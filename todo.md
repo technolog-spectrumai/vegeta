@@ -68,9 +68,10 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5c.3 `vegeta.chronos`: `Mission`/`Segment`/`Excitation`, `Structure` (DAF, margins, Campbell), ASTM rainflow, `build_spectrum` (JSON hand-off), `SNCurve`/`hotspot_damage`, `simulate_life`; CLI `chronos spectrum|life`; tests
 - [x] 5c.4 Notebooks `13_quadcopter_life`, `14_fixed_wing_life`: three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
 
-## Stage 5e — Boats (branch `dev_sea`)
+## Stage 5e — Boats and submarines (branch `dev_sea`)
 - [x] 5e.1 `designs/survey_boat.py` (lofted hard-chine hull, shell, deck, transom bracket; `part` = boat/hull_solid/hull_shell/bracket) and `16_boat_at_sea`: hydrostatics and GZ from the mesh, ITTC resistance + double-body RANS check, Boreas propeller in water, hull/bracket FEA (hydrostatic, slamming, thrust, wave slap), bracket modes, three sea states → spectra → fatigue → life, printed bracket
 - [x] 5e.3 `17_water_propeller`: Boreas in sea water (η/Ct vs J, cavitation number vs rpm, inception rpm), blade CAD, guarded `rotor_mrf` CFD check at cruise, one-blade FEA at bollard pull and its modes vs blade-pass frequency, Gutin tones + broadband in dB re 1 µPa, JSON export
+- [x] 5e.4 `designs/submarine.py` (Myring body, sail, fins; `part` = vehicle/body/pressure_hull with truncated ellipsoidal caps) and `18_submarine`: mass budget → buoyancy, trim lead position, BG; ITTC + form factor resistance, guarded `rans_ksst_external` check (nose upstream, L/4 reference length); Boreas thruster, top speed, endurance/range vs speed; pressure hull FEA at 200 m vs thin-shell theory, yield and Windenburg–Trilling collapse; three dive profiles → pressure spectra → damage per dive; JSON export
 - [ ] 5e.2 Free-surface resistance (needs an interFoam template), trim and sinkage at speed, seakeeping (heave/pitch RAOs)
 
 ## Stage 6 — Consistent interfaces

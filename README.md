@@ -56,7 +56,10 @@ types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life
 Talos). `16_boat_at_sea` (branch `dev_sea`) takes a 1 m survey boat from hull lines through hydrostatics and the GZ curve,
 resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life;
 `17_water_propeller` (`dev_sea`) takes its propeller through performance and cavitation in water, a rotating-frame
-CFD check, blade stress and modes, and blade-passing noise.
+CFD check, blade stress and modes, and blade-passing noise. `18_submarine` (`dev_sea`) is a 1.2 m AUV:
+buoyancy, trim lead and stability from the CAD, resistance with a fully submerged RANS check, thruster
+endurance and range, the aluminium pressure hull at its rated depth against thin-shell theory and collapse
+pressures, and three dive profiles as pressure cycles.
 Shared design files live in `notebooks/designs/`.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
