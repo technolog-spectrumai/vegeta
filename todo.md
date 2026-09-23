@@ -37,14 +37,14 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 3.10 Tests: unit (writers/parsers), integration (STEP→Gmsh, cantilever vs beam theory, axial bar, reactions), CLI; `docs/talos.md`, `notebooks/02_talos_fea.ipynb`
 
 ## Stage 4 — Aeromant (OpenFOAM, template cases)
-- [ ] 4.1 Package skeleton (deps: numpy, matplotlib, tqdm)
-- [ ] 4.2 STL utilities (read/write, bbox, explicit unit scaling)
-- [ ] 4.3 `TemplateSpec` (Python) + template cases: `laminar_external_simplefoam`, `rans_ksst_external_simplefoam`
-- [ ] 4.4 `CFDCase`: prepare (copy, render placeholders, insert geometry, domain check)
-- [ ] 4.5 Pipeline runner: blockMesh, surfaceFeatureExtract, snappyHexMesh, checkMesh, solver; `OpenFOAMEnvironment`
-- [ ] 4.6 Results: forceCoeffs parsing (Cd/Cl/Cm), checkMesh summary, residual/coefficient history plots
-- [ ] 4.7 CLI: `aeromant templates`, `prepare`, `run`, `results`
-- [ ] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
+- [x] 4.1 Package skeleton (deps: numpy, matplotlib, tqdm)
+- [x] 4.2 STL utilities (read/write, bbox, explicit unit scaling)
+- [x] 4.3 `TemplateSpec` (Python) + template cases: `laminar_external_simplefoam`, `rans_ksst_external_simplefoam`
+- [x] 4.4 `CFDCase`: prepare (copy, render placeholders, insert geometry, domain check)
+- [x] 4.5 Pipeline runner: blockMesh, surfaceFeatureExtract, snappyHexMesh, checkMesh, solver; `OpenFOAMEnvironment`
+- [x] 4.6 Results: forceCoeffs parsing (Cd/Cl/Cm), checkMesh summary, residual/coefficient history plots
+- [x] 4.7 CLI: `aeromant templates`, `prepare`, `run`, `results`
+- [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
 
 ## Stage 5 — Mellonia (PrusaSlicer)
 - [ ] 5.1 Package skeleton (deps: numpy, matplotlib, tqdm)
