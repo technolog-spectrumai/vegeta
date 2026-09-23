@@ -58,7 +58,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 5b — Boreas (propeller/rotor BEMT, motor, battery)
 - [x] 5b.1 `vegeta.boreas`: `Propeller`, `Airfoil`, `solve`/`rpm_for_thrust`, `Motor`/`Battery`/`Propulsion`, `excitations`, JSON `export`; CLI `boreas point|for-thrust|map`; tests vs scaling laws and an APC static point
-- [x] 5b.2 Dedalus `Propeller` example design; notebooks `11_quadcopter_propeller`, `12_fixed_wing_propeller` (export JSON + CAD for the mission/fatigue work)
+- [x] 5b.2 Dedalus `Propeller` example design; propeller parts of `08_quadcopter`, `09_fixed_wing_drone` (formerly notebooks 11, 12) (export JSON + CAD for the mission/fatigue work)
 - [x] 5b.3 `boreas.noise`: Gutin tonal harmonics, broadband allowance, cavitation number
 - [x] 4.10 Aeromant `rotor_mrf` / `rotor_mrf_static` (MRF propeller, forces → thrust/torque/power/Ct/Cp/η/FM, both dialects); CFD sections in notebooks 11/12 (`VEGETA_SKIP_OPENFOAM=1` skips them) — live validation on a machine with OpenFOAM: `test_openfoam.sh` + the notebook cells
 
@@ -66,7 +66,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5c.1 Talos: `PointMass`, `solve_modes` (CalculiX `*FREQUENCY`, validated vs beam theory and Rayleigh), `read_frd_steps`, `viz.plot_mode`
 - [x] 5c.2 Talos: `FatigueCurve`, `assess_fatigue` (unit stress fields × spectrum, Basquin + Goodman + Miner, hotspot map `viz.plot_damage`)
 - [x] 5c.3 `vegeta.chronos`: `Mission`/`Segment`/`Excitation`, `Structure` (DAF, margins, Campbell), ASTM rainflow, `build_spectrum` (JSON hand-off), `SNCurve`/`hotspot_damage`, `simulate_life`; CLI `chronos spectrum|life`; tests
-- [x] 5c.4 Notebooks `13_quadcopter_life`, `14_fixed_wing_life`: three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
+- [x] 5c.4 Life parts of `08_quadcopter`, `09_fixed_wing_drone` (formerly notebooks 13, 14): three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
 
 ## Stage 5d — Land vehicles (branch `dev_land`)
 - [x] 5d.1 `designs/rover.py` (tub chassis, trailing arms, wheels; `part` = rover/chassis/arm) and `15_rover_mechanics`: ISO 8608 terrains + rocks + drop → quarter-car wheel forces → static FEA (arm, chassis torsion), arm modes, rainflow spectra per terrain, fatigue and life, printed arm
@@ -82,6 +82,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)
 - [x] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
 - [x] 7.3 Interactive visualisation (pyvista/trame) per package; product notebooks `08_quadcopter`, `09_fixed_wing_drone`
+- [x] 7.4 Notebooks merged by machine (one per product); noise sections (Gutin + broadband) and frequency diagrams everywhere; `talos.viz.animate` (rotating stressed blade, load ramp) and `aeromant.viz.animate_particles` (tracers in the converged rotor flow) write MP4 with OpenCV
 
 ## Stage 8 — Vegeta Core (`vegeta-core`, branch `dev_core`)
 - [x] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts

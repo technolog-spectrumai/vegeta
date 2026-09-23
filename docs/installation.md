@@ -66,7 +66,7 @@ installation explicitly when it is not in a standard place:
 ```
 Case files and logs are kept in the work directory when something fails — send them with the output.
 
-Notebooks with OpenFOAM cells (11, 12 and the product notebooks) check `VEGETA_SKIP_OPENFOAM`: set it to `1`
+Notebooks with OpenFOAM cells (the product notebooks, 08 onwards) check `VEGETA_SKIP_OPENFOAM`: set it to `1`
 to execute them without OpenFOAM (`VEGETA_SKIP_OPENFOAM=1 scripts/run_notebooks.sh`); the CFD cells then print a
 note instead of running.
 

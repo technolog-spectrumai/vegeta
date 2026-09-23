@@ -42,3 +42,15 @@ def test_plots_render(solved, tmp_path):
         assert img.shape[0] > 0
     fig = viz.plot_section(res, normal="y")
     assert fig is not None
+
+
+def test_animate_writes_video(solved, tmp_path):
+    from vegeta.talos import viz
+
+    cv2 = pytest.importorskip("cv2")
+    model, res = solved
+    out = viz.animate(res, tmp_path / "beam.mp4", rpm=30.0, axis="x", seconds=0.5, fps=8, size=(320, 240))
+    cap = cv2.VideoCapture(str(out))
+    assert int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) == 4 and cap.read()[0]
+    out2 = viz.animate(res, tmp_path / "orbit.mp4", seconds=0.5, fps=4, size=(320, 240), load_ramp=False)
+    assert out2.stat().st_size > 0
