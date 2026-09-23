@@ -1,0 +1,14 @@
+
+ displacements (vx,vy,vz) for set N_X and time  0.1000000E+01
+
+ forces (fx,fy,fz) for set N_FIXED and time  0.1000000E+01
+
+         1  1.0E+00  2.0E+00 -3.0E+00
+
+ total force (fx,fy,fz) for set N_FIXED and time  0.1000000E+01
+
+        2.072596E-09 -7.389618E-10  1.000000E+02
+
+ total force (fx,fy,fz) for set N_OTHER and time  0.1000000E+01
+
+       -1.5E+01  0.0E+00  0.0E+00
