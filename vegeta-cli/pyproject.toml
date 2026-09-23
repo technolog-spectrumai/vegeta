@@ -7,7 +7,8 @@ name = "vegeta-cli"
 version = "0.1.0"
 description = "Vegeta engineering tools: Dedalus (CAD), Talos (FEA), Aeromant (CFD), Mellonia (3D printing)"
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
 requires-python = ">=3.10"
 dependencies = ["cadquery>=2.4", "gmsh>=4.11", "numpy", "matplotlib", "tqdm"]
 

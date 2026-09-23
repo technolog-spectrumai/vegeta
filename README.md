@@ -64,5 +64,5 @@ scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the 
 ```
 
 ## Licence
-MIT (see `LICENSE`). External tools keep their own licences, see `THIRD_PARTY_LICENSES.md`.
-The logo images are excluded from the MIT licence (see `THIRD_PARTY_LICENSES.md`).
+Proprietary — **internal use only** (see `LICENSE`). External tools keep their own licences, see
+`THIRD_PARTY_LICENSES.md`.
