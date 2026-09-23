@@ -51,12 +51,13 @@ vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeroman
 notebooks/         one notebook per package
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
-scripts/           install_ubuntu.sh, test_all.sh, run_notebooks.sh, demo_cli.sh
+install_local.sh   creates .venv, installs all dependencies and vegeta-cli
+scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
 ```
 
 ## Quick start
 ```bash
-scripts/install_ubuntu.sh           # apt tools, OpenFOAM (conda-forge), .venv with vegeta-cli
+./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
 source .venv/bin/activate
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly

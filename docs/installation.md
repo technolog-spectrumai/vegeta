@@ -4,7 +4,7 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 `vegeta-cli` and Jupyter) and checks each tool at the end:
 
 ```bash
-scripts/install_ubuntu.sh                   # options: --venv DIR, --system-python, --no-openfoam, --openfoam-prefix DIR
+./install_local.sh      # options: --venv DIR, --system-python, --skip-system, --no-openfoam, --openfoam-prefix DIR
 source .venv/bin/activate
 ```
 
@@ -19,7 +19,7 @@ explanation, never an import error.
 Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
 
 ## External tools (Ubuntu 24.04)
-`scripts/install_ubuntu.sh` installs:
+`install_local.sh` first creates the virtual environment, then installs:
 
 | Tool | Package | Check |
 |------|---------|-------|
