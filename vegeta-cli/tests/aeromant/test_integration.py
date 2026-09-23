@@ -41,6 +41,15 @@ def test_laminar_sphere_re100(tmp_path, openfoam):
     # results can be re-read later without running anything
     again = case.results()
     assert again.metrics["Cd"] == pytest.approx(m["Cd"])
+    pv = pytest.importorskip("pyvista")
+    pv.OFF_SCREEN = True
+    from vegeta.aeromant import viz
+
+    for pl in (viz.plot_mesh_slice(case), viz.plot_field_slice(case, "U"), viz.plot_streamlines(case),
+               viz.plot_surface_pressure(case)):
+        assert pl.screenshot(str(tmp_path / "v.png")).shape[0] > 0
+        pl.close()
+    assert viz.plot_section(case, "p", zoom=2) is not None
 
 
 def test_run_selected_steps_only(tmp_path, openfoam, sphere_stl):

@@ -38,7 +38,8 @@ pip install -e "vegeta-cli[pandas,test]"   # CadQuery and gmsh come from pip
 The external programs are only needed by the tool that uses them: Talos needs CalculiX `ccx`,
 Aeromant needs OpenFOAM, Mellonia needs PrusaSlicer. Missing programs give a failed result with an
 explanation, never an import error.
-Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
+Add `[pandas]` for `to_dataframe()` helpers, `[viz]` for the interactive 3D plots (pyvista + trame, see
+`docs/visualisation.md`) and `[test]` for the test suite; `install_local.sh` installs all three.
 
 ## External tools (Ubuntu 24.04)
 `install_local.sh` first creates the virtual environment, then installs:

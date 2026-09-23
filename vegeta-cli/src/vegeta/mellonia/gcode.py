@@ -29,6 +29,9 @@ class GcodeInfo:
     layer_extrusion_mm: np.ndarray       # net filament length extruded per layer
     generator: str | None = None
     messages: list[str] = field(default_factory=list)
+    segments: np.ndarray | None = None   # (N, 6) x0 y0 z0 x1 y1 z1 of every move (with ``moves=True``)
+    segment_layer: np.ndarray | None = None   # (N,) layer index of each move
+    segment_extruding: np.ndarray | None = None  # (N,) True when filament is extruded during the move
 
     @property
     def layer_count(self) -> int:
@@ -64,7 +67,8 @@ def _num(v) -> float | None:
         return None
 
 
-def read_gcode(path: str | Path) -> GcodeInfo:
+def read_gcode(path: str | Path, moves: bool = False) -> GcodeInfo:
+    """Parse a PrusaSlicer G-code file. With ``moves=True`` every G0/G1 move is kept (for toolpath plots)."""
     path = Path(path)
     comments: dict[str, str] = {}
     config: dict[str, str] = {}
@@ -73,9 +77,15 @@ def read_gcode(path: str | Path) -> GcodeInfo:
     in_config = False
     pending_layer = False
     relative = False
+    absolute_xyz = True
     e_pos = 0.0
     current = 0.0
     generator = None
+    pos = np.zeros(3)
+    have_pos = False
+    segs: list[list[float]] = []
+    seg_layer: list[int] = []
+    seg_ext: list[bool] = []
     with path.open("r", errors="replace") as fh:
         for raw in fh:
             line = raw.strip()
@@ -108,11 +118,18 @@ def read_gcode(path: str | Path) -> GcodeInfo:
                 relative = True
             elif cmd == "M82":
                 relative = False
+            elif cmd == "G91":
+                absolute_xyz = False
+            elif cmd == "G90":
+                absolute_xyz = True
             elif cmd == "G92":
                 for tok in code[1:]:
                     if tok.startswith("E"):
                         e_pos = float(tok[1:])
             elif cmd in ("G0", "G1", "G2", "G3"):
+                delta = 0.0
+                new = pos.copy()
+                moved = False
                 for tok in code[1:]:
                     if tok.startswith("E"):
                         val = float(tok[1:])
@@ -121,7 +138,28 @@ def read_gcode(path: str | Path) -> GcodeInfo:
                             e_pos = val
                         if z:
                             current += delta
+                    elif moves and tok[0] in "XYZ" and len(tok) > 1:
+                        try:
+                            v = float(tok[1:])
+                        except ValueError:
+                            continue
+                        i = "XYZ".index(tok[0])
+                        new[i] = v if absolute_xyz else new[i] + v
+                        moved = True
+                if moves:
+                    if moved and have_pos and z:
+                        segs.append([*pos, *new])
+                        seg_layer.append(len(z) - 1)
+                        seg_ext.append(delta > 0)
+                    if moved:
+                        pos = new
+                        have_pos = True
     if z:
         per_layer.append(current)
-    return GcodeInfo(path=path, comments=comments, config=config, layer_z=np.array(z),
+    info = GcodeInfo(path=path, comments=comments, config=config, layer_z=np.array(z),
                      layer_extrusion_mm=np.array(per_layer), generator=generator)
+    if moves:
+        info.segments = np.array(segs, dtype=float).reshape(-1, 6)
+        info.segment_layer = np.array(seg_layer, dtype=int)
+        info.segment_extruding = np.array(seg_ext, dtype=bool)
+    return info

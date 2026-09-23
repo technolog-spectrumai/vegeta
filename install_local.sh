@@ -103,7 +103,7 @@ fi
 step "Python packages (vegeta-cli, vegeta-core, vegeta-ai, JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
-  -e "$ROOT/vegeta-cli[pandas,test]" \
+  -e "$ROOT/vegeta-cli[pandas,viz,test]" \
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel

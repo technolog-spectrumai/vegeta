@@ -155,3 +155,15 @@ def test_prepare_uses_case_files_of_the_detected_flavor(tmp_path, sphere_stl):
     assert com.flavor == "openfoam.com" and com.prepare().ok
     assert (tmp_path / "com/constant/triSurface/body.stl").is_file()
     assert (tmp_path / "com/constant/transportProperties").is_file()
+
+
+def test_setup_plot_from_prepared_case(tmp_path, sphere_stl):
+    pv = pytest.importorskip("pyvista")
+    pv.OFF_SCREEN = True
+    from vegeta.aeromant import viz
+
+    case = CFDCase("laminar_external", sphere_stl, REQ, tmp_path / "c", geometry_units="m")
+    assert case.prepare().ok
+    pl = viz.plot_setup(case)
+    assert pl.screenshot(str(tmp_path / "s.png")).shape[0] > 0
+    pl.close()
