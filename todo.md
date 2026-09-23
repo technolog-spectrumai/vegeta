@@ -59,6 +59,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 5b — Boreas (propeller/rotor BEMT, motor, battery)
 - [x] 5b.1 `vegeta.boreas`: `Propeller`, `Airfoil`, `solve`/`rpm_for_thrust`, `Motor`/`Battery`/`Propulsion`, `excitations`, JSON `export`; CLI `boreas point|for-thrust|map`; tests vs scaling laws and an APC static point
 - [x] 5b.2 Dedalus `Propeller` example design; notebooks `11_quadcopter_propeller`, `12_fixed_wing_propeller` (export JSON + CAD for the mission/fatigue work)
+- [x] 5b.3 `boreas.noise`: Gutin tonal harmonics, broadband allowance, cavitation number
+- [x] 4.10 Aeromant `rotor_mrf` / `rotor_mrf_static` (MRF propeller, forces → thrust/torque/power/Ct/Cp/η/FM, both dialects); CFD sections in notebooks 11/12 (`VEGETA_SKIP_OPENFOAM=1` skips them) — live validation on a machine with OpenFOAM: `test_openfoam.sh` + the notebook cells
 
 ## Stage 5c — Chronos (missions, vibration, cyclic loads, life)
 - [x] 5c.1 Talos: `PointMass`, `solve_modes` (CalculiX `*FREQUENCY`, validated vs beam theory and Rayleigh), `read_frd_steps`, `viz.plot_mode`
