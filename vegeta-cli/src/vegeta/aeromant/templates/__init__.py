@@ -113,7 +113,7 @@ class TemplateSpec:
         out = {}
         for p in self.parameters:
             out[p.name] = p.validate(values[p.name]) if p.name in values else p.default
-        for positive in ("velocity", "kinematic_viscosity", "density", "reference_area", "reference_length"):
+        for positive in ("velocity", "kinematic_viscosity", "density", "reference_area", "reference_length", "diameter", "rpm"):
             if positive in out and out[positive] <= 0:
                 raise ValueError(f"{positive} must be > 0")
         return out
@@ -255,7 +255,116 @@ RANS_KSST = TemplateSpec(
     ),
 )
 
-TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST)}
+# -- rotating propeller / rotor in a rotating reference frame (MRF) --------------------------------
+ROTOR_COMMON = (
+    TemplateParameter("rpm", "rotor speed", "rpm"),
+    TemplateParameter("diameter", "rotor diameter D (reference length; also scales domain and mesh)", "m"),
+    TemplateParameter("kinematic_viscosity", "fluid kinematic viscosity", "m^2/s"),
+    TemplateParameter("density", "fluid density (forces are reported dimensional)", "kg/m^3"),
+    TemplateParameter("rotation", "sense of rotation about +x by the right-hand rule: 1 or -1", "", 1.0),
+    TemplateParameter("center", "rotor centre; the axis is +x through this point (place the STL accordingly)", "m", [0.0, 0.0, 0.0], "vector"),
+    TemplateParameter("iterations", "maximum SIMPLE iterations", "", 500, "int"),
+    TemplateParameter("residual_target", "stop when all initial residuals are below", "", 1e-4),
+    TemplateParameter("upstream", "domain inlet distance ahead of the rotor centre", "D", 3.0),
+    TemplateParameter("downstream", "domain outlet distance behind the rotor centre", "D", 6.0),
+    TemplateParameter("lateral", "domain half-width around the rotor centre", "D", 3.0),
+    TemplateParameter("zone_radius", "MRF cell-zone radius", "D", 0.6),
+    TemplateParameter("zone_length", "MRF cell-zone length along the axis", "D", 0.4),
+    TemplateParameter("wake_length", "refined wake region behind the rotor", "D", 2.0),
+    TemplateParameter("cells_per_diameter", "background cells per D", "", 8.0),
+    TemplateParameter("surface_level", "snappy refinement level on the blades", "", 4, "int"),
+    TemplateParameter("near_level", "refinement level in a box around the rotor", "", 3, "int"),
+    TemplateParameter("rotor_level", "refinement level inside the MRF zone", "", 3, "int"),
+    TemplateParameter("wake_level", "refinement level in the wake", "", 2, "int"),
+    TemplateParameter("turbulence_intensity", "far-field turbulence intensity", "-", 0.01),
+    TemplateParameter("viscosity_ratio", "far-field eddy/molecular viscosity ratio", "-", 10.0),
+)
+ROTOR_PATCHES = {
+    "inlet": "fixed axial inflow: airspeed (rotor_mrf) or inflow_fraction x tip speed (rotor_mrf_static)",
+    "outlet": "fixed pressure 0, inletOutlet velocity",
+    "sides": "slip (four lateral faces)",
+    "body*": "no-slip wall inside the rotating zone; forces patch",
+}
+
+
+def _rotor_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """Domain, MRF cylinder and refinement regions around the rotor, sized in diameters; the rotor axis is
+    +x through ``center`` (the STL must be placed on it)."""
+    if p["rpm"] <= 0:
+        raise ValueError("rpm must be > 0 (use rotation=-1 for the other sense of rotation)")
+    if p["rotation"] not in (1.0, -1.0):
+        raise ValueError("rotation must be 1 or -1")
+    if p.get("airspeed", 1.0) <= 0:
+        raise ValueError("airspeed must be > 0 (use rotor_mrf_static for a rotor without inflow)")
+    D = p["diameter"]
+    omega = p["rotation"] * p["rpm"] * 2 * math.pi / 60
+    tip_speed = abs(omega) * D / 2
+    airspeed = p["airspeed"] if "airspeed" in p else p["inflow_fraction"] * tip_speed   # static: a small residual inflow
+    c = np.asarray(p["center"], dtype=float)
+    if np.any(bmin > c + 0.1 * D) or np.any(bmax < c - 0.1 * D):
+        raise ValueError(f"the rotor centre {c.tolist()} is not inside the STL bounding box {bmin.tolist()}..{bmax.tolist()}: "
+                         "place the STL with its axis on +x through 'center' (default the origin)")
+    lo = c - np.array([p["upstream"] * D, p["lateral"] * D, p["lateral"] * D])
+    hi = c + np.array([p["downstream"] * D, p["lateral"] * D, p["lateral"] * D])
+    h = D / p["cells_per_diameter"]
+    n = np.maximum(1, np.ceil((hi - lo) / h)).astype(int)
+    hi = lo + n * h
+    near = 0.3 * D
+    u_ref = max(airspeed, 0.1 * tip_speed)
+    k = 1.5 * (u_ref * p["turbulence_intensity"]) ** 2
+    out = {
+        "XMIN": lo[0], "YMIN": lo[1], "ZMIN": lo[2], "XMAX": hi[0], "YMAX": hi[1], "ZMAX": hi[2],
+        "NX": n[0], "NY": n[1], "NZ": n[2],
+        "ROTOR_CENTER": c, "OMEGA": omega,
+        "ZONE_P1": c - np.array([0.5 * p["zone_length"] * D, 0, 0]), "ZONE_P2": c + np.array([0.5 * p["zone_length"] * D, 0, 0]),
+        "ZONE_RADIUS": p["zone_radius"] * D,
+        "NEAR_MIN": bmin - near, "NEAR_MAX": bmax + near,
+        "WAKE_MIN": np.array([bmin[0] - 0.2 * D, c[1] - 0.7 * D, c[2] - 0.7 * D]),
+        "WAKE_MAX": np.minimum(np.array([c[0] + p["wake_length"] * D, c[1] + 0.7 * D, c[2] + 0.7 * D]), hi - h),
+        "LOCATION_IN_MESH": lo + np.array([0.37 * p["upstream"] * D, 0.123 * (hi[1] - lo[1]), 0.211 * (hi[2] - lo[2])]),
+        "SURFACE_LEVEL_MIN": p["surface_level"], "SURFACE_LEVEL_MAX": p["surface_level"],
+        "FEATURE_LEVEL": p["surface_level"], "NEAR_LEVEL": p["near_level"], "ROTOR_LEVEL": p["rotor_level"],
+        "WAKE_LEVEL": p["wake_level"],
+        "AIRSPEED": airspeed, "KINEMATIC_VISCOSITY": p["kinematic_viscosity"], "DENSITY": p["density"],
+        "ITERATIONS": p["iterations"], "RESIDUAL_TARGET": p["residual_target"],
+        "K_INLET": k, "OMEGA_INLET": k / (p["kinematic_viscosity"] * p["viscosity_ratio"]),
+    }
+    return {key: _fmt(v) for key, v in out.items()}
+
+
+ROTOR_NOTES = (
+    "rotor axis +x through 'center' (default the origin); place the STL so its hub sits there",
+    "thrust is the force on the rotor along -x (the rotor pushes fluid toward +x); torque about +x; both from the forces function object",
+    "rotation=1 turns the rotor by the right-hand rule about +x; if the thrust comes out negative the blade pitch is handed the other way: use rotation=-1",
+    "steady MRF: no blade-passing unsteadiness, no tip-vortex resolution; wall functions without prism layers — compare with blade element theory, expect tens of percent",
+)
+
+ROTOR_MRF = TemplateSpec(
+    name="rotor_mrf",
+    description="Propeller/rotor in axial inflow (along +x) in a rotating reference frame, steady k-omega SST.",
+    parameters=(TemplateParameter("airspeed", "axial inflow speed along +x", "m/s"),) + ROTOR_COMMON,
+    flavors=EXTERNAL_FLAVORS,
+    derive=_rotor_derive,
+    max_body_extent=1.5,
+    patches=ROTOR_PATCHES,
+    notes=ROTOR_NOTES + ("efficiency = thrust x airspeed / shaft power",),
+)
+
+ROTOR_MRF_STATIC = TemplateSpec(
+    name="rotor_mrf_static",
+    description="Propeller/rotor at static thrust (hover): rotating frame, steady k-omega SST, a small residual axial inflow for stability.",
+    parameters=ROTOR_COMMON + (
+        TemplateParameter("inflow_fraction", "residual axial inflow as a fraction of the tip speed (keeps the steady solution stable; "
+                          "thrust changes by ~1 % at the default)", "-", 0.02),),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_rotor_derive,
+    max_body_extent=1.5,
+    patches=ROTOR_PATCHES,
+    notes=ROTOR_NOTES + ("figure of merit = ideal hover power / shaft power",
+                         "open (total-pressure) far-field boundaries were tried and diverged with SIMPLE; the small fixed inflow is the stable choice"),
+)
+
+TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 
