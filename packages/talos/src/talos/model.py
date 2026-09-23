@@ -245,6 +245,19 @@ class StructuralModel:
         known = [np.array(v) for v in by_support.values() if v is not None]
         m["reaction_total"] = np.sum(known, axis=0).tolist() if known else None
         m["applied_force_total"] = book["applied_force_total"]
+        supported = set()
+        for sup in self.supports:
+            supported.update(int(n) for n in mesh.region_nodes.get(sup.region, []))
+        loaded_on_support = [
+            l.region for l in self.loads
+            if hasattr(l, "region") and supported.intersection(int(n) for n in mesh.region_nodes.get(l.region, []))
+        ]
+        if loaded_on_support or any(isinstance(l, Acceleration) for l in self.loads):
+            res.messages.append(
+                "reactions are CalculiX RF values (internal nodal forces); load applied directly on supported "
+                "nodes (body-force share of supported nodes, or loads on regions "
+                f"{sorted(set(loaded_on_support))}) is not included in them"
+            )
         ys = self.material.yield_strength
         if ys is not None and m.get("max_von_mises"):
             m["safety_factor_yield"] = ys / m["max_von_mises"]
