@@ -4,7 +4,7 @@ Illustrative values: aluminium 6061-T6 nominal properties; verify for real use.
 """
 from pathlib import Path
 
-import talos
+from vegeta import talos
 
 HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent.parent / "runs"

@@ -6,7 +6,7 @@ The mesh is intentionally coarse for a quick demonstration.
 import math
 from pathlib import Path
 
-import aeromant
+from vegeta import aeromant
 
 RUNS = Path(__file__).resolve().parents[2] / "runs"
 
