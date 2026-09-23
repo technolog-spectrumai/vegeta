@@ -65,6 +65,10 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5c.3 `vegeta.chronos`: `Mission`/`Segment`/`Excitation`, `Structure` (DAF, margins, Campbell), ASTM rainflow, `build_spectrum` (JSON hand-off), `SNCurve`/`hotspot_damage`, `simulate_life`; CLI `chronos spectrum|life`; tests
 - [x] 5c.4 Notebooks `13_quadcopter_life`, `14_fixed_wing_life`: three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
 
+## Stage 5d — Land vehicles (branch `dev_land`)
+- [x] 5d.1 `designs/rover.py` (tub chassis, trailing arms, wheels; `part` = rover/chassis/arm) and `15_rover_mechanics`: ISO 8608 terrains + rocks + drop → quarter-car wheel forces → static FEA (arm, chassis torsion), arm modes, rainflow spectra per terrain, fatigue and life, printed arm
+- [ ] 5d.2 Motor torque reaction and cornering loads on the arm; chassis drop case with the battery; measured spring/tyre rates
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)

@@ -53,7 +53,9 @@ parameter campaign (FEA on every candidate, criteria, budget, approval policy) i
 `11_`/`12_` size the propellers (Boreas) and export the rpm, thrust and excitation data;
 `13_quadcopter_life` and `14_fixed_wing_life` take that data through modal analysis, three mission
 types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life simulation (Chronos +
-Talos). Shared design files live in `notebooks/designs/`.
+Talos). `15_rover_mechanics` (branch `dev_land`) does the same for a small rugged-terrain rover: terrain
+profiles → quarter-car wheel loads → arm and chassis FEA, arm modes, rainflow fatigue, life, printing.
+Shared design files live in `notebooks/designs/`.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
