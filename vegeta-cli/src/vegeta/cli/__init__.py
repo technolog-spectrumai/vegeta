@@ -14,6 +14,7 @@ TOOLS = {
     "talos": "linear static FEA (Gmsh + CalculiX): STEP -> mesh -> results",
     "aeromant": "aerodynamics (OpenFOAM template cases): STL -> Cd/Cl/Cm",
     "mellonia": "3D-print manufacturability (PrusaSlicer): STL -> G-code, time, material",
+    "boreas": "propeller/rotor performance (BEMT) with motor and battery: thrust, power, rpm, excitations",
 }
 
 
@@ -41,7 +42,7 @@ def usage() -> str:
         lines += ["", "Workbench commands:"]
         lines += [f"  {name:<10} (from {ep.dist.name if ep.dist else ep.value})" for name, ep in sorted(extra.items())]
     lines += ["", "Run 'vegeta <command> --help' for details.",
-              "The tools are also available as the commands dedalus, talos, aeromant and mellonia."]
+              "The tools are also available as the commands dedalus, talos, aeromant, mellonia and boreas."]
     return "\n".join(lines)
 
 
