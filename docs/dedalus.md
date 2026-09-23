@@ -57,5 +57,5 @@ dedalus measure out/plate/Plate.step [--json]
 Exit codes: 0 success, 1 failed run (e.g. build error), 2 invalid input.
 
 ## Examples
-`dedalus.examples`: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Cube` — illustrations only.
+`dedalus.examples`: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Propeller`, `Cube` — illustrations only.
 Notebook: `notebooks/01_dedalus_cad.ipynb`.
