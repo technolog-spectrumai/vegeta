@@ -77,8 +77,9 @@ def status_table(ws, design: str | None = None) -> StatusTable:
     rows = []
     for r in revs:
         summary = r.geometry_summary()
+        attempts = [a for a in r.annotations() if a.get("type") == "generate"]
         if summary is None:
-            cad = NOT_RUN
+            cad = FAILED if attempts and attempts[-1].get("status") != "success" else NOT_RUN
         elif summary.get("status") != "success":
             cad = FAILED
         else:
