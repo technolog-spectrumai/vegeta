@@ -1,4 +1,4 @@
-"""Parsers for OpenFOAM outputs: forceCoeffs, solver residuals, checkMesh."""
+"""Parsers for OpenFOAM outputs: forceCoeffs, forces, solver residuals, checkMesh."""
 from __future__ import annotations
 
 import re
@@ -89,7 +89,7 @@ def read_coefficients(files: list[Path] | Path) -> CoefficientHistory:
 
 
 _RESIDUAL = re.compile(r"Solving for (\w+), Initial residual = ([-+\d.eE]+)")
-_TIME = re.compile(r"^Time = ([-+\d.eE]+)\s*$")
+_TIME = re.compile(r"^Time = ([-+\d.eE]+)\s*s?\s*$")   # openfoam.org prints "Time = 1s"
 
 
 @dataclass
@@ -153,3 +153,31 @@ def read_checkmesh(path: str | Path) -> MeshCheck:
         failed_checks=int(failed.group(1)) if failed else 0,
         messages=msgs,
     )
+
+
+# -- forces function object (force.dat / moment.dat) ------------------------------------------------
+_NUM = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def find_force_files(case: Path, name: str = "force.dat") -> list[Path]:
+    pp = Path(case) / "postProcessing"
+    return sorted(set(pp.glob(f"*/*/{name}")), key=lambda p: (p.parent.parent.name, _time_key(p.parent.name)))
+
+
+def read_force_history(files: list[Path] | Path) -> np.ndarray:
+    """``(n, 4)`` array ``time, x, y, z`` of the TOTAL force (or moment) from ``force.dat``/``moment.dat``.
+
+    Both OpenFOAM forks write ``time`` followed by the total vector, then the pressure and viscous parts,
+    with or without parentheses; only the first three components after the time are used."""
+    files = [files] if isinstance(files, (str, Path)) else list(files)
+    rows = []
+    for f in files:
+        for line in Path(f).read_text(errors="replace").splitlines():
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            nums = [float(x) for x in _NUM.findall(line)]
+            if len(nums) >= 4:
+                rows.append(nums[:4])
+    if not rows:
+        raise ValueError("no force data found")
+    return np.array(rows, dtype=float)
