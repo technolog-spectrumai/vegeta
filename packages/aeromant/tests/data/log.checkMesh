@@ -1,0 +1,8 @@
+Mesh stats
+    points:           60000
+    cells:            49112
+Checking geometry...
+ ***Number of severely non-orthogonal (> 70 degrees) faces: 12.
+Failed 1 mesh checks.
+
+End

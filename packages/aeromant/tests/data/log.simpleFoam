@@ -1,0 +1,21 @@
+Build  : _7bdb509494-20191219 OPENFOAM=1912
+Starting time loop
+
+Time = 1
+
+smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 0.07, No Iterations 4
+smoothSolver:  Solving for Uy, Initial residual = 1, Final residual = 0.07, No Iterations 4
+GAMG:  Solving for p, Initial residual = 1, Final residual = 0.04, No Iterations 5
+GAMG:  Solving for p, Initial residual = 0.02, Final residual = 0.0007, No Iterations 2
+ExecutionTime = 0.36 s  ClockTime = 1 s
+
+Time = 2
+
+smoothSolver:  Solving for Ux, Initial residual = 0.1, Final residual = 0.007, No Iterations 4
+smoothSolver:  Solving for Uy, Initial residual = 0.2, Final residual = 0.007, No Iterations 4
+GAMG:  Solving for p, Initial residual = 0.3, Final residual = 0.04, No Iterations 5
+
+SIMPLE solution converged in 2 iterations
+
+End
+

@@ -1,0 +1,14 @@
+# Force and moment coefficients
+# dragDir     : (1 0 0)
+# sideDir     : (0 1 0)
+# liftDir     : (0 0 1)
+# rollAxis    : (1 0 0)
+# pitchAxis   : (0 1 0)
+# yawAxis     : (0 0 1)
+# magUInf     : 1
+# lRef        : 1
+# Aref        : 0.785398
+# CofR        : (0 0 0)
+# Time          Cd            Cd(f)         Cd(r)         Cl            Cl(f)         Cl(r)         CmPitch       CmRoll        CmYaw         Cs            Cs(f)         Cs(r)
+1               2.0           1.0           1.0           0.1           0.05          0.05          0.01          0             0             0             0             0
+2               1.2           0.6           0.6           0.0           0.0           0.0           0.02          0             0             0             0             0
