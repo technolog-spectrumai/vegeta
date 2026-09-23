@@ -9,8 +9,9 @@ for part in cli dedalus talos aeromant mellonia; do
   echo "=== $part ==="
   (cd "$ROOT/vegeta-cli" && python3 -m pytest -q "tests/$part" "$@") || status=1
 done
-if [ -d "$ROOT/vegeta-core/tests" ]; then
-  echo "=== core ==="
-  (cd "$ROOT/vegeta-core" && python3 -m pytest -q "$@") || status=1
-fi
+for pkg in vegeta-core vegeta-ai; do
+  [ -d "$ROOT/$pkg/tests" ] || continue
+  echo "=== ${pkg#vegeta-} ==="
+  (cd "$ROOT/$pkg" && python3 -m pytest -q "$@") || status=1
+done
 exit $status

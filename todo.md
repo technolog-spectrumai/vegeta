@@ -83,7 +83,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [-] 11.2 Explicit parameter sweeps (not an optimizer), full reproducibility records
 
 ## Stage 12 — AI assistance (deferred)
-- [-] 12.1 Pluggable `Proposer` (Anthropic default); proposals shown, validated, explicitly accepted/rejected
+- [x] 12.1 `vegeta-ai`: `Proposer` protocol, Claude adapter (`ClaudeConfig`: api key, model, effort), `DesignSession` — proposals built, measured, diffed, explicitly accepted/rejected
+- [ ] 12.2 OpenAI adapter; parameter-only proposals against `vegeta.core` criteria (see `plan.md` step 3)
 
 ## Stage 13 — Validation (continuous)
 - [x] 13.1 Unit tests in every package

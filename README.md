@@ -44,12 +44,14 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
-[installation](docs/installation.md) · [composition through files](docs/composition.md).
+[installation](docs/installation.md) · [composition through files](docs/composition.md) ·
+[Vegeta Core](docs/core.md) · [AI copilot](docs/ai.md).
 
 ## Layout
 ```
 vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
+vegeta-ai/         the vegeta-ai package: src/vegeta/ai (Claude design copilot), adds `vegeta ai`
 notebooks/         one notebook per package
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)

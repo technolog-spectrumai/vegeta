@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-ai"
+version = "0.1.0"
+description = "AI design assistant for Vegeta: Claude proposes CadQuery/Dedalus changes, the engineer validates and accepts"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["vegeta-cli", "anthropic>=1.0"]
+
+[project.optional-dependencies]
+core = ["vegeta-core"]
+test = ["pytest"]
+
+[project.entry-points."vegeta.commands"]
+ai = "vegeta.ai.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.ai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = ["requires_api_key: needs ANTHROPIC_API_KEY (calls the Claude API)"]
