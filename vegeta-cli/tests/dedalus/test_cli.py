@@ -49,3 +49,18 @@ def test_console_script_runs(tmp_path):
     r = subprocess.run([sys.executable, "-m", "vegeta.dedalus", "params", "vegeta.dedalus.examples:Bracket"],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "hole_diameter" in r.stdout
+
+
+def test_design_file_edits_are_picked_up_immediately(tmp_path):
+    """Same-size edit within the same second must not run stale cached bytecode."""
+    from vegeta.dedalus.loading import load_design
+
+    f = tmp_path / "plate.py"
+    f.write_text(DESIGN_FILE)
+    first = load_design(f"{f}:Plate")
+    assert first.generate().volume == pytest.approx(30 * 10 * 2)
+    first_sha = first.source_identity()["source_sha256"]
+    f.write_text(DESIGN_FILE.replace('box(p["width"], 10,', 'box(p["width"], 12,'))
+    second = load_design(f"{f}:Plate")
+    assert second.generate().volume == pytest.approx(30 * 12 * 2)
+    assert first_sha != second.source_identity()["source_sha256"]
