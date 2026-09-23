@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-core"
+version = "0.1.0"
+description = "Vegeta workbench core: workspaces, immutable design revisions, recorded evaluations"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["vegeta-cli"]
+
+[project.optional-dependencies]
+pandas = ["pandas"]
+test = ["pytest"]
+
+# Adds `vegeta ws ...` and `vegeta rev ...` to the `vegeta` command of vegeta-cli.
+[project.entry-points."vegeta.commands"]
+ws = "vegeta.core.cli:ws_main"
+rev = "vegeta.core.cli:rev_main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = [
+  "requires_gmsh: needs the gmsh Python module",
+  "requires_ccx: needs the CalculiX ccx executable",
+  "requires_openfoam: needs OpenFOAM executables",
+  "requires_prusaslicer: needs the PrusaSlicer executable",
+]
