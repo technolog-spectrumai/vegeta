@@ -18,14 +18,19 @@ Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
 | CadQuery | `pip install cadquery` | `python -c "import cadquery"` |
 | Gmsh | `pip install gmsh` (+ `libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1`) | `python -c "import gmsh"` |
 | CalculiX | `apt install calculix-ccx` | `ccx -v` |
-| OpenFOAM | `apt install openfoam` (v1912, openfoam.com) | `WM_PROJECT_DIR=/usr/share/openfoam blockMesh -help` |
+| OpenFOAM | official openfoam.com/.org package, or conda-forge `openfoam` | `simpleFoam -help` |
 | PrusaSlicer | `apt install prusa-slicer` | `prusa-slicer --help` |
 
 ### OpenFOAM notes
-The Ubuntu `openfoam` package puts executables in `/usr/bin` but they need `WM_PROJECT_DIR`
-to find their `etc/` files. Aeromant takes this explicitly:
-`OpenFOAMEnvironment(env={"WM_PROJECT_DIR": "/usr/share/openfoam"})`, or
-`OpenFOAMEnvironment(bashrc="/opt/openfoam2406/etc/bashrc")` for a sourced installation.
+Tell Aeromant explicitly how to launch OpenFOAM:
+- sourced installation: `OpenFOAMEnvironment(bashrc="/usr/lib/openfoam/openfoam2406/etc/bashrc")`
+- conda environment: `micromamba create -p /opt/foam -c conda-forge openfoam=2412`, then
+  `OpenFOAMEnvironment.conda("/opt/foam")`
+- `OpenFOAMEnvironment.detect()` looks in the usual places.
+
+Avoid the Ubuntu 24.04 `openfoam` apt package (v1912): it needs
+`OpenFOAMEnvironment(env={"WM_PROJECT_DIR": "/usr/share/openfoam"})` and, more importantly, its
+function objects fail (`IOstream "sha1"` error), so `forceCoeffs` never produces coefficients.
 
 ### PrusaSlicer notes
 The CLI slices headless. If your build insists on a display, run it under `xvfb-run`
