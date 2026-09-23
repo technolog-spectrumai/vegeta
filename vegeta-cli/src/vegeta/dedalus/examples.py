@@ -129,10 +129,11 @@ class Propeller(Design):
             else:
                 c = p["chord_max"] + (p["chord_tip"] - p["chord_max"]) * ((x - 0.35) / 0.65) ** 1.5
             beta = math.degrees(math.atan(p["pitch"] / (2 * math.pi * r)))
-            pts = [(-0.3 * c + u, v) for u, v in self._section(c, p["thickness"], p["camber"])]
-            # section drawn in the YZ plane at radius r (chord along -Y so the blade rotates about +Z), pitched by beta
+            pts = [(-0.3 * c + u, -v) for u, v in self._section(c, p["thickness"], p["camber"])]
+            # section drawn in the YZ plane at radius r, pitched by beta: a right-hand propeller about +Z (it pushes
+            # fluid toward -Z when turning by the right-hand rule; rotated z->x it matches aeromant's rotor templates)
             wp = cq.Workplane("YZ", origin=(r, 0, 0)).polyline([(-u, v) for u, v in pts]).close()
-            wire = wp.wires().val().rotate((r, 0, 0), (r + 1, 0, 0), beta)
+            wire = wp.wires().val().rotate((r, 0, 0), (r + 1, 0, 0), -beta)
             blade = cq.Workplane("XY").add(wire) if blade is None else blade.add(wire)
         blade = blade.toPending().loft(ruled=False)
         prop = hub
