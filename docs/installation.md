@@ -1,6 +1,14 @@
 # Installation
 
-Python ≥ 3.10. Each package installs on its own:
+On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` with all four
+packages and Jupyter) and checks each tool at the end:
+
+```bash
+scripts/install_ubuntu.sh                   # options: --venv DIR, --system-python, --no-openfoam, --openfoam-prefix DIR
+source .venv/bin/activate
+```
+
+Manual installation — Python ≥ 3.10; each package installs on its own:
 
 ```bash
 pip install -e packages/dedalus        # CadQuery CAD
@@ -11,7 +19,7 @@ pip install -e packages/mellonia       # needs PrusaSlicer (system)
 Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
 
 ## External tools (Ubuntu 24.04)
-`scripts/install_tools.sh` installs:
+`scripts/install_ubuntu.sh` installs:
 
 | Tool | Package | Check |
 |------|---------|-------|

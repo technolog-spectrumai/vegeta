@@ -11,7 +11,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 1.2 Per-package `_process.py`: `run_command` recording command, cwd, return code, duration, stdout, stderr, log file
 - [x] 1.3 Per-package `result.py`: common result shape (status, metrics, artifacts, messages, duration, execution, metadata)
 - [x] 1.4 Error policy: invalid explicit config → `ValueError` at construction; execution failures → `failed` result
-- [x] 1.5 `docs/philosophy.md`, `docs/result-shape.md`, `docs/installation.md`, `scripts/install_tools.sh`, `scripts/test_all.sh`
+- [x] 1.5 `docs/philosophy.md`, `docs/result-shape.md`, `docs/installation.md`, `scripts/install_ubuntu.sh`, `scripts/test_all.sh`
 
 ## Stage 2 — Dedalus (CadQuery CAD)
 - [x] 2.1 Package skeleton (`pyproject.toml`, deps: cadquery, numpy, matplotlib, tqdm; optional pandas)

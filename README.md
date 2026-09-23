@@ -47,13 +47,13 @@ packages/<name>/   pyproject.toml, src/<name>/, tests/     (dedalus, talos, aero
 notebooks/         one notebook per package
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
-scripts/           install_tools.sh, test_all.sh, run_notebooks.sh, demo_cli.sh
+scripts/           install_ubuntu.sh, test_all.sh, run_notebooks.sh, demo_cli.sh
 ```
 
 ## Quick start
 ```bash
-scripts/install_tools.sh            # pip + apt dependencies (Ubuntu) and OpenFOAM from conda-forge
-pip install -e packages/dedalus -e packages/talos -e packages/aeromant -e packages/mellonia
+scripts/install_ubuntu.sh           # apt tools, OpenFOAM (conda-forge), .venv with all four packages
+source .venv/bin/activate
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly
 scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the CLIs
