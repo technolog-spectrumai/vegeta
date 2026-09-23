@@ -70,6 +70,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 5e — Boats (branch `dev_sea`)
 - [x] 5e.1 `designs/survey_boat.py` (lofted hard-chine hull, shell, deck, transom bracket; `part` = boat/hull_solid/hull_shell/bracket) and `16_boat_at_sea`: hydrostatics and GZ from the mesh, ITTC resistance + double-body RANS check, Boreas propeller in water, hull/bracket FEA (hydrostatic, slamming, thrust, wave slap), bracket modes, three sea states → spectra → fatigue → life, printed bracket
+- [x] 5e.3 `17_water_propeller`: Boreas in sea water (η/Ct vs J, cavitation number vs rpm, inception rpm), blade CAD, guarded `rotor_mrf` CFD check at cruise, one-blade FEA at bollard pull and its modes vs blade-pass frequency, Gutin tones + broadband in dB re 1 µPa, JSON export
 - [ ] 5e.2 Free-surface resistance (needs an interFoam template), trim and sinkage at speed, seakeeping (heave/pitch RAOs)
 
 ## Stage 6 — Consistent interfaces

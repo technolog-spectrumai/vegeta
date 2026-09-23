@@ -54,7 +54,9 @@ parameter campaign (FEA on every candidate, criteria, budget, approval policy) i
 `13_quadcopter_life` and `14_fixed_wing_life` take that data through modal analysis, three mission
 types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life simulation (Chronos +
 Talos). `16_boat_at_sea` (branch `dev_sea`) takes a 1 m survey boat from hull lines through hydrostatics and the GZ curve,
-resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life.
+resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life;
+`17_water_propeller` (`dev_sea`) takes its propeller through performance and cavitation in water, a rotating-frame
+CFD check, blade stress and modes, and blade-passing noise.
 Shared design files live in `notebooks/designs/`.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
