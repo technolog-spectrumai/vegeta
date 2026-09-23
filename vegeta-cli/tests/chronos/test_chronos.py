@@ -51,7 +51,7 @@ def test_mission_and_spectrum(tmp_path):
     assert all(b.amplitude == pytest.approx(0.5 * 10) for b in vib)         # resonance x10
     assert vib[1].mean == 0.0                                                # lateral has no static level
     thrust = [b for b in spec.blocks if b.pattern == "thrust"]
-    assert sum(b.cycles for b in thrust) == pytest.approx(6.5)               # 4 punch cycles + 1 (6-4) + 3 residue halves
+    assert sum(b.cycles for b in thrust) == pytest.approx(6.0)               # 4 punch cycles + (6-4) + ground-air-ground
     assert max(b.amplitude for b in thrust) == pytest.approx(4.0)            # 0 -> 8 N half cycle
     p = spec.save(tmp_path / "s.json")
     back = chronos.LoadSpectrum.load(p)

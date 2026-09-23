@@ -22,7 +22,8 @@ class Excitation:
 @dataclass(frozen=True)
 class Segment:
     """``duration_s`` at steady ``loads`` (pattern -> level, in the load unit of the pattern) with
-    ``excitations`` superimposed. ``repeat`` stacks identical segments (e.g. 20 punch-outs)."""
+    ``excitations`` superimposed. ``repeat`` = this segment happens N times as excursions from the
+    preceding level (20 punch-outs from hover), each closing a load cycle."""
 
     name: str
     duration_s: float

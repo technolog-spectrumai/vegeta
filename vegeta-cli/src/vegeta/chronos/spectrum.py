@@ -82,9 +82,16 @@ def build_spectrum(mission: Mission, structure: Structure | None = None, *, grou
     at ``ground_level``) plus high-cycle blocks from every excitation (amplitude x dynamic
     amplification when a ``structure`` is given, cycles = frequency x duration)."""
     blocks: list[Block] = []
-    segs = mission.expanded()
     for p in mission.patterns:
-        series = [ground_level] + [s.loads.get(p, 0.0) for s in segs] + [ground_level]
+        # level sequence: a repeated segment is N excursions from the preceding level (punch-outs
+        # from hover, gusts from cruise), so every repeat closes a cycle
+        series = [ground_level]
+        for s in mission.segments:
+            level, prev = s.loads.get(p, 0.0), series[-1]
+            for _ in range(s.repeat - 1):
+                series += [level, prev]
+            series.append(level)
+        series.append(ground_level)
         merged: dict[tuple, float] = {}
         for rng, mean, count in rainflow(series):
             if rng >= min_range and rng > 0:
