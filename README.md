@@ -53,7 +53,9 @@ parameter campaign (FEA on every candidate, criteria, budget, approval policy) i
 `11_`/`12_` size the propellers (Boreas) and export the rpm, thrust and excitation data;
 `13_quadcopter_life` and `14_fixed_wing_life` take that data through modal analysis, three mission
 types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life simulation (Chronos +
-Talos). Shared design files live in `notebooks/designs/`.
+Talos). `16_boat_at_sea` (branch `dev_sea`) takes a 1 m survey boat from hull lines through hydrostatics and the GZ curve,
+resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life.
+Shared design files live in `notebooks/designs/`.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
