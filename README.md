@@ -1,3 +1,5 @@
+<p align="center"><img src="logo_with_text.png" alt="Vegeta logo" width="320"></p>
+
 # Vegeta
 
 A Python-first, human-in-the-loop engineering workbench built from small,
@@ -59,3 +61,4 @@ scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the 
 
 ## Licence
 MIT (see `LICENSE`). External tools keep their own licences, see `THIRD_PARTY_LICENSES.md`.
+The logo images are excluded from the MIT licence (see `THIRD_PARTY_LICENSES.md`).
