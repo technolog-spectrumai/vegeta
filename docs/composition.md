@@ -1,6 +1,6 @@
 # Composition through files
 
-The four tools (`vegeta.dedalus`, `vegeta.talos`, `vegeta.aeromant`, `vegeta.mellonia`) never import each other. They compose through standard files:
+The tools (`vegeta.dedalus`, `vegeta.talos`, `vegeta.aeromant`, `vegeta.mellonia`, `vegeta.boreas`) never import each other. They compose through standard files:
 
 ```
 Dedalus ──STEP──▶ Talos      (any STEP from any CAD program works)
