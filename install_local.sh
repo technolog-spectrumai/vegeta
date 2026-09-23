@@ -7,13 +7,15 @@
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks that every tool is usable.
 #
-# Usage: ./install_local.sh [--venv DIR] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR]
+# Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR]
+#   --python EXE   interpreter for the venv (default: Ubuntu's /usr/bin/python3, not a conda one)
 #   --skip-system  skip apt and OpenFOAM installation (tools already installed or no sudo)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/.venv"
 USE_VENV=1
+PYTHON_EXE=""
 WITH_OPENFOAM=1
 WITH_SYSTEM=1
 FOAM_PREFIX=/opt/foam
@@ -23,11 +25,12 @@ MICROMAMBA_URL=https://conda.anaconda.org/conda-forge/linux-64/micromamba-2.9.0-
 while [ $# -gt 0 ]; do
   case "$1" in
     --venv) VENV="$2"; shift 2 ;;
+    --python) PYTHON_EXE="$2"; shift 2 ;;
     --system-python) USE_VENV=0; shift ;;
     --no-openfoam) WITH_OPENFOAM=0; shift ;;
     --skip-system) WITH_SYSTEM=0; shift ;;
     --openfoam-prefix) FOAM_PREFIX="$2"; shift 2 ;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -41,18 +44,25 @@ if [ -r /etc/os-release ]; then
   [ "${ID:-}" = "ubuntu" ] || echo "warning: this script targets Ubuntu, found ${ID:-unknown}" >&2
 fi
 
+# Use Ubuntu's Python by default: an active conda env (e.g. "(base)") may provide a Python version
+# for which CadQuery/OCP wheels do not exist yet.
+if [ -z "$PYTHON_EXE" ]; then
+  if [ -x /usr/bin/python3 ]; then PYTHON_EXE=/usr/bin/python3; else PYTHON_EXE="$(command -v python3)"; fi
+fi
+[ -n "${CONDA_PREFIX:-}" ] && echo "note: conda environment '$CONDA_PREFIX' is active; the venv is built from $PYTHON_EXE instead"
+
 step "Virtual environment"
 if [ "$USE_VENV" -eq 1 ]; then
-  if ! python3 -c "import venv, ensurepip" >/dev/null 2>&1; then
+  if ! "$PYTHON_EXE" -c "import venv, ensurepip" >/dev/null 2>&1; then
     [ "$WITH_SYSTEM" -eq 1 ] || { echo "python3-venv is missing; install it or drop --skip-system" >&2; exit 1; }
     $SUDO apt-get update
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-venv python3-pip
   fi
-  python3 -m venv "$VENV"
+  "$PYTHON_EXE" -m venv "$VENV"
   PY="$VENV/bin/python"
   echo "virtual environment: $VENV (activate with: source $VENV/bin/activate)"
 else
-  PY="$(command -v python3)"
+  PY="$PYTHON_EXE"
   echo "using $PY (system Python; Ubuntu may refuse pip installs here — prefer the default venv)"
 fi
 
@@ -115,8 +125,8 @@ check jupyter "$(dirname "$PY")/jupyter" lab --version
 
 if [ $status -eq 0 ]; then
   printf '\nAll dependencies installed. Next:\n'
-  [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate"
-  echo "  jupyter lab notebooks/00_smoke_test.ipynb   # kernel \"Python (vegeta)\"; quick check that everything works"
+  echo "  ./jupyter.sh             # JupyterLab from the venv; open notebooks/00_smoke_test.ipynb"
+  [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate   # for the vegeta command and scripts"
   echo "  scripts/test_all.sh      # tests"
   echo "  scripts/demo_cli.sh      # CAD -> FEA -> print -> CFD with the CLIs"
 else

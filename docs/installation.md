@@ -4,9 +4,22 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 `vegeta-cli` and Jupyter) and checks each tool at the end:
 
 ```bash
-./install_local.sh      # options: --venv DIR, --system-python, --skip-system, --no-openfoam, --openfoam-prefix DIR
+./install_local.sh      # options: --venv DIR, --python EXE, --system-python, --skip-system, --no-openfoam, --openfoam-prefix DIR
 source .venv/bin/activate
 ```
+
+## Jupyter
+```bash
+./jupyter.sh            # JupyterLab from .venv, opened in notebooks/ — no activation needed
+```
+The installer registers the venv as the Jupyter kernel **"Python (vegeta)"** and every notebook asks
+for it, so the notebooks also work from another Jupyter (e.g. conda base) as long as that kernel exists.
+
+Troubleshooting: `FileNotFoundError: .../bin/python` when a kernel starts means a stale kernel
+registration from an old environment. List them with `jupyter kernelspec list`, remove the broken one
+with `jupyter kernelspec remove <name>`, and re-run `./install_local.sh` to register "Python (vegeta)".
+The installer builds the venv from Ubuntu's `/usr/bin/python3` even if a conda env is active
+(override with `--python`).
 
 Manual installation — Python ≥ 3.10; one package provides all four tools:
 
