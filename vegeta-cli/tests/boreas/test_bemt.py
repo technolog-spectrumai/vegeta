@@ -84,3 +84,26 @@ def test_cli(tmp_path, capsys):
     assert main(["map", "--dp", "9x6", "--rpm", "3000", "9000", "3", "--speed", "0", "15", "4", "-o", str(tmp_path / "m.json")]) == 0
     assert np.array(boreas.load(tmp_path / "m.json")["map"]["thrust_n"]).shape == (3, 4)
     assert main(["point", "--dp", "10x4.7", "--rpm", "-5"]) == 2
+
+
+def test_noise_and_cavitation(apc10x47):
+    from vegeta import boreas
+
+    tones = boreas.gutin_harmonics(apc10x47, thrust=5.0, torque=0.1, rpm=6000, distance=10.0, angle_deg=90.0)
+    assert tones["blade_pass_hz"] == 200 and tones["frequency_hz"][:2] == [200.0, 400.0]
+    assert tones["spl_db"][0] > tones["spl_db"][-1]                         # harmonics fall off
+    louder = boreas.gutin_harmonics(apc10x47, thrust=10.0, torque=0.2, rpm=6000, distance=10.0, angle_deg=90.0)
+    assert louder["total_tonal_db"] > tones["total_tonal_db"]
+    far = boreas.gutin_harmonics(apc10x47, thrust=5.0, torque=0.1, rpm=6000, distance=20.0, angle_deg=90.0)
+    assert tones["total_tonal_db"] - far["total_tonal_db"] == pytest.approx(6.02, abs=0.05)   # 1/r
+    on_axis = boreas.gutin_harmonics(apc10x47, thrust=5.0, torque=0.1, rpm=6000, distance=10.0, angle_deg=0.0)
+    assert on_axis["p_rms_pa"][0] < tones["p_rms_pa"][0]                    # Gutin: no loading noise on the axis
+    assert boreas.spl(2e-5) == pytest.approx(0.0) and boreas.spl(1e-6, "water") == pytest.approx(0.0)
+    bb = boreas.broadband_level(apc10x47, 5.0, 6000, 10.0)
+    assert boreas.broadband_level(apc10x47, 5.0, 12000, 10.0) - bb == pytest.approx(60 * math.log10(2), abs=1e-6)
+    cav = boreas.cavitation(apc10x47, rpm=3000, airspeed=2.0, depth_m=0.5, cp_min=-1.0)
+    assert cav["cavitation_number"] > 0 and cav["relative_speed_m_s"] > 2.0
+    deep = boreas.cavitation(apc10x47, rpm=3000, airspeed=2.0, depth_m=50.0, cp_min=-1.0)
+    assert deep["cavitation_number"] > cav["cavitation_number"] and not deep["cavitates"]
+    fast = boreas.cavitation(apc10x47, rpm=30000, airspeed=2.0, depth_m=0.5, cp_min=-1.0)
+    assert fast["cavitates"] and fast["rpm_at_inception"] < 30000
