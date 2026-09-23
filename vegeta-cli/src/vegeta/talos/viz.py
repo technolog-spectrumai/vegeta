@@ -159,6 +159,53 @@ def plot_results(result, *, field: str = "von_mises", deform_scale: float | None
     return pl
 
 
+def plot_mode(modes_result, mode: int = 1, *, scale: float | None = None, mesh=None, plotter=None):
+    """Mode shape ``mode`` (1-based) of a ``solve_modes`` result, warped and coloured by amplitude."""
+    from .frd import read_frd_steps
+
+    pv = _pv()
+    steps = read_frd_steps(modes_result.artifacts["frd"])
+    if not 1 <= mode <= len(steps):
+        raise ValueError(f"mode must be 1..{len(steps)}")
+    freq, fr = steps[mode - 1]
+    grid = mesh_to_pyvista(mesh or modes_result.artifacts["mesh"])
+    pos = {int(n): i for i, n in enumerate(fr.node_ids)}
+    order = np.array([pos[int(n)] for n in _mesh_of(mesh or modes_result.artifacts["mesh"]).node_ids])
+    u = np.nan_to_num(fr.displacement[order])
+    span = float(np.ptp(grid.points, axis=0).max()) or 1.0
+    umax = float(np.abs(u).max()) or 1.0
+    scale = scale if scale is not None else 0.1 * span / umax
+    grid.point_data["mode"] = u
+    grid.point_data["|mode|"] = np.linalg.norm(u, axis=1) / umax
+    pl = plotter or pv.Plotter()
+    pl.add_mesh(grid.extract_surface(), style="wireframe", color="#9aa5b1", opacity=0.3, line_width=0.5)
+    pl.add_mesh(grid.warp_by_vector("mode", factor=scale), scalars="|mode|", cmap="turbo",
+                scalar_bar_args={"title": "relative amplitude"})
+    pl.add_text(f"mode {mode}: {freq:.1f} Hz (shape x{scale:.3g}, arbitrary amplitude)", font_size=10)
+    pl.add_axes()
+    return pl
+
+
+def plot_damage(fatigue_result, mesh, *, log: bool = True, plotter=None):
+    """Fatigue damage per node (one spectrum pass) on the mesh; hotspot marked."""
+    pv = _pv()
+    grid = mesh_to_pyvista(mesh)
+    pos = {int(n): i for i, n in enumerate(fatigue_result.node_ids)}
+    order = np.array([pos[int(n)] for n in _mesh_of(mesh).node_ids])
+    d = np.asarray(fatigue_result.damage)[order]
+    with np.errstate(divide="ignore"):
+        shown = np.log10(np.clip(d, 1e-12, None)) if log else d
+    grid.point_data["damage"] = shown
+    pl = plotter or pv.Plotter()
+    pl.add_mesh(grid, scalars="damage", cmap="inferno", scalar_bar_args={"title": "log10 damage / pass" if log else "damage / pass"})
+    hot = fatigue_result.coords[fatigue_result.hotspot]
+    pl.add_mesh(pv.Sphere(radius=0.01 * float(np.ptp(grid.points, axis=0).max()), center=hot), color="#00e5ff")
+    m = fatigue_result.result.metrics
+    pl.add_text(f"damage per pass {m.get('damage_per_pass', 0):.3g} -> {m.get('passes_to_failure', 0):.3g} passes", font_size=10)
+    pl.add_axes()
+    return pl
+
+
 def plot_section(result, *, normal: str = "y", origin=None, field: str = "von_mises", ax=None, levels: int = 24,
                  mesh=None):
     """2D contour section through the results on a plane (matplotlib)."""

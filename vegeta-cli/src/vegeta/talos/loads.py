@@ -76,5 +76,18 @@ class Acceleration:
         return (self.ax, self.ay, self.az)
 
 
+@dataclass(frozen=True)
+class PointMass:
+    """A lumped mass (a motor, a battery) attached to the nodes of a surface region, shared equally
+    between them. Mass unit follows the unit system (tonne in mm-N-MPa, kg in m-N-Pa)."""
+
+    region: str
+    mass: float
+
+    def __post_init__(self):
+        if self.mass <= 0:
+            raise ValueError(f"PointMass on {self.region!r} must be positive")
+
+
 Support = FixedSupport | Displacement
 Load = Force | Pressure | Acceleration

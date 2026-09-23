@@ -52,10 +52,10 @@ def _floats(text: str, width: int = 12) -> list[float]:
     return vals
 
 
-def read_frd(path: str | Path) -> FieldResults:
-    path = Path(path)
+def _read_blocks(path: Path):
+    """Nodes and the list of result blocks ``(step_value, name, {node: values})`` in file order."""
     nodes: dict[int, list[float]] = {}
-    fields: dict[str, dict[int, list[float]]] = {}
+    blocks: list[tuple[float, str, dict[int, list[float]]]] = []
     with path.open("r", errors="replace") as fh:
         lines = iter(fh)
         for line in lines:
@@ -67,6 +67,10 @@ def read_frd(path: str | Path) -> FieldResults:
                         nid = int(rec[3:13])
                         nodes[nid] = _floats(rec[13:])
             elif line.startswith("  100C"):
+                try:
+                    step_value = float(line[12:24])
+                except ValueError:
+                    step_value = float("nan")
                 name = None
                 data: dict[int, list[float]] = {}
                 for rec in lines:
@@ -80,21 +84,45 @@ def read_frd(path: str | Path) -> FieldResults:
                     elif rec.startswith(" -3"):
                         break
                 if name:
-                    fields[name] = data  # later increments overwrite earlier ones
+                    blocks.append((step_value, name, data))
     if not nodes:
         raise ValueError(f"{path}: no node block found")
+    return nodes, blocks
+
+
+def _assemble(nodes, fields) -> FieldResults:
     ids = np.array(sorted(nodes), dtype=np.int64)
     coords = np.array([nodes[i][:3] for i in ids])
     out = {}
+    pos = {n: i for i, n in enumerate(ids)}
     for name, data in fields.items():
         width = max(len(v) for v in data.values())
         arr = np.full((len(ids), width), np.nan)
-        pos = {n: i for i, n in enumerate(ids)}
         for n, v in data.items():
             if n in pos:
                 arr[pos[n], :len(v)] = v
         out[name] = arr
     return FieldResults(node_ids=ids, coords=coords, fields=out)
+
+
+def read_frd(path: str | Path) -> FieldResults:
+    """Last increment of every field."""
+    nodes, blocks = _read_blocks(Path(path))
+    fields: dict[str, dict[int, list[float]]] = {}
+    for _, name, data in blocks:
+        fields[name] = data  # later increments overwrite earlier ones
+    return _assemble(nodes, fields)
+
+
+def read_frd_steps(path: str | Path) -> list[tuple[float, FieldResults]]:
+    """Every increment (a mode in a ``*FREQUENCY`` job) as ``(step_value, FieldResults)``."""
+    nodes, blocks = _read_blocks(Path(path))
+    steps: list[tuple[float, dict]] = []
+    for value, name, data in blocks:
+        if not steps or steps[-1][0] != value or name in steps[-1][1]:
+            steps.append((value, {}))
+        steps[-1][1][name] = data
+    return [(v, _assemble(nodes, f)) for v, f in steps]
 
 
 _TOTAL = re.compile(r"total force \(fx,fy,fz\) for set (\S+) and time\s+(\S+)", re.I)
@@ -113,6 +141,38 @@ def read_dat_reactions(path: str | Path) -> dict[str, list[float]]:
             if len(parts) == 3:
                 try:
                     out[m.group(1).upper()] = [float(p) for p in parts]
+                    break
+                except ValueError:
+                    continue
+    return out
+
+
+def read_dat_eigen(path: str | Path) -> dict:
+    """Eigenvalues (``*FREQUENCY``): frequencies in Hz plus, when printed, participation factors and
+    effective modal masses per mode (x, y, z, rx, ry, rz)."""
+    text = Path(path).read_text(errors="replace")
+    out: dict = {"frequencies_hz": [], "participation": [], "effective_modal_mass": [], "total_effective_mass": None}
+    m = re.search(r"E I G E N V A L U E   O U T P U T(.*?)(?:\n\s*\n\s*\n|P A R T I C I P A T I O N)", text, re.S)
+    if m:
+        for line in m.group(1).splitlines():
+            parts = line.split()
+            if len(parts) >= 5 and parts[0].isdigit():
+                out["frequencies_hz"].append(float(parts[3]))
+    for key, title in (("participation", "P A R T I C I P A T I O N   F A C T O R S"),
+                       ("effective_modal_mass", "E F F E C T I V E   M O D A L   M A S S")):
+        m = re.search(re.escape(title) + r"(.*?)(?:\n\s*\n\s*\n|T O T A L|E F F E C T I V E|\Z)", text, re.S)
+        if m:
+            for line in m.group(1).splitlines():
+                parts = line.split()
+                if len(parts) == 7 and parts[0].isdigit():
+                    out[key].append([float(x) for x in parts[1:]])
+    m = re.search(r"T O T A L   E F F E C T I V E   M A S S(.*?)\Z", text, re.S)
+    if m:
+        for line in m.group(1).splitlines():
+            parts = line.split()
+            if len(parts) == 6:
+                try:
+                    out["total_effective_mass"] = [float(x) for x in parts]
                     break
                 except ValueError:
                     continue

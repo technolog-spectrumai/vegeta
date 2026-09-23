@@ -14,8 +14,8 @@ import numpy as np
 from ._process import describe_failure, utc_now
 from ._progress import resolve_progress
 from .ccx import ccx_version, nset, run_ccx, write_inp
-from .frd import read_dat_reactions, read_frd
-from .loads import Acceleration, Displacement, FixedSupport, Force, Pressure
+from .frd import read_dat_eigen, read_dat_reactions, read_frd
+from .loads import Acceleration, Displacement, FixedSupport, Force, PointMass, Pressure
 from .materials import Material
 from .mesh import MeshSettings, generate_mesh, read_mesh
 from .regions import Surfaces, SurfacesInBox, SurfacesOnPlane
@@ -52,6 +52,7 @@ class StructuralModel:
     mesh_settings: MeshSettings
     name: str = "talos_model"
     notes: str = ""
+    masses: Sequence[PointMass] = ()   # lumped masses (motors, batteries): inertia in modal analysis
     _unit_system: object = field(init=False, repr=False)
 
     def __post_init__(self):
@@ -68,9 +69,9 @@ class StructuralModel:
             raise ValueError(f"region names must be unique (case-insensitive): {names}")
         if not self.supports:
             raise ValueError("no supports defined; a static analysis needs explicit supports")
-        if not self.loads:
-            raise ValueError("no loads defined")
-        for item in list(self.supports) + [l for l in self.loads if hasattr(l, "region")]:
+        if not self.loads and not self.masses:
+            raise ValueError("no loads defined (a modal-only model needs at least its masses)")
+        for item in list(self.supports) + [l for l in self.loads if hasattr(l, "region")] + list(self.masses):
             if item.region not in names:
                 raise ValueError(f"{type(item).__name__} refers to unknown region {item.region!r}; defined: {names}")
         if any(isinstance(l, Acceleration) for l in self.loads) and self.material.density is None:
@@ -91,6 +92,7 @@ class StructuralModel:
             "regions": [tagged(r) for r in self.regions],
             "supports": [tagged(s) for s in self.supports],
             "loads": [tagged(l) for l in self.loads],
+            "masses": [tagged(m) for m in self.masses],
             "mesh": asdict(self.mesh_settings),
             "notes": self.notes,
         }
@@ -171,7 +173,9 @@ class StructuralModel:
             cb("write deck", 0.05)
             mesh = read_mesh(workdir / MESH_FILE)
             inp = workdir / f"{JOB}.inp"
-            book = write_inp(inp, mesh, self.material, self.supports, self.loads)
+            if not self.loads:
+                raise ValueError("no loads defined; use solve_modes() for a modal analysis")
+            book = write_inp(inp, mesh, self.material, self.supports, self.loads, self.masses)
             res.artifacts["inp"] = inp
             res.metadata["tool_versions"] = {"ccx": ccx_version(executable),
                                              **mesh_info.get("metadata", {}).get("tool_versions", {})}
@@ -210,6 +214,80 @@ class StructuralModel:
             close()
         done()
         res.artifacts["summary"] = workdir / "summary.json"
+        res.save_json(res.artifacts["summary"])
+        return res
+
+    def solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
+                    timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+        """Natural frequencies and mode shapes (CalculiX ``*FREQUENCY``) of the supported structure with
+        its point masses; loads are ignored. Needs the material density. Results: ``modes.frd``/``.dat``."""
+        t0 = time.monotonic()
+        workdir = Path(workdir)
+        job = "modes"
+        res = Result(kind="talos.modes", metadata={"model": self.config(), "started_at": utc_now(), "n_modes": n_modes,
+                                                   "units": asdict(self._unit_system)})
+        done = lambda: (setattr(res, "duration_s", time.monotonic() - t0), res.save_json(workdir / "modes_summary.json"))
+        if self.material.density is None:
+            res.fail("a modal analysis needs the material density; none was given")
+            workdir.mkdir(parents=True, exist_ok=True)
+            done()
+            return res
+        summary = workdir / MESH_SUMMARY
+        if not (workdir / MESH_FILE).is_file() or not summary.is_file():
+            res.fail(f"no mesh in {workdir}; run model.mesh(workdir) first")
+            workdir.mkdir(parents=True, exist_ok=True)
+            done()
+            return res
+        mesh_info = json.loads(summary.read_text())
+        if mesh_info.get("status") != "success" or mesh_info.get("metadata", {}).get("mesh_key") != self._mesh_key():
+            res.fail("the mesh is missing, failed or out of date; re-run model.mesh(workdir)")
+            done()
+            return res
+        res.artifacts["mesh"] = workdir / MESH_FILE
+        cb, close = resolve_progress(progress, "talos modes")
+        try:
+            cb("write deck", 0.05)
+            mesh = read_mesh(workdir / MESH_FILE)
+            inp = workdir / f"{job}.inp"
+            write_inp(inp, mesh, self.material, self.supports, self.loads, self.masses, modes=n_modes)
+            res.artifacts["inp"] = inp
+            res.metadata["tool_versions"] = {"ccx": ccx_version(executable),
+                                             **mesh_info.get("metadata", {}).get("tool_versions", {})}
+            cb("CalculiX eigenvalues", 0.1)
+            rec = run_ccx(workdir, job, executable, threads, timeout,
+                          lambda line: cb("CalculiX: solving", 0.5) if "eigen" in line.lower() else None, cancel)
+            res.execution.append(rec)
+            if rec.log_file:
+                res.artifacts["ccx_log"] = Path(rec.log_file)
+            for ext in ("frd", "dat"):
+                if (workdir / f"{job}.{ext}").is_file():
+                    res.artifacts[ext] = workdir / f"{job}.{ext}"
+            if rec.error == "cancelled":
+                res.fail("CalculiX run cancelled by user", status="cancelled")
+            elif not rec.ok or "*ERROR" in rec.stdout or "*ERROR" in rec.stderr:
+                res.fail(describe_failure(rec))
+            elif "dat" not in res.artifacts:
+                res.fail("CalculiX finished but wrote no .dat file")
+            else:
+                eig = read_dat_eigen(res.artifacts["dat"])
+                if not eig["frequencies_hz"]:
+                    res.fail("no eigenvalues found in modes.dat")
+                else:
+                    res.metrics = {"n_nodes": int(len(mesh.node_ids)), "n_elements": int(len(mesh.element_ids)),
+                                   "n_modes": len(eig["frequencies_hz"]), "frequencies_hz": eig["frequencies_hz"],
+                                   "first_frequency_hz": eig["frequencies_hz"][0],
+                                   "effective_modal_mass": eig["effective_modal_mass"] or None,
+                                   "total_effective_mass": eig["total_effective_mass"],
+                                   "point_mass_total": float(sum(m.mass for m in self.masses))}
+                    res.messages.append("frequencies are undamped and linear (no stress stiffening, no pre-load); "
+                                        "printed parts are anisotropic and often softer than the datasheet modulus")
+        except Exception as exc:
+            res.fail(f"{type(exc).__name__}: {exc}")
+        finally:
+            cb("done", 1.0)
+            close()
+        done()
+        res.artifacts["summary"] = workdir / "modes_summary.json"
         res.save_json(res.artifacts["summary"])
         return res
 
