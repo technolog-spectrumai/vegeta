@@ -47,13 +47,13 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
 
 ## Stage 5 — Mellonia (PrusaSlicer)
-- [ ] 5.1 Package skeleton (deps: numpy, matplotlib, tqdm)
-- [ ] 5.2 `PrintSettings` (Python dicts → ini artifacts; `from_ini` for existing exports), example settings
-- [ ] 5.3 `Orientation` (engineer-chosen rotations, no optimisation)
-- [ ] 5.4 `slice_stl` via PrusaSlicer CLI, G-code preserved
-- [ ] 5.5 G-code parser: print time, filament (mm/cm³/g), cost, layer count, max Z
-- [ ] 5.6 CLI: `mellonia slice`, `mellonia parse`
-- [ ] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/04_mellonia_print.ipynb`
+- [x] 5.1 Package skeleton (deps: numpy, matplotlib, tqdm)
+- [x] 5.2 `PrintSettings` (Python dicts → ini artifacts; `from_ini` for existing exports), example settings
+- [x] 5.3 `Orientation` (engineer-chosen rotations, no optimisation)
+- [x] 5.4 `slice_stl` via PrusaSlicer CLI, G-code preserved
+- [x] 5.5 G-code parser: print time, filament (mm/cm³/g), cost, layer count, max Z
+- [x] 5.6 CLI: `mellonia slice`, `mellonia parse`
+- [x] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/04_mellonia_print.ipynb`
 
 ## Stage 6 — Consistent interfaces
 - [ ] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
