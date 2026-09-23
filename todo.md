@@ -8,7 +8,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 1 — Common philosophy
 - [x] 1.1 Repository layout (`packages/`, `notebooks/`, `docs/`, `scripts/`), README, this todo
-- [ ] 1.2 Per-package `_process.py`: `run_command` recording command, cwd, return code, duration, stdout, stderr, log file
+- [x] 1.2 Per-package `_process.py`: `run_command` recording command, cwd, return code, duration, stdout, stderr, log file
 - [x] 1.3 Per-package `result.py`: common result shape (status, metrics, artifacts, messages, duration, execution, metadata)
 - [x] 1.4 Error policy: invalid explicit config → `ValueError` at construction; execution failures → `failed` result
 - [x] 1.5 `docs/philosophy.md`, `docs/result-shape.md`, `docs/installation.md`, `scripts/install_tools.sh`, `scripts/test_all.sh`
@@ -25,16 +25,16 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 2.9 Tests (unit + CadQuery integration + CLI), `docs/dedalus.md`, `notebooks/01_dedalus_cad.ipynb`
 
 ## Stage 3 — Talos (Gmsh + CalculiX, linear static)
-- [ ] 3.1 Package skeleton (deps: gmsh, numpy, matplotlib, tqdm)
-- [ ] 3.2 Units (`mm-N-MPa`, `m-N-Pa`) and `Material` (explicit E, ν, optional density, yield)
-- [ ] 3.3 `inspect_step`: surface/volume table for region selection (any STEP)
-- [ ] 3.4 Regions: `Surfaces`, `SurfacesInBox`, `SurfacesOnPlane` (empty selection is an error)
-- [ ] 3.5 Supports and loads: `FixedSupport`, `Displacement`, `Force`, `Pressure`, `Acceleration`
-- [ ] 3.6 Meshing with Gmsh (`MeshSettings`), `mesh.msh`, CalculiX `.inp` writer
-- [ ] 3.7 `StructuralModel.mesh()` / `.solve()` (separate explicit steps), ccx runner
-- [ ] 3.8 FRD/DAT parsers, `StructuralResult` (max displacement, von Mises, reactions, safety factor only with yield)
-- [ ] 3.9 CLI: `talos inspect`, `talos mesh`, `talos solve`
-- [ ] 3.10 Tests: unit (writers/parsers), integration (STEP→Gmsh, cantilever vs beam theory, axial bar, reactions), CLI; `docs/talos.md`, `notebooks/02_talos_fea.ipynb`
+- [x] 3.1 Package skeleton (deps: gmsh, numpy, matplotlib, tqdm)
+- [x] 3.2 Units (`mm-N-MPa`, `m-N-Pa`) and `Material` (explicit E, ν, optional density, yield)
+- [x] 3.3 `inspect_step`: surface/volume table for region selection (any STEP)
+- [x] 3.4 Regions: `Surfaces`, `SurfacesInBox`, `SurfacesOnPlane` (empty selection is an error)
+- [x] 3.5 Supports and loads: `FixedSupport`, `Displacement`, `Force`, `Pressure`, `Acceleration`
+- [x] 3.6 Meshing with Gmsh (`MeshSettings`), `mesh.msh`, CalculiX `.inp` writer
+- [x] 3.7 `StructuralModel.mesh()` / `.solve()` (separate explicit steps), ccx runner
+- [x] 3.8 FRD/DAT parsers, `StructuralResult` (max displacement, von Mises, reactions, safety factor only with yield)
+- [x] 3.9 CLI: `talos inspect`, `talos mesh`, `talos solve`
+- [x] 3.10 Tests: unit (writers/parsers), integration (STEP→Gmsh, cantilever vs beam theory, axial bar, reactions), CLI; `docs/talos.md`, `notebooks/02_talos_fea.ipynb`
 
 ## Stage 4 — Aeromant (OpenFOAM, template cases)
 - [ ] 4.1 Package skeleton (deps: numpy, matplotlib, tqdm)
