@@ -9,20 +9,20 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 1 — Common philosophy
 - [x] 1.1 Repository layout (`packages/`, `notebooks/`, `docs/`, `scripts/`), README, this todo
 - [ ] 1.2 Per-package `_process.py`: `run_command` recording command, cwd, return code, duration, stdout, stderr, log file
-- [ ] 1.3 Per-package `result.py`: common result shape (status, metrics, artifacts, messages, duration, execution, metadata)
-- [ ] 1.4 Error policy: invalid explicit config → `ValueError` at construction; execution failures → `failed` result
-- [ ] 1.5 `docs/philosophy.md`, `docs/result-shape.md`, `docs/installation.md`, `scripts/install_tools.sh`, `scripts/test_all.sh`
+- [x] 1.3 Per-package `result.py`: common result shape (status, metrics, artifacts, messages, duration, execution, metadata)
+- [x] 1.4 Error policy: invalid explicit config → `ValueError` at construction; execution failures → `failed` result
+- [x] 1.5 `docs/philosophy.md`, `docs/result-shape.md`, `docs/installation.md`, `scripts/install_tools.sh`, `scripts/test_all.sh`
 
 ## Stage 2 — Dedalus (CadQuery CAD)
-- [ ] 2.1 Package skeleton (`pyproject.toml`, deps: cadquery, numpy, matplotlib, tqdm; optional pandas)
-- [ ] 2.2 `Parameter` and parameter-set validation
-- [ ] 2.3 `Design` (subclass + decorator), `generate(**overrides)`, source identity hash
-- [ ] 2.4 `Geometry`: measurements (bbox, dimensions, volume, area, center of mass, validity)
-- [ ] 2.5 STEP/STL export, `GenerationResult`, `summary.json`
-- [ ] 2.6 Jupyter display via CadQuery's own visualisation; `plot_*` helpers (matplotlib)
-- [ ] 2.7 Example designs: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Cube`
-- [ ] 2.8 CLI: `dedalus generate`, `dedalus measure` (`--json`)
-- [ ] 2.9 Tests (unit + CadQuery integration + CLI), `docs/dedalus.md`, `notebooks/01_dedalus_cad.ipynb`
+- [x] 2.1 Package skeleton (`pyproject.toml`, deps: cadquery, numpy, matplotlib, tqdm; optional pandas)
+- [x] 2.2 `Parameter` and parameter-set validation
+- [x] 2.3 `Design` (subclass + decorator), `generate(**overrides)`, source identity hash
+- [x] 2.4 `Geometry`: measurements (bbox, dimensions, volume, area, center of mass, validity)
+- [x] 2.5 STEP/STL export, `GenerationResult`, `summary.json`
+- [x] 2.6 Jupyter display via CadQuery's own visualisation; `plot_*` helpers (matplotlib)
+- [x] 2.7 Example designs: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Cube`
+- [x] 2.8 CLI: `dedalus generate`, `dedalus measure` (`--json`)
+- [x] 2.9 Tests (unit + CadQuery integration + CLI), `docs/dedalus.md`, `notebooks/01_dedalus_cad.ipynb`
 
 ## Stage 3 — Talos (Gmsh + CalculiX, linear static)
 - [ ] 3.1 Package skeleton (deps: gmsh, numpy, matplotlib, tqdm)
