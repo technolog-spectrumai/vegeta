@@ -42,18 +42,19 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Talos | `vegeta talos inspect/mesh/solve/results` | cantilever vs beam theory (−0.6 %), bar F/A, gravity | [docs/talos.md](docs/talos.md) | `02_talos_fea` |
 | Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `03_aeromant_cfd` |
 | Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
-| Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | `11_`, `12_` propeller |
-| Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | `13_`, `14_` life |
+| Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
+| Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 
-Product-level notebooks — the whole workflow on one design, with revisions and visualisation:
-`08_quadcopter` (printed X-frame: two load cases, three revisions, drag with a canopy, slicing) and
-`09_fixed_wing_drone` (twin-motor fixed wing: wing pull-up and engine-out cases, whole-aircraft RANS with
-level-flight speed and endurance, nacelle slicing). `07_ai_design_copilot` iterates a design with Claude; `10_agentic_design` lets Claude run a bounded
-parameter campaign (FEA on every candidate, criteria, budget, approval policy) in a workspace.
-`11_`/`12_` size the propellers (Boreas) and export the rpm, thrust and excitation data;
-`13_quadcopter_life` and `14_fixed_wing_life` take that data through modal analysis, three mission
-types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life simulation (Chronos +
-Talos). Shared design files live in `notebooks/designs/`.
+Product-level notebooks — one notebook per machine, the whole workflow on one design with revisions,
+visualisation and a JSON record: `08_quadcopter` (printed X-frame: load cases, three revisions, drag with a
+canopy, slicing; then the propeller and drive — BEMT, a rotating-frame CFD check, excitations, noise, a
+blade FEA with a stress video; then modes, Campbell diagram, three mission types, rainflow spectra,
+fatigue on the FEA stress fields and a fleet-usage life) and `09_fixed_wing_drone` (twin-motor fixed wing:
+wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on the resulting drag polar
+with the same CFD/noise/blade/video treatment, then wing modes, missions and life). `07_ai_design_copilot`
+iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
+every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
+`notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·

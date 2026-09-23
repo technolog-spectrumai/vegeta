@@ -68,4 +68,4 @@ vegeta boreas for-thrust -p props.py:NINE_SIX --thrust 1.4 --speed 14
 vegeta boreas map --dp 9x6 --rpm 3000 12000 10 --speed 0 20 5 -o runs/map.json
 ```
 
-Notebooks: `11_quadcopter_propeller`, `12_fixed_wing_propeller`.
+Notebooks: the propeller parts of `08_quadcopter` and `09_fixed_wing_drone` (BEMT, CFD check, noise, blade FEA and its video).
