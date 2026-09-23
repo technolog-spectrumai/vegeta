@@ -25,9 +25,19 @@ class OpenFOAMEnvironment:
     prefix: list[str] = field(default_factory=list)
 
     @classmethod
-    def conda(cls, env_prefix: str, runner: str = "micromamba") -> "OpenFOAMEnvironment":
-        """OpenFOAM installed in a conda/mamba environment (e.g. conda-forge ``openfoam``)."""
-        return cls(prefix=[runner, "run", "-p", str(env_prefix)])
+    def conda(cls, env_prefix: str | Path, runner: str | None = None) -> "OpenFOAMEnvironment":
+        """OpenFOAM installed in a conda/mamba environment (e.g. conda-forge ``openfoam``).
+
+        By default the environment's own activation script is sourced; pass ``runner="micromamba"``
+        (or ``"conda"``) to launch through ``<runner> run -p <env_prefix>`` instead.
+        """
+        env_prefix = str(Path(env_prefix))
+        if runner:
+            return cls(prefix=[runner, "run", "-p", env_prefix])
+        script = Path(env_prefix) / "etc" / "conda" / "activate.d" / "openfoam_activate.sh"
+        return cls(bashrc=str(script) if script.is_file() else None,
+                   env={"CONDA_PREFIX": env_prefix,
+                        "PATH": str(Path(env_prefix) / "bin") + os.pathsep + os.environ.get("PATH", "")})
 
     def command(self, argv: list[str]) -> list[str]:
         argv = list(argv)
@@ -49,7 +59,7 @@ class OpenFOAMEnvironment:
     @classmethod
     def detect(cls) -> "OpenFOAMEnvironment":
         """Look in well-known places: an already sourced environment, official openfoam.com/.org
-        packages under /usr/lib/openfoam and /opt, then the Debian/Ubuntu package."""
+        packages under /usr/lib/openfoam and /opt, conda environments, then the Debian/Ubuntu package."""
         if os.environ.get("WM_PROJECT_DIR") and shutil.which("blockMesh"):
             return cls()
         for pattern in ("/usr/lib/openfoam/openfoam*/etc/bashrc", "/opt/openfoam*/etc/bashrc",
@@ -57,9 +67,16 @@ class OpenFOAMEnvironment:
             hits = sorted(glob.glob(pattern))
             if hits:
                 return cls(bashrc=hits[-1])
+        conda_envs = [os.environ.get("CONDA_PREFIX", ""), "/opt/foam"]
+        for pattern in ("/opt/conda/envs/*", "~/micromamba/envs/*", "~/miniforge3/envs/*", "~/.conda/envs/*"):
+            conda_envs += sorted(glob.glob(os.path.expanduser(pattern)))
+        for env_dir in conda_envs:
+            if env_dir and (Path(env_dir) / "bin" / "simpleFoam").is_file():
+                return cls.conda(env_dir)
         if shutil.which("blockMesh") and Path("/usr/share/openfoam/etc/controlDict").is_file():
             return cls(env={"WM_PROJECT_DIR": "/usr/share/openfoam"})
         raise RuntimeError(
-            "OpenFOAM not found: no blockMesh on PATH, no /usr/share/openfoam, no /opt/openfoam*/etc/bashrc; "
+            "OpenFOAM not found: no sourced environment, no /usr/lib/openfoam or /opt/openfoam* bashrc, no conda "
+            "environment with simpleFoam, no /usr/share/openfoam; "
             "create OpenFOAMEnvironment(bashrc=...) explicitly"
         )

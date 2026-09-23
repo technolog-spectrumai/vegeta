@@ -13,4 +13,4 @@ if [ ! -x /opt/foam/bin/simpleFoam ]; then
   curl -Ls https://conda.anaconda.org/conda-forge/linux-64/micromamba-2.9.0-0.tar.bz2 | tar -xj -C /opt/mm bin/micromamba
   MAMBA_ROOT_PREFIX=/opt/mm/root /opt/mm/bin/micromamba create -y -p /opt/foam -c conda-forge openfoam=2412
 fi
-echo "OpenFOAM: aeromant.OpenFOAMEnvironment.conda('/opt/foam', runner='/opt/mm/bin/micromamba')"
+echo "OpenFOAM: aeromant.OpenFOAMEnvironment.conda('/opt/foam') (also found by detect())"
