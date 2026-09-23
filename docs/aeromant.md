@@ -87,6 +87,9 @@ aeromant results runs/sphere [--png] [--window 50]
 ```
 
 ## OpenFOAM installations
+- `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
+  and reports which passed; use it after installing or upgrading OpenFOAM, or to validate the `org/` case files on
+  an openfoam.org machine (`--bashrc /opt/openfoam14/etc/bashrc`).
 - Official openfoam.com (`/usr/lib/openfoam/openfoamXXXX/etc/bashrc`) or openfoam.org packages: use
   `bashrc=`; `detect()` finds them.
 - conda-forge `openfoam` (e.g. `micromamba create -p /opt/foam -c conda-forge openfoam=2412`):

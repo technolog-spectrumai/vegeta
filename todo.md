@@ -45,6 +45,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 4.6 Results: forceCoeffs parsing (Cd/Cl/Cm), checkMesh summary, residual/coefficient history plots
 - [x] 4.7 CLI: `aeromant templates`, `prepare`, `run`, `results`
 - [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
+- [x] 4.9 `test_openfoam.sh`: per-flavour check of both templates on the installations of the machine (the `org/` case files are validated this way on an openfoam.org machine, not in CI)
 
 ## Stage 5 — Mellonia (PrusaSlicer)
 - [x] 5.1 Package skeleton (deps: numpy, matplotlib, tqdm)

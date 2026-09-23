@@ -75,6 +75,7 @@ docs/              philosophy, result shape, installation, composition, per-pack
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli
 test.sh            checks the installation (components + a short working run)
+test_openfoam.sh   tests the CFD tool against every OpenFOAM installation found (or given), both flavours
 jupyter.sh         starts JupyterLab from .venv
 scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
 ```
@@ -83,6 +84,7 @@ scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
 ```bash
 ./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
 ./test.sh                           # check the installation; prints OK/MISSING/FAILED per part
+./test_openfoam.sh                  # test Aeromant against the OpenFOAM installation(s) on this machine (.com and .org)
 ./jupyter.sh                        # JupyterLab from the venv; start with notebooks/00_smoke_test.ipynb
 source .venv/bin/activate           # for the vegeta command and the scripts below
 scripts/test_all.sh                 # each package tested on its own
