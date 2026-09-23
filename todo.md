@@ -59,6 +59,12 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5b.1 `vegeta.boreas`: `Propeller`, `Airfoil`, `solve`/`rpm_for_thrust`, `Motor`/`Battery`/`Propulsion`, `excitations`, JSON `export`; CLI `boreas point|for-thrust|map`; tests vs scaling laws and an APC static point
 - [x] 5b.2 Dedalus `Propeller` example design; notebooks `11_quadcopter_propeller`, `12_fixed_wing_propeller` (export JSON + CAD for the mission/fatigue work)
 
+## Stage 5c — Chronos (missions, vibration, cyclic loads, life)
+- [x] 5c.1 Talos: `PointMass`, `solve_modes` (CalculiX `*FREQUENCY`, validated vs beam theory and Rayleigh), `read_frd_steps`, `viz.plot_mode`
+- [x] 5c.2 Talos: `FatigueCurve`, `assess_fatigue` (unit stress fields × spectrum, Basquin + Goodman + Miner, hotspot map `viz.plot_damage`)
+- [x] 5c.3 `vegeta.chronos`: `Mission`/`Segment`/`Excitation`, `Structure` (DAF, margins, Campbell), ASTM rainflow, `build_spectrum` (JSON hand-off), `SNCurve`/`hotspot_damage`, `simulate_life`; CLI `chronos spectrum|life`; tests
+- [x] 5c.4 Notebooks `13_quadcopter_life`, `14_fixed_wing_life`: three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)

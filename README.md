@@ -50,6 +50,10 @@ Product-level notebooks — the whole workflow on one design, with revisions and
 `09_fixed_wing_drone` (twin-motor fixed wing: wing pull-up and engine-out cases, whole-aircraft RANS with
 level-flight speed and endurance, nacelle slicing). `07_ai_design_copilot` iterates a design with Claude; `10_agentic_design` lets Claude run a bounded
 parameter campaign (FEA on every candidate, criteria, budget, approval policy) in a workspace.
+`11_`/`12_` size the propellers (Boreas) and export the rpm, thrust and excitation data;
+`13_quadcopter_life` and `14_fixed_wing_life` take that data through modal analysis, three mission
+types, rainflow spectra, fatigue on the FEA stress fields and a fleet-usage life simulation (Chronos +
+Talos). Shared design files live in `notebooks/designs/`.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
