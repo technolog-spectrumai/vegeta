@@ -52,13 +52,15 @@ notebooks/         one notebook per package
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli
+jupyter.sh         starts JupyterLab from .venv
 scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
 ```
 
 ## Quick start
 ```bash
 ./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
-source .venv/bin/activate
+./jupyter.sh                        # JupyterLab from the venv; start with notebooks/00_smoke_test.ipynb
+source .venv/bin/activate           # for the vegeta command and the scripts below
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly
 scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the CLIs
