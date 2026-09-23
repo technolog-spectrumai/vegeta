@@ -56,12 +56,12 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/04_mellonia_print.ipynb`
 
 ## Stage 6 — Consistent interfaces
-- [ ] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
-- [ ] 6.2 Import-isolation test (no cross-package imports)
-- [ ] 6.3 File-based composition documented (STEP → Talos, STL → Aeromant/Mellonia)
+- [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
+- [x] 6.2 Import-isolation test (no cross-package imports)
+- [x] 6.3 File-based composition documented (STEP → Talos, STL → Aeromant/Mellonia)
 
 ## Stage 7 — Jupyter as first-class interface
-- [ ] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)
+- [x] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)
 - [-] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
 
 ## Stage 8 — Vegeta Core (deferred)
@@ -85,6 +85,6 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [-] 12.1 Pluggable `Proposer` (Anthropic default); proposals shown, validated, explicitly accepted/rejected
 
 ## Stage 13 — Validation (continuous)
-- [ ] 13.1 Unit tests in every package
-- [ ] 13.2 Integration tests with numerical validation; clean skips when tools are missing
-- [ ] 13.3 After every stage: run tests, fix regressions, update/remove documentation
+- [x] 13.1 Unit tests in every package
+- [x] 13.2 Integration tests with numerical validation; clean skips when tools are missing
+- [ ] 13.3 After every stage: run tests, fix regressions, update/remove documentation (ongoing; done for stages 1–5)
