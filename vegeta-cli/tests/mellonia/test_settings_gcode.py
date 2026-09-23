@@ -1,8 +1,10 @@
+from pathlib import Path
 import pytest
 
-from mellonia import Orientation, PrintSettings, parse_duration, read_gcode, read_ini, slice_stl
-from mellonia.examples import GENERIC_PLA_0_2MM
-from conftest import DATA
+from vegeta.mellonia import Orientation, PrintSettings, parse_duration, read_gcode, read_ini, slice_stl
+from vegeta.mellonia.examples import GENERIC_PLA_0_2MM
+
+DATA = Path(__file__).parent / "data"
 
 
 def test_required_keys_are_enforced():

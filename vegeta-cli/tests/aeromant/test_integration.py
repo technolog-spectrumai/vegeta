@@ -4,8 +4,8 @@ import math
 
 import pytest
 
-import aeromant
-from aeromant import CFDCase
+from vegeta import aeromant
+from vegeta.aeromant import CFDCase
 
 pytestmark = [pytest.mark.requires_openfoam, pytest.mark.slow]
 

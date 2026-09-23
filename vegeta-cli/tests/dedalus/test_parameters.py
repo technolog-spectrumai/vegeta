@@ -1,6 +1,6 @@
 import pytest
 
-from dedalus import Parameter, ParameterSet
+from vegeta.dedalus import Parameter, ParameterSet
 
 
 def test_defaults_and_overrides():

@@ -1,7 +1,7 @@
 import pytest
 
-import talos
-from talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
+from vegeta import talos
+from vegeta.talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
                    StructuralModel, SurfacesOnPlane)
 
 STEEL = Material("steel", 210000, 0.3)

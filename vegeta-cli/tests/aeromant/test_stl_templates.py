@@ -4,9 +4,9 @@ import struct
 import numpy as np
 import pytest
 
-import aeromant
-from aeromant import CFDCase, get_template, read_stl, write_stl_ascii
-from aeromant.stl import Surface
+from vegeta import aeromant
+from vegeta.aeromant import CFDCase, get_template, read_stl, write_stl_ascii
+from vegeta.aeromant.stl import Surface
 
 REQ = dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0, reference_area=math.pi / 4,
            reference_length=1.0, center_of_rotation=(0, 0, 0))

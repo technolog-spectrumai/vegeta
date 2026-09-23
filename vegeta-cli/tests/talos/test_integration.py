@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pytest
 
-from talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
+from vegeta.talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
                    StructuralModel, SurfacesOnPlane, Surfaces, inspect_step, read_frd)
 
 E, NU = 210000.0, 0.3
@@ -163,7 +163,7 @@ def test_plots(beam_step, tmp_path):
     import matplotlib
 
     matplotlib.use("Agg")
-    from talos import plot_along_axis, plot_deformed, plot_von_mises_histogram
+    from vegeta.talos import plot_along_axis, plot_deformed, plot_von_mises_histogram
 
     m = _cantilever(beam_step, 20.0)
     m.mesh(tmp_path)

@@ -1,13 +1,16 @@
+from pathlib import Path
 import json
 
 import pytest
 
-from mellonia.cli import main
-from conftest import DATA
+from vegeta.mellonia.cli import main
+
+DATA = Path(__file__).parent / "data"
 
 SETTINGS = """
-from mellonia import PrintSettings
-from mellonia.examples import GENERIC_PLA_0_2MM
+from vegeta.mellonia import PrintSettings
+from vegeta.mellonia.examples import GENERIC_PLA_0_2MM
+
 FINE = GENERIC_PLA_0_2MM.replace(print={"layer_height": 0.1, "first_layer_height": 0.2})
 """
 
@@ -31,5 +34,5 @@ def test_cli_errors(tmp_path, cube_stl, capsys):
     f.write_text("x = 1\n")
     assert main(["slice", str(cube_stl), "-s", str(f), "-o", str(tmp_path)]) == 2
     assert "0 PrintSettings" in capsys.readouterr().err
-    assert main(["slice", str(cube_stl), "-s", "mellonia.examples:GENERIC_PLA_0_2MM", "-o", str(tmp_path / "x"),
+    assert main(["slice", str(cube_stl), "-s", "vegeta.mellonia.examples:GENERIC_PLA_0_2MM", "-o", str(tmp_path / "x"),
                  "--prusa-slicer", "no-such-slicer"]) == 1

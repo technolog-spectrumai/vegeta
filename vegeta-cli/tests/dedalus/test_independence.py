@@ -1,19 +1,20 @@
-"""Dedalus must not import the other engineering packages or Vegeta; results follow the common shape."""
+"""vegeta.dedalus must not import the other tools, other vegeta subpackages or its parent namespace."""
 import re
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "dedalus"
-FORBIDDEN = ("talos", "aeromant", "mellonia", "vegeta")
+SRC = Path(__file__).resolve().parents[2] / "src" / "vegeta" / "dedalus"
+FORBIDDEN = re.compile(
+    r"^\s*(from|import)\s+(vegeta\b|talos|aeromant|mellonia\b|\.\.)", re.M
+)
 
 
 def test_no_forbidden_imports():
-    pattern = re.compile(r"^\s*(from|import)\s+(" + "|".join(FORBIDDEN) + r")\b", re.M)
-    offenders = [p.name for p in SRC.rglob("*.py") if pattern.search(p.read_text())]
+    offenders = [str(p.relative_to(SRC)) for p in SRC.rglob("*.py") if FORBIDDEN.search(p.read_text())]
     assert offenders == []
 
 
 def test_result_shape():
-    from dedalus import Result
+    from vegeta.dedalus import Result
 
     d = Result(kind="dedalus.test").to_dict()
     assert set(d) == {"kind", "status", "metrics", "artifacts", "messages", "duration_s", "execution", "metadata"}

@@ -1,13 +1,17 @@
+from pathlib import Path
 import json
 import shutil
 
 import pytest
 
-from aeromant.cli import main
-from conftest import DATA
+from vegeta.aeromant.cli import main
+
+DATA = Path(__file__).parent / "data"
 
 CASE = """
-import math, aeromant
+import math
+from vegeta import aeromant
+
 case = aeromant.CFDCase(
     "laminar_external_simplefoam", r"{stl}",
     dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0, reference_area=math.pi / 4,

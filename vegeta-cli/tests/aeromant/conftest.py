@@ -13,7 +13,7 @@ def _openfoam_env():
     import os
     import shlex
 
-    from aeromant import OpenFOAMEnvironment
+    from vegeta.aeromant import OpenFOAMEnvironment
 
     if os.environ.get("AEROMANT_TEST_OPENFOAM_PREFIX"):
         return OpenFOAMEnvironment(prefix=shlex.split(os.environ["AEROMANT_TEST_OPENFOAM_PREFIX"]))
@@ -38,7 +38,7 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture
 def sphere_stl(tmp_path):
     from _sphere import icosphere
-    from aeromant import write_stl_ascii
+    from vegeta.aeromant import write_stl_ascii
 
     return write_stl_ascii(icosphere(0.5, 3), tmp_path / "sphere.stl")
 

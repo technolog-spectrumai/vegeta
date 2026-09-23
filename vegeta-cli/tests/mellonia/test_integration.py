@@ -3,8 +3,8 @@ import math
 
 import pytest
 
-from mellonia import Orientation, read_gcode, slice_stl
-from mellonia.examples import GENERIC_PLA_0_2MM as PLA
+from vegeta.mellonia import Orientation, read_gcode, slice_stl
+from vegeta.mellonia.examples import GENERIC_PLA_0_2MM as PLA
 
 pytestmark = pytest.mark.requires_prusaslicer
 

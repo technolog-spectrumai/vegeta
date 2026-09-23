@@ -1,11 +1,13 @@
+from pathlib import Path
 import json
 import math
 
 import pytest
 
-from aeromant import read_checkmesh, read_coefficients, read_solver_log
-from aeromant.case import read_case_results
-from conftest import DATA
+from vegeta.aeromant import read_checkmesh, read_coefficients, read_solver_log
+from vegeta.aeromant.case import read_case_results
+
+DATA = Path(__file__).parent / "data"
 
 
 def test_coefficients_v1912_format():

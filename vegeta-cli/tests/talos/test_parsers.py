@@ -1,10 +1,12 @@
+from pathlib import Path
 import numpy as np
 import pytest
 
-from talos import read_dat_reactions, read_frd, von_mises
-from talos.mesh import consistent_nodal_forces, element_faces, MeshData
+from vegeta.talos import read_dat_reactions, read_frd, von_mises
+from vegeta.talos.mesh import consistent_nodal_forces, element_faces, MeshData
 
-from conftest import DATA
+DATA = Path(__file__).parent / "data"
+
 
 
 def test_read_frd_fixture():

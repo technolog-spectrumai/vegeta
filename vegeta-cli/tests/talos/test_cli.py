@@ -2,10 +2,10 @@ import json
 
 import pytest
 
-from talos.cli import main
+from vegeta.talos.cli import main
 
 MODEL = """
-import talos
+from vegeta import talos
 model = talos.StructuralModel(
     geometry=r"{step}", units="mm-N-MPa",
     material=talos.Material("steel", 210000, 0.3, yield_strength=235),

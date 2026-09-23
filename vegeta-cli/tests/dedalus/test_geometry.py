@@ -3,8 +3,8 @@ import json
 import cadquery as cq
 import pytest
 
-from dedalus import BuildError, Design, Geometry, Parameter, design, load_step
-from dedalus.examples import Bracket, CantileverBeam, Cube, StreamlinedBody
+from vegeta.dedalus import BuildError, Design, Geometry, Parameter, design, load_step
+from vegeta.dedalus.examples import Bracket, CantileverBeam, Cube, StreamlinedBody
 
 
 def test_box_measurements_exact():
@@ -105,7 +105,7 @@ def test_plots_return_figures():
     import matplotlib
 
     matplotlib.use("Agg")
-    from dedalus import measurements_table, plot_parameter_study, plot_views
+    from vegeta.dedalus import measurements_table, plot_parameter_study, plot_views
 
     gs = [Cube().generate(size=s) for s in (5.0, 10.0, 15.0)]
     assert plot_views(gs[0]) is not None

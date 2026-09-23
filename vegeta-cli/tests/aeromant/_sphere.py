@@ -1,6 +1,6 @@
 """Icosphere STL generator for tests (Aeromant itself does not generate geometry)."""
 import numpy as np
-from aeromant.stl import Surface, write_stl_ascii
+from vegeta.aeromant.stl import Surface, write_stl_ascii
 
 def icosphere(radius=0.5, level=3):
     t = (1 + 5 ** 0.5) / 2
