@@ -12,7 +12,7 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Talos** | linear static FEA | Gmsh + CalculiX | STEP + explicit config → mesh, `.inp`, `.frd`/`.dat`, summary |
 | **Aeromant** | aerodynamics / CFD | OpenFOAM | STL + template case + explicit values → case, logs, Cd/Cl/Cm |
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
-| **Vegeta** | workbench (later) | the four above | revisions, artifacts, comparison |
+| **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
 
 Dedalus designs. Talos tests structures. Aeromant tests aerodynamics.
 Mellonia tests manufacturability. Vegeta organizes the engineer's work.
@@ -31,9 +31,10 @@ Mellonia tests manufacturability. Vegeta organizes the engineer's work.
 - Nothing runs automatically: every analysis is started by the engineer.
 
 ## Status
-Stages 1–5 are implemented: the four independent tools, each with a Python API, a CLI, tests
-validated against known solutions, documentation and a notebook. Vegeta itself (revisions,
-comparison, experiments, a GUI later) comes next — see [`todo.md`](todo.md).
+Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
+notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded
+evaluations, NOT RUN status; [docs/core.md](docs/core.md), `06_core_revisions`). Next: comparison and
+sweeps, then a GUI — see [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
 |---------|-----|------------|-------|----------|
@@ -48,6 +49,7 @@ More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) �
 ## Layout
 ```
 vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia}, tests/<tool>/
+vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 notebooks/         one notebook per package
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)

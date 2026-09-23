@@ -65,15 +65,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)
 - [x] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
 
-## Stage 8 — Vegeta Core (deferred)
-- [-] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts
-- [-] 8.2 Branching from revisions, human labels (preferred/rejected/reference/unclassified)
-- [-] 8.3 Reproducibility metadata (parameters, configs, tool versions, commands, timestamps)
-- [-] 8.4 Invokes the four packages exactly as a Python user would
+## Stage 8 — Vegeta Core (`vegeta-core`, branch `dev_core`)
+- [x] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts
+- [x] 8.2 Branching from revisions, human labels (preferred/rejected/reference/unclassified)
+- [x] 8.3 Reproducibility metadata (parameters, configs, tool versions, commands, timestamps)
+- [x] 8.4 Invokes the four packages exactly as a Python user would
 
-## Stage 9 — Open-loop workflow (deferred)
-- [-] 9.1 No automatic chaining (CAD ↛ FEA ↛ CFD); missing analyses shown as NOT RUN
-- [-] 9.2 Vegeta CLI for the workflow (design → generate → inspect → choose → run → compare)
+## Stage 9 — Open-loop workflow
+- [x] 9.1 No automatic chaining (CAD ↛ FEA ↛ CFD); missing analyses shown as NOT RUN
+- [x] 9.2 Vegeta CLI for the workflow (design → generate → inspect → choose → run → compare)
 
 ## Stage 10 — Vegeta Studio (deferred; CLI first, GUI integration later)
 - [-] 10.1 Thin GUI over Vegeta Core and the four packages; no engineering logic unavailable from Python
@@ -88,4 +88,4 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 13 — Validation (continuous)
 - [x] 13.1 Unit tests in every package
 - [x] 13.2 Integration tests with numerical validation; clean skips when tools are missing
-- [ ] 13.3 After every stage: run tests, fix regressions, update/remove documentation (ongoing; done for stages 1–5)
+- [ ] 13.3 After every stage: run tests, fix regressions, update/remove documentation (ongoing; done for stages 1–9)
