@@ -64,6 +64,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 7 — Jupyter as first-class interface
 - [x] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)
 - [x] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
+- [x] 7.3 Interactive visualisation (pyvista/trame) per package; product notebooks `08_quadcopter`, `09_fixed_wing_drone`
 
 ## Stage 8 — Vegeta Core (`vegeta-core`, branch `dev_core`)
 - [x] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts

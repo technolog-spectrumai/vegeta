@@ -31,4 +31,5 @@ Aeromant reads the native case through pyvista's OpenFOAM reader (`case.foam` is
 Talos builds the grid from `mesh.msh` + `model.frd` (C3D10 elements map directly onto VTK quadratic
 tetrahedra); Mellonia parses the G-code moves (`read_gcode(path, moves=True)`).
 
-See the notebooks: `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print`, `05_workflow`.
+See the notebooks: `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print`, `05_workflow`, and the two
+product-level ones, `08_quadcopter` and `09_fixed_wing_drone`.
