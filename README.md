@@ -46,7 +46,8 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 Product-level notebooks — the whole workflow on one design, with revisions and visualisation:
 `08_quadcopter` (printed X-frame: two load cases, three revisions, drag with a canopy, slicing) and
 `09_fixed_wing_drone` (twin-motor fixed wing: wing pull-up and engine-out cases, whole-aircraft RANS with
-level-flight speed and endurance, nacelle slicing). `07_ai_design_copilot` iterates a design with Claude.
+level-flight speed and endurance, nacelle slicing). `07_ai_design_copilot` iterates a design with Claude; `10_agentic_design` lets Claude run a bounded
+parameter campaign (FEA on every candidate, criteria, budget, approval policy) in a workspace.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·

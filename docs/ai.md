@@ -56,6 +56,44 @@ vegeta ai --model claude-sonnet-5 --effort medium propose ... # cheaper model fo
 vegeta ai propose ... --accept                                 # explicit one-step accept if it validates
 ```
 
+## Campaigns — a controlled agentic loop
+`Campaign` lets the model drive a parameter search. It proposes values; Vegeta checks them, runs each
+candidate as a new revision in a `vegeta.core` workspace, runs your analyses, checks your criteria, and
+shows the model the full results table before the next proposal. The loop is bounded and recorded.
+
+```python
+from vegeta.ai import Analysis, Budget, Campaign, Criterion, Objective
+
+campaign = Campaign(
+    ws, start_revision,
+    analyses=[Analysis("fea", "cantilever", cantilever)],          # your factory: loads, material, mesh
+    criteria=[Criterion("fea.cantilever.safety_factor_yield", ">=", 2.5),
+              Criterion("fea.cantilever.max_displacement", "<=", 0.8)],
+    objective=Objective("geometry.volume", "min"),
+    proposer=ClaudeProposer(ClaudeConfig(effort="medium")),
+    free=["thickness", "width"], bounds={"thickness": (3, 12)},
+    approval="ask",                     # or "auto" (explicit opt-in) or a function(proposal) -> bool
+    budget=Budget(max_iterations=8, max_tokens=200_000, max_minutes=20, patience=3),
+    name="light_bracket")
+campaign.run()                          # the only call that does work
+campaign.table(); campaign.plot(); campaign.best
+```
+- **What the model may change:** parameter values only, from the `free` list, within the design's
+  ranges and `bounds`, and never a set of values it has already tried. Source changes, unknown or fixed
+  parameters, out-of-range values and repeats are refused and recorded as such. Loads, materials and
+  analyses are code you wrote, and the model never sees them as something it can change.
+- **Approval:** if your policy declines a proposal, the campaign **stops**; it does not ask the model
+  for another option.
+- **Limits:** `max_iterations`, `max_tokens`, `max_minutes`, `patience` (proposals without a new best
+  feasible design), and a file named `STOP` in `campaigns/<name>/`. The proposer can also end the
+  campaign by answering instead of proposing.
+- **Record:** `campaigns/<name>/campaign.json` (the state, rewritten after every step) and
+  `events.jsonl` (every step with its rationale and token usage). Every candidate is an ordinary revision
+  with its evaluations. Running `run()` again with the same `name` continues the recorded campaign.
+- **Metric names:** `geometry.<measurement>` and `<kind>.<analysis>.<metric>`, for example
+  `fea.cantilever.safety_factor_yield` or `cfd.cruise.Cd`.
+- **Labels:** a campaign never labels revisions. Picking the design stays your decision (`rev.label(...)`).
+
 ## Safety and cost
 - Validation **executes the proposed CadQuery code** in this Python process (that is what building a
   design means). Use trusted models and read the diff; the copilot is a programmer, not the engineer.
@@ -65,4 +103,4 @@ vegeta ai propose ... --accept                                 # explicit one-st
 - Structured output: the model must answer with the JSON schema in `vegeta.ai.PROPOSAL_SCHEMA`, so a
   malformed answer is an error, never a silent change.
 
-Notebook: `notebooks/07_ai_design_copilot.ipynb`.
+Notebooks: `notebooks/07_ai_design_copilot.ipynb` (one proposal at a time), `notebooks/10_agentic_design.ipynb` (a campaign).

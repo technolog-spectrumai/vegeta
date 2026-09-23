@@ -86,6 +86,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 12 — AI assistance (deferred)
 - [x] 12.1 `vegeta-ai`: `Proposer` protocol, Claude adapter (`ClaudeConfig`: api key, model, effort), `DesignSession` — proposals built, measured, diffed, explicitly accepted/rejected
 - [ ] 12.2 OpenAI adapter; parameter-only proposals against `vegeta.core` criteria (see `plan.md` step 3)
+- [x] 12.3 `Campaign`: bounded agentic parameter search on `vegeta.core` revisions (criteria, objective, budget, approval policy, STOP file, resumable record); `notebooks/10_agentic_design.ipynb`
 
 ## Stage 13 — Validation (continuous)
 - [x] 13.1 Unit tests in every package
