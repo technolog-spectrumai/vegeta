@@ -29,6 +29,7 @@ class MeshSettings:
     optimize: bool = True
     algorithm_3d: int = 1  # Gmsh 3D algorithm: 1 Delaunay, 4 Frontal, 10 HXT
     high_order_optimize: int = 1  # order 2 only: 0 off, 1 optimise, 2 elastic + optimise (fixes curved-node inversions)
+    curvature_points: int = 0  # elements per 2*pi on curved surfaces (Gmsh MeshSizeFromCurvature); 0 = off
 
     def __post_init__(self):
         if self.element_size <= 0:
@@ -37,6 +38,8 @@ class MeshSettings:
             raise ValueError("order must be 1 (C3D4) or 2 (C3D10); use 2 for bending")
         if self.high_order_optimize not in (0, 1, 2, 3, 4):
             raise ValueError("high_order_optimize must be a Gmsh Mesh.HighOrderOptimize value 0-4")
+        if self.curvature_points < 0:
+            raise ValueError("curvature_points must be >= 0 (0 disables curvature-based sizing)")
 
 
 @dataclass
@@ -77,6 +80,7 @@ def generate_mesh(geometry: Path, units, regions, settings: MeshSettings, msh_pa
         opt = gmsh.option
         opt.setNumber("Mesh.MeshSizeMax", settings.element_size)
         opt.setNumber("Mesh.MeshSizeMin", settings.min_element_size or 0.0)
+        opt.setNumber("Mesh.MeshSizeFromCurvature", settings.curvature_points)
         opt.setNumber("Mesh.ElementOrder", settings.order)
         opt.setNumber("Mesh.Optimize", 1 if settings.optimize else 0)
         opt.setNumber("Mesh.Algorithm3D", settings.algorithm_3d)

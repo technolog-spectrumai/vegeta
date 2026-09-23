@@ -52,6 +52,14 @@ Second-order meshes place mid-side nodes on curved geometry (holes, fillets), wh
 element. `MeshSettings(high_order_optimize=1)` (default) runs Gmsh's high-order optimisation to fix
 this; `mesh()` still fails loudly if any element remains inverted (minSICN ≤ 0) and warns below 0.1.
 
+`MeshSettings(curvature_points=24)` sizes elements from curvature (Gmsh `MeshSizeFromCurvature`, elements
+per full circle), so small holes and fillets get finer elements than `element_size` without a global
+refinement; off by default.
+
+A Gmsh "PLC Error: a segment and a facet intersect" almost always means a sliver in the geometry (a
+bolt hole 0.1 mm from an edge, a 0.4 mm edge left by a union) rather than a meshing setting: check the
+smallest edges of the CAD before changing the mesh (`notebooks/08_quadcopter` shows such a case).
+
 ## Results
 `solve()` returns a `talos.Result` (see `docs/result-shape.md`). Metrics:
 
