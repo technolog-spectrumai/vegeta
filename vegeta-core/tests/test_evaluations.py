@@ -72,3 +72,17 @@ def test_cfd_evaluation_mesh_steps_only(ws, beam_rev):
     assert ev.ok, ev.messages
     assert ev.metrics["mesh_cells"] > 0 and ev.record["steps"] == ["blockMesh", "checkMesh"]
     assert "cells" in ws.status().rows[0]["cfd:mesh_only"]
+
+
+@pytest.mark.requires_gmsh
+@pytest.mark.requires_ccx
+def test_interrupted_evaluation_is_moved_aside_and_rerun(ws, beam_rev):
+    stale = beam_rev.dir / "evaluations" / "fea-static"
+    stale.mkdir(parents=True)
+    (stale / "mesh.msh").write_text("partial")          # what a kernel interrupt leaves behind
+    assert beam_rev.evaluation("fea", "static") is None
+    ev = beam_rev.run_fea("static", beam_model)
+    assert ev.ok, ev.messages
+    kept = beam_rev.dir / "evaluations" / "fea-static.interrupted-1"
+    assert (kept / "mesh.msh").read_text() == "partial"
+    assert [e.name for e in beam_rev.evaluations()] == ["static"]

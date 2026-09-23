@@ -149,9 +149,15 @@ class Revision:
         if not self.is_generated:
             return Evaluation(kind, name, "failed", messages=[
                 f"{self.id} has no geometry; run generate() first (nothing is generated automatically)"])
-        if self._eval_dir(kind, name).exists():
+        edir = self._eval_dir(kind, name)
+        if (edir / "evaluation.json").is_file():
             return Evaluation(kind, name, "failed", messages=[
                 f"{kind} evaluation {name!r} already exists on {self.id}; results are immutable, use a new name"])
+        if edir.exists():  # an interrupted run left files but no record: keep them, out of the way
+            n = 1
+            while edir.with_name(f"{edir.name}.interrupted-{n}").exists():
+                n += 1
+            edir.rename(edir.with_name(f"{edir.name}.interrupted-{n}"))
         return None
 
     def _record(self, kind, name, t0, started, status, metrics, messages, tool_results, config, factory,
