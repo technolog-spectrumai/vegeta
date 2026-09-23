@@ -60,6 +60,32 @@ A Gmsh "PLC Error: a segment and a facet intersect" almost always means a sliver
 bolt hole 0.1 mm from an edge, a 0.4 mm edge left by a union) rather than a meshing setting: check the
 smallest edges of the CAD before changing the mesh (`notebooks/08_quadcopter` shows such a case).
 
+## Modal analysis and point masses
+```python
+model = talos.StructuralModel(step, "mm-N-MPa", petg_cf, regions, supports, loads=[], mesh_settings=...,
+                              masses=[talos.PointMass("motor0", 30e-6), talos.PointMass("stack", 60e-6)])  # tonnes in mm-N-MPa
+model.mesh("runs/frame")
+modes = model.solve_modes("runs/frame", n_modes=8)      # CalculiX *FREQUENCY; needs material density
+modes.metrics["frequencies_hz"], modes.metrics["effective_modal_mass"]
+talos.viz.plot_mode(modes, mode=1)                       # warped mode shape
+```
+`PointMass` shares a lumped mass equally between the nodes of a surface region (motors on their
+bolt holes, a battery on its strap area). Validation: a steel cantilever gives 209.6 Hz against
+208.9 Hz from beam theory; with a tip mass of half the beam mass, 120.1 Hz against 120.0 Hz (Rayleigh).
+
+## Fatigue from unit cases and a spectrum
+```python
+curve = talos.FatigueCurve("PETG-CF", sigma_f=80.0, b=-0.11, ultimate=55.0, endurance_limit=None)
+fat = talos.assess_fatigue({"thrust": (res_thrust, 8.0), "lateral": (res_lateral, 1.0)}, "spectrum.json", curve,
+                           workdir="runs/fatigue_hover")
+fat.result.metrics            # damage_per_pass, passes_to_failure, hours_to_failure, hotspot
+talos.viz.plot_damage(fat, res_thrust.artifacts["mesh"])
+```
+Each pattern's unit case is a normal `solve()` run at a known load; the spectrum (a
+`vegeta.chronos` JSON) gives mean, amplitude and cycles per block in that pattern's load unit.
+Stress at every node is linear in the load, so the block's stress amplitude and mean follow from the
+signed von Mises of the unit tensor; Basquin + Goodman give cycles to failure; Miner sums the damage.
+
 ## Results
 `solve()` returns a `talos.Result` (see `docs/result-shape.md`). Metrics:
 

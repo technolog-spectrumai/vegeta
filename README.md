@@ -43,6 +43,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `03_aeromant_cfd` |
 | Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | `11_`, `12_` propeller |
+| Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | `13_`, `14_` life |
 
 Product-level notebooks — the whole workflow on one design, with revisions and visualisation:
 `08_quadcopter` (printed X-frame: two load cases, three revisions, drag with a canopy, slicing) and
@@ -54,9 +55,15 @@ More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) �
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
 [Vegeta Core](docs/core.md) · [AI copilot](docs/ai.md).
 
+### The names
+Every tool is a figure from Greek myth, one word, easy to say in a meeting:
+Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reader of the air" (CFD),
+Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
+rotors), Chronos time (missions, cyclic loads, life). The workbench itself is Vegeta.
+
 ## Layout
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas}, tests/<tool>/
+vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (Claude design copilot), adds `vegeta ai`
 notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs

@@ -57,7 +57,7 @@ e = aeromant.OpenFOAMEnvironment.detect()
 r = subprocess.run(e.command(['blockMesh', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
 assert r.returncode == 0, (r.stderr or r.stdout)[-300:]
 print('via', e.bashrc or ' '.join(e.prefix) or 'PATH')"
-for tool in dedalus talos aeromant mellonia boreas; do
+for tool in dedalus talos aeromant mellonia boreas chronos; do
   check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
 done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"
