@@ -59,3 +59,14 @@ def test_case_results_not_run(tmp_path):
     r = read_case_results(tmp_path)
     assert r.status == "failed" and r.metrics["Cd"] is None and "NOT RUN" in r.messages[0]
     assert not read_case_results(tmp_path / "nothing").ok
+
+
+def test_solver_log_org_time_suffix(tmp_path):
+    """openfoam.org prints 'Time = 1s'; the iteration counter must see it."""
+    from vegeta.aeromant import read_solver_log
+
+    log = tmp_path / "log.solver"
+    log.write_text("Time = 1s\n\nsmoothSolver:  Solving for Ux, Initial residual = 0.5, Final residual = 0.01, No Iterations 3\n"
+                   "Time = 2s\n\nsmoothSolver:  Solving for Ux, Initial residual = 0.4, Final residual = 0.01, No Iterations 3\nEnd\n")
+    sl = read_solver_log(log)
+    assert sl.iterations == 2 and sl.completed

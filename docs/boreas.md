@@ -43,6 +43,17 @@ pt = sys_.for_thrust(1.4, airspeed=14.0)    # throttle that gives the thrust
 rotating unbalance force for an ISO 21940 balance grade (`G 6.3` by default): the inputs of a
 vibration or fatigue assessment.
 
+## Noise and cavitation (first estimates)
+```python
+tones = boreas.gutin_harmonics(prop, thrust=5.0, torque=0.1, rpm=6000, distance=10.0, angle_deg=90.0)  # Gutin steady-loading tones
+tones["blade_pass_hz"], tones["spl_db"], tones["total_tonal_db"]          # dB re 20 uPa (air) / 1 uPa (boreas.SEA_WATER)
+boreas.broadband_level(prop, thrust=5.0, rpm=6000, distance=10.0)         # empirical allowance, dB
+boreas.cavitation(prop, rpm=3000, airspeed=2.0, depth_m=0.5, cp_min=-1.0) # cavitation number vs -Cp_min at 0.7 R
+```
+Gutin's formula covers the steady thrust/torque loading only (no thickness or unsteady-inflow noise, no
+installation effects); the broadband term is a tip-speed⁶ allowance; `cp_min` is a property of your
+blade section. Use them to rank designs and operating points, not as certification numbers.
+
 ## Export (the hand-off)
 ```python
 boreas.export("runs/prop_9x6.json", prop, airfoil, map=grid, motor=motor, battery=bat,
