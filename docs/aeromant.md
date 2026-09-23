@@ -26,6 +26,9 @@ dictionaries and solvers:
 | openfoam.com | v1912 and later (conda-forge `openfoam`, official `.com` packages) | `com/` (`constant/triSurface`, `transportProperties`, `turbulenceProperties`) | `surfaceFeatureExtract` | `simpleFoam` |
 | openfoam.org | 12 and later (`/opt/openfoam14`, official `.org` packages) | `org/` (`constant/geometry`, `physicalProperties`, `momentumTransport`) | `surfaceFeatures` | `foamRun -solver incompressibleFluid` |
 
+Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static` (a
+propeller in a rotating frame, see below). `aeromant templates` lists them with their parameters.
+
 `CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
 matching files; `case.flavor` tells you which. `OpenFOAMEnvironment.detect()` prefers a .com install
 when both exist (`detect(flavor="openfoam.org")` to prefer .org). The placeholders and the step names
@@ -86,7 +89,33 @@ aeromant run case.py [--steps blockMesh,snappyHexMesh,checkMesh] [--timeout S]
 aeromant results runs/sphere [--png] [--window 50]
 ```
 
+## Rotating propellers and rotors (`rotor_mrf`, `rotor_mrf_static`)
+A propeller in a rotating reference frame (MRF cell zone around the blades, steady k-ω SST):
+`rotor_mrf` for axial inflow along +x (a propeller in flight or a marine propeller under way),
+`rotor_mrf_static` for hover / static thrust (a residual inflow of 2 % of the tip speed keeps the steady
+solution stable; open total-pressure boundaries diverged). Place the STL with its
+axis on +x through `center` (default the origin); the rotor pushes fluid toward +x.
+```python
+case = aeromant.CFDCase("rotor_mrf_static", "prop.stl",
+    dict(rpm=8200, diameter=0.127, kinematic_viscosity=1.5e-5, density=1.2, rotation=1),
+    workdir="runs/prop_hover", geometry_units="mm", environment=env)
+case.prepare(); res = case.run()
+res.metrics["thrust_N"], res.metrics["torque_Nm"], res.metrics["power_W"], res.metrics["figure_of_merit"]
+# rotor_mrf adds airspeed=…; its metrics include efficiency and advance_ratio; both give ct, cp
+```
+`rotation=1` turns the rotor by the right-hand rule about +x; a negative thrust means the blades are
+handed the other way — rerun with `rotation=-1` (handedness does not change by rotating the CAD; only a
+mirror does). `vegeta.dedalus.examples.Propeller`, rotated z→x, is right-handed for `rotation=1`. Forces come from the `forces` function object
+(`postProcessing/forces/*/force.dat`, `moment.dat`), averaged over the last 50 iterations. Template
+decisions you can override: domain size in diameters, MRF zone radius/length, refinement levels
+(`surface_level` on the blades, `rotor_level` in the zone, `wake_level`), iterations, far-field turbulence.
+Expect tens of percent against blade element theory (`vegeta.boreas`): no blade-passing unsteadiness,
+no tip-vortex resolution, wall functions without prism layers. Compare trends, refine before trusting absolutes.
+
 ## OpenFOAM installations
+- `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
+  and reports which passed; use it after installing or upgrading OpenFOAM, or to validate the `org/` case files on
+  an openfoam.org machine (`--bashrc /opt/openfoam14/etc/bashrc`).
 - Official openfoam.com (`/usr/lib/openfoam/openfoamXXXX/etc/bashrc`) or openfoam.org packages: use
   `bashrc=`; `detect()` finds them.
 - conda-forge `openfoam` (e.g. `micromamba create -p /opt/foam -c conda-forge openfoam=2412`):

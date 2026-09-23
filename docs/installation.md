@@ -12,6 +12,7 @@ source .venv/bin/activate
 ```bash
 ./test.sh               # components + a ~10 s working run through every tool; exit code 0 = OK
 ./test.sh --quick       # components only
+./test_openfoam.sh      # the CFD tool against every OpenFOAM installation found (both flavours); see "OpenFOAM notes"
 ```
 Each line prints `ok`, `MISSING` (a component is not installed) or `FAILED` (installed but the working
 run failed), followed by `RESULT: OK` or `RESULT: PROBLEMS FOUND`. `install_local.sh` runs the quick
@@ -53,6 +54,22 @@ Add `[pandas]` for `to_dataframe()` helpers, `[viz]` for the interactive 3D plot
 | PrusaSlicer | `apt install prusa-slicer` | `prusa-slicer --help` |
 
 ### OpenFOAM notes
+`./test_openfoam.sh` checks that Aeromant works with the OpenFOAM installation(s) on your machine: it lists
+what it finds (version, flavour, executables), then runs the sphere case of every template through every
+pipeline step per flavour and compares the laminar drag with the Schiller–Naumann correlation. Point it at an
+installation explicitly when it is not in a standard place:
+```bash
+./test_openfoam.sh                                          # everything found under /usr/lib/openfoam*, /opt/openfoam*, /opt/OpenFOAM-*, conda envs
+./test_openfoam.sh --bashrc /opt/openfoam14/etc/bashrc      # a specific openfoam.org installation
+./test_openfoam.sh --prefix "micromamba run -p /opt/foam"   # a conda environment through its launcher
+./test_openfoam.sh --quick                                  # meshing only (a minute); --pytest also runs the test suite
+```
+Case files and logs are kept in the work directory when something fails — send them with the output.
+
+Notebooks with OpenFOAM cells (11, 12 and the product notebooks) check `VEGETA_SKIP_OPENFOAM`: set it to `1`
+to execute them without OpenFOAM (`VEGETA_SKIP_OPENFOAM=1 scripts/run_notebooks.sh`); the CFD cells then print a
+note instead of running.
+
 Tell Aeromant explicitly how to launch OpenFOAM:
 - sourced installation: `OpenFOAMEnvironment(bashrc="/usr/lib/openfoam/openfoam2406/etc/bashrc")`
 - conda environment: `micromamba create -p /opt/foam -c conda-forge openfoam=2412`, then

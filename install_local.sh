@@ -118,6 +118,7 @@ if [ $status -eq 0 ]; then
   echo "  ./jupyter.sh             # JupyterLab from the venv; open notebooks/00_smoke_test.ipynb"
   [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate   # for the vegeta command and scripts"
   echo "  ./test.sh                 # installation check with a short working run"
+  echo "  ./test_openfoam.sh        # test the CFD tool against the OpenFOAM installation(s) on this machine"
   echo "  scripts/test_all.sh      # full test suite"
   echo "  scripts/demo_cli.sh      # CAD -> FEA -> print -> CFD with the CLIs"
 else

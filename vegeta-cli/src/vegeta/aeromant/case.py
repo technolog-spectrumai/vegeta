@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import json
 import re
 import shutil
@@ -91,7 +92,7 @@ class CFDCase:
             body = surface.scaled(scale)
             bmin, bmax = body.bbox
             extent = float((bmax - bmin).max())
-            L = self.parameters["reference_length"]
+            L = self.parameters.get("reference_length") or self.parameters["diameter"]   # rotor templates: D
             if extent > self.template.max_body_extent * L:
                 raise ValueError(
                     f"body size {extent:.4g} m is {extent / L:.1f} x reference_length; template "
@@ -115,7 +116,8 @@ class CFDCase:
             res.metrics = {
                 "body_bbox_min_m": bmin.tolist(), "body_bbox_max_m": bmax.tolist(),
                 "body_surface_area_m2": body.area, "n_triangles": int(len(body.triangles)),
-                "reynolds_number": self.parameters["velocity"] * L / self.parameters["kinematic_viscosity"],
+                "reynolds_number": (self.parameters["velocity"] if "velocity" in self.parameters
+                                    else self.parameters["rpm"] * math.pi / 60 * L) * L / self.parameters["kinematic_viscosity"],
                 "background_cells": [int(values["NX"]), int(values["NY"]), int(values["NZ"])],
             }
             if body.volume <= 0:
@@ -277,7 +279,12 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
     p = info["config"]["parameters"]
     res.metadata = {"case": info["config"]}
     m = res.metrics
-    m["reynolds_number"] = p["velocity"] * p["reference_length"] / p["kinematic_viscosity"]
+    if "velocity" in p:
+        m["reynolds_number"] = p["velocity"] * p["reference_length"] / p["kinematic_viscosity"]
+    else:  # rotor: Reynolds number of the tip speed and the diameter
+        omega = p["rpm"] * 2 * math.pi / 60
+        m["tip_speed_m_s"] = omega * p["diameter"] / 2
+        m["reynolds_number"] = m["tip_speed_m_s"] * p["diameter"] / p["kinematic_viscosity"]
     if (workdir / "log.checkMesh").is_file():
         mc = read_checkmesh(workdir / "log.checkMesh")
         m.update(mesh_cells=mc.cells, mesh_ok=mc.ok, mesh_failed_checks=mc.failed_checks)
@@ -292,6 +299,8 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         if not sl.converged:
             res.messages.append(f"residual target not reached in {sl.iterations} iterations; "
                                 "check coefficient histories before trusting the values")
+    if str(info["config"].get("template", "")).startswith("rotor_"):
+        return _rotor_results(res, workdir, p, average_window)
     files = find_coefficient_files(workdir)
     if not files:
         for c in ("Cd", "Cl", "Cm"):
@@ -314,4 +323,43 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         m["drag_force_N"] = m["Cd"] * q * p["reference_area"]
     if m.get("Cl") is not None:
         m["lift_force_N"] = m["Cl"] * q * p["reference_area"]
+    return res
+
+
+def _rotor_results(res: Result, workdir: Path, p: dict, average_window: int) -> Result:
+    """Thrust, torque and power of a rotor template from the forces function object."""
+    from .results import find_force_files, read_force_history
+
+    m = res.metrics
+    f_files, q_files = find_force_files(workdir, "force.dat"), find_force_files(workdir, "moment.dat")
+    if not f_files or not q_files:
+        m.update(thrust_N=None, torque_Nm=None, power_W=None)
+        return res.fail("no forces output found (solver NOT RUN or failed)")
+    F, Q = read_force_history(f_files), read_force_history(q_files)
+    res.artifacts.update(forces=f_files[-1], moments=q_files[-1])
+    n = max(1, min(average_window, len(F)))
+    omega = p["rotation"] * p["rpm"] * 2 * math.pi / 60
+    fx, mx = F[-n:, 1], Q[-n:, 1]
+    thrust = -float(np.mean(fx))                        # the rotor pushes fluid toward +x, so its thrust is along -x
+    torque = -float(np.mean(mx)) * p["rotation"]        # fluid torque on the rotor opposes the rotation
+    power = torque * abs(omega)
+    nrev, D, rho = p["rpm"] / 60, p["diameter"], p["density"]
+    m.update(thrust_N=thrust, thrust_std_lastN=float(np.std(fx)), torque_Nm=torque, torque_std_lastN=float(np.std(mx)),
+             power_W=power, omega_rad_s=omega, averaging_window=n,
+             force_N=[-float(x) for x in np.mean(F[-n:, 1:4], axis=0)],
+             moment_Nm=[-float(x) for x in np.mean(Q[-n:, 1:4], axis=0)],
+             ct=thrust / (rho * nrev ** 2 * D ** 4), cp=power / (rho * nrev ** 3 * D ** 5) if power else None)
+    if "airspeed" in p:
+        m["efficiency"] = thrust * p["airspeed"] / power if power > 0 else None
+        m["advance_ratio"] = p["airspeed"] / (nrev * D)
+    else:
+        area = math.pi * (D / 2) ** 2
+        ideal = thrust * math.sqrt(max(thrust, 0.0) / (2 * rho * area))
+        m["figure_of_merit"] = ideal / power if power > 0 else None
+    if thrust < 0:
+        res.messages.append("negative thrust: the blades are handed against the sense of rotation; rerun with the "
+                            "other 'rotation' value (or check that the rotor axis is +x)")
+    if torque < 0:
+        res.messages.append("negative torque (fluid drives the rotor): check the sense of rotation")
+    res.messages.append(f"forces averaged over the last {n} iterations; steady MRF result, compare with blade element theory")
     return res
