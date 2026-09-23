@@ -11,7 +11,7 @@ from vegeta import aeromant
 RUNS = Path(__file__).resolve().parents[2] / "runs"
 
 case = aeromant.CFDCase(
-    "rans_ksst_external_simplefoam",
+    "rans_ksst_external",
     RUNS / "body" / "StreamlinedBody.stl",
     dict(velocity=10.0, kinematic_viscosity=1.5e-5, density=1.2,
          reference_area=math.pi * 0.010 ** 2, reference_length=0.100, center_of_rotation=(0.05, 0, 0),

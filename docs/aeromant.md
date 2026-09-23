@@ -11,16 +11,28 @@ aeromant templates                      # or: aeromant.get_template(name).descri
 ```
 | template | physics | notes |
 |----------|---------|-------|
-| `laminar_external_simplefoam` | steady laminar, `simpleFoam` | low Reynolds numbers; validation case |
-| `rans_ksst_external_simplefoam` | steady RANS k-ω SST, wall functions | no prism layers: trends, not absolute drag |
+| `laminar_external` | steady laminar | low Reynolds numbers; validation case |
+| `rans_ksst_external` | steady RANS k-ω SST, wall functions | no prism layers: trends, not absolute drag |
 
 Both use a box domain around the body bounding box, flow along **+x**, lift along **+z**, pitch
 axis **+y**; patches `inlet` (fixed velocity), `outlet` (fixed pressure), `sides` (slip), `body`
-(no-slip wall, forceCoeffs). Pipeline: `blockMesh → surfaceFeatureExtract → snappyHexMesh → checkMesh
-→ restore0 → simpleFoam`.
+(no-slip wall, forceCoeffs). Pipeline: `blockMesh → features → snappyHexMesh → checkMesh → restore0 → solver`.
 
-Each template is a directory of native OpenFOAM files plus a Python `TemplateSpec` in
-`aeromant/templates/__init__.py`, which lists:
+Each template ships its case files in **both OpenFOAM dialects**, because the two forks use different
+dictionaries and solvers:
+
+| flavor | versions | case files | feature tool | solver |
+|---|---|---|---|---|
+| openfoam.com | v1912 and later (conda-forge `openfoam`, official `.com` packages) | `com/` (`constant/triSurface`, `transportProperties`, `turbulenceProperties`) | `surfaceFeatureExtract` | `simpleFoam` |
+| openfoam.org | 12 and later (`/opt/openfoam14`, official `.org` packages) | `org/` (`constant/geometry`, `physicalProperties`, `momentumTransport`) | `surfaceFeatures` | `foamRun -solver incompressibleFluid` |
+
+`CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
+matching files; `case.flavor` tells you which. `OpenFOAMEnvironment.detect()` prefers a .com install
+when both exist (`detect(flavor="openfoam.org")` to prefer .org). The placeholders and the step names
+are the same for both, so a case file `case.py` works unchanged on either fork.
+
+Each template is a directory of native OpenFOAM files (`com/` and `org/`) plus a Python `TemplateSpec`
+in `aeromant/templates/__init__.py`, which lists:
 - **required values** (no default): `velocity`, `kinematic_viscosity`, `density`, `reference_area`,
   `reference_length`, `center_of_rotation`;
 - **template decisions** with visible defaults (domain size in L_ref, refinement levels, iterations,
@@ -38,14 +50,14 @@ env = aeromant.OpenFOAMEnvironment(bashrc="/usr/lib/openfoam/openfoam2406/etc/ba
 # or aeromant.OpenFOAMEnvironment.conda("/opt/foam")  or  aeromant.OpenFOAMEnvironment.detect()
 
 case = aeromant.CFDCase(
-    "laminar_external_simplefoam", "body.stl",
+    "laminar_external", "body.stl",
     dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0,
          reference_area=math.pi / 4, reference_length=1.0, center_of_rotation=(0, 0, 0)),
     workdir="runs/sphere", geometry_units="m",          # STL has no units: say what they are
     environment=env,
 )
 case.prepare()                                  # copy template, scale + insert STL, fill values
-case.run(steps=["blockMesh", "surfaceFeatureExtract", "snappyHexMesh", "checkMesh"])  # mesh only
+case.run(steps=["blockMesh", "features", "snappyHexMesh", "checkMesh"])  # mesh only
 res = case.run()                                # or the whole pipeline
 res.metrics["Cd"], res.metrics["converged"]
 aeromant.plot_coefficients("runs/sphere"); aeromant.plot_residuals("runs/sphere")
@@ -58,7 +70,7 @@ Nothing runs on construction; `run()` refuses an unprepared (or changed) case; `
 | `Cd`, `Cl`, `Cm` | last value written by `forceCoeffs` (None if not available) |
 | `Cd_mean_lastN`, `Cd_std_lastN` | mean / standard deviation over the last N iterations |
 | `drag_force_N`, `lift_force_N` | `C × ½ρU² × A_ref` |
-| `iterations`, `converged`, `final_residuals` | from `log.simpleFoam` |
+| `iterations`, `converged`, `final_residuals` | from `log.solver` |
 | `mesh_cells`, `mesh_ok`, `mesh_failed_checks` | from `log.checkMesh` (failures are reported, not fatal) |
 | `reynolds_number` | `U L_ref / ν` |
 

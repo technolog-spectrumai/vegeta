@@ -54,7 +54,7 @@ check openfoam    "$PY" -c "
 import os, subprocess
 from vegeta import aeromant
 e = aeromant.OpenFOAMEnvironment.detect()
-r = subprocess.run(e.command(['simpleFoam', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
+r = subprocess.run(e.command(['blockMesh', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
 assert r.returncode == 0, (r.stderr or r.stdout)[-300:]
 print('via', e.bashrc or ' '.join(e.prefix) or 'PATH')"
 for tool in dedalus talos aeromant mellonia; do
@@ -117,7 +117,7 @@ cfd = None
 try:
     env = aeromant.OpenFOAMEnvironment.detect()
     case = aeromant.CFDCase(
-        "laminar_external_simplefoam", cad.artifacts["stl"],
+        "laminar_external", cad.artifacts["stl"],
         dict(velocity=1.0, kinematic_viscosity=1e-3, density=1.0, reference_area=1e-4, reference_length=0.1,
              center_of_rotation=(0, 0, 0)),
         workdir=work / "cfd", geometry_units="mm", environment=env)

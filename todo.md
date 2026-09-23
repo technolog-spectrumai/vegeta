@@ -39,9 +39,9 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 4 — Aeromant (OpenFOAM, template cases)
 - [x] 4.1 Package skeleton (deps: numpy, matplotlib, tqdm)
 - [x] 4.2 STL utilities (read/write, bbox, explicit unit scaling)
-- [x] 4.3 `TemplateSpec` (Python) + template cases: `laminar_external_simplefoam`, `rans_ksst_external_simplefoam`
+- [x] 4.3 `TemplateSpec` (Python) + template cases: `laminar_external`, `rans_ksst_external`
 - [x] 4.4 `CFDCase`: prepare (copy, render placeholders, insert geometry, domain check)
-- [x] 4.5 Pipeline runner: blockMesh, surfaceFeatureExtract, snappyHexMesh, checkMesh, solver; `OpenFOAMEnvironment`
+- [x] 4.5 Pipeline runner: blockMesh, features, snappyHexMesh, checkMesh, solver; `OpenFOAMEnvironment` (openfoam.com and openfoam.org case files)
 - [x] 4.6 Results: forceCoeffs parsing (Cd/Cl/Cm), checkMesh summary, residual/coefficient history plots
 - [x] 4.7 CLI: `aeromant templates`, `prepare`, `run`, `results`
 - [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
