@@ -89,7 +89,7 @@ def generate_mesh(geometry: Path, units, regions, settings: MeshSettings, msh_pa
         opt.setNumber("Mesh.MshFileVersion", 4.1)
         progress("mesh 2D", 0.2)
         model.mesh.generate(2)
-        progress("mesh 3D", 0.4)
+        progress("mesh 3D" + (" + second order" if settings.order == 2 else ""), 0.4)
         model.mesh.generate(3)  # Mesh.ElementOrder makes this second order when requested
         progress("write mesh", 0.9)
         gmsh.write(str(msh_path))
