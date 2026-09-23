@@ -44,7 +44,7 @@ class StepInfo:
         try:
             import pandas as pd
         except ImportError as exc:  # pragma: no cover
-            raise ImportError("to_dataframe needs pandas: pip install 'talos[pandas]'") from exc
+            raise ImportError("to_dataframe needs pandas: pip install 'vegeta-cli[pandas]'") from exc
         return pd.DataFrame([asdict(s) for s in self.surfaces])
 
     def _repr_html_(self):

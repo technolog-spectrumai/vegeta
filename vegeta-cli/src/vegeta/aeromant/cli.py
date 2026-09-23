@@ -86,8 +86,8 @@ def cmd_results(args) -> int:
     return _emit(res, args.json)
 
 
-def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="aeromant", description="External aerodynamics with OpenFOAM template cases")
+def build_parser(prog: str = "aeromant") -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog=prog, description="External aerodynamics with OpenFOAM template cases")
     sub = ap.add_subparsers(dest="command", required=True)
 
     t = sub.add_parser("templates", help="list templates and their required parameters")
@@ -118,12 +118,12 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv=None, prog: str = "aeromant") -> int:
+    args = build_parser(prog).parse_args(argv)
     try:
         return args.func(args)
     except (ValueError, FileNotFoundError, RuntimeError) as exc:
-        print(f"aeromant: error: {exc}", file=sys.stderr)
+        print(f"{prog}: error: {exc}", file=sys.stderr)
         return 2
 
 

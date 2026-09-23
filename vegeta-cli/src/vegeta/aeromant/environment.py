@@ -50,7 +50,7 @@ class OpenFOAMEnvironment:
         if self.prefix:
             return shutil.which(self.prefix[0]) is not None or Path(self.prefix[0]).is_file()
         if self.bashrc:
-            return Path(self.bashrc).is_file()
+            return Path(self.bashrc).is_file() and shutil.which("bash") is not None
         return shutil.which(executable, path=self.env.get("PATH")) is not None
 
     def describe(self) -> dict:

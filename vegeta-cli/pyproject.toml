@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-cli"
+version = "0.1.0"
+description = "Vegeta engineering tools: Dedalus (CAD), Talos (FEA), Aeromant (CFD), Mellonia (3D printing)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["cadquery>=2.4", "gmsh>=4.11", "numpy", "matplotlib", "tqdm"]
+
+[project.optional-dependencies]
+pandas = ["pandas"]
+test = ["pytest"]
+
+[project.scripts]
+vegeta = "vegeta.cli:main"
+dedalus = "vegeta.dedalus.cli:main"
+talos = "vegeta.talos.cli:main"
+aeromant = "vegeta.aeromant.cli:main"
+mellonia = "vegeta.mellonia.cli:main"
+
+# `vegeta` is a namespace package (no __init__.py) so other distributions in this repository can
+# add their own subpackages later (e.g. vegeta.core).
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = [
+  "vegeta.cli",
+  "vegeta.dedalus",
+  "vegeta.talos",
+  "vegeta.aeromant",
+  "vegeta.aeromant.templates",
+  "vegeta.mellonia",
+]
+
+[tool.setuptools.package-data]
+"vegeta.aeromant.templates" = ["*/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = [
+  "requires_gmsh: needs the gmsh Python module",
+  "requires_ccx: needs the CalculiX ccx executable",
+  "requires_openfoam: needs OpenFOAM executables",
+  "requires_prusaslicer: needs the PrusaSlicer executable",
+  "slow: long-running test",
+]

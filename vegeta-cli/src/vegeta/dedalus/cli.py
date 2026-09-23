@@ -74,17 +74,17 @@ def cmd_measure(args) -> int:
     return 0
 
 
-def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="dedalus", description="Parametric CAD on CadQuery")
+def build_parser(prog: str = "dedalus") -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog=prog, description="Parametric CAD on CadQuery")
     sub = ap.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("params", help="list a design's parameters")
-    p.add_argument("design", help="file.py[:Name] or package.module:Name")
+    p.add_argument("design", help="file.py[:Name] or module:Name, e.g. vegeta.dedalus.examples:Bracket")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_params)
 
     g = sub.add_parser("generate", help="generate geometry and export STEP/STL")
-    g.add_argument("design", help="file.py[:Name] or package.module:Name")
+    g.add_argument("design", help="file.py[:Name] or module:Name, e.g. vegeta.dedalus.examples:Bracket")
     g.add_argument("--param", "-p", action="append", metavar="NAME=VALUE", help="parameter override (repeatable)")
     g.add_argument("--out", "-o", default="dedalus_out", help="output directory")
     g.add_argument("--formats", default="step,stl", help="comma separated: step,stl")
@@ -102,12 +102,12 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv=None, prog: str = "dedalus") -> int:
+    args = build_parser(prog).parse_args(argv)
     try:
         return args.func(args)
     except (ValueError, FileNotFoundError) as exc:
-        print(f"dedalus: error: {exc}", file=sys.stderr)
+        print(f"{prog}: error: {exc}", file=sys.stderr)
         return 2
 
 

@@ -31,7 +31,7 @@ class CoefficientHistory:
         try:
             import pandas as pd
         except ImportError as exc:  # pragma: no cover
-            raise ImportError("to_dataframe needs pandas: pip install 'aeromant[pandas]'") from exc
+            raise ImportError("to_dataframe needs pandas: pip install 'vegeta-cli[pandas]'") from exc
         return pd.DataFrame(self.data, columns=self.columns)
 
 

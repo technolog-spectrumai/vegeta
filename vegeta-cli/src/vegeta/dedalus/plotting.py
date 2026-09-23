@@ -61,7 +61,7 @@ def measurements_table(geometries: Sequence):
     try:
         import pandas as pd
     except ImportError as exc:  # pragma: no cover
-        raise ImportError("measurements_table needs pandas: pip install 'dedalus[pandas]'") from exc
+        raise ImportError("measurements_table needs pandas: pip install 'vegeta-cli[pandas]'") from exc
     rows = []
     for g in geometries:
         m = g.measure()

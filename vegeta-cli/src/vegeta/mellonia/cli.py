@@ -1,7 +1,7 @@
 """Command line interface: ``mellonia slice|parse``.
 
 Settings are Python: ``settings.py`` defines a ``mellonia.PrintSettings`` (or use
-``mellonia.examples:GENERIC_PLA_0_2MM``).
+``vegeta.mellonia.examples:GENERIC_PLA_0_2MM``).
 """
 from __future__ import annotations
 
@@ -74,14 +74,14 @@ def cmd_parse(args) -> int:
     return 0 if info.layer_count else 1
 
 
-def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="mellonia", description="3D-print manufacturability with PrusaSlicer")
+def build_parser(prog: str = "mellonia") -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog=prog, description="3D-print manufacturability with PrusaSlicer")
     sub = ap.add_subparsers(dest="command", required=True)
 
     s = sub.add_parser("slice", help="slice an STL with explicit settings and orientation")
     s.add_argument("stl")
     s.add_argument("--settings", "-s", required=True,
-                   help="settings.py[:NAME] or module:NAME defining a mellonia.PrintSettings")
+                   help="settings.py[:NAME] or module:NAME defining a PrintSettings, e.g. vegeta.mellonia.examples:GENERIC_PLA_0_2MM")
     s.add_argument("--rotate-x", type=float, default=0.0, help="degrees")
     s.add_argument("--rotate-y", type=float, default=0.0, help="degrees")
     s.add_argument("--rotate-z", type=float, default=0.0, help="degrees")
@@ -99,12 +99,12 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv=None, prog: str = "mellonia") -> int:
+    args = build_parser(prog).parse_args(argv)
     try:
         return args.func(args)
     except (ValueError, FileNotFoundError) as exc:
-        print(f"mellonia: error: {exc}", file=sys.stderr)
+        print(f"{prog}: error: {exc}", file=sys.stderr)
         return 2
 
 

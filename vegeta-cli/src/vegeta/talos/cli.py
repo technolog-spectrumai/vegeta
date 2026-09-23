@@ -95,8 +95,8 @@ def cmd_results(args) -> int:
     return 0 if data["status"] == "success" else 1
 
 
-def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="talos", description="Linear static FEA with Gmsh + CalculiX")
+def build_parser(prog: str = "talos") -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog=prog, description="Linear static FEA with Gmsh + CalculiX")
     sub = ap.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("inspect", help="list surfaces/volumes of a STEP file for region selection")
@@ -126,12 +126,12 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv=None, prog: str = "talos") -> int:
+    args = build_parser(prog).parse_args(argv)
     try:
         return args.func(args)
     except (ValueError, FileNotFoundError, RuntimeError) as exc:
-        print(f"talos: error: {exc}", file=sys.stderr)
+        print(f"{prog}: error: {exc}", file=sys.stderr)
         return 2
 
 
