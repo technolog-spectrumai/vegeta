@@ -45,6 +45,8 @@ The result follows the common shape (`docs/result-shape.md`); `metadata` records
 source identity (module, qualname, SHA-256 of the `build` source) and the CadQuery version.
 
 Existing STEP files from any CAD program: `dedalus.load_step("part.step").measure()`.
+A design from a file or module: `dedalus.load_design("designs/bracket.py:Bracket")` (what the CLI and
+`vegeta.core` use).
 
 ## CLI
 ```
