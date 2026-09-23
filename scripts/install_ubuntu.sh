@@ -2,7 +2,8 @@
 # Install everything the Vegeta packages need on Ubuntu (tested on 24.04; 22.04 should work):
 #   - system tools: CalculiX (ccx), PrusaSlicer, Gmsh/CadQuery runtime libraries, xvfb
 #   - OpenFOAM v2412 from conda-forge (the Ubuntu 'openfoam' package cannot run forceCoeffs)
-#   - a Python virtual environment with dedalus, talos, aeromant, mellonia (editable) + Jupyter/test tools
+#   - a Python virtual environment with vegeta-cli (editable: vegeta.dedalus/talos/aeromant/mellonia)
+#     plus Jupyter and test tools
 # Then it checks that every tool is usable.
 #
 # Usage: scripts/install_ubuntu.sh [--venv DIR] [--system-python] [--no-openfoam] [--openfoam-prefix DIR]
@@ -67,10 +68,7 @@ else
 fi
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
-  -e "$ROOT/packages/dedalus[pandas,test]" \
-  -e "$ROOT/packages/talos[pandas,test]" \
-  -e "$ROOT/packages/aeromant[pandas,test]" \
-  -e "$ROOT/packages/mellonia[pandas,test]" \
+  -e "$ROOT/vegeta-cli[pandas,test]" \
   jupyterlab nbconvert nbformat ipykernel
 
 step "Checks"
@@ -86,15 +84,17 @@ check calculix   bash -c "ccx -v | grep -i version"
 check prusaslicer bash -c "prusa-slicer --help | head -1"
 if [ "$WITH_OPENFOAM" -eq 1 ]; then
   check openfoam "$PY" -c "
-import os, subprocess, aeromant
+import os, subprocess
+from vegeta import aeromant
 e = aeromant.OpenFOAMEnvironment.conda('$FOAM_PREFIX')
 r = subprocess.run(e.command(['simpleFoam', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
 assert r.returncode == 0, r.stderr[-300:]
 print('simpleFoam in $FOAM_PREFIX; use aeromant.OpenFOAMEnvironment.conda(\'$FOAM_PREFIX\')')"
 fi
-for pkg in dedalus talos aeromant mellonia; do
-  check "$pkg" "$PY" -c "import $pkg; print($pkg.__version__)"
+for tool in dedalus talos aeromant mellonia; do
+  check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
 done
+check vegeta "$(dirname "$PY")/vegeta" --version
 
 if [ $status -eq 0 ]; then
   printf '\nAll dependencies installed. Next:\n'
