@@ -50,6 +50,9 @@ def test_laminar_sphere_re100(tmp_path, openfoam):
         assert pl.screenshot(str(tmp_path / "v.png")).shape[0] > 0
         pl.close()
     assert viz.plot_section(case, "p", zoom=2) is not None
+    cv2 = pytest.importorskip("cv2")
+    video = viz.animate_particles(case, tmp_path / "flow.mp4", n=50, seconds=0.5, fps=8, rpm=60.0, size=(320, 240))
+    assert int(cv2.VideoCapture(str(video)).get(cv2.CAP_PROP_FRAME_COUNT)) == 4
 
 
 def test_run_selected_steps_only(tmp_path, openfoam, sphere_stl):
