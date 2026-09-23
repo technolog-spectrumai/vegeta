@@ -36,6 +36,9 @@ input config files for our own settings. Files that an external tool itself requ
   stderr, and writes a log file next to the artifacts.
 
 ## Independence
-Dedalus, Talos, Aeromant and Mellonia do not import each other and know nothing about Vegeta.
+Dedalus, Talos, Aeromant and Mellonia ship together in the `vegeta-cli` distribution as
+`vegeta.dedalus`, `vegeta.talos`, `vegeta.aeromant` and `vegeta.mellonia`, but they do not import each
+other, their parent namespace or any other part of Vegeta (each has a test enforcing this). Anything
+that organises work across them (revisions, comparison) will depend on them, never the reverse.
 They share a result *shape* by convention (see `result-shape.md`), not a shared framework; the small
-helper modules (`result.py`, `_process.py`) are deliberately copied into each package.
+helper modules (`result.py`, `_process.py`) are deliberately copied into each tool.

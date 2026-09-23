@@ -31,7 +31,8 @@ Unknown parameter names, missing required values, a body larger than the templat
 
 ## Workflow
 ```python
-import math, aeromant
+import math
+from vegeta import aeromant
 
 env = aeromant.OpenFOAMEnvironment(bashrc="/usr/lib/openfoam/openfoam2406/etc/bashrc")
 # or aeromant.OpenFOAMEnvironment.conda("/opt/foam")  or  aeromant.OpenFOAMEnvironment.detect()
@@ -82,7 +83,7 @@ aeromant results runs/sphere [--png] [--window 50]
   (`FOAM FATAL IO ERROR: error in IOstream "sha1"`), so no force coefficients. Aeromant reports this
   with a hint instead of returning numbers.
 
-## Validation (tests/test_integration.py)
+## Validation (vegeta-cli/tests/aeromant/test_integration.py)
 Laminar sphere, Re = 100, ~49k cells: Cd = 1.100 vs Schiller–Naumann 1.092 (+0.7 %; test tolerance
 10 %), |Cl| < 0.02, converged in ~105 iterations (OpenFOAM v2412). The test harness picks the
 installation from `AEROMANT_TEST_OPENFOAM_PREFIX` / `AEROMANT_TEST_OPENFOAM_BASHRC` or `detect()`.

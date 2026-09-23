@@ -6,7 +6,8 @@ metadata; it knows nothing about FEA, CFD, slicing or Vegeta. Lengths are CadQue
 ## Defining a design
 ```python
 import cadquery as cq
-from dedalus import Design, Parameter, design
+from vegeta import dedalus
+from vegeta.dedalus import Design, Parameter, design
 
 class Plate(Design):
     parameters = [
@@ -47,7 +48,7 @@ Existing STEP files from any CAD program: `dedalus.load_step("part.step").measur
 
 ## CLI
 ```
-dedalus params  dedalus.examples:Bracket
+dedalus params  vegeta.dedalus.examples:Bracket
 dedalus generate my_design.py:Plate -p width=60 -p thickness=4 -o out/plate --png [--json]
 dedalus measure out/plate/Plate.step [--json]
 ```

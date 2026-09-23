@@ -1,7 +1,7 @@
 # Result shape
 
 Every operation that produces engineering output returns a result object with the same fields.
-Each package defines its own class (`dedalus.Result`, `talos.Result`, ...); the shape is a convention.
+Each package defines its own class (`vegeta.dedalus.Result`, `vegeta.talos.Result`, ...); the shape is a convention.
 
 | Field | Type | Meaning |
 |-------|------|---------|

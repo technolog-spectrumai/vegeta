@@ -7,7 +7,7 @@ forces it), standalone packages never import each other or Vegeta, every stage e
 Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 1 — Common philosophy
-- [x] 1.1 Repository layout (`packages/`, `notebooks/`, `docs/`, `scripts/`), README, this todo
+- [x] 1.1 Repository layout (`vegeta-cli/`, `notebooks/`, `docs/`, `scripts/`), README, this todo
 - [x] 1.2 Per-package `_process.py`: `run_command` recording command, cwd, return code, duration, stdout, stderr, log file
 - [x] 1.3 Per-package `result.py`: common result shape (status, metrics, artifacts, messages, duration, execution, metadata)
 - [x] 1.4 Error policy: invalid explicit config → `ValueError` at construction; execution failures → `failed` result
@@ -59,6 +59,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)
 - [x] 6.3 File-based composition documented (STEP → Talos, STL → Aeromant/Mellonia)
+- [x] 6.4 One installable distribution `vegeta-cli`: `vegeta.dedalus/talos/aeromant/mellonia` in a `vegeta` namespace, `vegeta <tool>` command plus shortcuts
 
 ## Stage 7 — Jupyter as first-class interface
 - [x] 7.1 Per-package notebooks executed headlessly in tests (done per stage above)

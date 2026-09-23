@@ -6,7 +6,8 @@ kept, and so is the full configuration PrusaSlicer used.
 
 ## Settings in Python
 ```python
-from mellonia import PrintSettings, Orientation, slice_stl
+from vegeta import mellonia
+from vegeta.mellonia import PrintSettings, Orientation, slice_stl
 
 settings = PrintSettings(
     name="my printer PLA 0.2",
@@ -22,7 +23,7 @@ everything else falls back to PrusaSlicer defaults, and every run says how many 
 writes them all to `effective_config.ini`. PrusaSlicer silently ignores unknown keys, so Mellonia
 compares your keys with the effective configuration and **fails** on any it does not know (typos).
 Existing PrusaSlicer exports: `PrintSettings.from_ini(printer_ini, filament_ini, print_ini)`.
-`mellonia.examples.GENERIC_PLA_0_2MM` is an illustration, not a validated profile.
+`vegeta.mellonia.examples.GENERIC_PLA_0_2MM` is an illustration, not a validated profile.
 
 ## Slicing
 ```python
@@ -48,11 +49,11 @@ Artifacts: `inputs/<stl>`, `profiles/{printer,filament,print}.ini`, `<stem>.gcod
 ## CLI
 ```
 mellonia slice part.stl -s settings.py:FINE --rotate-x 90 -o runs/part_x90 [--png] [--json]
-mellonia slice part.stl -s mellonia.examples:GENERIC_PLA_0_2MM -o runs/part --prusa-slicer "xvfb-run -a prusa-slicer"
+mellonia slice part.stl -s vegeta.mellonia.examples:GENERIC_PLA_0_2MM -o runs/part --prusa-slicer "xvfb-run -a prusa-slicer"
 mellonia parse runs/part/part.gcode [--json]
 ```
 
-## Validation (tests/test_integration.py)
+## Validation (vegeta-cli/tests/mellonia/test_integration.py)
 - 20 mm cube: layer count = 1 + ⌈(20 − h₁)/h⌉ and top Z = h₁ + (n − 1)·h (PrusaSlicer quantises layers).
 - Solid (100 % rectilinear) 20 mm cube: filament volume within 3 % of 8 cm³ (observed +0.9 %).
 - Per-layer extrusion parsed from the moves sums to PrusaSlicer's reported filament length (±0.5 %).

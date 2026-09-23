@@ -1,21 +1,21 @@
 # Installation
 
 On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` with all four
-packages and Jupyter) and checks each tool at the end:
+`vegeta-cli` and Jupyter) and checks each tool at the end:
 
 ```bash
 scripts/install_ubuntu.sh                   # options: --venv DIR, --system-python, --no-openfoam, --openfoam-prefix DIR
 source .venv/bin/activate
 ```
 
-Manual installation — Python ≥ 3.10; each package installs on its own:
+Manual installation — Python ≥ 3.10; one package provides all four tools:
 
 ```bash
-pip install -e packages/dedalus        # CadQuery CAD
-pip install -e packages/talos          # needs gmsh (pip) + CalculiX `ccx` (system)
-pip install -e packages/aeromant       # needs OpenFOAM (system)
-pip install -e packages/mellonia       # needs PrusaSlicer (system)
+pip install -e "vegeta-cli[pandas,test]"   # CadQuery and gmsh come from pip
 ```
+The external programs are only needed by the tool that uses them: Talos needs CalculiX `ccx`,
+Aeromant needs OpenFOAM, Mellonia needs PrusaSlicer. Missing programs give a failed result with an
+explanation, never an import error.
 Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
 
 ## External tools (Ubuntu 24.04)
@@ -45,6 +45,6 @@ The CLI slices headless. If your build insists on a display, run it under `xvfb-
 (`slice_stl(..., executable=["xvfb-run", "-a", "prusa-slicer"])`).
 
 ## Tests
-`scripts/test_all.sh` runs every package's tests separately. Integration tests skip cleanly when a
+`scripts/test_all.sh` runs the tests of each tool (`vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
 tool is missing; markers: `requires_cadquery`, `requires_gmsh`, `requires_ccx`, `requires_openfoam`,
 `requires_prusaslicer`, `slow`. Run only fast tests with `pytest -m "not slow"`.
