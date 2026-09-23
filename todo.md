@@ -55,6 +55,10 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5.6 CLI: `mellonia slice`, `mellonia parse`
 - [x] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/04_mellonia_print.ipynb`
 
+## Stage 5b — Boreas (propeller/rotor BEMT, motor, battery)
+- [x] 5b.1 `vegeta.boreas`: `Propeller`, `Airfoil`, `solve`/`rpm_for_thrust`, `Motor`/`Battery`/`Propulsion`, `excitations`, JSON `export`; CLI `boreas point|for-thrust|map`; tests vs scaling laws and an APC static point
+- [x] 5b.2 Dedalus `Propeller` example design; notebooks `11_quadcopter_propeller`, `12_fixed_wing_propeller` (export JSON + CAD for the mission/fatigue work)
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)
