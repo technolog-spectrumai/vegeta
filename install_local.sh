@@ -5,7 +5,7 @@
 #   - OpenFOAM v2412 from conda-forge (the Ubuntu 'openfoam' package cannot run forceCoeffs)
 #   - into the virtual environment: vegeta-cli (editable: vegeta.dedalus/talos/aeromant/mellonia)
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
-# Then it checks that every tool is usable.
+# Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
 # Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR]
 #   --python EXE   interpreter for the venv (default: Ubuntu's /usr/bin/python3, not a conda one)
@@ -58,6 +58,15 @@ if [ "$USE_VENV" -eq 1 ]; then
     $SUDO apt-get update
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-venv python3-pip
   fi
+  # An existing venv built from another Python (e.g. conda's) is rebuilt from $PYTHON_EXE.
+  want="$("$PYTHON_EXE" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+  if [ -x "$VENV/bin/python" ]; then
+    have="$("$VENV/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo broken)"
+    if [ "$have" != "$want" ]; then
+      echo "existing venv uses Python $have, rebuilding it with Python $want"
+      rm -rf "$VENV"
+    fi
+  fi
   "$PYTHON_EXE" -m venv "$VENV"
   PY="$VENV/bin/python"
   echo "virtual environment: $VENV (activate with: source $VENV/bin/activate)"
@@ -94,40 +103,19 @@ step "Python packages (vegeta-cli, JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,test]" \
-  jupyterlab nbconvert nbformat ipykernel
+  jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 
 step "Checks"
 status=0
-check() {  # check <label> <command...>
-  local label="$1"; shift
-  if out="$("$@" 2>&1)"; then printf '  ok       %-12s %s\n' "$label" "$(echo "$out" | head -1)"
-  else printf '  MISSING  %-12s %s\n' "$label" "$(echo "$out" | tail -1)"; status=1; fi
-}
-check cadquery   "$PY" -c "import cadquery; print(cadquery.__version__)"
-check gmsh       "$PY" -c "import gmsh; print(gmsh.__version__)"
-check calculix   bash -c "ccx -v | grep -i version"
-check prusaslicer bash -c "prusa-slicer --help | head -1"
-if [ "$WITH_OPENFOAM" -eq 1 ]; then
-  check openfoam "$PY" -c "
-import os, subprocess
-from vegeta import aeromant
-e = aeromant.OpenFOAMEnvironment.conda('$FOAM_PREFIX')
-r = subprocess.run(e.command(['simpleFoam', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
-assert r.returncode == 0, r.stderr[-300:]
-print('simpleFoam in $FOAM_PREFIX; use aeromant.OpenFOAMEnvironment.conda(\'$FOAM_PREFIX\')')"
-fi
-for tool in dedalus talos aeromant mellonia; do
-  check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
-done
-check vegeta "$(dirname "$PY")/vegeta" --version
-check jupyter "$(dirname "$PY")/jupyter" lab --version
+"$ROOT/test.sh" --quick --python "$PY" || status=1
 
 if [ $status -eq 0 ]; then
   printf '\nAll dependencies installed. Next:\n'
   echo "  ./jupyter.sh             # JupyterLab from the venv; open notebooks/00_smoke_test.ipynb"
   [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate   # for the vegeta command and scripts"
-  echo "  scripts/test_all.sh      # tests"
+  echo "  ./test.sh                 # installation check with a short working run"
+  echo "  scripts/test_all.sh      # full test suite"
   echo "  scripts/demo_cli.sh      # CAD -> FEA -> print -> CFD with the CLIs"
 else
   printf '\nSome checks failed (see MISSING above).\n' >&2

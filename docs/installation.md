@@ -8,6 +8,15 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 source .venv/bin/activate
 ```
 
+## Checking the installation
+```bash
+./test.sh               # components + a ~10 s working run through every tool; exit code 0 = OK
+./test.sh --quick       # components only
+```
+Each line prints `ok`, `MISSING` (a component is not installed) or `FAILED` (installed but the working
+run failed), followed by `RESULT: OK` or `RESULT: PROBLEMS FOUND`. `install_local.sh` runs the quick
+check at the end. Re-running `install_local.sh` rebuilds `.venv` if it was made with a different Python.
+
 ## Jupyter
 ```bash
 ./jupyter.sh            # JupyterLab from .venv, opened in notebooks/ — no activation needed
