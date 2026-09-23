@@ -28,12 +28,15 @@ class MeshSettings:
     min_element_size: float | None = None
     optimize: bool = True
     algorithm_3d: int = 1  # Gmsh 3D algorithm: 1 Delaunay, 4 Frontal, 10 HXT
+    high_order_optimize: int = 1  # order 2 only: 0 off, 1 optimise, 2 elastic + optimise (fixes curved-node inversions)
 
     def __post_init__(self):
         if self.element_size <= 0:
             raise ValueError("element_size must be > 0")
         if self.order not in (1, 2):
             raise ValueError("order must be 1 (C3D4) or 2 (C3D10); use 2 for bending")
+        if self.high_order_optimize not in (0, 1, 2, 3, 4):
+            raise ValueError("high_order_optimize must be a Gmsh Mesh.HighOrderOptimize value 0-4")
 
 
 @dataclass
@@ -77,14 +80,13 @@ def generate_mesh(geometry: Path, units, regions, settings: MeshSettings, msh_pa
         opt.setNumber("Mesh.ElementOrder", settings.order)
         opt.setNumber("Mesh.Optimize", 1 if settings.optimize else 0)
         opt.setNumber("Mesh.Algorithm3D", settings.algorithm_3d)
+        opt.setNumber("Mesh.HighOrderOptimize", settings.high_order_optimize if settings.order == 2 else 0)
         opt.setNumber("Mesh.SaveAll", 0)
         opt.setNumber("Mesh.MshFileVersion", 4.1)
         progress("mesh 2D", 0.2)
         model.mesh.generate(2)
         progress("mesh 3D", 0.4)
-        model.mesh.generate(3)
-        if settings.order == 2:
-            model.mesh.setOrder(2)
+        model.mesh.generate(3)  # Mesh.ElementOrder makes this second order when requested
         progress("write mesh", 0.9)
         gmsh.write(str(msh_path))
 

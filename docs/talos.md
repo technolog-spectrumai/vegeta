@@ -23,7 +23,7 @@ model = talos.StructuralModel(
              talos.SurfacesInBox("pad", (70, -5, 2, 80, 5, 4))],
     supports=[talos.FixedSupport("fixed")],
     loads=[talos.Force("pad", fz=-500.0), talos.Pressure("holes", 2.0), talos.Acceleration(az=-9810)],
-    mesh_settings=talos.MeshSettings(element_size=2.0, order=2),
+    mesh_settings=talos.MeshSettings(element_size=2.0, order=2),   # high_order_optimize=1 by default
 )
 mesh_result = model.mesh("runs/bracket")       # explicit step 1: Gmsh -> mesh.msh
 result = model.solve("runs/bracket")           # explicit step 2: CalculiX (needs an up-to-date mesh)
@@ -46,6 +46,11 @@ The STEP geometry is converted to the chosen length unit by OpenCascade on impor
 - Loads: `Force(region, fx, fy, fz)` — total force distributed as a uniform traction with consistent
   nodal loads; `Pressure(region, value)` — positive pushes into the solid (CalculiX convention);
   `Acceleration(ax, ay, az)` — body load on the whole solid, needs `density`.
+
+## Meshing notes
+Second-order meshes place mid-side nodes on curved geometry (holes, fillets), which can invert an
+element. `MeshSettings(high_order_optimize=1)` (default) runs Gmsh's high-order optimisation to fix
+this; `mesh()` still fails loudly if any element remains inverted (minSICN ≤ 0) and warns below 0.1.
 
 ## Results
 `solve()` returns a `talos.Result` (see `docs/result-shape.md`). Metrics:

@@ -170,3 +170,35 @@ def test_plots(beam_step, tmp_path):
     res = m.solve(tmp_path)
     for fn in (plot_deformed, plot_von_mises_histogram, plot_along_axis):
         assert fn(res) is not None
+
+
+@pytest.mark.requires_ccx
+def test_curved_holes_and_fillets_mesh_without_inversions(tmp_path):
+    """Second-order nodes on fillets/holes used to invert an element (8 mm example bracket)."""
+    gmsh = pytest.importorskip("gmsh")
+    gmsh.initialize(readConfigFiles=False)
+    try:
+        gmsh.option.setNumber("General.Terminal", 0)
+        occ = gmsh.model.occ
+        plate = occ.addBox(-40, -20, -4, 80, 40, 8)
+        holes = [occ.addCylinder(x, y, -5, 0, 0, 10, 3.25) for x in (-30, 30) for y in (-10, 10)]
+        occ.cut([(3, plate)], [(3, h) for h in holes])
+        occ.synchronize()
+        occ.fillet([v for _, v in gmsh.model.getEntities(3)],
+                   [t for _, t in gmsh.model.getEntities(1)
+                    if abs(gmsh.model.getBoundingBox(1, t)[2] - (-4)) < 1e-6
+                    and abs(gmsh.model.getBoundingBox(1, t)[5] - 4) < 1e-6
+                    and abs(abs(gmsh.model.getBoundingBox(1, t)[0]) - 40) < 1e-6
+                    and abs(abs(gmsh.model.getBoundingBox(1, t)[1]) - 20) < 1e-6], [4.0])
+        occ.synchronize()
+        step = tmp_path / "bracket.step"
+        gmsh.write(str(step))
+    finally:
+        gmsh.finalize()
+    m = StructuralModel(step, "mm-N-MPa", STEEL, regions=[SurfacesOnPlane("clamped", "x", -40.0),
+                        SurfacesOnPlane("loaded", "x", 40.0)], supports=[FixedSupport("clamped")],
+                        loads=[Force("loaded", fz=-200.0)], mesh_settings=MeshSettings(3.0))
+    mesh = m.mesh(tmp_path / "w")
+    assert mesh.ok, mesh.messages
+    assert mesh.metrics["min_quality_sicn"] > 0
+    assert m.solve(tmp_path / "w").ok
