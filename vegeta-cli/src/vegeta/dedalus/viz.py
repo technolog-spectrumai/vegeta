@@ -49,6 +49,7 @@ def section_polylines(geometry, normal: str = "z", position: float = 0.0, tolera
     sl = to_pyvista(geometry, tolerance).slice(normal=normal, origin=origin)
     if sl.n_points == 0:
         return []
+    sl = sl.strip()  # join the cut segments into connected polylines
     keep = [i for i in range(3) if i != axis]
     lines = sl.lines
     out = []
