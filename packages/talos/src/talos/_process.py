@@ -24,14 +24,15 @@ def run_command(
     env: Mapping[str, str] | None = None,
     timeout: float | None = None,
     log_name: str | None = None,
+    log_path: str | os.PathLike | None = None,
     on_output: Callable[[str], None] | None = None,
     cancel: threading.Event | None = None,
 ) -> CommandRecord:
     """Run ``command`` in ``cwd``; never raises for tool problems.
 
     ``env`` entries are added to the current environment. ``on_output`` receives each stdout line
-    (used for progress reporting). Setting ``cancel`` terminates the process. When ``log_name`` is
-    given, ``<cwd>/<log_name>.log`` receives the command, return code, stdout and stderr.
+    (used for progress reporting). Setting ``cancel`` terminates the process. The log (command,
+    return code, stdout, stderr) goes to ``log_path`` if given, else ``<cwd>/<log_name>.log``.
     """
     cmd = [str(c) for c in command]
     cwd = Path(cwd)
@@ -46,8 +47,9 @@ def run_command(
             command=cmd, cwd=str(cwd), returncode=returncode, duration_s=time.monotonic() - t0,
             stdout=stdout, stderr=stderr, started_at=started_at, error=error,
         )
-        if log_name:
-            rec.log_file = str(_write_log(cwd / f"{log_name}.log", rec))
+        target = Path(log_path) if log_path else (cwd / f"{log_name}.log" if log_name else None)
+        if target is not None:
+            rec.log_file = str(_write_log(target, rec))
         return rec
 
     if not cwd.is_dir():
