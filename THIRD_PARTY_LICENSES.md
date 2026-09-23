@@ -23,3 +23,9 @@ Notes
   separately with `pip install gmsh` keeps this the user's choice.
 - OpenFOAM template cases shipped in Aeromant are written for this project and
   are MIT; they are inputs to OpenFOAM, not OpenFOAM code.
+
+## Logo
+`logo_with_text.png`, `logo_no_text.png` and `logo_small_mono.png` are **not** covered by the MIT
+licence. The figure is based on a character whose rights belong to Bird Studio/Shueisha and Toei
+Animation; no rights to it are granted by this repository. Replace the logo with original artwork
+before any public or commercial distribution.
