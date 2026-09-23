@@ -25,7 +25,7 @@ def plot_coefficients(case: str | Path, names=("Cd", "Cl", "Cm"), ax=None):
     return ax.figure
 
 
-def plot_residuals(case: str | Path, log_name: str = "log.simpleFoam", ax=None):
+def plot_residuals(case: str | Path, log_name: str = "log.solver", ax=None):
     """Initial residuals per field (log scale)."""
     import matplotlib.pyplot as plt
 

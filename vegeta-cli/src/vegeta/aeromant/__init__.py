@@ -9,12 +9,12 @@ from .plotting import plot_coefficients, plot_residuals
 from .result import CommandRecord, Result, ResultError
 from .results import read_checkmesh, read_coefficients, read_solver_log
 from .stl import Surface, read_stl, write_stl_ascii
-from .templates import TEMPLATES, TemplateParameter, TemplateSpec, get_template, list_templates
+from .templates import TEMPLATES, Flavor, TemplateParameter, TemplateSpec, get_template, list_templates
 
 __version__ = "0.1.0"
 
 __all__ = [
-    "CFDCase", "CommandRecord", "OpenFOAMEnvironment", "Result", "ResultError", "Surface", "TEMPLATES",
+    "CFDCase", "CommandRecord", "Flavor", "OpenFOAMEnvironment", "Result", "ResultError", "Surface", "TEMPLATES",
     "TemplateParameter", "TemplateSpec", "get_template", "list_templates", "open_case", "plot_coefficients",
     "plot_residuals", "read_case_results", "read_checkmesh", "read_coefficients", "read_solver_log", "read_stl",
     "write_stl_ascii",

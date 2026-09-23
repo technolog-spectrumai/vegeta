@@ -3,6 +3,8 @@
 A template holds the engineering decisions (domain, patches, physics model, boundary conditions,
 meshing and solver settings). Its :class:`TemplateSpec` states which values the engineer must
 supply and which values the template decides (visible defaults that can be explicitly overridden).
+Each template ships its case files in both OpenFOAM dialects (``com/`` for openfoam.com,
+``org/`` for openfoam.org) because the two forks use different dictionaries and solvers.
 """
 from __future__ import annotations
 
@@ -55,12 +57,22 @@ class Step:
 
 
 @dataclass(frozen=True)
+class Flavor:
+    """Case files and pipeline for one OpenFOAM fork (the dialects differ)."""
+
+    name: str            # "openfoam.com" | "openfoam.org"
+    directory: str       # subdirectory of the template holding the case files
+    geometry_dir: str    # where the STL goes inside the case
+    pipeline: tuple[Step, ...]
+    versions: str        # human note, e.g. "v1912+" or "12+"
+
+
+@dataclass(frozen=True)
 class TemplateSpec:
     name: str
     description: str
-    openfoam_flavor: str
     parameters: tuple[TemplateParameter, ...]
-    pipeline: tuple[Step, ...]
+    flavors: tuple[Flavor, ...]
     derive: Callable[[dict, np.ndarray, np.ndarray], dict[str, Any]]
     max_body_extent: float  # largest body dimension allowed, in multiples of reference_length
     patches: dict[str, str] = field(default_factory=dict)
@@ -71,8 +83,23 @@ class TemplateSpec:
         return TEMPLATE_ROOT / self.name
 
     @property
-    def step_names(self) -> list[str]:
-        return [s.name for s in self.pipeline]
+    def flavor_names(self) -> list[str]:
+        return [f.name for f in self.flavors]
+
+    def flavor(self, name: str | None) -> Flavor:
+        """Case files for an OpenFOAM flavor; ``None`` selects the first (openfoam.com)."""
+        if name is None:
+            return self.flavors[0]
+        for f in self.flavors:
+            if f.name == name:
+                return f
+        raise ValueError(f"template {self.name!r} has no case files for {name!r}; available: {self.flavor_names}")
+
+    def case_dir(self, flavor: str | None) -> Path:
+        return self.directory / self.flavor(flavor).directory
+
+    def step_names(self, flavor: str | None = None) -> list[str]:
+        return [s.name for s in self.flavor(flavor).pipeline]
 
     def resolve(self, values: dict[str, Any]) -> dict[str, Any]:
         """Validate engineer-supplied values; add template decisions for the rest."""
@@ -92,11 +119,12 @@ class TemplateSpec:
         return out
 
     def describe(self) -> str:
-        lines = [f"{self.name} ({self.openfoam_flavor})", f"  {self.description}", "  parameters:"]
+        lines = [f"{self.name}", f"  {self.description}", "  parameters:"]
         for p in self.parameters:
             d = "REQUIRED" if p.required else f"template default = {p.default}"
             lines.append(f"    {p.name:<22} [{p.units}] {d} — {p.description}")
-        lines.append("  pipeline: " + " -> ".join(self.step_names))
+        for f in self.flavors:
+            lines.append(f"  {f.name} ({f.versions}): " + " -> ".join(s.name for s in f.pipeline))
         lines += [f"  note: {n}" for n in self.notes]
         return "\n".join(lines)
 
@@ -111,13 +139,25 @@ COMMON_REQUIRED = (
     TemplateParameter("center_of_rotation", "moment reference point", "m", kind="vector"),
 )
 
-EXTERNAL_PIPELINE = (
+COM_PIPELINE = (
     Step("blockMesh", ("blockMesh",), description="background hex mesh of the domain"),
-    Step("surfaceFeatureExtract", ("surfaceFeatureExtract",), description="feature edges of body.stl"),
+    Step("features", ("surfaceFeatureExtract",), description="feature edges of body.stl"),
     Step("snappyHexMesh", ("snappyHexMesh", "-overwrite"), description="castellate and snap around the body"),
     Step("checkMesh", ("checkMesh",), description="mesh quality report"),
     Step("restore0", ("copy", "0.orig", "0"), kind="internal", description="initial fields for the meshed case"),
-    Step("simpleFoam", ("simpleFoam",), description="steady incompressible solver with forceCoeffs"),
+    Step("solver", ("simpleFoam",), description="steady incompressible solver with forceCoeffs"),
+)
+ORG_PIPELINE = (
+    Step("blockMesh", ("blockMesh",), description="background hex mesh of the domain"),
+    Step("features", ("surfaceFeatures",), description="feature edges of body.stl"),
+    Step("snappyHexMesh", ("snappyHexMesh", "-overwrite"), description="castellate and snap around the body"),
+    Step("checkMesh", ("checkMesh",), description="mesh quality report"),
+    Step("restore0", ("copy", "0.orig", "0"), kind="internal", description="initial fields for the meshed case"),
+    Step("solver", ("foamRun",), description="steady incompressibleFluid solver with forceCoeffs"),
+)
+EXTERNAL_FLAVORS = (
+    Flavor("openfoam.com", "com", "constant/triSurface", COM_PIPELINE, "v1912 and later"),
+    Flavor("openfoam.org", "org", "constant/geometry", ORG_PIPELINE, "12 and later"),
 )
 
 EXTERNAL_PATCHES = {
@@ -184,11 +224,10 @@ def _mesh_and_domain(iterations: int) -> tuple[TemplateParameter, ...]:
 
 
 LAMINAR = TemplateSpec(
-    name="laminar_external_simplefoam",
+    name="laminar_external",
     description="Steady laminar external flow around a single body in a box domain (flow +x, lift +z).",
-    openfoam_flavor="openfoam.com v1912+",
     parameters=COMMON_REQUIRED + _mesh_and_domain(400),
-    pipeline=EXTERNAL_PIPELINE,
+    flavors=EXTERNAL_FLAVORS,
     derive=_external_derive,
     max_body_extent=4.0,
     patches=EXTERNAL_PATCHES,
@@ -200,14 +239,13 @@ LAMINAR = TemplateSpec(
 )
 
 RANS_KSST = TemplateSpec(
-    name="rans_ksst_external_simplefoam",
+    name="rans_ksst_external",
     description="Steady RANS k-omega SST external flow with wall functions (flow +x, lift +z).",
-    openfoam_flavor="openfoam.com v1912+",
     parameters=COMMON_REQUIRED + _mesh_and_domain(600) + (
         TemplateParameter("turbulence_intensity", "inlet turbulence intensity", "-", 0.005),
         TemplateParameter("viscosity_ratio", "inlet eddy/molecular viscosity ratio", "-", 10.0),
     ),
-    pipeline=EXTERNAL_PIPELINE,
+    flavors=EXTERNAL_FLAVORS,
     derive=_external_derive,
     max_body_extent=4.0,
     patches=EXTERNAL_PATCHES,
@@ -218,11 +256,13 @@ RANS_KSST = TemplateSpec(
 )
 
 TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST)}
+ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 
 def get_template(name: str | TemplateSpec) -> TemplateSpec:
     if isinstance(name, TemplateSpec):
         return name
+    name = ALIASES.get(name, name)
     if name not in TEMPLATES:
         raise ValueError(f"unknown template {name!r}; available: {sorted(TEMPLATES)}")
     return TEMPLATES[name]

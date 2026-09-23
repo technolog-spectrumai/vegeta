@@ -46,12 +46,16 @@ class CFDCase:
         self.user_parameters = dict(parameters)
         self.workdir = Path(workdir)
         self.environment = environment or OpenFOAMEnvironment()
+        detected = self.environment.flavor()
+        self.flavor = detected or self.template.flavors[0].name
+        self.files = self.template.flavor(self.flavor)  # case files + pipeline for this OpenFOAM fork
 
     # -- description ------------------------------------------------------------------------
     def config(self) -> dict:
         return {
             "template": self.template.name,
-            "openfoam_flavor": self.template.openfoam_flavor,
+            "openfoam_flavor": self.flavor,
+            "openfoam_version": self.environment.version(),
             "geometry": str(self.geometry),
             "geometry_units": self.geometry_units,
             "parameters": self.parameters,
@@ -62,6 +66,7 @@ class CFDCase:
     def _key(self) -> str:
         cfg = dict(self.config(), geometry_sha256=_sha256(self.geometry) if self.geometry.is_file() else None)
         cfg.pop("environment")
+        cfg.pop("openfoam_version")
         return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
 
     @property
@@ -94,12 +99,14 @@ class CFDCase:
                     f"— check geometry_units and reference_length"
                 )
             values = self.template.derive(self.parameters, bmin, bmax)
-            shutil.copytree(self.template.directory, self.workdir)
-            (self.workdir / "constant" / "triSurface" / "README").unlink(missing_ok=True)
+            shutil.copytree(self.template.case_dir(self.flavor), self.workdir)
+            geometry_dir = self.workdir / self.files.geometry_dir
+            geometry_dir.mkdir(parents=True, exist_ok=True)
+            (geometry_dir / "README").unlink(missing_ok=True)
             inputs = self.workdir / "inputs"
             inputs.mkdir()
             shutil.copy2(self.geometry, inputs / self.geometry.name)
-            write_stl_ascii(body, self.workdir / "constant" / "triSurface" / "body.stl", "body")
+            write_stl_ascii(body, geometry_dir / "body.stl", "body")
             self._render(values)
             info = {"key": self._key(), "config": self.config(), "derived": values, "created_at": utc_now(),
                     "body_bbox_m": [bmin.tolist(), bmax.tolist()], "body_area_m2": body.area,
@@ -114,15 +121,20 @@ class CFDCase:
             if body.volume <= 0:
                 res.messages.append("STL encloses no positive volume (open or inverted surface?); snappyHexMesh may fail")
             res.artifacts.update(case=self.workdir, case_info=self.workdir / CASE_INFO,
-                                 body_stl=self.workdir / "constant" / "triSurface" / "body.stl")
+                                 body_stl=geometry_dir / "body.stl")
         except (ValueError, FileNotFoundError, OSError) as exc:
             res.fail(str(exc))
+        if res.ok and self.environment.flavor() is None:
+            res.messages.append(
+                f"OpenFOAM flavor could not be detected (WM_PROJECT_VERSION unknown); using the {self.flavor} "
+                f"case files. Use OpenFOAMEnvironment(bashrc=...), .conda(...) or .detect() to be explicit"
+            )
         res.duration_s = time.monotonic() - t0
         return res
 
     def _render(self, values: dict[str, str]) -> None:
         for path in sorted(p for p in self.workdir.rglob("*") if p.is_file()):
-            if path.parent.name == "triSurface" or path.parent.name == "inputs":
+            if path.parent.name in ("triSurface", "geometry", "inputs"):
                 continue
             text = path.read_text()
             names = set(_PLACEHOLDER.findall(text))
@@ -146,12 +158,12 @@ class CFDCase:
             res.fail(f"case in {self.workdir} is not prepared for this configuration; call prepare() first")
             res.duration_s = time.monotonic() - t0
             return res
-        names = list(steps) if steps is not None else self.template.step_names
-        unknown = [s for s in names if s not in self.template.step_names]
+        names = list(steps) if steps is not None else self.template.step_names(self.flavor)
+        unknown = [s for s in names if s not in self.template.step_names(self.flavor)]
         if unknown:
-            res.fail(f"unknown step(s) {unknown}; template steps: {self.template.step_names}")
+            res.fail(f"unknown step(s) {unknown}; template steps: {self.template.step_names(self.flavor)}")
             return res
-        by_name = {s.name: s for s in self.template.pipeline}
+        by_name = {s.name: s for s in self.files.pipeline}
         res.metadata["steps"] = names
         cb, close = resolve_progress(progress, "aeromant")
         iterations = self.parameters.get("iterations", 1)
@@ -164,7 +176,7 @@ class CFDCase:
                     rec = self._internal(step)
                 else:
                     on_line = None
-                    if name == "simpleFoam":
+                    if name == "solver":
                         def on_line(line, base=base, share=1 / len(names)):
                             m = re.match(r"^Time = (\d+)", line)
                             if m:
@@ -177,6 +189,10 @@ class CFDCase:
                     res.artifacts[f"log_{name}"] = Path(rec.log_file)
                 if rec.error == "cancelled":
                     res.fail(f"{name} cancelled by user", status="cancelled")
+                    break
+                if rec.error and "not found" in rec.error and step.kind == "openfoam":
+                    res.fail(f"step {name} failed: {rec.error} — is this an {self.flavor} installation "
+                             f"(version {self.environment.version()})? Aeromant selected the {self.flavor} case files")
                     break
                 if name == "checkMesh" and rec.error is None and rec.log_file:
                     mc = read_checkmesh(rec.log_file)
@@ -198,7 +214,7 @@ class CFDCase:
             cb("done", 1.0)
             close()
         res.artifacts["case"] = self.workdir
-        if res.ok and "simpleFoam" in names:
+        if res.ok and "solver" in names:
             summary = self.results()
             res.metrics.update(summary.metrics)
             res.messages.extend(summary.messages)
@@ -241,7 +257,7 @@ def open_case(workdir: str | Path) -> dict:
 def _version_from_logs(case: Path) -> str | None:
     from .results import read_version
 
-    for log in ("log.blockMesh", "log.simpleFoam"):
+    for log in ("log.blockMesh", "log.solver"):
         p = Path(case) / log
         if p.is_file():
             v = read_version(p.read_text(errors="replace"))
@@ -265,7 +281,7 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
     if (workdir / "log.checkMesh").is_file():
         mc = read_checkmesh(workdir / "log.checkMesh")
         m.update(mesh_cells=mc.cells, mesh_ok=mc.ok, mesh_failed_checks=mc.failed_checks)
-    log = workdir / "log.simpleFoam"
+    log = workdir / "log.solver"
     if log.is_file():
         sl = read_solver_log(log)
         m.update(iterations=sl.iterations, converged=sl.converged,

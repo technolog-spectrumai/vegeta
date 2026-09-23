@@ -46,8 +46,9 @@ def cmd_templates(args) -> int:
         out = []
         for n in names:
             t = get_template(n)
-            out.append({"name": t.name, "description": t.description, "openfoam_flavor": t.openfoam_flavor,
-                        "pipeline": t.step_names, "notes": list(t.notes),
+            out.append({"name": t.name, "description": t.description,
+                        "flavors": {f.name: {"versions": f.versions, "pipeline": [s.name for s in f.pipeline]} for f in t.flavors},
+                        "notes": list(t.notes),
                         "parameters": [{"name": p.name, "units": p.units, "required": p.required,
                                         "default": None if p.required else p.default, "description": p.description}
                                        for p in t.parameters]})
