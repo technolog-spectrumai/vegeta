@@ -24,10 +24,23 @@ def _version() -> str:
         return "unknown"
 
 
+def plugins() -> dict:
+    """Command groups contributed by other installed distributions (entry point group ``vegeta.commands``)."""
+    try:
+        eps = metadata.entry_points(group="vegeta.commands")
+    except TypeError:  # Python < 3.10 style API
+        eps = metadata.entry_points().get("vegeta.commands", [])
+    return {ep.name: ep for ep in eps if ep.name not in TOOLS}
+
+
 def usage() -> str:
-    lines = ["usage: vegeta <tool> [arguments]", "", "Engineering tools:"]
+    lines = ["usage: vegeta <command> [arguments]", "", "Engineering tools:"]
     lines += [f"  {name:<10} {text}" for name, text in TOOLS.items()]
-    lines += ["", "Run 'vegeta <tool> --help' for the tool's commands.",
+    extra = plugins()
+    if extra:
+        lines += ["", "Workbench commands:"]
+        lines += [f"  {name:<10} (from {ep.dist.name if ep.dist else ep.value})" for name, ep in sorted(extra.items())]
+    lines += ["", "Run 'vegeta <command> --help' for details.",
               "The tools are also available as the commands dedalus, talos, aeromant and mellonia."]
     return "\n".join(lines)
 
@@ -42,7 +55,10 @@ def main(argv=None) -> int:
         return 0
     tool, rest = argv[0], argv[1:]
     if tool not in TOOLS:
-        print(f"vegeta: unknown tool {tool!r}\n\n{usage()}", file=sys.stderr)
+        extra = plugins()
+        if tool in extra:
+            return extra[tool].load()(rest, prog=f"vegeta {tool}")
+        print(f"vegeta: unknown command {tool!r}\n\n{usage()}", file=sys.stderr)
         return 2
     cli = importlib.import_module(f"vegeta.{tool}.cli")
     return cli.main(rest, prog=f"vegeta {tool}")
