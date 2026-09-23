@@ -21,7 +21,7 @@ def test_laminar_sphere_re100(tmp_path, openfoam):
     stl = aeromant.write_stl_ascii(icosphere(0.5, 4), tmp_path / "sphere.stl")
     params = dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0, reference_area=math.pi / 4,
                   reference_length=1.0, center_of_rotation=(0, 0, 0))
-    case = CFDCase("laminar_external_simplefoam", stl, params, tmp_path / "case", geometry_units="m",
+    case = CFDCase("laminar_external", stl, params, tmp_path / "case", geometry_units="m",
                    environment=openfoam)
     assert case.prepare().ok
     res = case.run()
@@ -34,7 +34,7 @@ def test_laminar_sphere_re100(tmp_path, openfoam):
     assert abs(m["Cl"]) < 0.02  # symmetric body
     assert m["Cd_std_last50"] < 1e-3
     # native case and logs are preserved
-    for f in ("log.blockMesh", "log.snappyHexMesh", "log.checkMesh", "log.simpleFoam", "constant/polyMesh/boundary",
+    for f in ("log.blockMesh", "log.snappyHexMesh", "log.checkMesh", "log.solver", "constant/polyMesh/boundary",
               "system/controlDict", "inputs/sphere.stl"):
         assert (tmp_path / "case" / f).exists(), f
     assert json.loads((tmp_path / "case/summary.json").read_text())["status"] == "success"
@@ -46,11 +46,11 @@ def test_laminar_sphere_re100(tmp_path, openfoam):
 def test_run_selected_steps_only(tmp_path, openfoam, sphere_stl):
     params = dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0, reference_area=math.pi / 4,
                   reference_length=1.0, center_of_rotation=(0, 0, 0), surface_level=2, near_level=2, wake_level=1)
-    case = CFDCase("laminar_external_simplefoam", sphere_stl, params, tmp_path / "c", geometry_units="m",
+    case = CFDCase("laminar_external", sphere_stl, params, tmp_path / "c", geometry_units="m",
                    environment=openfoam)
     case.prepare()
     res = case.run(steps=["blockMesh", "checkMesh"])
     assert res.ok and res.metrics["mesh_cells"] > 0
-    assert not (tmp_path / "c/log.simpleFoam").exists()  # nothing beyond the chosen steps ran
+    assert not (tmp_path / "c/log.solver").exists()  # nothing beyond the chosen steps ran
     assert "Cd" not in res.metrics
     assert not case.results().ok  # NOT RUN

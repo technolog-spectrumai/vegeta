@@ -13,7 +13,7 @@ import math
 from vegeta import aeromant
 
 case = aeromant.CFDCase(
-    "laminar_external_simplefoam", r"{stl}",
+    "laminar_external", r"{stl}",
     dict(velocity=1.0, kinematic_viscosity=0.01, density=1.0, reference_area=math.pi / 4,
          reference_length=1.0, center_of_rotation=(0, 0, 0)),
     workdir=r"{work}", geometry_units="m",
@@ -23,8 +23,8 @@ case = aeromant.CFDCase(
 
 def test_cli_templates(capsys):
     assert main(["templates"]) == 0
-    assert "laminar_external_simplefoam" in capsys.readouterr().out
-    assert main(["templates", "rans_ksst_external_simplefoam", "--json"]) == 0
+    assert "laminar_external" in capsys.readouterr().out
+    assert main(["templates", "rans_ksst_external", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert any(p["name"] == "velocity" and p["required"] for p in data[0]["parameters"])
 
@@ -45,7 +45,7 @@ def test_cli_prepare_run_results(tmp_path, sphere_stl, capsys):
     post = tmp_path / "c/postProcessing/forceCoeffs/0"
     post.mkdir(parents=True)
     shutil.copy(DATA / "coefficient_v1912.dat", post / "coefficient.dat")
-    shutil.copy(DATA / "log.simpleFoam", tmp_path / "c/log.simpleFoam")
+    shutil.copy(DATA / "log.solver", tmp_path / "c/log.solver")
     capsys.readouterr()
     assert main(["results", str(tmp_path / "c"), "--json", "--png", "--window", "2"]) == 0
     out = json.loads(capsys.readouterr().out)

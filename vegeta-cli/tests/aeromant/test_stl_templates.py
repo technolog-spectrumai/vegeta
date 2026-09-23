@@ -1,3 +1,4 @@
+import json
 import math
 import struct
 
@@ -34,7 +35,7 @@ def test_bad_stl(tmp_path):
 
 
 def test_template_requires_explicit_values():
-    t = get_template("laminar_external_simplefoam")
+    t = get_template("laminar_external")
     with pytest.raises(ValueError, match="requires explicit"):
         t.resolve({"velocity": 1.0})
     with pytest.raises(ValueError, match="no parameter"):
@@ -51,7 +52,7 @@ def test_template_requires_explicit_values():
 
 
 def test_prepare_renders_every_placeholder(tmp_path, sphere_stl):
-    case = CFDCase("rans_ksst_external_simplefoam", sphere_stl, REQ, tmp_path / "c", geometry_units="m")
+    case = CFDCase("rans_ksst_external", sphere_stl, REQ, tmp_path / "c", geometry_units="m")
     res = case.prepare()
     assert res.ok, res.messages
     assert case.is_prepared
@@ -71,37 +72,86 @@ def test_prepare_scales_mm_and_checks_body_size(tmp_path):
     from _sphere import icosphere
 
     stl = write_stl_ascii(icosphere(500.0, 1), tmp_path / "big.stl")  # 1 m sphere drawn in mm
-    ok = CFDCase("laminar_external_simplefoam", stl, REQ, tmp_path / "mm", geometry_units="mm").prepare()
+    ok = CFDCase("laminar_external", stl, REQ, tmp_path / "mm", geometry_units="mm").prepare()
     assert ok.ok and ok.metrics["body_bbox_max_m"][0] == pytest.approx(0.5, rel=1e-3)
-    bad = CFDCase("laminar_external_simplefoam", stl, REQ, tmp_path / "m", geometry_units="m").prepare()
+    bad = CFDCase("laminar_external", stl, REQ, tmp_path / "m", geometry_units="m").prepare()
     assert not bad.ok and "geometry_units" in bad.messages[0]
     with pytest.raises(ValueError, match="geometry_units"):
-        CFDCase("laminar_external_simplefoam", stl, REQ, tmp_path / "x", geometry_units="furlong")
+        CFDCase("laminar_external", stl, REQ, tmp_path / "x", geometry_units="furlong")
 
 
 def test_prepare_refuses_non_empty_dir(tmp_path, sphere_stl):
     (tmp_path / "c").mkdir()
     (tmp_path / "c" / "keep.txt").write_text("mine")
-    res = CFDCase("laminar_external_simplefoam", sphere_stl, REQ, tmp_path / "c", geometry_units="m").prepare()
+    res = CFDCase("laminar_external", sphere_stl, REQ, tmp_path / "c", geometry_units="m").prepare()
     assert not res.ok and "not empty" in res.messages[0]
     assert (tmp_path / "c" / "keep.txt").is_file()
 
 
 def test_run_requires_prepare_and_known_steps(tmp_path, sphere_stl):
-    case = CFDCase("laminar_external_simplefoam", sphere_stl, REQ, tmp_path / "c", geometry_units="m")
+    case = CFDCase("laminar_external", sphere_stl, REQ, tmp_path / "c", geometry_units="m")
     assert "prepare() first" in case.run().messages[0]
     case.prepare()
     assert "unknown step" in case.run(steps=["magicFoam"]).messages[0]
-    changed = CFDCase("laminar_external_simplefoam", sphere_stl, dict(REQ, velocity=2.0), tmp_path / "c",
+    changed = CFDCase("laminar_external", sphere_stl, dict(REQ, velocity=2.0), tmp_path / "c",
                       geometry_units="m")
     assert not changed.is_prepared
 
 
 def test_missing_openfoam_is_failed_result(tmp_path, sphere_stl):
     env = aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)})
-    case = CFDCase("laminar_external_simplefoam", sphere_stl, REQ, tmp_path / "c", geometry_units="m",
+    case = CFDCase("laminar_external", sphere_stl, REQ, tmp_path / "c", geometry_units="m",
                    environment=env)
     case.prepare()
     res = case.run(steps=["blockMesh"])
     assert res.status == "failed" and "not found" in res.messages[0]
     assert res.execution[0].returncode is None
+
+
+def test_openfoam_flavor_detection(tmp_path):
+    from vegeta.aeromant.environment import flavor_of
+
+    assert flavor_of("v2412") == "openfoam.com" and flavor_of("v1912") == "openfoam.com"
+    assert flavor_of("14") == "openfoam.org" and flavor_of("14-7b05503f98a8") == "openfoam.org"
+    assert flavor_of("dev") == "openfoam.org" and flavor_of(None) is None and flavor_of("weird") is None
+    rc = tmp_path / "bashrc"
+    rc.write_text("# fake\nexport WM_PROJECT_VERSION=14\nexport FOAM_INST_DIR=/opt\n")
+    env = aeromant.OpenFOAMEnvironment(bashrc=str(rc))
+    assert env.version() == "14" and env.flavor() == "openfoam.org"
+    assert aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}).flavor() is None
+
+
+def test_template_aliases_and_flavors():
+    t = get_template("laminar_external_simplefoam")  # old name still works
+    assert t.name == "laminar_external" and t.flavor_names == ["openfoam.com", "openfoam.org"]
+    assert t.step_names("openfoam.com")[1] == "features" and t.step_names("openfoam.org")[-1] == "solver"
+    assert t.flavor("openfoam.org").pipeline[-1].argv == ("foamRun",)
+    with pytest.raises(ValueError, match="no case files"):
+        t.flavor("openfoam.net")
+    assert "openfoam.org (12 and later)" in t.describe()
+
+
+def test_prepare_uses_case_files_of_the_detected_flavor(tmp_path, sphere_stl):
+    rc = tmp_path / "bashrc"
+    rc.write_text("export WM_PROJECT_VERSION=14\n")
+    org = aeromant.OpenFOAMEnvironment(bashrc=str(rc))
+    case = CFDCase("rans_ksst_external", sphere_stl, REQ, tmp_path / "org", geometry_units="m", environment=org)
+    assert case.flavor == "openfoam.org"
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "org"
+    assert (c / "constant/geometry/body.stl").is_file() and not (c / "constant/triSurface").exists()
+    assert (c / "constant/physicalProperties").is_file() and (c / "constant/momentumTransport").is_file()
+    assert "solver          incompressibleFluid;" in (c / "system/controlDict").read_text()
+    assert "type triSurface;" in (c / "system/snappyHexMeshDict").read_text()
+    assert 'insidePoint (' in (c / "system/snappyHexMeshDict").read_text()
+    assert "{{" not in (c / "system/snappyHexMeshDict").read_text()
+    assert res.artifacts["body_stl"] == c / "constant/geometry/body.stl"
+    info = json.loads((c / "aeromant_case.json").read_text())
+    assert info["config"]["openfoam_flavor"] == "openfoam.org" and info["config"]["openfoam_version"] == "14"
+    # the openfoam.com case files are used by default when nothing is detected
+    com = CFDCase("rans_ksst_external", sphere_stl, REQ, tmp_path / "com", geometry_units="m",
+                  environment=aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}))
+    assert com.flavor == "openfoam.com" and com.prepare().ok
+    assert (tmp_path / "com/constant/triSurface/body.stl").is_file()
+    assert (tmp_path / "com/constant/transportProperties").is_file()

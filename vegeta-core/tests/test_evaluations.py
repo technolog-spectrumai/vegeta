@@ -63,7 +63,7 @@ def test_print_evaluation(ws, beam_rev):
 def test_cfd_evaluation_mesh_steps_only(ws, beam_rev):
     def case(rev, workdir):
         return aeromant.CFDCase(
-            "laminar_external_simplefoam", rev.stl,
+            "laminar_external", rev.stl,
             dict(velocity=1.0, kinematic_viscosity=1e-3, density=1.0, reference_area=2e-4,
                  reference_length=0.2, center_of_rotation=(0, 0, 0)),
             workdir=workdir, geometry_units="mm", environment=aeromant.OpenFOAMEnvironment.detect())

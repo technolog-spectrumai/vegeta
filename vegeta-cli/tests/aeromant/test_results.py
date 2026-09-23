@@ -31,7 +31,7 @@ def test_restart_files_concatenate_and_deduplicate(tmp_path):
 
 
 def test_solver_log_and_checkmesh():
-    sl = read_solver_log(DATA / "log.simpleFoam")
+    sl = read_solver_log(DATA / "log.solver")
     assert sl.iterations == 2 and sl.converged and sl.completed
     assert sl.residuals["Ux"][-1] == pytest.approx(0.1) and sl.residuals["p"] == pytest.approx([1, 0.3])
     assert "1912" in sl.version
@@ -43,7 +43,7 @@ def test_case_results_from_files(tmp_path):
     case = tmp_path / "case"
     (case / "postProcessing/forceCoeffs/0").mkdir(parents=True)
     (case / "postProcessing/forceCoeffs/0/coefficient.dat").write_text((DATA / "coefficient_v1912.dat").read_text())
-    (case / "log.simpleFoam").write_text((DATA / "log.simpleFoam").read_text())
+    (case / "log.solver").write_text((DATA / "log.solver").read_text())
     params = dict(velocity=2.0, kinematic_viscosity=0.02, density=1.2, reference_area=math.pi / 4, reference_length=1.0)
     (case / "aeromant_case.json").write_text(json.dumps({"config": {"parameters": params}}))
     r = read_case_results(case, average_window=2)
