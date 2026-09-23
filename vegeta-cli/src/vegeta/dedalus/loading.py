@@ -20,7 +20,9 @@ def load_module(target: str):
         spec = importlib.util.spec_from_file_location(name, path)
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
-        spec.loader.exec_module(module)
+        # Compile the file's current text (never a cached .pyc): the code that runs must be exactly the
+        # source that source_identity() hashes, even when the file was edited a moment ago.
+        exec(compile(path.read_text(), str(path.resolve()), "exec"), module.__dict__)
         return module
     return importlib.import_module(target)
 
