@@ -24,6 +24,7 @@ talos = "vegeta.talos.cli:main"
 aeromant = "vegeta.aeromant.cli:main"
 mellonia = "vegeta.mellonia.cli:main"
 boreas = "vegeta.boreas.cli:main"
+chronos = "vegeta.chronos.cli:main"
 
 # `vegeta` is a namespace package (no __init__.py) so other distributions in this repository can
 # add their own subpackages later (e.g. vegeta.core).
@@ -37,6 +38,7 @@ packages = [
   "vegeta.aeromant.templates",
   "vegeta.mellonia",
   "vegeta.boreas",
+  "vegeta.chronos",
 ]
 
 [tool.setuptools.package-data]

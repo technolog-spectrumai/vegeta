@@ -14,7 +14,7 @@ def test_help_version_and_unknown_tool(capsys):
     assert main([]) == 0 and "dedalus" in capsys.readouterr().out
     assert main(["--version"]) == 0 and capsys.readouterr().out.startswith("vegeta-cli ")
     assert main(["nope"]) == 2 and "unknown command" in capsys.readouterr().err
-    assert set(TOOLS) == {"dedalus", "talos", "aeromant", "mellonia", "boreas"}
+    assert set(TOOLS) == {"dedalus", "talos", "aeromant", "mellonia", "boreas", "chronos"}
 
 
 def test_delegates_to_tool_with_prog_name(capsys):
