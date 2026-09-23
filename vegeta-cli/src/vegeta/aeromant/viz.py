@@ -173,6 +173,98 @@ def plot_streamlines(case, n: int = 60, plotter=None, normal_plane: str = "y"):
     return pl
 
 
+def _write_video(frames, path, fps: int) -> Path:
+    try:
+        import cv2
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("video export needs OpenCV: pip install opencv-python-headless") from e
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    h, w = frames[0].shape[:2]
+    out = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+    for f in frames:
+        out.write(cv2.cvtColor(np.ascontiguousarray(f[:, :, :3]), cv2.COLOR_RGB2BGR))
+    out.release()
+    return path
+
+
+def animate_particles(case, path, *, n: int = 400, seconds: float = 6.0, fps: int = 24, rpm: float | None = None,
+                      axis: str = "x", lengths: float = 6.0, size=(960, 720), seed: int = 0, camera=None,
+                      point_size: float = 7.0) -> Path:
+    """MP4 (OpenCV) of tracer particles carried by the converged velocity field: seeded upstream of the
+    body, advected through the steady field (Heun steps on the sampled ``U``), coloured by speed, and
+    re-seeded once they leave the domain. ``lengths`` body sizes of travel fill the video. With ``rpm``
+    the body is turned about ``axis`` at that speed for the eye — in an MRF case the field itself is
+    steady in the rotating zone. Returns the file path."""
+    pv = _pv()
+    mb = read_results(case)
+    internal = mb["internalMesh"]
+    info = case_info(case)
+    b = np.array(info["body_bbox_m"])
+    extent = b[1] - b[0]
+    size_m = float(extent.max())
+    centre = (b[0] + b[1]) / 2
+    rng = np.random.default_rng(seed)
+    cross = np.array([extent[1], extent[2]]).max() * 0.8
+
+    def seeds(k, spread: float = 0.0):
+        r = cross * np.sqrt(rng.uniform(0, 1, k)); a = rng.uniform(0, 2 * np.pi, k)
+        x = b[0][0] - rng.uniform(0.2 - spread, 1.2, k) * size_m
+        return np.column_stack([x, centre[1] + r * np.cos(a), centre[2] + r * np.sin(a)])
+
+    def velocity(pts):
+        s = pv.PolyData(pts).sample(internal, tolerance=1e-6)
+        u = np.asarray(s.point_data["U"], dtype=float)
+        ok = np.asarray(s.point_data["vtkValidPointMask"]).astype(bool) if "vtkValidPointMask" in s.point_data else np.ones(len(pts), bool)
+        return u, ok
+
+    pts = seeds(n, spread=lengths * 0.5)            # a stream that is already flowing at the first frame
+    u0, _ = velocity(pts)
+    u_ref = float(np.linalg.norm(u0, axis=1).mean()) or 1.0
+    n_frames = max(2, int(round(seconds * fps)))
+    dt = lengths * size_m / u_ref / n_frames
+    stl = None
+    cdir = _case_dir(case)
+    for sub in ("constant/triSurface", "constant/geometry"):
+        if (cdir / sub / "body.stl").is_file():
+            stl = pv.read(str(cdir / sub / "body.stl"))
+    rot = {"x": "rotate_x", "y": "rotate_y", "z": "rotate_z"}[axis]
+    pl = pv.Plotter(off_screen=True, window_size=list(size))
+    frames = []
+    speed_lim = [0.0, float(np.percentile(np.linalg.norm(internal.point_data["U"], axis=1), 99))]
+    for k in range(n_frames):
+        u1, ok = velocity(pts)
+        mid = pts + 0.5 * dt * u1
+        u2, ok2 = velocity(mid)
+        pts = pts + dt * np.where(ok2[:, None], u2, u1)
+        lost = ~(ok & ok2) | (pts[:, 0] > b[1][0] + 2.5 * size_m) | (np.abs(pts[:, 1] - centre[1]) > 4 * size_m) | (np.abs(pts[:, 2] - centre[2]) > 4 * size_m)
+        if lost.any():
+            pts[lost] = seeds(int(lost.sum()))
+        cloud = pv.PolyData(pts)
+        cloud.point_data["|U|"] = np.linalg.norm(u1, axis=1)
+        pl.clear()
+        pl.add_mesh(cloud, scalars="|U|", cmap="turbo", clim=speed_lim, point_size=point_size, render_points_as_spheres=True,
+                    scalar_bar_args={"title": "|U| [m/s]"})
+        if stl is not None:
+            body = getattr(stl, rot)((rpm / 60.0 * 360.0 * k / fps) % 360.0, point=tuple(centre), inplace=False) if rpm else stl
+            pl.add_mesh(body, color="#dddddd")
+        pl.add_text("tracer particles in the converged flow" + (f", body at {rpm:.0f} rpm" if rpm else ""), font_size=10)
+        if k == 0:
+            if camera is not None:
+                pl.camera_position = camera
+            else:
+                focus = centre + np.array([0.7 * size_m, 0.0, 0.0])          # flow left to right, seen from ahead-left and above
+                pl.camera_position = [tuple(focus + size_m * np.array([-2.2, -3.0, 1.6])), tuple(focus), (0.0, 0.0, 1.0)]
+                pl.reset_camera(bounds=[b[0][0] - 1.2 * size_m, b[1][0] + 2.5 * size_m, centre[1] - cross, centre[1] + cross, centre[2] - cross, centre[2] + cross])
+                pl.camera.zoom(1.35)
+            cam = pl.camera_position
+        else:
+            pl.camera_position = cam
+        frames.append(pl.screenshot(return_img=True))
+    pl.close()
+    return _write_video(frames, path, fps)
+
+
 def plot_surface_pressure(case, plotter=None):
     """Pressure (kinematic) on the body surface."""
     pv = _pv()

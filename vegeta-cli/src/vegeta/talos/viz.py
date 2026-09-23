@@ -159,6 +159,79 @@ def plot_results(result, *, field: str = "von_mises", deform_scale: float | None
     return pl
 
 
+def _write_video(frames, path, fps: int) -> Path:
+    try:
+        import cv2
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("video export needs OpenCV: pip install opencv-python-headless") from e
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    h, w = frames[0].shape[:2]
+    out = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+    for f in frames:
+        out.write(cv2.cvtColor(np.ascontiguousarray(f[:, :, :3]), cv2.COLOR_RGB2BGR))
+    out.release()
+    return path
+
+
+def animate(result, path, *, field: str = "von_mises", seconds: float = 4.0, fps: int = 24, rpm: float | None = None,
+            axis: str = "z", load_ramp: bool = True, deform_scale: float | None = None, mesh=None, size=(960, 720),
+            clim=None, camera=None) -> Path:
+    """MP4 (OpenCV) of a solved static case: the load ramps from zero to its full value — stress and
+    deformation scale with it, the solution being linear — while the part turns about ``axis`` at
+    ``rpm`` (a propeller: real shaft angle over the video's seconds) or, without ``rpm``, the camera
+    orbits it. A presentation of a steady result, not a transient analysis. Returns the file path."""
+    pv = _pv()
+    grid = results_to_pyvista(result, mesh)
+    span = float(np.ptp(grid.points, axis=0).max()) or 1.0
+    umax = float(grid.point_data["|U|"].max()) or 1.0
+    if deform_scale is None:
+        deform_scale = 0.1 * span / umax
+    full = grid.point_data[field].copy()
+    lim = clim or [float(full.min()), float(full.max())]
+    n = max(2, int(round(seconds * fps)))
+    frames = []
+    pl = pv.Plotter(off_screen=True, window_size=list(size))
+    rot = {"x": "rotate_x", "y": "rotate_y", "z": "rotate_z"}[axis]
+    for k in range(n):
+        t = k / fps
+        frac = (k / (n - 1)) if load_ramp else 1.0
+        g = grid.copy()
+        g.point_data[field] = full * frac
+        g = g.warp_by_vector("U", factor=deform_scale * frac)
+        angle = (rpm / 60.0 * 360.0 * t) if rpm else 0.0
+        if angle:
+            g = getattr(g, rot)(angle % 360.0, point=(0.0, 0.0, 0.0), inplace=False)
+        pl.clear()
+        pl.add_mesh(g, scalars=field, cmap="turbo", clim=lim, scalar_bar_args={"title": field})
+        label = f"{field}, load {frac:.0%}" + (f", {rpm:.0f} rpm, t = {t:.2f} s" if rpm else "")
+        pl.add_text(label, font_size=10)
+        if k == 0:
+            if camera is not None:
+                pl.camera_position = camera
+            else:                                  # frame the whole sweep about the axis, from a raised three-quarter view
+                ia = "xyz".index(axis)
+                pts = grid.points
+                radial = np.delete(pts, ia, axis=1) - np.delete(pts, ia, axis=1).mean(axis=0) * 0
+                r = float(np.linalg.norm(radial, axis=1).max()) if rpm else 0.6 * span
+                lo, hi = pts.min(axis=0), pts.max(axis=0)
+                focus = np.where(np.arange(3) == ia, (lo + hi) / 2, 0.0) if rpm else (lo + hi) / 2
+                up = np.eye(3)[ia]
+                side = np.roll(np.eye(3)[ia], 1)
+                pos = focus + 3.0 * max(r, 0.5 * span) * (1.0 * up + 1.2 * side + 0.8 * np.cross(up, side))
+                pl.camera_position = [tuple(pos), tuple(focus), tuple(up)]
+                bounds = [focus[j] - r if j != ia else lo[j] for j in range(3)], [focus[j] + r if j != ia else hi[j] for j in range(3)]
+                pl.reset_camera(bounds=[v for pair in zip(*bounds) for v in pair])
+            cam = pl.camera_position
+        else:
+            pl.camera_position = cam
+            if not rpm:
+                pl.camera.azimuth = 360.0 * k / n
+        frames.append(pl.screenshot(return_img=True))
+    pl.close()
+    return _write_video(frames, path, fps)
+
+
 def plot_mode(modes_result, mode: int = 1, *, scale: float | None = None, mesh=None, plotter=None):
     """Mode shape ``mode`` (1-based) of a ``solve_modes`` result, warped and coloured by amplitude."""
     from .frd import read_frd_steps
