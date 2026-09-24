@@ -55,6 +55,9 @@ with the same CFD/noise/blade/video treatment, then wing modes, missions and lif
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 `notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`11_rover_mechanics` (branch `dev_land`) is a small rugged-terrain rover: terrain profiles → quarter-car wheel
+loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
+arm modes and a speed–frequency diagram, rainflow fatigue, life, printing.
 `12_boat_at_sea` (branch `dev_sea`) takes a 1 m survey boat from hull lines through hydrostatics and the GZ
 curve, resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life, then
 its propeller in detail: performance and cavitation, a rotating-frame CFD check with a flow video, blade stress

@@ -68,6 +68,10 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5c.3 `vegeta.chronos`: `Mission`/`Segment`/`Excitation`, `Structure` (DAF, margins, Campbell), ASTM rainflow, `build_spectrum` (JSON hand-off), `SNCurve`/`hotspot_damage`, `simulate_life`; CLI `chronos spectrum|life`; tests
 - [x] 5c.4 Life parts of `08_quadcopter`, `09_fixed_wing_drone` (formerly notebooks 13, 14): three missions each, vibration → spectra → FEA fatigue → static re-check → fleet life; design comparison
 
+## Stage 5d — Land vehicles (branch `dev_land`)
+- [x] 5d.1 `designs/rover.py` (tub chassis, trailing arms, wheels; `part` = rover/chassis/arm) and `11_rover_mechanics` (formerly 15): ISO 8608 terrains + rocks + drop → quarter-car wheel forces → static strength over the operating cases (rocky-field peak, 30° hill climbing with weight transfer and traction limits, mud with sinkage and stall torque, 6 kg payload with a loaded quarter-car re-run) on the arm (FEA), the chassis (FEA: torsion, payload, loaded climb) and the pins (by hand); arm modes and a speed–frequency diagram, rainflow spectra per terrain, fatigue and life, printed arm
+- [ ] 5d.2 Motor torque reaction and cornering loads on the arm; chassis drop case with the battery; measured spring/tyre rates
+
 ## Stage 5e — Boats and submarines (branch `dev_sea`)
 - [x] 5e.1 `designs/survey_boat.py` (lofted hard-chine hull, shell, deck, transom bracket; `part` = boat/hull_solid/hull_shell/bracket) and `12_boat_at_sea` (formerly 16), Part 1: hydrostatics and GZ from the mesh, ITTC resistance + double-body RANS check, Boreas propeller in water, hull/bracket FEA (hydrostatic, slamming, thrust, wave slap), bracket modes, three sea states → spectra → fatigue → life, printed bracket
 - [x] 5e.3 `12_boat_at_sea` Part 2 (formerly `17_water_propeller`), plus a flow video, a blade-stress video and one bracket + blade frequency diagram: Boreas in sea water (η/Ct vs J, cavitation number vs rpm, inception rpm), blade CAD, guarded `rotor_mrf` CFD check at cruise, one-blade FEA at bollard pull and its modes vs blade-pass frequency, Gutin tones + broadband in dB re 1 µPa, JSON export
