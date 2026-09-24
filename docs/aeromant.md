@@ -112,6 +112,22 @@ decisions you can override: domain size in diameters, MRF zone radius/length, re
 Expect tens of percent against blade element theory (`vegeta.boreas`): no blade-passing unsteadiness,
 no tip-vortex resolution, wall functions without prism layers. Compare trends, refine before trusting absolutes.
 
+### Particle movies of a rotor case (`vegeta.aeromant.movie`)
+One file, used from a notebook after a rotor case has run: a few tracer particles carried by the
+converged velocity field, drawn with OpenCV in a side view and a view along the axis, the blades turning
+in consistent slow motion (each frame advances the flow by the time the rotor takes to turn
+`degrees_per_frame`). In an MRF case `U` is the absolute velocity, so the swirl the particles pick up is
+the swirl the rotor puts into the flow. Air or water makes no difference: the field is what the case solved.
+```python
+from vegeta.aeromant import movie
+movie.make_movie(case, "prop_particles.mp4", blades=3, n=40, seconds=12, fps=24, degrees_per_frame=10)
+```
+`RotorView.from_case` reads centre, diameter, rpm and sense of rotation from `aeromant_case.json`;
+`openfoam_sampler(case)` reads the last solved time step once (pyvista) and looks velocities up by
+inverse distance over the nearest cell centres (scipy); `Tracer` and `render_frame` are plain numpy and
+OpenCV and take any `points -> (U, valid)` function, which is how the unit tests run on a stub field
+(`tests/aeromant/test_movie.py`). A steady result shown as motion, not a transient simulation.
+
 ## OpenFOAM installations
 - `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
   and reports which passed; use it after installing or upgrading OpenFOAM, or to validate the `org/` case files on
