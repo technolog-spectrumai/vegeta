@@ -100,3 +100,13 @@ def test_slipstream_model():
     x0 = np.array([0.1 + 0.3 * R, 0.3 * R, 0.1 * R])
     div = sum((s(np.array([x0 + h * e]))[0][0, i] - s(np.array([x0 - h * e]))[0][0, i]) / (2 * h) for i, e in enumerate(np.eye(3)))
     assert abs(div) < 0.05 * (np.linalg.norm(s(np.array([x0]))[0]) / R)
+
+
+def test_any_blade_count_works_with_the_default_angles():
+    p7 = boreas.Propeller.from_pitch("7-blade", 0.12, 0.10, blades=7, chord_root_m=0.008, chord_max_m=0.013, chord_tip_m=0.005)
+    h = wake.load_harmonics(p7, SEC, 1100.0, 1.5, wake.fin_wake(4, 0.15, 0.25, 12.0), RHO)
+    A, T0 = h.amplitudes, h.amplitudes["shaft_thrust_N"][0]
+    assert len(h.theta_deg) == 364 and rel(A["blade_thrust_N"][4], T0) > 1e-3
+    assert max(rel(A["shaft_thrust_N"][k], T0) for k in (4, 7, 8, 12, 14)) < 1e-9          # 7 blades behind 4 fins: first shaft order 28
+    side = np.hypot(A["side_force_y_N"], A["side_force_z_N"])
+    assert side[7] > 1e-4 * T0 or side[8 - 1] > 1e-4 * T0                                  # blade order 8 -> side forces at 7
