@@ -152,11 +152,13 @@ def _amplitudes(x: np.ndarray, scale: float) -> np.ndarray:
 
 
 def load_harmonics(prop: Propeller, airfoil: Airfoil, rpm: float, ship_speed: float, wake: WakeField, rho: float, *,
-                   rotation: int = 1, r_frac: float = 0.7, n_angles: int = 360) -> LoadHarmonics:
+                   rotation: int = 1, r_frac: float = 0.7, n_angles: int | None = None) -> LoadHarmonics:
     """Blade and shaft load harmonics of ``prop`` at ``rpm`` behind ``wake`` (ship speed [m/s]): a blade-element
     solution at the inflow ``ship_speed (1 - w(r_frac, phi))`` of every angle (quasi-steady), the blade loads
-    around the revolution, the shaft sums over the blades, their Fourier amplitudes."""
+    around the revolution, the shaft sums over the blades, their Fourier amplitudes. ``n_angles`` (a multiple of
+    the blade count) defaults to the smallest multiple at or above 360."""
     B = prop.blades
+    n_angles = n_angles or B * math.ceil(360 / B)
     if n_angles % B:
         raise ValueError(f"n_angles must be a multiple of the blade count {B}")
     if rotation not in (1, -1):
