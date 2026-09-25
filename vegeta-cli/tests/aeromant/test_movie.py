@@ -156,3 +156,12 @@ def test_concat_videos_joins_in_order(tmp_path):
     assert (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))) == (320, 160)
     with pytest.raises(ValueError):
         movie.concat_videos([], tmp_path / "none.mp4")
+
+
+def test_colour_scale_starts_at_the_slow_end():
+    lo, hi = movie._colour([2.0, 2.0], 5.0, 2.0), movie._colour([5.0, 5.0], 5.0, 2.0)
+    assert (lo[0] == movie._colour([0.0], 5.0)[0]).all() and (hi[0] == movie._colour([5.0], 5.0)[0]).all()
+    tr = movie.Tracer(stub_sampler(), rotor(), n=6, seed=4)
+    a = movie.render_frame(tr, 0.0, size=(480, 200), speed_max=5.0, speed_min=0.0)
+    b = movie.render_frame(tr, 0.0, size=(480, 200), speed_max=5.0, speed_min=U0)
+    assert (a != b).any()                                                     # the particles at the inflow speed change colour
