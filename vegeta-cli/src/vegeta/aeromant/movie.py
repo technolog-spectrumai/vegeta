@@ -328,3 +328,40 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     finally:
         out.release()
     return path
+
+
+def concat_videos(paths, out, *, fps: int | None = None, captions=None) -> Path:
+    """Join movies one after the other into ``out`` (frames resized to the first movie's size; ``fps`` of the
+    first unless given; an optional caption per movie is written on its frames): e.g. the same rotor at
+    several operating points, to show how the flow changes."""
+    cv2 = _cv2()
+    paths = [Path(p) for p in paths]
+    if not paths:
+        raise ValueError("no movies to join")
+    first = cv2.VideoCapture(str(paths[0]))
+    if not first.isOpened():
+        raise FileNotFoundError(paths[0])
+    W, H = int(first.get(cv2.CAP_PROP_FRAME_WIDTH)), int(first.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = fps or int(round(first.get(cv2.CAP_PROP_FPS))) or 24
+    first.release()
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    writer = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))
+    try:
+        for i, p in enumerate(paths):
+            cap = cv2.VideoCapture(str(p))
+            if not cap.isOpened():
+                raise FileNotFoundError(p)
+            while True:
+                ok, img = cap.read()
+                if not ok:
+                    break
+                if img.shape[:2] != (H, W):
+                    img = cv2.resize(img, (W, H))
+                if captions and i < len(captions) and captions[i]:
+                    cv2.putText(img, str(captions[i]), (12, H - 36), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 160), 2, cv2.LINE_AA)
+                writer.write(img)
+            cap.release()
+    finally:
+        writer.release()
+    return out
