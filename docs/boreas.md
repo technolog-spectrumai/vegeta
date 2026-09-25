@@ -84,6 +84,9 @@ unsteady-aerofoil lag, so higher orders are upper estimates). The selection rule
 over the blades: each blade sees the wake orders; the shaft thrust and torque keep only multiples of the
 blade count; the side (bearing) forces keep blade orders one either side of those. With 3 blades behind
 4 fins: blade orders 4, 8, 12, shaft thrust at 12, side forces at 3 and 9 (`tests/boreas/test_wake.py`).
+`skew_deg=` sweeps the blade back (linear from the root, as in the Dedalus `Propeller` example's `skew_deg`):
+each section meets the wake at its own angle, so every blade-load harmonic is multiplied by the thrust-weighted
+phase average `Σ w_r e^(-i q skew(r)) / Σ w_r` — the higher the order, the more the sections cancel; the mean is unchanged.
 The tones are compact dipoles, `p = ω F / (4 π c r)` × cos (thrust) or sin (side force) of the angle from
 the axis. The slipstream model is momentum theory (induced axial velocity and swirl from the solution,
 contraction by continuity), a stand-in for pictures before a CFD field exists, not a flow solution.
