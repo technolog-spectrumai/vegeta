@@ -152,11 +152,16 @@ def _amplitudes(x: np.ndarray, scale: float) -> np.ndarray:
 
 
 def load_harmonics(prop: Propeller, airfoil: Airfoil, rpm: float, ship_speed: float, wake: WakeField, rho: float, *,
-                   rotation: int = 1, r_frac: float = 0.7, n_angles: int | None = None) -> LoadHarmonics:
+                   rotation: int = 1, r_frac: float = 0.7, n_angles: int | None = None, skew_deg: float = 0.0) -> LoadHarmonics:
     """Blade and shaft load harmonics of ``prop`` at ``rpm`` behind ``wake`` (ship speed [m/s]): a blade-element
     solution at the inflow ``ship_speed (1 - w(r_frac, phi))`` of every angle (quasi-steady), the blade loads
     around the revolution, the shaft sums over the blades, their Fourier amplitudes. ``n_angles`` (a multiple of
-    the blade count) defaults to the smallest multiple at or above 360."""
+    the blade count) defaults to the smallest multiple at or above 360.
+
+    ``skew_deg``: tip skew (linear from the root). Each section crosses the wake at its own angle, so the blade load
+    is the thrust-weighted sum of the section loads shifted by their skew: every blade-load harmonic q is
+    multiplied by ``sum_r w_r exp(-i q skew(r)) / sum_r w_r`` (w_r = dT/dr of the mean operating point). The mean
+    load is unchanged; the higher the order and the larger the skew, the more the sections cancel."""
     B = prop.blades
     n_angles = n_angles or B * math.ceil(360 / B)
     if n_angles % B:
@@ -173,6 +178,15 @@ def load_harmonics(prop: Propeller, airfoil: Airfoil, rpm: float, ship_speed: fl
             op = solve(prop, airfoil, rpm, max(float(v), 0.0), rho)
             cache[key] = (op.thrust / B, op.torque / B)
         T1[i], Q1[i] = cache[key]
+    if skew_deg:
+        op = solve(prop, airfoil, rpm, max(ship_speed * (1.0 - wake.mean(r_frac)), 0.0), rho)
+        w = np.maximum(np.asarray(op.dT_dr, float), 0.0)
+        rr = np.asarray(op.r, float)
+        delta = np.radians(skew_deg) * (rr - rr[0]) / max(rr[-1] - rr[0], 1e-12)
+        q = np.arange(n_angles // 2 + 1)
+        factor = (w[None, :] * np.exp(-1j * q[:, None] * delta[None, :])).sum(1) / max(w.sum(), 1e-12)
+        T1 = np.fft.irfft(np.fft.rfft(T1) * factor, n_angles)
+        Q1 = np.fft.irfft(np.fft.rfft(Q1) * factor, n_angles)
     shift = n_angles // B
     idx = (rotation * np.arange(n_angles)[:, None] + shift * np.arange(B)[None, :]) % n_angles   # (theta, blade)
     phib = np.radians(phi[idx])
