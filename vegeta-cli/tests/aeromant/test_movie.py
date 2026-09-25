@@ -145,3 +145,14 @@ def test_openfoam_sampler_needs_a_solved_case(tmp_path):
     pytest.importorskip("pyvista")
     with pytest.raises(FileNotFoundError, match="no time directories"):
         movie.openfoam_sampler(tmp_path)
+
+
+def test_concat_videos_joins_in_order(tmp_path):
+    a = movie.make_movie(None, tmp_path / "a.mp4", rotor=rotor(), sampler=stub_sampler(), n=4, seconds=0.5, fps=8, size=(320, 160))
+    b = movie.make_movie(None, tmp_path / "b.mp4", rotor=rotor(rpm=3000.0), sampler=stub_sampler(), n=4, seconds=0.25, fps=8, size=(480, 200))
+    out = movie.concat_videos([a, b], tmp_path / "ab.mp4", captions=["slow", "fast"])
+    cap = cv2.VideoCapture(str(out))
+    assert int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) == 4 + 2
+    assert (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))) == (320, 160)
+    with pytest.raises(ValueError):
+        movie.concat_videos([], tmp_path / "none.mp4")
