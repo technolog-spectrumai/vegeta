@@ -67,7 +67,9 @@ against speed and depth down to cavitation, the fin wake (a model, or the hull's
 operating points, the flow in 3D with streamlines and tracer particles, OpenCV movies of the flow at each operating
 point, blade FEA with its weak points, load harmonics with their frequencies and amplitudes, a frequency diagram
 against blade and hull modes, blade response and fatigue, the noise spectrum, and design updates proposed by rules,
-evaluated side by side, with a recommendation.
+evaluated side by side, with a recommendation; then the recommendation (7 blades in nickel-aluminium bronze) made
+quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
+fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
