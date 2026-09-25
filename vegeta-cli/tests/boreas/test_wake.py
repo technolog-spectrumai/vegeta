@@ -110,3 +110,22 @@ def test_any_blade_count_works_with_the_default_angles():
     assert max(rel(A["shaft_thrust_N"][k], T0) for k in (4, 7, 8, 12, 14)) < 1e-9          # 7 blades behind 4 fins: first shaft order 28
     side = np.hypot(A["side_force_y_N"], A["side_force_z_N"])
     assert side[7] > 1e-4 * T0 or side[8 - 1] > 1e-4 * T0                                  # blade order 8 -> side forces at 7
+
+
+def test_skew_attenuates_the_harmonics_not_the_mean():
+    fw = wake.fin_wake(4, 0.15, 0.25, 12.0)
+    h0 = wake.load_harmonics(PROP, SEC, 910.0, 1.5, fw, RHO)
+    hs = wake.load_harmonics(PROP, SEC, 910.0, 1.5, fw, RHO, skew_deg=30.0)
+    A0, As = h0.amplitudes, hs.amplitudes
+    assert As["shaft_thrust_N"][0] == pytest.approx(A0["shaft_thrust_N"][0], rel=1e-9)            # the mean is the same
+    for k in (4, 8, 12):
+        assert As["blade_thrust_N"][k] < A0["blade_thrust_N"][k]
+    assert As["blade_thrust_N"][12] / A0["blade_thrust_N"][12] < As["blade_thrust_N"][4] / A0["blade_thrust_N"][4]   # higher orders more
+    # the factor is the thrust-weighted phase average: check order 4 against it directly
+    op = boreas.solve(PROP, SEC, 910.0, 1.5 * (1 - fw.mean()), RHO)
+    w, rr = np.maximum(op.dT_dr, 0), np.asarray(op.r)
+    f4 = abs((w * np.exp(-1j * 4 * np.radians(30.0) * (rr - rr[0]) / (rr[-1] - rr[0]))).sum() / w.sum())
+    assert As["blade_thrust_N"][4] / A0["blade_thrust_N"][4] == pytest.approx(f4, rel=1e-6)
+    # selection rules unchanged
+    assert max(rel(As["shaft_thrust_N"][k], As["shaft_thrust_N"][0]) for k in (3, 4, 6, 8)) < 1e-9
+    assert wake.load_harmonics(PROP, SEC, 910.0, 1.5, wake.uniform_wake(0.1), RHO, skew_deg=30.0).amplitudes["blade_thrust_N"][1:].max() < 1e-9
