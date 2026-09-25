@@ -206,14 +206,14 @@ class Tracer:
         return self.speed
 
 
-def _colour(values, vmax):
+def _colour(values, vmax, vmin=0.0):
     cv2 = _cv2()
-    idx = np.clip(np.asarray(values, float) / max(vmax, 1e-12) * 255, 0, 255).astype(np.uint8).reshape(-1, 1)
+    idx = np.clip((np.asarray(values, float) - vmin) / max(vmax - vmin, 1e-12) * 255, 0, 255).astype(np.uint8).reshape(-1, 1)
     cmap = getattr(cv2, "COLORMAP_TURBO", cv2.COLORMAP_JET)
     return cv2.applyColorMap(idx, cmap).reshape(-1, 3)
 
 
-def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: float | None = None,
+def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: float | None = None, speed_min: float = 0.0,
                  title: str = "", time_s: float | None = None, background=(250, 250, 250)) -> np.ndarray:
     """One frame (H, W, 3 BGR uint8): side view on the left (x downstream to the right, radius up; the
     particles nearer the viewer drawn larger), the view along the axis on the right (looking upstream
@@ -261,7 +261,7 @@ def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: f
                  max(2, int(0.03 * D * s1)), cv2.LINE_AA)
     cv2.circle(img, (int(ax_), int(ay_)), max(2, int(hub * s2)), (60, 60, 60), -1, cv2.LINE_AA)
     # trails, then particles (far ones first in the side view)
-    cols = _colour(tracer.speed, vmax)
+    cols = _colour(tracer.speed, vmax, speed_min)
     L = len(tracer.trails)
     for j in range(tracer.n):
         tr = tracer.trails[:, j]
@@ -289,21 +289,22 @@ def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: f
     cv2.putText(img, "side view: flow left to right", (12, H - bottom + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, txt, 1, cv2.LINE_AA)
     cv2.putText(img, "along the axis (from behind)", (w_side + 10, H - bottom + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, txt, 1, cv2.LINE_AA)
     bx, by, bw = 12, H - 22, 220
-    bar = _colour(np.linspace(0, vmax, bw), vmax)
+    bar = _colour(np.linspace(speed_min, vmax, bw), vmax, speed_min)
     for i in range(bw):
         cv2.line(img, (bx + i, by), (bx + i, by + 10), tuple(int(v) for v in bar[i]), 1)
-    cv2.putText(img, f"|U| 0 .. {vmax:.3g} m/s", (bx + bw + 8, by + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, txt, 1, cv2.LINE_AA)
+    cv2.putText(img, f"|U| {speed_min:.3g} .. {vmax:.3g} m/s", (bx + bw + 8, by + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, txt, 1, cv2.LINE_AA)
     return img
 
 
 def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, sampler: Sampler | None = None,
                n: int = 40, seconds: float = 10.0, fps: int = 24, degrees_per_frame: float = 10.0, trail: int = 12,
-               size=(1280, 540), seed: int = 0, title: str = "", speed_max: float | None = None) -> Path:
+               size=(1280, 540), seed: int = 0, title: str = "", speed_max: float | None = None, speed_min: float | None = None) -> Path:
     """Write an ``.mp4`` of ``n`` tracer particles through a solved rotor case and return its path.
 
     ``case`` is a ``CFDCase`` or its directory (it provides the rotor record and the field); ``rotor`` and
     ``sampler`` replace what would be read from it (e.g. a stub field in a test, ``case`` may then be None).
-    Each frame advances the flow by the time the rotor needs to turn ``degrees_per_frame``."""
+    Each frame advances the flow by the time the rotor needs to turn ``degrees_per_frame``. The colour scale runs
+    from ``speed_min`` to ``speed_max`` (default: the 2nd and 98th percentiles of the field around the disc)."""
     cv2 = _cv2()
     rotor = rotor or RotorView.from_case(case, blades)
     sampler = sampler or openfoam_sampler(case)
@@ -314,6 +315,8 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     u, ok = sampler(c + np.column_stack([gx.ravel(), gy.ravel(), np.zeros(gx.size)]))   # the field around the disc
     sp = np.linalg.norm(u[ok], axis=1) if ok.any() else np.array([rotor.inflow or 1.0])
     speed_max = speed_max or float(np.percentile(sp, 98)) or 1.0              # one colour scale for the whole movie
+    speed_min = float(np.percentile(sp, 2)) if speed_min is None else speed_min   # from the slow end of the field: the speed-up shows
+    speed_min = min(speed_min, 0.9 * speed_max)
     tracer = Tracer(sampler, rotor, n, seed=seed, trail=trail, stall_speed=0.02 * speed_max, stall_steps=2 * fps)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -323,8 +326,45 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     try:
         for k in range(frames):
             t = k * dt
-            out.write(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, title=title, time_s=t))
+            out.write(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, speed_min=speed_min, title=title, time_s=t))
             tracer.step(dt)
     finally:
         out.release()
     return path
+
+
+def concat_videos(paths, out, *, fps: int | None = None, captions=None) -> Path:
+    """Join movies one after the other into ``out`` (frames resized to the first movie's size; ``fps`` of the
+    first unless given; an optional caption per movie is written on its frames): e.g. the same rotor at
+    several operating points, to show how the flow changes."""
+    cv2 = _cv2()
+    paths = [Path(p) for p in paths]
+    if not paths:
+        raise ValueError("no movies to join")
+    first = cv2.VideoCapture(str(paths[0]))
+    if not first.isOpened():
+        raise FileNotFoundError(paths[0])
+    W, H = int(first.get(cv2.CAP_PROP_FRAME_WIDTH)), int(first.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = fps or int(round(first.get(cv2.CAP_PROP_FPS))) or 24
+    first.release()
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    writer = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))
+    try:
+        for i, p in enumerate(paths):
+            cap = cv2.VideoCapture(str(p))
+            if not cap.isOpened():
+                raise FileNotFoundError(p)
+            while True:
+                ok, img = cap.read()
+                if not ok:
+                    break
+                if img.shape[:2] != (H, W):
+                    img = cv2.resize(img, (W, H))
+                if captions and i < len(captions) and captions[i]:
+                    cv2.putText(img, str(captions[i]), (12, 54), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 160), 2, cv2.LINE_AA)   # under the title
+                writer.write(img)
+            cap.release()
+    finally:
+        writer.release()
+    return out

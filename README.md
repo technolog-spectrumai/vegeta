@@ -65,7 +65,12 @@ with a video and modes, blade-passing noise, and one frequency diagram for brack
 (`dev_sea`) is a 1.2 m AUV: buoyancy, trim lead and stability, resistance with a submerged RANS check, thruster
 endurance and range, the pressure hull at its rated depth against thin-shell theory and collapse pressures,
 the propeller (CFD, noise and cavitation, blade modes, Campbell), a dive simulation with a propulsion loss,
-and dive profiles as pressure cycles.
+and dive profiles as pressure cycles. `14_submarine_propeller` (`dev_sea`) takes that propeller apart: pressure
+against speed and depth down to cavitation, the fin wake (a model, or the hull's own CFD wake), rotor CFD at three
+operating points, the flow in 3D with streamlines and tracer particles, OpenCV movies of the flow at each operating
+point, blade FEA with its weak points, load harmonics with their frequencies and amplitudes, a frequency diagram
+against blade and hull modes, blade response and fatigue, the noise spectrum, and design updates proposed by rules,
+evaluated side by side, with a recommendation.
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·

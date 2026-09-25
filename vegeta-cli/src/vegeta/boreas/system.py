@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .airfoil import Airfoil
-from .bemt import OperatingPoint, solve
+from .bemt import OperatingPoint, rpm_for_thrust, solve
 from .motor import Battery, Motor
 from .propeller import Propeller
 
@@ -63,17 +63,18 @@ class Propulsion:
                            self.motor.efficiency(rpm, aero.torque), aero, limited)
 
     def for_thrust(self, thrust: float, airspeed: float = 0.0) -> SystemPoint:
-        """Throttle needed for ``thrust`` [N] (raises if full throttle is not enough)."""
-        if self.at_throttle(1.0, airspeed).thrust < thrust:
+        """Throttle needed for ``thrust`` [N] (raises if full throttle is not enough): the rpm that gives the
+        thrust, then the voltage the motor needs to hold that rpm against the propeller torque."""
+        rpm_max = self.motor.kv_rpm_per_volt * self.battery.voltage          # no-load rpm at full voltage
+        try:
+            aero = rpm_for_thrust(self.prop, self.airfoil, thrust, airspeed, self.rho, rpm_max=rpm_max)
+        except ValueError:
+            aero = None
+        volts, current = self.motor.voltage_for(aero.rpm, aero.torque) if aero is not None else (float("inf"), 0.0)
+        if volts > self.battery.voltage:
             raise ValueError(f"{thrust:.2f} N not reachable at full throttle and {airspeed} m/s")
-        lo, hi = 0.02, 1.0
-        for _ in range(40):
-            mid = 0.5 * (lo + hi)
-            if self.at_throttle(mid, airspeed).thrust < thrust:
-                lo = mid
-            else:
-                hi = mid
-        return self.at_throttle(hi, airspeed)
+        return SystemPoint(volts / self.battery.voltage, volts, aero.rpm, current, volts * current,
+                           self.motor.efficiency(aero.rpm, aero.torque), aero, current > self.motor.max_current_a)
 
     def sweep(self, throttles, airspeed: float = 0.0) -> list[SystemPoint]:
         return [self.at_throttle(t, airspeed) for t in throttles]
