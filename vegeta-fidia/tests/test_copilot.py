@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from vegeta.ai import DesignSession, Proposal
-from vegeta.ai.claude import _user_message
+from vegeta.fidia import DesignSession, Proposal
+from vegeta.fidia.proposer import user_message as _user_message
 from _helpers import DESIGN, DESIGN_WITH_HOLE, FakeProposer, answer
 
 

@@ -1,4 +1,4 @@
-"""A design session: iterate on one Dedalus design file with an AI proposer, under the engineer's control."""
+"""The design copilot: iterate on one Dedalus design file with an AI proposer, under the engineer's control."""
 from __future__ import annotations
 
 import json

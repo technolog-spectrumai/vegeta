@@ -1,22 +1,15 @@
-import json
-
 from vegeta.ai import cli
-from _helpers import DESIGN, DESIGN_WITH_HOLE, FakeProposer, answer
 
 
-def test_cli_propose_save_and_accept(plate, tmp_path, monkeypatch, capsys):
-    fake = FakeProposer(answer("source", source=DESIGN_WITH_HOLE, summary="hole"))
-    monkeypatch.setattr(cli, "ClaudeProposer", lambda cfg: fake)
-    saved = tmp_path / "p.json"
-    assert cli.main(["propose", f"{plate}:Plate", "add a hole", "--save", str(saved), "--json"]) == 0
-    out = json.loads(capsys.readouterr().out)
-    assert out["kind"] == "source" and out["validation"]["ok"] and plate.read_text() == DESIGN
-    assert cli.main(["accept", f"{plate}:Plate", str(saved)]) == 0
-    assert plate.read_text() == DESIGN_WITH_HOLE
-
-
-def test_cli_needs_key(plate, monkeypatch, capsys):
+def test_check_without_key_reports_and_does_not_fail(monkeypatch, capsys):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    assert cli.main(["propose", f"{plate}:Plate", "x"]) == 2
-    assert "no API key" in capsys.readouterr().err
+    assert cli.main(["check"]) == 0
+    assert "API key missing" in capsys.readouterr().out
+    assert cli.main(["check", "--call"]) == 2
+    assert "no API key" in capsys.readouterr().out
+
+
+def test_models_lists_prices(capsys):
+    assert cli.main(["models"]) == 0
+    assert "claude-opus-5" in capsys.readouterr().out

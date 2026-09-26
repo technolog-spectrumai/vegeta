@@ -4,7 +4,7 @@ import shutil
 import pytest
 
 from vegeta import core
-from vegeta.ai import Analysis, Budget, Campaign, Criterion, Objective
+from vegeta.fidia import Analysis, Budget, Campaign, Criterion, Objective
 from _helpers import DESIGN, FakeProposer, answer
 
 

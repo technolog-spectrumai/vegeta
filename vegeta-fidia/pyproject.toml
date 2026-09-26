@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-fidia"
+version = "0.1.0"
+description = "Fidia: AI modelling for Vegeta - prompt-to-3D (plan, generate, run, check, render, review, revise), the design copilot and parameter campaigns"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["vegeta-cli", "vegeta-ai", "numpy", "trimesh>=4.4,<6"]
+
+[project.optional-dependencies]
+viz = ["pyvista>=0.44"]
+core = ["vegeta-core"]
+test = ["pytest"]
+
+[project.scripts]
+fidia = "vegeta.fidia.cli:main"
+
+[project.entry-points."vegeta.commands"]
+fidia = "vegeta.fidia.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.fidia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = [
+    "requires_api_key: needs ANTHROPIC_API_KEY (calls the Claude API)",
+    "requires_render: needs off-screen pyvista rendering",
+    "slow: takes more than a few seconds",
+]

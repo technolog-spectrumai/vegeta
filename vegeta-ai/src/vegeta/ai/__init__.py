@@ -1,12 +1,13 @@
-"""vegeta.ai — a Claude copilot for Dedalus designs.
+"""vegeta.ai — the connection to an AI provider, and nothing else.
 
-The model proposes; Vegeta builds and measures the proposal; the engineer accepts or rejects.
-Nothing changes on disk without ``accept()``.
+``ClaudeProvider(ProviderConfig(...)).call(system, messages, schema=..., images=..., cancel=...)`` returns a
+``Reply`` with JSON ``data`` (or ``text``) and ``Usage``; ``ScriptedProvider`` answers from a script for tests and
+offline demos. What to ask and what to do with the answer lives in the tools that use it (``vegeta.fidia``).
 """
-from .campaign import Analysis, Budget, Campaign, Criterion, Objective
-from .claude import ClaudeConfig, ClaudeProposer
-from .proposals import PROPOSAL_SCHEMA, Proposal, Validation
-from .session import DesignSession, Proposer
+from .claude import ClaudeProvider, ProviderConfig
+from .provider import (PRICES, Cancelled, Provider, ProviderError, Reply, ScriptedProvider, TranscriptLog, Usage,
+                       image_block, media_type, run_cancellable)
 
-__version__ = "0.1.0"
-__all__ = ["PROPOSAL_SCHEMA", "Analysis", "Budget", "Campaign", "ClaudeConfig", "Criterion", "Objective", "ClaudeProposer", "DesignSession", "Proposal", "Proposer", "Validation"]
+__version__ = "0.2.0"
+__all__ = ["PRICES", "Cancelled", "ClaudeProvider", "Provider", "ProviderConfig", "ProviderError", "Reply",
+           "ScriptedProvider", "TranscriptLog", "Usage", "image_block", "media_type", "run_cancellable"]
