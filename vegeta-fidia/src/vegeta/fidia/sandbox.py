@@ -53,6 +53,8 @@ class ExecResult:
     bbox_max: list[float] | None = None
     tessellation: dict = field(default_factory=dict)
     contacts: dict = field(default_factory=dict)
+    parameter_specs: list[dict] = field(default_factory=list)
+    measurements: dict | None = None
     command: list[str] = field(default_factory=list)
     outdir: str = ""
 
@@ -75,8 +77,10 @@ class ExecResult:
 
 
 def execute(source: str, outdir: str | Path, *, sandbox: Sandbox | None = None, parameters: Mapping | None = None,
-            cancel: threading.Event | None = None) -> ExecResult:
-    """Screen and run ``source``; write ``design.py``, ``execution.json``, ``runner.log`` (+ runner outputs) in ``outdir``."""
+            optional_parameters: Mapping | None = None, cancel: threading.Event | None = None) -> ExecResult:
+    """Screen and run ``source``; write ``design.py``, ``execution.json``, ``runner.log`` (+ runner outputs) in ``outdir``.
+
+    ``parameters`` must be parameters of the design; ``optional_parameters`` apply only where the design has them."""
     sb = sandbox or Sandbox()
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
@@ -90,8 +94,9 @@ def execute(source: str, outdir: str | Path, *, sandbox: Sandbox | None = None, 
     work = Path(tempfile.mkdtemp(prefix="fidia-run-"))
     try:
         command = [*sb.wrapper, sb.python, "-I", "-m", "vegeta.fidia.runner", str(design.resolve()), str(out.resolve())]
-        if parameters:
-            (work / "params.json").write_text(json.dumps(dict(parameters)))
+        if parameters or optional_parameters:
+            (work / "params.json").write_text(json.dumps({"strict": dict(parameters or {}),
+                                                          "optional": dict(optional_parameters or {})}, default=str))
             command.append(str(work / "params.json"))
         env = clean_environment(work)  # -I ignores PYTHON* variables anyway; the child imports from site-packages
         rec = run_walled(command, work, env=env, timeout=sb.timeout_s, cancel=cancel, memory_mb=sb.memory_mb,
@@ -115,7 +120,7 @@ def execute(source: str, outdir: str | Path, *, sandbox: Sandbox | None = None, 
         data = json.loads((out / "result.json").read_text())
         res.status = data.get("status", "build_error")
         for key in ("parts", "error", "traceback", "parameters", "bbox_min", "bbox_max", "tessellation",
-                    "contacts"):
+                    "contacts", "parameter_specs", "measurements"):
             if data.get(key) is not None:
                 setattr(res, key, data[key])
         if res.status == "build_error" and any(w in (res.error or "") for w in _MEMORY_WORDS):

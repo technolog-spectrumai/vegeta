@@ -1,4 +1,8 @@
-"""The design copilot: iterate on one Dedalus design file with an AI proposer, under the engineer's control."""
+"""The design copilot: iterate on one Dedalus design file with an AI proposer, under the engineer's control.
+
+Proposed code never runs in this process: the current design and every proposal are built and measured by
+Fidia's sandboxed runner (``sandbox.execute``), so the design file must follow Fidia's contract (one ``Design``
+class; imports from cadquery, math, numpy and ``vegeta.dedalus`` only)."""
 from __future__ import annotations
 
 import json
@@ -12,6 +16,7 @@ from typing import Any, Protocol
 from vegeta.dedalus.loading import load_design
 
 from .proposals import Proposal, Validation
+from .sandbox import ExecResult, Sandbox, execute
 
 
 class Proposer(Protocol):
@@ -29,13 +34,13 @@ def utc_now() -> str:
 class DesignSession:
     """Iterate on ``design_spec`` (``path/file.py:Name``) with a proposer.
 
-    Every ``ask()`` produces a Proposal that Vegeta builds and measures in a temporary copy; the design
-    file changes only in ``accept()``. All proposals and decisions are appended to
+    Every ``ask()`` produces a Proposal that Vegeta builds and measures in the sandbox (a subprocess with a
+    timeout, a memory cap and no API keys); the design file changes only in ``accept()``. All proposals and decisions are appended to
     ``<design dir>/<file>.ai.jsonl`` and the previous file content is kept as ``<file>.<n>.bak``.
     """
 
     def __init__(self, design_spec: str, proposer: Proposer, *, parameters: dict | None = None,
-                 notes: str = "", log_dir: str | Path | None = None):
+                 notes: str = "", log_dir: str | Path | None = None, sandbox: Sandbox | None = None):
         target, sep, attr = design_spec.partition(":")
         self.path = Path(target).resolve()
         if not self.path.is_file() or self.path.suffix != ".py":
@@ -47,6 +52,7 @@ class DesignSession:
         self.log = (Path(log_dir) if log_dir else self.path.parent) / f"{self.path.stem}.ai.jsonl"
         self.history: list[dict] = []
         self.proposals: dict[str, Proposal] = {}
+        self.sandbox = sandbox or Sandbox()
         self._n = 0
 
     # -- state ------------------------------------------------------------------------------
@@ -55,22 +61,29 @@ class DesignSession:
         return f"{p}:{self.attr}" if self.attr else str(p)
 
     def design(self, path: Path | None = None):
+        """The design loaded in this process (the engineer's accepted file; proposals never go through here)."""
         return load_design(self._spec(path))
 
+    def _run(self, source: str, *, strict: dict | None = None, optional: dict | None = None,
+             keep_step: Path | None = None) -> ExecResult:
+        """Build ``source`` in the sandbox (a throw-away directory); optionally keep its STEP file."""
+        with tempfile.TemporaryDirectory(prefix="fidia-copilot-") as tmp:
+            ex = execute(source, Path(tmp) / "run", sandbox=self.sandbox, parameters=strict, optional_parameters=optional)
+            if keep_step is not None and ex.ok:
+                shutil.copyfile(Path(tmp) / "run" / "model.step", keep_step)
+        return ex
+
     def context(self) -> dict:
-        dd = self.design()
-        values = dd.resolve(**self.parameters)
-        params = []
-        for p in dd.params:
-            row = {"name": p.name, "value": values[p.name], "units": p.units, "min": p.min, "max": p.max,
-                   "description": p.description}
-            params.append(row)
-        measurements = None
-        try:
-            measurements = dd.generate(**self.parameters).measure()
-        except Exception as exc:  # the current design may itself be broken; say so instead of hiding it
-            measurements = {"error": f"current design does not build: {exc!r}"}
-        return {"path": str(self.path), "source": self.path.read_text(), "parameters": params,
+        source = self.path.read_text()
+        ex = self._run(source, optional=self.parameters)
+        if not ex.parameter_specs:
+            raise RuntimeError(f"the current design does not load ({ex.status}): {ex.error}")
+        values = ex.parameters or {p["name"]: p["default"] for p in ex.parameter_specs}
+        params = [{"name": p["name"], "value": values.get(p["name"], p["default"]), "units": p["units"], "min": p["min"],
+                   "max": p["max"], "description": p["description"]} for p in ex.parameter_specs]
+        # the current design may itself be broken; say so instead of hiding it
+        measurements = ex.measurements if ex.ok else {"error": f"current design does not build: {ex.error}"}
+        return {"path": str(self.path), "source": source, "parameters": params,
                 "measurements": measurements, "notes": self.notes}
 
     # -- propose / validate -----------------------------------------------------------------
@@ -97,7 +110,7 @@ class DesignSession:
         return prop
 
     def validate(self, prop: Proposal, context: dict | None = None) -> Validation:
-        """Build the proposal in a temporary copy and compare measurements. Runs the proposed code."""
+        """Build the proposal in the sandbox and compare measurements (the proposed code runs only there)."""
         context = context or self.context()
         before = {p["name"]: p["value"] for p in context["parameters"]}
         v = Validation(ok=True, parameters_before=before, measurements_before=context.get("measurements"))
@@ -106,25 +119,23 @@ class DesignSession:
             v.messages.append("no change proposed")
             v.parameters_after = before
             return v
-        try:
-            with tempfile.TemporaryDirectory() as tmp:
-                path = Path(tmp) / self.path.name
-                path.write_text(prop.source if prop.kind == "source" else context["source"])
-                dd = self.design(path)
-                names = [p.name for p in dd.params]
-                v.parameters_added = [n for n in names if n not in before]
-                v.parameters_removed = [n for n in before if n not in names]
-                kept = {k: val for k, val in self.parameters.items() if k in names}
-                values = dd.resolve(**{**kept, **prop.parameters})
-                v.parameters_after = values
-                v.measurements_after = dd.generate(**values).measure()
-                if not v.measurements_after.get("valid"):
-                    v.ok = False
-                    v.messages.append("proposed geometry is not a valid solid")
-        except Exception as exc:
+        ex = self._run(prop.source if prop.kind == "source" else context["source"], strict=prop.parameters,
+                       optional=self.parameters)
+        names = [p["name"] for p in ex.parameter_specs]
+        if names:
+            v.parameters_added = [n for n in names if n not in before]
+            v.parameters_removed = [n for n in before if n not in names]
+        if not ex.ok:
             v.ok = False
-            v.messages.append(f"{type(exc).__name__}: {exc}")
-            v.messages.append(traceback.format_exc().strip().splitlines()[-1])
+            v.messages.append(f"{ex.status}: {ex.error}")
+            if ex.traceback:
+                v.messages.append(ex.traceback.strip().splitlines()[-1])
+            return v
+        v.parameters_after = ex.parameters
+        v.measurements_after = ex.measurements
+        if not (ex.measurements or {}).get("valid"):
+            v.ok = False
+            v.messages.append("proposed geometry is not a valid solid")
         return v
 
     # -- decisions --------------------------------------------------------------------------
@@ -151,13 +162,20 @@ class DesignSession:
         self._record("reject", prop, note=reason)
 
     def geometry(self, proposal: Proposal | str):
-        """The proposed geometry (for display) without accepting anything."""
+        """The proposed geometry (for display) without accepting anything: built in the sandbox, read back as STEP."""
+        from vegeta.dedalus.geometry import Geometry
+
         prop = self.proposals[proposal] if isinstance(proposal, str) else proposal
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / self.path.name
-            path.write_text(prop.source if prop.kind == "source" else self.path.read_text())
-            dd = self.design(path)
-            return dd.generate(**dd.resolve(**{**self.parameters, **prop.parameters}))
+        with tempfile.TemporaryDirectory(prefix="fidia-copilot-") as tmp:
+            step = Path(tmp) / "proposal.step"
+            ex = self._run(prop.source if prop.kind == "source" else self.path.read_text(), strict=prop.parameters,
+                           optional=self.parameters, keep_step=step)
+            if not ex.ok:
+                raise RuntimeError(f"proposal {prop.id} does not build: {ex.status}: {ex.error}")
+            geometry = Geometry.from_step(step)
+        geometry.parameters = dict(ex.parameters)
+        geometry.name = f"proposal {prop.id}"
+        return geometry
 
     def _record(self, event: str, prop: Proposal, note: str = "") -> None:
         rec = {"event": event, "at": utc_now(), "note": note, "proposer": self.proposer.describe(),

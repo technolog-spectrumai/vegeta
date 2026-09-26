@@ -28,6 +28,14 @@ def test_all_formats_round_trip(tmp_path, parts):
     assert json.loads((tmp_path / "reimport.json").read_text())["ok"]
 
 
+def test_parts_sharing_a_colour_keep_their_names(tmp_path, parts):
+    legs = [box_part(f"leg_{i}", size=(10, 10, 50), offset=(30 * i, 0, 0), color=(0.2, 0.2, 0.2, 1.0)) for i in range(3)]
+    export_scene(legs, tmp_path)
+    rep = reimport_check(tmp_path, legs, readers=("trimesh",))
+    assert rep["ok"], rep
+    assert rep["formats"]["obj"]["trimesh"]["parts"] == 3
+
+
 def test_pyvista_reader(tmp_path, parts):
     pytest.importorskip("pyvista")
     export_scene(parts, tmp_path)

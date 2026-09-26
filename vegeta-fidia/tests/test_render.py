@@ -35,3 +35,13 @@ def test_pyvista_backend(tmp_path, parts):
     _check(tmp_path, info, 160)
     red = np.asarray(Image.open(tmp_path / "iso.png")).astype(int)
     assert ((red[:, :, 0] > 120) & (red[:, :, 1] < 80)).any()  # the base's colour is visible
+
+
+@pytest.mark.requires_render
+def test_preview_plotter(parts):
+    from vegeta.fidia.preview import plotter
+
+    pl = plotter(parts, off_screen=True, window_size=(200, 150))
+    img = pl.screenshot(return_img=True)
+    pl.close()
+    assert img.shape[:2] == (150, 200) and img.std() > 5

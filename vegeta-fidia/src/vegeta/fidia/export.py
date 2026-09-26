@@ -2,7 +2,7 @@
 
 ``export_scene(parts, outdir)`` writes ``model.glb``, ``model.gltf`` + ``model.bin``, ``model.obj`` + ``model.mtl``,
 ``model.stl`` and (when the runner made one) ``model.step``, plus ``manifest.json``. One glTF node and one
-base-colour material per part; one ``usemtl``/``newmtl`` (``Kd``) per part in OBJ. glTF/GLB are **Y up, metres**
+base-colour material per part; in OBJ one ``o`` object per part and one ``newmtl`` (``Kd``) per colour. glTF/GLB are **Y up, metres**
 (the glTF convention; the transform is in the manifest); OBJ, STL and STEP stay **Z up, millimetres** like the CAD.
 
 ``reimport_check(outdir, parts)`` reads every file back with two independent readers (trimesh and, when installed,
@@ -168,7 +168,9 @@ def _to_cad(bounds_: np.ndarray, fmt: str) -> np.ndarray:
 def _trimesh_read(path: Path, fmt: str, parts: Sequence[Part], tol: float) -> dict[str, Any]:
     import trimesh
 
-    scene = trimesh.load(str(path), force="scene", process=False)
+    # OBJ: one geometry per `o` object (by default trimesh groups faces by material, and parts of one colour share one)
+    kw = {"split_objects": True, "group_material": False} if fmt == "obj" else {}
+    scene = trimesh.load(str(path), force="scene", process=False, **kw)
     geoms = dict(scene.geometry)
     tris = int(sum(len(g.faces) for g in geoms.values()))
     got = _to_cad(np.asarray(scene.bounds), fmt)

@@ -99,7 +99,12 @@ def _floating(parts: Sequence[Part], contacts: Mapping | None) -> tuple[list[str
                 stack.extend(adj[k] - g)
         seen |= g
         groups.append(g)
-    main = max(groups, key=lambda g: sum(float(parts[k].brep.get("volume_mm3", 0.0) or len(parts[k].triangles)) for k in g))
+    # the group standing lowest (on the floor) is the model; ties go to the bigger group
+    lo = [float(p.bounds[0][2]) for p in parts]
+    tol = 0.01 * float(np.linalg.norm(np.ptp(bounds(list(parts)), axis=0))) + 1e-6
+    floor = min(lo)
+    main = max(groups, key=lambda g: (any(lo[k] <= floor + tol for k in g),
+                                      sum(float(parts[k].brep.get("volume_mm3", 0.0) or len(parts[k].triangles)) for k in g)))
     return [parts[k].name for k in range(n) if k not in main], method
 
 

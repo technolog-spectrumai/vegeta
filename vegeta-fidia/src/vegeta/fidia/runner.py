@@ -1,5 +1,8 @@
 """The subprocess that runs the model's code: ``python -I -m vegeta.fidia.runner design.py outdir [params.json]``.
 
+``params.json`` is ``{"strict": {...}, "optional": {...}}``: strict values must be parameters of the design,
+optional ones are used only where the design has a parameter of that name.
+
 It re-checks the source, loads the Dedalus design, calls ``build()`` itself (``Design.generate()`` would flatten an
 assembly and lose part names and colours), splits the result into parts (placing each with its location), measures
 each part's B-rep, tessellates with a size-relative tolerance, and writes ``result.json`` + ``parts.npz`` +
@@ -80,7 +83,8 @@ def main(argv=None) -> int:
 
     argv = list(sys.argv[1:] if argv is None else argv)
     design_path, outdir = Path(argv[0]), Path(argv[1])
-    params = json.loads(Path(argv[2]).read_text()) if len(argv) > 2 else {}
+    raw = json.loads(Path(argv[2]).read_text()) if len(argv) > 2 else {}
+    strict, optional = dict(raw.get("strict") or {}), dict(raw.get("optional") or {})
     outdir.mkdir(parents=True, exist_ok=True)
     t0 = time.monotonic()
     result: dict = {"status": "ok", "parts": [], "error": None, "traceback": None, "parameters": {}}
@@ -101,9 +105,13 @@ def main(argv=None) -> int:
         from vegeta.dedalus.loading import load_design
 
         dd = load_design(str(design_path))
-        values = dd.resolve(**params)
+        names = [p.name for p in dd.params]
+        result["parameter_specs"] = [{"name": p.name, "default": p.default, "units": p.units, "min": p.min, "max": p.max,
+                                      "description": p.description} for p in dd.params]
+        values = dd.resolve(**{**{k: v for k, v in optional.items() if k in names}, **strict})
         result["parameters"] = values
-        parts = split_parts(dd.build(values))
+        built = dd.build(values)
+        parts = split_parts(built)
     except MemoryError:
         return done("resource_limit", "out of memory while building")
     except Exception as exc:  # the model's code failed: tell it exactly where
@@ -134,6 +142,12 @@ def main(argv=None) -> int:
         result["contacts"] = contacts(parts, boxes, max(0.5, 2e-3 * diag))
         compound = cq.Compound.makeCompound([s for _, s, _ in parts])
         cq.exporters.export(compound, str(outdir / "model.step"))
+        try:  # the whole model as Dedalus measures it (the copilot compares these before/after)
+            from vegeta.dedalus.geometry import Geometry
+
+            result["measurements"] = Geometry.from_cadquery(built).measure()
+        except Exception as exc:
+            result["measurements"] = {"error": f"{type(exc).__name__}: {exc}"}
     except MemoryError:
         return done("resource_limit", "out of memory while meshing")
     except Exception as exc:
