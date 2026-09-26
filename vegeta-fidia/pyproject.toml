@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "Proprietary - internal use only" }
 classifiers = ["Private :: Do Not Upload"]
 requires-python = ">=3.10"
-dependencies = ["vegeta-cli", "vegeta-ai", "numpy", "trimesh>=4.4,<6"]
+dependencies = ["vegeta-cli", "vegeta-ai", "numpy", "scipy", "trimesh>=4.4,<6"]
 
 [project.optional-dependencies]
 viz = ["pyvista>=0.44"]

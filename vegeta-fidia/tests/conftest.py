@@ -18,6 +18,13 @@ HAVE_KEY = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC
 
 
 def pytest_collection_modifyitems(config, items):
+    render = None
     for item in items:
         if "requires_api_key" in item.keywords and not HAVE_KEY:
             item.add_marker(pytest.mark.skip(reason="no ANTHROPIC_API_KEY"))
+        if "requires_render" in item.keywords:
+            if render is None:
+                from vegeta.fidia.render import pyvista_works
+                render = pyvista_works()
+            if not render:
+                item.add_marker(pytest.mark.skip(reason="no off-screen pyvista rendering here"))
