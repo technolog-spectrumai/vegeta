@@ -61,7 +61,8 @@ for tool in dedalus talos aeromant mellonia boreas chronos; do
   check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
 done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"
-optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(needs ANTHROPIC_API_KEY to propose)')"
+optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
+optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
 check vegeta      "$BIN/vegeta" --version
 check jupyter     "$BIN/jupyter" lab --version
 optional kernel   bash -c "'$BIN/jupyter' kernelspec list 2>/dev/null | grep -E '^\s*vegeta\s' | awk '{print \"Python (vegeta) ->\", \$2}' | grep ."
