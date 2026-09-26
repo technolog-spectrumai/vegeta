@@ -4,16 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vegeta-ai"
-version = "0.1.0"
-description = "AI design assistant for Vegeta: Claude proposes CadQuery/Dedalus changes, the engineer validates and accepts"
+version = "0.2.0"
+description = "The AI provider layer of Vegeta: Claude connection, structured output, images, cancellation, usage"
 readme = "README.md"
 license = { text = "Proprietary - internal use only" }
 classifiers = ["Private :: Do Not Upload"]
 requires-python = ">=3.10"
-dependencies = ["vegeta-cli", "anthropic>=1.0"]
+dependencies = ["anthropic>=1.0"]
 
 [project.optional-dependencies]
-core = ["vegeta-core"]
 test = ["pytest"]
 
 [project.entry-points."vegeta.commands"]

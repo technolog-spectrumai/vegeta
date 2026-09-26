@@ -24,7 +24,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
-from .session import utc_now
+from .copilot import utc_now
 
 _OPS = {">=": operator.ge, "<=": operator.le, ">": operator.gt, "<": operator.lt}
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$")
@@ -145,8 +145,8 @@ def _design_source(spec: str, dd) -> str:
 class Campaign:
     """Propose → approve → branch → generate → analyse → record, until a limit is reached.
 
-    ``start`` is an existing revision (the baseline); ``proposer`` is any ``vegeta.ai.Proposer``
-    (``ClaudeProposer`` or your own). ``run()`` is the only call that does work; it can be called again
+    ``start`` is an existing revision (the baseline); ``proposer`` is any ``vegeta.fidia.Proposer``
+    (``ProviderProposer(ClaudeProvider(...))`` or your own). ``run()`` is the only call that does work; it can be called again
     on the same workspace and name to continue a stopped campaign with a new budget.
     """
 

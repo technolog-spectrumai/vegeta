@@ -4,7 +4,7 @@
 #   - system tools: CalculiX (ccx), PrusaSlicer, Gmsh/CadQuery runtime libraries, xvfb
 #   - OpenFOAM v2412 from conda-forge (the Ubuntu 'openfoam' package cannot run forceCoeffs)
 #   - into the virtual environment: vegeta-cli (editable: vegeta.dedalus/talos/aeromant/mellonia),
-#     vegeta-core (vegeta.core: workspaces, revisions), vegeta-ai (Claude design copilot)
+#     vegeta-core (vegeta.core: workspaces, revisions), vegeta-ai (AI provider connection), vegeta-fidia (AI modelling: prompt-to-3D, copilot, campaigns)
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
@@ -100,12 +100,13 @@ else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli, vegeta-core, vegeta-ai, JupyterLab)"
+step "Python packages (vegeta-cli, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test]" \
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
+  -e "$ROOT/vegeta-fidia[viz,test]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 

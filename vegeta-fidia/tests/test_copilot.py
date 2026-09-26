@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from vegeta.ai import DesignSession, Proposal
-from vegeta.ai.claude import _user_message
+from vegeta.fidia import DesignSession, Proposal
+from vegeta.fidia.proposer import user_message as _user_message
 from _helpers import DESIGN, DESIGN_WITH_HOLE, FakeProposer, answer
 
 
@@ -74,3 +74,17 @@ def test_user_message_contains_state():
 def test_rejects_non_python_spec(tmp_path):
     with pytest.raises(ValueError):
         DesignSession("vegeta.dedalus.examples:Cube", FakeProposer())
+
+
+def test_proposed_code_never_runs_in_this_process(plate, monkeypatch):
+    import vegeta.dedalus.loading as loading
+
+    def forbidden(*a, **k):
+        raise AssertionError("design code was loaded in the test process")
+    monkeypatch.setattr(loading, "load_module", forbidden)
+    evil = "import os\n" + DESIGN.replace("return", "os.system('true')\n        return")
+    s = DesignSession(f"{plate}:Plate", FakeProposer(answer("source", source=evil), answer("source", source=DESIGN_WITH_HOLE)))
+    bad = s.ask("do something")
+    assert not bad.ok and any("rejected" in m for m in bad.validation.messages)
+    good = s.ask("add a hole")
+    assert good.ok and good.validation.measurements_after["valid"]
