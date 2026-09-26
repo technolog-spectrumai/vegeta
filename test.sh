@@ -63,6 +63,20 @@ done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
+[ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
+import tempfile
+from vegeta.fidia import execute
+from vegeta.fidia.contract import EXAMPLE_SOURCE
+from vegeta.fidia.export import export_scene, reimport_check
+from vegeta.fidia.mesh import load_parts
+d = tempfile.mkdtemp()
+r = execute(EXAMPLE_SOURCE, d)
+assert r.ok, r.error
+parts = load_parts(d)
+export_scene(parts, d + '/export')
+rep = reimport_check(d + '/export', parts)
+assert rep['ok'], rep
+print('sandboxed build and GLB/glTF/OBJ round trip ok')"
 check vegeta      "$BIN/vegeta" --version
 check jupyter     "$BIN/jupyter" lab --version
 optional kernel   bash -c "'$BIN/jupyter' kernelspec list 2>/dev/null | grep -E '^\s*vegeta\s' | awk '{print \"Python (vegeta) ->\", \$2}' | grep ."

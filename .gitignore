@@ -9,3 +9,4 @@ dist/
 # local run outputs (examples and notebooks write here)
 runs/
 notebooks/_runs/
+fidia_runs/

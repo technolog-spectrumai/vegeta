@@ -13,9 +13,14 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Aeromant** | aerodynamics / CFD | OpenFOAM | STL + template case + explicit values → case, logs, Cd/Cl/Cm |
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
 | **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
+| **Fidia** | AI modelling | Dedalus + `vegeta-ai` (Claude) | prompt → checked 3D model (glTF/GLB, OBJ, STEP); design copilot; campaigns |
 
 Dedalus designs. Talos tests structures. Aeromant tests aerodynamics.
-Mellonia tests manufacturability. Vegeta organizes the engineer's work.
+Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes the engineer's work.
+
+Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
+`vegeta-core`, **`vegeta-fidia`** and `vegeta-ai` (the provider layer only: keys, model, structured
+output, images, cancellation, usage).
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports
@@ -44,6 +49,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
+| Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `15_fidia_prompt_to_3d`, `07_`, `10_` |
 
 Product-level notebooks — one notebook per machine, the whole workflow on one design with revisions,
 visualisation and a JSON record: `08_quadcopter` (printed X-frame: load cases, three revisions, drag with a
@@ -53,24 +59,28 @@ fatigue on the FEA stress fields and a fleet-usage life) and `09_fixed_wing_dron
 wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on the resulting drag polar
 with the same CFD/noise/blade/video treatment, then wing modes, missions and life). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
-every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
+every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
+prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
+with a scripted agent when no API key is set. Shared design files live in
 `notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
-[Vegeta Core](docs/core.md) · [AI copilot](docs/ai.md).
+[Vegeta Core](docs/core.md) · [Fidia: AI modelling](docs/fidia.md) · [AI provider layer](docs/ai.md).
 
 ### The names
 Every tool is a figure from Greek myth, one word, easy to say in a meeting:
 Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reader of the air" (CFD),
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
-rotors), Chronos time (missions, cyclic loads, life). The workbench itself is Vegeta.
+rotors), Chronos time (missions, cyclic loads, life), Fidia — Phidias, the sculptor of the Parthenon —
+(AI modelling from a prompt). The workbench itself is Vegeta.
 
 ## Layout
 ```
 vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
-vegeta-ai/         the vegeta-ai package: src/vegeta/ai (Claude design copilot), adds `vegeta ai`
+vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
+vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
 notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)

@@ -98,9 +98,11 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [-] 11.2 Explicit parameter sweeps (not an optimizer), full reproducibility records
 
 ## Stage 12 — AI assistance (deferred)
-- [x] 12.1 `vegeta-ai`: `Proposer` protocol, Claude adapter (`ClaudeConfig`: api key, model, effort), `DesignSession` — proposals built, measured, diffed, explicitly accepted/rejected
+- [x] 12.1 `vegeta-ai` is the provider layer only (`ProviderConfig`, `ClaudeProvider`: structured output, images, cancel, usage/cost; `ScriptedProvider`; `vegeta ai check|models`); the copilot (`DesignSession`: proposals built in the sandbox, measured, diffed, explicitly accepted/rejected) lives in `vegeta-fidia`
 - [ ] 12.2 OpenAI adapter; parameter-only proposals against `vegeta.core` criteria (see `plan.md` step 3)
-- [x] 12.3 `Campaign`: bounded agentic parameter search on `vegeta.core` revisions (criteria, objective, budget, approval policy, STOP file, resumable record); `notebooks/10_agentic_design.ipynb`
+- [x] 12.3 `Campaign` (now in `vegeta-fidia`): bounded agentic parameter search on `vegeta.core` revisions (criteria, objective, budget, approval policy, STOP file, resumable record); `notebooks/10_agentic_design.ipynb`
+- [x] 12.4 Fidia prompt-to-3D (`vegeta-fidia`, branch `dev_fidia`): plan → CadQuery (Dedalus contract) → sandboxed build (AST screen, clean env, rlimits, process-group kill) → checks (validity, watertight, winding, budget, size, floating) → five views + sheet → vision review → revise; limits, feedback, cancel, STOP, approval, best valid revision, resumable run; GLB/glTF+bin/OBJ+MTL/STL/STEP with re-import by trimesh and VTK; `fidia run|resume|show`; `notebooks/15_fidia_prompt_to_3d.ipynb`; docs/fidia.md (incl. the Blender assessment)
+- [ ] 12.5 Fidia backends: Blender (organic shapes, textures, photoreal renders) behind the same runner contract; network isolation by default where user namespaces exist
 
 ## Stage 13 — Validation (continuous)
 - [x] 13.1 Unit tests in every package

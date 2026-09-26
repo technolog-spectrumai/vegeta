@@ -1,106 +1,53 @@
-# Vegeta AI — a Claude copilot for Dedalus designs
+# Vegeta AI — the connection to an AI provider
 
-`vegeta-ai` (`vegeta.ai`) lets you iterate on a CadQuery/Dedalus design with Claude. The model
-**proposes** a new version of the design file or new parameter values; Vegeta **builds and measures**
-the proposal in a temporary copy, shows the diff and the measured effect; the design file changes only
-when **you accept**. Every proposal and decision is logged next to the design file.
+`vegeta-ai` (`vegeta.ai`) is a thin layer: it connects to an AI provider and handles what surrounds a call —
+keys, model, effort, retries, structured JSON output, image input, cancellation, token usage and cost, an optional
+transcript. It knows nothing about geometry or engineering and imports nothing else from Vegeta.
 
-Rules (from `docs/philosophy.md`): the AI never changes anything silently; it never decides loads,
-materials or boundary conditions; a proposal is data until you accept it.
+What to ask and what to do with the answer lives in the tools that use it: **[Fidia](fidia.md)** (`vegeta-fidia`)
+holds the design copilot, parameter campaigns and prompt-to-3D.
 
 ## Setup
 ```bash
-pip install -e vegeta-ai            # done by install_local.sh
+pip install -e vegeta-ai             # done by install_local.sh
 export ANTHROPIC_API_KEY=sk-ant-...  # or pass api_key=... explicitly
+vegeta ai check                      # configuration and key status (no call, no cost)
+vegeta ai check --call               # one tiny call (a few tokens); exit 2 without a key
+vegeta ai models                     # models in the cost table (USD per million tokens)
 ```
 
 ## Python
 ```python
-from vegeta.ai import ClaudeConfig, ClaudeProposer, DesignSession
+from vegeta.ai import ClaudeProvider, ProviderConfig, ScriptedProvider
 
-claude = ClaudeProposer(ClaudeConfig(
+claude = ClaudeProvider(ProviderConfig(
     api_key=None,            # default: ANTHROPIC_API_KEY
     model="claude-opus-5",   # any current Claude model id
     effort="high",           # low | medium | high | xhigh | max  (cost/quality)
-    max_tokens=16000,
-    extra_system="All parts are FDM-printed in PETG; wall thickness >= 1.6 mm.",  # company rules
-))
+    max_tokens=16000, timeout=600, max_retries=2,
+), log="calls.jsonl")        # optional: every call appended as JSON (images recorded by size only)
 
-s = DesignSession("designs/bracket.py:Bracket", claude,
-                  parameters={"thickness": 6.0}, notes="clamped at x=-40, 200 N down at x=+40")
-
-p1 = s.ask("add two ribs under the plate to increase bending stiffness without adding more than 15 % mass")
-p1                       # summary, rationale, expected effects, risks, VALIDATION (built + measured), diff
-s.geometry(p1)           # CadQuery view of the proposal — nothing written yet
-s.accept(p1, note="ribs look right")      # writes designs/bracket.py (backup bracket.py.1.bak)
-
-p2 = s.ask("the ribs are too tall, halve their height and round their ends")   # conversation continues
-s.reject(p2, "rounding failed to build")
+reply = claude.call(
+    "You are ...",                                   # system prompt
+    [{"role": "user", "content": "..."}],            # messages
+    schema={...},                                    # JSON schema -> reply.data (strict structured output)
+    images=[png_bytes],                              # PNG/JPEG, attached to the last user message
+    effort="medium",                                 # per call
+    cancel=threading.Event(),                        # set it to abandon the call
+)
+reply.data, reply.text, reply.usage.tokens, reply.usage.cost_usd(), reply.model, reply.stop_reason
 ```
-What validation checks: the proposed file loads as a `Design`; parameters resolve within their ranges;
-the geometry builds and is a valid solid; measurements before/after (volume, area, dimensions,
-face/solid counts) are compared; added/removed parameters are listed. A failed validation cannot be
-accepted.
+- **Errors:** anything that is not a usable answer (refusal, cut off at `max_tokens`, invalid JSON, no key,
+  network or API errors after retries) raises `ProviderError`; a set `cancel` event raises `Cancelled`.
+- **Cancellation:** the call runs in a worker thread that the caller stops waiting for within 0.2 s of the event
+  being set (`run_cancellable`); the request itself finishes in the background and is discarded.
+- **Usage:** `Usage(input_tokens, output_tokens, calls, model)` adds up with `+`; `cost_usd()` uses list prices in
+  `PRICES` (an estimate; `None` for models not in the table).
+- **Offline and tests:** `ScriptedProvider(*answers)` answers in order — a dict (JSON data), a string (text), an
+  exception (raised) or a function of the call — and records every call (`.calls`: system, messages, schema,
+  images, effort). It is how Fidia's tests and its offline demo run without a key.
+- **The protocol:** any object with `call(system, messages, *, schema, images, effort, max_tokens, cancel) -> Reply`
+  and `describe() -> dict` is a provider. An OpenAI provider is planned (`todo.md` 12.2).
 
-`Proposal.kind` is `source` (new file content), `parameters` (values only) or `answer` (no change:
-an explanation or a question back to you).
-
-With `vegeta-core`, accept a proposal and then record it as a revision as usual
-(`design.new_revision(...)` / `rev.branch(...)`) — the workspace keeps the source snapshot and hash.
-
-## CLI
-```bash
-vegeta ai propose designs/bracket.py:Bracket "add two stiffening ribs" -p thickness=6 --save p1.json
-vegeta ai accept  designs/bracket.py:Bracket p1.json          # re-validates, then writes (backup kept)
-vegeta ai --model claude-sonnet-5 --effort medium propose ... # cheaper model for quick iterations
-vegeta ai propose ... --accept                                 # explicit one-step accept if it validates
-```
-
-## Campaigns — a controlled agentic loop
-`Campaign` lets the model drive a parameter search. It proposes values; Vegeta checks them, runs each
-candidate as a new revision in a `vegeta.core` workspace, runs your analyses, checks your criteria, and
-shows the model the full results table before the next proposal. The loop is bounded and recorded.
-
-```python
-from vegeta.ai import Analysis, Budget, Campaign, Criterion, Objective
-
-campaign = Campaign(
-    ws, start_revision,
-    analyses=[Analysis("fea", "cantilever", cantilever)],          # your factory: loads, material, mesh
-    criteria=[Criterion("fea.cantilever.safety_factor_yield", ">=", 2.5),
-              Criterion("fea.cantilever.max_displacement", "<=", 0.8)],
-    objective=Objective("geometry.volume", "min"),
-    proposer=ClaudeProposer(ClaudeConfig(effort="medium")),
-    free=["thickness", "width"], bounds={"thickness": (3, 12)},
-    approval="ask",                     # or "auto" (explicit opt-in) or a function(proposal) -> bool
-    budget=Budget(max_iterations=8, max_tokens=200_000, max_minutes=20, patience=3),
-    name="light_bracket")
-campaign.run()                          # the only call that does work
-campaign.table(); campaign.plot(); campaign.best
-```
-- **What the model may change:** parameter values only, from the `free` list, within the design's
-  ranges and `bounds`, and never a set of values it has already tried. Source changes, unknown or fixed
-  parameters, out-of-range values and repeats are refused and recorded as such. Loads, materials and
-  analyses are code you wrote, and the model never sees them as something it can change.
-- **Approval:** if your policy declines a proposal, the campaign **stops**; it does not ask the model
-  for another option.
-- **Limits:** `max_iterations`, `max_tokens`, `max_minutes`, `patience` (proposals without a new best
-  feasible design), and a file named `STOP` in `campaigns/<name>/`. The proposer can also end the
-  campaign by answering instead of proposing.
-- **Record:** `campaigns/<name>/campaign.json` (the state, rewritten after every step) and
-  `events.jsonl` (every step with its rationale and token usage). Every candidate is an ordinary revision
-  with its evaluations. Running `run()` again with the same `name` continues the recorded campaign.
-- **Metric names:** `geometry.<measurement>` and `<kind>.<analysis>.<metric>`, for example
-  `fea.cantilever.safety_factor_yield` or `cfd.cruise.Cd`.
-- **Labels:** a campaign never labels revisions. Picking the design stays your decision (`rev.label(...)`).
-
-## Safety and cost
-- Validation **executes the proposed CadQuery code** in this Python process (that is what building a
-  design means). Use trusted models and read the diff; the copilot is a programmer, not the engineer.
-- Files: `<design>.ai.jsonl` (all proposals/decisions with token usage), `<design>.<n>.bak` backups.
-- Cost: a proposal is a few thousand tokens; with Claude Opus 5 ($5 / $25 per MTok) typically a few
-  cents. `effort="low"`/`medium` or `claude-sonnet-5` for cheap iterations.
-- Structured output: the model must answer with the JSON schema in `vegeta.ai.PROPOSAL_SCHEMA`, so a
-  malformed answer is an error, never a silent change.
-
-Notebooks: `notebooks/07_ai_design_copilot.ipynb` (one proposal at a time), `notebooks/10_agentic_design.ipynb` (a campaign).
+Rules (from `docs/philosophy.md`): the AI never changes anything silently; it never decides loads, materials or
+boundary conditions; its answers are data until the engineer, or a deterministic check, accepts them.
