@@ -67,8 +67,8 @@ and trim are missing. A free-surface scenario (interFoam, VOF) is a later step.
 - [x] Aeromant: `animate_particles(progress=True)` — tqdm over the frames
 - [x] `run_scenario.py` + `air_video.sh` with the air preset (09a's aircraft, propeller and cruise point)
 - [x] Aeromant template `hull_rotor_disk` (one disk)
-- [ ] `sub_video.sh` with the submarine preset (`13_submarine`)
-- [ ] `boat_video.sh`, double body, with the boat preset (`12_boat_at_sea`)
+- [x] `sub_video.sh` with the submarine preset (`13_submarine`)
+- [x] `boat_video.sh`, double body, with the boat preset (`12_boat_at_sea`)
 - [ ] First real runs on a machine with OpenFOAM: disk thrust sign, mesh quality, measured run times → this file
 
 Later: read the design from a JSON exported by the notebooks instead of the presets; a free-surface boat
