@@ -41,6 +41,8 @@ class DeltaWing(Design):
         Parameter("boss_diameter", 60.0, "mm", min=10, description="pusher: spinner boss diameter"),
         Parameter("nozzle_diameter", 90.0, "mm", min=20, description="jet: nozzle exit diameter"),
         Parameter("angle_of_attack_deg", 0.0, "deg", min=-10, max=25, description="rotate nose-up about Y"),
+        Parameter("hardpoint_depth", 0.0, "mm", min=0, max=30,
+                  description="> 0: a belly skid flat and a spine rail flat cut this deep into the body (FEA hardpoints)"),
     ]
 
     # -- pieces ---------------------------------------------------------------------------------------------------
@@ -71,8 +73,15 @@ class DeltaWing(Design):
         prof = [(x0 - L * s, 0.5 * math.sqrt(max(1e-6, 1 - (2 * s - 1) ** 2 * 0.85))) for s in [i / 16 for i in range(17)]]
         body = (cq.Workplane("XY").moveTo(prof[0][0], 0).spline([(x, y * w) for x, y in prof[1:]], includeCurrent=True)
                 .lineTo(prof[-1][0], 0).close().revolve(360, (0, 0, 0), (1, 0, 0)))
-        return cq.Workplane("XY").add(body.val().transformGeometry(          # squash the spindle to the body height
+        body = cq.Workplane("XY").add(body.val().transformGeometry(          # squash the spindle to the body height
             cq.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, h / w, 0]])))
+        d = p["hardpoint_depth"]
+        if d > 0:                                                    # planar hardpoints: belly skid (z = -zf), spine rail (z = +zf)
+            zf = h / 2 - d
+            big = 2 * (x0 + L)
+            body = (body.cut(cq.Workplane("XY").box(big, big, h, centered=(True, True, False)).translate((0, 0, -zf - h)))
+                    .cut(cq.Workplane("XY").box(big, big, h, centered=(True, True, False)).translate((0, 0, zf))))
+        return body
 
     def _fin(self, p, y=0.0, cant=0.0):
         """A swept fin standing on the wing near the trailing edge, canted outwards."""
