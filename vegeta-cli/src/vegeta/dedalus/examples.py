@@ -83,7 +83,8 @@ class StreamlinedBody(Design):
 class Propeller(Design):
     """Constant-geometric-pitch propeller: hub cylinder plus ``blades`` lofted NACA-4 sections along the
     radius (chord grows to ``chord_max`` at 35 % of the blade then tapers to the tip). Rotation axis Z,
-    blade 1 along +X. The planform formula matches ``vegeta.boreas.Propeller.from_pitch``."""
+    blade 1 along +X. The planform formula matches ``vegeta.boreas.Propeller.from_pitch``. ``skew_deg`` sweeps the
+    sections back about the axis, linearly from 0 at the root to the tip value (a skewed, quieter propeller)."""
 
     parameters = [
         Parameter("diameter", 127.0, "mm", min=20, description="tip-to-tip"),
@@ -98,6 +99,7 @@ class Propeller(Design):
         Parameter("thickness", 0.10, "", min=0.04, max=0.3, description="section thickness / chord"),
         Parameter("camber", 0.04, "", min=0.0, max=0.12, description="section camber / chord"),
         Parameter("stations", 10, min=4, max=30),
+        Parameter("skew_deg", 0.0, "deg", min=0.0, max=60.0, description="tip skew, swept back against the rotation (linear from the root)"),
     ]
 
     @staticmethod
@@ -134,6 +136,8 @@ class Propeller(Design):
             # fluid toward -Z when turning by the right-hand rule; rotated z->x it matches aeromant's rotor templates)
             wp = cq.Workplane("YZ", origin=(r, 0, 0)).polyline([(-u, v) for u, v in pts]).close()
             wire = wp.wires().val().rotate((r, 0, 0), (r + 1, 0, 0), -beta)
+            if p["skew_deg"]:
+                wire = wire.rotate((0, 0, 0), (0, 0, 1), -p["skew_deg"] * x)            # swept back: the tip trails the root
             blade = cq.Workplane("XY").add(wire) if blade is None else blade.add(wire)
         blade = blade.toPending().loft(ruled=False)
         prop = hub

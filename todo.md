@@ -61,6 +61,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5b.2 Dedalus `Propeller` example design; propeller parts of `08_quadcopter`, `09_fixed_wing_drone` (formerly notebooks 11, 12) (export JSON + CAD for the mission/fatigue work)
 - [x] 5b.3 `boreas.noise`: Gutin tonal harmonics, broadband allowance, cavitation number
 - [x] 4.10 Aeromant `rotor_mrf` / `rotor_mrf_static` (MRF propeller, forces → thrust/torque/power/Ct/Cp/η/FM, both dialects); CFD sections in notebooks 11/12 (`VEGETA_SKIP_OPENFOAM=1` skips them) — live validation on a machine with OpenFOAM: `test_openfoam.sh` + the notebook cells
+- [x] 4.11 Aeromant `aircraft_rotor_disks`: a whole aircraft with two propellers as `rotorDisk` blade-element sources (Boreas blade + polar tables), both dialects; `09_fixed_wing_drone` Part 5 — live validation on a machine with OpenFOAM
+- [ ] 4.12 Full realistic simulation of an aircraft with its propellers: resolved rotating blades in the whole-aircraft mesh (several MRF zones, then sliding mesh / AMI for the unsteady blade passing), instead of rotor disks — some day
 
 ## Stage 5c — Chronos (missions, vibration, cyclic loads, life)
 - [x] 5c.1 Talos: `PointMass`, `solve_modes` (CalculiX `*FREQUENCY`, validated vs beam theory and Rayleigh), `read_frd_steps`, `viz.plot_mode`
@@ -83,6 +85,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
 - [x] 7.3 Interactive visualisation (pyvista/trame) per package; product notebooks `08_quadcopter`, `09_fixed_wing_drone`
 - [x] 7.4 Notebooks merged by machine (one per product); noise sections (Gutin + broadband) and frequency diagrams everywhere; `talos.viz.animate` (rotating stressed blade, load ramp) and `aeromant.viz.animate_particles` (tracers in the converged rotor flow) write MP4 with OpenCV
+- [x] 7.5 `09_fixed_wing_drone` Part 4: the whole fuselage (hollow printed shell + tail, `part="fuselage"`) over a long full-battery survey — modes and propeller lines, unit cases (inertia, tail, fin), gust mission, rainflow spectrum, fatigue and life; Part 5: the whole aircraft in flight with its propellers (rotor disks). Every movie a notebook makes goes to `notebooks/output/<notebook>/`
 
 ## Stage 8 — Vegeta Core (`vegeta-core`, branch `dev_core`)
 - [x] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts

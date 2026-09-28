@@ -11,8 +11,9 @@ from .noise import AIR, SEA_WATER, Medium, broadband_level, cavitation, gutin_ha
 from .propeller import Propeller, inches
 from .result import CommandRecord, Result, ResultError
 from .system import Propulsion, SystemPoint, excitations, unbalance_force
+from . import wake
 
 __version__ = "0.1.0"
 __all__ = ["AIR", "Airfoil", "Battery", "CommandRecord", "Medium", "Motor", "SEA_WATER", "broadband_level", "cavitation", "gutin_harmonics", "spl", "OperatingPoint", "Propeller", "Propulsion", "Result",
            "ResultError", "SystemPoint", "excitations", "export", "inches", "load", "performance_map",
-           "rpm_for_thrust", "solve", "unbalance_force"]
+           "rpm_for_thrust", "solve", "unbalance_force", "wake"]
