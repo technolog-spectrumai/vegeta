@@ -28,6 +28,8 @@ from typing import Callable
 
 import numpy as np
 
+from ._watermark import watermark
+
 Sampler = Callable[[np.ndarray], "tuple[np.ndarray, np.ndarray]"]
 
 ROTOR_TEMPLATES = ("rotor_mrf", "rotor_mrf_static")
@@ -326,7 +328,7 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     try:
         for k in range(frames):
             t = k * dt
-            out.write(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, speed_min=speed_min, title=title, time_s=t))
+            out.write(watermark(np.ascontiguousarray(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, speed_min=speed_min, title=title, time_s=t))))
             tracer.step(dt)
     finally:
         out.release()
@@ -363,7 +365,7 @@ def concat_videos(paths, out, *, fps: int | None = None, captions=None) -> Path:
                     img = cv2.resize(img, (W, H))
                 if captions and i < len(captions) and captions[i]:
                     cv2.putText(img, str(captions[i]), (12, 54), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 160), 2, cv2.LINE_AA)   # under the title
-                writer.write(img)
+                writer.write(watermark(img))   # again after a resize; on an already stamped clip it is invisible
             cap.release()
     finally:
         writer.release()
