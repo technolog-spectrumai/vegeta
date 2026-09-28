@@ -62,6 +62,10 @@ every candidate, criteria, budget, approval policy) in a workspace. Shared desig
 loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
 arm modes and a speed–frequency diagram, rainflow fatigue, life, printing.
 
+Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
+CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/` — see
+[scenarios/scenarios.md](scenarios/scenarios.md).
+
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
 [Vegeta Core](docs/core.md) · [AI copilot](docs/ai.md).

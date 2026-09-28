@@ -10,3 +10,4 @@ dist/
 runs/
 notebooks/_runs/
 notebooks/output/
+scenarios/output/
