@@ -11,9 +11,11 @@ from .noise import AIR, SEA_WATER, Medium, broadband_level, cavitation, gutin_ha
 from .propeller import Propeller, inches
 from .result import CommandRecord, Result, ResultError
 from .system import Propulsion, SystemPoint, excitations, unbalance_force
+from . import range as range_
 from . import wake
+from .range import Aircraft, ElectricFan, ElectricProp, Leg, MissionLog, PistonProp, Turbojet, breguet_jet, breguet_prop, fly_mission, max_range
 
 __version__ = "0.1.0"
-__all__ = ["AIR", "Airfoil", "Battery", "CommandRecord", "Medium", "Motor", "SEA_WATER", "broadband_level", "cavitation", "gutin_harmonics", "spl", "OperatingPoint", "Propeller", "Propulsion", "Result",
+__all__ = ["AIR", "Aircraft", "Airfoil", "ElectricFan", "ElectricProp", "Leg", "MissionLog", "PistonProp", "Turbojet", "breguet_jet", "breguet_prop", "fly_mission", "max_range", "range_", "Battery", "CommandRecord", "Medium", "Motor", "SEA_WATER", "broadband_level", "cavitation", "gutin_harmonics", "spl", "OperatingPoint", "Propeller", "Propulsion", "Result",
            "ResultError", "SystemPoint", "excitations", "export", "inches", "load", "performance_map",
            "rpm_for_thrust", "solve", "unbalance_force", "wake"]

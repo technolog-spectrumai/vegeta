@@ -59,3 +59,39 @@ class Structure:
         ax.legend(fontsize=8)
         ax.grid(alpha=0.3)
         return ax.figure
+
+
+# -- shock ----------------------------------------------------------------------------------------------------------
+def half_sine(peak_m_s2: float, duration_s: float, dt: float | None = None, tail_s: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
+    """A half-sine base-acceleration pulse ``(t, a)``: the classic drop / crush pulse (``tail_s`` of zeros after it)."""
+    dt = dt or duration_s / 200
+    t = np.arange(0.0, duration_s + tail_s + dt, dt)
+    a = np.where(t <= duration_s, peak_m_s2 * np.sin(np.pi * np.clip(t, 0, duration_s) / duration_s), 0.0)
+    return t, a
+
+
+def srs(t, a, freqs_hz, damping_ratio: float = 0.05) -> np.ndarray:
+    """Shock response spectrum (maximax absolute acceleration) of the base pulse ``a(t)`` for single-degree-of-freedom
+    oscillators at ``freqs_hz``: what a part mounted at that natural frequency feels, as a multiple of the input's
+    units. Central-difference integration of the relative motion, primary and residual response included."""
+    t, a = np.asarray(t, float), np.asarray(a, float)
+    f = np.atleast_1d(np.asarray(freqs_hz, float))
+    w = 2 * np.pi * f
+    dt = min(float(np.min(np.diff(t))), float(1.0 / (40 * f.max())))
+    t_end = t[-1] + 3.0 / f.min()
+    tt = np.arange(0.0, t_end, dt)
+    aa = np.interp(tt, t, a, left=0.0, right=0.0)
+    y = np.zeros_like(w); v = np.zeros_like(w); peak = np.zeros_like(w)
+    z = damping_ratio
+    for ak in aa:
+        acc = -ak - 2 * z * w * v - w * w * y
+        v = v + acc * dt
+        y = y + v * dt
+        absolute = -(2 * z * w * v + w * w * y)
+        peak = np.maximum(peak, np.abs(absolute))
+    return peak
+
+
+def shock_at_mount(t, a, mount_hz: float, damping_ratio: float = 0.05) -> float:
+    """The peak acceleration a payload on isolators of natural frequency ``mount_hz`` sees from the base pulse."""
+    return float(srs(t, a, [mount_hz], damping_ratio)[0])

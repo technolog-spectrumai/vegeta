@@ -107,3 +107,35 @@ def test_hull_rotor_disk_has_one_disk(tmp_path, sphere_stl, version):
             assert "{{" not in f.read_text().replace("{{...}}", ""), f
     with pytest.raises(ValueError, match="disk2_center"):
         CFDCase("hull_rotor_disk", sphere_stl, values(), tmp_path / "x", geometry_units="m")
+
+
+@pytest.mark.parametrize("version", [None, "14"])
+def test_thrust_disk_model_writes_a_momentum_source(tmp_path, sphere_stl, version):
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    v = values(disk_model="thrust", thrust=60.0)
+    for k in ("rpm", "blades", "blade", "polar"):
+        v.pop(k)
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, v, tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    src = (c / ("system/fvOptions" if version is None else "constant/fvModels")).read_text()
+    assert "type            rotorDisk;" not in src
+    assert src.count("vectorSemiImplicitSource" if version is None else "type            semiImplicitSource") == 2
+    assert "volumeMode      absolute;" in src and src.count("cellZone        disk") == 2
+    assert "(-50 0 0)" in src                                          # 60 N / 1.2 kg/m^3 along -x
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+
+
+def test_disk_models_need_their_inputs(tmp_path, sphere_stl):
+    v = values(disk_model="thrust")
+    assert not CFDCase("aircraft_rotor_disks", sphere_stl, v, tmp_path / "a", geometry_units="m").prepare().ok
+    v = values()
+    v.pop("polar")
+    r = CFDCase("aircraft_rotor_disks", sphere_stl, v, tmp_path / "b", geometry_units="m").prepare()
+    assert not r.ok and "polar" in r.messages[0]
+    with pytest.raises(ValueError, match="disk_model"):
+        CFDCase("aircraft_rotor_disks", sphere_stl, values(disk_model="magic"), tmp_path / "c", geometry_units="m")

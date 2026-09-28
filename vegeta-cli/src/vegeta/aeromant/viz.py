@@ -175,6 +175,11 @@ def plot_streamlines(case, n: int = 60, plotter=None, normal_plane: str = "y"):
     return pl
 
 
+def write_video(frames, path, fps: int = 24) -> Path:
+    """Write RGB frames (H x W x 3 uint8 arrays) to an MP4 with the Vegeta watermark (OpenCV)."""
+    return _write_video(frames, path, fps)
+
+
 def _write_video(frames, path, fps: int) -> Path:
     try:
         import cv2

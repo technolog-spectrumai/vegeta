@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
-  One propeller as a rotor disk (blade-element source terms): the blade geometry and the section polar
-  come from Boreas (radius [m], twist [deg], chord [m]; alpha [deg], Cd, Cl). Thrust is along "axis".
+  The propeller disk: rotorDisk (blade-element source terms from the Boreas blade + polar) or a
+  prescribed thrust (a momentum source over the disk zone, e.g. a jet). Written by aeromant.prepare().
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -13,56 +13,6 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-diskLeft
-{
-    type            rotorDisk;
-    selectionMode   cellZone;
-    cellZone        diskLeft;
-    fields          (U);
-
-    nBlades         {{BLADES}};
-    tipEffect       {{TIP_EFFECT}};
-    inletFlowType   local;
-    inletVelocity   ({{INLET_VELOCITY}});
-    geometryMode    specified;
-    origin          ({{DISK1_CENTER}});
-    axis            ({{DISK_AXIS}});
-    refDirection    ({{REF_DIRECTION}});
-    rpm             {{DISK1_RPM}};
-    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
-    rhoRef          {{DENSITY}};
-    rhoInf          {{DENSITY}};
-
-    fixedTrimCoeffs
-    {
-        theta0      0;
-        theta1c     0;
-        theta1s     0;
-    }
-    flapCoeffs
-    {
-        beta0       0;
-        beta1c      0;
-        beta2s      0;
-    }
-    blade
-    {
-        data
-        (
-{{BLADE_DATA}}
-        );
-    }
-    profiles
-    {
-        section
-        {
-            type    lookup;
-            data
-            (
-{{PROFILE_DATA}}
-            );
-        }
-    }
-}
+{{DISK1_SOURCE_COM}}
 
 // ************************************************************************* //

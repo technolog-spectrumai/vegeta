@@ -5,13 +5,14 @@ Missions are sequences of segments with explicit load levels and vibratory excit
 ``build_spectrum`` rainflow-counts the mission into blocks; ``simulate_life`` accumulates Miner
 damage over a fleet usage. The spectrum JSON is the hand-off to ``talos.assess_fatigue``.
 """
-from .dynamics import Structure
+from .dynamics import Structure, half_sine, shock_at_mount, srs
 from .life import LifeSimulation, SNCurve, hotspot_damage, simulate_life
 from .mission import Excitation, Mission, Segment
+from .parachute import Body, DropResult, Parachute, Wind, crush_pulse, landing_scatter, simulate_drop
 from .rainflow import rainflow, reversals
 from .result import CommandRecord, Result, ResultError
 from .spectrum import Block, LoadSpectrum, build_spectrum
 
 __version__ = "0.1.0"
-__all__ = ["Block", "CommandRecord", "Excitation", "LifeSimulation", "LoadSpectrum", "Mission", "Result", "ResultError",
+__all__ = ["Block", "Body", "DropResult", "Parachute", "Wind", "crush_pulse", "half_sine", "landing_scatter", "shock_at_mount", "simulate_drop", "srs", "CommandRecord", "Excitation", "LifeSimulation", "LoadSpectrum", "Mission", "Result", "ResultError",
            "SNCurve", "Segment", "Structure", "build_spectrum", "hotspot_damage", "rainflow", "reversals", "simulate_life"]

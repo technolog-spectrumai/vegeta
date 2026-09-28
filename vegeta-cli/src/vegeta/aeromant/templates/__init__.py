@@ -9,6 +9,7 @@ Each template ships its case files in both OpenFOAM dialects (``com/`` for openf
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -25,13 +26,18 @@ class TemplateParameter:
     description: str
     units: str = ""
     default: Any = REQUIRED  # REQUIRED -> the engineer must give it; otherwise a template decision
-    kind: str = "float"      # float | int | vector | table (rows of 3 numbers)
+    kind: str = "float"      # float | int | vector | table (rows of 3 numbers) | string
+    choices: tuple = ()      # string: the allowed values
 
     @property
     def required(self) -> bool:
         return self.default is REQUIRED
 
     def validate(self, value: Any) -> Any:
+        if self.kind == "string":
+            if self.choices and value not in self.choices:
+                raise ValueError(f"template parameter {self.name!r} must be one of {list(self.choices)}, got {value!r}")
+            return str(value)
         if self.kind == "table":
             arr = np.asarray(value, dtype=float)
             if arr.ndim != 2 or arr.shape[1] != 3 or len(arr) < 2 or not np.all(np.isfinite(arr)):
@@ -117,9 +123,9 @@ class TemplateSpec:
             raise ValueError(f"template {self.name!r} requires explicit value(s) for {missing}")
         out = {}
         for p in self.parameters:
-            out[p.name] = p.validate(values[p.name]) if p.name in values else p.default
+            out[p.name] = p.validate(values[p.name]) if values.get(p.name) is not None else p.default
         for positive in ("velocity", "kinematic_viscosity", "density", "reference_area", "reference_length", "diameter", "rpm"):
-            if positive in out and out[positive] <= 0:
+            if out.get(positive) is not None and out[positive] <= 0:
                 raise ValueError(f"{positive} must be > 0")
         return out
 
@@ -378,11 +384,157 @@ def _unit(v) -> np.ndarray:
     return v / n
 
 
+ROTOR_COM = """{{NAME}}
+{
+    type            rotorDisk;
+    selectionMode   cellZone;
+    cellZone        {{NAME}};
+    fields          (U);
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    rpm             {{RPM}};
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrimCoeffs
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flapCoeffs
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+"""
+ROTOR_ORG = """{{NAME}}
+{
+    type            rotorDisk;
+    libs            ("librotorDisk.so");
+    cellZone        {{NAME}};
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    omega           {{RPM}} [rpm];
+    trimModel       fixedTrim;
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrim
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flap
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+"""
+# a prescribed thrust: a uniform momentum source over the disk zone (kinematic, so force / density), e.g. a jet
+THRUST_COM = """{{NAME}}
+{
+    type            vectorSemiImplicitSource;   // prescribed thrust {{THRUST}} N along the disk axis
+    selectionMode   cellZone;
+    cellZone        {{NAME}};
+    volumeMode      absolute;
+    sources
+    {
+        U    (({{FORCE}}) 0);
+    }
+}
+"""
+THRUST_ORG = """{{NAME}}
+{
+    type            semiImplicitSource;         // prescribed thrust {{THRUST}} N along the disk axis
+    cellZone        {{NAME}};
+    volumeMode      absolute;
+    sources
+    {
+        U
+        {
+            explicit    ({{FORCE}});
+            implicit    0;
+        }
+    }
+}
+"""
+_PH = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+
+
+def _fill(template: str, values: dict) -> str:
+    return _PH.sub(lambda m: str(values[m.group(1)]), template)
+
+
 def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
-    """The external RANS case plus two disk cell zones and their rotor-disk sources (blade data and the
-    section polar are written as tables)."""
+    """The external RANS case plus one or two disk cell zones and their sources: ``disk_model`` "rotorDisk"
+    (blade elements from the blade geometry and the section polar) or "thrust" (a prescribed thrust as a
+    momentum source, e.g. a jet). The source dictionaries are written for both OpenFOAM dialects."""
     out = _external_derive(p, bmin, bmax)
     D, axis = p["diameter"], _unit(p["disk_axis"])
+    model = p["disk_model"]
+    if model == "rotorDisk":
+        missing = [k for k in ("rpm", "blades", "blade", "polar") if p.get(k) is None]
+        if missing:
+            raise ValueError(f"disk_model 'rotorDisk' needs {missing}")
+    elif p.get("thrust") is None:
+        raise ValueError("disk_model 'thrust' needs 'thrust' (N per disk)")
     ref = np.array([0.0, 0.0, 1.0]) - axis[2] * axis        # "up" in the disk plane: psi = 0 reference
     if np.linalg.norm(ref) < 1e-6:
         ref = np.array([0.0, 1.0, 0.0]) - axis[1] * axis
@@ -390,35 +542,46 @@ def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]
     lo = np.array([float(out["XMIN"]), float(out["YMIN"]), float(out["ZMIN"])])
     hi = np.array([float(out["XMAX"]), float(out["YMAX"]), float(out["ZMAX"])])
     half = 0.5 * p["disk_thickness"] * D * axis
-    extra: dict[str, Any] = {}
     disks = [i for i in (1, 2) if f"disk{i}_center" in p]            # two disks (aircraft) or one (hull_rotor_disk)
+    extra: dict[str, Any] = {}
     for i in disks:
         key = f"disk{i}_center"
         c = np.asarray(p[key], dtype=float)
         if np.any(c - D < lo) or np.any(c + D > hi):
             raise ValueError(f"{key} {c.tolist()} is not well inside the domain {lo.tolist()}..{hi.tolist()}")
         extra[f"DISK{i}_CENTER"], extra[f"DISK{i}_P1"], extra[f"DISK{i}_P2"] = c, c - half, c + half
-        extra[f"DISK{i}_RPM"] = p["rpm"] * p[f"rotation{i}"]
-    for i in disks:
         if p[f"rotation{i}"] not in (1.0, -1.0):
             raise ValueError(f"rotation{i} must be 1 or -1")
-    blade = np.asarray(p["blade"], dtype=float)
-    if np.any(np.diff(blade[:, 0]) <= 0) or blade[0, 0] <= 0 or blade[-1, 0] > 0.5 * D * 1.001:
-        raise ValueError("blade rows are (radius [m], twist [deg], chord [m]) with increasing radius up to diameter / 2")
-    if np.any(blade[:, 2] <= 0):
-        raise ValueError("blade chord must be positive")
-    polar = np.asarray(p["polar"], dtype=float)
-    polar = polar[np.argsort(polar[:, 0])]
-    if polar[0, 0] > -90 or polar[-1, 0] < 90:
-        raise ValueError("polar rows are (alpha [deg], Cd, Cl) and must cover at least -90..90 deg")
+        extra[f"DISK{i}_RPM"] = (p["rpm"] or 0.0) * p[f"rotation{i}"]
     extra.update({
         "DISK_AXIS": axis, "REF_DIRECTION": ref, "DISK_ZONE_RADIUS": p["zone_radius"] * D,
-        "DISK_LEVEL": p["disk_level"], "BLADES": p["blades"], "TIP_EFFECT": p["tip_effect"],
+        "DISK_LEVEL": p["disk_level"], "BLADES": p.get("blades") or 0, "TIP_EFFECT": p["tip_effect"],
         "INLET_VELOCITY": np.array([p["velocity"], 0.0, 0.0]),
     })
     out.update({k: _fmt(v) for k, v in extra.items()})
-    out["BLADE_DATA"] = "\n".join(f"            (section ({_fmt(r)} {_fmt(t)} {_fmt(c)}))" for r, t, c in blade)
-    out["PROFILE_DATA"] = "\n".join(f"                ({_fmt(a)} {_fmt(cd)} {_fmt(cl)})" for a, cd, cl in polar)
+    if model == "rotorDisk":
+        blade = np.asarray(p["blade"], dtype=float)
+        if np.any(np.diff(blade[:, 0]) <= 0) or blade[0, 0] <= 0 or blade[-1, 0] > 0.5 * D * 1.001:
+            raise ValueError("blade rows are (radius [m], twist [deg], chord [m]) with increasing radius up to diameter / 2")
+        if np.any(blade[:, 2] <= 0):
+            raise ValueError("blade chord must be positive")
+        polar = np.asarray(p["polar"], dtype=float)
+        polar = polar[np.argsort(polar[:, 0])]
+        if polar[0, 0] > -90 or polar[-1, 0] < 90:
+            raise ValueError("polar rows are (alpha [deg], Cd, Cl) and must cover at least -90..90 deg")
+        out["BLADE_DATA"] = "\n".join(f"            (section ({_fmt(r)} {_fmt(t)} {_fmt(c)}))" for r, t, c in blade)
+        out["PROFILE_DATA"] = "\n".join(f"                ({_fmt(a)} {_fmt(cd)} {_fmt(cl)})" for a, cd, cl in polar)
+    else:
+        out["BLADE_DATA"] = out["PROFILE_DATA"] = ""
+    names = {1: "diskLeft", 2: "diskRight"}
+    for i in disks:
+        v = dict(out, NAME=names[i], CENTER=out[f"DISK{i}_CENTER"], RPM=out[f"DISK{i}_RPM"])
+        if model == "thrust":
+            v["THRUST"] = _fmt(p["thrust"])
+            v["FORCE"] = _fmt(p["thrust"] / p["density"] * axis)      # kinematic momentum source: N / (kg/m^3) = m^4/s^2
+            out[f"DISK{i}_SOURCE_COM"], out[f"DISK{i}_SOURCE_ORG"] = _fill(THRUST_COM, v), _fill(THRUST_ORG, v)
+        else:
+            out[f"DISK{i}_SOURCE_COM"], out[f"DISK{i}_SOURCE_ORG"] = _fill(ROTOR_COM, v), _fill(ROTOR_ORG, v)
     return out
 
 
@@ -432,11 +595,14 @@ AIRCRAFT_ROTOR_DISKS = TemplateSpec(
         TemplateParameter("disk1_center", "centre of the left propeller disk (in the flow frame, metres)", "m", kind="vector"),
         TemplateParameter("disk2_center", "centre of the right propeller disk", "m", kind="vector"),
         TemplateParameter("disk_axis", "thrust direction of both disks (usually about -x: upstream)", "-", kind="vector"),
-        TemplateParameter("diameter", "propeller diameter", "m"),
-        TemplateParameter("rpm", "propeller speed", "rpm"),
-        TemplateParameter("blades", "blades per propeller", "", kind="int"),
-        TemplateParameter("blade", "blade rows (radius [m], twist [deg], chord [m]), hub to tip", "", kind="table"),
-        TemplateParameter("polar", "section polar rows (alpha [deg], Cd, Cl), covering -180..180 deg", "", kind="table"),
+        TemplateParameter("diameter", "propeller / jet disk diameter", "m"),
+        TemplateParameter("disk_model", "rotorDisk: blade elements (rpm, blades, blade, polar); thrust: a prescribed thrust "
+                          "per disk as a momentum source (a jet)", "", "rotorDisk", "string", choices=("rotorDisk", "thrust")),
+        TemplateParameter("rpm", "propeller speed (rotorDisk)", "rpm", None),
+        TemplateParameter("blades", "blades per propeller (rotorDisk)", "", None, "int"),
+        TemplateParameter("blade", "blade rows (radius [m], twist [deg], chord [m]), hub to tip (rotorDisk)", "", None, "table"),
+        TemplateParameter("polar", "section polar rows (alpha [deg], Cd, Cl), covering -180..180 deg (rotorDisk)", "", None, "table"),
+        TemplateParameter("thrust", "thrust per disk along disk_axis (thrust model)", "N", None),
         TemplateParameter("rotation1", "left disk sense of rotation about disk_axis: 1 or -1", "", 1.0),
         TemplateParameter("rotation2", "right disk sense of rotation: -1 counter-rotates", "", -1.0),
         TemplateParameter("tip_effect", "normalised radius above which the blades carry no lift (tip loss)", "-", 0.97),

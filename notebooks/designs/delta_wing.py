@@ -21,7 +21,8 @@ class DeltaWing(Design):
     """Delta flying wing with a central body, nose payload bay, twin fins; pusher propeller or jet at the tail."""
 
     parameters = [
-        Parameter("part", "aircraft", choices=("aircraft", "wing", "payload_bay", "fin"), description="what to build"),
+        Parameter("part", "aircraft", choices=("aircraft", "wing", "half_wing", "payload_bay", "fin"),
+                  description="what to build (half_wing: the +Y half, root face on y = 0, for a symmetric FEA)"),
         Parameter("propulsion", "pusher", choices=("pusher", "jet"), description="tail end: pusher boss or jet nozzle"),
         Parameter("span", 2000.0, "mm", min=500),
         Parameter("root_chord", 1150.0, "mm", min=200, description="chord at the centreline (the delta's length)"),
@@ -52,15 +53,15 @@ class DeltaWing(Design):
         return (wp.moveTo(*pts_u[0]).spline(pts_u[1:], includeCurrent=True)
                 .spline(pts_l[::-1][1:], includeCurrent=True).close())
 
-    def _wing(self, p):
+    def _wing(self, p, half=False):
         """A cropped delta: root section at the centreline lofted to a tip section at the half span."""
         c0, ct, b2 = p["root_chord"], p["tip_chord"], p["span"] / 2
         # the trailing edge is straight at x = 0; the leading edge sweeps back from the nose (x = c0) to the tip
         wp = cq.Workplane("XZ")                                 # XZ normal is -Y: offset -b2 moves to +Y
         wp = self._biconvex(wp, c0, p["thickness"], c0, 0.0).workplane(offset=-b2)
         wp = self._biconvex(wp, ct, p["thickness"], ct, 0.0)
-        half = wp.loft(combine=True, ruled=True)
-        return half.union(half.mirror("XZ"))
+        half_wing = wp.loft(combine=True, ruled=True)
+        return half_wing if half else half_wing.union(half_wing.mirror("XZ"))
 
     def _body(self, p):
         """A blended central body: an ellipsoidal spindle from the nose back to the tail, on the wing's centreline."""
@@ -106,6 +107,8 @@ class DeltaWing(Design):
             return self._fin(p)
         if p["part"] == "payload_bay":
             return self._payload_bay(p)
+        if p["part"] == "half_wing":
+            return self._wing(p, half=True)
         wing = self._wing(p)
         if p["part"] == "wing":
             return wing
