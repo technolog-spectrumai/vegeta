@@ -43,6 +43,8 @@ packages = [
 
 [tool.setuptools.package-data]
 "vegeta.aeromant.templates" = ["*/**/*"]
+"vegeta.aeromant" = ["assets/*.png"]
+"vegeta.talos" = ["assets/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -88,7 +88,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 7.2 Combined workflow notebook (CAD → inspect → FEA → CFD → slice, every step user-initiated)
 - [x] 7.3 Interactive visualisation (pyvista/trame) per package; product notebooks `08_quadcopter`, `09_fixed_wing_drone`
 - [x] 7.4 Notebooks merged by machine (one per product); noise sections (Gutin + broadband) and frequency diagrams everywhere; `talos.viz.animate` (rotating stressed blade, load ramp) and `aeromant.viz.animate_particles` (tracers in the converged rotor flow) write MP4 with OpenCV
-- [x] 7.5 `09_fixed_wing_drone` Part 4: the whole fuselage (hollow printed shell + tail, `part="fuselage"`) over a long full-battery survey — modes and propeller lines, unit cases (inertia, tail, fin), gust mission, rainflow spectrum, fatigue and life; Part 5: the whole aircraft in flight with its propellers (rotor disks). Every movie a notebook makes goes to `notebooks/output/<notebook>/`
+- [x] 7.5 `09_fixed_wing_drone` Part 4: the whole fuselage (hollow printed shell + tail, `part="fuselage"`) over a long full-battery survey — modes and propeller lines, unit cases (inertia, tail, fin), gust mission, rainflow spectrum, fatigue and life; Part 5: the whole aircraft in flight with its propellers (rotor disks). Every movie a notebook makes goes to `notebooks/output/<notebook>/`, with the Vegeta logo as a small watermark (bottom right, at most 10 % of the frame)
 
 ## Stage 8 — Vegeta Core (`vegeta-core`, branch `dev_core`)
 - [x] 8.1 Workspaces, designs, revisions (immutable), evaluations, artifacts

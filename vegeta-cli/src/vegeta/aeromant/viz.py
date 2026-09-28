@@ -11,6 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
+from ._watermark import watermark
+
 
 def _pv():
     try:
@@ -183,7 +185,7 @@ def _write_video(frames, path, fps: int) -> Path:
     h, w = frames[0].shape[:2]
     out = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
     for f in frames:
-        out.write(cv2.cvtColor(np.ascontiguousarray(f[:, :, :3]), cv2.COLOR_RGB2BGR))
+        out.write(watermark(cv2.cvtColor(np.ascontiguousarray(f[:, :, :3]), cv2.COLOR_RGB2BGR)))
     out.release()
     return path
 
