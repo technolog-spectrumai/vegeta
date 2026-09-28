@@ -86,7 +86,8 @@ quieter one measure at a time — skew, an anti-singing trailing edge, a damping
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
-CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/` — see
+CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/`; on `dev_sea`
+also `scenarios/sub_video.sh` (submarine) and `scenarios/boat_video.sh` (boat, double body, no free surface) — see
 [scenarios/scenarios.md](scenarios/scenarios.md).
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·

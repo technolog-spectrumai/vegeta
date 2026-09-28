@@ -38,6 +38,7 @@ class Scenario:
     movie: dict = field(default_factory=lambda: {"n": 600, "seconds": 8.0, "fps": 24})
     notes: tuple = ()
     build: Callable | None = None        # custom geometry: (design, params) -> dedalus Geometry
+    force_scale: float = 1.0             # 0.5 for a double body: the real hull carries half the forces
 
 
 # -- presets ---------------------------------------------------------------------------------------------------
@@ -81,7 +82,84 @@ def air() -> Scenario:
                            "forces are the airframe's in the slipstream; the disks' thrust is in the solver log"))
 
 
-PRESETS: dict[str, Callable[[], Scenario]] = {"air": air}
+def sub() -> Scenario:
+    """The 1.2 m AUV of ``13_submarine`` at its 1.5 m/s cruise, nose upstream, its 120 mm 3-blade propeller at the
+    recorded cruise rpm as a rotor disk just behind the tail tip."""
+    from vegeta import boreas
+
+    spec = f"{DESIGNS / 'submarine.py'}:Submarine"
+    params = {"part": "vehicle"}
+    prop = boreas.Propeller.from_pitch("120 mm 3-blade", 0.120, 0.100, blades=3, chord_root_m=0.018, chord_max_m=0.030,
+                                       chord_tip_m=0.012, mass_kg=0.06, rotor_mass_kg=0.15, notes="generic planform")
+    section = boreas.Airfoil(name="marine blade section", cl_alpha=5.5, alpha0_deg=-2.0, cl_max=1.0, cd0=0.02, k=0.05, source="assumed")
+    rho, nu, v, rpm = 1025.0, 1.05e-6, 1.5, 910.0     # sea water; cruise; cruise rpm recorded from 13 (BEMT, wake 0.85)
+    cb_x = 0.6393                                      # m: centre of buoyancy from the tail tip (recorded from 13)
+
+    def nose_upstream(dd, p_):
+        from vegeta import dedalus
+
+        g = dd.generate(**p_)
+        return dedalus.Geometry.from_cadquery(g.shape.rotate((0, 0, 0), (0, 0, 1), 180), name="submarine_nose_upstream")
+
+    cfd = dict(velocity=v, kinematic_viscosity=nu, density=rho, reference_area=0.6936, reference_length=0.30,
+               center_of_rotation=(-cb_x, 0.0, 0.0), iterations=600, residual_target=1e-4,
+               cells_per_length=3.0, surface_level=4, near_level=3, wake_level=2,
+               disk1_center=[0.04, 0.0, 0.0], disk_axis=[-1.0, 0.0, 0.0],        # 40 mm behind the tail tip; thrust forward
+               diameter=prop.diameter, rpm=rpm, blades=prop.blades,
+               blade=[[r, b, c] for r, b, c in zip(prop.r, prop.beta_deg, prop.chord)], polar=_polar_table(section),
+               rotation1=1, disk_level=5)
+    return Scenario("sub", "submarine at cruise, its propeller running", spec, params, "hull_rotor_disk", cfd,
+                    build=nose_upstream,
+                    notes=("the propeller is a rotor disk just behind the tail tip (no shaft or hub modelled)",
+                           "forces are the hull's in the propeller's inflow; the disk's thrust is in the solver log"))
+
+
+def boat() -> Scenario:
+    """The 1 m survey boat of ``12_boat_at_sea`` at 1.5 m/s without a free surface: the hull and motor pod below the
+    waterline mirrored about it (double body), the 60 mm 3-blade propeller behind the pod at the recorded cruise rpm and
+    its mirror image turning the other way."""
+    from vegeta import boreas
+
+    spec = f"{DESIGNS / 'survey_boat.py'}:SurveyBoat"
+    params = {"part": "hull_solid"}
+    draft = 53.1                                       # mm: waterline above the keel at the loaded displacement (recorded from 12)
+    prop = boreas.Propeller.from_pitch("60 mm 3-blade marine", 0.060, 0.050, blades=3, chord_root_m=0.012, chord_max_m=0.018,
+                                       chord_tip_m=0.008, mass_kg=0.02, rotor_mass_kg=0.05, notes="generic planform")
+    section = boreas.Airfoil(name="marine blade section", cl_alpha=5.5, alpha0_deg=-2.0, cl_max=1.0, cd0=0.02, k=0.05, source="assumed")
+    rho, nu, v, rpm = 1025.0, 1.05e-6, 1.5, 2184.0     # sea water; cruise; cruise rpm recorded from 12 (BEMT, wake 0.9)
+
+    def double_body(dd, p_):
+        import cadquery as cq
+        from vegeta import dedalus
+
+        p = dd.resolve(**p_)
+        hull = cq.Workplane("XY").add(dd.generate(part="hull_solid").shape)
+        pod = cq.Workplane("XY").add(dd.generate(part="bracket").shape.translate((0, 0, p["depth"] * 0.55)))   # as in the boat
+        big = 4 * max(p["length"], p["beam"])
+        below = cq.Workplane("XY").box(big, big, big, centered=(True, True, False)).translate((0, 0, draft - big))
+        under = hull.union(pod).intersect(below)
+        body = under.union(under.mirror("XY", basePointVector=(0, 0, draft)))
+        return dedalus.Geometry.from_cadquery(body.val().rotate((0, 0, 0), (0, 0, 1), 180), name="boat_double_body")
+
+    # the pod (bracket) runs from x = -8 to -98 mm behind the transom, axis at z = 0.55 depth - bracket_height = -26.5 mm;
+    # the propeller plane 10 mm behind it. After turning the boat bow-upstream (180 deg about z): x -> -x.
+    z_prop = 0.55 * 170.0 - 120.0
+    x_prop = 0.108
+    cfd = dict(velocity=v, kinematic_viscosity=nu, density=rho, reference_area=2 * 0.231, reference_length=0.25,
+               center_of_rotation=(-0.5, 0.0, draft / 1000), iterations=600, residual_target=1e-4,
+               surface_level=4, near_level=3, wake_level=2, cells_per_length=2.0,
+               disk1_center=[x_prop, 0.0, z_prop / 1000], disk2_center=[x_prop, 0.0, (2 * draft - z_prop) / 1000],
+               disk_axis=[-1.0, 0.0, 0.0], diameter=prop.diameter, rpm=rpm, blades=prop.blades,
+               blade=[[r, b, c] for r, b, c in zip(prop.r, prop.beta_deg, prop.chord)], polar=_polar_table(section),
+               rotation1=1, rotation2=-1, disk_level=6)
+    return Scenario("boat", "survey boat at cruise, no free surface (double body), propeller running", spec, params,
+                    "aircraft_rotor_disks", cfd, build=double_body, force_scale=0.5,
+                    notes=("no free surface: the waterline is a symmetry plane (double body); no waves, no wave drag, no trim",
+                           "forces in summary.json 'real_hull' are half the double body's; the mirror disk turns the other way",
+                           "the propeller is a rotor disk behind the motor pod"))
+
+
+PRESETS: dict[str, Callable[[], Scenario]] = {"air": air, "sub": sub, "boat": boat}
 
 
 # -- runner ------------------------------------------------------------------------------------------------------
@@ -195,6 +273,11 @@ def main(argv=None) -> int:
     summary.update(finished_at=utc_now(), files={"movie": str(movie_path), "case": str(case_dir), "stl": str(stl)})
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
     m = summary["metrics"]
+    if sc.force_scale != 1.0:
+        summary["real_hull"] = {k: m[k] * sc.force_scale for k in ("drag_force_N", "lift_force_N") if m.get(k) is not None}
+        summary["real_hull"]["note"] = f"x {sc.force_scale}: {sc.notes[0]}"
+        (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
+        print(f"[{sc.name}] real hull (x {sc.force_scale} of the double body): {summary['real_hull']}")
     print(f"[{sc.name}] movie {movie_path}")
     if m.get("Cl") is not None:
         print(f"[{sc.name}] Cl {m['Cl']:.3f}, Cd {m['Cd']:.4f}, lift {m.get('lift_force_N', float('nan')):.2f} N, "

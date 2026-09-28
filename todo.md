@@ -63,7 +63,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 4.10 Aeromant `rotor_mrf` / `rotor_mrf_static` (MRF propeller, forces → thrust/torque/power/Ct/Cp/η/FM, both dialects); CFD sections in notebooks 11/12 (`VEGETA_SKIP_OPENFOAM=1` skips them) — live validation on a machine with OpenFOAM: `test_openfoam.sh` + the notebook cells
 - [x] 4.11 Aeromant `aircraft_rotor_disks`: a whole aircraft with two propellers as `rotorDisk` blade-element sources (Boreas blade + polar tables), both dialects; `09a_fixed_wing_design` Part 3 — live validation on a machine with OpenFOAM
 - [x] 4.13 Parallel CFD runs: `CFDCase.run(processors=N)` (decomposePar, mpirun, reconstructPar); scenarios: `scenarios/air_video.sh [-j N]` (preset aircraft + rotor disks → CFD → particle movie), plan in `scenarios/scenarios.md`
-- [ ] 4.14 Scenarios for the submarine and the boat (double body); scenarios read the design JSON exported by the notebooks instead of presets
+- [x] 4.14 Scenarios for the submarine (`sub_video.sh`, template `hull_rotor_disk`) and the boat (`boat_video.sh`, double body, no free surface)
+- [ ] 4.15 Scenarios read the design JSON exported by the notebooks instead of presets; free-surface boat scenario (interFoam)
 - [ ] 4.12 Full realistic simulation of an aircraft with its propellers: resolved rotating blades in the whole-aircraft mesh (several MRF zones, then sliding mesh / AMI for the unsteady blade passing), instead of rotor disks — some day
 
 ## Stage 5c — Chronos (missions, vibration, cyclic loads, life)
