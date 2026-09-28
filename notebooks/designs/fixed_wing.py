@@ -97,17 +97,22 @@ class FixedWing(Design):
         if r_end <= 0.5:     # the cavity stops where the tail cone gets thinner than the wall
             x_end = -ln + Lf - lt + (lt - inset) * (r - 1.0) / (r - 0.12 * D / 2 + 1e-9) * 0.9
             r_end = 1.0
+        x_cyl = -ln + Lf - lt
+        x_te = min(p["root_chord"], x_cyl - 1.0)
+        # the cylinder is split at the wing's leading and trailing edges (same shape, separate faces), so the part
+        # under the wing can be selected on its own (the clamp of the fuselage FEA)
         wp = (cq.Workplane("XY").moveTo(x0, 0).spline(nose[1:], includeCurrent=True)
-              .lineTo(-ln + Lf - lt, r).lineTo(x_end, r_end).lineTo(x_end, 0).close())
+              .lineTo(0.0, r).lineTo(x_te, r).lineTo(x_cyl, r).lineTo(x_end, r_end).lineTo(x_end, 0).close())
         return wp
 
     def _fuselage(self, p, hollow=False):
         """Elliptic nose, cylinder, tapered tail; axis at z = -D/2 so the wing sits on top. ``hollow``: a printed
         shell of ``fuselage_wall`` (the cavity follows the outside, closed at the tail cone)."""
         r = p["fuselage_diameter"] / 2
-        body = self._profile(p).revolve(360, (0, 0, 0), (1, 0, 0))
+        # the printed shell keeps its faces split at the wing (clean=False): the FEA clamps only the part under the wing
+        body = self._profile(p).revolve(360, (0, 0, 0), (1, 0, 0), clean=not hollow)
         if hollow:
-            body = body.cut(self._profile(p, inset=p["fuselage_wall"]).revolve(360, (0, 0, 0), (1, 0, 0)))
+            body = body.cut(self._profile(p, inset=p["fuselage_wall"]).revolve(360, (0, 0, 0), (1, 0, 0), clean=False), clean=False)
         return body.translate((0, 0, -r))
 
     def _tail(self, p, separate=False):
@@ -123,7 +128,7 @@ class FixedWing(Design):
         if p["part"] == "nacelle":
             return self._nacelle(p, 0.0)
         if p["part"] == "fuselage":
-            return self._fuselage(p, hollow=True).union(self._tail(p))
+            return self._fuselage(p, hollow=True).union(self._tail(p), clean=False)
         wing = self._wing(p)
         wing = wing.union(self._nacelle(p, -p["nacelle_y"])).union(self._nacelle(p, p["nacelle_y"]))
         if p["part"] == "wing":
