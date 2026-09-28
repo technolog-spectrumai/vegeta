@@ -12,7 +12,10 @@ from .parachute import Body, DropResult, Parachute, Wind, crush_pulse, landing_s
 from .rainflow import rainflow, reversals
 from .result import CommandRecord, Result, ResultError
 from .spectrum import Block, LoadSpectrum, build_spectrum
+from .turbulence import (GustField, Turbulence, alleviation_factor, frozen_field, gust_series, load_factor, rice_extreme,
+                         through_mount, welch)
 
 __version__ = "0.1.0"
 __all__ = ["Block", "Body", "DropResult", "Parachute", "Wind", "crush_pulse", "half_sine", "landing_scatter", "shock_at_mount", "simulate_drop", "srs", "CommandRecord", "Excitation", "LifeSimulation", "LoadSpectrum", "Mission", "Result", "ResultError",
-           "SNCurve", "Segment", "Structure", "build_spectrum", "hotspot_damage", "rainflow", "reversals", "simulate_life"]
+           "SNCurve", "Segment", "Structure", "build_spectrum", "hotspot_damage", "rainflow", "reversals", "simulate_life",
+           "GustField", "Turbulence", "alleviation_factor", "frozen_field", "gust_series", "load_factor", "rice_extreme", "through_mount", "welch"]
