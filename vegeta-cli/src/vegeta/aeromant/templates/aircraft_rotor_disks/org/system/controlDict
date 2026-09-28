@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solver          incompressibleFluid;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         {{ITERATIONS}};
+deltaT          1;
+writeControl    timeStep;
+writeInterval   {{ITERATIONS}};
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable false;
+
+functions
+{
+    forceCoeffs
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        log             yes;
+        patches         ("body.*");
+        rho             rhoInf;
+        rhoInf          {{DENSITY}};
+        liftDir         (0 0 1);
+        dragDir         (1 0 0);
+        CofR            ({{CENTER_OF_ROTATION}});
+        pitchAxis       (0 1 0);
+        magUInf         {{VELOCITY}};
+        lRef            {{REFERENCE_LENGTH}};
+        Aref            {{REFERENCE_AREA}};
+    }
+}
+
+// ************************************************************************* //

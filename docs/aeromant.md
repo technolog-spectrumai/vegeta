@@ -27,7 +27,8 @@ dictionaries and solvers:
 | openfoam.org | 12 and later (`/opt/openfoam14`, official `.org` packages) | `org/` (`constant/geometry`, `physicalProperties`, `momentumTransport`) | `surfaceFeatures` | `foamRun -solver incompressibleFluid` |
 
 Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static` (a
-propeller in a rotating frame, see below). `aeromant templates` lists them with their parameters.
+propeller in a rotating frame, see below), `aircraft_rotor_disks` (a whole aircraft with two propellers as
+rotor disks, see below). `aeromant templates` lists them with their parameters.
 
 `CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
 matching files; `case.flavor` tells you which. `OpenFOAMEnvironment.detect()` prefers a .com install
@@ -127,6 +128,27 @@ movie.make_movie(case, "prop_particles.mp4", blades=3, n=40, seconds=12, fps=24,
 inverse distance over the nearest cell centres (scipy); `Tracer` and `render_frame` are plain numpy and
 OpenCV and take any `points -> (U, valid)` function, which is how the unit tests run on a stub field
 (`tests/aeromant/test_movie.py`). A steady result shown as motion, not a transient simulation.
+
+## A whole aircraft with its propellers (`aircraft_rotor_disks`)
+The external RANS case of an aircraft with **two propellers as rotor disks**: each disk is a thin cylindrical
+cell zone (snappyHexMesh) carrying OpenFOAM's `rotorDisk` blade-element source (`system/fvOptions` for
+openfoam.com, `constant/fvModels` for openfoam.org). The blade geometry and the section polar are tables, e.g.
+from Boreas:
+```python
+case = aeromant.CFDCase("aircraft_rotor_disks", "aircraft.stl", dict(
+    velocity=14, kinematic_viscosity=1.5e-5, density=1.2, reference_area=0.17, reference_length=0.25,
+    center_of_rotation=(0.05, 0, 0),
+    disk1_center=(-0.06, -0.3, 0.0), disk2_center=(-0.06, 0.3, 0.0), disk_axis=(-1, 0, 0),   # thrust direction
+    diameter=prop.diameter, rpm=cruise.rpm, blades=prop.blades,
+    blade=[[r, beta, c] for r, beta, c in zip(prop.r, prop.beta_deg, prop.chord)],          # m, deg, m
+    polar=[[a, cd, cl] ...],                                                                 # deg, -180..180
+    rotation1=1, rotation2=-1), workdir="runs/aircraft_disks", geometry_units="mm")
+```
+The forces (Cl, Cd, lift and drag) are the **airframe's in the slipstream**; the disks' own thrust is printed by
+the source in the solver log. Momentum and swirl are right on average; blade passing and tip vortices are not
+resolved (a fully resolved rotating-blade simulation of the whole aircraft is on the to-do list). Sign check: the
+flow behind the disks must be faster than the free stream; if not, flip `disk_axis`. Notebook:
+`09_fixed_wing_drone`, Part 5.
 
 ## OpenFOAM installations
 - `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,

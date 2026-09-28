@@ -57,7 +57,8 @@ canopy, slicing; then the propeller and drive — BEMT, a rotating-frame CFD che
 blade FEA with a stress video; then modes, Campbell diagram, three mission types, rainflow spectra,
 fatigue on the FEA stress fields and a fleet-usage life) and `09_fixed_wing_drone` (twin-motor fixed wing:
 wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on the resulting drag polar
-with the same CFD/noise/blade/video treatment, then wing modes, missions and life). `07_ai_design_copilot`
+with the same CFD/noise/blade/video treatment, then wing modes, missions and life, the whole fuselage
+over a long full-battery mission, and the whole aircraft in flight with its propellers as rotor disks). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
@@ -81,6 +82,7 @@ against blade and hull modes, blade response and fatigue, the noise spectrum, an
 evaluated side by side, with a recommendation; then the recommendation (7 blades in nickel-aluminium bronze) made
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
+every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
