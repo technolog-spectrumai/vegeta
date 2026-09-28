@@ -65,3 +65,20 @@ def _bashrc(tmp_path, version):
     rc = tmp_path / "bashrc"
     rc.write_text(f"export WM_PROJECT_VERSION={version}\n")
     return str(rc)
+
+
+def test_parallel_pipeline_and_subdomains(tmp_path, sphere_stl):
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, values(), tmp_path / "c", geometry_units="m")
+    assert case.prepare().ok
+    serial = [s.name for s in case.pipeline(1)]
+    assert "decompose" not in serial and serial[-1] == "solver"
+    par = case.pipeline(8)
+    names = [s.name for s in par]
+    assert names[-3:] == ["decompose", "solver", "reconstruct"]
+    solver = par[names.index("solver")]
+    assert solver.argv[:3] == ("mpirun", "-np", "8") and solver.argv[-1] == "-parallel"
+    assert par[-1].argv == ("reconstructPar", "-latestTime")
+    case._set_subdomains(8)
+    assert "numberOfSubdomains 8;" in (tmp_path / "c/system/decomposeParDict").read_text()
+    res = case.run(["decompose"], processors=0)
+    assert not res.ok and "processors" in res.messages[0]
