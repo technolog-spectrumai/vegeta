@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import math
 import json
+import os
 import re
 import shutil
 import threading
@@ -19,7 +20,7 @@ from .environment import OpenFOAMEnvironment
 from .result import CommandRecord, Result
 from .results import find_coefficient_files, read_checkmesh, read_coefficients, read_solver_log
 from .stl import LENGTH_TO_METRES, read_stl, write_stl_ascii
-from .templates import TemplateSpec, get_template
+from .templates import Step, TemplateSpec, get_template
 
 CASE_INFO = "aeromant_case.json"
 _PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
@@ -148,24 +149,61 @@ class CFDCase:
             path.write_text(_PLACEHOLDER.sub(lambda m: values[m.group(1)], text))
 
     # -- run --------------------------------------------------------------------------------
-    def run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
-            timeout: float | None = None) -> Result:
-        """Run the template pipeline, or only ``steps`` (names from ``template.step_names``), in order.
+    def pipeline(self, processors: int = 1) -> list[Step]:
+        """The steps ``run`` executes. With ``processors`` > 1 the mesh is still built serially, then the case is
+        decomposed (``decomposePar``), the solver runs under ``mpirun -np N ... -parallel`` and the last time is
+        reconstructed (``reconstructPar -latestTime``) so that results and plots read the case as usual."""
+        steps = list(self.files.pipeline)
+        if processors <= 1:
+            return steps
+        out = []
+        for s in steps:
+            if s.name == "solver":
+                out.append(Step("decompose", ("decomposePar", "-force"), description=f"split the case into {processors} subdomains"))
+                out.append(Step("solver", ("mpirun", "-np", str(processors), *s.argv, "-parallel"),
+                                description=f"{s.description} on {processors} processors"))
+                out.append(Step("reconstruct", ("reconstructPar", "-latestTime"), description="gather the last time step"))
+            else:
+                out.append(s)
+        return out
 
+    def _set_subdomains(self, processors: int) -> None:
+        f = self.workdir / "system" / "decomposeParDict"
+        text = f.read_text()
+        new, n = re.subn(r"numberOfSubdomains\s+\d+\s*;", f"numberOfSubdomains {processors};", text)
+        if n != 1:
+            raise ValueError(f"{f} has no numberOfSubdomains entry to set")
+        f.write_text(new)
+
+    def run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
+            timeout: float | None = None, processors: int = 1) -> Result:
+        """Run the template pipeline, or only ``steps`` (names from ``pipeline(processors)``), in order.
+
+        ``processors`` > 1 runs the solver in parallel with MPI (see ``pipeline``); meshing stays serial.
         Stops at the first failing step. ``checkMesh`` failures are reported but do not stop the run.
         """
         t0 = time.monotonic()
-        res = Result(kind="aeromant.run", metadata={"case": self.config(), "started_at": utc_now()})
+        res = Result(kind="aeromant.run", metadata={"case": self.config(), "started_at": utc_now(), "processors": processors})
         if not self.is_prepared:
             res.fail(f"case in {self.workdir} is not prepared for this configuration; call prepare() first")
             res.duration_s = time.monotonic() - t0
             return res
-        names = list(steps) if steps is not None else self.template.step_names(self.flavor)
-        unknown = [s for s in names if s not in self.template.step_names(self.flavor)]
-        if unknown:
-            res.fail(f"unknown step(s) {unknown}; template steps: {self.template.step_names(self.flavor)}")
+        if processors < 1:
+            res.fail("processors must be >= 1")
             return res
-        by_name = {s.name: s for s in self.files.pipeline}
+        pipeline = self.pipeline(processors)
+        known = [s.name for s in pipeline]
+        names = list(steps) if steps is not None else known
+        unknown = [s for s in names if s not in known]
+        if unknown:
+            res.fail(f"unknown step(s) {unknown}; template steps: {known}")
+            return res
+        by_name = {s.name: s for s in pipeline}
+        if processors > 1:
+            self._set_subdomains(processors)
+        env = dict(self.environment.env or {})
+        if processors > 1 and hasattr(os, "geteuid") and os.geteuid() == 0:   # OpenMPI refuses root without these
+            env.update(OMPI_ALLOW_RUN_AS_ROOT="1", OMPI_ALLOW_RUN_AS_ROOT_CONFIRM="1")
         res.metadata["steps"] = names
         cb, close = resolve_progress(progress, "aeromant")
         iterations = self.parameters.get("iterations", 1)
@@ -183,7 +221,7 @@ class CFDCase:
                             m = re.match(r"^Time = (\d+)", line)
                             if m:
                                 cb(name, base + share * min(1.0, int(m.group(1)) / iterations), f"iteration {m.group(1)}")
-                    rec = run_command(self.environment.command(list(step.argv)), self.workdir, env=self.environment.env,
+                    rec = run_command(self.environment.command(list(step.argv)), self.workdir, env=env or None,
                                       timeout=timeout, log_path=self.workdir / f"log.{name}", on_output=on_line,
                                       cancel=cancel)
                 res.execution.append(rec)

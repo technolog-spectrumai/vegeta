@@ -74,6 +74,10 @@ evaluated side by side, with a recommendation; then the recommendation (7 blades
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
+Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
+CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/` — see
+[scenarios/scenarios.md](scenarios/scenarios.md).
+
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
 [Vegeta Core](docs/core.md) · [AI copilot](docs/ai.md).
