@@ -43,4 +43,4 @@ Talos also draws mode shapes (`viz.plot_mode(modes_result, mode=1)`) and fatigue
 cumulative-damage curves with matplotlib.
 
 See the notebooks: `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print`, `05_workflow`, and the two
-product-level ones, `08_quadcopter` and `09_fixed_wing_drone`.
+product-level ones, `08_quadcopter` and `09a_fixed_wing_design` / `09b_fixed_wing_durability`.
