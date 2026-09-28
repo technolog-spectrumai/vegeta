@@ -74,4 +74,4 @@ vegeta chronos spectrum missions.py:HOVER --modes 210,415 --damping 0.03 -o runs
 vegeta chronos life --damage hover=2e-4 freestyle=3e-3 --hours hover=0.2 freestyle=0.1 --usage hover=0.7 freestyle=0.3
 ```
 
-Notebooks: the life parts of `08_quadcopter` and `09_fixed_wing_drone`.
+Notebooks: the life parts of `08_quadcopter` and `09b_fixed_wing_durability`.
