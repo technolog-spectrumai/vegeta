@@ -25,13 +25,18 @@ class TemplateParameter:
     description: str
     units: str = ""
     default: Any = REQUIRED  # REQUIRED -> the engineer must give it; otherwise a template decision
-    kind: str = "float"      # float | int | vector
+    kind: str = "float"      # float | int | vector | table (rows of 3 numbers)
 
     @property
     def required(self) -> bool:
         return self.default is REQUIRED
 
     def validate(self, value: Any) -> Any:
+        if self.kind == "table":
+            arr = np.asarray(value, dtype=float)
+            if arr.ndim != 2 or arr.shape[1] != 3 or len(arr) < 2 or not np.all(np.isfinite(arr)):
+                raise ValueError(f"template parameter {self.name!r} needs at least 2 rows of 3 finite numbers")
+            return arr.tolist()
         if self.kind == "vector":
             arr = np.asarray(value, dtype=float)
             if arr.shape != (3,):
@@ -364,7 +369,94 @@ ROTOR_MRF_STATIC = TemplateSpec(
                          "open (total-pressure) far-field boundaries were tried and diverged with SIMPLE; the small fixed inflow is the stable choice"),
 )
 
-TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC)}
+# -- a whole aircraft with its two propellers as rotor disks (blade-element source terms) ---------------
+def _unit(v) -> np.ndarray:
+    v = np.asarray(v, dtype=float)
+    n = float(np.linalg.norm(v))
+    if n == 0:
+        raise ValueError("disk_axis must not be zero")
+    return v / n
+
+
+def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """The external RANS case plus two disk cell zones and their rotor-disk sources (blade data and the
+    section polar are written as tables)."""
+    out = _external_derive(p, bmin, bmax)
+    D, axis = p["diameter"], _unit(p["disk_axis"])
+    ref = np.array([0.0, 0.0, 1.0]) - axis[2] * axis        # "up" in the disk plane: psi = 0 reference
+    if np.linalg.norm(ref) < 1e-6:
+        ref = np.array([0.0, 1.0, 0.0]) - axis[1] * axis
+    ref = _unit(ref)
+    lo = np.array([float(out["XMIN"]), float(out["YMIN"]), float(out["ZMIN"])])
+    hi = np.array([float(out["XMAX"]), float(out["YMAX"]), float(out["ZMAX"])])
+    half = 0.5 * p["disk_thickness"] * D * axis
+    extra: dict[str, Any] = {}
+    for i, key in ((1, "disk1_center"), (2, "disk2_center")):
+        c = np.asarray(p[key], dtype=float)
+        if np.any(c - D < lo) or np.any(c + D > hi):
+            raise ValueError(f"{key} {c.tolist()} is not well inside the domain {lo.tolist()}..{hi.tolist()}")
+        extra[f"DISK{i}_CENTER"], extra[f"DISK{i}_P1"], extra[f"DISK{i}_P2"] = c, c - half, c + half
+        extra[f"DISK{i}_RPM"] = p["rpm"] * p[f"rotation{i}"]
+    for i in (1, 2):
+        if p[f"rotation{i}"] not in (1.0, -1.0):
+            raise ValueError(f"rotation{i} must be 1 or -1")
+    blade = np.asarray(p["blade"], dtype=float)
+    if np.any(np.diff(blade[:, 0]) <= 0) or blade[0, 0] <= 0 or blade[-1, 0] > 0.5 * D * 1.001:
+        raise ValueError("blade rows are (radius [m], twist [deg], chord [m]) with increasing radius up to diameter / 2")
+    if np.any(blade[:, 2] <= 0):
+        raise ValueError("blade chord must be positive")
+    polar = np.asarray(p["polar"], dtype=float)
+    polar = polar[np.argsort(polar[:, 0])]
+    if polar[0, 0] > -90 or polar[-1, 0] < 90:
+        raise ValueError("polar rows are (alpha [deg], Cd, Cl) and must cover at least -90..90 deg")
+    extra.update({
+        "DISK_AXIS": axis, "REF_DIRECTION": ref, "DISK_ZONE_RADIUS": p["zone_radius"] * D,
+        "DISK_LEVEL": p["disk_level"], "BLADES": p["blades"], "TIP_EFFECT": p["tip_effect"],
+        "INLET_VELOCITY": np.array([p["velocity"], 0.0, 0.0]),
+    })
+    out.update({k: _fmt(v) for k, v in extra.items()})
+    out["BLADE_DATA"] = "\n".join(f"            (section ({_fmt(r)} {_fmt(t)} {_fmt(c)}))" for r, t, c in blade)
+    out["PROFILE_DATA"] = "\n".join(f"                ({_fmt(a)} {_fmt(cd)} {_fmt(cl)})" for a, cd, cl in polar)
+    return out
+
+
+AIRCRAFT_ROTOR_DISKS = TemplateSpec(
+    name="aircraft_rotor_disks",
+    description="Whole aircraft in steady RANS k-omega SST flow (flow +x, lift +z) with two propellers as rotor "
+                "disks: blade-element source terms from the blade geometry and section polar (e.g. Boreas).",
+    parameters=COMMON_REQUIRED + _mesh_and_domain(800) + (
+        TemplateParameter("turbulence_intensity", "inlet turbulence intensity", "-", 0.005),
+        TemplateParameter("viscosity_ratio", "inlet eddy/molecular viscosity ratio", "-", 10.0),
+        TemplateParameter("disk1_center", "centre of the left propeller disk (in the flow frame, metres)", "m", kind="vector"),
+        TemplateParameter("disk2_center", "centre of the right propeller disk", "m", kind="vector"),
+        TemplateParameter("disk_axis", "thrust direction of both disks (usually about -x: upstream)", "-", kind="vector"),
+        TemplateParameter("diameter", "propeller diameter", "m"),
+        TemplateParameter("rpm", "propeller speed", "rpm"),
+        TemplateParameter("blades", "blades per propeller", "", kind="int"),
+        TemplateParameter("blade", "blade rows (radius [m], twist [deg], chord [m]), hub to tip", "", kind="table"),
+        TemplateParameter("polar", "section polar rows (alpha [deg], Cd, Cl), covering -180..180 deg", "", kind="table"),
+        TemplateParameter("rotation1", "left disk sense of rotation about disk_axis: 1 or -1", "", 1.0),
+        TemplateParameter("rotation2", "right disk sense of rotation: -1 counter-rotates", "", -1.0),
+        TemplateParameter("tip_effect", "normalised radius above which the blades carry no lift (tip loss)", "-", 0.97),
+        TemplateParameter("disk_thickness", "thickness of each disk cell zone", "D", 0.08),
+        TemplateParameter("zone_radius", "radius of each disk cell zone", "D", 0.52),
+        TemplateParameter("disk_level", "refinement level inside the disk zones", "", 5, "int"),
+    ),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_disks_derive,
+    max_body_extent=6.0,
+    patches=EXTERNAL_PATCHES,
+    notes=(
+        "propellers are rotor disks (momentum and swirl from blade elements), not resolved rotating blades",
+        "forceCoeffs are on the airframe (body*) only: the airframe sees the slipstream; propeller thrust is "
+        "the disks' (printed by the rotorDisk source in the solver log)",
+        "sign check: with a correct setup the disks accelerate the flow (+x) behind them; if not, flip disk_axis",
+        "wall functions without prism layers: y+ is not controlled; use for trend comparison, not absolute drag",
+    ),
+)
+
+TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC,
+                                                         AIRCRAFT_ROTOR_DISKS)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 
