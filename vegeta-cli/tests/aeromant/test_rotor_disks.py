@@ -45,6 +45,10 @@ def test_prepare_writes_both_disks(tmp_path, sphere_stl, version, files):
     assert "(section (0.02 30 0.018))" in src and "(-180 " in src
     assert ("rpm             7000;" in src and "rpm             -7000;" in src) or ("7000 [rpm]" in src and "-7000 [rpm]" in src)
     assert "axis            (-1 0 0);" in src and "refDirection    (0 0 1);" in src
+    if version is None:                           # openfoam.com v2012+: trim model "fixedTrim" with "fixedTrimCoeffs"
+        assert src.count("trimModel       fixedTrim;") == 2 and src.count("fixedTrimCoeffs") == 2
+    else:                                         # openfoam.org: "fixedTrim" with a "fixedTrim" sub-dictionary
+        assert src.count("trimModel       fixedTrim;") == 2
     snappy = (c / "system/snappyHexMeshDict").read_text()
     assert snappy.count("cellZone diskLeft;") == 1 and "point1 (-0.050856 -0.3 0)" in snappy
 

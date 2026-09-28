@@ -29,11 +29,11 @@ diskLeft
     axis            ({{DISK_AXIS}});
     refDirection    ({{REF_DIRECTION}});
     rpm             {{DISK1_RPM}};
-    trimModel       fixed;
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
     rhoRef          {{DENSITY}};
     rhoInf          {{DENSITY}};
 
-    fixedCoeffs
+    fixedTrimCoeffs
     {
         theta0      0;
         theta1c     0;
