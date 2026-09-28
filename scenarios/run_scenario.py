@@ -152,8 +152,10 @@ def boat() -> Scenario:
                disk_axis=[-1.0, 0.0, 0.0], diameter=prop.diameter, rpm=rpm, blades=prop.blades,
                blade=[[r, b, c] for r, b, c in zip(prop.r, prop.beta_deg, prop.chord)], polar=_polar_table(section),
                rotation1=1, rotation2=-1, disk_level=6)
+    movie = {"n": 600, "seconds": 8.0, "fps": 24, "surface_z": draft / 1000,     # water below: speed colours; above: grey
+             "above_label": "above the waterline: mirror image (double body, no air simulated)"}
     return Scenario("boat", "survey boat at cruise, no free surface (double body), propeller running", spec, params,
-                    "aircraft_rotor_disks", cfd, build=double_body, force_scale=0.5,
+                    "aircraft_rotor_disks", cfd, build=double_body, force_scale=0.5, movie=movie,
                     notes=("no free surface: the waterline is a symmetry plane (double body); no waves, no wave drag, no trim",
                            "forces in summary.json 'real_hull' are half the double body's; the mirror disk turns the other way",
                            "the propeller is a rotor disk behind the motor pod"))
