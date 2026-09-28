@@ -63,7 +63,6 @@ iterates a design with Claude; `10_agentic_design` lets Claude run a bounded par
 every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
 with a scripted agent when no API key is set. Shared design files live in
-every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 `notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 `11_rover_mechanics` (branch `dev_land`) is a small rugged-terrain rover: terrain profiles → quarter-car wheel
 loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
@@ -83,7 +82,6 @@ against blade and hull modes, blade response and fatigue, the noise spectrum, an
 evaluated side by side, with a recommendation; then the recommendation (7 blades in nickel-aluminium bronze) made
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
-every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
