@@ -74,4 +74,12 @@ vegeta chronos spectrum missions.py:HOVER --modes 210,415 --damping 0.03 -o runs
 vegeta chronos life --damage hover=2e-4 freestyle=3e-3 --hours hover=0.2 freestyle=0.1 --usage hover=0.7 freestyle=0.3
 ```
 
+## Timed parachute landing and shock (`chronos.parachute`, `chronos.srs`)
+`simulate_drop(Body, Parachute, altitude_m=, speed_m_s=, timer_s=, wind=Wind(...), crush_stroke_m=)` follows a point
+mass from the motor cut: the fall, the canopy filling over its fill time (the **opening shock** is the peak drag),
+the descent in a mean wind with seeded gusts, and the **touchdown** stopped over a crush pad (a half-sine pulse:
+`crush_pulse`). `landing_scatter` repeats it over a wind range and seeds. `srs(t, a, freqs_hz, damping)` is the
+shock response spectrum of any base pulse (`half_sine` makes one) and `shock_at_mount` the peak a payload on
+isolators of a given natural frequency sees. Notebook: `16_delta_wing_delivery`.
+
 Notebooks: the life parts of `08_quadcopter` and `09b_fixed_wing_durability`.

@@ -91,4 +91,12 @@ The tones are compact dipoles, `p = ω F / (4 π c r)` × cos (thrust) or sin (s
 the axis. The slipstream model is momentum theory (induced axial velocity and swirl from the solution,
 contraction by continuity), a stand-in for pictures before a CFD field exists, not a flow solution.
 
+## Mission range with four kinds of powerplant (`boreas.range`)
+`Aircraft` (a drag polar and the masses that do not burn) plus a powerplant — `ElectricProp` (a `Propulsion`: BEMT
+propeller, motor, battery), `PistonProp` (the propeller on a petrol engine: shaft power x BSFC), `ElectricFan`
+(fan momentum theory on a battery) or `Turbojet` (static thrust, a lapse with speed, TSFC) — and `fly_mission(ac,
+pp, [Leg(...)], wind_m_s=...)` flies the legs step by step: lift = the current weight, so a **liquid-fuel aircraft's
+mass, drag and consumption fall as it burns**; `max_range` cruises until the store is empty. `breguet_jet` /
+`breguet_prop` are the closed forms the tests compare against. Notebook: `16_delta_wing_delivery`.
+
 Notebooks: the propeller parts of `08_quadcopter` and `09a_fixed_wing_design` (BEMT, CFD check, noise, blade FEA and its video).

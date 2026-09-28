@@ -144,6 +144,9 @@ case = aeromant.CFDCase("aircraft_rotor_disks", "aircraft.stl", dict(
     polar=[[a, cd, cl] ...],                                                                 # deg, -180..180
     rotation1=1, rotation2=-1), workdir="runs/aircraft_disks", geometry_units="mm")
 ```
+`disk_model="thrust"` with `thrust=<N>` replaces the blade elements by a **prescribed thrust** (a uniform momentum
+source over the disk zone, no swirl): a jet, a ducted fan, or a propeller whose thrust is known; `rpm`, `blade` and
+`polar` are then not needed. `hull_rotor_disk` is the same with one disk (a submarine, a boat, a single pusher).
 The forces (Cl, Cd, lift and drag) are the **airframe's in the slipstream**; the disks' own thrust is printed by
 the source in the solver log. Momentum and swirl are right on average; blade passing and tip vortices are not
 resolved (a fully resolved rotating-blade simulation of the whole aircraft is on the to-do list). Sign check: the
