@@ -82,3 +82,24 @@ def test_parallel_pipeline_and_subdomains(tmp_path, sphere_stl):
     assert "numberOfSubdomains 8;" in (tmp_path / "c/system/decomposeParDict").read_text()
     res = case.run(["decompose"], processors=0)
     assert not res.ok and "processors" in res.messages[0]
+
+
+@pytest.mark.parametrize("version", [None, "14"])
+def test_hull_rotor_disk_has_one_disk(tmp_path, sphere_stl, version):
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    v = values()
+    v.pop("disk2_center")
+    case = CFDCase("hull_rotor_disk", sphere_stl, v, tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    src = (c / ("system/fvOptions" if version is None else "constant/fvModels")).read_text()
+    assert src.count("type            rotorDisk;") == 1 and "diskRight" not in src
+    snappy = (c / "system/snappyHexMeshDict").read_text()
+    assert "diskRight" not in snappy and snappy.count("cellZone diskLeft;") == 1
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+    with pytest.raises(ValueError, match="disk2_center"):
+        CFDCase("hull_rotor_disk", sphere_stl, values(), tmp_path / "x", geometry_units="m")

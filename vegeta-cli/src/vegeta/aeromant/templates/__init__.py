@@ -391,13 +391,15 @@ def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]
     hi = np.array([float(out["XMAX"]), float(out["YMAX"]), float(out["ZMAX"])])
     half = 0.5 * p["disk_thickness"] * D * axis
     extra: dict[str, Any] = {}
-    for i, key in ((1, "disk1_center"), (2, "disk2_center")):
+    disks = [i for i in (1, 2) if f"disk{i}_center" in p]            # two disks (aircraft) or one (hull_rotor_disk)
+    for i in disks:
+        key = f"disk{i}_center"
         c = np.asarray(p[key], dtype=float)
         if np.any(c - D < lo) or np.any(c + D > hi):
             raise ValueError(f"{key} {c.tolist()} is not well inside the domain {lo.tolist()}..{hi.tolist()}")
         extra[f"DISK{i}_CENTER"], extra[f"DISK{i}_P1"], extra[f"DISK{i}_P2"] = c, c - half, c + half
         extra[f"DISK{i}_RPM"] = p["rpm"] * p[f"rotation{i}"]
-    for i in (1, 2):
+    for i in disks:
         if p[f"rotation{i}"] not in (1.0, -1.0):
             raise ValueError(f"rotation{i} must be 1 or -1")
     blade = np.asarray(p["blade"], dtype=float)
@@ -455,8 +457,31 @@ AIRCRAFT_ROTOR_DISKS = TemplateSpec(
     ),
 )
 
+_ONE_DISK_DROP = ("disk2_center", "rotation2")
+HULL_ROTOR_DISK = TemplateSpec(
+    name="hull_rotor_disk",
+    description="A hull (submarine, boat double body, any body) in steady RANS k-omega SST flow (flow +x) with one "
+                "propeller as a rotor disk: blade-element source terms from the blade geometry and section polar.",
+    parameters=tuple(
+        (TemplateParameter("disk1_center", "centre of the propeller disk (in the flow frame, metres)", "m", kind="vector")
+         if t.name == "disk1_center" else
+         TemplateParameter("rotation1", "sense of rotation about disk_axis: 1 or -1", "", 1.0) if t.name == "rotation1" else t)
+        for t in AIRCRAFT_ROTOR_DISKS.parameters if t.name not in _ONE_DISK_DROP),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_disks_derive,
+    max_body_extent=6.0,
+    patches=EXTERNAL_PATCHES,
+    notes=(
+        "the propeller is a rotor disk (momentum and swirl from blade elements), not resolved rotating blades",
+        "forceCoeffs are on the hull (body*) only: the hull sees the propeller's inflow; the thrust is the disk's "
+        "(printed by the rotorDisk source in the solver log)",
+        "sign check: the flow behind the disk must be faster than around it; if not, flip disk_axis",
+        "wall functions without prism layers: y+ is not controlled; use for trend comparison, not absolute drag",
+    ),
+)
+
 TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC,
-                                                         AIRCRAFT_ROTOR_DISKS)}
+                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 
