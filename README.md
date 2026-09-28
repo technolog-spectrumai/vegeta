@@ -62,7 +62,7 @@ iterates a design with Claude; `10_agentic_design` lets Claude run a bounded par
 every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
 with a scripted agent when no API key is set. Shared design files live in
-`notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
