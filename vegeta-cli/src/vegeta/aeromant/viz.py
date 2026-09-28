@@ -192,12 +192,16 @@ def _write_video(frames, path, fps: int) -> Path:
 
 def animate_particles(case, path, *, n: int = 400, seconds: float = 6.0, fps: int = 24, rpm: float | None = None,
                       axis: str = "x", lengths: float = 6.0, size=(960, 720), seed: int = 0, camera=None,
-                      point_size: float = 7.0, progress: bool = False) -> Path:
+                      point_size: float = 7.0, progress: bool = False, surface_z: float | None = None,
+                      above_label: str = "above the surface", above_color: str = "#8a8a8a") -> Path:
     """MP4 (OpenCV) of tracer particles carried by the converged velocity field: seeded upstream of the
     body, advected through the steady field (Heun steps on the sampled ``U``), coloured by speed, and
     re-seeded once they leave the domain. ``lengths`` body sizes of travel fill the video. With ``rpm``
     the body is turned about ``axis`` at that speed for the eye — in an MRF case the field itself is
-    steady in the rotating zone. ``progress``: a tqdm bar over the frames. Returns the file path."""
+    steady in the rotating zone. ``progress``: a tqdm bar over the frames. ``surface_z`` (m): a water surface —
+    particles below it are coloured by speed (water), those above it in one flat ``above_color`` (air, or the mirror
+    image of a double-body case, named by ``above_label``); a translucent plane marks the surface and the body above
+    it is drawn faint. Returns the file path."""
     pv = _pv()
     mb = read_results(case)
     internal = mb["internalMesh"]
@@ -247,15 +251,35 @@ def animate_particles(case, path, *, n: int = 400, seconds: float = 6.0, fps: in
         lost = ~(ok & ok2) | (pts[:, 0] > b[1][0] + 2.5 * size_m) | (np.abs(pts[:, 1] - centre[1]) > 4 * size_m) | (np.abs(pts[:, 2] - centre[2]) > 4 * size_m)
         if lost.any():
             pts[lost] = seeds(int(lost.sum()))
-        cloud = pv.PolyData(pts)
-        cloud.point_data["|U|"] = np.linalg.norm(u1, axis=1)
+        speed = np.linalg.norm(u1, axis=1)
+        below = pts[:, 2] <= surface_z if surface_z is not None else np.ones(len(pts), bool)
         pl.clear()
-        pl.add_mesh(cloud, scalars="|U|", cmap="turbo", clim=speed_lim, point_size=point_size, render_points_as_spheres=True,
-                    scalar_bar_args={"title": "|U| [m/s]"})
+        if below.any():
+            cloud = pv.PolyData(pts[below])
+            cloud.point_data["|U|"] = speed[below]
+            pl.add_mesh(cloud, scalars="|U|", cmap="turbo", clim=speed_lim, point_size=point_size, render_points_as_spheres=True,
+                        scalar_bar_args={"title": "water |U| [m/s]" if surface_z is not None else "|U| [m/s]",
+                                         "position_x": 0.18, "position_y": 0.04, "width": 0.55})   # clear of the logo (bottom right)
+        if surface_z is not None and (~below).any():
+            pl.add_mesh(pv.PolyData(pts[~below]), color=above_color, point_size=point_size, render_points_as_spheres=True)
         if stl is not None:
             body = getattr(stl, rot)((rpm / 60.0 * 360.0 * k / fps) % 360.0, point=tuple(centre), inplace=False) if rpm else stl
-            pl.add_mesh(body, color="#dddddd")
-        pl.add_text("tracer particles in the converged flow" + (f", body at {rpm:.0f} rpm" if rpm else ""), font_size=10)
+            if surface_z is None:
+                pl.add_mesh(body, color="#dddddd")
+            else:
+                wet = body.clip(normal=(0, 0, 1), origin=(0, 0, surface_z), invert=True)
+                dry = body.clip(normal=(0, 0, 1), origin=(0, 0, surface_z), invert=False)
+                if wet.n_points:
+                    pl.add_mesh(wet, color="#dddddd")
+                if dry.n_points:
+                    pl.add_mesh(dry, color="#dddddd", opacity=0.18)
+        if surface_z is not None:
+            half = 2.5 * size_m
+            plane = pv.Plane(center=(centre[0] + 0.6 * size_m, centre[1], surface_z), direction=(0, 0, 1),
+                             i_size=2 * half + 1.5 * size_m, j_size=2 * max(cross, 0.6 * size_m))
+            pl.add_mesh(plane, color="#4f8fcf", opacity=0.22)
+        pl.add_text("tracer particles in the converged flow" + (f", body at {rpm:.0f} rpm" if rpm else "")
+                    + (f"\nwater: coloured by speed | {above_label}: grey" if surface_z is not None else ""), font_size=10)
         if k == 0:
             if camera is not None:
                 pl.camera_position = camera
