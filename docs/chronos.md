@@ -83,4 +83,18 @@ the descent in a mean wind with seeded gusts, and the **touchdown** stopped over
 shock response spectrum of any base pulse (`half_sine` makes one) and `shock_at_mount` the peak a payload on
 isolators of a given natural frequency sees. Notebook: `16_delta_wing_delivery`.
 
+## Atmospheric turbulence (`chronos.turbulence`)
+`Turbulence(altitude_m, wind_20ft_m_s)` is the low-altitude Dryden model of MIL-F-8785C: `sigma_w = 0.1 W20`, the
+horizontal intensities and the scale lengths from the altitude; `Turbulence.from_severity("light" | "moderate" |
+"severe", altitude_m)` uses the standard 20 ft winds (15 / 30 / 45 kt). `gust_series(turb, V, duration_s, dt, seed)`
+draws the three gust components met along a straight flight at true airspeed `V` (Gaussian Fourier coefficients on
+the exact Dryden spectra: the rms and the spectrum are right for any record length; seeded) as a `GustField`
+(`rms()`, `spectrum(c)` = Welch PSD). `load_factor(w, V, cl_alpha, W/S, rho, mean_chord_m=)` is the gust load
+factor (sharp-edged increment, with the Pratt alleviation factor when the mean chord is given);
+`rice_extreme(series, dt, exposures)` the expected largest excursion over one or more records;
+`frozen_field(turb, length_m, heights_m, dx)` an (x, z) field of u and w for streak pictures (rows correlated over
+the scale length); `through_mount(t, a, mount_hz, damping)` a base acceleration through an isolator. Rainflow +
+`SNCurve` on the stress history gives the life in turbulence. Notebook: `16_delta_wing_delivery` (7b, a 20 km
+cruise in moderate turbulence, with a wind-streak movie).
+
 Notebooks: the life parts of `08_quadcopter` and `09b_fixed_wing_durability`.

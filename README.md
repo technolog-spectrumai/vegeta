@@ -57,7 +57,7 @@ and life, then the whole fuselage over a long full-battery mission; it starts fr
 values). `16_delta_wing_delivery` (branch `dev_wing3`) is a delta-wing medical courier in two sizes with four powerplants —
 pusher propeller or jet, electric or liquid fuel (fuel burns along the mission: consumption and range) — with
 whole-aircraft CFD with the propulsion as a rotor or thrust disk, the wing structure and the stresses in the whole 2 m
-construction on its hardpoints, a timed-parachute landing in
+construction on its hardpoints, a long cruise through Dryden turbulence (with a wind-streak movie), a timed-parachute landing in
 wind and whether the medicine survives (vibration, opening shock, touchdown). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
