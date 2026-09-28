@@ -241,8 +241,9 @@ def main(argv=None) -> int:
         case = make_case()
 
         def prepare():
-            if case.is_prepared:
-                return "already prepared"
+            # a solved case is kept; anything else is prepared again (seconds), so template fixes always reach the case
+            if case.is_prepared and case.results().ok:
+                return "already solved"
             r = case.prepare(overwrite=True)
             if not r.ok:
                 raise RuntimeError(f"prepare failed: {r.messages}")
