@@ -49,10 +49,12 @@ Product-level notebooks — one notebook per machine, the whole workflow on one 
 visualisation and a JSON record: `08_quadcopter` (printed X-frame: load cases, three revisions, drag with a
 canopy, slicing; then the propeller and drive — BEMT, a rotating-frame CFD check, excitations, noise, a
 blade FEA with a stress video; then modes, Campbell diagram, three mission types, rainflow spectra,
-fatigue on the FEA stress fields and a fleet-usage life) and `09_fixed_wing_drone` (twin-motor fixed wing:
-wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on the resulting drag polar
-with the same CFD/noise/blade/video treatment, then wing modes, missions and life, the whole fuselage
-over a long full-battery mission, and the whole aircraft in flight with its propellers as rotor disks). `07_ai_design_copilot`
+fatigue on the FEA stress fields and a fleet-usage life) and the twin-motor fixed wing in two notebooks:
+`09a_fixed_wing_design` (wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on the
+resulting drag polar with the same CFD/noise/blade/video treatment, then the whole aircraft in flight with its
+propellers as rotor disks; it ends with a hand-off file) and `09b_fixed_wing_durability` (wing modes, missions
+and life, then the whole fuselage over a long full-battery mission; it starts from 09a's hand-off, or recorded
+values). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 `notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).

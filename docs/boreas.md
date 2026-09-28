@@ -91,4 +91,4 @@ The tones are compact dipoles, `p = ω F / (4 π c r)` × cos (thrust) or sin (s
 the axis. The slipstream model is momentum theory (induced axial velocity and swirl from the solution,
 contraction by continuity), a stand-in for pictures before a CFD field exists, not a flow solution.
 
-Notebooks: the propeller parts of `08_quadcopter` and `09_fixed_wing_drone` (BEMT, CFD check, noise, blade FEA and its video).
+Notebooks: the propeller parts of `08_quadcopter` and `09a_fixed_wing_design` (BEMT, CFD check, noise, blade FEA and its video).
