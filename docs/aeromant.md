@@ -148,7 +148,7 @@ The forces (Cl, Cd, lift and drag) are the **airframe's in the slipstream**; the
 the source in the solver log. Momentum and swirl are right on average; blade passing and tip vortices are not
 resolved (a fully resolved rotating-blade simulation of the whole aircraft is on the to-do list). Sign check: the
 flow behind the disks must be faster than the free stream; if not, flip `disk_axis`. Notebook:
-`09_fixed_wing_drone`, Part 5.
+`09a_fixed_wing_design`, Part 3.
 
 ## OpenFOAM installations
 - `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
