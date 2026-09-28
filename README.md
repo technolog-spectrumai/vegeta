@@ -54,7 +54,7 @@ wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on th
 with the same CFD/noise/blade/video treatment, then wing modes, missions and life). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
-`notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 `11_rover_mechanics` (branch `dev_land`) is a small rugged-terrain rover: terrain profiles → quarter-car wheel
 loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
 arm modes and a speed–frequency diagram, rainflow fatigue, life, printing.
