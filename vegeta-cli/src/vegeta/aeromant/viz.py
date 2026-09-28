@@ -192,12 +192,12 @@ def _write_video(frames, path, fps: int) -> Path:
 
 def animate_particles(case, path, *, n: int = 400, seconds: float = 6.0, fps: int = 24, rpm: float | None = None,
                       axis: str = "x", lengths: float = 6.0, size=(960, 720), seed: int = 0, camera=None,
-                      point_size: float = 7.0) -> Path:
+                      point_size: float = 7.0, progress: bool = False) -> Path:
     """MP4 (OpenCV) of tracer particles carried by the converged velocity field: seeded upstream of the
     body, advected through the steady field (Heun steps on the sampled ``U``), coloured by speed, and
     re-seeded once they leave the domain. ``lengths`` body sizes of travel fill the video. With ``rpm``
     the body is turned about ``axis`` at that speed for the eye — in an MRF case the field itself is
-    steady in the rotating zone. Returns the file path."""
+    steady in the rotating zone. ``progress``: a tqdm bar over the frames. Returns the file path."""
     pv = _pv()
     mb = read_results(case)
     internal = mb["internalMesh"]
@@ -234,7 +234,12 @@ def animate_particles(case, path, *, n: int = 400, seconds: float = 6.0, fps: in
     pl = pv.Plotter(off_screen=True, window_size=list(size))
     frames = []
     speed_lim = [0.0, float(np.percentile(np.linalg.norm(internal.point_data["U"], axis=1), 99))]
-    for k in range(n_frames):
+    frame_ids = range(n_frames)
+    if progress:
+        from tqdm.auto import tqdm
+
+        frame_ids = tqdm(frame_ids, desc="movie frames", unit="frame")
+    for k in frame_ids:
         u1, ok = velocity(pts)
         mid = pts + 0.5 * dt * u1
         u2, ok2 = velocity(mid)

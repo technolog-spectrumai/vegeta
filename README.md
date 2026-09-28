@@ -68,6 +68,10 @@ with a scripted agent when no API key is set. Shared design files live in
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
 `notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 
+Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
+CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/` — see
+[scenarios/scenarios.md](scenarios/scenarios.md).
+
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
 [Vegeta Core](docs/core.md) · [Fidia: AI modelling](docs/fidia.md) · [AI provider layer](docs/ai.md).
