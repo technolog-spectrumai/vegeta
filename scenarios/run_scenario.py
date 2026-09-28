@@ -266,8 +266,7 @@ def main(argv=None) -> int:
             return r
         res = stage("mesh + solve", solve)
         summary["metrics"] = {k: v for k, v in res.metrics.items() if not isinstance(v, (list, dict))}
-    stage("movie", lambda: aviz.animate_particles(case, movie_path, n=movie["n"], seconds=movie["seconds"], fps=movie["fps"],
-                                                  size=(1280, 720), progress=True))
+    stage("movie", lambda: aviz.animate_particles(case, movie_path, size=(1280, 720), progress=True, **movie))
     bar.close()
     if "metrics" not in summary:
         summary["metrics"] = {k: v for k, v in case.results().metrics.items() if not isinstance(v, (list, dict))}
