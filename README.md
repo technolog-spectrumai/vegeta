@@ -54,7 +54,7 @@ wing pull-up and engine-out cases, whole-aircraft RANS, then the propeller on th
 with the same CFD/noise/blade/video treatment, then wing modes, missions and life). `07_ai_design_copilot`
 iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
 every candidate, criteria, budget, approval policy) in a workspace. Shared design files live in
-`notebooks/designs/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 `12_boat_at_sea` (branch `dev_sea`) takes a 1 m survey boat from hull lines through hydrostatics and the GZ
 curve, resistance and propulsion in water, slamming and thrust structure, three sea states and fatigue life, then
 its propeller in detail: performance and cavitation, a rotating-frame CFD check with a flow video, blade stress
