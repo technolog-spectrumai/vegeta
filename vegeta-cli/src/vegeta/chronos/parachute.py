@@ -63,6 +63,8 @@ class DropResult:
     vz: np.ndarray
     g: np.ndarray                    # acceleration felt (drag / weight), in g
     phase: np.ndarray                # 0 fall, 1 inflating, 2 descent
+    speed: np.ndarray                # |v| over the ground, m/s
+    descent_speed: np.ndarray        # -vz: positive going down, m/s
     opening_g: float
     opening_time_s: float
     opening_altitude_m: float
@@ -158,7 +160,7 @@ def simulate_drop(body: Body, chute: Parachute, *, altitude_m: float, speed_m_s:
     a_p, tau, g_td = crush_pulse(v_vert, crush_stroke_m) if landed else (0.0, 0.0, 0.0)
     steady = PH[sl] == 2
     descent = float(-np.median(VZ[sl][steady])) if steady.sum() > 10 else float("nan")
-    return DropResult(T[sl], X[sl], Z[sl], VX[sl], VZ[sl], GG[sl], PH[sl], float(opening_g), float(opening_t), float(opening_alt),
+    return DropResult(T[sl], X[sl], Z[sl], VX[sl], VZ[sl], GG[sl], PH[sl], np.hypot(VX[sl], VZ[sl]), -VZ[sl], float(opening_g), float(opening_t), float(opening_alt),
                       descent, v_td, v_vert, g_td, (a_p, tau), float(X[k - 1]), float(T[k - 1]), landed)
 
 

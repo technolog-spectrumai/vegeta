@@ -29,6 +29,9 @@ def test_drop_reaches_the_terminal_speed_and_the_opening_shock_is_bounded():
     assert r.opening_altitude_m < 150.0
     assert r.touchdown_g == pytest.approx(crush_pulse(r.touchdown_vertical_m_s, 0.05)[2])
     assert (np.diff(r.z) <= 1e-9).all()                                # it only goes down
+    assert np.allclose(r.speed, np.hypot(r.vx, r.vz)) and np.allclose(r.descent_speed, -r.vz)
+    assert r.descent_speed[-1] == pytest.approx(ch.terminal_speed(10.0), rel=0.08)   # settled on the canopy
+    assert r.descent_speed[:5].max() < 1.0 and r.speed[0] == pytest.approx(30.0)      # level and fast at the cut
 
 
 def test_no_canopy_is_ballistic_and_later_timer_opens_lower_and_harder():
