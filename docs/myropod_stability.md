@@ -188,3 +188,16 @@ early is advanced. σ = 0.6 rad/(N·s) for the comparison (about half of ω at 0
    purpose, to find the onset; servo saturation is recorded), `flexible` with body-yaw stiffness
    k ∈ {2, 4, 8, 16} N·m/rad and `locked`, both controllers, 10 seeds; undulation amplitude vs speed per stiffness,
    and the onset speed (RMS body-yaw angle above 5°).
+
+## 10. Amendment B — implementation in Chiron (no change to the science)
+
+The simulation is built as a Vegeta tool rather than a notebook helper: **Chiron** (`vegeta.chiron`, the centaur
+who trained the heroes) wraps MuJoCo, and **ChironLab** is its reusable environment — any robot described with
+Chiron's building blocks (or imported from MJCF) walks in it on any Chiron terrain, with any controller, under the
+same logging, disturbances and failure rules. The robot-specific parts stay with the designs:
+`notebooks/designs/myropod_robot.py` (Cleopatra and her treatments as a Chiron robot),
+`notebooks/designs/myropod_controller.py` (the fixed and adaptive gaits of §3 and §9.1), and
+`notebooks/designs/stability_experiments.py` (the trial lists of §7 and §9.3). The metrics of §6 and §9.2 and the
+statistics of §7 live in `vegeta.chiron.metrics` and `vegeta.chiron.stats`. Notebooks: `20_chiron_lab.ipynb`
+(the tool, shown on the robot dog and Cleopatra) and `21_cleopatra_stability.ipynb` (this study). Every number
+in §1–§9 is unchanged.
