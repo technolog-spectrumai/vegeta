@@ -147,3 +147,44 @@ Yasui et al. (2022), *Adaptive centipede walking via synergetic coupling between
 flexible body dynamics* — in a 2-D centipede model, body flexibility and adaptive leg control both improved
 rough-terrain walking. Bretl & Lall (2008), *Testing static equilibrium for legged robots* — the projected
 support polygon is not sufficient on uneven ground; contact-force feasibility is.
+
+## 9. Amendment A — adaptive interlimb coordination (added before any experiment result)
+
+Source: Aoi, Manoonpong, Ambe, Matsuno and Wörgötter (2017), *Adaptive control strategies for interlimb
+coordination in legged robots: a review*, Frontiers in Neurorobotics 11:39 (doi 10.3389/fnbot.2017.00039). The
+review's point for this study: in animals and in the robots it surveys, interlimb coordination is not a fixed
+phase schedule — it adapts to speed, terrain, body properties and task through local sensory feedback (phase
+resetting at touchdown, phase modulation by the load on the leg), and in many-legged robots the body's
+flexibility and the leg control interact; straight walking of a flexible centipede-like body can lose stability
+above a critical speed and turn into body undulation (Aoi et al., Phys. Rev. E 2013). The fixed controller of §3
+therefore isolates the body, but it cannot show the synergy that Yasui et al. report. Three additions:
+
+**9.1 A second controller, as a second factor.** `adaptive`: every leg has its own phase oscillator with local
+load feedback (the "Tegotae" rule of Owaki et al.): `dφ_i/dt = ω_i(φ_i) − σ N_i cos φ_i`, where `N_i` is that
+foot's normal ground force (contact sensing; in simulation the contact force) and the phase sets the foot target
+of §3 — swing for φ ∈ [0, π), stance for φ ∈ [π, 2π), with `ω` piecewise so that at σ = 0 the swing and stance
+last `(1 − duty)·T` and `duty·T` exactly. The initial phases are the fixed controller's, so **σ = 0 is the fixed
+controller of §3**. A loaded leg in late stance (cos φ > 0) slows its phase and delays lift-off; a leg loaded
+early is advanced. σ = 0.6 rad/(N·s) for the comparison (about half of ω at 0.2 m/s with the nominal foot load of
+6.7 N); the equal-tuning study may vary σ ∈ {0.3, 0.6, 1.2}. Everything else — gains, stride, heights — as §3.
+
+**9.2 Gait and undulation metrics** (added to §6):
+
+| metric | definition |
+|---|---|
+| measured duty factor | per leg: stance time / stride time from the contact record (loaded = normal force > 2 % of weight); mean and SD |
+| interlimb phase relations | per stride, the touchdown phase of each foot relative to its segment's rear-left foot; circular mean and circular SD (√(−2 ln R)) of the contralateral, ipsilateral and intersegmental relations — the gait pattern and its regularity |
+| phase recovery | after a push: time until every relation is back within ±0.1 cycle of its pre-push circular mean for two consecutive strides |
+| body undulation | during steady walking: RMS and peak-to-peak of each body-yaw joint angle, its dominant frequency (FFT), lateral COM oscillation amplitude, and each segment's yaw about the mean heading (also defined for `locked`) |
+
+**9.3 Experiments** (added to §7):
+
+7. **Factorial body × controller**: {locked, flexible, flexible+roll} × {fixed, adaptive} on `rough` and `alt_bumps`
+   at h/L ∈ {0.15, 0.25}, v = 0.2 m/s, 30 seeds, every seed paired across all six cells. Success with Wilson
+   intervals per cell; the synergy is the interaction — the difference of paired differences
+   `(flex·adaptive − flex·fixed) − (locked·adaptive − locked·fixed)` with a paired bootstrap 95 % interval, and a
+   logistic model of success on body, controller and their interaction (maximum likelihood).
+8. **Undulation onset**: flat ground, v ∈ {0.1, 0.2, 0.3, 0.4, 0.5} m/s (above the sheet's crawl speed on
+   purpose, to find the onset; servo saturation is recorded), `flexible` with body-yaw stiffness
+   k ∈ {2, 4, 8, 16} N·m/rad and `locked`, both controllers, 10 seeds; undulation amplitude vs speed per stiffness,
+   and the onset speed (RMS body-yaw angle above 5°).
