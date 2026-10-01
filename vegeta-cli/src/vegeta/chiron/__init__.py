@@ -1,4 +1,4 @@
-"""Chiron — Vegeta's legged-robot simulation tool, a wrapper on MuJoCo (Chiron, the centaur who trained heroes).
+"""Chiron — Vegeta's legged-robot dynamics tool, a wrapper on MuJoCo (Chiron, the centaur who trained the heroes).
 
 Build a robot from plain dataclasses (``Link``, ``Joint``, ``Geom``, ``PointMass``, ``Servo``, ``FootSpec``,
 ``Robot``) or wrap a third-party MJCF (``Robot.from_mjcf`` + ``RobotMeta``); put it on a ``Terrain``
@@ -8,9 +8,17 @@ whole trial under ``FailureRules`` with ``Disturbance`` s, returning an ``Episod
 episode-log format, an outcome, ``save``/``load``, ``to_result``). ``PhaseGenerator`` provides fixed or
 load-adaptive (Tegotae) leg phases for controllers.
 
-MuJoCo is imported only when a lab is built or a model compiled. Study-level analysis lives in submodules
-imported explicitly: ``from vegeta.chiron import metrics, stats, viz``. Units: SI (m, kg, s, N, N·m, rad).
+Submodules, loaded on first use (``ch.metrics`` or ``from vegeta.chiron import metrics``):
+
+* ``metrics`` — per-trial locomotion metrics on an episode log (``trial_metrics``);
+* ``stats`` — paired-trial statistics (Wilson, McNemar, bootstrap, logistic fits);
+* ``experiments`` — ``Trial``, ``run_trials`` (cached process pool), ``rerun_with_log``, paired-design helpers;
+* ``viz`` — off-screen rendering with pyvista; ``cli`` — the ``chiron`` command.
+
+Importing the package loads neither MuJoCo nor pyvista nor pandas. Units: SI (m, kg, s, N, N·m, rad).
 """
+import importlib as _importlib
+
 from .gaits import PhaseGenerator, cycle_to_oscillator, in_stance, oscillator_to_cycle
 from .lab import ChironLab, Command, Disturbance, Episode, FailureRules, Observation
 from .result import CommandRecord, Result, ResultError
@@ -27,3 +35,16 @@ __all__ = [
     "cycle_to_oscillator", "in_stance", "oscillator_to_cycle", "saturation", "servo_torque", "terrain_from_spec",
     "torque_limit",
 ]
+
+_SUBMODULES = ("metrics", "stats", "experiments", "viz", "cli")
+
+
+def __getattr__(name):
+    """Load the submodules lazily (``ch.metrics.trial_metrics`` works without an explicit import)."""
+    if name in _SUBMODULES:
+        return _importlib.import_module(f"{__name__}.{name}")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | set(_SUBMODULES))

@@ -49,6 +49,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
+| Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `20_chiron_lab`, `21_cleopatra_stability` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `15_fidia_prompt_to_3d`, `07_`, `10_` |
 
 Product-level notebooks — one notebook per machine, the whole workflow on one design with revisions,
@@ -119,12 +120,13 @@ More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) �
 Every tool is a figure from Greek myth, one word, easy to say in a meeting:
 Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reader of the air" (CFD),
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
-rotors), Chronos time (missions, cyclic loads, life), Fidia — Phidias, the sculptor of the Parthenon —
+rotors), Chronos time (missions, cyclic loads, life), Chiron the centaur who trained the heroes (legged robots
+walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculptor of the Parthenon —
 (AI modelling from a prompt). The workbench itself is Vegeta.
 
 ## Layout
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos}, tests/<tool>/
+vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
