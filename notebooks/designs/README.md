@@ -9,4 +9,6 @@ the Myropod family's segmented walker — its defaults are Persephone (12 segmen
 the same class with three large segments (parameters in notebook 18). `apheloria.py` (`Apheloria`, notebook 19)
 is the modular Myropod that curls into a ball. `actuators.py` is the shared actuator / motor / joint catalogue
 (`import actuators as act` from `notebooks/designs`): `act.table()`, `act.get(key)`, `act.select(torque, sf)`,
-`Actuator.holding_power()`. All on branch `dev_sikarian`.
+`Actuator.holding_power()`. `gait.py` is the shared gait simulation (`import gait`): `make_terrain`, `body_pose`,
+`simulate_steps`, `ik_dog` / `ik_myropod`, `fk_dog` / `fk_myropod`, `torques_dog` / `torques_myropod`, `gait_diagram`.
+All on branch `dev_sikarian`.
