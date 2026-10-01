@@ -176,6 +176,85 @@ MuJoCo's renderer needs EGL/OSMesa; Chiron draws from the log with pyvista inste
 `ChironLab(..., log_geoms=True)` (or `--log-geoms`) records every geom's pose; `viz.frames(ep, camera)`,
 `viz.to_video(frames, path)`, `viz.render(ep, path)`. Headless: `xvfb-run -a` with `PYVISTA_OFF_SCREEN=true`.
 
+## Cleopatra body joints: spring-only and spring-damper
+The stability study's treatments ([docs/myropod_stability.md](myropod_stability.md) §12, Amendment D; Amendment
+C's `rigid` / `flexible` / `flexible+yaw` are legacy). Both have the **identical** joints between segments 1–2 and
+2–3 (the head is welded to segment 1): passive hinges `body <i>-<i+1> yaw|pitch|roll` (tags `body_yaw|pitch|roll`)
+chained yaw → pitch → roll at the pin mid-gap; pitch and yaw always, roll per `body_roll_axis`; same k, q0, stops;
+armature 0, friction loss 0, no actuator, no translation, no prescribed bending. q = 0 is the straight chain; yaw +
+swings the rear segment's tail right, pitch + lifts it, roll is about +x. They differ only in c:
+
+| treatment | joint torque [N·m] | damping |
+|---|---|---|
+| `spring` | `τ = −k (q − q0)` | c = 0 on every axis (any `body_c_*` given is ignored; `robot.notes` lists them) |
+| `spring_damper` (default) | `τ = −k (q − q0) − c q̇` | c per axis |
+
+| parameter (Python keyword = Myropod design parameter = CLI `-p`) | unit | default |
+|---|---|---|
+| `body_connection` | — | `spring_damper` (`spring`; legacy names need `legacy=True`) |
+| `body_roll_axis` | bool | true (without it the roll values are unused and `body_q0_roll` must be 0) |
+| `body_k_pitch`, `body_k_yaw`, `body_k_roll` | N·m/rad | 8 |
+| `body_c_pitch`, `body_c_yaw`, `body_c_roll` | N·m·s/rad | 0.2 (spring_damper only) |
+| `body_q0_pitch`, `body_q0_yaw`, `body_q0_roll` | rad | 0 (the spring's rest angle and the start pose) |
+| `body_limit_pitch`, `body_limit_yaw`, `body_limit_roll` | rad | 0.785 (45°), 0.785 (45°), 0.349 (20°): stops at ±value |
+
+```python
+import myropod_robot as mr, myropod_controller as mc      # notebooks/designs on sys.path
+robot = mr.cleopatra("spring")                            # or "spring_damper"; keywords as in the table
+lab = mr.cleopatra_lab("spring_damper", terrain, robot_kw={"body_k_yaw": 4.0})   # LAB_OPTIONS: 0.25 ms step
+ep = lab.run(mc.adaptive(0.2), rules=mr.failure_rules(0.2), seed=3, info={"treatment": "spring_damper"})
+import myropod                                            # the Dedalus design (imports CadQuery)
+p = myropod.Myropod().resolve(**mr.CLEO_MM, body_connection="spring")   # its parameters, Cleopatra's geometry
+robot = mr.robot_from_design(p)                           # geometry [mm] + body joints → the same robot
+```
+```bash
+dedalus params notebooks/designs/myropod.py:Myropod                           # lists the body_* parameters
+chiron run notebooks/designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 \
+    -p body_roll_axis=false --controller notebooks/designs/myropod_controller.py:fixed --terrain flat \
+    --course 1.5 --v-target 0.2 --timestep 0.00025 --seed 0 --out runs/s0
+```
+`-p` values are Python literals: `8`, `8.0` and `"8"` build the same joint; bools accept true/false, 1/0,
+yes/no, on/off; `-p body_connection=rigid` exits 2 (legacy). In trials: `ex.Trial(robot=
+"designs/myropod_robot.py:cleopatra", robot_kwargs={"body_connection": "spring", ...}, lab_kwargs=mr.LAB_OPTIONS)`.
+The robot carries `treatment` (`spring`, `spring_damper`, `legacy:<name>`), `body_params` (the values as built:
+`spring` reports c = 0) and `connection`; the log's `robot` is `cleopatra <treatment>`. The CAD ignores the body
+parameters (its chain is drawn straight unless `bend_*_deg` bend it; q0 is not drawn). The controllers take the
+leg lengths from the robot they are given.
+
+**Checks** (`notebooks/designs/tests/test_body_joint_physics.py`; numbers at the lab's 0.25 ms step, printed with
+`pytest -s`). *Model equivalence*: all 592 `MjModel` attributes compared — the two treatments differ only in
+`dof_damping` on the body DOFs and in the model's own name. *c = 0*: `spring_damper` with every `body_c_* = 0`
+reproduces `spring` bitwise (rough ground, both controllers; only the log's `robot` label differs). The other
+checks run on a rig where only one hinge is free (the robot welded at its standing pose, gravity off; inertia
+about the hinge 0.012–0.15 kg·m²). *Restoring torque*: a 0.8 N·m torque on the child segment deflects every axis
+of both joints by τ/k (k = 6, 8, 10 N·m/rad; q0 = 0.05 rad) within 2e-7 relative, and `qfrc_spring` =
+−k (q − q0), `qfrc_damper` = −c q̇ to 1e-12. *Damping*: in a free decay from q0 + 0.1 rad the energy lost equals
+∫ c q̇² dt within 1.3e-5 relative; the logarithmic decrement (δ = 0.50–2.39 per period, ζ = 0.08–0.36) gives c
+within 0.25 % (0.998–1.000 c).
+
+**Where energy goes besides c** (so `spring` is not a lossless robot):
+- *Contacts*: MuJoCo soft contacts with the default `solref` (0.02 s time constant, damping ratio 1 — critically
+  damped) and `solimp` (0.9, 0.95, 0.001, 0.5, 2): every touchdown and belly contact loses energy.
+- *Friction*: pads μ = 0.8, shells and head μ = 0.5, pyramidal cones, `condim` 3 (sliding only); a slipping
+  contact dissipates μ N |v_slip|.
+- *Hard stops*: the body hinges' ±45° / ±20° and the leg ranges are soft limit constraints with the same default
+  solref/solimp; hitting one dissipates.
+- *Leg servos*: 36 PD loops with kd = 0.8 N·m·s/rad, dissipating whenever a joint moves inside its unclipped
+  regime, and the torque–speed line `|τ| ≤ τ_stall (1 − |ω|/ω₀)` (6 N·m, 5.76 rad/s), along which a braking joint
+  absorbs energy. Their velocity derivative is integrated implicitly (see ChironLab, *Servo integration*). Where
+  −kd stayed implicit for a clipped joint (the build before Amendment E §13.2), a saturated joint was
+  under-accelerated by I/(I + h·kd), I its effective inertia at the standing pose (1/(M⁻¹)ᵢᵢ): knee 9.2e-5 kg·m²
+  → 0.32 at 0.25 ms and 0.10 at 1 ms; hip yaw 3.2–3.9e-4 → 0.62–0.66 and 0.29–0.33; hip pitch 3.7–4.0e-4 →
+  0.65–0.67 and 0.31–0.34.
+- *Integrator* (`implicitfast`): velocity terms (c, servo kd) are implicit, springs semi-implicit (symplectic
+  Euler). Measured on the rig with c = 0: no systematic loss — energy drift per cycle between −5e-9 and +1.5e-6 of
+  E (all six hinges, 20 cycles, 0.25 ms), with a within-cycle fluctuation of 0.16–0.71 % of E; on the fastest hinge
+  (body 2-3 roll, ω = 28.5 rad/s) the drift per cycle is 9e-8, 1.2e-6, 2.8e-6, 3.2e-6 and 2.8e-5 at 0.125, 0.25,
+  0.5, 1 and 2 ms. With c > 0 the implicit damping shifts the identified c by −0.10 %, −0.20 %, −0.40 %, −0.79 % and
+  −1.6 % at those steps, while the energy balance ΔE = ∫ c q̇² dt holds within 0.002 % (0.06 % at 2 ms).
+- None from the joints themselves: armature 0 and friction loss 0 everywhere; no fluid drag (density and
+  viscosity 0). Bearing friction, backlash and gear losses of a real body joint are not modelled.
+
 ## Assumptions (stated with every result)
 - MuJoCo soft contacts (default solref/solimp unless given) and pyramidal friction cones; contact stiffness and
   damping dissipate energy at every touchdown. Robot geoms touch only the terrain unless `self_collision=True`.

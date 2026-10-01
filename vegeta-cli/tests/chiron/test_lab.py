@@ -444,3 +444,162 @@ def test_viz_renders_a_frame(tmp_path):
     out = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=300)
     assert out.returncode == 0, out.stderr[-2000:]
     assert "OK" in out.stdout and (tmp_path / "v.mp4").stat().st_size > 0
+
+
+# ----------------------------------------------------------------------------------------------- servo integration
+STALL_LIMITED = Servo(stall_torque=1.0, rated_torque=0.5, no_load_speed=200.0, stall_current=1.0, voltage=12.0,
+                      kp=40.0, kd=0.8, source="test: stall-limited (ω₀ so high that the line's slope is negligible)")
+
+
+def servo_arm(servo, rod_mass, rod_len, base_mass=1e4):
+    """One servo-driven rod [kg, m] on a heavy floating base (run with zero gravity): a joint of known inertia."""
+    rod = Link("rod", joints=[Joint("j", axis=(0, 1, 0), servo=servo, tag="knee")],
+               geoms=[Geom("rod", "capsule", (0.005,), fromto=(0, 0, 0, rod_len, 0, 0), mass=rod_mass)])
+    base = Link("base", geoms=[Geom("base", "box", (0.05, 0.05, 0.05), mass=base_mass, role="body")],
+                children=[rod], log=True)
+    return Robot("arm", base, feet=[])
+
+
+def effective_inertia(lab) -> float:
+    """1 / (M⁻¹)_jj [kg·m²] of the lab's first actuated joint (the base's reaction included)."""
+    M = np.zeros((lab.model.nv, lab.model.nv))
+    mujoco.mj_fullM(lab.model, lab.data, M)
+    j = lab._ad[0]
+    return 1.0 / np.linalg.inv(M)[j, j]
+
+
+def legacy_step(lab, q_target):
+    """One physics step as ChironLab integrated servos before the fix: −kd·q̇ always carried by the actuator's
+    implicit bias and ctrl = τ + kd·q̇, whether τ was clipped or not. Returns True when a torque was clipped."""
+    m, d = lab.model, lab.data
+    m.actuator_biasprm[:, 2] = -lab._kd
+    q, qd = d.qpos[lab._aq], d.qvel[lab._ad]
+    tau = (np.asarray(q_target, dtype=float) - q) * lab._kp
+    tau += (0.0 - qd) * lab._kd
+    lim = np.maximum(1.0 - np.abs(qd) * lab._inv_w0, 0.0) * lab._stall
+    clipped = bool(np.any(np.abs(tau) > lim))
+    tau = np.maximum(np.minimum(tau, lim), -lim)
+    d.ctrl[:] = tau + lab._kd * qd
+    mujoco.mj_step(m, d)
+    return clipped
+
+
+def arm_trajectory(servo, dt, T, q_target, qd0=0.0, legacy=False, **arm):
+    """q [rad], q̇ [rad/s] after each physics step of ``dt`` [s] for ``T`` [s], τ [N·m] applied over each step, and
+    the joint's effective inertia I [kg·m²]."""
+    lab = ChironLab(servo_arm(servo, **arm), gravity=(0, 0, 0), timestep=dt, control_dt=dt, log_dt=dt)
+    lab.reset(base_pos=(0.0, 0.0, 1.0))
+    lab.data.qvel[lab._ad[0]] = qd0
+    out = np.zeros((int(round(T / dt)), 3))
+    for i in range(len(out)):
+        if legacy:
+            legacy_step(lab, [q_target])
+            tau = lab.data.actuator_force[0]
+        else:
+            lab.step(Command(q_target=[q_target]))
+            tau = lab._tau[0]
+        out[i] = lab.data.qpos[lab._aq[0]], lab.data.qvel[lab._ad[0]], tau
+    return out[:, 0], out[:, 1], out[:, 2], effective_inertia(lab)
+
+
+def test_saturated_joint_accelerates_at_clipped_torque_over_inertia():
+    """A stall-limited joint at dt = 1 ms: its acceleration is τ_clip/I to 1 % and its speed matches a 0.05 ms run;
+    before the fix the implicit −kd made it τ_clip/(I + dt·kd) (37 % short here)."""
+    dt, rod = 1e-3, dict(rod_mass=0.1, rod_len=0.2)
+    q, qd, tau, inertia = arm_trajectory(STALL_LIMITED, dt, 0.01, q_target=2.0, **rod)
+    assert np.all(np.abs(tau) > 0.9 * STALL_LIMITED.stall_torque)               # saturated throughout
+    acc = np.diff(np.r_[0.0, qd]) / dt
+    np.testing.assert_allclose(acc, tau / inertia, rtol=0.01)
+    _, qd_ref, _, _ = arm_trajectory(STALL_LIMITED, 5e-5, 0.01, q_target=2.0, **rod)
+    np.testing.assert_allclose(qd, qd_ref[19::20], rtol=0.01)
+    # the pre-fix integration, for the record: under-accelerated by I / (I + dt·kd)
+    _, qd_old, tau_old, _ = arm_trajectory(STALL_LIMITED, dt, 0.01, q_target=2.0, legacy=True, **rod)
+    shortfall = inertia / (inertia + dt * STALL_LIMITED.kd)
+    assert shortfall < 0.7
+    assert qd_old[0] / dt == pytest.approx(shortfall * tau_old[0] / inertia, rel=1e-6)
+
+
+def test_saturated_light_joint_follows_the_torque_speed_line_at_1ms():
+    """Cleopatra's knee (stall 6 N·m, ω₀ 5.76 rad/s, kd 0.8; I ≈ 2e-4 kg·m²): the line's time constant
+    I·ω₀/τ_stall ≈ 0.2 ms is 5× shorter than a 1 ms step. Its slope is integrated implicitly, so the joint reaches
+    the no-load speed without overshoot and its angle matches a 0.05 ms run to 1 %."""
+    rod = dict(rod_mass=0.06, rod_len=0.1)
+    q, qd, tau, inertia = arm_trajectory(SERVO, 1e-3, 0.02, q_target=0.5, **rod)
+    assert 1e-3 * SERVO.stall_torque / (SERVO.no_load_speed * inertia) > 4                # a stiff line at 1 ms
+    q_ref, qd_ref, _, _ = arm_trajectory(SERVO, 5e-5, 0.02, q_target=0.5, **rod)
+    assert qd.max() <= SERVO.no_load_speed * (1 + 1e-9)
+    assert qd[4] == pytest.approx(SERVO.no_load_speed, rel=0.01)                   # at 5 ms
+    assert q[-1] == pytest.approx(q_ref[-1], rel=0.01)                              # at 20 ms
+    q_old, qd_old, _, _ = arm_trajectory(SERVO, 1e-3, 0.02, q_target=0.5, legacy=True, **rod)
+    assert qd_old.max() > 1.02 * SERVO.no_load_speed                               # before: past ω₀, coasting
+    assert abs(q_old[-1] / q_ref[-1] - 1) > 0.03
+
+
+@pytest.mark.parametrize("rod, rtol", [(dict(rod_mass=0.06, rod_len=0.1), 0.05),       # I ≈ 2e-4 kg·m²
+                                       (dict(rod_mass=0.5, rod_len=0.25), 0.02)])      # I ≈ 1e-2 kg·m²
+def test_saturated_braking_does_not_overshoot_past_zero_speed(rod, rtol):
+    """Moving at 3 rad/s, commanded 0.3 rad behind: braking on the line, reversal, then pulling at the no-load
+    speed. The braking slope is positive (explicit) unless the torque stops the joint within the step; at 1 ms the
+    light joint must not be flung past ω₀ (a fully explicit braking step reaches ≈ 11 rad/s and then coasts)."""
+    q, qd, _, _ = arm_trajectory(SERVO, 1e-3, 0.04, q_target=-0.3, qd0=3.0, **rod)
+    q_ref, _, _, _ = arm_trajectory(SERVO, 5e-5, 0.04, q_target=-0.3, qd0=3.0, **rod)
+    assert np.abs(qd).max() <= SERVO.no_load_speed * (1 + 1e-9)
+    assert q[-1] == pytest.approx(q_ref[-1], rel=rtol)
+
+
+def test_unsaturated_pd_joints_integrate_exactly_as_before():
+    """No torque clipped: the same trajectory, bit for bit, as the pre-fix integration (kd implicit)."""
+    lab, ref = ChironLab(toy_quadruped()), ChironLab(toy_quadruped())
+    target = lab.nominal_command().q_target + np.random.default_rng(0).normal(0, 0.02, len(lab.actuated_joints))
+    lab.reset(seed=0)
+    ref.reset(seed=0)
+    clipped = False
+    for _ in range(1500):
+        lab.step(Command(q_target=target))
+        clipped |= legacy_step(ref, target)
+        np.testing.assert_array_equal(lab.data.qpos, ref.data.qpos)
+        np.testing.assert_array_equal(lab.data.qvel, ref.data.qvel)
+    assert not clipped
+    np.testing.assert_array_equal(lab.model.actuator_biasprm[:, 2], -lab._kd)
+
+
+def test_mixed_saturation_bias_per_joint_and_reset_restores_the_model():
+    lab = ChironLab(toy_quadruped())
+    lab.reset()
+    kicked = lab.nominal_command().q_target.copy()
+    kicked[0] += 1.5                                                         # one joint far off: saturated
+    lab.step(Command(q_target=kicked))
+    np.testing.assert_allclose(lab.data.actuator_force, lab._tau, atol=1e-12)   # applied = the servo law
+    b = lab.model.actuator_biasprm[:, 2]
+    assert b[0] == pytest.approx(-SERVO.stall_torque / SERVO.no_load_speed)     # pulling on the line (from rest)
+    np.testing.assert_array_equal(b[1:], -lab._kd[1:])                          # the others: PD, kd implicit
+    lab.reset()
+    np.testing.assert_array_equal(lab.model.actuator_biasprm[:, 2], -lab._kd)
+    assert lab.run(Hold(), duration=0.01, settle=0.0).meta["servo_integration"] == "implicit-slope/1"
+
+
+def test_per_step_slopes_are_servo_implicit_slope():
+    """The hot loop's inline rule equals ``servo.implicit_slope`` on random states (all four regimes occur)."""
+    from vegeta.chiron.servo import implicit_slope
+
+    lab = ChironLab(toy_quadruped())
+    rng = np.random.default_rng(5)
+    seen = set()
+    for _ in range(40):
+        lab.reset()
+        d = lab.data
+        d.qvel[lab._ad] = rng.normal(0.0, 4.0, len(lab._ad))
+        dinv = d.qLDiagInv[lab._ad].copy()                            # M is unchanged by q̇
+        target = lab.nominal_command().q_target + rng.normal(0.0, 0.3, len(lab._ad))
+        lab.step(Command(q_target=target))
+        tau, qd = lab._tau, lab._qd                                   # this step's torque and starting speed
+        clipped = np.abs(SERVO.kp * (target - lab._q) - SERVO.kd * qd) > SERVO.stall_torque * np.maximum(
+            0.0, 1 - np.abs(qd) / SERVO.no_load_speed)
+        if not clipped.any():
+            continue
+        ref = implicit_slope(tau, qd, clipped, lab._kd, lab._stall, lab._w0, step_dv=lab.timestep * np.abs(tau) * dinv)
+        np.testing.assert_allclose(lab.model.actuator_biasprm[:, 2], ref, rtol=1e-12, atol=0)
+        seen.update(np.round(ref, 6).tolist())
+        np.testing.assert_allclose(d.actuator_force, tau, atol=1e-12)
+    line = round(-SERVO.stall_torque / SERVO.no_load_speed, 6)
+    assert {-SERVO.kd, 0.0, line} <= seen

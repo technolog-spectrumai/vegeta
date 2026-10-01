@@ -1,5 +1,9 @@
-"""Cleopatra in ChironLab (myropod_robot.py, myropod_controller.py): the robot of protocol §1 and its body treatments
-(§11.2), the fixed (§3) and adaptive (§9.1) controllers, and flat walking under the §5 failure rules.
+"""Cleopatra in ChironLab (myropod_robot.py, myropod_controller.py): the robot of protocol §1 and its Amendment D body
+treatments (§12: 'spring' and 'spring_damper'), the design parameters and the CLI, the fixed (§3) and load-feedback
+(§9.1, §13.1) controllers, and flat walking under the §5 failure rules for treatment × controller.
+
+The body-joint physics checks of §12.5 (model equivalence, c = 0 equivalence, restoring torque, damping dissipation,
+numerical dissipation) are in test_body_joint_physics.py.
 
 Run: cd /home/user/vegeta/notebooks/designs && python3 -m pytest -q tests/test_myropod_chiron.py
 """
@@ -57,14 +61,20 @@ def test_geometry_from_the_protocol():
     assert mr.design_params(mr.CLEO_MM) == P                     # the same numbers as notebook 18's CLEO
 
 
-@pytest.mark.parametrize("treatment,body", [("rigid", []),
-                                            ("flexible", ["pitch", "roll"]),
-                                            ("flexible+yaw", ["yaw", "pitch", "roll"])])
-def test_treatments_have_the_right_joints(treatment, body):
-    robot = mr.cleopatra(treatment, yaw_stiffness=4.0)
+@pytest.mark.parametrize("treatment", mr.TREATMENTS)
+@pytest.mark.parametrize("roll", [True, False])
+def test_treatments_have_the_right_joints(treatment, roll):
+    """§12.1: pitch and yaw always, roll per body_roll_axis; per-axis k, q0, limits; c only in spring_damper."""
+    k = {"yaw": 4.0, "pitch": 8.0, "roll": 6.0}
+    c = {"yaw": 0.15, "pitch": 0.2, "roll": 0.25}
+    lim = {"yaw": 0.6, "pitch": math.radians(45.0), "roll": math.radians(20.0)}
+    robot = mr.cleopatra(treatment, body_roll_axis=roll, body_q0_pitch=0.05,
+                         **{f"body_k_{a}": v for a, v in k.items()}, **{f"body_c_{a}": v for a, v in c.items()},
+                         body_limit_yaw=lim["yaw"])
     lab = ch.ChironLab(robot)
+    axes = ["yaw", "pitch", "roll"] if roll else ["yaw", "pitch"]
     passive = [j for j in lab.joint_names if j not in lab.actuated_joints]
-    assert passive == [f"body {i}-{i + 1} {a}" for i in (1, 2) for a in body]
+    assert passive == [f"body {i}-{i + 1} {a}" for i in (1, 2) for a in axes] == mr.body_joints(robot.connection)
     assert len(lab.actuated_joints) == 36 and len(lab.feet) == 12
     assert lab.bodies == ["head", "segment 1", "segment 2", "segment 3"]
     tags = dict(zip(lab.joint_names, lab.joint_tags))
@@ -73,16 +83,20 @@ def test_treatments_have_the_right_joints(treatment, body):
     m = lab.model
     for j in passive:
         jid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, j)
-        axis = j.rsplit(" ", 1)[1]
-        k = {"yaw": 4.0, "pitch": 8.0, "roll": 8.0}[axis]
-        lim = {"yaw": 45.0, "pitch": 45.0, "roll": 20.0}[axis]
-        assert m.jnt_stiffness[jid] == pytest.approx(k)
-        assert m.dof_damping[m.jnt_dofadr[jid]] == pytest.approx(0.2)
-        assert np.degrees(m.jnt_range[jid]) == pytest.approx([-lim, lim])
-        assert m.dof_armature[m.jnt_dofadr[jid]] == 0.0 and not any(j in a for a in lab.actuated_joints)
-    # servos: the smart servo 6 Nm with the protocol's gains, on every leg joint and nothing else
+        dof, a = m.jnt_dofadr[jid], j.rsplit(" ", 1)[1]
+        assert m.jnt_type[jid] == mujoco.mjtJoint.mjJNT_HINGE              # rotations only: translations constrained
+        assert m.jnt_stiffness[jid] == k[a]
+        assert m.qpos_spring[m.jnt_qposadr[jid]] == (0.05 if a == "pitch" else 0.0)      # q0 [rad]
+        assert m.dof_damping[dof] == (c[a] if treatment == "spring_damper" else 0.0)
+        np.testing.assert_allclose(m.jnt_range[jid], [-lim[a], lim[a]], rtol=0, atol=1e-10)  # MJCF: 10 digits
+        assert m.dof_armature[dof] == 0.0 and m.dof_frictionloss[dof] == 0.0
+        np.testing.assert_array_equal(m.jnt_axis[jid], {"yaw": [0, 0, 1], "pitch": [0, 1, 0], "roll": [1, 0, 0]}[a])
+        np.testing.assert_allclose(m.jnt_pos[jid], [P.pitch / 2, 0, 0], atol=1e-15)   # the pin, mid-gap
+    assert lab.nominal_q[[lab.joint_names.index(j) for j in passive]].tolist() == \
+        [0.05 if j.endswith("pitch") else 0.0 for j in passive]                    # starts at q0: springs unloaded
+    # no body actuator: servos on every leg joint and nothing else (smart servo 6 Nm, the protocol's gains)
     s = robot.meta().servos
-    assert set(s) == set(lab.actuated_joints)
+    assert set(s) == set(lab.actuated_joints) and not set(s) & set(passive)
     one = s[lab.actuated_joints[0]]
     assert (one.stall_torque, one.rated_torque, one.kp, one.kd) == (6.0, 2.0, 40.0, 0.8)
     assert one.no_load_speed == pytest.approx(55 * 2 * math.pi / 60)
@@ -93,43 +107,155 @@ def test_treatments_have_the_right_joints(treatment, body):
     assert sorted(g.name for g in geoms.values() if g.role == "body") == [
         "head shell", "segment 1 shell", "segment 2 shell", "segment 3 shell"]
     assert {g.role for g in geoms.values()} == {"foot", "body", "visual"}
+    # bookkeeping: what was built, and (spring) that body_c_* were ignored
+    assert robot.treatment == treatment and robot.name == f"cleopatra {treatment}" and not robot.legacy
+    assert robot.body_params["body_roll_axis"] is roll
+    if treatment == "spring":
+        assert "'spring': joint damping c = 0" in robot.notes and "body_c_pitch" in robot.notes
+        assert all(robot.body_params[f"body_c_{a}"] == 0.0 for a in ("pitch", "yaw", "roll"))
+    else:
+        assert robot.body_params["body_c_roll"] == 0.25
+    if not roll:
+        assert "no roll hinge" in robot.notes
 
 
-def test_treatment_names_and_design_parameters():
-    assert mr.canonical_treatment("locked") == "rigid"                  # §2's names with the same physics
-    assert mr.canonical_treatment("flexible+roll") == "flexible+yaw"
-    assert mr.treatment_connection("flexible").hinged == ("pitch", "roll")  # §11.2: 'flexible' is pitch + roll
+def test_treatment_names_parameters_and_legacy():
+    assert mr.TREATMENTS == ("spring", "spring_damper")
+    for bad in ("wobbly", "locked", "flexible+roll", "rigid", "flexible", "flexible+yaw"):
+        with pytest.raises(ValueError):
+            mr.cleopatra(bad)                       # Amendment C names only with legacy=True; §2's never
+    with pytest.raises(ValueError, match="legacy"):
+        mr.cleopatra("rigid")
     with pytest.raises(ValueError):
-        mr.cleopatra("wobbly")
-    conn = mr.design_connection({"body_connection": "flexible", "body_yaw": True, "roll_stiffness": 4.0,
-                                 "pitch_neutral_deg": 3.0, "yaw_limit_deg": 30.0})
-    assert conn.hinged == ("yaw", "pitch", "roll")
-    assert conn.roll.stiffness == 4.0 and conn.pitch.neutral_deg == 3.0 and conn.yaw.limits_deg == (-30.0, 30.0)
-    assert mr.design_connection({"body_connection": "rigid"}).hinged == ()
+        mr.cleopatra("locked", legacy=True)
+    with pytest.raises(TypeError):
+        mr.cleopatra("spring", 4.0)                 # the old positional yaw_stiffness is gone: keywords only
+    for bad in ({"body_roll_axis": "maybe"}, {"body_k_pitch": "stiff"}, {"body_k_yaw": -1.0}, {"body_c_roll": -0.1},
+                {"body_limit_roll": 0.0}, {"body_q0_pitch": 1.0}, {"body_roll_axis": False, "body_q0_roll": 0.1},
+                {"body_k_pitch": True}):
+        with pytest.raises(ValueError):
+            mr.cleopatra("spring_damper", **bad)
+    # defaults (§12.1): the default robot is spring_damper with k 8, c 0.2, q0 0, ±45°/±45°/±20°
+    assert mr.cleopatra().treatment == "spring_damper"
+    assert mr.make_connection() == mr.BodyConnection() == mr.design_connection({})
+    assert mr.connection_params(mr.make_connection()) == mr.BODY_DEFAULTS
+    # the CLI's value forms (ints, numeric strings, 'false'/0) build the same joints as floats and bools
+    a = mr.make_connection("spring", body_roll_axis="false", body_k_pitch=8, body_q0_yaw="0.05")
+    b = mr.make_connection("spring", body_roll_axis=False, body_k_pitch=8.0, body_q0_yaw=0.05)
+    assert a == b and a.hinged == ("yaw", "pitch") and a.yaw.q0 == 0.05
+    assert mr.make_connection("spring", body_roll_axis=0, body_q0_yaw=0.05) == b
+    assert mr.make_connection("spring_damper", body_limit_pitch=(-0.3, 0.5)).pitch.limits == (-0.3, 0.5)
+    # a ready connection, or the keywords — not both
+    conn = mr.make_connection("spring", body_k_yaw=4.0)
+    assert mr.cleopatra(connection=conn).connection == conn
+    with pytest.raises(ValueError):
+        mr.cleopatra(connection=conn, body_k_yaw=4.0)
+    # legacy (pre-Amendment D) treatments: labelled, never the default
+    leg = mr.cleopatra("flexible+yaw", legacy=True)
+    assert leg.treatment == "legacy:flexible+yaw" and leg.legacy and leg.notes.startswith("LEGACY (pre-Amendment D")
+    assert mr.body_joints("flexible", legacy=True) == [f"body {i}-{i + 1} {a}" for i in (1, 2)
+                                                       for a in ("pitch", "roll")]
+    rigid = mr.cleopatra("rigid", legacy=True)
+    assert [j.name for j in rigid.joints() if j.servo is None] == []
+    with pytest.raises(ValueError):
+        mr.cleopatra(connection=rigid.connection)  # a legacy connection still needs legacy=True
 
 
-def test_treatments_share_bodies_masses_inertias_and_actuators():
-    """§11.2: both modes keep the same bodies, geometry, masses, inertias, leg actuators (compiled models)."""
-    labs = [ch.ChironLab(mr.cleopatra(t)) for t in mr.TREATMENTS]
-    ref = labs[0].model
-    names = [mujoco.mj_id2name(ref, mujoco.mjtObj.mjOBJ_BODY, b) for b in range(ref.nbody)]
-    for lab in labs[1:]:
-        m = lab.model
-        assert [mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, b) for b in range(m.nbody)] == names
-        np.testing.assert_allclose(m.body_mass, ref.body_mass, atol=1e-12)
-        np.testing.assert_allclose(m.body_inertia, ref.body_inertia, atol=1e-12)
-        np.testing.assert_allclose(m.body_ipos, ref.body_ipos, atol=1e-12)
-        np.testing.assert_allclose(m.geom_size, ref.geom_size, atol=1e-12)
-        np.testing.assert_allclose(m.geom_friction, ref.geom_friction, atol=1e-12)
-        assert m.nu == ref.nu == 36
-        np.testing.assert_allclose(m.actuator_biasprm, ref.actuator_biasprm)
-        assert lab.actuated_joints == labs[0].actuated_joints
-        assert lab.nominal_base_height == labs[0].nominal_base_height == pytest.approx(P.hip_height)
+def test_design_parameters_are_the_robot_parameters():
+    """§12.3: the Myropod design lists every body-joint parameter with the protocol's defaults, and the Chiron robot
+    built from a design dict is the robot built from the same keywords."""
+    myropod = pytest.importorskip("myropod")                  # imports CadQuery
+    design = myropod.Myropod()
+    params = {p.name: p for p in design.params}
+    assert set(mr.DESIGN_KEYS) <= set(params)
+    for k, v in mr.BODY_DEFAULTS.items():
+        assert params[k].default == v, k
+        if k.startswith(("body_k_", "body_c_", "body_q0_", "body_limit_")):
+            assert params[k].units == {"k": "N·m/rad", "c": "N·m·s/rad", "q0": "rad", "limit": "rad"}[k.split("_")[1]]
+    assert params["body_connection"].choices == mr.TREATMENTS
+    p = design.resolve(**mr.CLEO_MM, body_connection="spring", body_roll_axis=False, body_k_yaw=4.0,
+                       body_q0_pitch=0.05)
+    r1 = mr.robot_from_design(p)
+    r2 = mr.cleopatra("spring", body_roll_axis=False, body_k_yaw=4.0, body_q0_pitch=0.05)
+    assert r1.connection == r2.connection and r1.params == r2.params == P
+    assert r1.to_mjcf() == r2.to_mjcf()
+    assert mr.design_connection(p) == r2.connection
+    with pytest.raises(ValueError):
+        mr.robot_from_design(design.resolve())                # Persephone: 12 segments, not Cleopatra
+    with pytest.raises(TypeError):
+        mr.robot_from_design(p, body_k_yaw=8.0)
+
+
+def test_controllers_walk_the_robots_own_leg_lengths():
+    """A robot built from a design dict with other leg lengths gets them in the controller's IK (Chiron's runner
+    and CLI pass ``robot`` to the controller factory)."""
+    r = mr.robot_from_design(dict(mr.CLEO_MM, femur_length=90.0, body_connection="spring"))
+    assert r.params.femur == pytest.approx(0.090)
+    assert mc.fixed(0.2, robot=r).robot_params == r.params == mc.adaptive(0.2, robot=r).robot_params
+    assert mc.fixed(0.2).robot_params == P and mc.fixed(0.2, robot=object()).robot_params == P
+
+
+def test_cli_parses_the_body_parameters(tmp_path, capsys):
+    """``chiron info|run designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 ...``"""
+    from vegeta.chiron import cli
+    from vegeta.chiron.experiments import load_ref
+
+    ref = f"{mr.__file__}:cleopatra"
+    argv = ["run", ref, "-p", "body_connection=spring", "-p", "body_k_pitch=8", "-p", "body_roll_axis=false",
+            "-p", "body_c_yaw=0.3", "-p", "body_q0_pitch=0.05", "-p", "body_limit_yaw=0.6",
+            "--controller", f"{mc.__file__}:fixed", "--terrain", "flat", "--duration", "0.05", "--settle", "0.05",
+            "--timestep", "0.00025", "--seed", "1", "--no-metrics", "--out", str(tmp_path / "run")]
+    trial = cli.trial_from_args(cli.build_parser().parse_args(argv))
+    assert trial.robot_kwargs == {"body_connection": "spring", "body_k_pitch": 8, "body_roll_axis": False,
+                                  "body_c_yaw": 0.3, "body_q0_pitch": 0.05, "body_limit_yaw": 0.6}
+    robot = load_ref(trial.robot)(**trial.robot_kwargs)
+    ref_robot = mr.cleopatra("spring", body_k_pitch=8.0, body_roll_axis=False, body_c_yaw=0.3, body_q0_pitch=0.05,
+                             body_limit_yaw=0.6)
+    assert robot.connection == ref_robot.connection and robot.connection.hinged == ("yaw", "pitch")
+    assert robot.connection.yaw.damping == 0.0                                   # 'spring': c = 0
+    assert cli.main(argv) == 0
+    out = tmp_path / "run"
+    assert (out / "episode.npz").exists() and (out / "summary.json").exists()
+    capsys.readouterr()
+    assert cli.main(["info", ref, "-p", "body_connection=spring_damper", "-p", "body_roll_axis=0"]) == 0
+    text = capsys.readouterr().out
+    assert "body 1-2 pitch" in text and "body 2-3 roll" not in text
+    assert cli.main(["info", ref, "-p", "body_connection=rigid"]) == 2           # legacy: invalid input
+
+
+def test_standing_pose_carries_the_weight():
+    lab = mr.cleopatra_lab("spring_damper")
+    obs = lab.reset()
+    np.testing.assert_allclose(obs.foot_pos[:, 2], P.foot_diameter / 2, atol=1e-9)   # pads touching z = 0
+    for _ in range(2000):                                                              # 0.5 s holding the pose
+        obs = lab.step()
+    obs = lab.observe(sync=True)
+    assert obs.foot_normal_force.sum() == pytest.approx(lab.total_mass * G, rel=0.02)
+    assert tilt_deg(obs.body_quat).max() < 2.0
+    m = lab.model
+    hips = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, j) for j in lab.actuated_joints if j.endswith("hip_yaw")]
+    z = lab.data.xanchor[hips, 2]
+    assert z.mean() == pytest.approx(P.hip_height, abs=0.004)                          # contact + servo sag
+    assert z.min() > P.hip_height - 0.010
+
+
+def test_legacy_rigid_connection_holds_the_neutral_angles():
+    """Legacy (Amendment C) 'rigid': the welded segments keep their neutral angles under load."""
+    conn = mr.make_connection("rigid", body_q0_pitch=math.radians(5.0), legacy=True)
+    lab = mr.cleopatra_lab(robot=mr.cleopatra(connection=conn, legacy=True))
+    lab.reset()
+    for _ in range(2000):
+        lab.step()
+    d = lab.data
+    R1, R2 = (d.xmat[_body_id(lab, f"segment {i}")].reshape(3, 3) for i in (1, 2))
+    rel = R1.T @ R2
+    assert math.degrees(math.atan2(rel[0, 2], rel[0, 0])) == pytest.approx(5.0, abs=1e-9)   # about +y, exact
+    assert rel[1, 1] == pytest.approx(1.0, abs=1e-12)
 
 
 def test_joint_axes_follow_gait_ik_myropod():
     """MuJoCo's forward kinematics of gait.ik_myropod's angles puts every foot on its target (segment frame)."""
-    lab = ch.ChironLab(mr.cleopatra("flexible"))
+    lab = ch.ChironLab(mr.cleopatra("spring"))
     rng = np.random.default_rng(5)
     qpos, targets = {}, {}
     for i, f in enumerate(lab.feet):
@@ -161,62 +287,9 @@ def test_vectorised_ik_equals_gait_ik_myropod():
     assert list(ok) == [r[1] for r in ref] and not ok.all()
 
 
-def test_standing_pose_carries_the_weight():
-    lab = mr.cleopatra_lab("flexible")
-    obs = lab.reset()
-    np.testing.assert_allclose(obs.foot_pos[:, 2], P.foot_diameter / 2, atol=1e-9)   # pads touching z = 0
-    for _ in range(2000):                                                              # 0.5 s holding the pose
-        obs = lab.step()
-    obs = lab.observe(sync=True)
-    assert obs.foot_normal_force.sum() == pytest.approx(lab.total_mass * G, rel=0.02)
-    assert tilt_deg(obs.body_quat).max() < 2.0
-    m = lab.model
-    hips = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, j) for j in lab.actuated_joints if j.endswith("hip_yaw")]
-    z = lab.data.xanchor[hips, 2]
-    assert z.mean() == pytest.approx(P.hip_height, abs=0.004)                          # contact + servo sag
-    assert z.min() > P.hip_height - 0.010
-
-
-# ----------------------------------------------------------------------------------------------- §11.5 checks
-def test_rigid_connection_holds_the_neutral_angles():
-    conn = mr.BodyConnection(mode="rigid", pitch=mr.BodyAxis(neutral_deg=5.0))
-    lab = mr.cleopatra_lab(robot=mr.cleopatra(connection=conn))
-    lab.reset()
-    for _ in range(2000):
-        lab.step()
-    d = lab.data
-    R1, R2 = (d.xmat[_body_id(lab, f"segment {i}")].reshape(3, 3) for i in (1, 2))
-    rel = R1.T @ R2
-    assert math.degrees(math.atan2(rel[0, 2], rel[0, 0])) == pytest.approx(5.0, abs=1e-9)   # about +y, exact
-    assert rel[1, 1] == pytest.approx(1.0, abs=1e-12)
-    # and the default rigid robot keeps its segments exactly parallel under load
-    lab = mr.cleopatra_lab("rigid")
-    lab.reset()
-    for _ in range(2000):
-        lab.step()
-    d = lab.data
-    for i in (2, 3):
-        rel = d.xmat[_body_id(lab, "segment 1")].reshape(3, 3).T @ d.xmat[_body_id(lab, f"segment {i}")].reshape(3, 3)
-        np.testing.assert_allclose(rel, np.eye(3), atol=1e-12)
-
-
-@pytest.mark.parametrize("axis", ["pitch", "roll", "yaw"])
-def test_body_spring_static_deflection_is_torque_over_k(axis):
-    """A known torque on a body hinge (no gravity, the robot floating) settles at θ = θ₀ + τ/k."""
-    k, tau = {"pitch": 8.0, "roll": 8.0, "yaw": 4.0}[axis], 0.3
-    lab = mr.cleopatra_lab("flexible+yaw", robot_kw={"yaw_stiffness": 4.0}, gravity=(0.0, 0.0, 0.0))
-    lab.reset(base_pos=(0.0, 0.0, 1.0))
-    dof = _joint_dof(lab, f"body 1-2 {axis}")
-    lab.data.qfrc_applied[dof] = tau
-    for _ in range(16000):                           # 4 s; the hinge is damped (c = 0.2 N·m·s/rad)
-        lab.step()
-    assert lab.observe().joint(f"body 1-2 {axis}") == pytest.approx(tau / k, rel=0.01)
-    assert abs(lab.data.qvel[dof]) < 1e-3
-
-
 # ----------------------------------------------------------------------------------------------- controllers
 def test_sigma_zero_is_the_fixed_controller():
-    lab = mr.cleopatra_lab("flexible")
+    lab = mr.cleopatra_lab("spring_damper")
     ep_fixed = lab.run(mc.fixed(0.2), duration=1.0, seed=3)
     ep_zero = lab.run(mc.adaptive(0.2, sigma=0.0), duration=1.0, seed=3)
     for key in ("com", "q", "qd", "tau", "foot_force", "leg_phase", "leg_stance_cmd", "body_quat"):
@@ -253,14 +326,14 @@ def test_floored_generator_is_the_tegotae_rule_where_the_floor_is_inactive():
 
 
 def test_start_pose_has_every_foot_on_the_ground():
-    lab = mr.cleopatra_lab("flexible+yaw")
+    lab = mr.cleopatra_lab("spring")
     c = mc.adaptive(0.2)
     c.reset(lab, seed=4)
     obs = lab.observe(sync=True)
     # the stance depth is the protocol's 0.151 m; the 40°/85° standing pose drops 0.15104 m: 42 µm apart
     np.testing.assert_allclose(obs.foot_pos[:, 2], P.foot_diameter / 2, atol=1e-4)
     assert obs.base_pos[2] == pytest.approx(P.hip_height)
-    assert np.allclose([obs.joint(j) for j in mr.body_joints("flexible+yaw")], 0.0)
+    assert np.allclose([obs.joint(j) for j in mr.body_joints("spring")], 0.0)     # q0 = 0: springs unloaded
     assert np.all(obs.qd == 0)
     # the swinging leg of each segment is the one whose phase is past the duty
     assert (c.gen.phases >= 0.75).sum() == 3
@@ -291,7 +364,7 @@ def test_pairing_same_seed_same_terrain_and_initial_phase():
 
 
 def test_determinism():
-    lab = mr.cleopatra_lab("flexible+yaw")
+    lab = mr.cleopatra_lab("spring")
     a = lab.run(mc.adaptive(0.2), duration=1.0, seed=7)
     b = lab.run(mc.adaptive(0.2), duration=1.0, seed=7)
     c = lab.run(mc.adaptive(0.2), duration=1.0, seed=8)
@@ -301,22 +374,31 @@ def test_determinism():
 
 
 # ----------------------------------------------------------------------------------------------- walking
+@pytest.mark.parametrize("seed", [0, 1])
 @pytest.mark.parametrize("controller", ["fixed", "adaptive"])
 @pytest.mark.parametrize("treatment", mr.TREATMENTS)
-def test_flat_course_at_0_2_m_s(treatment, controller):
+def test_flat_course_at_0_2_m_s(treatment, controller, seed):
+    """§12.4's factorial on flat ground: both treatments × both controllers at 0.2 m/s with LAB_OPTIONS, paired
+    seeds (same terrain, same initial gait phase); every trial must succeed under the §5 rules."""
     v = 0.2
     lab = mr.cleopatra_lab(treatment)
+    assert lab.timestep == mr.LAB_OPTIONS["timestep"]
     ctrl = (mc.fixed if controller == "fixed" else mc.adaptive)(v)
-    ep = lab.run(ctrl, rules=mr.failure_rules(v), seed=0, info={"treatment": treatment})
+    ep = lab.run(ctrl, rules=mr.failure_rules(v), seed=seed, info={"treatment": treatment})
     assert ep.success, ep.outcome
     log = ep.log
     speed = ep.outcome["distance_m"] / ep.outcome["t_end"]
-    assert speed > (0.85 if controller == "fixed" else 0.5) * v
-    assert tilt_deg(log["body_quat"]).max() < 35.0
-    assert np.abs(log["com"][:, 1]).max() < 0.25
+    # sanity bounds, looser than the §5 rules but not protocol criteria. Measured (seeds 0, 1; a test, not a study
+    # result): speed fixed 0.79-0.83 v spring, 0.87-0.88 v spring_damper, load-feedback 0.62-0.65 v; max tilt
+    # 26-31° spring, 14-21° spring_damper; max |y| of the COM 0.12-0.26 m spring, 0.07-0.16 m spring_damper.
+    assert speed > (0.7 if controller == "fixed" else 0.5) * v
+    assert tilt_deg(log["body_quat"]).max() < 45.0
+    assert np.abs(log["com"][:, 1]).max() < 0.4
     # the episode log carries what chiron.metrics needs
     assert log["bodies"] == ["head", "segment 1", "segment 2", "segment 3"]
-    assert log["treatment"] == treatment and log["controller"] == controller
+    assert log["treatment"] == treatment and log["controller"] == controller and log["seed"] == seed
+    assert log["robot"] == f"cleopatra {treatment}"
+    assert [j for j in log["joints"] if j.startswith("body ")] == mr.body_joints(treatment)
     assert log["leg_phase"].shape == (len(log["t"]), 12) and log["leg_stance_cmd"].dtype == bool
     assert log["total_mass"] == pytest.approx(6.1697, abs=1e-6)
     assert log["nominal_hip_height"] == pytest.approx(P.hip_height)

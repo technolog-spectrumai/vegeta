@@ -1,17 +1,25 @@
-"""Cleopatra as a Chiron robot: the three-segment Myropod of notebook 18 and its body-connection treatments.
+"""Cleopatra as a Chiron robot: the three-segment Myropod of notebook 18 and its body treatments (Amendment D).
 
 The pre-registered stability protocol (``docs/myropod_stability.md``) fixes everything here: §1 the robot (geometry,
-masses, joints, actuators, friction) and §11 (Amendment C, which supersedes §2) the treatments. ``cleopatra()``
-returns a ``chiron.Robot``; the treatments differ **only** in how segments 1–2 and 2–3 are joined, never in a body,
-a mass, an inertia, a leg, a friction or an actuator:
+masses, joints, actuators, friction) and §12 (Amendment D, 2026-10-01, which supersedes §2 and §11.2) the
+treatments. ``cleopatra()`` returns a ``chiron.Robot``. Both treatments have the **identical intersegment joints**
+between segments 1–2 and 2–3 (the head is welded to segment 1): passive hinges on pitch and yaw always, roll per
+``body_roll_axis`` (default on), chained yaw → pitch → roll at the joint pin, with the same stiffness k [N·m/rad],
+neutral angle q0 [rad] and hard stops [rad] per axis, armature 0, friction loss 0, translations constrained, no
+body actuator and no prescribed bending. They differ in nothing but the joint damping c:
 
-* ``rigid`` — the rear segment is welded to the front one at the neutral angles (no degree of freedom);
-* ``flexible`` — passive spring–damper hinges at the joint pin on pitch and roll (k = 8 N·m/rad, c = 0.2 N·m·s/rad,
-  θ₀ = 0°, limits ±45° pitch, ±20° roll);
-* ``flexible+yaw`` — as ``flexible`` plus a yaw hinge (k = 8, c = 0.2, ±45°; its stiffness is ``yaw_stiffness``).
+* ``spring`` — joint torque ``τ = −k (q − q0)``; c = 0 on every axis (any ``body_c_*`` given is ignored, and
+  ``robot.notes`` says so);
+* ``spring_damper`` — ``τ = −k (q − q0) − c q̇`` with c [N·m·s/rad] per axis (default 0.2).
 
-Every per-axis value (k, c, θ₀, limits) is a field of ``BodyConnection`` / ``BodyAxis``; ``design_connection`` and
-``design_params`` read the same settings from a Myropod design-parameter dict (§11.3).
+Protocol defaults (``BODY_DEFAULTS``): k = 8 N·m/rad, c = 0.2 N·m·s/rad, q0 = 0 rad, limits ±45° (0.785 rad) pitch
+and yaw, ±20° (0.349 rad) roll. The same names are Myropod design parameters (``designs/myropod.py``, §12.3):
+``design_connection`` and ``robot_from_design`` build the robot from a Dedalus parameter dict, and Chiron's CLI
+passes them as ``-p body_connection=spring -p body_k_pitch=8``.
+
+Amendment C's treatments ('rigid', 'flexible', 'flexible+yaw', §11.2) are **legacy (pre-Amendment D)**: they are
+built only with ``legacy=True``, labelled ``legacy:<name>`` and never pooled with the Amendment D results; §2's
+'locked' and 'flexible+roll' are refused.
 
 Frames (Chiron's convention): x forward (the head at +x), y left, z up. Every segment's link frame sits at the
 segment's centre at **hip height** (the CAD's ``seg_height / 2`` above the shell's belly), so a hip is at
@@ -20,7 +28,7 @@ grows backwards from the root link, the head (it floats freely; Chiron logs the 
 segment 1, segment 2, segment 3): head → segment 1 (welded, 0.160 m behind it) → segment 2 → segment 3, one pitch
 (0.170 m) apart; a body joint sits at the pin halfway across the joint gap. Body-joint signs: yaw about +z
 (+ swings the rear segment's tail to the right), pitch about +y (+ lifts the rear segment's tail), roll about +x;
-hinges are chained yaw → pitch → roll.
+q = 0 is the straight chain.
 
 Legs: hip yaw (axis: segment z; positive sweeps the foot forward), hip pitch (horizontal, perpendicular to the
 leg plane; positive = femur below horizontal) and knee (parallel to hip pitch; the **relative** angle, positive =
@@ -28,22 +36,28 @@ tibia folds further down). These are ``gait.ik_myropod``'s conventions: its knee
 below horizontal, so the physical knee joint is ``knee_abs − hip_pitch``. At zero every leg sticks straight out
 sideways.
 
-Units: SI here (m, kg, s, N·m, rad); the design files (``myropod.py``, ``gait.py``) work in mm and degrees and are
-converted at the boundary. Every number carries its source in ``CleopatraParams`` and ``Robot.sources``.
+Units: SI here (m, kg, s, N·m, rad); the design files (``myropod.py``, ``gait.py``) work in mm and degrees for
+geometry and are converted at the boundary (the body-joint design parameters are already SI). Every number
+carries its source in ``CleopatraParams`` and ``Robot.sources``.
 """
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass, replace
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field
+
+import numpy as np
 
 import actuators as act
 from vegeta import chiron as ch
 
-__all__ = ["CLEO_MM", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "TREATMENT_CONNECTIONS",
-           "LEGACY_TREATMENTS", "LEG_KEYS", "LEG_SIDES", "SEGMENTS", "LEG_RANGES", "KP", "KD", "cleopatra",
-           "cleopatra_servo", "canonical_treatment", "treatment_connection", "design_connection", "design_params",
-           "leg_name", "leg_joints", "body_joints", "nominal_pose", "mass_budget", "hip_position", "stance_foot",
-           "LAB_OPTIONS", "LAB_OPTIONS_PROTOCOL", "COURSE_M", "cleopatra_lab", "failure_rules"]
+__all__ = ["CLEO_MM", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",
+           "RETIRED_TREATMENTS", "AXIS_ORDER", "BODY_DEFAULTS", "DESIGN_KEYS", "LIMIT_PITCH", "LIMIT_YAW",
+           "LIMIT_ROLL", "LEG_KEYS", "LEG_SIDES", "SEGMENTS", "LEG_RANGES", "KP", "KD", "cleopatra",
+           "cleopatra_servo", "canonical_treatment", "make_connection", "connection_params", "design_connection",
+           "design_params", "robot_from_design", "as_bool", "leg_name", "leg_joints", "body_joints", "nominal_pose",
+           "mass_budget", "hip_position", "stance_foot", "LAB_OPTIONS", "LAB_OPTIONS_PROTOCOL", "COURSE_M",
+           "cleopatra_lab", "failure_rules"]
 
 #: Notebook 18's ``CLEO`` parameters for ``designs/myropod.py`` [mm, deg] (Cleopatra) — the protocol's §1 geometry.
 CLEO_MM = dict(n_segments=3, seg_length=150.0, seg_width=110.0, seg_height=70.0, shell_thickness=3.0, joint_gap=20.0,
@@ -195,123 +209,253 @@ class CleopatraParams:
         return rest * self.tibia / (self.femur + self.tibia)
 
 
-# ----------------------------------------------------------------------------------------------- body connections
+# ----------------------------------------------------------------------------------------------- body joints
+#: The treatments (protocol §12.1, Amendment D). They differ in nothing but the body joints' damping c.
+TREATMENTS = ("spring", "spring_damper")
+#: Amendment C's treatments (§11.2): legacy (pre-Amendment D) — built only with ``legacy=True``, never pooled.
+LEGACY_TREATMENTS = ("rigid", "flexible", "flexible+yaw")
+#: §2's names (retired by Amendment C): refused.
+RETIRED_TREATMENTS = ("locked", "flexible+roll")
+#: Hinge order at a body joint, from the front segment to the rear one: the yaw pin, then pitch, then roll.
+AXIS_ORDER = ("yaw", "pitch", "roll")
+AXIS_VECTOR = {"yaw": (0.0, 0.0, 1.0), "pitch": (0.0, 1.0, 0.0), "roll": (1.0, 0.0, 0.0)}
+#: Protocol §12.1 hard stops [rad]: ±45° pitch and yaw, ±20° roll.
+LIMIT_PITCH, LIMIT_YAW, LIMIT_ROLL = math.radians(45.0), math.radians(45.0), math.radians(20.0)
+#: The body-joint parameters with the protocol's §12.1 defaults — the same names as the Myropod design parameters
+#: (§12.3) and ``cleopatra()``'s keywords: treatment; roll hinge on/off; per axis stiffness k [N·m/rad], damping
+#: c [N·m·s/rad] (spring_damper only), neutral angle q0 [rad] and the symmetric hard stop ±limit [rad].
+BODY_DEFAULTS = {
+    "body_connection": "spring_damper", "body_roll_axis": True,
+    "body_k_pitch": 8.0, "body_k_yaw": 8.0, "body_k_roll": 8.0,
+    "body_c_pitch": 0.2, "body_c_yaw": 0.2, "body_c_roll": 0.2,
+    "body_q0_pitch": 0.0, "body_q0_yaw": 0.0, "body_q0_roll": 0.0,
+    "body_limit_pitch": LIMIT_PITCH, "body_limit_yaw": LIMIT_YAW, "body_limit_roll": LIMIT_ROLL,
+}
+#: Myropod design-parameter names read by ``design_connection`` (= ``BODY_DEFAULTS``' keys).
+DESIGN_KEYS = tuple(BODY_DEFAULTS)
+_LEGACY_AXES = {"rigid": (), "flexible": ("pitch", "roll"), "flexible+yaw": AXIS_ORDER}
+_TRUE, _FALSE = ("true", "yes", "on", "1"), ("false", "no", "off", "0")
+
+
+def as_bool(value, name: str = "value") -> bool:
+    """A bool from a Python/numpy bool, 0/1, or 'true'/'false', 'yes'/'no', 'on'/'off', '1'/'0' (any case) — the
+    forms a design dict or ``chiron run -p name=value`` gives; anything else raises ``ValueError``."""
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    if isinstance(value, (int, float, np.integer, np.floating)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str) and value.strip().lower() in _TRUE + _FALSE:
+        return value.strip().lower() in _TRUE
+    raise ValueError(f"{name} expects a bool (true/false, 1/0, yes/no, on/off), got {value!r}")
+
+
+def _num(value, name: str) -> float:
+    """A finite float from a number or a numeric string (not a bool)."""
+    if isinstance(value, (bool, np.bool_)) or value is None:
+        raise ValueError(f"{name} expects a number, got {value!r}")
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name} expects a number, got {value!r}") from None
+    if not math.isfinite(x):
+        raise ValueError(f"{name} must be finite, got {value!r}")
+    return x
+
+
+def _limits(value, name: str) -> tuple:
+    """Hard stops [rad]: a positive number L → (−L, L); a pair → (lo, hi)."""
+    if isinstance(value, (list, tuple, np.ndarray)):
+        if len(value) != 2:
+            raise ValueError(f"{name} expects a number L (stops at ±L) or a pair (lo, hi) [rad], got {value!r}")
+        return (_num(value[0], name), _num(value[1], name))
+    lim = _num(value, name)
+    if lim <= 0:
+        raise ValueError(f"{name} must be positive (stops at ±{name}) [rad], got {value!r}")
+    return (-lim, lim)
+
+
 @dataclass(frozen=True)
 class BodyAxis:
-    """One passive body-joint axis (protocol §11.2): torque ``τ = −k (θ − θ₀) − c θ̇`` plus hard stops.
+    """One passive body-joint axis: joint torque ``τ = −k (q − q0) − c q̇`` [N·m] plus the hard stops.
 
-    ``stiffness`` k [N·m/rad], ``damping`` c [N·m·s/rad], ``neutral_deg`` θ₀ [deg] (the spring's rest angle; the
-    segments start there and a rigid connection is welded there), ``limits_deg`` (lo, hi) [deg] hard stops
-    (absolute joint angles)."""
+    ``stiffness`` k [N·m/rad] (≥ 0); ``damping`` c [N·m·s/rad] (≥ 0; 0 in the 'spring' treatment); ``q0`` [rad] the
+    neutral angle — the spring's rest angle; the segments start there with the springs unloaded; ``limits``
+    (lo, hi) [rad] the hard stops, absolute joint angles with lo < q0 < hi, within ±π."""
 
     stiffness: float = 8.0
     damping: float = 0.2
-    neutral_deg: float = 0.0
-    limits_deg: tuple = (-45.0, 45.0)
+    q0: float = 0.0
+    limits: tuple = (-LIMIT_PITCH, LIMIT_PITCH)
 
     def __post_init__(self):
-        lo, hi = self.limits_deg
-        if not lo < hi:
-            raise ValueError("limits_deg must be (lo, hi) with lo < hi")
-        if not lo <= self.neutral_deg <= hi:
-            raise ValueError("neutral_deg must lie within limits_deg")
+        for k in ("stiffness", "damping", "q0"):
+            object.__setattr__(self, k, _num(getattr(self, k), k))
+        if len(self.limits) != 2:
+            raise ValueError("limits must be (lo, hi) [rad]")
+        lo, hi = (_num(v, "limits") for v in self.limits)
+        object.__setattr__(self, "limits", (lo, hi))
+        if not -math.pi <= lo < hi <= math.pi:
+            raise ValueError(f"limits must satisfy -pi <= lo < hi <= pi [rad], got {(lo, hi)}")
+        if not lo < self.q0 < hi:
+            raise ValueError(f"q0 = {self.q0} rad must lie strictly within the limits {(lo, hi)} rad")
         if self.stiffness < 0 or self.damping < 0:
-            raise ValueError("stiffness and damping must be non-negative")
+            raise ValueError("stiffness [N·m/rad] and damping [N·m·s/rad] must be non-negative")
 
 
-#: Protocol §11.2 defaults: k = 8 N·m/rad, c = 0.2 N·m·s/rad, θ₀ = 0°, limits ±45° pitch, ±20° roll, ±45° yaw.
-PITCH_AXIS = BodyAxis(8.0, 0.2, 0.0, (-45.0, 45.0))
-ROLL_AXIS = BodyAxis(8.0, 0.2, 0.0, (-20.0, 20.0))
-YAW_AXIS = BodyAxis(8.0, 0.2, 0.0, (-45.0, 45.0))
-#: Hinge order at a body joint, from the front segment to the rear one (yaw pin, then pitch pin, then roll).
-AXIS_ORDER = ("yaw", "pitch", "roll")
-AXIS_VECTOR = {"yaw": (0.0, 0.0, 1.0), "pitch": (0.0, 1.0, 0.0), "roll": (1.0, 0.0, 0.0)}
+_DEFAULT_AXES = {a: BodyAxis(BODY_DEFAULTS[f"body_k_{a}"], BODY_DEFAULTS[f"body_c_{a}"], BODY_DEFAULTS[f"body_q0_{a}"],
+                             (-BODY_DEFAULTS[f"body_limit_{a}"], BODY_DEFAULTS[f"body_limit_{a}"]))
+                 for a in AXIS_ORDER}
 
 
 @dataclass(frozen=True)
 class BodyConnection:
-    """How segments 1–2 and 2–3 are joined (protocol §11.2; the head is welded to segment 1 in every mode).
+    """The intersegment joints between segments 1–2 and 2–3 (identical at both; the head is welded to segment 1).
 
-    ``mode`` 'rigid' — the rear segment is welded to the front one (no degree of freedom), oriented at the neutral
-    angles of ``yaw``/``pitch``/``roll``; 'flexible' — passive spring–damper hinges at the joint pin on ``axes``
-    (default pitch and roll; yaw optional), each with its ``BodyAxis``. An axis that is not hinged is fixed at its
-    neutral angle (built into the link's orientation, before the hinges). Translations stay constrained.
+    ``treatment`` 'spring' | 'spring_damper' (protocol §12.1), or with ``legacy=True`` Amendment C's 'rigid' |
+    'flexible' | 'flexible+yaw' (§11.2, pre-Amendment D). ``axes``: the hinged axes in chain order (yaw → pitch →
+    roll) — Amendment D: ('yaw', 'pitch', 'roll') or ('yaw', 'pitch') without the roll hinge; legacy: () welds the
+    segments ('rigid'), ('pitch', 'roll') 'flexible', all three 'flexible+yaw'. ``yaw``/``pitch``/``roll``: each
+    axis's ``BodyAxis`` **as built** (a 'spring' connection has c = 0 on every axis). An axis that is not hinged is
+    held at its q0, built into the link's orientation before the hinges (Amendment D: only q0 = 0 there; legacy
+    'rigid' welds at the neutral angles). ``notes``: what the builder ignored (not part of equality).
+
+    Use ``make_connection`` (the design-parameter names) or ``design_connection`` (a design dict) to build one.
     """
 
-    mode: str = "flexible"
-    axes: tuple = ("pitch", "roll")
-    pitch: BodyAxis = PITCH_AXIS
-    roll: BodyAxis = ROLL_AXIS
-    yaw: BodyAxis = YAW_AXIS
+    treatment: str = "spring_damper"
+    axes: tuple = AXIS_ORDER
+    yaw: BodyAxis = _DEFAULT_AXES["yaw"]
+    pitch: BodyAxis = _DEFAULT_AXES["pitch"]
+    roll: BodyAxis = _DEFAULT_AXES["roll"]
+    legacy: bool = False
+    notes: str = field(default="", compare=False)
 
     def __post_init__(self):
-        if self.mode not in ("rigid", "flexible"):
-            raise ValueError("mode must be 'rigid' or 'flexible'")
-        bad = [a for a in self.axes if a not in AXIS_ORDER]
-        if bad:
-            raise ValueError(f"unknown body axes {bad}; use {AXIS_ORDER}")
+        axes = tuple(self.axes)
+        object.__setattr__(self, "axes", axes)
+        object.__setattr__(self, "legacy", as_bool(self.legacy, "legacy"))
+        if any(a not in AXIS_ORDER for a in axes) or tuple(a for a in AXIS_ORDER if a in axes) != axes:
+            raise ValueError(f"axes {axes} must be distinct names from {AXIS_ORDER}, in that (chain) order")
+        canonical_treatment(self.treatment, self.legacy)
+        if self.treatment in LEGACY_TREATMENTS:
+            if not self.legacy:
+                raise ValueError("a legacy treatment needs legacy=True")
+            if axes != _LEGACY_AXES[self.treatment]:
+                raise ValueError(f"legacy {self.treatment!r} hinges {_LEGACY_AXES[self.treatment]}, not {axes}")
+            return
+        if self.legacy:
+            raise ValueError(f"{self.treatment!r} is an Amendment D treatment, not legacy")
+        if axes not in (AXIS_ORDER, ("yaw", "pitch")):
+            raise ValueError(f"Amendment D hinges pitch and yaw always and roll optionally (§12.1), not {axes}")
+        if self.treatment == "spring" and any(self.axis(a).damping != 0.0 for a in axes):
+            raise ValueError("'spring' has joint damping c = 0 on every body axis (§12.1)")
+        for a in AXIS_ORDER:
+            if a not in axes and self.axis(a).q0 != 0.0:
+                raise ValueError(f"the {a} axis is not hinged: its q0 must be 0 (a fixed offset is not modelled)")
 
     @property
     def hinged(self) -> tuple:
-        """The hinged axes in chain order (empty when rigid)."""
-        return () if self.mode == "rigid" else tuple(a for a in AXIS_ORDER if a in self.axes)
+        """The hinged axes in chain order (empty for the legacy 'rigid')."""
+        return self.axes
+
+    @property
+    def roll_axis(self) -> bool:
+        return "roll" in self.axes
 
     def axis(self, name: str) -> BodyAxis:
         return getattr(self, name)
 
 
-#: The treatments run (protocol §11.2; they supersede §2's locked / flexible / flexible+roll).
-TREATMENT_CONNECTIONS = {
-    "rigid": BodyConnection(mode="rigid"),
-    "flexible": BodyConnection(mode="flexible", axes=("pitch", "roll")),
-    "flexible+yaw": BodyConnection(mode="flexible", axes=("yaw", "pitch", "roll")),
-}
-TREATMENTS = tuple(TREATMENT_CONNECTIONS)
-#: §2's retired names that have an identical §11 meaning (the same hinged axes, the same values). §2's 'flexible'
-#: (pitch + yaw) has none: 'flexible' now means pitch + roll.
-LEGACY_TREATMENTS = {"locked": "rigid", "flexible+roll": "flexible+yaw"}
+def canonical_treatment(treatment: str, legacy: bool = False) -> str:
+    """Check a treatment name: 'spring' | 'spring_damper' (protocol §12.1); Amendment C's 'rigid' | 'flexible' |
+    'flexible+yaw' only with ``legacy=True`` (pre-Amendment D: reported as legacy, never pooled); §2's 'locked' and
+    'flexible+roll' and anything else raise ``ValueError``."""
+    name = str(treatment)
+    if name in TREATMENTS:
+        return name
+    if name in LEGACY_TREATMENTS:
+        if as_bool(legacy, "legacy"):
+            return name
+        raise ValueError(f"treatment {name!r} is legacy (pre-Amendment D, protocol §11.2): pass legacy=True to build "
+                         f"it (its results are never pooled with {TREATMENTS}); Amendment D uses {TREATMENTS}")
+    if name in RETIRED_TREATMENTS:
+        raise ValueError(f"treatment {name!r} (protocol §2) was retired by Amendment C and is not built; "
+                         f"use one of {TREATMENTS} (§12.1)")
+    raise ValueError(f"unknown treatment {name!r}: use one of {TREATMENTS} (protocol §12.1)")
 
 
-def canonical_treatment(treatment: str) -> str:
-    """'rigid' | 'flexible' | 'flexible+yaw' (§2's 'locked' and 'flexible+roll' are mapped; anything else fails)."""
-    name = LEGACY_TREATMENTS.get(treatment, treatment)
-    if name not in TREATMENT_CONNECTIONS:
-        raise ValueError(f"treatment {treatment!r}: use one of {TREATMENTS} (protocol §11.2)")
-    return name
+def make_connection(body_connection: str = BODY_DEFAULTS["body_connection"], *,
+                    body_roll_axis=BODY_DEFAULTS["body_roll_axis"],
+                    body_k_pitch=8.0, body_k_yaw=8.0, body_k_roll=8.0,
+                    body_c_pitch=0.2, body_c_yaw=0.2, body_c_roll=0.2,
+                    body_q0_pitch=0.0, body_q0_yaw=0.0, body_q0_roll=0.0,
+                    body_limit_pitch=LIMIT_PITCH, body_limit_yaw=LIMIT_YAW, body_limit_roll=LIMIT_ROLL,
+                    legacy=False) -> BodyConnection:
+    """The ``BodyConnection`` for the body-joint parameters (names and defaults: ``BODY_DEFAULTS``, protocol §12.1).
+
+    ``body_connection`` 'spring' | 'spring_damper'; ``body_roll_axis`` (bool; ``as_bool`` forms accepted) adds the
+    roll hinge; per axis ``body_k_*`` k [N·m/rad], ``body_c_*`` c [N·m·s/rad] (spring_damper only: 'spring' builds
+    c = 0 whatever these say and records the ignored values in ``notes``), ``body_q0_*`` q0 [rad], ``body_limit_*``
+    [rad] (a positive L: stops at ±L; or a pair (lo, hi)). Numbers may be ints, floats or numeric strings (the CLI's
+    ``-p`` values). Without the roll hinge, ``body_k_roll``/``body_c_roll``/``body_limit_roll`` are unused and
+    ``body_q0_roll`` must be 0. 'spring_damper' accepts c = 0 (the §12.5 check that it then reproduces 'spring'
+    bitwise); the treatment as run has c > 0. ``legacy=True`` unlocks Amendment C's names (see
+    ``canonical_treatment``), built with Amendment C's hinged axes and these per-axis values (``body_roll_axis``
+    unused)."""
+    t = canonical_treatment(body_connection, legacy)
+    roll_on = as_bool(body_roll_axis, "body_roll_axis")
+    given = {"k": {"pitch": body_k_pitch, "yaw": body_k_yaw, "roll": body_k_roll},
+             "c": {"pitch": body_c_pitch, "yaw": body_c_yaw, "roll": body_c_roll},
+             "q0": {"pitch": body_q0_pitch, "yaw": body_q0_yaw, "roll": body_q0_roll},
+             "limit": {"pitch": body_limit_pitch, "yaw": body_limit_yaw, "roll": body_limit_roll}}
+    k = {a: _num(v, f"body_k_{a}") for a, v in given["k"].items()}
+    c = {a: _num(v, f"body_c_{a}") for a, v in given["c"].items()}
+    q0 = {a: _num(v, f"body_q0_{a}") for a, v in given["q0"].items()}
+    lim = {a: _limits(v, f"body_limit_{a}") for a, v in given["limit"].items()}
+    notes = []
+    if t in LEGACY_TREATMENTS:
+        axes = _LEGACY_AXES[t]
+        notes.append(f"LEGACY (pre-Amendment D) treatment {t!r} (protocol §11.2), never pooled with {TREATMENTS}; "
+                     f"body_roll_axis unused")
+    else:
+        axes = AXIS_ORDER if roll_on else ("yaw", "pitch")
+        if not roll_on:
+            notes.append("no roll hinge (body_roll_axis false): roll held at 0; body_k_roll, body_c_roll and "
+                         "body_limit_roll unused")
+    if t == "spring":
+        ignored = {f"body_c_{a}": c[a] for a in axes if c[a] != 0.0}
+        notes.append("'spring': joint damping c = 0 on every body axis"
+                     + (f" (ignored {ignored} [N·m·s/rad])" if ignored else ""))
+        c = dict.fromkeys(AXIS_ORDER, 0.0)
+    axis = {a: BodyAxis(k[a], c[a], q0[a], lim[a]) for a in AXIS_ORDER}
+    return BodyConnection(t, axes, yaw=axis["yaw"], pitch=axis["pitch"], roll=axis["roll"],
+                          legacy=t in LEGACY_TREATMENTS, notes="; ".join(notes))
 
 
-def treatment_connection(treatment: str, yaw_stiffness: float | None = None) -> BodyConnection:
-    """The BodyConnection of a named treatment, with an optional body-yaw stiffness [N·m/rad] (§9.3 exp. 8)."""
-    conn = TREATMENT_CONNECTIONS[canonical_treatment(treatment)]
-    if yaw_stiffness is not None:
-        conn = replace(conn, yaw=replace(conn.yaw, stiffness=float(yaw_stiffness)))
-    return conn
+def connection_params(conn: BodyConnection) -> dict:
+    """The body-joint parameters of a connection **as built**, by ``DESIGN_KEYS`` name (SI; for records and CSV):
+    'spring' reports c = 0; a symmetric stop is its L, an asymmetric one the pair (lo, hi). Legacy connections add
+    ``legacy: True``."""
+    out = {"body_connection": conn.treatment, "body_roll_axis": conn.roll_axis}
+    for q in ("k", "c", "q0", "limit"):
+        for a in ("pitch", "yaw", "roll"):
+            ax = conn.axis(a)
+            lo, hi = ax.limits
+            out[f"body_{q}_{a}"] = {"k": ax.stiffness, "c": ax.damping, "q0": ax.q0,
+                                    "limit": hi if lo == -hi else (lo, hi)}[q]
+    if conn.legacy:
+        out["legacy"] = True
+    return out
 
 
-#: Myropod design-parameter names read by ``design_connection`` (protocol §11.3; [deg] for angles).
-DESIGN_KEYS = ("body_connection", "body_yaw", *(f"{a}_{q}" for a in AXIS_ORDER
-                                                for q in ("stiffness", "damping", "neutral_deg", "limit_deg")))
+def design_connection(p: Mapping) -> BodyConnection:
+    """The ``BodyConnection`` from a Myropod design-parameter dict (protocol §12.3), e.g.
+    ``Myropod().resolve(body_connection='spring')``: the ``DESIGN_KEYS`` present (a resolved Myropod has them all;
+    missing ones take the §12.1 defaults); other keys are ignored."""
+    return make_connection(**{k: p[k] for k in DESIGN_KEYS if k in p})
 
 
-def design_connection(p: dict) -> BodyConnection:
-    """The BodyConnection from a Myropod design-parameter dict (protocol §11.3), e.g. ``Myropod.resolve(...)``.
-
-    Reads ``body_connection`` ('rigid' | 'flexible'), ``body_yaw`` (bool: the optional yaw hinge) and per axis
-    ``<axis>_stiffness`` [N·m/rad], ``<axis>_damping`` [N·m·s/rad], ``<axis>_neutral_deg`` [deg] and
-    ``<axis>_limit_deg`` [deg] (symmetric stops ±limit) for axis in yaw, pitch, roll. Missing keys take the §11.2
-    defaults."""
-    defaults = {"yaw": YAW_AXIS, "pitch": PITCH_AXIS, "roll": ROLL_AXIS}
-    axes = {}
-    for a, d in defaults.items():
-        lim = p.get(f"{a}_limit_deg")
-        axes[a] = BodyAxis(float(p.get(f"{a}_stiffness", d.stiffness)), float(p.get(f"{a}_damping", d.damping)),
-                           float(p.get(f"{a}_neutral_deg", d.neutral_deg)),
-                           (-float(lim), float(lim)) if lim is not None else d.limits_deg)
-    hinged = ("yaw", "pitch", "roll") if bool(p.get("body_yaw", False)) else ("pitch", "roll")
-    return BodyConnection(mode=str(p.get("body_connection", "flexible")), axes=hinged, **axes)
-
-
-def design_params(p: dict, **overrides) -> CleopatraParams:
+def design_params(p: Mapping, **overrides) -> CleopatraParams:
     """CleopatraParams with the geometry of a Myropod design-parameter dict [mm, deg] (e.g. ``CLEO_MM`` or a
     resolved ``Myropod``); masses and placement stay the recorded values (``overrides`` change any field)."""
     mm = 1e-3
@@ -324,6 +468,36 @@ def design_params(p: dict, **overrides) -> CleopatraParams:
         geo["leg_pair_spacing"] = float(p["leg_pair_spacing"])
     geo.update(overrides)
     return CleopatraParams(**geo)
+
+
+#: Myropod geometry keys read by ``robot_from_design`` [mm, deg] (notebook 18's ``CLEO_MM`` plus the pair spacing).
+GEOMETRY_KEYS = tuple(CLEO_MM) + ("leg_pair_spacing",)
+
+
+def robot_from_design(p: Mapping | None = None, **kw) -> ch.Robot:
+    """Cleopatra from a Myropod (Dedalus) design-parameter dict: one configuration for the CAD and the dynamics
+    (protocol §12.3).
+
+    Geometry [mm, deg] (``GEOMETRY_KEYS``; missing keys take notebook 18's ``CLEO_MM``) → ``design_params``; the
+    body-joint keys (``DESIGN_KEYS``) → ``design_connection``. ``n_segments`` must be 3 and ``leg_sweep_deg`` 0
+    (the Chiron model has neither more segments nor swept legs); CAD-only keys (part, version, bend_*, tether,
+    pincer_*, case_*, guide_*, joint and pin diameters) are ignored. ``kw``: ``cleopatra``'s other keywords (kp,
+    kd, armature, leg_links_collide). Example::
+
+        import myropod, myropod_robot as mr
+        p = myropod.Myropod().resolve(**mr.CLEO_MM, body_connection="spring", body_k_yaw=4.0)
+        robot = mr.robot_from_design(p)
+    """
+    p = dict(p or {})
+    clash = sorted(set(kw) & ({"connection", "params", "legacy"} | set(DESIGN_KEYS)))
+    if clash:
+        raise TypeError(f"robot_from_design: {clash} come from the design dict, not keywords")
+    geo = {**CLEO_MM, **{k: p[k] for k in GEOMETRY_KEYS if k in p}}
+    if int(geo["n_segments"]) != 3:
+        raise ValueError(f"Cleopatra has 3 segments; the design dict says n_segments = {geo['n_segments']}")
+    if float(p.get("leg_sweep_deg", 0.0)) != 0.0:
+        raise ValueError("leg_sweep_deg must be 0: the Chiron model has no swept legs")
+    return cleopatra(connection=design_connection(p), params=design_params(geo), **kw)
 
 
 # ----------------------------------------------------------------------------------------------- names and poses
@@ -345,9 +519,13 @@ def leg_joints(segment: int, key: str) -> list:
     return [f"{n} hip_yaw", f"{n} hip_pitch", f"{n} knee"]
 
 
-def body_joints(treatment="rigid", n_segments: int = 3) -> list:
-    """Names of the passive body joints of a treatment name or BodyConnection (empty when rigid)."""
-    conn = treatment if isinstance(treatment, BodyConnection) else treatment_connection(treatment)
+def body_joints(connection="spring_damper", n_segments: int = 3, *, roll_axis=True, legacy=False) -> list:
+    """Names of the passive body joints, ``body <i>-<i+1> <axis>`` in chain order, of a ``BodyConnection`` or a
+    treatment name (with ``roll_axis``; both Amendment D treatments have the same joints; legacy 'rigid': none)."""
+    if isinstance(connection, BodyConnection):
+        conn = connection
+    else:
+        conn = make_connection(connection, body_roll_axis=roll_axis, legacy=legacy)
     return [f"body {i}-{i + 1} {a}" for i in range(1, n_segments) for a in conn.hinged]
 
 
@@ -365,7 +543,7 @@ def stance_foot(p: CleopatraParams, key: str) -> tuple:
 
 def nominal_pose(p: CleopatraParams | None = None, connection: BodyConnection | None = None) -> dict:
     """The standing pose (protocol §1): every leg at hip yaw 0, hip pitch 40°, knee 85° − 40° = 45° (relative);
-    every body hinge at its neutral angle (springs unloaded, §11.2). Joint → angle [rad]."""
+    every body hinge of ``connection`` at its q0 (springs unloaded, §12.3). Joint → angle [rad]."""
     p = p or CleopatraParams()
     q = {}
     for s in (1, 2, 3):
@@ -376,7 +554,7 @@ def nominal_pose(p: CleopatraParams | None = None, connection: BodyConnection | 
             q[knee] = math.radians(p.knee_angle_deg - p.hip_angle_deg)
     if connection is not None:
         for name in body_joints(connection):
-            q[name] = math.radians(connection.axis(name.rsplit(" ", 1)[1]).neutral_deg)
+            q[name] = connection.axis(name.rsplit(" ", 1)[1]).q0
     return q
 
 
@@ -460,7 +638,7 @@ def _segment(p: CleopatraParams, index: int, servo: ch.Servo, leg_role: str) -> 
 
 
 def _head(p: CleopatraParams) -> ch.Link:
-    """The head — the robot's root link; segment 1 is welded behind it in every treatment (§1, §11.2). A tapered
+    """The head — the robot's root link; segment 1 is welded behind it in every treatment (§1, §12.1). A tapered
     shell (110 × 70 mm at the back, 85 % at the front) modelled as a thin-walled box of its mean section."""
     w = p.seg_width * (1 + p.head_taper) / 2
     h = p.seg_height * (1 + p.head_taper) / 2
@@ -496,12 +674,13 @@ def _rotate(q, v):
 
 
 def _connect(child: ch.Link, i: int, p: CleopatraParams, conn: BodyConnection) -> None:
-    """Hang segment i+1 (``child``) behind segment i at the pin (half a pitch behind segment i's centre): fixed
-    rotation for the axes that are not hinged (all of them when rigid), then the hinges about the pin."""
+    """Hang segment i+1 (``child``) behind segment i at the pin (half a pitch behind segment i's centre): the fixed
+    rotation of the axes that are not hinged (identity in Amendment D: their q0 is 0), then the passive hinges about
+    the pin in chain order, each with its k, c, q0 (spring reference) and stops; armature and friction loss 0."""
     q = (1.0, 0.0, 0.0, 0.0)
     for a in AXIS_ORDER:
         if a not in conn.hinged:
-            q = _quat_mul(q, _quat_axis(AXIS_VECTOR[a], math.radians(conn.axis(a).neutral_deg)))
+            q = _quat_mul(q, _quat_axis(AXIS_VECTOR[a], conn.axis(a).q0))
     half = p.pitch / 2
     off = _rotate(q, (-half, 0.0, 0.0))
     child.pos = (-half + off[0], off[1], off[2])
@@ -509,39 +688,63 @@ def _connect(child: ch.Link, i: int, p: CleopatraParams, conn: BodyConnection) -
     joints = []
     for a in conn.hinged:
         ax = conn.axis(a)
-        joints.append(ch.Joint(f"body {i}-{i + 1} {a}", axis=AXIS_VECTOR[a], pos=(half, 0.0, 0.0),
-                               range=(math.radians(ax.limits_deg[0]), math.radians(ax.limits_deg[1])),
-                               stiffness=ax.stiffness, damping=ax.damping, springref=math.radians(ax.neutral_deg),
-                               tag=f"body_{a}"))
+        joints.append(ch.Joint(f"body {i}-{i + 1} {a}", axis=AXIS_VECTOR[a], pos=(half, 0.0, 0.0), range=ax.limits,
+                               stiffness=ax.stiffness, damping=ax.damping, springref=ax.q0, armature=0.0,
+                               frictionloss=0.0, tag=f"body_{a}"))
     child.joints = joints
 
 
 # ----------------------------------------------------------------------------------------------- the robot
-def cleopatra(treatment: str = "rigid", yaw_stiffness: float | None = None, *,
-              connection: BodyConnection | None = None, params: CleopatraParams | None = None, kp: float = KP,
-              kd: float = KD, armature: float = 0.0, leg_links_collide: bool = False) -> ch.Robot:
-    """Cleopatra (protocol §1) with a body treatment (§11.2).
+def cleopatra(body_connection: str = BODY_DEFAULTS["body_connection"], *,
+              body_roll_axis=BODY_DEFAULTS["body_roll_axis"],
+              body_k_pitch=8.0, body_k_yaw=8.0, body_k_roll=8.0,
+              body_c_pitch=0.2, body_c_yaw=0.2, body_c_roll=0.2,
+              body_q0_pitch=0.0, body_q0_yaw=0.0, body_q0_roll=0.0,
+              body_limit_pitch=LIMIT_PITCH, body_limit_yaw=LIMIT_YAW, body_limit_roll=LIMIT_ROLL,
+              legacy=False, connection: BodyConnection | None = None, params: CleopatraParams | None = None,
+              kp: float = KP, kd: float = KD, armature: float = 0.0, leg_links_collide: bool = False) -> ch.Robot:
+    """Cleopatra (protocol §1) with an Amendment D body treatment (§12.1).
 
-    ``treatment``: 'rigid', 'flexible' (pitch + roll hinges) or 'flexible+yaw' (pitch + roll + yaw); §2's
-    'locked' and 'flexible+roll' are accepted as the same physics ('rigid', 'flexible+yaw'). ``yaw_stiffness``
-    [N·m/rad] sets the body-yaw spring (None = 8; §9.3 experiment 8 varies it). ``connection``: a full
-    ``BodyConnection`` instead of a named treatment (every per-axis k, c, θ₀, limit). ``params``: the robot's
-    numbers (``CleopatraParams``; ``design_params`` builds them from a Myropod parameter dict). ``kp``/``kd``
-    [N·m/rad, N·m·s/rad] and ``armature`` [kg·m²] of every leg servo (§1: 40, 0.8; no armature given).
-    ``leg_links_collide`` lets the femur and tibia bars touch the ground (§1: only pads, shells and head do).
+    ``body_connection``: 'spring' (joint torque −k (q − q0), c = 0) or 'spring_damper' (−k (q − q0) − c q̇).
+    Both build the **identical** body joints — hinges on yaw and pitch, plus roll when ``body_roll_axis`` (bool;
+    'true'/'false', 1/0 accepted), chained yaw → pitch → roll at the pins between segments 1–2 and 2–3, with
+    ``body_k_<axis>`` k [N·m/rad] (default 8), ``body_q0_<axis>`` q0 [rad] (0; the spring's rest angle and the
+    start pose), ``body_limit_<axis>`` [rad] stops at ± the value (π/4 pitch and yaw, π/9 roll; or a pair (lo,
+    hi)), armature 0, friction loss 0, no actuator — and differ only in ``body_c_<axis>`` c [N·m·s/rad] (default
+    0.2), which 'spring' replaces by 0 (``robot.notes`` records the ignored values). Without the roll hinge the
+    roll values are unused and ``body_q0_roll`` must be 0. Numbers may be ints, floats or numeric strings
+    (``chiron run -p body_k_pitch=8``).
 
-    Returns a ``chiron.Robot``: logged bodies head, segment 1–3 (groups = their names); 12 feet ``s<i> <leg>``
-    on their segments; 36 actuated leg joints ``s<i> <leg> hip_yaw|hip_pitch|knee``; passive body hinges
-    ``body <i>-<i+1> yaw|pitch|roll``; the standing pose of §1 with body hinges at their neutral angles, and its
-    base height (the root frame — the head's centre, level with the hips — above flat ground), 0.163 m.
+    ``legacy=True`` unlocks Amendment C's 'rigid' | 'flexible' | 'flexible+yaw' (pre-Amendment D; labelled
+    ``legacy:<name>``, never pooled). ``connection``: a ready ``BodyConnection`` (from ``make_connection`` or
+    ``design_connection``) instead of the ``body_*`` keywords, which must then stay at their defaults.
+    ``params``: the robot's numbers (``CleopatraParams``; ``design_params`` / ``robot_from_design`` read a Myropod
+    design dict). ``kp``/``kd`` [N·m/rad, N·m·s/rad] and ``armature`` [kg·m²] of every leg servo (§1: 40, 0.8; no
+    armature given). ``leg_links_collide`` lets the femur and tibia bars touch the ground (§1: only pads, shells
+    and head do).
+
+    Returns a ``chiron.Robot`` named ``cleopatra <treatment>``: logged bodies head, segment 1–3 (groups = their
+    names); 12 feet ``s<i> <leg>`` on their segments; 36 actuated leg joints ``s<i> <leg> hip_yaw|hip_pitch|knee``;
+    passive body hinges ``body <i>-<i+1> yaw|pitch|roll`` (tags ``body_yaw|body_pitch|body_roll``); the standing
+    pose of §1 with the body hinges at q0 (springs unloaded) and its base height (the root frame — the head's centre,
+    level with the hips — above flat ground), 0.163 m for a straight chain. Bookkeeping attributes: ``treatment``
+    ('spring', 'spring_damper' or 'legacy:<name>'), ``legacy``, ``connection`` (the BodyConnection as built),
+    ``body_params`` (``connection_params``), ``params``.
     """
+    body = {"body_connection": body_connection, "body_roll_axis": body_roll_axis,
+            "body_k_pitch": body_k_pitch, "body_k_yaw": body_k_yaw, "body_k_roll": body_k_roll,
+            "body_c_pitch": body_c_pitch, "body_c_yaw": body_c_yaw, "body_c_roll": body_c_roll,
+            "body_q0_pitch": body_q0_pitch, "body_q0_yaw": body_q0_yaw, "body_q0_roll": body_q0_roll,
+            "body_limit_pitch": body_limit_pitch, "body_limit_yaw": body_limit_yaw, "body_limit_roll": body_limit_roll}
+    legacy = as_bool(legacy, "legacy")
     if connection is None:
-        connection = treatment_connection(treatment, yaw_stiffness)
-        name = canonical_treatment(treatment)
+        connection = make_connection(**body, legacy=legacy)
     else:
-        if yaw_stiffness is not None:
-            connection = replace(connection, yaw=replace(connection.yaw, stiffness=float(yaw_stiffness)))
-        name = "custom"
+        changed = sorted(k for k, v in body.items() if not _same(v, BODY_DEFAULTS[k]))
+        if changed:
+            raise ValueError(f"pass either connection= or the body keywords {changed}, not both")
+        if connection.legacy and not legacy:
+            raise ValueError(f"connection {connection.treatment!r} is legacy (pre-Amendment D): pass legacy=True")
     p = params or CleopatraParams()
     servo = cleopatra_servo(kp, kd, armature, p.leg_servo)
     leg_role = "link" if leg_links_collide else "visual"
@@ -554,47 +757,81 @@ def cleopatra(treatment: str = "rigid", yaw_stiffness: float | None = None, *,
         segs[i - 1].children.append(segs[i])
     feet = [ch.FootSpec(leg_name(s, k), f"{leg_name(s, k)} foot", leg_joints(s, k), f"segment {s}")
             for s in (1, 2, 3) for k in LEG_KEYS]
+    label = f"legacy:{connection.treatment}" if connection.legacy else connection.treatment
     sources = {
         "geometry": "designs/myropod.py with notebook 18's CLEO parameters (CLEO_MM); protocol §1",
         "masses": "notebook 18 mass budget (CAD volume x 1.1 g/cm^3, actuators.py servo masses, recorded payload); "
                   "protocol §1 table",
         "leg servo": f"actuators.py '{p.leg_servo}': {act.get(p.leg_servo).source}; kp {kp}, kd {kd} (protocol §1)",
-        "body connection": "protocol §11.2 (Amendment C): rigid weld, or hinges with k 8 N·m/rad, c 0.2 N·m·s/rad, "
-                           "θ0 0°, limits ±45° pitch, ±20° roll, ±45° yaw",
+        "body connection": ("protocol §11.2 (Amendment C) — LEGACY, pre-Amendment D" if connection.legacy else
+                            "protocol §12.1 (Amendment D, 2026-10-01): identical passive hinges (pitch, yaw, roll "
+                            "configurable), defaults k 8 N·m/rad, c 0.2 N·m·s/rad (spring_damper; 0 in spring), "
+                            "q0 0 rad, limits ±45° pitch and yaw, ±20° roll"),
         "friction": "protocol §1: pads 0.8 (rubber on rock), shells and head 0.5",
         "placement": "CleopatraParams docstring (thin-walled shells, payload positions)",
     }
-    notes = (f"Cleopatra, treatment '{name}': {connection.mode}"
-             + (f" ({', '.join(connection.hinged)})" if connection.hinged else "")
-             + f"; connection {asdict(connection)}; armature {armature}; params {asdict(p)}")
-    robot = ch.Robot(f"cleopatra {name}", head, feet=feet, nominal_qpos=nominal_pose(p, connection),
-                     nominal_base_height=p.hip_height, nominal_hip_height=p.hip_height, notes=notes, sources=sources)
+    per_axis = "; ".join(
+        f"{a}: k {connection.axis(a).stiffness:g} N·m/rad, c {connection.axis(a).damping:g} N·m·s/rad, "
+        f"q0 {connection.axis(a).q0:g} rad, limits [{connection.axis(a).limits[0]:.6g}, "
+        f"{connection.axis(a).limits[1]:.6g}] rad" for a in connection.hinged)
+    hinges = (f"passive hinges {' -> '.join(connection.hinged)} at body joints 1-2 and 2-3 ({per_axis}); armature 0, "
+              f"friction loss 0, no body actuator, translations constrained" if connection.hinged else
+              "segments welded at the neutral angles (no body degree of freedom)")
+    notes = ("LEGACY (pre-Amendment D; never pooled with Amendment D results). " if connection.legacy else "") \
+        + f"Cleopatra, treatment '{label}': {hinges}" \
+        + (f"; {connection.notes}" if connection.notes else "") \
+        + f"; leg servo armature {armature} kg·m²; params {asdict(p)}"
+    bent = any(connection.axis(a).q0 != 0.0 for a in connection.hinged)
+    robot = ch.Robot(f"cleopatra {label}", head, feet=feet, nominal_qpos=nominal_pose(p, connection),
+                     # a bent chain (q0 ≠ 0) stands with its lowest foot on the ground (Chiron computes it)
+                     nominal_base_height=None if bent else p.hip_height, nominal_hip_height=p.hip_height,
+                     notes=notes, sources=sources)
     robot.validate()
-    robot.treatment = name               # plain attributes for bookkeeping (not part of chiron.Robot's fields)
+    robot.treatment = label              # plain attributes for bookkeeping (not part of chiron.Robot's fields)
+    robot.legacy = connection.legacy
     robot.connection = connection
+    robot.body_params = connection_params(connection)
     robot.params = p
     return robot
 
 
-#: ChironLab settings for Cleopatra. Protocol §1: control at 1 kHz, log at 100 Hz, time step 1 ms — but the §11.5
-#: timestep-convergence check fails at 1 ms (and 0.5 ms): the servos' kp = 40 N·m/rad on the light leg links
-#: (tibia + pad ≈ 2e-4 kg·m²) is integrated explicitly, and when a torque is clipped the implicit kd term
-#: under-accelerates the joint by I / (I + dt·kd) (≈ 1/5 at 1 ms). At 0.25 ms the walking speed and tilt agree
-#: with 0.125 ms within 4 % and 1° (both integrators); so the physics step is 0.25 ms and the controller still
-#: runs at 1 kHz. ``LAB_OPTIONS_PROTOCOL`` keeps the literal 1 ms.
+def _same(a, b) -> bool:
+    """Whether a body keyword equals its default (numbers by value, so 8 == 8.0)."""
+    if isinstance(b, bool):
+        try:
+            return as_bool(a) == b
+        except ValueError:
+            return False
+    if isinstance(b, str):
+        return a == b
+    try:
+        return float(a) == float(b)
+    except (TypeError, ValueError):
+        return False
+
+
+#: ChironLab settings for Cleopatra [s]. Protocol §1: control at 1 kHz, log at 100 Hz, time step 1 ms — but the
+#: previous build failed the timestep-convergence check (§11.5, §12.5) at 1 ms and 0.5 ms: with the servo's kd
+#: integrated implicitly even when its torque is clipped, a saturated joint is under-accelerated by M / (M + dt·kd)
+#: (M its effective inertia: ≈ 9e-5 kg·m² for a knee at the standing pose → 0.10 at 1 ms, 0.32 at 0.25 ms;
+#: Amendment E §13.2). At 0.25 ms the walking speed and tilt agreed with 0.125 ms within 4 % and 1°, so the physics
+#: step is 0.25 ms and the controller still runs at 1 kHz. §13.2: once the core gives a clipped joint its clipped
+#: torque with no implicit damping, the study's step is re-chosen by the §12.5 check and recorded in the study
+#: notebook. ``LAB_OPTIONS_PROTOCOL`` keeps the literal 1 ms.
 LAB_OPTIONS = dict(timestep=0.00025, control_dt=0.001, log_dt=0.01)
 LAB_OPTIONS_PROTOCOL = dict(timestep=0.001, control_dt=0.001, log_dt=0.01)
 #: Protocol §4: every course is 1.5 m long and starts flat for 0.3 m.
 COURSE_M = 1.5
 
 
-def cleopatra_lab(treatment: str = "rigid", terrain=None, *, robot: ch.Robot | None = None,
-                  robot_kw: dict | None = None, **lab_kw) -> ch.ChironLab:
-    """A ChironLab with Cleopatra (``cleopatra(treatment, **robot_kw)`` or ``robot``) on ``terrain`` (default flat)
-    with ``LAB_OPTIONS`` (overridden by ``lab_kw``, e.g. ``course_extent``, ``flat_as_plane``)."""
+def cleopatra_lab(body_connection: str = BODY_DEFAULTS["body_connection"], terrain=None, *,
+                  robot: ch.Robot | None = None, robot_kw: dict | None = None, **lab_kw) -> ch.ChironLab:
+    """A ChironLab with Cleopatra — ``cleopatra(body_connection, **robot_kw)`` (e.g. ``robot_kw={'body_k_yaw':
+    4.0}``), or ``robot`` — on ``terrain`` (default flat) with ``LAB_OPTIONS`` (overridden by ``lab_kw``, e.g.
+    ``course_extent``, ``flat_as_plane``, ``gravity``)."""
     opts = dict(LAB_OPTIONS)
     opts.update(lab_kw)
-    return ch.ChironLab(robot if robot is not None else cleopatra(treatment, **(robot_kw or {})), terrain, **opts)
+    return ch.ChironLab(robot if robot is not None else cleopatra(body_connection, **(robot_kw or {})), terrain, **opts)
 
 
 def failure_rules(v_target: float, course_m: float = COURSE_M, **kw) -> ch.FailureRules:
@@ -617,4 +854,4 @@ if __name__ == "__main__":  # pragma: no cover
     for t in TREATMENTS:
         r = cleopatra(t)
         print(f"{t:13s} {r.total_mass():.4f} kg, {len(r.actuated_joints())} servos, body joints "
-              f"{[j.name for j in r.joints() if j.servo is None]}")
+              f"{[(j.name, j.stiffness, j.damping) for j in r.joints() if j.servo is None]}")

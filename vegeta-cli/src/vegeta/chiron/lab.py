@@ -8,10 +8,20 @@
 
 **Simulation.** MuJoCo with the options of ``SimOptions`` (1 ms, implicit-fast integration by default). Every
 actuated joint is driven by its servo law (``servo.py``) at every physics step: a PD loop on the controller's
-targets, clipped to the motor's torque–speed line, vectorised over joints. (Implementation: a MuJoCo ``general``
-actuator with a −kd·q̇ bias carries the damping term, so the integrator treats it implicitly; its control is set
-so the applied torque equals the clipped servo torque exactly.) The controller is called every ``control_dt``
-with an ``Observation`` and returns a ``Command`` (zero-order hold between calls).
+targets, clipped to the motor's torque–speed line, vectorised over joints. The controller is called every
+``control_dt`` with an ``Observation`` and returns a ``Command`` (zero-order hold between calls).
+
+**Servo integration.** Each actuator is a MuJoCo ``general`` actuator with an affine velocity bias ``b·q̇``
+(b [N·m·s/rad]); every physics step its control is set to ``τ − b·q̇``, so the applied torque is exactly the
+clipped servo torque τ [N·m], and ``b`` is τ's velocity derivative in the joint's current regime
+(``servo.implicit_slope``), which ``implicitfast`` (and ``implicit``) integrate implicitly: ``−kd`` for an unclipped
+PD joint; ``−τ_stall/ω₀``, the torque–speed line's slope, for a joint saturated while pulling; 0 at or beyond the
+no-load speed (τ ≡ 0); 0 (explicit) for a joint saturated while braking, where the line's slope is positive —
+unless the torque would stop the joint within the step (judged with its articulated inertia from MuJoCo's
+factorisation of M), when it gets the line's slope of the far side of zero speed. A saturated joint is thus
+accelerated by τ/I (I [kg·m²]), not by τ/(I + h·kd) as when −kd stayed implicit whatever the clip; unclipped joints
+are integrated bit for bit as before. ``reset`` restores the compiled ``b = −kd``. (With ``Euler`` or ``RK4``, b
+only cancels out of the applied torque.)
 
 **Timing of observations.** ``q``, ``qd`` and ``t`` are the current state. Body poses, velocities, contact forces
 and Jacobians come from MuJoCo's last forward pass — the state one physics step earlier (≤ 1 ms), as from a real
@@ -39,6 +49,8 @@ from .terrain import Flat, Terrain
 __all__ = ["ChironLab", "Command", "Disturbance", "FailureRules", "Observation", "Episode"]
 
 LOG_FORMAT_VERSION = 1
+#: Recorded in every Episode's meta: how the servo law is integrated (module docstring, "Servo integration").
+SERVO_INTEGRATION = "implicit-slope/1"
 
 
 # ----------------------------------------------------------------------------------------------- small types
@@ -458,6 +470,14 @@ class ChironLab:
         self._q, self._qd = np.zeros(nA), np.zeros(nA)
         self._tau, self._work = np.zeros(nA), np.zeros(nA)
         self._qt, self._qdt, self._ff = np.zeros(nA), np.zeros(nA), np.zeros(nA)
+        # servo integration (see _simulate): b = ∂τ/∂q̇ [N·m·s/rad] per actuator, carried by the actuator's
+        # velocity bias (actuator_biasprm[:, 2], a view into the model) so implicitfast integrates it implicitly
+        self._lim, self._slope = np.zeros(nA), np.zeros(nA)
+        self._clip, self._line, self._brake, self._keep = (np.zeros(nA, dtype=bool) for _ in range(4))
+        self._neg_kd, self._neg_line = -self._kd, -self._stall * self._inv_w0
+        self._bias_vel = m.actuator_biasprm[:, 2]
+        self._bias_vel[:] = self._neg_kd
+        self._bias_is_kd = True
         # bodies
         self.bodies = list(meta.logged_bodies)
         self._bid = np.array([self._body_id(b) for b in self.bodies], dtype=int)
@@ -635,6 +655,8 @@ class ChironLab:
         self._qdt[:] = 0.0
         self._ff[:] = 0.0
         self._tau[:] = 0.0
+        self._bias_vel[:] = self._neg_kd                              # the compiled model's values
+        self._bias_is_kd = True
         self._leg_phase = None
         self._leg_stance = None
         self._transient = []
@@ -741,6 +763,10 @@ class ChironLab:
         q, qd, tau, work = self._q, self._qd, self._tau, self._work
         qt, qdt, ff = self._qt, self._qdt, self._ff
         kp, kd, stall, inv_w0 = self._kp, self._kd, self._stall, self._inv_w0
+        w0, lim, slope, clip, line = self._w0, self._lim, self._slope, self._clip, self._line
+        brake, keep = self._brake, self._keep
+        neg_kd, neg_line, bias_vel, dinv, h = self._neg_kd, self._neg_line, self._bias_vel, d.qLDiagInv, m.opt.timestep
+        greater, less, copyto = np.greater, np.less, np.copyto
         n_ctrl, n_log = self._n_ctrl, self._n_log
         has_act = len(aq) > 0
         for _ in range(nsteps):
@@ -760,17 +786,45 @@ class ChironLab:
                 subtract(qdt, qd, out=work)
                 work *= kd
                 tau += work
-                tau += ff
-                absolute(qd, out=work)
-                work *= inv_w0
-                subtract(1.0, work, out=work)
-                maximum(work, 0.0, out=work)
-                work *= stall
-                minimum(tau, work, out=tau)
-                negative(work, out=work)
-                maximum(tau, work, out=tau)
-                multiply(kd, qd, out=work)
-                add(tau, work, out=ctrl)
+                tau += ff                                             # τ_pd
+                absolute(qd, out=lim)
+                lim *= inv_w0
+                subtract(1.0, lim, out=lim)
+                maximum(lim, 0.0, out=lim)
+                lim *= stall                                          # τ_max(q̇) = τ_stall·max(0, 1 − |q̇|/ω₀)
+                absolute(tau, out=work)
+                greater(work, lim, out=clip)                          # clipped joints
+                minimum(tau, lim, out=tau)
+                negative(lim, out=work)
+                maximum(tau, work, out=tau)                           # τ = clip(τ_pd, ±τ_max)
+                if clip.any():                       # saturated: b = ∂τ/∂q̇ of the regime (servo.implicit_slope)
+                    copyto(slope, neg_kd)                             # unclipped: −kd
+                    copyto(slope, 0.0, where=clip)                    # clipped at/beyond ω₀ (τ ≡ 0): 0
+                    absolute(qd, out=lim)
+                    less(lim, w0, out=line)
+                    line &= clip                                      # clipped on the torque–speed line
+                    multiply(tau, qd, out=work)
+                    less(work, 0.0, out=brake)
+                    brake &= line                                     # ... and braking
+                    if brake.any():                                   # explicit, unless it stops within the step
+                        take(dinv, ad, out=work)                      # 1/D_jj [1/(kg·m²)], M = LᵀDL (last step)
+                        work *= tau
+                        absolute(work, out=work)
+                        work *= h                                     # |Δq̇| the torque alone gives in a step
+                        less(work, lim, out=keep)
+                        keep &= brake                                 # braking that does not stop: explicit
+                        line ^= keep
+                    copyto(slope, neg_line, where=line)               # pulling on the line: −τ_stall/ω₀
+                    bias_vel[:] = slope
+                    self._bias_is_kd = False
+                    multiply(slope, qd, out=work)
+                    subtract(tau, work, out=ctrl)                     # applied: ctrl + b·q̇ = τ exactly
+                else:
+                    if not self._bias_is_kd:
+                        bias_vel[:] = neg_kd
+                        self._bias_is_kd = True
+                    multiply(kd, qd, out=work)
+                    add(tau, work, out=ctrl)
             if self._disturbances or self._transient:                 # may be added by a controller
                 self._apply_disturbances(k)
             mj_step(m, d)
@@ -1009,7 +1063,8 @@ class ChironLab:
                 "realtime_factor": sim_t / wall if wall > 0 else None, "timestep": h, "control_dt": self.control_dt,
                 "log_dt": self.log_dt, "settle_s": n_settle * h, "stopped_by_rules": bool(stopped),
                 "options": _plain(asdict(self.options)), "rules": _plain(asdict(rules)) if rules else None,
-                "mujoco_version": _mujoco_version(), "robot": self.robot.name, "total_mass_kg": self.total_mass}
+                "mujoco_version": _mujoco_version(), "servo_integration": SERVO_INTEGRATION,
+                "robot": self.robot.name, "total_mass_kg": self.total_mass}
         return Episode(log_dict, outcome, meta)
 
     def summary(self) -> dict:

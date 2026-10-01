@@ -7,6 +7,7 @@
 The limit is the motoring line of a DC motor at its supply voltage, applied symmetrically (the same bound
 whether the torque drives or brakes the joint), as fixed by the pre-registered locomotion-stability
 protocol in docs/ (§1). Pure numpy, vectorised over joints; ``out`` lets a simulation loop reuse its buffers.
+``implicit_slope`` gives the law's velocity derivative for an implicit integrator (``ChironLab`` uses it).
 """
 from __future__ import annotations
 
@@ -57,6 +58,46 @@ def servo_torque(q, qd, q_target, qd_target=0.0, tau_ff=0.0, *, kp, kd, stall, n
     np.minimum(out, work, out=out)
     np.negative(work, out=work)
     np.maximum(out, work, out=out)
+    return out
+
+
+def implicit_slope(tau, qd, clipped, kd, stall, no_load_speed, step_dv=None, out=None):
+    """The servo torque's velocity derivative ``b = ∂τ/∂q̇`` [N·m·s/rad] for an implicit integrator (``b ≤ 0``).
+
+    ``tau`` [N·m] is the servo torque (already clipped), ``qd`` [rad/s] the joint speed, ``clipped`` (bool) marks
+    the joints whose PD torque exceeded the torque–speed line, ``kd`` [N·m·s/rad], ``stall`` [N·m] and
+    ``no_load_speed`` ω₀ [rad/s] the servo data (scalars or one value per joint). ``step_dv`` [rad/s] (optional):
+    the speed change the torque alone gives over one time step, ``h·|τ|/I`` (I the joint's inertia [kg·m²]).
+
+    An integrator that is implicit in the velocity (MuJoCo's ``implicitfast``) solves
+    ``(M − h·b) Δq̇ = h·f`` with the torque linearised as ``τ + b·Δq̇``; ``b`` must be the slope of the regime the
+    joint is in, or a saturated joint is integrated with a damping it does not have:
+
+    * unclipped: ``−kd`` (the PD law);
+    * clipped and pulling (``τ·q̇ ≥ 0``, ``|q̇| < ω₀``): ``−τ_stall/ω₀``, the slope of the torque–speed line;
+    * clipped at or beyond the no-load speed: 0 (``τ ≡ 0``);
+    * clipped and braking (``τ·q̇ < 0``): the line's slope there is ``+τ_stall/ω₀`` (less speed, more torque), which
+      an implicit step cannot take (``M − h·b`` would lose definiteness): 0, i.e. explicit — unless the torque stops
+      the joint within the step (``step_dv ≥ |q̇|``); the joint then ends the step past zero speed, pulling on the
+      line, and gets the line's slope ``−τ_stall/ω₀``.
+
+    ``out`` (a float array of the result's shape) is filled and returned.
+    """
+    tau = np.asarray(tau, dtype=float)
+    qd = np.asarray(qd, dtype=float)
+    clipped = np.asarray(clipped, dtype=bool)
+    w0 = np.asarray(no_load_speed, dtype=float)
+    if out is None:
+        out = np.empty(np.broadcast_shapes(tau.shape, qd.shape, clipped.shape))
+    np.negative(np.broadcast_to(np.asarray(kd, dtype=float), out.shape), out=out)
+    np.copyto(out, 0.0, where=clipped)
+    speed = np.abs(qd)
+    line = clipped & (speed < w0)
+    pulling = tau * qd >= 0.0
+    if step_dv is not None:
+        pulling |= np.asarray(step_dv, dtype=float) >= speed
+    line &= pulling
+    np.copyto(out, -np.asarray(stall, dtype=float) / w0, where=line)
     return out
 
 

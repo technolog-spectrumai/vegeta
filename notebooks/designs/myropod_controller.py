@@ -1,8 +1,10 @@
 """Cleopatra's controllers for ChironLab: the fixed gait of protocol §3 and the adaptive (Tegotae) gait of §9.1.
 
 One class, ``CleopatraController``, whose only difference between the two is the load-feedback gain ``sigma``:
-``fixed(v)`` is σ = 0, ``adaptive(v)`` is σ = 0.6 rad/(N·s). The same code drives every body treatment (it is
-terrain-blind and does not know whether the body joints are locked).
+``fixed(v)`` is σ = 0 (the protocol's baseline fixed-phase controller), ``adaptive(v)`` is σ = 0.6 rad/(N·s) (the
+load-feedback controller). The same code and settings drive both body treatments of Amendment D (§12: 'spring'
+and 'spring_damper'; the controller settings are fixed within every paired comparison, §12.4): it is
+terrain-blind and never reads the body joints.
 
 **Phases** (``vegeta.chiron.gaits.PhaseGenerator``). Each segment walks a lateral-sequence wave on its four legs —
 rear-left, front-left, rear-right, front-right at cycle fractions 0, 0.25, 0.5, 0.75, duty 0.75 — and segment i
@@ -11,7 +13,8 @@ adds one random offset, uniform in a stride, to every leg (protocol §4). Stride
 σ > 0 every leg integrates ``dφ/dt = ω(φ) − σ N cos φ`` with its foot's normal ground force N (the lab's contact
 force: a contact sensor), swing φ ∈ [0, π), stance φ ∈ [π, 2π); the initial phases are the fixed controller's, so
 σ = 0 *is* the fixed controller. ``min_rate`` (default 0.25 for σ > 0) bounds the phase rate below at
-``min_rate · ω(φ)``: a loaded leg is slowed but never frozen (see ``ControllerParams``).
+``min_rate · ω(φ)`` — ``dφ/dt = max(ω − σ N cos φ, 0.25 ω)``, recorded in the protocol as Amendment E §13.1 (it is
+not part of §9.1's plain rule): a loaded leg is slowed but never frozen (see ``ControllerParams``).
 
 **Foot targets** (in each segment's own frame, relative to the hip; the segment's tilt is not compensated — no
 body levelling): stance — the foot moves straight back at the target speed, ``depth`` (0.151 m) below the hip and
@@ -28,7 +31,8 @@ tested — for many-legged batches; for 12 legs both take ≈ 50 µs.)
 **Servo targets**: joint angles only, as a position servo receives them (its PD acts on the measured speed). With
 ``velocity_feedforward`` the targets' rate is sent too (it drives saturated servos harder; off by default).
 
-**Start** (§5, §11.2: standing on the feet at the nominal height, zero velocities, then the 0.5 s settle): with
+**Start** (§5, §12.3, §13.4: standing on the feet at the nominal height, zero velocities, body springs at their
+neutral angles, then the 0.5 s settle): with
 ``start='stance'`` (default) the controller's ``reset`` poses the robot with every foot on the ground at its gait
 position for the first phase (stance feet where the stance schedule puts them, the swinging leg's foot below its
 swing position) at the nominal height, holds that pose through the settle and starts walking from it — no jump
@@ -68,13 +72,16 @@ class ControllerParams:
     (0 = the fixed controller; 0.6 for §9.1's comparison); ``wave_shift`` 1/12 stride between neighbouring
     segments; ``base_phases`` within a segment.
 
-    Implementation choices (not protocol numbers): ``min_rate`` — for σ > 0 the phase rate never drops below
-    ``min_rate × ω(φ)``. At §9.1's design point (6.7 N per foot at 0.2 m/s, σN/ω ≈ 0.48) it is inactive; it acts
-    only where σN cos φ > (1 − min_rate) ω, which freezes a leg (σN > ω) under the plain rule — Cleopatra's
-    head-loaded front legs (≈ 17 N) on the flexible bodies, and every leg at 0.1 m/s (σN/ω ≈ 0.96). 0 = the
-    plain rule. ``sigma_ref_speed`` — if set, σ is scaled by v / sigma_ref_speed (keeps σN/ω at every speed;
-    off). ``velocity_feedforward`` (off), ``start`` 'stance' | 'gait' | 'nominal', ``random_offset`` (draw the
-    seed's phase offset, §4), ``ik`` 'numpy' | 'gait' (see the module docstring).
+    ``min_rate`` — for σ > 0 the phase rate never drops below ``min_rate × ω(φ)`` (dimensionless; 0.25). Not in
+    §9.1 (whose plain rule is ``min_rate = 0``); added and recorded before the main trials as Amendment E §13.1. At
+    §9.1's design point (6.7 N per foot at 0.2 m/s, σN/ω ≈ 0.48) it is inactive; it acts only where
+    σN cos φ > (1 − min_rate) ω, which freezes a leg (σN > ω) under the plain rule — Cleopatra's head-loaded front
+    legs (≈ 17 N), and every leg at 0.1 m/s (σN/ω ≈ 0.96).
+
+    Other implementation choices (not protocol numbers): ``sigma_ref_speed`` [m/s] — if set, σ is scaled by
+    v / sigma_ref_speed (keeps σN/ω at every speed; off). ``velocity_feedforward`` (off), ``start`` 'stance' |
+    'gait' | 'nominal', ``random_offset`` (draw the seed's phase offset, §4), ``ik`` 'numpy' | 'gait' (see the
+    module docstring).
     """
 
     v_target: float = 0.2
@@ -198,7 +205,7 @@ class CleopatraController:
     """The §3 / §9.1 controller for ChironLab: ``reset(lab, seed)``, ``settle_command(obs)``, ``__call__(obs)``.
 
     ``params``: ControllerParams; ``robot_params``: the robot's ``CleopatraParams`` (femur and tibia lengths for
-    the IK); ``name``: 'fixed' / 'adaptive' (logged). Works with every treatment of ``myropod_robot.cleopatra``
+    the IK); ``name``: 'fixed' / 'adaptive' (logged). Works with both treatments of ``myropod_robot.cleopatra``
     (feet named ``s<i> <leg>``; the root link — the head — welded square to segment 1). After ``reset``:
     ``offset`` (the seed's phase offset), ``gen`` (the phase generator); ``unreachable`` counts targets the IK had
     to pull into reach.
@@ -293,17 +300,32 @@ class CleopatraController:
         return ch.Command(q_target=q, qd_target=qd, leg_phase=phases, leg_stance=stance)
 
 
-def fixed(v_target: float = 0.2, robot_params: mr.CleopatraParams | None = None, **kw) -> CleopatraController:
-    """The fixed controller of §3 (σ = 0) at ``v_target`` [m/s]; ``kw`` override ControllerParams fields."""
-    return CleopatraController(ControllerParams(v_target=v_target, sigma=0.0, **kw), robot_params, name="fixed")
+def _leg_params(robot_params, robot):
+    """The CleopatraParams for the IK: ``robot_params``, else the robot's own ``params`` (``myropod_robot.cleopatra``
+    and ``robot_from_design`` attach them), else notebook 18's."""
+    if robot_params is not None:
+        return robot_params
+    p = getattr(robot, "params", None)
+    return p if isinstance(p, mr.CleopatraParams) else None
 
 
-def adaptive(v_target: float = 0.2, sigma: float = 0.6, robot_params: mr.CleopatraParams | None = None,
-             **kw) -> CleopatraController:
-    """The adaptive (Tegotae) controller of §9.1: σ = 0.6 rad/(N·s) by default; ``kw`` override
-    ControllerParams fields (e.g. ``min_rate=0`` for the plain rule)."""
-    return CleopatraController(ControllerParams(v_target=v_target, sigma=sigma, **kw), robot_params,
-                               name="adaptive")
+def fixed(v_target: float = 0.2, robot_params: mr.CleopatraParams | None = None, *, robot=None,
+          **kw) -> CleopatraController:
+    """The fixed (baseline fixed-phase) controller of §3 (σ = 0) at ``v_target`` [m/s]; ``kw`` override
+    ControllerParams fields. ``robot``: the Chiron robot (Chiron's trial runner and CLI pass it) — its leg lengths
+    [m] are used for the IK when ``robot_params`` is None, so a robot built from a Myropod design dict with other
+    leg lengths is walked with its own geometry."""
+    return CleopatraController(ControllerParams(v_target=v_target, sigma=0.0, **kw), _leg_params(robot_params, robot),
+                               name="fixed")
+
+
+def adaptive(v_target: float = 0.2, sigma: float = 0.6, robot_params: mr.CleopatraParams | None = None, *,
+             robot=None, **kw) -> CleopatraController:
+    """The adaptive (load-feedback, Tegotae) controller of §9.1 with the phase-rate floor of §13.1: σ = 0.6
+    rad/(N·s) by default; ``kw`` override ControllerParams fields (e.g. ``min_rate=0`` for the plain rule);
+    ``robot`` as in ``fixed``."""
+    return CleopatraController(ControllerParams(v_target=v_target, sigma=sigma, **kw),
+                               _leg_params(robot_params, robot), name="adaptive")
 
 
 def with_params(ctrl: CleopatraController, **kw) -> CleopatraController:

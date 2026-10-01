@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from vegeta.chiron import servo_torque, torque_limit
-from vegeta.chiron.servo import saturation
+from vegeta.chiron.servo import implicit_slope, saturation
 
 STALL, W0, KP, KD = 6.0, 5.76, 40.0, 0.8
 
@@ -60,3 +60,45 @@ def test_saturation_flags():
     ts, ss = saturation([6.0, 1.0, 0.0], [0.0, 0.0, 6.0], STALL, W0)
     assert ts.tolist() == [True, False, True]
     assert ss.tolist() == [False, False, True]
+
+
+# ----------------------------------------------------------------------------------------------- implicit slope
+def _fd_slope(q, qd, qt, eps=1e-7):
+    """Central finite difference ∂τ/∂q̇ [N·m·s/rad] of the servo law."""
+    return (tau(q, qd + eps, qt) - tau(q, qd - eps, qt)) / (2 * eps)
+
+
+def test_implicit_slope_is_the_laws_derivative_where_it_dissipates():
+    cases = [(0.3, 0.05),       # (q̇ [rad/s], q* [rad]) at q = 0 — unclipped PD: −kd
+             (2.0, 1.0),        # saturated, pulling on the line (τ > 0, q̇ > 0): −τ_stall/ω₀
+             (-2.0, -1.0),      # the same, negative
+             (7.0, 1.0)]        # beyond the no-load speed: τ ≡ 0
+    for qd, qt in cases:
+        t = tau(0.0, qd, qt)
+        clipped = abs(KP * qt - KD * qd) > torque_limit(qd, STALL, W0)
+        b = implicit_slope(t, qd, clipped, KD, STALL, W0)
+        assert b == pytest.approx(_fd_slope(0.0, qd, qt), abs=1e-6), (qd, qt)
+        assert b <= 0.0
+    assert implicit_slope(tau(0, 0.3, 0.05), 0.3, False, KD, STALL, W0) == pytest.approx(-KD)
+    assert implicit_slope(tau(0, 2.0, 1.0), 2.0, True, KD, STALL, W0) == pytest.approx(-STALL / W0)
+
+
+def test_implicit_slope_while_braking_is_explicit_unless_the_joint_stops_within_the_step():
+    qd, qt = 3.0, -1.0                              # moving forward, commanded far behind: braking on the line
+    t = tau(0.0, qd, qt)
+    assert t == pytest.approx(-STALL * (1 - qd / W0))
+    assert _fd_slope(0.0, qd, qt) == pytest.approx(STALL / W0, rel=1e-6)    # positive: no implicit treatment
+    assert implicit_slope(t, qd, True, KD, STALL, W0) == 0.0                 # explicit
+    assert implicit_slope(t, qd, True, KD, STALL, W0, step_dv=0.5 * qd) == 0.0
+    assert implicit_slope(t, qd, True, KD, STALL, W0, step_dv=1.5 * qd) == pytest.approx(-STALL / W0)
+
+
+def test_implicit_slope_vectorised_and_out_buffer():
+    t = np.array([0.5, 6.0, -0.79, 0.0, -6.0])
+    qd = np.array([0.1, 0.0, 5.0, 7.0, -1.0])
+    clipped = np.array([False, True, True, True, True])
+    kd = np.array([0.8, 0.8, 0.5, 0.8, 0.8])
+    out = np.full(5, np.nan)
+    b = implicit_slope(t, qd, clipped, kd, STALL, W0, step_dv=np.array([0.0, 1.0, 1.0, 1.0, 0.0]), out=out)
+    assert b is out
+    np.testing.assert_allclose(b, [-0.8, -STALL / W0, 0.0, 0.0, -STALL / W0])
