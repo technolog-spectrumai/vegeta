@@ -201,3 +201,54 @@ same logging, disturbances and failure rules. The robot-specific parts stay with
 statistics of §7 live in `vegeta.chiron.metrics` and `vegeta.chiron.stats`. Notebooks: `20_chiron_lab.ipynb`
 (the tool, shown on the robot dog and Cleopatra) and `21_cleopatra_stability.ipynb` (this study). Every number
 in §1–§9 is unchanged.
+
+## 11. Amendment C — the treatments and outputs as specified for this study (supersedes §2; before any result)
+
+Recorded before any stability trial has run. Where it differs from §2, this section governs.
+
+**11.1 What existed before.** Notebook 18's Cleopatra gait is kinematic: `designs/gait.py` places feet on
+planned paths with inverse kinematics; there is no gravity, inertia, contact force or actuator limit, so nothing
+in it shows physical stability. The physics engine for this study is MuJoCo through Chiron (§10).
+
+**11.2 Two body-connection modes** for the joints between segments 1–2 and 2–3 (the head stays welded to
+segment 1 in both):
+
+- **Rigid** — the intersegment joints are locked at their neutral angles by a fixed connection: the child segment
+  is attached to its parent with no degree of freedom (a weld in MuJoCo's kinematic tree), oriented at the neutral
+  angles. Nothing can deflect it.
+- **Flexible** — passive rotational spring–damper hinges at the joint pin, on **pitch and roll** by default, with
+  **yaw optional**. Per axis: stiffness k [N·m/rad], damping c [N·m·s/rad], neutral angle θ₀ [deg] (the spring's
+  rest angle), limits [deg] (hard stops). Torque on the joint `τ = −k (θ − θ₀) − c θ̇`, plus the limit when reached.
+  Translations stay constrained (hinges only, no slides). No actuator, no prescribed bending: every deflection
+  comes from forces and contacts. Defaults: k = 8 N·m/rad, c = 0.2 N·m·s/rad, θ₀ = 0°, limits ±45° pitch,
+  ±20° roll, ±45° yaw.
+
+Both modes keep the same bodies, geometry, masses, inertias, leg actuators and controller settings (checked in a
+test that compares the compiled models), and start from the same physically consistent state: segments at the
+neutral angles (springs unloaded), feet on the flat start section, zero velocities, then the 0.5 s settle phase.
+
+Treatments run: `rigid`, `flexible` (pitch + roll), `flexible+yaw` (pitch + roll + yaw). The earlier names
+`locked`, `flexible` (pitch + yaw) and `flexible+roll` (§2) are retired.
+
+**11.3 Configuration.** The mode and every per-axis parameter are parameters of the Myropod design
+(`designs/myropod.py`, visible with `dedalus params designs/myropod.py:Myropod`) and are passed through
+Chiron's CLI (`chiron run ... -p body_connection=flexible -p roll_stiffness=8`), so the CAD, the dynamics model and
+the runs read one configuration.
+
+**11.4 Terrains and sweeps.** flat, longitudinal bumps, alternating left/right bumps, cross-slope and random uneven
+ground (steps are kept as an extra). Every run records the obstacle height (m and h/L), the spacing (m and
+spacing/P), the slope or the RMS, and the seed. Commanded speed and difficulty are both swept; the controller
+settings are identical in every run.
+
+**11.5 Checks.** Rigid locking (the relative orientation of welded segments stays at the neutral angles under load),
+spring restoring torque (static deflection under a known torque equals τ/k), damping dissipation (a free decay's
+energy loss equals ∫ c θ̇² dt and its decrement matches c), and timestep convergence (a representative run at
+2, 1 and 0.5 ms; key metrics must converge).
+
+**11.6 Outputs.** CSV: one row per run (configuration, seeds, terrain parameters, outcome and every metric), the
+treatment parameters, and each run's raw time series (gzip CSV). Plots (Matplotlib): success rate vs roughness with
+95 % intervals; achieved vs commanded speed; body angular motion and slip vs roughness; cost of transport vs
+achieved speed; synchronised traces of segment attitudes, contact forces and joint deflections. Failures are always
+included; any metric computed on successful runs only says so on the plot and in the table. Runs, not frames, are
+the samples. The conclusion states, per terrain and difficulty, where flexibility helps, hurts or makes no clear
+difference (paired McNemar p < 0.05 and a paired-difference interval excluding 0, otherwise "no clear difference").
