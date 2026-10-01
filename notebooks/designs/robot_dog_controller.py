@@ -9,8 +9,9 @@ frame (body axes, origin at the hip point) and turns it into joint targets with 
   ahead of its hip and leaves half a stance behind);
 * **swing** — it returns forward, lifted by ``swing_lift`` (notebook 16: 60 mm). ``swing_profile='linear'`` is
   notebook 16's curve (x linear in the swing, lift ``sin(π u)``); ``'smooth'`` (default) is a cubic in x that
-  leaves and lands at the stance speed with a ``sin²(π u)`` lift, so the foot touches down at ground speed with no
-  vertical velocity; ``'cosine'`` is x on a cosine with the ``sin(π u)`` lift.
+  leaves and lands at the stance speed, lifting off on ``sin(π u)`` and landing on a raised cosine, so the foot
+  clears the ground at once and touches down at ground speed with no vertical velocity; ``'cosine'`` is x on a
+  cosine with the ``sin(π u)`` lift.
 
 **Pattern** (``GAITS``): the walk is rear-left, front-left, rear-right, front-right at cycle fractions 0, 0.25,
 0.5, 0.75, duty 0.75 (notebook 16 §9: three feet down at any time); the trot moves the diagonals together
@@ -26,16 +27,18 @@ number [Hz].
 
 Additions a dynamic simulation needs and notebook 16's kinematic plan did not (each can be switched off):
 a ramp from the standing pose over ``ramp_s`` (speed, swing lift and the stance centre blend from notebook 16's
-standing pose, foot 20 mm ahead of the hip, into the gait); a heading correction (left
-and right stance travel differ by ``k_heading × yaw``, clipped to ±``heading_clip`` of the travel — the stability
-protocol's §3 rule; ``k_lateral`` also steers back towards y = 0); a load feed-forward (``load_ff``: each
+standing pose, foot 20 mm ahead of the hip, into the gait); a heading correction (left and right stance travel
+differ by ``k_heading × yaw``, clipped to ±``heading_clip`` of the travel — the stability protocol's §3 rule;
+``k_lateral`` also steers back towards y = 0); a load feed-forward (``load_ff``: each
 commanded-stance leg's servos add ``−Jᵀ (0, 0, m g / n_stance)``, the torque that carries its share of the weight,
-from ChironLab's foot Jacobians); joint-velocity feed-forward (``velocity_ff``: the backward difference of the
-joint targets); an optional lateral body sway away from the swinging legs (``sway``). No terrain sensing, no
-body levelling, no reflexes.
+from ChironLab's foot Jacobians; ``'contact'`` shares it only among stance legs that touch the ground — tried and
+found worse: when a leg unloads, the others push harder and the dog hops); joint-velocity feed-forward
+(``velocity_ff``: the backward difference of the joint targets; off by default); an optional lateral body sway
+away from the swinging legs (``sway``; off by default). No terrain sensing, no body levelling, no reflexes
+(``sigma > 0`` adds the Tegotae phase reflex).
 
     import robot_dog_robot as rdr, robot_dog_controller as rdc
-    lab = chiron.ChironLab(rdr.dog_robot(), chiron.Flat())
+    lab = rdr.dog_lab(chiron.Flat())            # ChironLab(rdr.dog_robot(), terrain, **rdr.LAB_OPTIONS)
     ep = lab.run(rdc.DogGait("walk", 0.3), rules=chiron.FailureRules(course_m=1.5, v_target=0.3), seed=0)
 """
 from __future__ import annotations
@@ -77,13 +80,6 @@ def _yaw(quat) -> float:
     return math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
 
 
-def _quat_to_mat(q) -> np.ndarray:
-    w, x, y, z = q
-    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
-                     [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
-                     [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]])
-
-
 class Stand:
     """Hold notebook 16's standing pose (a ChironLab controller)."""
 
@@ -104,7 +100,8 @@ class DogGait:
     the hip in stance [m] (None = notebook 16's standing height); ``x_offset`` stance centre ahead of the hip [m]
     (0: notebook 16 §9); ``swing_profile`` 'smooth' | 'linear' (notebook 16) | 'cosine'; ``ramp_s`` speed ramp from
     standstill [s] (None = one stride period); ``k_heading`` [m/rad], ``heading_clip`` (fraction of the stance
-    travel), ``k_lateral`` [rad/m]; ``load_ff``, ``velocity_ff`` feed-forwards; ``sway`` peak lateral body sway [m]
+    travel), ``k_lateral`` [rad/m]; ``load_ff`` 'stance' (= True) | 'contact' | False and ``contact_threshold``
+    (fraction of the weight), ``velocity_ff`` feed-forwards; ``sway`` peak lateral body sway [m]
     with ``sway_lead`` (cycle fraction of the ramps around each swing); ``sigma`` [rad/(N·s)] Tegotae gain (0 =
     fixed schedule); ``random_phase``: start at a seeded random point of the stride (uniform in one stride, as the
     stability protocol does); ``geometry``: ``robot_dog_robot.geometry()`` of the simulated dog.
@@ -114,10 +111,9 @@ class DogGait:
                  phases: dict | None = None, swing_lift: float = 0.06, depth: float | None = None,
                  x_offset: float = 0.0, swing_profile: str = "smooth", ramp_s: float | None = None,
                  k_heading: float = 0.5, heading_clip: float = 0.3, k_lateral: float = 0.0, load_ff="stance",
-                 contact_threshold: float = 0.02,
-                 velocity_ff: bool = False, sway: float = 0.0, sway_lead: float = 0.125, k_level: float = 0.0,
-                 sigma: float = 0.0,
-                 random_phase: bool = False, geometry: dict | None = None, name: str | None = None):
+                 contact_threshold: float = 0.02, velocity_ff: bool = False, sway: float = 0.0,
+                 sway_lead: float = 0.125, sigma: float = 0.0, random_phase: bool = False,
+                 geometry: dict | None = None, name: str | None = None):
         if gait_name not in GAITS:
             raise ValueError(f"gait must be one of {sorted(GAITS)}")
         if swing_profile not in ("linear", "cosine", "smooth"):
@@ -151,9 +147,6 @@ class DogGait:
         self.contact_threshold = float(contact_threshold)
         self.velocity_ff = bool(velocity_ff)
         self.sway, self.sway_lead = float(sway), float(sway_lead)
-        if not 0.0 <= k_level <= 1.0:
-            raise ValueError("k_level must be in [0, 1]")
-        self.k_level = float(k_level)
         self.sigma = float(sigma)
         self.random_phase = bool(random_phase)
         self.name = name or f"{gait_name} {self.v:g} m/s" + (f" sigma {self.sigma:g}" if self.sigma else "")
@@ -163,8 +156,7 @@ class DogGait:
         """The controller's settings (plain values, for the episode log)."""
         keys = ("gait", "v", "duty", "base_phases", "stride_hz", "stride_rule", "swing_lift", "depth", "x_offset",
                 "swing_profile", "ramp_s", "k_heading", "heading_clip", "k_lateral", "load_ff", "contact_threshold",
-                "velocity_ff", "k_level",
-                "sway", "sway_lead", "sigma", "random_phase")
+                "velocity_ff", "sway", "sway_lead", "sigma", "random_phase")
         return {k: getattr(self, k) for k in keys}
 
     # ---- the stride
@@ -189,12 +181,14 @@ class DogGait:
             return x0 + length * u, -self.depth + h * math.sin(math.pi * u), False
         if self.swing_profile == "cosine":
             return x0 + length * (1 - math.cos(math.pi * u)) / 2, -self.depth + h * math.sin(math.pi * u), False
-        # 'smooth': cubic Hermite in x leaving and landing at the stance speed (dx/du = −L (1 − duty)/duty),
-        # lift sin²(π u): no velocity jump at lift-off or touchdown, no vertical speed at touchdown
+        # 'smooth': cubic Hermite in x leaving and landing at the stance speed (dx/du = −L (1 − duty)/duty); the
+        # foot lifts off on sin(π u) (clears the ground at once) and lands on (1 + cos 2π(u − ½))/2 (no vertical
+        # speed at touchdown)
         m = -length * (1 - duty) / duty
         u2, u3 = u * u, u * u * u
         x = (2 * u3 - 3 * u2 + 1) * x0 + (u3 - 2 * u2 + u) * m + (-2 * u3 + 3 * u2) * (x0 + length) + (u3 - u2) * m
-        return x, -self.depth + h * math.sin(math.pi * u) ** 2, False
+        zl = math.sin(math.pi * u) if u <= 0.5 else 0.5 * (1.0 + math.cos(2.0 * math.pi * (u - 0.5)))
+        return x, -self.depth + h * zl, False
 
     def swing_weight(self, c: float) -> float:
         """For the sway: 1 while the leg swings, 0 deep in stance, raised-cosine ramps ``sway_lead`` (cycle
@@ -232,9 +226,6 @@ class DogGait:
         self.dt = lab.control_dt
         self.prev_q = None
         self.unreachable = 0
-        g = self.geom
-        self.hips = np.array([[rdr.LEGS[leg][0] * g["hip_x"], rdr.LEGS[leg][1] * g["y_leg"], g["hip_z"]]
-                              for leg in self.legs])
         # sway normalisation: the peak of the summed swing weights over one stride of the fixed schedule
         cs = np.linspace(0.0, 1.0, 400, endpoint=False)
         sums = [abs(sum(-self.side[i] * self.swing_weight((c + self.pg.base[i]) % 1.0) for i in range(len(self.legs))))
@@ -270,22 +261,10 @@ class DogGait:
         if self.sway:
             y_body = ramp * self.sway / self._sway_norm * sum(-self.side[i] * self.swing_weight(float(phases[i]))
                                                                for i in range(len(self.legs)))
-        # attitude feedback (k_level > 0): feet planned in the gravity-levelled frame (yaw only), each leg shortened
-        # by k_level × its hip's height above the hips' mean, so the stance legs bring the trunk back to level
-        R_rp = None
-        if self.k_level:
-            R = _quat_to_mat(obs.base_quat)
-            c, s_ = math.cos(-math.atan2(R[1, 0], R[0, 0])), math.sin(-math.atan2(R[1, 0], R[0, 0]))
-            R_rp = np.array([[c, -s_, 0.0], [s_, c, 0.0], [0.0, 0.0, 1.0]]) @ R      # roll and pitch only
-            hz = (self.hips @ R_rp.T)[:, 2]
-            dz = self.k_level * (hz - hz.mean())
         q = self._q
         for i in range(len(self.legs)):
             x, z, _ = self.foot_target(float(phases[i]), length + self.side[i] * dl / 2, x_centre, lift)
-            y = -y_body
-            if R_rp is not None:
-                x, y, z = R_rp.T @ np.array([x, y, z + dz[i]])
-            angles, ok = self.leg_angles(x, y, z)
+            angles, ok = self.leg_angles(x, -y_body, z)
             self.unreachable += 0 if ok else 1
             q[self.leg_cols[i]] = angles
         qd = None

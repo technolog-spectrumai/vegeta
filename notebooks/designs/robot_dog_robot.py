@@ -20,19 +20,19 @@ actuated joints, as notebook 16's mass budget lists them and as ``gait.ik_dog`` 
 
     import robot_dog_robot as rdr
     robot = rdr.dog_robot()                 # 13.07 kg, 12 × qdd 24 Nm
-    lab = chiron.ChironLab(robot, chiron.Flat())
+    lab = rdr.dog_lab(chiron.Flat())         # = ChironLab(robot, terrain, **rdr.LAB_OPTIONS)
 """
 from __future__ import annotations
 
 import math
 
-from vegeta.chiron import FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
+from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
 import actuators as act
 
 __all__ = ["DOG", "CAD", "ASSUMPTIONS", "LEGS", "LEG_NAMES", "JOINTS", "DENSITY_G_MM3", "SHELL_T_MM",
-           "OTHER_PARTS_G", "design_params", "cad_numbers", "geometry", "mass_budget", "dog_servo", "dog_robot",
-           "leg_joints", "angles_to_q", "q_to_angles", "nominal_qpos"]
+           "OTHER_PARTS_G", "LAB_OPTIONS", "design_params", "cad_numbers", "geometry", "mass_budget", "dog_servo",
+           "dog_robot", "dog_lab", "leg_joints", "angles_to_q", "q_to_angles", "nominal_qpos"]
 
 # ---- the design: robot_dog.py's parameter defaults (mm, deg; tests check they match RobotDog.parameters) ----
 DOG = {
@@ -96,9 +96,19 @@ ASSUMPTIONS = {
     "servo_gains": "kp = 100 N·m/rad, kd = 1.0 N·m·s/rad on every joint: not in notebook 16. kp: a stance knee "
                    "carrying a third of the weight (≈ 6 N·m) sags ≈ 3°; kd: the free lower leg (≈ 1.5e-3 kg·m² "
                    "about the knee) is overdamped (ζ ≈ 1.3), and kd ≲ 1.2 keeps ChironLab's default implicit-fast "
-                   "integrator out of a contact limit cycle (kd ≥ 2 makes the standing dog bounce at ≈ 10 Hz; "
-                   "see the Chiron report)",
+                   "integrator out of a contact limit cycle: with damping integrated implicitly (implicit-fast, or "
+                   "Euler with joint damping) kd ≥ 2 makes the standing dog bounce at ≈ 10 Hz (summed foot force "
+                   "0.4–1.6 m g); explicit damping (Euler) is stable standing but unstable on a free lower leg for "
+                   "kd ≥ 2",
 }
+
+#: ChironLab settings for the dog (everything else: ChironLab's defaults — 1 ms implicit-fast, pyramidal cones).
+#: contact_solref: MuJoCo's default contact time constant (0.02 s) lets a loaded foot sink several mm (≈ 10 mm at a
+#: walking touchdown of this 13 kg dog) — on a 5 mm-cell height field the 17 mm foot sphere then meets prism sides
+#: (nearly horizontal contact normals), gets trapped below the surface and sees kN spikes; 0.005 s (≥ 2 time
+#: steps, MuJoCo's lower bound) keeps the sink < 1 mm: a 0.3 m/s walk on a flat 5 mm height field covers 0.89 m in
+#: 4 s (0.39 m at the default; 0.97 m on a plane).
+LAB_OPTIONS = {"contact_solref": (0.005, 1.0)}
 
 LEGS = {"FL": (1, 1), "FR": (1, -1), "RL": (-1, 1), "RR": (-1, -1)}           # foot name -> (sx, sy)
 LEG_NAMES = {"FL": "front-left", "FR": "front-right", "RL": "rear-left", "RR": "rear-right"}   # gait.LEGS names
@@ -315,3 +325,11 @@ def dog_robot(overrides: dict | None = None, *, kp: float = DEFAULT_KP, kd: floa
     notes = (f"Cerberus (notebook 16): {m_total:.2f} kg, 12 × {a.key}; hips at x = ±{g['hip_x']:.3f} m, "
              f"leg planes at y = ±{g['y_leg']:.3f} m; standing hip-to-foot-centre {g['h_stand']:.4f} m.")
     return Robot(name, trunk, feet=feet, nominal_qpos=nominal_qpos(p), notes=notes, sources=sources)
+
+
+def dog_lab(terrain=None, *, robot: Robot | None = None, **lab_kwargs) -> ChironLab:
+    """A ChironLab with the dog (``dog_robot()`` unless ``robot`` is given) on ``terrain`` (default flat) with
+    ``LAB_OPTIONS``; ``lab_kwargs`` are ChironLab keywords and win over ``LAB_OPTIONS``."""
+    kw = dict(LAB_OPTIONS)
+    kw.update(lab_kwargs)
+    return ChironLab(robot if robot is not None else dog_robot(), terrain, **kw)

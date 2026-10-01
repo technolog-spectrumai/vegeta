@@ -15,10 +15,12 @@ Every per-axis value (k, c, θ₀, limits) is a field of ``BodyConnection`` / ``
 
 Frames (Chiron's convention): x forward (the head at +x), y left, z up. Every segment's link frame sits at the
 segment's centre at **hip height** (the CAD's ``seg_height / 2`` above the shell's belly), so a hip is at
-``(±hip_x, ±hip_y, 0)`` in its segment's frame. The chain grows backwards from the root: segment 1 (with the head
-welded in front of it) → segment 2 → segment 3, one pitch (0.170 m) apart; a body joint sits at the pin halfway
-across the joint gap. Body-joint signs: yaw about +z (+ swings the rear segment's tail to the right), pitch about
-+y (+ lifts the rear segment's tail), roll about +x; hinges are chained yaw → pitch → roll.
+``(±hip_x, ±hip_y, 0)`` in its segment's frame; the head's frame is at its centre at the same height. The chain
+grows backwards from the root link, the head (it floats freely; Chiron logs the bodies in tree order: head,
+segment 1, segment 2, segment 3): head → segment 1 (welded, 0.160 m behind it) → segment 2 → segment 3, one pitch
+(0.170 m) apart; a body joint sits at the pin halfway across the joint gap. Body-joint signs: yaw about +z
+(+ swings the rear segment's tail to the right), pitch about +y (+ lifts the rear segment's tail), roll about +x;
+hinges are chained yaw → pitch → roll.
 
 Legs: hip yaw (axis: segment z; positive sweeps the foot forward), hip pitch (horizontal, perpendicular to the
 leg plane; positive = femur below horizontal) and knee (parallel to hip pitch; the **relative** angle, positive =
@@ -40,7 +42,8 @@ from vegeta import chiron as ch
 __all__ = ["CLEO_MM", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "TREATMENT_CONNECTIONS",
            "LEGACY_TREATMENTS", "LEG_KEYS", "LEG_SIDES", "SEGMENTS", "LEG_RANGES", "KP", "KD", "cleopatra",
            "cleopatra_servo", "canonical_treatment", "treatment_connection", "design_connection", "design_params",
-           "leg_name", "leg_joints", "body_joints", "nominal_pose", "mass_budget", "hip_position", "stance_foot"]
+           "leg_name", "leg_joints", "body_joints", "nominal_pose", "mass_budget", "hip_position", "stance_foot",
+           "LAB_OPTIONS", "LAB_OPTIONS_PROTOCOL", "COURSE_M", "cleopatra_lab", "failure_rules"]
 
 #: Notebook 18's ``CLEO`` parameters for ``designs/myropod.py`` [mm, deg] (Cleopatra) — the protocol's §1 geometry.
 CLEO_MM = dict(n_segments=3, seg_length=150.0, seg_width=110.0, seg_height=70.0, shell_thickness=3.0, joint_gap=20.0,
@@ -457,8 +460,8 @@ def _segment(p: CleopatraParams, index: int, servo: ch.Servo, leg_role: str) -> 
 
 
 def _head(p: CleopatraParams) -> ch.Link:
-    """The head, welded in front of segment 1 in every treatment (§1, §11.2). A tapered shell (110 × 70 mm at the
-    back, 85 % at the front) modelled as a thin-walled box of its mean section."""
+    """The head — the robot's root link; segment 1 is welded behind it in every treatment (§1, §11.2). A tapered
+    shell (110 × 70 mm at the back, 85 % at the front) modelled as a thin-walled box of its mean section."""
     w = p.seg_width * (1 + p.head_taper) / 2
     h = p.seg_height * (1 + p.head_taper) / 2
     geoms = [ch.Geom("head shell", "box", (p.head_length / 2, w / 2, h / 2), role="body",
@@ -469,7 +472,7 @@ def _head(p: CleopatraParams) -> ch.Link:
     rest = sum(payload.values()) - cams
     masses = [ch.PointMass("head cameras and LWIR", cams, (p.camera_x, 0.0, 0.0)),
               ch.PointMass("head microphones, IMU, radio", rest, (0.0, 0.0, 0.0))]
-    return ch.Link("head", pos=(p.head_offset, 0.0, 0.0), geoms=geoms, masses=masses, log=True, group="head")
+    return ch.Link("head", geoms=geoms, masses=masses, log=True, group="head")
 
 
 def _quat_axis(axis, angle):
@@ -530,7 +533,7 @@ def cleopatra(treatment: str = "rigid", yaw_stiffness: float | None = None, *,
     Returns a ``chiron.Robot``: logged bodies head, segment 1–3 (groups = their names); 12 feet ``s<i> <leg>``
     on their segments; 36 actuated leg joints ``s<i> <leg> hip_yaw|hip_pitch|knee``; passive body hinges
     ``body <i>-<i+1> yaw|pitch|roll``; the standing pose of §1 with body hinges at their neutral angles, and its
-    base (= hip) height above flat ground, 0.163 m.
+    base height (the root frame — the head's centre, level with the hips — above flat ground), 0.163 m.
     """
     if connection is None:
         connection = treatment_connection(treatment, yaw_stiffness)
@@ -543,7 +546,9 @@ def cleopatra(treatment: str = "rigid", yaw_stiffness: float | None = None, *,
     servo = cleopatra_servo(kp, kd, armature, p.leg_servo)
     leg_role = "link" if leg_links_collide else "visual"
     segs = [_segment(p, i, servo, leg_role) for i in (1, 2, 3)]
-    segs[0].children.insert(0, _head(p))
+    head = _head(p)                                   # the root link (free joint); segment 1 is welded behind it
+    segs[0].pos = (-p.head_offset, 0.0, 0.0)
+    head.children.append(segs[0])
     for i in (1, 2):                                  # segment i+1 hangs behind segment i
         _connect(segs[i], i, p, connection)
         segs[i - 1].children.append(segs[i])
@@ -562,13 +567,40 @@ def cleopatra(treatment: str = "rigid", yaw_stiffness: float | None = None, *,
     notes = (f"Cleopatra, treatment '{name}': {connection.mode}"
              + (f" ({', '.join(connection.hinged)})" if connection.hinged else "")
              + f"; connection {asdict(connection)}; armature {armature}; params {asdict(p)}")
-    robot = ch.Robot(f"cleopatra {name}", segs[0], feet=feet, nominal_qpos=nominal_pose(p, connection),
+    robot = ch.Robot(f"cleopatra {name}", head, feet=feet, nominal_qpos=nominal_pose(p, connection),
                      nominal_base_height=p.hip_height, nominal_hip_height=p.hip_height, notes=notes, sources=sources)
     robot.validate()
     robot.treatment = name               # plain attributes for bookkeeping (not part of chiron.Robot's fields)
     robot.connection = connection
     robot.params = p
     return robot
+
+
+#: ChironLab settings for Cleopatra. Protocol §1: control at 1 kHz, log at 100 Hz, time step 1 ms — but the §11.5
+#: timestep-convergence check fails at 1 ms (and 0.5 ms): the servos' kp = 40 N·m/rad on the light leg links
+#: (tibia + pad ≈ 2e-4 kg·m²) is integrated explicitly, and when a torque is clipped the implicit kd term
+#: under-accelerates the joint by I / (I + dt·kd) (≈ 1/5 at 1 ms). At 0.25 ms the walking speed and tilt agree
+#: with 0.125 ms within 4 % and 1° (both integrators); so the physics step is 0.25 ms and the controller still
+#: runs at 1 kHz. ``LAB_OPTIONS_PROTOCOL`` keeps the literal 1 ms.
+LAB_OPTIONS = dict(timestep=0.00025, control_dt=0.001, log_dt=0.01)
+LAB_OPTIONS_PROTOCOL = dict(timestep=0.001, control_dt=0.001, log_dt=0.01)
+#: Protocol §4: every course is 1.5 m long and starts flat for 0.3 m.
+COURSE_M = 1.5
+
+
+def cleopatra_lab(treatment: str = "rigid", terrain=None, *, robot: ch.Robot | None = None,
+                  robot_kw: dict | None = None, **lab_kw) -> ch.ChironLab:
+    """A ChironLab with Cleopatra (``cleopatra(treatment, **robot_kw)`` or ``robot``) on ``terrain`` (default flat)
+    with ``LAB_OPTIONS`` (overridden by ``lab_kw``, e.g. ``course_extent``, ``flat_as_plane``)."""
+    opts = dict(LAB_OPTIONS)
+    opts.update(lab_kw)
+    return ch.ChironLab(robot if robot is not None else cleopatra(treatment, **(robot_kw or {})), terrain, **opts)
+
+
+def failure_rules(v_target: float, course_m: float = COURSE_M, **kw) -> ch.FailureRules:
+    """The protocol's §5 rules for a trial at ``v_target`` [m/s] (tilt 60°, COM below 40 % of the hip height for
+    0.5 s, stall after 2 s over 3 s windows at 10 %, |y| ≤ 0.5 m, timeout 2·course/v + 2 s)."""
+    return ch.FailureRules(course_m=course_m, v_target=v_target, **kw)
 
 
 def mass_budget(p: CleopatraParams | None = None) -> dict:
