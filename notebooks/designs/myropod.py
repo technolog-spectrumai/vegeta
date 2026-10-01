@@ -36,7 +36,7 @@ class Myropod(Design):
         Parameter("femur_length", 36.0, "mm", min=5, description="hip to knee"),
         Parameter("tibia_length", 42.0, "mm", min=5, description="knee to the foot pad"),
         Parameter("leg_diameter", 9.0, "mm", min=1.5),
-        Parameter("foot_diameter", 9.0, "mm", min=2),
+        Parameter("foot_diameter", 12.0, "mm", min=2, description="rubber pad; must exceed leg_diameter + 1"),
         Parameter("hip_angle_deg", 20.0, "deg", min=-60, max=80, description="femur below horizontal, reaching outwards"),
         Parameter("knee_angle_deg", 70.0, "deg", min=0, max=150, description="tibia below horizontal"),
         Parameter("leg_sweep_deg", 0.0, "deg", min=-60, max=60, description="legs swept forward (+) in the top view"),
@@ -122,6 +122,8 @@ class Myropod(Design):
     def _leg(self, p):
         """One leg in its own frame: hip bore at the origin (axis x), femur reaching +y and down."""
         d, f, tb = p["leg_diameter"], p["femur_length"], p["tibia_length"]
+        if p["foot_diameter"] <= d + 1.0:
+            raise ValueError("foot_diameter must exceed leg_diameter + 1 mm (a pad tangent to the leg bar is not a valid solid)")
         a, b = math.radians(p["hip_angle_deg"]), math.radians(p["knee_angle_deg"])
         knee = (f * math.cos(a), -f * math.sin(a))
         foot = (knee[0] + tb * math.cos(b), knee[1] - tb * math.sin(b))

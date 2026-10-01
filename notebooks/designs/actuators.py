@@ -1,0 +1,111 @@
+"""Actuator, motor and joint library shared by the product notebooks (robot dog, Myropods).
+
+A catalogue of explicit entries — every number is an engineer's input with a source, nothing is
+fitted — plus two helpers: pick the lightest actuator that holds a torque with a safety factor, and
+the electrical power of holding a torque. Notebooks select from here instead of inventing their own
+motor dictionaries, so a change of catalogue reaches every machine.
+"""
+from dataclasses import dataclass, asdict
+
+import pandas as pd
+
+
+@dataclass(frozen=True)
+class Actuator:
+    """One actuator: a hobby servo, a serial-bus smart servo, or a quasi-direct-drive (QDD) module."""
+
+    key: str
+    kind: str                 # "servo", "smart servo", "qdd"
+    mass_g: float
+    stall_Nm: float           # peak / stall torque
+    rated_Nm: float           # continuous torque (thermal)
+    stall_A: float            # current at stall
+    voltage_V: float
+    no_load_rpm: float
+    self_locking: bool = False   # worm / lead-screw output: holds a load with the motor unpowered
+    source: str = ""
+
+    @property
+    def name(self) -> str:
+        return self.key
+
+    def as_dict(self) -> dict:
+        d = asdict(self); d["name"] = self.key
+        return d
+
+    def holding_power(self, torque_Nm: float, hold_current_fraction: float = 1.0) -> float:
+        """Electrical power [W] to hold ``torque_Nm``: the current is proportional to the torque fraction of
+        stall (a DC motor at rest); a self-locking drive holds for nothing."""
+        if self.self_locking:
+            return 0.0
+        f = min(abs(torque_Nm) / self.stall_Nm, 1.0)
+        return f * self.stall_A * self.voltage_V * hold_current_fraction
+
+    def safety_factor(self, torque_Nm: float) -> float:
+        return float("inf") if torque_Nm == 0 else self.stall_Nm / abs(torque_Nm)
+
+
+@dataclass(frozen=True)
+class Joint:
+    """A joint type: degrees of freedom, pin, range. Pins are steel (C45, yield 400 MPa in the notebooks)."""
+
+    key: str
+    dof: int
+    pin_diameter_mm: float
+    range_deg: float          # per axis, +/- from neutral
+    description: str = ""
+
+
+CATALOG = [
+    # hobby servos, 7.4 V, metal gears (datasheet-class values; the sizes the Persephone legs choose from)
+    Actuator("sub-micro 9 g", "servo", 9.0, 0.22, 0.10, 0.9, 7.4, 110, False, "generic 9 g metal-gear micro servo datasheet"),
+    Actuator("micro 13 g", "servo", 13.0, 0.32, 0.14, 1.1, 7.4, 100, False, "generic 13 g servo datasheet"),
+    Actuator("micro-metal 20 g", "servo", 20.0, 0.55, 0.22, 1.4, 7.4, 90, False, "generic 20 g metal-gear servo datasheet"),
+    Actuator("mini 32 g", "servo", 32.0, 1.10, 0.40, 2.0, 7.4, 80, False, "generic 32 g mini servo datasheet"),
+    Actuator("standard 55 g", "servo", 55.0, 2.20, 0.80, 3.0, 7.4, 60, False, "generic 55 g standard servo datasheet"),
+    Actuator("micro-metal 22 g worm", "servo", 22.0, 0.50, 0.22, 1.4, 7.4, 45, True, "assumed: a 20 g servo with a worm output stage (self-locking, slower)"),
+    Actuator("mini 32 g worm", "servo", 36.0, 1.00, 0.40, 2.0, 7.4, 40, True, "assumed: a 32 g servo with a worm output stage (self-locking, slower)"),
+    Actuator("standard 60 g worm", "servo", 60.0, 2.00, 0.80, 3.0, 7.4, 30, True, "assumed: a 55 g servo with a worm output stage (self-locking, slower)"),
+    # serial-bus smart servos, 12 V (Cleopatra and Apheloria legs and joints)
+    Actuator("smart servo 6 Nm", "smart servo", 70.0, 6.0, 2.0, 3.0, 12.0, 55, False, "serial-bus smart servo class, supplier datasheet"),
+    Actuator("smart servo 12 Nm", "smart servo", 120.0, 12.0, 4.0, 4.5, 12.0, 45, False, "serial-bus smart servo class, supplier datasheet"),
+    Actuator("smart servo 25 Nm", "smart servo", 250.0, 25.0, 8.0, 6.0, 24.0, 40, False, "serial-bus smart servo class, supplier datasheet"),
+    # quasi-direct-drive modules (the robot dog's legs, Apheloria's joints)
+    Actuator("qdd 24 Nm", "qdd", 480.0, 24.0, 8.0, 18.0, 24.0, 300, False, "quasi-direct-drive leg module class (planetary 1:6), supplier datasheet"),
+    Actuator("qdd 60 Nm", "qdd", 650.0, 60.0, 20.0, 25.0, 48.0, 200, False, "quasi-direct-drive module class (planetary 1:9), supplier datasheet"),
+]
+JOINTS = [
+    Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),
+    Joint("two-axis body joint", 2, 5.0, 45.0, "pitch + yaw between two Persephone segments: tongue and fork, one pin per axis"),
+    Joint("two-axis body joint, large", 2, 10.0, 45.0, "Cleopatra and Apheloria body joints"),
+    Joint("dog hip / knee pin", 1, 10.0, 110.0, "robot dog leg pins in clevises"),
+]
+
+
+def get(key: str) -> Actuator:
+    for a in CATALOG:
+        if a.key == key:
+            return a
+    raise KeyError(f"no actuator {key!r}; known: {[a.key for a in CATALOG]}")
+
+
+def joint(key: str) -> Joint:
+    for j in JOINTS:
+        if j.key == key:
+            return j
+    raise KeyError(f"no joint {key!r}; known: {[j.key for j in JOINTS]}")
+
+
+def table(kind: str | None = None) -> pd.DataFrame:
+    """The catalogue as a DataFrame indexed by key, lightest first (optionally one kind)."""
+    rows = [a.as_dict() for a in CATALOG if kind is None or a.kind == kind]
+    return pd.DataFrame(rows).set_index("key").drop(columns=["name"]).sort_values("mass_g")
+
+
+def select(torque_Nm: float, sf: float = 1.5, kind: str | None = None, self_locking: bool | None = None, max_mass_g: float | None = None) -> Actuator:
+    """The lightest actuator whose stall torque is at least ``sf × torque``."""
+    cands = [a for a in CATALOG if (kind is None or a.kind == kind) and (self_locking is None or a.self_locking == self_locking)
+             and (max_mass_g is None or a.mass_g <= max_mass_g) and a.stall_Nm >= sf * abs(torque_Nm)]
+    if not cands:
+        raise ValueError(f"no actuator in the catalogue holds {torque_Nm:.2f} Nm with SF {sf} (kind={kind}, self_locking={self_locking})")
+    return min(cands, key=lambda a: a.mass_g)
