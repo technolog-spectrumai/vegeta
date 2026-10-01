@@ -20,7 +20,20 @@ class Myropod(Design):
 
     ``part`` selects the whole crawler (as its version), a segment, a leg (hip bore at the origin,
     reaching +y), the head, one pincer (pivot bore at the origin, jaw along +x), the carry case or
-    the insertion guide."""
+    the insertion guide.
+
+    **Body-joint dynamics** (``body_*``; stability protocol ``docs/myropod_stability.md`` §12,
+    Amendment D). The passive intersegment hinges of the dynamics model: ``body_connection`` 'spring'
+    (torque −k (q − q0), joint damping c = 0) or 'spring_damper' (−k (q − q0) − c q̇); pitch and yaw
+    hinges always, roll when ``body_roll_axis``; per axis stiffness ``body_k_*`` [N·m/rad], damping
+    ``body_c_*`` [N·m·s/rad] (spring_damper only — 'spring' uses c = 0 whatever these say), neutral
+    angle ``body_q0_*`` [rad] (the spring's rest angle; the segments start there) and hard stops
+    ``±body_limit_*`` [rad]. Defaults are the protocol's: k = 8, c = 0.2, q0 = 0, limits ±45° (0.785
+    rad) pitch and yaw, ±20° (0.349 rad) roll. They are read by the Chiron model
+    (``myropod_robot.robot_from_design`` / ``design_connection``); **the CAD ignores them**: the drawn
+    chain is straight unless ``bend_yaw_deg`` / ``bend_pitch_deg`` bend it (a CAD pose in degrees
+    with its own sign convention), so q0 is not drawn. Angles of the dynamics parameters are in
+    radians, unlike the CAD's ``*_deg`` parameters."""
 
     parameters = [
         Parameter("part", "crawler", choices=("crawler", "segment", "leg", "head", "pincer", "case", "guide"), description="what to build"),
@@ -55,6 +68,21 @@ class Myropod(Design):
         Parameter("drum_diameter", 120.0, "mm", min=20, description="tether drum in the middle of the case"),
         Parameter("guide_diameter", 150.0, "mm", min=40, description="inner diameter of the insertion guide (half-pipe)"),
         Parameter("guide_radius", 220.0, "mm", min=50, description="bend radius of the insertion guide"),
+        # ---- intersegment joint dynamics (stability protocol §12, Amendment D; read by myropod_robot.py, not the CAD)
+        Parameter("body_connection", "spring_damper", choices=("spring", "spring_damper"), description="body-joint treatment: 'spring' tau = -k (q - q0), c = 0; 'spring_damper' tau = -k (q - q0) - c dq/dt (dynamics only)"),
+        Parameter("body_roll_axis", True, "", description="passive roll hinge at each body joint, as well as pitch and yaw (identical in both treatments; dynamics only)"),
+        Parameter("body_k_pitch", 8.0, "N·m/rad", min=0, description="body-joint pitch spring stiffness k"),
+        Parameter("body_k_yaw", 8.0, "N·m/rad", min=0, description="body-joint yaw spring stiffness k"),
+        Parameter("body_k_roll", 8.0, "N·m/rad", min=0, description="body-joint roll spring stiffness k (with body_roll_axis)"),
+        Parameter("body_c_pitch", 0.2, "N·m·s/rad", min=0, description="body-joint pitch damping c (spring_damper only; 'spring' uses 0)"),
+        Parameter("body_c_yaw", 0.2, "N·m·s/rad", min=0, description="body-joint yaw damping c (spring_damper only; 'spring' uses 0)"),
+        Parameter("body_c_roll", 0.2, "N·m·s/rad", min=0, description="body-joint roll damping c (spring_damper only; 'spring' uses 0)"),
+        Parameter("body_q0_pitch", 0.0, "rad", min=-1.57, max=1.57, description="body-joint pitch neutral angle q0 (spring rest, start pose; + lifts the rear segment's tail; not drawn)"),
+        Parameter("body_q0_yaw", 0.0, "rad", min=-1.57, max=1.57, description="body-joint yaw neutral angle q0 (spring rest, start pose; + swings the rear segment's tail right; not drawn)"),
+        Parameter("body_q0_roll", 0.0, "rad", min=-1.57, max=1.57, description="body-joint roll neutral angle q0 (spring rest, start pose; must be 0 without body_roll_axis; not drawn)"),
+        Parameter("body_limit_pitch", math.radians(45.0), "rad", min=0.01, max=3.14, description="body-joint pitch hard stops at +/- this angle (45 deg)"),
+        Parameter("body_limit_yaw", math.radians(45.0), "rad", min=0.01, max=3.14, description="body-joint yaw hard stops at +/- this angle (45 deg)"),
+        Parameter("body_limit_roll", math.radians(20.0), "rad", min=0.01, max=3.14, description="body-joint roll hard stops at +/- this angle (20 deg; with body_roll_axis)"),
     ]
 
     # ---- kinematics shared with the notebook ----
