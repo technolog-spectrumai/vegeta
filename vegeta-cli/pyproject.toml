@@ -16,6 +16,7 @@ dependencies = ["cadquery>=2.4", "gmsh>=4.11", "numpy", "matplotlib", "tqdm"]
 pandas = ["pandas"]
 viz = ["pyvista>=0.44", "trame", "trame-vtk", "trame-vuetify", "ipywidgets", "opencv-python-headless", "scipy"]
 test = ["pytest"]
+sim = ["mujoco>=3.1", "scipy"]
 
 [project.scripts]
 vegeta = "vegeta.cli:main"
@@ -39,6 +40,7 @@ packages = [
   "vegeta.mellonia",
   "vegeta.boreas",
   "vegeta.chronos",
+  "vegeta.chiron",
 ]
 
 [tool.setuptools.package-data]
