@@ -3,3 +3,8 @@
 `quad_frame.py` (`QuadFrame`, notebook 08) and `fixed_wing.py` (`FixedWing`, notebook 09) are ordinary
 Dedalus designs. The notebooks copy them into their `_runs/...` folder before use, so a copilot
 proposal (notebook 07) or a campaign (notebook 10) edits the copy, never this original.
+
+`robot_dog.py` (`RobotDog`, notebook 16) is the quadruped. `myropod.py` (`Myropod`, notebooks 17 and 18) is
+the Myropod family's segmented walker — its defaults are Persephone (12 segments, chimney crawler); Cleopatra is
+the same class with three large segments (parameters in notebook 18). `apheloria.py` (`Apheloria`, notebook 19)
+is the modular Myropod that curls into a ball. All on branch `dev_sikarian`.

@@ -85,6 +85,21 @@ evaluated side by side, with a recommendation; then the recommendation (7 blades
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
+`16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
+foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
+step, FEA of both leg links and the pins, lower-leg modes against stride harmonics, rainflow fatigue over three
+missions, printing. The **Myropods** (`dev_sikarian`) are a family of segmented walkers from one design file —
+four legs on every segment, so each segment stands and braces on its own: `17_myropod_persephone` is the chimney
+crawler (twelve 60 mm segments, 48 legs, a tether) in three versions — v1 the crawler (fit in flues and elbows,
+bracing on soot and the servo class it needs, climb power and the tether, leg and shell FEA, a thermal limit in a
+warm flue, the comms and power links, gait dynamics, leg fatigue), v2 transport into the chimney (coiled in a carry
+case around its tether drum, the flue-mouth insertion guide, the push-in / anchor-and-pull / emergency-retreat
+forces, case FEA), v3 two pincers on the head (grip, head moment, pincer FEA); `18_myropod_cleopatra` is the
+three-segment 12-legged walker (gaits, actuator torques, limb loss and the support polygon on three legs, leg FEA,
+endurance); `19_myropod_apheloria` (`designs/apheloria.py`) is the modular pill millipede that rolls into a ball
+(configurations and module masses, ball geometry, rolling and a drop, the curl-up joint moment, plate and leg FEA,
+endurance).
+
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
 CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/`; on `dev_sea`
 also `scenarios/sub_video.sh` (submarine) and `scenarios/boat_video.sh` (boat, double body, no free surface) — see
