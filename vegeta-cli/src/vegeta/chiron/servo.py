@@ -7,7 +7,8 @@
 The limit is the motoring line of a DC motor at its supply voltage, applied symmetrically (the same bound
 whether the torque drives or brakes the joint), as fixed by the pre-registered locomotion-stability
 protocol in docs/ (§1). Pure numpy, vectorised over joints; ``out`` lets a simulation loop reuse its buffers.
-``implicit_slope`` gives the law's velocity derivative for an implicit integrator (``ChironLab`` uses it).
+``implicit_slope`` gives the law's velocity derivative for an implicit integrator (the rule ``ChironLab`` applies,
+inlined, at every physics step).
 """
 from __future__ import annotations
 
