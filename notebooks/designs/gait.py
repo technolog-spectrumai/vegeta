@@ -154,14 +154,21 @@ class StepResult:
 
 
 def simulate_steps(times, pose_fn, legs, phases, duty, stride_mm, period_s, terrain, ik_fn, *, swing_lift=60.0, torque_fn=None,
-                   force_body_fn=None, joint_names=("j1", "j2", "j3"), peak_Nm=None, body_names=None, foot_out=0.0):
+                   force_body_fn=None, joint_names=("j1", "j2", "j3"), peak_Nm=None, body_names=None, foot_out=0.0,
+                   contact=None, foot_drop=0.0, clear_margin=3.0):
     """Step the feet of one or more bodies through ``times``.
 
     ``pose_fn(t)`` returns a list of (centre, R, pitch, roll, hips) — one per body. ``legs`` maps a leg name to
     (body index, sx, sy) and ``phases`` to its phase in the stride; ``ik_fn(rel, sx, sy)`` -> (angles, ok);
     ``torque_fn(angles, rel, F_body, sx, sy)`` -> torques; ``force_body_fn(R)`` -> the ground force on a landing
     foot in the body frame. ``foot_out`` puts each foot that far outward (sideways) from its hip — 0 for a dog
-    (feet under the hips), the standing foot reach for a Myropod. A landing becomes one row of the step table."""
+    (feet under the hips), the standing foot reach for a Myropod. A landing becomes one row of the step table.
+
+    Without ``contact`` the feet land on ``terrain`` (z = terrain(x, y)), aimed ahead along world x. With a
+    ``contact`` surface (for example ``PipeContact``) every landing is aimed in the body frame — half a stance
+    ahead along the body, ``foot_out`` outward and ``foot_drop`` down from the hip — and projected onto the
+    surface; a swing lifts the foot off the surface along ``contact.lift``. ``force_body_fn(R, foot)`` gets the
+    landing foot's world position too (a wall pushes along its normal)."""
     dt = float(times[1] - times[0])
     state, feet, stance, joints, steps, unreachable = {}, {}, {}, {}, [], 0
     poses0 = pose_fn(float(times[0]))
@@ -169,7 +176,12 @@ def simulate_steps(times, pose_fn, legs, phases, duty, stride_mm, period_s, terr
         hip0 = poses0[b][4][_key(sx, sy)]
         x0 = hip0[0] + (stride_mm * duty / 2 * (1 - 2 * phases[leg] / duty) if phases[leg] < duty else 0.0)
         y0 = hip0[1] + sy * foot_out
-        state[leg] = {"foot": np.array([x0, y0, float(terrain(x0, y0))]), "lift": None, "land": None, "was_stance": True}
+        if contact is None:
+            foot0 = np.array([x0, y0, float(terrain(x0, y0))])
+        else:
+            ahead0 = stride_mm * duty / 2 * (1 - 2 * phases[leg] / duty) if phases[leg] < duty else 0.0
+            foot0 = contact.project(hip0 + poses0[b][1] @ np.array([ahead0, sy * foot_out, -foot_drop]))
+        state[leg] = {"foot": foot0, "lift": None, "land": None, "was_stance": True}
         feet[leg], stance[leg], joints[leg] = [], [], []
     for t_s in times:
         poses = pose_fn(float(t_s))
@@ -186,19 +198,27 @@ def simulate_steps(times, pose_fn, legs, phases, duty, stride_mm, period_s, terr
                 u = (phase - duty) / (1 - duty)
                 if st["lift"] is None:
                     st["lift"] = st["foot"].copy()
-                    hips_land = pose_fn(float(t_s) + (1 - u) * (1 - duty) * period_s)[b][4]
-                    xl, yl = hips_land[_key(sx, sy)][0] + stride_mm * duty / 2, hips_land[_key(sx, sy)][1] + sy * foot_out
-                    st["land"] = np.array([xl, yl, float(terrain(xl, yl))])
+                    pose_land = pose_fn(float(t_s) + (1 - u) * (1 - duty) * period_s)[b]
+                    hip_land = pose_land[4][_key(sx, sy)]
+                    if contact is None:
+                        xl, yl = hip_land[0] + stride_mm * duty / 2, hip_land[1] + sy * foot_out
+                        st["land"] = np.array([xl, yl, float(terrain(xl, yl))])
+                    else:
+                        st["land"] = contact.project(hip_land + pose_land[1] @ np.array([stride_mm * duty / 2, sy * foot_out, -foot_drop]))
                 lift, land = st["lift"], st["land"]
                 foot = lift + (land - lift) * u
-                clear = max(0.0, float(terrain(foot[0], foot[1])) - foot[2] + 15.0)
-                foot = foot + np.array([0.0, 0.0, (swing_lift + clear) * math.sin(math.pi * u)])
+                if contact is None:
+                    clear = max(0.0, float(terrain(foot[0], foot[1])) - foot[2] + 15.0)
+                    foot = foot + np.array([0.0, 0.0, (swing_lift + clear) * math.sin(math.pi * u)])
+                else:
+                    clear = max(0.0, contact.penetration(foot) + clear_margin)
+                    foot = foot + contact.lift(foot) * (swing_lift + clear) * math.sin(math.pi * u)
                 in_stance = False
             rel = R.T @ (foot - hip)
             angles, ok = ik_fn(rel, sx, sy)
             unreachable += 0 if ok else 1
             if in_stance and not st["was_stance"] and torque_fn is not None and force_body_fn is not None:
-                F_body = force_body_fn(R)
+                F_body = force_body_fn(R, foot)
                 taus = torque_fn(angles, rel, F_body, sx, sy)
                 row = {"t [s]": float(t_s), "leg": leg, "x [mm]": foot[0], "y [mm]": foot[1], "ground z [mm]": foot[2],
                        "body pitch [deg]": math.degrees(th), "body roll [deg]": math.degrees(ph)}
@@ -245,3 +265,66 @@ def fk_dog(angles, L1, L2):
     k_p = np.array([-L1 * math.sin(a1), 0.0, -L1 * math.cos(a1)])
     f_p = k_p + np.array([L2 * math.sin(a2), 0.0, -L2 * math.cos(a2)])
     return Rx(roll) @ k_p, Rx(roll) @ f_p
+
+
+# ---- pipes: a body that follows a centre line, feet that land on the wall ----
+def path_pose(path_fn, s_mm, hip_x, hip_y, z_offset=0.0):
+    """A body on a planar centre line (in the xz plane): ``path_fn(s)`` -> (point, unit tangent). The body's x axis is
+    the tangent, its y axis world y; ``z_offset`` lifts the centre (world z), e.g. on a hearth before the flue."""
+    c, t = path_fn(s_mm)
+    t = np.asarray(t, float) / np.linalg.norm(t)
+    y = np.array([0.0, 1.0, 0.0]); z = np.cross(t, y)
+    R = np.column_stack([t, y, z])
+    centre = np.asarray(c, float) + np.array([0.0, 0.0, z_offset])
+    hips = {leg: centre + R @ np.array([sx * hip_x, sy * hip_y, 0.0]) for leg, (sx, sy) in LEGS.items()}
+    return centre, R, math.atan2(t[2], t[0]), 0.0, hips
+
+
+class PipeContact:
+    """The inside wall of a pipe around a centre line, with an optional floor before its mouth (s < 0).
+
+    ``radius`` is the radius of the foot pad's centre (pipe radius minus the pad radius); ``floor(x, y)`` is the
+    ground height before the mouth and ``floor_offset`` lifts the pad centre above it."""
+
+    def __init__(self, path_fn, s_range, radius, floor=None, floor_offset=0.0, n=4000):
+        self.s = np.linspace(s_range[0], s_range[1], n)
+        pts = [path_fn(x) for x in self.s]
+        self.c = np.array([q[0] for q in pts], float)
+        self.t = np.array([np.asarray(q[1], float) / np.linalg.norm(q[1]) for q in pts])
+        self.radius, self.floor, self.floor_offset = radius, floor, floor_offset
+
+    def _near(self, pt):
+        i = int(np.argmin(np.einsum("ij,ij->i", self.c - pt, self.c - pt)))
+        c, t = self.c[i], self.t[i]
+        r = pt - c; r = r - (r @ t) * t
+        return i, c, t, r
+
+    def s_of(self, pt):
+        return float(self.s[self._near(np.asarray(pt, float))[0]])
+
+    def where(self, pt):
+        return "floor" if (self.floor is not None and self.s_of(pt) < 0) else "wall"
+
+    def project(self, pt):
+        pt = np.asarray(pt, float)
+        i, c, t, r = self._near(pt)
+        if self.floor is not None and self.s[i] < 0:
+            return np.array([pt[0], pt[1], float(self.floor(pt[0], pt[1])) + self.floor_offset])
+        n = r / max(np.linalg.norm(r), 1e-9)
+        return c + n * self.radius
+
+    def lift(self, pt):
+        """Unit vector away from the surface (into the free space)."""
+        pt = np.asarray(pt, float)
+        i, c, t, r = self._near(pt)
+        if self.floor is not None and self.s[i] < 0:
+            return np.array([0.0, 0.0, 1.0])
+        return -r / max(np.linalg.norm(r), 1e-9)
+
+    def penetration(self, pt):
+        """How far the point is inside the material (positive) or clear of it (negative)."""
+        pt = np.asarray(pt, float)
+        i, c, t, r = self._near(pt)
+        if self.floor is not None and self.s[i] < 0:
+            return float(self.floor(pt[0], pt[1])) + self.floor_offset - pt[2]
+        return float(np.linalg.norm(r)) - self.radius

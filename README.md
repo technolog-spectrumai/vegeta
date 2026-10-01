@@ -92,14 +92,15 @@ missions, the trot as a sequence of leg angles with a movie, printing. Actuators
 the Myropods come from one shared catalogue, `notebooks/designs/actuators.py` (explicit entries with sources, a
 selection helper and holding power). Walking is simulated by one shared stepping machine,
 `notebooks/designs/gait.py` (terrain, body pose from the ground, foot stepping, inverse and forward kinematics and joint
-torques for dog legs and Myropod legs), written for the dog and reused for Cleopatra. The **Myropods** (`dev_sikarian`) are a family of segmented walkers from one design file —
+torques for dog legs and Myropod legs), written for the dog and reused for Cleopatra and Persephone (whose feet land on a pipe
+wall: `PipeContact`, `path_pose`). The **Myropods** (`dev_sikarian`) are a family of segmented walkers from one design file —
 four legs on every segment, so each segment stands and braces on its own: `17_myropod_persephone` is the chimney
 crawler (twelve 60 mm segments, 48 legs, a tether) in three versions — v1 the crawler (fit in flues and elbows,
 bracing on soot and the servo class it needs, climb power and the tether, leg and shell FEA, a thermal limit in a
 warm flue, the comms and power links, gait dynamics, leg fatigue), v2 transport into the chimney (coiled in a carry
 case around its tether drum, the flue-mouth insertion guide, the push-in / anchor-and-pull / emergency-retreat
-forces, case FEA), v3 two pincers on the head (grip, head moment, pincer FEA), and a kinematic simulation of the crawler entering a
-pipeline with a 90° knee, as a movie; `18_myropod_cleopatra` is the
+forces, case FEA), v3 two pincers on the head (grip, head moment, pincer FEA), and its gait from the hearth into the flue: 48 legs joint by
+joint on the pipe wall through a 90° knee, with a step table and a movie; `18_myropod_cleopatra` is the
 three-segment 12-legged walker (gaits, actuator torques, limb loss and the support polygon on three legs, leg FEA,
 endurance, and its gait on open terrain: twelve legs joint by joint, the body joints between segments, a movie); `19_myropod_apheloria` (`designs/apheloria.py`) is the modular pill millipede that rolls into a ball
 (configurations and module masses, ball geometry, rolling and a drop, the curl-up joint moment, plate and leg FEA,
