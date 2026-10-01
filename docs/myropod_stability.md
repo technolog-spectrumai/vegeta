@@ -307,3 +307,33 @@ stated tolerances, and the difference is reported.
 Matplotlib plots with trial-level 95 % intervals, failures always shown; benefits and drawbacks of damping reported
 per terrain, difficulty and controller with the "helps / hurts / no clear difference" rule of §11.6, without
 assuming that damping wins.
+
+## 13. Amendment E (2026-10-01) — implementation findings recorded before the main trials
+
+Building Cleopatra in ChironLab (§10) forced choices the protocol did not fix, and found two problems. All are
+recorded here before any main-study trial; pilot runs are labelled `pilot` and never pooled with the study.
+
+1. **Load-feedback controller (§9.1): a floor on the phase rate.** With σ = 0.6 rad/(N·s) the plain rule
+   `dφ/dt = ω − σ N cos φ` stops a leg in late stance whenever `N > ω_stance/σ` (14 N at 0.2 m/s, 7 N at 0.1 m/s);
+   segment 1's front legs carry the head (≈ 17 N), and every 0.1 m/s load-feedback trial timed out. The rule is
+   therefore `dφ/dt = max(ω − σ N cos φ, 0.25 ω)`. The floor never acts at §9.1's design point (6.7 N at 0.2 m/s,
+   σN/ω = 0.48); σ is unchanged. `min_rate = 0` restores the plain rule.
+2. **Saturated servos and the physics step.** The leg servo's damping kd was integrated implicitly even when its
+   torque was clipped, under-accelerating saturated joints by `I/(I + dt·kd)` (≈ 1/5 at 1 ms); a 0.25 ms step hid
+   it. The core is being fixed so a clipped joint gets the clipped torque with no implicit damping; the study's
+   physics step is then chosen by the §12.5 convergence check (the largest step whose outcome is identical and
+   whose metrics agree within 2 % with 0.25 ms) and recorded in the study notebook before the main runs.
+3. **The gait saturates the leg servos.** The hip-yaw return stroke cannot fit the 0.25·T swing above about
+   0.146 m/s even at the servo's no-load speed (5.76 rad/s); at 0.4–0.5 m/s (onset sweep) even the stance sweep
+   reaches it. Touchdowns arrive late and the measured duty falls below 0.75. This is a property of the robot as
+   specified, not an error: actuator saturation is reported with every result.
+4. **Start pose.** Each trial starts with all twelve feet on the ground at the gait's first-phase positions (not
+   all under the hips), at the nominal 0.163 m hip height, zero velocities, springs at their neutral angles; then
+   the 0.5 s settle. Starting from §1's pose would make the stance targets jump by up to 37.5 mm at t = 0.
+5. **Mass placement** (totals unchanged, 6.170 kg): shells spread over their wall plates by area; the head's 450 g
+   payload 40 mm ahead of its centre (cameras, LWIR) and at the centre (the rest); hip yaw + pitch servos as point
+   masses at each hip; knee servos at the knee; the 10 g pad inside the leg's CAD mass; battery and compute low in
+   segments 2 and 1. Femur and tibia do not collide (§1's contact list is pads, shells and head).
+6. **Contacts.** MuJoCo defaults (`solref` 0.02, 1; `solimp` 0.9, 0.95, 0.001) for Cleopatra; pyramidal friction
+   cones; `implicitfast` integrator. The robot dog uses `solref` 0.005 (its 17 mm pads otherwise sink into 5 mm
+   height-field cells); it is not part of this study.
