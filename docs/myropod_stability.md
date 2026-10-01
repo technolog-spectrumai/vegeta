@@ -252,3 +252,58 @@ achieved speed; synchronised traces of segment attitudes, contact forces and joi
 included; any metric computed on successful runs only says so on the plot and in the table. Runs, not frames, are
 the samples. The conclusion states, per terrain and difficulty, where flexibility helps, hurts or makes no clear
 difference (paired McNemar p < 0.05 and a paired-difference interval excluding 0, otherwise "no clear difference").
+
+## 12. Amendment D (2026-10-01) — two articulated treatments: spring-only and spring–damper
+
+Recorded before any stability trial of this study has been run. No trial of the earlier treatments (§2:
+locked / flexible / flexible+roll; §11: rigid / flexible / flexible+yaw) was ever completed — only the core's toy
+robots ran — so there are no old-treatment results to label; should any appear later, they are reported as
+**legacy (pre-Amendment D)** and never pooled with the results below. §2 and §11.2 are superseded; everything else
+stands (§3 controller, §4 terrains, §5 failure rules, §6 and §9.2 metrics, §7 and §9.3 experiments, §11.4–11.6
+outputs and checks).
+
+**12.1 Treatments.** Both use the **identical intersegment joints** between segments 1–2 and 2–3 (head welded to
+segment 1): passive rotational hinges on **pitch and yaw** (terrain and pipe bends), **roll configurable** and set
+identically in both treatments (default: roll on, ±20°); translations constrained (hinges only); no body motor,
+no prescribed bending — every deflection comes from forces and contacts. Per axis, with units: stiffness
+k [N·m/rad], neutral angle q₀ [rad; 0 by default], limits [rad; ±45° pitch and yaw, ±20° roll], and the joint torque
+
+- **spring-only**: `τ = −k (q − q₀)`, joint viscous damping c = 0;
+- **spring–damper**: `τ = −k (q − q₀) − c q̇`, c > 0 [N·m·s/rad], default c = 0.2 (pitch, yaw and roll).
+
+Defaults k = 8 N·m/rad on every axis. The two treatments differ in nothing but c.
+
+**12.2 Where energy is lost anyway** ("spring-only" is not a lossless robot). Foot contacts: friction μ = 0.8
+(feet on rock), shells and head μ = 0.5; MuJoCo soft contacts with the default `solref` (0.02, 1) and `solimp`
+(0.9, 0.95, 0.001, 0.5, 2) — the contact constraint has its own stiffness and damping, which dissipate energy at
+every touchdown and belly contact. Joint friction loss is 0 on every joint, armature 0. The leg servos dissipate
+(a PD loop with kd = 0.8 N·m·s/rad per joint and the stall limit). Integration: `implicitfast` at 1 ms — implicit
+in the velocity-dependent terms (joint damping, servo kd), which adds numerical damping that is small at 1 ms and
+is measured by the timestep-sensitivity check (§12.5). The intersegment springs themselves are conservative.
+
+**12.3 Configuration.** Treatment and per-axis parameters are Myropod design parameters
+(`body_connection` ∈ {spring, spring_damper}, `body_roll_axis` bool, `body_k_pitch/yaw/roll`, `body_c_pitch/yaw/roll`,
+`body_q0_pitch/yaw/roll`, `body_limit_pitch/yaw/roll`; units in their descriptions), read by the CAD, the Chiron
+robot and the CLI (`chiron run ... -p body_connection=spring -p body_k_pitch=8`). Masses, inertia, geometry, leg
+actuators, controller settings, initial conditions (neutral angles, springs unloaded, feet on the flat start, zero
+velocities, 0.5 s settle) and physics settings are identical; a test compares the compiled models of the two
+treatments field by field and allows only the damping to differ.
+
+**12.4 Design.** Factorial **treatment × controller** (spring-only, spring–damper) × (baseline fixed-phase,
+load-feedback σ = 0.6 — Amendment A); controller settings held fixed within every paired comparison. Paired
+terrain seeds and initial gait phases across treatments and controllers. Terrains: flat, longitudinal bumps,
+alternating bumps, cross-slope, random rough (steps kept as an extra); commanded speed and roughness swept; obstacle
+height (m, h/L) and spacing (m, spacing/P) recorded per run. Gait (duty factor, interlimb phases, phase recovery),
+body undulation and the onset-speed sweep over body-yaw stiffness (§9.3, experiment 8) are retained, now comparing
+c = 0 against c = 0.2 at each stiffness.
+
+**12.5 Checks.** Restoring torque: a static deflection under a known torque equals τ/k on every axis. Damping
+dissipation: a free decay's energy loss equals ∫ c q̇² dt and the log decrement matches c. Equivalence: the
+spring–damper model with c = 0 reproduces the spring-only trajectory bitwise. Timestep sensitivity: one
+representative run per treatment at 2, 1 and 0.5 ms; outcome, distance, CoT and deflection must agree within
+stated tolerances, and the difference is reported.
+
+**12.6 Reporting.** Raw time series and per-run summaries as CSV with the configuration and seeds; comparative
+Matplotlib plots with trial-level 95 % intervals, failures always shown; benefits and drawbacks of damping reported
+per terrain, difficulty and controller with the "helps / hurts / no clear difference" rule of §11.6, without
+assuming that damping wins.
