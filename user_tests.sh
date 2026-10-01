@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Run the Chiron / Cleopatra / Persephone checks and benchmarks and print a compact report to paste back.
+#
+# Usage: ./user_tests.sh [SECTION ...] [--python EXE] [-j N]
+#   env               versions, git commit, imports                                         (seconds)
+#   unit              chiron + cli + chronos test suites, notebooks/designs tests          (~2-3 min)
+#   physics           body-joint physics checks with their numbers: restoring torque,
+#                     damping dissipation, c = 0 equivalence, model equivalence           (~1 min)
+#   cleopatra-smoke   benchmark/cleopatra/full_benchmark.py --scale smoke                  (~5-10 min)
+#   persephone-smoke  benchmark/persephone/full_benchmark.py --scale smoke                 (minutes; first run of Persephone)
+#   cleopatra-pilot   ... --scale pilot (a few seeds of every experiment)                  (~1 h on 4 cores)
+#   cleopatra         the FULL Cleopatra benchmark (6440 runs; several hours; resumable)
+#   persephone        the FULL Persephone benchmark (1140 runs; long; resumable)
+#   all (default)     env unit physics cleopatra-smoke persephone-smoke
+# Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
+# Everything is printed and also saved to user_tests_<date>.log.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+PY=""
+JOBS="$(nproc 2>/dev/null || echo 4)"
+SECTIONS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --python) PY="$2"; shift 2 ;;
+    -j) JOBS="$2"; shift 2 ;;
+    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    *) SECTIONS+=("$1"); shift ;;
+  esac
+done
+[ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(env unit physics cleopatra-smoke persephone-smoke)
+if [ -z "$PY" ]; then
+  if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
+fi
+LOG="$ROOT/user_tests_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$LOG") 2>&1
+export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning"
+status=0
+
+hdr() { printf '\n==================== %s ====================\n' "$1"; }
+ok() { printf '  ok      %s\n' "$1"; }
+bad() { printf '  FAILED  %s\n' "$1"; status=1; }
+timed() { local t0=$SECONDS; "$@"; local rc=$?; printf '  (%s s)\n' $((SECONDS - t0)); return $rc; }
+
+sec_env() {
+  hdr "env"
+  echo "  python   $PY ($("$PY" -c 'import platform; print(platform.python_version())'))"
+  echo "  git      $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null) on $(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo ' (uncommitted changes)')"
+  echo "  cpus     $JOBS"
+  "$PY" - <<'EOF'
+import importlib
+for m in ("mujoco", "numpy", "scipy", "pandas", "matplotlib", "tqdm", "pyvista", "vegeta.chiron", "vegeta.dedalus"):
+    try:
+        mod = importlib.import_module(m)
+        print(f"  ok      {m:<15} {getattr(mod, '__version__', '')}")
+    except Exception as e:
+        print(f"  MISSING {m:<15} {type(e).__name__}: {e}")
+EOF
+}
+
+pytest_summary() {  # pytest_summary <dir> <args...>
+  local dir="$1"; shift
+  local out
+  out="$(cd "$dir" && "$PY" -m pytest -q -p no:cacheprovider "$@" 2>&1)"; local rc=$?
+  echo "$out" | grep -E "^(FAILED|ERROR)" | head -20 | sed 's/^/    /'
+  echo "  $(echo "$out" | tail -1)"
+  return $rc
+}
+
+sec_unit() {
+  hdr "unit tests"
+  echo "  vegeta-cli: chiron, cli, chronos"
+  timed pytest_summary "$ROOT/vegeta-cli" tests/chiron tests/cli tests/chronos || status=1
+  echo "  notebooks/designs (Cleopatra and the robot dog in ChironLab, plot helpers)"
+  timed pytest_summary "$ROOT/notebooks/designs" tests || status=1
+}
+
+sec_physics() {
+  hdr "body-joint physics checks (numbers)"
+  local out
+  out="$(cd "$ROOT/notebooks/designs" && "$PY" -m pytest -q -s -p no:cacheprovider tests/test_body_joint_physics.py 2>&1)"; local rc=$?
+  echo "$out" | grep -vE "^\s*$|^\.+$|passed|warnings summary|^  /|DeprecationWarning" | head -60 | sed 's/^/  /'
+  echo "  $(echo "$out" | tail -1)"
+  [ $rc -eq 0 ] || status=1
+}
+
+bench() {  # bench <robot> <scale>
+  local robot="$1" scale="$2"
+  hdr "$robot benchmark, scale $scale ($JOBS processes)"
+  local t0=$SECONDS
+  "$PY" "$ROOT/benchmark/$robot/full_benchmark.py" --scale "$scale" -j "$JOBS" 2>&1 | tr '\r' '\n' | grep -vE "chiron trials:.*[0-9]+%\|.*\]$|^\s*$" | tail -15 | sed 's/^/  /'
+  local rc=${PIPESTATUS[0]}
+  printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"
+  local rep="$ROOT/benchmark/$robot/results/$scale/report.md"
+  if [ -f "$rep" ]; then
+    echo "  --- report.md (outcome tables and plot status) ---"
+    grep -vE "^- !\[" "$rep" | head -120 | sed 's/^/  /'
+    echo "  plots: $(ls "$ROOT/benchmark/$robot/results/$scale/plots/"*.png 2>/dev/null | wc -l) PNG in benchmark/$robot/results/$scale/plots/"
+  else
+    bad "no report.md"
+  fi
+  [ "$rc" -eq 0 ] || status=1
+}
+
+for s in "${SECTIONS[@]}"; do
+  case "$s" in
+    env) sec_env ;;
+    unit) sec_unit ;;
+    physics) sec_physics ;;
+    cleopatra-smoke) bench cleopatra smoke ;;
+    persephone-smoke) bench persephone smoke ;;
+    cleopatra-pilot) bench cleopatra pilot ;;
+    persephone-pilot) bench persephone pilot ;;
+    cleopatra) bench cleopatra full ;;
+    persephone) bench persephone full ;;
+    all) sec_env; sec_unit; sec_physics; bench cleopatra smoke; bench persephone smoke ;;
+    *) echo "unknown section: $s (see --help)"; status=2 ;;
+  esac
+done
+hdr "done (exit $status) — log: $LOG"
+exit $status

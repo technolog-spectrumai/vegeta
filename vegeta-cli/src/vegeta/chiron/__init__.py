@@ -36,7 +36,7 @@ __all__ = [
     "torque_limit",
 ]
 
-_SUBMODULES = ("metrics", "stats", "experiments", "viz", "cli")
+_SUBMODULES = ("metrics", "stats", "experiments", "export", "viz", "cli")
 
 
 def __getattr__(name):

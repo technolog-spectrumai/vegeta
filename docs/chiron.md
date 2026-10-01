@@ -64,8 +64,11 @@ ep.outcome, ep.log["com"], ep.save("trial.npz"), ep.to_result()
   COM, COM velocity, angular momentum, per-foot contact force (ON the foot), normal (ground → foot), contact
   point and Jacobian, belly contacts. Kinematic and contact fields are one physics step old (a sensor);
   `observe(sync=True)` makes them simultaneous.
-- **Servos** run at every physics step (a MuJoCo `general` actuator carries −kd·q̇ so the default
-  `implicitfast` integrator treats it implicitly; the applied torque equals the clipped servo law exactly).
+- **Servos** run at every physics step. An unclipped joint's −kd·q̇ is an implicit actuator bias (so
+  `implicitfast` integrates the damping implicitly); a joint whose torque is clipped gets the clipped torque with
+  the implicit derivative of the servo law it is actually on (the torque–speed line's slope, or none beyond the
+  no-load speed) — before this fix a saturated joint was under-accelerated by I/(I + h·kd). The applied torque
+  always equals the clipped servo law exactly.
 - **Disturbances**: `lab.add_disturbance(Disturbance(body, t_start, duration, impulse=J or force=F,
   direction))` delivers the exact impulse on the body's COM; `lab.apply_impulse(...)` from a controller.
 - **FailureRules**(course_m, max_tilt_deg 60, min_height_fraction 0.4, low_height_time 0.5, stall_window 3,
@@ -263,4 +266,4 @@ within 0.25 % (0.998–1.000 c).
 - Height-field resolution (5 mm) and the time step are numerical choices: check convergence for your robot
   (Cleopatra needs 0.25 ms; see `designs/myropod_robot.py`).
 
-Notebooks: `20_chiron_lab` (the tool, on the robot dog and Cleopatra) and `21_cleopatra_stability` (the study).
+Benchmarks: `benchmark/cleopatra/full_benchmark.py` and `benchmark/persephone/full_benchmark.py` (the study of docs/myropod_stability.md; see benchmark/README.md); `./user_tests.sh` runs the checks and the smoke benchmarks.

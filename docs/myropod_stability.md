@@ -337,3 +337,31 @@ recorded here before any main-study trial; pilot runs are labelled `pilot` and n
 6. **Contacts.** MuJoCo defaults (`solref` 0.02, 1; `solimp` 0.9, 0.95, 0.001) for Cleopatra; pyramidal friction
    cones; `implicitfast` integrator. The robot dog uses `solref` 0.005 (its 17 mm pads otherwise sink into 5 mm
    height-field cells); it is not part of this study.
+
+## 14. Amendment F (2026-10-01) — closing the build: timestep, benchmarks, status
+
+Recorded before any study trial (the benchmarks are run by the study owner, not during the build).
+
+1. **Physics step: 0.25 ms** (§12.5, §13.2). With the saturated-servo fix, Cleopatra (spring_damper, fixed
+   controller, 0.2 m/s, flat, 3 seeds) gave different outcomes at 1 ms and 0.5 ms (one off-course run each) and
+   speeds up to 16 % off; 0.125 ms agreed with 0.25 ms within 2 % on speed and 0.1 % on distance. The fix itself:
+   a clipped servo gets the clipped torque with the implicit derivative of the law it is on — the torque–speed
+   line's slope while on the line, none beyond the no-load speed — "no implicit damping the servo law does not
+   have" (a literal zero derivative on every clipped joint made the light knees unstable).
+2. **Known limitation**: §1's symmetric torque–speed bound gives no torque beyond the no-load speed, also when
+   braking; about a third of knee samples run at or above it at 0.2 m/s. A real DC servo brakes there. Not changed
+   (it would change §1); reported with the results.
+3. **Where the study lives**: `benchmark/cleopatra/full_benchmark.py` (trial lists in `benchmark/cleopatra/
+   experiments.py`, plots from `notebooks/designs/stability_plots.py` and `benchmark/_common.py`) replaces the
+   notebooks 20/21 named in §10; outputs `results.json`, CSV (runs, configurations, raw time series), plots and
+   `report.md`. `./user_tests.sh` runs the tests, the physics checks and the smoke benchmarks.
+4. **Course of the push experiment**: 2.0 m (not 1.5 m), so the 5 s recovery window after a push at 3.0 s ends
+   before the finish at 0.2 m/s.
+5. **Persephone** (`benchmark/persephone/`): built at the close from Cleopatra's blocks with notebook 17's geometry
+   and 10.96 kg budget (worm servos as PD servos with an estimated reflected gear inertia of 5e-4 kg·m²; their
+   self-locking not modelled), hearth scenarios only — no flue (Chiron has no pipe geometry). It has not been run;
+   its results are exploratory until its smoke scale shows it walks.
+6. **Runs during the build** (not data, never pooled): the agents' flat-ground development runs and one 20-run
+   smoke of `main` (one seed per cell) used to check the pipeline end to end; its output was deleted.
+7. **Not run in this round**: §7.6 equal tuning; the review of the Amendment D code by independent reviewers was
+   stopped before it ran.
