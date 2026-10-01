@@ -73,3 +73,12 @@ and trim are missing. A free-surface scenario (interFoam, VOF) is a later step.
 
 Later: read the design from a JSON exported by the notebooks instead of the presets; a free-surface boat
 (interFoam); resolved rotating propellers instead of disks (`todo.md` 4.12).
+
+## Apheloria packs and unpacks (MuJoCo)
+
+`xvfb-run -a python3 scenarios/apheloria_pack.py` (or `./user_tests.sh apheloria-movies`) simulates Apheloria
+(`notebooks/designs/apheloria_robot.py`: head + 8 segments, 33.1 kg, 96 leg servos, 8 active body pitch joints of
+60 N·m stall) in MuJoCo through Chiron and writes `scenarios/output/apheloria_pack.mp4` (stand → tuck the legs →
+curl into the ball, neck first) and `apheloria_unpack.mp4` (from the ball → open tail first → stand), plus
+`apheloria_pack_unpack.json` with the body joints' final angles, peak torques and saturation. A scripted controller
+sets only servo targets; whether the ball closes is decided by gravity, contacts and the actuators' limits.

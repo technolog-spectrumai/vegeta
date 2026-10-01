@@ -11,6 +11,7 @@
 #   cleopatra-pilot   ... --scale pilot (a few seeds of every experiment)                  (~1 h on 4 cores)
 #   cleopatra         the FULL Cleopatra benchmark (6440 runs; several hours; resumable)
 #   persephone        the FULL Persephone benchmark (1140 runs; long; resumable)
+#   apheloria-movies  scenarios/apheloria_pack.py: Apheloria packs into its ball and unpacks (2 movies)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -24,7 +25,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
     -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -114,6 +115,11 @@ for s in "${SECTIONS[@]}"; do
     cleopatra) bench cleopatra full ;;
     persephone) bench persephone full ;;
     all) sec_env; sec_unit; sec_physics; bench cleopatra smoke; bench persephone smoke ;;
+    apheloria-movies)
+      hdr "Apheloria pack / unpack (MuJoCo, 2 movies)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/apheloria_pack.py" 2>&1 | grep -v "^\s*$" | tail -40 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done
