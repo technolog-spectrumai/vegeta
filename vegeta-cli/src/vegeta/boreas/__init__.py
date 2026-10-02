@@ -11,9 +11,9 @@ from .noise import AIR, SEA_WATER, Medium, a_weighting, add_levels, broadband_le
 from .propeller import Propeller, inches
 from .result import CommandRecord, Result, ResultError
 from .system import Propulsion, SystemPoint, excitations, unbalance_force
-from . import wake
+from . import ducted, fan_noise, wake
 
 __version__ = "0.1.0"
 __all__ = ["AIR", "Airfoil", "a_weighting", "add_levels", "Battery", "CommandRecord", "Medium", "Motor", "SEA_WATER", "broadband_level", "cavitation", "gutin_harmonics", "spl", "OperatingPoint", "Propeller", "Propulsion", "Result",
            "ResultError", "SystemPoint", "excitations", "export", "inches", "load", "performance_map",
-           "rpm_for_thrust", "solve", "unbalance_force", "vortex_noise", "wake"]
+           "rpm_for_thrust", "solve", "unbalance_force", "vortex_noise", "wake", "ducted", "fan_noise"]
