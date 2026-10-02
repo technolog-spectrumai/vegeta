@@ -14,7 +14,9 @@ spans ``x = ±hub_height/2``; the pod starts ``gap`` behind it (tractor) or ends
 
 Beside the CAD (``PropPod``): ``outline`` (the pod and pylon as polygons for the particle movies), ``pylon_wake``
 (the wake the blades cross, as a Boreas ``WakeField``: Silverstein's airfoil wake for the pusher, a Rankine
-leading-edge blockage for the tractor) and ``synthesize`` / ``write_wav`` (a propeller's tones and broadband as a
+leading-edge blockage for the tractor), ``installation_wake`` (that plus the pod's own mean share: its boundary-layer
+wake behind, its nose blockage ahead), ``installation_drag`` (the extra pod and pylon drag the running propeller causes:
+the thrust deduction), ``pod_friction`` and ``synthesize`` / ``write_wav`` (a propeller's tones and broadband as a
 sound you can listen to, all files at one common scale so louder sounds louder).
 """
 import math
@@ -147,6 +149,109 @@ def pylon_wake(p, radius_mm: float, *, cd: float = 0.012, r_frac=(0.12, 0.2, 0.3
     src = (f"pylon wake (Silverstein, cd {cd}, {gap:.0f} mm behind the trailing edge)" if p["layout"] == "pusher"
            else f"pylon leading-edge blockage (Rankine, {gap:.0f} mm ahead)")
     return WakeField(r, phi, w, src)
+
+
+def _defaults(p):
+    return dict({q.name: q.default for q in PropPod.parameters}, **p)
+
+
+def pod_friction(p, speed: float, nu: float = 1.5e-5):
+    """The pod's friction drag area ``Cd A`` [m^2] in a free stream (turbulent flat plate, Prandtl–Schlichting
+    ``Cf = 0.455 / (log10 Re_L)^2.58``, times Hoerner's body-of-revolution form factor ``1 + 1.5 (d/L)^1.5 + 7 (d/L)^3``),
+    its wetted area per profile segment [m^2] (for ``installation_drag``) and the boundary-layer thickness at the tail [m]
+    (``0.37 L Re_L^-0.2``)."""
+    p = _defaults(p)
+    prof = np.array(PropPod.pod_profile(p)) / 1000.0
+    x, r = prof[:, 0], prof[:, 1]
+    seg = np.pi * (r[1:] + r[:-1]) * np.hypot(np.diff(x), np.diff(r))          # frustum side areas
+    L, d = p["pod_length"] / 1000.0, p["pod_diameter"] / 1000.0
+    re = speed * L / nu
+    cf = 0.455 / math.log10(re) ** 2.58
+    ff = 1 + 1.5 * (d / L) ** 1.5 + 7 * (d / L) ** 3
+    return {"cd_area_m2": cf * ff * float(seg.sum()), "cf": cf, "form_factor": ff, "segment_area_m2": seg,
+            "segment_x_m": 0.5 * (x[1:] + x[:-1]), "delta_tail_m": 0.37 * L * re ** -0.2}
+
+
+def installation_wake(p, radius_mm: float, speed: float, *, cd: float = 0.012, nu: float = 1.5e-5,
+                      r_frac=(0.06, 0.09, 0.12, 0.16, 0.2, 0.28, 0.35, 0.5, 0.7, 0.85, 1.0), n_phi: int = 720):
+    """``pylon_wake`` plus the pod's own axisymmetric share (it changes the mean inflow, not the harmonics):
+
+    - pusher: the pod's boundary-layer wake at the disc, a Gaussian ``w0 exp(-(r/b)^2)`` of width ``b = r_end + delta_tail``
+      (the motor end's radius plus the tail's boundary-layer thickness), its depth ``w0`` from the pod's friction drag
+      by momentum, ``Cd A / 2 = pi b^2 w0 (1 - w0/2)``;
+    - tractor: the pod's nose blockage, the 3-D Rankine half-body of the pod's radius ``a`` (a source of strength
+      ``V pi a^2`` a/2 behind the nose): ``w = (a^2 / 4) x_s / (x_s^2 + r^2)^1.5`` on the disc, ``x_s`` the source's distance.
+
+    ``speed`` sets the Reynolds number of the pod's friction (pusher). A model of the mean inflow for
+    ``boreas.wake.effective_inflow``."""
+    from vegeta.boreas.wake import WakeField
+
+    p = _defaults(p)
+    base = pylon_wake(p, radius_mm, cd=cd, r_frac=r_frac, n_phi=n_phi)
+    r_m = np.asarray(r_frac, float) * radius_mm / 1000.0
+    if p["layout"] == "pusher":
+        f = pod_friction(p, speed, nu)
+        b = p["motor_end_diameter"] / 2000.0 + f["delta_tail_m"]
+        k = f["cd_area_m2"] / (2 * math.pi * b ** 2)                    # w0 (1 - w0 / 2) = k
+        w0 = 1 - math.sqrt(max(1 - 2 * k, 0.0))
+        pod = w0 * np.exp(-(r_m / b) ** 2)
+        src = f"; pod boundary-layer wake w0 {w0:.3f}, b {b * 1000:.0f} mm"
+    else:
+        a = p["pod_diameter"] / 2000.0
+        x_s = (p["hub_height"] / 2 + p["gap"]) / 1000.0 + a / 2
+        pod = (a ** 2 / 4) * x_s / (x_s ** 2 + r_m ** 2) ** 1.5
+        src = f"; pod nose blockage (Rankine, a {a * 1000:.0f} mm)"
+    return WakeField(base.r_frac, base.phi_deg, base.w + pod[:, None], base.source + src)
+
+
+def installation_drag(p, radius_mm: float, speed: float, thrust: float, *, rho: float = 1.225, nu: float = 1.5e-5,
+                      cd_pylon: float = 0.012) -> dict:
+    """The extra drag [N] the running propeller puts on the pod and the pylon (thrust deduction ``t = dD / T``), from
+    the actuator disc's flow (momentum theory, on the axis: induced axial velocity ``u(x) = v_i (1 + x / sqrt(x^2 + R^2))``,
+    ``x`` from the disc, ``T = 2 rho A (V + v_i) v_i``):
+
+    - pressure on the pod: ahead of the disc the static pressure falls (``-rho (V u + u^2/2)``: a pusher's tail cone is sucked
+      back), behind it the disc's jump ``T/A`` recovers along the slipstream (a tractor's nose is pushed back); integrated
+      over the pod's profile as annuli (projected areas), at the axis value — the pod is thin against the disc;
+    - friction: every pod segment's friction drag scaled by the local ``((V + u)/V)^2``; the pylon's share inside the
+      stream tube likewise (``cd_pylon`` on chord x span);
+
+    The swirl and the blade-passing unsteadiness are left out (CFD has them, the swirl in the steady mean). Returns the parts
+    and the total; at zero thrust everything is zero."""
+    p = _defaults(p)
+    R = radius_mm / 1000.0
+    A = math.pi * R ** 2
+    V = speed
+    if thrust <= 0:
+        return {"v_i": 0.0, "pressure_N": 0.0, "pod_friction_N": 0.0, "pylon_N": 0.0, "total_N": 0.0, "t": 0.0}
+    v_i = 0.5 * (-V + math.sqrt(V ** 2 + 2 * thrust / (rho * A)))       # T = 2 rho A (V + v_i) v_i
+
+    def u(x):
+        return v_i * (1 + x / np.sqrt(x ** 2 + R ** 2))
+
+    def dp(x):
+        x = np.asarray(x, float)
+        return np.where(x < 0, 0.0, thrust / A) - rho * (V * u(x) + 0.5 * u(x) ** 2)
+
+    prof = np.array(PropPod.pod_profile(p)) / 1000.0
+    x, r = prof[:, 0], prof[:, 1]
+    xm = 0.5 * (x[1:] + x[:-1])
+    annulus = np.pi * (r[:-1] ** 2 - r[1:] ** 2)                         # > 0 where the surface faces downstream (n_x > 0)
+    pressure = float(np.sum(-dp(xm) * annulus))                          # x force of -dp n dA, drag positive
+    f = pod_friction(p, V, nu) if V > 0 else None
+    if f is not None:
+        q = 0.5 * rho * V ** 2
+        seg_d = q * f["cf"] * f["form_factor"] * f["segment_area_m2"]
+        friction = float(np.sum(seg_d * (((V + u(f["segment_x_m"])) / V) ** 2 - 1)))
+        le, te = (v / 1000.0 for v in PropPod.pylon_x(p))
+        xp = 0.5 * (le + te)
+        r_tube = R * math.sqrt((V + v_i) / (V + float(u(xp))))           # stream-tube radius at the pylon (continuity)
+        span = max(0.0, min(r_tube, p["pylon_height"] / 1000.0) - p["pod_diameter"] / 2000.0)
+        pylon = float(q * cd_pylon * (p["pylon_chord"] / 1000.0) * span * (((V + float(u(xp))) / V) ** 2 - 1))
+    else:
+        friction = pylon = 0.0
+    total = pressure + friction + pylon
+    return {"v_i": v_i, "pressure_N": pressure, "pod_friction_N": friction, "pylon_N": pylon, "total_N": total, "t": total / thrust}
 
 
 def synthesize(tones, broadband_db: float, *, seconds: float = 3.0, rate: int = 44100, band=(400.0, 6000.0), seed: int = 0,

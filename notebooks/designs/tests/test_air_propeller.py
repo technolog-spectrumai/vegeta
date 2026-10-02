@@ -51,3 +51,40 @@ def test_synthesized_sound_has_the_requested_levels(tmp_path):
     f = ap.write_wav(tmp_path / "a.wav", x, full_scale_pa=1.0)
     with wave.open(str(f)) as w:
         assert w.getframerate() == 44100 and w.getnframes() == len(x) and w.getsampwidth() == 2
+
+
+POD = dict(pod_diameter=46.0, pod_length=240.0, pylon_chord=90.0, pylon_thickness=0.12, pylon_height=230.0, pylon_gap=64.0)
+
+
+def test_pod_friction_is_a_flat_plate_with_a_form_factor():
+    f = ap.pod_friction(dict(POD, layout="pusher"), 20.0)
+    re = 20.0 * 0.24 / 1.5e-5
+    assert f["cf"] == pytest.approx(0.455 / math.log10(re) ** 2.58)
+    assert f["form_factor"] == pytest.approx(1 + 1.5 * (46 / 240) ** 1.5 + 7 * (46 / 240) ** 3)
+    assert 0.02 < f["segment_area_m2"].sum() < math.pi * 0.046 * 0.24       # less than the circumscribed cylinder
+    assert f["cd_area_m2"] == pytest.approx(f["cf"] * f["form_factor"] * f["segment_area_m2"].sum())
+
+
+def test_installation_wake_adds_the_pod_to_the_mean_not_the_harmonics():
+    for lay in ap.LAYOUTS:
+        p = dict(POD, layout=lay)
+        full, pylon = ap.installation_wake(p, 127.0, 20.0), ap.pylon_wake(p, 127.0, r_frac=(0.06, 0.09, 0.12, 0.16, 0.2, 0.28, 0.35, 0.5, 0.7, 0.85, 1.0))
+        assert np.allclose(full.harmonics(0.7, 12), pylon.harmonics(0.7, 12), atol=1e-12)
+        assert full.mean(0.09) > pylon.mean(0.09) and full.mean(0.09) > full.mean(0.7)
+    a, xs = 0.023, 0.005 + 0.003 + 0.0115                                    # tractor: the Rankine nose on the axis
+    t = ap.installation_wake(dict(POD, layout="tractor"), 127.0, 20.0, r_frac=(0.0, 0.5, 1.0))
+    assert t(0.0, 90.0) == pytest.approx(a ** 2 / (4 * xs ** 2), rel=1e-9)
+
+
+def test_installation_drag_signs_and_limits():
+    for lay in ap.LAYOUTS:
+        p = dict(POD, layout=lay)
+        zero = ap.installation_drag(p, 127.0, 20.0, 0.0)
+        assert zero["total_N"] == 0.0 and zero["t"] == 0.0
+        d = ap.installation_drag(p, 127.0, 20.0, 5.0)
+        assert d["v_i"] * (20.0 + d["v_i"]) * 2 * 1.225 * math.pi * 0.127 ** 2 == pytest.approx(5.0)
+        assert d["pressure_N"] > 0 and d["pod_friction_N"] > 0 and d["pylon_N"] >= 0
+        assert 0.0 < d["t"] < 0.05                                           # a thin pod in a large disc
+        assert ap.installation_drag(p, 127.0, 20.0, 10.0)["total_N"] > d["total_N"]
+    far = ap.installation_drag(dict(POD, layout="pusher", gap=3000.0), 127.0, 20.0, 5.0)
+    assert far["pressure_N"] < 0.01 * ap.installation_drag(dict(POD, layout="pusher"), 127.0, 20.0, 5.0)["pressure_N"]
