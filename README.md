@@ -144,8 +144,13 @@ in the thin air at the site, Talos FEA of the arm, the capsule and the body shel
 case — the bridle goes to the arm frame next), modes against the rotor lines, the mission in a reduced 6-DOF flight model
 with wind and gusts (set-down precision, station-keeping at the wall with GNSS vs a wall-relative sensor, energy reserve),
 Chronos spectra and arm fatigue, printing, a rendered movie of the flight; `scenarios/velutina_mission.py` (or
-`./user_tests.sh velutina`) re-runs the mission. To do: the parachute in CFD, propeller guards, four rotor disks in the
-whole-aircraft CFD; Velutina v2 (wind-turbine blade inspection) in the next commit.
+`./user_tests.sh velutina`) re-runs the mission. **Velutina v2** (`designs/velutina_inspection.py`, notebook §11–12) is
+the same airframe with a camera nose inspecting the blades of a parked onshore wind turbine (a half-real 2 MW machine):
+wind shear and the tower's wind shadow, a camera model that sets the scan speed (motion blur, frame overlap) and the dwell
+time at a suspect point (sharp frames inside a tolerance, from the simulated station keeping in the tower's wake), four
+passes per blade along the leading edge, both sides and the trailing edge, the flight, the energy and the number of
+battery charges, and a movie (`scenarios/velutina_mission.py --mode turbine`). To do: the parachute in CFD, propeller
+guards, four rotor disks in the whole-aircraft CFD, the camera nose as a CAD part and a blade-relative sensor.
 
 **Air propellers** (branch `dev_crazy_prop`): `25_air_propeller` (`designs/air_propeller.py`) is a 10 × 6 inch propeller on
 the motor pod and pylon of a 3 kg fixed-wing drone, **tractor first, then pusher**, each with **two and three blades**:

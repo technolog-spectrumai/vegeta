@@ -32,7 +32,12 @@ valley: depot, rescue site, the rock face's direction), `Aircraft` (masses, drag
 limit, navigation error and loop response), `Wind` (steady with altitude shear plus a gust process), `Plan` (set-down or
 hand-over, clearances, holds), `simulate` → `Episode` (phase table, events, energy, station-keeping error),
 `touchdown_statistics`, `parachute_descent` (analytic), `render_movie` (matplotlib 3D frames → MP4 with the watermark),
-`profile_figure`. `scenarios/velutina_mission.py` re-runs the mission from the notebook's recorded design.
+`profile_figure`. `scenarios/velutina_mission.py` re-runs the mission from the notebook's recorded design. `velutina_inspection.py` (`import velutina_inspection as vi`) is Velutina v2: `Turbine` (a half-real parked
+onshore turbine: tower, nacelle, three blades with a chord distribution, parked azimuths, `blade_point`, `blade_frame`),
+`SiteWind` (shear and the tower's wind shadow on top of `Wind`), `Camera` (pixel size on the blade, largest standoff,
+scan speed from blur and overlap, dwell time from a station-keeping error series), `InspectionPlan` and `inspection_path`
+(four passes per blade with suspect points), `follow_path` → `InspectionEpisode` (the same point-mass model following
+waypoints with dwells; table, track error), `station_keeping_at_blade`, `flights_needed`, `render_movie`, `wind_figure`.
 
 `air_propeller.py` (`PropPod`, notebook 25, branch `dev_crazy_prop`) is a propeller's motor pod with its pylon in the CFD frame of
 Aeromant's rotor templates (axis +x through the origin, the pylon up along +y), placed for `layout` = `tractor` (pod behind the
