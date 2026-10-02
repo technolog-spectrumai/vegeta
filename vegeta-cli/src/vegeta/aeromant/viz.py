@@ -38,7 +38,8 @@ def _vec(text: str) -> np.ndarray:
 
 
 def plot_setup(case, plotter=None):
-    """Problem statement: domain box, near/wake refinement boxes, the body, inflow direction and values."""
+    """Problem statement: domain box, refinement boxes, the body, the flow's direction and values (a free stream's
+    inlet arrows, a rotor's axis, or a suction hood's duct outflow)."""
     pv = _pv()
     info = case_info(case)
     d, p = info["derived"], info["config"]["parameters"]
@@ -46,28 +47,53 @@ def plot_setup(case, plotter=None):
     stl = next((cdir / sub / "body.stl" for sub in ("constant/triSurface", "constant/geometry")
                 if (cdir / sub / "body.stl").is_file()), None)
     pl = plotter or pv.Plotter()
-    lo = np.array([float(d["XMIN"]), float(d["YMIN"]), float(d["ZMIN"])])
-    hi = np.array([float(d["XMAX"]), float(d["YMAX"]), float(d["ZMAX"])])
+    suction = "SUCTION_W" in d                                      # the suction_hood template's block grid
+    if suction:
+        lo = np.array([float(d["X0"]), float(d["Y0"]), 0.0])
+        hi = np.array([float(d["X3"]), float(d["Y3"]), float(d["ZTOP"])])
+        cells = f"{int(d['NX0']) + int(d['NX1']) + int(d['NX2'])}x{int(d['NY0']) + int(d['NY1']) + int(d['NY2'])}x{d['NZ']}"
+        boxes = (("NEAR", "#2ca02c"), ("GAP", "#ff7f0e"))
+    else:
+        lo = np.array([float(d["XMIN"]), float(d["YMIN"]), float(d["ZMIN"])])
+        hi = np.array([float(d["XMAX"]), float(d["YMAX"]), float(d["ZMAX"])])
+        cells = f"{d['NX']}x{d['NY']}x{d['NZ']}"
+        boxes = (("NEAR", "#2ca02c"), ("WAKE", "#ff7f0e"))
     pl.add_mesh(pv.Box(bounds=(lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])), style="wireframe", color="#555555",
                 line_width=1.5, label="domain")
-    for name, colour in (("NEAR", "#2ca02c"), ("WAKE", "#ff7f0e")):
+    for name, colour in boxes:
+        if f"{name}_MIN" not in d:
+            continue
         a, b = _vec(d[f"{name}_MIN"]), _vec(d[f"{name}_MAX"])
         pl.add_mesh(pv.Box(bounds=(a[0], b[0], a[1], b[1], a[2], b[2])), style="wireframe", color=colour,
                     line_width=1.0, label=f"{name.lower()} refinement (level {d[name + '_LEVEL']})")
     if stl is not None:
         pl.add_mesh(pv.read(str(stl)), color="#9fb8d0", smooth_shading=True, label="body")
     span = float((hi - lo).max())
-    u = float(p["velocity"])
-    for y in np.linspace(lo[1] + 0.2 * (hi[1] - lo[1]), hi[1] - 0.2 * (hi[1] - lo[1]), 3):
-        for z in np.linspace(lo[2] + 0.2 * (hi[2] - lo[2]), hi[2] - 0.2 * (hi[2] - lo[2]), 3):
-            pl.add_mesh(pv.Arrow(start=(lo[0], y, z), direction=(1, 0, 0), scale=0.08 * span), color="#1f77b4")
-    pl.add_point_labels([[lo[0], hi[1], hi[2]]], [f"inlet U = {u:g} m/s"], font_size=12, shape=None,
-                        text_color="#1f77b4")
-    pl.add_text(
-        f"{info['config']['template']} ({info['config'].get('openfoam_flavor', '')})\n"
-        f"Re = {u * p['reference_length'] / p['kinematic_viscosity']:.3g}, nu = {p['kinematic_viscosity']:g} m2/s, "
-        f"rho = {p['density']:g} kg/m3\nA_ref = {p['reference_area']:.4g} m2, L_ref = {p['reference_length']:g} m, "
-        f"background cells {d['NX']}x{d['NY']}x{d['NZ']}", font_size=10)
+    if suction:
+        w = float(d["SUCTION_W"])
+        x1, x2, y1, y2 = float(d["X1"]), float(d["X2"]), float(d["Y1"]), float(d["Y2"])
+        pl.add_mesh(pv.Box(bounds=(x1, x2, y1, y2, hi[2] - 0.002, hi[2] + 0.002)), color="#d62728", label="suction patch")
+        pl.add_mesh(pv.Arrow(start=((x1 + x2) / 2, (y1 + y2) / 2, hi[2]), direction=(0, 0, 1), scale=0.08 * span), color="#1f77b4")
+        pl.add_point_labels([[(x1 + x2) / 2, (y1 + y2) / 2, hi[2] + 0.1 * span]], [f"duct U = {w:.3g} m/s ({p['flow_rate']:g} m3/s)"],
+                            font_size=12, shape=None, text_color="#1f77b4")
+        if float(d["GROUND_U"]) != 0.0:
+            pl.add_point_labels([[lo[0], lo[1], 0.0]], [f"road U = {float(d['GROUND_U']):g} m/s"], font_size=12, shape=None, text_color="#555555")
+        head = (f"{info['config']['template']} ({info['config'].get('openfoam_flavor', '')})\n"
+                f"Re = {w * p['reference_length'] / p['kinematic_viscosity']:.3g} (duct speed, hood width), nu = {p['kinematic_viscosity']:g} m2/s, "
+                f"rho = {p['density']:g} kg/m3\nfloor {p['floor_height']:g} m over the road, L_ref = {p['reference_length']:g} m, background cells {cells}")
+    else:
+        u = float(p["velocity"]) if "velocity" in p else float(d.get("AIRSPEED", 0.0))
+        for y in np.linspace(lo[1] + 0.2 * (hi[1] - lo[1]), hi[1] - 0.2 * (hi[1] - lo[1]), 3):
+            for z in np.linspace(lo[2] + 0.2 * (hi[2] - lo[2]), hi[2] - 0.2 * (hi[2] - lo[2]), 3):
+                pl.add_mesh(pv.Arrow(start=(lo[0], y, z), direction=(1, 0, 0), scale=0.08 * span), color="#1f77b4")
+        pl.add_point_labels([[lo[0], hi[1], hi[2]]], [f"inlet U = {u:g} m/s"], font_size=12, shape=None,
+                            text_color="#1f77b4")
+        L = p.get("reference_length") or p.get("diameter")
+        a_ref = f"A_ref = {p['reference_area']:.4g} m2, " if "reference_area" in p else ""
+        head = (f"{info['config']['template']} ({info['config'].get('openfoam_flavor', '')})\n"
+                f"Re = {u * L / p['kinematic_viscosity']:.3g}, nu = {p['kinematic_viscosity']:g} m2/s, "
+                f"rho = {p['density']:g} kg/m3\n{a_ref}L_ref = {L:g} m, background cells {cells}")
+    pl.add_text(head, font_size=10)
     pl.add_legend()
     pl.add_axes()
     return pl
