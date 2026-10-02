@@ -101,6 +101,28 @@ def broadband_level(prop: Propeller, thrust: float, rpm: float, distance: float,
     return k_db + 10 * math.log10(max(a_blade * vt ** 6 / distance ** 2, 1e-30))
 
 
+def vortex_noise(prop: Propeller, rpm: float, distance: float, airspeed: float = 0.0, *, thickness_ratio: float = 0.10,
+                 alpha_deg: float = 4.0, k: float = 3.8e-27, strouhal: float = 0.28) -> dict:
+    """Broadband vortex (trailing-edge / turbulence) noise of a propeller in air, Schlegel, King & Mull (1966), as given by
+    Hubbard (NASA RP-1258, 1991): the overall level at 300 ft is ``10 log10(k A_b V_0.7^6 / 1e-16)`` (feet, seconds; A_b the
+    blade area of all blades, V_0.7 the section speed at 0.7 R), spread spherically to ``distance`` [m]; the spectrum peaks
+    at ``f = St V_0.7 / h`` with h the section thickness projected across the flow (``thickness_ratio``, ``alpha_deg``).
+    An empirical estimate for comparing designs (helicopter-rotor data; about ±5 dB). Returns ``spl_db`` (re 20 uPa,
+    overall) and ``peak_hz``."""
+    if rpm <= 0 or distance <= 0:
+        raise ValueError("rpm and distance must be > 0")
+    r, c = np.asarray(prop.r), np.asarray(prop.chord)
+    a_b = prop.blades * float(np.trapezoid(c, r))                                   # m^2
+    r07 = 0.7 * prop.radius
+    v07 = math.hypot(airspeed, rpm * 2 * math.pi / 60 * r07)                        # m/s
+    ft = 0.3048
+    spl_300ft = 10 * math.log10(k * (a_b / ft ** 2) * (v07 / ft) ** 6 / 1e-16)
+    c07 = float(np.interp(r07, r, c))
+    h = c07 * (thickness_ratio * math.cos(math.radians(alpha_deg)) + math.sin(math.radians(alpha_deg)))
+    return {"spl_db": spl_300ft + 20 * math.log10(300 * ft / distance), "peak_hz": strouhal * v07 / h, "v07_m_s": v07,
+            "blade_area_m2": a_b, "distance_m": distance}
+
+
 def cavitation(prop: Propeller, rpm: float, airspeed: float, depth_m: float, medium: Medium = SEA_WATER, *,
                p_atm: float = 101325.0, p_vapour: float = 2300.0, cp_min: float = -1.0, radial_station: float = 0.7) -> dict:
     """Cavitation check at a blade station: cavitation number sigma = (p_static - p_v) / (0.5 rho V_rel^2)
