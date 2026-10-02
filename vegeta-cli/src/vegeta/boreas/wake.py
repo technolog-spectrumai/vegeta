@@ -118,10 +118,11 @@ def sampled_wake(sampler, center, radius: float, ship_speed: float, *, r_frac=(0
 
 
 def effective_inflow(prop: Propeller, airfoil: Airfoil, rpm: float, speed: float, wake: WakeField, rho: float, *,
-                     iterations: int = 4) -> tuple[float, OperatingPoint]:
+                     iterations: int = 2) -> tuple[float, OperatingPoint]:
     """The effective (Taylor) wake fraction of ``prop`` behind ``wake`` and its operating point there: the circumferential
     mean wake at every blade station, weighted by the station's thrust ``dT/dr`` (negative thrust counts as none), and the
-    blade-element solution at the uniform inflow ``speed (1 - w_eff)`` — iterated, since the weights depend on the inflow.
+    blade-element solution at the uniform inflow ``speed (1 - w_eff)`` — iterated, since the weights depend on the inflow
+    (it settles in one or two rounds).
     The thrust and torque of the result are what the installed propeller gives on average; ``T speed / P`` with the free
     stream ``speed`` is its efficiency installed (it gains when it works in slower air, as a pusher in a body's wake).
     Returns ``(w_eff, operating point)``; with no thrust anywhere the weights are the station radii (area)."""
@@ -129,9 +130,10 @@ def effective_inflow(prop: Propeller, airfoil: Airfoil, rpm: float, speed: float
         raise ValueError("iterations must be >= 1")
     w_eff = wake.mean(0.7)
     op = solve(prop, airfoil, rpm, max(speed * (1.0 - w_eff), 0.0), rho)
+    rr = np.asarray(op.r, float)                                    # the stations do not move with the inflow
+    phi = np.arange(360.0)
+    wbar = wake(np.repeat(rr / prop.radius, len(phi)), np.tile(phi, len(rr))).reshape(len(rr), len(phi)).mean(axis=1)
     for _ in range(iterations):
-        rr = np.asarray(op.r, float)
-        wbar = np.array([wake.mean(float(x) / prop.radius) for x in rr])
         weight = np.maximum(np.asarray(op.dT_dr, float), 0.0)
         if weight.sum() <= 0:
             weight = rr
