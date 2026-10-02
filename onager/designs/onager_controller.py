@@ -21,8 +21,8 @@
   motor loses power: the controller commands zero torque — ω_target = the wheel's own speed — and the wheel
   freewheels), ``'seized'`` (the wheel is braked: ω_target = 0 on the motor's full torque line, up to its stall
   torque; the tyre skids), ``'knee_locked'`` (the knee module loses power and its spring-applied brake engages:
-  modelled as the servo holding the angle of the failure instant, with the servo's compliance, no gravity
-  feed-forward). The controller's *response* to a seized wheel (``lift_seized`` [m] > 0) is the three-wheel limp:
+  modelled as the servo holding the angle of the failure instant, with the servo's compliance and its
+  feed-forward — the brake carries the load without current). The controller's *response* to a seized wheel (``lift_seized`` [m] > 0) is the three-wheel limp:
   the CG must leave the seized corner's side of the diagonal through the two neighbouring wheels, so over
   ``shift_s`` the three good legs move the hull ``shift_x`` [m] along x away from the seized wheel (every axle
   re-placed by the two-link inverse kinematics at the same height) while the seized leg folds its wheel up by
@@ -206,8 +206,8 @@ class Drive:
                 if self.limp is not None and self.limp[1] == leg:
                     tau_ff[jk] = tau_ff[js] = 0.0                        # lifted: carries nothing
             elif mode == "knee_locked":
-                q_target[jk] = self.locked[jk]                           # the brake holds the failure angle
-                tau_ff[jk] = 0.0
+                q_target[jk] = self.locked[jk]                           # the brake holds the failure angle (the
+                # feed-forward stays: a spring-applied brake carries the standing load without current)
         return Command(q_target=q_target, qd_target=qd_target, tau_ff=tau_ff)
 
 
