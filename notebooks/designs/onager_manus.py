@@ -31,7 +31,7 @@ class OnagerManus(OnagerSentinel):
 
     ``part`` adds the arm parts to the Sentinel's (each in its own frame: the joint bore at the origin, the link
     along +x, the bore axis along y): ``upper_arm``, ``forearm``, ``jaw`` (one finger, its pivot bore at the origin,
-    the inner — cutting and gripping — edge on z = 0, the finger above it)."""
+    the inner — cutting and gripping — edge on z = 0, the finger above it, the hooked tip below it)."""
 
     parameters = [Parameter("part", "robot", choices=("robot", "hull", "upper_leg", "lower_leg", "wheel", "upper_arm",
                                                       "forearm", "jaw"), description="what to build")] + _sentinel_params() + [
@@ -55,6 +55,8 @@ class OnagerManus(OnagerSentinel):
         Parameter("jaw_pin_diameter", 16.0, "mm", min=4),
         Parameter("notch_x", 40.0, "mm", min=10, description="cutter notch from the pivot"),
         Parameter("notch_depth", 6.0, "mm", min=1, description="depth of the V cutter notch in the inner edge"),
+        Parameter("hook_length", 40.0, "mm", min=0, description="hooked tip: how far it turns in past the inner edge"),
+        Parameter("hook_width", 25.0, "mm", min=5, description="hooked tip: its extent along the jaw"),
         Parameter("arm_shoulder_deg", 50.0, "deg", min=-90, max=120, description="upper arm above horizontal (ready pose)"),
         Parameter("arm_elbow_deg", 40.0, "deg", min=-90, max=150, description="forearm below horizontal (ready pose)"),
         Parameter("jaw_open_deg", 20.0, "deg", min=0, max=60, description="each jaw's opening from closed"),
@@ -91,7 +93,9 @@ class OnagerManus(OnagerSentinel):
                           p["arm_boss_diameter"] * 0.85, p["arm_pin_diameter"])
 
     def _jaw(self, p):
-        """One finger: inner edge on z = 0 from the pivot to the tip, the back tapering; a V notch at notch_x."""
+        """One finger: inner edge on z = 0 from the pivot to the tip, the back tapering; a V notch at notch_x; the
+        tip hooked inwards (below z = 0) by ``hook_length`` — straight jaws closing on a round log from above wedge
+        it down out of the grip; the hooks close under its middle."""
         L, t, d = p["jaw_length"], p["jaw_thickness"], p["jaw_depth"]
         r = d / 2 + 4.0
         profile = [(0.0, 0.0), (L, 0.0), (L, d * 0.45), (0.0, d)]
@@ -101,6 +105,10 @@ class OnagerManus(OnagerSentinel):
         nx, nd = p["notch_x"], p["notch_depth"]
         notch = cq.Workplane("XZ").polyline([(nx - nd, -1.0), (nx + nd, -1.0), (nx, nd)]).close().extrude(t, both=True)
         bore = cq.Workplane("XZ").center(0, d / 2).circle(p["jaw_pin_diameter"] / 2).extrude(t, both=True)
+        if p["hook_length"] > 0:
+            hw, hl = p["hook_width"], p["hook_length"]
+            hook = cq.Workplane("XY").box(hw, t, hl + d * 0.45).translate((L - hw / 2, 0, (d * 0.45 - hl) / 2))
+            finger = finger.union(hook)
         return finger.cut(notch).cut(bore)
 
     def _arm(self, p, side):

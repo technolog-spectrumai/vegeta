@@ -1,8 +1,9 @@
 """The Onager Manus mission controller for ChironLab: drive, stop, work with the arms, drive on.
 
-A ``Mission`` is a list of ``Phase`` s run in order; each phase updates the speed target, the crouch and the arm
-and jaw targets until it reports done. Underneath, the Sentinel's ``onager_controller.Drive`` keeps driving the
-chassis (wheel speed loop, heading hold, the legs' gravity and contact-force feed-forward). On top of it:
+A ``Mission`` (``onager_controller.PhasedMission`` with arms) is a list of ``Phase`` s run in order; each phase
+updates the speed target, the crouch and the arm and jaw targets until it reports done. Underneath, the Sentinel's
+``onager_controller.Drive`` keeps driving the chassis (wheel speed loop, heading hold, the legs' gravity and
+contact-force feed-forward). On top of it:
 
 * **speed** — a stop at a world x: ``v = min(v_max, √(2 a (x_stop − x)), v_prev + a·dt)``, then 0 (the wheels'
   speed loop holds the robot);
@@ -24,23 +25,16 @@ whether the log stays in the jaws is physics.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Callable
 
 import numpy as np
 
-from vegeta.chiron import Command
-
 import onager_controller as oc
 import onager_manus_robot as omr
-import onager_robot as orb
 
 __all__ = ["Phase", "Mission", "smooth", "world_to_hull", "cut_and_clear"]
 
 
-def smooth(u: float) -> float:
-    u = min(max(u, 0.0), 1.0)
-    return u * u * (3 - 2 * u)
+smooth, Phase = oc.smooth, oc.Phase
 
 
 def world_to_hull(obs, p) -> np.ndarray:
@@ -52,99 +46,24 @@ def world_to_hull(obs, p) -> np.ndarray:
     return R.T @ (np.asarray(p, dtype=float) - np.asarray(obs.base_pos, dtype=float))
 
 
-@dataclass
-class Phase:
-    """``start(m, obs)`` once, then ``update(m, obs, tau) -> done`` every control step (tau: time in the phase);
-    ``timeout`` [s] ends it anyway (logged)."""
-
-    name: str
-    update: Callable
-    start: Callable | None = None
-    timeout: float = 30.0
-
-
-class Mission:
-    """Runs ``phases`` in order on top of the Sentinel drive (see the module)."""
+class Mission(oc.PhasedMission):
+    """``onager_controller.PhasedMission`` with the two arms and their jaws (see the module)."""
 
     def __init__(self, phases: list, *, accel: float = 0.6, name: str = "manus mission"):
-        self.phases = list(phases)
-        self.accel = float(accel)
-        self.name = name
+        super().__init__(phases, accel=accel, name=name)
 
-    # ---- ChironLab protocol
-    def reset(self, lab, seed=None):
-        self.lab = lab
-        self.drive = oc.Drive(0.0, ramp_s=0.0, name="manus chassis")
-        self.drive.reset(lab, seed)
-        g = lab.robot.geometry
-        self.axle_x, self.h_axle, self.L1, self.L2 = g["axle_x"], g["h_axle"], g["L1"], g["L2"]
-        self.idx = {n: i for i, n in enumerate(lab.joint_names)}
-        self.dof = {n: int(lab._jd[lab._joint_index[n]]) for n in lab.actuated_joints}
+    def tool_reset(self, lab):
         self.kp_jaw = omr.ARM_GAINS["jaw"][0]
         self.stall_jaw = omr.act.get(omr.ARM_ACTUATORS["jaw"]).stall_Nm
         self.arm = {s: np.array([omr.STOW["yaw"], omr.STOW["shoulder"], omr.STOW["elbow"], omr.STOW["wrist"]])
                     for s in omr.SIDES}
         self.jaw = {s: ("angle", omr.STOW["jaw"]) for s in omr.SIDES}
-        self.v, self.v_cmd, self.crouch = 0.0, 0.0, 0.0
-        self.i, self.t0, self.started, self.t_prev = 0, 0.0, False, None
-        self.log = []                                                   # [t, phase, note]
-        self.state = {}                                                 # scratch for phases
-        self.memory = {}                                                # what the mission has seen
-
-    def settle_command(self, obs):
-        return self._command(obs, 0.0)
-
-    def __call__(self, obs):
-        t = float(obs.t)
-        dt = 0.0 if self.t_prev is None else t - self.t_prev
-        self.t_prev = t
-        while self.i < len(self.phases):
-            ph = self.phases[self.i]
-            if not self.started:
-                self.t0, self.started = t, True
-                self.state = {}
-                if ph.start is not None:
-                    ph.start(self, obs)
-                self.log.append([t, ph.name, "start"])
-            tau = t - self.t0
-            done = bool(ph.update(self, obs, tau))
-            if not done and tau >= ph.timeout:
-                self.log.append([t, ph.name, f"timeout after {ph.timeout:g} s"])
-                done = True
-            if not done:
-                break
-            self.log.append([t, ph.name, "done"])
-            self.i += 1
-            self.started = False
-        if self.i >= len(self.phases):
-            self.v = 0.0
-        return self._command(obs, dt)
-
-    @property
-    def phase(self) -> str:
-        return self.phases[self.i].name if self.i < len(self.phases) else "finished"
-
-    # ---- building blocks for phases
-    def drive_to(self, obs, x_stop: float, v_max: float, dt: float) -> bool:
-        x = float(obs.base_pos[0])
-        v_brake = math.sqrt(2 * self.accel * max(0.0, x_stop - x))
-        self.v = max(0.0, min(v_max, v_brake, self.v + self.accel * max(dt, 1e-3)))
-        return x_stop - x < 0.01 and abs(float(obs.com_vel[0])) < 0.03
 
     def arm_target(self, obs, side: str, p_world, elevation: float):
         """IK in the hull frame for a world jaw-pin position; None when out of reach."""
         return omr.arm_ik(world_to_hull(obs, p_world), elevation, side, self.lab.robot.params)
 
-    # ---- the command
-    def _command(self, obs, dt: float) -> Command:
-        cmd = self.drive.command(obs, self.v, dt)
-        q_t, qd_t, ff = cmd.q_target, cmd.qd_target, cmd.tau_ff
-        if self.crouch:
-            for leg in orb.LEGS:
-                js, jk, _ = orb.leg_joints(leg)
-                ik = oc._ik(self.axle_x, self.h_axle - self.crouch, self.L1, self.L2)
-                if ik is not None:
-                    q_t[js], q_t[jk] = orb.angles_to_q(*ik)
+    def tool_command(self, obs, q_t, qd_t, ff):
         bias = self.lab.data.qfrc_bias
         for side in omr.SIDES:
             names = omr.arm_joints(side)
@@ -162,7 +81,6 @@ class Mission:
                     q_t[n] = float(obs.q[self.idx[n]]) - float(val) / self.kp_jaw
                 else:                                                   # "close": the drive's full force
                     q_t[n] = float(obs.q[self.idx[n]]) - 2.0 * self.stall_jaw / self.kp_jaw
-        return Command(q_target=q_t, qd_target=qd_t, tau_ff=ff)
 
 
 # ----------------------------------------------------------------------------------------------- the mission
@@ -232,7 +150,9 @@ def cut_and_clear(scene, *, v_max: float = 1.5, cut_arm: str = "R", lift_arm: st
     s_lift = omr.SIDES[lift_arm]
     r_log = 0.65                                                 # the log 0.65 m ahead of the shoulders (8 cm from the wheels)
     x_stop_log = log_c[0] - r_log - g["x"]
-    grip_depth = 0.16                                            # log centre below the jaw pin when gripping
+    # log centre below the jaw pin when gripping: the hooked tips (0.22 m out) then close under its middle. (Straight
+    # jaws on a round log from above form a wedge that pushes it down and the arm up: the first runs lost the log.)
+    grip_depth = 0.16
 
     def log_now(m, obs):
         """The log's centre as perception sees it when the arm reaches for it (the simulated pose), kept for the
@@ -247,7 +167,7 @@ def cut_and_clear(scene, *, v_max: float = 1.5, cut_arm: str = "R", lift_arm: st
 
     def set_v(x_stop):
         def update(m, obs, tau):
-            return m.drive_to(obs, x_stop, v_max, m.lab.control_dt)
+            return m.drive_to(obs, x_stop, v_max)
         return update
 
     def wait(T):

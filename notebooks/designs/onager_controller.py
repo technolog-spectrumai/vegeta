@@ -41,7 +41,7 @@ The controller never reads the terrain; the hull level follows from the servo co
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 

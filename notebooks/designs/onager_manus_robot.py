@@ -35,7 +35,7 @@ import actuators as act
 import onager_robot as orb
 
 __all__ = ["MANUS", "CAD", "PARTS_KG", "ARM_ACTUATORS", "ARM_GAINS", "JAW_ARMATURE", "ASSUMPTIONS", "SIDES",
-           "LAB_OPTIONS", "design_params", "cad_numbers", "arm_geometry", "arm_joints", "jaw_geoms", "arm_masses",
+           "LAB_OPTIONS", "design_params", "cad_numbers", "arm_geometry", "arm_joints", "jaw_geoms", "jaw_parts", "arm_masses",
            "mass_budget", "arm_ik", "arm_fk", "manus", "manus_lab", "nominal_qpos", "STOW"]
 
 #: Manus parameters beyond the Sentinel's (onager_manus.py defaults, mm and degrees).
@@ -45,13 +45,14 @@ MANUS = {
     "forearm_length": 550.0, "forearm_width": 50.0, "forearm_depth": 70.0, "arm_wall": 4.0,
     "arm_boss_diameter": 110.0, "arm_pin_diameter": 30.0, "palm_length": 100.0, "jaw_length": 220.0,
     "jaw_thickness": 14.0, "jaw_depth": 45.0, "jaw_pin_diameter": 16.0, "notch_x": 40.0, "notch_depth": 6.0,
+    "hook_length": 40.0, "hook_width": 25.0,
     "arm_shoulder_deg": 50.0, "arm_elbow_deg": 40.0, "jaw_open_deg": 20.0,
 }
 CHASSIS = {"turret_length": 0.0, "turret_height": 0.0}      # the Sentinel parameters the Manus changes
 
 #: CAD measurements of the default Manus (notebook 21 §1; mm², mm³). ``cad_numbers(recompute=True)`` rebuilds them.
 CAD = {
-    "hull_surface_area": 6431301.0, "upper_arm_volume": 1624214.0, "forearm_volume": 1058820.0, "jaw_volume": 113929.0,
+    "hull_surface_area": 6431301.0, "upper_arm_volume": 1624214.0, "forearm_volume": 1058820.0, "jaw_volume": 127929.0,
 }
 MATERIALS = {"Al 6082-T6 arm tubes": 2.70e-6, "tool steel jaws": 7.85e-6}
 
@@ -78,7 +79,8 @@ ASSUMPTIONS = {
                 "cycloid); the jaw: a 1 kg·cm² rotor through the screw (5 mm lead) on the 60 mm lever = 0.57 kg·m²",
     "jaw_model": "two hinges with the drive's full torque each (the machine has one screw and a linkage); the inner "
                  "faces are boxes, the V notch is not modelled: the wire's squeeze is τ / x at its distance x from "
-                 "the pin; the jaws do not collide with each other",
+                 "the pin; the hooked tips are boxes (their mass is in the jaws' CAD mass); the jaws do not collide "
+                 "with each other",
     "arm_links": "rectangular Al tubes as boxes of their outer size with the CAD mass at their middle; the joint "
                  "modules as point masses at their joints; jaws as boxes of the mean finger depth",
     "sensors": "no turret: 14 kg of sensors (mast head 25 %, mast 15 %, lidar and wrist cameras 60 % on the roof)",
@@ -122,6 +124,7 @@ def arm_geometry(p: dict | None = None) -> dict:
     return {"x": p["arm_x"] * mm, "y": p["arm_y"] * mm, "z": (p["hull_height"] / 2 + p["pedestal_height"]) * mm,
             "Lu": p["upper_arm_length"] * mm, "Lf": p["forearm_length"] * mm, "Lp": p["palm_length"] * mm,
             "Lj": p["jaw_length"] * mm, "notch": p["notch_x"] * mm, "jaw_t": p["jaw_thickness"] * mm,
+            "hook": p["hook_length"] * mm, "hook_w": p["hook_width"] * mm,
             "jaw_d": p["jaw_depth"] * mm, "ped_h": p["pedestal_height"] * mm, "ped_r": p["pedestal_diameter"] / 2 * mm}
 
 
@@ -131,7 +134,13 @@ def arm_joints(side: str) -> list:
 
 
 def jaw_geoms(side: str) -> list:
+    """The two fingers (their inner faces cut and squeeze)."""
     return [f"{side}_jaw_upper", f"{side}_jaw_lower"]
+
+
+def jaw_parts(side: str) -> list:
+    """Every jaw geom: the fingers and their hooked tips (what grips)."""
+    return jaw_geoms(side) + [f"{side}_jaw_upper_hook", f"{side}_jaw_lower_hook"]
 
 
 def arm_masses(p: dict | None = None, cad: dict | None = None) -> dict:
@@ -230,7 +239,10 @@ def _arm(side: str, p: dict, cad: dict, jaw_mu: float) -> tuple:
                                        servo=_servo("jaw"))],
                          geoms=[Geom(name, "box", (g["Lj"] / 2, g["jaw_t"] / 2 * 1.5, d_mean / 2),
                                      pos=(g["Lj"] / 2, 0.0, zsign * d_mean / 2), mass=m_jaw, role="link",
-                                     friction=jaw_fr, rgba=jaw_rgba)]))
+                                     friction=jaw_fr, rgba=jaw_rgba)]
+                         + ([Geom(name + "_hook", "box", (g["hook_w"] / 2, g["jaw_t"] / 2 * 1.5, g["hook"] / 2),
+                                  pos=(g["Lj"] - g["hook_w"] / 2, 0.0, -zsign * g["hook"] / 2), role="link",
+                                  friction=jaw_fr, rgba=jaw_rgba)] if g["hook"] > 0 else [])))
     palm = Link(f"{side}_palm", pos=(g["Lf"], 0.0, 0.0),
                 joints=[Joint(wr_j, axis=(0, 1, 0), range=(math.radians(-115), math.radians(115)), tag="wrist",
                               servo=_servo("wrist"))],

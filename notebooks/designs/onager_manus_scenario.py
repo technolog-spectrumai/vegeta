@@ -21,7 +21,7 @@ The robot only knows where the wire and the log are (``Scene``); the mission is 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -30,7 +30,6 @@ from vegeta import chiron as ch
 
 import onager_manus_controller as omc
 import onager_manus_robot as omr
-import onager_robot as orb
 
 __all__ = ["Scene", "WireCutter", "WIRE", "LOG", "props", "terrain", "make_lab", "run", "timeseries", "phase_table"]
 

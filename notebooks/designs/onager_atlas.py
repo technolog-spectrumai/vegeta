@@ -37,9 +37,12 @@ class OnagerAtlas(OnagerSentinel):
 
     ``part`` adds to the Sentinel's (each in its own frame): ``fork`` (one fork: the heel corner at the origin, the
     tine along +x, the shank up +z, its width along y), ``mast`` (the two uprights with their crossbars: the tilt
-    pivot at the origin, uprights up +z from ``mast_bottom`` to ``mast_top``)."""
+    pivot at the origin, uprights up +z from ``mast_bottom`` to ``mast_top``), ``mast_fea`` (the mast with the
+    tilt screws' cross-bar 300 mm above the pivot and the carriage's roller beam at the ``lift`` height: the faces
+    an analysis holds and loads)."""
 
-    parameters = [Parameter("part", "robot", choices=("robot", "hull", "upper_leg", "lower_leg", "wheel", "fork", "mast"),
+    parameters = [Parameter("part", "robot", choices=("robot", "hull", "upper_leg", "lower_leg", "wheel", "fork", "mast",
+                                                      "mast_fea"),
                             description="what to build")] + _sentinel_params() + [
         Parameter("pivot_x", 1200.0, "mm", min=0, description="mast tilt pivot ahead of the hull centre"),
         Parameter("pivot_z", 1065.0, "mm", min=0, description="mast tilt pivot above the ground (standing)"),
@@ -103,6 +106,15 @@ class OnagerAtlas(OnagerSentinel):
         mast = mast.union(cq.Workplane("XZ").circle(35.0).circle(27.0).extrude(span / 2, both=True))
         return mast
 
+    def _mast_fea(self, p):
+        """The mast plus the tilt bar (300 mm above the pivot) and the carriage's roller beam at the lift height."""
+        d, span = p["upright_depth"], 2 * p["upright_y"] + p["upright_width"]
+        mast = self._mast(p)
+        mast = mast.union(cq.Workplane("XY").box(d * 0.8, span, 40.0).translate((0, 0, 300.0)))
+        z_c = p["fork_ground"] - p["pivot_z"] + p["lift"] + p["carriage_height"] / 2
+        beam = cq.Workplane("XY").box(60.0, span, 120.0).translate((d / 2 + 30.0, 0, z_c))
+        return mast.union(beam)
+
     def _forklift(self, p):
         """Mast, carriage and forks in the world, in the built pose (lift, tilt), plus the frame to the hull."""
         tilt = p["tilt_deg"]
@@ -132,6 +144,8 @@ class OnagerAtlas(OnagerSentinel):
             return self._fork(p)
         if part == "mast":
             return self._mast(p)
+        if part == "mast_fea":
+            return self._mast_fea(p)
         if p["lift"] > p["lift_max"]:
             raise ValueError("lift exceeds lift_max")
         body = super().build(dict(p, part=part))
