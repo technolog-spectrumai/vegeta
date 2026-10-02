@@ -102,3 +102,45 @@ def test_implicit_slope_vectorised_and_out_buffer():
     b = implicit_slope(t, qd, clipped, kd, STALL, W0, step_dv=np.array([0.0, 1.0, 1.0, 1.0, 0.0]), out=out)
     assert b is out
     np.testing.assert_allclose(b, [-0.8, -STALL / W0, 0.0, 0.0, -STALL / W0])
+
+
+# ----------------------------------------------------------------------------------------------- four-quadrant
+def test_four_quadrant_braking_bound():
+    from vegeta.chiron.servo import servo_torque
+    kw = dict(kp=100.0, kd=0.0, stall=2.0, no_load_speed=0.5)
+    # motoring past the no-load speed: zero either way
+    assert servo_torque(0.0, 0.6, 1.0, **kw) == 0.0
+    assert servo_torque(0.0, 0.6, 1.0, four_quadrant=True, **kw) == 0.0
+    # braking past the no-load speed: zero with the original law, the stall torque four-quadrant
+    assert servo_torque(0.0, 0.6, -1.0, **kw) == 0.0
+    assert servo_torque(0.0, 0.6, -1.0, four_quadrant=True, **kw) == pytest.approx(-2.0)
+    # braking below the no-load speed: the line vs the stall torque
+    assert servo_torque(0.0, 0.25, -1.0, **kw) == pytest.approx(-1.0)
+    assert servo_torque(0.0, 0.25, -1.0, four_quadrant=True, **kw) == pytest.approx(-2.0)
+    out = np.zeros(2)
+    servo_torque(np.zeros(2), np.array([0.6, 0.6]), np.array([-1.0, -1.0]), out=out, four_quadrant=np.array([False, True]), **kw)
+    np.testing.assert_allclose(out, [0.0, -2.0])
+
+
+def test_four_quadrant_drive_brakes_a_falling_arm():
+    """An arm too heavy for its drive falls; with the original law the drive lets go past ω₀, four-quadrant it
+    keeps braking with its stall torque — the arm falls slower."""
+    mujoco = pytest.importorskip("mujoco")  # noqa: F841
+    from vegeta.chiron import ChironLab, Flat, Geom, Joint, Link, Robot, Servo
+
+    def robot(fourq):
+        s = Servo(stall_torque=2.0, rated_torque=1.0, no_load_speed=0.5, stall_current=2.0, voltage=12.0, kp=100.0,
+                  kd=1.0, four_quadrant=fourq)
+        arm = Link("arm", pos=(0.0, 0.0, 0.3), joints=[Joint("arm_j", axis=(0, 1, 0), range=(-1.6, 1.6), servo=s)],
+                   geoms=[Geom("arm_g", "capsule", (0.01,), fromto=(0, 0, 0, 0.5, 0, 0), mass=1.0, role="visual")])
+        base = Link("base", log=True, geoms=[Geom("base_g", "box", (0.3, 0.3, 0.05), mass=50.0, role="body")],
+                    children=[arm])
+        return Robot("arm", base, nominal_base_height=0.05)
+
+    peak = {}
+    for fourq in (False, True):
+        lab = ChironLab(robot(fourq), Flat())
+        ep = lab.run(lambda obs: None, duration=1.0, rules=None, settle=0.0)       # holds q = 0 (horizontal)
+        peak[fourq] = float(np.abs(ep.log["qd"][:, 0]).max())
+    assert peak[False] > 2.0                    # free fall once past ω₀ = 0.5 rad/s
+    assert peak[True] < 0.8 * peak[False]

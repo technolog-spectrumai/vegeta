@@ -9,7 +9,10 @@
   ``−Jᵀ (f_x, f_y, W/4)`` from the lab's foot Jacobians — the measured horizontal contact force of its wheel
   (``force_ff``: the drive, braking and drag forces that would otherwise swing the leg on its servo compliance;
   a seized tyre's drag of ~700 N is ~700 N·m at the shoulder, 25° on a 1600 N·m/rad servo) and its nominal share
-  of the weight (``gravity_ff``) — so the servos' stiffness is spent on deviations, not on the standing loads;
+  of the weight (``gravity_ff``; ``load_ff='measured'``: the wheel's measured normal force instead, for a machine
+  whose payload moves its weight between the wheels; ``'axle'``: the mean of its axle's two wheels, so a wheel that
+  lifts on uneven ground still pushes down — the Atlas's stiff stance) — so the servos' stiffness is spent on
+  deviations, not on the standing loads;
 * **wheel speed loop** — the hub motor's velocity servo is proportional (``onager_robot.wheel_servo``: τ = kd
   (ω_target − ω), on the torque–speed line) and droops under load; the controller adds the integral term of a PI
   loop as a feed-forward torque, ``k_i ∫(ω_target − ω) dt`` (anti-windup), so a loaded wheel still reaches its
@@ -46,7 +49,7 @@ from vegeta.chiron import Command
 
 import onager_robot as orb
 
-__all__ = ["Failure", "Drive", "Stand", "yaw_of"]
+__all__ = ["Failure", "Drive", "Stand", "yaw_of", "smooth", "Phase", "PhasedMission"]
 
 
 def _ik(x_axle: float, z_down: float, L1: float, L2: float):
@@ -84,9 +87,13 @@ class Drive:
     def __init__(self, v_target: float, *, failures=(), ramp_s: float = 1.5, k_heading: float = 30.0,
                  k_lateral: float = 3.0, diff_clip: float = 4.0, gravity_ff: bool = True, lift_seized: float = 0.10,
                  shift_x: float = 0.30, shift_s: float = 1.5, v_limp: float | None = 1.5, k_i: float = 60.0,
-                 force_ff: bool = True, tau_wheel_max: float = 150.0, crouch: float = 0.0, name: str | None = None):
+                 force_ff: bool = True, tau_wheel_max: float = 150.0, crouch: float = 0.0, load_ff: str = "nominal",
+                 name: str | None = None):
         self.v_limp = v_limp
         self.force_ff = force_ff
+        if load_ff not in ("nominal", "measured", "axle"):
+            raise ValueError("load_ff must be 'nominal', 'measured' or 'axle'")
+        self.load_ff = load_ff
         self.tau_wheel_max = float(tau_wheel_max)
         self.v_target = float(v_target)
         self.k_i = float(k_i)
@@ -194,6 +201,11 @@ class Drive:
                 f = np.zeros(3)
                 if self.gravity_ff:
                     f[2] = self.weight / n_carry
+                    if self.load_ff == "measured" and not (mode == "seized" and self.limp is not None):
+                        f[2] = max(0.0, float(obs.foot_force[i][2]))       # what this wheel carries now (a payload)
+                    elif self.load_ff == "axle" and not (mode == "seized" and self.limp is not None):
+                        pair = [k for k, w in enumerate(self.feet) if orb.LEGS[w][0] == sx]
+                        f[2] = max(0.0, float(np.mean([obs.foot_force[k][2] for k in pair])))   # the axle's mean
                 if self.force_ff:
                     f[:2] = obs.foot_force[i][:2]                        # the measured horizontal contact force
                 tau = -jac.T @ f
@@ -210,6 +222,116 @@ class Drive:
                 q_target[jk] = self.locked[jk]                           # the brake holds the failure angle (the
                 # feed-forward stays: a spring-applied brake carries the standing load without current)
         return Command(q_target=q_target, qd_target=qd_target, tau_ff=tau_ff)
+
+
+def smooth(u: float) -> float:
+    """Smoothstep on [0, 1] (0 below, 1 above)."""
+    u = min(max(u, 0.0), 1.0)
+    return u * u * (3 - 2 * u)
+
+
+@dataclass
+class Phase:
+    """One step of a mission: ``start(m, obs)`` once, then ``update(m, obs, tau) -> done`` every control step (tau:
+    time in the phase); ``timeout`` [s] ends it anyway (logged)."""
+
+    name: str
+    update: object
+    start: object = None
+    timeout: float = 30.0
+
+
+class PhasedMission:
+    """A list of ``Phase`` s run in order on top of a ``Drive`` that keeps the chassis going (wheel speed loop,
+    heading hold, the legs' feed-forward). Phases set ``self.v`` (the speed target, m/s) and ``self.crouch`` (the
+    hull lowered on its legs, axles kept under the shoulders); subclasses add their tools in ``tool_command``.
+    ``self.log`` records [t, phase, note]; ``self.memory`` keeps what the mission has seen."""
+
+    def __init__(self, phases: list, *, accel: float = 0.6, drive_kw: dict | None = None, name: str = "mission"):
+        self.phases = list(phases)
+        self.accel = float(accel)
+        self.drive_kw = dict(drive_kw or {})
+        self.name = name
+
+    def reset(self, lab, seed=None):
+        self.lab = lab
+        self.drive = Drive(0.0, ramp_s=0.0, name=f"{self.name}: chassis", **self.drive_kw)
+        self.drive.reset(lab, seed)
+        g = lab.robot.geometry
+        self.axle_x, self.h_axle, self.L1, self.L2 = g["axle_x"], g["h_axle"], g["L1"], g["L2"]
+        self.idx = {n: i for i, n in enumerate(lab.joint_names)}
+        self.dof = {n: int(lab._jd[lab._joint_index[n]]) for n in lab.actuated_joints}
+        self.v, self.crouch = 0.0, 0.0
+        self.i, self.t0, self.started, self.t_prev = 0, 0.0, False, None
+        self.log, self.state, self.memory = [], {}, {}
+        self.tool_reset(lab)
+
+    def tool_reset(self, lab):
+        pass
+
+    def tool_command(self, obs, q_t: dict, qd_t: dict, ff: dict) -> None:
+        pass
+
+    def settle_command(self, obs):
+        return self._command(obs, 0.0)
+
+    def __call__(self, obs):
+        t = float(obs.t)
+        dt = 0.0 if self.t_prev is None else t - self.t_prev
+        self.t_prev = t
+        while self.i < len(self.phases):
+            ph = self.phases[self.i]
+            if not self.started:
+                self.t0, self.started, self.state = t, True, {}
+                if ph.start is not None:
+                    ph.start(self, obs)
+                self.log.append([t, ph.name, "start"])
+            tau = t - self.t0
+            done = bool(ph.update(self, obs, tau))
+            if not done and tau >= ph.timeout:
+                self.log.append([t, ph.name, f"timeout after {ph.timeout:g} s"])
+                done = True
+            if not done:
+                break
+            self.log.append([t, ph.name, "done"])
+            self.i += 1
+            self.started = False
+        if self.i >= len(self.phases):
+            self.v = 0.0
+        return self._command(obs, dt)
+
+    @property
+    def phase(self) -> str:
+        return self.phases[self.i].name if self.i < len(self.phases) else "finished"
+
+    @property
+    def finished(self) -> bool:
+        return self.i >= len(self.phases)
+
+    def drive_to(self, obs, x_stop: float, v_max: float, tol: float = 0.02) -> bool:
+        """Brake to a stop at world x (forward or backward): v = ±min(v_max, √(2 a |Δx|), |v| + a·dt); done within
+        ``tol`` [m] and below 5 cm/s."""
+        x = float(obs.base_pos[0])
+        dx = x_stop - x
+        v_brake = math.sqrt(2 * self.accel * max(0.0, abs(dx) - tol / 2))
+        speed = min(v_max, v_brake, abs(self.v) + self.accel * self.lab.control_dt)
+        self.v = math.copysign(speed, dx)
+        done = abs(dx) < tol and abs(float(obs.com_vel[0])) < 0.05
+        if done:
+            self.v = 0.0
+        return done
+
+    def _command(self, obs, dt: float) -> Command:
+        cmd = self.drive.command(obs, self.v, dt)
+        q_t, qd_t, ff = cmd.q_target, cmd.qd_target, cmd.tau_ff
+        if self.crouch:
+            for leg in orb.LEGS:
+                js, jk, _ = orb.leg_joints(leg)
+                ik = _ik(self.axle_x, self.h_axle - self.crouch, self.L1, self.L2)
+                if ik is not None:
+                    q_t[js], q_t[jk] = orb.angles_to_q(*ik)
+        self.tool_command(obs, q_t, qd_t, ff)
+        return Command(q_target=q_t, qd_target=qd_t, tau_ff=ff)
 
 
 class Stand:

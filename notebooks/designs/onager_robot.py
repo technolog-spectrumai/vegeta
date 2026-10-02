@@ -26,6 +26,7 @@ apply to them unchanged.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
@@ -113,7 +114,7 @@ LEG_NAMES = {"FL": "front-left", "FR": "front-right", "RL": "rear-left", "RR": "
 JOINTS = ("shoulder", "knee", "wheel")
 LEG_KP, LEG_KD, WHEEL_KD = 1600.0, 120.0, 30.0
 LEG_ARMATURE, WHEEL_ARMATURE = 0.05, 0.05
-BATTERY_X_MAX = 0.6                                  # m ahead of the hull centre: the front compartment
+BATTERY_X_MAX = 0.6                                  # m from the hull centre: the front (or rear) compartment
 
 
 # ----------------------------------------------------------------------------------------------- the design
@@ -170,17 +171,18 @@ def geometry(p: dict | None = None) -> dict:
             "wheelbase": (2 * p["shoulder_x"]) / 1000.0, "track": 2 * y_wheel / 1000.0}
 
 
-def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict | None = None) -> dict:
+def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict | None = None,
+                leg_actuator: str = LEG_ACTUATOR) -> dict:
     """Notebook 20 §1's parts list [kg]: part -> mass (actuators from the catalogue); ``parts_kg`` replaces the
     listed parts (``PARTS_KG``; a variant with other sensors)."""
     p = design_params() if p is None else p
     cad = cad_numbers(p) if cad is None else cad
-    la, wm = act.get(LEG_ACTUATOR), act.get(WHEEL_MOTOR)
+    la, wm = act.get(leg_actuator), act.get(WHEEL_MOTOR)
     out = {
         f"armour shell, {SHELL_T_MM:.0f} mm Al 5083 (from CAD area)": cad["hull_surface_area"] * SHELL_T_MM * MATERIALS["Al 5083 armour plate"],
         "upper legs 4x (Al 7075-T6, from CAD)": 4 * cad["upper_leg_volume"] * MATERIALS["Al 7075-T6 legs"],
         "lower legs 4x (Al 7075-T6, from CAD)": 4 * cad["lower_leg_volume"] * MATERIALS["Al 7075-T6 legs"],
-        f"leg actuators 8x ({LEG_ACTUATOR}; {la.mass_g / 1000:.1f} kg each)": 8 * la.mass_g / 1000.0,
+        f"leg actuators 8x ({leg_actuator}; {la.mass_g / 1000:.1f} kg each)": 8 * la.mass_g / 1000.0,
         f"hub motors 4x ({WHEEL_MOTOR}; {wm.mass_g / 1000:.1f} kg each)": 4 * wm.mass_g / 1000.0,
     }
     out.update(PARTS_KG if parts_kg is None else parts_kg)
@@ -220,14 +222,17 @@ def nominal_qpos(p: dict | None = None) -> dict:
     return out
 
 
-def leg_servo(kp: float = LEG_KP, kd: float = LEG_KD, actuator: str = LEG_ACTUATOR) -> Servo:
-    """A leg joint module as a Chiron position servo (catalogue data + the gains of ``ASSUMPTIONS['servo_gains']``)."""
-    return Servo.from_actuator(act.get(actuator), kp=kp, kd=kd, armature=LEG_ARMATURE)
+def leg_servo(kp: float = LEG_KP, kd: float = LEG_KD, actuator: str = LEG_ACTUATOR, four_quadrant: bool = False) -> Servo:
+    """A leg joint module as a Chiron position servo (catalogue data + the gains of ``ASSUMPTIONS['servo_gains']``);
+    ``four_quadrant``: the module brakes with its full torque when backdriven (``Servo.four_quadrant``)."""
+    s = Servo.from_actuator(act.get(actuator), kp=kp, kd=kd, armature=LEG_ARMATURE)
+    return replace(s, four_quadrant=bool(four_quadrant))
 
 
-def wheel_servo(kd: float = WHEEL_KD, motor: str = WHEEL_MOTOR) -> Servo:
+def wheel_servo(kd: float = WHEEL_KD, motor: str = WHEEL_MOTOR, four_quadrant: bool = False) -> Servo:
     """The hub motor as a velocity servo: ``kp = 0``, τ = kd (ω_target − ω) on the torque–speed line."""
-    return Servo.from_actuator(act.get(motor), kp=0.0, kd=kd, armature=WHEEL_ARMATURE)
+    s = Servo.from_actuator(act.get(motor), kp=0.0, kd=kd, armature=WHEEL_ARMATURE)
+    return replace(s, four_quadrant=bool(four_quadrant))
 
 
 # ----------------------------------------------------------------------------------------------- the robot
@@ -236,7 +241,8 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
            shoulder_range_deg: tuple = (-20.0, 100.0), knee_flexion_range_deg: tuple = (20.0, 150.0),
            cad: dict | None = None, name: str = "Onager Sentinel SX-1", parts_kg: dict | None = None,
            extra_children=(), extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0,
-           extra_hull_masses=(), notes: str | None = None, sources: dict | None = None) -> Robot:
+           extra_hull_masses=(), notes: str | None = None, sources: dict | None = None,
+           four_quadrant: bool = False) -> Robot:
     """Onager Sentinel as a Chiron ``Robot``.
 
     ``overrides``: OnagerSentinel parameters [mm, deg] (other than the defaults, the CAD is rebuilt for the
@@ -250,7 +256,8 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     ``extra_mass_kg`` / ``extra_moment_kgm`` their total mass and its first moment about the hull centre along x
     (Σ m x, standing pose), which the rolling resistance and the battery placement take into account. Without a
     turret (``turret_length`` or ``turret_height`` 0) the 60 % of the sensor mass the turret carried sits as a point
-    mass on the roof.
+    mass on the roof. ``four_quadrant``: leg modules and hub motors brake with their full torque when backdriven
+    (``Servo.four_quadrant``; the Sentinel studies use the original law).
     """
     p = design_params(overrides)
     g = geometry(p)
@@ -259,7 +266,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     budget = mass_budget(p, cad, parts)
     la, wm = act.get(LEG_ACTUATOR), act.get(WHEEL_MOTOR)
     m_leg_act, m_hub = la.mass_g / 1000.0, wm.mass_g / 1000.0
-    servo, wservo = leg_servo(kp, kd), wheel_servo(wheel_kd)
+    servo, wservo = leg_servo(kp, kd, four_quadrant=four_quadrant), wheel_servo(wheel_kd, four_quadrant=four_quadrant)
     mm = 1.0 / 1000.0
     Lh, Wh, Hh = p["hull_length"] * mm, p["hull_width"] * mm, p["hull_height"] * mm
     m_shell = budget[f"armour shell, {SHELL_T_MM:.0f} mm Al 5083 (from CAD area)"]
@@ -326,7 +333,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     moment_legs = 4 * (m_upper * x_upper + m_lower * x_lower + (m_tyre + m_hub) * x_axle + m_leg_act * x_knee)
     moment_hull = m_sens * (0.6 * x_tur + 0.4 * x_mast) + m_elec * 0.5 + float(extra_moment_kgm)
     x_batt = (m_total * g["axle_x"] - moment_legs - moment_hull) / m_batt
-    x_batt = min(x_batt, BATTERY_X_MAX)                                    # the knee modules sit 0.33 m behind the
+    x_batt = max(min(x_batt, BATTERY_X_MAX), -BATTERY_X_MAX)               # the knee modules sit 0.33 m behind the
     # shoulders: the exact balance would put the battery past the front wall, so it is capped (ASSUMPTIONS)
     turret = tur_l > 0 and tur_w > 0 and tur_h > 0
     hull = Link("hull", log=True, children=legs + list(extra_children),

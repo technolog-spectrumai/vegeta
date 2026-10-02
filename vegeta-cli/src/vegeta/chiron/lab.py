@@ -490,6 +490,9 @@ class ChironLab:
         self._stall, self._w0 = arr("stall_torque"), arr("no_load_speed")
         self._inv_w0 = 1.0 / self._w0 if len(servos) else np.zeros(0)
         self._rated, self._istall, self._volt = arr("rated_torque"), arr("stall_current"), arr("voltage")
+        self._fourq = np.array([bool(getattr(sv, "four_quadrant", False)) for sv in servos], dtype=bool)
+        self._has_fourq = bool(self._fourq.any())
+        self._brk4 = np.zeros(len(servos), dtype=bool)
         nA = len(act)
         self._q, self._qd = np.zeros(nA), np.zeros(nA)
         self._tau, self._work = np.zeros(nA), np.zeros(nA)
@@ -854,6 +857,7 @@ class ChironLab:
         brake, keep = self._brake, self._keep
         neg_kd, neg_line, bias_vel, dinv, h = self._neg_kd, self._neg_line, self._bias_vel, d.qLDiagInv, m.opt.timestep
         greater, less, copyto = np.greater, np.less, np.copyto
+        fourq, has_fourq, brk4 = self._fourq, self._has_fourq, self._brk4
         n_ctrl, n_log = self._n_ctrl, self._n_log
         has_act = len(aq) > 0
         hooks = self._hooks
@@ -883,6 +887,11 @@ class ChironLab:
                 subtract(1.0, lim, out=lim)
                 maximum(lim, 0.0, out=lim)
                 lim *= stall                                          # τ_max(q̇) = τ_stall·max(0, 1 − |q̇|/ω₀)
+                if has_fourq:                                         # four-quadrant drives braking: τ_stall
+                    multiply(tau, qd, out=work)
+                    less(work, 0.0, out=brk4)
+                    brk4 &= fourq
+                    copyto(lim, stall, where=brk4)
                 absolute(tau, out=work)
                 greater(work, lim, out=clip)                          # clipped joints
                 minimum(tau, lim, out=tau)
@@ -894,6 +903,8 @@ class ChironLab:
                     absolute(qd, out=lim)
                     less(lim, w0, out=line)
                     line &= clip                                      # clipped on the torque–speed line
+                    if has_fourq:
+                        line &= ~brk4                                 # ... not a four-quadrant brake (τ ≡ ±τ_stall)
                     multiply(tau, qd, out=work)
                     less(work, 0.0, out=brake)
                     brake &= line                                     # ... and braking
@@ -1419,6 +1430,7 @@ class _Recorder:
                "rbound": m.geom_rbound[g].copy(),
                "collides": ((m.geom_contype[g] | m.geom_conaffinity[g]) > 0),
                "foot": lab._foot_of_geom[g] >= 0,
+               "robot": m.body_rootid[m.geom_bodyid[g]] == lab._root_body,
                "pos": self.geom_pos[:n].copy(), "mat": self.geom_mat[:n].copy()}
         ti = lab._tinfo
         x0, x1, y0, y1 = lab.options.course_extent

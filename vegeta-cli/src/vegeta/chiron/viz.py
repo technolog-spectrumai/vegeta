@@ -109,6 +109,8 @@ def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=
         pos, mat = np.asarray(gp["pos"], dtype=float), np.asarray(gp["mat"], dtype=float)
         sizes, rgba = np.asarray(gp["size"], dtype=float), np.asarray(gp["rgba"], dtype=float)
         p0 = pos[0]
+        if "robot" in gp and np.any(gp["robot"]):           # frame the robot, not the scenery around it
+            p0 = p0[np.asarray(gp["robot"], dtype=bool)]
         scale = float(max(np.ptp(p0[:, 0]), np.ptp(p0[:, 1]), np.ptp(p0[:, 2]), 0.1)) if len(p0) else 0.5
         for g, kind in enumerate(gp["type"]):
             mesh = _geom_mesh(pv, kind, sizes[g])

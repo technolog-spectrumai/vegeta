@@ -50,6 +50,11 @@ class Servo:
     """A position servo: PD loop with gains ``kp`` [N·m/rad], ``kd`` [N·m·s/rad], output torque clipped to the
     DC-motor line ``|τ| ≤ stall_torque · (1 − |ω|/no_load_speed)`` (zero beyond the no-load speed).
 
+    ``four_quadrant`` True: when the torque opposes the motion (braking: the drive is backdriven, regenerating, or
+    a brake/self-locking screw holds), up to ``stall_torque`` is available at any speed — only motoring follows
+    the line. False (default, the original law): the line in all four quadrants. On a slide joint the units are
+    N, N/m, N·s/m, kg and m/s.
+
     ``stall_torque`` [N·m], ``rated_torque`` (continuous/thermal) [N·m], ``no_load_speed`` [rad/s],
     ``stall_current`` [A] at ``voltage`` [V] — datasheet values (``source``). ``armature`` [kg·m²] is the
     reflected rotor inertia (rotor inertia × gear ratio²) added to the joint; 0 when unknown.
@@ -64,6 +69,7 @@ class Servo:
     kd: float
     armature: float = 0.0
     source: str = ""
+    four_quadrant: bool = False
 
     def __post_init__(self):
         for name in ("stall_torque", "no_load_speed"):

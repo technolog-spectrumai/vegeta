@@ -31,7 +31,7 @@ def torque_limit(qd, stall, no_load_speed, out=None):
 
 
 def servo_torque(q, qd, q_target, qd_target=0.0, tau_ff=0.0, *, kp, kd, stall, no_load_speed, out=None,
-                 work=None):
+                 work=None, four_quadrant=False):
     """Servo output torque [N·m] for joint angles ``q`` [rad] and speeds ``qd`` [rad/s].
 
     ``q_target``/``qd_target`` are the commanded angle and speed, ``tau_ff`` a feed-forward torque; ``kp``
@@ -41,12 +41,19 @@ def servo_torque(q, qd, q_target, qd_target=0.0, tau_ff=0.0, *, kp, kd, stall, n
 
     ``out`` and ``work`` (float arrays of the result's shape) avoid allocations in a simulation loop.
     """
-    if out is None:
+    if out is None or np.any(four_quadrant):
         q = np.asarray(q, dtype=float)
         qd = np.asarray(qd, dtype=float)
         tau = kp * (np.asarray(q_target, dtype=float) - q) + kd * (np.asarray(qd_target, dtype=float) - qd) + tau_ff
         lim = torque_limit(qd, stall, no_load_speed)
-        return np.clip(tau, -lim, lim)
+        if np.any(four_quadrant):                     # braking: the full stall torque at any speed
+            lim = np.where(np.asarray(four_quadrant, dtype=bool) & (tau * qd < 0),
+                           np.broadcast_to(np.asarray(stall, dtype=float), np.shape(lim)), lim)
+        res = np.clip(tau, -lim, lim)
+        if out is not None:
+            out[...] = res
+            return out
+        return res
     if work is None:
         work = np.empty_like(out)
     np.subtract(q_target, q, out=out)
