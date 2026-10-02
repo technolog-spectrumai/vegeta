@@ -107,17 +107,18 @@ endurance, and its gait on open terrain: twelve legs joint by joint, the body jo
 (configurations and module masses, ball geometry, rolling and a drop, the curl-up joint moment, plate and leg FEA,
 endurance).
 
-Project Onager — land robots (branch `dev_sikarian`): `20_onager_sentinel` (`designs/onager.py`) is the Onager
-Sentinel SX-1, a 380 kg wheel-leg reconnaissance unit (CAD of the hull, turret, mast and four wheel-legs against
-the datasheet envelope; mass budget and CG; wheel mode — resistance vs the hub motors' torque–speed line, grades,
-the 0–38 km/h run, range and endurance; walking mode — stance torques, the joint modules and the speed they
-allow; ISO 8608 terrains through a quarter car with the active leg as suspension, hull vibration PSDs, pitch,
-leg and mast modes from Talos and a frequency diagram; static FEA of both leg plates, stub axle and knee pin;
-the actuators under Chiron's servo model — a stand-up from the crouch, currents and the battery; and in MuJoCo
-through ChironLab a patrol on gravel with a speed bump where a hub motor fails and a wheel seizes, two responses
-compared — drag vs the three-wheel limp — with a movie each). `designs/onager_robot.py`, `onager_controller.py`
-and `onager_scenario.py` are the Sentinel in ChironLab; `scenarios/onager_patrol.py` (or `./user_tests.sh onager`)
-re-runs the patrol and writes the movies.
+Project Onager — land robots (`onager/`, branch `dev_sikarian`): the wheeled machines have their own category,
+with their notebooks, design files, tests and scenarios under `onager/` (see `onager/README.md`).
+`onager/01_onager_sentinel.ipynb` (`onager/designs/onager.py`) is the Onager Sentinel SX-1, a 380 kg wheel-leg
+reconnaissance unit: CAD of the hull, turret, mast and four wheel-legs against the datasheet envelope; mass budget
+and CG; wheel mode (resistance vs the hub motors' torque–speed line, grades, the 0–38 km/h run, range and
+endurance); walking mode (stance torques, the joint modules and the speed they allow); ISO 8608 terrains through a
+quarter car with the active leg as suspension, hull vibration PSDs, pitch, leg and mast modes from Talos and a
+frequency diagram; static FEA of both leg plates, stub axle and knee pin; the actuators under Chiron's servo model
+(a stand-up from the crouch, currents and the battery); and in MuJoCo through ChironLab a patrol on gravel with a
+speed bump where a hub motor fails and a wheel seizes, two responses compared — drag vs the three-wheel limp — with
+a movie each. `onager/scenarios/onager_patrol.py` (or `./user_tests.sh onager`) re-runs the patrol and writes the
+movies.
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 

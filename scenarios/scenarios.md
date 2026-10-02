@@ -85,12 +85,4 @@ sets only servo targets; whether the ball closes is decided by gravity, contacts
 
 ## Onager Sentinel on patrol (MuJoCo)
 
-`xvfb-run -a python3 scenarios/onager_patrol.py [--response drag|limp]` (or `./user_tests.sh onager`) drives the
-Onager Sentinel SX-1 (`notebooks/designs/onager_robot.py`: a 408 kg wheel-leg hybrid, eight 800 N·m joint
-modules as position servos, four 3 kW hub motors as velocity servos on their torque–speed lines) over a gravel
-road with a 120 mm speed bump at 3 m/s; at 6 s the front-left hub motor loses power (it freewheels), at 9 s the
-rear-right wheel seizes. Two responses, one movie each: `onager_patrol_drag.mp4` (keep driving on three motors,
-the braked tyre skids) and `onager_patrol_limp.mp4` (the three-wheel limp: the hull shifts 0.4 m forward on the
-three good legs, the seized wheel lifts 100 mm, speed down to 1.5 m/s); `onager_patrol.json` has the per-phase
-tables (speed, heading, tilt, corner loads, wheel torques and power, the seized wheel's drag). The scenario is
-`notebooks/designs/onager_scenario.py`, the same one notebook 20 §7 runs.
+Moved to the Onager category: `onager/scenarios/onager_patrol.py`, described in `onager/README.md`.
