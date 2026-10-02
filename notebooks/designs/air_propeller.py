@@ -212,7 +212,10 @@ def installation_drag(p, radius_mm: float, speed: float, thrust: float, *, rho: 
 
     - pressure on the pod: ahead of the disc the static pressure falls (``-rho (V u + u^2/2)``: a pusher's tail cone is sucked
       back), behind it the disc's jump ``T/A`` recovers along the slipstream (a tractor's nose is pushed back); integrated
-      over the pod's profile as annuli (projected areas), at the axis value — the pod is thin against the disc;
+      over the pod's profile as annuli (projected areas), at the axis value — the pod is thin against the disc. The pod's
+      flat motor-end face is left out: it faces the propeller hub across the small ``gap`` and the hub carries the same
+      pressure the other way (the hub is not in the blade-element thrust, so both are left out together — as in the CFD,
+      where the hub's force is in the propeller's and the face's in the body's, and they cancel in ``T - dD``);
     - friction: every pod segment's friction drag scaled by the local ``((V + u)/V)^2``; the pylon's share inside the
       stream tube likewise (``cd_pylon`` on chord x span);
 
@@ -237,7 +240,9 @@ def installation_drag(p, radius_mm: float, speed: float, thrust: float, *, rho: 
     x, r = prof[:, 0], prof[:, 1]
     xm = 0.5 * (x[1:] + x[:-1])
     annulus = np.pi * (r[:-1] ** 2 - r[1:] ** 2)                         # > 0 where the surface faces downstream (n_x > 0)
-    pressure = float(np.sum(-dp(xm) * annulus))                          # x force of -dp n dA, drag positive
+    x_face = (p["hub_height"] / 2 + p["gap"]) / 1000.0 * (1 if p["layout"] == "tractor" else -1)
+    end_face = (np.abs(x[:-1] - x_face) < 1e-9) & (np.abs(x[1:] - x_face) < 1e-9)   # the motor-end face across the gap from the hub
+    pressure = float(np.sum(np.where(end_face, 0.0, -dp(xm) * annulus)))  # x force of -dp n dA, drag positive
     f = pod_friction(p, V, nu) if V > 0 else None
     if f is not None:
         q = 0.5 * rho * V ** 2

@@ -88,3 +88,21 @@ def test_installation_drag_signs_and_limits():
         assert ap.installation_drag(p, 127.0, 20.0, 10.0)["total_N"] > d["total_N"]
     far = ap.installation_drag(dict(POD, layout="pusher", gap=3000.0), 127.0, 20.0, 5.0)
     assert far["pressure_N"] < 0.01 * ap.installation_drag(dict(POD, layout="pusher"), 127.0, 20.0, 5.0)["pressure_N"]
+
+
+def test_installation_drag_leaves_out_the_motor_end_face():
+    for lay in ap.LAYOUTS:
+        p = dict(POD, layout=lay, hub_height=10.0, gap=3.0)
+        d = ap.installation_drag(p, 127.0, 20.0, 5.0)
+        prof = np.array(ap.PropPod.pod_profile(dict({q.name: q.default for q in ap.PropPod.parameters}, **p))) / 1000.0
+        x, r = prof[:, 0], prof[:, 1]
+        x_face = 0.008 if lay == "tractor" else -0.008
+        face = (np.abs(x[:-1] - x_face) < 1e-9) & (np.abs(x[1:] - x_face) < 1e-9)
+        assert face.sum() == 1                                               # exactly one flat end face, at the disc side
+        R, V, T = 0.127, 20.0, 5.0
+        v_i = 0.5 * (-V + math.sqrt(V ** 2 + 2 * T / (1.225 * math.pi * R ** 2)))
+        xm = 0.5 * (x[1:] + x[:-1])
+        u = v_i * (1 + xm / np.sqrt(xm ** 2 + R ** 2))
+        dp = np.where(xm < 0, 0.0, T / (math.pi * R ** 2)) - 1.225 * (V * u + 0.5 * u ** 2)
+        ann = np.pi * (r[:-1] ** 2 - r[1:] ** 2)
+        assert d["pressure_N"] == pytest.approx(float(np.sum((-dp * ann)[~face])), rel=1e-9)
