@@ -61,17 +61,32 @@ def _duct_cut_off(n: int) -> float:
         return n + 0.8086 * n ** (1 / 3) + 0.0725 * n ** (-1 / 3)
 
 
+def _lowest_mode(mB: int, V: int) -> tuple[int, int]:
+    """(n, s) of the lowest-order interaction mode n = mB - s V: the distance from mB to the nearest multiple of V
+    (ties, mB halfway between two multiples, go to the smaller s)."""
+    s = mB // V                                     # the multiples of V either side of mB: s V <= mB < (s+1) V
+    n_lo, n_hi = mB - s * V, mB - (s + 1) * V       # n_lo >= 0 > n_hi
+    return (n_lo, s) if n_lo <= -n_hi else (n_hi, s + 1)
+
+
 def tyler_sofrin_modes(blades: int, vanes: int, harmonics: int = 3, s_range: int = 4) -> list[dict]:
     """The circumferential mode orders of rotor-stator interaction (Tyler & Sofrin 1962): at m x BPF the B rotor wakes
     sweeping over V vanes make the pressure patterns ``n = m B - s V`` (s any integer; the vane loading repeats every
-    vane, so only these survive the sum over the vanes). For m = 1..``harmonics`` and s = -``s_range``..``s_range``,
-    sorted by |n| within each harmonic (ties by s). Returns ``[{"harmonic", "s", "n"}, ...]``."""
+    vane, so only these survive the sum over the vanes). For m = 1..``harmonics``, sorted by |n| within each harmonic
+    (ties by s), so the first row of a harmonic is its lowest-order mode (as in ``vane_count_study``).
+
+    The s listed are -``s_range``..``s_range`` together with s0 - ``s_range``..s0 + ``s_range`` around the lowest-order
+    mode s0 (the multiple of V nearest m B, s0 ~ m B / V, as ``interaction_tones`` does). The window around 0 alone
+    misses the lowest mode once m B / V > ``s_range`` (B = 12, V = 7 at 3 x BPF: s = 5, n = 1; few vanes: V = 1 makes
+    the plane wave n = 0 at s = m B). Returns ``[{"harmonic", "s", "n"}, ...]``."""
     B, V = _count(blades, "blades"), _count(vanes, "vanes")
     if harmonics < 1 or s_range < 0:
         raise ValueError("harmonics >= 1 and s_range >= 0")
     rows = []
     for m in range(1, harmonics + 1):
-        modes = [{"harmonic": m, "s": s, "n": m * B - s * V} for s in range(-s_range, s_range + 1)]
+        s0 = _lowest_mode(m * B, V)[1]
+        s_all = sorted(set(range(-s_range, s_range + 1)) | set(range(s0 - s_range, s0 + s_range + 1)))
+        modes = [{"harmonic": m, "s": s, "n": m * B - s * V} for s in s_all]
         rows += sorted(modes, key=lambda d: (abs(d["n"]), d["s"]))
     return rows
 
@@ -112,9 +127,7 @@ def vane_count_study(blades: int, vane_counts, tip_mach: float, harmonics: int =
         V = _count(vanes, "vanes")
         modes = []
         for m in range(1, harmonics + 1):
-            s = (m * B) // V                                   # the multiples of V either side of mB: s V <= mB < (s+1) V
-            n_lo, n_hi = m * B - s * V, m * B - (s + 1) * V    # n_lo >= 0 > n_hi
-            n, s = (n_lo, s) if n_lo <= -n_hi else (n_hi, s + 1)     # ties go to the smaller s, as in tyler_sofrin_modes
+            n, s = _lowest_mode(m * B, V)                      # ties go to the smaller s, as in tyler_sofrin_modes
             ratio = cut_on_ratio(m, B, n, tip_mach)
             modes.append({"harmonic": m, "n": n, "s": s, "cut_on_ratio": ratio, "cut_on": ratio > 1.0})
         rows.append({"vanes": V, "modes": modes, "cut_on_harmonics": [d["harmonic"] for d in modes if d["cut_on"]],
@@ -128,13 +141,26 @@ def rotor_wake_harmonics(blades: int, chord_m: float, cd: float, spacing_m: floa
     as a fraction of the blade's local relative velocity W: index 0 the circumferential mean, index m = 1..``harmonics``
     the amplitude at m x BPF.
 
-    Each blade (chord c, profile drag coefficient ``cd`` including its losses) sheds a wake with, at a distance x
-    downstream of the trailing edge (Silverstein, Katzoff & Bullivant 1939, in the form fan-noise prediction uses
-    after Kemp & Sears 1955):
+    Each blade (chord c, profile drag coefficient ``cd`` including its losses) sheds a wake that Silverstein, Katzoff &
+    Bullivant (NACA Rep. 651, 1939) fit, at a distance x downstream of the trailing edge, as a loss of total head
+    (equally, of dynamic pressure) with a cos^2 profile across it:
 
-        centreline deficit   u_c / W = 2.42 sqrt(cd) / (x/c + 0.3)
-        half width at half deficit   b = 0.68 c sqrt(cd (x/c + 0.15))
-        profile   u / W = (u_c / W) exp(-ln2 (y / b)^2)          (Gaussian, y across the wake)
+        centreline loss   H_0 / q = 2.42 sqrt(cd) / (x/c + 0.3)
+        half width to the wake's edge   y_w = 0.68 c sqrt(cd (x/c + 0.15)),   H / H_0 = cos^2(pi y / (2 y_w))
+
+    With the static pressure recovered, H / q = 1 - (1 - u/W)^2 ~ 2 u / W for a small velocity deficit u, and the
+    cos^2 falls to half its depth at y_w / 2. Here, as a Gaussian of the same depth and half width at half deficit:
+
+        centreline deficit   u_c / W = H_0 / (2 q) = 1.21 sqrt(cd) / (x/c + 0.3)
+        half width at half deficit   b = y_w / 2 = 0.34 c sqrt(cd (x/c + 0.15))
+        profile   u / W = (u_c / W) exp(-ln2 (y / b)^2)          (y across the wake)
+
+    The Gaussian's area, 0.876 cd c sqrt(x/c + 0.15) / (x/c + 0.3), is 6 % above the cos^2 wake's; it is 1.8, 1.4,
+    1.1 and 0.8 times the section's momentum deficit cd c / 2 at x/c = 0.5, 1, 2 and 4 (an empirical near-wake fit,
+    consistent with the drag further down). Reading the 2.42 fit as a velocity deficit and 0.68 as the half width at
+    half deficit, as is sometimes done, makes the wake 4-7 times the drag's momentum deficit and 1 x BPF ~10 dB too loud.
+    The linear u = H / (2 q) is below the exact 1 - sqrt(1 - H/q) by a fraction ~ u_c / (2 W) (8 % at u_c = 0.15 W),
+    and nearer than it to the momentum deficit (u/W)(1 - u/W).
 
     The B wakes repeat every blade pitch 2 pi r / B around the circumference and sweep past the vane once per blade
     passage, so the deficit is sampled over one pitch (``n_samples`` points, overlapping wakes summed) and Fourier
@@ -148,9 +174,7 @@ def rotor_wake_harmonics(blades: int, chord_m: float, cd: float, spacing_m: floa
     across the inclined wake sheet at the vane plane is b / cos(angle) wide along the circumference. 0 (default)
     takes the wake straight downstream.
 
-    The integral of this wake, 3.5 cd c sqrt(x/c + 0.15) / (x/c + 0.3), is several times the momentum deficit
-    cd c / 2 of the section drag alone at x ~ c: for a clean section it is an upper estimate (real fan-rotor wakes also
-    carry tip-clearance and secondary-flow losses — put them in ``cd``, or scale the result)."""
+    Real fan-rotor wakes also carry tip-clearance and secondary-flow losses: put them in ``cd``, or scale the result."""
     B = _count(blades, "blades")
     if chord_m <= 0 or cd < 0 or spacing_m < 0 or radius_m <= 0:
         raise ValueError("chord_m > 0, cd >= 0, spacing_m >= 0, radius_m > 0")
@@ -162,8 +186,8 @@ def rotor_wake_harmonics(blades: int, chord_m: float, cd: float, spacing_m: floa
         return np.zeros(harmonics + 1)
     cos_b = math.cos(math.radians(wake_angle_deg))
     xc = spacing_m / cos_b / chord_m                                        # distance travelled along the wake, chords
-    u_c = 2.42 * math.sqrt(cd) / (xc + 0.3)
-    b = 0.68 * chord_m * math.sqrt(cd * (xc + 0.15)) / cos_b                # half width along the circumference
+    u_c = 0.5 * 2.42 * math.sqrt(cd) / (xc + 0.3)                           # half Silverstein's total-head loss
+    b = 0.5 * 0.68 * chord_m * math.sqrt(cd * (xc + 0.15)) / cos_b          # half width at half deficit, along the circumference
     pitch = 2 * math.pi * radius_m / B
     y = np.arange(n_samples) * pitch / n_samples
     copies = int(math.ceil(8 * b / pitch)) + 1                             # neighbouring wakes whose tails reach this pitch

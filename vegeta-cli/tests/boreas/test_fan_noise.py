@@ -37,16 +37,30 @@ def brute_force(vanes, row, R, stagger_deg, angle_deg, azimuth_deg, distance):
     return w / (4 * math.pi * C * distance) * abs(P) / math.sqrt(2)
 
 
+def first_modes(blades, vanes, harmonics=3, **kw):
+    """The first row (lowest |n|) of every harmonic of tyler_sofrin_modes, as (n, s)."""
+    modes = fn.tyler_sofrin_modes(blades, vanes, harmonics, **kw)
+    return [next((d["n"], d["s"]) for d in modes if d["harmonic"] == m) for m in range(1, harmonics + 1)]
+
+
 def test_tyler_sofrin_mode_selection():
     modes = fn.tyler_sofrin_modes(B, 7, harmonics=3, s_range=4)
-    assert len(modes) == 3 * 9
     assert all(d["n"] == d["harmonic"] * B - d["s"] * 7 for d in modes)
-    for m in (1, 2, 3):
+    for m, s0 in ((1, 2), (2, 3), (3, 5)):                           # s0: the multiple of 7 nearest 12 m
         own = [d for d in modes if d["harmonic"] == m]
-        assert sorted(d["s"] for d in own) == list(range(-4, 5))
+        # s = -4..4 and s0 - 4..s0 + 4, each once
+        assert sorted(d["s"] for d in own) == sorted(set(range(-4, 5)) | set(range(s0 - 4, s0 + 5)))
         assert [abs(d["n"]) for d in own] == sorted(abs(d["n"]) for d in own)
-    first = [d for d in modes if d["harmonic"] == 1][0]
-    assert (first["n"], first["s"]) == (-2, 2)                       # 12 - 2 x 7
+    # the lowest mode comes first even when m B / V > s_range: 12 - 2 x 7, 24 - 3 x 7, 36 - 5 x 7
+    assert first_modes(B, 7) == [(-2, 2), (3, 3), (1, 5)]
+    assert first_modes(B, 5) == [(2, 2), (-1, 5), (1, 7)]
+    assert first_modes(B, 3) == [(0, 4), (0, 8), (0, 12)]
+    assert first_modes(B, 1) == [(0, 12), (0, 24), (0, 36)]               # one vane: the plane wave n = mB - mB
+    assert first_modes(B, 7, s_range=0) == [(-2, 2), (3, 3), (1, 5)]      # only the lowest mode
+    # = the lowest mode of vane_count_study (ties to the smaller s), for every vane count
+    for V in range(1, 40):
+        study = fn.vane_count_study(B, [V], 0.4, harmonics=4)[0]["modes"]
+        assert first_modes(B, V, 4) == [(d["n"], d["s"]) for d in study], V
     # as many vanes as blades: a plane wave (n = 0) at every harmonic
     for m in (1, 2, 3):
         assert [d for d in fn.tyler_sofrin_modes(B, B, 3) if d["harmonic"] == m][0]["n"] == 0
@@ -98,11 +112,15 @@ def test_rotor_wake_harmonics():
     chord, cd, spacing = 0.015, 0.03, 0.015
     a = fn.rotor_wake_harmonics(B, chord, cd, spacing, R_VANE, harmonics=6)
     xc = spacing / chord
-    u_c = 2.42 * math.sqrt(cd) / (xc + 0.3)
-    b = 0.68 * chord * math.sqrt(cd * (xc + 0.15))
+    u_c = 1.21 * math.sqrt(cd) / (xc + 0.3)                                    # half Silverstein's total-head loss 2.42 ...
+    b = 0.34 * chord * math.sqrt(cd * (xc + 0.15))                             # ... half his edge half width 0.68 ...
     pitch = 2 * math.pi * R_VANE / B
     mean = u_c * b * math.sqrt(math.pi / math.log(2)) / pitch                 # the wake's area over the pitch
     assert len(a) == 7 and a[0] == pytest.approx(mean, rel=1e-9)
+    # the wake's momentum deficit is the section drag's, cd c / 2, within the near-wake fit: 1.4x at x = c, 1.1x at 2 c
+    for x, ratio in ((1.0, 1.445), (2.0, 1.117), (4.0, 0.830)):
+        area = fn.rotor_wake_harmonics(B, chord, cd, x * chord, R_VANE)[0] * pitch
+        assert area / (cd * chord / 2) == pytest.approx(ratio, abs=2e-3)
     m = np.arange(1, 7)
     assert a[1:] == pytest.approx(2 * mean * np.exp(-(math.pi * m * b / pitch) ** 2 / math.log(2)), rel=1e-6)
     assert np.all(np.diff(a[1:]) < 0)
@@ -112,8 +130,8 @@ def test_rotor_wake_harmonics():
     assert np.all(ratio < 1) and np.all(np.diff(ratio) < 0)
     # a wake travelling at 60 deg from the axis: twice the path, twice as wide along the circumference
     sl = fn.rotor_wake_harmonics(B, chord, cd, spacing, R_VANE, harmonics=6, wake_angle_deg=60.0)
-    u2 = 2.42 * math.sqrt(cd) / (2 * xc + 0.3)
-    b2 = 2 * 0.68 * chord * math.sqrt(cd * (2 * xc + 0.15))
+    u2 = 1.21 * math.sqrt(cd) / (2 * xc + 0.3)
+    b2 = 2 * 0.34 * chord * math.sqrt(cd * (2 * xc + 0.15))
     assert sl[0] == pytest.approx(u2 * b2 * math.sqrt(math.pi / math.log(2)) / pitch, rel=1e-9) and sl[3] < a[3]
     assert np.all(fn.rotor_wake_harmonics(B, chord, 0.0, spacing, R_VANE) == 0.0)
     with pytest.raises(ValueError):

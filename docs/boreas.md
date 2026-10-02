@@ -140,9 +140,14 @@ With no losses it is the ideal ducted actuator disk, `P = T (V_exit + V)/2` and 
 for σ = 1 that is 1/√2 of an ideal open rotor of the same area. `figure_of_merit` is `T^1.5 / (P √(2 ρ A_fan))` — the
 open-rotor definition on the fan annulus — so an ideal duct reaches `√(2σ)` (1.34 at σ = 0.9) and a real one can exceed 1.
 The default losses describe a clean fan: the 90 mm, 12-blade unit above makes 22 N static at ~27 000 rpm with
-FM ≈ 1.07 (80 % of its ideal); a lumped `duct_loss = 0.25` and a 0.9 mm gap give ≈ 0.91. Hobby EDFs (moulded blades,
-motor struts, sharp static inlets) are usually rougher than the defaults: fit `duct_loss` to a measured static
-thrust/power point of the unit you have. Windmilling (`V_exit < V`, negative thrust) is solved like any other point;
+FM ≈ 1.07 (only 26 % above its ideal power), which flatters a hobby EDF. Catalogue claims for 90 mm, 12-blade 6S units
+(≈ 3.0–3.8 kgf from 1.9–3.1 kW electrical, at an assumed 85 % motor + ESC efficiency) give FM ≈ 0.75–1.0; a lumped
+`duct_loss` of 0.25–0.5 with a 0.9 mm gap gives 0.91–0.78 (0.4 → 0.83). Do not compare a propeller with the defaults:
+use such values, or fit `duct_loss` to a measured static thrust and shaft power of the unit you have,
+`fan = ducted.fit_duct_loss(fan, section, thrust=29.4, power=0.85 * 1930.0)` (it lumps what the model leaves out:
+inlet lip, struts, low-Reynolds blades, mixing). `rpm_for_thrust` searches 100 rpm..`rpm_max` and raises when the
+target lies outside the thrusts at those ends or the point found is not converged.
+Windmilling (`V_exit < V`, negative thrust) is solved like any other point;
 if the fan cannot push air against the system at any flow, `solve` returns the point nearest a balance with
 `converged=False`. `nacelle_drag` is turbulent flat-plate friction (Prandtl–Schlichting `Cf = 0.455 / (log10 Re)^2.58`)
 on `external_wetted_area_m2` with Re on `duct_length_m`. Tests: `tests/boreas/test_ducted.py`.
@@ -152,7 +157,7 @@ A ducted fan's loudest tones come from the rotor wakes striking the stator vanes
 estimates of them from plain numbers (no geometry objects), to compare blade and vane counts, spacing and rpm:
 ```python
 from vegeta.boreas import fan_noise
-fan_noise.tyler_sofrin_modes(12, 7, harmonics=3)            # n = mB - sV per harmonic, lowest |n| first
+fan_noise.tyler_sofrin_modes(12, 7, harmonics=3)            # n = mB - sV per harmonic, lowest |n| first (s around 0 and mB/V)
 fan_noise.cut_on_ratio(1, 12, -2, tip_mach=0.35)            # m B M_tip / |n|: > 1 propagates, < 1 decays
 fan_noise.vane_count_study(12, [7, 11, 17, 25], 0.35)       # lowest mode per harmonic, cut on or off, per vane count
 w = fan_noise.rotor_wake_harmonics(12, chord_m=0.015, cd=0.03, spacing_m=0.015, radius_m=0.036, wake_angle_deg=55)
@@ -167,10 +172,13 @@ tones[0]["spl_db"], tones[0]["dominant_n"], tones[0]["modes"]   # per m x BPF: l
   form; a hard-walled duct needs `k R > j'_{n,1} ≈ |n| + 0.81 |n|^{1/3}`, so the ratio errs on the noisy side).
   1 × BPF is cut off for every V > B (1 + M_tip) and never for V < 2 B M_tip (the classic "V > 2B" for sonic tips).
   With 12 blades at M_tip ≈ 0.35, V = 7 leaves `n = −2` cut on; V ≥ 17 cuts 1 × BPF off; V = 12 makes a plane wave.
-- **Wakes**: Silverstein's wake (centreline deficit `2.42 √cd / (x/c + 0.3)`, half width at half deficit
-  `0.68 c √(cd (x/c + 0.15))`, Gaussian) repeated every blade pitch and Fourier-analysed at the vane radius;
-  `wake_angle_deg` lets the wake travel along the rotor's relative exit flow (longer path, wider cut). The wake carries
-  more momentum deficit than the section drag alone: an upper estimate for a clean blade.
+- **Wakes**: Silverstein, Katzoff & Bullivant (NACA Rep. 651) fit the total-head loss `H₀/q = 2.42 √cd / (x/c + 0.3)`
+  with a cos² profile of edge half width `0.68 c √(cd (x/c + 0.15))`. As a velocity deficit (`H/q ≈ 2u/W`) that is a
+  Gaussian of centreline deficit `u_c/W = 1.21 √cd / (x/c + 0.3)` and half width at half deficit
+  `0.34 c √(cd (x/c + 0.15))`, repeated every blade pitch and Fourier-analysed at the vane radius; its momentum deficit
+  is 1.4 × / 1.1 × the section drag's `cd c/2` at x = c / 2c (reading 2.42 as the velocity deficit would make it ~6 ×
+  and 1 × BPF ~10 dB too loud). `wake_angle_deg` lets the wake travel along the rotor's relative exit flow (longer path,
+  wider cut). Tip-clearance and secondary-flow losses go into `cd`.
 - **Vane load**: thin aerofoil in a transverse gust, `L_m = π ρ c U w_m |S(k_m)| span` with the Sears amplitude
   `|S| ≈ 1/√(1 + 2πk)` (`fan_noise.sears`), normal to the chord: `L sin ξ` axial, `L cos ξ` tangential (stagger ξ from
   the axis, towards the rotation).
