@@ -32,7 +32,7 @@ from ._watermark import watermark
 
 Sampler = Callable[[np.ndarray], "tuple[np.ndarray, np.ndarray]"]
 
-ROTOR_TEMPLATES = ("rotor_mrf", "rotor_mrf_static")
+ROTOR_TEMPLATES = ("rotor_mrf", "rotor_mrf_static", "rotor_mrf_installed")
 
 
 def _cv2():

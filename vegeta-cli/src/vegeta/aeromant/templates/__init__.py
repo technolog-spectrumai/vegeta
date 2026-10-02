@@ -82,6 +82,7 @@ class TemplateSpec:
     max_body_extent: float  # largest body dimension allowed, in multiples of reference_length
     patches: dict[str, str] = field(default_factory=dict)
     notes: tuple[str, ...] = ()
+    static_geometry: bool = False   # True: a second STL (a pod, an airframe) that stands still next to the rotor
 
     @property
     def directory(self) -> Path:
@@ -369,6 +370,60 @@ ROTOR_MRF_STATIC = TemplateSpec(
                          "open (total-pressure) far-field boundaries were tried and diverged with SIMPLE; the small fixed inflow is the stable choice"),
 )
 
+# -- a propeller installed on a pod / airframe: rotating blades (MRF) next to a standing body ------------------
+def _installed_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """``_rotor_derive`` for the propeller (``bmin``/``bmax``), then the domain grown to hold the standing body
+    (``p["_static_bbox"]``, given by ``CFDCase.prepare``) with ``static_margin`` diameters around it, and a refinement
+    box around that body."""
+    out = _rotor_derive(p, bmin, bmax)
+    if "_static_bbox" not in p:
+        raise ValueError("rotor_mrf_installed needs the standing body: CFDCase(..., static_geometry=<STL>)")
+    smin, smax = (np.asarray(v, dtype=float) for v in p["_static_bbox"])
+    D, c = p["diameter"], np.asarray(p["center"], dtype=float)
+    h = D / p["cells_per_diameter"]
+    lo = np.minimum(c - np.array([p["upstream"] * D, p["lateral"] * D, p["lateral"] * D]), smin - p["static_margin"] * D)
+    hi = np.maximum(c + np.array([p["downstream"] * D, p["lateral"] * D, p["lateral"] * D]), smax + p["static_margin"] * D)
+    n = np.maximum(1, np.ceil((hi - lo) / h)).astype(int)
+    hi = lo + n * h
+    loc = lo + np.array([0.37 * p["upstream"] * D, 0.123 * (hi[1] - lo[1]), 0.211 * (hi[2] - lo[2])])
+    if np.all(loc > smin) and np.all(loc < smax):
+        raise ValueError("the mesh seed point falls inside the standing body's bounding box; enlarge 'lateral'")
+    out.update({k: _fmt(v) for k, v in {
+        "XMIN": lo[0], "YMIN": lo[1], "ZMIN": lo[2], "XMAX": hi[0], "YMAX": hi[1], "ZMAX": hi[2],
+        "NX": n[0], "NY": n[1], "NZ": n[2], "LOCATION_IN_MESH": loc,
+        "STATIC_BOX_MIN": smin - 0.1 * D, "STATIC_BOX_MAX": smax + 0.1 * D,
+        "STATIC_LEVEL": p["static_level"], "STATIC_BOX_LEVEL": p["static_box_level"],
+        "WAKE_MAX": np.minimum(np.array([c[0] + p["wake_length"] * D, c[1] + 0.7 * D, c[2] + 0.7 * D]), hi - h),
+    }.items()})
+    return out
+
+
+ROTOR_MRF_INSTALLED = TemplateSpec(
+    name="rotor_mrf_installed",
+    description="A propeller installed on a standing body (a pod, a nacelle with its pylon, an airframe) in axial inflow "
+                "(along +x): the blades in a rotating reference frame, the body standing still, steady k-omega SST; "
+                "forces on the propeller and on the body separately (tractor: body behind the disc, pusher: ahead of it).",
+    parameters=(TemplateParameter("airspeed", "axial inflow speed along +x (flight speed)", "m/s"),) + ROTOR_COMMON + (
+        TemplateParameter("static_margin", "free space around the standing body (the domain grows to keep it)", "D", 1.5),
+        TemplateParameter("static_level", "snappy refinement level on the standing body", "", 3, "int"),
+        TemplateParameter("static_box_level", "refinement level in a box around the standing body", "", 1, "int"),
+    ),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_installed_derive,
+    max_body_extent=1.5,
+    patches=dict(ROTOR_PATCHES, **{"static*": "no-slip wall, not rotating even inside the MRF zone (nonRotatingPatches); "
+                                              "its own forces function object (staticForces)"}),
+    notes=ROTOR_NOTES + (
+        "geometry = the propeller (with its spinner) on the axis +x through 'center'; static_geometry = the body",
+        "leave a small gap between spinner and body, or let the body reach into the spinner: two surfaces must not touch face to face",
+        "thrust/torque are the propeller's (forces); body_force_N is the standing body's (staticForces); net_thrust_N = thrust - body drag",
+        "efficiency = thrust x airspeed / shaft power; net efficiency uses the net thrust",
+        "steady MRF with a standing body: the blades are frozen at one angle relative to the body (frozen rotor); "
+        "the unsteady blade-passing interaction needs a sliding mesh — read the body's wake from a body-alone run",
+    ),
+    static_geometry=True,
+)
+
 # -- a whole aircraft with its two propellers as rotor disks (blade-element source terms) ---------------
 def _unit(v) -> np.ndarray:
     v = np.asarray(v, dtype=float)
@@ -572,7 +627,7 @@ SUCTION_HOOD = TemplateSpec(
     ),
 )
 
-TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC,
+TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC, ROTOR_MRF_INSTALLED,
                                                          AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 

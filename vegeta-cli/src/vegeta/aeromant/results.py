@@ -178,9 +178,11 @@ def read_surface_field_values(case: Path, name: str) -> np.ndarray:
     return np.array([r[:width] for r in rows], dtype=float)
 
 
-def find_force_files(case: Path, name: str = "force.dat") -> list[Path]:
+def find_force_files(case: Path, name: str = "force.dat", function: str | None = None) -> list[Path]:
+    """``postProcessing/<function>/<time>/<name>`` files in time order; ``function`` None takes every function
+    object's (one forces object per case), a name picks one (a case with several, e.g. forces and staticForces)."""
     pp = Path(case) / "postProcessing"
-    return sorted(set(pp.glob(f"*/*/{name}")), key=lambda p: (p.parent.parent.name, _time_key(p.parent.name)))
+    return sorted(set(pp.glob(f"{function or '*'}/*/{name}")), key=lambda p: (p.parent.parent.name, _time_key(p.parent.name)))
 
 
 def read_force_history(files: list[Path] | Path) -> np.ndarray:

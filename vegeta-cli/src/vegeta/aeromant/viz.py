@@ -57,7 +57,7 @@ def plot_setup(case, plotter=None):
         lo = np.array([float(d["XMIN"]), float(d["YMIN"]), float(d["ZMIN"])])
         hi = np.array([float(d["XMAX"]), float(d["YMAX"]), float(d["ZMAX"])])
         cells = f"{d['NX']}x{d['NY']}x{d['NZ']}"
-        boxes = (("NEAR", "#2ca02c"), ("WAKE", "#ff7f0e"))
+        boxes = (("NEAR", "#2ca02c"), ("WAKE", "#ff7f0e"), ("STATIC_BOX", "#9467bd"))
     pl.add_mesh(pv.Box(bounds=(lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])), style="wireframe", color="#555555",
                 line_width=1.5, label="domain")
     for name, colour in boxes:
@@ -68,6 +68,8 @@ def plot_setup(case, plotter=None):
                     line_width=1.0, label=f"{name.lower()} refinement (level {d[name + '_LEVEL']})")
     if stl is not None:
         pl.add_mesh(pv.read(str(stl)), color="#9fb8d0", smooth_shading=True, label="body")
+        if (stl.parent / "static.stl").is_file():                   # rotor_mrf_installed: the standing pod / airframe
+            pl.add_mesh(pv.read(str(stl.parent / "static.stl")), color="#c9c9c9", smooth_shading=True, label="standing body")
     span = float((hi - lo).max())
     if suction:
         w = float(d["SUCTION_W"])

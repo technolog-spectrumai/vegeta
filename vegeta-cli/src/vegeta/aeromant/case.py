@@ -47,9 +47,15 @@ class CFDCase:
     """
 
     def __init__(self, template: str | TemplateSpec, geometry: str | Path, parameters: dict[str, Any],
-                 workdir: str | Path, geometry_units: str, environment: OpenFOAMEnvironment | None = None):
+                 workdir: str | Path, geometry_units: str, environment: OpenFOAMEnvironment | None = None,
+                 static_geometry: str | Path | None = None):
         self.template = get_template(template)
         self.geometry = Path(geometry)
+        if self.template.static_geometry and static_geometry is None:
+            raise ValueError(f"template {self.template.name!r} needs static_geometry (the standing body's STL, same units)")
+        if static_geometry is not None and not self.template.static_geometry:
+            raise ValueError(f"template {self.template.name!r} has no standing body; static_geometry is for rotor_mrf_installed")
+        self.static_geometry = Path(static_geometry) if static_geometry is not None else None
         if geometry_units not in LENGTH_TO_METRES:
             raise ValueError(f"geometry_units must be one of {sorted(LENGTH_TO_METRES)} (STL has no units)")
         self.geometry_units = geometry_units
@@ -69,6 +75,7 @@ class CFDCase:
             "openfoam_version": self.environment.version(),
             "geometry": str(self.geometry),
             "geometry_units": self.geometry_units,
+            **({"static_geometry": str(self.static_geometry)} if self.static_geometry else {}),
             "parameters": self.parameters,
             "user_parameters": self.user_parameters,
             "environment": self.environment.describe(),
@@ -76,6 +83,8 @@ class CFDCase:
 
     def _key(self) -> str:
         cfg = dict(self.config(), geometry_sha256=_sha256(self.geometry) if self.geometry.is_file() else None)
+        if self.static_geometry is not None:
+            cfg["static_geometry_sha256"] = _sha256(self.static_geometry) if self.static_geometry.is_file() else None
         cfg.pop("environment")
         cfg.pop("openfoam_version")
         return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
@@ -110,7 +119,11 @@ class CFDCase:
                     f"{self.template.name!r} is designed for bodies up to {self.template.max_body_extent} x L_ref "
                     f"— check geometry_units and reference_length"
                 )
-            values = self.template.derive(self.parameters, bmin, bmax)
+            derive_p = dict(self.parameters)
+            if self.static_geometry is not None:
+                static = read_stl(self.static_geometry).scaled(scale)
+                derive_p["_static_bbox"] = static.bbox
+            values = self.template.derive(derive_p, bmin, bmax)
             shutil.copytree(self.template.case_dir(self.flavor), self.workdir)
             geometry_dir = self.workdir / self.files.geometry_dir
             geometry_dir.mkdir(parents=True, exist_ok=True)
@@ -119,6 +132,9 @@ class CFDCase:
             inputs.mkdir()
             shutil.copy2(self.geometry, inputs / self.geometry.name)
             write_stl_ascii(body, geometry_dir / "body.stl", "body")
+            if self.static_geometry is not None:
+                shutil.copy2(self.static_geometry, inputs / ("static_" + self.static_geometry.name))
+                write_stl_ascii(static, geometry_dir / "static.stl", "static")
             self._render(values)
             info = {"key": self._key(), "config": self.config(), "derived": values, "created_at": utc_now(),
                     "body_bbox_m": [bmin.tolist(), bmax.tolist()], "body_area_m2": body.area,
@@ -136,6 +152,12 @@ class CFDCase:
                 res.messages.append("STL encloses no positive volume (open or inverted surface?); snappyHexMesh may fail")
             res.artifacts.update(case=self.workdir, case_info=self.workdir / CASE_INFO,
                                  body_stl=geometry_dir / "body.stl")
+            if self.static_geometry is not None:
+                res.metrics.update(static_bbox_min_m=static.bbox[0].tolist(), static_bbox_max_m=static.bbox[1].tolist(),
+                                   static_surface_area_m2=static.area)
+                res.artifacts["static_stl"] = geometry_dir / "static.stl"
+                if static.volume <= 0:
+                    res.messages.append("static STL encloses no positive volume (open or inverted surface?)")
         except (ValueError, FileNotFoundError, OSError) as exc:
             res.fail(str(exc))
         if res.ok and self.environment.flavor() is None:
@@ -413,7 +435,7 @@ def _rotor_results(res: Result, workdir: Path, p: dict, average_window: int) -> 
     from .results import find_force_files, read_force_history
 
     m = res.metrics
-    f_files, q_files = find_force_files(workdir, "force.dat"), find_force_files(workdir, "moment.dat")
+    f_files, q_files = find_force_files(workdir, "force.dat", "forces"), find_force_files(workdir, "moment.dat", "forces")
     if not f_files or not q_files:
         m.update(thrust_N=None, torque_Nm=None, power_W=None)
         return res.fail("no forces output found (solver NOT RUN or failed)")
@@ -438,6 +460,14 @@ def _rotor_results(res: Result, workdir: Path, p: dict, average_window: int) -> 
         area = math.pi * (D / 2) ** 2
         ideal = thrust * math.sqrt(max(thrust, 0.0) / (2 * rho * area))
         m["figure_of_merit"] = ideal / power if power > 0 else None
+    s_files = find_force_files(workdir, "force.dat", "staticForces")
+    if s_files:                                          # rotor_mrf_installed: the standing body's own forces
+        S = read_force_history(s_files)
+        fb = np.mean(S[-n:, 1:4], axis=0)
+        m.update(body_force_N=[float(x) for x in fb], body_drag_N=float(fb[0]), net_thrust_N=thrust - float(fb[0]))
+        res.artifacts["body_forces"] = s_files[-1]
+        if "airspeed" in p and power > 0:
+            m["net_efficiency"] = m["net_thrust_N"] * p["airspeed"] / power
     if thrust < 0:
         res.messages.append("negative thrust: the blades are handed against the sense of rotation; rerun with the "
                             "other 'rotation' value (or check that the rotor axis is +x)")
