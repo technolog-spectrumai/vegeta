@@ -147,6 +147,19 @@ Chronos spectra and arm fatigue, printing, a rendered movie of the flight; `scen
 `./user_tests.sh velutina`) re-runs the mission. To do: the parachute in CFD, propeller guards, four rotor disks in the
 whole-aircraft CFD; Velutina v2 (wind-turbine blade inspection) in the next commit.
 
+**Air propellers** (branch `dev_crazy_prop`): `25_air_propeller` (`designs/air_propeller.py`) is a 10 × 6 inch propeller on
+the motor pod and pylon of a 3 kg fixed-wing drone, **tractor first, then pusher**, each with **two and three blades**:
+aerodynamic efficiency from Boreas (η, C_T, C_P against J, η across the flight envelope at the thrust the drag polar needs,
+loading along the blade); the air the blades meet (the pylon's leading-edge blockage ahead of a tractor, its viscous wake
+behind it for a pusher) and the load on a blade over a revolution (with a Sears attenuation); OpenFOAM — the isolated
+propellers (`rotor_mrf`), the installed ones (the new `rotor_mrf_installed`: rotating blades, standing pod and pylon, forces
+apart → propeller and net efficiency) and the pod alone (the wake on the propeller plane); 3D particles and a movie of tracer
+balls through the four configurations with the pod drawn in; the blade in Talos spinning (the new `talos.Centrifugal`) and
+loaded, weak points, modes, a Campbell diagram with spin stiffening, a stress movie; fatigue under the pusher's
+once-per-revolution pulse; noise as Lowson's rotating dipoles (the new `boreas.wake.rotating_tones`) plus Schlegel–King–Mull
+vortex noise (`boreas.vortex_noise`), dB and dB(A) (`boreas.a_weighting`), directivity, and the four sounds as WAV files at one
+common scale. The CFD runs a **smoke test** by default (`AIR_PROP_CFD=smoke`, ~20 s a case); `AIR_PROP_CFD=full` is the real run.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

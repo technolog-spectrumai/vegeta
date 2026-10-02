@@ -48,10 +48,14 @@ vibration or fatigue assessment.
 tones = boreas.gutin_harmonics(prop, thrust=5.0, torque=0.1, rpm=6000, distance=10.0, angle_deg=90.0)  # Gutin steady-loading tones
 tones["blade_pass_hz"], tones["spl_db"], tones["total_tonal_db"]          # dB re 20 uPa (air) / 1 uPa (boreas.SEA_WATER)
 boreas.broadband_level(prop, thrust=5.0, rpm=6000, distance=10.0)         # empirical allowance, dB
+boreas.vortex_noise(prop, rpm=9000, distance=10.0, airspeed=20.0)         # Schlegel-King-Mull broadband: spl_db, peak_hz
+boreas.a_weighting([100, 1000, 4000])                                     # dB to add for dB(A): -19.1, 0.0, +1.0
+boreas.add_levels([60.0, 60.0])                                           # energetic sum: 63.0 dB
 boreas.cavitation(prop, rpm=3000, airspeed=2.0, depth_m=0.5, cp_min=-1.0) # cavitation number vs -Cp_min at 0.7 R
 ```
 Gutin's formula covers the steady thrust/torque loading only (no thickness or unsteady-inflow noise, no
-installation effects); the broadband term is a tip-speed⁶ allowance; `cp_min` is a property of your
+installation effects); the broadband term is a tip-speed⁶ allowance (its default constant reads high for small air
+propellers — `vortex_noise`, Schlegel–King–Mull as in Hubbard's NASA RP-1258, is the calibrated choice in air); `cp_min` is a property of your
 blade section. Use them to rank designs and operating points, not as certification numbers.
 
 ## Export (the hand-off)
@@ -77,6 +81,7 @@ w = wake.fin_wake(4, mean=0.15, depth=0.25, width_deg=12)        # or wake.sampl
 h = wake.load_harmonics(prop, airfoil, rpm, ship_speed, w, rho=1025.0)
 h.table(16)                     # per order: frequency, blade thrust/torque, shaft thrust/torque, side forces (amplitudes)
 wake.unsteady_tones(h, 1.0, boreas.SEA_WATER, angle_deg=30)       # the shaft force harmonics as dipole tones, dB
+wake.rotating_tones(h, prop, 10.0, boreas.AIR, 45.0, harmonics=16) # Lowson's rotating dipoles: steady + unsteady loading at m x BPF
 field = wake.slipstream_sampler(prop, op)                         # points -> (U, valid): a slipstream model for particle movies
 ```
 The loads are quasi-steady (a blade-element solution at the local inflow of every blade angle; no
@@ -92,3 +97,9 @@ the axis. The slipstream model is momentum theory (induced axial velocity and sw
 contraction by continuity), a stand-in for pictures before a CFD field exists, not a flow solution.
 
 Notebooks: the propeller parts of `08_quadcopter` and `09a_fixed_wing_design` (BEMT, CFD check, noise, blade FEA and its video).
+
+`rotating_tones` is the form for air propellers (the tip Mach number makes the rotating source non-compact): every
+blade-load harmonic k radiates at m·BPF with `J_{mB−k}`, so the steady load (k = 0) gives Gutin's tones exactly and a
+sharp wake pulse lifts a whole comb of harmonics, mostly towards the axis (on the axis only k = mB radiates, the compact
+thrust dipole of `unsteady_tones` — both identities in `tests/boreas/test_wake.py`). Loading noise only (no thickness
+noise, no forward-flight Doppler factor). Notebook `25_air_propeller` uses it for a tractor against a pusher behind a pylon.

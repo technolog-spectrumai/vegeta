@@ -27,7 +27,7 @@ dictionaries and solvers:
 | openfoam.org | 12 and later (`/opt/openfoam14`, official `.org` packages) | `org/` (`constant/geometry`, `physicalProperties`, `momentumTransport`) | `surfaceFeatures` | `foamRun -solver incompressibleFluid` |
 
 Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static` (a
-propeller in a rotating frame, see below), `aircraft_rotor_disks` (a whole aircraft with two propellers as
+propeller in a rotating frame, see below), `rotor_mrf_installed` (a propeller beside a standing pod or airframe), `aircraft_rotor_disks` (a whole aircraft with two propellers as
 rotor disks, see below). `aeromant templates` lists them with their parameters.
 
 `CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
@@ -113,6 +113,26 @@ decisions you can override: domain size in diameters, MRF zone radius/length, re
 Expect tens of percent against blade element theory (`vegeta.boreas`): no blade-passing unsteadiness,
 no tip-vortex resolution, wall functions without prism layers. Compare trends, refine before trusting absolutes.
 
+### An installed propeller (`rotor_mrf_installed`)
+The propeller of `rotor_mrf` next to a **standing body** — a motor pod with its pylon, a nacelle, an airframe — given as a
+second STL (`static_geometry`, same units). The blades sit in the MRF zone; the body is its own patch (`static`), listed in
+`nonRotatingPatches` so it stands still even where it reaches into the zone, refined by `static_level` and a box at
+`static_box_level`; the domain grows to keep `static_margin` diameters around it. Two forces function objects: `forces` on
+the propeller, `staticForces` on the body.
+```python
+case = aeromant.CFDCase("rotor_mrf_installed", "prop_axis_x.stl",
+    dict(rpm=9100, airspeed=20.0, diameter=0.254, kinematic_viscosity=1.5e-5, density=1.225),
+    workdir="runs/pusher", geometry_units="mm", environment=env, static_geometry="pod.stl")
+res = case.run(processors=4)
+res.metrics["efficiency"]          # the propeller's T V / P, installed
+res.metrics["body_drag_N"]         # the body's drag in the propeller's flow (x force on the static patch)
+res.metrics["net_thrust_N"], res.metrics["net_efficiency"]   # thrust minus that drag; (T - D) V / P
+```
+Tractor: the body behind the disc (its slipstream scrubs it); pusher: the body ahead (the propeller swallows its wake).
+Leave a small gap between spinner and body. Steady MRF freezes the blades at one angle to the body (frozen rotor), so the
+blade-passing interaction is not in it: for the wake a pusher's blades cross, run the body alone (`rans_ksst_external`)
+and read the propeller plane with `boreas.wake.sampled_wake` (notebook `25_air_propeller`).
+
 ### Particle movies of a rotor case (`vegeta.aeromant.movie`)
 One file, used from a notebook after a rotor case has run: a few tracer particles carried by the
 converged velocity field, drawn with OpenCV in a side view and a view along the axis, the blades turning
@@ -123,6 +143,9 @@ the swirl the rotor puts into the flow. Air or water makes no difference: the fi
 from vegeta.aeromant import movie
 movie.make_movie(case, "prop_particles.mp4", blades=3, n=40, seconds=12, fps=24, degrees_per_frame=10)
 ```
+`outline={"side": [...], "axial": [...]}` draws a standing body (polygons in metres, e.g. `designs/air_propeller.outline`)
+so the balls visibly flow past the pod and pylon of an installed case; `view={"feed_upstream": 1.7, ...}` sets where the
+tracer feeds and how far the view reaches (in diameters).
 `RotorView.from_case` reads centre, diameter, rpm and sense of rotation from `aeromant_case.json`;
 `openfoam_sampler(case)` reads the last solved time step once (pyvista) and looks velocities up by
 inverse distance over the nearest cell centres (scipy); `Tracer` and `render_frame` are plain numpy and

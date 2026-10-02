@@ -34,3 +34,9 @@ hand-over, clearances, holds), `simulate` → `Episode` (phase table, events, en
 `touchdown_statistics`, `parachute_descent` (analytic), `render_movie` (matplotlib 3D frames → MP4 with the watermark),
 `profile_figure`. `scenarios/velutina_mission.py` re-runs the mission from the notebook's recorded design.
 
+`air_propeller.py` (`PropPod`, notebook 25, branch `dev_crazy_prop`) is a propeller's motor pod with its pylon in the CFD frame of
+Aeromant's rotor templates (axis +x through the origin, the pylon up along +y), placed for `layout` = `tractor` (pod behind the
+disc) or `pusher` (pod ahead); `outline` gives it as polygons for the particle movies, `pylon_wake` the wake the blades cross as
+a Boreas `WakeField` (Silverstein's airfoil wake behind a pusher's pylon, a Rankine leading-edge blockage ahead of a tractor's),
+`synthesize` / `write_wav` a propeller's tones and broadband as sound files on one common scale.
+

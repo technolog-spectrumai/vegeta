@@ -92,6 +92,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5f.5 **Velutina v2 — infrastructure inspection**: an onshore wind turbine, flying along a blade with a camera to film it for cracks (a camera nose instead of the capsule, a blade-following guidance mode, the turbine and its wake in the flight model's scene, station keeping in the tower's wind shadow)
 - [ ] 5f.6 Coupon tests for LW-PLA and PETG-CF replacing the assumed material values; the FULL CFD preset run on a workstation and its numbers recorded
 
+## Stage 5g — Air propellers (branch `dev_crazy_prop`)
+- [x] 5g.1 `designs/air_propeller.py` (pod + pylon, tractor/pusher, movie outline, pylon wake models, sound synthesis) and
+  `25_air_propeller`: tractor then pusher, 2 and 3 blades — BEMT efficiency, wake and blade-load harmonics, CFD (isolated
+  `rotor_mrf`, installed `rotor_mrf_installed`, pod alone), 3D particles and a ball movie of the four configurations, blade FEA
+  with `talos.Centrifugal`, Campbell, fatigue, noise (`boreas.wake.rotating_tones`, `boreas.vortex_noise`, dB(A)), WAV files
+- [ ] 5g.2 Run `AIR_PROP_CFD=full` on a workstation and record the installed efficiencies and the CFD wake; mesh study on one case
+- [ ] 5g.3 Unsteady installed CFD (sliding mesh / AMI) for the blade-passing loads directly, against the quasi-steady + Sears model
+- [ ] 5g.4 Thickness noise and forward-flight Doppler in the tones; a static (take-off) wake model for the pusher (the induced inflow past the pylon)
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)
