@@ -8,6 +8,10 @@ a slipstream velocity model.
   orders k·B only, side (bearing) forces at orders k·B ± 1 of the blade loads.
 - ``unsteady_tones``: the shaft force harmonics as compact dipoles, the low-frequency tones of a propeller in
   a wake (they usually dominate the steady-loading Gutin tones under water).
+- ``rotating_tones``: the blade loads around the revolution as rotating (non-compact) dipoles (Lowson): the tones
+  at multiples of the blade-passing frequency from the steady and the unsteady loading together; the steady part
+  is Gutin's. For air propellers, where the tip Mach number makes the rotating source non-compact (a pusher in a
+  pylon or wing wake).
 - ``slipstream_sampler``: an axisymmetric momentum-theory velocity field (inflow, induced axial velocity and
   swirl from a blade-element solution, contraction by continuity) as a ``points -> (U, valid)`` function —
   the signature the particle movies of ``vegeta.aeromant.movie`` take — for when no CFD field exists yet.
@@ -24,7 +28,7 @@ import numpy as np
 
 from .airfoil import Airfoil
 from .bemt import OperatingPoint, solve
-from .noise import P_REF_AIR, P_REF_WATER, Medium
+from .noise import P_REF_AIR, P_REF_WATER, Medium, _bessel
 from .propeller import Propeller
 
 
@@ -225,6 +229,48 @@ def unsteady_tones(h: LoadHarmonics, distance: float, medium: Medium, angle_deg:
             continue
         rows.append({"order": k, "frequency_hz": f, "thrust_amplitude_N": Fa, "side_force_amplitude_N": Fs,
                      "p_rms_Pa": p_rms, "spl_db": 20 * math.log10(p_rms / p_ref)})
+    return rows
+
+
+def rotating_tones(h: LoadHarmonics, prop: Propeller, distance: float, medium: Medium, angle_deg: float = 90.0, *,
+                   harmonics: int = 10, effective_radius: float = 0.8, azimuth_deg: float = 0.0, max_load_order: int = 80) -> list[dict]:
+    """Tones at m x BPF (m = 1..``harmonics``) of every blade's load around the revolution, radiated as rotating dipoles
+    at ``effective_radius`` R (Lowson 1965; Goldstein, Aeroacoustics, 1976, ch. 4):
+
+    p_m,rms = m B^2 Omega / (2 sqrt2 pi c r) | sum_k  e^{i (mB - k)(phi_o - pi/2)} [T_k cos(theta) - (mB - k)/(mB) Q_k c / (Omega R_e^2)] J_{mB-k}(mB Omega R_e sin(theta) / c) |
+
+    with T_k, Q_k the complex Fourier coefficients of one blade's thrust and torque over the shaft angle (``h``: blade 1
+    starts at the wake angle 0 and travels with the rotation), ``theta`` the angle from the axis and ``phi_o``
+    (``azimuth_deg``) the observer's angle from the wake angle 0 in the sense of rotation. The k = 0 term alone is
+    Gutin's steady-loading tone; on the axis only k = mB radiates, as the compact thrust dipole of ``unsteady_tones``.
+    Loading noise only (no thickness noise), far field, no forward-flight Doppler factor. Levels in dB re 20 uPa (air)
+    or 1 uPa (water)."""
+    B, omega, c = h.blades, h.rpm * 2 * math.pi / 60, medium.speed_of_sound
+    re = effective_radius * prop.radius
+    th, ph = math.radians(angle_deg), math.radians(azimuth_deg)
+    n = len(h.blade_thrust)
+    Tk = np.fft.fft(h.blade_thrust) / n                 # T(theta) = sum_k Tk e^{+i k theta}  (k = 0..n-1, wrap for negative)
+    Qk = np.fft.fft(h.blade_torque) / n
+    K = min(max_load_order, n // 2 - 1)
+    ks = np.arange(-K, K + 1)
+    cos_t = 0.0 if abs(math.cos(th)) < 1e-12 else math.cos(th)
+    p_ref = P_REF_AIR if medium.name == "air" else P_REF_WATER
+    rows = []
+    for m in range(1, harmonics + 1):
+        mB = m * B
+        x = mB * omega * re * math.sin(th) / c
+        total = 0j
+        for k in ks:
+            q = mB - k
+            q = int(q)
+            J = float(_bessel(abs(q), np.array([x]))[0]) * (-1.0 if q < 0 and q % 2 else 1.0)   # J_{-n} = (-1)^n J_n
+            if J == 0.0:
+                continue
+            term = Tk[k % n] * cos_t - (q / mB) * Qk[k % n] * c / (omega * re ** 2)
+            total += np.exp(1j * q * (ph - math.pi / 2)) * term * J
+        p = m * B ** 2 * omega / (2 * math.sqrt(2) * math.pi * c * distance) * abs(total)
+        rows.append({"harmonic": m, "frequency_hz": mB * h.shaft_hz, "p_rms_Pa": float(p),
+                     "spl_db": 20 * math.log10(max(p, 1e-30) / p_ref)})
     return rows
 
 
