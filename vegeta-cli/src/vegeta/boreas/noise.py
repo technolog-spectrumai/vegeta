@@ -25,6 +25,22 @@ def spl(p_rms: float, medium: str = "air") -> float:
     return 20 * math.log10(max(p_rms, 1e-30) / ref)
 
 
+def a_weighting(frequency_hz) -> np.ndarray:
+    """A-weighting [dB] at ``frequency_hz`` (IEC 61672-1, normalised to 0 dB at 1 kHz): what an ear-like
+    meter takes off low and very high tones. Add it to a band or tone level to get dB(A)."""
+    f2 = np.asarray(frequency_hz, dtype=float) ** 2
+    ra = 12194.0 ** 2 * f2 ** 2 / ((f2 + 20.6 ** 2) * np.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194.0 ** 2))
+    with np.errstate(divide="ignore"):
+        return 20 * np.log10(ra) + 2.0
+
+
+def add_levels(levels) -> float:
+    """Energetic sum of sound levels [dB]: 10 log10(sum 10^(L/10)); -inf for nothing."""
+    x = np.asarray(levels, dtype=float).ravel()
+    x = x[np.isfinite(x)]
+    return float(10 * np.log10(np.sum(10 ** (x / 10)))) if x.size else float("-inf")
+
+
 @dataclass(frozen=True)
 class Medium:
     name: str
@@ -83,6 +99,28 @@ def broadband_level(prop: Propeller, thrust: float, rpm: float, distance: float,
     if k_db is None:
         k_db = 10.0 if medium.name == "air" else 60.0    # air: Hubbard-type constant (dB re 20 uPa); water: crude, re 1 uPa
     return k_db + 10 * math.log10(max(a_blade * vt ** 6 / distance ** 2, 1e-30))
+
+
+def vortex_noise(prop: Propeller, rpm: float, distance: float, airspeed: float = 0.0, *, thickness_ratio: float = 0.10,
+                 alpha_deg: float = 4.0, k: float = 3.8e-27, strouhal: float = 0.28) -> dict:
+    """Broadband vortex (trailing-edge / turbulence) noise of a propeller in air, Schlegel, King & Mull (1966), as given by
+    Hubbard (NASA RP-1258, 1991): the overall level at 300 ft is ``10 log10(k A_b V_0.7^6 / 1e-16)`` (feet, seconds; A_b the
+    blade area of all blades, V_0.7 the section speed at 0.7 R), spread spherically to ``distance`` [m]; the spectrum peaks
+    at ``f = St V_0.7 / h`` with h the section thickness projected across the flow (``thickness_ratio``, ``alpha_deg``).
+    An empirical estimate for comparing designs (helicopter-rotor data; about ±5 dB). Returns ``spl_db`` (re 20 uPa,
+    overall) and ``peak_hz``."""
+    if rpm <= 0 or distance <= 0:
+        raise ValueError("rpm and distance must be > 0")
+    r, c = np.asarray(prop.r), np.asarray(prop.chord)
+    a_b = prop.blades * float(np.trapezoid(c, r))                                   # m^2
+    r07 = 0.7 * prop.radius
+    v07 = math.hypot(airspeed, rpm * 2 * math.pi / 60 * r07)                        # m/s
+    ft = 0.3048
+    spl_300ft = 10 * math.log10(k * (a_b / ft ** 2) * (v07 / ft) ** 6 / 1e-16)
+    c07 = float(np.interp(r07, r, c))
+    h = c07 * (thickness_ratio * math.cos(math.radians(alpha_deg)) + math.sin(math.radians(alpha_deg)))
+    return {"spl_db": spl_300ft + 20 * math.log10(300 * ft / distance), "peak_hz": strouhal * v07 / h, "v07_m_s": v07,
+            "blade_area_m2": a_b, "distance_m": distance}
 
 
 def cavitation(prop: Propeller, rpm: float, airspeed: float, depth_m: float, medium: Medium = SEA_WATER, *,

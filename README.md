@@ -152,6 +152,23 @@ passes per blade along the leading edge, both sides and the trailing edge, the f
 battery charges, and a movie (`scenarios/velutina_mission.py --mode turbine`). To do: the parachute in CFD, propeller
 guards, four rotor disks in the whole-aircraft CFD, the camera nose as a CAD part and a blade-relative sensor.
 
+**Air propellers** (branch `dev_crazy_prop`): `25_air_propeller` (`designs/air_propeller.py`) is a 10 × 6 inch propeller on
+the motor pod and pylon of a 3 kg fixed-wing drone, **tractor first, then pusher**, each with **two and three blades**:
+aerodynamic efficiency from Boreas (η, C_T, C_P against J, η across the flight envelope at the thrust the drag polar needs,
+loading along the blade); the air the blades meet (the pylon's leading-edge blockage ahead of a tractor, its viscous wake
+behind it for a pusher) and the load on a blade over a revolution (with a Sears attenuation); OpenFOAM — the isolated
+propellers (`rotor_mrf`), the installed ones (the new `rotor_mrf_installed`: rotating blades, standing pod and pylon, forces
+apart → propeller and net efficiency), each over an rpm sweep, and the pod alone (its drag and the wake on the propeller plane);
+**efficiency against rpm in six panels** — alone, tractor, pusher × two and three blades — at five airspeeds, with the
+installation's effective wake (`boreas.wake.effective_inflow`) and thrust deduction (`installation_drag`), where the aircraft
+flies, and the CFD sweep; 3D particles and a movie of tracer
+balls through the four configurations with the pod drawn in; the blade in Talos spinning (the new `talos.Centrifugal`) and
+loaded, weak points, modes, a Campbell diagram with spin stiffening, a stress movie; fatigue under the pusher's
+once-per-revolution pulse; noise as Lowson's rotating dipoles (the new `boreas.wake.rotating_tones`) plus Schlegel–King–Mull
+vortex noise (`boreas.vortex_noise`), dB and dB(A) (`boreas.a_weighting`), directivity, and the four sounds as WAV files at one
+common scale. The CFD runs a **smoke test** by default (`AIR_PROP_CFD=smoke`, 20 cases of ~20 s); `AIR_PROP_CFD=full` (32 cases)
+is the real run. The committed notebook is unexecuted (run it to get the outputs).
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

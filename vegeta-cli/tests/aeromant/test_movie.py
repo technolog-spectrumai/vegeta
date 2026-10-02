@@ -125,6 +125,24 @@ def test_render_frame_draws_particles_and_turning_blades():
     assert (a != 250).any(axis=2).sum() > (blank != 250).any(axis=2).sum()   # more particles, more ink
 
 
+def test_render_frame_draws_a_standing_body_outline():
+    tr = movie.Tracer(stub_sampler(), rotor(), n=1, seed=2)
+    pod = {"side": [np.array([[0.05, -0.02], [0.4, -0.02], [0.4, 0.02], [0.05, 0.02]])],
+           "axial": [np.array([[-0.02, -0.02], [0.02, -0.02], [0.02, 0.02], [-0.02, 0.02]])]}
+    plain = movie.render_frame(tr, 0.0, size=(640, 270), speed_max=5.0)
+    drawn = movie.render_frame(tr, 0.0, size=(640, 270), speed_max=5.0, outline=pod)
+    grey = (drawn == 205).all(axis=2).sum()
+    assert grey > 200 and grey > (plain == 205).all(axis=2).sum()
+
+
+def test_make_movie_view_sets_the_feed(tmp_path):
+    out = movie.make_movie(None, tmp_path / "v.mp4", rotor=rotor(), sampler=stub_sampler(), n=6, seconds=0.5, fps=8,
+                           size=(480, 200), view={"feed_upstream": 2.5, "lateral": 1.2}, outline={"side": [np.array([[-0.4, -0.01], [-0.05, -0.01], [-0.05, 0.01]])]})
+    assert out.is_file()
+    with pytest.raises(TypeError):
+        movie.make_movie(None, tmp_path / "w.mp4", rotor=rotor(), sampler=stub_sampler(), n=2, seconds=0.2, fps=8, view={"nonsense": 1})
+
+
 def test_make_movie_writes_video_with_stubs(tmp_path):
     out = movie.make_movie(None, tmp_path / "m" / "prop.mp4", rotor=rotor(), sampler=stub_sampler(), n=12, seconds=1.0, fps=8,
                            size=(480, 200), title="stub rotor")

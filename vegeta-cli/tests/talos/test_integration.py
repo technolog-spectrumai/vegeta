@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pytest
 
-from vegeta.talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
+from vegeta.talos import (Acceleration, Centrifugal, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
                    StructuralModel, SurfacesOnPlane, Surfaces, inspect_step, read_frd)
 
 E, NU = 210000.0, 0.3
@@ -202,3 +202,20 @@ def test_curved_holes_and_fillets_mesh_without_inversions(tmp_path):
     assert mesh.ok, mesh.messages
     assert mesh.metrics["min_quality_sicn"] > 0
     assert m.solve(tmp_path / "w").ok
+
+
+@pytest.mark.requires_ccx
+def test_centrifugal_bar_matches_rotating_rod_theory(bar_step, tmp_path):
+    """A bar spinning about z through its root end: reaction m omega^2 r_cg, tip stretch rho omega^2 L^3 / (3 E)."""
+    rpm = 30000.0
+    m = StructuralModel(bar_step, "mm-N-MPa", STEEL, regions=[SurfacesOnPlane("x0", "x", 0)],
+                        supports=[FixedSupport("x0")], loads=[Centrifugal(rpm, point=(0.0, 5.0, 5.0), axis=(0, 0, 1))],
+                        mesh_settings=MeshSettings(4.0))
+    assert m.mesh(tmp_path).ok
+    res = m.solve(tmp_path)
+    assert res.ok, res.messages
+    w2, rho, L = (rpm * 2 * np.pi / 60) ** 2, 7.85e-9, 100.0
+    pull = rho * (L * 10 * 10) * w2 * L / 2                      # N: mass x omega^2 x centroid radius
+    assert -pull * 1.0001 <= res.metrics["reaction_total"][0] < -pull * 0.98
+    tip = rho * w2 * L ** 3 / (3 * E)
+    assert res.metrics["displacement_max"][0] == pytest.approx(tip, rel=0.03)

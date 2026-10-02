@@ -129,3 +129,48 @@ def test_skew_attenuates_the_harmonics_not_the_mean():
     # selection rules unchanged
     assert max(rel(As["shaft_thrust_N"][k], As["shaft_thrust_N"][0]) for k in (3, 4, 6, 8)) < 1e-9
     assert wake.load_harmonics(PROP, SEC, 910.0, 1.5, wake.uniform_wake(0.1), RHO, skew_deg=30.0).amplitudes["blade_thrust_N"][1:].max() < 1e-9
+
+
+AIR_PROP = boreas.Propeller.from_pitch("10x6", 0.254, 0.152, blades=2, chord_root_m=0.018, chord_max_m=0.026, chord_tip_m=0.010)
+AIR_SEC = boreas.Airfoil(name="thin", cl_alpha=5.6, alpha0_deg=-3.0, cl_max=1.1, cd0=0.02, k=0.04)
+
+
+def test_rotating_tones_steady_part_is_gutin():
+    h = wake.load_harmonics(AIR_PROP, AIR_SEC, 7000.0, 15.0, wake.uniform_wake(0.0), 1.2)
+    op = boreas.solve(AIR_PROP, AIR_SEC, 7000.0, 15.0, 1.2)
+    for angle in (60.0, 90.0, 120.0):
+        g = boreas.gutin_harmonics(AIR_PROP, op.thrust, op.torque, 7000.0, 3.0, angle, boreas.AIR, harmonics=4)
+        r = wake.rotating_tones(h, AIR_PROP, 3.0, boreas.AIR, angle, harmonics=4)
+        assert [x["p_rms_Pa"] for x in r] == pytest.approx(g["p_rms_pa"], rel=1e-6)
+
+
+def test_rotating_tones_on_the_axis_are_the_compact_thrust_dipole():
+    pylon = wake.fin_wake(1, 0.0, 0.3, 4.0)                    # one narrow deficit per revolution: a pusher behind a pylon
+    h = wake.load_harmonics(AIR_PROP, AIR_SEC, 7000.0, 15.0, pylon, 1.2)
+    r = {x["frequency_hz"]: x["p_rms_Pa"] for x in wake.rotating_tones(h, AIR_PROP, 2.0, boreas.AIR, 0.0, harmonics=3)}
+    c = {x["frequency_hz"]: x["p_rms_Pa"] for x in wake.unsteady_tones(h, 2.0, boreas.AIR, angle_deg=0.0) if x["order"] % 2 == 0}
+    for f, p in c.items():
+        if f in r:
+            assert r[f] == pytest.approx(p, rel=1e-6)
+    # in the disc plane the unsteady loading adds to the steady tones: louder than Gutin at the higher harmonics
+    clean = wake.load_harmonics(AIR_PROP, AIR_SEC, 7000.0, 15.0, wake.uniform_wake(0.0), 1.2)
+    a = wake.rotating_tones(h, AIR_PROP, 2.0, boreas.AIR, 90.0, harmonics=6)
+    b = wake.rotating_tones(clean, AIR_PROP, 2.0, boreas.AIR, 90.0, harmonics=6)
+    assert a[5]["spl_db"] > b[5]["spl_db"] + 10
+
+
+def test_effective_inflow_weights_the_wake_by_thrust():
+    w, op = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, wake.uniform_wake(0.1), 1.2)
+    assert w == pytest.approx(0.1, abs=1e-12)
+    ref = boreas.solve(AIR_PROP, AIR_SEC, 9000.0, 18.0, 1.2)
+    assert op.thrust == pytest.approx(ref.thrust, rel=1e-9) and op.airspeed == pytest.approx(18.0)
+    # a deficit only near the hub, where the blade carries little thrust, counts for little
+    hub = wake.WakeField([0.05, 0.15, 0.25, 1.0], [0.0, 180.0], [[0.3, 0.3], [0.3, 0.3], [0.0, 0.0], [0.0, 0.0]])
+    w_hub, op_hub = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, hub, 1.2)
+    assert 0.0 < w_hub < 0.02
+    # installed efficiency with the free stream as reference rises with the wake (a pusher in a body's wake)
+    w_in, op_in = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, wake.uniform_wake(0.05), 1.2)
+    open_ = boreas.solve(AIR_PROP, AIR_SEC, 9000.0, 20.0, 1.2)
+    assert op_in.thrust * 20.0 / op_in.power > open_.efficiency
+    with pytest.raises(ValueError):
+        wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, hub, 1.2, iterations=0)

@@ -39,3 +39,26 @@ scan speed from blur and overlap, dwell time from a station-keeping error series
 (four passes per blade with suspect points), `follow_path` → `InspectionEpisode` (the same point-mass model following
 waypoints with dwells; table, track error), `station_keeping_at_blade`, `flights_needed`, `render_movie`, `wind_figure`.
 
+`air_propeller.py` (`PropPod`, notebook 25, branch `dev_crazy_prop`) is a propeller's motor pod with its pylon in the CFD frame of
+Aeromant's rotor templates (axis +x through the origin, the pylon up along +y), placed for `layout` = `tractor` (pod behind the
+disc) or `pusher` (pod ahead); `outline` gives it as polygons for the particle movies, `pylon_wake` the pylon's wake alone as
+a Boreas `WakeField` (Silverstein's airfoil wake behind a pusher's pylon), `installation_wake` the whole inflow the blades work
+in — the potential flow of the closed bodies (pod + propeller hub as slender-body line sources, the pylon as a closed source
+sheet) for both layouts, plus the viscous wakes behind them (the pusher) — and `installation_drag` the drag the running
+propeller adds to pod and pylon (the thrust deduction: the pressure field of a loaded actuator disc from the blade-element
+thrust distribution, exact disc solid angles in `disc_solid_angle`, on the pod's profile and the pylon's thickness, plus the
+scrubbing of the faster air); `synthesize` / `write_wav` a propeller's tones and broadband as sound files on one common scale.
+
+`ducted_fan.py` (`EDFRotor`, `EDFHousing`, notebook 25, branch `dev_crazy_prop`) is the electric ducted fan the open propellers are
+compared with (90 mm, 12 blades, hub/tip 0.45, 7 stator vanes). `EDFRotor` is `dedalus.examples.Propeller` in its own CAD frame
+(axis Z, upstream -Z) with the blade tips trimmed to the cylinder `r = D/2` and an elliptic spinner on the upstream hub face;
+turned +90° about +Y it stands in the CFD frame of Aeromant's rotor templates. `EDFHousing` is the standing part in that frame
+(axis +x, the rotor centre at the origin, flow along +x, mm) as one solid: the duct (a thick rounded lip, convex outside and
+no higher than the nacelle, with a `lip_radius` bell-mouth inside; the shroud `D/2 + tip_clearance` over the rotor and the
+stators; an area-ruled convergent nozzle whose flow area falls to the exit, `exit_area_ratio` of the fan annulus, so the exit is
+its throat; a uniform wall outside), the centre body (the motor housing, `axial_gap` of free space behind the rotor — the hub
+face or the blade-root stub behind it — then a pointed tail cone) and the radial NACA 00xx stator vanes `stator_gap` behind the
+rotor's trailing-edge plane (`rotor_trailing_edge`, from the blade stations), cut to the annulus between the bodies so they sit in
+both at any stagger. The housing takes the rotor's blade parameters under the same names (`SHARED`). `housing_geometry` gives the
+numbers the Boreas ducted-fan and fan-noise models need (fan, exit and throat areas as built, shroud and nacelle radii, wetted
+areas, lengths, stator and rotor positions); `outline` the housing as polygons for the particle movies.

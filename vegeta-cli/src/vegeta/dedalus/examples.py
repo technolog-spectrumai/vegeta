@@ -89,7 +89,7 @@ class Propeller(Design):
     parameters = [
         Parameter("diameter", 127.0, "mm", min=20, description="tip-to-tip"),
         Parameter("pitch", 109.0, "mm", min=1, description="geometric pitch (advance per turn)"),
-        Parameter("blades", 2, min=1, max=8),
+        Parameter("blades", 2, min=1, max=16),
         Parameter("hub_diameter", 14.0, "mm", min=2),
         Parameter("hub_height", 8.0, "mm", min=1),
         Parameter("bore", 5.0, "mm", min=0, description="shaft hole (0 = none)"),

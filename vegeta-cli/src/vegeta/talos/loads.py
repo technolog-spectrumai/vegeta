@@ -1,6 +1,7 @@
 """Supports and loads. All values are explicit and in the model's unit system."""
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 
@@ -77,6 +78,27 @@ class Acceleration:
 
 
 @dataclass(frozen=True)
+class Centrifugal:
+    """Rotation of the whole solid at ``rpm`` about the axis through ``point`` along ``axis`` (model units):
+    the centrifugal body force rho omega^2 r (CalculiX ``CENTRIF``), e.g. a spinning propeller blade.
+    Requires the material density. The sense of rotation does not matter for this load."""
+
+    rpm: float
+    point: tuple = (0.0, 0.0, 0.0)
+    axis: tuple = (0.0, 0.0, 1.0)
+
+    def __post_init__(self):
+        if not self.rpm > 0:
+            raise ValueError("Centrifugal rpm must be > 0")
+        if len(self.point) != 3 or len(self.axis) != 3 or not any(self.axis):
+            raise ValueError("Centrifugal needs a 3-component point and a non-zero 3-component axis")
+
+    @property
+    def omega(self) -> float:
+        return self.rpm * 2 * math.pi / 60
+
+
+@dataclass(frozen=True)
 class PointMass:
     """A lumped mass (a motor, a battery) attached to the nodes of a surface region, shared equally
     between them. Mass unit follows the unit system (tonne in mm-N-MPa, kg in m-N-Pa)."""
@@ -90,4 +112,4 @@ class PointMass:
 
 
 Support = FixedSupport | Displacement
-Load = Force | Pressure | Acceleration
+Load = Force | Pressure | Acceleration | Centrifugal

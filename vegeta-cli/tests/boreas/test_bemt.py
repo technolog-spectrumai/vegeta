@@ -107,3 +107,25 @@ def test_noise_and_cavitation(apc10x47):
     assert deep["cavitation_number"] > cav["cavitation_number"] and not deep["cavitates"]
     fast = boreas.cavitation(apc10x47, rpm=30000, airspeed=2.0, depth_m=0.5, cp_min=-1.0)
     assert fast["cavitates"] and fast["rpm_at_inception"] < 30000
+
+
+def test_a_weighting_matches_the_iec_table_and_levels_add_in_power():
+    # IEC 61672-1 table: 50 Hz -30.2, 100 Hz -19.1, 1 kHz 0.0, 4 kHz +1.0, 10 kHz -2.5 dB
+    for f, a in ((50, -30.2), (100, -19.1), (1000, 0.0), (4000, 1.0), (10000, -2.5)):
+        assert float(boreas.a_weighting(f)) == pytest.approx(a, abs=0.1)
+    assert boreas.add_levels([60.0, 60.0]) == pytest.approx(63.01, abs=0.01)
+    assert boreas.add_levels([70.0, -np.inf]) == pytest.approx(70.0)
+    assert boreas.add_levels([]) == -np.inf
+
+
+def test_vortex_noise_schlegel_king_mull():
+    pr = boreas.Propeller.from_pitch("10x6", 0.254, 0.1524, blades=2, chord_root_m=0.018, chord_max_m=0.026, chord_tip_m=0.010)
+    v = boreas.vortex_noise(pr, 9000.0, 300 * 0.3048)
+    a_ft2 = 2 * np.trapezoid(pr.chord, pr.r) / 0.3048 ** 2
+    v07_fts = 9000 * 2 * math.pi / 60 * 0.7 * 0.127 / 0.3048
+    assert v["spl_db"] == pytest.approx(10 * math.log10(3.8e-27 * a_ft2 * v07_fts ** 6 / 1e-16), abs=1e-9)
+    assert 20 < v["spl_db"] < 40                                       # a small propeller, 91 m away
+    near = boreas.vortex_noise(pr, 9000.0, 10.0)
+    assert near["spl_db"] - v["spl_db"] == pytest.approx(20 * math.log10(91.44 / 10.0))
+    assert boreas.vortex_noise(pr, 18000.0, 10.0)["spl_db"] - near["spl_db"] == pytest.approx(60 * math.log10(2), abs=1e-9)
+    assert 500 < near["peak_hz"] < 20000

@@ -45,7 +45,10 @@ The STEP geometry is converted to the chosen length unit by OpenCascade on impor
 - Supports: `FixedSupport(region)`, `Displacement(region, ux=None, uy=None, uz=None)`.
 - Loads: `Force(region, fx, fy, fz)` — total force distributed as a uniform traction with consistent
   nodal loads; `Pressure(region, value)` — positive pushes into the solid (CalculiX convention);
-  `Acceleration(ax, ay, az)` — body load on the whole solid, needs `density`.
+  `Acceleration(ax, ay, az)` — body load on the whole solid, needs `density`;
+  `Centrifugal(rpm, point=(0, 0, 0), axis=(0, 0, 1))` — the solid spinning about an axis (CalculiX `CENTRIF`,
+  ρ ω² r), e.g. a propeller blade; needs `density`. Validated against a rotating rod (reaction m ω² r_cg, tip
+  stretch ρ ω² L³ / 3E).
 
 ## Meshing notes
 Second-order meshes place mid-side nodes on curved geometry (holes, fillets), which can invert an

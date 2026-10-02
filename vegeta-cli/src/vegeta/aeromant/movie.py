@@ -32,7 +32,7 @@ from ._watermark import watermark
 
 Sampler = Callable[[np.ndarray], "tuple[np.ndarray, np.ndarray]"]
 
-ROTOR_TEMPLATES = ("rotor_mrf", "rotor_mrf_static")
+ROTOR_TEMPLATES = ("rotor_mrf", "rotor_mrf_static", "rotor_mrf_installed")
 
 
 def _cv2():
@@ -216,11 +216,12 @@ def _colour(values, vmax, vmin=0.0):
 
 
 def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: float | None = None, speed_min: float = 0.0,
-                 title: str = "", time_s: float | None = None, background=(250, 250, 250)) -> np.ndarray:
+                 title: str = "", time_s: float | None = None, background=(250, 250, 250), outline: dict | None = None) -> np.ndarray:
     """One frame (H, W, 3 BGR uint8): side view on the left (x downstream to the right, radius up; the
     particles nearer the viewer drawn larger), the view along the axis on the right (looking upstream
     from behind: y to the right, z up), blades at ``angle`` [rad] about +x, particles and trails coloured
-    by speed."""
+    by speed. ``outline`` draws a standing body (a pod, a pylon) as filled polygons in metres, in the case's
+    frame: ``{"side": [(k, 2) arrays of (x, y)], "axial": [(k, 2) arrays of (y, z)]}`` (either key may be left out)."""
     cv2 = _cv2()
     W, H = size
     img = np.full((H, W, 3), background, dtype=np.uint8)
@@ -246,6 +247,14 @@ def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: f
         return np.column_stack([ax_ + (p[:, 1] - c[1]) * s2, ay_ - (p[:, 2] - c[2]) * s2]).astype(np.int32)
 
     grey = (170, 170, 170)
+    body_fill, body_edge = (205, 205, 205), (120, 120, 120)
+    for key, view in (("side", side), ("axial", axial)):
+        for poly in (outline or {}).get(key, ()):
+            q = np.asarray(poly, float)
+            p3 = np.column_stack([q[:, 0], q[:, 1], np.zeros(len(q))]) if key == "side" else np.column_stack([np.full(len(q), c[0]), q[:, 0], q[:, 1]])
+            pts = view(p3).reshape(-1, 1, 2)
+            cv2.fillPoly(img, [pts], body_fill, cv2.LINE_AA)
+            cv2.polylines(img, [pts], True, body_edge, 1, cv2.LINE_AA)
     cv2.line(img, (int(ox), int(oy)), (w_side - 10, int(oy)), grey, 1, cv2.LINE_AA)                  # axis
     cv2.circle(img, (int(ax_), int(ay_)), int(R * s2), grey, 1, cv2.LINE_AA)                          # disc
     cv2.line(img, (w_side, top - 10), (w_side, H - bottom + 10), (220, 220, 220), 1)
@@ -300,13 +309,16 @@ def render_frame(tracer: Tracer, angle: float, *, size=(1280, 540), speed_max: f
 
 def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, sampler: Sampler | None = None,
                n: int = 40, seconds: float = 10.0, fps: int = 24, degrees_per_frame: float = 10.0, trail: int = 12,
-               size=(1280, 540), seed: int = 0, title: str = "", speed_max: float | None = None, speed_min: float | None = None) -> Path:
+               size=(1280, 540), seed: int = 0, title: str = "", speed_max: float | None = None, speed_min: float | None = None,
+               outline: dict | None = None, view: dict | None = None) -> Path:
     """Write an ``.mp4`` of ``n`` tracer particles through a solved rotor case and return its path.
 
     ``case`` is a ``CFDCase`` or its directory (it provides the rotor record and the field); ``rotor`` and
     ``sampler`` replace what would be read from it (e.g. a stub field in a test, ``case`` may then be None).
     Each frame advances the flow by the time the rotor needs to turn ``degrees_per_frame``. The colour scale runs
-    from ``speed_min`` to ``speed_max`` (default: the 2nd and 98th percentiles of the field around the disc)."""
+    from ``speed_min`` to ``speed_max`` (default: the 2nd and 98th percentiles of the field around the disc).
+    ``outline`` draws a standing body (see ``render_frame``); ``view`` sets the tracer's feed and view extent in
+    diameters (``feed_upstream``, ``feed_radius``, ``downstream``, ``lateral``; e.g. a longer feed ahead of a pusher's pod)."""
     cv2 = _cv2()
     rotor = rotor or RotorView.from_case(case, blades)
     sampler = sampler or openfoam_sampler(case)
@@ -319,7 +331,7 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     speed_max = speed_max or float(np.percentile(sp, 98)) or 1.0              # one colour scale for the whole movie
     speed_min = float(np.percentile(sp, 2)) if speed_min is None else speed_min   # from the slow end of the field: the speed-up shows
     speed_min = min(speed_min, 0.9 * speed_max)
-    tracer = Tracer(sampler, rotor, n, seed=seed, trail=trail, stall_speed=0.02 * speed_max, stall_steps=2 * fps)
+    tracer = Tracer(sampler, rotor, n, seed=seed, trail=trail, stall_speed=0.02 * speed_max, stall_steps=2 * fps, **(view or {}))
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     out = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, tuple(size))
@@ -328,7 +340,7 @@ def make_movie(case, path, *, blades: int = 2, rotor: RotorView | None = None, s
     try:
         for k in range(frames):
             t = k * dt
-            out.write(watermark(np.ascontiguousarray(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, speed_min=speed_min, title=title, time_s=t))))
+            out.write(watermark(np.ascontiguousarray(render_frame(tracer, rotor.omega * t, size=size, speed_max=speed_max, speed_min=speed_min, title=title, time_s=t, outline=outline))))
             tracer.step(dt)
     finally:
         out.release()
