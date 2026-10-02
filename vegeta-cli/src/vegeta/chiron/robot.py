@@ -10,6 +10,11 @@ Units: SI (m, kg, s, N, N·m, rad). Every physical number is an input: geometry 
 servo data from the actuator datasheet — put the source in ``Servo.source`` / ``Robot.sources``.
 
 Third-party models (an MJCF file, e.g. from a model zoo) are wrapped with ``Robot.from_mjcf(xml, RobotMeta)``.
+
+**Scenery.** ``Prop`` places things that are not the robot in the world — a post, a wire, a log to lift: a Link
+tree, fixed to the world or free (a loose object), whose colliding geoms touch the robot, the terrain and the
+other props. ``Weld`` is an equality constraint between two bodies (or a body and the world) that ChironLab can
+switch off at run time — a wire that parts when it is cut, a load that is released.
 """
 from __future__ import annotations
 
@@ -22,8 +27,8 @@ import numpy as np
 
 from .terrain import Flat, Terrain
 
-__all__ = ["Servo", "Joint", "Geom", "PointMass", "Link", "FootSpec", "Robot", "RobotMeta", "SimOptions",
-           "TERRAIN_NAME", "GEOM_ROLES", "JOINT_TAGS"]
+__all__ = ["Servo", "Joint", "Geom", "PointMass", "Link", "FootSpec", "Robot", "RobotMeta", "SimOptions", "Prop",
+           "Weld", "TERRAIN_NAME", "GEOM_ROLES", "JOINT_TAGS"]
 
 TERRAIN_NAME = "chiron_terrain"
 GEOM_TYPES = ("box", "sphere", "capsule", "cylinder", "ellipsoid")
@@ -31,7 +36,7 @@ GEOM_ROLES = ("foot", "body", "link", "visual")
 JOINT_KINDS = ("hinge", "slide")
 #: Conventional joint tags (any string is accepted; metrics group joints by tag).
 JOINT_TAGS = ("hip_yaw", "hip_pitch", "hip_roll", "knee", "ankle", "body_pitch", "body_yaw", "body_roll")
-TERRAIN_BIT, ROBOT_BIT = 1, 2
+TERRAIN_BIT, ROBOT_BIT, PROP_BIT = 1, 2, 4
 POINT_MASS_RADIUS = 1e-3  # m; a point mass is a 1 mm sphere (its own inertia is negligible)
 
 
@@ -199,6 +204,52 @@ class Link:
 
     def own_mass(self) -> float:
         return sum(g.mass or 0.0 for g in self.geoms) + sum(p.mass for p in self.masses)
+
+
+@dataclass
+class Prop:
+    """Scenery that is not the robot: a Link tree placed in the world by ``root.pos`` / ``root.quat``.
+
+    ``free`` True gives the root a free joint (a loose object: a log, a box); False fixes it to the world (a
+    post, a wall), while its links' own Joints (hinges, slides; passive — no servos) still move them (a gate, a
+    wire hinged at a post). Its colliding geoms touch the robot, the terrain and the other props. ``priority``
+    above the robot's 1 makes the prop's ``solref`` / ``solimp`` (None = MuJoCo's defaults) and its geoms'
+    friction govern its contacts with the robot; ``condim`` its contact dimensionality (None = the lab's). A
+    ``solref`` with negative values is MuJoCo's direct (−stiffness [N/m], −damping [N·s/m]) — a stiff contact
+    for a thin object a gripper squeezes. ``log``: the poses of its links are logged (``prop_pos``,
+    ``prop_quat``). Names (links, joints, geoms) must not clash with the robot's.
+    """
+
+    root: Link
+    free: bool = False
+    priority: int = 2
+    solref: tuple | None = None
+    solimp: tuple | None = None
+    condim: int | None = None
+    log: bool = True
+
+    @property
+    def name(self) -> str:
+        return self.root.name
+
+    def links(self) -> list:
+        return [lk for lk, _ in self.root.walk()]
+
+    def total_mass(self) -> float:
+        return sum(lk.own_mass() for lk in self.links())
+
+
+@dataclass
+class Weld:
+    """An equality constraint holding ``body1`` to ``body2`` (None = the world) in their relative pose of the
+    model's reference configuration. ``active`` at reset; ChironLab's ``set_weld(name, False)`` releases it at run
+    time (a wire cut through, a load let go). ``solref`` None = MuJoCo's default stiffness."""
+
+    name: str
+    body1: str
+    body2: str | None = None
+    active: bool = True
+    solref: tuple | None = None
 
 
 @dataclass
@@ -438,17 +489,22 @@ class Robot:
 
     # ---- MJCF
     def to_mjcf(self, terrain: Terrain | None = None, options: SimOptions | None = None, *,
-                heightfield: str = "inline") -> str:
-        """The MJCF model of this robot on ``terrain`` (default flat) with ``options``.
+                heightfield: str = "inline", props=(), welds=()) -> str:
+        """The MJCF model of this robot on ``terrain`` (default flat) with ``options``, plus scenery (``props``,
+        ``welds``; Link-tree robots only).
 
         ``heightfield='inline'`` writes the sampled elevations into the file (self-contained);
         ``'deferred'`` leaves them out — ChironLab then fills ``model.hfield_data`` after compiling (faster).
         """
         terrain = terrain if terrain is not None else Flat()
         opt = options or SimOptions()
+        props, welds = list(props), list(welds)
         if self.is_mjcf:
+            if props or welds:
+                raise ValueError("props and welds need a Link-tree robot (not Robot.from_mjcf)")
             return self._mjcf_from_spec(terrain, opt, heightfield)
         self.validate()
+        _validate_scenery(self, props, welds)
         meta_servo = {j.name: j.servo for j in self.joints() if j.servo is not None}
         out = [f'<mujoco model={quoteattr(self.name)}>',
                '  <compiler angle="radian" autolimits="true" inertiafromgeom="true"/>',
@@ -463,7 +519,20 @@ class Robot:
         out.append("    " + _terrain_geom_xml(tinfo, opt))
         coll = _collision_bits(opt)
         out += _link_xml(self.root, opt, coll, indent=4, is_root=True)
+        for pr in props:
+            out += _prop_xml(pr, opt)
         out.append("  </worldbody>")
+        if welds:
+            out.append("  <equality>")
+            for w in welds:
+                a = [f"name={quoteattr(w.name)}", f"body1={quoteattr(w.body1)}"]
+                if w.body2 is not None:
+                    a.append(f"body2={quoteattr(w.body2)}")
+                a.append(f'active="{str(bool(w.active)).lower()}"')
+                if w.solref is not None:
+                    a.append(f'solref="{_f(w.solref)}"')
+                out.append("    <weld " + " ".join(a) + "/>")
+            out.append("  </equality>")
         if meta_servo:
             out.append("  <actuator>")
             for jn, s in meta_servo.items():
@@ -596,6 +665,81 @@ def _logged_owner(root: Link):
         for c in lk.children:
             yield from rec(c, own)
     yield from rec(root, None)
+
+
+def _validate_scenery(robot: "Robot", props: list, welds: list) -> None:
+    """Names unique across robot and props; prop joints passive; welds name known bodies."""
+    taken = {"link": {lk.name for lk in robot.links()}, "joint": {j.name for j in robot.joints()},
+             "geom": {g.name for g in robot.geoms()}}
+    bodies = set(taken["link"])
+    for pr in props:
+        if not isinstance(pr, Prop):
+            raise TypeError("props must be chiron.Prop")
+        if pr.free and pr.root.joints:
+            raise ValueError(f"prop {pr.name}: a free prop's root gets a free joint; give it no joints")
+        for lk in pr.links():
+            for kind, items in (("link", [lk]), ("joint", lk.joints), ("geom", lk.geoms)):
+                for it in items:
+                    if it.name in taken[kind]:
+                        raise ValueError(f"prop {pr.name}: duplicate {kind} name {it.name!r}")
+                    taken[kind].add(it.name)
+            for j in lk.joints:
+                if j.servo is not None:
+                    raise ValueError(f"prop {pr.name}: joint {j.name} has a servo; props are passive")
+            if lk.joints and _subtree_mass(lk) <= 0:
+                raise ValueError(f"prop {pr.name}: link {lk.name} moves but has no mass")
+        if pr.free and pr.total_mass() <= 0:
+            raise ValueError(f"prop {pr.name}: a free prop needs mass")
+        bodies |= {lk.name for lk in pr.links()}
+    names = set()
+    for w in welds:
+        if not isinstance(w, Weld):
+            raise TypeError("welds must be chiron.Weld")
+        if w.name in names:
+            raise ValueError(f"duplicate weld {w.name!r}")
+        names.add(w.name)
+        for b in (w.body1, w.body2):
+            if b is not None and b not in bodies:
+                raise ValueError(f"weld {w.name}: no body {b!r}")
+
+
+def _prop_xml(pr: "Prop", opt: SimOptions) -> list:
+    """A prop's bodies: its own contact settings, colliding with terrain, robot and other props."""
+    coll = (PROP_BIT, TERRAIN_BIT | ROBOT_BIT | PROP_BIT)
+    extra = [f'priority="{int(pr.priority)}"', f'condim="{int(pr.condim if pr.condim is not None else opt.condim)}"']
+    if pr.solref is not None:
+        extra.append(f'solref="{_f(pr.solref)}"')
+    if pr.solimp is not None:
+        extra.append(f'solimp="{_f(pr.solimp)}"')
+
+    def body(link: Link, indent: int, root: bool) -> list:
+        pad = " " * indent
+        lines = [f'{pad}<body name={quoteattr(link.name)} pos="{_f(link.pos)}" quat="{_f(link.quat)}">']
+        if root and pr.free:
+            lines.append(f'{pad}  <freejoint name={quoteattr(link.name + ":free")}/>')
+        for j in link.joints:
+            lines.append(pad + "  " + _joint_xml(j))
+        for g in link.geoms:
+            a = [f"name={quoteattr(g.name)}", f'type="{g.type}"', f'size="{_f(g.size)}"']
+            a.append(f'fromto="{_f(g.fromto)}"' if g.fromto is not None else f'pos="{_f(g.pos)}" quat="{_f(g.quat)}"')
+            a.append(f'mass="{(g.mass or 0.0):.10g}"')
+            if g.role == "visual":
+                a.append('contype="0" conaffinity="0" group="1"')
+            else:
+                a.append(f'contype="{coll[0]}" conaffinity="{coll[1]}" friction="{_f(g.friction)}" ' + " ".join(extra))
+            if g.rgba is not None:
+                a.append(f'rgba="{_f(g.rgba)}"')
+            lines.append(pad + "  <geom " + " ".join(a) + "/>")
+        for pm in link.masses:
+            lines.append(f'{pad}  <geom name={quoteattr("pm:" + pm.name)} type="sphere" size="{POINT_MASS_RADIUS}" '
+                         f'pos="{_f(pm.pos)}" mass="{pm.mass:.10g}" contype="0" conaffinity="0" group="4" '
+                         f'rgba="0 0 0 0"/>')
+        for c in link.children:
+            lines += body(c, indent + 2, False)
+        lines.append(f"{pad}</body>")
+        return lines
+
+    return body(pr.root, 4, True)
 
 
 def _collision_bits(opt: SimOptions):

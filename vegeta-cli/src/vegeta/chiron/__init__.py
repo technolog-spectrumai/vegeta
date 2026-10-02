@@ -6,7 +6,8 @@ Build a robot from plain dataclasses (``Link``, ``Joint``, ``Geom``, ``PointMass
 in **ChironLab**, the reusable environment: ``reset``/``step``/``observe`` for interactive use, ``run`` for a
 whole trial under ``FailureRules`` with ``Disturbance`` s, returning an ``Episode`` (a log dict in the shared
 episode-log format, an outcome, ``save``/``load``, ``to_result``). ``PhaseGenerator`` provides fixed or
-load-adaptive (Tegotae) leg phases for controllers.
+load-adaptive (Tegotae) leg phases for controllers. ``Prop`` and ``Weld`` add scenery the robot works on (a wire to
+cut, a log to lift), with run-time hooks (``ChironLab.add_hook``) for scene logic.
 
 Submodules, loaded on first use (``ch.metrics`` or ``from vegeta.chiron import metrics``):
 
@@ -22,7 +23,7 @@ import importlib as _importlib
 from .gaits import PhaseGenerator, cycle_to_oscillator, in_stance, oscillator_to_cycle
 from .lab import ChironLab, Command, Disturbance, Episode, FailureRules, Observation
 from .result import CommandRecord, Result, ResultError
-from .robot import FootSpec, Geom, Joint, Link, PointMass, Robot, RobotMeta, Servo, SimOptions
+from .robot import FootSpec, Geom, Joint, Link, PointMass, Prop, Robot, RobotMeta, Servo, SimOptions, Weld
 from .servo import saturation, servo_torque, torque_limit
 from .terrain import (AlternatingBumps, CrossSlope, Custom, Flat, LongitudinalBumps, Rough, Steps, Terrain,
                       terrain_from_spec)
@@ -31,9 +32,9 @@ __version__ = "0.1.0"
 __all__ = [
     "AlternatingBumps", "ChironLab", "Command", "CommandRecord", "CrossSlope", "Custom", "Disturbance", "Episode",
     "FailureRules", "Flat", "FootSpec", "Geom", "Joint", "Link", "LongitudinalBumps", "Observation", "PhaseGenerator",
-    "PointMass", "Result", "ResultError", "Robot", "RobotMeta", "Rough", "Servo", "SimOptions", "Steps", "Terrain",
+    "PointMass", "Prop", "Result", "ResultError", "Robot", "RobotMeta", "Rough", "Servo", "SimOptions", "Steps", "Terrain",
     "cycle_to_oscillator", "in_stance", "oscillator_to_cycle", "saturation", "servo_torque", "terrain_from_spec",
-    "torque_limit",
+    "torque_limit", "Weld",
 ]
 
 _SUBMODULES = ("metrics", "stats", "experiments", "export", "viz", "cli")

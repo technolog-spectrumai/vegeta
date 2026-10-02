@@ -83,6 +83,38 @@ ep.outcome, ep.log["com"], ep.save("trial.npz"), ep.to_result()
   options, versions); `save`/`load` (.npz), `to_result()` (kind `chiron.episode`). Runs are deterministic:
   the same trial gives a bitwise-identical log; logging on or off does not change the trajectory.
 
+## Scenery: props, welds, hooks (`Prop`, `Weld`, `ChironLab.add_hook`)
+
+Things the robot works on that are not the robot — a wire across the road, a log to lift, a post:
+
+```python
+post = ch.Prop(ch.Link("post", pos=(8.0, -1.3, 0.0), geoms=[ch.Geom("post_g", "box", (0.04, 0.04, 0.6), pos=(0, 0, 0.6))]))
+wire = ch.Prop(ch.Link("wire_a", pos=(8.0, -1.3, 1.15), joints=[ch.Joint("wire_a_hinge", axis=(1, 0, 0))],
+                       geoms=[ch.Geom("wire_a_g", "capsule", (0.0016,), fromto=(0, 0, 0, 0, 1.0, 0), mass=0.06)]),
+               solref=(-2e7, -2e3))                         # direct stiffness: a thin wire the jaws squeeze
+log = ch.Prop(ch.Link("log", pos=(16, 0, 0.075), geoms=[ch.Geom("log_g", "cylinder", (0.075, 0.4), mass=6.4)]), free=True)
+lab = ch.ChironLab(robot, terrain, props=[post, wire, log], welds=[ch.Weld("wire_joint", "wire_a", "wire_b")])
+
+def cutter(lab):                                         # scene logic: the wire parts when squeezed hard enough
+    f, fn = lab.contact_force(["jaw_upper", "jaw_lower"], "wire_a_g")
+    if fn > 7500 and lab.weld_active("wire_joint"):
+        lab.set_weld("wire_joint", False); lab.log_event("wire", f"cut at {fn:.0f} N")
+lab.add_hook(cutter)
+```
+
+* A `Prop` is a Link tree placed in the world: `free=True` gives its root a free joint (a loose object), otherwise
+  it is fixed and its own passive Joints still move it. Its geoms collide with the robot, the terrain and the other
+  props (the robot's own geoms still only touch the terrain and the props); `priority` 2 lets the prop's
+  `solref`/`solimp`/friction govern its contacts with the robot. Prop joints are not robot joints (`lab.joint_names`,
+  `total_mass` and the COM stay the robot's).
+* A `Weld` holds two bodies (or a body and the world) in their reference relative pose; `lab.set_weld(name, active)`
+  switches it at run time, `reset` restores it.
+* `lab.add_hook(fn)`: `fn(lab)` every control step of walking time after the controller; `fn.reset(lab)` at reset.
+  `lab.log_event(source, detail)` → `log["events"]`. `lab.contact_force(a, b)` → (force vector on `b` from `a`,
+  summed normal force) from the last forward pass.
+* Logged: `props` (prop link names), `prop_pos`, `prop_quat` (T,P,·), `events`, `welds` (state at the end).
+  Observation: `obs.prop_pos`, `obs.prop_quat`. Rendering draws the props with the robot.
+
 ## The episode log
 A dict of numpy arrays, T samples every `log_dt` of walking time (0 at the end of the settle), B logged
 bodies, F feet, J joints:

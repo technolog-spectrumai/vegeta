@@ -31,6 +31,14 @@ state at its time ``t`` together with the contact forces and the torques applied
 **Episode log.** See ``Episode`` and docs: the dict format shared with ``vegeta.chiron.metrics``.
 
 **Failure rules.** ``FailureRules`` implements the protocol's §5 generically (progress along +x).
+
+**Scenery.** ``ChironLab(robot, terrain, props=[Prop, ...], welds=[Weld, ...])`` adds objects that are not the
+robot (a wire across the road, a log to lift). ``lab.set_weld(name, active)`` switches a weld at run time;
+``lab.contact_force(geoms_a, geoms_b)`` is the contact force between two sets of geoms (a gripper's jaws and the
+object between them); ``lab.add_hook(fn)`` registers scene logic called every control step of walking time after
+the controller (``fn(lab)``; optional ``fn.reset(lab)``) — e.g. a wire that parts when the jaws squeeze it hard
+enough. ``lab.log_event(source, detail)`` records what happened (``log['events']``); prop poses are logged as
+``prop_pos`` / ``prop_quat`` over ``log['props']``.
 """
 from __future__ import annotations
 
@@ -43,7 +51,7 @@ from pathlib import Path
 import numpy as np
 
 from .result import Result
-from .robot import TERRAIN_NAME, Robot, RobotMeta, SimOptions, terrain_geometry
+from .robot import TERRAIN_NAME, Prop, Robot, RobotMeta, SimOptions, Weld, terrain_geometry
 from .terrain import Flat, Terrain
 
 __all__ = ["ChironLab", "Command", "Disturbance", "FailureRules", "Observation", "Episode"]
@@ -150,6 +158,7 @@ _OBS_GROUPS = {
     "foot_force": "contacts", "foot_normal": "contacts", "foot_normal_force": "normal_force",
     "foot_contact_pos": "contacts", "foot_in_contact": "contacts", "belly_contact": "contacts",
     "foot_jac": "foot_jac",
+    "prop_pos": "props", "prop_quat": "props",
 }
 
 
@@ -162,7 +171,8 @@ class Observation:
     of the root; ``com``, ``com_vel``, ``ang_mom`` (about the COM, world); ``foot_pos`` (F,3) pad centres,
     ``foot_force`` (F,3) contact force on each foot (world, N), ``foot_normal`` (F,3) from the ground into the
     foot (nan without contact), ``foot_normal_force`` (F,) [N], ``foot_contact_pos`` (F,3), ``foot_in_contact``
-    (F,), ``foot_jac`` list of (3, n_leg) Jacobians, ``belly_contact`` (B,).
+    (F,), ``foot_jac`` list of (3, n_leg) Jacobians, ``belly_contact`` (B,); ``prop_pos`` (P,3) / ``prop_quat``
+    (P,4) of ``lab.props`` (logged prop links).
 
     Valid until the lab steps again (reading a new field afterwards raises); ``as_dict()`` freezes everything.
     """
@@ -227,7 +237,9 @@ class Episode:
     * ``belly_contact`` (T,B) any 'body' geom of that body touching the terrain;
     * ``leg_phase`` (T,F), ``leg_stance_cmd`` (T,F) when the controller's Command reports them;
     * ``v_target``, ``course_m``, ``nominal_hip_height``, ``disturbances`` (t_start in walking time), ``robot``,
-      ``treatment``, ``controller``, ``terrain`` (spec dict), ``seed``; ``geom_pose`` with ``log_geoms=True``.
+      ``treatment``, ``controller``, ``terrain`` (spec dict), ``seed``; ``geom_pose`` with ``log_geoms=True``;
+    * with scenery: ``props`` (P logged prop links), ``prop_pos`` (T,P,3), ``prop_quat`` (T,P,4); ``events`` (list of
+      [t, source, detail] from ``log_event``); ``welds`` {name: active at the end}.
 
     Each sample is consistent: the state at ``t`` with the contact forces and torques of the step from ``t``.
     ``log=False`` runs keep only ``t``, bodies, COM and terrain height (plus the static fields).
@@ -347,14 +359,16 @@ class ChironLab:
     ``timestep`` [s] physics step; ``control_dt`` [s] controller period (a multiple of the timestep);
     ``log_dt`` [s] log period (a multiple of the timestep); ``log_geoms`` also logs every geom's pose (for
     ``viz``); ``course_extent`` (x0, x1, y0, y1) [m] and ``heightfield_cell`` [m] the height field; the other
-    keywords are ``SimOptions`` fields (or pass ``options=SimOptions(...)``, which then wins).
+    keywords are ``SimOptions`` fields (or pass ``options=SimOptions(...)``, which then wins). ``props`` /
+    ``welds``: scenery (``Prop``, ``Weld``; Link-tree robots only).
     """
 
     def __init__(self, robot: Robot, terrain: Terrain | None = None, *, timestep=0.001, control_dt=0.001,
                  log_dt=0.01, log_geoms=False, course_extent=(-1.0, 3.0, -1.0, 1.0), heightfield_cell=0.005,
                  integrator="implicitfast", cone="pyramidal", impratio=1.0, condim=3, contact_solref=None,
                  contact_solimp=None, iterations=100, tolerance=1e-8, noslip_iterations=0, self_collision=False,
-                 flat_as_plane=True, gravity=(0.0, 0.0, -9.81), options: SimOptions | None = None):
+                 flat_as_plane=True, gravity=(0.0, 0.0, -9.81), options: SimOptions | None = None,
+                 props=(), welds=()):
         import mujoco  # noqa: F401  (fail early with a clear message when MuJoCo is missing)
 
         if options is None:
@@ -368,6 +382,10 @@ class ChironLab:
         self.robot = robot
         self.terrain = terrain if terrain is not None else Flat()
         self.log_geoms = bool(log_geoms)
+        self.props = list(props)
+        self.welds = list(welds)
+        self._hooks = []
+        self.events = []
         h = options.timestep
         self._n_ctrl = _ratio(control_dt, h, "control_dt")
         self._n_log = _ratio(log_dt, h, "log_dt")
@@ -392,11 +410,13 @@ class ChironLab:
         self.meta = robot.meta()
         tinfo = terrain_geometry(terrain, opt)
         if robot.is_mjcf:
+            if self.props or self.welds:
+                raise ValueError("props and welds need a Link-tree robot (not Robot.from_mjcf)")
             robot.validate()
             spec = robot._build_spec(terrain, opt)
             m = spec.compile()
         else:
-            xml = robot.to_mjcf(terrain, opt, heightfield="deferred")
+            xml = robot.to_mjcf(terrain, opt, heightfield="deferred", props=self.props, welds=self.welds)
             m = mujoco.MjModel.from_xml_string(xml)
         if tinfo["type"] == "hfield":
             hid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_HFIELD, TERRAIN_NAME)
@@ -417,7 +437,7 @@ class ChironLab:
     @property
     def xml(self) -> str:
         """The complete MJCF of the robot on its terrain (height field inline)."""
-        return self.robot.to_mjcf(self.terrain, self.options)
+        return self.robot.to_mjcf(self.terrain, self.options, props=self.props, welds=self.welds)
 
     def _index(self):
         import mujoco
@@ -426,6 +446,9 @@ class ChironLab:
         J = mujoco.mjtJoint
         name = lambda kind, i: mujoco.mj_id2name(m, kind, i)  # noqa: E731
         free = [j for j in range(m.njnt) if m.jnt_type[j] == J.mjJNT_FREE]
+        if self.props:                                         # loose props have free joints of their own
+            rid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, self.robot.root.name)
+            free = [j for j in free if int(m.jnt_bodyid[j]) == rid]
         if len(free) != 1:
             raise ValueError(f"Chiron needs exactly one free joint (the robot's root); found {len(free)}")
         if any(m.jnt_type[j] == J.mjJNT_BALL for j in range(m.njnt)):
@@ -434,7 +457,8 @@ class ChironLab:
         self._root_body = int(m.jnt_bodyid[free[0]])
         self._root_qadr = int(m.jnt_qposadr[free[0]])
         self._root_dadr = int(m.jnt_dofadr[free[0]])
-        jids = [j for j in range(m.njnt) if int(m.jnt_type[j]) in (int(J.mjJNT_HINGE), int(J.mjJNT_SLIDE))]
+        jids = [j for j in range(m.njnt) if int(m.jnt_type[j]) in (int(J.mjJNT_HINGE), int(J.mjJNT_SLIDE))
+                and int(m.body_rootid[m.jnt_bodyid[j]]) == self._root_body]          # the robot's own joints
         self.joint_names = [name(mujoco.mjtObj.mjOBJ_JOINT, j) for j in jids]
         if any(n is None for n in self.joint_names):
             raise ValueError("every hinge/slide joint needs a name")
@@ -541,6 +565,10 @@ class ChironLab:
         self._viz_gid = np.array([g for g in range(m.ngeom) if g != self._terrain_gid and
                                   not (name(mujoco.mjtObj.mjOBJ_GEOM, g) or "").startswith("pm:") and
                                   m.geom_bodyid[g] != 0], dtype=int)
+        # scenery
+        self.prop_bodies = [lk.name for pr in self.props if pr.log for lk in pr.links()]
+        self._prop_bid = np.array([self._body_id(b) for b in self.prop_bodies], dtype=int)
+        self._weld_id = {name(mujoco.mjtObj.mjOBJ_EQUALITY, e): e for e in range(m.neq)}
         self._jacp = np.zeros((3, m.nv))
         self._pyr4 = np.arange(4)
         self.total_mass = float(m.body_subtreemass[self._root_body])
@@ -580,7 +608,8 @@ class ChironLab:
         mujoco.mj_kinematics(m, d)
         mujoco.mj_comPos(m, d)
         gids = self._foot_gid if len(self._foot_gid) else np.array(
-            [g for g in range(m.ngeom) if (m.geom_contype[g] or m.geom_conaffinity[g]) and m.geom_bodyid[g] != 0])
+            [g for g in range(m.ngeom) if (m.geom_contype[g] or m.geom_conaffinity[g]) and m.geom_bodyid[g] != 0
+             and int(m.body_rootid[m.geom_bodyid[g]]) == self._root_body])
         low = min(_geom_lowest_z(m, d, g) for g in gids) if len(gids) else 0.0
         self.nominal_base_height = float(meta.nominal_base_height) if meta.nominal_base_height is not None else -low
         self._com_offset = d.subtree_com[self._root_body].copy()
@@ -661,6 +690,11 @@ class ChironLab:
         self._leg_stance = None
         self._transient = []
         self.data.xfrc_applied[:] = 0.0
+        self.events = []
+        for hook in self._hooks:
+            r = getattr(hook, "reset", None)
+            if callable(r):
+                r(self)
         return Observation(self)
 
     def observe(self, sync: bool = False) -> Observation:
@@ -743,6 +777,59 @@ class ChironLab:
                 mag = dist.impulse / (n * h) if dist.impulse is not None else dist.force
                 xf[self._body_id(dist.body), :3] += mag * dist.unit
 
+    # ---- scenery
+    def set_weld(self, name: str, active: bool) -> None:
+        """Switch a ``Weld`` on or off from now on (``reset`` restores its ``active`` setting)."""
+        try:
+            e = self._weld_id[name]
+        except KeyError:
+            raise KeyError(f"no weld {name!r}; known: {sorted(self._weld_id)}") from None
+        self.data.eq_active[e] = 1 if active else 0
+
+    def weld_active(self, name: str) -> bool:
+        return bool(self.data.eq_active[self._weld_id[name]])
+
+    def add_hook(self, hook) -> None:
+        """Scene logic ``hook(lab)`` called every control step of walking time (after the controller's command);
+        ``hook.reset(lab)``, if present, at every reset. Kept across resets; ``clear_hooks``."""
+        if not callable(hook):
+            raise TypeError("a hook must be callable: hook(lab)")
+        self._hooks.append(hook)
+
+    def clear_hooks(self) -> None:
+        self._hooks = []
+
+    def log_event(self, source: str, detail: str) -> None:
+        """Record ``[t, source, detail]`` in ``lab.events`` (and the episode's ``log['events']``)."""
+        self.events.append([float(self.time), str(source), str(detail)])
+
+    def contact_force(self, geoms_a, geoms_b) -> tuple:
+        """Contact force [N] that geoms ``geoms_a`` exert on ``geoms_b`` (names or lists of names) now: the total
+        force vector (world) and the summed normal force. Uses MuJoCo's last forward pass, like ``Observation``."""
+        import mujoco
+
+        m, d = self.model, self.data
+        a = {self._geom_id(g) for g in ([geoms_a] if isinstance(geoms_a, str) else geoms_a)}
+        b = {self._geom_id(g) for g in ([geoms_b] if isinstance(geoms_b, str) else geoms_b)}
+        total, normal = np.zeros(3), 0.0
+        buf = np.zeros(6)
+        for c in range(d.ncon):
+            con = d.contact[c]
+            g1, g2 = int(con.geom1), int(con.geom2)
+            if con.efc_address < 0:
+                continue
+            if g1 in a and g2 in b:
+                sign = 1.0                    # MuJoCo's contact force acts on geom2, its normal points 1 -> 2
+            elif g2 in a and g1 in b:
+                sign = -1.0
+            else:
+                continue
+            mujoco.mj_contactForce(m, d, c, buf)
+            frame = con.frame.reshape(3, 3)
+            total += sign * (frame.T @ buf[:3])
+            normal += float(buf[0])
+        return total, normal
+
     # ---- stepping
     def step(self, command=None) -> Observation:
         """Apply ``command`` (Command, dict or array; None = keep the last) for one control step."""
@@ -769,12 +856,16 @@ class ChironLab:
         greater, less, copyto = np.greater, np.less, np.copyto
         n_ctrl, n_log = self._n_ctrl, self._n_log
         has_act = len(aq) > 0
+        hooks = self._hooks
         for _ in range(nsteps):
             k = self._k
             if controller is not None and k % n_ctrl == 0:
                 cmd = controller(Observation(self))
                 if cmd is not None:
                     self._set_command(cmd)
+            if hooks and k >= 0 and k % n_ctrl == 0:
+                for hook in hooks:
+                    hook(self)
             rec = recorder is not None and k >= 0 and k % n_log == 0
             if rec:
                 recorder.pre(k)
@@ -863,6 +954,9 @@ class ChironLab:
                     "foot_in_contact": inc, "belly_contact": belly}
         if group == "normal_force":
             return {"foot_normal_force": self._foot_normal_forces()}
+        if group == "props":
+            b = self._prop_bid
+            return {"prop_pos": d.xpos[b].copy(), "prop_quat": d.xquat[b].copy()}
         if group == "foot_jac":
             jac = self._foot_jacobians()
             return {"foot_jac": [jac[i, :, :len(self._foot_dofs[i])].copy() for i in range(len(self.feet))]}
@@ -1072,7 +1166,8 @@ class ChironLab:
                 "actuated": len(self.actuated_joints), "feet": list(self.feet), "bodies": list(self.bodies),
                 "nominal_base_height_m": self.nominal_base_height, "nominal_hip_height_m": self.nominal_hip_height,
                 "terrain": self.terrain.spec(), "timestep": self.timestep, "control_dt": self.control_dt,
-                "log_dt": self.log_dt, "nq": self.model.nq, "nv": self.model.nv}
+                "log_dt": self.log_dt, "nq": self.model.nq, "nv": self.model.nv,
+                "props": [pr.name for pr in self.props], "welds": [w.name for w in self.welds]}
 
 
 # ----------------------------------------------------------------------------------------------- recorder
@@ -1092,6 +1187,9 @@ class _Recorder:
         self.body_pos = np.zeros((T, B, 3))
         self.body_quat = np.zeros((T, B, 4))
         self.ground = np.zeros(T)
+        P = len(lab.prop_bodies)
+        self.prop_pos = np.zeros((T, P, 3))
+        self.prop_quat = np.zeros((T, P, 4))
         if full:
             self.body_angvel = np.zeros((T, B, 3))
             self.body_linvel = np.zeros((T, B, 3))
@@ -1143,6 +1241,9 @@ class _Recorder:
         self.ang_mom[i] = d.subtree_angmom[r]
         if self.rules is not None:
             self.ground[i] = lab.terrain.height(self.com[i, 0], self.com[i, 1])
+        if len(lab._prop_bid):
+            self.prop_pos[i] = d.xpos[lab._prop_bid]
+            self.prop_quat[i] = d.xquat[lab._prop_bid]
         if self.full:
             pos, quat, angb, lin = lab._body_state()
             self.body_pos[i], self.body_quat[i] = pos, quat
@@ -1264,6 +1365,12 @@ class _Recorder:
             "q_range": lab._q_range.copy(),
             "actuated_joints": list(lab.actuated_joints),
         }
+        if lab.props or lab.welds or lab.events:
+            log["props"] = list(lab.prop_bodies)
+            log["prop_pos"] = self.prop_pos[:n].copy()
+            log["prop_quat"] = self.prop_quat[:n].copy()
+            log["events"] = [list(e) for e in lab.events]
+            log["welds"] = {w.name: lab.weld_active(w.name) for w in lab.welds}
         J = len(lab.joint_names)
         for key, src in (("tau_stall", lab._stall), ("tau_rated", lab._rated), ("qd_noload", lab._w0),
                          ("i_stall", lab._istall), ("voltage", lab._volt)):
