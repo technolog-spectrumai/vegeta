@@ -182,12 +182,14 @@ class DebrisTracks:
         self.t = 0.0
         self.t_collected = np.full(self.N, np.nan)
 
-    def _accel(self, x, v):
+    def _accel(self, x, v, idx=None):
+        """Acceleration and air force of particles ``idx`` (all when None) at positions ``x``, velocities ``v``."""
+        idx = slice(None) if idx is None else idx
         u, ok = self.sampler(x)
         u = np.where(ok[:, None], u, 0.0)
         rel = u - v
-        f = self.k_drag[:, None] * np.linalg.norm(rel, axis=1)[:, None] * rel
-        return f / self.mass[:, None] + np.array([0.0, 0.0, -G]), f
+        f = self.k_drag[idx, None] * np.linalg.norm(rel, axis=1)[:, None] * rel
+        return f / self.mass[idx, None] + np.array([0.0, 0.0, -G]), f
 
     def step(self):
         h = self.h
@@ -223,7 +225,7 @@ class DebrisTracks:
             idx = np.where(air)[0]
             xp = self.x[idx] + self.v[idx] * self.dt
             vp = self.v[idx] + a1[idx] * self.dt
-            a2, _ = self._accel(xp, vp)
+            a2, _ = self._accel(xp, vp, idx)
             self.x[idx] += 0.5 * (self.v[idx] + vp) * self.dt
             self.v[idx] += 0.5 * (a1[idx] + a2) * self.dt
             # landing
