@@ -151,6 +151,13 @@ class Drive:
         return self._command(obs, v, dt)
 
     # ---- the command
+    def command(self, obs, v: float, dt: float) -> Command:
+        """The chassis command at speed ``v`` [m/s] for a controller that schedules the speed itself (failures
+        and the limp are not evaluated: call the Drive itself for those)."""
+        if self.yaw0 is None:
+            self.yaw0 = yaw_of(obs.base_quat)
+        return self._command(obs, v, dt)
+
     def _command(self, obs, v: float, dt: float) -> Command:
         yaw = yaw_of(obs.base_quat) - (self.yaw0 or 0.0)
         y = float(obs.com[1])

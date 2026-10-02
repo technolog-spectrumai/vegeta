@@ -1208,6 +1208,9 @@ class _Recorder:
                 G = len(lab._viz_gid)
                 self.geom_pos = np.zeros((T, G, 3), dtype=np.float32)
                 self.geom_mat = np.zeros((T, G, 9), dtype=np.float32)
+        import mujoco
+
+        self.bad_qacc = int(lab.data.warning[mujoco.mjtWarning.mjWARN_BADQACC].number)
         # rule state
         self.low_since = None
         self.rules_hip = None
@@ -1272,6 +1275,11 @@ class _Recorder:
         else:
             self.body_pos[i] = d.xipos[b]
             self.body_quat[i] = d.xquat[b]
+        bad = int(d.warning[mujoco.mjtWarning.mjWARN_BADQACC].number)
+        if bad != self.bad_qacc:                                       # MuJoCo reset the state: say so in the log
+            self.bad_qacc = bad
+            lab.log_event("mujoco", f"unstable simulation (bad acceleration, dof "
+                                    f"{int(d.warning[mujoco.mjtWarning.mjWARN_BADQACC].lastinfo)}): MuJoCo reset the state")
         self.n = i + 1
         if self.rules is not None:
             self.outcome = self._check(i)
@@ -1365,7 +1373,9 @@ class _Recorder:
             "q_range": lab._q_range.copy(),
             "actuated_joints": list(lab.actuated_joints),
         }
-        if lab.props or lab.welds or lab.events:
+        if lab.events and "events" not in log:
+            log["events"] = [list(e) for e in lab.events]
+        if lab.props or lab.welds:
             log["props"] = list(lab.prop_bodies)
             log["prop_pos"] = self.prop_pos[:n].copy()
             log["prop_quat"] = self.prop_quat[:n].copy()

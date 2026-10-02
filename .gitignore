@@ -14,3 +14,4 @@ notebooks/output/
 scenarios/output/
 benchmark/*/results/
 user_tests_*.log
+MUJOCO_LOG.TXT

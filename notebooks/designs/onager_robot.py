@@ -170,8 +170,9 @@ def geometry(p: dict | None = None) -> dict:
             "wheelbase": (2 * p["shoulder_x"]) / 1000.0, "track": 2 * y_wheel / 1000.0}
 
 
-def mass_budget(p: dict | None = None, cad: dict | None = None) -> dict:
-    """Notebook 20 §1's parts list [kg]: part -> mass (actuators from the catalogue)."""
+def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict | None = None) -> dict:
+    """Notebook 20 §1's parts list [kg]: part -> mass (actuators from the catalogue); ``parts_kg`` replaces the
+    listed parts (``PARTS_KG``; a variant with other sensors)."""
     p = design_params() if p is None else p
     cad = cad_numbers(p) if cad is None else cad
     la, wm = act.get(LEG_ACTUATOR), act.get(WHEEL_MOTOR)
@@ -182,7 +183,7 @@ def mass_budget(p: dict | None = None, cad: dict | None = None) -> dict:
         f"leg actuators 8x ({LEG_ACTUATOR}; {la.mass_g / 1000:.1f} kg each)": 8 * la.mass_g / 1000.0,
         f"hub motors 4x ({WHEEL_MOTOR}; {wm.mass_g / 1000:.1f} kg each)": 4 * wm.mass_g / 1000.0,
     }
-    out.update(PARTS_KG)
+    out.update(PARTS_KG if parts_kg is None else parts_kg)
     return out
 
 
@@ -233,7 +234,9 @@ def wheel_servo(kd: float = WHEEL_KD, motor: str = WHEEL_MOTOR) -> Servo:
 def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG_KD, wheel_kd: float = WHEEL_KD,
            tyre_mu: float = 0.8, hull_mu: float = 0.5, leg_collision: bool = True, rolling_resistance: float = C_RR,
            shoulder_range_deg: tuple = (-20.0, 100.0), knee_flexion_range_deg: tuple = (20.0, 150.0),
-           cad: dict | None = None, name: str = "Onager Sentinel SX-1") -> Robot:
+           cad: dict | None = None, name: str = "Onager Sentinel SX-1", parts_kg: dict | None = None,
+           extra_children=(), extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0,
+           extra_hull_masses=(), notes: str | None = None, sources: dict | None = None) -> Robot:
     """Onager Sentinel as a Chiron ``Robot``.
 
     ``overrides``: OnagerSentinel parameters [mm, deg] (other than the defaults, the CAD is rebuilt for the
@@ -241,11 +244,19 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     sliding friction; ``leg_collision``: the leg plates collide with the terrain (False = visual only, faster);
     ``rolling_resistance``: C_RR of the tyres (a wheel-hinge friction loss). Logged body: ``hull``; feet (wheels)
     ``FL``, ``FR``, ``RL``, ``RR``.
+
+    Variants of the series (notebook 21's Manus) reuse the chassis: ``parts_kg`` replaces the listed parts,
+    ``extra_children`` are Links fixed under the hull (arms), ``extra_hull_masses`` PointMasses in the hull,
+    ``extra_mass_kg`` / ``extra_moment_kgm`` their total mass and its first moment about the hull centre along x
+    (Σ m x, standing pose), which the rolling resistance and the battery placement take into account. Without a
+    turret (``turret_length`` or ``turret_height`` 0) the 60 % of the sensor mass the turret carried sits as a point
+    mass on the roof.
     """
     p = design_params(overrides)
     g = geometry(p)
     cad = cad_numbers(p) if cad is None else cad
-    budget = mass_budget(p, cad)
+    parts = PARTS_KG if parts_kg is None else parts_kg
+    budget = mass_budget(p, cad, parts)
     la, wm = act.get(LEG_ACTUATOR), act.get(WHEEL_MOTOR)
     m_leg_act, m_hub = la.mass_g / 1000.0, wm.mass_g / 1000.0
     servo, wservo = leg_servo(kp, kd), wheel_servo(wheel_kd)
@@ -254,13 +265,13 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     m_shell = budget[f"armour shell, {SHELL_T_MM:.0f} mm Al 5083 (from CAD area)"]
     m_upper = budget["upper legs 4x (Al 7075-T6, from CAD)"] / 4
     m_lower = budget["lower legs 4x (Al 7075-T6, from CAD)"] / 4
-    m_tyre = PARTS_KG["wheels: tyres + rims 4x"] / 4
-    m_total = sum(budget.values())
+    m_tyre = parts["wheels: tyres + rims 4x"] / 4
+    m_total = sum(budget.values()) + float(extra_mass_kg)
     weight_corner = m_total * G / 4
     tau_rr = rolling_resistance * weight_corner * g["r_wheel"]
-    m_batt = PARTS_KG["battery 48 V LFP 6 kWh"]
-    m_sens = PARTS_KG["sensors: E/O-IR head, lidar, acoustic, mast"]
-    m_elec = PARTS_KG["computer, radios, relay, IMU"]
+    m_batt = parts["battery 48 V LFP 6 kWh"]
+    m_sens = next(v for k, v in parts.items() if k.startswith("sensors"))
+    m_elec = parts["computer, radios, relay, IMU"]
 
     hull_rgba, leg_rgba, tyre_rgba = (0.36, 0.37, 0.30, 1.0), (0.22, 0.23, 0.22, 1.0), (0.08, 0.08, 0.08, 1.0)
     leg_role = "link" if leg_collision else "visual"
@@ -313,16 +324,17 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     x_lower = x_knee + (lx * math.cos(a2) - lz * math.sin(a2))             # Ry(-a2) applied to the CAD COM
     x_axle = x_knee + g["L2"] * math.sin(a2)
     moment_legs = 4 * (m_upper * x_upper + m_lower * x_lower + (m_tyre + m_hub) * x_axle + m_leg_act * x_knee)
-    moment_hull = m_sens * (0.6 * x_tur + 0.4 * x_mast) + m_elec * 0.5
+    moment_hull = m_sens * (0.6 * x_tur + 0.4 * x_mast) + m_elec * 0.5 + float(extra_moment_kgm)
     x_batt = (m_total * g["axle_x"] - moment_legs - moment_hull) / m_batt
     x_batt = min(x_batt, BATTERY_X_MAX)                                    # the knee modules sit 0.33 m behind the
     # shoulders: the exact balance would put the battery past the front wall, so it is capped (ASSUMPTIONS)
-    hull = Link("hull", log=True, children=legs,
-                geoms=[Geom("hull", "box", (Lh / 2, Wh / 2, Hh / 2), mass=m_shell + PARTS_KG["frame, mounts, hatches"],
-                            role="body", friction=hull_fr, rgba=hull_rgba),
-                       Geom("turret", "box", (tur_l / 2, tur_w / 2, tur_h / 2), pos=(x_tur, 0.0, z_roof + tur_h / 2),
-                            mass=m_sens * 0.6, role="body", friction=hull_fr, rgba=hull_rgba),
-                       Geom("mast", "cylinder", (p["mast_diameter"] / 2000.0, mast_h / 2),
+    turret = tur_l > 0 and tur_w > 0 and tur_h > 0
+    hull = Link("hull", log=True, children=legs + list(extra_children),
+                geoms=[Geom("hull", "box", (Lh / 2, Wh / 2, Hh / 2), mass=m_shell + parts["frame, mounts, hatches"],
+                            role="body", friction=hull_fr, rgba=hull_rgba)]
+                + ([Geom("turret", "box", (tur_l / 2, tur_w / 2, tur_h / 2), pos=(x_tur, 0.0, z_roof + tur_h / 2),
+                         mass=m_sens * 0.6, role="body", friction=hull_fr, rgba=hull_rgba)] if turret else [])
+                + [Geom("mast", "cylinder", (p["mast_diameter"] / 2000.0, mast_h / 2),
                             pos=(x_mast, 0.0, z_roof + tur_h + mast_h / 2), mass=m_sens * 0.15, role="visual",
                             rgba=leg_rgba),
                        Geom("sensor_head", "box", (head / 2, head / 2, head / 2),
@@ -330,15 +342,17 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
                             rgba=leg_rgba)],
                 masses=[PointMass("battery", m_batt, (x_batt, 0.0, -Hh / 2 + 0.08)),
                         PointMass("computer, radios, relay, IMU", m_elec, (0.5, 0.0, 0.0)),
-                        PointMass("wiring, connectors, cooling", PARTS_KG["wiring, connectors, cooling"], (0.0, 0.0, 0.0))]
+                        PointMass("wiring, connectors, cooling", parts["wiring, connectors, cooling"], (0.0, 0.0, 0.0))]
                 + [PointMass(f"{leg}_shoulder_actuator", m_leg_act, (sx * g["shoulder_x"], sy * (Wh / 2 + 0.045), g["shoulder_z"]))
-                   for leg, (sx, sy) in LEGS.items()])
+                   for leg, (sx, sy) in LEGS.items()]
+                + ([] if turret else [PointMass("roof sensors", m_sens * 0.6, (x_tur, 0.0, z_roof + 0.05))])
+                + list(extra_hull_masses))
     robot = Robot(name, hull, feet=feet, nominal_qpos=nominal_qpos(p), nominal_base_height=g["hull_z"],
                   nominal_hip_height=g["shoulder_height"],
-                  notes=f"Onager Sentinel SX-1: hull + 4 wheel-legs; {LEG_ACTUATOR} ×8, {WHEEL_MOTOR} ×4; "
-                        f"wheel hinge friction loss {tau_rr:.1f} N·m (C_RR {rolling_resistance})",
-                  sources={"geometry": "designs/onager.py", "masses": "notebook 20 §1 mass budget",
-                           "actuators": "designs/actuators.py", "assumptions": "onager_robot.ASSUMPTIONS"})
+                  notes=notes or (f"Onager Sentinel SX-1: hull + 4 wheel-legs; {LEG_ACTUATOR} ×8, {WHEEL_MOTOR} ×4; "
+                                  f"wheel hinge friction loss {tau_rr:.1f} N·m (C_RR {rolling_resistance})"),
+                  sources=sources or {"geometry": "designs/onager.py", "masses": "notebook 20 §1 mass budget",
+                                      "actuators": "designs/actuators.py", "assumptions": "onager_robot.ASSUMPTIONS"})
     robot.validate()
     robot.params = p
     robot.geometry = g

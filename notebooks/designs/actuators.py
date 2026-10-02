@@ -15,7 +15,7 @@ class Actuator:
     """One actuator: a hobby servo, a serial-bus smart servo, or a quasi-direct-drive (QDD) module."""
 
     key: str
-    kind: str                 # "servo", "smart servo", "qdd", "industrial module", "hub motor"
+    kind: str                 # "servo", "smart servo", "qdd", "industrial module", "hub motor", "linear (jaw-equivalent)"
     mass_g: float
     stall_Nm: float           # peak / stall torque
     rated_Nm: float           # continuous torque (thermal)
@@ -80,6 +80,14 @@ CATALOG = [
              "assumed: 48 V BLDC with a 1:60 cycloidal stage and a holding brake, light-industrial joint-module class"),
     Actuator("hub motor 3 kW", "hub motor", 9000.0, 240.0, 60.0, 150.0, 48.0, 500, False,
              "assumed: in-wheel BLDC hub motor class of light electric vehicles, 48 V, 3 kW peak (stall torque x no-load speed / 4)"),
+    # manipulator joints and the pincer drive (Onager Manus, notebook 21)
+    Actuator("harmonic 60 Nm, brake", "industrial module", 1600.0, 60.0, 25.0, 15.0, 48.0, 40, True,
+             "assumed: 48 V BLDC with a 1:100 strain-wave gear and a holding brake, cobot wrist-joint class"),
+    Actuator("harmonic 150 Nm, brake", "industrial module", 3200.0, 150.0, 60.0, 30.0, 48.0, 30, True,
+             "assumed: 48 V BLDC with a 1:120 strain-wave gear and a holding brake, cobot elbow-joint class"),
+    Actuator("jaw screw 6 kN", "linear (jaw-equivalent)", 2200.0, 360.0, 120.0, 20.0, 48.0, 9.5, False,
+             "assumed: 48 V ball-screw linear actuator, 6 kN stall, 60 mm/s no-load, acting on the jaw at a 60 mm "
+             "lever: given here at the jaw pivot (6 kN x 0.06 m = 360 N m, 1.0 rad/s = 9.5 rpm)"),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),
@@ -88,6 +96,8 @@ JOINTS = [
     Joint("dog hip / knee pin", 1, 10.0, 110.0, "robot dog leg pins in clevises"),
     Joint("onager shoulder / knee pin", 1, 40.0, 100.0, "Onager Sentinel leg pins (steel, in the actuator output flange)"),
     Joint("onager wheel axle", 1, 45.0, 360.0, "Onager Sentinel stub axle carrying the hub motor (continuous rotation)"),
+    Joint("manus arm pin", 1, 30.0, 150.0, "Onager Manus arm joints (shoulder, elbow, wrist): pin in the module flange"),
+    Joint("manus jaw pin", 1, 16.0, 60.0, "Onager Manus pincer: both jaws on one hardened pin"),
 ]
 
 
