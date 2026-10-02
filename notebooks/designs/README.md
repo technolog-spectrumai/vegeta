@@ -23,3 +23,14 @@ and their scenes use Chiron's props, welds and hooks. `actuators.py` is the shar
 `Actuator.holding_power()`; it also carries the Onager series' industrial joint modules, hub motor, arm and jaw drives, and (``LINEAR``, ``get_linear``) the Atlas's lift and tilt screws. `gait.py` is the shared gait simulation (`import gait`): `make_terrain`, `body_pose`,
 `simulate_steps`, `path_pose`, `PipeContact`, `ik_dog` / `ik_myropod`, `fk_dog` / `fk_myropod`, `torques_dog` / `torques_myropod`, `gait_diagram`.
 All on branch `dev_sikarian`.
+
+`velutina.py` (`Velutina`, notebook 24, branch `dev_velutina`) is the mountain medical courier: a slim body with the ogive
+nose as the removable medical capsule (with a grab handle for the hand-over), four short arms with pusher propellers near
+the tail, four fins, the parachute bay in the tail cone (`part` = aircraft/body/arm/capsule/fin, `angle_of_attack_deg` for
+the CFD). `velutina_flight.py` is its reduced flight model (`import velutina_flight as vf`): `Terrain` (an abstract mountain
+valley: depot, rescue site, the rock face's direction), `Aircraft` (masses, drag areas, the Boreas hover point and thrust
+limit, navigation error and loop response), `Wind` (steady with altitude shear plus a gust process), `Plan` (set-down or
+hand-over, clearances, holds), `simulate` → `Episode` (phase table, events, energy, station-keeping error),
+`touchdown_statistics`, `parachute_descent` (analytic), `render_movie` (matplotlib 3D frames → MP4 with the watermark),
+`profile_figure`. `scenarios/velutina_mission.py` re-runs the mission from the notebook's recorded design.
+

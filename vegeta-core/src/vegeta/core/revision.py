@@ -206,8 +206,9 @@ class Revision:
                             factory_record(model_factory))
 
     def run_cfd(self, name: str, case_factory: Callable, *, steps: Sequence[str] | None = None,
-                timeout: float | None = None, progress=False) -> Evaluation:
-        """Prepare and run ``case_factory(self, workdir)`` (an ``aeromant.CFDCase`` on this revision's STL)."""
+                timeout: float | None = None, progress=False, processors: int = 1) -> Evaluation:
+        """Prepare and run ``case_factory(self, workdir)`` (an ``aeromant.CFDCase`` on this revision's STL);
+        ``processors`` > 1 runs the solver in parallel (``CFDCase.run(processors=)``)."""
         from vegeta.aeromant import CFDCase
 
         refused = self._precheck("cfd", name, "stl")
@@ -225,11 +226,11 @@ class Revision:
         prep = case.prepare()
         results = [prep]
         if prep.ok:
-            results.append(case.run(steps=steps, timeout=timeout, progress=progress))
+            results.append(case.run(steps=steps, timeout=timeout, progress=progress, processors=processors))
         last = results[-1]
         return self._record("cfd", name, t0, started, last.status, dict(last.metrics),
                             [m for r in results for m in r.messages], results, case.config(),
-                            factory_record(case_factory), {"steps": list(steps) if steps else None})
+                            factory_record(case_factory), {"steps": list(steps) if steps else None, "processors": processors})
 
     def run_print(self, name: str, settings, orientation, *, executable="prusa-slicer",
                   timeout: float | None = None) -> Evaluation:

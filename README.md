@@ -133,6 +133,20 @@ the broom's and fan's unbalance against their modes; and in MuJoCo a street with
 drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
 `scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
 
+**Velutina** (branch `dev_velutina`): `24_velutina` (`designs/velutina.py`, `designs/velutina_flight.py`) is a printed
+medical courier for the mountains — a slim body whose ogive nose is the medical capsule (with a grab handle), four pusher
+propellers on short arms near the tail, cruciform fins, an emergency parachute in the tail cone; it flies 8 km and 1800 m
+up at 40 m/s and delivers by setting the capsule down on a pad or by **hand-over**, hovering at a rock face or a tree
+where a person takes it (the same airframe for flood rescue, rescue-team resupply and environmental sampling). The notebook:
+mass budget from the CAD, a hand estimate of the drag areas with the propeller zones as actuator disks and a rudimentary
+Aeromant screening at 0° and 10° (a `fast` preset; `VELUTINA_CFD=full` for a real run), Boreas propulsion at the depot and
+in the thin air at the site, Talos FEA of the arm, the capsule and the body shell (the parachute's opening shock is the weak
+case — the bridle goes to the arm frame next), modes against the rotor lines, the mission in a reduced 6-DOF flight model
+with wind and gusts (set-down precision, station-keeping at the wall with GNSS vs a wall-relative sensor, energy reserve),
+Chronos spectra and arm fatigue, printing, a rendered movie of the flight; `scenarios/velutina_mission.py` (or
+`./user_tests.sh velutina`) re-runs the mission. To do: the parachute in CFD, propeller guards, four rotor disks in the
+whole-aircraft CFD; Velutina v2 (wind-turbine blade inspection) in the next commit.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
