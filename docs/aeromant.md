@@ -150,6 +150,14 @@ resolved (a fully resolved rotating-blade simulation of the whole aircraft is on
 flow behind the disks must be faster than the free stream; if not, flip `disk_axis`. Notebook:
 `09a_fixed_wing_design`, Part 3.
 
+`hull_rotor_disk` is the same case with **one** disk (`disk1_center`, `rotation1`) around any body — a hull, a
+robot. **Heavily loaded disks** (near bollard: a jet several times the free stream, e.g. a thruster at walking or
+swimming speed in water) diverge with `rotorDisk`'s default local inflow — the blade elements see the cell velocity,
+which the disk itself drives. `fixed_inflow=1` makes them see the free stream (`inletFlowType fixed`): a steady
+source with no induction, so it over-predicts the thrust — set the rpm to the one whose no-induction thrust is the
+thrust you want (`notebooks/designs/lobster_cfd.disk_calibration` does it from Boreas). Notebook:
+`24_sikarian_lobster_nefri`, §5.
+
 ## A suction hood under a vehicle (`suction_hood`)
 The Onager Sweeper's vacuum nozzle (notebook 23): the air between the road and the vehicle floor, a hood whose lips
 stand a gap over the road, a square duct through the floor drawing the fan's flow. The domain is nine blockMesh

@@ -15,7 +15,7 @@ class Actuator:
     """One actuator: a hobby servo, a serial-bus smart servo, or a quasi-direct-drive (QDD) module."""
 
     key: str
-    kind: str                 # "servo", "smart servo", "qdd", "industrial module", "hub motor", "linear (jaw-equivalent)"
+    kind: str                 # "servo", "smart servo", "sealed servo", "qdd", "industrial module", "hub motor", "linear (jaw-equivalent)", ...
     mass_g: float
     stall_Nm: float           # peak / stall torque
     rated_Nm: float           # continuous torque (thermal)
@@ -88,6 +88,13 @@ CATALOG = [
     Actuator("jaw screw 6 kN", "linear (jaw-equivalent)", 2200.0, 360.0, 120.0, 20.0, 48.0, 9.5, False,
              "assumed: 48 V ball-screw linear actuator, 6 kN stall, 60 mm/s no-load, acting on the jaw at a 60 mm "
              "lever: given here at the jaw pivot (6 kN x 0.06 m = 360 N m, 1.0 rad/s = 9.5 rpm)"),
+    # sealed underwater drives (Sikarian Lobster, notebook 24): oil-filled / potted servo cases rated for 10 m+
+    Actuator("sealed servo 1.5 Nm", "sealed servo", 55.0, 1.5, 0.5, 1.6, 12.0, 60, False,
+             "assumed: 12 V potted underwater micro servo class (shaft seal), rated 30 m"),
+    Actuator("sealed servo 3 Nm", "sealed servo", 95.0, 3.0, 1.0, 2.5, 12.0, 50, False,
+             "assumed: 12 V oil-compensated underwater servo class (aluminium case, shaft seal), rated 30 m"),
+    Actuator("sealed servo 12 Nm, worm", "sealed servo", 300.0, 12.0, 5.0, 4.0, 12.0, 15, True,
+             "assumed: 12 V underwater gripper drive class, worm output (holds the grip unpowered), rated 30 m"),
     # the street sweeper's broom and suction fan (Onager Sweeper, notebook 23)
     Actuator("broom drive 1.5 kW", "gearmotor", 9000.0, 120.0, 50.0, 60.0, 48.0, 240, False,
              "assumed: 48 V BLDC through a 1:12 planetary stage, brush-disc sweeper drive class (disc brooms run 100-200 rpm)"),
@@ -104,6 +111,9 @@ JOINTS = [
     Joint("manus arm pin", 1, 30.0, 150.0, "Onager Manus arm joints (shoulder, elbow, wrist): pin in the module flange"),
     Joint("manus jaw pin", 1, 16.0, 60.0, "Onager Manus pincer: both jaws on one hardened pin"),
     Joint("sweeper broom spindle", 1, 40.0, 360.0, "Onager Sweeper disc broom: the drive's output spindle (continuous rotation)"),
+    Joint("lobster leg pin", 1, 5.0, 60.0, "Sikarian Lobster leg hips (yaw, pitch): stainless pins in the servo horn"),
+    Joint("lobster tail knuckle", 2, 6.0, 60.0, "Sikarian Lobster tail: yaw + pitch knuckle, a rubber boot over it"),
+    Joint("lobster jaw pin", 1, 6.0, 60.0, "Sikarian Lobster pincer: both jaws on one hardened pin"),
 ]
 
 

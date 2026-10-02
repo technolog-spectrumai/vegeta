@@ -417,6 +417,9 @@ def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]
         "INLET_VELOCITY": np.array([p["velocity"], 0.0, 0.0]),
     })
     out.update({k: _fmt(v) for k, v in extra.items()})
+    if p.get("fixed_inflow", 0.0) not in (0.0, 1.0):
+        raise ValueError("fixed_inflow must be 0 (local inflow) or 1 (the free stream)")
+    out["INLET_FLOW_TYPE"] = "fixed" if p.get("fixed_inflow", 0.0) else "local"
     out["BLADE_DATA"] = "\n".join(f"            (section ({_fmt(r)} {_fmt(t)} {_fmt(c)}))" for r, t, c in blade)
     out["PROFILE_DATA"] = "\n".join(f"                ({_fmt(a)} {_fmt(cd)} {_fmt(cl)})" for a, cd, cl in polar)
     return out
@@ -443,6 +446,10 @@ AIRCRAFT_ROTOR_DISKS = TemplateSpec(
         TemplateParameter("disk_thickness", "thickness of each disk cell zone", "D", 0.08),
         TemplateParameter("zone_radius", "radius of each disk cell zone", "D", 0.52),
         TemplateParameter("disk_level", "refinement level inside the disk zones", "", 5, "int"),
+        TemplateParameter("fixed_inflow", "0: the blade elements see the local cell velocity (induction included; the "
+                          "rotorDisk default); 1: they see the free stream (inletFlowType fixed): no induction, a steady "
+                          "source — the stable choice for a heavily loaded disk (near bollard), where the local model "
+                          "diverges; it over-predicts the thrust, so calibrate the rpm to the thrust you want", "-", 0.0),
     ),
     flavors=EXTERNAL_FLAVORS,
     derive=_disks_derive,

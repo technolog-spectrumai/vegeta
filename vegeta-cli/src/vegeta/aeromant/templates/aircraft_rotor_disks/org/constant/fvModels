@@ -20,7 +20,7 @@ diskLeft
 
     nBlades         {{BLADES}};
     tipEffect       {{TIP_EFFECT}};
-    inletFlowType   local;
+    inletFlowType   {{INLET_FLOW_TYPE}};
     inletVelocity   ({{INLET_VELOCITY}});
     geometryMode    specified;
     origin          ({{DISK1_CENTER}});
@@ -71,7 +71,7 @@ diskRight
 
     nBlades         {{BLADES}};
     tipEffect       {{TIP_EFFECT}};
-    inletFlowType   local;
+    inletFlowType   {{INLET_FLOW_TYPE}};
     inletVelocity   ({{INLET_VELOCITY}});
     geometryMode    specified;
     origin          ({{DISK2_CENTER}});

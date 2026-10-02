@@ -107,3 +107,20 @@ def test_hull_rotor_disk_has_one_disk(tmp_path, sphere_stl, version):
             assert "{{" not in f.read_text().replace("{{...}}", ""), f
     with pytest.raises(ValueError, match="disk2_center"):
         CFDCase("hull_rotor_disk", sphere_stl, values(), tmp_path / "x", geometry_units="m")
+
+
+@pytest.mark.parametrize("template", ["aircraft_rotor_disks", "hull_rotor_disk"])
+def test_fixed_inflow_switch(tmp_path, sphere_stl, template):
+    """fixed_inflow 0 keeps the rotorDisk's local inflow (the default); 1 writes inletFlowType fixed (the free stream)."""
+    v = values()
+    if template == "hull_rotor_disk":
+        v.pop("disk2_center")
+    for flag, word in ((None, "local"), (1.0, "fixed")):
+        vv = dict(v) if flag is None else dict(v, fixed_inflow=flag)
+        case = CFDCase(template, sphere_stl, vv, tmp_path / f"{template}_{word}", geometry_units="m")
+        assert case.prepare().ok
+        src = (tmp_path / f"{template}_{word}" / "system/fvOptions").read_text()
+        assert f"inletFlowType   {word};" in src and "{{" not in src.replace("{{...}}", "")
+    bad = CFDCase(template, sphere_stl, dict(v, fixed_inflow=0.5), tmp_path / "bad", geometry_units="m")
+    res = bad.prepare()
+    assert not res.ok and any("fixed_inflow" in m for m in res.messages)

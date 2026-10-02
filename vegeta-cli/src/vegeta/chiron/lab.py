@@ -367,8 +367,8 @@ class ChironLab:
                  log_dt=0.01, log_geoms=False, course_extent=(-1.0, 3.0, -1.0, 1.0), heightfield_cell=0.005,
                  integrator="implicitfast", cone="pyramidal", impratio=1.0, condim=3, contact_solref=None,
                  contact_solimp=None, iterations=100, tolerance=1e-8, noslip_iterations=0, self_collision=False,
-                 flat_as_plane=True, gravity=(0.0, 0.0, -9.81), options: SimOptions | None = None,
-                 props=(), welds=()):
+                 flat_as_plane=True, gravity=(0.0, 0.0, -9.81), density=0.0, viscosity=0.0, wind=(0.0, 0.0, 0.0),
+                 options: SimOptions | None = None, props=(), welds=()):
         import mujoco  # noqa: F401  (fail early with a clear message when MuJoCo is missing)
 
         if options is None:
@@ -377,7 +377,8 @@ class ChironLab:
                                  noslip_iterations=noslip_iterations, condim=condim, contact_solref=contact_solref,
                                  contact_solimp=contact_solimp, self_collision=self_collision,
                                  course_extent=tuple(course_extent), heightfield_cell=heightfield_cell,
-                                 flat_as_plane=flat_as_plane)
+                                 flat_as_plane=flat_as_plane, density=density, viscosity=viscosity,
+                                 wind=tuple(wind))
         self.options = options
         self.robot = robot
         self.terrain = terrain if terrain is not None else Flat()

@@ -128,6 +128,18 @@ lab.add_hook(cutter)
   hook parks away once collected would otherwise stretch the camera's clipping range).
   Observation: `obs.prop_pos`, `obs.prop_quat`. Rendering draws the props with the robot.
 
+## Water (`density`, `viscosity`, `Geom.fluidshape`)
+
+`ChironLab(..., density=1000.0, viscosity=1.0e-3, wind=(0, 0.5, 0))` (or the same `SimOptions` fields; `wind` is the
+medium's velocity — a current) turns on MuJoCo's fluid forces:
+quadratic drag and viscous resistance on every body from its inertia box, or — on geoms with
+`fluidshape="ellipsoid"` — from the geom's own ellipsoid, with added mass and lift (`fluidcoef` overrides MuJoCo's five
+coefficients). **MuJoCo applies no buoyancy**: its fluid forces vanish at rest (checked: `qfrc_fluid` is zero for a
+body at rest at density 1000). A scene supplies it, e.g. a hook that pushes each body up with ρ g V at its centre of
+buoyancy through `lab.body_force` (the Sikarian Lobster's `lobster_scenario.Water`: CAD volumes per body, and the
+tail thruster's force along its shroud axis). Weight-normalised metrics (`metrics.py`) still divide by the robot's
+dry weight. Defaults are 0 (vacuum): existing models are unchanged.
+
 ## The episode log
 A dict of numpy arrays, T samples every `log_dt` of walking time (0 at the end of the settle), B logged
 bodies, F feet, J joints:
@@ -304,7 +316,7 @@ within 0.25 % (0.998–1.000 c).
   0.5, 1 and 2 ms. With c > 0 the implicit damping shifts the identified c by −0.10 %, −0.20 %, −0.40 %, −0.79 % and
   −1.6 % at those steps, while the energy balance ΔE = ∫ c q̇² dt holds within 0.002 % (0.06 % at 2 ms).
 - None from the joints themselves: armature 0 and friction loss 0 everywhere; no fluid drag (density and
-  viscosity 0). Bearing friction, backlash and gear losses of a real body joint are not modelled.
+  viscosity 0 unless a model sets them, see "Water"). Bearing friction, backlash and gear losses of a real body joint are not modelled.
 
 ## Assumptions (stated with every result)
 - MuJoCo soft contacts (default solref/solimp unless given) and pyramidal friction cones; contact stiffness and

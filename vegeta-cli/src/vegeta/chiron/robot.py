@@ -153,6 +153,10 @@ class Geom:
     ``mass`` [kg] (None = massless); ``friction`` (sliding, torsional, rolling) — the robot's value governs every
     terrain contact. ``role``: 'foot' (a foot pad named in a FootSpec), 'body' (a shell whose ground contact is a
     belly contact), 'link' (any other colliding part) or 'visual' (never collides).
+
+    ``fluidshape`` 'ellipsoid' gives the geom MuJoCo's ellipsoid fluid model (drag, added mass, lift from its own
+    size) when ``SimOptions.density`` > 0; None: the body's inertia-box model. ``fluidcoef`` (5 numbers: blunt drag,
+    slender drag, angular drag, Kutta lift, Magnus lift) overrides MuJoCo's defaults (0.5, 0.25, 1.5, 1.0, 1.0).
     """
 
     name: str
@@ -165,8 +169,14 @@ class Geom:
     friction: tuple = (1.0, 0.005, 0.0001)
     role: str = "link"
     rgba: tuple | None = None
+    fluidshape: str | None = None
+    fluidcoef: tuple | None = None
 
     def __post_init__(self):
+        if self.fluidshape not in (None, "ellipsoid"):
+            raise ValueError(f"geom {self.name}: fluidshape must be None or 'ellipsoid'")
+        if self.fluidcoef is not None and len(self.fluidcoef) != 5:
+            raise ValueError(f"geom {self.name}: fluidcoef needs 5 numbers")
         if self.type not in GEOM_TYPES:
             raise ValueError(f"geom {self.name}: type must be one of {GEOM_TYPES}")
         if self.role not in GEOM_ROLES:
@@ -313,6 +323,11 @@ class SimOptions:
     ``self_collision`` False: robot geoms collide only with the terrain. The terrain is a MuJoCo height field
     sampled every ``heightfield_cell`` metres over ``course_extent`` (x0, x1, y0, y1); a flat terrain is a plane
     when ``flat_as_plane``. ``heightfield_base`` is the height-field slab thickness below its lowest point.
+
+    ``density`` [kg/m³] and ``viscosity`` [Pa·s] of the medium (0 = vacuum, the default) and its velocity ``wind``
+    [m/s] (a water current; MuJoCo's name): MuJoCo's fluid forces —
+    drag, viscous resistance and, on geoms with ``fluidshape='ellipsoid'``, added mass and lift. MuJoCo applies **no
+    buoyancy** (its fluid forces vanish at rest): a scene hook adds it (``lab.body_force``), see docs/chiron.md.
     """
 
     timestep: float = 0.001
@@ -333,6 +348,13 @@ class SimOptions:
     flat_as_plane: bool = True
     memory: str = "64M"
     terrain_rgba: tuple = (0.55, 0.5, 0.45, 1.0)
+    density: float = 0.0
+    viscosity: float = 0.0
+    wind: tuple = (0.0, 0.0, 0.0)
+
+    def __post_init__(self):
+        if self.density < 0 or self.viscosity < 0:
+            raise ValueError("SimOptions.density and viscosity must be >= 0")
 
 
 # ----------------------------------------------------------------------------------------------- the robot
@@ -578,6 +600,9 @@ class Robot:
         o.iterations = opt.iterations
         o.tolerance = opt.tolerance
         o.noslip_iterations = opt.noslip_iterations
+        o.density = opt.density
+        o.viscosity = opt.viscosity
+        o.wind = list(opt.wind)
         ctype, caff = _collision_bits(opt)
         for g in spec.geoms:
             if g.parent.name == spec.worldbody.name:      # static scenery keeps its own collision settings
@@ -735,6 +760,7 @@ def _prop_xml(pr: "Prop", opt: SimOptions) -> list:
                 a.append(f'contype="{coll[0]}" conaffinity="{coll[1]}" friction="{_f(g.friction)}" ' + " ".join(extra))
             if g.rgba is not None:
                 a.append(f'rgba="{_f(g.rgba)}"')
+            a += _fluid_attrs(g)
             lines.append(pad + "  <geom " + " ".join(a) + "/>")
         for pm in link.masses:
             lines.append(f'{pad}  <geom name={quoteattr("pm:" + pm.name)} type="sphere" size="{POINT_MASS_RADIUS}" '
@@ -758,7 +784,8 @@ def _option_xml(opt: SimOptions) -> str:
     integ = names[opt.integrator.lower()]
     return (f'<option timestep="{opt.timestep:.10g}" gravity="{_f(opt.gravity)}" integrator="{integ}" '
             f'cone="{opt.cone}" impratio="{opt.impratio:.10g}" iterations="{int(opt.iterations)}" '
-            f'tolerance="{opt.tolerance:.10g}" noslip_iterations="{int(opt.noslip_iterations)}"/>')
+            f'tolerance="{opt.tolerance:.10g}" noslip_iterations="{int(opt.noslip_iterations)}" '
+            f'density="{opt.density:.10g}" viscosity="{opt.viscosity:.10g}" wind="{_f(opt.wind)}"/>')
 
 
 def terrain_geometry(terrain: Terrain, opt: SimOptions) -> dict:
@@ -814,7 +841,17 @@ def _geom_xml(g: Geom, opt: SimOptions, coll) -> str:
             a.append(f'solimp="{_f(opt.contact_solimp)}"')
     if g.rgba is not None:
         a.append(f'rgba="{_f(g.rgba)}"')
+    a += _fluid_attrs(g)
     return "<geom " + " ".join(a) + "/>"
+
+
+def _fluid_attrs(g: Geom) -> list:
+    out = []
+    if g.fluidshape is not None:
+        out.append(f'fluidshape="{g.fluidshape}"')
+    if g.fluidcoef is not None:
+        out.append(f'fluidcoef="{_f(g.fluidcoef)}"')
+    return out
 
 
 def _joint_xml(j: Joint) -> str:

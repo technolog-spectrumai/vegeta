@@ -133,6 +133,22 @@ the broom's and fan's unbalance against their modes; and in MuJoCo a street with
 drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
 `scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
 
+Project Sikarian — the underwater walker (branch `dev_lobster`): `24_sikarian_lobster_nefri` (`designs/lobster.py`)
+is the Sikarian Lobster Nefri, a ~7 kg, 0.32 m robot that walks on the bottom on six 2-joint legs, cuts and grips
+with two pincers, and swims on one shrouded propeller at the end of a jointed tail that points the jet (CAD; mass
+and displaced-volume budget, syntactic foam that trims it to sink with 10 % of its weight, the centre of buoyancy
+over the centre of gravity; leg loads in water and pressing, the tripod gait; the thruster in Boreas in water, the
+duct, cavitation with depth, the swim speed; the tail's thrust-line envelope — through the CG within ±15°, steep
+downward thrust with the tail curled over the back; CFD with Aeromant on fast presets — the propeller at bollard
+with `rotor_mrf_static` against BEMT and the body with the jet deflected 0°/35° as a `hull_rotor_disk`, particle
+movies; the pincer's cutting force against rope classes and jaw FEA; housing FEA at 8 m with buckling by hand, leg
+and tail FEA, the tail's modes against the blade pass; endurance; and in MuJoCo — Chiron's new water options plus a
+buoyancy-and-thrust hook — three jobs with movies: swim and land, cut a Ø10 mm PP rope across a Ø600 mm outfall pipe
+and walk 1 m into it, hold in a 0.5 m/s current by pressing down with the tail). `designs/lobster_robot.py`,
+`lobster_controller.py`, `lobster_scenario.py` and `lobster_cfd.py` are its modules;
+`scenarios/sikarian_lobster.py` (or `./user_tests.sh lobster`) re-runs the jobs. The big member, Ornatus (15 kg, a
+Ø12 mm electric cable), is the next notebook.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

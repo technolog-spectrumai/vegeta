@@ -123,3 +123,16 @@ drag on the litter under the hood (`onager_sweeper_cfd.SUCTION`), what reaches t
 back into the basket, does the same with a 0.6 kg box with the right pincer, and sweeps on. Writes
 `onager_sweeper_street.mp4` and `onager_sweeper_street.json` (what was vacuumed, what landed in the basket, the
 phase table).
+
+## Sikarian Lobster Nefri underwater (MuJoCo)
+
+`xvfb-run -a python3 scenarios/sikarian_lobster.py [--only swim|cut_and_enter|current]` (or `./user_tests.sh
+lobster`): the ~7 kg underwater walker (`notebooks/designs/lobster_robot.py`) in fresh water — MuJoCo's fluid drag
+on ellipsoid shapes plus the `Water` hook's buoyancy and vectored tail thrust. **swim**: released 1 m over the bed,
+it swims on its tail thruster (the tail aims the thrust through the CG, a depth loop sets the angle), eases off and
+lands on its legs. **cut_and_enter**: walks to a Ø600 mm outfall pipe, puts its right pincer's notch on the Ø10 mm
+PP rope across the mouth and closes the worm drive — the rope parts only when both jaws squeeze it with 600 N for
+50 ms (the Manus's `WireCutter` hook) — lowers the claw so the ends drop, backs off, stows and walks 1 m into the
+pipe (drawn translucent). **current**: 0.5 m/s across it; standing it slides, then it curls the tail over its back,
+presses itself down with the jet and walks across. Writes `sikarian_lobster_<job>.mp4` and `.json` (mission log,
+events, the cut and the peak squeeze, the drift).
