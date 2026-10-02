@@ -110,14 +110,36 @@ def test_motor_off_keeps_the_heading(lab):
     assert ctrl.events == [(pytest.approx(3.0, abs=0.02), "FL", "motor_off")]
 
 
-def test_seized_wheel_drag_slows_without_the_limp(lab):
-    ep, _ = drive(lab, [oc.Failure(3.0, "RR", "seized")], duration=9.0, lift_seized=0.0)
+def test_seized_wheel_drag_at_the_limp_speed(lab):
+    ep, _ = drive(lab, [oc.Failure(3.0, "RR", "seized")], duration=10.0, lift_seized=0.0, v_limp=1.5)
     ts = osc.timeseries(ep)
-    late = ts[ts.t > 5.0]
-    assert late.v.mean() < 3.0                          # the braked tyre drags
+    late = ts[ts.t > 6.0]
+    assert late.v.mean() == pytest.approx(1.5, abs=0.2)   # slowed to the limp speed, dragging the braked tyre
     assert (-late.fx_RR).mean() > 300.0                 # hundreds of newtons of drag
-    assert late.tilt_deg.max() < 8.0
+    assert late.tilt_deg.max() < 4.0
     assert late.yaw_deg.abs().max() < 3.0
+    names = list(ep.log["joints"])
+    q = np.asarray(ep.log["q"])[-1, names.index("RR_shoulder")]
+    assert abs(q - orb.nominal_qpos()["RR_shoulder"]) < 0.25   # the leg holds against the drag (force feed-forward)
+
+
+def test_wheel_torque_is_clamped_to_what_the_legs_react(lab):
+    ep, ctrl = drive(lab, duration=4.0)
+    names = list(ep.log["joints"])
+    tau = np.asarray(ep.log["tau"])[:, [names.index(f"{w}_wheel") for w in orb.LEGS]]
+    assert np.abs(tau).max() <= ctrl.tau_wheel_max + 1e-6
+
+
+def test_force_feedforward_holds_the_legs_against_a_push(lab):
+    deflection = {}
+    for ff in (False, True):
+        lab.add_disturbance(ch.Disturbance("hull", 1.0, 3.0, force=600.0, direction=(-1, 0, 0)))
+        ep = lab.run(oc.Drive(0.0, ramp_s=0.0, force_ff=ff), duration=4.0, rules=None, settle=0.5)
+        lab.clear_disturbances()
+        names = list(ep.log["joints"])
+        q = np.asarray(ep.log["q"])[-1, names.index("FL_shoulder")]
+        deflection[ff] = abs(q - orb.nominal_qpos()["FL_shoulder"])
+    assert deflection[True] < 0.5 * deflection[False]
 
 
 def test_three_wheel_limp_lifts_the_seized_wheel(lab):
@@ -141,6 +163,15 @@ def test_knee_locked_holds_the_angle(lab):
 
 
 # ----------------------------------------------------------------------------------------------- the scenario
+def test_patrol_on_gravel_stays_upright_without_failures():
+    lab_g = orb.onager_lab(osc.gravel_road())
+    ep = osc.run(lab_g, "drag", duration=12.0)
+    ts = osc.timeseries(ep)
+    assert ts.x.iloc[-1] > 25.0
+    assert ts[ts.t < 6.0].tilt_deg.max() < 8.0            # the speed bump at 3 m/s, before any failure
+    assert ts.tilt_deg.max() < 30.0
+
+
 def test_patrol_scenario_bookkeeping():
     road = osc.gravel_road()
     assert road.height(0.0, 0.0) == 0.0                 # flat before the gravel starts
@@ -149,5 +180,6 @@ def test_patrol_scenario_bookkeeping():
         extent=osc.ROAD["extent"], cell=osc.ROAD["cell"]).height(osc.BUMP["x"], 0.0), abs=1e-9)
     ctrl = osc.controller("limp")
     assert ctrl.name == "patrol/limp" and ctrl.v_limp == 1.5 and [f.mode for f in ctrl.failures] == ["motor_off", "seized"]
+    assert osc.controller("drag").lift_seized == 0.0 and osc.controller("drag").v_limp == 1.5
     with pytest.raises(ValueError):
         oc.Failure(1.0, "FL", "exploded")

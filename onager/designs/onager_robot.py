@@ -112,7 +112,7 @@ ASSUMPTIONS = {
 
 #: ChironLab settings (everything else: ChironLab's defaults — 1 ms implicit-fast, pyramidal cones). The wheels
 #: are stiff tyres: contact time constant 0.01 s keeps the 95 kg corner's tyre sink ≈ 5 mm (a foam-filled tyre).
-LAB_OPTIONS = {"contact_solref": (0.01, 1.0), "heightfield_cell": 0.05, "course_extent": (-3.0, 40.0, -4.0, 4.0)}
+LAB_OPTIONS = {"contact_solref": (0.01, 1.0), "heightfield_cell": 0.05, "course_extent": (-3.0, 60.0, -4.0, 4.0)}
 
 LEGS = {"FL": (1, 1), "FR": (1, -1), "RL": (-1, 1), "RR": (-1, -1)}           # wheel name -> (sx, sy)
 LEG_NAMES = {"FL": "front-left", "FR": "front-right", "RL": "rear-left", "RR": "rear-right"}

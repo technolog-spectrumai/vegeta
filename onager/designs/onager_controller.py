@@ -5,13 +5,17 @@
 * **wheels** — every hub motor gets a speed target ω = v / r; a heading hold adds a differential (skid-steer):
   the left and right sides differ by ``k_heading × yaw + k_lateral × y`` (rad/s), clipped to ``±diff_clip``;
 * **legs** — shoulders and knees hold the standing pose through their position servos (an active suspension:
-  kp / kd of ``onager_robot.leg_servo``) with a gravity feed-forward: each leg's servos add ``Jᵀ (0, 0, W/4)``,
-  the torque that carries its share of the weight, from the lab's foot Jacobians (``gravity_ff``), so the servos'
-  stiffness is spent on deviations, not on the static load;
+  kp / kd of ``onager_robot.leg_servo``) with a contact-force feed-forward: each leg's servos add
+  ``−Jᵀ (f_x, f_y, W/4)`` from the lab's foot Jacobians — the measured horizontal contact force of its wheel
+  (``force_ff``: the drive, braking and drag forces that would otherwise swing the leg on its servo compliance;
+  a seized tyre's drag of ~700 N is ~700 N·m at the shoulder, 25° on a 1600 N·m/rad servo) and its nominal share
+  of the weight (``gravity_ff``) — so the servos' stiffness is spent on deviations, not on the standing loads;
 * **wheel speed loop** — the hub motor's velocity servo is proportional (``onager_robot.wheel_servo``: τ = kd
   (ω_target − ω), on the torque–speed line) and droops under load; the controller adds the integral term of a PI
-  loop as a feed-forward torque, ``k_i ∫(ω_target − ω) dt`` clipped to the motor's stall torque (anti-windup),
-  so a loaded wheel still reaches its speed;
+  loop as a feed-forward torque, ``k_i ∫(ω_target − ω) dt`` (anti-windup), so a loaded wheel still reaches its
+  speed. Both terms are clamped to ``tau_wheel_max`` (default 150 N·m: a wheel's tractive force acts ~1 m below
+  the shoulder, and the 800 N·m shoulder module cannot react the hub motor's 240 N·m stall torque through the leg —
+  it would swing the leg to its limit): the speed error the P term sees is clipped to ``tau_wheel_max / kd``;
 * **speed ramp** — v rises from 0 over ``ramp_s`` (the hub motors stay on their torque–speed line otherwise);
 * **failures** — ``Failure(t, wheel, mode)`` at walking time ``t`` on wheel ``'FL'``…: ``'motor_off'`` (the hub
   motor loses power: the controller commands zero torque — ω_target = the wheel's own speed — and the wheel
@@ -22,8 +26,8 @@
   the CG must leave the seized corner's side of the diagonal through the two neighbouring wheels, so over
   ``shift_s`` the three good legs move the hull ``shift_x`` [m] along x away from the seized wheel (every axle
   re-placed by the two-link inverse kinematics at the same height) while the seized leg folds its wheel up by
-  ``lift_seized``; each good leg's gravity feed-forward then carries W/3 and the speed target drops to ``v_limp``
-  (None = keep it). Failures and the shift are logged in ``Drive.events``.
+  ``lift_seized``; each good leg's gravity feed-forward then carries W/3. After any seizure the speed target drops
+  to ``v_limp`` (None = keep it), whether the wheel is lifted or dragged. Failures and the shift are logged in ``Drive.events``.
 
 The controller never reads the terrain; the hull level follows from the servo compliance. ``Stand`` holds the pose.
 
@@ -86,8 +90,10 @@ class Drive:
     def __init__(self, v_target: float, *, failures=(), ramp_s: float = 1.5, k_heading: float = 30.0,
                  k_lateral: float = 3.0, diff_clip: float = 4.0, gravity_ff: bool = True, lift_seized: float = 0.10,
                  shift_x: float = 0.30, shift_s: float = 1.5, v_limp: float | None = 1.5, k_i: float = 60.0,
-                 crouch: float = 0.0, name: str | None = None):
+                 force_ff: bool = True, tau_wheel_max: float = 150.0, crouch: float = 0.0, name: str | None = None):
         self.v_limp = v_limp
+        self.force_ff = force_ff
+        self.tau_wheel_max = float(tau_wheel_max)
         self.v_target = float(v_target)
         self.k_i = float(k_i)
         self.shift_x, self.shift_s = float(shift_x), float(shift_s)
@@ -117,7 +123,8 @@ class Drive:
         self.yaw0 = None
         self.integral = {leg: 0.0 for leg in orb.LEGS}
         self.t_prev = None
-        self.stall = {leg: orb.act.get(orb.WHEEL_MOTOR).stall_Nm for leg in orb.LEGS}
+        self.stall = {leg: min(orb.act.get(orb.WHEEL_MOTOR).stall_Nm, self.tau_wheel_max) for leg in orb.LEGS}
+        self.dw_max = self.tau_wheel_max / orb.WHEEL_KD              # speed error the P loop may see
         if self.crouch:
             # lower the hull by `crouch` [m] with the knees (the wheel rises by L2 sin a2 per rad of knee flexion)
             dq = self.crouch / (self.L2 * math.sin(self.a2))
@@ -143,8 +150,8 @@ class Drive:
                     self.limp = (t, f.wheel)
                     self.events.append((t, f.wheel, f"limp: hull shifts {self.shift_x:+.2f} m, wheel lifts {self.lift_seized:.2f} m"))
         v = self.v_target * min(1.0, t / self.ramp_s) if self.ramp_s > 0 else self.v_target
-        if self.limp is not None and self.v_limp is not None:
-            v = min(v, self.v_limp)                              # limp home at the reduced speed
+        if self.v_limp is not None and any(m == "seized" for m in self.state.values()):
+            v = min(v, self.v_limp)                              # a seized wheel: home at the reduced speed, lifted or dragged
         dt = 0.0 if self.t_prev is None else t - self.t_prev
         self.t_prev = t
         return self._command(obs, v, dt)
@@ -175,14 +182,20 @@ class Drive:
             # a left wheel slows down when the hull points left (yaw > 0): turn right
             w = w0 + (diff if sy > 0 else -diff)
             mode = self.state.get(leg)
-            qd_target[jw] = w
+            w_now = float(obs.qd[self.idx[jw]])
+            qd_target[jw] = w_now + float(np.clip(w - w_now, -self.dw_max, self.dw_max))
             if mode is None and self.k_i > 0:
-                err = w - float(obs.qd[self.idx[jw]])
+                err = w - w_now
                 self.integral[leg] = float(np.clip(self.integral[leg] + self.k_i * err * dt, -self.stall[leg], self.stall[leg]))
                 tau_ff[jw] = self.integral[leg]
-            if self.gravity_ff:
+            if self.gravity_ff or self.force_ff:
                 jac = obs.foot_jac[i]                                    # (3, n_leg): shoulder, knee, wheel
-                tau = -jac.T @ np.array([0.0, 0.0, self.weight / n_carry])
+                f = np.zeros(3)
+                if self.gravity_ff:
+                    f[2] = self.weight / n_carry
+                if self.force_ff:
+                    f[:2] = obs.foot_force[i][:2]                        # the measured horizontal contact force
+                tau = -jac.T @ f
                 tau_ff[js], tau_ff[jk] = float(tau[0]), float(tau[1])
             if mode == "motor_off":
                 qd_target[jw] = float(obs.qd[self.idx[jw]])              # zero torque: freewheel

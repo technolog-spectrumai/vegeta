@@ -5,8 +5,9 @@ with a speed bump at 3 m/s (11 km/h), then two partial failures of the drive and
   1.2 m long at x = 12 m (``gravel_road``);
 * **failures** (``FAILURES``) — at 6 s the front-left hub motor loses power (it freewheels), at 9 s the
   rear-right wheel seizes (braked on its motor's torque line);
-* **responses** (``RESPONSES``) — ``'drag'``: keep driving, the seized tyre skids; ``'limp'``: the three-wheel limp
-  (the hull shifts 0.4 m forward over 1.5 s, the seized wheel lifts 0.1 m, speed down to 1.5 m/s).
+* **responses** (``RESPONSES``) — both slow to 1.5 m/s after the seizure; ``'drag'``: keep driving on three motors,
+  the seized tyre skids; ``'limp'``: the three-wheel limp (the hull shifts 0.4 m forward over 1.5 s on the three
+  good legs, the seized wheel lifts 0.1 m).
 
 ``run(lab, response)`` returns the Episode with the controller's events in ``ep.log['events']``; ``timeseries(ep)``
 and ``phase_table(ep)`` give the numbers (speed, heading, tilt, corner loads, wheel torques and power per phase).
@@ -28,12 +29,12 @@ import onager_robot as orb
 __all__ = ["ROAD", "BUMP", "V_PATROL", "FAILURES", "RESPONSES", "DURATION", "PHASES", "gravel_road", "controller",
            "run", "timeseries", "phase_table", "tilt_deg", "yaw_deg"]
 
-ROAD = dict(rms=0.015, correlation_length=0.30, start=2.0, seed=3, extent=(-3.0, 45.0, -4.0, 4.0), cell=0.05)
+ROAD = dict(rms=0.015, correlation_length=0.30, start=2.0, seed=3, extent=(-3.0, 60.0, -4.0, 4.0), cell=0.05)   # 16 s at 3 m/s stay inside
 BUMP = dict(x=12.0, height=0.12, length=1.2)
 V_PATROL = 3.0                                                  # m/s (11 km/h: a patrol speed on gravel)
 FAILURES = [oc.Failure(6.0, "FL", "motor_off"), oc.Failure(9.0, "RR", "seized")]
 RESPONSES = {
-    "drag": dict(lift_seized=0.0, v_limp=None),
+    "drag": dict(lift_seized=0.0, v_limp=1.5),
     "limp": dict(lift_seized=0.10, shift_x=0.40, shift_s=1.5, v_limp=1.5),
 }
 DURATION = 16.0
