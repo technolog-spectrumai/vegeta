@@ -34,7 +34,10 @@ name says `_deg`). World frame: z up; a course runs along +x from x = 0.
   actuators are replaced by Chiron servos.
 
 Robot-specific code lives with the designs, never in the package: `notebooks/designs/myropod_robot.py`
-(Cleopatra), `myropod_controller.py`, `robot_dog_robot.py`, `robot_dog_controller.py`.
+(Cleopatra), `myropod_controller.py`, `robot_dog_robot.py`, `robot_dog_controller.py`, and for a wheeled
+machine `onager_robot.py` / `onager_controller.py` / `onager_scenario.py` (the Onager Sentinel: wheels are
+unlimited hinges driven by a `Servo` with `kp = 0`, i.e. a velocity loop on the hub motor's torque–speed line,
+with rolling resistance as a hinge `frictionloss`; the wheels are the robot's feet, so the foot metrics apply).
 
 ## Terrains (`terrain.py`)
 Analytic, vectorised `height(x, y)` [m], turned into a MuJoCo height field (5 mm cells by default; flat ground

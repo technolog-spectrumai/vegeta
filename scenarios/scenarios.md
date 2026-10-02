@@ -82,3 +82,15 @@ Later: read the design from a JSON exported by the notebooks instead of the pres
 curl into the ball, neck first) and `apheloria_unpack.mp4` (from the ball → open tail first → stand), plus
 `apheloria_pack_unpack.json` with the body joints' final angles, peak torques and saturation. A scripted controller
 sets only servo targets; whether the ball closes is decided by gravity, contacts and the actuators' limits.
+
+## Onager Sentinel on patrol (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_patrol.py [--response drag|limp]` (or `./user_tests.sh onager`) drives the
+Onager Sentinel SX-1 (`notebooks/designs/onager_robot.py`: a 408 kg wheel-leg hybrid, eight 800 N·m joint
+modules as position servos, four 3 kW hub motors as velocity servos on their torque–speed lines) over a gravel
+road with a 120 mm speed bump at 3 m/s; at 6 s the front-left hub motor loses power (it freewheels), at 9 s the
+rear-right wheel seizes. Two responses, one movie each: `onager_patrol_drag.mp4` (keep driving on three motors,
+the braked tyre skids) and `onager_patrol_limp.mp4` (the three-wheel limp: the hull shifts 0.4 m forward on the
+three good legs, the seized wheel lifts 100 mm, speed down to 1.5 m/s); `onager_patrol.json` has the per-phase
+tables (speed, heading, tilt, corner loads, wheel torques and power, the seized wheel's drag). The scenario is
+`notebooks/designs/onager_scenario.py`, the same one notebook 20 §7 runs.

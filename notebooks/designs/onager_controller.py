@@ -1,0 +1,210 @@
+"""Wheel-mode driving for the Onager Sentinel in ChironLab, with partial failures of the drive.
+
+``Drive`` is a ChironLab controller (``reset(lab, seed)``, ``__call__(obs) -> Command``):
+
+* **wheels** — every hub motor gets a speed target ω = v / r; a heading hold adds a differential (skid-steer):
+  the left and right sides differ by ``k_heading × yaw + k_lateral × y`` (rad/s), clipped to ``±diff_clip``;
+* **legs** — shoulders and knees hold the standing pose through their position servos (an active suspension:
+  kp / kd of ``onager_robot.leg_servo``) with a gravity feed-forward: each leg's servos add ``Jᵀ (0, 0, W/4)``,
+  the torque that carries its share of the weight, from the lab's foot Jacobians (``gravity_ff``), so the servos'
+  stiffness is spent on deviations, not on the static load;
+* **wheel speed loop** — the hub motor's velocity servo is proportional (``onager_robot.wheel_servo``: τ = kd
+  (ω_target − ω), on the torque–speed line) and droops under load; the controller adds the integral term of a PI
+  loop as a feed-forward torque, ``k_i ∫(ω_target − ω) dt`` clipped to the motor's stall torque (anti-windup),
+  so a loaded wheel still reaches its speed;
+* **speed ramp** — v rises from 0 over ``ramp_s`` (the hub motors stay on their torque–speed line otherwise);
+* **failures** — ``Failure(t, wheel, mode)`` at walking time ``t`` on wheel ``'FL'``…: ``'motor_off'`` (the hub
+  motor loses power: the controller commands zero torque — ω_target = the wheel's own speed — and the wheel
+  freewheels), ``'seized'`` (the wheel is braked: ω_target = 0 on the motor's full torque line, up to its stall
+  torque; the tyre skids), ``'knee_locked'`` (the knee module loses power and its spring-applied brake engages:
+  modelled as the servo holding the angle of the failure instant, with the servo's compliance, no gravity
+  feed-forward). The controller's *response* to a seized wheel (``lift_seized`` [m] > 0) is the three-wheel limp:
+  the CG must leave the seized corner's side of the diagonal through the two neighbouring wheels, so over
+  ``shift_s`` the three good legs move the hull ``shift_x`` [m] along x away from the seized wheel (every axle
+  re-placed by the two-link inverse kinematics at the same height) while the seized leg folds its wheel up by
+  ``lift_seized``; each good leg's gravity feed-forward then carries W/3 and the speed target drops to ``v_limp``
+  (None = keep it). Failures and the shift are logged in ``Drive.events``.
+
+The controller never reads the terrain; the hull level follows from the servo compliance. ``Stand`` holds the pose.
+
+    import onager_robot as orb, onager_controller as oc
+    lab = orb.onager_lab(chiron.Flat())
+    ep = lab.run(oc.Drive(3.0, failures=[oc.Failure(4.0, "FL", "motor_off")]), duration=10.0, rules=None)
+"""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, field
+
+import numpy as np
+
+from vegeta.chiron import Command
+
+import onager_robot as orb
+
+__all__ = ["Failure", "Drive", "Stand", "yaw_of"]
+
+
+def _ik(x_axle: float, z_down: float, L1: float, L2: float):
+    """Two-link planar IK (``gait.ik_two_link_planar``): (a1, a2) [deg] for an axle ``x_axle`` ahead of the shoulder
+    and ``z_down`` below it; None when out of reach."""
+    import gait
+
+    return gait.ik_two_link_planar(x_axle, -z_down, L1, L2)
+
+
+def yaw_of(quat) -> float:
+    w, x, y, z = quat
+    return math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+
+
+@dataclass
+class Failure:
+    """A partial failure at walking time ``t`` [s] on ``wheel`` ('FL', 'FR', 'RL', 'RR'): ``mode`` 'motor_off',
+    'seized' or 'knee_locked'."""
+
+    t: float
+    wheel: str
+    mode: str
+
+    def __post_init__(self):
+        if self.mode not in ("motor_off", "seized", "knee_locked"):
+            raise ValueError(f"unknown failure mode {self.mode!r}")
+        if self.wheel not in orb.LEGS:
+            raise ValueError(f"unknown wheel {self.wheel!r}")
+
+
+class Drive:
+    """Wheel-mode drive at ``v_target`` [m/s] with a heading hold and scripted partial failures (see the module)."""
+
+    def __init__(self, v_target: float, *, failures=(), ramp_s: float = 1.5, k_heading: float = 30.0,
+                 k_lateral: float = 3.0, diff_clip: float = 4.0, gravity_ff: bool = True, lift_seized: float = 0.10,
+                 shift_x: float = 0.30, shift_s: float = 1.5, v_limp: float | None = 1.5, k_i: float = 60.0,
+                 crouch: float = 0.0, name: str | None = None):
+        self.v_limp = v_limp
+        self.v_target = float(v_target)
+        self.k_i = float(k_i)
+        self.shift_x, self.shift_s = float(shift_x), float(shift_s)
+        self.failures = sorted((Failure(*f) if isinstance(f, tuple) else f for f in failures), key=lambda f: f.t)
+        self.ramp_s, self.k_heading, self.k_lateral, self.diff_clip = ramp_s, k_heading, k_lateral, diff_clip
+        self.gravity_ff, self.lift_seized, self.crouch = gravity_ff, lift_seized, float(crouch)
+        self.name = name or ("drive" if not self.failures else "drive+failures")
+        self.events = []
+
+    # ---- ChironLab protocol
+    def reset(self, lab, seed=None):
+        self.lab = lab
+        self.r = lab.robot.geometry["r_wheel"]
+        self.L2 = lab.robot.geometry["L2"]
+        self.L1 = lab.robot.geometry["L1"]
+        self.a2 = lab.robot.geometry["a2"]
+        self.axle_x = lab.robot.geometry["axle_x"]
+        self.h_axle = lab.robot.geometry["h_axle"]
+        self.locked = {}                                     # knee joint -> angle held after a knee_locked failure
+        self.limp = None                                     # (t_start, seized wheel) of the three-wheel limp
+        self.weight = lab.total_mass * orb.G
+        self.q0 = {n: float(lab.nominal_q[lab._joint_index[n]]) for n in lab.actuated_joints}
+        self.idx = {n: i for i, n in enumerate(lab.joint_names)}
+        self.feet = list(lab.feet)
+        self.state = {leg: None for leg in orb.LEGS}        # wheel -> active failure mode
+        self.events = []
+        self.yaw0 = None
+        self.integral = {leg: 0.0 for leg in orb.LEGS}
+        self.t_prev = None
+        self.stall = {leg: orb.act.get(orb.WHEEL_MOTOR).stall_Nm for leg in orb.LEGS}
+        if self.crouch:
+            # lower the hull by `crouch` [m] with the knees (the wheel rises by L2 sin a2 per rad of knee flexion)
+            dq = self.crouch / (self.L2 * math.sin(self.a2))
+            for leg in orb.LEGS:
+                self.q0[f"{leg}_knee"] -= dq
+
+    def settle_command(self, obs):
+        return self._command(obs, 0.0, 0.0)
+
+    def __call__(self, obs):
+        t = float(obs.t)
+        if self.yaw0 is None:
+            self.yaw0 = yaw_of(obs.base_quat)
+        for f in self.failures:
+            if t >= f.t and self.state[f.wheel] != f.mode and (f.wheel, f.mode) not in {(e[1], e[2]) for e in self.events}:
+                self.state[f.wheel] = f.mode
+                self.integral[f.wheel] = 0.0
+                self.events.append((t, f.wheel, f.mode))
+                if f.mode == "knee_locked":
+                    jk = orb.leg_joints(f.wheel)[1]
+                    self.locked[jk] = float(obs.q[self.idx[jk]])
+                if f.mode == "seized" and self.lift_seized > 0 and self.limp is None:
+                    self.limp = (t, f.wheel)
+                    self.events.append((t, f.wheel, f"limp: hull shifts {self.shift_x:+.2f} m, wheel lifts {self.lift_seized:.2f} m"))
+        v = self.v_target * min(1.0, t / self.ramp_s) if self.ramp_s > 0 else self.v_target
+        if self.limp is not None and self.v_limp is not None:
+            v = min(v, self.v_limp)                              # limp home at the reduced speed
+        dt = 0.0 if self.t_prev is None else t - self.t_prev
+        self.t_prev = t
+        return self._command(obs, v, dt)
+
+    # ---- the command
+    def _command(self, obs, v: float, dt: float) -> Command:
+        yaw = yaw_of(obs.base_quat) - (self.yaw0 or 0.0)
+        y = float(obs.com[1])
+        diff = float(np.clip(self.k_heading * yaw + self.k_lateral * y, -self.diff_clip, self.diff_clip))
+        w0 = v / self.r
+        q_target, qd_target, tau_ff = dict(self.q0), {}, {}
+        n_carry = len(self.feet)
+        if self.limp is not None:                            # the three-wheel limp: re-place every axle
+            t0, seized = self.limp
+            u = min(1.0, max(0.0, (float(obs.t) - t0) / self.shift_s))
+            u = u * u * (3 - 2 * u)
+            dx = -orb.LEGS[seized][0] * self.shift_x * u     # the hull moves away from the seized wheel ...
+            n_carry = len(self.feet) - 1
+            for leg in self.feet:
+                js, jk, _ = orb.leg_joints(leg)
+                lift = self.lift_seized * u if leg == seized else 0.0
+                ik = _ik(self.axle_x - dx, self.h_axle - lift, self.L1, self.L2)   # ... so the axles move the other way
+                if ik is not None:
+                    q_target[js], q_target[jk] = orb.angles_to_q(*ik)
+        for i, leg in enumerate(self.feet):
+            sx, sy = orb.LEGS[leg]
+            js, jk, jw = orb.leg_joints(leg)
+            # a left wheel slows down when the hull points left (yaw > 0): turn right
+            w = w0 + (diff if sy > 0 else -diff)
+            mode = self.state.get(leg)
+            qd_target[jw] = w
+            if mode is None and self.k_i > 0:
+                err = w - float(obs.qd[self.idx[jw]])
+                self.integral[leg] = float(np.clip(self.integral[leg] + self.k_i * err * dt, -self.stall[leg], self.stall[leg]))
+                tau_ff[jw] = self.integral[leg]
+            if self.gravity_ff:
+                jac = obs.foot_jac[i]                                    # (3, n_leg): shoulder, knee, wheel
+                tau = -jac.T @ np.array([0.0, 0.0, self.weight / n_carry])
+                tau_ff[js], tau_ff[jk] = float(tau[0]), float(tau[1])
+            if mode == "motor_off":
+                qd_target[jw] = float(obs.qd[self.idx[jw]])              # zero torque: freewheel
+                tau_ff[jw] = 0.0
+            elif mode == "seized":
+                qd_target[jw] = 0.0                                      # braked on the motor's torque line
+                tau_ff[jw] = 0.0
+                if self.limp is not None and self.limp[1] == leg:
+                    tau_ff[jk] = tau_ff[js] = 0.0                        # lifted: carries nothing
+            elif mode == "knee_locked":
+                q_target[jk] = self.locked[jk]                           # the brake holds the failure angle
+                tau_ff[jk] = 0.0
+        return Command(q_target=q_target, qd_target=qd_target, tau_ff=tau_ff)
+
+
+class Stand:
+    """Hold the standing pose (with the gravity feed-forward), wheels at zero speed."""
+
+    name = "stand"
+
+    def __init__(self, gravity_ff: bool = True):
+        self.drive = Drive(0.0, gravity_ff=gravity_ff, ramp_s=0.0, name="stand")
+
+    def reset(self, lab, seed=None):
+        self.drive.reset(lab, seed)
+
+    def settle_command(self, obs):
+        return self.drive.settle_command(obs)
+
+    def __call__(self, obs):
+        return self.drive(obs)

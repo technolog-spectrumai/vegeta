@@ -1,4 +1,4 @@
-"""Actuator, motor and joint library shared by the product notebooks (robot dog, Myropods).
+"""Actuator, motor and joint library shared by the product notebooks (robot dog, Myropods, the Onager series).
 
 A catalogue of explicit entries — every number is an engineer's input with a source, nothing is
 fitted — plus two helpers: pick the lightest actuator that holds a torque with a safety factor, and
@@ -15,14 +15,14 @@ class Actuator:
     """One actuator: a hobby servo, a serial-bus smart servo, or a quasi-direct-drive (QDD) module."""
 
     key: str
-    kind: str                 # "servo", "smart servo", "qdd"
+    kind: str                 # "servo", "smart servo", "qdd", "industrial module", "hub motor"
     mass_g: float
     stall_Nm: float           # peak / stall torque
     rated_Nm: float           # continuous torque (thermal)
     stall_A: float            # current at stall
     voltage_V: float
     no_load_rpm: float
-    self_locking: bool = False   # worm / lead-screw output: holds a load with the motor unpowered
+    self_locking: bool = False   # worm / lead-screw output or a holding brake: holds a load with the motor unpowered
     source: str = ""
 
     @property
@@ -73,12 +73,21 @@ CATALOG = [
     # quasi-direct-drive modules (the robot dog's legs, Apheloria's joints)
     Actuator("qdd 24 Nm", "qdd", 480.0, 24.0, 8.0, 18.0, 24.0, 300, False, "quasi-direct-drive leg module class (planetary 1:6), supplier datasheet"),
     Actuator("qdd 60 Nm", "qdd", 650.0, 60.0, 20.0, 25.0, 48.0, 200, False, "quasi-direct-drive module class (planetary 1:9), supplier datasheet"),
+    # industrial joint modules and hub motors, 48 V (the Onager series: 380 kg wheel-leg machines, notebook 20)
+    Actuator("cycloidal 400 Nm, brake", "industrial module", 6500.0, 400.0, 150.0, 120.0, 48.0, 60, True,
+             "assumed: 48 V BLDC with a 1:40 cycloidal stage and a holding brake, light-industrial joint-module class"),
+    Actuator("cycloidal 800 Nm, brake", "industrial module", 11000.0, 800.0, 300.0, 180.0, 48.0, 40, True,
+             "assumed: 48 V BLDC with a 1:60 cycloidal stage and a holding brake, light-industrial joint-module class"),
+    Actuator("hub motor 3 kW", "hub motor", 9000.0, 240.0, 60.0, 150.0, 48.0, 500, False,
+             "assumed: in-wheel BLDC hub motor class of light electric vehicles, 48 V, 3 kW peak (stall torque x no-load speed / 4)"),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),
     Joint("two-axis body joint", 2, 5.0, 45.0, "pitch + yaw between two Persephone segments: tongue and fork, one pin per axis"),
     Joint("two-axis body joint, large", 2, 10.0, 45.0, "Cleopatra and Apheloria body joints"),
     Joint("dog hip / knee pin", 1, 10.0, 110.0, "robot dog leg pins in clevises"),
+    Joint("onager shoulder / knee pin", 1, 40.0, 100.0, "Onager Sentinel leg pins (steel, in the actuator output flange)"),
+    Joint("onager wheel axle", 1, 45.0, 360.0, "Onager Sentinel stub axle carrying the hub motor (continuous rotation)"),
 ]
 
 
