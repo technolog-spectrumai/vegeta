@@ -157,3 +157,20 @@ def test_rotating_tones_on_the_axis_are_the_compact_thrust_dipole():
     a = wake.rotating_tones(h, AIR_PROP, 2.0, boreas.AIR, 90.0, harmonics=6)
     b = wake.rotating_tones(clean, AIR_PROP, 2.0, boreas.AIR, 90.0, harmonics=6)
     assert a[5]["spl_db"] > b[5]["spl_db"] + 10
+
+
+def test_effective_inflow_weights_the_wake_by_thrust():
+    w, op = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, wake.uniform_wake(0.1), 1.2)
+    assert w == pytest.approx(0.1, abs=1e-12)
+    ref = boreas.solve(AIR_PROP, AIR_SEC, 9000.0, 18.0, 1.2)
+    assert op.thrust == pytest.approx(ref.thrust, rel=1e-9) and op.airspeed == pytest.approx(18.0)
+    # a deficit only near the hub, where the blade carries little thrust, counts for little
+    hub = wake.WakeField([0.05, 0.15, 0.25, 1.0], [0.0, 180.0], [[0.3, 0.3], [0.3, 0.3], [0.0, 0.0], [0.0, 0.0]])
+    w_hub, op_hub = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, hub, 1.2)
+    assert 0.0 < w_hub < 0.02
+    # installed efficiency with the free stream as reference rises with the wake (a pusher in a body's wake)
+    w_in, op_in = wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, wake.uniform_wake(0.05), 1.2)
+    open_ = boreas.solve(AIR_PROP, AIR_SEC, 9000.0, 20.0, 1.2)
+    assert op_in.thrust * 20.0 / op_in.power > open_.efficiency
+    with pytest.raises(ValueError):
+        wake.effective_inflow(AIR_PROP, AIR_SEC, 9000.0, 20.0, hub, 1.2, iterations=0)

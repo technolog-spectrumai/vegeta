@@ -3,6 +3,7 @@ a slipstream velocity model.
 
 - ``WakeField``: axial wake fraction ``w(r/R, phi)`` at the propeller plane (inflow = ship speed x (1 - w)),
   built uniform, from fin wakes (``fin_wake``) or from samples of a flow solution (``sampled_wake``).
+- ``effective_inflow``: the thrust-weighted mean wake (Taylor) and the operating point the installed propeller works at.
 - ``load_harmonics``: quasi-steady blade loads around one revolution (a blade-element solution at the local
   inflow of every angle), their Fourier orders per blade, and what reaches the shaft: thrust and torque at
   orders k·B only, side (bearing) forces at orders k·B ± 1 of the blade loads.
@@ -114,6 +115,29 @@ def sampled_wake(sampler, center, radius: float, ship_speed: float, *, r_frac=(0
         wi[~ok] = wi[ok].mean()
         w[i] = wi
     return WakeField(r, phi, w, source)
+
+
+def effective_inflow(prop: Propeller, airfoil: Airfoil, rpm: float, speed: float, wake: WakeField, rho: float, *,
+                     iterations: int = 4) -> tuple[float, OperatingPoint]:
+    """The effective (Taylor) wake fraction of ``prop`` behind ``wake`` and its operating point there: the circumferential
+    mean wake at every blade station, weighted by the station's thrust ``dT/dr`` (negative thrust counts as none), and the
+    blade-element solution at the uniform inflow ``speed (1 - w_eff)`` — iterated, since the weights depend on the inflow.
+    The thrust and torque of the result are what the installed propeller gives on average; ``T speed / P`` with the free
+    stream ``speed`` is its efficiency installed (it gains when it works in slower air, as a pusher in a body's wake).
+    Returns ``(w_eff, operating point)``; with no thrust anywhere the weights are the station radii (area)."""
+    if iterations < 1:
+        raise ValueError("iterations must be >= 1")
+    w_eff = wake.mean(0.7)
+    op = solve(prop, airfoil, rpm, max(speed * (1.0 - w_eff), 0.0), rho)
+    for _ in range(iterations):
+        rr = np.asarray(op.r, float)
+        wbar = np.array([wake.mean(float(x) / prop.radius) for x in rr])
+        weight = np.maximum(np.asarray(op.dT_dr, float), 0.0)
+        if weight.sum() <= 0:
+            weight = rr
+        w_eff = float(np.sum(wbar * weight) / np.sum(weight))
+        op = solve(prop, airfoil, rpm, max(speed * (1.0 - w_eff), 0.0), rho)
+    return w_eff, op
 
 
 @dataclass
