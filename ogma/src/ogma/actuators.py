@@ -88,6 +88,11 @@ CATALOG = [
     Actuator("jaw screw 6 kN", "linear (jaw-equivalent)", 2200.0, 360.0, 120.0, 20.0, 48.0, 9.5, False,
              "assumed: 48 V ball-screw linear actuator, 6 kN stall, 60 mm/s no-load, acting on the jaw at a 60 mm "
              "lever: given here at the jaw pivot (6 kN x 0.06 m = 360 N m, 1.0 rad/s = 9.5 rpm)"),
+    # the street sweeper's broom and suction fan (Onager Sweeper, notebook 23)
+    Actuator("broom drive 1.5 kW", "gearmotor", 9000.0, 120.0, 50.0, 60.0, 48.0, 240, False,
+             "assumed: 48 V BLDC through a 1:12 planetary stage, brush-disc sweeper drive class (disc brooms run 100-200 rpm)"),
+    Actuator("suction fan 4 kW", "fan motor", 8000.0, 16.0, 9.0, 110.0, 48.0, 6000, False,
+             "assumed: 48 V outer-rotor BLDC blower motor class, 9 N m continuous at 4200 rpm (4 kW), direct drive on the impeller"),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),
@@ -98,6 +103,7 @@ JOINTS = [
     Joint("onager wheel axle", 1, 45.0, 360.0, "Onager Sentinel stub axle carrying the hub motor (continuous rotation)"),
     Joint("manus arm pin", 1, 30.0, 150.0, "Onager Manus arm joints (shoulder, elbow, wrist): pin in the module flange"),
     Joint("manus jaw pin", 1, 16.0, 60.0, "Onager Manus pincer: both jaws on one hardened pin"),
+    Joint("sweeper broom spindle", 1, 40.0, 360.0, "Onager Sweeper disc broom: the drive's output spindle (continuous rotation)"),
 ]
 
 
