@@ -102,3 +102,91 @@ def test_design_builds_every_part():
     assert nose_z > tail_z + 20.0
     with pytest.raises(dedalus.BuildError):            # the design's own check (arm on the cylinder), wrapped by Dedalus
         d.generate(arm_x=100.0)
+
+
+# ---------------------------------------------------------------- Velutina v2: the wind-turbine inspection
+import velutina_inspection as vi  # noqa: E402
+
+
+def _inspector():
+    return _aircraft(mass_kg=2.3, capsule_kg=0.0, position_noise_m=0.05, response_s=0.6, hold_gain=2.0, max_speed=8.0)
+
+
+def test_turbine_geometry():
+    tb = vi.Turbine()
+    assert tb.chord(tb.chord_max_r) == pytest.approx(tb.chord_max)
+    assert tb.chord(tb.rotor_radius) == pytest.approx(tb.chord_tip)
+    tip_down = tb.blade_point(0, tb.rotor_radius)
+    assert tip_down[2] < tb.hub_height - 40.0 and abs(tip_down[1]) < 1.0            # blade 1 points down along the tower
+    for k in range(3):
+        span, chordwise, normal = tb.blade_frame(k)
+        assert abs(np.dot(span, chordwise)) < 1e-9
+        assert abs(np.dot(span, normal)) == pytest.approx(math.sin(math.radians(tb.cone_deg)), abs=1e-9)   # the cone leans the blade upwind
+    assert tb.blade_point(1, 30.0)[2] > tb.hub_height and tb.blade_point(2, 30.0)[2] > tb.hub_height
+
+
+def test_tower_shadow_and_shear():
+    tb, w = vi.Turbine(), vi.SiteWind(speed=7.0, hub_height=80.0)
+    free = w.mean((-40.0, 0.0, 40.0), tb)[0]
+    assert free < 7.0 and free > 5.0                                              # shear: slower below hub height
+    assert w.mean((-40.0, 0.0, 80.0), tb)[0] == pytest.approx(7.0)
+    a = tb.tower_diameter(40.0) / 2
+    assert w.mean((a + 3.0, 0.0, 40.0), tb)[0] < 0.7 * free                        # the wake deficit right behind the tower
+    assert w.turbulence_factor((a + 3.0, 0.0, 40.0), tb) > 1.5 > w.turbulence_factor((-40.0, 0.0, 40.0), tb) == 1.0
+    assert w.mean((0.0, a + 1.0, 40.0), tb)[0] > free                              # the flow speeds up past the side
+    assert w.mean((a + 30.0, 0.0, 40.0), tb)[0] > w.mean((a + 3.0, 0.0, 40.0), tb)[0]   # the wake fills in downstream
+
+
+def test_camera_numbers():
+    cam = vi.Camera()
+    assert cam.gsd_mm(cam.max_standoff_m()) * cam.pixels_per_crack == pytest.approx(cam.crack_width_mm)
+    v, lim = cam.max_scan_speed(4.0)
+    assert v == pytest.approx(min(lim.values()))
+    assert cam.dwell_time_s(np.zeros(100), 0.05)[0] == pytest.approx(cam.sharp_frames_needed / cam.fps)
+    assert cam.dwell_time_s(np.full(100, 1.0), 0.05)[0] == math.inf
+    dwell, inside = cam.dwell_time_s(np.array([0.05] * 50 + [0.5] * 50), 0.05)
+    assert inside == pytest.approx(0.5) and dwell == pytest.approx(2 * cam.sharp_frames_needed / cam.fps)
+
+
+def test_inspection_path_covers_every_pass():
+    tb, cam, plan = vi.Turbine(), vi.Camera(), vi.InspectionPlan(blades=(0,))
+    wps, v = vi.inspection_path(tb, plan, cam, dwell_s=3.0)
+    labels = {lb for _, _, _, lb in wps}
+    for name, *_ in plan.passes:
+        assert f"blade 1: {name}" in labels
+    assert sum(1 for _, _, d, _ in wps if d > 0) == 2                              # blade 1 has two suspect points
+    for p, _, _, lb in wps:
+        if lb.startswith("blade 1: ") and "to " not in lb:
+            r = np.linalg.norm(p - tb.hub)
+            assert tb.blade_root_r < r < tb.rotor_radius + plan.standoff_m + 1.0
+    assert v == pytest.approx(cam.max_scan_speed(plan.standoff_m)[0])
+
+
+def test_inspection_flight_one_blade():
+    tb, wind, cam = vi.Turbine(), vi.SiteWind(speed=7.0, hub_height=80.0, gust_sigma=1.5), vi.Camera()
+    wps, _ = vi.inspection_path(tb, vi.InspectionPlan(blades=(0,)), cam, dwell_s=2.0)
+    ep = vi.follow_path(_inspector(), tb, wind, wps, seed=0)
+    s = ep.summary()
+    assert not any("time limit" in e[1] for e in ep.events)
+    assert sum("steady video" in e[1] for e in ep.events) == 2
+    assert s["track_error_p95_m"] < 2.0 and s["energy_wh"] < 60.0
+    assert ep.pos[-1][2] < 0.8                                                     # back at the van (the last waypoint's arrival radius)
+    f = vi.flights_needed(ep, 151.0, n_blades=1)
+    assert f["flights"] == 1 and f["energy_per_blade_wh"][0] > 0
+
+
+def test_station_keeping_gives_a_finite_dwell():
+    tb, wind, cam = vi.Turbine(), vi.SiteWind(speed=7.0, hub_height=80.0, gust_sigma=1.5), vi.Camera()
+    point = tb.blade_point(0, 20.0, 0.5, 1.0) + vi.pass_offset(tb, 0, 0.5, 1.0, 4.0)
+    err, _ = vi.station_keeping_at_blade(_inspector(), tb, wind, point, seconds=20.0, seed=1)
+    dwell, inside = cam.dwell_time_s(err, 0.05)
+    assert len(err) > 300 and inside > 0.5 and dwell < 10.0
+
+
+def test_inspection_movie_renders(tmp_path):
+    pytest.importorskip("cv2")
+    tb, wind, cam = vi.Turbine(), vi.SiteWind(speed=7.0, hub_height=80.0), vi.Camera()
+    wps, _ = vi.inspection_path(tb, vi.InspectionPlan(blades=(0,), passes=vi.InspectionPlan().passes[:1]), cam, dwell_s=1.0)
+    ep = vi.follow_path(_inspector(), tb, wind, wps)
+    path, frames = vi.render_movie(ep, tb, tmp_path / "i.mp4", seconds=0.4, fps=5)
+    assert path.exists() and len(frames) == 2

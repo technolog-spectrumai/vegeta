@@ -89,7 +89,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5f.2 Parachute in CFD (opening, canopy drag, the body in the canopy's wake); the bridle anchored to the arm frame and a reefed canopy (the shell fails the opening shock in 24 §5); a drop test case
 - [ ] 5f.3 Propeller guard rings for the hand-over mode (a hand near the rotors): CAD, mass, their drag in the CFD
 - [ ] 5f.4 Four rotor disks in the whole-aircraft CFD (`aircraft_rotor_disks` has two): the slipstream over the arms and fins instead of the analytic increment
-- [ ] 5f.5 **Velutina v2 — infrastructure inspection**: an onshore wind turbine, flying along a blade with a camera to film it for cracks (a camera nose instead of the capsule, a blade-following guidance mode, the turbine and its wake in the flight model's scene, station keeping in the tower's wind shadow)
+- [x] 5f.5 **Velutina v2 — infrastructure inspection** (`designs/velutina_inspection.py`, notebook 24 §11–12): a half-real parked 2 MW turbine, wind shear + tower shadow, the camera model (pixel size, blur and overlap → scan speed; sharp frames inside a tolerance → dwell time from the simulated station keeping), four passes per blade with suspect-point dwells, the flight with its track error, energy and battery charges, a movie; `scenarios/velutina_mission.py --mode turbine`
+- [ ] 5f.7 Velutina v2 next: the camera nose as a Dedalus part (mass, CG, its drag in the CFD), a blade-relative sensor model (the blade's edge in the camera frame instead of GNSS + a fixed error), the turbine's wake with the rotor idling, the nacelle and the hub in the inspection path
 - [ ] 5f.6 Coupon tests for LW-PLA and PETG-CF replacing the assumed material values; the FULL CFD preset run on a workstation and its numbers recorded
 
 ## Stage 6 — Consistent interfaces
