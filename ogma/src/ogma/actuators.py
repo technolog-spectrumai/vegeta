@@ -101,6 +101,40 @@ JOINTS = [
 ]
 
 
+@dataclass(frozen=True)
+class LinearActuator:
+    """A linear drive: force [N] and speed [mm/s] instead of torque and rpm (the Onager Atlas's lift and tilt)."""
+
+    key: str
+    kind: str
+    mass_g: float
+    stall_N: float
+    rated_N: float
+    no_load_mm_s: float
+    stall_A: float
+    voltage_V: float
+    self_locking: bool = False
+    source: str = ""
+
+    def as_dict(self) -> dict:
+        return asdict(self)
+
+
+LINEAR = [
+    LinearActuator("lift screw 8 kN", "ball screw + brake", 12000.0, 8000.0, 3000.0, 200.0, 60.0, 48.0, True,
+                   "assumed: 48 V BLDC on a 32 mm ball screw (10 mm lead) with a holding brake, forklift-retrofit class"),
+    LinearActuator("tilt screw 12 kN", "ball screw + brake", 6000.0, 12000.0, 5000.0, 60.0, 40.0, 48.0, True,
+                   "assumed: 48 V electric cylinder (5 mm lead) with a brake, mast-tilt class"),
+]
+
+
+def get_linear(key: str) -> LinearActuator:
+    for a in LINEAR:
+        if a.key == key:
+            return a
+    raise KeyError(f"no linear actuator {key!r}; known: {[a.key for a in LINEAR]}")
+
+
 def get(key: str) -> Actuator:
     for a in CATALOG:
         if a.key == key:
