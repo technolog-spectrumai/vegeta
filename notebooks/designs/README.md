@@ -23,7 +23,11 @@ the small member) is the Sikarian line's underwater walker; `lobster_robot.py` (
 budget, the foam trim and the `Water` hook — buoyancy per body and the vectored thruster from a Boreas table),
 `lobster_controller.py` (the tripod gait, the 4-joint claw IK, `thrust_line` for the tail, the `Mission` phases),
 `lobster_scenario.py` (the river bed, the Ø600 pipe, the rope cut by the Manus's `WireCutter`, the three jobs) and
-`lobster_cfd.py` (the propeller at bollard and the deflected jet on the body, fast presets) are its modules. `actuators.py` is the shared actuator / motor / joint catalogue
+`lobster_cfd.py` (the propeller at bollard and the deflected jet on the body, fast presets) are its modules. The
+family's members are `lobster_robot.Variant`s (`NEFRI_V`, `ORNATUS`; `variant_of("ornatus")`): design parameters,
+stored CAD numbers, parts, servos and gains, thruster, trim positions, a target mass (ballast) and the missions'
+tuning; every function takes `variant=` and the scene `Scene("ornatus")` picks the cable (`lobster_scenario.CABLE`)
+instead of the rope — notebook 25 is Ornatus on the same code. `actuators.py` is the shared actuator / motor / joint catalogue
 (`import actuators as act` from `notebooks/designs`): `act.table()`, `act.get(key)`, `act.select(torque, sf)`,
 `Actuator.holding_power()`; it also carries the Onager series' industrial joint modules, hub motor, arm and jaw drives, and (``LINEAR``, ``get_linear``) the Atlas's lift and tilt screws. `gait.py` is the shared gait simulation (`import gait`): `make_terrain`, `body_pose`,
 `simulate_steps`, `path_pose`, `PipeContact`, `ik_dog` / `ik_myropod`, `fk_dog` / `fk_myropod`, `torques_dog` / `torques_myropod`, `gait_diagram`.

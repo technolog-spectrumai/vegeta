@@ -35,13 +35,14 @@ import numpy as np
 import lobster_robot as lr
 from lobster import SikarianLobster
 
-__all__ = ["WATER", "QUALITY", "SWIM", "prop_stl", "prop_case", "bemt_bollard", "duct_gain", "body_stl", "disk_tables",
+__all__ = ["WATER", "QUALITY", "SWIM", "SWIM_BY", "prop_stl", "prop_case", "bemt_bollard", "duct_gain", "body_stl", "disk_tables",
            "disk_geometry", "disk_thrust_fixed", "disk_calibration", "tail_case", "tail_forces", "disk_log_forces", "to_robot", "jet_side_force"]
 
 #: Fresh water at 15 °C (the MuJoCo scene's): density [kg/m³], kinematic viscosity [m²/s].
 WATER = {"density": lr.WATER["density"], "kinematic_viscosity": lr.WATER["viscosity"] / lr.WATER["density"]}
-#: The swim the tail case is run at (the MuJoCo swim reaches ~0.8 m/s at 2600 rpm; 0.6 m/s is the cruise).
+#: The swim the tail case is run at (Nefri: the MuJoCo swim reaches ~0.8 m/s at 2600 rpm; 0.6 m/s is the cruise).
 SWIM = {"speed_m_s": 0.6, "rpm": 2600.0}
+SWIM_BY = {"nefri": SWIM, "ornatus": {"speed_m_s": 0.6, "rpm": 2000.0}}
 
 #: Mesh and solver presets. ``fast``: background cells ~D/5 (prop) or L/3 (body), two refinement levels fewer, a
 #: smaller domain, 250-300 iterations — minutes on 4 cores; ``fine``: the notebooks 13/14 settings, ~20-40 min.
@@ -62,40 +63,47 @@ QUALITY = {
 }
 
 
-def _params(p=None) -> dict:
-    return lr.design_params() if p is None else dict(p)
+def _params(p=None, variant=None) -> dict:
+    return dict(lr.variant_of(variant).params) if p is None else dict(p)
+
+
+def _swim(variant=None) -> dict:
+    return SWIM_BY[lr.variant_of(variant).name]
 
 
 # ----------------------------------------------------------------------------------------------- the propeller
-def prop_stl(outdir, p=None) -> Path:
+def prop_stl(outdir, p=None, variant=None) -> Path:
     """The propeller (axis +x, hub at the origin), as an STL in mm."""
     from vegeta import dedalus
 
-    p = _params(p)
+    v = lr.variant_of(variant)
+    p = _params(p, v)
     g = SikarianLobster().generate(**dict(p, part="propeller"))
-    geo = dedalus.Geometry.from_cadquery(g.shape, name="lobster_prop")
-    return geo.export_stl(Path(outdir) / "lobster_prop_axis_x.stl", tolerance=0.02)
+    geo = dedalus.Geometry.from_cadquery(g.shape, name=f"lobster_prop_{v.name}")
+    return geo.export_stl(Path(outdir) / f"lobster_prop_{v.name}_axis_x.stl", tolerance=0.02)
 
 
-def prop_case(stl, workdir, p=None, *, rpm: float | None = None, quality: str = "fast", environment=None, **overrides):
-    """``rotor_mrf_static`` on the bare propeller at ``rpm`` (default the thruster's maximum)."""
+def prop_case(stl, workdir, p=None, *, rpm: float | None = None, quality: str = "fast", environment=None, variant=None, **overrides):
+    """``rotor_mrf_static`` on the bare propeller at ``rpm`` (default the variant's thruster maximum)."""
     from vegeta import aeromant
 
-    p = _params(p)
-    params = dict(rpm=float(rpm or lr.THRUSTER["rpm_max"]), diameter=p["prop_diameter"] / 1000.0, rotation=1,
+    v = lr.variant_of(variant)
+    p = _params(p, v)
+    params = dict(rpm=float(rpm or v.thruster["rpm_max"]), diameter=p["prop_diameter"] / 1000.0, rotation=1,
                   kinematic_viscosity=WATER["kinematic_viscosity"], density=WATER["density"])
     params.update(QUALITY[quality]["prop"])
     params.update(overrides)
     return aeromant.CFDCase("rotor_mrf_static", stl, params, workdir=workdir, geometry_units="mm", environment=environment)
 
 
-def bemt_bollard(rpm: float | None = None, p=None) -> dict:
+def bemt_bollard(rpm: float | None = None, p=None, variant=None) -> dict:
     """Boreas blade element theory at bollard (open propeller, in water): thrust [N], torque [N·m], power [W]."""
     from vegeta import boreas
 
-    p = _params(p)
-    rpm = float(rpm or lr.THRUSTER["rpm_max"])
-    op = boreas.solve(lr._prop(p), lr.THRUSTER["section"], rpm, 0.0, WATER["density"], speed_of_sound=1500.0)
+    v = lr.variant_of(variant)
+    p = _params(p, v)
+    rpm = float(rpm or v.thruster["rpm_max"])
+    op = boreas.solve(lr._prop(p), v.thruster["section"], rpm, 0.0, WATER["density"], speed_of_sound=1500.0)
     return {"rpm": rpm, "thrust_N": op.thrust, "torque_Nm": op.torque, "power_W": op.torque * rpm * 2 * math.pi / 60}
 
 
@@ -123,22 +131,23 @@ def _tail_pose(deflection_deg: float, pitch_deg: float = 0.0) -> dict:
     return {"tail_yaw_deg": deflection_deg / 2.0, "tail_pitch_deg": pitch_deg / 2.0}
 
 
-def body_stl(outdir, deflection_deg: float = 0.0, p=None, pitch_deg: float = 0.0) -> Path:
+def body_stl(outdir, deflection_deg: float = 0.0, p=None, pitch_deg: float = 0.0, variant=None) -> Path:
     """The ``cfd`` part with the tail posed, in the CFD frame (mm): turned 180° about z, the shell's centre at the
     origin."""
     from vegeta import dedalus
 
-    p = dict(_params(p), **_tail_pose(deflection_deg, pitch_deg))
+    v = lr.variant_of(variant)
+    p = dict(_params(p, v), **_tail_pose(deflection_deg, pitch_deg))
     g = SikarianLobster().generate(**dict(p, part="cfd"))
     c = _shell_centre(p)
     shape = g.shape.translate(tuple(-c)).rotate((0, 0, 0), (0, 0, 1), 180)
-    geo = dedalus.Geometry.from_cadquery(shape, name=f"lobster_cfd_{deflection_deg:g}deg")
-    return geo.export_stl(Path(outdir) / f"lobster_cfd_tail_{deflection_deg:g}deg.stl", tolerance=0.2)
+    geo = dedalus.Geometry.from_cadquery(shape, name=f"lobster_cfd_{v.name}_{deflection_deg:g}deg")
+    return geo.export_stl(Path(outdir) / f"lobster_cfd_{v.name}_tail_{deflection_deg:g}deg.stl", tolerance=0.2)
 
 
-def disk_geometry(deflection_deg: float = 0.0, p=None, pitch_deg: float = 0.0) -> tuple:
+def disk_geometry(deflection_deg: float = 0.0, p=None, pitch_deg: float = 0.0, variant=None) -> tuple:
     """(disk centre [m], thrust axis) in the CFD frame: the propeller plane in the shroud, the force on the robot."""
-    p = dict(_params(p), **_tail_pose(deflection_deg, pitch_deg))
+    p = dict(_params(p, variant), **_tail_pose(deflection_deg, pitch_deg))
     _, (hub, R) = SikarianLobster.tail_frames(p)
     prop = hub + R @ np.array([-p["shroud_length"] * 0.15, 0.0, 0.0])          # as the CAD places it
     c = (prop - _shell_centre(p)) / 1000.0
@@ -146,11 +155,12 @@ def disk_geometry(deflection_deg: float = 0.0, p=None, pitch_deg: float = 0.0) -
     return to_robot(c), to_robot(axis)
 
 
-def disk_tables(p=None) -> tuple:
+def disk_tables(p=None, variant=None) -> tuple:
     """(blade rows (r [m], twist [deg], chord [m]), polar rows (α [deg], Cd, Cl)) for the rotor disk, from the
     Boreas propeller and section the MuJoCo thruster uses."""
-    p = _params(p)
-    prop, sec = lr._prop(p), lr.THRUSTER["section"]
+    v = lr.variant_of(variant)
+    p = _params(p, v)
+    prop, sec = lr._prop(p), v.thruster["section"]
     blade = [[float(r), float(b), float(c)] for r, b, c in zip(prop.r, prop.beta_deg, prop.chord)]
     alphas = np.unique(np.r_[np.arange(-180, -30, 10), np.arange(-30, 31, 1), np.arange(40, 181, 10)]).astype(float)
     cl, cd = sec.coefficients(np.radians(alphas))
@@ -158,11 +168,11 @@ def disk_tables(p=None) -> tuple:
     return blade, polar
 
 
-def disk_thrust_fixed(rpm: float, v_axial: float, p=None, tip_effect: float = 0.97) -> float:
+def disk_thrust_fixed(rpm: float, v_axial: float, p=None, tip_effect: float = 0.97, variant=None) -> float:
     """Thrust [N] of the rotor disk with ``fixed_inflow`` (no induction): the blade elements at ω r and the axial
     inflow ``v_axial``, the polar of ``disk_tables``, no lift beyond ``tip_effect`` R — what the solver sums."""
-    blade, polar = (np.asarray(t, dtype=float) for t in disk_tables(p))
-    p = _params(p)
+    blade, polar = (np.asarray(t, dtype=float) for t in disk_tables(p, variant))
+    p = _params(p, variant)
     w, R = rpm * 2 * math.pi / 60, blade[-1, 0]
     r = np.linspace(blade[0, 0], R, 400)
     c, th = np.interp(r, blade[:, 0], blade[:, 2]), np.interp(r, blade[:, 0], blade[:, 1])
@@ -176,37 +186,40 @@ def disk_thrust_fixed(rpm: float, v_axial: float, p=None, tip_effect: float = 0.
 
 
 def disk_calibration(deflection_deg: float = 0.0, p=None, *, speed: float | None = None, rpm: float | None = None,
-                     pitch_deg: float = 0.0) -> dict:
+                     pitch_deg: float = 0.0, variant=None) -> dict:
     """The disk rpm whose no-induction thrust equals the BEMT thrust of the open propeller at ``rpm`` and the axial
-    inflow (``speed`` along the deflected axis)."""
-    p = _params(p)
-    speed, rpm = float(speed or SWIM["speed_m_s"]), float(rpm or SWIM["rpm"])
-    _, axis = disk_geometry(deflection_deg, p, pitch_deg)
+    inflow (``speed`` along the deflected axis); defaults from ``SWIM_BY[variant]``."""
+    v = lr.variant_of(variant)
+    p = _params(p, v)
+    sw = _swim(v)
+    speed, rpm = float(speed or sw["speed_m_s"]), float(rpm or sw["rpm"])
+    _, axis = disk_geometry(deflection_deg, p, pitch_deg, v)
     v_ax = speed * abs(float(axis[0]))
-    target = lr.thrust(lr.thruster_table(p), rpm, v_ax)[0] / lr.DUCT_GAIN          # open propeller (the disk has no duct)
+    target = lr.thrust(lr.thruster_table(p, variant=v), rpm, v_ax)[0] / lr.DUCT_GAIN   # open propeller (the disk has no duct)
     lo, hi = 0.2 * rpm, 1.5 * rpm
     for _ in range(50):
         mid = 0.5 * (lo + hi)
-        if disk_thrust_fixed(mid, v_ax, p) < target:
+        if disk_thrust_fixed(mid, v_ax, p, variant=v) < target:
             lo = mid
         else:
             hi = mid
     return {"rpm": rpm, "axial_inflow_m_s": v_ax, "target_thrust_N": target, "disk_rpm": 0.5 * (lo + hi),
-            "uncalibrated_thrust_N": disk_thrust_fixed(rpm, v_ax, p)}
+            "uncalibrated_thrust_N": disk_thrust_fixed(rpm, v_ax, p, variant=v)}
 
 
 def tail_case(stl, workdir, deflection_deg: float = 0.0, p=None, *, speed: float | None = None, rpm: float | None = None,
-              quality: str = "fast", environment=None, pitch_deg: float = 0.0, **overrides):
+              quality: str = "fast", environment=None, pitch_deg: float = 0.0, variant=None, **overrides):
     """``hull_rotor_disk``: the body (``body_stl`` at the same deflection) swimming at ``speed`` with the propeller a
     rotor disk along the deflected shroud axis, calibrated (``disk_calibration``) to the BEMT thrust at ``rpm``.
     Forces on the body about the shell's centre."""
     from vegeta import aeromant
 
-    p = _params(p)
-    centre, axis = disk_geometry(deflection_deg, p, pitch_deg)
-    blade, polar = disk_tables(p)
-    cal = disk_calibration(deflection_deg, p, speed=speed, rpm=rpm, pitch_deg=pitch_deg)
-    params = dict(velocity=float(speed or SWIM["speed_m_s"]), kinematic_viscosity=WATER["kinematic_viscosity"],
+    v = lr.variant_of(variant)
+    p = _params(p, v)
+    centre, axis = disk_geometry(deflection_deg, p, pitch_deg, v)
+    blade, polar = disk_tables(p, v)
+    cal = disk_calibration(deflection_deg, p, speed=speed, rpm=rpm, pitch_deg=pitch_deg, variant=v)
+    params = dict(velocity=float(speed or _swim(v)["speed_m_s"]), kinematic_viscosity=WATER["kinematic_viscosity"],
                   density=WATER["density"], reference_area=p["shell_width"] * p["shell_height"] * 1e-6,
                   reference_length=p["shell_length"] / 1000.0, center_of_rotation=(0.0, 0.0, 0.0),
                   disk1_center=centre.tolist(), disk_axis=axis.tolist(), diameter=p["prop_diameter"] / 1000.0,

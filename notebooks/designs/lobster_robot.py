@@ -29,6 +29,7 @@ The thruster's thrust acts on the ``thruster`` body along its +x axis (towards t
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -37,7 +38,7 @@ from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Rob
 
 import actuators as act
 
-__all__ = ["NEFRI", "CAD", "WATER", "MATERIALS", "PARTS_KG", "SERVO_KEYS", "SERVO_DENSITY", "GAINS", "NET_FRACTION",
+__all__ = ["Variant", "VARIANTS", "ORNATUS", "ORNATUS_CAD", "variant_of", "NEFRI", "CAD", "WATER", "MATERIALS", "PARTS_KG", "SERVO_KEYS", "SERVO_DENSITY", "GAINS", "NET_FRACTION",
            "LEGS", "TRIPODS", "CLAWS", "TAIL_JOINTS", "THRUSTER", "ASSUMPTIONS", "LAB_OPTIONS", "design_params",
            "cad_numbers", "geometry", "budget", "thruster_table", "thrust", "leg_joints", "claw_joints", "nominal_qpos",
            "lobster", "lobster_lab", "Water"]
@@ -126,8 +127,9 @@ LAB_OPTIONS = {"timestep": 0.0005, "control_dt": 0.002, "log_dt": 0.02, "density
 
 
 # ----------------------------------------------------------------------------------------------- the design
-def design_params(overrides: dict | None = None) -> dict:
-    p = dict(NEFRI)
+def design_params(overrides: dict | None = None, variant=None) -> dict:
+    """The variant's parameters (Nefri by default) with ``overrides``."""
+    p = dict(variant_of(variant).params)
     for k, v in (overrides or {}).items():
         if k not in NEFRI:
             raise KeyError(f"unknown SikarianLobster parameter {k!r}")
@@ -135,11 +137,15 @@ def design_params(overrides: dict | None = None) -> dict:
     return p
 
 
-def cad_numbers(p: dict | None = None, *, recompute: bool = False) -> dict:
-    """CAD volumes [mm³] (and the shell's centroid height [mm]); the stored ``CAD`` for the default design."""
-    p = design_params() if p is None else dict(p)
-    if not recompute and p == design_params():
-        return dict(CAD)
+def cad_numbers(p: dict | None = None, *, recompute: bool = False, variant=None) -> dict:
+    """CAD volumes [mm³] (and the shell's centroid height [mm]); the stored numbers (``CAD``, ``ORNATUS_CAD``) for a
+    variant's own design."""
+    v = variant_of(variant)
+    p = dict(v.params) if p is None else dict(p)
+    if not recompute:
+        for vv in VARIANTS.values():
+            if vv.cad and p == vv.params:
+                return dict(vv.cad)
     import lobster
 
     d = lobster.SikarianLobster()
@@ -180,11 +186,18 @@ def _servo_count():
     return {"leg": 12, "arm": 8, "jaw": 2, "tail": 4}
 
 
-def budget(p: dict | None = None, cad: dict | None = None) -> dict:
+BALLAST_DENSITY = 7850.0                  # kg/m³: steel trim plates (a variant with a target mass carries what is missing)
+
+
+def budget(p: dict | None = None, cad: dict | None = None, variant=None) -> dict:
     """Mass [kg] and displaced volume [m³] of every part, the foam that trims the robot to ``NET_FRACTION``, and
-    the totals: {"parts": {name: (kg, m³)}, "mass", "volume", "net_kg" (mass − ρV), "foam_volume", ...}."""
-    p = design_params() if p is None else p
-    cad = cad_numbers(p) if cad is None else cad
+    the totals: {"parts": {name: (kg, m³)}, "mass", "volume", "net_kg" (mass − ρV), "foam_volume", ...}. A variant
+    with a ``target_mass`` gets steel ballast plates so the total is exactly that (``ballast_kg``; 0 and
+    ``over_target_kg`` > 0 when the parts alone are heavier)."""
+    v = variant_of(variant)
+    p = dict(v.params) if p is None else p
+    cad = cad_numbers(p, variant=v) if cad is None else cad
+    PARTS_KG, PARTS_VOLUME, SERVO_KEYS = v.parts_kg, v.parts_volume, v.servo_keys
     rho = WATER["density"]
     g = geometry(p)
     mm3 = 1e-9
@@ -204,19 +217,30 @@ def budget(p: dict | None = None, cad: dict | None = None) -> dict:
     for k, m in PARTS_KG.items():
         parts[k] = (m, PARTS_VOLUME.get(k, 0.0))
     m0 = sum(m for m, _ in parts.values())
-    v0 = sum(v for _, v in parts.values())
+    v0 = sum(vol for _, vol in parts.values())
     rf = MATERIALS["syntactic foam (10 m class)"]
-    # (m0 + rf Vf) − ρ (v0 + Vf) = f (m0 + rf Vf)  →  Vf
     f = NET_FRACTION
+    mb, over = 0.0, 0.0
+    if v.target_mass:
+        # total M = m0 + mb + rf Vf = target and M − ρ (v0 + mb/ρb + Vf) = f M: two equations for the ballast mb and
+        # the foam Vf
+        T = v.target_mass
+        mb = (T - m0 - rf * ((1 - f) * T / rho - v0)) / (1 - rf / BALLAST_DENSITY)
+        if mb < 0:
+            over, mb = -mb, 0.0
+        parts["ballast plates (steel, trim to the target mass)"] = (mb, mb / BALLAST_DENSITY)
+        m0 += mb
+        v0 += mb / BALLAST_DENSITY
+    # (m0 + rf Vf) − ρ (v0 + Vf) = f (m0 + rf Vf)  →  Vf
     Vf = ((1 - f) * m0 - rho * v0) / (rho - (1 - f) * rf)
     Vf = max(Vf, 0.0)
     parts["syntactic foam trim"] = (rf * Vf, Vf)
     mass = sum(m for m, _ in parts.values())
-    volume = sum(v for _, v in parts.values())
+    volume = sum(vol for _, vol in parts.values())
     L, W, H = g["shell"]
     free = (L - 2 * 0.03) * (W - 2 * r_h - 0.01) * (H - 0.01)               # the shell's corners beside the housing
     return {"parts": parts, "mass": mass, "volume": volume, "net_kg": mass - rho * volume, "foam_volume": Vf,
-            "foam_space": free, "wet_weight_N": (mass - rho * volume) * WATER["g"]}
+            "foam_space": free, "wet_weight_N": (mass - rho * volume) * WATER["g"], "ballast_kg": mb, "over_target_kg": over}
 
 
 # ----------------------------------------------------------------------------------------------- the thruster
@@ -227,9 +251,11 @@ def _prop(p: dict) -> boreas.Propeller:
                                        chord_tip_m=D * 0.12)
 
 
-def thruster_table(p: dict | None = None, rpm=None, speed=None) -> dict:
+def thruster_table(p: dict | None = None, rpm=None, speed=None, variant=None) -> dict:
     """Boreas BEMT in water over rpm × axial inflow speed: thrust [N] (open propeller) and torque [N·m] arrays."""
-    p = design_params() if p is None else p
+    v = variant_of(variant)
+    p = dict(v.params) if p is None else p
+    THRUSTER = v.thruster
     rpm = np.linspace(0.0, THRUSTER["rpm_max"], 12) if rpm is None else np.asarray(rpm, dtype=float)
     speed = np.array([0.0, 0.5, 1.0, 1.5]) if speed is None else np.asarray(speed, dtype=float)
     prop = _prop(p)
@@ -268,9 +294,10 @@ def claw_joints(side: str) -> list:
     return [f"{side}_shoulder_yaw", f"{side}_shoulder", f"{side}_elbow", f"{side}_wrist", f"{side}_jaw_upper", f"{side}_jaw_lower"]
 
 
-def _servo(kind: str) -> Servo:
-    kp, kd, arm = GAINS[kind]
-    return Servo.from_actuator(act.get(SERVO_KEYS[kind]), kp=kp, kd=kd, armature=arm)
+def _servo(kind: str, variant=None) -> Servo:
+    v = variant_of(variant)
+    kp, kd, arm = v.gains[kind]
+    return Servo.from_actuator(act.get(v.servo_keys[kind]), kp=kp, kd=kd, armature=arm)
 
 
 #: Claws stowed: arms raised and folded back over the nose, jaws closed.
@@ -294,7 +321,7 @@ def nominal_qpos(p: dict | None = None) -> dict:
 SHELL_RGBA, LEG_RGBA, JAW_RGBA, TAIL_RGBA = (0.27, 0.25, 0.20, 1.0), (0.16, 0.16, 0.15, 1.0), (0.55, 0.53, 0.48, 1.0), (0.22, 0.21, 0.18, 1.0)
 
 
-def _leg_link(leg: str, g: dict, m_leg: float, foot_mu: float) -> Link:
+def _leg_link(leg: str, g: dict, m_leg: float, foot_mu: float, v=None) -> Link:
     _, side = LEGS[leg]
     yj, lj = leg_joints(leg)
     fx, fy, fz = g["foot"]
@@ -304,9 +331,9 @@ def _leg_link(leg: str, g: dict, m_leg: float, foot_mu: float) -> Link:
     tib_c = (0.0, side * (g["femur"] + g["tibia"] / 2 * math.sin(s)), -g["tibia"] / 2 * math.cos(s))
     return Link(f"{leg}_leg", pos=g["hips"][leg],
                 joints=[Joint(yj, axis=(0, 0, -side), range=(math.radians(-40), math.radians(40)), tag="hip_yaw",
-                              servo=_servo("leg"), leg=leg),
+                              servo=_servo("leg", v), leg=leg),
                         Joint(lj, axis=(side, 0, 0), range=(math.radians(-30), math.radians(60)), tag="hip_pitch",
-                              servo=_servo("leg"), leg=leg)],
+                              servo=_servo("leg", v), leg=leg)],
                 geoms=[Geom(f"{leg}_femur", "capsule", (0.007,), fromto=(0, 0, 0, *knee), mass=m_leg * 0.45, role="link",
                             friction=(0.6, 0.005, 0.0001), rgba=LEG_RGBA, fluidshape="ellipsoid"),
                        Geom(f"{leg}_tibia", "capsule", (0.007,), fromto=(*knee, fx, fy, fz), mass=m_leg * 0.45, role="link",
@@ -315,7 +342,9 @@ def _leg_link(leg: str, g: dict, m_leg: float, foot_mu: float) -> Link:
                             friction=(foot_mu, 0.005, 0.0001), rgba=(0.08, 0.08, 0.08, 1.0))])
 
 
-def _claw_link(side: str, g: dict, m_arm: float, m_jaw: float, m_jaw_servo: float, m_servo: float, jaw_mu: float) -> Link:
+def _claw_link(side: str, g: dict, m_arm: float, m_jaw: float, m_jaw_servo: float, m_servo: float, jaw_mu: float, v=None) -> Link:
+    v = variant_of(v)
+    NOTCH_TOOTH = v.notch_tooth
     sgn = CLAWS[side]
     syj, shj, elj, wrj, juj, jlj = claw_joints(side)
     jaws = []
@@ -335,28 +364,28 @@ def _claw_link(side: str, g: dict, m_arm: float, m_jaw: float, m_jaw_servo: floa
                           friction=(jaw_mu, 0.01, 0.0001), rgba=JAW_RGBA))
         jaws.append(Link(name + "_link", pos=(g["Lh"], 0.0, 0.0),
                          joints=[Joint(name, axis=axis, range=(math.radians(-12), math.radians(60)), tag="jaw",
-                                       servo=_servo("jaw"))], geoms=geoms))
+                                       servo=_servo("jaw", v))], geoms=geoms))
     hand = Link(f"{side}_hand", pos=(g["Lp"], 0.0, 0.0),
-                joints=[Joint(wrj, axis=(0, 1, 0), range=(math.radians(-90), math.radians(90)), tag="wrist", servo=_servo("arm"))],
+                joints=[Joint(wrj, axis=(0, 1, 0), range=(math.radians(-90), math.radians(90)), tag="wrist", servo=_servo("arm", v))],
                 geoms=[Geom(f"{side}_hand", "box", (g["Lh"] / 2, g["arm_w"] * 0.35, g["arm_w"] * 0.5), pos=(g["Lh"] / 2, 0, 0),
-                            mass=PARTS_KG["palm housings 2x"] / 2, role="link", friction=(0.5, 0.005, 0.0001), rgba=LEG_RGBA,
+                            mass=v.parts_kg["palm housings 2x"] / 2, role="link", friction=(0.5, 0.005, 0.0001), rgba=LEG_RGBA,
                             fluidshape="ellipsoid")],
                 masses=[PointMass(f"{side}_jaw_drive", m_jaw_servo, (g["Lh"] / 2, 0.0, 0.0))], children=jaws)
     palm = Link(f"{side}_palm", pos=(g["Lu"], 0.0, 0.0),
-                joints=[Joint(elj, axis=(0, 1, 0), range=(math.radians(-20), math.radians(150)), tag="elbow", servo=_servo("arm"))],
+                joints=[Joint(elj, axis=(0, 1, 0), range=(math.radians(-20), math.radians(150)), tag="elbow", servo=_servo("arm", v))],
                 geoms=[Geom(f"{side}_palm", "box", (g["Lp"] / 2, g["arm_w"] * 0.35, g["arm_w"] * 0.45), pos=(g["Lp"] / 2, 0, 0),
                             mass=m_arm * 0.4, role="link", friction=(0.5, 0.005, 0.0001), rgba=LEG_RGBA,
                             fluidshape="ellipsoid")],
                 masses=[PointMass(f"{side}_wrist_servo", m_servo, (g["Lp"], 0.0, 0.0))], children=[hand])
     return Link(f"{side}_arm", pos=g["claw"] if sgn > 0 else (g["claw"][0], -g["claw"][1], g["claw"][2]),
-                joints=[Joint(syj, axis=(0, 0, 1), range=(math.radians(-60), math.radians(60)), tag="yaw", servo=_servo("arm")),
-                        Joint(shj, axis=(0, -1, 0), range=(math.radians(-40), math.radians(80)), tag="shoulder", servo=_servo("arm"))],
+                joints=[Joint(syj, axis=(0, 0, 1), range=(math.radians(-60), math.radians(60)), tag="yaw", servo=_servo("arm", v)),
+                        Joint(shj, axis=(0, -1, 0), range=(math.radians(-40), math.radians(80)), tag="shoulder", servo=_servo("arm", v))],
                 geoms=[Geom(f"{side}_upper_arm", "box", (g["Lu"] / 2, g["arm_w"] * 0.35, g["arm_w"] / 2), pos=(g["Lu"] / 2, 0, 0),
                             mass=m_arm * 0.6, role="link", friction=(0.5, 0.005, 0.0001), rgba=LEG_RGBA, fluidshape="ellipsoid")],
                 masses=[PointMass(f"{side}_elbow_servo", m_servo, (g["Lu"], 0.0, 0.0))], children=[palm])
 
 
-def _tail_link(g: dict, m_seg: float, m_servo: float, m_thruster: float, m_shroud: float) -> Link:
+def _tail_link(g: dict, m_seg: float, m_servo: float, m_thruster: float, m_shroud: float, v=None) -> Link:
     q90 = (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)          # cylinder axis z -> x
     L1, L2, r = g["L1"], g["L2"], g["tail_r"]
     thruster = Link("thruster", pos=(-L2 - g["shroud_L"] / 2, 0.0, 0.0),
@@ -365,14 +394,14 @@ def _tail_link(g: dict, m_seg: float, m_servo: float, m_thruster: float, m_shrou
                            Geom("prop_disc", "cylinder", (g["prop_D"] / 2, 0.004), quat=q90, role="visual", rgba=(0.6, 0.55, 0.4, 0.6))],
                     masses=[PointMass("thruster motor", m_thruster, (0.01, 0.0, 0.0))])
     seg2 = Link("tail2", pos=(-L1, 0.0, 0.0),
-                joints=[Joint("tail2_yaw", axis=(0, 0, 1), range=(math.radians(-50), math.radians(50)), tag="tail", servo=_servo("tail")),
-                        Joint("tail2_pitch", axis=(0, 1, 0), range=tuple(math.radians(v) for v in TAIL_PITCH_RANGE[2]), tag="tail", servo=_servo("tail"))],
+                joints=[Joint("tail2_yaw", axis=(0, 0, 1), range=(math.radians(-50), math.radians(50)), tag="tail", servo=_servo("tail", v)),
+                        Joint("tail2_pitch", axis=(0, 1, 0), range=tuple(math.radians(v) for v in TAIL_PITCH_RANGE[2]), tag="tail", servo=_servo("tail", v))],
                 geoms=[Geom("tail2", "capsule", (r * 0.9,), fromto=(0, 0, 0, -L2, 0, 0), mass=m_seg, role="link",
                             friction=(0.5, 0.005, 0.0001), rgba=TAIL_RGBA, fluidshape="ellipsoid")],
                 children=[thruster])
     return Link("tail1", pos=g["tail0"],
-                joints=[Joint("tail1_yaw", axis=(0, 0, 1), range=(math.radians(-50), math.radians(50)), tag="tail", servo=_servo("tail")),
-                        Joint("tail1_pitch", axis=(0, 1, 0), range=tuple(math.radians(v) for v in TAIL_PITCH_RANGE[1]), tag="tail", servo=_servo("tail"))],
+                joints=[Joint("tail1_yaw", axis=(0, 0, 1), range=(math.radians(-50), math.radians(50)), tag="tail", servo=_servo("tail", v)),
+                        Joint("tail1_pitch", axis=(0, 1, 0), range=tuple(math.radians(v) for v in TAIL_PITCH_RANGE[1]), tag="tail", servo=_servo("tail", v))],
                 geoms=[Geom("tail1", "capsule", (r,), fromto=(0, 0, 0, -L1, 0, 0), mass=m_seg, role="link",
                             friction=(0.5, 0.005, 0.0001), rgba=TAIL_RGBA, fluidshape="ellipsoid")],
                 masses=[PointMass("tail2 servos", 2 * m_servo, (-L1, 0.0, 0.0))], children=[seg2])
@@ -387,18 +416,120 @@ FOAM_Z = 0.035                            # ... and the foam high in the shell's
                                           # above the centre of gravity, the hydrostatic righting moment (notebook 24 §1)
 
 
-def lobster(overrides: dict | None = None, *, cad: dict | None = None, foot_mu: float = 0.7, jaw_mu: float = 0.6,
-            name: str = "Sikarian Lobster Nefri", trim: bool = True) -> Robot:
+# ----------------------------------------------------------------------------------------------- variants
+#: Mission tuning per variant (the controller's gait and the scenario's missions read these; notebooks 24/25).
+NEFRI_MISSION = {"stride_deg": 22.0, "lift_deg": 25.0, "period": 1.2, "v_nominal": 0.10,
+                 "swim_rpm": 2600.0, "swim_depth": 0.7, "swim_k_z": 0.8, "walk_v": 0.10, "creep_v": 0.03,
+                 "notch_x": 0.30, "throat": 0.02, "claw_drop": (-0.04, 0.0, -0.09), "jaw_open_deg": 40.0,
+                 "duration": {"swim": 45.0, "cut_and_enter": 55.0, "current": 24.0},
+                 "press_rpm": 2400.0, "press_deg": -60.0, "press_x": -0.08, "walk_rpm": 2400.0, "walk_deg": -45.0,
+                 "walk_x": -0.065, "current_walk_v": 0.08}
+ORNATUS_MISSION = {"stride_deg": 36.0, "lift_deg": 25.0, "period": 1.3, "v_nominal": 0.12,
+                   "swim_rpm": 2000.0, "swim_depth": 0.8, "swim_k_z": 0.8, "walk_v": 0.12, "creep_v": 0.04,
+                   "notch_x": 0.38, "throat": 0.015, "claw_drop": (-0.05, 0.0, -0.11), "jaw_open_deg": 40.0,
+                   "duration": {"swim": 45.0, "cut_and_enter": 70.0, "current": 24.0},
+                   "press_rpm": 1800.0, "press_deg": -60.0, "press_x": -0.10, "walk_rpm": 1800.0, "walk_deg": -45.0,
+                   "walk_x": -0.08, "current_walk_v": 0.08}
+
+
+@dataclass
+class Variant:
+    """One member of the Lobster family: its design parameters (``lobster.py``, mm), stored CAD numbers, parts list,
+    servos and gains, thruster, trim positions and mission tuning. ``variant_of(x)`` resolves a name, a Variant or
+    None (Nefri)."""
+
+    name: str
+    display: str
+    params: dict
+    cad: dict
+    parts_kg: dict
+    parts_volume: dict
+    servo_keys: dict
+    gains: dict
+    thruster: dict
+    battery_key: str
+    battery_x: float = BATTERY_X
+    battery_z: float = BATTERY_Z
+    foam_z: float = FOAM_Z
+    notch_tooth: dict = field(default_factory=lambda: dict(NOTCH_TOOTH))
+    target_mass: float | None = None
+    payload_x: float | None = None            # a "payload" part sits here (hull frame); None: with the rest of the hull mass
+    mission: dict = field(default_factory=lambda: dict(NEFRI_MISSION))
+    notebook: str = "24"
+
+
+NEFRI_V = Variant("nefri", "Sikarian Lobster Nefri", NEFRI, CAD, PARTS_KG, PARTS_VOLUME, SERVO_KEYS, GAINS, THRUSTER,
+                  "battery 4S3P Li-ion 21700, 207 Wh (in the housing)")
+
+#: Ornatus (v2, the big member, notebook 25): 15 kg, cuts a Ø12 mm PVC power cable (3×2.5 mm² Cu, ~2.5 kN), the same
+#: Ø600 pipe — so the legs are narrower than a pure scale-up (the foot span must stay inside the pipe's 0.52 m silt floor).
+ORNATUS_PARAMS = dict(NEFRI, **{
+    "shell_length": 410.0, "shell_width": 260.0, "shell_height": 170.0, "shell_thickness": 3.0, "shell_chamfer": 36.0,
+    "shell_bottom": 90.0, "housing_diameter": 140.0, "housing_wall": 3.0, "housing_length": 280.0, "cap_thickness": 10.0,
+    "hip_spacing": 120.0, "hip_height": 40.0, "coxa_length": 26.0, "femur_length": 45.0, "tibia_length": 135.0,
+    "tibia_splay_deg": 4.0, "leg_width": 20.0, "leg_thickness": 10.0, "foot_diameter": 26.0, "claw_y": 70.0,
+    "claw_height": 90.0, "upper_arm_length": 115.0, "palm_length": 58.0, "hand_length": 28.0, "arm_width": 28.0,
+    "jaw_length": 90.0, "jaw_thickness": 8.0, "jaw_depth": 24.0, "jaw_pin_diameter": 8.0, "cutter_x": 18.0, "cutter_depth": 5.5,
+    "hook_width": 10.0, "tail_height": 90.0, "tail_segment_1": 110.0, "tail_segment_2": 90.0, "tail_diameter": 64.0,
+    "shroud_length": 76.0, "shroud_inner": 106.0, "shroud_wall": 6.0, "prop_diameter": 100.0, "prop_pitch": 92.0,
+    "prop_hub": 26.0, "mast_height": 115.0, "mast_diameter": 9.0})
+#: CAD of Ornatus (notebook 25 §1; ``cad_numbers(ORNATUS_PARAMS, recompute=True)`` rebuilds them).
+ORNATUS_CAD = {'shell_volume': 1044272.8, 'shell_com_z': 177.8, 'housing_volume': 643586.7, 'leg_volume': 65881.5, 'upper_arm_volume': 98117.4, 'jaw_volume': 15679.5, 'tail_segment_volume': 394545.8, 'shroud_volume': 198342.2, 'propeller_volume': 13571.8}
+ORNATUS_PARTS_KG = {
+    "battery 4S6P Li-ion 21700, 414 Wh (in the housing)": 1.60, "computer, IMU, depth sensor (in the housing)": 0.15,
+    "acoustic modem and radio relay (in the housing)": 0.10, "power electronics, thruster ESC (in the housing)": 0.15,
+    "O-rings, penetrators, cable glands": 0.18, "cameras 3x low-light (sealed)": 0.09, "imaging sonar (sealed)": 0.40,
+    "hydrophone array and antenna masts": 0.12, "wiring outside the housing": 0.12,
+    "thruster motor, sealed BLDC": 0.35, "tail segments 2x (PA12 tube, foam-filled)": 0.30,
+    "palm housings 2x": 0.12, "foot balls 6x (rubber)": 0.06,
+    "payload bay (sample carousel / sensor head, in the shell)": 1.00}
+ORNATUS_PARTS_VOLUME = {
+    "cameras 3x low-light (sealed)": 45e-6, "imaging sonar (sealed)": 240e-6, "hydrophone array and antenna masts": 60e-6,
+    "thruster motor, sealed BLDC": 110e-6, "tail segments 2x (PA12 tube, foam-filled)": 2 * 300e-6,
+    "palm housings 2x": 2 * 50e-6, "foot balls 6x (rubber)": 6 * 9.2e-6, "wiring outside the housing": 70e-6,
+    "payload bay (sample carousel / sensor head, in the shell)": 800e-6}
+ORNATUS_SERVO_KEYS = {"leg": "sealed servo 3 Nm", "arm": "sealed servo 8 Nm", "jaw": "sealed jaw screw 4 kN", "tail": "sealed servo 8 Nm"}
+ORNATUS_GAINS = {"leg": (20.0, 0.35, 0.005), "arm": (40.0, 0.6, 0.008), "jaw": (120.0, 1.5, 0.02), "tail": (30.0, 0.5, 0.008)}
+ORNATUS_THRUSTER = {
+    "motor": boreas.Motor("sealed BLDC 180 kV", kv_rpm_per_volt=180.0, resistance_ohm=0.08, no_load_current_a=0.6,
+                          max_current_a=25.0, mass_kg=0.35, source="assumed: underwater thruster motor class, 4S, 300 W"),
+    "battery": boreas.Battery("4S6P Li-ion 21700", cells=4, capacity_ah=28.8, cell_voltage_nominal=3.6, usable_fraction=0.85, mass_kg=1.60),
+    "section": THRUSTER["section"], "rpm_max": 2800.0, "spool_s": 0.2}
+ORNATUS = Variant("ornatus", "Sikarian Lobster Ornatus", ORNATUS_PARAMS, ORNATUS_CAD, ORNATUS_PARTS_KG, ORNATUS_PARTS_VOLUME,
+                  ORNATUS_SERVO_KEYS, ORNATUS_GAINS, ORNATUS_THRUSTER, "battery 4S6P Li-ion 21700, 414 Wh (in the housing)",
+                  battery_x=-0.11, battery_z=-0.045, foam_z=0.045, notch_tooth={"gap": 0.005, "width": 0.005, "height": 0.005},
+                  target_mass=15.0, payload_x=-0.14, mission=dict(ORNATUS_MISSION), notebook="25")
+VARIANTS = {"nefri": NEFRI_V, "ornatus": ORNATUS}
+
+
+def variant_of(x=None) -> Variant:
+    """A ``Variant`` from its name, itself, or None (Nefri)."""
+    if x is None:
+        return NEFRI_V
+    if isinstance(x, Variant):
+        return x
+    try:
+        return VARIANTS[str(x).lower()]
+    except KeyError:
+        raise KeyError(f"unknown Lobster variant {x!r}; known: {list(VARIANTS)}") from None
+
+
+
+def lobster(overrides: dict | None = None, *, variant=None, cad: dict | None = None, foot_mu: float = 0.7, jaw_mu: float = 0.6,
+            name: str | None = None, trim: bool = True) -> Robot:
     """The Lobster as a Chiron ``Robot`` (masses from ``budget``), **trimmed**: the foam's position along x is solved
     so the centre of buoyancy sits above the centre of gravity in the standing pose (``robot.trim``: the foam x and
-    the couple before trimming). ``robot.volumes``: {body: (m³, centre of buoyancy in the body frame)} for the
-    Water hook; ``robot.lobster``: the geometry; ``robot.budget``."""
+    the couple before trimming). ``variant``: "nefri" (default) or "ornatus" (or a ``Variant``) — ``robot.variant``.
+    ``robot.volumes``: {body: (m³, centre of buoyancy in the body frame)} for the Water hook; ``robot.lobster``: the
+    geometry; ``robot.budget``."""
+    v = variant_of(variant)
+    name = name or v.display
     if not trim:
-        return _lobster(overrides, cad, foot_mu, jaw_mu, name, 0.0)
-    r0 = _lobster(overrides, cad, foot_mu, jaw_mu, name, 0.0)
+        return _lobster(v, overrides, cad, foot_mu, jaw_mu, name, 0.0)
+    r0 = _lobster(v, overrides, cad, foot_mu, jaw_mu, name, 0.0)
     M0, up = _pitch_couple(r0)
     foam_x = -M0 / up
-    robot = _lobster(overrides, cad, foot_mu, jaw_mu, name, foam_x)
+    robot = _lobster(v, overrides, cad, foot_mu, jaw_mu, name, foam_x)
     robot.trim = {"foam_x_m": foam_x, "couple_untrimmed_Nm": M0, "couple_trimmed_Nm": _pitch_couple(robot)[0]}
     return robot
 
@@ -427,13 +558,16 @@ def _pitch_couple(robot) -> tuple:
     return MB - MW, up
 
 
-def _lobster(overrides, cad, foot_mu, jaw_mu, name, foam_x) -> Robot:
-    p = design_params(overrides)
-    cad = cad_numbers(p) if cad is None else cad
+def _lobster(v, overrides, cad, foot_mu, jaw_mu, name, foam_x) -> Robot:
+    p = design_params(overrides, v)
+    cad = cad_numbers(p, variant=v) if cad is None else cad
     g = geometry(p)
-    b = budget(p, cad)
+    b = budget(p, cad, v)
     parts = b["parts"]
-    m_servo = act.get(SERVO_KEYS["leg"]).mass_g / 1000.0               # legs and arms
+    PARTS_KG, PARTS_VOLUME, SERVO_KEYS = v.parts_kg, v.parts_volume, v.servo_keys
+    BATTERY_X, BATTERY_Z, FOAM_Z = v.battery_x, v.battery_z, v.foam_z
+    m_servo = act.get(SERVO_KEYS["leg"]).mass_g / 1000.0               # legs
+    m_arm_servo = act.get(SERVO_KEYS["arm"]).mass_g / 1000.0           # arms
     m_tail_servo = act.get(SERVO_KEYS["tail"]).mass_g / 1000.0
     m_jaw_servo = act.get(SERVO_KEYS["jaw"]).mass_g / 1000.0
     m_leg = parts["legs 6x (PA12-CF, CAD)"][0] / 6 + PARTS_KG["foot balls 6x (rubber)"] / 6
@@ -441,24 +575,30 @@ def _lobster(overrides, cad, foot_mu, jaw_mu, name, foam_x) -> Robot:
     m_arm = parts["arms 2x (PA12-CF)"][0] / 2
     m_seg = PARTS_KG["tail segments 2x (PA12 tube, foam-filled)"] / 2
     m_shroud = parts["shroud + propeller (PA12, CAD)"][0]
-    legs = [_leg_link(leg, g, m_leg, foot_mu) for leg in LEGS]
-    claws = [_claw_link(s, g, m_arm, m_jaw, m_jaw_servo, m_servo, jaw_mu) for s in CLAWS]
-    tail = _tail_link(g, m_seg, m_tail_servo, PARTS_KG["thruster motor, sealed BLDC"], m_shroud)
+    legs = [_leg_link(leg, g, m_leg, foot_mu, v) for leg in LEGS]
+    claws = [_claw_link(s, g, m_arm, m_jaw, m_jaw_servo, m_arm_servo, jaw_mu, v) for s in CLAWS]
+    tail = _tail_link(g, m_seg, m_tail_servo, PARTS_KG["thruster motor, sealed BLDC"], m_shroud, v)
     L, W, H = g["shell"]
     r_h, L_h = g["housing"]
     zc = g["zc"]
     # hull masses: everything not on a moving link
-    on_links = (6 * m_leg + 2 * (m_arm + 2 * m_jaw + PARTS_KG["palm housings 2x"] / 2 + m_jaw_servo + 2 * m_servo)
+    on_links = (6 * m_leg + 2 * (m_arm + 2 * m_jaw + PARTS_KG["palm housings 2x"] / 2 + m_jaw_servo + 2 * m_arm_servo)
                 + 2 * m_seg + 2 * m_tail_servo + PARTS_KG["thruster motor, sealed BLDC"] + m_shroud)
     m_hull = b["mass"] - on_links
     shell_m = parts["shell (ASA, CAD)"][0]
     housing_m = parts["pressure housing (Al 6082, CAD; displaces its envelope)"][0]
     foam_m = parts["syntactic foam trim"][0]
-    inside = sum(v for k, v in PARTS_KG.items() if "(in the housing)" in k)
+    ballast_m = b.get("ballast_kg", 0.0)
+    inside = sum(m for k, m in PARTS_KG.items() if "(in the housing)" in k)
     hips = [PointMass(f"{leg}_hip_servos", 2 * m_servo, g["hips"][leg]) for leg in LEGS]
-    claw_servos = [PointMass(f"{s}_shoulder_servos", 2 * m_servo, (g["claw"][0] - 0.02, CLAWS[s] * g["claw"][1], g["claw"][2])) for s in CLAWS]
+    claw_servos = [PointMass(f"{s}_shoulder_servos", 2 * m_arm_servo, (g["claw"][0] - 0.02, CLAWS[s] * g["claw"][1], g["claw"][2])) for s in CLAWS]
     tail_servos = PointMass("tail1 servos", 2 * m_tail_servo, (g["tail0"][0] + 0.02, 0.0, g["tail0"][2]))
-    rest = m_hull - shell_m - housing_m - foam_m - inside - sum(pm.mass for pm in hips + claw_servos) - tail_servos.mass
+    extra = [PointMass("ballast plates", ballast_m, (BATTERY_X, 0.0, -H / 2 + 0.01))] if ballast_m > 0 else []
+    payload_m = sum(m for k, m in PARTS_KG.items() if "payload" in k) if v.payload_x is not None else 0.0
+    if payload_m > 0:
+        extra.append(PointMass("payload bay", payload_m, (v.payload_x, 0.0, -0.02)))
+    rest = (m_hull - shell_m - housing_m - foam_m - ballast_m - payload_m - inside - sum(pm.mass for pm in hips + claw_servos)
+            - tail_servos.mass)
     hull = Link("hull", log=True,
                 geoms=[Geom("shell", "box", (L / 2, W / 2, H / 2), mass=shell_m, role="body", friction=(0.5, 0.005, 0.0001),
                             rgba=SHELL_RGBA, fluidshape="ellipsoid"),
@@ -467,10 +607,10 @@ def _lobster(overrides, cad, foot_mu, jaw_mu, name, foam_x) -> Robot:
                        Geom("mast_a", "cylinder", (0.0035, 0.045), pos=(-L * 0.15, W * 0.2, H / 2 + 0.045), role="visual", rgba=LEG_RGBA),
                        Geom("mast_b", "cylinder", (0.0035, 0.036), pos=(-L * 0.05, -W * 0.2, H / 2 + 0.036), role="visual", rgba=LEG_RGBA)],
                 masses=[PointMass("pressure housing", housing_m, (0.0, 0.0, 0.0)),
-                        PointMass("battery", PARTS_KG["battery 4S3P Li-ion 21700, 207 Wh (in the housing)"], (BATTERY_X, 0.0, BATTERY_Z)),
-                        PointMass("electronics", inside - PARTS_KG["battery 4S3P Li-ion 21700, 207 Wh (in the housing)"], (0.03, 0.0, 0.0)),
+                        PointMass("battery", PARTS_KG[v.battery_key], (BATTERY_X, 0.0, BATTERY_Z)),
+                        PointMass("electronics", inside - PARTS_KG[v.battery_key], (0.03, 0.0, 0.0)),
                         PointMass("syntactic foam", foam_m, (foam_x, 0.0, FOAM_Z)),
-                        PointMass("sensors, glands, wiring", max(rest, 0.0), (L * 0.2, 0.0, 0.0)), tail_servos] + hips + claw_servos,
+                        PointMass("sensors, glands, wiring, payload", max(rest, 0.0), (L * 0.2, 0.0, 0.0)), tail_servos] + hips + claw_servos + extra,
                 children=legs + claws + [tail])
     feet = [FootSpec(leg, f"{leg}_foot", leg_joints(leg), "hull") for leg in LEGS]
     robot = Robot(name, hull, feet=feet, nominal_qpos=nominal_qpos(p),
@@ -479,29 +619,28 @@ def _lobster(overrides, cad, foot_mu, jaw_mu, name, foam_x) -> Robot:
                   sources={"geometry": "designs/lobster.py", "masses": "notebook 24 §1 budget", "actuators": "designs/actuators.py",
                            "assumptions": "lobster_robot.ASSUMPTIONS"})
     robot.validate()
-    # buoyancy: volumes per body and their centres (body frame)
+    # buoyancy: volumes per body and their centres (body frame); the hull's is what the links do not carry
     v_seg = 2 * PARTS_VOLUME["tail segments 2x (PA12 tube, foam-filled)"] / 2 / 2
-    v_hull = (parts["shell (ASA, CAD)"][1] + parts["pressure housing (Al 6082, CAD; displaces its envelope)"][1]
-              + parts["syntactic foam trim"][1] + (16 * m_servo + 2 * m_tail_servo) / SERVO_DENSITY
-              + sum(PARTS_VOLUME[k] for k in ("cameras 3x low-light (sealed)", "imaging sonar (sealed)",
-                                                "hydrophone array and antenna masts", "wiring outside the housing")))
-    cb_hull = (parts["syntactic foam trim"][1] * FOAM_Z + parts["shell (ASA, CAD)"][1] * (cad["shell_com_z"] / 1000.0 - zc)) / v_hull
-    cbx_hull = parts["syntactic foam trim"][1] * foam_x / v_hull
-    vols = {"hull": (v_hull, (cbx_hull, 0.0, cb_hull))}
+    vols = {}
     for leg in LEGS:
         _, side = LEGS[leg]
         vols[f"{leg}_leg"] = (cad["leg_volume"] * 1e-9 + PARTS_VOLUME["foot balls 6x (rubber)"] / 6,
                               (0.0, side * (g["femur"] * 0.7), g["foot"][2] * 0.4))
     for s in CLAWS:
-        vols[f"{s}_arm"] = (parts["arms 2x (PA12-CF)"][1] / 2 * 0.6 + m_servo / SERVO_DENSITY, (g["Lu"] * 0.6, 0.0, 0.0))
-        vols[f"{s}_palm"] = (parts["arms 2x (PA12-CF)"][1] / 2 * 0.4 + m_servo / SERVO_DENSITY, (g["Lp"] * 0.6, 0.0, 0.0))
+        vols[f"{s}_arm"] = (parts["arms 2x (PA12-CF)"][1] / 2 * 0.6 + m_arm_servo / SERVO_DENSITY, (g["Lu"] * 0.6, 0.0, 0.0))
+        vols[f"{s}_palm"] = (parts["arms 2x (PA12-CF)"][1] / 2 * 0.4 + m_arm_servo / SERVO_DENSITY, (g["Lp"] * 0.6, 0.0, 0.0))
         vols[f"{s}_hand"] = (PARTS_VOLUME["palm housings 2x"] / 2 + m_jaw_servo / SERVO_DENSITY, (g["Lh"] / 2, 0.0, 0.0))
         for j in claw_joints(s)[4:]:
             vols[j + "_link"] = (m_jaw / MATERIALS["tool steel jaws"], (g["Lj"] / 2, 0.0, 0.0))
     vols["tail1"] = (v_seg + 2 * m_tail_servo / SERVO_DENSITY, (-g["L1"] / 2, 0.0, 0.0))
     vols["tail2"] = (v_seg, (-g["L2"] / 2, 0.0, 0.0))
     vols["thruster"] = (parts["shroud + propeller (PA12, CAD)"][1] + PARTS_VOLUME["thruster motor, sealed BLDC"], (0.0, 0.0, 0.0))
+    v_hull = b["volume"] - sum(V for V, _ in vols.values())
+    cb_hull = (parts["syntactic foam trim"][1] * FOAM_Z + parts["shell (ASA, CAD)"][1] * (cad["shell_com_z"] / 1000.0 - zc)) / v_hull
+    cbx_hull = parts["syntactic foam trim"][1] * foam_x / v_hull
+    vols["hull"] = (v_hull, (cbx_hull, 0.0, cb_hull))
     robot.volumes = vols
+    robot.variant = v
     robot.foam_x = foam_x
     robot.params = p
     robot.lobster = g
@@ -516,7 +655,8 @@ class Water:
 
     def __init__(self, robot: Robot, table: dict | None = None, rho: float = WATER["density"], g: float = WATER["g"]):
         self.volumes = dict(robot.volumes)
-        self.table = thruster_table(robot.params) if table is None else table
+        self.variant = getattr(robot, "variant", NEFRI_V)
+        self.table = thruster_table(robot.params, variant=self.variant) if table is None else table
         self.rho, self.g = rho, g
 
     def reset(self, lab):
@@ -538,8 +678,9 @@ class Water:
             r = R @ (cb - self.ipos[b])
             forces[name] = [F, np.cross(r, F)]
         # thruster
-        target = float(np.clip(getattr(lab, "thruster_rpm", 0.0), 0.0, THRUSTER["rpm_max"]))
-        self.rpm += (target - self.rpm) * min(1.0, lab.control_dt / THRUSTER["spool_s"])
+        thr = self.variant.thruster
+        target = float(np.clip(getattr(lab, "thruster_rpm", 0.0), 0.0, thr["rpm_max"]))
+        self.rpm += (target - self.rpm) * min(1.0, lab.control_dt / thr["spool_s"])
         R = d.xmat[self.thr].reshape(3, 3)
         axis = R[:, 0]
         v = np.zeros(6)
@@ -555,9 +696,9 @@ class Water:
             lab.body_force(name, F, tq)
 
 
-def lobster_lab(terrain=None, robot: Robot | None = None, **kwargs) -> ChironLab:
-    """``ChironLab(lobster(), terrain, **LAB_OPTIONS)`` with the ``Water`` hook (``lab.water``)."""
-    robot = robot or lobster()
+def lobster_lab(terrain=None, robot: Robot | None = None, variant=None, **kwargs) -> ChironLab:
+    """``ChironLab(lobster(variant=...), terrain, **LAB_OPTIONS)`` with the ``Water`` hook (``lab.water``)."""
+    robot = robot or lobster(variant=variant)
     opts = dict(LAB_OPTIONS)
     opts.update(kwargs)
     lab = ChironLab(robot, terrain, **opts)

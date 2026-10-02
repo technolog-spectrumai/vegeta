@@ -146,8 +146,14 @@ and tail FEA, the tail's modes against the blade pass; endurance; and in MuJoCo 
 buoyancy-and-thrust hook — three jobs with movies: swim and land, cut a Ø10 mm PP rope across a Ø600 mm outfall pipe
 and walk 1 m into it, hold in a 0.5 m/s current by pressing down with the tail). `designs/lobster_robot.py`,
 `lobster_controller.py`, `lobster_scenario.py` and `lobster_cfd.py` are its modules;
-`scenarios/sikarian_lobster.py` (or `./user_tests.sh lobster`) re-runs the jobs. The big member, Ornatus (15 kg, a
-Ø12 mm electric cable), is the next notebook.
+`scenarios/sikarian_lobster.py` (or `./user_tests.sh lobster`) re-runs the jobs. `25_sikarian_lobster_ornatus` is the
+big member, **Ornatus**: the same modules with a second parameter set (`lobster_robot.ORNATUS`, a `Variant`) — 15 kg
+exactly (the budget solves the foam and steel ballast together), a 0.41 m shell, a Ø100 mm propeller, a payload bay
+and a 414 Wh pack, legs narrower than a scale-up so it still fits the Ø600 pipe (foot span vs the silt floor, masts
+vs the roof), and the Onager Manus's pincer check at its size — a sealed 4 kN lead-screw jaw drive, the cutting
+envelope against cable classes — to cut a Ø12 mm PVC power cable (2.5 kN) across the pipe's mouth and walk in; the
+same CFD, FEA and the three MuJoCo jobs with movies, each next to Nefri's number.
+`scenarios/sikarian_lobster.py --variant ornatus` (or `./user_tests.sh lobster-ornatus`) re-runs them.
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 

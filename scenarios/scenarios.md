@@ -135,4 +135,6 @@ PP rope across the mouth and closes the worm drive — the rope parts only when 
 50 ms (the Manus's `WireCutter` hook) — lowers the claw so the ends drop, backs off, stows and walks 1 m into the
 pipe (drawn translucent). **current**: 0.5 m/s across it; standing it slides, then it curls the tail over its back,
 presses itself down with the jet and walks across. Writes `sikarian_lobster_<job>.mp4` and `.json` (mission log,
-events, the cut and the peak squeeze, the drift).
+events, the cut and the peak squeeze, the drift). `--variant ornatus` (or `./user_tests.sh lobster-ornatus`) runs the 15 kg Ornatus
+(`lobster_robot.ORNATUS`) through the same three jobs — the Ø12 mm PVC power cable in place of the rope (2.5 kN to
+cut, its sealed 4 kN jaw screw), 2000 rpm for the swim, the press at 1800 rpm — writing `sikarian_lobster_ornatus_<job>.*`.

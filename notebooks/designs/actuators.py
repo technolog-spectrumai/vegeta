@@ -95,6 +95,12 @@ CATALOG = [
              "assumed: 12 V oil-compensated underwater servo class (aluminium case, shaft seal), rated 30 m"),
     Actuator("sealed servo 12 Nm, worm", "sealed servo", 300.0, 12.0, 5.0, 4.0, 12.0, 15, True,
              "assumed: 12 V underwater gripper drive class, worm output (holds the grip unpowered), rated 30 m"),
+    Actuator("sealed servo 8 Nm", "sealed servo", 180.0, 8.0, 2.5, 4.0, 12.0, 40, False,
+             "assumed: 12 V oil-compensated underwater servo class (the 3 Nm case with a second planetary stage), rated 30 m"),
+    Actuator("sealed jaw screw 4 kN", "linear (jaw-equivalent)", 750.0, 80.0, 30.0, 8.0, 12.0, 6, True,
+             "assumed: 12 V sealed lead-screw linear actuator (self-locking), 4 kN stall, acting on the jaw at a 20 mm lever: given "
+             "here at the jaw pivot (4 kN x 0.02 m = 80 N m; 8 mm/s no-load = 0.4 rad/s = 6 rpm), rated 30 m — the Sikarian "
+             "Lobster Ornatus's cable cutter (the Onager Manus pattern at a tenth of the force)"),
     # the street sweeper's broom and suction fan (Onager Sweeper, notebook 23)
     Actuator("broom drive 1.5 kW", "gearmotor", 9000.0, 120.0, 50.0, 60.0, 48.0, 240, False,
              "assumed: 48 V BLDC through a 1:12 planetary stage, brush-disc sweeper drive class (disc brooms run 100-200 rpm)"),

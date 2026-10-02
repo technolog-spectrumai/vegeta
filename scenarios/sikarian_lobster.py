@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Sikarian Lobster Nefri underwater — MuJoCo dynamics through Chiron, three movies.
+"""Sikarian Lobster underwater — MuJoCo dynamics through Chiron, three movies (Nefri, or Ornatus with --variant).
 
-    xvfb-run -a python3 scenarios/sikarian_lobster.py                  # all three (pyvista needs a display)
+    xvfb-run -a python3 scenarios/sikarian_lobster.py                  # Nefri, all three (pyvista needs a display)
     python3 scenarios/sikarian_lobster.py --only cut_and_enter --camera iso
+    xvfb-run -a python3 scenarios/sikarian_lobster.py --variant ornatus   # the 15 kg Ornatus cuts the Ø12 mm cable
 
 The scenario is ``notebooks/designs/lobster_scenario.py`` (the same one notebook 24 §9 runs), in fresh water
 (MuJoCo's fluid drag, the ``lobster_robot.Water`` hook's buoyancy and vectored thrust):
@@ -16,7 +17,7 @@ The scenario is ``notebooks/designs/lobster_scenario.py`` (the same one notebook
                      it walks across the current.
 
 Writes ``scenarios/output/sikarian_lobster_<job>.mp4`` and ``.json`` (mission log, events, the cut, the phase
-summary).
+summary); Ornatus's files are ``sikarian_lobster_ornatus_<job>.*``.
 """
 from __future__ import annotations
 
@@ -37,9 +38,9 @@ OUT = ROOT / "scenarios" / "output"
 JOBS = ("swim", "cut_and_enter", "current")
 
 
-def summary(kind: str, ep) -> dict:
+def summary(kind: str, ep, variant: str = "nefri") -> dict:
     df = ls.timeseries(ep)
-    doc = {"job": kind, "mission": ep.log["mission"], "finished": ep.log["mission_finished"],
+    doc = {"job": kind, "variant": variant, "mission": ep.log["mission"], "finished": ep.log["mission_finished"],
            "events": ep.log.get("events", []), "end_x_m": float(df.x.iloc[-1]), "end_y_m": float(df.y.iloc[-1]),
            "max_tilt_deg": float(df.tilt_deg.max())}
     if kind == "swim":
@@ -57,6 +58,7 @@ def summary(kind: str, ep) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", choices=JOBS, action="append", help="run only this job (repeatable)")
+    ap.add_argument("--variant", choices=("nefri", "ornatus"), default="nefri", help="which Lobster (default Nefri)")
     ap.add_argument("--camera", default="follow", help="chiron.viz camera: follow, side, front, top, iso")
     ap.add_argument("--fps", type=int, default=25)
     ap.add_argument("--width", type=int, default=960)
@@ -68,12 +70,12 @@ def main(argv=None) -> int:
     status = 0
     for kind in args.only or JOBS:
         t0 = time.time()
-        scene = ls.Scene()
+        scene = ls.Scene(args.variant)
         extra = dict(wind=(0.0, 0.5, 0.0), course_extent=(-2.0, 6.0, -2.0, 6.0)) if kind == "current" else {}
         lab = ls.make_lab(scene, kind, log_geoms=not args.no_movie, **extra)
         ep = ls.run(kind, scene, lab=lab)
-        doc = summary(kind, ep)
-        stem = f"sikarian_lobster_{kind}"
+        doc = summary(kind, ep, args.variant)
+        stem = f"sikarian_lobster_{kind}" if args.variant == "nefri" else f"sikarian_lobster_{args.variant}_{kind}"
         if not args.no_movie:
             dt = float(ep.log["t"][1] - ep.log["t"][0])
             every = max(1, int(round(1.0 / (args.fps * dt))))
@@ -83,7 +85,7 @@ def main(argv=None) -> int:
         (OUT / f"{stem}.json").write_text(json.dumps(doc, indent=1, default=float))
         status |= 0 if doc["finished"] else 1
         keys = [k for k in ("max_vx_m_s", "cut_at_s", "peak_squeeze_N", "drift_y_m") if k in doc]
-        print(f"{kind}: finished={doc['finished']} end x={doc['end_x_m']:.2f} m, max tilt {doc['max_tilt_deg']:.0f}°, "
+        print(f"{args.variant} {kind}: finished={doc['finished']} end x={doc['end_x_m']:.2f} m, max tilt {doc['max_tilt_deg']:.0f}°, "
               + ", ".join(f"{k}={doc[k]}" for k in keys) + f" ({time.time() - t0:.0f} s) -> {doc.get('movie', '-')}")
     return status
 

@@ -1,5 +1,6 @@
-"""Sikarian Lobster Nefri (notebook 24): design/CAD consistency, the mass and volume budget, trim, standing in water,
-the tripod gait, the thrust line through the CG, the claw's inverse kinematics, and the three jobs (slow).
+"""Sikarian Lobster Nefri (notebook 24) and Ornatus (notebook 25): design/CAD consistency, the mass and volume
+budget, trim, standing in water, the tripod gait, the thrust line through the CG, the claw's inverse kinematics,
+Ornatus in the Ø600 pipe and on the cable, and the three jobs of each (slow).
 
 Run: cd /home/user/vegeta && python3 -m pytest -q notebooks/designs/tests/test_sikarian_lobster.py
 """
@@ -22,43 +23,60 @@ def test_design_defaults_match_the_dedalus_design():
     assert {k: defaults[k] for k in lr.NEFRI} == lr.NEFRI
 
 
-def test_stored_cad_numbers_match_a_rebuild():
+VARIANTS = ["nefri", "ornatus"]
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_stored_cad_numbers_match_a_rebuild(variant):
     pytest.importorskip("cadquery")
-    fresh = lr.cad_numbers(recompute=True)
-    for k in lr.CAD:
-        assert fresh[k] == pytest.approx(lr.CAD[k], rel=0.01)
+    v = lr.variant_of(variant)
+    fresh = lr.cad_numbers(v.params, recompute=True)
+    for k in v.cad:
+        assert fresh[k] == pytest.approx(v.cad[k], rel=0.01)
 
 
-def test_budget_sinks_by_the_net_fraction_and_the_foam_fits():
-    b = lr.budget()
-    assert 5.5 < b["mass"] < 8.0                                     # datasheet: 4-8 kg
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_budget_sinks_by_the_net_fraction_and_the_foam_fits(variant):
+    b = lr.budget(variant=variant)
+    if variant == "nefri":
+        assert 5.5 < b["mass"] < 8.0                                 # datasheet: 4-8 kg
+        assert b["ballast_kg"] == 0.0
+    else:
+        assert b["mass"] == pytest.approx(15.0, abs=1e-6)             # the target mass, met with ballast
+        assert b["ballast_kg"] > 0 and b["over_target_kg"] == 0.0
     assert b["net_kg"] == pytest.approx(lr.NET_FRACTION * b["mass"], rel=1e-6)
     assert 0 < b["foam_volume"] < b["foam_space"]
-    r = lr.lobster()
+    r = lr.lobster(variant=variant)
+    assert r.variant.name == variant
     assert r.total_mass() == pytest.approx(b["mass"], abs=1e-6)
     assert sum(v for v, _ in r.volumes.values()) == pytest.approx(b["volume"], rel=1e-9)
+    L = r.params["shell_length"] / 1000
+    assert abs(r.trim["foam_x_m"]) < L / 2 - 0.03                    # the foam's centre is inside the shell
 
 
-def test_trimmed_it_stands_level_on_six_feet_in_water():
-    r = lr.lobster()
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_trimmed_it_stands_level_on_six_feet_in_water(variant):
+    r = lr.lobster(variant=variant)
     assert abs(r.trim["couple_trimmed_Nm"]) < 1e-6
     lab = lr.lobster_lab(ch.Flat(), robot=r)
     ep = lab.run(None, duration=2.0, rules=None, settle=0.0)
     fz = np.asarray(ep.log["foot_force"])[-1, :, 2]
-    assert fz.sum() == pytest.approx(lr.budget()["wet_weight_N"], rel=0.03)
+    assert fz.sum() == pytest.approx(r.budget["wet_weight_N"], rel=0.03)
     assert fz.min() > 0.5 * fz.mean()                                # level: every foot carries a share
     q = np.asarray(ep.log["body_quat"])[-1, 0]
     assert abs(q[1]) < 0.01 and abs(q[2]) < 0.01
 
 
-def test_tripod_gait_walks_straight():
-    lab = lr.lobster_lab(ch.Flat())
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_tripod_gait_walks_straight(variant):
+    lab = lr.lobster_lab(ch.Flat(), variant=variant)
     st, up = lc.stand(0.6)
     m = lc.Mission([lc.Phase("walk", lc.walk_to(0.6, v=0.1), timeout=20.0), lc.Phase("stand", up, st)])
     ep = lab.run(m, duration=9.0, rules=None, settle=0.0)
     pos = np.asarray(ep.log["body_pos"])[-1, 0]
     assert pos[0] > 0.55 and abs(pos[1]) < 0.05
     assert abs(math.degrees(lc.yaw_of(np.asarray(ep.log["body_quat"])[-1, 0]))) < 5
+    assert m.period == lr.variant_of(variant).mission["period"]      # the gait took the variant's tuning
 
 
 @pytest.mark.parametrize("theta", [10.0, 0.0, -10.0])
@@ -105,24 +123,53 @@ def test_water_hook_buoyancy_and_thrust_direction():
 
 
 def test_rope_cut_force_and_scene():
-    assert ls.F_CUT == 600.0
+    assert ls.F_CUT == 600.0 and ls.ROPE["f_cut_N"] == 600.0
     sc = ls.Scene()
+    assert sc.z_rope == pytest.approx(0.16) and sc.wire is ls.ROPE
     props, welds = ls.rope_props(sc)
     assert [w.name for w in welds] == [sc.ROPE_WELD]
     assert ls.PIPE["inner_d"] == 0.60
 
 
+def test_ornatus_fits_the_pipe_and_cuts_the_cable():
+    """The big member in the same pipe: its feet inside the silt floor, its masts under the roof; the jaw screw's
+    squeeze at the cutter notch beats the cable with margin; the cable scene builds."""
+    import lobster
+
+    v = lr.ORNATUS
+    p, g = v.params, lr.geometry(v.params)
+    fo = lobster.SikarianLobster.foot_offset(p)
+    span = 2 * (lobster.SikarianLobster.hips(p)["FL"][1] + fo[1]) / 1000 + p["foot_diameter"] / 1000
+    r_in, silt = ls.PIPE["inner_d"] / 2, ls.PIPE["silt"]
+    floor = 2 * math.sqrt(r_in ** 2 - (r_in - silt) ** 2)
+    assert span < floor - 0.04, (span, floor)
+    stand = ls._standing_height(p)
+    mast_top = stand + p["shell_height"] / 2000 + p["mast_height"] / 1000
+    y_mast = p["shell_width"] * 0.2 / 1000
+    roof = (r_in - silt) + math.sqrt(r_in ** 2 - y_mast ** 2)
+    assert mast_top < roof - 0.03, (mast_top, roof)
+    jaw = lr.act.get(v.servo_keys["jaw"])
+    assert jaw.self_locking and jaw.stall_Nm / g["cutter"] >= 1.2 * ls.CABLE["f_cut_N"]
+    sc = ls.Scene("ornatus")
+    assert sc.wire is ls.CABLE and sc.z_rope > 0.19
+    props, welds = ls.rope_props(sc)
+    assert len(props) == 4 and [w.name for w in welds] == [sc.ROPE_WELD]
+    assert sc.cut_y() == pytest.approx(-p["claw_y"] / 1000)
+
+
 @pytest.mark.slow
+@pytest.mark.parametrize("variant", VARIANTS)
 @pytest.mark.parametrize("kind", ["swim", "cut_and_enter", "current"])
-def test_jobs(kind):
-    ep = ls.run(kind)
+def test_jobs(kind, variant):
+    sc = ls.Scene(variant)
+    ep = ls.run(kind, sc)
     assert ep.log["mission_finished"]
     ts = ls.timeseries(ep)
     if kind == "swim":
-        assert ts.z.iloc[-1] < 0.2 and ts.x.iloc[-1] > 2.5 and ts.tilt_deg.iloc[-1] < 5
+        assert ts.z.iloc[-1] < 0.25 and ts.x.iloc[-1] > 2.5 and ts.tilt_deg.iloc[-1] < 5
     elif kind == "cut_and_enter":
         assert ep.log["cut_at"] is not None
-        assert ts.x.iloc[-1] > ls.Scene().x_mouth + 0.8                            # inside the pipe
+        assert ts.x.iloc[-1] > sc.x_mouth + 0.8                                     # inside the pipe
     else:
         st = {r[1]: r[0] for r in ep.log["mission"] if r[2] == "start"}
         free = ts[(ts.t > 0.5) & (ts.t < st["curl the tail over the back"])]
@@ -133,15 +180,16 @@ def test_jobs(kind):
     assert not [e for e in ep.log.get("events", []) if e[1] == "mujoco"]
 
 
-def test_cfd_disk_calibration():
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_cfd_disk_calibration(variant):
     """The tail case's rotor disk (no induction) runs at the rpm that gives the BEMT thrust of the open propeller."""
     import lobster_cfd as cfd
 
     for d in (0.0, 35.0):
-        cal = cfd.disk_calibration(d)
+        cal = cfd.disk_calibration(d, variant=variant)
         assert cal["uncalibrated_thrust_N"] > cal["target_thrust_N"] > 0          # no induction over-predicts
         assert cal["disk_rpm"] < cal["rpm"]
-        assert abs(cfd.disk_thrust_fixed(cal["disk_rpm"], cal["axial_inflow_m_s"]) / cal["target_thrust_N"] - 1) < 1e-3
+        assert abs(cfd.disk_thrust_fixed(cal["disk_rpm"], cal["axial_inflow_m_s"], variant=variant) / cal["target_thrust_N"] - 1) < 1e-3
     c, axis = cfd.disk_geometry(35.0)
     assert abs(np.linalg.norm(axis) - 1) < 1e-9 and axis[0] < 0 and c[1] > 0      # thrust upstream; tail tip to robot right
     assert 1.3 < cfd.duct_gain() < 1.4

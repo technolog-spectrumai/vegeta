@@ -138,24 +138,37 @@ def thrust_line(theta: float, cg=(0.0, 0.0, 0.0), g: dict | None = None, best_ef
 
 
 # ----------------------------------------------------------------------------------------------- the mission
-V_NOMINAL = 0.10        # m/s: the full stride (±stride_deg at period 1.2 s); slower walking shortens the stride
+V_NOMINAL = 0.10        # m/s: Nefri's full stride (±stride_deg at period 1.2 s); slower walking shortens the stride (the
+                        # variant's ``mission["v_nominal"]`` once the Mission is reset on a lab)
 
 
 class Mission:
     """Phases over the Lobster's joints (see the module). ``m.log`` [t, phase, note]; ``m.memory`` what it has seen."""
 
-    def __init__(self, phases: list, *, name: str = "lobster mission", stride_deg: float = 22.0, lift_deg: float = 25.0,
-                 period: float = 1.2):
+    def __init__(self, phases: list, *, name: str = "lobster mission", stride_deg: float | None = None,
+                 lift_deg: float | None = None, period: float | None = None):
         self.phases, self.name = list(phases), name
-        self.stride, self.lift, self.period = math.radians(stride_deg), math.radians(lift_deg), float(period)
+        self._gait_kw = (stride_deg, lift_deg, period)
+        self._set_gait(lr.NEFRI_V)
+
+    def _set_gait(self, variant):
+        """The gait's stride, lift and period: the constructor's values, else the variant's mission tuning."""
+        ms = variant.mission
+        stride_deg, lift_deg, period = self._gait_kw
+        self.stride = math.radians(ms["stride_deg"] if stride_deg is None else stride_deg)
+        self.lift = math.radians(ms["lift_deg"] if lift_deg is None else lift_deg)
+        self.period = float(ms["period"] if period is None else period)
+        self.v_nominal = float(ms["v_nominal"])
 
     # ---- ChironLab controller protocol
     def reset(self, lab, seed=None):
         self.lab = lab
         self.g = lab.robot.lobster
+        self.variant = getattr(lab.robot, "variant", lr.NEFRI_V)
+        self._set_gait(self.variant)
         self.idx = {n: i for i, n in enumerate(lab.joint_names)}
-        self.kp_jaw = lr.GAINS["jaw"][0]
-        self.stall_jaw = lr.act.get(lr.SERVO_KEYS["jaw"]).stall_Nm
+        self.kp_jaw = self.variant.gains["jaw"][0]
+        self.stall_jaw = lr.act.get(self.variant.servo_keys["jaw"]).stall_Nm
         self.q = dict(lab.robot.nominal_qpos)
         self.claw = {s: np.array([self.q[f"{s}_shoulder_yaw"], self.q[f"{s}_shoulder"], self.q[f"{s}_elbow"], self.q[f"{s}_wrist"]])
                      for s in lr.CLAWS}
@@ -228,7 +241,7 @@ class Mission:
             u = ph / 0.5 if swing else (ph - 0.5) / 0.5
             for leg in tripod:
                 side = lr.LEGS[leg][1]
-                A = self.stride * min(1.0, abs(v) / V_NOMINAL) * float(np.clip(1.0 - side * turn, 0.2, 1.8))   # turn > 0: shorter left strides
+                A = self.stride * min(1.0, abs(v) / self.v_nominal) * float(np.clip(1.0 - side * turn, 0.2, 1.8))   # turn > 0: shorter left strides
                 if swing:
                     yaw = direction * A * (2 * smooth(u) - 1)
                     lift = self.lift * math.sin(math.pi * u)
@@ -314,12 +327,20 @@ def walk_to(x_stop, v=0.10, k_heading=1.5, y_line=0.0, k_lat=2.0):
     return update
 
 
-def creep_to(x_stop, v=0.04, tol=0.012, k_heading=1.5):
-    """Short steps forward or back (|v|, the tripod gait) until the hull is within ``tol`` of ``x_stop``."""
+def creep_to(x_stop, v=0.04, tol=0.012, k_heading=1.5, blocked_after=1.5, blocked_mm=3.0):
+    """Short steps forward or back (|v|, the tripod gait) until the hull is within ``tol`` of ``x_stop`` — or until
+    it is **blocked**: within 5 cm of the stop but not advancing ``blocked_mm`` in ``blocked_after`` s (the body
+    pressed against the rope it is creeping onto: the legs cannot push it further, and need not)."""
     def update(m, obs, tau):
         x = float(obs.base_pos[0])
         dx = x_stop - x
-        if m.state.get("stopping") or abs(dx) < tol:
+        hist = m.state.setdefault("creep_x", [])
+        hist.append((tau, x))
+        past = [xx for tt, xx in hist if tt <= tau - blocked_after]
+        blocked = bool(past) and abs(dx) < 0.05 and abs(x - past[-1]) < blocked_mm / 1000
+        if blocked and not m.state.get("stopping"):
+            m.log.append([float(obs.t), m.phases[m.i].name, f"blocked {dx * 1000:.0f} mm short: stop"])
+        if m.state.get("stopping") or abs(dx) < tol or blocked:
             m.state["stopping"] = True
             m.walk = None
             return m.gait_phase == 0.0

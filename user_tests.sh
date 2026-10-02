@@ -18,6 +18,8 @@
 #   onager-sweeper    Onager Sweeper (street cleaner): tests, then scenarios/onager_sweeper_street.py (1 movie; ~5 min)
 #   lobster           Sikarian Lobster Nefri (underwater): chiron water + lobster tests, then
 #                     scenarios/sikarian_lobster.py (swim, cut_and_enter, current: 3 movies; ~15 min)
+#   lobster-ornatus   Sikarian Lobster Ornatus (15 kg, the cable): the lobster tests, then
+#                     scenarios/sikarian_lobster.py --variant ornatus (3 movies; ~15 min)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -31,7 +33,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
     -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -149,6 +151,13 @@ for s in "${SECTIONS[@]}"; do
       hdr "Sikarian Lobster Nefri missions in MuJoCo (3 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/sikarian_lobster.py" 2>&1 | grep -v "^\s*$" | tail -25 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    lobster-ornatus)
+      hdr "Sikarian Lobster Ornatus: Lobster tests (both variants; the missions run below)"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_sikarian_lobster.py -m "not slow" || status=1
+      hdr "Sikarian Lobster Ornatus missions in MuJoCo (3 movies: swim, cut the cable and enter, current)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/sikarian_lobster.py" --variant ornatus 2>&1 | grep -v "^\s*$" | tail -25 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
