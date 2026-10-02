@@ -7,7 +7,7 @@ from typing import Iterable
 import numpy as np
 
 from ._process import run_command
-from .loads import Acceleration, Displacement, FixedSupport, Force, PointMass, Pressure
+from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure
 from .mesh import MeshData, consistent_nodal_forces, element_faces
 
 
@@ -88,6 +88,12 @@ def write_inp(path: Path, mesh: MeshData, material, supports, loads, masses=(), 
             mag = float(np.linalg.norm(vec))
             d = vec / mag
             dloads.append(f"EALL, GRAV, {mag:.12g}, {d[0]:.12g}, {d[1]:.12g}, {d[2]:.12g}")
+        elif isinstance(load, Centrifugal):
+            a = np.array(load.axis, dtype=float)
+            a /= np.linalg.norm(a)
+            p0 = load.point
+            dloads.append(f"EALL, CENTRIF, {load.omega ** 2:.12g}, {p0[0]:.12g}, {p0[1]:.12g}, {p0[2]:.12g}, "
+                          f"{a[0]:.12g}, {a[1]:.12g}, {a[2]:.12g}")
     if cloads:
         lines += ["*CLOAD"] + cloads
     if dloads:

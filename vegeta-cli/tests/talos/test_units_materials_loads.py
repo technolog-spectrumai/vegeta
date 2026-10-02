@@ -1,7 +1,7 @@
 import pytest
 
 from vegeta import talos
-from vegeta.talos import (Acceleration, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
+from vegeta.talos import (Acceleration, Centrifugal, Displacement, FixedSupport, Force, Material, MeshSettings, Pressure,
                    StructuralModel, SurfacesOnPlane)
 
 STEEL = Material("steel", 210000, 0.3)
@@ -29,6 +29,11 @@ def test_loads_reject_empty_values():
         Acceleration()
     with pytest.raises(ValueError):
         Displacement("a")
+    with pytest.raises(ValueError):
+        Centrifugal(0.0)
+    with pytest.raises(ValueError):
+        Centrifugal(1000.0, axis=(0, 0, 0))
+    assert Centrifugal(60.0).omega == pytest.approx(2 * 3.141592653589793)
     assert Displacement("a", uy=0.0).dofs() == [(2, 0.0)]
 
 
@@ -52,6 +57,8 @@ def test_model_validation_never_guesses():
         _model(loads=[Force("nowhere", fx=1)])
     with pytest.raises(ValueError, match="density"):
         _model(loads=[Acceleration(az=-9810)])
+    with pytest.raises(ValueError, match="density"):
+        _model(loads=[Centrifugal(5000.0)])
     with pytest.raises(ValueError, match="unique"):
         _model(regions=[SurfacesOnPlane("a", "x", 0), SurfacesOnPlane("A", "x", 1)], supports=[FixedSupport("a")],
                loads=[Force("a", fx=1)])

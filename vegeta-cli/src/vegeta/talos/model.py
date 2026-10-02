@@ -15,7 +15,7 @@ from ._process import describe_failure, utc_now
 from ._progress import resolve_progress
 from .ccx import ccx_version, nset, run_ccx, write_inp
 from .frd import read_dat_eigen, read_dat_reactions, read_frd
-from .loads import Acceleration, Displacement, FixedSupport, Force, PointMass, Pressure
+from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure
 from .materials import Material
 from .mesh import MeshSettings, generate_mesh, read_mesh
 from .regions import Surfaces, SurfacesInBox, SurfacesOnPlane
@@ -48,7 +48,7 @@ class StructuralModel:
     material: Material
     regions: Sequence[Surfaces | SurfacesInBox | SurfacesOnPlane]
     supports: Sequence[FixedSupport | Displacement]
-    loads: Sequence[Force | Pressure | Acceleration]
+    loads: Sequence[Force | Pressure | Acceleration | Centrifugal]
     mesh_settings: MeshSettings
     name: str = "talos_model"
     notes: str = ""
@@ -74,8 +74,8 @@ class StructuralModel:
         for item in list(self.supports) + [l for l in self.loads if hasattr(l, "region")] + list(self.masses):
             if item.region not in names:
                 raise ValueError(f"{type(item).__name__} refers to unknown region {item.region!r}; defined: {names}")
-        if any(isinstance(l, Acceleration) for l in self.loads) and self.material.density is None:
-            raise ValueError("an Acceleration load needs material density; none was given")
+        if any(isinstance(l, (Acceleration, Centrifugal)) for l in self.loads) and self.material.density is None:
+            raise ValueError("an Acceleration or Centrifugal load needs material density; none was given")
         if not isinstance(self.mesh_settings, MeshSettings):
             raise ValueError("mesh_settings must be a talos.MeshSettings")
 
@@ -330,7 +330,7 @@ class StructuralModel:
             l.region for l in self.loads
             if hasattr(l, "region") and supported.intersection(int(n) for n in mesh.region_nodes.get(l.region, []))
         ]
-        if loaded_on_support or any(isinstance(l, Acceleration) for l in self.loads):
+        if loaded_on_support or any(isinstance(l, (Acceleration, Centrifugal)) for l in self.loads):
             res.messages.append(
                 "reactions are CalculiX RF values (internal nodal forces); load applied directly on supported "
                 "nodes (body-force share of supported nodes, or loads on regions "
