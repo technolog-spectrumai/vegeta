@@ -117,7 +117,14 @@ actuators under Chiron's servo model (a stand-up from the crouch, currents and t
 ChironLab a patrol on gravel with a speed bump where a hub motor fails and a wheel seizes, two responses compared —
 drag vs the three-wheel limp — with a movie each. `designs/onager_robot.py`, `onager_controller.py` and
 `onager_scenario.py` are the Sentinel in ChironLab; `scenarios/onager_patrol.py` (or `./user_tests.sh onager`)
-re-runs the patrol and writes the movies.
+re-runs the patrol and writes the movies. `21_onager_atlas` (`designs/onager_atlas.py`) is the forklift: the Sentinel
+chassis in a logistics stance with a tilting mast, lift carriage and forks (load chart and tipping, the stance's
+knee torques, lift and tilt screws, fork FEA and mast modes, a quarter car with the pallet, and in MuJoCo a pallet
+job — approach, lift, carry 8 m, set down — with a movie). `22_onager_manus` (`designs/onager_manus.py`) has two
+manipulator arms with pincers (workspace and joint torques, the cutting envelope, why the jaws have hooked tips,
+jaw and arm FEA, and in MuJoCo a track blocked by a wire it cuts — the wire parts only when both jaws squeeze it
+with the cutting force — and a log it lifts off the track, with a movie). `scenarios/onager_atlas_pallet.py` and
+`scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-atlas` / `onager-manus`) re-run them.
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 

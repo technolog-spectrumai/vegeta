@@ -94,3 +94,21 @@ three motors, the braked tyre skids) and `onager_patrol_limp.mp4` (the three-whe
 forward on the three good legs, the seized wheel lifts 100 mm); `onager_patrol.json` has the per-phase tables
 (speed, heading, tilt, corner loads, wheel torques and power, the seized wheel's drag). The scenario is
 `notebooks/designs/onager_scenario.py`, the same one notebook 20 §7 runs.
+
+## Onager Atlas moves a pallet (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_atlas_pallet.py` (or `./user_tests.sh onager-atlas`): the forklift Onager
+(`notebooks/designs/onager_atlas_robot.py`, 726 kg, four-quadrant drives) picks a Euro pallet with a 175 kg crate
+off a gravel yard (forks at travel height, stand-off, lower to the openings, creep in, lift, tilt back), carries it
+8 m at 1 m/s, sets it down and backs out. The pallet is a Chiron prop; whether it rides on the forks is contact
+physics. Writes `onager_atlas_pallet.mp4` and `onager_atlas_pallet.json` (the phase table: pallet height and tilt,
+lift force, tilt torque, front knees against their stall, the lightest rear wheel).
+
+## Onager Manus clears a blocked track (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-manus`): the two-arm Onager
+(`notebooks/designs/onager_manus_robot.py`, 458 kg) stops at a fence wire across the track (Ø 3.15 mm, 1200 MPa:
+7.5 kN to cut), puts its right pincer's cutter notch on it and closes — a scene hook releases the wire's weld only
+when both jaws squeeze it with the cutting force — drives through, crouches at a 14 kg log, takes it with the left
+pincer's hooked jaws, lifts it, swings it over the side, puts it down and drives on. Writes
+`onager_manus_tasks.mp4` (the wire drawn 4× thicker) and `onager_manus_tasks.json`.

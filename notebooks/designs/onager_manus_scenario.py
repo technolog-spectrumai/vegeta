@@ -103,7 +103,10 @@ def props(scene: Scene) -> tuple:
                                    joints=[ch.Joint(f"wire_{side}_hinge", axis=(1, 0, 0), damping=0.02),
                                            ch.Joint(f"wire_{side}_swing", axis=(0, 0, 1), damping=0.02)],
                                    geoms=[ch.Geom(f"wire_{side}_g", "capsule", (r,), fromto=(0, 0, 0, 0, y1 - y0, 0),
-                                                  mass=m, friction=(0.3, 0.005, 0.0001), rgba=(0.75, 0.75, 0.78, 1.0))]),
+                                                  mass=m, friction=(0.3, 0.005, 0.0001), rgba=(0.75, 0.75, 0.78, 1.0)),
+                                          # drawn 4× thicker in movies (visual only: it never collides)
+                                          ch.Geom(f"wire_{side}_vis", "capsule", (4 * r,), fromto=(0, 0, 0, 0, y1 - y0, 0),
+                                                  role="visual", rgba=(0.85, 0.85, 0.9, 1.0))]),
                            solref=WIRE["contact_solref"], solimp=WIRE["contact_solimp"]))
     c = scene.log_center()
     q = (math.cos(math.pi / 4), math.sin(math.pi / 4), 0.0, 0.0)          # cylinder axis z -> y: across the track

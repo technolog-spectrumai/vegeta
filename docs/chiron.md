@@ -83,6 +83,15 @@ ep.outcome, ep.log["com"], ep.save("trial.npz"), ep.to_result()
   options, versions); `save`/`load` (.npz), `to_result()` (kind `chiron.episode`). Runs are deterministic:
   the same trial gives a bitwise-identical log; logging on or off does not change the trajectory.
 
+## Four-quadrant drives (`Servo.four_quadrant`)
+
+By default a servo's torque follows the DC-motor line in all four quadrants: zero at and beyond the no-load speed,
+even when the joint is being backdriven. `Servo(..., four_quadrant=True)` gives a braking drive (torque opposing
+the motion) its full stall torque at any speed — a regenerating motor, a braked or self-locking screw. The Onager
+Atlas needs it: without it, a mast jolted past its screw's no-load speed loses all torque and falls. The hot loop
+treats a four-quadrant joint clipped while braking as a constant torque (integrated explicitly). Off by default:
+the Cleopatra and Persephone studies keep their law.
+
 ## Scenery: props, welds, hooks (`Prop`, `Weld`, `ChironLab.add_hook`)
 
 Things the robot works on that are not the robot — a wire across the road, a log to lift, a post:
