@@ -36,7 +36,11 @@ hand-over, clearances, holds), `simulate` → `Episode` (phase table, events, en
 
 `air_propeller.py` (`PropPod`, notebook 25, branch `dev_crazy_prop`) is a propeller's motor pod with its pylon in the CFD frame of
 Aeromant's rotor templates (axis +x through the origin, the pylon up along +y), placed for `layout` = `tractor` (pod behind the
-disc) or `pusher` (pod ahead); `outline` gives it as polygons for the particle movies, `pylon_wake` the wake the blades cross as
-a Boreas `WakeField` (Silverstein's airfoil wake behind a pusher's pylon, a Rankine leading-edge blockage ahead of a tractor's),
-`synthesize` / `write_wav` a propeller's tones and broadband as sound files on one common scale.
+disc) or `pusher` (pod ahead); `outline` gives it as polygons for the particle movies, `pylon_wake` the pylon's wake alone as
+a Boreas `WakeField` (Silverstein's airfoil wake behind a pusher's pylon), `installation_wake` the whole inflow the blades work
+in — the potential flow of the closed bodies (pod + propeller hub as slender-body line sources, the pylon as a closed source
+sheet) for both layouts, plus the viscous wakes behind them (the pusher) — and `installation_drag` the drag the running
+propeller adds to pod and pylon (the thrust deduction: the pressure field of a loaded actuator disc from the blade-element
+thrust distribution, exact disc solid angles in `disc_solid_angle`, on the pod's profile and the pylon's thickness, plus the
+scrubbing of the faster air); `synthesize` / `write_wav` a propeller's tones and broadband as sound files on one common scale.
 
