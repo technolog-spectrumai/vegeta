@@ -119,8 +119,12 @@ def pylon_wake(p, radius_mm: float, *, cd: float = 0.012, r_frac=(0.12, 0.2, 0.3
     """The axial wake fraction ``w(r/R, phi)`` the blades cross (a Boreas ``WakeField``; phi from +y towards +z, so the
     pylon is at phi = 0), from the pylon alone (the pod's own wake is axisymmetric and adds no harmonics).
 
-    - pusher: Silverstein's airfoil wake at ``x = pylon_gap`` behind the trailing edge — centreline deficit
-      ``2.42 sqrt(cd) / (x/c + 0.3)``, half width (to half deficit) ``0.68 c sqrt(cd (x/c + 0.15))``, Gaussian across;
+    - pusher: Silverstein, Katzoff & Bullivant's airfoil wake (NACA Rep. 651) at ``x = pylon_gap`` behind the trailing
+      edge. Their fit gives the total-head loss on the centreline, ``H0/q = 2.42 sqrt(cd) / (x/c + 0.3)``, and the half
+      width to the wake's edge of a cos^2 profile, ``0.68 c sqrt(cd (x/c + 0.15))``; as a velocity deficit (``u/V ~ H/(2q)``)
+      that is ``1.21 sqrt(cd) / (x/c + 0.3)`` on the centreline, Gaussian across with half width at half deficit
+      ``0.34 c sqrt(cd (x/c + 0.15))`` (its momentum deficit is close to the section's ``cd c / 2``; the same form as
+      ``boreas.fan_noise.rotor_wake_harmonics``);
     - tractor: the blockage of the pylon's leading edge ``pylon_gap`` ahead of it, as a 2-D Rankine half-body of the
       pylon's thickness: ``u/U = -h / (pi d)`` on the stagnation line (h the half thickness, d the distance), falling
       off as ``d^2 / (d^2 + s^2)`` across (s the lateral distance).
@@ -141,8 +145,8 @@ def pylon_wake(p, radius_mm: float, *, cd: float = 0.012, r_frac=(0.12, 0.2, 0.3
         s = rr * np.radians((phi + 180.0) % 360.0 - 180.0)          # lateral distance from the pylon's plane, mm
         if p["layout"] == "pusher":
             xc = gap / c
-            w0 = 2.42 * math.sqrt(cd) / (xc + 0.3)
-            b = 0.68 * c * math.sqrt(cd * (xc + 0.15))              # half width at half deficit
+            w0 = 1.21 * math.sqrt(cd) / (xc + 0.3)                  # velocity deficit: half the total-head loss H0/q
+            b = 0.34 * c * math.sqrt(cd * (xc + 0.15))              # half width at half deficit (the cos^2 edge / 2)
             w[i] = w0 * np.exp(-math.log(2) * (s / b) ** 2)
         else:
             h = p["pylon_thickness"] * c / 2

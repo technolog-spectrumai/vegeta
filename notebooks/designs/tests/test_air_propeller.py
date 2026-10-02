@@ -35,8 +35,11 @@ def test_pusher_wake_is_deep_and_narrow_tractor_blockage_is_weak():
     R = 127.0
     pw, tw = ap.pylon_wake({"layout": "pusher"}, R), ap.pylon_wake({"layout": "tractor"}, R)
     xc = 64 / 90
-    assert pw(0.7, 0.0) == pytest.approx(2.42 * math.sqrt(0.012) / (xc + 0.3), rel=1e-3)
-    assert pw(0.7, 30.0) < 1e-3 and pw(0.12, 0.0) == 0.0               # narrow; nothing inside the pod
+    assert pw(0.7, 0.0) == pytest.approx(1.21 * math.sqrt(0.012) / (xc + 0.3), rel=1e-3)
+    b = 0.34 * 90 * math.sqrt(0.012 * (xc + 0.15))                          # momentum deficit ~ the section's drag, cd c / 2
+    w0 = 1.21 * math.sqrt(0.012) / (xc + 0.3)
+    assert 0.8 < w0 * b * math.sqrt(math.pi / math.log(2)) / (0.012 * 90 / 2) < 2.0
+    assert pw(0.7, 15.0) < 1e-3 and pw(0.12, 0.0) == 0.0               # narrow; nothing inside the pod
     assert tw(0.7, 0.0) == pytest.approx(0.12 * 90 / 2 / (math.pi * 64), rel=1e-3)
     hp, ht = pw.harmonics(0.7, 10), tw.harmonics(0.7, 10)
     assert hp[9] > 0.8 * hp[0] and ht[9] < 0.05 * ht[0]                 # a narrow wake keeps its high orders
@@ -87,11 +90,11 @@ def test_bodies_are_closed_and_the_wake_follows_the_layout():
     t = ap.installation_wake(dict(POD, layout="tractor"), 127.0, 20.0)
     u = ap.installation_wake(dict(POD, layout="pusher"), 127.0, 20.0)
     assert 0.0 < t.mean(0.7) < 0.01 and t(0.09, 90.0) > t(0.7, 90.0) > 0       # blockage ahead of the bodies, strongest near the hub
-    assert u(0.7, 0.0) > 0.2 and u.mean(0.7) > t.mean(0.7)                       # the pylon's viscous lane behind a pusher
+    assert u(0.7, 0.0) > 0.1 and u.mean(0.7) > t.mean(0.7)                       # the pylon's viscous lane behind a pusher
     half_body = ap.pylon_wake(dict(POD, layout="tractor"), 127.0)
     assert t(0.7, 0.0) - t(0.7, 180.0) < 0.6 * half_body(0.7, 0.0)               # a closed strut blocks less than a half-body
     hp, hu = u.harmonics(0.7, 10), ap.pylon_wake(dict(POD, layout="pusher"), 127.0).harmonics(0.7, 10)
-    assert np.allclose(hp[4:], hu[4:], rtol=0.05) and 1.0 < hp[0] / hu[0] < 1.5  # high orders: the viscous lane; low ones: + the bodies
+    assert np.allclose(hp[6:], hu[6:], rtol=0.05) and 1.0 < hp[0] / hu[0] < 2.5  # high orders: the viscous lane; low ones: + the bodies
     far = ap.potential_wake_w(ap._defaults(dict(POD, layout="tractor", gap=2000.0, pylon_gap=2000.0)), np.array([0.09]), np.array([90.0]))
     assert abs(float(far[0, 0])) < 1e-3
 
