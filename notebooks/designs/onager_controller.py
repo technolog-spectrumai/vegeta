@@ -38,12 +38,6 @@ The controller never reads the terrain; the hull level follows from the servo co
 from __future__ import annotations
 
 import math
-import sys
-from pathlib import Path
-
-_SHARED = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")   # the shared catalogue (actuators.py) and gait.py
-if _SHARED not in sys.path:
-    sys.path.append(_SHARED)
 from dataclasses import dataclass, field
 
 import numpy as np

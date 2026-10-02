@@ -12,7 +12,7 @@
 #   cleopatra         the FULL Cleopatra benchmark (6440 runs; several hours; resumable)
 #   persephone        the FULL Persephone benchmark (1140 runs; long; resumable)
 #   apheloria-movies  scenarios/apheloria_pack.py: Apheloria packs into its ball and unpacks (2 movies)
-#   onager            Onager Sentinel (onager/): the ChironLab tests, then onager/scenarios/onager_patrol.py (2 movies; ~5 min)
+#   onager            Onager Sentinel: the ChironLab tests, then scenarios/onager_patrol.py (2 movies; ~5 min)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -73,10 +73,8 @@ sec_unit() {
   hdr "unit tests"
   echo "  vegeta-cli: chiron, cli, chronos"
   timed pytest_summary "$ROOT/vegeta-cli" tests/chiron tests/cli tests/chronos || status=1
-  echo "  notebooks/designs (Cleopatra and the robot dog in ChironLab, plot helpers)"
+  echo "  notebooks/designs (Cleopatra, the robot dog and the Onager Sentinel in ChironLab, plot helpers)"
   timed pytest_summary "$ROOT/notebooks/designs" tests || status=1
-  echo "  onager/designs (the Onager Sentinel in ChironLab)"
-  timed pytest_summary "$ROOT/onager/designs" tests || status=1
 }
 
 sec_physics() {
@@ -125,11 +123,11 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     onager)
       hdr "Onager Sentinel: ChironLab tests"
-      timed pytest_summary "$ROOT/onager/designs" tests || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_onager_chiron.py || status=1
       hdr "Onager Sentinel on patrol: FL motor off, RR wheel seized — drag vs the three-wheel limp (MuJoCo, 2 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
-      t0=$SECONDS; $XV "$PY" "$ROOT/onager/scenarios/onager_patrol.py" 2>&1 | grep -v "^\s*$" | tail -40 | sed 's/^/  /'
-      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in onager/scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/onager_patrol.py" 2>&1 | grep -v "^\s*$" | tail -40 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

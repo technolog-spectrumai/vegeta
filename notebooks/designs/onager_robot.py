@@ -1,7 +1,7 @@
-"""Onager Sentinel SX-1 (the Onager project, ``onager/01_onager_sentinel.ipynb``) as a Chiron robot (``vegeta.chiron``): a 380 kg wheel-leg hybrid built from
+"""Onager Sentinel SX-1 (notebook 20) as a Chiron robot (``vegeta.chiron``): a 380 kg wheel-leg hybrid built from
 Chiron's building blocks — hull, four two-link legs (shoulder pitch, knee pitch) each carrying a hub-motor wheel.
 
-Every number comes from the design (``onager.py`` parameters, mm and degrees), from the Sentinel notebook's mass budget
+Every number comes from the design (``onager.py`` parameters, mm and degrees), from notebook 20's mass budget
 (CAD areas and volumes × material densities, plus the listed parts) or from the shared actuator catalogue
 (``actuators.py``: ``cycloidal 800 Nm, brake`` at the leg joints, ``hub motor 3 kW`` in the wheels). Inputs the
 notebook does not fix are named in ``ASSUMPTIONS`` with the reason for each value. SI at the Chiron boundary.
@@ -26,12 +26,6 @@ apply to them unchanged.
 from __future__ import annotations
 
 import math
-import sys
-from pathlib import Path
-
-_SHARED = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")   # the shared catalogue (actuators.py) and gait.py
-if _SHARED not in sys.path:
-    sys.path.append(_SHARED)
 
 from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
@@ -56,7 +50,7 @@ DESIGN = {
     "sensor_head": 150.0,
 }
 
-#: CAD measurements of the default design (Dedalus/CadQuery, the Sentinel notebook §1; mm², mm³, mm). ``cad_numbers(
+#: CAD measurements of the default design (Dedalus/CadQuery, notebook 20 §1; mm², mm³, mm). ``cad_numbers(
 #: recompute=True)`` rebuilds them. Centres of mass are in each part's own frame.
 CAD = {
     "hull_surface_area": 6678000.0,
@@ -68,7 +62,7 @@ CAD = {
     "wheel_volume": 45130000.0,
 }
 
-#: Materials and the listed parts of the Sentinel notebook §1 (kg; densities in kg/mm³).
+#: Materials and the listed parts of notebook 20 §1 (kg; densities in kg/mm³).
 MATERIALS = {"Al 5083 armour plate": 2.66e-6, "Al 7075-T6 legs": 2.81e-6}
 SHELL_T_MM = 3.0                                     # armour shell thickness over a welded frame (the CAD hull is solid)
 PARTS_KG = {
@@ -79,8 +73,8 @@ PARTS_KG = {
     "computer, radios, relay, IMU": 12.0,
     "wiring, connectors, cooling": 15.0,
 }
-LEG_ACTUATOR = "cycloidal 800 Nm, brake"             # the Sentinel notebook §3: shoulders and knees (8×)
-WHEEL_MOTOR = "hub motor 3 kW"                       # the Sentinel notebook §2: one per wheel (4×)
+LEG_ACTUATOR = "cycloidal 800 Nm, brake"             # notebook 20 §3: shoulders and knees (8×)
+WHEEL_MOTOR = "hub motor 3 kW"                       # notebook 20 §2: one per wheel (4×)
 C_RR = 0.03                                          # rolling-resistance coefficient, knobbly tyre on gravel (input)
 
 #: Inputs notebook 20 does not fix, with the reason for each value.
@@ -96,7 +90,7 @@ ASSUMPTIONS = {
                         "tyre contact patches (x = axle_x, 108 mm ahead of the hull centre: the lower legs slant "
                         "forward) but no further forward than BATTERY_X_MAX = 0.6 m (the front compartment): the "
                         "knee modules sit 0.33 m behind the shoulders, so the CG ends ~50 mm behind the patch "
-                        "centre and the rear pair carries ~53 % (the Sentinel notebook §1)",
+                        "centre and the rear pair carries ~53 % (notebook 20 §1)",
     "sensor_positions": "turret and mast head masses at their CAD centres (the mast head 1.9 m up)",
     "shell_inertia": "the 3 mm armour shell is given the inertia of a solid box of the hull's size with its mass "
                      "(a hollow shell's would be ~1.6× larger)",
@@ -105,7 +99,7 @@ ASSUMPTIONS = {
     "friction": "tyres μ = 0.8 (knobbly rubber on dry gravel/concrete, input); hull μ = 0.5",
     "servo_gains": "leg joints kp = 1600 N·m/rad, kd = 120 N·m·s/rad: the knee's vertical rate at the wheel is "
                    "kp / (L2 sin a2)² ≈ 8 kN/m, a 1.5 Hz heave on the 95 kg corner (an active suspension, "
-                   "the Sentinel notebook §5); ζ ≈ 0.45. Wheels kd = 30 N·m·s/rad: a 10 rad/s speed error asks for 300 N·m, "
+                   "notebook 20 §5); ζ ≈ 0.45. Wheels kd = 30 N·m·s/rad: a 10 rad/s speed error asks for 300 N·m, "
                    "more than the stall torque — the hub motor runs on its torque–speed line until near the target",
     "rolling_resistance": "joint friction loss C_RR·(W/4)·r on each wheel hinge: 0.03 × 955 N × 0.28 m = 8 N·m",
 }
@@ -343,7 +337,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
                   nominal_hip_height=g["shoulder_height"],
                   notes=f"Onager Sentinel SX-1: hull + 4 wheel-legs; {LEG_ACTUATOR} ×8, {WHEEL_MOTOR} ×4; "
                         f"wheel hinge friction loss {tau_rr:.1f} N·m (C_RR {rolling_resistance})",
-                  sources={"geometry": "designs/onager.py", "masses": "the Sentinel notebook §1 mass budget",
+                  sources={"geometry": "designs/onager.py", "masses": "notebook 20 §1 mass budget",
                            "actuators": "designs/actuators.py", "assumptions": "onager_robot.ASSUMPTIONS"})
     robot.validate()
     robot.params = p

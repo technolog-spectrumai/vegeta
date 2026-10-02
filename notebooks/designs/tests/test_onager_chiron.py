@@ -1,7 +1,7 @@
-"""Onager Sentinel SX-1 (the Onager project, ``onager/01_onager_sentinel.ipynb``) in ChironLab: design/CAD consistency, mass budget, standing, the flat drive,
+"""Onager Sentinel SX-1 (notebook 20) in ChironLab: design/CAD consistency, mass budget, standing, the flat drive,
 the heading hold, the partial failures and the three-wheel limp, the patrol scenario's bookkeeping.
 
-Run: cd /home/user/vegeta && python3 -m pytest -q onager/designs/tests/test_onager_chiron.py
+Run: cd /home/user/vegeta && python3 -m pytest -q notebooks/designs/tests/test_onager_chiron.py
 """
 import math
 

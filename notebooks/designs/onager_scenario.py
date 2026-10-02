@@ -1,4 +1,4 @@
-"""The Onager Sentinel's patrol scenario in ChironLab (the Sentinel notebook §7, ``onager/scenarios/onager_patrol.py``): a gravel road
+"""The Onager Sentinel's patrol scenario in ChironLab (notebook 20 §7, ``scenarios/onager_patrol.py``): a gravel road
 with a speed bump at 3 m/s (11 km/h), then two partial failures of the drive and two responses to compare.
 
 * **road** — ISO-8608-like rough gravel (RMS 15 mm, correlation 0.3 m, from x = 2 m) with a 120 mm speed bump
