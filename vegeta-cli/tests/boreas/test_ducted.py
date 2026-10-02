@@ -65,25 +65,73 @@ def test_thrust_rises_with_rpm_and_rpm_for_thrust_inverts_solve():
     op = ducted.solve(FAN, SECTION, 23000.0, 10.0)
     back = ducted.rpm_for_thrust(FAN, SECTION, op.thrust, 10.0)
     assert back.rpm == pytest.approx(23000.0, rel=1e-3) and back.thrust == pytest.approx(op.thrust, rel=1e-3)
-    with pytest.raises(ValueError, match="not reachable"):
+    with pytest.raises(ValueError, match="not reachable below"):
         ducted.rpm_for_thrust(FAN, SECTION, 500.0, rpm_max=30000.0)
+    # below the thrust at the bottom of the search (100 rpm): raise instead of returning the 100 rpm point
+    with pytest.raises(ValueError, match="not reachable above"):
+        ducted.rpm_for_thrust(FAN, SECTION, -5.0, 20.0)               # more drag than the stopped fan windmills with
+    with pytest.raises(ValueError, match="not reachable above"):
+        ducted.rpm_for_thrust(FAN, SECTION, 1e-6)                     # static ~0 N: only at ~0 rpm
+    drag = ducted.rpm_for_thrust(FAN, SECTION, -0.1, 20.0)            # a reachable windmilling drag is found
+    assert drag.converged and drag.thrust == pytest.approx(-0.1, rel=1e-3) and 100 < drag.rpm < 23000
     slow = ducted.solve(FAN, SECTION, 2000.0, 30.0)                  # windmilling: negative thrust, no crash
     assert slow.converged and slow.thrust < 0 and slow.exit_velocity < 30.0 and slow.efficiency <= 0.0
+
+
+def loss_powers(fan: ducted.DuctedFan, af: boreas.Airfoil, op: ducted.DuctedPoint) -> dict:
+    """Shaft power split into the jet's kinetic-energy rise and each loss, recomputed from the radial arrays."""
+    r, chord, _, dr = fan.rotor.stations(len(op.r))
+    omega = op.rpm * 2 * math.pi / 60
+    vf, rho, B = op.fan_velocity, op.rho, fan.rotor.blades
+    wt = omega * r - 0.5 * op.c_theta
+    W2 = vf**2 + wt**2
+    _, cd = af.coefficients(np.radians(op.alpha_deg))
+    Q = fan.fan_area * vf                                                   # volume flow
+
+    def mean(x):                                                            # area average over the annulus
+        return float(np.sum(x * r * dr) / np.sum(r * dr))
+
+    k_swirl = fan.stator_loss if fan.stator_vanes > 0 else 1.0
+    return {"jet": op.thrust * (op.exit_velocity + op.airspeed) / 2,
+            "duct": Q * fan.duct_loss * 0.5 * rho * vf**2,
+            "profile": Q * mean(B * 0.5 * rho * W2 * chord * cd * np.sqrt(W2) / (2 * math.pi * r * vf)),
+            "swirl": Q * mean(k_swirl * 0.5 * rho * op.c_theta**2),
+            "tip": 2 * fan.tip_clearance_m / fan.blade_height * op.power}
 
 
 def test_90mm_edf_of_notebook_25():
     static = ducted.rpm_for_thrust(FAN, SECTION, 22.0)
     assert static.converged and 15000 < static.rpm < 45000 and static.tip_mach < 0.5
-    # with the default (clean) losses the fan reaches ~80 % of the ideal duct, sqrt(2 sigma) = 1.34
-    assert 0.4 < static.figure_of_merit < math.sqrt(2 * FAN.exit_area_ratio)
-    # a hobby-grade unit: sharp static inlet, struts, stator profile and tail cone lumped into duct_loss, 0.9 mm gap
-    hobby = ducted.rpm_for_thrust(replace(FAN, duct_loss=0.25, tip_clearance_m=0.0009), SECTION, 22.0)
-    assert 15000 < hobby.rpm < 45000 and 0.4 < hobby.figure_of_merit < 1.0
+    # the losses add up to the shaft power exactly: P = T (V_exit + V)/2 + duct + profile + swirl + tip
+    parts = loss_powers(FAN, SECTION, static)
+    assert sum(parts.values()) == pytest.approx(static.power, rel=1e-6)
+    ideal = 0.5 * 22.0**1.5 / math.sqrt(RHO * FAN.exit_area_ratio * FAN.fan_area)  # the ideal duct at 22 N
+    assert parts["jet"] == pytest.approx(ideal, rel=1e-3)
+    assert parts["profile"] > parts["tip"] > parts["duct"] > parts["swirl"] > 0    # ~85, 49, 34, 11 W
+    # the default losses describe a clean unit: ~26 % above the ideal duct, FM ~1.07 of sqrt(2 sigma) = 1.34;
+    # the band catches a loss that goes missing or doubles
+    assert 1.0 < static.figure_of_merit < 1.12 and 1.2 < static.power / ideal < 1.33
+    # a hobby-grade unit per the context (0.9 mm gap; sharp static inlet, struts, stator profile and tail cone
+    # lumped into duct_loss): the spec's realism bound 0.4 < FM < 1.0, and inside the 0.75-1.0 of catalogue claims
+    hobby = ducted.rpm_for_thrust(replace(FAN, duct_loss=0.4, tip_clearance_m=0.0009), SECTION, 22.0)
+    assert hobby.converged and 15000 < hobby.rpm < 45000 and 0.75 < hobby.figure_of_merit < 0.9
     cruise = ducted.rpm_for_thrust(FAN, SECTION, 4.64, 20.0)
     assert cruise.converged and 0 < cruise.efficiency < 2 * 20.0 / (20.0 + cruise.exit_velocity)
     d = cruise.to_dict()
     json.dumps(d)
     assert d["converged"] is True and len(d["radial"]["dp0"]) == 30 and d["thrust"] == pytest.approx(4.64, rel=1e-3)
+
+
+def test_fit_duct_loss_recovers_a_measured_point():
+    rough = replace(FAN, duct_loss=0.4, tip_clearance_m=0.0009)
+    measured = ducted.rpm_for_thrust(rough, SECTION, 22.0)                # stands in for a static thrust stand point
+    fitted = ducted.fit_duct_loss(replace(rough, duct_loss=0.06), SECTION, 22.0, measured.power)
+    assert fitted.duct_loss == pytest.approx(0.4, rel=1e-3) and fitted.tip_clearance_m == rough.tip_clearance_m
+    assert ducted.rpm_for_thrust(fitted, SECTION, 22.0).power == pytest.approx(measured.power, rel=1e-4)
+    with pytest.raises(ValueError, match="duct_loss = 0"):                # less than the blades alone need
+        ducted.fit_duct_loss(FAN, SECTION, 22.0, 700.0)
+    with pytest.raises(ValueError):
+        ducted.fit_duct_loss(FAN, SECTION, 22.0, -1.0)
 
 
 def test_nacelle_drag():

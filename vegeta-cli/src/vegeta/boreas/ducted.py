@@ -50,18 +50,25 @@ If the fan cannot push air against the system at any flow (the residual is negat
 huge ``duct_loss``), ``solve`` returns the scan point nearest a balance (the largest residual) with
 ``converged=False``; its numbers are not an operating point. Windmilling (``V_exit < V``, negative thrust and an
 Euler rise below zero) is solved like any other point.
+
+The default losses (``duct_loss = 0.06``, ``stator_loss = 0.1``, 0.5 mm gap) describe a clean, well-made unit: a
+90 mm, 12-blade fan with them needs only ~26 % more shaft power than the ideal duct at 22 N static (figure of merit
+~1.07). Catalogue claims for hobby 90 mm, 12-blade 6S units (about 3.0-3.8 kgf from 1.9-3.1 kW electrical, taken at
+an assumed 85 % motor + ESC efficiency) give 0.75-1.0, i.e. ``duct_loss`` ~0.25-0.5 with a 0.9 mm gap. For a real
+unit, fit ``duct_loss`` to a measured static thrust and shaft power with ``fit_duct_loss``; it then carries
+everything the model leaves out (inlet lip and strut losses, low-Reynolds or rough blades, mixing).
 """
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
 from .airfoil import Airfoil
 from .propeller import Propeller
 
-__all__ = ["DuctedFan", "DuctedPoint", "nacelle_drag", "rpm_for_thrust", "solve"]
+__all__ = ["DuctedFan", "DuctedPoint", "fit_duct_loss", "nacelle_drag", "rpm_for_thrust", "solve"]
 
 
 @dataclass(frozen=True)
@@ -74,7 +81,10 @@ class DuctedFan:
     swirl dynamic pressure 1/2 rho c_theta^2 lost while the stator turns the flow axial. ``duct_loss``: inlet + wall +
     nozzle total-pressure loss in units of 1/2 rho V_fan^2. ``external_wetted_area_m2`` and ``duct_length_m``: the
     nacelle outside, for its friction drag (``nacelle_drag``). ``mass_kg``: the whole unit (rotor, duct, stator, motor
-    if you include it — say so in ``notes``)."""
+    if you include it — say so in ``notes``).
+
+    The default losses are those of a clean unit and flatter a typical hobby EDF (see the module docstring): give
+    ``duct_loss`` ~0.25-0.5 and the real gap for one, or fit it to a measured point with ``fit_duct_loss``."""
 
     name: str
     rotor: Propeller
@@ -297,15 +307,26 @@ def solve(fan: DuctedFan, airfoil: Airfoil, rpm: float, airspeed: float = 0.0, r
 
 def rpm_for_thrust(fan: DuctedFan, airfoil: Airfoil, thrust: float, airspeed: float = 0.0, rho: float = 1.225,
                    rpm_max: float = 80000.0, *, n_stations: int = 30, speed_of_sound: float = 340.0) -> DuctedPoint:
-    """The rpm at which ``fan`` gives ``thrust`` [N] at ``airspeed`` (bisection on rpm; raises if unreachable)."""
+    """The rpm at which ``fan`` gives ``thrust`` [N] at ``airspeed``: bisection on rpm between 100 rpm and
+    ``rpm_max``, which assumes the thrust rises with rpm (it does on the working branch).
+
+    Raises ValueError if the target lies outside the thrusts at the two ends of that range — above the thrust at
+    ``rpm_max``, or below the one at 100 rpm (a static target of ~0 N, or more drag than the nearly stopped fan
+    windmills with in forward flight) — or if the point found is not a converged operating point."""
     def at(n):
         return solve(fan, airfoil, n, airspeed, rho, n_stations=n_stations, speed_of_sound=speed_of_sound)
 
     lo, hi = 100.0, float(rpm_max)
+    if not hi > lo:
+        raise ValueError(f"rpm_max must be above {lo:.0f} rpm, where the search starts")
     top = at(hi)
     if top.thrust < thrust:
         raise ValueError(f"{thrust:.2f} N is not reachable below {rpm_max:.0f} rpm at {airspeed} m/s "
                          f"({top.thrust:.2f} N at {rpm_max:.0f} rpm)")
+    bottom = at(lo)
+    if bottom.thrust > thrust:                            # bisection would otherwise slide down to lo and return it
+        raise ValueError(f"{thrust:.4g} N is not reachable above {lo:.0f} rpm at {airspeed} m/s "
+                         f"({bottom.thrust:.4g} N at {lo:.0f} rpm, the slowest searched)")
     for _ in range(60):
         if hi - lo <= 1e-7 * hi:
             break
@@ -314,7 +335,58 @@ def rpm_for_thrust(fan: DuctedFan, airfoil: Airfoil, thrust: float, airspeed: fl
             lo = mid
         else:
             hi = mid
-    return at(hi)
+    op = at(hi)
+    if not op.converged:
+        raise ValueError(f"no converged operating point for {thrust:.2f} N at {airspeed} m/s "
+                         f"(solve gave converged=False at {op.rpm:.0f} rpm)")
+    return op
+
+
+def fit_duct_loss(fan: DuctedFan, airfoil: Airfoil, thrust: float, power: float, airspeed: float = 0.0,
+                  rho: float = 1.225, *, rpm_max: float = 80000.0, n_stations: int = 30,
+                  tolerance: float = 1e-4) -> DuctedFan:
+    """``fan`` with the ``duct_loss`` at which it needs the shaft ``power`` [W] to give ``thrust`` [N] at
+    ``airspeed`` — a measured point, usually static. The blades, stator and clearance stay as given; the one
+    coefficient takes up whatever the model leaves out (inlet lip and struts, low-Reynolds or rough blades, mixing).
+
+    ``power`` is shaft power: a measured electrical power times the motor and ESC efficiencies (~0.8-0.9 together).
+    At a fixed thrust the shaft power rises with ``duct_loss`` (almost linearly), so the root of
+    ``P(duct_loss) - power`` is bracketed from 0 upwards and refined by Illinois regula falsi until it is within
+    ``tolerance`` (relative) of ``power``. Raises ValueError if even ``duct_loss = 0`` needs more than ``power`` (the
+    blade, swirl and clearance losses alone exceed it: check the section data, the gap or the motor efficiency), or
+    if ``thrust`` stops being reachable below ``rpm_max`` before the power is matched."""
+    if not (thrust > 0 and power > 0 and tolerance > 0):
+        raise ValueError("thrust, power and tolerance must be > 0")
+
+    def excess(k: float) -> float:
+        op = rpm_for_thrust(replace(fan, duct_loss=k), airfoil, thrust, airspeed, rho, rpm_max, n_stations=n_stations)
+        return op.power - power
+
+    a, fa = 0.0, excess(0.0)
+    if fa > 0:
+        raise ValueError(f"{thrust:.2f} N at {airspeed} m/s needs {fa + power:.1f} W even with duct_loss = 0, "
+                         f"more than the {power:.1f} W given")
+    b = 0.5
+    fb = excess(b)
+    while fb < 0:                                         # widen the bracket; rpm_for_thrust raises when out of reach
+        if b >= 64.0:
+            raise ValueError(f"no duct_loss up to {b:.0f} uses {power:.1f} W for {thrust:.2f} N")
+        a, fa = b, fb
+        b *= 2.0
+        fb = excess(b)
+    for _ in range(50):                                   # bracketed regula falsi (Illinois), as in solve
+        if abs(fb) <= tolerance * power:
+            break
+        c = b - fb * (b - a) / (fb - fa)
+        fc = excess(c)
+        if (fc > 0) != (fb > 0):
+            a, fa = b, fb
+        else:
+            fa *= 0.5
+        b, fb = c, fc
+    else:
+        raise ValueError("fit_duct_loss did not converge")
+    return replace(fan, duct_loss=b)
 
 
 def nacelle_drag(fan: DuctedFan, airspeed: float, rho: float = 1.225, nu: float = 1.5e-5) -> float:
