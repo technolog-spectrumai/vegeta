@@ -82,6 +82,7 @@ h = wake.load_harmonics(prop, airfoil, rpm, ship_speed, w, rho=1025.0)
 h.table(16)                     # per order: frequency, blade thrust/torque, shaft thrust/torque, side forces (amplitudes)
 wake.unsteady_tones(h, 1.0, boreas.SEA_WATER, angle_deg=30)       # the shaft force harmonics as dipole tones, dB
 wake.rotating_tones(h, prop, 10.0, boreas.AIR, 45.0, harmonics=16) # Lowson's rotating dipoles: steady + unsteady loading at m x BPF
+w_eff, op = wake.effective_inflow(prop, airfoil, rpm, V, w, rho)  # thrust-weighted mean wake and the point at V (1 - w_eff): T V / P installed
 field = wake.slipstream_sampler(prop, op)                         # points -> (U, valid): a slipstream model for particle movies
 ```
 The loads are quasi-steady (a blade-element solution at the local inflow of every blade angle; no
