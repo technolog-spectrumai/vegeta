@@ -123,3 +123,24 @@ def test_scenery_validation():
         lab.add_hook(42)
     assert "<equality>" in lab.xml and 'name="bar_hold"' in lab.xml
     assert math.isclose(lab.total_mass, 5.5)
+
+
+def test_body_force_moves_a_free_prop_until_removed():
+    props, welds = scenery()
+    lab = ChironLab(toy_robot(), Flat(), props=props, welds=welds)
+    lab.reset(seed=0)
+
+    class Blower:                                   # a hook: a sideways force on the box while it is 'on'
+        on = True
+
+        def __call__(self, lab):
+            lab.body_force("box", (0.0, 40.0, 0.0) if self.on else None)
+    blower = Blower()
+    lab.add_hook(blower)
+    y0 = float(lab.data.xpos[lab._body_id("box")][1])
+    lab.run(None, duration=0.5, rules=None, settle=0.0)
+    y1 = float(lab.data.xpos[lab._body_id("box")][1])
+    assert y1 > y0 + 0.05                           # 40 N on a 2 kg box slides it (μ 1: 20 N of friction)
+    blower.on = False
+    lab.run(None, duration=0.3, rules=None, settle=0.0)   # a new run resets: the force dict is cleared, the box is back
+    assert abs(float(lab.data.xpos[lab._body_id("box")][1]) - y0) < 0.02

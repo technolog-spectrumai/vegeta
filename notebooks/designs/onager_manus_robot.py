@@ -219,8 +219,10 @@ def _servo(joint: str) -> Servo:
     return Servo.from_actuator(act.get(ARM_ACTUATORS[joint]), kp=kp, kd=kd, armature=arm)
 
 
-def _arm(side: str, p: dict, cad: dict, jaw_mu: float) -> tuple:
-    """One arm as a Link tree under the hull, and (its mass, Σ m x in the stowed pose) for the battery placement."""
+def _arm(side: str, p: dict, cad: dict, jaw_mu: float, yaw_range_deg: tuple = (-100.0, 100.0)) -> tuple:
+    """One arm as a Link tree under the hull, and (its mass, Σ m x in the stowed pose) for the battery placement.
+    ``yaw_range_deg``: the pedestal's travel (the Manus ±100°; None = unlimited: the Sweeper's slip-ring pedestals
+    swing the arms back to the basket)."""
     g = arm_geometry(p)
     sgn = SIDES[side]
     m = arm_masses(p, cad)
@@ -269,7 +271,7 @@ def _arm(side: str, p: dict, cad: dict, jaw_mu: float) -> tuple:
                          PointMass(f"{side}_cabling", m["arm cabling and covers"], (g["Lu"] / 2, 0.0, 0.0))],
                  children=[fore])
     base = Link(f"{side}_arm_base", pos=(g["x"], sgn * g["y"], g["z"]),
-                joints=[Joint(yaw_j, axis=(0, 0, 1), range=(math.radians(-100), math.radians(100)), tag="yaw",
+                joints=[Joint(yaw_j, axis=(0, 0, 1), range=None if yaw_range_deg is None else tuple(math.radians(v) for v in yaw_range_deg), tag="yaw",
                               servo=_servo("yaw"))],
                 geoms=[Geom(f"{side}_pedestal", "cylinder", (g["ped_r"], g["ped_h"] / 2), pos=(0.0, 0.0, -g["ped_h"] / 2),
                             mass=m["pedestal"], role="visual", rgba=arm_rgba)],

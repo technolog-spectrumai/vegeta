@@ -480,8 +480,100 @@ HULL_ROTOR_DISK = TemplateSpec(
     ),
 )
 
+# -- a suction hood under a vehicle floor (a street sweeper's vacuum nozzle) --------------------------------------
+SUCTION_PATCHES = {
+    "ground": "no-slip wall (moving at -ground_speed along x: the road passing under the vehicle)",
+    "floor": "no-slip wall (the vehicle's floor, the domain top outside the duct)",
+    "suction": "fixed velocity out of the domain, +z (flow_rate over the duct's inner section), zero-gradient pressure",
+    "sides": "fixed pressure 0 with pressureInletOutletVelocity (the atmosphere under the vehicle's edges)",
+    "body*": "no-slip wall (the hood, duct, broom...; surfaceFieldValue patch)",
+}
+
+
+def _suction_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """A 3 x 3 block domain between the road and the floor: the middle block is the duct's column (its top face
+    the suction patch), the eight others end on the floor; refinement boxes around the body and in the gap under
+    it."""
+    L, H = p["reference_length"], p["floor_height"]
+    di, dw = p["duct_inner"], p["duct_wall"]
+    cx, cy = float(p["duct_center"][0]), float(p["duct_center"][1])
+    if bmax[2] <= H:
+        raise ValueError(f"the STL must carry the duct through the floor (floor_height {H} m): its top is at {bmax[2]:.4g} m")
+    if bmin[2] < -1e-6:
+        raise ValueError(f"the STL goes below the road (z = 0): its bottom is at {bmin[2]:.4g} m")
+    if H <= 0 or di <= 0 or dw <= 0:
+        raise ValueError("floor_height, duct_inner and duct_wall must be > 0")
+    half = (di + dw) / 2                                    # the block boundary runs through the duct's wall
+    lo = np.array([bmin[0] - p["margin_ahead"] * L, bmin[1] - p["margin_aside"] * L])
+    hi = np.array([bmax[0] + p["margin_behind"] * L, bmax[1] + p["margin_aside"] * L])
+    x1, x2, y1, y2 = cx - half, cx + half, cy - half, cy + half
+    if not (lo[0] < x1 and x2 < hi[0] and lo[1] < y1 and y2 < hi[1]):
+        raise ValueError("the duct column must lie inside the domain: check duct_center against the STL bounding box")
+    h = L / p["cells_per_length"]
+    n = lambda a, b: int(max(1, math.ceil((b - a) / h)))        # noqa: E731
+    gap_top = min(H, bmin[2] + 0.5 * (bmax[2] - bmin[2]))
+    near = 0.2 * L
+    out = {
+        "X0": lo[0], "X1": x1, "X2": x2, "X3": hi[0], "Y0": lo[1], "Y1": y1, "Y2": y2, "Y3": hi[1], "ZTOP": H,
+        "NX0": n(lo[0], x1), "NX1": max(2, n(x1, x2)), "NX2": n(x2, hi[0]),
+        "NY0": n(lo[1], y1), "NY1": max(2, n(y1, y2)), "NY2": n(y2, hi[1]), "NZ": n(0.0, H),
+        "NEAR_MIN": np.array([bmin[0] - near, bmin[1] - near, 0.0]), "NEAR_MAX": np.array([bmax[0] + near, bmax[1] + near, H]),
+        "GAP_MIN": np.array([bmin[0] - 0.05 * L, bmin[1] - 0.05 * L, 0.0]),
+        "GAP_MAX": np.array([bmax[0] + 0.05 * L, bmax[1] + 0.05 * L, gap_top]),
+        "LOCATION_IN_MESH": np.array([lo[0] + 0.5 * (bmin[0] - lo[0]), lo[1] + 0.37 * (bmin[1] - lo[1]), 0.5 * H]),
+        "SURFACE_LEVEL_MIN": p["surface_level"], "SURFACE_LEVEL_MAX": p["surface_level"],
+        "FEATURE_LEVEL": p["surface_level"], "NEAR_LEVEL": p["near_level"], "GAP_LEVEL": p["gap_level"],
+        "SUCTION_W": p["flow_rate"] / (di * di), "GROUND_U": -p["ground_speed"],
+        "KINEMATIC_VISCOSITY": p["kinematic_viscosity"], "DENSITY": p["density"],
+        "ITERATIONS": p["iterations"], "RESIDUAL_TARGET": p["residual_target"],
+    }
+    u_ref = out["SUCTION_W"]
+    k = 1.5 * (u_ref * p["turbulence_intensity"]) ** 2
+    out["K_INLET"] = k
+    out["OMEGA_INLET"] = k / (p["kinematic_viscosity"] * p["viscosity_ratio"])
+    return {key: _fmt(v) for key, v in out.items()}
+
+
+SUCTION_HOOD = TemplateSpec(
+    name="suction_hood",
+    description="A suction hood under a vehicle floor (a sweeper's vacuum nozzle): the road and the floor are walls, "
+                "a square duct draws flow_rate out through the floor, the sides are the atmosphere; steady k-omega SST.",
+    parameters=(
+        TemplateParameter("flow_rate", "volume flow the fan draws through the duct", "m^3/s"),
+        TemplateParameter("duct_center", "the duct's axis (x, y; z ignored): the STL's duct must run through the floor here", "m", kind="vector"),
+        TemplateParameter("duct_inner", "the square duct's inner width (the suction patch is this square)", "m"),
+        TemplateParameter("duct_wall", "the duct's wall thickness (the mesh blocks meet inside it)", "m"),
+        TemplateParameter("floor_height", "the vehicle floor over the road: the domain's top", "m"),
+        TemplateParameter("kinematic_viscosity", "fluid kinematic viscosity", "m^2/s"),
+        TemplateParameter("density", "fluid density (pressures are reported in Pa)", "kg/m^3"),
+        TemplateParameter("reference_length", "the hood's width: scales the domain margins and the background mesh", "m"),
+        TemplateParameter("ground_speed", "the vehicle's speed over the road (the road moves at -x under it)", "m/s", 0.0),
+        TemplateParameter("iterations", "maximum SIMPLE iterations", "", 500, "int"),
+        TemplateParameter("residual_target", "stop when all initial residuals are below", "", 1e-4),
+        TemplateParameter("margin_ahead", "domain edge ahead of the body (-x)", "L_ref", 2.0),
+        TemplateParameter("margin_behind", "domain edge behind the body (+x)", "L_ref", 2.0),
+        TemplateParameter("margin_aside", "domain edge beside the body", "L_ref", 2.0),
+        TemplateParameter("cells_per_length", "background cells per L_ref", "", 12.0),
+        TemplateParameter("surface_level", "snappy refinement level at the body", "", 3, "int"),
+        TemplateParameter("near_level", "refinement level in a box around the body, road to floor", "", 2, "int"),
+        TemplateParameter("gap_level", "refinement level in the gap under the body (road to half its height)", "", 3, "int"),
+        TemplateParameter("turbulence_intensity", "turbulence intensity of the air drawn in", "-", 0.05),
+        TemplateParameter("viscosity_ratio", "eddy/molecular viscosity ratio of the air drawn in", "-", 10.0),
+    ),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_suction_derive,
+    max_body_extent=6.0,
+    patches=SUCTION_PATCHES,
+    notes=(
+        "place the STL on the road: z = 0 is the road, the hood's lips just above it, the duct rising through the floor (above floor_height)",
+        "the duct's inner square must be centred on duct_center with the wall of duct_wall around it: the block boundary runs through that wall",
+        "no boundary-layer prism layers; the gap flow under the lips is resolved by the gap box's refinement level",
+        "metrics: the depression at the duct (fan static pressure), the flow drawn (a check of the suction velocity), the air power Q x dp",
+    ),
+)
+
 TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC,
-                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK)}
+                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 

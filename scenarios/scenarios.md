@@ -112,3 +112,14 @@ lift force, tilt torque, front knees against their stall, the lightest rear whee
 when both jaws squeeze it with the cutting force — drives through, crouches at a 14 kg log, takes it with the left
 pincer's hooked jaws, lifts it, swings it over the side, puts it down and drives on. Writes
 `onager_manus_tasks.mp4` (the wire drawn 4× thicker) and `onager_manus_tasks.json`.
+
+## Onager Sweeper cleans a street (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`): the street-cleaning
+Onager (`notebooks/designs/onager_sweeper_robot.py`, 590 kg: the chassis low in a fixed stance, a disc broom, a
+suction hood, two Manus arms, a basket on the roof) spins its broom, runs the fan — the suction is the CFD's air
+drag on the litter under the hood (`onager_sweeper_cfd.SUCTION`), what reaches the duct is collected — sweeps at
+1 m/s over cans and packets, stops at a 2.3 kg brick, takes it with its left pincer's hooked jaws and swings it
+back into the basket, does the same with a 0.6 kg box with the right pincer, and sweeps on. Writes
+`onager_sweeper_street.mp4` and `onager_sweeper_street.json` (what was vacuumed, what landed in the basket, the
+phase table).

@@ -242,7 +242,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
            cad: dict | None = None, name: str = "Onager Sentinel SX-1", parts_kg: dict | None = None,
            extra_children=(), extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0,
            extra_hull_masses=(), notes: str | None = None, sources: dict | None = None,
-           four_quadrant: bool = False) -> Robot:
+           four_quadrant: bool = False, mast_x: float | None = None, extra_hull_geoms=()) -> Robot:
     """Onager Sentinel as a Chiron ``Robot``.
 
     ``overrides``: OnagerSentinel parameters [mm, deg] (other than the defaults, the CAD is rebuilt for the
@@ -257,7 +257,9 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     (Σ m x, standing pose), which the rolling resistance and the battery placement take into account. Without a
     turret (``turret_length`` or ``turret_height`` 0) the 60 % of the sensor mass the turret carried sits as a point
     mass on the roof. ``four_quadrant``: leg modules and hub motors brake with their full torque when backdriven
-    (``Servo.four_quadrant``; the Sentinel studies use the original law).
+    (``Servo.four_quadrant``; the Sentinel studies use the original law). ``mast_x`` [m] moves the mast and
+    sensor head along the roof (None: the Sentinel's place behind the turret); ``extra_hull_geoms`` are Geoms
+    added to the hull (a hood, a bumper).
     """
     p = design_params(overrides)
     g = geometry(p)
@@ -320,7 +322,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
     mast_h, head = p["mast_height"] * mm, p["sensor_head"] * mm
     z_roof = Hh / 2
     x_tur = -Lh * 0.1
-    x_mast = x_tur + tur_l * 0.3
+    x_mast = x_tur + tur_l * 0.3 if mast_x is None else float(mast_x)
     # battery x: puts the whole robot's standing CG over the centre of the tyre contact patches (x = axle_x in the
     # hull frame); everything else is placed first and its moment taken out
     a1, a2 = g["a1"], g["a2"]
@@ -346,7 +348,7 @@ def onager(overrides: dict | None = None, *, kp: float = LEG_KP, kd: float = LEG
                             rgba=leg_rgba),
                        Geom("sensor_head", "box", (head / 2, head / 2, head / 2),
                             pos=(x_mast, 0.0, z_roof + tur_h + mast_h + head / 2), mass=m_sens * 0.25, role="visual",
-                            rgba=leg_rgba)],
+                            rgba=leg_rgba)] + list(extra_hull_geoms),
                 masses=[PointMass("battery", m_batt, (x_batt, 0.0, -Hh / 2 + 0.08)),
                         PointMass("computer, radios, relay, IMU", m_elec, (0.5, 0.0, 0.0)),
                         PointMass("wiring, connectors, cooling", parts["wiring, connectors, cooling"], (0.0, 0.0, 0.0))]

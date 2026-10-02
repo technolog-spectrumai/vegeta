@@ -121,7 +121,11 @@ lab.add_hook(cutter)
 * `lab.add_hook(fn)`: `fn(lab)` every control step of walking time after the controller; `fn.reset(lab)` at reset.
   `lab.log_event(source, detail)` → `log["events"]`. `lab.contact_force(a, b)` → (force vector on `b` from `a`,
   summed normal force) from the last forward pass.
+* `lab.body_force(body, force, torque=None)`: a force [N] at a body's COM (world) kept until the next call for that
+  body — a scene hook's aerodynamic drag on a prop (the Sweeper's suction); `None` removes it; `reset` clears all.
 * Logged: `props` (prop link names), `prop_pos`, `prop_quat` (T,P,·), `events`, `welds` (state at the end).
+  Rendering (`viz.frames`) frames the robot and hides scenery farther than 25 robot sizes from it (litter a scene
+  hook parks away once collected would otherwise stretch the camera's clipping range).
   Observation: `obs.prop_pos`, `obs.prop_quat`. Rendering draws the props with the robot.
 
 ## The episode log

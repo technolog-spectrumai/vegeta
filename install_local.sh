@@ -95,6 +95,12 @@ if [ "$WITH_SYSTEM" -eq 1 ]; then
       $SUDO env MAMBA_ROOT_PREFIX="$MAMBA_DIR/root" "$MAMBA_DIR/bin/micromamba" create -y -p "$FOAM_PREFIX" \
         -c conda-forge openfoam=2412
     fi
+    # conda-forge's openfoam 2412 links its MPI Pstream through the rpath lib/sys-mpich but ships it as lib/mpich-*:
+    # without the link every parallel run stops with "The dummy Pstream library cannot be used in parallel mode"
+    if [ ! -e "$FOAM_PREFIX/lib/sys-mpich" ]; then
+      mpich_lib=$(ls -d "$FOAM_PREFIX"/lib/mpich-* 2>/dev/null | head -1)
+      [ -n "$mpich_lib" ] && $SUDO ln -s "$(basename "$mpich_lib")" "$FOAM_PREFIX/lib/sys-mpich"
+    fi
   fi
 else
   step "Skipping system packages and OpenFOAM (--skip-system)"

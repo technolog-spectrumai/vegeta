@@ -124,7 +124,14 @@ job — approach, lift, carry 8 m, set down — with a movie). `22_onager_manus`
 manipulator arms with pincers (workspace and joint torques, the cutting envelope, why the jaws have hooked tips,
 jaw and arm FEA, and in MuJoCo a track blocked by a wire it cuts — the wire parts only when both jaws squeeze it
 with the cutting force — and a log it lifts off the track, with a movie). `scenarios/onager_atlas_pallet.py` and
-`scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-atlas` / `onager-manus`) re-run them.
+`scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-atlas` / `onager-manus`) re-run them. `23_onager_sweeper`
+(`designs/onager_sweeper.py`) is the street cleaner: the chassis low in a fixed stance, a bulky rounded body, a disc
+broom with a suction hood behind it, the Manus arms and a basket on the roof (mass budget, broom and fan sizing,
+power and endurance, the arms' reach to the road and the basket; the suction in CFD — Aeromant's new `suction_hood`
+template: the depression, the lip inflow, which litter the hood lifts, a litter-particle movie; basket and hood FEA,
+the broom's and fan's unbalance against their modes; and in MuJoCo a street with litter the hood vacuums — the CFD's
+drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
+`scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 

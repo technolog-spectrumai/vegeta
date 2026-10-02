@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    ground
+    {
+        type            zeroGradient;
+    }
+    floor
+    {
+        type            zeroGradient;
+    }
+    suction
+    {
+        type            zeroGradient;
+    }
+    sides
+    {
+        type            fixedValue;
+        value           uniform 0;
+    }
+    "body.*"
+    {
+        type            zeroGradient;
+    }
+}
+
+// ************************************************************************* //

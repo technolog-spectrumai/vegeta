@@ -30,6 +30,15 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def reference_speed(p: dict, L: float) -> float:
+    """The speed the Reynolds number uses: the free stream, a rotor's tip speed, or a suction duct's velocity."""
+    if "velocity" in p:
+        return p["velocity"]
+    if "rpm" in p:
+        return p["rpm"] * math.pi / 60 * L
+    return p["flow_rate"] / p["duct_inner"] ** 2
+
+
 class CFDCase:
     """One CFD case directory made from a template, an STL and explicit parameters.
 
@@ -94,6 +103,7 @@ class CFDCase:
             bmin, bmax = body.bbox
             extent = float((bmax - bmin).max())
             L = self.parameters.get("reference_length") or self.parameters["diameter"]   # rotor templates: D
+            u_ref = reference_speed(self.parameters, L)
             if extent > self.template.max_body_extent * L:
                 raise ValueError(
                     f"body size {extent:.4g} m is {extent / L:.1f} x reference_length; template "
@@ -117,9 +127,10 @@ class CFDCase:
             res.metrics = {
                 "body_bbox_min_m": bmin.tolist(), "body_bbox_max_m": bmax.tolist(),
                 "body_surface_area_m2": body.area, "n_triangles": int(len(body.triangles)),
-                "reynolds_number": (self.parameters["velocity"] if "velocity" in self.parameters
-                                    else self.parameters["rpm"] * math.pi / 60 * L) * L / self.parameters["kinematic_viscosity"],
-                "background_cells": [int(values["NX"]), int(values["NY"]), int(values["NZ"])],
+                "reynolds_number": u_ref * L / self.parameters["kinematic_viscosity"],
+                "background_cells": ([int(values["NX"]), int(values["NY"]), int(values["NZ"])] if "NX" in values
+                                     else [int(values["NX0"]) + int(values["NX1"]) + int(values["NX2"]),
+                                           int(values["NY0"]) + int(values["NY1"]) + int(values["NY2"]), int(values["NZ"])]),
             }
             if body.volume <= 0:
                 res.messages.append("STL encloses no positive volume (open or inverted surface?); snappyHexMesh may fail")
@@ -319,10 +330,13 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
     m = res.metrics
     if "velocity" in p:
         m["reynolds_number"] = p["velocity"] * p["reference_length"] / p["kinematic_viscosity"]
-    else:  # rotor: Reynolds number of the tip speed and the diameter
+    elif "rpm" in p:  # rotor: Reynolds number of the tip speed and the diameter
         omega = p["rpm"] * 2 * math.pi / 60
         m["tip_speed_m_s"] = omega * p["diameter"] / 2
         m["reynolds_number"] = m["tip_speed_m_s"] * p["diameter"] / p["kinematic_viscosity"]
+    else:  # suction: the duct velocity and the hood width
+        m["suction_velocity_m_s"] = reference_speed(p, p["reference_length"])
+        m["reynolds_number"] = m["suction_velocity_m_s"] * p["reference_length"] / p["kinematic_viscosity"]
     if (workdir / "log.checkMesh").is_file():
         mc = read_checkmesh(workdir / "log.checkMesh")
         m.update(mesh_cells=mc.cells, mesh_ok=mc.ok, mesh_failed_checks=mc.failed_checks)
@@ -339,6 +353,8 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
                                 "check coefficient histories before trusting the values")
     if str(info["config"].get("template", "")).startswith("rotor_"):
         return _rotor_results(res, workdir, p, average_window)
+    if info["config"].get("template") == "suction_hood":
+        return _suction_results(res, workdir, p, average_window)
     files = find_coefficient_files(workdir)
     if not files:
         for c in ("Cd", "Cl", "Cm"):
@@ -361,6 +377,34 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         m["drag_force_N"] = m["Cd"] * q * p["reference_area"]
     if m.get("Cl") is not None:
         m["lift_force_N"] = m["Cl"] * q * p["reference_area"]
+    return res
+
+
+def _suction_results(res: Result, workdir: Path, p: dict, average_window: int) -> Result:
+    """The depression at the duct, the flow drawn and the air power of a ``suction_hood`` case, from its
+    surfaceFieldValue function objects (``postProcessing/<name>/<time>/surfaceFieldValue.dat``)."""
+    from .results import read_surface_field_values
+
+    m = res.metrics
+    rho, Q_set = p["density"], p["flow_rate"]
+    try:
+        p_duct = read_surface_field_values(workdir, "suctionPressure")
+        phi = read_surface_field_values(workdir, "suctionFlow")
+        p_hood = read_surface_field_values(workdir, "hoodPressure")
+    except FileNotFoundError as exc:
+        m.update(suction_pressure_Pa=None, flow_rate_m3_s=None, air_power_W=None)
+        return res.fail(f"no surfaceFieldValue output found (solver NOT RUN or failed): {exc}")
+    n = max(1, min(average_window, len(p_duct)))
+    dp = -rho * float(np.mean(p_duct[-n:, 1]))                  # kinematic p at the duct -> the depression there
+    Q = float(np.mean(phi[-n:, 1]))                             # phi is the outward flux: positive leaving the domain
+    m.update(suction_pressure_Pa=-dp, fan_static_pressure_Pa=dp, flow_rate_m3_s=Q, flow_rate_set_m3_s=Q_set,
+             hood_wall_pressure_Pa=rho * float(np.mean(p_hood[-n:, 1])), air_power_W=Q * dp,
+             suction_pressure_std_Pa=rho * float(np.std(p_duct[-n:, 1])), averaging_window=n)
+    if Q_set > 0 and abs(Q / Q_set - 1) > 0.02:
+        res.messages.append(f"the flow through the suction patch ({Q:.4g} m3/s) differs from flow_rate ({Q_set:.4g}): "
+                            "the suction square is not the duct's inner section (check duct_center, duct_inner, duct_wall)")
+    res.messages.append(f"pressures averaged over the last {n} iterations; the fan must supply the depression at the duct plus "
+                        "the losses downstream of it (not modelled)")
     return res
 
 

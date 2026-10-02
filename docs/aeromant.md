@@ -150,6 +150,29 @@ resolved (a fully resolved rotating-blade simulation of the whole aircraft is on
 flow behind the disks must be faster than the free stream; if not, flip `disk_axis`. Notebook:
 `09a_fixed_wing_design`, Part 3.
 
+## A suction hood under a vehicle (`suction_hood`)
+The Onager Sweeper's vacuum nozzle (notebook 23): the air between the road and the vehicle floor, a hood whose lips
+stand a gap over the road, a square duct through the floor drawing the fan's flow. The domain is nine blockMesh
+blocks between `z = 0` (the road, a no-slip wall moving at `-ground_speed`: the road passing under the machine) and
+`floor_height` (the floor, a wall); the middle block is the duct's column — its top face is the `suction` patch
+(fixed outflow `flow_rate / duct_inner²`), the other eight end on the `floor`; the `sides` are the atmosphere (p = 0,
+`pressureInletOutletVelocity`). The STL carries the hood **and** its duct through the floor (the block boundary runs
+through the duct's wall, so `duct_center`, `duct_inner` and `duct_wall` must match the STL); place it on the road.
+```python
+case = aeromant.CFDCase("suction_hood", "hood.stl",
+    dict(flow_rate=0.35, duct_center=(-0.1, 0.0, 0.0), duct_inner=0.14, duct_wall=0.01, floor_height=0.30,
+         kinematic_viscosity=1.5e-5, density=1.2, reference_length=0.5, ground_speed=1.0),
+    workdir="runs/hood", geometry_units="mm", environment=env)
+case.prepare(); res = case.run(processors=4)
+res.metrics["fan_static_pressure_Pa"], res.metrics["flow_rate_m3_s"], res.metrics["air_power_W"]
+```
+Metrics come from `surfaceFieldValue` function objects: the depression at the duct (what the fan must supply, before
+the losses downstream of it), the flow actually drawn (a check: it must equal `flow_rate`), the mean pressure on the
+hood walls, the air power `Q × Δp`. The gap flow is resolved by the `gap_level` refinement box (road to half the
+body's height). `notebooks/designs/onager_sweeper_cfd.py` reads the lip inflow and the hood's upward speed off the
+field, compares them with the litter classes' terminal speeds, and runs litter particles through the field for a
+movie.
+
 ## OpenFOAM installations
 - `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
   and reports which passed; use it after installing or upgrading OpenFOAM, or to validate the `org/` case files on
@@ -157,7 +180,9 @@ flow behind the disks must be faster than the free stream; if not, flip `disk_ax
 - Official openfoam.com (`/usr/lib/openfoam/openfoamXXXX/etc/bashrc`) or openfoam.org packages: use
   `bashrc=`; `detect()` finds them.
 - conda-forge `openfoam` (e.g. `micromamba create -p /opt/foam -c conda-forge openfoam=2412`):
-  `OpenFOAMEnvironment.conda("/opt/foam")`.
+  `OpenFOAMEnvironment.conda("/opt/foam")`. The 2412 build links its MPI Pstream through `lib/sys-mpich` but ships it
+  as `lib/mpich-3.3`: without `ln -s mpich-3.3 /opt/foam/lib/sys-mpich` (which `install_local.sh` adds) every
+  `processors > 1` run stops with "The dummy Pstream library cannot be used in parallel mode".
 - The Ubuntu 24.04 `openfoam` package (v1912) meshes correctly but **cannot start function objects**
   (`FOAM FATAL IO ERROR: error in IOstream "sha1"`), so no force coefficients. Aeromant reports this
   with a hint instead of returning numbers.

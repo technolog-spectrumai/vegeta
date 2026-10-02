@@ -159,6 +159,25 @@ def read_checkmesh(path: str | Path) -> MeshCheck:
 _NUM = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 
 
+def read_surface_field_values(case: Path, name: str) -> np.ndarray:
+    """The history written by a ``surfaceFieldValue`` function object ``name``: rows (time, value...) from every
+    ``postProcessing/<name>/<time>/surfaceFieldValue.dat`` in time order (both dialects)."""
+    files = sorted((Path(case) / "postProcessing" / name).glob("*/surfaceFieldValue.dat"), key=lambda f: _time_key(f.parent.name))
+    if not files:
+        raise FileNotFoundError(f"no postProcessing/{name}/*/surfaceFieldValue.dat in {case}")
+    rows = []
+    for f in files:
+        for line in f.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            rows.append([float(v) for v in line.replace("(", " ").replace(")", " ").split()])
+    if not rows:
+        raise FileNotFoundError(f"postProcessing/{name} has no data rows in {case}")
+    width = min(len(r) for r in rows)
+    return np.array([r[:width] for r in rows], dtype=float)
+
+
 def find_force_files(case: Path, name: str = "force.dat") -> list[Path]:
     pp = Path(case) / "postProcessing"
     return sorted(set(pp.glob(f"*/*/{name}")), key=lambda p: (p.parent.parent.name, _time_key(p.parent.name)))

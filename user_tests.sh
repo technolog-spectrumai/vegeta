@@ -15,6 +15,7 @@
 #   onager            Onager Sentinel: the ChironLab tests, then scenarios/onager_patrol.py (2 movies; ~5 min)
 #   onager-atlas      Onager Atlas (forklift): tests, then scenarios/onager_atlas_pallet.py (1 movie; ~3 min)
 #   onager-manus      Onager Manus (pincers): tests, then scenarios/onager_manus_tasks.py (1 movie; ~4 min)
+#   onager-sweeper    Onager Sweeper (street cleaner): tests, then scenarios/onager_sweeper_street.py (1 movie; ~5 min)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -130,8 +131,9 @@ for s in "${SECTIONS[@]}"; do
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/onager_patrol.py" 2>&1 | grep -v "^\s*$" | tail -40 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
-    onager-atlas|onager-manus)
-      name=${s#onager-}; script=$([ "$name" = atlas ] && echo onager_atlas_pallet.py || echo onager_manus_tasks.py)
+    onager-atlas|onager-manus|onager-sweeper)
+      name=${s#onager-}
+      case "$name" in atlas) script=onager_atlas_pallet.py ;; manus) script=onager_manus_tasks.py ;; *) script=onager_sweeper_street.py ;; esac
       hdr "Onager ${name}: ChironLab tests"
       timed pytest_summary "$ROOT/notebooks/designs" "tests/test_onager_${name}.py" || status=1
       hdr "Onager ${name} mission in MuJoCo (1 movie)"

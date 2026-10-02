@@ -393,6 +393,7 @@ class ChironLab:
         self.log_dt = self._n_log * h
         self._disturbances: list[Disturbance] = []
         self._transient: list[Disturbance] = []
+        self._body_forces: dict = {}
         self._build()
         self.reset()
 
@@ -693,6 +694,7 @@ class ChironLab:
         self._leg_stance = None
         self._transient = []
         self.data.xfrc_applied[:] = 0.0
+        self._body_forces = {}
         self.events = []
         for hook in self._hooks:
             r = getattr(hook, "reset", None)
@@ -750,6 +752,7 @@ class ChironLab:
     def clear_disturbances(self) -> None:
         self._disturbances = []
         self._transient = []
+        self._body_forces = {}
         self.data.xfrc_applied[:] = 0.0
 
     @property
@@ -769,10 +772,26 @@ class ChironLab:
         self._transient.append(dist)
         return dist
 
+    def body_force(self, body: str, force, torque=None) -> None:
+        """A force [N] (world, at the body's COM) and torque [N·m] on ``body`` from now until the next call for that
+        body (a scene hook's aerodynamic drag, a suction field): ``None``/zero removes it. Kept while disturbances
+        act; cleared by ``reset``."""
+        b = self._body_id(body)
+        f = np.zeros(3) if force is None else np.asarray(force, dtype=float)
+        t = np.zeros(3) if torque is None else np.asarray(torque, dtype=float)
+        if not f.any() and not t.any():
+            self._body_forces.pop(b, None)
+        else:
+            self._body_forces[b] = (f, t)
+        self.data.xfrc_applied[b, :3] = f
+        self.data.xfrc_applied[b, 3:] = t
+
     def _apply_disturbances(self, k):
         xf = self.data.xfrc_applied
         h = self.timestep
         xf[:, :3] = 0.0
+        for b, (f, t) in self._body_forces.items():
+            xf[b, :3] = f
         for dist in self._disturbances + self._transient:
             k0 = int(round(dist.t_start / h))
             n = max(1, int(round(dist.duration / h)))

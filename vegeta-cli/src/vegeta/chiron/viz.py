@@ -138,13 +138,15 @@ def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=
     weight = float(log.get("total_mass", 1.0)) * 9.81
     for i in idx:
         if gp is not None:
-            for g, actor in enumerate(actors):
+            far = 25.0 * scale                                 # scenery parked far from the robot (collected litter)
+            for g, actor in enumerate(actors):               # is not drawn: it would stretch the camera's clipping range
                 if actor is None:
                     continue
                 M = np.eye(4)
                 M[:3, :3] = mat[i, g].reshape(3, 3)
                 M[:3, 3] = pos[i, g]
                 actor.user_matrix = M
+                actor.SetVisibility(bool(np.linalg.norm(pos[i, g] - com[i]) < far))
         else:
             for name in marker_names:
                 pl.remove_actor(name)
