@@ -107,3 +107,12 @@ def test_noise_and_cavitation(apc10x47):
     assert deep["cavitation_number"] > cav["cavitation_number"] and not deep["cavitates"]
     fast = boreas.cavitation(apc10x47, rpm=30000, airspeed=2.0, depth_m=0.5, cp_min=-1.0)
     assert fast["cavitates"] and fast["rpm_at_inception"] < 30000
+
+
+def test_a_weighting_matches_the_iec_table_and_levels_add_in_power():
+    # IEC 61672-1 table: 50 Hz -30.2, 100 Hz -19.1, 1 kHz 0.0, 4 kHz +1.0, 10 kHz -2.5 dB
+    for f, a in ((50, -30.2), (100, -19.1), (1000, 0.0), (4000, 1.0), (10000, -2.5)):
+        assert float(boreas.a_weighting(f)) == pytest.approx(a, abs=0.1)
+    assert boreas.add_levels([60.0, 60.0]) == pytest.approx(63.01, abs=0.01)
+    assert boreas.add_levels([70.0, -np.inf]) == pytest.approx(70.0)
+    assert boreas.add_levels([]) == -np.inf

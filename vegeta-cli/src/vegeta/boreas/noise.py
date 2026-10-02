@@ -25,6 +25,22 @@ def spl(p_rms: float, medium: str = "air") -> float:
     return 20 * math.log10(max(p_rms, 1e-30) / ref)
 
 
+def a_weighting(frequency_hz) -> np.ndarray:
+    """A-weighting [dB] at ``frequency_hz`` (IEC 61672-1, normalised to 0 dB at 1 kHz): what an ear-like
+    meter takes off low and very high tones. Add it to a band or tone level to get dB(A)."""
+    f2 = np.asarray(frequency_hz, dtype=float) ** 2
+    ra = 12194.0 ** 2 * f2 ** 2 / ((f2 + 20.6 ** 2) * np.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194.0 ** 2))
+    with np.errstate(divide="ignore"):
+        return 20 * np.log10(ra) + 2.0
+
+
+def add_levels(levels) -> float:
+    """Energetic sum of sound levels [dB]: 10 log10(sum 10^(L/10)); -inf for nothing."""
+    x = np.asarray(levels, dtype=float).ravel()
+    x = x[np.isfinite(x)]
+    return float(10 * np.log10(np.sum(10 ** (x / 10)))) if x.size else float("-inf")
+
+
 @dataclass(frozen=True)
 class Medium:
     name: str
