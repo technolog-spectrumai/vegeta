@@ -169,7 +169,9 @@ res.metrics["fan_static_pressure_Pa"], res.metrics["flow_rate_m3_s"], res.metric
 Metrics come from `surfaceFieldValue` function objects: the depression at the duct (what the fan must supply, before
 the losses downstream of it), the flow actually drawn (a check: it must equal `flow_rate`), the mean pressure on the
 hood walls, the air power `Q × Δp`. The gap flow is resolved by the `gap_level` refinement box (road to half the
-body's height). `notebooks/designs/onager_sweeper_cfd.py` reads the lip inflow and the hood's upward speed off the
+body's height). `notebooks/designs/onager_sweeper_cfd.QUALITY` holds two presets: `fast` (8 cells per L_ref,
+levels 3/1/2, 150 iterations: ~110 k cells for the Sweeper's hood, a minute or two on 4 cores) and `fine` (12 cells,
+levels 3/2/3, 400 iterations: ~0.9 M cells, ~15 min). `notebooks/designs/onager_sweeper_cfd.py` reads the lip inflow and the hood's upward speed off the
 field, compares them with the litter classes' terminal speeds, and runs litter particles through the field for a
 movie.
 

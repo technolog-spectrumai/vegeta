@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-__all__ = ["AIR", "DEBRIS", "SUCTION", "terminal_velocity", "pickup_table", "suction_case", "sample_hood",
+__all__ = ["AIR", "DEBRIS", "SUCTION", "QUALITY", "terminal_velocity", "pickup_table", "suction_case", "sample_hood",
            "DebrisTracks", "debris_movie", "hood_frame"]
 
 G = 9.81
@@ -42,15 +42,12 @@ DEBRIS = {
     "pebble 15 mm": {"mass": 2650 * math.pi / 6 * 0.015 ** 3, "area": math.pi / 4 * 0.015 ** 2, "cd": 0.6, "size": 0.015, "mu": 0.6, "note": "a 15 mm stone"},
 }
 #: The suction numbers the MuJoCo scene uses (``onager_sweeper_scenario.Vacuum``) when notebook 23 §4 has not been
-#: run on this machine: the fan's flow (``onager_sweeper_robot.FAN_FLOW``), the duct velocity (flow / duct section),
-#: the lip inflow and the hood's upward speed from continuity (flow / lip-gap area, flow / hood section: the CFD
-#: resolves how they distribute, not their mean), and the depression at the duct a first CFD run gave after 340 of
-#: its 400 iterations (OpenFOAM v2412, the road at 1 m/s). Notebook 23 §4 writes the solved values here through
-#: ``sample_hood``; until then these are the estimates they stand in for.
+#: run on this machine: ``sample_hood`` on the ``fast`` case of the Sweeper's hood (OpenFOAM v2412, 110 k cells, 150
+#: iterations, the road at 1 m/s, the fan at ``onager_sweeper_robot.FAN_FLOW``). Notebook 23 §4 recomputes them.
 SUCTION = {
-    "flow_rate_m3_s": 0.35, "duct_velocity_m_s": 17.9, "gap_velocity_m_s": 8.0, "mouth_velocity_m_s": 3.0,
-    "hood_depression_Pa": 72.0, "fan_static_pressure_Pa": 430.0, "air_power_W": 150.0,
-    "source": "continuity estimates + a partial suction_hood CFD (notebook 23 §4 replaces them with the solved field)",
+    "flow_rate_m3_s": 0.35, "duct_velocity_m_s": 17.9, "gap_velocity_m_s": 6.4, "mouth_velocity_m_s": 3.0,
+    "hood_depression_Pa": 49.0, "fan_static_pressure_Pa": 328.0, "air_power_W": 115.0,
+    "source": "notebook 23 §4: suction_hood CFD of the Sweeper hood, fast preset (recorded; re-run the notebook to refresh)",
 }
 
 
@@ -73,14 +70,27 @@ def pickup_table(suction: dict | None = None, rho: float = AIR["density"]) -> pd
     return pd.DataFrame(rows).T
 
 
-def suction_case(stl, workdir, p: dict, *, flow_rate: float, ground_speed: float = 1.0, environment=None, **overrides):
-    """The Aeromant case of the hood: ``stl`` the ``hood`` part of the design (mm), ``p`` the design parameters."""
+#: Mesh and solver settings of ``suction_case``: ``fast`` (the notebook's default: ~100 k cells, 150 iterations, a few
+#: minutes on 4 cores — the depression and the mean speeds within ~20 %, the gap under the lips two cells deep) and
+#: ``fine`` (~0.9 M cells, 400 iterations, ~15 min on 4 cores: the gap resolved by 5 mm cells).
+QUALITY = {
+    "fast": dict(cells_per_length=8.0, surface_level=3, near_level=1, gap_level=2, margin_ahead=1.5, margin_behind=1.5,
+                 margin_aside=1.5, iterations=150, residual_target=1e-3),
+    "fine": dict(cells_per_length=12.0, surface_level=3, near_level=2, gap_level=3, iterations=400, residual_target=1e-4),
+}
+
+
+def suction_case(stl, workdir, p: dict, *, flow_rate: float, ground_speed: float = 1.0, environment=None,
+                 quality: str = "fast", **overrides):
+    """The Aeromant case of the hood: ``stl`` the ``hood`` part of the design (mm), ``p`` the design parameters,
+    ``quality`` a ``QUALITY`` preset (``overrides`` go on top of it)."""
     from vegeta import aeromant
 
     mm = 1e-3
     params = dict(flow_rate=flow_rate, duct_center=(p["hood_x"] * mm, 0.0, 0.0), duct_inner=p["duct_inner"] * mm,
                   duct_wall=p["duct_wall"] * mm, floor_height=p["hull_bottom"] * mm, kinematic_viscosity=AIR["kinematic_viscosity"],
-                  density=AIR["density"], reference_length=p["hood_width"] * mm, ground_speed=ground_speed, iterations=400)
+                  density=AIR["density"], reference_length=p["hood_width"] * mm, ground_speed=ground_speed)
+    params.update(QUALITY[quality])
     params.update(overrides)
     return aeromant.CFDCase("suction_hood", stl, params, workdir=workdir, geometry_units="mm", environment=environment)
 
