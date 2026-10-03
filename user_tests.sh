@@ -18,6 +18,7 @@
 #   onager-sweeper    Onager Sweeper (street cleaner): tests, then scenarios/onager_sweeper_street.py (1 movie; ~5 min)
 #   velutina          Velutina (mountain medical courier): tests, then scenarios/velutina_mission.py (1 movie; ~2 min)
 #   merlin            MERLIN (wildfire sampler): tests, then scenarios/merlin_mission.py (race table + 1 movie; ~3 min)
+#   peregrine         PEREGRINE (folding-wing farm drone): the lattice, flight-model and CAD tests (~30 s)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -154,6 +155,9 @@ for s in "${SECTIONS[@]}"; do
       hdr "MERLIN races to a fire 20 km out and samples its smoke (1 movie)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/merlin_mission.py" 2>&1 | grep -v "^\s*$\|movie frames" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    peregrine)
+      hdr "PEREGRINE: vortex lattice, flight models, CAD and movie tests"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_peregrine.py || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

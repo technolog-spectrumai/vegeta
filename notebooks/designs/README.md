@@ -87,3 +87,18 @@ MERLIN's fairing taken off); `unit_mass_kg`, `merlin_airframe` (from notebook 26
 `merlin.Merlin` takes the fan's `edf_diameter`, `edf_pitch` and `edf_exit_area_ratio`; `merlin_flight.load_design` reads notebook
 26's export (`data/merlin_design.json`) and `build_merlins(design=...)` puts the library's propulsors on that airframe.
 
+`peregrine.py` (`Peregrine`, notebook 28, branch `dev_peregrine`) is the falcon-inspired farm drone: MERLIN's tractor body
+(`Merlin` subclassed) with `FixedWing`'s wing, three wings in `VARIANTS` (A large fixed, B small fixed, C hinged), and for the
+hinged wing `fold_deg` (each outer panel rotated aft about a vertical hinge at `hinge_y_frac` of the half span, on the spar at
+`hinge_x_frac` of the local chord, with a hinge knuckle); `part` = aircraft/wing/hinge (the printed hinge lug)/nose (the motor
+fairing). Beside the CAD: `resolve({"variant": ...})`, `planform` (the lifting surfaces as quads for the lattice, the folded
+span, the hidden part of a folded panel), `fold_limit` (the fold at which the panels collide), `exposed_wing_area`,
+`wetted_areas`, `drag_buildup` (MERLIN's Raymer build-up on the folded geometry plus a hinge allowance) and `outline` (side and
+top views). `peregrine_flight.py` (`import peregrine_flight as pf`) is the rest: `vlm` (a vortex lattice in streamwise strips,
+Trefftz-plane induced drag), `aero`, `cl_max`, `fold_polar`; `BOM_ITEMS`, `mass_table`, `bom`, `ENGINEERING_HOURS`,
+`engineering_cost`; `stability` (CG, neutral point, margin, trim); `drive` (a `merlin_flight.Unit` from notebook 25's library
+with a fixed no-load + avionics power), `Aircraft` / `make_aircraft` (an `Airframe` per fold), `turn`, `envelope`,
+`envelope_table`; `BIRDS`, `bird_table`; `stoop`, `terminal_speed`; `gap_passage`; `prop_hang`, `hand_throw`,
+`min_throw_speed`, `roof_drop`, `perched_wind`; `hinge_loads`; `Farm`, `Flock` (boids with a fear radius), `herd`, `mission`
+→ `Episode`, `profile_figure`, `render_movie`; `decision_table`, `weight_sensitivity`.
+

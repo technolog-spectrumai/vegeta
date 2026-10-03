@@ -198,6 +198,23 @@ reasonable ducted fan — 70–120 mm, any pitch and nozzle, a well-made duct, o
 battery — beats the propellers (two to twelve blades) in a 5 km out-and-back and a 10 km race: none does, and even a
 lossless duct does not. `scenarios/propulsor_maps.py [--kind ...]` rebuilds the maps, `scenarios/merlin_race.py` re-runs the race.
 
+**PEREGRINE** (branch `dev_peregrine`): `28_peregrine` (`designs/peregrine.py`, `designs/peregrine_flight.py`) is a cheap,
+light electric fixed-wing inspired by the peregrine falcon that keeps wild animals and pest bird flocks off the crops with
+the noise of its propeller (no acoustics: the sound does the job) — it patrols, stoops at a deer, flies between trees and
+houses, herds a starling flock off the field, rests on the farmhouse ridge and starts again by hanging on its propeller.
+The question: **does a wing that sweeps back in flight (the falcon's tuck) justify its engineering cost?** Three wings on
+MERLIN's tractor body — A large fixed, B small fixed, C A's wing on two hinges (0–60° in flight, 85° stowed) — go through
+the same tasks: a calculated bill of materials and lab hours, CAD, a new **vortex lattice** for the folded wing
+(streamwise strips; checked against Helmbold and the elliptic wing), stability and trim against the fold, notebook 25's
+propeller, envelopes, an agility chart against the pest birds and the peregrine, the stoop, the narrowest gap between
+trees, boids flocks herded off the crop (after Paranjape et al.), prop-hang, hand throw and roof drop, wind on a perched
+aircraft, wing and hinge-lug FEA with the fold servo from `actuators.py`, printing, the whole sortie as a movie, and a
+decision table with a weight sensitivity. Findings with the defaults: a true root hinge collides beyond ~10° (the hinge
+belongs at 30 % of the half span, the falcon's "elbow"); the tuck buys almost nothing in the stoop (it keeps the area)
+but lets a stowed wing stay on a windy ridge (~9.7 m/s against ~6.5) and cuts the gust load in a dive; it costs ~95 g,
+~35 EUR of parts and ~105 lab hours, and the small fixed wing B wins most weightings. The committed notebook is
+unexecuted; `PEREGRINE_QUICK=1` runs it as a quick check; `./user_tests.sh peregrine` runs its tests.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
