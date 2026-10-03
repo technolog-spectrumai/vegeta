@@ -124,7 +124,7 @@ def build(engine_node: Assembly, engine: mj.Microjet, fidelity: str = "full", de
 
 
 def run(*, fidelity: str = "full", design_range_km: int = DESIGN_RANGE_KM, distances_km=DISTANCES_KM,
-        engine_vida: Path | None = None, run_cfd: bool = True, run_fea: bool = True, processors: int = 1, jobs: int = 1,
+        engine_vida: Path | None = None, merlin_vida: Path | None = None, propulsors_vida: Path | None = None, run_cfd: bool = True, run_fea: bool = True, processors: int = 1, jobs: int = 1,
         threads: int = 1, out: Path | None = None, vida_path: Path | None = None, include: str = "results",
         export: bool = True, export_path: Path | None = None, force: bool = False, redo=(), progress: bool = True) -> Assembly:
     """Compute what the saved tree does not have, save the tree, write the export. Returns the tree."""
@@ -164,7 +164,8 @@ def run(*, fidelity: str = "full", design_range_km: int = DESIGN_RANGE_KM, dista
                          "drag_at_dash_cfd_N": (jet.results.get("forces") or {}).get("drag_force_N"),
                          "gust_load_factor": wing.params["gust"]["load_factor"],
                          "gust_penetration_speed_m_s": wing.params["gust"]["penetration_speed"]})
-    root.not_run("race against MERLIN: MERLIN is not an assembly yet (notebook 29 section 5 has it)")
+    race = merlin_race(root, Path(merlin_vida or DATA / "merlin.vida"), Path(propulsors_vida or DATA / "propulsors.vida"),
+                       engine, unit, af, mission_from(air), distances_km, prior, redo)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
     if export:
@@ -180,6 +181,50 @@ def run(*, fidelity: str = "full", design_range_km: int = DESIGN_RANGE_KM, dista
         path.write_text(_json(doc))
         root.meta["exported_to"] = str(path)
     return root
+
+
+def mission_from(air: Assembly) -> F.JetMission:
+    return F.JetMission(**air.params["mission"])
+
+
+def merlin_race(root: Assembly, merlin_path: Path, libs_path: Path, engine, unit, af, mission, distances_km, prior,
+                redo) -> Assembly:
+    """AGUYA against the fastest MERLIN of each kind at 1900 W (notebook 29 section 5): reach and return times. Reads the
+    saved MERLIN design and propulsor libraries; NOT RUN (with the commands) when they are not there."""
+    from ..components import merlin_flight as mf, merlin_race as mr, propulsor_maps as pm
+    from .propulsors import load_library
+
+    if not (merlin_path.is_file() and libs_path.is_file()):
+        node = Assembly("merlin_race", "race", params={"distances_km": list(distances_km)})
+        root.add(node)
+        missing = [p.name for p in (merlin_path, libs_path) if not p.is_file()]
+        return node.not_run(f"race against MERLIN: {', '.join(missing)} missing (python -m assemblies.workflows.propulsors, "
+                            "then python -m assemblies.workflows.merlin)")
+    m_tree, libs = vida.load(merlin_path), vida.load(libs_path)
+    design = m_tree.results["design"]
+    node = Assembly("merlin_race", "race", params={"distances_km": list(distances_km), "merlin": m_tree.key,
+                                                   "libraries": libs.key, "power_w": 1900.0})
+    root.add(node)
+    if "race" not in redo:
+        root.reuse(prior)
+    if node.results:
+        return node
+    lib = load_library(libs)
+    best = {}
+    for e, layout in mr.candidates(lib):
+        kind = "edf" if layout == "edf" else layout
+        af_m = pm.merlin_airframe(layout, 1900.0, e, design=design)
+        u = pm.unit(e, 1900.0, layout=None if layout == "edf" else layout)
+        t10 = mf.race(af_m, u, 10000.0)["time_to_fire_s"]
+        if np.isfinite(t10) and (kind not in best or t10 < best[kind][0]):
+            best[kind] = (t10, af_m, u, e["id"])
+    merlin = {}
+    for kind, (_, af_m, u, eid) in best.items():
+        rr = [mf.race(af_m, u, d * 1000.0) for d in distances_km]
+        merlin[kind] = {"id": eid, "reach_s": [r["time_to_fire_s"] for r in rr], "return_s": [r["return_time_s"] for r in rr]}
+    aguya = [F.fuel_for(af, unit, d * 1000.0, mission) for d in distances_km]
+    node.record(merlin=merlin, aguya={"reach_s": [f.time_to_fire_s for f in aguya], "return_s": [f.return_time_s for f in aguya]})
+    return node
 
 
 def _redo(root: Assembly, redo) -> None:
@@ -213,6 +258,10 @@ def _parser():
     ap.add_argument("--engine", dest="engine_vida", type=Path, default=None,
                     help="the microjet .vida to fly (default assemblies/data/microjet.vida)")
     ap.add_argument("--design-range-km", type=int, default=DESIGN_RANGE_KM, help="the range the tank is sized for")
+    ap.add_argument("--merlin", dest="merlin_vida", type=Path, default=None,
+                    help="MERLIN's .vida for the race (default assemblies/data/merlin.vida)")
+    ap.add_argument("--propulsors", dest="propulsors_vida", type=Path, default=None,
+                    help="the propulsor libraries' .vida for the race (default assemblies/data/propulsors.vida)")
     return ap
 
 

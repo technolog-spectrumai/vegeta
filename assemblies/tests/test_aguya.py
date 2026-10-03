@@ -129,14 +129,16 @@ def test_workflow_needs_the_engine(tmp_path):
 
 def test_workflow_tree_reuse_and_export(tmp_path, engine_vida, fake_jet_cfd):
     kw = dict(fidelity="smoke", engine_vida=engine_vida, run_fea=False, out=tmp_path / "runs", vida_path=tmp_path / "a.vida",
-              export_path=tmp_path / "a.json", progress=False)
+              export_path=tmp_path / "a.json", progress=False, merlin_vida=tmp_path / "merlin.vida",
+              propulsors_vida=tmp_path / "propulsors.vida")
     first = wf.run(run_cfd=False, **kw)
     assert [p for p, _ in first.walk()] == ["", "engine", "engine/parts", "engine/compressor", "engine/wheels", "airframe",
-                                            "jet_cfd", "wing"]
+                                            "jet_cfd", "wing", "merlin_race"]
     assert first.child("engine").status() == "reused" and first.child("airframe").status() == "computed"
     assert first.child("jet_cfd").status() == "NOT RUN" and first.child("wing").status() == "NOT RUN"
     assert first.child("engine").key == vida.load(engine_vida).key                 # grafted as it is
-    assert first.child("airframe").results["feasible"] and "MERLIN" in first.meta["not_run"][0]
+    assert first.child("airframe").results["feasible"] and first.child("merlin_race").status() == "NOT RUN"
+    assert "merlin.vida" in first.child("merlin_race").meta["not_run"][0]
 
     second = wf.run(run_cfd=True, **kw)
     assert second.child("airframe").status() == "reused" and fake_jet_cfd == [1, 1]
@@ -158,7 +160,7 @@ def test_workflow_tree_reuse_and_export(tmp_path, engine_vida, fake_jet_cfd):
 
 def test_a_new_engine_changes_every_node_on_it(tmp_path, engine_vida, fake_jet_cfd):
     kw = dict(fidelity="smoke", run_cfd=True, run_fea=False, out=tmp_path / "runs", vida_path=tmp_path / "a.vida",
-              export=False, progress=False)
+              export=False, progress=False, merlin_vida=tmp_path / "merlin.vida", propulsors_vida=tmp_path / "propulsors.vida")
     a = wf.run(engine_vida=engine_vida, **kw)
     other = vida.load(engine_vida)
     other.params["engine_class"] = "200 N class"                                   # a different engine assembly
@@ -176,7 +178,7 @@ def test_wing_fea_for_real(tmp_path, engine_vida):
     if shutil.which("ccx") is None:
         pytest.skip("CalculiX not on PATH")
     kw = dict(fidelity="smoke", engine_vida=engine_vida, run_cfd=False, out=tmp_path / "runs", vida_path=tmp_path / "a.vida",
-              export=False, progress=False)
+              export=False, progress=False, merlin_vida=tmp_path / "merlin.vida", propulsors_vida=tmp_path / "propulsors.vida")
     w = wf.run(**kw).child("wing")
     assert w.results["complete"] and all(v["ok"] for v in w.results["stress"].values())
     s = w.results["stress"]
