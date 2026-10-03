@@ -7,7 +7,7 @@ from typing import Iterable
 import numpy as np
 
 from ._process import run_command
-from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure
+from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure, RadialTemperature
 from .mesh import MeshData, consistent_nodal_forces, element_faces
 
 
@@ -50,9 +50,16 @@ def write_inp(path: Path, mesh: MeshData, material, supports, loads, masses=(), 
         lines.append(f"*SURFACE, NAME={surf(name)}, TYPE=ELEMENT")
         lines += [f"{e}, S{f}" for e, f in element_faces(mesh, mesh.region_triangles[name])]
 
-    lines += ["*MATERIAL, NAME=MAT", "*ELASTIC", f"{material.youngs_modulus:.12g}, {material.poissons_ratio:.12g}"]
+    thermal = [l for l in loads if isinstance(l, RadialTemperature)] if modes is None else []
+    lines += ["*MATERIAL, NAME=MAT", "*ELASTIC"]
+    if thermal and material.temperature_table:
+        lines += [f"{e:.12g}, {nu:.12g}, {t:.12g}" for t, e, nu, _ in material.temperature_table]
+    else:
+        lines.append(f"{material.youngs_modulus:.12g}, {material.poissons_ratio:.12g}")
     if material.density is not None:
         lines += ["*DENSITY", f"{material.density:.12g}"]
+    if thermal and material.thermal_expansion is not None:
+        lines += [f"*EXPANSION, ZERO={material.reference_temperature:.12g}", f"{material.thermal_expansion:.12g}"]
     lines += ["*SOLID SECTION, ELSET=EALL, MATERIAL=MAT"]
     next_eid = int(mesh.element_ids.max()) + 1
     for i, m in enumerate(masses):
@@ -61,6 +68,8 @@ def write_inp(path: Path, mesh: MeshData, material, supports, loads, masses=(), 
         lines += [f"{next_eid + k}, {int(n)}" for k, n in enumerate(nodes)]
         next_eid += len(nodes)
         lines += [f"*MASS, ELSET=MASS_{i}", f"{m.mass / len(nodes):.12g}"]
+    if thermal:
+        lines += ["*INITIAL CONDITIONS, TYPE=TEMPERATURE", f"NALL, {material.reference_temperature:.12g}"]
     if modes is not None:
         lines += ["*STEP", "*FREQUENCY", f"{int(modes)}"]
     else:
@@ -98,6 +107,11 @@ def write_inp(path: Path, mesh: MeshData, material, supports, loads, masses=(), 
         lines += ["*CLOAD"] + cloads
     if dloads:
         lines += ["*DLOAD"] + dloads
+    temperatures = None
+    for load in thermal:
+        temperatures = load.at(mesh.coords)
+        lines.append("*TEMPERATURE")
+        lines += [f"{int(n)}, {t:.12g}" for n, t in zip(mesh.node_ids, temperatures)]
 
     if modes is not None:
         lines += ["*NODE FILE", "U", "*END STEP", ""]
@@ -107,7 +121,8 @@ def write_inp(path: Path, mesh: MeshData, material, supports, loads, masses=(), 
             lines += [f"*NODE PRINT, NSET={nset(s.region)}, TOTALS=YES", "RF"]
         lines += ["*END STEP", ""]
     path.write_text("\n".join(lines))
-    return {"applied_force_total": applied.tolist(), "n_cload_lines": len(cloads)}
+    return {"applied_force_total": applied.tolist(), "n_cload_lines": len(cloads),
+            "temperature_range": None if temperatures is None else [float(temperatures.min()), float(temperatures.max())]}
 
 
 def ccx_version(executable: str = "ccx") -> str | None:

@@ -99,6 +99,41 @@ class Centrifugal:
 
 
 @dataclass(frozen=True)
+class RadialTemperature:
+    """A steady temperature field that depends on the distance from an axis: ``temperatures`` [K] at ``radii`` (model
+    length units) from the axis through ``point`` along ``axis``, linear in between and constant beyond the ends — a
+    turbine disc runs hot at the rim and cooler at the bore. The material's ``thermal_expansion`` turns it into
+    thermal strain (stress where the expansion is restrained); a ``temperature_table`` makes the stiffness and the
+    yield strength follow it. Stress-free at the material's ``reference_temperature``."""
+
+    radii: tuple
+    temperatures: tuple
+    point: tuple = (0.0, 0.0, 0.0)
+    axis: tuple = (0.0, 0.0, 1.0)
+
+    def __post_init__(self):
+        r, t = list(self.radii), list(self.temperatures)
+        if len(r) < 1 or len(r) != len(t):
+            raise ValueError("RadialTemperature needs as many temperatures as radii (at least one)")
+        if any(b <= a for a, b in zip(r, r[1:])) or r[0] < 0:
+            raise ValueError("RadialTemperature radii must be >= 0 and increasing")
+        if any(x <= 0 for x in t):
+            raise ValueError("RadialTemperature temperatures are absolute (K) and must be > 0")
+        if len(self.point) != 3 or len(self.axis) != 3 or not any(self.axis):
+            raise ValueError("RadialTemperature needs a 3-component point and a non-zero 3-component axis")
+
+    def at(self, coords):
+        """Temperatures [K] at points ``(N, 3)``."""
+        import numpy as np
+
+        c = np.atleast_2d(np.asarray(coords, dtype=float)) - np.asarray(self.point, dtype=float)
+        a = np.asarray(self.axis, dtype=float)
+        a = a / np.linalg.norm(a)
+        r = np.linalg.norm(c - np.outer(c @ a, a), axis=1)
+        return np.interp(r, np.asarray(self.radii, float), np.asarray(self.temperatures, float))
+
+
+@dataclass(frozen=True)
 class PointMass:
     """A lumped mass (a motor, a battery) attached to the nodes of a surface region, shared equally
     between them. Mass unit follows the unit system (tonne in mm-N-MPa, kg in m-N-Pa)."""
@@ -112,4 +147,4 @@ class PointMass:
 
 
 Support = FixedSupport | Displacement
-Load = Force | Pressure | Acceleration | Centrifugal
+Load = Force | Pressure | Acceleration | Centrifugal | RadialTemperature

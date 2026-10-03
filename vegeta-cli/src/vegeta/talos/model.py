@@ -15,7 +15,7 @@ from ._process import describe_failure, utc_now
 from ._progress import resolve_progress
 from .ccx import ccx_version, nset, run_ccx, write_inp
 from .frd import read_dat_eigen, read_dat_reactions, read_frd
-from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure
+from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure, RadialTemperature
 from .materials import Material
 from .mesh import MeshSettings, generate_mesh, read_mesh
 from .regions import Surfaces, SurfacesInBox, SurfacesOnPlane
@@ -48,7 +48,7 @@ class StructuralModel:
     material: Material
     regions: Sequence[Surfaces | SurfacesInBox | SurfacesOnPlane]
     supports: Sequence[FixedSupport | Displacement]
-    loads: Sequence[Force | Pressure | Acceleration | Centrifugal]
+    loads: Sequence[Force | Pressure | Acceleration | Centrifugal | RadialTemperature]
     mesh_settings: MeshSettings
     name: str = "talos_model"
     notes: str = ""
@@ -76,6 +76,11 @@ class StructuralModel:
                 raise ValueError(f"{type(item).__name__} refers to unknown region {item.region!r}; defined: {names}")
         if any(isinstance(l, (Acceleration, Centrifugal)) for l in self.loads) and self.material.density is None:
             raise ValueError("an Acceleration or Centrifugal load needs material density; none was given")
+        thermal = [l for l in self.loads if isinstance(l, RadialTemperature)]
+        if len(thermal) > 1:
+            raise ValueError("one temperature field per model (combine the profiles into one RadialTemperature)")
+        if thermal and self.material.thermal_expansion is None and self.material.temperature_table is None:
+            raise ValueError("a temperature load needs the material's thermal_expansion and/or temperature_table; none was given")
         if not isinstance(self.mesh_settings, MeshSettings):
             raise ValueError("mesh_settings must be a talos.MeshSettings")
 
@@ -337,7 +342,22 @@ class StructuralModel:
                 f"{sorted(set(loaded_on_support))}) is not included in them"
             )
         ys = self.material.yield_strength
-        if ys is not None and m.get("max_von_mises"):
+        thermal = [l for l in self.loads if isinstance(l, RadialTemperature)]
+        if thermal and "STRESS" in fr.fields:
+            temps = thermal[0].at(fr.coords)
+            m["temperature_min"], m["temperature_max"] = float(temps.min()), float(temps.max())
+            y = self.material.yield_at(temps)
+            if y is not None:
+                sf = y / np.maximum(fr.von_mises, 1e-30)
+                k = int(np.nanargmin(sf))
+                m.update(safety_factor_yield=float(sf[k]), safety_factor_location=fr.coords[k].tolist(),
+                         safety_factor_temperature=float(temps[k]), safety_factor_von_mises=float(fr.von_mises[k]))
+                res.messages.append("safety factor = the lowest nodal ratio of the yield strength at the node's temperature "
+                                    "to its von Mises stress (thermal + mechanical); creep at the hot end is not in it")
+            else:
+                m["safety_factor_yield"] = None
+                res.messages.append("safety factor not computed: no yield_strength or temperature_table yield values")
+        elif ys is not None and m.get("max_von_mises"):
             m["safety_factor_yield"] = ys / m["max_von_mises"]
         else:
             m["safety_factor_yield"] = None
