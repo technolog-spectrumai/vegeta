@@ -5,7 +5,8 @@
     python scenarios/merlin_mission.py --race-only                  # the 5 / 8 / 10 / 20 / 30 km table, no movie
 
 Builds the three MERLINs from the design files' defaults (``merlin_flight.build_merlins``: the notebook's first
-design; the notebook recomputes the airframe mass from the CAD and may refine the polar with CFD), races them to fires 5, 8, 10, 20 and 30 km out, flies
+design; the notebook recomputes the airframe mass from the CAD and may refine the polar with CFD), races them to fires 5, 8, 10, 20 and 30 km out (reach, return and landing times; flat ground and a fire
+``--fire-elevation`` m up a mountain), flies
 the chosen one through a Gaussian smoke plume and renders the movie. Writes
 ``scenarios/output/merlin_<propulsion>_<km>km.mp4`` and ``.json`` (the race table, the mission summary, the phases and
 the fire's size from the passes).
@@ -34,22 +35,27 @@ def main(argv=None) -> int:
     ap.add_argument("--seconds", type=float, default=24.0)
     ap.add_argument("--fps", type=int, default=20)
     ap.add_argument("--quick", action="store_true", help="coarse propulsor tables (seconds instead of a minute)")
+    ap.add_argument("--fire-elevation", type=float, default=600.0, help="the mountain case: the fire this far above the launch site [m]")
     ap.add_argument("--race-only", action="store_true")
     a = ap.parse_args(argv)
 
     merlins = mf.build_merlins(quick=a.quick)
-    table = {}
-    for k, v in merlins.items():
-        for d in sorted(set(mf.DISTANCES_KM) | {a.distance_km}):
-            r = mf.race(v["airframe"], v["unit"], d * 1000)
-            table[f"{d:.0f} km / {NAME[k]}"] = {key: r.get(key) for key in ("time_to_fire_s", "dash_speed", "limit", "why")}
-    for key, r in table.items():
-        t = r["time_to_fire_s"]
-        print(f"{key:<30s} " + (f"{t / 60:5.1f} min at {r['dash_speed']:4.1f} m/s ({r['limit']})" if t else f"out of reach: {r['why']}"))
+    import pandas as pd
+    pd.set_option("display.width", 200)
+    dists = sorted(set(mf.DISTANCES_KM) | {a.distance_km})
+    cols = ["reach [min]", "return [min]", "landing [min]", "dash [m/s]", "dash climb [deg]", "return [m/s]", "limited by"]
+    flat = mf.race_table(merlins, dists)
+    print("flat forest: reach (first data by radio), return (fire to touchdown), landing (launch to touchdown)")
+    print(flat[cols].round(2).to_string())
+    mountain = mf.race_table(merlins, dists, fire_elevation_m=a.fire_elevation)
+    print(f"\nthe fire {a.fire_elevation:.0f} m up a mountain (a gentle climb all along the dash)")
+    print(mountain[cols].round(2).to_string())
+    table = {"flat": flat.to_dict("index"), f"mountain_{a.fire_elevation:.0f}m": mountain.to_dict("index")}
+    table = {case: {" / ".join(k): v for k, v in t.items()} for case, t in table.items()}
     kind = a.propulsion
     if kind == "fastest":
-        times = {k: (table[f"{a.distance_km:.0f} km / {NAME[k]}"]["time_to_fire_s"] or math.inf) for k in merlins}
-        kind = min(times, key=times.get)
+        reach = flat.xs(f"{a.distance_km:g} km", level=0)["reach [min]"].astype(float)
+        kind = next(k for k, n in NAME.items() if n == reach.idxmin())
     print(f"flying the {NAME[kind]} to a fire {a.distance_km:.0f} km out")
     if a.race_only:
         return 0

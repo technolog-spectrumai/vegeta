@@ -178,7 +178,8 @@ it to a fire 5, 8, 10, 20 or 30 km away fastest**: a nose **ducted fan** (the je
 25's fitted losses, the propellers are Boreas BEMT in `air_propeller.installation_wake`'s effective wake with
 `installation_drag`'s thrust deduction. The notebook: three variants in CAD, a drag build-up, wing FEA (pull-up and a dash
 gust), optional RANS per variant; thrust and power against speed; the race (climb, accelerate, dash at the fastest speed
-the energy for the way home allows); the winner as a rotor disk in CFD (optional); the mission through a Gaussian smoke
+the energy for the way home allows) with the reach (first data by radio), return and landing times, on flat ground and
+to a fire 600 m up a mountain (a gentle climb all along the dash); the winner as a rotor disk in CFD (optional); the mission through a Gaussian smoke
 plume (Briggs rise, Pasquill–Gifford spread), the fire's heat release recovered from the passes, and a movie with the
 smoke as particles. With the defaults the **pusher** is fastest at all three distances, the tractor a few seconds behind,
 the ducted fan close only at 10 km (its jet costs twice the energy per kilometre). `scenarios/merlin_mission.py` (or

@@ -308,13 +308,28 @@ def performance(af: Airframe, unit: Unit, rho=RHO, V=None) -> dict:
             "wh_per_km_best": float(per_m.min() / 3.6), "v_stall": af.stall_speed(rho)}
 
 
-def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission(), rho=RHO) -> dict:
-    """The fastest legal flight to a fire ``distance_m`` away: climb at the best-climb speed and full power to the
-    sampling height, accelerate at full power to the dash speed, dash, then sample and fly home at the best-range
-    speed — the dash speed is the highest (up to the top speed) that keeps the reserve. Returns the time to the fire,
-    the dash speed, what limited it and the energy per phase."""
+def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission(), rho=RHO, *,
+         fire_elevation_m: float = 0.0, approach_sink: float = 2.0) -> dict:
+    """The fastest legal flight to a fire ``distance_m`` away, and back.
+
+    Out: climb at the best-climb speed and full power to the sampling height above the launch site, accelerate at full
+    power to the dash speed, dash. A fire ``fire_elevation_m`` above the launch site (on a mountain) is reached by
+    climbing gently all along the dash, at the constant angle that gains that height over the dash's distance: the
+    thrust then also carries ``W sin(gamma)``, so the top speed falls and the energy rises by ``m g dh``. The dash speed
+    is the highest (up to the top speed on that slope) that keeps the energy for the sampling, the flight home and the
+    reserve.
+
+    Over the fire: ``mission.sampling_s`` of passes (the data go out by radio: the **reach time** is when the first
+    reading comes in). Home: as fast as the energy left allows (between the best-range speed and the top speed, keeping
+    the reserve), descending the same height (the thrust only needs ``D - W sin(gamma)``, a glide when that is
+    negative), then an approach from the sampling height at ``approach_sink`` m/s and 1.3 stall speed to a belly
+    landing at the launch site.
+
+    Returns the reach time (``time_to_fire_s``), the return time (leaving the fire to touchdown, ``return_time_s``),
+    the landing time (touchdown after launch, ``landing_time_s``), the dash speed and its slope, what limited it and
+    the energy per phase. Air density is ``rho`` throughout (a 600 m mountain thins the air by ~6 %: not modelled)."""
     pf = performance(af, unit, rho)
-    W, m = af.mass_kg * G, af.mass_kg
+    W = af.mass_kg * G
     v_c = pf["v_climb"]
     T_c, P_c, _ = unit.full(v_c)
     roc = (T_c - af.drag(v_c, rho)) * v_c / W
@@ -323,25 +338,48 @@ def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission
     t_climb = mission.sampling_agl_m / roc
     x_climb = v_c * t_climb
     e_climb = P_c * t_climb / 3600
-    # launch: from the stand speed to the climb speed, level (a short level acceleration)
     t_l, x_l, e_l = _accelerate(af, unit, mission.launch_speed, v_c, rho)
-    # the sampling and the flight home
+    x_out = distance_m - x_l - x_climb                     # the acceleration and the dash
+    if x_out <= 0:
+        return {"reachable": False, "why": "the fire is closer than the climb-out"}
+    sin_out = fire_elevation_m / math.hypot(x_out, fire_elevation_m)
+    # the sampling
     v_s = 1.3 * af.stall_speed(rho, mission.sampling_load_factor)
     P_s = unit.electrical_power(v_s, float(af.drag(v_s, rho, mission.sampling_load_factor)))
     e_sample = P_s * mission.sampling_s / 3600
-    v_r = pf["v_range"]
-    e_home = unit.electrical_power(v_r, float(af.drag(v_r, rho))) * distance_m / v_r / 3600
+    # home: cruise at the best-range speed, descending fire_elevation_m, then the approach
+    v_r, v_app = pf["v_range"], 1.3 * af.stall_speed(rho)
+    t_app = mission.sampling_agl_m / approach_sink
+    x_app = v_app * t_app
+    x_home = max(distance_m - x_app, 0.0)
+    sin_home = fire_elevation_m / math.hypot(x_home, fire_elevation_m) if x_home > 0 else 0.0
+
+    def power(v, T):
+        return 0.0 if T <= 0 else unit.electrical_power(v, T)
+
+    P_home = power(v_r, float(af.drag(v_r, rho)) - W * sin_home)
+    P_app = power(v_app, float(af.drag(v_app, rho)) - W * approach_sink / v_app)
+    if not (math.isfinite(P_home) and math.isfinite(P_app)):
+        return {"reachable": False, "why": "cannot fly home"}
+    t_home = x_home / v_r
+    e_home = (P_home * t_home + P_app * t_app) / 3600
     budget = mission.battery_wh * mission.usable_fraction * (1 - mission.reserve_fraction)
+    # the top speed on the slope: full thrust = drag + the weight's share along the path
+    V = pf["V"]
+    ok = pf["T_full"] >= pf["D"] + W * sin_out
+    if not ok.any():
+        return {"reachable": False, "why": f"cannot hold a {math.degrees(math.asin(sin_out)):.1f} deg climb at any speed"}
+    v_top = float(V[ok].max())
 
     def out_leg(v_d):
-        t_a, x_a, e_a = _accelerate(af, unit, v_c, v_d, rho, max_distance=distance_m - x_l - x_climb)
-        x_dash = max(distance_m - x_l - x_climb - x_a, 0.0)
-        P_d = unit.electrical_power(v_d, float(af.drag(v_d, rho)))
+        t_a, x_a, e_a = _accelerate(af, unit, v_c, v_d, rho, max_distance=x_out, climb_sin=sin_out)
+        x_dash = max(x_out - x_a, 0.0)
+        P_d = unit.electrical_power(v_d, float(af.drag(v_d, rho)) + W * sin_out)
         t = t_l + t_climb + t_a + x_dash / v_d
         e = e_l + e_climb + e_a + P_d * x_dash / v_d / 3600
         return t, e, {"accelerate": e_a, "dash": P_d * x_dash / v_d / 3600}
 
-    v_hi = 0.995 * pf["v_top"]
+    v_hi = 0.995 * v_top
     v_lo = min(v_r, v_hi)
     if out_leg(v_lo)[1] + e_sample + e_home > budget:
         return {"reachable": False, "why": "not enough energy even at the best-range speed", "distance_km": distance_m / 1000}
@@ -354,20 +392,64 @@ def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission
             lo, hi = (mid, hi) if out_leg(mid)[1] + e_sample + e_home <= budget else (lo, mid)
         v_d, limit = lo, "energy (the way home and the reserve)"
     t, e_out, parts = out_leg(v_d)
-    return {"reachable": True, "distance_km": distance_m / 1000, "time_to_fire_s": t, "dash_speed": v_d, "limit": limit,
-            "climb_speed": v_c, "climb_time_s": t_climb, "top_speed": pf["v_top"], "range_speed": v_r, "sampling_speed": v_s,
+    # home as fast as the energy left allows (the reach comes first; the return takes what is left, keeping the reserve)
+    e_left = budget - e_out - e_sample - P_app * t_app / 3600
+    ok_h = pf["T_full"] >= pf["D"] - W * sin_home
+    v_hmax = 0.995 * float(V[ok_h].max()) if ok_h.any() else v_r
+    e_at = lambda v: power(v, float(af.drag(v, rho)) - W * sin_home) * x_home / v / 3600
+    v_ret = v_r
+    if v_hmax > v_r and e_at(v_hmax) <= e_left:
+        v_ret = v_hmax
+    elif v_hmax > v_r:
+        lo, hi = v_r, v_hmax
+        for _ in range(40):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if e_at(mid) <= e_left else (lo, mid)
+        v_ret = lo
+    t_home = x_home / v_ret
+    e_home = e_at(v_ret) + P_app * t_app / 3600
+    t_return = t_home + t_app
+    return {"reachable": True, "distance_km": distance_m / 1000, "fire_elevation_m": fire_elevation_m,
+            "time_to_fire_s": t, "sampling_s": mission.sampling_s, "return_time_s": t_return,
+            "landing_time_s": t + mission.sampling_s + t_return, "dash_speed": v_d, "limit": limit,
+            "dash_climb_deg": math.degrees(math.asin(sin_out)), "climb_speed": v_c, "climb_time_s": t_climb,
+            "top_speed": v_top, "range_speed": v_r, "return_speed": v_ret, "sampling_speed": v_s, "approach_s": t_app,
             "energy_out_wh": e_out, "energy_sampling_wh": e_sample, "energy_home_wh": e_home, "budget_wh": budget,
-            "home_time_s": distance_m / v_r, "energy_parts_wh": dict(launch=e_l, climb=e_climb, **parts)}
+            "home_time_s": t_home, "energy_parts_wh": dict(launch=e_l, climb=e_climb, **parts)}
 
 
-def _accelerate(af, unit, v0, v1, rho, n=60, max_distance=math.inf):
-    """Level acceleration at full power from v0 to v1: (time, distance, energy Wh); zero if v1 <= v0. It stops after
-    ``max_distance`` (the fire reached before the dash speed: a short race)."""
+NAMES = {"edf": "ducted fan", "tractor": "tractor propeller", "pusher": "pusher propeller"}
+
+
+def race_table(merlins, distances_km=DISTANCES_KM, mission: Mission = Mission(), *, fire_elevation_m=0.0):
+    """The race for every aircraft of ``build_merlins`` and every distance, as a table (pandas) indexed by
+    (distance, propulsor): reach, return and landing times [min], the dash and return speeds, the dash's climb angle,
+    what limited the dash and the energy used. The reach is what counts when the data go out by radio."""
+    import pandas as pd
+    rows = {}
+    for d in distances_km:
+        for k, v in merlins.items():
+            r = race(v["airframe"], v["unit"], d * 1000, mission, fire_elevation_m=fire_elevation_m)
+            key = (f"{d:g} km", NAMES.get(k, k))
+            if not r["reachable"]:
+                rows[key] = {"reach [min]": math.nan, "limited by": r["why"]}
+                continue
+            rows[key] = {"reach [min]": r["time_to_fire_s"] / 60, "return [min]": r["return_time_s"] / 60,
+                         "landing [min]": r["landing_time_s"] / 60, "dash [m/s]": r["dash_speed"],
+                         "dash climb [deg]": r["dash_climb_deg"], "return [m/s]": r["return_speed"], "limited by": r["limit"],
+                         "energy used [Wh]": r["energy_out_wh"] + r["energy_sampling_wh"] + r["energy_home_wh"],
+                         "of [Wh]": r["budget_wh"]}
+    return pd.DataFrame(rows).T
+
+
+def _accelerate(af, unit, v0, v1, rho, n=60, max_distance=math.inf, climb_sin=0.0):
+    """Acceleration at full power from v0 to v1 (on a path climbing at ``asin(climb_sin)``): (time, distance, energy
+    Wh); zero if v1 <= v0. It stops after ``max_distance`` (the fire reached before the dash speed: a short race)."""
     if v1 <= v0 or max_distance <= 0:
         return 0.0, 0.0, 0.0
     vs = np.linspace(v0, v1, n)
     full = np.array([unit.full(v) for v in vs])
-    a = (full[:, 0] - af.drag(vs, rho)) / af.mass_kg
+    a = (full[:, 0] - af.drag(vs, rho) - af.mass_kg * G * climb_sin) / af.mass_kg
     a = np.maximum(a, 1e-3)
     dt = np.diff(vs) / (0.5 * (a[1:] + a[:-1]))
     vm = 0.5 * (vs[1:] + vs[:-1])
@@ -801,5 +883,5 @@ def render_movie(ep: Episode, forest: Forest, plume: Plume, path, *, fps=20, sec
     return path, frames
 
 
-__all__ = ["DISTANCES_KM", "build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
+__all__ = ["DISTANCES_KM", "NAMES", "race_table", "build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
            "source_estimate", "Forest", "Episode", "fly", "profile_figure", "render_movie"]

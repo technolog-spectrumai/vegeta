@@ -60,6 +60,23 @@ def test_race_slows_with_distance_and_keeps_the_reserve(merlins):
     assert not far["reachable"]
 
 
+def test_reach_return_and_landing_add_up(merlins):
+    for v in merlins.values():
+        r = mf.race(v["airframe"], v["unit"], 8000.0)
+        assert r["landing_time_s"] == pytest.approx(r["time_to_fire_s"] + r["sampling_s"] + r["return_time_s"])
+        assert r["range_speed"] - 1e-9 <= r["return_speed"] <= r["top_speed"] + 1e-9
+
+
+def test_a_fire_up_a_mountain_costs_reach_time_and_keeps_the_reserve(merlins):
+    for v in merlins.values():
+        for d in (5.0, 10.0):
+            flat = mf.race(v["airframe"], v["unit"], d * 1000)
+            hill = mf.race(v["airframe"], v["unit"], d * 1000, fire_elevation_m=600.0)
+            assert hill["time_to_fire_s"] > flat["time_to_fire_s"] and hill["top_speed"] < flat["top_speed"]
+            assert 0 < hill["dash_climb_deg"] < 10
+            assert hill["energy_out_wh"] + hill["energy_sampling_wh"] + hill["energy_home_wh"] <= hill["budget_wh"] * (1 + 1e-6)
+
+
 def test_full_throttle_respects_the_power_limit(merlins):
     for v in merlins.values():
         u = v["unit"]

@@ -109,7 +109,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   (propulsor tables from `boreas.ducted` and BEMT with the installation models, the race, Gaussian smoke plume and the source
   estimate, the mission, the smoke movie) and `26_merlin`: which propulsor reaches a fire 5 / 8 / 10 / 20 / 30 km away first;
   `scenarios/merlin_mission.py`, `user_tests.sh merlin`, `tests/test_merlin.py`
-- [ ] 5h.2 The race in head- and tailwind; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
+- [x] 5h.5 Reach / return / landing times (`race_table`); a fire up a mountain (`fire_elevation_m`: a constant gentle climb on the dash, the descent home)
+- [ ] 5h.2 The race in head- and tailwind; air density at the fire's altitude; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
 - [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)
 
