@@ -109,6 +109,7 @@ def test_workflow_tree_reuse_and_handoff(tmp_path, fake_cfd):
     assert all(third.child(n).status() == "reused" for n in ("aero_cfd", "rotor_cfd", "installed_cfd"))
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_wing_and_blade_fea_for_real(tmp_path):

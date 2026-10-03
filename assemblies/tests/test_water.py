@@ -102,6 +102,7 @@ def test_submarine_reproduces_notebook_13_and_the_scenario(tmp_path, fake_cfd):
     assert submarine.run(run_cfd=True, **kw).child("rotor_cfd").status() == "reused"
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_water_fea_for_real(tmp_path):
