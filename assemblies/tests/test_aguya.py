@@ -171,6 +171,7 @@ def test_a_new_engine_changes_every_node_on_it(tmp_path, engine_vida, fake_jet_c
     assert b.child("airframe").status() == "reused"
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_wing_fea_for_real(tmp_path, engine_vida):

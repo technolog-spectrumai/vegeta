@@ -134,6 +134,7 @@ def test_rover_tree_without_fea(tmp_path):
     assert all(math.isfinite(v["pin_SF"]) and v["pin_SF"] > 0 for v in root.results["pins"].values())
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_ground_fea_for_real(tmp_path):
@@ -146,6 +147,7 @@ def test_ground_fea_for_real(tmp_path):
     assert r.child("arm_fea").results["complete"] and r.child("chassis_fea").results["complete"]
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 def test_apheloria_packs_in_mujoco(tmp_path):
     pytest.importorskip("mujoco")
