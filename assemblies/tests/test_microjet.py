@@ -120,6 +120,7 @@ def test_force_starts_over(tmp_path, fake_cfd):
     assert not (tmp_path / "runs" / "marker").exists() and again.child("compressor").status() == "computed"
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_workflow_real_fea_then_read_back(tmp_path):

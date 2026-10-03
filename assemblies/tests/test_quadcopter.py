@@ -79,6 +79,7 @@ def test_workflow_tree_reuse_and_export(tmp_path, fake_cfd):
     assert vida.load(tmp_path / "q.vida").child("frame").params["frame"]["arm_width"] == 16.0
 
 
+@pytest.mark.real_solvers
 @pytest.mark.slow
 @pytest.mark.requires_ccx
 def test_frame_and_blade_fea_for_real(tmp_path):

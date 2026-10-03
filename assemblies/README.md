@@ -131,3 +131,12 @@ replaced by known results, the simulations and FEA off; lifted snippets checked 
 `./assembly_tests.sh smoke` runs every workflow with the solvers on at `smoke` into `runs/assemblies_smoke/`
 (nothing in `data/` changes); `./assembly_tests.sh air|water|ground|everything` are the real, resumable runs that
 write `data/`.
+
+### Solver mocks
+Every test runs with the solver run functions mocked (`tests/stubs.py`, installed by `tests/conftest.py` for every
+test): `talos.solve_models`, `aeromant.run_cases`, the OpenFOAM lookup and the ground workflows' `run_scene` are
+`unittest.mock` objects autospecced from the real functions (a wrong call fails), each call recorded with the real
+models and cases a workflow built, answered by stubs: fixed, plausible results in the real `Result` types and metric
+names, `run=False` still NOT RUN. A test takes the `solvers` fixture to look at the calls (`solvers.fea`, `.cfd`,
+`.sim`, or `solvers.solve_models.call_args_list`) or to swap an answer (`solvers.run_cases.side_effect = ...`). Tests
+that need the real tools are marked `@pytest.mark.real_solvers` (and `slow`).
