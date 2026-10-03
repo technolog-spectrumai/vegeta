@@ -16,7 +16,7 @@ What may change is the library's design space (``propulsor_maps.EDF_SPACE`` / ``
 
 - the **ducted fan**: diameter 70–120 mm, blade pitch 1.4–2.2 diameters, nozzle exit 65–90 % of the fan annulus, the duct's
   build quality (the hobby catalogue fan's fitted loss, 0.34, or a well-made fan, 0.20), **one to three stages**;
-- the **propellers**: tractor or pusher, 9–12 inch, pitch 0.6–1.2 diameters;
+- the **propellers**: tractor or pusher, 9–12 inch, pitch 0.6–1.2 diameters, two, six or twelve blades;
 - **both**: the electrical power asked of the pack — 1900, 2700 or 3500 W (about 11, 15 and 20 C) — with motors and
   controllers that grow with it (``propulsor_maps.unit_mass_kg``).
 """
@@ -108,7 +108,7 @@ def study(lib, powers=POWERS_W, mission: mf.Mission = mf.Mission()):
                          "10 km reach [s]": r10["time_to_fire_s"] if r10["reachable"] else math.nan,
                          "10 km reach: limit": r10.get("limit", r10.get("why")),
                          "10 km and back [s]": r10b["time_s"] if r10b["reachable"] else math.nan,
-                         "stages": e.get("stages", math.nan), "diameter": e.get("diameter_mm", e.get("diameter_in")),
+                         "stages": e.get("stages", math.nan), "blades": e.get("blades", 12), "diameter": e.get("diameter_mm", e.get("diameter_in")),
                          "pitch ratio": e["pitch_ratio"], "exit area ratio": e.get("exit_area_ratio", math.nan),
                          "quality": e.get("quality", "")})
     return pd.DataFrame(rows)

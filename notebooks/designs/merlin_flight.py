@@ -224,7 +224,7 @@ def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pit
     out = {}
     hits = pm.find(lib, kind="edf", **edf)
     if not hits:
-        raise ValueError(f"no fan {edf} in the propulsor library: rebuild it (notebook 25 section 15) with that design in its space")
+        raise ValueError(f"no fan {edf} in the propulsor library: rebuild it (notebook 25 section 16) with that design in its space")
     e = hits[0]
     af, um = airframe("edf", e)
     u = pm.unit(e, max_electrical_w, drive_efficiency=drive_efficiency, merlin=p)
@@ -235,7 +235,7 @@ def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pit
     for kind in ("tractor", "pusher"):
         best, rows = None, []
         for pin in pitches_in:
-            hits = pm.find(lib, kind="propeller", diameter_in=float(prop_diameter_in), pitch_ratio=round(pin / prop_diameter_in, 6))
+            hits = pm.find(lib, kind="propeller", diameter_in=float(prop_diameter_in), pitch_ratio=round(pin / prop_diameter_in, 6), blades=2)
             if not hits:
                 continue
             e = hits[0]
@@ -252,7 +252,7 @@ def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pit
         if best is None:
             raise ValueError(f"no {prop_diameter_in}-inch propeller with a pitch in {pitches_in} in the propulsor library")
         _, af, u, e = best
-        out[kind] = {"airframe": af, "unit": u, "info": {"entry": e, "prop": pm.prop_object(e["diameter_in"], e["pitch_ratio"]),
+        out[kind] = {"airframe": af, "unit": u, "info": {"entry": e, "prop": pm.prop_object(e["diameter_in"], e["pitch_ratio"], e["blades"]),
                                                           "w": e["installation"][kind]["w"], "t": e["installation"][kind]["t"],
                                                           "pitch_study": rows, "rpm_max": e["rpm_max"]}}
     return out

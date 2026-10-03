@@ -1,4 +1,4 @@
-"""The propulsor library (notebook 25 §15) and MERLIN's race on it (notebook 27): the mass models at notebook 26's units, a
+"""The propulsor library (notebook 25 §16) and MERLIN's race on it (notebook 27): the mass models at notebook 26's units, a
 library that survives its JSON round trip, the installation applied to a propeller map, multi-stage fans, the scaled fan in
 CAD, the out-and-back race and the study.
 
@@ -14,7 +14,7 @@ import propulsor_maps as pm
 V = np.linspace(0.0, 90.0, 10)
 SMALL_EDF = {"diameter_mm": (90.0,), "pitch_ratio": (1.78,), "exit_area_ratio": (0.9,), "duct_loss": (pm.CATALOGUE_DUCT_LOSS,),
              "stages": (1, 2)}
-SMALL_PROP = {"diameter_in": (10.0,), "pitch_ratio": (1.0,)}
+SMALL_PROP = {"diameter_in": (10.0,), "pitch_ratio": (1.0,), "blades": (2,)}
 
 
 @pytest.fixture(scope="module")
@@ -32,7 +32,7 @@ def test_library_round_trip(lib):
 
 def test_mass_models_reproduce_notebook_26(lib):
     e1, e2 = (lib["by_id"][f"edf-90-p1.78-e0.90-catalogue-s{n}"] for n in (1, 2))
-    p = lib["by_id"]["prop-10x10"]
+    p = lib["by_id"]["prop-10x10-b2"]
     assert pm.unit_mass_kg(e1, 1900.0) == pytest.approx(mf.UNIT_MASS_KG["edf"], abs=1e-9)
     assert pm.unit_mass_kg(p, 1900.0) == pytest.approx(mf.UNIT_MASS_KG["pusher"], abs=1e-9)
     assert pm.unit_mass_kg(e2, 1900.0) == pytest.approx(pm.unit_mass_kg(e1, 1900.0) + 0.045)
@@ -40,7 +40,7 @@ def test_mass_models_reproduce_notebook_26(lib):
 
 
 def test_installation_applies_to_the_map(lib):
-    p = lib["by_id"]["prop-10x10"]
+    p = lib["by_id"]["prop-10x10-b2"]
     free = mf.Unit("free", p["V"], p["rpm"], p["thrust"], p["power"], 0.0, 1900.0)
     for layout in ("tractor", "pusher"):
         w, t = p["installation"][layout]["w"], p["installation"][layout]["t"]

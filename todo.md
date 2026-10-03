@@ -110,9 +110,9 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   estimate, the mission, the smoke movie) and `26_merlin`: which propulsor reaches a fire 5 / 8 / 10 / 20 / 30 km away first;
   `scenarios/merlin_mission.py`, `user_tests.sh merlin`, `tests/test_merlin.py`
 - [x] 5h.5 Reach / return / landing times (`race_table`); a fire up a mountain (`fire_elevation_m`: a constant gentle climb on the dash, the descent home)
-- [x] 5h.6 Multi-stage fans (`boreas.ducted` `stages`, notebook 25 §14); the propulsor library (notebook 25 §15,
+- [x] 5h.6 Multi-stage fans (`boreas.ducted` `stages`, notebook 25 §14); the propulsor library (notebook 25 §16,
   `designs/propulsor_maps.py`, `data/propulsor_maps.json`) read by notebooks 26 and 27; `27_merlin_race` (branch `dev_rave`):
-  5 km and back and 10 km races over 324 fans and 16 propellers at three powers; `scenarios/merlin_race.py`, `propulsor_maps.py`
+  5 km and back and 10 km races over 324 fans (1-3 stages) and 48 propellers (2, 6, 12 blades) at three powers; `scenarios/merlin_race.py`, `propulsor_maps.py`
 - [ ] 5h.2 The race in head- and tailwind; air density at the fire's altitude; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
 - [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)

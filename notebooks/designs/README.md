@@ -75,7 +75,7 @@ effective wake and thrust deduction) or `ducted_fan_unit` (`boreas.ducted` less 
 Pasquill–Gifford spread, CO from the heat release, `particles` for drawing), `source_estimate` (the fire's size from the
 passes), `Forest`, `fly` → `Episode`, `profile_figure`, `render_movie` (the smoke as particles, a map and the sensor trace).
 
-`propulsor_maps.py` (`import propulsor_maps as pm`, notebook 25 §15, branch `dev_rave`) is the propulsor library the reduced
+`propulsor_maps.py` (`import propulsor_maps as pm`, notebook 25 §16, branch `dev_rave`) is the propulsor library the reduced
 flight models read instead of solving propellers and fans again: `build_library` (parallel) solves every two-blade propeller
 (9–12 inch, pitch 0.6–1.2 D; free-stream maps plus MERLIN's installation w and t as tractor and pusher) and every ducted fan
 (70–120 mm, pitch 1.4–2.2 D, nozzle exit 0.65–0.9, catalogue or well-made duct, **one to three stages**; plus the lossless

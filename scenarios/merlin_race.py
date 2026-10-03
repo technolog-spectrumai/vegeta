@@ -3,7 +3,7 @@
     python scenarios/merlin_race.py                 # every map of the library, 3 powers (~1 min)
 
 Reads notebook 25's propulsor library (``notebooks/designs/data/propulsor_maps.json``: 324 ducted fans with one to three
-stages, 16 propellers as tractor and pusher; rebuild it with ``scenarios/propulsor_maps.py``), races each at 1900, 2700
+stages, 48 propellers of 2, 6 and 12 blades as tractor and pusher; rebuild it with ``scenarios/propulsor_maps.py``), races each at 1900, 2700
 and 3500 W on the same 6S 8000 mAh pack — 5 km and back, 10 km reach, 10 km and back — and prints the fastest of each kind.
 Writes ``scenarios/output/merlin_race.csv`` (every configuration and power) and ``merlin_race.json`` (the winners).
 """

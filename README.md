@@ -187,7 +187,7 @@ the ducted fan close only at 10 km (its jet costs twice the energy per kilometre
 
 **The propulsor race** (branch `dev_rave`): notebook 25 now ends with **multi-stage ducted fans** (§14: two and three
 rotor + stator stages, `boreas.ducted`'s `stages` — they add pressure at the same flow, so they pay only for a fan that runs
-out of tip speed before power, a small or quiet one) and the **propulsor library** (§15, `designs/propulsor_maps.py`:
+out of tip speed before power, a small or quiet one) and the **propulsor library** (§16, `designs/propulsor_maps.py`:
 every propeller and fan of a design space solved once over airspeed × rpm and exported to `designs/data/propulsor_maps.json`).
 Notebooks 26 and 27 read it and solve nothing. `27_merlin_race` asks whether any reasonable ducted fan — 70–120 mm, any pitch
 and nozzle, a well-made duct, one to three stages, up to 3500 W from the same battery — beats the propellers in a 5 km

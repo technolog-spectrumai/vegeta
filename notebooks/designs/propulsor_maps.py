@@ -4,7 +4,7 @@ The propeller notebook (25) does the propulsion analysis; this module is how it 
 solved once, over airspeed x rpm, and written to one JSON library (``data/propulsor_maps.json``); the flight models only
 interpolate in it (``unit``), so a race over hundreds of designs takes seconds.
 
-- **Open propellers** (two blades, notebook 25's planform scaled with the diameter): Boreas BEMT in the free stream —
+- **Open propellers** (two, six or twelve of notebook 25's blades, the planform scaled with the diameter): Boreas BEMT in the free stream —
   thrust and shaft power over (V, rpm) — plus, per layout on MERLIN, the installation from ``air_propeller``'s models
   (``merlin_flight.installation``): the effective wake fraction w (the blades work at ``V (1 - w)``) and the thrust
   deduction t (the net thrust is ``T (1 - t)``), both at MERLIN's 25 m/s cruise.
@@ -17,10 +17,10 @@ interpolate in it (``unit``), so a race over hundreds of designs takes seconds.
 - **Masses** of a propulsion unit at a rated electrical power (``unit_mass_kg``), anchored on notebook 26's units at
   1900 W: the fan's rotor + duct + stators 120 g x (D / 90 mm)^2 and 45 g x (D / 90 mm)^2 per extra stage, its motor
   200 g x (P / 1900 W)^0.75, its controller 85 g x P / 1900 W (405 g at 90 mm); a propeller unit's motor
-  190 g x (P / 1900 W)^0.75, controller 65 g x P / 1900 W, propeller 18 g x (D / 10 in)^2.5 (273 g).
+  190 g x (P / 1900 W)^0.75, controller 65 g x P / 1900 W, propeller 18 g x (D / 10 in)^2.5 x blades / 2 (273 g).
 
 ``build_library`` (parallel) → ``save`` → ``load`` → ``unit(entry, power, layout=...)`` → ``merlin_flight.Unit``.
-Regenerate the library with notebook 25 §15 or ``python scenarios/propulsor_maps.py``.
+Regenerate the library with notebook 25 §16 or ``python scenarios/propulsor_maps.py``.
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ CATALOGUE_DUCT_LOSS = 0.3353          # fitted to a 90 mm, 12-blade hobby fan: 3
 WELL_MADE_DUCT_LOSS = 0.20
 EDF_SPACE = {"diameter_mm": (70.0, 80.0, 90.0, 100.0, 110.0, 120.0), "pitch_ratio": (1.4, 1.78, 2.2),
              "exit_area_ratio": (0.65, 0.8, 0.9), "duct_loss": (CATALOGUE_DUCT_LOSS, WELL_MADE_DUCT_LOSS), "stages": (1, 2, 3)}
-PROP_SPACE = {"diameter_in": (9.0, 10.0, 11.0, 12.0), "pitch_ratio": (0.6, 0.8, 1.0, 1.2)}
+PROP_SPACE = {"diameter_in": (9.0, 10.0, 11.0, 12.0), "pitch_ratio": (0.6, 0.8, 1.0, 1.2), "blades": (2, 6, 12)}
 # the upper bound, not a design: one-stage fans whose duct loses nothing (no inlet, wall or nozzle loss at all)
 EDF_BOUND = {"diameter_mm": EDF_SPACE["diameter_mm"], "pitch_ratio": EDF_SPACE["pitch_ratio"], "exit_area_ratio": (0.65, 0.8),
              "duct_loss": (0.0,), "stages": (1,)}
@@ -80,10 +80,11 @@ def fan_object(diameter_mm, pitch_ratio, exit_area_ratio, duct_loss, stages):
     return fan, hp, hg
 
 
-def prop_object(diameter_in, pitch_ratio):
+def prop_object(diameter_in, pitch_ratio, blades=2):
+    """An open propeller: notebook 25's blade (planform scaled with the diameter), ``blades`` of it on one hub."""
     from vegeta import boreas
     D = diameter_in * 0.0254
-    return boreas.Propeller.from_pitch(f"{diameter_in:.0f}x{diameter_in * pitch_ratio:.0f}", D, pitch_ratio * D, blades=2,
+    return boreas.Propeller.from_pitch(f"{diameter_in:.0f}x{diameter_in * pitch_ratio:.0f}", D, pitch_ratio * D, blades=int(blades),
                                        chord_root_m=0.018 * D / 0.254, chord_max_m=0.026 * D / 0.254, chord_tip_m=0.010 * D / 0.254,
                                        hub_radius_m=0.011)
 
@@ -119,11 +120,11 @@ def edf_entry(diameter_mm, pitch_ratio, exit_area_ratio, duct_loss, stages, V=V_
             "V": V, "rpm": rpm, "thrust": T, "power": P, "exit_velocity": Ve}
 
 
-def prop_entry(diameter_in, pitch_ratio, V=V_TABLE, n_rpm=20, merlin=None) -> dict:
+def prop_entry(diameter_in, pitch_ratio, blades=2, V=V_TABLE, n_rpm=20, merlin=None) -> dict:
     """One propeller in the free stream over (V, rpm), and its installation on MERLIN as tractor and pusher."""
     import merlin_flight as mf
     from vegeta import boreas
-    prop, sec = prop_object(diameter_in, pitch_ratio), section()
+    prop, sec = prop_object(diameter_in, pitch_ratio, blades), section()
     rpm_max = PROP_TIP_MACH * 340.0 / (math.pi * prop.diameter) * 60
     rpm = np.linspace(0.1 * rpm_max, rpm_max, n_rpm)
     T, P = np.zeros((len(V), len(rpm))), np.zeros((len(V), len(rpm)))
@@ -133,11 +134,11 @@ def prop_entry(diameter_in, pitch_ratio, V=V_TABLE, n_rpm=20, merlin=None) -> di
             T[i, j], P[i, j] = op.thrust, op.power
     inst = {}
     for layout in ("tractor", "pusher"):
-        af = merlin_airframe(layout, 1900.0, {"kind": "propeller", "diameter_in": diameter_in}, merlin)
+        af = merlin_airframe(layout, 1900.0, {"kind": "propeller", "diameter_in": diameter_in, "blades": blades}, merlin)
         r = mf.installation(layout, dict(merlin or {}), prop, sec, INSTALLATION_SPEED, float(af.drag(INSTALLATION_SPEED)))
         inst[layout] = {"w": r["w"], "t": r["t"]}
-    return {"kind": "propeller", "id": f"prop-{diameter_in:.0f}x{diameter_in * pitch_ratio:.0f}", "label": f"{prop.name} in, 2 blades",
-            "diameter_in": diameter_in, "pitch_ratio": pitch_ratio, "blades": 2, "rpm_max": rpm_max, "V": V, "rpm": rpm,
+    return {"kind": "propeller", "id": f"prop-{diameter_in:.0f}x{diameter_in * pitch_ratio:.0f}-b{int(blades)}",
+            "label": f"{prop.name} in, {int(blades)} blades", "diameter_in": diameter_in, "pitch_ratio": pitch_ratio, "blades": int(blades), "rpm_max": rpm_max, "V": V, "rpm": rpm,
             "thrust": T, "power": P, "installation": inst}
 
 
@@ -189,7 +190,7 @@ def load(path=LIBRARY) -> dict:
     """The library with its tables as arrays; ``entries`` keyed by id in ``by_id``."""
     path = Path(path)
     if not path.exists():
-        raise FileNotFoundError(f"{path} is missing: run notebook 25 §15 or `python scenarios/propulsor_maps.py`")
+        raise FileNotFoundError(f"{path} is missing: run notebook 25 §16 or `python scenarios/propulsor_maps.py`")
     lib = json.loads(path.read_text())
     for e in lib["entries"]:
         for k in ("V", "rpm", "thrust", "power", "exit_velocity"):
@@ -206,7 +207,7 @@ def unit_mass_kg(entry: dict, power_w: float) -> float:
     if entry["kind"] == "edf":
         k2 = (entry["diameter_mm"] / 90.0) ** 2
         return 0.120 * k2 + 0.045 * k2 * (entry.get("stages", 1) - 1) + 0.200 * f ** 0.75 + 0.085 * f
-    return 0.190 * f ** 0.75 + 0.065 * f + 0.018 * (entry["diameter_in"] / 10.0) ** 2.5
+    return 0.190 * f ** 0.75 + 0.065 * f + 0.018 * (entry["diameter_in"] / 10.0) ** 2.5 * entry.get("blades", 2) / 2
 
 
 def merlin_airframe(layout, power_w, entry, merlin=None):
@@ -249,7 +250,7 @@ def unit(entry: dict, power_w: float, *, layout=None, scrub_area_m2=None, drive_
         T = np.array([[np.interp(va, V, T[:, j]) for j in range(len(rpm))] for va in Va]) * (1 - t)
         P = np.array([[np.interp(va, V, P[:, j]) for j in range(len(rpm))] for va in Va])
         notes = f"library map {entry['id']}, {layout}: w = {w:.4f}, t = {t:.4f}"
-        name = f"{layout} propeller {entry['label'].split(' in')[0]}"
+        name = f"{layout} propeller {entry['label'].split(' in')[0]}, {entry.get('blades', 2)} blades"
     else:
         area = edf_scrub_area(entry, merlin) if scrub_area_m2 is None else scrub_area_m2
         vj = np.maximum(entry["exit_velocity"], V[:, None])

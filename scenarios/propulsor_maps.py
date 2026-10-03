@@ -1,8 +1,8 @@
 """Build the propulsor library — every fan and propeller of notebook 25's design space as (airspeed x rpm) maps — and write
 ``notebooks/designs/data/propulsor_maps.json`` for the reduced flight models (MERLIN, notebooks 26 and 27). The same as
-notebook 25 §15, headless.
+notebook 25 §16, headless.
 
-    python scenarios/propulsor_maps.py              # 324 ducted fans (1-3 stages) + 16 propellers (~10 min on 4 cores)
+    python scenarios/propulsor_maps.py              # 324 ducted fans (1-3 stages), 36 lossless bound fans, 48 propellers (2, 6, 12 blades) (~12 min on 4 cores)
     python scenarios/propulsor_maps.py -j 8 --out /tmp/maps.json
 """
 import argparse
