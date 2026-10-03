@@ -185,6 +185,15 @@ smoke as particles. With the defaults the **pusher** is fastest at all three dis
 the ducted fan close only at 10 km (its jet costs twice the energy per kilometre). `scenarios/merlin_mission.py` (or
 `./user_tests.sh merlin`) re-runs the race and the movie; `MERLIN_QUICK=1` runs the notebook as a quick check.
 
+**The propulsor race** (branch `dev_rave`): notebook 25 now ends with **multi-stage ducted fans** (§14: two and three
+rotor + stator stages, `boreas.ducted`'s `stages` — they add pressure at the same flow, so they pay only for a fan that runs
+out of tip speed before power, a small or quiet one) and the **propulsor library** (§15, `designs/propulsor_maps.py`:
+every propeller and fan of a design space solved once over airspeed × rpm and exported to `designs/data/propulsor_maps.json`).
+Notebooks 26 and 27 read it and solve nothing. `27_merlin_race` asks whether any reasonable ducted fan — 70–120 mm, any pitch
+and nozzle, a well-made duct, one to three stages, up to 3500 W from the same battery — beats the propellers in a 5 km
+out-and-back and a 10 km race: none does, and even a lossless duct does not. `scenarios/merlin_race.py` re-runs the race,
+`scenarios/propulsor_maps.py` rebuilds the library.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

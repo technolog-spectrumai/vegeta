@@ -134,3 +134,10 @@ up a mountain (`--fire-elevation 600`), flies the fastest
 estimates the fire's heat release from the passes. Writes `merlin_<propulsion>_<km>km.mp4` and `.json` (race table, mission
 summary, phases, source estimate).
 
+## The propulsor library and MERLIN's race
+
+`python scenarios/propulsor_maps.py [-j N]` solves every propeller and ducted fan of notebook 25's design space over airspeed ×
+rpm and writes `notebooks/designs/data/propulsor_maps.json` (about 12 minutes on four cores; the same as notebook 25 §15).
+`python scenarios/merlin_race.py` races the library on MERLIN — 5 km and back, 10 km reach, 10 km and back, at 1900, 2700 and
+3500 W on the same battery — and writes `merlin_race.csv` (every race) and `merlin_race.json` (the fastest of each kind).
+

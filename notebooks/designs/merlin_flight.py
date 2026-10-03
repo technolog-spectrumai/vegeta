@@ -193,79 +193,68 @@ def installation(kind, p, prop, airfoil, speed, thrust, rho=RHO):
 
 
 def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pitches_in=(6.0, 8.0, 10.0), prop_diameter_in=10.0,
-                  tip_mach_max=0.75, edf_static=(3.0 * G, 1930.0), design_speed=25.0, distance_m=20000.0, mission=None,
-                  common_mass_kg=None, unit_mass_kg=None, V=np.linspace(0.0, 70.0, 36), quick=False):
+                  edf=None, distance_m=20000.0, mission=None, common_mass_kg=None, unit_mass_kg=None, library=None, **_ignored):
     """The three MERLINs, each an ``Airframe`` (its own drag build-up and mass) with its ``Unit``, on one battery and one
-    electrical power limit ``max_electrical_w``:
+    electrical power limit ``max_electrical_w`` — read from notebook 25's propulsor library (``propulsor_maps``), nothing
+    solved here:
 
-    - ``edf``: notebook 25's EDF (90 mm, 12 blades, 7 stators) in MERLIN's nose duct (``merlin.edf_housing_params`` ->
-      ``ducted_fan.housing_geometry``), ``duct_loss`` fitted to the same catalogue static point (``edf_static`` = thrust N,
-      electrical W at ``drive_efficiency``), the annular jet scrubbing the fairing behind the nozzle;
-    - ``tractor`` / ``pusher``: a two-blade ``prop_diameter_in`` propeller (notebook 25's blade planform), the pitch chosen
-      among ``pitches_in`` for the shortest time to a fire ``distance_m`` away, rpm limited to a tip Mach number of
-      ``tip_mach_max``, w and t from ``installation`` at the ``design_speed`` cruise point.
+    - ``edf``: the fan ``edf`` picks in the library (default notebook 25's 90 mm, 12-blade, 7-stator fan with the catalogue
+      loss, one stage), its map less the annular jet scrubbing MERLIN's fairing (``propulsor_maps.unit``);
+    - ``tractor`` / ``pusher``: the ``prop_diameter_in`` propeller with the pitch among ``pitches_in`` that reaches a fire
+      ``distance_m`` away first, its free-stream map at MERLIN's effective wake and thrust deduction (both from the library).
 
-    Returns ``{kind: {"airframe", "unit", "info"}}``. ``quick``: coarse tables (tests)."""
+    Returns ``{kind: {"airframe", "unit", "info"}}``; ``info`` carries the fan and propeller objects for reference."""
     import merlin as m
-    import ducted_fan as df
-    from vegeta import boreas
-    from vegeta.boreas import ducted
+    import propulsor_maps as pm
+    lib = pm.load() if library is None else (pm.load(library) if not isinstance(library, dict) else library)
     p = {} if p is None else dict(p)
     mission = Mission() if mission is None else mission
     common = dict(COMMON_MASS_KG if common_mass_kg is None else common_mass_kg)
-    unit_mass = dict(UNIT_MASS_KG if unit_mass_kg is None else unit_mass_kg)
-    section = boreas.Airfoil(**SECTION_KW)
-    if quick:
-        V = np.linspace(0.0, 70.0, 15)
-    n_rpm_p, n_rpm_f = (10, 8) if quick else (24, 16)
+    edf = dict(diameter_mm=90.0, pitch_ratio=1.78, exit_area_ratio=0.9, quality="catalogue", stages=1, **(edf or {}))
+
+    def airframe(kind, entry):
+        q = dict(p, propulsion=kind)
+        if kind == "edf":
+            q.update(edf_diameter=entry["diameter_mm"], edf_pitch=entry["pitch_ratio"] * entry["diameter_mm"],
+                     edf_exit_area_ratio=entry["exit_area_ratio"])
+        b = m.drag_buildup(q, 25.0)
+        um = unit_mass_kg[kind] if unit_mass_kg else pm.unit_mass_kg(entry, max_electrical_w)
+        return mf_airframe(kind, sum(common.values()) + um, b, (b["cd_area_m2"] + EXTRA_CD_AREA_M2) / b["planform"]), um
+
     out = {}
-
-    def airframe(kind):
-        b = m.drag_buildup(dict(p, propulsion=kind), design_speed)
-        mass = sum(common.values()) + unit_mass[kind]
-        cd0 = (b["cd_area_m2"] + EXTRA_CD_AREA_M2) / b["planform"]
-        return mf_airframe(kind, mass, b, cd0)
-
-    # the ducted fan
-    q = m.Merlin().resolve(**dict(p, propulsion="edf"))
-    hp = m.edf_housing_params(q)
-    hg = df.housing_geometry(hp)
-    blade = boreas.Propeller.from_pitch(f"EDF {hp['diameter']:.0f} mm, 12 blades", hp["diameter"] / 1000, hp["pitch"] / 1000, blades=12,
-                                        chord_root_m=hp["chord_root"] / 1000, chord_max_m=hp["chord_max"] / 1000,
-                                        chord_tip_m=hp["chord_tip"] / 1000, hub_radius_m=hp["hub_diameter"] / 2000)
-    fan = ducted.DuctedFan(blade.name, blade, tip_clearance_m=hp["tip_clearance"] / 1000, exit_area_ratio=hg["exit_area_ratio"],
-                           stator_vanes=int(hp["stator_vanes"]), stator_loss=0.10, external_wetted_area_m2=hg["external_wetted_area"] * 1e-6,
-                           duct_length_m=hg["total_length"] / 1000, mass_kg=0.32)
-    fan = ducted.fit_duct_loss(fan, section, edf_static[0], edf_static[1] * drive_efficiency, 0.0, RHO)
-    lay = m.Merlin.layout(q)
-    scrub_area = math.pi * 0.5 * (hp["hub_diameter"] + q["fuselage_diameter"]) / 1000 * q["fairing_length"] / 1000 \
-        + math.pi * q["fuselage_diameter"] / 1000 * 0.15                    # the fairing + 150 mm of the cylinder behind it
-    edf = ducted_fan_unit("ducted fan (EDF 90 mm)", fan, section, mass_kg=unit_mass["edf"], max_electrical_w=max_electrical_w,
-                          rpm_max=45000.0, scrub_area_m2=scrub_area, drive_efficiency=drive_efficiency, V=V, n_rpm=n_rpm_f)
-    out["edf"] = {"airframe": airframe("edf"), "unit": edf,
-                  "info": {"duct_loss": fan.duct_loss, "fan": fan, "housing": hg, "scrub_area_m2": scrub_area, "exit_x_mm": lay["exit_x"]}}
-    # the open propellers
-    D = prop_diameter_in * 0.0254
-    rpm_max = tip_mach_max * 340.0 / (math.pi * D) * 60
+    hits = pm.find(lib, kind="edf", **edf)
+    if not hits:
+        raise ValueError(f"no fan {edf} in the propulsor library: rebuild it (notebook 25 section 15) with that design in its space")
+    e = hits[0]
+    af, um = airframe("edf", e)
+    u = pm.unit(e, max_electrical_w, drive_efficiency=drive_efficiency, merlin=p)
+    u.mass_kg = um
+    fan, hp, hg = pm.fan_object(e["diameter_mm"], e["pitch_ratio"], e["exit_area_ratio"], e["duct_loss"], e["stages"])
+    out["edf"] = {"airframe": af, "unit": u, "info": {"entry": e, "duct_loss": e["duct_loss"], "fan": fan, "housing": hg,
+                                                      "scrub_area_m2": pm.edf_scrub_area(e, p)}}
     for kind in ("tractor", "pusher"):
-        af = airframe(kind)
         best, rows = None, []
         for pin in pitches_in:
-            prop = boreas.Propeller.from_pitch(f"{prop_diameter_in:.0f}x{pin:.0f}", D, pin * 0.0254, blades=2, chord_root_m=0.018 * D / 0.254,
-                                               chord_max_m=0.026 * D / 0.254, chord_tip_m=0.010 * D / 0.254, hub_radius_m=0.011)
-            inst = installation(kind, p, prop, section, design_speed, float(af.drag(design_speed)))
-            u = open_propeller(f"{kind} propeller {prop.name}", prop, section, wake_fraction=inst["w"], thrust_deduction=inst["t"],
-                               mass_kg=unit_mass[kind], max_electrical_w=max_electrical_w, rpm_max=rpm_max,
-                               drive_efficiency=drive_efficiency, V=V, n_rpm=n_rpm_p)
+            hits = pm.find(lib, kind="propeller", diameter_in=float(prop_diameter_in), pitch_ratio=round(pin / prop_diameter_in, 6))
+            if not hits:
+                continue
+            e = hits[0]
+            af, um = airframe(kind, e)
+            u = pm.unit(e, max_electrical_w, layout=kind, drive_efficiency=drive_efficiency)
+            u.mass_kg = um
             r = race(af, u, distance_m, mission)
-            time_ = r["time_to_fire_s"] if r["reachable"] else math.inf
+            t = r["time_to_fire_s"] if r["reachable"] else math.inf
+            inst = e["installation"][kind]
             rows.append({"pitch [in]": pin, "w": inst["w"], "t": inst["t"], "top speed [m/s]": performance(af, u)["v_top"],
-                         f"time to the fire at {distance_m / 1000:.0f} km [s]": time_})
-            if best is None or time_ < best[0]:
-                best = (time_, u, prop, inst)
-        out[kind] = {"airframe": af, "unit": best[1], "info": {"prop": best[2], "w": best[3]["w"], "t": best[3]["t"],
-                                                                "wake": best[3]["wake"], "pod": best[3]["pod"], "pitch_study": rows,
-                                                                "rpm_max": rpm_max}}
+                         f"time to the fire at {distance_m / 1000:.0f} km [s]": t})
+            if best is None or t < best[0]:
+                best = (t, af, u, e)
+        if best is None:
+            raise ValueError(f"no {prop_diameter_in}-inch propeller with a pitch in {pitches_in} in the propulsor library")
+        _, af, u, e = best
+        out[kind] = {"airframe": af, "unit": u, "info": {"entry": e, "prop": pm.prop_object(e["diameter_in"], e["pitch_ratio"]),
+                                                          "w": e["installation"][kind]["w"], "t": e["installation"][kind]["t"],
+                                                          "pitch_study": rows, "rpm_max": e["rpm_max"]}}
     return out
 
 

@@ -31,6 +31,11 @@ A ducted fan is a rotor in a duct, usually with a stator row behind it and a noz
   highest-flow crossing (the stable intersection of the fan and system curves) is refined by bracketed
   regula falsi (bisection with secant steps, Illinois variant).
 - Shaft torque and power: ``Q = sum r rho V_fan 2 pi r c_theta dr``, ``P = omega Q``.
+- Several stages (``stages`` = n > 1, each a rotor and its stator, on one shaft): the stator turns the flow axial
+  again, so every rotor meets the same axial inflow at the same ``V_fan`` and does the same work; the rise is
+  ``n dp0_useful``, the rotor thrust, torque and power ``n`` times one rotor's. Each stage after the first adds
+  ``interstage_loss 1/2 rho V_fan^2`` to the system (the stator's wake and the gap in front of the next rotor). A
+  multi-stage fan needs a stator in every stage.
 
 With no profile drag, no duct, stator or clearance loss the result is the ideal ducted actuator disk:
 ``P = T (V_exit + V) / 2``, and in hover ``P = T^1.5 / (2 sqrt(rho sigma A_f))`` — for ``sigma = 1`` that is 1/sqrt(2)
@@ -97,6 +102,8 @@ class DuctedFan:
     duct_length_m: float = 0.0
     mass_kg: float = 0.0
     notes: str = ""
+    stages: int = 1
+    interstage_loss: float = 0.03
 
     def __post_init__(self):
         if not isinstance(self.rotor, Propeller):
@@ -111,6 +118,12 @@ class DuctedFan:
             raise ValueError(f"tip_clearance_m must be >= 0 and below the blade height {self.blade_height * 1000:.2f} mm")
         if self.external_wetted_area_m2 < 0 or self.duct_length_m < 0 or self.mass_kg < 0:
             raise ValueError("external_wetted_area_m2, duct_length_m and mass_kg must be >= 0")
+        if self.stages < 1 or int(self.stages) != self.stages:
+            raise ValueError("stages must be a whole number >= 1")
+        if self.stages > 1 and self.stator_vanes == 0:
+            raise ValueError("a multi-stage fan needs a stator in every stage (stator_vanes > 0)")
+        if self.interstage_loss < 0:
+            raise ValueError("interstage_loss must be >= 0")
         if self.external_wetted_area_m2 > 0 and self.duct_length_m <= 0:
             raise ValueError("a nacelle wetted area needs duct_length_m > 0 (the friction Reynolds number length)")
 
@@ -133,6 +146,7 @@ class DuctedFan:
                 "exit_area_m2": self.exit_area, "blade_height_m": self.blade_height,
                 "tip_clearance_m": self.tip_clearance_m, "exit_area_ratio": self.exit_area_ratio,
                 "stator_vanes": self.stator_vanes, "stator_loss": self.stator_loss, "duct_loss": self.duct_loss,
+                "stages": self.stages, "interstage_loss": self.interstage_loss,
                 "external_wetted_area_m2": self.external_wetted_area_m2, "duct_length_m": self.duct_length_m,
                 "mass_kg": self.mass_kg, "notes": self.notes}
 
@@ -248,16 +262,17 @@ def solve(fan: DuctedFan, airfoil: Airfoil, rpm: float, airspeed: float = 0.0, r
     r, chord, beta, dr = fan.rotor.stations(n_stations)
     sigma, V, A = fan.exit_area_ratio, float(airspeed), fan.fan_area
     u_tip = omega * fan.rotor.radius
+    n = int(fan.stages)
 
     def residual(v_exit: float):
         """Fan rise minus system demand [Pa] at the exit velocity ``v_exit``, and the station state."""
         v_fan = sigma * v_exit
         st = _stations(fan, airfoil, omega, v_fan, rho, r, chord, beta, dr)
-        demand = 0.5 * rho * (v_exit**2 - V**2) + fan.duct_loss * 0.5 * rho * v_fan**2
-        return st["dp0_mean"] - demand, st
+        demand = 0.5 * rho * (v_exit**2 - V**2) + (fan.duct_loss + (n - 1) * fan.interstage_loss) * 0.5 * rho * v_fan**2
+        return n * st["dp0_mean"] - demand, st
 
     # scan the fan and system curves; the highest-flow sign change (+ -> -) is the stable operating point
-    v_max = V + 3.0 * u_tip
+    v_max = V + 3.0 * math.sqrt(n) * u_tip
     grid = v_max * np.geomspace(1e-4, 1.0, 40)
     f = np.array([residual(v)[0] for v in grid])
     up = np.nonzero((f[:-1] > 0) & (f[1:] <= 0))[0]
@@ -290,16 +305,16 @@ def solve(fan: DuctedFan, airfoil: Airfoil, rpm: float, airspeed: float = 0.0, r
     c_theta, phi, cl, cd, W2 = st["c_theta"], st["phi"], st["cl"], st["cd"], st["W2"]
     B = fan.rotor.blades
     dT_rotor = B * 0.5 * rho * W2 * chord * (cl * np.cos(phi) - cd * np.sin(phi))           # axial blade force / radius
-    rotor_thrust = float(np.sum(dT_rotor * dr))
+    rotor_thrust = n * float(np.sum(dT_rotor * dr))
     dQ = rho * v_fan * 2 * math.pi * r * c_theta * r                                         # angular momentum flux / radius
-    torque = float(np.sum(dQ * dr))
+    torque = n * float(np.sum(dQ * dr))
     power = torque * omega
     fm = thrust**1.5 / (power * math.sqrt(2 * rho * A)) if V == 0 and power > 0 and thrust > 0 else 0.0
     return DuctedPoint(
         rpm=float(rpm), airspeed=V, rho=rho, thrust=thrust, rotor_thrust=rotor_thrust,
         duct_thrust=thrust - rotor_thrust, torque=torque, power=power,
         efficiency=(thrust * V / power) if power > 0 and V > 0 else 0.0, figure_of_merit=fm,
-        mass_flow=mdot, fan_velocity=v_fan, exit_velocity=v_exit, total_pressure_rise=st["dp0_mean"],
+        mass_flow=mdot, fan_velocity=v_fan, exit_velocity=v_exit, total_pressure_rise=n * st["dp0_mean"],
         tip_mach=u_tip / speed_of_sound, converged=bool(converged),
         r=r, c_theta=c_theta, alpha_deg=np.degrees(st["alpha"]), cl=cl, dp0=st["dp0"],
     )

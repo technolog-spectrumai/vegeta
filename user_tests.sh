@@ -150,7 +150,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     merlin)
       hdr "MERLIN: design, race and plume tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_merlin.py || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_merlin.py tests/test_merlin_race.py || status=1
       hdr "MERLIN races to a fire 20 km out and samples its smoke (1 movie)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/merlin_mission.py" 2>&1 | grep -v "^\s*$\|movie frames" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;

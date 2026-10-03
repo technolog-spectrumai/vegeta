@@ -161,3 +161,22 @@ def test_validation():
         ducted.solve(fan, SECTION, 20000.0, -1.0)
     with pytest.raises(ValueError):
         ducted.nacelle_drag(fan, -1.0)
+
+
+def test_stages_add_their_rise_and_keep_the_ideal_limit():
+    ideal = replace(FAN, stator_loss=0.0, duct_loss=0.0, tip_clearance_m=0.0, interstage_loss=0.0)
+    flat = boreas.Airfoil(cl_alpha=2 * math.pi * 0.9, alpha0_deg=-3.0, cl_max=1.1, cd0=0.0, k=0.0)
+    one = ducted.solve(ideal, flat, 25000, 20.0, RHO)
+    two = ducted.solve(replace(ideal, stages=2), flat, 25000, 20.0, RHO)
+    for op in (one, two):                                                   # lossless: P = T (V_exit + V) / 2
+        assert op.converged and op.power == pytest.approx(op.thrust * (op.exit_velocity + 20.0) / 2, rel=1e-3)
+    assert two.thrust > 1.2 * one.thrust and two.exit_velocity > one.exit_velocity      # more flow: each stage less loaded
+    assert two.total_pressure_rise == pytest.approx(0.5 * RHO * (two.exit_velocity**2 - 20.0**2), rel=1e-3)
+    real = [ducted.solve(replace(FAN, stages=k), SECTION, 25000, 30.0, RHO) for k in (1, 2, 3)]
+    assert real[0].thrust < real[1].thrust < real[2].thrust and real[0].power < real[1].power < real[2].power
+    assert ducted.solve(replace(FAN, stages=1), SECTION, 25000, 30.0, RHO).thrust == pytest.approx(
+        ducted.solve(FAN, SECTION, 25000, 30.0, RHO).thrust)
+    with pytest.raises(ValueError):
+        replace(FAN, stages=2, stator_vanes=0)
+    with pytest.raises(ValueError):
+        replace(FAN, stages=0)

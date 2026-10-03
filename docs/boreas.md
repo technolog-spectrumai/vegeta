@@ -147,6 +147,11 @@ use such values, or fit `duct_loss` to a measured static thrust and shaft power 
 `fan = ducted.fit_duct_loss(fan, section, thrust=29.4, power=0.85 * 1930.0)` (it lumps what the model leaves out:
 inlet lip, struts, low-Reynolds blades, mixing). `rpm_for_thrust` searches 100 rpm..`rpm_max` and raises when the
 target lies outside the thrusts at those ends or the point found is not converged.
+**Several stages** (`stages=2` or `3`, each a rotor and its stator on one shaft): every rotor meets the same axial inflow
+at the same flow, so the stages add their pressure rise and their power; each stage after the first adds
+`interstage_loss · ½ρV_fan²` (default 0.03). More pressure at the same rpm — a faster jet — so a second stage pays only
+when one stage runs out of tip speed before it runs out of power (a small or a quiet fan); a power-limited fan gets no
+faster (notebook 25 §14). A multi-stage fan needs a stator in every stage.
 Windmilling (`V_exit < V`, negative thrust) is solved like any other point;
 if the fan cannot push air against the system at any flow, `solve` returns the point nearest a balance with
 `converged=False`. `nacelle_drag` is turbulent flat-plate friction (Prandtl–Schlichting `Cf = 0.455 / (log10 Re)^2.58`)
