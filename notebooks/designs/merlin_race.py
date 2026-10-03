@@ -2,7 +2,8 @@
 battery?
 
 Nothing is solved here: every propeller and fan comes from notebook 25's propulsor library (``propulsor_maps``,
-``data/propulsor_maps.json``: maps over airspeed x rpm, the installation on MERLIN, the unit masses), and the race only
+``data/*_maps.json``, built by notebooks 25, 25b and 25c: maps over airspeed x rpm, the installation on MERLIN, the unit
+masses), and the race only
 interpolates in it.
 
 Two races, both from the launch stand, still air, the same 6S 8000 mAh pack and its 15 % reserve for everyone:
@@ -89,14 +90,15 @@ def round_trip(af: mf.Airframe, unit: mf.Unit, distance_m: float, mission: mf.Mi
             "budget_wh": budget, "turn_s": math.pi * v / (mf.G * tb)}
 
 
-def study(lib, powers=POWERS_W, mission: mf.Mission = mf.Mission()):
-    """Every map of the library, as every layout it can fly in, at every power, through the races: one row each (pandas)."""
+def study(lib, powers=POWERS_W, mission: mf.Mission = mf.Mission(), design=None):
+    """Every map of the library, as every layout it can fly in, at every power, through the races: one row each (pandas).
+    ``design``: notebook 26's export (the airframe); None: the design file's defaults."""
     import pandas as pd
     rows = []
     for e, layout in candidates(lib):
         for P in powers:
             unit = pm.unit(e, P, layout=None if layout == "edf" else layout)
-            af = pm.merlin_airframe(layout, P, e)
+            af = pm.merlin_airframe(layout, P, e, design=design)
             pf = mf.performance(af, unit)
             r5 = round_trip(af, unit, 5000.0, mission)
             r10 = mf.race(af, unit, 10000.0, mission)

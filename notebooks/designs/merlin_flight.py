@@ -192,56 +192,63 @@ def installation(kind, p, prop, airfoil, speed, thrust, rho=RHO):
     return {"w": float(w), "t": float(t), "wake": W, "pod": pod}
 
 
-def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pitches_in=(6.0, 8.0, 10.0), prop_diameter_in=10.0,
-                  edf=None, distance_m=20000.0, mission=None, common_mass_kg=None, unit_mass_kg=None, library=None, **_ignored):
-    """The three MERLINs, each an ``Airframe`` (its own drag build-up and mass) with its ``Unit``, on one battery and one
-    electrical power limit ``max_electrical_w`` — read from notebook 25's propulsor library (``propulsor_maps``), nothing
-    solved here:
+DESIGN_JSON = Path(__file__).resolve().parent / "data" / "merlin_design.json"
 
-    - ``edf``: the fan ``edf`` picks in the library (default notebook 25's 90 mm, 12-blade, 7-stator fan with the catalogue
+
+def load_design(path=None):
+    """Notebook 26's export of the aircraft (``data/merlin_design.json``): its parameters, masses, polar corrections and the
+    mission settings; None when it has not been written."""
+    import json
+    path = Path(path or DESIGN_JSON)
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pitches_in=(6.0, 8.0, 10.0), prop_diameter_in=10.0,
+                  blades=2, edf=None, distance_m=20000.0, mission=None, common_mass_kg=None, unit_mass_kg=None, library=None,
+                  design=None, **_ignored):
+    """The three MERLINs, each an ``Airframe`` with its ``Unit``, on one battery and one electrical power limit — the airframe
+    from notebook 26's design export (``design``, or the design file's defaults), the propulsors from the propulsor
+    libraries (``propulsor_maps``), nothing solved here:
+
+    - ``edf``: the fan ``edf`` picks in the library (default notebook 25b's 90 mm, 12-blade, 7-stator fan with the catalogue
       loss, one stage), its map less the annular jet scrubbing MERLIN's fairing (``propulsor_maps.unit``);
-    - ``tractor`` / ``pusher``: the ``prop_diameter_in`` propeller with the pitch among ``pitches_in`` that reaches a fire
-      ``distance_m`` away first, its free-stream map at MERLIN's effective wake and thrust deduction (both from the library).
+    - ``tractor`` / ``pusher``: the ``prop_diameter_in`` propeller of ``blades`` blades with the pitch among ``pitches_in``
+      that reaches a fire ``distance_m`` away first, its free-stream map at MERLIN's effective wake and thrust deduction.
 
     Returns ``{kind: {"airframe", "unit", "info"}}``; ``info`` carries the fan and propeller objects for reference."""
-    import merlin as m
     import propulsor_maps as pm
     lib = pm.load() if library is None else (pm.load(library) if not isinstance(library, dict) else library)
-    p = {} if p is None else dict(p)
+    design = dict(design or {})
+    if common_mass_kg is not None:
+        design["common_mass_kg"] = dict(common_mass_kg)
+    p = dict(design.get("merlin_params", {}), **(p or {}))
     mission = Mission() if mission is None else mission
-    common = dict(COMMON_MASS_KG if common_mass_kg is None else common_mass_kg)
     edf = dict(diameter_mm=90.0, pitch_ratio=1.78, exit_area_ratio=0.9, quality="catalogue", stages=1, **(edf or {}))
 
     def airframe(kind, entry):
-        q = dict(p, propulsion=kind)
-        if kind == "edf":
-            q.update(edf_diameter=entry["diameter_mm"], edf_pitch=entry["pitch_ratio"] * entry["diameter_mm"],
-                     edf_exit_area_ratio=entry["exit_area_ratio"])
-        b = m.drag_buildup(q, 25.0)
-        um = unit_mass_kg[kind] if unit_mass_kg else pm.unit_mass_kg(entry, max_electrical_w)
-        return mf_airframe(kind, sum(common.values()) + um, b, (b["cd_area_m2"] + EXTRA_CD_AREA_M2) / b["planform"]), um
+        um = unit_mass_kg[kind] if unit_mass_kg else None
+        return pm.merlin_airframe(kind, max_electrical_w, entry, merlin=p, design=design, unit_mass=um)
 
     out = {}
     hits = pm.find(lib, kind="edf", **edf)
-    if not hits:
-        raise ValueError(f"no fan {edf} in the propulsor library: rebuild it (notebook 25 section 16) with that design in its space")
-    e = hits[0]
-    af, um = airframe("edf", e)
-    u = pm.unit(e, max_electrical_w, drive_efficiency=drive_efficiency, merlin=p)
-    u.mass_kg = um
-    fan, hp, hg = pm.fan_object(e["diameter_mm"], e["pitch_ratio"], e["exit_area_ratio"], e["duct_loss"], e["stages"])
-    out["edf"] = {"airframe": af, "unit": u, "info": {"entry": e, "duct_loss": e["duct_loss"], "fan": fan, "housing": hg,
-                                                      "scrub_area_m2": pm.edf_scrub_area(e, p)}}
+    if hits:
+        e = hits[0]
+        af = airframe("edf", e)
+        u = pm.unit(e, max_electrical_w, drive_efficiency=drive_efficiency, merlin=p)
+        u.mass_kg = af.mass_kg - sum(design.get("common_mass_kg", COMMON_MASS_KG).values())
+        fan, hp, hg = pm.fan_object(e["diameter_mm"], e["pitch_ratio"], e["exit_area_ratio"], e["duct_loss"], e["stages"])
+        out["edf"] = {"airframe": af, "unit": u, "info": {"entry": e, "duct_loss": e["duct_loss"], "fan": fan, "housing": hg,
+                                                          "scrub_area_m2": pm.edf_scrub_area(e, p)}}
     for kind in ("tractor", "pusher"):
         best, rows = None, []
         for pin in pitches_in:
-            hits = pm.find(lib, kind="propeller", diameter_in=float(prop_diameter_in), pitch_ratio=round(pin / prop_diameter_in, 6), blades=2)
+            hits = pm.find(lib, kind="propeller", diameter_in=float(prop_diameter_in), pitch_ratio=round(pin / prop_diameter_in, 6), blades=blades)
             if not hits:
                 continue
             e = hits[0]
-            af, um = airframe(kind, e)
+            af = airframe(kind, e)
             u = pm.unit(e, max_electrical_w, layout=kind, drive_efficiency=drive_efficiency)
-            u.mass_kg = um
+            u.mass_kg = af.mass_kg - sum(design.get("common_mass_kg", COMMON_MASS_KG).values())
             r = race(af, u, distance_m, mission)
             t = r["time_to_fire_s"] if r["reachable"] else math.inf
             inst = e["installation"][kind]
@@ -250,11 +257,13 @@ def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pit
             if best is None or t < best[0]:
                 best = (t, af, u, e)
         if best is None:
-            raise ValueError(f"no {prop_diameter_in}-inch propeller with a pitch in {pitches_in} in the propulsor library")
+            continue
         _, af, u, e = best
         out[kind] = {"airframe": af, "unit": u, "info": {"entry": e, "prop": pm.prop_object(e["diameter_in"], e["pitch_ratio"], e["blades"]),
                                                           "w": e["installation"][kind]["w"], "t": e["installation"][kind]["t"],
                                                           "pitch_study": rows, "rpm_max": e["rpm_max"]}}
+    if not out:
+        raise ValueError("no propulsor in the libraries: run notebooks 25 / 25b (their maps sections) or scenarios/propulsor_maps.py")
     return out
 
 
@@ -872,5 +881,5 @@ def render_movie(ep: Episode, forest: Forest, plume: Plume, path, *, fps=20, sec
     return path, frames
 
 
-__all__ = ["DISTANCES_KM", "NAMES", "race_table", "build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
+__all__ = ["DESIGN_JSON", "load_design", "DISTANCES_KM", "NAMES", "race_table", "build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
            "source_estimate", "Forest", "Episode", "fly", "profile_figure", "render_movie"]

@@ -2,8 +2,8 @@
 
     python scenarios/merlin_race.py                 # every map of the library, 3 powers (~1 min)
 
-Reads notebook 25's propulsor library (``notebooks/designs/data/propulsor_maps.json``: 324 ducted fans with one to three
-stages, 48 propellers of 2, 6 and 12 blades as tractor and pusher; rebuild it with ``scenarios/propulsor_maps.py``), races each at 1900, 2700
+Reads the propulsor libraries (``notebooks/designs/data/*_maps.json`` from notebooks 25, 25b and 25c: propellers of 2 and 3
+blades, of 6 and 12 blades, and ducted fans of one to three stages; rebuild them with ``scenarios/propulsor_maps.py``), races each at 1900, 2700
 and 3500 W on the same 6S 8000 mAh pack — 5 km and back, 10 km reach, 10 km and back — and prints the fastest of each kind.
 Writes ``scenarios/output/merlin_race.csv`` (every configuration and power) and ``merlin_race.json`` (the winners).
 """
@@ -22,12 +22,15 @@ OUT = ROOT / "scenarios" / "output"
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--library", type=Path, default=None, help="propulsor library (default: the committed one)")
+    ap.add_argument("--library", type=Path, nargs="*", default=None, help="propulsor library files (default: every one in notebooks/designs/data)")
     a = ap.parse_args(argv)
     import propulsor_maps as pm
     t0 = time.time()
-    lib = pm.load(a.library or pm.LIBRARY)
-    table = mr.study(lib)
+    lib = pm.load(a.library or None)
+    import merlin_flight as mf
+    design = mf.load_design()
+    print("airframe:", "notebook 26's design export" if design else "the design file's defaults (run notebook 26 to export the design)")
+    table = mr.study(lib, design=design)
     failed = {e["id"]: e["error"] for e in lib["entries"] if "error" in e}
     print(f"{len(table)} races (maps x layouts x powers) in {time.time() - t0:.0f} s" + (f"; {len(failed)} maps failed" if failed else ""))
     import pandas as pd

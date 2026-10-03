@@ -113,6 +113,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5h.6 Multi-stage fans (`boreas.ducted` `stages`, notebook 25 §14); the propulsor library (notebook 25 §16,
   `designs/propulsor_maps.py`, `data/propulsor_maps.json`) read by notebooks 26 and 27; `27_merlin_race` (branch `dev_rave`):
   5 km and back and 10 km races over 324 fans (1-3 stages) and 48 propellers (2, 6, 12 blades) at three powers; `scenarios/merlin_race.py`, `propulsor_maps.py`
+- [x] 5h.7 Split by job: 25 (2/3 blades) exports results and maps, 25b the ducted fan, 25c six and twelve blades, each with
+  its maps; 26 designs MERLIN and exports it, 26b flies the mission from the exports, 27 races the libraries
 - [ ] 5h.2 The race in head- and tailwind; air density at the fire's altitude; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
 - [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)

@@ -1,10 +1,15 @@
-"""Propulsor maps — notebook 25's propellers and ducted fans as tables for the reduced flight models (MERLIN, notebooks 26, 27).
+"""Propulsor maps — the propellers and ducted fans of notebooks 25, 25b and 25c as tables for the reduced flight models
+(MERLIN, notebooks 26, 27).
 
-The propeller notebook (25) does the propulsion analysis; this module is how it hands the results on. Every propulsor is
-solved once, over airspeed x rpm, and written to one JSON library (``data/propulsor_maps.json``); the flight models only
-interpolate in it (``unit``), so a race over hundreds of designs takes seconds.
+The propulsion notebooks do the analysis; this module is how they hand the results on. Every propulsor is solved once, over
+airspeed x rpm, and written to a JSON library — one file per notebook, so each notebook builds its own and the flight models
+read whichever exist (``load`` merges them) and only interpolate (``unit``): a race over hundreds of designs takes seconds.
 
-- **Open propellers** (two, six or twelve of notebook 25's blades, the planform scaled with the diameter): Boreas BEMT in the free stream —
+- ``data/propeller_maps.json`` — notebook 25: two- and three-blade propellers;
+- ``data/exotic_propeller_maps.json`` — notebook 25c: six- and twelve-blade propellers;
+- ``data/edf_maps.json`` — notebook 25b: ducted fans of one to three stages, and the lossless bound.
+
+- **Open propellers** (notebook 25's blade, two to twelve of it, the planform scaled with the diameter): Boreas BEMT in the free stream —
   thrust and shaft power over (V, rpm) — plus, per layout on MERLIN, the installation from ``air_propeller``'s models
   (``merlin_flight.installation``): the effective wake fraction w (the blades work at ``V (1 - w)``) and the thrust
   deduction t (the net thrust is ``T (1 - t)``), both at MERLIN's 25 m/s cruise.
@@ -19,8 +24,8 @@ interpolate in it (``unit``), so a race over hundreds of designs takes seconds.
   200 g x (P / 1900 W)^0.75, its controller 85 g x P / 1900 W (405 g at 90 mm); a propeller unit's motor
   190 g x (P / 1900 W)^0.75, controller 65 g x P / 1900 W, propeller 18 g x (D / 10 in)^2.5 x blades / 2 (273 g).
 
-``build_library`` (parallel) → ``save`` → ``load`` → ``unit(entry, power, layout=...)`` → ``merlin_flight.Unit``.
-Regenerate the library with notebook 25 §16 or ``python scenarios/propulsor_maps.py``.
+``build_library(kind)`` (parallel) → ``save`` → ``load`` → ``unit(entry, power, layout=...)`` → ``merlin_flight.Unit``.
+Regenerate the files with their notebooks or ``python scenarios/propulsor_maps.py [--kind ...]``.
 """
 from __future__ import annotations
 
@@ -31,14 +36,18 @@ from pathlib import Path
 
 import numpy as np
 
-LIBRARY = Path(__file__).resolve().parent / "data" / "propulsor_maps.json"
+DATA = Path(__file__).resolve().parent / "data"
+LIBRARIES = {"propellers": DATA / "propeller_maps.json", "exotic": DATA / "exotic_propeller_maps.json", "edf": DATA / "edf_maps.json"}
+SOURCES = {"propellers": "notebook 25 (two and three blades)", "exotic": "notebook 25c (six and twelve blades)",
+           "edf": "notebook 25b (ducted fans, 1-3 stages, and the lossless bound)"}
 SECTION_KW = dict(name="thin cambered section", cl_alpha=2 * math.pi * 0.9, alpha0_deg=-3.0, cl_max=1.1, cd0=0.018, k=0.04)
 V_TABLE = np.linspace(0.0, 90.0, 19)
 CATALOGUE_DUCT_LOSS = 0.3353          # fitted to a 90 mm, 12-blade hobby fan: 3.0 kgf from 1930 W (notebooks 25, 26)
 WELL_MADE_DUCT_LOSS = 0.20
 EDF_SPACE = {"diameter_mm": (70.0, 80.0, 90.0, 100.0, 110.0, 120.0), "pitch_ratio": (1.4, 1.78, 2.2),
              "exit_area_ratio": (0.65, 0.8, 0.9), "duct_loss": (CATALOGUE_DUCT_LOSS, WELL_MADE_DUCT_LOSS), "stages": (1, 2, 3)}
-PROP_SPACE = {"diameter_in": (9.0, 10.0, 11.0, 12.0), "pitch_ratio": (0.6, 0.8, 1.0, 1.2), "blades": (2, 6, 12)}
+PROP_SPACE = {"diameter_in": (9.0, 10.0, 11.0, 12.0), "pitch_ratio": (0.6, 0.8, 1.0, 1.2), "blades": (2, 3)}
+EXOTIC_SPACE = dict(PROP_SPACE, blades=(6, 12))
 # the upper bound, not a design: one-stage fans whose duct loses nothing (no inlet, wall or nozzle loss at all)
 EDF_BOUND = {"diameter_mm": EDF_SPACE["diameter_mm"], "pitch_ratio": EDF_SPACE["pitch_ratio"], "exit_area_ratio": (0.65, 0.8),
              "duct_loss": (0.0,), "stages": (1,)}
@@ -150,21 +159,29 @@ def _build(job):
         return {"kind": kind, "id": f"{kind}-{args}", "error": repr(exc)}
 
 
-def build_library(edf_space=EDF_SPACE, prop_space=PROP_SPACE, processes=None, progress=False, edf_bound=EDF_BOUND) -> dict:
-    """Every fan and propeller of the spaces (and the lossless bound fans, ``edf_bound``; None leaves them out), solved in
-    parallel: ``{"meta": ..., "entries": [...]}``."""
+def build_library(kind="propellers", space=None, processes=None, progress=False, edf_bound=EDF_BOUND) -> dict:
+    """One library file's maps, solved in parallel: ``kind`` "propellers" (``PROP_SPACE``), "exotic" (``EXOTIC_SPACE``) or
+    "edf" (``EDF_SPACE`` and the lossless ``edf_bound``; None leaves it out); ``space`` overrides the design space.
+    Returns ``{"meta": ..., "entries": [...]}``."""
     import multiprocessing as mp
-    jobs = [("edf", c) for c in itertools.product(*edf_space.values())] + [("prop", c) for c in itertools.product(*prop_space.values())]
-    if edf_bound:
-        jobs += [("edf", c) for c in itertools.product(*edf_bound.values()) if ("edf", c) not in jobs]
+    if kind not in LIBRARIES:
+        raise ValueError(f"kind must be one of {tuple(LIBRARIES)}")
+    if kind == "edf":
+        space = EDF_SPACE if space is None else space
+        jobs = [("edf", c) for c in itertools.product(*space.values())]
+        if edf_bound:
+            jobs += [("edf", c) for c in itertools.product(*edf_bound.values()) if ("edf", c) not in jobs]
+    else:
+        space = (PROP_SPACE if kind == "propellers" else EXOTIC_SPACE) if space is None else space
+        jobs = [("prop", c) for c in itertools.product(*space.values())]
     with mp.get_context("fork").Pool(processes) as pool:
         it = pool.imap_unordered(_build, jobs)
         if progress:
             from tqdm.auto import tqdm
-            it = tqdm(it, total=len(jobs), desc="propulsor maps")
+            it = tqdm(it, total=len(jobs), desc=f"{kind} maps")
         entries = sorted(it, key=lambda e: e["id"])
-    meta = {"source": "notebook 25 (propulsor_maps.build_library)", "section": SECTION_KW, "edf_space": edf_space, "edf_bound": edf_bound,
-            "prop_space": prop_space, "edf_tip_speed_m_s": EDF_TIP_SPEED, "prop_tip_mach": PROP_TIP_MACH,
+    meta = {"kind": kind, "source": SOURCES[kind], "space": space, "edf_bound": edf_bound if kind == "edf" else None,
+            "section": SECTION_KW, "edf_tip_speed_m_s": EDF_TIP_SPEED, "prop_tip_mach": PROP_TIP_MACH,
             "installation_speed_m_s": INSTALLATION_SPEED, "rho": 1.225,
             "units": "V m/s, rpm, thrust N (EDF: net of the nacelle's friction; propeller: free stream), power W (shaft), exit_velocity m/s"}
     return {"meta": meta, "entries": entries}
@@ -177,8 +194,9 @@ def _round(a, sig=5):
     return (np.round(a * mag) / mag).tolist()
 
 
-def save(lib: dict, path=LIBRARY) -> Path:
-    path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+def save(lib: dict, path=None) -> Path:
+    """Write ``lib`` (rounded to five significant digits); by default to its kind's file in ``data/``."""
+    path = Path(path or LIBRARIES[lib["meta"]["kind"]]); path.parent.mkdir(parents=True, exist_ok=True)
     out = {"meta": lib["meta"], "entries": []}
     for e in lib["entries"]:
         out["entries"].append({k: (_round(v) if isinstance(v, np.ndarray) else v) for k, v in e.items()})
@@ -186,16 +204,30 @@ def save(lib: dict, path=LIBRARY) -> Path:
     return path
 
 
-def load(path=LIBRARY) -> dict:
-    """The library with its tables as arrays; ``entries`` keyed by id in ``by_id``."""
-    path = Path(path)
-    if not path.exists():
-        raise FileNotFoundError(f"{path} is missing: run notebook 25 §16 or `python scenarios/propulsor_maps.py`")
-    lib = json.loads(path.read_text())
-    for e in lib["entries"]:
-        for k in ("V", "rpm", "thrust", "power", "exit_velocity"):
-            if k in e:
-                e[k] = np.asarray(e[k], float)
+def load(paths=None) -> dict:
+    """The maps of every library file that exists (``paths``: one file, a list, or None for all of ``LIBRARIES``), merged:
+    ``entries`` (tables as arrays), ``by_id``, ``meta`` per kind and ``kinds`` (the files found). Raises if there is none."""
+    if paths is None:
+        paths = [p for p in LIBRARIES.values() if Path(p).exists()]
+        if not paths:
+            raise FileNotFoundError("no propulsor library in " + str(DATA) + ": run notebooks 25 / 25b / 25c (their last section) "
+                                    "or `python scenarios/propulsor_maps.py`")
+    elif isinstance(paths, (str, Path)):
+        paths = [paths]
+    lib = {"entries": [], "meta": {}, "kinds": []}
+    for path in paths:
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} is missing")
+        part = json.loads(path.read_text())
+        kind = part["meta"].get("kind", path.stem)
+        lib["meta"][kind] = part["meta"]
+        lib["kinds"].append(kind)
+        for e in part["entries"]:
+            for k in ("V", "rpm", "thrust", "power", "exit_velocity"):
+                if k in e:
+                    e[k] = np.asarray(e[k], float)
+            lib["entries"].append(e)
     lib["by_id"] = {e["id"]: e for e in lib["entries"] if "error" not in e}
     return lib
 
@@ -210,18 +242,25 @@ def unit_mass_kg(entry: dict, power_w: float) -> float:
     return 0.190 * f ** 0.75 + 0.065 * f + 0.018 * (entry["diameter_in"] / 10.0) ** 2.5 * entry.get("blades", 2) / 2
 
 
-def merlin_airframe(layout, power_w, entry, merlin=None):
-    """MERLIN carrying ``entry`` as ``layout`` (edf / tractor / pusher) at ``power_w``: the common masses plus the unit's,
-    the drag build-up of that nose (``merlin.drag_buildup``) plus the skid/intake allowance."""
+def merlin_airframe(layout, power_w, entry, merlin=None, design=None, unit_mass=None):
+    """MERLIN carrying ``entry`` as ``layout`` (edf / tractor / pusher) at ``power_w``: the common masses plus the unit's
+    (``unit_mass``, else ``unit_mass_kg``), the drag build-up of that nose (``merlin.drag_buildup``) plus the skid/intake
+    allowance. ``design`` (notebook 26's export, ``merlin_flight.load_design``) supplies the aircraft's parameters, the
+    common masses, the allowance, the CFD's correction to the build-up and the polar's Cl_max and Oswald factor; without it
+    the design file's defaults and ``merlin_flight``'s masses are used."""
     import merlin as m
     import merlin_flight as mf
-    p = dict(merlin or {}, propulsion=layout)
+    p = dict((design or {}).get("merlin_params", {}), **(merlin or {}), propulsion=layout)
     if entry["kind"] == "edf":
         p.update(edf_diameter=entry["diameter_mm"], edf_pitch=entry["pitch_ratio"] * entry["diameter_mm"], edf_exit_area_ratio=entry["exit_area_ratio"])
     b = m.drag_buildup(p, INSTALLATION_SPEED)
-    mass = sum(mf.COMMON_MASS_KG.values()) + unit_mass_kg(entry, power_w)
+    common = (design or {}).get("common_mass_kg", mf.COMMON_MASS_KG)
+    extra = (design or {}).get("extra_cd_area_m2", mf.EXTRA_CD_AREA_M2)
+    corr = (design or {}).get("cd0_correction", {}).get(layout, 0.0)
+    mass = sum(common.values()) + (unit_mass_kg(entry, power_w) if unit_mass is None else unit_mass)
     return mf.Airframe(f"MERLIN ({entry.get('label', layout)})", mass, b["planform"], b["aspect_ratio"],
-                       (b["cd_area_m2"] + mf.EXTRA_CD_AREA_M2) / b["planform"])
+                       (b["cd_area_m2"] + extra) / b["planform"] + corr, oswald=(design or {}).get("oswald", 0.8),
+                       cl_max=(design or {}).get("cl_max", 1.2))
 
 
 def edf_scrub_area(entry, merlin=None) -> float:
@@ -270,6 +309,6 @@ def find(lib, **kw):
     return [e for e in lib["entries"] if "error" not in e and ok(e)]
 
 
-__all__ = ["LIBRARY", "SECTION_KW", "V_TABLE", "EDF_SPACE", "EDF_BOUND", "PROP_SPACE", "quality", "CATALOGUE_DUCT_LOSS", "WELL_MADE_DUCT_LOSS",
+__all__ = ["DATA", "LIBRARIES", "SECTION_KW", "V_TABLE", "EDF_SPACE", "EDF_BOUND", "PROP_SPACE", "EXOTIC_SPACE", "quality", "CATALOGUE_DUCT_LOSS", "WELL_MADE_DUCT_LOSS",
            "fan_object", "prop_object", "edf_entry", "prop_entry", "build_library", "save", "load", "unit_mass_kg",
            "merlin_airframe", "edf_scrub_area", "unit", "find"]

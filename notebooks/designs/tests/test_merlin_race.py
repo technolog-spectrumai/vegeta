@@ -1,4 +1,4 @@
-"""The propulsor library (notebook 25 §16) and MERLIN's race on it (notebook 27): the mass models at notebook 26's units, a
+"""The propulsor library (notebooks 25, 25b, 25c) and MERLIN's race on it (notebook 27): the mass models at notebook 26's units, a
 library that survives its JSON round trip, the installation applied to a propeller map, multi-stage fans, the scaled fan in
 CAD, the out-and-back race and the study.
 
@@ -19,12 +19,15 @@ SMALL_PROP = {"diameter_in": (10.0,), "pitch_ratio": (1.0,), "blades": (2,)}
 
 @pytest.fixture(scope="module")
 def lib(tmp_path_factory):
-    built = pm.build_library(SMALL_EDF, SMALL_PROP, processes=3)
-    return pm.load(pm.save(built, tmp_path_factory.mktemp("maps") / "maps.json"))
+    d = tmp_path_factory.mktemp("maps")
+    files = [pm.save(pm.build_library("edf", SMALL_EDF, processes=2, edf_bound=None), d / "edf.json"),
+             pm.save(pm.build_library("propellers", SMALL_PROP, processes=2), d / "props.json")]
+    return pm.load(files)
 
 
 def test_library_round_trip(lib):
     assert len(lib["by_id"]) == 3 and not [e for e in lib["entries"] if "error" in e]
+    assert sorted(lib["kinds"]) == ["edf", "propellers"] and lib["meta"]["edf"]["kind"] == "edf"
     e = lib["by_id"]["edf-90-p1.78-e0.90-catalogue-s1"]
     assert e["thrust"].shape == (len(pm.V_TABLE), len(e["rpm"])) and np.all(np.diff(e["rpm"]) > 0)
     assert pm.find(lib, kind="edf", stages=2)[0]["stages"] == 2
@@ -90,3 +93,14 @@ def test_study_and_winners(lib):
     assert set(w.index.get_level_values(0)) == {"edf", "tractor", "pusher"}
     edf = table[table["kind"] == "edf"].set_index(["id", "power [W]"])["5 km and back [s]"]
     assert edf[("edf-90-p1.78-e0.90-catalogue-s1", 3500.0)] < edf[("edf-90-p1.78-e0.90-catalogue-s1", 1900.0)]
+
+
+def test_design_export_drives_the_airframe(lib):
+    e = lib["by_id"]["prop-10x10-b2"]
+    base = pm.merlin_airframe("pusher", 1900.0, e)
+    design = {"merlin_params": {"thickness": 0.15}, "common_mass_kg": {"everything": 2.0}, "extra_cd_area_m2": 0.0015,
+              "cd0_correction": {"pusher": 0.004}, "cl_max": 1.3, "oswald": 0.75}
+    af = pm.merlin_airframe("pusher", 1900.0, e, design=design)
+    assert af.mass_kg == pytest.approx(2.0 + pm.unit_mass_kg(e, 1900.0)) and af.cl_max == 1.3 and af.oswald == 0.75
+    assert af.cd0 > base.cd0 + 0.004 - 1e-9                         # the correction, and a thicker wing's form factor
+    assert mf.load_design("/nonexistent/merlin_design.json") is None

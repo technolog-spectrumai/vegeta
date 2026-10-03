@@ -75,15 +75,15 @@ effective wake and thrust deduction) or `ducted_fan_unit` (`boreas.ducted` less 
 Pasquill–Gifford spread, CO from the heat release, `particles` for drawing), `source_estimate` (the fire's size from the
 passes), `Forest`, `fly` → `Episode`, `profile_figure`, `render_movie` (the smoke as particles, a map and the sensor trace).
 
-`propulsor_maps.py` (`import propulsor_maps as pm`, notebook 25 §16, branch `dev_rave`) is the propulsor library the reduced
-flight models read instead of solving propellers and fans again: `build_library` (parallel) solves every two-blade propeller
-(9–12 inch, pitch 0.6–1.2 D; free-stream maps plus MERLIN's installation w and t as tractor and pusher) and every ducted fan
-(70–120 mm, pitch 1.4–2.2 D, nozzle exit 0.65–0.9, catalogue or well-made duct, **one to three stages**; plus the lossless
-bound) over airspeed × rpm; `save` / `load` (`data/propulsor_maps.json`, committed; rebuild with `scenarios/propulsor_maps.py`);
+`propulsor_maps.py` (`import propulsor_maps as pm`, branch `dev_rave`) is how the propulsion notebooks hand their results to the
+reduced flight models, which then solve nothing: `build_library(kind)` (parallel) solves a design space over airspeed × rpm —
+`propellers` (notebook 25: two and three blades, 9–12 inch, pitch 0.6–1.2 D, free-stream maps plus MERLIN's installation w
+and t as tractor and pusher), `exotic` (notebook 25c: six and twelve blades) or `edf` (notebook 25b: 70–120 mm, pitch
+1.4–2.2 D, nozzle exit 0.65–0.9, catalogue or well-made duct, one to three stages, plus the lossless bound); `save` writes
+`data/<kind>_maps.json` (committed; rebuild with `scenarios/propulsor_maps.py`); `load` merges the files that exist;
 `unit(entry, power, layout=...)` gives a `merlin_flight.Unit` by interpolation (the installation applied, the jet scrubbing
-MERLIN's fairing taken off); `unit_mass_kg` (unit masses with power and size), `merlin_airframe`, `fan_object`, `prop_object`,
-`find`. `merlin_race.py` (notebook 27) races the library on MERLIN: `round_trip` (out and back, a 60° turn), `study` (every
-map × layout × power through the 5 km and back, 10 km reach and 10 km and back races), `winners`. `merlin.Merlin` takes the
-fan's `edf_diameter`, `edf_pitch` and `edf_exit_area_ratio`; `merlin_flight.build_merlins` reads its three propulsors from
-the library.
+MERLIN's fairing taken off); `unit_mass_kg`, `merlin_airframe` (from notebook 26's design export when given), `fan_object`,
+`prop_object`, `find`. `merlin_race.py` (notebook 27) races the libraries on MERLIN: `round_trip`, `study`, `winners`.
+`merlin.Merlin` takes the fan's `edf_diameter`, `edf_pitch` and `edf_exit_area_ratio`; `merlin_flight.load_design` reads notebook
+26's export (`data/merlin_design.json`) and `build_merlins(design=...)` puts the library's propulsors on that airframe.
 
