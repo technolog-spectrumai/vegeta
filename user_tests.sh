@@ -17,6 +17,7 @@
 #   onager-manus      Onager Manus (pincers): tests, then scenarios/onager_manus_tasks.py (1 movie; ~4 min)
 #   onager-sweeper    Onager Sweeper (street cleaner): tests, then scenarios/onager_sweeper_street.py (1 movie; ~5 min)
 #   velutina          Velutina (mountain medical courier): tests, then scenarios/velutina_mission.py (1 movie; ~2 min)
+#   merlin            MERLIN (wildfire sampler): tests, then scenarios/merlin_mission.py (race table + 1 movie; ~3 min)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -30,7 +31,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
     -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -146,6 +147,12 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT/notebooks/designs" tests/test_velutina.py || status=1
       hdr "Velutina flies medical aid to the mountain rescue site (hand-over at the wall; 1 movie)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/velutina_mission.py" 2>&1 | grep -v "^\s*$" | tail -10 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    merlin)
+      hdr "MERLIN: design, race and plume tests"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_merlin.py || status=1
+      hdr "MERLIN races to a fire 20 km out and samples its smoke (1 movie)"
+      t0=$SECONDS; "$PY" "$ROOT/scenarios/merlin_mission.py" 2>&1 | grep -v "^\s*$\|movie frames" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac

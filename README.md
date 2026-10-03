@@ -169,6 +169,21 @@ vortex noise (`boreas.vortex_noise`), dB and dB(A) (`boreas.a_weighting`), direc
 common scale. The CFD runs a **smoke test** by default (`AIR_PROP_CFD=smoke`, 20 cases of ~20 s); `AIR_PROP_CFD=full` (32 cases)
 is the real run. The committed notebook is unexecuted (run it to get the outputs).
 
+**MERLIN** (branch `dev_merlin`): `26_merlin` (`designs/merlin.py`, `designs/merlin_flight.py`) is a compact electric
+fixed-wing for **rapid atmospheric sampling** — it leaves a launch stand, dashes to a reported wildfire, flies crosswind
+passes through the smoke with a forward gas sensor and comes home for a belly landing — and asks **which propulsor gets
+it to a fire 10, 20 or 30 km away fastest**: a nose **ducted fan** (the jet leaves as a ring around the fuselage), a
+**tractor** or a **pusher** propeller, on one battery and one power limit. Nothing is designed twice: `Merlin` subclasses
+09's `FixedWing` (wing, tail, sections) and builds its nose duct from 25's `EDFHousing`; the fan is `boreas.ducted` with
+25's fitted losses, the propellers are Boreas BEMT in `air_propeller.installation_wake`'s effective wake with
+`installation_drag`'s thrust deduction. The notebook: three variants in CAD, a drag build-up, wing FEA (pull-up and a dash
+gust), optional RANS per variant; thrust and power against speed; the race (climb, accelerate, dash at the fastest speed
+the energy for the way home allows); the winner as a rotor disk in CFD (optional); the mission through a Gaussian smoke
+plume (Briggs rise, Pasquill–Gifford spread), the fire's heat release recovered from the passes, and a movie with the
+smoke as particles. With the defaults the **pusher** is fastest at all three distances, the tractor a few seconds behind,
+the ducted fan close only at 10 km (its jet costs twice the energy per kilometre). `scenarios/merlin_mission.py` (or
+`./user_tests.sh merlin`) re-runs the race and the movie; `MERLIN_QUICK=1` runs the notebook as a quick check.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

@@ -62,3 +62,15 @@ rotor's trailing-edge plane (`rotor_trailing_edge`, from the blade stations), cu
 both at any stagger. The housing takes the rotor's blade parameters under the same names (`SHARED`). `housing_geometry` gives the
 numbers the Boreas ducted-fan and fan-noise models need (fan, exit and throat areas as built, shroud and nacelle radii, wetted
 areas, lengths, stator and rotor positions); `outline` the housing as polygons for the particle movies.
+
+`merlin.py` (`Merlin`, notebook 26, branch `dev_merlin`) is the wildfire sampler: `FixedWing` subclassed (its `_wing`, `_tail`
+and sections), a fuselage of its own and `propulsion` = `edf` (25's duct and stators from `EDFHousing.duct_profile` /
+`vane_section`, the fuselage running through the nozzle: an annular jet), `tractor` or `pusher`; `part` = aircraft / wing /
+nose; `layout`, `fuselage_profile`, `wetted_areas`, `drag_buildup` (component build-up), `edf_housing_params`, `outline`.
+`merlin_flight.py` (`import merlin_flight as mf`) is its race and mission: `Airframe` (parabolic polar), `Unit` (net thrust and
+shaft power tabulated over airspeed × rpm; full throttle at a shared electrical limit) from `open_propeller` (BEMT with an
+effective wake and thrust deduction) or `ducted_fan_unit` (`boreas.ducted` less nacelle friction and jet scrubbing),
+`installation` / `installation_pod` (MERLIN's fuselage, wing and tail as `air_propeller`'s pod and pylon), `build_merlins`
+(the three aircraft, the pitch picked per race), `performance`, `race`, `Plume` (Gaussian smoke: Briggs rise,
+Pasquill–Gifford spread, CO from the heat release, `particles` for drawing), `source_estimate` (the fire's size from the
+passes), `Forest`, `fly` → `Episode`, `profile_figure`, `render_movie` (the smoke as particles, a map and the sensor trace).

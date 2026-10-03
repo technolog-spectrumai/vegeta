@@ -123,3 +123,13 @@ drag on the litter under the hood (`onager_sweeper_cfd.SUCTION`), what reaches t
 back into the basket, does the same with a 0.6 kg box with the right pincer, and sweeps on. Writes
 `onager_sweeper_street.mp4` and `onager_sweeper_street.json` (what was vacuumed, what landed in the basket, the
 phase table).
+
+## MERLIN races to a wildfire and samples its smoke
+
+`python scenarios/merlin_mission.py [--propulsion fastest|edf|tractor|pusher] [--distance-km 20] [--heat-mw 40] [--wind 5]
+[--wind-from 225] [--race-only] [--quick]` (or `./user_tests.sh merlin`). Builds the three MERLINs of notebook 26 (ducted fan,
+tractor, pusher on one battery and one power limit), prints the time to a fire 10, 20 and 30 km out for each, flies the fastest
+(or the chosen one) through a Gaussian smoke plume — climb, dash, crosswind passes at four heights, home, belly landing — and
+estimates the fire's heat release from the passes. Writes `merlin_<propulsion>_<km>km.mp4` and `.json` (race table, mission
+summary, phases, source estimate).
+

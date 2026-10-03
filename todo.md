@@ -104,6 +104,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5g.3 Unsteady installed CFD (sliding mesh / AMI) for the blade-passing loads directly, against the quasi-steady + Sears model
 - [ ] 5g.4 Thickness noise and forward-flight Doppler in the tones; a static (take-off) wake model for the pusher (the induced inflow past the pylon)
 
+## Stage 5h — MERLIN, wildfire sampling (branch `dev_merlin`)
+- [x] 5h.1 `designs/merlin.py` (`FixedWing` subclass; EDF / tractor / pusher noses; drag build-up) and `designs/merlin_flight.py`
+  (propulsor tables from `boreas.ducted` and BEMT with the installation models, the race, Gaussian smoke plume and the source
+  estimate, the mission, the smoke movie) and `26_merlin`: which propulsor reaches a fire 10 / 20 / 30 km away first;
+  `scenarios/merlin_mission.py`, `user_tests.sh merlin`, `tests/test_merlin.py`
+- [ ] 5h.2 The race in head- and tailwind; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
+- [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
+- [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)
