@@ -240,6 +240,8 @@ vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisio
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
 notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
+assemblies/        proven product code without notebooks: components/, workflows/ (python -m assemblies.workflows.<name>),
+                   data/ (<product>.vida assembly trees and exports other workflows read); see assemblies/README.md
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli
