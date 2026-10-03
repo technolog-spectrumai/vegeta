@@ -16,3 +16,4 @@ benchmark/*/results/
 user_tests_*.log
 MUJOCO_LOG.TXT
 notebooks/designs/data/air_propeller_results.json
+notebooks/designs/data/aguya_design.json

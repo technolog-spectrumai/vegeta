@@ -343,6 +343,41 @@ class CFDCase:
         """Read existing results; never runs anything."""
         return read_case_results(self.workdir, average_window)
 
+    @property
+    def key(self) -> str:
+        """The case's identity: template, parameters and the STL files' hashes (not the OpenFOAM installation)."""
+        return self._key()
+
+    @property
+    def is_solved(self) -> bool:
+        """Prepared for exactly this configuration and its results read back complete."""
+        return self.is_prepared and self.results().ok
+
+    def ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
+               timeout: float | None = None) -> Result:
+        """The case's results, solving only when needed.
+
+        Solved already with these inputs (same key, results complete) -> read back, nothing runs. Otherwise the
+        directory is prepared again (a stale or half-run case is replaced) and the whole pipeline runs. With
+        ``run=False`` nothing is prepared or run: an unsolved case comes back as a failed result saying NOT RUN.
+        ``metadata["reused"]`` says which happened.
+        """
+        if self.is_prepared:
+            done = self.results()
+            if done.ok:
+                done.metadata["reused"] = True
+                return done
+        if not run:
+            res = Result(kind="aeromant.run", metadata={"case": self.config(), "reused": False, "not_run": True})
+            return res.fail(f"NOT RUN: {self.template.name} case in {self.workdir} (run=False)")
+        prep = self.prepare(overwrite=True)
+        if not prep.ok:
+            prep.metadata["reused"] = False
+            return prep
+        res = self.run(progress=progress, processors=processors, cancel=cancel, timeout=timeout)
+        res.metadata["reused"] = False
+        return res
+
 
 def open_case(workdir: str | Path) -> dict:
     """Case information written by ``prepare()``."""

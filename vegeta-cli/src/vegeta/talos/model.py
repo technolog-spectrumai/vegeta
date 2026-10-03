@@ -111,6 +111,16 @@ class StructuralModel:
         }
         return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
 
+    def _solve_key(self) -> str:
+        cfg = {k: v for k, v in self.config().items() if k not in ("geometry", "notes")}   # geometry: in the mesh key by hash
+        cfg["mesh_key"] = self._mesh_key()
+        return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
+
+    @property
+    def key(self) -> str:
+        """The static analysis's identity: geometry hash, units, regions, mesh settings, material, supports, loads."""
+        return self._solve_key()
+
     # -- meshing ----------------------------------------------------------------------------
     def mesh(self, workdir: str | Path, progress=False) -> Result:
         """Mesh the geometry with Gmsh into ``workdir/mesh.msh``."""
@@ -153,7 +163,7 @@ class StructuralModel:
         t0 = time.monotonic()
         workdir = Path(workdir)
         res = Result(kind="talos.solve", metadata={"model": self.config(), "started_at": utc_now(),
-                                                   "units": asdict(self._unit_system)})
+                                                   "units": asdict(self._unit_system), "solve_key": self._solve_key()})
         done = lambda: (setattr(res, "duration_s", time.monotonic() - t0), res.save_json(workdir / "summary.json"))
 
         summary = workdir / MESH_SUMMARY
@@ -220,6 +230,50 @@ class StructuralModel:
         done()
         res.artifacts["summary"] = workdir / "summary.json"
         res.save_json(res.artifacts["summary"])
+        return res
+
+    # -- solving only when needed -------------------------------------------------------------
+    def solved(self, workdir: str | Path) -> Result | None:
+        """The static result in ``workdir`` when it was solved with exactly these inputs, read back; else None."""
+        summary = Path(workdir) / "summary.json"
+        if not summary.is_file():
+            return None
+        try:
+            d = json.loads(summary.read_text())
+        except (OSError, json.JSONDecodeError):
+            return None
+        if d.get("status") != "success" or d.get("metadata", {}).get("solve_key") != self._solve_key():
+            return None
+        res = result_from_dict(d)
+        res.metadata["reused"] = True
+        return res
+
+    def mesh_is_current(self, workdir: str | Path) -> bool:
+        """``workdir`` holds a successful mesh made with this geometry, regions and mesh settings."""
+        summary = Path(workdir) / MESH_SUMMARY
+        if not (Path(workdir) / MESH_FILE).is_file() or not summary.is_file():
+            return False
+        info = json.loads(summary.read_text())
+        return info.get("status") == "success" and info.get("metadata", {}).get("mesh_key") == self._mesh_key()
+
+    def ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
+               timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+        """The static result, computing only what is missing: solved with these inputs -> read back; else mesh (only
+        when the mesh is missing or out of date) and solve. ``run=False``: nothing runs, an unsolved model comes back
+        as a failed result saying NOT RUN. ``metadata["reused"]`` says which happened."""
+        done = self.solved(workdir)
+        if done is not None:
+            return done
+        if not run:
+            res = Result(kind="talos.solve", metadata={"model": self.config(), "reused": False, "not_run": True})
+            return res.fail(f"NOT RUN: {self.name} in {workdir} (run=False)")
+        if not self.mesh_is_current(workdir):
+            m = self.mesh(workdir, progress=progress)
+            if not m.ok:
+                m.metadata["reused"] = False
+                return m
+        res = self.solve(workdir, executable=executable, threads=threads, timeout=timeout, progress=progress, cancel=cancel)
+        res.metadata["reused"] = False
         return res
 
     def solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
@@ -371,3 +425,13 @@ class StructuralModel:
             f"lengths {self._unit_system.length}, forces {self._unit_system.force}, "
             f"stresses {self._unit_system.stress}"
         )
+
+
+def result_from_dict(d: dict) -> Result:
+    """A ``Result`` back from its ``to_dict()`` form (``summary.json``): paths as ``Path``, commands as records."""
+    from .result import CommandRecord
+
+    return Result(kind=d["kind"], status=d.get("status", "success"), metrics=dict(d.get("metrics", {})),
+                  artifacts={k: Path(v) for k, v in d.get("artifacts", {}).items()}, messages=list(d.get("messages", [])),
+                  duration_s=d.get("duration_s", 0.0), execution=[CommandRecord(**c) for c in d.get("execution", [])],
+                  metadata=dict(d.get("metadata", {})))

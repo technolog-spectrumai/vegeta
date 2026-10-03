@@ -125,6 +125,16 @@ Artifacts kept in the work directory: `mesh.msh`, `gmsh.log`, `mesh_summary.json
 Field data: `talos.read_frd(result.artifacts["frd"])` → nodes, displacement, stress, von Mises.
 Plots: `plot_deformed`, `plot_von_mises_histogram`, `plot_along_axis` (matplotlib figures).
 
+## Solving only when needed, and many models at once
+`model.ensure(workdir, run=True, threads=1)` returns the static result and computes only what is missing: a
+`summary.json` solved with exactly these inputs (`model.key`: geometry hash, units, regions, mesh settings, material,
+supports, loads) is read back; otherwise the model is meshed (only when the mesh is missing or out of date) and solved.
+A changed load re-solves on the same mesh. `run=False` runs nothing and returns a failed result saying NOT RUN.
+`result.metadata["reused"]` says which happened; a read-back result plots like a fresh one.
+
+`talos.solve_models(models, workdirs, threads=1, run=True, progress=False)` does that for a list, one model after the
+other (Gmsh is one process-wide state; CalculiX parallelises one solve with `threads`), and resumes when called again.
+
 ## CLI
 ```
 talos inspect part.step --units mm-N-MPa [--json]

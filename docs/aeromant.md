@@ -82,6 +82,23 @@ The whole case directory is kept: `inputs/` (original STL), `constant/triSurface
 metres), `system/`, `0.orig/`, `0/`, the mesh, `postProcessing/`, `log.*`, `aeromant_case.json`
 (configuration and derived values) and `summary.json`.
 
+## Solving only when needed, and many cases at once
+`case.ensure(run=True, processors=1, progress=False)` returns the case's results and solves only when it must: a
+case directory prepared for exactly these inputs (`case.key`: template, parameters, STL hashes; not the OpenFOAM
+installation) with complete results is read back in seconds; anything else is prepared again (a stale or half-run
+directory is replaced) and run. `run=False` runs nothing and returns a failed result saying NOT RUN.
+`result.metadata["reused"]` says which happened.
+
+`aeromant.run_cases(cases, jobs=1, processors=1, run=True, progress=False, cancel=None)` does that for a list: the
+solved ones are read back, the others run `jobs` at a time with `processors` MPI ranks each, a failed case is a failed
+result in the list, the results come back in the order given. Interrupted, the same call resumes. Each case needs its
+own `workdir`.
+```python
+cases = [aeromant.CFDCase("compressor_mrf", stl, dict(params, outlet_pressure=p), f"runs/speedline/p{i}", "mm", env, surfaces=s)
+         for i, p in enumerate(back_pressures)]
+results = aeromant.run_cases(cases, jobs=2, processors=4, progress=True)
+```
+
 ## CLI
 ```
 aeromant templates [NAME] [--json]
