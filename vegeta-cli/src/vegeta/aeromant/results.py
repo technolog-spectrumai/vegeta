@@ -202,3 +202,34 @@ def read_force_history(files: list[Path] | Path) -> np.ndarray:
     if not rows:
         raise ValueError("no force data found")
     return np.array(rows, dtype=float)
+
+
+def read_sample_set(case: Path, function: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """The last time's samples of a ``sets`` function object along a line with ``axis x``: the x coordinates and a
+    column per field. Reads ``postProcessing/<function>/<time>/*.csv`` (header names the columns) or, failing that,
+    raw ``*.xy`` files whose names list the fields (``<set>_<field1>_<field2>.xy``)."""
+    times = sorted((Path(case) / "postProcessing" / function).glob("*"), key=lambda f: _time_key(f.name))
+    times = [t for t in times if t.is_dir() and any(t.glob("*.csv")) or t.is_dir() and any(t.glob("*.xy"))]
+    if not times:
+        raise FileNotFoundError(f"no postProcessing/{function}/<time>/ samples in {case}")
+    last = times[-1]
+    x = None
+    cols: dict[str, np.ndarray] = {}
+    for f in sorted(last.glob("*.csv")):
+        lines = [ln for ln in f.read_text().splitlines() if ln.strip()]
+        names = [c.strip().lstrip("#").strip() for c in lines[0].split(",")]
+        data = np.array([[float(v) for v in ln.split(",")] for ln in lines[1:]], dtype=float)
+        x = data[:, 0]
+        for j, name in enumerate(names[1:], start=1):
+            cols[name] = data[:, j]
+    if x is None:
+        for f in sorted(last.glob("*.xy")):
+            data = np.loadtxt(f, ndmin=2)
+            fields = f.stem.split("_")[1:]
+            x = data[:, 0]
+            for j, name in enumerate(fields, start=1):
+                if j < data.shape[1]:
+                    cols[name] = data[:, j]
+    if x is None or not cols:
+        raise FileNotFoundError(f"postProcessing/{function}/{last.name} has no readable samples")
+    return x, cols
