@@ -80,6 +80,10 @@ class Merlin(FixedWing):
         Parameter("hub_height", 10.0, "mm", min=2),
         Parameter("spinner_length", 22.0, "mm", min=0),
         _fw("tail_span", 420.0), _fw("tail_chord", 120.0), _fw("fin_height", 150.0), _fw("tail_thickness", 5.0),
+        Parameter("edf_diameter", 90.0, "mm", min=60, max=130,
+                  description="edf: fan diameter (rotor, hub, chords, stators, lip and duct scale with it; notebook 25's fan is 90)"),
+        Parameter("edf_pitch", 160.0, "mm", min=60, max=400, description="edf: the rotor's geometric pitch"),
+        Parameter("edf_exit_area_ratio", 0.9, "", min=0.5, max=1.1, description="edf: nozzle exit annulus / fan annulus"),
         _fw("angle_of_attack_deg"),
     ]
 
@@ -95,7 +99,7 @@ class Merlin(FixedWing):
             L = df.EDFHousing.layout(hp)
             x0 = -p["nose_length"]                                   # the rotor plane
             out.update(prop_x=x0, edf_x0=x0, lip_x=x0 + L["x_l"], exit_x=x0 + L["x_e"], body_x=x0 + L["x_b0"],
-                       front_x=x0 - EDF_ROTOR["hub_height"] / 2 - p["spinner_length"], r_front=hp["hub_diameter"] / 2,
+                       front_x=x0 - hp["hub_height"] / 2 - p["spinner_length"], r_front=hp["hub_diameter"] / 2,
                        nacelle_r=L["R_s"] + hp["wall_thickness"], prop_d=hp["diameter"])
             if out["exit_x"] + p["fairing_length"] > 0:
                 raise ValueError("the fairing behind the EDF nozzle must reach the full diameter ahead of the wing: shorten "
@@ -122,7 +126,7 @@ class Merlin(FixedWing):
         R, s = L["R"], np.linspace(0, 1, n)
         pts = []
         if p["propulsion"] == "edf":
-            rb, h = L["r_front"], EDF_ROTOR["hub_height"]                # the EDF rotor's hub, not the propeller's
+            rb, h = L["r_front"], edf_housing_params(p)["hub_height"]    # the EDF rotor's hub, not the propeller's
             x_hub = L["prop_x"] - h / 2
             sp = p["spinner_length"]
             pts += [(x_hub - sp * math.cos(a), rb * math.sin(a)) for a in s * math.pi / 2]
@@ -226,11 +230,23 @@ def _resolve(p):
     return Merlin().resolve(**dict(p))
 
 
-def edf_housing_params(p) -> dict:
-    """The ``ducted_fan.EDFHousing`` parameters of MERLIN's nose duct: notebook 25's EDF (``EDF_HOUSING``) with a tail
-    cone long enough to stay cylindrical through the nozzle — the fuselage continues there, so the nozzle converges
-    around a cylinder and the jet leaves as a ring around the fuselage."""
-    return df.EDFHousing().resolve(**dict(EDF_HOUSING, tail_length=1.0e5))
+_EDF_SCALED = ("hub_diameter", "hub_height", "chord_root", "chord_max", "chord_tip", "stator_chord", "stator_gap")
+
+
+def edf_housing_params(p=None) -> dict:
+    """The ``ducted_fan.EDFHousing`` parameters of MERLIN's nose duct: notebook 25's EDF (``EDF_HOUSING``) scaled to
+    ``edf_diameter`` (hub, chords, stator chord and gap, lip and duct lengths in proportion; the tip clearance, wall
+    and lip radii stay), with ``edf_pitch`` and ``edf_exit_area_ratio``, and a tail cone long enough to stay
+    cylindrical through the nozzle — the fuselage continues there, so the nozzle converges around a cylinder and the
+    jet leaves as a ring around the fuselage."""
+    p = Merlin().resolve(**dict(p or {})) if not (p and "edf_diameter" in p) else p
+    k = p["edf_diameter"] / EDF_HOUSING["diameter"]
+    base = df.EDFHousing().resolve()
+    hp = dict(EDF_HOUSING, diameter=p["edf_diameter"], pitch=p["edf_pitch"], exit_area_ratio=p["edf_exit_area_ratio"],
+              lip_length=base["lip_length"] * k, duct_length=base["duct_length"] * k, tail_length=1.0e5)
+    for name in _EDF_SCALED:
+        hp[name] = EDF_HOUSING.get(name, base[name]) * k
+    return df.EDFHousing().resolve(**hp)
 
 
 def _frusta(prof):
