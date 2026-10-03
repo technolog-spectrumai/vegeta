@@ -78,6 +78,11 @@ Interrupted runs resume: solved cases are read back.
 sub-assembly and stops with the command to run when it is missing. A new engine changes the engine node's key and
 so the keys of the nodes built on it; nodes whose own parameters did not change are still reused.
 
+The `.vida` and JSON files committed in `data/` were written with the solvers off (`--no-cfd --no-fea`, fidelity
+`full`): the cycle, the parts, AGUYA's sizing and missions are computed, the CFD and FEA nodes say NOT RUN. A full run
+on a workstation fills them in and is committed in their place. Full fidelity needs a workstation: AGUYA's wing at
+4 mm elements takes more than 10 GB of memory in CalculiX, the microjet wheels at 1 mm more still.
+
 ## Components
 | component | from | gives |
 |---|---|---|
