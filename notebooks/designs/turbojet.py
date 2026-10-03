@@ -57,7 +57,7 @@ class Turbojet(Design):
         Parameter("turbine_blade_t", 0.10, "", min=0.03, max=0.25, description="turbine blade thickness / chord"),
         Parameter("turbine_stagger_deg", 35.0, "deg", min=0, max=70, description="blade stagger at mid-span"),
         Parameter("turbine_twist_deg", 12.0, "deg", min=0, max=40, description="stagger change hub to tip"),
-        Parameter("bore_diameter", 8.0, "mm", min=2, max=40, description="turbine disc bore (the shaft)"),
+        Parameter("bore_diameter", 8.0, "mm", min=2, max=40, description="impeller and turbine bore (the shaft)"),
         Parameter("disc_width", 12.0, "mm", min=3, max=60, description="turbine disc width at the hub"),
         Parameter("web_width", 5.0, "mm", min=1, max=40, description="turbine disc width at mid-radius"),
         Parameter("outer_diameter", 112.0, "mm", min=30, max=400, description="engine casing diameter (datasheet)"),
@@ -156,7 +156,16 @@ class Turbojet(Design):
     def impeller(self, p):
         hub = self._hub(p).val()
         blades = [self._blade(p, k) for k in range(int(p["blades"]))]
-        return cq.Workplane("XY").add(hub.fuse(*blades).clean())
+        wheel = hub.fuse(*blades).clean()
+        s = self.stations(p)
+        rb = p["bore_diameter"] / 2
+        if rb >= 0.8 * s["r1h"]:
+            raise ValueError("bore_diameter too large for the impeller's inducer hub")
+        x0 = s["x_spinner"] if p["spinner_ratio"] > 0 else 0.0
+        # the shaft's bore, from the spinner's base (the nut sits in the spinner) through the backplate
+        x_from = x0 + 0.5 * (0.0 - x0)
+        bore = cq.Solid.makeCylinder(rb, s["x_back"] - x_from + 1.0, cq.Vector(x_from, 0, 0), cq.Vector(1, 0, 0))
+        return cq.Workplane("XY").add(wheel.cut(bore).clean())
 
     # ------------------------------------------------------------------------------------- turbine
     @staticmethod
