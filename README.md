@@ -198,6 +198,22 @@ reasonable ducted fan — 70–120 mm, any pitch and nozzle, a well-made duct, o
 battery — beats the propellers (two to twelve blades) in a 5 km out-and-back and a 10 km race: none does, and even a
 lossless duct does not. `scenarios/propulsor_maps.py [--kind ...]` rebuilds the maps, `scenarios/merlin_race.py` re-runs the race.
 
+**Microjet and AGUYA** (branch `dev_jet`): `28_microjet` builds a model turbojet in the workbench. It has a 1-D cycle
+on its operating line (`vegeta.boreas.microjet`: a radial compressor, a choked or unchoked NGV and nozzle, and turbine
+work = compressor work), calibrated to a datasheet's thrust, fuel flow and EGT for 100, 140 and 200 N classes. Its
+impeller, turbine wheel and casing are in CAD (`designs/turbojet.py`). The compressor runs in compressible MRF CFD, one
+speed-line point per back pressure (Aeromant `compressor_mrf`). The wheels run in FEA spinning and hot (Talos
+`Centrifugal` + `RadialTemperature`, with stiffness and yield at temperature). The notebook exports
+`designs/data/microjet.json`. `29_aguya` puts that engine into **AGUYA** (`designs/aguya.py`, `designs/aguya_flight.py`), a
+turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the jet, and the fuel tank in the fuselage.
+- **Sizing:** it flies the mission with fuel burn and sizes the tank per range.
+- **Speed:** it reaches a fire 10 km out in about 80 s (MERLIN's best is about 157 s) and one 30 km out in about 200 s, at
+  about 160 m/s.
+- **Jet and exhaust:** it checks the hot jet against the V-tail (a free-jet estimate, then compressible CFD with the
+  running engine, Aeromant `jet_external`) and whether the sensor samples its own exhaust.
+- **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
+  80 m/s) and its vibration modes.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

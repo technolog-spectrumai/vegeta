@@ -198,6 +198,40 @@ levels 3/2/3, 400 iterations: ~0.9 M cells, ~15 min). `notebooks/designs/onager_
 field, compares them with the litter classes' terminal speeds, and runs litter particles through the field for a
 movie.
 
+## Compressible cases: a jet aircraft and a radial compressor (`jet_external`, `compressor_mrf`)
+
+Both templates are steady compressible RANS k-ω SST with `rhoSimpleFoam`. They exist for openfoam.com only (v2106 or
+later: they use `surfaceFieldValue`'s `names`); with an openfoam.org installation, `CFDCase` refuses them. Both need
+**named extra surfaces**, i.e. STLs besides the geometry, given as `CFDCase(..., surfaces={name: path})`. Together with
+the geometry they close one surface. The template lists the names it needs (`TemplateSpec.surfaces`), and `prepare`
+writes each as `<name>.stl` and passes their bounding boxes and areas to the template.
+
+**`jet_external`** is an aircraft with a running jet engine.
+- **Surfaces:** `geometry` is the body (airframe and nacelle, open at the intake and the nozzle). `intake` is the engine
+  face, through which the engine's air leaves the domain (`flowRateOutletVelocity`, the intake mass flow). `exhaust` is the
+  nozzle face, through which the jet enters (`flowRateInletVelocity` with air plus fuel, at the jet's static temperature
+  from the cycle).
+- **Parameters:** the ambient `pressure` and `temperature` replace the density.
+- **Outputs:** `forceCoeffs` gives the body's drag and lift with the engine running (pressure relative to the ambient,
+  because the body is open). A scalar tracer `exhaust` (1 at the nozzle) marks the jet. A `sets` line along the jet's axis
+  gives `metrics["plume"]` (temperature, excess temperature and exhaust fraction against the distance behind the nozzle)
+  and `jet_excess_T_at_<d>m_K`.
+- **Mesh:** `engine_level` and `plume_level` refine the faces and the jet.
+
+**`compressor_mrf`** is one point of a radial compressor's speed line.
+- **Surfaces:** `geometry` is the impeller (it turns with the MRF zone). `shroud` is the stationary casing, the static hub
+  and the diffuser walls (`nonRotatingPatches`). `inlet` holds the total pressure and temperature. `outlet` holds a
+  static back pressure.
+- **Mesh:** the background box is closed (`farfield`), and `location_in_mesh` must lie in the passage.
+- **Results:** `mass_flow_kg_s`, `corrected_mass_flow_kg_s`, `pressure_ratio_tt`, `efficiency_tt` (from mass-averaged
+  static values and the isentropic relations), `shaft_power_W` and `efficiency_from_torque` (from the impeller torque),
+  and `work_coefficient` (shaft work / U², the cycle's slip × power input).
+- **Running a speed line:** start near choke with `first_order=1`, then raise the back pressure. The steady solver does
+  not find surge.
+
+`designs/turbojet.py` (`compressor_surfaces`) and `designs/aguya.py` (`cfd_surfaces`) write these STLs from CAD;
+notebooks 28 and 29 run them.
+
 ## OpenFOAM installations
 - `./test_openfoam.sh` (repository root) runs both templates on every installation it finds, one per flavour,
   and reports which passed; use it after installing or upgrading OpenFOAM, or to validate the `org/` case files on

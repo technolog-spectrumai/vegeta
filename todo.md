@@ -119,6 +119,20 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
 - [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)
 
+## Stage 5i — Microjet and AGUYA (branch `dev_jet`)
+- [x] 5i.1 `vegeta.boreas.microjet`: the turbojet cycle on its operating line, calibrated to a datasheet (thrust, fuel, EGT),
+  maps, export; three catalogue classes
+- [x] 5i.2 Aeromant `jet_external` (an aircraft with a running jet engine: intake and nozzle faces, exhaust tracer, plume
+  samples) and `compressor_mrf` (an impeller MRF speed-line point), both compressible (`rhoSimpleFoam`, openfoam.com);
+  named extra surfaces in `CFDCase`
+- [x] 5i.3 Talos `RadialTemperature`, thermal expansion, stiffness and yield at temperature (CalculiX `*TEMPERATURE`)
+- [x] 5i.4 `designs/turbojet.py` (impeller, turbine wheel, engine, compressor CFD passage) and `28_microjet`
+- [x] 5i.5 `designs/aguya.py`, `designs/aguya_flight.py` (fuel burn, tank sizing) and `29_aguya` (race against MERLIN, hot jet,
+  own exhaust, gust FEA, modes)
+- [ ] 5i.6 Run the compressor speed line and refit the cycle's compressor from it; the jet CFD at the dash
+- [ ] 5i.7 Turbine creep life (Larson-Miller) from the hot-wheel FEA; an annular combustor model; spool-up dynamics
+- [ ] 5i.8 AGUYA's mission movie with the smoke (reuse `merlin_flight.render_movie`); the race in wind and at altitude
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)

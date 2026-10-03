@@ -87,3 +87,27 @@ MERLIN's fairing taken off); `unit_mass_kg`, `merlin_airframe` (from notebook 26
 `merlin.Merlin` takes the fan's `edf_diameter`, `edf_pitch` and `edf_exit_area_ratio`; `merlin_flight.load_design` reads notebook
 26's export (`data/merlin_design.json`) and `build_merlins(design=...)` puts the library's propulsors on that airframe.
 
+`turbojet.py` (`Turbojet`, notebook 28, branch `dev_jet`) is a model turbojet's parts:
+- the impeller: radial-element blades with an inducer lean, on a hub of revolution with a spinner and a shaft bore;
+- the turbine wheel: a cast disc with twisted blades;
+- the engine's outside: bell-mouth, casing, nozzle and tail cone.
+
+All are sized from a `vegeta.boreas.microjet.Microjet` by `sized(engine)`. `compressor_surfaces(p, dir)` writes the four
+STLs of Aeromant's `compressor_mrf`: impeller, shroud (inlet duct, casing over the tips with the gap, vaneless diffuser),
+inlet face and outlet face. It returns a `location_in_mesh` in the passage. `passage_profile`, `masses`.
+
+`aguya.py` (`Aguya`, notebook 29) is the turbojet sampler: `FixedWing`'s wing, an ogive sensor nose, a fuselage tank, the
+engine pod on a pylon and a V-tail. `for_engine(engine)` sizes the pod and nozzle from the cycle. Also: `tank_volume_l`,
+`drag_buildup` (Raymer, with Mach corrections), `cfd_surfaces(p, dir)` (the body, intake-face and nozzle-face STLs of
+`jet_external`) and `outline`.
+
+`aguya_flight.py` (`import aguya_flight as F`) is the mission with fuel burn:
+- `JetUnit` (thrust and fuel flow over airspeed × shaft speed), from the cycle (`jet_unit`) or notebook 28's export
+  (`jet_unit_from_export`);
+- `JetAirframe` / `airframe(p, unit)`;
+- `top_speed`;
+- `fly`: start, catapult, climb, accelerate, dash, 3 min of passes, return, parachute;
+- `fuel_for`: the smallest fuel load that keeps the reserve;
+- `size_for`: the thinnest fuselage whose tank holds it;
+- `race_table`.
+

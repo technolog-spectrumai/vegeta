@@ -63,6 +63,20 @@ A Gmsh "PLC Error: a segment and a facet intersect" almost always means a sliver
 bolt hole 0.1 mm from an edge, a 0.4 mm edge left by a union) rather than a meshing setting: check the
 smallest edges of the CAD before changing the mesh (`notebooks/08_quadcopter` shows such a case).
 
+## Temperature (`RadialTemperature`)
+
+`RadialTemperature(radii, temperatures, point, axis)` is a steady temperature field [K] that depends on the distance
+from an axis. It interpolates linearly between the given radii (a turbine disc: cool bore, hot rim and blades). One
+field per model.
+
+- **Material:** it needs `thermal_expansion` (1/K, stress-free at `reference_temperature`) and/or a `temperature_table`
+  of rows `(T, E, nu, yield)`. With a table, the stiffness follows the temperature (CalculiX `*ELASTIC` with temperature
+  columns), and the **safety factor** becomes the lowest nodal ratio of the yield at that node's temperature to its von
+  Mises stress (`safety_factor_temperature` and `safety_factor_location` say where).
+- **Deck:** `*INITIAL CONDITIONS, TYPE=TEMPERATURE` at the reference temperature, `*EXPANSION`, and `*TEMPERATURE` per node.
+- **Combining:** combine it with `Centrifugal` for a spinning hot wheel (notebook 28).
+- **Limit:** creep is not in it.
+
 ## Modal analysis and point masses
 ```python
 model = talos.StructuralModel(step, "mm-N-MPa", petg_cf, regions, supports, loads=[], mesh_settings=...,
