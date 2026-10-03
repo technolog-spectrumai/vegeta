@@ -71,31 +71,63 @@ Interrupted runs resume: solved cases are read back.
 
 | workflow | from | tree | writes |
 |---|---|---|---|
-| `microjet` | notebook 28 | microjet → parts, compressor (CFD speed line), wheels (FEA) | `data/microjet.vida`, `data/microjet.json` (read by notebook 29) |
-| `aguya` | notebook 29 (not its race against MERLIN) | aguya → engine (= `microjet.vida`, grafted), airframe (sizing, missions), jet_cfd (CFD at the dash), wing (gust FEA, modes) | `data/aguya.vida`, `data/aguya.json` |
+| `microjet` | notebook 28 | microjet → parts, compressor (CFD speed line), wheels (FEA) | `microjet.vida`, `microjet.json` (read by notebook 29) |
+| `aguya` | notebook 29 | aguya → engine (= `microjet.vida`, grafted), airframe (sizing, missions), jet_cfd, wing (gust FEA, modes), merlin_race (from `merlin.vida` and `propulsors.vida`) | `aguya.vida`, `aguya.json` |
+| `quadcopter` | notebook 08 | quadcopter → frame (CAD, masses), frame_fea, canopy_cfd, propeller (5x4.3 tri-blade, BEMT points), rotor_cfd, blade_fea | `quadcopter.vida`, `quadcopter.json` (boreas' format, as 08's `quad_5x43.json`) |
+| `fixed_wing` | notebook 09a | fixed_wing → airframe (planform, polar), propeller (9x6), wing_fea, aero_cfd (4°), rotor_cfd, blade_fea, installed_cfd (rotor disks) | `fixed_wing.vida`, `fixed_wing.json` (the keys 09b reads), `fixed_wing_propulsion.json` |
+| `propulsors` | notebooks 25, 25b, 25c (last cells) | propulsors → propellers, exotic, edf: the libraries over airspeed × rpm | `propulsors.vida`; at `full` also `*_maps.json` (only a full run writes them) |
+| `merlin` | notebooks 26, 26b, 27 | merlin → airframe (3 propulsions), wing_fea, polar_cfd (3 aircraft), propulsors (grafted), race, mission | `merlin.vida`, `merlin_design.json` (kept, not replaced, by a run that solved neither the wing FEA nor the polar CFD) |
+| `boat` | notebook 12 | boat → hull (CAD, masses, hydrostatics), propeller (60 mm marine), hull_cfd (double body), hull_fea, bracket_fea, rotor_cfd, blade_fea, scene_cfd | `boat.vida`, `boat.json` |
+| `submarine` | notebooks 13, 14 | submarine → hull (buoyancy, trim), propeller (120 mm), hull_cfd, pressure_hull_fea, rotor_cfd, blade_fea, scene_cfd | `submarine.vida`, `submarine.json` |
+| `rover` | notebook 11 | rover → parts (CAD), terrains (quarter car, ISO 8608 roads with rocks), arm_fea, chassis_fea; pins and wheel loads on the root | `rover.vida` |
+| `onager` | notebooks 20–23 | onager → sentinel, atlas, manus, sweeper; each → body (mass budget, CAD drift), scene (MuJoCo episode); sentinel also → leg_fea (walk, braking, drop, cornering) | `onager.vida` |
+| `walkers` | notebooks 16–19 | walkers → dog (body, gaits), cleopatra (body), persephone (CAD), apheloria (body, pack, unpack in MuJoCo) | `walkers.vida` |
 
-`aguya` does not compute the engine: it loads `data/microjet.vida` (or `--engine PATH`) as its `engine`
-sub-assembly and stops with the command to run when it is missing. A new engine changes the engine node's key and
-so the keys of the nodes built on it; nodes whose own parameters did not change are still reused.
+All files go to `data/`. A workflow that needs another product's result loads its `.vida` and stops with the command
+to run when it is missing: `aguya` grafts `microjet.vida` (or `--engine PATH`) as its `engine`; `merlin` grafts
+`propulsors.vida`; `aguya`'s race reads both `merlin.vida` and `propulsors.vida`. A new engine changes the engine
+node's key and so the keys of the nodes built on it; nodes whose own parameters did not change are still reused.
+`--show` prints a saved tree. The ground workflows also take `--no-sim` (no MuJoCo scenes) and `--variant`/`--machine`.
 
-The `.vida` and JSON files committed in `data/` were written with the solvers off (`--no-cfd --no-fea`, fidelity
-`full`): the cycle, the parts, AGUYA's sizing and missions are computed, the CFD and FEA nodes say NOT RUN. A full run
-on a workstation fills them in and is committed in their place. Full fidelity needs a workstation: AGUYA's wing at
-4 mm elements takes more than 10 GB of memory in CalculiX, the microjet wheels at 1 mm more still.
+The `.vida` and JSON files committed in `data/` were written with the solvers off (`--no-cfd --no-fea`, `--no-sim`,
+fidelity `full`): CAD, cycles, masses, sizing, hydrostatics, the quarter car, the propulsor libraries, the races and
+missions are computed; the CFD, FEA and MuJoCo nodes say NOT RUN. A full run on a workstation fills them in and is
+committed in their place. Full fidelity needs a workstation: AGUYA's wing at 4 mm elements takes more than 10 GB of
+memory in CalculiX, the microjet wheels at 1 mm more still.
+
+What stayed in the notebooks: life and fatigue (08 Part 3, 09b, 12 §5–6, 14 §10–11), the leg torque tables of 18 and
+19, the Onager's standing and rock-strike leg cases (20), the gait simulations of 16 and 17. The delta wing is not
+here yet (`wing.WingSpec` refuses sweep).
 
 ## Components
 | component | from | gives |
 |---|---|---|
+| `propeller.py` | 08, 09a, 12, 13, 14, 25, `scenarios/run_scenario.py` | `PropellerSpec` and the `CATALOGUE` (5x4.3 tri-blade, 9x6, 10x6, 60 mm and 120 mm marine), polar and blade tables, stamped CAD, rotor CFD cases per fidelity, blade loads and FEA |
+| `wing.py` | 09a, 09b, 26, `aguya_wing` | `WingSpec` (rectangular and straight-tapered; sweep refused), planform, lift slope, Pratt gust, lift pressure, lower skins, root and motor regions, the wing FEA model |
+| `hull.py` | 12, 13, 14, `run_scenario` | ITTC-57 friction, boat and body-of-revolution resistance, the double body, the nose upstream |
+| `leg.py` | 11, 16, 18, 19, 20 | pin bending and shear, foot peak force, two-link wheel-leg torques, the plate-leg FEA models |
+| `road_wheel.py` | 11, 20, 21 | ISO 8608 roads, rocks and drops, the quarter car, rock-strike force, rolling resistance, hub traction |
+| `pincer.py` | 22, 23 | the Manus arm, its IK/FK, actuators, stow pose and parts |
+| `quad_frame_analysis.py` | 08 cells 13, 29 | the frame FEA (full thrust, hard landing) and the canopy CFD case |
+| `_cad.py` | — | `export_kept`: STEP/STL kept while the parameters are unchanged (stable FEA mesh keys) |
 | `turbojet.py` | `notebooks/designs/turbojet.py` | the impeller, turbine wheel and engine CAD; the compressor passage STLs; sizing; masses |
 | `turbojet_parts.py` | notebook 28 §4 | the three STEP files with masses and sizes (kept when the parameters are unchanged) |
 | `cycle.py` | notebook 28 §1–3, 5, 7 | the catalogue engine, calibration from a speed line, design point, map, export |
 | `impeller.py` | notebook 28 §5 | the compressor's `compressor_mrf` cases per fidelity, the speed line |
-| `wheels.py` | notebook 28 §6 | the turbine and impeller FEA models (spin, hot, overspeed), their results |
-| `fixed_wing.py`, `aguya.py`, `aguya_flight.py` | `notebooks/designs/` | the wing sections, AGUYA's CAD and CFD surfaces, the jet unit, airframe, missions with fuel burn, tank sizing |
-| `aguya_jet.py` | notebook 29 §7 | the dash point, the free-jet estimate, the `jet_external` case and its results |
-| `aguya_wing.py` | notebook 29 §9 | Pratt's gust numbers, the wing's gust and 6 g FEA, the vibration modes |
+| `wheels.py` | notebook 28 §6 | the microjet's turbine and impeller FEA models (not the road wheel: that is `road_wheel.py`) |
+| `aguya_jet.py`, `aguya_wing.py` | notebook 29 §7, §9 | the dash point and jet case; Pratt's gust numbers, the wing's gust and 6 g FEA, the modes |
+| `apheloria_pack.py` | `scenarios/apheloria_pack.py` | the scripted pack/unpack controller and its summary (no movie) |
+
+Copied verbatim from `notebooks/designs/` (imports made package-relative, nothing else changed; their tests copied
+too): `fixed_wing`, `aguya`, `aguya_flight`, `quad_frame`, `air_propeller`, `ducted_fan`, `merlin`, `merlin_flight`,
+`propulsor_maps`, `merlin_race`, `survey_boat`, `submarine`, `gait`, `actuators`, `rover`, `robot_dog*`, `myropod*`,
+`apheloria*`, `onager*`. The notebooks keep their own copies; `benchmark/` keeps pointing at the notebook modules.
 
 ## Tests
-`python -m pytest assemblies/tests -m "not slow"` (about two minutes: CAD and the workflows with the CFD batches
-replaced by known results); `-m slow` runs the wheels' and the wing's FEA for real (CalculiX, a few minutes). Also in `scripts/test_all.sh` and
-`./user_tests.sh microjet`.
+`./assembly_tests.sh` (env + the fast tests; `--help` lists the sections) or directly:
+`python -m pytest assemblies/tests -m "not slow"` (about eight minutes: CAD and the workflows with the CFD batches
+replaced by known results, the simulations and FEA off; lifted snippets checked against the notebook cells themselves);
+`-m slow` runs the FEA at smoke mesh for real (CalculiX), the MuJoCo scenes and a propulsor library.
+`./assembly_tests.sh smoke` runs every workflow with the solvers on at `smoke` into `runs/assemblies_smoke/`
+(nothing in `data/` changes); `./assembly_tests.sh air|water|ground|everything` are the real, resumable runs that
+write `data/`.

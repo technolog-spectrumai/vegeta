@@ -265,9 +265,9 @@
   "workflow": "assemblies.workflows.aguya",
   "fidelity": "full",
   "vida": "aguya.vida",
-  "written_at": "2026-10-03T15:38:42+00:00",
+  "written_at": "2026-10-03T17:40:25+00:00",
   "git": {
-   "commit": "82f0019e7c161e91caf530ae29448a32cccfe633",
+   "commit": "7b1be852c8a47b4428655c354585a60d8874a3b8",
    "dirty": true
   },
   "jet_cfd_complete": false,

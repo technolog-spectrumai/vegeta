@@ -216,8 +216,13 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
         root.not_run("Cd0 corrections from CFD: none (the drag build-up is the polar)")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
-    if export:
-        path = Path(export_path or mf.DESIGN_JSON)
+    path = Path(export_path or mf.DESIGN_JSON)
+    solved = bool(wf.results.get("complete") or pc.results.get("polar"))
+    if export and path.is_file() and not solved:
+        # the shared design file is not replaced by a run that solved neither the wing FEA nor the polar CFD
+        root.meta["export_kept"] = f"{path} kept: this run solved neither the wing FEA nor the polar CFD"
+        print(root.meta["export_kept"])
+    elif export:
         path.write_text(__import__("json").dumps(dict(design, written_at=vida.utc_now(), git=vida.manifest(vida_path)["git"],
                                                       fidelity=fidelity), indent=1, default=float))
         root.meta["exported_to"] = str(path)
