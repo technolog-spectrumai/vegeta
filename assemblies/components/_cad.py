@@ -29,7 +29,9 @@ def export_kept(make: Callable[[], object], params: dict, folder: Path, basename
     g = make()
     res = g.export(folder, formats=tuple(formats), basename=basename, stl_tolerance=stl_tolerance)
     res.raise_for_status()
+    com = g.measure().get("center_of_mass")
     info = {"volume_mm3": float(g.volume), "surface_area_mm2": float(g.surface_area),
-            "dimensions_mm": [float(x) for x in g.dimensions], "valid": bool(g.shape.isValid())}
+            "dimensions_mm": [float(x) for x in g.dimensions], "valid": bool(g.shape.isValid()),
+            "center_of_mass_mm": [float(x) for x in com] if com is not None else None}
     stamp.write_text(json.dumps({"params": want, "info": info}) + "\n")
     return {f: Path(res.artifacts[f]) for f in formats}, info

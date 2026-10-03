@@ -232,13 +232,14 @@ def blade_loads(prop: boreas.Propeller, point) -> dict:
 
 
 def blade_model(spec: PropellerSpec, step: Path, loads: dict, *, element_mm: float, material: dict | None = None,
-                name: str = "blade") -> talos.StructuralModel:
+                name: str = "blade", root_gap_mm: float = 1.5, half_width_mm: float | None = None) -> talos.StructuralModel:
     """One blade on its hub: the hub fixed, the blade's thrust and tangential force on the blade (08 cell 76,
-    09a cell 68)."""
+    09a cell 68; notebook 12 cell 48 boxes the blade at ``half_width_mm=25``, 13 cell 25 at ``root_gap_mm=2``)."""
     kw = spec.cad_kw(1)
     hub_r, hub_h, R_tip = kw["hub_diameter"] / 2, kw["hub_height"], kw["diameter"] / 2
+    w = R_tip if half_width_mm is None else half_width_mm
     regions = [talos.SurfacesInBox("hub", (-hub_r - 0.5, -hub_r - 0.5, -hub_h / 2 - 0.5, hub_r + 0.5, hub_r + 0.5, hub_h / 2 + 0.5)),
-               talos.SurfacesInBox("blade", (hub_r - 1.5, -R_tip, -R_tip, R_tip + 1.0, R_tip, R_tip))]
+               talos.SurfacesInBox("blade", (hub_r - root_gap_mm, -w, -w, R_tip + 1.0, w, w))]
     mat = talos.Material(**(material or BLADE_MATERIAL))
     return talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("hub")],
                                  [talos.Force("blade", fz=loads["thrust_N"], fy=-loads["tangential_N"])],
