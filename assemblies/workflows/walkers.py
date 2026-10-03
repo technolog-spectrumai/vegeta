@@ -90,12 +90,13 @@ def dog_gaits(node: Assembly, mass_kg: float) -> Assembly:
 
 
 def run(*, machines=MACHINES, run_sim: bool = True, vida_path: Path | None = None, include: str = "results", force: bool = False,
-        redo=(), **_ignored) -> Assembly:
+        redo=(), progress: bool = True, **_ignored) -> Assembly:
     vida_path = Path(vida_path or DATA / f"{NAME}.vida")
     prior = vida.load(vida_path) if vida_path.is_file() and not force else None
     root = build(machines)
     root.reuse(prior)
-    for m in machines:
+    from tqdm.auto import tqdm
+    for m in tqdm(machines, desc="walkers (CAD, robots, MuJoCo scenes)", disable=not progress):
         node = root.child(m)
         b = node.child("body")
         if m in redo or "body" in redo:

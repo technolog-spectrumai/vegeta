@@ -140,3 +140,12 @@ models and cases a workflow built, answered by stubs: fixed, plausible results i
 names, `run=False` still NOT RUN. A test takes the `solvers` fixture to look at the calls (`solvers.fea`, `.cfd`,
 `.sim`, or `solvers.solve_models.call_args_list`) or to swap an answer (`solvers.run_cases.side_effect = ...`). Tests
 that need the real tools are marked `@pytest.mark.real_solvers` (and `slow`).
+
+With the mocks, `test_stubbed_workflows.py` runs every workflow end to end with all its solvers on: nothing may stay
+NOT RUN, a second run calls no solver and reuses every node of its own, and `stubs.check_calls` checks that what was
+handed to the solvers is what the real ones take (real `StructuralModel`/`CFDCase` objects whose `key` computes, one
+workdir per model, `progress` passed through). `test_cli_api.py` sends every command-line option of every workflow to
+an autospecced mock of its `run()`.
+
+Progress bars: the FEA and CFD batches, the propulsor libraries, MERLIN's race (one step per power), the Onager
+variants and the walkers show tqdm bars; `progress=False` turns them off.

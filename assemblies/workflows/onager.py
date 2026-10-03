@@ -92,7 +92,8 @@ def run(*, fidelity: str = "full", variants=tuple(VARIANTS), run_fea: bool = Tru
     prior = vida.load(vida_path) if vida_path.is_file() and not force else None
     root = build(fidelity, variants)
     root.reuse(prior)
-    for v in variants:
+    from tqdm.auto import tqdm
+    for v in tqdm(variants, desc="Onager variants (CAD, MuJoCo scene)", disable=not progress):
         node = root.child(v)
         b = node.child("body")
         if v in redo or "body" in redo:

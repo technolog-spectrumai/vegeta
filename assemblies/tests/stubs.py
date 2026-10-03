@@ -125,3 +125,35 @@ def install(monkeypatch) -> Solvers:
         if getattr(mod, "run_scene", None) is real_scene:
             monkeypatch.setattr(mod, "run_scene", solvers.run_scene)
     return solvers
+
+
+# ------------------------------------------------------------------------------------------------ API compatibility
+def check_calls(solvers: Solvers, *, progress=None) -> dict:
+    """What a workflow handed the mocked solvers must be what the real ones take: real ``StructuralModel`` /
+    ``CFDCase`` objects whose ``key`` computes (their configuration is complete), one distinct workdir per FEA model,
+    a callable episode per scene. With ``progress`` given, every call must pass the workflow's ``progress`` through
+    (a long calculation shows its bar when asked, and none in tests). Returns the counts checked."""
+    n = {"fea_calls": 0, "models": 0, "cfd_calls": 0, "cases": 0, "scenes": 0}
+    for c in solvers.solve_models.call_args_list:
+        models, workdirs = c.args[0], c.args[1]
+        assert len(models) == len(workdirs), "one workdir per model"
+        assert len({Path(w).resolve() for w in workdirs}) == len(workdirs), "two FEA models share a workdir"
+        for m in models:
+            assert isinstance(m, talos.StructuralModel), f"not a StructuralModel: {m!r}"
+            assert isinstance(m.key, str) and m.key
+        if progress is not None:
+            assert c.kwargs.get("progress") is progress, f"solve_models called with progress={c.kwargs.get('progress')!r}"
+        n["fea_calls"] += 1
+        n["models"] += len(models)
+    for c in solvers.run_cases.call_args_list:
+        for case in c.args[0]:
+            assert isinstance(case, aeromant.CFDCase), f"not a CFDCase: {case!r}"
+            assert case.template.name and isinstance(case.key, str) and case.key
+        if progress is not None:
+            assert c.kwargs.get("progress") is progress, f"run_cases called with progress={c.kwargs.get('progress')!r}"
+        n["cfd_calls"] += 1
+        n["cases"] += len(c.args[0])
+    for c in solvers.run_scene.call_args_list:
+        assert callable(c.args[1]) and "run" in c.kwargs
+        n["scenes"] += 1
+    return n

@@ -195,7 +195,7 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
                                                                       "powers_w": list(mr.POWERS_W), "races": list(mr.RACES)}),
                      prior, redo)
     if not race.results:
-        table = mr.study(lib, design=design)
+        table = race_table(lib, design, progress=progress)
         winners = {}
         for name in mr.RACES:
             w = mr.winners(table, name).reset_index()
@@ -227,6 +227,17 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
                                                       fidelity=fidelity), indent=1, default=float))
         root.meta["exported_to"] = str(path)
     return root
+
+
+def race_table(lib: dict, design: dict, *, powers=mr.POWERS_W, progress=True):
+    """``merlin_race.study`` one power at a time under a progress bar (minutes), its rows put back in ``study``'s order
+    (every map and layout, then every power): the same table as one ``study`` call."""
+    import pandas as pd
+    from tqdm.auto import tqdm
+
+    parts = [mr.study(lib, powers=(P,), design=design) for P in tqdm(powers, desc="MERLIN race (per power)", disable=not progress)]
+    rows = [t.iloc[[i]] for i in range(len(parts[0])) for t in parts]
+    return pd.concat(rows, ignore_index=True) if rows else parts[0]
 
 
 def _merlins(design: dict, lib: dict) -> dict:
