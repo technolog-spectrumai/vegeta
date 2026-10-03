@@ -107,7 +107,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 5h — MERLIN, wildfire sampling (branch `dev_merlin`)
 - [x] 5h.1 `designs/merlin.py` (`FixedWing` subclass; EDF / tractor / pusher noses; drag build-up) and `designs/merlin_flight.py`
   (propulsor tables from `boreas.ducted` and BEMT with the installation models, the race, Gaussian smoke plume and the source
-  estimate, the mission, the smoke movie) and `26_merlin`: which propulsor reaches a fire 10 / 20 / 30 km away first;
+  estimate, the mission, the smoke movie) and `26_merlin`: which propulsor reaches a fire 5 / 8 / 10 / 20 / 30 km away first;
   `scenarios/merlin_mission.py`, `user_tests.sh merlin`, `tests/test_merlin.py`
 - [ ] 5h.2 The race in head- and tailwind; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)

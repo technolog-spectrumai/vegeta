@@ -172,7 +172,7 @@ is the real run. The committed notebook is unexecuted (run it to get the outputs
 **MERLIN** (branch `dev_merlin`): `26_merlin` (`designs/merlin.py`, `designs/merlin_flight.py`) is a compact electric
 fixed-wing for **rapid atmospheric sampling** — it leaves a launch stand, dashes to a reported wildfire, flies crosswind
 passes through the smoke with a forward gas sensor and comes home for a belly landing — and asks **which propulsor gets
-it to a fire 10, 20 or 30 km away fastest**: a nose **ducted fan** (the jet leaves as a ring around the fuselage), a
+it to a fire 5, 8, 10, 20 or 30 km away fastest**: a nose **ducted fan** (the jet leaves as a ring around the fuselage), a
 **tractor** or a **pusher** propeller, on one battery and one power limit. Nothing is designed twice: `Merlin` subclasses
 09's `FixedWing` (wing, tail, sections) and builds its nose duct from 25's `EDFHousing`; the fan is `boreas.ducted` with
 25's fitted losses, the propellers are Boreas BEMT in `air_propeller.installation_wake`'s effective wake with

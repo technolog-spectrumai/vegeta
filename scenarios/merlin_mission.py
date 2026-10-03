@@ -2,10 +2,10 @@
 
     python scenarios/merlin_mission.py                              # the fastest propulsor, a fire 20 km out
     python scenarios/merlin_mission.py --propulsion edf --distance-km 10 --heat-mw 60 --wind 7
-    python scenarios/merlin_mission.py --race-only                  # the 10 / 20 / 30 km table, no movie
+    python scenarios/merlin_mission.py --race-only                  # the 5 / 8 / 10 / 20 / 30 km table, no movie
 
 Builds the three MERLINs from the design files' defaults (``merlin_flight.build_merlins``: the notebook's first
-design; the notebook recomputes the airframe mass from the CAD and may refine the polar with CFD), races them, flies
+design; the notebook recomputes the airframe mass from the CAD and may refine the polar with CFD), races them to fires 5, 8, 10, 20 and 30 km out, flies
 the chosen one through a Gaussian smoke plume and renders the movie. Writes
 ``scenarios/output/merlin_<propulsion>_<km>km.mp4`` and ``.json`` (the race table, the mission summary, the phases and
 the fire's size from the passes).
@@ -40,7 +40,7 @@ def main(argv=None) -> int:
     merlins = mf.build_merlins(quick=a.quick)
     table = {}
     for k, v in merlins.items():
-        for d in (10.0, 20.0, 30.0, a.distance_km):
+        for d in sorted(set(mf.DISTANCES_KM) | {a.distance_km}):
             r = mf.race(v["airframe"], v["unit"], d * 1000)
             table[f"{d:.0f} km / {NAME[k]}"] = {key: r.get(key) for key in ("time_to_fire_s", "dash_speed", "limit", "why")}
     for key, r in table.items():

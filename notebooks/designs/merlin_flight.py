@@ -274,6 +274,9 @@ def mf_airframe(kind, mass, buildup, cd0):
 
 
 # ------------------------------------------------------------------------------------------------- the race
+DISTANCES_KM = (5.0, 8.0, 10.0, 20.0, 30.0)        # the fires the race is run to (notebook, scenario, tests)
+
+
 @dataclass
 class Mission:
     sampling_agl_m: float = 150.0
@@ -331,7 +334,7 @@ def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission
     budget = mission.battery_wh * mission.usable_fraction * (1 - mission.reserve_fraction)
 
     def out_leg(v_d):
-        t_a, x_a, e_a = _accelerate(af, unit, v_c, v_d, rho)
+        t_a, x_a, e_a = _accelerate(af, unit, v_c, v_d, rho, max_distance=distance_m - x_l - x_climb)
         x_dash = max(distance_m - x_l - x_climb - x_a, 0.0)
         P_d = unit.electrical_power(v_d, float(af.drag(v_d, rho)))
         t = t_l + t_climb + t_a + x_dash / v_d
@@ -357,9 +360,10 @@ def race(af: Airframe, unit: Unit, distance_m: float, mission: Mission = Mission
             "home_time_s": distance_m / v_r, "energy_parts_wh": dict(launch=e_l, climb=e_climb, **parts)}
 
 
-def _accelerate(af, unit, v0, v1, rho, n=60):
-    """Level acceleration at full power from v0 to v1: (time, distance, energy Wh); zero if v1 <= v0."""
-    if v1 <= v0:
+def _accelerate(af, unit, v0, v1, rho, n=60, max_distance=math.inf):
+    """Level acceleration at full power from v0 to v1: (time, distance, energy Wh); zero if v1 <= v0. It stops after
+    ``max_distance`` (the fire reached before the dash speed: a short race)."""
+    if v1 <= v0 or max_distance <= 0:
         return 0.0, 0.0, 0.0
     vs = np.linspace(v0, v1, n)
     full = np.array([unit.full(v) for v in vs])
@@ -368,6 +372,12 @@ def _accelerate(af, unit, v0, v1, rho, n=60):
     dt = np.diff(vs) / (0.5 * (a[1:] + a[:-1]))
     vm = 0.5 * (vs[1:] + vs[:-1])
     Pm = 0.5 * (full[1:, 1] + full[:-1, 1])
+    x = np.cumsum(vm * dt)
+    if x[-1] > max_distance:                                  # cut the last step at the distance
+        k = int(np.searchsorted(x, max_distance))
+        f = (max_distance - (x[k - 1] if k else 0.0)) / (vm[k] * dt[k])
+        dt = np.r_[dt[:k], f * dt[k]]
+        vm, Pm = vm[:k + 1], Pm[:k + 1]
     return float(dt.sum()), float((vm * dt).sum()), float((Pm * dt).sum() / 3600)
 
 
@@ -791,5 +801,5 @@ def render_movie(ep: Episode, forest: Forest, plume: Plume, path, *, fps=20, sec
     return path, frames
 
 
-__all__ = ["build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
+__all__ = ["DISTANCES_KM", "build_merlins", "installation", "installation_pod", "COMMON_MASS_KG", "UNIT_MASS_KG", "Airframe", "Unit", "open_propeller", "ducted_fan_unit", "Mission", "performance", "race", "Plume",
            "source_estimate", "Forest", "Episode", "fly", "profile_figure", "render_movie"]

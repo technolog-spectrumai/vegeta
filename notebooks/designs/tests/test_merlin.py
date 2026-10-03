@@ -49,10 +49,10 @@ def test_drag_buildup_is_a_clean_small_airframe():
 
 def test_race_slows_with_distance_and_keeps_the_reserve(merlins):
     for kind, v in merlins.items():
-        rr = [mf.race(v["airframe"], v["unit"], d * 1000) for d in (10, 20, 30)]
+        rr = [mf.race(v["airframe"], v["unit"], d * 1000) for d in mf.DISTANCES_KM]
         assert all(r["reachable"] for r in rr), kind
         t = [r["time_to_fire_s"] for r in rr]
-        assert t[0] < t[1] < t[2]
+        assert all(a < b for a, b in zip(t, t[1:]))
         for r in rr:
             assert r["energy_out_wh"] + r["energy_sampling_wh"] + r["energy_home_wh"] <= r["budget_wh"] * (1 + 1e-6)
             assert r["dash_speed"] <= r["top_speed"] + 1e-9
