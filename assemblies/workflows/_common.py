@@ -116,3 +116,19 @@ def unit_fea(node: Assembly, base: talos.StructuralModel, unit: dict, out: Path,
     node.record(modes_hz=list(modes.metrics.get("frequencies_hz", [])) if modes.ok else [], unit=rows, complete=complete,
                 point_mass_total=modes.metrics.get("point_mass_total") if modes.ok else None)
     return {k: (r, unit[k][1]) for k, r in zip(names, rs)} if complete else {}
+
+
+def solve_modes(model: talos.StructuralModel, workdir: Path, *, n_modes: int, mesh_from: Path | None = None, threads: int = 1,
+                progress=False) -> talos.Result:
+    """The modes of ``model`` in ``workdir``: its mesh copied from ``mesh_from`` (a solved case on the same geometry,
+    regions and mesh settings) when that one is current, else meshed here; then ``model.solve_modes``."""
+    workdir = Path(workdir)
+    if not model.mesh_is_current(workdir):
+        if mesh_from is not None and model.mesh_is_current(mesh_from):
+            shutil.copytree(mesh_from, workdir, dirs_exist_ok=True)
+        else:
+            m = model.mesh(workdir, progress=progress)
+            if not m.ok:
+                return m
+    return model.solve_modes(workdir, n_modes=n_modes, threads=threads, progress=progress)
+
