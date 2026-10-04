@@ -3,7 +3,9 @@
 The tree::
 
     fixed_wing (aircraft)          the mass budget; the polar through the CFD point; cruise / climb / static /
-                                   engine-out points; endurance, range (the hand-off of 09a -> 09b)
+                                   engine-out points; endurance, range (the hand-off of 09a -> 09b); the speed range
+                                   and climb / engine-out envelope (09a cell 49); the noise table and tone spectra
+                                   (09a cell 56)
       airframe (fixed_wing)        the aircraft CAD; planform, shell and nacelle masses, all-up mass
       wing_fea (wing_fea)          the wing in a 2.5 g pull-up and with one engine out (Talos)
       aero_cfd (aircraft_4deg)     the whole aircraft at 4 deg in cruise (Aeromant rans_ksst_external)
@@ -63,6 +65,8 @@ AERO = {"smoke": dict(iterations=60, surface_level=3, near_level=2, wake_level=1
         "full": dict(iterations=400, surface_level=4, near_level=3, wake_level=2)}        # full: the notebook's
 DISK_ITERATIONS = {"smoke": 60, "quick": 300, "full": 600}                                 # full: the notebook's
 MAP_RPM, MAP_V = np.linspace(3000, 10000, 8), np.linspace(0, 24, 7)                        # 09a cell 58
+SPEEDS = np.linspace(8, 26, 19)                                                            # 09a cell 49
+NOISE_DIST, NOISE_ANGLE = 1.0, 90.0                                                        # 09a cell 56: 1 m broadside
 
 
 def build(fidelity: str = "full", aircraft: dict | None = None) -> Assembly:
@@ -99,6 +103,63 @@ def drive(auw_kg: float, wing_area: float, aspect_ratio: float, cl: float, cd: f
     endurance = battery.usable_wh / p_cruise * 60
     return prop, sec, battery, pts, {"cd0": cd0, "k_induced": k, "drag_cruise_N": d_cruise, "endurance_min": endurance,
                                      "range_km": V_CRUISE * endurance * 60 / 1000}
+
+
+def level_drag(W: float, RHO: float, WING_AREA: float, CD0: float, K_INDUCED: float):
+    """09a cell 42's ``drag(v)`` over the given weight, density, wing area and polar: level flight, lift = weight ->
+    Cl(v) -> Cd(v) -> D. Returns the function; it gives ``(D, cl)``."""
+    def drag(v):                       # level flight: lift = weight -> Cl(v) -> Cd(v) -> D
+        q = 0.5 * RHO * v**2
+        cl = W / (q * WING_AREA)
+        return q * WING_AREA * (CD0 + K_INDUCED * cl**2), cl
+    return drag
+
+
+def speed_range(system, drag, *, W: float, WING_AREA: float, RHO: float = DRIVE["rho"], MOTORS: int = DRIVE["motors"],
+                Vs=SPEEDS) -> tuple[dict, dict]:
+    """09a cell 49 (the plots left out): thrust available at full throttle (both motors, one motor) against the
+    level-flight drag over 8-26 m/s and the rate of climb ``(T - D) V / W``; stall speed (Cl_max 1.1 assumed), maximum
+    level speed, best climb and the speed for it, the engine-out level-flight range (its ends are where the sweep
+    finds thrust > drag, so the low end can be the sweep's 8 m/s, below stall). Returns the cell's curves as columns
+    and its printed numbers (``None`` where the cell prints nan / NOT possible)."""
+    D = np.array([drag(v)[0] for v in Vs])
+    T_full = np.array([system.at_throttle(1.0, v).thrust for v in Vs])
+    roc = (MOTORS * T_full - D) * Vs / W
+    stall_v = math.sqrt(2 * W / (RHO * WING_AREA * 1.1))
+    v_max = Vs[np.where(MOTORS * T_full > D)[0].max()] if np.any(MOTORS * T_full > D) else float("nan")
+    eo = np.where(T_full > D)[0]
+    table = {"airspeed_m_s": Vs, "drag_N": D, "cl_level": [drag(v)[1] for v in Vs], "thrust_full_both_N": MOTORS * T_full,
+             "thrust_full_one_N": T_full, "rate_of_climb_m_s": roc}
+    envelope = {"stall_speed_m_s": float(stall_v), "cl_max_assumed": 1.1,
+                "v_max_level_m_s": None if math.isnan(v_max) else float(v_max),
+                "best_climb_m_s": float(roc.max()), "best_climb_speed_m_s": float(Vs[roc.argmax()]),
+                "engine_out_level_m_s": [float(Vs[eo.min()]), float(Vs[eo.max()])] if len(eo) else None,
+                "sweep_m_s": [float(Vs[0]), float(Vs[-1])]}
+    return {k: [float(x) for x in v] for k, v in table.items()}, envelope
+
+
+def wing_loading(W: float, S: float, RHO: float = DRIVE["rho"], V_CRUISE: float = V_CRUISE) -> dict:
+    """09a cell 10's printed wing loading [N/m^2] and the C_L needed at the cruise speed."""
+    q = 0.5 * RHO * V_CRUISE**2
+    return {"wing_loading_N_m2": float(W / S), "cl_cruise": float(W / (q * S))}
+
+
+def noise_table(prop, pts, motors: int = DRIVE["motors"]) -> tuple[dict, dict]:
+    """09a cell 56 (the plot left out): per operating point one propeller's Gutin tones and broadband allowance at 1 m
+    broadside (``propeller.noise``, the cell's loop body) and the aircraft's level at 1 and 100 m with its propellers
+    running (one at the engine-out point), in the cell's columns; and each point's tone spectrum (``frequency_hz``,
+    ``spl_db``; the cell plots cruise's)."""
+    DIST, ANGLE, MOTORS = NOISE_DIST, NOISE_ANGLE, motors
+    rotor = pr.noise(prop, pts, medium=boreas.AIR, distance=DIST, angle_deg=ANGLE, harmonics=6)
+    noise_rows, tones = {}, {}
+    for name, n in rotor.items():
+        one = n["one_rotor_dB"]
+        n_running = 1 if "engine-out" in name.replace("_", "-") else MOTORS      # the workflow's point is "engine_out"
+        noise_rows[name] = {"rpm": n["rpm"], "BPF_hz": n["BPF_hz"], "tonal_dB": n["tonal_dB"], "broadband_dB": n["broadband_dB"],
+                            "one_prop_dB_at_1m": one, "aircraft_dB_at_1m": one + 10 * math.log10(n_running),
+                            "aircraft_dB_at_100m": one + 10 * math.log10(n_running) - 40}
+        tones[name] = {"frequency_hz": n["frequency_hz"], "spl_db": n["spl_db"]}
+    return noise_rows, tones
 
 
 def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool = True, run_fea: bool = True,
@@ -174,6 +235,11 @@ def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool =
 
     # the drive (09a Part 2), the propeller CAD, rotor CFD at cruise, one blade at the climb
     prop, sec, battery, pts, perf = drive(auw, pl["area_m2"], pl["aspect_ratio"], polar_point["Cl"], polar_point["Cd"])
+    system = boreas.Propulsion(prop, sec, pr.motor(DRIVE["motor"]), battery, rho=DRIVE["rho"])     # drive()'s system
+    speeds, envelope = speed_range(system, level_drag(W, DRIVE["rho"], pl["area_m2"], perf["cd0"], perf["k_induced"]),
+                                   W=W, WING_AREA=pl["area_m2"])              # 09a cell 49 (19 full-throttle points, about 5 s)
+    envelope.update(wing_loading(W, pl["area_m2"]))                           # 09a cell 10
+    noise, noise_tones = noise_table(prop, pts)                               # 09a cell 56
     ps = pr.get(DRIVE["propeller"])
     pn = root.child("propeller")
     pfiles, bfiles = pr.cad_files(ps, out / "propeller"), pr.cad_files(ps, out / "blade", blades=1)
@@ -220,7 +286,8 @@ def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool =
                              progress=progress)
 
     root.record(auw_kg=auw, polar_point=polar_point, polar_source=polar_source, polar=perf,
-                points={k: _point(v) for k, v in pts.items()})
+                points={k: _point(v) for k, v in pts.items()},
+                speed_range=speeds, envelope=envelope, noise=noise, noise_tones=noise_tones)
     if polar_source != "aero_cfd":
         root.not_run("polar through the whole-aircraft CFD: notebook 09a's recorded point used")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"

@@ -9,10 +9,13 @@ The tree::
       polar_cfd (merlin_polar)     the three aircraft at 30 m/s, 2 deg (Aeromant rans_ksst_external): the Cd0 corrections
       propulsors (propulsor_libraries)  the saved libraries (assemblies/data/propulsors.vida), grafted as they are
       race (propulsor_race)        every library entry on MERLIN at 1900, 2700 and 3500 W over the three races
-      mission (merlin_mission)     the three MERLINs on one battery: performance, reach and return to 5-30 km
+      mission (merlin_mission)     the three MERLINs on one battery: performance, reach and return to 5-30 km; 26b's
+                                   race table and winners, the propulsors and airframes flown, the pitch studies, the
+                                   race to a fire 600 m up a mountain, where the sensor breathes and the winner's
+                                   mission through the smoke with the fire's size estimated (``mission_extras``)
 
 The wing is the design's defaults unless ``--merlin thickness=0.15`` (notebook 26 compared NACA 2412 and 2415). The
-plume, the sensor and the movies of notebook 26b stay in the notebook.
+rotor-disk CFD and the movies of notebook 26b stay in the notebook.
 
     python -m assemblies.workflows.propulsors -j 4       # first (once): the libraries
     python -m assemblies.workflows.merlin --fidelity quick -j 4
@@ -50,6 +53,14 @@ WING_ELEMENT_MM = {"smoke": 20.0, "quick": 14.0, "full": 10.0}                  
 POLAR = {"smoke": dict(iterations=60, surface_level=3, near_level=2, wake_level=1),
          "quick": dict(iterations=400, surface_level=3, near_level=2, wake_level=1),
          "full": dict(iterations=400, surface_level=4, near_level=3, wake_level=2)}             # full: the notebook's
+FIRE_ELEVATION_M = 600.0                                                                         # 26b cell 12
+SMOKE_PLUME = dict(source_xy=(20000.0, 0.0), heat_mw=40.0, wind_speed=5.0, wind_from_deg=225.0)  # 26b cell 18
+SMOKE_TRACK_EVERY = 10                       # the smoke mission's track as recorded: every 10th 0.5 s step
+RACE_COLUMNS = ("reach [min]", "return [min]", "landing [min]", "dash [m/s]", "dash climb [deg]", "return [m/s]", "limited by",
+                "energy used [Wh]", "of [Wh]")                  # merlin_flight.race_table's (an unreachable row has two)
+MOUNTAIN_KEYS = ("race_mountain", "race_mountain_vs_flat", "winner_per_distance_mountain")
+MISSION_EXTRAS = ("race_table", "winner_per_distance", "first_home_per_distance", "units", "airframes", "pitch_study",
+                  *MOUNTAIN_KEYS, "sensor_air", "smoke")                       # the mission node's results from 26b
 
 
 def build(fidelity: str = "full", merlin: dict | None = None) -> Assembly:
@@ -202,6 +213,7 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
             winners[name] = {c: w[c].tolist() for c in ("kind", "power [W]", "config", name, "top speed [m/s]", "mass [kg]")}
         race.record(table={c: table[c].tolist() for c in table.columns}, winners=winners, n=len(table))
     mission = add_after(root, Assembly("mission", "merlin_mission", params={"design": design, "libraries": libs.key}), prior, redo)
+    merlins = None
     if not mission.results:
         merlins = _merlins(design, lib)
         perf = {k: mf.performance(v["airframe"], v["unit"]) for k, v in merlins.items()}
@@ -210,6 +222,12 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
         mission.record(performance={k: {kk: (float(vv) if np.ndim(vv) == 0 else np.asarray(vv, float)) for kk, vv in pf.items()}
                                     for k, pf in perf.items()},
                        mass_kg={k: v["airframe"].mass_kg for k, v in merlins.items()}, reach=reach)
+    # what 26b shows besides the reach, on the same MERLINs (interpolation and a kinematic flight, seconds); a reused
+    # mission gets the keys it lacks once, then keeps them
+    missing = extras_missing(mission.results)
+    if missing:
+        extras = mission_extras(merlins or _merlins(design, lib))
+        mission.record(**{k: extras[k] for k in missing})
 
     root.record(design=design)
     if not (pc.results.get("polar")):
@@ -245,6 +263,171 @@ def race_table(lib: dict, design: dict, *, powers=mr.POWERS_W, progress=True):
 def _merlins(design: dict, lib: dict) -> dict:
     return mf.build_merlins(max_electrical_w=MAX_ELECTRICAL_W, drive_efficiency=DRIVE_EFF, mission=MISSION,
                             distance_m=20000.0, design=design, library=lib)
+
+
+# ------------------------------------------------------------------------------------------------ 26b on the mission node
+def extras_missing(res: dict) -> list[str]:
+    """The ``MISSION_EXTRAS`` a mission node's results lack, plus those made with another ``FIRE_ELEVATION_M`` or
+    ``SMOKE_PLUME`` than now (so a changed constant is not silently ignored)."""
+    missing = [k for k in MISSION_EXTRAS if k not in res]
+    mountain = res.get("race_mountain")
+    if mountain and mountain[0].get("fire elevation [m]") != FIRE_ELEVATION_M:
+        missing += [k for k in MOUNTAIN_KEYS if k not in missing]
+    smoke = res.get("smoke")
+    if smoke and "smoke" not in missing and (vida.canonical(smoke.get("plume"))
+                                              != vida.canonical(dataclasses.asdict(mf.Plume(**SMOKE_PLUME)))):
+        missing.append("smoke")
+    return missing
+
+
+def mission_extras(MERLINS: dict, MISSION: mf.Mission = MISSION, DISTANCES_KM=mf.DISTANCES_KM) -> dict:
+    """What notebook 26b shows besides the reach, on the MERLINs of ``_merlins`` (the mission node's ``MISSION_EXTRAS``;
+    the tables as lists of records, which ``results.table`` reads back as DataFrames):
+
+    - ``race_table`` (cell 8's ``RACE_TAB``): per distance and propulsor the reach, return and landing times, the dash
+      and return speeds, the dash's climb, what limited the dash, the energy used and the budget;
+    - ``winner_per_distance`` (cell 9, the cell 24 hand-off: first over the fire) and ``first_home_per_distance``;
+    - ``units``, ``airframes``, ``pitch_study`` (cells 4 and 6, the hand-off's polar and masses): what each MERLIN flies;
+    - ``race_mountain``, ``race_mountain_vs_flat``, ``winner_per_distance_mountain`` (cell 12): the fire
+      ``FIRE_ELEVATION_M`` up a mountain;
+    - ``sensor_air`` (cell 14; None without both the ducted fan and the tractor);
+    - ``smoke`` (cells 18 and 20): the 20 km winner through the smoke and the fire's size from its passes (None when
+      nothing reaches 20 km)."""
+    RACE_TAB = _all_columns(mf.race_table(MERLINS, DISTANCES_KM, MISSION))                                 # cell 8
+    WINNER, FIRST_HOME = race_winners(RACE_TAB, DISTANCES_KM)                                               # cell 9
+    MOUNTAIN_TAB = _all_columns(mf.race_table(MERLINS, DISTANCES_KM, MISSION, fire_elevation_m=FIRE_ELEVATION_M))   # cell 12
+    cmp_ = mountain_vs_flat(RACE_TAB, MOUNTAIN_TAB)
+    UPHILL = uphill_winners(MOUNTAIN_TAB, DISTANCES_KM)
+    FASTEST = WINNER.get(20.0)                                     # cell 9: the design point, the 20 km fire
+
+    def km(d):                                                     # cell 24's keys
+        return f"{d:.0f} km"
+
+    return {"race_table": _records(RACE_TAB),
+            "winner_per_distance": {km(d): WINNER[d] for d in DISTANCES_KM},
+            "first_home_per_distance": {km(d): FIRST_HOME[d] for d in DISTANCES_KM},
+            "units": units_flown(MERLINS),
+            "airframes": {k: dataclasses.asdict(v["airframe"]) for k, v in MERLINS.items()},
+            "pitch_study": [dict(propulsor=k, **row) for k, v in MERLINS.items() for row in v["info"].get("pitch_study", [])],
+            "race_mountain": _records(MOUNTAIN_TAB.assign(**{"fire elevation [m]": FIRE_ELEVATION_M})),
+            "race_mountain_vs_flat": _records(cmp_.set_axis([" / ".join(c) for c in cmp_.columns], axis=1)),
+            "winner_per_distance_mountain": {km(d): UPHILL[d] for d in DISTANCES_KM},
+            "sensor_air": sensor_air(MERLINS) if {"edf", "tractor"} <= set(MERLINS) else None,
+            "smoke": smoke_mission(MERLINS, FASTEST, MISSION) if FASTEST else None}
+
+
+def _all_columns(tab):
+    """A race table with every column, also when no row reached (``merlin_flight.race_table`` then has only two)."""
+    return tab.reindex(columns=list(dict.fromkeys([*RACE_COLUMNS, *tab.columns])))
+
+
+def _records(tab) -> list[dict]:
+    """A table indexed by (distance, propulsor) as a list of records."""
+    return tab.reset_index(names=["distance", "propulsor"]).to_dict("records")
+
+
+def race_winners(RACE_TAB, DISTANCES_KM, KINDS=KINDS, NAME=mf.NAMES) -> tuple[dict, dict]:
+    """Notebook 26b cell 9 (its print as data): per distance the propulsor first over the fire (``WINNER``) and the one
+    first home (the earliest landing), as kinds; None where none reaches."""
+    WINNER, FIRST_HOME = {}, {}
+    for d in DISTANCES_KM:
+        sub = RACE_TAB.xs(f"{d:g} km", level=0)["reach [min]"].astype(float)
+        if sub.isna().all():                                       # (not in the cell: nothing reaches this fire)
+            WINNER[d] = FIRST_HOME[d] = None
+            continue
+        best = sub.idxmin()
+        WINNER[d] = next(k for k in KINDS if NAME[k] == best)
+        land = RACE_TAB.xs(f"{d:g} km", level=0)["landing [min]"].astype(float)
+        FIRST_HOME[d] = next(k for k in KINDS if NAME[k] == land.idxmin())
+    return WINNER, FIRST_HOME
+
+
+def mountain_vs_flat(RACE_TAB, MOUNTAIN_TAB):
+    """Notebook 26b cell 12's ``cmp_``: reach, landing and dash speed on flat ground and to the fire up the mountain, the
+    dash's climb angle and what the hill costs in reach [s] (two-level columns)."""
+    import pandas as pd
+    cmp_ = pd.DataFrame({("reach [min]", "flat"): RACE_TAB["reach [min]"], ("reach [min]", "mountain"): MOUNTAIN_TAB["reach [min]"],
+                         ("landing [min]", "flat"): RACE_TAB["landing [min]"], ("landing [min]", "mountain"): MOUNTAIN_TAB["landing [min]"],
+                         ("dash [m/s]", "flat"): RACE_TAB["dash [m/s]"], ("dash [m/s]", "mountain"): MOUNTAIN_TAB["dash [m/s]"],
+                         ("dash", "climb [deg]"): MOUNTAIN_TAB["dash climb [deg]"]}).astype(float)
+    cmp_[("reach [min]", "uphill costs [s]")] = (cmp_[("reach [min]", "mountain")] - cmp_[("reach [min]", "flat")]) * 60
+    return cmp_
+
+
+def uphill_winners(MOUNTAIN_TAB, DISTANCES_KM, KINDS=KINDS, NAME=mf.NAMES) -> dict:
+    """Notebook 26b cell 12's loop (its print as data): per distance the propulsor first over the fire up the mountain,
+    as a kind; None where none reaches."""
+    out = {}
+    for d in DISTANCES_KM:
+        sub = MOUNTAIN_TAB.xs(f"{d:g} km", level=0)["reach [min]"].astype(float)
+        out[d] = None if sub.isna().all() else next(k for k in KINDS if NAME[k] == sub.idxmin())
+    return out
+
+
+def units_flown(MERLINS: dict) -> dict:
+    """Notebook 26b cell 4's prints and cell 6's static thrust, per MERLIN: the library entry it flies (``id``,
+    ``label``, to find it in the propulsor libraries and the race table), the unit's mass and full-throttle static
+    thrust; the fan's duct loss, exit area ratio and the fuselage area its jet scrubs; a propeller's size, rpm limit,
+    effective wake ``w`` and thrust deduction ``t``."""
+    out = {}
+    for k, v in MERLINS.items():
+        i = v["info"]
+        row = {"id": i["entry"]["id"], "label": i["entry"]["label"], "unit_mass_kg": v["unit"].mass_kg,
+               "static_thrust_N": v["unit"].full(0.0)[0]}                                                # cell 6
+        if k == "edf":                                                                                 # cell 4
+            row.update(duct_loss=i["duct_loss"], exit_area_ratio=i["housing"]["exit_area_ratio"], scrub_area_m2=i["scrub_area_m2"])
+        else:
+            row.update(prop=i["prop"].name, rpm_max=i["rpm_max"], w=i["w"], t=i["t"])
+        out[k] = row
+    return out
+
+
+def sensor_air(MERLINS: dict, RHO=RHO) -> dict:
+    """Notebook 26b cell 14, where the sensor breathes: at 15, 30 and 50 m/s the ducted fan's capture stream tube against
+    its inlet's highlight area and its jet speed, and the tractor's slipstream excess in the far wake (the cell's
+    ``rows``, by speed)."""
+    e_fan = MERLINS["edf"]["info"]["entry"]                    # the library map: jet speed over (V, rpm)
+    A_exit = e_fan["exit_area_ratio"] * e_fan["fan_area_m2"]
+    A_high = math.pi * (MERLINS["edf"]["info"]["housing"]["highlight_radius"] / 1000) ** 2
+    A_prop = math.pi * (MERLINS["tractor"]["info"]["prop"].diameter / 2) ** 2
+    rows = {}
+    for V in (15.0, 30.0, 50.0):
+        rpm = MERLINS["edf"]["unit"].full(V)[2]
+        vj = float(np.interp(rpm, e_fan["rpm"], [np.interp(V, e_fan["V"], e_fan["exit_velocity"][:, j]) for j in range(len(e_fan["rpm"]))]))
+        T = MERLINS["tractor"]["unit"].full(V)[0]                 # far-wake excess from momentum: T = rho A (V + u) u, u = jet - V
+        u = math.sqrt(V ** 2 + 2 * T / (RHO * A_prop)) - V
+        rows[f"{V:.0f} m/s"] = {"EDF capture area / highlight area": A_exit * vj / V / A_high, "EDF jet speed [m/s]": vj,
+                                "tractor slipstream excess, far wake [m/s]": u}
+    return rows
+
+
+def smoke_mission(MERLINS: dict, FASTEST: str, MISSION: mf.Mission = MISSION, plume: dict = SMOKE_PLUME,
+                  every: int = SMOKE_TRACK_EVERY) -> dict:
+    """Notebook 26b cells 18 and 20 without the figures: the winner ``FASTEST`` flies the mission through a 40 MW fire's
+    smoke 20 km out (``mf.fly``, a kinematic flight at 0.5 s steps), and the fire's CO flux, plume height and heat
+    release come back from its passes (``mf.source_estimate``) against the model's truth (cell 20's "ignition check").
+    Returns the plume, the episode's summary and phase table (cell 24 hands off the summary and the estimate), the
+    estimate, the check (both None without a pass through the smoke) and the track at every ``every``-th step."""
+    import warnings
+    from scipy.optimize import OptimizeWarning
+    PLUME = mf.Plume(**plume)
+    FOREST = mf.Forest()
+    af, unit = MERLINS[FASTEST]["airframe"], MERLINS[FASTEST]["unit"]
+    R20 = mf.race(af, unit, 20000.0, MISSION)
+    EP = mf.fly(af, unit, FOREST, PLUME, race_result=R20, mission=MISSION)
+    EST = check = None
+    if EP.passes:                                                  # (not in the cell: no pass, nothing to fit)
+        with warnings.catch_warnings():                            # three passes: the fit's covariance is undetermined
+            warnings.simplefilter("ignore", OptimizeWarning)
+            EST = mf.source_estimate(PLUME, EP.passes)             # cell 20
+        check = {"peak CO [ppm]": EST["peak_ppm"], "CO flux [g/s]": EST["co_kg_s"] * 1000, "true CO flux [g/s]": PLUME.co_kg_s * 1000,
+                 "plume height [m]": EST["plume_height_m"], "fire heat release [MW]": EST["heat_mw"], "true [MW]": PLUME.heat_mw,
+                 "confirmed": EST["peak_ppm"] > 10 * 0.05}
+    s = slice(None, None, every)
+    return {"propulsor": FASTEST, "plume": dataclasses.asdict(PLUME), "summary": EP.summary(),
+            "phases": EP.phase_table().reset_index().to_dict("records"), "source_estimate": EST, "ignition_check": check,
+            "track": {"t_s": EP.t[s], "x_m": EP.pos[s, 0], "y_m": EP.pos[s, 1], "altitude_m": EP.pos[s, 2], "agl_m": EP.agl[s],
+                      "airspeed_m_s": EP.airspeed[s], "power_w": EP.power[s], "energy_wh": EP.energy_wh[s], "ppm": EP.ppm[s]}}
 
 
 def _parser():

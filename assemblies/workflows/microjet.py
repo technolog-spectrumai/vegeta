@@ -22,6 +22,9 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import numpy as np
+from vegeta.boreas import microjet as mj
+
 from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import cycle, impeller, turbojet as tj, turbojet_parts, wheels
@@ -29,6 +32,8 @@ from ..vida import Assembly
 
 NAME = "microjet"
 DEFAULT_ENGINE = "140 N class"
+ATMOSPHERES = {"ISA sea level": (0, 0), "ISA 1500 m": (1500, 0), "1500 m, ISA+20 (≈ 25 °C)": (1500, 20),
+               "sea level, 35 °C": (0, 20)}       # notebook 28 cell 10: name -> mj.isa(altitude [m], ISA offset [K])
 
 
 def build(engine_class: str = DEFAULT_ENGINE, fidelity: str = "full") -> Assembly:
@@ -72,6 +77,9 @@ def run(*, engine_class: str = DEFAULT_ENGINE, fidelity: str = "full", run_cfd: 
     root.record(engine=engine.to_dict(), calibration=calibration, design_point=cycle.design_point(engine),
                 catalogue_design_point=cycle.design_point(catalogue), map=cycle.performance_map(engine),
                 metal_temperatures_K=tj_metal_temperatures(engine))
+    engines = {k: catalogue if k == engine_class else cycle.from_catalogue(k) for k in mj.CATALOGUE}
+    root.record(atmosphere_cases=atmosphere_cases(engine), catalogue_classes=catalogue_classes(engines),
+                catalogue_full_throttle=catalogue_full_throttle(engines))
     if calibration is None:
         root.not_run("calibration to the CFD compressor (no solved speed line point): the catalogue cycle is exported")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
@@ -99,6 +107,41 @@ def tj_metal_temperatures(engine) -> dict:
     from vegeta.boreas import microjet as mj
 
     return mj.metal_temperatures(mj.solve(engine, engine.rpm_max))
+
+
+def atmosphere_cases(engine: mj.Microjet) -> dict:
+    """Full throttle in the four atmospheres of notebook 28 section 3 (cell 10): density, static thrust, thrust and fuel
+    flow at 150 m/s, the static EGT. One row per atmosphere of ``ATMOSPHERES`` (``results.load("microjet").table("",
+    "atmosphere_cases")``). Run on the exported engine (the catalogue one when no speed line calibrated it)."""
+    cases = {name: mj.isa(*h_dt) for name, h_dt in ATMOSPHERES.items()}
+    rows = {}
+    for name, atm in cases.items():
+        p0, p150 = mj.solve(engine, engine.rpm_max, 0.0, atm), mj.solve(engine, engine.rpm_max, 150.0, atm)
+        rows[name] = {"density_kg_m3": atm.density, "static_thrust_N": p0.thrust, "thrust_150_m_s_N": p150.thrust,
+                      "fuel_150_m_s_g_min": p150.fuel_flow_g_min, "egt_K": p0.t5,
+                      "altitude_m": ATMOSPHERES[name][0], "delta_isa_K": ATMOSPHERES[name][1]}
+    return rows
+
+
+def catalogue_classes(engines: dict) -> dict:
+    """The design-point row of every catalogue class (notebook 28 cell 4: ``cycle_row`` is ``cycle.design_point``),
+    ``{class: row}``; ``results.load("microjet").table("", "catalogue_classes").T`` is the cell's table."""
+    return {k: cycle.design_point(e) for k, e in engines.items()}
+
+
+def catalogue_full_throttle(engines: dict, V=cycle.V_MAP) -> dict:
+    """Full throttle against airspeed for every catalogue class (notebook 28 cell 8): net thrust, fuel flow, TSFC and
+    the overall and propulsive efficiencies over ``V`` (the export's airspeed axis, the cell's ``linspace(0, 220, 23)``).
+    ``{class: {column: array}}``: ``pd.DataFrame(r[""]["catalogue_full_throttle"][class])`` is one class's curve."""
+    out = {}
+    for k, e in engines.items():
+        full = [mj.solve(e, e.rpm_max, v) for v in V]
+        out[k] = {"V_m_s": np.asarray(V, float), "thrust_N": np.array([p.thrust for p in full], float),
+                  "fuel_g_min": np.array([p.fuel_flow_g_min for p in full], float),
+                  "tsfc_kg_N_h": np.array([p.tsfc for p in full], float),
+                  "overall_efficiency": np.array([p.overall_efficiency(e.lhv) for p in full], float),
+                  "propulsive_efficiency": np.array([p.propulsive_efficiency for p in full], float)}
+    return out
 
 
 def _parser():

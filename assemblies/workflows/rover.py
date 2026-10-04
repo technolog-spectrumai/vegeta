@@ -7,9 +7,12 @@ The tree::
       terrains (quarter_car)       the quarter car over paved, gravel and rocky ISO 8608 roads (and the rocky field loaded)
       arm_fea (arm)                the suspension arm under the six cases of notebook 11 (Talos)
       chassis_fea (chassis)        the chassis in torsion, under the payload, and climbing loaded
+      arm_modes (arm_unit)         the arm with the wheel at the axle: 4 modes; the 100 N unit cases wheel_z, wheel_x (11 §4, §6)
     the pins (axle, pivot) are checked by hand on the root.
 
-The rainflow, fatigue and print sections of notebook 11 stay in the notebook.
+The terrains also record the rainflow counts of their wheel forces (11 cell 21, per simulated duration, unscaled: a
+notebook scales the cycles by its mission minutes); the root records body bounce, wheel hop and the arm's frequency
+check (11 cells 18, 19). The fatigue (damage, life) and print sections of notebook 11 stay in the notebook.
 """
 from __future__ import annotations
 
@@ -18,7 +21,7 @@ import shutil
 from pathlib import Path
 
 import numpy as np
-from vegeta import talos
+from vegeta import chronos, talos
 
 from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
@@ -26,7 +29,7 @@ from ..components import leg, road_wheel as rw
 from ..components._cad import export_kept
 from ..components.rover import Rover
 from ..vida import Assembly
-from ._common import add_after, solve_fea
+from ._common import add_after, solve_fea, unit_fea
 
 NAME = "rover"
 G = 9.81
@@ -46,6 +49,61 @@ PA12CF = dict(name="PA12-CF (printed)", youngs_modulus=3500.0, poissons_ratio=0.
 STEEL_PIN = dict(name="steel pin (C45)", youngs_modulus=210000.0, poissons_ratio=0.30, density=7.85e-9, yield_strength=400.0,
                  source="handbook")
 ELEMENT = {"arm": {"smoke": 4.0, "quick": 3.0, "full": 2.0}, "chassis": {"smoke": 12.0, "quick": 9.0, "full": 6.0}}
+ARM_MODES = 4                    # 11 cell 18: the arm's modes with the wheel at the axle
+ARM_DAMPING = 0.04               # 11 cell 18: chronos.Structure(..., damping_ratio=0.04)
+UNIT_N = 100.0                   # 11 cell 23: the unit cases, 100 N vertical and 100 N longitudinal at the axle
+RAINFLOW_DECIMATE = 4            # 11 cell 21: series[::4], 2 kHz -> 500 Hz
+
+
+def rainflow_blocks(series, scale: float = 1.0) -> list:
+    """One force history counted as in 11 cell 21: ASTM rainflow on ``series[::4]``, ranges under 0.5 N dropped,
+    (mean, amplitude) rounded to 0.1 N and merged; ``[[mean_N, amplitude_N, cycles], ...]``. The cell multiplies each
+    count by its mission scale (``MISSION_MIN * 60 / duration_s``); ``scale=1`` gives the counts per simulated duration."""
+    merged = {}
+    for rng_, mean, count in chronos.rainflow(series[::4]):                  # 2 kHz -> 500 Hz, ample for < 30 Hz content
+        if rng_ < 0.5:                                                        # ignore sub-0.5 N noise
+            continue
+        key = (round(mean, 1), round(rng_ / 2, 1))
+        merged[key] = merged.get(key, 0.0) + count * scale
+    return [[float(m), float(a), float(c)] for (m, a), c in merged.items()]
+
+
+def suspension_frequencies(m_total: float, k_susp: float, zeta: float, k_tyre: float, m_wheel: float = M_WHEEL) -> dict:
+    """The sprung mass per corner (11 cell 6), the suspension damping (cell 8), body bounce and wheel hop (cell 18)."""
+    M_SPRUNG_CORNER = (m_total - 4 * m_wheel) / 4
+    C_SUSP = 2 * zeta * math.sqrt(k_susp * M_SPRUNG_CORNER)
+    f_hop = math.sqrt((k_tyre + k_susp) / m_wheel) / (2 * math.pi)
+    f_body = math.sqrt(k_susp / M_SPRUNG_CORNER) / (2 * math.pi)
+    return {"m_sprung_corner_kg": M_SPRUNG_CORNER, "c_susp_N_s_m": C_SUSP, "f_body_hz": f_body, "f_hop_hz": f_hop}
+
+
+def frequency_table(modes_hz, wheel_diameter_mm: float, terrains: dict = TERRAINS, damping_ratio: float = ARM_DAMPING) -> dict:
+    """The wheel's once-per-revolution and the rock pulse per terrain against the arm modes (11 cells 18, 19): one row per
+    terrain (``rock_pulse_hz`` NaN where the terrain has no rocks)."""
+    structure = chronos.Structure(tuple(modes_hz), damping_ratio=damping_ratio)
+    D_WHEEL = wheel_diameter_mm / 1000
+    return {name: {"speed_m_s": s["speed"], "wheel_1_rev_hz": s["speed"] / (math.pi * D_WHEEL),
+                   "rock_pulse_hz": (s["speed"] / terrains[name]["rocks"][1]) if terrains[name]["rocks"] else float("nan"),
+                   "nearest_arm_mode_hz": structure.nearest_mode(s["speed"] / (math.pi * D_WHEEL)),
+                   "margin_wheel_to_arm_mode": structure.margin(s["speed"] / (math.pi * D_WHEEL))} for name, s in terrains.items()}
+
+
+def arm_unit_models(step, p: dict, element_mm: float, wheel_mass_kg: float = M_WHEEL, unit_N: float = UNIT_N):
+    """The arm's modal model with the wheel as a point mass at the axle (11 cells 14, 18) and its unit cases ``wheel_z``,
+    ``wheel_x`` at ``unit_N`` (cell 23): ``(arm_modal, {name: (model, load)})``, the input of ``_common.unit_fea``."""
+    L, h = p["arm_length"], p["arm_height"]
+    rp, ra = p["pivot_diameter"] / 2 + 0.2, p["axle_diameter"] / 2 + 0.2
+    ARM_REGIONS = [talos.SurfacesInBox("pivot", (-rp, -h, -rp, rp, h, rp)), talos.SurfacesInBox("axle", (L - ra, -h, -ra, L + ra, h, ra))]
+    WHEEL_MASS_T = wheel_mass_kg * 1e-3                                            # tonnes at the axle
+
+    def arm_model(loads, name, masses=()):
+        return talos.StructuralModel(step, "mm-N-MPa", talos.Material(**PA12CF), ARM_REGIONS, [talos.FixedSupport("pivot")], loads,
+                                     talos.MeshSettings(element_size=element_mm), name=name, masses=list(masses))
+
+    arm_modal = arm_model([], "arm_modal", masses=[talos.PointMass("axle", WHEEL_MASS_T)])
+    unit_models = {"wheel_z": (arm_model([talos.Force("axle", fz=unit_N)], "unit_z"), unit_N),
+                   "wheel_x": (arm_model([talos.Force("axle", fx=unit_N)], "unit_x"), unit_N)}
+    return arm_modal, unit_models
 
 
 def terrain_runs(m_total: float, k_susp: float, zeta: float, k_tyre: float, names=tuple(TERRAINS)) -> dict:
@@ -122,6 +180,7 @@ def run(*, fidelity: str = "full", rover: dict | None = None, run_fea: bool = Tr
     # the terrains (seconds; the rocky field again with the payload on board)
     tn = add_after(root, Assembly("terrains", "quarter_car", params={"m_total": m_total, "m_wheel": M_WHEEL, "suspension": SUSPENSION,
                                                                      "terrains": TERRAINS, "payload_kg": c["payload_kg"]}), prior, redo)
+    runs = None
     if not tn.results:
         s = SUSPENSION
         runs = terrain_runs(m_total, s["k_susp"], s["zeta"], s["k_tyre"])
@@ -135,6 +194,12 @@ def run(*, fidelity: str = "full", rover: dict | None = None, run_fea: bool = Tr
                   peak_x=max(v["longitudinal_max_N"] for v in summary.values()), peak_arm=max(v["arm_force_max_N"] for v in summary.values()),
                   peak_z_loaded=float(loaded["Ft"].max()), peak_x_loaded=float(loaded["Fx"].max()),
                   travel_loaded_mm=float(np.abs(loaded["travel"]).max() * 1000))
+    if "rainflow" not in tn.results:            # the wheel-force cycles (11 cell 21), also on a saved node made before them
+        if runs is None:
+            s = SUSPENSION
+            runs = terrain_runs(m_total, s["k_susp"], s["zeta"], s["k_tyre"])
+        tn.record(rainflow={k: {"duration_s": float(r["t"][-1]), "dt_s": float(r["t"][1] - r["t"][0]) * RAINFLOW_DECIMATE,
+                                "wheel_z": rainflow_blocks(r["Ft"]), "wheel_x": rainflow_blocks(r["Fx"])} for k, r in runs.items()})
     T = tn.results
 
     # the wheel loads (11 cell 13)
@@ -190,6 +255,14 @@ def run(*, fidelity: str = "full", rover: dict | None = None, run_fea: bool = Tr
                   for n, (sup, loads) in cases.items()}
         solve_fea(cn, models, out / "chassis_fea", run=run_fea, threads=threads, progress=progress)
 
+    # the arm's modes with the wheel on it and its unit cases, on one mesh (11 cells 18, 23)
+    mn = add_after(root, Assembly("arm_modes", "arm_unit", params={"rover": p, "material": PA12CF, "wheel_mass_kg": M_WHEEL,
+                                                                   "unit_N": UNIT_N, "n_modes": ARM_MODES,
+                                                                   "element_mm": ELEMENT["arm"][fidelity]}), prior, redo)
+    if not mn.results.get("complete"):
+        base, unit = arm_unit_models(files["arm"]["step"], p, mn.params["element_mm"], mn.params["wheel_mass_kg"], mn.params["unit_N"])
+        unit_fea(mn, base, unit, out / "arm_modes", n_modes=mn.params["n_modes"], run=run_fea, threads=threads, progress=progress)
+
     # the pins by hand (11 cell 16)
     lever_axle, lever_pivot = p["wheel_offset"] + p["wheel_width"] / 2, (p["arm_width"] / 2 + 3.0) / 2
     pins = {}
@@ -200,6 +273,10 @@ def run(*, fidelity: str = "full", rover: dict | None = None, run_fea: bool = Tr
     root.record(mass_kg=m_total, parts_g=parts, wheel_loads={"level": level, "hill": hill, "hill_loaded": hill_loaded, "mud": mud,
                                                              "mud_loaded": mud_loaded},
                 sag_mm=c["payload_kg"] * G / 4 / SUSPENSION["k_susp"] * 1000, pins=pins)
+    s = SUSPENSION                                                # body bounce, wheel hop, the arm against the wheel (11 cells 18, 19)
+    modes_hz = mn.results.get("modes_hz") if mn.results.get("complete") else None
+    root.record(**suspension_frequencies(m_total, s["k_susp"], s["zeta"], s["k_tyre"]),
+                arm_frequency_table=frequency_table(modes_hz, p["wheel_diameter"], TERRAINS) if modes_hz else None)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
     if export:                                                    # plain data for notebooks (assemblies.results)

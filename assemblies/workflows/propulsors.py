@@ -11,7 +11,9 @@ The tree::
 Each node holds its whole library (``results["entries"]``, the maps as arrays). At ``full`` fidelity the library is
 also written to ``assemblies/data/<kind>_maps.json`` (the format ``propulsor_maps.load`` reads); smaller fidelities
 solve a 2 x 2 x ... corner of the space and write nothing shared. A committed map file made from the same space and
-constants is loaded instead of solved again (the tree says ``source: file``).
+constants is loaded instead of solved again (the tree says ``source: file``). Each node also holds its notebook's
+table at MERLIN's 1900 W electrical limit (``results["at_1900W"]``, one record per entry and layout: static thrust,
+at 30 and 60 m/s; notebook 25 cell 48, 25b cell 30, 25c cell 10), interpolated from the maps.
 
     python -m assemblies.workflows.propulsors -j 4                # about a minute per propeller set, ten for the fans
     python -m assemblies.workflows.propulsors --fidelity smoke
@@ -33,6 +35,7 @@ NAME = "propulsors"
 KINDS = ("propellers", "exotic", "edf")
 SPACES = {"propellers": pm.PROP_SPACE, "exotic": pm.EXOTIC_SPACE, "edf": pm.EDF_SPACE}
 COMPARED = ("kind", "space", "edf_bound", "section", "edf_tip_speed_m_s", "prop_tip_mach", "installation_speed_m_s", "rho")
+MAP_ARRAYS = ("V", "rpm", "thrust", "power", "exit_velocity")      # an entry's tables (``propulsor_maps.load`` makes arrays)
 
 
 def space_for(kind: str, fidelity: str) -> tuple[dict, dict | None]:
@@ -84,6 +87,62 @@ def library(node: Assembly, out: Path, *, write_shared: bool, processes: int, pr
     return node
 
 
+# ------------------------------------------------------------------------------------------------ the tables at 1900 W
+def map_table(PMAPS: dict, pmaps=pm) -> dict:
+    """Notebook 25 cell 48 (the library's load left out): every propeller as a tractor and as a pusher at MERLIN's
+    1900 W electrical limit; the rows of its ``MAP_TAB``, keyed by (label, layout)."""
+    rows = {}
+    for e in PMAPS["entries"]:
+        if "error" in e:
+            continue
+        for lay in ("tractor", "pusher"):
+            u = pmaps.unit(e, 1900.0, layout=lay)
+            rows[(e["label"], lay)] = {"static thrust at 1900 W [N]": u.full(0.0)[0], "at 30 m/s [N]": u.full(30.0)[0], "at 60 m/s [N]": u.full(60.0)[0],
+                                       "w": e["installation"][lay]["w"], "t": e["installation"][lay]["t"]}
+    return rows
+
+
+def fan_table(FMAPS: dict, pmaps=pm) -> dict:
+    """Notebook 25b cell 30 (the library's load and the scatter left out): every fan at 1900 W electrical, with its jet
+    scrubbing MERLIN's fairing; the rows of its ``FAN_TAB``, keyed by label."""
+    fans = [e for e in FMAPS["entries"] if "error" not in e]
+    rows = {}
+    for e in fans:
+        u = pmaps.unit(e, 1900.0)
+        rows[e["label"]] = {"stages": e["stages"], "quality": e["quality"], "static thrust at 1900 W [N]": u.full(0.0)[0],
+                            "at 30 m/s [N]": u.full(30.0)[0], "at 60 m/s [N]": u.full(60.0)[0]}
+    return rows
+
+
+def exotic_table(XMAPS: dict, LAYOUTS=("tractor", "pusher"), pmaps=pm) -> dict:
+    """Notebook 25c cell 10 (the library's load left out; ``LAYOUTS`` its cell 4's): the six- and twelve-blade propellers
+    as tractor and pusher at 1900 W electrical; its table's rows, keyed by (label, layout)."""
+    rows = {}
+    for e in XMAPS["entries"]:
+        if "error" in e:
+            continue
+        for lay in LAYOUTS:
+            u = pmaps.unit(e, 1900.0, layout=lay)
+            rows[(e["label"], lay)] = {"static thrust at 1900 W [N]": u.full(0.0)[0], "at 30 m/s [N]": u.full(30.0)[0], "at 60 m/s [N]": u.full(60.0)[0]}
+    return rows
+
+
+TABLES = {"propellers": map_table, "exotic": exotic_table, "edf": fan_table}       # the notebook's table per library
+
+
+def at_1900W(node: Assembly) -> list[dict]:
+    """A library node's table at 1900 W electrical (``TABLES``: its notebook's cell) as records: the entry's ``id``,
+    ``label`` and (a propeller) ``layout``, then the cell's columns. Interpolation in the saved maps only."""
+    entries = [dict(e, **{k: np.asarray(e[k], float) for k in MAP_ARRAYS if k in e}) for e in node.results["entries"]]
+    rows = TABLES[node.params["kind"]]({"entries": entries})
+    ids = {e["label"]: e["id"] for e in entries if "error" not in e}
+    out = []
+    for key, cols in rows.items():
+        label, layout = key if isinstance(key, tuple) else (key, None)
+        out.append({"id": ids[label], "label": label, **({"layout": layout} if layout else {}), **cols})
+    return out
+
+
 def run(*, fidelity: str = "full", kinds=KINDS, processors: int = 4, out: Path | None = None, vida_path: Path | None = None,
         include: str = "results", force: bool = False, redo=(), progress: bool = True, export: bool = True, **_ignored) -> Assembly:
     out = Path(out or RUNS / NAME).resolve()
@@ -98,6 +157,9 @@ def run(*, fidelity: str = "full", kinds=KINDS, processors: int = 4, out: Path |
     for node in root.children:
         if not node.results:
             library(node, out, write_shared=fidelity == "full", processes=processors, progress=progress)
+    for node in root.children:                                    # the notebooks' tables at 1900 W (interpolation, seconds)
+        if "at_1900W" not in node.results:
+            node.record(at_1900W=at_1900W(node))
     root.record(summary={n.name: {"maps": n.results["n"], "failed": len(n.results["failed"]), "source": n.results["source"]}
                          for n in root.children})
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"

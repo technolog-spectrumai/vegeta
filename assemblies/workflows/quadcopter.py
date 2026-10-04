@@ -3,7 +3,8 @@
 The tree::
 
     quadcopter (multirotor)        the mass budget, the drive; results: hover / cruise / full-throttle points, endurance,
-                                   the map over rpm x airspeed (exported like notebook 08's quad_5x43.json)
+                                   the map over rpm x airspeed (exported like notebook 08's quad_5x43.json); the
+                                   throttle sweep (cell 55) and the noise table and tone spectra (cell 60)
       frame (quad_frame)           the frame CAD; volume and mass
       frame_fea (frame_fea)        full thrust on all motors, a hard landing on one pad (Talos)
       canopy_cfd (frame_canopy)    the frame with a canopy at 15 m/s (Aeromant rans_ksst_external)
@@ -24,6 +25,7 @@ of 08's life.json).
 """
 from __future__ import annotations
 
+import math
 import shutil
 from pathlib import Path
 
@@ -48,6 +50,8 @@ DRIVE = {"propeller": "5x4.3 tri-blade", "motor": "2306-2400KV", "battery": "4S 
 MAX_THRUST_PER_MOTOR_N, LANDING_N, CANOPY_SPEED = 8.0, 40.0, 15.0
 BLADE_ELEMENT_MM = {"smoke": 2.0, "quick": 1.2, "full": 0.8}                               # full: the notebook's
 MAP_RPM, MAP_V = np.linspace(5000, 30000, 11), np.linspace(0, 15, 6)                       # cell 62
+THROTTLES = np.linspace(0.2, 1.0, 17)                                                       # cell 55
+NOISE_DIST, NOISE_ANGLE = 1.0, 90.0                                                         # cell 60: 1 m broadside
 G = 9.81
 
 
@@ -73,6 +77,32 @@ def drive_points(auw_kg: float):
     pts = {"hover": system.for_thrust(hover_thrust), "cruise": system.for_thrust(hover_thrust * 1.3),
            "full": system.at_throttle(1.0)}                                                 # cell 56
     return prop, sec, system, pts
+
+
+def throttle_sweep(system, throttles=THROTTLES) -> dict:
+    """Notebook 08 cell 55 (the plots left out): the motor curve meets the propeller's torque curve at each throttle,
+    static; current above the motor's limit flagged. The cell's ``sw`` table as columns."""
+    sweep = system.sweep(throttles, airspeed=0.0)
+    sw = [{"throttle": s.throttle, "rpm": s.rpm, "thrust_N": s.thrust, "current_A": s.current,
+           "electrical_W": s.electrical_power, "motor_eff": s.motor_efficiency, "current_limited": s.current_limited} for s in sweep]
+    return {k: [bool(r[k]) if k == "current_limited" else float(r[k]) for r in sw] for k in sw[0]}
+
+
+def noise_table(prop, pts, motors: int = DRIVE["motors"]) -> tuple[dict, dict]:
+    """Notebook 08 cell 60 (the plot left out): per operating point one rotor's Gutin tones and broadband allowance at
+    1 m broadside (``propeller.noise``, the cell's loop body) and the machine's level at 1, 10 and 50 m, in the cell's
+    columns; and each point's tone spectrum (``frequency_hz``, ``spl_db``; the cell plots hover's)."""
+    DIST, ANGLE, MOTORS = NOISE_DIST, NOISE_ANGLE, motors
+    rotor = pr.noise(prop, pts, medium=boreas.AIR, distance=DIST, angle_deg=ANGLE, harmonics=6)
+    noise_rows, tones = {}, {}
+    for name, n in rotor.items():
+        one = n["one_rotor_dB"]
+        noise_rows[name] = {"rpm": n["rpm"], "BPF_hz": n["BPF_hz"], "tonal_dB": n["tonal_dB"], "broadband_dB": n["broadband_dB"],
+                            "one_rotor_dB_at_1m": one, f"{MOTORS}_rotors_dB_at_1m": one + 10 * math.log10(MOTORS),
+                            f"{MOTORS}_rotors_dB_at_10m": one + 10 * math.log10(MOTORS) - 20,
+                            f"{MOTORS}_rotors_dB_at_50m": one + 10 * math.log10(MOTORS) - 20 * math.log10(50)}
+        tones[name] = {"frequency_hz": n["frequency_hz"], "spl_db": n["spl_db"]}
+    return noise_rows, tones
 
 
 def _point(p) -> dict:
@@ -130,6 +160,8 @@ def run(*, fidelity: str = "full", frame: dict | None = None, run_cfd: bool = Tr
     battery = pr.battery(DRIVE["battery"])
     hover_min = battery.usable_wh / (DRIVE["motors"] * pts["hover"].electrical_power) * 60
     grid = boreas.performance_map(prop, sec, MAP_RPM, MAP_V, DRIVE["rho"])
+    sweep = throttle_sweep(system)                                # cell 55 (about 4 s)
+    noise, noise_tones = noise_table(prop, pts)                   # cell 60
 
     # the propeller: CAD, rotor CFD at hover, one blade in FEA at full throttle
     pn = root.child("propeller")
@@ -163,7 +195,8 @@ def run(*, fidelity: str = "full", frame: dict | None = None, run_cfd: bool = Tr
                 thrust_to_weight=DRIVE["motors"] * pts["full"].thrust / (auw_kg * G),
                 map={"rpm": np.asarray(grid["rpm"], float), "airspeed_m_s": np.asarray(grid["airspeed_m_s"], float),
                      "thrust_N": np.asarray(grid["thrust_n"], float)},
-                hover_thrust_bemt_vs_cfd={"bemt_N": float(bemt_hover), "cfd_N": cfd_hover})
+                hover_thrust_bemt_vs_cfd={"bemt_N": float(bemt_hover), "cfd_N": cfd_hover},
+                throttle_sweep=sweep, noise=noise, noise_tones=noise_tones)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
     if export:                                                    # plain data for notebooks (assemblies.results)

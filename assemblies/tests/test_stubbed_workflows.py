@@ -113,10 +113,10 @@ def test_ground(tmp_path, solvers):
     r = solved_twice(rover.run, solvers, export=False, **common(tmp_path, "rover"))
     assert r.child("arm_fea").results["complete"] and r.child("chassis_fea").results["complete"]
     assert len(r.child("arm_fea").results["stress"]) == 6 and len(r.child("chassis_fea").results["stress"]) == 3
-    assert len(solvers.fea) == 9 and solvers.cfd == []
+    assert len(solvers.fea) == 6 + 3 + 2 and solvers.cfd == []        # arm 6, chassis 3, arm_modes unit cases 2
     o = solved_twice(onager.run, solvers, **common(tmp_path, "onager"))
-    assert o.child("sentinel/leg_fea").results["complete"] and len(solvers.fea) == 9 + 8
-    assert sorted(solvers.sim) == ["scene"] * 4
+    assert o.child("sentinel/leg_fea").results["complete"] and len(solvers.fea) == 11 + 8
+    assert sorted(solvers.sim) == ["scene"] * 4 + ["stand"] * 4         # each variant's mission and its standing episode
     w = solved_twice(walkers.run, solvers, vida_path=tmp_path / "walkers.vida", progress=False)
     assert w.child("apheloria/pack").results["stub"] and solvers.sim.count("pack") == 1
 

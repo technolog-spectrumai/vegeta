@@ -105,6 +105,21 @@ def own_exhaust(af, unit, mission, flight) -> dict:
             "co_increment_ppm": ppm(0.100 * ff_idle * 1000 / v_s / air, 28.0)}
 
 
+def drag_buildup(p: dict) -> dict:
+    """The parasite-drag build-up of notebook 29 section 3 (cell 8: ``b = ag.drag_buildup(P0, 150.0, mach=150.0 / A0)``
+    and its Cd·A table) with the allowance ``F.airframe`` adds to it: Cd·A per component, the 10 % interference, the
+    extra Cd·A for the intake spillage, antennas and hatch, and the cd0 they give (``cd0``: the airframe's;
+    ``cd0_buildup``: without the allowance). At the design speed and allowance ``F.airframe`` uses."""
+    kw = F.airframe.__kwdefaults__
+    v_d, extra, A0 = kw["design_speed"], kw["extra_cd_area"], 340.3
+    b = ag.drag_buildup(p, v_d, mach=v_d / A0)
+    return {"speed_m_s": v_d, "mach": v_d / A0, "parts_m2": b["parts_m2"],
+            "parts_cm2": {k: v * 1e4 for k, v in b["parts_m2"].items()},
+            "interference_m2": b["cd_area_m2"] - sum(b["parts_m2"].values()), "cd_area_buildup_m2": b["cd_area_m2"],
+            "extra_cd_area_m2": extra, "cd_area_m2": b["cd_area_m2"] + extra, "planform_m2": b["planform"],
+            "cd0_buildup": b["cd0"], "cd0": (b["cd_area_m2"] + extra) / b["planform"]}
+
+
 def _plain(d: dict) -> dict:
     return {k: (bool(v) if isinstance(v, (bool, np.bool_)) else v) for k, v in d.items()}
 
@@ -164,6 +179,7 @@ def run(*, fidelity: str = "full", design_range_km: int = DESIGN_RANGE_KM, dista
                          "drag_at_dash_cfd_N": (jet.results.get("forces") or {}).get("drag_force_N"),
                          "gust_load_factor": wing.params["gust"]["load_factor"],
                          "gust_penetration_speed_m_s": wing.params["gust"]["penetration_speed"]})
+    root.record(drag_buildup={**drag_buildup(P), "start_point": drag_buildup(air.params["start_geometry"])})
     race = merlin_race(root, Path(merlin_vida or DATA / "merlin.vida"), Path(propulsors_vida or DATA / "propulsors.vida"),
                        engine, unit, af, mission_from(air), distances_km, prior, redo)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
