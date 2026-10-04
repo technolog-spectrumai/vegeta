@@ -20,12 +20,20 @@ for nb in *.ipynb; do
   for a in "${ARGS[@]}"; do case "$nb" in "$a"*) LIST+=("${nb%.ipynb}") ;; esac; done
 done
 LOGS="$(mktemp -d)"
+# one virtual display for all notebooks (pyvista renders need one; one xvfb-run per notebook races when run in parallel)
+if [ -z "${DISPLAY:-}" ] && command -v Xvfb >/dev/null; then
+  for n in $(seq 90 140); do [ -e "/tmp/.X$n-lock" ] || { DNUM=$n; break; }; done
+  Xvfb ":$DNUM" -screen 0 1280x1024x24 >/dev/null 2>&1 &
+  XVFB_PID=$!
+  trap 'kill $XVFB_PID 2>/dev/null' EXIT
+  export DISPLAY=":$DNUM"
+  sleep 1
+fi
 export VEGETA_DEBUG=1 PYVISTA_OFF_SCREEN=true PYVISTA_JUPYTER_BACKEND=static MPLBACKEND=Agg
 unset VEGETA_SKIP_OPENFOAM
 run_one() {
   local nb="$1" t0=$SECONDS
   local cmd=(jupyter nbconvert --to notebook --execute "$nb.ipynb" --output "$nb-run.ipynb" --ExecutePreprocessor.timeout=3600)
-  if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then cmd=(xvfb-run -a "${cmd[@]}"); fi
   if "${cmd[@]}" >"$LOGS/$nb.log" 2>&1; then
     printf 'ok      %-40s %5s s\n' "$nb" $((SECONDS - t0))
   else
