@@ -172,10 +172,15 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   - half-track: steered front wheels + rear track units (`ScarabHalftrack(Scarab)`: Ackermann front axle, short rear
     track); front/rear load split, wheel steering vs. track braking, road speed and efficiency against soft-soil
     traction, the front-wheel sinkage penalty
-  - triangular (delta) tracks: four track units with an elevated drive sprocket, front/rear idlers and bogie mid-rollers
-    in place of the wheels (`ScarabQuadtrac(Scarab)`, as the Quadtrac and the STX/Magnum conversion kits); the sprocket
-    clear of mud and rocks, oscillating units on uneven ground, footprint against a wheel, added mass and height,
-    articulated vs. skid steering
+  - triangular (delta) tracks: four track units in place of the wheels (`ScarabQuadtrac(Scarab)`, as the Quadtrac and
+    the STX/Magnum conversion kits). Each unit (reference image from the user): a large elevated drive wheel on the hub
+    at the apex, driving the rubber belt's inner lugs by friction/positive drive; two large end idlers (front and rear);
+    4 small mid-rollers on a walking-beam bogie frame that pivots under the hub; a tensioner on one idler; a rubber belt
+    with chevron tread. Separate CAD parts (`part` = delta_unit/drive_wheel/end_idler/mid_roller/bogie_frame). Checks:
+    the drive wheel clear of mud and rocks; unit pitch oscillation (stops ± deg, the anti-rotation link) on uneven ground;
+    contact length and footprint against a wheel; how the hub load spreads over the idlers and mid-rollers; belt wrap angle
+    and slip on the drive wheel (capstan, T1/T2 = e^(μθ)); added mass, height and gear ratio (the drive wheel is smaller
+    than the wheel it replaces); articulated vs. skid steering
   - legged (robot dog) for reference, optional
   `designs/mobility_maps.py` in the `propulsor_maps.py` library pattern (`build`, `save`, `load`, JSON in `data/`):
   drawbar pull/weight vs. slip per soil, max grade × soil, speed × grade → power and efficiency, cost of transport,
@@ -192,8 +197,9 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   - (c) full tracks (`scarab_robot.py`, `scarab_controller.py`: skid steer, slip-aware torque limit)
   - (d) half-track (`scarab_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
     Ackermann blended with the track-speed differential)
-  - (e) triangular tracks (`scarab_quadtrac_robot.py`: four pivoting delta units on hinge joints, each a multi-roller
-    track)
+  - (e) triangular tracks (`scarab_quadtrac_robot.py`: four delta units, each on a pitch hinge at the hub with
+    spring/stop limits; inside each, a walking-beam bogie on its own hinge carrying 4 mid-rollers, plus 2 end idlers, all
+    `role="foot"` and driven at the drive wheel's belt speed)
   Mission via `PhasedMission`: cross the course → pick an object with the arms → put it in the basket → return;
   `scenarios/scarab_mission.py` → `scenarios/output/*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
   tilt, sinkage, stall; `benchmark/scarab/` with `run_trials` over terrain × drive × seed, report and success-rate heat
