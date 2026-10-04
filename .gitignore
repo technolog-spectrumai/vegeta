@@ -23,3 +23,6 @@ notebooks/designs/data/microjet.json
 # notebook simulation caches (vegeta.cache): local only, delete when the code changes
 *.cache/
 vegeta.cache/
+
+# notebooks executed by scripts/debug_notebooks.sh (nbconvert --output X-run.ipynb)
+notebooks/*-run.ipynb

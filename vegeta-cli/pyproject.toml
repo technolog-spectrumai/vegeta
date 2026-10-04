@@ -35,6 +35,7 @@ package-dir = { "" = "src" }
 packages = [
   "vegeta.cache",
   "vegeta.cli",
+  "vegeta.mock",
   "vegeta.dedalus",
   "vegeta.talos",
   "vegeta.aeromant",
