@@ -1,7 +1,7 @@
 <!-- Detailed design for TODO.md (notebook 28: heat solve, maps, movies). Read from the code, not yet implemented. -->
 # Implementation plan: notebook 28 microjet (movies, 3D blade thermal analysis, compressor and turbine maps, 3D max-temperature map)
 
-This plan comes from reading the code only. Nothing was edited. I had no Write tool, so the plan is in this message rather than in the plan file. Line numbers refer to the current tree.
+This plan comes from reading the code only; nothing is implemented yet. Line numbers refer to the tree at the time of writing.
 
 ## 0. What the code does today, and what that means for the design
 
