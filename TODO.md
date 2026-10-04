@@ -1,5 +1,7 @@
 # TODO — microjet (notebook 28): spin movies, blade heat solve, performance maps
 
+Detailed design (file:line references, signatures, deck cards, mock keys, notebook cell by cell): `docs/plans/microjet_28_design.md`.
+
 Requested for `notebooks/28_microjet.ipynb`:
 - movies of the engine spinning: the rotor in its casing, the hot turbine, and the stress while spinning
 - a thermal analysis of the turbine blades, with stated combustion assumptions, done as a new 3D steady heat-transfer solve in Talos
@@ -86,3 +88,11 @@ In `boreas.microjet`, pressure ratio depends only on rpm, so there is no constan
 - [ ] **Quick suites with mocks:** talos, mock and cache.
 - [ ] **Debug run:** `scripts/debug_notebooks.sh 28_ 29_`.
 - [ ] **Real solves (the user's):** `jupyter nbconvert --to notebook --execute 28_microjet.ipynb --output 28_microjet-run.ipynb`.
+
+## Notes from the design pass
+- **Melting limit:** IN713C incipient melting is ~1530 K (solidus). Treat 1255 K as a service limit, not melting.
+- **Separate class:** a `ThermalModel` class (`talos/thermal.py`), because `StructuralModel` requires supports and loads. It must share the mesh key with `StructuralModel` so heat and stress run on one mesh.
+- **New regions:** `SurfacesInCylinder` and `SurfacesExcept`, to pick the blades, rim, disc faces and bore.
+- **Solved field as a load:** `TemperatureField(frd)` does this; `RadialTemperature` keeps its exact deck.
+- **Maps:** `boreas.microjet.flow_function` made public for the NGV swallowing curve.
+- **`ccx` cards:** it may want `*SPECIFIC HEAT` even for steady heat transfer; the slow 1D film test will tell.
