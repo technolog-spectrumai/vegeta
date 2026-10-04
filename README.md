@@ -261,7 +261,20 @@ source .venv/bin/activate           # for the vegeta command and the scripts bel
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly
 scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the CLIs
+scripts/debug_notebooks.sh -j 3     # every notebook end to end in DEBUG mode (below), in minutes
 ```
+
+### Testing a notebook before the full run (DEBUG)
+Every notebook starts with `DEBUG = False`. Set it to `True` (or set `VEGETA_DEBUG=1` in the shell) and the FEA, CFD
+and slicer runs are mocked (`vegeta.mock`): results of the real shapes with fixed numbers, in seconds, with the
+result cache off. Run a single notebook the usual way:
+```bash
+cd notebooks
+VEGETA_DEBUG=1 jupyter nbconvert --to notebook --execute 08_quadcopter.ipynb --output 08_quadcopter-run.ipynb   # mocked
+jupyter nbconvert --to notebook --execute 08_quadcopter.ipynb --output 08_quadcopter-run.ipynb                  # the real run
+```
+`scripts/debug_notebooks.sh [prefixes]` runs that same command for each notebook, then puts back any tracked file a
+mocked run wrote (`designs/data/*.json`).
 
 ## Licence
 Proprietary — **internal use only** (see `LICENSE`). External tools keep their own licences, see
