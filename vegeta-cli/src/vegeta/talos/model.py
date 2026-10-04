@@ -19,12 +19,16 @@ from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force,
 from .materials import Material
 from .mesh import MeshSettings, generate_mesh, read_mesh
 from .regions import Surfaces, SurfacesInBox, SurfacesOnPlane
-from .result import Result
+from .result import CommandRecord, Result
+from . import cache as _cache
 from .units import get_units
 
 MESH_FILE = "mesh.msh"
 MESH_SUMMARY = "mesh_summary.json"
 JOB = "model"
+# what a cache entry (vegeta.cache) keeps of each result: the files later cells read
+MESH_KEEP = ("mesh", "mesh_summary", "gmsh_log")
+SOLVE_KEEP = ("frd", "dat", "mesh", "summary", "ccx_log", "sta", "cvg")
 
 
 def _sha256(path: Path) -> str:
@@ -122,8 +126,15 @@ class StructuralModel:
         return self._solve_key()
 
     # -- meshing ----------------------------------------------------------------------------
-    def mesh(self, workdir: str | Path, progress=False) -> Result:
-        """Mesh the geometry with Gmsh into ``workdir/mesh.msh``."""
+    def mesh(self, workdir: str | Path, progress=False, *, cache: str | None = None) -> Result:
+        """Mesh the geometry with Gmsh into ``workdir/mesh.msh``.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``). When the entry exists its mesh is copied
+        into ``workdir`` and nothing is meshed; else the mesh made here is saved as that entry."""
+        return _cache.cached(cache, lambda: self._mesh(workdir, progress), Result, CommandRecord, keep=MESH_KEEP,
+                             restore_to=workdir, label="talos")
+
+    def _mesh(self, workdir: str | Path, progress=False) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         workdir.mkdir(parents=True, exist_ok=True)
@@ -158,8 +169,19 @@ class StructuralModel:
 
     # -- solving ----------------------------------------------------------------------------
     def solve(self, workdir: str | Path, *, executable: str = "ccx", threads: int = 1,
-              timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
-        """Write ``model.inp`` from the existing mesh, run CalculiX and summarise results."""
+              timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+              cache: str | None = None) -> Result:
+        """Write ``model.inp`` from the existing mesh, run CalculiX and summarise results.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``). When the entry exists it is loaded (its
+        ``.frd``, ``.dat`` and mesh copied in the cache) and nothing runs; else the solved result is saved there.
+        Nothing checks whether the model changed: delete the entry when it does."""
+        return _cache.cached(cache, lambda: self._solve(workdir, executable=executable, threads=threads, timeout=timeout,
+                                                        progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+
+    def _solve(self, workdir: str | Path, *, executable: str = "ccx", threads: int = 1,
+               timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         res = Result(kind="talos.solve", metadata={"model": self.config(), "started_at": utc_now(),
@@ -257,10 +279,18 @@ class StructuralModel:
         return info.get("status") == "success" and info.get("metadata", {}).get("mesh_key") == self._mesh_key()
 
     def ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
-               timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+               timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+               cache: str | None = None) -> Result:
         """The static result, computing only what is missing: solved with these inputs -> read back; else mesh (only
         when the mesh is missing or out of date) and solve. ``run=False``: nothing runs, an unsolved model comes back
-        as a failed result saying NOT RUN. ``metadata["reused"]`` says which happened."""
+        as a failed result saying NOT RUN. ``metadata["reused"]`` says which happened. ``cache``: as in ``solve``
+        (an existing entry is returned before anything else is looked at)."""
+        return _cache.cached(cache, lambda: self._ensure(workdir, run=run, executable=executable, threads=threads,
+                                                         timeout=timeout, progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+
+    def _ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
+                timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
         done = self.solved(workdir)
         if done is not None:
             return done
@@ -277,9 +307,18 @@ class StructuralModel:
         return res
 
     def solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
-                    timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+                    timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+                    cache: str | None = None) -> Result:
         """Natural frequencies and mode shapes (CalculiX ``*FREQUENCY``) of the supported structure with
-        its point masses; loads are ignored. Needs the material density. Results: ``modes.frd``/``.dat``."""
+        its point masses; loads are ignored. Needs the material density. Results: ``modes.frd``/``.dat``.
+
+        ``cache``: as in ``solve`` (an existing entry is loaded, nothing runs; else the modes are saved there)."""
+        return _cache.cached(cache, lambda: self._solve_modes(workdir, n_modes, executable=executable, threads=threads,
+                                                              timeout=timeout, progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+
+    def _solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
+                     timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         job = "modes"

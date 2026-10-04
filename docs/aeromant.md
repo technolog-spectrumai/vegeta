@@ -99,6 +99,21 @@ cases = [aeromant.CFDCase("compressor_mrf", stl, dict(params, outlet_pressure=p)
 results = aeromant.run_cases(cases, jobs=2, processors=4, progress=True)
 ```
 
+## Caching a result next to the notebook (`cache=`)
+A finished case is loaded from a file next to the notebook instead of running again:
+```python
+from vegeta import cache
+cache.notebook("09a_fixed_wing_design")                       # entries in ./09a_fixed_wing_design.cache/
+case.prepare()
+r = case.run(cache="aircraft_4deg")                          # a whole run only (not with steps=)
+rs = aeromant.run_cases(cases, jobs=2, cache=True)           # each case's workdir name is its entry
+```
+The entry exists: it is loaded and nothing runs. It does not: the case runs and, when it succeeds, is saved as
+`<name>.json` (the `Result`) plus `<name>/` with copies of the force-coefficient files and the logs; the case
+directory itself (mesh and fields) is not copied, so field plots and particle movies still need it. **Nothing checks
+whether the case or the code changed: delete the entry (`cache.clear("aircraft_4deg")`) or the folder when they do.**
+Failed runs are not saved; `VEGETA_CACHE=off` runs everything. The same `cache.notebook(...)` serves Talos too.
+
 ## CLI
 ```
 aeromant templates [NAME] [--json]

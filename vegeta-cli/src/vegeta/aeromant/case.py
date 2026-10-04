@@ -18,6 +18,7 @@ from ._process import describe_failure, run_command, utc_now
 from ._progress import resolve_progress
 from .environment import OpenFOAMEnvironment
 from .result import CommandRecord, Result
+from . import cache as _cache
 from .results import find_coefficient_files, read_checkmesh, read_coefficients, read_solver_log, read_surface_field_values
 from .stl import LENGTH_TO_METRES, read_stl, write_stl_ascii
 from .templates import GAS_CONSTANT, Step, TemplateSpec, get_template
@@ -234,12 +235,25 @@ class CFDCase:
         f.write_text(new)
 
     def run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
-            timeout: float | None = None, processors: int = 1) -> Result:
+            timeout: float | None = None, processors: int = 1, cache: str | None = None) -> Result:
         """Run the template pipeline, or only ``steps`` (names from ``pipeline(processors)``), in order.
 
         ``processors`` > 1 runs the solver in parallel with MPI (see ``pipeline``); meshing stays serial.
         Stops at the first failing step. ``checkMesh`` failures are reported but do not stop the run.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``), for a whole run (no ``steps``). When the
+        entry exists it is loaded (its force and residual logs copied in the cache; the case directory itself is not)
+        and nothing runs; else the finished result is saved there. Nothing checks whether the case changed: delete
+        the entry when it does.
         """
+        if cache is not None and steps is not None:
+            raise ValueError("cache applies to a whole run: give either steps or cache")
+        return _cache.cached(cache, lambda: self._run(steps, progress=progress, cancel=cancel, timeout=timeout,
+                                                      processors=processors),
+                             Result, CommandRecord, label="aeromant")
+
+    def _run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
+             timeout: float | None = None, processors: int = 1) -> Result:
         t0 = time.monotonic()
         res = Result(kind="aeromant.run", metadata={"case": self.config(), "started_at": utc_now(), "processors": processors})
         if not self.is_prepared:
@@ -354,14 +368,21 @@ class CFDCase:
         return self.is_prepared and self.results().ok
 
     def ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
-               timeout: float | None = None) -> Result:
+               timeout: float | None = None, cache: str | None = None) -> Result:
         """The case's results, solving only when needed.
 
         Solved already with these inputs (same key, results complete) -> read back, nothing runs. Otherwise the
         directory is prepared again (a stale or half-run case is replaced) and the whole pipeline runs. With
         ``run=False`` nothing is prepared or run: an unsolved case comes back as a failed result saying NOT RUN.
-        ``metadata["reused"]`` says which happened.
+        ``metadata["reused"]`` says which happened. ``cache``: as in ``run`` (an existing entry is returned before
+        anything else is looked at; a result solved or read back here is saved as the entry).
         """
+        return _cache.cached(cache, lambda: self._ensure(run=run, processors=processors, progress=progress, cancel=cancel,
+                                                         timeout=timeout),
+                             Result, CommandRecord, label="aeromant")
+
+    def _ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
+                timeout: float | None = None) -> Result:
         if self.is_prepared:
             done = self.results()
             if done.ok:
