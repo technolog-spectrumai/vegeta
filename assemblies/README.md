@@ -105,6 +105,10 @@ What stayed in the notebooks: life and fatigue of the boat and the submarine (12
 here yet (`wing.WingSpec` refuses sweep).
 
 ## Data for notebooks
+The split: a workflow runs what is long (CFD, FEA, MuJoCo, the libraries) and hands over what it computed as data; a
+notebook keeps its own analysis code in view and imports those results instead of running the solvers again. Notebook
+analysis is not moved into the workflows: the point of a notebook is to see in one place what you run.
+
 Every workflow writes `data/<name>_results.json` next to its `.vida` when it exports (`--no-export` skips it):
 plain JSON with every node's kind, status (computed / reused / NOT RUN and why), parameters and results; arrays as
 lists, NaN as null. Grafted trees (AGUYA's engine, MERLIN's propulsors) are left to their own product's file, and a

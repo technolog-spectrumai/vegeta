@@ -244,21 +244,3 @@ def blade_model(spec: PropellerSpec, step: Path, loads: dict, *, element_mm: flo
     return talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("hub")],
                                  [talos.Force("blade", fz=loads["thrust_N"], fy=-loads["tangential_N"])],
                                  talos.MeshSettings(element_size=element_mm), name=name)
-
-
-def noise(prop, points: dict, *, medium=None, distance: float = 1.0, angle_deg: float = 90.0, harmonics: int = 6) -> dict:
-    """One rotor's noise at each operating point (notebook 08 cell 60, 09a cell 56; in water 12 cell 55, 13 cell 23):
-    Gutin's tonal harmonics and the broadband allowance at ``distance`` [m], ``angle_deg`` off the axis; dB re 20 uPa in
-    air, re 1 uPa in water. ``points`` maps names to boreas operating points (``thrust``, ``rpm``, ``aero.torque``).
-    The machine's level adds ``10 log10(n_rotors)`` and ``-20 log10(d / distance)``."""
-    medium = medium or boreas.AIR
-    out = {}
-    for name, pt in points.items():
-        tones = boreas.gutin_harmonics(prop, pt.thrust, pt.aero.torque, pt.rpm, distance, angle_deg, medium, harmonics=harmonics)
-        bb = boreas.broadband_level(prop, pt.thrust, pt.rpm, distance, medium)
-        out[name] = {"rpm": float(pt.rpm), "BPF_hz": float(tones["blade_pass_hz"]), "tonal_dB": float(tones["total_tonal_db"]),
-                     "broadband_dB": float(bb),
-                     "one_rotor_dB": float(10 * math.log10(10 ** (tones["total_tonal_db"] / 10) + 10 ** (bb / 10))),
-                     "frequency_hz": [float(x) for x in tones["frequency_hz"]], "spl_db": [float(x) for x in tones["spl_db"]]}
-    return out
-

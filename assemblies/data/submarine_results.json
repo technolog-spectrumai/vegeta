@@ -2,9 +2,9 @@
  "workflow": "assemblies.workflows.submarine",
  "name": "submarine",
  "fidelity": "full",
- "written_at": "2026-10-04T02:15:14+00:00",
+ "written_at": "2026-10-04T04:41:14+00:00",
  "git": {
-  "commit": "7b1be852c8a47b4428655c354585a60d8874a3b8",
+  "commit": "e7e8163f45431f14d50014b5824d4d23f86db231",
   "dirty": true
  },
  "vida": "submarine.vida",
@@ -14,7 +14,7 @@
    "kind": "submersible",
    "status": "computed",
    "not_run": [],
-   "computed_at": "2026-10-03T17:37:16+00:00",
+   "computed_at": "2026-10-04T04:41:14+00:00",
    "params": {
     "design_depth_m": 200.0,
     "drive": {
@@ -105,7 +105,7 @@
   },
   "hull": {
    "kind": "submarine",
-   "status": "computed",
+   "status": "reused",
    "not_run": [],
    "computed_at": "2026-10-03T17:37:08+00:00",
    "params": {
@@ -192,7 +192,7 @@
   },
   "propeller": {
    "kind": "propeller",
-   "status": "computed",
+   "status": "reused",
    "not_run": [],
    "computed_at": "2026-10-03T17:37:16+00:00",
    "params": {

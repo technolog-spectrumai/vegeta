@@ -294,7 +294,7 @@ def run(*, fidelity: str = "full", boat: dict | None = None, run_cfd: bool = Tru
         root.meta["results_to"] = str(results.write(root, vida_path))
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")
-        res = boreas.export(path, prop, sec, motor=pr.motor(DRIVE["motor"]), battery=battery, points=pts,
+        res = boreas.export(path, prop, sec, motor=pr.motor(DRIVE["motor"]), battery=battery, points=pts, rho=RHO_W,
                             notes=f"survey boat from assemblies.workflows.{NAME} ({fidelity}); draft {T:.1f} mm, wake {DRIVE['wake']}")
         res.raise_for_status()
         root.meta["exported_to"] = str(path)

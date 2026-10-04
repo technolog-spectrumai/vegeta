@@ -222,7 +222,7 @@ def run(*, fidelity: str = "full", sub: dict | None = None, run_cfd: bool = True
         root.meta["results_to"] = str(results.write(root, vida_path))
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")
-        boreas.export(path, prop, sec, motor=pr.motor(DRIVE["motor"]), battery=battery, points=pts,
+        boreas.export(path, prop, sec, motor=pr.motor(DRIVE["motor"]), battery=battery, points=pts, rho=RHO_W,
                       notes=f"submarine from assemblies.workflows.{NAME} ({fidelity}); wake {DRIVE['wake']}").raise_for_status()
         root.meta["exported_to"] = str(path)
     return root

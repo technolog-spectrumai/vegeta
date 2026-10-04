@@ -2,9 +2,9 @@
  "workflow": "assemblies.workflows.boat",
  "name": "boat",
  "fidelity": "full",
- "written_at": "2026-10-04T02:15:13+00:00",
+ "written_at": "2026-10-04T04:41:01+00:00",
  "git": {
-  "commit": "7b1be852c8a47b4428655c354585a60d8874a3b8",
+  "commit": "e7e8163f45431f14d50014b5824d4d23f86db231",
   "dirty": true
  },
  "vida": "boat.vida",
@@ -14,7 +14,7 @@
    "kind": "surface_vessel",
    "status": "computed",
    "not_run": [],
-   "computed_at": "2026-10-03T17:37:05+00:00",
+   "computed_at": "2026-10-04T04:41:01+00:00",
    "params": {
     "drive": {
      "battery": "4S 10 Ah",
@@ -215,7 +215,7 @@
   },
   "hull": {
    "kind": "survey_boat",
-   "status": "computed",
+   "status": "reused",
    "not_run": [],
    "computed_at": "2026-10-03T17:36:55+00:00",
    "params": {
@@ -332,7 +332,7 @@
   },
   "propeller": {
    "kind": "propeller",
-   "status": "computed",
+   "status": "reused",
    "not_run": [],
    "computed_at": "2026-10-03T17:37:04+00:00",
    "params": {

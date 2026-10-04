@@ -1,6 +1,6 @@
 {
   "tool": "vegeta.boreas",
-  "created_at": "2026-10-03T17:37:05+00:00",
+  "created_at": "2026-10-04T04:41:01+00:00",
   "notes": "survey boat from assemblies.workflows.boat (full); draft 53.1 mm, wake 0.9",
   "propeller": {
     "name": "60 mm 3-blade marine",
@@ -83,7 +83,7 @@
     "k": 0.05,
     "source": "assumed"
   },
-  "rho": 1.225,
+  "rho": 1025.0,
   "motor": {
     "name": "2836-500KV (water-cooled pod)",
     "kv_rpm_per_volt": 500,
