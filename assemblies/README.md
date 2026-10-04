@@ -104,6 +104,26 @@ What stayed in the notebooks: life and fatigue of the boat and the submarine (12
 19, the Onager's standing and rock-strike leg cases (20), the gait simulations of 16 and 17. The delta wing is not
 here yet (`wing.WingSpec` refuses sweep).
 
+## Data for notebooks
+Every workflow writes `data/<name>_results.json` next to its `.vida` when it exports (`--no-export` skips it):
+plain JSON with every node's kind, status (computed / reused / NOT RUN and why), parameters and results; arrays as
+lists, NaN as null. Grafted trees (AGUYA's engine, MERLIN's propulsors) are left to their own product's file, and a
+single result over 1 MB (the ducted-fan maps) stays in the `.vida` as a reference that `results.load` resolves.
+`python -m assemblies.results all` writes the files again from the saved `.vida` files without running anything.
+
+```python
+import sys; sys.path.insert(0, "..")                 # from notebooks/: the repository root
+from assemblies import results
+q = results.load("quadcopter")
+q.status()                                           # one row per node: kind, status, why NOT RUN, when
+q["life/fatigue"]["hours_to_failure"]                # a node's results
+q.table("life/fatigue", "life")                      # a table-like result as a pandas DataFrame
+results.load("merlin").table("race", "table")        # every race of notebook 27
+```
+Without `assemblies`: `json.load(open("../assemblies/data/quadcopter_results.json"))["nodes"]`. The product exports
+(`quadcopter.json` in boreas' format, `fixed_wing.json` = the hand-off 09b reads, `microjet.json`, `merlin_design.json`,
+`*_maps.json`, `*_life.json`) stay as they were.
+
 ## Components
 | component | from | gives |
 |---|---|---|

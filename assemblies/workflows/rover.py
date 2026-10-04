@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 from vegeta import talos
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import leg, road_wheel as rw
 from ..components._cad import export_kept
@@ -202,6 +202,8 @@ def run(*, fidelity: str = "full", rover: dict | None = None, run_fea: bool = Tr
                 sag_mm=c["payload_kg"] * G / 4 / SUSPENSION["k_susp"] * 1000, pins=pins)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     return root
 
 

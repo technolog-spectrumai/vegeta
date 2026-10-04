@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import propulsor_maps as pm
 from ..vida import Assembly
@@ -85,7 +85,7 @@ def library(node: Assembly, out: Path, *, write_shared: bool, processes: int, pr
 
 
 def run(*, fidelity: str = "full", kinds=KINDS, processors: int = 4, out: Path | None = None, vida_path: Path | None = None,
-        include: str = "results", force: bool = False, redo=(), progress: bool = True, **_ignored) -> Assembly:
+        include: str = "results", force: bool = False, redo=(), progress: bool = True, export: bool = True, **_ignored) -> Assembly:
     out = Path(out or RUNS / NAME).resolve()
     vida_path = Path(vida_path or DATA / f"{NAME}.vida")
     if force and out.exists():
@@ -102,6 +102,8 @@ def run(*, fidelity: str = "full", kinds=KINDS, processors: int = 4, out: Path |
                          for n in root.children})
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     return root
 
 

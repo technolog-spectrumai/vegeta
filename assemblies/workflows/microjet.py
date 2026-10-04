@@ -22,7 +22,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import cycle, impeller, turbojet as tj, turbojet_parts, wheels
 from ..vida import Assembly
@@ -76,6 +76,8 @@ def run(*, engine_class: str = DEFAULT_ENGINE, fidelity: str = "full", run_cfd: 
         root.not_run("calibration to the CFD compressor (no solved speed line point): the catalogue cycle is exported")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
 
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")

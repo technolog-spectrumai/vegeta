@@ -1,0 +1,598 @@
+{
+ "workflow": "assemblies.workflows.quadcopter",
+ "name": "quadcopter",
+ "fidelity": "full",
+ "written_at": "2026-10-04T02:15:14+00:00",
+ "git": {
+  "commit": "ab99f1a7f14331e0b8b5071aacc3c15015d65cb4",
+  "dirty": true
+ },
+ "vida": "quadcopter.vida",
+ "skipped": [],
+ "nodes": {
+  "": {
+   "kind": "multirotor",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-04T01:51:47+00:00",
+   "params": {
+    "drive": {
+     "battery": "4S 1500 mAh",
+     "motor": "2306-2400KV",
+     "motors": 4,
+     "propeller": "5x4.3 tri-blade",
+     "rho": 1.2
+    },
+    "fidelity": "full",
+    "parts_g": {
+     "4-in-1 ESC": 15.0,
+     "battery 4S 1500 mAh": 180.0,
+     "camera + VTX + antenna": 35.0,
+     "flight controller": 10.0,
+     "motors 2306 (4x)": 120.0,
+     "propellers 5x4.3 (4x)": 20.0,
+     "receiver, wiring, bolts": 30.0
+    }
+   },
+   "results": {
+    "auw_kg": 0.48127044360610166,
+    "points": {
+     "hover": {
+      "throttle": 0.2524172464557702,
+      "rpm": 8242.472932348977,
+      "thrust_N": 1.1803157629439645,
+      "current_A": 5.023525428888747,
+      "electrical_W": 18.766761952657465,
+      "current_limited": false
+     },
+     "cruise": {
+      "throttle": 0.2895954121564502,
+      "rpm": 9397.865079509136,
+      "thrust_N": 1.534410491827154,
+      "current_A": 6.170583057555374,
+      "electrical_W": 26.447193648215688,
+      "current_limited": false
+     },
+     "full": {
+      "throttle": 1.0,
+      "rpm": 28680.773080443527,
+      "thrust_N": 14.291073560410847,
+      "current_A": 47.49463138580881,
+      "electrical_W": 702.9205445099702,
+      "current_limited": true
+     }
+    },
+    "hover_endurance_min": 14.195309807416002,
+    "thrust_to_weight": 12.107839282571131,
+    "map": {
+     "rpm": [
+      5000.0,
+      7500.0,
+      10000.0,
+      12500.0,
+      15000.0,
+      17500.0,
+      20000.0,
+      22500.0,
+      25000.0,
+      27500.0,
+      30000.0
+     ],
+     "airspeed_m_s": [
+      0.0,
+      3.0,
+      6.0,
+      9.0,
+      12.0,
+      15.0
+     ],
+     "thrust_N": [
+      [
+       0.434333,
+       0.391425,
+       0.264367,
+       0.092854,
+       -0.166465,
+       -0.504998
+      ],
+      [
+       0.97725,
+       0.935929,
+       0.80345,
+       0.594826,
+       0.345431,
+       0.064757
+      ],
+      [
+       1.737333,
+       1.697341,
+       1.565701,
+       1.347398,
+       1.057468,
+       0.730259
+      ],
+      [
+       2.714583,
+       2.675239,
+       2.545904,
+       2.323837,
+       2.022997,
+       1.652294
+      ],
+      [
+       3.909,
+       3.870356,
+       3.743714,
+       3.522828,
+       3.213802,
+       2.829124
+      ],
+      [
+       5.320583,
+       5.282258,
+       5.157444,
+       4.938996,
+       4.628211,
+       4.235651
+      ],
+      [
+       6.949333,
+       6.910576,
+       6.789363,
+       6.572496,
+       6.262806,
+       5.863283
+      ],
+      [
+       8.79525,
+       8.756688,
+       8.637115,
+       8.423357,
+       8.11549,
+       7.715532
+      ],
+      [
+       10.858333,
+       10.818737,
+       10.700955,
+       10.48996,
+       10.183616,
+       9.785634
+      ],
+      [
+       13.138583,
+       13.09855,
+       12.982244,
+       12.774452,
+       12.470985,
+       12.073915
+      ],
+      [
+       15.636,
+       15.596128,
+       15.481425,
+       15.276067,
+       14.974856,
+       14.579332
+      ]
+     ]
+    },
+    "hover_thrust_bemt_vs_cfd": {
+     "bemt_N": 1.1803157629439645,
+     "cfd_N": null
+    }
+   }
+  },
+  "frame": {
+   "kind": "quad_frame",
+   "status": "reused",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:34+00:00",
+   "params": {
+    "density_g_mm3": 0.00125,
+    "frame": {
+     "arm_height": 6.0,
+     "arm_width": 12.0,
+     "canopy_height": 0.0,
+     "motor_hole": 3.2,
+     "motor_pattern": 16.0,
+     "pad_diameter": 30.0,
+     "plate_size": 70.0,
+     "plate_thickness": 6.0,
+     "stack_hole": 3.2,
+     "stack_pattern": 30.5,
+     "taper": 0.7,
+     "wheelbase": 250.0
+    }
+   },
+   "results": {
+    "volume_mm3": 57016.35488488132,
+    "mass_g": 71.27044360610165,
+    "valid": true,
+    "dimensions_mm": [
+     206.7766952966369,
+     206.7766952966369,
+     6.0
+    ]
+   }
+  },
+  "frame_fea": {
+   "kind": "frame_fea",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_fea=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "element_mm": 4.0,
+    "frame": {
+     "arm_height": 6.0,
+     "arm_width": 12.0,
+     "canopy_height": 0.0,
+     "motor_hole": 3.2,
+     "motor_pattern": 16.0,
+     "pad_diameter": 30.0,
+     "plate_size": 70.0,
+     "plate_thickness": 6.0,
+     "stack_hole": 3.2,
+     "stack_pattern": 30.5,
+     "taper": 0.7,
+     "wheelbase": 250.0
+    },
+    "landing_N": 40.0,
+    "material": {
+     "density": 1.25e-09,
+     "name": "PETG-CF",
+     "poissons_ratio": 0.38,
+     "source": "nominal filament datasheet values, XY orientation",
+     "yield_strength": 45.0,
+     "youngs_modulus": 4800.0
+    },
+    "max_thrust_per_motor_N": 8.0
+   },
+   "results": {}
+  },
+  "canopy_cfd": {
+   "kind": "frame_canopy",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_cfd=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "cfd": {
+     "cells_per_length": 2.0,
+     "center_of_rotation": [
+      0,
+      0,
+      0
+     ],
+     "density": 1.2,
+     "iterations": 250,
+     "kinematic_viscosity": 1.5e-05,
+     "near_level": 2,
+     "reference_area": 0.004900000000000001,
+     "reference_length": 0.1,
+     "surface_level": 3,
+     "velocity": 15.0,
+     "wake_level": 1
+    },
+    "frame": {
+     "arm_height": 6.0,
+     "arm_width": 12.0,
+     "canopy_height": 25.0,
+     "motor_hole": 3.2,
+     "motor_pattern": 16.0,
+     "pad_diameter": 30.0,
+     "plate_size": 70.0,
+     "plate_thickness": 6.0,
+     "stack_hole": 3.2,
+     "stack_pattern": 30.5,
+     "taper": 0.7,
+     "wheelbase": 250.0
+    }
+   },
+   "results": {}
+  },
+  "propeller": {
+   "kind": "propeller",
+   "status": "reused",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:38+00:00",
+   "params": {
+    "section": {
+     "alpha0_deg": -3.0,
+     "cd0": 0.025,
+     "cl_alpha": 5.654866776461628,
+     "cl_max": 1.1,
+     "k": 0.045,
+     "name": "thin cambered section",
+     "source": "assumed for a moulded 5-inch blade at Re ~ 1e5"
+    },
+    "spec": {
+     "blades": 3,
+     "cad": {
+      "bore": 5,
+      "camber": 0.05,
+      "chord_max": 16,
+      "chord_root": 10,
+      "chord_tip": 6,
+      "diameter": 127.0,
+      "hub_diameter": 12,
+      "hub_height": 7,
+      "pitch": 109.22,
+      "thickness": 0.1
+     },
+     "chord_max_m": 0.016,
+     "chord_root_m": 0.01,
+     "chord_tip_m": 0.006,
+     "diameter_m": 0.127,
+     "hub_radius_m": null,
+     "mass_kg": 0.0045,
+     "name": "5x4.3 tri-blade",
+     "notes": "generic planform; fit chord/beta to the real propeller for better numbers",
+     "pitch_m": 0.10922,
+     "rotor_mass_kg": 0.02,
+     "section": "quad 5 in"
+    }
+   },
+   "results": {
+    "describe": {
+     "name": "5x4.3 tri-blade",
+     "blades": 3,
+     "diameter_m": 0.127,
+     "hub_radius_m": 0.00762,
+     "solidity": 0.16312297196770315,
+     "mass_kg": 0.0045,
+     "rotor_mass_kg": 0.02,
+     "stations": [
+      {
+       "r_m": 0.00762,
+       "chord_m": 0.01,
+       "beta_deg": 66.32919231699401
+      },
+      {
+       "r_m": 0.0127,
+       "chord_m": 0.011558441558441558,
+       "beta_deg": 53.84802591127398
+      },
+      {
+       "r_m": 0.01778,
+       "chord_m": 0.013116883116883117,
+       "beta_deg": 44.35298226910126
+      },
+      {
+       "r_m": 0.02286,
+       "chord_m": 0.014675324675324675,
+       "beta_deg": 37.249610835990836
+      },
+      {
+       "r_m": 0.02794,
+       "chord_m": 0.015969613699676453,
+       "beta_deg": 31.887855751012374
+      },
+      {
+       "r_m": 0.03302,
+       "chord_m": 0.015354958438934693,
+       "beta_deg": 27.76391504517404
+      },
+      {
+       "r_m": 0.0381,
+       "chord_m": 0.0143510836391707,
+       "beta_deg": 24.52456641372436
+      },
+      {
+       "r_m": 0.04318,
+       "chord_m": 0.013075802052231255,
+       "beta_deg": 21.92815706631754
+      },
+      {
+       "r_m": 0.048260000000000004,
+       "chord_m": 0.011578057587933168,
+       "beta_deg": 19.808653263597833
+      },
+      {
+       "r_m": 0.053340000000000005,
+       "chord_m": 0.009887036806860958,
+       "beta_deg": 18.050203481807362
+      },
+      {
+       "r_m": 0.05842000000000001,
+       "chord_m": 0.008022742500407342,
+       "beta_deg": 16.5704021879972
+      },
+      {
+       "r_m": 0.0635,
+       "chord_m": 0.006,
+       "beta_deg": 15.309459263028234
+      }
+     ],
+     "notes": "generic planform; fit chord/beta to the real propeller for better numbers"
+    }
+   }
+  },
+  "rotor_cfd": {
+   "kind": "rotor",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_cfd=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "cells_per_diameter": 8.0,
+    "density": 1.2,
+    "diameter": 0.127,
+    "iterations": 600,
+    "kinematic_viscosity": 1.5e-05,
+    "near_level": 3,
+    "rotation": 1,
+    "rotor_level": 3,
+    "rpm": 8242.472932348977,
+    "surface_level": 4,
+    "wake_level": 2
+   },
+   "results": {}
+  },
+  "blade_fea": {
+   "kind": "blade",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_fea=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "element_mm": 0.8,
+    "loads": {
+     "rpm": 28680.773080443527,
+     "tangential_N": 1.3813309755659307,
+     "thrust_N": 4.763691186803616
+    },
+    "material": {
+     "density": 1.35e-09,
+     "name": "PA6-GF30 (moulded blade)",
+     "poissons_ratio": 0.35,
+     "source": "assumed moulded glass-filled nylon",
+     "yield_strength": 100.0,
+     "youngs_modulus": 8000.0
+    },
+    "spec": {
+     "blades": 3,
+     "cad": {
+      "bore": 5,
+      "camber": 0.05,
+      "chord_max": 16,
+      "chord_root": 10,
+      "chord_tip": 6,
+      "diameter": 127.0,
+      "hub_diameter": 12,
+      "hub_height": 7,
+      "pitch": 109.22,
+      "thickness": 0.1
+     },
+     "chord_max_m": 0.016,
+     "chord_root_m": 0.01,
+     "chord_tip_m": 0.006,
+     "diameter_m": 0.127,
+     "hub_radius_m": null,
+     "mass_kg": 0.0045,
+     "name": "5x4.3 tri-blade",
+     "notes": "generic planform; fit chord/beta to the real propeller for better numbers",
+     "pitch_m": 0.10922,
+     "rotor_mass_kg": 0.02,
+     "section": "quad 5 in"
+    }
+   },
+   "results": {}
+  },
+  "life": {
+   "kind": "life",
+   "status": "-",
+   "not_run": [],
+   "computed_at": null,
+   "params": {},
+   "results": {}
+  },
+  "life/unit_fea": {
+   "kind": "unit_fea",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_fea=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "element_mm": 5.0,
+    "frame": {
+     "arm_height": 6.0,
+     "arm_width": 12.0,
+     "canopy_height": 0.0,
+     "motor_hole": 3.2,
+     "motor_pattern": 16.0,
+     "pad_diameter": 30.0,
+     "plate_size": 70.0,
+     "plate_thickness": 6.0,
+     "stack_hole": 3.2,
+     "stack_pattern": 30.5,
+     "taper": 0.7,
+     "wheelbase": 250.0
+    },
+    "masses_t": {
+     "motor_prop": 3.45e-05,
+     "stack": 0.000272
+    },
+    "material": {
+     "density": 1.25e-09,
+     "name": "PETG-CF",
+     "poissons_ratio": 0.38,
+     "source": "nominal filament datasheet values, XY orientation",
+     "yield_strength": 45.0,
+     "youngs_modulus": 4800.0
+    },
+    "max_thrust_N": 8.0,
+    "n_modes": 8
+   },
+   "results": {}
+  },
+  "life/fatigue": {
+   "kind": "fatigue",
+   "status": "NOT RUN",
+   "not_run": [
+    "needs the modes and unit cases (life/unit_fea)"
+   ],
+   "computed_at": null,
+   "params": {
+    "balance_factor": 2.5,
+    "curve": {
+     "b": -0.11,
+     "endurance_limit": null,
+     "name": "PETG-CF (assumed)",
+     "sigma_f": 80.0,
+     "source": "assumed Basquin fit; replace with coupon tests",
+     "ultimate": 55.0
+    },
+    "max_thrust_N": 8.0,
+    "mixes": {
+     "cruise-only": {
+      "cruise": 1.0,
+      "freestyle": 0.0,
+      "inspection": 0.0
+     },
+     "freestyle-heavy": {
+      "cruise": 0.2,
+      "freestyle": 0.6,
+      "inspection": 0.2
+     },
+     "inspection-heavy": {
+      "cruise": 0.25,
+      "freestyle": 0.15,
+      "inspection": 0.6
+     }
+    },
+    "n_flights": 40000,
+    "prop": {
+     "cruise": {
+      "rpm": 9397.865079509136,
+      "thrust_N": 1.534410491827154,
+      "unbalance_N": 0.12400190835149863
+     },
+     "full": {
+      "rpm": 28680.773080443527,
+      "thrust_N": 14.291073560410847,
+      "unbalance_N": 0.3784338852369486
+     },
+     "hover": {
+      "rpm": 8242.472932348977,
+      "thrust_N": 1.1803157629439645,
+      "unbalance_N": 0.10875686812905713
+     }
+    },
+    "unit_fea": "76917a8c5738dd9e7bd1b2424385a0d2888d94b819b04288c4956973d6360864",
+    "usage": {
+     "cruise": 0.25,
+     "freestyle": 0.15,
+     "inspection": 0.6
+    }
+   },
+   "results": {}
+  }
+ }
+}

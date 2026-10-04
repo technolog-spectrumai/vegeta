@@ -21,7 +21,7 @@ import math
 import shutil
 from pathlib import Path
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import (actuators as act, leg, onager as cad_sentinel, onager_atlas as cad_atlas, onager_atlas_robot as oar,
                           onager_atlas_scenario as oas, onager_manus as cad_manus, onager_manus_robot as omr,
@@ -84,7 +84,7 @@ def body(node: Assembly, variant: str) -> Assembly:
 
 def run(*, fidelity: str = "full", variants=tuple(VARIANTS), run_fea: bool = True, run_sim: bool = True, threads: int = 1,
         duration: float | None = None, out: Path | None = None, vida_path: Path | None = None, include: str = "results",
-        force: bool = False, redo=(), progress: bool = True, **_ignored) -> Assembly:
+        force: bool = False, redo=(), progress: bool = True, export: bool = True, **_ignored) -> Assembly:
     out = Path(out or RUNS / NAME).resolve()
     vida_path = Path(vida_path or DATA / f"{NAME}.vida")
     if force and out.exists():
@@ -109,6 +109,8 @@ def run(*, fidelity: str = "full", variants=tuple(VARIANTS), run_fea: bool = Tru
     root.record(masses_kg={v: root.child(f"{v}/body").results["mass_kg"] for v in variants})
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     return root
 
 

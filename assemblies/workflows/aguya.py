@@ -28,7 +28,7 @@ from pathlib import Path
 import numpy as np
 from vegeta.boreas import microjet as mj
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import aguya as ag, aguya_flight as F, aguya_jet, aguya_wing
 from ..vida import Assembly
@@ -168,6 +168,8 @@ def run(*, fidelity: str = "full", design_range_km: int = DESIGN_RANGE_KM, dista
                        engine, unit, af, mission_from(air), distances_km, prior, redo)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")
         doc = {"params": P, "engine": engine.to_dict(), "engine_source": str(engine_vida or DATA / "microjet.vida"),

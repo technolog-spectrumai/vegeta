@@ -37,7 +37,7 @@ from pathlib import Path
 import numpy as np
 from vegeta import aeromant, boreas, chronos, talos
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from .._cli_util import parse_assignments
 from ..components import fixed_wing_life as fl, life as lf, propeller as pr, wing
@@ -225,6 +225,8 @@ def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool =
         root.not_run("polar through the whole-aircraft CFD: notebook 09a's recorded point used")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")
         handoff = {"source": f"assemblies.workflows.{NAME} ({fidelity})", "auw_kg": auw, "wing_area_m2": pl["area_m2"],

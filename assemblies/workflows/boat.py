@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 from vegeta import aeromant, boreas, talos
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from ..components import hull as H, propeller as pr
 from ..components._cad import export_kept
@@ -290,6 +290,8 @@ def run(*, fidelity: str = "full", boat: dict | None = None, run_cfd: bool = Tru
     root.record(points={k: _point(v) for k, v in pts.items()}, performance=perf)
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     if export:
         path = Path(export_path or DATA / f"{NAME}.json")
         res = boreas.export(path, prop, sec, motor=pr.motor(DRIVE["motor"]), battery=battery, points=pts,

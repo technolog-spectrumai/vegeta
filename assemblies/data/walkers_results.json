@@ -1,0 +1,830 @@
+{
+ "workflow": "assemblies.workflows.walkers",
+ "name": "walkers",
+ "fidelity": null,
+ "written_at": "2026-10-04T02:15:14+00:00",
+ "git": {
+  "commit": "7b1be852c8a47b4428655c354585a60d8874a3b8",
+  "dirty": true
+ },
+ "vida": "walkers.vida",
+ "skipped": [],
+ "nodes": {
+  "": {
+   "kind": "walker_family",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:24+00:00",
+   "params": {},
+   "results": {
+    "masses_kg": {
+     "dog": 13.065234378096202,
+     "cleopatra": 6.169700000000001,
+     "apheloria": 33.116000000000014
+    }
+   }
+  },
+  "dog": {
+   "kind": "walker",
+   "status": "-",
+   "not_run": [],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "body_height": 130.0,
+     "body_length": 520.0,
+     "body_width": 240.0,
+     "deck_depth": 6.0,
+     "deck_hole_diameter": 5.5,
+     "deck_hole_pitch": 200.0,
+     "deck_length": 300.0,
+     "deck_width": 200.0,
+     "foot_diameter": 34.0,
+     "head_drop": 25.0,
+     "head_height": 95.0,
+     "head_length": 150.0,
+     "hip_angle_deg": 35.0,
+     "hip_boss_diameter": 64.0,
+     "hip_boss_length": 30.0,
+     "hip_x": 190.0,
+     "knee_angle_deg": 40.0,
+     "lower_leg_diameter": 24.0,
+     "lower_leg_length": 210.0,
+     "pin_diameter": 10.0,
+     "shell_fillet": 28.0,
+     "upper_leg_length": 200.0,
+     "upper_leg_taper": 0.65,
+     "upper_leg_thickness": 16.0,
+     "upper_leg_width": 44.0
+    }
+   },
+   "results": {}
+  },
+  "dog/body": {
+   "kind": "walker_body",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:15+00:00",
+   "params": {
+    "design": {
+     "body_height": 130.0,
+     "body_length": 520.0,
+     "body_width": 240.0,
+     "deck_depth": 6.0,
+     "deck_hole_diameter": 5.5,
+     "deck_hole_pitch": 200.0,
+     "deck_length": 300.0,
+     "deck_width": 200.0,
+     "foot_diameter": 34.0,
+     "head_drop": 25.0,
+     "head_height": 95.0,
+     "head_length": 150.0,
+     "hip_angle_deg": 35.0,
+     "hip_boss_diameter": 64.0,
+     "hip_boss_length": 30.0,
+     "hip_x": 190.0,
+     "knee_angle_deg": 40.0,
+     "lower_leg_diameter": 24.0,
+     "lower_leg_length": 210.0,
+     "pin_diameter": 10.0,
+     "shell_fillet": 28.0,
+     "upper_leg_length": 200.0,
+     "upper_leg_taper": 0.65,
+     "upper_leg_thickness": 16.0,
+     "upper_leg_width": 44.0
+    }
+   },
+   "results": {
+    "mass_budget_kg": {
+     "body shell, 3 mm PA12-CF (from CAD area)": 1.6351970348905593,
+     "aluminium frame + deck plate": 1.4,
+     "upper legs 4x (from CAD)": 0.5176633515387993,
+     "lower legs 4x (from CAD, CF-nylon)": 0.4023739916668423,
+     "actuators 12x (hip roll, hip pitch, knee; 480 g each)": 5.76,
+     "battery 10S 10 Ah": 2.2,
+     "computer, radios, IMU, cameras": 0.65,
+     "wiring, bearings, pins, feet": 0.5
+    },
+    "mass_kg": 13.065234378096202,
+    "robot_mass_kg": 13.065234378096202,
+    "servos": 12,
+    "links": 13,
+    "passive_joints": 0,
+    "link_mass_kg": {
+     "trunk": 8.305197034890561,
+     "FL_hip": 0.96,
+     "FL_upper_leg": 0.12941583788469982,
+     "FL_lower_leg": 0.10059349791671057,
+     "FR_hip": 0.96,
+     "FR_upper_leg": 0.12941583788469982,
+     "FR_lower_leg": 0.10059349791671057,
+     "RL_hip": 0.96,
+     "RL_upper_leg": 0.12941583788469982,
+     "RL_lower_leg": 0.10059349791671057,
+     "RR_hip": 0.96,
+     "RR_upper_leg": 0.12941583788469982,
+     "RR_lower_leg": 0.10059349791671057
+    }
+   }
+  },
+  "dog/gaits": {
+   "kind": "foot_peaks",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:15+00:00",
+   "params": {
+    "duty": {
+     "bound": 0.3,
+     "trot": 0.5,
+     "walk": 0.75
+    },
+    "payload_kg": 5.0
+   },
+   "results": {
+    "gaits": {
+     "bound": {
+      "duty": 0.3,
+      "feet_down_mean": 1.2,
+      "peak_foot_N": 167.77407123834323,
+      "peak_foot_loaded_N": 231.98037109608464,
+      "F_over_W_per_foot": 1.3089969389957472
+     },
+     "trot": {
+      "duty": 0.5,
+      "feet_down_mean": 2.0,
+      "peak_foot_N": 100.66444274300594,
+      "peak_foot_loaded_N": 139.18822265765078,
+      "F_over_W_per_foot": 0.7853981633974483
+     },
+     "walk": {
+      "duty": 0.75,
+      "feet_down_mean": 3.0,
+      "peak_foot_N": 67.10962849533729,
+      "peak_foot_loaded_N": 92.79214843843386,
+      "F_over_W_per_foot": 0.5235987755982988
+     }
+    }
+   }
+  },
+  "cleopatra": {
+   "kind": "walker",
+   "status": "-",
+   "not_run": [],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "battery_mass": 0.444,
+     "battery_z": -0.015,
+     "body_servo": "smart servo 12 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.04,
+     "compute_mass": 0.15,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.024,
+     "foot_mu": 0.8,
+     "head_length": 0.13,
+     "head_payload": [
+      [
+       "4K day camera",
+       0.18
+      ],
+      [
+       "NIR night camera",
+       0.12
+      ],
+      [
+       "LWIR",
+       0.09
+      ],
+      [
+       "microphones, IMU, radio",
+       0.06
+      ]
+     ],
+     "head_shell_mass": 0.188,
+     "head_taper": 0.85,
+     "hip_angle_deg": 40.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.02,
+     "knee_angle_deg": 85.0,
+     "leg_cad_mass": 0.1967,
+     "leg_diameter": 0.016,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 6 Nm",
+     "pad_mass": 0.01,
+     "pcb_mass": 0.06,
+     "pcb_z": 0.025,
+     "seg_height": 0.07,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.2592,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.1,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.05
+    }
+   },
+   "results": {}
+  },
+  "cleopatra/body": {
+   "kind": "walker_body",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:15+00:00",
+   "params": {
+    "design": {
+     "battery_mass": 0.444,
+     "battery_z": -0.015,
+     "body_servo": "smart servo 12 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.04,
+     "compute_mass": 0.15,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.024,
+     "foot_mu": 0.8,
+     "head_length": 0.13,
+     "head_payload": [
+      [
+       "4K day camera",
+       0.18
+      ],
+      [
+       "NIR night camera",
+       0.12
+      ],
+      [
+       "LWIR",
+       0.09
+      ],
+      [
+       "microphones, IMU, radio",
+       0.06
+      ]
+     ],
+     "head_shell_mass": 0.188,
+     "head_taper": 0.85,
+     "hip_angle_deg": 40.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.02,
+     "knee_angle_deg": 85.0,
+     "leg_cad_mass": 0.1967,
+     "leg_diameter": 0.016,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 6 Nm",
+     "pad_mass": 0.01,
+     "pcb_mass": 0.06,
+     "pcb_z": 0.025,
+     "seg_height": 0.07,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.2592,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.1,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.05
+    }
+   },
+   "results": {
+    "mass_budget_kg": {
+     "per segment": 1.6459000000000001,
+     "segments": 4.9377,
+     "head": 0.638,
+     "battery": 0.444,
+     "compute": 0.15,
+     "total": 6.169700000000001
+    },
+    "mass_kg": 6.169700000000001,
+    "robot_mass_kg": 6.169699999999995,
+    "servos": 36,
+    "links": 28,
+    "passive_joints": 6,
+    "link_mass_kg": {
+     "head": 0.638,
+     "segment 1": 1.3192,
+     "s1 front-left femur": 0.08741111111111112,
+     "s1 front-left tibia": 0.03176388888888889,
+     "s1 front-right femur": 0.08741111111111112,
+     "s1 front-right tibia": 0.03176388888888889,
+     "s1 rear-left femur": 0.08741111111111112,
+     "s1 rear-left tibia": 0.03176388888888889,
+     "s1 rear-right femur": 0.08741111111111112,
+     "s1 rear-right tibia": 0.03176388888888889,
+     "segment 2": 1.6132,
+     "s2 front-left femur": 0.08741111111111112,
+     "s2 front-left tibia": 0.03176388888888889,
+     "s2 front-right femur": 0.08741111111111112,
+     "s2 front-right tibia": 0.03176388888888889,
+     "s2 rear-left femur": 0.08741111111111112,
+     "s2 rear-left tibia": 0.03176388888888889,
+     "s2 rear-right femur": 0.08741111111111112,
+     "s2 rear-right tibia": 0.03176388888888889,
+     "segment 3": 1.1692,
+     "s3 front-left femur": 0.08741111111111112,
+     "s3 front-left tibia": 0.03176388888888889,
+     "s3 front-right femur": 0.08741111111111112,
+     "s3 front-right tibia": 0.03176388888888889,
+     "s3 rear-left femur": 0.08741111111111112,
+     "s3 rear-left tibia": 0.03176388888888889,
+     "s3 rear-right femur": 0.08741111111111112,
+     "s3 rear-right tibia": 0.03176388888888889
+    }
+   }
+  },
+  "persephone": {
+   "kind": "walker",
+   "status": "-",
+   "not_run": [],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "bend_from": 0,
+     "bend_pitch_deg": 0.0,
+     "bend_yaw_deg": 0.0,
+     "body_c_pitch": 0.2,
+     "body_c_roll": 0.2,
+     "body_c_yaw": 0.2,
+     "body_connection": "spring_damper",
+     "body_k_pitch": 8.0,
+     "body_k_roll": 8.0,
+     "body_k_yaw": 8.0,
+     "body_limit_pitch": 0.7853981633974483,
+     "body_limit_roll": 0.3490658503988659,
+     "body_limit_yaw": 0.7853981633974483,
+     "body_q0_pitch": 0.0,
+     "body_q0_roll": 0.0,
+     "body_q0_yaw": 0.0,
+     "body_roll_axis": true,
+     "case_clearance": 6.0,
+     "case_wall": 3.0,
+     "drum_diameter": 120.0,
+     "femur_length": 36.0,
+     "foot_diameter": 12.0,
+     "guide_diameter": 150.0,
+     "guide_radius": 220.0,
+     "head_length": 80.0,
+     "hip_angle_deg": 20.0,
+     "joint_diameter": 16.0,
+     "joint_gap": 10.0,
+     "joint_pin_diameter": 5.0,
+     "knee_angle_deg": 70.0,
+     "leg_diameter": 9.0,
+     "leg_pair_spacing": 0.5,
+     "leg_sweep_deg": 0.0,
+     "n_segments": 12,
+     "part": "crawler",
+     "pincer_length": 55.0,
+     "pincer_open_deg": 25.0,
+     "pincer_thickness": 6.0,
+     "seg_height": 34.0,
+     "seg_length": 60.0,
+     "seg_width": 44.0,
+     "shell_thickness": 2.5,
+     "tether": true,
+     "tether_diameter": 8.0,
+     "tibia_length": 42.0,
+     "version": 1
+    }
+   },
+   "results": {}
+  },
+  "persephone/body": {
+   "kind": "walker_cad",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:24+00:00",
+   "params": {
+    "design": {
+     "bend_from": 0,
+     "bend_pitch_deg": 0.0,
+     "bend_yaw_deg": 0.0,
+     "body_c_pitch": 0.2,
+     "body_c_roll": 0.2,
+     "body_c_yaw": 0.2,
+     "body_connection": "spring_damper",
+     "body_k_pitch": 8.0,
+     "body_k_roll": 8.0,
+     "body_k_yaw": 8.0,
+     "body_limit_pitch": 0.7853981633974483,
+     "body_limit_roll": 0.3490658503988659,
+     "body_limit_yaw": 0.7853981633974483,
+     "body_q0_pitch": 0.0,
+     "body_q0_roll": 0.0,
+     "body_q0_yaw": 0.0,
+     "body_roll_axis": true,
+     "case_clearance": 6.0,
+     "case_wall": 3.0,
+     "drum_diameter": 120.0,
+     "femur_length": 36.0,
+     "foot_diameter": 12.0,
+     "guide_diameter": 150.0,
+     "guide_radius": 220.0,
+     "head_length": 80.0,
+     "hip_angle_deg": 20.0,
+     "joint_diameter": 16.0,
+     "joint_gap": 10.0,
+     "joint_pin_diameter": 5.0,
+     "knee_angle_deg": 70.0,
+     "leg_diameter": 9.0,
+     "leg_pair_spacing": 0.5,
+     "leg_sweep_deg": 0.0,
+     "n_segments": 12,
+     "part": "crawler",
+     "pincer_length": 55.0,
+     "pincer_open_deg": 25.0,
+     "pincer_thickness": 6.0,
+     "seg_height": 34.0,
+     "seg_length": 60.0,
+     "seg_width": 44.0,
+     "shell_thickness": 2.5,
+     "tether": true,
+     "tether_diameter": 8.0,
+     "tibia_length": 42.0,
+     "version": 1
+    }
+   },
+   "results": {
+    "volume_mm3": 753072.6615109582,
+    "surface_area_mm2": 455748.25286805996,
+    "dimensions_mm": [
+     990.0000001,
+     164.38756073594158,
+     114.77981523273223
+    ],
+    "center_of_mass_mm": [
+     -448.46872536185424,
+     -9.51507370565425e-07,
+     9.14845419975187
+    ]
+   }
+  },
+  "apheloria": {
+   "kind": "walker",
+   "status": "-",
+   "not_run": [],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "battery_mass": 0.0,
+     "battery_z": -0.015,
+     "body_servo": "qdd 60 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.05,
+     "compute_mass": 0.0,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.026,
+     "foot_mu": 0.8,
+     "head_length": 0.15,
+     "head_payload": [
+      [
+       "stereo cameras",
+       0.36
+      ],
+      [
+       "lidar",
+       0.35
+      ],
+      [
+       "illuminators",
+       0.15
+      ],
+      [
+       "computer",
+       0.2
+      ],
+      [
+       "neck actuator",
+       0.65
+      ]
+     ],
+     "head_shell_mass": 0.71,
+     "head_taper": 0.85,
+     "hip_angle_deg": 30.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.018,
+     "knee_angle_deg": 75.0,
+     "leg_cad_mass": 0.267,
+     "leg_diameter": 0.018,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 12 Nm",
+     "n_segments": 8,
+     "pad_mass": 0.015,
+     "pcb_mass": 0.09,
+     "pcb_z": 0.03,
+     "plates": true,
+     "seg_height": 0.11,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.3,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.095,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.08
+    }
+   },
+   "results": {}
+  },
+  "apheloria/body": {
+   "kind": "walker_body",
+   "status": "computed",
+   "not_run": [],
+   "computed_at": "2026-10-03T17:36:24+00:00",
+   "params": {
+    "design": {
+     "battery_mass": 0.0,
+     "battery_z": -0.015,
+     "body_servo": "qdd 60 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.05,
+     "compute_mass": 0.0,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.026,
+     "foot_mu": 0.8,
+     "head_length": 0.15,
+     "head_payload": [
+      [
+       "stereo cameras",
+       0.36
+      ],
+      [
+       "lidar",
+       0.35
+      ],
+      [
+       "illuminators",
+       0.15
+      ],
+      [
+       "computer",
+       0.2
+      ],
+      [
+       "neck actuator",
+       0.65
+      ]
+     ],
+     "head_shell_mass": 0.71,
+     "head_taper": 0.85,
+     "hip_angle_deg": 30.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.018,
+     "knee_angle_deg": 75.0,
+     "leg_cad_mass": 0.267,
+     "leg_diameter": 0.018,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 12 Nm",
+     "n_segments": 8,
+     "pad_mass": 0.015,
+     "pcb_mass": 0.09,
+     "pcb_z": 0.03,
+     "plates": true,
+     "seg_height": 0.11,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.3,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.095,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.08
+    }
+   },
+   "results": {
+    "mass_kg": 33.116000000000014,
+    "robot_mass_kg": 33.116000000000014,
+    "servos": 104,
+    "links": 73,
+    "passive_joints": 0,
+    "link_mass_kg": {
+     "head": 2.42,
+     "segment 1": 3.09,
+     "s1 front-left femur": 0.14365714285714287,
+     "s1 front-left tibia": 0.04309285714285715,
+     "s1 front-right femur": 0.14365714285714287,
+     "s1 front-right tibia": 0.04309285714285715,
+     "s1 rear-left femur": 0.14365714285714287,
+     "s1 rear-left tibia": 0.04309285714285715,
+     "s1 rear-right femur": 0.14365714285714287,
+     "s1 rear-right tibia": 0.04309285714285715,
+     "segment 2": 3.09,
+     "s2 front-left femur": 0.14365714285714287,
+     "s2 front-left tibia": 0.04309285714285715,
+     "s2 front-right femur": 0.14365714285714287,
+     "s2 front-right tibia": 0.04309285714285715,
+     "s2 rear-left femur": 0.14365714285714287,
+     "s2 rear-left tibia": 0.04309285714285715,
+     "s2 rear-right femur": 0.14365714285714287,
+     "s2 rear-right tibia": 0.04309285714285715,
+     "segment 3": 3.09,
+     "s3 front-left femur": 0.14365714285714287,
+     "s3 front-left tibia": 0.04309285714285715,
+     "s3 front-right femur": 0.14365714285714287,
+     "s3 front-right tibia": 0.04309285714285715,
+     "s3 rear-left femur": 0.14365714285714287,
+     "s3 rear-left tibia": 0.04309285714285715,
+     "s3 rear-right femur": 0.14365714285714287,
+     "s3 rear-right tibia": 0.04309285714285715,
+     "segment 4": 3.09,
+     "s4 front-left femur": 0.14365714285714287,
+     "s4 front-left tibia": 0.04309285714285715,
+     "s4 front-right femur": 0.14365714285714287,
+     "s4 front-right tibia": 0.04309285714285715,
+     "s4 rear-left femur": 0.14365714285714287,
+     "s4 rear-left tibia": 0.04309285714285715,
+     "s4 rear-right femur": 0.14365714285714287,
+     "s4 rear-right tibia": 0.04309285714285715,
+     "segment 5": 3.09,
+     "s5 front-left femur": 0.14365714285714287,
+     "s5 front-left tibia": 0.04309285714285715,
+     "s5 front-right femur": 0.14365714285714287,
+     "s5 front-right tibia": 0.04309285714285715,
+     "s5 rear-left femur": 0.14365714285714287,
+     "s5 rear-left tibia": 0.04309285714285715,
+     "s5 rear-right femur": 0.14365714285714287,
+     "s5 rear-right tibia": 0.04309285714285715,
+     "segment 6": 3.09,
+     "s6 front-left femur": 0.14365714285714287,
+     "s6 front-left tibia": 0.04309285714285715,
+     "s6 front-right femur": 0.14365714285714287,
+     "s6 front-right tibia": 0.04309285714285715,
+     "s6 rear-left femur": 0.14365714285714287,
+     "s6 rear-left tibia": 0.04309285714285715,
+     "s6 rear-right femur": 0.14365714285714287,
+     "s6 rear-right tibia": 0.04309285714285715,
+     "segment 7": 3.09,
+     "s7 front-left femur": 0.14365714285714287,
+     "s7 front-left tibia": 0.04309285714285715,
+     "s7 front-right femur": 0.14365714285714287,
+     "s7 front-right tibia": 0.04309285714285715,
+     "s7 rear-left femur": 0.14365714285714287,
+     "s7 rear-left tibia": 0.04309285714285715,
+     "s7 rear-right femur": 0.14365714285714287,
+     "s7 rear-right tibia": 0.04309285714285715,
+     "segment 8": 3.09,
+     "s8 front-left femur": 0.14365714285714287,
+     "s8 front-left tibia": 0.04309285714285715,
+     "s8 front-right femur": 0.14365714285714287,
+     "s8 front-right tibia": 0.04309285714285715,
+     "s8 rear-left femur": 0.14365714285714287,
+     "s8 rear-left tibia": 0.04309285714285715,
+     "s8 rear-right femur": 0.14365714285714287,
+     "s8 rear-right tibia": 0.04309285714285715
+    }
+   }
+  },
+  "apheloria/pack": {
+   "kind": "episode",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_sim=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "battery_mass": 0.0,
+     "battery_z": -0.015,
+     "body_servo": "qdd 60 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.05,
+     "compute_mass": 0.0,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.026,
+     "foot_mu": 0.8,
+     "head_length": 0.15,
+     "head_payload": [
+      [
+       "stereo cameras",
+       0.36
+      ],
+      [
+       "lidar",
+       0.35
+      ],
+      [
+       "illuminators",
+       0.15
+      ],
+      [
+       "computer",
+       0.2
+      ],
+      [
+       "neck actuator",
+       0.65
+      ]
+     ],
+     "head_shell_mass": 0.71,
+     "head_taper": 0.85,
+     "hip_angle_deg": 30.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.018,
+     "knee_angle_deg": 75.0,
+     "leg_cad_mass": 0.267,
+     "leg_diameter": 0.018,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 12 Nm",
+     "n_segments": 8,
+     "pad_mass": 0.015,
+     "pcb_mass": 0.09,
+     "pcb_z": 0.03,
+     "plates": true,
+     "seg_height": 0.11,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.3,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.095,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.08
+    },
+    "scene": "pack"
+   },
+   "results": {}
+  },
+  "apheloria/unpack": {
+   "kind": "episode",
+   "status": "NOT RUN",
+   "not_run": [
+    "run_sim=False"
+   ],
+   "computed_at": null,
+   "params": {
+    "design": {
+     "battery_mass": 0.0,
+     "battery_z": -0.015,
+     "body_servo": "qdd 60 Nm",
+     "body_servo_x": 0.05,
+     "body_servos_per_segment": 2,
+     "camera_x": 0.05,
+     "compute_mass": 0.0,
+     "compute_z": 0.01,
+     "femur": 0.08,
+     "foot_diameter": 0.026,
+     "foot_mu": 0.8,
+     "head_length": 0.15,
+     "head_payload": [
+      [
+       "stereo cameras",
+       0.36
+      ],
+      [
+       "lidar",
+       0.35
+      ],
+      [
+       "illuminators",
+       0.15
+      ],
+      [
+       "computer",
+       0.2
+      ],
+      [
+       "neck actuator",
+       0.65
+      ]
+     ],
+     "head_shell_mass": 0.71,
+     "head_taper": 0.85,
+     "hip_angle_deg": 30.0,
+     "hip_y_offset": 0.006,
+     "joint_gap": 0.018,
+     "knee_angle_deg": 75.0,
+     "leg_cad_mass": 0.267,
+     "leg_diameter": 0.018,
+     "leg_pair_spacing": 0.5,
+     "leg_servo": "smart servo 12 Nm",
+     "n_segments": 8,
+     "pad_mass": 0.015,
+     "pcb_mass": 0.09,
+     "pcb_z": 0.03,
+     "plates": true,
+     "seg_height": 0.11,
+     "seg_length": 0.15,
+     "seg_width": 0.11,
+     "shell_mass": 0.3,
+     "shell_mu": 0.5,
+     "shell_thickness": 0.003,
+     "tibia": 0.095,
+     "tibia_diameter_ratio": 0.8,
+     "wiring_mass": 0.08
+    },
+    "scene": "unpack"
+   },
+   "results": {}
+  }
+ }
+}

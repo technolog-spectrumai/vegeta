@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 from vegeta import aeromant, talos
 
-from .. import DATA, RUNS, vida
+from .. import DATA, RUNS, vida, results
 from .._cli import main, parser
 from .._cli_util import parse_assignments
 from ..components import merlin as mdesign, merlin_flight as mf, merlin_race as mr, wing
@@ -216,6 +216,8 @@ def run(*, fidelity: str = "full", merlin: dict | None = None, propulsors_vida: 
         root.not_run("Cd0 corrections from CFD: none (the drag build-up is the polar)")
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     path = Path(export_path or mf.DESIGN_JSON)
     solved = bool(wf.results.get("complete") or pc.results.get("polar"))
     if export and path.is_file() and not solved:

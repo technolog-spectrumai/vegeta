@@ -51,4 +51,6 @@ def main(run: Callable, ap: argparse.ArgumentParser, default_vida: Path, argv=No
     print(f"saved {root.meta.get('saved_to')}  ({time.monotonic() - t0:.0f} s)")
     if root.meta.get("exported_to"):
         print(f"exported {root.meta['exported_to']}")
+    if root.meta.get("results_to"):
+        print(f"results {root.meta['results_to']}  (assemblies.results.load)")
     return 0

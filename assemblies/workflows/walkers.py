@@ -23,7 +23,7 @@ from __future__ import annotations
 import dataclasses
 from pathlib import Path
 
-from .. import DATA, vida
+from .. import DATA, vida, results
 from .._cli import main, parser
 from ..components import apheloria_pack as ap_scene, apheloria_robot as ar, leg, myropod, myropod_robot as mr
 from ..components import robot_dog_robot as rdr
@@ -90,7 +90,7 @@ def dog_gaits(node: Assembly, mass_kg: float) -> Assembly:
 
 
 def run(*, machines=MACHINES, run_sim: bool = True, vida_path: Path | None = None, include: str = "results", force: bool = False,
-        redo=(), progress: bool = True, **_ignored) -> Assembly:
+        redo=(), progress: bool = True, export: bool = True, **_ignored) -> Assembly:
     vida_path = Path(vida_path or DATA / f"{NAME}.vida")
     prior = vida.load(vida_path) if vida_path.is_file() and not force else None
     root = build(machines)
@@ -117,6 +117,8 @@ def run(*, machines=MACHINES, run_sim: bool = True, vida_path: Path | None = Non
     root.record(masses_kg={m: root.child(f"{m}/body").results["mass_kg"] for m in machines if m != "persephone"})
     root.meta["workflow"] = f"assemblies.workflows.{NAME}"
     root.meta["saved_to"] = str(root.save(vida_path, include=include))
+    if export:                                                    # plain data for notebooks (assemblies.results)
+        root.meta["results_to"] = str(results.write(root, vida_path))
     return root
 
 

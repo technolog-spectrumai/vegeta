@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 import stubs
 
+from assemblies import results
+
 pytest.importorskip("cadquery")
 
 from assemblies.workflows import (aguya, boat, fixed_wing, merlin, microjet, onager, quadcopter, rover,  # noqa: E402
@@ -27,6 +29,8 @@ def solved_twice(run, solvers, **kw):
     run asks no solver and reuses every leaf of its own (grafted trees keep their saved status)."""
     first = run(**kw)
     assert not_run(first) == []
+    if kw.get("export", True):                            # the plain data for notebooks, next to the .vida
+        assert results.load(results.path_for(kw["vida_path"])).status().loc[first.name, "kind"] == first.kind
     stubs.check_calls(solvers, progress=kw.get("progress"))
     asked = (len(solvers.fea), len(solvers.cfd), len(solvers.sim))
     again = run(**kw)
