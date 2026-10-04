@@ -186,7 +186,8 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   drawbar pull/weight vs. slip per soil, max grade × soil, speed × grade → power and efficiency, cost of transport,
   obstacle height and trench width, go/no-go heat maps (terrain × drive type), radar summary (matplotlib `contourf` /
   `imshow`); `31_drive_comparison`
-- [ ] 5j.7 MuJoCo missions (Chiron): the track as a multi-roller approximation (6–8 road-wheel cylinders per side,
+- [ ] 5j.7 Terrain race, its own notebook `32_terrain_race` (MuJoCo/Chiron), not part of `30_scarab`/`31_drive_comparison`;
+  shared code in `designs/terrain_race.py` (course, hooks, runner, tables): the track as a multi-roller approximation (6–8 road-wheel cylinders per side,
   `role="foot"`, plus sprocket and idler, one velocity command per side, capsule pads between rollers to keep contact over
   steps, internal loss as `frictionloss`; a closed chain of pad links needs a `Connect` equality in `chiron/robot.py`,
   deferred); soft soil as a `TerramechanicsHook` via `ChironLab.add_hook` (Bekker sinkage resistance and a slip-limited
@@ -201,11 +202,12 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
     spring/stop limits; inside each, a walking-beam bogie on its own hinge carrying 4 mid-rollers, plus 2 end idlers, all
     `role="foot"` and driven at the drive wheel's belt speed)
   Mission via `PhasedMission`: cross the course → pick an object with the arms → put it in the basket → return;
-  `scenarios/scarab_mission.py` → `scenarios/output/*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
-  tilt, sinkage, stall; `benchmark/scarab/` with `run_trials` over terrain × drive × seed, report and success-rate heat
+  `scenarios/terrain_race.py` → `scenarios/output/terrain_race_*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
+  tilt, sinkage, stall; `benchmark/terrain_race/` with `run_trials` over terrain × drive × seed, report and success-rate heat
   maps from `stats.cell_rates`
 - [ ] 5j.8 Tests + docs: `components/scarab*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_scarab*.py`
-  (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive, slow mission); `terramechanics` against
+  (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive) and
+  `test_terrain_race.py` (course zones, hook forces, slow race); `terramechanics` against
   published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
 
 ## Stage 6 — Consistent interfaces
