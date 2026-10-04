@@ -9,7 +9,7 @@ The rule is deliberately simple: **if the entry exists it is loaded and nothing 
 and, when it succeeds, is saved.** Nothing checks whether the inputs or the code changed since: when they do, delete
 the entry (``cache.clear("frame_thrust")``, or the file) or the whole folder (``cache.clear()``) and run again.
 
-An entry is ``<folder>/<name>.json`` (the ``Result``: metrics, messages, the commands run) and ``<folder>/<name>/``
+An entry is ``<folder>/<name>.json`` (the ``Result``: metrics, messages, the commands run) and ``<folder>/<name>.files/``
 (copies of the files later cells read: the FEA ``.frd``/``.dat``/mesh, the CFD force and residual logs). A loaded
 ``Result`` points its artifacts at those copies, so ``talos.read_frd``, the plots and the fatigue assessment work
 from the cache alone; artifacts that are not copied (an Aeromant case directory) keep their original path. Failed
@@ -114,8 +114,9 @@ def path(name: str) -> Path:
 
 
 def files_dir(name: str) -> Path:
-    """``<folder>/<name>/``: the copied files of an entry."""
-    return path(name).with_suffix("")
+    """``<folder>/<name>.files/``: the copied files of an entry (apart from ``<name>/``, which groups entries)."""
+    p = path(name)
+    return p.with_name(p.stem + ".files")
 
 
 def exists(name: str) -> bool:
@@ -125,16 +126,26 @@ def exists(name: str) -> bool:
 def entries() -> list[str]:
     """The names of the entries in the folder."""
     d = directory()
-    return sorted(str(p.relative_to(d).with_suffix("")) for p in d.rglob("*.json")) if d.is_dir() else []
+    if not d.is_dir():
+        return []
+    return sorted(str(p.relative_to(d).with_suffix("")) for p in d.rglob("*.json")
+                  if not any(q.suffix == ".files" for q in p.relative_to(d).parents))
 
 
 def clear(name: str | None = None) -> list[str]:
-    """Delete one entry (its ``.json`` and its files) or, without ``name``, the whole folder; returns what went."""
+    """Delete one entry (its ``.json`` and its files) or, without ``name``, every entry in the folder (only what the
+    cache wrote; folders left empty go too); returns what went."""
     if name is None:
         d = directory()
-        gone = entries()
+        if d.name != FALLBACK and d.suffix != SUFFIX:
+            raise ValueError(f"cache folder {d} does not end in {SUFFIX}: clear the entries by name")
+        gone = [n for n in entries() if clear(n)]
         if d.is_dir():
-            shutil.rmtree(d)
+            for sub in sorted((q for q in d.rglob("*") if q.is_dir()), key=lambda q: len(q.parts), reverse=True):
+                if not any(sub.iterdir()):
+                    sub.rmdir()
+            if not any(d.iterdir()):
+                d.rmdir()
         return gone
     p, f = path(name), files_dir(name)
     gone = [name] if p.is_file() else []
@@ -144,10 +155,11 @@ def clear(name: str | None = None) -> list[str]:
     return gone
 
 
-def load(name: str, result_type, record_type, *, restore_to: str | Path | None = None, label: str = "vegeta"):
+def load(name: str, result_type, record_type, *, restore_to: str | Path | None = None, label: str = "vegeta",
+         kinds: tuple | None = None):
     """The entry as a ``result_type`` (its artifacts pointing at the copied files), or None when there is none.
     ``restore_to``: also copy the files there (e.g. a mesh into the directory the next solve uses) and point the
-    artifacts at those copies."""
+    artifacts at those copies. ``kinds``: the result kinds the caller can use (a mesh entry is not a solve)."""
     if not enabled():
         return None
     p = path(name)
@@ -157,11 +169,17 @@ def load(name: str, result_type, record_type, *, restore_to: str | Path | None =
         d = json.loads(p.read_text())
     except (OSError, ValueError) as exc:
         raise ValueError(f"cache entry {p} cannot be read ({exc}); delete it to run again") from None
+    if kinds is not None and d.get("kind") not in kinds:
+        raise ValueError(f"cache entry {p} holds a {d.get('kind')!r} result, not {' or '.join(kinds)}: "
+                         "use another name, or delete it")
     base = p.parent
     cached = set(d.get("metadata", {}).get("cached_artifacts", []))
     arts = {}
     for k, v in d.get("artifacts", {}).items():
         arts[k] = (base / v) if k in cached else Path(v)
+    missing = sorted(k for k in cached if not arts[k].is_file())
+    if missing:
+        raise ValueError(f"cache entry {p}: its copied files are missing ({missing}); delete it to run again")
     if restore_to is not None:
         restore_to = Path(restore_to)
         restore_to.mkdir(parents=True, exist_ok=True)
@@ -171,10 +189,14 @@ def load(name: str, result_type, record_type, *, restore_to: str | Path | None =
                 dst = restore_to / src.name
                 shutil.copy2(src, dst)
                 arts[k] = dst
-    res = result_type(kind=d["kind"], status=d.get("status", "success"), metrics=dict(d.get("metrics", {})),
-                      artifacts=arts, messages=list(d.get("messages", [])), duration_s=d.get("duration_s", 0.0),
-                      execution=[record_type(**c) for c in d.get("execution", [])], metadata=dict(d.get("metadata", {})))
+    try:
+        res = result_type(kind=d["kind"], status=d.get("status", "success"), metrics=dict(d.get("metrics", {})),
+                          artifacts=arts, messages=list(d.get("messages", [])), duration_s=d.get("duration_s", 0.0),
+                          execution=[record_type(**c) for c in d.get("execution", [])], metadata=dict(d.get("metadata", {})))
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        raise ValueError(f"cache entry {p} cannot be read ({exc}); delete it to run again") from None
     res.metadata["cached"] = str(p)
+    res.metadata["reused"] = True
     if verbose:
         print(f"{label}: {name!r} loaded from {p} (delete it to run again)")
     return res
@@ -211,12 +233,13 @@ def save(name: str, result, keep: Iterable[str] | Callable[[str, Path], bool] | 
     return p
 
 
-def cached(name: str | None, compute: Callable, result_type, record_type, *, keep=None, restore_to=None, label: str = "vegeta"):
+def cached(name: str | None, compute: Callable, result_type, record_type, *, keep=None, restore_to=None, label: str = "vegeta",
+           kinds: tuple | None = None):
     """``compute()`` once: the entry ``name`` when it exists, else ``compute()`` saved when it succeeds. ``name`` None
     or the cache disabled: just ``compute()``."""
     if name is None or not enabled():
         return compute()
-    hit = load(name, result_type, record_type, restore_to=restore_to, label=label)
+    hit = load(name, result_type, record_type, restore_to=restore_to, label=label, kinds=kinds)
     if hit is not None:
         return hit
     res = compute()
@@ -225,15 +248,23 @@ def cached(name: str | None, compute: Callable, result_type, record_type, *, kee
     return res
 
 
+def safe_name(text: str) -> str:
+    """``text`` as an entry name: characters outside letters, digits, ``_ . + -`` and ``/`` become ``_``."""
+    out = re.sub(r"[^A-Za-z0-9_.+\-/]", "_", str(text)).strip("/") or "entry"
+    return "/".join("_" if part in (".", "..") else part for part in out.split("/"))
+
+
 def entry_names(cache, defaults: list, what: str = "item") -> list:
-    """One entry name (or None) per item of a batch: ``cache`` None/False -> all None; True -> ``defaults``; else the
-    sequence given (one per item; names must not repeat)."""
+    """One entry name (or None) per item of a batch: ``cache`` None/False -> all None; True -> ``defaults`` made safe
+    (``safe_name``); else the sequence given. Every name is checked before anything runs; names must not repeat."""
     if cache is None or cache is False:
         return [None] * len(defaults)
-    names = list(defaults) if cache is True else list(cache)
+    names = [safe_name(n) for n in defaults] if cache is True else list(cache)
     if len(names) != len(defaults):
         raise ValueError(f"cache: one entry name (or None) per {what}")
     given = [n for n in names if n is not None]
+    for n in given:
+        path(n)                                                  # a bad name fails here, before any solve
     if len(set(given)) != len(given):
         raise ValueError(f"cache: two {what}s share an entry name ({sorted({n for n in given if given.count(n) > 1})})")
     return names

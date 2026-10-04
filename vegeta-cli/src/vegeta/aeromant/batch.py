@@ -19,7 +19,7 @@ def run_cases(cases: Sequence[CFDCase], *, jobs: int = 1, processors: int = 1, r
     the list, never an exception, and does not stop the others. Interrupted: call again with the same cases, the
     solved ones are read back and the rest run. ``run=False``: nothing runs, unsolved cases are NOT RUN results.
     ``progress=True`` shows a bar over the cases (the solvers' own progress is off when ``jobs > 1``).
-    ``cache`` (``vegeta.cache``): None (off), True (each case's workdir name is its entry) or one entry name (or None)
+    ``cache`` (``vegeta.cache``): None (off), True (``<parent>/<workdir>`` names each case's entry) or one entry name (or None)
     per case. A case whose entry exists is loaded and not run; a finished one is saved as its entry.
     """
     if jobs < 1:
@@ -27,7 +27,7 @@ def run_cases(cases: Sequence[CFDCase], *, jobs: int = 1, processors: int = 1, r
     workdirs = [c.workdir.resolve() for c in cases]
     if len(set(workdirs)) != len(workdirs):
         raise ValueError("two cases share a workdir; give each case its own directory")
-    names = _cache.entry_names(cache, [c.workdir.name for c in cases], "case")
+    names = _cache.entry_names(cache, [f"{c.workdir.parent.name}/{c.workdir.name}" for c in cases], "case")
     results: list[Result | None] = [None] * len(cases)
     todo = []
     for i, case in enumerate(cases):

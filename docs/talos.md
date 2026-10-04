@@ -143,13 +143,13 @@ cache.notebook("08_quadcopter")                               # entries in ./08_
 base.mesh(RUNS / "mesh", cache="frame_mesh")                 # an existing entry's mesh is copied into the workdir
 r = model.solve(case_dir("thrust"), cache="frame_thrust")
 modes = base.solve_modes(case_dir("modal"), n_modes=8, cache="frame_modes")
-rs = talos.solve_models(models, dirs, cache=True)            # each model's name is its entry
+rs = talos.solve_models(models, dirs, cache=True)            # entries named <parent>/<workdir>
 ```
 The entry exists: it is loaded and nothing runs. It does not: the model is solved and, when it succeeds, saved as
-`<name>.json` (the `Result`) plus `<name>/` with copies of the `.frd`, `.dat`, mesh and logs; the loaded result's
+`<name>.json` (the `Result`) plus `<name>.files/` with copies of the `.frd`, `.dat`, mesh and logs; the loaded result's
 artifacts point at those copies, so `read_frd`, the plots and `assess_fatigue` work from the cache alone. **Nothing
 checks whether the model or the code changed: delete the entry (`cache.clear("frame_thrust")`) or the folder
-(`cache.clear()`) when they do.** Failed results are not saved. `VEGETA_CACHE=off` (or `cache.disable()`) runs
+(`cache.clear()`: only the entries it wrote) when they do.** A name used for a mesh cannot be read back as a solve. Failed results are not saved. `VEGETA_CACHE=off` (or `cache.disable()`) runs
 everything. Without `cache.notebook(...)` the notebook is detected in Jupyter / VS Code, else `./vegeta.cache` is used.
 The caches are gitignored (`*.cache/`).
 

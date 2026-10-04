@@ -10,5 +10,5 @@ The entry exists -> it is loaded and nothing runs; it does not -> the simulation
 saved. Nothing checks whether the inputs or the code changed: delete the entry when they do. The implementation is
 ``vegeta.talos.cache`` (Aeromant has an identical copy; the settings are shared through the process environment).
 """
-from vegeta.talos.cache import (clear, directory, disable, enable, enabled, entries, exists, files_dir, notebook,  # noqa: F401
-                                path)
+from vegeta.talos.cache import (clear, directory, disable, enable, enabled, entries, entry_names, exists, files_dir,  # noqa: F401
+                                notebook, path, safe_name)

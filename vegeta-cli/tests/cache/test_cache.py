@@ -111,12 +111,12 @@ def test_solve_once_then_loaded_with_its_files(tmp_path, fake_talos, folder):
     r1 = m.solve(tmp_path / "runs" / "thrust", cache="frame_thrust")
     assert fake_talos["solve"] == 1 and "cached" not in r1.metadata
     entry = folder / "frame_thrust.json"
-    assert entry.is_file() and (folder / "frame_thrust" / "model.frd").is_file()
-    assert not (folder / "frame_thrust" / "case.inp").exists()                 # only the files later cells read
+    assert entry.is_file() and (folder / "frame_thrust.files" / "model.frd").is_file()
+    assert not (folder / "frame_thrust.files" / "case.inp").exists()                 # only the files later cells read
     r2 = m.solve(tmp_path / "runs" / "thrust", cache="frame_thrust")
     assert fake_talos["solve"] == 1 and r2.metadata["cached"] == str(entry)
     assert r2.metrics == r1.metrics and r2.ok
-    assert r2.artifacts["frd"] == folder / "frame_thrust" / "model.frd" and r2.artifacts["frd"].read_text() == "frd of thrust"
+    assert r2.artifacts["frd"] == folder / "frame_thrust.files" / "model.frd" and r2.artifacts["frd"].read_text() == "frd of thrust"
     assert r2.artifacts["inp"] == (tmp_path / "runs" / "thrust" / "case.inp").resolve()   # not copied: original path
 
 
@@ -124,7 +124,7 @@ def test_no_input_check_delete_to_run_again(tmp_path, fake_talos, folder):
     _model(tmp_path, fz=-100.0).solve(tmp_path / "w", cache="beam")
     changed = _model(tmp_path, fz=-999.0).solve(tmp_path / "w", cache="beam")        # the user's call: still loaded
     assert fake_talos["solve"] == 1 and changed.metrics["load"] == -100.0
-    assert cache.clear("beam") == ["beam"] and not (folder / "beam").exists()
+    assert cache.clear("beam") == ["beam"] and not (folder / "beam.files").exists()
     again = _model(tmp_path, fz=-999.0).solve(tmp_path / "w", cache="beam")
     assert fake_talos["solve"] == 2 and again.metrics["load"] == -999.0
 
@@ -181,8 +181,9 @@ def test_solve_models_batch(tmp_path, fake_talos, folder):
     r1 = talos.solve_models(models, dirs, cache=True)
     r2 = talos.solve_models(models, dirs, cache=True)
     assert [r.ok for r in r1] == [True, True] and fake_talos["solve"] == 2
-    assert all(r.metadata.get("cached") for r in r2) and sorted(cache.entries()) == ["a", "b"]
-    talos.solve_models(models, dirs, cache=["a", None])                    # b without the cache: solved again
+    assert all(r.metadata.get("cached") for r in r2)
+    assert sorted(cache.entries()) == [f"{tmp_path.name}/a", f"{tmp_path.name}/b"]      # <parent>/<workdir>
+    talos.solve_models(models, dirs, cache=[f"{tmp_path.name}/a", None])     # b without the cache: solved again
     assert fake_talos["solve"] == 3
     with pytest.raises(ValueError, match="share"):
         talos.solve_models(models, dirs, cache=["x", "x"])
@@ -223,7 +224,7 @@ def test_cfd_run_once_then_loaded(tmp_path, fake_cfd, folder):
     c.run(cache="canopy_15ms")
     r = c.run(cache="canopy_15ms")
     assert fake_cfd == ["c"] and r.metrics["Cd"] == 0.42 and r.metadata["cached"]
-    assert r.artifacts["force_coefficients"] == folder / "canopy_15ms" / "coefficient.dat"
+    assert r.artifacts["force_coefficients"] == folder / "canopy_15ms.files" / "coefficient.dat"
     assert r.artifacts["case"] == (tmp_path / "c").resolve()                  # the case directory is not copied
     with pytest.raises(ValueError, match="whole run"):
         c.run(["blockMesh"], cache="canopy_15ms")
@@ -234,4 +235,45 @@ def test_run_cases_batch(tmp_path, fake_cfd, folder):
     aeromant.run_cases(cases, cache=True)
     out = aeromant.run_cases(cases, cache=True)
     assert sorted(fake_cfd) == ["c1", "c2"] and all(r.metadata.get("cached") for r in out)
-    assert sorted(cache.entries()) == ["c1", "c2"]
+    assert sorted(cache.entries()) == [f"{tmp_path.name}/c1", f"{tmp_path.name}/c2"]
+
+
+# ------------------------------------------------------------------------------------------------ what can go wrong
+def test_clear_deletes_only_entries_and_refuses_other_folders(tmp_path, fake_talos, folder, monkeypatch):
+    m = _model(tmp_path)
+    m.mesh(tmp_path / "w", cache="frame")
+    m.solve(tmp_path / "w", cache="frame/thrust")                             # grouped under frame/
+    assert sorted(cache.entries()) == ["frame", "frame/thrust"]               # copied files are not entries
+    (folder / "notes.txt").write_text("mine")
+    assert sorted(cache.clear()) == ["frame", "frame/thrust"]
+    assert (folder / "notes.txt").read_text() == "mine" and sorted(p.name for p in folder.iterdir()) == ["notes.txt"]
+    (tmp_path / "08.ipynb").write_text("{}")
+    monkeypatch.setenv("VEGETA_CACHE_DIR", str(tmp_path))
+    with pytest.raises(ValueError, match="does not end in .cache"):
+        cache.clear()
+    assert (tmp_path / "08.ipynb").is_file()
+
+
+def test_an_entry_of_another_kind_is_refused(tmp_path, fake_talos, folder):
+    m = _model(tmp_path)
+    m.mesh(tmp_path / "w", cache="frame")
+    with pytest.raises(ValueError, match="talos.mesh"):
+        m.solve(tmp_path / "w", cache="frame")
+
+
+def test_missing_copied_files_say_delete_it(tmp_path, fake_talos, folder):
+    import shutil
+    m = _model(tmp_path)
+    m.solve(tmp_path / "w", cache="beam")
+    shutil.rmtree(folder / "beam.files")
+    with pytest.raises(ValueError, match="copied files are missing"):
+        m.solve(tmp_path / "w", cache="beam")
+
+
+def test_a_hit_says_reused_and_batch_names_are_made_safe(tmp_path, fake_talos, folder):
+    m = _model(tmp_path)
+    m.solve(tmp_path / "w", cache="beam")
+    assert m.solve(tmp_path / "w", cache="beam").metadata["reused"] is True
+    assert cache.entry_names(True, ["runs/Frame arm", "runs/a:b"]) == ["runs/Frame_arm", "runs/a_b"]
+    with pytest.raises(ValueError):
+        cache.entry_names(["ok", "../x"], [0, 1])                             # checked before anything runs

@@ -250,7 +250,7 @@ class CFDCase:
             raise ValueError("cache applies to a whole run: give either steps or cache")
         return _cache.cached(cache, lambda: self._run(steps, progress=progress, cancel=cancel, timeout=timeout,
                                                       processors=processors),
-                             Result, CommandRecord, label="aeromant")
+                             Result, CommandRecord, label="aeromant", kinds=("aeromant.run", "aeromant.results"))
 
     def _run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
              timeout: float | None = None, processors: int = 1) -> Result:
@@ -379,7 +379,7 @@ class CFDCase:
         """
         return _cache.cached(cache, lambda: self._ensure(run=run, processors=processors, progress=progress, cancel=cancel,
                                                          timeout=timeout),
-                             Result, CommandRecord, label="aeromant")
+                             Result, CommandRecord, label="aeromant", kinds=("aeromant.run", "aeromant.results"))
 
     def _ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
                 timeout: float | None = None) -> Result:

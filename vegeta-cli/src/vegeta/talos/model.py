@@ -132,7 +132,7 @@ class StructuralModel:
         ``cache``: an entry name in the notebook's cache (``vegeta.cache``). When the entry exists its mesh is copied
         into ``workdir`` and nothing is meshed; else the mesh made here is saved as that entry."""
         return _cache.cached(cache, lambda: self._mesh(workdir, progress), Result, CommandRecord, keep=MESH_KEEP,
-                             restore_to=workdir, label="talos")
+                             restore_to=workdir, label="talos", kinds=("talos.mesh",))
 
     def _mesh(self, workdir: str | Path, progress=False) -> Result:
         t0 = time.monotonic()
@@ -178,7 +178,7 @@ class StructuralModel:
         Nothing checks whether the model changed: delete the entry when it does."""
         return _cache.cached(cache, lambda: self._solve(workdir, executable=executable, threads=threads, timeout=timeout,
                                                         progress=progress, cancel=cancel),
-                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.solve",))
 
     def _solve(self, workdir: str | Path, *, executable: str = "ccx", threads: int = 1,
                timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
@@ -287,7 +287,7 @@ class StructuralModel:
         (an existing entry is returned before anything else is looked at)."""
         return _cache.cached(cache, lambda: self._ensure(workdir, run=run, executable=executable, threads=threads,
                                                          timeout=timeout, progress=progress, cancel=cancel),
-                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.solve",))
 
     def _ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
                 timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
@@ -315,7 +315,7 @@ class StructuralModel:
         ``cache``: as in ``solve`` (an existing entry is loaded, nothing runs; else the modes are saved there)."""
         return _cache.cached(cache, lambda: self._solve_modes(workdir, n_modes, executable=executable, threads=threads,
                                                               timeout=timeout, progress=progress, cancel=cancel),
-                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos")
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.modes",))
 
     def _solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
                      timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:

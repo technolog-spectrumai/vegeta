@@ -21,12 +21,12 @@ def solve_models(models: Sequence[StructuralModel], workdirs: Sequence[str | Pat
     a failed result, never an exception. Interrupted: call again, the solved ones are read back. ``run=False``:
     nothing runs, unsolved models are NOT RUN results.
 
-    ``cache`` (``vegeta.cache``): None (off), True (each model's ``name`` is its entry) or one entry name (or None)
+    ``cache`` (``vegeta.cache``): None (off), True (``<parent>/<workdir>`` names each model's entry) or one entry name (or None)
     per model. A model whose entry exists is loaded and not solved; a solved one is saved as its entry.
     """
     if len(models) != len(workdirs):
         raise ValueError("one workdir per model")
-    names = _cache.entry_names(cache, [m.name for m in models], "model")
+    names = _cache.entry_names(cache, [f"{w.parent.name}/{w.name}" for w in workdirs], "model")
     workdirs = [Path(w) for w in workdirs]
     if len({w.resolve() for w in workdirs}) != len(workdirs):
         raise ValueError("two models share a workdir; give each model its own directory")
