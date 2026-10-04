@@ -133,6 +133,75 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5i.7 Turbine creep life (Larson-Miller) from the hot-wheel FEA; an annular combustor model; spool-up dynamics
 - [ ] 5i.8 AGUYA's mission movie with the smoke (reuse `merlin_flight.render_movie`); the race in wind and at altitude
 
+## Stage 5j — Tracked rover "Scarab" (branch `dev_track`)
+A caterpillar-drive rover in the class of the rover and the Onager (~25 kg, ~5 kg payload), planned in the same way: base
+rover → two arms → basket, then the gears and track, a drive-type comparison with performance maps, and Chiron missions
+of wheels (passive and active suspension, like the Onager) against tracks, half-tracks and triangular tracks. Nothing to
+reuse for tracks, gearboxes or soil: no sprocket, gear or Bekker/terramechanics model exists yet, Chiron contacts are
+rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" and "Half-track"; The Western Producer,
+"Triangular tracks for STX and Magnum" (both blocked by the network proxy here, so fetch them before 5j.3/5j.6).
+- [ ] 5j.1 Stage 1, base tracked rover: `designs/scarab.py` `Scarab(Design)` + `components/scarab.py` (`part` =
+  rover/hull/track_module/sprocket/idler/road_wheel/track_link; rear drive sprocket, front idler with tensioner, road
+  wheels on bogies, return rollers; static `contact_length`, `track_gauge`, `overall`), `designs/scarab_robot.py` in the
+  `onager_robot.py` pattern (`DESIGN`, `CAD`, `MATERIALS`, `PARTS_KG`, `ASSUMPTIONS`, `geometry`, `mass_budget`, battery
+  placed for CG over the contact patch) and `30_scarab` §1–§3: mass budget and CG, nominal ground pressure W/(2bL) and
+  mean maximum pressure (Rowland MMP), steering ratio L/B ≤ 1.8, resistance (rolling, internal track loss, grade, drag),
+  tractive effort against μW and soil shear (Bekker–Wong), top speed per grade, acceleration, range and endurance, static
+  stability (longitudinal/lateral tip-over, side slope, step climb, trench crossing)
+- [ ] 5j.2 Gears and drive train: motor → gearbox (planetary, or spur + planetary) → sprocket; ratio from the hill-climb
+  torque against top speed; gear sizing (module, tooth counts, Lewis bending, AGMA contact stress by hand, Talos FEA on a
+  tooth); efficiency chain; gearbox life from Chronos rainflow on the mission torque; sprocket–link mesh (pitch, tooth
+  count, chordal speed variation); motor and gearbox entries in `actuators.py`
+- [ ] 5j.3 Track: rubber band vs. linked pads, live vs. dead track; pre-tension, sag and the tension against throwing a
+  track; road-wheel load distribution and pressure peaks; suspension options (rigid, bogie, torsion bar, Christie,
+  Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
+  regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
+- [ ] 5j.4 Stage 2, two arms: `ScarabManus(Scarab)` in the Manus pattern (parent parameters via `replace`, Manus arm
+  geometry), `scarab_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
+  `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
+  pressure redistribution, actuator checks; `30b_scarab_manus`
+- [ ] 5j.5 Stage 3, basket: `ScarabCarrier(ScarabManus)` with `_basket` from the Sweeper (`basket_*` parameters); payload
+  against stability (load chart as for the Atlas), ground pressure loaded vs. empty, drive train re-checked on the loaded
+  grade, pick → place-in-basket reach check; `30c_scarab_carrier`
+- [ ] 5j.6 Drive-type comparison and performance maps: `designs/terramechanics.py` (Bekker–Wong soil table: dry sand,
+  loose sand, clay, snow, mud, grass, gravel, asphalt with k_c, k_φ, n, c, φ, K; wheel sinkage, compaction resistance,
+  drawbar pull–slip; track with uniform and MMP pressure; rigid-surface μ and C_rr; step, trench and slope criteria).
+  Drive types at equal mass and payload:
+  - 4-wheel skid steer; 6-wheel rocker-bogie; 4 wheels on active legs (Onager)
+  - full tracks (Scarab)
+  - half-track: steered front wheels + rear track units (`ScarabHalftrack(Scarab)`: Ackermann front axle, short rear
+    track); front/rear load split, wheel steering vs. track braking, road speed and efficiency against soft-soil
+    traction, the front-wheel sinkage penalty
+  - triangular (delta) tracks: four track units with an elevated drive sprocket, front/rear idlers and bogie mid-rollers
+    in place of the wheels (`ScarabQuadtrac(Scarab)`, as the Quadtrac and the STX/Magnum conversion kits); the sprocket
+    clear of mud and rocks, oscillating units on uneven ground, footprint against a wheel, added mass and height,
+    articulated vs. skid steering
+  - legged (robot dog) for reference, optional
+  `designs/mobility_maps.py` in the `propulsor_maps.py` library pattern (`build`, `save`, `load`, JSON in `data/`):
+  drawbar pull/weight vs. slip per soil, max grade × soil, speed × grade → power and efficiency, cost of transport,
+  obstacle height and trench width, go/no-go heat maps (terrain × drive type), radar summary (matplotlib `contourf` /
+  `imshow`); `31_drive_comparison`
+- [ ] 5j.7 MuJoCo missions (Chiron): the track as a multi-roller approximation (6–8 road-wheel cylinders per side,
+  `role="foot"`, plus sprocket and idler, one velocity command per side, capsule pads between rollers to keep contact over
+  steps, internal loss as `frictionloss`; a closed chain of pad links needs a `Connect` equality in `chiron/robot.py`,
+  deferred); soft soil as a `TerramechanicsHook` via `ChironLab.add_hook` (Bekker sinkage resistance and a slip-limited
+  thrust cap per contact foot, by terrain zone); one course from `ch.Custom` zones (rocks and steps, 20–30° slope, loose
+  sand, mud, side slope). Robots on the same course:
+  - (a) wheels, passive suspension (`rover` geometry, a new `rover_robot.py`)
+  - (b) wheels, active suspension (Onager Sentinel: `onager_robot` + `Drive`)
+  - (c) full tracks (`scarab_robot.py`, `scarab_controller.py`: skid steer, slip-aware torque limit)
+  - (d) half-track (`scarab_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
+    Ackermann blended with the track-speed differential)
+  - (e) triangular tracks (`scarab_quadtrac_robot.py`: four pivoting delta units on hinge joints, each a multi-roller
+    track)
+  Mission via `PhasedMission`: cross the course → pick an object with the arms → put it in the basket → return;
+  `scenarios/scarab_mission.py` → `scenarios/output/*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
+  tilt, sinkage, stall; `benchmark/scarab/` with `run_trials` over terrain × drive × seed, report and success-rate heat
+  maps from `stats.cell_rates`
+- [ ] 5j.8 Tests + docs: `components/scarab*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_scarab*.py`
+  (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive, slow mission); `terramechanics` against
+  published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
+
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
 - [x] 6.2 Import-isolation test (no cross-package imports)
