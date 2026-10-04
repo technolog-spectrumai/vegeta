@@ -199,6 +199,20 @@ CFD = {"Cd": 0.03, "Cl": 0.4, "Cm": 0.01, "drag_force_N": 5.0, "lift_force_N": 2
        "mach_number": 0.3, "converged": True, "iterations": 100, "mesh_cells": 1000, "mesh_ok": True}
 
 
+def _template_metrics(m, p):
+    """The metrics a template adds to the common ones, for the templates whose consumers read them."""
+    if "outlet_pressure" in p and "inlet_total_pressure" in p:      # a compressor speed-line point
+        pr = p["outlet_pressure"] / p["inlet_total_pressure"]
+        flow = max(0.05, 0.40 - 0.08 * pr)
+        m.update(mass_flow_kg_s=flow, corrected_mass_flow_kg_s=flow, pressure_ratio_tt=1.05 * pr, efficiency_tt=0.72,
+                 efficiency_from_torque=0.70, work_coefficient=0.6, shaft_power_W=1000.0 * flow * 1.05 * pr * 40.0)
+    if "flow_rate" in p:                                             # a suction hood (suction_hood)
+        q, dp = float(p["flow_rate"]), 300.0
+        m.update(suction_pressure_Pa=-dp, fan_static_pressure_Pa=dp, flow_rate_m3_s=q, flow_rate_set_m3_s=q,
+                 hood_wall_pressure_Pa=-0.5 * dp, air_power_W=q * dp, suction_pressure_std_Pa=5.0, averaging_window=50)
+    return m
+
+
 def _cfd_result(case, kind="aeromant.results"):
     from vegeta.aeromant.result import Result
     w = Path(case.workdir)
@@ -207,11 +221,7 @@ def _cfd_result(case, kind="aeromant.results"):
     p = getattr(case, "user_parameters", {}) or {}
     if "velocity" in p:
         m["velocity"] = p["velocity"]
-    if "outlet_pressure" in p and "inlet_total_pressure" in p:      # a compressor speed-line point
-        pr = p["outlet_pressure"] / p["inlet_total_pressure"]
-        flow = max(0.05, 0.40 - 0.08 * pr)
-        m.update(mass_flow_kg_s=flow, corrected_mass_flow_kg_s=flow, pressure_ratio_tt=1.05 * pr, efficiency_tt=0.72,
-                 efficiency_from_torque=0.70, work_coefficient=0.6, shaft_power_W=1000.0 * flow * 1.05 * pr * 40.0)
+    _template_metrics(m, p)
     return Result(kind=kind, metrics=m, artifacts={"case": w}, metadata={"mock": True})
 
 
@@ -231,7 +241,13 @@ def _cfd_results(self, average_window=50):
 def _read_case_results(workdir, average_window=50):
     from vegeta.aeromant.result import Result
     _count("aeromant.read_case_results")
-    return Result(kind="aeromant.results", metrics=Metrics(CFD), artifacts={"case": Path(workdir)}, metadata={"mock": True})
+    try:                                    # the case was prepared for real: its parameters are on disk
+        from vegeta.aeromant.case import open_case
+        p = open_case(Path(workdir))["config"]["parameters"]
+    except Exception:
+        p = {}
+    m = _template_metrics(Metrics(CFD), p)
+    return Result(kind="aeromant.results", metrics=m, artifacts={"case": Path(workdir)}, metadata={"mock": True})
 
 
 def _read_results(case, time=None):
@@ -254,15 +270,17 @@ def _read_results(case, time=None):
 
 
 def _openfoam_sampler(case, time=None):
-    """A uniform stream at the case's velocity (else 10 m/s along x), valid everywhere."""
+    """A stream at the case's velocity (else 10 m/s) along x, valid everywhere, with a wake about the x axis: a 20 %
+    deficit near the axis that varies four times around it (like four fins), so wake harmonics are not all zero."""
     _count("aeromant.openfoam_sampler")
     p = getattr(case, "user_parameters", {}) or {}
     v = float(p.get("velocity", 10.0) or 10.0)
 
     def sample(points):
         pts = np.asarray(points, float).reshape(-1, 3)
+        r, th = np.hypot(pts[:, 1], pts[:, 2]), np.arctan2(pts[:, 2], pts[:, 1])
         u = np.zeros_like(pts)
-        u[:, 0] = v
+        u[:, 0] = v * (1.0 - 0.2 * np.exp(-(r / 0.1) ** 2) * (1.0 + 0.5 * np.cos(4 * th)))
         return u, np.ones(len(pts), bool)
     return sample
 
@@ -292,9 +310,26 @@ def _concat_videos(paths, out, **kw):
 
 
 # ------------------------------------------------------------------------------------------------ Mellonia
-def _gcode(settings, n_layers=5, size=20.0) -> str:
+# PrusaSlicer keys a key one letter off is taken for a misspelling of (the slicer's config block leaves it out, so the
+# real slice_stl reports it); any other key passes, since the mock does not know PrusaSlicer's whole list
+_PRUSA_KEYS = ("layer_height", "first_layer_height", "perimeters", "fill_density", "fill_pattern", "top_solid_layers",
+               "bottom_solid_layers", "skirts", "support_material", "brim_width", "infill_overlap", "nozzle_diameter",
+               "filament_diameter", "filament_density", "filament_cost", "temperature", "bed_temperature",
+               "first_layer_temperature", "first_layer_bed_temperature", "bed_shape", "max_print_height", "gcode_flavor",
+               "perimeter_speed", "infill_speed", "travel_speed", "external_perimeter_speed", "solid_infill_speed",
+               "support_material_threshold", "extrusion_width", "seam_position", "ironing", "elefant_foot_compensation")
+
+
+def _misspelt(cfg):
+    import difflib
+    return [k for k in cfg if k not in _PRUSA_KEYS and difflib.get_close_matches(k, _PRUSA_KEYS, n=1, cutoff=0.85)]
+
+
+def _gcode(settings, n_layers=40, size=20.0) -> str:
     """A short G-code in PrusaSlicer's format: square perimeters, the summary comments, the config block."""
     cfg = dict(settings.merged()) if hasattr(settings, "merged") else {}
+    for k in _misspelt(cfg):                     # PrusaSlicer ignores a key it does not know: not in its config block
+        cfg.pop(k)
     lh = float(str(cfg.get("layer_height", 0.2)).rstrip("%") or 0.2)
     cfg.setdefault("layer_height", lh)
     cfg.setdefault("first_layer_height", lh)
@@ -327,6 +362,10 @@ def _slice_stl(stl, settings, orientation, workdir, *, executable="prusa-slicer"
                    + "".join(f"{k} = {v}\n" for k, v in sorted(info.config.items())))
     res = Result(kind="mellonia.slice", metrics=Metrics(info.metrics(), slicing_status="ok"), metadata={"mock": True},
                  artifacts={"input_stl": Path(stl), "gcode": gcode, "effective_config": eff})
+    unknown = sorted(k for k in settings.merged() if k not in info.config)     # as the real slice_stl checks
+    if unknown:
+        res.fail(f"PrusaSlicer does not know setting(s) {unknown} (typo?) — they were ignored")
+        res.metrics["slicing_status"] = "settings error"
     res.artifacts["summary"] = w / "summary.json"
     res.save_json(res.artifacts["summary"])
     return res

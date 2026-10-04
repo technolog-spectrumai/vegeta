@@ -85,5 +85,20 @@ def test_cfd_through_the_mocks(tmp_path, mocked):
     assert r.ok and r.metrics["Cd"] == 0.03 and case.ensure().ok
     assert all(x.ok for x in aeromant.run_cases([case]))
     from vegeta.aeromant import movie
-    u, valid = movie.openfoam_sampler(case)([[0, 0, 0], [1, 0, 0]])
-    assert u[0, 0] == 7.0 and valid.all()
+    u, valid = movie.openfoam_sampler(case)([[0, 1, 0], [1, 0, 1], [0, 0.05, 0], [0, 0.05 / 2 ** 0.5, 0.05 / 2 ** 0.5]])
+    assert u[0, 0] == pytest.approx(7.0) and u[1, 0] == pytest.approx(7.0) and valid.all()   # the free stream
+    assert u[2, 0] < 7.0 and u[2, 0] != pytest.approx(u[3, 0])           # a wake near the axis, not the same all round
+
+
+def test_slicing_and_suction_through_the_mocks(tmp_path, mocked):
+    from vegeta import mellonia
+    from vegeta.mellonia import Orientation, examples
+    stl = tmp_path / "part.stl"
+    stl.write_text("solid x\nendsolid x\n")
+    settings = examples.GENERIC_PLA_0_2MM
+    ok = mellonia.slice_stl(stl, settings, Orientation(), tmp_path / "ok")
+    assert ok.ok and ok.metrics["layer_count"] >= 20
+    typo = mellonia.slice_stl(stl, settings.replace(print={"layer_heigth": 0.3}), Orientation(), tmp_path / "typo")
+    assert not typo.ok and "layer_heigth" in typo.messages[0]
+    m = mock._template_metrics(mock.Metrics(), {"flow_rate": 0.2})
+    assert m["fan_static_pressure_Pa"] > 0 and m["air_power_W"] == pytest.approx(0.2 * m["fan_static_pressure_Pa"])
