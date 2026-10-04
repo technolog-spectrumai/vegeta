@@ -1,9 +1,16 @@
-"""Proven, notebook-free product code: components, workflows and the ``.vida`` assembly files they write.
+"""Geometry only: how components are arranged into machines (a quadcopter, an aircraft, a boat, a submarine).
 
-Run a workflow from the repository root: ``python -m assemblies.workflows.microjet --help``. See ``assemblies/README.md``.
+An assembly is a Dedalus ``Design`` whose ``parts(p)`` places components (``components/``) and returns them by name;
+``build`` joins them into one compound, so an assembly generates, exports and loads by spec like any design. No
+analysis: masses, loads, FEA and CFD stay in the notebooks. A notebook may use an assembly, a component, or its own
+geometry::
+
+    import sys; sys.path.insert(0, "..")
+    from assemblies.quadcopter import Quadcopter
+    quad = Quadcopter()
+    parts = quad.generate_parts(wheelbase=280)        # {"frame": Shape, "motor_1": Shape, ..., "propeller_4": Shape}
+    geometry = quad.generate(wheelbase=280)            # one compound (dedalus.Geometry)
 """
-from pathlib import Path
+from .base import Assembly, component_parameters, pick
 
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data"
-RUNS = ROOT.parent / "runs" / "assemblies"
+__all__ = ["Assembly", "component_parameters", "pick"]

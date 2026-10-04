@@ -19,8 +19,8 @@
 #   velutina          Velutina (mountain medical courier): tests, then scenarios/velutina_mission.py (1 movie; ~2 min)
 #   merlin            MERLIN (wildfire sampler): tests, then scenarios/merlin_mission.py (race table + 1 movie; ~3 min)
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
-#   microjet          assemblies: the microjet workflow's tests, then python -m assemblies.workflows.microjet
-#                     --fidelity quick (CFD when OpenFOAM is found, the wheels' FEA; resumable; hours with CFD)
+#   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
+#   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -149,14 +149,13 @@ for s in "${SECTIONS[@]}"; do
       hdr "Microjet and AGUYA: cycle, templates, thermal FEA, CAD, mission"
       timed pytest_summary "$ROOT/vegeta-cli" tests/boreas/test_microjet.py tests/aeromant/test_compressible.py tests/talos/test_thermal.py || status=1
       timed pytest_summary "$ROOT/notebooks/designs" tests/test_turbojet.py tests/test_aguya.py || status=1 ;;
-    microjet)
-      hdr "Microjet assembly: components, workflow and .vida tests"
-      timed pytest_summary "$ROOT" assemblies/tests -m "not slow" || status=1
-      hdr "Microjet workflow (quick): cycle, compressor speed line (CFD), wheels (FEA); writes runs/assemblies/microjet_quick.vida"
-      cfd=""; "$PY" -c "from vegeta.aeromant import OpenFOAMEnvironment as E; E.detect()" >/dev/null 2>&1 || cfd="--no-cfd"
-      t0=$SECONDS; (cd "$ROOT" && "$PY" -m assemblies.workflows.microjet --fidelity quick -j "$JOBS" $cfd \
-        --out "$ROOT/runs/assemblies/microjet_quick" --vida "$ROOT/runs/assemblies/microjet_quick.vida" --no-export) 2>&1 | grep -Ev "^\s*\*|Statistics|Transfer|WorkSession|Step File|^\s*$" | tail -12 | sed 's/^/  /'
-      echo "  ($((SECONDS - t0)) s)" ;;
+    geometry)
+      hdr "Components and assemblies: geometry only"
+      timed pytest_summary "$ROOT" components/tests assemblies/tests -m "not slow" || status=1 ;;
+    notebooks-debug)
+      hdr "Notebooks in DEBUG mode (vegeta.mock: FEA and CFD mocked)"
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" 2>&1 | tail -60 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     velutina)
       hdr "Velutina: design and flight-model tests"
       timed pytest_summary "$ROOT/notebooks/designs" tests/test_velutina.py || status=1
