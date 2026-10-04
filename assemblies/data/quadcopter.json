@@ -1,6 +1,6 @@
 {
   "tool": "vegeta.boreas",
-  "created_at": "2026-10-03T17:36:38+00:00",
+  "created_at": "2026-10-04T01:51:47+00:00",
   "notes": "quadcopter from assemblies.workflows.quadcopter (full); AUW 0.481 kg, 4 motors; hover endurance 14.2 min",
   "propeller": {
     "name": "5x4.3 tri-blade",

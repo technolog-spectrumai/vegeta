@@ -73,8 +73,8 @@ Interrupted runs resume: solved cases are read back.
 |---|---|---|---|
 | `microjet` | notebook 28 | microjet → parts, compressor (CFD speed line), wheels (FEA) | `microjet.vida`, `microjet.json` (read by notebook 29) |
 | `aguya` | notebook 29 | aguya → engine (= `microjet.vida`, grafted), airframe (sizing, missions), jet_cfd, wing (gust FEA, modes), merlin_race (from `merlin.vida` and `propulsors.vida`) | `aguya.vida`, `aguya.json` |
-| `quadcopter` | notebook 08 | quadcopter → frame (CAD, masses), frame_fea, canopy_cfd, propeller (5x4.3 tri-blade, BEMT points), rotor_cfd, blade_fea | `quadcopter.vida`, `quadcopter.json` (boreas' format, as 08's `quad_5x43.json`) |
-| `fixed_wing` | notebook 09a | fixed_wing → airframe (planform, polar), propeller (9x6), wing_fea, aero_cfd (4°), rotor_cfd, blade_fea, installed_cfd (rotor disks) | `fixed_wing.vida`, `fixed_wing.json` (the keys 09b reads), `fixed_wing_propulsion.json` |
+| `quadcopter` | notebook 08 | quadcopter → frame (CAD, masses), frame_fea, canopy_cfd, propeller (5x4.3 tri-blade, BEMT points), rotor_cfd, blade_fea, life → unit_fea (point masses, 8 modes, unit cases), fatigue (missions, damage, life) | `quadcopter.vida`, `quadcopter.json` (boreas' format, as 08's `quad_5x43.json`), `quadcopter_life.json` (08's `life.json`) |
+| `fixed_wing` | notebooks 09a, 09b | fixed_wing → airframe (planform, polar), propeller (9x6), wing_fea, aero_cfd (4°), rotor_cfd, blade_fea, installed_cfd (rotor disks), wing_life → unit_fea (NACA 2415), unit_fea_naca2412, fatigue; fuselage_life → unit_fea, fatigue | `fixed_wing.vida`, `fixed_wing.json` (the keys 09b reads), `fixed_wing_propulsion.json`, `fixed_wing_life.json` (09b's `life.json` + `fuselage_life.json`) |
 | `propulsors` | notebooks 25, 25b, 25c (last cells) | propulsors → propellers, exotic, edf: the libraries over airspeed × rpm | `propulsors.vida`; at `full` also `*_maps.json` (only a full run writes them) |
 | `merlin` | notebooks 26, 26b, 27 | merlin → airframe (3 propulsions), wing_fea, polar_cfd (3 aircraft), propulsors (grafted), race, mission | `merlin.vida`, `merlin_design.json` (kept, not replaced, by a run that solved neither the wing FEA nor the polar CFD) |
 | `boat` | notebook 12 | boat → hull (CAD, masses, hydrostatics), propeller (60 mm marine), hull_cfd (double body), hull_fea, bracket_fea, rotor_cfd, blade_fea, scene_cfd | `boat.vida`, `boat.json` |
@@ -95,7 +95,12 @@ missions are computed; the CFD, FEA and MuJoCo nodes say NOT RUN. A full run on 
 committed in their place. Full fidelity needs a workstation: AGUYA's wing at 4 mm elements takes more than 10 GB of
 memory in CalculiX, the microjet wheels at 1 mm more still.
 
-What stayed in the notebooks: life and fatigue (08 Part 3, 09b, 12 §5–6, 14 §10–11), the leg torque tables of 18 and
+The life parts are two nodes each: `unit_fea` (the point masses, the modal solve and the unit load cases on one mesh,
+`_common.unit_fea`, behind `--no-fea`) and `fatigue` (missions → spectra → `talos.assess_fatigue` → `chronos.simulate_life`,
+post-processing only, NOT RUN until its unit cases are solved). 09b's wing life is on 09a's preferred NACA 2415 wing
+(compared with the NACA 2412), whatever the flown aircraft's default.
+
+What stayed in the notebooks: life and fatigue of the boat and the submarine (12 §5–6, 14 §10–11), the leg torque tables of 18 and
 19, the Onager's standing and rock-strike leg cases (20), the gait simulations of 16 and 17. The delta wing is not
 here yet (`wing.WingSpec` refuses sweep).
 
@@ -109,6 +114,9 @@ here yet (`wing.WingSpec` refuses sweep).
 | `road_wheel.py` | 11, 20, 21 | ISO 8608 roads, rocks and drops, the quarter car, rock-strike force, rolling resistance, hub traction |
 | `pincer.py` | 22, 23 | the Manus arm, its IK/FK, actuators, stow pose and parts |
 | `quad_frame_analysis.py` | 08 cells 13, 29 | the frame FEA (full thrust, hard landing) and the canopy CFD case |
+| `life.py` | 08 cells 88–104, 09b cells 12–25 | margins to the excitations, spectra, damage per mission, static re-check, damage rate, usage life, balanced propellers, nacelle amplitude |
+| `quad_life.py` | 08 cells 80–104 | the frame with motors and stack as point masses, unit cases, the three missions, the PETG-CF curve, usage mixes |
+| `fixed_wing_life.py` | 09b cells 4–42 | the wing with nacelle masses and the fuselage with the nose contents, unit cases, missions, the gust survey, the LW-PLA curve |
 | `_cad.py` | — | `export_kept`: STEP/STL kept while the parameters are unchanged (stable FEA mesh keys) |
 | `turbojet.py` | `notebooks/designs/turbojet.py` | the impeller, turbine wheel and engine CAD; the compressor passage STLs; sizing; masses |
 | `turbojet_parts.py` | notebook 28 §4 | the three STEP files with masses and sizes (kept when the parameters are unchanged) |
@@ -134,7 +142,8 @@ write `data/`.
 
 ### Solver mocks
 Every test runs with the solver run functions mocked (`tests/stubs.py`, installed by `tests/conftest.py` for every
-test): `talos.solve_models`, `aeromant.run_cases`, the OpenFOAM lookup and the ground workflows' `run_scene` are
+test): `talos.solve_models`, `StructuralModel.mesh` and `.solve_modes`, `talos.assess_fatigue` and `talos.read_frd`,
+`aeromant.run_cases`, the OpenFOAM lookup and the ground workflows' `run_scene` are
 `unittest.mock` objects autospecced from the real functions (a wrong call fails), each call recorded with the real
 models and cases a workflow built, answered by stubs: fixed, plausible results in the real `Result` types and metric
 names, `run=False` still NOT RUN. A test takes the `solvers` fixture to look at the calls (`solvers.fea`, `.cfd`,

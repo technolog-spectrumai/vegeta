@@ -55,6 +55,16 @@ def test_quadcopter(tmp_path, solvers):
     q = solved_twice(quadcopter.run, solvers, export_path=tmp_path / "q.json", **common(tmp_path, "quadcopter"))
     assert all(q.child(n).results["complete"] for n in ("frame_fea", "canopy_cfd", "rotor_cfd", "blade_fea"))
     assert set(solvers.cfd) == {"rans_ksst_external", "rotor_mrf_static"}
+    # the life (08 Part 3): one mesh, the modes with the 4 motor and 4 stack masses, 3 unit cases, 3 missions + 3 balanced
+    assert solvers.mesh.call_count == 1 and solvers.solve_modes.call_count == 1
+    modal = solvers.solve_modes.call_args.args[0]
+    assert len(modal.masses) == 8 and not modal.loads and solvers.solve_modes.call_args.args[2] == 8
+    assert {"thrust", "unbalance", "landing"} <= set(solvers.fea) and solvers.assess_fatigue.call_count == 6
+    fat = q.child("life/fatigue").results
+    assert set(fat["life"]) == {"inspection", "freestyle", "cruise"} and fat["worst"] in fat["life"]
+    assert set(fat["mixes"]) == {"inspection-heavy", "freestyle-heavy", "cruise-only"} and fat["hours_to_failure"] > 0
+    life_json = __import__("json").loads((tmp_path / "q_life.json").read_text())
+    assert life_json["modes_hz"] == q.child("life/unit_fea").results["modes_hz"] and "hours_to_failure" in life_json
 
 
 def test_fixed_wing(tmp_path, solvers):
@@ -62,6 +72,19 @@ def test_fixed_wing(tmp_path, solvers):
     assert f.results["polar_source"] == "aero_cfd"
     assert all(f.child(n).results["complete"] for n in ("wing_fea", "aero_cfd", "rotor_cfd", "blade_fea", "installed_cfd"))
     assert set(solvers.cfd) == {"rans_ksst_external", "rotor_mrf", "aircraft_rotor_disks"}
+    # the life (09b): wing 2415 and 2412, fuselage: 3 meshes and modal solves, 4 + 4 + 3 unit cases, 3 + 3 + 3 + 1 fatigue
+    assert solvers.mesh.call_count == 3 and solvers.solve_modes.call_count == 3
+    assert [c.args[2] for c in solvers.solve_modes.call_args_list] == [8, 8, 6]
+    assert solvers.assess_fatigue.call_count == 10
+    steps = [c.args[0].geometry for c in solvers.solve_modes.call_args_list]
+    assert len(set(steps)) == 3                                    # three different STEP files: 2415, 2412, fuselage
+    w = f.child("wing_life/fatigue").results
+    assert set(w["damage_per_mission"]) == set(w["damage_naca2412"]) == {"survey", "patrol", "windy_hops"}
+    assert len(w["nacelle_amplitude_mm"]) == 3 and w["damage_per_1000h"] > 0
+    fu = f.child("fuselage_life/fatigue").results
+    assert fu["static"]["bound_MPa"] >= fu["static"]["hotspot_stress_MPa"] > 0 and fu["mass_kg"]["shell"] > 0
+    life_json = __import__("json").loads((tmp_path / "fw_life.json").read_text())
+    assert set(life_json) >= {"wing", "fuselage"}
 
 
 def test_merlin(tmp_path, solvers):

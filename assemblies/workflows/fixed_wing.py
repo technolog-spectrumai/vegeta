@@ -11,10 +11,20 @@ The tree::
       rotor_cfd (rotor)            the propeller at cruise (Aeromant rotor_mrf)
       blade_fea (blade)            one blade at full throttle in the climb (Talos)
       installed_cfd (rotor_disks)  the aircraft with both propellers as rotor disks (Aeromant aircraft_rotor_disks)
+      wing_life (life)             notebook 09b Part 1, on 09a's preferred NACA 2415 wing
+        unit_fea (unit_fea)        nacelles as point masses: 8 modes; unit cases lift, thrust, thrust_left, vib_left
+        unit_fea_naca2412          the same on the thinner NACA 2412 wing (09b cell 25)
+        fatigue (fatigue)          margins, three missions -> damage, static re-check, rate per 1000 h, life; the
+                                   variants: no resonance, NACA 2412; nacelle amplitudes
+      fuselage_life (life)         notebook 09b Part 2
+        unit_fea (unit_fea)        the shell clamped at the wing, nose contents as a point mass: 6 modes; inertia,
+                                   tail_lift, fin_side
+        fatigue (fatigue)          the full-battery survey with sharp-edged gusts -> damage, re-check, bound, life
 
 The aircraft is the design's defaults unless ``aircraft`` overrides some: notebook 09a preferred the thicker NACA 2415
 wing, ``--aircraft thickness=0.15``. Without the whole-aircraft CFD the polar goes through notebook 09a's recorded
-point (Cl 0.40, Cd 0.070, coarse mesh) and the tree says so. Notebook 09b (durability) stays a notebook.
+point (Cl 0.40, Cd 0.070, coarse mesh) and the tree says so. The life (notebook 09b) uses this tree's mass, wing area,
+endurance and points in place of 09a's hand-off file and is exported to fixed_wing_life.json.
 
     python -m assemblies.workflows.fixed_wing --fidelity quick -j 4 --aircraft thickness=0.15
 """
@@ -25,17 +35,17 @@ import shutil
 from pathlib import Path
 
 import numpy as np
-from vegeta import aeromant, boreas, talos
+from vegeta import aeromant, boreas, chronos, talos
 
 from .. import DATA, RUNS, vida
 from .._cli import main, parser
 from .._cli_util import parse_assignments
-from ..components import propeller as pr, wing
+from ..components import fixed_wing_life as fl, life as lf, propeller as pr, wing
 from ..components._cad import export_kept
 from ..components.fixed_wing import FixedWing
 from ..components.impeller import environment
 from ..vida import Assembly
-from ._common import add_after, run_cfd as cfd_node, solve_fea
+from ._common import add_after, run_cfd as cfd_node, solve_fea, sub, unit_fea
 
 NAME = "fixed_wing"
 PARTS_G = {"motors 2212 (2x)": 2 * 55.0, "propellers 9x6 (2x)": 2 * 12.0, "ESC 30 A (2x)": 2 * 25.0,
@@ -204,6 +214,11 @@ def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool =
         cfd_node(ic, case, ("Cl", "Cd", "lift_force_N", "drag_force_N", "converged", "mesh_cells"), run=run_cfd,
                 processors=processors, progress=progress)
 
+    # the vibration and life of the wing and the fuselage (notebook 09b)
+    life_sum = aircraft_life(root, prior, redo, p, fw, prop, pts, auw=auw, wing_area=pl["area_m2"],
+                             endurance_min=perf["endurance_min"], fidelity=fidelity, out=out, run_fea=run_fea, threads=threads,
+                             progress=progress)
+
     root.record(auw_kg=auw, polar_point=polar_point, polar_source=polar_source, polar=perf,
                 points={k: _point(v) for k, v in pts.items()})
     if polar_source != "aero_cfd":
@@ -225,7 +240,134 @@ def run(*, fidelity: str = "full", aircraft: dict | None = None, run_cfd: bool =
                       points={k: pts[k] for k in ("cruise", "climb", "static", "engine_out")},
                       notes=f"fixed wing from assemblies.workflows.{NAME}; AUW {auw:.3f} kg").raise_for_status()
         root.meta["exported_to"] = f"{path}, {prop_path}"
+        if life_sum:
+            lpath = path.with_name(f"{path.stem}_life.json")
+            lpath.write_text(__import__("json").dumps(dict(life_sum, source=f"assemblies.workflows.{NAME} ({fidelity})",
+                                                           written_at=vida.utc_now()), indent=2, default=float))
+            root.meta["exported_to"] += f", {lpath}"
     return root
+
+
+def _wing_step(fw, p, thickness, out):
+    wp = dict(p, part="wing", thickness=thickness)
+    files, _ = export_kept(lambda: fw.generate(**wp), wp, out, "wing", formats=("step",))
+    return files["step"]
+
+
+def aircraft_life(root, prior, redo, p, fw, prop, pts, *, auw, wing_area, endurance_min, fidelity, out, run_fea, threads,
+                  progress) -> dict:
+    """Notebook 09b: the wing's and the fuselage's life as nodes; returns the summaries (cells 27 and 42) computed."""
+    motor = pr.motor(DRIVE["motor"])
+    PROP = fl.prop_points(prop, pts)
+    W, rho = auw * G, DRIVE["rho"]
+    lines = {k: v["rpm"] / 60 for k, v in PROP.items()}
+    summary = {}
+
+    # the wing (cells 6-25)
+    wl = add_after(root, Assembly("wing_life", "life"), prior, redo)
+    prior_wl = sub(prior, "wing_life")
+    nacelle_t, lift_unit = fl.nacelle_mass_t(motor.mass_kg, prop.mass_kg), fl.lift_unit_mpa(auw, wing_area)
+    units, fea = {}, {}
+    for name, thickness in (("unit_fea", fl.PREFERRED_THICKNESS), ("unit_fea_naca2412", fl.THIN_THICKNESS)):
+        node = add_after(wl, Assembly(name, "unit_fea", params={
+            "aircraft": dict(p, thickness=thickness), "material": wing.LW_PLA, "nacelle_mass_t": nacelle_t,
+            "lift_unit_MPa": lift_unit, "element_mm": fl.WING_ELEMENT_MM[fidelity], "n_modes": fl.WING_MODES}), prior_wl, redo)
+        step = _wing_step(fw, p, thickness, out / "life" / f"wing_{thickness:.2f}" / "cad")
+        base, unit = fl.wing_models(step, dict(p, thickness=thickness), nacelle_t, lift_unit, element_mm=node.params["element_mm"])
+        units[name] = unit_fea(node, base, unit, out / "life" / f"wing_{thickness:.2f}", n_modes=fl.WING_MODES, run=run_fea,
+                               threads=threads, progress=progress)
+        fea[name] = node
+    wf = add_after(wl, Assembly("fatigue", "fatigue", params={
+        "prop": PROP, "curve": dict(fl.CURVE.__dict__), "usage": fl.USAGE, "n_flights": fl.N_FLIGHTS,
+        "unit_fea": {k: n.key for k, n in fea.items()}}), prior_wl, redo)
+    if not wf.results:
+        if not all(units.values()):
+            wf.not_run("needs the modes and unit cases of both wings (wing_life/unit_fea*)")
+        else:
+            uc, thin_uc = units["unit_fea"], units["unit_fea_naca2412"]
+            st = lf.structure(fea["unit_fea"].results["modes_hz"], "Talos modal, LW-PLA solid-equivalent E, nacelle masses")
+            thin_st = lf.structure(fea["unit_fea_naca2412"].results["modes_hz"])
+            missions = fl.missions(PROP)
+            spectra = lf.spectra(missions, st)
+            fatigue, table = lf.fatigue(uc, spectra, missions, fl.CURVE, workdir=out / "life" / "wing", progress=progress)
+            worst = lf.worst(table)
+            damage = {k: table[k]["damage_per_mission"] for k in table}
+            hours = {k: m.duration_h for k, m in missions.items()}
+            rate = lf.damage_rate(damage, hours, fl.USAGE)
+            sim = lf.usage_life(damage, hours, fl.USAGE, fl.N_FLIGHTS, seed=0)
+            no_res = {k: talos.assess_fatigue(uc, sp.to_dict(), fl.CURVE).result.metrics["damage_per_pass"]
+                      for k, sp in lf.spectra(missions, None).items()}
+            thin = {k: talos.assess_fatigue(thin_uc, sp.to_dict(), fl.CURVE).result.metrics["damage_per_pass"]
+                    for k, sp in lf.spectra(missions, thin_st).items()}
+            variants = {"NACA 2415 (as is)": (st, uc, damage), "NACA 2415, cruise rpm moved off the mode": (None, uc, no_res),
+                        "NACA 2412 (thinner)": (thin_st, thin_uc, thin)}
+            amp = {}
+            for vname, (s_, u_, d_) in variants.items():
+                r = {f"nacelle amplitude {pt} [mm]": lf.nacelle_amplitude_mm(s_, u_["vib_left"][0], u_["vib_left"][1],
+                                                                             PROP[pt]["rpm"], PROP[pt]["unbalance_N"]) for pt in PROP}
+                r["damage per 1000 h (usage mix)"] = lf.damage_rate(d_, hours, fl.USAGE) * 1000
+                amp[vname] = r
+            wf.record(margins=lf.margins(st, lines, "amplification"), excitations_hz=lines,
+                      missions={k: m.describe() for k, m in missions.items()}, spectra={k: sp.to_dict() for k, sp in spectra.items()},
+                      life=table, worst=worst, contributions=dict(fatigue[worst].contributions),
+                      static_recheck=lf.static_recheck(fatigue[worst], uc, spectra, wing.LW_PLA["yield_strength"]),
+                      damage_per_mission=damage, damage_no_resonance=no_res, damage_naca2412=thin, hours_per_mission=hours,
+                      usage=fl.USAGE, damage_per_1000h=rate * 1000, hours_to_failure=sim.hours_to_failure,
+                      flights_to_failure=sim.flights_to_failure, nacelle_amplitude_mm=amp)
+    if wf.results:
+        u = fea["unit_fea"].results
+        summary["wing"] = {"design": {"file": "assemblies/components/fixed_wing.py", "parameters": fea["unit_fea"].params["aircraft"]},
+                           "modes_hz": u["modes_hz"], "damping_ratio": lf.DAMPING, "excitations_hz": wf.results["excitations_hz"],
+                           "margins": wf.results["margins"],
+                           "unit_cases": {k: {"load": v["load"], "max_von_mises": v["max_von_mises_MPa"]} for k, v in u["unit"].items()},
+                           "curve": wf.params["curve"], "missions": wf.results["missions"],
+                           **{k: wf.results[k] for k in ("damage_per_mission", "damage_no_resonance", "damage_naca2412",
+                                                         "hours_per_mission", "usage", "damage_per_1000h", "nacelle_amplitude_mm")}}
+
+    # the fuselage (cells 30-42)
+    fls = add_after(root, Assembly("fuselage_life", "life"), prior, redo)
+    prior_fl = sub(prior, "fuselage_life")
+    fp = dict(p, part="fuselage", thickness=fl.PREFERRED_THICKNESS)
+    ffiles, finfo = export_kept(lambda: fw.generate(**fp), fp, out / "life" / "fuselage" / "cad", "fuselage", formats=("step",))
+    nose = fl.nose_kg(PARTS_G)
+    fu = add_after(fls, Assembly("unit_fea", "unit_fea", params={
+        "fuselage": fp, "material": wing.LW_PLA, "nose_kg": nose, "element_mm": fl.FUSELAGE_ELEMENT_MM[fidelity],
+        "n_modes": fl.FUSELAGE_MODES}), prior_fl, redo)
+    base, unit = fl.fuselage_models(ffiles["step"], fp, nose, element_mm=fu.params["element_mm"])
+    fuc = unit_fea(fu, base, unit, out / "life" / "fuselage", n_modes=fl.FUSELAGE_MODES, run=run_fea, threads=threads,
+                   progress=progress)
+    ff = add_after(fls, Assembly("fatigue", "fatigue", params={
+        "curve": dict(fl.CURVE.__dict__), "auw_kg": auw, "wing_area_m2": wing_area, "rho": rho, "v_cruise": V_CRUISE,
+        "endurance_min": endurance_min, "n_flights": fl.N_FLIGHTS, "unit_fea": fu.key}), prior_fl, redo)
+    if not ff.results:
+        if not fuc:
+            ff.not_run("needs the modes and unit cases (fuselage_life/unit_fea)")
+        else:
+            fst = lf.structure(fu.results["modes_hz"], "Talos modal, fuselage shell clamped at the wing, nose masses")
+            mission, gusts = fl.long_mission(fp, W, wing_area, rho, V_CRUISE, endurance_min)
+            fspec = chronos.build_spectrum(mission, fst)
+            ffat = talos.assess_fatigue(fuc, fspec.to_dict(), fl.CURVE, workdir=out / "life" / "fuselage" / "fatigue")
+            fm = ffat.result.metrics
+            recheck = lf.static_recheck(ffat, fuc, {"long_survey": fspec}, wing.LW_PLA["yield_strength"])["long_survey"]
+            sim_f = lf.usage_life({"long_survey": fm["damage_per_pass"]}, {"long_survey": mission.duration_h},
+                                  {"long_survey": 1.0}, fl.N_FLIGHTS, seed=0)
+            ff.record(mass_kg={"shell": fl.fuselage_mass_kg(finfo["volume_mm3"]), "nose_contents": nose},
+                      margins={k: {"1P_hz": v["rpm"] / 60, "2P_hz": prop.blades * v["rpm"] / 60,
+                                   "nearest_mode_hz": fst.nearest_mode(v["rpm"] / 60), "margin_1P": fst.margin(v["rpm"] / 60),
+                                   "margin_2P": fst.margin(prop.blades * v["rpm"] / 60)} for k, v in PROP.items()},
+                      mission=mission.describe(), gusts=gusts, spectrum=fspec.to_dict(),
+                      fatigue={k: v for k, v in fm.items() if not isinstance(v, (list, dict))} | {"hotspot_location": fm["hotspot_location"]},
+                      contributions=dict(ffat.contributions),
+                      static={"hotspot_stress_MPa": recheck["hotspot_stress_MPa"],
+                              "bound_MPa": fl.fuselage_bound(fspec, fu.results["unit"]), "yield_MPa": wing.LW_PLA["yield_strength"]},
+                      hours_to_failure=sim_f.hours_to_failure, flights_to_failure=sim_f.flights_to_failure)
+    if ff.results:
+        summary["fuselage"] = {"design": {"file": "assemblies/components/fixed_wing.py", "part": "fuselage", "parameters": fp},
+                               "modes_hz": fu.results["modes_hz"],
+                               **{k: ff.results[k] for k in ("mass_kg", "mission", "gusts", "fatigue", "static")},
+                               "assumptions": ["LW-PLA S-N curve assumed", "flat-plate tail lift slopes", "sharp-edged gusts",
+                                               "wing clamps the whole fuselage cylinder"]}
+    return summary
 
 
 def _parser():

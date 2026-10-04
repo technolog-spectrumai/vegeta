@@ -1,6 +1,6 @@
 {
   "tool": "vegeta.boreas",
-  "created_at": "2026-10-03T17:36:50+00:00",
+  "created_at": "2026-10-04T01:51:59+00:00",
   "notes": "fixed wing from assemblies.workflows.fixed_wing; AUW 0.981 kg",
   "propeller": {
     "name": "9x6 electric",
