@@ -134,14 +134,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5i.8 AGUYA's mission movie with the smoke (reuse `merlin_flight.render_movie`); the race in wind and at altitude
 
 ## Stage 5j — Tracked rover "Pekari" (branch `dev_track`)
-A caterpillar-drive rover in the class of the rover and the Onager (~25 kg, ~5 kg payload), planned in the same way: base
+A caterpillar-drive rover in the class of the wheeled rover of notebook 11 (~19 kg empty, a 5 kg payload in its
+basket; the Onager is a 380 kg machine), planned in the same way: base
 rover → two arms → basket, then the gears and track, a drive-type comparison with performance maps, and Chiron missions
 of wheels (passive and active suspension, like the Onager) against tracks and half-tracks (the triangular-track
 Catagon is its own product, Stage 5k). Nothing to
 reuse for tracks, gearboxes or soil: no sprocket, gear or Bekker/terramechanics model exists yet, Chiron contacts are
 rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" and "Half-track"; The Western Producer,
 "Triangular tracks for STX and Magnum" (both blocked by the network proxy here, so fetch them before 5j.3/5j.6).
-- [ ] 5j.1 Stage 1, base tracked rover: `designs/pekari_rover.py` `PekariRover(Design)` + `components/pekari_rover.py` (`part` =
+- [x] 5j.1 Stage 1, base tracked rover: `designs/pekari_rover.py` `PekariRover(Design)` + `components/pekari_rover.py` (`part` =
   rover/hull/track_module/sprocket/idler/road_wheel/track_link; rear drive sprocket, front idler with tensioner, road
   wheels on bogies, return rollers; static `contact_length`, `track_gauge`, `overall`), `designs/pekari_rover_robot.py` in the
   `onager_robot.py` pattern (`DESIGN`, `CAD`, `MATERIALS`, `PARTS_KG`, `ASSUMPTIONS`, `geometry`, `mass_budget`, battery
@@ -149,14 +150,22 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   mean maximum pressure (Rowland MMP), steering ratio L/B ≤ 1.8, resistance (rolling, internal track loss, grade, drag),
   tractive effort against μW and soil shear (Bekker–Wong), top speed per grade, acceleration, range and endurance, static
   stability (longitudinal/lateral tip-over, side slope, step climb, trench crossing)
-- [ ] 5j.2 Gears and drive train: motor → gearbox (planetary, or spur + planetary) → sprocket; ratio from the hill-climb
+- [x] 5j.2 Gears and drive train: motor → gearbox (planetary, or spur + planetary) → sprocket; ratio from the hill-climb
   torque against top speed; gear sizing (module, tooth counts, Lewis bending, AGMA contact stress by hand, Talos FEA on a
   tooth); efficiency chain; gearbox life from Chronos rainflow on the mission torque; sprocket–link mesh (pitch, tooth
   count, chordal speed variation); motor and gearbox entries in `actuators.py`
-- [ ] 5j.3 Track: rubber band vs. linked pads, live vs. dead track; pre-tension, sag and the tension against throwing a
+- [x] 5j.3 Track: rubber band vs. linked pads, live vs. dead track; pre-tension, sag and the tension against throwing a
   track; road-wheel load distribution and pressure peaks; suspension options (rigid, bogie, torsion bar, Christie,
   Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
   regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
+- [x] 5j.1–5j.3 done in `30_pekari_rover` (real FEA; designs `pekari_rover.py`, `pekari_rover_robot.py`, `terramechanics.py`,
+  `gears.py`, `tracks.py`; tests `notebooks/designs/tests/test_pekari_rover.py`, `components/tests` CASES); the Chiron
+  builder `pekari_rover_robot.pekari()` moves to 5j.7. Follow-ups from the numbers:
+  - [ ] 5j.3a Measure the track's internal loss (f_in = 0.035 + 0.002 v assumed: most of the resistance on soft soil)
+  - [ ] 5j.3b Rubber pads or sharper grousers: the 30° climb fails on gravel (26°) and grass (20°) — traction, not power
+  - [ ] 5j.3c Thinner links (FEA: 6.3 MPa, SF 16 at the tight side) or a rubber band: the belts are 4.8 kg of 19 kg
+  - [ ] 5j.3d Hinge seals or sacrificial bushings: sandy hinges use the idler take-up in ~500 km (clean: ~50,000 km)
+  - [ ] 5j.3e A 20-tooth sprocket (polygon effect 3.4 % at 48 Hz → 1.2 %); the gears nitrided (contact SF 1.27 at stall)
 - [ ] 5j.4 Stage 2, two arms: `PekariManus(PekariRover)` in the Manus pattern (parent parameters via `replace`, Manus arm
   geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
   `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
