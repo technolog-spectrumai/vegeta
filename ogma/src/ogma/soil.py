@@ -64,8 +64,9 @@ SOILS = {s.name: s for s in [
     Soil("heavy clay", 0.13, 12.70e3, 1555.95e3, 68.95e3, 34.0, 0.006, 0.6, 0.05, source=_WONG + " (WES heavy clay)"),
     Soil("lean clay", 0.2, 16.43e3, 1724.69e3, 68.95e3, 20.0, 0.006, 0.5, 0.05, source=_WONG + " (WES lean clay)"),
     Soil("snow", 1.6, 4.37e3, 196.72e3, 1.03e3, 19.7, 0.04, 0.3, 0.06, source=_WONG + " (US snow)"),
-    Soil("mud", 0.5, 13.19e3, 692.15e3, 2.0e3, 6.0, 0.010, 0.25, 0.10,
-         source="assumed: Wong's wet clayey soil with half the cohesion and φ 6° (saturated)"),
+    Soil("mud", 1.0, 2.0e3, 50.0e3, 2.0e3, 6.0, 0.010, 0.25, 0.10,
+         source="assumed: saturated clay, an order of magnitude softer than Wong's wet clayey soil (k_c 2, k_φ 50, "
+                "n 1.0; c 2 kPa, φ 6°) — to be measured with a plate sinkage test"),
     Soil("asphalt", 1.0, 0.0, 1e12, 0.0, 0.0, 0.01, 0.8, 0.015, rigid=True, source="handbook: rubber on dry asphalt"),
     Soil("gravel", 1.0, 0.0, 1e12, 0.0, 0.0, 0.01, 0.6, 0.03, rigid=True, source="handbook: rubber on loose gravel"),
     Soil("grass", 1.0, 0.0, 1e12, 0.0, 0.0, 0.01, 0.5, 0.06, rigid=True, source="handbook: rubber on dry short grass"),
