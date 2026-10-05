@@ -50,10 +50,12 @@ CASES = (
              module="onager_manus", cls="OnagerManus")
     + _parts("robot", "hull", "upper_leg", "lower_leg", "wheel", "upper_arm", "forearm", "jaw", "broom_disc", "hood",
              "hood_shell", "basket", module="onager_sweeper", cls="OnagerSweeper")
+    + _parts("rover", "hull", "track_module", "sprocket", "idler", "road_wheel", "track_link", "pinion",
+             module="pekari_rover", cls="PekariRover")
 )
 DESIGN_CLASSES = [("rover", "Rover"), ("robot_dog", "RobotDog"), ("myropod", "Myropod"), ("apheloria", "Apheloria"),
                   ("onager", "OnagerSentinel"), ("onager_atlas", "OnagerAtlas"), ("onager_manus", "OnagerManus"),
-                  ("onager_sweeper", "OnagerSweeper")]
+                  ("onager_sweeper", "OnagerSweeper"), ("pekari_rover", "PekariRover")]
 
 
 def _close(a, b, rel=REL):

@@ -133,18 +133,19 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5i.7 Turbine creep life (Larson-Miller) from the hot-wheel FEA; an annular combustor model; spool-up dynamics
 - [ ] 5i.8 AGUYA's mission movie with the smoke (reuse `merlin_flight.render_movie`); the race in wind and at altitude
 
-## Stage 5j — Tracked rover "Scarab" (branch `dev_track`)
+## Stage 5j — Tracked rover "Pekari" (branch `dev_track`)
 A caterpillar-drive rover in the class of the rover and the Onager (~25 kg, ~5 kg payload), planned in the same way: base
 rover → two arms → basket, then the gears and track, a drive-type comparison with performance maps, and Chiron missions
-of wheels (passive and active suspension, like the Onager) against tracks, half-tracks and triangular tracks. Nothing to
+of wheels (passive and active suspension, like the Onager) against tracks and half-tracks (the triangular-track
+Catagon is its own product, Stage 5k). Nothing to
 reuse for tracks, gearboxes or soil: no sprocket, gear or Bekker/terramechanics model exists yet, Chiron contacts are
 rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" and "Half-track"; The Western Producer,
 "Triangular tracks for STX and Magnum" (both blocked by the network proxy here, so fetch them before 5j.3/5j.6).
-- [ ] 5j.1 Stage 1, base tracked rover: `designs/scarab.py` `Scarab(Design)` + `components/scarab.py` (`part` =
+- [ ] 5j.1 Stage 1, base tracked rover: `designs/pekari_rover.py` `PekariRover(Design)` + `components/pekari_rover.py` (`part` =
   rover/hull/track_module/sprocket/idler/road_wheel/track_link; rear drive sprocket, front idler with tensioner, road
-  wheels on bogies, return rollers; static `contact_length`, `track_gauge`, `overall`), `designs/scarab_robot.py` in the
+  wheels on bogies, return rollers; static `contact_length`, `track_gauge`, `overall`), `designs/pekari_rover_robot.py` in the
   `onager_robot.py` pattern (`DESIGN`, `CAD`, `MATERIALS`, `PARTS_KG`, `ASSUMPTIONS`, `geometry`, `mass_budget`, battery
-  placed for CG over the contact patch) and `30_scarab` §1–§3: mass budget and CG, nominal ground pressure W/(2bL) and
+  placed for CG over the contact patch) and `30_pekari_rover` §1–§3: mass budget and CG, nominal ground pressure W/(2bL) and
   mean maximum pressure (Rowland MMP), steering ratio L/B ≤ 1.8, resistance (rolling, internal track loss, grade, drag),
   tractive effort against μW and soil shear (Bekker–Wong), top speed per grade, acceleration, range and endurance, static
   stability (longitudinal/lateral tip-over, side slope, step climb, trench crossing)
@@ -156,37 +157,29 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   track; road-wheel load distribution and pressure peaks; suspension options (rigid, bogie, torsion bar, Christie,
   Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
   regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
-- [ ] 5j.4 Stage 2, two arms: `ScarabManus(Scarab)` in the Manus pattern (parent parameters via `replace`, Manus arm
-  geometry), `scarab_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
+- [ ] 5j.4 Stage 2, two arms: `PekariManus(Pekari)` in the Manus pattern (parent parameters via `replace`, Manus arm
+  geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
   `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
-  pressure redistribution, actuator checks; `30b_scarab_manus`
-- [ ] 5j.5 Stage 3, basket: `ScarabCarrier(ScarabManus)` with `_basket` from the Sweeper (`basket_*` parameters); payload
+  pressure redistribution, actuator checks; `30b_pekari_manus`
+- [ ] 5j.5 Stage 3, basket: `PekariCarrier(PekariManus)` with `_basket` from the Sweeper (`basket_*` parameters); payload
   against stability (load chart as for the Atlas), ground pressure loaded vs. empty, drive train re-checked on the loaded
-  grade, pick → place-in-basket reach check; `30c_scarab_carrier`
+  grade, pick → place-in-basket reach check; `30c_pekari_carrier`
 - [ ] 5j.6 Drive-type comparison and performance maps: `designs/terramechanics.py` (Bekker–Wong soil table: dry sand,
   loose sand, clay, snow, mud, grass, gravel, asphalt with k_c, k_φ, n, c, φ, K; wheel sinkage, compaction resistance,
   drawbar pull–slip; track with uniform and MMP pressure; rigid-surface μ and C_rr; step, trench and slope criteria).
   Drive types at equal mass and payload:
   - 4-wheel skid steer; 6-wheel rocker-bogie; 4 wheels on active legs (Onager)
-  - full tracks (Scarab)
-  - half-track: steered front wheels + rear track units (`ScarabHalftrack(Scarab)`: Ackermann front axle, short rear
+  - full tracks (Pekari Rover)
+  - [-] (not for now) half-track: steered front wheels + rear track units (`PekariHalftrack(Pekari)`: Ackermann front axle, short rear
     track); front/rear load split, wheel steering vs. track braking, road speed and efficiency against soft-soil
     traction, the front-wheel sinkage penalty
-  - triangular (delta) tracks: four track units in place of the wheels (`ScarabQuadtrac(Scarab)`, as the Quadtrac and
-    the STX/Magnum conversion kits). Each unit (reference image from the user): a large elevated drive wheel on the hub
-    at the apex, driving the rubber belt's inner lugs by friction/positive drive; two large end idlers (front and rear);
-    4 small mid-rollers on a walking-beam bogie frame that pivots under the hub; a tensioner on one idler; a rubber belt
-    with chevron tread. Separate CAD parts (`part` = delta_unit/drive_wheel/end_idler/mid_roller/bogie_frame). Checks:
-    the drive wheel clear of mud and rocks; unit pitch oscillation (stops ± deg, the anti-rotation link) on uneven ground;
-    contact length and footprint against a wheel; how the hub load spreads over the idlers and mid-rollers; belt wrap angle
-    and slip on the drive wheel (capstan, T1/T2 = e^(μθ)); added mass, height and gear ratio (the drive wheel is smaller
-    than the wheel it replaces); articulated vs. skid steering
+  - triangular (delta) track units: a separate product, **Catagon** (Stage 5k); it joins this comparison once built
   - legged (robot dog) for reference, optional
   `designs/mobility_maps.py` in the `propulsor_maps.py` library pattern (`build`, `save`, `load`, JSON in `data/`):
   drawbar pull/weight vs. slip per soil, max grade × soil, speed × grade → power and efficiency, cost of transport,
   obstacle height and trench width, go/no-go heat maps (terrain × drive type), radar summary (matplotlib `contourf` /
   `imshow`); `31_drive_comparison`
-- [ ] 5j.7 Terrain race, its own notebook `32_terrain_race` (MuJoCo/Chiron), not part of `30_scarab`/`31_drive_comparison`;
+- [ ] 5j.7 Terrain race, its own notebook `32_terrain_race` (MuJoCo/Chiron), not part of `30_pekari_rover`/`31_drive_comparison`;
   shared code in `designs/terrain_race.py` (course, hooks, runner, tables): the track as a multi-roller approximation (6–8 road-wheel cylinders per side,
   `role="foot"`, plus sprocket and idler, one velocity command per side, capsule pads between rollers to keep contact over
   steps, internal loss as `frictionloss`; a closed chain of pad links needs a `Connect` equality in `chiron/robot.py`,
@@ -195,20 +188,37 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   sand, mud, side slope). Robots on the same course:
   - (a) wheels, passive suspension (`rover` geometry, a new `rover_robot.py`)
   - (b) wheels, active suspension (Onager Sentinel: `onager_robot` + `Drive`)
-  - (c) full tracks (`scarab_robot.py`, `scarab_controller.py`: skid steer, slip-aware torque limit)
-  - (d) half-track (`scarab_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
+  - (c) full tracks (`pekari_rover_robot.py`, `pekari_controller.py`: skid steer, slip-aware torque limit)
+  - [-] (not for now) (d) half-track (`pekari_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
     Ackermann blended with the track-speed differential)
-  - (e) triangular tracks (`scarab_quadtrac_robot.py`: four delta units, each on a pitch hinge at the hub with
-    spring/stop limits; inside each, a walking-beam bogie on its own hinge carrying 4 mid-rollers, plus 2 end idlers, all
-    `role="foot"` and driven at the drive wheel's belt speed)
+  - (e) Catagon (Stage 5k), once built: four delta units, each on a pitch hinge at the hub with spring/stop limits;
+    inside each a walking-beam bogie on its own hinge with 4 mid-rollers and 2 end idlers, all `role="foot"`
   Mission via `PhasedMission`: cross the course → pick an object with the arms → put it in the basket → return;
   `scenarios/terrain_race.py` → `scenarios/output/terrain_race_*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
   tilt, sinkage, stall; `benchmark/terrain_race/` with `run_trials` over terrain × drive × seed, report and success-rate heat
   maps from `stats.cell_rates`
-- [ ] 5j.8 Tests + docs: `components/scarab*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_scarab*.py`
+- [ ] 5j.8 Tests + docs: `components/pekari*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_pekari*.py`
   (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive) and
   `test_terrain_race.py` (course zones, hook forces, slow race); `terramechanics` against
   published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
+
+## Stage 5k — Catagon, the two-segment quad-track rover (later; a separate product from Pekari)
+Two body segments joined by an articulation joint (steering by articulation, plus pitch/roll oscillation between the
+segments), each segment on a pair of triangular (delta) track units — four units in all, as the Quadtrac tractors and
+the STX/Magnum track conversions.
+- [ ] 5k.1 The delta unit, from the user's reference image: a large elevated drive wheel on the hub at the apex, driving
+  the rubber belt's inner lugs by friction/positive drive; two large end idlers (front and rear); 4 small mid-rollers on
+  a walking-beam bogie frame that pivots under the hub; a tensioner on one idler; a rubber belt with chevron tread. CAD
+  `designs/catagon.py` `Catagon(Design)` + `components/catagon.py` (`part` = catagon/front_segment/rear_segment/
+  articulation/delta_unit/drive_wheel/end_idler/mid_roller/bogie_frame), `designs/catagon_robot.py` (mass budget, CG
+  per segment), notebook `33_catagon`
+- [ ] 5k.2 Unit checks: the drive wheel clear of mud and rocks; unit pitch oscillation (stops ± deg, the anti-rotation
+  link) on uneven ground; contact length and footprint against a wheel; how the hub load spreads over the idlers and
+  mid-rollers; belt wrap angle and slip on the drive wheel (capstan, T1/T2 = e^(μθ)); added mass, height and gear ratio
+  (the drive wheel is smaller than a wheel it would replace); reuse `gears`, `tracks`, `terramechanics`
+- [ ] 5k.3 Articulation: steering torque and the articulation actuator, turning radius against articulation angle, the
+  load split between the segments, tip-over with the segments yawed and rolled, hitch loads (Talos FEA)
+- [ ] 5k.4 Catagon in the drive comparison (5j.6) and the terrain race (5j.7); tests + docs
 
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`
