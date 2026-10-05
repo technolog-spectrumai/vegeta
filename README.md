@@ -226,7 +226,10 @@ wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on it
   tooth life over a patrol mission (`designs/gears.py`, Chronos).
 - **Track:** belt tension, sag and derailing, pins by hand, FEA on a link and on the sprocket, link fatigue and hinge
   wear, skid steering (turning moment, pivot turns, clutch-brake vs regenerative power).
-The arms, the drive-type comparison and a terrain race in MuJoCo come next (todo 5j.4–5j.7); the two-segment
+- **MuJoCo:** the rover in Chiron, with its tracks as rows of rollers, drives 3 m, makes a 90° turn and drives 2 m on
+  rough ground with a log and stones. It produces the path, the side forces against the hand numbers, and a movie
+  (`designs/pekari_controller.py`).
+The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
 quad-track **Catagon** is its own product (todo 5k).
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.

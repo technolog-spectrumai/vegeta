@@ -160,12 +160,16 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
 - [x] 5j.1–5j.3 done in `30_pekari_rover` (real FEA; designs `pekari_rover.py`, `pekari_rover_robot.py`, `terramechanics.py`,
   `gears.py`, `tracks.py`; tests `notebooks/designs/tests/test_pekari_rover.py`, `components/tests` CASES); the Chiron
-  builder `pekari_rover_robot.pekari()` moves to 5j.7. Follow-ups from the numbers:
+  model came after (5j.1b). Follow-ups from the numbers:
   - [ ] 5j.3a Measure the track's internal loss (f_in = 0.035 + 0.002 v assumed: most of the resistance on soft soil)
   - [ ] 5j.3b Rubber pads or sharper grousers: the 30° climb fails on gravel (26°) and grass (20°) — traction, not power
   - [ ] 5j.3c Thinner links (FEA: 6.3 MPa, SF 16 at the tight side) or a rubber band: the belts are 4.8 kg of 19 kg
   - [ ] 5j.3d Hinge seals or sacrificial bushings: sandy hinges use the idler take-up in ~500 km (clean: ~50,000 km)
   - [ ] 5j.3e A 20-tooth sprocket (polygon effect 3.4 % at 48 Hz → 1.2 %); the gears nitrided (contact SF 1.27 at stall)
+- [x] 5j.1b The Pekari Rover in MuJoCo (`30_pekari_rover` §7): `pekari_rover_robot.pekari()` (each track a row of 11
+  rollers, the road wheels on bogies with passive hinges, velocity servos at the belt speed, a roller may carry 1/3 of
+  its side's drive force) and `pekari_controller.py` (`TrackDrive` legs, `uneven_ground`, `leg_table`): 3 m, a 90° turn
+  on 1 m, 2 m over rough soil with a 60 mm log and stones; the path, side forces against `tracks`, and a movie
 - [ ] 5j.4 Stage 2, two arms: `PekariManus(PekariRover)` in the Manus pattern (parent parameters via `replace`, Manus arm
   geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
   `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
@@ -199,7 +203,8 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   sand, mud, side slope). Robots on the same course:
   - (a) wheels, passive suspension (`rover` geometry, a new `rover_robot.py`)
   - (b) wheels, active suspension (Onager Sentinel: `onager_robot` + `Drive`)
-  - (c) full tracks (`pekari_rover_robot.py`, `pekari_controller.py`: skid steer, slip-aware torque limit)
+  - (c) full tracks: `pekari_rover_robot.pekari()` and `pekari_controller.TrackDrive` exist (5j.1b); add a slip-aware
+    torque limit
   - [-] (not for now) (d) half-track (`pekari_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
     Ackermann blended with the track-speed differential)
   - (e) Catagon (Stage 5k), once built: four delta units, each on a pitch hinge at the hub with spring/stop limits;

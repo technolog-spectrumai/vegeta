@@ -203,3 +203,31 @@ def test_tension_and_stability():
                          step_height=0.11, contact_front=0.215, contact_rear=-0.215)
     assert s["tip_uphill_deg"] == pytest.approx(s["tip_downhill_deg"])
     assert s["trench_m"] == pytest.approx(0.36)
+
+
+# ----------------------------------------------------------------------------------------------- MuJoCo (Chiron)
+def test_chiron_model_stands_and_drives():
+    pytest.importorskip("mujoco")
+    from vegeta import chiron as ch
+    import pekari_controller as pc
+
+    robot = prr.pekari()
+    assert robot.total_mass() == pytest.approx(prr.cg()["loaded"]["mass_kg"])
+    lab = prr.pekari_lab(ch.Flat(), robot=robot)
+    ep = pc.run(lab, legs=[], duration=0.5)
+    fz = np.asarray(ep.log["foot_force"])[-1, :, 2]
+    assert fz.sum() == pytest.approx(robot.total_mass() * prr.G, rel=0.02)
+    ep = pc.run(lab, legs=[pc.Leg("straight", 1.5, v=0.8)], duration=3.0)
+    ts = pc.timeseries(ep)
+    assert ts.v.max() == pytest.approx(0.8, rel=0.1) and abs(ts.yaw_deg.iloc[-1]) < 3.0
+
+
+@pytest.mark.slow
+def test_chiron_mission_on_uneven_ground():
+    pytest.importorskip("mujoco")
+    import pekari_controller as pc
+
+    lab = prr.pekari_lab(pc.uneven_ground())
+    ep = pc.run(lab, pc.MISSION, duration=16.0)
+    assert ep.log["events"][-1][1] == "done"
+    assert pc.timeseries(ep).yaw_deg.iloc[-1] == pytest.approx(90.0, abs=10.0)

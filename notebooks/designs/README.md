@@ -121,8 +121,16 @@ and the gearbox's final-stage sun pinion (involute teeth). Static methods keep C
 
 `pekari_rover_robot.py` (`import pekari_rover_robot as prr`) holds the design's numbers: `DESIGN`, `CAD`, `MATERIALS`,
 `PARTS_KG`, `ASSUMPTIONS`, `DRIVE` / `MOTOR` (catalogue keys), `PAYLOAD_KG`; `geometry` (SI), `mass_budget`, `masses`
-(each mass with its position, the battery placed to balance the CG over the road wheels), `cg` (empty and loaded). Its
-Chiron (MuJoCo) model comes with the terrain race (todo 5j.7).
+(each mass with its position, the battery placed to balance the CG over the road wheels), `cg` (empty and loaded).
+`pekari()` builds it for Chiron (MuJoCo): each track is a row of 11 rollers (sprocket, idler, 7 ground rollers every
+60 mm, one on each inclined run), the road wheels on bogies with passive hinges, and every roller a velocity servo at
+its side's belt speed. `pekari_lab`, `rollers`, `roller_joints` and `LAB_OPTIONS` go with it.
+
+`pekari_controller.py` drives it (notebook 30 §7):
+- `TrackDrive(legs)`: skid steering with a heading hold, over `Leg("straight", m)` / `Leg("turn", deg, radius=…)`;
+- `MISSION`: 3 m, a 90° turn on 1 m, 2 m;
+- `uneven_ground()`: rough soil with a log and stones;
+- `run`, `timeseries` (path, heading, tilt, side belt forces, slip, power) and `leg_table`.
 
 `terramechanics.py` (`import terramechanics as tm`) is the soil: `SOILS` (Bekker–Wong values from Wong's tables and
 handbook μ / C_rr for hard ground), `pressure_sinkage` / `sinkage`, `track_sinkage`, `compaction_resistance_track`,
