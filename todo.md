@@ -157,13 +157,15 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   track; road-wheel load distribution and pressure peaks; suspension options (rigid, bogie, torsion bar, Christie,
   Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
   regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
-- [ ] 5j.4 Stage 2, two arms: `PekariManus(Pekari)` in the Manus pattern (parent parameters via `replace`, Manus arm
+- [ ] 5j.4 Stage 2, two arms: `PekariManus(PekariRover)` in the Manus pattern (parent parameters via `replace`, Manus arm
   geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
   `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
   pressure redistribution, actuator checks; `30b_pekari_manus`
-- [ ] 5j.5 Stage 3, basket: `PekariCarrier(PekariManus)` with `_basket` from the Sweeper (`basket_*` parameters); payload
-  against stability (load chart as for the Atlas), ground pressure loaded vs. empty, drive train re-checked on the loaded
-  grade, pick → place-in-basket reach check; `30c_pekari_carrier`
+- [ ] 5j.5 Stage 3, basket: the basket is Pekari's (and Catagon's) default configuration — built with the base rover in
+  5j.1 (`PekariRover` `part="basket"`, `basket_*` parameters, the Sweeper's sheet-metal basket; the 5 kg payload sits in
+  it; loaded vs. empty pressure, CG and the drive re-checked on the loaded grade are in `30_pekari_rover`). Left for
+  stage 3 with the arms: the payload range against stability (a load chart as for the Atlas, payload mass × position in
+  the basket) and the pick → place-in-basket reach check; in `30b_pekari_manus`
 - [ ] 5j.6 Drive-type comparison and performance maps: `designs/terramechanics.py` (Bekker–Wong soil table: dry sand,
   loose sand, clay, snow, mud, grass, gravel, asphalt with k_c, k_φ, n, c, φ, K; wheel sinkage, compaction resistance,
   drawbar pull–slip; track with uniform and MMP pressure; rigid-surface μ and C_rr; step, trench and slope criteria).
@@ -203,13 +205,13 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
 
 ## Stage 5k — Catagon, the two-segment quad-track rover (later; a separate product from Pekari)
-Two body segments joined by an articulation joint (steering by articulation, plus pitch/roll oscillation between the
+Like Pekari, it carries a payload basket by default. Two body segments joined by an articulation joint (steering by articulation, plus pitch/roll oscillation between the
 segments), each segment on a pair of triangular (delta) track units — four units in all, as the Quadtrac tractors and
 the STX/Magnum track conversions.
 - [ ] 5k.1 The delta unit, from the user's reference image: a large elevated drive wheel on the hub at the apex, driving
   the rubber belt's inner lugs by friction/positive drive; two large end idlers (front and rear); 4 small mid-rollers on
   a walking-beam bogie frame that pivots under the hub; a tensioner on one idler; a rubber belt with chevron tread. CAD
-  `designs/catagon.py` `Catagon(Design)` + `components/catagon.py` (`part` = catagon/front_segment/rear_segment/
+  `designs/catagon.py` `Catagon(Design)` + `components/catagon.py` (`part` = catagon/front_segment/rear_segment/basket/
   articulation/delta_unit/drive_wheel/end_idler/mid_roller/bogie_frame), `designs/catagon_robot.py` (mass budget, CG
   per segment), notebook `33_catagon`
 - [ ] 5k.2 Unit checks: the drive wheel clear of mud and rocks; unit pitch oscillation (stops ± deg, the anti-rotation

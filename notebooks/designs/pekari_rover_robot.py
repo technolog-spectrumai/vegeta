@@ -28,7 +28,8 @@ MOTOR = "BLDC 100 W, 24 V"                           # the bare motor inside the
 # ---- the design: pekari_rover.py's parameter defaults (mm; tests check they match PekariRover.parameters) ----
 DESIGN = {
     "hull_length": 560.0, "hull_width": 300.0, "hull_height": 140.0, "hull_chamfer": 15.0, "ground_clearance": 90.0,
-    "sensor_box": 80.0, "frame_offset": 56.0, "frame_thickness": 6.0, "track_width": 80.0, "track_pitch": 31.0,
+    "sensor_box": 80.0, "basket_length": 380.0, "basket_width": 260.0, "basket_height": 120.0, "basket_wall": 1.5,
+    "basket_x": -70.0, "frame_offset": 56.0, "frame_thickness": 6.0, "track_width": 80.0, "track_pitch": 31.0,
     "link_thickness": 8.0, "grouser_height": 6.0, "guide_height": 12.0, "guide_width": 16.0, "pin_diameter": 5.0,
     "sprocket_teeth": 12, "sprocket_x": -290.0, "sprocket_z": 140.0, "idler_diameter": 110.0, "idler_x": 290.0,
     "idler_z": 110.0, "road_wheel_diameter": 70.0, "road_wheels": 4, "road_wheel_spacing": 120.0,
@@ -46,10 +47,12 @@ CAD = {
     "idler_volume": 655493.3,
     "road_wheel_volume": 244573.0,
     "pinion_volume": 1384.4,
+    "basket_volume": 401053.5,
+    "basket_com": (0.0, 0.0, 42.41),
 }
 
 #: Densities [kg/mm³].
-MATERIALS = {"Al 6061-T6 hull shell": 2.70e-6, "PA6-GF30 links, sprockets, wheels": 1.36e-6,
+MATERIALS = {"Al 6061-T6 hull shell": 2.70e-6, "Al 5754 basket sheet": 2.66e-6, "PA6-GF30 links, sprockets, wheels": 1.36e-6,
              "steel pins (42CrMo4)": 7.85e-6}
 SHELL_T_MM = 1.5                                     # hull shell: 1.5 mm Al sheet, bent and riveted (the CAD hull is solid)
 WHEEL_FILL = 0.35                                    # wheels and sprockets are ribbed mouldings: 35 % of the solid volume
@@ -76,7 +79,9 @@ ASSUMPTIONS = {
              "sprocket; the sprocket on the gearbox's output shaft",
     "battery_position": "on the hull floor at the x that puts the empty rover's CG over the centre of the road wheels "
                         "(the contact patch's centre), within the hull (|x| ≤ hull_length/2 − 100 mm)",
-    "payload_position": "a 5 kg payload centred on the deck, its CG 60 mm above the roof",
+    "basket": "the payload basket on the roof is the default configuration (Pekari and the later Catagon both carry "
+              "one): 1.5 mm Al 5754 sheet of the CAD volume",
+    "payload_position": "a 5 kg payload in the basket, centred on its floor, its CG 50 mm above the floor",
     "rubber": "the links carry no rubber pads: PA6 grousers on soil, hard plastic on asphalt (μ 0.6 is the "
               "terramechanics table's rubber value — a pad would add it; to be measured)",
     "internal_loss": "f_in = 0.035 + 0.002 v (v m/s): a small plastic-link track with 70 mm road wheels and plain "
@@ -105,10 +110,13 @@ def cad_numbers(p: dict | None = None, *, recompute: bool = False) -> dict:
     design = pekari_rover.PekariRover()
     over = {k: v for k, v in p.items() if k in DESIGN}
     m = {k: design.generate(part=k, **over).measure() for k in ("hull", "track_link", "sprocket", "idler", "road_wheel", "pinion")}
+    has_basket = p["basket_height"] > 0 and p["basket_length"] > 0 and p["basket_width"] > 0
+    bk = design.generate(part="basket", **over).measure() if has_basket else {"volume": 0.0, "center_of_mass": (0.0, 0.0, 0.0)}
     return {"hull_surface_area": m["hull"]["surface_area"], "hull_com": tuple(m["hull"]["center_of_mass"]),
             "link_volume": m["track_link"]["volume"], "sprocket_volume": m["sprocket"]["volume"],
             "idler_volume": m["idler"]["volume"], "road_wheel_volume": m["road_wheel"]["volume"],
-            "pinion_volume": m["pinion"]["volume"]}
+            "pinion_volume": m["pinion"]["volume"], "basket_volume": bk["volume"],
+            "basket_com": tuple(bk["center_of_mass"])}
 
 
 def _design():
@@ -163,6 +171,8 @@ def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict |
         f"road wheels 2x{int(p['road_wheels'])} (PA6-GF30, ribbed, from CAD)": 2 * int(p["road_wheels"]) * cad["road_wheel_volume"] * pa * WHEEL_FILL,
         f"track drives 2x ({DRIVE}; {drive.mass_g / 1000:.2f} kg each)": 2 * drive.mass_g / 1000.0,
     }
+    if cad.get("basket_volume", 0.0) > 0:
+        out[f"basket ({p['basket_wall']:g} mm Al 5754, from CAD)"] = cad["basket_volume"] * MATERIALS["Al 5754 basket sheet"]
     out.update(PARTS_KG if parts_kg is None else parts_kg)
     return out
 
@@ -224,6 +234,8 @@ def masses(p: dict | None = None, payload_kg: float = 0.0) -> list:
             pos[name] = (0.0, z_mid)
         elif name.startswith("hull frame"):
             pos[name] = (0.0, z_mid)
+        elif name.startswith("basket"):
+            pos[name] = (p["basket_x"] * mm, z_roof + cad["basket_com"][2] * mm)
         elif name.startswith("track frames"):
             pos[name] = ((sx + ix) / 2, (zw + min(sz, iz)) / 2 + 0.02)
     batt = next(k for k in budget if k.startswith("battery"))
@@ -235,7 +247,10 @@ def masses(p: dict | None = None, payload_kg: float = 0.0) -> list:
     x_batt = max(-lim, min(lim, x_batt))
     out = others + [(batt, budget[batt], x_batt, z_floor + 0.04)]
     if payload_kg:
-        out.append(("payload", payload_kg, 0.0, z_roof + 0.06))
+        has_basket = cad.get("basket_volume", 0.0) > 0
+        x_pl = p["basket_x"] * mm if has_basket else 0.0
+        z_pl = z_roof + (p["basket_wall"] * mm + 0.05 if has_basket else 0.06)
+        out.append(("payload", payload_kg, x_pl, z_pl))
     return out
 
 

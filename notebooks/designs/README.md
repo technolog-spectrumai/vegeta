@@ -111,3 +111,30 @@ engine pod on a pylon and a V-tail. `for_engine(engine)` sizes the pod and nozzl
 - `size_for`: the thinnest fuselage whose tank holds it;
 - `race_table`.
 
+`pekari_rover.py` (`PekariRover`, notebook 30, branch `dev_track`) is the small tracked rover: the hull with a sensor
+block and the payload basket on its roof (the default configuration), two track modules (side frame, rear drive
+sprocket of two toothed discs, front idler, road wheels in pairs on bogies, a return roller, the belt as a band), and
+the parts on their own — sprocket, idler, road wheel, one hinged track link (knuckles, pin bores, grouser, guide horn)
+and the gearbox's final-stage sun pinion (involute teeth). Static methods keep CAD and mechanics in step:
+`track_center_y`, `track_gauge`, `sprocket_pitch_radius`, `road_wheel_x/z`, `contact_length`, `belt_circles`,
+`belt_length` (the convex hull of the wrapped circles), `link_count` (links and the idler's take-up), `overall`.
+
+`pekari_rover_robot.py` (`import pekari_rover_robot as prr`) holds the design's numbers: `DESIGN`, `CAD`, `MATERIALS`,
+`PARTS_KG`, `ASSUMPTIONS`, `DRIVE` / `MOTOR` (catalogue keys), `PAYLOAD_KG`; `geometry` (SI), `mass_budget`, `masses`
+(each mass with its position, the battery placed to balance the CG over the road wheels), `cg` (empty and loaded). Its
+Chiron (MuJoCo) model comes with the terrain race (todo 5j.7).
+
+`terramechanics.py` (`import terramechanics as tm`) is the soil: `SOILS` (Bekker–Wong values from Wong's tables and
+handbook μ / C_rr for hard ground), `pressure_sinkage` / `sinkage`, `track_sinkage`, `compaction_resistance_track`,
+`thrust_track` (Janosi–Hanamoto, Wong's closed form), `max_thrust_track`, `drawbar_pull_track`, `mmp_rowland`, and the
+rigid wheel's `wheel_sinkage`, `wheel_compaction_resistance`, `thrust_wheel`.
+
+`gears.py` is the drive train: `involute_profile` (the CAD pinion's construction), `planetary` (ratio, assembly and
+neighbour conditions), `select_ratio` (top speed against the continuous climbing torque on a motor's line),
+`lewis_bending`, `contact_stress` (Hertz, external and internal meshes), `stage_loads`, `MATERIALS` (ISO 6336 class
+allowables), `chain_efficiency`, `sn_cycles`, `sprocket_chordal` (the polygon effect) and `capstan`.
+
+`tracks.py` is the track: `ground_pressure`, `resistance` (compaction or rolling, internal, grade, drag), `tractive_limit`,
+`road_wheel_loads` (rigid frame or bogies), `sag`, `derail_tension`, `drive_tension`, `skid_steer` (Wong's turning
+resistance; clutch-brake and regenerative power), `min_turn_radius`, `stability` (tip-over, step, trench).
+

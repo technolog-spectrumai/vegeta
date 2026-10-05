@@ -214,6 +214,21 @@ turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the je
 - **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
   80 m/s) and its vibration modes.
 
+**Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
+wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
+- **Machine:** a hull between two track modules (rear drive sprocket, front idler on a tensioner slide, four road wheels
+  on two bogies, a return roller, a belt of 51 PA6-GF30 links with steel pins); CAD `designs/pekari_rover.py`, numbers
+  and mass budget `designs/pekari_rover_robot.py`.
+- **Ground:** ground pressure and Rowland's MMP, Bekker–Wong sinkage, compaction and thrust–slip per soil
+  (`designs/terramechanics.py`), against the same load on the wheeled rover's wheels; resistance, traction, top speed per
+  grade, the steepest grade per soil, range and endurance; tip-over, step, trench, road-wheel loads (`designs/tracks.py`).
+- **Drive train:** the gear ratio window, a 16:1 two-stage planetary, Lewis and Hertz per stage, FEA on the sun pinion,
+  tooth life over a patrol mission (`designs/gears.py`, Chronos).
+- **Track:** belt tension, sag and derailing, pins by hand, FEA on a link and on the sprocket, link fatigue and hinge
+  wear, skid steering (turning moment, pivot turns, clutch-brake vs regenerative power).
+The arms, the drive-type comparison and a terrain race in MuJoCo come next (todo 5j.4–5j.7); the two-segment
+quad-track **Catagon** is its own product (todo 5k).
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

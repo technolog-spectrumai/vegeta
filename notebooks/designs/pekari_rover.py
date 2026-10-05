@@ -29,26 +29,31 @@ def _perimeter(poly):
 
 class PekariRover(Design):
     """Pekari Rover: a small tracked (caterpillar) rover, ~20 kg with ~5 kg payload — a hull box between two track
-    modules. Each track module: a side frame plate on the hull, a rear drive sprocket (raised), a front idler on a
+    modules, a sheet-metal basket on the roof for the payload (the default configuration; ``basket_height`` 0 = none). Each track module: a side frame plate on the hull, a rear drive sprocket (raised), a front idler on a
     tensioner slide, road wheels in pairs on bogies, a return roller, and a belt of hinged links (pins across the
     width, a grouser under each link, a centre guide horn on top running in the grooves of the wheels; the sprocket
     is two toothed discs either side of the horns, seating on the link knuckles). x forward, y left, z up, ground at
     z = 0 (the grouser tips).
 
-    ``part`` selects the whole rover, the hull, one track module (in its own frame: the track centre plane at
+    ``part`` selects the whole rover, the hull, the basket (own frame: the floor's underside on z = 0), one track module (in its own frame: the track centre plane at
     y = 0), or one sprocket, idler, road wheel, track link or the gearbox's final-stage sun pinion (each in its own
     frame, the axis along y through the origin; the link with its rear pin at x = −pitch/2), for FEA and the mass
     budget."""
 
     parameters = [
         Parameter("part", "rover", choices=("rover", "hull", "track_module", "sprocket", "idler", "road_wheel",
-                                            "track_link", "pinion"), description="what to build"),
+                                            "track_link", "pinion", "basket"), description="what to build"),
         Parameter("hull_length", 560.0, "mm", min=100),
         Parameter("hull_width", 300.0, "mm", min=50),
         Parameter("hull_height", 140.0, "mm", min=30),
         Parameter("hull_chamfer", 15.0, "mm", min=1),
         Parameter("ground_clearance", 90.0, "mm", min=20, description="hull floor above the ground"),
         Parameter("sensor_box", 80.0, "mm", min=0, description="sensor block on the hull roof, front (0 = none)"),
+        Parameter("basket_length", 380.0, "mm", min=0, description="payload basket on the roof (the default configuration)"),
+        Parameter("basket_width", 260.0, "mm", min=0),
+        Parameter("basket_height", 120.0, "mm", min=0, description="0 = no basket"),
+        Parameter("basket_wall", 1.5, "mm", min=0.5, description="Al sheet"),
+        Parameter("basket_x", -70.0, "mm", description="basket centre along x (behind the sensor block)"),
         Parameter("frame_offset", 56.0, "mm", min=10, description="hull side to the track centre plane"),
         Parameter("frame_thickness", 6.0, "mm", min=1, description="track side frame plate"),
         Parameter("track_width", 80.0, "mm", min=20),
@@ -143,7 +148,8 @@ class PekariRover(Design):
         xmax = max(x + r for x, _, r in out)
         top_track = max(z + r for _, z, r in out)
         hull_top = p["ground_clearance"] + p["hull_height"]
-        height = max(top_track, hull_top + (p["sensor_box"] * 0.5 if p["sensor_box"] > 0 else 0.0))
+        height = max(top_track, hull_top + (p["sensor_box"] * 0.5 if p["sensor_box"] > 0 else 0.0),
+                     hull_top + (p["basket_height"] if p["basket_height"] > 0 else 0.0))
         return {"length": max(xmax, p["hull_length"] / 2) - min(xmin, -p["hull_length"] / 2),
                 "width": 2 * (PekariRover.track_center_y(p) + p["track_width"] / 2), "height": height,
                 "hull_top": hull_top}
@@ -279,6 +285,20 @@ class PekariRover(Design):
             out = out.union(axle)
         return out.union(self._belt(p))
 
+    def _basket(self, p):
+        """Sheet-metal basket: floor, four walls and a 10 mm rim lip outwards (own frame: the floor's underside on
+        z = 0), as the Onager Sweeper's."""
+        L, W, H, t = p["basket_length"], p["basket_width"], p["basket_height"], p["basket_wall"]
+        outer = cq.Workplane("XY").box(L, W, H, centered=(True, True, False))
+        inner = cq.Workplane("XY").box(L - 2 * t, W - 2 * t, H, centered=(True, True, False)).translate((0, 0, t))
+        rim = cq.Workplane("XY").box(L + 20.0, W + 20.0, 2.0, centered=(True, True, False)).translate((0, 0, H - 2.0))
+        rim = rim.cut(cq.Workplane("XY").box(L - 2 * t, W - 2 * t, 10.0, centered=(True, True, False)).translate((0, 0, H - 6.0)))
+        return outer.cut(inner).union(rim)
+
+    @staticmethod
+    def has_basket(p):
+        return p["basket_height"] > 0 and p["basket_length"] > 0 and p["basket_width"] > 0
+
     def _hull(self, p):
         Lh, Wh, Hh, ch = p["hull_length"], p["hull_width"], p["hull_height"], p["hull_chamfer"]
         z0 = p["ground_clearance"]
@@ -302,6 +322,10 @@ class PekariRover(Design):
             return self._link(p)
         if part == "pinion":
             return self._pinion(p)
+        if part == "basket":
+            if not self.has_basket(p):
+                raise ValueError("no basket: basket_length, basket_width and basket_height must be > 0")
+            return self._basket(p)
         if p["idler_x"] <= p["sprocket_x"]:
             raise ValueError("the idler (front) must be ahead of the sprocket (rear)")
         xs = self.road_wheel_x(p)
@@ -309,6 +333,10 @@ class PekariRover(Design):
             raise ValueError("the road wheels must fit between the sprocket and the idler")
         if p["frame_offset"] < p["track_width"] / 2 + 10.0 + p["frame_thickness"]:
             raise ValueError("frame_offset must leave room for half the track, the frame plate and a 10 mm gap")
+        if self.has_basket(p):
+            x_front = p["hull_length"] / 2 - (p["sensor_box"] + p["hull_chamfer"] if p["sensor_box"] > 0 else 0.0)
+            if p["basket_x"] - p["basket_length"] / 2 < -p["hull_length"] / 2 or p["basket_x"] + p["basket_length"] / 2 > x_front:
+                raise ValueError("the basket must sit on the roof, behind the sensor block")
         if int(p["road_wheels"]) % 2:
             raise ValueError("road_wheels must be even (pairs on bogies)")
         if part == "track_module":
@@ -320,4 +348,8 @@ class PekariRover(Design):
         module = self._track_module(p)
         left = module.translate((0, yc, 0))
         right = module.mirror("XZ").translate((0, -yc, 0))
-        return hull.union(left).union(right)
+        rover = hull.union(left).union(right)
+        if self.has_basket(p):
+            roof = p["ground_clearance"] + p["hull_height"]
+            rover = rover.union(self._basket(p).translate((p["basket_x"], 0, roof)))
+        return rover
