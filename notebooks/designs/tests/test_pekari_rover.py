@@ -231,3 +231,49 @@ def test_chiron_mission_on_uneven_ground():
     ep = pc.run(lab, pc.MISSION, duration=16.0)
     assert ep.log["events"][-1][1] == "done"
     assert pc.timeseries(ep).yaw_deg.iloc[-1] == pytest.approx(90.0, abs=10.0)
+
+
+# ----------------------------------------------------------------------------------------------- the trials (§7.2)
+def test_trial_terrains():
+    pytest.importorskip("mujoco")
+    import pekari_controller as pc
+
+    hills = pc.micro_hills()
+    assert hills.diameter == pytest.approx(2 * pc.ROVER_LENGTH)
+    assert 14.5 < pc.max_slope_deg(hills, (0.0, 8.0, -1.5, 1.5)) <= 15.2       # sized to 15 deg, blends included
+    assert hills.height(-1.0, 0.0) == 0.0 and abs(hills.height(3.0, 0.3)) <= hills.amplitude
+    hill = pc.steep_hill()
+    (xs, zs), (x_top0, x_top1) = hill.knots, hill.top
+    x = np.linspace(xs[0] + 0.3, xs[1] - 0.3, 50)
+    grade = np.degrees(np.arctan(np.gradient(hill.height(x, 0.0 * x), x)))
+    assert np.allclose(grade, 30.0, atol=0.5)
+    assert hill.height((x_top0 + x_top1) / 2, 0.0) == pytest.approx(0.9)
+
+
+def test_mud_hook_pushes_and_drags():
+    pytest.importorskip("mujoco")
+    from vegeta import chiron as ch
+    import pekari_controller as pc
+
+    robot = prr.pekari()
+    lab = prr.pekari_lab(ch.Flat(), robot=robot, course_extent=(-2.0, 4.0, -2.0, 2.0))
+    hook = pc.MudHook(zone=(-1.0, 3.0), flow=(0.0, -0.15), gust=0.0)
+    lab.add_hook(hook)
+    ep = pc.run(lab, legs=[pc.Leg("straight", 1.0, v=0.6)], duration=1.5)
+    b = lab._body_id("hull")
+    F = lab.data.xfrc_applied[b, :3]
+    W = robot.total_mass() * prr.G
+    assert F[1] == pytest.approx(-0.15 * W, rel=0.05)                        # the drift, full fraction in the zone
+    assert F[0] < -hook.R_c * 0.9                                             # drag against the forward motion
+    assert lab.model.geom_friction[lab._geom_id("L_g4"), 0] == pytest.approx(0.25)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("name", ["micro_hills", "steep_hill", "mud"])
+def test_trial_ends_with_an_outcome(name):
+    pytest.importorskip("mujoco")
+    import pekari_controller as pc
+
+    ep = pc.run_trial(name, log_geoms=False)
+    assert ep.outcome["reason"] in ("success", "fall", "stall", "off_course", "timeout")
+    assert ep.log["t"][-1] == pytest.approx(ep.outcome["t_end"], abs=0.05)   # the log (and the movie) ends there

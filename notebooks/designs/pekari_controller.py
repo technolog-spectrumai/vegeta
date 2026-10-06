@@ -12,6 +12,18 @@ distance, turn by an angle on a radius — and the tables of a run.
 The controller never reads the terrain. ``timeseries(ep)`` and ``leg_table(ep)`` give the numbers (path, speed,
 heading, tilt, side belt forces and power, slip).
 
+**Trials** (notebook 30 §7.2, ``TRIALS``): the unchanged rover on three grounds, each run under ``FailureRules`` so
+the episode — and its movie — ends at the frame where the mission fails (fall, stall, off course, timeout) or at
+the finish line:
+
+* ``micro_hills`` — an irregular egg-crate of hills the rover's own radius: hill diameter twice the rover's length
+  (1.44 m), the steepest slope 15°, sized numerically (``A`` from the field's max gradient on a fine grid);
+* ``steep_hill`` — flat, up a 30° ramp, a plateau, down the other side;
+* ``mud`` — flat rough ground with a zone of water-ish soil that moves under the tracks (``MudHook``: the rollers'
+  friction drops to the mud's μ, the hull meets the Bekker compaction resistance of ``terramechanics.SOILS['mud']``
+  plus a viscous drag, and the soft layer drifts sideways and pushes the rover with it). MuJoCo's ground stays
+  rigid: sinkage shows up as resistance and lost grip, not as a rut.
+
     import pekari_rover_robot as prr, pekari_controller as pc
     lab = prr.pekari_lab(chiron.Flat())
     ep = lab.run(pc.TrackDrive(pc.MISSION), duration=14.0, rules=None)
@@ -27,7 +39,9 @@ from vegeta.chiron import Command
 
 import pekari_rover_robot as prr
 
-__all__ = ["Leg", "MISSION", "COURSE", "TrackDrive", "yaw_of", "uneven_ground", "run", "timeseries", "leg_table"]
+__all__ = ["Leg", "MISSION", "COURSE", "TrackDrive", "yaw_of", "uneven_ground", "run", "timeseries", "leg_table",
+           "micro_hills", "steep_hill", "mud_flat", "max_slope_deg", "MudHook", "TRIALS", "trial_rules", "run_trial",
+           "trial_table", "end_card"]
 
 
 def yaw_of(quat) -> float:
@@ -246,3 +260,223 @@ def leg_table(ep, legs=MISSION, robot=None):
             "energy [J]": float(np.trapezoid(s.P_mech, s.t)),
         }
     return pd.DataFrame(rows).T
+
+
+# ----------------------------------------------------------------------------------------------- the trials (§7.2)
+ROVER_LENGTH = 0.72                                     # m, PekariRover.overall(p)['length'] of the default design
+
+
+def max_slope_deg(terrain, extent, cell: float = 0.01) -> float:
+    """The steepest gradient [deg] of ``terrain.height`` on a ``cell`` grid over ``extent`` (x0, x1, y0, y1)."""
+    x = np.arange(extent[0], extent[1], cell)
+    y = np.arange(extent[2], extent[3], cell)
+    X, Y = np.meshgrid(x, y)
+    Z = terrain.height(X, Y)
+    gy, gx = np.gradient(Z, cell)
+    return float(np.degrees(np.arctan(np.hypot(gx, gy).max())))
+
+
+def micro_hills(diameter: float = 2 * ROVER_LENGTH, slope_deg: float = 15.0, start: float = 0.5, length: float = 7.0,
+                extent=(-1.5, 8.5, -3.0, 3.0)):
+    """Irregular micro-hills: an egg-crate z = A sin(kx + φ(y)) sin(ky + φ(x)) whose hills (the positive lobes) are
+    ``diameter`` across (k = π / diameter) with slowly varying phases so no two rows match; ``A`` is set so the
+    steepest gradient of the field is ``slope_deg`` (measured on a 10 mm grid). Flat before ``start`` (a 0.5 m
+    blend) and after ``start + length``."""
+    from vegeta import chiron as ch
+
+    k = math.pi / diameter
+
+    def field(x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        return np.sin(k * x + 0.6 * np.sin(0.37 * k * y)) * np.sin(k * y + 0.5 * np.sin(0.41 * k * x) + 0.9)
+
+    blend = 1.5
+
+    def unit(x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        w_in = np.clip((x - start) / blend, 0.0, 1.0)
+        w_out = np.clip((start + length - x) / blend, 0.0, 1.0)
+        w = (w_in * w_out) ** 2 * (3 - 2 * w_in * w_out)                 # a smooth step in and out
+        return field(x, y) * w
+
+    # the ground scales with A, blends included: size it on the whole course
+    A = math.tan(math.radians(slope_deg)) / math.tan(math.radians(
+        max_slope_deg(ch.Custom(unit), (start - 0.5, start + length + 0.5, -1.5, 1.5))))
+
+    def ground(x, y):
+        return A * unit(x, y)
+
+    t = ch.Custom(ground, name=f"micro-hills: diameter {diameter:.2f} m, slopes up to {slope_deg:g} deg, "
+                               f"height ±{A * 1000:.0f} mm")
+    t.amplitude, t.diameter, t.extent = A, diameter, extent
+    return t
+
+
+def steep_hill(angle_deg: float = 30.0, height: float = 0.9, start: float = 1.0, plateau: float = 1.0, knee: float = 0.3,
+               extent=(-1.5, 9.5, -2.0, 2.0)):
+    """Flat, up a ``angle_deg`` ramp to ``height``, a ``plateau``, down the other side, flat — the knees rounded
+    over ``knee`` m (a box average of the piecewise profile). The ramp's horizontal run is height / tan(angle)."""
+    from vegeta import chiron as ch
+
+    run = height / math.tan(math.radians(angle_deg))
+    xs = np.array([start, start + run, start + run + plateau, start + 2 * run + plateau])
+    zs = np.array([0.0, height, height, 0.0])
+    offsets = np.linspace(-knee / 2, knee / 2, 7)
+
+    def ground(x, y):
+        x = np.asarray(x, dtype=float)
+        z = np.zeros_like(x)
+        for d in offsets:
+            z = z + np.interp(x + d, xs, zs, left=0.0, right=0.0)
+        return z / len(offsets) + 0.0 * np.asarray(y, dtype=float)
+
+    t = ch.Custom(ground, name=f"a {angle_deg:g} deg hill, {height:g} m high (ramp run {run:.2f} m), plateau {plateau:g} m")
+    t.knots, t.extent, t.top = (xs, zs), extent, (start + run, start + run + plateau)
+    return t
+
+
+def mud_flat(zone=(1.5, 4.5), rms: float = 0.008, extent=(-1.5, 8.5, -3.0, 3.0), seed: int = 7):
+    """Flat rough ground (RMS ``rms``) — the mud ``zone`` (x0, x1) lives in ``MudHook``, not in the height."""
+    from vegeta import chiron as ch
+
+    t = ch.Rough(rms, 0.25, start=0.3, seed=seed, extent=extent, cell=0.02)
+    t.zone, t.extent = tuple(zone), extent
+    return t
+
+
+class MudHook:
+    """Water-ish, moving soil in the zone (x0, x1), as a ChironLab scene hook (``lab.add_hook``).
+
+    Every control step: ``f`` = the fraction of the rover's contact length inside the zone (from the hull's x). The
+    rollers' sliding friction is ``mu_mud`` when the hull is in the zone (``mu_dry`` outside; MuJoCo's rigid ground
+    keeps the robot's value). On the hull, a force ``−f (R_c + c_v |v|) v̂`` — R_c the Bekker compaction resistance
+    of both tracks on ``soil`` at the rover's weight (``terramechanics``), ``c_v`` the viscous drag of soil moving
+    with the tracks — plus the soft layer's drift ``f · flow · W`` (world x, y; a fraction of the weight) with a
+    slow random part (``gust``, seeded). The hull's velocity is taken from its position between calls."""
+
+    def __init__(self, zone=(1.5, 4.5), *, soil: str = "mud", flow=(0.0, -0.15), gust: float = 0.05, c_v: float = 20.0,
+                 mu_mud: float = 0.25, mu_dry: float = 0.6, seed: int = 0):
+        self.zone, self.soil, self.flow, self.gust, self.c_v = tuple(zone), soil, np.asarray(flow, dtype=float), gust, c_v
+        self.mu_mud, self.mu_dry, self.seed = mu_mud, mu_dry, seed
+
+    def reset(self, lab):
+        import terramechanics as tm
+
+        self.lab = lab
+        self.hull = lab._body_id("hull")
+        self.geoms = [lab._geom_id(f.geom) for f in lab.robot.feet]
+        self.L = lab.robot.geometry["L"]
+        W = lab.total_mass * prr.G
+        self.W = W
+        self.R_c = 2 * tm.compaction_resistance_track(W / 2, lab.robot.geometry["b"], self.L, self.soil)
+        self.rng = np.random.default_rng(self.seed)
+        self.noise = np.zeros(2)
+        self.prev = None
+        self.inside = False
+        self._set_mu(self.mu_dry)
+
+    def _set_mu(self, mu):
+        for g in self.geoms:
+            self.lab.model.geom_friction[g, 0] = mu
+
+    def fraction(self, x):
+        lo, hi = x - self.L / 2, x + self.L / 2
+        return float(np.clip(min(hi, self.zone[1]) - max(lo, self.zone[0]), 0.0, self.L) / self.L)
+
+    def __call__(self, lab):
+        pos = np.array(lab.data.xpos[self.hull][:2])
+        t = lab.time
+        v = np.zeros(2)
+        if self.prev is not None and t > self.prev[0]:
+            v = (pos - self.prev[1]) / (t - self.prev[0])
+        self.prev = (t, pos.copy())
+        f = self.fraction(pos[0])
+        inside = f > 0.0
+        if inside != self.inside:
+            self.inside = inside
+            self._set_mu(self.mu_mud if inside else self.mu_dry)
+            lab.log_event("mud", "into the mud" if inside else "out of the mud")
+        if f <= 0.0:
+            lab.body_force("hull", None)
+            return
+        speed = float(np.linalg.norm(v))
+        drag = -(self.R_c + self.c_v * speed) * (v / speed if speed > 1e-6 else np.zeros(2))
+        self.noise = 0.999 * self.noise + 0.0447 * self.rng.normal(0.0, self.gust, 2)     # a slow (~1 s) random walk
+        push = (self.flow + self.noise) * self.W
+        F = f * (drag + push)
+        lab.body_force("hull", (F[0], F[1], 0.0))
+
+
+#: The three trials: terrain, legs (one straight run over the course), failure rules and hooks.
+TRIALS = {
+    "micro_hills": dict(terrain=micro_hills, course_m=6.5, v=0.6, max_tilt_deg=40.0, lateral_limit=1.0, hooks=()),
+    "steep_hill": dict(terrain=steep_hill, course_m=7.5, v=0.5, max_tilt_deg=50.0, lateral_limit=1.0, hooks=()),
+    "mud": dict(terrain=mud_flat, course_m=6.0, v=0.6, max_tilt_deg=40.0, lateral_limit=1.0, hooks=(MudHook,)),
+}
+
+
+def trial_rules(name: str):
+    """The ``FailureRules`` of a trial: success past ``course_m``; fall at ``max_tilt_deg``; off course beyond
+    ``lateral_limit``; stall when the COM advances less than 10 % of v × 3 s; timeout 2 × course / v + 2 s."""
+    from vegeta.chiron import FailureRules
+
+    tr = TRIALS[name]
+    return FailureRules(course_m=tr["course_m"], max_tilt_deg=tr["max_tilt_deg"], lateral_limit=tr["lateral_limit"],
+                        stall_window=3.0, stall_fraction=0.1, stall_grace=2.0, v_target=tr["v"])
+
+
+def run_trial(name: str, robot=None, *, log_geoms: bool = True, seed: int = 0, **lab_kw):
+    """Run one trial of ``TRIALS``: the rover (``robot`` or ``prr.pekari()``) drives straight at the trial's speed
+    until the rules end it. Returns the Episode (``ep.outcome``, ``ep.log['events']`` with the hooks' events)."""
+    tr = TRIALS[name]
+    terrain = tr["terrain"]()
+    opts = dict(course_extent=getattr(terrain, "extent", prr.LAB_OPTIONS["course_extent"]), log_geoms=log_geoms)
+    opts.update(lab_kw)
+    lab = prr.pekari_lab(terrain, robot=robot, **opts)
+    for hook in tr["hooks"]:
+        lab.add_hook(hook())
+    rules = trial_rules(name)
+    ctrl = TrackDrive([Leg("straight", tr["course_m"] + 1.0, v=tr["v"])], name=f"trial/{name}")
+    ep = lab.run(ctrl, rules=rules, settle=0.5, seed=seed, info={"controller": ctrl.name, "trial": name, "v_target": tr["v"]})
+    ep.log["events"] = sorted(list(ctrl.events) + list(lab.events), key=lambda e: e[0])
+    ep.terrain = terrain
+    return ep
+
+
+def trial_table(episodes: dict, robot=None):
+    """Per trial: outcome, reason and detail, time, distance along x, max tilt, min speed after 2 s, mean side belt
+    forces, max |side force|, energy."""
+    import pandas as pd
+
+    rows = {}
+    for name, ep in episodes.items():
+        ts = timeseries(ep, robot)
+        o = ep.outcome
+        late = ts[ts.t >= 2.0]
+        rows[name] = {"outcome": "success" if o.get("success") else "FAIL", "reason": o.get("reason"), "detail": o.get("detail"),
+                      "t_end [s]": o.get("t_end"), "distance x [m]": o.get("distance_m"), "max tilt [deg]": float(ts.tilt_deg.max()),
+                      "min speed after 2 s [m/s]": float(late.v.min()) if len(late) else np.nan,
+                      "max |y| [m]": float(ts.y.abs().max()), "end heading [deg]": float(ts.yaw_deg.iloc[-1]),
+                      "F_L mean [N]": float(ts.F_L.mean()), "F_R mean [N]": float(ts.F_R.mean()),
+                      "|F| max [N]": float(ts[["F_L", "F_R"]].abs().max().max()),
+                      "energy [J]": float(np.trapezoid(ts.P_mech, ts.t))}
+    return pd.DataFrame(rows).T
+
+
+def end_card(images: list, ep, fps: int = 25, hold_s: float = 1.5) -> list:
+    """The movie's last frame held for ``hold_s`` with the outcome written on it (red: a failure, green: success),
+    so a failed mission's movie ends at the frame where it failed."""
+    import cv2
+
+    o = ep.outcome
+    ok = bool(o.get("success"))
+    text = ("FINISHED" if ok else "FAILED: " + str(o.get("reason", "")).upper()) + f"  t = {o.get('t_end', 0):.1f} s"
+    detail = str(o.get("detail", ""))
+    last = images[-1].copy()
+    colour = (46, 125, 50) if ok else (198, 40, 40)
+    cv2.rectangle(last, (0, last.shape[0] - 70), (last.shape[1], last.shape[0]), (20, 20, 20), -1)
+    cv2.putText(last, text, (16, last.shape[0] - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, colour, 2, cv2.LINE_AA)
+    cv2.putText(last, detail[:90], (16, last.shape[0] - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (235, 235, 235), 1, cv2.LINE_AA)
+    return list(images) + [last] * int(round(hold_s * fps))

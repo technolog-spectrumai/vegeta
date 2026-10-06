@@ -130,7 +130,12 @@ its side's belt speed. `pekari_lab`, `rollers`, `roller_joints` and `LAB_OPTIONS
 - `TrackDrive(legs)`: skid steering with a heading hold, over `Leg("straight", m)` / `Leg("turn", deg, radius=…)`;
 - `MISSION`: 3 m, a 90° turn on 1 m, 2 m;
 - `uneven_ground()`: rough soil with a log and stones;
-- `run`, `timeseries` (path, heading, tilt, side belt forces, slip, power) and `leg_table`.
+- `run`, `timeseries` (path, heading, tilt, side belt forces, slip, power) and `leg_table`;
+- the trials of §7.2 (`TRIALS`, `run_trial`, `trial_rules`, `trial_table`): `micro_hills` (an egg-crate of hills the
+  rover's radius, sized to 15° slopes; `max_slope_deg`), `steep_hill` (up a 30° ramp and down), `mud_flat` with
+  `MudHook` (the rollers' friction drops to the mud's, Bekker compaction and viscous drag on the hull, a sideways
+  drift of the soft layer); each runs under `FailureRules`, so the episode and its movie end at the failing frame,
+  and `end_card` writes the outcome on the last frame.
 
 `terramechanics.py` (`import terramechanics as tm`) is the soil: `SOILS` (Bekker–Wong values from Wong's tables and
 handbook μ / C_rr for hard ground), `pressure_sinkage` / `sinkage`, `track_sinkage`, `compaction_resistance_track`,

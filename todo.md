@@ -170,6 +170,12 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   rollers, the road wheels on bogies with passive hinges, velocity servos at the belt speed, a roller may carry 1/3 of
   its side's drive force) and `pekari_controller.py` (`TrackDrive` legs, `uneven_ground`, `leg_table`): 3 m, a 90° turn
   on 1 m, 2 m over rough soil with a 60 mm log and stones; the path, side forces against `tracks`, and a movie
+- [x] 5j.1c Three trials of the unchanged rover in MuJoCo (`30_pekari_rover` §7.2, `pekari_controller.TRIALS`), each
+  under `FailureRules` so the movie ends at the failing frame with the outcome on it (`end_card`): micro-hills the
+  rover's own radius (diameter 1.44 m, slopes sized to 15°) — crossed; a 30° hill up and down — stalls at the foot
+  of the ramp (traction: μ 0.6 gives 122 N, the slope asks 118 N + the internal loss; 26° was the hand limit); mud
+  (`MudHook`: μ 0.25, Bekker compaction + viscous drag, the soft layer drifting sideways at 15 % W) — crossed, pushed
+  0.24 m sideways. MuJoCo's ground stays rigid: no rut; a deformable height field is 5j.7's `TerramechanicsHook`
 - [ ] 5j.4 Stage 2, two arms: `PekariManus(PekariRover)` in the Manus pattern (parent parameters via `replace`, Manus arm
   geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
   `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track

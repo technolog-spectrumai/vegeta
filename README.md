@@ -228,7 +228,10 @@ wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on it
   wear, skid steering (turning moment, pivot turns, clutch-brake vs regenerative power).
 - **MuJoCo:** the rover in Chiron, with its tracks as rows of rollers, drives 3 m, makes a 90° turn and drives 2 m on
   rough ground with a log and stones. It produces the path, the side forces against the hand numbers, and a movie
-  (`designs/pekari_controller.py`).
+  (`designs/pekari_controller.py`). Three trials then run the unchanged rover under failure rules, each movie ending
+  at the frame where the mission fails: micro-hills of the rover's own radius with 15° slopes (crossed), a 30° hill
+  (it stalls at the foot of the ramp: traction, as the hand calculation said) and moving, water-ish mud (crossed,
+  pushed sideways).
 The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
 quad-track **Catagon** is its own product (todo 5k).
 
