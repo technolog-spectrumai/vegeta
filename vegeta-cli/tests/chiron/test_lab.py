@@ -446,6 +446,37 @@ def test_viz_renders_a_frame(tmp_path):
     assert "OK" in out.stdout and (tmp_path / "v.mp4").stat().st_size > 0
 
 
+RENDER_MOVING = textwrap.dedent("""
+    import numpy as np, sys
+    from vegeta.chiron import viz
+    from vegeta.chiron.lab import Episode
+    ep = Episode.load(sys.argv[1])
+    cams = iter([((1.5, -1.5, 1.0), (0, 0, 0.2), (0, 0, 1)), ((-1.5, -1.5, 1.0), (0, 0, 0.2), (0, 0, 1))])
+    imgs = viz.frames(ep, camera=lambda com: next(cams), every=20, stop=21, size=(160, 120), show_time=False,
+                      ground=(-5, 5, -5, 5), scenery_range=100.0, ground_color="#7fa860")
+    assert len(imgs) == 2
+    assert np.abs(imgs[0].astype(int) - imgs[1].astype(int)).sum() > 0, "the second frame was not rendered"
+    print("OK")
+""")
+
+
+def test_viz_renders_every_frame_without_the_time_text(tmp_path):
+    """Without the time text nothing else asks pyvista to render: every frame must still be drawn anew."""
+    pytest.importorskip("pyvista")
+    lab = ChironLab(toy_quadruped(), log_geoms=True)
+    ep = lab.run(Hold(), duration=0.4, settle=0.0, seed=0)
+    path = ep.save(tmp_path / "ep.npz")
+    cmd = [sys.executable, "-c", RENDER_MOVING, str(path)]
+    env = dict(os.environ, PYVISTA_OFF_SCREEN="true")
+    if not os.environ.get("DISPLAY"):
+        if shutil.which("xvfb-run") is None:
+            pytest.skip("no display and no xvfb-run")
+        cmd = ["xvfb-run", "-a"] + cmd
+    out = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=300)
+    assert out.returncode == 0, out.stderr[-2000:]
+    assert "OK" in out.stdout
+
+
 # ----------------------------------------------------------------------------------------------- servo integration
 STALL_LIMITED = Servo(stall_torque=1.0, rated_torque=0.5, no_load_speed=200.0, stall_current=1.0, voltage=12.0,
                       kp=40.0, kd=0.8, source="test: stall-limited (ω₀ so high that the line's slope is negligible)")
