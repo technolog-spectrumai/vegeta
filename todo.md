@@ -199,8 +199,16 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
     match in air speed); in gusts the relative motion of two different aircraft (a quad and a wing respond differently)
     sets the miss distance — Monte Carlo of success vs wind and gust intensity for A/B/C.
   - *Damage limits*: Drongo's frame and arms (notebook 08's FEA, pincer contact loads on PETG-CF), its battery (no crush),
-    the probe (5m.3 limits), PEREGRINE's legs and hinges at the grip shock; landing ashore with the load (prop-hang
-    landing may be impossible with it: a belly-safe release into a net, or release Drongo to fly the last metres itself).
+    the probe (5m.3 limits), PEREGRINE's legs and hinges at the grip shock; the handover ashore (below).
+  - *Delivery ashore — decided (user): PEREGRINE releases Drongo in the air over the shore, where the wind is weaker, and
+    Drongo flies the probe the last stretch and lands itself* — the only way to save both machines and deliver the probe
+    (a loaded prop-hang landing is out). To analyse: the release point (over land, past the coastal wind band; the
+    sea-to-land wind drop and the gust level there), Drongo's **air restart** — rotors spun up again from stopped/idle
+    while falling, the height it loses before it holds itself (spin-up time `spin_up_s`, its thrust with the probe,
+    tumbling if released at PEREGRINE's 10–15 m/s), so the minimum release height and the best release speed and attitude;
+    PEREGRINE's pull-up as it sheds 0.84 kg (the CG and trim jump); separation so Drongo's spinning-up rotors stay clear of
+    the legs and wings; Drongo's landing with the probe at the shore base (its own `touchdown` phase). Success = probe and
+    Drongo landed undamaged, PEREGRINE free.
   - *Simulation*: as 5m.3 (Chiron: PEREGRINE the robot with two leg-pincers; Drongo a free prop with its rotors and
     `drongo_controller.Flight`; the probe welded in Drongo's pincer), plus a ship deck as the launch pad (moving: heave and
     pitch) and the wind field over the sea; notebook sections after 5m.3's.
