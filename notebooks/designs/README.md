@@ -161,6 +161,6 @@ slides, the skids as feet) and `Rotors` (a scene hook: rotor thrust with spin-up
 airframe drag, energy). `drongo_controller.py` is the flight controller (`Flight`: position loop, SO(3) attitude, X
 mixer with saturation; `Profile`) and the mission (`Mission`, `Plan`, `delivery(scene, plan)`: land over an item, grip,
 climb, drop into the net or lower onto the zone until the descent stalls, home). `drongo_scenario.py` is the garden
-(`Scene`, `scenery`, `item_props`), the judge (`Watch`: squeeze, slip, release, net catch with the 5 m rule, impacts,
+(`Scene` with the supply basket — an open cube Drongo lands in over each item —, `scenery`, `item_props`), the judge (`Watch`: squeeze, slip, release, net catch with the 5 m rule, impacts,
 the people taking each item to the table), `make_lab`, `run`, `timeseries`, `phase_table`, `deliveries`, `wait_times`,
 `time_budget`, `sweep` and `render_movie` / `stills`.

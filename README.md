@@ -135,7 +135,7 @@ drag on Chiron props — and a brick and a box the pincers load into the basket,
 
 **Drongo** (branch `dev_potato`): `08b_quadcopter_potato` gives notebook 08's quadcopter a job. Drongo is that quad
 (`designs/drongo.py`, `Drongo(QuadFrame)`) with two skids and a rack-and-pinion pincer. It takes a 200 g potato (a sphere)
-and then a 412 g cup of cream (a cylinder) from the kitchen door to hungry people 36 m away, in two variants:
+and then a 412 g cup of cream (a cylinder) from a basket (an open cube) in the supply zone to hungry people 36 m away, in two variants:
 - **drop** — into a net the people hold; the item falls at most 5 m onto it, or the net tears. The net is not simulated:
   the catch happens at its plane, and its arrest is an assumed stretch.
 - **place** — lowered calmly until it touches the drop zone, then let go.

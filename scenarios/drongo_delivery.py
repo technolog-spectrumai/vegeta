@@ -6,7 +6,7 @@
     python3 scenarios/drongo_delivery.py --no-movie                  # the numbers only
 
 The scenario is ``notebooks/designs/drongo_scenario.py`` (the one notebook 08b runs): notebook 08's quadcopter with skids
-and a pincer takes a 200 g potato and then a 412 g cup of cream from the kitchen door to people 36 m away, dropping each
+and a pincer takes a 200 g potato and then a 412 g cup of cream from a basket in the supply zone to people 36 m away, dropping each
 into their net (``drop``) or putting it down on the zone (``place``). Writes ``scenarios/output/drongo_<variant>.mp4``
 and ``drongo_delivery.json`` (wait times, deliveries, outcome).
 """
