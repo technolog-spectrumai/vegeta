@@ -178,6 +178,32 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
     home and net, movie with `chiron.viz.frames` + `drongo_scenario._hud`, does folding help the catch, export
     `peregrine_catch.json`); `tests/test_peregrine_catch.py` (leg/pincer CAD, grip, level-flight trim, weld holds until
     released, one calm catch, judge flags over-squeeze). Quick runs only (`PEREGRINE_QUICK`); no CFD.
+- [ ] 5m.3b **Maritime scenario — PEREGRINE catches Drongo itself** (user: more important than the probe handover). Drongo,
+  carrying the probe, is launched from a ship; PEREGRINE catches **Drongo with the probe** in the air and carries both
+  ashore much faster than Drongo could fly — **nothing damaged: not the probe, not Drongo, not PEREGRINE**. Needs
+  coordination and testing in **high wind** (sea winds are strong). Analysis to do before implementing:
+  - *Why it can work*: two legs and two pincers — grip Drongo's frame at two points (e.g. the skids or two hard points on the
+    centre plate / a catch bar on top), not one; the snap + worm-hold pincers from 5m.3.
+  - *Load*: Drongo ~0.59 kg + probe 0.25 kg ≈ 0.84 kg on a ~0.66–0.88 kg PEREGRINE — the pair weighs ~1.5–1.7 kg. Check
+    wing loading and stall speed with the load, thrust (prop-hang T/W 1.45–1.9 without it), climb, range to shore, CG with
+    the load under the belly, pull-up load factor on legs and pincers; maybe only B or A can do it, or a bigger PEREGRINE.
+  - *Drag*: Drongo's Cd·A ~0.015 m² with its item (`drongo_robot.DRAG_AREA_M2`) is ~3–4 × PEREGRINE's; tucked to the belly,
+    rotors stopped and props parked. Cruise speed and endurance with it; is it still "much faster" than Drongo alone?
+  - *Coordination protocol*: the ship launches Drongo; Drongo climbs and flies a steady, speed-matched course downwind or
+    into the wind as agreed (radio link, shared GNSS/relative positioning); PEREGRINE closes from behind and above; at
+    the grip signal Drongo **cuts its rotors** (or idles) so its thrust does not fight the pincers; abort rules and
+    separation if the grip fails (Drongo recovers, PEREGRINE goes around); no rotor may touch PEREGRINE — Drongo's props
+    (5", r 0.064 m) must stay clear of the legs and wings during the grip and the tuck.
+  - *High wind*: steady 10–20 m/s plus strong OU gusts and sea-surface turbulence. In a headwind Drongo holds station
+    against the ground (it flies at the wind speed in the air, PEREGRINE's minimum airspeed ~10–12 m/s is then easy to
+    match in air speed); in gusts the relative motion of two different aircraft (a quad and a wing respond differently)
+    sets the miss distance — Monte Carlo of success vs wind and gust intensity for A/B/C.
+  - *Damage limits*: Drongo's frame and arms (notebook 08's FEA, pincer contact loads on PETG-CF), its battery (no crush),
+    the probe (5m.3 limits), PEREGRINE's legs and hinges at the grip shock; landing ashore with the load (prop-hang
+    landing may be impossible with it: a belly-safe release into a net, or release Drongo to fly the last metres itself).
+  - *Simulation*: as 5m.3 (Chiron: PEREGRINE the robot with two leg-pincers; Drongo a free prop with its rotors and
+    `drongo_controller.Flight`; the probe welded in Drongo's pincer), plus a ship deck as the launch pad (moving: heave and
+    pitch) and the wind field over the sea; notebook sections after 5m.3's.
 - [ ] 5m.4 Fold-in-flight dynamics (unsteady aero while folding), measured LW-PLA and PETG coupons, the hinge in CFD
 
 ## Stage 5h — MERLIN, wildfire sampling (branch `dev_merlin`)
