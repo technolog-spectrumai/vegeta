@@ -111,6 +111,55 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5g.3 Unsteady installed CFD (sliding mesh / AMI) for the blade-passing loads directly, against the quasi-steady + Sears model
 - [ ] 5g.4 Thickness noise and forward-flight Doppler in the tones; a static (take-off) wake model for the pusher (the induced inflow past the pylon)
 
+## Stage 5m — PEREGRINE, the folding-wing farm drone (branch `dev_peregrine`)
+- [x] 5m.1 `designs/peregrine.py` (`Peregrine(Merlin)`: wings A large fixed / B small fixed / C hinged, `fold_deg`,
+  `hinge_y_frac`, hinge lug, `planform`, `fold_limit`, folded drag build-up), `designs/peregrine_flight.py` (vortex lattice in
+  streamwise strips, stability and trim vs fold, BOM and lab hours, drive with fixed losses, envelopes, birds, stoop, gaps,
+  prop-hang / hand throw / roof drop / perched wind, hinge loads, boids herding, sortie and movie, decision table) and
+  `28_peregrine` (Parts 1–3: does folding pay? — no, B wins most weightings; folding pays only for roof rest in wind);
+  `tests/test_peregrine.py`, `user_tests.sh peregrine`
+- [x] 5m.2 Merge `dev_potato` (Drongo) into `dev_peregrine` so Part 4 can reuse Drongo's pincer, robot and controller
+- [ ] 5m.3 **Part 4 — the mid-air catch** (planned, not implemented). Drongo flies holding a long scientific probe; PEREGRINE
+  swoops down, takes it with talons, flies on and delivers the sensor undamaged to the base. Calm air, then unsteady wind.
+  MuJoCo through Chiron, like Drongo; all three wings A/B/C. Design worked out so far:
+  - *Handover geometry*: a falcon strikes from above, so Drongo holds the probe **pointing up** as a mast in its pincer, the top
+    ~0.40 m above its rotor plane; both fly the same course with Drongo at ~PEREGRINE's 1.25 × stall (10–12 m/s; Drongo
+    tilts ~8° for that, easy), so PEREGRINE overtakes at 0.5–1 m/s (air-to-air refuelling style), not 10 m/s.
+  - *Probe* (`PROBE`, assumptions): 0.55 m × 32 mm cylinder, 0.25 kg, μ 0.6; undamaged = squeeze ≤ 60 N per pad, shock
+    ≤ 30 g, no propeller/ground contact, net arrest within its load. Carried vertical it has ~0.018 m² of drag — about four
+    times PEREGRINE's whole Cd·A (budget it; it may rotate in the grip).
+  - *Talons* (`peregrine.py`: `talons`, `talon_*`, `part="talons"`): two pads closing along y on a rail under the belly at
+    the CG, on **legs ~0.20 m long**: the probe passes under the nose first, so the grip zone must sit below the propeller
+    disc (r 0.114 m) with margin — short legs leave a vertical window of only ~8 cm, 0.20 m legs ~18 cm. Open gap ~0.14 m
+    (±5 cm lateral window), pads 0.12 m long × 0.08 m tall. Extended legs add ~0.0036 m² Cd·A (≈ the airframe's): retract them.
+  - *Closing speed is the crux*: Drongo's rack-and-pinion servo closes at ~0.11 m/s per jaw (≈0.5 s), but the pads' 0.12 m
+    dwell at 0.5–1 m/s overtaking is 0.1–0.25 s — so a **spring-loaded snap closure** (latch released by a trigger, the
+    falcon's tendon lock) with the servo only to re-open/release; compare both in a capture-window analysis.
+  - *Grip*: Drongo's arithmetic as is (`drongo_robot.grip_needed` / `grip_holds` with the probe as an item): 20 N per pad
+    holds ~9.8 g with μ 0.6, under the 60 N limit.
+  - *Simulation* (`designs/peregrine_catch.py`): PEREGRINE as the Chiron `Robot` (origin at the CG, Chiron frame x forward /
+    y left = notebook frame rotated 180° about z; fuselage capsule, wing quads from `peregrine.planform` as boxes, tail, fin,
+    talons as two servo slides); Drongo as a free `Prop` built from `drongo_robot.drongo().root` with the jaws stripped and
+    every geom `role="visual"` (no contacts; hits judged geometrically), flown by `drongo_controller.Flight` set up by hand
+    for a prop (mass, inertia from `model.body_inertia`, mixer) and a `drongo_robot.Rotors` subclass for a prop body with
+    air-relative drag; the probe a free `Prop` held by a `Weld` to Drongo, released with `lab.set_weld` after the grip
+    signal + a radio delay. Start velocities set in the controller's `reset` (Chiron's reset zeroes qvel); `settle=0`.
+    One controller object computes the OU gust (as `velutina_flight.simulate`), PEREGRINE's 6-DOF aero (CL0, CLα, Cm0, Cmα,
+    Cmδe from `peregrine_flight.aero` moved to the CG, stall blend to a flat plate, Cmq ~ −8 from the tail volume, Clp
+    −0.45, Clδa from p b/2V = 0.09, CYβ −0.4, Cnβ 0.06, Cnr −0.12, Clβ 0.05; thrust from `peregrine_flight.drive`) and
+    its autopilot (course → bank, γ → load factor → α → elevator with trim feed-forward, throttle on airspeed); guidance:
+    speed-matched pursuit of the probe top, 3 m above until 20 m behind, then the swoop down to the grip window; trigger when
+    the pads straddle the probe. Body forces are per body (PEREGRINE, Drongo, probe), so no hook overwrites another.
+  - *Judge* (Drongo's `Watch` idea): pad squeeze from `lab.contact_force`, the probe's shock (specific force), probe vs
+    PEREGRINE's propeller disc and PEREGRINE vs Drongo's rotors checked geometrically, ground contact, the net catch.
+  - *Home*: climb, cruise to the base, release over Drongo's people's `NET` from ≤ 4 m above it with the fall's lead
+    (≈ 9 m at 10 m/s); arrest load from the total speed, not only the vertical.
+  - Notebook 28 sections 18–25 (job and probe, talons, handover geometry and clearance, calm catch A/B/C, gust Monte Carlo,
+    home and net, movie with `chiron.viz.frames` + `drongo_scenario._hud`, does folding help the catch, export
+    `peregrine_catch.json`); `tests/test_peregrine_catch.py` (talon CAD, grip, level-flight trim, weld holds until
+    released, one calm catch, judge flags over-squeeze). Quick runs only (`PEREGRINE_QUICK`); no CFD.
+- [ ] 5m.4 Fold-in-flight dynamics (unsteady aero while folding), measured LW-PLA and PETG coupons, the hinge in CFD
+
 ## Stage 5h — MERLIN, wildfire sampling (branch `dev_merlin`)
 - [x] 5h.1 `designs/merlin.py` (`FixedWing` subclass; EDF / tractor / pusher noses; drag build-up) and `designs/merlin_flight.py`
   (propulsor tables from `boreas.ducted` and BEMT with the installation models, the race, Gaussian smoke plume and the source
