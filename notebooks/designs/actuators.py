@@ -93,6 +93,12 @@ CATALOG = [
              "assumed: 48 V BLDC through a 1:12 planetary stage, brush-disc sweeper drive class (disc brooms run 100-200 rpm)"),
     Actuator("suction fan 4 kW", "fan motor", 8000.0, 16.0, 9.0, 110.0, 48.0, 6000, False,
              "assumed: 48 V outer-rotor BLDC blower motor class, 9 N m continuous at 4200 rpm (4 kW), direct drive on the impeller"),
+    # the track drive of the Pekari Rover (notebook 30): a small BLDC and the same motor through a two-stage planetary
+    Actuator("BLDC 100 W, 24 V", "motor", 450.0, 0.95, 0.32, 16.0, 24.0, 4000, False,
+             "assumed: 57 mm inrunner BLDC class, 24 V, 0.32 N m continuous at 3000 rpm (100 W), 3x peak"),
+    Actuator("pekari drive 16:1 planetary", "gearmotor", 800.0, 14.3, 4.8, 16.0, 24.0, 250, False,
+             "BLDC 100 W, 24 V through two planetary stages 4:1 x 4:1 (sun 18, planets 18, ring 54, module 0.8; "
+             "efficiency 0.97 per stage): torques x 16 x 0.94, speed / 16; gearbox 350 g (notebook 30 §5)"),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),

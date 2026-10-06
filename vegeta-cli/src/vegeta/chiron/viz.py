@@ -88,13 +88,16 @@ def _camera(camera, com, scale):
 
 
 def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=None, show_terrain=True,
-           show_forces=False, show_time=True, background="white", robot_color="#c8a24a"):
+           show_forces=False, show_time=True, background="white", robot_color="#c8a24a", ground=None,
+           scenery_range=None, ground_color="#b9b2a5"):
     """Render the episode's log samples ``start:stop:every`` to RGB arrays (H, W, 3) uint8.
 
     ``camera``: 'follow' (three-quarter view from the rear left, following the COM), 'side', 'front', 'top',
     'iso' (fixed at the first sample), a dict ``position/focal_point/view_up`` or a callable ``com -> (position,
     focal_point, view_up)``. ``show_forces`` draws each foot's contact force as an arrow (one robot size per
-    robot weight).
+    robot weight). ``ground`` (x0, x1, y0, y1) [m]: the flat ground drawn over that extent (default: a few robot
+    sizes around the run); ``scenery_range`` [m]: geoms farther than this from the COM are hidden (default 25 robot
+    sizes); ``ground_color`` the terrain's colour.
     """
     pv = _pv()
     log = episode.log if hasattr(episode, "log") else episode
@@ -128,17 +131,20 @@ def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=
     half = (max(1.5, 4 * scale), max(1.0, 2 * scale))
     if show_terrain:
         centre = com[idx].mean(axis=0) if len(idx) else np.zeros(3)
-        if gp is None or "terrain_z" not in gp:
+        if ground is not None:
+            x0, x1, y0, y1 = (float(v) for v in ground)
+            centre, half = np.array([(x0 + x1) / 2, (y0 + y1) / 2, 0.0]), ((x1 - x0) / 2, (y1 - y0) / 2)
+        elif gp is None or "terrain_z" not in gp:
             span = np.ptp(com[:, 0]) if len(com) else 0.0
             half = (max(half[0], span / 2 + 2 * scale), half[1])
-        pl.add_mesh(_terrain_mesh(pv, log, centre, half), color="#b9b2a5", smooth_shading=True)
+        pl.add_mesh(_terrain_mesh(pv, log, centre, half), color=ground_color, smooth_shading=True)
     images = []
     marker_names = []
     first_cam = _camera(camera, com[idx[0]] if len(idx) else np.zeros(3), scale) if camera in ("iso",) else None
     weight = float(log.get("total_mass", 1.0)) * 9.81
     for i in idx:
         if gp is not None:
-            far = 25.0 * scale                                 # scenery parked far from the robot (collected litter)
+            far = 25.0 * scale if scenery_range is None else float(scenery_range)   # scenery parked far away
             for g, actor in enumerate(actors):               # is not drawn: it would stretch the camera's clipping range
                 if actor is None:
                     continue
@@ -179,6 +185,7 @@ def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=
         pl.camera_position = [cam[0], cam[1], cam[2]]
         if show_time:
             pl.add_text(f"t = {t[i]:.2f} s", position="upper_left", font_size=10, color="black", name="time")
+        pl.render()                                          # screenshot() renders only the first time
         images.append(np.asarray(pl.screenshot(return_img=True))[..., :3].copy())
     pl.close()
     return images

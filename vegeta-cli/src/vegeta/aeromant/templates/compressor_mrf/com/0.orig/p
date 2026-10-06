@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -2 0 0 0 0];
+
+internalField   uniform {{INLET_TOTAL_PRESSURE}};
+
+boundaryField
+{
+    "inlet.*"
+    {
+        type            totalPressure;
+        p0              uniform {{INLET_TOTAL_PRESSURE}};
+        value           uniform {{INLET_TOTAL_PRESSURE}};
+    }
+    "outlet.*"
+    {
+        type            fixedValue;
+        value           uniform {{OUTLET_PRESSURE}};
+    }
+    "(body|shroud).*"
+    {
+        type            zeroGradient;
+    }
+    farfield
+    {
+        type            zeroGradient;
+    }
+}
+
+// ************************************************************************* //

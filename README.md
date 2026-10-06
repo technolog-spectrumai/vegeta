@@ -133,6 +133,20 @@ the broom's and fan's unbalance against their modes; and in MuJoCo a street with
 drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
 `scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
 
+**Drongo** (branch `dev_potato`): `08b_quadcopter_potato` gives notebook 08's quadcopter a job. Drongo is that quad
+(`designs/drongo.py`, `Drongo(QuadFrame)`) with two skids and a rack-and-pinion pincer. It takes a 200 g potato (a sphere)
+and then a 412 g cup of cream (a cylinder) from a basket (an open cube) in the supply zone to hungry people 36 m away, in two variants:
+- **drop** — into a net the people hold; the item falls at most 5 m onto it, or the net tears. The net is not simulated:
+  the catch happens at its plane, and its arrest is an assumed stretch.
+- **place** — lowered calmly until it touches the drop zone, then let go.
+
+The flight is MuJoCo through Chiron: rotor thrusts with lag and limits as a scene hook, a geometric flight controller,
+the items as free bodies held by friction. A judge compares the contact forces with each item's squeeze, impact and
+net-arrest limits. The propulsion is notebook 08's Boreas export when it exists, otherwise stated assumptions.
+With the defaults nothing is spoilt. The hungry people wait **63 s** for both items when they are dropped and **72 s**
+when placed. A faster cruise gains little; cruising lower (5.2 m) gains most. The notebook ends with a movie per variant;
+`scenarios/drongo_delivery.py` (or `./user_tests.sh drongo`) re-runs them.
+
 **Velutina** (branch `dev_velutina`): `24_velutina` (`designs/velutina.py`, `designs/velutina_flight.py`) is a printed
 medical courier for the mountains — a slim body whose ogive nose is the medical capsule (with a grab handle), four pusher
 propellers on short arms near the tail, cruciform fins, an emergency parachute in the tail cone; it flies 8 km and 1800 m
@@ -214,6 +228,42 @@ belongs at 30 % of the half span, the falcon's "elbow"); the tuck buys almost no
 but lets a stowed wing stay on a windy ridge (~9.7 m/s against ~6.5) and cuts the gust load in a dive; it costs ~95 g,
 ~35 EUR of parts and ~105 lab hours, and the small fixed wing B wins most weightings. The committed notebook is
 unexecuted; `PEREGRINE_QUICK=1` runs it as a quick check; `./user_tests.sh peregrine` runs its tests.
+**Microjet and AGUYA** (branch `dev_jet`): `28_microjet` builds a model turbojet in the workbench. It has a 1-D cycle
+on its operating line (`vegeta.boreas.microjet`: a radial compressor, a choked or unchoked NGV and nozzle, and turbine
+work = compressor work), calibrated to a datasheet's thrust, fuel flow and EGT for 100, 140 and 200 N classes. Its
+impeller, turbine wheel and casing are in CAD (`designs/turbojet.py`). The compressor runs in compressible MRF CFD, one
+speed-line point per back pressure (Aeromant `compressor_mrf`). The wheels run in FEA spinning and hot (Talos
+`Centrifugal` + `RadialTemperature`, with stiffness and yield at temperature). The notebook exports
+`designs/data/microjet.json`. `29_aguya` puts that engine into **AGUYA** (`designs/aguya.py`, `designs/aguya_flight.py`), a
+turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the jet, and the fuel tank in the fuselage.
+- **Sizing:** it flies the mission with fuel burn and sizes the tank per range.
+- **Speed:** it reaches a fire 10 km out in about 80 s (MERLIN's best is about 157 s) and one 30 km out in about 200 s, at
+  about 160 m/s.
+- **Jet and exhaust:** it checks the hot jet against the V-tail (a free-jet estimate, then compressible CFD with the
+  running engine, Aeromant `jet_external`) and whether the sensor samples its own exhaust.
+- **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
+  80 m/s) and its vibration modes.
+
+**Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
+wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
+- **Machine:** a hull between two track modules (rear drive sprocket, front idler on a tensioner slide, four road wheels
+  on two bogies, a return roller, a belt of 51 PA6-GF30 links with steel pins); CAD `designs/pekari_rover.py`, numbers
+  and mass budget `designs/pekari_rover_robot.py`.
+- **Ground:** ground pressure and Rowland's MMP, Bekker–Wong sinkage, compaction and thrust–slip per soil
+  (`designs/terramechanics.py`), against the same load on the wheeled rover's wheels; resistance, traction, top speed per
+  grade, the steepest grade per soil, range and endurance; tip-over, step, trench, road-wheel loads (`designs/tracks.py`).
+- **Drive train:** the gear ratio window, a 16:1 two-stage planetary, Lewis and Hertz per stage, FEA on the sun pinion,
+  tooth life over a patrol mission (`designs/gears.py`, Chronos).
+- **Track:** belt tension, sag and derailing, pins by hand, FEA on a link and on the sprocket, link fatigue and hinge
+  wear, skid steering (turning moment, pivot turns, clutch-brake vs regenerative power).
+- **MuJoCo:** the rover in Chiron, with its tracks as rows of rollers, drives 3 m, makes a 90° turn and drives 2 m on
+  rough ground with a log and stones. It produces the path, the side forces against the hand numbers, and a movie
+  (`designs/pekari_controller.py`). Three trials then run the unchanged rover under failure rules, each movie ending
+  at the frame where the mission fails: micro-hills of the rover's own radius with 15° slopes (crossed), a 30° hill
+  (it stalls at the foot of the ramp: traction, as the hand calculation said) and moving, water-ish mud (crossed,
+  pushed sideways).
+The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
+quad-track **Catagon** is its own product (todo 5k).
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
@@ -241,6 +291,8 @@ vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisio
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
 notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
+components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
+assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
 docs/              philosophy, result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli

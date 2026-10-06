@@ -10,7 +10,7 @@ cd "$ROOT/notebooks"
 for nb in "${@:-*.ipynb}"; do
   for f in $nb; do
     echo "=== $f ==="
-    PYVISTA_JUPYTER_BACKEND=static PYVISTA_OFF_SCREEN=true jupyter nbconvert --to notebook --execute "$f" --output-dir "$OUT" --ExecutePreprocessor.timeout=1800 --ExecutePreprocessor.kernel_name=python3 \
+    VEGETA_CACHE_DIR="${VEGETA_CACHE_DIR:-$ROOT/notebooks/${f%.ipynb}.cache}" PYVISTA_JUPYTER_BACKEND=static PYVISTA_OFF_SCREEN=true jupyter nbconvert --to notebook --execute "$f" --output-dir "$OUT" --ExecutePreprocessor.timeout=1800 --ExecutePreprocessor.kernel_name=python3 \
       >/dev/null 2>"$OUT/$f.err" && echo ok || { status=1; tail -20 "$OUT/$f.err"; }
   done
 done

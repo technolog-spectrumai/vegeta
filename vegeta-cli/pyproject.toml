@@ -33,7 +33,9 @@ chiron = "vegeta.chiron.cli:main"
 [tool.setuptools]
 package-dir = { "" = "src" }
 packages = [
+  "vegeta.cache",
   "vegeta.cli",
+  "vegeta.mock",
   "vegeta.dedalus",
   "vegeta.talos",
   "vegeta.aeromant",

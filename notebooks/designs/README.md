@@ -102,3 +102,80 @@ with a fixed no-load + avionics power), `Aircraft` / `make_aircraft` (an `Airfra
 `min_throw_speed`, `roof_drop`, `perched_wind`; `hinge_loads`; `Farm`, `Flock` (boids with a fear radius), `herd`, `mission`
 → `Episode`, `profile_figure`, `render_movie`; `decision_table`, `weight_sensitivity`.
 
+`turbojet.py` (`Turbojet`, notebook 28, branch `dev_jet`) is a model turbojet's parts:
+- the impeller: radial-element blades with an inducer lean, on a hub of revolution with a spinner and a shaft bore;
+- the turbine wheel: a cast disc with twisted blades;
+- the engine's outside: bell-mouth, casing, nozzle and tail cone.
+
+All are sized from a `vegeta.boreas.microjet.Microjet` by `sized(engine)`. `compressor_surfaces(p, dir)` writes the four
+STLs of Aeromant's `compressor_mrf`: impeller, shroud (inlet duct, casing over the tips with the gap, vaneless diffuser),
+inlet face and outlet face. It returns a `location_in_mesh` in the passage. `passage_profile`, `masses`.
+
+`aguya.py` (`Aguya`, notebook 29) is the turbojet sampler: `FixedWing`'s wing, an ogive sensor nose, a fuselage tank, the
+engine pod on a pylon and a V-tail. `for_engine(engine)` sizes the pod and nozzle from the cycle. Also: `tank_volume_l`,
+`drag_buildup` (Raymer, with Mach corrections), `cfd_surfaces(p, dir)` (the body, intake-face and nozzle-face STLs of
+`jet_external`) and `outline`.
+
+`aguya_flight.py` (`import aguya_flight as F`) is the mission with fuel burn:
+- `JetUnit` (thrust and fuel flow over airspeed × shaft speed), from the cycle (`jet_unit`) or notebook 28's export
+  (`jet_unit_from_export`);
+- `JetAirframe` / `airframe(p, unit)`;
+- `top_speed`;
+- `fly`: start, catapult, climb, accelerate, dash, 3 min of passes, return, parachute;
+- `fuel_for`: the smallest fuel load that keeps the reserve;
+- `size_for`: the thinnest fuselage whose tank holds it;
+- `race_table`.
+
+`pekari_rover.py` (`PekariRover`, notebook 30, branch `dev_track`) is the small tracked rover: the hull with a sensor
+block and the payload basket on its roof (the default configuration), two track modules (side frame, rear drive
+sprocket of two toothed discs, front idler, road wheels in pairs on bogies, a return roller, the belt as a band), and
+the parts on their own — sprocket, idler, road wheel, one hinged track link (knuckles, pin bores, grouser, guide horn)
+and the gearbox's final-stage sun pinion (involute teeth). Static methods keep CAD and mechanics in step:
+`track_center_y`, `track_gauge`, `sprocket_pitch_radius`, `road_wheel_x/z`, `contact_length`, `belt_circles`,
+`belt_length` (the convex hull of the wrapped circles), `link_count` (links and the idler's take-up), `overall`.
+
+`pekari_rover_robot.py` (`import pekari_rover_robot as prr`) holds the design's numbers: `DESIGN`, `CAD`, `MATERIALS`,
+`PARTS_KG`, `ASSUMPTIONS`, `DRIVE` / `MOTOR` (catalogue keys), `PAYLOAD_KG`; `geometry` (SI), `mass_budget`, `masses`
+(each mass with its position, the battery placed to balance the CG over the road wheels), `cg` (empty and loaded).
+`pekari()` builds it for Chiron (MuJoCo): each track is a row of 11 rollers (sprocket, idler, 7 ground rollers every
+60 mm, one on each inclined run), the road wheels on bogies with passive hinges, and every roller a velocity servo at
+its side's belt speed. `pekari_lab`, `rollers`, `roller_joints` and `LAB_OPTIONS` go with it.
+
+`pekari_controller.py` drives it (notebook 30 §7):
+- `TrackDrive(legs)`: skid steering with a heading hold, over `Leg("straight", m)` / `Leg("turn", deg, radius=…)`;
+- `MISSION`: 3 m, a 90° turn on 1 m, 2 m;
+- `uneven_ground()`: rough soil with a log and stones;
+- `run`, `timeseries` (path, heading, tilt, side belt forces, slip, power) and `leg_table`;
+- the trials of §7.2 (`TRIALS`, `run_trial`, `trial_rules`, `trial_table`): `micro_hills` (an egg-crate of hills the
+  rover's radius, sized to 15° slopes; `max_slope_deg`), `steep_hill` (up a 30° ramp and down), `mud_flat` with
+  `MudHook` (the rollers' friction drops to the mud's, Bekker compaction and viscous drag on the hull, a sideways
+  drift of the soft layer); each runs under `FailureRules`, so the episode and its movie end at the failing frame,
+  and `end_card` writes the outcome on the last frame.
+
+`terramechanics.py` (`import terramechanics as tm`) is the soil: `SOILS` (Bekker–Wong values from Wong's tables and
+handbook μ / C_rr for hard ground), `pressure_sinkage` / `sinkage`, `track_sinkage`, `compaction_resistance_track`,
+`thrust_track` (Janosi–Hanamoto, Wong's closed form), `max_thrust_track`, `drawbar_pull_track`, `mmp_rowland`, and the
+rigid wheel's `wheel_sinkage`, `wheel_compaction_resistance`, `thrust_wheel`.
+
+`gears.py` is the drive train: `involute_profile` (the CAD pinion's construction), `planetary` (ratio, assembly and
+neighbour conditions), `select_ratio` (top speed against the continuous climbing torque on a motor's line),
+`lewis_bending`, `contact_stress` (Hertz, external and internal meshes), `stage_loads`, `MATERIALS` (ISO 6336 class
+allowables), `chain_efficiency`, `sn_cycles`, `sprocket_chordal` (the polygon effect) and `capstan`.
+
+`tracks.py` is the track: `ground_pressure`, `resistance` (compaction or rolling, internal, grade, drag), `tractive_limit`,
+`road_wheel_loads` (rigid frame or bogies), `sag`, `derail_tension`, `drive_tension`, `skid_steer` (Wong's turning
+resistance; clutch-brake and regenerative power), `min_turn_radius`, `stability` (tip-over, step, trench).
+
+`drongo.py` (`Drongo`, notebook 08b, branch `dev_potato`) is notebook 08's `QuadFrame` with a landing gear of two skids and
+a parallel pincer (servo housing, rail, two jaws with TPU pads at `grip_height` above the ground when landed); `part` =
+drongo / frame / gear / gripper / jaw / pad. `drongo_robot.py` (`import drongo_robot as dr`) holds its numbers (`DRONGO`,
+`CAD`, `mass_budget`), the items (`POTATO`, `CREAM`: masses, sizes, friction, squeeze / impact / net-arrest limits), the
+`NET`, `GRIP_N`, the grip and net arithmetic (`grip_needed`, `grip_holds`, `net_catch`), the propulsion (`propulsion()`:
+notebook 08's Boreas export when it exists, else `ASSUMED_PROPULSION`), the Chiron robot (`drongo()`: the jaws as servo
+slides, the skids as feet) and `Rotors` (a scene hook: rotor thrust with spin-up lag and limits, moments, drag torque,
+airframe drag, energy). `drongo_controller.py` is the flight controller (`Flight`: position loop, SO(3) attitude, X
+mixer with saturation; `Profile`) and the mission (`Mission`, `Plan`, `delivery(scene, plan)`: land over an item, grip,
+climb, drop into the net or lower onto the zone until the descent stalls, home). `drongo_scenario.py` is the garden
+(`Scene` with the supply basket — an open cube Drongo lands in over each item —, `scenery`, `item_props`), the judge (`Watch`: squeeze, slip, release, net catch with the 5 m rule, impacts,
+the people taking each item to the table), `make_lab`, `run`, `timeseries`, `phase_table`, `deliveries`, `wait_times`,
+`time_budget`, `sweep` and `render_movie` / `stills`.

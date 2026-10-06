@@ -19,6 +19,10 @@
 #   velutina          Velutina (mountain medical courier): tests, then scenarios/velutina_mission.py (1 movie; ~2 min)
 #   merlin            MERLIN (wildfire sampler): tests, then scenarios/merlin_mission.py (race table + 1 movie; ~3 min)
 #   peregrine         PEREGRINE (folding-wing farm drone): the lattice, flight-model and CAD tests (~30 s)
+#   drongo            Drongo (potato and cream delivery): tests, then scenarios/drongo_delivery.py (2 movies; ~4 min)
+#   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
+#   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
+#   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
 #   all (default)     env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
@@ -32,7 +36,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
     -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -143,6 +147,17 @@ for s in "${SECTIONS[@]}"; do
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/$script" 2>&1 | grep -v "^\s*$" | tail -25 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    jet)
+      hdr "Microjet and AGUYA: cycle, templates, thermal FEA, CAD, mission"
+      timed pytest_summary "$ROOT/vegeta-cli" tests/boreas/test_microjet.py tests/aeromant/test_compressible.py tests/talos/test_thermal.py || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_turbojet.py tests/test_aguya.py || status=1 ;;
+    geometry)
+      hdr "Components and assemblies: geometry only"
+      timed pytest_summary "$ROOT" components/tests assemblies/tests -m "not slow" || status=1 ;;
+    notebooks-debug)
+      hdr "Notebooks in DEBUG mode (vegeta.mock: FEA and CFD mocked)"
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" 2>&1 | tail -60 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     velutina)
       hdr "Velutina: design and flight-model tests"
       timed pytest_summary "$ROOT/notebooks/designs" tests/test_velutina.py || status=1
@@ -158,6 +173,13 @@ for s in "${SECTIONS[@]}"; do
     peregrine)
       hdr "PEREGRINE: vortex lattice, flight models, CAD and movie tests"
       timed pytest_summary "$ROOT/notebooks/designs" tests/test_peregrine.py || status=1 ;;
+    drongo)
+      hdr "Drongo: design, flight and delivery tests"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_drongo.py || status=1
+      hdr "Drongo delivers a potato and a cream: drop into the net, place on the zone (2 movies)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/drongo_delivery.py" 2>&1 | grep -v "^\s*$" | tail -10 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

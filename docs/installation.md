@@ -36,6 +36,8 @@ Manual installation — Python ≥ 3.10; one package provides all four tools:
 ```bash
 pip install -e "vegeta-cli[pandas,test]"   # CadQuery and gmsh come from pip
 ```
+After pulling a change that adds a subpackage (e.g. `vegeta.cache`), run the same `pip install -e` again so the
+editable install knows it (or re-run `./install_local.sh`).
 The external programs are only needed by the tool that uses them: Talos needs CalculiX `ccx`,
 Aeromant needs OpenFOAM, Mellonia needs PrusaSlicer. Missing programs give a failed result with an
 explanation, never an import error.

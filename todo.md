@@ -84,6 +84,13 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5e.5 `14_submarine_propeller`: `DESIGN` dict → Boreas + CAD; operating points; pressure vs speed and depth (suction peak, cavitation inception); fin-wake model or hull CFD wake (`boreas.wake.sampled_wake`); guarded `rotor_mrf` at three points (thrust/torque/η vs BEMT, blade surface pressure vs relative speed); 3D streamlines + tracer particles (slipstream model or CFD field); OpenCV movies per operating point joined into one; blade FEA held at the bore, weak points; load harmonics (`boreas.wake.load_harmonics`), frequency diagram vs blade and hull modes, blade response and Goodman fatigue at the weak points; steady + wake tones + broadband; rule-based design proposals with repair rounds, evaluated and ranked (safe first); section 11: quieting measures tried on the recommendation and kept or dropped (skew in the CAD and `load_harmonics(skew_deg=)`, anti-singing edge vs trailing-edge shedding, material damping, larger/slower, fins upstream)
 - [ ] 5e.2 Free-surface resistance (needs an interFoam template), trim and sinkage at speed, seakeeping (heave/pitch RAOs)
 
+## Stage 5l — Drongo, potato and cream delivery (branch `dev_potato`)
+- [x] 5l.1 `designs/drongo.py` (`Drongo(QuadFrame)`: skids, rack-and-pinion pincer), `drongo_robot.py`, `drongo_controller.py`, `drongo_scenario.py`; notebook `08b_quadcopter_potato`: items and limits, grip window, net drop height, both variants in MuJoCo with movies, the wait, speed/altitude sweep, export; `scenarios/drongo_delivery.py`, `user_tests.sh drongo`, `tests/test_drongo.py`; `chiron.viz.frames`: `ground`, `scenery_range`, `ground_color`, a render per frame
+- [ ] 5l.2 The net as a body (cloth or spring mesh) instead of a catch at its plane; the people's arms giving
+- [ ] 5l.3 Wind and gusts in the garden; the rotors' downwash on the net and the people; ground effect at the pickups
+- [ ] 5l.4 Frame FEA with the pincer and skid loads (notebook 08's load cases with 0.4 kg hanging below)
+- [ ] 5l.5 Measured numbers: the cream cup's size and crushing force, potato bruising thresholds, notebook 08's export run
+
 ## Stage 5f — Air couriers (branch `dev_velutina`)
 - [x] 5f.1 `designs/velutina.py` (slim-body quadrotor: capsule nose with handle, pusher arms, fins, parachute bay; `part`, `angle_of_attack_deg`), `designs/velutina_flight.py` (terrain, ISA, wind + gusts, reduced 6-DOF flight model with set-down and hand-over, parachute estimate, movie) and `24_velutina`: mass budget, drag areas by hand + actuator-disk slipstream, Aeromant screening (fast/full presets), Boreas at the depot and the site, arm/capsule/shell FEA, modes and Campbell, the mission with precision statistics and energy, Chronos fatigue, printing, movie, JSON; `scenarios/velutina_mission.py`, `user_tests.sh velutina`; `core.Revision.run_cfd(processors=)`
 - [ ] 5f.2 Parachute in CFD (opening, canopy drag, the body in the canopy's wake); the bridle anchored to the arm frame and a reefed canopy (the shell fails the opening shock in 24 §5); a drop test case
@@ -118,6 +125,129 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5h.2 The race in head- and tailwind; air density at the fire's altitude; battery voltage sag at 12 C; a folding pusher propeller and its blade in the tail's wakes
 - [ ] 5h.3 The EDF in its duct with `rotor_mrf_installed` on MERLIN's nose; the sensor inlet in CFD (where the sensor breathes)
 - [ ] 5h.4 Belly-landing load case on the fuselage; the wing at the dash gust load with a spar (the printed wing alone is weak there)
+
+## Stage 5i — Microjet and AGUYA (branch `dev_jet`)
+- [x] 5i.1 `vegeta.boreas.microjet`: the turbojet cycle on its operating line, calibrated to a datasheet (thrust, fuel, EGT),
+  maps, export; three catalogue classes
+- [x] 5i.2 Aeromant `jet_external` (an aircraft with a running jet engine: intake and nozzle faces, exhaust tracer, plume
+  samples) and `compressor_mrf` (an impeller MRF speed-line point), both compressible (`rhoSimpleFoam`, openfoam.com);
+  named extra surfaces in `CFDCase`
+- [x] 5i.3 Talos `RadialTemperature`, thermal expansion, stiffness and yield at temperature (CalculiX `*TEMPERATURE`)
+- [x] 5i.4 `designs/turbojet.py` (impeller, turbine wheel, engine, compressor CFD passage) and `28_microjet`
+- [x] 5i.5 `designs/aguya.py`, `designs/aguya_flight.py` (fuel burn, tank sizing) and `29_aguya` (race against MERLIN, hot jet,
+  own exhaust, gust FEA, modes)
+- [ ] 5i.6 Run the compressor speed line and refit the cycle's compressor from it; the jet CFD at the dash
+- [ ] 5i.7 Turbine creep life (Larson-Miller) from the hot-wheel FEA; an annular combustor model; spool-up dynamics
+- [ ] 5i.8 AGUYA's mission movie with the smoke (reuse `merlin_flight.render_movie`); the race in wind and at altitude
+
+## Stage 5j — Tracked rover "Pekari" (branch `dev_track`)
+A caterpillar-drive rover in the class of the wheeled rover of notebook 11 (~19 kg empty, a 5 kg payload in its
+basket; the Onager is a 380 kg machine), planned in the same way: base
+rover → two arms → basket, then the gears and track, a drive-type comparison with performance maps, and Chiron missions
+of wheels (passive and active suspension, like the Onager) against tracks and half-tracks (the triangular-track
+Catagon is its own product, Stage 5k). Nothing to
+reuse for tracks, gearboxes or soil: no sprocket, gear or Bekker/terramechanics model exists yet, Chiron contacts are
+rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" and "Half-track"; The Western Producer,
+"Triangular tracks for STX and Magnum" (both blocked by the network proxy here, so fetch them before 5j.3/5j.6).
+- [x] 5j.1 Stage 1, base tracked rover: `designs/pekari_rover.py` `PekariRover(Design)` + `components/pekari_rover.py` (`part` =
+  rover/hull/track_module/sprocket/idler/road_wheel/track_link; rear drive sprocket, front idler with tensioner, road
+  wheels on bogies, return rollers; static `contact_length`, `track_gauge`, `overall`), `designs/pekari_rover_robot.py` in the
+  `onager_robot.py` pattern (`DESIGN`, `CAD`, `MATERIALS`, `PARTS_KG`, `ASSUMPTIONS`, `geometry`, `mass_budget`, battery
+  placed for CG over the contact patch) and `30_pekari_rover` §1–§3: mass budget and CG, nominal ground pressure W/(2bL) and
+  mean maximum pressure (Rowland MMP), steering ratio L/B ≤ 1.8, resistance (rolling, internal track loss, grade, drag),
+  tractive effort against μW and soil shear (Bekker–Wong), top speed per grade, acceleration, range and endurance, static
+  stability (longitudinal/lateral tip-over, side slope, step climb, trench crossing)
+- [x] 5j.2 Gears and drive train: motor → gearbox (planetary, or spur + planetary) → sprocket; ratio from the hill-climb
+  torque against top speed; gear sizing (module, tooth counts, Lewis bending, AGMA contact stress by hand, Talos FEA on a
+  tooth); efficiency chain; gearbox life from Chronos rainflow on the mission torque; sprocket–link mesh (pitch, tooth
+  count, chordal speed variation); motor and gearbox entries in `actuators.py`
+- [x] 5j.3 Track: rubber band vs. linked pads, live vs. dead track; pre-tension, sag and the tension against throwing a
+  track; road-wheel load distribution and pressure peaks; suspension options (rigid, bogie, torsion bar, Christie,
+  Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
+  regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
+- [x] 5j.1–5j.3 done in `30_pekari_rover` (real FEA; designs `pekari_rover.py`, `pekari_rover_robot.py`, `terramechanics.py`,
+  `gears.py`, `tracks.py`; tests `notebooks/designs/tests/test_pekari_rover.py`, `components/tests` CASES); the Chiron
+  model came after (5j.1b). Follow-ups from the numbers:
+  - [ ] 5j.3a Measure the track's internal loss (f_in = 0.035 + 0.002 v assumed: most of the resistance on soft soil)
+  - [ ] 5j.3b Rubber pads or sharper grousers: the 30° climb fails on gravel (26°) and grass (20°) — traction, not power
+  - [ ] 5j.3c Thinner links (FEA: 6.3 MPa, SF 16 at the tight side) or a rubber band: the belts are 4.8 kg of 19 kg
+  - [ ] 5j.3d Hinge seals or sacrificial bushings: sandy hinges use the idler take-up in ~500 km (clean: ~50,000 km)
+  - [ ] 5j.3e A 20-tooth sprocket (polygon effect 3.4 % at 48 Hz → 1.2 %); the gears nitrided (contact SF 1.27 at stall)
+- [x] 5j.1b The Pekari Rover in MuJoCo (`30_pekari_rover` §7): `pekari_rover_robot.pekari()` (each track a row of 11
+  rollers, the road wheels on bogies with passive hinges, velocity servos at the belt speed, a roller may carry 1/3 of
+  its side's drive force) and `pekari_controller.py` (`TrackDrive` legs, `uneven_ground`, `leg_table`): 3 m, a 90° turn
+  on 1 m, 2 m over rough soil with a 60 mm log and stones; the path, side forces against `tracks`, and a movie
+- [x] 5j.1c Three trials of the unchanged rover in MuJoCo (`30_pekari_rover` §7.2, `pekari_controller.TRIALS`), each
+  under `FailureRules` so the movie ends at the failing frame with the outcome on it (`end_card`): micro-hills the
+  rover's own radius (diameter 1.44 m, slopes sized to 15°) — crossed; a 30° hill up and down — stalls at the foot
+  of the ramp (traction: μ 0.6 gives 122 N, the slope asks 118 N + the internal loss; 26° was the hand limit); mud
+  (`MudHook`: μ 0.25, Bekker compaction + viscous drag, the soft layer drifting sideways at 15 % W) — crossed, pushed
+  0.24 m sideways. MuJoCo's ground stays rigid: no rut; a deformable height field is 5j.7's `TerramechanicsHook`
+- [ ] 5j.4 Stage 2, two arms: `PekariManus(PekariRover)` in the Manus pattern (parent parameters via `replace`, Manus arm
+  geometry), `pekari_manus_robot.py` reusing `onager_manus_robot` (`_arm`, `arm_ik`, `arm_fk`, `ARM_ACTUATORS`,
+  `ARM_GAINS`, `STOW`) as `extra_children`; CG shift and tip-over margin over the arm workspace with payload, track
+  pressure redistribution, actuator checks; `30b_pekari_manus`
+- [ ] 5j.5 Stage 3, basket: the basket is Pekari's (and Catagon's) default configuration — built with the base rover in
+  5j.1 (`PekariRover` `part="basket"`, `basket_*` parameters, the Sweeper's sheet-metal basket; the 5 kg payload sits in
+  it; loaded vs. empty pressure, CG and the drive re-checked on the loaded grade are in `30_pekari_rover`). Left for
+  stage 3 with the arms: the payload range against stability (a load chart as for the Atlas, payload mass × position in
+  the basket) and the pick → place-in-basket reach check; in `30b_pekari_manus`
+- [ ] 5j.6 Drive-type comparison and performance maps: `designs/terramechanics.py` (Bekker–Wong soil table: dry sand,
+  loose sand, clay, snow, mud, grass, gravel, asphalt with k_c, k_φ, n, c, φ, K; wheel sinkage, compaction resistance,
+  drawbar pull–slip; track with uniform and MMP pressure; rigid-surface μ and C_rr; step, trench and slope criteria).
+  Drive types at equal mass and payload:
+  - 4-wheel skid steer; 6-wheel rocker-bogie; 4 wheels on active legs (Onager)
+  - full tracks (Pekari Rover)
+  - [-] (not for now) half-track: steered front wheels + rear track units (`PekariHalftrack(Pekari)`: Ackermann front axle, short rear
+    track); front/rear load split, wheel steering vs. track braking, road speed and efficiency against soft-soil
+    traction, the front-wheel sinkage penalty
+  - triangular (delta) track units: a separate product, **Catagon** (Stage 5k); it joins this comparison once built
+  - legged (robot dog) for reference, optional
+  `designs/mobility_maps.py` in the `propulsor_maps.py` library pattern (`build`, `save`, `load`, JSON in `data/`):
+  drawbar pull/weight vs. slip per soil, max grade × soil, speed × grade → power and efficiency, cost of transport,
+  obstacle height and trench width, go/no-go heat maps (terrain × drive type), radar summary (matplotlib `contourf` /
+  `imshow`); `31_drive_comparison`
+- [ ] 5j.7 Terrain race, its own notebook `32_terrain_race` (MuJoCo/Chiron), not part of `30_pekari_rover`/`31_drive_comparison`;
+  shared code in `designs/terrain_race.py` (course, hooks, runner, tables): the track as a multi-roller approximation (6–8 road-wheel cylinders per side,
+  `role="foot"`, plus sprocket and idler, one velocity command per side, capsule pads between rollers to keep contact over
+  steps, internal loss as `frictionloss`; a closed chain of pad links needs a `Connect` equality in `chiron/robot.py`,
+  deferred); soft soil as a `TerramechanicsHook` via `ChironLab.add_hook` (Bekker sinkage resistance and a slip-limited
+  thrust cap per contact foot, by terrain zone); one course from `ch.Custom` zones (rocks and steps, 20–30° slope, loose
+  sand, mud, side slope). Robots on the same course:
+  - (a) wheels, passive suspension (`rover` geometry, a new `rover_robot.py`)
+  - (b) wheels, active suspension (Onager Sentinel: `onager_robot` + `Drive`)
+  - (c) full tracks: `pekari_rover_robot.pekari()` and `pekari_controller.TrackDrive` exist (5j.1b); add a slip-aware
+    torque limit
+  - [-] (not for now) (d) half-track (`pekari_halftrack_robot.py`: steering hinge servos on the front wheels + a rear multi-roller track;
+    Ackermann blended with the track-speed differential)
+  - (e) Catagon (Stage 5k), once built: four delta units, each on a pitch hinge at the hub with spring/stop limits;
+    inside each a walking-beam bogie on its own hinge with 4 mid-rollers and 2 end idlers, all `role="foot"`
+  Mission via `PhasedMission`: cross the course → pick an object with the arms → put it in the basket → return;
+  `scenarios/terrain_race.py` → `scenarios/output/terrain_race_*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
+  tilt, sinkage, stall; `benchmark/terrain_race/` with `run_trials` over terrain × drive × seed, report and success-rate heat
+  maps from `stats.cell_rates`
+- [ ] 5j.8 Tests + docs: `components/pekari*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_pekari*.py`
+  (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive) and
+  `test_terrain_race.py` (course zones, hook forces, slow race); `terramechanics` against
+  published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
+
+## Stage 5k — Catagon, the two-segment quad-track rover (later; a separate product from Pekari)
+Like Pekari, it carries a payload basket by default. Two body segments joined by an articulation joint (steering by articulation, plus pitch/roll oscillation between the
+segments), each segment on a pair of triangular (delta) track units — four units in all, as the Quadtrac tractors and
+the STX/Magnum track conversions.
+- [ ] 5k.1 The delta unit, from the user's reference image: a large elevated drive wheel on the hub at the apex, driving
+  the rubber belt's inner lugs by friction/positive drive; two large end idlers (front and rear); 4 small mid-rollers on
+  a walking-beam bogie frame that pivots under the hub; a tensioner on one idler; a rubber belt with chevron tread. CAD
+  `designs/catagon.py` `Catagon(Design)` + `components/catagon.py` (`part` = catagon/front_segment/rear_segment/basket/
+  articulation/delta_unit/drive_wheel/end_idler/mid_roller/bogie_frame), `designs/catagon_robot.py` (mass budget, CG
+  per segment), notebook `33_catagon`
+- [ ] 5k.2 Unit checks: the drive wheel clear of mud and rocks; unit pitch oscillation (stops ± deg, the anti-rotation
+  link) on uneven ground; contact length and footprint against a wheel; how the hub load spreads over the idlers and
+  mid-rollers; belt wrap angle and slip on the drive wheel (capstan, T1/T2 = e^(μθ)); added mass, height and gear ratio
+  (the drive wheel is smaller than a wheel it would replace); reuse `gears`, `tracks`, `terramechanics`
+- [ ] 5k.3 Articulation: steering torque and the articulation actuator, turning radius against articulation angle, the
+  load split between the segments, tip-over with the segments yawed and rolled, hitch loads (Talos FEA)
+- [ ] 5k.4 Catagon in the drive comparison (5j.6) and the terrain race (5j.7); tests + docs
 
 ## Stage 6 — Consistent interfaces
 - [x] 6.1 Result-shape conformance test in every package against `docs/result-shape.md`

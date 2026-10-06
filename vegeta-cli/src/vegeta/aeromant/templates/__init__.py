@@ -83,6 +83,7 @@ class TemplateSpec:
     patches: dict[str, str] = field(default_factory=dict)
     notes: tuple[str, ...] = ()
     static_geometry: bool = False   # True: a second STL (a pod, an airframe) that stands still next to the rotor
+    surfaces: tuple[str, ...] = ()  # further named STL surfaces the case needs (an engine intake, a casing...)
 
     @property
     def directory(self) -> Path:
@@ -119,7 +120,8 @@ class TemplateSpec:
         out = {}
         for p in self.parameters:
             out[p.name] = p.validate(values[p.name]) if p.name in values else p.default
-        for positive in ("velocity", "kinematic_viscosity", "density", "reference_area", "reference_length", "diameter", "rpm"):
+        for positive in ("velocity", "kinematic_viscosity", "density", "reference_area", "reference_length", "diameter", "rpm",
+                         "pressure", "temperature"):
             if positive in out and out[positive] <= 0:
                 raise ValueError(f"{positive} must be > 0")
         return out
@@ -627,8 +629,223 @@ SUCTION_HOOD = TemplateSpec(
     ),
 )
 
+# -- compressible cases (openfoam.com, rhoSimpleFoam): a jet aircraft and a radial compressor ---------------------
+GAS_CONSTANT = 287.05
+COMPRESSIBLE_FLAVORS = (
+    Flavor("openfoam.com", "com", "constant/triSurface", tuple(
+        Step(s.name, ("rhoSimpleFoam",), description="steady compressible solver (SIMPLE)") if s.name == "solver" else s
+        for s in COM_PIPELINE), "v2106 and later (surfaceFieldValue 'names')"),
+)
+
+
+def _flag(v) -> str:
+    return "yes" if float(v) else "no"
+
+
+def _surface(p: dict, name: str) -> tuple[np.ndarray, np.ndarray, float]:
+    """Bounding box and area of a named extra surface (given by ``CFDCase.prepare``)."""
+    if "_surface_bboxes" not in p or name not in p["_surface_bboxes"]:
+        raise ValueError(f"this template needs the surface {name!r}: CFDCase(..., surfaces={{{name!r}: <STL>, ...}})")
+    lo, hi = (np.asarray(v, dtype=float) for v in p["_surface_bboxes"][name])
+    return lo, hi, float(p["_surface_areas"][name])
+
+
+def _jet_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """``_external_derive`` with the density of the free stream, the engine's flows at the intake and nozzle faces,
+    refinement around both faces and along the hot jet, and the sampling line down the plume."""
+    for k in ("pressure", "temperature", "exhaust_temperature", "intake_mass_flow", "exhaust_mass_flow"):
+        if p[k] <= 0:
+            raise ValueError(f"{k} must be > 0")
+    if p["exhaust_mass_flow"] < p["intake_mass_flow"]:
+        raise ValueError("exhaust_mass_flow is the air plus the fuel: it cannot be below intake_mass_flow")
+    rho = p["pressure"] / (GAS_CONSTANT * p["temperature"])
+    q = dict(p, density=rho)
+    out = _external_derive(q, bmin, bmax)
+    L = p["reference_length"]
+    ilo, ihi, _ = _surface(p, "intake")
+    elo, ehi, e_area = _surface(p, "exhaust")
+    lo = np.array([float(out[k]) for k in ("XMIN", "YMIN", "ZMIN")])
+    hi = np.array([float(out[k]) for k in ("XMAX", "YMAX", "ZMAX")])
+    h = L / p["cells_per_length"]
+    for name, (a, b) in (("intake", (ilo, ihi)), ("exhaust", (elo, ehi))):
+        if np.any(a < bmin - 0.05 * L) or np.any(b > bmax + 0.05 * L):
+            raise ValueError(f"the {name} face lies outside the body's bounding box: it must close an opening of the body")
+    d_jet = math.sqrt(4 * e_area / math.pi)
+    centre = 0.5 * (elo + ehi)
+    reach = p["plume_length"] * L
+    half = 0.15 * L + d_jet
+    start = centre + np.array([0.5 * d_jet, 0.0, 0.0])
+    end = np.array([min(centre[0] + reach, hi[0] - h), centre[1], centre[2]])
+    if end[0] <= start[0]:
+        raise ValueError("the domain ends at the nozzle: raise downstream")
+    margin = 0.1 * L
+    out.update({k: _fmt(v) for k, v in {
+        "PRESSURE": p["pressure"], "TEMPERATURE": p["temperature"], "DENSITY": rho,
+        "INTAKE_MASS_FLOW": p["intake_mass_flow"], "EXHAUST_MASS_FLOW": p["exhaust_mass_flow"],
+        "EXHAUST_TEMPERATURE": p["exhaust_temperature"],
+        "EXHAUST_DENSITY": p["pressure"] / (GAS_CONSTANT * p["exhaust_temperature"]),
+        "JET_INTENSITY": p["jet_intensity"], "JET_MIXING_LENGTH": 0.07 * d_jet,
+        "ENGINE_MIN": np.minimum(ilo, elo) - margin, "ENGINE_MAX": np.maximum(ihi, ehi) + margin,
+        "ENGINE_LEVEL": p["engine_level"], "PLUME_LEVEL": p["plume_level"],
+        "PLUME_MIN": np.array([elo[0] - margin, centre[1] - half, centre[2] - half]),
+        "PLUME_MAX": np.minimum(np.array([centre[0] + reach, centre[1] + half, centre[2] + half]), hi - h),
+        "PLUME_START": start, "PLUME_END": end, "PLUME_POINTS": p["plume_points"],
+        "K_INLET": max(float(out["K_INLET"]), 1e-8),
+    }.items()})
+    out["TRANSONIC"] = _flag(p["transonic"])
+    return out
+
+
+JET_EXTERNAL = TemplateSpec(
+    name="jet_external",
+    description="An aircraft with a running jet engine in steady compressible RANS k-omega SST (rhoSimpleFoam, flow +x, "
+                "lift +z): the engine draws its air through the intake face and blows the hot jet out of the nozzle "
+                "face; a passive tracer follows the exhaust (dilution behind the aircraft).",
+    parameters=(
+        TemplateParameter("velocity", "flight speed along +x", "m/s"),
+        TemplateParameter("pressure", "ambient static pressure (absolute)", "Pa"),
+        TemplateParameter("temperature", "ambient static temperature", "K"),
+        TemplateParameter("reference_area", "reference area A_ref for coefficients (the wing area)", "m^2"),
+        TemplateParameter("reference_length", "reference length for Cm; also scales domain and mesh (span / 4 for an aircraft)", "m"),
+        TemplateParameter("center_of_rotation", "moment reference point", "m", kind="vector"),
+        TemplateParameter("intake_mass_flow", "air the engine swallows through the intake face", "kg/s"),
+        TemplateParameter("exhaust_mass_flow", "gas leaving the nozzle face: air plus fuel", "kg/s"),
+        TemplateParameter("exhaust_temperature", "static temperature of the jet at the nozzle face (cycle model)", "K"),
+        TemplateParameter("kinematic_viscosity", "only for the Reynolds number report (the solver uses Sutherland's law)", "m^2/s", 1.5e-5),
+    ) + _mesh_and_domain(1500) + (
+        TemplateParameter("turbulence_intensity", "inlet turbulence intensity", "-", 0.005),
+        TemplateParameter("viscosity_ratio", "inlet eddy/molecular viscosity ratio", "-", 10.0),
+        TemplateParameter("jet_intensity", "turbulence intensity of the jet at the nozzle", "-", 0.05),
+        TemplateParameter("engine_level", "refinement level on the intake and nozzle faces and around them", "", 5, "int"),
+        TemplateParameter("plume_level", "refinement level in the box along the jet", "", 3, "int"),
+        TemplateParameter("plume_length", "length of the refined, sampled jet behind the nozzle", "L_ref", 4.0),
+        TemplateParameter("plume_points", "sample points along the jet's axis", "", 200, "int"),
+        TemplateParameter("transonic", "1: transonic pressure formulation (above about Mach 0.6 anywhere); 0: off", "-", 0.0),
+    ),
+    flavors=COMPRESSIBLE_FLAVORS,
+    derive=_jet_derive,
+    max_body_extent=6.0,
+    patches=dict(EXTERNAL_PATCHES, **{
+        "intake*": "the engine face: the engine's air leaves the domain (flowRateOutletVelocity, the intake mass flow)",
+        "exhaust*": "the nozzle face: the hot jet enters (flowRateInletVelocity with the exhaust mass flow, fixed temperature, tracer = 1)"}),
+    notes=(
+        "three STLs, one closed surface together: the body (airframe and nacelle, with the intake and the nozzle open), "
+        "the intake face and the nozzle exit face (surfaces={'intake': ..., 'exhaust': ...})",
+        "forceCoeffs are on the body only, with the pressure relative to the ambient: the airframe and nacelle drag with "
+        "the engine running (inlet spillage, the jet's suction on the afterbody); the engine's thrust is the cycle's",
+        "the jet is air with a hot temperature (no fuel species, one Cp): its temperature and the 'exhaust' tracer along "
+        "the sampled line show how fast the jet cools and dilutes",
+        "compressible with wall functions and no prism layers: drag for trends, not to the last percent",
+        "openfoam.com only (rhoSimpleFoam)",
+    ),
+    surfaces=("intake", "exhaust"),
+)
+
+
+def _compressor_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """A closed background box around the casing; the MRF cylinder around the impeller (``bmin``/``bmax``); the inlet
+    turbulence from the inlet face's size."""
+    if p["rpm"] <= 0:
+        raise ValueError("rpm must be > 0 (use rotation=-1 for the other sense of rotation)")
+    if p["rotation"] not in (1.0, -1.0):
+        raise ValueError("rotation must be 1 or -1")
+    for k in ("inlet_total_pressure", "inlet_total_temperature", "outlet_pressure"):
+        if p[k] <= 0:
+            raise ValueError(f"{k} must be > 0 (absolute)")
+    D = p["diameter"]
+    c = np.asarray(p["center"], dtype=float)
+    if np.any(bmin > c + 0.1 * D) or np.any(bmax < c - 0.1 * D):
+        raise ValueError(f"the impeller axis point {c.tolist()} is not inside the impeller's bounding box: the axis is +x through 'center'")
+    boxes = [(bmin, bmax)] + [_surface(p, n)[:2] for n in ("shroud", "inlet", "outlet")]
+    alo = np.min([b[0] for b in boxes], axis=0)
+    ahi = np.max([b[1] for b in boxes], axis=0)
+    loc = np.asarray(p["location_in_mesh"], dtype=float)
+    if np.any(loc <= alo) or np.any(loc >= ahi):
+        raise ValueError("location_in_mesh must lie in the flow passage, inside the casing's bounding box")
+    h = D / p["cells_per_diameter"]
+    lo = alo - 0.1 * D
+    n = np.maximum(1, np.ceil((ahi + 0.1 * D - lo) / h)).astype(int)
+    hi = lo + n * h
+    omega = p["rotation"] * p["rpm"] * 2 * math.pi / 60
+    tip = abs(omega) * D / 2
+    m = p["zone_margin"] * D
+    axial = 0.1 * tip
+    _, _, a_in = _surface(p, "inlet")
+    mix = 0.07 * math.sqrt(4 * a_in / math.pi)
+    k = 1.5 * (axial * p["turbulence_intensity"]) ** 2
+    out = {
+        "XMIN": lo[0], "YMIN": lo[1], "ZMIN": lo[2], "XMAX": hi[0], "YMAX": hi[1], "ZMAX": hi[2],
+        "NX": n[0], "NY": n[1], "NZ": n[2],
+        "ROTOR_CENTER": c, "OMEGA": omega,
+        "ZONE_P1": np.array([bmin[0] - m, c[1], c[2]]), "ZONE_P2": np.array([bmax[0] + m, c[1], c[2]]),
+        "ZONE_RADIUS": 0.5 * D + m,
+        "LOCATION_IN_MESH": loc,
+        "SURFACE_LEVEL": p["surface_level"], "SHROUD_LEVEL": p["shroud_level"], "PORT_LEVEL": p["port_level"],
+        "ROTOR_LEVEL": p["rotor_level"],
+        "INLET_TOTAL_PRESSURE": p["inlet_total_pressure"], "INLET_TOTAL_TEMPERATURE": p["inlet_total_temperature"],
+        "OUTLET_PRESSURE": p["outlet_pressure"], "AXIAL_GUESS": axial,
+        "TURBULENCE_INTENSITY": p["turbulence_intensity"], "MIXING_LENGTH": mix,
+        "K_INLET": k, "OMEGA_INLET": math.sqrt(k) / (0.09 ** 0.25 * mix),
+        "ITERATIONS": p["iterations"], "RESIDUAL_TARGET": p["residual_target"],
+    }
+    out = {key: _fmt(v) for key, v in out.items()}
+    out["TRANSONIC"] = _flag(p["transonic"])
+    out["U_SCHEME"] = "upwind" if float(p["first_order"]) else "linearUpwind limited"
+    return out
+
+
+COMPRESSOR_MRF = TemplateSpec(
+    name="compressor_mrf",
+    description="A radial compressor impeller in its casing (inlet duct, shroud, vaneless diffuser) in a rotating "
+                "reference frame, steady compressible k-omega SST (rhoSimpleFoam): total pressure and temperature at the "
+                "inlet face, a static back pressure at the outlet face. One back pressure = one point of a speed line.",
+    parameters=(
+        TemplateParameter("rpm", "impeller speed", "rpm"),
+        TemplateParameter("diameter", "impeller tip (exducer) diameter: scales the mesh", "m"),
+        TemplateParameter("inlet_total_pressure", "total pressure at the inlet face (absolute)", "Pa"),
+        TemplateParameter("inlet_total_temperature", "total temperature at the inlet face", "K"),
+        TemplateParameter("outlet_pressure", "static back pressure at the outlet face (absolute): sets the flow", "Pa"),
+        TemplateParameter("location_in_mesh", "a point in the flow passage, inside the casing and outside the impeller's metal", "m", kind="vector"),
+        TemplateParameter("rotation", "sense of rotation about +x by the right-hand rule: 1 or -1", "", 1.0),
+        TemplateParameter("center", "a point on the impeller axis (+x through it)", "m", [0.0, 0.0, 0.0], "vector"),
+        TemplateParameter("kinematic_viscosity", "only for the Reynolds number report (the solver uses Sutherland's law)", "m^2/s", 1.5e-5),
+        TemplateParameter("iterations", "maximum SIMPLE iterations", "", 3000, "int"),
+        TemplateParameter("residual_target", "stop when all initial residuals are below", "", 1e-5),
+        TemplateParameter("cells_per_diameter", "background cells per impeller diameter", "", 10.0),
+        TemplateParameter("surface_level", "snappy refinement level on the impeller", "", 4, "int"),
+        TemplateParameter("shroud_level", "snappy refinement level on the casing (resolves the tip gap)", "", 4, "int"),
+        TemplateParameter("port_level", "refinement level on the inlet and outlet faces", "", 2, "int"),
+        TemplateParameter("rotor_level", "refinement level inside the MRF zone", "", 3, "int"),
+        TemplateParameter("zone_margin", "MRF cylinder beyond the impeller (stay inside the casing's tip gap)", "D", 0.002),
+        TemplateParameter("turbulence_intensity", "inlet turbulence intensity", "-", 0.03),
+        TemplateParameter("transonic", "1: transonic pressure formulation; 0: off (start with 0)", "-", 0.0),
+        TemplateParameter("first_order", "1: first-order upwind momentum (robust start); 0: linearUpwind", "-", 1.0),
+    ),
+    flavors=COMPRESSIBLE_FLAVORS,
+    derive=_compressor_derive,
+    max_body_extent=2.0,
+    patches={
+        "inlet*": "total pressure and total temperature (pressureInletOutletVelocity)",
+        "outlet*": "fixed static back pressure, inletOutlet velocity and temperature",
+        "body*": "the impeller: no-slip wall turning with the MRF zone; forces patch (torque -> shaft power)",
+        "shroud*": "the casing, the static hub after the impeller, the diffuser walls: no-slip, not rotating",
+        "farfield": "the background box (not part of the flow when the casing is closed)",
+    },
+    notes=(
+        "four STLs forming one closed passage: the impeller (geometry), the casing (shroud), the inlet face and the "
+        "outlet face (surfaces={'shroud': ..., 'inlet': ..., 'outlet': ...}); location_in_mesh in the passage",
+        "the MRF cylinder must hold the impeller and stay off the casing: keep zone_margin below the tip gap / D",
+        "steady MRF (frozen rotor), wall functions without prism layers: pressure ratio and efficiency within ~5-10 % "
+        "of a test rig; the speed line's choke end is reliable, surge is not (an unsteady phenomenon)",
+        "start a speed line near choke (low back pressure) with first_order=1, then raise the back pressure",
+        "openfoam.com only (rhoSimpleFoam)",
+    ),
+    surfaces=("shroud", "inlet", "outlet"),
+)
+
 TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC, ROTOR_MRF_INSTALLED,
-                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD)}
+                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD,
+                                                         JET_EXTERNAL, COMPRESSOR_MRF)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
 

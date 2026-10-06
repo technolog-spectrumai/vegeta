@@ -18,9 +18,10 @@ from ._process import describe_failure, run_command, utc_now
 from ._progress import resolve_progress
 from .environment import OpenFOAMEnvironment
 from .result import CommandRecord, Result
-from .results import find_coefficient_files, read_checkmesh, read_coefficients, read_solver_log
+from . import cache as _cache
+from .results import find_coefficient_files, read_checkmesh, read_coefficients, read_solver_log, read_surface_field_values
 from .stl import LENGTH_TO_METRES, read_stl, write_stl_ascii
-from .templates import Step, TemplateSpec, get_template
+from .templates import GAS_CONSTANT, Step, TemplateSpec, get_template
 
 CASE_INFO = "aeromant_case.json"
 _PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
@@ -48,7 +49,7 @@ class CFDCase:
 
     def __init__(self, template: str | TemplateSpec, geometry: str | Path, parameters: dict[str, Any],
                  workdir: str | Path, geometry_units: str, environment: OpenFOAMEnvironment | None = None,
-                 static_geometry: str | Path | None = None):
+                 static_geometry: str | Path | None = None, surfaces: dict[str, str | Path] | None = None):
         self.template = get_template(template)
         self.geometry = Path(geometry)
         if self.template.static_geometry and static_geometry is None:
@@ -56,6 +57,15 @@ class CFDCase:
         if static_geometry is not None and not self.template.static_geometry:
             raise ValueError(f"template {self.template.name!r} has no standing body; static_geometry is for rotor_mrf_installed")
         self.static_geometry = Path(static_geometry) if static_geometry is not None else None
+        surfaces = dict(surfaces or {})
+        missing, unknown = set(self.template.surfaces) - set(surfaces), set(surfaces) - set(self.template.surfaces)
+        if missing:
+            raise ValueError(f"template {self.template.name!r} needs the surface STL(s) {sorted(missing)} "
+                             f"(surfaces={{name: path}}, same units as the geometry)")
+        if unknown:
+            raise ValueError(f"template {self.template.name!r} has no surface(s) {sorted(unknown)}; "
+                             f"it takes {list(self.template.surfaces) or 'none'}")
+        self.surfaces = {k: Path(surfaces[k]) for k in self.template.surfaces}
         if geometry_units not in LENGTH_TO_METRES:
             raise ValueError(f"geometry_units must be one of {sorted(LENGTH_TO_METRES)} (STL has no units)")
         self.geometry_units = geometry_units
@@ -76,6 +86,7 @@ class CFDCase:
             "geometry": str(self.geometry),
             "geometry_units": self.geometry_units,
             **({"static_geometry": str(self.static_geometry)} if self.static_geometry else {}),
+            **({"surfaces": {k: str(v) for k, v in self.surfaces.items()}} if self.surfaces else {}),
             "parameters": self.parameters,
             "user_parameters": self.user_parameters,
             "environment": self.environment.describe(),
@@ -85,6 +96,8 @@ class CFDCase:
         cfg = dict(self.config(), geometry_sha256=_sha256(self.geometry) if self.geometry.is_file() else None)
         if self.static_geometry is not None:
             cfg["static_geometry_sha256"] = _sha256(self.static_geometry) if self.static_geometry.is_file() else None
+        for k, v in self.surfaces.items():
+            cfg[f"surface_{k}_sha256"] = _sha256(v) if v.is_file() else None
         cfg.pop("environment")
         cfg.pop("openfoam_version")
         return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
@@ -123,6 +136,10 @@ class CFDCase:
             if self.static_geometry is not None:
                 static = read_stl(self.static_geometry).scaled(scale)
                 derive_p["_static_bbox"] = static.bbox
+            extra = {k: read_stl(v).scaled(scale) for k, v in self.surfaces.items()}
+            if extra:
+                derive_p["_surface_bboxes"] = {k: s.bbox for k, s in extra.items()}
+                derive_p["_surface_areas"] = {k: s.area for k, s in extra.items()}
             values = self.template.derive(derive_p, bmin, bmax)
             shutil.copytree(self.template.case_dir(self.flavor), self.workdir)
             geometry_dir = self.workdir / self.files.geometry_dir
@@ -135,10 +152,16 @@ class CFDCase:
             if self.static_geometry is not None:
                 shutil.copy2(self.static_geometry, inputs / ("static_" + self.static_geometry.name))
                 write_stl_ascii(static, geometry_dir / "static.stl", "static")
+            for k, surf in extra.items():
+                shutil.copy2(self.surfaces[k], inputs / (f"{k}_" + self.surfaces[k].name))
+                write_stl_ascii(surf, geometry_dir / f"{k}.stl", k)
             self._render(values)
             info = {"key": self._key(), "config": self.config(), "derived": values, "created_at": utc_now(),
                     "body_bbox_m": [bmin.tolist(), bmax.tolist()], "body_area_m2": body.area,
-                    "geometry_sha256": _sha256(self.geometry)}
+                    "geometry_sha256": _sha256(self.geometry),
+                    **({"surface_areas_m2": {k: s.area for k, s in extra.items()},
+                        "surface_bboxes_m": {k: [s.bbox[0].tolist(), s.bbox[1].tolist()] for k, s in extra.items()}}
+                       if extra else {})}
             (self.workdir / CASE_INFO).write_text(json.dumps(info, indent=2, default=str))
             res.metrics = {
                 "body_bbox_min_m": bmin.tolist(), "body_bbox_max_m": bmax.tolist(),
@@ -148,7 +171,7 @@ class CFDCase:
                                      else [int(values["NX0"]) + int(values["NX1"]) + int(values["NX2"]),
                                            int(values["NY0"]) + int(values["NY1"]) + int(values["NY2"]), int(values["NZ"])]),
             }
-            if body.volume <= 0:
+            if body.volume <= 0 and not self.surfaces:
                 res.messages.append("STL encloses no positive volume (open or inverted surface?); snappyHexMesh may fail")
             res.artifacts.update(case=self.workdir, case_info=self.workdir / CASE_INFO,
                                  body_stl=geometry_dir / "body.stl")
@@ -158,6 +181,9 @@ class CFDCase:
                 res.artifacts["static_stl"] = geometry_dir / "static.stl"
                 if static.volume <= 0:
                     res.messages.append("static STL encloses no positive volume (open or inverted surface?)")
+            for k, surf in extra.items():
+                res.metrics[f"{k}_area_m2"] = surf.area
+                res.artifacts[f"{k}_stl"] = geometry_dir / f"{k}.stl"
         except (ValueError, FileNotFoundError, OSError) as exc:
             res.fail(str(exc))
         if res.ok and self.environment.flavor() is None:
@@ -209,12 +235,25 @@ class CFDCase:
         f.write_text(new)
 
     def run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
-            timeout: float | None = None, processors: int = 1) -> Result:
+            timeout: float | None = None, processors: int = 1, cache: str | None = None) -> Result:
         """Run the template pipeline, or only ``steps`` (names from ``pipeline(processors)``), in order.
 
         ``processors`` > 1 runs the solver in parallel with MPI (see ``pipeline``); meshing stays serial.
         Stops at the first failing step. ``checkMesh`` failures are reported but do not stop the run.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``), for a whole run (no ``steps``). When the
+        entry exists it is loaded (its force and residual logs copied in the cache; the case directory itself is not)
+        and nothing runs; else the finished result is saved there. Nothing checks whether the case changed: delete
+        the entry when it does.
         """
+        if cache is not None and steps is not None:
+            raise ValueError("cache applies to a whole run: give either steps or cache")
+        return _cache.cached(cache, lambda: self._run(steps, progress=progress, cancel=cancel, timeout=timeout,
+                                                      processors=processors),
+                             Result, CommandRecord, label="aeromant", kinds=("aeromant.run", "aeromant.results"))
+
+    def _run(self, steps: Sequence[str] | None = None, *, progress=False, cancel: threading.Event | None = None,
+             timeout: float | None = None, processors: int = 1) -> Result:
         t0 = time.monotonic()
         res = Result(kind="aeromant.run", metadata={"case": self.config(), "started_at": utc_now(), "processors": processors})
         if not self.is_prepared:
@@ -318,6 +357,48 @@ class CFDCase:
         """Read existing results; never runs anything."""
         return read_case_results(self.workdir, average_window)
 
+    @property
+    def key(self) -> str:
+        """The case's identity: template, parameters and the STL files' hashes (not the OpenFOAM installation)."""
+        return self._key()
+
+    @property
+    def is_solved(self) -> bool:
+        """Prepared for exactly this configuration and its results read back complete."""
+        return self.is_prepared and self.results().ok
+
+    def ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
+               timeout: float | None = None, cache: str | None = None) -> Result:
+        """The case's results, solving only when needed.
+
+        Solved already with these inputs (same key, results complete) -> read back, nothing runs. Otherwise the
+        directory is prepared again (a stale or half-run case is replaced) and the whole pipeline runs. With
+        ``run=False`` nothing is prepared or run: an unsolved case comes back as a failed result saying NOT RUN.
+        ``metadata["reused"]`` says which happened. ``cache``: as in ``run`` (an existing entry is returned before
+        anything else is looked at; a result solved or read back here is saved as the entry).
+        """
+        return _cache.cached(cache, lambda: self._ensure(run=run, processors=processors, progress=progress, cancel=cancel,
+                                                         timeout=timeout),
+                             Result, CommandRecord, label="aeromant", kinds=("aeromant.run", "aeromant.results"))
+
+    def _ensure(self, *, run: bool = True, processors: int = 1, progress=False, cancel: threading.Event | None = None,
+                timeout: float | None = None) -> Result:
+        if self.is_prepared:
+            done = self.results()
+            if done.ok:
+                done.metadata["reused"] = True
+                return done
+        if not run:
+            res = Result(kind="aeromant.run", metadata={"case": self.config(), "reused": False, "not_run": True})
+            return res.fail(f"NOT RUN: {self.template.name} case in {self.workdir} (run=False)")
+        prep = self.prepare(overwrite=True)
+        if not prep.ok:
+            prep.metadata["reused"] = False
+            return prep
+        res = self.run(progress=progress, processors=processors, cancel=cancel, timeout=timeout)
+        res.metadata["reused"] = False
+        return res
+
 
 def open_case(workdir: str | Path) -> dict:
     """Case information written by ``prepare()``."""
@@ -373,6 +454,8 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         if not sl.converged:
             res.messages.append(f"residual target not reached in {sl.iterations} iterations; "
                                 "check coefficient histories before trusting the values")
+    if info["config"].get("template") == "compressor_mrf":
+        return _compressor_results(res, workdir, p, info, average_window)
     if str(info["config"].get("template", "")).startswith("rotor_"):
         return _rotor_results(res, workdir, p, average_window)
     if info["config"].get("template") == "suction_hood":
@@ -384,7 +467,8 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         return res.fail("no forceCoeffs output found (solver NOT RUN or failed)")
     hist = read_coefficients(files)
     res.artifacts["force_coefficients"] = files[-1]
-    q = 0.5 * p["density"] * p["velocity"] ** 2
+    density = p["density"] if "density" in p else p["pressure"] / (GAS_CONSTANT * p["temperature"])
+    q = 0.5 * density * p["velocity"] ** 2
     n = max(1, min(average_window, len(hist.data)))
     for c in ("Cd", "Cl", "Cm"):
         if c in hist:
@@ -399,6 +483,113 @@ def read_case_results(workdir: str | Path, average_window: int = 50) -> Result:
         m["drag_force_N"] = m["Cd"] * q * p["reference_area"]
     if m.get("Cl") is not None:
         m["lift_force_N"] = m["Cl"] * q * p["reference_area"]
+    if info["config"].get("template") == "jet_external":
+        _jet_results(res, workdir, p, average_window)
+    return res
+
+
+def _jet_results(res: Result, workdir: Path, p: dict, average_window: int) -> None:
+    """The engine's flows through the intake and nozzle faces (a check of the boundary conditions), the free-stream
+    Mach number, and the jet's temperature and exhaust fraction along its axis (``postProcessing/plumeLine``)."""
+    from .results import read_sample_set
+
+    m = res.metrics
+    a0 = math.sqrt(1.4 * GAS_CONSTANT * p["temperature"])
+    m["mach_number"] = p["velocity"] / a0
+    n = average_window
+    for name, key, set_value in (("intakeFlow", "intake_mass_flow_kg_s", p["intake_mass_flow"]),
+                                 ("exhaustFlow", "exhaust_mass_flow_kg_s", p["exhaust_mass_flow"])):
+        try:
+            rows = read_surface_field_values(workdir, name)
+        except FileNotFoundError:
+            m[key] = None
+            continue
+        flow = abs(float(np.mean(rows[-min(n, len(rows)):, 1])))
+        m[key] = flow
+        if abs(flow / set_value - 1) > 0.02:
+            res.messages.append(f"{name}: {flow:.4g} kg/s through the face, {set_value:.4g} set: check the face STL")
+    try:
+        x, cols = read_sample_set(workdir, "plumeLine")
+    except FileNotFoundError:
+        m["plume"] = None
+        res.messages.append("no plume samples (postProcessing/plumeLine): solver not run, or the sets function failed")
+        return
+    T, tracer = cols.get("T"), cols.get("exhaust")
+    x0 = float(x[0])
+    plume = {"distance_m": (x - x0).tolist()}
+    if T is not None:
+        plume["temperature_K"] = T.tolist()
+        plume["excess_temperature_K"] = (T - p["temperature"]).tolist()
+    if tracer is not None:
+        plume["exhaust_fraction"] = tracer.tolist()
+    m["plume"] = plume
+    for d in (0.5, 1.0, 2.0, 5.0):
+        if x[-1] - x0 >= d:
+            if T is not None:
+                m[f"jet_excess_T_at_{d:g}m_K"] = float(np.interp(x0 + d, x, T) - p["temperature"])
+            if tracer is not None:
+                m[f"exhaust_fraction_at_{d:g}m"] = float(np.interp(x0 + d, x, tracer))
+
+
+def _compressor_results(res: Result, workdir: Path, p: dict, info: dict, average_window: int) -> Result:
+    """Mass flow, total-to-total pressure ratio, isentropic efficiency and shaft power of a ``compressor_mrf`` case.
+
+    Totals from the mass-averaged static pressure, temperature and speed at each face (``inletState``/``outletState``)
+    with the isentropic relations; the shaft power from the impeller torque (``forces``). The efficiency from the
+    temperatures and from the torque should agree within a few percent on a converged case."""
+    from .results import find_force_files, read_force_history
+
+    m = res.metrics
+    g, cp = 1.4, 1005.0
+    n = average_window
+    try:
+        flow_in = read_surface_field_values(workdir, "inletFlow")
+        flow_out = read_surface_field_values(workdir, "outletFlow")
+        s_in = read_surface_field_values(workdir, "inletState")
+        s_out = read_surface_field_values(workdir, "outletState")
+    except FileNotFoundError as exc:
+        m.update(mass_flow_kg_s=None, pressure_ratio_tt=None, efficiency_tt=None)
+        return res.fail(f"no surfaceFieldValue output found (solver NOT RUN or failed): {exc}")
+
+    def last(a, col):
+        k = max(1, min(n, len(a)))
+        return float(np.mean(a[-k:, col]))
+
+    mdot = abs(last(flow_in, 1))
+    m["mass_flow_kg_s"] = mdot
+    m["mass_flow_outlet_kg_s"] = abs(last(flow_out, 1))
+    totals = {}
+    for side, s in (("inlet", s_in), ("outlet", s_out)):
+        ps, ts, u = last(s, 1), last(s, 2), last(s, 3)
+        t0 = ts + u * u / (2 * cp)
+        totals[side] = (ps * (t0 / ts) ** (g / (g - 1)), t0, ps, ts, u)
+        m[f"{side}_static_pressure_Pa"], m[f"{side}_static_temperature_K"], m[f"{side}_speed_m_s"] = ps, ts, u
+        m[f"{side}_total_pressure_Pa"], m[f"{side}_total_temperature_K"] = totals[side][0], t0
+    pr = totals["outlet"][0] / totals["inlet"][0]
+    tr = totals["outlet"][1] / totals["inlet"][1]
+    m["pressure_ratio_tt"] = pr
+    m["temperature_ratio_tt"] = tr
+    m["efficiency_tt"] = (pr ** ((g - 1) / g) - 1) / (tr - 1) if tr > 1 else None
+    omega = p["rotation"] * p["rpm"] * 2 * math.pi / 60
+    m["tip_speed_m_s"] = abs(omega) * p["diameter"] / 2
+    q_files = find_force_files(workdir, "moment.dat", "forces")
+    if q_files:
+        Q = read_force_history(q_files)
+        k = max(1, min(n, len(Q)))
+        torque = -float(np.mean(Q[-k:, 1])) * p["rotation"]
+        power = torque * abs(omega)
+        m.update(torque_Nm=torque, shaft_power_W=power)
+        if mdot > 0 and power > 0:
+            m["work_per_kg_J"] = power / mdot
+            m["work_coefficient"] = power / mdot / m["tip_speed_m_s"] ** 2   # slip x power input of the cycle model
+            ideal = cp * totals["inlet"][1] * (pr ** ((g - 1) / g) - 1)
+            m["efficiency_from_torque"] = ideal * mdot / power
+    tin = totals["inlet"][1]
+    m["corrected_mass_flow_kg_s"] = mdot * math.sqrt(tin / 288.15) / (totals["inlet"][0] / 101325.0)
+    if abs(m["mass_flow_outlet_kg_s"] / max(mdot, 1e-12) - 1) > 0.02:
+        res.messages.append(f"inlet and outlet mass flows differ by {m['mass_flow_outlet_kg_s'] / mdot - 1:+.1%}: not converged")
+    res.messages.append(f"averaged over the last {n} iterations; totals from mass-averaged static values (the outlet's swirl "
+                        "counts in the total pressure: put the outlet face far out in the vaneless diffuser)")
     return res
 
 

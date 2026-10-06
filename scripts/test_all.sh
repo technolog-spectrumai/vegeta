@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia.
+# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia,
+# components and assemblies (geometry only).
 # Extra args go to pytest, e.g. -m "not slow".
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,5 +14,10 @@ for pkg in vegeta-core vegeta-ai vegeta-fidia; do
   [ -d "$ROOT/$pkg/tests" ] || continue
   echo "=== ${pkg#vegeta-} ==="
   (cd "$ROOT/$pkg" && python3 -m pytest -q "$@") || status=1
+done
+for pkg in components assemblies; do
+  [ -d "$ROOT/$pkg/tests" ] || continue
+  echo "=== $pkg ==="
+  (cd "$ROOT" && python3 -m pytest -q "$pkg/tests" "$@") || status=1
 done
 exit $status

@@ -157,6 +157,26 @@ if the fan cannot push air against the system at any flow, `solve` returns the p
 `converged=False`. `nacelle_drag` is turbulent flat-plate friction (Prandtl–Schlichting `Cf = 0.455 / (log10 Re)^2.58`)
 on `external_wetted_area_m2` with Re on `duct_length_m`. Tests: `tests/boreas/test_ducted.py`.
 
+## Model turbojets (`boreas.microjet`)
+
+A single-spool turbojet's 1-D cycle on its operating line:
+- **Compressor:** the radial compressor's work is set by the impeller tip speed (slip × power input × U²), with an
+  isentropic efficiency that falls away from the design speed.
+- **Combustor:** an energy balance with a burner efficiency, and a pressure loss that scales with N².
+- **Turbine:** turbine work = compressor work.
+- **Matching:** the NGV and the convergent nozzle are compressible orifices in series. At a shaft speed and airspeed, the
+  only unknown is the turbine entry temperature, which is found by bracketing.
+
+| Function | What it does |
+|---|---|
+| `solve(engine, rpm, V, atmosphere)` | Thrust, fuel flow, air flow, TIT, EGT, jet speed and temperature, choking, efficiencies |
+| `calibrate(engine, thrust, fuel, egt)` | Fits the design air flow, TIT and burner efficiency to one datasheet point |
+| `from_catalogue(name)` | A calibrated engine of one of `CATALOGUE`'s classes (100, 140 or 200 N: approximate class values, replace them with your engine's datasheet) |
+| `performance_map`, `rpm_for_thrust`, `metal_temperatures` | The map; the shaft speed for a thrust; turbine-wheel temperatures for the FEA |
+| `export` / `load` | JSON |
+
+**Limits:** no compressor or turbine map, no surge line, no cooling flows, steady only.
+
 ## Fan noise (`boreas.fan_noise`)
 A ducted fan's loudest tones come from the rotor wakes striking the stator vanes. `boreas.fan_noise` gives first
 estimates of them from plain numbers (no geometry objects), to compare blade and vane counts, spacing and rpm:

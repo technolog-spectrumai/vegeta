@@ -15,16 +15,20 @@ from ._process import describe_failure, utc_now
 from ._progress import resolve_progress
 from .ccx import ccx_version, nset, run_ccx, write_inp
 from .frd import read_dat_eigen, read_dat_reactions, read_frd
-from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure
+from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure, RadialTemperature
 from .materials import Material
 from .mesh import MeshSettings, generate_mesh, read_mesh
 from .regions import Surfaces, SurfacesInBox, SurfacesOnPlane
-from .result import Result
+from .result import CommandRecord, Result
+from . import cache as _cache
 from .units import get_units
 
 MESH_FILE = "mesh.msh"
 MESH_SUMMARY = "mesh_summary.json"
 JOB = "model"
+# what a cache entry (vegeta.cache) keeps of each result: the files later cells read
+MESH_KEEP = ("mesh", "mesh_summary", "gmsh_log")
+SOLVE_KEEP = ("frd", "dat", "mesh", "summary", "ccx_log", "sta", "cvg")
 
 
 def _sha256(path: Path) -> str:
@@ -48,7 +52,7 @@ class StructuralModel:
     material: Material
     regions: Sequence[Surfaces | SurfacesInBox | SurfacesOnPlane]
     supports: Sequence[FixedSupport | Displacement]
-    loads: Sequence[Force | Pressure | Acceleration | Centrifugal]
+    loads: Sequence[Force | Pressure | Acceleration | Centrifugal | RadialTemperature]
     mesh_settings: MeshSettings
     name: str = "talos_model"
     notes: str = ""
@@ -76,6 +80,11 @@ class StructuralModel:
                 raise ValueError(f"{type(item).__name__} refers to unknown region {item.region!r}; defined: {names}")
         if any(isinstance(l, (Acceleration, Centrifugal)) for l in self.loads) and self.material.density is None:
             raise ValueError("an Acceleration or Centrifugal load needs material density; none was given")
+        thermal = [l for l in self.loads if isinstance(l, RadialTemperature)]
+        if len(thermal) > 1:
+            raise ValueError("one temperature field per model (combine the profiles into one RadialTemperature)")
+        if thermal and self.material.thermal_expansion is None and self.material.temperature_table is None:
+            raise ValueError("a temperature load needs the material's thermal_expansion and/or temperature_table; none was given")
         if not isinstance(self.mesh_settings, MeshSettings):
             raise ValueError("mesh_settings must be a talos.MeshSettings")
 
@@ -106,9 +115,26 @@ class StructuralModel:
         }
         return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
 
+    def _solve_key(self) -> str:
+        cfg = {k: v for k, v in self.config().items() if k not in ("geometry", "notes")}   # geometry: in the mesh key by hash
+        cfg["mesh_key"] = self._mesh_key()
+        return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()
+
+    @property
+    def key(self) -> str:
+        """The static analysis's identity: geometry hash, units, regions, mesh settings, material, supports, loads."""
+        return self._solve_key()
+
     # -- meshing ----------------------------------------------------------------------------
-    def mesh(self, workdir: str | Path, progress=False) -> Result:
-        """Mesh the geometry with Gmsh into ``workdir/mesh.msh``."""
+    def mesh(self, workdir: str | Path, progress=False, *, cache: str | None = None) -> Result:
+        """Mesh the geometry with Gmsh into ``workdir/mesh.msh``.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``). When the entry exists its mesh is copied
+        into ``workdir`` and nothing is meshed; else the mesh made here is saved as that entry."""
+        return _cache.cached(cache, lambda: self._mesh(workdir, progress), Result, CommandRecord, keep=MESH_KEEP,
+                             restore_to=workdir, label="talos", kinds=("talos.mesh",))
+
+    def _mesh(self, workdir: str | Path, progress=False) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         workdir.mkdir(parents=True, exist_ok=True)
@@ -143,12 +169,23 @@ class StructuralModel:
 
     # -- solving ----------------------------------------------------------------------------
     def solve(self, workdir: str | Path, *, executable: str = "ccx", threads: int = 1,
-              timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
-        """Write ``model.inp`` from the existing mesh, run CalculiX and summarise results."""
+              timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+              cache: str | None = None) -> Result:
+        """Write ``model.inp`` from the existing mesh, run CalculiX and summarise results.
+
+        ``cache``: an entry name in the notebook's cache (``vegeta.cache``). When the entry exists it is loaded (its
+        ``.frd``, ``.dat`` and mesh copied in the cache) and nothing runs; else the solved result is saved there.
+        Nothing checks whether the model changed: delete the entry when it does."""
+        return _cache.cached(cache, lambda: self._solve(workdir, executable=executable, threads=threads, timeout=timeout,
+                                                        progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.solve",))
+
+    def _solve(self, workdir: str | Path, *, executable: str = "ccx", threads: int = 1,
+               timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         res = Result(kind="talos.solve", metadata={"model": self.config(), "started_at": utc_now(),
-                                                   "units": asdict(self._unit_system)})
+                                                   "units": asdict(self._unit_system), "solve_key": self._solve_key()})
         done = lambda: (setattr(res, "duration_s", time.monotonic() - t0), res.save_json(workdir / "summary.json"))
 
         summary = workdir / MESH_SUMMARY
@@ -217,10 +254,71 @@ class StructuralModel:
         res.save_json(res.artifacts["summary"])
         return res
 
+    # -- solving only when needed -------------------------------------------------------------
+    def solved(self, workdir: str | Path) -> Result | None:
+        """The static result in ``workdir`` when it was solved with exactly these inputs, read back; else None."""
+        summary = Path(workdir) / "summary.json"
+        if not summary.is_file():
+            return None
+        try:
+            d = json.loads(summary.read_text())
+        except (OSError, json.JSONDecodeError):
+            return None
+        if d.get("status") != "success" or d.get("metadata", {}).get("solve_key") != self._solve_key():
+            return None
+        res = result_from_dict(d)
+        res.metadata["reused"] = True
+        return res
+
+    def mesh_is_current(self, workdir: str | Path) -> bool:
+        """``workdir`` holds a successful mesh made with this geometry, regions and mesh settings."""
+        summary = Path(workdir) / MESH_SUMMARY
+        if not (Path(workdir) / MESH_FILE).is_file() or not summary.is_file():
+            return False
+        info = json.loads(summary.read_text())
+        return info.get("status") == "success" and info.get("metadata", {}).get("mesh_key") == self._mesh_key()
+
+    def ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
+               timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+               cache: str | None = None) -> Result:
+        """The static result, computing only what is missing: solved with these inputs -> read back; else mesh (only
+        when the mesh is missing or out of date) and solve. ``run=False``: nothing runs, an unsolved model comes back
+        as a failed result saying NOT RUN. ``metadata["reused"]`` says which happened. ``cache``: as in ``solve``
+        (an existing entry is returned before anything else is looked at)."""
+        return _cache.cached(cache, lambda: self._ensure(workdir, run=run, executable=executable, threads=threads,
+                                                         timeout=timeout, progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.solve",))
+
+    def _ensure(self, workdir: str | Path, *, run: bool = True, executable: str = "ccx", threads: int = 1,
+                timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+        done = self.solved(workdir)
+        if done is not None:
+            return done
+        if not run:
+            res = Result(kind="talos.solve", metadata={"model": self.config(), "reused": False, "not_run": True})
+            return res.fail(f"NOT RUN: {self.name} in {workdir} (run=False)")
+        if not self.mesh_is_current(workdir):
+            m = self.mesh(workdir, progress=progress)
+            if not m.ok:
+                m.metadata["reused"] = False
+                return m
+        res = self.solve(workdir, executable=executable, threads=threads, timeout=timeout, progress=progress, cancel=cancel)
+        res.metadata["reused"] = False
+        return res
+
     def solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
-                    timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
+                    timeout: float | None = None, progress=False, cancel: threading.Event | None = None,
+                    cache: str | None = None) -> Result:
         """Natural frequencies and mode shapes (CalculiX ``*FREQUENCY``) of the supported structure with
-        its point masses; loads are ignored. Needs the material density. Results: ``modes.frd``/``.dat``."""
+        its point masses; loads are ignored. Needs the material density. Results: ``modes.frd``/``.dat``.
+
+        ``cache``: as in ``solve`` (an existing entry is loaded, nothing runs; else the modes are saved there)."""
+        return _cache.cached(cache, lambda: self._solve_modes(workdir, n_modes, executable=executable, threads=threads,
+                                                              timeout=timeout, progress=progress, cancel=cancel),
+                             Result, CommandRecord, keep=SOLVE_KEEP, label="talos", kinds=("talos.modes",))
+
+    def _solve_modes(self, workdir: str | Path, n_modes: int = 10, *, executable: str = "ccx", threads: int = 1,
+                     timeout: float | None = None, progress=False, cancel: threading.Event | None = None) -> Result:
         t0 = time.monotonic()
         workdir = Path(workdir)
         job = "modes"
@@ -337,7 +435,22 @@ class StructuralModel:
                 f"{sorted(set(loaded_on_support))}) is not included in them"
             )
         ys = self.material.yield_strength
-        if ys is not None and m.get("max_von_mises"):
+        thermal = [l for l in self.loads if isinstance(l, RadialTemperature)]
+        if thermal and "STRESS" in fr.fields:
+            temps = thermal[0].at(fr.coords)
+            m["temperature_min"], m["temperature_max"] = float(temps.min()), float(temps.max())
+            y = self.material.yield_at(temps)
+            if y is not None:
+                sf = y / np.maximum(fr.von_mises, 1e-30)
+                k = int(np.nanargmin(sf))
+                m.update(safety_factor_yield=float(sf[k]), safety_factor_location=fr.coords[k].tolist(),
+                         safety_factor_temperature=float(temps[k]), safety_factor_von_mises=float(fr.von_mises[k]))
+                res.messages.append("safety factor = the lowest nodal ratio of the yield strength at the node's temperature "
+                                    "to its von Mises stress (thermal + mechanical); creep at the hot end is not in it")
+            else:
+                m["safety_factor_yield"] = None
+                res.messages.append("safety factor not computed: no yield_strength or temperature_table yield values")
+        elif ys is not None and m.get("max_von_mises"):
             m["safety_factor_yield"] = ys / m["max_von_mises"]
         else:
             m["safety_factor_yield"] = None
@@ -351,3 +464,13 @@ class StructuralModel:
             f"lengths {self._unit_system.length}, forces {self._unit_system.force}, "
             f"stresses {self._unit_system.stress}"
         )
+
+
+def result_from_dict(d: dict) -> Result:
+    """A ``Result`` back from its ``to_dict()`` form (``summary.json``): paths as ``Path``, commands as records."""
+    from .result import CommandRecord
+
+    return Result(kind=d["kind"], status=d.get("status", "success"), metrics=dict(d.get("metrics", {})),
+                  artifacts={k: Path(v) for k, v in d.get("artifacts", {}).items()}, messages=list(d.get("messages", [])),
+                  duration_s=d.get("duration_s", 0.0), execution=[CommandRecord(**c) for c in d.get("execution", [])],
+                  metadata=dict(d.get("metadata", {})))
