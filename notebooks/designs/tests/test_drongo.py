@@ -153,6 +153,19 @@ def test_takeoff_and_hop_hover_on_the_weight():
 
 
 # ----------------------------------------------------------------------------------------------- the deliveries
+def test_items_start_in_the_basket_with_room_for_drongo():
+    scene = ds.Scene()
+    g = dr.geometry()
+    inner = scene.basket_size / 2 - scene.basket_wall
+    span = g["R"] * math.cos(math.radians(45)) + g["prop_r"]          # rotor tips from the centre, along x or y
+    for n in ("potato", "cream"):
+        x, y = scene.item_at(n)
+        assert scene.ground(x, y) == scene.basket_wall                 # on the basket's floor
+        assert abs(x - scene.basket_at[0]) + span < inner and abs(y - scene.basket_at[1]) + span < inner
+        other = scene.item_at("cream" if n == "potato" else "potato")
+        assert abs(other[1] - y) - dr.ITEMS["cream"]["diameter_m"] / 2 > g["skid_y"] + g["skid_r"]   # skids clear
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("variant", ["drop", "place"])
 def test_delivery_arrives_unspoilt(variant):

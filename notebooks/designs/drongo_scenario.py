@@ -1,6 +1,7 @@
 """Drongo delivers a potato and a cup of cream to hungry people (notebook 08b, ``scenarios/drongo_delivery.py``).
 
-The scene (``Scene``): a kitchen with Drongo's pad by the door and the two items on the ground beside it, a garden
+The scene (``Scene``): a kitchen with Drongo's pad by the door, a supply zone beside it with a basket (an open cube)
+holding the two items, a garden
 hedge, and 36 m away a picnic with hungry people and a drop zone (a blanket). Two variants:
 
 * **drop** — four of the people hold a 2 m × 2 m net at waist height over the zone. Drongo hovers over the net and
@@ -46,14 +47,19 @@ VARIANTS = ("drop", "place")
 @dataclass
 class Scene:
     """Where things are (world, m; the ground is flat at z = 0). ``variant`` 'drop' or 'place'; ``home`` Drongo's pad
-    by the kitchen door; ``potato_at`` / ``cream_at`` the items on the ground beside it; ``zone`` the drop zone's centre
+    by the kitchen door; the supply ``basket`` (an open cube of ``basket_size`` with walls and floor ``basket_wall``
+    thick, centred at ``basket_at``) holding the items at ``potato_at`` / ``cream_at`` on its floor — Drongo lands in it
+    over each (its rotors span 0.30 m: the cube leaves room for one item beside it); ``zone`` the drop zone's centre
     (a ``zone_size`` square blanket) with the net held ``NET['height_m']`` above it; ``cruise_alt`` above the ground
     (over the 2.5 m hedge at ``hedge_x`` and the people)."""
 
     variant: str = "drop"
     home: tuple = (0.0, 0.0)
-    potato_at: tuple = (1.2, 0.7)
-    cream_at: tuple = (1.2, -0.7)
+    basket_at: tuple = (1.5, 0.0)
+    basket_size: float = 0.7
+    basket_wall: float = 0.015
+    potato_at: tuple = (1.5, 0.13)
+    cream_at: tuple = (1.5, -0.13)
     zone: tuple = (36.0, 6.0)
     zone_size: float = 2.4
     net_height: float = dr.NET["height_m"]
@@ -71,7 +77,10 @@ class Scene:
             raise ValueError(f"variant must be one of {VARIANTS}")
 
     def ground(self, x, y) -> float:
-        return 0.0
+        """What Drongo or an item stands on at (x, y): the basket's floor inside it, the flat garden elsewhere."""
+        h = self.basket_size / 2 - self.basket_wall
+        bx, by = self.basket_at
+        return self.basket_wall if abs(x - bx) < h and abs(y - by) < h else 0.0
 
     def item_at(self, name: str) -> tuple:
         return {"potato": self.potato_at, "cream": self.cream_at}[name]
@@ -139,6 +148,17 @@ def _box(name, centre, half, rgba):
     return ch.Geom(name, "box", tuple(half), pos=tuple(centre), role="visual", rgba=rgba)
 
 
+def _basket(scene: Scene) -> list:
+    """The supply basket as an open cube: a floor and four walls (they collide; drawn translucent)."""
+    a, t = scene.basket_size / 2, scene.basket_wall
+    rgba = (0.72, 0.55, 0.32, 0.55)
+    g = [ch.Geom("basket_floor", "box", (a, a, t / 2), pos=(0, 0, t / 2), rgba=rgba)]
+    for k, (cx, cy, hx, hy) in enumerate(((a - t / 2, 0, t / 2, a), (-a + t / 2, 0, t / 2, a),
+                                          (0, a - t / 2, a, t / 2), (0, -a + t / 2, a, t / 2))):
+        g.append(ch.Geom(f"basket_wall{k}", "box", (hx, hy, a), pos=(cx, cy, a), rgba=rgba))
+    return g
+
+
 def _person(name, x, y, facing, shirt, holding=None):
     """A standing person (1.75 m) as capsules and a sphere; ``holding`` (x, y, z) a point the arms reach to."""
     c, s = math.cos(facing), math.sin(facing)
@@ -173,6 +193,7 @@ def scenery(scene: Scene) -> list:
             _box("pad_h1", (0, 0.12, 0.0045), (0.18, 0.025, 0.0006), (1, 1, 1, 1)),
             _box("pad_h2", (0, -0.12, 0.0045), (0.18, 0.025, 0.0006), (1, 1, 1, 1)),
             _box("pad_h3", (0, 0, 0.0045), (0.025, 0.12, 0.0006), (1, 1, 1, 1))]), log=False),
+        ch.Prop(ch.Link("basket", pos=(scene.basket_at[0], scene.basket_at[1], 0.0), geoms=_basket(scene)), log=False),
         ch.Prop(ch.Link("hedge", pos=(scene.hedge_x, (hy + zy) / 2, 0.0), geoms=[
             _box("hedge_g", (0, 0, scene.hedge_height / 2), (0.5, 12.0, scene.hedge_height / 2), (0.18, 0.42, 0.16, 1.0))]),
             log=False),
@@ -686,7 +707,7 @@ def render_movie(ep, scene: Scene, path, *, speed: float = 2.0, fps: int = 25, s
             elif r["picked_up"] is not None and r["picked_up"] <= ti:
                 txt, col = f"{name}: in the pincer", (235, 235, 235)
             else:
-                txt, col = f"{name}: waiting by the kitchen", (200, 200, 200)
+                txt, col = f"{name}: waiting in the basket", (200, 200, 200)
             bad = [e for e in events if e[1] == name and "SPOILT" in e[2] and e[0] <= ti]
             if bad:
                 txt, col = f"{name}: {bad[0][2]}", (255, 110, 110)
