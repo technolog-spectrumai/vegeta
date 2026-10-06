@@ -128,13 +128,33 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   - *Probe* (`PROBE`, assumptions): 0.55 m × 32 mm cylinder, 0.25 kg, μ 0.6; undamaged = squeeze ≤ 60 N per pad, shock
     ≤ 30 g, no propeller/ground contact, net arrest within its load. Carried vertical it has ~0.018 m² of drag — about four
     times PEREGRINE's whole Cd·A (budget it; it may rotate in the grip).
-  - *Talons* (`peregrine.py`: `talons`, `talon_*`, `part="talons"`): two pads closing along y on a rail under the belly at
-    the CG, on **legs ~0.20 m long**: the probe passes under the nose first, so the grip zone must sit below the propeller
-    disc (r 0.114 m) with margin — short legs leave a vertical window of only ~8 cm, 0.20 m legs ~18 cm. Open gap ~0.14 m
-    (±5 cm lateral window), pads 0.12 m long × 0.08 m tall. Extended legs add ~0.0036 m² Cd·A (≈ the airframe's): retract them.
-  - *Closing speed is the crux*: Drongo's rack-and-pinion servo closes at ~0.11 m/s per jaw (≈0.5 s), but the pads' 0.12 m
-    dwell at 0.5–1 m/s overtaking is 0.1–0.25 s — so a **spring-loaded snap closure** (latch released by a trigger, the
-    falcon's tendon lock) with the servo only to re-open/release; compare both in a capture-window analysis.
+  - *Two pincers on foldable legs, like the falcon's feet* (user's decision; replaces a single belly gripper). Lessons from
+    the pincers already in the repository:
+    - **Drongo** (`drongo_robot.py`, merged): a rack-and-pinion parallel gripper, one 20 g servo, 23 N per pad at stall —
+      squeeze capped below the item's limit by the drive itself; the grip window `grip_needed` / `grip_holds`
+      (friction on two pads); the jaws as Chiron servo slides commanded `q = mean − F/kp`. Slow: ~0.11 m/s per jaw.
+    - **Onager Manus** (`onager_manus_robot.py`, notebook 22): a 4-DOF arm (yaw, shoulder, elbow, wrist) with two hinged
+      jaws on one screw drive; squeeze `τ / x` (strong near the pin, weak at the tips); `arm_ik` / `arm_fk`; Chiron robots
+      have no self-collision, so jaws closing past 0 just squeeze what is between them.
+    - **Sikarian Lobster** (`dev_lobster`, not merged): claws on 4-DOF arms, a **worm drive** (self-locking: holds without
+      power), hooked tips, a cutter notch with a tooth so closing jaws do not push a round object out (the scissors'
+      push-out — it matters for a cylindrical probe too).
+    Applied to PEREGRINE:
+    - Each leg folds flat under the belly in cruise (drag ~0.0036 m² extended, ~0.0006 m² folded) and swings down to
+      catch: hip pitch (fold/deploy) + a knee or wrist so the jaws can *reach* — active vertical tracking enlarges the
+      capture window beyond the fixed geometry. Legs "slightly longer" (~0.22–0.25 m): the jaws must sit below the
+      propeller disc (r 0.114 m) because the probe passes under the nose first.
+    - Hinged jaws (Manus/lobster) with **hooked tips** that cage the probe (form closure) so a catch does not depend on
+      friction alone; a tooth against push-out; a spring-loaded **snap** to close in < 0.1 s (the dwell at 0.5–1 m/s
+      overtaking is 0.1–0.25 s) and a small worm drive to hold without power and to open for the release.
+    - **Two pincers**: both close on the probe's top; then the legs fold aft and swing the probe **horizontal along the
+      belly** (the falcon tucks its prey) — the probe's drag falls from ~0.018 m² upright to ~0.001 m² end-on, and two
+      grips spaced along it stop it pivoting. Check the CG shift (probe 0.25 kg under the belly) with
+      `peregrine_flight.stability`, and the jaws' squeeze vs the probe's 60 N limit (Drongo's window).
+    - Sizing: torques from `actuators.select` (hip holds the probe's weight × arm + its drag × arm at 2 g pull-ups);
+      mass and cost into `BOM_ITEMS` for A/B/C; CAD `part="legs"` in `peregrine.py` (folded and deployed).
+    - Chiron model like `lobster_robot._claw_link`: hip and wrist hinges + two jaw hinges per leg, servos from the
+      catalogue; snap as a high-speed, force-limited servo; legs as `role="link"` so they touch the probe.
   - *Grip*: Drongo's arithmetic as is (`drongo_robot.grip_needed` / `grip_holds` with the probe as an item): 20 N per pad
     holds ~9.8 g with μ 0.6, under the 60 N limit.
   - *Simulation* (`designs/peregrine_catch.py`): PEREGRINE as the Chiron `Robot` (origin at the CG, Chiron frame x forward /
@@ -156,7 +176,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
     (≈ 9 m at 10 m/s); arrest load from the total speed, not only the vertical.
   - Notebook 28 sections 18–25 (job and probe, talons, handover geometry and clearance, calm catch A/B/C, gust Monte Carlo,
     home and net, movie with `chiron.viz.frames` + `drongo_scenario._hud`, does folding help the catch, export
-    `peregrine_catch.json`); `tests/test_peregrine_catch.py` (talon CAD, grip, level-flight trim, weld holds until
+    `peregrine_catch.json`); `tests/test_peregrine_catch.py` (leg/pincer CAD, grip, level-flight trim, weld holds until
     released, one calm catch, judge flags over-squeeze). Quick runs only (`PEREGRINE_QUICK`); no CFD.
 - [ ] 5m.4 Fold-in-flight dynamics (unsteady aero while folding), measured LW-PLA and PETG coupons, the hinge in CFD
 
