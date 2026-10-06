@@ -133,6 +133,20 @@ the broom's and fan's unbalance against their modes; and in MuJoCo a street with
 drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
 `scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
 
+**Drongo** (branch `dev_potato`): `08b_quadcopter_potato` gives notebook 08's quadcopter a job. Drongo is that quad
+(`designs/drongo.py`, `Drongo(QuadFrame)`) with two skids and a rack-and-pinion pincer. It takes a 200 g potato (a sphere)
+and then a 412 g cup of cream (a cylinder) from the kitchen door to hungry people 36 m away, in two variants:
+- **drop** — into a net the people hold; the item falls at most 5 m onto it, or the net tears. The net is not simulated:
+  the catch happens at its plane, and its arrest is an assumed stretch.
+- **place** — lowered calmly until it touches the drop zone, then let go.
+
+The flight is MuJoCo through Chiron: rotor thrusts with lag and limits as a scene hook, a geometric flight controller,
+the items as free bodies held by friction. A judge compares the contact forces with each item's squeeze, impact and
+net-arrest limits. The propulsion is notebook 08's Boreas export when it exists, otherwise stated assumptions.
+With the defaults nothing is spoilt. The hungry people wait **63 s** for both items when they are dropped and **72 s**
+when placed. A faster cruise gains little; cruising lower (5.2 m) gains most. The notebook ends with a movie per variant;
+`scenarios/drongo_delivery.py` (or `./user_tests.sh drongo`) re-runs them.
+
 **Velutina** (branch `dev_velutina`): `24_velutina` (`designs/velutina.py`, `designs/velutina_flight.py`) is a printed
 medical courier for the mountains — a slim body whose ogive nose is the medical capsule (with a grab handle), four pusher
 propellers on short arms near the tail, cruciform fins, an emergency parachute in the tail cone; it flies 8 km and 1800 m

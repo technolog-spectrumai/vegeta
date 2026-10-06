@@ -151,3 +151,16 @@ allowables), `chain_efficiency`, `sn_cycles`, `sprocket_chordal` (the polygon ef
 `road_wheel_loads` (rigid frame or bogies), `sag`, `derail_tension`, `drive_tension`, `skid_steer` (Wong's turning
 resistance; clutch-brake and regenerative power), `min_turn_radius`, `stability` (tip-over, step, trench).
 
+`drongo.py` (`Drongo`, notebook 08b, branch `dev_potato`) is notebook 08's `QuadFrame` with a landing gear of two skids and
+a parallel pincer (servo housing, rail, two jaws with TPU pads at `grip_height` above the ground when landed); `part` =
+drongo / frame / gear / gripper / jaw / pad. `drongo_robot.py` (`import drongo_robot as dr`) holds its numbers (`DRONGO`,
+`CAD`, `mass_budget`), the items (`POTATO`, `CREAM`: masses, sizes, friction, squeeze / impact / net-arrest limits), the
+`NET`, `GRIP_N`, the grip and net arithmetic (`grip_needed`, `grip_holds`, `net_catch`), the propulsion (`propulsion()`:
+notebook 08's Boreas export when it exists, else `ASSUMED_PROPULSION`), the Chiron robot (`drongo()`: the jaws as servo
+slides, the skids as feet) and `Rotors` (a scene hook: rotor thrust with spin-up lag and limits, moments, drag torque,
+airframe drag, energy). `drongo_controller.py` is the flight controller (`Flight`: position loop, SO(3) attitude, X
+mixer with saturation; `Profile`) and the mission (`Mission`, `Plan`, `delivery(scene, plan)`: land over an item, grip,
+climb, drop into the net or lower onto the zone until the descent stalls, home). `drongo_scenario.py` is the garden
+(`Scene`, `scenery`, `item_props`), the judge (`Watch`: squeeze, slip, release, net catch with the 5 m rule, impacts,
+the people taking each item to the table), `make_lab`, `run`, `timeseries`, `phase_table`, `deliveries`, `wait_times`,
+`time_budget`, `sweep` and `render_movie` / `stills`.
