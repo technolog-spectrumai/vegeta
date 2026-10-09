@@ -179,3 +179,16 @@ climb, drop into the net or lower onto the zone until the descent stalls, home).
 (`Scene` with the supply basket — an open cube Drongo lands in over each item —, `scenery`, `item_props`), the judge (`Watch`: squeeze, slip, release, net catch with the 5 m rule, impacts,
 the people taking each item to the table), `make_lab`, `run`, `timeseries`, `phase_table`, `deliveries`, `wait_times`,
 `time_budget`, `sweep` and `render_movie` / `stills`.
+
+`nisus.py` (`Nisus`, notebook 31, branch `dev_nisus`) is the twin-boom single-pusher survey drone: `FixedWing`'s wing on a
+lofted elliptic pod, a main spar and a rear carry-through tube, carbon booms in printed root fittings that clamp both tubes,
+an H-tail with two fins, the motor mount, trays and a keel skid (`part` = aircraft/wing/spar/rear_spar/pod/nose/boom/boom_fitting/
+tail/tail_fitting/motor_mount/tray/skid/battery_tray, and the FEA's `*_fea` variants); `Nisus.layout` holds the stations, areas,
+volumes and clearances, `bays` the component bays; `planform`, `wetted_areas`, `drag_buildup`, `outline`, `exploded_parts` and
+`boom_check` the rest. `nisus_systems.py` is the two variants' components (with sources), mass tables, CG and inertia, electrical
+loads, the propulsion requirement and map (`data/nisus_propulsion.json`), batteries and the mission energy; `nisus_flight.py` the
+lattice aerodynamics, the tagged derivatives, trim, CG range, envelope and flight checks; `nisus_structure.py` the load cases, hand
+checks and Talos models; `nisus_cfd.py` the Aeromant cases; `nisus_drawings.py` the drawings; `nisus_robot.py` /
+`nisus_controller.py` / `nisus_scenario.py` the aircraft in ChironLab (the `Aero` hook: forces from the derivative table, the
+propulsion map, actuators, wind), its flight controller (attitude, speed/height, line following, the energy manager, the OBS
+scripted pilot, the Zero waypoint stream and its failure) and the missions with their movies.

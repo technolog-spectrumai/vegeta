@@ -265,6 +265,31 @@ wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on it
 The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
 quad-track **Catagon** is its own product (todo 5k).
 
+**NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
+**Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
+return-to-home) and **Nisus-Zero** (the same aircraft with an NVIDIA Jetson for onboard computer vision, its camera, power
+branch and data link). The notebook is the first engineering approximation:
+- **Geometry:** CAD of every part (`designs/nisus.py`, a `FixedWing` subclass) with STEP/STL exports, a dimensioned
+  three-view, the exploded assembly, the internal placement of both variants and the propeller's swept disk against the
+  booms, the wing, the tail and the ground (`designs/nisus_drawings.py`).
+- **Construction and mass:** materials by function (XPS, balsa D-box, carbon tubes, PETG / LW-PLA / TPU prints), load paths,
+  mass budgets from the CAD and a sourced component table (`designs/nisus_systems.py`; market research of 2026-10-09 in
+  `designs/data/nisus_component_sources.md`, no availability confirmed), CG, inertia, wing loading.
+- **Electronics and propulsion:** per-variant load tables with duty cycles and regulator losses, the power branches, the
+  propulsion requirement calculated before the selection (SunnySky X2216 KV1250 + APC 9×6E on 3S, fitted to the published
+  static point; Boreas BEMT map), ESC and battery comparison.
+- **Analyses:** the vortex lattice and a tagged derivative table (`designs/nisus_flight.py`), whole-aircraft RANS with the
+  propeller as a rotor disk (`designs/nisus_cfd.py`), load cases from the flight envelope with hand checks and Talos FEA of the
+  spars, a boom, the boom fitting, the motor mount and the battery tray (`designs/nisus_structure.py`), trim, CG range, control,
+  stall, turns, gusts, pull-up, approach and provisional operating limits.
+- **Mission:** the ten-minute survey's energy by phase (Wh, kWh, %), a derated pack, a return calculated from the route with
+  the 20 % reserve, the battery iteration, the Jetson's 15–20 W sensitivity and the Orin substitution; then the missions in
+  MuJoCo through Chiron (`designs/nisus_robot.py`, `nisus_controller.py`, `nisus_scenario.py`): hand launch, climb, survey,
+  energy-triggered return, approach and landing for OBS (a scripted pilot) and Zero (the computer's waypoints), in calm air,
+  a headwind, gusts and with a Jetson failure, with movies (chase and ground views, a synthetic onboard view, overlays).
+`scenarios/nisus_mission.py` (or `./user_tests.sh nisus`) re-runs the missions. The FEA and CFD cells run when the notebook
+runs (`NISUS_FEA=0`, `VEGETA_SKIP_OPENFOAM=1` skip them: NOT RUN); `NISUS_QUICK=1` flies only the calm missions.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

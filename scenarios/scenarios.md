@@ -142,3 +142,14 @@ three blades), 25c (six and twelve) and 25b (ducted fans, one to three stages) o
 each notebook's last section). `python scenarios/merlin_race.py` races every map on MERLIN (notebook 26's design export when it
 exists) — 5 km and back, 10 km reach, 10 km and back, at 1900, 2700 and 3500 W on the same battery — and writes
 `merlin_race.csv` (every race) and `merlin_race.json` (the fastest of each kind).
+
+## NISUS survey missions (`nisus_mission.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_mission.py                               # six missions with movies (~25 min)
+xvfb-run -a python3 scenarios/nisus_mission.py --variant Zero --condition "Jetson failure"
+python3 scenarios/nisus_mission.py --no-movie                                # the numbers only
+```
+Notebook 31's missions in MuJoCo through Chiron (`notebooks/designs/nisus_scenario.py`): Nisus-OBS and Nisus-Zero, hand
+launch, climb, survey until the flight controller's energy manager calls the return, approach and landing. Writes
+`scenarios/output/nisus_<variant>_<condition>.mp4` and `.csv` and `nisus_mission.json`.
