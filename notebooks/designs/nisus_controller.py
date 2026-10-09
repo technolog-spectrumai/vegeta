@@ -172,7 +172,8 @@ class EnergyManager:
     """The return decision from the route actually flown home: from where the aircraft is to the initial approach
     fix (``iaf``: downwind of home) at the cruise airspeed with the wind component along that leg, then the final
     from the fix to the touchdown point into the wind at the approach speed (60 % of its level power: the descent
-    from the survey height pays the rest), the electronics all along; times (1 + uncertainty), plus the final reserve
+    from the survey height pays the rest), one go-around circuit per ``plan.go_arounds``, the electronics all along;
+    times (1 + uncertainty), plus the final reserve
     (``reserve_frac`` of the available energy). ``margin`` = what is left − needed."""
 
     def __init__(self, aero: nr.Aero, pm: ns.PropulsionMap, mass_kg, cd0, AR, oswald, S, plan: ns.MissionPlan, electronics_w: float,
@@ -196,8 +197,9 @@ class EnergyManager:
         t1, t2 = d1 / gs1, d2 / gs2 + 15.0                            # + 15 s for the turn onto the final and the flare
         E_back = (self.P_cruise + self.el) * t1 / 3600
         E_land = (self.P_app + self.el) * t2 / 3600
-        E = (E_back + E_land) * (1 + self.plan.uncertainty_frac)
-        return {"t_back_s": t1, "t_final_s": t2, "E_return_wh": E_back + E_land, "E_with_uncertainty_wh": E, "E_reserve_wh": self.E_reserve,
+        E_ga = self.plan.go_arounds * (self.P_cruise + self.el) * self.plan.circuit_m / self.plan.V_cruise / 3600
+        E = (E_back + E_land + E_ga) * (1 + self.plan.uncertainty_frac)
+        return {"t_back_s": t1, "t_final_s": t2, "E_return_wh": E_back + E_land + E_ga, "E_go_around_wh": E_ga, "E_with_uncertainty_wh": E, "E_reserve_wh": self.E_reserve,
                 "E_needed_wh": E + self.E_reserve, "E_remaining_wh": self.aero.E_remaining_Wh, "margin_wh": self.aero.E_remaining_Wh - E - self.E_reserve,
                 "route_m": d1 + d2}
 
@@ -245,6 +247,9 @@ class FlightController:
         self.margin = None
         self.last_cmd = np.zeros(4)
         self.pilot_t0 = None
+        self.v_mean, self.v_var = 15.0, 0.0
+        if self.pilot is not None:
+            self.pilot.reset()
         self._set_phase("prelaunch", 0.0)
         # the ground operation's energy before the simulated seconds
         extra = max(self.ground_s - self.prelaunch_sim_s, 0.0) * self.el_phase.get("prelaunch", 0.0) / 3600
@@ -321,6 +326,10 @@ class FlightController:
         pos, v, V, roll, pitch, yaw, omega_b = self._state()
         h, hdot = pos[2], v[2]
         dt = self.lab.control_dt
+        if self.phase in ("outbound", "survey", "return"):                    # the airspeed's fluctuation (a 20 s window): the gust additive
+            k = dt / 20.0
+            self.v_mean += k * (V - self.v_mean)
+            self.v_var += k * ((V - self.v_mean) ** 2 - self.v_var)
         home_d = float(np.linalg.norm(pos[:2] - self.home))
         # the computer's failure
         if self.jetson_failure is not None:
@@ -433,12 +442,28 @@ class FlightController:
             bank, along, Ld, e = self._track_to(pos, v, iaf, td)
             dist_td = max(Ld - along, 0.0)
             h_slope = dist_td * math.tan(math.radians(4.5))
-            if h > 1.5:
-                pc, thr = self._speed_height(self.V_app, min(h_slope, 50.0), V, h, hdot, dt)
-                thr = min(thr, 0.7 if h > 3.0 else 0.0)                 # a headwind final needs nearly level-flight power
+            if along > Ld - 15.0 and h > 10.0:                          # at the aim point and still high (an updraft, a gust): go around
+                self.go_arounds = getattr(self, "go_arounds", 0) + 1
+                self.events.append([t, "landing", f"go-around {self.go_arounds}: {h:.0f} m high over the aim point"])
+                self.target = None
+                self._set_phase("return", t)
+                return Command(q_target={})
+            # the gust additive: twice the airspeed fluctuation the flight controller has measured (at most 3 m/s); and well
+            # above the slope at idle, trade the height for speed (descend faster), up to the cruise speed
+            V_gust = min(2.0 * math.sqrt(max(self.v_var, 0.0)), 3.0)
+            V_tgt = self.V_app + V_gust + float(np.clip(0.4 * (h - min(h_slope, 50.0) - 3.0), 0.0, self.plan.V_cruise - self.V_app))
+            if h > 4.0:
+                pc, thr = self._speed_height(V_tgt, min(h_slope, 50.0), V, h, hdot, dt)
+                thr = min(thr, 0.7)                                     # a headwind final needs nearly level-flight power
                 self._attitude(bank if h > 8.0 else 0.4 * bank, pc, roll, pitch, omega_b, V, thr)
             else:
-                self._attitude(0.0, math.radians(5.0), roll, pitch, omega_b, V, 0.0)       # the flare: motor off, nose up
+                # the flare: hold a sink rate that shrinks with the height (0.25 h, at least 0.3 m/s) with the pitch, and
+                # catch a gust's extra sink with a little power until the last half metre; wings level
+                sink_tgt = max(0.25 * h, 0.3)
+                err = (-hdot) - sink_tgt                                 # > 0: sinking too fast
+                pc = math.radians(2.0) + float(np.clip(0.12 * err, -0.05, math.radians(3.0)))   # at most 5° nose up: no stall in the flare
+                thr = float(np.clip(0.5 * err, 0.0, 0.6)) if h > 0.5 else 0.0             # the motor catches a gust's extra sink
+                self._attitude(0.0, pc, roll, pitch, omega_b, V, thr)
             if self.touchdown is None and h < 0.25 and float(np.linalg.norm(v[:2])) < 9.5 and t - self.t_phase > 5.0:
                 self.touchdown = t
                 self.events.append([t, "landing", f"touchdown at {np.linalg.norm(v[:2]):.1f} m/s ground speed, sink {-v[2]:.2f} m/s, {home_d:.0f} m from home"])

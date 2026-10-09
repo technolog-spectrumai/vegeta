@@ -68,6 +68,12 @@ class Scenario:
         return f"Nisus-{self.variant} — {self.name}"
 
     @property
+    def slug(self):
+        """A file-name-safe name: ``nisus_<variant>_<condition>`` ("headwind 6 m/s" → "headwind_6_ms")."""
+        import re
+        return f"nisus_{self.variant}_" + re.sub(r"[^A-Za-z0-9]+", "_", self.name.replace("m/s", "ms")).strip("_")
+
+    @property
     def field_centre(self):
         a = math.radians(self.launch_heading_deg)
         return np.array([self.radius_m * math.cos(a), self.radius_m * math.sin(a)])

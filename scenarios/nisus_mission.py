@@ -9,7 +9,7 @@ and landing — with a movie per scenario (notebook 31, Part 11).
 
 The scenarios are ``notebooks/designs/nisus_scenario.standard_scenarios()`` (the ones notebook 31 flies): Nisus-OBS and
 Nisus-Zero in calm air and in a 6 m/s headwind with turbulence, Zero in gusts and with a Jetson failure (its power
-branch drops at 300 s; the flight controller returns on its own). Writes ``scenarios/output/nisus_<variant>_<condition>.mp4``,
+branch drops at 300 s; the flight controller returns on its own). Writes ``scenarios/output/<Scenario.slug>.mp4`` (e.g. ``nisus_Zero_headwind_6_ms.mp4``),
 the telemetry ``.csv`` and ``nisus_mission.json`` (outcome, phases, energy by phase, the comparison).
 """
 from __future__ import annotations
@@ -46,7 +46,7 @@ def main(argv=None) -> int:
         lab = nsc.make_lab(scn, log_geoms=not args.no_movie)
         ep = nsc.run(lab, scn)
         eps.append(ep)
-        stem = f"nisus_{scn.variant}_{scn.name.replace(' ', '_')}"
+        stem = scn.slug
         nsc.timeseries(ep).to_csv(OUT / f"{stem}.csv", index=False)
         doc[scn.label] = {"outcome": ep.outcome, "phases": nsc.phase_table(ep).reset_index().to_dict("records"),
                           "energy": nsc.energy_table(ep).reset_index().to_dict("records"), "events": ep.log["events"]}

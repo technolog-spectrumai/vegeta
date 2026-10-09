@@ -855,6 +855,8 @@ class MissionPlan:
     derating: float = 0.90           # usable share of the nominal capacity: temperature, age, the ESC's cut-off voltage (assumption)
     reserve_frac: float = 0.20       # of the available (derated) energy left after landing
     uncertainty_frac: float = 0.15   # on the predicted return and landing energy
+    go_arounds: int = 1              # missed approaches budgeted in the return energy (a gust or an updraft on the final)
+    circuit_m: float = 900.0         # one go-around: back to the approach fix and round again at the cruise speed
 
 
 def _level_power(pm: PropulsionMap, mass_kg, cd0, AR, oswald, S, V, roc=0.0, rho=RHO):
@@ -868,16 +870,18 @@ def _level_power(pm: PropulsionMap, mass_kg, cd0, AR, oswald, S, V, roc=0.0, rho
 
 def return_energy(pm: PropulsionMap, mass_kg, cd0, AR, oswald, S, distance_m, electronics_w, plan: MissionPlan) -> dict:
     """The energy to come home from ``distance_m`` against the wind at the cruise airspeed (ground speed V - wind),
-    descend and land (``approach_s`` at the approach power), plus the electronics all along: this is what the return
-    trigger compares against — not a fixed share of the pack."""
+    descend and land (``approach_s`` at the approach power), ``go_arounds`` missed-approach circuits, plus the
+    electronics all along: this is what the return trigger compares against — not a fixed share of the pack."""
     P_cruise, _ = _level_power(pm, mass_kg, cd0, AR, oswald, S, plan.V_cruise)
     gs = max(plan.V_cruise - plan.wind_m_s, 3.0)
     t_back = distance_m / gs
     P_app, _ = _level_power(pm, mass_kg, cd0, AR, oswald, S, 1.3 * 10.0)      # approach near 13 m/s, idle-ish (descent): 60 % of level
     E_back = (P_cruise + electronics_w) * t_back / 3600
     E_land = (0.6 * P_app + electronics_w) * plan.approach_s / 3600
-    E = E_back + E_land
-    return {"t_back_s": t_back, "ground_speed": gs, "E_back_wh": E_back, "E_land_wh": E_land, "E_return_wh": E, "E_uncertainty_wh": plan.uncertainty_frac * E}
+    E_ga = plan.go_arounds * (P_cruise + electronics_w) * plan.circuit_m / plan.V_cruise / 3600
+    E = E_back + E_land + E_ga
+    return {"t_back_s": t_back, "ground_speed": gs, "E_back_wh": E_back, "E_land_wh": E_land, "E_go_around_wh": E_ga, "E_return_wh": E,
+            "E_uncertainty_wh": plan.uncertainty_frac * E}
 
 
 def mission_energy(variant: str, bat: Battery, pm: PropulsionMap, airframe: dict, plan: MissionPlan = MissionPlan(), *,
