@@ -45,6 +45,7 @@ packages = [
   "vegeta.chronos",
   "vegeta.chiron",
   "vegeta.mission",
+  "vegeta.mission.sim",
 ]
 
 [tool.setuptools.package-data]
