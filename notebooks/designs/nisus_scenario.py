@@ -174,11 +174,12 @@ def controller(lab, scn: Scenario) -> nc.FlightController:
     return fc
 
 
-def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 12.0, launch_pitch_deg: float = 10.0) -> ch.Episode:
+def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 12.0, launch_pitch_deg: float = 10.0, fc=None) -> ch.Episode:
     """The mission. The hand launch is a Chiron disturbance: an impulse of ``m x launch_speed`` over 0.30 s along the
     launch heading, ``launch_pitch_deg`` upwards, starting at the controller's launch time (the thrower's hand).
-    ``ep.log`` gets ``aero`` (the hook's rows), ``mission`` (phase log), ``events``, ``energy``."""
-    fc = controller(lab, scn)
+    ``ep.log`` gets ``aero`` (the hook's rows), ``mission`` (phase log), ``events``, ``energy``. ``fc``: a flight
+    controller built elsewhere (the bird missions of ``nisus_birds``); default ``controller(lab, scn)``."""
+    fc = fc or controller(lab, scn)
     m = float(lab.model.body_subtreemass[lab._body_id("nisus")])
     a, e = math.radians(scn.launch_heading_deg), math.radians(launch_pitch_deg)
     lab._disturbances = [d for d in lab._disturbances if d.body != "nisus"]

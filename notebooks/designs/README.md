@@ -191,4 +191,7 @@ lattice aerodynamics, the tagged derivatives, trim, CG range, envelope and fligh
 checks and Talos models; `nisus_cfd.py` the Aeromant cases; `nisus_drawings.py` the drawings; `nisus_robot.py` /
 `nisus_controller.py` / `nisus_scenario.py` the aircraft in ChironLab (the `Aero` hook: forces from the derivative table, the
 propulsion map, actuators, wind), its flight controller (attitude, speed/height, line following, the energy manager, the OBS
-scripted pilot, the Zero waypoint stream and its failure) and the missions with their movies.
+scripted pilot, the Zero waypoint stream and its failure) and the missions with their movies. `nisus_birds.py` (notebook 32)
+is the seam between that aircraft and the mission software `vegeta.mission`: `BirdMission` (a Chiron hook: the
+navigation state out, the birds and the mission stack stepped, the guidance in for the controller's mode 'birds'),
+`BirdScenario` / `bird_scenarios`, `run`, `summary`, `photo_table`; `nisus_birds_movie.py` the bird-mission video.

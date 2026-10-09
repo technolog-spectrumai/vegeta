@@ -153,3 +153,15 @@ python3 scenarios/nisus_mission.py --no-movie                                # t
 Notebook 31's missions in MuJoCo through Chiron (`notebooks/designs/nisus_scenario.py`): Nisus-OBS and Nisus-Zero, hand
 launch, climb, survey until the flight controller's energy manager calls the return, approach and landing. Writes
 `scenarios/output/nisus_<variant>_<condition>.mp4` and `.csv` and `nisus_mission.json`.
+
+## NISUS bird photography (`nisus_birds.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_birds.py                                 # six bird missions with videos (~30 min)
+xvfb-run -a python3 scenarios/nisus_birds.py --scenario "pigeon flock"
+python3 scenarios/nisus_birds.py --no-movie                                  # the numbers only
+```
+Notebook 32: Nisus-Zero in MuJoCo with the mission software `vegeta.mission` (tracking, one-by-one target selection,
+stern photo passes) against simulated birds; YOLOX is not run (simulated detections at the assumed Jetson budget).
+The reference (Orin Nano Super, YOLOX-Tiny, 6 mm lens), the stock lens, the Nano B01, a pigeon flock, a 5 m/s wind and
+a Jetson failure. Writes `scenarios/output/birds_<scenario>.mp4`, `_photos.csv` and `nisus_birds.json`.

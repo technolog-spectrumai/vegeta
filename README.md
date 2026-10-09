@@ -290,6 +290,18 @@ branch and data link). The notebook is the first engineering approximation:
 `scenarios/nisus_mission.py` (or `./user_tests.sh nisus`) re-runs the missions. The FEA and CFD cells run when the notebook
 runs (`NISUS_FEA=0`, `VEGETA_SKIP_OPENFOAM=1` skip them: NOT RUN); `NISUS_QUICK=1` flies only the calm missions.
 
+`32_nisus_birds` is Nisus-Zero's bird-photography mission software, a prototype: track several birds, pick them one by
+one, fly stern photo passes for close-ups, come home. The flight software is a general package, **`vegeta.mission`**
+(no simulator, no ROS 2): typed messages on an in-process bus with a deterministic executor; the detector node (tiled
+search and a target crop, latency; YOLOX is **not run**: `SimDetector` stands in, `YoloxTrtDetector` is the stub for the
+TensorRT engine), an assumed Jetson compute budget (`compute`), a multi-bird tracker (ByteTrack-style association, an
+IMM/EKF per bird in the camera's coordinates with log range from the bird's size, OC-SORT re-update), target selection
+with hysteresis, photo-pass guidance with separation breakoffs, the shutter, and CLEAR-MOT/IDF1 scores.
+`vegeta.mission.sim` holds the birds (species presets, thermals, flocks, flight from the drone), the simulated detector
+and a kinematic aircraft. `designs/nisus_birds.py` plugs the stack into the MuJoCo Nisus-Zero (the flight controller's
+mode 'birds'), `designs/nisus_birds_movie.py` renders the video (synthetic onboard view with boxes and tracks, chase
+view, map, photo log). `scenarios/nisus_birds.py` (or `./user_tests.sh nisus-birds`) flies the six bird scenarios.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

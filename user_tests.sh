@@ -21,6 +21,7 @@
 #   peregrine         PEREGRINE (folding-wing farm drone): the lattice, flight-model and CAD tests (~30 s)
 #   drongo            Drongo (potato and cream delivery): tests, then scenarios/drongo_delivery.py (2 movies; ~4 min)
 #   nisus             NISUS (OBS / Zero survey drone): tests, then scenarios/nisus_mission.py (6 missions + movies; ~25 min)
+#   nisus-birds       NISUS-Zero bird photography: vegeta.mission tests, then scenarios/nisus_birds.py (6 missions + videos; ~30 min)
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
@@ -188,6 +189,14 @@ for s in "${SECTIONS[@]}"; do
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies, telemetry and nisus_mission.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    nisus-birds)
+      hdr "NISUS bird photography: the mission software (vegeta.mission) and the MuJoCo seam"
+      timed pytest_summary "$ROOT/vegeta-cli" tests/mission || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus_birds.py -m "not slow" || status=1
+      hdr "NISUS-Zero bird missions: reference, stock lens, Nano B01, pigeons, wind, Jetson failure (MuJoCo, 6 videos)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_birds.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -14 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and nisus_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

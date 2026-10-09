@@ -213,11 +213,12 @@ class FlightController:
                  pilot: ScriptedPilot | None = None, survey_wps: list | None = None, energy: EnergyManager | None = None,
                  electronics_phase_w: dict | None = None, jetson_w: float = 0.0, jetson_failure: tuple | None = None,
                  wind_estimate=(0.0, 0.0), prelaunch_sim_s: float = 4.0, ground_s: float = 180.0, gains: Gains = Gains(),
-                 companion_timeout_s: float = 5.0, airborne_cap_s: float = 1500.0, name: str = "Nisus flight controller"):
+                 companion_timeout_s: float = 5.0, airborne_cap_s: float = 1500.0, companion=None, name: str = "Nisus flight controller"):
         self.aero, self.plan, self.g = aero, plan, gains
         self.home = np.asarray(home, float)
         self.launch_heading = math.radians(launch_heading_deg)
         self.mode, self.mission, self.pilot, self.energy = mode, mission, pilot, energy
+        self.companion = companion            # mode 'birds': the companion computer's mission (``command()`` → GuidanceCmd or None)
         self.survey_wps = survey_wps or []
         self.el_phase = electronics_phase_w or {}
         self.jetson_w, self.jetson_failure = jetson_w, jetson_failure
@@ -391,7 +392,9 @@ class FlightController:
                 if self.mission is not None:
                     self.mission.advance()
         elif ph == "survey":
-            if self.mode == "auto":
+            if self.mode == "birds":
+                self._birds(t, pos, v, V, h, hdot, roll, pitch, yaw, omega_b, dt)
+            elif self.mode == "auto":
                 wp = self.mission.current() if self.mission is not None else None
                 if wp is None:
                     if self.mission is not None and not self.mission.alive:
@@ -476,6 +479,35 @@ class FlightController:
                 self.aero.electronics_w = 0.0
                 self.events.append([t, "landed", "mission complete: electronics switched off"])
         return Command(q_target={})
+
+    def _birds(self, t, pos, v, V, h, hdot, roll, pitch, yaw, omega_b, dt):
+        """Mode 'birds': fly the companion's guidance (course, height, airspeed: ``vegeta.mission.GuidanceCmd``). No fresh
+        command (the computer is off, crashed or silent) for ``companion_timeout_s``: hold a gentle orbit, then
+        return, as with the waypoint stream. A 'done' command ends the mission (return)."""
+        cmd = self.companion.command() if (self.companion is not None and self.jetson_alive) else None
+        fresh = cmd is not None and cmd.valid and t - cmd.t < 1.0
+        if cmd is not None and cmd.mode == "done":
+            self.events.append([t, "mission", f"companion: {cmd.note or 'bird mission complete'}: return"])
+            self.return_ordered, self.return_reason = True, "mission complete"
+            self._set_phase("return", t)
+            return
+        if not fresh:
+            if self.companion_lost_since is None:
+                self.companion_lost_since = t
+            if t - self.companion_lost_since >= self.companion_timeout_s:
+                self.events.append([t, "failsafe", f"no guidance from the computer for {self.companion_timeout_s:.0f} s: return"])
+                self.return_ordered, self.return_reason = True, "companion lost"
+                self._set_phase("return", t)
+            else:
+                self._hold(pos, v, V, h, hdot, roll, pitch, omega_b, dt)
+            return
+        self.companion_lost_since = None
+        track = math.atan2(v[1], v[0]) if np.linalg.norm(v[:2]) > 2.0 else yaw
+        err = wrap(cmd.course - track)
+        bank = -max(-1, min(1, self.g.k_track * err)) * math.radians(self.g.bank_max_deg)
+        V_cmd = max(cmd.airspeed, self.V_app + 1.0)                      # the guidance never commands a speed near the stall
+        pc, thr = self._speed_height(V_cmd, cmd.height, V, h, hdot, dt)
+        self._attitude(bank, pc, roll, pitch, omega_b, V, thr)
 
     def _hold(self, pos, v, V, h, hdot, roll, pitch, omega_b, dt):
         pc, thr = self._speed_height(self.plan.V_survey, h, V, h, hdot, dt)
