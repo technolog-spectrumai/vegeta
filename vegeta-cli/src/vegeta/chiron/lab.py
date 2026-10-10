@@ -1126,8 +1126,8 @@ class ChironLab:
 
     # ---- runs
     def run(self, controller, duration=None, rules: FailureRules | None = None, settle=0.5, seed=None, log=True,
-            *, reset=True, base_pos=None, base_yaw=0.0, base_quat=None, qpos=None, info: dict | None = None
-            ) -> Episode:
+            *, reset=True, base_pos=None, base_yaw=0.0, base_quat=None, qpos=None, info: dict | None = None,
+            stop_when=None) -> Episode:
         """Run one trial and return its Episode.
 
         ``controller``: an object with ``reset(lab, seed)`` and ``__call__(obs) -> Command`` (or any callable
@@ -1136,7 +1136,8 @@ class ChironLab:
         ``controller.reset`` is called, the robot settles for ``settle`` s, then walks until an outcome of
         ``rules`` (or for ``duration`` s; default the rules' timeout). ``log=False`` keeps only the light log
         (time, bodies, COM, terrain height). ``info`` adds bookkeeping to the log (``treatment``, ``controller``,
-        ``terrain`` (merged into the terrain spec, e.g. a normalised level), ``v_target``, ...).
+        ``terrain`` (merged into the terrain spec, e.g. a normalised level), ``v_target``, ...). ``stop_when``: a
+        callable ``lab -> bool`` checked at every log sample; True ends the trial there (outcome 'completed').
         """
         wall0 = time.perf_counter()
         info = dict(info or {})
@@ -1164,6 +1165,7 @@ class ChironLab:
         n_samples = int(math.floor(duration / self.log_dt + 1e-9)) + 1
         nsteps = (n_samples - 1) * self._n_log + 1
         recorder = _Recorder(self, n_samples, full=log, rules=rules)
+        recorder.stop_when = stop_when
         stopped = self._simulate(nsteps, controller=controller, recorder=recorder)
         n = recorder.n
         outcome = recorder.outcome
@@ -1313,8 +1315,10 @@ class _Recorder:
         self.n = i + 1
         if self.rules is not None:
             self.outcome = self._check(i)
-            return self.outcome is not None
-        return False
+            if self.outcome is not None:
+                return True
+        stop = getattr(self, "stop_when", None)
+        return bool(stop is not None and stop(lab))
 
     def _check(self, i):
         rules, t = self.rules, float(self.t[i])

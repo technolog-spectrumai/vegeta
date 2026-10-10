@@ -347,7 +347,7 @@ def wetted_areas(p=None) -> dict:
 
 def drag_buildup(p=None, speed: float = 20.0, nu: float = 1.5e-5) -> dict:
     """NISUS's build-up (Raymer) on FALCO's geometry at ``speed`` and the kinematic viscosity ``nu`` of the altitude
-    (``falco_flight.atmosphere``: ν grows from 1.46e-5 at sea level to 2.2e-5 at 4500 m, the Reynolds numbers drop)."""
+    (``falco_systems.atmosphere``: ν grows from 1.46e-5 at sea level to 2.1e-5 at 4500 m, the Reynolds numbers drop)."""
     return nisus.drag_buildup(p, speed, nu, design=Falco())
 
 
