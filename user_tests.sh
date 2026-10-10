@@ -201,7 +201,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and nisus_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     nisus-plus)
       hdr "NISUS+: geometry, atmosphere, mass, pack, drive and brake, flight, structure and simulation tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus_plus.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus_plus.py tests/test_frame_study.py -m "not slow" || status=1
       hdr "NISUS+ mountain missions: calm / ridge lift / lee downdraft / hot day / storm escape / Jetson failure (MuJoCo, 6 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_plus_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'

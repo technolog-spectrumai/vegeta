@@ -204,3 +204,8 @@ Sutherland), the Li-ion pack model, the signed drive map with the windmill and b
 altitude, the descent and regeneration tables; `nisus_plus_structure.py`, `nisus_plus_cfd.py`, `nisus_plus_drawings.py` as NISUS's;
 `nisus_plus_robot.py` (`Massif` terrain, `MountainWind`, `NisusPlusAero`), `nisus_plus_controller.py` (TECS, crow and brake, terrain
 following) and `nisus_plus_scenario.py` the mountain missions and movies; `nisus_plus_birds.py` / `nisus_plus_birds_movie.py` the bird hunt.
+`frame_study.py` (notebook 34) compares NISUS+'s twin booms with a single tail for FALCO, the tractor redesign:
+`frames` (the variants: the booms moved apart for 18-22" pushers, the single tube), `hand_table`, `wing_loading`,
+`fea_models` / `solve_cases` / `fea_table` / `modes_table` (Talos), `aero_table` (the aerodynamic efficiency of each
+variant), `performance_table` (speed and acceleration), `drive_for_prop` (the larger propellers' maps,
+`data/frame_study_drive_*.json`), `verdict`, `sketch`.

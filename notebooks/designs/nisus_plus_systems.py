@@ -776,12 +776,14 @@ class NisusPlusDrive:
                    d["max_current_a"], d["battery_v"], d["esc_efficiency"], d["motor_name"], d.get("notes", {}))
 
 
-def build_drive(*, V=V_GRID, rpm=RPM_GRID, battery_v=21.6, esc_efficiency=0.96, correct: bool = True) -> NisusPlusDrive:
+def build_drive(*, V=V_GRID, rpm=RPM_GRID, battery_v=21.6, esc_efficiency=0.96, correct: bool = True, prop=None, motor=None, fit=None) -> NisusPlusDrive:
     """Boreas BEMT over (V, rpm) at sea level for the 15x8, signed (the windmill region kept), the calibration ratios on
-    the positive region; ~400 solves."""
+    the positive region; ~400 solves. ``prop`` / ``motor`` / ``fit``: another propeller and motor on the same map (the
+    frame study's larger propellers); the 15x8's calibration ratios are kept unless ``fit`` says otherwise."""
     from vegeta import boreas
-    prop, af = propeller_15x8(), blade_section()
-    motor, fit = motor_model()
+    prop, af = prop or propeller_15x8(), blade_section()
+    motor0, fit0 = motor_model()
+    motor, fit = motor or motor0, fit or fit0
     kT = fit["thrust_correction"] if correct else 1.0
     kQ = fit["torque_correction"] if correct else 1.0
     T = np.zeros((len(V), len(rpm))); Q = np.zeros_like(T)

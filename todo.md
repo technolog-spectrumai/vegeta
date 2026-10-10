@@ -118,6 +118,11 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5o.6 Weather limits: thunderstorm and icing go/no-go, lee rotor turbulence beyond the simple model; the bungee launch hardware and a hand-launch with flap test
 - [ ] 5o.7 Rules and ethics before flying near eagles and vultures (protected species, nesting seasons)
 
+## Stage 5p — FALCO, the tractor mountain aircraft (branch `dev_falco`)
+- [x] 5p.1 The frame study in notebook `34_frame_study` (`designs/frame_study.py`): NISUS+'s twin booms against a single tail — hand and Talos structure (bending, torsion with the tube's own G, the asymmetric gust, the first modes), what the tail puts into the wing, the aerodynamic efficiency and the speed and acceleration of each variant with the larger propellers on an assumed motor; verdict: no wider booms on NISUS+ (the spar), a roll-wrapped single tail tube for FALCO with the 20x13
+- [ ] 5p.2 FALCO's design (notebook 35): MERLIN's tractor body with the single tail of the study, NISUS+'s wing, pack, drive map (a motor chosen for the 20x13), crow and brake, the mountain missions and the bird hunt; the FALCO-109 marking; the belly landing with a fixed nose propeller (park it horizontal, a high thrust line, or gear)
+- [ ] 5p.3 The tractor's installation effects in the CFD (the propeller's wash over the pod and the wing root) and the real 20x13 blade in Boreas; a motor's real data (KV ~300, 6S) instead of the AT4125-class assumption
+
 ## Stage 5f — Air couriers (branch `dev_velutina`)
 - [x] 5f.1 `designs/velutina.py` (slim-body quadrotor: capsule nose with handle, pusher arms, fins, parachute bay; `part`, `angle_of_attack_deg`), `designs/velutina_flight.py` (terrain, ISA, wind + gusts, reduced 6-DOF flight model with set-down and hand-over, parachute estimate, movie) and `24_velutina`: mass budget, drag areas by hand + actuator-disk slipstream, Aeromant screening (fast/full presets), Boreas at the depot and the site, arm/capsule/shell FEA, modes and Campbell, the mission with precision statistics and energy, Chronos fatigue, printing, movie, JSON; `scenarios/velutina_mission.py`, `user_tests.sh velutina`; `core.Revision.run_cfd(processors=)`
 - [ ] 5f.2 Parachute in CFD (opening, canopy drag, the body in the canopy's wake); the bridle anchored to the arm frame and a reefed canopy (the shell fails the opening shock in 24 §5); a drop test case

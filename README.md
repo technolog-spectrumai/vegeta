@@ -329,6 +329,18 @@ T-Motor AT4125 KV540 class drive with a fixed 15-inch propeller.
 `scenarios/nisus_plus_mission.py` and `scenarios/nisus_plus_birds.py` (or `./user_tests.sh nisus-plus`, `nisus-plus-birds`) re-run them;
 `NISUS_PLUS_QUICK=1` flies only the calm mission and one bird hunt in the notebook.
 
+`34_frame_study` is the structural comparison study that prepares FALCO, the tractor redesign (a large propeller, a
+simple tail, more efficiency): NISUS+'s twin booms against a single tail (`designs/frame_study.py`). The frames by hand
+and in Talos (the tubes, the stabiliser's spar, a rod per fin carrying the side load at the fin's aerodynamic centre;
+the symmetric pull-out and the asymmetric gust, the first modes with the tail's masses), what the tail puts into the
+wing (the spar and the rear tube at the boom fittings), and — marked beside the structure for each variant — the
+aerodynamic efficiency (the frame's drag, Cd0, L/D, the mission's energy, the propeller's efficiency) and the speed
+and acceleration (top speed, the acceleration at the launch and cruise speeds, 15 → 25 m/s, the best climb) with each
+propeller on a motor of the AT4125's class wound for it. Findings: moving NISUS+'s booms apart for a 20" pusher is
+rejected (the wing's main spar fails its tail case, crow loses a quarter of its span); the single tail is 213 g
+lighter, three times stiffer in bending, puts nothing into the wing's spars, and must be a roll-wrapped tube (torsion);
+with the 20x13 the package is −11 % mission energy and +20 % climb against NISUS+ as built.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
