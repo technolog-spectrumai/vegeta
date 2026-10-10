@@ -630,9 +630,36 @@ def _tail_motion(case, result, f: Frame, p=None):
             "fin yaw twist at its AC [deg] (isotropic G)": yaw}
 
 
-def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_modes: int = 6) -> dict:
+def _unsound(case, result) -> str:
+    """Why a solved result cannot be trusted (a sliver element or a loose piece in the mesh): the support's reaction
+    off the applied load, a peak stress far above the 99.5th percentile, a mode near 0 Hz. '' when it is sound."""
+    if result is None or not getattr(result, "ok", False):
+        return ""
+    m = result.metrics or {}
+    if case.kind == "static":
+        applied, reaction = m.get("applied_force_magnitude"), m.get("reaction_force_magnitude")
+        try:
+            from vegeta import talos
+            rx = talos.read_dat_reactions(result.artifacts["dat"])
+            reaction = float(np.linalg.norm(np.sum([np.asarray(v[:3], float) for v in rx.values()], axis=0))) if rx else reaction
+        except Exception:
+            pass
+        row = st.summary_row(case, result)
+        applied, reaction = row.get("applied [N]", applied), row.get("reaction [N]", reaction)
+        if applied and reaction and abs(reaction - applied) > 0.01 * applied:
+            return f"reaction {reaction:.1f} N against {applied:.1f} N applied"
+        if row.get("peak von Mises [MPa]", 0) > 30 * max(row.get("99.5th percentile von Mises [MPa]", 1.0), 1.0):
+            return f"peak {row['peak von Mises [MPa]']:.0f} MPa against a 99.5th percentile of {row['99.5th percentile von Mises [MPa]']:.0f}"
+        return ""
+    freqs = m.get("frequencies_hz") or []
+    return f"a mode at {freqs[0]:.2f} Hz" if freqs and freqs[0] < 1.0 else ""
+
+
+def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_modes: int = 6, retries: int = 2, p=None) -> dict:
     """Mesh and solve each case in ``workdir/<name>`` (static: ``ensure``; modes: mesh then ``solve_modes``); ``run``
-    False reads back what exists and marks the rest NOT RUN."""
+    False reads back what exists and marks the rest NOT RUN. A frame whose result is unsound (``_unsound``: a mesh
+    accident) is rebuilt at a smaller element size in ``workdir/retry<n>`` and solved again, up to ``retries`` times;
+    the cases list is updated in place with the retried cases."""
     out = {}
     for c in cases:
         wd = Path(workdir) / c.name
@@ -645,6 +672,22 @@ def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_m
             if not (wd / "mesh.msh").exists():
                 c.model.mesh(wd)
             out[c.name] = c.model.solve_modes(wd, n_modes=n_modes, threads=threads)
+    if not run or retries <= 0:
+        return out
+    bad = {c.frame.name for c in cases if _unsound(c, out[c.name])}
+    if not bad:
+        return out
+    for name in sorted(bad):
+        print(f"{name}: unsound mesh — " + "; ".join(f"{c.name}: {_unsound(c, out[c.name])}" for c in cases if c.frame.name == name and _unsound(c, out[c.name])))
+    frames_ = [c.frame for c in cases if c.frame.name in bad and c.kind == "modes"]
+    size = cases[0].model.mesh_settings.element_size if hasattr(cases[0].model, "mesh_settings") else 2.5
+    n = sum(1 for d in Path(workdir).glob("retry*")) + 1
+    redo = fea_models(frames_, Path(workdir) / f"retry{n}", p, element_size=size * 0.88)
+    out2 = solve_cases(redo, Path(workdir) / f"retry{n}", run=run, threads=threads, n_modes=n_modes, retries=retries - 1, p=p)
+    for c in redo:
+        i = next(k for k, c0 in enumerate(cases) if c0.name == c.name)
+        cases[i] = c
+        out[c.name] = out2[c.name]
     return out
 
 
