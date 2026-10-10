@@ -157,12 +157,48 @@ def controller(lab, scn: Scenario, **kw):
                               wind_estimate=tuple(scn.wind[:2]), ground_s=scn.plan.ground_s, name=f"{sim.craft} autopilot ({scn.name})", **kw)
 
 
-def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 17.0, launch_pitch_deg: float = 8.0, fc=None) -> ch.Episode:
+class TimeBar:
+    """A tqdm bar over the simulation's time as a ChironLab hook (``run(..., progress=True)``): its postfix the
+    controller's phase; closed with the outcome."""
+
+    def __init__(self, total: float, desc: str, fc=None, every: int = 25):
+        self.total, self.desc, self.fc, self.every = float(total), desc, fc, every
+        self.bar, self.n = None, 0
+
+    def reset(self, lab):
+        from tqdm.auto import tqdm
+        if self.bar is not None:
+            self.bar.close()
+        self.n = 0
+        self.bar = tqdm(total=int(round(self.total)), desc=self.desc, unit="s", bar_format="{desc}: {n_fmt}/{total_fmt} s |{bar}| {elapsed} {postfix}")
+
+    def __call__(self, lab):
+        self.n += 1
+        if self.bar is not None and self.n % self.every == 0:
+            self.bar.n = int(min(lab.time, self.total))
+            self.bar.set_postfix_str(getattr(self.fc, "phase", ""))
+            self.bar.refresh()
+
+    def close(self, note: str = ""):
+        if self.bar is not None:
+            self.bar.set_postfix_str(note)
+            self.bar.refresh()
+            self.bar.close()
+            self.bar = None
+
+
+def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 17.0, launch_pitch_deg: float = 8.0, fc=None,
+        progress: bool = False) -> ch.Episode:
     """The mission: the launch from the meadow — a light bungee (an impulse of ``m x launch_speed`` over 0.3 s along the
     launch heading; 17 m/s: a hand throw of 11-12 m/s leaves the 5.2 kg aircraft at its stall at 1200 m and it sinks
     into the meadow: the simulation's finding, ``nisus_plus_flight.launch_check`` needs the take-off flap for it) — then the
-    controller's phases until it has landed and stopped (or ``duration``)."""
+    controller's phases until it has landed and stopped (or ``duration``). ``progress``: a tqdm bar over the simulation's
+    time (``TimeBar``)."""
     fc = fc or controller(lab, scn)
+    tb = None
+    if progress:
+        tb = TimeBar(duration or scn.duration, scn.label, fc)
+        lab.add_hook(tb)
     body = getattr(lab, "body", fr.BODY)
     m = float(lab.model.body_subtreemass[lab._body_id(body)])
     a, e = math.radians(scn.launch_heading_deg), math.radians(launch_pitch_deg)
@@ -176,6 +212,9 @@ def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: floa
     ep = lab.run(fc, duration=duration or scn.duration, rules=None, settle=0.0, seed=scn.seed, base_pos=(0.0, 0.0, z0), base_quat=quat,
                  info={"controller": fc.name, "treatment": f"Zero:{scn.name}"}, stop_when=lambda lab_: fc.finished and lab_.time > fc.t_phase + 12.0)
     _finish(ep, lab, scn, fc, m, launch_speed)
+    if tb is not None:
+        tb.close(f"{ep.outcome['reason']} at {ep.outcome['t_end']:.0f} s")
+        lab._hooks = [h for h in lab._hooks if h is not tb]
     return ep
 
 
@@ -422,9 +461,11 @@ def _profile(ep, i_now, size=(300, 110)):
     return img
 
 
-def render_movie(ep, scn: Scenario, path, *, speed: float = 30.0, fps: int = 20, size=(960, 540), onboard=True, massif: fr.Massif | None = None):
+def render_movie(ep, scn: Scenario, path, *, speed: float = 30.0, fps: int = 20, size=(960, 540), onboard=True, massif: fr.Massif | None = None,
+                 progress: bool = False):
     """The mission as an MP4 (NISUS's movie over the mountains): the chase camera (the meadow's tripod for the launch
-    and the landing), the synthetic onboard view, the map with the terrain, the altitude profile, the overlays."""
+    and the landing), the synthetic onboard view, the map with the terrain, the altitude profile, the overlays.
+    ``progress``: a tqdm bar (the chase and onboard renders, then a step per composed frame, the write)."""
     import cv2
     from vegeta.aeromant._watermark import watermark
     from vegeta.chiron import viz
@@ -443,10 +484,19 @@ def render_movie(ep, scn: Scenario, path, *, speed: float = 30.0, fps: int = 20,
     it_main = iter(main_cams)
     clog = _cropped(ep)
     common = dict(every=every, stop=idx[-1] + 1, show_time=False, scenery_range=5000.0, ground_color="#7f9a68", background="#b9d3ee")
+    bar = None
+    if progress:
+        from tqdm.auto import tqdm
+        bar = tqdm(total=len(idx) + 3, desc=f"movie {scn.slug}", bar_format="{desc}: {n_fmt}/{total_fmt} |{bar}| {elapsed} {postfix}")
+        bar.set_postfix_str(f"chase camera: {len(idx)} frames")
     imgs = viz.frames(clog, camera=lambda com: next(it_main), size=size, **common)
+    if bar:
+        bar.update(1); bar.set_postfix_str("onboard camera")
     if onboard:
         it_on = iter(onboard_cams)
         small = viz.frames(clog, camera=lambda com: next(it_on), size=(size[0] // 3 // 2 * 2, size[1] // 3 // 2 * 2), **common)
+    if bar:
+        bar.update(1); bar.set_postfix_str("overlays, map, profile")
     ts = timeseries(ep)
     ta = ts["t"].to_numpy()
     starts = [(tt, name) for tt, name, note in log["mission"] if note == "start"]
@@ -484,7 +534,11 @@ def render_movie(ep, scn: Scenario, path, *, speed: float = 30.0, fps: int = 20,
         img[y1:y1 + mp.shape[0], size[0] - mp.shape[1] - 10:size[0] - 10] = mp
         img[y1 - pr.shape[0] - 4:y1 - 4, size[0] - pr.shape[1] - 10:size[0] - 10] = pr
         out.append(img)
+        if bar:
+            bar.update(1)
     out = end_card(out, ep, fps=fps, hold_s=2.5)
+    if bar:
+        bar.set_postfix_str(f"writing {path}")
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     h, w = out[0].shape[:2]
@@ -494,4 +548,6 @@ def render_movie(ep, scn: Scenario, path, *, speed: float = 30.0, fps: int = 20,
             vw.write(watermark(cv2.cvtColor(np.ascontiguousarray(img, dtype=np.uint8), cv2.COLOR_RGB2BGR)))
     finally:
         vw.release()
+    if bar:
+        bar.update(1); bar.set_postfix_str("done"); bar.close()
     return path

@@ -35,10 +35,10 @@ def bird_scenarios() -> list:
     return [BirdScenario(**asdict(b)) for b in npb.bird_scenarios()]
 
 
-def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True):
+def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True, progress: bool = False):
     """The whole flight on FALCO (``nisus_plus_birds.run`` with FALCO's ``sim``), judged by FALCO's outcome (the parked
-    propeller at touchdown)."""
-    ep = npb.run(bs, duration=duration, log_geoms=log_geoms, sim=fscn.SIM)
+    propeller at touchdown); ``progress``: a tqdm bar over the simulation's time."""
+    ep = npb.run(bs, duration=duration, log_geoms=log_geoms, sim=fscn.SIM, progress=progress)
     fc = ep.controller
     ep.log["parked_at_touchdown"] = fc.parked_at_touchdown
     ep.log["t_park_cmd"] = fc.t_park_cmd

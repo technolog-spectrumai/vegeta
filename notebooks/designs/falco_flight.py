@@ -159,7 +159,7 @@ def airframe(battery_key: str = fsy.DEFAULT_PACK, p=None, *, h_m: float = 0.0, c
 
 # ================================================================================================= the propeller trade
 def propeller_trade(props=((20.0, 13.0), (20.0, 15.0), (21.0, 14.0), (22.0, 12.0), (22.0, 14.0), (19.0, 14.0), (18.0, 12.0)), *, p=None, h_m: float = 3000.0,
-                    af=None, plan: fs.MissionPlan | None = None) -> pd.DataFrame:
+                    af=None, plan: fs.MissionPlan | None = None, progress: bool = False) -> pd.DataFrame:
     """The propeller's pitch and diameter on the fitted AT5220 at 8S (a map per propeller: ~2 s each): the static point
     (thrust, current, rpm), the cruise point at ``h_m`` (power, rpm, the propeller's efficiency), the best climb, the top
     speed, the launch acceleration, the mission's energy and feasible survey time. The 20x13 of the frame study cruises
@@ -172,6 +172,9 @@ def propeller_trade(props=((20.0, 13.0), (20.0, 15.0), (21.0, 14.0), (22.0, 12.0
     V = plan.V_cruise_eas / math.sqrt(atm["sigma"])
     T = af.drag(V, atm["rho"])
     rows = {}
+    if progress:
+        from tqdm.auto import tqdm
+        props = tqdm(list(props), desc="propeller trade (a Boreas map, the envelope and the mission per propeller)")
     for d, pi in props:
         import frame_study as fst
         dr = fs.build_drive(battery_v=fsy.BATTERY_V, prop=fst.propeller(d, pi), motor=motor, fit=fit, rpm=fsy.RPM_GRID)

@@ -371,7 +371,7 @@ def _static_point(prop, af, kv, R, I0, V, kQ):
     return n, (V - n / kv) / R, boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ
 
 
-def drive_options(p=None, battery_key_6s: str = "6s4p-p45b", battery_key_8s: str = DEFAULT_PACK) -> pd.DataFrame:
+def drive_options(p=None, battery_key_6s: str = "6s4p-p45b", battery_key_8s: str = DEFAULT_PACK, progress: bool = False) -> pd.DataFrame:
     """The motor / pack / propeller combinations weighed, at the nominal pack voltage, static, sea level: the full-throttle
     rpm, the motor current, the shaft power, the static thrust, the motor's efficiency there, and what the limits say
     (the motor's 180 s current, the ESC's 80 A). The requirement column is NISUS+'s static T/W 0.7 on FALCO's mass."""
@@ -386,6 +386,9 @@ def drive_options(p=None, battery_key_6s: str = "6s4p-p45b", battery_key_8s: str
               ("AT5220-A KV220", battery_key_8s, (20.0, 13.0)), ("AT5220-A KV220", battery_key_8s, (20.0, 15.0)), ("AT5220-A KV220", battery_key_8s, (22.0, 12.0)),
               ("AT5220-A KV380", battery_key_6s, (20.0, 13.0)), ("AT5220-A KV380", battery_key_6s, (18.0, 10.0))]
     rows = {}
+    if progress:
+        from tqdm.auto import tqdm
+        combos = tqdm(combos, desc="drive options (motor x pack x propeller: BEMT static points)")
     for name, bk, (d, pi) in combos:
         M, b = MOTORS[name], pack(bk)
         R = M["r_sheet"] * r_scale

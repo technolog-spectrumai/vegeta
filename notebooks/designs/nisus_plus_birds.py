@@ -148,7 +148,7 @@ def bird_scenarios() -> list:
             replace(base, name="eagles, Jetson failure", jetson_failure=(None, None))]
 
 
-def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True, sim=None):
+def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True, sim=None, progress: bool = False):
     """The whole flight: the bungee launch, the climb over the meadow, the transit to the face, ``bird_time_s`` of
     hunting, the return, the crow descent, the landing. ``sim``: another aircraft's pieces (``nisus_plus_scenario.Sim``)."""
     scn = bs.scenario()
@@ -168,7 +168,7 @@ def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True, sim=None):
                 fc.jetson_failure = (mission.t_start + 90.0, mission.t_start + 130.0)
         lab._hooks = [failing if h is mission else h for h in lab._hooks]
     mission.fc = fc
-    ep = fsc.run(lab, scn, duration=duration, fc=fc)
+    ep = fsc.run(lab, scn, duration=duration, fc=fc, progress=progress)
     ep.birds = mission
     ep.bird_scenario = bs
     ep.log["birds"] = mission.loop.rec
