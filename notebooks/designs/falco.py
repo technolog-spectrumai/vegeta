@@ -237,16 +237,25 @@ class Falco(NisusPlus):
             parts.append(t)
         return cq.Workplane("XY").add(parts[0].fuse(*parts[1:]) if len(parts) > 1 else parts[0])
 
-    def _tail_socket(self, p, bore=True):
+    def _tail_socket(self, p, bore=True, pieces=False):
         """The PETG insert in the keel that holds the tube: a block ``tail_socket_length`` long around the tube from the
-        saddle to the tail cone's end, its top flat under the wing's rear bolt."""
+        saddle to the tail cone's end, its top flat under the wing's rear bolt. ``pieces``: the bore cut in three
+        segments (the front and the exit 25 mm long, the middle) kept as separate faces for the FEA's bearing regions."""
         L = self.layout(p)
         w = p["tail_tube_od"] + 8.0
-        blk = cq.Workplane("XY").box(p["tail_socket_length"], w, w, centered=(False, True, True)).translate((L["x_tube0"], 0, p["boom_z"]))
+        x0, Ls = L["x_tube0"], p["tail_socket_length"]
+        blk = cq.Workplane("XY").box(Ls, w, w, centered=(False, True, True)).translate((x0, 0, p["boom_z"]))
         if not bore:
             return blk
-        b = cq.Workplane("YZ").workplane(offset=L["x_tube0"] - 1).center(0, p["boom_z"]).circle(p["tail_tube_od"] / 2 + 0.1).extrude(p["tail_socket_length"] + 2)
-        return blk.cut(b)
+        r = p["tail_tube_od"] / 2 + 0.1
+        if not pieces:
+            b = cq.Workplane("YZ").workplane(offset=x0 - 1).center(0, p["boom_z"]).circle(r).extrude(Ls + 2)
+            return blk.cut(b)
+        seg = 25.0
+        out = blk
+        for xa, xb in ((x0 - 1.0, x0 + seg), (x0 + seg, x0 + Ls - seg), (x0 + Ls - seg, x0 + Ls + 1.0)):
+            out = out.cut(cq.Workplane("YZ").workplane(offset=xa).center(0, p["boom_z"]).circle(r).extrude(xb - xa), clean=False)
+        return out
 
     def _tail_fitting(self, p, side=0):
         """The printed sleeve on the tube's end that carries the stabiliser's spar (a saddle at 30 % of its chord) and
@@ -359,8 +368,10 @@ class Falco(NisusPlus):
             return self._tail_tube(p)
         if part == "tail_tube_fea":
             return self._tail_tube(p, pieces=True)
-        if part in ("tail_socket", "tail_socket_fea"):
+        if part == "tail_socket":
             return self._tail_socket(p)
+        if part == "tail_socket_fea":
+            return self._tail_socket(p, pieces=True)
         if part == "tail_fitting":
             return self._tail_fitting(p)
         if part == "tail":

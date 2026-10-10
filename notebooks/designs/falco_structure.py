@@ -211,6 +211,15 @@ def tail_frame(p=None) -> fst.Frame:
                      rear_spar_id=p["rear_spar_id"], fin_ventral=0.0, p={"boom_z": p["boom_z"], "tail_thickness": p["tail_thickness"]})
 
 
+def _fea_frame(f: fst.Frame) -> fst.Frame:
+    """The frame for the Talos CAD: the stabiliser's 12/10 spar as a solid rod of the same bending stiffness (a 1 mm
+    wall breeds sliver elements at the 2.5 mm mesh — the frame study's lesson; the spar's own stress is excluded from the
+    reading anyway). The masses come from the true frame."""
+    from dataclasses import replace
+    d_eq = (f.tie_od ** 4 - f.tie_id ** 4) ** 0.25
+    return replace(f, tie_od=d_eq, tie_id=0.0)
+
+
 def _np_over(p) -> dict:
     """The NISUS+ overrides the frame study's helpers need for FALCO's tube (its axis height, the tail plates)."""
     return {"boom_z": p["boom_z"], "tail_thickness": p["tail_thickness"]}
@@ -223,7 +232,8 @@ def tail_tube_cases(workdir, p=None, cases=None, element_size: float = 2.5) -> l
     from vegeta import talos
     p = falco.resolve(p)
     c = cases if cases is not None else load_cases(p)
-    f = tail_frame(p)
+    f_true = tail_frame(p)
+    f = _fea_frame(f_true)
     pn = _np_over(p)
     workdir = Path(workdir)
     (workdir / "cad").mkdir(parents=True, exist_ok=True)
@@ -245,7 +255,7 @@ def tail_tube_cases(workdir, p=None, cases=None, element_size: float = 2.5) -> l
     F_half = F_tail / 2
     mesh = talos.MeshSettings(element_size=element_size, order=2)
     mat = talos_material(CARBON)
-    m = fst.frame_mass(f, pn)
+    m = fst.frame_mass(f_true, pn)
     masses = [talos.PointMass("tie_left", 0.5 * m["stabiliser [g]"] * 1e-6), talos.PointMass("tie_right", 0.5 * m["stabiliser [g]"] * 1e-6),
               talos.PointMass("ends", fsy.CAD["tail_fitting"] * 1e-3 * PETG["rho"] * fsy.PRINT_FILL["tail_fitting"] * 1e-6 + 2 * 22.0 * 1e-6),
               talos.PointMass("post_0", m["fins [g]"] * 1e-6)]
@@ -318,8 +328,8 @@ def tail_socket_case(step, p=None, cases=None, element_size=2.0):
     r = p["tail_tube_od"] / 2 + 0.1
     seg = 25.0
     regions = [talos.SurfacesOnPlane("top", "z", z + w / 2), talos.SurfacesOnPlane("bottom", "z", z - w / 2),
-               talos.SurfacesInBox("bore_exit", (x1 - seg - 0.5, -r - 0.5, z - r - 0.5, x1 + 0.5, r + 0.5, z + r + 0.5)),
-               talos.SurfacesInBox("bore_front", (x0 - 0.5, -r - 0.5, z - r - 0.5, x0 + seg + 0.5, r + 0.5, z + r + 0.5))]
+               talos.SurfacesInBox("bore_exit", (x1 - seg - 0.5, -r - 0.5, z - r - 0.5, x1 + 1.5, r + 0.5, z + r + 0.5)),
+               talos.SurfacesInBox("bore_front", (x0 - 1.5, -r - 0.5, z - r - 0.5, x0 + seg + 0.5, r + 0.5, z + r + 0.5))]
     loads = [talos.Force("bore_exit", fz=-R_exit_z, fy=R_exit_y), talos.Force("bore_front", fz=R_exit_z - F_tail, fy=-(R_exit_y - F_fin))]
     desc = f"keel socket (PETG): the tube's bearing {R_exit_z:.0f} N down at the exit, {R_exit_z - F_tail:.0f} N up at the front, the fin's {R_exit_y:.0f} N sideways (ultimate)"
     return FEACase("tail_socket", "tail_socket_fea", desc,
