@@ -85,6 +85,8 @@ class Falco(Nisus):
         _nf("pod_length", 760.0), _nf("pod_width", 130.0), _nf("pod_height", 140.0),
         _nf("nose_length", 400.0, description="pod nose tip ahead of the wing leading edge (the pack and the Orin sit in it)"),
         _nf("nose_cone_length", 90.0), _nf("pod_wall", 1.5),
+        Parameter("marking", "FALCO-109", description="the aircraft's name, raised on both sides of the pod (printed with it)"),
+        Parameter("marking_height", 32.0, "mm", min=0, description="cap height of the marking (0: none)"),
         _nf("boom_y", 250.0, description="boom centre from the symmetry plane (500 mm spacing)"),
         _nf("boom_od", 20.0, description="boom tube OD (16/14 bent ~50 mm at the tail under the tail + fin ultimate load in the FEA, margin 0.41 by hand: 20/18 doubles the stiffness for ~35 g)"), _nf("boom_id", 18.0),
         _nf("boom_length", 880.0), _nf("boom_x0", 120.0, description="tube front end inside the root fitting: a 170 mm socket (an 88 mm one let the boom pry the fitting apart: the first FEA)"), _nf("boom_z", -28.0),
@@ -292,6 +294,32 @@ class Falco(Nisus):
         tray = floor.union(lips[0]).union(lips[1])
         slots = [cq.Workplane("XY").box(22.0, bw + 20.0, 5.0, centered=(True, True, False)).translate((x0 + f * (x1 - x0), 0, z - 1.0)) for f in (0.33, 0.67)]
         return tray.cut(slots[0]).cut(slots[1])
+
+    def _pod_solid(self, p, inset=0.0, x_from=None, x_to=None):
+        """NISUS's pod, with the marking raised on both sides of the whole outer pod (not on the inner shell's surface or
+        on cut sections): the inner shell's cut leaves the letters on the wall."""
+        solid = super()._pod_solid(p, inset, x_from, x_to)
+        if inset or x_from is not None or x_to is not None or not p["marking"] or p["marking_height"] <= 0:
+            return solid
+        return solid.union(self._marking(p))
+
+    def _marking(self, p, raised: float = 0.8):
+        """The marking on both pod sides, read from outside (the text runs nose to tail on the left side and tail to
+        nose on the right, as on a real aircraft), centred on the pod's constant section (under the wing: the sides stay clear);
+        ``raised`` [mm] proud of the surface at the text's centre line (more toward its top and bottom edges, where the
+        elliptic section curves away)."""
+        prof = self.pod_profile(p)
+        body = prof[prof[:, 1] >= prof[:, 1].max() - 0.5, 0]                     # the constant section: the text lies flat on it
+        x_c = 0.5 * (body.min() + body.max())
+        h = min(p["marking_height"], (body.max() - body.min() - 20.0) / (0.62 * len(p["marking"])))   # shrunk to fit if long
+        a_c = float(np.interp(x_c, prof[:, 0], prof[:, 1]))
+        zc = float(np.interp(x_c, prof[:, 0], prof[:, 3]))
+        out = None
+        for s in (1, -1):
+            plane = cq.Plane(origin=(x_c, s * (a_c - 2.5), zc), xDir=(-s, 0, 0), normal=(0, s, 0))
+            txt = cq.Workplane(plane).text(p["marking"], h, 2.5 + raised, halign="center", valign="center", kind="bold")
+            out = txt if out is None else out.union(txt)
+        return out
 
     def build(self, p):
         if p["flap_y1"] >= p["wing_joint_y"] or p["flap_y0"] <= p["boom_y"] + p["fitting_width"] / 2:

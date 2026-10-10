@@ -74,7 +74,7 @@ def atmosphere_table(heights=(0, 1000, 1500, 2000, 3000, 4000, 4500, 5000, 6000)
 # ================================================================================================= CAD numbers
 #: CAD volumes [mm³] of the default Falco parts (``falco.Falco().generate(part=...).measure()['volume']``); ``cad_numbers(
 #: recompute=True)`` rebuilds them (about a minute).
-CAD = {"aircraft": 22940086.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 60363.0, "pod": 397418.0, "nose": 31160.0, "boom": 52527.0,
+CAD = {"aircraft": 22952472.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 60363.0, "pod": 401476.0, "nose": 31160.0, "boom": 52527.0,
        "boom_fitting": 143789.0, "tail": 1721585.0, "tail_fitting": 31193.0, "motor_mount": 17681.0, "tray": 35216.0, "skid": 183580.0,
        "battery_tray": 71320.0, "flap": 224959.0, "aileron": 277388.0, "spar_joiner": 18871.0}
 
