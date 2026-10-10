@@ -504,19 +504,21 @@ def phase_power(jetson_w: float = JETSON_INSTALLATION_W) -> pd.DataFrame:
     return pd.DataFrame({"electronics battery-side [W]": out})
 
 
-def servo_check(p=None, *, V_ail_eas=40.0, V_fe_eas=22.0, flap_deg=55.0, ail_deg=25.0, ch_delta=0.40, servo_kgcm=6.0, linkage_ratio=1.0) -> pd.DataFrame:
+def servo_check(p=None, *, V_ail_eas=40.0, V_fe_eas=22.0, flap_deg=55.0, ail_deg=25.0, ch_delta=0.40, servo_kgcm=6.0, linkage_ratio=1.0, design=None) -> pd.DataFrame:
     """Hinge moments ``H = q S_s c_s Ch_δ δ`` (NISUS's estimate; Ch_δ ~ 0.4/rad, capped at 40° of effective deflection —
     a plain flap's hinge moment saturates as it separates: assumed) against a 6 kg·cm servo: the aileron at V_NE (EAS),
-    the flap in crow at the maximum flap-extended speed V_FE, the elevator and the rudders at V_NE."""
-    p = nisus_plus.resolve(p)
-    L = nisus_plus.NisusPlus.layout(p)
+    the flap in crow at the maximum flap-extended speed V_FE, the elevator and the rudders at V_NE. ``design``: another
+    design's instance (FALCO's: one rudder)."""
+    d = nisus_plus._design(design)
+    p = nisus_plus.resolve(p, d)
+    L = type(d).layout(p)
     rows = {}
     c_ail = p["aileron_chord_frac"] * 0.5 * (p["root_chord"] + p["tip_chord"]) / 1000
     c_flap = p["flap_chord_frac"] * L["chord_joint"] / 1000
     cases = {"aileron (each) at V_NE": (L["S_aileron_each"], c_ail, V_ail_eas, ail_deg),
              f"flap (each) in crow {flap_deg:g}° at V_FE": (L["S_flap_each"], c_flap, V_fe_eas, flap_deg),
              "elevator at V_NE": (L["S_elevator"], p["elevator_frac"] * p["tail_chord"] / 1000, V_ail_eas, 25.0),
-             "rudders (both on one servo) at V_NE": (2 * L["S_rudder_each"], p["rudder_frac"] * p["fin_chord"] / 1000, V_ail_eas, 25.0)}
+             ("rudders (both on one servo) at V_NE" if L.get("n_fins", 2) == 2 else "rudder at V_NE"): (L.get("n_fins", 2) * L["S_rudder_each"], p["rudder_frac"] * p["fin_chord"] / 1000, V_ail_eas, 25.0)}
     for name, (S, c, V, d) in cases.items():
         q = 0.5 * RHO0 * V ** 2                 # EAS: the dynamic pressure is the sea-level one at the same EAS
         H = q * S * c * ch_delta * math.radians(min(d, 40.0))

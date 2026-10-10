@@ -283,6 +283,11 @@ def cg_inertia(table: pd.DataFrame, p=None) -> dict:
     return fs.cg_inertia(table, falco.resolve(p), design=falco.Falco())
 
 
+def servo_check(p=None, **kw) -> pd.DataFrame:
+    """NISUS+'s hinge-moment check on FALCO's surfaces (one rudder)."""
+    return fs.servo_check(falco.resolve(p), design=falco.Falco(), **kw)
+
+
 # ================================================================================================= the drive
 #: T-Motor's bench table for the AT5220-A KV220 on APC 18x8 at 12S (the German page of the datasheet carries the rows to
 #: 100 %); the 100 % row fits the motor model, the 70 % row checks the propeller's torque calibration.
