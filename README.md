@@ -302,6 +302,33 @@ and a kinematic aircraft. `designs/nisus_birds.py` plugs the stack into the MuJo
 mode 'birds'), `designs/nisus_birds_movie.py` renders the video (synthetic onboard view with boxes and tracks, chase
 view, map, photo log). `scenarios/nisus_birds.py` (or `./user_tests.sh nisus-birds`) flies the six bird scenarios.
 
+**FALCO** (branch `dev_falco`): `33_falco` is NISUS's bigger mountain sibling, one variant only, **Falco-Zero**
+(autonomous, Jetson Orin Nano Super onboard): a 2.4 m, ~5.2 kg twin-boom pusher built to climb fast, descend fast and
+work up to ~4500 m density altitude from valley meadows. It is an "energy plane": a 6S4P 21700 Li-ion pack (~335 Wh) and a
+T-Motor AT4125 KV540 class drive with a fixed 15-inch propeller.
+- **Geometry:** `designs/falco.py` (`Falco(Nisus)`): a two-piece wing with a carbon spar joiner (transport pieces ≤ 1.2 m),
+  cut flaps and ailerons that can be posed (crow: flaps +55°, ailerons −25°), a bigger pod, booms and tail; drawings with the
+  crow and transport views in `designs/falco_drawings.py`. NISUS gained only backward-compatible `design=` seams.
+- **Systems:** `designs/falco_systems.py`: ISA with ΔT and Sutherland viscosity, the mass table and CG, a Li-ion pack model
+  (OCV, resistance and capacity against temperature, no charging below 5 °C), the drive fitted to the published AT4125 point,
+  a signed Boreas BEMT map that keeps the windmill and brake region (ESC active braking and regeneration), mission energy
+  over a climb–survey–descent route (sources in `designs/data/falco_component_sources.md`).
+- **Analyses:** `designs/falco_flight.py` (lattice with flap/aileron panels, crow increments, the envelope and ceiling
+  against altitude, climb strategy, descent table, `regen_table`, downdraft escape, launch), `designs/falco_structure.py`
+  (EAS gusts, hand checks, Talos FEA of the spar, joiner, boom, fitting, motor mount and tray), `designs/falco_cfd.py`
+  (Aeromant cases at 3000 m air, crow and brake disk).
+- **Answers:** climb 12 m/s at sea level and 9 m/s at 4500 m; crow + propeller brake sink ~14 m/s at 22 m/s EAS; fast climbs
+  are the cheapest in energy; **regeneration does not pay in energy** (~2.6 Wh per 1000 m, under 2 % of the pack, none when
+  the pack is cold) — the braked propeller is kept for its drag.
+- **Mountain missions** in MuJoCo through Chiron over an analytic massif heightfield (`designs/falco_robot.py`: altitude-aware
+  `FalcoAero`, `MountainWind` with shear, slope lift and lee sink; `falco_controller.py`: a TECS-style energy controller with
+  crow and brake allocation, terrain floor and look-ahead, bungee launch, climb orbit, terrain-following slope survey, crow
+  spiral descent, 9° crow approach and flare; `falco_scenario.py`: calm, ridge lift, lee downdraft, hot day, weather escape,
+  Jetson failure, with movies). `designs/falco_birds.py` flies NISUS-Zero's bird mission software (`vegeta.mission`) on
+  FALCO after golden eagles, griffon vultures and alpine choughs over the slope (`falco_birds_movie.py`).
+`scenarios/falco_mission.py` and `scenarios/falco_birds.py` (or `./user_tests.sh falco`, `falco-birds`) re-run them;
+`FALCO_QUICK=1` flies only the calm mission and one bird hunt in the notebook.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

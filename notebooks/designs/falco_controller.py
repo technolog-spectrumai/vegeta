@@ -258,7 +258,7 @@ class FalcoController:
         rel = pos[:2] - centre
         d = float(np.linalg.norm(rel)) + 1e-6
         tang = direction * np.array([-rel[1], rel[0]]) / d
-        course = math.atan2(tang[1], tang[0]) - direction * math.atan((d - r) / 60.0)
+        course = math.atan2(tang[1], tang[0]) + direction * math.atan((d - r) / 60.0)    # outside the circle: turn in
         return self._course(v, course, 0.0)
 
     def _floor(self, pos, v):
@@ -391,7 +391,8 @@ class FalcoController:
             if self.target is None:
                 self.target = "to iaf"
             if self.target == "to iaf":
-                bank, along, Ld, _ = self._track_to(pos, v, self.home, iaf)
+                to = iaf - pos[:2]                                         # straight to the fix (from wherever the descent ended)
+                bank = self._course(v, math.atan2(to[1], to[0]), yaw)
                 pc, thr, crow, brake = self._energy(self.V_cruise_eas - 2.0, self.home_alt + self.approach_agl, a, dt, climb_max=2.0, sink_max=4.0)
                 self._attitude(bank, pc, roll, pitch, omega_b, V, eas, thr, crow, brake)
                 if float(np.linalg.norm(pos[:2] - iaf)) < 60.0:
@@ -419,11 +420,14 @@ class FalcoController:
                 hdot = v[2]
                 sink_tgt = max(0.3 * agl, 0.4)
                 err = (-hdot) - sink_tgt
-                pc = math.radians(1.0) + float(np.clip(0.10 * err, -0.05, math.radians(6.0)))
+                pc = math.radians(1.0) + float(np.clip(0.10 * err, -0.10, math.radians(6.0)))
                 a_max = math.radians(self.c["alpha_stall_deg"] - 2.5)
                 pc = min(pc, pitch + (a_max - a["alpha"]))
                 thr = float(np.clip(0.4 * err, 0.0, 0.5)) if agl > 0.6 else 0.0
-                self._attitude(0.0, pc, roll, pitch, omega_b, V, eas, thr, 0.0, 0.0)
+                # floating (rising air over the meadow, or fast): crow and the brake back out as airbrakes, only with the
+                # speed above the approach speed (the stall margin stays)
+                float_ = float(np.clip(-0.6 * err, 0.0, 0.7)) if eas > self.V_app_eas - 0.5 else 0.0
+                self._attitude(0.0, pc, roll, pitch, omega_b, V, eas, thr, float_, float_)
             if self.touchdown is None and agl < 0.45 and t - self.t_phase > 5.0:
                 self.touchdown = t
                 self.events.append([t, "landing", f"touchdown at {np.linalg.norm(v[:2]):.1f} m/s ground speed, sink {-v[2]:.2f} m/s, {home_d:.0f} m from home"])

@@ -7,19 +7,24 @@ aircraft is NISUS's ``nisus_birds.BirdMission`` hook (the navigation state out, 
 the flight controller's mode 'birds'), which works on ``falco_robot.FalcoAero`` unchanged. What the mountains change:
 
 - **the birds**: soaring birds of the Alps (``vegeta.mission.sim.SPECIES``: golden eagle, griffon vulture, alpine
-  chough) circling in the lift over the south face (the 'thermal' behaviour: a ridge-lift or thermal circle) or
-  wandering along it, their height band above sea level (``BirdField`` works in absolute heights);
+  chough) beating along the south face in its slope lift (the 'wander' behaviour over a 250 m reach) or circling wide in
+  a thermal (160 m), their height band above sea level (``BirdField`` works in absolute heights). A tight thermal
+  circle (~90 m radius) is about FALCO's own turn radius at 22 m/s TAS: the bird leaves the fixed camera's 34° frame
+  before the range closes, and the kinematic loop gets no good photo of it — a gimbal (todo 5n.5) would;
+- **the tracker**: the range from the bird's size assumes the planned species' wingspan (NISUS's 0.9 m crow/gull
+  prior halves a 2 m eagle's range and fires the shutter far too early);
 - **the aircraft**: FALCO flies 18-24 m/s TAS at 3000 m and is twice NISUS's size, so the guidance's speeds, its
   minimum speed (above FALCO's 1.4 V_s with crow, in TAS at the altitude) and the separations are FALCO's: a
-  25 m minimum separation (``min_sep``: eagles attack drones — a breakoff starts well before), the photo range 35 m
-  (the 6 mm lens resolves a 2 m eagle at ~300 px there);
+  25 m minimum separation (``min_sep``: eagles attack drones — a breakoff starts well before; 15 m for the choughs,
+  which do not, and which span 150 px only within ~28 m), the photo range 35 m (the 6 mm lens resolves a 2 m eagle at
+  ~300 px there);
 - **the heights**: the guidance's height limits and the scheduler's band are above sea level over the slope; the flight
   controller's terrain floor stays in force under the bird mission (``FalcoController._birds``);
 - **the wind**: a south wind gives the ridge lift the birds use; the controller's crow and propeller brake keep the
   height when the same lift carries the aircraft up.
 
     import falco_birds as fb
-    bs = fb.BirdScenario()                     # three golden eagles soaring in the ridge lift, a south wind
+    bs = fb.BirdScenario()                     # three golden eagles beating along the face in the ridge lift, a south wind
     ep = fb.run(bs)
     fb.summary(ep), fb.photo_table(ep)
 """
@@ -34,7 +39,8 @@ import pandas as pd
 from vegeta.mission import IMX219_6MM, DetectorConfig, MissionConfig, budget
 from vegeta.mission.guidance import GuidanceConfig
 from vegeta.mission.photo import PhotoConfig
-from vegeta.mission.sim import BirdField, BirdGroup
+from vegeta.mission.sim import SPECIES, BirdField, BirdGroup
+from vegeta.mission.tracking import TrackerConfig
 from vegeta.mission.targeting import SchedulerConfig
 
 import falco_robot as fr
@@ -45,18 +51,23 @@ import nisus_birds as nb
 __all__ = ["BirdScenario", "bird_scenarios", "mission_config", "run", "summary", "photo_table", "compare"]
 
 
-def mission_config(centre_xy, ground_m, *, device="orin_nano_super", model="yolox-tiny", band=(150.0, 450.0), sigma_ref=0.78) -> MissionConfig:
+def mission_config(centre_xy, ground_m, *, device="orin_nano_super", model="yolox-tiny", band=(150.0, 450.0), sigma_ref=0.78,
+                   size_prior_m: float = 0.9, min_sep: float = 25.0, search_agl: float | None = None) -> MissionConfig:
     """The mission software's configuration for FALCO over a slope whose ground is ``ground_m`` [m ASL] at the bird area:
-    heights above sea level, FALCO's speeds (TAS at the area's density ``sigma_ref``), the separations for big raptors."""
+    heights above sea level, FALCO's speeds (TAS at the area's density ``sigma_ref``), the separations for big raptors,
+    the tracker's wingspan prior for the range (``size_prior_m``: the species the flight is planned for), the search
+    leg's height above the ground (``search_agl``: the planned birds' height; default the band's middle)."""
     k = 1 / math.sqrt(sigma_ref)
     h0, h1 = ground_m + band[0], ground_m + band[1]
     det = DetectorConfig(device=device, model=model, search_tiles=2, search_hz=5.0, roi_hz=15.0)
-    guid = GuidanceConfig(search_centre=tuple(centre_xy), search_radius=260.0, search_height=0.5 * (h0 + h1), cruise=18.0 * k, dash=22.0 * k,
+    guid = GuidanceConfig(search_centre=tuple(centre_xy), search_radius=260.0,
+                          search_height=ground_m + search_agl if search_agl is not None else 0.5 * (h0 + h1), cruise=18.0 * k, dash=22.0 * k,
                           v_min=16.5 * k, slow_range=220.0, behind_m=45.0, pass_range=110.0, photo_range=35.0, closure_max=8.0, closure_min=3.0,
-                          min_sep=25.0, react_s=3.0, breakoff_s=5.0, climb_m=25.0, reposition_range=220.0, reposition_max_s=18.0,
+                          min_sep=min_sep, react_s=3.0, breakoff_s=5.0, climb_m=25.0, reposition_range=220.0, reposition_max_s=18.0,
                           h_min=h0 - 60.0, h_max=h1 + 120.0)
     sch = SchedulerConfig(area_centre=tuple(centre_xy), area_radius=700.0, dash_speed=22.0 * k, h_band=(h0 - 80.0, h1 + 120.0), commit_range=220.0)
-    return MissionConfig(camera=IMX219_6MM, detector=det, scheduler=sch, guidance=guid, photo=PhotoConfig(good_px=150.0, min_px=80.0))
+    return MissionConfig(camera=IMX219_6MM, detector=det, tracker=TrackerConfig(size_prior_m=size_prior_m), scheduler=sch, guidance=guid,
+                         photo=PhotoConfig(good_px=150.0, min_px=80.0))
 
 
 @dataclass
@@ -64,7 +75,7 @@ class BirdScenario:
     """The birds (``groups``: species, count, behaviour, height band above the ground [m], radius, offset from the
     area's centre [m]), the area's centre on the south face, the wind, the Jetson, the hunting time."""
     name: str = "golden eagles in the ridge lift"
-    groups: list = field(default_factory=lambda: [("golden eagle", 3, "thermal", (220.0, 380.0), 90.0, (0.0, 0.0))])
+    groups: list = field(default_factory=lambda: [("golden eagle", 3, "wander", (220.0, 380.0), 250.0, (0.0, 0.0))])
     centre: tuple = (2400.0, 2300.0)
     wind: tuple = (0.0, 6.0, 0.0)
     sigma: float = 0.6
@@ -72,7 +83,8 @@ class BirdScenario:
     model: str = "yolox-tiny"
     lens: str = "6 mm M12"
     jetson_failure: tuple | None = None
-    bird_time_s: float = 300.0
+    bird_time_s: float = 600.0
+    min_sep: float = 25.0                    # [m] the guidance's separation (25 m from raptors that may attack)
     seed: int = 1
     battery_key: str = fs.DEFAULT_PACK
 
@@ -105,19 +117,34 @@ class BirdScenario:
         # lift does not move), so their circles do not drift with the wind
         return BirdField(groups, wind=(0.0, 0.0, 0.0), seed=self.seed)
 
+    def size_prior(self) -> float:
+        """The wingspan the tracker assumes for the range: the planned species' (count-weighted; NISUS's 0.9 m crow/gull
+        prior halves the range of a 2 m eagle and fires the shutter far too early)."""
+        n = sum(g[1] for g in self.groups)
+        return sum(SPECIES[g[0]].wingspan_m * g[1] for g in self.groups) / n
+
+    def band(self) -> tuple:
+        """The planned birds' height band above the ground and their count-weighted middle (the search leg's height:
+        a camera 15° down sees small birds 50-100 m below only at ranges too long to detect them)."""
+        n = sum(g[1] for g in self.groups)
+        return (min(g[3][0] for g in self.groups), max(g[3][1] for g in self.groups)), sum(0.5 * (g[3][0] + g[3][1]) * g[1] for g in self.groups) / n
+
     def config(self) -> MissionConfig:
         sig = fs.atmosphere(self.ground() + 300.0)["sigma"]
-        return mission_config(self.centre, self.ground(), device=self.device, model=self.model, sigma_ref=sig)
+        band, mid = self.band()
+        return mission_config(self.centre, self.ground(), device=self.device, model=self.model, band=band, sigma_ref=sig,
+                              size_prior_m=self.size_prior(), min_sep=self.min_sep, search_agl=mid)
 
 
 def bird_scenarios() -> list:
-    """Golden eagles soaring in the ridge lift (south wind); griffon vultures circling in calm air; a flock of alpine
+    """Golden eagles beating along the face in the ridge lift (south wind); griffon vultures circling wide in a thermal (calm air); a flock of alpine
     choughs wandering along the face (small, quick, many); the eagles with the Jetson failing during the hunt."""
     base = BirdScenario()
     return [base,
-            replace(base, name="griffon vultures circling", groups=[("griffon vulture", 5, "thermal", (200.0, 420.0), 120.0, (0.0, 0.0))], wind=(0.0, 0.0, 0.0), sigma=0.0),
+            replace(base, name="griffon vultures circling", groups=[("griffon vulture", 5, "thermal", (200.0, 420.0), 160.0, (0.0, 0.0))], wind=(0.0, 0.0, 0.0), sigma=0.0),
             replace(base, name="alpine chough flock", groups=[("alpine chough", 8, "wander", (150.0, 300.0), 220.0, (0.0, 0.0)),
-                                                              ("golden eagle", 1, "thermal", (300.0, 420.0), 80.0, (250.0, 150.0))]),
+                                                              ("golden eagle", 1, "wander", (300.0, 420.0), 200.0, (250.0, 150.0))],
+            min_sep=15.0),          # a 0.8 m chough spans 150 px only within ~28 m (6 mm lens): inside its flight distance
             replace(base, name="eagles, Jetson failure", jetson_failure=(None, None))]
 
 
