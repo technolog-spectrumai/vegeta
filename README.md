@@ -303,7 +303,7 @@ mode 'birds'), `designs/nisus_birds_movie.py` renders the video (synthetic onboa
 view, map, photo log). `scenarios/nisus_birds.py` (or `./user_tests.sh nisus-birds`) flies the six bird scenarios.
 
 **FALCO** (branch `dev_falco`): `33_falco` is NISUS's bigger mountain sibling, one variant only, **Falco-Zero**
-(autonomous, Jetson Orin Nano Super onboard): a 2.4 m, ~5.2 kg twin-boom pusher built to climb fast, descend fast and
+(autonomous, Jetson Orin Nano Super onboard): a 2.4 m, ~5.3 kg twin-boom pusher built to climb fast, descend fast and
 work up to ~4500 m density altitude from valley meadows. It is an "energy plane": a 6S4P 21700 Li-ion pack (~335 Wh) and a
 T-Motor AT4125 KV540 class drive with a fixed 15-inch propeller.
 - **Geometry:** `designs/falco.py` (`Falco(Nisus)`): a two-piece wing with a carbon spar joiner (transport pieces ≤ 1.2 m),

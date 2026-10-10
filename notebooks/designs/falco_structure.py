@@ -21,6 +21,8 @@ Units: the Talos models are mm-N-MPa (density t/mm³).
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 from pathlib import Path
 
@@ -245,6 +247,12 @@ def joints_hand(p=None, cases=None, battery_key=fs.DEFAULT_PACK) -> pd.DataFrame
     rows["boom socket: bearing reaction at the exit, ultimate [N]"] = R_exit
     rows["boom socket: epoxy shear [MPa]"] = tau
     rows["boom socket: margin (epoxy on PETG 5 MPa x 0.5)"] = 5.0 * KNOCKDOWN["adhesive"] / tau - 1
+    # the boom tube at the socket's exit: the tail's vertical load and the fin's side load together (ultimate), as the FEA
+    I_b = math.pi / 64 * (p["boom_od"] ** 4 - p["boom_id"] ** 4)
+    F_fin = ULTIMATE * a["fin"]
+    sig_b = math.hypot(F_tail, F_fin) * arm * (p["boom_od"] / 2) / I_b
+    rows["boom tube: bending at the socket exit, tail + fin ultimate [MPa]"] = sig_b
+    rows["boom tube: margin (500 MPa x 0.8)"] = CARBON["strength"] * KNOCKDOWN["carbon tube"] / sig_b - 1
     dx = fs_["x_rear"] - fs_["x_front"]
     R_rear = F_tail * (L["x_ac_tail"] - fs_["x_front"]) / dx
     R_front = F_tail * (L["x_ac_tail"] - fs_["x_rear"]) / dx
@@ -289,14 +297,16 @@ def joints_hand(p=None, cases=None, battery_key=fs.DEFAULT_PACK) -> pd.DataFrame
 def export_step(part: str, workdir: Path, p=None) -> Path:
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
-    path = workdir / f"falco_{part}.step"
+    # keyed by the parameters: a changed design never meshes a stale STEP
+    key = hashlib.sha1(json.dumps(falco.resolve(p), sort_keys=True, default=str).encode()).hexdigest()[:10]
+    path = workdir / f"falco_{part}_{key}.step"
     if not path.exists():
         falco.Falco().generate(**falco.overrides(p), part=part).export_step(str(path))
     return path
 
 
 def spar_case(step, p=None, cases=None, element_size=3.0):
-    """NISUS's spar case on FALCO: the right half of the 16/14 tube (straight), the Schrenk lift on its 7 outer
+    """NISUS's spar case on FALCO: the right half of the main spar tube (straight), the Schrenk lift on its 7 outer
     segments (95 % on the wing), clamped in the saddle. The joiner's double wall at the joint is left out (the tube
     alone: conservative there)."""
     from vegeta import talos
@@ -317,7 +327,7 @@ def spar_case(step, p=None, cases=None, element_size=3.0):
     return case
 
 
-def joiner_case(step, p=None, cases=None, element_size=1.5):
+def joiner_case(step, p=None, cases=None, element_size=2.5):      # 1.5 mm meshes now and then held a sliver element (10 GPa spikes); 3.0 and 2.5 agree at 132 MPa
     """The spar joiner (``spar_joiner_fea``: five pieces): its inner half held in the centre section's spar, the outer
     panel's lift at the joint (shear V and moment M, ultimate) as two bearing forces on its outer half — up on the 30 mm
     piece at its end, down on the 30 mm piece at the joint (a two-point bearing: an idealisation of the slide fit)."""
@@ -363,7 +373,9 @@ def boom_case(step, p=None, cases=None, element_size=3.0):
                    talos.StructuralModel(step, "mm-N-MPa", talos_material(CARBON), regions, [talos.FixedSupport("socket")],
                                          [talos.Force("sleeve", fy=F_s, fz=F_v)], talos.MeshSettings(element_size=element_size, order=2), name="boom_tail"),
                    None, CARBON["strength"])
-    case.exclude = lambda xyz: xyz[:, 0] < fs_["x_te"] + p["boom_od"]
+    # nominal: the tube between the clamped socket and the loaded sleeve (the load enters the 1 mm wall through the
+    # sleeve's surface: local, not the tube's bending)
+    case.exclude = lambda xyz: (xyz[:, 0] < fs_["x_te"] + p["boom_od"]) | (xyz[:, 0] > x_sl - p["boom_od"])
     return case
 
 

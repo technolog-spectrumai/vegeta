@@ -74,8 +74,8 @@ def atmosphere_table(heights=(0, 1000, 1500, 2000, 3000, 4000, 4500, 5000, 6000)
 # ================================================================================================= CAD numbers
 #: CAD volumes [mm³] of the default Falco parts (``falco.Falco().generate(part=...).measure()['volume']``); ``cad_numbers(
 #: recompute=True)`` rebuilds them (about a minute).
-CAD = {"aircraft": 22872200.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 46687.0, "pod": 397418.0, "nose": 31160.0, "boom": 41469.0,
-       "boom_fitting": 136248.0, "tail": 1721585.0, "tail_fitting": 28201.0, "motor_mount": 17681.0, "tray": 35216.0, "skid": 183580.0,
+CAD = {"aircraft": 22940086.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 60363.0, "pod": 397418.0, "nose": 31160.0, "boom": 52527.0,
+       "boom_fitting": 143789.0, "tail": 1721585.0, "tail_fitting": 31193.0, "motor_mount": 17681.0, "tray": 35216.0, "skid": 183580.0,
        "battery_tray": 71320.0, "flap": 224959.0, "aileron": 277388.0, "spar_joiner": 18871.0}
 
 
@@ -381,7 +381,7 @@ def structure_items(p=None, cad: dict | None = None) -> list:
         ("wing: tip rods 8/6 carbon, 2 x 200", "wing/reinforcement/covering", rods, L["spar_x_root"] + 30, 0.0, 50.0, "tube section x length x 1.55"),
         ("wing: balsa D-box 2 mm (LE to spar, full span), TE strips, servo bays, joint ribs", "wing/reinforcement/covering", balsa, 0.15 * L["mac"] + 10, 0.0, 8.0,
          "D-box area x 2 mm x 0.16 g/cm³ + 25 g strips and ribs"),
-        ("wing: rear carry-through tube 18/15 x 600 (carbon)", "wing/reinforcement/covering", cad["rear_spar"] * 1e-3 * carbon, fs["x_rear"], 0.0, 10.0, "CAD volume x 1.55"),
+        (f"wing: rear carry-through tube {p['rear_spar_od']:g}/{p['rear_spar_id']:g} x {2 * p['rear_spar_half_length']:g} (carbon)", "wing/reinforcement/covering", cad["rear_spar"] * 1e-3 * carbon, fs["x_rear"], 0.0, 10.0, "CAD volume x 1.55"),
         ("wing: covering film", "wing/reinforcement/covering", film_wing, x_wing, 0.0, 8.0, "32 g/m² x wetted area"),
         ("wing: flap and aileron hinges, horns' hard points, tape", "wing/reinforcement/covering", 20.0, 0.82 * p["root_chord"], 0.0, 4.0, "assumed"),
         ("wing: panel joint pins, latches, root ribs (plywood)", "wing/reinforcement/covering", 30.0, 0.35 * p["root_chord"], 0.0, 10.0, "assumed"),
@@ -391,7 +391,7 @@ def structure_items(p=None, cad: dict | None = None) -> list:
         ("pod: electronics tray (PETG)", "pod", cad["tray"] * 1e-3 * petg * PRINT_FILL["tray"], 35.0, 0.0, -82.0, "CAD x 1.25 x fill 0.5"),
         ("pod: battery tray (PETG)", "pod", cad["battery_tray"] * 1e-3 * petg * PRINT_FILL["battery_tray"], -25.0, 0.0, -125.0, "CAD x 1.25 x fill 0.6"),
         ("pod: vents, grommets, foam liner", "pod", 15.0, 200.0, 0.0, -70.0, "assumed"),
-        ("booms: carbon tube 16/14 x 880, 2 x", "booms/tail", 2 * cad["boom"] * 1e-3 * carbon, 0.5 * (p["boom_x0"] + L["boom_x1"]), 0.0, p["boom_z"], "CAD volume x 1.55"),
+        (f"booms: carbon tube {p['boom_od']:g}/{p['boom_id']:g} x {p['boom_length']:g}, 2 x", "booms/tail", 2 * cad["boom"] * 1e-3 * carbon, 0.5 * (p["boom_x0"] + L["boom_x1"]), 0.0, p["boom_z"], "CAD volume x 1.55"),
         ("tail: foam stabiliser and fins (11 mm plates)", "booms/tail", tail_foam, x_tail, 0.0, 15.0, "CAD volume x 30 kg/m³"),
         ("tail: carbon spar 6/5", "booms/tail", tail_spar, L["tail_le"] + 0.3 * p["tail_chord"], 0.0, p["boom_z"], "tube section x length x 1.55"),
         ("tail: covering film", "booms/tail", film_tail, x_tail, 0.0, 15.0, "32 g/m² x wetted area"),

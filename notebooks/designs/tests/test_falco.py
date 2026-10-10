@@ -87,8 +87,12 @@ def test_mass_and_cg():
     for k in ("6s3p-p45b", "6s4p-p45b"):
         t = fs.mass_table(k)
         ci = fs.cg_inertia(t)
-        assert t.index.is_unique and t.attrs["ballast_note"] == ""
-        assert ci["x_cg_frac_mac"] == pytest.approx(0.28, abs=1e-6)
+        assert t.index.is_unique
+        if k == fs.DEFAULT_PACK:                                   # the build's pack slides to the 28 % MAC target
+            assert t.attrs["ballast_note"] == "" and ci["x_cg_frac_mac"] == pytest.approx(0.28, abs=1e-6)
+        else:                                                      # the lighter pack at the bay's front: inside the CG range
+            r = ff.cg_range(None, ci["mass_kg"])
+            assert r["fwd_frac_mac"] + 0.05 < ci["x_cg_frac_mac"] < r["aft_frac_mac"] - 0.05
         assert ci["mass_kg"] == pytest.approx(t["mass [g]"].sum() / 1000)
         assert 4.3 < ci["mass_kg"] < 5.5
         assert ci["Izz"] > ci["Ixx"] > 0 and ci["Iyy"] > 0
