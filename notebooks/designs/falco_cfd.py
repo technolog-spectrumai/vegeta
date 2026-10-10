@@ -87,22 +87,27 @@ def case(workdir, *, alpha_deg=2.0, V_eas=ff.V_CRUISE_EAS, h_m=H_CFD, part="airc
     return aeromant.CFDCase(template, str(stl), params, workdir=str(Path(workdir) / name), geometry_units="mm", environment=env)
 
 
-def plan(workdir, *, x_cg_m, z_cg_m, cruise_rpm, brake_rpm, quality="screening", fine=True, env=None, p=None) -> dict:
-    """The cases by name: the α sweep at cruise (3000 m), crow at V_FE (α 0 and +4°), the pusher at its cruise rpm and
-    braked, the fine cruise point."""
-    kw = dict(x_cg_m=x_cg_m, z_cg_m=z_cg_m, env=env, p=p)
+def specs(*, cruise_rpm, brake_rpm, quality="screening", fine=True) -> dict:
+    """The cases by name and their ``case`` arguments: the α sweep at cruise (3000 m), crow at V_FE (α 0 and +4°), the
+    pusher at its cruise rpm and braked, the fine cruise point. Needs no OpenFOAM (the NOT RUN table lists them)."""
     out = {}
     for a in ALPHAS:
-        out[f"α {a:+.0f}°, {ff.V_CRUISE_EAS:g} m/s EAS, 3000 m"] = case(workdir, alpha_deg=a, quality=quality, **kw)
+        out[f"α {a:+.0f}°, {ff.V_CRUISE_EAS:g} m/s EAS, 3000 m"] = dict(alpha_deg=a, quality=quality)
     for a in (0.0, 4.0):
-        out[f"crow 55/-25, α {a:+.0f}°, {ff.V_FE_EAS:g} m/s EAS"] = case(workdir, alpha_deg=a, V_eas=ff.V_FE_EAS, quality=quality, crow=(55.0, -25.0), **kw)
-    out[f"clean, α +0°, {ff.V_FE_EAS:g} m/s EAS (crow's reference)"] = case(workdir, alpha_deg=0.0, V_eas=ff.V_FE_EAS, quality=quality, **kw)
-    out[f"α +2°, cruise, propeller {cruise_rpm:.0f} rpm"] = case(workdir, alpha_deg=2.0, quality=quality, prop={"rpm": cruise_rpm}, **kw)
-    out[f"crow at V_FE, propeller braked {brake_rpm:.0f} rpm"] = case(workdir, alpha_deg=0.0, V_eas=ff.V_FE_EAS, quality=quality, crow=(55.0, -25.0),
-                                                                      prop={"rpm": brake_rpm}, **kw)
+        out[f"crow 55/-25, α {a:+.0f}°, {ff.V_FE_EAS:g} m/s EAS"] = dict(alpha_deg=a, V_eas=ff.V_FE_EAS, quality=quality, crow=(55.0, -25.0))
+    out[f"clean, α +0°, {ff.V_FE_EAS:g} m/s EAS (crow's reference)"] = dict(alpha_deg=0.0, V_eas=ff.V_FE_EAS, quality=quality)
+    out[f"α +2°, cruise, propeller {cruise_rpm:.0f} rpm"] = dict(alpha_deg=2.0, quality=quality, prop={"rpm": cruise_rpm})
+    out[f"crow at V_FE, propeller braked {brake_rpm:.0f} rpm"] = dict(alpha_deg=0.0, V_eas=ff.V_FE_EAS, quality=quality, crow=(55.0, -25.0),
+                                                                   prop={"rpm": brake_rpm})
     if fine:
-        out["α +2°, cruise, fine mesh"] = case(workdir, alpha_deg=2.0, quality="fine", **kw)
+        out["α +2°, cruise, fine mesh"] = dict(alpha_deg=2.0, quality="fine")
     return out
+
+
+def plan(workdir, *, x_cg_m, z_cg_m, cruise_rpm, brake_rpm, quality="screening", fine=True, env=None, p=None) -> dict:
+    """The cases of ``specs`` built (STL and OpenFOAM case; needs an OpenFOAM environment)."""
+    return {name: case(workdir, x_cg_m=x_cg_m, z_cg_m=z_cg_m, env=env, p=p, **kw)
+            for name, kw in specs(cruise_rpm=cruise_rpm, brake_rpm=brake_rpm, quality=quality, fine=fine).items()}
 
 
 def table(results: dict, p=None) -> pd.DataFrame:
@@ -138,4 +143,4 @@ def crow_check(tab: pd.DataFrame, deriv: pd.DataFrame) -> dict:
             "dCm_cfd": crow["Cm (CG, MAC)"] - clean["Cm (CG, MAC)"], "dCm_table": c["dCm_crow"]}
 
 
-__all__ = ["H_CFD", "QUALITY", "ALPHAS", "air", "l_ref", "export_stl", "case", "plan", "table", "crow_check"]
+__all__ = ["specs", "H_CFD", "QUALITY", "ALPHAS", "air", "l_ref", "export_stl", "case", "plan", "table", "crow_check"]
