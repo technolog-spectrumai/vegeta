@@ -102,6 +102,11 @@ class Frame:
         return self.x_end - self.tail_chord + 0.30 * self.tail_chord           # the stabiliser's spar at 30 % of its chord
 
     @property
+    def x_fin(self):
+        """The fin's rod: at 50 % of the fin's chord, clear of the stabiliser's spar at 30 % (the torque arm is the rod's height)."""
+        return self.x_end - 0.5 * self.fin_chord
+
+    @property
     def x_ac_tail(self):
         return self.x_end - self.tail_chord + 0.25 * self.tail_chord
 
@@ -527,9 +532,10 @@ def _frame_cad(f: Frame, p=None):
     x0 = p["boom_x0"] if f.kind == "twin" else f.x_root - 200.0
     ys = [-f.boom_y, f.boom_y] if f.kind == "twin" else [0.0]
     solid = None
-    for y in ys:
-        tube = cq.Workplane("YZ").workplane(offset=x0).center(y, z).circle(f.tube_od / 2).circle(f.tube_id / 2).extrude(f.x_end - x0)
-        solid = tube if solid is None else solid.union(tube, clean=False)
+    for y in ys:                                                         # two pieces fused without cleaning: the socket's own faces take the clamp
+        for xa, xb in ((x0, f.x_root), (f.x_root, f.x_end)):
+            tube = cq.Workplane("YZ").workplane(offset=xa).center(y, z).circle(f.tube_od / 2).circle(f.tube_id / 2).extrude(xb - xa)
+            solid = tube if solid is None else solid.union(tube, clean=False)
     zt = z + f.tube_od / 2                                                   # the spar on the tubes' top (half embedded: fused)
     half = f.tail_span / 2
     def tie(length):                                                     # a wall under 1 mm cannot be meshed at this size: a solid rod of the
@@ -537,9 +543,8 @@ def _frame_cad(f: Frame, p=None):
         return (w if f.tie_od - f.tie_id < 2.0 else w.circle(f.tie_id / 2)).extrude(length)
     left, right = tie(half), tie(-half)                                  # XZ's normal is -Y: +length extrudes toward -y
     solid = solid.union(left, clean=False).union(right, clean=False)
-    x_fin = f.x_end - f.fin_chord + 0.30 * f.fin_chord
     for y in ys:
-        post = cq.Workplane("XY").workplane(offset=z).center(x_fin, y).circle(6.0).extrude(f.h_fin_ac)      # a stiff rod: it only carries the torque in
+        post = cq.Workplane("XY").workplane(offset=z).center(f.x_fin, y).circle(8.0).extrude(f.h_fin_ac)    # a stiff rod: it only carries the torque in
         solid = solid.union(post, clean=False)
     return solid
 
@@ -569,13 +574,13 @@ def fea_models(F: list, workdir, p=None, *, element_size: float = 2.5) -> list:
         x_sock0 = (p["boom_x0"] if f.kind == "twin" else f.x_root - 200.0) - 0.5
         zt = z + f.tube_od / 2
         rt = f.tie_od / 2 + 0.3
-        x_fin = f.x_end - f.fin_chord + 0.30 * f.fin_chord
+        x_fin = f.x_fin
         regions = [talos.SurfacesInBox("socket", (x_sock0, -f.boom_y - r, z - r, f.x_root + 0.3, f.boom_y + r, z + r)),
                    talos.SurfacesInBox("tie_left", (f.x_tie - rt, -f.tail_span / 2 - 0.5, zt - rt, f.x_tie + rt, 0.5, zt + rt)),
                    talos.SurfacesInBox("tie_right", (f.x_tie - rt, -0.5, zt - rt, f.x_tie + rt, f.tail_span / 2 + 0.5, zt + rt)),
                    talos.SurfacesInBox("ends", (f.x_end - 0.3, -f.boom_y - r, z - r, f.x_end + 0.3, f.boom_y + r, z + r))]
         for i, y in enumerate(ys):
-            regions.append(talos.SurfacesInBox(f"post_{i}", (x_fin - 6.5, y - 6.5, z + f.h_fin_ac - 0.3, x_fin + 6.5, y + 6.5, z + f.h_fin_ac + 0.3)))
+            regions.append(talos.SurfacesInBox(f"post_{i}", (x_fin - 8.5, y - 8.5, z + f.h_fin_ac - 0.3, x_fin + 8.5, y + 8.5, z + f.h_fin_ac + 0.3)))
         F_half = ld["F_tail"] / 2
         F_fin = 2 * ld["F_fin"] / len(ys)                                        # NISUS+'s two fins' side load, per rod (the single fin carries both)
         fins = [talos.Force(f"post_{i}", fy=F_fin) for i in range(len(ys))]
@@ -617,7 +622,7 @@ def _tail_motion(case, result, f: Frame, p=None):
     # the spar where it leaves the tube(s): the twin's roll is the booms' differential heave, the single's the tube's twist
     yl, yr = (-f.boom_y - f.tube_od, f.boom_y + f.tube_od) if f.kind == "twin" else (-f.tube_od - 6.0, f.tube_od + 6.0)
     zl, zr = float(u[near(yl), 2].mean()), float(u[near(yr), 2].mean())
-    x_fin = f.x_end - f.fin_chord + 0.30 * f.fin_chord
+    x_fin = f.x_fin
     top = c[:, 2] > p["boom_z"] + f.h_fin_ac - 3.0
     axis = (np.abs(c[:, 0] - x_fin) < 6.0) & (np.abs(c[:, 2] - p["boom_z"]) < f.tube_od / 2 + 0.5)
     yaw = math.degrees((float(u[top, 1].mean()) - float(u[axis, 1].mean())) / f.h_fin_ac) if top.any() and axis.any() else np.nan
