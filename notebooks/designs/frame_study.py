@@ -52,7 +52,7 @@ import nisus_plus_structure as st
 import nisus_plus_systems as fs
 import nisus_systems as ns
 
-__all__ = ["Frame", "frames", "solve_cases", "boom_y_for_prop", "twin_frame", "single_frame", "hand_table", "wing_loading", "aero_table",
+__all__ = ["Frame", "frames", "solve_cases", "COLORS", "PROP_COLORS", "color", "bars", "boom_y_for_prop", "twin_frame", "single_frame", "hand_table", "wing_loading", "aero_table",
            "performance_table", "drive_for_prop", "propeller", "motor_for_prop", "fea_models", "fea_table", "modes_table", "verdict", "sketch"]
 
 G = fs.G
@@ -65,6 +65,24 @@ RHO_CARBON = ns.MATERIALS["carbon tube"]["rho"]                   # g/cm³
 FOAM = ns.MATERIALS["XPS foam 30"]["rho"]
 FILM = ns.MATERIALS["covering film"]["areal_g_m2"]
 PETG = ns.MATERIALS["PETG printed"]["rho"]
+#: one colour per variant in every plot of the study (the twins blue, purple, green, yellow by propeller; the single red)
+COLORS = {'twin 15"': "#1f77b4", 'twin 18"': "#9467bd", 'twin 20"': "#2ca02c", 'twin 22"': "#d4b100", 'single 20"': "#d62728"}
+PROP_COLORS = {15.0: "#1f77b4", 18.0: "#9467bd", 20.0: "#2ca02c", 22.0: "#d4b100"}
+
+
+def color(name: str) -> str:
+    return COLORS.get(name, "0.5")
+
+
+def bars(ax, series, frames_or_feasible, *, rotate: int = 30):
+    """A bar per variant in its colour, a rejected variant hatched; ``frames_or_feasible``: the frames, or a mapping
+    name -> feasible."""
+    feas = {f.name: f.feasible for f in frames_or_feasible} if not isinstance(frames_or_feasible, dict) else frames_or_feasible
+    names = list(series.index)
+    vals = [float(v) for v in series.values]
+    for i, (n, v) in enumerate(zip(names, vals)):
+        ax.bar(i, v, color=color(n), hatch="" if feas.get(n, True) else "///", edgecolor="k", linewidth=0.5, alpha=1.0 if feas.get(n, True) else 0.55)
+    ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=rotate, ha="right", fontsize=8); ax.grid(alpha=0.3, axis="y")
 
 
 @dataclass
@@ -522,10 +540,23 @@ def performance_table(F: list, p=None, heights=(1200.0, 3000.0), battery_key: st
 
 
 # ---------------------------------------------------------------------------------------------------------------- FEA
+SADDLE = 8.0            # the tail fittings' saddle blocks on the tubes [mm above the tube's top]: the spar and the fin rods stand on them
+
+
+def _z_saddle_top(f: Frame, p) -> float:
+    return p["boom_z"] + f.tube_od / 2 + SADDLE
+
+
 def _zt(f: Frame, p) -> float:
-    """The stabiliser spar's axis: its top 0.5 mm proud of the tube's top, the rest through the wall and the bore
-    (a spar seated tangent on the tube grazes it and leaves sliver elements in the mesh)."""
-    return p["boom_z"] + f.tube_od / 2 - f.tie_od / 2 + 0.5
+    """The stabiliser spar's axis: seated 1 mm into the saddle's top (a spar crossing the tube's thin wall, or grazing
+    it, leaves sliver elements in the mesh; the saddle's box faces cut the cylinder cleanly)."""
+    return _z_saddle_top(f, p) + f.tie_od / 2 - 1.0
+
+
+def _saddle(cq, f: Frame, p, x: float, y: float, half_len: float = 12.0):
+    """A saddle block on the tube at (x, y): from the tube's axis up to ``SADDLE`` above its top, as wide as the tube."""
+    z = p["boom_z"]
+    return (cq.Workplane("XY").workplane(offset=z).center(x, y).rect(2 * half_len, f.tube_od + 2.0).extrude(f.tube_od / 2 + SADDLE))
 
 
 def _frame_cad(f: Frame, p=None):
@@ -542,15 +573,19 @@ def _frame_cad(f: Frame, p=None):
         for xa, xb in ((x0, f.x_root), (f.x_root, f.x_end)):
             tube = cq.Workplane("YZ").workplane(offset=xa).center(y, z).circle(f.tube_od / 2).circle(f.tube_id / 2).extrude(xb - xa)
             solid = tube if solid is None else solid.union(tube, clean=False)
-    zt = _zt(f, p)                                                           # the spar seated through the tubes' wall (no grazing contact: no sliver elements)
+    for y in ys:                                                         # the saddles the spar and the fin rods stand on
+        for x in (f.x_tie, f.x_fin):
+            solid = solid.union(_saddle(cq, f, p, x, y), clean=False)
+    zt = _zt(f, p)                                                           # the spar on the saddles
     half = f.tail_span / 2
     def tie(length):                                                     # a wall under 1 mm cannot be meshed at this size: a solid rod of the
         w = cq.Workplane("XZ").workplane(offset=0.0).center(f.x_tie, zt).circle(f.tie_od / 2)       # same diameter (2 x the 6/5's stiffness: negligible)
         return (w if f.tie_od - f.tie_id < 2.0 else w.circle(f.tie_id / 2)).extrude(length)
     left, right = tie(half), tie(-half)                                  # XZ's normal is -Y: +length extrudes toward -y
     solid = solid.union(left, clean=False).union(right, clean=False)
-    for y in ys:
-        post = cq.Workplane("XY").workplane(offset=z).center(f.x_fin, y).circle(8.0).extrude(f.h_fin_ac)    # a stiff rod: it only carries the torque in
+    z_top = _z_saddle_top(f, p)
+    for y in ys:                                                         # a stiff rod from the saddle to the fin's aerodynamic centre: it only carries the torque in
+        post = cq.Workplane("XY").workplane(offset=z_top - 2.0).center(f.x_fin, y).circle(8.0).extrude(z + f.h_fin_ac - z_top + 2.0)
         solid = solid.union(post, clean=False)
     return solid
 
@@ -605,7 +640,7 @@ def fea_models(F: list, workdir, p=None, *, element_size: float = 2.5) -> list:
                               talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("socket")], loads, mesh, name=f"{slug}_{key}"),
                               None, st.CARBON["strength"])
             case.exclude = lambda xyz, f=f, x_fin=x_fin: ((xyz[:, 0] < f.x_root + f.tube_od) | (np.abs(xyz[:, 0] - f.x_tie) < 15.0) | (np.abs(xyz[:, 0] - x_fin) < 15.0)
-                                                          | (xyz[:, 2] > p["boom_z"] + f.tube_od / 2 + 3.0))
+                                                          | (xyz[:, 2] > p["boom_z"] + f.tube_od / 2 - 0.5))
             case.kind, case.frame = "static", f
             out.append(case)
         modal = st.FEACase(f"{slug}_modes", "frame", f"{f.name}: the first modes with the tail's masses",
@@ -792,21 +827,21 @@ def sketch(F: list, p=None, figsize=(16, 5)):
         R = f.prop_in * 25.4 / 2
         if f.kind == "twin":
             for y in (-f.boom_y, f.boom_y):
-                ax.fill([p["boom_x0"], f.x_end, f.x_end, p["boom_x0"]], [y - f.tube_od / 2, y - f.tube_od / 2, y + f.tube_od / 2, y + f.tube_od / 2], color="#444")
-            ax.fill([f.x_end - f.tail_chord, f.x_end, f.x_end, f.x_end - f.tail_chord], [-f.tail_span / 2, -f.tail_span / 2, f.tail_span / 2, f.tail_span / 2], color="#cfe0f3", ec="k", lw=0.6)
-            ax.add_patch(plt.Circle((L["prop_x"], 0), R, fill=False, ls="--", color="r"))
+                ax.fill([p["boom_x0"], f.x_end, f.x_end, p["boom_x0"]], [y - f.tube_od / 2, y - f.tube_od / 2, y + f.tube_od / 2, y + f.tube_od / 2], color=color(f.name))
+            ax.fill([f.x_end - f.tail_chord, f.x_end, f.x_end, f.x_end - f.tail_chord], [-f.tail_span / 2, -f.tail_span / 2, f.tail_span / 2, f.tail_span / 2], color=color(f.name), alpha=0.35, ec="k", lw=0.6)
+            ax.add_patch(plt.Circle((L["prop_x"], 0), R, fill=False, ls="--", color=color(f.name)))
             ax.plot([0.7 * p["root_chord"]] * 2, [f.flap_y0, p["flap_y1"]], color="C1", lw=3, label="flap")
             ax.plot([0.7 * p["root_chord"]] * 2, [-p["flap_y1"], -f.flap_y0], color="C1", lw=3)
         else:
-            ax.fill([f.x_root - 200, f.x_end, f.x_end, f.x_root - 200], [-f.tube_od / 2, -f.tube_od / 2, f.tube_od / 2, f.tube_od / 2], color="#444")
-            ax.fill([f.x_end - f.tail_chord, f.x_end, f.x_end, f.x_end - f.tail_chord], [-f.tail_span / 2, -f.tail_span / 2, f.tail_span / 2, f.tail_span / 2], color="#cfe0f3", ec="k", lw=0.6)
-            ax.add_patch(plt.Circle((L["x_nose"] - 30, 0), R, fill=False, ls="--", color="r"))
+            ax.fill([f.x_root - 200, f.x_end, f.x_end, f.x_root - 200], [-f.tube_od / 2, -f.tube_od / 2, f.tube_od / 2, f.tube_od / 2], color=color(f.name))
+            ax.fill([f.x_end - f.tail_chord, f.x_end, f.x_end, f.x_end - f.tail_chord], [-f.tail_span / 2, -f.tail_span / 2, f.tail_span / 2, f.tail_span / 2], color=color(f.name), alpha=0.35, ec="k", lw=0.6)
+            ax.add_patch(plt.Circle((L["x_nose"] - 30, 0), R, fill=False, ls="--", color=color(f.name)))
             ax.plot([0.7 * p["root_chord"]] * 2, [f.flap_y0, p["flap_y1"]], color="C1", lw=3, label="flap")
             ax.plot([0.7 * p["root_chord"]] * 2, [-p["flap_y1"], -f.flap_y0], color="C1", lw=3)
         ax.set_aspect("equal"); ax.set_xlim(-650, 1100); ax.set_ylim(-1250, 1250)
-        ax.set_title(f"{f.name}" + ("" if f.feasible else "\n(rejected)"), color="k" if f.feasible else "C3", fontsize=10)
+        ax.set_title(f"{f.name}" + ("" if f.feasible else "\n(rejected)"), color=color(f.name), fontsize=10, fontweight="bold")
         ax.grid(alpha=0.2); ax.set_xlabel("x [mm]")
     axes[0].set_ylabel("y [mm]")
-    fig.suptitle("the tail frames on NISUS+'s wing (top view; the propeller disc red dashed, the flaps orange)")
+    fig.suptitle("the tail frames on NISUS+'s wing (top view; each variant in its colour, the propeller disc dashed, the flaps orange)")
     fig.tight_layout()
     return fig
