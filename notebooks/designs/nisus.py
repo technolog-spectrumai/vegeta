@@ -583,18 +583,24 @@ def overrides(p=None) -> dict:
     return {k: v for k, v in dict(p or {}).items() if k not in ("part", "show_prop", "angle_of_attack_deg")}
 
 
-def resolve(p=None, **kw) -> dict:
+def _design(design=None):
+    """The design instance the helpers work on: ``Nisus()`` by default, or a subclass's instance (FALCO's) so the same
+    helpers serve a design with more parameters."""
+    return design if design is not None else Nisus()
+
+
+def resolve(p=None, design=None, **kw) -> dict:
     d = dict(p or {})
     d.update(kw)
-    return Nisus().resolve(**d)
+    return _design(design).resolve(**d)
 
 
-def exploded_parts(p=None, spread=1.0) -> dict:
+def exploded_parts(p=None, spread=1.0, design=None) -> dict:
     """The aircraft's parts as separate shapes moved apart for an exploded view: {name: cq shape}. ``spread`` scales
     the offsets (0 = assembled)."""
-    p = resolve(p)
-    d = Nisus()
-    L = Nisus.layout(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
     s = spread
     parts = {
         "wing": d._wing_solid(p).translate((0, 0, 120 * s)),
@@ -623,13 +629,14 @@ def exploded_parts(p=None, spread=1.0) -> dict:
     return parts
 
 
-def planform(p=None) -> dict:
+def planform(p=None, design=None) -> dict:
     """The lifting surfaces as flat quads [m] in the aircraft frame (x aft, y right, z up), each (LE inboard, LE
     outboard, TE outboard, TE inboard): ``wing`` (centre halves, two panels with the dihedral), ``tail`` (two halves
     at the boom height). The fins are given as ``fins`` (vertical quads) for the lateral estimates. ``S_ref``,
     ``c_ref`` (MAC), ``b_ref``, the incidences."""
-    p = resolve(p)
-    L = Nisus.layout(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
     c0, c1, yc, b2 = p["root_chord"], p["tip_chord"], L["yc"], L["b2"]
     dx, dz = L["le_sweep_tip"], (b2 - yc) * math.tan(math.radians(p["dihedral_deg"]))
     centre = np.array([[0, 0, 0], [0, -yc, 0], [c0, -yc, 0], [c0, 0, 0]], float)
@@ -656,15 +663,16 @@ def _frusta_ellipse(prof):
     return float(np.sum(0.5 * (per[1:] + per[:-1]) * np.hypot(np.diff(x), np.diff(0.5 * (a + b)))))
 
 
-def wetted_areas(p=None) -> dict:
+def wetted_areas(p=None, design=None) -> dict:
     """Wetted areas [m²] and reference lengths [m] per component from the same numbers the CAD builds: the exposed
     wing (both skins, 1.02 x planform for the curvature, outside the pod), the pod, the two booms outside the wing
     and the stabiliser, the stabiliser (both faces) and the two fins."""
-    p = resolve(p)
-    L = Nisus.layout(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
     S = L["S_ref"]
     S_exposed = S - p["pod_width"] * p["root_chord"] * 1e-6
-    prof = Nisus.pod_profile(p)
+    prof = type(d).pod_profile(p)
     pod = _frusta_ellipse(prof) * 1e-6
     boom_free = (p["boom_length"] - (p["root_chord"] - p["boom_x0"]) - p["tail_chord"]) * 1e-3
     booms = 2 * math.pi * p["boom_od"] * 1e-3 * boom_free
@@ -681,15 +689,15 @@ EXTRA_CD_AREA_M2 = 0.0012      # m²: camera lens, antennas, hatch lines, contro
                                # face — a flat allowance (Hoerner-level guess; an assumption to replace by CFD/flight test)
 
 
-def drag_buildup(p=None, speed: float = 16.0, nu: float = 1.5e-5) -> dict:
+def drag_buildup(p=None, speed: float = 16.0, nu: float = 1.5e-5, design=None) -> dict:
     """Parasite drag area ``Cd0 S`` [m²] by component (Raymer's build-up, as ``merlin.drag_buildup``): turbulent
     flat-plate friction on each component's length, its form factor (wing and tail ``1 + 2 t/c + 60 (t/c)^4``, pod
     and booms ``1 + 60/f³ + f/400`` with the fineness f = L/d), its wetted area, plus 10 % interference (wing–pod,
     boom fittings, tail–boom junctions) and ``EXTRA_CD_AREA_M2``. ``cd0`` is referred to the planform ``S_ref``.
     Low Reynolds numbers (the booms at Re ~ 1e4, the wing ~ 2e5) make the flat-plate law optimistic by tens of
     percent on the small parts; the CFD and the flight test are the check."""
-    p = resolve(p)
-    a = wetted_areas(p)
+    p = resolve(p, design)
+    a = wetted_areas(p, design)
 
     def cf(length):
         re = max(speed * length / nu, 1e4)
@@ -710,14 +718,15 @@ def drag_buildup(p=None, speed: float = 16.0, nu: float = 1.5e-5) -> dict:
             "aspect_ratio": a["aspect_ratio"], "speed": speed, "re_wing": speed * a["wing_mac"] / nu, "wetted": a}
 
 
-def outline(p=None) -> dict:
+def outline(p=None, design=None) -> dict:
     """Polygons [m] for the three-view drawing and the movie: ``top`` (x, y), ``side`` (x, z), ``front`` (y, z);
     ``hinges`` (control-surface hinge lines per view), ``prop`` (plane and disc), ``bays`` (the component bays as
     boxes in top and side view), and the key stations."""
-    p = resolve(p)
-    L = Nisus.layout(p)
-    pl = planform(p)
-    prof = Nisus.pod_profile(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
+    pl = planform(p, d)
+    prof = type(d).pod_profile(p)
     x, a, b, zc = prof.T
     pod_top = np.vstack([np.c_[x, a], np.c_[x[::-1], -a[::-1]]]) / 1000
     pod_side = np.vstack([np.c_[x, zc + b], np.c_[x[::-1], (zc - b)[::-1]]]) / 1000
@@ -771,7 +780,7 @@ def outline(p=None) -> dict:
                                 [L["tail_le"] + (1 - p["elevator_frac"]) * p["tail_chord"], p["tail_span"] / 2]]) / 1000)
     hinge_side = np.array([[L["fin_le"] + (1 - p["rudder_frac"]) * p["fin_chord"], p["boom_z"] - p["fin_ventral"]],
                            [L["fin_le"] + (1 - p["rudder_frac"]) * p["fin_chord"], p["boom_z"] + p["fin_height"]]]) / 1000
-    bays = {k: (v[0] / 1000, v[1] / 1000, v[2] / 1000, v[3] / 1000) for k, v in Nisus.bays(p).items()}
+    bays = {k: (v[0] / 1000, v[1] / 1000, v[2] / 1000, v[3] / 1000) for k, v in type(d).bays(p).items()}
     return {"top": {"pod": pod_top, "wing": [q[:, :2] for q in pl["wing"]], "tail": [q[:, :2] for q in pl["tail"]],
                     "booms": boom_top, "fins": [np.array([[L["fin_le"], s * p["boom_y"] - 4], [L["boom_x1"], s * p["boom_y"] - 4],
                                                           [L["boom_x1"], s * p["boom_y"] + 4], [L["fin_le"], s * p["boom_y"] + 4]]) / 1000 for s in (1, -1)],
@@ -792,13 +801,14 @@ CARBON_TUBE = {"E_GPa": 120.0, "G_GPa": 5.0, "flexural_strength_MPa": 500.0, "de
 
 
 def boom_check(p=None, *, tail_load_N: float = 12.0, fin_side_load_N: float = 5.0, tail_mass_kg: float = 0.03,
-               tolerance_mm: float = 1.5, tube=CARBON_TUBE) -> dict:
+               tolerance_mm: float = 1.5, tube=CARBON_TUBE, design=None) -> dict:
     """The boom tube by hand: section properties, bending stress and tip deflection under the tail load (one
     boom's share of the stabiliser's maximum lift) as a cantilever from the socket's rear, torsion and bending from
     the fin's side load, the first bending frequency with the tail mass at the tip, and the propeller clearance
     after the boom's lateral deflection at the propeller plane and the build tolerance."""
-    p = resolve(p)
-    L = Nisus.layout(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
     do, di = p["boom_od"], p["boom_id"]
     I = math.pi / 64 * (do ** 4 - di ** 4)                      # mm^4
     J = 2 * I

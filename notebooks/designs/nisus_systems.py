@@ -425,13 +425,15 @@ def budget_comparison(variant: str, **kw) -> pd.DataFrame:
     return df
 
 
-def cg_inertia(table: pd.DataFrame, p=None) -> dict:
+def cg_inertia(table: pd.DataFrame, p=None, *, design=None) -> dict:
     """Mass [kg], centre of gravity [m] and the inertia tensor about it [kg m²] in the aircraft frame (x aft, y
     right, z up). Every row is a point mass at its position; the extended parts (wing core and skins, pod shell,
     booms, tail) add their own inertia about their centroid as simple shapes (thin plates and rods, the pod an
-    ellipsoidal shell). ``Ixz`` is the only off-diagonal term (y symmetry)."""
-    p = nisus.resolve(p)
-    L = nisus.Nisus.layout(p)
+    ellipsoidal shell). ``Ixz`` is the only off-diagonal term (y symmetry). ``design``: another design built on
+    ``nisus.Nisus`` (FALCO) whose parameters and layout to use."""
+    d = nisus._design(design)
+    p = nisus.resolve(p, d)
+    L = type(d).layout(p)
     m = table["mass [g]"].to_numpy() / 1000
     r = table[["x [mm]", "y [mm]", "z [mm]"]].to_numpy() / 1000
     M = m.sum()
