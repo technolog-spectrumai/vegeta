@@ -3,7 +3,7 @@ fast to 4500 m and the crow flaps to come down fast (notebook 33).
 
 The aircraft: NISUS's layout scaled up and reworked for the mountains — a straight-tapered wing of 2400 mm span (300/200
 mm chords, 0.60 m², AR 9.6) in **three pieces** for a backpack (a 1.1 m centre section with the flaps, two 0.65 m outer
-panels with the ailerons on a carbon spar joiner), a rounded pod (760 x 130 x 140 mm) that carries a 6S Li-ion pack of
+panels with the ailerons on a carbon spar joiner; a 20 mm carbon spar), a rounded pod (760 x 130 x 140 mm) that carries a 6S Li-ion pack of
 21700 cells under the wing, the Jetson Orin, a lidar and a pitot in the nose; one electric pusher (a fixed 15 x 8 propeller on a
 41xx-class motor) between two 16 mm carbon booms 500 mm apart; an H-tail on the booms; a belly skid.
 
@@ -23,7 +23,7 @@ lattice (``falco_flight``).
 
 ``part``: as NISUS's (``aircraft``, ``wing``, ``spar``, ``rear_spar``, ``pod``, ``nose``, ``boom``, ``boom_fitting``,
 ``tail``, ``tail_fitting``, ``motor_mount``, ``tray``, ``skid``, ``battery_tray``) plus ``flap`` and ``aileron`` (the right
-surfaces, undeflected) and ``spar_joiner``; FEA parts NISUS's plus ``spar_joiner_fea`` (the joiner in three pieces).
+surfaces, undeflected) and ``spar_joiner``; FEA parts NISUS's plus ``spar_joiner_fea`` (the joiner in five pieces).
 """
 from __future__ import annotations
 
@@ -66,10 +66,10 @@ class Falco(Nisus):
         _nf("wing_incidence_deg", 1.5),
         _nf("camber", 0.03), _nf("camber_pos", 0.4), _nf("thickness", 0.12),
         _nf("spar_x_frac", 0.30),
-        _nf("spar_od", 16.0), _nf("spar_id", 14.0),
+        _nf("spar_od", 20.0, description="20/17 carbon: the mountain gust (Pratt, 10 m/s at 22 m/s EAS) sized it; 16/14 failed the hand check"), _nf("spar_id", 17.0),
         _nf("spar_half_length", 1000.0, description="the carbon tube (centre section and outer panels with the joiner) reaches this far from the centre"),
-        _nf("rear_spar_x_frac", 0.65),
-        _nf("rear_spar_od", 12.0), _nf("rear_spar_id", 10.0),
+        _nf("rear_spar_x_frac", 0.55),
+        _nf("rear_spar_od", 18.0), _nf("rear_spar_id", 15.0),
         _nf("rear_spar_half_length", 300.0),
         _nf("aileron_chord_frac", 0.25),
         _nf("aileron_span_frac", 0.56, description="outer share of the half span with an aileron (the outer panel from just outboard of the joint)"),
@@ -77,8 +77,8 @@ class Falco(Nisus):
         Parameter("flap_y1", 535.0, "mm", min=100, description="flap outboard end (just inboard of the panel joint)"),
         Parameter("flap_chord_frac", 0.30, "", min=0.1, max=0.45),
         Parameter("wing_joint_y", 550.0, "mm", min=200, description="centre section / outer panel joint: the centre piece is 2 x this long"),
-        Parameter("joiner_od", 13.8, "mm", min=4, description="spar joiner tube, a slide fit inside the main spar"),
-        Parameter("joiner_id", 11.0, "mm", min=0),
+        Parameter("joiner_od", 16.8, "mm", min=4, description="spar joiner tube, a slide fit inside the main spar"),
+        Parameter("joiner_id", 13.5, "mm", min=0),
         Parameter("joiner_length", 240.0, "mm", min=40, description="half in the centre section's spar, half in the panel's"),
         Parameter("flap_deg", 0.0, "deg", min=-10, max=70, description="flap deflection in the CAD (trailing edge down +)"),
         Parameter("aileron_deg", 0.0, "deg", min=-40, max=30, description="both ailerons, symmetric (crow: up, negative)"),
@@ -87,8 +87,8 @@ class Falco(Nisus):
         _nf("nose_cone_length", 90.0), _nf("pod_wall", 1.5),
         _nf("boom_y", 250.0, description="boom centre from the symmetry plane (500 mm spacing)"),
         _nf("boom_od", 16.0), _nf("boom_id", 14.0),
-        _nf("boom_length", 800.0), _nf("boom_x0", 200.0), _nf("boom_z", -28.0),
-        _nf("fitting_width", 22.0), _nf("fitting_ring_wall", 3.5), _nf("fitting_web", 14.0), _nf("socket_od", 26.0),
+        _nf("boom_length", 880.0), _nf("boom_x0", 120.0, description="tube front end inside the root fitting: a 170 mm socket (an 88 mm one let the boom pry the fitting apart: the first FEA)"), _nf("boom_z", -28.0),
+        _nf("fitting_width", 26.0), _nf("fitting_ring_wall", 4.0), _nf("fitting_web", 18.0), _nf("socket_od", 26.0),
         _nf("tail_span", 560.0), _nf("tail_chord", 190.0), _nf("tail_thickness", 0.06), _nf("tail_incidence_deg", 1.0),
         _nf("elevator_frac", 0.35),
         _nf("fin_height", 200.0), _nf("fin_ventral", 110.0), _nf("fin_chord", 190.0), _nf("rudder_frac", 0.35),
@@ -204,14 +204,15 @@ class Falco(Nisus):
 
     def _joiner(self, p, pieces=False):
         """The spar joiner: a carbon tube inside the main spar, centred on the panel joint (right side), straight along the
-        spar's outboard line. ``pieces``: in three pieces fused without cleaning (in the centre spar, across the joint
-        gap, in the panel's spar) for the FEA."""
+        spar's outboard line. ``pieces``: in five pieces fused without cleaning for the FEA (in the centre spar, across
+        the joint gap, then the part in the panel's spar as a 30 mm piece at the joint, the middle, a 30 mm piece at the
+        end: the panel's bearing loads go on the two short pieces)."""
         yj, half = p["wing_joint_y"], p["joiner_length"] / 2
         xa, za = self.tube_point(p, yj - half, p["spar_x_frac"])
         xb, zb = self.tube_point(p, yj + half, p["spar_x_frac"])
         a, b = np.array([xa, yj - half, za]), np.array([xb, yj + half, zb])
         u = (b - a) / np.linalg.norm(b - a)
-        cuts = [yj - half, yj - 2.0, yj + 2.0, yj + half] if pieces else [yj - half, yj + half]
+        cuts = [yj - half, yj - 2.0, yj + 2.0, yj + 32.0, yj + half - 30.0, yj + half] if pieces else [yj - half, yj + half]
         parts = []
         for y0, y1 in zip(cuts[:-1], cuts[1:]):
             p0 = a + u * (y0 - (yj - half)) / u[1]
