@@ -1,8 +1,8 @@
-"""FALCO in ChironLab (MuJoCo) over the mountains: the airframe as a Chiron robot, the terrain, the mountain wind and the
-aerodynamic, propulsion and battery forces as a scene hook that knows the altitude (notebook 33, ``falco_scenario``).
+"""NISUS+ in ChironLab (MuJoCo) over the mountains: the airframe as a Chiron robot, the terrain, the mountain wind and the
+aerodynamic, propulsion and battery forces as a scene hook that knows the altitude (notebook 33, ``nisus_plus_scenario``).
 
-* **the airframe** — NISUS's recipe (``nisus_robot``): one rigid body (``Link('falco')``) carrying every row of
-  ``falco_systems.mass_table`` (the structure as the shapes' masses, the components as point masses), the skid and the
+* **the airframe** — NISUS's recipe (``nisus_robot``): one rigid body (``Link('nisus_plus')``) carrying every row of
+  ``nisus_plus_systems.mass_table`` (the structure as the shapes' masses, the components as point masses), the skid and the
   two tail bumpers as its feet; ``inertia_check`` compares MuJoCo's mass, CG and inertia with the table.
 * **the mountains** (``Massif``): an analytic valley (the meadow at 1200 m, the floor rising gently east) between a
   north ridge (crest ~3900-4200 m, its south face the survey slope) and a lower south ridge, with some texture. The
@@ -15,10 +15,10 @@ aerodynamic, propulsion and battery forces as a scene hook that knows the altitu
   lee), the **lee** amplified (``lee_factor``, the separated flow behind a crest sinks harder) with stronger
   turbulence (``lee_sigma``). A reduced model, honest about it: no rotor dynamics, no thermals, no valley winds — it
   makes the controller meet lift and sink where a pilot would expect them.
-* **the forces** (``FalcoAero``, a subclass of NISUS's ``Aero``): every control step the air's density from the ISA at
-  the aircraft's altitude (and the scenario's temperature offset), the coefficients of ``falco_flight.derivatives``
+* **the forces** (``NisusPlusAero``, a subclass of NISUS's ``Aero``): every control step the air's density from the ISA at
+  the aircraft's altitude (and the scenario's temperature offset), the coefficients of ``nisus_plus_flight.derivatives``
   with the **crow** increments (ΔCL, ΔCD, ΔCm, k, ΔCL_max: the flap channel 0..1), the drive from
-  ``falco_systems.FalcoDrive`` at that density and at the pack's **loaded voltage** (``LiIonPack``: the state of charge
+  ``nisus_plus_systems.NisusPlusDrive`` at that density and at the pack's **loaded voltage** (``LiIonPack``: the state of charge
   and the temperature) — throttle, freewheel or the **propeller brake** (the brake channel 0..1) with the
   **regeneration** charging the pack within its limits. Energy: the battery-side power (the drive's, negative when it
   charges, plus the electronics) integrated.
@@ -35,15 +35,15 @@ import numpy as np
 from vegeta import chiron as ch
 from vegeta.chiron import FootSpec, Geom, Link, PointMass, Robot
 
-import falco
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_systems as fs
 import nisus_robot as nr
 from nisus_robot import to_body, quat_to_R, euler_from_R
 
 G = 9.81
-BODY = "falco"
+BODY = "nisus_plus"
 
-__all__ = ["G", "BODY", "Massif", "falco_robot", "inertia_check", "MountainWind", "FalcoActuators", "FalcoAero", "lab_options", "to_body",
+__all__ = ["G", "BODY", "Massif", "nisus_plus_robot", "inertia_check", "MountainWind", "NisusPlusActuators", "NisusPlusAero", "lab_options", "to_body",
            "quat_to_R", "euler_from_R"]
 
 
@@ -104,7 +104,7 @@ class Massif:
 
     def as_chiron(self):
         """The terrain as a Chiron ``Custom`` height field (with ``extent`` for the lab's ``course_extent``)."""
-        t = ch.Custom(lambda x, y: self.height(x, y), name="falco massif")
+        t = ch.Custom(lambda x, y: self.height(x, y), name="nisus_plus massif")
         t.extent = self.extent
         return t
 
@@ -122,10 +122,10 @@ def _wing_x(table) -> float:
     return float((w["mass [g]"] * w["x [mm]"]).sum() / w["mass [g]"].sum())
 
 
-def falco_robot(battery_key: str = fs.DEFAULT_PACK, p=None, *, table=None) -> Robot:
-    """The aircraft as a Chiron ``Robot`` (NISUS's ``nisus_robot`` on FALCO; root body ``falco``)."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+def nisus_plus_robot(battery_key: str = fs.DEFAULT_PACK, p=None, *, table=None) -> Robot:
+    """The aircraft as a Chiron ``Robot`` (NISUS's ``nisus_robot`` on NISUS+; root body ``nisus_plus``)."""
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     t = fs.mass_table(battery_key, p=p) if table is None else table
     pod_rgba, foam, carbon, dark = (0.86, 0.87, 0.9, 1.0), (0.95, 0.66, 0.2, 1.0), (0.12, 0.12, 0.14, 1.0), (0.1, 0.1, 0.1, 1.0)
     groups = {"wing": 0.0, "pod": 0.0, "booms": 0.0, "tail": 0.0}
@@ -172,18 +172,18 @@ def falco_robot(battery_key: str = fs.DEFAULT_PACK, p=None, *, table=None) -> Ro
                           mass=None, role="foot", friction=(0.5, 0.005, 0.0001), rgba=dark))
     feet = [FootSpec("skid", "skid", [], BODY), FootSpec("stub_L", "stub_L", [], BODY), FootSpec("stub_R", "stub_R", [], BODY)]
     root = Link(BODY, geoms=geoms, masses=masses, log=True)
-    robot = Robot("Falco-Zero", root=root, feet=feet,
-                  notes=f"Falco-Zero on the {battery_key} pack: falco_systems.mass_table as geom and point masses; no joints (the control surfaces "
-                        "and the crow flaps are states of the FalcoAero hook)",
-                  sources={"geometry": "designs/falco.py", "masses": "designs/falco_systems.py: mass_table", "aerodynamics": "designs/falco_flight.py: derivatives",
-                           "propulsion": "designs/falco_systems.py: FalcoDrive (Boreas BEMT, the fitted AT4125 KV540)"})
+    robot = Robot("Nisus+ Zero", root=root, feet=feet,
+                  notes=f"Nisus+ Zero on the {battery_key} pack: nisus_plus_systems.mass_table as geom and point masses; no joints (the control surfaces "
+                        "and the crow flaps are states of the NisusPlusAero hook)",
+                  sources={"geometry": "designs/nisus_plus.py", "masses": "designs/nisus_plus_systems.py: mass_table", "aerodynamics": "designs/nisus_plus_flight.py: derivatives",
+                           "propulsion": "designs/nisus_plus_systems.py: NisusPlusDrive (Boreas BEMT, the fitted AT4125 KV540)"})
     robot.validate()
     robot.params, robot.battery_key, robot.mass_table, robot.layout = p, battery_key, t, L
     return robot
 
 
 def inertia_check(lab, table) -> dict:
-    """MuJoCo's mass, COM and inertia against ``falco_systems.cg_inertia`` of the same table."""
+    """MuJoCo's mass, COM and inertia against ``nisus_plus_systems.cg_inertia`` of the same table."""
     m, d = lab.model, lab.data
     b = lab._body_id(BODY)
     mass = float(m.body_subtreemass[b])
@@ -243,7 +243,7 @@ class MountainWind(nr.Wind):
 
 # ================================================================================================= actuators
 @dataclass
-class FalcoActuators(nr.Actuators):
+class NisusPlusActuators(nr.Actuators):
     """NISUS's servos (aileron, elevator, rudder), the throttle's lag, plus the crow channel (0..1 of the crow setting:
     the flap servos under load, ``crow_time`` for the full travel) and the brake channel (0..1, the ESC's response)."""
     crow_time: float = 1.2
@@ -262,16 +262,16 @@ class FalcoActuators(nr.Actuators):
 
 
 # ================================================================================================= the forces
-class FalcoAero(nr.Aero):
+class NisusPlusAero(nr.Aero):
     """NISUS's scene hook over the mountains (see the module). The controller writes ``command`` (aileron, elevator,
     rudder [rad], throttle 0..1, crow 0..1, brake 0..1; a throttle ≤ ``idle`` with no brake freewheels the propeller)."""
 
     COLUMNS = nr.Aero.COLUMNS + ["z_asl", "agl", "rho", "sigma", "EAS", "crow", "brake", "rpm", "P_prop_W", "V_batt", "soc", "regen_Wh", "pack_T_C", "w_air"]
 
-    def __init__(self, robot: Robot, coeff: dict, drive: fs.FalcoDrive, pack: fs.LiIonPack, massif: Massif, *, wind: MountainWind | None = None,
-                 actuators: FalcoActuators | None = None, electronics_w: float = 0.0, derating: float = 0.90, dT: float = 0.0,
+    def __init__(self, robot: Robot, coeff: dict, drive: fs.NisusPlusDrive, pack: fs.LiIonPack, massif: Massif, *, wind: MountainWind | None = None,
+                 actuators: NisusPlusActuators | None = None, electronics_w: float = 0.0, derating: float = 0.90, dT: float = 0.0,
                  pack_T_C: float = 15.0, log_every: int = 10, post_stall: bool = True, idle: float = 0.02):
-        super().__init__(robot, coeff, None, pack, wind=wind or MountainWind(massif=massif), actuators=actuators or FalcoActuators(),
+        super().__init__(robot, coeff, None, pack, wind=wind or MountainWind(massif=massif), actuators=actuators or NisusPlusActuators(),
                          electronics_w=electronics_w, derating=derating, rho=fs.RHO0, log_every=log_every, post_stall=post_stall)
         self.drive, self.pack, self.massif, self.dT, self.pack_T_C, self.idle = drive, pack, massif, dT, pack_T_C, idle
         self.E_nominal_Wh = pack.energy_wh

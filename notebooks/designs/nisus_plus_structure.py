@@ -1,4 +1,4 @@
-"""FALCO structure — the load cases from the mountain flight conditions (in EAS), the hand checks, the Talos models of
+"""NISUS+ structure — the load cases from the mountain flight conditions (in EAS), the hand checks, the Talos models of
 the load-carrying parts and what linear-static FEA cannot tell (notebook 33).
 
 NISUS's method (``nisus_structure``, whose materials, knock-downs, FEA case record and result post-processing this
@@ -9,7 +9,7 @@ module reuses) with what the mountains change:
   density (thinner air: a heavier aircraft relative to the air, a little less alleviation) — taken at the work
   altitude (4000 m) and at sea level, the larger counts;
 - **the gusts are mountain gusts**: 10 m/s EAS at V_C (22 m/s EAS: the penetration speed in a 12 m/s valley wind) and
-  5 m/s at V_NE (35 m/s EAS); the manoeuvre limit ``falco_flight.N_STRUCTURAL`` (4.4: the pull-out after a fast descent);
+  5 m/s at V_NE (35 m/s EAS); the manoeuvre limit ``nisus_plus_flight.N_STRUCTURAL`` (4.4: the pull-out after a fast descent);
 - **crow**: the flaps at 55° at V_FE (their hinge moment on the horn, the tail's load to trim the crow's pitching
   moment), the propeller brake's reverse thrust on the motor mount at V_NE;
 - **launch and landing** at 5 kg: a bungee (18 m/s in 0.25 s: 7.3 g) as well as a hand throw; the belly landing at
@@ -29,9 +29,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import falco
-import falco_flight as ff
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_flight as ff
+import nisus_plus_systems as fs
 import nisus_structure as nst
 from nisus_structure import (ULTIMATE, KNOCKDOWN, PETG, CARBON, BUILD_AXIS, PRINT_SETTINGS, FEACase, talos_material, across_layers, nominal_stress,
                              summary_row)
@@ -56,10 +56,10 @@ def gust_n(mass_kg, V_eas, U_eas, a, rho_alt=RHO0) -> float:
     return 1 + Kg * RHO0 * V_eas * U_eas * a["CLa"] * a["S_ref"] / (2 * W)
 
 
-def load_cases(p=None, *, V_C=V_C_EAS, V_NE=ff.V_NE_EAS, V_FE=ff.V_FE_EAS, U_C_=U_C, U_NE=U_D, h_work=4000.0, dr: fs.FalcoDrive | None = None, a=None) -> pd.DataFrame:
+def load_cases(p=None, *, V_C=V_C_EAS, V_NE=ff.V_NE_EAS, V_FE=ff.V_FE_EAS, U_C_=U_C, U_NE=U_D, h_work=4000.0, dr: fs.NisusPlusDrive | None = None, a=None) -> pd.DataFrame:
     """The structural load cases (limit values; x ultimate in the FEA) with their derivation."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     a = a or ff.aero(p)
     m = design_mass_kg(p)
     W = m * G
@@ -94,7 +94,7 @@ def load_cases(p=None, *, V_C=V_C_EAS, V_NE=ff.V_NE_EAS, V_FE=ff.V_FE_EAS, U_C_=
     F_stub = m_eff * sink_t ** 2 / (2 * stroke_t)
     rows = {
         "design mass [kg]": (m, "6S4P + 8 % (MTOM)"),
-        "manoeuvre limit n": (n_man, "falco_flight.N_STRUCTURAL: the pull-out after a fast descent"),
+        "manoeuvre limit n": (n_man, "nisus_plus_flight.N_STRUCTURAL: the pull-out after a fast descent"),
         f"gust n at V_C = {V_C:g} m/s EAS, U = {U_C_:g} m/s": (n_gc, f"Pratt in EAS, μ at sea level and at {h_work:.0f} m: the larger"),
         f"gust n at V_NE = {V_NE:g} m/s EAS, U = {U_NE:g} m/s": (n_gd, "Pratt in EAS"),
         "lift-limited n at V_NE": (n_lift_ne, "CL_max at V_NE: the gust cannot exceed it"),
@@ -120,7 +120,7 @@ def load_cases(p=None, *, V_C=V_C_EAS, V_NE=ff.V_NE_EAS, V_FE=ff.V_FE_EAS, U_C_=
 
 def schrenk(p=None, n_pts=600) -> tuple:
     """Schrenk's spanwise lift per unit span for unit total lift [1/m] (NISUS's): (y [m], l(y))."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     b2 = p["span"] / 2000
     c0, c1 = p["root_chord"] / 1000, p["tip_chord"] / 1000
     y = np.linspace(0, b2, n_pts)
@@ -141,8 +141,8 @@ def moment_at(p, total_lift_N, y0_m) -> tuple:
 def spar_segment_forces(p=None, total_lift_N=1.0) -> list:
     """NISUS's: the lift on each of the 7 outer spar segments of one side, the lift beyond the spar's end added
     moment-equivalently to the last."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     y, l = schrenk(p)
     y_mm = y * 1000
     stations = [L["yc"]] + list(np.linspace(L["yc"], p["spar_half_length"], 8)[1:])
@@ -162,11 +162,11 @@ def spar_segment_forces(p=None, total_lift_N=1.0) -> list:
 
 
 def wing_hand(p=None, cases=None) -> pd.DataFrame:
-    """The wing by hand at the ultimate load (NISUS's checks on FALCO): root bending and the spar's stress and
+    """The wing by hand at the ultimate load (NISUS's checks on NISUS+): root bending and the spar's stress and
     deflection, the joiner at the panel joint (bending, bearing in the spar), the torsion at V_NE on the 2 mm balsa
     D-box, the foam and the spar, the spar–foam bond."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     W, n_ult = c.attrs["W"], c.attrs["n_ult"]
     total = n_ult * W
@@ -230,12 +230,12 @@ def wing_hand(p=None, cases=None) -> pd.DataFrame:
 
 
 def joints_hand(p=None, cases=None, battery_key=fs.DEFAULT_PACK) -> pd.DataFrame:
-    """The joints by hand at the ultimate loads (NISUS's list on FALCO) plus the flap's horn and hinges in crow."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    """The joints by hand at the ultimate loads (NISUS's list on NISUS+) plus the flap's horn and hinges in crow."""
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     a = c.attrs
-    d = falco.Falco()
+    d = nisus_plus.NisusPlus()
     fs_ = d.fitting_stations(p)
     rows = {}
     Ls = fs_["socket_length"]
@@ -298,20 +298,20 @@ def export_step(part: str, workdir: Path, p=None) -> Path:
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
     # keyed by the parameters: a changed design never meshes a stale STEP
-    key = hashlib.sha1(json.dumps(falco.resolve(p), sort_keys=True, default=str).encode()).hexdigest()[:10]
-    path = workdir / f"falco_{part}_{key}.step"
+    key = hashlib.sha1(json.dumps(nisus_plus.resolve(p), sort_keys=True, default=str).encode()).hexdigest()[:10]
+    path = workdir / f"nisus_plus_{part}_{key}.step"
     if not path.exists():
-        falco.Falco().generate(**falco.overrides(p), part=part).export_step(str(path))
+        nisus_plus.NisusPlus().generate(**nisus_plus.overrides(p), part=part).export_step(str(path))
     return path
 
 
 def spar_case(step, p=None, cases=None, element_size=3.0):
-    """NISUS's spar case on FALCO: the right half of the main spar tube (straight), the Schrenk lift on its 7 outer
+    """NISUS's spar case on NISUS+: the right half of the main spar tube (straight), the Schrenk lift on its 7 outer
     segments (95 % on the wing), clamped in the saddle. The joiner's double wall at the joint is left out (the tube
     alone: conservative there)."""
     from vegeta import talos
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     segs = spar_segment_forces(p, c.attrs["n_ult"] * c.attrs["W"] * 0.95)
     e = p["spar_od"] / 2 * math.sin(math.radians(p["dihedral_deg"])) + 0.3      # the tube's end circles lean with the dihedral
@@ -332,7 +332,7 @@ def joiner_case(step, p=None, cases=None, element_size=2.5):      # 1.5 mm meshe
     panel's lift at the joint (shear V and moment M, ultimate) as two bearing forces on its outer half — up on the 30 mm
     piece at its end, down on the 30 mm piece at the joint (a two-point bearing: an idealisation of the slide fit)."""
     from vegeta import talos
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     c = cases if cases is not None else load_cases(p)
     yj, half = p["wing_joint_y"], p["joiner_length"] / 2
     V_j, M_j = moment_at(p, c.attrs["n_ult"] * c.attrs["W"], yj / 1000)
@@ -340,7 +340,7 @@ def joiner_case(step, p=None, cases=None, element_size=2.5):      # 1.5 mm meshe
     R2 = (M_j * 1000 + V_j * (y1 - yj)) / (y2 - y1)
     R1 = V_j - R2
     r = p["joiner_od"] / 2 + 6.0
-    xs, zs = falco.Falco().tube_point(p, yj, p["spar_x_frac"])
+    xs, zs = nisus_plus.NisusPlus().tube_point(p, yj, p["spar_x_frac"])
     box = lambda ya, yb: (xs - r, ya, zs - r - 10, xs + r, yb, zs + r + 10)
     e = p["joiner_od"] / 2 * math.sin(math.radians(p["dihedral_deg"])) + 0.3
     regions = [talos.SurfacesInBox("inner", box(yj - half - 2.0, yj - 2.0 + e)), talos.SurfacesInBox("near", box(yj + 2.0 - e, yj + 32.0 + e)),
@@ -355,13 +355,13 @@ def joiner_case(step, p=None, cases=None, element_size=2.5):      # 1.5 mm meshe
 
 
 def boom_case(step, p=None, cases=None, element_size=3.0):
-    """NISUS's boom case on FALCO (the tail load or the stub touchdown up, the fin's side load)."""
+    """NISUS's boom case on NISUS+ (the tail load or the stub touchdown up, the fin's side load)."""
     from vegeta import talos
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     a = c.attrs
-    fs_ = falco.Falco().fitting_stations(p)
+    fs_ = nisus_plus.NisusPlus().fitting_stations(p)
     y = p["boom_y"]
     r = p["boom_od"] / 2 + 0.5
     F_v = ULTIMATE * max(a["tail"] / 2, a["F_stub"])
@@ -380,14 +380,14 @@ def boom_case(step, p=None, cases=None, element_size=3.0):
 
 
 def boom_fitting_case(step, p=None, cases=None, element_size=2.5):
-    """NISUS's boom root fitting case on FALCO."""
+    """NISUS's boom root fitting case on NISUS+."""
     from vegeta import talos
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     a = c.attrs
     y = p["boom_y"]
-    fs_ = falco.Falco().fitting_stations(p)
+    fs_ = nisus_plus.NisusPlus().fitting_stations(p)
     x_te = fs_["x_te"]
     Ls = x_te - p["boom_x0"]
     xm = 0.5 * (p["boom_x0"] + x_te)
@@ -418,17 +418,17 @@ def boom_fitting_case(step, p=None, cases=None, element_size=2.5):
 
 
 def motor_mount_case(step, p=None, cases=None, element_size=1.5, case="flight"):
-    """NISUS's motor mount case on FALCO's mount (the 41xx bolt pattern), three load cases: ``flight`` (static thrust,
+    """NISUS's motor mount case on NISUS+'s mount (the 41xx bolt pattern), three load cases: ``flight`` (static thrust,
     torque, the motor's inertia at the limit n), ``brake`` (the propeller brake's reverse thrust at V_NE, the
     regeneration's reverse torque), ``landing`` (the inertia at the belly landing). Ultimate."""
     from vegeta import talos
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = cases if cases is not None else load_cases(p)
     a = c.attrs
     xe, zm = L["x_pod_end"], p["motor_z"]
     t = p["mount_thickness"]
-    holes = falco.Falco().motor_holes(p)
+    holes = nisus_plus.NisusPlus().motor_holes(p)
     r_out = p["motor_diameter"] / 2 + 2.0
     info = talos.inspect_step(step, units="mm-N-MPa")
     skirt = [sf.tag for sf in info.surfaces if sf.kind.startswith("Cylinder") and xe - 15.0 < sf.centroid[0] < xe
@@ -465,10 +465,10 @@ def battery_tray_case(step, p=None, cases=None, element_size=2.5, battery_key=fs
     between its ends alone fails under a 1.8 kg pack at 17 g — the first model's finding; the cradle is a liner on the
     frame, not a beam). What the case checks: the lips in the cartwheel, the slots. Ultimate."""
     from vegeta import talos
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     c = cases if cases is not None else load_cases(p)
     a = c.attrs
-    x0, x1, w, h = falco.Falco.bays(p)["battery bay"]
+    x0, x1, w, h = nisus_plus.NisusPlus.bays(p)["battery bay"]
     z = -p["pod_height"] + p["pod_wall"] + 12.0
     bw = p["battery_tray_width"]
     xa, xb = x0 + 5.0, x1 - 5.0

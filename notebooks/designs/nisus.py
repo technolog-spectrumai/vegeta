@@ -584,7 +584,7 @@ def overrides(p=None) -> dict:
 
 
 def _design(design=None):
-    """The design instance the helpers work on: ``Nisus()`` by default, or a subclass's instance (FALCO's) so the same
+    """The design instance the helpers work on: ``Nisus()`` by default, or a subclass's instance (NISUS+'s) so the same
     helpers serve a design with more parameters."""
     return design if design is not None else Nisus()
 

@@ -166,30 +166,30 @@ stern photo passes) against simulated birds; YOLOX is not run (simulated detecti
 The reference (Orin Nano Super, YOLOX-Tiny, 6 mm lens), the stock lens, the Nano B01, a pigeon flock, a 5 m/s wind and
 a Jetson failure. Writes `scenarios/output/birds_<scenario>.mp4`, `_photos.csv` and `nisus_birds.json`.
 
-## FALCO mountain missions (`falco_mission.py`)
+## NISUS+ mountain missions (`nisus_plus_mission.py`)
 
 ```bash
-xvfb-run -a python3 scenarios/falco_mission.py                               # six mountain missions with movies (~20 min)
-xvfb-run -a python3 scenarios/falco_mission.py --condition "storm: weather escape"
-python3 scenarios/falco_mission.py --no-movie                                # the numbers only (~10 min)
+xvfb-run -a python3 scenarios/nisus_plus_mission.py                               # six mountain missions with movies (~20 min)
+xvfb-run -a python3 scenarios/nisus_plus_mission.py --condition "storm: weather escape"
+python3 scenarios/nisus_plus_mission.py --no-movie                                # the numbers only (~10 min)
 ```
-Notebook 33's missions in MuJoCo through Chiron (`notebooks/designs/falco_scenario.py`) over an analytic mountain valley
-(a MuJoCo height field, 10 x 9.5 km in 25 m cells): Falco-Zero launched by a light bungee from the valley meadow at 1200 m,
+Notebook 33's missions in MuJoCo through Chiron (`notebooks/designs/nisus_plus_scenario.py`) over an analytic mountain valley
+(a MuJoCo height field, 10 x 9.5 km in 25 m cells): Nisus+ Zero launched by a light bungee from the valley meadow at 1200 m,
 a spiral climb to 3650 m (the air's density from the ISA at the aircraft's altitude), the terrain-following survey legs on
 the north face, the return, the crow + propeller-brake descent (with regeneration), the steep crow approach and the belly
 landing. Calm, the ridge lift of a south wind, the lee downdraft of a north wind, a hot day (ISA +20 °C), a storm warning
-(the return and the fastest descent) and the Jetson's failure. Writes `scenarios/output/falco_<condition>.mp4` and `.csv`
-and `falco_mission.json`.
+(the return and the fastest descent) and the Jetson's failure. Writes `scenarios/output/nisus_plus_<condition>.mp4` and `.csv`
+and `nisus_plus_mission.json`.
 
-## FALCO bird hunts in the mountains (`falco_birds.py`)
+## NISUS+ bird hunts in the mountains (`nisus_plus_birds.py`)
 
 ```bash
-xvfb-run -a python3 scenarios/falco_birds.py                                 # four bird hunts with videos (~25 min)
-xvfb-run -a python3 scenarios/falco_birds.py --scenario "griffon vultures"
-python3 scenarios/falco_birds.py --no-movie                                  # the numbers only
+xvfb-run -a python3 scenarios/nisus_plus_birds.py                                 # four bird hunts with videos (~25 min)
+xvfb-run -a python3 scenarios/nisus_plus_birds.py --scenario "griffon vultures"
+python3 scenarios/nisus_plus_birds.py --no-movie                                  # the numbers only
 ```
 Notebook 33, Part 11b: NISUS-Zero's mission software (`vegeta.mission`: tracking, target selection, stern photo passes)
-on Falco-Zero over the south-facing slope — golden eagles beating along it in the ridge lift, griffon vultures circling
+on Nisus+ Zero over the south-facing slope — golden eagles beating along it in the ridge lift, griffon vultures circling
 wide in a thermal, a flock of alpine
 choughs, the Jetson failing mid-hunt. YOLOX is not run (simulated detections at the assumed Jetson budget). Writes
-`scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.
+`scenarios/output/nisus_plus_birds_<scenario>.mp4`, `_photos.csv` and `nisus_plus_birds.json`.

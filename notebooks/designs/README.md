@@ -196,11 +196,11 @@ is the seam between that aircraft and the mission software `vegeta.mission`: `Bi
 navigation state out, the birds and the mission stack stepped, the guidance in for the controller's mode 'birds'),
 `BirdScenario` / `bird_scenarios`, `run`, `summary`, `photo_table`; `nisus_birds_movie.py` the bird-mission video.
 
-`falco.py` (`Falco(Nisus)`, notebook 33, branch `dev_falco`) is the bigger mountain aircraft in NISUS's style: a 2.4 m
+`nisus_plus.py` (`NisusPlus(Nisus)`, notebook 33, branch `dev_falco`; formerly FALCO) is the bigger mountain aircraft in NISUS's style: a 2.4 m
 two-piece wing with a spar joiner, cut flaps and ailerons (posed for crow by `flap_deg` / `aileron_deg`), `spar_joiner`,
-`flap` and `aileron` parts, `transport_check` and `planform_split`. `falco_systems.py` holds the atmosphere (ISA + ΔT,
-Sutherland), the Li-ion pack model, the signed drive map with the windmill and brake region (`FalcoDrive`,
-`data/falco_propulsion.json`) and the mission energy; `falco_flight.py` the aerodynamics with crow, the envelope against
-altitude, the descent and regeneration tables; `falco_structure.py`, `falco_cfd.py`, `falco_drawings.py` as NISUS's;
-`falco_robot.py` (`Massif` terrain, `MountainWind`, `FalcoAero`), `falco_controller.py` (TECS, crow and brake, terrain
-following) and `falco_scenario.py` the mountain missions and movies; `falco_birds.py` / `falco_birds_movie.py` the bird hunt.
+`flap` and `aileron` parts, `transport_check` and `planform_split`. `nisus_plus_systems.py` holds the atmosphere (ISA + ΔT,
+Sutherland), the Li-ion pack model, the signed drive map with the windmill and brake region (`NisusPlusDrive`,
+`data/nisus_plus_propulsion.json`) and the mission energy; `nisus_plus_flight.py` the aerodynamics with crow, the envelope against
+altitude, the descent and regeneration tables; `nisus_plus_structure.py`, `nisus_plus_cfd.py`, `nisus_plus_drawings.py` as NISUS's;
+`nisus_plus_robot.py` (`Massif` terrain, `MountainWind`, `NisusPlusAero`), `nisus_plus_controller.py` (TECS, crow and brake, terrain
+following) and `nisus_plus_scenario.py` the mountain missions and movies; `nisus_plus_birds.py` / `nisus_plus_birds_movie.py` the bird hunt.

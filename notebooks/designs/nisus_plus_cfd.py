@@ -1,15 +1,15 @@
-"""FALCO whole-aircraft CFD with Aeromant / OpenFOAM: the cases, their presets and the reading of the results
+"""NISUS+ whole-aircraft CFD with Aeromant / OpenFOAM: the cases, their presets and the reading of the results
 (notebook 33).
 
 NISUS's study (``nisus_cfd``, whose quality presets and frame conversion this module reuses) at altitude, with the
-questions FALCO adds:
+questions NISUS+ adds:
 
 - **the clean aircraft at the work altitude** — the α sweep at the cruise EAS (18 m/s: 20.9 m/s TAS at 3000 m) in the
-  ISA air of 3000 m (ρ and ν from ``falco_systems.atmosphere``: the Reynolds number on the MAC is ~2.6e5 instead of
+  ISA air of 3000 m (ρ and ν from ``nisus_plus_systems.atmosphere``: the Reynolds number on the MAC is ~2.6e5 instead of
   3.1e5 at sea level at the same EAS);
-- **crow** — the aircraft with the flaps at 55° and the ailerons at −25° in the CAD (``falco.Falco(flap_deg,
+- **crow** — the aircraft with the flaps at 55° and the ailerons at −25° in the CAD (``nisus_plus.NisusPlus(flap_deg,
   aileron_deg)``) at V_FE (22 m/s EAS) and α 0 and +4°: the drag increment the derivative table assumes
-  (``falco_flight.crow_increments``: Raymer's plain-flap formula) and the pitching moment it computes with the lattice
+  (``nisus_plus_flight.crow_increments``: Raymer's plain-flap formula) and the pitching moment it computes with the lattice
   — the check of both. The deflected surfaces are separate solids touching the wing at their hinge line: the STL
   carries the gap's small overlaps; snappyHexMesh resolves them at the surface level (a small error source);
 - **the installed pusher and its brake** — the cruise point with the 15x8 as a rotor disk (``hull_rotor_disk``) at the
@@ -28,9 +28,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import falco
-import falco_flight as ff
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_flight as ff
+import nisus_plus_systems as fs
 from nisus_cfd import QUALITY, to_flow
 
 H_CFD = 3000.0
@@ -43,17 +43,17 @@ def air(h_m: float = H_CFD, dT: float = 0.0) -> dict:
 
 
 def l_ref(p=None) -> float:
-    return falco.resolve(p)["span"] / 4000
+    return nisus_plus.resolve(p)["span"] / 4000
 
 
 def export_stl(workdir, part="aircraft", alpha_deg=0.0, p=None, *, flap_deg=0.0, aileron_deg=0.0) -> Path:
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
     tag = f"_f{flap_deg:+.0f}_a{aileron_deg:+.0f}" if (flap_deg or aileron_deg) else ""
-    path = workdir / f"falco_{part}_a{alpha_deg:+.0f}{tag}.stl"
+    path = workdir / f"nisus_plus_{part}_a{alpha_deg:+.0f}{tag}.stl"
     if not path.exists():
-        q = falco.overrides(p)
-        g = falco.Falco().generate(**q, part=part, angle_of_attack_deg=alpha_deg, flap_deg=flap_deg, aileron_deg=aileron_deg)
+        q = nisus_plus.overrides(p)
+        g = nisus_plus.NisusPlus().generate(**q, part=part, angle_of_attack_deg=alpha_deg, flap_deg=flap_deg, aileron_deg=aileron_deg)
         g.export_stl(str(path), tolerance=0.3)
     return path
 
@@ -63,8 +63,8 @@ def case(workdir, *, alpha_deg=2.0, V_eas=ff.V_CRUISE_EAS, h_m=H_CFD, part="airc
     """One Aeromant case (prepared, not run) at the altitude ``h_m``'s air and the TAS of ``V_eas``. ``prop``: None or
     ``{'rpm': ...}`` (the 15x8 as a rotor disk); ``crow``: None or ``(flap_deg, aileron_deg)``."""
     from vegeta import aeromant
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     a = air(h_m)
     V = V_eas / math.sqrt(a["sigma"])
     fl, al = crow if crow else (0.0, 0.0)
@@ -112,8 +112,8 @@ def plan(workdir, *, x_cg_m, z_cg_m, cruise_rpm, brake_rpm, quality="screening",
 
 def table(results: dict, p=None) -> pd.DataFrame:
     """One row per case: Cl, Cd, Cm (about the CG, referred to the MAC), forces, Re, convergence, mesh size — or NOT RUN."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     k_cm = l_ref(p) / (L["mac"] / 1000)
     rows = {}
     for name, r in results.items():

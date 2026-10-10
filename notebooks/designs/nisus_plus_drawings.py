@@ -1,5 +1,5 @@
-"""FALCO drawings from the same parameters the CAD and the analyses use (notebook 33): NISUS's dimensioned three-view,
-propeller disk and exploded view on FALCO, plus the internal placement of the pack and the Orin, the crow
+"""NISUS+ drawings from the same parameters the CAD and the analyses use (notebook 33): NISUS's dimensioned three-view,
+propeller disk and exploded view on NISUS+, plus the internal placement of the pack and the Orin, the crow
 configuration (side and front), and the transport layout (the pieces against a backpack). Matplotlib figures."""
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 
-import falco
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_systems as fs
 from nisus_drawings import GROUP_COLOR, _dim
 
 
 def three_view(p=None, figsize=(16, 11)):
     """Top, side and front views [mm] with the main dimensions; the propeller disc dashed, the hinge lines (ailerons,
     flaps, elevator, rudders) dotted, the panel joints dash-dotted, the ground line at rest in the side view."""
-    p = falco.resolve(p)
-    o = falco.outline(p)
+    p = nisus_plus.resolve(p)
+    o = nisus_plus.outline(p)
     L = o["layout"]
     k = 1000.0
     fig = plt.figure(figsize=figsize)
@@ -85,17 +85,17 @@ def three_view(p=None, figsize=(16, 11)):
     for ax in (top, side, front):
         ax.set_aspect("equal")
         ax.grid(alpha=0.25)
-    fig.suptitle("FALCO — first engineering approximation (Falco-Zero)", fontsize=12)
+    fig.suptitle("NISUS+ — first engineering approximation (Nisus+ Zero)", fontsize=12)
     fig.tight_layout()
     return fig
 
 
 def prop_clearance(p=None, tolerance_mm=1.5):
-    """NISUS's propeller-disk table on FALCO (booms with their deflection, the wing, the tail, the ground)."""
+    """NISUS's propeller-disk table on NISUS+ (booms with their deflection, the wing, the tail, the ground)."""
     import pandas as pd
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
-    bc = falco.boom_check(p, tolerance_mm=tolerance_mm)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
+    bc = nisus_plus.boom_check(p, tolerance_mm=tolerance_mm)
     d_def = bc["lateral_deflection_at_prop_mm"]
     rows = {"boom (nominal)": (L["prop_clearance_boom"], "disc edge to the boom's surface in the propeller plane"),
             "boom (deflected + tolerance)": (L["prop_clearance_boom"] - d_def - tolerance_mm, f"fin side load: {d_def:.2f} mm; ±{tolerance_mm} mm build"),
@@ -121,9 +121,9 @@ def prop_clearance(p=None, tolerance_mm=1.5):
 def internal_layout(battery_key: str = fs.DEFAULT_PACK, p=None, figsize=(15, 7)):
     """The pod in side and top view with its bays and every mass-table item inside it, the CG, the neutral point and the
     pack's travel (NISUS's figure)."""
-    import falco_flight as ff
-    p = falco.resolve(p)
-    o = falco.outline(p)
+    import nisus_plus_flight as ff
+    p = nisus_plus.resolve(p)
+    o = nisus_plus.outline(p)
     t = fs.mass_table(battery_key, p=p)
     ci = fs.cg_inertia(t, p)
     a = ff.aero(p)
@@ -154,7 +154,7 @@ def internal_layout(battery_key: str = fs.DEFAULT_PACK, p=None, figsize=(15, 7))
     handles = [plt.Line2D([], [], marker="o", ls="", color=c, label=g) for g, c in GROUP_COLOR.items() if g in set(t["group"])]
     ax1.legend(handles=handles, fontsize=6.5, loc="upper right", ncol=2)
     ax2.legend(fontsize=7, loc="lower right")
-    ax1.set_title(f"Falco-Zero: internal placement, side view [mm] ({ci['mass_kg'] * 1000:.0f} g, {fs.pack(battery_key).name})", fontsize=10)
+    ax1.set_title(f"Nisus+ Zero: internal placement, side view [mm] ({ci['mass_kg'] * 1000:.0f} g, {fs.pack(battery_key).name})", fontsize=10)
     ax2.set_title("top view [mm]", fontsize=10)
     ax2.set_xlabel("x [mm] (aft)")
     fig.tight_layout()
@@ -165,9 +165,9 @@ def crow_view(p=None, flap_deg=55.0, aileron_deg=-25.0, figsize=(13, 4.5)):
     """The crow configuration: a chordwise section through the flap and one through the aileron with their surfaces
     deflected (side view), and the front view of the trailing edges."""
     from fixed_wing import naca4
-    p = falco.resolve(p)
-    d = falco.Falco()
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    d = nisus_plus.NisusPlus()
+    L = nisus_plus.NisusPlus.layout(p)
     up, lo = naca4(p["camber"], p["camber_pos"], p["thickness"])
     sec = np.array(up + lo[::-1])
     fig, axes = plt.subplots(1, 3, figsize=figsize, gridspec_kw=dict(width_ratios=[1, 1, 1.3]))
@@ -200,15 +200,15 @@ def crow_view(p=None, flap_deg=55.0, aileron_deg=-25.0, figsize=(13, 4.5)):
     ax.plot([], [], color="#e6550d", label=f"flaps {flap_deg:+.0f}° (down)")
     ax.plot([], [], color="#3182bd", label=f"ailerons {aileron_deg:+.0f}° (up)")
     ax.legend(fontsize=8); ax.grid(alpha=0.3); ax.set_title("front view: crow (trailing edges)", fontsize=10); ax.set_xlabel("y [mm]")
-    fig.suptitle("FALCO in crow: the flaps down and the ailerons up — drag without lift loss (the fast descent)", fontsize=11)
+    fig.suptitle("NISUS+ in crow: the flaps down and the ailerons up — drag without lift loss (the fast descent)", fontsize=11)
     fig.tight_layout()
     return fig
 
 
 def transport_view(p=None, backpack_mm=1150.0, figsize=(10, 4.5)):
-    """The pieces FALCO comes apart into, drawn to scale beside a backpack's carrying length."""
-    p = falco.resolve(p)
-    tc = falco.transport_check(p, backpack_mm)
+    """The pieces NISUS+ comes apart into, drawn to scale beside a backpack's carrying length."""
+    p = nisus_plus.resolve(p)
+    tc = nisus_plus.transport_check(p, backpack_mm)
     fig, ax = plt.subplots(figsize=figsize)
     y = 0.0
     colors = {"centre section": "#9ecae1", "outer panel": "#c6dbef", "boom": "#525252", "pod": "#d9d9d9", "tail (stabiliser)": "#deebf7"}
@@ -232,7 +232,7 @@ def exploded_png(path, p=None, spread=1.0, size=(1600, 1000)):
     import pyvista as pv
     from vegeta import dedalus
     from vegeta.dedalus import viz as dviz
-    parts = falco.exploded_parts(p, spread)
+    parts = nisus_plus.exploded_parts(p, spread)
     pl = pv.Plotter(off_screen=True, window_size=list(size))
     pl.set_background("white")
     colors = {"wing": "#c6dbef", "spar": "#252525", "rear spar": "#252525", "pod": "#e0e0e0", "nose cone": "#bdbdbd", "boom": "#404040",

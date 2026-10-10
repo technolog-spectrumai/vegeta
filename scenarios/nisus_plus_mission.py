@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""FALCO-Zero mountain survey missions in MuJoCo through Chiron — a bungee launch from the valley meadow (1200 m), a
+"""Nisus+ Zero mountain survey missions in MuJoCo through Chiron — a bungee launch from the valley meadow (1200 m), a
 spiral climb to 3650 m, the transit to the north face, the terrain-following survey legs, the return, the crow +
 propeller-brake descent (with regeneration), the steep crow approach and the belly landing — with a movie per
 scenario (notebook 33, Part 11).
 
-    xvfb-run -a python3 scenarios/falco_mission.py                         # the six standard scenarios (pyvista needs a display)
-    xvfb-run -a python3 scenarios/falco_mission.py --condition "storm: weather escape"
-    python3 scenarios/falco_mission.py --no-movie                          # the numbers only
-    python3 scenarios/falco_mission.py --list                              # the condition names
+    xvfb-run -a python3 scenarios/nisus_plus_mission.py                         # the six standard scenarios (pyvista needs a display)
+    xvfb-run -a python3 scenarios/nisus_plus_mission.py --condition "storm: weather escape"
+    python3 scenarios/nisus_plus_mission.py --no-movie                          # the numbers only
+    python3 scenarios/nisus_plus_mission.py --list                              # the condition names
 
-The scenarios are ``notebooks/designs/falco_scenario.standard_scenarios()``: calm, the ridge lift of a south wind, the
+The scenarios are ``notebooks/designs/nisus_plus_scenario.standard_scenarios()``: calm, the ridge lift of a south wind, the
 lee downdraft of a north wind, a hot day (ISA +20 °C), a storm warning (the return and the fastest descent) and the
-Jetson's failure. Writes ``scenarios/output/<Scenario.slug>.mp4`` (e.g. ``falco_calm.mp4``), the telemetry ``.csv`` and
-``falco_mission.json`` (outcome, phases, energy by phase, the comparison).
+Jetson's failure. Writes ``scenarios/output/<Scenario.slug>.mp4`` (e.g. ``nisus_plus_calm.mp4``), the telemetry ``.csv`` and
+``nisus_plus_mission.json`` (outcome, phases, energy by phase, the comparison).
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
 
-import falco_scenario as fsc  # noqa: E402
+import nisus_plus_scenario as fsc  # noqa: E402
 
 OUT = ROOT / "scenarios" / "output"
 
@@ -54,7 +54,7 @@ def main(argv=None) -> int:
             doc[scn.label]["movie"] = str(fsc.render_movie(ep, scn, OUT / f"{scn.slug}.mp4", speed=args.speed))
         print(f"{scn.label:50s} {ep.outcome['reason']:22s} {ep.outcome['detail']}", flush=True)
     doc["comparison"] = fsc.compare(eps).reset_index().to_dict("records")
-    (OUT / "falco_mission.json").write_text(json.dumps(doc, indent=1, default=str))
+    (OUT / "nisus_plus_mission.json").write_text(json.dumps(doc, indent=1, default=str))
     return 0 if all(e.outcome["success"] for e in eps) else 1
 
 

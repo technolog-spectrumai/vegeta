@@ -1,4 +1,4 @@
-"""FALCO flight controller and missions over the mountains (notebook 33).
+"""NISUS+ flight controller and missions over the mountains (notebook 33).
 
 NISUS's controller (``nisus_controller``: the attitude loops, the line following, the waypoint stream and its failure,
 the companion seam of mode 'birds') reworked for altitude and terrain — ArduPilot Plane's TECS and terrain following
@@ -33,15 +33,15 @@ import numpy as np
 
 from vegeta.chiron import Command
 
-import falco_flight as ff
-import falco_robot as fr
-import falco_systems as fs
+import nisus_plus_flight as ff
+import nisus_plus_robot as fr
+import nisus_plus_systems as fs
 from nisus_controller import Waypoint, AutoMission, survey_pattern, wrap
 
 G = 9.81
 PHASES = ("prelaunch", "launch", "climb", "transit", "survey", "return", "descent", "approach", "landed")
 
-__all__ = ["G", "PHASES", "Gains", "Waypoint", "AutoMission", "slope_survey", "EnergyManager", "FalcoController", "wrap"]
+__all__ = ["G", "PHASES", "Gains", "Waypoint", "AutoMission", "slope_survey", "EnergyManager", "NisusPlusController", "wrap"]
 
 
 @dataclass
@@ -79,7 +79,7 @@ class EnergyManager:
     """The return decision (NISUS's, over the mountains): home at the cruise EAS from here (the wind along the way), the
     descent's electronics, the approach, the go-arounds — x (1 + uncertainty) + the reserve."""
 
-    def __init__(self, aero: fr.FalcoAero, drive, airframe: dict, plan: fs.MissionPlan, electronics: dict, *, home_alt: float):
+    def __init__(self, aero: fr.NisusPlusAero, drive, airframe: dict, plan: fs.MissionPlan, electronics: dict, *, home_alt: float):
         self.aero, self.drive, self.af, self.plan, self.el, self.home_alt = aero, drive, airframe, plan, electronics, home_alt
         self.E_reserve = plan.reserve_frac * aero.E_available_Wh
         self._P = {}
@@ -114,18 +114,18 @@ class EnergyManager:
                 "margin_wh": rem - E - self.E_reserve, "route_m": d}
 
 
-class FalcoController:
+class NisusPlusController:
     """The flight controller with its mission (see the module). ``mode``: 'auto' (the Jetson's waypoints, ``mission``)
     or 'birds' (the companion's guidance). ``weather_at``: a time [s] at which a storm warning orders the return and
     the fastest descent. ``jetson_failure``: (t_fail, t_reboot)."""
 
-    def __init__(self, aero: fr.FalcoAero, deriv_c: dict, airframe: dict, plan: fs.MissionPlan, massif: fr.Massif, *, home=(0.0, 0.0),
+    def __init__(self, aero: fr.NisusPlusAero, deriv_c: dict, airframe: dict, plan: fs.MissionPlan, massif: fr.Massif, *, home=(0.0, 0.0),
                  launch_heading_deg=0.0, climb_alt: float = 3500.0, mode="auto", mission: AutoMission | None = None, survey_wps=None,
                  energy: EnergyManager | None = None, electronics_phase_w: dict | None = None, jetson_w: float = 0.0, jetson_failure=None,
                  weather_at: float | None = None, wind_estimate=(0.0, 0.0), prelaunch_sim_s: float = 4.0, ground_s: float = 300.0, gains: Gains = Gains(),
                  companion_timeout_s: float = 5.0, airborne_cap_s: float = 2400.0, companion=None, transit_agl: float = 200.0, agl_min: float = 80.0,
                  lookahead_s: float = 25.0, climb_rate: float = 7.0, descent_rate: float = 12.0, V_climb_eas: float = 16.0, V_cruise_eas: float = 18.0,
-                 V_descent_eas: float = 21.0, orbit_r: float = 280.0, approach_agl: float = 120.0, glide_slope_deg: float = 9.0, name: str = "Falco flight controller"):
+                 V_descent_eas: float = 21.0, orbit_r: float = 280.0, approach_agl: float = 120.0, glide_slope_deg: float = 9.0, name: str = "Nisus+ flight controller"):
         self.aero, self.c, self.af, self.plan, self.massif, self.g = aero, deriv_c, airframe, plan, massif, gains
         self.home = np.asarray(home, float)
         self.home_alt = float(massif.height(*self.home))

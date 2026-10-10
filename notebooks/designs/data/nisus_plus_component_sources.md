@@ -1,8 +1,8 @@
-# FALCO — component sources (market research of 2026-10-10)
+# NISUS+ — component sources (market research of 2026-10-10)
 
 Method: web search on 2026-10-10. Only the search-index snippets of the cited pages could be read: no page was opened,
 so every row's **availability is "not confirmed"** and the figures are the snippets' (or the manufacturer's sheet as a
-retailer copied it). Items not researched are marked **assumed** in `falco_systems.COMPONENTS` and here. The avionics
+retailer copied it). Items not researched are marked **assumed** in `nisus_plus_systems.COMPONENTS` and here. The avionics
 shared with NISUS (GNSS, the Jetson options) are in `nisus_component_sources.md`.
 
 ## 1. Motor
@@ -15,7 +15,7 @@ shared with NISUS (GNSS, the Jetson options) are in `nisus_component_sources.md`
 | T-Motor AT4130 KV450 | 450 | not found | 6-12S | the KV450 rows were cut off | https://rcdrone.top/pl/products/tmotor-at4130 | not confirmed |
 
 T-Motor's note on the table: measured on the 2017 test platform, "for reference only, not comparable horizontally"
-with older data. The model fitted to the full-throttle point (`falco_systems.motor_model`) gives R = 0.068 Ω (ESC and
+with older data. The model fitted to the full-throttle point (`nisus_plus_systems.motor_model`) gives R = 0.068 Ω (ESC and
 wires included) and checks itself against the 40 % point.
 
 ## 2. Propeller
@@ -39,12 +39,12 @@ A folding propeller is not an option: braked, its blades fold back and it recove
 | Molicel INR21700-P45B | 4500 mAh typ (4300 min; one shop 4350) | 45 A | 4.5 A standard / 13.5 A max (Molicel sheet; one shop says 9 A) | AC 7 mΩ, DC 15 mΩ at 10 A (Battery Junction) | 70 g | https://www.imrbatteries.com/content/molicel_p45b.pdf ; https://batteryjunction.com/molicel-inr21700-p45b | not confirmed |
 | Molicel INR21700-P50B | 5000 mAh | 60 A | 2C assumed | as P45B assumed | 70 g assumed | https://akkuteile.de/en/lithium-ionen-battery/size-21700/molicel/molicel-inr21700-p50b-5000mah-60a-3-6-3-7v-li-ion-battery_100638_3507 | not confirmed |
 
-Packs (`falco_systems.PACKS`): 6S3P / 6S4P / 6S5P of P45B and 6S3P of P50B, assembled (nickel strip, wrap, balance
+Packs (`nisus_plus_systems.PACKS`): 6S3P / 6S4P / 6S5P of P45B and 6S3P of P50B, assembled (nickel strip, wrap, balance
 lead, XT90: +8 % mass, assumed). The open-circuit-voltage curve, the resistance's growth in the cold and the capacity's
 loss are **assumed** (generic NMC); the charge limit below 5 °C is an assumed margin over the usual 0 °C datasheet
 limit (lithium plating).
 
-## 5. Not researched (assumed in `falco_systems.COMPONENTS`)
+## 5. Not researched (assumed in `nisus_plus_systems.COMPONENTS`)
 
 Servos (six 22 g metal-gear wing servos, 6 kg·cm), the servo BEC, the flight controller (Matek H743-WING class), the
 pitot-static airspeed sensor, the lidar (TF02-Pro class), the ELRS 900 MHz receiver, the RFD900x telemetry, the

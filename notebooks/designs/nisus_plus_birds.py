@@ -1,29 +1,29 @@
-"""FALCO-Zero chasing birds in the mountains: NISUS-Zero's bird-photography mission software (``vegeta.mission``,
+"""Nisus+ Zero chasing birds in the mountains: NISUS-Zero's bird-photography mission software (``vegeta.mission``,
 notebook 32) on the bigger aircraft, over a mountain slope (notebook 33).
 
 Nothing of the mission software is new: the detector, the multi-bird tracker, the target scheduler, the stern
 photo-pass guidance with its separation breakoffs and the shutter are ``vegeta.mission``'s; the seam to the MuJoCo
 aircraft is NISUS's ``nisus_birds.BirdMission`` hook (the navigation state out, the birds stepped, the guidance in for
-the flight controller's mode 'birds'), which works on ``falco_robot.FalcoAero`` unchanged. What the mountains change:
+the flight controller's mode 'birds'), which works on ``nisus_plus_robot.NisusPlusAero`` unchanged. What the mountains change:
 
 - **the birds**: soaring birds of the Alps (``vegeta.mission.sim.SPECIES``: golden eagle, griffon vulture, alpine
   chough) beating along the south face in its slope lift (the 'wander' behaviour over a 250 m reach) or circling wide in
   a thermal (160 m), their height band above sea level (``BirdField`` works in absolute heights). A tight thermal
-  circle (~90 m radius) is about FALCO's own turn radius at 22 m/s TAS: the bird leaves the fixed camera's 34° frame
+  circle (~90 m radius) is about NISUS+'s own turn radius at 22 m/s TAS: the bird leaves the fixed camera's 34° frame
   before the range closes, and the kinematic loop gets no good photo of it — a gimbal (todo 5n.5) would;
 - **the tracker**: the range from the bird's size assumes the planned species' wingspan (NISUS's 0.9 m crow/gull
   prior halves a 2 m eagle's range and fires the shutter far too early);
-- **the aircraft**: FALCO flies 18-24 m/s TAS at 3000 m and is twice NISUS's size, so the guidance's speeds, its
-  minimum speed (above FALCO's 1.4 V_s with crow, in TAS at the altitude) and the separations are FALCO's: a
+- **the aircraft**: NISUS+ flies 18-24 m/s TAS at 3000 m and is twice NISUS's size, so the guidance's speeds, its
+  minimum speed (above NISUS+'s 1.4 V_s with crow, in TAS at the altitude) and the separations are NISUS+'s: a
   25 m minimum separation (``min_sep``: eagles attack drones — a breakoff starts well before; 15 m for the choughs,
   which do not, and which span 150 px only within ~28 m), the photo range 35 m (the 6 mm lens resolves a 2 m eagle at
   ~300 px there);
 - **the heights**: the guidance's height limits and the scheduler's band are above sea level over the slope; the flight
-  controller's terrain floor stays in force under the bird mission (``FalcoController._birds``);
+  controller's terrain floor stays in force under the bird mission (``NisusPlusController._birds``);
 - **the wind**: a south wind gives the ridge lift the birds use; the controller's crow and propeller brake keep the
   height when the same lift carries the aircraft up.
 
-    import falco_birds as fb
+    import nisus_plus_birds as fb
     bs = fb.BirdScenario()                     # three golden eagles beating along the face in the ridge lift, a south wind
     ep = fb.run(bs)
     fb.summary(ep), fb.photo_table(ep)
@@ -43,9 +43,9 @@ from vegeta.mission.sim import SPECIES, BirdField, BirdGroup
 from vegeta.mission.tracking import TrackerConfig
 from vegeta.mission.targeting import SchedulerConfig
 
-import falco_robot as fr
-import falco_scenario as fsc
-import falco_systems as fs
+import nisus_plus_robot as fr
+import nisus_plus_scenario as fsc
+import nisus_plus_systems as fs
 import nisus_birds as nb
 
 __all__ = ["BirdScenario", "bird_scenarios", "mission_config", "run", "summary", "photo_table", "compare"]
@@ -53,8 +53,8 @@ __all__ = ["BirdScenario", "bird_scenarios", "mission_config", "run", "summary",
 
 def mission_config(centre_xy, ground_m, *, device="orin_nano_super", model="yolox-tiny", band=(150.0, 450.0), sigma_ref=0.78,
                    size_prior_m: float = 0.9, min_sep: float = 25.0, search_agl: float | None = None) -> MissionConfig:
-    """The mission software's configuration for FALCO over a slope whose ground is ``ground_m`` [m ASL] at the bird area:
-    heights above sea level, FALCO's speeds (TAS at the area's density ``sigma_ref``), the separations for big raptors,
+    """The mission software's configuration for NISUS+ over a slope whose ground is ``ground_m`` [m ASL] at the bird area:
+    heights above sea level, NISUS+'s speeds (TAS at the area's density ``sigma_ref``), the separations for big raptors,
     the tracker's wingspan prior for the range (``size_prior_m``: the species the flight is planned for), the search
     leg's height above the ground (``search_agl``: the planned birds' height; default the band's middle)."""
     k = 1 / math.sqrt(sigma_ref)
@@ -90,11 +90,11 @@ class BirdScenario:
 
     @property
     def label(self):
-        return f"Falco-Zero birds: {self.name}"
+        return f"Nisus+ Zero birds: {self.name}"
 
     @property
     def slug(self):
-        return "falco_" + "".join(c if c.isalnum() else "_" for c in f"birds_{self.name}").strip("_").replace("__", "_")
+        return "nisus_plus_" + "".join(c if c.isalnum() else "_" for c in f"birds_{self.name}").strip("_").replace("__", "_")
 
     def ground(self, massif: fr.Massif = fr.Massif()) -> float:
         return float(massif.height(*self.centre))
@@ -157,7 +157,7 @@ def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True):
     lab.add_hook(mission)
     fc = fsc.controller(lab, scn)
     fc.mode, fc.companion, fc.mission = "birds", mission, None
-    fc.name = f"Falco-Zero autopilot + bird mission ({bs.name})"
+    fc.name = f"Nisus+ Zero autopilot + bird mission ({bs.name})"
     if bs.jetson_failure == (None, None):                         # fail 90 s into the hunt (the hunt's start is not known in advance)
         fc.jetson_failure = None
         orig = mission.__call__
@@ -178,7 +178,7 @@ def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True):
 
 
 def summary(ep) -> dict:
-    """NISUS's bird summary (photos, tracking scores, separations) plus FALCO's altitude and the landing."""
+    """NISUS's bird summary (photos, tracking scores, separations) plus NISUS+'s altitude and the landing."""
     out = nb.summary(ep)
     ts = fsc.timeseries(ep)
     hunt = ts[(ts["t"] >= (ep.birds.t_start or 0.0)) & (ts["t"] <= (ep.birds.t_stop or ts["t"].iloc[-1]))]

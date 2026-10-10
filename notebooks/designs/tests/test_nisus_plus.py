@@ -1,20 +1,20 @@
-"""FALCO (notebook 33): the geometry and its layout, the transport pieces, the atmosphere, the mass and CG, the Li-ion
+"""NISUS+ (notebook 33): the geometry and its layout, the transport pieces, the atmosphere, the mass and CG, the Li-ion
 pack, the drive against its published point and over altitude (the brake region's signs), the climb and descent
 targets, the crow increments, the derivative signs, the structural load cases and hand margins, the Chiron model over
 the mountains (mass and inertia, the density at the altitude, the height field), a short flight and (slow) a whole
 mission and a bird hunt.
 
-Run: cd /home/user/vegeta && .venv/bin/python -m pytest -q notebooks/designs/tests/test_falco.py   (add -m "not slow")
+Run: cd /home/user/vegeta && .venv/bin/python -m pytest -q notebooks/designs/tests/test_nisus_plus.py   (add -m "not slow")
 """
 import math
 
 import numpy as np
 import pytest
 
-import falco
-import falco_flight as ff
-import falco_structure as fst
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_flight as ff
+import nisus_plus_structure as fst
+import nisus_plus_systems as fs
 
 
 @pytest.fixture(scope="module")
@@ -35,33 +35,33 @@ def deriv(a):
 
 # ----------------------------------------------------------------------------------------------- geometry
 def test_layout_meets_the_brief():
-    p = falco.resolve()
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve()
+    L = nisus_plus.NisusPlus.layout(p)
     assert L["S_ref"] == pytest.approx(0.60, rel=1e-9) and L["AR"] == pytest.approx(9.6, rel=1e-9)
     assert 0.45 < L["V_h"] < 0.65 and 0.05 < L["V_v"] < 0.09
     assert L["prop_clearance_boom"] > 40.0 and L["prop_ground_margin_resting"] > 20.0
     assert L["tail_le"] > L["prop_x"] + 200
     assert p["flap_y0"] > p["boom_y"] and p["flap_y1"] < p["wing_joint_y"] < L["y_aileron0"]
-    assert falco.transport_check(p)["fits"] and L["longest_piece_mm"] <= 1150.0
+    assert nisus_plus.transport_check(p)["fits"] and L["longest_piece_mm"] <= 1150.0
 
 
 def test_planform_split_tags_the_surfaces():
-    pl = falco.planform_split()
+    pl = nisus_plus.planform_split()
     tags = pl["wing_tags"]
     assert tags.count("flap") == 2 and tags.count("aileron") == 2 and tags.count("centre") == 2
     area = sum(0.5 * np.linalg.norm(np.cross(q[2] - q[0], q[3] - q[1])) for q in pl["wing"])
-    assert area == pytest.approx(falco.Falco.layout(falco.resolve())["S_ref"], rel=0.02)
+    assert area == pytest.approx(nisus_plus.NisusPlus.layout(nisus_plus.resolve())["S_ref"], rel=0.02)
 
 
 def test_build_refuses_a_flap_across_the_joint():
     pytest.importorskip("cadquery")
     with pytest.raises(Exception):
-        falco.Falco().generate(flap_y1=600.0)
+        nisus_plus.NisusPlus().generate(flap_y1=600.0)
 
 
 def test_cad_volumes_match_a_rebuild():
     pytest.importorskip("cadquery")
-    d = falco.Falco()
+    d = nisus_plus.NisusPlus()
     for part in ("spar", "boom_fitting", "spar_joiner"):
         assert d.generate(part=part).measure()["volume"] == pytest.approx(fs.CAD[part], rel=0.01)
 
@@ -69,7 +69,7 @@ def test_cad_volumes_match_a_rebuild():
 @pytest.mark.slow
 def test_crow_pose_is_one_valid_solid():
     pytest.importorskip("cadquery")
-    m = falco.Falco().generate(flap_deg=55.0, aileron_deg=-25.0).measure()
+    m = nisus_plus.NisusPlus().generate(flap_deg=55.0, aileron_deg=-25.0).measure()
     assert m["valid"] and m["n_solids"] == 1 and m["dimensions"][1] == pytest.approx(2400.0, abs=1.0)
 
 
@@ -179,8 +179,8 @@ def test_load_cases_and_hand_margins():
 
 
 def test_spar_segments_carry_the_root_moment():
-    p = falco.resolve()
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve()
+    L = nisus_plus.NisusPlus.layout(p)
     segs = fst.spar_segment_forces(p, 1000.0)
     _, M = fst.moment_at(p, 1000.0, L["yc"] / 1000)
     assert sum(s["F"] * (s["y_bar"] - L["yc"]) / 1000 for s in segs) == pytest.approx(M, rel=0.02)
@@ -192,12 +192,12 @@ mujoco = pytest.importorskip("mujoco")
 
 @pytest.fixture(scope="module")
 def lab():
-    import falco_scenario as fsc
+    import nisus_plus_scenario as fsc
     return fsc.make_lab(fsc.Scenario(), log_geoms=False)
 
 
 def test_chiron_model_matches_the_mass_table(lab):
-    import falco_robot as fr
+    import nisus_plus_robot as fr
     ic = fr.inertia_check(lab, lab.robot.mass_table)
     assert abs(ic["mass_error"]) < 1e-6
     assert ic["mujoco_cg_x_mm"] == pytest.approx(ic["table_cg_x_mm"], abs=1.0)
@@ -219,7 +219,7 @@ def test_hook_density_is_the_isa_at_the_altitude(lab):
 
 
 def test_short_flight_launches_and_climbs():
-    import falco_scenario as fsc
+    import nisus_plus_scenario as fsc
     scn = fsc.Scenario()
     lab_ = fsc.make_lab(scn, log_geoms=False)
     ep = fsc.run(lab_, scn, duration=60.0)
@@ -234,7 +234,7 @@ def test_short_flight_launches_and_climbs():
 
 @pytest.mark.slow
 def test_calm_mission_lands_on_the_meadow_with_the_reserve():
-    import falco_scenario as fsc
+    import nisus_plus_scenario as fsc
     scn = fsc.Scenario()
     ep = fsc.run(fsc.make_lab(scn, log_geoms=False), scn)
     assert ep.outcome["success"], ep.outcome
@@ -244,14 +244,14 @@ def test_calm_mission_lands_on_the_meadow_with_the_reserve():
 
 
 def test_bird_tracker_assumes_the_planned_species_size():
-    import falco_birds as fb
+    import nisus_plus_birds as fb
     bs = fb.BirdScenario()
     assert bs.size_prior() == pytest.approx(2.0) and bs.config().tracker.size_prior_m == pytest.approx(2.0)
 
 
 @pytest.mark.slow
 def test_bird_hunt_photographs_an_eagle():
-    import falco_birds as fb
+    import nisus_plus_birds as fb
     ep = fb.run(fb.BirdScenario(), log_geoms=False)
     s = fb.summary(ep)
     assert s["photos"] > 0 and s["approaches < 10 m"] == 0

@@ -42,7 +42,7 @@ SPECIES = {
     "carrion crow": Species("carrion crow", 0.95, 12.0, 16.0, 2.0, 28.0, (25, 25, 30)),
     "feral pigeon": Species("feral pigeon", 0.65, 17.0, 22.0, 2.5, 22.0, (120, 125, 140)),
     "common buzzard": Species("common buzzard", 1.2, 9.0, 14.0, 1.8, 35.0, (110, 80, 50)),
-    # the mountains (FALCO, notebook 33): soaring raptors and corvids of the Alps; the speeds and the fear distances are
+    # the mountains (NISUS+, notebook 33): soaring raptors and corvids of the Alps; the speeds and the fear distances are
     # first estimates (assumed: big raptors are bold — an eagle may come at the aircraft; the fear distance is where it
     # reacts, kept short)
     "golden eagle": Species("golden eagle", 2.0, 13.0, 20.0, 1.8, 30.0, (90, 62, 35)),

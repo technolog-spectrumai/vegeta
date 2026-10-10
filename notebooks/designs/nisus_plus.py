@@ -1,4 +1,4 @@
-"""FALCO — a 2.4 m twin-boom pusher for mountain survey: NISUS's style, bigger, with the energy and the power to climb
+"""NISUS+ — a 2.4 m twin-boom pusher for mountain survey: NISUS's style, bigger, with the energy and the power to climb
 fast to 4500 m and the crow flaps to come down fast (notebook 33).
 
 The aircraft: NISUS's layout scaled up and reworked for the mountains — a straight-tapered wing of 2400 mm span (300/200
@@ -18,8 +18,8 @@ What is new against NISUS (whose shapes this class inherits — nothing is desig
 
 Frame and conventions as ``nisus`` (wing root leading edge at the origin, x aft, y right, z up; mm). The module helpers
 (``resolve``, ``planform``, ``wetted_areas``, ``drag_buildup``, ``outline``, ``exploded_parts``, ``boom_check``) are
-NISUS's with ``design=Falco()``; ``planform_split`` cuts the wing's quads at the flap and aileron stations for the
-lattice (``falco_flight``).
+NISUS's with ``design=NisusPlus()``; ``planform_split`` cuts the wing's quads at the flap and aileron stations for the
+lattice (``nisus_plus_flight``).
 
 ``part``: as NISUS's (``aircraft``, ``wing``, ``spar``, ``rear_spar``, ``pod``, ``nose``, ``boom``, ``boom_fitting``,
 ``tail``, ``tail_fitting``, ``motor_mount``, ``tray``, ``skid``, ``battery_tray``) plus ``flap`` and ``aileron`` (the right
@@ -37,14 +37,14 @@ import nisus
 from fixed_wing import FixedWing
 from nisus import Nisus, naca4
 
-NAME = "Falco-Zero (autonomous mountain survey, Jetson Orin onboard)"
+NAME = "Nisus+ Zero (autonomous mountain survey, Jetson Orin onboard)"
 PARTS = nisus.PARTS + ("flap", "aileron", "spar_joiner")
 FEA_PARTS = nisus.FEA_PARTS + ("spar_joiner_fea",)
 PER_CALL = ("part", "show_prop", "angle_of_attack_deg", "flap_deg", "aileron_deg")
 
 
 def _nf(name, default=None, **kw):
-    """NISUS's parameter ``name`` with a new default where FALCO differs."""
+    """NISUS's parameter ``name`` with a new default where NISUS+ differs."""
     p = next(q for q in Nisus.parameters if q.name == name)
     f = dict(name=p.name, default=p.default, units=p.units, min=p.min, max=p.max, description=p.description, choices=p.choices)
     if default is not None:
@@ -53,8 +53,8 @@ def _nf(name, default=None, **kw):
     return Parameter(**f)
 
 
-class Falco(Nisus):
-    """FALCO: NISUS's twin-boom pusher, 2.4 m, with flaps, ailerons, a three-piece wing and a 6S Li-ion pack."""
+class NisusPlus(Nisus):
+    """NISUS+: NISUS's twin-boom pusher, 2.4 m, with flaps, ailerons, a three-piece wing and a 6S Li-ion pack."""
 
     parameters = [
         Parameter("part", "aircraft", choices=PARTS + FEA_PARTS, description="what to build"),
@@ -85,7 +85,7 @@ class Falco(Nisus):
         _nf("pod_length", 760.0), _nf("pod_width", 130.0), _nf("pod_height", 140.0),
         _nf("nose_length", 400.0, description="pod nose tip ahead of the wing leading edge (the pack and the Orin sit in it)"),
         _nf("nose_cone_length", 90.0), _nf("pod_wall", 1.5),
-        Parameter("marking", "FALCO-109", description="the aircraft's name, raised on both sides of the pod (printed with it)"),
+        Parameter("marking", "NISUS+", description="the aircraft's name, raised on both sides of the pod (printed with it)"),
         Parameter("marking_height", 32.0, "mm", min=0, description="cap height of the marking (0: none)"),
         _nf("boom_y", 250.0, description="boom centre from the symmetry plane (500 mm spacing)"),
         _nf("boom_od", 20.0, description="boom tube OD (16/14 bent ~50 mm at the tail under the tail + fin ultimate load in the FEA, margin 0.41 by hand: 20/18 doubles the stiffness for ~35 g)"), _nf("boom_id", 18.0),
@@ -135,7 +135,7 @@ class Falco(Nisus):
         """The pod's bays: camera, lidar and pitot in the nose cone; the Jetson Orin behind it (the computer bay); the 6S
         pack on the floor of the battery bay under the wing — near the centre of gravity, where it slides to set it; the
         flight controller tray above the pack; the ESC, the buck regulators and the wiring at the tail with the vents."""
-        L = Falco.layout(p)
+        L = NisusPlus.layout(p)
         w = p["pod_width"] - 2 * p["pod_wall"]
         h = p["pod_height"] - 2 * p["pod_wall"]
         x0 = L["x_nose"]
@@ -345,17 +345,17 @@ class Falco(Nisus):
 
 # --------------------------------------------------------------------------------------------------- helpers
 def overrides(p=None) -> dict:
-    """A parameter set without the per-call keys (``PER_CALL``), to pass to ``Falco().generate(**overrides(p), part=...)``."""
+    """A parameter set without the per-call keys (``PER_CALL``), to pass to ``NisusPlus().generate(**overrides(p), part=...)``."""
     return {k: v for k, v in dict(p or {}).items() if k not in PER_CALL}
 
 
 def resolve(p=None, **kw) -> dict:
-    return nisus.resolve(p, Falco(), **kw)
+    return nisus.resolve(p, NisusPlus(), **kw)
 
 
 def exploded_parts(p=None, spread=1.0) -> dict:
-    """NISUS's exploded view of FALCO plus the flaps, ailerons and joiners; the wing in three pieces."""
-    d = Falco()
+    """NISUS's exploded view of NISUS+ plus the flaps, ailerons and joiners; the wing in three pieces."""
+    d = NisusPlus()
     p = resolve(p)
     parts = nisus.exploded_parts(p, 1.4 * spread, design=d)
     s = 1.4 * spread
@@ -366,32 +366,32 @@ def exploded_parts(p=None, spread=1.0) -> dict:
 
 
 def planform(p=None) -> dict:
-    return nisus.planform(p, Falco())
+    return nisus.planform(p, NisusPlus())
 
 
 def wetted_areas(p=None) -> dict:
-    return nisus.wetted_areas(p, Falco())
+    return nisus.wetted_areas(p, NisusPlus())
 
 
 def drag_buildup(p=None, speed: float = 20.0, nu: float = 1.5e-5) -> dict:
-    """NISUS's build-up (Raymer) on FALCO's geometry at ``speed`` and the kinematic viscosity ``nu`` of the altitude
-    (``falco_systems.atmosphere``: ν grows from 1.46e-5 at sea level to 2.1e-5 at 4500 m, the Reynolds numbers drop)."""
-    return nisus.drag_buildup(p, speed, nu, design=Falco())
+    """NISUS's build-up (Raymer) on NISUS+'s geometry at ``speed`` and the kinematic viscosity ``nu`` of the altitude
+    (``nisus_plus_systems.atmosphere``: ν grows from 1.46e-5 at sea level to 2.1e-5 at 4500 m, the Reynolds numbers drop)."""
+    return nisus.drag_buildup(p, speed, nu, design=NisusPlus())
 
 
 def boom_check(p=None, **kw) -> dict:
     kw.setdefault("tail_load_N", 40.0)
     kw.setdefault("fin_side_load_N", 15.0)
     kw.setdefault("tail_mass_kg", 0.12)
-    return nisus.boom_check(p, design=Falco(), **kw)
+    return nisus.boom_check(p, design=NisusPlus(), **kw)
 
 
 def planform_split(p=None) -> dict:
     """``planform`` with each wing half cut into spanwise quads at the pod side, the boom, the flap's ends, the joint and
     the aileron's start, and each quad tagged (``surface``: 'centre', 'plain', 'flap', 'aileron'), so the lattice can
-    deflect the flaps and the ailerons (an incidence increment on their quads) — ``falco_flight``."""
+    deflect the flaps and the ailerons (an incidence increment on their quads) — ``nisus_plus_flight``."""
     p = resolve(p)
-    L = Falco.layout(p)
+    L = NisusPlus.layout(p)
     pl = planform(p)
     c0, c1, yc, b2 = p["root_chord"], p["tip_chord"], L["yc"], L["b2"]
     dxt, dzt = L["le_sweep_tip"], (b2 - yc) * math.tan(math.radians(p["dihedral_deg"]))
@@ -426,11 +426,11 @@ def planform_split(p=None) -> dict:
 
 
 def outline(p=None) -> dict:
-    """NISUS's outline of FALCO plus the flap hinge lines, the panel joints (top view) and the pieces."""
-    d = Falco()
+    """NISUS's outline of NISUS+ plus the flap hinge lines, the panel joints (top view) and the pieces."""
+    d = NisusPlus()
     p = resolve(p)
     o = nisus.outline(p, design=d)
-    L = Falco.layout(p)
+    L = NisusPlus.layout(p)
     hinges = list(o["top"]["hinges"])
     joints = []
     for s in (1, -1):
@@ -449,12 +449,12 @@ def transport_check(p=None, backpack_mm: float = 1150.0) -> dict:
     """The pieces the aircraft comes apart into and the longest against a backpack's carrying length (a 70-80 l
     mountain pack with the pieces strapped alongside: ~1.1-1.2 m; an assumption)."""
     p = resolve(p)
-    L = Falco.layout(p)
+    L = NisusPlus.layout(p)
     return {"pieces_mm": L["pieces_mm"], "longest_mm": L["longest_piece_mm"], "backpack_mm": backpack_mm,
             "fits": L["longest_piece_mm"] <= backpack_mm,
             "note": "centre section with the booms' root fittings, two outer panels on the joiner, two booms with the tail (the stabiliser "
                     "unbolts from one boom), the pod; the propeller off"}
 
 
-__all__ = ["Falco", "NAME", "PARTS", "FEA_PARTS", "PER_CALL", "overrides", "resolve", "exploded_parts", "planform", "planform_split", "wetted_areas",
+__all__ = ["NisusPlus", "NAME", "PARTS", "FEA_PARTS", "PER_CALL", "overrides", "resolve", "exploded_parts", "planform", "planform_split", "wetted_areas",
            "drag_buildup", "boom_check", "outline", "transport_check"]

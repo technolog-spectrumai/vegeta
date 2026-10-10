@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""FALCO-Zero chasing birds in the mountains: NISUS-Zero's mission software (vegeta.mission) on the bigger aircraft
+"""Nisus+ Zero chasing birds in the mountains: NISUS-Zero's mission software (vegeta.mission) on the bigger aircraft
 over the north face — golden eagles in the ridge lift, griffon vultures circling, a flock of alpine choughs, the
 Jetson failing mid-hunt; the autopilot launches, climbs, returns, descends in crow and lands (notebook 33, Part 11b).
 
-    xvfb-run -a python3 scenarios/falco_birds.py                         # the four bird scenarios with videos
-    xvfb-run -a python3 scenarios/falco_birds.py --scenario "griffon vultures"
-    python3 scenarios/falco_birds.py --no-movie                          # the numbers only
-    python3 scenarios/falco_birds.py --list
+    xvfb-run -a python3 scenarios/nisus_plus_birds.py                         # the four bird scenarios with videos
+    xvfb-run -a python3 scenarios/nisus_plus_birds.py --scenario "griffon vultures"
+    python3 scenarios/nisus_plus_birds.py --no-movie                          # the numbers only
+    python3 scenarios/nisus_plus_birds.py --list
 
 YOLOX is not run: the detections are simulated from the truth (vegeta.mission.sim) with the ASSUMED Jetson budget.
-Writes ``scenarios/output/<slug>.mp4``, ``<slug>_photos.csv`` and ``falco_birds.json``.
+Writes ``scenarios/output/<slug>.mp4``, ``<slug>_photos.csv`` and ``nisus_plus_birds.json``.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
 
-import falco_birds as fb  # noqa: E402
+import nisus_plus_birds as fb  # noqa: E402
 
 OUT = ROOT / "scenarios" / "output"
 
@@ -52,9 +52,9 @@ def main(argv=None) -> int:
             print(f"   {k}: {v}")
         fb.photo_table(ep).to_csv(out / f"{bs.slug}_photos.csv", index=False)
         if not args.no_movie:
-            import falco_birds_movie as fm
+            import nisus_plus_birds_movie as fm
             print(f"   movie: {fm.render_movie(ep, out / f'{bs.slug}.mp4')}", flush=True)
-    (out / "falco_birds.json").write_text(json.dumps(rows, indent=2, default=str))
+    (out / "nisus_plus_birds.json").write_text(json.dumps(rows, indent=2, default=str))
     return 0 if ok else 1
 
 

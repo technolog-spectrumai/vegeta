@@ -1,23 +1,23 @@
-"""FALCO flight — the aerodynamics with flaps and crow, the derivative table, trim, the envelope against altitude, the
+"""NISUS+ flight — the aerodynamics with flaps and crow, the derivative table, trim, the envelope against altitude, the
 climb and descent capability, the propeller brake and its regeneration, the launch at altitude (notebook 33).
 
 Reduced models, honest about what they are, on top of NISUS's (``nisus_flight``, whose constants this module reuses):
 
-- **the lattice**: PEREGRINE's vortex lattice (``peregrine_flight.vlm``) on ``falco.planform_split``'s quads — the
+- **the lattice**: PEREGRINE's vortex lattice (``peregrine_flight.vlm``) on ``nisus_plus.planform_split``'s quads — the
   flap and aileron quads take their deflection as an incidence increment ``τ K(δ) δ`` (thin-airfoil flap theory with
   the plain flap's effectiveness ``FLAP_TAU`` / ``AILERON_TAU`` and its loss at large deflection ``K(δ)``: **assumed**,
   Roskam/Raymer class charts) — so ΔCL, ΔCm and the induced drag of crow are **calculated (lattice)** in the linear
   sense; their profile drag is the plain-flap formula ``ΔCD = 1.7 (cf/c)^1.38 (S_flapped/S) sin²δ`` (Raymer's
-  approximation: **assumed**, the crow CFD case of ``falco_cfd`` is the check). Nothing here predicts the separation at
+  approximation: **assumed**, the crow CFD case of ``nisus_plus_cfd`` is the check). Nothing here predicts the separation at
   55° of flap: the numbers are a first approximation for sizing and simulation;
-- **the air**: everything takes the density (``falco_systems.atmosphere``); speeds are TAS unless named EAS; the
+- **the air**: everything takes the density (``nisus_plus_systems.atmosphere``); speeds are TAS unless named EAS; the
   structure's speeds (V_NE, V_FE, V_A) are EAS (``V_TAS = V_EAS / √σ``) — the flutter margin at TAS is not computed;
-- **the drive**: ``falco_systems.FalcoDrive`` — full thrust, the free windmill, the brake (``brake``) with its
+- **the drive**: ``nisus_plus_systems.NisusPlusDrive`` — full thrust, the free windmill, the brake (``brake``) with its
   battery-side power;
 - **descent**: the steady glide ``W sin γ = D − T`` with ``L = W cos γ`` solved for γ at each EAS and configuration
   (clean, crow, crow + the propeller brake), the sink rate ``V sin γ`` and the regeneration's power along it.
 
-Units SI; angles in degrees where the name says so; the aircraft frame is ``falco``'s (x aft, y right, z up).
+Units SI; angles in degrees where the name says so; the aircraft frame is ``nisus_plus``'s (x aft, y right, z up).
 """
 from __future__ import annotations
 
@@ -27,8 +27,8 @@ from dataclasses import dataclass, asdict
 import numpy as np
 import pandas as pd
 
-import falco
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_systems as fs
 import merlin_flight as mf
 import nisus_flight as nf
 import peregrine_flight as pf
@@ -77,10 +77,10 @@ def _surfaces(pl, it_deg, de_deg=0.0, df_deg=0.0, da_deg=0.0, da_anti=0.0):
 
 
 def aero(p=None, *, x_ref=None, it_deg=None, n_chord=4) -> dict:
-    """NISUS's lattice derivatives on FALCO (``nisus_flight.aero``'s recipe) plus the flaps' and the symmetric ailerons'
+    """NISUS's lattice derivatives on NISUS+ (``nisus_flight.aero``'s recipe) plus the flaps' and the symmetric ailerons'
     CL and Cm per degree (linear: small deflections)."""
-    p = falco.resolve(p)
-    pl = falco.planform_split(p)
+    p = nisus_plus.resolve(p)
+    pl = nisus_plus.planform_split(p)
     it = p["tail_incidence_deg"] if it_deg is None else it_deg
     S, c = pl["S_ref"], pl["c_ref"]
     x_ref = pl["x_ac_wing"] if x_ref is None else x_ref
@@ -123,8 +123,8 @@ def crow_increments(p=None, flap_deg=CROW["flap_deg"], aileron_deg=CROW["aileron
     angle of attack: ΔCL, ΔCm (about ``x_ref``, default the MAC quarter chord), ΔCDi from the lattice with the
     effectiveness K(δ); the profile drag ΔCD_p of both surfaces (Raymer's plain-flap formula); ΔCL_max (the flaps'
     Δcl_max over the flapped span, the ailerons' loss likewise)."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     a = a or aero(p)
     pl = a["pl"]
     x_ref = pl["x_ac_wing"] if x_ref is None else x_ref
@@ -170,14 +170,14 @@ def cl_max(p=None) -> float:
 # ================================================================================================= the derivatives
 def derivatives(p=None, *, x_cg_m: float, z_cg_m: float = -0.05, cd0: float | None = None, CL_ref: float = 0.45, h_m: float = 0.0, a=None,
                 crow=CROW) -> pd.DataFrame:
-    """NISUS's derivative table (``nisus_flight.derivatives``, the same formulas and tags) on FALCO's geometry, the Cd0
+    """NISUS's derivative table (``nisus_flight.derivatives``, the same formulas and tags) on NISUS+'s geometry, the Cd0
     from the build-up at the altitude ``h_m``'s viscosity, and the flap and crow rows: CLdf, Cmdf (lattice, per rad,
     linear), the crow increments at ``crow`` (CL, Cm about the CG, the profile drag, k), the symmetric aileron's CL, Cm."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     a = a or aero(p)
-    L = falco.Falco.layout(p)
+    L = nisus_plus.NisusPlus.layout(p)
     atm = fs.atmosphere(h_m)
-    cd0 = falco.drag_buildup(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])["cd0"] if cd0 is None else cd0
+    cd0 = nisus_plus.drag_buildup(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])["cd0"] if cd0 is None else cd0
     c, b, S = a["c_ref"], a["b"], a["S_ref"]
     shift = (x_cg_m - a["x_ref"]) / c
     CLa, CL0 = a["CLa"], a["CL0"]
@@ -270,7 +270,7 @@ def derivatives(p=None, *, x_cg_m: float, z_cg_m: float = -0.05, cd0: float | No
         ("Cndr", Cndr, "1/rad", "calculated (analytic)", "rudder power"),
         ("CL_max", cl_max(p), "-", "assumed", f"{CL_MAX_FACTOR} x section cl_max {AIRFOIL['cl_max_2d']} (no lattice stall)"),
         ("alpha_stall_deg", math.degrees((cl_max(p) - CL0) / CLa), "deg", "assumed", "from CL_max and the linear slope"),
-        ("x_np_m", a["x_np"], "m", "calculated (lattice + pod term)", "neutral point in the falco frame"),
+        ("x_np_m", a["x_np"], "m", "calculated (lattice + pod term)", "neutral point in the nisus_plus frame"),
         ("static_margin", (a["x_np"] - x_cg_m) / c, "MAC", "calculated", f"CG at x = {x_cg_m:.4f} m"),
         ("deps_dalpha", a["deps_dalpha"], "-", "calculated (lattice)", "downwash gradient at the tail"),
         ("CLa_t", CLa_t, "1/rad", "calculated (lattice)", "tail lift slope on S_h, isolated"),
@@ -297,9 +297,9 @@ def trim_crow(deriv: pd.DataFrame, mass_kg: float, V: float, rho=RHO0, crow_frac
 
 def cg_range(p, mass_kg, *, sm_min: float = 0.05, de_max_deg: float = 20.0, rho=RHO0, a=None) -> dict:
     """NISUS's CG range (aft: the minimum static margin; forward: the elevator trims the stall in crow too) at density rho."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     a = a or aero(p)
-    L = falco.Falco.layout(p)
+    L = nisus_plus.NisusPlus.layout(p)
     c = a["c_ref"]
     aft = a["x_np"] - sm_min * c
     xs = np.linspace(L["x_mac_le"] / 1000 - 0.1 * c, aft, 40)
@@ -320,12 +320,12 @@ def cg_range(p, mass_kg, *, sm_min: float = 0.05, de_max_deg: float = 20.0, rho=
 def airframe(battery_key: str = fs.DEFAULT_PACK, p=None, *, h_m: float = 0.0, cd0_correction: float = 0.0, a=None) -> Airframe:
     """Merlin's parabolic-polar ``Airframe``: mass from the mass table, Cd0 from the build-up at ``h_m``'s viscosity
     (+ a CFD correction), Oswald e = 0.9 x the lattice's span efficiency, CL_max as assumed (clean)."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     a = a or aero(p)
     m = fs.cg_inertia(fs.mass_table(battery_key, p=p), p)["mass_kg"]
     atm = fs.atmosphere(h_m)
-    b = falco.drag_buildup(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])
-    return Airframe("Falco-Zero", m, a["S_ref"], a["AR"], b["cd0"] + cd0_correction, oswald=pf.OSWALD_VISCOUS * a["e"], cl_max=cl_max(p))
+    b = nisus_plus.drag_buildup(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])
+    return Airframe("Nisus+ Zero", m, a["S_ref"], a["AR"], b["cd0"] + cd0_correction, oswald=pf.OSWALD_VISCOUS * a["e"], cl_max=cl_max(p))
 
 
 def airframe_dict(af: Airframe) -> dict:
@@ -334,9 +334,9 @@ def airframe_dict(af: Airframe) -> dict:
 
 @dataclass
 class DriveUnit:
-    """``FalcoDrive`` at one density wearing Merlin's ``Unit`` interface (``full(V)``, ``electrical_power(V, T)``), so
+    """``NisusPlusDrive`` at one density wearing Merlin's ``Unit`` interface (``full(V)``, ``electrical_power(V, T)``), so
     ``merlin_flight.performance`` and PEREGRINE's turn arithmetic run unchanged; ``fixed_w`` the electronics."""
-    drive: fs.FalcoDrive
+    drive: fs.NisusPlusDrive
     rho: float = RHO0
     fixed_w: float = 0.0
     v_batt: float | None = None
@@ -357,7 +357,7 @@ class DriveUnit:
         return P + self.fixed_w if np.isfinite(P) else math.inf
 
 
-def envelope(af: Airframe, dr: fs.FalcoDrive, h_m: float = 0.0, *, dT: float = 0.0, battery_wh: float = 350.0, usable: float = 0.85 * 0.9,
+def envelope(af: Airframe, dr: fs.NisusPlusDrive, h_m: float = 0.0, *, dT: float = 0.0, battery_wh: float = 350.0, usable: float = 0.85 * 0.9,
              electronics_w: float = 0.0, n_struct=N_STRUCTURAL) -> dict:
     """NISUS's envelope at an altitude: the speed polar (``merlin_flight.performance``), endurance and range, glide, turns."""
     atm = fs.atmosphere(h_m, dT)
@@ -375,7 +375,7 @@ def envelope(af: Airframe, dr: fs.FalcoDrive, h_m: float = 0.0, *, dT: float = 0
             "L/D_max": float(ld.max()), "v_L/D_max": float(V[np.argmax(ld)]), "sink_min_m_s": float(sink.min()), "v_sink_min": float(V[np.argmin(sink)])}
 
 
-def envelope_vs_altitude(af: Airframe, dr: fs.FalcoDrive, heights=(0.0, 1500.0, 3000.0, 4500.0, 6000.0), *, dT: float = 0.0,
+def envelope_vs_altitude(af: Airframe, dr: fs.NisusPlusDrive, heights=(0.0, 1500.0, 3000.0, 4500.0, 6000.0), *, dT: float = 0.0,
                          electronics_w: float = 0.0, battery_wh: float = 350.0) -> pd.DataFrame:
     """The envelope at each altitude: stall (TAS, and its EAS stays put), best climb, the most the drive climbs,
     minimum power, endurance, top speed, glide, minimum sink, the never-exceed speed in TAS."""
@@ -388,7 +388,7 @@ def envelope_vs_altitude(af: Airframe, dr: fs.FalcoDrive, heights=(0.0, 1500.0, 
     return pd.DataFrame(rows).T
 
 
-def ceiling(af: Airframe, dr: fs.FalcoDrive, *, dT: float = 0.0, service_roc: float = 0.5, h_max: float = 9000.0) -> dict:
+def ceiling(af: Airframe, dr: fs.NisusPlusDrive, *, dT: float = 0.0, service_roc: float = 0.5, h_max: float = 9000.0) -> dict:
     """The service (``service_roc``) and absolute (0) ceilings: bisection on the altitude of the best climb rate."""
     def roc(h):
         return envelope(af, dr, h, dT=dT)["roc_max"]
@@ -408,7 +408,7 @@ def ceiling(af: Airframe, dr: fs.FalcoDrive, *, dT: float = 0.0, service_roc: fl
 
 
 # ================================================================================================= climb and descent
-def climb_strategy(dr: fs.FalcoDrive, af: Airframe, plan: fs.MissionPlan = fs.MissionPlan(), rates=(2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0),
+def climb_strategy(dr: fs.NisusPlusDrive, af: Airframe, plan: fs.MissionPlan = fs.MissionPlan(), rates=(2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0),
                    electronics_w: float = 33.6) -> pd.DataFrame:
     """Is a fast climb cheap? The climb from the launch to the work altitude at each rate (capped at what the drive gives):
     its time, the propulsion energy, the electronics' energy over the climb, the total and the energy per 100 m."""
@@ -448,7 +448,7 @@ def glide_state(af: Airframe, deriv_c: dict, V: float, rho: float, *, crow: floa
     return {"gamma_deg": math.degrees(g), "sink": V * math.sin(g), "CL": CL, "CD": cd0 + k * CL ** 2, "drag": D, "stalls": CL > clmax}
 
 
-def descent_table(af: Airframe, dr: fs.FalcoDrive, deriv: pd.DataFrame, h_m: float = 3000.0, *, dT: float = 0.0, eas=(14.0, 16.0, 18.0, 20.0, 22.0, 26.0, 30.0, 35.0),
+def descent_table(af: Airframe, dr: fs.NisusPlusDrive, deriv: pd.DataFrame, h_m: float = 3000.0, *, dT: float = 0.0, eas=(14.0, 16.0, 18.0, 20.0, 22.0, 26.0, 30.0, 35.0),
                   pack_T_C: float = 15.0, soc: float = 0.6, pk: fs.LiIonPack | None = None) -> pd.DataFrame:
     """The descent at altitude ``h_m``, EAS by EAS, in four configurations: clean with the motor freewheeling, crow
     (only up to V_FE), the propeller brake alone (its full brake, the regeneration within the pack's charge limit), crow +
@@ -479,7 +479,7 @@ def best_descent(table: pd.DataFrame) -> pd.DataFrame:
     return table.loc[i].set_index("configuration")
 
 
-def regen_table(af: Airframe, dr: fs.FalcoDrive, deriv: pd.DataFrame, *, h_top: float = 4000.0, h_bottom: float = 1200.0, eas: float = 22.0,
+def regen_table(af: Airframe, dr: fs.NisusPlusDrive, deriv: pd.DataFrame, *, h_top: float = 4000.0, h_bottom: float = 1200.0, eas: float = 22.0,
                 pk: fs.LiIonPack | None = None, pack_T_C: float = 15.0, soc: float = 0.6, brakes=(0.25, 0.5, 0.75, 1.0)) -> pd.DataFrame:
     """Does regeneration pay? The descent from ``h_top`` to ``h_bottom`` at ``eas`` with crow, the propeller braked
     by b (0: freewheeling), integrated in 100 m steps: the time, the sink, the energy returned to the pack and its
@@ -508,7 +508,7 @@ def regen_table(af: Airframe, dr: fs.FalcoDrive, deriv: pd.DataFrame, *, h_top: 
     return pd.DataFrame(rows).T
 
 
-def downdraft_escape(af: Airframe, dr: fs.FalcoDrive, *, heights=(1500.0, 3000.0, 4000.0, 4500.0), downdrafts=(2.0, 4.0, 6.0), dT: float = 0.0) -> pd.DataFrame:
+def downdraft_escape(af: Airframe, dr: fs.NisusPlusDrive, *, heights=(1500.0, 3000.0, 4000.0, 4500.0), downdrafts=(2.0, 4.0, 6.0), dT: float = 0.0) -> pd.DataFrame:
     """Can the climb out-climb a lee downdraft? The best climb rate at each altitude against the sink of the air: the
     net climb (positive: it still gains height)."""
     rows = {}
@@ -518,12 +518,12 @@ def downdraft_escape(af: Airframe, dr: fs.FalcoDrive, *, heights=(1500.0, 3000.0
     return pd.DataFrame(rows).T
 
 
-def launch_check(af: Airframe, dr: fs.FalcoDrive, h_m: float = 3000.0, *, v_release: float = 11.0, flap_deg: float = 15.0, pitch_deg: float = 8.0,
+def launch_check(af: Airframe, dr: fs.NisusPlusDrive, h_m: float = 3000.0, *, v_release: float = 11.0, flap_deg: float = 15.0, pitch_deg: float = 8.0,
                  dT: float = 0.0, a=None, p=None, duration: float = 4.0) -> dict:
     """A launch at a site of altitude ``h_m``: released at ``v_release`` (a strong hand throw ~11 m/s; a light bungee
     ~18 m/s) at full power with the take-off flap, the wing held at the stall's angle at most: a point mass in the
     vertical plane; the height lost before it climbs and the time to reach 1.2 V_s (flaps set)."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     a = a or aero(p)
     atm = fs.atmosphere(h_m, dT)
     rho = atm["rho"]
@@ -568,7 +568,7 @@ gust_response = nf.gust_response
 pull_up = nf.pull_up
 
 
-def operating_limits(af: Airframe, dr: fs.FalcoDrive, deriv: pd.DataFrame, cg: dict, *, h_work: float = 4000.0, dT: float = 0.0) -> pd.DataFrame:
+def operating_limits(af: Airframe, dr: fs.NisusPlusDrive, deriv: pd.DataFrame, cg: dict, *, h_work: float = 4000.0, dT: float = 0.0) -> pd.DataFrame:
     """Provisional operating limits (EAS where the structure decides, TAS where the performance does)."""
     atm = fs.atmosphere(h_work, dT)
     Vs0 = af.stall_speed(RHO0)
@@ -580,9 +580,9 @@ def operating_limits(af: Airframe, dr: fs.FalcoDrive, deriv: pd.DataFrame, cg: d
         "approach speed [m/s EAS]": (1.3 * Vs0, "1.3 Vs, crow set"),
         "cruise speed [m/s EAS]": (V_CRUISE_EAS, f"TAS at {h_work:.0f} m: {V_CRUISE_EAS / math.sqrt(atm['sigma']):.1f}"),
         "never-exceed speed [m/s EAS]": (V_NE_EAS, f"TAS at {h_work:.0f} m: {V_NE_EAS / math.sqrt(atm['sigma']):.1f}; flutter is a TAS problem: not computed (todo)"),
-        "maximum flap-extended (crow) speed V_FE [m/s EAS]": (V_FE_EAS, "the flaps' hinge loads and servo (falco_systems.servo_check)"),
+        "maximum flap-extended (crow) speed V_FE [m/s EAS]": (V_FE_EAS, "the flaps' hinge loads and servo (nisus_plus_systems.servo_check)"),
         "manoeuvring speed V_A [m/s EAS]": (math.sqrt(2 * N_STRUCTURAL * af.mass_kg * G / (RHO0 * af.wing_area_m2 * af.cl_max)), f"n = {N_STRUCTURAL:g} at CL_max"),
-        "limit load factor": (N_STRUCTURAL, "the pull-out after a fast descent; the mountain gusts (falco_structure)"),
+        "limit load factor": (N_STRUCTURAL, "the pull-out after a fast descent; the mountain gusts (nisus_plus_structure)"),
         "maximum bank, survey turns [deg]": (45.0, "n = 1.41"),
         f"best climb at {h_work:.0f} m [m/s]": (e["roc_max"], f"at {e['v_climb']:.1f} m/s TAS, full throttle"),
         "maximum steady wind [m/s]": (12.0, "two thirds of the cruise EAS"),

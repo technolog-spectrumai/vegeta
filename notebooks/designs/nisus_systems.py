@@ -430,7 +430,7 @@ def cg_inertia(table: pd.DataFrame, p=None, *, design=None) -> dict:
     right, z up). Every row is a point mass at its position; the extended parts (wing core and skins, pod shell,
     booms, tail) add their own inertia about their centroid as simple shapes (thin plates and rods, the pod an
     ellipsoidal shell). ``Ixz`` is the only off-diagonal term (y symmetry). ``design``: another design built on
-    ``nisus.Nisus`` (FALCO) whose parameters and layout to use."""
+    ``nisus.Nisus`` (NISUS+) whose parameters and layout to use."""
     d = nisus._design(design)
     p = nisus.resolve(p, d)
     L = type(d).layout(p)

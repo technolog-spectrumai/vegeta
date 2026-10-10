@@ -1,20 +1,20 @@
-"""FALCO missions in MuJoCo over the mountains: the scenarios, the runs, the judge, the tables and the movies
-(notebook 33, ``scenarios/falco_mission.py``).
+"""NISUS+ missions in MuJoCo over the mountains: the scenarios, the runs, the judge, the tables and the movies
+(notebook 33, ``scenarios/nisus_plus_mission.py``).
 
 A ``Scenario`` names the conditions (the synoptic wind, the turbulence, a gust, the ISA offset, the pack's temperature,
 a storm warning, the Jetson's failure) and the mission: the climb over the meadow to ``climb_alt``, the survey legs on
 the north face at ``survey_agl`` above the slope, the return, the crow descent and the landing. ``make_lab`` builds the
-aircraft (``falco_robot``) on the ``Massif`` height field with the ``FalcoAero`` hook; ``run`` flies it with the
-``FalcoController``, the launch a scheduled impulse (a light bungee). ``outcome`` judges from the physics: a landing on
+aircraft (``nisus_plus_robot``) on the ``Massif`` height field with the ``NisusPlusAero`` hook; ``run`` flies it with the
+``NisusPlusController``, the launch a scheduled impulse (a light bungee). ``outcome`` judges from the physics: a landing on
 the meadow (within ``land_radius`` of home) at a gentle sink with the reserve kept, no terrain strike — or the first
 failure. ``energy_table`` by phase (Wh, kWh, % of nominal; the regeneration in its own row); ``render_movie`` the chase
 view over the terrain, the synthetic onboard camera, the map, the overlays (altitude, height above the ground, the
 density altitude, EAS and TAS, crow and brake, the regeneration, the pack).
 
-    import falco_scenario as fsc
+    import nisus_plus_scenario as fsc
     scn = fsc.Scenario()                              # calm
     lab = fsc.make_lab(scn); ep = fsc.run(lab, scn)
-    fsc.outcome(ep), fsc.energy_table(ep), fsc.render_movie(ep, scn, "falco_calm.mp4")
+    fsc.outcome(ep), fsc.energy_table(ep), fsc.render_movie(ep, scn, "nisus_plus_calm.mp4")
 """
 from __future__ import annotations
 
@@ -28,11 +28,11 @@ import pandas as pd
 
 from vegeta import chiron as ch
 
-import falco
-import falco_controller as fc_
-import falco_flight as ff
-import falco_robot as fr
-import falco_systems as fs
+import nisus_plus
+import nisus_plus_controller as fc_
+import nisus_plus_flight as ff
+import nisus_plus_robot as fr
+import nisus_plus_systems as fs
 
 __all__ = ["Scenario", "CONDITIONS", "standard_scenarios", "make_lab", "controller", "run", "outcome", "timeseries", "phase_table", "energy_table",
            "summary", "compare", "render_movie"]
@@ -64,11 +64,11 @@ class Scenario:
 
     @property
     def label(self):
-        return f"Falco-Zero — {self.name}"
+        return f"Nisus+ Zero — {self.name}"
 
     @property
     def slug(self):
-        return "falco_" + re.sub(r"[^A-Za-z0-9]+", "_", self.name.replace("m/s", "ms").replace("°", "")).strip("_")
+        return "nisus_plus_" + re.sub(r"[^A-Za-z0-9]+", "_", self.name.replace("m/s", "ms").replace("°", "")).strip("_")
 
     @property
     def launch_heading_deg(self):
@@ -94,11 +94,11 @@ def standard_scenarios() -> list:
 
 
 # ------------------------------------------------------------------------------------------------- the lab and the run
-def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: fs.FalcoDrive | None = None, **kwargs):
-    """The aircraft of the scenario on the mountains in ChironLab with the ``FalcoAero`` hook (``lab.aero``)."""
-    p = falco.resolve(p)
+def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: fs.NisusPlusDrive | None = None, **kwargs):
+    """The aircraft of the scenario on the mountains in ChironLab with the ``NisusPlusAero`` hook (``lab.aero``)."""
+    p = nisus_plus.resolve(p)
     massif = massif or fr.Massif()
-    robot = fr.falco_robot(scn.battery_key, p)
+    robot = fr.nisus_plus_robot(scn.battery_key, p)
     drive = drive or fs.drive()
     ci = fs.cg_inertia(robot.mass_table, p)
     a = ff.aero(p)
@@ -109,7 +109,7 @@ def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: f
     wind = fr.MountainWind(steady=tuple(scn.wind), sigma=scn.sigma, gust=scn.gust, seed=scn.seed, massif=massif)
     el = fs.phase_power()["electronics battery-side [W]"].to_dict()
     pk = fs.pack(scn.battery_key)
-    lab.aero = fr.FalcoAero(robot, coeff, drive, pk, massif, wind=wind, electronics_w=el["prelaunch"], derating=scn.plan.derating, dT=scn.dT,
+    lab.aero = fr.NisusPlusAero(robot, coeff, drive, pk, massif, wind=wind, electronics_w=el["prelaunch"], derating=scn.plan.derating, dT=scn.dT,
                             pack_T_C=scn.pack_T_C)
     lab.add_hook(lab.aero)
     lab.coeff, lab.deriv, lab.drive, lab.ci, lab.el, lab.massif, lab.a = coeff, deriv, drive, ci, el, massif, a
@@ -118,19 +118,19 @@ def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: f
     return lab
 
 
-def controller(lab, scn: Scenario, **kw) -> fc_.FalcoController:
+def controller(lab, scn: Scenario, **kw) -> fc_.NisusPlusController:
     em = fc_.EnergyManager(lab.aero, lab.drive, lab.airframe, scn.plan, lab.el, home_alt=float(lab.massif.height(0.0, 0.0)))
     wps = scn.survey_waypoints(lab.massif)
-    return fc_.FalcoController(lab.aero, lab.coeff, lab.airframe, scn.plan, lab.massif, launch_heading_deg=scn.launch_heading_deg, climb_alt=scn.climb_alt,
+    return fc_.NisusPlusController(lab.aero, lab.coeff, lab.airframe, scn.plan, lab.massif, launch_heading_deg=scn.launch_heading_deg, climb_alt=scn.climb_alt,
                                mode="auto", mission=fc_.AutoMission(wps, repeats=scn.survey_repeats), survey_wps=wps, energy=em, electronics_phase_w=lab.el,
                                jetson_w=fs.JETSON_INSTALLATION_W, jetson_failure=scn.jetson_failure, weather_at=scn.weather_at,
-                               wind_estimate=tuple(scn.wind[:2]), ground_s=scn.plan.ground_s, name=f"Falco-Zero autopilot ({scn.name})", **kw)
+                               wind_estimate=tuple(scn.wind[:2]), ground_s=scn.plan.ground_s, name=f"Nisus+ Zero autopilot ({scn.name})", **kw)
 
 
 def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 17.0, launch_pitch_deg: float = 8.0, fc=None) -> ch.Episode:
     """The mission: the launch from the meadow — a light bungee (an impulse of ``m x launch_speed`` over 0.3 s along the
     launch heading; 17 m/s: a hand throw of 11-12 m/s leaves the 5.2 kg aircraft at its stall at 1200 m and it sinks
-    into the meadow: the simulation's finding, ``falco_flight.launch_check`` needs the take-off flap for it) — then the
+    into the meadow: the simulation's finding, ``nisus_plus_flight.launch_check`` needs the take-off flap for it) — then the
     controller's phases until it has landed and stopped (or ``duration``)."""
     fc = fc or controller(lab, scn)
     m = float(lab.model.body_subtreemass[lab._body_id(fr.BODY)])
@@ -150,8 +150,8 @@ def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: floa
 
 def _finish(ep, lab, scn, fc, m, launch_speed):
     aero = lab.aero
-    ep.log["aero"] = np.asarray(aero.history, float).reshape(-1, len(fr.FalcoAero.COLUMNS))
-    ep.log["aero_columns"] = list(fr.FalcoAero.COLUMNS)
+    ep.log["aero"] = np.asarray(aero.history, float).reshape(-1, len(fr.NisusPlusAero.COLUMNS))
+    ep.log["aero_columns"] = list(fr.NisusPlusAero.COLUMNS)
     ep.log["mission"] = [list(x) for x in fc.log]
     ep.log["events"] = sorted(list(ep.log.get("events", [])) + [list(x) for x in fc.events], key=lambda r: r[0])
     ep.log["touchdown"] = fc.touchdown

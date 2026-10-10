@@ -1,17 +1,17 @@
-"""FALCO systems — the atmosphere, the components with their sources, the mass budget, the centre of gravity and
+"""NISUS+ systems — the atmosphere, the components with their sources, the mass budget, the centre of gravity and
 inertia, the electrical loads, the Li-ion pack (its sag and the cold), the drive over altitude with its brake and
 regeneration region, and the mountain mission's energy (notebook 33).
 
 Everything is a number with a stated origin, as in ``nisus_systems`` (whose dataclasses, materials and Jetson options
 this module reuses): **calculated** (CAD volumes x densities, Boreas BEMT, the ISA), **sourced** (a published figure:
 the component table carries the URL; the research of 2026-10-10 read search-index snippets only, **no availability is
-confirmed** — ``data/falco_component_sources.md``) or **assumed** (an engineer's first estimate, labelled).
+confirmed** — ``data/nisus_plus_component_sources.md``) or **assumed** (an engineer's first estimate, labelled).
 
 What changes against NISUS, and why:
 
 - **the air thins with height**: ``atmosphere(h, dT)`` (the ISA troposphere of ``vegeta.boreas.microjet.isa`` with a
   temperature offset, plus Sutherland's viscosity) feeds every power, thrust and Reynolds number below;
-- **the drive keeps its sign**: ``FalcoDrive`` holds the signed Boreas BEMT table of the 15x8 (thrust and torque go
+- **the drive keeps its sign**: ``NisusPlusDrive`` holds the signed Boreas BEMT table of the 15x8 (thrust and torque go
   negative at low rpm and high airspeed: the windmill) and the fitted AT4125 KV540; at density ρ the propeller's thrust
   and torque scale with ρ/ρ0 at fixed (V, rpm) (Boreas has no Reynolds or Mach effect: stated, not hidden), the motor and
   ESC follow. Low throttle at speed **brakes**: the ESC's active freewheeling holds a voltage below the motor's back-EMF,
@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import falco
+import nisus_plus
 import nisus_systems as ns
 from nisus_systems import Component, MATERIALS, REGULATOR_EFF, JETSON_OPTIONS
 
@@ -72,9 +72,9 @@ def atmosphere_table(heights=(0, 1000, 1500, 2000, 3000, 4000, 4500, 5000, 6000)
 
 
 # ================================================================================================= CAD numbers
-#: CAD volumes [mm³] of the default Falco parts (``falco.Falco().generate(part=...).measure()['volume']``); ``cad_numbers(
+#: CAD volumes [mm³] of the default Nisus+ parts (``nisus_plus.NisusPlus().generate(part=...).measure()['volume']``); ``cad_numbers(
 #: recompute=True)`` rebuilds them (about a minute).
-CAD = {"aircraft": 22952472.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 60363.0, "pod": 401476.0, "nose": 31160.0, "boom": 52527.0,
+CAD = {"aircraft": 22950563.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar": 60363.0, "pod": 400388.0, "nose": 31160.0, "boom": 52527.0,
        "boom_fitting": 143789.0, "tail": 1721585.0, "tail_fitting": 31193.0, "motor_mount": 17681.0, "tray": 35216.0, "skid": 183580.0,
        "battery_tray": 71320.0, "flap": 224959.0, "aileron": 277388.0, "spar_joiner": 18871.0}
 
@@ -82,20 +82,20 @@ CAD = {"aircraft": 22952472.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar"
 def cad_numbers(p: dict | None = None, *, recompute: bool = False) -> dict:
     if not recompute and not p:
         return dict(CAD)
-    d = falco.Falco()
-    return {part: float(d.generate(**falco.overrides(p), part=part).measure()["volume"]) for part in CAD}
+    d = nisus_plus.NisusPlus()
+    return {part: float(d.generate(**nisus_plus.overrides(p), part=part).measure()["volume"]) for part in CAD}
 
 
 # ================================================================================================= components
 #: the 6S pack's cells: the electrical model's data (``LiIonCell``); the packs are ``PACKS``
-# positions: the aircraft frame of ``falco`` (x aft from the wing root LE, z up from the pod top), mm
+# positions: the aircraft frame of ``nisus_plus`` (x aft from the wing root LE, z up from the pod top), mm
 COMPONENTS = [
     # --- propulsion
     Component("motor T-Motor AT4125 KV540", "propulsion/ESC/wiring", 355.0, ZERO, 387.0, 40.0, supply="battery", supply_v=21.6, price_eur=95.0,
               url="https://store.tmotor.com/goods.php?id=827",
               source=f"355 g with cable, 6S, 85 A / 2000 W for 180 s (T-Motor datasheet via ligpower.com / robotshop PDF); APC 15x8 at 100 %: "
                      f"21.36 V, 72.77 A, 1554 W, 8879 rpm, 5537 gf (T-Motor table, 2017 test platform); {SNIPPET}",
-              note="the published full-throttle point fits the motor model (falco_systems.motor_model); price assumed"),
+              note="the published full-throttle point fits the motor model (nisus_plus_systems.motor_model); price assumed"),
     Component("propeller APC 15x8E (fixed: it brakes)", "propulsion/ESC/wiring", 46.0, ZERO, 418.0, 40.0, price_eur=15.0,
               url="https://www.motionrc.com/products/apc-15x8-thin-electric-propeller-black-lpb15080e",
               source=f"47.9 g (Motion RC, black LPB15080E) / ~44 g (Gator-RC, LP15080E); 46 g taken; {SNIPPET}",
@@ -334,8 +334,8 @@ def pack_table(T_C=(25.0, 5.0, -10.0)) -> pd.DataFrame:
 
 
 def battery_fits(b: LiIonPack, p=None) -> dict:
-    p = falco.resolve(p)
-    x0, x1, w, h = falco.Falco.bays(p)["battery bay"]
+    p = nisus_plus.resolve(p)
+    x0, x1, w, h = nisus_plus.NisusPlus.bays(p)["battery bay"]
     L_bay = x1 - x0
     dims = b.size_mm
     fits = dims[0] <= L_bay - 6 and dims[1] <= p["battery_tray_width"] and dims[2] <= h - 50      # the flight controller tray sits above the pack
@@ -350,19 +350,19 @@ PRINT_FILL = dict(ns.PRINT_FILL)
 
 def structure_items(p=None, cad: dict | None = None) -> list:
     """The airframe's parts (item, group, mass_g, x, y, z, basis) from the CAD volumes and the materials — NISUS's
-    recipe on FALCO's geometry: an XPS core (25 % lightened) with a 2 mm balsa D-box over the whole span (the bigger wing
+    recipe on NISUS+'s geometry: an XPS core (25 % lightened) with a 2 mm balsa D-box over the whole span (the bigger wing
     flies faster and twists more), the carbon spar, joiners and tip rods, film; the flaps and ailerons are foam with a
     balsa trailing edge."""
-    p = falco.resolve(p)
+    p = nisus_plus.resolve(p)
     cad = cad or CAD
-    L = falco.Falco.layout(p)
+    L = nisus_plus.NisusPlus.layout(p)
     m = MATERIALS
     x_wing = L["x_mac_le"] + 0.42 * L["mac"]
-    prof = falco.Falco.pod_profile(p)
+    prof = nisus_plus.NisusPlus.pod_profile(p)
     per = math.pi * (prof[:, 1] + prof[:, 2])
     x_pod = float(np.trapezoid(prof[:, 0] * per, prof[:, 0]) / np.trapezoid(per, prof[:, 0]))
     z_pod = float(np.trapezoid(prof[:, 3] * per, prof[:, 0]) / np.trapezoid(per, prof[:, 0]))
-    w = falco.wetted_areas(p)
+    w = nisus_plus.wetted_areas(p)
     foam = cad["wing"] * 1e-3 * m["XPS foam 30"]["rho"] * (1 - ns.FOAM_LIGHTENING)
     balsa = 2 * 0.30 * 0.5 * (p["root_chord"] + p["tip_chord"]) * p["span"] * 2.0 * 1e-3 * m["balsa"]["rho"] * 1.05 + 25.0
     carbon = m["carbon tube"]["rho"]
@@ -373,7 +373,7 @@ def structure_items(p=None, cad: dict | None = None) -> list:
     tail_spar = math.pi / 4 * (TAIL_SPAR["od"] ** 2 - TAIL_SPAR["id_"] ** 2) * p["tail_span"] * 1e-3 * carbon
     film_tail = m["covering film"]["areal_g_m2"] * (w["tail"] + w["fins"])
     petg = m["PETG printed"]["rho"]
-    fs = falco.Falco().fitting_stations(p)
+    fs = nisus_plus.NisusPlus().fitting_stations(p)
     items = [
         ("wing: XPS core (25 % lightened)", "wing/reinforcement/covering", foam, x_wing, 0.0, 8.0, "CAD volume x 30 kg/m³ x 0.75"),
         ("wing: carbon spar tube 20/17 x 2000 (three pieces)", "wing/reinforcement/covering", cad["spar"] * 1e-3 * carbon, L["spar_x_root"], 0.0, 6.0, "CAD volume x 1.55 g/cm³"),
@@ -414,10 +414,10 @@ def structure_items(p=None, cad: dict | None = None) -> list:
 
 
 def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac: float = 0.28, battery_x: float | None = None) -> pd.DataFrame:
-    """FALCO's mass table [g, mm]: the structure from the CAD, the components, the pack — placed along its bay so the
+    """NISUS+'s mass table [g, mm]: the structure from the CAD, the components, the pack — placed along its bay so the
     centre of gravity sits at ``cg_frac_mac`` of the MAC (``attrs['ballast_note']`` when the bay's ends do not allow it)."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     rows = [{"item": i[0], "group": i[1], "mass [g]": i[2], "x [mm]": i[3], "y [mm]": i[4], "z [mm]": i[5], "basis": i[6]}
             for i in structure_items(p, cad)]
     for c in COMPONENTS:
@@ -425,7 +425,7 @@ def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac
                      "basis": f"{c.kind}: {c.source[:60]}"})
     df = pd.DataFrame(rows).set_index("item")
     b = pack(battery_key)
-    x0, x1, _, _ = falco.Falco.bays(p)["battery bay"]
+    x0, x1, _, _ = nisus_plus.NisusPlus.bays(p)["battery bay"]
     half = b.size_mm[0] / 2
     lo, hi = x0 + 4 + half, x1 - 4 - half
     z_b = -p["pod_height"] + p["pod_wall"] + 15.0 + b.size_mm[2] / 2
@@ -446,8 +446,8 @@ def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac
 
 
 def cg_inertia(table: pd.DataFrame, p=None) -> dict:
-    """NISUS's mass, CG and inertia arithmetic on FALCO's parameters (``nisus_systems.cg_inertia(design=Falco())``)."""
-    return ns.cg_inertia(table, p, design=falco.Falco())
+    """NISUS's mass, CG and inertia arithmetic on NISUS+'s parameters (``nisus_systems.cg_inertia(design=NisusPlus())``)."""
+    return ns.cg_inertia(table, p, design=nisus_plus.NisusPlus())
 
 
 # ================================================================================================= electrical loads
@@ -501,8 +501,8 @@ def servo_check(p=None, *, V_ail_eas=40.0, V_fe_eas=22.0, flap_deg=55.0, ail_deg
     """Hinge moments ``H = q S_s c_s Ch_δ δ`` (NISUS's estimate; Ch_δ ~ 0.4/rad, capped at 40° of effective deflection —
     a plain flap's hinge moment saturates as it separates: assumed) against a 6 kg·cm servo: the aileron at V_NE (EAS),
     the flap in crow at the maximum flap-extended speed V_FE, the elevator and the rudders at V_NE."""
-    p = falco.resolve(p)
-    L = falco.Falco.layout(p)
+    p = nisus_plus.resolve(p)
+    L = nisus_plus.NisusPlus.layout(p)
     rows = {}
     c_ail = p["aileron_chord_frac"] * 0.5 * (p["root_chord"] + p["tip_chord"]) / 1000
     c_flap = p["flap_chord_frac"] * L["chord_joint"] / 1000
@@ -591,13 +591,13 @@ def motor_model(no_load_a: float = 1.6, max_current_a: float = 85.0):
     return motor, fit
 
 
-PROPULSION_JSON = DATA / "falco_propulsion.json"
+PROPULSION_JSON = DATA / "nisus_plus_propulsion.json"
 V_GRID = np.arange(0.0, 40.01, 2.5)
 RPM_GRID = np.r_[150.0, 300.0, 500.0, 750.0, np.arange(1000.0, 2000.0, 250.0), np.arange(2000.0, 11001.0, 500.0)]
 
 
 @dataclass
-class FalcoDrive:
+class NisusPlusDrive:
     """The drive over (airspeed V, rpm) at sea level — signed thrust [N] and shaft torque [N m] from Boreas BEMT on the
     15x8 (calibrated on the positive region) — and the fitted motor; at any density the propeller scales with σ and the
     motor's current and voltage follow (``rows``). The throttle is the ESC's applied voltage over the pack's loaded
@@ -771,12 +771,12 @@ class FalcoDrive:
                 "motor_name": self.motor_name, "rho0": RHO0, "notes": self.notes}
 
     @classmethod
-    def from_json(cls, d: dict) -> "FalcoDrive":
+    def from_json(cls, d: dict) -> "NisusPlusDrive":
         return cls(np.asarray(d["V"]), np.asarray(d["rpm"]), np.asarray(d["thrust0"]), np.asarray(d["torque0"]), d["kv"], d["R"], d["I0"],
                    d["max_current_a"], d["battery_v"], d["esc_efficiency"], d["motor_name"], d.get("notes", {}))
 
 
-def build_drive(*, V=V_GRID, rpm=RPM_GRID, battery_v=21.6, esc_efficiency=0.96, correct: bool = True) -> FalcoDrive:
+def build_drive(*, V=V_GRID, rpm=RPM_GRID, battery_v=21.6, esc_efficiency=0.96, correct: bool = True) -> NisusPlusDrive:
     """Boreas BEMT over (V, rpm) at sea level for the 15x8, signed (the windmill region kept), the calibration ratios on
     the positive region; ~400 solves."""
     from vegeta import boreas
@@ -798,22 +798,22 @@ def build_drive(*, V=V_GRID, rpm=RPM_GRID, battery_v=21.6, esc_efficiency=0.96, 
                              "thrust is negative (the momentum balance is skipped): the braking is somewhat optimistic; the turbulent-windmill state "
                              "is not modelled. Calculated, low confidence; the calibration ratios are not applied there",
              "limits": "no installation effect (the pusher behind the pod); the pack's sag enters through v_batt; no motor heating model"}
-    return FalcoDrive(np.asarray(V, float), np.asarray(rpm, float), T, Q, motor.kv_rpm_per_volt, motor.resistance_ohm, motor.no_load_current_a,
+    return NisusPlusDrive(np.asarray(V, float), np.asarray(rpm, float), T, Q, motor.kv_rpm_per_volt, motor.resistance_ohm, motor.no_load_current_a,
                       motor.max_current_a, battery_v, esc_efficiency, motor.name, notes)
 
 
-def drive(path: Path = PROPULSION_JSON, rebuild: bool = False) -> FalcoDrive:
-    """The cached drive (``data/falco_propulsion.json``), rebuilt when missing or ``rebuild``."""
+def drive(path: Path = PROPULSION_JSON, rebuild: bool = False) -> NisusPlusDrive:
+    """The cached drive (``data/nisus_plus_propulsion.json``), rebuilt when missing or ``rebuild``."""
     path = Path(path)
     if path.exists() and not rebuild:
-        return FalcoDrive.from_json(json.loads(path.read_text()))
+        return NisusPlusDrive.from_json(json.loads(path.read_text()))
     d = build_drive()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(d.to_json(), indent=1))
     return d
 
 
-def drive_table(dr: FalcoDrive, heights=(0.0, 1500.0, 3000.0, 4500.0, 6000.0), V=(0.0, 15.0, 20.0, 25.0)) -> pd.DataFrame:
+def drive_table(dr: NisusPlusDrive, heights=(0.0, 1500.0, 3000.0, 4500.0, 6000.0), V=(0.0, 15.0, 20.0, 25.0)) -> pd.DataFrame:
     """Full throttle against altitude: thrust, rpm, current, battery-side power at a few airspeeds (nominal voltage)."""
     rows = {}
     for h in heights:
@@ -878,7 +878,7 @@ class MissionPlan:
     V_cruise_eas: float = 18.0
     V_survey_eas: float = 17.0
     descent_rate: float = 10.0
-    descent_regen_w: float = 0.0     # battery-side power recovered while descending (negative of a load): from falco_flight.descent_table
+    descent_regen_w: float = 0.0     # battery-side power recovered while descending (negative of a load): from nisus_plus_flight.descent_table
     approach_s: float = 90.0
     wind_m_s: float = 0.0
     ridge_m: float = 0.0             # height the return must climb over an intervening ridge
@@ -896,20 +896,20 @@ def _drag(mass_kg, cd0, AR, oswald, S, V, rho):
     return q * S * (cd0 + k * (W / (q * S)) ** 2)
 
 
-def level_power(dr: FalcoDrive, mass_kg, cd0, AR, oswald, S, V_tas, h, roc=0.0, dT=0.0, v_batt=None):
+def level_power(dr: NisusPlusDrive, mass_kg, cd0, AR, oswald, S, V_tas, h, roc=0.0, dT=0.0, v_batt=None):
     """Battery-side propulsion power [W] and thrust for level (or climbing) flight at TAS and altitude."""
     a = atmosphere(h, dT)
     T = _drag(mass_kg, cd0, AR, oswald, S, V_tas, a["rho"]) + mass_kg * G * roc / V_tas
     return dr.electrical_for_thrust(V_tas, T, a["rho"], v_batt), T
 
 
-def max_roc(dr: FalcoDrive, mass_kg, cd0, AR, oswald, S, V_tas, h, dT=0.0, v_batt=None) -> float:
+def max_roc(dr: NisusPlusDrive, mass_kg, cd0, AR, oswald, S, V_tas, h, dT=0.0, v_batt=None) -> float:
     a = atmosphere(h, dT)
     T = dr.max_thrust(V_tas, a["rho"], v_batt)
     return (T - _drag(mass_kg, cd0, AR, oswald, S, V_tas, a["rho"])) * V_tas / (mass_kg * G)
 
 
-def climb_profile(dr: FalcoDrive, airframe: dict, plan: MissionPlan, *, step_m: float = 100.0, v_batt=None) -> pd.DataFrame:
+def climb_profile(dr: NisusPlusDrive, airframe: dict, plan: MissionPlan, *, step_m: float = 100.0, v_batt=None) -> pd.DataFrame:
     """The climb from the launch altitude to the work altitude in ``step_m`` steps: at each, the TAS for the climb's
     EAS, the climb rate (the plan's, or the most the drive gives), the thrust, the battery-side power, the time and
     energy of the step."""
@@ -959,7 +959,7 @@ def return_energy(dr, airframe, plan: MissionPlan, distance_m, electronics: dict
             "E_go_around_wh": E_ga, "E_return_wh": E, "E_uncertainty_wh": plan.uncertainty_frac * E}
 
 
-def mission_energy(pk: LiIonPack, dr: FalcoDrive, airframe: dict, plan: MissionPlan = MissionPlan(), *, jetson_w=JETSON_INSTALLATION_W) -> dict:
+def mission_energy(pk: LiIonPack, dr: NisusPlusDrive, airframe: dict, plan: MissionPlan = MissionPlan(), *, jetson_w=JETSON_INSTALLATION_W) -> dict:
     """The mountain mission's energy phase by phase on one pack (see ``MissionPlan``): the electronics from
     ``phase_power``, the propulsion from the drive at each phase's density; the descent's regeneration in its own row
     (negative). Returns the phase table [Wh, kWh, % of nominal], the totals, the reserve, the return trigger."""
@@ -1030,5 +1030,5 @@ def mission_table(dr, airframe_fn, plan: MissionPlan = MissionPlan(), packs=None
 __all__ = ["G", "RHO0", "atmosphere", "density_altitude", "atmosphere_table", "CAD", "cad_numbers", "COMPONENTS", "components", "component_table",
            "JETSON", "JETSON_INSTALLATION_W", "LiIonCell", "CELLS", "CHARGE_MIN_C", "LiIonPack", "PACKS", "DEFAULT_PACK", "pack", "pack_table", "battery_fits",
            "structure_items", "mass_table", "cg_inertia", "PHASES", "DUTY", "electrical_loads", "phase_power", "servo_check", "PUBLISHED_STATIC",
-           "MOTOR_SHORTLIST", "motor_shortlist_table", "propeller_15x8", "blade_section", "motor_model", "FalcoDrive", "build_drive", "drive", "drive_table",
+           "MOTOR_SHORTLIST", "motor_shortlist_table", "propeller_15x8", "blade_section", "motor_model", "NisusPlusDrive", "build_drive", "drive", "drive_table",
            "requirements", "MissionPlan", "level_power", "max_roc", "climb_profile", "return_energy", "mission_energy", "mission_table"]
