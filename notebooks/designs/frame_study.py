@@ -522,6 +522,12 @@ def performance_table(F: list, p=None, heights=(1200.0, 3000.0), battery_key: st
 
 
 # ---------------------------------------------------------------------------------------------------------------- FEA
+def _zt(f: Frame, p) -> float:
+    """The stabiliser spar's axis: its top 0.5 mm proud of the tube's top, the rest through the wall and the bore
+    (a spar seated tangent on the tube grazes it and leaves sliver elements in the mesh)."""
+    return p["boom_z"] + f.tube_od / 2 - f.tie_od / 2 + 0.5
+
+
 def _frame_cad(f: Frame, p=None):
     """The frame's carbon members as one solid for Talos: the tube(s) from the socket to the end, the stabiliser's spar
     across them at 30 % of its chord (two halves fused without cleaning: each half is its own load region), a rod per
@@ -536,7 +542,7 @@ def _frame_cad(f: Frame, p=None):
         for xa, xb in ((x0, f.x_root), (f.x_root, f.x_end)):
             tube = cq.Workplane("YZ").workplane(offset=xa).center(y, z).circle(f.tube_od / 2).circle(f.tube_id / 2).extrude(xb - xa)
             solid = tube if solid is None else solid.union(tube, clean=False)
-    zt = z + f.tube_od / 2                                                   # the spar on the tubes' top (half embedded: fused)
+    zt = _zt(f, p)                                                           # the spar seated through the tubes' wall (no grazing contact: no sliver elements)
     half = f.tail_span / 2
     def tie(length):                                                     # a wall under 1 mm cannot be meshed at this size: a solid rod of the
         w = cq.Workplane("XZ").workplane(offset=0.0).center(f.x_tie, zt).circle(f.tie_od / 2)       # same diameter (2 x the 6/5's stiffness: negligible)
@@ -572,7 +578,7 @@ def fea_models(F: list, workdir, p=None, *, element_size: float = 2.5) -> list:
         r = f.tube_od / 2 + 0.5
         ys = [-f.boom_y, f.boom_y] if f.kind == "twin" else [0.0]
         x_sock0 = (p["boom_x0"] if f.kind == "twin" else f.x_root - 200.0) - 0.5
-        zt = z + f.tube_od / 2
+        zt = _zt(f, p)
         rt = f.tie_od / 2 + 0.3
         x_fin = f.x_fin
         regions = [talos.SurfacesInBox("socket", (x_sock0, -f.boom_y - r, z - r, f.x_root + 0.3, f.boom_y + r, z + r)),
@@ -617,7 +623,7 @@ def _tail_motion(case, result, f: Frame, p=None):
     p = npl.resolve(p)
     fr = talos.read_frd(result.artifacts["frd"])
     c, u = fr.coords, fr.displacement
-    zt = p["boom_z"] + f.tube_od / 2
+    zt = _zt(f, p)
     near = lambda y: (np.abs(c[:, 0] - f.x_tie) < f.tie_od) & (np.abs(c[:, 1] - y) < 6.0) & (np.abs(c[:, 2] - zt) < f.tie_od)
     # the spar where it leaves the tube(s): the twin's roll is the booms' differential heave, the single's the tube's twist
     yl, yr = (-f.boom_y - f.tube_od, f.boom_y + f.tube_od) if f.kind == "twin" else (-f.tube_od - 6.0, f.tube_od + 6.0)
@@ -646,9 +652,9 @@ def _unsound(case, result) -> str:
             pass
         row = st.summary_row(case, result)
         applied, reaction = row.get("applied [N]", applied), row.get("reaction [N]", reaction)
-        if applied and reaction and abs(reaction - applied) > 0.01 * applied:
+        if applied and reaction and abs(reaction - applied) > 0.001 * applied:
             return f"reaction {reaction:.1f} N against {applied:.1f} N applied"
-        if row.get("peak von Mises [MPa]", 0) > 30 * max(row.get("99.5th percentile von Mises [MPa]", 1.0), 1.0):
+        if row.get("peak von Mises [MPa]", 0) > 10 * max(row.get("99.5th percentile von Mises [MPa]", 1.0), 1.0):
             return f"peak {row['peak von Mises [MPa]']:.0f} MPa against a 99.5th percentile of {row['99.5th percentile von Mises [MPa]']:.0f}"
         return ""
     freqs = m.get("frequencies_hz") or []
