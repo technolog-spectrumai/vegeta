@@ -661,23 +661,42 @@ def _unsound(case, result) -> str:
     return f"a mode at {freqs[0]:.2f} Hz" if freqs and freqs[0] < 1.0 else ""
 
 
-def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_modes: int = 6, retries: int = 2, p=None) -> dict:
+def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_modes: int = 6, retries: int = 2, p=None,
+                progress: bool = False, label: str = "frames FEA") -> dict:
     """Mesh and solve each case in ``workdir/<name>`` (static: ``ensure``; modes: mesh then ``solve_modes``); ``run``
     False reads back what exists and marks the rest NOT RUN. A frame whose result is unsound (``_unsound``: a mesh
     accident) is rebuilt at a smaller element size in ``workdir/retry<n>`` and solved again, up to ``retries`` times;
-    the cases list is updated in place with the retried cases."""
+    the cases list is updated in place with the retried cases. ``progress``: one tqdm bar over the cases, its postfix
+    the case and Talos' stage (mesh, solve) with that stage's fraction."""
     out = {}
+    bar = None
+    if progress:
+        from tqdm.auto import tqdm
+        bar = tqdm(total=len(cases), desc=label, bar_format="{desc}: {n_fmt}/{total_fmt} |{bar}| {elapsed} {postfix}")
+
+    def stage_of(name):
+        if bar is None:
+            return False
+        def cb(stage, fraction=None, message=""):
+            bar.set_postfix_str(f"{name}: {stage}" + (f" {fraction:.0%}" if fraction is not None else ""))
+        return cb
+
     for c in cases:
         wd = Path(workdir) / c.name
         if c.kind == "static":
-            out[c.name] = c.model.ensure(wd, run=run, threads=threads)
+            out[c.name] = c.model.ensure(wd, run=run, threads=threads, progress=stage_of(c.name))
         else:
             if not run and not (wd / "modes.dat").exists():
                 out[c.name] = None
+                if bar: bar.update(1)
                 continue
             if not (wd / "mesh.msh").exists():
-                c.model.mesh(wd)
-            out[c.name] = c.model.solve_modes(wd, n_modes=n_modes, threads=threads)
+                c.model.mesh(wd, progress=stage_of(c.name))
+            out[c.name] = c.model.solve_modes(wd, n_modes=n_modes, threads=threads, progress=stage_of(c.name))
+        if bar:
+            bar.update(1)
+    if bar:
+        bar.set_postfix_str("done"); bar.close()
     if not run or retries <= 0:
         return out
     bad = {c.frame.name for c in cases if _unsound(c, out[c.name])}
@@ -689,7 +708,8 @@ def solve_cases(cases: list, workdir, *, run: bool = True, threads: int = 4, n_m
     size = cases[0].model.mesh_settings.element_size if hasattr(cases[0].model, "mesh_settings") else 2.5
     n = sum(1 for d in Path(workdir).glob("retry*")) + 1
     redo = fea_models(frames_, Path(workdir) / f"retry{n}", p, element_size=size * 0.88)
-    out2 = solve_cases(redo, Path(workdir) / f"retry{n}", run=run, threads=threads, n_modes=n_modes, retries=retries - 1, p=p)
+    out2 = solve_cases(redo, Path(workdir) / f"retry{n}", run=run, threads=threads, n_modes=n_modes, retries=retries - 1, p=p, progress=progress,
+                       label=f"{label} (retry {n})")
     for c in redo:
         i = next(k for k, c0 in enumerate(cases) if c0.name == c.name)
         cases[i] = c
