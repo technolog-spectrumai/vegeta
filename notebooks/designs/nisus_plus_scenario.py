@@ -41,6 +41,8 @@ __all__ = ["Scenario", "CONDITIONS", "standard_scenarios", "make_lab", "controll
 @dataclass
 class Scenario:
     name: str = "calm"
+    craft: str = "Nisus+ Zero"                # the aircraft's name in labels; ``slug_prefix`` in file names
+    slug_prefix: str = "nisus_plus"
     battery_key: str = fs.DEFAULT_PACK
     wind: tuple = (0.0, 0.0, 0.0)            # the synoptic wind [m/s] (x east, y north)
     sigma: float = 0.0
@@ -64,11 +66,11 @@ class Scenario:
 
     @property
     def label(self):
-        return f"Nisus+ Zero — {self.name}"
+        return f"{self.craft} — {self.name}"
 
     @property
     def slug(self):
-        return "nisus_plus_" + re.sub(r"[^A-Za-z0-9]+", "_", self.name.replace("m/s", "ms").replace("°", "")).strip("_")
+        return self.slug_prefix + "_" + re.sub(r"[^A-Za-z0-9]+", "_", self.name.replace("m/s", "ms").replace("°", "")).strip("_")
 
     @property
     def launch_heading_deg(self):
@@ -94,37 +96,65 @@ def standard_scenarios() -> list:
 
 
 # ------------------------------------------------------------------------------------------------- the lab and the run
-def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: fs.NisusPlusDrive | None = None, **kwargs):
-    """The aircraft of the scenario on the mountains in ChironLab with the ``NisusPlusAero`` hook (``lab.aero``)."""
-    p = nisus_plus.resolve(p)
-    massif = massif or fr.Massif()
-    robot = fr.nisus_plus_robot(scn.battery_key, p)
-    drive = drive or fs.drive()
-    ci = fs.cg_inertia(robot.mass_table, p)
-    a = ff.aero(p)
-    deriv = ff.derivatives(p, x_cg_m=ci["x_cg_m"], z_cg_m=ci["z_cg_m"], a=a, h_m=2500.0)
+@dataclass
+class Sim:
+    """What ``make_lab`` builds the aircraft from — NISUS+'s pieces by default; FALCO passes its own (``falco_scenario.SIM``):
+    the resolver, the robot builder, the drive, the lattice and derivative functions, the Aero hook class, the controller
+    class, the CG arithmetic, the electronics and the pack, the aircraft's name and the MuJoCo body."""
+    resolve: object = nisus_plus.resolve
+    robot: object = fr.nisus_plus_robot
+    drive: object = fs.drive
+    aero: object = ff.aero
+    derivatives: object = ff.derivatives
+    cg_inertia: object = fs.cg_inertia
+    aero_cls: type = fr.NisusPlusAero
+    controller_cls: type = fc_.NisusPlusController
+    phase_power: object = fs.phase_power
+    pack: object = fs.pack
+    jetson_w: float = fs.JETSON_INSTALLATION_W
+    craft: str = "Nisus+ Zero"
+    body: str = fr.BODY
+    massif_cls: type = fr.Massif
+    wind_cls: type = fr.MountainWind
+
+
+SIM = Sim()
+
+
+def make_lab(scn: Scenario, *, p=None, massif: fr.Massif | None = None, drive: fs.NisusPlusDrive | None = None, sim: Sim | None = None, **kwargs):
+    """The aircraft of the scenario on the mountains in ChironLab with the ``NisusPlusAero`` hook (``lab.aero``); ``sim``:
+    another aircraft's pieces (``Sim``)."""
+    sim = sim or SIM
+    p = sim.resolve(p)
+    massif = massif or sim.massif_cls()
+    robot = sim.robot(scn.battery_key, p)
+    drive = drive or sim.drive()
+    ci = sim.cg_inertia(robot.mass_table, p)
+    a = sim.aero(p)
+    deriv = sim.derivatives(p, x_cg_m=ci["x_cg_m"], z_cg_m=ci["z_cg_m"], a=a, h_m=2500.0)
     coeff = ff.coefficients(deriv)
     opts = fr.lab_options(massif, **kwargs)
     lab = ch.ChironLab(robot, massif.as_chiron(), **opts)
-    wind = fr.MountainWind(steady=tuple(scn.wind), sigma=scn.sigma, gust=scn.gust, seed=scn.seed, massif=massif)
-    el = fs.phase_power()["electronics battery-side [W]"].to_dict()
-    pk = fs.pack(scn.battery_key)
-    lab.aero = fr.NisusPlusAero(robot, coeff, drive, pk, massif, wind=wind, electronics_w=el["prelaunch"], derating=scn.plan.derating, dT=scn.dT,
+    wind = sim.wind_cls(steady=tuple(scn.wind), sigma=scn.sigma, gust=scn.gust, seed=scn.seed, massif=massif)
+    el = sim.phase_power()["electronics battery-side [W]"].to_dict()
+    pk = sim.pack(scn.battery_key)
+    lab.aero = sim.aero_cls(robot, coeff, drive, pk, massif, wind=wind, electronics_w=el["prelaunch"], derating=scn.plan.derating, dT=scn.dT,
                             pack_T_C=scn.pack_T_C)
     lab.add_hook(lab.aero)
     lab.coeff, lab.deriv, lab.drive, lab.ci, lab.el, lab.massif, lab.a = coeff, deriv, drive, ci, el, massif, a
     lab.airframe = {"mass_kg": ci["mass_kg"], "cd0": coeff["CD0"], "AR": a["AR"], "oswald": 0.9 * a["e"], "S": a["S_ref"]}
-    lab.scenario = scn
+    lab.scenario, lab.sim, lab.body = scn, sim, sim.body
     return lab
 
 
-def controller(lab, scn: Scenario, **kw) -> fc_.NisusPlusController:
+def controller(lab, scn: Scenario, **kw):
+    sim = getattr(lab, "sim", SIM)
     em = fc_.EnergyManager(lab.aero, lab.drive, lab.airframe, scn.plan, lab.el, home_alt=float(lab.massif.height(0.0, 0.0)))
     wps = scn.survey_waypoints(lab.massif)
-    return fc_.NisusPlusController(lab.aero, lab.coeff, lab.airframe, scn.plan, lab.massif, launch_heading_deg=scn.launch_heading_deg, climb_alt=scn.climb_alt,
-                               mode="auto", mission=fc_.AutoMission(wps, repeats=scn.survey_repeats), survey_wps=wps, energy=em, electronics_phase_w=lab.el,
-                               jetson_w=fs.JETSON_INSTALLATION_W, jetson_failure=scn.jetson_failure, weather_at=scn.weather_at,
-                               wind_estimate=tuple(scn.wind[:2]), ground_s=scn.plan.ground_s, name=f"Nisus+ Zero autopilot ({scn.name})", **kw)
+    return sim.controller_cls(lab.aero, lab.coeff, lab.airframe, scn.plan, lab.massif, launch_heading_deg=scn.launch_heading_deg, climb_alt=scn.climb_alt,
+                              mode="auto", mission=fc_.AutoMission(wps, repeats=scn.survey_repeats), survey_wps=wps, energy=em, electronics_phase_w=lab.el,
+                              jetson_w=sim.jetson_w, jetson_failure=scn.jetson_failure, weather_at=scn.weather_at,
+                              wind_estimate=tuple(scn.wind[:2]), ground_s=scn.plan.ground_s, name=f"{sim.craft} autopilot ({scn.name})", **kw)
 
 
 def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: float = 17.0, launch_pitch_deg: float = 8.0, fc=None) -> ch.Episode:
@@ -133,10 +163,11 @@ def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: floa
     into the meadow: the simulation's finding, ``nisus_plus_flight.launch_check`` needs the take-off flap for it) — then the
     controller's phases until it has landed and stopped (or ``duration``)."""
     fc = fc or controller(lab, scn)
-    m = float(lab.model.body_subtreemass[lab._body_id(fr.BODY)])
+    body = getattr(lab, "body", fr.BODY)
+    m = float(lab.model.body_subtreemass[lab._body_id(body)])
     a, e = math.radians(scn.launch_heading_deg), math.radians(launch_pitch_deg)
-    lab._disturbances = [d for d in lab._disturbances if d.body != fr.BODY]
-    lab.add_disturbance(ch.Disturbance(fr.BODY, t_start=fc.prelaunch_sim_s, duration=0.30, impulse=m * launch_speed,
+    lab._disturbances = [d for d in lab._disturbances if d.body != body]
+    lab.add_disturbance(ch.Disturbance(body, t_start=fc.prelaunch_sim_s, duration=0.30, impulse=m * launch_speed,
                                        direction=(math.cos(a) * math.cos(e), math.sin(a) * math.cos(e), math.sin(e))))
     z0 = float(lab.massif.height(0.0, 0.0)) + lab.nominal_base_height + 1.2           # the bungee's release height
     th = -math.radians(launch_pitch_deg + 2.0)                         # held nose-up in the thrower's hand (about the body's y axis)
@@ -150,8 +181,9 @@ def run(lab, scn: Scenario, *, duration: float | None = None, launch_speed: floa
 
 def _finish(ep, lab, scn, fc, m, launch_speed):
     aero = lab.aero
-    ep.log["aero"] = np.asarray(aero.history, float).reshape(-1, len(fr.NisusPlusAero.COLUMNS))
-    ep.log["aero_columns"] = list(fr.NisusPlusAero.COLUMNS)
+    ep.log["aero"] = np.asarray(aero.history, float).reshape(-1, len(type(aero).COLUMNS))
+    ep.log["aero_columns"] = list(type(aero).COLUMNS)
+    ep.log["body"] = getattr(lab, "body", fr.BODY)
     ep.log["mission"] = [list(x) for x in fc.log]
     ep.log["events"] = sorted(list(ep.log.get("events", [])) + [list(x) for x in fc.events], key=lambda r: r[0])
     ep.log["touchdown"] = fc.touchdown
@@ -185,7 +217,7 @@ def outcome(ep, land_radius: float = 150.0) -> dict:
     ts = timeseries(ep)
     t = np.asarray(log["t"])
     bodies = list(log["bodies"])
-    belly = np.asarray(log["belly_contact"])[:, bodies.index(fr.BODY)] if "belly_contact" in log else np.zeros(len(t), bool)
+    belly = np.asarray(log["belly_contact"])[:, bodies.index(log.get("body", fr.BODY))] if "belly_contact" in log else np.zeros(len(t), bool)
     E = log["energy"]
     reserve_ok = E["reserve_wh"] is None or E["E_remaining_wh"] >= E["reserve_wh"] - 1e-6
     phases = [name for _, name, note in log["mission"] if note == "start"]

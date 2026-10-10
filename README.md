@@ -341,6 +341,30 @@ rejected (the wing's main spar fails its tail case, crow loses a quarter of its 
 lighter, three times stiffer in bending, puts nothing into the wing's spars, and must be a roll-wrapped tube (torsion);
 with the 20x13 the package is −11 % mission energy and +20 % climb against NISUS+ as built.
 
+**FALCO** (`35_falco`, branch `dev_falco`) is the tractor the study prepared, one variant, **Falco-Zero**: NISUS+'s
+wing, pack cells, Orin and missions on MERLIN's round fuselage (spinner, cowl, cylinder, tail cone, the FALCO-109 marking
+raised on both sides), a **T-Motor AT5220-A KV220** sourced with its published bench table turning an **APC 20x15E** in
+the nose, the pack re-connected **8S3P** (the same 24 cells and box: the KV220 needs the volts — the 6S option gives
+0.5 kW shaft), a conventional tail on **one roll-wrapped 30/28 tube** in a keel socket with a single dorsal fin and the
+elevator and rudder servos on the end fitting. The landing is a belly landing with the **propeller parked horizontal**:
+on the final below 20 m the ESC's active brake stops the blades and a Hall sensor on the hub marks the horizontal (the
+routine is a companion-computer script, ArduPilot has none; a bench item), the keel keeps the spinner 83 mm clear, a
+blade straight down would be 150 mm in the meadow. Code: `designs/falco.py` (`Falco(NisusPlus)`: the layout with the
+parked and blade-down clearances, the bays, the parts), `falco_systems.py` (components with sources in
+`data/falco_component_sources.md`, the motor fit, `drive_options`, the 8S drive `data/falco_propulsion.json`, the mass
+table through NISUS+'s seams), `falco_flight.py` (the derivatives with one fin, the tractor's installation effects from
+`air_propeller`, `propeller_trade` — the frame study's 20x13 cruises near its zero-thrust advance ratio, the 20x15 is the
+pick — and `compare_with_nisus_plus`), `falco_structure.py` (the tail tube A/B and modes on the frame study's machinery,
+the keel socket, the firewall, the gyroscopic and blade-strike rows), `falco_cfd.py` (the nose rotor disk: NOT RUN),
+`falco_drawings.py` (the parked-propeller clearance drawing), `falco_robot.py` (`FalcoAero` with the ``parked`` state),
+`falco_controller.py` (the flare parks the propeller; a go-around un-parks it), `falco_scenario.py` / `falco_birds.py`
+(the six mountain missions and the four bird hunts, the judge counting a touchdown with the blades not parked as a blade
+strike). NISUS+'s modules gained only backward-compatible `design=` / `sim=` seams. Against NISUS+ on the same mission:
+static thrust +6 %, climb and acceleration +13-15 %, cruise power −3-4 %, mission energy −5 %, survey time +7 %; the
+study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch propeller — the sourced AT5220's losses
+(fitted R 0.13 Ω with the ESC) take the rest. `scenarios/falco_mission.py`, `scenarios/falco_birds.py`
+(`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

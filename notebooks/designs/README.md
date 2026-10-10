@@ -209,3 +209,18 @@ following) and `nisus_plus_scenario.py` the mountain missions and movies; `nisus
 `fea_models` / `solve_cases` / `fea_table` / `modes_table` (Talos), `aero_table` (the aerodynamic efficiency of each
 variant), `performance_table` (speed and acceleration), `drive_for_prop` (the larger propellers' maps,
 `data/frame_study_drive_*.json`), `verdict`, `sketch`.
+`falco.py` (`Falco(NisusPlus)`, notebook 35) is the tractor built on the study: MERLIN's round fuselage in NISUS+'s
+section rows (`pod_profile`), the propeller at the nose, one tail tube in a keel socket (`tail_tube`, `tail_socket`,
+`tail_fitting` parts), one dorsal fin, the parked-propeller and blade-down ground clearances in `layout`, `outline`
+with `side.prop_parked`. `falco_systems.py`: `COMPONENTS` (the AT5220-A KV220 with its bench table, the APC 20x15E, the
+Hall position sensor), `PACKS` with the 8S3P, `motor_model` (fitted to the published point), `drive_options`,
+`drive` (`data/falco_propulsion.json`), `structure_items`, `mass_table` / `cg_inertia` through NISUS+'s seams.
+`falco_flight.py`: `aero` / `derivatives` / `cg_range` (one fin), `installation` / `installation_table` (the tractor's
+wake fraction and thrust deduction), `airframe`, `propeller_trade`, `compare_with_nisus_plus`. `falco_structure.py`:
+`load_cases` (+ gyroscopic, fin torsion, blade strike), `joints_hand` (the socket, the tube in bending and torsion,
+the stabiliser spar, the fin rod, the firewall), `tail_frame` / `tail_tube_cases` / `solve_tail_tube` (the frame study's
+FEA on FALCO's tube), `tail_socket_case`, `motor_mount_case`, `models`. `falco_cfd.py` (the nose rotor disk),
+`falco_drawings.py` (`three_view`, `park_clearance`, `internal_layout`, `crow_view`, `transport_view`, `exploded_png`),
+`falco_robot.py` (`falco_robot`, `FalcoAero`: the `park` command channel and the `parked` log column),
+`falco_controller.py` (`FalcoController`: the flare parks the propeller), `falco_scenario.py` (`SIM`, `scenario`,
+`standard_scenarios`, `run`, `outcome` with the blade-strike check, `park_table`), `falco_birds.py`.

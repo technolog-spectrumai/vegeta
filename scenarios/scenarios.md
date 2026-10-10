@@ -193,3 +193,27 @@ on Nisus+ Zero over the south-facing slope — golden eagles beating along it in
 wide in a thermal, a flock of alpine
 choughs, the Jetson failing mid-hunt. YOLOX is not run (simulated detections at the assumed Jetson budget). Writes
 `scenarios/output/nisus_plus_birds_<scenario>.mp4`, `_photos.csv` and `nisus_plus_birds.json`.
+
+## FALCO mountain missions (`falco_mission.py`)
+
+```bash
+xvfb-run -a python3 scenarios/falco_mission.py                                    # six mountain missions with movies (~20 min)
+xvfb-run -a python3 scenarios/falco_mission.py --condition "lee downdraft (north wind 10 m/s)"
+python3 scenarios/falco_mission.py --no-movie                                     # the numbers only (~10 min)
+```
+Notebook 35's missions: NISUS+'s six conditions on Falco-Zero, the tractor (`notebooks/designs/falco_scenario.py`) — the
+20x15 in the nose on the 8S3P pack, the single tail; the landing **parks the propeller**: on the 9° crow final below
+20 m the throttle goes to idle, the ESC's brake stops the blades and the parking routine marks them horizontal, the
+flare is flown on the pitch alone, a go-around un-parks it. The judge counts a touchdown with the blades not parked as a
+blade strike. Writes `scenarios/output/falco_<condition>.mp4` and `.csv` and `falco_mission.json`.
+
+## FALCO bird hunts (`falco_birds.py`)
+
+```bash
+xvfb-run -a python3 scenarios/falco_birds.py                                      # four bird hunts with videos (~25 min)
+xvfb-run -a python3 scenarios/falco_birds.py --scenario "alpine chough"
+python3 scenarios/falco_birds.py --no-movie
+```
+NISUS+'s four hunts on Falco-Zero (`notebooks/designs/falco_birds.py`): the camera in the chin looks past the
+propeller's hub (the blades cross the top of the frame: computer vision masks them, accepted). Writes
+`scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.

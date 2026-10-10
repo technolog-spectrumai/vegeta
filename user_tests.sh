@@ -24,6 +24,8 @@
 #   nisus-birds       NISUS-Zero bird photography: vegeta.mission tests, then scenarios/nisus_birds.py (6 missions + videos; ~30 min)
 #   nisus-plus        NISUS+ (mountain survey drone): tests, then scenarios/nisus_plus_mission.py (6 mountain missions + movies; ~20 min)
 #   nisus-plus-birds  Nisus+ Zero chasing birds in the mountains: scenarios/nisus_plus_birds.py (4 hunts + videos; ~25 min)
+#   falco             FALCO (tractor mountain aircraft): tests, then scenarios/falco_mission.py (6 missions, the propeller parked; ~20 min)
+#   falco-birds       Falco-Zero chasing birds in the mountains: scenarios/falco_birds.py (4 hunts + videos; ~25 min)
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
@@ -211,6 +213,18 @@ for s in "${SECTIONS[@]}"; do
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_plus_birds.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and nisus_plus_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    falco)
+      hdr "FALCO: the tractor's layout and parked propeller, CAD, mass, the sourced motor's fit, the drive, one fin, structure, the parking in MuJoCo"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_falco.py -m "not slow" || status=1
+      hdr "FALCO mountain missions: calm / ridge lift / lee downdraft / hot day / storm escape / Jetson failure, the propeller parked for the landing (MuJoCo, 6 movies)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/falco_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies, telemetry and falco_mission.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    falco-birds)
+      hdr "Falco-Zero bird hunts in the mountains: eagles in the ridge lift, vultures, choughs, Jetson failure (MuJoCo, 4 videos)"
+      XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
+      t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/falco_birds.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -16 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and falco_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

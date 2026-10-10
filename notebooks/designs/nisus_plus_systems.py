@@ -79,11 +79,13 @@ CAD = {"aircraft": 22950563.0, "wing": 12783897.0, "spar": 174536.0, "rear_spar"
        "battery_tray": 71320.0, "flap": 224959.0, "aileron": 277388.0, "spar_joiner": 18871.0}
 
 
-def cad_numbers(p: dict | None = None, *, recompute: bool = False) -> dict:
+def cad_numbers(p: dict | None = None, *, recompute: bool = False, design=None, table: dict | None = None) -> dict:
+    """``design`` / ``table``: another design's instance and its cached volumes (FALCO's)."""
+    table = CAD if table is None else table
     if not recompute and not p:
-        return dict(CAD)
-    d = nisus_plus.NisusPlus()
-    return {part: float(d.generate(**nisus_plus.overrides(p), part=part).measure()["volume"]) for part in CAD}
+        return dict(table)
+    d = design if design is not None else nisus_plus.NisusPlus()
+    return {part: float(d.generate(**nisus_plus.overrides(p), part=part).measure()["volume"]) for part in table}
 
 
 # ================================================================================================= components
@@ -333,9 +335,9 @@ def pack_table(T_C=(25.0, 5.0, -10.0)) -> pd.DataFrame:
     return pd.DataFrame(rows).T
 
 
-def battery_fits(b: LiIonPack, p=None) -> dict:
-    p = nisus_plus.resolve(p)
-    x0, x1, w, h = nisus_plus.NisusPlus.bays(p)["battery bay"]
+def battery_fits(b: LiIonPack, p=None, design=None) -> dict:
+    p = nisus_plus.resolve(p, design)
+    x0, x1, w, h = type(nisus_plus._design(design)).bays(p)["battery bay"]
     L_bay = x1 - x0
     dims = b.size_mm
     fits = dims[0] <= L_bay - 6 and dims[1] <= p["battery_tray_width"] and dims[2] <= h - 50      # the flight controller tray sits above the pack
@@ -413,19 +415,24 @@ def structure_items(p=None, cad: dict | None = None) -> list:
     return items
 
 
-def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac: float = 0.28, battery_x: float | None = None) -> pd.DataFrame:
+def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac: float = 0.28, battery_x: float | None = None,
+               design=None, items=None, components=None, variant: str = "Zero", battery: "LiIonPack | None" = None) -> pd.DataFrame:
     """NISUS+'s mass table [g, mm]: the structure from the CAD, the components, the pack — placed along its bay so the
-    centre of gravity sits at ``cg_frac_mac`` of the MAC (``attrs['ballast_note']`` when the bay's ends do not allow it)."""
-    p = nisus_plus.resolve(p)
-    L = nisus_plus.NisusPlus.layout(p)
+    centre of gravity sits at ``cg_frac_mac`` of the MAC (``attrs['ballast_note']`` when the bay's ends do not allow it).
+    ``design`` / ``items`` / ``components``: another design's instance, its ``structure_items`` function and its
+    component list (FALCO's); ``battery``: a pack object instead of ``battery_key`` (FALCO's 8S3P)."""
+    d = nisus_plus._design(design)
+    p = nisus_plus.resolve(p, d)
+    L = type(d).layout(p)
+    items_fn = items or structure_items
     rows = [{"item": i[0], "group": i[1], "mass [g]": i[2], "x [mm]": i[3], "y [mm]": i[4], "z [mm]": i[5], "basis": i[6]}
-            for i in structure_items(p, cad)]
-    for c in COMPONENTS:
-        rows.append({"item": c.key, "group": c.group, "mass [g]": c.mass_g, "x [mm]": c.x("Zero"), "y [mm]": c.y_mm, "z [mm]": c.z_mm,
+            for i in items_fn(p, cad)]
+    for c in (COMPONENTS if components is None else components):
+        rows.append({"item": c.key, "group": c.group, "mass [g]": c.mass_g, "x [mm]": c.x(variant), "y [mm]": c.y_mm, "z [mm]": c.z_mm,
                      "basis": f"{c.kind}: {c.source[:60]}"})
     df = pd.DataFrame(rows).set_index("item")
-    b = pack(battery_key)
-    x0, x1, _, _ = nisus_plus.NisusPlus.bays(p)["battery bay"]
+    b = battery if battery is not None else pack(battery_key)
+    x0, x1, _, _ = type(d).bays(p)["battery bay"]
     half = b.size_mm[0] / 2
     lo, hi = x0 + 4 + half, x1 - 4 - half
     z_b = -p["pod_height"] + p["pod_wall"] + 15.0 + b.size_mm[2] / 2
@@ -441,13 +448,13 @@ def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac
             battery_x = edge
     df.loc[f"battery {b.name}"] = {"group": "battery/retention", "mass [g]": b.mass_g, "x [mm]": battery_x, "y [mm]": 0.0, "z [mm]": z_b,
                                    "basis": f"calculated: {b.series * b.parallel} cells x {b.cell.mass_g:g} g + {b.pack_overhead:.0%} packing"}
-    df.attrs.update(variant="Zero", battery=b.key, battery_item=f"battery {b.name}", ballast_note=note, battery_x_range=(lo, hi), cg_target_frac=cg_frac_mac)
+    df.attrs.update(variant=variant, battery=b.key, battery_item=f"battery {b.name}", ballast_note=note, battery_x_range=(lo, hi), cg_target_frac=cg_frac_mac)
     return df
 
 
-def cg_inertia(table: pd.DataFrame, p=None) -> dict:
+def cg_inertia(table: pd.DataFrame, p=None, design=None) -> dict:
     """NISUS's mass, CG and inertia arithmetic on NISUS+'s parameters (``nisus_systems.cg_inertia(design=NisusPlus())``)."""
-    return ns.cg_inertia(table, p, design=nisus_plus.NisusPlus())
+    return ns.cg_inertia(table, p, design=nisus_plus._design(design))
 
 
 # ================================================================================================= electrical loads

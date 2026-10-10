@@ -148,16 +148,16 @@ def bird_scenarios() -> list:
             replace(base, name="eagles, Jetson failure", jetson_failure=(None, None))]
 
 
-def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True):
+def run(bs: BirdScenario, *, duration=None, log_geoms: bool = True, sim=None):
     """The whole flight: the bungee launch, the climb over the meadow, the transit to the face, ``bird_time_s`` of
-    hunting, the return, the crow descent, the landing."""
+    hunting, the return, the crow descent, the landing. ``sim``: another aircraft's pieces (``nisus_plus_scenario.Sim``)."""
     scn = bs.scenario()
-    lab = fsc.make_lab(scn, log_geoms=log_geoms)
+    lab = fsc.make_lab(scn, log_geoms=log_geoms, sim=sim)
     mission = nb.BirdMission(bs.make_birds, bs.config(), bird_time_s=bs.bird_time_s, seed=bs.seed)
     lab.add_hook(mission)
     fc = fsc.controller(lab, scn)
     fc.mode, fc.companion, fc.mission = "birds", mission, None
-    fc.name = f"Nisus+ Zero autopilot + bird mission ({bs.name})"
+    fc.name = f"{lab.sim.craft} autopilot + bird mission ({bs.name})"
     if bs.jetson_failure == (None, None):                         # fail 90 s into the hunt (the hunt's start is not known in advance)
         fc.jetson_failure = None
         orig = mission.__call__

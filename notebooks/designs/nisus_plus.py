@@ -124,7 +124,8 @@ class NisusPlus(Nisus):
         S_flap = p["flap_chord_frac"] * 0.5 * (chord(y0) + chord(y1)) * (y1 - y0) * 1e-6
         pieces = {"centre section": 2 * p["wing_joint_y"], "outer panel": b2 - p["wing_joint_y"], "boom": p["boom_length"],
                   "pod": p["pod_length"], "tail (stabiliser)": p["tail_span"]}
-        L.update({"S_flap_each": S_flap, "y_flap0": y0, "y_flap1": y1, "flap_span_share": 2 * (y1 - y0) / p["span"],
+        L.update({"fin_root_z": p["boom_z"], "n_fins": 2,
+                  "S_flap_each": S_flap, "y_flap0": y0, "y_flap1": y1, "flap_span_share": 2 * (y1 - y0) / p["span"],
                   "flapped_area_share": 2 * 0.5 * (chord(y0) + chord(y1)) * (y1 - y0) * 1e-6 / L["S_ref"],
                   "y_joint": p["wing_joint_y"], "chord_joint": chord(p["wing_joint_y"]), "pieces_mm": pieces,
                   "longest_piece_mm": max(pieces.values())})
@@ -349,8 +350,13 @@ def overrides(p=None) -> dict:
     return {k: v for k, v in dict(p or {}).items() if k not in PER_CALL}
 
 
-def resolve(p=None, **kw) -> dict:
-    return nisus.resolve(p, NisusPlus(), **kw)
+def _design(design=None):
+    """The design instance the helpers work on: ``NisusPlus()`` by default, or a subclass's instance (FALCO's)."""
+    return design if design is not None else NisusPlus()
+
+
+def resolve(p=None, design=None, **kw) -> dict:
+    return nisus.resolve(p, _design(design), **kw)
 
 
 def exploded_parts(p=None, spread=1.0) -> dict:
@@ -365,8 +371,9 @@ def exploded_parts(p=None, spread=1.0) -> dict:
     return parts
 
 
-def planform(p=None) -> dict:
-    return nisus.planform(p, NisusPlus())
+def planform(p=None, design=None) -> dict:
+    d = _design(design)
+    return d.planform(p) if hasattr(d, "planform") else nisus.planform(p, d)
 
 
 def wetted_areas(p=None) -> dict:
@@ -386,13 +393,14 @@ def boom_check(p=None, **kw) -> dict:
     return nisus.boom_check(p, design=NisusPlus(), **kw)
 
 
-def planform_split(p=None) -> dict:
+def planform_split(p=None, design=None) -> dict:
     """``planform`` with each wing half cut into spanwise quads at the pod side, the boom, the flap's ends, the joint and
     the aileron's start, and each quad tagged (``surface``: 'centre', 'plain', 'flap', 'aileron'), so the lattice can
     deflect the flaps and the ailerons (an incidence increment on their quads) — ``nisus_plus_flight``."""
-    p = resolve(p)
-    L = NisusPlus.layout(p)
-    pl = planform(p)
+    d = _design(design)
+    p = resolve(p, d)
+    L = type(d).layout(p)
+    pl = planform(p, d)
     c0, c1, yc, b2 = p["root_chord"], p["tip_chord"], L["yc"], L["b2"]
     dxt, dzt = L["le_sweep_tip"], (b2 - yc) * math.tan(math.radians(p["dihedral_deg"]))
 

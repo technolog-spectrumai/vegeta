@@ -161,13 +161,13 @@ def internal_layout(battery_key: str = fs.DEFAULT_PACK, p=None, figsize=(15, 7))
     return fig
 
 
-def crow_view(p=None, flap_deg=55.0, aileron_deg=-25.0, figsize=(13, 4.5)):
+def crow_view(p=None, flap_deg=55.0, aileron_deg=-25.0, figsize=(13, 4.5), design=None):
     """The crow configuration: a chordwise section through the flap and one through the aileron with their surfaces
-    deflected (side view), and the front view of the trailing edges."""
+    deflected (side view), and the front view of the trailing edges. ``design``: another design's instance (FALCO's)."""
     from fixed_wing import naca4
-    p = nisus_plus.resolve(p)
-    d = nisus_plus.NisusPlus()
-    L = nisus_plus.NisusPlus.layout(p)
+    d = nisus_plus._design(design)
+    p = nisus_plus.resolve(p, d)
+    L = type(d).layout(p)
     up, lo = naca4(p["camber"], p["camber_pos"], p["thickness"])
     sec = np.array(up + lo[::-1])
     fig, axes = plt.subplots(1, 3, figsize=figsize, gridspec_kw=dict(width_ratios=[1, 1, 1.3]))

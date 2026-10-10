@@ -76,11 +76,11 @@ def _surfaces(pl, it_deg, de_deg=0.0, df_deg=0.0, da_deg=0.0, da_anti=0.0):
     return quads, inc, n_span
 
 
-def aero(p=None, *, x_ref=None, it_deg=None, n_chord=4) -> dict:
+def aero(p=None, *, x_ref=None, it_deg=None, n_chord=4, design=None) -> dict:
     """NISUS's lattice derivatives on NISUS+ (``nisus_flight.aero``'s recipe) plus the flaps' and the symmetric ailerons'
-    CL and Cm per degree (linear: small deflections)."""
-    p = nisus_plus.resolve(p)
-    pl = nisus_plus.planform_split(p)
+    CL and Cm per degree (linear: small deflections). ``design``: another design's instance (FALCO's)."""
+    p = nisus_plus.resolve(p, design)
+    pl = nisus_plus.planform_split(p, design)
     it = p["tail_incidence_deg"] if it_deg is None else it_deg
     S, c = pl["S_ref"], pl["c_ref"]
     x_ref = pl["x_ac_wing"] if x_ref is None else x_ref
@@ -115,17 +115,17 @@ def aero(p=None, *, x_ref=None, it_deg=None, n_chord=4) -> dict:
             "Cma": Cma + Cma_f, "Cma_lattice": Cma, "Cma_pod": Cma_f, "x_np": x_np, "k": k, "e": 1 / (math.pi * AR * k),
             "CLde": re["CL"] - r0["CL"], "Cmde": re["Cm"] - r0["Cm"], "CLdf": rf["CL"] - r0["CL"], "Cmdf": rf["Cm"] - r0["Cm"],
             "CLda_sym": ra["CL"] - r0["CL"], "Cmda_sym": ra["Cm"] - r0["Cm"], "it_deg": it, "CLa_tail_alone": CLa_t_alone, "deps_dalpha": deps,
-            "V_h": pl["V_h"], "V_v": pl["V_v"], "l_t": pl["l_t"], "l_v": pl["l_v"], "S_h": pl["S_h"], "S_v": pl["S_v"], "pl": pl}
+            "V_h": pl["V_h"], "V_v": pl["V_v"], "l_t": pl["l_t"], "l_v": pl["l_v"], "S_h": pl["S_h"], "S_v": pl["S_v"], "n_fins": pl.get("n_fins", 2), "pl": pl}
 
 
-def crow_increments(p=None, flap_deg=CROW["flap_deg"], aileron_deg=CROW["aileron_deg"], *, x_ref=None, a=None) -> dict:
+def crow_increments(p=None, flap_deg=CROW["flap_deg"], aileron_deg=CROW["aileron_deg"], *, x_ref=None, a=None, design=None) -> dict:
     """The increments of a flap / aileron setting (crow: flaps down, ailerons up) against the clean wing at the same
     angle of attack: ΔCL, ΔCm (about ``x_ref``, default the MAC quarter chord), ΔCDi from the lattice with the
     effectiveness K(δ); the profile drag ΔCD_p of both surfaces (Raymer's plain-flap formula); ΔCL_max (the flaps'
     Δcl_max over the flapped span, the ailerons' loss likewise)."""
-    p = nisus_plus.resolve(p)
-    L = nisus_plus.NisusPlus.layout(p)
-    a = a or aero(p)
+    p = nisus_plus.resolve(p, design)
+    L = type(nisus_plus._design(design)).layout(p)
+    a = a or aero(p, design=design)
     pl = a["pl"]
     x_ref = pl["x_ac_wing"] if x_ref is None else x_ref
     kw = dict(S_ref=pl["S_ref"], c_ref=pl["c_ref"], x_ref=x_ref, n_chord=4)
@@ -154,11 +154,11 @@ def crow_increments(p=None, flap_deg=CROW["flap_deg"], aileron_deg=CROW["aileron
             "source": "ΔCL, ΔCm, k: calculated (lattice, K(δ) assumed); ΔCD profile: assumed (Raymer's plain-flap formula); ΔCL_max assumed"}
 
 
-def crow_table(p=None, settings=((0, 0), (15, 0), (30, 0), (30, -15), (45, -20), (55, -25), (60, -30), (0, -25)), a=None) -> pd.DataFrame:
-    a = a or aero(p)
+def crow_table(p=None, settings=((0, 0), (15, 0), (30, 0), (30, -15), (45, -20), (55, -25), (60, -30), (0, -25)), a=None, design=None) -> pd.DataFrame:
+    a = a or aero(p, design=design)
     rows = {}
     for df_, da_ in settings:
-        c = crow_increments(p, df_, da_, a=a)
+        c = crow_increments(p, df_, da_, a=a, design=design)
         rows[f"flap {df_:+.0f}°, aileron {da_:+.0f}°"] = {k: c[k] for k in ("dCL", "dCm", "dCD_profile", "k_crow", "dCL_max")}
     return pd.DataFrame(rows).T
 
@@ -169,15 +169,18 @@ def cl_max(p=None) -> float:
 
 # ================================================================================================= the derivatives
 def derivatives(p=None, *, x_cg_m: float, z_cg_m: float = -0.05, cd0: float | None = None, CL_ref: float = 0.45, h_m: float = 0.0, a=None,
-                crow=CROW) -> pd.DataFrame:
+                crow=CROW, design=None) -> pd.DataFrame:
     """NISUS's derivative table (``nisus_flight.derivatives``, the same formulas and tags) on NISUS+'s geometry, the Cd0
     from the build-up at the altitude ``h_m``'s viscosity, and the flap and crow rows: CLdf, Cmdf (lattice, per rad,
     linear), the crow increments at ``crow`` (CL, Cm about the CG, the profile drag, k), the symmetric aileron's CL, Cm."""
-    p = nisus_plus.resolve(p)
-    a = a or aero(p)
-    L = nisus_plus.NisusPlus.layout(p)
+    d = nisus_plus._design(design)
+    p = nisus_plus.resolve(p, d)
+    a = a or aero(p, design=design)
+    L = type(d).layout(p)
     atm = fs.atmosphere(h_m)
-    cd0 = nisus_plus.drag_buildup(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])["cd0"] if cd0 is None else cd0
+    if cd0 is None:
+        build = d.drag_buildup if hasattr(d, "drag_buildup") else (lambda p_, V, nu: nisus_plus.drag_buildup(p_, V, nu))
+        cd0 = build(p, V_CRUISE_EAS / math.sqrt(atm["sigma"]), atm["nu"])["cd0"]
     c, b, S = a["c_ref"], a["b"], a["S_ref"]
     shift = (x_cg_m - a["x_ref"]) / c
     CLa, CL0 = a["CLa"], a["CL0"]
@@ -196,11 +199,12 @@ def derivatives(p=None, *, x_cg_m: float, z_cg_m: float = -0.05, cd0: float | No
     CLq = 2 * eta * CLa_t * V_h
     Cmadot = Cmq * a["deps_dalpha"]
     h_v = (p["fin_height"] + p["fin_ventral"]) / 1000
-    S_v1 = a["S_v"] / 2
+    n_fins = a.get("n_fins", 2)
+    S_v1 = a["S_v"] / n_fins
     AR_v = 1.55 * h_v ** 2 / S_v1
     CLa_v = 2 * math.pi * AR_v / (2 + math.sqrt(AR_v ** 2 + 4))
     l_v = L["x_ac_fin"] / 1000 - x_cg_m
-    z_v = (p["boom_z"] + 0.5 * (p["fin_height"] - p["fin_ventral"])) / 1000 - z_cg_m
+    z_v = (L.get("fin_root_z", p.get("boom_z", 0.0)) + 0.5 * (p["fin_height"] - p["fin_ventral"])) / 1000 - z_cg_m
     S_v = a["S_v"]
     Cyb_v = -eta * (S_v / S) * CLa_v
     Cyb_body = -0.08
@@ -230,7 +234,7 @@ def derivatives(p=None, *, x_cg_m: float, z_cg_m: float = -0.05, cd0: float | No
     Cndr = -Cydr * l_v / b
     Cldr = Cydr * z_v / b
     CD_de = 0.05
-    cr = crow_increments(p, crow["flap_deg"], crow["aileron_deg"], x_ref=x_cg_m, a=a)
+    cr = crow_increments(p, crow["flap_deg"], crow["aileron_deg"], x_ref=x_cg_m, a=a, design=design)
     rows = [
         ("CL0", CL0, "-", "calculated (lattice)", "lift at α = 0 from the pod axis: wing incidence and camber"),
         ("CLa", CLa, "1/rad", "calculated (lattice)", "lift slope, wing + tail"),
@@ -295,17 +299,17 @@ def trim_crow(deriv: pd.DataFrame, mass_kg: float, V: float, rho=RHO0, crow_frac
     return {"V": V, "CL": cl, "alpha_deg": math.degrees(al), "elevator_deg": math.degrees(de), "stalled": cl > c["CL_max"] + crow_frac * c["dCLmax_crow"]}
 
 
-def cg_range(p, mass_kg, *, sm_min: float = 0.05, de_max_deg: float = 20.0, rho=RHO0, a=None) -> dict:
+def cg_range(p, mass_kg, *, sm_min: float = 0.05, de_max_deg: float = 20.0, rho=RHO0, a=None, design=None) -> dict:
     """NISUS's CG range (aft: the minimum static margin; forward: the elevator trims the stall in crow too) at density rho."""
-    p = nisus_plus.resolve(p)
-    a = a or aero(p)
-    L = nisus_plus.NisusPlus.layout(p)
+    p = nisus_plus.resolve(p, design)
+    a = a or aero(p, design=design)
+    L = type(nisus_plus._design(design)).layout(p)
     c = a["c_ref"]
     aft = a["x_np"] - sm_min * c
     xs = np.linspace(L["x_mac_le"] / 1000 - 0.1 * c, aft, 40)
     fwd = xs[0]
     for x in xs:
-        d = derivatives(p, x_cg_m=x, a=a)
+        d = derivatives(p, x_cg_m=x, a=a, design=design)
         cf = coefficients(d)
         Vs = math.sqrt(2 * mass_kg * G / (rho * cf["S"] * (cf["CL_max"] + cf["dCLmax_crow"])))
         t = trim_crow(d, mass_kg, 1.1 * Vs, rho)
@@ -519,15 +523,16 @@ def downdraft_escape(af: Airframe, dr: fs.NisusPlusDrive, *, heights=(1500.0, 30
 
 
 def launch_check(af: Airframe, dr: fs.NisusPlusDrive, h_m: float = 3000.0, *, v_release: float = 11.0, flap_deg: float = 15.0, pitch_deg: float = 8.0,
-                 dT: float = 0.0, a=None, p=None, duration: float = 4.0) -> dict:
+                 dT: float = 0.0, a=None, p=None, duration: float = 4.0, design=None) -> dict:
     """A launch at a site of altitude ``h_m``: released at ``v_release`` (a strong hand throw ~11 m/s; a light bungee
     ~18 m/s) at full power with the take-off flap, the wing held at the stall's angle at most: a point mass in the
-    vertical plane; the height lost before it climbs and the time to reach 1.2 V_s (flaps set)."""
-    p = nisus_plus.resolve(p)
-    a = a or aero(p)
+    vertical plane; the height lost before it climbs and the time to reach 1.2 V_s (flaps set). ``design``: another
+    design's instance (FALCO's)."""
+    p = nisus_plus.resolve(p, design)
+    a = a or aero(p, design=design)
     atm = fs.atmosphere(h_m, dT)
     rho = atm["rho"]
-    cr = crow_increments(p, flap_deg, 0.0, a=a)
+    cr = crow_increments(p, flap_deg, 0.0, a=a, design=design)
     W, m, S = af.mass_kg * G, af.mass_kg, af.wing_area_m2
     clmax = af.cl_max + cr["dCL_max"]
     Vs = math.sqrt(2 * W / (rho * S * clmax))
