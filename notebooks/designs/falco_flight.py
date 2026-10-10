@@ -29,7 +29,7 @@ import peregrine_flight as pf
 from merlin_flight import Airframe
 from nisus_plus_flight import (FLAP_TAU, N_STRUCTURAL, V_NE_EAS, V_FE_EAS, V_CRUISE_EAS, CROW, flap_k, flap_profile_drag, cl_max,  # noqa: F401
                                trim_crow, coefficients, trim, airframe_dict, DriveUnit, envelope, envelope_vs_altitude, ceiling, climb_strategy,
-                               glide_state, descent_table, best_descent, regen_table, downdraft_escape, launch_table, operating_limits,
+                               glide_state, descent_table, best_descent, regen_table, downdraft_escape, operating_limits,
                                stall_table, gust_response, pull_up, AIRFOIL, TAIL_SECTION)
 
 try:
@@ -73,6 +73,11 @@ def cg_range(p=None, mass_kg: float | None = None, **kw) -> dict:
 def launch_check(af, dr, h_m: float = 3000.0, **kw) -> dict:
     kw.setdefault("a", aero(kw.get("p")))
     return ff.launch_check(af, dr, h_m, design=_d(), **kw)
+
+
+def launch_table(af, dr, heights=(1200.0, 2000.0, 3000.0), releases=(9.0, 11.0, 18.0), **kw) -> pd.DataFrame:
+    kw.setdefault("a", aero(kw.get("p")))
+    return ff.launch_table(af, dr, heights, releases, design=_d(), **kw)
 
 
 # ================================================================================================= the tractor's installation
