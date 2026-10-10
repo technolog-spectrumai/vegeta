@@ -1,0 +1,601 @@
+{
+ "status": {
+  "FEA": "run",
+  "variants": 5,
+  "feasible": [
+   "twin 15\"",
+   "twin 18\"",
+   "single 20\""
+  ],
+  "rejected": {
+   "twin 20\"": "the main spar's tail-case margin -0.10: the wing's spar would have to grow for the booms",
+   "twin 22\"": "the main spar's tail-case margin -0.21: the wing's spar would have to grow for the booms"
+  }
+ },
+ "variants": {
+  "twin 15\"": {
+   "feasible": true,
+   "propeller": "15x8",
+   "kind": "twin",
+   "booms apart [mm]": 500.0,
+   "tube": "2 x 20/18 pultruded",
+   "stabiliser [mm]": "560 x 190",
+   "fins [mm]": "2 x 310 x 190 (110 ventral)",
+   "rear tube": "18/14 x 600",
+   "flap span [mm]": 260.0,
+   "note": ""
+  },
+  "twin 18\"": {
+   "feasible": true,
+   "propeller": "18x10",
+   "kind": "twin",
+   "booms apart [mm]": 578.5973884119,
+   "tube": "2 x 20/18 pultruded",
+   "stabiliser [mm]": "639 x 167",
+   "fins [mm]": "2 x 354 x 167 (125 ventral)",
+   "rear tube": "20/16 x 679",
+   "flap span [mm]": 220.7013057941,
+   "note": ""
+  },
+  "twin 20\"": {
+   "feasible": false,
+   "propeller": "20x13",
+   "kind": "twin",
+   "booms apart [mm]": 630.6688220678,
+   "tube": "2 x 20/18 pultruded",
+   "stabiliser [mm]": "691 x 154",
+   "fins [mm]": "2 x 382 x 154 (136 ventral)",
+   "rear tube": "22/18 x 731",
+   "flap span [mm]": 194.6655889661,
+   "note": "the main spar's tail-case margin -0.10: the wing's spar would have to grow for the booms"
+  },
+  "twin 22\"": {
+   "feasible": false,
+   "propeller": "22x12",
+   "kind": "twin",
+   "booms apart [mm]": 682.5486564193,
+   "tube": "2 x 20/18 pultruded",
+   "stabiliser [mm]": "743 x 143",
+   "fins [mm]": "2 x 411 x 143 (146 ventral)",
+   "rear tube": "25/21 x 783",
+   "flap span [mm]": 168.7256717903,
+   "note": "the main spar's tail-case margin -0.21: the wing's spar would have to grow for the booms"
+  },
+  "single 20\"": {
+   "feasible": true,
+   "propeller": "20x13",
+   "kind": "single",
+   "booms apart [mm]": null,
+   "tube": "1 x 30/28 roll-wrapped",
+   "stabiliser [mm]": "560 x 190",
+   "fins [mm]": "1 x 413 x 285",
+   "rear tube": "18/14 x 600",
+   "flap span [mm]": 260.0,
+   "note": "the tractor's frame: the tube leaves the pod where the pusher's propeller is"
+  }
+ },
+ "hand": {
+  "twin 15\"": {
+   "feasible": true,
+   "propeller [in]": 15.0,
+   "booms apart [mm]": 500.0,
+   "tube": "2 x 20/18 pultruded",
+   "cantilever [mm]": 569.4469026549,
+   "tail span x chord [mm]": "560 x 190",
+   "fins": "2 x 310 high",
+   "bending stress, ultimate [MPa]": 150.6627611216,
+   "margin (500 MPa x 0.8)": 1.6549360773,
+   "tip deflection at ultimate [mm]": 9.0964137782,
+   "tail incidence change at ultimate [deg]": 1.37287458,
+   "fin twist under its side load [deg]": 2.5944634453,
+   "tail roll, asymmetric case [deg]": 1.0423722364,
+   "roll carried by": "differential bending",
+   "first bending mode, hand [Hz]": 39.510253381,
+   "frame mass [g]": 524.119188085,
+   "note": ""
+  },
+  "twin 18\"": {
+   "feasible": true,
+   "propeller [in]": 18.0,
+   "booms apart [mm]": 578.5973884119,
+   "tube": "2 x 20/18 pultruded",
+   "cantilever [mm]": 589.5938601673,
+   "tail span x chord [mm]": "639 x 167",
+   "fins": "2 x 354 high",
+   "bending stress, ultimate [MPa]": 155.9931900569,
+   "margin (500 MPa x 0.8)": 1.564214501,
+   "tip deflection at ultimate [mm]": 10.0964653452,
+   "tail incidence change at ultimate [deg]": 1.4717373043,
+   "fin twist under its side load [deg]": 3.0632778062,
+   "tail roll, asymmetric case [deg]": 0.9998055018,
+   "roll carried by": "differential bending",
+   "first bending mode, hand [Hz]": 38.3523983105,
+   "frame mass [g]": 515.7344989028,
+   "note": ""
+  },
+  "twin 20\"": {
+   "feasible": false,
+   "propeller [in]": 20.0,
+   "booms apart [mm]": 630.6688220678,
+   "tube": "2 x 20/18 pultruded",
+   "cantilever [mm]": 600.7430774015,
+   "tail span x chord [mm]": "691 x 154",
+   "fins": "2 x 382 high",
+   "bending stress, ultimate [MPa]": 158.9430205767,
+   "margin (500 MPa x 0.8)": 1.5166251311,
+   "tip deflection at ultimate [mm]": 10.6801370821,
+   "tail incidence change at ultimate [deg]": 1.5279246714,
+   "fin twist under its side load [deg]": 3.3757083707,
+   "tail roll, asymmetric case [deg]": 0.970282275,
+   "roll carried by": "differential bending",
+   "first bending mode, hand [Hz]": 37.7401029536,
+   "frame mass [g]": 511.3624393735,
+   "note": "the main spar's tail-case margin -0.10: the wing's spar would have to grow for the booms"
+  },
+  "twin 22\"": {
+   "feasible": false,
+   "propeller [in]": 22.0,
+   "booms apart [mm]": 682.5486564193,
+   "tube": "2 x 20/18 pultruded",
+   "cantilever [mm]": 610.5372282293,
+   "tail span x chord [mm]": "743 x 143",
+   "fins": "2 x 411 high",
+   "bending stress, ultimate [MPa]": 161.534331197,
+   "margin (500 MPa x 0.8)": 1.476253791,
+   "tip deflection at ultimate [mm]": 11.2110671607,
+   "tail incidence change at ultimate [deg]": 1.5781515093,
+   "fin twist under its side load [deg]": 3.6884454198,
+   "tail roll, asymmetric case [deg]": 0.9411004272,
+   "roll carried by": "differential bending",
+   "first bending mode, hand [Hz]": 37.2123957776,
+   "frame mass [g]": 507.7135269433,
+   "note": "the main spar's tail-case margin -0.21: the wing's spar would have to grow for the booms"
+  },
+  "single 20\"": {
+   "feasible": true,
+   "propeller [in]": 20.0,
+   "booms apart [mm]": null,
+   "tube": "1 x 30/28 roll-wrapped",
+   "cantilever [mm]": 497.5,
+   "tail span x chord [mm]": "560 x 190",
+   "fins": "1 x 413 high",
+   "bending stress, ultimate [MPa]": 111.22927567,
+   "margin (500 MPa x 0.8)": 2.5961755355,
+   "tip deflection at ultimate [mm]": 3.4172113103,
+   "tail incidence change at ultimate [deg]": 0.5903269923,
+   "fin twist under its side load [deg]": 1.5843478058,
+   "tail roll, asymmetric case [deg]": 2.0827143119,
+   "roll carried by": "torsion (G 20 GPa roll-wrapped)",
+   "first bending mode, hand [Hz]": 60.1055934862,
+   "frame mass [g]": 298.3231080707,
+   "note": "the tractor's frame: the tube leaves the pod where the pusher's propeller is"
+  }
+ },
+ "wing_loading": {
+  "twin 15\"": {
+   "booms apart [mm]": 500.0,
+   "arm from the pod's side [mm]": 180.0,
+   "rear tube": "18/14 x 600",
+   "main spar: bending from the boom, tail case [MPa]": 300.4932883161,
+   "main spar margin": 0.3311445398,
+   "rear tube: bending at the pod side [MPa]": 342.4044456958,
+   "rear tube margin": 0.1682091311,
+   "boom socket: bearing at the exit [N]": 280.1993634284,
+   "flap span left [mm]": 260.0,
+   "crow drag kept [%]": 100.0,
+   "into the pod": "nothing: the tail's loads go through the spars"
+  },
+  "twin 18\"": {
+   "booms apart [mm]": 578.5973884119,
+   "arm from the pod's side [mm]": 219.2986942059,
+   "rear tube": "20/16 x 679",
+   "main spar: bending from the boom, tail case [MPa]": 386.4526052606,
+   "main spar margin": 0.0350557728,
+   "rear tube: bending at the pod side [MPa]": 343.5450705533,
+   "rear tube margin": 0.164330489,
+   "boom socket: bearing at the exit [N]": 295.9500127722,
+   "flap span left [mm]": 220.7013057941,
+   "crow drag kept [%]": 84.8851176131,
+   "into the pod": "nothing: the tail's loads go through the spars"
+  },
+  "twin 20\"": {
+   "booms apart [mm]": 630.6688220678,
+   "arm from the pod's side [mm]": 245.3344110339,
+   "rear tube": "22/18 x 731",
+   "main spar: bending from the boom, tail case [MPa]": 445.7883770296,
+   "main spar margin": -0.102713259,
+   "rear tube: bending at the pod side [MPa]": 317.899993021,
+   "rear tube margin": 0.2582573412,
+   "boom socket: bearing at the exit [N]": 305.3637560345,
+   "flap span left [mm]": 194.6655889661,
+   "crow drag kept [%]": 74.8713803716,
+   "into the pod": "nothing: the tail's loads go through the spars"
+  },
+  "twin 22\"": {
+   "booms apart [mm]": 682.5486564193,
+   "arm from the pod's side [mm]": 271.2743282097,
+   "rear tube": "25/21 x 783",
+   "main spar: bending from the boom, tail case [MPa]": 506.7687107065,
+   "main spar margin": -0.2106852859,
+   "rear tube: bending at the pod side [MPa]": 270.1987091267,
+   "rear tube margin": 0.4803919726,
+   "boom socket: bearing at the exit [N]": 314.2035441433,
+   "flap span left [mm]": 168.7256717903,
+   "crow drag kept [%]": 64.8944891501,
+   "into the pod": "nothing: the tail's loads go through the spars"
+  },
+  "single 20\"": {
+   "booms apart [mm]": null,
+   "arm from the pod's side [mm]": null,
+   "rear tube": "18/14 (NISUS+'s: no tail load on it)",
+   "main spar: bending from the boom, tail case [MPa]": 0.0,
+   "main spar margin": null,
+   "rear tube: bending at the pod side [MPa]": 0.0,
+   "rear tube margin": null,
+   "boom socket: bearing at the exit [N]": 272.3786732629,
+   "flap span left [mm]": 260.0,
+   "crow drag kept [%]": 100.0,
+   "into the pod": "54 N m at the keel socket (200 mm): bearing 0.4 MPa on PETG (45 x 0.7 x 0.5: margin +42.4); the saddle's bolts take the couple"
+  }
+ },
+ "aero": {
+  "twin 15\"": {
+   "feasible": true,
+   "propeller": "15x8",
+   "frame wetted area [m\u00b2]": 0.5214564901,
+   "frame drag area [m\u00b2]": 0.0038566842,
+   "aircraft Cd0": 0.0264652273,
+   "mass [kg]": 5.3099707729,
+   "L/D max": 16.0134066881,
+   "cruise power at 18 EAS, 3000 m [W]": 160.1036378277,
+   "propeller \u03b7 at cruise": 0.6680254282,
+   "propeller \u03b7 in the climb (full throttle)": 0.5790624826,
+   "mission energy [Wh]": 195.2834631945,
+   "feasible survey [min]": 39.4607419699,
+   "reserve kept": true
+  },
+  "twin 18\"": {
+   "feasible": true,
+   "propeller": "18x10",
+   "frame wetted area [m\u00b2]": 0.524395117,
+   "frame drag area [m\u00b2]": 0.0039677496,
+   "aircraft Cd0": 0.0266503363,
+   "mass [kg]": 5.3015860837,
+   "L/D max": 15.9571578635,
+   "cruise power at 18 EAS, 3000 m [W]": 164.6779528873,
+   "propeller \u03b7 at cruise": 0.6514728,
+   "propeller \u03b7 in the climb (full throttle)": 0.6213866745,
+   "mission energy [Wh]": 190.2504701482,
+   "feasible survey [min]": 40.4381298522,
+   "reserve kept": true
+  },
+  "twin 20\"": {
+   "feasible": false,
+   "propeller": "20x13",
+   "frame wetted area [m\u00b2]": 0.5259736513,
+   "frame drag area [m\u00b2]": 0.0040349581,
+   "aircraft Cd0": 0.0267623505,
+   "mass [kg]": 5.2972140242,
+   "L/D max": 15.9233017281,
+   "cruise power at 18 EAS, 3000 m [W]": 153.8309406081,
+   "propeller \u03b7 at cruise": 0.7034156964,
+   "propeller \u03b7 in the climb (full throttle)": 0.6485592919,
+   "mission energy [Wh]": 180.7381901478,
+   "feasible survey [min]": 44.5677318316,
+   "reserve kept": true
+  },
+  "twin 22\"": {
+   "feasible": false,
+   "propeller": "22x12",
+   "frame wetted area [m\u00b2]": 0.5273262075,
+   "frame drag area [m\u00b2]": 0.0040977672,
+   "aircraft Cd0": 0.0268670323,
+   "mass [kg]": 5.2935651117,
+   "L/D max": 15.8917861627,
+   "cruise power at 18 EAS, 3000 m [W]": 181.8214912287,
+   "propeller \u03b7 at cruise": 0.5897114821,
+   "propeller \u03b7 in the climb (full throttle)": 0.6613725315,
+   "mission energy [Wh]": 193.2602449527,
+   "feasible survey [min]": 37.9122886012,
+   "reserve kept": true
+  },
+  "single 20\"": {
+   "feasible": true,
+   "propeller": "20x13",
+   "frame wetted area [m\u00b2]": 0.4997795008,
+   "frame drag area [m\u00b2]": 0.003574005,
+   "aircraft Cd0": 0.0259940953,
+   "mass [kg]": 5.0841746928,
+   "L/D max": 16.1580559787,
+   "cruise power at 18 EAS, 3000 m [W]": 149.2250351024,
+   "propeller \u03b7 at cruise": 0.698712291,
+   "propeller \u03b7 in the climb (full throttle)": 0.6485592919,
+   "mission energy [Wh]": 174.380647493,
+   "feasible survey [min]": 47.2431042118,
+   "reserve kept": true
+  }
+ },
+ "performance": {
+  "twin 15\"": {
+   "feasible": true,
+   "propeller": "15x8",
+   "static thrust, sea level [N]": 55.3292321644,
+   "top speed, level [m/s TAS] @1200 m": 36.1260438936,
+   "top speed capped by V_NE @1200 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @1200 m": 6.0047193025,
+   "acceleration at cruise 19 m/s TAS [m/s\u00b2] @1200 m": 5.467104857,
+   "15 \u2192 25 m/s [s] @1200 m": 2.0,
+   "best climb [m/s] @1200 m": 10.6428148554,
+   "top speed, level [m/s TAS] @3000 m": 36.6670564148,
+   "top speed capped by V_NE @3000 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @3000 m": 5.3493040444,
+   "acceleration at cruise 21 m/s TAS [m/s\u00b2] @3000 m": 4.4781769828,
+   "15 \u2192 25 m/s [s] @3000 m": 2.2,
+   "best climb [m/s] @3000 m": 9.5623745992
+  },
+  "twin 18\"": {
+   "feasible": true,
+   "propeller": "18x10",
+   "static thrust, sea level [N]": 62.2353761368,
+   "top speed, level [m/s TAS] @1200 m": 34.1695735558,
+   "top speed capped by V_NE @1200 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @1200 m": 6.4271271383,
+   "acceleration at cruise 19 m/s TAS [m/s\u00b2] @1200 m": 5.7572220182,
+   "15 \u2192 25 m/s [s] @1200 m": 1.9,
+   "best climb [m/s] @1200 m": 11.2199651475,
+   "top speed, level [m/s TAS] @3000 m": 34.6288944658,
+   "top speed capped by V_NE @3000 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @3000 m": 5.7356626427,
+   "acceleration at cruise 21 m/s TAS [m/s\u00b2] @3000 m": 4.6459951679,
+   "15 \u2192 25 m/s [s] @3000 m": 2.15,
+   "best climb [m/s] @3000 m": 10.0559334533
+  },
+  "twin 20\"": {
+   "feasible": false,
+   "propeller": "20x13",
+   "static thrust, sea level [N]": 65.1314931502,
+   "top speed, level [m/s TAS] @1200 m": 34.8007713967,
+   "top speed capped by V_NE @1200 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @1200 m": 7.0002695151,
+   "acceleration at cruise 19 m/s TAS [m/s\u00b2] @1200 m": 6.2927464297,
+   "15 \u2192 25 m/s [s] @1200 m": 1.75,
+   "best climb [m/s] @1200 m": 12.249961382,
+   "top speed, level [m/s TAS] @3000 m": 35.280602692,
+   "top speed capped by V_NE @3000 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @3000 m": 6.263652345,
+   "acceleration at cruise 21 m/s TAS [m/s\u00b2] @3000 m": 5.1100773183,
+   "15 \u2192 25 m/s [s] @3000 m": 1.95,
+   "best climb [m/s] @3000 m": 11.0117091691
+  },
+  "twin 22\"": {
+   "feasible": false,
+   "propeller": "22x12",
+   "static thrust, sea level [N]": 71.3906595099,
+   "top speed, level [m/s TAS] @1200 m": 30.986806819,
+   "top speed capped by V_NE @1200 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @1200 m": 6.6025547611,
+   "acceleration at cruise 19 m/s TAS [m/s\u00b2] @1200 m": 5.7240020957,
+   "15 \u2192 25 m/s [s] @1200 m": 2.0,
+   "best climb [m/s] @1200 m": 11.4514223994,
+   "top speed, level [m/s TAS] @3000 m": 31.3436838087,
+   "top speed capped by V_NE @3000 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @3000 m": 5.9244040891,
+   "acceleration at cruise 21 m/s TAS [m/s\u00b2] @3000 m": 4.487616845,
+   "15 \u2192 25 m/s [s] @3000 m": 2.2,
+   "best climb [m/s] @3000 m": 10.2664276176
+  },
+  "single 20\"": {
+   "feasible": true,
+   "propeller": "20x13",
+   "static thrust, sea level [N]": 65.1314931502,
+   "top speed, level [m/s TAS] @1200 m": 34.9384181435,
+   "top speed capped by V_NE @1200 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @1200 m": 7.3239883257,
+   "acceleration at cruise 19 m/s TAS [m/s\u00b2] @1200 m": 6.5871098035,
+   "15 \u2192 25 m/s [s] @1200 m": 1.65,
+   "best climb [m/s] @1200 m": 12.8210774137,
+   "top speed, level [m/s TAS] @3000 m": 35.4157135239,
+   "top speed capped by V_NE @3000 m": false,
+   "acceleration at launch 17 m/s [m/s\u00b2] @3000 m": 6.5574163185,
+   "acceleration at cruise 21 m/s TAS [m/s\u00b2] @3000 m": 5.3548839692,
+   "15 \u2192 25 m/s [s] @3000 m": 1.85,
+   "best climb [m/s] @3000 m": 11.5321257748
+  }
+ },
+ "fea": {
+  "twin_15in_A": {
+   "status": "solved",
+   "description": "twin 15\": symmetric pull-out: stabiliser 96 N up, fins 53 N side each (ultimate)",
+   "peak von Mises [MPa]": 257.3347033832,
+   "nominal von Mises [MPa]": 148.9555802114,
+   "99.5th percentile von Mises [MPa]": 138.7340594531,
+   "max displacement [mm]": 19.1845396915,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 1.6853643176,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 142.9238796061,
+   "applied [N]": 142.9238610535,
+   "tail heave at the tube(s) [mm]": 9.4133043296,
+   "tail roll [deg]": -0.0521747714,
+   "fin yaw twist at its AC [deg] (isotropic G)": 0.2320914434
+  },
+  "twin_15in_B": {
+   "status": "solved",
+   "description": "twin 15\": asymmetric: the left half's 48 N only, fins 53 N side (ultimate)",
+   "peak von Mises [MPa]": 189.3157113355,
+   "nominal von Mises [MPa]": 132.3498655233,
+   "99.5th percentile von Mises [MPa]": 119.7337547388,
+   "max displacement [mm]": 17.0102127107,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 2.0222924551,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 116.3787769812,
+   "applied [N]": 116.3787541969,
+   "tail heave at the tube(s) [mm]": 4.7066188836,
+   "tail roll [deg]": -0.5628328011,
+   "fin yaw twist at its AC [deg] (isotropic G)": 0.2629405359
+  },
+  "twin_20in_A": {
+   "status": "solved",
+   "description": "twin 20\": symmetric pull-out: stabiliser 96 N up, fins 53 N side each (ultimate)",
+   "peak von Mises [MPa]": 291.1870973523,
+   "nominal von Mises [MPa]": 157.0020348531,
+   "99.5th percentile von Mises [MPa]": 147.4114096859,
+   "max displacement [mm]": 23.121587394,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 1.5477376798,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 142.9238796061,
+   "applied [N]": 142.9238610535,
+   "tail heave at the tube(s) [mm]": 10.8890161797,
+   "tail roll [deg]": -0.0515547852,
+   "fin yaw twist at its AC [deg] (isotropic G)": 0.3166574277
+  },
+  "twin_20in_B": {
+   "status": "solved",
+   "description": "twin 20\": asymmetric: the left half's 48 N only, fins 53 N side (ultimate)",
+   "peak von Mises [MPa]": 207.1398432259,
+   "nominal von Mises [MPa]": 141.1802907639,
+   "99.5th percentile von Mises [MPa]": 126.8795057743,
+   "max displacement [mm]": 18.8051726581,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 1.8332566666,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 116.3787769812,
+   "applied [N]": 116.3787541969,
+   "tail heave at the tube(s) [mm]": 5.4445030533,
+   "tail roll [deg]": -0.5669117321,
+   "fin yaw twist at its AC [deg] (isotropic G)": 0.2994493488
+  },
+  "single_20in_A": {
+   "status": "solved",
+   "description": "single 20\": symmetric pull-out: stabiliser 96 N up, fins 106 N side each (ultimate)",
+   "peak von Mises [MPa]": 131.3821542143,
+   "nominal von Mises [MPa]": 109.1816603119,
+   "99.5th percentile von Mises [MPa]": 104.1754557415,
+   "max displacement [mm]": 10.4352280914,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 2.6636189526,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 142.9238796061,
+   "applied [N]": 142.9238610535,
+   "tail heave at the tube(s) [mm]": 3.6703551317,
+   "tail roll [deg]": -0.7155534831,
+   "fin yaw twist at its AC [deg] (isotropic G)": 0.8450265462
+  },
+  "single_20in_B": {
+   "status": "solved",
+   "description": "single 20\": asymmetric: the left half's 48 N only, fins 106 N side (ultimate)",
+   "peak von Mises [MPa]": 136.428540327,
+   "nominal von Mises [MPa]": 93.3863409485,
+   "99.5th percentile von Mises [MPa]": 89.6793551262,
+   "max displacement [mm]": 9.932367113,
+   "allowable [MPa]": 400.0,
+   "margin (governing)": 3.2832816442,
+   "governing stress": "nominal (\u2265 1 diameter from the support)",
+   "reaction [N]": 116.3787769812,
+   "applied [N]": 116.3787541969,
+   "tail heave at the tube(s) [mm]": 1.8349705316,
+   "tail roll [deg]": -0.9747917125,
+   "fin yaw twist at its AC [deg] (isotropic G)": 1.0699226158
+  }
+ },
+ "modes": {
+  "twin 15\"": {
+   "status": "solved",
+   "mode 1 [Hz]": 26.55874,
+   "mode 2 [Hz]": 28.43733,
+   "mode 3 [Hz]": 32.00334,
+   "mode 4 [Hz]": 106.9341,
+   "mode 5 [Hz]": 110.3861,
+   "torsion note": "isotropic G 46 GPa: a torsional mode is optimistic x 3.0"
+  },
+  "twin 20\"": {
+   "status": "solved",
+   "mode 1 [Hz]": 25.3352,
+   "mode 2 [Hz]": 26.95122,
+   "mode 3 [Hz]": 29.47911,
+   "mode 4 [Hz]": 76.42211,
+   "mode 5 [Hz]": 76.64907,
+   "torsion note": "isotropic G 46 GPa: a torsional mode is optimistic x 3.0"
+  },
+  "single 20\"": {
+   "status": "solved",
+   "mode 1 [Hz]": 42.32552,
+   "mode 2 [Hz]": 43.18032,
+   "mode 3 [Hz]": 84.70187,
+   "mode 4 [Hz]": 129.7759,
+   "mode 5 [Hz]": 137.4266,
+   "torsion note": "isotropic G 46 GPa: a torsional mode is optimistic x 1.5"
+  }
+ },
+ "verdict": {
+  "widening": {
+   "twin 18\"": {
+    "feasible": true,
+    "booms apart [mm]": 578.5973884118947,
+    "rear tube": "20/16 x 679",
+    "crow drag kept [%]": 84.88511761309717,
+    "frame mass [g]": 515.7344989027745,
+    "Cd0": 0.026650336296287887,
+    "mission energy [Wh]": 190.2504701482476,
+    "note": ""
+   },
+   "twin 20\"": {
+    "feasible": false,
+    "booms apart [mm]": 630.6688220678437,
+    "rear tube": "22/18 x 731",
+    "crow drag kept [%]": 74.87138037156852,
+    "frame mass [g]": 511.3624393735173,
+    "Cd0": 0.02676235046105608,
+    "mission energy [Wh]": 180.7381901477571,
+    "note": "the main spar's tail-case margin -0.10: the wing's spar would have to grow for the booms"
+   },
+   "twin 22\"": {
+    "feasible": false,
+    "booms apart [mm]": 682.5486564193193,
+    "rear tube": "25/21 x 783",
+    "crow drag kept [%]": 64.89448915013091,
+    "frame mass [g]": 507.71352694328635,
+    "Cd0": 0.02686703225369622,
+    "mission energy [Wh]": 193.26024495271136,
+    "note": "the main spar's tail-case margin -0.21: the wing's spar would have to grow for the booms"
+   }
+  },
+  "single vs twin": {
+   "against": "twin 20\"",
+   "frame mass [g]": [
+    298.3231080707188,
+    511.3624393735173
+   ],
+   "frame drag area [m\u00b2]": [
+    0.0035740050257983586,
+    0.004034958101650739
+   ],
+   "L/D max": [
+    16.15805597869543,
+    15.923301728077478
+   ],
+   "mission energy [Wh]": [
+    174.38064749298567,
+    180.7381901477571
+   ],
+   "tail roll, asymmetric [deg]": [
+    2.0827143118585556,
+    0.9702822749640301
+   ],
+   "fin twist [deg]": [
+    1.584347805785699,
+    3.3757083707209663
+   ],
+   "first bending mode [Hz]": [
+    60.1055934861614,
+    37.740102953647
+   ],
+   "spar tail-case stress [MPa]": [
+    0.0,
+    445.7883770296333
+   ]
+  }
+ }
+}
