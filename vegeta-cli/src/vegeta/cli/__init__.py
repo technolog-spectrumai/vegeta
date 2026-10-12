@@ -17,6 +17,7 @@ TOOLS = {
     "boreas": "propeller/rotor performance (BEMT) with motor and battery: thrust, power, rpm, excitations",
     "chronos": "missions, cyclic loads and life: rainflow spectra, dynamic amplification, fleet usage",
     "chiron": "legged-robot dynamics (MuJoCo): ChironLab episodes, locomotion metrics, paired trials",
+    "atropos": "laser-cut flat parts (GRBL diode lasers): ribs, kerf, nesting -> SVG, G-code, time, material",
 }
 
 
@@ -44,8 +45,8 @@ def usage() -> str:
         lines += ["", "Workbench commands:"]
         lines += [f"  {name:<10} (from {ep.dist.name if ep.dist else ep.value})" for name, ep in sorted(extra.items())]
     lines += ["", "Run 'vegeta <command> --help' for details.",
-              "The tools are also available as the commands dedalus, talos, aeromant, mellonia, boreas, chronos "
-              "and chiron."]
+              "The tools are also available as the commands dedalus, talos, aeromant, mellonia, boreas, chronos, "
+              "chiron and atropos."]
     return "\n".join(lines)
 
 
