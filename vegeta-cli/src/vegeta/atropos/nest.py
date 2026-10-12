@@ -65,32 +65,41 @@ def nest(parts: list[Part], settings: CutSettings) -> Nesting:
     # tallest first, in the preferred orientation; ties by name so the result is reproducible
     items.sort(key=lambda it: (-it[1][0][1].size()[1], -it[1][0][1].size()[0], it[0]))
 
+    # first fit, decreasing height: every open shelf on every sheet is tried before a new shelf, a new sheet last
     nesting = Nesting(sheet)
-    sheet_i, x, y, shelf_h = 0, 0.0, 0.0, 0.0
+    shelves: list[dict] = []                  # sheet, y, height, x cursor
     areas: dict[int, float] = {}
+
+    def put(p, angle, name, shelf):
+        moved = p.transformed(0.0, m + shelf["x"], m + shelf["y"])
+        nesting.placements.append(Placement(moved, shelf["sheet"], m + shelf["x"], m + shelf["y"], angle, name))
+        areas[shelf["sheet"]] = areas.get(shelf["sheet"], 0.0) + p.area()
+        shelf["x"] += p.size()[0] + gap
+
     for name, fits in items:
         placed = False
-        for attempt in range(3):             # this shelf, a new shelf, a new sheet
-            for angle, p in fits:
-                w, h = p.size()
-                if x + w <= W + 1e-9 and y + max(h, shelf_h) <= H + 1e-9:
-                    moved = p.transformed(0.0, m + x, m + y)
-                    nesting.placements.append(Placement(moved, sheet_i, m + x, m + y, angle, name))
-                    areas[sheet_i] = areas.get(sheet_i, 0.0) + p.area()
-                    x += w + gap
-                    shelf_h = max(shelf_h, h)
+        for angle, p in fits:
+            w, h = p.size()
+            for shelf in shelves:
+                if shelf["x"] + w <= W + 1e-9 and h <= shelf["height"] + 1e-9:
+                    put(p, angle, name, shelf)
                     placed = True
                     break
             if placed:
                 break
-            if attempt == 0:                 # new shelf
-                y += shelf_h + gap if shelf_h else 0.0
-                x, shelf_h = 0.0, 0.0
-            else:                            # new sheet
-                sheet_i += 1
-                x, y, shelf_h = 0.0, 0.0, 0.0
-        if not placed:                       # cannot happen: an empty sheet takes any part that fits the usable area
-            raise ValueError(f"part {name!r} could not be placed")
-    nesting.n_sheets = sheet_i + 1 if nesting.placements else 0
+        if placed:
+            continue
+        angle, p = fits[0]
+        w, h = p.size()
+        last = shelves[-1] if shelves else None
+        if last is None:
+            shelf = dict(sheet=0, y=0.0, height=h, x=0.0)
+        elif last["y"] + last["height"] + gap + h <= H + 1e-9:
+            shelf = dict(sheet=last["sheet"], y=last["y"] + last["height"] + gap, height=h, x=0.0)
+        else:
+            shelf = dict(sheet=last["sheet"] + 1, y=0.0, height=h, x=0.0)
+        shelves.append(shelf)
+        put(p, angle, name, shelf)
+    nesting.n_sheets = shelves[-1]["sheet"] + 1 if shelves else 0
     nesting.utilisation = [areas.get(i, 0.0) / (sheet.width_mm * sheet.height_mm) for i in range(nesting.n_sheets)]
     return nesting
