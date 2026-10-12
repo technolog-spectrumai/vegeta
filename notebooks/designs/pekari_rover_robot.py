@@ -1,16 +1,22 @@
 """Pekari Rover (notebook 30): the design's numbers — parameters, CAD measurements, materials, the mass budget, the
 centre of gravity and the derived geometry in SI — for the track, gear and terrain calculations (``tracks``,
-``gears``, ``terramechanics``). The Chiron (MuJoCo) model of the rover comes with the terrain race (todo 5j.7).
+``gears``, ``terramechanics``) — and the Chiron (MuJoCo) model of the rover (``pekari()``, notebook 30 §7).
 
 Every number comes from the design (``pekari_rover.py`` parameters, mm), from the CAD (areas and volumes ×
 material densities), from the actuator catalogue (``actuators.py``: ``pekari drive 16:1 planetary``, one per track)
 or from the listed parts; inputs the notebook does not fix are named in ``ASSUMPTIONS`` with the reason for each.
 
-``pekari()`` builds the rover for Chiron (MuJoCo, notebook 30 §8). MuJoCo has no track, so each track is a row of
+``pekari()`` builds the rover for Chiron (MuJoCo, notebook 30 §7). MuJoCo has no track, so each track is a row of
 rollers under the belt's outer surface (the multi-roller approximation of todo 5j.7): the raised sprocket and idler,
-the four road wheels and a belt roller midway between each pair — every 60 mm along the ground run. The road wheels
-and the roller between them sit on the two bogies (passive hinges at the pivots, ±12°); the middle roller on the
-frame. Every roller is a velocity servo commanded to the side's belt speed (ω = v / r). A real sprocket pulls the whole
+the four road wheels and a belt roller midway between each pair — every 60 mm along the ground run — and one roller
+on each inclined run (11 per side). The road wheels and the roller between them sit on the two bogies (passive
+hinges at the pivots, ±12°); the middle roller on the frame.
+
+Variants build on it the way the Onager series builds on ``onager_robot.onager``: ``mass_budget``, ``masses``,
+``cg``, ``rollers`` and ``pekari`` take keyword overrides (``cad``, ``parts_kg``, ``drive``, ``shell_t_mm``,
+``materials``, ``wheel_fill``, ``n_bogies``, ``extra_children`` under the hull, ``extra_hull_masses`` /
+``extra_hull_geoms``, ``extra_mass_kg`` / ``extra_moment_kgm`` in the battery placement, ``payload_pos``); with
+none given they are the Pekari Rover (``perseus_robot.py`` is the first variant: the branch-cutting Perseus). Every roller is a velocity servo commanded to the side's belt speed (ω = v / r). A real sprocket pulls the whole
 belt, so its force goes wherever the belt touches; here each roller may carry a third of the side's gearmotor force
 (``ROLLER_SHARE``): enough when only two or three rollers touch (on an obstacle), an overestimate of the drive's limit
 only when many rollers saturate at once (a stalled rover on flat ground) — read the side forces against the gearmotor's
@@ -166,32 +172,41 @@ def geometry(p: dict | None = None) -> dict:
     }
 
 
-def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict | None = None) -> dict:
-    """Notebook 30 §1's parts list [kg]: part -> mass (CAD × density, the catalogue drives, the listed parts)."""
+def mass_budget(p: dict | None = None, cad: dict | None = None, parts_kg: dict | None = None, *,
+                drive: str | None = None, shell_t_mm: float | None = None, materials: dict | None = None,
+                wheel_fill: float | None = None) -> dict:
+    """Notebook 30 §1's parts list [kg]: part -> mass (CAD × density, the catalogue drives, the listed parts).
+    A variant passes its own ``cad`` numbers, ``parts_kg``, ``drive`` (catalogue key), ``shell_t_mm``, ``materials``
+    (the ``MATERIALS`` keys) and ``wheel_fill``; None = the Pekari Rover's."""
     p = design_params() if p is None else p
     cad = cad_numbers(p) if cad is None else cad
+    drive = DRIVE if drive is None else drive
+    t_sh = SHELL_T_MM if shell_t_mm is None else shell_t_mm
+    mat = MATERIALS if materials is None else materials
+    fill = WHEEL_FILL if wheel_fill is None else wheel_fill
     g = geometry(p)
     n = g["links"]
-    pa = MATERIALS["PA6-GF30 links, sprockets, wheels"]
-    pin = math.pi / 4 * p["pin_diameter"] ** 2 * p["track_width"] * MATERIALS["steel pins (42CrMo4)"]
-    drive = act.get(DRIVE)
+    pa = mat["PA6-GF30 links, sprockets, wheels"]
+    pin = math.pi / 4 * p["pin_diameter"] ** 2 * p["track_width"] * mat["steel pins (42CrMo4)"]
+    drv = act.get(drive)
     out = {
-        f"hull shell, {SHELL_T_MM} mm Al 6061 (from CAD area)": cad["hull_surface_area"] * SHELL_T_MM * MATERIALS["Al 6061-T6 hull shell"],
+        f"hull shell, {t_sh} mm Al 6061 (from CAD area)": cad["hull_surface_area"] * t_sh * mat["Al 6061-T6 hull shell"],
         f"track links 2x{n} (PA6-GF30, from CAD)": 2 * n * cad["link_volume"] * pa,
         f"track pins 2x{n} (steel, d {p['pin_diameter']:g} mm)": 2 * n * pin,
-        "sprockets 2x (PA6-GF30, ribbed, from CAD)": 2 * cad["sprocket_volume"] * pa * WHEEL_FILL,
-        "idlers 2x (PA6-GF30, ribbed, from CAD)": 2 * cad["idler_volume"] * pa * WHEEL_FILL,
-        f"road wheels 2x{int(p['road_wheels'])} (PA6-GF30, ribbed, from CAD)": 2 * int(p["road_wheels"]) * cad["road_wheel_volume"] * pa * WHEEL_FILL,
-        f"track drives 2x ({DRIVE}; {drive.mass_g / 1000:.2f} kg each)": 2 * drive.mass_g / 1000.0,
+        "sprockets 2x (PA6-GF30, ribbed, from CAD)": 2 * cad["sprocket_volume"] * pa * fill,
+        "idlers 2x (PA6-GF30, ribbed, from CAD)": 2 * cad["idler_volume"] * pa * fill,
+        f"road wheels 2x{int(p['road_wheels'])} (PA6-GF30, ribbed, from CAD)": 2 * int(p["road_wheels"]) * cad["road_wheel_volume"] * pa * fill,
+        f"track drives 2x ({drive}; {drv.mass_g / 1000:.2f} kg each)": 2 * drv.mass_g / 1000.0,
     }
     if cad.get("basket_volume", 0.0) > 0:
-        out[f"basket ({p['basket_wall']:g} mm Al 5754, from CAD)"] = cad["basket_volume"] * MATERIALS["Al 5754 basket sheet"]
+        out[f"basket ({p['basket_wall']:g} mm Al 5754, from CAD)"] = cad["basket_volume"] * mat["Al 5754 basket sheet"]
     out.update(PARTS_KG if parts_kg is None else parts_kg)
     return out
 
 
-def total_mass(p: dict | None = None, payload_kg: float = 0.0) -> float:
-    return sum(mass_budget(p).values()) + payload_kg
+def total_mass(p: dict | None = None, payload_kg: float = 0.0, **budget_kw) -> float:
+    """Budget total plus the payload [kg] (``budget_kw``: ``mass_budget``'s variant keywords)."""
+    return sum(mass_budget(p, **budget_kw).values()) + payload_kg
 
 
 def _belt_centroid(circles) -> tuple:
@@ -209,14 +224,21 @@ def _belt_centroid(circles) -> tuple:
     return sx / sl, sz / sl
 
 
-def masses(p: dict | None = None, payload_kg: float = 0.0) -> list:
+def masses(p: dict | None = None, payload_kg: float = 0.0, *, cad: dict | None = None, budget: dict | None = None,
+           extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0, payload_pos: tuple | None = None,
+           **budget_kw) -> list:
     """Every mass of the budget with its position: [(name, kg, x, z)] [kg, m] in the vehicle frame (x from the
-    road wheels' centre, z above the ground); the battery placed by ``ASSUMPTIONS['battery_position']``."""
+    road wheels' centre, z above the ground); the battery placed by ``ASSUMPTIONS['battery_position']``.
+
+    A variant passes its ``cad`` numbers and ``budget`` (else ``mass_budget(p, cad, **budget_kw)``), what it adds
+    outside the budget as ``extra_mass_kg`` with its first moment ``extra_moment_kgm`` (Σ m x [kg·m], arms, tools:
+    the battery balances them too; they are not listed here) and ``payload_pos`` (x, z) [m] for its payload
+    (None: the basket, or the roof)."""
     p = design_params() if p is None else p
     g = geometry(p)
-    budget = mass_budget(p)
+    cad = cad_numbers(p) if cad is None else cad
+    budget = mass_budget(p, cad, **budget_kw) if budget is None else budget
     mm = 1e-3
-    cad = cad_numbers(p)
     belt_x, belt_z = _belt_centroid(g["belt_circles"])
     xs, zw = g["wheel_x"], g["wheel_z"]
     sx, sz = g["sprocket"]
@@ -253,9 +275,9 @@ def masses(p: dict | None = None, payload_kg: float = 0.0) -> list:
             pos[name] = ((sx + ix) / 2, (zw + min(sz, iz)) / 2 + 0.02)
     batt = next(k for k in budget if k.startswith("battery"))
     others = [(k, budget[k], *pos[k]) for k in budget if k != batt]
-    m_tot = sum(budget.values())
+    m_tot = sum(budget.values()) + float(extra_mass_kg)
     x_target = sum(xs) / len(xs)
-    x_batt = (m_tot * x_target - sum(m * x for _, m, x, _ in others)) / budget[batt]
+    x_batt = (m_tot * x_target - sum(m * x for _, m, x, _ in others) - float(extra_moment_kgm)) / budget[batt]
     lim = p["hull_length"] / 2 * mm - 0.10
     x_batt = max(-lim, min(lim, x_batt))
     out = others + [(batt, budget[batt], x_batt, z_floor + 0.04)]
@@ -263,18 +285,21 @@ def masses(p: dict | None = None, payload_kg: float = 0.0) -> list:
         has_basket = cad.get("basket_volume", 0.0) > 0
         x_pl = p["basket_x"] * mm if has_basket else 0.0
         z_pl = z_roof + (p["basket_wall"] * mm + 0.05 if has_basket else 0.06)
+        if payload_pos is not None:
+            x_pl, z_pl = float(payload_pos[0]), float(payload_pos[1])
         out.append(("payload", payload_kg, x_pl, z_pl))
     return out
 
 
-def cg(p: dict | None = None, payload_kg: float = PAYLOAD_KG) -> dict:
-    """Mass [kg] and CG (x, z) [m] of the empty and the loaded rover, and the battery's x."""
+def cg(p: dict | None = None, payload_kg: float = PAYLOAD_KG, **kw) -> dict:
+    """Mass [kg] and CG (x, z) [m] of the empty and the loaded rover (the listed masses: a variant's extras are
+    not in it), and the battery's x (``kw``: ``masses``' variant keywords)."""
     out = {}
     for label, pl in (("empty", 0.0), ("loaded", payload_kg)):
-        ms = masses(p, pl)
+        ms = masses(p, pl, **kw)
         m = sum(k for _, k, _, _ in ms)
         out[label] = {"mass_kg": m, "x": sum(k * x for _, k, x, _ in ms) / m, "z": sum(k * z for _, k, _, z in ms) / m}
-    out["battery_x"] = next(x for n, _, x, _ in masses(p) if n.startswith("battery"))
+    out["battery_x"] = next(x for n, _, x, _ in masses(p, **kw) if n.startswith("battery"))
     return out
 
 
@@ -290,23 +315,31 @@ MID_ROLLER_KG = 0.02                                  # the belt rollers between
 BOGIE_KG = 0.10
 
 
-def rollers(p: dict | None = None) -> list:
+def rollers(p: dict | None = None, n_bogies: int | None = None) -> list:
     """The rollers under one track [(name, x, z, r, kind, bogie)] [m]: ``r`` the belt's outer radius around the
     wheel (wheel + link + grouser; the sprocket: pitch radius + half a link + grouser), ``kind`` sprocket / idler /
-    road / mid, ``bogie`` 0 (rear), 1 (front) or None (frame)."""
+    road / mid, ``bogie`` the bogie's index from the rear or None (frame). ``n_bogies``: the road wheels are split
+    into that many bogies (default 2: the Pekari's pairs); a mid roller between two bogies rides on the frame."""
     p = design_params() if p is None else p
     g = geometry(p)
     mm = 1e-3
     t, gr = p["link_thickness"] * mm, p["grouser_height"] * mm
     xs, zr, rw = g["wheel_x"], g["wheel_z"], g["d_wheel"] / 2
+    nb = 2 if n_bogies is None else int(n_bogies)
+    if nb < 1 or len(xs) % nb:
+        raise ValueError(f"{len(xs)} road wheels do not split into {nb} bogies")
+    per = len(xs) // nb
     out = [("sprocket", g["sprocket"][0], g["sprocket"][1], g["r_sprocket"] + t / 2 + gr, "sprocket", None),
            ("idler", g["idler"][0], g["idler"][1], g["r_idler"] + t + gr, "idler", None)]
     ground = sorted(xs + [(a + b) / 2 for a, b in zip(xs[:-1], xs[1:])])
-    half = len(ground) // 2
     rg = rw + t + gr
-    for i, x in enumerate(ground):
+    for i, x in enumerate(ground):                        # wheel, mid, wheel, ... from the rear
         kind = "road" if any(abs(x - w) < 1e-9 for w in xs) else "mid"
-        bogie = None if i == half else (0 if i < half else 1)
+        if kind == "road":
+            bogie = (i // 2) // per
+        else:
+            a, b = (i - 1) // 2, (i + 1) // 2             # the wheels either side of the mid roller
+            bogie = a // per if a // per == b // per else None
         out.append((f"g{i + 1}", x, zr, rg, kind, bogie))
     # the inclined belt runs up to the sprocket and the idler: a roller midway on each (the circle halfway between two
     # circles touches their common lower tangent), so an obstacle meets a ramp, as on the real belt
@@ -316,29 +349,52 @@ def rollers(p: dict | None = None) -> list:
     return out
 
 
-def roller_joints(side: str, p: dict | None = None) -> list:
-    return [f"{side}_{name}" for name, *_ in rollers(p)]
+def roller_joints(side: str, p: dict | None = None, n_bogies: int | None = None) -> list:
+    return [f"{side}_{name}" for name, *_ in rollers(p, n_bogies)]
 
 
 def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, track_mu: float = 0.6,
-           hull_mu: float = 0.5, bogies: bool = True, internal_f0: float = 0.035) -> Robot:
-    """The Pekari Rover as a Chiron ``Robot`` (see the module docstring): hull (logged), per side 9 rollers (feet
-    ``L_sprocket``, ``L_idler``, ``L_g1`` … ``L_g7``, ``L_ramp_rear``, ``L_ramp_front``, and ``R_…``), bogies on passive hinges (``bogies=False``:
-    welded). ``track_mu``: the belt's friction on the ground (0.6: PA6 grousers on gravel, terramechanics);
-    ``internal_f0``: the track's internal loss coefficient at rest (``ASSUMPTIONS['internal_loss']``)."""
-    p = design_params(overrides)
+           hull_mu: float = 0.5, bogies: bool = True, internal_f0: float = 0.035, params: dict | None = None,
+           cad: dict | None = None, parts_kg: dict | None = None, drive: str | None = None,
+           shell_t_mm: float | None = None, materials: dict | None = None, wheel_fill: float | None = None,
+           n_bogies: int | None = None, name: str = "Pekari Rover", extra_children=(), extra_hull_masses=(),
+           extra_hull_geoms=(), extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0,
+           payload_pos: tuple | None = None, roller_kd: float | None = None, roller_armature: float | None = None,
+           bogie_damping: float = 2.0, bogie_range_deg: float | None = None, notes: str | None = None,
+           sources: dict | None = None) -> Robot:
+    """The Pekari Rover as a Chiron ``Robot`` (see the module docstring): hull (logged), per side 11 rollers (feet
+    ``L_sprocket``, ``L_idler``, ``L_g1`` … ``L_g7``, ``L_ramp_rear``, ``L_ramp_front``, and ``R_…``), bogies on
+    passive hinges (``bogies=False``: welded). ``track_mu``: the belt's friction on the ground (0.6: PA6 grousers on
+    gravel, terramechanics); ``internal_f0``: the track's internal loss coefficient at rest
+    (``ASSUMPTIONS['internal_loss']``).
+
+    Variant keywords (a variant such as ``perseus_robot.perseus`` builds on this; None = the Pekari's): ``params``
+    (a complete parameter dict, instead of ``overrides``), ``cad``, ``parts_kg``, ``drive``, ``shell_t_mm``,
+    ``materials``, ``wheel_fill`` (the mass budget), ``n_bogies``, ``name``; ``extra_children`` Links under the hull
+    (an arm), ``extra_hull_masses`` / ``extra_hull_geoms`` on the hull, ``extra_mass_kg`` / ``extra_moment_kgm``
+    (their mass and Σ m x, in the battery placement and the drive's load), ``payload_pos``; ``roller_kd``,
+    ``roller_armature``, ``bogie_damping``, ``bogie_range_deg`` (the roller servos and bogie hinges)."""
+    p = design_params(overrides) if params is None else dict(params)
+    robot_name = name
     g = geometry(p)
-    budget = mass_budget(p)
-    ms = masses(p, payload_kg)
-    m_total = sum(m for _, m, _, _ in ms)
+    cad = cad_numbers(p) if cad is None else cad
+    drive_key = DRIVE if drive is None else drive
+    budget = mass_budget(p, cad, parts_kg, drive=drive_key, shell_t_mm=shell_t_mm, materials=materials,
+                         wheel_fill=wheel_fill)
+    ms = masses(p, payload_kg, cad=cad, budget=budget, extra_mass_kg=extra_mass_kg, extra_moment_kgm=extra_moment_kgm,
+                payload_pos=payload_pos)
+    m_total = sum(m for _, m, _, _ in ms) + float(extra_mass_kg)
+    kd_r = ROLLER_KD if roller_kd is None else roller_kd
+    arm_r = ROLLER_ARMATURE if roller_armature is None else roller_armature
+    bogie_rng = BOGIE_RANGE_DEG if bogie_range_deg is None else bogie_range_deg
     mm = 1e-3
     z_hull = (p["ground_clearance"] + p["hull_height"] / 2) * mm
     Lh, Wh, Hh = p["hull_length"] * mm, p["hull_width"] * mm, p["hull_height"] * mm
     b = g["b"]
     yc = g["track_center_y"]
-    rl = rollers(p)
+    rl = rollers(p, n_bogies)
     n = len(rl)
-    drive = act.get(DRIVE)
+    drive = act.get(drive_key)
     r_s = g["r_sprocket"]
     F_stall, F_rated = drive.stall_Nm / r_s, drive.rated_Nm / r_s
     v0 = drive.no_load_rpm * 2 * math.pi / 60 * r_s
@@ -356,8 +412,8 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
     def roller_link(side, name, x, z, r, kind, parent_pos):
         sy = SIDES[side]
         servo = Servo(stall_torque=F_stall / ROLLER_SHARE * r, rated_torque=F_rated / ROLLER_SHARE * r, no_load_speed=v0 / r,
-                      stall_current=drive.stall_A, voltage=drive.voltage_V, kp=0.0, kd=ROLLER_KD,
-                      armature=ROLLER_ARMATURE, source=f"{DRIVE}, a third of the side's force per roller")
+                      stall_current=drive.stall_A, voltage=drive.voltage_V, kp=0.0, kd=kd_r,
+                      armature=arm_r, source=f"{drive_key}, a third of the side's force per roller")
         jn = f"{side}_{name}"
         return Link(f"{jn}_link", pos=(x - parent_pos[0], sy * yc - parent_pos[1], z - parent_pos[2]),
                     joints=[Joint(jn, axis=(0, 1, 0), range=None, tag="wheel", servo=servo, leg=jn,
@@ -371,7 +427,7 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
         on_frame = [rr for rr in rl if rr[5] is None]
         for name, x, z, r, kind, _ in on_frame:
             children.append(roller_link(side, name, x, z, r, kind, hull_origin))
-        for k in range(2):
+        for k in range(n_bogie):
             members = [rr for rr in rl if rr[5] == k]
             if not members:
                 continue
@@ -380,8 +436,8 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
             piv = (xp, sy * yc, zp)
             sub = [roller_link(side, name, x, z, r, kind, piv) for name, x, z, r, kind, _ in members]
             span = max(rr[1] for rr in members) - min(rr[1] for rr in members)
-            joints = ([Joint(f"{side}_bogie{k}", axis=(0, 1, 0), range=(-math.radians(BOGIE_RANGE_DEG), math.radians(BOGIE_RANGE_DEG)),
-                             damping=2.0, tag="bogie")] if bogies else [])
+            joints = ([Joint(f"{side}_bogie{k}", axis=(0, 1, 0), range=(-math.radians(bogie_rng), math.radians(bogie_rng)),
+                             damping=bogie_damping, tag="bogie")] if bogies else [])
             children.append(Link(f"{side}_bogie{k}", pos=(piv[0] - hull_origin[0], piv[1], piv[2] - hull_origin[2]), joints=joints,
                                  geoms=[Geom(f"{side}_bogie{k}_plate", "box", (span / 2 + 0.01, 0.003, 0.01),
                                              pos=(0.0, -sy * (b / 2 + 0.006), -0.011), mass=BOGIE_KG, role="visual",
@@ -414,15 +470,18 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
     for side, sy in SIDES.items():                                      # the track frames and the belt, visual
         geoms.append(Geom(f"{side}_frame", "box", (0.29, 0.003, 0.035), pos=(0.0, sy * (Wh / 2 + 0.003), 0.11 - z_hull),
                           role="visual", rgba=frame_rgba))
-    hull = Link("hull", log=True, geoms=geoms, masses=masses_h, children=children)
+    hull = Link("hull", log=True, geoms=geoms + list(extra_hull_geoms), masses=masses_h + list(extra_hull_masses),
+                children=children + list(extra_children))
     nominal = {f"{side}_{name}": 0.0 for side in SIDES for name, *_ in rl}
     if bogies:
-        nominal.update({f"{side}_bogie{k}": 0.0 for side in SIDES for k in range(2)})
-    robot = Robot("Pekari Rover", hull, feet=feet, nominal_qpos=nominal,
-                  notes=f"Pekari Rover: hull + 2 tracks as 11 rollers each; {DRIVE} per track shared over the rollers; "
-                        f"payload {payload_kg:g} kg in the basket",
-                  sources={"geometry": "designs/pekari_rover.py", "masses": "pekari_rover_robot.masses",
-                           "drive": "designs/actuators.py", "assumptions": "pekari_rover_robot.ASSUMPTIONS"})
+        nominal.update({f"{side}_bogie{k}": 0.0 for side in SIDES for k in range(n_bogie)})
+    robot = Robot(robot_name, hull, feet=feet, nominal_qpos=nominal,
+                  notes=notes if notes is not None else
+                  f"Pekari Rover: hull + 2 tracks as {n} rollers each; {drive_key} per track shared over the rollers; "
+                  f"payload {payload_kg:g} kg in the basket",
+                  sources=sources if sources is not None else
+                  {"geometry": "designs/pekari_rover.py", "masses": "pekari_rover_robot.masses",
+                   "drive": "designs/actuators.py", "assumptions": "pekari_rover_robot.ASSUMPTIONS"})
     robot.validate()
     robot.params, robot.geometry = p, g
     robot.rollers = rl

@@ -1,5 +1,9 @@
 import math
-import cadquery as cq
+
+try:
+    import cadquery as cq
+except ImportError:                     # the static geometry (belt, wheels, overall size) needs no CAD kernel
+    cq = None
 from vegeta.dedalus import Design, Parameter
 
 
