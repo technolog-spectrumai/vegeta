@@ -219,11 +219,12 @@ def _line_move(p0_fn, p1_fn, elevation, T):
     return start, update
 
 
-def _feed(branch, direction, feed_speed, elevation, retreat=0.3, hold_fraction=0.7):
-    """Push the bar root along ``direction`` (world unit vector, into the branch) at ``feed_speed`` [m/s] until the
-    cutter's force reading reaches ``hold_fraction`` × its window's top, hold there while the chain works, back off
-    at ``retreat`` × the speed while it reports a jam; done when the branch's weld is released (a feed loop on the
-    measured bar force: the operator's push)."""
+def _feed(branch, direction, feed_speed, elevation, retreat=2.0, band=(0.5, 0.8)):
+    """Push the bar root along ``direction`` (world unit vector, into the branch) under a force loop on the
+    cutter's reading: push at ``feed_speed`` [m/s] below ``band[0]`` × the window's top, back off at that speed
+    above ``band[1]`` × it, hold in between; back off at ``retreat`` × the speed while the cutter reports a jam
+    (the boom's servos deflect under the push: backing off slowly leaves the bar pressed). Done when the
+    branch's weld is released (the operator's feel for the saw, as a regulator)."""
     d = np.asarray(direction, dtype=float)
     d = d / np.linalg.norm(d)
 
@@ -240,8 +241,10 @@ def _feed(branch, direction, feed_speed, elevation, retreat=0.3, hold_fraction=0
         f = cutter.force.get(branch.name, 0.0)
         if branch.name in cutter.jammed:
             step = -retreat * feed_speed * dt
-        elif f < hold_fraction * cutter.F_max:
+        elif f < band[0] * cutter.F_max:
             step = feed_speed * dt
+        elif f > band[1] * cutter.F_max:
+            step = -feed_speed * dt
         else:
             step = 0.0
         m.state["p"] = m.state["p"] + d * step

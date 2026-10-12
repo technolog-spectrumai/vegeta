@@ -87,7 +87,8 @@ class Scene:
     from the rover, crosses them), the rover's stand-off from the trunk (``stand_dist``: hull centre to trunk; None
     = found by ``perseus_controller.stand_distance``), the cut ``cut_s`` [m] out from the trunk, where the machine
     backs out to when done (``x_end``, behind it: the trunk is ahead); the ground: rough soil with a cross-slope
-    band at ``bank``=(x0, x1, deg) and hummocks."""
+    band at ``bank``=(x0, x1, deg), hummocks, and an ``even_patch`` (x0, x1, factor) where the operator parks the
+    machine (the roughness scaled down there: a rover on two rollers rocks and walks while its boom swings)."""
 
     x_tree: float = 6.5
     r_trunk: float = 0.18
@@ -99,12 +100,13 @@ class Scene:
     ])
     stand_dist: float | None = None
     cut_s: float = 0.40
-    cut_timeout: float = 25.0
+    cut_timeout: float = 40.0
     x_end: float = 1.0                                 # back out the way it came (the trunk is ahead)
     rough_rms: float = 0.03
     rough_len: float = 0.4
     bank: tuple = (2.0, 4.5, 8.0)                      # a side slope band: x0, x1, deg (0 = none)
-    hummocks: tuple = ((3.2, 0.5, 0.12, 0.6), (4.8, -0.6, 0.10, 0.5))   # (x, y, height, radius)
+    hummocks: tuple = ((3.2, 0.5, 0.12, 0.6), (1.4, -0.6, 0.10, 0.5))   # (x, y, height, radius)
+    even_patch: tuple = (4.3, 6.4, 0.3)                # where the machine parks: x0, x1, roughness × factor
     seed: int = 5
     course_extent: tuple = (-2.0, 13.0, -4.0, 4.0)
     name: str = "a tree on rough ground"
@@ -131,7 +133,8 @@ def garden_scene() -> Scene:
                            Branch("branch_4", 0.58, -110.0, 10.0, 0.040, 1.0, "garden shrub (hazel, privet, fruit), green"),
                            Branch("branch_5", 0.68, 75.0, 25.0, 0.028, 0.7, "garden shrub (hazel, privet, fruit), green")],
                  cut_s=0.25, cut_timeout=20.0, x_end=0.8, rough_rms=0.012, rough_len=0.25, bank=(1.5, 3.0, 12.0),
-                 hummocks=((2.2, 0.3, 0.05, 0.35),), seed=11, course_extent=(-1.5, 9.0, -3.0, 3.0),
+                 hummocks=((2.2, 0.3, 0.05, 0.35),), even_patch=(3.3, 4.6, 0.5), seed=11,
+                 course_extent=(-1.5, 9.0, -3.0, 3.0),
                  name="a shrub on a lawn bank")
 
 
@@ -145,10 +148,14 @@ def terrain(scene: Scene):
     bx0, bx1, bdeg = scene.bank
     slope = math.tan(math.radians(bdeg))
     hums = scene.hummocks
+    ex0, ex1, efac = scene.even_patch
 
     def ground(x, y):
         x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
         z = rough.height(x, y)
+        if efac < 1.0:
+            inside = np.clip((x - ex0) / 0.4, 0.0, 1.0) * np.clip((ex1 - x) / 0.4, 0.0, 1.0)
+            z = z * (1.0 - (1.0 - efac) * inside)
         if bdeg:
             w = np.clip((x - bx0) / 0.6, 0.0, 1.0) * np.clip((bx1 - x) / 0.6, 0.0, 1.0)   # fades in and out over 0.6 m
             z = z + w * slope * y
