@@ -99,6 +99,15 @@ CATALOG = [
     Actuator("pekari drive 16:1 planetary", "gearmotor", 800.0, 14.3, 4.8, 16.0, 24.0, 250, False,
              "BLDC 100 W, 24 V through two planetary stages 4:1 x 4:1 (sun 18, planets 18, ring 54, module 0.8; "
              "efficiency 0.97 per stage): torques x 16 x 0.94, speed / 16; gearbox 350 g (notebook 30 §5)"),
+    # the track drives of the Perseus branch-cutting rovers (notebooks 37 and 38): a 180 kg forestry machine and a
+    # 30 kg garden machine on the Pekari track architecture
+    Actuator("perseus track drive 1.5 kW, 48 V", "gearmotor", 9000.0, 160.0, 60.0, 45.0, 48.0, 150, False,
+             "assumed: 48 V 1.5 kW BLDC (4.8 N m continuous at 3000 rpm) through a 20:1 two-stage planetary "
+             "(efficiency 0.94): 60 N m continuous, 160 N m stall at the sprocket, 150 rpm no-load; sized for the 180 kg "
+             "Perseus on a 30 deg climb (perseus_robot.ASSUMPTIONS['drive'])"),
+    Actuator("perseus mini drive 20:1 planetary", "gearmotor", 1100.0, 30.0, 10.0, 20.0, 24.0, 200, False,
+             "assumed: 24 V 200 W inrunner BLDC (0.53 N m continuous at 3600 rpm, 3x peak) through two planetary "
+             "stages 4:1 x 5:1 (efficiency 0.94): 10 N m continuous, 30 N m stall, 200 rpm no-load; the 30 kg Perseus Mini"),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),
@@ -137,6 +146,12 @@ LINEAR = [
                    "assumed: 48 V BLDC on a 32 mm ball screw (10 mm lead) with a holding brake, forklift-retrofit class"),
     LinearActuator("tilt screw 12 kN", "ball screw + brake", 6000.0, 12000.0, 5000.0, 60.0, 40.0, 48.0, True,
                    "assumed: 48 V electric cylinder (5 mm lead) with a brake, mast-tilt class"),
+    # the Perseus boom (notebook 37): the lift and stick cylinders of a small excavator layout, electric
+    LinearActuator("boom cylinder 12 kN", "ball screw + brake", 6500.0, 12000.0, 5000.0, 60.0, 40.0, 48.0, True,
+                   "assumed: 48 V electric cylinder (ball screw, 5 mm lead) with a holding brake, 400 mm stroke, "
+                   "mini-excavator boom class; given at the rod"),
+    LinearActuator("stick cylinder 8 kN", "ball screw + brake", 4500.0, 8000.0, 3500.0, 80.0, 30.0, 48.0, True,
+                   "assumed: 48 V electric cylinder (ball screw, 6 mm lead) with a holding brake, 350 mm stroke"),
 ]
 
 
