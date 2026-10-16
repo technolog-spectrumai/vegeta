@@ -263,8 +263,10 @@ def load_json(name: str | None = None, *, reports_dir=REPORTS) -> dict | None:
 
 def export(name: str, title: str, sections: dict, *, meta: dict | None = None, reports_dir=REPORTS) -> dict:
     """Both copies of a notebook's report (Markdown and JSON) and both dossiers; returns the paths and the sizes."""
+    reports_dir = Path(reports_dir)
     md = write(name, title, sections, reports_dir=reports_dir, meta=meta)
     js = write_json(name, title, sections, reports_dir=reports_dir, meta=meta)
-    d_md, d_js = dossier(reports_dir=reports_dir), dossier_json(reports_dir=reports_dir)
+    out_md, out_js = (DOSSIER, DOSSIER_JSON) if reports_dir == REPORTS else (reports_dir.parent / DOSSIER.name, reports_dir.parent / DOSSIER_JSON.name)
+    d_md, d_js = dossier(reports_dir=reports_dir, out=out_md), dossier_json(reports_dir=reports_dir, out=out_js)   # a test's reports never restitch the real dossier
     return {"markdown": str(md), "json": str(js), "dossier_md": str(d_md), "dossier_json": str(d_js),
             "json_kB": round(js.stat().st_size / 1024, 1), "dossier_json_kB": round(d_js.stat().st_size / 1024, 1)}

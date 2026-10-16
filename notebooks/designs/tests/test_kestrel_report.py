@@ -31,7 +31,7 @@ def test_write_dossier_and_paste(tmp_path, capsys):
     assert txt.startswith("# Kestrel-4Q") and "## spec" in txt and "## custom" in txt and "| r | 1 |" in txt
     out = kr.dossier(reports_dir=d, out=tmp_path / "dossier.md")
     doc = out.read_text()
-    assert doc.index("40_kestrel") < doc.index("38_prop_lab") and "| report | lines | exported |" in doc and "## Kestrel-4Q" in doc
+    assert doc.index("38_prop_lab") < doc.index("40_kestrel") and "| report | lines | exported |" in doc and "## Kestrel-4Q" in doc
     block = kr.paste("40_kestrel", reports_dir=d, max_lines=5)
     assert block.startswith("<!--") and "more lines" in block and "Kestrel-4Q" in capsys.readouterr().out
 
@@ -47,7 +47,8 @@ def test_json_export_and_dossier(tmp_path):
     assert doc["notebook"] == "40_kestrel" and doc["sections"]["tab"]["rows"][0] == {"_index": "r1", "a": 1.235, "b": "x"} and doc["sections"]["tab"]["rows"][1]["a"] is None
     assert doc["sections"]["multi"]["rows"][0]["_index"] == "v · back · 3.0" and doc["sections"]["multi"]["rows"][0]["pass"] is True
     assert doc["sections"]["d"] == {"m": 1.686, "ok": True} and doc["sections"]["s"] == {"x": 2} and doc["sections"]["txt"] == "hello" and doc["sections"]["none"] is None
-    kr.export("38_prop_lab", "prop_lab", {"k": [{"n": 1}]}, reports_dir=d)
+    out2 = kr.export("38_prop_lab", "prop_lab", {"k": [{"n": 1}]}, reports_dir=d)
+    assert Path(out2["dossier_json"]).parent == tmp_path                 # a test's dossier lands beside its reports, never on the real one
     dj = json.loads(Path(kr.dossier_json(reports_dir=d, out=tmp_path / "d.json")).read_text())
-    assert list(dj["reports"]) == ["40_kestrel", "38_prop_lab"] and dj["contents"]["40_kestrel"]["sections"][0] == "tab"
+    assert list(dj["reports"]) == ["38_prop_lab", "40_kestrel"] and dj["contents"]["40_kestrel"]["sections"][0] == "tab"
     assert kr.load_json("40_kestrel", reports_dir=d)["meta"] == {"mass": 1.686} and kr.load_json("none", reports_dir=d) is None
