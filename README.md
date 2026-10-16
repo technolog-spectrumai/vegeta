@@ -391,9 +391,10 @@ in the hover and in cruise, the transitions), faired struts (`strut_fairing`: th
 against the drag they save), a reflexed section on **Zephyr** (`kestrel_section.py`: NeuralFoil polars of NACA 0012
 against the reflexed 230/240-series, the elevon's flap data, the trim each section asks of the elevons, Aeromant slab
 cases as the CFD check — NOT RUN until `dev_zephyr` is merged), and lighter bracing (`bracing`: the motor stations'
-stiffness and first modes per truss); then the four together against 4Q, and the **X-wing** of the same motors, battery
-and pod with no bracing at all (`kestrel_xwing.py`: four cantilever panels at ±45° — half the vertical lift slope of the
-same area laid flat, the spars sized as cantilevers with tip motors, flown in the same panel model). Code:
+stiffness and first modes per truss); then the four together against 4Q. **`39_xwing`** is the X-wing of the same
+motors, battery and pod with no bracing at all (`kestrel_xwing.py`: four cantilever panels at ±45° — half the vertical
+lift slope of the same area laid flat, the spars sized as cantilevers with tip motors, the panels' section on Zephyr,
+flown in the same panel model) against Kestrel-4Q and 4Q-2. Code:
 `designs/kestrel.py`, `kestrel_systems.py`, `kestrel_control.py`, `kestrel_flight.py`, `kestrel_transition.py` (a list
 of lifting panels: the biplane's four flat ones or the X-wing's four at 45°), `kestrel_cfd.py`, `kestrel_structure.py`,
 `kestrel_section.py`, `kestrel_xwing.py`, `kestrel_drawings.py`; `tests/test_kestrel.py`; `scenarios/kestrel_transitions.py

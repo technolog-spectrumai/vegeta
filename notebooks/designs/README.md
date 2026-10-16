@@ -246,5 +246,6 @@ first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`,
 panels, each at its dihedral, height and rotor — the model flies any arrangement of them), `z_rotor`, `elevon_y_in`,
 `lift_slope_vertical`; `kestrel_section.py` (on `vegeta.zephyr`: `CANDIDATES`, `table` → `data/kestrel_sections.json`,
 `summary_frame`, `trim_table`, `cfd_specs`) and `kestrel_cfd.section_stl` / `section_case` / `section_not_run_table`;
-`kestrel_xwing.py` (`VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice, `drag_buildup`,
-`cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`, `cruise`).
+`kestrel_xwing.py` (notebook 39: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
+`drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
+`cruise`).
