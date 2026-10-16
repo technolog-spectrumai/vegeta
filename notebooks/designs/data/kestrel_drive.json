@@ -29,7 +29,8 @@
    "height_m": 0.032,
    "usable": 0.8
   },
-  "V_grid_max": 36.0
+  "V_grid_max": 36.0,
+  "prop_lab": null
  },
  "rho": 1.225,
  "table": {
@@ -425,6 +426,7 @@
   "T_min": 0.25,
   "diameter": 0.2286,
   "rpm_hover": 6600.278626460341,
-  "source": "Boreas BEMT (generic section) + first-order motor + 4S battery"
+  "source": "Boreas BEMT (generic section) + first-order motor + 4S battery",
+  "P_cap": 370.0
  }
 }
