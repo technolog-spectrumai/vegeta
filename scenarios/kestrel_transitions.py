@@ -80,10 +80,15 @@ def main(argv=None) -> int:
         res = aeromant.run_cases([cases[n] for n in names], jobs=args.jobs, processors=args.processors, progress=True, cache=True)
         tab = kcfd.table(dict(zip(names, res)), spec)
         tab.to_csv(OUT / "cfd_cases.csv")
-        solved = int((tab["status"] == "solved").sum())
-        print(f"CFD: {solved} of {len(tab)} cases solved")
-        if solved:
-            corr = kcfd.CFDAirframe.from_results(tab, veh)
+        sm = kcfd.summary(tab)                                     # a failed or diverged case is a result, listed and counted
+        print("CFD:", sm["line"])
+        doc["cfd_summary"] = {k: v for k, v in sm.items() if k != "line"}
+        kcfd.save_records(tab, kcfd.RESULTS_JSON, key="4Q-1", meta={"source": "scenarios/kestrel_transitions.py", "quality": args.quality})
+        corr = kcfd.CFDAirframe.from_results(tab, veh) or kcfd.CFDAirframe.from_results(tab, veh, source="sweep")
+        if corr is None:
+            print("CFD: nothing usable solved — the verdict stands on the model's polar")
+        else:
+            print(f"CFD: correction from the {corr.source} ({len(corr.samples)} points)")
             vc = {"elevons, CFD": kt.make_vehicle(airframe=corr, name="Kestrel-4Q, elevons, CFD aero"),
                   "rotors only, CFD": kt.make_vehicle(airframe=corr, elevons=False, name="Kestrel-4Q, rotors only, CFD aero")}
             mat_c, _ = kt.matrix(vc, durations=durs, headwinds=(0.0, 6.0))

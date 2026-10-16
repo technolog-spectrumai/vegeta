@@ -385,7 +385,19 @@ three schedule lengths, headwind, gusts, three vehicles, the back transition's s
 side stalling first. The CFD (`kestrel_cfd`, Aeromant's new **`aircraft_quad_rotor_disks`**: four rotor disks each at its
 own rpm) solves the airframe at the points the transitions fly and feeds the coefficients back into the model as a
 correction; NOT RUN where there is no OpenFOAM. The truss as a plane frame (braced / posts / none) and the ground
-stance close it. **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
+stance close it. The notebook is built as a **design loop** (`kestrel_loop.py`): iteration 0 is the envelope — the
+spec's numbers, the layout's lengths and five assumptions, nothing else; the tools are plugged in and every number
+is checked against its target (`check_table`), the knob that fails is turned (the battery's station, the effectors,
+the schedule, the entry speed) and the loop goes round; then the CFD on file is plugged in (iteration 3) and the matrix
+flown again; an `IterationLog` closes the notebook with the path from the envelope to Kestrel-4Q-2. **A failed
+computation is a result**: a CFD case that fails or diverges is listed with its reason and left out of the correction
+(`kestrel_cfd.table`: `solved` / `diverged` / `FAILED` / `NOT RUN`), a transition that diverges is a failed
+transition. The first OpenFOAM campaign (on another machine) solved the ten bare-airframe cases — the model's lift
+slope within 2 %, its Cd0 a fifth conservative, its stall harsher than the CFD's — and lost all fourteen blown cases to
+the solver's numerics; the rotor-disk templates now run plain SIMPLE with a velocity cap. **`40_kestrel_tests`** is the
+test campaign: every case for Kestrel-4Q, Kestrel-4Q-2 and the two finalist sections at the quality it is given
+(`KESTREL_CFD_QUALITY`, `KESTREL_CFD_ONLY`, `KESTREL_CFD_SWEEP_ONLY`), failures accepted and counted, the solved cases
+written to `designs/data/kestrel_cfd_results.json` for notebook 38 to read (`kestrel_cfd.plug_in`). **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
 insulated capsule (72 × 72 × 160 mm, up to 0.5 kg) on the pod's axis, the battery on the floor under it and the
 electronics above, the pod grown to a 220 mm constant mid-body behind an ellipsoidal nose (`Kestrel4Q.bays`,
 `bay_checks`; the capsule's cost in CG, margin, hover thrust-to-weight, endurance and the transitions) — and

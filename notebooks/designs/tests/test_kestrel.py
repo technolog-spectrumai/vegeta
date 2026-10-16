@@ -529,15 +529,26 @@ def test_cfd_records_roundtrip_and_the_plug_in(tmp_path, VEH):
     import kestrel_cfd as kcfd
     T, _ = _fake_campaign()
     path = tmp_path / "kestrel_cfd_results.json"
-    recs = kcfd.save_records(T, path, meta={"quality": "screening"})
-    doc = kcfd.load_records(path)
+    recs = kcfd.save_records(T, path, key="4Q-1", meta={"quality": "screening"})
+    doc = kcfd.load_records(path, "4Q-1")
     assert doc["meta"]["quality"] == "screening" and len(doc["records"]) == len(recs) == len(kcfd.SWEEP_ALPHAS) + 1
     assert doc["summary"]["FAILED"] == 1 and doc["summary"]["diverged"] == 1 and len(doc["statuses"]) == len(T)
-    assert kcfd.load_records(tmp_path / "missing.json") is None
+    assert kcfd.load_records(tmp_path / "missing.json") is None and kcfd.load_records(path, "4Q-2") is None
     corr = kcfd.CFDAirframe.from_records(doc["records"], VEH)
     assert corr is not None and len(corr.samples) == 1
     sw = kcfd.CFDAirframe.from_records(doc["records"], VEH, source="sweep")
     assert sw is not None and len(sw.samples) == len(kcfd.SWEEP_ALPHAS)
+    # a second campaign in the same file; a NOT RUN pass never erases a result
+    T2 = T.copy(); T2["status"] = "NOT RUN"
+    assert len(kcfd.save_records(T2, path, key="4Q-1")) == len(recs) and len(kcfd.load_records(path, "4Q-1")["records"]) == len(recs)
+    kcfd.save_records(T2, path, key="4Q-2", keep_previous=False)
+    assert kcfd.load_records(path, "4Q-2")["records"] == [] and sorted(kcfd.load_records(path)["campaigns"]) == ["4Q-1", "4Q-2"]
+    # the plug-in: the blown correction first, the sweep when none solved blown, nothing when nothing solved
+    pi = kcfd.plug_in(VEH, path, "4Q-1")
+    assert pi["source"] == "disks" and pi["airframe"] is not None
+    assert kcfd.plug_in(VEH, path, "4Q-2")["airframe"] is None and kcfd.plug_in(VEH, tmp_path / "none.json")["campaign"] is None
+    rt = kcfd.records_table(doc["records"])
+    assert len(kcfd.sweep_comparison(rt, VEH)) == len(kcfd.SWEEP_ALPHAS)
 
 
 def test_a_diverging_airframe_is_a_failed_transition_not_a_crash(P):
@@ -550,3 +561,24 @@ def test_a_diverging_airframe_is_a_failed_transition_not_a_crash(P):
     df, _ = kt.matrix({"garbage": veh}, kinds=("forward",), durations=(3.0,), headwinds=(0.0,), t_after=1.0)
     v = kt.verdict(df)["garbage"]
     assert v["passes"] == 0 and "diverged" in v["failures"][0]
+
+
+# ----------------------------------------------------------------------------------------------- the design loop
+def test_envelope_checks_and_the_iteration_log(CI):
+    import kestrel_loop as kl
+    e = kl.envelope(mass_kg=2.0)
+    assert e["wing area [m²]"] == pytest.approx(0.28, rel=1e-6) and 0.4 < e["cruise CL"] < 0.5 and 10.5 < e["stall speed [m/s]"] < 12.0
+    assert 150 < e["hover power, momentum theory [W]"] < 300 and 15 < e["endurance at the cruise [min]"] < 30 and 0.08 < e["static margin [chords]"] < 0.14
+    # the envelope lands within a third of the tools on the numbers both compute
+    assert e["take-off mass [kg]"] == pytest.approx(CI["mass_kg"], rel=0.35)
+    c = [kl.check("take-off mass [kg]", 1.9), kl.check("static margin [chords]", 0.2), kl.check("own", 3.0, "≥", 2.0, unit="N", note="x"), kl.check("flag", True, "==", True)]
+    assert [r["holds"] for r in c] == [True, False, True, True] and c[2]["value"] == "3 N" and c[1]["target"] == "0.05 – 0.15"
+    t = kl.check_table(c, "t")
+    assert t.attrs["passes"] == 3 and t.attrs["of"] == 4 and list(t["holds"]) == ["✔", "✘", "✔", "✔"] and kl.failing(c) == ["static margin [chords]"]
+    assert kl.check("nan", float("nan"), "≤", 1.0)["holds"] is False
+    log = kl.IterationLog()
+    log.add("0", changed="—", checks=c, **{"take-off mass [kg]": 2.0, "Cd0": 0.067})
+    log.add("1", changed="battery", **{"take-off mass [kg]": 1.69, "Cd0": 0.067, "transitions passing": "11 of 12"})
+    f = log.frame()
+    assert list(f.index) == ["0", "1"] and f.loc["0", "checks holding"] == "3 / 4" and f.loc["1", "transitions passing"] == "11 of 12"
+    assert isinstance(log.to_dict()[0]["take-off mass [kg]"], float)

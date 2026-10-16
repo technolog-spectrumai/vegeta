@@ -212,7 +212,14 @@ Disk zones that would overlap (centres closer than `2 × zone_radius × diameter
 turn the STL and the disk centres together about the moment point and give the turned thrust axis
 (`kestrel.rotate`, `kestrel_cfd.disk_setup`). The forces on the airframe include the slipstream; the disks' thrust and
 in-plane force are in the solver log. Steady RANS beyond the stall is a time average at best: read the residuals and
-the force scatter. Notebook: `38_kestrel` (the transitions through the stall).
+the force scatter. Notebook: `38_kestrel` (the transitions through the stall), `40_kestrel_tests` (the campaign).
+
+**Numerics of the rotor-disk templates** (`aircraft_rotor_disks`, `aircraft_quad_rotor_disks`, `hull_rotor_disk`):
+plain SIMPLE with the under-relaxation of OpenFOAM's rotorDisk tutorial (p 0.3, U 0.7, k and ω 0.7), not the SIMPLEC
+at U 0.9 the external templates use — four disks at a free stream of 1–6 m/s are strong momentum sources, and the
+first blown tailsitter campaign diverged on every case under SIMPLEC. A `limitVelocity` cap (`velocity_limit`;
+default 1.5 × the blade tip speed plus the free stream, or 3 × the free stream if more) clamps a diverging iteration
+instead of letting it overflow: a case that still runs into nonsense is a `diverged` result to read, not a number.
 
 ## A suction hood under a vehicle (`suction_hood`)
 The Onager Sweeper's vacuum nozzle (notebook 23): the air between the road and the vehicle floor, a hood whose lips

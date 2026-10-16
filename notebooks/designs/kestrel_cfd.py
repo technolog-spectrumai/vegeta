@@ -132,7 +132,7 @@ def case(workdir, pt: dict, *, x_cg_m: float, z_cg_m: float = 0.0, quality: str 
     from vegeta import aeromant
     L = kestrel.layout(p)
     a = pt["alpha_deg"]
-    stl = export_stl(Path(workdir).parent / "stl", a, x_cg_m, p)
+    stl = export_stl(Path(workdir) / "stl", a, x_cg_m, p)
     cor = kestrel.rotate((x_cg_m * 1000, 0.0, z_cg_m * 1000), a, x_cg_m * 1000)
     params = dict(velocity=max(pt["V"], 1.0), kinematic_viscosity=NU, density=RHO, reference_area=L["S_ref"], reference_length=l_ref(p),
                   center_of_rotation=(cor[0] / 1000, 0.0, cor[2] / 1000), **QUALITY[quality])
@@ -285,7 +285,7 @@ class CFDAirframe:
         out = []
         for name, r in usable(cfd_table).iterrows():
             out.append({"case": str(name), "alpha_deg": float(r["α [deg]"]), "V": float(r["V [m/s]"]), "T_up": float(r["T upper [N]"]),
-                        "T_lo": float(r["T lower [N]"]), "rotor_disks": bool(r["rotor disks"]), "source": str(r["source"]),
+                        "T_lo": float(r["T lower [N]"]), "rotor_disks": bool(r["rotor disks"]), "source": str(r.get("source", "")),
                         "CL": float(r["CL"]), "CD": float(r["CD"]), "Cm": float(r["Cm (CG, chord)"]),
                         "converged": None if r.get("converged") is None or r.get("converged") != r.get("converged") else bool(r["converged"]),
                         "iterations": None if r.get("iterations") is None or r.get("iterations") != r.get("iterations") else int(r["iterations"])})
@@ -369,25 +369,65 @@ def sweep_numbers(cmp) -> dict:
     return out
 
 
-def save_records(cfd_table, path, *, meta: dict | None = None) -> list[dict]:
-    """The solved cases (``CFDAirframe.records``) and the whole table's statuses to a JSON the design notebook plugs
-    in (``load_records``): the campaign's result, failures included."""
+def save_records(cfd_table, path, *, key: str = "4Q-1", meta: dict | None = None, keep_previous: bool = True) -> list[dict]:
+    """The campaign ``key`` (``"4Q-1"``, ``"4Q-2"``, ``"sections"``) into the JSON the design notebook plugs in
+    (``load_records``): the solved cases (``CFDAirframe.records``), the whole table's statuses, the summary. Other
+    campaigns in the file are kept. With ``keep_previous`` a campaign that solved nothing (a run without OpenFOAM) does
+    not overwrite one that did — a NOT RUN pass never erases a result."""
     import json
     recs = CFDAirframe.records(cfd_table)
     st = {str(k): {"status": str(v["status"]), "note": str(v.get("note", "")), "rotor disks": bool(v["rotor disks"]),
                    "α [deg]": float(v["α [deg]"]), "V [m/s]": float(v["V [m/s]"])} for k, v in cfd_table.to_dict("index").items()}
-    doc = {"meta": meta or {}, "summary": {k: v for k, v in summary(cfd_table).items() if k != "line"}, "records": recs, "statuses": st}
+    camp = {"meta": meta or {}, "summary": {k: v for k, v in summary(cfd_table).items() if k != "line"}, "records": recs, "statuses": st}
     path = Path(path)
+    doc = load_records(path) or {"campaigns": {}}
+    doc.setdefault("campaigns", {})
+    prev = doc["campaigns"].get(key)
+    if keep_previous and not recs and prev and prev.get("records"):
+        return prev["records"]
+    doc["campaigns"][key] = camp
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=1, default=str))
     return recs
 
 
-def load_records(path) -> dict | None:
-    """The campaign's JSON (``save_records``) or ``None`` when it does not exist."""
+def load_records(path, key: str | None = None) -> dict | None:
+    """The JSON of ``save_records`` (``key`` None: the whole document, else that campaign), or ``None`` when the file
+    or the campaign does not exist."""
     import json
     path = Path(path)
-    return json.loads(path.read_text()) if path.exists() else None
+    if not path.exists():
+        return None
+    doc = json.loads(path.read_text())
+    if "campaigns" not in doc:                              # the first layout: one campaign, unkeyed
+        doc = {"campaigns": {"4Q-1": doc}}
+    return doc if key is None else doc["campaigns"].get(key)
+
+
+def plug_in(veh, path=RESULTS_JSON, key: str = "4Q-1") -> dict:
+    """What the design notebook does with a campaign: the correction from the blown cases if any solved, else from
+    the bare sweep, else none; with the campaign's summary and the records. ``{"airframe": CFDAirframe | None,
+    "source": "disks" | "sweep" | None, "campaign": dict | None}``."""
+    camp = load_records(path, key)
+    if not camp or not camp.get("records"):
+        return {"airframe": None, "source": None, "campaign": camp}
+    for source in ("disks", "sweep"):
+        corr = CFDAirframe.from_records(camp["records"], veh, source=source)
+        if corr is not None:
+            return {"airframe": corr, "source": source, "campaign": camp}
+    return {"airframe": None, "source": None, "campaign": camp}
+
+
+def records_table(records: list[dict]):
+    """The records of a campaign as a frame in ``table``'s columns (for ``sweep_comparison`` and the polar figure)."""
+    import pandas as pd
+    rows = {}
+    for r in records:
+        rows[r.get("case", f"α {r['alpha_deg']:g}°, {r['V']:g} m/s")] = {
+            "α [deg]": r["alpha_deg"], "V [m/s]": r["V"], "T upper [N]": r["T_up"], "T lower [N]": r["T_lo"], "rotor disks": bool(r["rotor_disks"]),
+            "source": r.get("source", ""), "status": "solved", "CL": r["CL"], "CD": r["CD"], "Cm (CG, chord)": r["Cm"],
+            "iterations": r.get("iterations"), "converged": r.get("converged"), "note": ""}
+    return pd.DataFrame(rows).T
 
 
 # ------------------------------------------------------------------------------------------------- the section check (Part II)
@@ -422,6 +462,51 @@ def section_case(workdir, spec: dict, *, quality: str = "screening", env=None):
     env = env or aeromant.OpenFOAMEnvironment.detect()
     tag = stl.stem + f"_V{spec['V']:g}_{quality}"
     return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / tag), geometry_units="mm", environment=env)
+
+
+def section_table(results: dict, specs: dict) -> "pd.DataFrame":
+    """One row per slab case: the status (solved / diverged / FAILED / NOT RUN), CL and CD on the slab's planform, Cm
+    about the quarter chord on the chord (the template's reference length is AR·c/4), the section estimate of the lift
+    coefficient (lifting line: CL·(AR + 2)/AR) to read against Zephyr's polar, convergence and a note."""
+    import pandas as pd
+    rows = {}
+    for k, v in specs.items():
+        r = results.get(k)
+        label = v["name"] + (f", k₂/k₁ {v['reflex_k21']:g}" if v.get("reflex_k21") else "")
+        base = {"α [deg]": v["alpha_deg"], "V [m/s]": v["V"], "Re (chord)": v["V"] * v["chord_m"] / NU, "AR": v["AR"], "section": label}
+        if r is None or not getattr(r, "ok", False):
+            msg = "NOT RUN" if r is None or any("NOT RUN" in m for m in getattr(r, "messages", [])) else "FAILED"
+            rows[k] = dict(base, status=msg, note="" if r is None else _note(r))
+            continue
+        m = r.metrics
+        coefs = [np.nan if m.get(c) is None else float(m.get(c)) for c in ("Cl", "Cd", "Cm")]
+        sane = all(np.isfinite(x) and abs(x) <= SANE for x in coefs)
+        note = "" if sane else f"diverged: |coefficients| up to {np.nanmax(np.abs(coefs)):.3g}"
+        if sane and m.get("converged") is False:
+            note = f"not converged in {m.get('iterations')} iterations"
+        rows[k] = dict(base, status="solved" if sane else "diverged", CL=coefs[0], CD=coefs[1], **{"Cm (c/4, chord)": coefs[2] * v["AR"] / 4},
+                       **{"cl section estimate": coefs[0] * (v["AR"] + 2) / v["AR"]}, iterations=m.get("iterations"), converged=m.get("converged"),
+                       cells=m.get("mesh_cells"), note=note)
+    return pd.DataFrame(rows).T
+
+
+def save_section_table(table, path=RESULTS_JSON, *, key: str = "sections", meta: dict | None = None) -> dict:
+    """The slab campaign into the results JSON (``campaigns[key]``: the rows as plain dicts, the status counts)."""
+    import json
+    rows = {str(k): {kk: (None if vv is None or (isinstance(vv, float) and not np.isfinite(vv)) else (vv.item() if hasattr(vv, "item") else vv))
+                     for kk, vv in r.items()} for k, r in table.to_dict("index").items()}
+    st = table["status"].astype(str)
+    camp = {"meta": meta or {}, "summary": {k: int((st == k).sum()) for k in ("solved", "diverged", "FAILED", "NOT RUN")}, "rows": rows}
+    path = Path(path)
+    doc = load_records(path) or {"campaigns": {}}
+    doc.setdefault("campaigns", {})
+    prev = doc["campaigns"].get(key)
+    if camp["summary"]["solved"] == 0 and prev and prev.get("summary", {}).get("solved"):
+        return prev
+    doc["campaigns"][key] = camp
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=1, default=str))
+    return camp
 
 
 def section_not_run_table(specs: dict) -> "pd.DataFrame":

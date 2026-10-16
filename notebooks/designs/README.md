@@ -237,7 +237,15 @@ battery placed for the CG), `cg_inertia`, `propulsion` (Boreas), `drive_table` (
 `kestrel_transition.py`: `make_vehicle`, `slipstream`, `airframe_forces`, `simulate` (forward / back, `t_tr`,
 `headwind`, `gust_up`, `V_entry`, `floor`), `matrix`, `verdict`, `CRITERIA`. `kestrel_cfd.py`: `points` (from the
 transitions), `case` / `plan` (Aeromant `aircraft_quad_rotor_disks`, the bare sweep on `rans_ksst_external`), `table`,
-`not_run_table`, `CFDAirframe` (the CFD's correction for the transition model). `kestrel_structure.py`: `frame`,
+`not_run_table`, `CFDAirframe` (the CFD's correction for the transition model; `from_results` / `from_records`
+return `None` when nothing usable solved, `source="sweep"` corrects in α from the bare airframe), `table` with the
+statuses `solved` / `diverged` (`SANE`) / `FAILED` / `NOT RUN` and a `note`, `summary`, `sweep_comparison` /
+`sweep_numbers` (the bare sweep against the model: lift slope, CL max, Cd0, static margin from Cmα), `save_records` /
+`load_records` / `plug_in` / `records_table` (the campaigns in `data/kestrel_cfd_results.json`, keyed `4Q-1`, `4Q-2`,
+`sections`; a pass that solved nothing never erases a result), `section_table` / `save_section_table` (the slabs).
+`kestrel_loop.py` (the design loop's bookkeeping): `envelope` (iteration 0 from the spec and the layout), `TARGETS`,
+`check` / `check_table` / `failing`, `IterationLog`. Notebook **40** (`40_kestrel_tests`) is the CFD campaign of every
+case for both aircraft and the sections, failures accepted. `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
 `polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,
