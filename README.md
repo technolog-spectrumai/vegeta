@@ -383,8 +383,19 @@ three schedule lengths, headwind, gusts, three vehicles, the back transition's s
 side stalling first. The CFD (`kestrel_cfd`, Aeromant's new **`aircraft_quad_rotor_disks`**: four rotor disks each at its
 own rpm) solves the airframe at the points the transitions fly and feeds the coefficients back into the model as a
 correction; NOT RUN where there is no OpenFOAM. The truss as a plane frame (braced / posts / none) and the ground
-stance close it. Code: `designs/kestrel.py`, `kestrel_systems.py`, `kestrel_control.py`, `kestrel_flight.py`,
-`kestrel_transition.py`, `kestrel_cfd.py`, `kestrel_structure.py`, `kestrel_drawings.py`; `tests/test_kestrel.py`.
+stance close it. **Part II (Kestrel-4Q-2)** develops the verdict's four changes as CAD variants and proves or disproves
+each against Part I: elevons on the blown outer panels (`elevons`, hinge moments against a 9 g servo, their authority
+in the hover and in cruise, the transitions), faired struts (`strut_fairing`: the sleeves' mass and broadside area
+against the drag they save), a reflexed section on **Zephyr** (`kestrel_section.py`: NeuralFoil polars of NACA 0012
+against the reflexed 230/240-series, the elevon's flap data, the trim each section asks of the elevons, Aeromant slab
+cases as the CFD check — NOT RUN until `dev_zephyr` is merged), and lighter bracing (`bracing`: the motor stations'
+stiffness and first modes per truss); then the four together against 4Q, and the **X-wing** of the same motors, battery
+and pod with no bracing at all (`kestrel_xwing.py`: four cantilever panels at ±45° — half the vertical lift slope of the
+same area laid flat, the spars sized as cantilevers with tip motors, flown in the same panel model). Code:
+`designs/kestrel.py`, `kestrel_systems.py`, `kestrel_control.py`, `kestrel_flight.py`, `kestrel_transition.py` (a list
+of lifting panels: the biplane's four flat ones or the X-wing's four at 45°), `kestrel_cfd.py`, `kestrel_structure.py`,
+`kestrel_section.py`, `kestrel_xwing.py`, `kestrel_drawings.py`; `tests/test_kestrel.py`; `scenarios/kestrel_transitions.py
+--part2`.
 
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 

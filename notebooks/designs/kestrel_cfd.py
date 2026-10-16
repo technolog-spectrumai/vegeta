@@ -252,3 +252,44 @@ class CFDAirframe:
                 return v
         d = ((self._X - x) / np.array([math.radians(10.0), 0.2])) ** 2
         return self._D[int(np.argmin(d.sum(1)))]
+
+
+# ------------------------------------------------------------------------------------------------- the section check (Part II)
+def section_stl(workdir, name: str, reflex_k21, alpha_deg: float, *, chord_m: float = 0.14, AR: float = 8.0) -> Path:
+    """An extruded slab of a Zephyr section (chord ``chord_m``, span AR × chord, square tips) turned to ``alpha_deg``
+    about its quarter chord, as an STL in millimetres: the CFD check of the surrogate's polar."""
+    import cadquery as cq
+    from vegeta import zephyr
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    s = zephyr.naca(name, reflex_k21=reflex_k21)
+    tag = s.name.replace(" ", "_").replace("/", "").replace("(", "").replace(")", "")
+    path = workdir / f"section_{tag}_a{alpha_deg:+05.1f}.stl"
+    if not path.exists():
+        c = chord_m * 1000
+        pts = [(x * c, z * c) for x, z in s.coordinates(80, te_cut=0.995)]
+        solid = cq.Workplane("XZ").polyline(pts).close().extrude(AR * c / 2, both=True)
+        solid = solid.rotate((0.25 * c, 0, 0), (0.25 * c, 1, 0), alpha_deg)
+        cq.exporters.export(solid, str(path), tolerance=0.2)
+    return path
+
+
+def section_case(workdir, spec: dict, *, quality: str = "screening", env=None):
+    """One Aeromant ``rans_ksst_external`` case of a section slab (``kestrel_section.cfd_specs`` row): the free stream at
+    the cruise speed, the reference area the slab's planform, the moment about the quarter chord."""
+    from vegeta import aeromant
+    c, AR, a = spec["chord_m"], spec["AR"], spec["alpha_deg"]
+    stl = section_stl(Path(workdir).parent / "stl", spec["name"], spec["reflex_k21"], a, chord_m=c, AR=AR)
+    params = dict(velocity=spec["V"], kinematic_viscosity=NU, density=RHO, reference_area=AR * c * c, reference_length=c,
+                  center_of_rotation=(0.25 * c, 0.0, 0.0), **QUALITY[quality])
+    env = env or aeromant.OpenFOAMEnvironment.detect()
+    tag = stl.stem + f"_V{spec['V']:g}_{quality}"
+    return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / tag), geometry_units="mm", environment=env)
+
+
+def section_not_run_table(specs: dict) -> "pd.DataFrame":
+    import pandas as pd
+    rows = {k: {"status": "NOT RUN", "α [deg]": v["alpha_deg"], "V [m/s]": v["V"], "Re (chord)": v["V"] * v["chord_m"] / NU, "AR": v["AR"],
+                "template": "rans_ksst_external", "reads against": f"the slab's lift slope ≈ AR/(AR+2) = {v['AR'] / (v['AR'] + 2):.2f} of the section's"}
+            for k, v in specs.items()}
+    return pd.DataFrame(rows).T

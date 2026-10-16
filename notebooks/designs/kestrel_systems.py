@@ -53,6 +53,8 @@ POD_SHELL_KG = 0.120             # the pod's composite shell with its bulkheads 
 FIN_KG_M2 = 0.55                 # 4 mm balsa-composite plate
 FOOT_ROD_KG_M = 0.020            # 6 mm carbon rod
 NACELLE_KG = 0.012               # motor mount, can and fairing, each
+SERVO_KG = 0.012                 # one 9 g micro servo with its horn, pushrod and hinge tape (Part II: the elevons)
+SLEEVE_KG_M = {"post": 0.006, "diagonal": 0.004}   # a strut's foam-and-film fairing sleeve per metre (Part II)
 WIRING_KG = 0.075                # power wiring to four nacelles, signal wiring, connectors
 MARGIN_KG = 0.060                # growth margin of a concept
 
@@ -78,11 +80,22 @@ def _parts(p):
     for nm, z in (("upper", L["h"]), ("lower", -L["h"])):
         add(f"wing {nm}", WING_AREAL_KG_M2 * L["S_wing"], L["x_le"] + 0.42 * L["chord"], 0.0, z, "structure", ("y", L["span"]))
         add(f"spar {nm}", SPAR_KG_M * L["span"], L["x_spar"], 0.0, z, "structure", ("y", L["span"]))
+    sleeve = bool(p.get("strut_fairing"))
     for s in (-1, 1):
-        add(f"post {'left' if s < 0 else 'right'}", POST_KG_M * L["post_length"], L["x_spar"], s * L["motor_y"], 0.0, "structure", ("z", L["gap"]))
-        add(f"diagonals {'left' if s < 0 else 'right'}", 2 * DIAGONAL_KG_M * L["diagonal_length"], L["x_spar"],
-            s * 0.5 * (L["motor_y"] + L["pod_width"] / 2), 0.0, "structure")
-    add("truss joints", 12 * JOINT_KG, L["x_spar"], 0.0, 0.0, "structure")
+        if L["posts"]:
+            add(f"post {'left' if s < 0 else 'right'}", (POST_KG_M + (SLEEVE_KG_M["post"] if sleeve else 0.0)) * L["post_length"],
+                L["x_spar"], s * L["motor_y"], 0.0, "structure", ("z", L["gap"]))
+        if L["diagonals"]:
+            add(f"diagonals {'left' if s < 0 else 'right'}", 2 * (DIAGONAL_KG_M + (SLEEVE_KG_M["diagonal"] if sleeve else 0.0)) * L["diagonal_length"],
+                L["x_spar"], s * 0.5 * (L["motor_y"] + L["pod_width"] / 2), 0.0, "structure")
+    n_joints = {4: 12, 0: 4 if L["posts"] else 0}[L["diagonals"]]
+    if n_joints:
+        add("truss joints", n_joints * JOINT_KG, L["x_spar"], 0.0, 0.0, "structure")
+    if L["elevons"]:
+        y_mid = 0.5 * (L["elevon_y_in"] + L["span"] / 2)
+        for nm, z in (("upper", L["h"]), ("lower", -L["h"])):
+            for s in (-1, 1):
+                add(f"elevon servo {nm} {'L' if s < 0 else 'R'}", SERVO_KG, L["x_hinge"] - 0.02, s * y_mid, z, "systems")
     add("pod shell", POD_SHELL_KG, 0.45 * L["pod_length"], 0.0, 0.0, "structure")
     fin_area = (L["fin_height"] + L["ventral_height"]) * 0.5 * (L["x_feet"] - L["fin_root_x"] + L["fin_tip_chord"]) + L["gap"] * (L["x_feet"] - L["pod_length"])
     z_fin = 0.5 * (L["fin_height"] - L["ventral_height"]) * 0.5

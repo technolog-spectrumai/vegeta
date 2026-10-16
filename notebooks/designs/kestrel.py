@@ -24,16 +24,18 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 try:
     import cadquery as cq
 except ImportError:                     # the layout (areas, stations, clearances) needs no CAD kernel
     cq = None
 from vegeta.dedalus import Design, Parameter
 
-PARTS = ("aircraft", "airframe", "wing", "pod", "truss", "nacelle", "tail")
+PARTS = ("aircraft", "airframe", "wing", "pod", "truss", "nacelle", "tail", "elevon")
 MOTORS = ("M1", "M2", "M3", "M4")
 MOTOR_SIDES = {"M1": (-1, 1), "M2": (1, 1), "M3": (-1, -1), "M4": (1, -1)}      # (sign of y, sign of z)
-PER_CALL = ("part", "angle_of_attack_deg", "rotation_x", "show_props")
+PER_CALL = ("part", "angle_of_attack_deg", "rotation_x", "show_props", "elevon_deg")
 
 
 def naca4(camber, camber_pos, thickness, n=40, te_cut=0.98):
@@ -81,9 +83,16 @@ class Kestrel4Q(Design):
         # truss
         Parameter("post_diameter", 8.0, "mm", min=3, description="carbon interplane posts at the motor stations"),
         Parameter("diagonal_diameter", 6.0, "mm", min=2, description="carbon diagonals: an X in each bay"),
+        Parameter("bracing", "x", choices=("x", "posts", "none"), description="the interplane truss: posts and X diagonals, posts only, none (Part II)"),
         Parameter("strut_fairing", False, "", description="posts and diagonals in streamlined sleeves (Kestrel-4Q-2's option)"),
         Parameter("fairing_tc", 0.33, "", min=0.15, max=0.6, description="the sleeve's thickness / chord (a symmetric NACA 00xx)"),
         Parameter("fairing_wall", 0.8, "mm", min=0.2, description="sleeve material outside the tube at its thickest"),
+        # elevons (Part II): trailing-edge surfaces on the outer panels of both wings, behind the propellers
+        Parameter("elevons", False, "", description="elevons on the outer panels of both wings"),
+        Parameter("elevon_chord", 0.28, "", min=0.1, max=0.5, description="elevon chord, fraction of the wing chord"),
+        Parameter("elevon_inner_y", 275.0, "mm", min=30, description="the elevons' inner end either side of the centre plane (the slipstream's inner edge)"),
+        Parameter("elevon_gap", 1.0, "mm", min=0.2, description="gap between the wing and the elevon at the hinge and the inner end"),
+        Parameter("elevon_deg", 0.0, "deg", min=-45, max=45, description="all four elevons turned (trailing edge down positive; display)"),
         # tail and feet
         Parameter("x_feet", 540.0, "mm", min=200, description="the feet's ends from the nose tip: the ground when standing"),
         Parameter("fin_height", 190.0, "mm", min=20, description="dorsal fin above the upper wing"),
@@ -120,13 +129,18 @@ class Kestrel4Q(Design):
             "prop_x": p["prop_x"] * mm, "prop_ahead_of_le": x_le - p["prop_x"] * mm,
             "prop_gap": gap - 2 * R, "prop_to_pod": y_m - R - y_in, "prop_beyond_tip": y_m + R - b / 2,
             "pod_length": p["pod_length"] * mm, "pod_width": p["pod_width"] * mm, "pod_height": gap,
-            "posts": 2, "post_length": post_len, "diagonals": 4, "diagonal_length": diag_len,
+            "post_length": post_len, "diagonal_length": diag_len,
             "x_feet": p["x_feet"] * mm, "fin_height": p["fin_height"] * mm, "ventral_height": p["ventral_height"] * mm,
             "fin_tip_chord": p["fin_tip_chord"] * mm, "fin_root_x": x_te - 0.06 * 1.0,
             "foot_rod_length": p["x_feet"] * mm - (x_le + 0.6 * c),
             # the ground footprint standing nose-up (ground plane x = x_feet): the feet's (y, z)
             "feet": [(0.0, h + p["fin_height"] * mm), (0.0, -h - p["ventral_height"] * mm)]
                     + [(sy * y_m, sz * h) for sy, sz in MOTOR_SIDES.values()],
+            # the elevons (four: both sides of both wings) and the bracing
+            "elevons": bool(p["elevons"]), "elevon_cf": p["elevon_chord"], "elevon_y_in": p["elevon_inner_y"] * mm,
+            "elevon_span_side": max(b / 2 - p["elevon_inner_y"] * mm, 0.0), "x_hinge": x_le + (1 - p["elevon_chord"]) * c,
+            "S_elevon": 4 * max(b / 2 - p["elevon_inner_y"] * mm, 0.0) * p["elevon_chord"] * c, "bracing": p["bracing"],
+            "diagonals": 4 if p["bracing"] == "x" else 0, "posts": 0 if p["bracing"] == "none" else 2,
         }
 
     @staticmethod
@@ -150,14 +164,44 @@ class Kestrel4Q(Design):
             out.append("the feet must reach aft of the pod's tail")
         if p["prop_x"] < p["camera_diameter"] / 2:
             out.append("the propeller plane is ahead of the camera dome")
+        if p["elevons"] and not p["pod_width"] / 2 + 10.0 <= p["elevon_inner_y"] <= p["span"] / 2 - 30.0:
+            out.append("the elevons' inner end must lie between the pod and 30 mm short of the tip")
         return out
 
     # ------------------------------------------------------------------------------------------- parts
+    def _section(self, p):
+        """(upper, lower) point lists of the wing section, chord 1, from the trailing edge to the leading edge."""
+        return naca4(p["camber"], p["camber_pos"], p["thickness"])
+
     def _wing(self, p, z0):
         c, x_le = p["chord"], p["wing_le_x"]
-        up, lo = naca4(p["camber"], p["camber_pos"], p["thickness"])
+        up, lo = self._section(p)
         pts = [(x_le + c * u, z0 + c * v) for u, v in up] + [(x_le + c * u, z0 + c * v) for u, v in lo[::-1][1:]]
-        return cq.Workplane("XZ").polyline(pts).close().extrude(p["span"] / 2, both=True)
+        wing = cq.Workplane("XZ").polyline(pts).close().extrude(p["span"] / 2, both=True)
+        if p["elevons"]:                                   # the elevons' bays cut out of the trailing edge
+            xh, g = x_le + (1 - p["elevon_chord"]) * c, p["elevon_gap"]
+            y0, y1 = p["elevon_inner_y"] - g, p["span"] / 2 + 2.0
+            for s in (1, -1):
+                bay = cq.Workplane("XY").box(c, y1 - y0, c).translate((xh - g + c / 2, s * (y0 + y1) / 2, z0))
+                wing = wing.cut(bay)
+        return wing
+
+    def _elevon(self, p, z0, s, deflect=True):
+        """One elevon (side ``s``: +1 right, −1 left) on the wing at ``z0``: the section's aft ``elevon_chord`` from the
+        hinge to the trailing edge, over the outer panel, turned by ``elevon_deg`` about the hinge line (on the camber
+        line at the hinge station; trailing edge down positive)."""
+        c, x_le, cf = p["chord"], p["wing_le_x"], p["elevon_chord"]
+        up, lo = self._section(p)
+        xh = 1 - cf
+        up_aft = [(u, v) for u, v in up if u >= xh]          # TE → hinge
+        lo_aft = [(u, v) for u, v in lo if u >= xh]
+        pts = [(x_le + c * u, z0 + c * v) for u, v in up_aft[::-1]] + [(x_le + c * u, z0 + c * v) for u, v in lo_aft[1:]]
+        y0, y1 = p["elevon_inner_y"], p["span"] / 2
+        el = cq.Workplane("XZ").polyline(pts).close().extrude((y1 - y0) / 2, both=True).translate((0, s * (y0 + y1) / 2, 0))
+        if deflect and p["elevon_deg"]:
+            zh = z0 + c * float(np.interp(xh, [u for u, _ in up[::-1]], [0.5 * (a + b) for (_, a), (_, b) in zip(up[::-1], lo[::-1])]))
+            el = el.rotate((x_le + c * xh, 0, zh), (x_le + c * xh, 1, zh), p["elevon_deg"])
+        return el
 
     @staticmethod
     def _superellipse(wp, w, hgt, n=24, e=3.0):
@@ -199,11 +243,14 @@ class Kestrel4Q(Design):
         h, x = p["gap"] / 2, p["wing_le_x"] + p["spar_x"] * p["chord"]
         y_m, y_in = p["motor_y"], p["pod_width"] / 2
         out = None
+        if p["bracing"] == "none":
+            return None
         for s in (1, -1):
             strut = (lambda a, b, d: self._faired(a, b, d, p)) if p["strut_fairing"] else self._rod
-            parts = [strut((x, s * y_m, -h), (x, s * y_m, h), p["post_diameter"]),
-                     strut((x, s * y_in, h), (x, s * y_m, -h), p["diagonal_diameter"]),
-                     strut((x, s * y_in, -h), (x, s * y_m, h), p["diagonal_diameter"])]
+            parts = [strut((x, s * y_m, -h), (x, s * y_m, h), p["post_diameter"])]
+            if p["bracing"] == "x":
+                parts += [strut((x, s * y_in, h), (x, s * y_m, -h), p["diagonal_diameter"]),
+                          strut((x, s * y_in, -h), (x, s * y_m, h), p["diagonal_diameter"])]
             for q in parts:
                 out = q if out is None else out.union(q)
         return out
@@ -246,12 +293,25 @@ class Kestrel4Q(Design):
             shape = self._pod(p)
         elif part == "truss":
             shape = self._truss(p)
+            if shape is None:
+                raise ValueError("bracing 'none': there is no truss to build")
+        elif part == "elevon":
+            if not p["elevons"]:
+                raise ValueError("elevons are off: set elevons=True")
+            shape = self._elevon(p, h, 1)
         elif part == "nacelle":
             shape = self._nacelle(p, 1, 1)
         elif part == "tail":
             shape = self._tail(p)
         else:
-            shape = self._wing(p, h).union(self._wing(p, -h)).union(self._pod(p)).union(self._truss(p)).union(self._tail(p))
+            shape = self._wing(p, h).union(self._wing(p, -h)).union(self._pod(p)).union(self._tail(p))
+            truss = self._truss(p)
+            if truss is not None:
+                shape = shape.union(truss)
+            if p["elevons"]:
+                for z0 in (h, -h):
+                    for s in (1, -1):
+                        shape = shape.union(self._elevon(p, z0, s))
             for sy, sz in MOTOR_SIDES.values():
                 shape = shape.union(self._nacelle(p, sy, sz, prop=(part == "aircraft" and p["show_props"])))
         a = p["angle_of_attack_deg"]

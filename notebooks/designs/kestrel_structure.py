@@ -60,11 +60,13 @@ def _model(p, bracing: str, n_seg: int = 6):
 
 
 def frame(p=None, *, n: float = 4.0, mass_kg: float, bracing: str = "braced", upper_share: float = 0.5,
-          distribution: str = "elliptic", inertia: bool = True) -> dict:
+          distribution: str = "elliptic", inertia: bool = True, loads: str = "flight") -> dict:
     """Solve the half frame at load factor ``n`` (see the module's text). Returns the spar's peak bending stress, the
     deflections, the bars' forces and buckling margins (negative force: compression). ``distribution``: the lift's
     spanwise shape (``elliptic`` or ``uniform``); ``inertia=False`` leaves out the wings' and the motors' inertia (the
-    check against beam theory)."""
+    check against beam theory). ``loads``: ``flight`` (the pull-up), ``motor_unit`` (1 N up at both motor stations: the
+    pair's symmetric stiffness) or ``motor_anti`` (+1 N on the upper, −1 N on the lower station: the racking the posts
+    and diagonals resist)."""
     p = kestrel.resolve(p)
     nodes, beams, bars, idx, stations, L = _model(p, bracing)
     E = CARBON["E"]
@@ -110,7 +112,12 @@ def frame(p=None, *, n: float = 4.0, mass_kg: float, bracing: str = "braced", up
     b2 = L["span"] / 2
     wing_mass = ks.WING_AREAL_KG_M2 * L["S_wing"] + ks.SPAR_KG_M * L["span"]
     motor_mass = ks.COMPONENTS["motor"]["mass_kg"] + ks.COMPONENTS["propeller"]["mass_kg"] + ks.COMPONENTS["esc"]["mass_kg"] + ks.NACELLE_KG
+    if loads != "flight":
+        F[3 * idx[("upper", L["motor_y"])] + 1] = 1.0
+        F[3 * idx[("lower", L["motor_y"])] + 1] = 1.0 if loads == "motor_unit" else -1.0
     for wing, share in (("upper", upper_share), ("lower", 1 - upper_share)):
+        if loads != "flight":
+            break
         for a, b in zip(stations[:-1], stations[1:]):
             ya, yb = a / b2, b / b2
             if distribution == "uniform":
@@ -121,7 +128,7 @@ def frame(p=None, *, n: float = 4.0, mass_kg: float, bracing: str = "braced", up
             inert = n * G * wing_mass / 2 * (b - a) / b2 if inertia else 0.0
             for node in (idx[(wing, a)], idx[(wing, b)]):
                 F[3 * node + 1] += 0.5 * (lift - inert)
-        if inertia:
+        if inertia and loads == "flight":
             F[3 * idx[(wing, L["motor_y"])] + 1] -= n * G * motor_mass
     # supports: the pod clamps both spars at y = 0 (the symmetry plane)
     fixed = []
@@ -158,6 +165,31 @@ def frame(p=None, *, n: float = 4.0, mass_kg: float, bracing: str = "braced", up
             "motor station, upper [mm]": w_up * 1e3, "motor station, lower [mm]": w_lo * 1e3,
             "propeller gap change [mm]": (w_up - w_lo) * 1e3, "propeller gap under load [mm]": L["prop_gap"] * 1e3 + (w_up - w_lo) * 1e3,
             "bars": bar_rows}
+
+
+def stiffness_and_modes(p=None) -> "pd.DataFrame":
+    """Per bracing: the motor stations' stiffness to a symmetric unit load (both wings up: the pair's bending) and to an
+    antisymmetric one (one up, one down: the racking only the truss resists), and first-mode estimates from them with
+    the motors' masses (Rayleigh, f = √(k / m_eff) / 2π; m_eff a station's motor and its half-wing's share) — against
+    the rotor's 1P in the hover and the pitch loop's bandwidth (``df.attrs['references']``). Without diagonals the
+    antisymmetric case is held only by the spars' own bending."""
+    import pandas as pd
+    L = kestrel.layout(p)
+    motor_m = ks.COMPONENTS["motor"]["mass_kg"] + ks.COMPONENTS["propeller"]["mass_kg"] + ks.COMPONENTS["esc"]["mass_kg"] + ks.NACELLE_KG
+    wing_m = ks.WING_AREAL_KG_M2 * L["S_wing"] + ks.SPAR_KG_M * L["span"]
+    rows = {}
+    for br, label in (("braced", "posts + X diagonals"), ("posts", "posts only"), ("none", "no truss (two cantilevers)")):
+        sym = frame(p, mass_kg=1.0, bracing=br, loads="motor_unit", inertia=False)
+        anti = frame(p, mass_kg=1.0, bracing=br, loads="motor_anti", inertia=False)
+        k_sym = 1.0 / max(abs(sym["motor station, upper [mm]"]) / 1e3, 1e-12)
+        k_anti = 1.0 / max(abs(anti["motor station, upper [mm]"]) / 1e3, 1e-12)
+        m_eff = motor_m + 0.24 * wing_m / 2
+        rows[label] = {"k symmetric [N/mm]": k_sym / 1e3, "k antisymmetric [N/mm]": k_anti / 1e3,
+                       "first mode, symmetric [Hz]": math.sqrt(k_sym / m_eff) / (2 * math.pi),
+                       "first mode, antisymmetric [Hz]": math.sqrt(k_anti / m_eff) / (2 * math.pi)}
+    df = pd.DataFrame(rows).T
+    df.attrs["references"] = {"rotor 1P in the hover [Hz]": ks.drive_table().rpm_hover / 60, "pitch loop bandwidth [Hz]": 12.0 / (2 * math.pi)}
+    return df
 
 
 def compare_bracing(p=None, *, mass_kg: float, n: float = 4.0, upper_share: float = 0.5) -> "pd.DataFrame":

@@ -254,3 +254,63 @@ def fairing_figure(p=None, V: float = 16.0):
     ax.set_box_aspect((1, 1, 1)); ax.view_init(elev=22, azim=-125); ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
     fig.tight_layout()
     return fig
+
+
+def front_view_4q2(p=None, *, cg=None, ax=None):
+    """Looking at the nose with the Part-II options drawn: the elevons shaded on the outer panels, the bracing as
+    chosen (``bracing``: x / posts / none), the faired struts as thicker blades."""
+    import matplotlib.pyplot as plt
+    pr = kestrel.resolve(p)
+    L = kestrel.layout(p)
+    if ax is None:
+        _, ax = plt.subplots(figsize=(11, 4.5))
+    b2, h, ym, yin, R = L["span"] / 2, L["h"], L["motor_y"], L["pod_width"] / 2, L["R_prop"]
+    t = 0.12 * L["chord"]
+    for z in (h, -h):
+        ax.add_patch(plt.Rectangle((-b2, z - t / 2), 2 * b2, t, color=COL["wing"], ec=COL["edge"]))
+        if L["elevons"]:
+            for s in (1, -1):
+                y0, y1 = s * L["elevon_y_in"], s * b2
+                ax.add_patch(plt.Rectangle((min(y0, y1), z - t / 2 - 0.004), abs(y1 - y0), t + 0.008, color="#8a2be2", alpha=0.45, lw=0))
+    ax.add_patch(plt.Rectangle((-yin, -h), 2 * yin, 2 * h, color="#e8e8e8", ec=COL["edge"]))
+    lw_post = 2.5 if not pr["strut_fairing"] else 4.5
+    lw_diag = 1.5 if not pr["strut_fairing"] else 3.0
+    for s in (1, -1):
+        if L["posts"]:
+            ax.plot([s * ym, s * ym], [-h, h], color=COL["truss"], lw=lw_post)
+        if L["diagonals"]:
+            ax.plot([s * yin, s * ym], [h, -h], color=COL["truss"], lw=lw_diag)
+            ax.plot([s * yin, s * ym], [-h, h], color=COL["truss"], lw=lw_diag)
+    for name, m in L["motors"].items():
+        ax.add_patch(plt.Circle((m["y"], m["z"]), R, color=COL["disc"], alpha=0.25))
+        ax.add_patch(plt.Circle((m["y"], m["z"]), 0.017, color="#333"))
+    if cg is not None:
+        ax.plot(cg.get("y_cg", 0.0), cg["z_cg"], "x", color=COL["cg"], ms=12, mew=3)
+    tags = [f"bracing: {L['bracing']}", "faired struts" if pr["strut_fairing"] else "round struts", "elevons" if L["elevons"] else "no elevons"]
+    ax.set(aspect="equal", xlabel="y [m]", ylabel="z [m]", title="Kestrel-4Q-2 options, looking at the nose — " + ", ".join(tags))
+    return ax
+
+
+def xwing_front_view(L, *, cg=None, ax=None):
+    """The X-wing looking at the nose: four panels at ±45°, the discs at their tips, the pod, the elevons shaded."""
+    import matplotlib.pyplot as plt
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 7))
+    t = 0.12 * L["chord"]
+    phi = L["phi"]
+    for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1)):
+        e = np.array([sy * math.cos(phi), sz * math.sin(phi)])
+        n = np.array([-e[1], e[0]])
+        for r0, r1, col, al in ((L["r0"], L["r1"], COL["wing"], 1.0), (L["elevon_y_in"], L["r1"], "#8a2be2", 0.45)):
+            a, b = r0 * e, r1 * e
+            quad = np.array([a + n * t / 2, b + n * t / 2, b - n * t / 2, a - n * t / 2])
+            ax.fill(quad[:, 0], quad[:, 1], color=col, ec=COL["edge"] if al == 1.0 else None, alpha=al, lw=0.8 if al == 1.0 else 0)
+    ax.add_patch(plt.Circle((0, 0), L["pod_width"] / 2, color="#e8e8e8", ec=COL["edge"]))
+    for name, m in L["motors"].items():
+        ax.add_patch(plt.Circle((m["y"], m["z"]), L["R_prop"], color=COL["disc"], alpha=0.25))
+        ax.add_patch(plt.Circle((m["y"], m["z"]), 0.017, color="#333"))
+        ax.text(m["y"] * 1.12, m["z"] * 1.12, name, ha="center", va="center", fontsize=9)
+    if cg is not None:
+        ax.plot(0.0, cg["z_cg"], "x", color=COL["cg"], ms=12, mew=3)
+    ax.set(aspect="equal", xlabel="y [m]", ylabel="z [m]", title=f"{L['variant']}: looking at the nose")
+    return ax

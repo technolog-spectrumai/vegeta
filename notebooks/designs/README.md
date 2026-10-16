@@ -238,5 +238,13 @@ battery placed for the CG), `cg_inertia`, `propulsion` (Boreas), `drive_table` (
 `headwind`, `gust_up`, `V_entry`, `floor`), `matrix`, `verdict`, `CRITERIA`. `kestrel_cfd.py`: `points` (from the
 transitions), `case` / `plan` (Aeromant `aircraft_quad_rotor_disks`, the bare sweep on `rans_ksst_external`), `table`,
 `not_run_table`, `CFDAirframe` (the CFD's correction for the transition model). `kestrel_structure.py`: `frame`,
-`compare_bracing`, `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`,
-`path_figure`, `polar_figure`.
+`compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
+first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
+`polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the CAD's `elevons` / `elevon_chord` /
+`elevon_inner_y` / `elevon_deg`, `strut_fairing` (`fairing_section`), `bracing` (`x` / `posts` / `none`);
+`kestrel_control.elevon_hinge` / `elevon_authority`; `kestrel_transition.Vehicle.panels` (`biplane_panels`: the lifting
+panels, each at its dihedral, height and rotor — the model flies any arrangement of them), `z_rotor`, `elevon_y_in`,
+`lift_slope_vertical`; `kestrel_section.py` (on `vegeta.zephyr`: `CANDIDATES`, `table` → `data/kestrel_sections.json`,
+`summary_frame`, `trim_table`, `cfd_specs`) and `kestrel_cfd.section_stl` / `section_case` / `section_not_run_table`;
+`kestrel_xwing.py` (`VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice, `drag_buildup`,
+`cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`, `cruise`).

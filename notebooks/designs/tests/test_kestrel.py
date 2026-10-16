@@ -302,3 +302,104 @@ def test_fairing_section_and_the_faired_truss(P):
     assert faired["valid"] and faired["volume"] > 3 * bare["volume"]
     assert faired["dimensions"][0] == pytest.approx(c, abs=0.5)                                # the chords along x
     assert faired["dimensions"][1] == pytest.approx(bare["dimensions"][1], abs=3.0)           # same footprint seen from the front
+
+
+# ------------------------------------------------------------------------------------------------ Part II: the options and the X-wing
+def test_part_ii_cad_options_build_and_weigh(P):
+    pytest.importorskip("cadquery")
+    d = kestrel.Kestrel4Q()
+    base = d.generate(part="airframe").measure()["volume"]
+    el = d.generate(part="airframe", elevons=True, elevon_deg=15.0).measure()
+    assert el["valid"] and abs(el["volume"] - base) < 0.02 * base                         # the elevons are cut from the wing, not added
+    e = d.generate(part="elevon", elevons=True).measure()
+    assert e["bbox_min"][1] == pytest.approx(P["elevon_inner_y"], abs=0.5) and e["bbox_max"][1] == pytest.approx(P["span"] / 2, abs=0.5)
+    assert e["bbox_min"][0] > P["wing_le_x"] + (1 - P["elevon_chord"]) * P["chord"] - 1.0
+    for br in ("posts", "none"):
+        assert d.generate(part="airframe", bracing=br).measure()["valid"]
+    with pytest.raises(Exception):
+        d.generate(part="truss", bracing="none")
+    with pytest.raises(Exception):
+        d.generate(part="elevon")
+    L = kestrel.layout(dict(elevons=True, bracing="posts"))
+    assert L["diagonals"] == 0 and L["posts"] == 2 and L["S_elevon"] == pytest.approx(4 * 0.225 * 0.28 * 0.14)
+    m0 = ks.cg_inertia(ks.mass_table(kestrel.resolve()))["mass_kg"]
+    assert ks.cg_inertia(ks.mass_table(kestrel.resolve(dict(elevons=True))))["mass_kg"] == pytest.approx(m0 + 4 * ks.SERVO_KG)
+    assert ks.cg_inertia(ks.mass_table(kestrel.resolve(dict(bracing="none"))))["mass_kg"] < ks.cg_inertia(ks.mass_table(kestrel.resolve(dict(bracing="posts"))))["mass_kg"] < m0
+
+
+def test_panel_model_reproduces_the_biplane(VEH):
+    """The generalised panel model: four flat panels, the same numbers as Part I."""
+    assert len(VEH.panels) == 4 and all(pn["phi"] == 0.0 for pn in VEH.panels) and VEH.z_rotor == pytest.approx(VEH.L["h"])
+    f = kt.airframe_forces(VEH, 8.0, 2.0, 3.0, 3.5)
+    assert len(f["panels"]) == 4 and f["S_blown_up"] == pytest.approx(2 * f["panels"][0]["S_blown"])
+    m = kt.simulate(VEH, "forward", t_tr=3.0).metrics
+    assert m["pass"] and m["height loss [m]"] < 0.5
+
+
+def test_xwing_layout_mass_and_levers():
+    import kestrel_xwing as kx
+    L = kx.layout()
+    assert kx.checks(L) == [] and L["S_ref"] == pytest.approx(0.28, abs=1e-9)
+    ci = ks.cg_inertia(kx.mass_table(L))
+    assert 1.4 < ci["mass_kg"] < 1.8 and not ci["battery_clipped"]
+    assert ci["mass_kg"] < ks.cg_inertia(ks.mass_table(kestrel.resolve()))["mass_kg"]       # no truss, no fin plate
+    B = kc.allocation(kappa=0.015, cg=ci, L=L)
+    assert np.linalg.matrix_rank(B) == 4
+    assert abs(B[2]).max() == pytest.approx(abs(B[3]).max(), abs=abs(ci["z_cg"]) + 1e-9)       # pitch and yaw levers equal at 45° (± the CG's height)
+    c = kx.cantilever(L, mass_kg=ci["mass_kg"])
+    assert c["first bending, with the tip motor [Hz]"] >= kx.F1_MIN - 1e-6 and c["spar reserve"] > 1.5
+
+
+def test_xwing_lift_slope_is_about_half_and_it_flies():
+    pytest.importorskip("cadquery")
+    import kestrel_xwing as kx
+    L = kx.layout()
+    a = kx.aero(L)
+    bi = kf.aero()["biplane"]["CLa"]
+    assert 0.4 < a["CLa"] / bi < 0.55                                                           # cos² 45° of the flat pair, less the X's interference
+    veh = kx.make_vehicle()
+    assert veh.lift_slope_vertical == pytest.approx(veh.pol.cl_alpha * 0.5, rel=1e-6)
+    assert all(pn["phi"] == pytest.approx(math.radians(45.0)) for pn in veh.panels)
+    assert kt.simulate(veh, "forward", t_tr=3.0, V_cruise=20.0).metrics["pass"]
+    cr = kx.cruise(veh)
+    assert bool(cr.loc[16.0, "feasible"]) and cr.loc[16.0, "α [deg]"] > 9.0                     # the same-area X cruises near the stall at 16 m/s
+
+
+def test_stiffness_and_modes_of_the_bracings():
+    df = kst.stiffness_and_modes()
+    k = df["k symmetric [N/mm]"]
+    assert k["posts + X diagonals"] > 50 * k["no truss (two cantilevers)"]
+    assert k["posts only"] == pytest.approx(k["no truss (two cantilevers)"], rel=1e-3)          # pinned posts carry nothing symmetric
+    assert df.loc["posts only", "k antisymmetric [N/mm]"] > 100 * df.loc["no truss (two cantilevers)", "k antisymmetric [N/mm]"]
+    f = df.loc["no truss (two cantilevers)", "first mode, symmetric [Hz]"]
+    assert 5.0 < f < 40.0 and f > 3 * df.attrs["references"]["pitch loop bandwidth [Hz]"]
+
+
+def test_elevon_hinge_and_authority(CI):
+    h = kc.elevon_hinge(dict(elevons=True), V=16.0)
+    assert h["servo margin, cruise"] > 1.5 and h["servo margin, hover"] > 1.5
+    df = kc.elevon_authority(dict(elevons=True), mass_kg=CI["mass_kg"], cg=CI)
+    assert df.loc["hover (slipstream only)", "elevons / rotors, about the axis"] > 1.0        # the elevons beat the reaction torque for the heading
+    assert df.loc["cruise 16 m/s", "elevons / rotors, about the axis"] > 3.0
+
+
+def test_section_study_on_zephyr(tmp_path):
+    """Part II § 13 runs on vegeta.zephyr (branch dev_zephyr); skipped where it is not merged yet."""
+    pytest.importorskip("vegeta.zephyr")
+    import kestrel_section as ksec
+    s = ksec.section("NACA 23112", 0.02)
+    assert s.name.startswith("NACA 23112") and s.thickness == pytest.approx(0.12)
+    specs = ksec.cfd_specs([("NACA 0012", None), ("NACA 23112", 0.02)], alphas=(0.0, 8.0))
+    assert len(specs) == 4
+    import kestrel_cfd as kcfd
+    tab = kcfd.section_not_run_table(specs)
+    assert (tab["status"] == "NOT RUN").all() and tab["Re (chord)"].astype(float).min() > 1e5
+    pytest.importorskip("cadquery")
+    from vegeta import aeromant
+    env = aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)})
+    c = kcfd.section_case(tmp_path / "cfd", next(iter(specs.values())), env=env)
+    assert c.prepare().ok
+    if __import__("vegeta.zephyr").zephyr.backends()["neuralfoil"]:
+        t = ksec.table(recompute=False) if ksec.SECTIONS_JSON.exists() else {ksec.key("NACA 0012"): ksec.study_one("NACA 0012")}
+        k0 = ksec.key("NACA 0012")
+        assert abs(t[k0]["cruise"]["cm0"]) < 0.01 and 0.25 < t[k0]["elevon"]["tau"] < 0.5

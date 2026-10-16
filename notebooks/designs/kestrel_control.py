@@ -42,29 +42,29 @@ BASELINE_SPIN = "diagonal pairs (M1, M4 | M2, M3)"
 AXES = ("T", "L", "M", "N")
 
 
-def rotor_offsets(p=None, cg=None) -> np.ndarray:
-    """(dx, y, dz) of M1..M4 from the CG [m] (rows)."""
-    L = kestrel.layout(p)
+def rotor_offsets(p=None, cg=None, L=None) -> np.ndarray:
+    """(dx, y, dz) of M1..M4 from the CG [m] (rows); ``L`` a layout dict in place of the biplane's (an X-wing's)."""
+    L = L or kestrel.layout(p)
     cg = cg or {"x_cg": L["x_le"] + 0.1 * L["chord"], "y_cg": 0.0, "z_cg": 0.0}
     return np.array([[s["x"] - cg["x_cg"], s["y"] - cg["y_cg"], s["z"] - cg["z_cg"]] for s in L["motors"].values()])
 
 
-def allocation(p=None, *, spins=BASELINE_SPIN, kappa: float = 0.012, cg=None) -> np.ndarray:
+def allocation(p=None, *, spins=BASELINE_SPIN, kappa: float = 0.012, cg=None, L=None) -> np.ndarray:
     """B (4 × 4): rows T, L, M, N; columns M1..M4."""
     s = np.asarray(SPINS[spins] if isinstance(spins, str) else spins, float)
-    r = rotor_offsets(p, cg)
+    r = rotor_offsets(p, cg, L)
     return np.vstack([np.ones(4), -s * kappa, -r[:, 2], r[:, 1]])
 
 
-def rank_table(p=None, *, kappa: float = 0.012, cg=None):
+def rank_table(p=None, *, kappa: float = 0.012, cg=None, L=None):
     """Rank, singular values and condition of B for each sense-of-rotation set; the axis lost when it is singular.
     The rows are scaled to the hover's natural units first (T in N; L, M, N in N·m divided by the matching lever: κ,
     the half gap, the motor station), so a singular value of 2 means a full lever and the condition compares levers."""
     import pandas as pd
-    Lh = kestrel.layout(p)
+    Lh = L or kestrel.layout(p)
     rows = {}
     for name in SPINS:
-        B = allocation(p, spins=name, kappa=kappa, cg=cg)
+        B = allocation(p, spins=name, kappa=kappa, cg=cg, L=L)
         sv = np.linalg.svd(B, compute_uv=False)
         rk = int(np.linalg.matrix_rank(B, tol=1e-9 * sv[0]))
         lost = ""
@@ -102,13 +102,13 @@ def attainable(B: np.ndarray, collective: float, t_min, t_max) -> dict:
     return out
 
 
-def hover_authority(p=None, *, mass_kg: float, cg=None, spins=BASELINE_SPIN, drive=None, inertia=None) -> "pd.DataFrame":
+def hover_authority(p=None, *, mass_kg: float, cg=None, spins=BASELINE_SPIN, drive=None, inertia=None, L=None) -> "pd.DataFrame":
     """The attainable moments in the hover (collective = the weight, rotors in [T_min, T_max(0)]) and the angular
     accelerations they give with the inertia; the yaw (heading) lever is the reaction torque's."""
     import pandas as pd
     drive = drive or ks.drive_table()
     kap = float(drive.kap(0.0))
-    B = allocation(p, spins=spins, kappa=kap, cg=cg)
+    B = allocation(p, spins=spins, kappa=kap, cg=cg, L=L)
     att = attainable(B, mass_kg * G, drive.T_min, float(drive.t_max(0.0)))
     I = inertia if inertia is not None else np.diag([0.03, 0.03, 0.03])
     names = {"L": "about the thrust axis (hover heading / cruise roll)", "M": "about y (pitch-over / cruise pitch)",
@@ -189,3 +189,58 @@ def roll_authority(p=None, *, V: float, thrust_each: float, cl_alpha_3d: float, 
     aileron = 2 * 2 * q_blown * s_panel * dCL * 0.5 * (y0 + y1)         # two wings, two sides
     return {"V": V, "torque lever [N·m]": torque, "ailerons [N·m]": aileron, "ratio": aileron / torque if torque > 0 else math.inf,
             "aileron span per side [m]": y1 - y0}
+
+
+# ------------------------------------------------------------------------------------------------- the elevons
+SERVO = {"name": "9 g micro servo (metal gear)", "torque_Nm": 0.17, "speed_deg_s": 500.0, "mass_kg": 0.012}
+CH_DELTA, CH_ALPHA = -0.55, -0.35       # hinge-moment slopes of a 25-30 % plain flap at low Re, per rad (assumed: sealed gap, no horn balance)
+
+
+def elevon_hinge(p=None, *, V: float, alpha_deg: float = 5.0, delta_deg: float = 20.0, rho: float = ks.RHO0, L=None) -> dict:
+    """One elevon's hinge moment at airspeed ``V``, angle of attack and deflection: Ch = Ch_α α + Ch_δ δ on q·S_e·c_e;
+    the servo torque needed (a 1:1 horn-to-arm linkage), against the servo's rating; the hover's case in the
+    slipstream (V_slip ≈ √(2 T / ρ A) at the hover thrust)."""
+    L = L or kestrel.layout(p)
+    c_e = L["elevon_cf"] * L["chord"]
+    S_e = L["elevon_span_side"] * c_e
+    q = 0.5 * rho * V * V
+    Ch = CH_ALPHA * math.radians(alpha_deg) + CH_DELTA * math.radians(delta_deg)
+    H = q * S_e * c_e * Ch
+    v_slip = math.sqrt(2 * 4.15 / (rho * L["A_disc"]))
+    q_s = 0.5 * rho * v_slip ** 2
+    H_hover = q_s * S_e * c_e * CH_DELTA * math.radians(delta_deg)
+    return {"V [m/s]": V, "elevon area, one [m²]": S_e, "elevon chord [m]": c_e, "hinge moment [N·m]": H, "hinge moment, hover slipstream [N·m]": H_hover,
+            "slipstream speed in the hover [m/s]": v_slip, "servo torque rating [N·m]": SERVO["torque_Nm"],
+            "servo margin, cruise": SERVO["torque_Nm"] / abs(H) if H else math.inf, "servo margin, hover": SERVO["torque_Nm"] / abs(H_hover) if H_hover else math.inf,
+            "time to 20° [s]": 20.0 / SERVO["speed_deg_s"]}
+
+
+def elevon_authority(p=None, *, mass_kg: float, cg=None, tau: float = 0.45, cl_alpha: float = 4.08, x_cp: float = 0.60, delta_max_deg: float = 25.0,
+                     drive=None, rho: float = ks.RHO0, L=None) -> "pd.DataFrame":
+    """What four elevons add in each regime: in the hover (the slipstream over them, no free stream) the heading
+    moment (opposite deflections on the two wings' ... diagonals) against the rotors' reaction torque, the pitch and the
+    tilt moments; in cruise at 16 m/s the roll against the torque lever and the pitch against the differential thrust.
+    Panels' lift increment ΔL = q S_e cl_α τ δ at ``x_cp`` of the chord; ``tau`` from Zephyr's flap sweep when known."""
+    import pandas as pd
+    L = L or kestrel.layout(p)
+    drive = drive or ks.drive_table()
+    c = L["chord"]
+    S_e = L["elevon_span_side"] * c                          # one elevon's *wing* strip (the increment acts on the strip, τ carries the flap size)
+    d = math.radians(delta_max_deg)
+    v_slip = math.sqrt(2 * (mass_kg * G / 4) / (rho * L["A_disc"]))
+    q_h, q_c = 0.5 * rho * v_slip ** 2, 0.5 * rho * 16.0 ** 2
+    y_mid = 0.5 * (L["elevon_y_in"] + L["span"] / 2)
+    arm_x = L["x_le"] + x_cp * c - (cg["x_cg"] if cg else L["x_le"] + 0.1 * c)
+    B = allocation(p, kappa=float(drive.kap(0.0)), cg=cg, L=L)
+    att_h = attainable(B, mass_kg * G, drive.T_min, float(drive.t_max(0.0)))
+    rows = {}
+    for regime, q in (("hover (slipstream only)", q_h), ("cruise 16 m/s", q_c)):
+        dL = q * S_e * cl_alpha * tau * d                      # one elevon's lift increment at full deflection
+        rows[regime] = {"one elevon ΔL [N]": dL, "roll / heading from elevons [N·m]": 4 * dL * y_mid,
+                        "pitch from elevons [N·m]": 4 * dL * arm_x,
+                        "rotors: about the thrust axis [N·m]": min(abs(att_h["L"][0]), att_h["L"][1]) if regime.startswith("hover") else
+                        roll_authority(p, V=16.0, thrust_each=0.8, cl_alpha_3d=cl_alpha, drive=drive)["torque lever [N·m]"],
+                        "rotors: pitch [N·m]": min(abs(att_h["M"][0]), att_h["M"][1])}
+    df = pd.DataFrame(rows).T
+    df["elevons / rotors, about the axis"] = df["roll / heading from elevons [N·m]"] / df["rotors: about the thrust axis [N·m]"]
+    return df

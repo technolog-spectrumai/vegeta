@@ -227,6 +227,7 @@ CFD's coefficients correct the model and the matrix is flown again.
 ```bash
 python3 scenarios/kestrel_transitions.py                 # the model polar (~2 min)
 python3 scenarios/kestrel_transitions.py --cfd -n 8      # + the CFD at the transition points (OpenFOAM), then again
+python3 scenarios/kestrel_transitions.py --part2         # + Kestrel-4Q-2 (elevons, faired posts, no X) and the two X-wings
 ```
 Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
 transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.

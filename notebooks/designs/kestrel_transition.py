@@ -24,6 +24,10 @@ The model, honest about what it is: a rigid body in the vertical plane (x, z, pi
   and to the elevons (optional: trailing-edge surfaces on the blown outer panels) in proportion to their authority; the
   collective gives way when the rotors saturate (attitude before height). ``floor`` keeps a least collective through
   the pitch schedule.
+- The airframe is a list of **panels** (``Vehicle.panels``, ``biplane_panels``): each at its dihedral φ about the
+  pod's axis, its height, its extent along its own span axis and its rotor. The biplane is four flat panels; an
+  X-wing (``kestrel_xwing``) four panels at ±45°, whose lift normal is tilted: a panel sees w cos φ and gives back cos φ
+  of its normal force vertically. The same model flies both.
 - Roll and yaw are not simulated. ``wing_drop`` checks the roll axis along the trajectory: the rolling moment of one
   side's free-stream panels stalling before the other's (ΔCL = ``WING_DROP_DCL``) against what is left to resist it — the
   rotors' reaction torque (one diagonal pair up, the other down: the only roll lever without surfaces) and the elevons
@@ -82,10 +86,38 @@ class Vehicle:
     motor_tau: float = 0.06
     cd_pod_cross: float = 1.0
     airframe: object = None
+    panels: list = None             # the lifting panels (see ``biplane_panels``); None: the biplane's from the layout
+    z_rotor: float = None           # the upper rotors' height above the pod's axis (the differential thrust's lever); None: the gap's half
+    elevon_y_in: float = None       # the elevons' inner end along the panel; None: the slipstream's inner edge at each instant
+    lift_slope_vertical: float = None   # the aircraft's vertical lift slope on S_ref [1/rad] the autopilot trims with; None: the polar's
+
+    def __post_init__(self):
+        if self.panels is None:
+            self.panels = biplane_panels(self.L)
+        if self.z_rotor is None:
+            self.z_rotor = self.L["h"]
+        if self.elevon_y_in is None and self.L.get("elevons"):
+            self.elevon_y_in = self.L["elevon_y_in"]
+        if self.lift_slope_vertical is None:
+            self.lift_slope_vertical = self.pol.cl_alpha
 
     @property
     def weight(self):
         return self.mass * G
+
+
+def biplane_panels(L: dict) -> list:
+    """The biplane as four flat panels: each wing's two halves from the pod to the tip, at z = ±h, the upper two blown
+    by the upper rotors and the lower two by the lower. A panel: ``phi`` its dihedral about x (the lift normal tilted
+    away from the vertical), ``z`` its mean height above the pod's axis, ``y0``–``y1`` its extent along its own span
+    axis from the pod's axis, ``y_motor`` its rotor's station along that axis, ``rotor`` ``up`` or ``lo``, ``S`` its area,
+    ``sy`` its side."""
+    out = []
+    for z, rotor in ((L["h"], "up"), (-L["h"], "lo")):
+        for sy in (-1, 1):
+            out.append({"phi": 0.0, "sy": sy, "z": z, "y0": L["pod_width"] / 2, "y1": L["span"] / 2, "y_motor": L["motor_y"],
+                        "rotor": rotor, "S": L["S_wing"] / 2})
+    return out
 
 
 def make_vehicle(p=None, *, name="Kestrel-4Q", payload=True, x_cg=None, elevons=True, faired=False, extra_kg=0.0,
@@ -103,10 +135,12 @@ def make_vehicle(p=None, *, name="Kestrel-4Q", payload=True, x_cg=None, elevons=
 
 
 # ================================================================================================= the aerodynamics
-def slipstream(veh: Vehicle, T: float, u: float, w: float, vi0: float | None = None) -> dict:
-    """One propeller pair's slipstream at its wing: the induced velocity at the disk (Glauert), the velocity added at
-    the wing's quarter chord, the slipstream's radius there and the blown span of the wing (both sides)."""
+def slipstream(veh: Vehicle, T: float, u: float, w: float, vi0: float | None = None, panel: dict | None = None) -> dict:
+    """One rotor's slipstream at its panel: the induced velocity at the disk (Glauert), the velocity added at the
+    wing's quarter chord, the slipstream's radius there and the blown length of the panel (``y_in``–``y_out`` along the
+    panel; ``blown_span`` is that length — for the biplane's half-wing, one side)."""
     L = veh.L
+    panel = panel or veh.panels[1]
     A, R = L["A_disc"], L["R_prop"]
     V = math.hypot(u, w)
     alpha = math.atan2(w, u) if V > 1e-6 else 0.0
@@ -119,14 +153,18 @@ def slipstream(veh: Vehicle, T: float, u: float, w: float, vi0: float | None = N
     dv = vi * (1 + d / math.sqrt(R ** 2 + d ** 2))
     ua = max(u, 0.0)
     r_s = R * math.sqrt((ua + vi) / max(ua + dv, 1e-6)) if dv > 0 else R
-    y_in = max(L["motor_y"] - r_s, L["pod_width"] / 2)
-    y_out = min(L["motor_y"] + r_s, L["span"] / 2)
-    return {"vi": vi, "dv": dv, "r_s": r_s, "blown_span": 2 * max(y_out - y_in, 0.0), "y_in": y_in, "y_out": y_out}
+    y_in = max(panel["y_motor"] - r_s, panel["y0"])
+    y_out = min(panel["y_motor"] + r_s, panel["y1"])
+    return {"vi": vi, "dv": dv, "r_s": r_s, "blown_span": max(y_out - y_in, 0.0), "y_in": y_in, "y_out": y_out}
 
 
-def _part(veh, u_l, w_l, S, z_w, mu=1.0):
-    """Force (body x, z) and moment about the CG of a wing part of area S at height z_w in the local flow (u_l, w_l)."""
+def _part(veh, u_l, w_l, S, z_w, mu=1.0, phi=0.0):
+    """Force (body x, z) and moment about the CG of a wing part of area S at height z_w in the local flow (u_l, w_l).
+    A panel at the dihedral ``phi`` sees the normal component w cos φ of the vertical flow and gives cos φ of its
+    normal force back as vertical force (the side components of the mirrored panels cancel)."""
     L = veh.L
+    cph = math.cos(phi)
+    w_l = w_l * cph
     V2 = u_l * u_l + w_l * w_l
     if V2 < 1e-8 or S <= 0:
         return 0.0, 0.0, 0.0, 0.0
@@ -134,12 +172,12 @@ def _part(veh, u_l, w_l, S, z_w, mu=1.0):
     cl, cd, cm = veh.pol.coefficients(a_l)
     qS = 0.5 * RHO * V2 * S
     Vn = math.sqrt(V2)
-    dx, dz = u_l / Vn, w_l / Vn                     # drag along the local flow
+    dx, dz = u_l / Vn, w_l / Vn                     # drag along the local flow (in the panel's plane)
     lx, lz = -dz, dx                                # lift perpendicular, "up" at α = 0
     Fx = qS * (float(cl) * lx + float(cd) * dx)
-    Fz = qS * (float(cl) * lz + float(cd) * dz)
+    Fz = qS * (float(cl) * lz + float(cd) * dz) * cph
     rx, rz = L["x_ac"] - veh.x_cg, z_w - veh.z_cg
-    M = rz * Fx - rx * Fz + qS * L["chord"] * float(cm)
+    M = rz * Fx - rx * Fz + qS * L["chord"] * float(cm) * cph
     return Fx, Fz, M, a_l
 
 
@@ -151,22 +189,28 @@ def airframe_forces(veh: Vehicle, u: float, w: float, T_up: float, T_lo: float, 
     L = veh.L
     V = math.hypot(u, w)
     Fx = Fz = M = 0.0
-    out = {"alpha": math.atan2(w, u) if V > 1e-6 else math.pi / 2, "V": V}
-    for name, T, z_w, v0 in (("up", T_up, L["h"], vi[0]), ("lo", T_lo, -L["h"], vi[1])):
-        s = slipstream(veh, T, u, w, v0)
-        Sb = min(s["blown_span"], L["span"]) * L["chord"]
-        Sf = L["S_wing"] - Sb
+    out = {"alpha": math.atan2(w, u) if V > 1e-6 else math.pi / 2, "V": V, "panels": []}
+    thrust = {"up": T_up, "lo": T_lo}
+    vi_by = {"up": vi[0], "lo": vi[1]}
+    for pn in veh.panels:
+        T = thrust[pn["rotor"]]
+        s = slipstream(veh, T, u, w, vi_by[pn["rotor"]], pn)
+        Sb = min(s["blown_span"], pn["y1"] - pn["y0"]) * L["chord"]
+        Sf = pn["S"] - Sb
         mu = V / max(V + s["dv"], 1e-6)
-        fb = _part(veh, u + s["dv"], w, Sb, z_w, mu)
-        ff = _part(veh, u, w, Sf, z_w, 1.0)
+        fb = _part(veh, u + s["dv"], w, Sb, pn["z"], mu, pn["phi"])
+        ff = _part(veh, u, w, Sf, pn["z"], 1.0, pn["phi"])
         Fx += fb[0] + ff[0]; Fz += fb[1] + ff[1]; M += fb[2] + ff[2]
-        out[f"alpha_blown_{name}"] = fb[3]
-        out[f"slip_{name}"] = s
-        out[f"S_blown_{name}"] = Sb
-        # the propellers' normal force (two rotors), at the propeller plane
+        out["panels"].append({"rotor": pn["rotor"], "slip": s, "S_blown": Sb, "alpha_blown": fb[3], "panel": pn})
+        if f"slip_{pn['rotor']}" not in out:
+            out[f"slip_{pn['rotor']}"] = s
+            out[f"alpha_blown_{pn['rotor']}"] = fb[3]
+            out[f"S_blown_{pn['rotor']}"] = 0.0
+        out[f"S_blown_{pn['rotor']}"] += Sb
+        # the panel's rotor's normal force, at the propeller plane
         if V > 0.2 and props_normal:
             a = math.atan2(w, u)
-            N = 2 * kf.prop_cn_alpha(T, V, veh.p) * 0.5 * RHO * V * V * L["A_disc"] * math.sin(a)
+            N = kf.prop_cn_alpha(T, V, veh.p) * 0.5 * RHO * V * V * L["A_disc"] * math.sin(a)
             Fz += N
             M += -(L["prop_x"] - veh.x_cg) * N
     # the pod in cross-flow, at its plan area's centre
@@ -185,26 +229,32 @@ def airframe_forces(veh: Vehicle, u: float, w: float, T_up: float, T_lo: float, 
     return out
 
 
-def elevon_moment_per_rad(veh: Vehicle, u: float, w: float, slips: tuple) -> tuple[float, float]:
-    """The pitch moment [N·m] per radian of elevon (all four outer panels together, trailing edge down = negative
+def elevon_moment_per_rad(veh: Vehicle, u: float, w: float, panels: list) -> tuple[float, float]:
+    """The pitch moment [N·m] per radian of elevon (every panel's outer surface together, trailing edge down = negative
     moment: nose down) and the roll moment per radian used differentially, in the slipstream; the surfaces lose their
-    effect as the blown panel's own angle of attack passes the stall (to nothing 30° beyond it)."""
+    effect as the blown panel's own angle of attack passes the stall (to nothing 30° beyond it). ``panels`` is
+    ``airframe_forces``' per-panel list; the elevon runs from ``veh.elevon_y_in`` (or the slipstream's inner edge) to
+    the panel's tip."""
     if not veh.elevons:
         return 0.0, 0.0
     L = veh.L
     pitch = roll = 0.0
     a_s = veh.pol.alpha_stall
-    for s in slips:
-        span_side = max(L["span"] / 2 - s["y_in"], 0.0)
-        S_e = 2 * span_side * L["chord"]                        # both sides of one wing
+    for pp in panels:
+        s, pn = pp["slip"], pp["panel"]
+        y_e = s["y_in"] if veh.elevon_y_in is None else max(veh.elevon_y_in, pn["y0"])
+        span = max(pn["y1"] - y_e, 0.0)
+        S_e = span * L["chord"]
+        cph = math.cos(pn["phi"])
         ub = u + s["dv"]
-        V2 = ub * ub + w * w
-        a_b = abs(math.atan2(w, ub)) if V2 > 1e-8 else 0.0
+        wn = w * cph
+        V2 = ub * ub + wn * wn
+        a_b = abs(math.atan2(wn, ub)) if V2 > 1e-8 else 0.0
         eff = float(np.clip(1.0 - (a_b - a_s) / math.radians(30.0), 0.0, 1.0)) if a_b > a_s else 1.0
-        dL = 0.5 * RHO * V2 * S_e * veh.pol.cl_alpha * veh.elevon_tau * eff     # per radian
+        dL = 0.5 * RHO * V2 * S_e * veh.pol.cl_alpha * veh.elevon_tau * eff     # per radian, normal to the panel
         arm = L["x_le"] + 0.6 * L["chord"] - veh.x_cg
-        pitch += dL * arm
-        roll += dL * 0.5 * (s["y_in"] + L["span"] / 2)
+        pitch += dL * arm * cph
+        roll += dL * 0.5 * (y_e + pn["y1"])
     return pitch, roll
 
 
@@ -227,8 +277,9 @@ def _sched(tau):
 
 
 def _alpha_trim(veh, V):
+    """The autopilot's trim angle of attack at V: a linear lift on the vehicle's vertical slope, capped short of the stall."""
     CL = veh.weight / (0.5 * RHO * V * V * veh.L["S_ref"])
-    return min(CL / veh.pol.cl_alpha, veh.pol.alpha_stall * 0.85) + veh.pol.alpha0
+    return min(CL / veh.lift_slope_vertical, veh.pol.alpha_stall * 0.85) + veh.pol.alpha0
 
 
 def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind: float = 0.0, gust_up: float = 0.0,
@@ -243,7 +294,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
     L = veh.L
     V_entry = V_cruise if V_entry is None else V_entry
     m, W, I = veh.mass, veh.weight, veh.Iyy
-    h, zc = L["h"], veh.z_cg
+    h, zc = veh.z_rotor, veh.z_cg
     S = L["S_ref"]
     d = veh.drive
     wind = np.array([-headwind, 0.0])
@@ -298,7 +349,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         gamma = math.atan2(vz, max(vx - wind[0], 1e-3)) if V > 1.0 else 0.0
         # the autopilot's lift estimate: linear, no blowing, no stall
         a_est = th - gamma
-        L_est = 0.5 * RHO * V * V * S * min(max(pol.cl_alpha * math.sin(a_est) * math.cos(a_est), -pol.cl_max), pol.cl_max) if V > 1.0 else 0.0
+        L_est = 0.5 * RHO * V * V * S * min(max(veh.lift_slope_vertical * math.sin(a_est) * math.cos(a_est), -pol.cl_max), pol.cl_max) if V > 1.0 else 0.0
         if kind == "forward":
             if t < t_sched0:
                 mode = "hover"
@@ -351,7 +402,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         Kp = I * wn * wn + K_AERO * qSc
         M_cmd = Kp * e - 2 * zeta * wn * I * q + KI_RATIO * Kp * e_int
         # ---- allocation: differential thrust first, elevons for the rest, the collective gives way
-        Mp_rad, Mr_rad = elevon_moment_per_rad(veh, u, w, (aero["slip_up"], aero["slip_lo"]))
+        Mp_rad, Mr_rad = elevon_moment_per_rad(veh, u, w, aero["panels"])
         dmax = math.radians(veh.elevon_max_deg)
         D_lim = 0.5 * (Tmax - Tmin)
         delta = 0.0
@@ -379,10 +430,11 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         a_free = abs(aero["alpha"])
         demand = 0.0
         if V > 2.0 and pol.alpha_stall - math.radians(3) < a_free < math.radians(50):
-            for s in (aero["slip_up"], aero["slip_lo"]):
-                y0, y1 = L["pod_width"] / 2, s["y_in"]
-                S_side = max(y1 - y0, 0.0) * L["chord"]
-                demand += 0.5 * RHO * V * V * S_side * WING_DROP_DCL * 0.5 * (y0 + y1)
+            for pp in aero["panels"]:
+                if pp["panel"]["sy"] > 0:                                   # one side's free-stream inner panels stall first
+                    y0, y1 = pp["panel"]["y0"], pp["slip"]["y_in"]
+                    S_side = max(y1 - y0, 0.0) * L["chord"]
+                    demand += 0.5 * RHO * V * V * S_side * WING_DROP_DCL * 0.5 * (y0 + y1)
         kap = float(d.kap(max(u, 0.0)))
         # one diagonal pair (same sense, pitch- and yaw-neutral) up to T_max, the other down to T_min
         auth_rot = 2 * kap * (max(Tmax - max(T_up_c, T_lo_c), 0.0) + max(min(T_up_c, T_lo_c) - Tmin, 0.0))
