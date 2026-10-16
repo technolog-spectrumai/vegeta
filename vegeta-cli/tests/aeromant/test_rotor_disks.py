@@ -152,3 +152,22 @@ def test_quad_rotor_disks_refuses_overlapping_zones(tmp_path, sphere_stl):
         v = quad_values()
         v.pop("rpm4")
         CFDCase("aircraft_quad_rotor_disks", sphere_stl, v, tmp_path / "x", geometry_units="m")
+
+
+@pytest.mark.parametrize("version,name", [(None, "system/fvOptions"), ("14", "constant/fvConstraints")])
+def test_rotor_disk_cases_carry_a_velocity_cap_and_plain_simple(tmp_path, sphere_stl, version, name):
+    """Blown cases at a low free stream diverged under SIMPLEC: the disk templates run plain SIMPLE with the rotorDisk
+    tutorial's under-relaxation and cap |U| (limitVelocity) at 1.5 x the tip speed plus the free stream by default."""
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, values(), tmp_path / "c", geometry_units="m", environment=env)
+    assert case.prepare().ok
+    src = (tmp_path / "c" / name).read_text()
+    assert "type            limitVelocity;" in src
+    tip = 7000.0 * 2 * np.pi / 60 * 0.2286 / 2
+    assert f"max             {1.5 * tip + 14.0:.6g}" in src
+    sol = (tmp_path / "c" / "system/fvSolution").read_text()
+    assert "consistent      no;" in sol and "p               0.3;" in sol and "U               0.7;" in sol
+    # an explicit cap
+    case2 = CFDCase("aircraft_rotor_disks", sphere_stl, values(velocity_limit=42.0), tmp_path / "c2", geometry_units="m", environment=env)
+    assert case2.prepare().ok and "max             42;" in (tmp_path / "c2" / name).read_text()

@@ -31,8 +31,10 @@ solvers
 
 SIMPLE
 {
+    // rotor-disk sources at a low free stream (near the hover) are strong momentum sources: plain SIMPLE with the
+    // under-relaxation of OpenFOAM's rotorDisk tutorial, not SIMPLEC (which diverged on blown tailsitter cases)
     nNonOrthogonalCorrectors 1;
-    consistent      yes;
+    consistent      no;
     residualControl
     {
         p               {{RESIDUAL_TARGET}};
@@ -42,10 +44,14 @@ SIMPLE
 
 relaxationFactors
 {
+    fields
+    {
+        p               0.3;
+    }
     equations
     {
-        U               0.9;
-        ".*"            0.8;
+        U               0.7;
+        "(k|omega)"     0.7;
     }
 }
 

@@ -472,7 +472,11 @@ def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]
     polar = polar[np.argsort(polar[:, 0])]
     if polar[0, 0] > -90 or polar[-1, 0] < 90:
         raise ValueError("polar rows are (alpha [deg], Cd, Cl) and must cover at least -90..90 deg")
+    rpm_max = max(abs(float(p[f"rpm{i}"] if f"rpm{i}" in p else p["rpm"])) for i in disks)
+    tip = rpm_max * 2 * math.pi / 60 * 0.5 * D
+    u_limit = float(p.get("velocity_limit") or 0.0) or max(3.0 * p["velocity"], 1.5 * tip + p["velocity"])
     extra.update({
+        "U_LIMIT": u_limit,
         "DISK_AXIS": axis, "REF_DIRECTION": ref, "DISK_ZONE_RADIUS": p["zone_radius"] * D,
         "DISK_LEVEL": p["disk_level"], "BLADES": p["blades"], "TIP_EFFECT": p["tip_effect"],
         "INLET_VELOCITY": np.array([p["velocity"], 0.0, 0.0]),
@@ -504,6 +508,8 @@ AIRCRAFT_ROTOR_DISKS = TemplateSpec(
         TemplateParameter("disk_thickness", "thickness of each disk cell zone", "D", 0.08),
         TemplateParameter("zone_radius", "radius of each disk cell zone", "D", 0.52),
         TemplateParameter("disk_level", "refinement level inside the disk zones", "", 5, "int"),
+        TemplateParameter("velocity_limit", "cap on |U| (limitVelocity), a divergence guard; 0: 1.5 x the blade tip speed "
+                          "plus the free stream, or 3 x the free stream if more", "m/s", 0.0),
     ),
     flavors=EXTERNAL_FLAVORS,
     derive=_disks_derive,

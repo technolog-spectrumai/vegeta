@@ -15,7 +15,11 @@ answers that at the points the aircraft actually flies:
   in the slipstream: that is the question.
 - ``sweep_specs``: the power-off airframe from 0° to 90° (``rans_ksst_external``): the bare stall, the reference the
   blown cases are read against.
-- ``table`` / ``not_run_table``: the coefficients per case (CL, CD on S_ref; Cm about the CG on the chord), or NOT RUN.
+- ``table`` / ``not_run_table``: the coefficients per case (CL, CD on S_ref; Cm about the CG on the chord), or the status
+  ``diverged`` / ``FAILED`` / ``NOT RUN`` — a failure is a result, carried in the table, never fed to the model.
+- ``summary``, ``sweep_comparison`` / ``sweep_numbers``: how the campaign went, and the bare sweep against the model's
+  polar (lift slope, CL max, Cd0, static margin); ``save_records`` / ``load_records``: the solved cases to and from
+  ``data/kestrel_cfd_results.json`` — the test notebook (40) writes it, the design notebook (38) plugs it in.
 - ``CFDAirframe``: the CFD's coefficients minus the model's at the same points (α, the slipstream ratio μ = V / (V + Δv)),
   interpolated (linear inside the points, nearest outside) and added to the model's forces — the transition model then
   flies on the CFD where the CFD has been run and on the model elsewhere. ``kestrel_transition.make_vehicle(airframe=...)``.
@@ -39,6 +43,7 @@ RHO, NU = ks.RHO0, 1.46e-5
 TRANSITION_ALPHAS = (80.0, 60.0, 45.0, 30.0, 20.0, 15.0, 10.0)
 SWEEP_ALPHAS = (0.0, 5.0, 10.0, 15.0, 20.0, 30.0, 45.0, 60.0, 75.0, 90.0)
 SWEEP_V = 10.0
+RESULTS_JSON = Path(__file__).resolve().parent / "data" / "kestrel_cfd_results.json"     # the test notebook (40) writes it
 QUALITY = {
     "screening": dict(cells_per_length=2.0, surface_level=4, near_level=3, wake_level=2, iterations=400, residual_target=1e-4),
     "fine": dict(cells_per_length=3.0, surface_level=5, near_level=4, wake_level=3, iterations=800, residual_target=1e-5),
@@ -161,8 +166,20 @@ def plan(workdir, pts: list[dict], *, x_cg_m: float, z_cg_m: float = 0.0, qualit
 
 
 # ------------------------------------------------------------------------------------------------- the results
+SANE = 10.0                      # |CL|, |CD|, |Cm| beyond this: the steady solver has diverged, not solved
+
+
+def _note(r) -> str:
+    msgs = [m for m in getattr(r, "messages", []) if m]
+    return (msgs[-1][:160] if msgs else "")
+
+
 def table(results: dict, spec: dict, p=None) -> "pd.DataFrame":
-    """One row per case: the point, CL and CD on S_ref (wind axes), Cm about the CG on the chord, convergence — or NOT RUN."""
+    """One row per case: the point, CL and CD on S_ref (wind axes), Cm about the CG on the chord, convergence, and the
+    status — ``solved``, ``diverged`` (the solver ran but its coefficients are not finite or beyond ``SANE``: a blown
+    case at a low free stream can run its iterations into 1e94), ``FAILED`` (a step failed; ``note`` says which) or
+    ``NOT RUN``. A failure is a result: the table carries it and ``CFDAirframe`` / ``sweep_comparison`` use the solved
+    rows only."""
     import pandas as pd
     L = kestrel.layout(p)
     k_cm = l_ref(p) / L["chord"]
@@ -173,13 +190,37 @@ def table(results: dict, spec: dict, p=None) -> "pd.DataFrame":
                 "rotor disks": bool(s["props"]), "source": s["source"]}
         if r is None or not getattr(r, "ok", False):
             msg = "NOT RUN" if r is None or any("NOT RUN" in m for m in getattr(r, "messages", [])) else "FAILED"
-            rows[name] = dict(base, status=msg)
+            rows[name] = dict(base, status=msg, note="" if r is None else _note(r))
             continue
         m = r.metrics
-        rows[name] = dict(base, status="solved", CL=m.get("Cl"), CD=m.get("Cd"), **{"Cm (CG, chord)": (m.get("Cm") or np.nan) * k_cm},
+        cl, cd, cm = m.get("Cl"), m.get("Cd"), m.get("Cm")
+        coefs = [np.nan if v is None else float(v) for v in (cl, cd, cm)]
+        sane = all(np.isfinite(v) and abs(v) <= SANE for v in coefs)
+        note = "" if sane else f"diverged: |coefficients| up to {np.nanmax(np.abs(coefs)):.3g}"
+        if sane and m.get("converged") is False:
+            note = f"not converged in {m.get('iterations')} iterations (the residual target was not reached)"
+        rows[name] = dict(base, status="solved" if sane else "diverged", CL=coefs[0], CD=coefs[1], **{"Cm (CG, chord)": coefs[2] * k_cm},
                           iterations=m.get("iterations"), converged=m.get("converged"), **{"Cd scatter (last 50)": m.get("Cd_std_lastN")},
-                          cells=m.get("mesh_cells"))
+                          cells=m.get("mesh_cells"), note=note)
     return pd.DataFrame(rows).T
+
+
+def summary(cfd_table) -> dict:
+    """How the campaign went: the count per status, split by rotor disks / bare, and one line to print."""
+    st = cfd_table["status"].astype(str)
+    disks = cfd_table["rotor disks"].astype(bool)
+    out = {"solved": int((st == "solved").sum()), "diverged": int((st == "diverged").sum()), "FAILED": int((st == "FAILED").sum()),
+           "NOT RUN": int((st == "NOT RUN").sum()), "n": int(len(st)),
+           "solved with rotor disks": int(((st == "solved") & disks).sum()), "solved bare": int(((st == "solved") & ~disks).sum()),
+           "with rotor disks": int(disks.sum())}
+    out["line"] = (f"{out['solved']} of {out['n']} cases solved ({out['solved with rotor disks']} of {out['with rotor disks']} with rotor "
+                   f"disks, {out['solved bare']} bare), {out['diverged']} diverged, {out['FAILED']} failed, {out['NOT RUN']} not run")
+    return out
+
+
+def usable(cfd_table):
+    """The solved rows (finite, sane coefficients)."""
+    return cfd_table[cfd_table["status"].astype(str) == "solved"]
 
 
 def not_run_table(spec: dict) -> "pd.DataFrame":
@@ -214,44 +255,139 @@ def model_coefficients(veh, pt: dict) -> dict:
 
 class CFDAirframe:
     """The CFD's correction to the transition model: ΔCL, ΔCD, ΔCm (CFD − model) at the solved points, interpolated
-    in (α, μ) — linear inside the points, the nearest point outside — and added to the model's airframe forces."""
+    in (α, μ) — linear inside the points, the nearest point outside; from the bare sweep alone (μ = 1 at every point)
+    linear in α — and added to the model's airframe forces."""
 
-    def __init__(self, samples: list[dict]):
+    def __init__(self, samples: list[dict], source: str = "disks"):
         if not samples:
             raise ValueError("no solved CFD case to build a correction from")
         self.samples = samples
+        self.source = source
         X = np.array([[s["alpha"], s["mu"]] for s in samples])
         self._X = X
         self._D = np.array([[s["dCL"], s["dCD"], s["dCm"]] for s in samples])
         self._lin = None
-        if len(samples) >= 4 and np.ptp(X[:, 1]) > 1e-3 and np.ptp(X[:, 0]) > 1e-3:
+        self._by_alpha = np.ptp(X[:, 1]) <= 1e-3 and len(samples) >= 2
+        if self._by_alpha:
+            o = np.argsort(X[:, 0])
+            self._X, self._D = X[o], self._D[o]
+        elif len(samples) >= 4 and np.ptp(X[:, 0]) > 1e-3:
             from scipy.interpolate import LinearNDInterpolator
             try:
                 self._lin = LinearNDInterpolator(X, self._D)
             except Exception:                          # degenerate (collinear) points
                 self._lin = None
 
+    @staticmethod
+    def records(cfd_table) -> list[dict]:
+        """The solved rows as plain records (α, V, the thrusts, CL, CD, Cm, rotor disks): what ``save_records`` keeps
+        and ``from_records`` rebuilds a correction from, with no dependence on the case names."""
+        out = []
+        for name, r in usable(cfd_table).iterrows():
+            out.append({"case": str(name), "alpha_deg": float(r["α [deg]"]), "V": float(r["V [m/s]"]), "T_up": float(r["T upper [N]"]),
+                        "T_lo": float(r["T lower [N]"]), "rotor_disks": bool(r["rotor disks"]), "source": str(r["source"]),
+                        "CL": float(r["CL"]), "CD": float(r["CD"]), "Cm": float(r["Cm (CG, chord)"]),
+                        "converged": None if r.get("converged") is None or r.get("converged") != r.get("converged") else bool(r["converged"]),
+                        "iterations": None if r.get("iterations") is None or r.get("iterations") != r.get("iterations") else int(r["iterations"])})
+        return out
+
     @classmethod
-    def from_results(cls, cfd_table, veh) -> "CFDAirframe":
-        """From ``table``'s solved rows with rotor disks (the bare sweep is the reference, not the correction)."""
+    def from_records(cls, records: list[dict], veh, *, source: str = "disks"):
+        """``source`` ``disks``: the blown cases (the correction in α and μ); ``sweep``: the bare airframe (in α, at
+        μ = 1 — it corrects the model's un-blown polar where no blown case solved). ``None`` when no record of that
+        kind is usable: the caller keeps flying on the model."""
+        want = source == "disks"
         samples = []
-        for _, r in cfd_table.iterrows():
-            if r.get("status") != "solved" or not bool(r.get("rotor disks")):
+        for r in records:
+            if bool(r.get("rotor_disks")) != want:
                 continue
-            pt = {"alpha_deg": float(r["α [deg]"]), "V": float(r["V [m/s]"]), "T_up": float(r["T upper [N]"]), "T_lo": float(r["T lower [N]"])}
+            vals = [r.get("CL"), r.get("CD"), r.get("Cm")]
+            if any(v is None or not np.isfinite(v) or abs(v) > SANE for v in vals):
+                continue
+            pt = {"alpha_deg": float(r["alpha_deg"]), "V": float(r["V"]), "T_up": float(r["T_up"]), "T_lo": float(r["T_lo"])}
             mc = model_coefficients(veh, pt)
-            samples.append({"alpha": math.radians(pt["alpha_deg"]), "mu": mc["mu"], "dCL": float(r["CL"]) - mc["CL"],
-                            "dCD": float(r["CD"]) - mc["CD"], "dCm": float(r["Cm (CG, chord)"]) - mc["Cm"]})
-        return cls(samples)
+            samples.append({"alpha": math.radians(pt["alpha_deg"]), "mu": mc["mu"] if want else 1.0, "dCL": float(vals[0]) - mc["CL"],
+                            "dCD": float(vals[1]) - mc["CD"], "dCm": float(vals[2]) - mc["Cm"], "case": r.get("case", "")})
+        return cls(samples, source) if samples else None
+
+    @classmethod
+    def from_results(cls, cfd_table, veh, *, source: str = "disks"):
+        """From ``table``'s solved rows: ``source="disks"`` the rotor-disk cases (the bare sweep is their reference),
+        ``"sweep"`` the bare airframe. ``None`` when nothing usable solved."""
+        return cls.from_records(cls.records(cfd_table), veh, source=source)
 
     def correction(self, alpha: float, mu: float) -> np.ndarray:
         x = np.array([alpha, mu])
+        if self._by_alpha:
+            a = float(np.clip(alpha, self._X[0, 0], self._X[-1, 0]))
+            return np.array([np.interp(a, self._X[:, 0], self._D[:, j]) for j in range(3)])
         if self._lin is not None:
             v = self._lin(x[None])[0]
             if np.all(np.isfinite(v)):
                 return v
         d = ((self._X - x) / np.array([math.radians(10.0), 0.2])) ** 2
         return self._D[int(np.argmin(d.sum(1)))]
+
+
+def sweep_comparison(cfd_table, veh) -> "pd.DataFrame":
+    """The bare sweep against the model's airframe at the same points: CL, CD, Cm (CG, chord) from the CFD and from
+    the model, and the differences. Empty when no bare case solved."""
+    import pandas as pd
+    rows = {}
+    for name, r in usable(cfd_table).iterrows():
+        if bool(r["rotor disks"]):
+            continue
+        pt = {"alpha_deg": float(r["α [deg]"]), "V": float(r["V [m/s]"]), "T_up": 0.0, "T_lo": 0.0}
+        mc = model_coefficients(veh, pt)
+        rows[name] = {"α [deg]": pt["alpha_deg"], "CL CFD": float(r["CL"]), "CL model": mc["CL"], "ΔCL": float(r["CL"]) - mc["CL"],
+                      "CD CFD": float(r["CD"]), "CD model": mc["CD"], "ΔCD": float(r["CD"]) - mc["CD"],
+                      "Cm CFD": float(r["Cm (CG, chord)"]), "Cm model": mc["Cm"], "ΔCm": float(r["Cm (CG, chord)"]) - mc["Cm"],
+                      "converged": r.get("converged"), "note": r.get("note", "")}
+    return pd.DataFrame(rows).T
+
+
+def sweep_numbers(cmp) -> dict:
+    """What the bare sweep says in four numbers each for the CFD and the model: the lift slope (per rad, fitted on
+    the points at or below 10°), CL max and its α, CD at the lowest α, and Cm's slope (per rad: −slope / CLα is the
+    static margin in chords)."""
+    out = {}
+    if cmp is None or len(cmp) == 0:
+        return out
+    a = cmp["α [deg]"].astype(float).to_numpy()
+    for who in ("CFD", "model"):
+        cl, cd, cm = (cmp[f"{k} {who}"].astype(float).to_numpy() for k in ("CL", "CD", "Cm"))
+        lin = a <= 10.0 + 1e-9
+        ar = np.radians(a)
+        if lin.sum() >= 2:
+            cla = float(np.polyfit(ar[lin], cl[lin], 1)[0])
+            cma = float(np.polyfit(ar[lin], cm[lin], 1)[0])
+        else:
+            cla = cma = math.nan
+        i = int(np.nanargmax(cl))
+        out[who] = {"CLα [1/rad]": cla, "CL max": float(cl[i]), "α at CL max [deg]": float(a[i]), "CD at the lowest α": float(cd[int(np.argmin(a))]),
+                    "Cmα [1/rad]": cma, "static margin from Cmα [chords]": (-cma / cla) if cla and np.isfinite(cla) and cla != 0 else math.nan}
+    return out
+
+
+def save_records(cfd_table, path, *, meta: dict | None = None) -> list[dict]:
+    """The solved cases (``CFDAirframe.records``) and the whole table's statuses to a JSON the design notebook plugs
+    in (``load_records``): the campaign's result, failures included."""
+    import json
+    recs = CFDAirframe.records(cfd_table)
+    st = {str(k): {"status": str(v["status"]), "note": str(v.get("note", "")), "rotor disks": bool(v["rotor disks"]),
+                   "α [deg]": float(v["α [deg]"]), "V [m/s]": float(v["V [m/s]"])} for k, v in cfd_table.to_dict("index").items()}
+    doc = {"meta": meta or {}, "summary": {k: v for k, v in summary(cfd_table).items() if k != "line"}, "records": recs, "statuses": st}
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=1, default=str))
+    return recs
+
+
+def load_records(path) -> dict | None:
+    """The campaign's JSON (``save_records``) or ``None`` when it does not exist."""
+    import json
+    path = Path(path)
+    return json.loads(path.read_text()) if path.exists() else None
 
 
 # ------------------------------------------------------------------------------------------------- the section check (Part II)

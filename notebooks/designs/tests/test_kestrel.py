@@ -470,3 +470,83 @@ def test_cruise_manoeuvrability(VEH):
     assert df["turn rate [deg/s]"].max() > 60.0
     bare = kc.cruise_manoeuvrability(kt.make_vehicle(elevons=False))
     assert bare.loc[16.0, "pitch: elevons [rad/s²]"] == 0.0 and bare.loc[16.0, "steady roll rate [deg/s]"] < r16["steady roll rate [deg/s]"]
+
+
+# ----------------------------------------------------------------------------------------------- failure is a result
+class _FakeResult:
+    def __init__(self, ok, metrics=None, messages=()):
+        self.ok, self.metrics, self.messages = ok, metrics or {}, list(messages)
+
+
+def _fake_campaign():
+    """A campaign like the first real one: the bare sweep solved, two blown cases ran into 1e94, the rest failed."""
+    import kestrel_cfd as kcfd
+    pts = [{"source": "forward 3 s", "kind": "forward", "alpha_deg": a, "V": v, "T_up": 4.6, "T_lo": 4.7} for a, v in ((53.0, 1.5), (20.0, 5.8), (10.0, 9.3))]
+    spec = kcfd.specs(pts, sweep=True)
+    res = {}
+    for name, sp in spec.items():
+        if not sp["props"]:
+            a = sp["alpha_deg"]
+            res[name] = _FakeResult(True, {"Cl": 0.07 * min(a, 10.0) - 0.05 + (0.03 if a > 10 else 0.0), "Cd": 0.05 + 0.0003 * a * a, "Cm": -0.004 * a,
+                                           "iterations": 400, "converged": False, "mesh_cells": 280000})
+        elif sp["alpha_deg"] > 40:
+            res[name] = _FakeResult(True, {"Cl": 1.5e94, "Cd": -4.9e94, "Cm": -6.1e94, "iterations": 400, "converged": False, "mesh_cells": 498000})
+        elif sp["alpha_deg"] > 15:
+            res[name] = _FakeResult(False, messages=["step solver failed: simpleFoam exited with 1 (sigFpe)"])
+        else:
+            res[name] = _FakeResult(True, {"Cl": 0.9, "Cd": 0.2, "Cm": -0.1, "iterations": 400, "converged": True, "mesh_cells": 490000})
+    return kcfd.table(res, spec), spec
+
+
+def test_cfd_table_accepts_failure_and_divergence_as_results(VEH):
+    import kestrel_cfd as kcfd
+    T, spec = _fake_campaign()
+    st = T["status"].astype(str)
+    assert st.value_counts().to_dict() == {"solved": len(kcfd.SWEEP_ALPHAS) + 1, "diverged": 1, "FAILED": 1}
+    assert T.loc[st == "FAILED", "note"].iloc[0].startswith("step solver failed")
+    assert T.loc[st == "diverged", "note"].iloc[0].startswith("diverged")
+    sm = kcfd.summary(T)
+    assert sm["solved with rotor disks"] == 1 and sm["solved bare"] == len(kcfd.SWEEP_ALPHAS) and "1 diverged, 1 failed" in sm["line"]
+    # the correction from the blown cases uses the one sane row only; the diverged one never reaches the model
+    corr = kcfd.CFDAirframe.from_results(T, VEH)
+    assert corr is not None and len(corr.samples) == 1 and all(abs(corr.samples[0][k]) < 5 for k in ("dCL", "dCD", "dCm"))
+    # drop that row too: no correction, not an exception
+    T2 = T.copy()
+    T2.loc[(T2["rotor disks"].astype(bool)) & (st == "solved"), "status"] = "FAILED"
+    assert kcfd.CFDAirframe.from_results(T2, VEH) is None
+    # the bare sweep against the model, and a correction in α from it
+    cmp = kcfd.sweep_comparison(T, VEH)
+    assert len(cmp) == len(kcfd.SWEEP_ALPHAS) and np.allclose(cmp["ΔCL"].astype(float), cmp["CL CFD"].astype(float) - cmp["CL model"].astype(float))
+    nums = kcfd.sweep_numbers(cmp)
+    assert 3.0 < nums["CFD"]["CLα [1/rad]"] < 5.0 and 2.5 < nums["model"]["CLα [1/rad]"] < 6.0
+    sw = kcfd.CFDAirframe.from_results(T, VEH, source="sweep")
+    assert sw is not None and sw.source == "sweep" and len(sw.samples) == len(kcfd.SWEEP_ALPHAS)
+    d0 = sw.correction(math.radians(5.0), 0.3)                      # μ is ignored: the sweep knows only α
+    assert np.allclose(d0, sw.correction(math.radians(5.0), 1.0)) and np.all(np.isfinite(d0))
+
+
+def test_cfd_records_roundtrip_and_the_plug_in(tmp_path, VEH):
+    import kestrel_cfd as kcfd
+    T, _ = _fake_campaign()
+    path = tmp_path / "kestrel_cfd_results.json"
+    recs = kcfd.save_records(T, path, meta={"quality": "screening"})
+    doc = kcfd.load_records(path)
+    assert doc["meta"]["quality"] == "screening" and len(doc["records"]) == len(recs) == len(kcfd.SWEEP_ALPHAS) + 1
+    assert doc["summary"]["FAILED"] == 1 and doc["summary"]["diverged"] == 1 and len(doc["statuses"]) == len(T)
+    assert kcfd.load_records(tmp_path / "missing.json") is None
+    corr = kcfd.CFDAirframe.from_records(doc["records"], VEH)
+    assert corr is not None and len(corr.samples) == 1
+    sw = kcfd.CFDAirframe.from_records(doc["records"], VEH, source="sweep")
+    assert sw is not None and len(sw.samples) == len(kcfd.SWEEP_ALPHAS)
+
+
+def test_a_diverging_airframe_is_a_failed_transition_not_a_crash(P):
+    import kestrel_cfd as kcfd
+    bad = kcfd.CFDAirframe([{"alpha": 0.5, "mu": 0.5, "dCL": 1.5e94, "dCD": -4.9e94, "dCm": -6.1e94}])
+    veh = kt.make_vehicle(P, airframe=bad, name="garbage")
+    ep = kt.simulate(veh, "forward", t_tr=3.0, t_after=1.0)
+    m = ep.metrics
+    assert np.isfinite(m["diverged at [s]"]) and not m["pass"]
+    df, _ = kt.matrix({"garbage": veh}, kinds=("forward",), durations=(3.0,), headwinds=(0.0,), t_after=1.0)
+    v = kt.verdict(df)["garbage"]
+    assert v["passes"] == 0 and "diverged" in v["failures"][0]

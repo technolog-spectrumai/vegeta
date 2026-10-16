@@ -221,4 +221,15 @@ disk4
     }
 }
 
+
+// a divergence guard, not a model: |U| is capped well above any physical speed in the case (the blade tip speed is the
+// most a rotor disk can give the air), so a diverging iteration is clamped instead of overflowing to 1e300
+limitU
+{
+    type            limitVelocity;
+    active          yes;
+    selectionMode   all;
+    max             {{U_LIMIT}};
+}
+
 // ************************************************************************* //

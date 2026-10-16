@@ -62,6 +62,7 @@ CRITERIA = {"height loss [m]": 3.0, "height gain, forward [m]": 3.0, "height gai
             "moment shortfall [s]": 0.2, "roll demand / authority": 1.0}
 REF_RATE = math.radians(90.0)    # the hover's lean reference changes at most this fast [rad/s]
 V_CLIMB, V_DESCENT = 3.0, 2.0    # the height loop's vertical-speed limits [m/s] (no tail-first fall at idle thrust)
+V_DIVERGED = 150.0               # m/s: an integration past this has diverged (a 2 kg tailsitter never flies it): a result, not a crash
 
 
 # ================================================================================================= the vehicle
@@ -330,8 +331,13 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
     log = {k: [] for k in keys}
     E = 0.0
     done_at = None
+    diverged = None
     for i in range(n):
         t = i * dt
+        # ---- a diverged integration is a result (an airframe correction gone wrong, a polar that is not one), not a crash
+        if not all(math.isfinite(v) for v in (X, Z, vx, vz, th, q)) or math.hypot(vx, vz) > V_DIVERGED or abs(q) > 200.0:
+            diverged = t
+            break
         # ---- the air
         g_up = gust_up * 0.5 * (1 - math.cos(2 * math.pi * (t - (t_sched0 + 0.5 * t_tr - 0.5)))) if abs(t - (t_sched0 + 0.5 * t_tr)) < 0.5 else 0.0
         rel = np.array([wind[0] - vx, g_up - vz])            # the air's velocity relative to the aircraft (earth)
@@ -468,12 +474,15 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
             done_at = t
     log = {k: np.array(v) for k, v in log.items()}
     ep = Episode(kind, t_tr, headwind, veh.name, veh.elevons, log, options={"V_entry": V_entry, "floor": floor, "gust_up": gust_up})
-    ep.metrics = metrics(ep, veh, dt, Z0, E, done_at)
+    ep.metrics = metrics(ep, veh, dt, Z0, E, done_at, diverged=diverged)
     return ep
 
 
-def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at) -> dict:
+def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at, diverged=None) -> dict:
     g = ep.log
+    if len(g["t"]) < 2:                                     # diverged before the second step: nothing to measure
+        g = {k: (np.array([0.0, 0.0]) if k != "mode" else np.array(["hover", "hover"])) for k in g}
+        g["Z"] = np.array([Z0, Z0]); g["T_max"] = np.array([1.0, 1.0]); g["margin"] = np.array([0.0, 0.0])
     tr = (g["mode"] == "transition")
     a_deg = np.degrees(np.abs(g["alpha"]))
     # stalled in the transition (not the hover leaning into a headwind, where the free-stream wing is stalled as well)
@@ -505,7 +514,8 @@ def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at) 
     out["holds height"] = out["height loss [m]"] <= c["height loss [m]"] and out["height gain [m]"] <= gain
     out["holds attitude"] = out["pitch error max [deg]"] <= c["pitch error [deg]"] and out["moment shortfall [s]"] <= c["moment shortfall [s]"]
     out["roll holds"] = out["roll demand / authority"] <= c["roll demand / authority"]
-    out["pass"] = out["holds height"] and out["holds attitude"] and out["roll holds"]
+    out["diverged at [s]"] = math.nan if diverged is None else float(diverged)
+    out["pass"] = out["holds height"] and out["holds attitude"] and out["roll holds"] and diverged is None
     return out
 
 
@@ -537,6 +547,8 @@ def verdict(df) -> dict:
         why = []
         for idx, r in fails.iterrows():
             reasons = [k for k in ("holds height", "holds attitude", "roll holds") if not bool(r[k])]
+            if "diverged at [s]" in r and np.isfinite(float(r["diverged at [s]"])):
+                reasons.append(f"diverged at {float(r['diverged at [s]']):.2f} s")
             why.append(f"{idx[1]} {idx[2]:g} s, headwind {idx[3]:g} m/s: fails {', '.join(reasons)}")
         out[vn] = {"passes": int(sub["pass"].astype(bool).sum()), "of": len(sub), "failures": why}
     return out
