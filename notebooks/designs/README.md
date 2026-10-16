@@ -260,7 +260,11 @@ modes), `joint_cases`, `cases`, `solve(run=)`, `table` (statuses, nominal and pe
 tension, frequencies), `summary`, `plane_frame_reference`, `save` (`data/kestrel_fea_results.json`).
 `kestrel_report.py`: `export(name, title, sections)` — a notebook's tables, series, dicts and verdicts as JSON
 (`data/reports/<name>.json`: `plain`, `write_json`, `dossier_json` → `data/kestrel_dossier.json`, `load_json`) and
-as rounded, trimmed Markdown (`write`, `dossier` → `data/kestrel_dossier.md`, `paste(name)`). `kestrel_structure.py`: `frame`,
+as rounded, trimmed Markdown (`write`, `dossier` → `data/kestrel_dossier.md`, `paste(name)`). `kestrel2.py` (notebook
+42): `vehicles` (4Q-1 / 4Q-2 / 4Q-3 from 38's recipe), `REMEDIES` / `remedy_matrix` / `remedy_verdict` (the back
+transition's remedies: `kestrel_transition.simulate(airbrake_deg=, overshoot_deg=, reverse_N=, descent_entry=)`),
+`decelerate_level`, `performance` / `pursuit` (endurance, range, V max, climb, dive, acceleration, turns, authority),
+`propose_4q3`. `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
 `polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,

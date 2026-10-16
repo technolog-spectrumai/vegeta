@@ -195,7 +195,7 @@ def airframe_forces(veh: Vehicle, u: float, w: float, T_up: float, T_lo: float, 
     vi_by = {"up": vi[0], "lo": vi[1]}
     for pn in veh.panels:
         T = thrust[pn["rotor"]]
-        s = slipstream(veh, T, u, w, vi_by[pn["rotor"]], pn)
+        s = slipstream(veh, max(T, 0.0), u, w, vi_by[pn["rotor"]], pn)
         Sb = min(s["blown_span"], pn["y1"] - pn["y0"]) * L["chord"]
         Sf = pn["S"] - Sb
         mu = V / max(V + s["dv"], 1e-6)
@@ -285,13 +285,22 @@ def _alpha_trim(veh, V):
 
 def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind: float = 0.0, gust_up: float = 0.0,
              V_cruise: float = kf.V_CRUISE, V_entry: float | None = None, floor: float = 0.0, Z0: float = 30.0, dt: float = 0.002, t_hold: float = 1.5, t_after: float = 6.0,
-             wn: float = WN, zeta: float = 0.8) -> Episode:
+             wn: float = WN, zeta: float = 0.8, airbrake_deg: float = 0.0, overshoot_deg: float = 0.0, reverse_N: float = 0.0, descent_entry: float = 0.0) -> Episode:
     """One transition. ``kind``: ``forward`` (hover → cruise) or ``back`` (cruise → hover). ``headwind`` [m/s] blows
     against the direction of flight; ``gust_up`` [m/s] is a 1-cos vertical gust of 1 s at the middle of the pitch
     schedule. The aircraft holds the hover (or the cruise) for ``t_hold`` s first and is followed ``t_after`` s after
     the schedule ends. ``V_entry``: the back transition starts from level flight at this airspeed (default the cruise);
     ``floor``: during the pitch schedule the collective never drops below this fraction of the hover thrust (keeps the
-    slipstream on the wings and room for the rotors' torque)."""
+    slipstream on the wings and room for the rotors' torque).
+
+    The back transition's remedies for a clean aircraft that balloons (notebook 42): ``airbrake_deg`` — through the
+    schedule the four elevons are split as a crow brake (the upper wing's up, the lower's down: the pitch cancels, the
+    drag of all four stays, the pitch travel left is what remains of ±``elevon_max_deg``); ``overshoot_deg`` — the pitch
+    reference bulges past the vertical by this much at the schedule's middle (the thrust vector tilted aft brakes);
+    ``reverse_N`` — bidirectional drives: through the schedule the least thrust is −``reverse_N`` per rotor instead of
+    the idle, so the height loop can brake and pull down; ``descent_entry`` — the height reference descends at this
+    rate [m/s] from the start to the schedule's middle (the balloon lands back on the datum; the height criteria are
+    read against the reference)."""
     L = veh.L
     V_entry = V_cruise if V_entry is None else V_entry
     m, W, I = veh.mass, veh.weight, veh.Iyy
@@ -309,7 +318,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         c0 = W / 4
     elif kind == "back":
         a0 = _alpha_trim(veh, V_entry)
-        X, Z, vx, vz, th, q = 0.0, Z0, V_entry - headwind, 0.0, a0, 0.0
+        X, Z, vx, vz, th, q = 0.0, Z0, V_entry - headwind, -descent_entry, a0, 0.0
         mode = "cruise"
         CD = pol.cd0 + pol.k * (W / (0.5 * RHO * V_entry ** 2 * S)) ** 2
         c0 = max(0.5 * RHO * V_entry ** 2 * S * CD / 4, d.T_min)
@@ -325,7 +334,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
     t_sched0, t_sched1 = t_hold, t_hold + t_tr
     t_end = t_sched1 + t_after
     n = int(round(t_end / dt)) + 1
-    keys = ("t", "X", "Z", "vx", "vz", "theta", "q", "theta_ref", "alpha", "alpha_blown_up", "alpha_blown_lo", "V", "T_up", "T_lo",
+    keys = ("t", "X", "Z", "Z_ref", "vx", "vz", "theta", "q", "theta_ref", "alpha", "alpha_blown_up", "alpha_blown_lo", "V", "T_up", "T_lo",
             "T_max", "delta", "M_cmd", "M_got", "M_aero", "collective_cmd", "sat_moment", "sat_collective", "margin", "P",
             "roll_demand", "roll_authority", "roll_authority_rotors", "mode", "lift_share")
     log = {k: [] for k in keys}
@@ -349,6 +358,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         vi = [aero["slip_up"]["vi"], aero["slip_lo"]["vi"]]
         Tmax = float(d.t_max(max(u, 0.0)))
         Tmin = d.T_min
+        Zr = Z0 - descent_entry * min(t, t_sched0 + 0.5 * t_tr) if kind == "back" else Z0        # the height reference (a descent into the transition)
         # ---- guidance
         tau = (t - t_sched0) / t_tr
         v_air_fwd = -rel[0]                                      # airspeed along the flight direction (earth x)
@@ -378,14 +388,16 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
             if th_start is None:
                 th_start = th_ref_prev
             th_ref = th_start + (th_end - th_start) * _sched(tau)
+            if kind == "back" and overshoot_deg and 0.0 <= tau <= 1.0:                    # the bulge past the vertical: the thrust braking
+                th_ref += math.radians(overshoot_deg) * math.sin(math.pi * tau)
             if kind == "back" and tau >= 1.0:
                 th_ref = math.pi / 2
         else:                                                    # cruise: height by pitch
-            th_ref = _alpha_trim(veh, max(v_air_fwd, Vs)) + 0.04 * (Z0 - Z) - 0.05 * vz + 0.01 * z_int
+            th_ref = _alpha_trim(veh, max(v_air_fwd, Vs)) + 0.04 * (Zr - Z) - 0.05 * vz + 0.01 * z_int
             th_ref = float(np.clip(th_ref, -0.3, 0.6))
         th_ref_prev = th_ref
         # ---- collective thrust
-        vz_cmd = float(np.clip(1.0 * (Z0 - Z) + 0.1 * z_int, -V_DESCENT, V_CLIMB))
+        vz_cmd = float(np.clip(1.0 * (Zr - Z) + 0.1 * z_int - (descent_entry if (kind == "back" and t < t_sched0 + 0.5 * t_tr) else 0.0), -max(V_DESCENT, descent_entry), V_CLIMB))
         az_des = 2.5 * (vz_cmd - vz)
         if mode == "cruise":
             CL_c = W / (0.5 * RHO * max(V, 1.0) ** 2 * S)
@@ -397,7 +409,9 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
             T_cmd = Fz_req / max(math.sin(th), 0.3)
             if mode == "hover" and kind == "back":
                 T_cmd = (m * (G + az_des)) / max(math.sin(th), 0.5)
-        z_int = float(np.clip(z_int + (Z0 - Z) * dt, -20.0, 20.0))
+        z_int = float(np.clip(z_int + (Zr - Z) * dt, -20.0, 20.0))
+        if reverse_N > 0 and mode == "transition" and kind == "back":                      # bidirectional drives: the rotors may brake
+            Tmin = -reverse_N
         c_cmd = float(np.clip(T_cmd / 4, Tmin, Tmax))
         if mode == "transition" and floor > 0:
             c_cmd = max(c_cmd, min(floor * W / 4, Tmax))
@@ -410,6 +424,8 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         # ---- allocation: differential thrust first, elevons for the rest, the collective gives way
         Mp_rad, Mr_rad = elevon_moment_per_rad(veh, u, w, aero["panels"])
         dmax = math.radians(veh.elevon_max_deg)
+        brake = math.radians(airbrake_deg) if (airbrake_deg and mode == "transition" and kind == "back" and veh.elevons) else 0.0
+        dmax = max(dmax - brake, math.radians(2.0))                                         # the crow brake uses up travel
         D_lim = 0.5 * (Tmax - Tmin)
         delta = 0.0
         if Mp_rad > 1e-9:                                     # the elevons take their share of the moment by authority
@@ -447,11 +463,19 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         auth = auth_rot + Mr_rad * max(dmax - abs(delta), 0.0)
         # ---- the rotors' lag, the forces, the integration (semi-implicit Euler)
         T_act += (np.array([T_up_c, T_lo_c]) - T_act) * (dt / veh.motor_tau)
-        T_act = np.clip(T_act, 0.0, Tmax)
+        T_act = np.clip(T_act, min(Tmin, 0.0), Tmax)
         T_tot = 2 * (T_act[0] + T_act[1])
         Fx_b = aero["Fx"] - T_tot
+        if brake > 0 and V > 1e-3:                                                           # the crow brake's drag, along the relative air
+            y_e = veh.elevon_y_in if veh.elevon_y_in is not None else L["motor_y"] - L["R_prop"]
+            S_e4 = 4 * max(L["span"] / 2 - y_e, 0.0) * L["chord"]
+            D_b = 0.5 * RHO * V * V * S_e4 * 1.2 * math.sin(brake) ** 2
+            Fx_b += D_b * u / V
+            Fz_brk = D_b * w / V
+        else:
+            Fz_brk = 0.0
         arm_e = L["x_le"] + 0.6 * L["chord"] - veh.x_cg
-        Fz_b = aero["Fz"] + (Mp_rad * delta / arm_e if Mp_rad > 0 else 0.0)              # the elevons' lift (trailing edge down: up)
+        Fz_b = aero["Fz"] + (Mp_rad * delta / arm_e if Mp_rad > 0 else 0.0) + Fz_brk     # the elevons' lift (trailing edge down: up)
         M_thr = 2 * (-(h - zc) * T_act[0] + (h + zc) * T_act[1])
         M_tot = aero["M"] + M_thr - Mp_rad * delta
         F = Fx_b * bx + Fz_b * bz
@@ -460,10 +484,10 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
         X += vx * dt; Z += vz * dt
         q += M_tot / I * dt
         th += q * dt
-        P = 2 * d.power(T_act[0], max(u, 0.0)) + 2 * d.power(T_act[1], max(u, 0.0))
+        P = 2 * d.power(abs(T_act[0]), max(u, 0.0)) + 2 * d.power(abs(T_act[1]), max(u, 0.0))
         E += P * dt
         lift_share = aero["Fz"] * math.cos(th) / W if V > 1 else 0.0
-        for k, v in (("t", t), ("X", X), ("Z", Z), ("vx", vx), ("vz", vz), ("theta", th), ("q", q), ("theta_ref", th_ref),
+        for k, v in (("t", t), ("X", X), ("Z", Z), ("Z_ref", Zr), ("vx", vx), ("vz", vz), ("theta", th), ("q", q), ("theta_ref", th_ref),
                      ("alpha", aero["alpha"]), ("alpha_blown_up", aero["alpha_blown_up"]), ("alpha_blown_lo", aero["alpha_blown_lo"]),
                      ("V", V), ("T_up", T_act[0]), ("T_lo", T_act[1]), ("T_max", Tmax), ("delta", delta), ("M_cmd", M_cmd),
                      ("M_got", M_got_cmd), ("M_aero", aero["M"]), ("collective_cmd", c_cmd), ("sat_moment", sat_m),
@@ -482,7 +506,7 @@ def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at, 
     g = ep.log
     if len(g["t"]) < 2:                                     # diverged before the second step: nothing to measure
         g = {k: (np.array([0.0, 0.0]) if k != "mode" else np.array(["hover", "hover"])) for k in g}
-        g["Z"] = np.array([Z0, Z0]); g["T_max"] = np.array([1.0, 1.0]); g["margin"] = np.array([0.0, 0.0])
+        g["Z"] = np.array([Z0, Z0]); g["Z_ref"] = np.array([Z0, Z0]); g["T_max"] = np.array([1.0, 1.0]); g["margin"] = np.array([0.0, 0.0])
     tr = (g["mode"] == "transition")
     a_deg = np.degrees(np.abs(g["alpha"]))
     # stalled in the transition (not the hover leaning into a headwind, where the free-stream wing is stalled as well)
@@ -493,7 +517,8 @@ def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at, 
                          np.where(g["roll_demand"] > 0, np.inf, 0.0))
     perr = np.degrees(np.abs(np.arctan2(np.sin(g["theta_ref"] - g["theta"]), np.cos(g["theta_ref"] - g["theta"]))))
     out = {
-        "height loss [m]": float(Z0 - g["Z"].min()), "height gain [m]": float(g["Z"].max() - Z0),
+        "height loss [m]": float((g["Z_ref"] - g["Z"]).max()) if "Z_ref" in g else float(Z0 - g["Z"].min()),
+        "height gain [m]": float(g["Z"].max() - Z0),                      # above the start: a descent into the transition must land the balloon back on it
         "pitch error max [deg]": float(perr[tr].max()) if tr.any() else float(perr.max()),
         "α free-stream max in transition [deg]": float(a_deg[tr & (g["V"] > 2.0)].max()) if (tr & (g["V"] > 2.0)).any() else math.nan,
         "time stalled, free stream [s]": float(stall.sum() * dt),
