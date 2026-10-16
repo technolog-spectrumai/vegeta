@@ -329,6 +329,304 @@
      "V [m/s]": 10.0
     }
    }
+  },
+  "4Q-2": {
+   "meta": {
+    "source": "40_kestrel_tests",
+    "quality": "screening",
+    "aircraft": "Kestrel-4Q-2",
+    "date": "2026-10-16",
+    "iterations": 400
+   },
+   "summary": {
+    "solved": 0,
+    "diverged": 0,
+    "FAILED": 0,
+    "NOT RUN": 27,
+    "n": 27,
+    "solved with rotor disks": 0,
+    "solved bare": 0,
+    "with rotor disks": 14
+   },
+   "records": [],
+   "statuses": {
+    "forward 3 s: \u03b1 53\u00b0, 1.5 m/s, T 4.20/4.65 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 53.14645009830941,
+     "V [m/s]": 1.5020770376741281
+    },
+    "forward 3 s: \u03b1 45\u00b0, 2.1 m/s, T 4.29/4.81 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 44.9657838667163,
+     "V [m/s]": 2.1180802635903646
+    },
+    "forward 3 s: \u03b1 30\u00b0, 3.9 m/s, T 4.42/5.08 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 29.96110776590459,
+     "V [m/s]": 3.8796521368749968
+    },
+    "forward 3 s: \u03b1 20\u00b0, 5.9 m/s, T 4.31/5.05 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 19.98724330221859,
+     "V [m/s]": 5.896848191857861
+    },
+    "forward 3 s: \u03b1 15\u00b0, 7.4 m/s, T 3.95/4.70 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 14.963228303258285,
+     "V [m/s]": 7.429635528973113
+    },
+    "forward 3 s: \u03b1 10\u00b0, 9.4 m/s, T 2.75/3.54 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 9.984976789134922,
+     "V [m/s]": 9.397519962045282
+    },
+    "back 3 s: \u03b1 80\u00b0, 6.1 m/s, T 0.34/1.69 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 80.18056371410985,
+     "V [m/s]": 6.14440924238798
+    },
+    "back 3 s: \u03b1 60\u00b0, 7.8 m/s, T 0.25/2.01 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 60.12453083775432,
+     "V [m/s]": 7.792916539784711
+    },
+    "back 3 s: \u03b1 45\u00b0, 10.0 m/s, T 0.25/2.34 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 45.06029527414179,
+     "V [m/s]": 10.031350957703237
+    },
+    "back 3 s: \u03b1 30\u00b0, 12.9 m/s, T 0.25/1.93 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 30.035806873143056,
+     "V [m/s]": 12.895433489027702
+    },
+    "back 3 s: \u03b1 20\u00b0, 14.2 m/s, T 0.25/1.12 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 20.00582153126555,
+     "V [m/s]": 14.157060607753053
+    },
+    "back 3 s: \u03b1 15\u00b0, 14.5 m/s, T 0.25/1.08 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 15.02038353640758,
+     "V [m/s]": 14.488180831983026
+    },
+    "back 3 s: \u03b1 10\u00b0, 14.6 m/s, T 0.25/1.30 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 10.002170223510051,
+     "V [m/s]": 14.597925349170797
+    },
+    "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.05/4.05 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 90.0,
+     "V [m/s]": 1.0
+    },
+    "bare airframe, \u03b1 0\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 0.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 5\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 5.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 8\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 8.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 10\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 10.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 12\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 12.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 14\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 14.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 16\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 16.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 20\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 20.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 30\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 30.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 45\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 45.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 60\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 60.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 75\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 75.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 90\u00b0, 10 m/s": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": false,
+     "\u03b1 [deg]": 90.0,
+     "V [m/s]": 10.0
+    }
+   }
+  },
+  "sections": {
+   "meta": {
+    "source": "40_kestrel_tests",
+    "quality": "screening",
+    "date": "2026-10-16"
+   },
+   "summary": {
+    "solved": 0,
+    "diverged": 0,
+    "FAILED": 0,
+    "NOT RUN": 8
+   },
+   "rows": {
+    "NACA 0012, \u03b1 0\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 0012, \u03b1 4\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 0012, \u03b1 8\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 0012, \u03b1 12\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 23112 (k2/k1 0.03), \u03b1 0\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 23112 (k2/k1 0.03), \u03b1 4\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 23112 (k2/k1 0.03), \u03b1 8\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    },
+    "NACA 23112 (k2/k1 0.03), \u03b1 12\u00b0, 16 m/s, AR 8 slab": {
+     "status": "NOT RUN",
+     "\u03b1 [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153424.6575342466,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+    }
+   }
   }
  }
 }
