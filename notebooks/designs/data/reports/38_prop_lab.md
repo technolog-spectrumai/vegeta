@@ -1,6 +1,6 @@
-# prop_lab — notebook 41, the 9x6 alone
+# prop_lab — notebook 38, the 9x6 alone
 
-*41_prop_lab — exported 2026-10-16 12:30*
+*38_prop_lab — exported 2026-10-16 12:30*
 
 | key | value |
 |---|---|
@@ -118,7 +118,7 @@
 | cd_scale | 1 |
 | cn_factor | 1 |
 | on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
 
 
 ## noise at the listener
@@ -152,11 +152,11 @@
 
 |  | path | seconds | rms_db | full_scale_pa | total_db | total_dba | rpms | beat_hz |
 |---|---|---|---|---|---|---|---|---|
-| one_rotor_hover | output/41_prop_lab/sound/one_rotor_hover.wav | 3 | 38.7 | 0.0173 | 38.8 | 37.1 | — | — |
-| one_rotor_cruise_16ms | output/41_prop_lab/sound/one_rotor_cruise_16ms.wav | 3 | 37.9 | 0.0173 | 38 | 37.3 | — | — |
-| one_rotor_transition_8ms_45deg | output/41_prop_lab/sound/one_rotor_transition_8ms_45deg.wav | 3 | 44.1 | 0.0173 | — | — | — | — |
-| four_rotors_hover | output/41_prop_lab/sound/four_rotors_hover.wav | 3 | 44.2 | 0.0173 | 44.8 | — | [6759.653306224799, 6659.007687140006, 6659.007687140006, 6759.653306224799] | [3.3548539694931208] |
-| transition_hover_to_cruise | output/41_prop_lab/sound/transition_hover_to_cruise.wav | 6 | 43.3 | 0.0173 | — | — | — | — |
+| one_rotor_hover | output/38_prop_lab/sound/one_rotor_hover.wav | 3 | 38.7 | 0.0173 | 38.8 | 37.1 | — | — |
+| one_rotor_cruise_16ms | output/38_prop_lab/sound/one_rotor_cruise_16ms.wav | 3 | 37.9 | 0.0173 | 38 | 37.3 | — | — |
+| one_rotor_transition_8ms_45deg | output/38_prop_lab/sound/one_rotor_transition_8ms_45deg.wav | 3 | 44.1 | 0.0173 | — | — | — | — |
+| four_rotors_hover | output/38_prop_lab/sound/four_rotors_hover.wav | 3 | 44.2 | 0.0173 | 44.8 | — | [6759.653306224799, 6659.007687140006, 6659.007687140006, 6759.653306224799] | [3.3548539694931208] |
+| transition_hover_to_cruise | output/38_prop_lab/sound/transition_hover_to_cruise.wav | 6 | 43.3 | 0.0173 | — | — | — | — |
 
 
 ## checks

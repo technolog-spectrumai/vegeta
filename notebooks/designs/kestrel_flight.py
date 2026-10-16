@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the biplane's aerodynamics, the cruise and the full-range polar for the transition (notebook 38).
+"""Kestrel-4Q — the biplane's aerodynamics, the cruise and the full-range polar for the transition (notebook 40).
 
 - ``aero``: the zero-stagger biplane in PEREGRINE's vortex lattice (``peregrine_flight.vlm``: two flat lifting
   surfaces at z = ±gap/2, Trefftz-plane induced drag) against one of its wings alone and against a monoplane of the

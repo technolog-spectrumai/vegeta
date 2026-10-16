@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the transitions: hover → wing-borne flight and back, through the stall (notebook 38).
+"""Kestrel-4Q — the transitions: hover → wing-borne flight and back, through the stall (notebook 40).
 
 A tailsitter crosses the whole range of angle of attack twice per flight: pitching over from the hover (α ≈ 90°) to
 cruise (α ≈ 5°), and pitching back up to the hover. Between α ≈ 11° and 60° the free-stream wing is stalled. The

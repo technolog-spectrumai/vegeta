@@ -1,8 +1,8 @@
 """Kestrel-4Q-2 against 4Q-1, and the case for 4Q-3 (notebook 42).
 
-Notebook 38 handed over two aircraft: **4Q-1** (round struts, the X, elevons as effectors) and **4Q-2** (faired posts,
+Notebook 40 handed over two aircraft: **4Q-1** (round struts, the X, elevons as effectors) and **4Q-2** (faired posts,
 no X, the reflexed section, elevons) — 4Q-2 flies twice as far on the battery and balloons on the pitch-up from the
-cruise, because a clean aircraft cannot throw its speed away. This module rebuilds both from notebook 38's recipe
+cruise, because a clean aircraft cannot throw its speed away. This module rebuilds both from notebook 40's recipe
 (``vehicles``), flies the **remedies** for the back transition (``REMEDIES`` / ``remedy_matrix``: the crow-brake
 elevons, the pitch bulge past the vertical, reverse thrust on bidirectional drives, a descent into the transition,
 the level deceleration to 13 m/s first — ``decelerate_level`` gives its time, distance and energy), and compares the
@@ -36,7 +36,7 @@ V_SLOW = 13.0                    # the slow-entry rule
 
 # ------------------------------------------------------------------------------------------------- the aircraft
 def section_numbers():
-    """Notebook 38 § 14's finalist on Zephyr (NACA 23112, k₂/k₁ 0.03) when its table is on file: the section drag over the
+    """Notebook 40 § 14's finalist on Zephyr (NACA 23112, k₂/k₁ 0.03) when its table is on file: the section drag over the
     0012's, cl_max, α₀, the elevon's τ; else the 0012's with τ 0.40."""
     try:
         import kestrel_section as ksec
@@ -61,7 +61,7 @@ def params(which: str = "4Q-2", p=None) -> dict:
 
 
 def polar_for(which: str, p=None, aero=None, sec=None):
-    """Notebook 38's polar recipe: 4Q-1 on the round-strut build-up; 4Q-2 / 4Q-3 on the faired build-up with the
+    """Notebook 40's polar recipe: 4Q-1 on the round-strut build-up; 4Q-2 / 4Q-3 on the faired build-up with the
     finalist section's drag ratio on the wings' share, its cl_max and α₀, and the sleeves' broadside area in cd90."""
     pp = params(which, p)
     a = aero or kf.aero(pp)
@@ -80,7 +80,7 @@ def polar_for(which: str, p=None, aero=None, sec=None):
 
 
 def vehicles(p=None, *, which=("4Q-1", "4Q-2")) -> dict:
-    """``kestrel_transition.Vehicle`` for each aircraft, as notebook 38 built them (the elevon τ from Zephyr)."""
+    """``kestrel_transition.Vehicle`` for each aircraft, as notebook 40 built them (the elevon τ from Zephyr)."""
     p = kestrel.resolve(p)
     a = kf.aero(p)
     sec = section_numbers()

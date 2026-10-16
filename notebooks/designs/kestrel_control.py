@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the hold point: can four fixed, parallel rotors control the aircraft? (notebook 38)
+"""Kestrel-4Q — the hold point: can four fixed, parallel rotors control the aircraft? (notebook 40)
 
 The allocation matrix ``B`` maps the four thrusts to the collective thrust and the three body moments about the CG:
 

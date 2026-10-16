@@ -1,13 +1,13 @@
-# Kestrel-4Q — notebook 38, the design loop (Parts I and II)
+# Kestrel-4Q — notebook 40, the design loop (Parts I and II)
 
-*38_kestrel — exported 2026-10-16 12:22*
+*40_kestrel — exported 2026-10-16 12:22*
 
 | key | value |
 |---|---|
 | mass [kg] | 1.69 |
 | 4Q-2 mass [kg] | 1.65 |
 | CFD | NOT RUN here |
-| FEA | NOT RUN (no CalculiX here; notebook 40) |
+| FEA | NOT RUN (no CalculiX here; notebook 39) |
 
 
 ## targets
@@ -748,7 +748,7 @@
 | 0 — envelope | — | spec + layout + 5 assumptions | 2 | 0.12 | 2 | 11.3 | — | 6 | 108 | 21.7 | — | 6 / 6 | — |
 | 1 — CAD, Boreas, lattice, drag build-up | the CG target at 10 % of the chord (battery station) | kestrel_systems, Boreas, PEREGRINE lattice | 1.69 | 0.0955 | 2.89 | 10.9 | 0.0665 | 4.96 | 110 | 21.3 | — | 8 / 9 | battery inside its bay (not at a stop) |
 | 2 — transition model | elevons; pitch-over ≥ 3 s; back entry 13 m/s | kestrel_transition (model polar) | 1.69 | 0.0955 | 2.89 | 10.9 | 0.0665 | 4.96 | 110 | 21.3 | 8 of 8 (≥ 3 s) | 5 / 7 | rotors only, every schedule, cruise entry: passing, elevons, every schedule: passing |
-| 3 — CFD plugged in | the polar read against the CFD (sweep correction, 10 solved cases) | 38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | 1.69 | 0.164 | 2.89 | 13.3 | 0.0532 | 4.96 | 110 | 21.3 | 12 of 12 | 5 / 7 | CL max below 20°, CFD / the model's polar peak, blown cases solved |
+| 3 — CFD plugged in | the polar read against the CFD (sweep correction, 10 solved cases) | 40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | 1.69 | 0.164 | 2.89 | 13.3 | 0.0532 | 4.96 | 110 | 21.3 | 12 of 12 | 5 / 7 | CL max below 20°, CFD / the model's polar peak, blown cases solved |
 | 4 — payload bay (Part II) | pod 430 → 470 mm, ogive nose, the capsule on the axis | CAD bays + mass table + transitions | 2.28 | 0.0638 | 2.14 | 12.7 | 0.0665 | — | 120 | 19.5 | 8 of 8 | 5 / 6 | endurance at the cruise, full [min] |
 | 5 — elevons (Part II) | four 28 % surfaces from 275 mm to the tips, τ from Zephyr | CAD + kestrel_control + transitions | 1.73 | 0.0955 | 2.89 | 10.9 | 0.0665 | — | — | — | 11 of 12 | 3 / 4 | transitions, rotors only: passing |
 | 6 — faired struts (Part II) | teardrop sleeves on posts and diagonals | drag build-up + CAD + transitions | 1.74 | 0.0955 | 2.89 | 10.9 | 0.0234 | 11.5 | 59.2 | 39.6 | 10 of 12 | 4 / 5 | trim by thrust alone, faired |
@@ -803,7 +803,7 @@
 |---|---|---|---|---|
 | lift slope, CFD / model | 0.986 | 0.85 – 1.15 | ✔ |  |
 | Cd0, CFD / model | 0.8 | ≤ 1.2 | ✔ | the model may be conservative, not optimistic |
-| CL max below 20° on the sweep's angles, CFD / model | 0.959 | ≥ 0.8 | ✔ | a 5° grid: the peak itself waits for the fine sweep (notebook 40) |
+| CL max below 20° on the sweep's angles, CFD / model | 0.959 | ≥ 0.8 | ✔ | a 5° grid: the peak itself waits for the fine sweep (notebook 39) |
 | CL max below 20°, CFD / the model's polar peak | 0.668 | ≥ 0.8 | ✘ | the model's 0.81 against the CFD's 0.54 at 15°: the stall speed and the entry rule hang… |
 | static margin from the CFD's Cmα [chords] | 0.164 | 0.05 – 0.2 | ✔ |  |
 | blown cases solved | 0 | ≥ 1 | ✘ | the transition points with rotor disks: the question this CFD was set up for |
@@ -851,7 +851,7 @@
 | cl max, pick / NACA 0012 | 1.08 | ≥ 0.97 | ✔ |  |
 | section drag at the cruise cl, pick / 0012 (incl. the 0012's trim elevon) | 1.02 | ≤ 1.1 | ✔ |  |
 | surrogate confidence on the attached branch | 0.911 | ≥ 0.8 | ✔ |  |
-| CFD slab cases of the finalists solved | 0 | ≥ 1 | ✘ | NOT RUN here: notebook 40 |
+| CFD slab cases of the finalists solved | 0 | ≥ 1 | ✘ | NOT RUN here: notebook 39 |
 
 
 ## CHK8
@@ -868,7 +868,7 @@
 
 | check | value | target | holds | note |
 |---|---|---|---|---|
-| FEA cases solved | 0 | ≥ 9 | ✘ | CalculiX: notebook 40 on a machine that has it |
+| FEA cases solved | 0 | ≥ 9 | ✘ | CalculiX: notebook 39 on a machine that has it |
 
 
 ## CHK9
@@ -891,7 +891,7 @@
 | key | value |
 |---|---|
 | CFD | NOT RUN here |
-| FEA (Talos): frame x / posts, joint | NOT RUN (no CalculiX here; notebook 40) |
+| FEA (Talos): frame x / posts, joint | NOT RUN (no CalculiX here; notebook 39) |
 | CAD | run |
 | mass table | run |
 | propulsion (Boreas tables) | run |
@@ -902,7 +902,7 @@
 | truss frame + ground stance | run |
 | Part II: elevons, faired struts, bracing, 4Q-2 | run (8 of 12 4Q-2 transitions pass) |
 | Part II: reflexed section (Zephyr) | run |
-| X-wing | its own notebook, 39_xwing |
+| X-wing | its own notebook, 41_xwing |
 
 
 ## prop_lab calibration
@@ -913,5 +913,5 @@
 | cd_scale | 1 |
 | cn_factor | 1 |
 | on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
 

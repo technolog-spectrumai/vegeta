@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the transitions in CFD (Aeromant / OpenFOAM) and the CFD fed back into the transition model (notebook 38).
+"""Kestrel-4Q — the transitions in CFD (Aeromant / OpenFOAM) and the CFD fed back into the transition model (notebook 40).
 
 The transition model (``kestrel_transition``) flies the aircraft through the stall on an estimated polar: attached flow
 blended into a flat plate, the slipstream from momentum theory, the wings' parts treated one by one. What it cannot

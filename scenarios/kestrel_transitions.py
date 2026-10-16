@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Kestrel-4Q's transitions through the stall — hover → cruise and cruise → hover — on the model's polar and, with
-``--cfd``, on the CFD's (notebook 38, §§ 6–7).
+``--cfd``, on the CFD's (notebook 40, §§ 6–7).
 
     python3 scenarios/kestrel_transitions.py                    # the matrix on the model's polar (~2 min)
     python3 scenarios/kestrel_transitions.py --quick            # 1.5 and 3 s schedules only

@@ -1,5 +1,5 @@
 """Kestrel — the design dossier: every notebook's numbers exported as Markdown you can paste into a conversation
-(notebooks 38, 39, 40, 41).
+(notebooks 39, 41, 39, 38).
 
 Each notebook ends with ``write(name, title, sections)``: its tables, series, dicts and verdicts rendered as compact
 Markdown — numbers rounded to three significant figures, wide tables trimmed to their first columns, long tables to
@@ -25,7 +25,7 @@ REPORTS = Path(__file__).resolve().parent / "data" / "reports"
 DOSSIER = Path(__file__).resolve().parent / "data" / "kestrel_dossier.md"
 MAX_COLS = 14
 MAX_ROWS = 60
-ORDER = ("38_kestrel", "39_xwing", "40_kestrel_tests", "41_prop_lab", "42_kestrel2")
+ORDER = ("38_prop_lab", "39_kestrel_tests", "40_kestrel", "41_xwing", "42_kestrel2")
 
 
 def fmt(v, sig: int = 3) -> str:

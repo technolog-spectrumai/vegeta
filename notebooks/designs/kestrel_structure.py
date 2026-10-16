@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the truss, the wings' bending, the propellers' clearance under load, and the ground stance (notebook 38).
+"""Kestrel-4Q — the truss, the wings' bending, the propellers' clearance under load, and the ground stance (notebook 40).
 
 - ``frame``: the front view (y–z plane) as a plane frame. The spars are beams through the pod (the pod a rigid post at
   y = 0, clamped there: the half-model's symmetry and the flight's inertia relief at the CG), the posts and the

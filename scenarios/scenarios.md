@@ -219,7 +219,7 @@ propeller's hub (the blades cross the top of the frame: computer vision masks th
 `scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.
 
 ## Kestrel-4Q transitions (`kestrel_transitions.py`)
-The zero-stagger biplane quadrotor tailsitter's transitions through the stall, hover → cruise and back (notebook 38):
+The zero-stagger biplane quadrotor tailsitter's transitions through the stall, hover → cruise and back (notebook 40):
 the matrix of three vehicles (elevons, rotors only, 2.0 kg with the CG aft), both directions, 1.5 / 3 / 5 s pitch
 schedules, still air and a 6 m/s headwind, on the model's polar; with `--cfd` the airframe is solved in OpenFOAM at
 the points the nominal transitions fly (Aeromant `aircraft_quad_rotor_disks`: four rotor disks at each pair's rpm), the

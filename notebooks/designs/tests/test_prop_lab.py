@@ -1,4 +1,4 @@
-"""prop_lab (notebook 41): the 9x6 alone — its configurations, the table beside BEMT, the calibration fit on a
+"""prop_lab (notebook 38): the 9x6 alone — its configurations, the table beside BEMT, the calibration fit on a
 synthetic campaign, the export Kestrel reads (the blade section, the drive key, the normal-force factor), and a
 failure as a result.
 

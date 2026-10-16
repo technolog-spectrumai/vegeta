@@ -1,4 +1,4 @@
-"""Kestrel's structure in Talos (kestrel_fea, notebook 38 § 8b / notebook 40): the frame and joint CAD build and export,
+"""Kestrel's structure in Talos (kestrel_fea, notebook 40 § 8b / notebook 39): the frame and joint CAD build and export,
 the cases prepare for every bracing, the NOT RUN table and the plane-frame reference; nothing is solved here.
 
 Run: cd /home/user/vegeta && python3 -m pytest -q notebooks/designs/tests/test_kestrel_fea.py

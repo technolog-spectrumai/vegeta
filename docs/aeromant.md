@@ -152,7 +152,7 @@ through them) and the refined wake box follows the deflected slipstream. Beside 
 carry the **normal force** `normal_force_N` (the force on the rotor along +z, with the cross-flow), `cn` on
 ρ n² D⁴, the propeller's own **pitching moment** `pitching_moment_Nm` about +y, `axial_inflow_m_s` and
 `crossflow_m_s`; the efficiency uses the axial component. A steady frame averages the once-per-revolution load cycle
-an inclined inflow puts on every blade: the mean loads are what it gives. Notebook: `41_prop_lab` (Kestrel's 9×6
+an inclined inflow puts on every blade: the mean loads are what it gives. Notebook: `38_prop_lab` (Kestrel's 9×6
 alone, in the configurations the aircraft flies, read against blade-element theory and De Young's normal force).
 
 ```python
@@ -230,7 +230,7 @@ Disk zones that would overlap (centres closer than `2 × zone_radius × diameter
 turn the STL and the disk centres together about the moment point and give the turned thrust axis
 (`kestrel.rotate`, `kestrel_cfd.disk_setup`). The forces on the airframe include the slipstream; the disks' thrust and
 in-plane force are in the solver log. Steady RANS beyond the stall is a time average at best: read the residuals and
-the force scatter. Notebook: `38_kestrel` (the transitions through the stall), `40_kestrel_tests` (the campaign).
+the force scatter. Notebook: `40_kestrel` (the transitions through the stall), `39_kestrel_tests` (the campaign).
 
 **Numerics of the rotor-disk templates** (`aircraft_rotor_disks`, `aircraft_quad_rotor_disks`, `hull_rotor_disk`):
 plain SIMPLE with the under-relaxation of OpenFOAM's rotorDisk tutorial (p 0.3, U 0.7, k and ω 0.7), not the SIMPLEC

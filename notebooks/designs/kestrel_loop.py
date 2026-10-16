@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the design loop's bookkeeping (notebook 38): the envelope estimate before any tool runs, the check
+"""Kestrel-4Q — the design loop's bookkeeping (notebook 40): the envelope estimate before any tool runs, the check
 tables each iteration is measured by, and the log of how the numbers moved from iteration to iteration.
 
 A design study is a loop, not a pipeline: estimate (``envelope``: the spec's numbers and the layout's lengths, nothing

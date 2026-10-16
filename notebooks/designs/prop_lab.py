@@ -1,4 +1,4 @@
-"""prop_lab — one propeller alone in CFD, in the configurations Kestrel flies (notebook 41), and the calibration it
+"""prop_lab — one propeller alone in CFD, in the configurations Kestrel flies (notebook 38), and the calibration it
 hands to the Kestrel notebooks.
 
 Kestrel's airframe CFD runs its four propellers as **rotor disks** (blade-element sources fed with Boreas's blade rows

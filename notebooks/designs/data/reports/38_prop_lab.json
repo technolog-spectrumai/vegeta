@@ -1,6 +1,6 @@
 {
- "notebook": "41_prop_lab",
- "title": "prop_lab — notebook 41, the 9x6 alone",
+ "notebook": "38_prop_lab",
+ "title": "prop_lab — notebook 38, the 9x6 alone",
  "exported": "2026-10-16T12:30",
  "meta": {
   "date": "2026-10-16",
@@ -483,7 +483,7 @@
    "cn_factor": 1.0,
    "on_file": false,
    "meta": {
-    "source": "41_prop_lab",
+    "source": "38_prop_lab",
     "quality": "screening",
     "date": "2026-10-16",
     "propeller": "9x6, Dedalus CAD of Boreas's planform"
@@ -888,7 +888,7 @@
    "rows": [
     {
      "_index": "one_rotor_hover",
-     "path": "output/41_prop_lab/sound/one_rotor_hover.wav",
+     "path": "output/38_prop_lab/sound/one_rotor_hover.wav",
      "seconds": 3.0,
      "rms_db": 38.72,
      "full_scale_pa": 0.01729,
@@ -899,7 +899,7 @@
     },
     {
      "_index": "one_rotor_cruise_16ms",
-     "path": "output/41_prop_lab/sound/one_rotor_cruise_16ms.wav",
+     "path": "output/38_prop_lab/sound/one_rotor_cruise_16ms.wav",
      "seconds": 3.0,
      "rms_db": 37.86,
      "full_scale_pa": 0.01729,
@@ -910,7 +910,7 @@
     },
     {
      "_index": "one_rotor_transition_8ms_45deg",
-     "path": "output/41_prop_lab/sound/one_rotor_transition_8ms_45deg.wav",
+     "path": "output/38_prop_lab/sound/one_rotor_transition_8ms_45deg.wav",
      "seconds": 3.0,
      "rms_db": 44.06,
      "full_scale_pa": 0.01729,
@@ -921,7 +921,7 @@
     },
     {
      "_index": "four_rotors_hover",
-     "path": "output/41_prop_lab/sound/four_rotors_hover.wav",
+     "path": "output/38_prop_lab/sound/four_rotors_hover.wav",
      "seconds": 3.0,
      "rms_db": 44.16,
      "full_scale_pa": 0.01729,
@@ -939,7 +939,7 @@
     },
     {
      "_index": "transition_hover_to_cruise",
-     "path": "output/41_prop_lab/sound/transition_hover_to_cruise.wav",
+     "path": "output/38_prop_lab/sound/transition_hover_to_cruise.wav",
      "seconds": 6.0,
      "rms_db": 43.3,
      "full_scale_pa": 0.01729,

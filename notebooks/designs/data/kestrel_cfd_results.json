@@ -2,7 +2,7 @@
  "campaigns": {
   "4Q-1": {
    "meta": {
-    "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+    "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
     "aircraft": "Kestrel-4Q (round struts, NACA 0012, no elevons in the CAD)",
     "quality": "screening",
     "date": "2026-10-16"
@@ -332,7 +332,7 @@
   },
   "4Q-2": {
    "meta": {
-    "source": "40_kestrel_tests",
+    "source": "39_kestrel_tests",
     "quality": "screening",
     "aircraft": "Kestrel-4Q-2",
     "date": "2026-10-16",
@@ -557,7 +557,7 @@
   },
   "sections": {
    "meta": {
-    "source": "40_kestrel_tests",
+    "source": "39_kestrel_tests",
     "quality": "screening",
     "date": "2026-10-16"
    },

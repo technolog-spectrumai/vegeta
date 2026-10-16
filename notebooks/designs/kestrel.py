@@ -1,4 +1,4 @@
-"""Kestrel-4Q — a zero-stagger, truss-braced biplane quadrotor tailsitter (notebook 38).
+"""Kestrel-4Q — a zero-stagger, truss-braced biplane quadrotor tailsitter (notebook 40).
 
 Two straight, equal-span wings one above the other with their leading edges at the **same** station (zero stagger:
 there is no stagger parameter, both wings are built from one ``wing_le_x``), a slim central pod spanning the gap with

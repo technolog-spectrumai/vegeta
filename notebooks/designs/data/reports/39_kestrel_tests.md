@@ -1,6 +1,6 @@
-# Kestrel — notebook 40, the CFD and FEA campaign
+# Kestrel — notebook 39, the CFD and FEA campaign
 
-*40_kestrel_tests — exported 2026-10-16 12:30*
+*39_kestrel_tests — exported 2026-10-16 12:30*
 
 | key | value |
 |---|---|
@@ -37,7 +37,7 @@
 | cd_scale | 1 |
 | cn_factor | 1 |
 | on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
 
 
 ## case lists
@@ -125,9 +125,9 @@
 
 |  | solved | diverged | FAILED | NOT RUN | n | solved with rotor disks | solved bare | with rotor disks | source | quality | date |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 4Q-1 | 10 | 2 | 12 | 0 | 24 | 0 | 10 | 14 | 38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | screening | 2026-10-16 |
-| 4Q-2 | 0 | 0 | 0 | 29 | 29 | 0 | 0 | 16 | 40_kestrel_tests | screening | 2026-10-16 |
-| sections | 0 | 0 | 0 | 8 | — | — | — | — | 40_kestrel_tests | screening | 2026-10-16 |
+| 4Q-1 | 10 | 2 | 12 | 0 | 24 | 0 | 10 | 14 | 40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | screening | 2026-10-16 |
+| 4Q-2 | 0 | 0 | 0 | 29 | 29 | 0 | 0 | 16 | 39_kestrel_tests | screening | 2026-10-16 |
+| sections | 0 | 0 | 0 | 8 | — | — | — | — | 39_kestrel_tests | screening | 2026-10-16 |
 
 
 ## cases that did not solve

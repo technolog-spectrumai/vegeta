@@ -1,5 +1,5 @@
 """Kestrel-4Q — the structure in Talos (CalculiX FEA): the carbon frame as solids, the printed spar–post joint
-(notebook 38 § 8b, run in notebook 40's campaign).
+(notebook 40 § 8b, run in notebook 39's campaign).
 
 ``kestrel_structure`` answers the bracing question with a plane frame of beams and bars; this module puts the same
 structure through Talos as solid tubes — the two spars through the pod, the posts at the motor stations, the X of

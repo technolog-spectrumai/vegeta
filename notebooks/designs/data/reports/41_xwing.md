@@ -1,6 +1,6 @@
-# X-wing — notebook 39 (X-A and X-B against Kestrel-4Q and 4Q-2)
+# X-wing — notebook 41 (X-A and X-B against Kestrel-4Q and 4Q-2)
 
-*39_xwing — exported 2026-10-16 12:34*
+*41_xwing — exported 2026-10-16 12:34*
 
 ## variants
 

@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the parts, the masses, the centre of gravity, the inertia and the propulsion (notebook 38).
+"""Kestrel-4Q — the parts, the masses, the centre of gravity, the inertia and the propulsion (notebook 40).
 
 - ``COMPONENTS``: the bought parts (motor, propeller, ESC, battery, flight stack, camera) with the values the study
   assumes. They are datasheet-class numbers for parts of this size, not a sourced bill of materials: the propulsion
@@ -182,7 +182,7 @@ def groups(table) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------- propulsion
-PROP_LAB_JSON = Path(__file__).resolve().parent / "data" / "prop_lab.json"   # notebook 41's calibration of the 9x6 (prop_lab.export)
+PROP_LAB_JSON = Path(__file__).resolve().parent / "data" / "prop_lab.json"   # notebook 38's calibration of the 9x6 (prop_lab.export)
 
 
 def prop_lab_calibration() -> dict:

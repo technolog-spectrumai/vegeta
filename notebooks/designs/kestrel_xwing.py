@@ -1,4 +1,4 @@
-"""Kestrel-4Q against an X-wing of the same motors, battery and pod (notebook 38, Part II).
+"""Kestrel-4Q against an X-wing of the same motors, battery and pod (notebook 40, Part II).
 
 The X-wing: four straight cantilever panels radiating from the pod at ±45°, a motor near the tip of each, **no
 truss** — the configuration the biplane's bracing is weighed against. Seen as wings, it is two straight wings of equal

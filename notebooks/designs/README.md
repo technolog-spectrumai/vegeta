@@ -225,7 +225,7 @@ FEA on FALCO's tube), `tail_socket_case`, `motor_mount_case`, `models`. `falco_c
 `falco_controller.py` (`FalcoController`: the flare parks the propeller), `falco_scenario.py` (`SIM`, `scenario`,
 `standard_scenarios`, `run`, `outcome` with the blade-strike check, `park_table`), `falco_birds.py`.
 
-`kestrel.py` (`Kestrel4Q`, notebook 38, branch `dev_kestrel`) is the zero-stagger biplane quadrotor tailsitter: the
+`kestrel.py` (`Kestrel4Q`, notebook 40, branch `dev_kestrel`) is the zero-stagger biplane quadrotor tailsitter: the
 CAD (parts `aircraft`, `airframe` — the CFD body without the propellers —, `wing`, `pod`, `truss`, `nacelle`, `tail`;
 `angle_of_attack_deg` turns the build about `rotation_x`), `layout` (metres, no CAD kernel needed), `checks` (the
 clearance rules), `rotate` (a point turned like the build). `kestrel_systems.py`: `COMPONENTS`, `mass_table` (the
@@ -244,9 +244,9 @@ statuses `solved` / `diverged` (`SANE`) / `FAILED` / `NOT RUN` and a `note`, `su
 `load_records` / `plug_in` / `records_table` (the campaigns in `data/kestrel_cfd_results.json`, keyed `4Q-1`, `4Q-2`,
 `sections`; a pass that solved nothing never erases a result), `section_table` / `save_section_table` (the slabs).
 `kestrel_loop.py` (the design loop's bookkeeping): `envelope` (iteration 0 from the spec and the layout), `TARGETS`,
-`check` / `check_table` / `failing`, `IterationLog`. Notebook **40** (`40_kestrel_tests`) is the CFD campaign of every
+`check` / `check_table` / `failing`, `IterationLog`. Notebook **39** (`39_kestrel_tests`) is the CFD campaign of every
 case for both aircraft and the sections, failures accepted; `kestrel_cfd.flight_points` adds the level cruise and the
-stall to its points. `prop_lab.py` (notebook **41**, `41_prop_lab`): the 9×6 alone in CFD — `geometry` / `cad` / `stl`
+stall to its points. `prop_lab.py` (notebook **38**, `38_prop_lab`): the 9×6 alone in CFD — `geometry` / `cad` / `stl`
 (Dedalus's propeller on the rotor frame), `bemt`, `configurations` (hover, axial, oblique on `rotor_mrf_static` /
 `rotor_mrf` / `rotor_mrf_oblique`), `plan`, `table` (beside BEMT and De Young, statuses `solved` / `diverged` /
 `FAILED` / `NOT RUN`), `summary`, `fit_section` (`cl_scale`, `cd_scale`), `fit_normal_force` (`cn_factor`), `export` /
@@ -254,7 +254,7 @@ stall to its points. `prop_lab.py` (notebook **41**, `41_prop_lab`): the 9×6 al
 `propulsion()` (the drive key stamps it), `kestrel_flight.prop_cn_alpha(calibrated=)` the normal force; `noise` /
 `noise_table` (Gutin's tones on the measured loads, the broadband, dB(A) at `LISTENER`), `signal` / `signal_rotors` /
 `signal_sweep` / `write_wav` / `render` (the WAV files: one rotor, the four rotors beating in the hover, the
-transition glide). `kestrel_fea.py` (Talos, notebook 38 § 8b / 40): `frame_cad` / `frame_step` (the carbon frame as
+transition glide). `kestrel_fea.py` (Talos, notebook 40 § 8b / 40): `frame_cad` / `frame_step` (the carbon frame as
 hollow tubes per bracing), `joint_cad` (the printed spar–post clamp), `lift_segments`, `frame_cases` (A / B / C /
 modes), `joint_cases`, `cases`, `solve(run=)`, `table` (statuses, nominal and peak stress, margins, across-layer
 tension, frequencies), `summary`, `plane_frame_reference`, `save` (`data/kestrel_fea_results.json`).
@@ -274,6 +274,6 @@ first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`,
 panels, each at its dihedral, height and rotor — the model flies any arrangement of them), `z_rotor`, `elevon_y_in`,
 `lift_slope_vertical`; `kestrel_section.py` (on `vegeta.zephyr`: `CANDIDATES`, `table` → `data/kestrel_sections.json`,
 `summary_frame`, `trim_table`, `cfd_specs`) and `kestrel_cfd.section_stl` / `section_case` / `section_not_run_table`;
-`kestrel_xwing.py` (notebook 39: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
+`kestrel_xwing.py` (notebook 41: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
 `drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
 `cruise`).

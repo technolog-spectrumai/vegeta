@@ -1,5 +1,5 @@
 {
- "source": "38_kestrel",
+ "source": "40_kestrel",
  "params": {
   "part": "aircraft",
   "span": 1000.0,
@@ -1104,7 +1104,7 @@
  "cfd_plug_in": {
   "source": "sweep",
   "campaign": {
-   "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+   "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
    "aircraft": "Kestrel-4Q (round struts, NACA 0012, no elevons in the CAD)",
    "quality": "screening",
    "date": "2026-10-16"
@@ -1181,7 +1181,7 @@
   {
    "iteration": "3 \u2014 CFD plugged in",
    "what changed": "the polar read against the CFD (sweep correction, 10 solved cases)",
-   "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+   "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
    "take-off mass [kg]": 1.6862063482324605,
    "static margin [chords]": 0.1644798332015242,
    "hover thrust / weight": 2.893213038200698,
@@ -2457,7 +2457,7 @@
  },
  "status": {
   "CFD": "NOT RUN here",
-  "FEA (Talos): frame x / posts, joint": "NOT RUN (no CalculiX here; notebook 40)",
+  "FEA (Talos): frame x / posts, joint": "NOT RUN (no CalculiX here; notebook 39)",
   "CAD": "run",
   "mass table": "run",
   "propulsion (Boreas tables)": "run",
@@ -2468,6 +2468,6 @@
   "truss frame + ground stance": "run",
   "Part II: elevons, faired struts, bracing, 4Q-2": "run (8 of 12 4Q-2 transitions pass)",
   "Part II: reflexed section (Zephyr)": "run",
-  "X-wing": "its own notebook, 39_xwing"
+  "X-wing": "its own notebook, 41_xwing"
  }
 }

@@ -369,7 +369,11 @@ study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch 
 (fitted R 0.13 Ω with the ESC) take the rest. `scenarios/falco_mission.py`, `scenarios/falco_birds.py`
 (`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
 
-**Kestrel-4Q** (`38_kestrel`, branch `dev_kestrel`) is a concept study of a zero-stagger, truss-braced biplane
+**Kestrel** is five notebooks numbered in the order they are run — **38** `prop_lab` (the propeller alone in CFD:
+its calibration feeds everything after it), **39** `kestrel_tests` (the CFD and FEA campaign of the airframes), **40**
+`kestrel` (the design loop, reading both), **41** `xwing` (the alternative airframe, reading 40's record), **42**
+`kestrel2` (4Q-2 against 4Q-1 and the case for 4Q-3) — each ending with a JSON report in
+`designs/data/reports/` stitched into `designs/data/kestrel_dossier.json`. **Kestrel-4Q** (`40_kestrel`, branch `dev_kestrel`) is a concept study of a zero-stagger, truss-braced biplane
 quadrotor **tailsitter**: two equal straight wings with their leading edges at one station (zero stagger is built into
 the CAD, not a parameter), a pod across the gap with the camera in the nose, carbon posts and an X of diagonals, four
 **fixed** propellers whose thrust axes are all parallel to the pod (no tilt: the whole aircraft pitches 90°), a fin
@@ -394,22 +398,22 @@ computation is a result**: a CFD case that fails or diverges is listed with its 
 (`kestrel_cfd.table`: `solved` / `diverged` / `FAILED` / `NOT RUN`), a transition that diverges is a failed
 transition. The first OpenFOAM campaign (on another machine) solved the ten bare-airframe cases — the model's lift
 slope within 2 %, its Cd0 a fifth conservative, its stall harsher than the CFD's — and lost all fourteen blown cases to
-the solver's numerics; the rotor-disk templates now run plain SIMPLE with a velocity cap. **`40_kestrel_tests`** is the
+the solver's numerics; the rotor-disk templates now run plain SIMPLE with a velocity cap. **`39_kestrel_tests`** is the
 test campaign: every case for Kestrel-4Q, Kestrel-4Q-2 and the two finalist sections at the quality it is given
 (`KESTREL_CFD_QUALITY`, `KESTREL_CFD_ONLY`, `KESTREL_CFD_SWEEP_ONLY`), failures accepted and counted, the solved cases
-written to `designs/data/kestrel_cfd_results.json` for notebook 38 to read (`kestrel_cfd.plug_in`). The airframe
-cases carry the propellers as **discs only**; the propeller itself is measured first in **`41_prop_lab`**
+written to `designs/data/kestrel_cfd_results.json` for notebook 40 to read (`kestrel_cfd.plug_in`). The airframe
+cases carry the propellers as **discs only**; the propeller itself is measured first in **`38_prop_lab`**
 (`designs/prop_lab.py`): the 9×6 alone, resolved in a rotating frame — the hover at three speeds, axial inflow 4–24 m/s,
 the inflow at 15–90° to the axis on Aeromant's new **`rotor_mrf_oblique`** (free-stream lateral faces, the normal force
 and the propeller's pitching moment in the metrics) — each case beside Boreas's blade-element numbers and De Young's
 normal force. Its calibration (two scales on the blade section fitted on thrust and torque together, one factor on the
 normal-force slope; `designs/data/prop_lab.json`) is read by `kestrel_systems.propulsion` (the drive tables, `rpm_for`,
-the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 38 and 40 fly on the measured propeller once
+the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 39 and 39 fly on the measured propeller once
 41 has run; the campaign's points now include the level cruise and the stall beside the hover and both transitions.
 prop_lab also turns the loads into **noise** — the blade-passing frequency and its harmonics (Gutin on the measured
 thrust and torque), the broadband, dB(A) at a bystander — and renders the sound as WAV files: one rotor in the hover,
 in cruise, at a transition point, the four rotors beating in the hover, the transition as a glide from the hover rpm
-to the cruise rpm (`output/41_prop_lab/sound/`). The **structure goes through Talos** too (`kestrel_fea.py`, notebook
+to the cruise rpm (`output/38_prop_lab/sound/`). The **structure goes through Talos** too (`kestrel_fea.py`, notebook
 38 § 8b, run in 40): the carbon frame as solid tubes for the X-braced and the posts-only truss — the 4 g pull-up with the
 lift elliptic along the spars, the 75 % wing, the heading manoeuvre's torsion (one diagonal pair at full thrust, the
 other at idle), the modes with the motor units — and the printed spar–post joint with its across-layer tension, each
@@ -432,7 +436,7 @@ in the hover and in cruise, the transitions), faired struts (`strut_fairing`: th
 against the drag they save), a reflexed section on **Zephyr** (`kestrel_section.py`: NeuralFoil polars of NACA 0012
 against the reflexed 230/240-series, the elevon's flap data, the trim each section asks of the elevons, Aeromant slab
 cases as the CFD check — NOT RUN until `dev_zephyr` is merged), and lighter bracing (`bracing`: the motor stations'
-stiffness and first modes per truss); then the four together against 4Q. **`39_xwing`** is the X-wing of the same
+stiffness and first modes per truss); then the four together against 4Q. **`41_xwing`** is the X-wing of the same
 motors, battery and pod with no bracing at all (`kestrel_xwing.py`: four cantilever panels at ±45° — half the vertical
 lift slope of the same area laid flat, the spars sized as cantilevers with tip motors, the panels' section on Zephyr,
 flown in the same panel model) against Kestrel-4Q and 4Q-2. Code:

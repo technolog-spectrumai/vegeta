@@ -1,5 +1,5 @@
 """Kestrel-4Q — the wing section study on Zephyr: NACA 0012 against reflexed sections, and the elevon's section data
-(notebook 38, Part II). Needs ``vegeta.zephyr`` (branch ``dev_zephyr``) and, to recompute, NeuralFoil.
+(notebook 40, Part II). Needs ``vegeta.zephyr`` (branch ``dev_zephyr``) and, to recompute, NeuralFoil.
 
 A tailless aircraft trims its pitch with the wing alone. With the CG ahead of the neutral point (static margin SM),
 the moment about the CG at a lift coefficient CL is Cm_cg = cm_section − SM·CL: a symmetric section leaves a nose-down

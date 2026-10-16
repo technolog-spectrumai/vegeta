@@ -1,6 +1,6 @@
 {
- "notebook": "40_kestrel_tests",
- "title": "Kestrel — notebook 40, the CFD and FEA campaign",
+ "notebook": "39_kestrel_tests",
+ "title": "Kestrel — notebook 39, the CFD and FEA campaign",
  "exported": "2026-10-16T12:30",
  "meta": {
   "date": "2026-10-16",
@@ -50,7 +50,7 @@
    "cn_factor": 1.0,
    "on_file": false,
    "meta": {
-    "source": "41_prop_lab",
+    "source": "38_prop_lab",
     "quality": "screening",
     "date": "2026-10-16",
     "propeller": "9x6, Dedalus CAD of Boreas's planform"
@@ -1884,7 +1884,7 @@
      "solved with rotor disks": 0,
      "solved bare": 10,
      "with rotor disks": 14,
-     "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+     "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
      "quality": "screening",
      "date": "2026-10-16"
     },
@@ -1898,7 +1898,7 @@
      "solved with rotor disks": 0,
      "solved bare": 0,
      "with rotor disks": 16,
-     "source": "40_kestrel_tests",
+     "source": "39_kestrel_tests",
      "quality": "screening",
      "date": "2026-10-16"
     },
@@ -1912,7 +1912,7 @@
      "solved with rotor disks": null,
      "solved bare": null,
      "with rotor disks": null,
-     "source": "40_kestrel_tests",
+     "source": "39_kestrel_tests",
      "quality": "screening",
      "date": "2026-10-16"
     }

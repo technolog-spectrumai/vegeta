@@ -1,4 +1,4 @@
-"""Kestrel-4Q (notebook 38): the zero-stagger layout and its rules, the CAD, the masses and the CG, the hold point (the
+"""Kestrel-4Q (notebook 40): the zero-stagger layout and its rules, the CAD, the masses and the CG, the hold point (the
 allocation's rank for each sense of rotation, the attainable moments, a motor out), the biplane's lattice against
 Prandtl's biplane factor, the drag of the bracing, the full-range polar, the slipstream, the transitions both ways
 through the stall (and what fails without elevons), the CFD cases with four rotor disks and the CFD fed back into the

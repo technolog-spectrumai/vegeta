@@ -1,4 +1,4 @@
-"""Kestrel-4Q — the drawings of notebook 38 (matplotlib only).
+"""Kestrel-4Q — the drawings of notebook 40 (matplotlib only).
 
 - ``front_view``: looking at the nose — both wings, the pod, the posts and the X diagonals, the four propeller discs
   with their senses of rotation (the diagonal pairing), the CG.

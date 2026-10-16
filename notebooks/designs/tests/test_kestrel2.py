@@ -1,4 +1,4 @@
-"""Kestrel-4Q-2 against 4Q-1 and the case for 4Q-3 (kestrel2, notebook 42): the aircraft rebuilt from notebook 38's
+"""Kestrel-4Q-2 against 4Q-1 and the case for 4Q-3 (kestrel2, notebook 42): the aircraft rebuilt from notebook 40's
 recipe, the back-transition remedies (reverse thrust closes the balloon; a descent into it does not), the level
 deceleration, the performance and pursuit tables, the 4Q-3 proposal.
 

@@ -1,27 +1,371 @@
 # Kestrel — the design dossier
 
-*stitched 2026-10-16 12:35 from 4 report(s)*
+*stitched 2026-10-16 15:28 from 4 report(s)*
 
 | report | lines | exported |
 |---|---|---|
-| 38_kestrel | 917 | 38_kestrel — exported 2026-10-16 12:22 |
-| 39_xwing | 172 | 39_xwing — exported 2026-10-16 12:34 |
-| 40_kestrel_tests | 164 | 40_kestrel_tests — exported 2026-10-16 12:30 |
-| 41_prop_lab | 172 | 41_prop_lab — exported 2026-10-16 12:30 |
+| 38_prop_lab | 172 | 38_prop_lab — exported 2026-10-16 12:30 |
+| 39_kestrel_tests | 164 | 39_kestrel_tests — exported 2026-10-16 12:30 |
+| 40_kestrel | 917 | 40_kestrel — exported 2026-10-16 12:22 |
+| 41_xwing | 172 | 41_xwing — exported 2026-10-16 12:34 |
 
 
 ---
 
-## Kestrel-4Q — notebook 38, the design loop (Parts I and II)
+## prop_lab — notebook 38, the 9x6 alone
 
-*38_kestrel — exported 2026-10-16 12:22*
+*38_prop_lab — exported 2026-10-16 12:30*
+
+| key | value |
+|---|---|
+| date | 2026-10-16 |
+| quality | screening |
+
+
+## settings
+
+| key | value |
+|---|---|
+| CFD | NOT RUN |
+| quality | screening |
+| kinds | hover, axial, oblique |
+
+
+## the 9x6
+
+| key | value |
+|---|---|
+| diameter | 229 |
+| pitch | 152 |
+| blades | 2 |
+| hub_diameter | 16 |
+| hub_height | 10 |
+| bore | 5 |
+| chord_root | 14 |
+| chord_max | 21 |
+| chord_tip | 8 |
+| thickness | 0.1 |
+| camber | 0.04 |
+| stations | 12 |
+
+
+## blade rows (Boreas)
+
+|  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| r [m] | 0.0137 | 0.0229 | 0.032 | 0.0411 | 0.0503 | 0.0594 | 0.0686 | 0.0777 | 0.0869 | 0.096 | 0.105 | 0.114 |
+| twist [deg] | 60.5 | 46.7 | 37.2 | 30.5 | 25.7 | 22.2 | 19.5 | 17.3 | 15.6 | 14.2 | 13 | 12 |
+| chord [m] | 0.014 | 0.0158 | 0.0176 | 0.0195 | 0.021 | 0.0202 | 0.0189 | 0.0172 | 0.0153 | 0.0131 | 0.0106 | 0.008 |
+
+
+## rpm
+
+| key | value |
+|---|---|
+| hover | 6.72e+03 |
+| cruise | 6.56e+03 |
+
+
+## cases: CFD against BEMT
+
+|  | kind | rpm | V [m/s] | angle [deg] | J | BEMT T [N] | BEMT Q [N·m] | BEMT P [W] | BEMT η / FM | De Young CNα [1/rad] | status | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hover, 5000 rpm | hover | 5e+03 | 0 | 0 | 0 | 2.3 | 0.0371 | 19.4 | 0.565 | — | NOT RUN |  |
+| hover, 6723 rpm (the hover) | hover | 6.72e+03 | 0 | 0 | 0 | 4.15 | 0.067 | 47.2 | 0.565 | — | NOT RUN |  |
+| hover, 9000 rpm | hover | 9e+03 | 0 | 0 | 0 | 7.44 | 0.12 | 113 | 0.565 | — | NOT RUN |  |
+| axial, 4 m/s, 8000 rpm | axial | 8e+03 | 4 | 0 | 0.131 | 5.44 | 0.0979 | 82 | 0.265 | — | NOT RUN |  |
+| axial, 8 m/s, 8000 rpm | axial | 8e+03 | 8 | 0 | 0.262 | 4.7 | 0.0955 | 80 | 0.47 | — | NOT RUN |  |
+| axial, 12 m/s, 8000 rpm | axial | 8e+03 | 12 | 0 | 0.394 | 3.68 | 0.0854 | 71.6 | 0.616 | — | NOT RUN |  |
+| axial, 16 m/s, 8000 rpm | axial | 8e+03 | 16 | 0 | 0.525 | 2.41 | 0.0659 | 55.2 | 0.697 | — | NOT RUN |  |
+| axial, 20 m/s, 8000 rpm | axial | 8e+03 | 20 | 0 | 0.656 | 1.01 | 0.0372 | 31.1 | 0.649 | — | NOT RUN |  |
+| axial, 24 m/s, 8000 rpm | axial | 8e+03 | 24 | 0 | 0.787 | -0.663 | -0.00662 | -5.54 | 0 | — | NOT RUN |  |
+| axial, 12 m/s, 10000 rpm | axial | 1e+04 | 12 | 0 | 0.315 | 6.76 | 0.145 | 151 | 0.536 | — | NOT RUN |  |
+| axial, 20 m/s, 10000 rpm | axial | 1e+04 | 20 | 0 | 0.525 | 3.76 | 0.103 | 108 | 0.697 | — | NOT RUN |  |
+| cruise, 16 m/s, 6562 rpm | axial | 6.56e+03 | 16 | 0 | 0.64 | 0.8 | 0.0278 | 19.1 | 0.671 | — | NOT RUN |  |
+| oblique, 8 m/s at 15°, 8000 rpm | oblique | 8e+03 | 8 | 15 | 0.254 | 4.76 | 0.0959 | 80.3 | 0.458 | 0.319 | NOT RUN |  |
+| oblique, 8 m/s at 30°, 8000 rpm | oblique | 8e+03 | 8 | 30 | 0.227 | 4.93 | 0.0968 | 81.1 | 0.421 | 0.323 | NOT RUN |  |
+| oblique, 8 m/s at 45°, 8000 rpm | oblique | 8e+03 | 8 | 45 | 0.186 | 5.17 | 0.0977 | 81.8 | 0.357 | 0.328 | NOT RUN |  |
+| oblique, 8 m/s at 60°, 8000 rpm | oblique | 8e+03 | 8 | 60 | 0.131 | 5.44 | 0.0979 | 82 | 0.265 | 0.333 | NOT RUN |  |
+| oblique, 8 m/s at 90°, 8000 rpm | oblique | 8e+03 | 8 | 90 | 1.61e-17 | 5.88 | 0.0949 | 79.5 | 3.62e-17 | 0.342 | NOT RUN |  |
+| oblique, 14 m/s at 15°, 8000 rpm | oblique | 8e+03 | 14 | 15 | 0.444 | 3.21 | 0.079 | 66.2 | 0.656 | 0.214 | NOT RUN |  |
+| oblique, 14 m/s at 30°, 8000 rpm | oblique | 8e+03 | 14 | 30 | 0.398 | 3.64 | 0.085 | 71.2 | 0.62 | 0.219 | NOT RUN |  |
+| oblique, 14 m/s at 45°, 8000 rpm | oblique | 8e+03 | 14 | 45 | 0.325 | 4.25 | 0.0918 | 76.9 | 0.547 | 0.227 | NOT RUN |  |
+| oblique, 14 m/s at 60°, 8000 rpm | oblique | 8e+03 | 14 | 60 | 0.23 | 4.91 | 0.0967 | 81 | 0.424 | 0.234 | NOT RUN |  |
+
+
+## campaign
+
+| key | value |
+|---|---|
+| solved | 0 |
+| diverged | 0 |
+| FAILED | 0 |
+| NOT RUN | 21 |
+| n | 21 |
+| by kind | {'hover': 0, 'axial': 0, 'oblique': 0} |
+
+
+## section fit
+
+| key | value |
+|---|---|
+| cl_scale | — |
+| cd_scale | — |
+| n_cases | 0 |
+| rms_log_ratio_before | — |
+| rms_log_ratio_after | — |
+
+
+## normal-force fit
+
+| key | value |
+|---|---|
+| cn_factor | — |
+| n_cases | 0 |
+
+
+## calibration on file
+
+| key | value |
+|---|---|
+| cl_scale | 1 |
+| cd_scale | 1 |
+| cn_factor | 1 |
+| on_file | no |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+
+
+## noise at the listener
+
+|  | source | rpm | V [m/s] | angle [deg] | BPF [Hz] | tone 1 [dB] | tone 2 [dB] | tone 3 [dB] | tonal [dB] | broadband [dB] | broadband peak [Hz] | total [dB] | total [dB(A)] |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hover, 5000 rpm | BEMT | 5e+03 | 0 | 0 | 167 | 26.9 | -1.16 | -30.6 | 26.9 | 28.8 | 4.14e+03 | 31 | 29.8 |
+| hover, 6723 rpm (the hover) | BEMT | 6.72e+03 | 0 | 0 | 224 | 34.9 | 11.9 | -12.4 | 35 | 36.5 | 5.57e+03 | 38.8 | 37.1 |
+| hover, 9000 rpm | BEMT | 9e+03 | 0 | 0 | 300 | 40.7 | 22.7 | 3.28 | 40.8 | 44.1 | 7.45e+03 | 45.8 | 43.8 |
+| axial, 4 m/s, 8000 rpm | BEMT | 8e+03 | 4 | 0 | 267 | 40.5 | 20.5 | -0.923 | 40.5 | 41.1 | 6.64e+03 | 43.8 | 41.4 |
+| axial, 8 m/s, 8000 rpm | BEMT | 8e+03 | 8 | 0 | 267 | 41.5 | 21.5 | 0.0971 | 41.6 | 41.2 | 6.67e+03 | 44.4 | 41.6 |
+| axial, 12 m/s, 8000 rpm | BEMT | 8e+03 | 12 | 0 | 267 | 41.6 | 21.6 | 0.187 | 41.7 | 41.5 | 6.73e+03 | 44.6 | 41.8 |
+| axial, 16 m/s, 8000 rpm | BEMT | 8e+03 | 16 | 0 | 267 | 40.3 | 20.3 | -1.08 | 40.4 | 41.8 | 6.81e+03 | 44.1 | 41.9 |
+| axial, 20 m/s, 8000 rpm | BEMT | 8e+03 | 20 | 0 | 267 | 36.6 | 16.6 | -4.81 | 36.7 | 42.2 | 6.91e+03 | 43.2 | 41.9 |
+| axial, 24 m/s, 8000 rpm | BEMT | 8e+03 | 24 | 0 | 267 | -506 | -506 | -506 | -506 | 42.6 | 7.04e+03 | 42.6 | 42.1 |
+| axial, 12 m/s, 10000 rpm | BEMT | 1e+04 | 12 | 0 | 333 | 47.1 | 30.8 | 13.2 | 47.2 | 47.1 | 8.37e+03 | 50.2 | 47 |
+| axial, 20 m/s, 10000 rpm | BEMT | 1e+04 | 20 | 0 | 333 | 46.6 | 30.4 | 12.8 | 46.7 | 47.6 | 8.51e+03 | 50.2 | 47.2 |
+| cruise, 16 m/s, 6562 rpm | BEMT | 6.56e+03 | 16 | 0 | 219 | 31.1 | 7.69 | -17.1 | 31.1 | 36.9 | 5.66e+03 | 38 | 37.3 |
+| oblique, 8 m/s at 15°, 8000 rpm | BEMT | 8e+03 | 8 | 15 | 267 | 41.5 | 21.5 | 0.0543 | 41.5 | 41.2 | 6.67e+03 | 44.4 | 41.6 |
+| oblique, 8 m/s at 30°, 8000 rpm | BEMT | 8e+03 | 8 | 30 | 267 | 41.3 | 21.3 | -0.0947 | 41.4 | 41.2 | 6.67e+03 | 44.3 | 41.6 |
+| oblique, 8 m/s at 45°, 8000 rpm | BEMT | 8e+03 | 8 | 45 | 267 | 41 | 21 | -0.403 | 41.1 | 41.2 | 6.67e+03 | 44.2 | 41.6 |
+| oblique, 8 m/s at 60°, 8000 rpm | BEMT | 8e+03 | 8 | 60 | 267 | 40.5 | 20.5 | -0.923 | 40.5 | 41.2 | 6.67e+03 | 43.9 | 41.5 |
+| oblique, 8 m/s at 90°, 8000 rpm | BEMT | 8e+03 | 8 | 90 | 267 | 38.8 | 18.8 | -2.63 | 38.8 | 41.2 | 6.67e+03 | 43.2 | 41.3 |
+| oblique, 14 m/s at 15°, 8000 rpm | BEMT | 8e+03 | 14 | 15 | 267 | 41.3 | 21.3 | -0.116 | 41.3 | 41.6 | 6.77e+03 | 44.5 | 41.9 |
+| oblique, 14 m/s at 30°, 8000 rpm | BEMT | 8e+03 | 14 | 30 | 267 | 41.6 | 21.6 | 0.17 | 41.6 | 41.6 | 6.77e+03 | 44.6 | 41.9 |
+| oblique, 14 m/s at 45°, 8000 rpm | BEMT | 8e+03 | 14 | 45 | 267 | 41.7 | 21.7 | 0.276 | 41.7 | 41.6 | 6.77e+03 | 44.7 | 41.9 |
+| oblique, 14 m/s at 60°, 8000 rpm | BEMT | 8e+03 | 14 | 60 | 267 | 41.3 | 21.3 | -0.08 | 41.4 | 41.6 | 6.77e+03 | 44.5 | 41.9 |
+
+
+## sound files
+
+|  | path | seconds | rms_db | full_scale_pa | total_db | total_dba | rpms | beat_hz |
+|---|---|---|---|---|---|---|---|---|
+| one_rotor_hover | output/38_prop_lab/sound/one_rotor_hover.wav | 3 | 38.7 | 0.0173 | 38.8 | 37.1 | — | — |
+| one_rotor_cruise_16ms | output/38_prop_lab/sound/one_rotor_cruise_16ms.wav | 3 | 37.9 | 0.0173 | 38 | 37.3 | — | — |
+| one_rotor_transition_8ms_45deg | output/38_prop_lab/sound/one_rotor_transition_8ms_45deg.wav | 3 | 44.1 | 0.0173 | — | — | — | — |
+| four_rotors_hover | output/38_prop_lab/sound/four_rotors_hover.wav | 3 | 44.2 | 0.0173 | 44.8 | — | [6759.653306224799, 6659.007687140006, 6659.007687140006, 6759.653306224799] | [3.3548539694931208] |
+| transition_hover_to_cruise | output/38_prop_lab/sound/transition_hover_to_cruise.wav | 6 | 43.3 | 0.0173 | — | — | — | — |
+
+
+## checks
+
+| check | value | target | holds | note |
+|---|---|---|---|---|
+| hover cases solved | 0 | ≥ 2 | ✘ |  |
+| axial cases solved | 0 | ≥ 5 | ✘ |  |
+| oblique cases solved | 0 | ≥ 4 | ✘ |  |
+| section fit: rms log ratio after | nan | ≤ 0.1 | ✘ | thrust and torque within ~10 % together |
+| cl scale within | 0 | ≤ 0.3 | ✔ | further than this and the generic section is the wrong model, not a scaled one |
+| cn factor within | 0 | ≤ 0.5 | ✔ |  |
+
+
+
+---
+
+## Kestrel — notebook 39, the CFD and FEA campaign
+
+*39_kestrel_tests — exported 2026-10-16 12:30*
+
+| key | value |
+|---|---|
+| date | 2026-10-16 |
+| quality | screening |
+
+
+## settings
+
+| key | value |
+|---|---|
+| CFD | NOT RUN |
+| quality | screening |
+| jobs | 1 |
+| processors | 4 |
+| campaigns | 4Q-1, 4Q-2, sections |
+| sweep only | no |
+| FEA | NOT RUN |
+
+
+## aircraft
+
+|  | mass [kg] | CG [mm] | Cd0 | transition points |
+|---|---|---|---|---|
+| 4Q-1 | 1.69 | 215 | 0.0665 | 16 |
+| 4Q-2 | 1.65 | 215 | 0.0234 | 16 |
+
+
+## prop_lab calibration
+
+| key | value |
+|---|---|
+| cl_scale | 1 |
+| cd_scale | 1 |
+| cn_factor | 1 |
+| on_file | no |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+
+
+## case lists
+
+| key | value |
+|---|---|
+| 4Q-1 |                                              status    α [deg]    V [m/s]              … |
+| 4Q-2 |                                              status    α [deg]    V [m/s]              … |
+
+
+## section slabs
+
+|  | status | α [deg] | V [m/s] | Re (chord) | AR | template | reads against |
+|---|---|---|---|---|---|---|---|
+| NACA 0012, α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+
+
+## campaign tables
+
+| key | value |
+|---|---|
+| 4Q-1 |                                              status    α [deg]    V [m/s]       source … |
+| 4Q-2 |                                              status    α [deg]    V [m/s]       source … |
+
+
+## slab results
+
+|  | status | α [deg] | V [m/s] | Re (chord) | AR | template | reads against |
+|---|---|---|---|---|---|---|---|
+| NACA 0012, α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 0012, α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+| NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
+
+
+## FEA (Talos)
+
+|  | part | bracing | kind | status | description | note |
+|---|---|---|---|---|---|---|
+| frame_x_A | frame | x | static | NOT RUN | 4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it… | NOT RUN: frame_x_A in _runs/kestrel_tests/fea/frame_x_A (run=False) |
+| frame_x_B | frame | x | static | NOT RUN | 4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5) | NOT RUN: frame_x_B in _runs/kestrel_tests/fea/frame_x_B (run=False) |
+| frame_x_C | frame | x | static | NOT RUN | the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diago… | NOT RUN: frame_x_C in _runs/kestrel_tests/fea/frame_x_C (run=False) |
+| frame_x_modes | frame | x | modes | NOT RUN | the first modes with the motor units as point masses at the stations |  |
+| frame_posts_A | frame | posts | static | NOT RUN | 4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it… | NOT RUN: frame_posts_A in _runs/kestrel_tests/fea/frame_posts_A (run=False) |
+| frame_posts_B | frame | posts | static | NOT RUN | 4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5) | NOT RUN: frame_posts_B in _runs/kestrel_tests/fea/frame_posts_B (run=False) |
+| frame_posts_C | frame | posts | static | NOT RUN | the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diago… | NOT RUN: frame_posts_C in _runs/kestrel_tests/fea/frame_posts_C (run=False) |
+| frame_posts_modes | frame | posts | modes | NOT RUN | the first modes with the motor units as point masses at the stations |  |
+| joint_post | joint |  | static | NOT RUN | the post's 5.5 N (ultimate) into the printed socket, the spar bore held; build axis z | NOT RUN: joint_post in _runs/kestrel_tests/fea/joint_post (run=False) |
+
+
+## plane-frame reference
+
+|  | bracing | case | spar stress, limit [MPa] | spar stress, ultimate [MPa] | tip deflection, upper, limit [mm] | tip deflection, ultimate [mm] | spar reserve (limit) | first mode, symmetric [Hz] | first mode, antisymmetric [Hz] |
+|---|---|---|---|---|---|---|---|---|---|
+| frame_x_A | x | A | 11.5 | 17.3 | -0.0909 | -0.136 | 34.8 | — | — |
+| frame_x_B | x | B | 12.7 | 19 | -0.146 | -0.219 | 31.6 | — | — |
+| frame_x_modes | x | modes | — | — | — | — | — | 261 | 1.64e+03 |
+| frame_posts_A | posts | A | 21.6 | 32.4 | 1.98 | 2.97 | 18.5 | — | — |
+| frame_posts_B | posts | B | 27.3 | 40.9 | 1.91 | 2.86 | 14.7 | — | — |
+| frame_posts_modes | posts | modes | — | — | — | — | — | 15.6 | 1.62e+03 |
+| frame_none_A | none | A | 21.6 | 32.4 | 1.98 | 2.97 | 18.5 | — | — |
+| frame_none_B | none | B | 52.1 | 78.1 | 6.38 | 9.57 | 7.68 | — | — |
+| frame_none_modes | none | modes | — | — | — | — | — | 15.6 | 15.6 |
+
+
+## verdicts, model against CFD
+
+|  | CFD (sweep) | model |
+|---|---|---|
+| 4Q-1 | {'passes': 8, 'of': 8, 'failures': []} | {'passes': 8, 'of': 8, 'failures': []} |
+
+
+## campaigns on file
+
+|  | solved | diverged | FAILED | NOT RUN | n | solved with rotor disks | solved bare | with rotor disks | source | quality | date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 4Q-1 | 10 | 2 | 12 | 0 | 24 | 0 | 10 | 14 | 40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | screening | 2026-10-16 |
+| 4Q-2 | 0 | 0 | 0 | 29 | 29 | 0 | 0 | 16 | 39_kestrel_tests | screening | 2026-10-16 |
+| sections | 0 | 0 | 0 | 8 | — | — | — | — | 39_kestrel_tests | screening | 2026-10-16 |
+
+
+## cases that did not solve
+
+|  | status | note | rotor disks | α [deg] | V [m/s] |
+|---|---|---|---|---|---|
+| 4Q-1: forward 3 s: α 53°, 1.5 m/s, T 4.63/4.64 N | diverged | diverged: /coefficients/ beyond 1e90 | yes | 52.9 | 1.51 |
+| 4Q-1: forward 3 s: α 45°, 2.1 m/s, T 4.73/4.80 N | FAILED | step solver failed (log not in the notebook) | yes | 45 | 2.1 |
+| 4Q-1: forward 3 s: α 30°, 3.8 m/s, T 4.91/5.11 N | FAILED | step solver failed (log not in the notebook) | yes | 29.9 | 3.83 |
+| 4Q-1: forward 3 s: α 20°, 5.8 m/s, T 4.85/5.14 N | diverged | diverged: /coefficients/ beyond 1e90 | yes | 19.9 | 5.82 |
+| 4Q-1: forward 3 s: α 15°, 7.3 m/s, T 4.54/4.88 N | FAILED | step solver failed (log not in the notebook) | yes | 15 | 7.35 |
+| 4Q-1: forward 3 s: α 10°, 9.3 m/s, T 3.29/3.79 N | FAILED | step solver failed (log not in the notebook) | yes | 9.99 | 9.31 |
+| 4Q-1: back 3 s: α 80°, 6.1 m/s, T 0.29/1.58 N | FAILED | step solver failed (log not in the notebook) | yes | 80.1 | 6.13 |
+| 4Q-1: back 3 s: α 60°, 7.8 m/s, T 0.25/1.98 N | FAILED | step solver failed (log not in the notebook) | yes | 60.1 | 7.78 |
+| 4Q-1: back 3 s: α 45°, 10.0 m/s, T 0.25/2.35 N | FAILED | step solver failed (log not in the notebook) | yes | 45 | 10 |
+| 4Q-1: back 3 s: α 30°, 13.0 m/s, T 0.25/2.02 N | FAILED | step solver failed (log not in the notebook) | yes | 30 | 13 |
+| 4Q-1: back 3 s: α 20°, 14.6 m/s, T 0.25/1.24 N | FAILED | step solver failed (log not in the notebook) | yes | 20 | 14.6 |
+| 4Q-1: back 3 s: α 15°, 15.2 m/s, T 0.25/1.16 N | FAILED | step solver failed (log not in the notebook) | yes | 15.1 | 15.2 |
+| 4Q-1: back 3 s: α 10°, 15.5 m/s, T 0.25/1.39 N | FAILED | step solver failed (log not in the notebook) | yes | 10 | 15.5 |
+| 4Q-1: hover: α 90°, 1.0 m/s, T 4.15/4.15 N | FAILED | step solver failed (log not in the notebook) | yes | 90 | 1 |
+
+
+## checks
+
+| check | value | target | holds | note |
+|---|---|---|---|---|
+| campaigns on file | 3 | ≥ 3 | ✔ |  |
+| FEA cases solved (Talos) | 0 | ≥ 9 | ✘ |  |
+| 4Q-1: blown cases solved | 0 | ≥ 1 | ✘ |  |
+| 4Q-1: bare sweep solved | 10 | ≥ 10 | ✔ |  |
+| 4Q-2: blown cases solved | 0 | ≥ 1 | ✘ |  |
+| 4Q-2: bare sweep solved | 0 | ≥ 10 | ✘ |  |
+| sections: slabs solved | 0 | ≥ 8 | ✘ |  |
+
+
+
+---
+
+## Kestrel-4Q — notebook 40, the design loop (Parts I and II)
+
+*40_kestrel — exported 2026-10-16 12:22*
 
 | key | value |
 |---|---|
 | mass [kg] | 1.69 |
 | 4Q-2 mass [kg] | 1.65 |
 | CFD | NOT RUN here |
-| FEA | NOT RUN (no CalculiX here; notebook 40) |
+| FEA | NOT RUN (no CalculiX here; notebook 39) |
 
 
 ## targets
@@ -762,7 +1106,7 @@
 | 0 — envelope | — | spec + layout + 5 assumptions | 2 | 0.12 | 2 | 11.3 | — | 6 | 108 | 21.7 | — | 6 / 6 | — |
 | 1 — CAD, Boreas, lattice, drag build-up | the CG target at 10 % of the chord (battery station) | kestrel_systems, Boreas, PEREGRINE lattice | 1.69 | 0.0955 | 2.89 | 10.9 | 0.0665 | 4.96 | 110 | 21.3 | — | 8 / 9 | battery inside its bay (not at a stop) |
 | 2 — transition model | elevons; pitch-over ≥ 3 s; back entry 13 m/s | kestrel_transition (model polar) | 1.69 | 0.0955 | 2.89 | 10.9 | 0.0665 | 4.96 | 110 | 21.3 | 8 of 8 (≥ 3 s) | 5 / 7 | rotors only, every schedule, cruise entry: passing, elevons, every schedule: passing |
-| 3 — CFD plugged in | the polar read against the CFD (sweep correction, 10 solved cases) | 38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | 1.69 | 0.164 | 2.89 | 13.3 | 0.0532 | 4.96 | 110 | 21.3 | 12 of 12 | 5 / 7 | CL max below 20°, CFD / the model's polar peak, blown cases solved |
+| 3 — CFD plugged in | the polar read against the CFD (sweep correction, 10 solved cases) | 40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | 1.69 | 0.164 | 2.89 | 13.3 | 0.0532 | 4.96 | 110 | 21.3 | 12 of 12 | 5 / 7 | CL max below 20°, CFD / the model's polar peak, blown cases solved |
 | 4 — payload bay (Part II) | pod 430 → 470 mm, ogive nose, the capsule on the axis | CAD bays + mass table + transitions | 2.28 | 0.0638 | 2.14 | 12.7 | 0.0665 | — | 120 | 19.5 | 8 of 8 | 5 / 6 | endurance at the cruise, full [min] |
 | 5 — elevons (Part II) | four 28 % surfaces from 275 mm to the tips, τ from Zephyr | CAD + kestrel_control + transitions | 1.73 | 0.0955 | 2.89 | 10.9 | 0.0665 | — | — | — | 11 of 12 | 3 / 4 | transitions, rotors only: passing |
 | 6 — faired struts (Part II) | teardrop sleeves on posts and diagonals | drag build-up + CAD + transitions | 1.74 | 0.0955 | 2.89 | 10.9 | 0.0234 | 11.5 | 59.2 | 39.6 | 10 of 12 | 4 / 5 | trim by thrust alone, faired |
@@ -817,7 +1161,7 @@
 |---|---|---|---|---|
 | lift slope, CFD / model | 0.986 | 0.85 – 1.15 | ✔ |  |
 | Cd0, CFD / model | 0.8 | ≤ 1.2 | ✔ | the model may be conservative, not optimistic |
-| CL max below 20° on the sweep's angles, CFD / model | 0.959 | ≥ 0.8 | ✔ | a 5° grid: the peak itself waits for the fine sweep (notebook 40) |
+| CL max below 20° on the sweep's angles, CFD / model | 0.959 | ≥ 0.8 | ✔ | a 5° grid: the peak itself waits for the fine sweep (notebook 39) |
 | CL max below 20°, CFD / the model's polar peak | 0.668 | ≥ 0.8 | ✘ | the model's 0.81 against the CFD's 0.54 at 15°: the stall speed and the entry rule hang… |
 | static margin from the CFD's Cmα [chords] | 0.164 | 0.05 – 0.2 | ✔ |  |
 | blown cases solved | 0 | ≥ 1 | ✘ | the transition points with rotor disks: the question this CFD was set up for |
@@ -865,7 +1209,7 @@
 | cl max, pick / NACA 0012 | 1.08 | ≥ 0.97 | ✔ |  |
 | section drag at the cruise cl, pick / 0012 (incl. the 0012's trim elevon) | 1.02 | ≤ 1.1 | ✔ |  |
 | surrogate confidence on the attached branch | 0.911 | ≥ 0.8 | ✔ |  |
-| CFD slab cases of the finalists solved | 0 | ≥ 1 | ✘ | NOT RUN here: notebook 40 |
+| CFD slab cases of the finalists solved | 0 | ≥ 1 | ✘ | NOT RUN here: notebook 39 |
 
 
 ## CHK8
@@ -882,7 +1226,7 @@
 
 | check | value | target | holds | note |
 |---|---|---|---|---|
-| FEA cases solved | 0 | ≥ 9 | ✘ | CalculiX: notebook 40 on a machine that has it |
+| FEA cases solved | 0 | ≥ 9 | ✘ | CalculiX: notebook 39 on a machine that has it |
 
 
 ## CHK9
@@ -905,7 +1249,7 @@
 | key | value |
 |---|---|
 | CFD | NOT RUN here |
-| FEA (Talos): frame x / posts, joint | NOT RUN (no CalculiX here; notebook 40) |
+| FEA (Talos): frame x / posts, joint | NOT RUN (no CalculiX here; notebook 39) |
 | CAD | run |
 | mass table | run |
 | propulsion (Boreas tables) | run |
@@ -916,7 +1260,7 @@
 | truss frame + ground stance | run |
 | Part II: elevons, faired struts, bracing, 4Q-2 | run (8 of 12 4Q-2 transitions pass) |
 | Part II: reflexed section (Zephyr) | run |
-| X-wing | its own notebook, 39_xwing |
+| X-wing | its own notebook, 41_xwing |
 
 
 ## prop_lab calibration
@@ -927,15 +1271,15 @@
 | cd_scale | 1 |
 | cn_factor | 1 |
 | on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
+| meta | {'source': '38_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
 
 
 
 ---
 
-## X-wing — notebook 39 (X-A and X-B against Kestrel-4Q and 4Q-2)
+## X-wing — notebook 41 (X-A and X-B against Kestrel-4Q and 4Q-2)
 
-*39_xwing — exported 2026-10-16 12:34*
+*41_xwing — exported 2026-10-16 12:34*
 
 ## variants
 
@@ -1104,348 +1448,4 @@
 | Kestrel-4Q-2 (elevons, faired posts, no X) | 0.369 | 0.357 | 0.107 | 2.57 | 46.7 | 49.3 | 1.47 | 0.394 | 6.13 | 57.7 | 401 | 2.2 | 68.7 | 13.4 |
 | X-A | 0.355 | 0.6 | 0.35 | 6.5 | 9.57 | 16.1 | 3.54 | 0.394 | 6.11 | 50.4 | 352 | 1.62 | 44.6 | 20.6 |
 | X-B | 0.21 | 0.82 | 0.57 | 6.65 | 8.58 | 15.2 | 3.48 | 0.394 | 12.6 | 42.6 | 190 | 2.73 | 89.2 | 10.3 |
-
-
-
----
-
-## Kestrel — notebook 40, the CFD and FEA campaign
-
-*40_kestrel_tests — exported 2026-10-16 12:30*
-
-| key | value |
-|---|---|
-| date | 2026-10-16 |
-| quality | screening |
-
-
-## settings
-
-| key | value |
-|---|---|
-| CFD | NOT RUN |
-| quality | screening |
-| jobs | 1 |
-| processors | 4 |
-| campaigns | 4Q-1, 4Q-2, sections |
-| sweep only | no |
-| FEA | NOT RUN |
-
-
-## aircraft
-
-|  | mass [kg] | CG [mm] | Cd0 | transition points |
-|---|---|---|---|---|
-| 4Q-1 | 1.69 | 215 | 0.0665 | 16 |
-| 4Q-2 | 1.65 | 215 | 0.0234 | 16 |
-
-
-## prop_lab calibration
-
-| key | value |
-|---|---|
-| cl_scale | 1 |
-| cd_scale | 1 |
-| cn_factor | 1 |
-| on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
-
-
-## case lists
-
-| key | value |
-|---|---|
-| 4Q-1 |                                              status    α [deg]    V [m/s]              … |
-| 4Q-2 |                                              status    α [deg]    V [m/s]              … |
-
-
-## section slabs
-
-|  | status | α [deg] | V [m/s] | Re (chord) | AR | template | reads against |
-|---|---|---|---|---|---|---|---|
-| NACA 0012, α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-
-
-## campaign tables
-
-| key | value |
-|---|---|
-| 4Q-1 |                                              status    α [deg]    V [m/s]       source … |
-| 4Q-2 |                                              status    α [deg]    V [m/s]       source … |
-
-
-## slab results
-
-|  | status | α [deg] | V [m/s] | Re (chord) | AR | template | reads against |
-|---|---|---|---|---|---|---|---|
-| NACA 0012, α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 0012, α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab | NOT RUN | 0 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab | NOT RUN | 4 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab | NOT RUN | 8 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-| NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab | NOT RUN | 12 | 16 | 1.53e+05 | 8 | rans_ksst_external | the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's |
-
-
-## FEA (Talos)
-
-|  | part | bracing | kind | status | description | note |
-|---|---|---|---|---|---|---|
-| frame_x_A | frame | x | static | NOT RUN | 4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it… | NOT RUN: frame_x_A in _runs/kestrel_tests/fea/frame_x_A (run=False) |
-| frame_x_B | frame | x | static | NOT RUN | 4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5) | NOT RUN: frame_x_B in _runs/kestrel_tests/fea/frame_x_B (run=False) |
-| frame_x_C | frame | x | static | NOT RUN | the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diago… | NOT RUN: frame_x_C in _runs/kestrel_tests/fea/frame_x_C (run=False) |
-| frame_x_modes | frame | x | modes | NOT RUN | the first modes with the motor units as point masses at the stations |  |
-| frame_posts_A | frame | posts | static | NOT RUN | 4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it… | NOT RUN: frame_posts_A in _runs/kestrel_tests/fea/frame_posts_A (run=False) |
-| frame_posts_B | frame | posts | static | NOT RUN | 4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5) | NOT RUN: frame_posts_B in _runs/kestrel_tests/fea/frame_posts_B (run=False) |
-| frame_posts_C | frame | posts | static | NOT RUN | the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diago… | NOT RUN: frame_posts_C in _runs/kestrel_tests/fea/frame_posts_C (run=False) |
-| frame_posts_modes | frame | posts | modes | NOT RUN | the first modes with the motor units as point masses at the stations |  |
-| joint_post | joint |  | static | NOT RUN | the post's 5.5 N (ultimate) into the printed socket, the spar bore held; build axis z | NOT RUN: joint_post in _runs/kestrel_tests/fea/joint_post (run=False) |
-
-
-## plane-frame reference
-
-|  | bracing | case | spar stress, limit [MPa] | spar stress, ultimate [MPa] | tip deflection, upper, limit [mm] | tip deflection, ultimate [mm] | spar reserve (limit) | first mode, symmetric [Hz] | first mode, antisymmetric [Hz] |
-|---|---|---|---|---|---|---|---|---|---|
-| frame_x_A | x | A | 11.5 | 17.3 | -0.0909 | -0.136 | 34.8 | — | — |
-| frame_x_B | x | B | 12.7 | 19 | -0.146 | -0.219 | 31.6 | — | — |
-| frame_x_modes | x | modes | — | — | — | — | — | 261 | 1.64e+03 |
-| frame_posts_A | posts | A | 21.6 | 32.4 | 1.98 | 2.97 | 18.5 | — | — |
-| frame_posts_B | posts | B | 27.3 | 40.9 | 1.91 | 2.86 | 14.7 | — | — |
-| frame_posts_modes | posts | modes | — | — | — | — | — | 15.6 | 1.62e+03 |
-| frame_none_A | none | A | 21.6 | 32.4 | 1.98 | 2.97 | 18.5 | — | — |
-| frame_none_B | none | B | 52.1 | 78.1 | 6.38 | 9.57 | 7.68 | — | — |
-| frame_none_modes | none | modes | — | — | — | — | — | 15.6 | 15.6 |
-
-
-## verdicts, model against CFD
-
-|  | CFD (sweep) | model |
-|---|---|---|
-| 4Q-1 | {'passes': 8, 'of': 8, 'failures': []} | {'passes': 8, 'of': 8, 'failures': []} |
-
-
-## campaigns on file
-
-|  | solved | diverged | FAILED | NOT RUN | n | solved with rotor disks | solved bare | with rotor disks | source | quality | date |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 4Q-1 | 10 | 2 | 12 | 0 | 24 | 0 | 10 | 14 | 38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening qua… | screening | 2026-10-16 |
-| 4Q-2 | 0 | 0 | 0 | 29 | 29 | 0 | 0 | 16 | 40_kestrel_tests | screening | 2026-10-16 |
-| sections | 0 | 0 | 0 | 8 | — | — | — | — | 40_kestrel_tests | screening | 2026-10-16 |
-
-
-## cases that did not solve
-
-|  | status | note | rotor disks | α [deg] | V [m/s] |
-|---|---|---|---|---|---|
-| 4Q-1: forward 3 s: α 53°, 1.5 m/s, T 4.63/4.64 N | diverged | diverged: /coefficients/ beyond 1e90 | yes | 52.9 | 1.51 |
-| 4Q-1: forward 3 s: α 45°, 2.1 m/s, T 4.73/4.80 N | FAILED | step solver failed (log not in the notebook) | yes | 45 | 2.1 |
-| 4Q-1: forward 3 s: α 30°, 3.8 m/s, T 4.91/5.11 N | FAILED | step solver failed (log not in the notebook) | yes | 29.9 | 3.83 |
-| 4Q-1: forward 3 s: α 20°, 5.8 m/s, T 4.85/5.14 N | diverged | diverged: /coefficients/ beyond 1e90 | yes | 19.9 | 5.82 |
-| 4Q-1: forward 3 s: α 15°, 7.3 m/s, T 4.54/4.88 N | FAILED | step solver failed (log not in the notebook) | yes | 15 | 7.35 |
-| 4Q-1: forward 3 s: α 10°, 9.3 m/s, T 3.29/3.79 N | FAILED | step solver failed (log not in the notebook) | yes | 9.99 | 9.31 |
-| 4Q-1: back 3 s: α 80°, 6.1 m/s, T 0.29/1.58 N | FAILED | step solver failed (log not in the notebook) | yes | 80.1 | 6.13 |
-| 4Q-1: back 3 s: α 60°, 7.8 m/s, T 0.25/1.98 N | FAILED | step solver failed (log not in the notebook) | yes | 60.1 | 7.78 |
-| 4Q-1: back 3 s: α 45°, 10.0 m/s, T 0.25/2.35 N | FAILED | step solver failed (log not in the notebook) | yes | 45 | 10 |
-| 4Q-1: back 3 s: α 30°, 13.0 m/s, T 0.25/2.02 N | FAILED | step solver failed (log not in the notebook) | yes | 30 | 13 |
-| 4Q-1: back 3 s: α 20°, 14.6 m/s, T 0.25/1.24 N | FAILED | step solver failed (log not in the notebook) | yes | 20 | 14.6 |
-| 4Q-1: back 3 s: α 15°, 15.2 m/s, T 0.25/1.16 N | FAILED | step solver failed (log not in the notebook) | yes | 15.1 | 15.2 |
-| 4Q-1: back 3 s: α 10°, 15.5 m/s, T 0.25/1.39 N | FAILED | step solver failed (log not in the notebook) | yes | 10 | 15.5 |
-| 4Q-1: hover: α 90°, 1.0 m/s, T 4.15/4.15 N | FAILED | step solver failed (log not in the notebook) | yes | 90 | 1 |
-
-
-## checks
-
-| check | value | target | holds | note |
-|---|---|---|---|---|
-| campaigns on file | 3 | ≥ 3 | ✔ |  |
-| FEA cases solved (Talos) | 0 | ≥ 9 | ✘ |  |
-| 4Q-1: blown cases solved | 0 | ≥ 1 | ✘ |  |
-| 4Q-1: bare sweep solved | 10 | ≥ 10 | ✔ |  |
-| 4Q-2: blown cases solved | 0 | ≥ 1 | ✘ |  |
-| 4Q-2: bare sweep solved | 0 | ≥ 10 | ✘ |  |
-| sections: slabs solved | 0 | ≥ 8 | ✘ |  |
-
-
-
----
-
-## prop_lab — notebook 41, the 9x6 alone
-
-*41_prop_lab — exported 2026-10-16 12:30*
-
-| key | value |
-|---|---|
-| date | 2026-10-16 |
-| quality | screening |
-
-
-## settings
-
-| key | value |
-|---|---|
-| CFD | NOT RUN |
-| quality | screening |
-| kinds | hover, axial, oblique |
-
-
-## the 9x6
-
-| key | value |
-|---|---|
-| diameter | 229 |
-| pitch | 152 |
-| blades | 2 |
-| hub_diameter | 16 |
-| hub_height | 10 |
-| bore | 5 |
-| chord_root | 14 |
-| chord_max | 21 |
-| chord_tip | 8 |
-| thickness | 0.1 |
-| camber | 0.04 |
-| stations | 12 |
-
-
-## blade rows (Boreas)
-
-|  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| r [m] | 0.0137 | 0.0229 | 0.032 | 0.0411 | 0.0503 | 0.0594 | 0.0686 | 0.0777 | 0.0869 | 0.096 | 0.105 | 0.114 |
-| twist [deg] | 60.5 | 46.7 | 37.2 | 30.5 | 25.7 | 22.2 | 19.5 | 17.3 | 15.6 | 14.2 | 13 | 12 |
-| chord [m] | 0.014 | 0.0158 | 0.0176 | 0.0195 | 0.021 | 0.0202 | 0.0189 | 0.0172 | 0.0153 | 0.0131 | 0.0106 | 0.008 |
-
-
-## rpm
-
-| key | value |
-|---|---|
-| hover | 6.72e+03 |
-| cruise | 6.56e+03 |
-
-
-## cases: CFD against BEMT
-
-|  | kind | rpm | V [m/s] | angle [deg] | J | BEMT T [N] | BEMT Q [N·m] | BEMT P [W] | BEMT η / FM | De Young CNα [1/rad] | status | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| hover, 5000 rpm | hover | 5e+03 | 0 | 0 | 0 | 2.3 | 0.0371 | 19.4 | 0.565 | — | NOT RUN |  |
-| hover, 6723 rpm (the hover) | hover | 6.72e+03 | 0 | 0 | 0 | 4.15 | 0.067 | 47.2 | 0.565 | — | NOT RUN |  |
-| hover, 9000 rpm | hover | 9e+03 | 0 | 0 | 0 | 7.44 | 0.12 | 113 | 0.565 | — | NOT RUN |  |
-| axial, 4 m/s, 8000 rpm | axial | 8e+03 | 4 | 0 | 0.131 | 5.44 | 0.0979 | 82 | 0.265 | — | NOT RUN |  |
-| axial, 8 m/s, 8000 rpm | axial | 8e+03 | 8 | 0 | 0.262 | 4.7 | 0.0955 | 80 | 0.47 | — | NOT RUN |  |
-| axial, 12 m/s, 8000 rpm | axial | 8e+03 | 12 | 0 | 0.394 | 3.68 | 0.0854 | 71.6 | 0.616 | — | NOT RUN |  |
-| axial, 16 m/s, 8000 rpm | axial | 8e+03 | 16 | 0 | 0.525 | 2.41 | 0.0659 | 55.2 | 0.697 | — | NOT RUN |  |
-| axial, 20 m/s, 8000 rpm | axial | 8e+03 | 20 | 0 | 0.656 | 1.01 | 0.0372 | 31.1 | 0.649 | — | NOT RUN |  |
-| axial, 24 m/s, 8000 rpm | axial | 8e+03 | 24 | 0 | 0.787 | -0.663 | -0.00662 | -5.54 | 0 | — | NOT RUN |  |
-| axial, 12 m/s, 10000 rpm | axial | 1e+04 | 12 | 0 | 0.315 | 6.76 | 0.145 | 151 | 0.536 | — | NOT RUN |  |
-| axial, 20 m/s, 10000 rpm | axial | 1e+04 | 20 | 0 | 0.525 | 3.76 | 0.103 | 108 | 0.697 | — | NOT RUN |  |
-| cruise, 16 m/s, 6562 rpm | axial | 6.56e+03 | 16 | 0 | 0.64 | 0.8 | 0.0278 | 19.1 | 0.671 | — | NOT RUN |  |
-| oblique, 8 m/s at 15°, 8000 rpm | oblique | 8e+03 | 8 | 15 | 0.254 | 4.76 | 0.0959 | 80.3 | 0.458 | 0.319 | NOT RUN |  |
-| oblique, 8 m/s at 30°, 8000 rpm | oblique | 8e+03 | 8 | 30 | 0.227 | 4.93 | 0.0968 | 81.1 | 0.421 | 0.323 | NOT RUN |  |
-| oblique, 8 m/s at 45°, 8000 rpm | oblique | 8e+03 | 8 | 45 | 0.186 | 5.17 | 0.0977 | 81.8 | 0.357 | 0.328 | NOT RUN |  |
-| oblique, 8 m/s at 60°, 8000 rpm | oblique | 8e+03 | 8 | 60 | 0.131 | 5.44 | 0.0979 | 82 | 0.265 | 0.333 | NOT RUN |  |
-| oblique, 8 m/s at 90°, 8000 rpm | oblique | 8e+03 | 8 | 90 | 1.61e-17 | 5.88 | 0.0949 | 79.5 | 3.62e-17 | 0.342 | NOT RUN |  |
-| oblique, 14 m/s at 15°, 8000 rpm | oblique | 8e+03 | 14 | 15 | 0.444 | 3.21 | 0.079 | 66.2 | 0.656 | 0.214 | NOT RUN |  |
-| oblique, 14 m/s at 30°, 8000 rpm | oblique | 8e+03 | 14 | 30 | 0.398 | 3.64 | 0.085 | 71.2 | 0.62 | 0.219 | NOT RUN |  |
-| oblique, 14 m/s at 45°, 8000 rpm | oblique | 8e+03 | 14 | 45 | 0.325 | 4.25 | 0.0918 | 76.9 | 0.547 | 0.227 | NOT RUN |  |
-| oblique, 14 m/s at 60°, 8000 rpm | oblique | 8e+03 | 14 | 60 | 0.23 | 4.91 | 0.0967 | 81 | 0.424 | 0.234 | NOT RUN |  |
-
-
-## campaign
-
-| key | value |
-|---|---|
-| solved | 0 |
-| diverged | 0 |
-| FAILED | 0 |
-| NOT RUN | 21 |
-| n | 21 |
-| by kind | {'hover': 0, 'axial': 0, 'oblique': 0} |
-
-
-## section fit
-
-| key | value |
-|---|---|
-| cl_scale | — |
-| cd_scale | — |
-| n_cases | 0 |
-| rms_log_ratio_before | — |
-| rms_log_ratio_after | — |
-
-
-## normal-force fit
-
-| key | value |
-|---|---|
-| cn_factor | — |
-| n_cases | 0 |
-
-
-## calibration on file
-
-| key | value |
-|---|---|
-| cl_scale | 1 |
-| cd_scale | 1 |
-| cn_factor | 1 |
-| on_file | no |
-| meta | {'source': '41_prop_lab', 'quality': 'screening', 'date': '2026-10-16', 'propeller': "9… |
-
-
-## noise at the listener
-
-|  | source | rpm | V [m/s] | angle [deg] | BPF [Hz] | tone 1 [dB] | tone 2 [dB] | tone 3 [dB] | tonal [dB] | broadband [dB] | broadband peak [Hz] | total [dB] | total [dB(A)] |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| hover, 5000 rpm | BEMT | 5e+03 | 0 | 0 | 167 | 26.9 | -1.16 | -30.6 | 26.9 | 28.8 | 4.14e+03 | 31 | 29.8 |
-| hover, 6723 rpm (the hover) | BEMT | 6.72e+03 | 0 | 0 | 224 | 34.9 | 11.9 | -12.4 | 35 | 36.5 | 5.57e+03 | 38.8 | 37.1 |
-| hover, 9000 rpm | BEMT | 9e+03 | 0 | 0 | 300 | 40.7 | 22.7 | 3.28 | 40.8 | 44.1 | 7.45e+03 | 45.8 | 43.8 |
-| axial, 4 m/s, 8000 rpm | BEMT | 8e+03 | 4 | 0 | 267 | 40.5 | 20.5 | -0.923 | 40.5 | 41.1 | 6.64e+03 | 43.8 | 41.4 |
-| axial, 8 m/s, 8000 rpm | BEMT | 8e+03 | 8 | 0 | 267 | 41.5 | 21.5 | 0.0971 | 41.6 | 41.2 | 6.67e+03 | 44.4 | 41.6 |
-| axial, 12 m/s, 8000 rpm | BEMT | 8e+03 | 12 | 0 | 267 | 41.6 | 21.6 | 0.187 | 41.7 | 41.5 | 6.73e+03 | 44.6 | 41.8 |
-| axial, 16 m/s, 8000 rpm | BEMT | 8e+03 | 16 | 0 | 267 | 40.3 | 20.3 | -1.08 | 40.4 | 41.8 | 6.81e+03 | 44.1 | 41.9 |
-| axial, 20 m/s, 8000 rpm | BEMT | 8e+03 | 20 | 0 | 267 | 36.6 | 16.6 | -4.81 | 36.7 | 42.2 | 6.91e+03 | 43.2 | 41.9 |
-| axial, 24 m/s, 8000 rpm | BEMT | 8e+03 | 24 | 0 | 267 | -506 | -506 | -506 | -506 | 42.6 | 7.04e+03 | 42.6 | 42.1 |
-| axial, 12 m/s, 10000 rpm | BEMT | 1e+04 | 12 | 0 | 333 | 47.1 | 30.8 | 13.2 | 47.2 | 47.1 | 8.37e+03 | 50.2 | 47 |
-| axial, 20 m/s, 10000 rpm | BEMT | 1e+04 | 20 | 0 | 333 | 46.6 | 30.4 | 12.8 | 46.7 | 47.6 | 8.51e+03 | 50.2 | 47.2 |
-| cruise, 16 m/s, 6562 rpm | BEMT | 6.56e+03 | 16 | 0 | 219 | 31.1 | 7.69 | -17.1 | 31.1 | 36.9 | 5.66e+03 | 38 | 37.3 |
-| oblique, 8 m/s at 15°, 8000 rpm | BEMT | 8e+03 | 8 | 15 | 267 | 41.5 | 21.5 | 0.0543 | 41.5 | 41.2 | 6.67e+03 | 44.4 | 41.6 |
-| oblique, 8 m/s at 30°, 8000 rpm | BEMT | 8e+03 | 8 | 30 | 267 | 41.3 | 21.3 | -0.0947 | 41.4 | 41.2 | 6.67e+03 | 44.3 | 41.6 |
-| oblique, 8 m/s at 45°, 8000 rpm | BEMT | 8e+03 | 8 | 45 | 267 | 41 | 21 | -0.403 | 41.1 | 41.2 | 6.67e+03 | 44.2 | 41.6 |
-| oblique, 8 m/s at 60°, 8000 rpm | BEMT | 8e+03 | 8 | 60 | 267 | 40.5 | 20.5 | -0.923 | 40.5 | 41.2 | 6.67e+03 | 43.9 | 41.5 |
-| oblique, 8 m/s at 90°, 8000 rpm | BEMT | 8e+03 | 8 | 90 | 267 | 38.8 | 18.8 | -2.63 | 38.8 | 41.2 | 6.67e+03 | 43.2 | 41.3 |
-| oblique, 14 m/s at 15°, 8000 rpm | BEMT | 8e+03 | 14 | 15 | 267 | 41.3 | 21.3 | -0.116 | 41.3 | 41.6 | 6.77e+03 | 44.5 | 41.9 |
-| oblique, 14 m/s at 30°, 8000 rpm | BEMT | 8e+03 | 14 | 30 | 267 | 41.6 | 21.6 | 0.17 | 41.6 | 41.6 | 6.77e+03 | 44.6 | 41.9 |
-| oblique, 14 m/s at 45°, 8000 rpm | BEMT | 8e+03 | 14 | 45 | 267 | 41.7 | 21.7 | 0.276 | 41.7 | 41.6 | 6.77e+03 | 44.7 | 41.9 |
-| oblique, 14 m/s at 60°, 8000 rpm | BEMT | 8e+03 | 14 | 60 | 267 | 41.3 | 21.3 | -0.08 | 41.4 | 41.6 | 6.77e+03 | 44.5 | 41.9 |
-
-
-## sound files
-
-|  | path | seconds | rms_db | full_scale_pa | total_db | total_dba | rpms | beat_hz |
-|---|---|---|---|---|---|---|---|---|
-| one_rotor_hover | output/41_prop_lab/sound/one_rotor_hover.wav | 3 | 38.7 | 0.0173 | 38.8 | 37.1 | — | — |
-| one_rotor_cruise_16ms | output/41_prop_lab/sound/one_rotor_cruise_16ms.wav | 3 | 37.9 | 0.0173 | 38 | 37.3 | — | — |
-| one_rotor_transition_8ms_45deg | output/41_prop_lab/sound/one_rotor_transition_8ms_45deg.wav | 3 | 44.1 | 0.0173 | — | — | — | — |
-| four_rotors_hover | output/41_prop_lab/sound/four_rotors_hover.wav | 3 | 44.2 | 0.0173 | 44.8 | — | [6759.653306224799, 6659.007687140006, 6659.007687140006, 6759.653306224799] | [3.3548539694931208] |
-| transition_hover_to_cruise | output/41_prop_lab/sound/transition_hover_to_cruise.wav | 6 | 43.3 | 0.0173 | — | — | — | — |
-
-
-## checks
-
-| check | value | target | holds | note |
-|---|---|---|---|---|
-| hover cases solved | 0 | ≥ 2 | ✘ |  |
-| axial cases solved | 0 | ≥ 5 | ✘ |  |
-| oblique cases solved | 0 | ≥ 4 | ✘ |  |
-| section fit: rms log ratio after | nan | ≤ 0.1 | ✘ | thrust and torque within ~10 % together |
-| cl scale within | 0 | ≤ 0.3 | ✔ | further than this and the generic section is the wrong model, not a scaled one |
-| cn factor within | 0 | ≤ 0.5 | ✔ |  |
 
