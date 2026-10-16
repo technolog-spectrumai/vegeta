@@ -81,6 +81,9 @@ class Kestrel4Q(Design):
         # truss
         Parameter("post_diameter", 8.0, "mm", min=3, description="carbon interplane posts at the motor stations"),
         Parameter("diagonal_diameter", 6.0, "mm", min=2, description="carbon diagonals: an X in each bay"),
+        Parameter("strut_fairing", False, "", description="posts and diagonals in streamlined sleeves (Kestrel-4Q-2's option)"),
+        Parameter("fairing_tc", 0.33, "", min=0.15, max=0.6, description="the sleeve's thickness / chord (a symmetric NACA 00xx)"),
+        Parameter("fairing_wall", 0.8, "mm", min=0.2, description="sleeve material outside the tube at its thickest"),
         # tail and feet
         Parameter("x_feet", 540.0, "mm", min=200, description="the feet's ends from the nose tip: the ground when standing"),
         Parameter("fin_height", 190.0, "mm", min=20, description="dorsal fin above the upper wing"),
@@ -178,6 +181,16 @@ class Kestrel4Q(Design):
         cam = cq.Workplane("XY").sphere(r).translate((r, 0, -0.05 * gap))
         return body.union(cam)
 
+    def _faired(self, a, b, d, p):
+        """A tube from a to b inside a streamlined sleeve whose chord lies along x (the free stream in cruise and the
+        slipstream in the hover). The struts lie in the y-z plane, so the section perpendicular to the strut is the
+        streamwise section: no sweep, no stretching."""
+        a, b = cq.Vector(*a), cq.Vector(*b)
+        axis = (b - a).normalized()
+        c, pts = fairing_section(d, p["fairing_tc"], p["fairing_wall"])
+        plane = cq.Plane(origin=a, xDir=cq.Vector(1, 0, 0), normal=axis)
+        return cq.Workplane(plane).polyline(pts).close().extrude((b - a).Length)
+
     def _rod(self, a, b, d):
         a, b = cq.Vector(*a), cq.Vector(*b)
         return cq.Workplane("XY").add(cq.Solid.makeCylinder(d / 2, (b - a).Length, a, b - a))
@@ -187,9 +200,10 @@ class Kestrel4Q(Design):
         y_m, y_in = p["motor_y"], p["pod_width"] / 2
         out = None
         for s in (1, -1):
-            parts = [self._rod((x, s * y_m, -h), (x, s * y_m, h), p["post_diameter"]),
-                     self._rod((x, s * y_in, h), (x, s * y_m, -h), p["diagonal_diameter"]),
-                     self._rod((x, s * y_in, -h), (x, s * y_m, h), p["diagonal_diameter"])]
+            strut = (lambda a, b, d: self._faired(a, b, d, p)) if p["strut_fairing"] else self._rod
+            parts = [strut((x, s * y_m, -h), (x, s * y_m, h), p["post_diameter"]),
+                     strut((x, s * y_in, h), (x, s * y_m, -h), p["diagonal_diameter"]),
+                     strut((x, s * y_in, -h), (x, s * y_m, h), p["diagonal_diameter"])]
             for q in parts:
                 out = q if out is None else out.union(q)
         return out
@@ -245,6 +259,16 @@ class Kestrel4Q(Design):
             x0 = p["rotation_x"]
             shape = shape.rotate((x0, 0, 0), (x0, 1, 0), a)
         return shape
+
+
+def fairing_section(d, tc=0.33, wall=0.8, n=30, tube_at=0.30):
+    """A strut sleeve around a tube of diameter ``d`` [mm]: a symmetric NACA 00xx of thickness ratio ``tc`` whose
+    thickest part (30 % chord) clears the tube by ``wall`` each side. Returns (chord, closed point list (x, t)) with the
+    tube's centre at (0, 0): the leading edge at −``tube_at`` × chord."""
+    c = (d + 2 * wall) / tc
+    up, lo = naca4(0.0, 0.4, tc, n=n, te_cut=1.0)
+    pts = [(c * (u - tube_at), c * v) for u, v in up] + [(c * (u - tube_at), c * v) for u, v in lo[::-1][1:-1]]
+    return c, pts
 
 
 def resolve(p=None, **kw) -> dict:

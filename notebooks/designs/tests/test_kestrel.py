@@ -287,3 +287,18 @@ def test_ground_stance(CI):
     assert g["least tip-over angle [deg]"] > 30.0
     assert g["wind that tips it, broadside [m/s]"] < g["wind that tips it, edge-on [m/s]"]
     assert g["foot rod margin, two feet first"] > 2.0
+
+
+def test_fairing_section_and_the_faired_truss(P):
+    c, pts = kestrel.fairing_section(8.0, 0.33, 0.8)
+    xs = [x for x, _ in pts]
+    ts = [t for _, t in pts]
+    assert c == pytest.approx(9.6 / 0.33)
+    assert min(xs) == pytest.approx(-0.3 * c, abs=0.05) and max(xs) == pytest.approx(0.7 * c, abs=0.05)   # the tube at 30 % chord
+    assert max(ts) - min(ts) == pytest.approx(9.6, rel=0.02)                                  # 0.8 mm outside the Ø8 tube
+    pytest.importorskip("cadquery")
+    d = kestrel.Kestrel4Q()
+    bare, faired = d.generate(part="truss").measure(), d.generate(part="truss", strut_fairing=True).measure()
+    assert faired["valid"] and faired["volume"] > 3 * bare["volume"]
+    assert faired["dimensions"][0] == pytest.approx(c, abs=0.5)                                # the chords along x
+    assert faired["dimensions"][1] == pytest.approx(bare["dimensions"][1], abs=3.0)           # same footprint seen from the front

@@ -182,3 +182,75 @@ def polar_figure(pol, cfd=None, ax=None):
             ax[0].plot(sv["α [deg]"].astype(float), sv["CD"].astype(float), "s", label="CFD, bare airframe CD")
             ax[0].legend(fontsize=8)
     return ax
+
+
+def _tri_plot(ax, g, a, b, tol=0.3, color=None):
+    from matplotlib.collections import PolyCollection
+    v, t = g.tessellate(tol)
+    tris = v[t]
+    ax.add_collection(PolyCollection(tris[:, :, [a, b]], facecolor=color or COL["wing"], edgecolor=COL["edge"], linewidths=0.05))
+
+
+def fairing_figure(p=None, V: float = 16.0):
+    """Kestrel-4Q-2's faired struts: the sections to scale (the round tube, its sleeve), the drag per metre of strut at
+    ``V``, one bay seen from above and from the front, and the whole aircraft with the faired truss."""
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    import kestrel_flight as kf
+    pr = kestrel.resolve(p)
+    q = 0.5 * kf.RHO * V ** 2
+    fig = plt.figure(figsize=(16, 10))
+    # 1. the sections
+    ax = fig.add_subplot(2, 3, 1)
+    for k, (d, dy) in enumerate(((pr["post_diameter"], 0.0), (pr["diagonal_diameter"], -22.0))):
+        c, pts = kestrel.fairing_section(d, pr["fairing_tc"], pr["fairing_wall"])
+        P = np.array(pts + pts[:1])
+        ax.fill(P[:, 0], P[:, 1] + dy, color="#cfd8e0", ec=COL["edge"])
+        ax.add_patch(plt.Circle((0, dy), d / 2, color="#202020"))
+        ax.add_patch(plt.Circle((-30, dy), d / 2, color="#202020"))
+        ax.text(-30, dy - d / 2 - 2, f"round Ø{d:g}", ha="center", va="top", fontsize=8)
+        ax.text(c * 0.7 + 1, dy, f"faired: chord {c:.0f} mm,\nthickness {d + 2 * pr['fairing_wall']:.1f} mm", va="center", fontsize=8)
+    ax.annotate("", xy=(-10, 14), xytext=(-42, 14), arrowprops=dict(arrowstyle="->", color="#2a6fb0", lw=2))
+    ax.text(-26, 16, "air (cruise; the slipstream in the hover)", ha="center", fontsize=8, color="#2a6fb0")
+    ax.set(aspect="equal", xlim=(-45, 45), ylim=(-36, 22), xlabel="x [mm] (along the pod's axis)", title="the strut sections, to scale")
+    # 2. the drag per metre
+    ax = fig.add_subplot(2, 3, 4)
+    rows = []
+    for d, name in ((pr["post_diameter"], "post Ø8"), (pr["diagonal_diameter"], "diagonal Ø6")):
+        rows += [(f"{name}\nround", q * kf.CD_CYLINDER * d / 1000), (f"{name}\nfaired", q * kf.CD_FAIRED * d / 1000)]
+    ax.bar([r[0] for r in rows], [r[1] for r in rows], color=["#c06000", "#2a6fb0"] * 2)
+    for i, (_, v) in enumerate(rows):
+        ax.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=9)
+    dr, dfa = kf.drag_buildup(p), kf.drag_buildup(p, faired=True)
+    ax.set(ylabel="N per metre of strut", title=f"drag per metre at {V:g} m/s — the whole truss {q * dr['bracing_m2']:.2f} N → {q * dfa['bracing_m2']:.2f} N\n"
+           f"(Cd0 {dr['Cd0']:.3f} → {dfa['Cd0']:.3f})")
+    # 3–4. one bay, from above and from the front
+    d = kestrel.Kestrel4Q()
+    over = {k: v for k, v in pr.items() if k not in kestrel.PER_CALL}
+    over["strut_fairing"] = True
+    truss = d.generate(**over, part="truss")
+    wing = d.generate(**over, part="wing")
+    nac = d.generate(**over, part="nacelle")
+    ax = fig.add_subplot(2, 3, 2)
+    _tri_plot(ax, wing, 0, 1, color="#e6edf3"); _tri_plot(ax, nac, 0, 1, color="#bbbbbb"); _tri_plot(ax, truss, 0, 1, color="#2b2b2b")
+    ax.set(aspect="equal", xlim=(100, 360), ylim=(30, 520), xlabel="x [mm]", ylabel="y [mm]",
+           title="the right bay from above:\npost and diagonals' sleeves, chords along x")
+    ax = fig.add_subplot(2, 3, 3)
+    _tri_plot(ax, d.generate(**over, part="airframe"), 1, 2, color="#cfd8e0"); _tri_plot(ax, truss, 1, 2, color="#2b2b2b")
+    ax.set(aspect="equal", xlim=(0, 520), ylim=(-170, 170), xlabel="y [mm]", ylabel="z [mm]", title="from the front: barely thicker than the tubes (9.6 / 7.6 mm)")
+    # 5. the right bay in 3-D, close up (the propeller discs left out)
+    import matplotlib.gridspec as gs
+    ax = fig.add_subplot(gs.GridSpec(2, 3, figure=fig)[1, 1:], projection="3d")
+    import cadquery as cq
+    from vegeta.dedalus import Geometry
+    box = cq.Workplane("XY").box(420, 520, 700).translate((210, 260, 0))
+    cut = lambda g: Geometry(cq.Workplane("XY").add(g.shape).intersect(box).val())
+    rest = cut(d.generate(**over, part="airframe"))
+    v, t = rest.tessellate(0.4)
+    ax.add_collection3d(Poly3DCollection(v[t], facecolor=COL["wing"], edgecolor=COL["edge"], linewidths=0.02, alpha=0.45))
+    v, t = cut(truss).tessellate(0.2)
+    ax.add_collection3d(Poly3DCollection(v[t], facecolor="#3a3a3a", edgecolor="#111", linewidths=0.05))
+    ax.set(xlim=(0, 520), ylim=(0, 520), zlim=(-260, 260), title="Kestrel-4Q-2: the right bay with the faired post and diagonals")
+    ax.set_box_aspect((1, 1, 1)); ax.view_init(elev=22, azim=-125); ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
+    fig.tight_layout()
+    return fig
