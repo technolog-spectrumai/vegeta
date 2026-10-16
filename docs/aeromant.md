@@ -28,7 +28,7 @@ dictionaries and solvers:
 
 Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static` (a
 propeller in a rotating frame, see below), `rotor_mrf_installed` (a propeller beside a standing pod or airframe), `aircraft_rotor_disks` (a whole aircraft with two propellers as
-rotor disks, see below). `aeromant templates` lists them with their parameters.
+rotor disks, see below), `aircraft_quad_rotor_disks` (four disks, each its own rpm). `aeromant templates` lists them with their parameters.
 
 `CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
 matching files; `case.flavor` tells you which. `OpenFOAMEnvironment.detect()` prefers a .com install
@@ -203,6 +203,16 @@ the source in the solver log. Momentum and swirl are right on average; blade pas
 resolved (a fully resolved rotating-blade simulation of the whole aircraft is on the to-do list). Sign check: the
 flow behind the disks must be faster than the free stream; if not, flip `disk_axis`. Notebook:
 `09a_fixed_wing_design`, Part 3.
+
+### Four rotor disks, each at its own rpm (`aircraft_quad_rotor_disks`)
+The same case with **four** disks (`disk1_center` … `disk4_center`) sharing one `disk_axis` (fixed, parallel rotors),
+each with its own speed `rpm1` … `rpm4` and sense `rotation1` … `rotation4` (defaults 1, −1, −1, 1: the diagonals
+paired) — a quadrotor tailsitter or a quadplane, with the differential thrust that pitches it in the slipstream.
+Disk zones that would overlap (centres closer than `2 × zone_radius × diameter`) are refused. For an angle of attack,
+turn the STL and the disk centres together about the moment point and give the turned thrust axis
+(`kestrel.rotate`, `kestrel_cfd.disk_setup`). The forces on the airframe include the slipstream; the disks' thrust and
+in-plane force are in the solver log. Steady RANS beyond the stall is a time average at best: read the residuals and
+the force scatter. Notebook: `38_kestrel` (the transitions through the stall).
 
 ## A suction hood under a vehicle (`suction_hood`)
 The Onager Sweeper's vacuum nozzle (notebook 23): the air between the road and the vehicle floor, a hood whose lips

@@ -107,3 +107,48 @@ def test_hull_rotor_disk_has_one_disk(tmp_path, sphere_stl, version):
             assert "{{" not in f.read_text().replace("{{...}}", ""), f
     with pytest.raises(ValueError, match="disk2_center"):
         CFDCase("hull_rotor_disk", sphere_stl, values(), tmp_path / "x", geometry_units="m")
+
+
+def quad_values(**over):
+    v = values()
+    for k in ("disk1_center", "disk2_center", "rpm"):
+        v.pop(k)
+    v.update(disk1_center=(-0.06, -0.39, 0.14), disk2_center=(-0.06, 0.39, 0.14), disk3_center=(-0.06, -0.39, -0.14),
+             disk4_center=(-0.06, 0.39, -0.14), rpm1=6000.0, rpm2=6000.0, rpm3=7200.0, rpm4=7200.0)
+    v.update(over)
+    return v
+
+
+@pytest.mark.parametrize("version,name", [(None, "system/fvOptions"), ("14", "constant/fvModels")])
+def test_quad_rotor_disks_four_disks_each_its_rpm(tmp_path, sphere_stl, version, name):
+    """aircraft_quad_rotor_disks: four disk zones and sources, each disk at its own rpm and sense (diagonals paired)."""
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    assert "four propellers" in get_template("aircraft_quad_rotor_disks").describe()
+    case = CFDCase("aircraft_quad_rotor_disks", sphere_stl, quad_values(), tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+    src = (c / name).read_text()
+    assert src.count("type            rotorDisk;") == 4 and "diskLeft" not in src
+    for i in range(1, 5):
+        assert f"cellZone        disk{i};" in src
+    rpms = ("6000", "-6000", "-7200", "7200")                       # rotation defaults (1, -1, -1, 1): the diagonals alike
+    for r in rpms:
+        assert (f"rpm             {r};" in src) or (f"omega           {r} [rpm];" in src), r
+    snappy = (c / "system/snappyHexMeshDict").read_text()
+    assert all(snappy.count(f"cellZone disk{i};") == 1 for i in range(1, 5)) and "diskRight" not in snappy
+
+
+def test_quad_rotor_disks_refuses_overlapping_zones(tmp_path, sphere_stl):
+    case = CFDCase("aircraft_quad_rotor_disks", sphere_stl, quad_values(disk3_center=(-0.06, -0.39, 0.10)), tmp_path / "c",
+                   geometry_units="m")
+    res = case.prepare()
+    assert not res.ok and any("overlap" in m for m in res.messages), res.messages
+    with pytest.raises(ValueError, match="rpm4"):
+        v = quad_values()
+        v.pop("rpm4")
+        CFDCase("aircraft_quad_rotor_disks", sphere_stl, v, tmp_path / "x", geometry_units="m")

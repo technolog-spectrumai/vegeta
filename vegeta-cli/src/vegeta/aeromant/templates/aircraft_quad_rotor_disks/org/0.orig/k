@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform {{K_INLET}};
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform {{K_INLET}};
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform {{K_INLET}};
+        value           uniform {{K_INLET}};
+    }
+    sides
+    {
+        type            slip;
+    }
+    "body.*"
+    {
+        type            kqRWallFunction;
+        value           uniform {{K_INLET}};
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform {{K_INLET}};
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform {{K_INLET}};
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform {{K_INLET}};
+        value           uniform {{K_INLET}};
+    }
+    sides
+    {
+        type            slip;
+    }
+    "body.*"
+    {
+        type            kqRWallFunction;
+        value           uniform {{K_INLET}};
+    }
+}
+
+// ************************************************************************* //

@@ -448,14 +448,18 @@ def _disks_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]
     hi = np.array([float(out["XMAX"]), float(out["YMAX"]), float(out["ZMAX"])])
     half = 0.5 * p["disk_thickness"] * D * axis
     extra: dict[str, Any] = {}
-    disks = [i for i in (1, 2) if f"disk{i}_center" in p]            # two disks (aircraft) or one (hull_rotor_disk)
+    disks = [i for i in (1, 2, 3, 4) if f"disk{i}_center" in p]      # four (quad), two (aircraft) or one (hull_rotor_disk)
     for i in disks:
         key = f"disk{i}_center"
         c = np.asarray(p[key], dtype=float)
         if np.any(c - D < lo) or np.any(c + D > hi):
             raise ValueError(f"{key} {c.tolist()} is not well inside the domain {lo.tolist()}..{hi.tolist()}")
         extra[f"DISK{i}_CENTER"], extra[f"DISK{i}_P1"], extra[f"DISK{i}_P2"] = c, c - half, c + half
-        extra[f"DISK{i}_RPM"] = p["rpm"] * p[f"rotation{i}"]
+        extra[f"DISK{i}_RPM"] = p[f"rpm{i}"] * p[f"rotation{i}"] if f"rpm{i}" in p else p["rpm"] * p[f"rotation{i}"]
+    for i, j in ((i, j) for i in disks for j in disks if i < j):
+        gap = float(np.linalg.norm(np.asarray(p[f"disk{i}_center"], float) - np.asarray(p[f"disk{j}_center"], float)))
+        if gap < 2 * p["zone_radius"] * D:
+            raise ValueError(f"disk{i} and disk{j} are {gap:.4g} m apart: their cell zones (radius {p['zone_radius']} D) overlap")
     for i in disks:
         if p[f"rotation{i}"] not in (1.0, -1.0):
             raise ValueError(f"rotation{i} must be 1 or -1")
@@ -511,6 +515,37 @@ AIRCRAFT_ROTOR_DISKS = TemplateSpec(
         "the disks' (printed by the rotorDisk source in the solver log)",
         "sign check: with a correct setup the disks accelerate the flow (+x) behind them; if not, flip disk_axis",
         "wall functions without prism layers: y+ is not controlled; use for trend comparison, not absolute drag",
+    ),
+)
+
+# the same with four disks, each at its own rpm (a quadrotor tailsitter or quadplane: differential thrust in the slipstream)
+_QUAD_DROP = ("disk1_center", "disk2_center", "rpm", "rotation1", "rotation2")
+AIRCRAFT_QUAD_ROTOR_DISKS = TemplateSpec(
+    name="aircraft_quad_rotor_disks",
+    description="Whole aircraft in steady RANS k-omega SST flow (flow +x, lift +z) with four propellers as rotor "
+                "disks, each at its own rpm and sense of rotation: blade-element source terms from the blade geometry "
+                "and section polar (e.g. Boreas).",
+    parameters=tuple(t for t in AIRCRAFT_ROTOR_DISKS.parameters if t.name not in _QUAD_DROP and t.name != "tip_effect") + tuple(
+        TemplateParameter(f"disk{i}_center", f"centre of propeller disk {i} (in the flow frame, metres)", "m", kind="vector")
+        for i in (1, 2, 3, 4)) + tuple(
+        TemplateParameter(f"rpm{i}", f"speed of propeller {i}", "rpm") for i in (1, 2, 3, 4)) + tuple(
+        TemplateParameter(f"rotation{i}", f"disk {i} sense of rotation about disk_axis: 1 or -1", "", s)
+        for i, s in ((1, 1.0), (2, -1.0), (3, -1.0), (4, 1.0))) + (
+        TemplateParameter("tip_effect", "normalised radius above which the blades carry no lift (tip loss)", "-", 0.97),),
+    flavors=EXTERNAL_FLAVORS,
+    derive=_disks_derive,
+    max_body_extent=6.0,
+    patches=EXTERNAL_PATCHES,
+    notes=(
+        "propellers are rotor disks (momentum and swirl from blade elements), not resolved rotating blades",
+        "all four disks share disk_axis (fixed rotors, parallel thrust axes); rotate the STL and the axis together "
+        "for an angle of attack",
+        "forceCoeffs are on the airframe (body*) only: the airframe sees the slipstream; propeller thrust and the "
+        "disks' in-plane (normal) force are the disks' (printed by the rotorDisk sources in the solver log)",
+        "the default senses of rotation pair the diagonals (1 and 4 one way, 2 and 3 the other)",
+        "sign check: with a correct setup the disks accelerate the flow behind them; if not, flip disk_axis",
+        "wall functions without prism layers: y+ is not controlled; use for trend comparison, not absolute drag",
+        "steady RANS beyond the stall is a time-averaged answer at best: read the residuals and the force scatter",
     ),
 )
 
@@ -844,7 +879,7 @@ COMPRESSOR_MRF = TemplateSpec(
 )
 
 TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC, ROTOR_MRF_INSTALLED,
-                                                         AIRCRAFT_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD,
+                                                         AIRCRAFT_ROTOR_DISKS, AIRCRAFT_QUAD_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD,
                                                          JET_EXTERNAL, COMPRESSOR_MRF)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}
 
