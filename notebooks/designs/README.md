@@ -257,7 +257,9 @@ stall to its points. `prop_lab.py` (notebook **41**, `41_prop_lab`): the 9×6 al
 transition glide). `kestrel_fea.py` (Talos, notebook 38 § 8b / 40): `frame_cad` / `frame_step` (the carbon frame as
 hollow tubes per bracing), `joint_cad` (the printed spar–post clamp), `lift_segments`, `frame_cases` (A / B / C /
 modes), `joint_cases`, `cases`, `solve(run=)`, `table` (statuses, nominal and peak stress, margins, across-layer
-tension, frequencies), `summary`, `plane_frame_reference`, `save` (`data/kestrel_fea_results.json`). `kestrel_structure.py`: `frame`,
+tension, frequencies), `summary`, `plane_frame_reference`, `save` (`data/kestrel_fea_results.json`).
+`kestrel_report.py`: `write(name, title, sections)` (a notebook's tables, series, dicts and verdicts as rounded,
+trimmed Markdown in `data/reports/<name>.md`), `dossier()` (`data/kestrel_dossier.md`), `paste(name)`. `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
 `polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,
