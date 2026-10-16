@@ -13,6 +13,7 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Aeromant** | aerodynamics / CFD | OpenFOAM | STL + template case + explicit values → case, logs, Cd/Cl/Cm |
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
 | **Atropos** | laser-cut flat parts | nothing (SVG + GRBL writers) | section + explicit rib spec, sheet and laser settings → ribs, nested sheets, SVG, G-code, time, material |
+| **Zephyr** | 2-D wing sections | NeuralFoil (optional) / XFOIL (optional) | NACA or .dat section + Re, n_crit, flap → thin-airfoil numbers, polar (cl, cd, cm, confidence), flap effectiveness, JSON |
 | **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
 | **Fidia** | AI modelling | Dedalus + `vegeta-ai` (Claude) | prompt → checked 3D model (glTF/GLB, OBJ, STEP); design copilot; campaigns |
 
@@ -51,6 +52,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
+| Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `15_fidia_prompt_to_3d`, `07_`, `10_` |
 
@@ -403,11 +405,11 @@ Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reade
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
 rotors), Chronos time (missions, cyclic loads, life), Chiron the centaur who trained the heroes (legged robots
 walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculptor of the Parthenon —
-(AI modelling from a prompt). The workbench itself is Vegeta.
+(AI modelling from a prompt), Zephyr the west wind (the air over a wing section). The workbench itself is Vegeta.
 
 ## Layout
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos}, tests/<tool>/
+vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`

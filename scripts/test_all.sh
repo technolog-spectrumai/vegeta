@@ -5,7 +5,7 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 status=0
-for part in cli dedalus talos aeromant mellonia boreas chronos chiron atropos; do
+for part in cli dedalus talos aeromant mellonia boreas chronos chiron atropos zephyr; do
   [ -d "$ROOT/vegeta-cli/tests/$part" ] || continue
   echo "=== $part ==="
   (cd "$ROOT/vegeta-cli" && python3 -m pytest -q "tests/$part" "$@") || status=1
