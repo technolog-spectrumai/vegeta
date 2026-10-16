@@ -52,9 +52,13 @@ def test_flap_geometry_and_effectiveness():
     assert zephyr.flap_effectiveness(1.0) == pytest.approx(1.0) and zephyr.flap_effectiveness(1e-9) == pytest.approx(0.0, abs=1e-4)
     # thin-airfoil theory on the flapped outline's mean line agrees with the closed form dα₀/dδ = −τ at a small
     # deflection (a thick outline turned 15° is no longer the linear theory's kinked line: τ drops to ~0.5)
-    ta5 = thin_airfoil(s.flapped(0.25, 5.0))
-    assert -ta5["alpha0_deg"] / 5.0 == pytest.approx(zephyr.flap_effectiveness(0.25), rel=0.08)
-    assert -thin_airfoil(s.flapped(0.25, 15.0))["alpha0_deg"] / 15.0 < zephyr.flap_effectiveness(0.25)
+    # on the flat plate (0012) the mean line of the flapped thick outline is the kinked line of the theory; a cambered
+    # outline's numeric mean line rounds the kink a little more
+    flat = naca("0012")
+    assert -thin_airfoil(flat.flapped(0.25, 5.0))["alpha0_deg"] / 5.0 == pytest.approx(zephyr.flap_effectiveness(0.25), rel=0.08)
+    assert -thin_airfoil(flat.flapped(0.25, 15.0))["alpha0_deg"] / 15.0 < zephyr.flap_effectiveness(0.25)
+    a00 = thin_airfoil(s)["alpha0_deg"]
+    assert 0.45 < (a00 - thin_airfoil(s.flapped(0.25, 5.0))["alpha0_deg"]) / 5.0 < 0.65
 
 
 def test_dat_round_trip(tmp_path):
