@@ -276,12 +276,13 @@ def section_stl(workdir, name: str, reflex_k21, alpha_deg: float, *, chord_m: fl
 
 def section_case(workdir, spec: dict, *, quality: str = "screening", env=None):
     """One Aeromant ``rans_ksst_external`` case of a section slab (``kestrel_section.cfd_specs`` row): the free stream at
-    the cruise speed, the reference area the slab's planform, the moment about the quarter chord."""
+    the cruise speed, the reference area the slab's planform, the moment about the quarter chord (on L_ref = span / 4:
+    multiply the case's Cm by L_ref / chord for the section's)."""
     from vegeta import aeromant
     c, AR, a = spec["chord_m"], spec["AR"], spec["alpha_deg"]
     stl = section_stl(Path(workdir).parent / "stl", spec["name"], spec["reflex_k21"], a, chord_m=c, AR=AR)
-    params = dict(velocity=spec["V"], kinematic_viscosity=NU, density=RHO, reference_area=AR * c * c, reference_length=c,
-                  center_of_rotation=(0.25 * c, 0.0, 0.0), **QUALITY[quality])
+    params = dict(velocity=spec["V"], kinematic_viscosity=NU, density=RHO, reference_area=AR * c * c, reference_length=AR * c / 4,
+                  center_of_rotation=(0.25 * c, 0.0, 0.0), **QUALITY[quality])        # L_ref a quarter of the span (it sizes the domain); Cm × L_ref / c for the chord
     env = env or aeromant.OpenFOAMEnvironment.detect()
     tag = stl.stem + f"_V{spec['V']:g}_{quality}"
     return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / tag), geometry_units="mm", environment=env)
