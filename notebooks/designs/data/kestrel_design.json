@@ -1274,6 +1274,80 @@
    "failing": "back transitions entered at the cruise speed: passing"
   }
  ],
+ "fea": {
+  "frame_x_A": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_x_A in _runs/kestrel/fea/frame_x_A (run=False)"
+  },
+  "frame_x_B": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_x_B in _runs/kestrel/fea/frame_x_B (run=False)"
+  },
+  "frame_x_C": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+   "note": "NOT RUN: frame_x_C in _runs/kestrel/fea/frame_x_C (run=False)"
+  },
+  "frame_x_modes": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "modes",
+   "status": "NOT RUN",
+   "description": "the first modes with the motor units as point masses at the stations",
+   "note": ""
+  },
+  "frame_posts_A": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_posts_A in _runs/kestrel/fea/frame_posts_A (run=False)"
+  },
+  "frame_posts_B": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_posts_B in _runs/kestrel/fea/frame_posts_B (run=False)"
+  },
+  "frame_posts_C": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+   "note": "NOT RUN: frame_posts_C in _runs/kestrel/fea/frame_posts_C (run=False)"
+  },
+  "frame_posts_modes": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "modes",
+   "status": "NOT RUN",
+   "description": "the first modes with the motor units as point masses at the stations",
+   "note": ""
+  },
+  "joint_post": {
+   "part": "joint",
+   "bracing": "",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the post's 5.5 N (ultimate) into the printed socket, the spar bore held; build axis z",
+   "note": "NOT RUN: joint_post in _runs/kestrel/fea/joint_post (run=False)"
+  }
+ },
  "ground": {
   "CG height above the ground [m]": 0.32515187263290285,
   "least tip-over angle [deg]": 39.3371166497809,
@@ -2383,6 +2457,7 @@
  },
  "status": {
   "CFD": "NOT RUN here",
+  "FEA (Talos): frame x / posts, joint": "NOT RUN (no CalculiX here; notebook 40)",
   "CAD": "run",
   "mass table": "run",
   "propulsion (Boreas tables)": "run",
@@ -2391,7 +2466,6 @@
   "cruise": "run",
   "transitions (model polar)": "run (36 in the matrix, 25 pass)",
   "truss frame + ground stance": "run",
-  "FEA (Talos) of the joints": "NOT RUN (next step)",
   "Part II: elevons, faired struts, bracing, 4Q-2": "run (8 of 12 4Q-2 transitions pass)",
   "Part II: reflexed section (Zephyr)": "run",
   "X-wing": "its own notebook, 39_xwing"
