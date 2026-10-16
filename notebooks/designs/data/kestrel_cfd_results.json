@@ -342,11 +342,11 @@
     "solved": 0,
     "diverged": 0,
     "FAILED": 0,
-    "NOT RUN": 27,
-    "n": 27,
+    "NOT RUN": 29,
+    "n": 29,
     "solved with rotor disks": 0,
     "solved bare": 0,
-    "with rotor disks": 14
+    "with rotor disks": 16
    },
    "records": [],
    "statuses": {
@@ -447,6 +447,20 @@
      "rotor disks": true,
      "\u03b1 [deg]": 90.0,
      "V [m/s]": 1.0
+    },
+    "cruise: \u03b1 5\u00b0, 16.0 m/s, T 0.36/0.36 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 5.181213294292749,
+     "V [m/s]": 16.0
+    },
+    "stall: \u03b1 10\u00b0, 11.3 m/s, T 0.33/0.33 N": {
+     "status": "NOT RUN",
+     "note": "",
+     "rotor disks": true,
+     "\u03b1 [deg]": 9.672385919513653,
+     "V [m/s]": 11.336204508246036
     },
     "bare airframe, \u03b1 0\u00b0, 10 m/s": {
      "status": "NOT RUN",
