@@ -21,7 +21,7 @@ Units SI. Frame: ``kestrel``'s (x aft, y right, z up); angles of attack positive
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import numpy as np
 

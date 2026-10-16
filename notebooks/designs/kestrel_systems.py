@@ -18,7 +18,6 @@ Units SI (kg, m, N, W). Frame: ``kestrel``'s (x aft from the nose tip, y right, 
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path

@@ -148,7 +148,7 @@ def frame(p=None, *, n: float = 4.0, mass_kg: float, bracing: str = "braced", up
         N = E * A / Le * du
         Pcr = math.pi ** 2 * E * I / Le ** 2
         bar_rows.append({"member": kind, "length [m]": Le, "force [N]": N, "Euler load [N]": Pcr,
-                         "buckling margin": (Pcr / -N) if N < 0 else math.inf, "stress [MPa]": N / A / 1e6})
+                         "buckling margin": (Pcr / -N) if N < -1e-6 else math.inf, "stress [MPa]": N / A / 1e6})
     ym = L["motor_y"]
     w_up, w_lo = u[3 * idx[("upper", ym)] + 1], u[3 * idx[("lower", ym)] + 1]
     tip_up, tip_lo = u[3 * idx[("upper", stations[-1])] + 1], u[3 * idx[("lower", stations[-1])] + 1]

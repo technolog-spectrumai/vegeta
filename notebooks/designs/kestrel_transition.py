@@ -40,7 +40,7 @@ elevation (90° = hovering nose-up); the body axes are ``kestrel``'s.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -424,7 +424,8 @@ def metrics(ep: Episode, veh: Vehicle, dt: float, Z0: float, E: float, done_at) 
     g = ep.log
     tr = (g["mode"] == "transition")
     a_deg = np.degrees(np.abs(g["alpha"]))
-    stall = (a_deg > math.degrees(veh.pol.alpha_stall)) & (a_deg < 80.0) & (g["V"] > 2.0)
+    # stalled in the transition (not the hover leaning into a headwind, where the free-stream wing is stalled as well)
+    stall = (a_deg > math.degrees(veh.pol.alpha_stall)) & (a_deg < 80.0) & (g["V"] > 2.0) & tr
     blown = np.degrees(np.maximum(np.abs(g["alpha_blown_up"]), np.abs(g["alpha_blown_lo"])))
     ratio = np.where(g["roll_authority"] > 1e-6, g["roll_demand"] / np.maximum(g["roll_authority"], 1e-6), np.where(g["roll_demand"] > 0, np.inf, 0.0))
     ratio_rot = np.where(g["roll_authority_rotors"] > 1e-6, g["roll_demand"] / np.maximum(g["roll_authority_rotors"], 1e-6),

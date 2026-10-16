@@ -217,3 +217,16 @@ python3 scenarios/falco_birds.py --no-movie
 NISUS+'s four hunts on Falco-Zero (`notebooks/designs/falco_birds.py`): the camera in the chin looks past the
 propeller's hub (the blades cross the top of the frame: computer vision masks them, accepted). Writes
 `scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.
+
+## Kestrel-4Q transitions (`kestrel_transitions.py`)
+The zero-stagger biplane quadrotor tailsitter's transitions through the stall, hover → cruise and back (notebook 38):
+the matrix of three vehicles (elevons, rotors only, 2.0 kg with the CG aft), both directions, 1.5 / 3 / 5 s pitch
+schedules, still air and a 6 m/s headwind, on the model's polar; with `--cfd` the airframe is solved in OpenFOAM at
+the points the nominal transitions fly (Aeromant `aircraft_quad_rotor_disks`: four rotor disks at each pair's rpm), the
+CFD's coefficients correct the model and the matrix is flown again.
+```bash
+python3 scenarios/kestrel_transitions.py                 # the model polar (~2 min)
+python3 scenarios/kestrel_transitions.py --cfd -n 8      # + the CFD at the transition points (OpenFOAM), then again
+```
+Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
+transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.

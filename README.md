@@ -367,6 +367,25 @@ study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch 
 (fitted R 0.13 Ω with the ESC) take the rest. `scenarios/falco_mission.py`, `scenarios/falco_birds.py`
 (`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
 
+**Kestrel-4Q** (`38_kestrel`, branch `dev_kestrel`) is a concept study of a zero-stagger, truss-braced biplane
+quadrotor **tailsitter**: two equal straight wings with their leading edges at one station (zero stagger is built into
+the CAD, not a parameter), a pod across the gap with the camera in the nose, carbon posts and an X of diagonals, four
+**fixed** propellers whose thrust axes are all parallel to the pod (no tilt: the whole aircraft pitches 90°), a fin
+plate and six feet to stand on. The question: **does it fly through its transitions** — hover → cruise and back,
+through the stall — on its motors, propellers and controller? The specification's hold point first: in a tailsitter
+the thrust axis is the body axis, so fore–aft rotor offsets carry no lever and the 2 × 2 layout is a quadcopter's X seen
+from above; the allocation matrix has full rank **only with the diagonal pairs counter-rotating** — the mirror-symmetric
+"each side's rotors alike" loses the hover's heading. The biplane in PEREGRINE's vortex lattice lands on Prandtl's
+biplane factor (induced drag 0.71 of the monoplane's); the round bracing is ~70 % of Cd0 (fair the struts); the
+propellers ahead of the CG are destabilising and the CG alone sets the margin (no tail). The transitions are flown in a
+pitch-plane model with each wing split into its blown and free-stream spans (`kestrel_transition`): forward and back,
+three schedule lengths, headwind, gusts, three vehicles, the back transition's strategies, a roll check for one wing
+side stalling first. The CFD (`kestrel_cfd`, Aeromant's new **`aircraft_quad_rotor_disks`**: four rotor disks each at its
+own rpm) solves the airframe at the points the transitions fly and feeds the coefficients back into the model as a
+correction; NOT RUN where there is no OpenFOAM. The truss as a plane frame (braced / posts / none) and the ground
+stance close it. Code: `designs/kestrel.py`, `kestrel_systems.py`, `kestrel_control.py`, `kestrel_flight.py`,
+`kestrel_transition.py`, `kestrel_cfd.py`, `kestrel_structure.py`, `kestrel_drawings.py`; `tests/test_kestrel.py`.
+
 Benchmarks (`benchmark/`, branch `dev_sikarian`): `benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
 
 Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one

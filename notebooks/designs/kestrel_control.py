@@ -173,15 +173,14 @@ def hover_wind(p=None, *, mass_kg: float, cg=None, winds=(2.0, 4.0, 6.0, 8.0, 10
 
 def roll_authority(p=None, *, V: float, thrust_each: float, cl_alpha_3d: float, aileron_chord: float = 0.25,
                    aileron_deg: float = 15.0, tau: float = 0.45, drive=None, rho: float = ks.RHO0) -> dict:
-    """Roll (about x) in cruise at airspeed ``V``: the reaction-torque lever (two rotors up by ΔT, two down, inside
-    [T_min, T_max]) against ailerons on both wings' outer panels behind the propellers (from motor_y − R to the tip,
+    """Roll (about x) in cruise at airspeed ``V``: the reaction-torque lever (one diagonal pair — the same sense,
+    pitch- and yaw-neutral — up to T_max, the other down to T_min) against ailerons on both wings' outer panels behind the propellers (from motor_y − R to the tip,
     ``aileron_chord`` of the chord, effectiveness ``tau``, both wings, ±``aileron_deg``); the slipstream raises the
     ailerons' dynamic pressure by the momentum-theory factor."""
     L = kestrel.layout(p)
     drive = drive or ks.drive_table()
     kap = float(drive.kap(V))
-    dT = min(thrust_each - drive.T_min, float(drive.t_max(V)) - thrust_each)
-    torque = 4 * kap * max(dT, 0.0)
+    torque = 2 * kap * (max(float(drive.t_max(V)) - thrust_each, 0.0) + max(thrust_each - drive.T_min, 0.0))
     y0, y1 = L["motor_y"] - L["R_prop"], L["span"] / 2
     s_panel = (y1 - y0) * L["chord"]
     v_slip2 = V ** 2 + 2 * thrust_each / (rho * L["A_disc"])            # far-wake velocity squared

@@ -26,6 +26,7 @@
 #   nisus-plus-birds  Nisus+ Zero chasing birds in the mountains: scenarios/nisus_plus_birds.py (4 hunts + videos; ~25 min)
 #   falco             FALCO (tractor mountain aircraft): tests, then scenarios/falco_mission.py (6 missions, the propeller parked; ~20 min)
 #   falco-birds       Falco-Zero chasing birds in the mountains: scenarios/falco_birds.py (4 hunts + videos; ~25 min)
+#   kestrel           Kestrel-4Q (biplane quadrotor tailsitter): tests, then scenarios/kestrel_transitions.py (the transition matrix; ~3 min; --cfd needs OpenFOAM)
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
@@ -225,6 +226,12 @@ for s in "${SECTIONS[@]}"; do
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/falco_birds.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and falco_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
+    kestrel)
+      hdr "Kestrel-4Q: zero-stagger layout, CAD, masses, the hold point (allocation rank), the biplane lattice, the transitions both ways, the CFD cases, the truss"
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_kestrel.py -m "not slow" || status=1
+      hdr "Kestrel-4Q transitions through the stall: 3 vehicles x forward/back x 1.5/3/5 s x still air/6 m/s headwind (model polar)"
+      t0=$SECONDS; "$PY" "$ROOT/scenarios/kestrel_transitions.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -20 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) tables, figures and kestrel_transitions.json in scenarios/output/kestrel/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     *) echo "unknown section: $s (see --help)"; status=2 ;;
   esac
 done

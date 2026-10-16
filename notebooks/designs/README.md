@@ -224,3 +224,19 @@ FEA on FALCO's tube), `tail_socket_case`, `motor_mount_case`, `models`. `falco_c
 `falco_robot.py` (`falco_robot`, `FalcoAero`: the `park` command channel and the `parked` log column),
 `falco_controller.py` (`FalcoController`: the flare parks the propeller), `falco_scenario.py` (`SIM`, `scenario`,
 `standard_scenarios`, `run`, `outcome` with the blade-strike check, `park_table`), `falco_birds.py`.
+
+`kestrel.py` (`Kestrel4Q`, notebook 38, branch `dev_kestrel`) is the zero-stagger biplane quadrotor tailsitter: the
+CAD (parts `aircraft`, `airframe` — the CFD body without the propellers —, `wing`, `pod`, `truss`, `nacelle`, `tail`;
+`angle_of_attack_deg` turns the build about `rotation_x`), `layout` (metres, no CAD kernel needed), `checks` (the
+clearance rules), `rotate` (a point turned like the build). `kestrel_systems.py`: `COMPONENTS`, `mass_table` (the
+battery placed for the CG), `cg_inertia`, `propulsion` (Boreas), `drive_table` (`data/kestrel_drive.json`: full thrust,
+κ = Q/T and power against the inflow), `rpm_for`, `hover_point`. `kestrel_control.py`: `SPINS`, `allocation`,
+`rank_table`, `attainable` (a linear programme per axis), `hover_authority`, `motor_out`, `hover_wind`,
+`roll_authority`. `kestrel_flight.py`: `aero` (the biplane in `peregrine_flight.vlm`), `neutral_point`,
+`prop_cn_alpha`, `drag_buildup` (`faired=`), `Polar` (the full-range polar), `polar`, `cruise`, `stall_speed`.
+`kestrel_transition.py`: `make_vehicle`, `slipstream`, `airframe_forces`, `simulate` (forward / back, `t_tr`,
+`headwind`, `gust_up`, `V_entry`, `floor`), `matrix`, `verdict`, `CRITERIA`. `kestrel_cfd.py`: `points` (from the
+transitions), `case` / `plan` (Aeromant `aircraft_quad_rotor_disks`, the bare sweep on `rans_ksst_external`), `table`,
+`not_run_table`, `CFDAirframe` (the CFD's correction for the transition model). `kestrel_structure.py`: `frame`,
+`compare_bracing`, `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`,
+`path_figure`, `polar_figure`.
