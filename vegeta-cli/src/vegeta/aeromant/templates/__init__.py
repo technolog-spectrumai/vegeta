@@ -358,6 +358,41 @@ ROTOR_MRF = TemplateSpec(
     notes=ROTOR_NOTES + ("efficiency = thrust x airspeed / shaft power",),
 )
 
+def _rotor_oblique_derive(p: dict, bmin: np.ndarray, bmax: np.ndarray) -> dict[str, str]:
+    """``_rotor_derive`` with the inflow at ``inflow_angle`` to the axis in the x–z plane (U = V (cos a, 0, sin a)):
+    the lateral faces are free-stream boundaries, the refined wake box follows the deflected slipstream."""
+    a = math.radians(p["inflow_angle"])
+    if not 0.0 <= p["inflow_angle"] <= 90.0:
+        raise ValueError("inflow_angle is the angle between the inflow and the rotor axis, 0 (axial) to 90 (edgewise) degrees")
+    out = _rotor_derive(p, bmin, bmax)
+    V = p["airspeed"]
+    D, c = p["diameter"], np.asarray(p["center"], dtype=float)
+    hi = np.array([float(out["XMAX"]), float(out["YMAX"]), float(out["ZMAX"])])
+    h = D / p["cells_per_diameter"]
+    wake_max = np.minimum(np.array([c[0] + p["wake_length"] * D, c[1] + 0.7 * D, c[2] + 0.7 * D + p["wake_length"] * D * math.sin(a)]), hi - h)
+    out.update({"INFLOW_VELOCITY": _fmt(np.array([V * math.cos(a), 0.0, V * math.sin(a)])), "WAKE_MAX": _fmt(wake_max)})
+    return out
+
+
+ROTOR_MRF_OBLIQUE = TemplateSpec(
+    name="rotor_mrf_oblique",
+    description="Propeller/rotor with the inflow at an angle to its axis (a propeller at an angle of attack: a tailsitter's "
+                "transition, a tilted rotor in forward flight) in a rotating reference frame, steady k-omega SST; free-stream "
+                "lateral boundaries. Thrust along the axis, the normal force across it, from the forces function object.",
+    parameters=(TemplateParameter("airspeed", "inflow speed", "m/s"),
+                TemplateParameter("inflow_angle", "angle between the inflow and the rotor axis, in the x-z plane (0 axial, 90 edgewise)", "deg"),) + ROTOR_COMMON,
+    flavors=EXTERNAL_FLAVORS,
+    derive=_rotor_oblique_derive,
+    max_body_extent=1.5,
+    patches={"inlet": "free-stream velocity V (cos a, 0, sin a) and pressure", "outlet": "fixed pressure 0, inletOutlet velocity",
+             "sides": "free stream (the cross-flow enters and leaves through the lateral faces)", "body*": "no-slip wall inside the rotating zone; forces patch"},
+    notes=ROTOR_NOTES + ("the cross-flow is along +z: the normal force is the force on the rotor along +z (metrics normal_force_N, cn), "
+                         "the pitching moment about +y (pitching_moment_Nm) — the propeller's own, about its centre",
+                         "efficiency = thrust x axial inflow / shaft power",
+                         "a steady frame averages the once-per-revolution load cycle an inclined inflow puts on each blade: the mean loads "
+                         "are what it gives, the blade's load pulse is not resolved"),
+)
+
 ROTOR_MRF_STATIC = TemplateSpec(
     name="rotor_mrf_static",
     description="Propeller/rotor at static thrust (hover): rotating frame, steady k-omega SST, a small residual axial inflow for stability.",
@@ -884,7 +919,7 @@ COMPRESSOR_MRF = TemplateSpec(
     surfaces=("shroud", "inlet", "outlet"),
 )
 
-TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_STATIC, ROTOR_MRF_INSTALLED,
+TEMPLATES: dict[str, TemplateSpec] = {t.name: t for t in (LAMINAR, RANS_KSST, ROTOR_MRF, ROTOR_MRF_OBLIQUE, ROTOR_MRF_STATIC, ROTOR_MRF_INSTALLED,
                                                          AIRCRAFT_ROTOR_DISKS, AIRCRAFT_QUAD_ROTOR_DISKS, HULL_ROTOR_DISK, SUCTION_HOOD,
                                                          JET_EXTERNAL, COMPRESSOR_MRF)}
 ALIASES = {"laminar_external_simplefoam": "laminar_external", "rans_ksst_external_simplefoam": "rans_ksst_external"}

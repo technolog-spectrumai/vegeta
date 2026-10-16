@@ -182,8 +182,36 @@ def groups(table) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------- propulsion
+PROP_LAB_JSON = Path(__file__).resolve().parent / "data" / "prop_lab.json"   # notebook 41's calibration of the 9x6 (prop_lab.export)
+
+
+def prop_lab_calibration() -> dict:
+    """prop_lab's measured corrections for the 9x6 (``data/prop_lab.json``): ``cl_scale`` and ``cd_scale`` on the blade
+    section, ``cn_factor`` on the propeller normal force; unit scales and ``on_file`` False before the campaign ran."""
+    if not PROP_LAB_JSON.exists():
+        return {"cl_scale": 1.0, "cd_scale": 1.0, "cn_factor": 1.0, "on_file": False, "meta": {}}
+    doc = json.loads(PROP_LAB_JSON.read_text())
+    cal = doc.get("calibration", {})
+    on = cal.get("cl_scale") is not None or cal.get("cn_factor") is not None
+    return {"cl_scale": cal.get("cl_scale") or 1.0, "cd_scale": cal.get("cd_scale") or 1.0, "cn_factor": cal.get("cn_factor") or 1.0,
+            "on_file": on, "meta": doc.get("meta", {})}
+
+
+def blade_airfoil(calibrated: bool = True):
+    """Boreas's generic thin cambered section for the 9-inch blade — with prop_lab's ``cl_scale`` / ``cd_scale`` when
+    ``calibrated`` and the campaign is on file."""
+    from vegeta import boreas
+    base = boreas.Airfoil()
+    cal = prop_lab_calibration() if calibrated else None
+    if not cal or not cal["on_file"]:
+        return base
+    return boreas.Airfoil(name=f"{base.name}, prop_lab x{cal['cl_scale']:.3f} cl / x{cal['cd_scale']:.3f} cd", cl_alpha=base.cl_alpha * cal["cl_scale"],
+                          alpha0_deg=base.alpha0_deg, cl_max=base.cl_max, cd0=base.cd0 * cal["cd_scale"], k=base.k)
+
+
 def propulsion(rho: float = RHO0):
-    """Boreas's propeller + motor + battery for one of the four drives."""
+    """Boreas's propeller + motor + battery for one of the four drives (the blade section as prop_lab calibrated it,
+    when its campaign is on file)."""
     from vegeta import boreas
     c = COMPONENTS
     d, pitch = boreas.inches(c["propeller"]["diameter_in"], c["propeller"]["pitch_in"])
@@ -191,7 +219,7 @@ def propulsion(rho: float = RHO0):
                                        chord_root_m=c["propeller"]["chord_root_m"], chord_max_m=c["propeller"]["chord_max_m"],
                                        chord_tip_m=c["propeller"]["chord_tip_m"], mass_kg=c["propeller"]["mass_kg"],
                                        rotor_mass_kg=c["propeller"]["mass_kg"] + 0.030)
-    airfoil = boreas.Airfoil()
+    airfoil = blade_airfoil()
     m = c["motor"]
     motor = boreas.Motor(m["name"], kv_rpm_per_volt=m["kv"], resistance_ohm=m["R_ohm"], no_load_current_a=m["I0_A"],
                          max_current_a=m["I_max_A"], mass_kg=m["mass_kg"])
@@ -235,7 +263,9 @@ class DriveTable:
 
 
 def _drive_key() -> dict:
-    return {**{k: COMPONENTS[k] for k in ("motor", "propeller", "battery")}, "V_grid_max": 36.0}
+    cal = prop_lab_calibration()
+    return {**{k: COMPONENTS[k] for k in ("motor", "propeller", "battery")}, "V_grid_max": 36.0,
+            "prop_lab": {k: round(cal[k], 4) for k in ("cl_scale", "cd_scale")} if cal["on_file"] else None}
 
 
 def drive_table(rho: float = RHO0, *, recompute: bool = False, save: bool = False) -> DriveTable:

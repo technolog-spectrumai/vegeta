@@ -644,7 +644,13 @@ def _rotor_results(res: Result, workdir: Path, p: dict, average_window: int) -> 
              force_N=[-float(x) for x in np.mean(F[-n:, 1:4], axis=0)],
              moment_Nm=[-float(x) for x in np.mean(Q[-n:, 1:4], axis=0)],
              ct=thrust / (rho * nrev ** 2 * D ** 4), cp=power / (rho * nrev ** 3 * D ** 5) if power else None)
-    if "airspeed" in p:
+    if "inflow_angle" in p:                              # rotor_mrf_oblique: the cross-flow is along +z
+        a = math.radians(p["inflow_angle"])
+        fz, my = float(np.mean(F[-n:, 3])), float(np.mean(Q[-n:, 2]))
+        m.update(normal_force_N=fz, pitching_moment_Nm=my, cn=fz / (rho * nrev ** 2 * D ** 4), cm_pitch=my / (rho * nrev ** 2 * D ** 5),
+                 axial_inflow_m_s=p["airspeed"] * math.cos(a), crossflow_m_s=p["airspeed"] * math.sin(a))
+        m["efficiency"] = thrust * p["airspeed"] * math.cos(a) / power if power > 0 else None
+    elif "airspeed" in p:
         m["efficiency"] = thrust * p["airspeed"] / power if power > 0 else None
         m["advance_ratio"] = p["airspeed"] / (nrev * D)
     else:

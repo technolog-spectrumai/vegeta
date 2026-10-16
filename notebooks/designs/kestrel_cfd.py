@@ -82,6 +82,25 @@ def points(episodes, *, alphas=TRANSITION_ALPHAS, mass_kg: float | None = None) 
     return out
 
 
+def flight_points(veh, *, V_cruise: float = 16.0, stall_factor: float = 1.05) -> list[dict]:
+    """The two level-flight points the campaign adds to the transitions: the **cruise** (``V_cruise``, trimmed: the
+    angle of attack that lifts the weight, the thrust that holds the speed, split as the trim asks) and the **stall**
+    (``stall_factor`` × the stall speed at the polar's stall angle, the thrust of level flight there)."""
+    import kestrel_transition as kt
+    W, S = veh.weight, veh.L["S_ref"]
+    pol = veh.pol
+    out = []
+    for source, V in (("cruise", V_cruise), ("stall", stall_factor * math.sqrt(2 * W / (RHO * S * pol.cl_max)))):
+        a = kt._alpha_trim(veh, V)
+        q = 0.5 * RHO * V * V
+        CL = W / (q * S)
+        D = q * S * (pol.cd0 + pol.k * CL ** 2)
+        T = max(D / 4, veh.drive.T_min)
+        out.append({"source": source, "kind": source, "alpha_deg": float(math.degrees(a)), "V": float(V), "T_up": float(T), "T_lo": float(T), "t": 0.0,
+                    "target_deg": float(math.degrees(a))})
+    return out
+
+
 def point_name(pt: dict) -> str:
     return f"{pt['source']}: α {pt['alpha_deg']:.0f}°, {pt['V']:.1f} m/s, T {pt['T_up']:.2f}/{pt['T_lo']:.2f} N"
 

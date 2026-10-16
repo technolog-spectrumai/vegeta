@@ -91,11 +91,12 @@ def aero(p=None, *, n_span=20, n_chord=4) -> dict:
     return out
 
 
-def prop_cn_alpha(thrust_each: float, V: float, p=None, rho: float = RHO) -> float:
+def prop_cn_alpha(thrust_each: float, V: float, p=None, rho: float = RHO, *, calibrated: bool = True) -> float:
     """One propeller's normal-force slope dC_N/dα [1/rad] on q·A (free-stream q, disk area A) in De Young's
     blade-element form: 4.25 σₑ / (1 + 2 σₑ) · sin(β₀.₇₅ + 8°) · f(T_c), f = 1 + ½ (√(1 + 8 T_c / π) − 1), with the
-    effective solidity σₑ = (4/3) B c₀.₇₅ / (π R) and T_c = T / (q A). An estimate: the CFD's rotor disks carry the
-    in-plane force of their blade elements (printed in the solver log), not on the airframe's force coefficients."""
+    effective solidity σₑ = (4/3) B c₀.₇₅ / (π R) and T_c = T / (q A), times prop_lab's measured factor when its
+    campaign is on file (``calibrated``). The CFD's rotor disks carry the in-plane force of their blade elements
+    (printed in the solver log), not on the airframe's force coefficients."""
     c = ks.COMPONENTS["propeller"]
     L = kestrel.layout(p)
     R = L["R_prop"]
@@ -105,7 +106,8 @@ def prop_cn_alpha(thrust_each: float, V: float, p=None, rho: float = RHO) -> flo
     beta = math.atan(pitch / (2 * math.pi * 0.75 * R))
     q = 0.5 * rho * max(V, 0.1) ** 2
     tc = max(thrust_each, 0.0) / (q * L["A_disc"])
-    return 4.25 * sig / (1 + 2 * sig) * math.sin(beta + math.radians(8.0)) * (1 + 0.5 * (math.sqrt(1 + 8 * tc / math.pi) - 1))
+    f = ks.prop_lab_calibration()["cn_factor"] if calibrated else 1.0          # prop_lab's measured slope over De Young's
+    return f * 4.25 * sig / (1 + 2 * sig) * math.sin(beta + math.radians(8.0)) * (1 + 0.5 * (math.sqrt(1 + 8 * tc / math.pi) - 1))
 
 
 def prop_normal_force_slope(V: float, thrust_each: float, p=None, rho: float = RHO, *, bound: bool = False) -> float:

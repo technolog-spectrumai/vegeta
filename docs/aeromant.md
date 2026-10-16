@@ -26,8 +26,8 @@ dictionaries and solvers:
 | openfoam.com | v1912 and later (conda-forge `openfoam`, official `.com` packages) | `com/` (`constant/triSurface`, `transportProperties`, `turbulenceProperties`) | `surfaceFeatureExtract` | `simpleFoam` |
 | openfoam.org | 12 and later (`/opt/openfoam14`, official `.org` packages) | `org/` (`constant/geometry`, `physicalProperties`, `momentumTransport`) | `surfaceFeatures` | `foamRun -solver incompressibleFluid` |
 
-Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static` (a
-propeller in a rotating frame, see below), `rotor_mrf_installed` (a propeller beside a standing pod or airframe), `aircraft_rotor_disks` (a whole aircraft with two propellers as
+Templates: `laminar_external`, `rans_ksst_external` (a body in a free stream), `rotor_mrf`, `rotor_mrf_static`,
+`rotor_mrf_oblique` (a propeller in a rotating frame — axial inflow, static, the inflow at an angle — see below), `rotor_mrf_installed` (a propeller beside a standing pod or airframe), `aircraft_rotor_disks` (a whole aircraft with two propellers as
 rotor disks, see below), `aircraft_quad_rotor_disks` (four disks, each its own rpm). `aeromant templates` lists them with their parameters.
 
 `CFDCase` reads the installation's `WM_PROJECT_VERSION` (`v2412` → .com, `14` → .org) and picks the
@@ -143,6 +143,24 @@ decisions you can override: domain size in diameters, MRF zone radius/length, re
 (`surface_level` on the blades, `rotor_level` in the zone, `wake_level`), iterations, far-field turbulence.
 Expect tens of percent against blade element theory (`vegeta.boreas`): no blade-passing unsteadiness,
 no tip-vortex resolution, wall functions without prism layers. Compare trends, refine before trusting absolutes.
+
+### A propeller at an angle of attack (`rotor_mrf_oblique`)
+The same rotating frame with the inflow at `inflow_angle` to the axis in the x–z plane (`U = V (cos a, 0, sin a)`;
+0 axial, 90 edgewise): a tailsitter's propeller in the transition, a tilted rotor in forward flight. The lateral
+faces are free-stream boundaries (`freestreamVelocity` / `freestreamPressure`: the cross-flow enters and leaves
+through them) and the refined wake box follows the deflected slipstream. Beside thrust, torque and power the metrics
+carry the **normal force** `normal_force_N` (the force on the rotor along +z, with the cross-flow), `cn` on
+ρ n² D⁴, the propeller's own **pitching moment** `pitching_moment_Nm` about +y, `axial_inflow_m_s` and
+`crossflow_m_s`; the efficiency uses the axial component. A steady frame averages the once-per-revolution load cycle
+an inclined inflow puts on every blade: the mean loads are what it gives. Notebook: `41_prop_lab` (Kestrel's 9×6
+alone, in the configurations the aircraft flies, read against blade-element theory and De Young's normal force).
+
+```python
+case = aeromant.CFDCase("rotor_mrf_oblique", "prop_axis_x.stl",
+                        dict(rpm=8000, airspeed=8.0, inflow_angle=45.0, diameter=0.2286,
+                             kinematic_viscosity=1.46e-5, density=1.225, rotation=1),
+                        workdir="runs/prop_45deg", geometry_units="mm")
+```
 
 ### An installed propeller (`rotor_mrf_installed`)
 The propeller of `rotor_mrf` next to a **standing body** — a motor pod with its pylon, a nacelle, an airframe — given as a

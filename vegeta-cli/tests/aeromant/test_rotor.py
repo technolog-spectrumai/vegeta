@@ -107,6 +107,31 @@ def test_rotor_metrics_from_forces(tmp_path, prop_stl):
     assert r.metrics["thrust_N"] == pytest.approx(-1.0) and any("negative thrust" in x for x in r.messages)
 
 
+@pytest.mark.parametrize("env", [COM, ORG], ids=["com", "org"])
+def test_oblique_rotor_renders_and_reports_the_normal_force(tmp_path, prop_stl, env):
+    """rotor_mrf_oblique: the inflow at an angle to the axis in the x-z plane, free-stream lateral faces, the wake box
+    following the deflected slipstream; the normal force along +z and the pitching moment about +y in the metrics."""
+    case = CFDCase("rotor_mrf_oblique", prop_stl, dict(PARAMS, airspeed=10.0, inflow_angle=30.0), tmp_path / "o", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    u = (tmp_path / "o/0.orig/U").read_text()
+    ux, uz = 10 * math.cos(math.radians(30)), 10 * math.sin(math.radians(30))
+    assert u.count("freestreamVelocity") == 2 and f"({ux:.6g} 0 {uz:.6g})" in u.replace(f"{ux:.9g}", f"{ux:.6g}").replace(f"{uz:.9g}", f"{uz:.6g}") or f"{uz:.4g}" in u
+    assert (tmp_path / "o/0.orig/p").read_text().count("freestreamPressure") == 2
+    for f in ("k", "omega"):
+        assert "slip" not in (tmp_path / f"o/0.orig/{f}").read_text()
+    snappy = (tmp_path / "o/system/snappyHexMeshDict").read_text()
+    assert not re.search(r"\{\{[A-Z0-9_]+\}\}", snappy)
+    _fake_forces(tmp_path / "o", fx=-2.0, mx=-0.05)         # force.dat carries (fx 0.01 -0.02), moment.dat (mx 0.001 0)
+    m = case.results().metrics
+    assert m["thrust_N"] == pytest.approx(2.0) and m["normal_force_N"] == pytest.approx(-0.02) and m["pitching_moment_Nm"] == pytest.approx(0.001)
+    assert m["axial_inflow_m_s"] == pytest.approx(ux) and m["crossflow_m_s"] == pytest.approx(uz)
+    assert m["efficiency"] == pytest.approx(2.0 * ux / (0.05 * 6000 * 2 * math.pi / 60))
+    assert m["cn"] == pytest.approx(-0.02 / (1.2 * 100 ** 2 * 0.127 ** 4))
+    bad = CFDCase("rotor_mrf_oblique", prop_stl, dict(PARAMS, airspeed=10.0, inflow_angle=120.0), tmp_path / "b", geometry_units="m", environment=env)
+    assert "inflow_angle" in bad.prepare().messages[0]
+
+
 @pytest.mark.requires_openfoam
 @pytest.mark.slow
 def test_static_rotor_live(tmp_path, openfoam, prop_stl):
