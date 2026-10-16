@@ -42,6 +42,7 @@ import kestrel_systems as ks
 RHO, NU = ks.RHO0, 1.46e-5
 TRANSITION_ALPHAS = (80.0, 60.0, 45.0, 30.0, 20.0, 15.0, 10.0)
 SWEEP_ALPHAS = (0.0, 5.0, 10.0, 15.0, 20.0, 30.0, 45.0, 60.0, 75.0, 90.0)
+SWEEP_ALPHAS_FINE = (0.0, 5.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 30.0, 45.0, 60.0, 75.0, 90.0)   # the campaign's: the stall's peak resolved
 SWEEP_V = 10.0
 RESULTS_JSON = Path(__file__).resolve().parent / "data" / "kestrel_cfd_results.json"     # the test notebook (40) writes it
 QUALITY = {
@@ -151,18 +152,19 @@ def sweep_specs(*, V: float = SWEEP_V, alphas=SWEEP_ALPHAS) -> dict:
                                                        "T_lo": 0.0, "t": 0.0, "target_deg": a} for a in alphas}
 
 
-def specs(pts: list[dict], *, sweep: bool = True) -> dict:
+def specs(pts: list[dict], *, sweep: bool = True, sweep_alphas=SWEEP_ALPHAS) -> dict:
     """The cases by name and their point (``props`` False for the bare sweep)."""
     out = {point_name(pt): dict(pt, props=True) for pt in pts}
     if sweep:
-        out.update({k: dict(v, props=False) for k, v in sweep_specs().items()})
+        out.update({k: dict(v, props=False) for k, v in sweep_specs(alphas=sweep_alphas).items()})
     return out
 
 
-def plan(workdir, pts: list[dict], *, x_cg_m: float, z_cg_m: float = 0.0, quality: str = "screening", sweep: bool = True, env=None, p=None) -> dict:
+def plan(workdir, pts: list[dict], *, x_cg_m: float, z_cg_m: float = 0.0, quality: str = "screening", sweep: bool = True, env=None, p=None,
+         sweep_alphas=SWEEP_ALPHAS) -> dict:
     return {name: case(workdir, {k: v for k, v in s.items() if k != "props"}, x_cg_m=x_cg_m, z_cg_m=z_cg_m, quality=quality,
                        props=s["props"], env=env, p=p)
-            for name, s in specs(pts, sweep=sweep).items()}
+            for name, s in specs(pts, sweep=sweep, sweep_alphas=sweep_alphas).items()}
 
 
 # ------------------------------------------------------------------------------------------------- the results
@@ -347,9 +349,10 @@ def sweep_comparison(cfd_table, veh) -> "pd.DataFrame":
 
 
 def sweep_numbers(cmp) -> dict:
-    """What the bare sweep says in four numbers each for the CFD and the model: the lift slope (per rad, fitted on
-    the points at or below 10°), CL max and its α, CD at the lowest α, and Cm's slope (per rad: −slope / CLα is the
-    static margin in chords)."""
+    """What the bare sweep says in a few numbers each for the CFD and the model: the lift slope (per rad, fitted on
+    the points at or below 10°), CL max over the sweep and its α, CL max below 20° (the stall's peak — on the sweep's
+    angles only: a 5° grid can miss it, ``SWEEP_ALPHAS_FINE`` resolves it) and its α, CD at the lowest α, and Cm's
+    slope (per rad: −slope / CLα is the static margin in chords)."""
     out = {}
     if cmp is None or len(cmp) == 0:
         return out
@@ -364,7 +367,10 @@ def sweep_numbers(cmp) -> dict:
         else:
             cla = cma = math.nan
         i = int(np.nanargmax(cl))
-        out[who] = {"CLα [1/rad]": cla, "CL max": float(cl[i]), "α at CL max [deg]": float(a[i]), "CD at the lowest α": float(cd[int(np.argmin(a))]),
+        pre = a < 20.0
+        j = int(np.flatnonzero(pre)[np.nanargmax(cl[pre])]) if pre.any() else i
+        out[who] = {"CLα [1/rad]": cla, "CL max": float(cl[i]), "α at CL max [deg]": float(a[i]), "CL max below 20°": float(cl[j]), "α of it [deg]": float(a[j]),
+                    "CD at the lowest α": float(cd[int(np.argmin(a))]),
                     "Cmα [1/rad]": cma, "static margin from Cmα [chords]": (-cma / cla) if cla and np.isfinite(cla) and cla != 0 else math.nan}
     return out
 

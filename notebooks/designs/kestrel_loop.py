@@ -94,10 +94,16 @@ def _holds(op, value, target) -> bool:
     raise ValueError(op)
 
 
+def _text(v) -> str:
+    if isinstance(v, (bool, np.bool_)):
+        return "yes" if v else "no"
+    return f"{v:g}" if isinstance(v, (int, float, np.floating, np.integer)) else str(v)
+
+
 def _target_text(op, target) -> str:
     if op == "between":
         return f"{target[0]:g} – {target[1]:g}"
-    return f"{op} {target:g}" if isinstance(target, (int, float)) else f"{op} {target}"
+    return f"{op} {_text(target)}"
 
 
 def check(name: str, value, op: str | None = None, target=None, *, unit: str = "", note: str = "", fmt: str = "{:.3g}") -> dict:
@@ -106,7 +112,12 @@ def check(name: str, value, op: str | None = None, target=None, *, unit: str = "
     if op is None:
         op, target = TARGETS[name]
     ok = _holds(op, value, target)
-    text = fmt.format(value) if isinstance(value, (int, float, np.floating, np.integer)) and math.isfinite(float(value)) else str(value)
+    if isinstance(value, (bool, np.bool_)):
+        text = _text(value)
+    elif isinstance(value, (int, float, np.floating, np.integer)) and math.isfinite(float(value)):
+        text = fmt.format(value)
+    else:
+        text = str(value)
     return {"check": name, "value": text + (f" {unit}" if unit else ""), "target": _target_text(op, target), "holds": ok, "note": note}
 
 

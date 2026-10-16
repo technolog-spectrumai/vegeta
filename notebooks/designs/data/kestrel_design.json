@@ -675,7 +675,30 @@
    ]
   }
  },
- "verdict_cfd": null,
+ "verdict_cfd": {
+  "elevons, CFD": {
+   "passes": 12,
+   "of": 12,
+   "failures": []
+  },
+  "rotors only, CFD": {
+   "passes": 1,
+   "of": 12,
+   "failures": [
+    "forward 1.5 s, headwind 0 m/s: fails roll holds",
+    "forward 1.5 s, headwind 6 m/s: fails roll holds",
+    "forward 3 s, headwind 0 m/s: fails roll holds",
+    "forward 3 s, headwind 6 m/s: fails roll holds",
+    "forward 5 s, headwind 0 m/s: fails roll holds",
+    "back 1.5 s, headwind 0 m/s: fails roll holds",
+    "back 1.5 s, headwind 6 m/s: fails roll holds",
+    "back 3 s, headwind 0 m/s: fails roll holds",
+    "back 3 s, headwind 6 m/s: fails roll holds",
+    "back 5 s, headwind 0 m/s: fails roll holds",
+    "back 5 s, headwind 6 m/s: fails roll holds"
+   ]
+  }
+ },
  "back_strategies": {
   "elevons | 16.0 | 0.0": {
    "height loss [m]": 0.5637043525841889,
@@ -1032,6 +1055,175 @@
    "Re (chord)": "95890.41095890412"
   }
  },
+ "cfd_plug_in": {
+  "source": "sweep",
+  "campaign": {
+   "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+   "aircraft": "Kestrel-4Q (round struts, NACA 0012, no elevons in the CAD)",
+   "quality": "screening",
+   "date": "2026-10-16"
+  },
+  "sweep": {
+   "CFD": {
+    "CL\u03b1 [1/rad]": 3.1877079889898488,
+    "CL max": 0.614804,
+    "\u03b1 at CL max [deg]": 45.0,
+    "CD at the lowest \u03b1": 0.053229,
+    "Cm\u03b1 [1/rad]": -0.5243136783242165,
+    "static margin from Cm\u03b1 [chords]": 0.1644798332015242
+   },
+   "model": {
+    "CL\u03b1 [1/rad]": 3.2343453233900323,
+    "CL max": 0.6845668227392617,
+    "\u03b1 at CL max [deg]": 45.0,
+    "CD at the lowest \u03b1": 0.06654869740668531,
+    "Cm\u03b1 [1/rad]": -0.4955981629011842,
+    "static margin from Cm\u03b1 [chords]": 0.15322982345673905
+   }
+  }
+ },
+ "iterations": [
+  {
+   "iteration": "0 \u2014 envelope",
+   "what changed": "\u2014",
+   "source": "spec + layout + 5 assumptions",
+   "take-off mass [kg]": 2.0,
+   "static margin [chords]": 0.11999999999999986,
+   "stall speed [m/s]": 11.272546064868418,
+   "cruise power [W]": 108.09478787878787,
+   "endurance at the cruise [min]": 21.687632179164865,
+   "L/D at the cruise": 6.0,
+   "hover thrust / weight": 2.0,
+   "checks holding": "6 / 6",
+   "failing": "\u2014"
+  },
+  {
+   "iteration": "1 \u2014 CAD, Boreas, lattice, drag build-up",
+   "what changed": "the CG target at 10 % of the chord (battery station)",
+   "source": "kestrel_systems, Boreas, PEREGRINE lattice",
+   "take-off mass [kg]": 1.6862063482324605,
+   "static margin [chords]": 0.09552453569798042,
+   "hover thrust / weight": 2.893213038200698,
+   "stall speed [m/s]": 10.910411381833859,
+   "Cd0": 0.06654869740668531,
+   "L/D at the cruise": 4.956275655891227,
+   "cruise power [W]": 110.21562126390147,
+   "endurance at the cruise [min]": 21.27030608834237,
+   "checks holding": "8 / 9",
+   "failing": "battery inside its bay (not at a stop)"
+  },
+  {
+   "iteration": "2 \u2014 transition model",
+   "what changed": "elevons; pitch-over \u2265 3 s; back entry 13 m/s",
+   "source": "kestrel_transition (model polar)",
+   "take-off mass [kg]": 1.6862063482324605,
+   "static margin [chords]": 0.09552453569798042,
+   "hover thrust / weight": 2.893213038200698,
+   "stall speed [m/s]": 10.910411381833859,
+   "Cd0": 0.06654869740668531,
+   "L/D at the cruise": 4.956275655891227,
+   "cruise power [W]": 110.21562126390147,
+   "endurance at the cruise [min]": 21.27030608834237,
+   "transitions passing": "8 of 8 (\u2265 3 s)",
+   "checks holding": "5 / 7",
+   "failing": "rotors only, every schedule, cruise entry: passing, elevons, every schedule: passing"
+  },
+  {
+   "iteration": "3 \u2014 CFD plugged in",
+   "what changed": "the polar read against the CFD (sweep correction, 10 solved cases)",
+   "source": "38_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+   "take-off mass [kg]": 1.6862063482324605,
+   "static margin [chords]": 0.1644798332015242,
+   "hover thrust / weight": 2.893213038200698,
+   "stall speed [m/s]": 12.52319933434215,
+   "Cd0": 0.053229,
+   "L/D at the cruise": 4.956275655891227,
+   "cruise power [W]": 110.21562126390147,
+   "endurance at the cruise [min]": 21.27030608834237,
+   "transitions passing": "12 of 12",
+   "checks holding": "5 / 6",
+   "failing": "blown cases solved"
+  },
+  {
+   "iteration": "4 \u2014 payload bay (Part II)",
+   "what changed": "pod 430 \u2192 470 mm, ogive nose, the capsule on the axis",
+   "source": "CAD bays + mass table + transitions",
+   "take-off mass [kg]": 2.2762063482324604,
+   "static margin [chords]": 0.06376867495792918,
+   "hover thrust / weight": 2.1432829214237445,
+   "stall speed [m/s]": 12.676272928858339,
+   "Cd0": 0.06654869740668531,
+   "cruise power [W]": 120.00865405396456,
+   "endurance at the cruise [min]": 19.534591221611606,
+   "transitions passing": "8 of 8",
+   "checks holding": "5 / 6",
+   "failing": "endurance at the cruise, full [min]"
+  },
+  {
+   "iteration": "5 \u2014 elevons (Part II)",
+   "what changed": "four 28 % surfaces from 275 mm to the tips, \u03c4 from Zephyr",
+   "source": "CAD + kestrel_control + transitions",
+   "take-off mass [kg]": 1.7342063482324606,
+   "static margin [chords]": 0.09552453569798042,
+   "hover thrust / weight": 2.893213038200698,
+   "stall speed [m/s]": 10.910411381833859,
+   "Cd0": 0.06654869740668531,
+   "transitions passing": "11 of 12",
+   "checks holding": "2 / 4",
+   "failing": "servo margin (hinge moment / 0.17 N\u00b7m), least, transitions, rotors only: passing"
+  },
+  {
+   "iteration": "6 \u2014 faired struts (Part II)",
+   "what changed": "teardrop sleeves on posts and diagonals",
+   "source": "drag build-up + CAD + transitions",
+   "take-off mass [kg]": 1.7445520479110899,
+   "static margin [chords]": 0.09552453569798042,
+   "hover thrust / weight": 2.893213038200698,
+   "stall speed [m/s]": 10.910411381833859,
+   "Cd0": 0.0234286974066853,
+   "L/D at the cruise": 11.457555786338029,
+   "cruise power [W]": 59.21745224127278,
+   "endurance at the cruise [min]": 39.588329306171666,
+   "transitions passing": "10 of 12",
+   "checks holding": "4 / 5",
+   "failing": "trim by thrust alone, faired"
+  },
+  {
+   "iteration": "7 \u2014 reflexed section (Part II, Zephyr)",
+   "what changed": "NACA 23112 (k2/k1 0.03) instead of NACA 0012",
+   "source": "vegeta.zephyr / NeuralFoil",
+   "take-off mass [kg]": 1.6862063482324605,
+   "static margin [chords]": 0.09552453569798042,
+   "stall speed [m/s]": 9.660261108031193,
+   "checks holding": "4 / 5",
+   "failing": "CFD slab cases of the finalists solved"
+  },
+  {
+   "iteration": "8 \u2014 bracing (Part II)",
+   "what changed": "the X diagonals dropped, posts kept",
+   "source": "kestrel_structure (frame, modes)",
+   "take-off mass [kg]": 1.603145,
+   "Cd0": 0.020260697406685298,
+   "checks holding": "4 / 4",
+   "failing": "\u2014"
+  },
+  {
+   "iteration": "9 \u2014 Kestrel-4Q-2",
+   "what changed": "elevons + faired posts + no X + the section; the slow-entry rule (\u2264 13 m/s)",
+   "source": "all of the above",
+   "take-off mass [kg]": 1.651145,
+   "static margin [chords]": 0.0915860620999865,
+   "hover thrust / weight": 2.9546491627343094,
+   "stall speed [m/s]": 9.559300456114304,
+   "Cd0": 0.02573992234522169,
+   "L/D at the cruise": 10.599408892465885,
+   "cruise power [W]": 59.12237767797982,
+   "endurance at the cruise [min]": 39.65199120997368,
+   "transitions passing": "12 of 12 (back at 13 m/s)",
+   "checks holding": "8 / 9",
+   "failing": "back transitions entered at the cruise speed: passing"
+  }
+ ],
  "ground": {
   "CG height above the ground [m]": 0.32515187263290285,
   "least tip-over angle [deg]": 39.3371166497809,
@@ -1075,7 +1267,7 @@
     "elevons": true,
     "bracing": "posts",
     "struts": "faired",
-    "transitions passed": "8 of 12",
+    "transitions passed": "8 of 12 (6 of 6 back with the 13 m/s entry)",
     "hover pitch [rad/s\u00b2]": 88.38411261158896
    }
   },
@@ -1804,6 +1996,272 @@
     "pass": true
    }
   },
+  "strategies_4q2": {
+   "16.0 | 0.0 | 1.5": {
+    "height loss [m]": 1.0689798963554473,
+    "height gain [m]": 4.807021254763768,
+    "pitch error max [deg]": 6.80298359162797,
+    "time stalled, free stream [s]": 0.9580000000000001,
+    "\u03b1 blown max while stalled [deg]": 63.76740355516212,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.62708418790306,
+    "peak rotor thrust / T_max": 0.4060504028331209,
+    "elevon max [deg]": 9.276611421251136,
+    "roll demand / authority": 0.3003645935876866,
+    "roll demand / rotors' authority": 1.857048560017306,
+    "pass": true
+   },
+   "16.0 | 0.0 | 3.0": {
+    "height loss [m]": 0.17196796411992565,
+    "height gain [m]": 12.332910009564259,
+    "pitch error max [deg]": 3.441576035051061,
+    "time stalled, free stream [s]": 1.346,
+    "\u03b1 blown max while stalled [deg]": 62.585182678072535,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8157339652916953,
+    "peak rotor thrust / T_max": 0.36457754657270564,
+    "elevon max [deg]": 4.554071081071267,
+    "roll demand / authority": 0.11604976102817433,
+    "roll demand / rotors' authority": 1.5304294639025111,
+    "pass": false
+   },
+   "16.0 | 0.0 | 5.0": {
+    "height loss [m]": 0.17196796411992565,
+    "height gain [m]": 15.984094199638172,
+    "pitch error max [deg]": 1.7264742106626103,
+    "time stalled, free stream [s]": 1.016,
+    "\u03b1 blown max while stalled [deg]": 56.956729182256126,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8489746097121544,
+    "peak rotor thrust / T_max": 0.3560905045340885,
+    "elevon max [deg]": 3.712350333522584,
+    "roll demand / authority": 0.07893319640506995,
+    "roll demand / rotors' authority": 0.7663567963539827,
+    "pass": false
+   },
+   "16.0 | 6.0 | 1.5": {
+    "height loss [m]": 0.6854329396051,
+    "height gain [m]": 4.767255794950316,
+    "pitch error max [deg]": 6.802983591627976,
+    "time stalled, free stream [s]": 0.9580000000000001,
+    "\u03b1 blown max while stalled [deg]": 63.767403555162375,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.6270841879030614,
+    "peak rotor thrust / T_max": 0.3830724459594016,
+    "elevon max [deg]": 9.276611421251099,
+    "roll demand / authority": 0.3003645935876868,
+    "roll demand / rotors' authority": 1.8570485600172981,
+    "pass": true
+   },
+   "16.0 | 6.0 | 3.0": {
+    "height loss [m]": 0.17196796411992565,
+    "height gain [m]": 12.332909936395694,
+    "pitch error max [deg]": 3.441576035051036,
+    "time stalled, free stream [s]": 1.346,
+    "\u03b1 blown max while stalled [deg]": 62.58518267807237,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8157339652916952,
+    "peak rotor thrust / T_max": 0.36544537106645625,
+    "elevon max [deg]": 4.554071081071267,
+    "roll demand / authority": 0.11604976102817291,
+    "roll demand / rotors' authority": 1.5304294639025156,
+    "pass": false
+   },
+   "16.0 | 6.0 | 5.0": {
+    "height loss [m]": 0.17196796411992565,
+    "height gain [m]": 15.984094199638115,
+    "pitch error max [deg]": 1.7264742106626103,
+    "time stalled, free stream [s]": 1.016,
+    "\u03b1 blown max while stalled [deg]": 56.956729182256204,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8389830812906677,
+    "peak rotor thrust / T_max": 0.42457868668048926,
+    "elevon max [deg]": 3.7123503335225863,
+    "roll demand / authority": 0.07893319640507006,
+    "roll demand / rotors' authority": 0.7663567963539794,
+    "pass": false
+   },
+   "13.0 | 0.0 | 1.5": {
+    "height loss [m]": 0.31362182419871587,
+    "height gain [m]": 1.9889153943357627,
+    "pitch error max [deg]": 7.244643401728021,
+    "time stalled, free stream [s]": 0.9,
+    "\u03b1 blown max while stalled [deg]": 74.83576385083788,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.6799809578814053,
+    "peak rotor thrust / T_max": 0.44767039118829255,
+    "elevon max [deg]": 7.957181411128094,
+    "roll demand / authority": 0.3077110989635943,
+    "roll demand / rotors' authority": 1.1980417809134247,
+    "pass": true
+   },
+   "13.0 | 0.0 | 3.0": {
+    "height loss [m]": 1.320598308241319,
+    "height gain [m]": 5.082556995981193,
+    "pitch error max [deg]": 4.335204652652482,
+    "time stalled, free stream [s]": 1.304,
+    "\u03b1 blown max while stalled [deg]": 71.76088490528198,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8157552233844169,
+    "peak rotor thrust / T_max": 0.40678574170806686,
+    "elevon max [deg]": 4.5624371401473365,
+    "roll demand / authority": 0.18567762683283784,
+    "roll demand / rotors' authority": 1.1505263318309793,
+    "pass": true
+   },
+   "13.0 | 0.0 | 5.0": {
+    "height loss [m]": 1.959026404961154,
+    "height gain [m]": 9.205323131166182,
+    "pitch error max [deg]": 2.058984123835446,
+    "time stalled, free stream [s]": 1.25,
+    "\u03b1 blown max while stalled [deg]": 63.82326956335347,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8419023259491224,
+    "peak rotor thrust / T_max": 0.40862774346945957,
+    "elevon max [deg]": 3.9053551295809443,
+    "roll demand / authority": 0.12956774650639652,
+    "roll demand / rotors' authority": 0.9076728534325831,
+    "pass": true
+   },
+   "13.0 | 6.0 | 1.5": {
+    "height loss [m]": 0.16106704607464195,
+    "height gain [m]": 1.9889154290746518,
+    "pitch error max [deg]": 7.2446434017280135,
+    "time stalled, free stream [s]": 0.9,
+    "\u03b1 blown max while stalled [deg]": 74.83576385083785,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.6799809578814051,
+    "peak rotor thrust / T_max": 0.3828091012822419,
+    "elevon max [deg]": 7.9571814111281,
+    "roll demand / authority": 0.30771109896359455,
+    "roll demand / rotors' authority": 1.1980417809134258,
+    "pass": true
+   },
+   "13.0 | 6.0 | 3.0": {
+    "height loss [m]": 0.913820504182425,
+    "height gain [m]": 5.0825569959812,
+    "pitch error max [deg]": 4.335204652652482,
+    "time stalled, free stream [s]": 1.304,
+    "\u03b1 blown max while stalled [deg]": 71.76088490528193,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8157552233844169,
+    "peak rotor thrust / T_max": 0.3953283825994438,
+    "elevon max [deg]": 4.5624371401473365,
+    "roll demand / authority": 0.18567762683283728,
+    "roll demand / rotors' authority": 1.1505263318309815,
+    "pass": true
+   },
+   "13.0 | 6.0 | 5.0": {
+    "height loss [m]": 1.3301956473342536,
+    "height gain [m]": 9.20532313116621,
+    "pitch error max [deg]": 2.058984123835433,
+    "time stalled, free stream [s]": 1.25,
+    "\u03b1 blown max while stalled [deg]": 63.8232695633535,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8395610249383988,
+    "peak rotor thrust / T_max": 0.4281378024097214,
+    "elevon max [deg]": 3.905355129580942,
+    "roll demand / authority": 0.12956774650639583,
+    "roll demand / rotors' authority": 0.9076728534325864,
+    "pass": true
+   },
+   "12.0 | 0.0 | 1.5": {
+    "height loss [m]": 0.19586510014427105,
+    "height gain [m]": 1.2144735443500387,
+    "pitch error max [deg]": 7.331467692818301,
+    "time stalled, free stream [s]": 0.86,
+    "\u03b1 blown max while stalled [deg]": 75.09061015896839,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.7025467624173877,
+    "peak rotor thrust / T_max": 0.4688361146080879,
+    "elevon max [deg]": 7.393984297412829,
+    "roll demand / authority": 0.29494741978484657,
+    "roll demand / rotors' authority": 1.01386199869263,
+    "pass": true
+   },
+   "12.0 | 0.0 | 3.0": {
+    "height loss [m]": 0.6759603916041499,
+    "height gain [m]": 3.116082101386368,
+    "pitch error max [deg]": 4.33733022194207,
+    "time stalled, free stream [s]": 1.298,
+    "\u03b1 blown max while stalled [deg]": 72.05727605966128,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8097179712618907,
+    "peak rotor thrust / T_max": 0.40327357420303445,
+    "elevon max [deg]": 4.717110613886849,
+    "roll demand / authority": 0.19805852500854618,
+    "roll demand / rotors' authority": 0.9947930383781236,
+    "pass": true
+   },
+   "12.0 | 0.0 | 5.0": {
+    "height loss [m]": 1.9590058039639118,
+    "height gain [m]": 6.522869249836688,
+    "pitch error max [deg]": 2.1346297664943434,
+    "time stalled, free stream [s]": 1.362,
+    "\u03b1 blown max while stalled [deg]": 63.64018922266381,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8404066346761258,
+    "peak rotor thrust / T_max": 0.4086217952533219,
+    "elevon max [deg]": 3.944543904875154,
+    "roll demand / authority": 0.1496808068886962,
+    "roll demand / rotors' authority": 0.8962775223376639,
+    "pass": true
+   },
+   "12.0 | 6.0 | 1.5": {
+    "height loss [m]": 0.15700505369625972,
+    "height gain [m]": 1.2144735443500423,
+    "pitch error max [deg]": 7.331467692818301,
+    "time stalled, free stream [s]": 0.86,
+    "\u03b1 blown max while stalled [deg]": 75.0906101589683,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.7025467624173873,
+    "peak rotor thrust / T_max": 0.3850372277965419,
+    "elevon max [deg]": 7.393984297412836,
+    "roll demand / authority": 0.2949474197848469,
+    "roll demand / rotors' authority": 1.0138619986926318,
+    "pass": true
+   },
+   "12.0 | 6.0 | 3.0": {
+    "height loss [m]": 0.15700505369625972,
+    "height gain [m]": 3.116082101386368,
+    "pitch error max [deg]": 4.33733022194207,
+    "time stalled, free stream [s]": 1.298,
+    "\u03b1 blown max while stalled [deg]": 72.05727605966129,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8097179712618904,
+    "peak rotor thrust / T_max": 0.40134061624574824,
+    "elevon max [deg]": 4.717110613886857,
+    "roll demand / authority": 0.19805852500854618,
+    "roll demand / rotors' authority": 0.9947930383781248,
+    "pass": true
+   },
+   "12.0 | 6.0 | 5.0": {
+    "height loss [m]": 1.4136969565569721,
+    "height gain [m]": 6.522869249836731,
+    "pitch error max [deg]": 2.1346297664943306,
+    "time stalled, free stream [s]": 1.362,
+    "\u03b1 blown max while stalled [deg]": 63.64018922266386,
+    "moment shortfall [s]": 0.0,
+    "least pitch margin": 0.8398228157020535,
+    "peak rotor thrust / T_max": 0.4293040175936279,
+    "elevon max [deg]": 3.9445439048751507,
+    "roll demand / authority": 0.1496808068886952,
+    "roll demand / rotors' authority": 0.8962775223376667,
+    "pass": true
+   }
+  },
+  "verdict_4q2_slow_entry": {
+   "forward": "6 of 6",
+   "back, entered at 13 m/s": "6 of 6"
+  },
+  "gusts_4q2": {
+   "forward, gust +3 m/s": true,
+   "forward, gust -3 m/s": true,
+   "back, gust +3 m/s": false,
+   "back, gust -3 m/s": false,
+   "back, gust +3 m/s, entered at 13 m/s": true,
+   "back, gust -3 m/s, entered at 13 m/s": true
+  },
   "drag_vs_speed": {
    "Kestrel-4Q-1 (round struts, X, no elevons)": {
     "V stall [m/s]": 10.910411381833859,
@@ -1874,7 +2332,7 @@
   }
  },
  "status": {
-  "CFD": "NOT RUN",
+  "CFD": "NOT RUN here",
   "CAD": "run",
   "mass table": "run",
   "propulsion (Boreas tables)": "run",
