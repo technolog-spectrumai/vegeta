@@ -251,7 +251,10 @@ stall to its points. `prop_lab.py` (notebook **41**, `41_prop_lab`): the 9×6 al
 `rotor_mrf` / `rotor_mrf_oblique`), `plan`, `table` (beside BEMT and De Young, statuses `solved` / `diverged` /
 `FAILED` / `NOT RUN`), `summary`, `fit_section` (`cl_scale`, `cd_scale`), `fit_normal_force` (`cn_factor`), `export` /
 `load` / `calibration` (`data/prop_lab.json`); `kestrel_systems.prop_lab_calibration` / `blade_airfoil` apply it to
-`propulsion()` (the drive key stamps it), `kestrel_flight.prop_cn_alpha(calibrated=)` the normal force. `kestrel_structure.py`: `frame`,
+`propulsion()` (the drive key stamps it), `kestrel_flight.prop_cn_alpha(calibrated=)` the normal force; `noise` /
+`noise_table` (Gutin's tones on the measured loads, the broadband, dB(A) at `LISTENER`), `signal` / `signal_rotors` /
+`signal_sweep` / `write_wav` / `render` (the WAV files: one rotor, the four rotors beating in the hover, the
+transition glide). `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
 `polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,

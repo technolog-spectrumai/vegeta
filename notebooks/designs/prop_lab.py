@@ -20,6 +20,12 @@ normal-force slope over De Young's, over the oblique cases). ``export`` writes t
 and the rotor disks' polar tables carry the measured propeller), ``kestrel_flight.prop_cn_alpha`` the normal-force
 factor. A failed or diverged case is a result: listed, counted, left out of the fit.
 
+**Noise** (``noise``, ``noise_table``): the blade-passing frequency and its harmonics from Gutin's steady-loading tones
+on the thrust and torque the CFD measured (BEMT's where it did not), the broadband vortex noise (Hubbard), the
+A-weighted total at a listener's distance and angle; ``render`` / ``render_sweep`` write the sound as WAV files — one
+rotor in the hover, in cruise, at a transition point, the four rotors of the aircraft in the hover (their rpm split
+by the allocation: the beats), and the transition as a glide from the hover rpm to the cruise rpm.
+
 Frame: the rotor axis is +x, the inflow comes along +x (axial) or in the x–z plane at ``inflow_angle`` (oblique:
 the cross-flow along +z); the CAD propeller (``cad``) is built about z and turned onto x (``stl``). Steady MRF: no
 blade passing, no tip vortex; a steady frame averages the once-per-revolution loading of an inclined inflow.
@@ -252,9 +258,11 @@ def export(tab, path=PROP_LAB_JSON, *, meta: dict | None = None, keep_previous: 
     sec, nf = fit_section(tab), fit_normal_force(tab)
     rows = {str(k): {kk: (None if vv is None or (isinstance(vv, float) and not np.isfinite(vv)) else (vv.item() if hasattr(vv, "item") else vv))
                      for kk, vv in r.items()} for k, r in tab.to_dict("index").items()}
+    nt = noise_table(tab)
+    noise_rows = {str(k): {kk: (vv.item() if hasattr(vv, "item") else vv) for kk, vv in r.items()} for k, r in nt.to_dict("index").items()}
     doc = {"meta": meta or {}, "summary": {k: v for k, v in summary(tab).items() if k != "line"},
            "calibration": {"cl_scale": sec["cl_scale"], "cd_scale": sec["cd_scale"], "cn_factor": nf["cn_factor"],
-                           "section_fit": sec, "normal_force_fit": nf}, "cases": rows}
+                           "section_fit": sec, "normal_force_fit": nf}, "cases": rows, "noise": {"listener": LISTENER, "rows": noise_rows}}
     path = Path(path)
     prev = load(path)
     if keep_previous and sec["cl_scale"] is None and nf["cn_factor"] is None and prev and prev.get("calibration", {}).get("cl_scale") is not None:
@@ -279,3 +287,166 @@ def calibration(path=PROP_LAB_JSON) -> dict:
     on = cal.get("cl_scale") is not None or cal.get("cn_factor") is not None
     return {"cl_scale": cal.get("cl_scale") or 1.0, "cd_scale": cal.get("cd_scale") or 1.0, "cn_factor": cal.get("cn_factor") or 1.0,
             "on_file": on, "meta": (doc or {}).get("meta", {}), "n_solved": (doc or {}).get("summary", {}).get("solved", 0)}
+
+
+# ------------------------------------------------------------------------------------------------- noise and sound
+LISTENER = {"distance_m": 10.0, "angle_deg": 60.0}      # 10 m off, 60° from the axis: a bystander watching it hover
+RATE = 44100
+
+
+def noise(rpm: float, V: float, thrust: float, torque: float, *, distance: float | None = None, angle_deg: float | None = None,
+          harmonics: int = 8) -> dict:
+    """One propeller's noise at a listener: Gutin's tones of the steady loading (the blade-passing frequency B·n and
+    its harmonics; ``thrust`` and ``torque`` as measured or predicted), the broadband vortex noise with its peak
+    frequency, the totals in dB and dB(A). Steady loading only: the once-per-revolution load cycle of an inclined
+    inflow adds loading harmonics the estimate does not carry."""
+    from vegeta.boreas import noise as bn
+    d = LISTENER["distance_m"] if distance is None else distance
+    a = LISTENER["angle_deg"] if angle_deg is None else angle_deg
+    pr = ks.propulsion().prop
+    g = bn.gutin_harmonics(pr, max(thrust, 0.0), max(torque, 0.0), rpm, d, a, harmonics=harmonics)
+    v = bn.vortex_noise(pr, rpm, d, V)
+    tones = [(float(f), float(L)) for f, L in zip(g["frequency_hz"], g["spl_db"])]
+    levels = [L for _, L in tones] + [v["spl_db"]]
+    weights = bn.a_weighting(np.array([f for f, _ in tones] + [v["peak_hz"]]))
+    total = bn.add_levels(levels)
+    total_a = bn.add_levels([L + float(w) for L, w in zip(levels, weights)])
+    return {"rpm": rpm, "V": V, "thrust": thrust, "torque": torque, "blade_pass_hz": g["blade_pass_hz"], "tones": tones,
+            "tonal_db": g["total_tonal_db"], "broadband_db": v["spl_db"], "broadband_peak_hz": v["peak_hz"],
+            "band": (max(0.3 * v["peak_hz"], 200.0), min(3.0 * v["peak_hz"], 0.45 * RATE)), "total_db": total, "total_dba": total_a,
+            "distance_m": d, "angle_deg": a}
+
+
+def noise_table(tab) -> "pd.DataFrame":
+    """One row per configuration: the blade-passing frequency, the first three tones, the broadband, the totals —
+    on the CFD's thrust and torque where the case solved, on BEMT's otherwise (the ``source`` column says which)."""
+    import pandas as pd
+    rows = {}
+    for name, r in tab.iterrows():
+        solved = str(r.get("status")) == "solved" and "CFD T [N]" in tab.columns and np.isfinite(float(r["CFD T [N]"]))
+        T = float(r["CFD T [N]"]) if solved else float(r["BEMT T [N]"])
+        Q = float(r["CFD Q [N·m]"]) if solved else float(r["BEMT Q [N·m]"])
+        nz = noise(float(r["rpm"]), float(r["V [m/s]"]), T, Q)
+        rows[name] = {"source": "CFD" if solved else "BEMT", "rpm": r["rpm"], "V [m/s]": r["V [m/s]"], "angle [deg]": r["angle [deg]"],
+                      "BPF [Hz]": nz["blade_pass_hz"], "tone 1 [dB]": nz["tones"][0][1], "tone 2 [dB]": nz["tones"][1][1], "tone 3 [dB]": nz["tones"][2][1],
+                      "tonal [dB]": nz["tonal_db"], "broadband [dB]": nz["broadband_db"], "broadband peak [Hz]": nz["broadband_peak_hz"],
+                      "total [dB]": nz["total_db"], "total [dB(A)]": nz["total_dba"]}
+    return pd.DataFrame(rows).T
+
+
+def _synth(tones, broadband_db, band, *, seconds, seed, p_ref=20e-6):
+    rng = np.random.default_rng(seed)
+    t = np.arange(int(seconds * RATE)) / RATE
+    x = np.zeros_like(t)
+    for f, L in tones:
+        if 0 < f < RATE / 2 and np.isfinite(L):
+            x += math.sqrt(2) * p_ref * 10 ** (L / 20) * np.sin(2 * math.pi * f * t + rng.uniform(0, 2 * math.pi))
+    if np.isfinite(broadband_db):
+        n = rng.standard_normal(len(t))
+        F = np.fft.rfft(n)
+        fr = np.fft.rfftfreq(len(t), 1 / RATE)
+        F[(fr < band[0]) | (fr > band[1])] = 0
+        nb = np.fft.irfft(F, len(t))
+        nb *= p_ref * 10 ** (broadband_db / 20) / max(float(np.std(nb)), 1e-30)
+        x += nb
+    return x
+
+
+def _fade(x, seconds: float = 0.05):
+    t = np.arange(len(x)) / RATE
+    return x * np.minimum(1.0, np.minimum(t, t[-1] - t) / seconds)
+
+
+def signal(nz: dict, *, seconds: float = 3.0, seed: int = 0) -> np.ndarray:
+    """A sound-pressure signal [Pa] of one propeller's noise (``noise``): the tones at their levels, the broadband as
+    band-passed noise around its peak."""
+    return _fade(_synth(nz["tones"], nz["broadband_db"], nz["band"], seconds=seconds, seed=seed))
+
+
+def signal_rotors(nzs: list, *, seconds: float = 3.0, seed: int = 0) -> np.ndarray:
+    """Several rotors heard together (each at its own rpm: the beats between them), their pressures added."""
+    return _fade(sum(_synth(nz["tones"], nz["broadband_db"], nz["band"], seconds=seconds, seed=seed + i) for i, nz in enumerate(nzs)))
+
+
+def signal_sweep(points: list, *, seconds: float = 6.0, seed: int = 0, p_ref: float = 20e-6) -> np.ndarray:
+    """The sound of a glide through ``points`` (``noise`` dicts, spread evenly over ``seconds``): every tone's
+    frequency and level interpolated in time, the phase integrated so the pitch slides without a click; the
+    broadband's level interpolated too."""
+    rng = np.random.default_rng(seed)
+    t = np.arange(int(seconds * RATE)) / RATE
+    knots = np.linspace(0, seconds, len(points))
+    x = np.zeros_like(t)
+    n_h = min(len(p["tones"]) for p in points)
+    for h in range(n_h):
+        f = np.interp(t, knots, [p["tones"][h][0] for p in points])
+        L = np.interp(t, knots, [p["tones"][h][1] for p in points])
+        phase = 2 * math.pi * np.cumsum(f) / RATE + rng.uniform(0, 2 * math.pi)
+        x += math.sqrt(2) * p_ref * 10 ** (L / 20) * np.sin(phase)
+    Lb = np.interp(t, knots, [p["broadband_db"] for p in points])
+    band = (min(p["band"][0] for p in points), max(p["band"][1] for p in points))
+    n = rng.standard_normal(len(t))
+    F = np.fft.rfft(n)
+    fr = np.fft.rfftfreq(len(t), 1 / RATE)
+    F[(fr < band[0]) | (fr > band[1])] = 0
+    nb = np.fft.irfft(F, len(t))
+    nb /= max(float(np.std(nb)), 1e-30)
+    x += nb * p_ref * 10 ** (Lb / 20)
+    return _fade(x)
+
+
+def write_wav(path, x: np.ndarray, full_scale_pa: float) -> Path:
+    """16-bit mono WAV at ``RATE``; one ``full_scale_pa`` for every file of a comparison, so the louder one is louder."""
+    import wave
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pcm = np.clip(np.asarray(x) / full_scale_pa, -1.0, 1.0)
+    with wave.open(str(path), "wb") as f:
+        f.setnchannels(1); f.setsampwidth(2); f.setframerate(RATE)
+        f.writeframes((pcm * 32767).astype("<i2").tobytes())
+    return path
+
+
+def hover_rotor_rpms(mass_kg: float = 1.686, split: float = 0.015) -> list:
+    """The four rotors' speeds in a steady hover with a small differential (``split`` of the thrust on the diagonal
+    pairs, the heading held against a disturbance): what makes four rotors beat rather than hum."""
+    T = mass_kg * ks.G / 4
+    return [ks.rpm_for(T * (1 + split), 0.0), ks.rpm_for(T * (1 - split), 0.0), ks.rpm_for(T * (1 - split), 0.0), ks.rpm_for(T * (1 + split), 0.0)]
+
+
+def render(out_dir, tab, *, mass_kg: float = 1.686, seconds: float = 3.0) -> dict:
+    """The WAV files: one rotor in the hover (at the hover rpm), in cruise, at a transition point (8 m/s at 45°);
+    the four rotors in the hover (their rpm split: the beats); the transition as a glide from the hover to the cruise
+    through the oblique points. The thrust and torque from the CFD where a matching case solved, else from BEMT.
+    Returns ``{name: {"path", "total_db", "total_dba", "seconds"}}``, every file at one full scale."""
+    out_dir = Path(out_dir)
+    def pick(kind, **sel):
+        rows = tab[tab["kind"] == kind]
+        for k, v in sel.items():
+            rows = rows[np.isclose(rows[k].astype(float), v)]
+        if len(rows) == 0:
+            return None
+        r = rows.iloc[0]
+        solved = str(r["status"]) == "solved" and "CFD T [N]" in tab.columns and np.isfinite(float(r["CFD T [N]"]))
+        return noise(float(r["rpm"]), float(r["V [m/s]"]), float(r["CFD T [N]"] if solved else r["BEMT T [N]"]), float(r["CFD Q [N·m]"] if solved else r["BEMT Q [N·m]"]))
+    r_h, r_c = rpm_hover(), rpm_cruise()
+    hov = pick("hover", rpm=r_h) or noise(r_h, 0.0, bemt(r_h).thrust, bemt(r_h).torque)
+    cru = pick("axial", rpm=r_c) or noise(r_c, 16.0, bemt(r_c, 16.0).thrust, bemt(r_c, 16.0).torque)
+    tr = pick("oblique", **{"V [m/s]": 8.0, "angle [deg]": 45.0}) or noise(8000.0, 8.0, bemt(8000.0, 8.0 * math.cos(math.pi / 4)).thrust, bemt(8000.0, 8.0 * math.cos(math.pi / 4)).torque)
+    four = [noise(r, 0.0, bemt(r).thrust, bemt(r).torque) for r in hover_rotor_rpms(mass_kg)]
+    glide = [hov] + [pick("oblique", **{"V [m/s]": 8.0, "angle [deg]": a}) or noise(8000.0, 8.0, bemt(8000.0, 8.0 * math.cos(math.radians(a))).thrust, bemt(8000.0, 8.0 * math.cos(math.radians(a))).torque)
+                     for a in (60.0, 45.0, 30.0, 15.0)] + [cru]
+    sigs = {"one_rotor_hover": signal(hov, seconds=seconds, seed=1), "one_rotor_cruise_16ms": signal(cru, seconds=seconds, seed=2),
+            "one_rotor_transition_8ms_45deg": signal(tr, seconds=seconds, seed=3), "four_rotors_hover": signal_rotors(four, seconds=seconds, seed=4),
+            "transition_hover_to_cruise": signal_sweep(glide, seconds=2 * seconds, seed=5)}
+    full = 1.2 * max(float(np.abs(x).max()) for x in sigs.values())
+    out = {}
+    for name, x in sigs.items():
+        path = write_wav(out_dir / f"{name}.wav", x, full)
+        rms = float(np.sqrt(np.mean(x ** 2)))
+        from vegeta.boreas import noise as bn
+        out[name] = {"path": str(path), "seconds": len(x) / RATE, "rms_db": bn.spl(rms), "full_scale_pa": full}
+    out["one_rotor_hover"].update(total_db=hov["total_db"], total_dba=hov["total_dba"])
+    out["one_rotor_cruise_16ms"].update(total_db=cru["total_db"], total_dba=cru["total_dba"])
+    out["four_rotors_hover"].update(total_db=float(10 * math.log10(sum(10 ** (nz["total_db"] / 10) for nz in four))),
+                                    rpms=[nz["rpm"] for nz in four], beat_hz=[abs(four[0]["blade_pass_hz"] - four[1]["blade_pass_hz"])])
+    return out

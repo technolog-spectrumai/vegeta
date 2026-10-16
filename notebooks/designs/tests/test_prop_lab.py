@@ -107,3 +107,31 @@ def test_flight_points_cruise_and_stall():
     assert 0 < pts[0]["alpha_deg"] < 8 and pts[1]["alpha_deg"] > pts[0]["alpha_deg"] and pts[0]["T_up"] > veh.drive.T_min
     spec = kcfd.specs(pts, sweep=False)
     assert len(spec) == 2 and all(s["props"] for s in spec.values())
+
+
+def test_noise_frequencies_and_the_audio_files(tmp_path):
+    rpm = 7000.0
+    op = pl.bemt(rpm)
+    nz = pl.noise(rpm, 0.0, op.thrust, op.torque)
+    assert nz["blade_pass_hz"] == pytest.approx(2 * rpm / 60) and nz["tones"][0][0] == pytest.approx(2 * rpm / 60) and nz["tones"][1][0] == pytest.approx(4 * rpm / 60)
+    assert 30 < nz["total_db"] < 110 and nz["total_dba"] < nz["total_db"] + 3 and nz["broadband_peak_hz"] > 500 and np.isfinite(nz["tonal_db"])
+    specs = {k: v for k, v in pl.configurations().items() if v["kind"] != "oblique" or v["airspeed"] == 8.0}
+    T = pl.table(None, specs)
+    nt = pl.noise_table(T)
+    assert len(nt) == len(specs) and (nt["source"] == "BEMT").all() and nt["BPF [Hz]"].astype(float).min() > 100
+    x = pl.signal(nz, seconds=1.0)
+    assert len(x) == pl.RATE and abs(float(x[0])) < 1e-9 and float(np.sqrt(np.mean(x ** 2))) > 0
+    sw = pl.signal_sweep([nz, pl.noise(9000.0, 8.0, op.thrust, op.torque)], seconds=2.0)
+    assert len(sw) == 2 * pl.RATE
+    rp = pl.hover_rotor_rpms()
+    assert rp[0] == rp[3] and rp[1] == rp[2] and rp[0] > rp[1]
+    files = pl.render(tmp_path / "sound", T, seconds=1.0)
+    assert set(files) == {"one_rotor_hover", "one_rotor_cruise_16ms", "one_rotor_transition_8ms_45deg", "four_rotors_hover", "transition_hover_to_cruise"}
+    import wave
+    with wave.open(files["four_rotors_hover"]["path"]) as f:
+        assert f.getframerate() == pl.RATE and f.getnframes() == pl.RATE and f.getnchannels() == 1
+    with wave.open(files["transition_hover_to_cruise"]["path"]) as f:
+        assert f.getnframes() == 2 * pl.RATE
+    assert files["four_rotors_hover"]["total_db"] > files["one_rotor_hover"]["total_db"] + 5 and files["four_rotors_hover"]["beat_hz"][0] > 0
+    doc = pl.export(T, tmp_path / "p.json")
+    assert len(doc["noise"]["rows"]) == len(specs) and doc["noise"]["listener"]["distance_m"] == 10.0
