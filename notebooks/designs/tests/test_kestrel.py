@@ -403,3 +403,54 @@ def test_section_study_on_zephyr(tmp_path):
         t = ksec.table(recompute=False) if ksec.SECTIONS_JSON.exists() else {ksec.key("NACA 0012"): ksec.study_one("NACA 0012")}
         k0 = ksec.key("NACA 0012")
         assert abs(t[k0]["cruise"]["cm0"]) < 0.01 and 0.25 < t[k0]["elevon"]["tau"] < 0.5
+
+
+# ------------------------------------------------------------------------------------------------ the nose, the speed range, the manoeuvrability
+def test_pod_profile_is_an_ogive_with_a_monotone_tail(P):
+    prof = kestrel.Kestrel4Q.pod_profile(P)
+    xs, ws, hs = zip(*prof)
+    i_full = next(i for i, x in enumerate(xs) if x >= P["nose_length"] - 1e-9)
+    assert all(b >= a for a, b in zip(hs[:i_full], hs[1:i_full + 1])) and hs[i_full] == pytest.approx(0.98 * P["gap"])   # the nose grows to the full section
+    assert hs[0] >= 0.9 * P["camera_diameter"] and hs[0] < 0.4 * P["gap"]                                               # the tip: the camera's flat
+    tail = [h for x, _, h in prof if x >= P["pod_length"] - P["tail_length"]]
+    assert all(b <= a for a, b in zip(tail, tail[1:])) and tail[-1] < 0.6 * tail[0]                                     # the tail shrinks monotonically
+    # the ellipsoid: half-way along the nose the section is √(1 − 0.25) = 0.87 of the full one
+    h_mid = float(np.interp(P["nose_length"] / 2, xs, hs))
+    assert h_mid == pytest.approx(math.sqrt(0.75) * 0.98 * P["gap"], rel=0.03)
+    assert any("mid-body" in m for m in kestrel.Kestrel4Q.checks(dict(P, nose_length=250.0, tail_length=200.0)))
+
+
+def test_pod_builds_monotone(P):
+    pytest.importorskip("cadquery")
+    g = kestrel.Kestrel4Q().generate(part="pod")
+    v, _ = g.tessellate(0.3)
+    zs = [v[(v[:, 0] >= x0) & (v[:, 0] < x0 + 20), 2].max() for x0 in range(0, 440, 20) if ((v[:, 0] >= x0) & (v[:, 0] < x0 + 20)).any()]
+    i_max = int(np.argmax(zs))
+    assert all(b >= a - 0.5 for a, b in zip(zs[:i_max], zs[1:i_max + 1])) and all(b <= a + 0.5 for a, b in zip(zs[i_max:], zs[i_max + 1:]))
+
+
+def test_drag_vs_speed_and_the_maximum_speed(VEH):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import kestrel_drawings as kd
+    fig, axs = plt.subplots(1, 3)
+    T = kd.drag_vs_speed({"4Q": VEH}, speeds=np.arange(8.0, 40.5, 0.5), axs=axs)
+    plt.close(fig)
+    r = T.loc["4Q"]
+    assert r["V stall [m/s]"] == pytest.approx(kf.stall_speed(mass_kg=VEH.mass, pol=VEH.pol), rel=1e-6)
+    assert 25.0 < r["V max, thrust = drag [m/s]"] < 36.0                                     # the 9x6 runs out of thrust near its pitch speed
+    assert r["power at V max [W]"] <= 4 * VEH.drive.P_cap + 13.0 + 1e-6
+    assert r["drag at 16 m/s [N]"] == pytest.approx(r["parasite at 16 [N]"] + r["induced at 16 [N]"])
+    assert VEH.drive.power(50.0, 36.0) == VEH.drive.P_cap                                     # the cap holds where the table runs out of thrust
+
+
+def test_cruise_manoeuvrability(VEH):
+    df = kc.cruise_manoeuvrability(VEH)
+    r16 = df.loc[16.0]
+    assert r16["pitch: elevons [rad/s²]"] > r16["pitch: rotors [rad/s²]"]                     # in cruise the elevons, not the thrust split, pitch it
+    assert 0 < r16["ΔT available [N]"] < 2.0 and r16["steady roll rate [deg/s]"] > 60.0
+    assert r16["load factor available"] < 4.0 and df.loc[25.0, "load factor available"] == pytest.approx(4.0)
+    assert df["turn rate [deg/s]"].max() > 60.0
+    bare = kc.cruise_manoeuvrability(kt.make_vehicle(elevons=False))
+    assert bare.loc[16.0, "pitch: elevons [rad/s²]"] == 0.0 and bare.loc[16.0, "steady roll rate [deg/s]"] < r16["steady roll rate [deg/s]"]

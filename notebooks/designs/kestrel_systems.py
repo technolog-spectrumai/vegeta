@@ -202,6 +202,7 @@ class DriveTable:
     diameter: float = 0.2286
     rpm_hover: float = 0.0
     source: str = ""
+    P_cap: float = 370.0            # one drive's electrical ceiling [W]: the motor's current limit at the pack voltage (25 A × 14.8 V)
 
     def t_max(self, v_axial):
         return np.interp(np.maximum(v_axial, 0.0), self.V, self.T_max)
@@ -215,12 +216,12 @@ class DriveTable:
         v = float(np.clip(v_axial, V[0], V[-1]))
         i = min(int(np.searchsorted(V, v, side="right")) - 1, len(V) - 2)
         a = (v - V[i]) / (V[i + 1] - V[i])
-        row = (1 - a) * P[i] + a * P[i + 1]
-        return float(np.interp(max(float(thrust), 0.0), T, row))
+        row = np.minimum((1 - a) * P[i] + a * P[i + 1], self.P_cap)      # beyond the table's full thrust the rows extrapolate: cap them
+        return float(min(np.interp(max(float(thrust), 0.0), T, row), self.P_cap))
 
 
 def _drive_key() -> dict:
-    return {k: COMPONENTS[k] for k in ("motor", "propeller", "battery")}
+    return {**{k: COMPONENTS[k] for k in ("motor", "propeller", "battery")}, "V_grid_max": 36.0}
 
 
 def drive_table(rho: float = RHO0, *, recompute: bool = False, save: bool = False) -> DriveTable:
@@ -240,8 +241,9 @@ def drive_table(rho: float = RHO0, *, recompute: bool = False, save: bool = Fals
 
 
 @lru_cache(maxsize=4)
-def compute_drive_table(rho: float = RHO0, V=(0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0)) -> DriveTable:
-    """Boreas's points for one drive (~40 s: BEMT and the motor model at every row)."""
+def compute_drive_table(rho: float = RHO0, V=(0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0)) -> DriveTable:
+    """Boreas's points for one drive (~40 s: BEMT and the motor model at every row), out to the inflow where the 9x6 at
+    full throttle has no thrust left (its pitch speed): the thrust-limited maximum speed lives there."""
     sys_ = propulsion(rho)
     t_max, kap = [], []
     t_grid = np.linspace(0.0, 9.0, 19)
@@ -276,7 +278,8 @@ def compute_drive_table(rho: float = RHO0, V=(0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.
         P.append(row)
     hover = sys_.for_thrust(4.0, 0.0)
     return DriveTable(tuple(V), tuple(t_max), tuple(kap), tuple(t_grid), tuple(map(tuple, P)), diameter=sys_.prop.diameter,
-                      rpm_hover=hover.rpm, source="Boreas BEMT (generic section) + first-order motor + 4S battery")
+                      rpm_hover=hover.rpm, source="Boreas BEMT (generic section) + first-order motor + 4S battery",
+                      P_cap=sys_.battery.voltage * sys_.motor.max_current_a)
 
 
 def rpm_for(thrust: float, v_axial: float, rho: float = RHO0) -> float:

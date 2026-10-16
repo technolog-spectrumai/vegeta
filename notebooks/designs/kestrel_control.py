@@ -244,3 +244,65 @@ def elevon_authority(p=None, *, mass_kg: float, cg=None, tau: float = 0.45, cl_a
     df = pd.DataFrame(rows).T
     df["elevons / rotors, about the axis"] = df["roll / heading from elevons [N·m]"] / df["rotors: about the thrust axis [N·m]"]
     return df
+
+
+# ------------------------------------------------------------------------------------------------- manoeuvrability in horizontal flight
+CL_P_FACTOR = -1.0 / 6.0          # roll damping of a rectangular wing, Cl_p ≈ −CLα / 6 per (p b / 2V)
+N_STRUCTURAL = 4.0
+
+
+def cruise_manoeuvrability(veh, *, speeds=None, rho: float = ks.RHO0, elevon_tau: float | None = None, delta_max_deg: float = 25.0, x_cp: float = 0.60):
+    """Against airspeed in level flight, for a ``kestrel_transition.Vehicle`` (the biplane's or an X-wing's): the pitch
+    and yaw angular accelerations the rotors give by differential thrust (the pairs split about the cruise thrust,
+    within [T_min, T_max(V)]: pitch on the rotors' vertical lever, yaw on their spanwise one) and the elevons add
+    (pitch: the four together; roll: differentially), the steady roll rate (the roll moment against the wings' roll
+    damping, Cl_p ≈ −CLα/6 on the wing span), and the turn: the load factor the lift allows (≤ the structural 4 g), the
+    turn rate and radius. The moments are the maxima one axis gets with the others untouched."""
+    import pandas as pd
+    speeds = np.arange(8.0, 30.5, 1.0) if speeds is None else np.asarray(speeds, float)
+    L, pol, d = veh.L, veh.pol, veh.drive
+    W, S, c = veh.weight, L["S_ref"], L["chord"]
+    phi = veh.panels[0]["phi"] if getattr(veh, "panels", None) else 0.0
+    cph = math.cos(phi)
+    tau = veh.elevon_tau if elevon_tau is None else elevon_tau
+    dmax = math.radians(delta_max_deg)
+    z_r, y_r = veh.z_rotor, L["motor_y"] * cph if phi else L["motor_y"]
+    span_wing = L["span"]                                     # the wing's own span (an X wing's full length)
+    y_in = veh.elevon_y_in if veh.elevon_y_in is not None else L["motor_y"] - L["R_prop"]
+    y1 = L["span"] / 2
+    S_e = max(y1 - y_in, 0.0) * c                            # one elevon's wing strip
+    cl_max_v = pol.cl_max * cph
+    rows = {}
+    for V in speeds:
+        q = 0.5 * rho * V * V
+        CL = W / (q * S)
+        if CL > cl_max_v:
+            continue
+        D = q * S * (pol.cd0 + pol.k * CL ** 2)
+        T = D / 4
+        Tmax, Tmin = float(d.t_max(V)), d.T_min
+        dT = max(min(T - Tmin, Tmax - T), 0.0)                # one pair up by dT, the other down by dT
+        M_pitch_rot = 4 * z_r * dT
+        N_yaw_rot = 4 * y_r * dT
+        kap = float(d.kap(V))
+        L_roll_rot = 2 * kap * (max(Tmax - T, 0.0) + max(T - Tmin, 0.0))   # one diagonal pair up to T_max, the other down to T_min
+        if veh.elevons:
+            dL = q * S_e * pol.cl_alpha * tau * dmax         # one elevon's lift increment, normal to its panel
+            M_pitch_el = 4 * dL * (L["x_le"] + x_cp * c - veh.x_cg) * cph
+            L_roll_el = 4 * dL * 0.5 * (y_in + y1)
+        else:
+            M_pitch_el = L_roll_el = 0.0
+        Cl_p = CL_P_FACTOR * pol.cl_alpha                     # per (p b / 2V), on S and the wing span
+        L_p = Cl_p * q * S * span_wing * span_wing / (2 * V)  # roll damping [N·m per rad/s]
+        p_ss = (L_roll_rot + L_roll_el) / -L_p
+        n_lift = min(cl_max_v / CL, N_STRUCTURAL)
+        turn_rate = ks.G * math.sqrt(max(n_lift ** 2 - 1.0, 0.0)) / V
+        rows[V] = {"CL": CL, "thrust per rotor [N]": T, "ΔT available [N]": dT,
+                   "pitch: rotors [rad/s²]": M_pitch_rot / veh.Iyy, "pitch: elevons [rad/s²]": M_pitch_el / veh.Iyy, "pitch: total [rad/s²]": (M_pitch_rot + M_pitch_el) / veh.Iyy,
+                   "yaw: rotors [rad/s²]": N_yaw_rot / veh.Izz if hasattr(veh, "Izz") else N_yaw_rot / veh.Ixx,
+                   "roll: rotors' torque [N·m]": L_roll_rot, "roll: elevons [N·m]": L_roll_el, "roll acceleration [rad/s²]": (L_roll_rot + L_roll_el) / veh.Ixx,
+                   "steady roll rate [deg/s]": math.degrees(p_ss), "load factor available": n_lift, "turn rate [deg/s]": math.degrees(turn_rate),
+                   "turn radius [m]": V / turn_rate if turn_rate > 0 else math.inf}
+    df = pd.DataFrame(rows).T
+    df.index.name = "V [m/s]"
+    return df

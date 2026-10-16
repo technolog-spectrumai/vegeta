@@ -61,7 +61,8 @@ def side_view(p=None, *, x_cg=None, x_np=None, ax=None):
     sec = np.array(up + lo[::-1])
     for z in (h, -h):
         ax.fill(xle + c * sec[:, 0], z + c * sec[:, 1], color=COL["wing"], ec=COL["edge"])
-    ax.add_patch(plt.Rectangle((0, -0.49 * L["gap"]), L["pod_length"], 0.98 * L["gap"], color="#e8e8e8", ec=COL["edge"], zorder=0))
+    prof = np.array([(x, hh) for x, _, hh in kestrel.Kestrel4Q.pod_profile(pr)]) / 1000.0
+    ax.fill(np.r_[prof[:, 0], prof[::-1, 0]], np.r_[prof[:, 1] / 2, -prof[::-1, 1] / 2], color="#e8e8e8", ec=COL["edge"], zorder=0)
     xt, tc = L["x_feet"], L["fin_tip_chord"]
     fin = np.array([(L["fin_root_x"], h), (xt - tc, h + L["fin_height"]), (xt, h + L["fin_height"]), (xt, -h - L["ventral_height"]),
                     (xt - tc, -h - L["ventral_height"]), (L["fin_root_x"], -h)])
@@ -314,3 +315,87 @@ def xwing_front_view(L, *, cg=None, ax=None):
         ax.plot(0.0, cg["z_cg"], "x", color=COL["cg"], ms=12, mew=3)
     ax.set(aspect="equal", xlabel="y [m]", ylabel="z [m]", title=f"{L['variant']}: looking at the nose")
     return ax
+
+
+def drag_vs_speed(vehicles: dict, *, speeds=None, avionics_W: float = 13.0, rho: float = 1.225, axs=None):
+    """Level flight against airspeed for several vehicles (``kestrel_transition.Vehicle``, the biplane's or an X-wing's):
+    the parasite drag q S Cd0, the induced drag q S k CL² and their sum (CL = W / q S, the vertical lift coefficient;
+    an X-wing's panels at the dihedral φ stall when CL reaches cl_max cos φ, a flat wing at cl_max), the speed of least
+    drag, and the electrical power of the four drives at thrust = drag (equal rotors; the trim split of ``cruise``
+    moves it by a few per cent) plus the avionics, and the **maximum speed**: where the four rotors' full-throttle thrust
+    (Boreas's table, falling with the inflow) equals the drag — a triangle on the drag curve; the full-thrust curve is
+    drawn thin. Dashed where the wing is stalled. (The structural never-exceed speed is not in it.)"""
+    import matplotlib.pyplot as plt
+    speeds = np.arange(8.0, 30.5, 0.5) if speeds is None else np.asarray(speeds, float)
+    if axs is None:
+        _, axs = plt.subplots(1, 3, figsize=(17, 4.6))
+    out = {}
+    for i, (name, veh) in enumerate(vehicles.items()):
+        W, S, pol = veh.weight, veh.L["S_ref"], veh.pol
+        phi = veh.panels[0]["phi"] if getattr(veh, "panels", None) else 0.0
+        cl_max_v = pol.cl_max * math.cos(phi)
+        q = 0.5 * rho * speeds ** 2
+        CL = W / (q * S)
+        Dp = q * S * pol.cd0
+        Di = q * S * pol.k * CL ** 2
+        D = Dp + Di
+        ok = CL <= cl_max_v
+        P = np.array([4 * veh.drive.power(d / 4, v) + avionics_W if o else np.nan for d, v, o in zip(D, speeds, ok)])
+        col = f"C{i}"
+        Tfull = np.array([4 * float(veh.drive.t_max(v)) for v in speeds])
+        excess = Tfull - D
+        v_max = math.nan
+        for a_, b_, ea, eb in zip(speeds[:-1], speeds[1:], excess[:-1], excess[1:]):
+            if ea >= 0 > eb:
+                v_max = a_ + (b_ - a_) * ea / (ea - eb)
+        axs[0].plot(speeds, Tfull, color=col, lw=0.6, alpha=0.6)
+        if np.isfinite(v_max):
+            axs[0].plot(v_max, np.interp(v_max, speeds, D), "^", color=col, ms=9)
+        axs[0].plot(speeds[ok], D[ok], color=col, lw=2, label=name); axs[0].plot(speeds[~ok], D[~ok], color=col, lw=1, ls="--")
+        axs[0].plot(speeds[ok], Dp[ok], color=col, lw=0.8, ls=":"); axs[0].plot(speeds[ok], Di[ok], color=col, lw=0.8, ls="-.")
+        axs[1].plot(speeds[ok], (W / D)[ok], color=col, lw=2, label=name)
+        axs[2].plot(speeds, P, color=col, lw=2, label=name)
+        j = int(np.nanargmin(np.where(ok, D, np.nan)))
+        v_stall = math.sqrt(2 * W / (rho * S * cl_max_v))
+        axs[0].plot(speeds[j], D[j], "o", color=col); axs[0].axvline(v_stall, color=col, lw=0.6, ls=":")
+        out[name] = {"V stall [m/s]": v_stall, "V of least drag [m/s]": float(speeds[j]), "least drag [N]": float(D[j]), "best L/D": float(W / D[j]),
+                     "drag at 16 m/s [N]": float(np.interp(16.0, speeds, D)), "parasite at 16 [N]": float(np.interp(16.0, speeds, Dp)),
+                     "induced at 16 [N]": float(np.interp(16.0, speeds, Di)), "power at 16 m/s [W]": float(np.interp(16.0, speeds, P)) if ok[np.searchsorted(speeds, 16.0)] else math.nan,
+                     "least power [W]": float(np.nanmin(P)), "V of least power [m/s]": float(speeds[int(np.nanargmin(P))]),
+                     "V max, thrust = drag [m/s]": v_max, "full thrust at 16 m/s [N]": float(np.interp(16.0, speeds, Tfull)),
+                     "thrust / drag at 16 m/s": float(np.interp(16.0, speeds, Tfull) / np.interp(16.0, speeds, D)),
+                     "power at V max [W]": float(4 * veh.drive.power(np.interp(v_max, speeds, D) / 4, v_max) + avionics_W) if np.isfinite(v_max) else math.nan}
+    axs[0].set(xlabel="airspeed [m/s]", ylabel="N")
+    axs[0].set_title("drag in level flight — total (solid), parasite (dotted), induced (dash-dot); dots: least drag;\nthin: the rotors' full thrust; triangles: V max; vertical: stall", fontsize=9)
+    axs[1].set(xlabel="airspeed [m/s]", ylabel="L/D", title="lift / drag"); axs[2].set(xlabel="airspeed [m/s]", ylabel="W", title="electrical power at thrust = drag (+ avionics)")
+    for a in axs:
+        a.grid(alpha=0.3); a.legend(fontsize=8)
+    axs[0].set_ylim(0, None); axs[2].set_ylim(0, None)
+    import pandas as pd
+    return pd.DataFrame(out).T
+
+
+def manoeuvrability_figure(vehicles: dict, *, speeds=None, axs=None):
+    """``kestrel_control.cruise_manoeuvrability`` for several vehicles: pitch and yaw angular accelerations, the steady
+    roll rate and the turn rate against airspeed."""
+    import matplotlib.pyplot as plt
+    import kestrel_control as kc
+    if axs is None:
+        _, axs = plt.subplots(2, 2, figsize=(15, 9))
+    axs = np.asarray(axs).ravel()
+    out = {}
+    for i, (name, veh) in enumerate(vehicles.items()):
+        df = kc.cruise_manoeuvrability(veh, speeds=speeds)
+        out[name] = df
+        col = f"C{i}"
+        axs[0].plot(df.index, df["pitch: total [rad/s²]"], color=col, lw=2, label=name); axs[0].plot(df.index, df["pitch: rotors [rad/s²]"], color=col, lw=0.9, ls=":")
+        axs[1].plot(df.index, df["steady roll rate [deg/s]"], color=col, lw=2, label=name)
+        axs[2].plot(df.index, df["yaw: rotors [rad/s²]"], color=col, lw=2, label=name)
+        axs[3].plot(df.index, df["turn rate [deg/s]"], color=col, lw=2, label=name)
+    axs[0].set(xlabel="airspeed [m/s]", ylabel="rad/s²", title="pitch acceleration available (solid: rotors + elevons; dotted: rotors alone)")
+    axs[1].set(xlabel="airspeed [m/s]", ylabel="deg/s", title="steady roll rate (rotors' torque + elevons against the wings' roll damping)")
+    axs[2].set(xlabel="airspeed [m/s]", ylabel="rad/s²", title="yaw acceleration from differential thrust (no rudder)")
+    axs[3].set(xlabel="airspeed [m/s]", ylabel="deg/s", title="turn rate at the load factor the lift allows (≤ 4 g)")
+    for a in axs:
+        a.grid(alpha=0.3); a.legend(fontsize=8); a.set_ylim(0, None)
+    return out

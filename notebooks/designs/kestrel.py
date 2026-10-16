@@ -74,6 +74,8 @@ class Kestrel4Q(Design):
         Parameter("pod_length", 430.0, "mm", min=150, description="nose tip to pod tail"),
         Parameter("pod_width", 110.0, "mm", min=40),
         Parameter("camera_diameter", 36.0, "mm", min=10, description="the forward-looking camera's dome in the nose"),
+        Parameter("nose_length", 150.0, "mm", min=30, description="the pod's ellipsoidal nose, tip to full section (an ogive of ~1.3 widths)"),
+        Parameter("tail_length", 120.0, "mm", min=20, description="the pod's tail taper, full section to the tail end"),
         # propulsion: four fixed nacelles, thrust axes parallel to x
         Parameter("motor_y", 390.0, "mm", min=50, description="motor stations either side of the centre plane"),
         Parameter("prop_diameter", 228.6, "mm", min=50, description="9 inch"),
@@ -160,6 +162,10 @@ class Kestrel4Q(Design):
             out.append("the nacelles overhang the wing tips")
         if p["pod_length"] < p["wing_le_x"] + p["chord"]:
             out.append("the pod ends ahead of the trailing edge: it must carry both wings over their whole chord")
+        if p["nose_length"] + p["tail_length"] > p["pod_length"] - 40.0:
+            out.append("the nose and tail tapers leave no constant mid-body (shorten nose_length or tail_length)")
+        if p["nose_length"] > p["wing_le_x"]:
+            out.append("the nose taper must end at or ahead of the leading edge")
         if p["x_feet"] <= p["pod_length"]:
             out.append("the feet must reach aft of the pod's tail")
         if p["prop_x"] < p["camera_diameter"] / 2:
@@ -212,17 +218,41 @@ class Kestrel4Q(Design):
             pts.append((w / 2 * math.copysign(abs(ct) ** (2 / e), ct), hgt / 2 * math.copysign(abs(st) ** (2 / e), st)))
         return wp.spline(pts, periodic=True).close()
 
-    def _pod(self, p):
-        gap, w, Lp = p["gap"], p["pod_width"], p["pod_length"]
-        stations = ((0.0, 0.30 * w, 0.30 * gap), (0.12 * Lp, 0.85 * w, 0.80 * gap), (0.30 * Lp, w, 0.98 * gap),
-                    (0.75 * Lp, w, 0.98 * gap), (Lp, 0.45 * w, 0.60 * gap))
-        body = None
+    @staticmethod
+    def pod_profile(p, n_nose: int = 7, n_tail: int = 4):
+        """The pod's loft stations (x, width, height) [mm]: an ellipsoidal nose over ``nose_length`` (the section's
+        width and height follow √(1 − ((L_n − x)/L_n)²): the tangent-ogive family's smooth member, no shoulder), a
+        constant mid-body, a tail taper over ``tail_length`` to 45 % width / 55 % height. The nose tip carries the
+        camera dome flush (a small flat of the dome's diameter)."""
+        w, Hh, Lp, Ln, Lt = p["pod_width"], 0.98 * p["gap"], p["pod_length"], p["nose_length"], p["tail_length"]
+        d_cam = p["camera_diameter"]
+        out = []
+        for k in range(n_nose + 1):
+            x = Ln * k / n_nose
+            f = math.sqrt(max(1.0 - ((Ln - x) / Ln) ** 2, 0.0))
+            f = max(f, d_cam / w * 0.95 if k == 0 else 0.0)               # the tip: the camera's flat, not a point
+            out.append((x, max(w * f, 2.0), max(Hh * f, 2.0)))
+        out.append((Lp - Lt, w, Hh))
+        for k in range(1, n_tail + 1):
+            x = Lp - Lt + Lt * k / n_tail
+            g = 1.0 - 0.55 * (k / n_tail) ** 1.5
+            out.append((x, w * g, Hh * (1.0 - 0.45 * (k / n_tail) ** 1.5)))
+        return out
+
+    def _loft(self, stations, ruled):
         wp = cq.Workplane("YZ")
         for i, (x, ww, hh) in enumerate(stations):
             wp = self._superellipse(wp.workplane(offset=x - (stations[i - 1][0] if i else 0.0)), ww, hh)
-        body = wp.loft(ruled=False, combine=True)
+        return wp.loft(ruled=ruled, combine=True)
+
+    def _pod(self, p):
+        """The nose and the mid-body as one smooth loft (the ellipsoid's stations are monotone), the tail taper as a
+        ruled loft (a smooth loft through shrinking stations bulges between them), joined at the mid-body's end."""
+        stations = self.pod_profile(p)
+        i_mid = next(i for i, s in enumerate(stations) if s[0] >= p["pod_length"] - p["tail_length"] - 1e-6)
+        body = self._loft(stations[:i_mid + 1], ruled=False).union(self._loft(stations[i_mid:], ruled=True))
         r = p["camera_diameter"] / 2
-        cam = cq.Workplane("XY").sphere(r).translate((r, 0, -0.05 * gap))
+        cam = cq.Workplane("XY").sphere(r).translate((r * 0.75, 0, 0))     # the dome: a quarter of its radius proud of the tip
         return body.union(cam)
 
     def _faired(self, a, b, d, p):
