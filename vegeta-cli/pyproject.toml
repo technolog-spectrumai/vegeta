@@ -17,6 +17,7 @@ pandas = ["pandas"]
 viz = ["pyvista>=0.44", "trame", "trame-vtk", "trame-vuetify", "ipywidgets", "opencv-python-headless", "scipy"]
 test = ["pytest"]
 sim = ["mujoco>=3.1", "scipy"]
+sections = ["neuralfoil"]
 
 [project.scripts]
 vegeta = "vegeta.cli:main"
@@ -28,6 +29,7 @@ boreas = "vegeta.boreas.cli:main"
 chronos = "vegeta.chronos.cli:main"
 chiron = "vegeta.chiron.cli:main"
 atropos = "vegeta.atropos.cli:main"
+zephyr = "vegeta.zephyr.cli:main"
 
 # `vegeta` is a namespace package (no __init__.py) so other distributions in this repository can
 # add their own subpackages later (e.g. vegeta.core).
@@ -46,6 +48,7 @@ packages = [
   "vegeta.chronos",
   "vegeta.chiron",
   "vegeta.atropos",
+  "vegeta.zephyr",
   "vegeta.mission",
   "vegeta.mission.sim",
 ]

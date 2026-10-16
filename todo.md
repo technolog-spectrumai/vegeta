@@ -146,6 +146,12 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5r.11 When `dev_zephyr` is merged: run § 13 (the reflexed section), put the finalist's section into the CAD (`section` parameter from Zephyr's outline), re-run Part II's matrix on it; run the Aeromant slab cases of the finalists
 - [ ] 5r.12 The ground and the touchdown in MuJoCo (Chiron): standing in gusty wind, the landing on six feet with a sink rate and a lean
 
+## Stage 5s — Zephyr, 2-D wing sections (branch `dev_zephyr`)
+- [x] 5s.1 `vegeta.zephyr`: NACA 4-digit and 5-digit sections (plain and reflexed, the aft reflex adjustable), .dat files, plain flaps; thin-airfoil theory (α₀, Cm_c/4, a flap's τ) validated against Abbott & von Doenhoff; `analyze()` over NeuralFoil (optional, a confidence per point) and XFOIL (on the PATH, the command recorded); `Polar.summary()`, flap sweeps, JSON export; CLI `section/polar/flap/backends`; tests (backends skipped when missing), `docs/zephyr.md`
+- [ ] 5s.2 A section notebook: the candidates for a tailless wing (symmetric, cambered, reflexed) at low Re, NeuralFoil against XFOIL where both exist, the flap data, the Reynolds and n_crit sensitivity
+- [ ] 5s.3 An Aeromant 2-D-slab template (an extruded section between two slip walls) as the CFD check of a surrogate polar; a Zephyr polar as the section input of Boreas's `Airfoil` and the lattice's camber terms
+- [ ] 5s.4 Multi-element sections (a slotted flap), the boundary-layer transition location in the polar, a Reynolds sweep in one call
+
 ## Stage 5f — Air couriers (branch `dev_velutina`)
 - [x] 5f.1 `designs/velutina.py` (slim-body quadrotor: capsule nose with handle, pusher arms, fins, parachute bay; `part`, `angle_of_attack_deg`), `designs/velutina_flight.py` (terrain, ISA, wind + gusts, reduced 6-DOF flight model with set-down and hand-over, parachute estimate, movie) and `24_velutina`: mass budget, drag areas by hand + actuator-disk slipstream, Aeromant screening (fast/full presets), Boreas at the depot and the site, arm/capsule/shell FEA, modes and Campbell, the mission with precision statistics and energy, Chronos fatigue, printing, movie, JSON; `scenarios/velutina_mission.py`, `user_tests.sh velutina`; `core.Revision.run_cfd(processors=)`
 - [ ] 5f.2 Parachute in CFD (opening, canopy drag, the body in the canopy's wake); the bridle anchored to the arm frame and a reefed canopy (the shell fails the opening shock in 24 §5); a drop test case
