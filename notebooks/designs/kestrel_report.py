@@ -7,6 +7,11 @@ their first rows — into ``designs/data/reports/<name>.md``, committed with the
 travels with it. ``dossier()`` stitches every report on file into ``designs/data/kestrel_dossier.md`` with a header
 of what ran and when; ``paste(name)`` prints a report (or the dossier) between fences, ready to copy. A section is
 whatever the notebook hands over: a DataFrame, a Series, a dict, a list of dicts, a string, or a list of those.
+
+The same sections go out as **JSON** — ``write_json`` → ``designs/data/reports/<name>.json`` (every table as
+``{"index": [...], "columns": [...], "rows": [{...}]}``, numbers rounded to four significant figures, NaN as null),
+``dossier_json`` → ``designs/data/kestrel_dossier.json`` with every notebook's report under its name — the machine-
+readable copy to paste or to load (``load_json``). ``export`` writes both copies and both dossiers.
 """
 from __future__ import annotations
 
@@ -165,3 +170,101 @@ def paste(name: str | None = None, *, max_lines: int | None = None, reports_dir=
     block = f"<!-- {path} -->\n{text}"
     print(block)
     return block
+
+
+# ------------------------------------------------------------------------------------------------- JSON
+DOSSIER_JSON = Path(__file__).resolve().parent / "data" / "kestrel_dossier.json"
+SIG_JSON = 4
+
+
+def _num(v):
+    f = float(v)
+    if not math.isfinite(f):
+        return None
+    if f == 0:
+        return 0.0
+    return float(f"{f:.{SIG_JSON}g}")
+
+
+def plain(obj, *, max_rows: int = 400):
+    """Any section object as plain JSON-able data: a DataFrame as index / columns / rows, a Series or dict as a dict,
+    numbers rounded to ``SIG_JSON`` significant figures, NaN and inf as null, numpy scalars as Python ones."""
+    import pandas as pd
+    if obj is None:
+        return None
+    if isinstance(obj, (bool, np.bool_)):
+        return bool(obj)
+    if isinstance(obj, (int, np.integer)):
+        return int(obj)
+    if isinstance(obj, (float, np.floating)):
+        return _num(obj)
+    if isinstance(obj, str):
+        return obj
+    if _is_frame(obj):
+        d = obj
+        idx = [" · ".join(str(x) for x in k) if isinstance(k, tuple) else (k if isinstance(k, str) else plain(k)) for k in d.index]
+        cols = [str(c) for c in d.columns]
+        rows = []
+        for k, (_, r) in zip(idx, d.iterrows()):
+            row = {"_index": k}
+            for c, v in zip(cols, r.values):
+                row[c] = plain(v)
+            rows.append(row)
+        out = {"index": idx[:max_rows], "columns": cols, "rows": rows[:max_rows]}
+        if len(rows) > max_rows:
+            out["truncated_rows"] = len(rows) - max_rows
+        return out
+    if _is_series(obj):
+        return {str(k): plain(v) for k, v in obj.items()}
+    if isinstance(obj, dict):
+        return {str(k): plain(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, np.ndarray)):
+        return [plain(x) for x in list(obj)[:max_rows]]
+    if isinstance(obj, pd.Timestamp):
+        return obj.isoformat()
+    if hasattr(obj, "__dict__") and not callable(obj):
+        return {k: plain(v) for k, v in vars(obj).items() if not k.startswith("_")}
+    return str(obj)
+
+
+def write_json(name: str, title: str, sections: dict, *, reports_dir=REPORTS, meta: dict | None = None) -> Path:
+    """The report as JSON: ``{"notebook", "title", "exported", "meta", "sections": {heading: data}}``."""
+    import json
+    reports_dir = Path(reports_dir)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    doc = {"notebook": name, "title": title, "exported": datetime.datetime.now().isoformat(timespec="minutes"), "meta": plain(meta or {}),
+           "sections": {str(k).lstrip("# ").strip(): plain(v) for k, v in sections.items()}}
+    path = reports_dir / f"{name}.json"
+    path.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str))
+    return path
+
+
+def dossier_json(*, reports_dir=REPORTS, out=DOSSIER_JSON, order=ORDER) -> Path:
+    """Every JSON report on file under its notebook's name, with a table of contents."""
+    import json
+    reports_dir = Path(reports_dir)
+    files = {p.stem: p for p in reports_dir.glob("*.json")}
+    names = [n for n in order if n in files] + sorted(n for n in files if n not in order)
+    doc = {"dossier": "Kestrel", "stitched": datetime.datetime.now().isoformat(timespec="minutes"), "reports": {}}
+    for n in names:
+        doc["reports"][n] = json.loads(files[n].read_text())
+    doc["contents"] = {n: {"title": r.get("title"), "exported": r.get("exported"), "sections": list(r.get("sections", {}))} for n, r in doc["reports"].items()}
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str))
+    return out
+
+
+def load_json(name: str | None = None, *, reports_dir=REPORTS) -> dict | None:
+    import json
+    path = DOSSIER_JSON if name is None else Path(reports_dir) / f"{name}.json"
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def export(name: str, title: str, sections: dict, *, meta: dict | None = None, reports_dir=REPORTS) -> dict:
+    """Both copies of a notebook's report (Markdown and JSON) and both dossiers; returns the paths and the sizes."""
+    md = write(name, title, sections, reports_dir=reports_dir, meta=meta)
+    js = write_json(name, title, sections, reports_dir=reports_dir, meta=meta)
+    d_md, d_js = dossier(reports_dir=reports_dir), dossier_json(reports_dir=reports_dir)
+    return {"markdown": str(md), "json": str(js), "dossier_md": str(d_md), "dossier_json": str(d_js),
+            "json_kB": round(js.stat().st_size / 1024, 1), "dossier_json_kB": round(d_js.stat().st_size / 1024, 1)}
