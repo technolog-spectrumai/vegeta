@@ -385,8 +385,11 @@ three schedule lengths, headwind, gusts, three vehicles, the back transition's s
 side stalling first. The CFD (`kestrel_cfd`, Aeromant's new **`aircraft_quad_rotor_disks`**: four rotor disks each at its
 own rpm) solves the airframe at the points the transitions fly and feeds the coefficients back into the model as a
 correction; NOT RUN where there is no OpenFOAM. The truss as a plane frame (braced / posts / none) and the ground
-stance close it. **Part II (Kestrel-4Q-2)** develops the verdict's four changes as CAD variants and proves or disproves
-each against Part I: elevons on the blown outer panels (`elevons`, hinge moments against a 9 g servo, their authority
+stance close it. **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
+insulated capsule (72 × 72 × 160 mm, up to 0.5 kg) on the pod's axis, the battery on the floor under it and the
+electronics above, the pod grown to a 220 mm constant mid-body behind an ellipsoidal nose (`Kestrel4Q.bays`,
+`bay_checks`; the capsule's cost in CG, margin, hover thrust-to-weight, endurance and the transitions) — and
+develops the verdict's four changes as CAD variants, proving or disproving each against Part I: elevons on the blown outer panels (`elevons`, hinge moments against a 9 g servo, their authority
 in the hover and in cruise, the transitions), faired struts (`strut_fairing`: the sleeves' mass and broadside area
 against the drag they save), a reflexed section on **Zephyr** (`kestrel_section.py`: NeuralFoil polars of NACA 0012
 against the reflexed 230/240-series, the elevon's flap data, the trim each section asks of the elevons, Aeromant slab

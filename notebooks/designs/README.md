@@ -240,7 +240,8 @@ transitions), `case` / `plan` (Aeromant `aircraft_quad_rotor_disks`, the bare sw
 `not_run_table`, `CFDAirframe` (the CFD's correction for the transition model). `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
-`polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the CAD's `elevons` / `elevon_chord` /
+`polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,
+`bays`, `bay_checks`, part `capsule`; `kestrel_systems.mass_table(capsule=)`, `kestrel_drawings.internal_layout`); the CAD's `elevons` / `elevon_chord` /
 `elevon_inner_y` / `elevon_deg`, `strut_fairing` (`fairing_section`), `bracing` (`x` / `posts` / `none`);
 `kestrel_control.elevon_hinge` / `elevon_authority`; `kestrel_transition.Vehicle.panels` (`biplane_panels`: the lifting
 panels, each at its dihedral, height and rotor — the model flies any arrangement of them), `z_rotor`, `elevon_y_in`,
