@@ -399,3 +399,36 @@ def manoeuvrability_figure(vehicles: dict, *, speeds=None, axs=None):
     for a in axs:
         a.grid(alpha=0.3); a.legend(fontsize=8); a.set_ylim(0, None)
     return out
+
+
+def internal_layout(p=None, *, battery_x=None, capsule_kg=None, ax=None):
+    """The pod's internal layout, side view: the ellipsoidal pod's outline, the nose and tail tapers shaded, the
+    camera, the capsule bay (and its contents' mass), the battery under it, the flight stack and the mission computer
+    above it, the wings' chord at the pod, the CG."""
+    import matplotlib.pyplot as plt
+    pr = kestrel.resolve(p)
+    L = kestrel.layout(p)
+    import kestrel_systems as ks
+    table = ks.mass_table(pr, battery_x=battery_x, capsule=capsule_kg)
+    ci = ks.cg_inertia(table)
+    b = kestrel.Kestrel4Q.bays(pr, battery_x=ci["battery_x"] * 1000)
+    if ax is None:
+        _, ax = plt.subplots(figsize=(12, 5))
+    prof = np.array([(x, hh) for x, _, hh in kestrel.Kestrel4Q.pod_profile(pr)])
+    ax.fill(np.r_[prof[:, 0], prof[::-1, 0]], np.r_[prof[:, 1] / 2, -prof[::-1, 1] / 2], color="#f0f0f0", ec=COL["edge"], zorder=0)
+    for x0, x1 in ((0.0, pr["nose_length"]), (pr["pod_length"] - pr["tail_length"], pr["pod_length"])):
+        ax.axvspan(x0, x1, color="#dddddd", alpha=0.5, lw=0, zorder=0)
+    colors = {"camera": "#555555", "flight stack": "#2a6fb0", "mission computer": "#5b9bd5", "capsule bay": "#c0392b", "battery": "#d0a040"}
+    for name, (x0, x1, y0, y1, z0, z1) in b.items():
+        ax.add_patch(plt.Rectangle((x0, z0), x1 - x0, z1 - z0, color=colors[name], alpha=0.55, ec="k", lw=0.8))
+        label = name if name != "capsule bay" else ("capsule bay" + (f": {capsule_kg:g} kg of supplies" if capsule_kg else " (empty)" if capsule_kg == 0.0 else " (no capsule)"))
+        ax.text(0.5 * (x0 + x1), 0.5 * (z0 + z1), label, ha="center", va="center", fontsize=8)
+    for z in (L["h"] * 1000, -L["h"] * 1000):
+        ax.plot([pr["wing_le_x"], pr["wing_le_x"] + pr["chord"]], [z, z], color=COL["edge"], lw=6, alpha=0.6)
+    ax.plot(ci["x_cg"] * 1000, ci["z_cg"] * 1000, "x", color=COL["cg"], ms=12, mew=3, label=f"CG x {ci['x_cg'] * 1000:.0f} mm, {ci['mass_kg']:.2f} kg")
+    lo, hi = ks.battery_range(pr)
+    ax.annotate("", xy=(hi * 1000, -125), xytext=(lo * 1000, -125), arrowprops=dict(arrowstyle="<->", color="#d0a040"))
+    ax.text(0.5 * (lo + hi) * 1000, -122, "battery slides", ha="center", fontsize=8, color="#806000")
+    ax.set(aspect="equal", xlabel="x [mm] (aft from the nose tip)", ylabel="z [mm]", title="the pod's internal layout (side view; grey: the nose and tail tapers)")
+    ax.legend(loc="upper right", fontsize=8)
+    return ax

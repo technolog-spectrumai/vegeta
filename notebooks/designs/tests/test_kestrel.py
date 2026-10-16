@@ -87,8 +87,11 @@ def test_cad_builds_symmetric_with_both_wings_at_one_station(P):
 # ------------------------------------------------------------------------------------------------ masses and drive
 def test_mass_table_and_cg(L, CI):
     assert 1.4 < CI["mass_kg"] < 2.0
-    assert CI["x_cg"] == pytest.approx(L["x_le"] + ks.X_CG_TARGET_FRAC * L["chord"], abs=1e-6)
-    assert not CI["battery_clipped"] and abs(CI["y_cg"]) < 1e-9
+    # the battery slides along the pod's floor under the bays; at its forward stop the CG lands a millimetre behind the target
+    assert CI["x_cg"] == pytest.approx(L["x_le"] + ks.X_CG_TARGET_FRAC * L["chord"], abs=0.002)
+    assert abs(CI["y_cg"]) < 1e-9 and kf.neutral_point(x_cg=CI["x_cg"])["static_margin"] > 0.05
+    lo, hi = ks.battery_range()
+    assert lo <= CI["battery_x"] <= hi
     assert CI["Ixx"] > CI["Iyy"] and CI["Izz"] > CI["Iyy"]                              # the span dominates roll and yaw
 
 
@@ -422,11 +425,24 @@ def test_pod_profile_is_an_ogive_with_a_monotone_tail(P):
 
 def test_pod_builds_monotone(P):
     pytest.importorskip("cadquery")
-    g = kestrel.Kestrel4Q().generate(part="pod")
-    v, _ = g.tessellate(0.3)
-    zs = [v[(v[:, 0] >= x0) & (v[:, 0] < x0 + 20), 2].max() for x0 in range(0, 440, 20) if ((v[:, 0] >= x0) & (v[:, 0] < x0 + 20)).any()]
-    i_max = int(np.argmax(zs))
-    assert all(b >= a - 0.5 for a, b in zip(zs[:i_max], zs[1:i_max + 1])) and all(b <= a + 0.5 for a, b in zip(zs[i_max:], zs[i_max + 1:]))
+    import cadquery as cq
+    shape = kestrel.Kestrel4Q().generate(part="pod").shape
+    solid = cq.Workplane("XY").add(shape)
+    # a true section at each station (the pod cut by a 1 mm slab): its height must grow to the mid-body and shrink after it
+    zs = []
+    x_end = P["pod_length"]
+    for x, _, h in kestrel.Kestrel4Q.pod_profile(P):
+        xc = min(x + 0.5, x_end - 0.5)                                                        # the slab inside the pod at its last station
+        cut = solid.intersect(cq.Workplane("XY").box(1.0, 400.0, 400.0).translate((xc, 0, 0)))
+        if not cut.vals():
+            continue
+        zs.append((x, cut.val().BoundingBox().zmax, h / 2))
+    assert len(zs) >= 10
+    for x, z, h2 in zs:
+        assert z == pytest.approx(h2, abs=2.5), (x, z, h2)                                   # the built section is the profile's
+    hs = [z for _, z, _ in zs]
+    i_max = int(np.argmax(hs))
+    assert all(b >= a - 0.5 for a, b in zip(hs[:i_max], hs[1:i_max + 1])) and all(b <= a + 0.5 for a, b in zip(hs[i_max:], hs[i_max + 1:]))
 
 
 def test_drag_vs_speed_and_the_maximum_speed(VEH):

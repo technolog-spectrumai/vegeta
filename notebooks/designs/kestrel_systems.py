@@ -41,6 +41,8 @@ COMPONENTS = {
     "flight_stack": {"name": "flight controller, GNSS + compass, receiver, telemetry radio, power module", "mass_kg": 0.085, "power_W": 4.0},
     "camera": {"name": "compact forward-looking camera with its video link", "mass_kg": 0.045, "power_W": 3.0},
     "mission_computer": {"name": "optional imaging / AI computer (payload slot)", "mass_kg": 0.060, "power_W": 6.0},
+    "capsule": {"name": "removable insulated payload capsule (medical supplies: gel, liquids, pills, a small kit)", "shell_kg": 0.090,
+                "contents_nominal_kg": 0.300, "contents_max_kg": 0.500, "volume_L": 0.6, "source": "a 72 x 72 x 160 mm vacuum-panel box (assumed)"},
 }
 
 # assumed densities of the structure
@@ -102,29 +104,40 @@ def _parts(p):
     add("fin plate (dorsal + ventral)", FIN_KG_M2 * fin_area, 0.5 * (L["fin_root_x"] + L["x_feet"]) + 0.02, 0.0, z_fin, "structure")
     add("foot rods (4)", 4 * FOOT_ROD_KG_M * L["foot_rod_length"], L["x_feet"] - 0.5 * L["foot_rod_length"], 0.0, 0.0, "structure")
     add("wiring", WIRING_KG, L["x_le"], 0.0, 0.0, "systems")
-    add("flight stack", c["flight_stack"]["mass_kg"], 0.60 * L["pod_length"], 0.0, 0.03, "systems")
-    add("camera", c["camera"]["mass_kg"], 0.03, 0.0, -0.01, "payload")
-    add("mission computer", c["mission_computer"]["mass_kg"], 0.30 * L["pod_length"], 0.0, 0.03, "payload")
+    bays = kestrel.Kestrel4Q.bays(p)
+    mid = lambda name: (0.5 * (bays[name][0] + bays[name][1]) / 1000, 0.5 * (bays[name][4] + bays[name][5]) / 1000)
+    add("flight stack", c["flight_stack"]["mass_kg"], mid("flight stack")[0], 0.0, mid("flight stack")[1], "systems")
+    add("camera", c["camera"]["mass_kg"], 0.02, 0.0, 0.0, "payload")
+    add("mission computer", c["mission_computer"]["mass_kg"], mid("mission computer")[0], 0.0, mid("mission computer")[1], "payload")
     add("growth margin", MARGIN_KG, L["x_ac"], 0.0, 0.0, "margin")
     return items, L
 
 
 def battery_range(p=None) -> tuple[float, float]:
-    """The battery centre's travel in the pod [m]: behind the camera (90 mm) to 60 mm ahead of the pod's tail."""
-    L = kestrel.layout(p)
+    """The battery centre's travel in the pod [m]: under the bays, from the end of the nose taper to the start of the
+    tail taper (it slides along the pod's floor)."""
+    p = kestrel.resolve(p)
     half = COMPONENTS["battery"]["length_m"] / 2
-    return 0.090 + half, L["pod_length"] - 0.060 - half
+    return p["nose_length"] / 1000 + half, (p["pod_length"] - p["tail_length"]) / 1000 - half
 
 
-def mass_table(p=None, *, battery_x: float | None = None, x_cg_target: float | None = None, payload: bool = True) -> list[dict]:
+def mass_table(p=None, *, battery_x: float | None = None, x_cg_target: float | None = None, payload: bool = True,
+               capsule: float | None = None) -> list[dict]:
     """Every item with mass and position. The battery sits at ``battery_x``, or where it puts the CG at
     ``x_cg_target`` (default ``X_CG_TARGET_FRAC`` of the chord aft of the leading edge); it is clipped to the pod's
     battery bay, and the row ``battery`` says so when it is (``clipped``). ``payload=False`` takes the mission computer
-    out (the camera stays)."""
+    out (the camera stays). ``capsule``: the medical capsule's contents [kg] (its shell comes with it; None: no capsule, Part I's
+    aircraft; 0.0: the empty capsule) at the bay's centre."""
     p = kestrel.resolve(p)
     items, L = _parts(p)
     if not payload:
         items = [i for i in items if i["item"] != "mission computer"]
+    if capsule is not None:
+        bay = kestrel.Kestrel4Q.bays(p)["capsule bay"]
+        xc, zc = 0.5 * (bay[0] + bay[1]) / 1000, 0.5 * (bay[4] + bay[5]) / 1000
+        items.append({"item": "capsule shell", "mass_kg": COMPONENTS["capsule"]["shell_kg"], "x": xc, "y": 0.0, "z": zc, "group": "payload", "rod": None})
+        if capsule > 0:
+            items.append({"item": "capsule contents (medical supplies)", "mass_kg": float(capsule), "x": xc, "y": 0.0, "z": zc, "group": "payload", "rod": None})
     mb = COMPONENTS["battery"]["mass_kg"]
     lo, hi = battery_range(p)
     clipped = False
@@ -136,7 +149,8 @@ def mass_table(p=None, *, battery_x: float | None = None, x_cg_target: float | N
         if not lo <= battery_x <= hi:
             clipped = True
             battery_x = float(np.clip(battery_x, lo, hi))
-    items.append({"item": "battery", "mass_kg": mb, "x": battery_x, "y": 0.0, "z": 0.0, "group": "propulsion", "rod": None,
+    z_batt = 0.5 * (kestrel.Kestrel4Q.bays(p)["battery"][4] + kestrel.Kestrel4Q.bays(p)["battery"][5]) / 1000
+    items.append({"item": "battery", "mass_kg": mb, "x": battery_x, "y": 0.0, "z": z_batt, "group": "propulsion", "rod": None,
                   "clipped": clipped})
     return items
 

@@ -315,3 +315,21 @@ def cruise(veh, *, speeds=np.arange(10.0, 27.0, 1.0), avionics_W: float = 13.0):
                      "upper rotor [N]": T_up / 2, "lower rotor [N]": T_lo / 2, "trim by thrust": ok, "electrical [W]": P,
                      "endurance [min]": Ewh / P * 60, "range [km]": Ewh / P * V * 3.6, "feasible": True, "note": ""})
     return pd.DataFrame(rows).set_index("V [m/s]")
+
+
+def capsule_fit(L: dict, *, wall: float = 0.006) -> dict:
+    """Does the biplane's medical capsule (``kestrel_systems.COMPONENTS['capsule']``, 72 × 72 × 160 mm) fit the X-wing's
+    pod? The X's pod has no wing gap to span: it is ``POD_WIDTH`` square, and the bays cannot stack as in the biplane's
+    274 mm of height — the battery, the capsule and the electronics must share the length instead."""
+    bay_w = bay_h = 0.072
+    bay_l = 0.160
+    batt_l = ks.COMPONENTS["battery"]["length_m"]
+    inner = L["pod_width"] - 2 * wall
+    fits_section = bay_w <= inner and bay_h <= inner
+    # in line along the pod: camera 40 mm, capsule 160, battery 140, electronics 90 + clearances, inside the pod's length
+    needed = 0.040 + bay_l + batt_l + 0.090 + 4 * 0.008
+    return {"pod section inside the walls [mm]": inner * 1000, "capsule fits the section": fits_section,
+            "wall left beside the capsule [mm]": (inner - bay_w) / 2 * 1000, "length needed in line [mm]": needed * 1000,
+            "pod length [mm]": L["pod_length"] * 1000, "fits in line": needed <= L["pod_length"],
+            "note": "the biplane stacks battery, capsule and electronics in its 274 mm of pod height; the X's pod must lay them end to end, "
+                    "and the capsule's contents then sit far from the CG unless the battery slides to meet them"}

@@ -32,7 +32,7 @@ except ImportError:                     # the layout (areas, stations, clearance
     cq = None
 from vegeta.dedalus import Design, Parameter
 
-PARTS = ("aircraft", "airframe", "wing", "pod", "truss", "nacelle", "tail", "elevon")
+PARTS = ("aircraft", "airframe", "wing", "pod", "truss", "nacelle", "tail", "elevon", "capsule")
 MOTORS = ("M1", "M2", "M3", "M4")
 MOTOR_SIDES = {"M1": (-1, 1), "M2": (1, 1), "M3": (-1, -1), "M4": (1, -1)}      # (sign of y, sign of z)
 PER_CALL = ("part", "angle_of_attack_deg", "rotation_x", "show_props", "elevon_deg")
@@ -71,11 +71,18 @@ class Kestrel4Q(Design):
         Parameter("camber_pos", 0.4, "", min=0.1, max=0.9),
         Parameter("spar_x", 0.30, "", min=0.1, max=0.6, description="main spar (and post) station, fraction of chord"),
         # pod
-        Parameter("pod_length", 430.0, "mm", min=150, description="nose tip to pod tail"),
+        Parameter("pod_length", 470.0, "mm", min=150, description="nose tip to pod tail (a 220 mm constant mid-body between the tapers: the bays)"),
         Parameter("pod_width", 110.0, "mm", min=40),
         Parameter("camera_diameter", 36.0, "mm", min=10, description="the forward-looking camera's dome in the nose"),
         Parameter("nose_length", 150.0, "mm", min=30, description="the pod's ellipsoidal nose, tip to full section (an ogive of ~1.3 widths)"),
-        Parameter("tail_length", 120.0, "mm", min=20, description="the pod's tail taper, full section to the tail end"),
+        Parameter("tail_length", 100.0, "mm", min=20, description="the pod's tail taper, full section to the tail end"),
+        Parameter("pod_wall", 6.0, "mm", min=2, description="the pod's shell and frames: the bays keep this clear of the skin"),
+        # the payload bay (Part II): a removable insulated capsule for medical supplies, on the pod's axis
+        Parameter("bay_length", 160.0, "mm", min=40, description="the capsule bay along x"),
+        Parameter("bay_width", 72.0, "mm", min=20, description="the capsule bay across (y)"),
+        Parameter("bay_height", 72.0, "mm", min=20, description="the capsule bay in z"),
+        Parameter("bay_x", 152.0, "mm", min=0, description="the bay's front face from the nose tip (inside the constant mid-body, close behind the CG)"),
+        Parameter("bay_z", 10.0, "mm", description="the bay's centre height above the pod's axis (the battery below, the electronics above)"),
         # propulsion: four fixed nacelles, thrust axes parallel to x
         Parameter("motor_y", 390.0, "mm", min=50, description="motor stations either side of the centre plane"),
         Parameter("prop_diameter", 228.6, "mm", min=50, description="9 inch"),
@@ -146,6 +153,42 @@ class Kestrel4Q(Design):
         }
 
     @staticmethod
+    def bays(p, battery_x: float | None = None) -> dict:
+        """The pod's internal layout [mm]: boxes (x0, x1, y0, y1, z0, z1) for the camera, the flight stack, the mission
+        computer, the battery (its centre at ``battery_x``, the mass table's choice), the capsule bay. The capsule sits
+        on the axis so that its contents move the CG along x only; the battery lies below it, the electronics above."""
+        bl, bw, bh, bx, bz = p["bay_length"], p["bay_width"], p["bay_height"], p["bay_x"], p["bay_z"]
+        batt_l, batt_w, batt_h = 140.0, 44.0, 32.0
+        bxc = battery_x if battery_x is not None else bx + bl / 2
+        z_batt = bz - bh / 2 - 8.0 - batt_h / 2
+        return {"camera": (0.0, 40.0, -18.0, 18.0, -18.0, 18.0),
+                "flight stack": (bx, bx + 90.0, -30.0, 30.0, bz + bh / 2 + 8.0, bz + bh / 2 + 8.0 + 30.0),
+                "mission computer": (bx + 95.0, bx + 95.0 + 60.0, -30.0, 30.0, bz + bh / 2 + 8.0, bz + bh / 2 + 8.0 + 30.0),
+                "capsule bay": (bx, bx + bl, -bw / 2, bw / 2, bz - bh / 2, bz + bh / 2),
+                "battery": (bxc - batt_l / 2, bxc + batt_l / 2, -batt_w / 2, batt_w / 2, z_batt - batt_h / 2, z_batt + batt_h / 2)}
+
+    @staticmethod
+    def bay_checks(p) -> list[str]:
+        """The bays inside the pod's constant mid-body, clear of the skin by ``pod_wall``, and clear of each other."""
+        out = []
+        b = Kestrel4Q.bays(p)
+        x_mid0, x_mid1 = p["nose_length"], p["pod_length"] - p["tail_length"]
+        w2, h2 = p["pod_width"] / 2 - p["pod_wall"], 0.49 * p["gap"] - p["pod_wall"]
+        for name in ("capsule bay", "flight stack", "mission computer"):
+            x0, x1, y0, y1, z0, z1 = b[name]
+            if x0 < x_mid0 - 1e-9 or x1 > x_mid1 + 1e-9:
+                out.append(f"the {name} ({x0:.0f}-{x1:.0f} mm) reaches out of the constant mid-body ({x_mid0:.0f}-{x_mid1:.0f} mm)")
+            if -y0 > w2 or y1 > w2 or -z0 > h2 or z1 > h2:
+                out.append(f"the {name} does not clear the pod's skin by {p['pod_wall']:.0f} mm")
+        names = list(b)
+        for i, a in enumerate(names):
+            for c in names[i + 1:]:
+                A, C = b[a], b[c]
+                if all(A[2 * k] < C[2 * k + 1] and C[2 * k] < A[2 * k + 1] for k in range(3)):
+                    out.append(f"the {a} and the {c} overlap")
+        return out
+
+    @staticmethod
     def checks(p) -> list[str]:
         """The geometric rules the concept must keep; an empty list when all hold."""
         L = Kestrel4Q.layout(p)
@@ -172,6 +215,7 @@ class Kestrel4Q(Design):
             out.append("the propeller plane is ahead of the camera dome")
         if p["elevons"] and not p["pod_width"] / 2 + 10.0 <= p["elevon_inner_y"] <= p["span"] / 2 - 30.0:
             out.append("the elevons' inner end must lie between the pod and 30 mm short of the tip")
+        out += Kestrel4Q.bay_checks(p)
         return out
 
     # ------------------------------------------------------------------------------------------- parts
@@ -311,6 +355,12 @@ class Kestrel4Q(Design):
             fin = fin.union(self._rod((x_rod - 5.0, sy * p["motor_y"], sz * h), (xt, sy * p["motor_y"], sz * h), p["foot_rod_diameter"]))
         return fin
 
+    def _capsule(self, p):
+        """The payload capsule: a rounded box filling the bay less 2 mm all round."""
+        x0, x1, y0, y1, z0, z1 = self.bays(p)["capsule bay"]
+        box = cq.Workplane("XY").box(x1 - x0 - 4.0, y1 - y0 - 4.0, z1 - z0 - 4.0).edges().fillet(8.0)
+        return box.translate(((x0 + x1) / 2, 0.0, (z0 + z1) / 2))
+
     def build(self, p):
         problems = self.checks(p)
         if problems:
@@ -329,6 +379,8 @@ class Kestrel4Q(Design):
             if not p["elevons"]:
                 raise ValueError("elevons are off: set elevons=True")
             shape = self._elevon(p, h, 1)
+        elif part == "capsule":
+            shape = self._capsule(p)
         elif part == "nacelle":
             shape = self._nacelle(p, 1, 1)
         elif part == "tail":
