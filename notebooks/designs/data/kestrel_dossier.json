@@ -1,0 +1,95 @@
+{
+ "dossier": "Kestrel",
+ "stitched": "2026-10-16T11:59",
+ "reports": {
+  "38_kestrel": {
+   "notebook": "38_kestrel",
+   "title": "Kestrel",
+   "exported": "2026-10-16T11:59",
+   "meta": {
+    "mass": 1.686
+   },
+   "sections": {
+    "tab": {
+     "index": [
+      "r1",
+      "r2"
+     ],
+     "columns": [
+      "a",
+      "b"
+     ],
+     "rows": [
+      {
+       "_index": "r1",
+       "a": 1.235,
+       "b": "x"
+      },
+      {
+       "_index": "r2",
+       "a": null,
+       "b": "y"
+      }
+     ]
+    },
+    "multi": {
+     "index": [
+      "v · back · 3.0"
+     ],
+     "columns": [
+      "pass"
+     ],
+     "rows": [
+      {
+       "_index": "v · back · 3.0",
+       "pass": true
+      }
+     ]
+    },
+    "d": {
+     "m": 1.686,
+     "ok": true
+    },
+    "s": {
+     "x": 2
+    },
+    "txt": "hello",
+    "none": null
+   }
+  },
+  "41_prop_lab": {
+   "notebook": "41_prop_lab",
+   "title": "prop_lab",
+   "exported": "2026-10-16T11:59",
+   "meta": {},
+   "sections": {
+    "k": [
+     {
+      "n": 1
+     }
+    ]
+   }
+  }
+ },
+ "contents": {
+  "38_kestrel": {
+   "title": "Kestrel",
+   "exported": "2026-10-16T11:59",
+   "sections": [
+    "tab",
+    "multi",
+    "d",
+    "s",
+    "txt",
+    "none"
+   ]
+  },
+  "41_prop_lab": {
+   "title": "prop_lab",
+   "exported": "2026-10-16T11:59",
+   "sections": [
+    "k"
+   ]
+  }
+ }
+}
