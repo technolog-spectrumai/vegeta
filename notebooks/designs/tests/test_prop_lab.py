@@ -22,7 +22,7 @@ class _R:
         self.ok, self.metrics, self.messages = ok, metrics or {}, list(messages)
 
 
-def _synthetic(specs, cl_scale=1.1, cd_scale=0.8, cn_scale=0.8, fail=("axial, 24 m/s, 8000 rpm",), diverge=("oblique, 8 m/s at 90°, 8000 rpm",)):
+def _synthetic(specs, cl_scale=1.1, cd_scale=0.8, cn_scale=0.8, fail=("axial, 24 m/s, 8000 rpm",), diverge=("oblique, 8 m/s at 90°, 8000 rpm, blades at 0°",)):
     """A campaign whose 'CFD' is BEMT on a blade section with the lift slope x1.1 and the profile drag x0.8 (what the
     fit must recover), the normal force 0.8 x De Young; one case failed, one diverged."""
     from vegeta import boreas
@@ -53,12 +53,13 @@ def _synthetic(specs, cl_scale=1.1, cd_scale=0.8, cn_scale=0.8, fail=("axial, 24
 def test_configurations_and_the_bemt_baseline():
     c = pl.configurations()
     kinds = {k: sum(1 for v in c.values() if v["kind"] == k) for k in ("hover", "axial", "oblique")}
-    assert kinds == {"hover": 3, "axial": 9, "oblique": 9} and all(v["template"].startswith("rotor_mrf") for v in c.values())
+    assert kinds == {"hover": 3, "axial": 9, "oblique": 18} and all(v["template"].startswith("rotor_mrf") for v in c.values())
+    assert sorted({v.get("azimuth", 0.0) for v in c.values() if v["kind"] == "oblique"}) == [0.0, 90.0]
     t = pl.table(None, c)
-    assert (t["status"] == "NOT RUN").all() and len(t) == 21
+    assert (t["status"] == "NOT RUN").all() and len(t) == 30
     assert float(t.loc["hover, 5000 rpm", "BEMT T [N]"]) > 1.0 and 0 < float(t.loc["axial, 16 m/s, 8000 rpm", "J"]) < 1.0
-    assert np.isfinite(float(t.loc["oblique, 8 m/s at 30°, 8000 rpm", "De Young CNα [1/rad]"]))
-    assert pl.summary(t)["NOT RUN"] == 21 and 5500 < pl.rpm_hover() < 8500
+    assert np.isfinite(float(t.loc["oblique, 8 m/s at 30°, 8000 rpm, blades at 0°", "De Young CNα [1/rad]"]))
+    assert pl.summary(t)["NOT RUN"] == 30 and 5500 < pl.rpm_hover() < 8500
 
 
 def test_cad_geometry_matches_the_components():
@@ -70,23 +71,41 @@ def test_calibration_fit_export_and_what_kestrel_reads(tmp_path, monkeypatch):
     specs = pl.configurations()
     T = pl.table(_synthetic(specs), specs)
     sm = pl.summary(T)
-    assert sm["FAILED"] == 1 and sm["diverged"] == 1 and sm["solved"] == 19 and sm["by kind"]["oblique"] == 8
+    assert sm["FAILED"] == 1 and sm["diverged"] == 1 and sm["solved"] == 28 and sm["by kind"]["oblique"] == 17
     assert T.loc["axial, 24 m/s, 8000 rpm", "note"].startswith("step solver failed")
     sec = pl.fit_section(T)
     assert sec["n_cases"] == 11 and sec["rms_log_ratio_after"] < 0.1 * sec["rms_log_ratio_before"]
     assert sec["cl_scale"] == pytest.approx(1.1, abs=0.02) and sec["cd_scale"] == pytest.approx(0.8, abs=0.05)
     nf = pl.fit_normal_force(T)
-    assert nf["n_cases"] == 8 and nf["cn_factor"] == pytest.approx(0.8, rel=1e-6)
+    assert nf["n_cases"] == 8 and nf["cn_factor"] == pytest.approx(0.8, rel=1e-6) and nf["azimuths_averaged"] is False      # the 90° point lost one azimuth
+    acc = pl.accept(sec, nf)
+    assert "cl_scale" in acc["applied"] and "cn_factor" not in acc["applied"] and any("azimuth" in r for r in acc["rejected"])
     path = tmp_path / "prop_lab.json"
     doc = pl.export(T, path, meta={"quality": "screening"})
-    assert doc["calibration"]["cn_factor"] == pytest.approx(0.8, rel=1e-6) and len(doc["cases"]) == 21
+    assert doc["calibration"]["accepted"] and doc["calibration"]["applied"]["cl_scale"] == pytest.approx(sec["cl_scale"]) and len(doc["cases"]) == 30
     cal = pl.calibration(path)
-    assert cal["on_file"] and cal["cl_scale"] == pytest.approx(sec["cl_scale"]) and cal["n_solved"] == 19
+    assert cal["on_file"] and cal["cl_scale"] == pytest.approx(sec["cl_scale"]) and cal["cn_factor"] == 1.0 and cal["n_solved"] == 28
+    # the complete synthetic campaign: the normal force passes too
+    T_all = pl.table(_synthetic(specs, fail=(), diverge=()), specs)
+    acc_all = pl.accept(pl.fit_section(T_all), pl.fit_normal_force(T_all))
+    assert acc_all["applied"]["cn_factor"] == pytest.approx(0.8, rel=1e-6) and acc_all["rejected"] == []
     # a NOT RUN pass keeps the calibration
     doc2 = pl.export(pl.table(None, specs), path)
-    assert doc2["calibration"]["cl_scale"] == pytest.approx(sec["cl_scale"]) and doc2["last_listing"]["summary"]["NOT RUN"] == 21
+    assert doc2["calibration"]["applied"]["cl_scale"] == pytest.approx(sec["cl_scale"]) and doc2["last_listing"]["summary"]["NOT RUN"] == 30
     assert not pl.calibration(tmp_path / "none.json")["on_file"]
-    # Kestrel reads it: the blade section, the drive key, the normal force
+    # the first campaign's fit (thrust 0.6 x BEMT on a 100 k-cell mesh, a frozen rotor's zero normal force) is rejected, by export and by the loader
+    bad = pl.table(_synthetic(specs, cl_scale=0.55, cd_scale=0.95, cn_scale=-0.01, fail=(), diverge=()), specs)
+    acc_bad = pl.accept(pl.fit_section(bad), pl.fit_normal_force(bad))
+    assert acc_bad["applied"] == {} and len(acc_bad["rejected"]) == 2
+    old = {"cl_scale": 0.5759, "cd_scale": 0.9424, "cn_factor": -0.0132, "section_fit": {"n_cases": 12, "rms_log_ratio_after": 0.37}, "normal_force_fit": {"n_cases": 9}}
+    assert pl.applied_calibration(old) == {}
+    import json
+    (tmp_path / "old.json").write_text(json.dumps({"calibration": old, "meta": {}}))
+    monkeypatch.setattr(ks, "PROP_LAB_JSON", tmp_path / "old.json")
+    assert not ks.prop_lab_calibration()["on_file"] and ks.blade_airfoil().cl_alpha == ks.blade_airfoil(calibrated=False).cl_alpha
+    # Kestrel reads it: the blade section, the drive key, the normal force (the complete campaign on file)
+    doc3 = pl.export(T_all, path, meta={"quality": "screening"})
+    assert doc3["calibration"]["applied"]["cn_factor"] == pytest.approx(0.8, rel=1e-6)
     monkeypatch.setattr(ks, "PROP_LAB_JSON", path)
     af0, af1 = ks.blade_airfoil(calibrated=False), ks.blade_airfoil()
     assert af1.cl_alpha == pytest.approx(af0.cl_alpha * sec["cl_scale"]) and af1.cd0 == pytest.approx(af0.cd0 * sec["cd_scale"])
@@ -115,7 +134,7 @@ def test_noise_frequencies_and_the_audio_files(tmp_path):
     nz = pl.noise(rpm, 0.0, op.thrust, op.torque)
     assert nz["blade_pass_hz"] == pytest.approx(2 * rpm / 60) and nz["tones"][0][0] == pytest.approx(2 * rpm / 60) and nz["tones"][1][0] == pytest.approx(4 * rpm / 60)
     assert 30 < nz["total_db"] < 110 and nz["total_dba"] < nz["total_db"] + 3 and nz["broadband_peak_hz"] > 500 and np.isfinite(nz["tonal_db"])
-    specs = {k: v for k, v in pl.configurations().items() if v["kind"] != "oblique" or v["airspeed"] == 8.0}
+    specs = {k: v for k, v in pl.configurations().items() if v["kind"] != "oblique" or (v["airspeed"] == 8.0 and v.get("azimuth", 0.0) == 0.0)}
     T = pl.table(None, specs)
     nt = pl.noise_table(T)
     assert len(nt) == len(specs) and (nt["source"] == "BEMT").all() and nt["BPF [Hz]"].astype(float).min() > 100

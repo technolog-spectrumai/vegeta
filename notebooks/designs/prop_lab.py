@@ -42,10 +42,12 @@ import kestrel_systems as ks
 
 PROP_LAB_JSON = Path(__file__).resolve().parent / "data" / "prop_lab.json"
 RHO, NU = ks.RHO0, 1.46e-5
-QUALITY = {
-    "screening": dict(cells_per_diameter=6.0, surface_level=3, near_level=2, rotor_level=2, wake_level=1, iterations=400, residual_target=1e-4),
-    "fine": dict(cells_per_diameter=8.0, surface_level=4, near_level=3, rotor_level=3, wake_level=2, iterations=800, residual_target=1e-5),
+QUALITY = {   # the first campaign at 6 cells/D, level 3 (100 k cells, 4 cells across the chord) gave a figure of merit of 0.29: unusable
+    "screening": dict(cells_per_diameter=10.0, surface_level=4, near_level=3, rotor_level=3, wake_level=2, iterations=600, residual_target=1e-4),
+    "fine": dict(cells_per_diameter=14.0, surface_level=5, near_level=4, rotor_level=4, wake_level=3, iterations=1000, residual_target=1e-5),
 }
+AZIMUTHS = (0.0, 90.0)           # the frozen rotor's blade azimuths for the oblique cases: the normal force is averaged over them
+GATES = {"rms_after": 0.15, "cl_scale": (0.7, 1.3), "cd_scale": (0.5, 2.0), "cn_factor": (0.3, 3.0), "n_section": 4, "n_normal": 2}
 RPM_HOVER_REF = 4.15             # N: one rotor's share of the 1.69 kg aircraft in the hover (the rpm for it comes from Boreas)
 T_CRUISE_REF = 0.8               # N: one rotor's cruise thrust at 16 m/s with round struts
 
@@ -65,15 +67,20 @@ def cad():
     return Propeller().generate(**geometry())
 
 
-def stl(workdir, tolerance: float = 0.05) -> Path:
-    """The propeller turned onto the rotor frame's axis (+x) and written as STL (mm), once per workdir."""
+def stl(workdir, tolerance: float = 0.05, azimuth_deg: float = 0.0) -> Path:
+    """The propeller turned onto the rotor frame's axis (+x), the blades turned ``azimuth_deg`` about it (a frozen
+    rotor's blade position: at 0° the blades lie in the x–z plane, the plane of an oblique case's cross-flow; at 90°
+    across it), written as STL (mm), once per workdir and azimuth."""
     from vegeta import dedalus
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
-    path = workdir / "prop_9x6_axis_x.stl"
+    path = workdir / (f"prop_9x6_axis_x_az{azimuth_deg:g}.stl" if azimuth_deg else "prop_9x6_axis_x.stl")
     if not path.exists():
         g = cad()
-        gx = dedalus.Geometry.from_cadquery(g.shape.rotate((0, 0, 0), (0, 1, 0), 90), name="prop_axis_x")
+        shape = g.shape.rotate((0, 0, 0), (0, 1, 0), 90)
+        if azimuth_deg:
+            shape = shape.rotate((0, 0, 0), (1, 0, 0), azimuth_deg)
+        gx = dedalus.Geometry.from_cadquery(shape, name="prop_axis_x")
         gx.export_stl(str(path), tolerance=tolerance)
     return path
 
@@ -121,7 +128,9 @@ def configurations(*, rpm_main: float = 8000.0, rpm_high: float = 10000.0) -> di
     out[f"cruise, 16 m/s, {r_c:.0f} rpm"] = {"kind": "axial", "template": "rotor_mrf", "rpm": r_c, "airspeed": 16.0, "inflow_angle": 0.0}
     for V, angles in ((8.0, (15.0, 30.0, 45.0, 60.0, 90.0)), (14.0, (15.0, 30.0, 45.0, 60.0))):
         for a in angles:
-            out[f"oblique, {V:g} m/s at {a:g}°, {rpm_main:.0f} rpm"] = {"kind": "oblique", "template": "rotor_mrf_oblique", "rpm": rpm_main, "airspeed": V, "inflow_angle": a}
+            for az in AZIMUTHS:                       # a frozen rotor sees the cross-flow differently at each blade azimuth: both, then the mean
+                out[f"oblique, {V:g} m/s at {a:g}°, {rpm_main:.0f} rpm, blades at {az:g}°"] = {"kind": "oblique", "template": "rotor_mrf_oblique", "rpm": rpm_main,
+                                                                                                "airspeed": V, "inflow_angle": a, "azimuth": az}
     return out
 
 
@@ -136,8 +145,8 @@ def case(workdir, name: str, spec: dict, *, quality: str = "screening", env=None
         params.update(airspeed=spec["airspeed"], inflow_angle=spec["inflow_angle"])
     env = env or aeromant.OpenFOAMEnvironment.detect()
     tag = name.replace(", ", "_").replace(" ", "").replace("°", "deg").replace("(", "").replace(")", "")
-    return aeromant.CFDCase(spec["template"], str(stl(Path(workdir) / "stl")), params, workdir=str(Path(workdir) / f"{tag}_{quality}"),
-                            geometry_units="mm", environment=env)
+    return aeromant.CFDCase(spec["template"], str(stl(Path(workdir) / "stl", azimuth_deg=spec.get("azimuth", 0.0))), params,
+                            workdir=str(Path(workdir) / f"{tag}_{quality}"), geometry_units="mm", environment=env)
 
 
 def plan(workdir, specs: dict | None = None, *, quality: str = "screening", env=None) -> dict:
@@ -172,7 +181,7 @@ def table(results: dict | None, specs: dict | None = None) -> "pd.DataFrame":
         n = s["rpm"] / 60
         q = 0.5 * RHO * max(V, 0.1) ** 2
         A = math.pi * (D / 2) ** 2
-        row = {"kind": s["kind"], "template": s["template"], "rpm": s["rpm"], "V [m/s]": V, "angle [deg]": s["inflow_angle"], "J": v_ax / (n * D),
+        row = {"kind": s["kind"], "template": s["template"], "rpm": s["rpm"], "V [m/s]": V, "angle [deg]": s["inflow_angle"], "blades at [deg]": s.get("azimuth", 0.0), "J": v_ax / (n * D),
                "Re (0.75 R)": 0.75 * D / 2 * 2 * math.pi * n * 0.9 * pr.chord[len(pr.chord) * 3 // 4] / NU,
                "BEMT T [N]": op.thrust, "BEMT Q [N·m]": op.torque, "BEMT P [W]": op.power,
                "BEMT η / FM": op.efficiency if V > 0 else op.figure_of_merit,
@@ -244,12 +253,64 @@ def fit_normal_force(tab) -> dict:
     """``cn_factor``: the median of the CFD's normal-force slope over De Young's across the solved oblique cases
     (``None`` without any), and the table of C_Nα against the angle and the advance ratio."""
     if "CNα CFD / De Young" not in tab.columns:
-        return {"cn_factor": None, "n_cases": 0, "points": []}
-    sel = tab[(tab["status"] == "solved") & (tab["kind"] == "oblique")]
-    ratios = [float(v) for v in sel["CNα CFD / De Young"].astype(float) if np.isfinite(v)]
-    rows = [{"angle_deg": float(r["angle [deg]"]), "V": float(r["V [m/s]"]), "J": float(r["J"]), "cn_alpha_cfd": float(r["CFD CNα [1/rad]"]),
-             "cn_alpha_deyoung": float(r["De Young CNα [1/rad]"]), "thrust_ratio": float(r["T CFD / BEMT"])} for _, r in sel.iterrows()]
-    return {"cn_factor": float(np.median(ratios)) if ratios else None, "n_cases": len(ratios), "points": rows}
+        return {"cn_factor": None, "n_cases": 0, "points": [], "azimuths_averaged": False}
+    sel = tab[(tab["status"] == "solved") & (tab["kind"] == "oblique")].copy()
+    sel["blades at [deg]"] = sel["blades at [deg]"].astype(float) if "blades at [deg]" in sel.columns else 0.0
+    rows, ratios = [], []
+    complete = True
+    for (V, a), g in sel.groupby(["V [m/s]", "angle [deg]"]):
+        azs = sorted(set(g["blades at [deg]"].astype(float)))
+        if len(azs) < len(AZIMUTHS):                                  # a frozen rotor at one azimuth alone says nothing about the normal force
+            complete = False
+        cn = float(np.nanmean(g["CFD CNα [1/rad]"].astype(float)))
+        dy = float(g["De Young CNα [1/rad]"].astype(float).iloc[0])
+        ratio = cn / dy if dy else np.nan
+        if np.isfinite(ratio) and len(azs) >= len(AZIMUTHS):
+            ratios.append(ratio)
+        rows.append({"angle_deg": float(a), "V": float(V), "J": float(g["J"].astype(float).iloc[0]), "azimuths": azs, "cn_alpha_cfd (mean over azimuths)": cn,
+                     "cn_alpha_deyoung": dy, "ratio": ratio, "thrust_ratio (mean)": float(np.nanmean(g["T CFD / BEMT"].astype(float)))})
+    return {"cn_factor": float(np.median(ratios)) if ratios else None, "n_cases": len(ratios), "points": rows, "azimuths_averaged": complete and bool(rows)}
+
+
+def accept(sec: dict, nf: dict) -> dict:
+    """The gates a calibration must pass before Kestrel applies it: enough cases, a fit that actually fits (rms of the
+    log ratios after ≤ ``GATES['rms_after']``), scales within the band where a *scaled* generic section is still the
+    right model (beyond it the section's shape is wrong, not its size), a normal-force factor within reason and from
+    azimuth-averaged cases. Returns ``{"applied": {...}, "rejected": [...], "accepted": bool}`` — what fails stays at
+    unity, with the reason."""
+    applied, rejected = {}, []
+    g = GATES
+    if sec.get("cl_scale") is None:
+        rejected.append("section: no fit (fewer than two solved hover / axial cases)")
+    else:
+        why = []
+        if sec["n_cases"] < g["n_section"]:
+            why.append(f"only {sec['n_cases']} cases")
+        if sec["rms_log_ratio_after"] is None or sec["rms_log_ratio_after"] > g["rms_after"]:
+            why.append(f"rms log ratio after the fit {sec['rms_log_ratio_after']:.2f} > {g['rms_after']}: thrust and torque do not follow one scaled section")
+        if not g["cl_scale"][0] <= sec["cl_scale"] <= g["cl_scale"][1]:
+            why.append(f"cl scale {sec['cl_scale']:.2f} outside {g['cl_scale']}: the section's shape (or the mesh) is wrong, not its scale")
+        if not g["cd_scale"][0] <= sec["cd_scale"] <= g["cd_scale"][1]:
+            why.append(f"cd scale {sec['cd_scale']:.2f} outside {g['cd_scale']}")
+        if why:
+            rejected.append("section: " + "; ".join(why))
+        else:
+            applied.update(cl_scale=sec["cl_scale"], cd_scale=sec["cd_scale"])
+    if nf.get("cn_factor") is None:
+        rejected.append("normal force: no azimuth-averaged oblique case")
+    else:
+        why = []
+        if nf["n_cases"] < g["n_normal"]:
+            why.append(f"only {nf['n_cases']} azimuth-averaged points")
+        if not nf.get("azimuths_averaged", False):
+            why.append("not every oblique point has both blade azimuths: a frozen rotor at one azimuth gives a false normal force")
+        if not g["cn_factor"][0] <= nf["cn_factor"] <= g["cn_factor"][1]:
+            why.append(f"cn factor {nf['cn_factor']:.3f} outside {g['cn_factor']}")
+        if why:
+            rejected.append("normal force: " + "; ".join(why))
+        else:
+            applied["cn_factor"] = nf["cn_factor"]
+    return {"applied": applied, "rejected": rejected, "accepted": bool(applied)}
 
 
 def export(tab, path=PROP_LAB_JSON, *, meta: dict | None = None, keep_previous: bool = True) -> dict:
@@ -260,12 +321,14 @@ def export(tab, path=PROP_LAB_JSON, *, meta: dict | None = None, keep_previous: 
                      for kk, vv in r.items()} for k, r in tab.to_dict("index").items()}
     nt = noise_table(tab)
     noise_rows = {str(k): {kk: (vv.item() if hasattr(vv, "item") else vv) for kk, vv in r.items()} for k, r in nt.to_dict("index").items()}
+    acc = accept(sec, nf)
     doc = {"meta": meta or {}, "summary": {k: v for k, v in summary(tab).items() if k != "line"},
-           "calibration": {"cl_scale": sec["cl_scale"], "cd_scale": sec["cd_scale"], "cn_factor": nf["cn_factor"],
+           "calibration": {"applied": acc["applied"], "rejected": acc["rejected"], "accepted": acc["accepted"], "gates": GATES,
+                           "fitted": {"cl_scale": sec["cl_scale"], "cd_scale": sec["cd_scale"], "cn_factor": nf["cn_factor"]},
                            "section_fit": sec, "normal_force_fit": nf}, "cases": rows, "noise": {"listener": LISTENER, "rows": noise_rows}}
     path = Path(path)
     prev = load(path)
-    if keep_previous and sec["cl_scale"] is None and nf["cn_factor"] is None and prev and prev.get("calibration", {}).get("cl_scale") is not None:
+    if keep_previous and sec["cl_scale"] is None and nf["cn_factor"] is None and prev and prev.get("calibration", {}).get("accepted"):
         prev["last_listing"] = {"meta": meta or {}, "summary": doc["summary"]}
         path.write_text(json.dumps(prev, indent=1, default=str))
         return prev
@@ -284,9 +347,24 @@ def calibration(path=PROP_LAB_JSON) -> dict:
     ``on_file`` False when there is no calibration yet."""
     doc = load(path)
     cal = (doc or {}).get("calibration", {})
-    on = cal.get("cl_scale") is not None or cal.get("cn_factor") is not None
-    return {"cl_scale": cal.get("cl_scale") or 1.0, "cd_scale": cal.get("cd_scale") or 1.0, "cn_factor": cal.get("cn_factor") or 1.0,
-            "on_file": on, "meta": (doc or {}).get("meta", {}), "n_solved": (doc or {}).get("summary", {}).get("solved", 0)}
+    ap = applied_calibration(cal)
+    return {"cl_scale": ap.get("cl_scale", 1.0), "cd_scale": ap.get("cd_scale", 1.0), "cn_factor": ap.get("cn_factor", 1.0), "on_file": bool(ap),
+            "rejected": cal.get("rejected", []), "meta": (doc or {}).get("meta", {}), "n_solved": (doc or {}).get("summary", {}).get("solved", 0)}
+
+
+def applied_calibration(cal: dict) -> dict:
+    """What a calibration record may apply: its ``applied`` block when it has one; an old record (the first layout:
+    bare ``cl_scale`` / ``cd_scale`` / ``cn_factor``) is put through the gates here, so a bad fit on file is ignored."""
+    if not cal:
+        return {}
+    if "applied" in cal:
+        return dict(cal["applied"])
+    sec = dict(cal.get("section_fit") or {})
+    sec.setdefault("cl_scale", cal.get("cl_scale")); sec.setdefault("cd_scale", cal.get("cd_scale"))
+    sec.setdefault("n_cases", 0); sec.setdefault("rms_log_ratio_after", None)
+    nf = dict(cal.get("normal_force_fit") or {})
+    nf.setdefault("cn_factor", cal.get("cn_factor")); nf.setdefault("n_cases", 0); nf.setdefault("azimuths_averaged", False)
+    return accept(sec, nf)["applied"]
 
 
 # ------------------------------------------------------------------------------------------------- noise and sound

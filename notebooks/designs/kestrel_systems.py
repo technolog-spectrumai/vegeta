@@ -192,9 +192,19 @@ def prop_lab_calibration() -> dict:
         return {"cl_scale": 1.0, "cd_scale": 1.0, "cn_factor": 1.0, "on_file": False, "meta": {}}
     doc = json.loads(PROP_LAB_JSON.read_text())
     cal = doc.get("calibration", {})
-    on = cal.get("cl_scale") is not None or cal.get("cn_factor") is not None
-    return {"cl_scale": cal.get("cl_scale") or 1.0, "cd_scale": cal.get("cd_scale") or 1.0, "cn_factor": cal.get("cn_factor") or 1.0,
-            "on_file": on, "meta": doc.get("meta", {})}
+    if "applied" in cal:                                   # prop_lab.export put the fit through its gates
+        ap = cal["applied"]
+    else:                                                  # an older record: the same gates here, so a bad fit on file is never applied
+        sec, nf = cal.get("section_fit") or {}, cal.get("normal_force_fit") or {}
+        ap = {}
+        cl, cd = cal.get("cl_scale"), cal.get("cd_scale")
+        if cl is not None and cd is not None and (sec.get("rms_log_ratio_after") or 1.0) <= 0.15 and 0.7 <= cl <= 1.3 and 0.5 <= cd <= 2.0 and sec.get("n_cases", 0) >= 4:
+            ap.update(cl_scale=cl, cd_scale=cd)
+        cn = cal.get("cn_factor")
+        if cn is not None and nf.get("azimuths_averaged") and 0.3 <= cn <= 3.0:
+            ap["cn_factor"] = cn
+    return {"cl_scale": ap.get("cl_scale", 1.0), "cd_scale": ap.get("cd_scale", 1.0), "cn_factor": ap.get("cn_factor", 1.0),
+            "on_file": bool(ap), "rejected": cal.get("rejected", []), "meta": doc.get("meta", {})}
 
 
 def blade_airfoil(calibrated: bool = True):

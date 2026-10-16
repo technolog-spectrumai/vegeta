@@ -407,7 +407,9 @@ cases carry the propellers as **discs only**; the propeller itself is measured f
 the inflow at 15–90° to the axis on Aeromant's new **`rotor_mrf_oblique`** (free-stream lateral faces, the normal force
 and the propeller's pitching moment in the metrics) — each case beside Boreas's blade-element numbers and De Young's
 normal force. Its calibration (two scales on the blade section fitted on thrust and torque together, one factor on the
-normal-force slope; `designs/data/prop_lab.json`) is read by `kestrel_systems.propulsion` (the drive tables, `rpm_for`,
+normal-force slope; `designs/data/prop_lab.json`; applied only when it passes its gates — a fit that fits, scales
+within 0.7–1.3, the normal force averaged over two frozen-rotor blade azimuths — else written down as rejected with
+the reason) is read by `kestrel_systems.propulsion` (the drive tables, `rpm_for`,
 the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 39 and 39 fly on the measured propeller once
 41 has run; the campaign's points now include the level cruise and the stall beside the hover and both transitions.
 prop_lab also turns the loads into **noise** — the blade-passing frequency and its harmonics (Gutin on the measured
