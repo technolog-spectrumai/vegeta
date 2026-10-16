@@ -397,7 +397,15 @@ slope within 2 %, its Cd0 a fifth conservative, its stall harsher than the CFD's
 the solver's numerics; the rotor-disk templates now run plain SIMPLE with a velocity cap. **`40_kestrel_tests`** is the
 test campaign: every case for Kestrel-4Q, Kestrel-4Q-2 and the two finalist sections at the quality it is given
 (`KESTREL_CFD_QUALITY`, `KESTREL_CFD_ONLY`, `KESTREL_CFD_SWEEP_ONLY`), failures accepted and counted, the solved cases
-written to `designs/data/kestrel_cfd_results.json` for notebook 38 to read (`kestrel_cfd.plug_in`). **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
+written to `designs/data/kestrel_cfd_results.json` for notebook 38 to read (`kestrel_cfd.plug_in`). The airframe
+cases carry the propellers as **discs only**; the propeller itself is measured first in **`41_prop_lab`**
+(`designs/prop_lab.py`): the 9×6 alone, resolved in a rotating frame — the hover at three speeds, axial inflow 4–24 m/s,
+the inflow at 15–90° to the axis on Aeromant's new **`rotor_mrf_oblique`** (free-stream lateral faces, the normal force
+and the propeller's pitching moment in the metrics) — each case beside Boreas's blade-element numbers and De Young's
+normal force. Its calibration (two scales on the blade section fitted on thrust and torque together, one factor on the
+normal-force slope; `designs/data/prop_lab.json`) is read by `kestrel_systems.propulsion` (the drive tables, `rpm_for`,
+the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 38 and 40 fly on the measured propeller once
+41 has run; the campaign's points now include the level cruise and the stall beside the hover and both transitions. **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
 insulated capsule (72 × 72 × 160 mm, up to 0.5 kg) on the pod's axis, the battery on the floor under it and the
 electronics above, the pod grown to a 220 mm constant mid-body behind an ellipsoidal nose (`Kestrel4Q.bays`,
 `bay_checks`; the capsule's cost in CG, margin, hover thrust-to-weight, endurance and the transitions) — and

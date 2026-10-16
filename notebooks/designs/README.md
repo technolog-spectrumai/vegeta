@@ -245,7 +245,13 @@ statuses `solved` / `diverged` (`SANE`) / `FAILED` / `NOT RUN` and a `note`, `su
 `sections`; a pass that solved nothing never erases a result), `section_table` / `save_section_table` (the slabs).
 `kestrel_loop.py` (the design loop's bookkeeping): `envelope` (iteration 0 from the spec and the layout), `TARGETS`,
 `check` / `check_table` / `failing`, `IterationLog`. Notebook **40** (`40_kestrel_tests`) is the CFD campaign of every
-case for both aircraft and the sections, failures accepted. `kestrel_structure.py`: `frame`,
+case for both aircraft and the sections, failures accepted; `kestrel_cfd.flight_points` adds the level cruise and the
+stall to its points. `prop_lab.py` (notebook **41**, `41_prop_lab`): the 9×6 alone in CFD — `geometry` / `cad` / `stl`
+(Dedalus's propeller on the rotor frame), `bemt`, `configurations` (hover, axial, oblique on `rotor_mrf_static` /
+`rotor_mrf` / `rotor_mrf_oblique`), `plan`, `table` (beside BEMT and De Young, statuses `solved` / `diverged` /
+`FAILED` / `NOT RUN`), `summary`, `fit_section` (`cl_scale`, `cd_scale`), `fit_normal_force` (`cn_factor`), `export` /
+`load` / `calibration` (`data/prop_lab.json`); `kestrel_systems.prop_lab_calibration` / `blade_airfoil` apply it to
+`propulsion()` (the drive key stamps it), `kestrel_flight.prop_cn_alpha(calibrated=)` the normal force. `kestrel_structure.py`: `frame`,
 `compare_bracing`, `stiffness_and_modes` (per bracing: the motor stations' symmetric and antisymmetric stiffness and
 first modes), `ground_stance`. `kestrel_drawings.py`: `front_view`, `side_view`, `episode_figure`, `path_figure`,
 `polar_figure`, `fairing_figure`, `front_view_4q2`, `xwing_front_view`. Part II: the pod's `nose_length` / `tail_length` / `pod_wall` and the payload bay (`bay_*`; `Kestrel4Q.pod_profile`,
