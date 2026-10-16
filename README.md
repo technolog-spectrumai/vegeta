@@ -409,7 +409,11 @@ the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 38 and 
 prop_lab also turns the loads into **noise** — the blade-passing frequency and its harmonics (Gutin on the measured
 thrust and torque), the broadband, dB(A) at a bystander — and renders the sound as WAV files: one rotor in the hover,
 in cruise, at a transition point, the four rotors beating in the hover, the transition as a glide from the hover rpm
-to the cruise rpm (`output/41_prop_lab/sound/`). **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
+to the cruise rpm (`output/41_prop_lab/sound/`). The **structure goes through Talos** too (`kestrel_fea.py`, notebook
+38 § 8b, run in 40): the carbon frame as solid tubes for the X-braced and the posts-only truss — the 4 g pull-up with the
+lift elliptic along the spars, the 75 % wing, the heading manoeuvre's torsion (one diagonal pair at full thrust, the
+other at idle), the modes with the motor units — and the printed spar–post joint with its across-layer tension, each
+read against the plane frame's numbers; prepared and NOT RUN where CalculiX is missing, a failed case a result. **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
 insulated capsule (72 × 72 × 160 mm, up to 0.5 kg) on the pod's axis, the battery on the floor under it and the
 electronics above, the pod grown to a 220 mm constant mid-body behind an ellipsoidal nose (`Kestrel4Q.bays`,
 `bay_checks`; the capsule's cost in CG, margin, hover thrust-to-weight, endurance and the transitions) — and

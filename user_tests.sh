@@ -228,7 +228,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and falco_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     kestrel)
       hdr "Kestrel-4Q: zero-stagger layout, CAD, masses, the hold point (allocation rank), the biplane lattice, the transitions both ways, the CFD cases, the truss"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_kestrel.py tests/test_prop_lab.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/notebooks/designs" tests/test_kestrel.py tests/test_prop_lab.py tests/test_kestrel_fea.py -m "not slow" || status=1
       hdr "Kestrel-4Q transitions through the stall: 3 vehicles x forward/back x 1.5/3/5 s x still air/6 m/s headwind (model polar)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/kestrel_transitions.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -20 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) tables, figures and kestrel_transitions.json in scenarios/output/kestrel/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
