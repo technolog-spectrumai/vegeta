@@ -549,6 +549,11 @@ def test_cfd_records_roundtrip_and_the_plug_in(tmp_path, VEH):
     assert kcfd.plug_in(VEH, path, "4Q-2")["airframe"] is None and kcfd.plug_in(VEH, tmp_path / "none.json")["campaign"] is None
     rt = kcfd.records_table(doc["records"])
     assert len(kcfd.sweep_comparison(rt, VEH)) == len(kcfd.SWEEP_ALPHAS)
+    # a NOT RUN listing (no OpenFOAM) saves its statuses and keeps the previous records
+    _, spec = _fake_campaign()
+    nr = kcfd.not_run_table(spec)
+    assert kcfd.summary(nr)["NOT RUN"] == len(nr) and len(kcfd.save_records(nr, path, key="4Q-1")) == len(recs)
+    assert kcfd.load_records(path, "4Q-1")["summary"]["solved"] == len(recs)
 
 
 def test_a_diverging_airframe_is_a_failed_transition_not_a_crash(P):

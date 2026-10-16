@@ -1068,6 +1068,8 @@
     "CL\u03b1 [1/rad]": 3.1877079889898488,
     "CL max": 0.614804,
     "\u03b1 at CL max [deg]": 45.0,
+    "CL max below 20\u00b0": 0.541091,
+    "\u03b1 of it [deg]": 15.0,
     "CD at the lowest \u03b1": 0.053229,
     "Cm\u03b1 [1/rad]": -0.5243136783242165,
     "static margin from Cm\u03b1 [chords]": 0.1644798332015242
@@ -1076,6 +1078,8 @@
     "CL\u03b1 [1/rad]": 3.2343453233900323,
     "CL max": 0.6845668227392617,
     "\u03b1 at CL max [deg]": 45.0,
+    "CL max below 20\u00b0": 0.5644997503963681,
+    "\u03b1 of it [deg]": 10.0,
     "CD at the lowest \u03b1": 0.06654869740668531,
     "Cm\u03b1 [1/rad]": -0.4955981629011842,
     "static margin from Cm\u03b1 [chords]": 0.15322982345673905
@@ -1135,14 +1139,14 @@
    "take-off mass [kg]": 1.6862063482324605,
    "static margin [chords]": 0.1644798332015242,
    "hover thrust / weight": 2.893213038200698,
-   "stall speed [m/s]": 12.52319933434215,
+   "stall speed [m/s]": 13.348992234759361,
    "Cd0": 0.053229,
    "L/D at the cruise": 4.956275655891227,
    "cruise power [W]": 110.21562126390147,
    "endurance at the cruise [min]": 21.27030608834237,
    "transitions passing": "12 of 12",
-   "checks holding": "5 / 6",
-   "failing": "blown cases solved"
+   "checks holding": "5 / 7",
+   "failing": "CL max below 20\u00b0, CFD / the model's polar peak, blown cases solved"
   },
   {
    "iteration": "4 \u2014 payload bay (Part II)",
@@ -1169,8 +1173,8 @@
    "stall speed [m/s]": 10.910411381833859,
    "Cd0": 0.06654869740668531,
    "transitions passing": "11 of 12",
-   "checks holding": "2 / 4",
-   "failing": "servo margin (hinge moment / 0.17 N\u00b7m), least, transitions, rotors only: passing"
+   "checks holding": "3 / 4",
+   "failing": "transitions, rotors only: passing"
   },
   {
    "iteration": "6 \u2014 faired struts (Part II)",

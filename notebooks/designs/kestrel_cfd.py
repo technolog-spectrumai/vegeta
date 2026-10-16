@@ -210,7 +210,7 @@ def table(results: dict, spec: dict, p=None) -> "pd.DataFrame":
 def summary(cfd_table) -> dict:
     """How the campaign went: the count per status, split by rotor disks / bare, and one line to print."""
     st = cfd_table["status"].astype(str)
-    disks = cfd_table["rotor disks"].astype(bool)
+    disks = cfd_table["rotor disks"].astype(bool) if "rotor disks" in cfd_table.columns else st.map(lambda _: False)
     out = {"solved": int((st == "solved").sum()), "diverged": int((st == "diverged").sum()), "FAILED": int((st == "FAILED").sum()),
            "NOT RUN": int((st == "NOT RUN").sum()), "n": int(len(st)),
            "solved with rotor disks": int(((st == "solved") & disks).sum()), "solved bare": int(((st == "solved") & ~disks).sum()),
@@ -231,7 +231,7 @@ def not_run_table(spec: dict) -> "pd.DataFrame":
     rows = {}
     for name, s in spec.items():
         v_ax = s["V"] * math.cos(math.radians(s["alpha_deg"]))
-        rows[name] = {"status": "NOT RUN", "α [deg]": s["alpha_deg"], "V [m/s]": max(s["V"], 1.0), "source": s["source"],
+        rows[name] = {"status": "NOT RUN", "α [deg]": s["alpha_deg"], "V [m/s]": max(s["V"], 1.0), "source": s["source"], "rotor disks": bool(s["props"]),
                       "template": "aircraft_quad_rotor_disks" if s["props"] else "rans_ksst_external",
                       "rpm upper": ks.rpm_for(s["T_up"], v_ax) if s["props"] else "", "rpm lower": ks.rpm_for(s["T_lo"], v_ax) if s["props"] else "",
                       "Re (chord)": max(s["V"], 1.0) * kestrel.layout()["chord"] / NU}
@@ -381,8 +381,8 @@ def save_records(cfd_table, path, *, key: str = "4Q-1", meta: dict | None = None
     campaigns in the file are kept. With ``keep_previous`` a campaign that solved nothing (a run without OpenFOAM) does
     not overwrite one that did — a NOT RUN pass never erases a result."""
     import json
-    recs = CFDAirframe.records(cfd_table)
-    st = {str(k): {"status": str(v["status"]), "note": str(v.get("note", "")), "rotor disks": bool(v["rotor disks"]),
+    recs = CFDAirframe.records(cfd_table) if "CL" in cfd_table.columns else []
+    st = {str(k): {"status": str(v["status"]), "note": str(v.get("note", "") or ""), "rotor disks": bool(v.get("rotor disks", False)),
                    "α [deg]": float(v["α [deg]"]), "V [m/s]": float(v["V [m/s]"])} for k, v in cfd_table.to_dict("index").items()}
     camp = {"meta": meta or {}, "summary": {k: v for k, v in summary(cfd_table).items() if k != "line"}, "records": recs, "statuses": st}
     path = Path(path)
