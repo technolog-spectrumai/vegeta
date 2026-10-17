@@ -36,8 +36,12 @@ from vegeta.hyperion import thermal as th
 SIGMA = th.SIGMA_SB
 
 
+ALIASES = {"black_pc": "black polycarbonate", "clear_pc": "clear polycarbonate", "laser_pc": "laser-safety polycarbonate", "black_pe": "black polyethylene",
+           "brick": "fired clay brick", "mild_steel": "mild steel", "stainless": "stainless 304", "aluminium": "aluminium"}
+
+
 def material(name: str) -> th.Solid:
-    return th.solid(name.replace("_", " "))
+    return th.solid(ALIASES.get(name, name.replace("_", " ")))
 
 
 def build_mesh(comm, thickness: float, r_max: float, nr: int, nz: int):
