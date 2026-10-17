@@ -1,6 +1,6 @@
 # Kestrel — the design dossier
 
-*stitched 2026-10-17 07:49 from 5 report(s)*
+*stitched 2026-10-17 08:59 from 5 report(s)*
 
 | report | lines | exported |
 |---|---|---|
@@ -8,7 +8,7 @@
 | 39_kestrel_tests | 164 | 39_kestrel_tests — exported 2026-10-16 12:30 |
 | 40_kestrel | 917 | 40_kestrel — exported 2026-10-16 12:22 |
 | 41_xwing | 172 | 41_xwing — exported 2026-10-16 12:34 |
-| 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 07:49 |
+| 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 08:59 |
 
 
 ---
@@ -1456,13 +1456,13 @@
 
 ## Kestrel — the design study (notebook 43)
 
-*43_kestrel_study — exported 2026-10-17 07:49*
+*43_kestrel_study — exported 2026-10-17 08:59*
 
 | key | value |
 |---|---|
 | main | 4Q-2 |
 | mass [kg] | 1.65 |
-| runtime_s | 125 |
+| runtime_s | 124 |
 | screening | yes |
 | CFD | {'4Q-1': 'solver (unconverged: indicative)', '4Q-2': 'solver (unconverged: indicative)'… |
 | FEA | NOT RUN |
@@ -1475,8 +1475,8 @@
 | prop_lab calibration (notebook 38) | optional | notebooks/designs/data/prop_lab.json | NOT RUN or rejected: Boreas's generic blade section and De Young's normal force | 38_prop_lab |  | no |
 | drive tables (Boreas) | required | notebooks/designs/data/kestrel_drive.json | on file for this motor, propeller, battery and calibration | kestrel_systems.compute_drive_table | keyed on motor, propeller, battery, calibration | yes |
 | section polars (Zephyr / NeuralFoil) | optional | notebooks/designs/data/kestrel_sections.json | NeuralFoil polars on file | kestrel_section.table | keyed on candidates, flap chord, n_crit | yes |
-| airframe CFD, 4Q-1, sweep | optional | workflows/runs/airframe_cfd/legacy_20261016_4Q-1_39_kestrel_tests | completed: 29 of 29 solved, 0 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: source changed since the run: kestrel_fea; fingerprint assumed from the curre… | yes |
-| airframe CFD, 4Q-2, sweep | optional | workflows/runs/airframe_cfd/legacy_20261016_4Q-2_39_kestrel_tests | completed: 29 of 29 solved, 1 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: source changed since the run: kestrel_fea; fingerprint assumed from the curre… | yes |
+| airframe CFD, 4Q-1, sweep | optional | workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-1_39_kestrel_tests | completed: 29 of 29 solved, 0 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
+| airframe CFD, 4Q-2, sweep | optional | workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-2_39_kestrel_tests | completed: 29 of 29 solved, 1 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
 | airframe CFD, 4Q-3, sweep | optional | — | not selected |  |  | no |
 
 
@@ -1841,10 +1841,10 @@ NOT RUN
 
 | order | workflow | variant | campaign | quality | why | command |
 |---|---|---|---|---|---|---|
-| 2 | airframe_cfd | 4Q-2 | stall | fine | CL max decides the stall speed and the wing area: the polar stalls at 14°; the screenin… | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --qu… |
-| 3 | airframe_cfd | 4Q-2 | cruise | screening | the level cruise and the stall point with the rotor disks on: the blown spans' lift and… | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign cruise --q… |
-| 4 | structure_fea | 4Q-2 | all | — | the frame's margins at ultimate and the joint's across-layer tension: no FEA on file | .venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --campaign all |
-| 5 | airframe_cfd | 4Q-2 | transitions | screening | the transition points with the disks (the model's least-known regime: blown, stalled); … | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign transition… |
+| 2 | airframe_cfd | 4Q-2 | stall | fine | CL max decides the stall speed and the wing area: the polar stalls at 14°; the screenin… | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --qua… |
+| 3 | airframe_cfd | 4Q-2 | cruise | screening | the level cruise and the stall point with the rotor disks on: the blown spans' lift and… | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter cruise --qu… |
+| 4 | structure_fea | 4Q-2 | all | — | the frame's margins at ultimate and the joint's across-layer tension: no FEA on file | .venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all |
+| 5 | airframe_cfd | 4Q-2 | transitions | screening | the transition points with the disks (the model's least-known regime: blown, stalled); … | .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter transitions… |
 
 
 ## final checks
@@ -1900,18 +1900,18 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 
 |  | seconds |
 |---|---|
-| 1 prerequisites | 2 |
-| 2 geometry | 12.4 |
+| 1 prerequisites | 0.3 |
+| 2 geometry | 10.1 |
 | 3 mass | 0 |
 | 4 propulsion | 0.4 |
 | 5 aerodynamics | 0.4 |
-| 6 trim | 0.6 |
+| 6 trim | 0.8 |
 | 7 performance | 0.7 |
 | 8 structure | 0.1 |
-| 9 transitions | 109 |
+| 9 transitions | 111 |
 | 10 recommendations | 0 |
 | 11 assessment | 0 |
-| total | 125 |
+| total | 124 |
 
 
 ## status
