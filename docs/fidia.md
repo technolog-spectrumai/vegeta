@@ -19,7 +19,7 @@ fidia run "a desk lamp with a round base and a conical shade" --out runs/lamp --
 fidia resume runs/lamp --feedback "make the shade red and 20 % larger"
 fidia show runs/lamp
 ```
-Notebook: `notebooks/15_fidia_prompt_to_3d.ipynb` (runs offline without a key).
+Notebook: `notebooks/demo/15_fidia_prompt_to_3d.ipynb` (runs offline without a key).
 
 ```python
 from vegeta.fidia import Limits, Session, agent_from_config, demo_agent
@@ -205,7 +205,7 @@ proposal and decision with token usage) and `<design>.<n>.bak`.
 fidia propose designs/bracket.py:Bracket "add two stiffening ribs" -p thickness=6 --save p1.json
 fidia accept  designs/bracket.py:Bracket p1.json          # re-validates, then writes (backup kept)
 ```
-Notebook: `07_ai_design_copilot`.
+Notebook: `demo/07_ai_design_copilot`.
 
 ## Campaigns
 `Campaign` lets the model drive a parameter search on `vegeta.core` revisions (install `vegeta-fidia[core]`). It
@@ -233,4 +233,4 @@ tried set; source changes, unknown or fixed parameters, out-of-range values and 
 declined approval stops the campaign. Limits: `max_iterations`, `max_tokens`, `max_minutes`, `patience`, and a
 `STOP` file in `campaigns/<name>/`. Record: `campaigns/<name>/campaign.json` and `events.jsonl`; every candidate is
 an ordinary revision with its evaluations; `run()` again with the same `name` continues. A campaign never labels
-revisions — picking the design is your decision. Notebook: `10_agentic_design`.
+revisions — picking the design is your decision. Notebook: `demo/10_agentic_design`.

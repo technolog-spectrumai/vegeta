@@ -128,13 +128,15 @@ class Unit:
 
 @dataclass
 class Notebook(Unit):
-    """A notebook under ``notebooks/``: ``screening_env`` names the variable that turns every required take optional."""
+    """A notebook under ``notebooks/`` (or ``notebooks/<folder>/``): ``screening_env`` names the variable that turns
+    every required take optional."""
     screening_env: str | None = None
+    folder: str = ""
     kind_of_unit = "notebook"
 
     @property
     def path(self) -> str:
-        return f"notebooks/{self.name}.ipynb"
+        return f"notebooks/{self.folder + '/' if self.folder else ''}{self.name}.ipynb"
 
 
 @dataclass
@@ -233,10 +235,10 @@ class Flow:
         self.books[name] = b
         return b
 
-    def notebook(self, name: str, *, needs=(), takes=(), gives=(), title: str = "", screening_env: str | None = None) -> Notebook:
+    def notebook(self, name: str, *, needs=(), takes=(), gives=(), title: str = "", screening_env: str | None = None, folder: str = "") -> Notebook:
         if name in self.notebooks:
             raise FlowError(f"notebook {name!r} declared twice")
-        nb = Notebook(name, needs=list(needs), takes=list(takes), gives=list(gives), title=title, screening_env=screening_env)
+        nb = Notebook(name, needs=list(needs), takes=list(takes), gives=list(gives), title=title, screening_env=screening_env, folder=folder)
         self.notebooks[name] = nb
         return nb
 

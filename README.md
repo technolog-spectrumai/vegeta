@@ -41,7 +41,7 @@ unit's needs, takes and gives in `workflows/flow.py`; the gates that check them;
 ## Status
 Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
 notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded
-evaluations, NOT RUN status; [docs/core.md](docs/core.md), `06_core_revisions`). Next: comparison and
+evaluations, NOT RUN status; [docs/core.md](docs/core.md), `demo/06_core_revisions`). Next: comparison and
 sweeps, then a GUI — see [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
@@ -55,7 +55,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
 | Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
-| Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `15_fidia_prompt_to_3d`, `07_`, `10_` |
+| Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
 Product-level notebooks — one notebook per machine, the whole workflow on one design with revisions,
 visualisation and a JSON record: `08_quadcopter` (printed X-frame: load cases, three revisions, drag with a
@@ -66,9 +66,9 @@ fatigue on the FEA stress fields and a fleet-usage life) and the twin-motor fixe
 resulting drag polar with the same CFD/noise/blade/video treatment, then the whole aircraft in flight with its
 propellers as rotor disks; it ends with a hand-off file) and `09b_fixed_wing_durability` (wing modes, missions
 and life, then the whole fuselage over a long full-battery mission; it starts from 09a's hand-off, or recorded
-values). `07_ai_design_copilot`
-iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
-every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
+values). `demo/07_ai_design_copilot`
+iterates a design with Claude; `demo/10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
+every candidate, criteria, budget, approval policy) in a workspace; `demo/15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
 with a scripted agent when no API key is set. Shared design files live in
 `notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).

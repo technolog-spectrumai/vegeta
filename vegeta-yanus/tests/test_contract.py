@@ -47,3 +47,13 @@ def test_load_by_path_and_env(repo, tmp_path, monkeypatch):
     assert "01_x" in fl.notebooks and fl.root == tmp_path
     monkeypatch.setenv("VEGETA_YANUS_FLOW", str(p))
     assert load_flow() is fl
+
+
+def test_notebook_folder(tmp_path):
+    f = Flow(root=tmp_path)
+    nb = f.notebook("15_demo", folder="demo", gives=[File("data/x.json")])
+    f.notebook("20_reader", takes=[File("15_demo:data/x.json")])
+    f.validate()
+    assert nb.path == "notebooks/demo/15_demo.ipynb" and f.unit("15").name == "15_demo"
+    from vegeta.yanus.gate import notebook_command
+    assert notebook_command(nb) == "scripts/run_notebooks.sh demo/15_demo.ipynb"

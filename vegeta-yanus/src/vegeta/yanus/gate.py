@@ -60,8 +60,8 @@ def run_command(ch: Chapter, variant: str | None) -> str:
     return f"wf {ch.code}" + (f" --variant {variant}" if variant else "")
 
 
-def notebook_command(name: str) -> str:
-    return f"scripts/run_notebooks.sh {name}.ipynb"
+def notebook_command(nb) -> str:
+    return f"scripts/run_notebooks.sh {nb.path.split('/', 1)[1]}"
 
 
 # ================================================================================================= one run take
@@ -295,7 +295,7 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
             row.usable, row.status = c["ok"], c["status"]
             st = c["stamp"] or {}
             row.provenance = f"{st.get('producer')} {st.get('written_at', '')[:16]} (git {st.get('git')})" if st else ""
-            row.fix = run_command(prod, None) if isinstance(prod, Chapter) else notebook_command(prod.name)
+            row.fix = run_command(prod, None) if isinstance(prod, Chapter) else notebook_command(prod)
             g.inputs[key] = c["path"] if c["ok"] else None
         else:
             continue

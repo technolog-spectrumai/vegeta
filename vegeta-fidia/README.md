@@ -17,4 +17,4 @@ pip install -e "vegeta-fidia[viz,test]"          # viz: pyvista renders and prev
 fidia run "a small stool with three legs" --offline --out runs/stool
 pytest vegeta-fidia/tests                        # offline, CPU; live tests need ANTHROPIC_API_KEY
 ```
-Guide: `../docs/fidia.md`. Notebook: `../notebooks/15_fidia_prompt_to_3d.ipynb`.
+Guide: `../docs/fidia.md`. Notebook: `../notebooks/demo/15_fidia_prompt_to_3d.ipynb`.

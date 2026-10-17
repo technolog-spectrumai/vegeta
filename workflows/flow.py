@@ -103,9 +103,9 @@ flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared
 # Their needs (the vegeta packages they import), the files they hand to each other under notebooks/designs/data/ and
 # take from each other (all optional: each falls back to its own defaults when the file is missing). Their scratch
 # output (_runs/, output/) is not a give. Long CFD/FEA cells stay in the notebooks until they become workflows (todo M.2).
-flow.notebook("06_core_revisions", title='Vegeta Core — revisions, evaluations, NOT RUN',
+flow.notebook("06_core_revisions", folder="demo", title='Vegeta Core — revisions, evaluations, NOT RUN',
               needs=[Package("vegeta.core"), Package("vegeta.mellonia"), Package("vegeta.talos")])
-flow.notebook("07_ai_design_copilot", title='AI design copilot — iterate on a CadQuery design with Claude',
+flow.notebook("07_ai_design_copilot", folder="demo", title='AI design copilot — iterate on a CadQuery design with Claude',
               needs=[Package("vegeta.ai"), Package("vegeta.dedalus"), Package("vegeta.fidia")])
 flow.notebook("08_quadcopter", title='Quadcopter — frame, propeller, noise, vibration and life',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])
@@ -115,7 +115,7 @@ flow.notebook("09a_fixed_wing_design", title='Fixed-wing drone — design and pe
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])
 flow.notebook("09b_fixed_wing_durability", title='Fixed-wing drone — durability',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])
-flow.notebook("10_agentic_design", title='Agentic design — a controlled AI campaign',
+flow.notebook("10_agentic_design", folder="demo", title='Agentic design — a controlled AI campaign',
               needs=[Package("vegeta.ai"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.fidia"), Package("vegeta.talos")])
 flow.notebook("11_rover_mechanics", title='Unmanned ground vehicle — a small rover for rugged terrain, mechanically',
               needs=[Package("vegeta.chronos"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])
@@ -125,7 +125,7 @@ flow.notebook("13_submarine", title='Submarine — a small autonomous underwater
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.dedalus"), Package("vegeta.talos")])
 flow.notebook("14_submarine_propeller", title='Submarine propeller — flow in 3D with particles, weak points, vibration and noise spectra,',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.dedalus"), Package("vegeta.talos")])
-flow.notebook("15_fidia_prompt_to_3d", title='Fidia — from a prompt to a 3D model',
+flow.notebook("15_fidia_prompt_to_3d", folder="demo", title='Fidia — from a prompt to a 3D model',
               needs=[Package("vegeta.dedalus"), Package("vegeta.fidia")])
 flow.notebook("16_robot_dog", title='Robot dog — a quadruped for patrols, stairs and building inspection',
               needs=[Package("vegeta.chronos"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])

@@ -11,6 +11,8 @@ runs/
 notebooks/_runs/
 notebooks/old/_runs/
 notebooks/old/output/
+notebooks/demo/_runs/
+notebooks/demo/output/
 workflows/runs/
 workflows/cache/
 workflows/runs_*.out
