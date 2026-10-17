@@ -194,3 +194,24 @@ def test_economics_are_sourced_and_close():
     pc3 = need[(need["family"] == "polycarbonate") & (need["escape_s"] == 3.0)].iloc[0]
     assert pc3["shield_needed_mm"] == 2.0 and pc3["panel €/m²"] == 24.0 and pc3["panel € per k€ of source"] == pytest.approx(24.0 / 50.0)
     assert (per[per["family"] == "aluminium"]["escape s per € of panel"] == math.inf).all()
+
+
+def test_required_thickness_closed_forms():
+    df = sc.required_thickness(sc.LASERS["FL2000C"])
+    assert df.shape[0] == 7 * 3 * 4 and set(df["distance_m"]) == set(sc.SHIELD_REQ_DISTANCES) and set(df["hold_s"]) == set(sc.HOLD_TIMES)
+    pc = df[(df["family"] == "polycarbonate")]
+    assert (pc["basis"] == "energy bound").all() and math.isnan(pc["d_steady_mm"].iloc[0])
+    for (fam, t), g in df.groupby(["family", "hold_s"]):
+        g = g.sort_values("distance_m")
+        assert (np.diff(g["required_mm"]) <= 1e-12).all()                                      # thinner with distance
+    for (fam, d), g in df.groupby(["family", "distance_m"]):
+        g = g.sort_values("hold_s")
+        assert (np.diff(g["d_energy_mm"]) > 0).all()                                            # thicker for a longer hold
+    pc2 = pc[(pc["distance_m"] == 2.0) & (pc["hold_s"] == 10.0)]["required_mm"].iloc[0]
+    q = pc[(pc["distance_m"] == 2.0)]["absorbed_W_per_cm2"].iloc[0] * 1e4
+    assert pc2 == pytest.approx(q * 10.0 / sc.th.BLACK_PC.enthalpy_to_fail() * 1e3)
+    al = df[df["family"] == "aluminium"]
+    assert al["d_steady_mm"].notna().all() and (al[al["hold_s"] == 10.0]["basis"] == "steady bound (never melts)").any()   # aluminium: the steady bound caps the sheet for long holds
+    st = df[(df["family"] == "steel") & (df["distance_m"] == 200.0)]
+    assert (st["required_mm"] <= st["d_energy_mm"]).all() and (df["note"].str.contains("not protection evidence")).all()
+    assert sc.required_thickness_table(df).shape == (12, 7)

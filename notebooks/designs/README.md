@@ -336,7 +336,7 @@ imaged against the embedded Gaussian through `si.HEAD`), `energy_balance` / `ene
 `SHEET_MATERIALS` / `weld_case` / `welding_cases` / `welding_table` / `welding_uncertainty` (the thin-plate Rosenthal field
 and its cooling, HAZ and distortion indicators), `SHIELDS` / `shield_cases` / `shield_case` (`stray_beam`, `mpe_eye_1070`,
 `mpe_skin_1070`, `nohd`, `od_required`, `thermal_response`, `fire_risk`, `seam_leak`, `verdict`), `verdict_matrix`,
-`degraded_sensitivity`, `endurance` / `endurance_record` / `load_endurance` (the hold times, made by `--endurance`), `ECON` / `econ_table` / `capex` / `opex_per_hour` / `cost_per_metre` /
+`degraded_sensitivity`, `endurance` / `endurance_record` / `load_endurance` (the hold times, made by `--endurance`), `required_thickness` / `required_thickness_table` (the sheet a hold time needs at 2–200 m, closed forms), `ECON` / `econ_table` / `capex` / `opex_per_hour` / `cost_per_metre` /
 `shield_economics` (sourced economic parameters; `PRICES` / `speed_per_keur` / `shield_for_escape` / `escape_per_keur` the first allowances), `record` / `write_csvs`. `svarog_commercial_drawings.py` draws the beam quality against the limits,
 the stray beams against distance, the Gaussian against the imaged core, the energy budgets, the thin-plate fields, the welding
 comparison, the exposure against the MPE, the barrier indicator against distance and the verdict matrices.

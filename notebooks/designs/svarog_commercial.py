@@ -870,3 +870,54 @@ def shield_economics(endurance_rows: list[dict], escape_times=None) -> tuple[pd.
         per_eur.append({"laser": r["laser"], "family": r["family"], "thickness_mm": r["thickness_mm"], "distance_m": r["distance_m"], "holds_s": r["holds_s"], "panel €/m²": cost,
                         "escape s per € of panel": r["holds_s"] / cost, "escape s per k€ of source": r["holds_s"] / (capex(LASERS[r["laser"]])["nominal"]["source"] / 1e3)})
     return pd.DataFrame(need), pd.DataFrame(per_eur)
+
+
+# ================================================================================================== shielding required against distance
+SHIELD_REQ_DISTANCES = (2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0)
+HOLD_TIMES = (1.0, 3.0, 5.0, 10.0)                      # s: the 1 / 3 / 5 s escape and IEC 60825-4's T1
+
+
+def _steady_safe_thickness(solid: th.Solid, beam: si.StrayBeam, T0: float = th.T_ROOM) -> float:
+    """The thickness [m] at which ``si.plate_steady_bound`` falls under the melting point (the sheet reaches a steady
+    state below melting: holds for ever by that bound); nan when 50 mm is not enough. Metals only make sense here."""
+    def rise(d):
+        return si.plate_steady_bound(solid, d, solid.absorptivity * beam.power, beam.radius, max(8 * beam.radius, 12 * d, 0.3))
+    lo, hi = 0.2e-3, 50e-3
+    if rise(hi) >= solid.T_melt - T0:
+        return math.nan
+    if rise(lo) < solid.T_melt - T0:
+        return lo
+    for _ in range(60):
+        mid = math.sqrt(lo * hi)
+        lo, hi = (mid, hi) if rise(mid) >= solid.T_melt - T0 else (lo, mid)
+    return hi
+
+
+def required_thickness(spec: Spec, distances=SHIELD_REQ_DISTANCES, sheets: dict | None = None, hold_times=HOLD_TIMES, opt: dict | None = None) -> pd.DataFrame:
+    """The sheet thickness a hold time needs, per family and distance, from the closed forms alone: the lossless energy
+    bound d = q·t / (the enthalpy to gone: ``enthalpy_to_fail`` for an ablating plastic, ``enthalpy_to_melt`` for a
+    metal's melt-through) — the lumped plate of ``th.thin_plate_time_to`` inverted, conservative where conduction helps
+    — and, for the metals, the thickness at which the steady bound never melts (then that is enough for any time). The
+    smaller of the two is ``required_mm`` with its ``basis``. A design number, not evidence."""
+    opt = optics(spec) if opt is None else opt
+    sheets = ENDURANCE_SHEETS if sheets is None else sheets
+    rows = []
+    for fam, s in sheets.items():
+        for d in distances:
+            beam = stray_beam(spec, d, "collimated", opt)
+            q = s.absorptivity * beam.mean_irradiance
+            e_gone = s.enthalpy_to_fail() if s.failure == "ablate" else s.enthalpy_to_melt()
+            d_steady = _steady_safe_thickness(s, beam) if s.failure == "melt" else math.nan
+            for t in hold_times:
+                d_energy = q * t / e_gone
+                req, basis = d_energy, "energy bound"
+                if d_steady == d_steady and d_steady < d_energy:
+                    req, basis = d_steady, "steady bound (never melts)"
+                rows.append({"laser": spec.key, "family": fam, "sheet": s.name, "distance_m": d, "hold_s": t, "hold": "T1 (10 s)" if t == 10.0 else f"{t:g} s escape",
+                             "irradiance_W_per_cm2": beam.mean_irradiance / 1e4, "absorbed_W_per_cm2": q / 1e4, "d_energy_mm": d_energy * 1e3, "d_steady_mm": d_steady * 1e3,
+                             "required_mm": req * 1e3, "basis": basis, "note": "lossless energy bound / steady bound: a design number, not protection evidence"})
+    return pd.DataFrame(rows)
+
+
+def required_thickness_table(df: pd.DataFrame) -> pd.DataFrame:
+    return df.pivot_table(index=["laser", "family", "hold"], columns="distance_m", values="required_mm", aggfunc="first")

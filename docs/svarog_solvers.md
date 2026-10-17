@@ -99,6 +99,8 @@ Closed forms only, under a minute; nothing is optimised and nothing is destroyed
    listings, Eurostat electricity and labour, argon, diode life, sheet prices — each with its source or marked assumed):
    `capex`, `opex_per_hour`, `cost_per_metre` (arc-on time over the model speed) and `shield_economics` (the thinnest
    recorded sheet that holds 1, 3, 5 s, its cost per m² and per k€ of source; escape seconds per euro of panel).
+   `required_thickness` turns it round without any transient: the sheet a 1 / 3 / 5 / 10 s hold needs at 2–200 m from
+   the lossless energy bound (d = q·t / enthalpy to gone) and, for the metals, the steady bound's never-melting thickness.
 7. **F4** (`fenix` chapter `shield-steady`): the same panels' steady states by finite elements, run only by
    `wf run F4 --variant <laser>`; the notebook cross-references the runs when they exist and says NOT RUN otherwise.
 8. **The record** `reports/47_svarog_iii.json` (specs verbatim, assumptions, standards with "verify the edition",

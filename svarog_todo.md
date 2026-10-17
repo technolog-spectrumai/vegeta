@@ -72,7 +72,8 @@ nothing load-bearing); the enclosure's panels are sheet metal sized by 49, M.2.
   notebook — a design number outside the verdicts; on it and sourced economic parameters (October 2026: listings for the
   source, head and chiller, Eurostat electricity and labour, argon, diode life, sheet prices; the first top-of-head
   allowances kept only as a record): capex, cost per hour and per metre of weld, the shield a 1 / 3 / 5 s escape needs
-  per k€ of source, escape seconds per euro of panel.
+  per k€ of source, escape seconds per euro of panel; the sheet thickness a 1 / 3 / 5 / 10 s hold needs at 2–200 m from
+  the closed-form bounds alone (`required_thickness`, no transient).
 - [x] **III.3 fenix F4 `shield-steady`**: the nine panels' steady states by finite elements for each commercial laser,
   steady only, run on request (`wf run F4 --variant FL2000C`); the notebook takes the runs as optional inputs.
 - [ ] **III.4 The MPE constants** (`mpe_eye_1070`, `mpe_skin_1070`) checked against the current IEC 60825-1 edition, and

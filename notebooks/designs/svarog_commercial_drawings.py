@@ -161,3 +161,35 @@ def verdict_matrix_view(vm, ax=None, title="verdicts"):
             ax.text(j, i, vm.values[i, j], ha="center", va="center", fontsize=6)
     ax.set_title(title, fontsize=9)
     return ax
+
+
+STYLE_HOLD = {1.0: ":", 3.0: "--", 5.0: "-", 10.0: "-."}
+
+
+def required_thickness_view(df, axs=None, hold_times=(1.0, 3.0, 5.0, 10.0), endurance_rows=None):
+    """Three panels (polycarbonate, aluminium, steel): the required sheet thickness against distance, one colour per laser,
+    one line style per hold time (1 s dotted, 3 s dashed, 5 s solid, T1 dash-dot); the recorded endurance points (the
+    1/2/3 mm sheets that held at least the hold time) as markers when given; guides at 1, 2, 3 mm."""
+    fams = list(dict.fromkeys(df["family"]))
+    if axs is None:
+        _, axs = plt.subplots(1, len(fams), figsize=(6.5 * len(fams), 4.8), sharey=True)
+    for ax, fam in zip(np.atleast_1d(axs), fams):
+        sub = df[df["family"] == fam]
+        for laser, g in sub.groupby("laser"):
+            for t in hold_times:
+                h = g[g["hold_s"] == t].sort_values("distance_m")
+                ax.plot(h["distance_m"], h["required_mm"], STYLE_HOLD.get(t, "-"), color=COL.get(laser, "k"), lw=1.5, label=f"{laser}, {'T1 10 s' if t == 10.0 else f'{t:g} s'}")
+        if endurance_rows is not None:
+            e = sc.pd.DataFrame(endurance_rows)
+            e = e[e["family"] == fam]
+            for t in hold_times:
+                ok = e[e["holds_s"] >= t]
+                for laser, g in ok.groupby("laser"):
+                    ax.scatter(g["distance_m"], g["thickness_mm"], marker="x", color=COL.get(laser, "k"), s=25, zorder=4)
+        for mm in (1.0, 2.0, 3.0):
+            ax.axhline(mm, color="grey", lw=0.6, ls=":")
+        ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlabel("distance [m]"); ax.grid(alpha=0.3, which="both")
+        ax.set_title(f"{fam}: sheet required (closed-form bounds; × recorded sheets that held)", fontsize=8)
+    np.atleast_1d(axs)[0].set_ylabel("required thickness [mm]")
+    np.atleast_1d(axs)[-1].legend(fontsize=5, ncol=2)
+    return axs
