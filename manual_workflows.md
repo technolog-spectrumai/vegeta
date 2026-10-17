@@ -17,7 +17,7 @@ Everything below also works as `.venv/bin/python workflows/cli.py …` without s
 
 ```bash
 pip install PyQt6            # once (or: sudo apt install python3-pyqt6 libegl1 libxkbcommon-x11-0 libxcb-cursor0)
-./workflows.sh               # or: wf gui  (= .venv/bin/python workflows/gui); ./workflows.sh cli list for the command line
+./workflows.sh               # or: wf gui  (= .venv/bin/python workflows/gui)
 ```
 
 One window: the **tree** of books and chapters on the left (double-click a chapter, or type its code — `K2` — in
