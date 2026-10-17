@@ -65,3 +65,19 @@ def test_performance_and_pursuit(V):
     assert float(t.loc["steady roll rate at 16 m/s [deg/s]", "4Q-3"]) > float(t.loc["steady roll rate at 16 m/s [deg/s]", "4Q-2"])
     prop = k2.propose_4q3()
     assert {"airframe", "drives", "elevons", "autopilot", "what it buys", "open"} <= set(prop)
+
+
+def test_kestrel_fast_compares_two_candidates():
+    """The fast comparator: Zephyr + Boreas points + beam rules, no solver; a bigger wing lowers the stall speed and the
+    wing loading, the structure rules give finite reserves, the targets table counts."""
+    import kestrel_fast as kfa
+    base = kfa.Candidate("base")
+    big = kfa.Candidate("big", span=1.2, chord=0.16, gap=0.30, prop="10x7")
+    df = kfa.compare([base, big])
+    assert df.loc["big", "stall speed [m/s]"] < df.loc["base", "stall speed [m/s]"]
+    assert df.loc["big", "wing loading [N/m²]"] < df.loc["base", "wing loading [N/m²]"]
+    assert df.loc["big", "V max, thrust-limited [m/s]"] > df.loc["base", "V max, thrust-limited [m/s]"]       # the 10x7's pitch speed
+    assert (df["spar reserve (ultimate)"] > 1).all() and (df["post buckling margin"] > 1).all() and (df["layout rules broken"] == 0).all()
+    v = kfa.verdicts(df)
+    assert "targets met" in v.columns and int(v.loc["base", "targets met"]) >= 8
+    assert abs(kfa.ratios(df, "base").loc["base"] - 1).max() < 1e-12

@@ -239,7 +239,10 @@ design identity a run is made for and the tolerance it is read with), `CFD_CAMPA
 `cfd_outcome` / `cfd_summary`, `FEA_CAMPAIGNS` / `fea_cases` / `fea_outcome` / `fea_summary`, `import_legacy`,
 `check_run` / `require` / `command` / `find_runs`, `records_frame` / `airframe_correction`; nothing in it runs a solver
 (`workflows/tests` checks). `workflows_runkit.py` re-exports `workflows/runkit.py` for the design modules.
-Notebooks 39–42 are in `notebooks/old/` (unchanged; see its README).
+`kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
+battery, bracing, spar…) → `params`, `section_polar` (Zephyr, cached), `propulsion` (Boreas points), `spar_rules` /
+`post_rules` (beam and Euler rules of thumb), `evaluate` / `compare` / `ratios` / `verdicts` / `plot_ratios`,
+`default_candidates`; no solver. Notebooks 39–42 are in `notebooks/old/` (unchanged; see its README).
 
 `kestrel.py` (`Kestrel4Q`, notebook 40, branch `dev_kestrel`) is the zero-stagger biplane quadrotor tailsitter: the
 CAD (parts `aircraft`, `airframe` — the CFD body without the propellers —, `wing`, `pod`, `truss`, `nacelle`, `tail`;

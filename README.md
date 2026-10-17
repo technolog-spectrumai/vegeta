@@ -384,7 +384,10 @@ when complete, the native cases) that the notebook reads **by explicit path** an
 before use; a required result that is missing, stale, incompatible or failed stops it with the exact command to run,
 an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
 workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
-[workflows/README.md](workflows/README.md); the short how-to is [manual_workflows.md](manual_workflows.md). The first campaign's results are imported as runs by
+[workflows/README.md](workflows/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `workflows/cli.py` lists, explains, launches and watches
+them (interactive without arguments). **`44_kestrel_fast`** (`designs/kestrel_fast.py`) is the standalone one-minute
+comparator of candidate designs — span, chord, section, propeller, motor, battery, bracing, spar — on Zephyr sections,
+Boreas points and beam rules of thumb, no solver: for ranking ideas before the study and the workflows decide. The first campaign's results are imported as runs by
 `workflows/kestrel/import_legacy.py`. The resolved propeller stays in **`38_prop_lab`**, whose calibration the airframe
 cases, the drive tables and the notebook read once it passed its gates. The notebooks that built the design — **39**
 `kestrel_tests`, **40** `kestrel`, **41** `xwing`, **42** `kestrel2` — are kept unchanged with their outputs in

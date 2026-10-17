@@ -35,6 +35,7 @@ next long-running analysis (a thermal case, another aircraft's CFD) reuses as it
 ```
 workflows/
   README.md                    this file
+  cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook, or interactive
   runkit.py                    the run-directory contract: manifest, status, run.log, heartbeat, cancel, resume, summary
   kestrel/
     airframe_cfd.py            the whole aircraft with the propellers as rotor disks (Aeromant / OpenFOAM), one campaign per run
@@ -52,7 +53,9 @@ Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`
 
 ## Running (Ubuntu)
 
-All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`).
+All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`). The quickest
+way is `workflows/cli.py` (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
+`resume`, `notebook`); the scripts below are what it calls.
 
 ```bash
 # what a campaign would do, without writing anything

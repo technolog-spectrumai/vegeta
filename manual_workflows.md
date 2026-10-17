@@ -13,7 +13,28 @@ directories you point it at, checks that they are finished and belong to the cur
 beside its own quick estimates. You can use the workflows without the notebook (the run directory is readable on its
 own) and the notebook without the workflows (a screening pass with the solver results marked NOT RUN).
 
-## 2. Without a notebook: run a campaign and read the result
+## 2. The easy way: `workflows/cli.py`
+
+One tool lists, explains, launches and watches every workflow. With no arguments it asks you what to run:
+
+```bash
+.venv/bin/python workflows/cli.py                 # interactive: workflow → campaign → variant/quality → run / prepare only / list; confirm; detached or not
+.venv/bin/python workflows/cli.py list            # the workflows, their campaigns and what each is for
+.venv/bin/python workflows/cli.py info airframe_cfd stall --variant 4Q-2    # the exact cases a campaign would run
+.venv/bin/python workflows/cli.py run airframe_cfd --detach --variant 4Q-2 --campaign stall --quality fine
+.venv/bin/python workflows/cli.py runs            # every run on disk: state, cases done, age
+.venv/bin/python workflows/cli.py status <run>    # one run: heartbeat, last log lines, and what to do next
+.venv/bin/python workflows/cli.py tail <run>      # follow its run.log
+.venv/bin/python workflows/cli.py stop <run>      # stop it cleanly (finished cases are kept)
+.venv/bin/python workflows/cli.py resume <run>    # continue it
+.venv/bin/python workflows/cli.py notebook <run>  # the RUNS line to paste into the notebook
+```
+
+`<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
+terminal output in `workflows/runs/<workflow>_<time>.out`, so logging out or closing Jupyter does not stop it.
+Everything below works without the tool too.
+
+## 3. Without a notebook: run a campaign and read the result
 
 ```bash
 # 1. see what a campaign contains (nothing is written)
@@ -74,7 +95,7 @@ the terminal clean (everything is still in `run.log`).
 Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the reflexed section — the main one),
 `4Q-3` (4Q-2 with crow-brake elevons and reverse-capable drives).
 
-## 3. With the notebook
+## 4. With the notebook
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
 2. The **first code cell** has a dictionary `RUNS` with the run directories the notebook reads, for example
@@ -93,7 +114,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 The notebook takes about two minutes (it prints its measured runtime at the end). Closing it never stops a workflow
 you started from a shell; re-run the notebook when a workflow has finished.
 
-## 4. The first time
+## 5. The first time
 
 The first CFD campaign (October 2026, screening quality, unconverged) lives in
 `notebooks/designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
@@ -105,11 +126,13 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 It prints two directories (`legacy_…_4Q-1_…`, `legacy_…_4Q-2_…`) — the ones `RUNS` in the notebook points at by
 default. Replace them as real workflow runs arrive.
 
-## 5. Order of work recommended now
+## 6. Order of work recommended now
 
 1. `import_legacy.py` (seconds) and the notebook in screening mode (two minutes): the baseline numbers.
 2. `airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine` (hours): decides CL max, the stall speed and
    whether the wing must grow.
 3. `structure_fea.py --variant 4Q-2 --campaign all` (under an hour): the frame's and the joint's margins.
 4. Notebook again in its default mode with both run directories in `RUNS`: the validated assessment.
+   For a quick *what if* on the design (span, chord, section, propeller, motor, battery, spar) without any solver,
+   `44_kestrel_fast.ipynb` compares candidates in about a minute (Zephyr sections, Boreas points, beam rules).
 5. Then `cruise` and `transitions` with the rotor disks, and `38_prop_lab` at fine quality for the propeller.
