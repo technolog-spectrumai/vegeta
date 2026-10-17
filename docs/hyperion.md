@@ -54,6 +54,19 @@ and Rigrod's √(g₀L) − L), `table(P)`; `thermal_lens(rod, P, w_p, stress_an
 the stress and end-bulging share as a stated fraction — of the order of 0.2 in Nd:YAG — not a default),
 `rod_temperature_rise`, `effective_pump_radius(w(z), rod)` (a diverging pump's absorption-weighted radius).
 
+**Fibres** (`fibre.py`): `Fibre(core_radius, NA, clad_radius, coating_radius, clad_NA, alpha_signal, alpha_pump)` — `V`,
+`cutoff_wavelength`, `single_mode`, `mode_radius` (Marcuse's fit, w/a = 0.65 + 1.619 V^−1.5 + 2.879 V^−6), `mode_area`,
+`overlap_core` Γ_s = 1 − exp(−2a²/w²), `overlap_clad` Γ_p = (a/b)², `beam(λ)` (the LP₀₁ as a `GaussianBeam`), `lp01(λ)` (the
+eigenvalue u J₁(u)/J₀(u) = w K₁(w)/K₀(w), Bessel functions by quadrature so numpy suffices), `bend_loss(R, λ)` (Marcuse 1976
+with the 1.28 stress-optic factor; an order of magnitude, as the catalogue curves). `Dopant` (a (λ, σ_a, σ_e) table, τ, N),
+`YB_SILICA` (Paschotta's shape), `ions_for_absorption(fibre, dB/m, λ)` — the datasheet's absorption sets N. `ActiveFibre(fibre,
+dopant, length)`. `FibreLaser(active, λ_p, λ_s, R_hr, R_oc)`: the pump and both signal waves along z from the two-level rate
+equations with the overlap factors (Kelson & Hardy 1998, no ASE), RK4 and a shooting on the circulating power so the waves meet
+the gratings' reflectivities; `solve(P)` → a `FibreSolution` (profiles, the inversion, the heat per metre, output, absorbed and
+unabsorbed pump), `threshold()` (the small-signal round trip reaching 1), `power_curve`, `length_sweep`. `FibreAmplifier(active,
+λ_p, λ_s, "co" | "counter")`: one pass of a seed, the counter-pump shot to its launched power. `srs_threshold` (Smith's
+16 A_eff/(g_R L_eff)), `core_temperature` (radial conduction through core, cladding, coating, and h to the sink).
+
 ## Validation
 - Materials against the catalogues: N-BK7 n_d 1.5168, fused silica 1.4570 at 633 nm and 1.4496 at 1064 nm (Malitson), YAG
   1.816 at 1064 nm (Zelmon), sapphire 1.760 at 800 nm, air 1.000277.
@@ -71,6 +84,13 @@ the stress and end-bulging share as a stated fraction — of the order of 0.2 in
 - The laser: the threshold formula, η_s, the output line, g₀(P_th) = T + L, the scan's optimum coupler against Rigrod's
   closed form (±0.002), the Nd:YAG numbers in Koechner's ranges (I_sat ≈ 2.9 kW/cm², a 100–300 mW threshold for a 200 µm
   spot, a thermal lens of tens of mm at 10 W); f ∝ 1/P and ∝ w_p².
+- Fibres: J₀, J₁, K₀, K₁ at 1 to 1e-9; SMF-28's MFD 10.4 µm at 1550 nm (±0.2) and its cutoff; Marcuse's w/a = 1.10 at the
+  cutoff; the bend loss exponential in R, tens of dB/m at R = 10 mm and nothing at 30 mm for SMF-28, less at 1310 nm. The
+  oscillator: Rigrod's P⁺P⁻ constant along the fibre (1e-6), both gratings' boundaries met, pump absorbed + unabsorbed =
+  launched, the output under the quantum limit (λ_p/λ_s × absorbed), nothing below the threshold and light above it, the slope
+  between 0.7 and λ_p/λ_s, an interior optimum length where the signal is reabsorbed (1030 nm). The amplifier: energy
+  conservation, the counter-pump shot to its launched power (1e-6), co- and counter-pumping within 5 % in output with the
+  stronger inversion at the co-pump's weak-signal end, the gain falling with the seed (saturation).
 
 ## CLI
 ```bash
@@ -80,13 +100,19 @@ vegeta hyperion lens --r1 0.1 --r2 -0.1 --thickness 0.02 --material BK7 --wavele
 vegeta hyperion beam --wavelength 1064e-9 --w0 200e-6 --lens 0.1 --at 0.5 --after 0.3 [--m2 1.3] [--z 0 1 0.1]
 vegeta hyperion cavity --r1 0.5 --r2 inf --length 0.2 [--lens 0.3 --at 0.05] [--reflectivity 1 0.95 --loss 0.01]
 vegeta hyperion laser --length 0.01 --pump 10 --wp 200e-6 --wl 200e-6 --t 0.05 [--loss 0.01] [--bulge 0.2] [--medium Nd:YAG]
+vegeta hyperion fibre --core 5e-6 --na 0.075 --clad 62.5e-6 --wavelength 1070e-9 [--bend 0.03 0.05]
+vegeta hyperion fibre-laser --core 5e-6 --na 0.075 --coating 125e-6 --length 8 --absorption 1.7 --pump 20 [--r-oc 0.1]   # an oscillator
+vegeta hyperion fibre-laser --core 10e-6 --na 0.06 --length 5 --absorption 5 --pump 40 --seed 15 [--direction counter]     # an amplifier
 ```
-Exit codes: 0 success (`cavity`: 1 when the cavity is unstable), 2 invalid input.
+Exit codes: 0 success (`cavity`: 1 when the cavity is unstable; `fibre-laser`: 1 when nothing comes out), 2 invalid input.
 
 ## What it is not
 Paraxial, Gaussian and steady: no apertures, no diffraction loss, no aberration — a tilted mirror's astigmatism and a
 Brewster plate's are in, a lens's spherical aberration and a hard-edged mirror's diffraction are not (the ray-tracing and
 physical-optics stages of `svarog_todo.md`). The thermal lens is the end-pumped closed form for a top-hat pump: the first
 number, not the measured one; the laser model is the four-level low-gain steady state with the standard overlap area,
-good to the tens of per cent a design decision needs, not the per cent a measurement gives. Pulses, Q-switching, frequency
-conversion and quasi-three-level media come with the new laser types (S.5).
+good to the tens of per cent a design decision needs, not the per cent a measurement gives. The fibre laser is the
+two-level rate equations with overlap factors and no ASE: right for an oscillator and a seeded amplifier above a watt, not for
+a preamplifier or the noise figure; the bend loss is Marcuse's for the pure bend of LP₀₁ (no mode coupling, no
+higher-mode stripping budget), and the cross sections are the literature's shape — the fibre's datasheet decides N.
+Pulses, Q-switching and frequency conversion come with the new laser types (S.5).

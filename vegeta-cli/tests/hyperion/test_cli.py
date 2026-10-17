@@ -26,3 +26,15 @@ def test_lens_beam_cavity_laser(capsys):
     assert main(["laser", "--length", "0.01", "--pump", "10", "--wp", "200e-6", "--wl", "200e-6", "--t", "0.05", "--json"]) == 0
     d = json.loads(capsys.readouterr().out)
     assert 0.1 < d["threshold_W"] < 0.3 and 4 < d["output_W"] < 7 and 0.03 < d["thermal_lens_f"] < 0.3
+
+
+def test_fibre_commands(capsys):
+    assert main(["fibre", "--core", "4.1e-6", "--na", "0.12", "--wavelength", "1550e-9", "--bend", "0.01", "0.03", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert d["single_mode"] and abs(d["MFD"] - 10.4e-6) < 0.3e-6 and d["bend_loss_db_per_m"]["0.01"] > d["bend_loss_db_per_m"]["0.03"]
+    assert main(["fibre-laser", "--core", "5e-6", "--na", "0.075", "--coating", "125e-6", "--length", "8", "--absorption", "1.7", "--pump", "20", "--steps", "120", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert 12 < d["output_W"] < 19 and d["threshold_W"] < 1 and d["srs"]["P_threshold_W"] > 1e3
+    assert main(["fibre-laser", "--core", "10e-6", "--na", "0.06", "--length", "5", "--absorption", "5", "--pump", "40", "--seed", "15", "--steps", "120", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert 40 < d["output_W"] < 55 and d["gain_db"] > 4

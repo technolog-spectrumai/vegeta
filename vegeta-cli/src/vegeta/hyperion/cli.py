@@ -105,6 +105,52 @@ def cmd_laser(args) -> int:
     return 0
 
 
+def _fibre(args):
+    from .elements import INF  # noqa: F401  (keeps the import graph identical to the API's)
+    from .fibre import Fibre
+    return Fibre(args.core, args.na, args.clad, args.coating, alpha_signal=args.loss_db_per_km / 1e3 / 4.343, alpha_pump=args.loss_db_per_km / 1e3 / 4.343)
+
+
+def cmd_fibre(args) -> int:
+    f = _fibre(args)
+    lam = args.wavelength
+    out = {"V": f.V(lam), "single_mode": f.single_mode(lam), "cutoff_wavelength": f.cutoff_wavelength, "mode_radius": f.mode_radius(lam),
+           "MFD": 2 * f.mode_radius(lam), "mode_area": f.mode_area(lam), "overlap_core": f.overlap_core(lam), "overlap_clad": f.overlap_clad,
+           "divergence_half_angle": f.beam(lam).divergence}
+    if args.bend:
+        out["bend_loss_db_per_m"] = {f"{r:g}": float(f.bend_loss_db_per_m(r, lam)) for r in args.bend}
+    _print(out, args.json)
+    return 0
+
+
+def cmd_fibre_laser(args) -> int:
+    from .fibre import YB_SILICA, ActiveFibre, FibreAmplifier, FibreLaser, core_temperature, ions_for_absorption, srs_threshold
+    f = _fibre(args)
+    yb = YB_SILICA.with_(N=ions_for_absorption(f, args.absorption, args.pump_wavelength))
+    act = ActiveFibre(f, yb, args.length)
+    if args.seed is not None:
+        s = FibreAmplifier(act, args.pump_wavelength, args.wavelength, args.direction).solve(args.seed, args.pump, n=args.steps)
+        out = {"amplifier": f"{args.length:g} m, {args.direction}-pumped, seed {args.seed:g} W, pump {args.pump:g} W", **s.to_dict()}
+    else:
+        laser = FibreLaser(act, args.pump_wavelength, args.wavelength, args.r_hr, args.r_oc)
+        s = laser.solve(args.pump, n=args.steps)
+        out = {"oscillator": f"{args.length:g} m, R_hr {args.r_hr:g}, R_oc {args.r_oc:g}, pump {args.pump:g} W", **s.to_dict(), "threshold_W": laser.threshold(n=args.steps // 2)}
+    out["absorption_db_per_m"] = act.absorption_db_per_m(args.pump_wavelength)
+    out["srs"] = srs_threshold(f, args.length, args.wavelength)
+    out["temperature"] = core_temperature(f, s.peak_heat_per_m, h=args.h)
+    _print(out, args.json)
+    return 0 if s.output_W > 0 else 1
+
+
+def _add_fibre_args(p):
+    p.add_argument("--core", type=float, required=True, help="core radius [m]")
+    p.add_argument("--na", type=float, required=True, help="core NA")
+    p.add_argument("--clad", type=float, default=62.5e-6, help="cladding (pump guide) radius [m]")
+    p.add_argument("--coating", type=float, default=None, help="coating radius [m]")
+    p.add_argument("--loss-db-per-km", type=float, default=10.0, help="background loss")
+    p.add_argument("--wavelength", type=float, default=1070e-9, help="signal [m]")
+
+
 def main(argv=None, prog: str = "hyperion") -> int:
     ap = argparse.ArgumentParser(prog=prog, description="Hyperion — optics: materials, ABCD elements, Gaussian beams, resonators, a four-level laser")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -157,6 +203,25 @@ def main(argv=None, prog: str = "hyperion") -> int:
     p.add_argument("--bulge", type=float, default=0.0, help="stress and end-bulging as a fraction of the dn/dT lens")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_laser)
+    p = sub.add_parser("fibre", help="a step-index fibre: V, cutoff, mode radius, overlaps, bend loss")
+    _add_fibre_args(p)
+    p.add_argument("--bend", type=float, nargs="*", help="bend radii [m] to report the LP01 loss at")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_fibre)
+    p = sub.add_parser("fibre-laser", help="a Yb fibre oscillator (or, with --seed, an amplifier): the power evolution, SRS, the core's temperature")
+    _add_fibre_args(p)
+    p.add_argument("--length", type=float, required=True, help="active fibre length [m]")
+    p.add_argument("--absorption", type=float, required=True, help="cladding-pumped small-signal absorption at the pump wavelength [dB/m]")
+    p.add_argument("--pump", type=float, required=True, help="launched pump [W]")
+    p.add_argument("--pump-wavelength", type=float, default=976e-9)
+    p.add_argument("--r-hr", type=float, default=0.99)
+    p.add_argument("--r-oc", type=float, default=0.10)
+    p.add_argument("--seed", type=float, default=None, help="an amplifier: the seed power [W]")
+    p.add_argument("--direction", default="counter", choices=("co", "counter"))
+    p.add_argument("--h", type=float, default=50.0, help="surface heat transfer [W/m²/K]")
+    p.add_argument("--steps", type=int, default=300)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_fibre_laser)
     args = ap.parse_args(argv)
     try:
         return args.func(args)
