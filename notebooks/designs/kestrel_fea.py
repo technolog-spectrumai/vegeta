@@ -67,16 +67,38 @@ def _shorten(a, b, by):
     return (a + u * by).toTuple(), (b - u * by).toTuple()
 
 
+REGION_MARGIN = 3.0               # mm around a face's bounding box for the region boxes (Gmsh's boxes are not exact)
+MOTOR_BAND = 7.0                  # mm: the motor station's load band on each spar, ± about motor_y
+
+
+def spar_breaks(p=None) -> list:
+    """Where each spar tube is split into separate cylinder faces [mm]: the tips, the pod's edges, the lift
+    segments' stations (``lift_segments``) and the motor station's band — so that every region box of
+    ``frame_cases`` contains **whole** faces (Talos's ``SurfacesInBox`` selects faces lying completely inside the box;
+    an unsplit tube is one face from tip to tip and no box of a station would ever hold it)."""
+    L = kestrel.layout(p)
+    b2, ym, yin = L["span"] / 2 * 1e3, L["motor_y"] * 1e3, L["pod_width"] / 2 * 1e3
+    stations = sorted(set(np.round(np.r_[np.linspace(0.0, b2, N_SEG + 1), ym, yin], 6)))
+    br = {-b2, b2}
+    for st in stations:
+        br |= {st, -st}
+    br |= {ym - MOTOR_BAND, ym + MOTOR_BAND, -ym - MOTOR_BAND, -ym + MOTOR_BAND}
+    return sorted(float(v) for v in br)
+
+
 def frame_cad(p=None, bracing: str = "x"):
     """The carbon frame as hollow tubes (mm, the aircraft's frame: x aft, y right, z up): both spars tip to tip at the
     spar station, the posts at the motor stations, the diagonals of the X (``bracing`` ``x``), or posts only, or none.
-    The struts' outer cylinders reach the spars' axes (a saddle's overlap) and their bores stop short of the spars, so
-    the spars' walls are whole; the bores are cut from the union last, which keeps the solid valid."""
+    Each spar is built from cylinder segments between ``spar_breaks`` and the unions keep the seams (``clean=False``),
+    so the outer surface is one face per segment — the faces the load regions select. The struts' outer cylinders
+    reach the spars' axes (a saddle's overlap) and their bores stop short of the spars, so the spars' walls are whole;
+    the bores are cut from the union last, which keeps the solid valid."""
     p = kestrel.resolve(p)
     L = kestrel.layout(p)
     h, b2, ym, yin, x = L["h"] * 1e3, L["span"] / 2 * 1e3, L["motor_y"] * 1e3, L["pod_width"] / 2 * 1e3, L["x_spar"] * 1e3
     od, idd = (v * 1e3 for v in kst.TUBES["spar"])
-    outers = [_cyl((x, -b2, h), (x, b2, h), od), _cyl((x, -b2, -h), (x, b2, -h), od)]
+    br = spar_breaks(p)
+    outers = [_cyl((x, a, z), (x, b, z), od) for z in (h, -h) for a, b in zip(br[:-1], br[1:])]
     inners = [_cyl((x, -b2 - 1, h), (x, b2 + 1, h), idd), _cyl((x, -b2 - 1, -h), (x, b2 + 1, -h), idd)]
     struts = []
     if bracing in ("x", "posts"):
@@ -94,9 +116,29 @@ def frame_cad(p=None, bracing: str = "x"):
         inners.append(_cyl(a2, b2_, d_i))
     out = outers[0]
     for o in outers[1:]:
-        out = out.union(o)
+        out = out.union(o, clean=False)
     for i in inners:
-        out = out.cut(i)
+        out = out.cut(i, clean=False)
+    return out
+
+
+def frame_faces(p=None, bracing: str = "x") -> list:
+    """The frame's faces as (xmin, ymin, zmin, xmax, ymax, zmax, type) — what Gmsh's bounding-box selection sees;
+    ``regions_select`` checks the region boxes against it without a mesher."""
+    out = []
+    for f in frame_cad(p, bracing).val().Faces():
+        bb = f.BoundingBox()
+        out.append((bb.xmin, bb.ymin, bb.zmin, bb.xmax, bb.ymax, bb.zmax, f.geomType()))
+    return out
+
+
+def regions_select(regions: list, faces: list) -> dict:
+    """``{region name: number of faces completely inside its box}`` for Talos ``SurfacesInBox`` regions against
+    ``frame_faces`` (or any list of face boxes): zero is the error Talos raises at meshing."""
+    out = {}
+    for r in regions:
+        b = r.box
+        out[r.name] = sum(1 for f in faces if f[0] >= b[0] and f[1] >= b[1] and f[2] >= b[2] and f[3] <= b[3] and f[4] <= b[4] and f[5] <= b[5])
     return out
 
 
@@ -109,9 +151,13 @@ def frame_step(workdir, p=None, bracing: str = "x") -> Path:
     return path
 
 
+JOINT_FLOOR = 2.0                 # mm of printed material between the socket's floor and the spar bore
+
+
 def joint_cad(p=None, *, size=(36.0, 26.0, 30.0), wall: float = 3.0):
     """The printed spar–post joint: a block clamped around the spar (bore along y) with the post's socket (bore along
-    z from the top face down to the spar), mm; the build axis z (printed standing on the spar's face)."""
+    z from the top face down to a floor ``JOINT_FLOOR`` above the spar bore — the post's end bears on that floor and
+    the force goes through the printed material into the spar's saddle), mm; the build axis z."""
     import cadquery as cq
     p = kestrel.resolve(p)
     od_s = kst.TUBES["spar"][0] * 1e3
@@ -119,8 +165,13 @@ def joint_cad(p=None, *, size=(36.0, 26.0, 30.0), wall: float = 3.0):
     lx, ly, lz = size
     block = cq.Workplane("XY").box(lx, ly, lz)
     spar = cq.Workplane("XZ").circle(od_s / 2 + 0.1).extrude(ly + 2.0, both=True)
-    post = cq.Workplane("XY").workplane(offset=od_s / 2 - 0.5).circle(od_p / 2 + 0.1).extrude(lz)
+    z_floor = od_s / 2 + 0.1 + JOINT_FLOOR
+    post = cq.Workplane("XY").workplane(offset=z_floor).circle(od_p / 2 + 0.1).extrude(lz)
     return block.cut(spar).cut(post)
+
+
+def joint_floor_z(p=None) -> float:
+    return kst.TUBES["spar"][0] * 1e3 / 2 + 0.1 + JOINT_FLOOR
 
 
 def joint_step(workdir, p=None) -> Path:
@@ -167,12 +218,12 @@ def frame_cases(workdir, p=None, *, mass_kg: float, bracing: str = "x", n: float
     L = kestrel.layout(p)
     step = frame_step(Path(workdir) / "cad", p, bracing)
     h, ym, yin, x = L["h"] * 1e3, L["motor_y"] * 1e3, L["pod_width"] / 2 * 1e3, L["x_spar"] * 1e3
-    r = kst.TUBES["spar"][0] * 1e3 / 2 + 0.6
-    regions = [talos.SurfacesInBox("pod_upper", (x - r, -yin - 0.5, h - r, x + r, yin + 0.5, h + r)),
-               talos.SurfacesInBox("pod_lower", (x - r, -yin - 0.5, -h - r, x + r, yin + 0.5, -h + r))]
+    r, m = kst.TUBES["spar"][0] * 1e3 / 2 + REGION_MARGIN, REGION_MARGIN
+    regions = [talos.SurfacesInBox("pod_upper", (x - r, -yin - m, h - r, x + r, yin + m, h + r)),
+               talos.SurfacesInBox("pod_lower", (x - r, -yin - m, -h - r, x + r, yin + m, -h + r))]
     motors = {"M1": (-1, 1), "M2": (1, 1), "M3": (-1, -1), "M4": (1, -1)}
     for name, (sy, sz) in motors.items():
-        regions.append(talos.SurfacesInBox(name, (x - r, sy * ym - 7.0, sz * h - r, x + r, sy * ym + 7.0, sz * h + r)))
+        regions.append(talos.SurfacesInBox(name, (x - r, sy * ym - MOTOR_BAND - m, sz * h - r, x + r, sy * ym + MOTOR_BAND + m, sz * h + r)))
     segs = {}
     for case_key, share in (("A", 0.5), ("B", 0.75)):
         segs[case_key] = lift_segments(p, n=n, mass_kg=mass_kg, upper_share=share)
@@ -180,9 +231,13 @@ def frame_cases(workdir, p=None, *, mass_kg: float, bracing: str = "x", n: float
     for i, (wing, y0, y1, _) in enumerate(segs["A"]):
         z = h if wing == "upper" else -h
         ya, yb = sorted((y0 * 1e3, y1 * 1e3))
+        if abs(ya - ym) < 1e-6 or abs(ya + ym) < 1e-6 or abs(yb) == ym:      # the segments touching the motor station: the band is the motor's
+            lo, hi = ya + (MOTOR_BAND if abs(ya) == ym else 0.0), yb - (MOTOR_BAND if abs(yb) == ym else 0.0)
+        else:
+            lo, hi = ya, yb
         name = f"lift_{wing[0]}{i:02d}"
         seg_regions[i] = name
-        regions.append(talos.SurfacesInBox(name, (x - r, ya + 0.2, z - r, x + r, yb - 0.2, z + r)))
+        regions.append(talos.SurfacesInBox(name, (x - r, lo - m, z - r, x + r, hi + m, z + r)))
     m = masses(p)
     mu_t = m["motor_unit"] * 1e-3                      # tonnes
     mesh = talos.MeshSettings(element_size=element_size, order=2)
@@ -228,13 +283,13 @@ def joint_cases(workdir, p=None, *, mass_kg: float, element_size: float = 1.2) -
     step = joint_step(Path(workdir) / "cad", p)
     od_s, od_p = kst.TUBES["spar"][0] * 1e3, kst.TUBES["post"][0] * 1e3
     _, ly, lz = 36.0, 26.0, 30.0
-    rs, rp = od_s / 2 + 0.3, od_p / 2 + 0.3
+    rs, rp, zf = od_s / 2 + 0.1 + REGION_MARGIN, od_p / 2 + 0.1 + REGION_MARGIN, joint_floor_z(p)
     regions = [talos.SurfacesInBox("spar_bore", (-rs, -ly / 2 - 1, -rs, rs, ly / 2 + 1, rs)),
-               talos.SurfacesInBox("socket_top", (-rp, -rp, lz / 2 - 4.0, rp, rp, lz / 2 + 1.0))]
+               talos.SurfacesInBox("socket_floor", (-rp, -rp, zf - 0.5, rp, rp, zf + 0.5))]
     F = ULTIMATE * post_force(p, mass_kg=mass_kg)
     mesh = talos.MeshSettings(element_size=element_size, order=2)
-    model = talos.StructuralModel(step, "mm-N-MPa", talos_material(PETG), regions, [talos.FixedSupport("spar_bore")], [talos.Force("socket_top", fz=-F)], mesh, name="joint_post")
-    c = FEACase("joint_post", "joint", f"the post's {F:.1f} N (ultimate) into the printed socket, the spar bore held; build axis z",
+    model = talos.StructuralModel(step, "mm-N-MPa", talos_material(PETG), regions, [talos.FixedSupport("spar_bore")], [talos.Force("socket_floor", fz=-F)], mesh, name="joint_post")
+    c = FEACase("joint_post", "joint", f"the post's {F:.1f} N (ultimate) on the socket's floor, the spar bore held; build axis z",
                 model, strength=PETG["strength"], strength_z=PETG["strength_z"], build_axis="z")
     c.exclude = lambda xyz, rs=rs: (np.sqrt(xyz[:, 0] ** 2 + xyz[:, 2] ** 2) < rs + 1.5)
     return [c]

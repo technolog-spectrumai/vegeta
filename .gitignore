@@ -9,6 +9,8 @@ dist/
 # local run outputs (examples and notebooks write here)
 runs/
 notebooks/_runs/
+workflows/runs/
+workflows/runs_*.out
 fidia_runs/
 notebooks/output/
 scenarios/output/

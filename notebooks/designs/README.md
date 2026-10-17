@@ -225,6 +225,22 @@ FEA on FALCO's tube), `tail_socket_case`, `motor_mount_case`, `models`. `falco_c
 `falco_controller.py` (`FalcoController`: the flare parks the propeller), `falco_scenario.py` (`SIM`, `scenario`,
 `standard_scenarios`, `run`, `outcome` with the blade-strike check, `park_table`), `falco_birds.py`.
 
+`kestrel_study.py` (notebook **43** `43_kestrel_study`, the recommended Kestrel entry point): `prerequisites` (the table of
+required / optional inputs — prop_lab, the drive tables, the sections, the airframe CFD and FEA runs by explicit
+path — with provenance, compatibility and status; one `PrerequisiteError` naming every missing required input's
+command), `build` / `build_all` (a variant's cheap numbers: mass table, polar, neutral point, hover, cruise table,
+transition vehicle), `variants_table`, `hover_analytic`, `envelope_vs_tools`, `biplane_check`, `correlations_table`
+(`CORRELATIONS`: source, applicability, uncertainty of every empirical input), `cfd_sweep` (a run read against the
+polar, labelled `validated` only when converged), `stall_decision`, `trim_table`, `control_table`, `structure_screen`,
+`fea_table` / `fea_against_frame`, `transitions` (the decision-relevant episodes only), `deceleration`, `performance`,
+`energy_budget`, `recommended_campaigns`, `assessment`, `Stopwatch` (the measured runtime). `kestrel_campaigns.py`
+(shared by the notebook and `workflows/kestrel/`): `VARIANTS`, `params` / `vehicle`, `fingerprint` / `compare` (the
+design identity a run is made for and the tolerance it is read with), `CFD_CAMPAIGNS` / `cfd_specs` / `cfd_case` /
+`cfd_outcome` / `cfd_summary`, `FEA_CAMPAIGNS` / `fea_cases` / `fea_outcome` / `fea_summary`, `import_legacy`,
+`check_run` / `require` / `command` / `find_runs`, `records_frame` / `airframe_correction`; nothing in it runs a solver
+(`workflows/tests` checks). `workflows_runkit.py` re-exports `workflows/runkit.py` for the design modules.
+Notebooks 39–42 are in `notebooks/old/` (unchanged; see its README).
+
 `kestrel.py` (`Kestrel4Q`, notebook 40, branch `dev_kestrel`) is the zero-stagger biplane quadrotor tailsitter: the
 CAD (parts `aircraft`, `airframe` — the CFD body without the propellers —, `wing`, `pod`, `truss`, `nacelle`, `tail`;
 `angle_of_attack_deg` turns the build about `rotation_x`), `layout` (metres, no CAD kernel needed), `checks` (the
@@ -244,7 +260,7 @@ statuses `solved` / `diverged` (`SANE`) / `FAILED` / `NOT RUN` and a `note`, `su
 `load_records` / `plug_in` / `records_table` (the campaigns in `data/kestrel_cfd_results.json`, keyed `4Q-1`, `4Q-2`,
 `sections`; a pass that solved nothing never erases a result), `section_table` / `save_section_table` (the slabs).
 `kestrel_loop.py` (the design loop's bookkeeping): `envelope` (iteration 0 from the spec and the layout), `TARGETS`,
-`check` / `check_table` / `failing`, `IterationLog`. Notebook **39** (`39_kestrel_tests`) is the CFD campaign of every
+`check` / `check_table` / `failing`, `IterationLog`. Notebook **39** (`old/39_kestrel_tests`, historical) is the CFD campaign of every
 case for both aircraft and the sections, failures accepted; `kestrel_cfd.flight_points` adds the level cruise and the
 stall to its points. `prop_lab.py` (notebook **38**, `38_prop_lab`): the 9×6 alone in CFD — `geometry` / `cad` / `stl`
 (Dedalus's propeller on the rotor frame), `bemt`, `configurations` (hover, axial, oblique on `rotor_mrf_static` /

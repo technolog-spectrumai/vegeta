@@ -25,7 +25,7 @@ REPORTS = Path(__file__).resolve().parent / "data" / "reports"
 DOSSIER = Path(__file__).resolve().parent / "data" / "kestrel_dossier.md"
 MAX_COLS = 14
 MAX_ROWS = 60
-ORDER = ("38_prop_lab", "39_kestrel_tests", "40_kestrel", "41_xwing", "42_kestrel2")
+ORDER = ("38_prop_lab", "39_kestrel_tests", "40_kestrel", "41_xwing", "42_kestrel2", "43_kestrel_study")
 
 
 def fmt(v, sig: int = 3) -> str:

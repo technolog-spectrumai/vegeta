@@ -369,7 +369,28 @@ study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch 
 (fitted R 0.13 Ω with the ESC) take the rest. `scenarios/falco_mission.py`, `scenarios/falco_birds.py`
 (`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
 
-**Kestrel** is five notebooks numbered in the order they are run — **38** `prop_lab` (the propeller alone in CFD:
+**Kestrel** — open **`43_kestrel_study`**: the one notebook for the design (geometry, mass budget, CG and
+inertia, propulsion and the hover, aerodynamics and the stall, trim and control, performance and energy, the
+structure, the transitions both ways, a final assessment) on inexpensive methods first — the mass table, Boreas, the
+vortex lattice with Prandtl's biplane correlation, the drag build-up, NeuralFoil sections, beam and truss statics,
+the reduced-order transition model — each number labelled *analytic / empirical / solver / validated*, with the
+correlations' sources, ranges and uncertainties in a table. It runs in about two minutes (measured, § 11) and
+**launches no solver**: the long-running analyses are explicit **workflows** under `workflows/kestrel/` —
+`airframe_cfd.py` (the airframe in RANS with the four propellers as rotor disks: the bare sweeps, the decision-relevant
+stall angles, the cruise and the transition points, one named campaign per run) and `structure_fea.py` (the carbon
+frame and the printed joint in CalculiX) — launched from a shell, monitored with `tail -F <run>/run.log`, each
+leaving a run directory (`manifest.json` with the design fingerprint, `status.json`, `run.log`, `summary.json` only
+when complete, the native cases) that the notebook reads **by explicit path** and checks for state and compatibility
+before use; a required result that is missing, stale, incompatible or failed stops it with the exact command to run,
+an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
+workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
+[workflows/README.md](workflows/README.md); the short how-to is [manual_workflows.md](manual_workflows.md). The first campaign's results are imported as runs by
+`workflows/kestrel/import_legacy.py`. The resolved propeller stays in **`38_prop_lab`**, whose calibration the airframe
+cases, the drive tables and the notebook read once it passed its gates. The notebooks that built the design — **39**
+`kestrel_tests`, **40** `kestrel`, **41** `xwing`, **42** `kestrel2` — are kept unchanged with their outputs in
+`notebooks/old/` (their story follows); `designs/kestrel3.md` is the 4Q-3 brief.
+
+*History.* Kestrel was five notebooks numbered in the order they were run — **38** `prop_lab` (the propeller alone in CFD:
 its calibration feeds everything after it), **39** `kestrel_tests` (the CFD and FEA campaign of the airframes), **40**
 `kestrel` (the design loop, reading both), **41** `xwing` (the alternative airframe, reading 40's record), **42**
 `kestrel2` (4Q-2 against 4Q-1 and the case for 4Q-3) — each ending with a JSON report in

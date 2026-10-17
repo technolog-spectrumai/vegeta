@@ -67,3 +67,23 @@ def test_plane_frame_reference_matches_kestrel_structure():
     assert float(ref.loc["frame_x_A", "spar stress, limit [MPa]"]) == pytest.approx(f["spar stress [MPa]"])
     assert float(ref.loc["frame_x_A", "spar stress, ultimate [MPa]"]) == pytest.approx(1.5 * f["spar stress [MPa]"])
     assert float(ref.loc["frame_posts_modes", "first mode, symmetric [Hz]"]) < float(ref.loc["frame_x_modes", "first mode, symmetric [Hz]"])
+
+
+def test_region_boxes_hold_whole_faces(tmp_path):
+    """The bug of the first FEA campaign: every region selected no surface (an unsplit tube is one face). The spars
+    are built in segments now; each region box of the frame and of the joint holds at least one whole face."""
+    import kestrel_fea as kfe
+    for br in ("x", "posts"):
+        faces = kfe.frame_faces(bracing=br)
+        cases = kfe.frame_cases(tmp_path / br, mass_kg=1.69, bracing=br)
+        sel = kfe.regions_select(cases[0].model.regions, faces)
+        assert all(v >= 1 for v in sel.values()), {k: v for k, v in sel.items() if v == 0}
+        assert all(sel[k] >= 1 for k in ("pod_upper", "pod_lower", "M1", "M2", "M3", "M4"))
+    jc = kfe.joint_cases(tmp_path / "joint", mass_kg=1.69)[0]
+    faces = []
+    for f in kfe.joint_cad().val().Faces():
+        bb = f.BoundingBox()
+        faces.append((bb.xmin, bb.ymin, bb.zmin, bb.xmax, bb.ymax, bb.zmax, f.geomType()))
+    sel = kfe.regions_select(jc.model.regions, faces)
+    assert sel["spar_bore"] >= 1 and sel["socket_floor"] == 1
+    assert kfe.frame_cad(bracing="x").val().isValid() and kfe.joint_cad().val().isValid()

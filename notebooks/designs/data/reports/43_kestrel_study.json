@@ -1,0 +1,2413 @@
+{
+ "notebook": "43_kestrel_study",
+ "title": "Kestrel — the design study (notebook 43)",
+ "exported": "2026-10-17T07:49",
+ "meta": {
+  "main": "4Q-2",
+  "mass [kg]": 1.651,
+  "runtime_s": 125.3,
+  "screening": true,
+  "CFD": {
+   "4Q-1": "solver (unconverged: indicative)",
+   "4Q-2": "solver (unconverged: indicative)",
+   "4Q-3": "NOT RUN"
+  },
+  "FEA": "NOT RUN"
+ },
+ "sections": {
+  "prerequisites": {
+   "index": [
+    "prop_lab calibration (notebook 38)",
+    "drive tables (Boreas)",
+    "section polars (Zephyr / NeuralFoil)",
+    "airframe CFD, 4Q-1, sweep",
+    "airframe CFD, 4Q-2, sweep",
+    "airframe CFD, 4Q-3, sweep"
+   ],
+   "columns": [
+    "role",
+    "selection",
+    "status",
+    "provenance",
+    "compatibility",
+    "usable"
+   ],
+   "rows": [
+    {
+     "_index": "prop_lab calibration (notebook 38)",
+     "role": "optional",
+     "selection": "notebooks/designs/data/prop_lab.json",
+     "status": "NOT RUN or rejected: Boreas's generic blade section and De Young's normal force",
+     "provenance": "38_prop_lab",
+     "compatibility": "",
+     "usable": false
+    },
+    {
+     "_index": "drive tables (Boreas)",
+     "role": "required",
+     "selection": "notebooks/designs/data/kestrel_drive.json",
+     "status": "on file for this motor, propeller, battery and calibration",
+     "provenance": "kestrel_systems.compute_drive_table",
+     "compatibility": "keyed on motor, propeller, battery, calibration",
+     "usable": true
+    },
+    {
+     "_index": "section polars (Zephyr / NeuralFoil)",
+     "role": "optional",
+     "selection": "notebooks/designs/data/kestrel_sections.json",
+     "status": "NeuralFoil polars on file",
+     "provenance": "kestrel_section.table",
+     "compatibility": "keyed on candidates, flap chord, n_crit",
+     "usable": true
+    },
+    {
+     "_index": "airframe CFD, 4Q-1, sweep",
+     "role": "optional",
+     "selection": "workflows/runs/airframe_cfd/legacy_20261016_4Q-1_39_kestrel_tests",
+     "status": "completed: 29 of 29 solved, 0 converged",
+     "provenance": "imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it)",
+     "compatibility": "warnings: source changed since the run: kestrel_fea; fingerprint assumed from the current source: the legacy results file recorded none (the CAD parameters of the campaign were notebook 39's of that day)",
+     "usable": true
+    },
+    {
+     "_index": "airframe CFD, 4Q-2, sweep",
+     "role": "optional",
+     "selection": "workflows/runs/airframe_cfd/legacy_20261016_4Q-2_39_kestrel_tests",
+     "status": "completed: 29 of 29 solved, 1 converged",
+     "provenance": "imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it)",
+     "compatibility": "warnings: source changed since the run: kestrel_fea; fingerprint assumed from the current source: the legacy results file recorded none (the CAD parameters of the campaign were notebook 39's of that day)",
+     "usable": true
+    },
+    {
+     "_index": "airframe CFD, 4Q-3, sweep",
+     "role": "optional",
+     "selection": "—",
+     "status": "not selected",
+     "provenance": "",
+     "compatibility": "",
+     "usable": false
+    }
+   ]
+  },
+  "parameters that differ": {
+   "index": [
+    "bracing",
+    "strut_fairing",
+    "elevons",
+    "elevon_chord",
+    "elevon_inner_y"
+   ],
+   "columns": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "rows": [
+    {
+     "_index": "bracing",
+     "Kestrel-4Q-1": null,
+     "Kestrel-4Q-2": "posts",
+     "Kestrel-4Q-3": "posts"
+    },
+    {
+     "_index": "strut_fairing",
+     "Kestrel-4Q-1": null,
+     "Kestrel-4Q-2": true,
+     "Kestrel-4Q-3": true
+    },
+    {
+     "_index": "elevons",
+     "Kestrel-4Q-1": null,
+     "Kestrel-4Q-2": true,
+     "Kestrel-4Q-3": true
+    },
+    {
+     "_index": "elevon_chord",
+     "Kestrel-4Q-1": null,
+     "Kestrel-4Q-2": null,
+     "Kestrel-4Q-3": 0.32
+    },
+    {
+     "_index": "elevon_inner_y",
+     "Kestrel-4Q-1": null,
+     "Kestrel-4Q-2": null,
+     "Kestrel-4Q-3": 250.0
+    }
+   ]
+  },
+  "layout [m, m²]": {
+   "span": 1.0,
+   "chord": 0.14,
+   "gap": 0.28,
+   "h": 0.14,
+   "x_le": 0.2,
+   "x_te": 0.34,
+   "x_ac": 0.235,
+   "x_spar": 0.242,
+   "S_wing": 0.14,
+   "S_ref": 0.28,
+   "AR_wing": 7.143,
+   "gap_chord": 2.0,
+   "gap_span": 0.28,
+   "R_prop": 0.1143,
+   "A_disc": 0.04104,
+   "motor_y": 0.39,
+   "prop_x": 0.125,
+   "prop_ahead_of_le": 0.075,
+   "prop_gap": 0.0514,
+   "prop_to_pod": 0.2207,
+   "prop_beyond_tip": 0.0043,
+   "pod_length": 0.47,
+   "pod_width": 0.11,
+   "pod_height": 0.28,
+   "post_length": 0.28,
+   "diagonal_length": 0.4366,
+   "x_feet": 0.54,
+   "fin_height": 0.19,
+   "ventral_height": 0.15,
+   "fin_tip_chord": 0.09,
+   "fin_root_x": 0.28,
+   "foot_rod_length": 0.256,
+   "elevons": true,
+   "elevon_cf": 0.28,
+   "elevon_y_in": 0.275,
+   "elevon_span_side": 0.225,
+   "x_hinge": 0.3008,
+   "S_elevon": 0.03528,
+   "diagonals": 0,
+   "posts": 2
+  },
+  "mass groups [kg]": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "propulsion",
+    "structure",
+    "systems",
+    "payload",
+    "margin"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "propulsion": 0.736,
+     "structure": 0.6252,
+     "systems": 0.16,
+     "payload": 0.105,
+     "margin": 0.06
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "propulsion": 0.736,
+     "structure": 0.5421,
+     "systems": 0.208,
+     "payload": 0.105,
+     "margin": 0.06
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "propulsion": 0.736,
+     "structure": 0.5421,
+     "systems": 0.208,
+     "payload": 0.105,
+     "margin": 0.06
+    }
+   ]
+  },
+  "mass, CG, inertia (main)": {
+   "mass_kg": 1.651,
+   "x_cg": 0.2154,
+   "y_cg": 5.253e-19,
+   "z_cg": -0.004579,
+   "Ixx": 0.1131,
+   "Iyy": 0.02323,
+   "Izz": 0.104,
+   "battery_x": 0.22,
+   "battery_clipped": true
+  },
+  "hover (Boreas)": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "thrust_N",
+    "rpm",
+    "current_A",
+    "electrical_W",
+    "throttle",
+    "figure_of_merit",
+    "T_max_N",
+    "T_W",
+    "kappa_m",
+    "total_W"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "thrust_N": 4.134,
+     "rpm": 6710.0,
+     "current_A": 6.654,
+     "electrical_W": 55.16,
+     "throttle": 0.5602,
+     "figure_of_merit": 0.5649,
+     "T_max_N": 11.96,
+     "T_W": 2.893,
+     "kappa_m": 0.01615,
+     "total_W": 220.6
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "thrust_N": 4.048,
+     "rpm": 6640.0,
+     "current_A": 6.526,
+     "electrical_W": 53.5,
+     "throttle": 0.5539,
+     "figure_of_merit": 0.5649,
+     "T_max_N": 11.96,
+     "T_W": 2.955,
+     "kappa_m": 0.01615,
+     "total_W": 214.0
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "thrust_N": 4.048,
+     "rpm": 6640.0,
+     "current_A": 6.526,
+     "electrical_W": 53.5,
+     "throttle": 0.5539,
+     "figure_of_merit": 0.5649,
+     "T_max_N": 11.96,
+     "T_W": 2.955,
+     "kappa_m": 0.01615,
+     "total_W": 214.0
+    }
+   ]
+  },
+  "hover (momentum theory)": {
+   "thrust per rotor [N]": 4.048,
+   "disc loading [N/m²]": 98.63,
+   "induced velocity [m/s]": 6.345,
+   "ideal power, one rotor [W]": 25.68,
+   "electrical at FM 0.6, η 0.8, four rotors [W]": 214.0,
+   "Boreas FM": 0.5649,
+   "Boreas electrical, four rotors [W]": 214.0
+  },
+  "correlations": {
+   "index": [
+    "Prandtl's biplane factor",
+    "momentum theory with a figure of merit",
+    "drag build-up",
+    "Oswald efficiency",
+    "Viterna post-stall extension",
+    "section polars (NeuralFoil)",
+    "De Young's propeller normal force",
+    "Glauert's actuator disk",
+    "plane frame and Euler buckling",
+    "material allowables",
+    "vortex lattice (PEREGRINE)"
+   ],
+   "columns": [
+    "used for",
+    "source",
+    "applicability",
+    "uncertainty",
+    "section"
+   ],
+   "rows": [
+    {
+     "_index": "Prandtl's biplane factor",
+     "used for": "induced drag of the two wings against one monoplane of the same span",
+     "source": "Prandtl, NACA TR 116 (1924); Munk's stagger theorem",
+     "applicability": "equal spans, zero stagger, gap/span 0.1–0.5 (here 0.28); the lattice checks it",
+     "uncertainty": "±5 % on the induced drag",
+     "section": "§ 5"
+    },
+    {
+     "_index": "momentum theory with a figure of merit",
+     "used for": "hover power per rotor: P = T^{3/2} / sqrt(2 ρ A) / FM",
+     "source": "Glauert; FM from Boreas BEMT (generic blade section, prop_lab calibration when on file)",
+     "applicability": "uniform inflow, no interference between the four discs, no ground effect",
+     "uncertainty": "±15 % on the hover power (the FM of a 9-inch propeller is 0.5–0.65)",
+     "section": "§ 4"
+    },
+    {
+     "_index": "drag build-up",
+     "used for": "Cd0 from wetted areas: turbulent flat-plate skin friction with form factors, cylinders in cross-flow, an interference allowance",
+     "source": "Hoerner, Fluid-Dynamic Drag; Prandtl–Schlichting Cf; Cd 1.1 for a tube at Re ~5e3, 0.12 in a 3:1 fairing",
+     "applicability": "Re 5e4–5e5, attached flow; no gaps, no protuberances",
+     "uncertainty": "±20 % on Cd0 (the campaign's bare sweep read 0.8 × the model's)",
+     "section": "§ 5"
+    },
+    {
+     "_index": "Oswald efficiency",
+     "used for": "e = 0.90 × the lattice's inviscid span efficiency",
+     "source": "a rule of thumb for built-up small wings",
+     "applicability": "attached flow",
+     "uncertainty": "±10 % on the induced drag",
+     "section": "§ 5"
+    },
+    {
+     "_index": "Viterna post-stall extension",
+     "used for": "the wing's forces beyond the stall, blended to a flat plate at 90°",
+     "source": "Viterna & Corrigan (1981), the flat-plate normal force with cd90 from the aspect ratio",
+     "applicability": "time-averaged post-stall loads of a straight wing; **not** a model of stall onset, hysteresis or unsteady transition aerodynamics",
+     "uncertainty": "±30 % beyond 20°; the transition verdicts inherit it",
+     "section": "§ 5, § 9"
+    },
+    {
+     "_index": "section polars (NeuralFoil)",
+     "used for": "cl_max (×0.9 for a built-up wing), α₀, the elevon's flap effectiveness τ, the section drag ratio",
+     "source": "NeuralFoil surrogate of XFOIL (Sharpe, 2024) at n_crit 6",
+     "applicability": "Re 5e4–1e6, smooth sections; the reflexed line's confidence 0.84–0.91, the 0012's 0.96",
+     "uncertainty": "±0.1 on cl_max, ±15 % on cd; XFOIL or a slab CFD is the check",
+     "section": "§ 5"
+    },
+    {
+     "_index": "De Young's propeller normal force",
+     "used for": "the propellers' destabilising normal-force slope in the neutral point",
+     "source": "De Young, J. Aircraft 2 (1965); prop_lab's cn_factor when on file",
+     "applicability": "advance ratio below ~1.5, small inflow angles",
+     "uncertainty": "±30 %; it moves the static margin by ~0.01 chord",
+     "section": "§ 6"
+    },
+    {
+     "_index": "Glauert's actuator disk",
+     "used for": "the slipstream velocity the blown spans see in the transition model",
+     "source": "momentum theory, uniform jet, fully developed at the wing",
+     "applicability": "a wing close behind the disk sees less than the fully developed Δv",
+     "uncertainty": "±20 % on the blown lift",
+     "section": "§ 9"
+    },
+    {
+     "_index": "plane frame and Euler buckling",
+     "used for": "spar stress and deflection, strut forces, buckling margins",
+     "source": "beam and truss statics; Euler columns pin-ended",
+     "applicability": "linear elastic, the joints ideal; the FEA case checks it",
+     "uncertainty": "the joint stiffness is not in it: ±25 % on the deflection",
+     "section": "§ 8"
+    },
+    {
+     "_index": "material allowables",
+     "used for": "carbon tube 400 MPa (compression, knock-down 0.8), PETG 45 MPa in plane / 27 MPa across the layers (knock-down 0.7)",
+     "source": "supplier data and printed-coupon literature; no coupon test of these parts",
+     "applicability": "room temperature, dry; printed parts at 100 % infill",
+     "uncertainty": "±25 % until coupons are tested",
+     "section": "§ 8"
+    },
+    {
+     "_index": "vortex lattice (PEREGRINE)",
+     "used for": "the lift slope, the span efficiency, the neutral point of the wing pair",
+     "source": "a first-order lattice, inviscid",
+     "applicability": "attached flow, small angles: it knows nothing of the stall",
+     "uncertainty": "±5 % on the lift slope (the campaign's sweep read within 2 %)",
+     "section": "§ 5, § 6"
+    }
+   ]
+  },
+  "biplane check": {
+   "gap / span": 0.28,
+   "Prandtl σ": 0.3908,
+   "induced drag / monoplane, Prandtl": 0.6954,
+   "induced drag / monoplane, lattice": 0.7074,
+   "lift slope / two isolated wings, lattice": 0.8949
+  },
+  "drag areas [cm²]": {
+   "index": [
+    "wings (2)",
+    "pod (between the wings)",
+    "fin plate",
+    "nacelles (4)",
+    "posts (2)",
+    "diagonals (4)",
+    "foot rods (4), axial",
+    "camera dome"
+   ],
+   "columns": [
+    "4Q-1 round struts, X",
+    "4Q-2 faired posts"
+   ],
+   "rows": [
+    {
+     "_index": "wings (2)",
+     "4Q-1 round struts, X": 24.51,
+     "4Q-2 faired posts": 24.51
+    },
+    {
+     "_index": "pod (between the wings)",
+     "4Q-1 round struts, X": 6.854,
+     "4Q-2 faired posts": 6.854
+    },
+    {
+     "_index": "fin plate",
+     "4Q-1 round struts, X": 4.093,
+     "4Q-2 faired posts": 4.093
+    },
+    {
+     "_index": "nacelles (4)",
+     "4Q-1 round struts, X": 6.441,
+     "4Q-2 faired posts": 6.441
+    },
+    {
+     "_index": "posts (2)",
+     "4Q-1 round struts, X": 49.28,
+     "4Q-2 faired posts": 5.376
+    },
+    {
+     "_index": "diagonals (4)",
+     "4Q-1 round struts, X": 73.92,
+     "4Q-2 faired posts": 8.064
+    },
+    {
+     "_index": "foot rods (4), axial",
+     "4Q-1 round struts, X": 0.2262,
+     "4Q-2 faired posts": 0.2262
+    },
+    {
+     "_index": "camera dome",
+     "4Q-1 round struts, X": 4.072,
+     "4Q-2 faired posts": 4.072
+    }
+   ]
+  },
+  "polars": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "cl_alpha",
+    "cd0",
+    "k",
+    "cl_max",
+    "cd90",
+    "alpha0",
+    "width",
+    "source"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "cl_alpha": 4.078,
+     "cd0": 0.06655,
+     "k": 0.06657,
+     "cl_max": 0.81,
+     "cd90": 1.239,
+     "alpha0": 0.0,
+     "width": 0.02618,
+     "source": "model"
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "cl_alpha": 4.078,
+     "cd0": 0.02574,
+     "k": 0.06657,
+     "cl_max": 1.033,
+     "cd90": 1.327,
+     "alpha0": -0.001694,
+     "width": 0.02618,
+     "source": "NACA 23112 (k2/k1 0.03) (Zephyr)"
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "cl_alpha": 4.078,
+     "cd0": 0.02574,
+     "k": 0.06657,
+     "cl_max": 1.033,
+     "cd90": 1.327,
+     "alpha0": -0.001694,
+     "width": 0.02618,
+     "source": "NACA 23112 (k2/k1 0.03) (Zephyr)"
+    }
+   ]
+  },
+  "CFD sweep against the model": {
+   "4Q-1": {
+    "index": [
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "α [deg]",
+     "CL CFD",
+     "CL model",
+     "ΔCL",
+     "CD CFD",
+     "CD model",
+     "ΔCD",
+     "Cm CFD",
+     "Cm model",
+     "ΔCm",
+     "converged",
+     "note"
+    ],
+    "rows": [
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "α [deg]": 0.0,
+      "CL CFD": -0.05156,
+      "CL model": 0.0,
+      "ΔCL": -0.05156,
+      "CD CFD": 0.07064,
+      "CD model": 0.06655,
+      "ΔCD": 0.004093,
+      "Cm CFD": 0.01992,
+      "Cm model": 0.002131,
+      "ΔCm": 0.01779,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "α [deg]": 5.0,
+      "CL CFD": 0.3059,
+      "CL model": 0.352,
+      "ΔCL": -0.04613,
+      "CD CFD": 0.08481,
+      "CD model": 0.07503,
+      "ΔCD": 0.009772,
+      "Cm CFD": -0.03469,
+      "Cm model": -0.04981,
+      "ΔCm": 0.01512,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "α [deg]": 8.0,
+      "CL CFD": 0.4036,
+      "CL model": 0.5284,
+      "ΔCL": -0.1248,
+      "CD CFD": 0.1081,
+      "CD model": 0.08836,
+      "ΔCD": 0.01977,
+      "Cm CFD": -0.04002,
+      "Cm model": -0.07664,
+      "ΔCm": 0.03663,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "α [deg]": 10.0,
+      "CL CFD": 0.512,
+      "CL model": 0.5645,
+      "ΔCL": -0.05245,
+      "CD CFD": 0.1323,
+      "CD model": 0.1013,
+      "ΔCD": 0.03097,
+      "Cm CFD": -0.0667,
+      "Cm model": -0.08437,
+      "ΔCm": 0.01767,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "α [deg]": 12.0,
+      "CL CFD": 0.4625,
+      "CL model": 0.4896,
+      "ΔCL": -0.02706,
+      "CD CFD": 0.1465,
+      "CD model": 0.1187,
+      "ΔCD": 0.02785,
+      "Cm CFD": -0.02054,
+      "Cm model": -0.07917,
+      "ΔCm": 0.05863,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "α [deg]": 14.0,
+      "CL CFD": 0.5293,
+      "CL model": 0.4002,
+      "ΔCL": 0.1291,
+      "CD CFD": 0.1814,
+      "CD model": 0.1399,
+      "ΔCD": 0.04141,
+      "Cm CFD": -0.06994,
+      "Cm model": -0.07396,
+      "ΔCm": 0.004022,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "α [deg]": 16.0,
+      "CL CFD": 0.5222,
+      "CL model": 0.3747,
+      "ΔCL": 0.1475,
+      "CD CFD": 0.2017,
+      "CD model": 0.1638,
+      "ΔCD": 0.03795,
+      "Cm CFD": -0.04242,
+      "Cm model": -0.07796,
+      "ΔCm": 0.03553,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "α [deg]": 20.0,
+      "CL CFD": 0.5698,
+      "CL model": 0.4213,
+      "ΔCL": 0.1485,
+      "CD CFD": 0.2938,
+      "CD model": 0.2187,
+      "ΔCD": 0.07509,
+      "Cm CFD": -0.1223,
+      "Cm model": -0.1002,
+      "ΔCm": -0.02206,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "α [deg]": 30.0,
+      "CL CFD": 0.5862,
+      "CL model": 0.5763,
+      "ΔCL": 0.009924,
+      "CD CFD": 0.4561,
+      "CD model": 0.3993,
+      "ΔCD": 0.0568,
+      "Cm CFD": -0.1148,
+      "Cm model": -0.1726,
+      "ΔCm": 0.05779,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "α [deg]": 45.0,
+      "CL CFD": 0.638,
+      "CL model": 0.6846,
+      "ΔCL": -0.04652,
+      "CD CFD": 0.7668,
+      "CD model": 0.7511,
+      "ΔCD": 0.01567,
+      "Cm CFD": -0.207,
+      "Cm model": -0.2923,
+      "ΔCm": 0.08525,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "α [deg]": 60.0,
+      "CL CFD": 0.4803,
+      "CL model": 0.6056,
+      "ΔCL": -0.1252,
+      "CD CFD": 0.9321,
+      "CD model": 1.115,
+      "ΔCD": -0.1833,
+      "Cm CFD": -0.2223,
+      "Cm model": -0.403,
+      "ΔCm": 0.1807,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "α [deg]": 75.0,
+      "CL CFD": 0.2133,
+      "CL model": 0.3542,
+      "ΔCL": -0.141,
+      "CD CFD": 0.849,
+      "CD model": 1.389,
+      "ΔCD": -0.5395,
+      "Cm CFD": -0.1998,
+      "Cm model": -0.4812,
+      "ΔCm": 0.2814,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "α [deg]": 90.0,
+      "CL CFD": 0.02926,
+      "CL model": 8.715e-17,
+      "ΔCL": 0.02926,
+      "CD CFD": 0.764,
+      "CD model": 1.49,
+      "ΔCD": -0.7258,
+      "Cm CFD": -0.2332,
+      "Cm model": -0.5097,
+      "ΔCm": 0.2766,
+      "converged": false,
+      "note": ""
+     }
+    ]
+   },
+   "4Q-2": {
+    "index": [
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "α [deg]",
+     "CL CFD",
+     "CL model",
+     "ΔCL",
+     "CD CFD",
+     "CD model",
+     "ΔCD",
+     "Cm CFD",
+     "Cm model",
+     "ΔCm",
+     "converged",
+     "note"
+    ],
+    "rows": [
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "α [deg]": 0.0,
+      "CL CFD": -0.05461,
+      "CL model": 0.00691,
+      "ΔCL": -0.06152,
+      "CD CFD": 0.065,
+      "CD model": 0.02574,
+      "ΔCD": 0.03926,
+      "Cm CFD": 0.02238,
+      "Cm model": -0.0001255,
+      "ΔCm": 0.0225,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "α [deg]": 5.0,
+      "CL CFD": 0.3077,
+      "CL model": 0.3618,
+      "ΔCL": -0.05415,
+      "CD CFD": 0.08105,
+      "CD model": 0.03454,
+      "ΔCD": 0.04651,
+      "Cm CFD": -0.03346,
+      "Cm model": -0.05056,
+      "ΔCm": 0.0171,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "α [deg]": 8.0,
+      "CL CFD": 0.4115,
+      "CL model": 0.567,
+      "ΔCL": -0.1555,
+      "CD CFD": 0.1004,
+      "CD model": 0.04783,
+      "ΔCD": 0.05253,
+      "Cm CFD": -0.02996,
+      "Cm model": -0.08006,
+      "ΔCm": 0.0501,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "α [deg]": 10.0,
+      "CL CFD": 0.5203,
+      "CL model": 0.6856,
+      "ΔCL": -0.1653,
+      "CD CFD": 0.1287,
+      "CD model": 0.06005,
+      "ΔCD": 0.06869,
+      "Cm CFD": -0.06033,
+      "Cm model": -0.09752,
+      "ΔCm": 0.03719,
+      "converged": true,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "α [deg]": 12.0,
+      "CL CFD": 0.4737,
+      "CL model": 0.7494,
+      "ΔCL": -0.2757,
+      "CD CFD": 0.148,
+      "CD model": 0.07571,
+      "ΔCD": 0.07228,
+      "Cm CFD": -0.02468,
+      "Cm model": -0.1086,
+      "ΔCm": 0.08392,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "α [deg]": 14.0,
+      "CL CFD": 0.5284,
+      "CL model": 0.6931,
+      "ΔCL": -0.1647,
+      "CD CFD": 0.1827,
+      "CD model": 0.097,
+      "ΔCD": 0.08571,
+      "Cm CFD": -0.06596,
+      "Cm model": -0.1066,
+      "ΔCm": 0.04061,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "α [deg]": 16.0,
+      "CL CFD": 0.5253,
+      "CL model": 0.555,
+      "ΔCL": -0.0297,
+      "CD CFD": 0.2101,
+      "CD model": 0.1247,
+      "ΔCD": 0.08544,
+      "Cm CFD": -0.04681,
+      "Cm model": -0.09729,
+      "ΔCm": 0.05049,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "α [deg]": 20.0,
+      "CL CFD": 0.5689,
+      "CL model": 0.4679,
+      "ΔCL": 0.101,
+      "CD CFD": 0.2957,
+      "CD model": 0.1875,
+      "ΔCD": 0.1083,
+      "Cm CFD": -0.1163,
+      "Cm model": -0.105,
+      "ΔCm": -0.01124,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "α [deg]": 30.0,
+      "CL CFD": 0.5941,
+      "CL model": 0.6148,
+      "ΔCL": -0.02066,
+      "CD CFD": 0.4656,
+      "CD model": 0.3807,
+      "ΔCD": 0.08493,
+      "Cm CFD": -0.1166,
+      "Cm model": -0.1773,
+      "ΔCm": 0.06071,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "α [deg]": 45.0,
+      "CL CFD": 0.6294,
+      "CL model": 0.729,
+      "ΔCL": -0.09958,
+      "CD CFD": 0.7651,
+      "CD model": 0.7547,
+      "ΔCD": 0.01043,
+      "Cm CFD": -0.203,
+      "Cm model": -0.2999,
+      "ΔCm": 0.0969,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "α [deg]": 60.0,
+      "CL CFD": 0.4718,
+      "CL model": 0.644,
+      "ΔCL": -0.1722,
+      "CD CFD": 0.9154,
+      "CD model": 1.141,
+      "ΔCD": -0.2258,
+      "Cm CFD": -0.2166,
+      "Cm model": -0.4135,
+      "ΔCm": 0.1969,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "α [deg]": 75.0,
+      "CL CFD": 0.2248,
+      "CL model": 0.3764,
+      "ΔCL": -0.1516,
+      "CD CFD": 0.8659,
+      "CD model": 1.431,
+      "ΔCD": -0.5647,
+      "Cm CFD": -0.2034,
+      "Cm model": -0.4936,
+      "ΔCm": 0.2901,
+      "converged": false,
+      "note": ""
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "α [deg]": 90.0,
+      "CL CFD": -0.003335,
+      "CL model": 9.259e-17,
+      "ΔCL": -0.003335,
+      "CD CFD": 0.7529,
+      "CD model": 1.538,
+      "ΔCD": -0.7849,
+      "Cm CFD": -0.2556,
+      "Cm model": -0.5226,
+      "ΔCm": 0.267,
+      "converged": false,
+      "note": ""
+     }
+    ]
+   }
+  },
+  "CFD sweep numbers": {
+   "4Q-1": {
+    "CFD": {
+     "CLα [1/rad]": 3.182,
+     "CL max": 0.638,
+     "α at CL max [deg]": 45.0,
+     "CL max below 20°": 0.5293,
+     "α of it [deg]": 14.0,
+     "CD at the lowest α": 0.07064,
+     "Cmα [1/rad]": -0.4665,
+     "static margin from Cmα [chords]": 0.1466
+    },
+    "model": {
+     "CLα [1/rad]": 3.356,
+     "CL max": 0.6846,
+     "α at CL max [deg]": 45.0,
+     "CL max below 20°": 0.5645,
+     "α of it [deg]": 10.0,
+     "CD at the lowest α": 0.06655,
+     "Cmα [1/rad]": -0.5108,
+     "static margin from Cmα [chords]": 0.1522
+    }
+   },
+   "4Q-2": {
+    "CFD": {
+     "CLα [1/rad]": 3.251,
+     "CL max": 0.6294,
+     "α at CL max [deg]": 45.0,
+     "CL max below 20°": 0.5284,
+     "α of it [deg]": 14.0,
+     "CD at the lowest α": 0.065,
+     "Cmα [1/rad]": -0.4315,
+     "static margin from Cmα [chords]": 0.1327
+    },
+    "model": {
+     "CLα [1/rad]": 3.916,
+     "CL max": 0.7494,
+     "α at CL max [deg]": 12.0,
+     "CL max below 20°": 0.7494,
+     "α of it [deg]": 12.0,
+     "CD at the lowest α": 0.02574,
+     "Cmα [1/rad]": -0.5613,
+     "static margin from Cmα [chords]": 0.1433
+    }
+   }
+  },
+  "CFD labels": {
+   "4Q-1": {
+    "label": "solver (unconverged: indicative)",
+    "bare cases": 13,
+    "converged": 0
+   },
+   "4Q-2": {
+    "label": "solver (unconverged: indicative)",
+    "bare cases": 13,
+    "converged": 1
+   },
+   "4Q-3": {
+    "label": "NOT RUN",
+    "bare cases": 0,
+    "converged": 0
+   }
+  },
+  "stall decision": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "CL max, polar",
+    "stall speed, polar [m/s]",
+    "cruise / stall, polar",
+    "CL max, CFD sweep (< 20°)",
+    "at α [deg]",
+    "stall speed, CFD [m/s]",
+    "cruise / stall, CFD",
+    "CFD label",
+    "CFD converged",
+    "wing area for cruise = 1.3 × stall on the CFD's CL max [m²]",
+    "wing area now [m²]"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "CL max, polar": 0.81,
+     "stall speed, polar [m/s]": 10.91,
+     "cruise / stall, polar": 1.466,
+     "CL max, CFD sweep (< 20°)": 0.5293,
+     "at α [deg]": 14.0,
+     "stall speed, CFD [m/s]": 13.5,
+     "cruise / stall, CFD": 1.185,
+     "CFD label": "solver (unconverged: indicative)",
+     "CFD converged": "0 of 13",
+     "wing area for cruise = 1.3 × stall on the CFD's CL max [m²]": 0.3367,
+     "wing area now [m²]": 0.28
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "CL max, polar": 1.033,
+     "stall speed, polar [m/s]": 9.559,
+     "cruise / stall, polar": 1.674,
+     "CL max, CFD sweep (< 20°)": 0.5284,
+     "at α [deg]": 14.0,
+     "stall speed, CFD [m/s]": 13.37,
+     "cruise / stall, CFD": 1.197,
+     "CFD label": "solver (unconverged: indicative)",
+     "CFD converged": "1 of 13",
+     "wing area for cruise = 1.3 × stall on the CFD's CL max [m²]": 0.3303,
+     "wing area now [m²]": 0.28
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "CL max, polar": 1.033,
+     "stall speed, polar [m/s]": 9.559,
+     "cruise / stall, polar": 1.674,
+     "CL max, CFD sweep (< 20°)": null,
+     "at α [deg]": null,
+     "stall speed, CFD [m/s]": null,
+     "cruise / stall, CFD": null,
+     "CFD label": "NOT RUN",
+     "CFD converged": null,
+     "wing area for cruise = 1.3 × stall on the CFD's CL max [m²]": null,
+     "wing area now [m²]": null
+    }
+   ]
+  },
+  "neutral point": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "x_np_wings",
+    "x_np",
+    "Cma_wings",
+    "Cma_pod",
+    "Cma_props",
+    "Cma",
+    "static_margin",
+    "x_cg"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "x_np_wings": 0.2331,
+     "x_np": 0.2282,
+     "Cma_wings": -0.5304,
+     "Cma_pod": 0.0665,
+     "Cma_props": 0.06465,
+     "Cma": -0.3992,
+     "static_margin": 0.09552,
+     "x_cg": 0.2148
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "x_np_wings": 0.2331,
+     "x_np": 0.2282,
+     "Cma_wings": -0.5143,
+     "Cma_pod": 0.0665,
+     "Cma_props": 0.06505,
+     "Cma": -0.3828,
+     "static_margin": 0.09159,
+     "x_cg": 0.2154
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "x_np_wings": 0.2331,
+     "x_np": 0.2282,
+     "Cma_wings": -0.519,
+     "Cma_pod": 0.0665,
+     "Cma_props": 0.06493,
+     "Cma": -0.3876,
+     "static_margin": 0.09275,
+     "x_cg": 0.2152
+    }
+   ]
+  },
+  "trim (main)": {
+   "index": [
+    10.0,
+    12.0,
+    14.0,
+    16.0,
+    20.0,
+    25.0
+   ],
+   "columns": [
+    "CL",
+    "L/D",
+    "upper rotor [N]",
+    "lower rotor [N]",
+    "trim by thrust",
+    "electrical [W]",
+    "endurance [min]",
+    "range [km]",
+    "feasible"
+   ],
+   "rows": [
+    {
+     "_index": 10.0,
+     "CL": 0.9442,
+     "L/D": 11.1,
+     "upper rotor [N]": -0.01787,
+     "lower rotor [N]": 0.7475,
+     "trim by thrust": false,
+     "electrical [W]": 41.1,
+     "endurance [min]": 57.04,
+     "range [km]": 34.22,
+     "feasible": true
+    },
+    {
+     "_index": 12.0,
+     "CL": 0.6557,
+     "L/D": 12.06,
+     "upper rotor [N]": -0.04611,
+     "lower rotor [N]": 0.7173,
+     "trim by thrust": false,
+     "electrical [W]": 45.12,
+     "endurance [min]": 51.96,
+     "range [km]": 37.41,
+     "feasible": true
+    },
+    {
+     "_index": 14.0,
+     "CL": 0.4817,
+     "L/D": 11.7,
+     "upper rotor [N]": -0.03594,
+     "lower rotor [N]": 0.7282,
+     "trim by thrust": false,
+     "electrical [W]": 51.16,
+     "endurance [min]": 45.82,
+     "range [km]": 38.49,
+     "feasible": true
+    },
+    {
+     "_index": 16.0,
+     "CL": 0.3688,
+     "L/D": 10.6,
+     "upper rotor [N]": -0.001322,
+     "lower rotor [N]": 0.7651,
+     "trim by thrust": false,
+     "electrical [W]": 59.12,
+     "endurance [min]": 39.65,
+     "range [km]": 38.07,
+     "feasible": true
+    },
+    {
+     "_index": 20.0,
+     "CL": 0.236,
+     "L/D": 8.015,
+     "upper rotor [N]": 0.1178,
+     "lower rotor [N]": 0.8923,
+     "trim by thrust": false,
+     "electrical [W]": 92.22,
+     "endurance [min]": 25.42,
+     "range [km]": 30.5,
+     "feasible": true
+    },
+    {
+     "_index": 25.0,
+     "CL": 0.1511,
+     "L/D": 5.542,
+     "upper rotor [N]": 0.3358,
+     "lower rotor [N]": 1.125,
+     "trim by thrust": true,
+     "electrical [W]": 168.5,
+     "endurance [min]": 13.91,
+     "range [km]": 20.86,
+     "feasible": true
+    }
+   ]
+  },
+  "allocation rank": {
+   "index": [
+    "diagonal pairs (M1, M4 | M2, M3)",
+    "side columns alike (M1, M3 | M2, M4)",
+    "rows alike (M1, M2 | M3, M4)",
+    "all the same way"
+   ],
+   "columns": [
+    "senses (M1..M4)",
+    "mirror-symmetric",
+    "rank",
+    "σ (N, N·m)",
+    "condition",
+    "never produced",
+    "verdict"
+   ],
+   "rows": [
+    {
+     "_index": "diagonal pairs (M1, M4 | M2, M3)",
+     "senses (M1..M4)": "(1, -1, -1, 1)",
+     "mirror-symmetric": true,
+     "rank": 4,
+     "σ (N, N·m)": "2, 0.78, 0.28, 0.0323",
+     "condition": 61.91,
+     "never produced": "—",
+     "verdict": "full control (thrust + 3 moments)"
+    },
+    {
+     "_index": "side columns alike (M1, M3 | M2, M4)",
+     "senses (M1..M4)": "(1, -1, 1, -1)",
+     "mirror-symmetric": true,
+     "rank": 3,
+     "σ (N, N·m)": "2, 0.781, 0.28, 1.95e-16",
+     "condition": null,
+     "never produced": "+1.00·L + -0.04·N",
+     "verdict": "NOT controllable in the hover"
+    },
+    {
+     "_index": "rows alike (M1, M2 | M3, M4)",
+     "senses (M1..M4)": "(1, 1, -1, -1)",
+     "mirror-symmetric": false,
+     "rank": 3,
+     "σ (N, N·m)": "2, 0.78, 0.282, 6.97e-17",
+     "condition": null,
+     "never produced": "+0.00·T + -1.00·L + +0.12·M",
+     "verdict": "NOT controllable in the hover"
+    },
+    {
+     "_index": "all the same way",
+     "senses (M1..M4)": "(1, 1, 1, 1)",
+     "mirror-symmetric": false,
+     "rank": 3,
+     "σ (N, N·m)": "2, 0.78, 0.28, 5.39e-17",
+     "condition": null,
+     "never produced": "-0.02·T + -1.00·L",
+     "verdict": "NOT controllable in the hover"
+    }
+   ]
+  },
+  "hover authority": {
+   "index": [
+    "about the thrust axis (hover heading / cruise roll)",
+    "about y (pitch-over / cruise pitch)",
+    "about z (hover tilt sideways / cruise yaw)"
+   ],
+   "columns": [
+    "most negative [N·m]",
+    "most positive [N·m]",
+    "inertia [kg·m²]",
+    "angular acceleration [rad/s²]"
+   ],
+   "rows": [
+    {
+     "_index": "about the thrust axis (hover heading / cruise roll)",
+     "most negative [N·m]": -0.2369,
+     "most positive [N·m]": 0.2369,
+     "inertia [kg·m²]": 0.1131,
+     "angular acceleration [rad/s²]": 2.094
+    },
+    {
+     "_index": "about y (pitch-over / cruise pitch)",
+     "most negative [N·m]": -2.201,
+     "most positive [N·m]": 2.053,
+     "inertia [kg·m²]": 0.02323,
+     "angular acceleration [rad/s²]": 88.38
+    },
+    {
+     "_index": "about z (hover tilt sideways / cruise yaw)",
+     "most negative [N·m]": -5.718,
+     "most positive [N·m]": 5.718,
+     "inertia [kg·m²]": 0.104,
+     "angular acceleration [rad/s²]": 54.98
+    }
+   ]
+  },
+  "pursuit": {
+   "index": [
+    "mass [kg]",
+    "Cd0",
+    "stall speed [m/s]",
+    "V max, thrust = drag [m/s]",
+    "accelerate 13 → 25 m/s [s]",
+    "accelerate 13 → 0.9 V max [s]",
+    "best climb rate [m/s]",
+    "at climb speed [m/s]",
+    "steepest climb [deg]",
+    "time to climb 100 m [s]",
+    "vertical climb (hover thrust margin) [m/s²]",
+    "dive at 30° (idle) [m/s]",
+    "dive at 60° (idle) [m/s]",
+    "terminal dive (idle) [m/s]",
+    "corner speed [m/s]",
+    "turn rate at the corner (4 g) [deg/s]",
+    "turn radius at the corner [m]",
+    "time for 180° at the corner [s]",
+    "sustained load factor at 16 m/s",
+    "sustained turn rate at 16 m/s [deg/s]",
+    "pitch at 16 m/s, total [rad/s²]",
+    "steady roll rate at 16 m/s [deg/s]",
+    "yaw at 16 m/s, rotors [rad/s²]",
+    "endurance at 16 m/s [min]",
+    "best endurance [min]",
+    "at [m/s]",
+    "best range [km]",
+    "at range speed [m/s]"
+   ],
+   "columns": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "rows": [
+    {
+     "_index": "mass [kg]",
+     "Kestrel-4Q-1": 1.686,
+     "Kestrel-4Q-2": 1.651,
+     "Kestrel-4Q-3": 1.651
+    },
+    {
+     "_index": "Cd0",
+     "Kestrel-4Q-1": 0.06655,
+     "Kestrel-4Q-2": 0.02574,
+     "Kestrel-4Q-3": 0.02574
+    },
+    {
+     "_index": "stall speed [m/s]",
+     "Kestrel-4Q-1": 10.91,
+     "Kestrel-4Q-2": 9.559,
+     "Kestrel-4Q-3": 9.559
+    },
+    {
+     "_index": "V max, thrust = drag [m/s]",
+     "Kestrel-4Q-1": 30.09,
+     "Kestrel-4Q-2": 33.28,
+     "Kestrel-4Q-3": 33.28
+    },
+    {
+     "_index": "accelerate 13 → 25 m/s [s]",
+     "Kestrel-4Q-1": 0.95,
+     "Kestrel-4Q-2": 0.8,
+     "Kestrel-4Q-3": 0.8
+    },
+    {
+     "_index": "accelerate 13 → 0.9 V max [s]",
+     "Kestrel-4Q-1": 1.34,
+     "Kestrel-4Q-2": 1.57,
+     "Kestrel-4Q-3": 1.57
+    },
+    {
+     "_index": "best climb rate [m/s]",
+     "Kestrel-4Q-1": 28.15,
+     "Kestrel-4Q-2": 30.94,
+     "Kestrel-4Q-3": 30.94
+    },
+    {
+     "_index": "at climb speed [m/s]",
+     "Kestrel-4Q-1": 16.5,
+     "Kestrel-4Q-2": 18.0,
+     "Kestrel-4Q-3": 18.0
+    },
+    {
+     "_index": "steepest climb [deg]",
+     "Kestrel-4Q-1": 90.0,
+     "Kestrel-4Q-2": 90.0,
+     "Kestrel-4Q-3": 90.0
+    },
+    {
+     "_index": "time to climb 100 m [s]",
+     "Kestrel-4Q-1": 3.552,
+     "Kestrel-4Q-2": 3.232,
+     "Kestrel-4Q-3": 3.232
+    },
+    {
+     "_index": "vertical climb (hover thrust margin) [m/s²]",
+     "Kestrel-4Q-1": 18.57,
+     "Kestrel-4Q-2": 19.17,
+     "Kestrel-4Q-3": 19.17
+    },
+    {
+     "_index": "dive at 30° (idle) [m/s]",
+     "Kestrel-4Q-1": 28.29,
+     "Kestrel-4Q-2": 45.27,
+     "Kestrel-4Q-3": 45.27
+    },
+    {
+     "_index": "dive at 60° (idle) [m/s]",
+     "Kestrel-4Q-1": 36.54,
+     "Kestrel-4Q-2": 58.28,
+     "Kestrel-4Q-3": 58.28
+    },
+    {
+     "_index": "terminal dive (idle) [m/s]",
+     "Kestrel-4Q-1": 39.12,
+     "Kestrel-4Q-2": 62.36,
+     "Kestrel-4Q-3": 62.36
+    },
+    {
+     "_index": "corner speed [m/s]",
+     "Kestrel-4Q-1": 21.82,
+     "Kestrel-4Q-2": 19.12,
+     "Kestrel-4Q-3": 19.12
+    },
+    {
+     "_index": "turn rate at the corner (4 g) [deg/s]",
+     "Kestrel-4Q-1": 99.73,
+     "Kestrel-4Q-2": 113.8,
+     "Kestrel-4Q-3": 113.8
+    },
+    {
+     "_index": "turn radius at the corner [m]",
+     "Kestrel-4Q-1": 12.54,
+     "Kestrel-4Q-2": 9.624,
+     "Kestrel-4Q-3": 9.624
+    },
+    {
+     "_index": "time for 180° at the corner [s]",
+     "Kestrel-4Q-1": 1.805,
+     "Kestrel-4Q-2": 1.581,
+     "Kestrel-4Q-3": 1.581
+    },
+    {
+     "_index": "sustained load factor at 16 m/s",
+     "Kestrel-4Q-1": 2.151,
+     "Kestrel-4Q-2": 2.801,
+     "Kestrel-4Q-3": 2.801
+    },
+    {
+     "_index": "sustained turn rate at 16 m/s [deg/s]",
+     "Kestrel-4Q-1": 66.86,
+     "Kestrel-4Q-2": 91.9,
+     "Kestrel-4Q-3": 91.9
+    },
+    {
+     "_index": "pitch at 16 m/s, total [rad/s²]",
+     "Kestrel-4Q-1": 65.78,
+     "Kestrel-4Q-2": 51.5,
+     "Kestrel-4Q-3": 57.08
+    },
+    {
+     "_index": "steady roll rate at 16 m/s [deg/s]",
+     "Kestrel-4Q-1": 412.8,
+     "Kestrel-4Q-2": 413.7,
+     "Kestrel-4Q-3": 443.0
+    },
+    {
+     "_index": "yaw at 16 m/s, rotors [rad/s²]",
+     "Kestrel-4Q-1": 8.571,
+     "Kestrel-4Q-2": 1.82,
+     "Kestrel-4Q-3": 1.827
+    },
+    {
+     "_index": "endurance at 16 m/s [min]",
+     "Kestrel-4Q-1": 21.04,
+     "Kestrel-4Q-2": 35.92,
+     "Kestrel-4Q-3": 35.92
+    },
+    {
+     "_index": "best endurance [min]",
+     "Kestrel-4Q-1": 38.02,
+     "Kestrel-4Q-2": 55.52,
+     "Kestrel-4Q-3": 55.52
+    },
+    {
+     "_index": "at [m/s]",
+     "Kestrel-4Q-1": 11.0,
+     "Kestrel-4Q-2": 10.0,
+     "Kestrel-4Q-3": 10.0
+    },
+    {
+     "_index": "best range [km]",
+     "Kestrel-4Q-1": 25.09,
+     "Kestrel-4Q-2": 37.51,
+     "Kestrel-4Q-3": 37.51
+    },
+    {
+     "_index": "at range speed [m/s]",
+     "Kestrel-4Q-1": 11.0,
+     "Kestrel-4Q-2": 13.0,
+     "Kestrel-4Q-3": 13.0
+    }
+   ]
+  },
+  "energy budget (main)": {
+   "usable energy [Wh]": 39.07,
+   "hover, 1.5 min (take-off, landing, transitions) [Wh]": 5.35,
+   "hover power [W]": 214.0,
+   "cruise power at 16 m/s [W]": 59.12,
+   "cruise time on the rest [min]": 34.22,
+   "best-endurance speed [m/s]": 10.0,
+   "power there [W]": 41.1,
+   "loiter time on the rest [min]": 49.23,
+   "range at 16 m/s on the rest [km]": 32.85
+  },
+  "plane frame, even lift": {
+   "index": [
+    "posts + X diagonals",
+    "posts only",
+    "no truss (two cantilevers)"
+   ],
+   "columns": [
+    "spar peak moment [N·m]",
+    "spar stress [MPa]",
+    "spar reserve",
+    "tip deflection, upper [mm]",
+    "tip deflection, lower [mm]",
+    "motor station, upper [mm]",
+    "motor station, lower [mm]",
+    "propeller gap change [mm]",
+    "propeller gap under load [mm]",
+    "least buckling margin",
+    "truss mass [g]"
+   ],
+   "rows": [
+    {
+     "_index": "posts + X diagonals",
+     "spar peak moment [N·m]": 0.6458,
+     "spar stress [MPa]": 11.14,
+     "spar reserve": 35.9,
+     "tip deflection, upper [mm]": -0.08903,
+     "tip deflection, lower [mm]": -0.08903,
+     "motor station, upper [mm]": 0.03395,
+     "motor station, lower [mm]": 0.03395,
+     "propeller gap change [mm]": 6.776e-18,
+     "propeller gap under load [mm]": 51.4,
+     "least buckling margin": 85.04,
+     "truss mass [g]": 127.2
+    },
+    {
+     "_index": "posts only",
+     "spar peak moment [N·m]": 1.18,
+     "spar stress [MPa]": 20.36,
+     "spar reserve": 19.65,
+     "tip deflection, upper [mm]": 1.796,
+     "tip deflection, lower [mm]": 1.796,
+     "motor station, upper [mm]": 1.355,
+     "motor station, lower [mm]": 1.355,
+     "propeller gap change [mm]": -6.505e-16,
+     "propeller gap under load [mm]": 51.4,
+     "least buckling margin": null,
+     "truss mass [g]": 40.8
+    },
+    {
+     "_index": "no truss (two cantilevers)",
+     "spar peak moment [N·m]": 1.18,
+     "spar stress [MPa]": 20.36,
+     "spar reserve": 19.65,
+     "tip deflection, upper [mm]": 1.796,
+     "tip deflection, lower [mm]": 1.796,
+     "motor station, upper [mm]": 1.355,
+     "motor station, lower [mm]": 1.355,
+     "propeller gap change [mm]": 0.0,
+     "propeller gap under load [mm]": 51.4,
+     "least buckling margin": null,
+     "truss mass [g]": 0.0
+    }
+   ]
+  },
+  "plane frame, 75 % wing": {
+   "index": [
+    "posts + X diagonals",
+    "posts only",
+    "no truss (two cantilevers)"
+   ],
+   "columns": [
+    "spar peak moment [N·m]",
+    "spar stress [MPa]",
+    "spar reserve",
+    "tip deflection, upper [mm]",
+    "tip deflection, lower [mm]",
+    "motor station, upper [mm]",
+    "motor station, lower [mm]",
+    "propeller gap change [mm]",
+    "propeller gap under load [mm]",
+    "least buckling margin",
+    "truss mass [g]"
+   ],
+   "rows": [
+    {
+     "_index": "posts + X diagonals",
+     "spar peak moment [N·m]": 0.7113,
+     "spar stress [MPa]": 12.27,
+     "spar reserve": 32.6,
+     "tip deflection, upper [mm]": -0.1427,
+     "tip deflection, lower [mm]": -0.03536,
+     "motor station, upper [mm]": 0.03376,
+     "motor station, lower [mm]": 0.03414,
+     "propeller gap change [mm]": -0.0003751,
+     "propeller gap under load [mm]": 51.4,
+     "least buckling margin": 587.4,
+     "truss mass [g]": 127.2
+    },
+    {
+     "_index": "posts only",
+     "spar peak moment [N·m]": 1.5,
+     "spar stress [MPa]": 25.89,
+     "spar reserve": 15.45,
+     "tip deflection, upper [mm]": 1.725,
+     "tip deflection, lower [mm]": 1.867,
+     "motor station, upper [mm]": 1.356,
+     "motor station, lower [mm]": 1.355,
+     "propeller gap change [mm]": 0.000574,
+     "propeller gap under load [mm]": 51.4,
+     "least buckling margin": null,
+     "truss mass [g]": 40.8
+    },
+    {
+     "_index": "no truss (two cantilevers)",
+     "spar peak moment [N·m]": 2.907,
+     "spar stress [MPa]": 50.15,
+     "spar reserve": 7.976,
+     "tip deflection, upper [mm]": 6.103,
+     "tip deflection, lower [mm]": -2.51,
+     "motor station, upper [mm]": 4.431,
+     "motor station, lower [mm]": -1.721,
+     "propeller gap change [mm]": 6.152,
+     "propeller gap under load [mm]": 57.55,
+     "least buckling margin": null,
+     "truss mass [g]": 0.0
+    }
+   ]
+  },
+  "stiffness and modes": {
+   "index": [
+    "posts + X diagonals",
+    "posts only",
+    "no truss (two cantilevers)"
+   ],
+   "columns": [
+    "k symmetric [N/mm]",
+    "k antisymmetric [N/mm]",
+    "first mode, symmetric [Hz]",
+    "first mode, antisymmetric [Hz]"
+   ],
+   "rows": [
+    {
+     "_index": "posts + X diagonals",
+     "k symmetric [N/mm]": 326.8,
+     "k antisymmetric [N/mm]": 12950.0,
+     "first mode, symmetric [Hz]": 260.5,
+     "first mode, antisymmetric [Hz]": 1640.0
+    },
+    {
+     "_index": "posts only",
+     "k symmetric [N/mm]": 1.173,
+     "k antisymmetric [N/mm]": 12570.0,
+     "first mode, symmetric [Hz]": 15.61,
+     "first mode, antisymmetric [Hz]": 1616.0
+    },
+    {
+     "_index": "no truss (two cantilevers)",
+     "k symmetric [N/mm]": 1.173,
+     "k antisymmetric [N/mm]": 1.173,
+     "first mode, symmetric [Hz]": 15.61,
+     "first mode, antisymmetric [Hz]": 15.61
+    }
+   ]
+  },
+  "ground stance": {
+   "CG height above the ground [m]": 0.3246,
+   "least tip-over angle [deg]": 39.38,
+   "wind that tips it, broadside [m/s]": 8.811,
+   "wind that tips it, edge-on [m/s]": 20.92,
+   "touchdown load [N]": 119.4,
+   "per foot, two feet first [N]": 59.69,
+   "foot rod Euler load [N]": 766.5,
+   "foot rod margin, two feet first": 12.84
+  },
+  "FEA": "NOT RUN",
+  "transitions": {
+   "index": [
+    "Kestrel-4Q-1 · forward · as is, still air",
+    "Kestrel-4Q-1 · back · as is, still air",
+    "Kestrel-4Q-1 · back · as is, headwind 6 m/s",
+    "Kestrel-4Q-2 · forward · as is, still air",
+    "Kestrel-4Q-2 · back · as is, still air",
+    "Kestrel-4Q-2 · back · as is, headwind 6 m/s",
+    "Kestrel-4Q-3 · forward · as is, still air",
+    "Kestrel-4Q-3 · back · as is, still air",
+    "Kestrel-4Q-3 · back · as is, headwind 6 m/s",
+    "Kestrel-4Q-2 · back · reverse thrust 3 N per rotor",
+    "Kestrel-4Q-2 · back · crow brake ±20° + reverse thrust",
+    "Kestrel-4Q-3 · back · reverse thrust 3 N per rotor",
+    "Kestrel-4Q-3 · back · crow brake ±20° + reverse thrust",
+    "Kestrel-4Q-2 · forward · as is, CFD sweep correction",
+    "Kestrel-4Q-2 · back · as is, CFD sweep correction"
+   ],
+   "columns": [
+    "height loss [m]",
+    "height gain [m]",
+    "pitch error max [deg]",
+    "time stalled, free stream [s]",
+    "least pitch margin",
+    "peak rotor thrust / T_max",
+    "elevon max [deg]",
+    "roll demand / authority",
+    "energy [Wh]",
+    "pass",
+    "method"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1 · forward · as is, still air",
+     "height loss [m]": 0.1084,
+     "height gain [m]": 0.388,
+     "pitch error max [deg]": 2.463,
+     "time stalled, free stream [s]": 0.954,
+     "least pitch margin": 0.823,
+     "peak rotor thrust / T_max": 0.5543,
+     "elevon max [deg]": 4.188,
+     "roll demand / authority": 0.06609,
+     "energy [Wh]": 0.5335,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-1 · back · as is, still air",
+     "height loss [m]": 0.5528,
+     "height gain [m]": 2.445,
+     "pitch error max [deg]": 4.654,
+     "time stalled, free stream [s]": 1.502,
+     "least pitch margin": 0.7681,
+     "peak rotor thrust / T_max": 0.4382,
+     "elevon max [deg]": 5.756,
+     "roll demand / authority": 0.2771,
+     "energy [Wh]": 0.528,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-1 · back · as is, headwind 6 m/s",
+     "height loss [m]": 0.1871,
+     "height gain [m]": 2.445,
+     "pitch error max [deg]": 4.654,
+     "time stalled, free stream [s]": 1.502,
+     "least pitch margin": 0.7681,
+     "peak rotor thrust / T_max": 0.4667,
+     "elevon max [deg]": 5.756,
+     "roll demand / authority": 0.2771,
+     "energy [Wh]": 0.51,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · forward · as is, still air",
+     "height loss [m]": 0.1264,
+     "height gain [m]": 0.4138,
+     "pitch error max [deg]": 2.447,
+     "time stalled, free stream [s]": 0.814,
+     "least pitch margin": 0.8429,
+     "peak rotor thrust / T_max": 0.5312,
+     "elevon max [deg]": 3.767,
+     "roll demand / authority": 0.02889,
+     "energy [Wh]": 0.4544,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · back · as is, still air",
+     "height loss [m]": 0.172,
+     "height gain [m]": 12.33,
+     "pitch error max [deg]": 3.442,
+     "time stalled, free stream [s]": 1.346,
+     "least pitch margin": 0.8157,
+     "peak rotor thrust / T_max": 0.3646,
+     "elevon max [deg]": 4.554,
+     "roll demand / authority": 0.116,
+     "energy [Wh]": 0.4409,
+     "pass": false,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · back · as is, headwind 6 m/s",
+     "height loss [m]": 0.172,
+     "height gain [m]": 12.33,
+     "pitch error max [deg]": 3.442,
+     "time stalled, free stream [s]": 1.346,
+     "least pitch margin": 0.8157,
+     "peak rotor thrust / T_max": 0.3654,
+     "elevon max [deg]": 4.554,
+     "roll demand / authority": 0.116,
+     "energy [Wh]": 0.4093,
+     "pass": false,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-3 · forward · as is, still air",
+     "height loss [m]": 0.1358,
+     "height gain [m]": 0.4094,
+     "pitch error max [deg]": 2.457,
+     "time stalled, free stream [s]": 0.818,
+     "least pitch margin": 0.8465,
+     "peak rotor thrust / T_max": 0.529,
+     "elevon max [deg]": 3.68,
+     "roll demand / authority": 0.02715,
+     "energy [Wh]": 0.4527,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-3 · back · as is, still air",
+     "height loss [m]": 0.1809,
+     "height gain [m]": 11.88,
+     "pitch error max [deg]": 3.548,
+     "time stalled, free stream [s]": 1.354,
+     "least pitch margin": 0.8211,
+     "peak rotor thrust / T_max": 0.3666,
+     "elevon max [deg]": 4.421,
+     "roll demand / authority": 0.1196,
+     "energy [Wh]": 0.4413,
+     "pass": false,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-3 · back · as is, headwind 6 m/s",
+     "height loss [m]": 0.1809,
+     "height gain [m]": 11.88,
+     "pitch error max [deg]": 3.548,
+     "time stalled, free stream [s]": 1.354,
+     "least pitch margin": 0.8211,
+     "peak rotor thrust / T_max": 0.3696,
+     "elevon max [deg]": 4.421,
+     "roll demand / authority": 0.1196,
+     "energy [Wh]": 0.4098,
+     "pass": false,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · back · reverse thrust 3 N per rotor",
+     "height loss [m]": 0.4422,
+     "height gain [m]": 0.2422,
+     "pitch error max [deg]": 4.101,
+     "time stalled, free stream [s]": 1.318,
+     "least pitch margin": 0.849,
+     "peak rotor thrust / T_max": 0.4103,
+     "elevon max [deg]": 3.712,
+     "roll demand / authority": 0.1444,
+     "energy [Wh]": 0.5429,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · back · crow brake ±20° + reverse thrust",
+     "height loss [m]": 0.4073,
+     "height gain [m]": 0.2149,
+     "pitch error max [deg]": 3.972,
+     "time stalled, free stream [s]": 1.348,
+     "least pitch margin": 0.849,
+     "peak rotor thrust / T_max": 0.4048,
+     "elevon max [deg]": 3.712,
+     "roll demand / authority": 0.2588,
+     "energy [Wh]": 0.5395,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-3 · back · reverse thrust 3 N per rotor",
+     "height loss [m]": 0.465,
+     "height gain [m]": 0.2061,
+     "pitch error max [deg]": 4.119,
+     "time stalled, free stream [s]": 1.334,
+     "least pitch margin": 0.8527,
+     "peak rotor thrust / T_max": 0.4102,
+     "elevon max [deg]": 3.551,
+     "roll demand / authority": 0.1361,
+     "energy [Wh]": 0.5425,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-3 · back · crow brake ±20° + reverse thrust",
+     "height loss [m]": 0.4204,
+     "height gain [m]": 0.1826,
+     "pitch error max [deg]": 3.975,
+     "time stalled, free stream [s]": 1.362,
+     "least pitch margin": 0.8518,
+     "peak rotor thrust / T_max": 0.4042,
+     "elevon max [deg]": 3.551,
+     "roll demand / authority": 0.2517,
+     "energy [Wh]": 0.5385,
+     "pass": true,
+     "method": "reduced-order model (solver)"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · forward · as is, CFD sweep correction",
+     "height loss [m]": 0.503,
+     "height gain [m]": 0.3981,
+     "pitch error max [deg]": 2.497,
+     "time stalled, free stream [s]": 0.846,
+     "least pitch margin": 0.8102,
+     "peak rotor thrust / T_max": 0.5362,
+     "elevon max [deg]": 4.541,
+     "roll demand / authority": 0.06403,
+     "energy [Wh]": 0.5193,
+     "pass": true,
+     "method": "reduced-order model on the CFD's airframe correction"
+    },
+    {
+     "_index": "Kestrel-4Q-2 · back · as is, CFD sweep correction",
+     "height loss [m]": 0.3967,
+     "height gain [m]": 0.2742,
+     "pitch error max [deg]": 3.826,
+     "time stalled, free stream [s]": 1.39,
+     "least pitch margin": 0.8363,
+     "peak rotor thrust / T_max": 0.4168,
+     "elevon max [deg]": 4.047,
+     "roll demand / authority": 0.28,
+     "energy [Wh]": 0.4966,
+     "pass": true,
+     "method": "reduced-order model on the CFD's airframe correction"
+    }
+   ]
+  },
+  "level deceleration": {
+   "index": [
+    "Kestrel-4Q-1 · rotors at idle",
+    "Kestrel-4Q-2 · rotors at idle",
+    "Kestrel-4Q-2 · crow brake ±20°",
+    "Kestrel-4Q-2 · reverse thrust 3 N",
+    "Kestrel-4Q-3 · rotors at idle",
+    "Kestrel-4Q-3 · crow brake ±20°",
+    "Kestrel-4Q-3 · reverse thrust 3 N"
+   ],
+   "columns": [
+    "from [m/s]",
+    "to [m/s]",
+    "time [s]",
+    "distance [m]",
+    "energy [Wh]",
+    "reached",
+    "mean deceleration [m/s²]"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1 · rotors at idle",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 2.68,
+     "distance [m]": 38.56,
+     "energy [Wh]": 0.03201,
+     "reached": true,
+     "mean deceleration [m/s²]": 1.119
+    },
+    {
+     "_index": "Kestrel-4Q-2 · rotors at idle",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 11.96,
+     "distance [m]": 172.1,
+     "energy [Wh]": 0.1428,
+     "reached": true,
+     "mean deceleration [m/s²]": 0.2508
+    },
+    {
+     "_index": "Kestrel-4Q-2 · crow brake ±20°",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 1.86,
+     "distance [m]": 26.75,
+     "energy [Wh]": 0.02222,
+     "reached": true,
+     "mean deceleration [m/s²]": 1.613
+    },
+    {
+     "_index": "Kestrel-4Q-2 · reverse thrust 3 N",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 0.37,
+     "distance [m]": 5.347,
+     "energy [Wh]": 0.03221,
+     "reached": true,
+     "mean deceleration [m/s²]": 8.108
+    },
+    {
+     "_index": "Kestrel-4Q-3 · rotors at idle",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 11.96,
+     "distance [m]": 172.1,
+     "energy [Wh]": 0.1428,
+     "reached": true,
+     "mean deceleration [m/s²]": 0.2508
+    },
+    {
+     "_index": "Kestrel-4Q-3 · crow brake ±20°",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 1.7,
+     "distance [m]": 24.45,
+     "energy [Wh]": 0.02031,
+     "reached": true,
+     "mean deceleration [m/s²]": 1.765
+    },
+    {
+     "_index": "Kestrel-4Q-3 · reverse thrust 3 N",
+     "from [m/s]": 16.0,
+     "to [m/s]": 13.0,
+     "time [s]": 0.37,
+     "distance [m]": 5.347,
+     "energy [Wh]": 0.03221,
+     "reached": true,
+     "mean deceleration [m/s²]": 8.108
+    }
+   ]
+  },
+  "recommended workflows": {
+   "index": [
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "columns": [
+    "workflow",
+    "variant",
+    "campaign",
+    "quality",
+    "why",
+    "command"
+   ],
+   "rows": [
+    {
+     "_index": "2",
+     "workflow": "airframe_cfd",
+     "variant": "4Q-2",
+     "campaign": "stall",
+     "quality": "fine",
+     "why": "CL max decides the stall speed and the wing area: the polar stalls at 14°; the screening sweep (if any) was unconverged on a 5° grid",
+     "command": ".venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine"
+    },
+    {
+     "_index": "3",
+     "workflow": "airframe_cfd",
+     "variant": "4Q-2",
+     "campaign": "cruise",
+     "quality": "screening",
+     "why": "the level cruise and the stall point with the rotor disks on: the blown spans' lift and the trim",
+     "command": ".venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign cruise --quality screening"
+    },
+    {
+     "_index": "4",
+     "workflow": "structure_fea",
+     "variant": "4Q-2",
+     "campaign": "all",
+     "quality": "—",
+     "why": "the frame's margins at ultimate and the joint's across-layer tension: no FEA on file",
+     "command": ".venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --campaign all"
+    },
+    {
+     "_index": "5",
+     "workflow": "airframe_cfd",
+     "variant": "4Q-2",
+     "campaign": "transitions",
+     "quality": "screening",
+     "why": "the transition points with the disks (the model's least-known regime: blown, stalled); only after the bare sweep converged",
+     "command": ".venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign transitions --quality screening"
+    }
+   ]
+  },
+  "final checks": {
+   "index": [
+    "take-off mass [kg]",
+    "hover thrust / weight",
+    "static margin [chords]",
+    "stall speed / cruise speed",
+    "endurance at the cruise [min]",
+    "forward transitions pass (nominal, still air)",
+    "back transitions pass as is (still air and headwind)",
+    "a back-transition remedy passes",
+    "CFD sweep: lift slope / lattice",
+    "CFD sweep: CL max (< 20°) / polar",
+    "structural FEA on file"
+   ],
+   "columns": [
+    "value",
+    "target",
+    "holds",
+    "note"
+   ],
+   "rows": [
+    {
+     "_index": "take-off mass [kg]",
+     "value": "1.65",
+     "target": "≤ 2",
+     "holds": "✔",
+     "note": "mass table: component data + assumed structure densities (estimate)"
+    },
+    {
+     "_index": "hover thrust / weight",
+     "value": "2.95",
+     "target": "≥ 2",
+     "holds": "✔",
+     "note": "Boreas BEMT, generic section unless prop_lab is on file (solver)"
+    },
+    {
+     "_index": "static margin [chords]",
+     "value": "0.0916",
+     "target": "0.05 – 0.15",
+     "holds": "✔",
+     "note": "lattice + De Young propellers (solver + empirical)"
+    },
+    {
+     "_index": "stall speed / cruise speed",
+     "value": "0.597",
+     "target": "≤ 0.8",
+     "holds": "✔",
+     "note": "polar's CL max 1.03 (NeuralFoil ×0.9, empirical)"
+    },
+    {
+     "_index": "endurance at the cruise [min]",
+     "value": "39.7",
+     "target": "≥ 20",
+     "holds": "✔",
+     "note": "drag build-up + BEMT (solver + empirical, ±20 % on Cd0)"
+    },
+    {
+     "_index": "forward transitions pass (nominal, still air)",
+     "value": "yes",
+     "target": "== yes",
+     "holds": "✔",
+     "note": "reduced-order model (solver); Viterna post-stall"
+    },
+    {
+     "_index": "back transitions pass as is (still air and headwind)",
+     "value": "no",
+     "target": "== yes",
+     "holds": "✘",
+     "note": "reduced-order model (solver)"
+    },
+    {
+     "_index": "a back-transition remedy passes",
+     "value": "yes",
+     "target": "== yes",
+     "holds": "✔",
+     "note": "reverse thrust / crow brake in the model (solver); the drives' reverse thrust is an assumption until prop_lab measures it"
+    },
+    {
+     "_index": "CFD sweep: lift slope / lattice",
+     "value": "0.83",
+     "target": "0.85 – 1.15",
+     "holds": "✘",
+     "note": "solver (unconverged: indicative); 1 of 13 converged"
+    },
+    {
+     "_index": "CFD sweep: CL max (< 20°) / polar",
+     "value": "0.511",
+     "target": "≥ 0.8",
+     "holds": "✘",
+     "note": "solver (unconverged: indicative): a 5° grid's lower bound; the fine stall campaign decides"
+    },
+    {
+     "_index": "structural FEA on file",
+     "value": "no",
+     "target": "== yes",
+     "holds": "✘",
+     "note": "NOT RUN: run workflows/kestrel/structure_fea.py; the plane frame's margins stand in (analytic)"
+    }
+   ]
+  },
+  "verdict": [
+   "Kestrel-4Q-2: 7 of 11 checks hold (screening pass: unvalidated — CFD and FEA labelled NOT RUN where missing).",
+   "Mass 1.65 kg, static margin 0.092 c, hover T/W 2.95 at 214 W; cruise 16 m/s at 59 W for 40 min (L/D 10.6); stall 9.6 m/s on the polar's CL max 1.03.",
+   "The CFD sweep (solver (unconverged: indicative)) reads CL max 0.53 below 20° against the polar's 1.03: if it holds, the stall is 13.4 m/s and the cruise only 1.20 × it — the fine stall campaign decides the wing area.",
+   "Transitions (reduced-order model): forward pass; back as is FAIL; with a remedy pass.",
+   "FEA: NOT RUN — the plane frame's spar reserve stands in.",
+   "Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m/s."
+  ],
+  "variants": {
+   "index": [
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "take-off mass [kg]",
+    "CG x [mm]",
+    "static margin [chords]",
+    "Cd0",
+    "CL max (polar)",
+    "stall speed [m/s]",
+    "stall / cruise",
+    "hover T/W",
+    "hover electrical [W]",
+    "L/D at 16 m/s",
+    "power at 16 m/s [W]",
+    "endurance at 16 m/s [min]",
+    "best endurance [min]",
+    "trim by thrust alone at the cruise",
+    "section",
+    "elevons",
+    "bracing",
+    "struts"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1",
+     "take-off mass [kg]": 1.686,
+     "CG x [mm]": 214.8,
+     "static margin [chords]": 0.09552,
+     "Cd0": 0.06655,
+     "CL max (polar)": 0.81,
+     "stall speed [m/s]": 10.91,
+     "stall / cruise": 0.6819,
+     "hover T/W": 2.893,
+     "hover electrical [W]": 220.6,
+     "L/D at 16 m/s": 4.956,
+     "power at 16 m/s [W]": 110.2,
+     "endurance at 16 m/s [min]": 21.27,
+     "best endurance [min]": 40.19,
+     "trim by thrust alone at the cruise": true,
+     "section": "NACA 0012",
+     "elevons": false,
+     "bracing": "x",
+     "struts": "round"
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "take-off mass [kg]": 1.651,
+     "CG x [mm]": 215.4,
+     "static margin [chords]": 0.09159,
+     "Cd0": 0.02574,
+     "CL max (polar)": 1.033,
+     "stall speed [m/s]": 9.559,
+     "stall / cruise": 0.5975,
+     "hover T/W": 2.955,
+     "hover electrical [W]": 214.0,
+     "L/D at 16 m/s": 10.6,
+     "power at 16 m/s [W]": 59.12,
+     "endurance at 16 m/s [min]": 39.65,
+     "best endurance [min]": 57.04,
+     "trim by thrust alone at the cruise": false,
+     "section": "NACA 23112 (k2/k1 0.03) (Zephyr)",
+     "elevons": true,
+     "bracing": "posts",
+     "struts": "faired"
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "take-off mass [kg]": 1.651,
+     "CG x [mm]": 215.2,
+     "static margin [chords]": 0.09275,
+     "Cd0": 0.02574,
+     "CL max (polar)": 1.033,
+     "stall speed [m/s]": 9.559,
+     "stall / cruise": 0.5975,
+     "hover T/W": 2.955,
+     "hover electrical [W]": 214.0,
+     "L/D at 16 m/s": 10.6,
+     "power at 16 m/s [W]": 59.33,
+     "endurance at 16 m/s [min]": 39.51,
+     "best endurance [min]": 56.82,
+     "trim by thrust alone at the cruise": false,
+     "section": "NACA 23112 (k2/k1 0.03) (Zephyr)",
+     "elevons": true,
+     "bracing": "posts",
+     "struts": "faired"
+    }
+   ]
+  },
+  "runtime [s]": {
+   "index": [
+    "1 prerequisites",
+    "2 geometry",
+    "3 mass",
+    "4 propulsion",
+    "5 aerodynamics",
+    "6 trim",
+    "7 performance",
+    "8 structure",
+    "9 transitions",
+    "10 recommendations",
+    "11 assessment",
+    "total"
+   ],
+   "columns": [
+    "seconds"
+   ],
+   "rows": [
+    {
+     "_index": "1 prerequisites",
+     "seconds": 2.0
+    },
+    {
+     "_index": "2 geometry",
+     "seconds": 12.4
+    },
+    {
+     "_index": "3 mass",
+     "seconds": 0.0
+    },
+    {
+     "_index": "4 propulsion",
+     "seconds": 0.4
+    },
+    {
+     "_index": "5 aerodynamics",
+     "seconds": 0.4
+    },
+    {
+     "_index": "6 trim",
+     "seconds": 0.6
+    },
+    {
+     "_index": "7 performance",
+     "seconds": 0.7
+    },
+    {
+     "_index": "8 structure",
+     "seconds": 0.1
+    },
+    {
+     "_index": "9 transitions",
+     "seconds": 108.7
+    },
+    {
+     "_index": "10 recommendations",
+     "seconds": 0.0
+    },
+    {
+     "_index": "11 assessment",
+     "seconds": 0.0
+    },
+    {
+     "_index": "total",
+     "seconds": 125.2
+    }
+   ]
+  },
+  "status": {
+   "screening": true,
+   "required": []
+  }
+ }
+}
