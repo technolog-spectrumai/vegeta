@@ -5,7 +5,7 @@ campaign per run, written as a run directory the unified Kestrel notebook reads.
     .venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4
     .venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-1 --chapter frame --list
     .venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter joint --prepare-only   # CAD + mesh, no solve
-    .venv/bin/python workflows/kestrel/structure_fea.py --resume workflows/runs/structure_fea/<run id>
+    .venv/bin/python workflows/kestrel/structure_fea.py --resume workflows/runs/kestrel/<chapter>/<run id>
 
 Book ``kestrel`` (code K), the FEA chapters; campaigns (``kestrel_campaigns.FEA_CAMPAIGNS``, ``--chapter``): ``frame`` — the variant's bracing (X for 4Q-1, posts for 4Q-2 /
 4Q-3) under A the 4 g pull-up, B the 75 % wing, C the heading manoeuvre, and the modes with the motor units;

@@ -1,0 +1,250 @@
+{
+ "KINDS": {
+  "cfd": {
+   "title": "CFD \u2014 the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)",
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd",
+   "needs": "OpenFOAM (openfoam.com or .org); 4 cores recommended",
+   "time": "screening case 10\u201320 min, fine case ~1 h",
+   "options": [
+    [
+     "--variant",
+     [
+      "4Q-1",
+      "4Q-2",
+      "4Q-3"
+     ],
+     "4Q-2"
+    ],
+    [
+     "--quality",
+     [
+      "screening",
+      "fine"
+     ],
+     "screening"
+    ],
+    [
+     "--processors",
+     null,
+     "4"
+    ]
+   ]
+  },
+  "fea": {
+   "title": "FEA \u2014 the carbon frame and the printed spar\u2013post joint (Talos: Gmsh + CalculiX)",
+   "script": "workflows/kestrel/structure_fea.py",
+   "workflow": "structure_fea",
+   "needs": "CalculiX ccx on the PATH, Gmsh (python module)",
+   "time": "a frame case a few minutes; the whole frame under an hour on 4 threads",
+   "options": [
+    [
+     "--variant",
+     [
+      "4Q-1",
+      "4Q-2",
+      "4Q-3"
+     ],
+     "4Q-2"
+    ],
+    [
+     "--threads",
+     null,
+     "4"
+    ]
+   ]
+  }
+ },
+ "BOOKS": {
+  "kestrel": {
+   "code": "K",
+   "title": "Kestrel-4Q \u2014 the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
+   "design": "notebooks/designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
+   "variants": [
+    "4Q-1",
+    "4Q-2",
+    "4Q-3"
+   ],
+   "chapters": {
+    "airframe-sweep": {
+     "kind": "cfd",
+     "campaign": "sweep",
+     "prerequisites": []
+    },
+    "airframe-stall": {
+     "kind": "cfd",
+     "campaign": "stall",
+     "prerequisites": []
+    },
+    "airframe-cruise": {
+     "kind": "cfd",
+     "campaign": "cruise",
+     "prerequisites": [
+      "airframe-sweep"
+     ]
+    },
+    "airframe-transitions": {
+     "kind": "cfd",
+     "campaign": "transitions",
+     "prerequisites": [
+      "airframe-sweep"
+     ]
+    },
+    "airframe-blown": {
+     "kind": "cfd",
+     "campaign": "blown",
+     "prerequisites": [
+      "airframe-sweep"
+     ]
+    },
+    "airframe-sweep-fine": {
+     "kind": "cfd",
+     "campaign": "sweep-fine",
+     "prerequisites": []
+    },
+    "airframe-all": {
+     "kind": "cfd",
+     "campaign": "all",
+     "prerequisites": []
+    },
+    "sections": {
+     "kind": "cfd",
+     "campaign": "sections",
+     "prerequisites": []
+    },
+    "frame": {
+     "kind": "fea",
+     "campaign": "frame",
+     "prerequisites": []
+    },
+    "joint": {
+     "kind": "fea",
+     "campaign": "joint",
+     "prerequisites": [
+      "frame"
+     ]
+    },
+    "frame-and-joint": {
+     "kind": "fea",
+     "campaign": "all",
+     "prerequisites": []
+    }
+   }
+  }
+ },
+ "IMPORTS": {
+  "import_legacy": {
+   "title": "import the first CFD campaign's results file into kestrel / airframe-sweep (once)",
+   "script": "workflows/kestrel/import_legacy.py"
+  }
+ },
+ "chapters": {
+  "airframe-sweep": {
+   "code": "K1",
+   "n": 1,
+   "kind": "cfd",
+   "campaign": "sweep",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-stall": {
+   "code": "K2",
+   "n": 2,
+   "kind": "cfd",
+   "campaign": "stall",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-cruise": {
+   "code": "K3",
+   "n": 3,
+   "kind": "cfd",
+   "campaign": "cruise",
+   "prerequisites": [
+    "airframe-sweep"
+   ],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-transitions": {
+   "code": "K4",
+   "n": 4,
+   "kind": "cfd",
+   "campaign": "transitions",
+   "prerequisites": [
+    "airframe-sweep"
+   ],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-blown": {
+   "code": "K5",
+   "n": 5,
+   "kind": "cfd",
+   "campaign": "blown",
+   "prerequisites": [
+    "airframe-sweep"
+   ],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-sweep-fine": {
+   "code": "K6",
+   "n": 6,
+   "kind": "cfd",
+   "campaign": "sweep-fine",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "airframe-all": {
+   "code": "K7",
+   "n": 7,
+   "kind": "cfd",
+   "campaign": "all",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "sections": {
+   "code": "K8",
+   "n": 8,
+   "kind": "cfd",
+   "campaign": "sections",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
+  },
+  "frame": {
+   "code": "K9",
+   "n": 9,
+   "kind": "fea",
+   "campaign": "frame",
+   "prerequisites": [],
+   "script": "workflows/kestrel/structure_fea.py",
+   "workflow": "structure_fea"
+  },
+  "joint": {
+   "code": "K10",
+   "n": 10,
+   "kind": "fea",
+   "campaign": "joint",
+   "prerequisites": [
+    "frame"
+   ],
+   "script": "workflows/kestrel/structure_fea.py",
+   "workflow": "structure_fea"
+  },
+  "frame-and-joint": {
+   "code": "K11",
+   "n": 11,
+   "kind": "fea",
+   "campaign": "all",
+   "prerequisites": [],
+   "script": "workflows/kestrel/structure_fea.py",
+   "workflow": "structure_fea"
+  }
+ }
+}

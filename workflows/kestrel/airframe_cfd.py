@@ -5,7 +5,7 @@ named campaign per run, written as a run directory the unified Kestrel notebook 
     .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
     .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --list
     .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter blown --prepare-only
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/airframe_cfd/<run id>
+    .venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/<chapter>/<run id>
 
 Book ``kestrel`` (code K), the CFD chapters; campaigns (``kestrel_campaigns.CFD_CAMPAIGNS``, ``--chapter``; ``--campaign`` still works): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
 ``stall`` 8–16° (5: CL max), ``cruise`` (2 blown), ``transitions`` (the 3 s transitions' points + hover, blown),

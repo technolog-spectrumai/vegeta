@@ -7,16 +7,21 @@ and every cached case under ``workflows/cache/<book>/``. A chapter may have **pr
 book only** — that must have a completed, compatible run for the same variant before it starts
 (``--ignore-prerequisites`` overrides, and says so in the manifest).
 
+The books, chapters, kinds and imports are declared once, in ``workflows/flow.py`` (Yanus's registry); ``KINDS``,
+``BOOKS`` and ``IMPORTS`` here are generated from it in the shape ``wf`` and the GUI read.
+
     kestrel  (K)  — Kestrel-4Q biplane quadrotor tailsitter
       CFD, the airframe with the propellers as rotor disks (Aeromant)
         K1  airframe-sweep      the bare airframe 0–90°
-        K2  airframe-stall      8–16°: CL max                              [after K1? no]
+        K2  airframe-stall      8–16°: CL max
         K3  airframe-cruise     cruise + stall point, rotor disks           [after K1]
         K4  airframe-transitions the transition points, rotor disks         [after K1]
         ...
+        K8  sections            the two finalist sections as slabs
       FEA, the carbon frame and the printed joint (Talos)
-        K8  frame               A, B, C, modes
-        K9  joint                                                           [after K8]
+        K9  frame               A, B, C, modes
+        K10 joint                                                           [after K9]
+        K11 frame-and-joint
 """
 from __future__ import annotations
 
@@ -38,38 +43,25 @@ def _kc():
     return kestrel_campaigns
 
 
-KINDS = {
-    "cfd": {"title": "CFD — the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)", "script": "workflows/kestrel/airframe_cfd.py", "workflow": "airframe_cfd",
-            "needs": "OpenFOAM (openfoam.com or .org); 4 cores recommended", "time": "screening case 10–20 min, fine case ~1 h",
-            "options": [("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")]},
-    "fea": {"title": "FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)", "script": "workflows/kestrel/structure_fea.py", "workflow": "structure_fea",
-            "needs": "CalculiX ccx on the PATH, Gmsh (python module)", "time": "a frame case a few minutes; the whole frame under an hour on 4 threads",
-            "options": [("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--threads", None, "4")]},
-}
+def _flow():
+    """The one registry, ``workflows/flow.py`` (Yanus): the dicts below are views of it, in the shape ``wf`` and the
+    GUI read."""
+    import sys
+    try:
+        from vegeta.yanus import load_flow
+    except ImportError:
+        sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
+        from vegeta.yanus import load_flow
+    return load_flow(ROOT / "workflows" / "flow.py")
 
-BOOKS = {
-    "kestrel": {
-        "code": "K",
-        "title": "Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
-        "design": "notebooks/designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
-        "variants": ("4Q-1", "4Q-2", "4Q-3"),
-        "chapters": {                                        # order = the chapter numbers K1, K2, …
-            "airframe-sweep": {"kind": "cfd", "campaign": "sweep", "prerequisites": ()},
-            "airframe-stall": {"kind": "cfd", "campaign": "stall", "prerequisites": ()},
-            "airframe-cruise": {"kind": "cfd", "campaign": "cruise", "prerequisites": ("airframe-sweep",)},
-            "airframe-transitions": {"kind": "cfd", "campaign": "transitions", "prerequisites": ("airframe-sweep",)},
-            "airframe-blown": {"kind": "cfd", "campaign": "blown", "prerequisites": ("airframe-sweep",)},
-            "airframe-sweep-fine": {"kind": "cfd", "campaign": "sweep-fine", "prerequisites": ()},
-            "airframe-all": {"kind": "cfd", "campaign": "all", "prerequisites": ()},
-            "sections": {"kind": "cfd", "campaign": "sections", "prerequisites": ()},
-            "frame": {"kind": "fea", "campaign": "frame", "prerequisites": ()},
-            "joint": {"kind": "fea", "campaign": "joint", "prerequisites": ("frame",)},
-            "frame-and-joint": {"kind": "fea", "campaign": "all", "prerequisites": ()},
-        },
-        "describe": lambda: {**{k: v for k, v in _kc().CFD_CAMPAIGNS.items()}, **{f"fea:{k}": v for k, v in _kc().FEA_CAMPAIGNS.items()}},
-    },
-}
-IMPORTS = {"import_legacy": {"title": "import the first CFD campaign's results file into kestrel / airframe-sweep (once)", "script": "workflows/kestrel/import_legacy.py"}}
+
+FLOW = _flow()
+KINDS = {k: kind.as_dict() for b in FLOW.books.values() for k, kind in b.kinds.items()}
+BOOKS = {name: {"code": b.code, "title": b.title, "design": b.design, "variants": tuple(b.variants),
+                "chapters": {ch.name: {"kind": ch.kind.name, "campaign": ch.campaign, "prerequisites": ch.prerequisites} for ch in b.chapters.values()},
+                "describe": b.describe or (lambda: {})}
+         for name, b in FLOW.books.items()}
+IMPORTS = {name: imp.as_dict() for name, imp in FLOW.imports.items()}
 
 
 # ----------------------------------------------------------------------------------------------- lookups

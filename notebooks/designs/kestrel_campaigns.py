@@ -38,13 +38,23 @@ ROOT = DESIGNS.parents[1]
 import os as _os
 RUNS_BASE = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "workflows" / "runs")
 BOOK = "kestrel"                                                                  # the book: workflows/runs/kestrel/<chapter>/
-CHAPTERS = {("airframe_cfd", "sweep"): "airframe-sweep", ("airframe_cfd", "stall"): "airframe-stall", ("airframe_cfd", "cruise"): "airframe-cruise",
-            ("airframe_cfd", "transitions"): "airframe-transitions", ("airframe_cfd", "blown"): "airframe-blown", ("airframe_cfd", "sweep-fine"): "airframe-sweep-fine",
-            ("airframe_cfd", "all"): "airframe-all", ("airframe_cfd", "sections"): "sections", ("structure_fea", "frame"): "frame", ("structure_fea", "joint"): "joint",
-            ("structure_fea", "all"): "frame-and-joint"}
-KIND = {"airframe_cfd": "cfd", "structure_fea": "fea"}
-SCRIPTS = {"airframe_cfd": "workflows/kestrel/airframe_cfd.py", "structure_fea": "workflows/kestrel/structure_fea.py",
-           "import_legacy": "workflows/kestrel/import_legacy.py"}
+
+
+def _flow():
+    """The one chapter map: ``workflows/flow.py`` (Yanus's registry), the same one ``workflows/library.py`` reads."""
+    import sys
+    try:
+        from vegeta.yanus import load_flow
+    except ImportError:
+        sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
+        from vegeta.yanus import load_flow
+    return load_flow(ROOT / "workflows" / "flow.py")
+
+
+_BOOK = _flow().books[BOOK]
+CHAPTERS = {(ch.kind.workflow, ch.campaign): ch.name for ch in _BOOK.chapters.values()}         # (workflow, campaign) → chapter folder
+KIND = {k.workflow: k.name for k in _BOOK.kinds.values()}
+SCRIPTS = {**{k.workflow: k.script for k in _BOOK.kinds.values()}, **{name: imp.script for name, imp in _flow().imports.items()}}
 PYTHON = ".venv/bin/python"
 SCHEMA = 1
 
