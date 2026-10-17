@@ -1,6 +1,6 @@
 {
  "dossier": "Kestrel",
- "stitched": "2026-10-17T09:36",
+ "stitched": "2026-10-17T09:37",
  "reports": {
   "38_prop_lab": {
    "notebook": "38_prop_lab",
@@ -9146,11 +9146,11 @@
   "43_kestrel_study": {
    "notebook": "43_kestrel_study",
    "title": "Kestrel — the design study (notebook 43)",
-   "exported": "2026-10-17T09:36",
+   "exported": "2026-10-17T09:37",
    "meta": {
     "main": "4Q-2",
     "mass [kg]": 1.651,
-    "runtime_s": 129.6,
+    "runtime_s": 129.9,
     "screening": true,
     "CFD": {
      "4Q-1": "solver (unconverged: indicative)",
@@ -11502,11 +11502,11 @@
      "rows": [
       {
        "_index": "1 prerequisites",
-       "seconds": 1.7
+       "seconds": 2.9
       },
       {
        "_index": "2 geometry",
-       "seconds": 13.5
+       "seconds": 12.6
       },
       {
        "_index": "3 mass",
@@ -11522,7 +11522,7 @@
       },
       {
        "_index": "6 trim",
-       "seconds": 0.8
+       "seconds": 0.5
       },
       {
        "_index": "7 performance",
@@ -11534,7 +11534,7 @@
       },
       {
        "_index": "9 transitions",
-       "seconds": 111.8
+       "seconds": 112.2
       },
       {
        "_index": "10 recommendations",
@@ -11546,7 +11546,7 @@
       },
       {
        "_index": "total",
-       "seconds": 129.5
+       "seconds": 129.9
       }
      ]
     },
@@ -11692,7 +11692,7 @@
   },
   "43_kestrel_study": {
    "title": "Kestrel — the design study (notebook 43)",
-   "exported": "2026-10-17T09:36",
+   "exported": "2026-10-17T09:37",
    "sections": [
     "prerequisites",
     "parameters that differ",

@@ -1,6 +1,6 @@
 # Kestrel — the design study (notebook 43)
 
-*43_kestrel_study — exported 2026-10-17 09:36*
+*43_kestrel_study — exported 2026-10-17 09:37*
 
 | key | value |
 |---|---|
@@ -444,12 +444,12 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 
 |  | seconds |
 |---|---|
-| 1 prerequisites | 1.7 |
-| 2 geometry | 13.5 |
+| 1 prerequisites | 2.9 |
+| 2 geometry | 12.6 |
 | 3 mass | 0 |
 | 4 propulsion | 0.4 |
 | 5 aerodynamics | 0.4 |
-| 6 trim | 0.8 |
+| 6 trim | 0.5 |
 | 7 performance | 0.8 |
 | 8 structure | 0.1 |
 | 9 transitions | 112 |
