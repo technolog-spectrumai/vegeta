@@ -1,6 +1,6 @@
 # Kestrel — the design dossier
 
-*stitched 2026-10-17 08:59 from 5 report(s)*
+*stitched 2026-10-17 09:36 from 5 report(s)*
 
 | report | lines | exported |
 |---|---|---|
@@ -8,7 +8,7 @@
 | 39_kestrel_tests | 164 | 39_kestrel_tests — exported 2026-10-16 12:30 |
 | 40_kestrel | 917 | 40_kestrel — exported 2026-10-16 12:22 |
 | 41_xwing | 172 | 41_xwing — exported 2026-10-16 12:34 |
-| 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 08:59 |
+| 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 09:36 |
 
 
 ---
@@ -1456,13 +1456,13 @@
 
 ## Kestrel — the design study (notebook 43)
 
-*43_kestrel_study — exported 2026-10-17 08:59*
+*43_kestrel_study — exported 2026-10-17 09:36*
 
 | key | value |
 |---|---|
 | main | 4Q-2 |
 | mass [kg] | 1.65 |
-| runtime_s | 124 |
+| runtime_s | 130 |
 | screening | yes |
 | CFD | {'4Q-1': 'solver (unconverged: indicative)', '4Q-2': 'solver (unconverged: indicative)'… |
 | FEA | NOT RUN |
@@ -1475,8 +1475,8 @@
 | prop_lab calibration (notebook 38) | optional | notebooks/designs/data/prop_lab.json | NOT RUN or rejected: Boreas's generic blade section and De Young's normal force | 38_prop_lab |  | no |
 | drive tables (Boreas) | required | notebooks/designs/data/kestrel_drive.json | on file for this motor, propeller, battery and calibration | kestrel_systems.compute_drive_table | keyed on motor, propeller, battery, calibration | yes |
 | section polars (Zephyr / NeuralFoil) | optional | notebooks/designs/data/kestrel_sections.json | NeuralFoil polars on file | kestrel_section.table | keyed on candidates, flap chord, n_crit | yes |
-| airframe CFD, 4Q-1, sweep | optional | workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-1_39_kestrel_tests | completed: 29 of 29 solved, 0 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
-| airframe CFD, 4Q-2, sweep | optional | workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-2_39_kestrel_tests | completed: 29 of 29 solved, 1 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
+| airframe CFD, 4Q-1, sweep | optional | workflows/runs/kestrel/airframe-sweep/legacy_20261016_4Q-1_39_kestrel_tests | completed: 29 of 29 solved, 0 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
+| airframe CFD, 4Q-2, sweep | optional | workflows/runs/kestrel/airframe-sweep/legacy_20261016_4Q-2_39_kestrel_tests | completed: 29 of 29 solved, 1 converged | imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it) | warnings: fingerprint assumed from the current source: the legacy results file recorded… | yes |
 | airframe CFD, 4Q-3, sweep | optional | — | not selected |  |  | no |
 
 
@@ -1900,18 +1900,18 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 
 |  | seconds |
 |---|---|
-| 1 prerequisites | 0.3 |
-| 2 geometry | 10.1 |
+| 1 prerequisites | 1.7 |
+| 2 geometry | 13.5 |
 | 3 mass | 0 |
 | 4 propulsion | 0.4 |
 | 5 aerodynamics | 0.4 |
 | 6 trim | 0.8 |
-| 7 performance | 0.7 |
+| 7 performance | 0.8 |
 | 8 structure | 0.1 |
-| 9 transitions | 111 |
+| 9 transitions | 112 |
 | 10 recommendations | 0 |
 | 11 assessment | 0 |
-| total | 124 |
+| total | 130 |
 
 
 ## status

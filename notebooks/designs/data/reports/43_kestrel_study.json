@@ -1,11 +1,11 @@
 {
  "notebook": "43_kestrel_study",
  "title": "Kestrel — the design study (notebook 43)",
- "exported": "2026-10-17T08:59",
+ "exported": "2026-10-17T09:36",
  "meta": {
   "main": "4Q-2",
   "mass [kg]": 1.651,
-  "runtime_s": 123.6,
+  "runtime_s": 129.6,
   "screening": true,
   "CFD": {
    "4Q-1": "solver (unconverged: indicative)",
@@ -63,7 +63,7 @@
     {
      "_index": "airframe CFD, 4Q-1, sweep",
      "role": "optional",
-     "selection": "workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-1_39_kestrel_tests",
+     "selection": "workflows/runs/kestrel/airframe-sweep/legacy_20261016_4Q-1_39_kestrel_tests",
      "status": "completed: 29 of 29 solved, 0 converged",
      "provenance": "imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it)",
      "compatibility": "warnings: fingerprint assumed from the current source: the legacy results file recorded none (the CAD parameters of the campaign were notebook 39's of that day)",
@@ -72,7 +72,7 @@
     {
      "_index": "airframe CFD, 4Q-2, sweep",
      "role": "optional",
-     "selection": "workflows/runs/kestrel_airframe/sweep/legacy_20261016_4Q-2_39_kestrel_tests",
+     "selection": "workflows/runs/kestrel/airframe-sweep/legacy_20261016_4Q-2_39_kestrel_tests",
      "status": "completed: 29 of 29 solved, 1 converged",
      "provenance": "imported from kestrel_cfd_results.json (39_kestrel_tests, 2026-10-16, screening, 400 it)",
      "compatibility": "warnings: fingerprint assumed from the current source: the legacy results file recorded none (the CAD parameters of the campaign were notebook 39's of that day)",
@@ -2357,11 +2357,11 @@
    "rows": [
     {
      "_index": "1 prerequisites",
-     "seconds": 0.3
+     "seconds": 1.7
     },
     {
      "_index": "2 geometry",
-     "seconds": 10.1
+     "seconds": 13.5
     },
     {
      "_index": "3 mass",
@@ -2381,7 +2381,7 @@
     },
     {
      "_index": "7 performance",
-     "seconds": 0.7
+     "seconds": 0.8
     },
     {
      "_index": "8 structure",
@@ -2389,7 +2389,7 @@
     },
     {
      "_index": "9 transitions",
-     "seconds": 110.7
+     "seconds": 111.8
     },
     {
      "_index": "10 recommendations",
@@ -2401,7 +2401,7 @@
     },
     {
      "_index": "total",
-     "seconds": 123.6
+     "seconds": 129.5
     }
    ]
   },
