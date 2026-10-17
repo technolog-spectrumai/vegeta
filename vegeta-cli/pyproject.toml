@@ -30,6 +30,7 @@ chronos = "vegeta.chronos.cli:main"
 chiron = "vegeta.chiron.cli:main"
 atropos = "vegeta.atropos.cli:main"
 zephyr = "vegeta.zephyr.cli:main"
+hyperion = "vegeta.hyperion.cli:main"
 
 # `vegeta` is a namespace package (no __init__.py) so other distributions in this repository can
 # add their own subpackages later (e.g. vegeta.core).
@@ -49,6 +50,7 @@ packages = [
   "vegeta.chiron",
   "vegeta.atropos",
   "vegeta.zephyr",
+  "vegeta.hyperion",
   "vegeta.mission",
   "vegeta.mission.sim",
 ]
