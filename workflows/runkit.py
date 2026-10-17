@@ -279,6 +279,7 @@ class Run:
         self.cases_dir.mkdir(parents=True, exist_ok=True)
         self._log = (self.root / "run.log").open("a", buffering=1, encoding="utf-8")
         self._echo = echo
+        self.echo_fn = print                      # a progress bar replaces it with tqdm.write so lines do not break the bar
         self.cancel = threading.Event()
         self.heartbeat = Heartbeat(self, heartbeat_s)
         self._started = time.monotonic()
@@ -343,7 +344,7 @@ class Run:
             self._log.write(line + "\n")
             self._log.flush()
         if (self._echo if echo is None else echo):
-            print(line, flush=True)
+            self.echo_fn(line)
 
     def status(self, state: str | None = None, **fields) -> dict:
         with self._lock:
@@ -549,6 +550,7 @@ def add_common_arguments(ap) -> None:
     ap.add_argument("--case-timeout", type=float, default=None, help="seconds a solver may take per case (the tool stops it)")
     ap.add_argument("--heartbeat", type=float, default=30.0, help="seconds between heartbeats in run.log / status.json")
     ap.add_argument("--quiet", action="store_true", help="log to run.log only, not to the terminal")
+    ap.add_argument("--no-progress", action="store_true", help="no progress bars (they are off anyway when the output is not a terminal, e.g. detached)")
     ap.add_argument("--no-cache", action="store_true", help="solve every case even when an earlier run of this book solved it (the cache under workflows/cache/)")
     ap.add_argument("--ignore-prerequisites", action="store_true", help="start the chapter although a prerequisite chapter of the book has no completed run")
 

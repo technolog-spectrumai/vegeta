@@ -69,6 +69,7 @@ def main(argv=None) -> int:
                                 versions={"calculix": _ccx_version()}, heartbeat_s=args.heartbeat, echo=not args.quiet)
     run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored)
     cache = runkit.Cache(BOOK, enabled=not args.no_cache)
+    bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"{args.chapter} {args.variant}")
     cases = kc.fea_cases(args.variant, args.chapter, run.root, veh=veh, element_size=args.element_size)   # the STEP files under <run>/cad
     byname = {c.name: c for c in cases}
     names = runkit.select_cases([c.name for c in cases], args.cases)
@@ -86,28 +87,30 @@ def main(argv=None) -> int:
 
     def one(name, case_dir, cancel):
         c = byname[name]
+        prog = bars.solver
         if args.prepare_only:
-            m = c.model.mesh(case_dir)
+            m = c.model.mesh(case_dir, progress=prog)
             if not m.ok:
                 return kc.fea_outcome(c, m)
             return {"status": "NOT RUN", "process": None, "note": f"meshed only (--prepare-only): {m.metrics.get('nodes')} nodes, {m.metrics.get('elements')} elements",
                     "artifacts": {k: str(v) for k, v in m.artifacts.items()}}
         if c.kind == "static":
-            res = c.model.ensure(case_dir, run=True, threads=args.threads, timeout=budget.case_timeout_s, cancel=cancel)
+            res = c.model.ensure(case_dir, run=True, threads=args.threads, timeout=budget.case_timeout_s, cancel=cancel, progress=prog)
         else:
             if not c.model.mesh_is_current(case_dir):
-                m = c.model.mesh(case_dir)
+                m = c.model.mesh(case_dir, progress=prog)
                 if not m.ok:
                     return kc.fea_outcome(c, m)
-            res = c.model.solve_modes(case_dir, n_modes=args.n_modes, threads=args.threads, timeout=budget.case_timeout_s, cancel=cancel)
+            res = c.model.solve_modes(case_dir, n_modes=args.n_modes, threads=args.threads, timeout=budget.case_timeout_s, cancel=cancel, progress=prog)
         return kc.fea_outcome(c, res)
 
     with run.signals():
         run.status("running")
-        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, cache=None if args.prepare_only else cache)
+        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, cache=None if args.prepare_only else cache, progress=bars)
     if args.prepare_only:
         state = "prepared"
     summary = kc.fea_summary(variant=args.variant, campaign=args.chapter, cases=[byname[n] for n in names], records=run.records, veh=veh, run_root=run.root)
+    bars.close()
     code = run.finish(summary, state=state)
     wk.closing(run, code, hint=f'notebook: RUNS["structure_fea"]["{args.variant}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"')
     return code

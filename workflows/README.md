@@ -134,7 +134,7 @@ reads the run directory, whenever it is next executed.
 Common options (every script): `--chapter` (`--campaign` still accepted), `--out DIR` (default `workflows/runs/<book>/<chapter>/<timestamp>_<label>`), `--no-cache`, `--ignore-prerequisites`,
 `--resume RUN_DIR`, `--rerun-failed`, `--prepare-only`, `--list`, `--cases TEXT[,TEXT]` (a name filter: a run does
 the cases it lists and never more), `--max-cases N`, `--max-minutes M` (no new case after that; the run ends
-`partial`, resumable), `--case-timeout S`, `--heartbeat S` (default 30), `--quiet`. CFD: `--quality screening|fine`,
+`partial`, resumable), `--case-timeout S`, `--heartbeat S` (default 30), `--quiet`, `--no-progress`. CFD: `--quality screening|fine`,
 `--processors N` (MPI ranks per case; meshing is serial). FEA: `--threads N`, `--n-modes`, `--element-size`.
 
 Orders of magnitude (one 4-core workstation): a screening CFD case 10–20 min, a fine one about an hour; the `sweep`
@@ -152,6 +152,10 @@ Engineers must be able to tell a healthy long run from a stalled or failed one.
   "alive" is the process; "advancing" is the solver's log having grown since the last beat; "no new output for N s"
   is reported, never acted on — a snappyHexMesh layer step or a CalculiX factorisation can be quiet for minutes. No
   percentage is invented.
+- **Progress bars** (a terminal only): the chapter's cases as one bar (done / planned, the case in hand, the cache hits)
+  and the solver inside a case as a second one — OpenFOAM's iteration out of the case's iteration count, Talos's mesh
+  and solve stages — as the tools report them through their progress callbacks. Off when the output is not a terminal
+  (a detached run) or with `--no-progress`; `run.log` carries the same information either way.
 - **`status.json`** (rewritten atomically): `state` ∈ `prepared | running | completed | partial | failed | cancelled`,
   the case counts (planned, done, reused, failed), the case in progress, the last heartbeat, `started_at`,
   `elapsed_s`, the PID. Numerical convergence is **not** in the state: a case whose solver exited cleanly without

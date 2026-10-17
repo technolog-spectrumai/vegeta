@@ -128,3 +128,15 @@ def test_heartbeat_distinguishes_alive_from_advancing(tmp_path):
 def test_slug_is_a_safe_directory_name():
     assert runkit.slug("forward 3 s: α 54°, 1.5 m/s, T 4.36/4.89 N") == "forward_3_s_54_1.5_m_s_T_4.36_4.89_N"
     assert "/" not in runkit.slug("a/b") and runkit.slug("") == "case"
+
+
+def test_progress_bars_are_silent_without_a_terminal_and_count_cases(tmp_path):
+    import _kestrel as wk
+    run = runkit.Run.create(tmp_path / "r", workflow="demo", campaign="c", config={}, planned_cases=["a", "b"], heartbeat_s=10, echo=False)
+    bars = wk.Progress(run, 2)                                   # pytest's stderr is not a tty: disabled, every call a no-op
+    assert not bars.enabled and bars.outer is None
+    bars.solver("solver", 0.5, "iteration 200"); bars.start_case("a"); bars.case_done("solved")
+    state = wk.drive(run, ["a", "b"], {"a": "k", "b": "k2"}, lambda n, d, c: {"status": "solved", "process": "ok"}, budget=runkit.Budget(), progress=bars)
+    bars.close()
+    assert state == "completed" and run.echo_fn is print
+    run.finish({}, state="completed"); run.close()

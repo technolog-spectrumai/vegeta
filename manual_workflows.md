@@ -63,7 +63,7 @@ nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapte
       > workflows/runs/stall.out 2>&1 &
 tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
-# 3. watch it
+# 3. watch it (in a terminal a run shows two progress bars: the cases, and the solver inside the case)
 tail -F workflows/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
 cat workflows/runs/kestrel/airframe-stall/<run id>/status.json      # state, case counts, the case in progress
 
