@@ -288,7 +288,8 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
             g.inputs[key] = rv.summary if ok else None
             g.selections[key] = rv.root if ok else None
         elif isinstance(t, File):
-            row = Row(f"{t.path.rsplit('/', 1)[-1]} ({t.producer})", "file", role, selection=t.path, key=t.key())
+            key = t.key()
+            row = Row(f"{t.path.rsplit('/', 1)[-1]} ({t.producer})", "file", role, selection=t.path, key=key)
             prod = flow.unit(t.producer)
             c = check_file(t.path, root=root, min_schema=t.min_schema, keys=t.keys, producer=prod.name, debug=g.debug)
             row.usable, row.status = c["ok"], c["status"]

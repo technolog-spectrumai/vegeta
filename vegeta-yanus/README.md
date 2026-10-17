@@ -54,6 +54,10 @@ GATE.leave()                             # every promised file written by this e
   and the declared keys must be present. A file is **stale** when it changed after it was stamped, or when one of
   its stamped inputs was rewritten after it. An unstamped file is usable, and the gate says it is unstamped.
 - **Screening** (`screening=True` or the notebook's `screening_env=1`) turns every required take optional.
+- **DEBUG** (`enter(..., debug=DEBUG)`, or `VEGETA_DEBUG=1` as `vegeta.mock` reads it):
+  - The numbers are mocked, so `leave()` stamps the outputs `debug` and only reports a missing one.
+  - A gate that is not in DEBUG refuses a debug-stamped input.
+  - `File(path, optional=True)` declares a give that a mode may skip without failing.
 - **Scripts** call `yanus.check_chapter(...)`. It reports missing needs (the script may still `--prepare-only`) and
   exits 2 on a missing prerequisite unless the script passes `--ignore-prerequisites`.
 

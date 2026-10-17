@@ -1,7 +1,7 @@
 # Yanus — the door keeper (design, v0 — for review)
 
 > Status: **v1 implemented** on `dev_yanus` (plan: `docs/yanus_plan.md`; package: `vegeta-yanus/README.md`).
-> Kestrel first: K1–K11 and notebooks 38, 43, 44. See § 12 for where the implementation differs from this design.
+> Kestrel first (K1–K11, notebooks 38, 43, 44), then every notebook in `notebooks/` (§ 13). See § 12 for where the implementation differs from this design.
 
 Yanus guards the doors between Vegeta's notebooks and workflows. Like Janus it has two faces: one looks at what
 comes **in** (tools on the machine, prerequisite runs, imported files), one at what goes **out** (the files a
@@ -228,3 +228,30 @@ any runner (never — guard only).
   (gmsh without libGLU) still reads as found.
 * **The committed exports are not stamped yet.** Stamping them needs 38 to run with OpenFOAM: run without CFD, it
   rewrites `prop_lab.json` with a NOT RUN listing. Until then the gate reports them as *unstamped* (todo Y.4).
+
+## 13. The rollout to every notebook
+
+All 41 notebooks in `notebooks/` have a contract in `workflows/flow.py`. The early notebooks 00–05 moved to
+`notebooks/old/` and are left out, as are the other historical notebooks there.
+
+* **Needs** are the vegeta packages a notebook imports. Solvers (ccx, OpenFOAM) are not needs of notebooks yet: today
+  a notebook copes with a missing solver only in DEBUG (mocks) or with `VEGETA_SKIP_OPENFOAM`, not uniformly (todo
+  Y.5b).
+* **Gives** are the files a notebook writes under `notebooks/designs/data/` for others:
+  * 25 `air_propeller_results.json`
+  * 26 `merlin_design.json`
+  * 28_microjet `microjet.json`
+  * 28_peregrine `peregrine_design.json`
+  * 29 `aguya_design.json`
+  * 31 `nisus_design.json`, 33 `nisus_plus_design.json`, 35 `falco_design.json`
+  * 34 `frame_study.json`
+  * 36 `falco_balsa_wing.json`
+
+  Scratch output (`_runs/`, `output/`) and the design modules' own caches (the `*_propulsion.json` tables) are not gives.
+* **Takes** are 25 → 25b and 25c; 26 → 26b, 27 and 29; 28_microjet → 29. All are optional, because each reader falls
+  back to its own defaults. The gate shows the input as NOT RUN, or *unstamped*, instead of hiding it.
+* **DEBUG** (`VEGETA_DEBUG=1`, or `DEBUG = True` passed as `debug=DEBUG`):
+  * What a notebook writes is stamped *debug*.
+  * A gate that is not in DEBUG refuses a debug-stamped input ("made in DEBUG (mocked numbers)").
+  * A give missing in DEBUG is reported, not raised.
+  * `File(..., optional=True)` declares a give that a mode may skip.

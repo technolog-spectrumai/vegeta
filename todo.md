@@ -171,7 +171,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] Y.2 `workflows/flow.py` the one registry; `library` and `kestrel_campaigns` read it; the scripts' entry gate; `wf run` stops on a missing need
 - [x] Y.3 Notebooks 38, 43, 44 on the gates; 43's `RUNS` dict → `notebooks/pins/43_kestrel_study.json`
 - [ ] Y.4 Stamp the committed exports by running 38 (with OpenFOAM) and 43 through their gates on a solver machine
-- [ ] Y.5 Roll out to the other notebooks: a contract per notebook in `flow.py`, the `designs/data/*.json` links as `File` takes (merlin, falco, nisus, frame_study …), `GATE.leave()` in each
+- [x] Y.5 Rolled out to the other 38 notebooks: a contract each in `flow.py` (needs = the vegeta packages imported; gives = the files under `designs/data/`; takes = 25→25b/25c, 26→26b/27/29, 28_microjet→29, all optional), the entry gate after the imports, `GATE.leave()` last
+- [ ] Y.5b Tools as needs of the notebooks (ccx, OpenFOAM) once their CFD/FEA cells honour a missing solver the same way (today only DEBUG / `VEGETA_SKIP_OPENFOAM` do); pins for them after M.2
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
 

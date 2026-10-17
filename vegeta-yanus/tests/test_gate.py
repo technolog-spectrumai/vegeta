@@ -175,3 +175,15 @@ def test_debug_output_is_not_taken_by_a_real_run(repo, monkeypatch):
     assert not row.usable and "in DEBUG" in row.status
     row = next(r for r in yanus.enter("20_study", debug=True).rows if r.kind == "file")
     assert row.usable and "made in DEBUG" in row.status
+
+
+def test_file_inputs_keyed_by_their_take(repo):
+    from vegeta.yanus import File
+    repo.notebook("30_reader", takes=[File("10_maker:data/maker.json")])     # a file as the first (only) take
+    p = _maker(repo)
+    g = yanus.enter("30_reader")
+    assert g.inputs == {"10_maker:data/maker.json": p}
+    d = make_run(repo.root, "demo", "sweep", "r1")
+    pins.set_pin(repo.root, "20_study", "demo/sweep@A", d)
+    g = yanus.enter("20_study")
+    assert g.inputs["demo/sweep@A"]["counts"]["n"] == 2 and g.inputs["10_maker:data/maker.json"] == p
