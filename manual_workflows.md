@@ -13,6 +13,22 @@ wf                   # interactive
 ```
 Everything below also works as `.venv/bin/python workflows/cli.py …` without sourcing anything.
 
+## 0b. The desktop interface
+
+```bash
+pip install PyQt6            # once (or: sudo apt install python3-pyqt6 libegl1 libxkbcommon-x11-0 libxcb-cursor0)
+./workflows.sh               # or: wf gui  (= .venv/bin/python workflows/gui)
+```
+
+One window: the **tree** of books and chapters on the left, each chapter marked with what happened to it so far —
+✔ completed, ▶ running, ◐ partial or cancelled, ○ prepared, ✘ failed, — not run — per variant from its latest run
+(double-click a chapter, or type its code — `K2` — in the box); the chapter's **options** on the right (variant, quality or threads, mode: run / prepare only / list,
+cache on or off, limits) with the exact command shown and a big **Run chapter** button; below, the **log** of the
+current run with a progress bar (cases done / planned) and the heartbeat in the status bar, and the **runs on
+disk** table with Follow / Resume / Stop / Notebook line / Open folder. A run starts detached, so closing the window
+never stops it. The toolbar has Refresh, the runs folder, the legacy import, the cache (with Clean), light / dark.
+Everything the window does, the command line does too; it computes nothing itself.
+
 ## 1. The idea in one paragraph
 
 A **workflow** is a script that runs the slow solver cases (CFD, FEA) and writes everything into one folder, the
@@ -63,7 +79,7 @@ nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapte
       > workflows/runs/stall.out 2>&1 &
 tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
-# 3. watch it
+# 3. watch it (in a terminal a run shows two progress bars: the cases, and the solver inside the case)
 tail -F workflows/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
 cat workflows/runs/kestrel/airframe-stall/<run id>/status.json      # state, case counts, the case in progress
 

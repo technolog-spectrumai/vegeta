@@ -82,6 +82,7 @@ def main(argv=None) -> int:
     runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
     cache = runkit.Cache(BOOK, enabled=not args.no_cache)
     run.log(f"cache {'off (--no-cache)' if args.no_cache else cache.dir}")
+    bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"{args.chapter} {args.variant}")
     run.log(f"{kc.VARIANTS[args.variant]}; {kc.CFD_CAMPAIGNS[args.chapter]}; quality {args.quality} {kcfd.QUALITY[args.quality]}; "
             f"{args.processors} MPI rank(s) per case; prop_lab {'on file' if fp['prop_lab']['on_file'] else 'not on file'}")
     budget = runkit.Budget(args.max_cases, args.max_minutes, args.case_timeout)
@@ -120,6 +121,7 @@ def main(argv=None) -> int:
         last = {"t": 0.0, "stage": None}
 
         def progress(stage, fraction=None, message=""):
+            bars.solver(stage, fraction, message)
             now = time.monotonic()
             if stage != last["stage"]:
                 run.log(f"case {name}: stage {stage}", echo=False)
@@ -132,13 +134,14 @@ def main(argv=None) -> int:
 
     with run.signals():
         run.status("running")
-        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, case_dirs=dirs, cache=None if args.prepare_only else cache)
+        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, case_dirs=dirs, cache=None if args.prepare_only else cache, progress=bars)
     if args.prepare_only:
         state = "prepared"
     summary = kc.cfd_summary(variant=args.variant, campaign=args.chapter, quality=args.quality, specs={n: specs[n] for n in names}, records=run.records,
                              veh=veh, run_root=run.root)
     for k, mp in summary.get("maps", {}).items():
         run.add_artifact(k, run.root / mp["file"])
+    bars.close()
     code = run.finish(summary, state=state)
     wk.closing(run, code, hint=f'notebook: RUNS["airframe_cfd"]["{args.variant}"]["{args.chapter}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"' + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
     return code

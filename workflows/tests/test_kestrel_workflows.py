@@ -192,5 +192,12 @@ def test_library_chapters_and_prerequisites(tmp_path, monkeypatch, fp2):
     (tmp_path / "kestrel" / "airframe-sweep" / "s1" / "manifest.json").write_text(json.dumps({**json.loads((tmp_path / "kestrel" / "airframe-sweep" / "s1" / "manifest.json").read_text()), "book": "kestrel", "chapter": "airframe-sweep"}))
     assert library.check_prerequisites("kestrel", "airframe-transitions", variant="4Q-2", expected=fp2) == []
     assert library.check_prerequisites("kestrel", "airframe-transitions", variant="4Q-1", expected=kcp.fingerprint("4Q-1"))       # another variant: still missing
+    cs = library.chapter_status("kestrel", "airframe-sweep")
+    assert cs["runs"] == 1 and cs["overall"] == "completed" and cs["mark"] == "✔" and cs["latest"]["4Q-2"]["state"] == "completed" and "4Q-2 completed" in cs["summary"]
+    assert library.chapter_status("kestrel", "joint")["summary"] == "not run" and library.chapter_status("kestrel", "joint")["mark"] == "—"
+    _fake_run(tmp_path / "kestrel" / "airframe-sweep" / "s2", fp2, state="failed", summary=False)
+    cs = library.chapter_status("kestrel", "airframe-sweep")
+    assert cs["counts"]["failed"] == 1 and cs["overall"] in ("completed", "failed")          # the latest run per variant decides
+    assert "✘" in library.tree() or "✔" in library.tree()
     runs = library.runs_of("kestrel", "airframe-sweep")
     assert runs and runs[0]["book"] == "kestrel" and runs[0]["chapter"] == "airframe-sweep" and runs[0]["code"] == "K1" and runs[0]["variant"] == "4Q-2"

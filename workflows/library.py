@@ -135,12 +135,12 @@ def tree(book: str | None = None, *, runs: bool = True) -> str:
             for j, (name, info) in enumerate(items):
                 branch = ("    " if last_kind else "│   ") + ("└── " if j == len(items) - 1 else "├── ")
                 pre = "  [after " + ", ".join(chs[p]["code"] for p in info["prerequisites"]) + "]" if info["prerequisites"] else ""
-                rc = ""
+                mark, rc = " ", ""
                 if runs:
-                    rs = runs_of(bname, name)
-                    done = sum(1 for r in rs if r["state"] == "completed")
-                    rc = f"  ({done} completed run{'s' if done != 1 else ''}{', ' + str(len(rs) - done) + ' other' if len(rs) - done else ''})" if rs else ""
-                lines.append(f"{branch}{info['code']:4s} {name:22s} {info['description']}{pre}{rc}")
+                    cs = chapter_status(bname, name)
+                    mark = cs["mark"] if cs["runs"] else " "
+                    rc = f"  [{cs['summary']}]" if cs["runs"] else ""
+                lines.append(f"{branch}{mark} {info['code']:4s} {name:22s} {info['description']}{pre}{rc}")
     return "\n".join(lines)
 
 
@@ -196,6 +196,39 @@ def check_prerequisites(book: str, chapter: str, *, variant: str, expected: dict
             missing.append(f"{info['code']} ({pre}) has no completed run for {variant}:  wf {info['code']} --variant {variant}   "
                            f"(= {info['script']} --variant {variant} --chapter {info['campaign']})")
     return missing
+
+
+STATE_MARK = {"completed": "✔", "running": "▶", "partial": "◐", "cancelled": "◐", "prepared": "○", "failed": "✘"}
+
+
+def chapter_status(book: str, chapter: str) -> dict:
+    """What happened to a chapter so far, from its runs: per variant the **latest** run's state (a chapter counts as
+    done for a variant when its latest run completed), the counts of completed / running / failed / other runs, and a
+    one-line summary with marks (✔ completed, ▶ running, ◐ partial or cancelled, ○ prepared, ✘ failed)."""
+    from runkit import read_json
+    rs = runs_of(book, chapter)
+    latest: dict[str, dict] = {}
+    for r in rs:                                             # newest first
+        st = r["state"] or "?"
+        if st == "running":
+            pid = (read_json(Path(r["run"]) / "status.json") or {}).get("pid")
+            try:
+                import os
+                os.kill(int(pid), 0)
+            except (OSError, TypeError, ValueError):
+                st = "failed"                                # the process is gone: it did not finish
+            r = {**r, "state": st}
+        latest.setdefault(r.get("variant") or "?", r)
+    counts = {"completed": 0, "running": 0, "failed": 0, "other": 0}
+    for r in rs:
+        counts["completed" if r["state"] == "completed" else "running" if r["state"] == "running" else "failed" if r["state"] == "failed" else "other"] += 1
+    parts = []
+    for v, r in sorted(latest.items()):
+        parts.append(f"{STATE_MARK.get(r['state'], '?')} {v} {r['state']}")
+    overall = ("running" if any(r["state"] == "running" for r in latest.values()) else "completed" if latest and all(r["state"] == "completed" for r in latest.values())
+               else "failed" if latest and any(r["state"] == "failed" for r in latest.values()) else "partial" if latest else "none")
+    return {"runs": len(rs), "latest": latest, "counts": counts, "overall": overall, "mark": STATE_MARK.get(overall, "—") if latest else "—",
+            "summary": " · ".join(parts) if parts else "not run"}
 
 
 def all_runs() -> list[dict]:
