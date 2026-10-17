@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
         rl.addWidget(self.runs_table, 1)
         rb = QHBoxLayout()
         for text, slot, tip in (("Follow", self.follow_selected, "Show this run's log and progress"), ("Resume", self.resume_selected, "Continue an interrupted or partial run"),
-                                ("Stop", self.stop_selected, "SIGINT to a running run"), ("Notebook line", self.notebook_selected, "Copy the RUNS line for 43_kestrel_study"),
+                                ("Stop", self.stop_selected, "SIGINT to a running run"), ("Notebook line", self.notebook_selected, "Copy the yn pin command(s) of the notebooks that read this run"),
                                 ("Open folder", self.open_selected, "The run directory in the file manager")):
             b = QPushButton(text)
             b.setToolTip(tip)
@@ -301,7 +301,11 @@ class MainWindow(QMainWindow):
         chs = library.chapters(book)
         self.chapter_title.setText(f"{info['code']}  {name}")
         self.chapter_desc.setText(info["description"])
-        self.chapter_meta.setText(f"{kind['title']}\nneeds: {kind['needs']} · time: {kind['time']}")
+        try:
+            ns = library.needs_status(book, name)["line"]
+        except Exception as exc:                                          # the panel never fails on a probe
+            ns = f"not checked ({exc})"
+        self.chapter_meta.setText(f"{kind['title']}\nneeds: {kind['needs']} · time: {kind['time']}\non this machine: {ns}")
         self.chapter_pre.setText(("prerequisites (same book): " + ", ".join(f"{chs[p]['code']} ({p})" for p in info["prerequisites"])) if info["prerequisites"] else "")
         self.chapter_pre.setVisible(bool(info["prerequisites"]))
         cs = library.chapter_status(book, name)

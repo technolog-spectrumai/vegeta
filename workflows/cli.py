@@ -168,6 +168,13 @@ def cmd_run(args) -> int:
     if args.code in library.IMPORTS:
         return _launch(library.IMPORTS[args.code]["script"], args.rest, detach=args.detach, label=args.code)
     book, name, info = _chapter(args.code)
+    ns = library.needs_status(book, name)
+    if not ns["ok"] and not ({"--prepare-only", "--list", "-h", "--help"} & set(args.rest)):
+        print(f"{info['code']} ({name}) needs {', '.join(ns['missing'])} on this machine — not found:", file=sys.stderr)
+        for fx in dict.fromkeys(ns["fixes"]):
+            print(f"  → {fx}", file=sys.stderr)
+        print(f"(or prepare the cases without solving: wf {info['code']} --prepare-only …; yn doctor shows what this machine can run)", file=sys.stderr)
+        return 2
     extra = ["--chapter", info["campaign"], *args.rest] + (["--no-cache"] if args.no_cache and "--no-cache" not in args.rest else [])
     return _launch(info["script"], extra, detach=args.detach, label=f"{info['code']}_{name}")
 
@@ -270,6 +277,9 @@ def cmd_stop(args) -> int:
 
 def cmd_notebook(args) -> int:
     d = _run_dir(args.run)
+    for line in library.pin_commands(d):
+        print(line)
+    print("# the older RUNS form (notebooks not yet on Yanus pins):")
     m = runkit.read_json(d / "manifest.json") or {}
     cfg = m.get("config") or {}
     rel = d.relative_to(ROOT) if ROOT in d.parents else d

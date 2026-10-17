@@ -380,8 +380,15 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
 
 
 # ================================================================================================= what the notebook reads
-class PrerequisiteError(RuntimeError):
-    """A required workflow result is missing, unfinished, failed or incompatible; the message names the command."""
+try:
+    from vegeta.yanus import GateClosed as _GateClosed
+except ImportError:                                                # pragma: no cover — vegeta-yanus/src is put on the path by _flow()
+    _GateClosed = RuntimeError
+
+
+class PrerequisiteError(_GateClosed):
+    """A required workflow result is missing, unfinished, failed or incompatible; the message names the command.
+    (A Yanus ``GateClosed``: one ``except`` catches both.)"""
 
 
 def command(workflow: str, *, variant: str, campaign: str, quality: str | None = None, extra: str = "") -> str:
@@ -469,7 +476,7 @@ def require(check: dict, *, what: str, required: bool = True) -> dict | None:
         return check["summary"]
     if not required:
         return None
-    raise PrerequisiteError(f"{what}: {check['status']}.\n  Produce it with:\n    {check['command']}\n  then put the run directory it prints into RUNS in the prerequisites cell."
+    raise PrerequisiteError(f"{what}: {check['status']}.\n  Produce it with:\n    {check['command']}\n  then pin the run directory it prints (yn pin 43_kestrel_study <chapter> --variant <v> <run dir>)."
                             + ("\n  Available runs: workflows/runs/ (kestrel_campaigns.find_runs)" if check["run"] is None else ""))
 
 

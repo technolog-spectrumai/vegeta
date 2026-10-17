@@ -78,7 +78,7 @@ def main(argv=None) -> int:
         out = Path(args.out) if args.out else wk.library.run_dir(BOOK, CHAPTER, f"{args.variant}_{args.quality}")
         run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names,
                                 versions={"openfoam": _openfoam_version()}, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored)
+    run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored, yanus={"needs": wk.GATE["needs"]})
     runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
     cache = runkit.Cache(BOOK, enabled=not args.no_cache)
     run.log(f"cache {'off (--no-cache)' if args.no_cache else cache.dir}")
@@ -143,7 +143,7 @@ def main(argv=None) -> int:
         run.add_artifact(k, run.root / mp["file"])
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=f'notebook: RUNS["airframe_cfd"]["{args.variant}"]["{args.chapter}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"' + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
+    wk.closing(run, code, hint=wk.pin_hint(run) + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
     return code
 
 

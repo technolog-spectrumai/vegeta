@@ -79,15 +79,23 @@ def chapter_args(ap, book: str, kind: str) -> None:
                     help=f"the study (the {kind.upper()} chapters of book {book!r}: workflows/cli.py list)")
 
 
+GATE: dict = {"missing": [], "needs": {}}
+
+
 def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: dict, ignore: bool) -> list[str]:
-    missing = library.check_prerequisites(book, chapter, variant=variant, expected=expected)
-    if missing and not ignore:
-        print(f"chapter {library.chapters(book)[chapter]['code']} ({chapter}) of book {book!r} needs a completed compatible run of its prerequisite chapter(s) first:")
-        for m in missing:
-            print("  - " + m)
-        print("(or --ignore-prerequisites, recorded in the manifest)")
-        sys.exit(2)
-    return missing
+    """The script's entry gate (Yanus, ``workflows/flow.py``): the chapter's needs (reported — a missing solver still
+    allows ``--prepare-only``) and a completed compatible run of each prerequisite chapter for the variant; exits 2
+    without one unless ``ignore`` (``--ignore-prerequisites``, recorded in the manifest). ``GATE`` keeps the result
+    for the manifest's ``yanus`` entry."""
+    from vegeta import yanus
+    GATE.update(yanus.check_chapter(f"{book}/{chapter}", variant=variant, expected=expected, ignore=ignore, flow=library.FLOW))
+    return GATE["missing"]
+
+
+def pin_hint(run: runkit.Run) -> str:
+    """The closing line that tells the engineer how a notebook reads this run (``yn pin``)."""
+    pins = library.pin_commands(run.root, run.manifest)
+    return ("notebook: " + "   |   ".join(pins)) if pins else "no notebook declares this chapter and variant in workflows/flow.py yet"
 
 
 def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.Budget, rerun_failed: bool = False, case_dirs: dict | None = None,

@@ -159,6 +159,9 @@ def resume_argv(run_dir: Path) -> list[str] | None:
 
 
 def notebook_line(run_dir: Path) -> str:
+    pins = library.pin_commands(run_dir)
+    if pins:
+        return "; ".join(pins)
     m = runkit.read_json(Path(run_dir) / "manifest.json") or {}
     cfg = m.get("config") or {}
     rel = Path(run_dir).relative_to(ROOT) if ROOT in Path(run_dir).parents else Path(run_dir)

@@ -228,3 +228,33 @@ def all_runs() -> list[dict]:
     for b in BOOKS:
         out += runs_of(b)
     return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
+
+
+# ----------------------------------------------------------------------------------------------- Yanus: needs and pins
+def needs_status(book: str, chapter: str) -> dict:
+    """The chapter's needs on this machine (Yanus): ``{"ok", "missing": [labels], "line": "✔ OpenFOAM v2406 · ✘ ccx"}``."""
+    from vegeta.yanus import check_need
+    ch = FLOW.books[book].chapters[chapter]
+    res = [check_need(n) for n in ch.all_needs()]
+    return {"ok": all(r.ok for r in res), "missing": [r.need.label for r in res if not r.ok], "fixes": [r.fix for r in res if not r.ok],
+            "line": " · ".join(f"{'✔' if r.ok else '✘'} {r.need.label}" + (f" {r.version}" if r.ok and r.version and r.version != "found" else "") for r in res)}
+
+
+def pin_commands(run_dir, manifest: dict | None = None) -> list[str]:
+    """The ``yn pin`` command of every notebook that takes this run's chapter and variant (Yanus pins replace the
+    hand-edited ``RUNS`` dict); empty when no notebook reads it. ``manifest`` = the run's, when the caller holds it."""
+    from runkit import read_json
+    d = Path(run_dir)
+    m = manifest if manifest is not None else (read_json(d / "manifest.json") or {})
+    book, chapter, variant = m.get("book"), m.get("chapter"), (m.get("config") or {}).get("variant")
+    if book not in FLOW.books or chapter not in FLOW.books[book].chapters:
+        return []
+    from vegeta.yanus import Run
+    ch = FLOW.books[book].chapters[chapter]
+    rel = d.resolve().relative_to(ROOT) if ROOT in d.resolve().parents else d
+    out = []
+    for nb in FLOW.notebooks.values():
+        for t in nb.takes:
+            if isinstance(t, Run) and t.chapter == ch.ref and t.variant in (None, variant):
+                out.append(f"yn pin {nb.name} {ch.code}" + (f" --variant {variant}" if t.variant else "") + f" {rel}")
+    return out

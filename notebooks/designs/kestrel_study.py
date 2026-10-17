@@ -100,6 +100,32 @@ def sections_status() -> dict:
         return {"on_file": False, "path": "designs/data/kestrel_sections.json", "note": f"vegeta.zephyr not importable ({exc}); the 0012's numbers stand in"}
 
 
+def runs_from_gate(gate) -> tuple[dict, set]:
+    """The notebook's Yanus gate (``yanus.enter("43_kestrel_study")``: the runs pinned in
+    ``notebooks/pins/43_kestrel_study.json``) as the ``RUNS`` / ``REQUIRED`` pair ``prerequisites`` reads —
+    ``{"airframe_cfd": {variant: {campaign: run dir | None}}, "structure_fea": {variant: run dir | None}}`` and the
+    required ``("airframe_cfd", variant, campaign)`` / ``("structure_fea", variant)``. Every run take of the
+    contract appears (an unpinned one as ``None``: NOT RUN, or the error when it is required)."""
+    from vegeta.yanus import Run
+    pins_ = __import__("vegeta.yanus.pins", fromlist=["read_pins"]).read_pins(gate.flow.root, gate.unit.name)
+    runs, required = {"airframe_cfd": {}, "structure_fea": {}}, set()
+    for t in gate.unit.takes:
+        if not isinstance(t, Run):
+            continue
+        ch = gate.flow.chapter(t.chapter)
+        sel = pins_.get(t.key())
+        wf, v = ch.kind.workflow, t.variant
+        if wf == "airframe_cfd":
+            runs[wf].setdefault(v, {})[ch.campaign] = sel
+            if t.required and not gate.screening:
+                required.add((wf, v, ch.campaign))
+        elif wf == "structure_fea":
+            runs[wf][v] = sel
+            if t.required and not gate.screening:
+                required.add((wf, v))
+    return runs, required
+
+
 def prerequisites(runs: dict, required: set, variants=VARIANTS, *, fingerprints: dict | None = None):
     """The prerequisite table and the usable summaries. ``runs`` =
     ``{"airframe_cfd": {variant: {campaign: run dir | None}}, "structure_fea": {variant: run dir | None}}``;
@@ -144,7 +170,7 @@ def prerequisites(runs: dict, required: set, variants=VARIANTS, *, fingerprints:
     if missing:
         lines = ["required workflow results are missing or unusable — this notebook never runs a solver in their place:"]
         for what, ck in missing:
-            lines.append(f"  • {what}: {ck['status']}\n      run:  {ck['command']}\n      then set its run directory in RUNS (the prerequisites cell)")
+            lines.append(f"  • {what}: {ck['status']}\n      run:  {ck['command']}\n      then pin its run directory: yn pin 43_kestrel_study <chapter code> --variant <v> <run dir>")
         lines.append("  For an analytical screening pass without them: KESTREL_SCREENING=1 (the final assessment is then labelled unvalidated).")
         raise kcp.PrerequisiteError("\n".join(lines))
     return table, summaries

@@ -67,12 +67,12 @@ def main(argv=None) -> int:
         out = Path(args.out) if args.out else wk.library.run_dir(BOOK, CHAPTER, args.variant)
         run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=[],
                                 versions={"calculix": _ccx_version()}, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored)
+    run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored, yanus={"needs": wk.GATE["needs"]})
     cache = runkit.Cache(BOOK, enabled=not args.no_cache)
-    bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"{args.chapter} {args.variant}")
     cases = kc.fea_cases(args.variant, args.chapter, run.root, veh=veh, element_size=args.element_size)   # the STEP files under <run>/cad
     byname = {c.name: c for c in cases}
     names = runkit.select_cases([c.name for c in cases], args.cases)
+    bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"{args.chapter} {args.variant}")
     if not run.manifest.get("planned_cases"):
         run.manifest["planned_cases"] = names
         runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
@@ -112,7 +112,7 @@ def main(argv=None) -> int:
     summary = kc.fea_summary(variant=args.variant, campaign=args.chapter, cases=[byname[n] for n in names], records=run.records, veh=veh, run_root=run.root)
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=f'notebook: RUNS["structure_fea"]["{args.variant}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"')
+    wk.closing(run, code, hint=wk.pin_hint(run))
     return code
 
 

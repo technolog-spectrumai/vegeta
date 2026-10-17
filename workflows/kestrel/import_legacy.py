@@ -34,7 +34,10 @@ def main(argv=None) -> int:
     if not roots:
         print("nothing imported: no campaign of those keys in the file")
         return 1
-    print('notebook: RUNS["airframe_cfd"]["<variant>"]["sweep"] = one of the directories above (the import holds the bare sweep and the blown points of its campaign)')
+    for r in roots:
+        for line in wk.library.pin_commands(r):
+            print(f"notebook: {line}")
+    print("(the import holds the bare sweep and the blown points of its campaign; notebooks/pins/43_kestrel_study.json pins them already)")
     return 0
 
 

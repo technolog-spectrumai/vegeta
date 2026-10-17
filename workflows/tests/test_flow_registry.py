@@ -30,3 +30,40 @@ def test_flow_validates_and_campaigns_share_it():
     assert kcp.CHAPTERS == {(k.workflow, ch.campaign): ch.name for ch in library.FLOW.books["kestrel"].chapters.values() for k in [ch.kind]}
     assert kcp.SCRIPTS["airframe_cfd"] == library.KINDS["cfd"]["script"]
     assert kcp.SCRIPTS["import_legacy"] == library.IMPORTS["import_legacy"]["script"]
+
+
+def test_pin_commands_name_the_notebooks_that_read_a_run(tmp_path):
+    d = tmp_path / "r"
+    d.mkdir()
+    (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "kestrel", "chapter": "airframe-sweep", "config": {"variant": "4Q-2"}}))
+    assert library.pin_commands(d) == [f"yn pin 43_kestrel_study K1 --variant 4Q-2 {d}"]
+    (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "kestrel", "chapter": "airframe-stall", "config": {"variant": "4Q-2"}}))
+    assert library.pin_commands(d) == []
+
+
+def test_needs_status():
+    ns = library.needs_status("kestrel", "frame")
+    assert set(ns) >= {"ok", "missing", "line"} and "ccx" in ns["line"] and "gmsh" in ns["line"]
+
+
+def test_wf_run_stops_when_a_need_is_missing():
+    import shutil
+    import subprocess
+    import sys
+    import pytest
+    if shutil.which("ccx"):
+        pytest.skip("CalculiX is installed here")
+    cli = Path(library.ROOT) / "workflows" / "cli.py"
+    out = subprocess.run([sys.executable, str(cli), "run", "K9", "--variant", "4Q-2"], capture_output=True, text=True, timeout=120, cwd=library.ROOT)
+    assert out.returncode == 2 and "needs ccx" in out.stderr and "--prepare-only" in out.stderr
+
+
+def test_notebook_43_contract_matches_its_runs_shape():
+    import kestrel_study as kstu
+    from vegeta import yanus
+    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=False)
+    runs, required = kstu.runs_from_gate(g)
+    assert set(runs["airframe_cfd"]) == {"4Q-1", "4Q-2", "4Q-3"} and "4Q-2" in runs["structure_fea"]
+    assert required == {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}
+    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=True)
+    assert kstu.runs_from_gate(g)[1] == set()
