@@ -46,3 +46,24 @@ def test_window_tree_and_chapter_panel(app):
     assert w.runs_model.columnCount() == 7
     assert "✔" in w.legend.text() and w.chapter_runs.text().startswith("runs so far")
     w.close()
+
+
+def test_batch_tab_collects_steps_and_writes_yaml(app, tmp_path):
+    import batch
+    from gui.app import MainWindow
+    w = MainWindow()
+    w.select_code("K1")
+    w.add_to_batch()
+    w.select_code("K11")
+    w.limits.setText("--max-minutes 30")
+    w.add_to_batch()
+    assert [s.chapter for s in w.batch_steps] == ["K1", "K11"] and w.batch_table.rowCount() == 2
+    w.batch_table.selectRow(1)
+    w._move_step(-1)
+    assert [s.chapter for s in w.batch_steps] == ["K11", "K1"]
+    path = w.save_batch(tmp_path / "b.yaml")
+    b = batch.load(path)
+    assert [s.chapter for s in b.steps] == ["K11", "K1"] and b.steps[0].limits == "--max-minutes 30"
+    w._clear_batch()
+    w.load_batch(str(path))
+    assert len(w.batch_steps) == 2 and w.batch_path == path

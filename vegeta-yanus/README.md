@@ -3,8 +3,9 @@
 Yanus guards the doors between Vegeta's notebooks and workflows. Every **unit** (a notebook, a workflow chapter)
 declares once, in the project's registry `workflows/flow.py`, what it **needs** on the machine, what it **takes** from
 other units and what it **gives**. Two gates check the declarations: one when the unit starts, one when it ends.
-Yanus **guards, it never drives**: it starts no solver, script or notebook. It prints the command that would, and an
-engineer types it. Design: `docs/yanus.md`.
+Yanus **guards**: it starts no solver, script or notebook; it prints the command that would, and an engineer types it.
+The one exception is **auto mode** (§ below): a notebook flagged `auto=True` runs what it is missing by itself, in
+screening quality, and never throws. Design: `docs/yanus.md`.
 
 Stdlib only (pandas, when present, for the gate table). It imports no other vegeta package; a test enforces it.
 
@@ -58,6 +59,13 @@ GATE.leave()                             # every promised file written by this e
   - The numbers are mocked, so `leave()` stamps the outputs `debug` and only reports a missing one.
   - A gate that is not in DEBUG refuses a debug-stamped input.
   - `File(path, optional=True)` declares a give that a mode may skip without failing.
+- **Auto mode** (`yanus_auto`). `flow.notebook(…, auto=True)`, or `enter(…, auto=True)`, or `YANUS_AUTO=1` from the
+  shell (`YANUS_AUTO=0` switches a flagged notebook off): every missing take is **produced first** — the chapters whose
+  runs it takes (their prerequisites first) with the kind's `screening` arguments (`--quality screening`, a coarse
+  FEA mesh), a producer notebook headlessly with `nbconvert` — one after the other in the foreground, their output in
+  the cell; then the gate opens with every take optional. It **never raises**: a chapter whose solver is not on the
+  machine, or whose script failed, is NOT RUN with the reason in the table and in `gate.auto` (`yanus.auto.report`).
+  `YANUS_AUTO_MINUTES=30` caps each chapter run. DEBUG runs nothing. `yn auto 43 --dry-run` prints the plan.
 - **Scripts** call `yanus.check_chapter(...)`. It reports missing needs (the script may still `--prepare-only`) and
   exits 2 on a missing prerequisite unless the script passes `--ignore-prerequisites`.
 
@@ -72,6 +80,7 @@ yn check [--strict]                       registry, pins, stamps (CI)
 yn stamp <unit> <file>                    stamp a given file made outside the gate
 yn new notebook 45_name [--title …]       the common header and both gates, plus the registry entry
 yn new chapter kestrel/thermal --kind fea [--new-kind] [--after frame]
+yn auto 43 [--dry-run]                    the yanus_auto plan of a notebook (chapters in screening quality, producer notebooks); runs it without --dry-run
 ```
 
 `--deep` builds the design fingerprints, which loads the CAD and takes a few seconds. Without it, `status` and `why`

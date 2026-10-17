@@ -55,12 +55,14 @@ kestrel = flow.book("kestrel", "K", title="Kestrel-4Q — the zero-stagger bipla
 kestrel.kind("cfd", title="CFD — the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)", script="workflows/kestrel/airframe_cfd.py",
              workflow="airframe_cfd", needs=[Tool.openfoam(probe=_openfoam), Package("vegeta.aeromant")],
              needs_text="OpenFOAM (openfoam.com or .org); 4 cores recommended", time="screening case 10–20 min, fine case ~1 h",
-             options=[("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")])
+             options=[("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")],
+             screening=("--quality", "screening"))                                   # auto mode: coarse meshes, few iterations
 kestrel.kind("fea", title="FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)", script="workflows/kestrel/structure_fea.py",
              workflow="structure_fea", needs=[Tool("ccx", why="the FEA solver", fix="install CalculiX (docs/installation.md)", version_cmd=("ccx", "-v")),
                                               Package("gmsh"), Package("vegeta.talos")],
              needs_text="CalculiX ccx on the PATH, Gmsh (python module)", time="a frame case a few minutes; the whole frame under an hour on 4 threads",
-             options=[("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--threads", None, "4")])
+             options=[("--variant", ("4Q-1", "4Q-2", "4Q-3"), "4Q-2"), ("--threads", None, "4")],
+             screening=("--element-size", "4", "--threads", "2"))                    # auto mode: a coarse mesh that fits in memory
 
 kestrel.chapter("airframe-sweep", kind="cfd", campaign="sweep")                                          # K1
 kestrel.chapter("airframe-stall", kind="cfd", campaign="stall")                                          # K2
@@ -98,13 +100,13 @@ flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one n
                      Run("kestrel/frame-and-joint", variant="4Q-2", required=True),
                      File(f"38_prop_lab:{DATA}/prop_lab.json", keys=("calibration",))],
               gives=[File(f"{DATA}/reports/43_kestrel_study.json")],
-              screening_env="KESTREL_SCREENING")
+              screening_env="KESTREL_SCREENING", auto=True)                       # yanus_auto: runs K1 / K11 in screening quality when they are missing
 
 flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cantilever panels, no bracing, against Kestrel-4Q",
               needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
               takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE,
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
-              gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")])
+              gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],

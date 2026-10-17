@@ -55,7 +55,7 @@ def _append(flow_file: Path, text: str) -> None:
     flow_file.write_text(src.rstrip("\n") + "\n" + text)
 
 
-def new_notebook(root, name: str, *, flow_file=None, title: str = "", book: str | None = None) -> list[Path]:
+def new_notebook(root, name: str, *, flow_file=None, title: str = "", book: str | None = None, auto: bool = False) -> list[Path]:
     root = Path(root)
     if not NAME.match(name):
         raise ValueError(f"notebook name {name!r}: <two digits>_<snake_case> (e.g. 45_kestrel_thermal)")
@@ -66,7 +66,8 @@ def new_notebook(root, name: str, *, flow_file=None, title: str = "", book: str 
     if f'flow.notebook("{name}"' in flow_file.read_text():
         raise FileExistsError(f"{name} is already declared in {flow_file}")
     nb.write_text(json.dumps(notebook_doc(name, title=title, book=book), indent=1, ensure_ascii=False) + "\n")
-    _append(flow_file, f'\nflow.notebook("{name}", title={title or name!r},\n              needs=[], takes=[], gives=[])        # yn new notebook: fill in the contract\n')
+    _append(flow_file, f'\nflow.notebook("{name}", title={title or name!r},\n              needs=[], takes=[], gives=[]' + (",\n              auto=True" if auto else "") +
+            ')        # yn new notebook: fill in the contract' + (" (yanus_auto: it runs what it is missing by itself, in screening quality)" if auto else "") + '\n')
     return [nb, flow_file]
 
 
