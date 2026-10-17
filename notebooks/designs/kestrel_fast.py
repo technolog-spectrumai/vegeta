@@ -246,9 +246,19 @@ def evaluate(c: Candidate, *, n_crit: float = 6.0) -> dict:
     return out
 
 
-def compare(cands: list, **kw):
+def compare(cands: list, *, progress: bool = True, **kw):
+    """One row per candidate. ``progress``: a tqdm bar over the candidates (the first ones are the slow ones: each new
+    section and Reynolds number is a NeuralFoil polar, cached after that)."""
     import pandas as pd
-    rows = [evaluate(c, **kw) for c in cands]
+    it = cands
+    if progress:
+        from tqdm.auto import tqdm
+        it = tqdm(cands, desc="candidates", unit="candidate")
+    rows = []
+    for c in it:
+        if progress:
+            it.set_postfix_str(f"{c.name}: {c.section}", refresh=True)
+        rows.append(evaluate(c, **kw))
     df = pd.DataFrame(rows).set_index("candidate")
     return df
 
