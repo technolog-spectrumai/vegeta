@@ -106,7 +106,7 @@ else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
+step "Python packages (vegeta-cli with MuJoCo for Chiron, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test,sim]" \
@@ -114,6 +114,7 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron, vegeta-core, vegeta-ai
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \
+  -e "$ROOT/vegeta-yanus[test,table]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 
