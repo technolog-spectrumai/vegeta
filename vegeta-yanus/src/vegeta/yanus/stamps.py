@@ -60,11 +60,11 @@ def write_json_atomic(p: Path, doc: dict) -> None:
 
 
 def write_stamp(file, *, producer: str, kind: str, schema: int | None = None, root=None, needs: dict | None = None,
-                inputs: list | None = None, design_fingerprint: dict | None = None) -> dict:
+                inputs: list | None = None, design_fingerprint: dict | None = None, debug: bool = False) -> dict:
     f = Path(file)
     doc = {"yanus": STAMP_SCHEMA, "file": f.name, "producer": producer, "kind": kind, "schema": schema, "written_at": utc_now(),
            "written_ts": time.time(), "sha256": sha256_file(f), "size": f.stat().st_size, "git": git_commit(root) if root else None,
-           "needs": needs or {}, "inputs": inputs or [], "design_fingerprint": design_fingerprint}
+           "needs": needs or {}, "inputs": inputs or [], "design_fingerprint": design_fingerprint, "debug": bool(debug)}
     write_json_atomic(stamp_path(f), doc)
     return doc
 
@@ -100,10 +100,10 @@ def missing_keys(file, keys) -> list[str]:
     return [k for k in keys if not isinstance(doc, dict) or k not in doc]
 
 
-def check_file(file, *, root, min_schema: int | None = None, keys=(), producer: str | None = None) -> dict:
+def check_file(file, *, root, min_schema: int | None = None, keys=(), producer: str | None = None, debug: bool = False) -> dict:
     """``{ok, status, stamp, stale}`` for a taken file: present, its stamp's hash and producer, schema ≥ ``min_schema``,
     the declared keys; **stale** when the file changed after it was stamped or one of the stamp's own file inputs was
-    re-stamped later than it."""
+    re-stamped later than it. A file stamped in DEBUG (mocked numbers) is usable only by a gate in DEBUG too."""
     f = Path(root) / file
     out = {"ok": False, "status": "", "stamp": None, "stale": False, "path": f}
     if not f.exists():
@@ -118,6 +118,11 @@ def check_file(file, *, root, min_schema: int | None = None, keys=(), producer: 
         if producer and st.get("producer") != producer:
             out["status"] = f"stamped by {st.get('producer')!r}, expected {producer!r}"
             return out
+        if st.get("debug") and not debug:
+            out["status"] = f"made by {st.get('producer')} in DEBUG (mocked numbers): run it again without VEGETA_DEBUG"
+            return out
+        if st.get("debug"):
+            notes.append("made in DEBUG (mocked numbers)")
         if sha256_file(f) != st.get("sha256"):
             out["stale"] = True
             notes.append("modified since it was stamped")

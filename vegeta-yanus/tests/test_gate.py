@@ -147,3 +147,31 @@ def test_table_and_text(repo):
     assert "✘ D1 sweep, A" in t and "→ wf D1 --variant A" in t
     pytest.importorskip("pandas")
     assert list(g.table().columns)[:3] == ["role", "selection", "status"]
+
+
+def test_optional_give_and_debug(repo, monkeypatch):
+    from vegeta.yanus import File
+    repo.notebooks["10_maker"].gives.append(File("data/extra.csv", optional=True))
+    p = repo.root / "data" / "maker.json"
+    g = yanus.enter("10_maker")
+    p.write_text(json.dumps({"schema": 2, "calibration": 1}))
+    g.leave()                                              # extra.csv not written: optional, no error
+    assert any("optional output" in r.status for r in g.left)
+    p.unlink()
+    monkeypatch.setenv("VEGETA_DEBUG", "1")
+    g = yanus.enter("10_maker")
+    assert g.debug and "DEBUG" in g.text()
+    assert g.leave() == []                                 # DEBUG: a missing output is reported, not raised
+    p.write_text(json.dumps({"schema": 2, "calibration": 1}))
+    assert g.leave()[0]["debug"] is True
+
+
+def test_debug_output_is_not_taken_by_a_real_run(repo, monkeypatch):
+    d = make_run(repo.root, "demo", "sweep", "r1")
+    pins.set_pin(repo.root, "20_study", "demo/sweep@A", d)
+    p = _maker(repo)
+    write_stamp(p, producer="10_maker", kind="notebook", schema=2, root=repo.root, debug=True)
+    row = next(r for r in yanus.enter("20_study").rows if r.kind == "file")
+    assert not row.usable and "in DEBUG" in row.status
+    row = next(r for r in yanus.enter("20_study", debug=True).rows if r.kind == "file")
+    assert row.usable and "made in DEBUG" in row.status

@@ -127,6 +127,7 @@ class Gate:
     screening: bool = False
     variant: str | None = None
     left: list = field(default_factory=list)
+    debug: bool = False
 
     @property
     def closed(self) -> list[Row]:
@@ -145,7 +146,8 @@ class Gate:
         return pd.DataFrame([r.as_dict() for r in self.rows]).set_index("input") if self.rows else pd.DataFrame()
 
     def text(self) -> str:
-        head = f"{self.unit.kind_of_unit} {self.unit.ref}" + (" — screening: every take optional" if self.screening else "")
+        head = f"{self.unit.kind_of_unit} {self.unit.ref}" + (" — screening: every take optional" if self.screening else "") + \
+            (" — DEBUG: mocked numbers, outputs stamped as such" if self.debug else "")
         lines = [head]
         w = max([len(r.input) for r in self.rows] + [10])
         for r in self.rows:
@@ -175,7 +177,8 @@ class Gate:
     # ---- the exit face
     def leave(self, *, design_fingerprint: dict | None = None) -> list[dict]:
         """Every file the unit gives must exist, be written during this execution and carry its keys; each then gets
-        its stamp. Raises ``GateClosed`` listing every missing or old output."""
+        its stamp. Raises ``GateClosed`` listing every missing or old output — except an ``optional`` give, and in
+        DEBUG (mocks) where a missing output is reported, not raised; what DEBUG writes is stamped ``debug``."""
         root = Path(self.flow.root)
         bad, stamps, rows = [], [], []
         needs = {r.input.split(" ", 1)[-1]: r.status for r in self.rows if r.kind == "need" and r.usable}
@@ -201,11 +204,15 @@ class Gate:
             else:
                 row.usable = True
                 stamps.append(write_stamp(f, producer=self.unit.name, kind=self.unit.kind_of_unit, schema=g.schema, root=root, needs=needs,
-                                          inputs=inputs, design_fingerprint=design_fingerprint))
+                                          inputs=inputs, design_fingerprint=design_fingerprint, debug=self.debug))
                 row.status = "written and stamped"
             if not row.usable:
-                row.fix = "the cell that writes it did not run or failed: read the notebook's output"
-                bad.append(row)
+                if g.optional or self.debug:
+                    row.role = "optional"
+                    row.status += " (optional output)" if g.optional else " (DEBUG: not required)"
+                else:
+                    row.fix = "the cell that writes it did not run or failed: read the notebook's output"
+                    bad.append(row)
             rows.append(row)
         self.left = rows
         if bad:
@@ -215,18 +222,22 @@ class Gate:
 
 
 def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fingerprints: dict | None = None, variant: str | None = None,
-          deep: bool = True, raise_closed: bool = True, needs_required: bool = True, display: bool = False) -> Gate:
+          deep: bool = True, raise_closed: bool = True, needs_required: bool = True, display: bool = False, debug: bool | None = None) -> Gate:
     """Check the unit's needs and takes (all of them), then open the gate or raise ``GateClosed``.
 
     For a **notebook** each ``Run`` take reads the run **pinned** in ``notebooks/pins/<unit>.json`` (never one
     picked by itself); for a **chapter** the newest usable run of each prerequisite chapter counts (the script's
     own check). ``fingerprints`` = ``{variant: fingerprint}`` already built (else the book builds them, only when
-    ``deep``). ``screening`` (default: the notebook's ``screening_env`` = 1) makes every take optional."""
+    ``deep``). ``screening`` (default: the notebook's ``screening_env`` = 1) makes every take optional. ``debug``
+    (default: ``VEGETA_DEBUG`` on, as ``vegeta.mock`` reads it) = the numbers are mocked: inputs made in DEBUG are
+    accepted, outputs are stamped as DEBUG and a missing one does not fail."""
     flow = current(flow)
     u = flow.unit(unit) if isinstance(unit, str) else unit
     if screening is None:
         screening = bool(isinstance(u, Notebook) and u.screening_env and os.environ.get(u.screening_env) == "1")
-    g = Gate(u, flow, started_ts=time.time(), screening=screening, variant=variant)
+    if debug is None:
+        debug = os.environ.get("VEGETA_DEBUG", "").strip().lower() in ("1", "true", "on", "yes")
+    g = Gate(u, flow, started_ts=time.time(), screening=screening, variant=variant, debug=bool(debug))
     fps = _Fingerprints(fingerprints)
     root = Path(flow.root)
     pins = _pins.read_pins(root, u.name) if isinstance(u, Notebook) else {}
@@ -279,7 +290,7 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
         elif isinstance(t, File):
             row = Row(f"{t.path.rsplit('/', 1)[-1]} ({t.producer})", "file", role, selection=t.path, key=t.key())
             prod = flow.unit(t.producer)
-            c = check_file(t.path, root=root, min_schema=t.min_schema, keys=t.keys, producer=prod.name)
+            c = check_file(t.path, root=root, min_schema=t.min_schema, keys=t.keys, producer=prod.name, debug=g.debug)
             row.usable, row.status = c["ok"], c["status"]
             st = c["stamp"] or {}
             row.provenance = f"{st.get('producer')} {st.get('written_at', '')[:16]} (git {st.get('git')})" if st else ""

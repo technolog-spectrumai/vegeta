@@ -57,7 +57,7 @@ def test_new_notebook(tmp_path):
     out = scaffold.new_notebook(tmp_path, "45_thermal", title="thermal")
     nb = json.loads(out[0].read_text())
     src = "".join("".join(c["source"]) for c in nb["cells"])
-    assert 'yanus.enter("45_thermal")' in src and "GATE.leave()" in src and "mock.setup" in src
+    assert 'yanus.enter("45_thermal", debug=DEBUG)' in src and "GATE.leave()" in src and "mock.setup" in src
     try:
         import nbformat
         nbformat.validate(nbformat.reads(out[0].read_text(), as_version=4))

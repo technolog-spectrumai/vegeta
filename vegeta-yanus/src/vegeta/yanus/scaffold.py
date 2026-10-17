@@ -36,7 +36,7 @@ def notebook_doc(name: str, *, title: str = "", book: str | None = None) -> dict
               "from IPython.display import display\nfrom vegeta import yanus\nsys.path.insert(0, \"designs\")\n\n"
               "pd.set_option(\"display.max_colwidth\", 110); pd.set_option(\"display.width\", 230); pd.set_option(\"display.max_columns\", 40)\n"
               f"OUT = Path(\"output/{name}\"); OUT.mkdir(parents=True, exist_ok=True)\n\n"
-              f"GATE = yanus.enter(\"{name}\")          # raises GateClosed with every fix command when a required input is missing\n"
+              f"GATE = yanus.enter(\"{name}\", debug=DEBUG)          # raises GateClosed with every fix command when a required input is missing\n"
               "display(GATE.table())\nINPUTS = GATE.inputs                        # take key → the run's summary / the file's path (None = NOT RUN)"),
         _md("## 2. …"),
         _code(""),
