@@ -42,7 +42,7 @@ def main(argv=None) -> int:
     if args.resume:
         cfg = (runkit.read_json(Path(args.resume) / "manifest.json") or {}).get("config") or {}
         if cfg:
-            args.variant, args.chapter, args.element_size, args.n_modes = cfg.get("variant", args.variant), cfg.get("chapter", cfg.get("campaign", args.chapter)), cfg.get("element_size", args.element_size), cfg.get("n_modes", args.n_modes)
+            args.variant, args.chapter, args.element_size, args.n_modes = cfg.get("variant", args.variant), cfg.get("campaign", args.chapter), cfg.get("element_size", args.element_size), cfg.get("n_modes", args.n_modes)
     config = {"workflow": WORKFLOW, "book": BOOK, "kind": KIND, "chapter": wk.library.chapter_of(BOOK, KIND, args.chapter) or args.chapter, "campaign": args.chapter, "variant": args.variant, "element_size": args.element_size, "n_modes": args.n_modes}
 
     t0 = time.monotonic()

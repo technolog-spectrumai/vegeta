@@ -48,7 +48,7 @@ def main(argv=None) -> int:
         m = runkit.read_json(Path(args.resume) / "manifest.json") or {}
         cfg = m.get("config") or {}
         if cfg:
-            args.variant, args.chapter, args.quality = cfg.get("variant", args.variant), cfg.get("chapter", cfg.get("campaign", args.chapter)), cfg.get("quality", args.quality)
+            args.variant, args.chapter, args.quality = cfg.get("variant", args.variant), cfg.get("campaign", args.chapter), cfg.get("quality", args.quality)
     config = {"workflow": WORKFLOW, "book": BOOK, "kind": KIND, "chapter": wk.library.chapter_of(BOOK, KIND, args.chapter) or args.chapter, "campaign": args.chapter, "variant": args.variant, "quality": args.quality}
 
     t0 = time.monotonic()
