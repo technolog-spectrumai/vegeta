@@ -57,6 +57,7 @@ e = aeromant.OpenFOAMEnvironment.detect()
 r = subprocess.run(e.command(['blockMesh', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
 assert r.returncode == 0, (r.stderr or r.stdout)[-300:]
 print('via', e.bashrc or ' '.join(e.prefix) or 'PATH')"
+optional sections "$PY" -c "import neuralfoil; print('neuralfoil', getattr(neuralfoil, '__version__', ''), '(Zephyr section polars; or xfoil on the PATH)')"
 check mujoco      "$PY" -c "import mujoco; print('mujoco', mujoco.__version__, '(physics engine of Chiron)')"
 for tool in dedalus talos aeromant mellonia boreas chronos chiron atropos zephyr; do
   check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"

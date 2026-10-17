@@ -57,3 +57,12 @@ def test_notebook_folder(tmp_path):
     assert nb.path == "notebooks/demo/15_demo.ipynb" and f.unit("15").name == "15_demo"
     from vegeta.yanus.gate import notebook_command
     assert notebook_command(nb) == "scripts/run_notebooks.sh demo/15_demo.ipynb"
+
+
+def test_any_of_need():
+    from vegeta.yanus import AnyOf, Tool
+    from vegeta.yanus.needs import check_need
+    ok = check_need(AnyOf("backend", Tool("no-such-tool-1"), Package("json")), cache=False)
+    assert ok.ok and "json" in ok.version
+    bad = check_need(AnyOf("backend", Tool("no-such-tool-1"), Package("no_such_pkg_xyz"), fix="install one"), cache=False)
+    assert not bad.ok and bad.fix == "install one" and "none of" in bad.detail

@@ -11,10 +11,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 try:
-    from vegeta.yanus import Env, File, Flow, Package, Run, Tool  # noqa: F401
+    from vegeta.yanus import AnyOf, Env, File, Flow, Package, Run, Tool  # noqa: F401
 except ImportError:                                            # a source tree without the editable install
     sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
-    from vegeta.yanus import Env, File, Flow, Package, Run, Tool  # noqa: F401,E402
+    from vegeta.yanus import AnyOf, Env, File, Flow, Package, Run, Tool  # noqa: F401,E402
 
 flow = Flow("vegeta", root=ROOT)
 
@@ -80,6 +80,8 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
 
 # ================================================================================================= notebooks
 DATA = "notebooks/designs/data"
+SECTION_BACKEND = AnyOf("section backend", Package("neuralfoil"), Tool("xfoil"), why="Zephyr's 2-D section polars",
+                        fix="pip install 'vegeta-cli[sections]' (neuralfoil), or put xfoil on the PATH; ./install_local.sh installs it")
 
 flow.notebook("38_prop_lab", title="the resolved 9x6 propeller: CFD against Boreas, the calibration Kestrel reads",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas"), Package("vegeta.aeromant")],
@@ -96,7 +98,7 @@ flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one n
               screening_env="KESTREL_SCREENING")
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
-              needs=[Package("vegeta.zephyr"), Package("vegeta.boreas")])
+              needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND])
 
 
 # ================================================================================================= the other notebooks

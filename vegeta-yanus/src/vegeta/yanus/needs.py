@@ -9,7 +9,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
-from .contract import Env, Need, Package, Tool
+from .contract import AnyOf, Env, Need, Package, Tool
 
 TIMEOUT = 2.0
 _CACHE: dict = {}
@@ -55,10 +55,15 @@ def _package_version(name: str) -> str:
 
 
 def check_need(need: Need, *, cache: bool = True) -> NeedResult:
-    key = (type(need).__name__, need.name, getattr(need, "version_cmd", ()))
+    key = (type(need).__name__, need.name, getattr(need, "version_cmd", ()), getattr(need, "options", ()))
     if cache and key in _CACHE:
         return _CACHE[key]
-    if isinstance(need, Tool):
+    if isinstance(need, AnyOf):
+        subs = [check_need(o, cache=cache) for o in need.options]
+        hit = next((r for r in subs if r.ok), None)
+        res = NeedResult(need, hit is not None, f"{hit.need.label} {hit.version}".strip() if hit else "",
+                         "" if hit else "none of " + ", ".join(o.label for o in need.options))
+    elif isinstance(need, Tool):
         if need.probe is not None:
             try:
                 v = need.probe()

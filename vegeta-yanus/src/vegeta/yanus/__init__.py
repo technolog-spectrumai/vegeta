@@ -10,11 +10,11 @@ stamps them. Yanus guards, it never drives: it runs no solver, no script, no not
     ...
     gate.leave()                                  # the promised files written and stamped
 """
-from .contract import Book, Chapter, Env, File, Flow, FlowError, Import, Kind, Need, Notebook, Package, Run, Tool, Unit
+from .contract import AnyOf, Book, Chapter, Env, File, Flow, FlowError, Import, Kind, Need, Notebook, Package, Run, Tool, Unit
 from .gate import Gate, GateClosed, Row, check_chapter, enter
 from .needs import check_need, check_needs
 from .registry import current, find_flow_file, load_flow, use
 
-__all__ = ["Book", "Chapter", "Env", "File", "Flow", "FlowError", "Gate", "GateClosed", "Import", "Kind", "Need", "Notebook", "Package", "Row",
+__all__ = ["AnyOf", "Book", "Chapter", "Env", "File", "Flow", "FlowError", "Gate", "GateClosed", "Import", "Kind", "Need", "Notebook", "Package", "Row",
            "Run", "Tool", "Unit", "check_chapter", "check_need", "check_needs", "current", "enter", "find_flow_file", "load_flow", "use"]
 __version__ = "0.1.0"

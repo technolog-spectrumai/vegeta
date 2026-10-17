@@ -46,6 +46,22 @@ class Package(Need):
 
 
 @dataclass(frozen=True)
+class AnyOf(Need):
+    """One of several needs is enough: ``AnyOf("section backend", Package("neuralfoil"), Tool("xfoil"))``."""
+    options: tuple = ()
+
+    def __init__(self, name: str, *options: Need, why: str = "", fix: str = ""):
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "why", why)
+        object.__setattr__(self, "fix", fix)
+        object.__setattr__(self, "options", tuple(options))
+
+    @property
+    def label(self) -> str:
+        return f"{self.name} ({' or '.join(o.label for o in self.options)})"
+
+
+@dataclass(frozen=True)
 class Env(Need):
     """An environment variable that must be set (its value is not shown)."""
 

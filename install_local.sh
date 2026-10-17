@@ -106,10 +106,10 @@ else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
+step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
-  -e "$ROOT/vegeta-cli[pandas,viz,test,sim]" \
+  -e "$ROOT/vegeta-cli[pandas,viz,test,sim,sections]" \
   mujoco \
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
