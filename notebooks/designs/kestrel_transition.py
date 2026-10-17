@@ -150,7 +150,7 @@ def slipstream(veh: Vehicle, T: float, u: float, w: float, vi0: float | None = N
         va, vn = u, w
         for _ in range(4):
             vi = 0.5 * vi + 0.5 * T / (2 * RHO * A * math.sqrt(max(va + vi, 0.0) ** 2 + vn ** 2 + 1e-9))
-    d = L["x_ac"] - L["prop_x"]
+    d = (panel.get("x_ac", L["x_ac"]) if panel else L["x_ac"]) - (panel.get("prop_x", L["prop_x"]) if panel else L["prop_x"])
     dv = vi * (1 + d / math.sqrt(R ** 2 + d ** 2))
     ua = max(u, 0.0)
     r_s = R * math.sqrt((ua + vi) / max(ua + dv, 1e-6)) if dv > 0 else R
@@ -159,25 +159,34 @@ def slipstream(veh: Vehicle, T: float, u: float, w: float, vi0: float | None = N
     return {"vi": vi, "dv": dv, "r_s": r_s, "blown_span": max(y_out - y_in, 0.0), "y_in": y_in, "y_out": y_out}
 
 
-def _part(veh, u_l, w_l, S, z_w, mu=1.0, phi=0.0):
+def _part(veh, u_l, w_l, S, z_w, mu=1.0, phi=0.0, x_ac=None, cl_scale=1.0, incidence=0.0):
     """Force (body x, z) and moment about the CG of a wing part of area S at height z_w in the local flow (u_l, w_l).
     A panel at the dihedral ``phi`` sees the normal component w cos φ of the vertical flow and gives cos φ of its
-    normal force back as vertical force (the side components of the mirrored panels cancel)."""
+    normal force back as vertical force (the side components of the mirrored panels cancel). ``x_ac``: the part's
+    aerodynamic centre (default the layout's: the biplane's wings share one); ``cl_scale``: a lift-slope factor on the
+    part (a tandem's rear wing in the front's downwash); ``incidence``: the part's own setting angle [rad] (decalage)."""
     L = veh.L
     cph = math.cos(phi)
     w_l = w_l * cph
+    if incidence:                                   # the part's chord line turned by its incidence: rotate the local flow
+        ci, si = math.cos(incidence), math.sin(incidence)
+        u_l, w_l = u_l * ci + w_l * si, -u_l * si + w_l * ci
     V2 = u_l * u_l + w_l * w_l
     if V2 < 1e-8 or S <= 0:
         return 0.0, 0.0, 0.0, 0.0
     a_l = math.atan2(w_l, u_l)
     cl, cd, cm = veh.pol.coefficients(a_l)
+    cl = float(cl) * cl_scale
     qS = 0.5 * RHO * V2 * S
     Vn = math.sqrt(V2)
     dx, dz = u_l / Vn, w_l / Vn                     # drag along the local flow (in the panel's plane)
     lx, lz = -dz, dx                                # lift perpendicular, "up" at α = 0
     Fx = qS * (float(cl) * lx + float(cd) * dx)
     Fz = qS * (float(cl) * lz + float(cd) * dz) * cph
-    rx, rz = L["x_ac"] - veh.x_cg, z_w - veh.z_cg
+    if incidence:                                   # back to the body axes
+        ci, si = math.cos(incidence), math.sin(incidence)
+        Fx, Fz = Fx * ci - Fz * si, Fx * si + Fz * ci
+    rx, rz = (L["x_ac"] if x_ac is None else x_ac) - veh.x_cg, z_w - veh.z_cg
     M = rz * Fx - rx * Fz + qS * L["chord"] * float(cm) * cph
     return Fx, Fz, M, a_l
 
@@ -199,8 +208,9 @@ def airframe_forces(veh: Vehicle, u: float, w: float, T_up: float, T_lo: float, 
         Sb = min(s["blown_span"], pn["y1"] - pn["y0"]) * L["chord"]
         Sf = pn["S"] - Sb
         mu = V / max(V + s["dv"], 1e-6)
-        fb = _part(veh, u + s["dv"], w, Sb, pn["z"], mu, pn["phi"])
-        ff = _part(veh, u, w, Sf, pn["z"], 1.0, pn["phi"])
+        extra = dict(x_ac=pn.get("x_ac"), cl_scale=pn.get("cl_scale", 1.0), incidence=pn.get("incidence", 0.0))
+        fb = _part(veh, u + s["dv"], w, Sb, pn["z"], mu, pn["phi"], **extra)
+        ff = _part(veh, u, w, Sf, pn["z"], 1.0, pn["phi"], **extra)
         Fx += fb[0] + ff[0]; Fz += fb[1] + ff[1]; M += fb[2] + ff[2]
         out["panels"].append({"rotor": pn["rotor"], "slip": s, "S_blown": Sb, "alpha_blown": fb[3], "panel": pn})
         if f"slip_{pn['rotor']}" not in out:
@@ -213,7 +223,7 @@ def airframe_forces(veh: Vehicle, u: float, w: float, T_up: float, T_lo: float, 
             a = math.atan2(w, u)
             N = kf.prop_cn_alpha(T, V, veh.p) * 0.5 * RHO * V * V * L["A_disc"] * math.sin(a)
             Fz += N
-            M += -(L["prop_x"] - veh.x_cg) * N
+            M += -(pn.get("prop_x", L["prop_x"]) - veh.x_cg) * N
     # the pod in cross-flow, at its plan area's centre
     A_pod = L["pod_length"] * L["pod_width"]
     Fp = 0.5 * RHO * veh.cd_pod_cross * A_pod * w * abs(w)
@@ -253,7 +263,7 @@ def elevon_moment_per_rad(veh: Vehicle, u: float, w: float, panels: list) -> tup
         a_b = abs(math.atan2(wn, ub)) if V2 > 1e-8 else 0.0
         eff = float(np.clip(1.0 - (a_b - a_s) / math.radians(30.0), 0.0, 1.0)) if a_b > a_s else 1.0
         dL = 0.5 * RHO * V2 * S_e * veh.pol.cl_alpha * veh.elevon_tau * eff     # per radian, normal to the panel
-        arm = L["x_le"] + 0.6 * L["chord"] - veh.x_cg
+        arm = pn.get("x_le", L["x_le"]) + 0.6 * L["chord"] - veh.x_cg
         pitch += dL * arm * cph
         roll += dL * 0.5 * (y_e + pn["y1"])
     return pitch, roll
@@ -304,7 +314,7 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
     L = veh.L
     V_entry = V_cruise if V_entry is None else V_entry
     m, W, I = veh.mass, veh.weight, veh.Iyy
-    h, zc = veh.z_rotor, veh.z_cg
+    h, zc = max(veh.z_rotor, 1e-6), veh.z_cg          # no vertical lever between the rotors (a flat tandem): the elevons take the pitch
     S = L["S_ref"]
     d = veh.drive
     wind = np.array([-headwind, 0.0])
@@ -474,8 +484,8 @@ def simulate(veh: Vehicle, kind: str = "forward", *, t_tr: float = 3.0, headwind
             Fz_brk = D_b * w / V
         else:
             Fz_brk = 0.0
-        arm_e = L["x_le"] + 0.6 * L["chord"] - veh.x_cg
-        Fz_b = aero["Fz"] + (Mp_rad * delta / arm_e if Mp_rad > 0 else 0.0) + Fz_brk     # the elevons' lift (trailing edge down: up)
+        arm_e = L.get("x_elevator", L["x_le"]) + 0.6 * L["chord"] - veh.x_cg
+        Fz_b = aero["Fz"] + (Mp_rad * delta / arm_e if Mp_rad > 0 and abs(arm_e) > 1e-6 else 0.0) + Fz_brk     # the elevons' lift (trailing edge down: up)
         M_thr = 2 * (-(h - zc) * T_act[0] + (h + zc) * T_act[1])
         M_tot = aero["M"] + M_thr - Mp_rad * delta
         F = Fx_b * bx + Fz_b * bz

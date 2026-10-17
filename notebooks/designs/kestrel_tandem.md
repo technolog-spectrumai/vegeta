@@ -1,7 +1,9 @@
 # Kestrel-Q4T — the tandem-wing Kestrel (design brief, for approval)
 
-> Status: **design, not built**. Nothing in the repository reads this file yet. The plan at the end (§ 8) names the
-> notebook and the workflows that would follow once the shortlist is approved. Numbers below: first principles,
+> Status: **approved — Q4T1N-10 is the design**, compared with Q4T1P-10, Q4T1N-12 and Kestrel-4Q-2. Built in
+> `kestrel_tandem.py` and notebook **46 `46_kestrel_tandem`** (the plan's steps 1–3 and 5); the workflows (step 4, a
+> book `kestrel-tandem`, code T) are todo 5r.24. Where the notebook's numbers differ from the table in § 4 (its
+> drive points, its drag build-up with the pod stretched over both wings), the notebook is the reference. Numbers below: first principles,
 > the project's correlations and the fast comparator's drive and spar rules (`kestrel_fast`, `kestrel_flight`,
 > Boreas); none of it is a solver result. Companion briefs: `kestrel3.md` (4Q-3), `K4Q_vs_X.md` (the X-wing).
 

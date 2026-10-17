@@ -300,4 +300,11 @@ panels, each at its dihedral, height and rotor — the model flies any arrangeme
 `summary_frame`, `trim_table`, `cfd_specs`) and `kestrel_cfd.section_stl` / `section_case` / `section_not_run_table`;
 `kestrel_xwing.py` (notebook 41: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
 `drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
-`cruise`).
+`cruise`). `kestrel_tandem.py` (notebook **46** `46_kestrel_tandem`, brief `kestrel_tandem.md`): the tandem-wing Kestrel-Q4T —
+`VARIANTS` (Q4T1N-10 the design; Q4T1P-10, Q4T1N-12, the flat Q4T1-10 as the control case), `layout` (stagger, gap, the
+low wing's pylons, skids), `mass_table`, `aero` on the staggered lattice with the front wing's decalage (each wing's
+effective slope: the rear's downwash factor), `stall` (the front-first stall rule and the aircraft's CL max), `drag_buildup`,
+`polar`, `drive` (another propeller's table through `kestrel_systems.drive_table_for`), `make_vehicle` (four half-wing
+panels at their own stations for the transition model), `cruise` trimmed by the rear elevator, `takeoff_roll`, `cantilever`,
+`elevator_power`, `front_view` / `side_view`, the CAD `KestrelQ4T` and `export_stl`. `kestrel_transition` panels now take
+`x_ac`, `x_le`, `prop_x`, `cl_scale` and `incidence` (a tandem's wings at different stations); a `z_rotor` of zero is allowed.
