@@ -7,7 +7,8 @@ install (PETSc, MPI), so it lives on `dev_svarog_advanced` and nothing in the ma
 
 ## Install
 
-- **`./install_local.sh`** does it: a micromamba-made conda-forge environment at `.fenicsx/env` with dolfinx, PyVista and
+- **`./install_local.sh`** does it, as its last step (it downloads ~1.5 GB — PETSc, MPI, dolfinx — and takes 3–15 minutes; the
+  solver prints its progress; a Ctrl-C and a rerun resume; `--only-fenicsx` runs just this step, `--no-fenicsx` skips it): a micromamba-made conda-forge environment at `.fenicsx/env` with dolfinx, PyVista and
   ipykernel, the Vegeta packages installed into it without dependencies, registered as the Jupyter kernel **"Python (fenicsx)"**;
   the fenix chapters run their worker in it; every notebook stays on "Python (vegeta)" and reads the runs. `--no-fenicsx` skips it.
 
@@ -58,6 +59,17 @@ the cell model's stall detection says steady and the FEM burns through at 136 s 
 Known difference: the FEM transient has no temperature cap at the failure point (the apparent-capacity band only), so a
 brick that keeps absorbing after its surface boils reads a few hundred kelvin above T_fail where the cell model holds the
 plateau; the ablation timing is unaffected (the removal is by enthalpy). What it will extend to: a 3-D panel with a rib, a beam at an angle, a panel with a liner (the enclosure, MVP M.2).
+
+## Why not one conda environment for all of Vegeta?
+
+It would work: cadquery, gmsh, mujoco, pyvista and dolfinx are all on conda-forge, so one `micromamba create` could hold
+the whole stack and the fenix pipe between two interpreters would vanish. The costs: a 5–6 GB environment and a solve
+of several minutes on every change (today the venv installs in a minute); conda-forge's cadquery/OCP lags the pip wheel
+at times; OpenFOAM and CalculiX stay system packages either way; and nothing runs faster — numpy is numpy, the solvers'
+speed is theirs. The gain is one interpreter. The rule here: the venv stays the home of everything that pip can
+install; conda holds what pip cannot (dolfinx), behind a workflow book so the notebooks never see two interpreters.
+If a second conda-only tool arrives, revisit — a `--conda` mode of install_local.sh that builds one environment with
+everything is a small change then.
 
 ## Where else it pays, in the order Vegeta would use it
 
