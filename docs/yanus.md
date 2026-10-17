@@ -1,6 +1,7 @@
 # Yanus — the door keeper (design, v0 — for review)
 
-> Status: **design only**, nothing implemented. Plan follows after this is approved.
+> Status: **v1 implemented** on `dev_yanus` (plan: `docs/yanus_plan.md`; package: `vegeta-yanus/README.md`).
+> Kestrel first: K1–K11 and notebooks 38, 43, 44. See § 12 for where the implementation differs from this design.
 
 Yanus guards the doors between Vegeta's notebooks and workflows. Like Janus it has two faces: one looks at what
 comes **in** (tools on the machine, prerequisite runs, imported files), one at what goes **out** (the files a
@@ -203,3 +204,27 @@ any runner (never — guard only).
   *Proposed: yes.*
 * **Q5 — Where the registry lives.** `workflows/flow.py` (proposed) vs a top-level `flow.py`.
 * **Q6 — Name in the CLI.** `vegeta yanus …` only, or also a short `yn` alias next to `wf`?
+
+## 12. As implemented (v1) — where it differs from the design above
+
+* **Q1–Q6.** These took the proposed answers:
+  * Schema: an integer schema plus the required keys.
+  * Pins: committed.
+  * Stale input: closes the gate when required; NOT RUN when optional.
+  * A missing promised output fails the run.
+  * Registry: `workflows/flow.py`.
+  * Command line: `yn` and `vegeta yanus`.
+* **Staleness of files.** There is no design-fingerprint check. A file is stale when it changed after it was stamped,
+  or when a stamped file it was made from was rewritten after it. Files written before Yanus are accepted as
+  *unstamped*, and the gate says so.
+* **Chapter prerequisites** take the newest usable run of the prerequisite chapter, as before. Only notebooks pin.
+* **Notebook 43 shows two tables.** The first is the gate table: needs, pins, the prop_lab file. The second is the
+  design's own prerequisite table, built from the pins by `kestrel_study.runs_from_gate`. It has the drive tables,
+  the section polars and the compatibility levels. Everything after § 1 is unchanged.
+  * A screening run of 43 gave a report identical to the committed one, apart from runtimes and the export time.
+* **Gives.** `kestrel_dossier.json` is not declared as a give. Every notebook re-stitches it, so it has no single
+  producer.
+* **`doctor` finds packages; it does not import them.** A module whose import fails on a missing system library
+  (gmsh without libGLU) still reads as found.
+* **The committed exports are not stamped yet.** Stamping them needs 38 to run with OpenFOAM: run without CFD, it
+  rewrites `prop_lab.json` with a NOT RUN listing. Until then the gate reports them as *unstamped* (todo Y.4).

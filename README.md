@@ -21,8 +21,9 @@ Dedalus designs. Talos tests structures. Aeromant tests aerodynamics.
 Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes the engineer's work.
 
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
-`vegeta-core`, **`vegeta-fidia`** and `vegeta-ai` (the provider layer only: keys, model, structured
-output, images, cancellation, usage).
+`vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
+output, images, cancellation, usage) and **`vegeta-yanus`**, the door keeper between notebooks and workflows (every
+unit's needs, takes and gives in `workflows/flow.py`; the gates that check them; `yn status`; `docs/yanus.md`).
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports
@@ -498,6 +499,7 @@ vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeroman
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
+vegeta-yanus/      the vegeta-yanus package: src/vegeta/yanus (contracts, gates, pins, stamps, scaffolds), adds `vegeta yanus` / `yn`
 notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md

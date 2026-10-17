@@ -166,6 +166,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] M.1 The historical Kestrel notebooks `notebooks/old/39_kestrel_tests`, `40_kestrel`, `41_xwing`, `42_kestrel2` are kept unchanged with their outputs; they predate the workflow rule (39 runs the CFD and FEA campaign from its cells, 40 prepares FEA itself). Migrate what is still worth reading into `43_kestrel_study` sections or into workflows (the X-wing comparison as a variant table; the remedy matrix as an optional, longer transition set behind a flag), then retire them — not now
 - [ ] M.2 Apply the workflow rule to the other long-running notebooks (the CFD cells of 09a, 24, 31–36, the MuJoCo benchmarks): each campaign a script under `workflows/<project>/` on `runkit`, the notebook reading the run; `VEGETA_SKIP_OPENFOAM` becomes unnecessary where that is done
 
+## Yanus — the door keeper (branch `dev_yanus`; `docs/yanus.md`, `docs/yanus_plan.md`)
+- [x] Y.1 `vegeta-yanus`: contracts (needs, takes, gives), entry and exit gates, pins, stamps, `yn status|why|doctor|pin|check|stamp|new`
+- [x] Y.2 `workflows/flow.py` the one registry; `library` and `kestrel_campaigns` read it; the scripts' entry gate; `wf run` stops on a missing need
+- [x] Y.3 Notebooks 38, 43, 44 on the gates; 43's `RUNS` dict → `notebooks/pins/43_kestrel_study.json`
+- [ ] Y.4 Stamp the committed exports by running 38 (with OpenFOAM) and 43 through their gates on a solver machine
+- [ ] Y.5 Roll out to the other notebooks: a contract per notebook in `flow.py`, the `designs/data/*.json` links as `File` takes (merlin, falco, nisus, frame_study …), `GATE.leave()` in each
+- [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
+- [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
+
 ## Stage 5s — Zephyr, 2-D wing sections (branch `dev_zephyr`)
 - [x] 5s.1 `vegeta.zephyr`: NACA 4-digit and 5-digit sections (plain and reflexed, the aft reflex adjustable), .dat files, plain flaps; thin-airfoil theory (α₀, Cm_c/4, a flap's τ) validated against Abbott & von Doenhoff; `analyze()` over NeuralFoil (optional, a confidence per point) and XFOIL (on the PATH, the command recorded); `Polar.summary()`, flap sweeps, JSON export; CLI `section/polar/flap/backends`; tests (backends skipped when missing), `docs/zephyr.md`
 - [ ] 5s.2 A section notebook: the candidates for a tailless wing (symmetric, cambered, reflexed) at low Re, NeuralFoil against XFOIL where both exist, the flap data, the Reynolds and n_crit sensitivity

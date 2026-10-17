@@ -44,6 +44,8 @@ def notebook_doc(name: str, *, title: str = "", book: str | None = None) -> dict
             "written by this execution and stamps it (`<file>.yanus.json`) for the notebooks that read it."),
         _code("STAMPS = GATE.leave()\nprint(f\"{len(STAMPS)} output(s) stamped\")"),
     ]
+    for i, c in enumerate(cells):
+        c["id"] = f"{name[:2]}-yanus-{i:02d}"                    # nbformat 4.5 cell ids, stable for the diff
     return {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python (vegeta)", "language": "python", "name": "vegeta"},
                                          "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 5}
 

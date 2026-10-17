@@ -58,7 +58,8 @@ wf status <run>                          # one run: heartbeat, last log lines, a
 wf tail <run>                            # follow its run.log
 wf stop <run>                            # stop it cleanly (finished cases are kept)
 wf resume <run>                          # continue it
-wf notebook <run>                        # the RUNS line to paste into the notebook
+wf notebook <run>                        # the yn pin command that makes a notebook read this run
+yn status | yn why 43 | yn doctor         # Yanus: what is ready, what blocks a notebook and why, what this machine can run
 ```
 
 `<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
@@ -129,13 +130,15 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 ## 4. With the notebook
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
-2. The **first code cell** has a dictionary `RUNS` with the run directories the notebook reads, for example
-   `RUNS["airframe_cfd"]["4Q-2"]["sweep"] = "workflows/runs/kestrel/airframe-stall/<run id>"`. Put your run directories there
-   (the workflow prints the exact line to paste when it finishes).
+2. The run directories the notebook reads are **pinned** in `notebooks/pins/43_kestrel_study.json`, one per
+   chapter and variant. Pin a run with `yn pin 43 K1 --variant 4Q-2 workflows/runs/kestrel/airframe-sweep/<run id>` — the
+   workflow prints the exact command when it finishes, `yn pin 43 --suggest` lists the usable runs on disk (it writes
+   nothing), and `yn why 43` shows the whole gate from the shell before you open the notebook. Which inputs are
+   required and which optional is the notebook's contract in `workflows/flow.py` (`docs/yanus.md`).
 3. Run the notebook. The prerequisite table shows, for every input: required or optional, which run, where it came
    from, whether it is compatible with the current design, and whether it is usable.
    - A **required** input that is missing, unfinished, failed or made for another design stops the notebook with an
-     error that contains the command to run. Run it (section 2), paste the run directory into `RUNS`, run again.
+     error that contains the command to run. Run it (section 2), pin the run directory it prints (`yn pin …`), run again.
    - An **optional** input that is missing shows **NOT RUN** and the notebook's own estimate stands beside it,
      labelled as an estimate.
 4. For a quick look without any solver result: `KESTREL_SCREENING=1 ./jupyter.sh` (or set the variable in the
@@ -154,8 +157,8 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 .venv/bin/python workflows/kestrel/import_legacy.py
 ```
 
-It prints two directories under `workflows/runs/kestrel/airframe-sweep/` (chapter K1) — the ones `RUNS` in the notebook points at by
-default. Replace them as real workflow runs arrive.
+It prints two directories under `workflows/runs/kestrel/airframe-sweep/` (chapter K1) — the ones the notebook's pins point at by
+default. Re-pin (`yn pin 43 K1 --variant 4Q-2 <run>`) as real workflow runs arrive.
 
 ## 6. Order of work recommended now
 
@@ -163,7 +166,7 @@ default. Replace them as real workflow runs arrive.
 2. `wf K2 --variant 4Q-2 --quality fine` (hours): decides CL max, the stall speed and
    whether the wing must grow.
 3. `wf K11 --variant 4Q-2` (under an hour): the frame's and the joint's margins.
-4. Notebook again in its default mode with both run directories in `RUNS`: the validated assessment.
+4. Notebook again in its default mode with both runs pinned (`yn pin 43 K2 …`, `yn pin 43 K11 …`): the validated assessment.
    For a quick *what if* on the design (span, chord, section, propeller, motor, battery, spar) without any solver,
    `44_kestrel_fast.ipynb` compares candidates in about a minute (Zephyr sections, Boreas points, beam rules).
 5. Then `cruise` and `transitions` with the rotor disks, and `38_prop_lab` at fine quality for the propeller.
