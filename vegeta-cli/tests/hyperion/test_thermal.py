@@ -126,3 +126,21 @@ def test_keyhole_rosenthal_and_penetration():
     assert win[0]["v_full_penetration"] > win[1]["v_full_penetration"] or math.isnan(win[1]["v_full_penetration"])
     weak = wd.penetration("mild steel", 30.0, 0.01, 50e-6)
     assert weak["mode"] == "conduction" and "pool_length" in weak
+
+
+def test_backend_dispatch_and_fenicsx_when_present():
+    from vegeta.hyperion import thermal_fenicsx as tf
+    with pytest.raises(ValueError):
+        th.steady_plate(th.ALUMINIUM, 3e-3, 300.0, 0.012, backend="nope")
+    st = th.steady_plate(th.ALUMINIUM, 3e-3, 300.0, 0.012, nr=12, nz=4, r_max=0.06, backend="numpy")
+    assert st["backend"] == "numpy"
+    if not tf.available():
+        with pytest.raises(ImportError):
+            th.steady_plate(th.ALUMINIUM, 3e-3, 300.0, 0.012, backend="fenicsx")
+        pytest.skip("dolfinx not installed: the FEniCSx backend is not exercised here (NOT RUN)")
+    fx = th.steady_plate(th.ALUMINIUM, 3e-3, 300.0, 0.012, nr=24, nz=6, r_max=0.06, backend="fenicsx")
+    assert fx["backend"] == "fenicsx" and fx["converged"]
+    assert fx["T_max"] == pytest.approx(th.steady_plate(th.ALUMINIUM, 3e-3, 300.0, 0.012, nr=24, nz=6, r_max=0.06, backend="numpy")["T_max"], abs=5.0)
+    hot = th.heat_plate(th.BLACK_PC, 5e-3, 1000.0, 0.012, 60.0, nr=20, nz=10, backend="fenicsx")
+    ref = th.heat_plate(th.BLACK_PC, 5e-3, 1000.0, 0.012, 60.0, nr=20, nz=10, backend="numpy")
+    assert hot.failed and hot.failure_time == pytest.approx(ref.failure_time, rel=0.25)

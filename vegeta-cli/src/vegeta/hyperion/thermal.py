@@ -175,12 +175,33 @@ class HeatingResult:
                 "note": self.note}
 
 
+BACKENDS = ("auto", "numpy", "fenicsx")
+
+
+def _backend(backend: str) -> str:
+    """``"auto"``: FEniCSx when dolfinx is installed (the tested finite-element route), else the numpy solver."""
+    if backend not in BACKENDS:
+        raise ValueError(f"backend is one of {BACKENDS}")
+    if backend == "numpy":
+        return "numpy"
+    from . import thermal_fenicsx
+    if thermal_fenicsx.available():
+        return "fenicsx"
+    if backend == "fenicsx":
+        raise ImportError("backend='fenicsx' asked but dolfinx is not installed (docs/fenics.md)")
+    return "numpy"
+
+
 def steady_plate(solid: Solid | str, thickness: float, power: float, radius: float, shape: str = "gaussian", h: float = 10.0, T0: float = T_ROOM,
-                 nr: int = 32, nz: int = 8, r_max: float | None = None, tol: float = 1e-3, max_iter: int = 200_000) -> dict:
+                 nr: int = 32, nz: int = 8, r_max: float | None = None, tol: float = 1e-3, max_iter: int = 200_000, backend: str = "auto") -> dict:
     """The steady state of the same plate under the same beam, without phase change: Jacobi iteration of the conduction
     balance on the r–z grid with the convection and the (linearised) radiation at both faces and the far edge at T0.
     Cheap (a fraction of a second), and the answer to "does it ever get there?": ``T_max`` against the melting or
-    decomposition point — when it stays below, no transient is needed; when it does not, the transient says when."""
+    decomposition point — when it stays below, no transient is needed; when it does not, the transient says when.
+    ``backend`` as in ``heat_plate``: FEniCSx (Newton on the nonlinear radiation) when installed, else this Jacobi iteration."""
+    if _backend(backend) == "fenicsx":
+        from .thermal_fenicsx import steady_plate_fenicsx
+        return steady_plate_fenicsx(solid, thickness, power, radius, shape, h, T0, nr, nz, r_max)
     s = solid if isinstance(solid, Solid) else SOLIDS[str(solid).lower()]
     if r_max is None:
         r_max = max(8.0 * radius, 12.0 * thickness, 0.02)
@@ -224,18 +245,22 @@ def steady_plate(solid: Solid | str, thickness: float, power: float, radius: flo
     damage_T = s.T_melt if s.failure == "melt" else s.T_fail
     return {"T_max": float(T.max()), "T_top_centre": float(T[0, 0]), "T_bottom_centre": float(T[-1, 0]), "damage_T": damage_T,
             "reaches_damage": bool(T.max() >= damage_T), "iterations": it + 1, "converged": change < tol, "T_field": T, "r": r_c,
-            "z": (np.arange(nz) + 0.5) * dz, "transmitted_fraction": s.transmitted(thickness)}
+            "z": (np.arange(nz) + 0.5) * dz, "transmitted_fraction": s.transmitted(thickness), "backend": "numpy"}
 
 
 def heat_plate(solid: Solid | str, thickness: float, power: float, radius: float, t_max: float, shape: str = "gaussian", h: float = 10.0,
                T0: float = T_ROOM, nr: int = 32, nz: int = 8, r_max: float | None = None, stop_at_failure: bool = True, steady_tol: float = 0.02,
-               record_every: float | None = None, max_steps: int = 4_000_000) -> HeatingResult:
+               record_every: float | None = None, max_steps: int = 4_000_000, backend: str = "auto") -> HeatingResult:
     """A plate of ``thickness`` under a beam of ``power`` and ``radius`` for up to ``t_max`` seconds; ``h`` the convection
     on both faces [W/m²/K] (10 still air; the emissivity's radiation is added), the far edge at ``r_max`` (default: the
     larger of 8 radii and 12 thicknesses) held at ``T0``. Explicit finite differences in r and z (``nr`` × ``nz`` cells),
     the enthalpy method for the latent heats, a cell that reaches the failure enthalpy is removed and the beam falls on
     the next. Stops at failure (``stop_at_failure``), at ``t_max``, or once steady (the hottest point moves less than
-    ``steady_tol`` K per second over the last ten seconds and nothing is melting)."""
+    ``steady_tol`` K per second over the last ten seconds and nothing is melting). ``backend``: ``"auto"`` (FEniCSx when
+    installed — the tested finite-element route — else numpy), ``"numpy"``, ``"fenicsx"``."""
+    if _backend(backend) == "fenicsx":
+        from .thermal_fenicsx import heat_plate_fenicsx
+        return heat_plate_fenicsx(solid, thickness, power, radius, t_max, shape, h, T0, nr, nz, r_max, stop_at_failure, record_every=record_every)
     s = solid if isinstance(solid, Solid) else SOLIDS[str(solid).lower()]
     if r_max is None:
         r_max = max(8.0 * radius, 12.0 * thickness, 0.02)

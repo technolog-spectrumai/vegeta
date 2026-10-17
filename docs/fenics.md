@@ -15,6 +15,16 @@ install (PETSc, MPI), so it lives on `dev_svarog_advanced` and nothing in the ma
   from `advanced/runs/` when they exist and says NOT RUN otherwise — the repository's convention for a solver that is
   not on the machine.
 
+## The backend in Hyperion (`hyperion.thermal_fenicsx`)
+
+`thermal.steady_plate(..., backend="auto")` and `thermal.heat_plate(..., backend="auto")` take FEniCSx when dolfinx is
+importable and fall back to the numpy solvers otherwise (`backend="fenicsx"` raises when it is missing; `"numpy"` forces
+the fallback). The FEniCSx steady solve is Newton on the nonlinear radiation; the transient is implicit Euler with the
+apparent-heat-capacity enthalpy method, Picard, and cell deactivation for ablation — the same inputs and the same result
+shapes, so notebook 49 and the guard study switch solvers by installing dolfinx. The test
+`test_backend_dispatch_and_fenicsx_when_present` compares the two on an aluminium steady case (5 K) and a polycarbonate
+burn-through (25 %) and skips (NOT RUN) without dolfinx.
+
 ## The first use: the guard's ablation (`advanced/svarog_ablation_fenicsx.py`, notebook 50)
 
 The barrier under the stray beam as a transient heat problem in r–z with the apparent-heat-capacity enthalpy method
