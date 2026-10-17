@@ -87,6 +87,19 @@ LASER_PC = _add(Solid("laser-safety polycarbonate", 1200, 1250, 0.21, 420, 0.0, 
                       note="dyed for 1 µm (OD 5+): the power is absorbed within the first few tenths of a millimetre"))
 BLACK_PE = _add(Solid("black polyethylene", 950, 2100, 0.42, 400, 2.0e5, 680, 1.2e6, 0.95, 0.9, failure="ablate", note="HDPE, carbon black; melts at 130 °C, decomposes near 400 °C"))
 BRICK = _add(Solid("fired clay brick", 1900, 850, 0.8, 1450, 4.0e5, 2500, 5.0e6, 0.75, 0.9, note="a red facing brick: softens and runs from ~1150 °C; absorptivity of a dull red surface at 1 µm"))
+# the shielding variants of notebook 47 (Svarog III): the same metals with other surfaces, and wood — handbook-class numbers,
+# each an order of magnitude where the surface decides (absorptivity at 1 µm spans 0.08–0.8 on aluminium alone)
+OXIDISED_ALUMINIUM = _add(ALUMINIUM.with_(name="aluminium, oxidised", absorptivity=0.25, emissivity=0.3,
+                                          note="a weathered or sand-blasted 5xxx sheet at 1 µm: 0.2–0.3 (the bare sheet's 0.12 is the polished end)"))
+COATED_ALUMINIUM = _add(ALUMINIUM.with_(name="aluminium, coated", absorptivity=0.7, emissivity=0.9,
+                                        note="a painted or dark-anodised sheet: the coating absorbs 0.5–0.8 at 1 µm and chars first; the metal under it conducts as bare aluminium"))
+WOOD = _add(Solid("softwood (spruce)", 450, 1600, 0.12, 573, 0.0, 673, 1.0e6, 0.6, 0.9, failure="ablate",
+                  note="dry spruce/pine board across the grain: ρ 400–500, k 0.10–0.14 (Wood Handbook); pyrolysis from ~300 °C (T_melt as the char point), "
+                       "piloted ignition ≈ 300–400 °C, unpiloted ≈ 400 °C (T_fail); absorptivity 0.5–0.7 at 1 µm (pale wood reflects); L_fail the pyrolysis heat"))
+PLYWOOD = _add(WOOD.with_(name="plywood", rho=550, k=0.13, note="birch/spruce plywood: ρ 500–650, the glue lines add little; delaminates and chars as the solid board does"))
+FR_WOOD = _add(WOOD.with_(name="fire-retardant wood", rho=500, absorptivity=0.6,
+                          note="a retardant-treated board (phosphate/borate): the same heating as untreated wood — the treatment lowers flame spread and raises the piloted-ignition "
+                               "flux, not the laser's local heating; its benefit needs the product's test report (EN 13501-1 class), not a conduction model"))
 
 
 def solid(name: str | Solid) -> Solid:

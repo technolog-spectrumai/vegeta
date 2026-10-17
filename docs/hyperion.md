@@ -74,9 +74,15 @@ unabsorbed pump), `threshold()` (the small-signal round trip reaching 1), `power
 
 **Heat** (`thermal.py`): `Solid` (ρ, c, k, T_melt/L_melt, T_fail/L_fail, absorptivity at 1 µm, emissivity, an absorption
 depth for a partly transparent material, the failure mode melt/ablate) with `MILD_STEEL`, `STAINLESS`, `ALUMINIUM`,
-`BLACK_PC`, `CLEAR_PC`, `LASER_PC`, `BLACK_PE`, `BRICK`; the closed forms `semi_infinite_surface_rise`, `thin_plate_time_to`,
+`BLACK_PC`, `CLEAR_PC`, `LASER_PC`, `BLACK_PE`, `BRICK`, and the shielding variants `OXIDISED_ALUMINIUM`, `COATED_ALUMINIUM`, `WOOD`,
+`PLYWOOD`, `FR_WOOD`; the closed forms `semi_infinite_surface_rise`, `thin_plate_time_to`,
 `gaussian_steady_rise`; `steady_plate` (Jacobi on the r–z grid with convection and linearised radiation) and `heat_plate`
 (explicit enthalpy-method transient with ablation, the surface-damage and burn-through times, `HeatingResult.survives(t)`).
+
+**Welding** (`welding.py`) adds the thin sheet: `rosenthal_thin_plate` / `thin_plate_field` (the 2-D moving line source with
+K₀ in numpy: the pool's width and length, the solidification time, the peak temperature across the weld, the gradient at the
+fusion line), `cooling_time_t85` (Rykalin's thin- and thick-plate forms with EN 1011-2's critical thickness), `cooling_rate_at`
+(Adams), `haz_width` (an isotherm beyond the melt).
 
 **Welding** (`welding.py`): `DeliveryFibre` (BPP, M², its beam), `WeldHead` (spot, cone, collimated radius, Rayleigh
 length), `keyhole_threshold`, `rosenthal_pool`, `penetration` / `penetration_curve` / `speed_for_penetration` /

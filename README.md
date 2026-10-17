@@ -55,7 +55,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
 | Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
-| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_fiber` |
+| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_iii` |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
@@ -116,6 +116,21 @@ runs (FEniCSx in its own interpreter, `workflows/fenix/`) against the cell model
 two 1 kW modules beam-combined into a 100 µm fibre (M² 18, a 200 µm spot) or one stage on 400 W pump modules (2 kW through
 one 30/250 fibre, SRS margin 3.5×) — with the welds at 2 kW and the guard re-screened (1.5 mm steel still holds, at 1440 K).
 What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
+
+`47_svarog_iii` (branch `dev_svarog_iii`) is **Svarog III**, four commercial 1070 nm fibre lasers — IPG YLS-SM, Coherent
+FL2000C and FL2000CSM, nLIGHT WFL-3000 — on the same Hyperion physics (`designs/svarog_commercial.py`): their published limits
+verbatim with the unknowns kept (`designs/data/svarog_commercial_specs.json`), the beam each implies (BPP ⇄ M², the fibre by
+étendue, the core imaged or the embedded Gaussian through Svarog's head, the collimated beam's growth), the energy balance as
+bounded intervals with a sensitivity table, the thin-sheet welds in steel and aluminium at 1, 2, 3 mm (the keyhole threshold,
+the speed with a margin, the thin-plate Rosenthal field — pool, solidification, t8/5 or cooling rate, HAZ, a distortion index —
+all unvalidated and said so), and a shielding assessment at 5–100 m against polycarbonate, aluminium and wood in three surfaces
+each (60 base cases, 180 with the variants, the reflected beam too): the MPE, the NOHD, the OD ladder, the transmitted and
+reflected shares, non-destructive thermal bounds, wood's fire risk, seams and degraded sheets, and — recorded by a script, as 46's
+cell model — how long PC, steel and aluminium sheets at 1–3 mm stand the beam at each distance, with the welding speed, the
+cost per metre of weld, the shield an escape needs per thousand euro of source and the escape seconds per euro of panel on sourced
+economic parameters (listings, Eurostat) — and verdicts PASS / FAIL /
+INCOMPLETE in which PASS needs certified evidence, so none appears. Book fenix's F4 `shield-steady` runs the same panels by
+finite elements on request; the record is `reports/47_svarog_iii.json`.
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a

@@ -10,8 +10,12 @@ Book ``fenix`` (code F). Chapters: ``guard-steady`` — every barrier's steady s
 the nonlinear radiation; seconds each); ``guard-ablation`` — the transient with melting and ablation for the pairs the
 closed-form screening of ``svarog_industrial`` could not decide (the plastics, the brick, the thin steel); ``sheet-distance`` —
 the reference 2 mm polycarbonate sheet (1200 kg/m³, 60 × 60 cm, its edge the cold boundary) under the collimated beam at
-10, 20, 50, 100 and 200 m. Variants:
-``1kW`` and ``2kW``, the delivered power of notebooks 48 and 51. ``--quality screening`` halves the mesh and lengthens
+10, 20, 50, 100 and 200 m; ``shield-steady`` (Svarog III, notebook 47) — the nine shielding panels of ``svarog_commercial``
+(polycarbonate clear/opaque/certified, aluminium bare/oxidised/coated, wood solid/plywood/fire-retardant) under a laser's
+raw collimated beam at 5, 10, 20, 50 and 100 m, **steady state only**: the non-destructive response — no transient, no
+burn-through time is ever computed for it. Variants: ``1kW`` and ``2kW``, the delivered power of notebook 46's devices, and
+the four commercial lasers ``YLS-SM``, ``FL2000C``, ``FL2000CSM``, ``WFL-3000`` of notebook 47 (their delivered power from
+the published limits and the head's optical efficiency). ``--quality screening`` halves the mesh and lengthens
 the time step (auto mode); ``fine`` is 48 × 16 cells through the plate.
 
 The worker is ``_worker.py``, launched with the fenicsx interpreter (``VEGETA_FENICSX_PYTHON``, else
@@ -39,7 +43,9 @@ import library  # noqa: E402
 WORKFLOW = "plate_thermal"
 BOOK = "fenix"
 KIND = "thermal"
-VARIANTS = {"1kW": 933.0, "2kW": 1811.0}                         # delivered to the head: notebooks 48 and 51 (their reports override when present)
+VARIANTS = {"1kW": 933.0, "2kW": 1811.0, "YLS-SM": None, "FL2000C": None, "FL2000CSM": None, "WFL-3000": None}   # 1kW/2kW: delivered to the head per notebook 46's report (these numbers when it is absent); the commercial lasers: svarog_commercial
+SVAROG_VARIANTS = ("1kW", "2kW")
+COMMERCIAL_VARIANTS = ("YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000")
 QUALITY = {"screening": {"nr": 24, "nz": 8, "dt_scale": 2.0, "t_max": 600.0}, "fine": {"nr": 48, "nz": 16, "dt_scale": 1.0, "t_max": 3000.0}}
 WORKER = Path(__file__).resolve().parent / "_worker.py"
 
@@ -65,8 +71,17 @@ def probe() -> str | None:
     return f"dolfinx {out.stdout.strip()} ({py})" if out.returncode == 0 else None
 
 
+def _commercial():
+    import svarog_commercial
+    return svarog_commercial
+
+
 def power_of(variant: str) -> float:
-    """The delivered power of the variant from notebook 46's record when it exists, else the recorded number."""
+    """The delivered power of the variant: notebook 46's record when it exists (else the recorded number) for the Svarog
+    devices; the published power through the head's optical efficiency for the commercial lasers."""
+    if variant in COMMERCIAL_VARIANTS:
+        sc = _commercial()
+        return float(sc.optics(sc.LASERS[variant])["delivered_W"])
     p = ROOT / "notebooks/designs/data/reports/46_svarog.json"
     if p.exists():
         d = json.loads(p.read_text()).get("industrial", {}).get(variant, {})
@@ -75,11 +90,21 @@ def power_of(variant: str) -> float:
     return VARIANTS[variant]
 
 
-def fingerprint(variant: str) -> dict:
+def collimated_beam(variant: str, distance: float):
+    """The variant's raw collimated beam at ``distance`` (an ``svarog_industrial.StrayBeam``)."""
+    if variant in COMMERCIAL_VARIANTS:
+        sc = _commercial()
+        return sc.stray_beam(sc.LASERS[variant], distance, "collimated")
     import svarog_industrial as si
     delivery = si.DELIVERY_100 if variant == "2kW" else si.DELIVERY
-    beam = si.stray_beams(power_of(variant), delivery=delivery)[0]
-    return {"variant": variant, "power_W": round(beam.power, 1), "beam_radius_m": round(beam.radius, 5), "barriers": [b.name for b in si.BARRIERS]}
+    return si.stray_beams(power_of(variant), distance=distance, delivery=delivery)[0]
+
+
+def fingerprint(variant: str) -> dict:
+    import svarog_industrial as si
+    beam = collimated_beam(variant, si.DISTANCE)
+    barriers = [b.name for b in si.BARRIERS] if variant in SVAROG_VARIANTS else [s.name for lst in _commercial().SHIELDS.values() for s in lst]
+    return {"variant": variant, "power_W": round(beam.power, 1), "beam_radius_m": round(beam.radius, 5), "barriers": barriers}
 
 
 def compatible(expected: dict | None, found: dict | None, chapter=None) -> dict:
@@ -98,10 +123,22 @@ def compatible(expected: dict | None, found: dict | None, chapter=None) -> dict:
 def cases_of(campaign: str, variant: str, quality: str) -> list[dict]:
     """The chapter's cases: one JSON spec each (the worker's input)."""
     import svarog_industrial as si
-    delivery = si.DELIVERY_100 if variant == "2kW" else si.DELIVERY
-    beam = si.stray_beams(power_of(variant), delivery=delivery)[0]                 # the raw collimated beam: the worst case decides
     q = QUALITY[quality]
     out = []
+    if campaign == "shield-steady":                                                   # Svarog III: every shielding panel, every distance, the steady state only
+        sc = _commercial()
+        for lst in sc.SHIELDS.values():
+            for sh in lst:
+                for d in sc.SHIELD_DISTANCES:
+                    bm = collimated_beam(variant, d)
+                    out.append({"name": f"{si_slug(sh.family + '_' + sh.variant)}_at_{int(d)}m", "mode": "steady", "material": sh.solid.name, "thickness": sh.thickness, "power": bm.power,
+                                "radius": bm.radius, "shape": bm.shape, "h": 10.0, "nr": q["nr"], "nz": q["nz"], "r_max": max(8 * bm.radius, 12 * sh.thickness, 0.3), "quality": quality,
+                                "distance_m": d, "family": sh.family, "variant": sh.variant})
+        return out
+    if variant not in SVAROG_VARIANTS:
+        raise SystemExit(f"chapter {campaign} takes the Svarog variants {SVAROG_VARIANTS}; {variant} is a commercial laser of shield-steady")
+    delivery = si.DELIVERY_100 if variant == "2kW" else si.DELIVERY
+    beam = si.stray_beams(power_of(variant), delivery=delivery)[0]                 # the raw collimated beam: the worst case decides
     for b in si.BARRIERS:
         base = {"material": b.solid.name, "thickness": b.thickness, "power": beam.power, "radius": beam.radius, "shape": beam.shape, "h": 10.0,
                 "nr": q["nr"], "nz": q["nz"] if b.thickness < 0.02 else q["nz"] + 8, "r_max": si._r_max(beam.radius, b.thickness), "quality": quality}

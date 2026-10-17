@@ -65,7 +65,11 @@
      "--variant",
      [
       "1kW",
-      "2kW"
+      "2kW",
+      "YLS-SM",
+      "FL2000C",
+      "FL2000CSM",
+      "WFL-3000"
      ],
      "1kW"
     ],
@@ -167,7 +171,11 @@
    "design": "notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
    "variants": [
     "1kW",
-    "2kW"
+    "2kW",
+    "YLS-SM",
+    "FL2000C",
+    "FL2000CSM",
+    "WFL-3000"
    ],
    "chapters": {
     "guard-steady": {
@@ -183,6 +191,11 @@
     "sheet-distance": {
      "kind": "thermal",
      "campaign": "sheet-distance",
+     "prerequisites": []
+    },
+    "shield-steady": {
+     "kind": "thermal",
+     "campaign": "shield-steady",
      "prerequisites": []
     }
    }

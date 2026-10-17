@@ -328,3 +328,15 @@ core rise per cooling, the stripper, the process fibre, the head's lenses), `DEL
 20 m), `BARRIERS`, `screen` (the closed-form and steady-solve triage), `simulate`, `verdict`, `guard_study`,
 `design_record`. `svarog_industrial_drawings.py` draws the penetration curves and windows, the stray beam against
 distance, the guard's timeline against the IEC 60825-4 classes, a barrier's transient and field.
+
+`svarog_commercial.py` (notebook 47, branch `dev_svarog_iii`) is **Svarog III**, four commercial fibre lasers on Hyperion
+(`import svarog_commercial as sc`): `Spec` / `LASERS` (the published limits, unknowns as `None`), `ASSUMPTIONS` (every number
+the sheets do not give, with its range), `optics` / `optics_table` / `beam_radius_at` (BPP ⇄ M², the fibre class, the core
+imaged against the embedded Gaussian through `si.HEAD`), `energy_balance` / `energy_table` / `energy_sensitivity`,
+`SHEET_MATERIALS` / `weld_case` / `welding_cases` / `welding_table` / `welding_uncertainty` (the thin-plate Rosenthal field
+and its cooling, HAZ and distortion indicators), `SHIELDS` / `shield_cases` / `shield_case` (`stray_beam`, `mpe_eye_1070`,
+`mpe_skin_1070`, `nohd`, `od_required`, `thermal_response`, `fire_risk`, `seam_leak`, `verdict`), `verdict_matrix`,
+`degraded_sensitivity`, `endurance` / `endurance_record` / `load_endurance` (the hold times, made by `--endurance`), `ECON` / `econ_table` / `capex` / `opex_per_hour` / `cost_per_metre` /
+`shield_economics` (sourced economic parameters; `PRICES` / `speed_per_keur` / `shield_for_escape` / `escape_per_keur` the first allowances), `record` / `write_csvs`. `svarog_commercial_drawings.py` draws the beam quality against the limits,
+the stray beams against distance, the Gaussian against the imaged core, the energy budgets, the thin-plate fields, the welding
+comparison, the exposure against the MPE, the barrier indicator against distance and the verdict matrices.

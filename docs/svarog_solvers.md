@@ -69,6 +69,41 @@ Of 33 (barrier, beam) pairs, 6 are simulated; the others are decided by the boun
 bound decided each. The absorptivity of the barrier at 1 µm (bare aluminium 0.12, painted or oxidised up to 0.5) is the
 input to vary before trusting a verdict near a class boundary; the standard's test on the panel is the confirmation.
 
+## 47 — Svarog III (`svarog_commercial.py`, notebook 47)
+
+Closed forms only, under a minute; nothing is optimised and nothing is destroyed.
+
+1. **The specs** from `designs/data/svarog_commercial_specs.json` into frozen `Spec`s; `None` is Unknown and is never
+   filled; consistency checks (M² ⇄ BPP against the mode; cooling capacity against the electrical maximum's waste heat).
+2. **Optics** per laser (`optics`): the fibre class by étendue, the spot two ways (core imaged / embedded Gaussian) with
+   the regime by M² ≤ 1.5, the collimated beam's radius and growth, the optical efficiency to the work as a range, the
+   stability band. `beam_radius_at(opt, d, kind)` is what the shielding uses.
+3. **Energy** (`energy_balance`): (low, nominal, high) triples from the extreme combinations of the named `ASSUMPTIONS`
+   (diode, driver and optical efficiencies, auxiliaries, COP, power factor), capped by the published maximum; a
+   sensitivity table moves one assumption at a time.
+4. **Welds** (`weld_case` × 2 materials × 3 thicknesses): `wd.keyhole_threshold`, `wd.speed_for_penetration` at 1.2 ×
+   the thickness (the speed's interval over the absorptivity and melting-efficiency ranges), `wd.rosenthal_thin_plate`
+   (K₀ in numpy, A&S 9.8.5–9.8.6; the isotherms by bisection), `wd.cooling_time_t85`, `wd.cooling_rate_at`,
+   `wd.haz_width`, the distortion index, the humping and marginal-keyhole flags; every row `validated = False`.
+5. **Shielding** (`shield_cases`: 4 lasers × 5 distances × 3 families = 60 base rows; 180 with the variants; the
+   reflected beam doubles them): per row the irradiance against `mpe_eye_1070` / `mpe_skin_1070`, `nohd`, `od_required`
+   (EN 207's LB ladder), `thermal_response` (the semi-infinite rise at T1 and T2, the lumped plate at T1,
+   `si.plate_steady_bound` — the smallest over the damage rise as `bound_ratio`), `fire_risk` for wood, `seam_leak`,
+   the evidence the panel would need; `verdict` → PASS only with `evidence == "certified"`, FAIL for > 1 % transmission
+   or a seam, INCOMPLETE otherwise. No `heat_plate`, no burn-through time: a simulation cannot certify a barrier.
+6. **Endurance** (`endurance`, 46 Part IV §3's route for the commercial lasers: `si.screen` → `th.heat_plate` only
+   where undecided → `si.verdict`): black PC, mild steel and aluminium at 1, 2, 3 mm against 5–100 m, `holds_s` and the
+   T1/T2/T3 classes — minutes per laser, so `python designs/svarog_commercial.py --endurance` records it in
+   `designs/data/svarog_commercial_endurance.json` and the notebook only reads it (NOT RUN otherwise). A design number,
+   kept out of the verdicts. On it and the sourced economic parameters (`economics` in the specs file: capex ranges from
+   listings, Eurostat electricity and labour, argon, diode life, sheet prices — each with its source or marked assumed):
+   `capex`, `opex_per_hour`, `cost_per_metre` (arc-on time over the model speed) and `shield_economics` (the thinnest
+   recorded sheet that holds 1, 3, 5 s, its cost per m² and per k€ of source; escape seconds per euro of panel).
+7. **F4** (`fenix` chapter `shield-steady`): the same panels' steady states by finite elements, run only by
+   `wf run F4 --variant <laser>`; the notebook cross-references the runs when they exist and says NOT RUN otherwise.
+8. **The record** `reports/47_svarog_iii.json` (specs verbatim, assumptions, standards with "verify the edition",
+   every section, `validation_open`) and the matrices as CSV under `output/47_svarog_iii/`.
+
 ## One notebook, and Yanus
 
 `46_svarog.ipynb` holds the series per topic: Part I the rod, Part II the fibre laser, Part III the industrial lasers —
@@ -92,7 +127,7 @@ producer that fails is NOT RUN, never a crash. `yn auto 48 --dry-run` prints the
 ## fenix — the finite-element chapters (book F)
 
 The same plates in FEniCSx, as workflow chapters (`workflows/fenix/plate_thermal.py`, `docs/fenics.md`): F1 the steady
-states, F2 the ablation transients, F3 the reference 2 mm PC sheet at 10–200 m; variants 1kW and 2kW; a dolfinx worker
+states, F2 the ablation transients, F3 the reference 2 mm PC sheet at 10–200 m, F4 Svarog III's nine shielding panels at 5–100 m (steady only); variants 1kW and 2kW, and the four commercial lasers of notebook 47 for F4; a dolfinx worker
 per case in the fenicsx interpreter, a run directory per chapter. Notebooks 49 and 51 take them (optional; auto mode
 makes them in screening quality) and tabulate FEM against the cell model. The air's loss on the way
 (`hyperion.atmosphere`, Kruse–Kim on the visibility) is in the same sections: ≤ 1 % on a clear day at 200 m, 13 % in a
@@ -106,3 +141,4 @@ dusty town, 93 % in fog.
 | 47 | length sweep, coupler table, power curve, amplifier sweep, two profiles | ~20 s |
 | 48 | power-stage sweep, pump bisection, budget, welds | ~15 s |
 | 49 | 33 screenings, ~10 steady solves, ~6 transients | ~1–2 min |
+| 47 (Svarog III) | 4 optics and energy balances, 24 thin-plate weld cases, 360 shielding rows | ~30 s |

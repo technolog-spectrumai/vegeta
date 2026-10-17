@@ -92,20 +92,22 @@ def _fenix():
 
 fenix = flow.book("fenix", "F", title="fenix — Svarog's guard plates by finite elements (FEniCSx in its own interpreter, a process pipe per case)",
                   design="notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
-                  variants=("1kW", "2kW"), fingerprint=lambda v: _fenix().fingerprint(v), compatible=lambda e, f, ch=None: _fenix().compatible(e, f, ch),
+                  variants=("1kW", "2kW", "YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000"), fingerprint=lambda v: _fenix().fingerprint(v), compatible=lambda e, f, ch=None: _fenix().compatible(e, f, ch),
                   describe=lambda: {"guard-steady": "every barrier's steady state under the collimated beam", "guard-ablation": "the transients the screening could not decide",
-                                    "sheet-distance": "the reference 2 mm PC sheet, 60 × 60 cm, at 10–200 m"})
+                                    "sheet-distance": "the reference 2 mm PC sheet, 60 × 60 cm, at 10–200 m",
+                                    "shield-steady": "Svarog III: the nine shielding panels at 5–100 m under a commercial laser, steady state only (no burn-through)"})
 
 fenix.kind("thermal", title="plate heat transfer — steady state and the ablation transient (FEniCSx: dolfinx, PETSc)", script="workflows/fenix/plate_thermal.py",
            workflow="plate_thermal", needs=[Tool("fenicsx", why="the finite-element solver, in its own conda-forge interpreter", fix="./install_local.sh (or --fenicsx-prefix), or VEGETA_FENICSX_PYTHON=…; docs/fenics.md",
                                                  probe=lambda: _fenix().probe()), Package("vegeta.hyperion")],
            needs_text="the fenicsx interpreter (.fenicsx/env or VEGETA_FENICSX_PYTHON)", time="steady: seconds a case; ablation: 10 s – 2 min a case",
-           options=[("--variant", ("1kW", "2kW"), "1kW"), ("--quality", ("screening", "fine"), "fine")],
+           options=[("--variant", ("1kW", "2kW", "YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000"), "1kW"), ("--quality", ("screening", "fine"), "fine")],
            screening=("--quality", "screening"))
 
 fenix.chapter("guard-steady", kind="thermal", campaign="guard-steady")                                   # F1
 fenix.chapter("guard-ablation", kind="thermal", campaign="guard-ablation")                               # F2
 fenix.chapter("sheet-distance", kind="thermal", campaign="sheet-distance")                               # F3: the 2 mm PC sheet at 10–200 m
+fenix.chapter("shield-steady", kind="thermal", campaign="shield-steady")                                 # F4: Svarog III's shielding panels, steady state only
 
 
 # ================================================================================================= notebooks
@@ -145,6 +147,14 @@ flow.notebook("46_svarog", title="Svarog — from the Nd:YAG rod to the 1 kW wel
                      File(f"{DATA}/svarog_industrial_design.json", keys=("kind", "design")),
                      File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions", "fibre", "industrial", "guard", "air"))],
               screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: the fenix runs it takes are made in screening quality when the fenicsx interpreter exists
+
+flow.notebook("47_svarog_iii", title="Svarog III — four commercial fibre lasers on Hyperion: optics, energy balance, thin-sheet welds, shielding at 5–100 m",
+              needs=[Package("vegeta.hyperion")],
+              takes=[Data(f"{DATA}/svarog_commercial_specs.json", keys=("lasers",), note="the published limits, verbatim (unknowns stay null)"),
+                     Data(f"{DATA}/svarog_commercial_endurance.json", required=False, keys=("meta", "rows"), note="the sheets' hold times (python designs/svarog_commercial.py --endurance; minutes per laser)"),
+                     File(f"46_svarog:{DATA}/reports/46_svarog.json", keys=("industrial", "guard")),
+                     *[Run("fenix/shield-steady", variant=v) for v in ("YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000")]],
+              gives=[File(f"{DATA}/reports/47_svarog_iii.json", keys=("meta", "specs", "optics", "energy", "welding", "shielding", "endurance", "validation_open"))])   # nothing is rerun silently: the F4 runs are optional takes
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],

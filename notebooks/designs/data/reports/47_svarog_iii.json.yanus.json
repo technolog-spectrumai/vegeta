@@ -1,0 +1,31 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "47_svarog_iii.json",
+ "git": "a2e2280e5d20",
+ "inputs": [
+  {
+   "key": "data:notebooks/designs/data/svarog_commercial_specs.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/svarog_commercial_specs.json",
+   "sha256": "085fcfe4afd95456f40145b873d96c2bc56eef43d0536a9efef4290aabd28f7e"
+  },
+  {
+   "key": "46_svarog:notebooks/designs/data/reports/46_svarog.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/reports/46_svarog.json",
+   "sha256": "6947af066dd4c51c41217805dd7398de43b0880f6ab5618405f6e43a7545b6fa"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.hyperion": "found"
+ },
+ "producer": "47_svarog_iii",
+ "schema": null,
+ "sha256": "050a40f7a08f561076b8320386bb3bd9646035d4de150ed55419695271ba4c25",
+ "size": 706000,
+ "written_at": "2026-10-17T20:53:19Z",
+ "written_ts": 1792270399.6375408,
+ "yanus": 1
+}

@@ -69,6 +69,35 @@ simulation: it reaches ~1250 K and creeps; the steady solve says it never melts.
 The stray beam is the reason the laser's enclosure exists; the guard's structure (the panel's own stiffness, its mounts)
 is a sheet-metal question, not a laser one, and is skipped on purpose.
 
+## 47 — Svarog III: four commercial lasers on the same physics
+
+The published limits of four 1070 nm lasers (IPG YLS-SM 2 kW single-mode; Coherent FL2000C multimode and FL2000CSM
+single-mode, 2 kW; nLIGHT WFL-3000 multimode, 3 kW) are read as limits and their unknowns kept. **Beam**: BPP = M² λ/π
+ties the two beam-quality columns (0.37–2.5 mm·mrad ⇔ M² 1.1–7.3); the BPP picks the smallest fibre whose r·NA holds it;
+through Svarog's 100/200 head a multimode beam *images its core* (a 100 µm spot at 60 mrad: geometric optics) and a beam
+of M² ≲ 1.5 focuses as its *embedded Gaussian* (w₀ = M² λ f/πW: ~10 µm, hundreds of MW/cm² — a cutting beam); the
+collimated beam W = NA·f_c grows by the larger of r_core/f_c and M²λ/πW per metre. **Energy**: electrical in =
+P/(η_diode η_driver η_optical) + auxiliaries, bounded by the published maximum where there is one; waste heat = in − out,
+checked against the published cooling capacity (the Coherent pair: 4.2 kW of heat under 4.4 kW of chiller); where
+nothing is published the assumptions' ranges give an interval and the diode efficiency moves it most. **Welds**: the
+thin-plate (line-source) Rosenthal field `[Rosenthal 1946, Rykalin]`, T − T₀ = q/(2πkd) e^(−vξ/2κ) K₀(vr/2κ), is the
+sheet's regime (EN 1011-2's two-dimensional flow): the pool's width and length, the solidification time, the gradient at
+the fusion line, t8/5 = (Q/d)²(1/(773−T₀)² − 1/(1073−T₀)²)/(4πkρc) for steel and Adams' cooling rate
+2πkρc(d/Q)²(T−T₀)³ for aluminium, the HAZ as the Ac1 (steel) or over-ageing (aluminium) isotherm beyond the melt, and
+angular distortion ∝ Q/d² `[Watanabe & Satoh]` as an index — all on the keyhole absorptivity and the melting efficiency,
+whose ranges span the speed by ×3; none of it validated. **Shielding**: at 5–100 m the raw collimated beam is centimetres
+wide and 10²–10⁶ times the eye's MPE (50 W/m² from 10 s on, 90 t^−0.25 W/m² below it, 1050–1400 nm, `[IEC 60825-1]`);
+the nominal ocular hazard distance of a collimated kilowatt is kilometres, of the diverging reflection tens of metres. A
+barrier's question is not how long it lasts but whether it can be shown to protect: clear polycarbonate transmits (FAIL);
+bare aluminium reflects nine tenths elsewhere; wood sits above its piloted-ignition flux (10–13 kW/m²); the bounds that
+never model damage (the semi-infinite rise at T1/T2, the lumped plate, the steady bound with the edge cold) say what
+cannot be reached and never what holds — so every opaque, certified, metal and wood panel is INCOMPLETE until its
+EN 12254 level or IEC 60825-4 test covers the irradiance and the exposure class. Distance never establishes safety.
+Apart from the verdicts, the guard designer's number — how long a sheet buys — is 46's cell model asked again: black
+polycarbonate at 1–3 mm is through in seconds to tens of seconds at any of the five distances (T1 at best, far out), 1 mm
+steel burns through inside ~20 m and 2 mm inside ~10 m under 2 kW while 3 mm never melts, and aluminium at any thickness
+holds by its steady bound — it reflects nine tenths and conducts the rest.
+
 ## References
 
 The numbered sources are in [hyperion_physics.md](hyperion_physics.md#references). The device-level ones:
@@ -81,6 +110,7 @@ The numbered sources are in [hyperion_physics.md](hyperion_physics.md#references
   J. Opt. Soc. Am. B 27, B63 (2010) — the fibre MOPA architecture and its limits.
 - C. Jauregui, J. Limpert, A. Tünnermann, "High-power fibre lasers", Nature Photonics 7, 861 (2013).
 - W. M. Steen, J. Mazumder, *Laser Material Processing*, 4th ed., Springer (2010) — keyhole welding, process windows.
+- IEC 60825-1, Safety of laser products — Part 1: equipment classification and requirements (the MPE tables; the edition the constants were read from is named in `svarog_commercial.STANDARDS` — verify); EN 12254 (screens for laser working places), EN 207 (eye protectors), ISO 11553-1 (laser processing machines)
 - IEC 60825-4, *Safety of laser products — Part 4: Laser guards* — the exposure classes T1/T2/T3 and the test method.
 - R. Hoffmann et al., "Laser guards for high-power lasers: protection times of passive guards", J. Laser Appl. — the
   measured burn-through of steel and aluminium panels the calculation is compared with when a test is run.
