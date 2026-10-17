@@ -10,6 +10,7 @@ Hyperion computes what the engineer names — the elements, their spacings, the 
 labels nothing as true: a paraxial Gaussian is the first description of a beam; apertures, aberrations and the
 real pump profile come after it (the physical-optics and ray-tracing stages are on the to-do list).
 """
+from .atmosphere import ATMOSPHERES, Atmosphere, aerosol_attenuation, kruse_q, transmission_table
 from .beam import BeamTrace, GaussianBeam, lens_for_waist, propagate_q, q_from, spot_from, trace
 from .elements import (INF, BrewsterPlate, CurvedMirror, Element, FlatMirror, FreeSpace, Interface, Slab, ThermalLens, ThickLens,
                        ThinLens, Train, abcd_power, element_from_dict, is_mirror)
@@ -27,6 +28,7 @@ from .welding import DeliveryFibre, WeldHead, keyhole_threshold, penetration, pe
 __version__ = "0.1.0"
 
 __all__ = [
+    "ATMOSPHERES", "Atmosphere", "aerosol_attenuation", "kruse_q", "transmission_table",
     "AIR_STP", "ActiveFibre", "BK7", "BeamTrace", "BrewsterPlate", "CommandRecord", "CurvedMirror", "Dopant", "Element", "FUSED_SILICA", "Fibre",
     "FibreAmplifier", "FibreLaser", "FibreOscillator", "FibreSolution", "FlatMirror", "FreeSpace", "GainMedium", "GaussianBeam", "INF", "Interface", "Laser",
     "MATERIALS", "Material", "Mode", "ND_YAG", "Resonator", "Result", "ResultError", "Rod", "SAPPHIRE", "Slab", "ThermalLens", "ThickLens",

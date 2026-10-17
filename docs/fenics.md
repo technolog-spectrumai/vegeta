@@ -7,17 +7,20 @@ install (PETSc, MPI), so it lives on `dev_svarog_advanced` and nothing in the ma
 
 ## Install
 
+- **`./install_local.sh`** does it: a micromamba-made conda-forge environment at `.fenicsx/env` with dolfinx, PyVista and
+  ipykernel, the Vegeta packages installed into it without dependencies, registered as the Jupyter kernel **"Python (fenicsx)"**;
+  the fenix chapters run their worker in it; every notebook stays on "Python (vegeta)" and reads the runs. `--no-fenicsx` skips it.
+
 - **conda-forge** (the supported way): `micromamba create -n fenicsx -c conda-forge fenics-dolfinx mpich pyvista
   h5py meshio gmsh python-gmsh` then `micromamba activate fenicsx` and `pip install -e vegeta-cli --no-deps`.
 - **Docker**: `docker run -ti -v $PWD:/root/vegeta dolfinx/dolfinx:stable` (PyVista headless needs `xvfb` or
   `pyvista.OFF_SCREEN = True`).
-- A cloud session of this repository cannot build it (no conda, no MPI); the advanced notebook therefore reads results
-  from `advanced/runs/` when they exist and says NOT RUN otherwise — the repository's convention for a solver that is
-  not on the machine.
+- Without the interpreter (`VEGETA_FENICSX_PYTHON` unset and no `.fenicsx/env`) a fenix run is `failed` with every case
+  NOT RUN, and the notebooks say so — the repository's convention for a solver that is not on the machine.
 
 ## The backend in Hyperion (`hyperion.thermal_fenicsx`)
 
-`thermal.steady_plate(..., backend="auto")` and `thermal.heat_plate(..., backend="auto")` take FEniCSx when dolfinx is
+`thermal.steady_plate(..., backend="auto")` (used in-process where the interpreter *is* the kernel; the notebooks go through fenix) and `thermal.heat_plate(..., backend="auto")` take FEniCSx when dolfinx is
 importable and fall back to the numpy solvers otherwise (`backend="fenicsx"` raises when it is missing; `"numpy"` forces
 the fallback). The FEniCSx steady solve is Newton on the nonlinear radiation; the transient is implicit Euler with the
 apparent-heat-capacity enthalpy method, Picard, and cell deactivation for ablation — the same inputs and the same result
@@ -32,15 +35,29 @@ burn-through (25 %) and skips (NOT RUN) without dolfinx.
 ``backend="auto"`` takes FEniCSx for the steady solve and keeps numpy for the transient (whose stall detection the FEM
 version does not have yet); ``backend="fenicsx"`` forces the FEM transient.
 
-## The first use: the guard's ablation (`advanced/svarog_ablation_fenicsx.py`, notebook 50)
+## The first use: the guard's ablation — book fenix (`workflows/fenix/`)
 
-The barrier under the stray beam as a transient heat problem in r–z with the apparent-heat-capacity enthalpy method
-(the latent heats of melting and of decomposition spread over ±15 K), implicit Euler with Picard iterations on the
-capacity and the linearised radiation, and ablation by cell deactivation once a cell held at the failure point has
-taken its latent heat of removal — the same physics as `hyperion.thermal.heat_plate`, on a finer mesh and
-unconditionally stable in time. It validates the cheap solver 49's verdicts rest on (the burn-through time of the
-10 mm polycarbonate, the steady state of 1.5 mm steel) and extends it where the structured grid cannot go: a 3-D
-panel with a rib, a beam at an angle, a panel with a liner.
+**fenix** is a book of the workflows layer (code F), the same mechanism as the CFD and FEA chapters: a chapter script
+in the Vegeta venv (`workflows/fenix/plate_thermal.py`) that launches a dolfinx worker (`_worker.py`) under the fenicsx
+interpreter for each case — a JSON spec in, a `result.json` out: the process pipe between the two environments — and
+writes a run directory per the runkit contract (manifest, status, run.log, cases, summary.json). Chapters: F1
+`guard-steady` (every barrier's steady state, Newton on the nonlinear radiation), F2 `guard-ablation` (the transients
+the closed-form screening could not decide), F3 `sheet-distance` (the reference 2 mm PC sheet at 10–200 m). Variants
+`1kW` and `2kW`. Notebooks 49 and 51 take the runs as optional inputs through Yanus; auto mode produces them in
+screening quality when the interpreter exists; without it the run is `failed` with every case NOT RUN and the
+notebook says so. `wf list` shows the book, `wf batch` can queue its chapters, `yn status` the notebooks that take them.
+
+```bash
+wf run F2 --variant 1kW --quality fine            # or: .venv/bin/python workflows/fenix/plate_thermal.py --chapter guard-ablation --variant 1kW
+.venv/bin/python workflows/fenix/plate_thermal.py --chapter sheet-distance --variant 2kW --list
+```
+
+What it validates: the cell model 49's verdicts rest on — steady states within 1 % (steel 1222 vs 1232 K), burn-through
+times within 10–20 % (the cell grid's coarseness), the same verdicts, except the marginal 2 kW / 200 m sheet where
+the cell model's stall detection says steady and the FEM burns through at 136 s — a case for the standard's test.
+Known difference: the FEM transient has no temperature cap at the failure point (the apparent-capacity band only), so a
+brick that keeps absorbing after its surface boils reads a few hundred kelvin above T_fail where the cell model holds the
+plateau; the ablation timing is unaffected (the removal is by enthalpy). What it will extend to: a 3-D panel with a rib, a beam at an angle, a panel with a liner (the enclosure, MVP M.2).
 
 ## Where else it pays, in the order Vegeta would use it
 

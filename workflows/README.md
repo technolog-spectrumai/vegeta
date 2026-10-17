@@ -225,3 +225,11 @@ rest from scratch. There is no solver checkpoint restart: an interrupted case st
 A thermal analysis (a motor's or battery's heat path), another aircraft's CFD, a durability campaign: a new script
 under `workflows/<project>/` that imports `runkit`, builds its cases from the project's design module, runs them in
 the same loop and writes the same files. Nothing in `runkit` is Kestrel-specific.
+
+
+## fenix (F)
+
+Svarog's guard plates by finite elements: a chapter script in the venv launches a dolfinx worker per case in the fenicsx
+interpreter (`VEGETA_FENICSX_PYTHON`, `.fenicsx/env` from install_local.sh) — a JSON spec in, `result.json` out — and
+writes the run like any chapter. F1 `guard-steady`, F2 `guard-ablation`, F3 `sheet-distance`; variants 1kW, 2kW;
+`--quality screening|fine`. Without the interpreter every case is NOT RUN. `docs/fenics.md`.

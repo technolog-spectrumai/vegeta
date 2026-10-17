@@ -8,14 +8,17 @@
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
-# Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR]
+# Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR] [--no-fenicsx] [--fenicsx-prefix DIR]
 #   --python EXE   interpreter for the venv (default: Ubuntu's /usr/bin/python3, not a conda one)
 #   --skip-system  skip apt and OpenFOAM installation (tools already installed or no sudo)
+#   --no-fenicsx   skip the FEniCSx environment (a conda-forge env made by micromamba, registered as the kernel "Python (fenicsx)")
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/.venv"
 USE_VENV=1
+WITH_FENICSX=1
+FENICSX_PREFIX="$ROOT/.fenicsx"
 PYTHON_EXE=""
 WITH_OPENFOAM=1
 WITH_SYSTEM=1
@@ -31,7 +34,9 @@ while [ $# -gt 0 ]; do
     --no-openfoam) WITH_OPENFOAM=0; shift ;;
     --skip-system) WITH_SYSTEM=0; shift ;;
     --openfoam-prefix) FOAM_PREFIX="$2"; shift 2 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --no-fenicsx) WITH_FENICSX=0; shift ;;
+    --fenicsx-prefix) FENICSX_PREFIX="$2"; shift 2 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -117,6 +122,27 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zeph
   -e "$ROOT/vegeta-yanus[test,table]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
+
+if [ "$WITH_FENICSX" -eq 1 ]; then
+  step "FEniCSx (dolfinx on conda-forge via micromamba; the thermal backend of Hyperion and notebook 50) — kernel \"Python (fenicsx)\""
+  MM="$FENICSX_PREFIX/bin/micromamba"
+  if [ ! -x "$MM" ]; then
+    mkdir -p "$FENICSX_PREFIX/bin"
+    arch="$(uname -m)"; case "$arch" in x86_64) mmarch=linux-64 ;; aarch64|arm64) mmarch=linux-aarch64 ;; *) mmarch=linux-64 ;; esac
+    curl -sSL --fail -o "$MM" "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-$mmarch" || { echo "micromamba download failed; rerun with --no-fenicsx or install dolfinx yourself (docs/fenics.md)" >&2; exit 1; }
+    chmod +x "$MM"
+  fi
+  export MAMBA_ROOT_PREFIX="$FENICSX_PREFIX/root"
+  if [ ! -x "$FENICSX_PREFIX/env/bin/python" ]; then
+    "$MM" create -y -q -p "$FENICSX_PREFIX/env" -c conda-forge python=3.12 fenics-dolfinx mpich numpy matplotlib pandas pyvista ipykernel pytest h5py
+  fi
+  FPY="$FENICSX_PREFIX/env/bin/python"
+  "$FPY" -m pip install -q --no-deps -e "$ROOT/vegeta-cli" -e "$ROOT/vegeta-yanus"
+  "$FPY" -m ipykernel install --user --name fenicsx --display-name "Python (fenicsx)"
+  "$FPY" -c 'import dolfinx, pyvista; print("dolfinx", dolfinx.__version__, "pyvista", pyvista.__version__, "— kernel Python (fenicsx) registered")'
+else
+  step "Skipping FEniCSx (--no-fenicsx): hyperion.thermal uses its numpy solvers, notebook 50 says NOT RUN"
+fi
 
 step "Checks"
 status=0

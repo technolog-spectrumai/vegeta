@@ -79,6 +79,15 @@ producer that fails is NOT RUN, never a crash. `yn auto 48 --dry-run` prints the
 `(auto)`. Tested: 48 opened with 47's report removed ran 47 in 0.2 min and read its 58.9 W seed. The batch mechanism
 (`wf batch batch.yaml`) is for workflow chapters, which Svarog has none of — every step is seconds inside a notebook.
 
+## fenix — the finite-element chapters (book F)
+
+The same plates in FEniCSx, as workflow chapters (`workflows/fenix/plate_thermal.py`, `docs/fenics.md`): F1 the steady
+states, F2 the ablation transients, F3 the reference 2 mm PC sheet at 10–200 m; variants 1kW and 2kW; a dolfinx worker
+per case in the fenicsx interpreter, a run directory per chapter. Notebooks 49 and 51 take them (optional; auto mode
+makes them in screening quality) and tabulate FEM against the cell model. The air's loss on the way
+(`hyperion.atmosphere`, Kruse–Kim on the visibility) is in the same sections: ≤ 1 % on a clear day at 200 m, 13 % in a
+dusty town, 93 % in fog.
+
 ## Runtimes (this machine, numpy only)
 
 | notebook | what runs | time |

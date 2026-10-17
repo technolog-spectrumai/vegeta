@@ -81,6 +81,33 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
 
 
+# ================================================================================================= book: fenix (F)
+def _fenix():
+    p = str(ROOT / "workflows" / "fenix")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import plate_thermal
+    return plate_thermal
+
+
+fenix = flow.book("fenix", "F", title="fenix — Svarog's guard plates by finite elements (FEniCSx in its own interpreter, a process pipe per case)",
+                  design="notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
+                  variants=("1kW", "2kW"), fingerprint=lambda v: _fenix().fingerprint(v), compatible=lambda e, f, ch=None: _fenix().compatible(e, f, ch),
+                  describe=lambda: {"guard-steady": "every barrier's steady state under the collimated beam", "guard-ablation": "the transients the screening could not decide",
+                                    "sheet-distance": "the reference 2 mm PC sheet, 60 × 60 cm, at 10–200 m"})
+
+fenix.kind("thermal", title="plate heat transfer — steady state and the ablation transient (FEniCSx: dolfinx, PETSc)", script="workflows/fenix/plate_thermal.py",
+           workflow="plate_thermal", needs=[Tool("fenicsx", why="the finite-element solver, in its own conda-forge interpreter", fix="./install_local.sh (or --fenicsx-prefix), or VEGETA_FENICSX_PYTHON=…; docs/fenics.md",
+                                                 probe=lambda: _fenix().probe()), Package("vegeta.hyperion")],
+           needs_text="the fenicsx interpreter (.fenicsx/env or VEGETA_FENICSX_PYTHON)", time="steady: seconds a case; ablation: 10 s – 2 min a case",
+           options=[("--variant", ("1kW", "2kW"), "1kW"), ("--quality", ("screening", "fine"), "fine")],
+           screening=("--quality", "screening"))
+
+fenix.chapter("guard-steady", kind="thermal", campaign="guard-steady")                                   # F1
+fenix.chapter("guard-ablation", kind="thermal", campaign="guard-ablation")                               # F2
+fenix.chapter("sheet-distance", kind="thermal", campaign="sheet-distance")                               # F3: the 2 mm PC sheet at 10–200 m
+
+
 # ================================================================================================= notebooks
 DATA = "notebooks/designs/data"
 KESTREL_DRIVE = Data(f"{DATA}/kestrel_drive.json", cache=True, note="the Boreas drive tables, ~40 s")
@@ -126,12 +153,12 @@ flow.notebook("48_svarog_weld", title="Svarog-industrial — the 1 kW fibre lase
 
 flow.notebook("49_svarog_guard", title="Svarog-guard — the stray kilowatt at 20 m against the barriers: closed forms, the steady solve, the transients that decide, IEC 60825-4 classes",
               needs=[Package("vegeta.hyperion")],
-              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",))],
+              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",)), Run("fenix/guard-ablation", variant="1kW"), Run("fenix/guard-steady", variant="1kW"), Run("fenix/sheet-distance", variant="1kW")],
               gives=[File(f"{DATA}/reports/49_svarog_guard.json", keys=("meta", "beams", "verdicts"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
 
 flow.notebook("51_svarog_2kw", title="Svarog-2kW — two 1 kW modules combined, or one stage pumped harder: the welds at 2 kW and the guard re-screened",
               needs=[Package("vegeta.hyperion")],
-              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",))],
+              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",)), Run("fenix/guard-ablation", variant="2kW"), Run("fenix/sheet-distance", variant="2kW")],
               gives=[File(f"{DATA}/reports/51_svarog_2kw.json", keys=("meta", "route_A", "route_B", "welds", "guard"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",

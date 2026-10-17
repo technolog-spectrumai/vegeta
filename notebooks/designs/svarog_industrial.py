@@ -331,7 +331,33 @@ def guard_study(power_W: float, barriers=None, beams=None, run: bool = True, del
     return {"rows": rows, "simulations": sims, "beams": beams, "barriers": barriers}
 
 
-# ---------------------------------------------------------------------------------------------- the record
+# ---------------------------------------------------------------------------------------------- the guard against distance
+REFERENCE_SHEET = Barrier(th.BLACK_PC, 2e-3)                    # the reference wall: 2 mm polycarbonate, 1200 kg/m³, a 60 × 60 cm sheet
+SHEET_HALF = 0.30                                               # the sheet's half-width: its edge is the cold boundary
+DISTANCES = (10.0, 20.0, 50.0, 100.0, 200.0)
+
+
+def guard_vs_distance(power_W: float, barrier: Barrier = REFERENCE_SHEET, distances=DISTANCES, delivery: wd.DeliveryFibre = DELIVERY, head: wd.WeldHead = HEAD,
+                      sheet_half: float = SHEET_HALF, run: bool = True) -> list[dict]:
+    """The raw collimated beam at each distance against one sheet: the beam's radius and irradiance there (it grows by the
+    fibre's divergence r_core/f_c, 0.25 mrad), the screening, the transient where it decides — on a grid that ends at the
+    sheet's edge — and the time the sheet holds against the exposure classes."""
+    rows = []
+    for d in distances:
+        beam = stray_beams(power_W, distance=d, delivery=delivery, head=head)[0]
+        scr = screen(barrier, beam)
+        sim = None
+        if scr["decision"] == "simulate" and run:
+            sim = th.heat_plate(barrier.solid, barrier.thickness, beam.power, beam.radius, SIMULATION_CAP_S, shape=beam.shape, h=10.0, nr=NR_GUARD, nz=_nz(barrier.thickness),
+                                r_max=sheet_half)
+        v = verdict(scr, sim)
+        rows.append({"distance_m": d, "beam_radius_mm": beam.radius * 1e3, "irradiance_W_per_cm2": beam.mean_irradiance / 1e4, "absorbed_W_per_cm2": scr["absorbed_irradiance_W_per_cm2"],
+                     "decision": scr["decision"], "surface_damage_s": v["surface_damage_s"], "holds_s": v["holds_s"], **{k: v[k] for k in EXPOSURE}, "source": v["source"],
+                     "simulation": sim})
+    return rows
+
+
+
 def design_record(length: float, seed_W: float, pump_W: float, sol: fb.FibreSolution, budget: dict, weld: dict, guard: dict) -> dict:
     return {"name": "Svarog-industrial", "wavelength": LAM, "pump_wavelength": LAM_P, "target_W": POWER_TARGET,
             "power_stage": {"amplifier": power_stage(length).to_dict(), "fibre": FIBRE_POWER.to_dict(), "seed_W": seed_W, "pump_W": pump_W,

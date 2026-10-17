@@ -2,13 +2,23 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "51_svarog_2kw.json",
- "git": "b9f9a5ffbb74",
+ "git": "942d16755d1f",
  "inputs": [
   {
    "key": "48_svarog_weld:notebooks/designs/data/reports/48_svarog_weld.json",
    "kind": "file",
    "path": "notebooks/designs/data/reports/48_svarog_weld.json",
-   "sha256": "6a150573ed4c4bf9c745f0b6cd59bcdb63b2187d8b47f7514b46cd8acacbb659"
+   "sha256": "42c84fb69028f3dae5865bf405dc1dc0aace31504ece5122c983db2c7a34b6b6"
+  },
+  {
+   "key": "fenix/guard-ablation@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-ablation/20261017-164412_2kW_screening"
+  },
+  {
+   "key": "fenix/sheet-distance@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/sheet-distance/20261017-163201_2kW_screening"
   }
  ],
  "kind": "notebook",
@@ -17,9 +27,9 @@
  },
  "producer": "51_svarog_2kw",
  "schema": null,
- "sha256": "bcde7ade418763fc23a6b5e8c5919984fef1d1a5dfe73c22b3b9b9968aff4766",
- "size": 30023,
- "written_at": "2026-10-17T15:50:41Z",
- "written_ts": 1792252241.7034464,
+ "sha256": "f83ac2e69ea7822c57cdda38d2f84f46d547208c89d7018db0388f9ea872aa6f",
+ "size": 33080,
+ "written_at": "2026-10-17T16:48:48Z",
+ "written_ts": 1792255728.6946545,
  "yanus": 1
 }

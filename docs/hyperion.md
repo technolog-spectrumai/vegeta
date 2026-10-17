@@ -82,6 +82,9 @@ depth for a partly transparent material, the failure mode melt/ablate) with `MIL
 length), `keyhole_threshold`, `rosenthal_pool`, `penetration` / `penetration_curve` / `speed_for_penetration` /
 `process_window`.
 
+**Atmosphere** (`atmosphere.py`): `Atmosphere(visibility, extra)` with `ATMOSPHERES` (clear day, wet day, dusty town, foggy
+autumn morning), `aerosol_attenuation` (Kruse–Kim on the visibility), `transmission_table(distances, λ)`.
+
 ## Validation
 - Materials against the catalogues: N-BK7 n_d 1.5168, fused silica 1.4570 at 633 nm and 1.4496 at 1064 nm (Malitson), YAG
   1.816 at 1064 nm (Zelmon), sapphire 1.760 at 800 nm, air 1.000277.

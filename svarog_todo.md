@@ -58,7 +58,7 @@ needed for that.
 Skipped on purpose: a structural analysis of the laser itself (a coil on a cooled spool, a combiner, a catalogue head —
 nothing load-bearing); the enclosure's panels are sheet metal sized by 49, M.2.
 
-## Branch `dev_svarog_advanced` — M.5, the field solver
+## M.5 as built — book fenix
 
-`advanced/svarog_ablation_fenicsx.py` (FEniCSx, not run in the cloud), notebook `50_svarog_ablation_fenicsx` (NOT RUN
-until a run exists under `advanced/runs/`), `docs/fenics.md` (install, and where else FEniCS pays in Vegeta).
+The field solver is a workflow book (`workflows/fenix/`, code F): F1 steady, F2 ablation, F3 the reference sheet at
+10–200 m; notebooks 49 and 51 take its runs; `docs/fenics.md`. The advanced branch and notebook 50 are retired into it.
