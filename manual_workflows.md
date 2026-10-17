@@ -5,12 +5,24 @@ commands are run from the repository root on Ubuntu, with the virtual environmen
 (`.venv`). OpenFOAM is needed for the CFD, CalculiX (`ccx`) and Gmsh for the FEA — `./test.sh --quick` tells you what
 is installed.
 
+## 0. Set the shell up
+
+```bash
+source env.sh        # activates .venv, defines  wf  (= workflows/cli.py)  and  wfrun <book> …  (= the book's script)
+wf                   # interactive
+```
+Everything below also works as `.venv/bin/python workflows/cli.py …` without sourcing anything.
+
 ## 1. The idea in one paragraph
 
 A **workflow** is a script that runs the slow solver cases (CFD, FEA) and writes everything into one folder, the
 **run directory**. The **notebook** (`notebooks/43_kestrel_study.ipynb`) never runs a solver: it reads run
 directories you point it at, checks that they are finished and belong to the current design, and shows the numbers
-beside its own quick estimates. You can use the workflows without the notebook (the run directory is readable on its
+beside its own quick estimates. Workflows are organised in **books** (the part simulated: `kestrel_airframe`,
+`kestrel_frame`) and **chapters** (the scenario: `sweep`, `stall`, `cruise`, `transitions`…; `frame`, `joint`);
+results land in `workflows/runs/<book>/<chapter>/<run id>/`. Some chapters need another chapter of the same book
+first (`cruise` and `transitions` need a completed `sweep`; `joint` needs `frame`) — the tool tells you. Cases a book
+already solved are **cached** and reused by later runs (`wf cache`, `wf clean-cache`, `--no-cache` to force). You can use the workflows without the notebook (the run directory is readable on its
 own) and the notebook without the workflows (a screening pass with the solver results marked NOT RUN).
 
 ## 2. The easy way: `workflows/cli.py`
@@ -18,16 +30,18 @@ own) and the notebook without the workflows (a screening pass with the solver re
 One tool lists, explains, launches and watches every workflow. With no arguments it asks you what to run:
 
 ```bash
-.venv/bin/python workflows/cli.py                 # interactive: workflow → campaign → variant/quality → run / prepare only / list; confirm; detached or not
-.venv/bin/python workflows/cli.py list            # the workflows, their campaigns and what each is for
-.venv/bin/python workflows/cli.py info airframe_cfd stall --variant 4Q-2    # the exact cases a campaign would run
-.venv/bin/python workflows/cli.py run airframe_cfd --detach --variant 4Q-2 --campaign stall --quality fine
-.venv/bin/python workflows/cli.py runs            # every run on disk: state, cases done, age
-.venv/bin/python workflows/cli.py status <run>    # one run: heartbeat, last log lines, and what to do next
-.venv/bin/python workflows/cli.py tail <run>      # follow its run.log
-.venv/bin/python workflows/cli.py stop <run>      # stop it cleanly (finished cases are kept)
-.venv/bin/python workflows/cli.py resume <run>    # continue it
-.venv/bin/python workflows/cli.py notebook <run>  # the RUNS line to paste into the notebook
+wf                                       # interactive: book → chapter → variant/quality → run / prepare only / list; cache yes/no; confirm; detached or not
+wf list                                  # the books, their chapters (with prerequisites), runs and cache
+wf info kestrel_airframe stall --variant 4Q-2     # the exact cases a chapter would run
+wf run kestrel_airframe --detach --variant 4Q-2 --chapter stall --quality fine [--no-cache]
+wf cache                                 # the cached cases per book
+wf clean-cache [--book kestrel_airframe] # remove them (the runs keep their native results)
+wf runs                                  # every run on disk: state, cases done, age
+wf status <run>                          # one run: heartbeat, last log lines, and what to do next
+wf tail <run>                            # follow its run.log
+wf stop <run>                            # stop it cleanly (finished cases are kept)
+wf resume <run>                          # continue it
+wf notebook <run>                        # the RUNS line to paste into the notebook
 ```
 
 `<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
@@ -38,25 +52,25 @@ Everything below works without the tool too.
 
 ```bash
 # 1. see what a campaign contains (nothing is written)
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --list
+.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
 
 # 2. run it — in the foreground …
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine --processors 4
+.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
 
 #    … or detached, so you can log out (nohup), or in a tmux window
-nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine --processors 4 \
+nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4 \
       > workflows/runs/stall.out 2>&1 &
-tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --campaign all --threads 4'
+tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # 3. watch it
-tail -F workflows/runs/airframe_cfd/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
-cat workflows/runs/airframe_cfd/<run id>/status.json      # state, case counts, the case in progress
+tail -F workflows/runs/kestrel_airframe/stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
+cat workflows/runs/kestrel_airframe/stall/<run id>/status.json      # state, case counts, the case in progress
 
 # 4. stop it if you must (Ctrl-C in the foreground, or:)
 kill -INT <pid>                                           # the pid is in status.json; finished cases are kept
 
 # 5. continue a stopped run
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/airframe_cfd/<run id>
+.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel_airframe/stall/<run id>
 ```
 
 The script prints the run directory at the end. Inside it:
@@ -77,15 +91,15 @@ Reading the heartbeat: a healthy long run shows `advancing` most of the time and
 
 What the campaigns are:
 
-| workflow | campaign | cases | purpose | rough time (4 cores) |
+| book | chapter | cases | purpose | rough time (4 cores) |
 |---|---|---|---|---|
-| `airframe_cfd.py` | `sweep` | 10 bare airframe angles 0–90° | checks the lattice: lift slope, Cd0, Cmα | an afternoon (screening) |
+| `kestrel_airframe` | `sweep` | 10 bare airframe angles 0–90° | checks the lattice: lift slope, Cd0, Cmα | an afternoon (screening) |
 | | `stall` | 5 bare angles 8–16° | CL max → stall speed → wing area | 1–2 h screening, ~5 h fine |
-| | `cruise` | 2 with rotor disks | level cruise and the stall point, blown | ~1 h |
-| | `transitions` | ~15 with rotor disks | the points the transitions fly | a day |
+| | `cruise` | 2 with rotor disks | level cruise and the stall point, blown (after `sweep`) | ~1 h |
+| | `transitions` | ~15 with rotor disks | the points the transitions fly (after `sweep`) | a day |
 | | `blown`, `all`, `sweep-fine`, `sections` | combinations / the section slabs | | |
-| `structure_fea.py` | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
-| | `joint` | 1 | the printed spar–post joint | minutes |
+| `kestrel_frame` | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
+| | `joint` | 1 | the printed spar–post joint (after `frame`) | minutes |
 | | `all` | 5 | both | under an hour |
 
 Useful options: `--cases "α 12°"` runs only matching cases; `--max-cases 2` / `--max-minutes 90` bound a run (it ends
@@ -99,7 +113,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
 2. The **first code cell** has a dictionary `RUNS` with the run directories the notebook reads, for example
-   `RUNS["airframe_cfd"]["4Q-2"]["sweep"] = "workflows/runs/airframe_cfd/<run id>"`. Put your run directories there
+   `RUNS["airframe_cfd"]["4Q-2"]["sweep"] = "workflows/runs/kestrel_airframe/stall/<run id>"`. Put your run directories there
    (the workflow prints the exact line to paste when it finishes).
 3. Run the notebook. The prerequisite table shows, for every input: required or optional, which run, where it came
    from, whether it is compatible with the current design, and whether it is usable.
@@ -123,15 +137,15 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 .venv/bin/python workflows/kestrel/import_legacy.py
 ```
 
-It prints two directories (`legacy_…_4Q-1_…`, `legacy_…_4Q-2_…`) — the ones `RUNS` in the notebook points at by
+It prints two directories under `workflows/runs/kestrel_airframe/sweep/` — the ones `RUNS` in the notebook points at by
 default. Replace them as real workflow runs arrive.
 
 ## 6. Order of work recommended now
 
 1. `import_legacy.py` (seconds) and the notebook in screening mode (two minutes): the baseline numbers.
-2. `airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine` (hours): decides CL max, the stall speed and
+2. `wf run kestrel_airframe --variant 4Q-2 --chapter stall --quality fine` (hours): decides CL max, the stall speed and
    whether the wing must grow.
-3. `structure_fea.py --variant 4Q-2 --campaign all` (under an hour): the frame's and the joint's margins.
+3. `wf run kestrel_frame --variant 4Q-2 --chapter all` (under an hour): the frame's and the joint's margins.
 4. Notebook again in its default mode with both run directories in `RUNS`: the validated assessment.
    For a quick *what if* on the design (span, chord, section, propeller, motor, battery, spar) without any solver,
    `44_kestrel_fast.ipynb` compares candidates in about a minute (Zephyr sections, Boreas points, beam rules).

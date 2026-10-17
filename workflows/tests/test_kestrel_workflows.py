@@ -52,7 +52,7 @@ def _fake_run(root, fp, *, state="completed", summary=True, workflow="airframe_c
 
 def test_check_run_missing_unfinished_incompatible_and_usable(tmp_path, fp2):
     ck = kcp.check_run(None, workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert not ck["ok"] and ck["status"] == "not selected" and "airframe_cfd.py --variant 4Q-2 --campaign sweep" in ck["command"]
+    assert not ck["ok"] and ck["status"] == "not selected" and "airframe_cfd.py --variant 4Q-2 --chapter sweep" in ck["command"]
     ck = kcp.check_run(tmp_path / "nowhere", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
     assert not ck["ok"] and ck["status"].startswith("not found")
     _fake_run(tmp_path / "running", fp2, state="running", summary=False)
@@ -64,7 +64,7 @@ def test_check_run_missing_unfinished_incompatible_and_usable(tmp_path, fp2):
     _fake_run(tmp_path / "good", fp2)
     ck = kcp.check_run(tmp_path / "good", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
     assert ck["ok"] and ck["compat"] == "compatible" and ck["summary"]["counts"]["solved"] == 1
-    with pytest.raises(kcp.PrerequisiteError, match="structure_fea.py --variant 4Q-2 --campaign all"):
+    with pytest.raises(kcp.PrerequisiteError, match="structure_fea.py --variant 4Q-2 --chapter all"):
         kcp.require(kcp.check_run(None, workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2), what="FEA")
     assert kcp.require(kcp.check_run(None, workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2), what="FEA", required=False) is None
     ck = kcp.check_run(tmp_path / "good", workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2)
@@ -79,7 +79,7 @@ def test_notebook_prerequisites_raise_one_actionable_error_and_write_nothing(tmp
     with pytest.raises(kcp.PrerequisiteError) as exc:
         kstu.prerequisites(runs, {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}, ("4Q-2",), fingerprints=fps)
     msg = str(exc.value)
-    assert "airframe_cfd.py --variant 4Q-2 --campaign sweep" in msg and "structure_fea.py --variant 4Q-2 --campaign all" in msg and "KESTREL_SCREENING" in msg
+    assert "airframe_cfd.py --variant 4Q-2 --chapter sweep" in msg and "structure_fea.py --variant 4Q-2 --chapter all" in msg and "KESTREL_SCREENING" in msg
     assert sorted(p.name for p in tmp_path.iterdir()) == before          # no run directory, no solver, nothing invented
     table, summ = kstu.prerequisites(runs, set(), ("4Q-2",), fingerprints=fps)
     assert list(table.loc[table["role"] == "optional"].index) and not summ["airframe_cfd"] and not summ["structure_fea"]
@@ -87,7 +87,7 @@ def test_notebook_prerequisites_raise_one_actionable_error_and_write_nothing(tmp
 
 def test_import_legacy_makes_completed_runs_that_say_they_are_assumed(tmp_path, fp2):
     roots = kcp.import_legacy(kcp.kcfd.RESULTS_JSON, tmp_path, keys=("4Q-2",))
-    assert len(roots) == 1
+    assert len(roots) == 1 and roots[0].parent.name == "sweep" and roots[0].parents[1].name == "kestrel_airframe"
     s = json.loads((roots[0] / "summary.json").read_text())
     assert s["state"] == "completed" and s["counts"]["n"] == 29 and s["counts"]["solved"] == 29 and "bare_sweep" in s["maps"]
     assert s["maps"]["bare_sweep"]["valid_domain"]["alpha_deg"] == [0.0, 90.0] and (roots[0] / "bare_sweep.csv").exists()
@@ -118,16 +118,16 @@ def test_the_notebook_and_its_modules_launch_no_solver():
 
 
 def test_scripts_list_without_writing(tmp_path):
-    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "airframe_cfd.py"), "--variant", "4Q-1", "--campaign", "stall", "--list"], capture_output=True, text=True, timeout=300)
+    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "airframe_cfd.py"), "--variant", "4Q-1", "--chapter", "stall", "--list"], capture_output=True, text=True, timeout=300)
     assert out.returncode == 0 and "5 case(s)" in out.stdout and "rans_ksst_external" in out.stdout
-    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "structure_fea.py"), "--variant", "4Q-2", "--campaign", "frame", "--list"], capture_output=True, text=True, timeout=300)
+    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "structure_fea.py"), "--variant", "4Q-2", "--chapter", "frame", "--list"], capture_output=True, text=True, timeout=300)
     assert out.returncode == 0 and "frame_posts_A" in out.stdout and "frame_posts_modes" in out.stdout
 
 
 @pytest.mark.slow
 def test_airframe_cfd_prepare_only_smoke(tmp_path):
     """One bare case prepared (the STL exported, the OpenFOAM dictionaries written), no solver: the run says 'prepared'."""
-    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "airframe_cfd.py"), "--variant", "4Q-2", "--campaign", "stall", "--cases", "α 12°", "--prepare-only",
+    out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "airframe_cfd.py"), "--variant", "4Q-2", "--chapter", "stall", "--cases", "α 12°", "--prepare-only",
                           "--out", str(tmp_path / "run"), "--quiet"], capture_output=True, text=True, timeout=900)
     assert out.returncode == 0, out.stdout[-2000:] + out.stderr[-2000:]
     st = json.loads((tmp_path / "run" / "status.json").read_text())
@@ -142,3 +142,47 @@ def test_airframe_cfd_prepare_only_smoke(tmp_path):
     out = subprocess.run([PY, str(ROOT / "workflows" / "kestrel" / "airframe_cfd.py"), "--resume", str(tmp_path / "run"), "--prepare-only", "--cases", "α 12°", "--quiet"],
                          capture_output=True, text=True, timeout=900)
     assert out.returncode == 0 and len(json.loads((tmp_path / "run" / "manifest.json").read_text())["resumed"]) == 1
+
+
+def test_cache_reuses_a_solved_case_across_runs_and_cleans(tmp_path, monkeypatch):
+    import _kestrel as wk
+    calls = []
+
+    def solver(name, d, cancel):
+        calls.append(name)
+        return {"status": "solved", "process": "ok", "converged": True, "metrics": {"CL": 0.5}, "artifacts": {"case": str(d)}}
+    cache = runkit.Cache("demo_book", base=tmp_path / "cache")
+    r1 = runkit.Run.create(tmp_path / "r1", workflow="demo", campaign="c", config={}, planned_cases=["a"], heartbeat_s=10, echo=False)
+    assert wk.drive(r1, ["a"], {"a": "key-a"}, solver, budget=runkit.Budget(), cache=cache) == "completed"
+    r1.finish({}, state="completed"); r1.close()
+    assert (tmp_path / "cache" / "demo_book" / "key-a.json").exists()
+    r2 = runkit.Run.create(tmp_path / "r2", workflow="demo", campaign="c", config={}, planned_cases=["a", "b"], heartbeat_s=10, echo=False)
+    cache2 = runkit.Cache("demo_book", base=tmp_path / "cache")
+    assert wk.drive(r2, ["a", "b"], {"a": "key-a", "b": "key-b"}, solver, budget=runkit.Budget(), cache=cache2) == "completed"
+    assert calls == ["a", "b"] and r2.records["a"].reused and "from the cache" in r2.records["a"].note and r2.records["a"].metrics["CL"] == 0.5
+    assert cache2.hits == 1 and "cache hit" in (tmp_path / "r2" / "run.log").read_text()
+    r2.finish({}, state="completed"); r2.close()
+    # --no-cache: solved again
+    r3 = runkit.Run.create(tmp_path / "r3", workflow="demo", campaign="c", config={}, planned_cases=["a"], heartbeat_s=10, echo=False)
+    wk.drive(r3, ["a"], {"a": "key-a"}, solver, budget=runkit.Budget(), cache=runkit.Cache("demo_book", base=tmp_path / "cache", enabled=False))
+    assert calls == ["a", "b", "a"]
+    r3.close()
+    st = runkit.Cache.stats(tmp_path / "cache")
+    assert st["demo_book"]["cases"] == 2
+    assert runkit.Cache.clean(tmp_path / "cache", book="demo_book") == 2 and not runkit.Cache.stats(tmp_path / "cache")
+
+
+def test_library_chapters_and_prerequisites(tmp_path, monkeypatch, fp2):
+    import library
+    monkeypatch.setattr(library, "RUNS", tmp_path)
+    chs = library.chapters("kestrel_airframe")
+    assert chs["transitions"]["prerequisites"] == ("sweep",) and chs["sweep"]["prerequisites"] == () and chs["stall"]["description"]
+    missing = library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-2", expected=fp2)
+    assert len(missing) == 1 and "--chapter sweep" in missing[0]
+    assert library.check_prerequisites("kestrel_airframe", "sweep", variant="4Q-2", expected=fp2) == []
+    _fake_run(tmp_path / "kestrel_airframe" / "sweep" / "s1", fp2)
+    (tmp_path / "kestrel_airframe" / "sweep" / "s1" / "manifest.json").write_text(json.dumps({**json.loads((tmp_path / "kestrel_airframe" / "sweep" / "s1" / "manifest.json").read_text()), "book": "kestrel_airframe", "chapter": "sweep"}))
+    assert library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-2", expected=fp2) == []
+    assert library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-1", expected=kcp.fingerprint("4Q-1"))       # another variant: still missing
+    runs = library.runs_of("kestrel_airframe", "sweep")
+    assert runs and runs[0]["book"] == "kestrel_airframe" and runs[0]["chapter"] == "sweep" and runs[0]["variant"] == "4Q-2"

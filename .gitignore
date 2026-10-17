@@ -10,6 +10,7 @@ dist/
 runs/
 notebooks/_runs/
 workflows/runs/
+workflows/cache/
 workflows/runs_*.out
 fidia_runs/
 notebooks/output/

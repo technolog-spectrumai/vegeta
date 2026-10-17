@@ -35,7 +35,9 @@ import kestrel2 as k2
 
 DESIGNS = Path(__file__).resolve().parent
 ROOT = DESIGNS.parents[1]
-RUNS_BASE = ROOT / "workflows" / "runs"
+import os as _os
+RUNS_BASE = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "workflows" / "runs")
+BOOKS = {"airframe_cfd": "kestrel_airframe", "structure_fea": "kestrel_frame"}      # workflow → book (the runs folder)
 SCRIPTS = {"airframe_cfd": "workflows/kestrel/airframe_cfd.py", "structure_fea": "workflows/kestrel/structure_fea.py",
            "import_legacy": "workflows/kestrel/import_legacy.py"}
 PYTHON = ".venv/bin/python"
@@ -327,7 +329,7 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
         veh = vehicle(variant)
         meta = camp.get("meta", {})
         quality = meta.get("quality", "screening")
-        root = Path(out_base) / "airframe_cfd" / f"legacy_{meta.get('date', 'undated').replace('-', '')}_{variant}_{meta.get('source', 'import')}"
+        root = Path(out_base) / BOOKS["airframe_cfd"] / "sweep" / f"legacy_{meta.get('date', 'undated').replace('-', '')}_{variant}_{meta.get('source', 'import')}"
         root.mkdir(parents=True, exist_ok=True)
         specs, records = {}, {}
         from workflows_runkit import CaseRecord
@@ -341,8 +343,8 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
                                        converged=metrics.get("converged"), note=st.get("note", ""), metrics=metrics)
         fp = fingerprint(variant, veh)
         fp["assumed"] = "fingerprint assumed from the current source: the legacy results file recorded none (the CAD parameters of the campaign were notebook 39's of that day)"
-        config = {"workflow": "airframe_cfd", "campaign": "legacy-import", "variant": variant, "quality": quality, "source_file": str(results_json), "key": key}
-        manifest = {"schema": 1, "run_id": root.name, "workflow": "airframe_cfd", "campaign": "legacy-import", "created_at": utc_now(), "imported_at": utc_now(),
+        config = {"workflow": "airframe_cfd", "book": BOOKS["airframe_cfd"], "chapter": "sweep", "campaign": "legacy-import", "variant": variant, "quality": quality, "source_file": str(results_json), "key": key}
+        manifest = {"schema": 1, "run_id": root.name, "workflow": "airframe_cfd", "book": BOOKS["airframe_cfd"], "chapter": "sweep", "campaign": "legacy-import", "created_at": utc_now(), "imported_at": utc_now(),
                     "command": f"{PYTHON} {SCRIPTS['import_legacy']}", "config": config, "config_hash": _sha(json.dumps(config, sort_keys=True)),
                     "inputs": {"results_json": {"path": str(results_json), "sha256": sha256_file(results_json)}}, "design": fp, "tool_versions": tool_versions(),
                     "planned_cases": list(specs), "resumed": [], "artifacts": {"run_log": "run.log", "status": "status.json", "cases": None, "summary": "summary.json"},
@@ -369,21 +371,27 @@ class PrerequisiteError(RuntimeError):
 
 def command(workflow: str, *, variant: str, campaign: str, quality: str | None = None, extra: str = "") -> str:
     q = f" --quality {quality}" if quality and workflow == "airframe_cfd" else ""
-    return f"{PYTHON} {SCRIPTS[workflow]} --variant {variant} --campaign {campaign}{q}{(' ' + extra) if extra else ''}"
+    return f"{PYTHON} {SCRIPTS[workflow]} --variant {variant} --chapter {campaign}{q}{(' ' + extra) if extra else ''}"
 
 
-def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None) -> list[dict]:
-    """The runs on disk for the engineer to pick from (newest first): id, campaign, variant, state, counts. Listing
-    only — the notebook never picks one by itself."""
+def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None, chapter: str | None = None) -> list[dict]:
+    """The runs on disk for the engineer to pick from (newest first), under ``workflows/runs/<book>/<chapter>/``:
+    id, chapter, variant, state, counts. Listing only — the notebook never picks one by itself."""
     from workflows_runkit import list_runs, read_json
     out = []
-    for r in list_runs(Path(base) / workflow):
-        m = read_json(Path(r["run"]) / "manifest.json") or {}
-        v = (m.get("config") or {}).get("variant")
-        if variant and v != variant:
+    book = Path(base) / BOOKS.get(workflow, workflow)
+    if not book.is_dir():
+        return out
+    for ch in sorted(book.iterdir()):
+        if not ch.is_dir() or (chapter and ch.name != chapter):
             continue
-        out.append({**r, "variant": v, "quality": (m.get("config") or {}).get("quality")})
-    return out
+        for r in list_runs(ch):
+            m = read_json(Path(r["run"]) / "manifest.json") or {}
+            v = (m.get("config") or {}).get("variant")
+            if variant and v != variant:
+                continue
+            out.append({**r, "book": book.name, "chapter": ch.name, "variant": v, "quality": (m.get("config") or {}).get("quality")})
+    return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
 
 
 def _load(run_dir, workflow: str) -> dict:

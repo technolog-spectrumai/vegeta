@@ -2,9 +2,10 @@
 """vegeta workflows — the one entry point to Vegeta's long-running analyses.
 
     .venv/bin/python workflows/cli.py                      # interactive: pick a workflow, a campaign, the options; confirm; run
-    .venv/bin/python workflows/cli.py list                 # the workflows and their campaigns, with what each is for
-    .venv/bin/python workflows/cli.py info airframe_cfd stall --variant 4Q-2     # the cases a campaign would run, the time it takes
-    .venv/bin/python workflows/cli.py run airframe_cfd --variant 4Q-2 --campaign stall --quality fine --detach
+    .venv/bin/python workflows/cli.py list                 # the books (parts) and their chapters (scenarios), prerequisites, runs, cache
+    .venv/bin/python workflows/cli.py info kestrel_airframe stall --variant 4Q-2    # the cases a chapter would run
+    .venv/bin/python workflows/cli.py run kestrel_airframe --variant 4Q-2 --chapter stall --quality fine --detach [--no-cache]
+    .venv/bin/python workflows/cli.py cache                # the cached cases per book;  clean-cache [--book B] removes them
     .venv/bin/python workflows/cli.py runs                 # every run on disk: state, counts, age
     .venv/bin/python workflows/cli.py status <run>         # one run: state, heartbeat, the last log lines, what to do next
     .venv/bin/python workflows/cli.py tail <run>           # follow its run.log
@@ -12,8 +13,10 @@
     .venv/bin/python workflows/cli.py resume <run>         # continue it
     .venv/bin/python workflows/cli.py notebook <run>       # the RUNS line to paste into 43_kestrel_study
 
-A run is a directory under workflows/runs/<workflow>/ (the contract: workflows/README.md); the scripts themselves
+A run is a directory under workflows/runs/<book>/<chapter>/ (the contract: workflows/README.md); solved cases are
+cached under workflows/cache/<book>/ and reused by later runs of the book. The scripts themselves
 (workflows/kestrel/*.py) stay usable directly — this tool only lists, explains, launches and watches them.
+`source env.sh` once per shell makes `wf` an alias of this tool inside the virtual environment.
 """
 from __future__ import annotations
 
@@ -33,32 +36,11 @@ sys.path.insert(0, str(ROOT / "workflows"))
 sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
 import runkit  # noqa: E402
 
-RUNS = Path(os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "workflows" / "runs")   # the tests point it elsewhere
-PY = sys.executable
+import library  # noqa: E402
 
-WORKFLOWS = {
-    "airframe_cfd": {
-        "script": "workflows/kestrel/airframe_cfd.py", "project": "Kestrel",
-        "title": "airframe CFD with the propellers as rotor disks (Aeromant / OpenFOAM)",
-        "needs": "OpenFOAM (openfoam.com or .org); 4 cores recommended",
-        "time": "screening case 10–20 min, fine case ~1 h; sweep ≈ an afternoon, all at fine ≈ days",
-        "options": [("--variant", ["4Q-1", "4Q-2", "4Q-3"], "4Q-2"), ("--quality", ["screening", "fine"], "screening"), ("--processors", None, "4")],
-        "campaigns": lambda: __import__("kestrel_campaigns").CFD_CAMPAIGNS,
-    },
-    "structure_fea": {
-        "script": "workflows/kestrel/structure_fea.py", "project": "Kestrel",
-        "title": "the carbon frame and the printed spar–post joint in Talos (Gmsh + CalculiX)",
-        "needs": "CalculiX ccx on the PATH, Gmsh (python module)",
-        "time": "a frame case a few minutes; all ≈ under an hour on 4 threads",
-        "options": [("--variant", ["4Q-1", "4Q-2", "4Q-3"], "4Q-2"), ("--threads", None, "4")],
-        "campaigns": lambda: __import__("kestrel_campaigns").FEA_CAMPAIGNS,
-    },
-    "import_legacy": {
-        "script": "workflows/kestrel/import_legacy.py", "project": "Kestrel",
-        "title": "import the first CFD campaign's results file as run directories (once)",
-        "needs": "nothing", "time": "seconds", "options": [], "campaigns": lambda: {"-": "the whole file (keys 4Q-1 and 4Q-2)"},
-    },
-}
+RUNS = library.RUNS
+PY = sys.executable
+BOOKS = library.BOOKS
 
 
 # ----------------------------------------------------------------------------------------------- helpers
@@ -83,20 +65,17 @@ def _alive(pid) -> bool:
 
 def _run_dir(arg: str) -> Path:
     p = Path(arg)
-    if p.is_dir():
+    if p.is_dir() and (p / "manifest.json").exists():
         return p
-    for w in RUNS.iterdir() if RUNS.is_dir() else []:
-        for d in w.iterdir():
-            if d.name == arg or d.name.endswith(arg):
-                return d
+    for r in _all_runs():
+        d = Path(r["run"])
+        if d.name == arg or d.name.endswith(arg) or f"{r['book']}/{r['chapter']}/{d.name}" == arg:
+            return d
     sys.exit(f"no run directory {arg!r} (see: workflows/cli.py runs)")
 
 
 def _all_runs() -> list[dict]:
-    out = []
-    for w in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
-        out += runkit.list_runs(w, workflow=None)
-    return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
+    return library.all_runs()
 
 
 def _ask(prompt: str, choices: list[str] | None = None, default: str | None = None) -> str:
@@ -120,34 +99,52 @@ def _ask(prompt: str, choices: list[str] | None = None, default: str | None = No
 
 # ----------------------------------------------------------------------------------------------- commands
 def cmd_list(args) -> int:
-    print("Workflows (the rule: an analysis over ~15–30 min is a workflow, never a notebook cell — workflows/README.md)\n")
-    for name, w in WORKFLOWS.items():
-        print(f"{name:15s} {w['title']}\n{'':15s} project {w['project']} · needs {w['needs']} · time: {w['time']}\n{'':15s} script {w['script']}")
+    print("Books and chapters — a book is the part or assembly simulated, a chapter the scenario solved on it; a chapter's\n"
+          "prerequisites are chapters of the same book (the rule: an analysis over ~15–30 min is a workflow — workflows/README.md)\n")
+    for name, b in BOOKS.items():
+        print(f"{name}\n  {b['title']}\n  part: {b['part']}\n  needs {b['needs']} · {b['time']} · variants {', '.join(b['variants'])} · script {b['script']}")
         try:
-            camps = w["campaigns"]()
+            chs = library.chapters(name)
         except Exception as exc:
-            camps = {"?": f"campaign list unavailable ({exc})"}
-        for c, d in camps.items():
-            print(f"{'':17s}{c:13s} {d}")
-        print()
-    runs = _all_runs()
-    print(f"{len(runs)} run(s) on disk under workflows/runs/ (workflows/cli.py runs)")
+            chs = {"?": {"description": f"chapter list unavailable ({exc})", "prerequisites": ()}}
+        for c, d in chs.items():
+            pre = f"  [after: {', '.join(d['prerequisites'])}]" if d["prerequisites"] else ""
+            print(f"    {c:13s} {d['description']}{pre}")
+        runs = library.runs_of(name)
+        done = sum(1 for r in runs if r["state"] == "completed")
+        print(f"    runs: {len(runs)} ({done} completed) under workflows/runs/{name}/\n")
+    for name, i in library.IMPORTS.items():
+        print(f"{name:15s} {i['title']} — {i['script']}")
+    st = runkit.Cache.stats()
+    print("\ncache (solved cases reused across runs of a book, workflows/cache/): " + (", ".join(f"{k}: {v['cases']} case(s), {v['kB']} kB" for k, v in st.items()) if st else "empty"))
     return 0
 
 
+def _book(name: str) -> dict:
+    if name in BOOKS:
+        return BOOKS[name]
+    alias = {"airframe_cfd": "kestrel_airframe", "structure_fea": "kestrel_frame"}
+    if name in alias:
+        return BOOKS[alias[name]]
+    sys.exit(f"unknown book {name!r}; one of {list(BOOKS)}")
+
+
 def cmd_info(args) -> int:
-    w = WORKFLOWS.get(args.workflow) or sys.exit(f"unknown workflow {args.workflow}; one of {list(WORKFLOWS)}")
-    print(f"{args.workflow}: {w['title']}\nneeds: {w['needs']}\ntime: {w['time']}\n")
-    if args.campaign:
+    w = _book(args.book)
+    print(f"{args.book}: {w['title']}\npart: {w['part']}\nneeds: {w['needs']}\ntime: {w['time']}\n")
+    if args.chapter:
         extra = []
         for k, v in vars(args).items():
             if k in ("variant", "quality") and v:
                 extra += [f"--{k}", v]
-        cmd = [PY, str(ROOT / w["script"]), "--campaign", args.campaign, *extra, "--list"]
+        pre = w["chapters"].get(args.chapter, {}).get("prerequisites", ())
+        if pre:
+            print(f"prerequisites (same book): {', '.join(pre)}")
+        cmd = [PY, str(ROOT / w["script"]), "--chapter", args.chapter, *extra, "--list"]
         print("$ " + shlex.join(cmd[1:]) + "\n")
         return subprocess.call(cmd, cwd=ROOT)
-    for c, d in w["campaigns"]().items():
-        print(f"  {c:13s} {d}")
+    for c, d in library.chapters(args.book if args.book in BOOKS else {"airframe_cfd": "kestrel_airframe", "structure_fea": "kestrel_frame"}[args.book]).items():
+        print(f"  {c:13s} {d['description']}" + (f"  [after: {', '.join(d['prerequisites'])}]" if d["prerequisites"] else ""))
     return 0
 
 
@@ -171,14 +168,17 @@ def _launch(script: str, extra: list[str], *, detach: bool, label: str) -> int:
 
 
 def cmd_run(args) -> int:
-    w = WORKFLOWS.get(args.workflow) or sys.exit(f"unknown workflow {args.workflow}; one of {list(WORKFLOWS)}")
-    return _launch(w["script"], args.rest, detach=args.detach, label=f"{args.workflow}")
+    if args.book in library.IMPORTS:
+        return _launch(library.IMPORTS[args.book]["script"], args.rest, detach=args.detach, label=args.book)
+    w = _book(args.book)
+    extra = list(args.rest) + (["--no-cache"] if args.no_cache and "--no-cache" not in args.rest else [])
+    return _launch(w["script"], extra, detach=args.detach, label=args.book)
 
 
 def cmd_resume(args) -> int:
     d = _run_dir(args.run)
     m = runkit.read_json(d / "manifest.json") or sys.exit(f"{d} has no manifest.json")
-    w = WORKFLOWS.get(m.get("workflow")) or sys.exit(f"unknown workflow in manifest: {m.get('workflow')}")
+    w = BOOKS.get(m.get("book") or {"airframe_cfd": "kestrel_airframe", "structure_fea": "kestrel_frame"}.get(m.get("workflow"))) or sys.exit(f"unknown book in manifest: {m.get('book')}")
     st = runkit.read_json(d / "status.json") or {}
     if st.get("state") == "running" and _alive(st.get("pid")):
         sys.exit(f"{d.name} is still running (pid {st.get('pid')}); stop it first or wait")
@@ -187,12 +187,12 @@ def cmd_resume(args) -> int:
 
 def cmd_runs(args) -> int:
     runs = _all_runs()
-    if args.workflow:
-        runs = [r for r in runs if r["workflow"] == args.workflow]
+    if args.book:
+        runs = [r for r in runs if r["book"] == args.book or r["workflow"] == args.book]
     if not runs:
         print("no runs under workflows/runs/ yet (workflows/cli.py list; workflows/cli.py run …; or import_legacy)")
         return 0
-    print(f"{'run id':48s} {'workflow':13s} {'campaign':14s} {'variant':7s} {'state':10s} {'cases':14s} {'created':12s} summary")
+    print(f"{'book / chapter':30s} {'run id':44s} {'variant':7s} {'state':10s} {'cases':14s} {'created':12s} summary")
     for r in runs:
         c = r.get("cases") or {}
         st = runkit.read_json(Path(r["run"]) / "status.json") or {}
@@ -201,7 +201,7 @@ def cmd_runs(args) -> int:
             state = "running? (pid gone)"
         m = runkit.read_json(Path(r["run"]) / "manifest.json") or {}
         var = (m.get("config") or {}).get("variant", "")
-        print(f"{r['run_id'][:48]:48s} {r['workflow']:13s} {r['campaign'][:14]:14s} {var:7s} {state:10s} {str(c.get('done', 0)) + '/' + str(c.get('planned', '?')) + (' (' + str(c.get('failed')) + ' failed)' if c.get('failed') else ''):14s} {_age(r.get('created_at')):12s} {'yes' if r['summary'] else '-'}")
+        print(f"{(r['book'] + ' / ' + r['chapter'])[:30]:30s} {r['run_id'][:44]:44s} {var:7s} {state:10s} {str(c.get('done', 0)) + '/' + str(c.get('planned', '?')) + (' (' + str(c.get('failed')) + ' failed)' if c.get('failed') else ''):14s} {_age(r.get('created_at')):12s} {'yes' if r['summary'] else '-'}")
     return 0
 
 
@@ -209,7 +209,7 @@ def cmd_status(args) -> int:
     d = _run_dir(args.run)
     m = runkit.read_json(d / "manifest.json") or {}
     st = runkit.read_json(d / "status.json") or {}
-    print(f"run {d.name}\n  workflow {m.get('workflow')} · campaign {m.get('campaign')} · config {m.get('config')}\n  created {m.get('created_at')} ({_age(m.get('created_at'))}) on {m.get('host')}\n  command {m.get('command')}")
+    print(f"run {d.name}\n  book {m.get('book')} · chapter {m.get('chapter', m.get('campaign'))} · config {m.get('config')}\n  created {m.get('created_at')} ({_age(m.get('created_at'))}) on {m.get('host')}\n  command {m.get('command')}")
     state = st.get("state")
     pid = st.get("pid")
     alive = _alive(pid)
@@ -256,7 +256,7 @@ def cmd_stop(args) -> int:
     d = _run_dir(args.run)
     st = runkit.read_json(d / "status.json") or {}
     pid = st.get("pid")
-    if not _alive(pid):
+    if st.get("state") != "running" or not _alive(pid):
         print(f"{d.name}: no running process (state {st.get('state')})")
         return 1
     os.kill(int(pid), signal.SIGINT)
@@ -272,7 +272,7 @@ def cmd_notebook(args) -> int:
     rel = d.relative_to(ROOT) if ROOT in d.parents else d
     w = m.get("workflow")
     if w == "airframe_cfd":
-        camp = cfg.get("campaign", "sweep")
+        camp = cfg.get("chapter") or cfg.get("campaign", "sweep")
         if camp == "legacy-import":
             camp = "sweep"
         print(f'RUNS["airframe_cfd"]["{cfg.get("variant")}"]["{camp}"] = "{rel}"')
@@ -286,16 +286,43 @@ def cmd_notebook(args) -> int:
     return 0
 
 
+def cmd_cache(args) -> int:
+    st = runkit.Cache.stats()
+    if not st:
+        print("the cache is empty (workflows/cache/): a case is stored when a run of its book solves it, and read back by any later run that asks for the same case")
+        return 0
+    for k, v in st.items():
+        print(f"{k:20s} {v['cases']:5d} case(s)  {v['kB']:8.1f} kB   workflows/cache/{k}/")
+    return 0
+
+
+def cmd_clean_cache(args) -> int:
+    st = runkit.Cache.stats()
+    n = sum(v["cases"] for k, v in st.items() if args.book is None or k == args.book)
+    if not n:
+        print("nothing to clean")
+        return 0
+    if not args.yes and _ask(f"remove {n} cached case(s)" + (f" of {args.book}" if args.book else "") + "? the native results stay in their runs", ["yes", "no"], default="no") != "yes":
+        return 0
+    print(f"removed {runkit.Cache.clean(book=args.book)} cached case(s)")
+    return 0
+
+
 def interactive() -> int:
     print(__doc__.split("\n\n")[0])
-    print("\nWorkflows:")
-    names = list(WORKFLOWS)
+    print("\nBooks (the part simulated) → chapters (the scenario):")
+    names = list(BOOKS)
     for i, n in enumerate(names, 1):
-        print(f"  {i}. {n:15s} {WORKFLOWS[n]['title']}  [{WORKFLOWS[n]['time']}]")
-    print(f"  {len(names) + 1}. runs            see the runs on disk and their state")
-    pick = _ask("choose", [*names, "runs"], default=names[0])
+        print(f"  {i}. {n:17s} {BOOKS[n]['title']}  [{BOOKS[n]['time']}]")
+    print(f"  {len(names) + 1}. runs              see the runs on disk and their state\n  {len(names) + 2}. cache             the cached cases; clean them")
+    pick = _ask("choose", [*names, "runs", "cache"], default=names[0])
+    if pick == "cache":
+        cmd_cache(None)
+        if _ask("clean it?", ["no", "yes"], default="no") == "yes":
+            return cmd_clean_cache(argparse.Namespace(book=None, yes=True))
+        return 0
     if pick == "runs":
-        cmd_runs(argparse.Namespace(workflow=None))
+        cmd_runs(argparse.Namespace(book=None))
         r = _ask("a run id to inspect (empty to quit)", default="")
         if r:
             cmd_status(argparse.Namespace(run=r, lines=12))
@@ -309,16 +336,15 @@ def interactive() -> int:
             elif act == "notebook line":
                 return cmd_notebook(argparse.Namespace(run=r))
         return 0
-    w = WORKFLOWS[pick]
-    print(f"\n{pick}: {w['title']}\nneeds: {w['needs']}\n")
-    camps = w["campaigns"]()
+    w = BOOKS[pick]
+    print(f"\n{pick}: {w['title']}\npart: {w['part']}\nneeds: {w['needs']}\n")
+    chs = library.chapters(pick)
     extra = []
-    if list(camps) != ["-"]:
-        print("campaigns:")
-        for c, d in camps.items():
-            print(f"  {c:13s} {d}")
-        camp = _ask("campaign", list(camps), default=list(camps)[0])
-        extra += ["--campaign", camp]
+    print("chapters:")
+    for c, d in chs.items():
+        print(f"  {c:13s} {d['description']}" + (f"  [after: {', '.join(d['prerequisites'])}]" if d["prerequisites"] else ""))
+    camp = _ask("chapter", list(chs), default=list(chs)[0])
+    extra += ["--chapter", camp]
     for flag, choices, default in w["options"]:
         v = _ask(flag.lstrip("-"), choices, default=default)
         extra += [flag, v]
@@ -331,6 +357,8 @@ def interactive() -> int:
     lim = _ask("limit (e.g. '--max-cases 2 --max-minutes 90 --cases \"α 12°\"', empty for none)", default="")
     if lim:
         extra += shlex.split(lim)
+    if _ask("use the cache (cases this book already solved are read back)?", ["yes", "no"], default="yes") == "no":
+        extra.append("--no-cache")
     detach = _ask("run detached (survives logout; watch with tail)?", ["yes", "no"], default="yes") == "yes"
     print("\nabout to run:\n  " + shlex.join([".venv/bin/python", w["script"], *extra]))
     if _ask("confirm", ["yes", "no"], default="yes") != "yes":
@@ -343,10 +371,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="workflows/cli.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("list", help="the workflows and their campaigns")
-    p = sub.add_parser("info", help="a workflow, or a campaign's cases"); p.add_argument("workflow"); p.add_argument("campaign", nargs="?"); p.add_argument("--variant"); p.add_argument("--quality")
-    p = sub.add_parser("run", help="launch a workflow (the rest of the arguments go to its script)"); p.add_argument("workflow"); p.add_argument("--detach", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
+    p = sub.add_parser("info", help="a book, or a chapter's cases"); p.add_argument("book"); p.add_argument("chapter", nargs="?"); p.add_argument("--variant"); p.add_argument("--quality")
+    p = sub.add_parser("run", help="launch a book's script (the rest of the arguments go to it: --chapter, --variant, …)"); p.add_argument("book"); p.add_argument("--detach", action="store_true"); p.add_argument("--no-cache", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("resume", help="continue a run"); p.add_argument("run"); p.add_argument("--detach", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
-    p = sub.add_parser("runs", help="the runs on disk"); p.add_argument("--workflow")
+    p = sub.add_parser("runs", help="the runs on disk"); p.add_argument("--book")
+    sub.add_parser("cache", help="the cached cases per book")
+    p = sub.add_parser("clean-cache", help="remove the cached cases (the runs keep their native results)"); p.add_argument("--book"); p.add_argument("-y", "--yes", action="store_true")
     p = sub.add_parser("status", help="one run: state, heartbeat, last log lines, what next"); p.add_argument("run"); p.add_argument("-n", "--lines", type=int, default=8)
     p = sub.add_parser("tail", help="follow a run's log"); p.add_argument("run"); p.add_argument("-n", "--lines", type=int, default=30)
     p = sub.add_parser("stop", help="stop a running run (SIGINT)"); p.add_argument("run")
@@ -355,12 +385,14 @@ def main(argv=None) -> int:
     if args.cmd is None:
         return interactive()
     if args.cmd in ("run", "resume"):
+        args.rest = list(getattr(args, "rest", []) or [])
         if args.rest[:1] == ["--"]:
             args.rest = args.rest[1:]
-        if "--detach" in args.rest:                      # --detach may come after the workflow name
-            args.rest = [a for a in args.rest if a != "--detach"]
-            args.detach = True
-    return {"list": cmd_list, "info": cmd_info, "run": cmd_run, "resume": cmd_resume, "runs": cmd_runs, "status": cmd_status, "tail": cmd_tail, "stop": cmd_stop, "notebook": cmd_notebook}[args.cmd](args)
+        for flag in ("--detach", "--no-cache"):            # may come after the book name
+            if flag in args.rest:
+                args.rest = [a for a in args.rest if a != flag]
+                setattr(args, flag.strip("-").replace("-", "_"), True)
+    return {"list": cmd_list, "info": cmd_info, "run": cmd_run, "resume": cmd_resume, "runs": cmd_runs, "status": cmd_status, "tail": cmd_tail, "stop": cmd_stop, "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache}[args.cmd](args)
 
 
 if __name__ == "__main__":

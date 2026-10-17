@@ -549,6 +549,8 @@ def add_common_arguments(ap) -> None:
     ap.add_argument("--case-timeout", type=float, default=None, help="seconds a solver may take per case (the tool stops it)")
     ap.add_argument("--heartbeat", type=float, default=30.0, help="seconds between heartbeats in run.log / status.json")
     ap.add_argument("--quiet", action="store_true", help="log to run.log only, not to the terminal")
+    ap.add_argument("--no-cache", action="store_true", help="solve every case even when an earlier run of this book solved it (the cache under workflows/cache/)")
+    ap.add_argument("--ignore-prerequisites", action="store_true", help="start the chapter although a prerequisite chapter of the book has no completed run")
 
 
 def select_cases(names: list[str], filt: str | None) -> list[str]:
@@ -559,5 +561,65 @@ def select_cases(names: list[str], filt: str | None) -> list[str]:
 
 
 def default_out(workflow: str, campaign: str, base=None) -> Path:
+    """``workflows/runs/<book>/<chapter>/<timestamp>_<label>`` (``workflow`` is the book, ``campaign`` the chapter
+    when given as ``"book/chapter"``; a bare name keeps the flat layout)."""
     base = Path(base) if base else Path(__file__).resolve().parent / "runs" / workflow
     return base / f"{stamp()}_{slug(campaign)}"
+
+
+class Cache:
+    """A content-addressed store of **finished** cases across runs of the same book: ``workflows/cache/<book>/<key>.json``
+    holds the case record (status, metrics, artifacts pointing at the run that solved it) — a chapter asked for a
+    case it has already solved, in any earlier run, reads it back instead of solving again. ``enabled=False`` turns
+    it off for a run (``--no-cache``); ``clean`` empties it. Only ``solved`` and ``diverged`` cases are kept (a FAILED
+    case is retried next time)."""
+
+    KEEP = ("solved", "diverged")
+
+    def __init__(self, book: str, base=None, *, enabled: bool = True):
+        self.dir = Path(base or os.environ.get("VEGETA_WORKFLOW_CACHE") or Path(__file__).resolve().parent / "cache") / book
+        self.enabled = enabled
+        self.hits = 0
+
+    def path(self, key: str) -> Path:
+        return self.dir / f"{key}.json"
+
+    def get(self, key: str) -> dict | None:
+        if not self.enabled:
+            return None
+        rec = read_json(self.path(key))
+        if rec and rec.get("status") in self.KEEP:
+            self.hits += 1
+            return rec
+        return None
+
+    def put(self, key: str, record: dict) -> None:
+        if not self.enabled or record.get("status") not in self.KEEP:
+            return
+        self.dir.mkdir(parents=True, exist_ok=True)
+        write_json_atomic(self.path(key), {**record, "cached_at": utc_now()})
+
+    @staticmethod
+    def stats(base=None) -> dict:
+        base = Path(base or os.environ.get("VEGETA_WORKFLOW_CACHE") or Path(__file__).resolve().parent / "cache")
+        out = {}
+        if not base.is_dir():
+            return out
+        for b in sorted(base.iterdir()):
+            if b.is_dir():
+                files = list(b.glob("*.json"))
+                out[b.name] = {"cases": len(files), "kB": round(sum(f.stat().st_size for f in files) / 1024, 1)}
+        return out
+
+    @staticmethod
+    def clean(base=None, book: str | None = None) -> int:
+        import shutil
+        base = Path(base or os.environ.get("VEGETA_WORKFLOW_CACHE") or Path(__file__).resolve().parent / "cache")
+        n = 0
+        if not base.is_dir():
+            return 0
+        for b in base.iterdir():
+            if b.is_dir() and (book is None or b.name == book):
+                n += len(list(b.glob("*.json")))
+                shutil.rmtree(b)
+        return n

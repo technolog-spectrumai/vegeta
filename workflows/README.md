@@ -30,12 +30,37 @@ What follows from it, for every notebook in the repository:
 The first workflows are Kestrel's (`workflows/kestrel/`); `runkit.py` is the shared run-directory bookkeeping the
 next long-running analysis (a thermal case, another aircraft's CFD) reuses as it is.
 
+## Books and chapters
+
+A **book** is the part or assembly that is simulated — one design module, one set of variants, one results folder.
+A **chapter** is the scenario or problem solved on it — one named list of cases. The Kestrel books:
+
+| book | part | chapters (→ prerequisite, same book) |
+|---|---|---|
+| `kestrel_airframe` | the whole aircraft with the propellers as rotor disks (Aeromant) | `sweep`, `sweep-fine`, `stall`, `cruise` → sweep, `transitions` → sweep, `blown` → sweep, `all`, `sections` |
+| `kestrel_frame` | the carbon truss and the printed spar–post joint (Talos) | `frame`, `joint` → frame, `all` |
+
+The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/`, every cached case
+`workflows/cache/<book>/<case key>.json`. A chapter's **prerequisites are chapters of the same book only**: a chapter
+does not start until each prerequisite has a completed run for the same variant with a compatible fingerprint
+(`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `workflows/library.py`; a new
+book is a new entry there and a new script.
+
+**Cache.** A case is identified by its key (template, every value, the geometry file's hash, the quality). When a
+run of a book asks for a case any earlier run of that book already solved, the case record is read back from
+`workflows/cache/<book>/` — status, convergence, coefficients, and the path of the run that holds the native files —
+and logged as a cache hit; nothing is solved twice. Only `solved` and `diverged` cases are cached (a `FAILED` one is
+retried). `--no-cache` solves everything; `workflows/cli.py cache` shows the cache, `clean-cache [--book B]` empties
+it (the runs keep their native results). A cache hit is still subject to the run's design fingerprint, because the
+key contains the geometry and the values.
+
 ## Layout
 
 ```
 workflows/
   README.md                    this file
-  cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook, or interactive
+  cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook / cache / clean-cache, or interactive
+  library.py                   the books and chapters, their prerequisites, the run folders
   runkit.py                    the run-directory contract: manifest, status, run.log, heartbeat, cancel, resume, summary
   kestrel/
     airframe_cfd.py            the whole aircraft with the propellers as rotor disks (Aeromant / OpenFOAM), one campaign per run
@@ -43,7 +68,8 @@ workflows/
     import_legacy.py           the first CFD campaign's results file as run directories
     _kestrel.py                what the Kestrel scripts share (paths, the case loop under a budget)
   tests/                       the contract on a fake solver; the campaigns; prepare-only smoke cases
-  runs/<workflow>/<run id>/    every run (gitignored): see the contract below
+  runs/<book>/<chapter>/<run id>/   every run (gitignored): see the contract below
+  cache/<book>/<key>.json           the solved cases reused across runs (gitignored)
 ```
 
 The engineering content of the Kestrel workflows — the variants and their fingerprints, the campaign catalogue, the
@@ -53,43 +79,44 @@ Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`
 
 ## Running (Ubuntu)
 
-All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`). The quickest
+All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`); `source env.sh`
+activates it and defines `wf` (= `workflows/cli.py`) and `wfrun <book> …` (= the book's script). The quickest
 way is `workflows/cli.py` (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
 `resume`, `notebook`); the scripts below are what it calls.
 
 ```bash
 # what a campaign would do, without writing anything
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --list
-.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --campaign all --list
+.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
+.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --list
 
 # prepare only: the cases written (STL, dictionaries / STEP, mesh), no solver — the run says 'prepared'
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --prepare-only
+.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --prepare-only
 
 # foreground
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine --processors 4
+.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
 
 # detached with nohup (survives the terminal and Jupyter closing)
-nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign sweep --processors 4 \
+nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --processors 4 \
       > workflows/runs/airframe_cfd_sweep.out 2>&1 &
 echo $!                                   # the PID (also in <run>/status.json)
 
 # detached in tmux (attach later with: tmux attach -t kestrel)
-tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --campaign all --threads 4'
+tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # watching a run
-tail -F workflows/runs/airframe_cfd/<run id>/run.log
-cat workflows/runs/airframe_cfd/<run id>/status.json
-tail -n 3 workflows/runs/airframe_cfd/<run id>/cases/<case>/log.simpleFoam        # the native solver log
+tail -F workflows/runs/kestrel_airframe/<chapter>/<run id>/run.log
+cat workflows/runs/kestrel_airframe/<chapter>/<run id>/status.json
+tail -n 3 workflows/runs/kestrel_airframe/<chapter>/<run id>/cases/<case>/log.simpleFoam        # the native solver log
 
 # stopping, resuming
 kill -INT <pid>        # or Ctrl-C in the foreground: the running solver is stopped, the run ends 'cancelled', finished cases are kept
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/airframe_cfd/<run id>
+.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel_airframe/<chapter>/<run id>
 ```
 
 Closing Jupyter never stops a workflow: the scripts are separate processes that write to disk; the notebook only
 reads the run directory, whenever it is next executed.
 
-Common options (every script): `--out DIR` (default `workflows/runs/<workflow>/<timestamp>_<campaign>`),
+Common options (every script): `--chapter` (`--campaign` still accepted), `--out DIR` (default `workflows/runs/<book>/<chapter>/<timestamp>_<label>`), `--no-cache`, `--ignore-prerequisites`,
 `--resume RUN_DIR`, `--rerun-failed`, `--prepare-only`, `--list`, `--cases TEXT[,TEXT]` (a name filter: a run does
 the cases it lists and never more), `--max-cases N`, `--max-minutes M` (no new case after that; the run ends
 `partial`, resumable), `--case-timeout S`, `--heartbeat S` (default 30), `--quiet`. CFD: `--quality screening|fine`,

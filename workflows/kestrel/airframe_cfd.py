@@ -2,12 +2,12 @@
 """Kestrel airframe CFD — the whole aircraft with the four propellers as rotor disks (Aeromant / OpenFOAM), one
 named campaign per run, written as a run directory the unified Kestrel notebook reads.
 
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign stall --quality fine --processors 4
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign sweep --list
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --campaign blown --prepare-only
+    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
+    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --list
+    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter blown --prepare-only
     .venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/airframe_cfd/<run id>
 
-Campaigns (``kestrel_campaigns.CFD_CAMPAIGNS``): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
+Book ``kestrel_airframe``; chapters (``kestrel_campaigns.CFD_CAMPAIGNS``, ``--chapter``; ``--campaign`` still works): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
 ``stall`` 8–16° (5: CL max), ``cruise`` (2 blown), ``transitions`` (the 3 s transitions' points + hover, blown),
 ``blown`` (cruise + transitions), ``all`` (sweep + blown), ``sections`` (the two finalist sections as slabs, 8).
 A run does exactly the cases it lists (``--list``) — filtered with ``--cases``, bounded with ``--max-cases`` /
@@ -31,12 +31,13 @@ import kestrel_campaigns as kc  # noqa: E402
 import kestrel_cfd as kcfd  # noqa: E402
 
 WORKFLOW = "airframe_cfd"
+BOOK = "kestrel_airframe"
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variant", default="4Q-2", choices=tuple(kc.VARIANTS))
-    ap.add_argument("--campaign", default="sweep", choices=tuple(kc.CFD_CAMPAIGNS))
+    wk.chapter_args(ap, BOOK)
     ap.add_argument("--quality", default="screening", choices=tuple(kcfd.QUALITY))
     ap.add_argument("--processors", type=int, default=4, help="MPI ranks per case (meshing stays serial)")
     runkit.add_common_arguments(ap)
@@ -46,19 +47,19 @@ def main(argv=None) -> int:
         m = runkit.read_json(Path(args.resume) / "manifest.json") or {}
         cfg = m.get("config") or {}
         if cfg:
-            args.variant, args.campaign, args.quality = cfg.get("variant", args.variant), cfg.get("campaign", args.campaign), cfg.get("quality", args.quality)
-    config = {"workflow": WORKFLOW, "variant": args.variant, "campaign": args.campaign, "quality": args.quality}
+            args.variant, args.chapter, args.quality = cfg.get("variant", args.variant), cfg.get("chapter", cfg.get("campaign", args.chapter)), cfg.get("quality", args.quality)
+    config = {"workflow": WORKFLOW, "book": BOOK, "chapter": args.chapter, "campaign": args.chapter, "variant": args.variant, "quality": args.quality}
 
     t0 = time.monotonic()
     veh = kc.vehicle(args.variant)
-    specs = kc.cfd_specs(args.variant, args.campaign, veh=veh)
+    specs = kc.cfd_specs(args.variant, args.chapter, veh=veh)
     names = runkit.select_cases(list(specs), args.cases)
     if not names:
-        print(f"no case of campaign {args.campaign} matches --cases {args.cases!r}; the campaign has: " + ", ".join(specs))
+        print(f"no case of campaign {args.chapter} matches --cases {args.cases!r}; the campaign has: " + ", ".join(specs))
         return 2
     if args.list:
         tab = kcfd.not_run_table({n: specs[n] for n in names if not specs[n].get("slab")})
-        print(f"{args.variant} / {args.campaign} ({args.quality}): {len(names)} case(s) — {kc.CFD_CAMPAIGNS[args.campaign]}")
+        print(f"{args.variant} / {args.chapter} ({args.quality}): {len(names)} case(s) — {kc.CFD_CAMPAIGNS[args.chapter]}")
         if len(tab):
             print(tab.to_string())
         slabs = [n for n in names if specs[n].get("slab")]
@@ -68,13 +69,18 @@ def main(argv=None) -> int:
         return 0
 
     fp = kc.fingerprint(args.variant, veh)
+    ignored = wk.prerequisites_or_exit(BOOK, args.chapter, variant=args.variant, expected=fp, ignore=args.ignore_prerequisites)
     if args.resume:
         run = runkit.Run.open(args.resume, config=config, heartbeat_s=args.heartbeat, echo=not args.quiet)
     else:
-        out = Path(args.out) if args.out else runkit.default_out(WORKFLOW, f"{args.variant}_{args.campaign}_{args.quality}")
-        run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.campaign, config=config, design=fp, planned_cases=names,
+        out = Path(args.out) if args.out else wk.library.run_dir(BOOK, args.chapter, f"{args.variant}_{args.quality}")
+        run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names,
                                 versions={"openfoam": _openfoam_version()}, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    run.log(f"{kc.VARIANTS[args.variant]}; {kc.CFD_CAMPAIGNS[args.campaign]}; quality {args.quality} {kcfd.QUALITY[args.quality]}; "
+    run.manifest.update(book=BOOK, chapter=args.chapter, prerequisites_ignored=ignored)
+    runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
+    cache = runkit.Cache(BOOK, enabled=not args.no_cache)
+    run.log(f"cache {'off (--no-cache)' if args.no_cache else cache.dir}")
+    run.log(f"{kc.VARIANTS[args.variant]}; {kc.CFD_CAMPAIGNS[args.chapter]}; quality {args.quality} {kcfd.QUALITY[args.quality]}; "
             f"{args.processors} MPI rank(s) per case; prop_lab {'on file' if fp['prop_lab']['on_file'] else 'not on file'}")
     budget = runkit.Budget(args.max_cases, args.max_minutes, args.case_timeout)
 
@@ -124,15 +130,15 @@ def main(argv=None) -> int:
 
     with run.signals():
         run.status("running")
-        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, case_dirs=dirs)
+        state = wk.drive(run, names, keys, one, budget=budget, rerun_failed=args.rerun_failed, case_dirs=dirs, cache=None if args.prepare_only else cache)
     if args.prepare_only:
         state = "prepared"
-    summary = kc.cfd_summary(variant=args.variant, campaign=args.campaign, quality=args.quality, specs={n: specs[n] for n in names}, records=run.records,
+    summary = kc.cfd_summary(variant=args.variant, campaign=args.chapter, quality=args.quality, specs={n: specs[n] for n in names}, records=run.records,
                              veh=veh, run_root=run.root)
     for k, mp in summary.get("maps", {}).items():
         run.add_artifact(k, run.root / mp["file"])
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=f'notebook: RUNS["airframe_cfd"]["{args.variant}"]["{args.campaign}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"')
+    wk.closing(run, code, hint=f'notebook: RUNS["airframe_cfd"]["{args.variant}"]["{args.chapter}"] = "{run.root.relative_to(wk.ROOT) if wk.ROOT in run.root.parents else run.root}"' + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
     return code
 
 
