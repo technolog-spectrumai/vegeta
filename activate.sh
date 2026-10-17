@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Activate the ready Vegeta environment (nothing is installed):   source activate.sh
 #   - activates the virtual environment (.venv, or $VEGETA_VENV)
-#   - puts the repository root first on the path and exports VEGETA_ROOT
+#   - exports VEGETA_ROOT and puts the Vegeta source trees, workflows/ and notebooks/designs/ on PYTHONPATH
+#     (the libraries import even without a pip install of the distributions)
 #   - defines `wf`  = the workflows tool (workflows/cli.py): wf list | wf info … | wf run … | wf runs | wf status … | wf cache
 #     and   `wfrun` = a book's script directly (wfrun kestrel_airframe --chapter stall …)
 # Nothing is run; sourcing only arranges the environment.
@@ -36,7 +37,13 @@ PY
 }
 export -f wf wfrun 2>/dev/null
 cd "$VEGETA_ROOT" || return
-python -c "import vegeta.aeromant, vegeta.talos" 2>/dev/null || echo "activate.sh: vegeta-cli is not importable from $_VENV — run ./install_local.sh" >&2
+# the Vegeta libraries and the workflow modules importable even without a pip install of the distributions
+_PP=""
+for _d in "$VEGETA_ROOT"/vegeta-cli/src "$VEGETA_ROOT"/vegeta-core/src "$VEGETA_ROOT"/vegeta-ai/src "$VEGETA_ROOT"/vegeta-fidia/src "$VEGETA_ROOT"/workflows "$VEGETA_ROOT"/notebooks/designs; do
+  [ -d "$_d" ] && _PP="${_PP:+$_PP:}$_d"
+done
+case ":${PYTHONPATH:-}:" in *":$VEGETA_ROOT/workflows:"*) ;; *) export PYTHONPATH="${_PP}${PYTHONPATH:+:$PYTHONPATH}" ;; esac
+python -c "import vegeta.aeromant, vegeta.talos, vegeta.boreas" 2>/dev/null || echo "activate.sh: the vegeta libraries do not import (missing dependencies?) — run ./install_local.sh or ./test.sh --quick" >&2
 _of="$(python -c "from vegeta import aeromant; e=aeromant.OpenFOAMEnvironment.detect(); print(e.flavor(), e.version())" 2>/dev/null || echo "not found")"
 _ccx="$(command -v ccx >/dev/null && echo found || echo "not found")"
 echo "Vegeta: python=$(command -v python)  root=$VEGETA_ROOT  OpenFOAM: $_of  CalculiX: $_ccx"
