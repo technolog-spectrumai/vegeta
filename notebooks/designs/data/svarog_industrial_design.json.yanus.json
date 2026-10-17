@@ -2,13 +2,13 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "svarog_industrial_design.json",
- "git": "202f88800591",
+ "git": "b9f9a5ffbb74",
  "inputs": [
   {
    "key": "47_svarog_fiber:notebooks/designs/data/reports/47_svarog_fiber.json",
    "kind": "file",
    "path": "notebooks/designs/data/reports/47_svarog_fiber.json",
-   "sha256": "df21d321651c210cb6c7d3eb7bdcec1e429f94d2822fc22ce06675f1b9ae8c3d"
+   "sha256": "4cbe04ad141d9cb7a0c92e028d540f0d050c04aabbf7bcfa73571d8f3a988941"
   }
  ],
  "kind": "notebook",
@@ -17,9 +17,9 @@
  },
  "producer": "48_svarog_weld",
  "schema": null,
- "sha256": "f637c49f3aca17d5d8d177bdd686c05b71100947e503e8afe2fbdb75b93e29bd",
- "size": 7497,
- "written_at": "2026-10-17T15:15:10Z",
- "written_ts": 1792250110.4013186,
+ "sha256": "90af61a2d15f1d073553a0dbec31a5ff0e18ebbe8e5b2353bc87a58bd0fa2af2",
+ "size": 7499,
+ "written_at": "2026-10-17T15:51:25Z",
+ "written_ts": 1792252285.2475972,
  "yanus": 1
 }

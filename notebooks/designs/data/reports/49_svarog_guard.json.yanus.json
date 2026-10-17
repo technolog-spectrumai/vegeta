@@ -2,13 +2,13 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "49_svarog_guard.json",
- "git": "202f88800591",
+ "git": "b9f9a5ffbb74",
  "inputs": [
   {
    "key": "48_svarog_weld:notebooks/designs/data/reports/48_svarog_weld.json",
    "kind": "file",
    "path": "notebooks/designs/data/reports/48_svarog_weld.json",
-   "sha256": "4d119ec0df149202b3f51f2fcb42bbb668e092840e633a3bb3bef45e41e3e248"
+   "sha256": "6a150573ed4c4bf9c745f0b6cd59bcdb63b2187d8b47f7514b46cd8acacbb659"
   }
  ],
  "kind": "notebook",
@@ -17,9 +17,9 @@
  },
  "producer": "49_svarog_guard",
  "schema": null,
- "sha256": "d76ff8e699d62e53eb297e15d8627a6a74d1cea403c42cfd2f3550eecfd8047b",
- "size": 39879,
- "written_at": "2026-10-17T15:16:41Z",
- "written_ts": 1792250201.1866271,
+ "sha256": "a83c123f794072655040810182714675e767c6b7bfe3fcced50e13a8559473e3",
+ "size": 39951,
+ "written_at": "2026-10-17T15:49:36Z",
+ "written_ts": 1792252176.0583696,
  "yanus": 1
 }

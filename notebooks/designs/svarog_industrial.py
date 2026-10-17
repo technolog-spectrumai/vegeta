@@ -20,6 +20,8 @@ from vegeta.hyperion import welding as wd
 import svarog_fiber as sf
 
 LAM, LAM_P = sf.LAM, sf.LAM_P
+SCREENING, N_FINE, N_SWEEP = sf.SCREENING, sf.N_FINE, sf.N_SWEEP
+NR_GUARD = 12 if SCREENING else 24            # the guard's grid across the plate (auto mode: half)
 POWER_TARGET = 1000.0                           # W at the workpiece
 SEED_DEFAULT = 59.0                             # W: notebook 47's amplifier output when its report is not at hand
 
@@ -89,7 +91,7 @@ class SignalCombiner:
         return self.n_inputs * per_module_W * self.efficiency
 
 
-def pump_for_target_with(length: float, seed_W: float, target_W: float, pump: PumpModules, n: int = 200) -> float:
+def pump_for_target_with(length: float, seed_W: float, target_W: float, pump: PumpModules, n: int = N_SWEEP) -> float:
     """``pump_for_target`` with a chosen pump module set."""
     amp = power_stage(length)
     lo, hi = 0.0, pump.launched_max
@@ -104,7 +106,7 @@ def pump_for_target_with(length: float, seed_W: float, target_W: float, pump: Pu
     return 0.5 * (lo + hi)
 
 
-def power_stage_length_choice(seed_W: float, pump_W: float, lengths=None, within: float = 0.03, n: int = 200) -> dict:
+def power_stage_length_choice(seed_W: float, pump_W: float, lengths=None, within: float = 0.03, n: int = N_SWEEP) -> dict:
     lengths = np.arange(4.0, 20.01, 1.0) if lengths is None else np.asarray(lengths, dtype=float)
     rows = []
     for L in lengths:
@@ -116,7 +118,7 @@ def power_stage_length_choice(seed_W: float, pump_W: float, lengths=None, within
     return {"rows": rows, "best_length": best["length"], "chosen_length": chosen["length"], "chosen_output_W": chosen["output_W"], "rule": f"shortest within {within:.0%} of the best"}
 
 
-def pump_for_target(length: float, seed_W: float, target_W: float = POWER_TARGET, n: int = 200) -> float:
+def pump_for_target(length: float, seed_W: float, target_W: float = POWER_TARGET, n: int = N_SWEEP) -> float:
     """The launched pump that puts ``target_W`` out of the stage (bisection), capped at the modules' maximum."""
     amp = power_stage(length)
     lo, hi = 0.0, PUMP_POWER.launched_max
@@ -256,7 +258,7 @@ def screen(barrier: Barrier, beam: StrayBeam, T0: float = th.T_ROOM) -> dict:
     elif t_lower > EXPOSURE["T3"]:
         decision = "survives: energy bound"
     else:                                                            # the cheap steady solve with the losses in: does it ever get hot enough?
-        st = th.steady_plate(s, d, beam.power, beam.radius, shape=beam.shape, h=10.0, nr=24, nz=_nz(d), r_max=_r_max(beam.radius, d))
+        st = th.steady_plate(s, d, beam.power, beam.radius, shape=beam.shape, h=10.0, nr=NR_GUARD, nz=_nz(d), r_max=_r_max(beam.radius, d))
         steady_T = st["T_max"]
         decision = "simulate" if st["reaches_damage"] else "survives: steady solve"
     return {"barrier": barrier.name, "beam": beam.name, "absorbed_irradiance_W_per_cm2": q / 1e4, "transmitted_fraction": transmitted,
@@ -275,9 +277,9 @@ def _r_max(radius: float, thickness: float) -> float:
 SIMULATION_CAP_S = 3000.0                                       # the transient's own cap: a front that has not crossed by then has stalled or is timed
 
 
-def simulate(barrier: Barrier, beam: StrayBeam, t_max: float = SIMULATION_CAP_S, nr: int = 24, nz: int | None = None) -> th.HeatingResult:
+def simulate(barrier: Barrier, beam: StrayBeam, t_max: float = SIMULATION_CAP_S, nr: int | None = None, nz: int | None = None) -> th.HeatingResult:
     """The one transient worth running: the barrier under the beam until it fails, settles (the melt front stalled) or the cap."""
-    return th.heat_plate(barrier.solid, barrier.thickness, beam.power, beam.radius, t_max, shape=beam.shape, h=10.0, nr=nr, nz=nz or _nz(barrier.thickness),
+    return th.heat_plate(barrier.solid, barrier.thickness, beam.power, beam.radius, t_max, shape=beam.shape, h=10.0, nr=nr or NR_GUARD, nz=nz or _nz(barrier.thickness),
                          r_max=_r_max(beam.radius, barrier.thickness))
 
 

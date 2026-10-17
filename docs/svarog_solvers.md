@@ -69,6 +69,16 @@ Of 33 (barrier, beam) pairs, 6 are simulated; the others are decided by the boun
 bound decided each. The absorptivity of the barrier at 1 µm (bare aluminium 0.12, painted or oxidised up to 0.5) is the
 input to vary before trusting a verdict near a class boundary; the standard's test on the panel is the confirmation.
 
+## Yanus: the chain runs itself (auto mode)
+
+Notebooks 47, 48, 49 and 51 carry the `yanus_auto` flag with `SVAROG_SCREENING` as their screening switch: opening one
+whose take is missing (48 without 47's report, 49 or 51 without 48's) makes the gate run the producer notebook
+headlessly first, with `SVAROG_SCREENING=1` — the design modules then solve with a third of the RK4 steps
+(`N_FINE` 100, `N_SWEEP` 40) and the guard on half the grid (`NR_GUARD` 12) — and then open with what is there; a
+producer that fails is NOT RUN, never a crash. `yn auto 48 --dry-run` prints the plan; `yn status` marks the four
+`(auto)`. Tested: 48 opened with 47's report removed ran 47 in 0.2 min and read its 58.9 W seed. The batch mechanism
+(`wf batch batch.yaml`) is for workflow chapters, which Svarog has none of — every step is seconds inside a notebook.
+
 ## Runtimes (this machine, numpy only)
 
 | notebook | what runs | time |

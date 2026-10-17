@@ -118,37 +118,37 @@
     "core_index": null,
     "name": "30/250 Yb double-clad"
    },
-   "seed_W": 58.88036668695728,
-   "pump_W": 1077.0319694317814,
+   "seed_W": 58.88036661392081,
+   "pump_W": 1077.0319690633978,
    "pump": {
     "modules": 6,
     "module_W": 220.0
    },
-   "output_W": 1000.0000006630972,
-   "absorbed_W": 1048.4733895999595,
-   "unabsorbed_W": 28.55857983182174,
-   "gain_db": 12.300294943113519,
-   "efficiency": 0.9284775466699243,
-   "heat_W": 105.21456203817098,
-   "peak_heat_per_m": 37.56711235059092,
-   "inversion_max": 0.12379797001487344,
-   "inversion_min": 0.0758476307686711,
+   "output_W": 1000.0000002623195,
+   "absorbed_W": 1048.4733892351098,
+   "unabsorbed_W": 28.55857982828801,
+   "gain_db": 12.300294946760047,
+   "efficiency": 0.9284775466153838,
+   "heat_W": 105.21456200059355,
+   "peak_heat_per_m": 37.56711233721665,
+   "inversion_max": 0.12379797001934553,
+   "inversion_min": 0.07584763081632817,
    "note": "",
    "coil_radius": 0.0495
   },
   "thermal_budget": {
-   "active_fibre_heat_W": 105.21456203817098,
-   "active_fibre_peak_W_per_m": 37.56711235059092,
+   "active_fibre_heat_W": 105.21456200059355,
+   "active_fibre_peak_W_per_m": 37.56711233721665,
    "core_dT_per_cooling": {
-    "water-cooled spool (h 2000)": 40.35077857944904,
-    "cooled plate (h 500)": 85.19321579158756,
-    "still air (h 10)": 3014.8991136513046
+    "water-cooled spool (h 2000)": 40.35077856508376,
+    "cooled plate (h 500)": 85.19321576125792,
+    "still air (h 10)": 3014.8991125779703
    },
-   "stripper_W": 51.32135889110501,
-   "delivery_loss_W": 66.74569924726791,
-   "delivered_W": 933.2543014158293,
-   "lens_absorbed_W_each": 1.8665086028316586,
-   "lens_centre_dT": 55.70236373448189,
+   "stripper_W": 51.321358878448464,
+   "delivery_loss_W": 66.74569922051774,
+   "delivered_W": 933.2543010418018,
+   "lens_absorbed_W_each": 1.8665086020836037,
+   "lens_centre_dT": 55.70236371215763,
    "wall_plug_pump_W": null
   },
   "delivery": {
@@ -170,7 +170,7 @@
    "spot_radius": 5e-05,
    "cone_half_angle": 0.06,
    "rayleigh_length": 0.0008333333333333334,
-   "mean_irradiance_W_per_cm2": 11882562.818568228,
+   "mean_irradiance_W_per_cm2": 11882562.813805964,
    "srs_delivery": {
     "P_threshold_W": 7255.6277027497,
     "L_eff": 19.546972960558833,
@@ -200,37 +200,37 @@
     "window": [
      {
       "thickness": 0.001,
-      "v_full_penetration": 0.0676650290489466,
-      "v_with_margin": 0.050265052532560604,
-      "heat_input_J_per_m": 18566.66320623633,
+      "v_full_penetration": 0.06766502900520273,
+      "v_with_margin": 0.05026505249936813,
+      "heat_input_J_per_m": 18566.663211055704,
       "feasible": true
      },
      {
       "thickness": 0.002,
-      "v_full_penetration": 0.021154010286589423,
-      "v_with_margin": 0.015363809628951418,
-      "heat_input_J_per_m": 60743.67776968635,
+      "v_full_penetration": 0.021154010271844836,
+      "v_with_margin": 0.015363809618060185,
+      "heat_input_J_per_m": 60743.67778840215,
       "feasible": true
      },
      {
       "thickness": 0.003,
-      "v_full_penetration": 0.010314223961352365,
-      "v_with_margin": 0.007408432769890614,
-      "heat_input_J_per_m": 125971.89316595618,
+      "v_full_penetration": 0.0103142239539022,
+      "v_with_margin": 0.007408432764465311,
+      "heat_input_J_per_m": 125971.89320772051,
       "feasible": true
      },
      {
       "thickness": 0.004,
-      "v_full_penetration": 0.006106716614753189,
-      "v_with_margin": 0.004357187233540949,
-      "heat_input_J_per_m": 214187.33035656193,
+      "v_full_penetration": 0.006106716610248419,
+      "v_with_margin": 0.0043571872302894995,
+      "heat_input_J_per_m": 214187.3304305527,
       "feasible": true
      },
      {
       "thickness": 0.006,
-      "v_full_penetration": 0.0028682789575361282,
-      "v_with_margin": 0.0020309569119317116,
-      "heat_input_J_per_m": 459514.5745993103,
+      "v_full_penetration": 0.002868278955369247,
+      "v_with_margin": 0.0020309569103840208,
+      "heat_input_J_per_m": 459514.57476532017,
       "feasible": true
      }
     ]
@@ -245,30 +245,30 @@
     "window": [
      {
       "thickness": 0.001,
-      "v_full_penetration": 0.06267811470301159,
-      "v_with_margin": 0.04478026789569294,
-      "heat_input_J_per_m": 20840.748509804955,
+      "v_full_penetration": 0.06267811465696663,
+      "v_with_margin": 0.044780267862399616,
+      "heat_input_J_per_m": 20840.74851694717,
       "feasible": true
      },
      {
       "thickness": 0.002,
-      "v_full_penetration": 0.017126572407529902,
-      "v_with_margin": 0.012085206832080692,
-      "heat_input_J_per_m": 77222.86547371837,
+      "v_full_penetration": 0.017126572394453088,
+      "v_with_margin": 0.012085206822785615,
+      "heat_input_J_per_m": 77222.86550216346,
       "feasible": true
      },
      {
       "thickness": 0.003,
-      "v_full_penetration": 0.007862238732901152,
-      "v_with_margin": 0.005521052145917742,
-      "heat_input_J_per_m": 169035.58900559857,
+      "v_full_penetration": 0.007862238726808034,
+      "v_with_margin": 0.005521052141616576,
+      "heat_input_J_per_m": 169035.5890695397,
       "feasible": true
      },
      {
       "thickness": 0.004,
-      "v_full_penetration": 0.004497342742423714,
-      "v_with_margin": 0.003149965498184758,
-      "heat_input_J_per_m": 296274.4518800727,
+      "v_full_penetration": 0.004497342738910707,
+      "v_with_margin": 0.0031499654957141826,
+      "heat_input_J_per_m": 296274.45199370594,
       "feasible": true
      }
     ]
@@ -284,21 +284,21 @@
    "beams": [
     {
      "name": "raw collimated beam",
-     "power": 933.2543014158293,
+     "power": 933.2543010418018,
      "radius": 0.017,
      "shape": "tophat",
      "note": "the worst case: the full power in a beam that stays small"
     },
     {
      "name": "diverging past the focus",
-     "power": 933.2543014158293,
+     "power": 933.2543010418018,
      "radius": 1.2,
      "shape": "tophat",
      "note": "the beam through the focus, or a flat workpiece's specular reflection"
     },
     {
      "name": "keyhole back-reflection",
-     "power": 186.65086028316588,
+     "power": 186.65086020836037,
      "radius": 1.2,
      "shape": "tophat",
      "note": "a fifth of the power thrown back out of the keyhole"

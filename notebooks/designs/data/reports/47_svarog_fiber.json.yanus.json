@@ -2,7 +2,7 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "47_svarog_fiber.json",
- "git": "d5d205faa764",
+ "git": "b9f9a5ffbb74",
  "inputs": [
   {
    "key": "46_svarog:notebooks/designs/data/reports/46_svarog.json",
@@ -19,7 +19,7 @@
  "schema": null,
  "sha256": "df21d321651c210cb6c7d3eb7bdcec1e429f94d2822fc22ce06675f1b9ae8c3d",
  "size": 19743,
- "written_at": "2026-10-17T14:43:54Z",
- "written_ts": 1792248234.3774936,
+ "written_at": "2026-10-17T15:47:55Z",
+ "written_ts": 1792252075.7992697,
  "yanus": 1
 }

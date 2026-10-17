@@ -10,6 +10,7 @@ Everything is Hyperion's `fibre` module; nothing is run."""
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import dataclass, replace
 
 import numpy as np
@@ -19,6 +20,9 @@ from vegeta.hyperion import fibre as fb
 
 import svarog as sv
 
+SCREENING = os.environ.get("SVAROG_SCREENING", "").strip().lower() in ("1", "true", "on", "yes")   # Yanus auto mode: coarse and quick
+N_FINE = 100 if SCREENING else 300             # RK4 steps of a solve shown in detail
+N_SWEEP = 40 if SCREENING else 150             # steps of a solve inside a sweep
 LAM = 1070e-9                                   # the gratings' line: Yb's gain is broad and flat here, reabsorption small
 LAM_P = 976e-9                                  # the absorption peak: short fibres; a wavelength-stabilised diode holds it
 LOSS_DB_PER_KM = 10.0                           # background loss of the active fibre at both wavelengths
@@ -91,7 +95,7 @@ def oscillator(length: float, R_oc: float = GRATINGS.R_oc, gratings: Gratings = 
     return hy.FibreLaser(active(FIBRE_OSC, length), LAM_P, LAM, gratings.R_hr_effective, R_oc, name=f"Svarog-fiber oscillator, {length:g} m")
 
 
-def length_choice(pump_W: float, lengths=None, within: float = 0.03, n: int = 200) -> dict:
+def length_choice(pump_W: float, lengths=None, within: float = 0.03, n: int = N_SWEEP) -> dict:
     """The length sweep at the design pump and the rule: the shortest fibre whose output is within ``within`` of the
     best (a shorter fibre is cheaper, stiffer against SRS and bends, and the unabsorbed pump it leaves is reported)."""
     lengths = np.arange(2.0, 20.01, 1.0) if lengths is None else np.asarray(lengths, dtype=float)
@@ -102,7 +106,7 @@ def length_choice(pump_W: float, lengths=None, within: float = 0.03, n: int = 20
             "chosen_output_W": chosen["output_W"], "chosen_unabsorbed_W": chosen["unabsorbed_W"], "rule": f"shortest within {within:.0%} of the best"}
 
 
-def coupler_choice(length: float, pump_W: float, n: int = 200) -> dict:
+def coupler_choice(length: float, pump_W: float, n: int = N_SWEEP) -> dict:
     """Output against the output grating's reflectivity at the design pump, with the threshold and the circulating power."""
     rows = {}
     for r in R_OC_CANDIDATES:
@@ -118,7 +122,7 @@ def amplifier(length: float, direction: str = "counter") -> hy.FibreAmplifier:
     return hy.FibreAmplifier(active(FIBRE_AMP, length), LAM_P, LAM, direction, name=f"Svarog-fiber amplifier, {length:g} m, {direction}-pumped")
 
 
-def amplifier_length_choice(seed_W: float, pump_W: float, lengths=None, within: float = 0.03, n: int = 200) -> dict:
+def amplifier_length_choice(seed_W: float, pump_W: float, lengths=None, within: float = 0.03, n: int = N_SWEEP) -> dict:
     lengths = np.arange(1.0, 10.01, 0.5) if lengths is None else np.asarray(lengths, dtype=float)
     rows = []
     for L in lengths:
