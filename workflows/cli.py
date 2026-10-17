@@ -12,6 +12,7 @@ code, case-insensitive: K1, k2, K10 …
     wf status <run>                 # one run: heartbeat, last log lines, what to do next
     wf tail <run> | wf stop <run> | wf resume <run> | wf notebook <run>
     wf cache | wf clean-cache [--book kestrel] [-y]
+    wf gui                          # the desktop interface (PyQt6): the same tree, Run / Stop, the live log and progress, the runs
     wf import_legacy                # the first CFD campaign's file into K1's folder (once)
 
 (``wf`` = ``workflows/cli.py`` after ``source activate.sh``.) A run is a directory under workflows/runs/<book>/<chapter>/
@@ -289,6 +290,15 @@ def cmd_notebook(args) -> int:
     return 0
 
 
+def cmd_gui(args) -> int:
+    try:
+        import PyQt6.QtWidgets  # noqa: F401
+    except Exception as exc:
+        sys.exit(f"the desktop interface needs PyQt6: pip install PyQt6 (or: sudo apt install python3-pyqt6 libegl1 libxkbcommon-x11-0 libxcb-cursor0) — {exc}")
+    from gui.app import main as gui_main
+    return gui_main([])
+
+
 def cmd_cache(args) -> int:
     st = runkit.Cache.stats()
     if not st:
@@ -381,6 +391,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("run", help="run a chapter by code (the rest of the arguments go to its script: --variant, --quality, …)"); p.add_argument("code"); p.add_argument("--detach", action="store_true"); p.add_argument("--no-cache", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("resume", help="continue a run"); p.add_argument("run"); p.add_argument("--detach", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("runs", help="the runs on disk (optionally of one book or chapter code)"); p.add_argument("book", nargs="?")
+    sub.add_parser("gui", help="the desktop interface (PyQt6): the tree, options, Run / Stop, the live log, the runs")
     sub.add_parser("cache", help="the cached cases per book")
     p = sub.add_parser("clean-cache", help="remove the cached cases (the runs keep their native results)"); p.add_argument("--book"); p.add_argument("-y", "--yes", action="store_true")
     p = sub.add_parser("status", help="one run: state, heartbeat, last log lines, what next"); p.add_argument("run"); p.add_argument("-n", "--lines", type=int, default=8)
@@ -399,7 +410,7 @@ def main(argv=None) -> int:
                 args.rest = [a for a in args.rest if a != flag]
                 setattr(args, flag.strip("-").replace("-", "_"), True)
     return {"list": cmd_list, "info": cmd_info, "run": cmd_run, "resume": cmd_resume, "runs": cmd_runs, "status": cmd_status, "tail": cmd_tail, "stop": cmd_stop,
-            "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache}[args.cmd](args)
+            "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache, "gui": cmd_gui}[args.cmd](args)
 
 
 if __name__ == "__main__":

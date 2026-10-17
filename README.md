@@ -385,7 +385,7 @@ before use; a required result that is missing, stale, incompatible or failed sto
 an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
 workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
 [workflows/README.md](workflows/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `workflows/cli.py` lists, explains, launches and watches
-them (interactive without arguments; `source activate.sh` makes it `wf`). Workflows are organised in **books** (a design:
+them (interactive without arguments; `source activate.sh` makes it `wf`; `wf gui` opens the same as a PyQt6 window). Workflows are organised in **books** (a design:
 `kestrel`, code K) and numbered **chapters** (its studies, CFD and FEA alike, chosen as `wf K2`); runs land in `workflows/runs/<book>/<chapter>/`, a chapter's prerequisites
 are chapters of its own book, and solved cases are cached across runs (`wf cache`, `wf clean-cache`, `--no-cache`). **`44_kestrel_fast`** (`designs/kestrel_fast.py`) is the standalone one-minute
 comparator of candidate designs — span, chord, section, propeller, motor, battery, bracing, spar — on Zephyr sections,

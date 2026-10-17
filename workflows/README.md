@@ -74,6 +74,7 @@ key contains the geometry and the values.
 ```
 workflows/
   README.md                    this file
+  gui/                         the desktop interface (PyQt6): app.py the window, runner.py launching and following a run, models.py the runs table, theme.py
   cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook / cache / clean-cache, or interactive
   library.py                   the books (designs) and their numbered chapters (studies), prerequisites, the tree, the run folders
   runkit.py                    the run-directory contract: manifest, status, run.log, heartbeat, cancel, resume, summary
@@ -96,7 +97,7 @@ Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`
 
 All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`); `source activate.sh`
 activates it and defines `wf` (= `workflows/cli.py`) and `wfrun <book> …` (= the book's script). The quickest
-way is `workflows/cli.py` (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
+way is `workflows/cli.py` (or its PyQt6 window: `wf gui`, `workflows/requirements-gui.txt`) (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
 `resume`, `notebook`); the scripts below are what it calls.
 
 ```bash
