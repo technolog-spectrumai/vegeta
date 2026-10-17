@@ -55,7 +55,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
 | Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
-| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002) | [docs/hyperion.md](docs/hyperion.md) | `46_svarog` |
+| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_fiber` |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
@@ -99,8 +99,12 @@ the optimum coupler (Rigrod), the pump's thermal lens, four cavity revisions (th
 closes before the design pump; a compact one with the HR on the rod; a folded one with an astigmatic fold mirror; a zone-II
 cavity that the lens opens above 13 W) with their stability windows over the pump and the self-consistent power curves,
 Magni's rule on what the mode can be, the beam out through the coupler's substrate and a delivery train to a 17 µm work
-spot; the record in `designs/data/svarog_design.json` and `reports/46_svarog.json`. What comes next, in order, is
-[`svarog_todo.md`](svarog_todo.md).
+spot; the record in `designs/data/svarog_design.json` and `reports/46_svarog.json`. `47_svarog_fiber` is **Svarog-fiber**,
+the fibre twin (`designs/svarog_fiber.py`, Hyperion's `fibre` module): a 10/125 Yb double-clad fibre between two Bragg
+gratings pumped at 976 nm — the fibres' modes and bend loss, the pump and both signal waves along the fibre from the rate
+equations, the length and coupler choices, a counter-pumped 20/125 amplifier stage, the coil radius, SRS and the core's
+temperature per cooling, the beam out on the same delivery train, and the rod and the fibre side by side at 20 W from
+46's record. What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a

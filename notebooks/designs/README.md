@@ -306,3 +306,11 @@ mode its cavity really has at each pump power), `stability_sweep` / `stability_w
 the coupler's substrate), `delivery_train` (collimator, stand-off, focusing lens, the work spot), `design_record`.
 `svarog_drawings.py` draws the cavity with its mode envelope, a beam train, the stability window, the power curves and the
 pump inside the rod.
+
+`svarog_fiber.py` (notebook 47, branch `dev_svarog`) is **Svarog-fiber**, the Yb fibre laser on Hyperion's `fibre` module
+(`import svarog_fiber as sf`): `FIBRE_OSC` / `FIBRE_AMP` (10/125 and 20/125 double-clad), `active` (doped to the datasheet's
+cladding absorption), `Pump` (976 nm diodes through a combiner, the étendue check), `Gratings` (with the splice excess loss
+folded into the HR), `oscillator` / `length_choice` / `coupler_choice`, `amplifier` / `amplifier_length_choice`, `coil` /
+`coil_radius_for`, `limits` (SRS, the core's temperature per cooling), `beam_out`, `delivery` (Svarog's train),
+`against_the_rod` (from 46's report), `design_record`. `svarog_fiber_drawings.py` draws the power evolution along the fibre,
+the length sweeps, the bend-loss curves and the power curves.

@@ -79,8 +79,11 @@ one adds what Hyperion lacks for it, in this order of growing distance from the 
 - [ ] S.5.3 A gas laser: CO₂ at 10.6 µm (a long tube, ZnSe optics, a large mode against the tube bore — the hard aperture S.6
   computes), its discharge as a volume pump: Hyperion takes the gain profile as a `GainMedium` map and designs the
   resonator on it
-- [ ] S.5.4 A fibre laser as the delivery alternative: the fibre's mode as a `GaussianBeam`, the coupling from Svarog's beam
-  (S.0's overlap), the fibre's own cavity (gratings as mirrors) when it becomes the source
+- [x] S.5.4 The fibre laser as the source (done first, out of order, as Svarog-fiber — notebook 47, `hyperion.fibre`): a
+  step-index fibre's modes and bend loss, Yb:silica, the pump/signal power evolution of an FBG oscillator and of a seeded
+  amplifier, SRS and the core's temperature, the beam out and the same delivery train, against the rod. Still open: the
+  coupling of Svarog's rod beam into a delivery fibre (S.0's overlap), ASE and the noise figure of a weak-seed preamplifier,
+  the higher-mode stripping budget of a few-mode fibre's coil
 
 ## S.6 — FFT physical optics
 Needed last, when the paraxial description stops explaining: hard apertures, diffraction losses, the real mode of an

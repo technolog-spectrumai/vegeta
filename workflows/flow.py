@@ -110,6 +110,11 @@ flow.notebook("46_svarog", title="Svarog — the CW diode-end-pumped Nd:YAG lase
               needs=[Package("vegeta.hyperion")],
               gives=[File(f"{DATA}/svarog_design.json", keys=("kind", "design")), File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions"))])
 
+flow.notebook("47_svarog_fiber", title="Svarog-fiber — the Yb fibre laser on Hyperion: the fibre and its modes, the FBG oscillator, an amplifier stage, the limits, the beam out, against the rod",
+              needs=[Package("vegeta.hyperion")],
+              takes=[File(f"46_svarog:{DATA}/reports/46_svarog.json", keys=("laser", "delivery"))],
+              gives=[File(f"{DATA}/svarog_fiber_design.json", keys=("kind", "design")), File(f"{DATA}/reports/47_svarog_fiber.json", keys=("meta", "oscillator", "amplifier"))])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])
