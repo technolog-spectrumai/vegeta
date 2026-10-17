@@ -21,7 +21,9 @@ What follows from it, for every notebook in the repository:
   that produces it when it is missing — it never substitutes an invented result.
 - A notebook **never launches a solver silently**: not behind an import, not inside a plotting call, not in a
   "load or compute" helper. Expensive work that a notebook does itself (a Boreas table, a NeuralFoil polar — tens
-  of seconds) is announced in the cell that does it.
+  of seconds) is announced in the cell that does it. The one loud exception: a notebook flagged `yanus_auto`
+  (`docs/yanus.md` § 16) runs the chapters it is missing in **screening quality**, in the foreground, through its
+  Yanus gate — the gate says what it started and the results are labelled indicative.
 - A result that is missing, stale, incompatible, running or failed is **NOT RUN** in the notebook: the analytical
   estimate stays visible beside it, labelled as such; optional validation may stay NOT RUN, required inputs stop
   the notebook with an actionable exception.
@@ -46,7 +48,8 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
 │   ├── K5   airframe-blown         cruise + transitions                                          [after K1]
 │   ├── K6   airframe-sweep-fine    13 angles, 8–16° resolved
 │   ├── K7   airframe-all           sweep + blown
-│   └── K8   sections               the two finalist sections as slabs
+│   ├── K8   sections               the two finalist sections as slabs
+│   └── K12  wing-interference      one wing / the pair / the equal monoplane at 0, 4, 8°: the interference measured
 └── FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]
@@ -147,6 +150,15 @@ the cases it lists and never more), `--max-cases N`, `--max-minutes M` (no new c
 Orders of magnitude (one 4-core workstation): a screening CFD case 10–20 min, a fine one about an hour; the `sweep`
 campaign at screening an afternoon, `all` at fine days. An FEA frame case a few minutes; the whole `all` campaign
 under an hour. Measure your own: `run.log` records every case's duration.
+
+## A batch of chapters (`batch.yaml`)
+
+`wf batch file.yaml` runs an ordered list of chapters from one file — the way to hand the heavy runs to a cloud box:
+the GUI's Batch tab (or `wf batch --example`) writes it, any machine with the repository and the solvers runs it. The
+format and the folder it leaves behind (`workflows/runs/_batches/<stamp>_<name>/batch.json`: every step's state, exit
+code, run directory and summary file) are in `workflows/batch.py` and `manual_workflows.md` § 2b. Each step is the
+chapter's script with an explicit `--out`, so a batch never changes what a run is; a batch is an engineer's explicit
+list, not a scheduler (`rejected.md`).
 
 ## Reading a run: the logs
 

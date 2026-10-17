@@ -236,6 +236,8 @@ def evaluate(c: Candidate, *, n_crit: float = 6.0) -> dict:
            "mass [kg]": m, "wing loading [N/m²]": W / S, "CG x [mm]": ci["x_cg"] * 1e3, "static margin [chords]": np_["static_margin"],
            "Re (chord, cruise)": Re, "section cl_max (NeuralFoil)": sec["cl_max"], "section cd at cl 0.35": sec["cd_design"], "section cm0": sec["cm0"], "section confidence": sec["confidence_min_attached"],
            "CL max (×0.9)": cl_max, "stall speed [m/s]": Vs, "cruise / stall": V_CRUISE / Vs, "Cd0": cd0, "k (induced)": k, "cruise CL": CL16, "L/D at cruise": W / D16,
+           "gap / span": L["gap"] / L["span"], "Prandtl σ": kf.prandtl_sigma(L["gap"] / L["span"]), "lift interference factor (lattice)": a["factors"]["lift slope vs two isolated wings"],
+           "induced drag vs equal monoplane (lattice)": a["factors"]["induced drag vs the monoplane"],
            "hover thrust per rotor [N]": W / 4, "hover rpm": hov.rpm, "hover electrical [W]": 4 * hov.electrical_power + AVIONICS_W, "hover current per motor [A]": hov.current,
            "static thrust per rotor [N]": T_static, "hover T/W": 4 * T_static / W, "cruise thrust per rotor [N]": D16 / 4, "cruise electrical [W]": P16,
            "usable energy [Wh]": Ewh, "endurance at cruise [min]": Ewh / P16 * 60, "range at cruise [km]": Ewh / P16 * V_CRUISE * 3.6, "hover time [min]": Ewh / (4 * hov.electrical_power + AVIONICS_W) * 60,
@@ -263,6 +265,7 @@ def compare(cands: list, *, progress: bool = True, **kw):
     return df
 
 
+INTERFERENCE_COLUMNS = ["gap / span", "Prandtl σ", "lift interference factor (lattice)", "induced drag vs equal monoplane (lattice)"]
 KEY_COLUMNS = ["mass [kg]", "wing loading [N/m²]", "static margin [chords]", "CL max (×0.9)", "stall speed [m/s]", "cruise / stall", "Cd0", "L/D at cruise",
                "hover T/W", "hover electrical [W]", "cruise electrical [W]", "endurance at cruise [min]", "range at cruise [km]", "V max, thrust-limited [m/s]",
                "spar reserve (ultimate)", "tip deflection / semi-span [%]", "post buckling margin", "first bending mode, one wing cantilever [Hz]"]

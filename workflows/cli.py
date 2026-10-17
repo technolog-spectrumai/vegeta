@@ -11,6 +11,7 @@ code, case-insensitive: K1, k2, K10 …
     wf runs                         # every run on disk: chapter code, state, cases done, age
     wf status <run>                 # one run: heartbeat, last log lines, what to do next
     wf tail <run> | wf stop <run> | wf resume <run> | wf notebook <run>
+    wf batch batch.yaml [--dry-run] [--from N] [--detach]       # an ordered batch of chapters from one file (wf batch --example)
     wf cache | wf clean-cache [--book kestrel] [-y]
     wf gui                          # the desktop interface (PyQt6): the same tree, Run / Stop, the live log and progress, the runs
     wf import_legacy                # the first CFD campaign's file into K1's folder (once)
@@ -159,6 +160,8 @@ def _launch(script: str, extra: list[str], *, detach: bool, label: str) -> int:
     newest = _all_runs()[:1]
     if newest and newest[0].get("created_at"):
         print(f"run directory: {newest[0]['run']}\n  watch:  workflows/cli.py tail {Path(newest[0]['run']).name}\n  status: workflows/cli.py status {Path(newest[0]['run']).name}")
+    elif label.startswith("batch_"):
+        print(f"the batch folder appears under {RUNS.relative_to(ROOT)}/_batches/ as it starts: its batch.json names every step's run directory and summary file")
     else:
         print("the run directory appears under workflows/runs/ once the cases are built (workflows/cli.py runs)")
     return 0
@@ -300,6 +303,26 @@ def cmd_notebook(args) -> int:
     return 0
 
 
+def cmd_batch(args) -> int:
+    import batch as _batch
+    if args.example or not args.file:
+        print(_batch.EXAMPLE, end="")
+        if not args.file and not args.example:
+            print("\n(wf batch <file.yaml> runs such a file; wf batch --example > batch.yaml writes this one)", file=sys.stderr)
+        return 0
+    f = Path(args.file)
+    if not f.exists():
+        sys.exit(f"no such file: {f}  (wf batch --example prints a template)")
+    try:
+        b = _batch.load(f)
+    except ValueError as exc:
+        sys.exit(f"{f}: {exc}")
+    if args.detach and not args.dry_run:
+        return _launch("workflows/cli.py", ["batch", str(f.resolve()), *(["--from", str(args.start)] if args.start > 1 else [])], detach=True, label=f"batch_{runkit.slug(b.name)}")
+    rep = _batch.run(b, source=f, dry_run=args.dry_run, start=args.start)
+    return rep["exit_code"]
+
+
 def cmd_gui(args) -> int:
     try:
         import PyQt6.QtWidgets  # noqa: F401
@@ -394,6 +417,8 @@ def main(argv=None) -> int:
     import re as _re
     if argv and (_re.fullmatch(r"[A-Za-z]\d+", argv[0]) or argv[0] in library.IMPORTS):     # wf K2 … = wf run K2 …
         argv = ["run", *argv]
+    elif argv and argv[0].endswith((".yaml", ".yml")):                                     # wf batch.yaml = wf batch batch.yaml
+        argv = ["batch", *argv]
     ap = argparse.ArgumentParser(prog="wf", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("list", help="the tree of books and chapters")
@@ -401,6 +426,10 @@ def main(argv=None) -> int:
     p = sub.add_parser("run", help="run a chapter by code (the rest of the arguments go to its script: --variant, --quality, …)"); p.add_argument("code"); p.add_argument("--detach", action="store_true"); p.add_argument("--no-cache", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("resume", help="continue a run"); p.add_argument("run"); p.add_argument("--detach", action="store_true"); p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("runs", help="the runs on disk (optionally of one book or chapter code)"); p.add_argument("book", nargs="?")
+    p = sub.add_parser("batch", help="run the chapters of a batch.yaml in order (the file: wf batch --example; the GUI writes one)"); p.add_argument("file", nargs="?")
+    p.add_argument("--dry-run", action="store_true", help="print the commands only"); p.add_argument("--from", dest="start", type=int, default=1, metavar="N", help="start at step N")
+    p.add_argument("--detach", action="store_true", help="run in the background (terminal output under workflows/runs/)"); p.add_argument("--example", action="store_true", help="print a template")
+    p.add_argument("--no-progress", action="store_true", help=argparse.SUPPRESS)        # the GUI adds it to every launch; the steps have no TTY anyway
     sub.add_parser("gui", help="the desktop interface (PyQt6): the tree, options, Run / Stop, the live log, the runs")
     sub.add_parser("cache", help="the cached cases per book")
     p = sub.add_parser("clean-cache", help="remove the cached cases (the runs keep their native results)"); p.add_argument("--book"); p.add_argument("-y", "--yes", action="store_true")
@@ -420,7 +449,7 @@ def main(argv=None) -> int:
                 args.rest = [a for a in args.rest if a != flag]
                 setattr(args, flag.strip("-").replace("-", "_"), True)
     return {"list": cmd_list, "info": cmd_info, "run": cmd_run, "resume": cmd_resume, "runs": cmd_runs, "status": cmd_status, "tail": cmd_tail, "stop": cmd_stop,
-            "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache, "gui": cmd_gui}[args.cmd](args)
+            "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache, "gui": cmd_gui, "batch": cmd_batch}[args.cmd](args)
 
 
 if __name__ == "__main__":

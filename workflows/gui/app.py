@@ -3,13 +3,17 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QAction, QColor, QDesktopServices, QFont, QKeySequence
 from PyQt6.QtCore import QUrl
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMainWindow, QMessageBox,
-                             QPlainTextEdit, QProgressBar, QPushButton, QSplitter, QTableView, QTabWidget, QToolBar, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMainWindow,
+                             QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QSplitter, QTableView, QTableWidget, QTableWidgetItem, QTabWidget, QToolBar,
+                             QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+
+import batch as _batch
 
 import library
 import runkit
@@ -171,8 +175,16 @@ class MainWindow(QMainWindow):
         self.stop_button.setEnabled(False)
         buttons.addWidget(self.run_button)
         buttons.addWidget(self.stop_button)
+        self.batch_button = QPushButton("＋  Add to batch")
+        self.batch_button.setToolTip("Append this chapter, with these options, to the batch (the Batch tab below): save it as batch.yaml, run it here or on another machine (Ctrl+B)")
+        self.batch_button.clicked.connect(self.add_to_batch)
+        buttons.addWidget(self.batch_button)
         buttons.addStretch(1)
         lay.addLayout(buttons)
+        act_b = QAction(self)
+        act_b.setShortcut(QKeySequence("Ctrl+B"))
+        act_b.triggered.connect(self.add_to_batch)
+        self.addAction(act_b)
         act = QAction(self)
         act.setShortcut(QKeySequence("Ctrl+R"))
         act.triggered.connect(self.run_chapter)
@@ -215,7 +227,182 @@ class MainWindow(QMainWindow):
         rb.addStretch(1)
         rl.addLayout(rb)
         self.tabs.addTab(runs, "Runs on disk")
+        self.tabs.addTab(self._build_batch_tab(), "Batch")
         return self.tabs
+
+    # ---------------------------------------------------------------------------------------------- the batch
+    def _build_batch_tab(self) -> QWidget:
+        """An ordered list of chapter runs, saved as batch.yaml and run by ``wf batch`` — here, detached, or on
+        another machine (a cloud box with the solvers): the file is the hand-over."""
+        box = QWidget()
+        lay = QVBoxLayout(box)
+        lay.setContentsMargins(0, 0, 0, 0)
+        head = QHBoxLayout()
+        head.addWidget(QLabel("name"))
+        self.batch_name = QLineEdit("kestrel batch")
+        self.batch_name.setMaximumWidth(260)
+        head.addWidget(self.batch_name)
+        self.batch_stop = QCheckBox("stop at the first failed step")
+        self.batch_stop.setChecked(True)
+        head.addWidget(self.batch_stop)
+        self.batch_file_label = QLabel("not saved yet")
+        self.batch_file_label.setProperty("role", "muted")
+        head.addWidget(self.batch_file_label, 1)
+        lay.addLayout(head)
+        self.batch_table = QTableWidget(0, 6)
+        self.batch_table.setHorizontalHeaderLabels(["#", "chapter", "variant", "options", "mode", "limits"])
+        self.batch_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.batch_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.batch_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.batch_table.verticalHeader().hide()
+        hh = self.batch_table.horizontalHeader()
+        for c in range(5):
+            hh.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        lay.addWidget(self.batch_table, 1)
+        self.batch_steps: list = []
+        self.batch_path: Path | None = None
+        row = QHBoxLayout()
+        for text, slot, tip in (("▲", lambda: self._move_step(-1), "Earlier"), ("▼", lambda: self._move_step(+1), "Later"), ("Remove", self._remove_step, "Remove the selected step"),
+                                ("Clear", self._clear_batch, "Empty the batch"), ("Load…", self.load_batch, "Read a batch.yaml"),
+                                ("Save batch.yaml…", self.save_batch, "Write the batch to a YAML file: wf batch <file> runs it, here or on another machine"),
+                                ("Show commands", self.dry_run_batch, "The commands the batch would run, in order, in the log"),
+                                ("▶  Run batch", self.run_batch, "Save, then run the steps one after the other, detached; the log and progress appear in the Log tab")):
+            b = QPushButton(text)
+            b.setToolTip(tip)
+            b.clicked.connect(slot)
+            if text.startswith("▶"):
+                b.setObjectName("runButton")
+            row.addWidget(b)
+        row.addStretch(1)
+        lay.addLayout(row)
+        return box
+
+    def _batch(self) -> "_batch.Batch":
+        return _batch.Batch(self.batch_name.text().strip() or "batch", list(self.batch_steps), self.batch_stop.isChecked())
+
+    def _refresh_batch_table(self) -> None:
+        t = self.batch_table
+        t.setRowCount(len(self.batch_steps))
+        for i, st in enumerate(self.batch_steps):
+            opts = " ".join(f"{k}={v}" for k, v in st.options.items()) + ("" if st.cache else " no-cache") + (" ignore-prerequisites" if st.ignore_prerequisites else "")
+            try:
+                _, name, info = _batch.resolve(st)
+                ch = f"{info['code']} {name}"
+            except KeyError:
+                ch = f"{st.chapter} (unknown)"
+            for c, txt in enumerate((str(i + 1), ch, st.variant, opts.strip(), st.mode, st.limits)):
+                t.setItem(i, c, QTableWidgetItem(txt))
+        self.tabs.setTabText(2, f"Batch ({len(self.batch_steps)})" if self.batch_steps else "Batch")
+
+    def add_to_batch(self) -> None:
+        if not self.chapter:
+            return
+        _, name, info = self.chapter
+        opts = {k.lstrip("-"): v for k, v in self._options().items() if v not in (None, "") and k != "--variant"}
+        mode = "prepare" if self.mode.currentIndex() == 1 else "run"
+        self.batch_steps.append(_batch.Step(info["code"], self._options().get("--variant", ""), opts, mode, self.cache.isChecked(), self.limits.text().strip(),
+                                            self.ignore_pre.isChecked()))
+        self._refresh_batch_table()
+        self.batch_table.selectRow(len(self.batch_steps) - 1)
+        self.tabs.setCurrentIndex(2)
+        self.status_label.setText(f"{info['code']} {name} added to the batch ({len(self.batch_steps)} step(s))")
+
+    def _move_step(self, d: int) -> None:
+        i = self.batch_table.currentRow()
+        j = i + d
+        if i < 0 or not (0 <= j < len(self.batch_steps)):
+            return
+        self.batch_steps[i], self.batch_steps[j] = self.batch_steps[j], self.batch_steps[i]
+        self._refresh_batch_table()
+        self.batch_table.selectRow(j)
+
+    def _remove_step(self) -> None:
+        i = self.batch_table.currentRow()
+        if 0 <= i < len(self.batch_steps):
+            del self.batch_steps[i]
+            self._refresh_batch_table()
+
+    def _clear_batch(self) -> None:
+        self.batch_steps.clear()
+        self.batch_path = None
+        self.batch_file_label.setText("not saved yet")
+        self._refresh_batch_table()
+
+    def load_batch(self, path=None) -> None:
+        if not path:
+            path, _ = QFileDialog.getOpenFileName(self, "Load a batch", str(ROOT), "batch files (*.yaml *.yml)")
+            if not path:
+                return
+        try:
+            b = _batch.load(path)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Batch", f"{path}:\n{exc}")
+            return
+        self.batch_steps = list(b.steps)
+        self.batch_name.setText(b.name)
+        self.batch_stop.setChecked(b.stop_on_failure)
+        self.batch_path = Path(path)
+        self.batch_file_label.setText(str(self.batch_path))
+        self._refresh_batch_table()
+        self.tabs.setCurrentIndex(2)
+
+    def save_batch(self, path=None) -> Path | None:
+        if not self.batch_steps:
+            QMessageBox.information(self, "Batch", "The batch is empty: pick a chapter, set its options and press 'Add to batch'.")
+            return None
+        probs = _batch.validate(self._batch())
+        if probs:
+            QMessageBox.warning(self, "Batch", "\n".join(probs))
+            return None
+        if not path:
+            default = str(self.batch_path or (ROOT / f"{runkit.slug(self.batch_name.text().strip() or 'batch')}.yaml"))
+            path, _ = QFileDialog.getSaveFileName(self, "Save the batch as YAML", default, "batch files (*.yaml *.yml)")
+            if not path:
+                return None
+        self.batch_path = _batch.save(self._batch(), path)
+        self.batch_file_label.setText(f"{self.batch_path}   —   run it anywhere:  wf batch {self.batch_path.name}")
+        self.status_label.setText(f"batch saved: {self.batch_path}")
+        return self.batch_path
+
+    def dry_run_batch(self) -> None:
+        if not self.batch_steps:
+            return
+        lines: list[str] = []
+        _batch.run(self._batch(), dry_run=True, log=lines.append)
+        self.log_view.clear()
+        self.log_view.setPlainText("\n".join(lines))
+        self.tabs.setCurrentIndex(0)
+
+    def run_batch(self) -> None:
+        path = self.save_batch(self.batch_path) if self.batch_path else self.save_batch()
+        if path is None:
+            return
+        b = self._batch()
+        if QMessageBox.question(self, "Run batch", f"Run the {len(b.steps)} step(s) of {path.name} one after the other, detached?\n\n$ wf batch {path}\n\n"
+                                "Each step is a chapter run with its own run directory; the batch folder under workflows/runs/_batches/ keeps batch.json with every "
+                                "output file. The same file runs on any machine with the solvers.") != QMessageBox.StandardButton.Yes:
+            return
+        before = {p.name for p in (library.RUNS / "_batches").glob("*")} if (library.RUNS / "_batches").is_dir() else set()
+        self.log_view.clear()
+        ok, cmd, _ = self.launcher.launch(["workflows/cli.py", "batch", str(path)], label=f"batch_{runkit.slug(b.name)}")
+        self.log_view.appendPlainText(f"$ {cmd}")
+        if not ok:
+            return
+        bdir = None
+        for _ in range(20):
+            QApplication.processEvents()
+            new = [p for p in (library.RUNS / "_batches").glob("*") if p.name not in before and p.is_dir()] if (library.RUNS / "_batches").is_dir() else []
+            if new:
+                bdir = max(new, key=lambda p: p.stat().st_mtime)
+                break
+            time.sleep(0.25)
+        if bdir is None:
+            self.log_view.appendPlainText("(the batch folder appears under workflows/runs/_batches/ in a moment; press Refresh and follow its runs from the table)")
+            QTimer.singleShot(4000, self.refresh)
+            return
+        self.follow(bdir)
+        self.refresh()
 
     def _build_status_bar(self) -> None:
         sb = self.statusBar()
@@ -405,7 +592,7 @@ class MainWindow(QMainWindow):
 
     def _on_status(self, st: dict) -> None:
         c = st.get("cases") or {}
-        planned, done = int(c.get("planned") or 0), int(c.get("done") or 0)
+        planned, done = int(c.get("planned") or c.get("n") or 0), int(c.get("done") or 0)
         state = st.get("state", "?")
         if planned:
             self.progress.setRange(0, planned)

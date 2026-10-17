@@ -166,6 +166,105 @@ def case(workdir, pt: dict, *, x_cg_m: float, z_cg_m: float = 0.0, quality: str 
     return aeromant.CFDCase(template, str(stl), params, workdir=str(Path(workdir) / tag), geometry_units="mm", environment=env)
 
 
+INTERFERENCE_ALPHAS = (0.0, 4.0, 8.0)
+PLANFORMS = {"one wing alone": "single", "the wing pair": "pair", "monoplane, same span and area": "monoplane"}
+
+
+def planform_stl(workdir, planform: str, alpha_deg: float, x_rot_m: float, p=None) -> Path:
+    """One of the three planforms of the wing-interference chapter as an STL (mm): ``single`` = one wing on the
+    aircraft's centre plane, ``pair`` = the two wings at ±gap/2 (no pod, no bracing, no nacelles), ``monoplane`` =
+    one wing of chord 2c on the centre plane (the pair's span and area in one wing). Elevon bays off on all three
+    (the comparison is between planforms, not control cut-outs); turned nose-up by ``alpha_deg`` about
+    (``x_rot_m``, 0, 0) as the airframe cases are."""
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    path = workdir / f"kestrel_{planform}_a{alpha_deg:+05.1f}.stl"
+    if not path.exists():
+        import cadquery as cq
+        q = kestrel.resolve(kestrel.overrides(p), elevons=False)
+        k = kestrel.Kestrel4Q()
+        h = q["gap"] / 2
+        if planform == "single":
+            shape = k._wing(q, 0.0)
+        elif planform == "pair":
+            shape = k._wing(q, h).union(k._wing(q, -h))
+        elif planform == "monoplane":
+            shape = k._wing(dict(q, chord=2 * q["chord"]), 0.0)
+        else:
+            raise ValueError(f"planform {planform!r}: one of {sorted(set(PLANFORMS.values()))}")
+        if alpha_deg:
+            x0 = x_rot_m * 1000
+            shape = shape.rotate((x0, 0, 0), (x0, 1, 0), float(alpha_deg))
+        cq.exporters.export(shape, str(path), tolerance=0.3)
+    return path
+
+
+def interference_specs(*, V: float = SWEEP_V, alphas=INTERFERENCE_ALPHAS) -> dict:
+    """The wing-interference chapter's cases: the three planforms at the sweep's speed and a few attached-flow angles."""
+    out = {}
+    for label, pf in PLANFORMS.items():
+        for a in alphas:
+            out[f"{label}, α {a:.0f}°, {V:g} m/s"] = {"source": "interference", "kind": "interference", "planform": pf, "alpha_deg": a, "V": V, "T_up": 0.0, "T_lo": 0.0,
+                                                      "t": 0.0, "target_deg": a}
+    return out
+
+
+def interference_case(workdir, spec: dict, *, x_cg_m: float, quality: str = "screening", env=None, p=None):
+    """One bare ``rans_ksst_external`` case of a planform: the reference area is the planform's own (one wing's for
+    ``single``, both wings' for the other two), so CL and CD are per unit area and the planforms compare directly;
+    the moment about the CG on the airframe's reference length, as the airframe cases."""
+    from vegeta import aeromant
+    L = kestrel.layout(p)
+    a, pf = spec["alpha_deg"], spec["planform"]
+    stl = planform_stl(Path(workdir) / "stl", pf, a, x_cg_m, p)
+    S = L["S_wing"] if pf == "single" else L["S_ref"]
+    cor = kestrel.rotate((x_cg_m * 1000, 0.0, 0.0), a, x_cg_m * 1000)
+    params = dict(velocity=max(spec["V"], 1.0), kinematic_viscosity=NU, density=RHO, reference_area=S, reference_length=l_ref(p),
+                  center_of_rotation=(cor[0] / 1000, 0.0, cor[2] / 1000), **QUALITY[quality])
+    env = env or aeromant.OpenFOAMEnvironment.detect()
+    tag = f"interference_{pf}_a{a:+05.1f}_V{spec['V']:.1f}_{quality}"
+    return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / tag), geometry_units="mm", environment=env)
+
+
+def interference_factors(rows: dict) -> dict:
+    """The chapter's measure from its solved cases (``rows``: the summary's case rows with ``planform``, ``alpha_deg``,
+    ``CL``, ``CD``, ``converged``): per angle the three CLs, the lift interference factor CL(pair)/CL(single) (per
+    area), CL(pair)/CL(monoplane); the induced-drag factor k from a CD = Cd0 + k CL² fit over the angles per planform,
+    and k(pair)/k(monoplane); the label (``validated`` when every case converged, else ``indicative``)."""
+    import pandas as pd
+    df = pd.DataFrame([r for r in rows.values() if r.get("planform") and r.get("status") == "solved" and r.get("CL") is not None])
+    if df.empty:
+        return {"label": "NOT RUN", "per_alpha": {}, "k": {}, "factors": {}}
+    per = {}
+    for a, g in df.groupby("alpha_deg"):
+        cl = {r["planform"]: float(r["CL"]) for _, r in g.iterrows()}
+        cd = {r["planform"]: float(r["CD"]) for _, r in g.iterrows()}
+        row = {"CL " + k: v for k, v in cl.items()} | {"CD " + k: v for k, v in cd.items()}
+        if "pair" in cl and "single" in cl and abs(cl["single"]) > 1e-6:
+            row["lift interference factor"] = cl["pair"] / cl["single"]
+        if "pair" in cl and "monoplane" in cl and abs(cl["monoplane"]) > 1e-6:
+            row["CL pair / CL monoplane"] = cl["pair"] / cl["monoplane"]
+        per[f"{a:g}°"] = row
+    ks_ = {}
+    for pf, g in df.groupby("planform"):
+        if len(g) >= 2 and g["CL"].astype(float).std() > 1e-4:
+            x, y = g["CL"].astype(float).values ** 2, g["CD"].astype(float).values
+            k, cd0 = np.polyfit(x, y, 1)
+            ks_[pf] = {"k": float(k), "Cd0": float(cd0), "n": int(len(g))}
+    factors = {}
+    if "pair" in ks_ and "monoplane" in ks_ and ks_["monoplane"]["k"] > 0:
+        factors["induced drag vs monoplane of the same span and area"] = ks_["pair"]["k"] / ks_["monoplane"]["k"]
+    if "pair" in ks_ and "single" in ks_ and ks_["single"]["k"] > 0:
+        factors["k pair / k one wing (per area)"] = ks_["pair"]["k"] / ks_["single"]["k"]
+    lifts = [v["lift interference factor"] for v in per.values() if "lift interference factor" in v and v.get("CL pair / CL monoplane") is not None]
+    nz = [v["lift interference factor"] for a, v in per.items() if "lift interference factor" in v and not a.startswith("0")]
+    if nz:
+        factors["lift interference factor (mean over α > 0)"] = float(np.mean(nz))
+    conv = df["converged"].fillna(False).astype(bool)
+    label = "validated" if bool(conv.all()) and len(df) == len(rows) else "indicative"
+    return {"label": label, "per_alpha": per, "k": ks_, "factors": factors, "n_solved": int(len(df)), "n_cases": int(len(rows)), "n_converged": int(conv.sum())}
+
+
 def sweep_specs(*, V: float = SWEEP_V, alphas=SWEEP_ALPHAS) -> dict:
     return {f"bare airframe, α {a:.0f}°, {V:g} m/s": {"source": "sweep", "kind": "sweep", "alpha_deg": a, "V": V, "T_up": 0.0,
                                                        "T_lo": 0.0, "t": 0.0, "target_deg": a} for a in alphas}

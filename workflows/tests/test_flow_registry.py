@@ -61,9 +61,22 @@ def test_wf_run_stops_when_a_need_is_missing():
 def test_notebook_43_contract_matches_its_runs_shape():
     import kestrel_study as kstu
     from vegeta import yanus
-    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=False)
+    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=False, auto=False)   # the manual shape (43 is yanus_auto)
     runs, required = kstu.runs_from_gate(g)
     assert set(runs["airframe_cfd"]) == {"4Q-1", "4Q-2", "4Q-3"} and "4Q-2" in runs["structure_fea"]
     assert required == {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}
-    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=True)
+    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=True, auto=False)
     assert kstu.runs_from_gate(g)[1] == set()
+
+
+def test_notebook_43_is_yanus_auto_and_its_plan_runs_screening_quality():
+    from vegeta import yanus
+    nb = library.FLOW.notebooks["43_kestrel_study"]
+    assert nb.auto and library.FLOW.notebooks["45_kestrel_x"].auto
+    first = yanus.enter(nb, flow=library.FLOW, deep=False, raise_closed=False, auto=False)
+    steps = yanus.auto.plan(library.FLOW, first)
+    cfd = [s for s in steps if s.unit.kind and s.unit.kind.name == "cfd"]
+    fea = [s for s in steps if s.unit.kind and s.unit.kind.name == "fea"]
+    assert all(s.argv[-2:] == ["--quality", "screening"] for s in cfd)
+    assert all("--element-size" in s.argv for s in fea)
+    assert all(s.state in ("planned", "skipped") for s in steps)        # a plan starts nothing

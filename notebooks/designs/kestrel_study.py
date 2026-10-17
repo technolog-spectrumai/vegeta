@@ -267,6 +267,43 @@ def biplane_check(a: dict, L: dict) -> dict:
             "lift slope / two isolated wings, lattice": a["factors"]["lift slope vs two isolated wings"]}
 
 
+def interference(s: dict, summary: dict | None = None) -> dict:
+    """The **wing-interference measure** of a variant: the analytic one (``kestrel_flight.interference``: the lattice's
+    gap sweep, Prandtl's σ, the monoplane equivalents) and the CFD chapter K12's factors when its run is on file
+    (``summary["interference"]``), side by side with their method labels. ``table`` is the comparison; ``label`` says
+    what the CFD column is (validated / indicative / NOT RUN)."""
+    import pandas as pd
+    an = kf.interference(s["p"])
+    d = an["design"]
+    cfd = (summary or {}).get("interference") if summary else None
+    f = (cfd or {}).get("factors", {})
+    label = (cfd or {}).get("label", "NOT RUN")
+    rows = {
+        "lift interference factor CLα(pair)/CLα(one wing)": {"lattice [solver, inviscid]": d["lift interference factor"], "Prandtl [empirical]": float("nan"),
+                                                           f"CFD K12 [{label}]": f.get("lift interference factor (mean over α > 0)", float("nan"))},
+        "lift lost to interference [%]": {"lattice [solver, inviscid]": d["lift lost to interference [%]"], "Prandtl [empirical]": float("nan"),
+                                          f"CFD K12 [{label}]": 100 * (1 - f["lift interference factor (mean over α > 0)"]) if "lift interference factor (mean over α > 0)" in f else float("nan")},
+        "induced drag vs monoplane, same span and area (k ratio)": {"lattice [solver, inviscid]": d["induced drag vs monoplane of the same span and area, lattice"],
+                                                                    "Prandtl [empirical]": float("nan"), f"CFD K12 [{label}]": f.get("induced drag vs monoplane of the same span and area", float("nan"))},
+        "induced drag vs equal-span monoplane of the same lift, (1+σ)/2": {"lattice [solver, inviscid]": float("nan"), "Prandtl [empirical]": d["induced drag vs equal-span monoplane of the same lift, Prandtl"],
+                                                                            f"CFD K12 [{label}]": float("nan")},
+        "Prandtl σ (gap/span %.2f)" % d["gap / span"]: {"lattice [solver, inviscid]": float("nan"), "Prandtl [empirical]": d["Prandtl σ"], f"CFD K12 [{label}]": float("nan")},
+        "span a monoplane of the same area needs for the pair's induced drag [m]": {"lattice [solver, inviscid]": d["span a monoplane of the same area needs for the pair's induced drag [m]"],
+                                                                                      "Prandtl [empirical]": float("nan"), f"CFD K12 [{label}]": float("nan")},
+    }
+    table = pd.DataFrame(rows).T.rename_axis(f"wing interference, Kestrel-{s['variant']}")
+    per = pd.DataFrame((cfd or {}).get("per_alpha", {})).T if cfd else None
+    return {"analytic": an, "cfd": cfd, "table": table, "per_alpha": per, "label": label, "notes": an["notes"]}
+
+
+def machines_compare(s: dict, *, V: float = kf.V_CRUISE) -> dict:
+    """The other Vegeta machines scaled to this variant's mass and flown at ``V``, and Kestrel as a monoplane
+    (``kestrel_compare``): the table and the sentences."""
+    import kestrel_compare as kcm
+    df = kcm.compare(s["p"], mass_kg=s["ci"]["mass_kg"], V=V, a=s["aero"], d=s["drag"], cl_max=s["pol"].cl_max)
+    return {"table": df, "verdict": kcm.verdict(df), "machines": kcm.machines()}
+
+
 def cfd_sweep(summary: dict | None, s: dict) -> dict:
     """What a CFD run says about the bare airframe: the comparison frame, the numbers, the convergence count and
     the label the notebook must print (``validated`` only when the sweep converged)."""
@@ -448,12 +485,15 @@ def energy_budget(s: dict) -> dict:
 
 
 # ================================================================================================= case selection and the assessment
-def recommended_campaigns(sets: dict, cfd: dict, fea_summaries: dict, *, main: str = MAIN) -> "pd.DataFrame":
+def recommended_campaigns(sets: dict, cfd: dict, fea_summaries: dict, *, main: str = MAIN, interference_summary: dict | None = None) -> "pd.DataFrame":
     """From the screening: which workflow campaigns settle a decision, in order, with their commands. The engineer
-    launches them; the notebook only lists them."""
+    launches them; the notebook only lists them. ``interference_summary``: K12's, when on file (else it is listed)."""
     import pandas as pd
     s = sets[main]
     rows = []
+    if not (interference_summary or {}).get("interference", {}).get("factors"):
+        rows.append(("0", "airframe_cfd", main, "interference", "screening", "the wing interference measured (one wing, the pair, the equal monoplane at 0/4/8°): the lattice's 10 % lift loss and 0.7 induced-drag ratio against RANS — 9 bare cases, an afternoon",
+                     kcp.command("airframe_cfd", variant=main, campaign="interference", quality="screening")))
     c = cfd.get(main) or {}
     a_stall = math.degrees(s["pol"].alpha_stall) if hasattr(s["pol"], "alpha_stall") else 11.0
     if not c.get("numbers"):

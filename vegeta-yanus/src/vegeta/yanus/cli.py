@@ -1,4 +1,4 @@
-"""yn / vegeta yanus — the door keeper's command line. It reads, checks, pins, stamps and scaffolds; it never runs a
+"""yn / vegeta yanus — the door keeper's command line. It reads, checks, pins, stamps and scaffolds; only ``yn auto`` runs a
 unit (the commands it prints do that, when an engineer types them).
 
     yn status [unit|book] [--deep] [--json]   every chapter and notebook: ready / blocked / not run, and its needs
@@ -11,10 +11,12 @@ unit (the commands it prints do that, when an engineer types them).
     yn stamp <unit> <file>                    stamp a file a unit gives that was made outside its gate
     yn new notebook <NN_name> [--title …]     a notebook with the common header and both gates, and its registry entry
     yn new chapter <book>/<name> --kind K [--new-kind] [--after CH]
+    yn auto <notebook> [--dry-run]            the yanus_auto plan: the chapters (screening quality) and notebooks it would run for its missing takes; runs them without --dry-run
 """
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 from pathlib import Path
@@ -62,12 +64,12 @@ def status_data(flow: Flow, only: str | None = None, *, deep: bool = False) -> d
     for nb in flow.notebooks.values():
         if only and only not in (nb.name, nb.name.split("_", 1)[0]) and only != "notebooks":
             continue
-        g = enter(nb, flow=flow, deep=deep, raise_closed=False)
+        g = enter(nb, flow=flow, deep=deep, raise_closed=False, auto=False)        # status looks, it never drives
         bad = g.closed
         nr = [r for r in g.rows if r.kind != "need" and not r.usable and r.role == "optional"]
         state = "blocked" if bad else ("ready, some optional inputs NOT RUN" if nr else "ready")
         out["notebooks"][nb.name] = {"state": state, "blocked_by": [f"{r.input}: {r.status}" for r in bad], "fix": [r.fix for r in bad if r.fix],
-                                     "not_run": [r.input for r in nr], "gives": [f.path for f in nb.gives], "screening": g.screening}
+                                     "not_run": [r.input for r in nr], "gives": [f.path for f in nb.gives], "screening": g.screening, "auto": nb.auto}
     return out
 
 
@@ -82,7 +84,8 @@ def print_status(d: dict) -> None:
         print("notebooks")
         for name, n in d["notebooks"].items():
             mark = "✘" if n["state"] == "blocked" else "✔"
-            print(f"  {mark} {name:24s} {n['state']}" + (" (screening)" if n["screening"] else ""))
+            print(f"  {mark} {name:24s} {n['state']}" + (" (screening)" if n["screening"] else "") +
+                  (" — yanus_auto: it runs what is missing by itself, in screening quality" if n.get("auto") and n["state"] == "blocked" else (" (auto)" if n.get("auto") else "")))
             for why, fix in zip(n["blocked_by"], n["fix"] + [""] * len(n["blocked_by"])):
                 print(f"      {why}" + (f"\n        → {fix}" if fix else ""))
             if n["not_run"]:
@@ -239,10 +242,31 @@ def cmd_stamp(a, flow) -> int:
     return 0
 
 
+def cmd_auto(a, flow) -> int:
+    """What auto mode would run for a notebook (``--dry-run``: the plan only), or run it now, without the notebook."""
+    from . import auto
+    u = flow.unit(a.unit)
+    first = enter(u, flow=flow, variant=a.variant, deep=a.deep, raise_closed=False, auto=False)
+    steps = auto.plan(flow, first)
+    if not steps:
+        print(f"{u.kind_of_unit} {u.ref}: nothing to produce — every take is usable")
+        return 0
+    print(f"{u.kind_of_unit} {u.ref}: {sum(s.state == 'planned' for s in steps)} step(s) to run in screening quality"
+          f"{' (YANUS_AUTO_MINUTES caps each)' if not os.environ.get('YANUS_AUTO_MINUTES') else ''}:")
+    for s in steps:
+        print(f"  {'·' if s.state == 'skipped' else '▶'} {s.label:40s} {s.because}" + (f"\n      skipped: {s.reason}" if s.reason else "") + f"\n      $ {' '.join(s.argv)}")
+    if a.dry_run:
+        print("(--dry-run: nothing started; without it the steps run now, one after the other, in the foreground)")
+        return 0
+    steps = auto.drive(flow, first)
+    print(auto.report(steps))
+    return 0 if all(s.state != "failed" for s in steps) else 1
+
+
 def cmd_new(a, flow) -> int:
     from . import scaffold
     if a.what == "notebook":
-        out = scaffold.new_notebook(flow.root, a.name, title=a.title or "")
+        out = scaffold.new_notebook(flow.root, a.name, title=a.title or "", auto=a.auto)
     else:
         out = scaffold.new_chapter(flow.root, a.name, kind=a.kind, campaign=a.campaign, new_kind=a.new_kind, title=a.title or "",
                                    takes=tuple(a.after or ()))
@@ -267,8 +291,11 @@ def parser(prog: str = "yn") -> argparse.ArgumentParser:
     p = sub.add_parser("unpin", help="forget a pin"); p.add_argument("unit"); p.add_argument("chapter"); p.add_argument("--variant")
     p = sub.add_parser("check", help="registry, pins and stamps (CI)"); p.add_argument("--strict", action="store_true", help="a modified stamped file is an error")
     p = sub.add_parser("stamp", help="stamp a given file made outside the gate"); p.add_argument("unit"); p.add_argument("file")
+    p = sub.add_parser("auto", help="what auto mode would produce for a notebook (its yanus_auto plan), or produce it now"); p.add_argument("unit")
+    p.add_argument("--variant"); p.add_argument("--dry-run", action="store_true", help="the plan only"); p.add_argument("--deep", action="store_true")
     p = sub.add_parser("new", help="scaffold a notebook or a chapter"); p.add_argument("what", choices=("notebook", "chapter")); p.add_argument("name")
     p.add_argument("--title"); p.add_argument("--kind"); p.add_argument("--campaign"); p.add_argument("--new-kind", action="store_true")
+    p.add_argument("--auto", action="store_true", help="notebook: the yanus_auto flag (it runs what it is missing by itself, in screening quality)")
     p.add_argument("--after", action="append", help="a prerequisite chapter of the same book (repeatable)")
     return ap
 
@@ -289,7 +316,7 @@ def main(argv=None, prog: str = "yn") -> int:
         raise SystemExit("yn new chapter <book>/<name> --kind <kind>")
     try:
         return {"status": cmd_status, "why": cmd_why, "doctor": cmd_doctor, "pin": cmd_pin, "unpin": cmd_unpin, "check": cmd_check,
-                "stamp": cmd_stamp, "new": cmd_new}[a.cmd](a, flow)
+                "stamp": cmd_stamp, "new": cmd_new, "auto": cmd_auto}[a.cmd](a, flow)
     except (KeyError, FileExistsError, ValueError) as exc:
         print(f"yn: {exc.args[0] if exc.args else exc}", file=sys.stderr)
         return 2

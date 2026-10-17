@@ -133,6 +133,7 @@ class Kind:
     time: str = ""
     options: list = field(default_factory=list)
     needs_text: str = ""
+    screening: tuple = ()           # the script arguments that make a run coarse and short (auto mode): ("--quality", "screening")
 
     def as_dict(self) -> dict:
         return {"title": self.title, "script": self.script, "workflow": self.workflow, "needs": self.needs_text or ", ".join(n.label for n in self.needs),
@@ -160,9 +161,11 @@ class Unit:
 @dataclass
 class Notebook(Unit):
     """A notebook under ``notebooks/`` (or ``notebooks/<folder>/``): ``screening_env`` names the variable that turns
-    every required take optional."""
+    every required take optional. ``auto`` (the ``yanus_auto`` flag) = the notebook runs by itself what it is missing,
+    in screening quality, and its gate never closes (``auto.py``)."""
     screening_env: str | None = None
     folder: str = ""
+    auto: bool = False
     kind_of_unit = "notebook"
 
     @property
@@ -266,10 +269,11 @@ class Flow:
         self.books[name] = b
         return b
 
-    def notebook(self, name: str, *, needs=(), takes=(), gives=(), title: str = "", screening_env: str | None = None, folder: str = "") -> Notebook:
+    def notebook(self, name: str, *, needs=(), takes=(), gives=(), title: str = "", screening_env: str | None = None, folder: str = "",
+                 auto: bool = False) -> Notebook:
         if name in self.notebooks:
             raise FlowError(f"notebook {name!r} declared twice")
-        nb = Notebook(name, needs=list(needs), takes=list(takes), gives=list(gives), title=title, screening_env=screening_env, folder=folder)
+        nb = Notebook(name, needs=list(needs), takes=list(takes), gives=list(gives), title=title, screening_env=screening_env, folder=folder, auto=auto)
         self.notebooks[name] = nb
         return nb
 
