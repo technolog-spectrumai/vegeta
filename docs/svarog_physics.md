@@ -69,6 +69,24 @@ simulation: it reaches ~1250 K and creeps; the steady solve says it never melts.
 The stray beam is the reason the laser's enclosure exists; the guard's structure (the panel's own stiffness, its mounts)
 is a sheet-metal question, not a laser one, and is skipped on purpose.
 
+## 47 — the combining of modules (Svarog-combining): power is not brightness
+
+The 2 kW of notebook 46 is two 1 kW modules put together; notebook 47 asks what "together" can mean when the channels
+are complete fibre lasers (the modules' 1070 nm LP₀₁ outputs, w₀ 11.8 µm — not the pump diodes, whose combining is the
+(6+1)×1 combiner's étendue sum in `svarog_industrial`) `[combining]`. The physics `[Fan 2005]`: every method delivers the
+channels' power minus its own loss, but only two keep one channel's **étendue** — the filled-aperture coherent combiner
+(fields added on one axis, ΣP when in phase, the rest out of the other port; one Gaussian of N times the power — brightness
+× N) and the spectral combiner (eight colours 3 nm apart in the Yb band through a grating at 95 %); the incoherent sum and
+the tiled coherent array deliver the same power into an étendue N times larger (the tiled array's N² on-axis peak sits in a
+lobe N times narrower: the brightness is the incoherent sum's). The devices' numbers: 933 W as one Gaussian is 8.2 × 10¹⁰
+W/(cm²·sr); incoherent N = 2, 4, 8 give 2.2, 0.62, 0.19 × 10¹⁰; coherent-filled keeps 8.2 at every N, spectral 7.7; the
+2 kW doubles each and changes no ranking. Coherent combining asks for λ/20 of phase control (σ = 0.3 rad costs 8 % on
+axis, 1 rad half) and balanced channels (a −10 % channel costs its power and 0.05 % of imbalance); spectral combining asks
+for the band and a grating whose residual dispersion stays under a few percent. For the welding devices the étendue is
+set by the 50 µm process fibre (a BPP of 3 mm·mrad, forty times a channel's): incoherent combining of two or eight modules
+fits in it with room to spare — the cheap and robust choice; coherent or spectral combining buys brightness the head does
+not use, and matters where the beam must stay near-diffraction-limited over metres.
+
 ## References
 
 The numbered sources are in [hyperion_physics.md](hyperion_physics.md#references). The device-level ones:
@@ -82,5 +100,8 @@ The numbered sources are in [hyperion_physics.md](hyperion_physics.md#references
 - C. Jauregui, J. Limpert, A. Tünnermann, "High-power fibre lasers", Nature Photonics 7, 861 (2013).
 - W. M. Steen, J. Mazumder, *Laser Material Processing*, 4th ed., Springer (2010) — keyhole welding, process windows.
 - IEC 60825-4, *Safety of laser products — Part 4: Laser guards* — the exposure classes T1/T2/T3 and the test method.
+- T. Y. Fan, "Laser beam combining for high-power, high-radiance sources", IEEE J. Sel. Top. Quantum Electron. 11, 567
+  (2005); S. J. Augst et al., Opt. Lett. 28, 331 (2003) and 29, 474 (2004); T. H. Loftus et al., IEEE J. Sel. Top. Quantum
+  Electron. 13, 487 (2007) — the combining of fibre lasers: filled and tiled coherent apertures, spectral combining.
 - R. Hoffmann et al., "Laser guards for high-power lasers: protection times of passive guards", J. Laser Appl. — the
   measured burn-through of steel and aluminium panels the calculation is compared with when a test is run.

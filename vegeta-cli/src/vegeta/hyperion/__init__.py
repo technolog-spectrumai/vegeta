@@ -3,14 +3,17 @@ thick lenses, curved and flat mirrors at incidence, interfaces, slabs, Brewster 
 ``Train``, Gaussian beams (q, w(z), M², through a train, mode overlap), resonators (round trip, stability, eigenmode,
 spots, Gouy phase, FSR, finesse, linewidth, parameter sweeps) and the four-level end-pumped laser (threshold, slope,
 output, optimum coupler, thermal lens) and the fibre laser (a step-index fibre's modes and bend loss, Yb:silica, the
-pump/signal power evolution of an oscillator between gratings and of an amplifier, SRS, the core's temperature) — the
-numbers a laser is designed on, pure numpy.
+pump/signal power evolution of an oscillator between gratings and of an amplifier, SRS, the core's temperature), the
+combining of fibre lasers' outputs (incoherent, coherent — filled or tiled aperture — and spectral; near and far fields,
+power accounting, beam-quality metrics) — the numbers a laser is designed on, pure numpy.
 
 Hyperion computes what the engineer names — the elements, their spacings, the pump, the mode, the coupler — and
 labels nothing as true: a paraxial Gaussian is the first description of a beam; apertures, aberrations and the
 real pump profile come after it (the physical-optics and ray-tracing stages are on the to-do list).
 """
 from .atmosphere import ATMOSPHERES, Atmosphere, aerosol_attenuation, kruse_q, transmission_table
+from .combining import (Channel, CoherentCombiner, Combined, Grid, IncoherentCombiner, SpectralCombiner, channels, equivalent_gaussian, far_field,
+                        phase_sensitivity, power_table)
 from .beam import BeamTrace, GaussianBeam, lens_for_waist, propagate_q, q_from, spot_from, trace
 from .elements import (INF, BrewsterPlate, CurvedMirror, Element, FlatMirror, FreeSpace, Interface, Slab, ThermalLens, ThickLens,
                        ThinLens, Train, abcd_power, element_from_dict, is_mirror)
@@ -37,5 +40,7 @@ __all__ = [
     "rod_temperature_rise", "save_design", "spot_from", "srs_threshold", "thermal_lens", "trace", "two_mirror",
     "ALUMINIUM", "BLACK_PC", "BLACK_PE", "BRICK", "CLEAR_PC", "LASER_PC", "MILD_STEEL", "SOLIDS", "STAINLESS", "HeatingResult", "Solid",
     "gaussian_steady_rise", "heat_plate", "irradiance", "semi_infinite_surface_rise", "solid", "steady_plate", "thin_plate_time_to",
+    "Channel", "CoherentCombiner", "Combined", "Grid", "IncoherentCombiner", "SpectralCombiner", "channels", "equivalent_gaussian", "far_field",
+    "phase_sensitivity", "power_table",
     "DeliveryFibre", "WeldHead", "keyhole_threshold", "penetration", "penetration_curve", "process_window", "rosenthal_pool", "speed_for_penetration",
 ]

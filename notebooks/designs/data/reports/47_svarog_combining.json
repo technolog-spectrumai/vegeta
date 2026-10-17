@@ -1,0 +1,2869 @@
+{
+ "meta": {
+  "module": {
+   "fibre": {
+    "core_radius": 1.5e-05,
+    "NA": 0.06,
+    "clad_radius": 0.000125,
+    "coating_radius": 0.0002,
+    "clad_NA": 0.46,
+    "alpha_signal": 0.002302585092994046,
+    "alpha_pump": 0.002302585092994046,
+    "core_index": null,
+    "name": "30/250 Yb double-clad"
+   },
+   "w0": 1.1750832003766681e-05,
+   "m2": 1.0,
+   "wavelength": 1.07e-06
+  },
+  "spectral_spacing": 3e-09,
+  "grating_efficiency": 0.95,
+  "grid_n": 256,
+  "note": "channels = the modules' signal outputs; pump combining stays in svarog_industrial; nothing here is a target",
+  "notebook": "47_svarog_combining",
+  "debug": false,
+  "powers_from": "/home/user/vegeta/notebooks/designs/data/reports/46_svarog.json"
+ },
+ "devices": {
+  "1kW": {
+   "power_W": 933.254301042445,
+   "metrics": [
+    {
+     "method": "one Gaussian",
+     "N": 1,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.8806641618,
+     "Parseval": 3.09416808998742e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 1,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.8806641618,
+     "Parseval": 3.09416808998742e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 2,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.386837069473955,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.3099430145975921,
+     "M\u00b2": 3.640054944640259,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 22393630377.97709,
+     "on-axis [W/sr]": 707211.880664162,
+     "Parseval": 1.583629337395137e-14,
+     "overlap": -3.6545292401426226e-16,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 4,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.38683706947396,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.3099430145975921,
+     "M\u00b2": 3.64005494464026,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 6152003395.154855,
+     "on-axis [W/sr]": 707211.880664162,
+     "Parseval": 2.265808128888426e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 8,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 38.44880318359718,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.5572089939097629,
+     "M\u00b2": 6.5440137636675555,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 1903461234.8118684,
+     "on-axis [W/sr]": 707211.8806641619,
+     "Parseval": 2.1805357799517643e-14,
+     "overlap": 1.2181764133808742e-16,
+     "aperture": ""
+    },
+    {
+     "method": "coherent-filled",
+     "N": 1,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.8806641618,
+     "Parseval": 3.09416808998742e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 2,
+     "P_out [W]": 933.2543010424447,
+     "efficiency": 0.9999999999999997,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474537,
+     "BPP [mm\u00b7mrad]": 0.08514789455416402,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.8018,
+     "on-axis [W/sr]": 707211.8806641618,
+     "Parseval": 1.6079928656627544e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 4,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474537,
+     "BPP [mm\u00b7mrad]": 0.08514789455416402,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.880664162,
+     "Parseval": 2.265808128888426e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 8,
+     "P_out [W]": 933.2543010424448,
+     "efficiency": 0.9999999999999994,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.8806641615,
+     "Parseval": 2.1805357799517653e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 1,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80183,
+     "on-axis [W/sr]": 707211.8806641618,
+     "Parseval": 3.09416808998742e-14,
+     "overlap": 0.0,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 2,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 0.5387797803934424,
+     "\u03c3x [\u00b5m]": 21.36524703370002,
+     "\u03c3\u03b8x [mrad]": 14.297171074456118,
+     "BPP [mm\u00b7mrad]": 0.30546259188882524,
+     "M\u00b2": 3.587435643455815,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 22722092627.501045,
+     "on-axis [W/sr]": 1414423.761328324,
+     "Parseval": 1.628793422784675e-14,
+     "overlap": 0.0021874911181829076,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 4,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 0.41467673032105107,
+     "\u03c3x [\u00b5m]": 21.365247033700022,
+     "\u03c3\u03b8x [mrad]": 14.297171074456118,
+     "BPP [mm\u00b7mrad]": 0.3054625918888253,
+     "M\u00b2": 3.5874356434558154,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 6333797978.773663,
+     "on-axis [W/sr]": 2828847.522656648,
+     "Parseval": 2.2923136209283355e-14,
+     "overlap": 0.004379767353757946,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 8,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 0.2634517171223771,
+     "\u03c3x [\u00b5m]": 38.43682422284665,
+     "\u03c3\u03b8x [mrad]": 14.297598549664393,
+     "BPP [mm\u00b7mrad]": 0.5495542822622774,
+     "M\u00b2": 6.454114751042925,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 1956856951.4444253,
+     "on-axis [W/sr]": 5657695.045313296,
+     "Parseval": 2.1710375257470787e-14,
+     "overlap": 0.004374983892283324,
+     "aperture": "tiled"
+    },
+    {
+     "method": "spectral",
+     "N": 1,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474539,
+     "BPP [mm\u00b7mrad]": 0.08514789455416402,
+     "M\u00b2": 1.0000000000000002,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77438342736.51173,
+     "on-axis [W/sr]": 671851.2866309538,
+     "Parseval": 3.115967036332131e-14,
+     "overlap": -1.282290961453552e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 2,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.494181899741191,
+     "BPP [mm\u00b7mrad]": 0.08515934826794727,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77417513620.62724,
+     "on-axis [W/sr]": 671783.5348588878,
+     "Parseval": 2.269655001772787e-14,
+     "overlap": -1.282290961453552e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 4,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.49586964782225,
+     "BPP [mm\u00b7mrad]": 0.08516926449002987,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77399487292.1889,
+     "on-axis [W/sr]": 671738.9055741631,
+     "Parseval": 1.679801159504153e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 8,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.498401194927641,
+     "BPP [mm\u00b7mrad]": 0.08518413838240241,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77372460402.95819,
+     "on-axis [W/sr]": 671716.7271710786,
+     "Parseval": 1.0130098595483061e-14,
+     "overlap": -2.564581922907104e-16,
+     "aperture": ""
+    }
+   ],
+   "results": {
+    "incoherent": {
+     "1": {
+      "method": "incoherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.254301042445,
+      "power_far": 933.2543010424162,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 815140449858018.4,
+      "I_far_axis": 707211.8806641618,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 3.09416808998742e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009
+     },
+     "2": {
+      "method": "incoherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.2543010424447,
+      "power_far": 933.2543010424299,
+      "sigma_x": 2.1386837069473955e-05,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.099430145975921e-07,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 3.640054944640259,
+      "m2_y": 1.0,
+      "brightness": 223936303779770.9,
+      "I_far_axis": 707211.880664162,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 1.583629337395137e-14,
+      "overlap": -3.6545292401426226e-16,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842
+     },
+     "4": {
+      "method": "incoherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.254301042445,
+      "power_far": 933.2543010424239,
+      "sigma_x": 2.138683706947396e-05,
+      "sigma_y": 2.138683706947396e-05,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.0994301459759213e-07,
+      "bpp_y": 3.0994301459759213e-07,
+      "m2_x": 3.64005494464026,
+      "m2_y": 3.64005494464026,
+      "brightness": 61520033951548.55,
+      "I_far_axis": 707211.880664162,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 2.265808128888426e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322
+     },
+     "8": {
+      "method": "incoherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.2543010424451,
+      "power_far": 933.2543010424248,
+      "sigma_x": 3.844880318359718e-05,
+      "sigma_y": 3.844880318359718e-05,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474536,
+      "bpp_x": 5.572089939097629e-07,
+      "bpp_y": 5.57208993909763e-07,
+      "m2_x": 6.5440137636675555,
+      "m2_y": 6.544013763667556,
+      "brightness": 19034612348118.684,
+      "I_far_axis": 707211.8806641619,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 2.1805357799517643e-14,
+      "overlap": 1.2181764133808742e-16,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402
+     }
+    },
+    "coherent-filled": {
+     "1": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.254301042445,
+      "power_far": 933.2543010424162,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 815140449858018.4,
+      "I_far_axis": 707211.8806641618,
+      "efficiency": 1.0,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 3.09416808998742e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "aperture": "filled",
+      "power_in_lobe": 804.931515065104,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 1.0,
+      "port_loss": 0.0
+     },
+     "2": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.2543010424447,
+      "power_near": 933.2543010424447,
+      "power_far": 933.2543010424297,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474536,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416402e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 815140449858018.0,
+      "I_far_axis": 707211.8806641618,
+      "efficiency": 0.9999999999999997,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 1.6079928656627544e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "aperture": "filled",
+      "power_in_lobe": 806.4333105561001,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 1.9999999999999993,
+      "port_loss": 3.410605131648481e-13
+     },
+     "4": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.254301042445,
+      "power_far": 933.2543010424239,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014492232469474536,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416402e-08,
+      "bpp_y": 8.514789455416399e-08,
+      "m2_x": 1.0,
+      "m2_y": 0.9999999999999998,
+      "brightness": 815140449858018.4,
+      "I_far_axis": 707211.880664162,
+      "efficiency": 1.0,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.265808128888426e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "aperture": "filled",
+      "power_in_lobe": 808.8936396676411,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 4.0,
+      "port_loss": 0.0
+     },
+     "8": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.2543010424448,
+      "power_near": 933.2543010424448,
+      "power_far": 933.2543010424245,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474536,
+      "bpp_x": 8.514789455416399e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 0.9999999999999998,
+      "m2_y": 1.0,
+      "brightness": 815140449858018.4,
+      "I_far_axis": 707211.8806641615,
+      "efficiency": 0.9999999999999994,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.1805357799517653e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "aperture": "filled",
+      "power_in_lobe": 806.0953636909849,
+      "cone_half_angle": 0.028984464938949076,
+      "axis_gain": 1.0,
+      "axis_vs_single": 7.999999999999999,
+      "port_loss": 2.2737367544323206e-13
+     }
+    },
+    "coherent-tiled": {
+     "1": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 933.254301042445,
+      "power_far": 933.2543010424162,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 815140449858018.4,
+      "I_far_axis": 707211.8806641618,
+      "efficiency": 1.0,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 3.09416808998742e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "aperture": "tiled",
+      "power_in_lobe": 804.931515065104,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 1.0,
+      "port_loss": 0.0
+     },
+     "2": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 935.2957865369814,
+      "power_far": 935.2957865369661,
+      "sigma_x": 2.1365247033700018e-05,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014297171074456117,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.0546259188882525e-07,
+      "bpp_y": 8.514789455416399e-08,
+      "m2_x": 3.587435643455815,
+      "m2_y": 0.9999999999999998,
+      "brightness": 227220926275010.44,
+      "I_far_axis": 1414423.761328324,
+      "efficiency": 0.5387797803934424,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 1.628793422784675e-14,
+      "overlap": 0.0021874911181829076,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "aperture": "tiled",
+      "power_in_lobe": 433.3159277999014,
+      "cone_half_angle": 0.015199546807078518,
+      "axis_gain": 1.0,
+      "axis_vs_single": 4.0,
+      "port_loss": 0.0
+     },
+     "4": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 937.3417377629049,
+      "power_far": 937.3417377628834,
+      "sigma_x": 2.136524703370002e-05,
+      "sigma_y": 2.136524703370002e-05,
+      "sigma_tx": 0.014297171074456117,
+      "sigma_ty": 0.014297171074456116,
+      "bpp_x": 3.054625918888253e-07,
+      "bpp_y": 3.0546259188882525e-07,
+      "m2_x": 3.5874356434558154,
+      "m2_y": 3.5874356434558154,
+      "brightness": 63337979787736.625,
+      "I_far_axis": 2828847.522656648,
+      "efficiency": 0.41467673032105107,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.2923136209283355e-14,
+      "overlap": 0.004379767353757946,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "aperture": "tiled",
+      "power_in_lobe": 334.30292977213537,
+      "cone_half_angle": 0.0079706913212712,
+      "axis_gain": 1.0,
+      "axis_vs_single": 16.0,
+      "port_loss": 0.0
+     },
+     "8": {
+      "method": "coherent",
+      "power_in": 933.254301042445,
+      "power_out": 933.254301042445,
+      "power_near": 937.3372735769099,
+      "power_far": 937.3372735768895,
+      "sigma_x": 3.8436824222846654e-05,
+      "sigma_y": 3.8436824222846654e-05,
+      "sigma_tx": 0.014297598549664392,
+      "sigma_ty": 0.014297598549664394,
+      "bpp_x": 5.495542822622775e-07,
+      "bpp_y": 5.495542822622776e-07,
+      "m2_x": 6.454114751042925,
+      "m2_y": 6.454114751042926,
+      "brightness": 19568569514444.254,
+      "I_far_axis": 5657695.045313296,
+      "efficiency": 0.2634517171223771,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.1710375257470787e-14,
+      "overlap": 0.004374983892283324,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "aperture": "tiled",
+      "power_in_lobe": 215.67418729421385,
+      "cone_half_angle": 0.004430537448177237,
+      "axis_gain": 1.0,
+      "axis_vs_single": 64.00000000000003,
+      "port_loss": 0.0
+     }
+    },
+    "spectral": {
+     "1": {
+      "method": "spectral",
+      "power_in": 933.254301042445,
+      "power_out": 886.5915859903228,
+      "power_near": 886.5915859903226,
+      "power_far": 886.591585990295,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474538,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416403e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0000000000000002,
+      "m2_y": 1.0,
+      "brightness": 774383427365117.4,
+      "I_far_axis": 671851.2866309538,
+      "efficiency": 0.95,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 3.115967036332131e-14,
+      "overlap": -1.282290961453552e-16,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "2": {
+      "method": "spectral",
+      "power_in": 933.254301042445,
+      "power_out": 886.5915859903228,
+      "power_near": 886.5915859903226,
+      "power_far": 886.5915859903428,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014494181899741191,
+      "sigma_ty": 0.014494181899741191,
+      "bpp_x": 8.515934826794727e-08,
+      "bpp_y": 8.515934826794727e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 774175136206272.4,
+      "I_far_axis": 671783.5348588878,
+      "efficiency": 0.95,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 2.269655001772787e-14,
+      "overlap": -1.282290961453552e-16,
+      "wavelengths": [
+       1.0685e-06,
+       1.0714999999999998e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "4": {
+      "method": "spectral",
+      "power_in": 933.254301042445,
+      "power_out": 886.5915859903228,
+      "power_near": 886.5915859903228,
+      "power_far": 886.5915859903376,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.01449586964782225,
+      "sigma_ty": 0.01449586964782225,
+      "bpp_x": 8.516926449002987e-08,
+      "bpp_y": 8.516926449002987e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 773994872921889.0,
+      "I_far_axis": 671738.9055741631,
+      "efficiency": 0.95,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 1.679801159504153e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.0655e-06,
+       1.0685e-06,
+       1.0714999999999998e-06,
+       1.0744999999999998e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "8": {
+      "method": "spectral",
+      "power_in": 933.254301042445,
+      "power_out": 886.5915859903228,
+      "power_near": 886.5915859903225,
+      "power_far": 886.5915859903315,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014498401194927641,
+      "sigma_ty": 0.01449840119492764,
+      "bpp_x": 8.518413838240241e-08,
+      "bpp_y": 8.51841383824024e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 773724604029581.9,
+      "I_far_axis": 671716.7271710786,
+      "efficiency": 0.95,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 1.0130098595483061e-14,
+      "overlap": -2.564581922907104e-16,
+      "wavelengths": [
+       1.0595e-06,
+       1.0625e-06,
+       1.0655e-06,
+       1.0685e-06,
+       1.0714999999999998e-06,
+       1.0744999999999998e-06,
+       1.0774999999999998e-06,
+       1.0804999999999999e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     }
+    }
+   }
+  },
+  "2kW": {
+   "power_W": 1810.5133440223433,
+   "metrics": [
+    {
+     "method": "one Gaussian",
+     "N": 1,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 3.101954372217278e-14,
+     "overlap": -1.2558519725576022e-16,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 1,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 3.101954372217278e-14,
+     "overlap": -1.2558519725576022e-16,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 2,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.386837069473955,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.3099430145975921,
+     "M\u00b2": 3.640054944640259,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 43443642933.27556,
+     "on-axis [W/sr]": 1371991.048488474,
+     "Parseval": 1.5949320051481552e-14,
+     "overlap": -2.5117039451152044e-16,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 4,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.386837069473955,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.3099430145975921,
+     "M\u00b2": 3.640054944640259,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 11934886586.600418,
+     "on-axis [W/sr]": 1371991.0484884738,
+     "Parseval": 2.285650590054836e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 8,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 38.44880318359719,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.5572089939097631,
+     "M\u00b2": 6.544013763667558,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 3692714795.5350227,
+     "on-axis [W/sr]": 1371991.0484884738,
+     "Parseval": 2.160065392799076e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "coherent-filled",
+     "N": 1,
+     "P_out [W]": 1810.513344022343,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.45557,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 3.101954372217278e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 2,
+     "P_out [W]": 1810.5133440223428,
+     "efficiency": 0.9999999999999999,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.45554,
+     "on-axis [W/sr]": 1371991.0484884742,
+     "Parseval": 1.6074905248737315e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 4,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.45557,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 2.285650590054836e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-filled",
+     "N": 8,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 2.160065392799076e-14,
+     "overlap": 0.0,
+     "aperture": "filled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 1,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.085147894554164,
+     "M\u00b2": 0.9999999999999998,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+     "on-axis [W/sr]": 1371991.0484884735,
+     "Parseval": 3.101954372217278e-14,
+     "overlap": -1.2558519725576022e-16,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 2,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 0.5387797803934423,
+     "\u03c3x [\u00b5m]": 21.365247033700022,
+     "\u03c3\u03b8x [mrad]": 14.297171074456118,
+     "BPP [mm\u00b7mrad]": 0.3054625918888253,
+     "M\u00b2": 3.5874356434558154,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 44080859697.35203,
+     "on-axis [W/sr]": 2743982.096976948,
+     "Parseval": 1.591450720831311e-14,
+     "overlap": 0.002187491118182644,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 4,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 0.4146767303210511,
+     "\u03c3x [\u00b5m]": 21.365247033700022,
+     "\u03c3\u03b8x [mrad]": 14.297171074456116,
+     "BPP [mm\u00b7mrad]": 0.30546259188882524,
+     "M\u00b2": 3.5874356434558154,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 12287568078.820908,
+     "on-axis [W/sr]": 5487964.193953894,
+     "Parseval": 2.2756836252056793e-14,
+     "overlap": 0.004379767353757773,
+     "aperture": "tiled"
+    },
+    {
+     "method": "coherent-tiled",
+     "N": 8,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 0.26345171712237714,
+     "\u03c3x [\u00b5m]": 38.436824222846646,
+     "\u03c3\u03b8x [mrad]": 14.297598549664393,
+     "BPP [mm\u00b7mrad]": 0.5495542822622773,
+     "M\u00b2": 6.454114751042925,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 3796302485.8021865,
+     "on-axis [W/sr]": 10975928.387907788,
+     "Parseval": 2.1881677533014957e-14,
+     "overlap": 0.004374983892283599,
+     "aperture": "tiled"
+    },
+    {
+     "method": "spectral",
+     "N": 1,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.492232469474535,
+     "BPP [mm\u00b7mrad]": 0.08514789455416401,
+     "M\u00b2": 1.0,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 150230384908.83276,
+     "on-axis [W/sr]": 1303391.49606405,
+     "Parseval": 3.106581195274069e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 2,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.494181899741191,
+     "BPP [mm\u00b7mrad]": 0.08515934826794726,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 150189976424.01688,
+     "on-axis [W/sr]": 1303260.0576262423,
+     "Parseval": 2.2473140561557092e-14,
+     "overlap": 1.3219494447974762e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 4,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 14.495869647822252,
+     "BPP [mm\u00b7mrad]": 0.08516926449002987,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 150155005346.84647,
+     "on-axis [W/sr]": 1303173.4768138765,
+     "Parseval": 1.652436805996845e-14,
+     "overlap": 1.3219494447974762e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 8,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 14.49840119492764,
+     "BPP [mm\u00b7mrad]": 0.0851841383824024,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 150102573181.7389,
+     "on-axis [W/sr]": 1303130.4507118925,
+     "Parseval": 1.0179010724940567e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    }
+   ],
+   "results": {
+    "incoherent": {
+     "1": {
+      "method": "incoherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.513344022343,
+      "power_far": 1810.513344022287,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416399e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 0.9999999999999998,
+      "m2_y": 1.0,
+      "brightness": 1581372472724556.0,
+      "I_far_axis": 1371991.0484884735,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 3.101954372217278e-14,
+      "overlap": -1.2558519725576022e-16,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009
+     },
+     "2": {
+      "method": "incoherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.5133440223428,
+      "power_far": 1810.513344022314,
+      "sigma_x": 2.1386837069473955e-05,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.099430145975921e-07,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 3.640054944640259,
+      "m2_y": 1.0,
+      "brightness": 434436429332755.56,
+      "I_far_axis": 1371991.048488474,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 1.5949320051481552e-14,
+      "overlap": -2.5117039451152044e-16,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842
+     },
+     "4": {
+      "method": "incoherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.5133440223433,
+      "power_far": 1810.513344022302,
+      "sigma_x": 2.1386837069473955e-05,
+      "sigma_y": 2.138683706947396e-05,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.099430145975921e-07,
+      "bpp_y": 3.0994301459759213e-07,
+      "m2_x": 3.640054944640259,
+      "m2_y": 3.64005494464026,
+      "brightness": 119348865866004.17,
+      "I_far_axis": 1371991.0484884738,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 2.285650590054836e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322
+     },
+     "8": {
+      "method": "incoherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.5133440223433,
+      "power_far": 1810.5133440223042,
+      "sigma_x": 3.8448803183597195e-05,
+      "sigma_y": 3.8448803183597195e-05,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 5.572089939097631e-07,
+      "bpp_y": 5.572089939097631e-07,
+      "m2_x": 6.544013763667558,
+      "m2_y": 6.544013763667558,
+      "brightness": 36927147955350.23,
+      "I_far_axis": 1371991.0484884738,
+      "efficiency": 1.0,
+      "note": "intensities add; the \u00e9tendue is the union of the channels'",
+      "conservation": 2.160065392799076e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402
+     }
+    },
+    "coherent-filled": {
+     "1": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.513344022343,
+      "power_near": 1810.513344022343,
+      "power_far": 1810.513344022287,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416399e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 0.9999999999999998,
+      "m2_y": 1.0,
+      "brightness": 1581372472724555.8,
+      "I_far_axis": 1371991.0484884735,
+      "efficiency": 1.0,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 3.101954372217278e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "aperture": "filled",
+      "power_in_lobe": 1561.5671392263016,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 1.0,
+      "port_loss": 2.2737367544323206e-13
+     },
+     "2": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223428,
+      "power_near": 1810.5133440223428,
+      "power_far": 1810.5133440223137,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 1581372472724555.2,
+      "I_far_axis": 1371991.0484884742,
+      "efficiency": 0.9999999999999999,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 1.6074905248737315e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "aperture": "filled",
+      "power_in_lobe": 1564.4806224788342,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 2.0000000000000004,
+      "port_loss": 4.547473508864641e-13
+     },
+     "4": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.5133440223433,
+      "power_far": 1810.513344022302,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 1581372472724555.8,
+      "I_far_axis": 1371991.0484884735,
+      "efficiency": 1.0,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.285650590054836e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "aperture": "filled",
+      "power_in_lobe": 1569.2536609552233,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 4.0,
+      "port_loss": 0.0
+     },
+     "8": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.5133440223433,
+      "power_far": 1810.5133440223042,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474533,
+      "bpp_x": 8.514789455416399e-08,
+      "bpp_y": 8.514789455416399e-08,
+      "m2_x": 0.9999999999999998,
+      "m2_y": 0.9999999999999998,
+      "brightness": 1581372472724556.0,
+      "I_far_axis": 1371991.0484884735,
+      "efficiency": 1.0,
+      "note": "fields add (filled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.160065392799076e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "aperture": "filled",
+      "power_in_lobe": 1563.8250055605113,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 8.0,
+      "port_loss": 0.0
+     }
+    },
+    "coherent-tiled": {
+     "1": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1810.513344022343,
+      "power_far": 1810.513344022287,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.514789455416399e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 0.9999999999999998,
+      "m2_y": 1.0,
+      "brightness": 1581372472724556.0,
+      "I_far_axis": 1371991.0484884735,
+      "efficiency": 1.0,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 3.101954372217278e-14,
+      "overlap": -1.2558519725576022e-16,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "aperture": "tiled",
+      "power_in_lobe": 1561.5671392263016,
+      "cone_half_angle": 0.02898446493894907,
+      "axis_gain": 1.0,
+      "axis_vs_single": 1.0,
+      "port_loss": 0.0
+     },
+     "2": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1814.4738258817433,
+      "power_far": 1814.4738258817144,
+      "sigma_x": 2.136524703370002e-05,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014297171074456117,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 3.054625918888253e-07,
+      "bpp_y": 8.514789455416399e-08,
+      "m2_x": 3.5874356434558154,
+      "m2_y": 0.9999999999999998,
+      "brightness": 440808596973520.25,
+      "I_far_axis": 2743982.096976948,
+      "efficiency": 0.5387797803934423,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 1.591450720831311e-14,
+      "overlap": 0.002187491118182644,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "aperture": "tiled",
+      "power_in_lobe": 840.6328999318087,
+      "cone_half_angle": 0.015199546807078515,
+      "axis_gain": 1.0,
+      "axis_vs_single": 4.0,
+      "port_loss": 0.0
+     },
+     "4": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1818.4429712600352,
+      "power_far": 1818.4429712599938,
+      "sigma_x": 2.136524703370002e-05,
+      "sigma_y": 2.136524703370002e-05,
+      "sigma_tx": 0.014297171074456116,
+      "sigma_ty": 0.014297171074456116,
+      "bpp_x": 3.0546259188882525e-07,
+      "bpp_y": 3.0546259188882525e-07,
+      "m2_x": 3.5874356434558154,
+      "m2_y": 3.5874356434558154,
+      "brightness": 122875680788209.08,
+      "I_far_axis": 5487964.193953894,
+      "efficiency": 0.4146767303210511,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.2756836252056793e-14,
+      "overlap": 0.004379767353757773,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "aperture": "tiled",
+      "power_in_lobe": 648.5476837579428,
+      "cone_half_angle": 0.0079706913212712,
+      "axis_gain": 1.0,
+      "axis_vs_single": 16.0,
+      "port_loss": 0.0
+     },
+     "8": {
+      "method": "coherent",
+      "power_in": 1810.5133440223433,
+      "power_out": 1810.5133440223433,
+      "power_near": 1818.4343107392056,
+      "power_far": 1818.4343107391658,
+      "sigma_x": 3.843682422284665e-05,
+      "sigma_y": 3.843682422284665e-05,
+      "sigma_tx": 0.014297598549664392,
+      "sigma_ty": 0.014297598549664394,
+      "bpp_x": 5.495542822622774e-07,
+      "bpp_y": 5.495542822622775e-07,
+      "m2_x": 6.454114751042925,
+      "m2_y": 6.454114751042925,
+      "brightness": 37963024858021.87,
+      "I_far_axis": 10975928.387907788,
+      "efficiency": 0.26345171712237714,
+      "note": "fields add (tiled aperture); efficiency = power in the array's central lobe against a Gaussian's 1 \u2212 e\u207b\u00b2",
+      "conservation": 2.1881677533014957e-14,
+      "overlap": 0.004374983892283599,
+      "wavelengths": [
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06,
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "aperture": "tiled",
+      "power_in_lobe": 418.4079233507749,
+      "cone_half_angle": 0.0044305374481772375,
+      "axis_gain": 1.0,
+      "axis_vs_single": 64.0,
+      "port_loss": 0.0
+     }
+    },
+    "spectral": {
+     "1": {
+      "method": "spectral",
+      "power_in": 1810.5133440223433,
+      "power_out": 1719.987676821226,
+      "power_near": 1719.987676821226,
+      "power_far": 1719.9876768211725,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.014492232469474535,
+      "sigma_ty": 0.014492232469474535,
+      "bpp_x": 8.5147894554164e-08,
+      "bpp_y": 8.5147894554164e-08,
+      "m2_x": 1.0,
+      "m2_y": 1.0,
+      "brightness": 1502303849088327.8,
+      "I_far_axis": 1303391.49606405,
+      "efficiency": 0.9499999999999998,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 3.106581195274069e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.07e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007050499202260009,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "2": {
+      "method": "spectral",
+      "power_in": 1810.5133440223433,
+      "power_out": 1719.987676821226,
+      "power_near": 1719.9876768212262,
+      "power_far": 1719.9876768212648,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014494181899741191,
+      "sigma_ty": 0.014494181899741191,
+      "bpp_x": 8.515934826794726e-08,
+      "bpp_y": 8.515934826794726e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 1501899764240168.8,
+      "I_far_axis": 1303260.0576262423,
+      "efficiency": 0.9499999999999998,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 2.2473140561557092e-14,
+      "overlap": 1.3219494447974762e-16,
+      "wavelengths": [
+       1.0685e-06,
+       1.0714999999999998e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007461778322391842,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "4": {
+      "method": "spectral",
+      "power_in": 1810.5133440223433,
+      "power_out": 1719.987676821226,
+      "power_near": 1719.9876768212262,
+      "power_far": 1719.9876768212546,
+      "sigma_x": 5.87541600188334e-06,
+      "sigma_y": 5.87541600188334e-06,
+      "sigma_tx": 0.014495869647822252,
+      "sigma_ty": 0.014495869647822252,
+      "bpp_x": 8.516926449002987e-08,
+      "bpp_y": 8.516926449002987e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 1501550053468464.8,
+      "I_far_axis": 1303173.4768138765,
+      "efficiency": 0.9499999999999998,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 1.652436805996845e-14,
+      "overlap": 1.3219494447974762e-16,
+      "wavelengths": [
+       1.0655e-06,
+       1.0685e-06,
+       1.0714999999999998e-06,
+       1.0744999999999998e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0007632135711871322,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     },
+     "8": {
+      "method": "spectral",
+      "power_in": 1810.5133440223433,
+      "power_out": 1719.987676821226,
+      "power_near": 1719.987676821226,
+      "power_far": 1719.9876768212434,
+      "sigma_x": 5.875416001883341e-06,
+      "sigma_y": 5.875416001883341e-06,
+      "sigma_tx": 0.01449840119492764,
+      "sigma_ty": 0.01449840119492764,
+      "bpp_x": 8.51841383824024e-08,
+      "bpp_y": 8.51841383824024e-08,
+      "m2_x": NaN,
+      "m2_y": NaN,
+      "brightness": 1501025731817389.0,
+      "I_far_axis": 1303130.4507118925,
+      "efficiency": 0.9499999999999998,
+      "note": "intensities add on one axis; the \u00e9tendue is one channel's plus the dispersion's residual pointing",
+      "conservation": 1.0179010724940567e-14,
+      "overlap": 0.0,
+      "wavelengths": [
+       1.0595e-06,
+       1.0625e-06,
+       1.0655e-06,
+       1.0685e-06,
+       1.0714999999999998e-06,
+       1.0744999999999998e-06,
+       1.0774999999999998e-06,
+       1.0804999999999999e-06
+      ],
+      "grid_n": 512,
+      "grid_size": 0.0008125223335442402,
+      "residual_pointing_max": 0.0,
+      "wavelength_centre": 1.07e-06
+     }
+    }
+   }
+  }
+ },
+ "phase": {
+  "1kW": {
+   "filled": {
+    "2": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      0.9999999999999994,
+      0.9950067323551298,
+      0.9796518721860337,
+      0.956355589194226,
+      0.8506198120774369,
+      0.7893295815821747,
+      0.7131070960785608,
+      0.6032310276743458
+     ],
+     "efficiency_std": [
+      0.0,
+      0.00727880995039069,
+      0.022528164360535497,
+      0.04101700343119049,
+      0.14879405237319637,
+      0.21629470549858326,
+      0.26156638854259207,
+      0.3405670440513819
+     ],
+     "axis_gain": [
+      1.0,
+      0.9950067323551306,
+      0.9796518721860344,
+      0.9563555891942268,
+      0.8506198120774375,
+      0.7893295815821753,
+      0.7131070960785612,
+      0.6032310276743463
+     ],
+     "closed_form": [
+      1.0,
+      0.9950249168745839,
+      0.9803947195761615,
+      0.9569655926356141,
+      0.8894003915357025,
+      0.7636462120215243,
+      0.6839397205857212,
+      0.5526996122809321
+     ]
+    },
+    "4": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      1.0,
+      0.992423205461357,
+      0.9685530704523644,
+      0.9408502598010864,
+      0.8037116624382842,
+      0.6497294464920282,
+      0.5005486755053911,
+      0.3110441609478192
+     ],
+     "efficiency_std": [
+      0.0,
+      0.004947680847917141,
+      0.029844002475224726,
+      0.03687824273551834,
+      0.1347280433791031,
+      0.24494409880294396,
+      0.261123737646246,
+      0.23702852698241453
+     ],
+     "axis_gain": [
+      1.0,
+      0.992423205461357,
+      0.9685530704523644,
+      0.9408502598010863,
+      0.8037116624382842,
+      0.6497294464920284,
+      0.5005486755053912,
+      0.3110441609478193
+     ],
+     "closed_form": [
+      1.0,
+      0.992537375311876,
+      0.9705920793642424,
+      0.9354483889534211,
+      0.8341005873035536,
+      0.6454693180322864,
+      0.5259095808785818,
+      0.32904941842139823
+     ]
+    },
+    "8": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      0.9999999999999994,
+      0.9898808476447253,
+      0.9680604919411401,
+      0.9209403048846992,
+      0.8168518011205596,
+      0.6102078970941466,
+      0.43632767243971415,
+      0.16391507474788228
+     ],
+     "efficiency_std": [
+      0.0,
+      0.004315615065286983,
+      0.01746899817096242,
+      0.03899009907647188,
+      0.07875676927698941,
+      0.18448346166263757,
+      0.18874252563871186,
+      0.13162977856787378
+     ],
+     "axis_gain": [
+      1.0,
+      0.9898808476447262,
+      0.9680604919411409,
+      0.9209403048846999,
+      0.8168518011205603,
+      0.6102078970941469,
+      0.43632767243971443,
+      0.16391507474788242
+     ],
+     "closed_form": [
+      1.0,
+      0.991293604530522,
+      0.9656907592582827,
+      0.9246897871123246,
+      0.8064506851874793,
+      0.5863808710376675,
+      0.44689451102501204,
+      0.2172243214916313
+     ]
+    }
+   },
+   "tiled": {
+    "4": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      0.4191222883196748,
+      0.416478585495668,
+      0.4088206516782658,
+      0.39839036068246614,
+      0.3518065127762204,
+      0.30057909003294103,
+      0.24926576729564462,
+      0.18507985642358932
+     ],
+     "efficiency_std": [
+      0.0,
+      0.0017704689521908191,
+      0.009630091133106054,
+      0.013463877699028756,
+      0.04453888603190854,
+      0.08297844094708724,
+      0.09250303356552154,
+      0.08651753856132341
+     ],
+     "axis_gain": [
+      1.0,
+      0.9924232054613572,
+      0.9685530704523646,
+      0.9408502598010869,
+      0.8037116624382844,
+      0.6497294464920286,
+      0.5005486755053913,
+      0.3110441609478194
+     ],
+     "closed_form": [
+      1.0,
+      0.992537375311876,
+      0.9705920793642424,
+      0.9354483889534211,
+      0.8341005873035536,
+      0.6454693180322864,
+      0.5259095808785818,
+      0.32904941842139823
+     ]
+    }
+   }
+  },
+  "2kW": {
+   "filled": {
+    "2": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      1.0,
+      0.9950067323551303,
+      0.9796518721860343,
+      0.9563555891942266,
+      0.8506198120774372,
+      0.789329581582175,
+      0.713107096078561,
+      0.6032310276743462
+     ],
+     "efficiency_std": [
+      0.0,
+      0.0072788099503907225,
+      0.02252816436053549,
+      0.04101700343119049,
+      0.14879405237319643,
+      0.21629470549858337,
+      0.2615663885425922,
+      0.34056704405138205
+     ],
+     "axis_gain": [
+      1.0,
+      0.9950067323551299,
+      0.9796518721860339,
+      0.9563555891942261,
+      0.8506198120774369,
+      0.7893295815821747,
+      0.7131070960785608,
+      0.6032310276743458
+     ],
+     "closed_form": [
+      1.0,
+      0.9950249168745839,
+      0.9803947195761615,
+      0.9569655926356141,
+      0.8894003915357025,
+      0.7636462120215243,
+      0.6839397205857212,
+      0.5526996122809321
+     ]
+    },
+    "4": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      1.0,
+      0.9924232054613572,
+      0.9685530704523646,
+      0.9408502598010868,
+      0.8037116624382844,
+      0.6497294464920286,
+      0.5005486755053913,
+      0.3110441609478194
+     ],
+     "efficiency_std": [
+      0.0,
+      0.0049476808479171335,
+      0.029844002475224778,
+      0.03687824273551832,
+      0.13472804337910316,
+      0.24494409880294402,
+      0.2611237376462461,
+      0.23702852698241456
+     ],
+     "axis_gain": [
+      1.0,
+      0.9924232054613569,
+      0.968553070452364,
+      0.9408502598010864,
+      0.8037116624382841,
+      0.6497294464920282,
+      0.5005486755053911,
+      0.3110441609478192
+     ],
+     "closed_form": [
+      1.0,
+      0.992537375311876,
+      0.9705920793642424,
+      0.9354483889534211,
+      0.8341005873035536,
+      0.6454693180322864,
+      0.5259095808785818,
+      0.32904941842139823
+     ]
+    },
+    "8": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      1.0,
+      0.989880847644726,
+      0.9680604919411405,
+      0.9209403048846997,
+      0.8168518011205602,
+      0.6102078970941468,
+      0.43632767243971443,
+      0.16391507474788236
+     ],
+     "efficiency_std": [
+      0.0,
+      0.004315615065287008,
+      0.017468998170962386,
+      0.03899009907647192,
+      0.07875676927698942,
+      0.18448346166263768,
+      0.18874252563871194,
+      0.13162977856787386
+     ],
+     "axis_gain": [
+      1.0,
+      0.9898808476447261,
+      0.9680604919411409,
+      0.9209403048846998,
+      0.8168518011205602,
+      0.6102078970941468,
+      0.4363276724397143,
+      0.16391507474788236
+     ],
+     "closed_form": [
+      1.0,
+      0.991293604530522,
+      0.9656907592582827,
+      0.9246897871123246,
+      0.8064506851874793,
+      0.5863808710376675,
+      0.44689451102501204,
+      0.2172243214916313
+     ]
+    }
+   },
+   "tiled": {
+    "4": {
+     "sigma_phase": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      1.0,
+      1.5
+     ],
+     "efficiency": [
+      0.4191222883196746,
+      0.41647858549566796,
+      0.4088206516782657,
+      0.3983903606824661,
+      0.3518065127762203,
+      0.300579090032941,
+      0.24926576729564456,
+      0.18507985642358935
+     ],
+     "efficiency_std": [
+      0.0,
+      0.0017704689521908245,
+      0.009630091133106072,
+      0.013463877699028763,
+      0.044538886031908496,
+      0.08297844094708723,
+      0.09250303356552153,
+      0.08651753856132342
+     ],
+     "axis_gain": [
+      1.0,
+      0.9924232054613572,
+      0.9685530704523645,
+      0.9408502598010867,
+      0.8037116624382843,
+      0.6497294464920285,
+      0.5005486755053913,
+      0.31104416094781934
+     ],
+     "closed_form": [
+      1.0,
+      0.992537375311876,
+      0.9705920793642424,
+      0.9354483889534211,
+      0.8341005873035536,
+      0.6454693180322864,
+      0.5259095808785818,
+      0.32904941842139823
+     ]
+    }
+   }
+  }
+ },
+ "losses": {
+  "1kW": {
+   "all channels": {
+    "incoherent": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.254301042445,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6152003395.154855,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 923.9217580320205,
+      "efficiency": 0.99,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6090483361.203305,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 914.5892150215961,
+      "efficiency": 0.98,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6028963327.251758,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 886.5915859903228,
+      "efficiency": 0.95,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 5844403225.397112,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 839.9288709382006,
+      "efficiency": 0.9,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 5536803055.63937,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "coherent-filled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.2543010424453,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80186,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 923.9217580320206,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 80698904535.94383,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 914.5892150215959,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 79883764086.08578,
+      "imbalance [%]": 2.220446049250313e-14
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 886.5915859903229,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 77438342736.51178,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 839.9288709382004,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 73362640487.22165,
+      "imbalance [%]": 2.220446049250313e-14
+     }
+    ],
+    "coherent-tiled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.254301042445,
+      "efficiency": 0.4191222883196748,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6333797978.773663,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 923.9217580320205,
+      "efficiency": 0.4191222883196749,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6270459998.985925,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 914.5892150215961,
+      "efficiency": 0.4191222883196745,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6207122019.198191,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 886.5915859903228,
+      "efficiency": 0.41912228831967485,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6017108079.834976,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 839.9288709382006,
+      "efficiency": 0.41912228831967474,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 5700418180.896297,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "spectral": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 886.5915859903228,
+      "efficiency": 0.95,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 77347149602.4975,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 877.7256701304195,
+      "efficiency": 0.9405,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 76573678106.47252,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 868.8597542705163,
+      "efficiency": 0.9309999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 75800206610.44756,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 842.2620066908066,
+      "efficiency": 0.9025,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 73479792122.37262,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 797.9324273912905,
+      "efficiency": 0.855,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 69612434642.24774,
+      "imbalance [%]": 0.0
+     }
+    ]
+   },
+   "one channel": {
+    "incoherent": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.254301042445,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6152003395.154855,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 930.9211652898389,
+      "efficiency": 0.9974999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6136675580.946214,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 928.5880295372328,
+      "efficiency": 0.995,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6121453020.756698,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 921.5886222794145,
+      "efficiency": 0.9875,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6076430287.998313,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 909.922943516384,
+      "efficiency": 0.9750000000000001,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6003628452.333183,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "coherent-filled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.2543010424453,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 81514044985.80186,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 930.9167686494839,
+      "efficiency": 0.999995277107752,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 81309875853.7413,
+      "imbalance [%]": 0.00047228922479547464
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 928.5703538155029,
+      "efficiency": 0.999980964947676,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 81104930894.88193,
+      "imbalance [%]": 0.0019035052324256618
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 921.4764338483635,
+      "efficiency": 0.9998782662585682,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 80485320451.42488,
+      "imbalance [%]": 0.012173374143176208
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 909.4621368573031,
+      "efficiency": 0.9994935761732742,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 79435945222.92807,
+      "imbalance [%]": 0.050642382672538844
+     }
+    ],
+    "coherent-tiled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 933.254301042445,
+      "efficiency": 0.4191222883196748,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6333797978.773663,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 930.9211652898389,
+      "efficiency": 0.41912172658476865,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6318015886.45121,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 928.5880295372328,
+      "efficiency": 0.41912002047734587,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6302339464.940993,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 921.5886222794145,
+      "efficiency": 0.41910771111101935,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6255957648.505703,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 909.922943516384,
+      "efficiency": 0.41906113037277015,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 6180898977.043263,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "spectral": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 886.5915859903228,
+      "efficiency": 0.95,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 77347149602.4975,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 884.375107025347,
+      "efficiency": 0.947625,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 77152233923.6406,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 882.1586280603711,
+      "efficiency": 0.9452499999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 76957318307.19646,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 875.5091911654438,
+      "efficiency": 0.938125,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 76372571837.04228,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 864.4267963405647,
+      "efficiency": 0.92625,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 75397995679.64114,
+      "imbalance [%]": 0.0
+     }
+    ]
+   }
+  },
+  "2kW": {
+   "all channels": {
+    "incoherent": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11934886586.60042,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1792.4082105821199,
+      "efficiency": 0.99,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11815537720.734413,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1774.3030771418964,
+      "efficiency": 0.98,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11696188854.86841,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1719.987676821226,
+      "efficiency": 0.9499999999999998,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11338142257.270395,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1629.462009620109,
+      "efficiency": 0.9,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 10741397927.940376,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "coherent-filled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1792.4082105821199,
+      "efficiency": 0.9999999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 156555874799.73105,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1774.3030771418967,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 154974502327.00656,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1719.9876768212262,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 150230384908.83282,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1629.462009620109,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 142323522545.21005,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "coherent-tiled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 0.4191222883196746,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12287568078.820904,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1792.4082105821199,
+      "efficiency": 0.41912228831967474,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12164692398.032696,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1774.3030771418964,
+      "efficiency": 0.41912228831967474,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12041816717.244484,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1719.987676821226,
+      "efficiency": 0.41912228831967463,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11673189674.879862,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1629.462009620109,
+      "efficiency": 0.4191222883196747,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11058811270.938814,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "spectral": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1719.987676821226,
+      "efficiency": 0.9499999999999998,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 150053470228.84515,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1702.7878000530138,
+      "efficiency": 0.9405,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 148552935526.55664,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1685.5879232848015,
+      "efficiency": 0.9309999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 147052400824.26825,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1633.9882929801647,
+      "efficiency": 0.9025,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 142550796717.40286,
+      "imbalance [%]": -2.220446049250313e-14
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1547.9889091391035,
+      "efficiency": 0.855,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 135048123205.96063,
+      "imbalance [%]": 0.0
+     }
+    ]
+   },
+   "one channel": {
+    "incoherent": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11934886586.60042,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1805.9870606622874,
+      "efficiency": 0.9974999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11905150627.035654,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1801.4607773022317,
+      "efficiency": 0.9950000000000001,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11875618860.267992,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1787.881927222064,
+      "efficiency": 0.9874999999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11788274758.716724,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1765.2505104217848,
+      "efficiency": 0.9750000000000001,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11647039197.526371,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "coherent-filled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 1.0,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 158137247272.4556,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1805.9785311799983,
+      "efficiency": 0.9999952771077518,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 157741159156.2581,
+      "imbalance [%]": 0.0004722892248176791
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1801.4264864020754,
+      "efficiency": 0.9999809649476759,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 157343565936.07086,
+      "imbalance [%]": 0.001903505232436764
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1787.664281665825,
+      "efficiency": 0.9998782662585679,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 156141521675.7643,
+      "imbalance [%]": 0.012173374143176208
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1764.3565455031676,
+      "efficiency": 0.9994935761732744,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 154105733732.4804,
+      "imbalance [%]": 0.05064238267257215
+     }
+    ],
+    "coherent-tiled": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1810.5133440223433,
+      "efficiency": 0.4191222883196746,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12287568078.820904,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1805.9870606622874,
+      "efficiency": 0.41912172658476854,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12256950819.715334,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1801.4607773022317,
+      "efficiency": 0.41912002047734576,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12226538561.985527,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1787.881927222064,
+      "efficiency": 0.4191077111110194,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 12136557838.101067,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1765.2505104217848,
+      "efficiency": 0.4190611303727701,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 11990944015.463928,
+      "imbalance [%]": 0.0
+     }
+    ],
+    "spectral": [
+     {
+      "loss": 0.0,
+      "P_out [W]": 1719.987676821226,
+      "efficiency": 0.9499999999999998,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 150053470228.84515,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.01,
+      "P_out [W]": 1715.687707629173,
+      "efficiency": 0.9476249999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 149675333811.8627,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.02,
+      "P_out [W]": 1711.3877384371199,
+      "efficiency": 0.9452499999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 149297197515.96103,
+      "imbalance [%]": 1.1102230246251565e-14
+     },
+     {
+      "loss": 0.05,
+      "P_out [W]": 1698.4878308609607,
+      "efficiency": 0.938125,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 148162789363.86194,
+      "imbalance [%]": 0.0
+     },
+     {
+      "loss": 0.1,
+      "P_out [W]": 1676.9879849006952,
+      "efficiency": 0.9262499999999999,
+      "brightness [W/(cm\u00b2\u00b7sr)]": 146272111618.50378,
+      "imbalance [%]": 1.1102230246251565e-14
+     }
+    ]
+   }
+  }
+ },
+ "spectral": {
+  "1kW": {
+   "residual": [
+    {
+     "residual share": 0.0,
+     "residual [mrad/nm]": 0.0,
+     "pointing max [mrad]": 0.0,
+     "\u03c3\u03b8x [mrad]": 14.50261296633783,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08520888429154211,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77327526735.0789
+    },
+    {
+     "residual share": 0.05,
+     "residual [mrad/nm]": 0.1,
+     "pointing max [mrad]": 0.44999999999999146,
+     "\u03c3\u03b8x [mrad]": 14.506494695051384,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08523169106254068,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77306835004.431
+    },
+    {
+     "residual share": 0.1,
+     "residual [mrad/nm]": 0.2,
+     "pointing max [mrad]": 0.8999999999999829,
+     "\u03c3\u03b8x [mrad]": 14.518133656317113,
+     "\u03c3\u03b8y [mrad]": 14.502612966337828,
+     "BPP x [mm\u00b7mrad]": 0.08530007480180665,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 77244859320.81404
+    },
+    {
+     "residual share": 0.25,
+     "residual [mrad/nm]": 0.5,
+     "pointing max [mrad]": 2.2499999999999574,
+     "\u03c3\u03b8x [mrad]": 14.599346673609043,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08577723506316488,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 76815162825.75961
+    },
+    {
+     "residual share": 0.5,
+     "residual [mrad/nm]": 1.0,
+     "pointing max [mrad]": 4.499999999999915,
+     "\u03c3\u03b8x [mrad]": 14.885777889314982,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08746013761136245,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 75337090222.73997
+    }
+   ],
+   "multimode": [
+    {
+     "method": "incoherent",
+     "N": 1,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 18.94461076683161,
+     "BPP [mm\u00b7mrad]": 0.11130746924889386,
+     "M\u00b2": 1.307225150213072,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 47701458174.27948,
+     "on-axis [W/sr]": 418387.42463482026,
+     "Parseval": 2.6799881094379227e-15,
+     "overlap": 1.2181764133808742e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 1,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 18.94461076683161,
+     "BPP [mm\u00b7mrad]": 0.11130746924889384,
+     "M\u00b2": 1.3072251502130718,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 45316385265.56552,
+     "on-axis [W/sr]": 397468.0534030793,
+     "Parseval": 3.0774983074885244e-15,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 4,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 933.254301042445,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.38683706947396,
+     "\u03c3\u03b8x [mrad]": 18.912131911815333,
+     "BPP [mm\u00b7mrad]": 0.4044706838343936,
+     "M\u00b2": 4.750213566080639,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 3612486006.8031116,
+     "on-axis [W/sr]": 418446.69143962057,
+     "Parseval": 3.167258674790273e-14,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 4,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 886.5915859903228,
+     "efficiency": 0.95,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 18.94585886657127,
+     "BPP [mm\u00b7mrad]": 0.1113148023540762,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 45310414830.963974,
+     "on-axis [W/sr]": 397464.2606233533,
+     "Parseval": 8.463120345593441e-15,
+     "overlap": 0.0,
+     "aperture": ""
+    }
+   ]
+  },
+  "2kW": {
+   "residual": [
+    {
+     "residual share": 0.0,
+     "residual [mrad/nm]": 0.0,
+     "pointing max [mrad]": 0.0,
+     "\u03c3\u03b8x [mrad]": 14.502612966337832,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08520888429154212,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 150015401866.05304
+    },
+    {
+     "residual share": 0.05,
+     "residual [mrad/nm]": 0.1,
+     "pointing max [mrad]": 0.44999999999999146,
+     "\u03c3\u03b8x [mrad]": 14.506494695051382,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08523169106254068,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 149975259908.59607
+    },
+    {
+     "residual share": 0.1,
+     "residual [mrad/nm]": 0.2,
+     "pointing max [mrad]": 0.8999999999999829,
+     "\u03c3\u03b8x [mrad]": 14.518133656317115,
+     "\u03c3\u03b8y [mrad]": 14.502612966337832,
+     "BPP x [mm\u00b7mrad]": 0.08530007480180667,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 149855027082.3791
+    },
+    {
+     "residual share": 0.25,
+     "residual [mrad/nm]": 0.5,
+     "pointing max [mrad]": 2.2499999999999574,
+     "\u03c3\u03b8x [mrad]": 14.599346673609041,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08577723506316488,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 149021415881.9736
+    },
+    {
+     "residual share": 0.5,
+     "residual [mrad/nm]": 1.0,
+     "pointing max [mrad]": 4.499999999999915,
+     "\u03c3\u03b8x [mrad]": 14.885777889314982,
+     "\u03c3\u03b8y [mrad]": 14.50261296633783,
+     "BPP x [mm\u00b7mrad]": 0.08746013761136247,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 146153955032.11548
+    }
+   ],
+   "multimode": [
+    {
+     "method": "incoherent",
+     "N": 1,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 5.87541600188334,
+     "\u03c3\u03b8x [mrad]": 18.944610766831612,
+     "BPP [mm\u00b7mrad]": 0.11130746924889387,
+     "M\u00b2": 1.307225150213072,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 92540828858.10219,
+     "on-axis [W/sr]": 811671.6037915515,
+     "Parseval": 2.7628743396267255e-15,
+     "overlap": -1.2558519725576022e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 1,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 18.944610766831612,
+     "BPP [mm\u00b7mrad]": 0.11130746924889388,
+     "M\u00b2": 1.3072251502130723,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 87913787415.19705,
+     "on-axis [W/sr]": 771088.0236019738,
+     "Parseval": 2.7760938340747e-15,
+     "overlap": 0.0,
+     "aperture": ""
+    },
+    {
+     "method": "incoherent",
+     "N": 4,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 1810.5133440223433,
+     "efficiency": 1.0,
+     "\u03c3x [\u00b5m]": 21.386837069473955,
+     "\u03c3\u03b8x [mrad]": 18.912131911815333,
+     "BPP [mm\u00b7mrad]": 0.40447068383439355,
+     "M\u00b2": 4.750213566080638,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 7008222853.198038,
+     "on-axis [W/sr]": 811786.5813928638,
+     "Parseval": 3.1396299313940054e-14,
+     "overlap": 1.2558519725576022e-16,
+     "aperture": ""
+    },
+    {
+     "method": "spectral",
+     "N": 4,
+     "M\u00b2 channel": 1.3,
+     "P_out [W]": 1719.987676821226,
+     "efficiency": 0.9499999999999998,
+     "\u03c3x [\u00b5m]": 5.875416001883341,
+     "\u03c3\u03b8x [mrad]": 18.94585886657127,
+     "BPP [mm\u00b7mrad]": 0.11131480235407622,
+     "M\u00b2": NaN,
+     "brightness [W/(cm\u00b2\u00b7sr)]": 87902204772.07007,
+     "on-axis [W/sr]": 771080.6656093054,
+     "Parseval": 8.724866335663344e-15,
+     "overlap": 0.0,
+     "aperture": ""
+    }
+   ]
+  }
+ }
+}

@@ -38,3 +38,14 @@ def test_fibre_commands(capsys):
     assert main(["fibre-laser", "--core", "10e-6", "--na", "0.06", "--length", "5", "--absorption", "5", "--pump", "40", "--seed", "15", "--steps", "120", "--json"]) == 0
     d = json.loads(capsys.readouterr().out)
     assert 40 < d["output_W"] < 55 and d["gain_db"] > 4
+
+
+def test_combine_command(capsys):
+    assert main(["combine", "--n", "4", "--method", "coherent-filled", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert abs(d["power_out"] - 4.0) < 1e-9 and abs(d["brightness_vs_one_gaussian"] - 1.0) < 1e-6 and d["aperture"] == "filled"
+    assert main(["combine", "--n", "4", "--method", "incoherent", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert abs(d["power_out"] - 4.0) < 1e-9 and d["brightness_vs_one_gaussian"] < 0.3 and d["m2_x"] > 2
+    assert main(["combine", "--n", "2", "--method", "coherent-filled", "--phases", "0", "3.141592653589793"]) == 1   # all of it out of the other port
+    assert main(["combine", "--n", "2", "--method", "spectral", "--spacing", "0"]) == 2

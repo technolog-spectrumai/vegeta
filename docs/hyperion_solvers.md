@@ -59,6 +59,29 @@ absorption e^{−αz} with the trapezoid rule on 400 points.
     1e-6, saturation.
 - `length_sweep` and `power_curve` are loops over solves; a 19-point length sweep at n = 150 takes ~4 s.
 
+## Beam combining (`combining.py`)
+
+- **The grid**: a square window of n × n points at the combining plane; `Grid.for_channels` sizes it so that every channel
+  has 12 waists of margin (the far-field pixel is λ/size — 1/7.6 of a channel's 1/e² half-angle at 12, finer with a larger
+  margin; the notebooks use 30 for the maps) and at least 6 points per waist (n grows to the next power of two when the
+  window asks for it). All channels of one comparison share one grid so their maps and moments compare.
+- **The far field**: `fftshift(fft2(ifftshift(E)))` scaled by dx²/λ gives the Fraunhofer amplitude on θ = λ f, f the FFT
+  frequencies; the discrete Parseval identity makes ∫|E_far|² dΩ = ∫|E|² dA to machine precision — `conservation` is that
+  check and never a tolerance. Another wavelength or an M² > 1 channel lives on a different angle grid: its intensity is
+  resampled (bilinear, integral kept) onto the common one — an M² channel's by stretching the angles by M² and dividing by
+  M⁴, so its second moments read back the M² it was given (±2 % on the default grid).
+- **The combiners**: incoherent sums intensities (one FFT per channel); coherent sums fields (one FFT, plus one for the
+  in-phase reference, one for a single channel and one for the reference Gaussian of the lobe's cone); spectral sums
+  resampled intensities with a per-colour tilt e^{i 2π tilt x/λ} for the residual dispersion. The coherent efficiency
+  integrates the far field inside the cone λ/(π·2σ_near) and divides by what a Gaussian of that size and power puts there on
+  the same grid (so a single Gaussian reads exactly 1, whatever the pixel).
+- **The moments**: first and second moments of the intensity on the grid (near: metres, far: radians); M² = 4π σ_x σ_θx/λ
+  only when every channel shares a wavelength (nan otherwise), brightness from the 2σ widths.
+- **Phase sensitivity** is a Monte Carlo: `trials` draws of Gaussian phases per σ, the combiner re-run on the same grid
+  (the channels' fields are cheap: one Gaussian each), the mean and spread reported with the closed form.
+- Cost: a 256² grid in a few milliseconds per combiner, 512² in tens; the whole of notebook 47 (two devices × four
+  methods × four counts, 30-draw phase studies, loss and residual tables) in under a minute.
+
 ## Heat in a plate (`thermal.py`)
 
 Two solvers on one grid, used in that order by the guard study: the steady one answers *whether*, the transient *when*.

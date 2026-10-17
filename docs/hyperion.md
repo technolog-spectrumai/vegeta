@@ -1,4 +1,4 @@
-# Hyperion — optics (materials, ABCD elements, Gaussian beams, resonators, lasers, fibres, heat, welding)
+# Hyperion — optics (materials, ABCD elements, Gaussian beams, resonators, lasers, fibres, beam combining, heat, welding)
 
 The physics behind each module, with references: [hyperion_physics.md](hyperion_physics.md); how each is solved and
 checked: [hyperion_solvers.md](hyperion_solvers.md). The device series built on it: [svarog_physics.md](svarog_physics.md),
@@ -72,6 +72,35 @@ unabsorbed pump), `threshold()` (the small-signal round trip reaching 1), `power
 λ_p, λ_s, "co" | "counter")`: one pass of a seed, the counter-pump shot to its launched power. `srs_threshold` (Smith's
 16 A_eff/(g_R L_eff)), `core_temperature` (radial conduction through core, cladding, coating, and h to the sink).
 
+**Beam combining** (`combining.py`): the outputs of complete fibre lasers (not pump diodes — that is a fibre combiner's
+étendue sum, `svarog_industrial.SignalCombiner`) put together on a grid. `Channel(beam, power, x, y, phase, loss)` — a
+`GaussianBeam` at its waist (wavelength, w0, M²), its power before the combiner, its centre, phase and the fraction lost on
+the way in; `channels(n, λ, P, w0, pitch, layout="ring"|"line"|"hex"|"overlap", m2, phases, losses, wavelengths)` makes a
+set (neighbours 3.5 w0 apart by default: a 0.2 % field overlap). `Grid(size, n)` / `Grid.for_channels` (the window holds
+every channel with 12 waists of margin so the far-field pixel λ/size is under 1/7 of a channel's half-angle; the sampling
+resolves the smallest waist). `far_field(E, grid, λ)` — Fraunhofer by FFT, scaled dx²/λ so Parseval holds: ∫|E_far|² dΩ =
+∫|E|² dA. Three combiners, each `combine(chans, grid=None, n=256)` → `Combined`:
+`IncoherentCombiner(throughput)` — intensities add (different lasers, no phase control), every channel's far field widened
+by its M²; `CoherentCombiner(throughput, aperture="auto"|"filled"|"tiled")` — fields add at one wavelength and M² = 1
+(two wavelengths or a multimode channel raise): *filled* (every channel on one axis through a lossless N-port, the output
+Σ E_i/√N — in phase it carries ΣP, phase errors send the rest out of the other ports, `extra["port_loss"]`), *tiled* (side by
+side: the single-tile envelope times the array factor, N² on axis in a lobe N times narrower, the side lobes keep the
+rest, the touching tiles' cross term reported as `overlap`); `SpectralCombiner(min_separation, dispersion,
+efficiency_per_channel)` — distinct wavelengths overlapped by a grating or dichroics: intensities add on one axis, each
+colour's far field resampled onto one angle grid, a residual pointing `dispersion` × (λ − λ_centre) per colour, the element's
+efficiency per channel. `Combined` carries `I_near` [W/m²], `I_far` [W/sr] on `theta_x/y`, the accounting (`power_in`,
+`power_out`, `power_near`, `power_far`, `conservation` = the Parseval check, `overlap` = the near field against `power_out`),
+the second moments `sigma_x/y`, `sigma_tx/ty`, `bpp_x/y` = σ_x σ_θx, `m2_x/y` = 4π σ_x σ_θx/λ (one wavelength only, else
+nan: there is no M² across colours), `brightness` = P/(π·2σ_x·2σ_y·π·2σ_θx·2σ_θy) [W/(m²·sr)], `I_far_axis`, `efficiency`
+(incoherent and spectral: power out / power in; coherent: the power in the array's central lobe — the cone of a
+diffraction-limited Gaussian of the array's near-field size — against what such a Gaussian puts there; 1 for one beam,
+less for an array or for phase errors) and `extra` (`axis_gain` against the same channels in phase, `axis_vs_single`,
+`cone_half_angle`, `port_loss`, `residual_pointing_max`); `cross_section`, `to_dict`. `equivalent_gaussian(P, λ, w0, grid)` —
+the one beam of the same power every result is held against; `phase_sensitivity(chans, combiner, sigmas, trials)` — the
+on-axis gain and central-lobe efficiency under Gaussian random phase errors, with the closed form 1/N + (1 − 1/N) e^(−σ²);
+`power_table`. Power is not brightness: every method delivers the channels' power (minus its own loss); only the filled
+coherent and the spectral combiner keep one channel's étendue.
+
 **Heat** (`thermal.py`): `Solid` (ρ, c, k, T_melt/L_melt, T_fail/L_fail, absorptivity at 1 µm, emissivity, an absorption
 depth for a partly transparent material, the failure mode melt/ablate) with `MILD_STEEL`, `STAINLESS`, `ALUMINIUM`,
 `BLACK_PC`, `CLEAR_PC`, `LASER_PC`, `BLACK_PE`, `BRICK`; the closed forms `semi_infinite_surface_rise`, `thin_plate_time_to`,
@@ -109,6 +138,15 @@ autumn morning), `aerosol_attenuation` (Kruse–Kim on the visibility), `transmi
   between 0.7 and λ_p/λ_s, an interior optimum length where the signal is reabsorbed (1030 nm). The amplifier: energy
   conservation, the counter-pump shot to its launched power (1e-6), co- and counter-pumping within 5 % in output with the
   stronger inversion at the co-pump's weak-signal end, the gain falling with the seed (saturation).
+- Beam combining: a Gaussian's second moments (σ = w0/2, σ_θ = λ/(2π w0), M² = 1, BPP = λ/4π) and Parseval (1e-12) on the
+  FFT far field; the same channel identical across the three methods; incoherent: power N×, the far field a channel's, M² up,
+  brightness down, losses and throughput take power only; coherent filled: ΣP in phase and N × a channel's on-axis
+  intensity, brightness N × one channel's, cos²(Δφ/2) for two channels (the π case: nothing out, all of it in
+  `port_loss`); coherent tiled: ΣP kept (the 3.5 w0 pitch's cross term under 1 %), N² on axis, the central lobe's share
+  below 1; two tiles reproduce Young's envelope × cos²(π d θ/λ) (1e-6) with the nulls at λ/2d and the π case dark on
+  axis; two wavelengths refused by the coherent combiner, too-close ones by the spectral; spectral: 0.95 × ΣP, one channel's
+  σ_θ and σ_x, brightness ∝ power, M² nan, a residual dispersion widens θ only; a channel's M² widens its far field by M²
+  (M² read back ±2 %, brightness /M⁴) and the coherent combiner refuses it; `phase_sensitivity` against the closed form (±0.05).
 
 ## CLI
 ```bash
@@ -121,8 +159,9 @@ vegeta hyperion laser --length 0.01 --pump 10 --wp 200e-6 --wl 200e-6 --t 0.05 [
 vegeta hyperion fibre --core 5e-6 --na 0.075 --clad 62.5e-6 --wavelength 1070e-9 [--bend 0.03 0.05]
 vegeta hyperion fibre-laser --core 5e-6 --na 0.075 --coating 125e-6 --length 8 --absorption 1.7 --pump 20 [--r-oc 0.1]   # an oscillator
 vegeta hyperion fibre-laser --core 10e-6 --na 0.06 --length 5 --absorption 5 --pump 40 --seed 15 [--direction counter]     # an amplifier
+vegeta hyperion combine --n 4 --power 250 --w0 12e-6 --method coherent-filled|coherent-tiled|incoherent|spectral [--layout ring --pitch 4e-5 --phases 0 0 0 0 --losses ... --spacing 3e-9 --dispersion 0 --m2 1.3 --json]
 ```
-Exit codes: 0 success (`cavity`: 1 when the cavity is unstable; `fibre-laser`: 1 when nothing comes out), 2 invalid input.
+Exit codes: 0 success (`cavity`: 1 when the cavity is unstable; `fibre-laser`: 1 when nothing comes out; `combine`: 1 when nothing leaves the output port), 2 invalid input.
 
 ## What it is not
 Paraxial, Gaussian and steady: no apertures, no diffraction loss, no aberration — a tilted mirror's astigmatism and a

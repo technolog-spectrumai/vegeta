@@ -328,3 +328,12 @@ core rise per cooling, the stripper, the process fibre, the head's lenses), `DEL
 20 m), `BARRIERS`, `screen` (the closed-form and steady-solve triage), `simulate`, `verdict`, `guard_study`,
 `design_record`. `svarog_industrial_drawings.py` draws the penetration curves and windows, the stray beam against
 distance, the guard's timeline against the IEC 60825-4 classes, a barrier's transient and field.
+
+`svarog_combining.py` (notebook 47, branch `dev_beam_combo`) is **Svarog-combining**, the devices built from N complete
+fibre lasers on Hyperion's `combining` module (`import svarog_combining as sc`): `MODULE_W0` / `MODULE_M2` (the 30/250
+stage's LP₀₁), `powers_from` (46's report), `channel_set` (N channels sharing a device's power: a ring for the tiled
+layouts, overlapped for the filled and spectral ones, 3 nm apart for the spectral), `COMBINERS`, `study` ({method: {N:
+Combined}} on one grid per N), `equivalent` (one Gaussian of the same power), `metrics_table`, `phase_study`, `loss_study`
+(every channel lossy / one channel lossy with the imbalance penalty), `interference_pair`, `spectral_residual`,
+`multimode_check`, `record`. `svarog_combining_drawings.py` draws the channel layouts, near- and far-field maps, 3-D
+surfaces, cross sections, side-by-side panels, the two-beam fringes, the phase and loss sensitivities — static only.

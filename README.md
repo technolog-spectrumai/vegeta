@@ -14,7 +14,7 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
 | **Atropos** | laser-cut flat parts | nothing (SVG + GRBL writers) | section + explicit rib spec, sheet and laser settings → ribs, nested sheets, SVG, G-code, time, material |
 | **Zephyr** | 2-D wing sections | NeuralFoil (optional) / XFOIL (optional) | NACA or .dat section + Re, n_crit, flap → thin-airfoil numbers, polar (cl, cd, cm, confidence), flap effectiveness, JSON |
-| **Hyperion** | optics: beams, lenses, mirrors, resonators, a laser's gain | nothing (numpy) | materials + ABCD elements + a Gaussian beam → spots, waists, cavity mode and stability, FSR/finesse/linewidth; a pumped rod → threshold, slope, output, thermal lens; JSON |
+| **Hyperion** | optics: beams, lenses, mirrors, resonators, a laser's gain, fibre lasers and their combining | nothing (numpy) | materials + ABCD elements + a Gaussian beam → spots, waists, cavity mode and stability, FSR/finesse/linewidth; a pumped rod → threshold, slope, output, thermal lens; N fibre lasers' outputs → near and far fields, power accounting, BPP/M²/brightness, incoherent / coherent (filled, tiled) / spectral; JSON |
 | **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
 | **Fidia** | AI modelling | Dedalus + `vegeta-ai` (Claude) | prompt → checked 3D model (glTF/GLB, OBJ, STEP); design copilot; campaigns |
 
@@ -55,7 +55,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
 | Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
-| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_fiber` |
+| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser/combine` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation; combining: Parseval (1e-12), a Gaussian's moments, coherent N² / cos²(Δφ/2) / Young's fringes (1e-6), M² read back ±2 % | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_combining` |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
@@ -115,6 +115,16 @@ runs (FEniCSx in its own interpreter, `workflows/fenix/`) against the cell model
 [docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). The 2 kW is carried through every topic two ways —
 two 1 kW modules beam-combined into a 100 µm fibre (M² 18, a 200 µm spot) or one stage on 400 W pump modules (2 kW through
 one 30/250 fibre, SRS margin 3.5×) — with the welds at 2 kW and the guard re-screened (1.5 mm steel still holds, at 1440 K).
+`47_svarog_combining` (branch `dev_beam_combo`) is **Svarog-combining**: the 1 kW and the 2 kW devices built from 1, 2, 4
+or 8 complete fibre lasers (the modules' signal outputs — the pump-diode combining stays in 46) on Hyperion's `combining`
+module (`designs/svarog_combining.py`, the drawings in `svarog_combining_drawings.py`): incoherent, coherent (a filled
+aperture through a beam-splitter tree, a tiled aperture side by side) and spectral combining, each device one after the
+other on the same code — near and far fields, the power accounting (Parseval, the losses, the beam splitter's other port,
+the tiles' cross term), the second-moment BPP, M² and brightness against one Gaussian of the same power, the two-beam
+fringes, the phase sensitivity against the closed form, the losses and the imbalance penalty, the grating's residual
+dispersion, the multimode check; static maps, 3-D surfaces and cross sections; the record in
+`reports/47_svarog_combining.json`. The finding: every method delivers the power, only the filled coherent and the
+spectral keep the brightness — and the welding head's 50 µm fibre cannot use it, so the devices' incoherent route stands.
 What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,

@@ -69,6 +69,22 @@ Of 33 (barrier, beam) pairs, 6 are simulated; the others are decided by the boun
 bound decided each. The absorptivity of the barrier at 1 µm (bare aluminium 0.12, painted or oxidised up to 0.5) is the
 input to vary before trusting a verdict near a class boundary; the standard's test on the panel is the confirmation.
 
+## 47 — the combining of modules (`svarog_combining.py`, notebook 47)
+
+- **The channel** is the 30/250 power stage's LP₀₁ (Marcuse's w₀ 11.8 µm at 1070 nm, M² 1 — the measured 1.1–1.3 of an LMA
+  stage is run as a check on the incoherent and spectral rows); a device's delivered power (46's report through the Yanus
+  take; nominal 1 and 2 kW without it) is shared by N = 1, 2, 4, 8 channels (`channel_set`: a ring at 3.5 w₀ for the tiled
+  layouts, overlapped for the filled and spectral ones, 3 nm apart for the spectral).
+- **The study** (`study`): every (method, N) on one 512² grid per N with 30 waists of margin (a 0.8 mrad far-field
+  pixel), 3 s per device; `metrics_table` with `equivalent` (one Gaussian of the device's power) as the first row.
+- **Phase** (`phase_study`): 30 draws per σ over 0–1.5 rad for N = 2, 4, 8 filled and N = 4 tiled, against the closed form;
+  **losses** (`loss_study`): every channel lossy and one channel lossy (the imbalance penalty computed against the power
+  available); **the grating's residual** (`spectral_residual`): 0–50 % of a 1740 l/mm grating's 2 mrad/nm; **the
+  multimode check** (`multimode_check`). The record `reports/47_svarog_combining.json` (`meta`, `devices`, `phase`,
+  `losses`, `spectral`) is the notebook's one give.
+- The whole notebook: under a minute; the drawings (`svarog_combining_drawings.py`) are static maps, 3-D surfaces,
+  cross sections and side-by-side panels — no animation.
+
 ## One notebook, and Yanus
 
 `46_svarog.ipynb` holds the series per topic: Part I the rod, Part II the fibre laser, Part III the industrial lasers —
@@ -106,3 +122,4 @@ dusty town, 93 % in fog.
 | 47 | length sweep, coupler table, power curve, amplifier sweep, two profiles | ~20 s |
 | 48 | power-stage sweep, pump bisection, budget, welds | ~15 s |
 | 49 | 33 screenings, ~10 steady solves, ~6 transients | ~1–2 min |
+| 47 (combining) | 2 devices × 4 methods × 4 counts on 512² grids, phase Monte Carlo, loss and residual tables | ~50 s |

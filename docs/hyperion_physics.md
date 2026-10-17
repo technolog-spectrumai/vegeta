@@ -84,6 +84,34 @@ fibre Bragg gratings, for an amplifier one pass of a seed with a co- or counter-
 Raman scattering above Smith's threshold 16 A_eff/(g_R L_eff) `[Smith, Agrawal]`, and the core's temperature from
 radial conduction through core, cladding and coating to the heat sink `[Brown & Hoffman]`.
 
+## 6b. Combining fibre lasers' outputs (`combining.py`)
+
+Several lasers into one beam is a question of étendue as much as of power `[Fan 2005]`. The beams are scalar fields at
+the combining plane; the far field is their Fraunhofer transform `[Goodman]`, and power is conserved between the two by
+Parseval. Three physics:
+
+- **Incoherent** (independent lasers): the intensities add, the far field is each channel's, the near field is the
+  union of them — the étendue grows with N and the radiance (brightness, power per area per solid angle) does not: it
+  is the physics of a fibre bundle or a (N+1)×1 combiner, what the devices of notebook 46 do.
+- **Coherent** (one wavelength, locked phases): the fields add. *Filled aperture* — the channels overlapped through
+  a lossless N-port (a beam-splitter tree, a diffractive combiner): the output is Σ E_i/√N, which carries ΣP when the
+  phases are equal and sends the rest out of the other ports otherwise (two channels: cos²(Δφ/2)); the beam that
+  leaves is one channel's beam with N times the power — the only combining that raises the radiance `[Augst]`. *Tiled
+  aperture* — the channels side by side: the far field is the single-tile envelope times the array factor, N² times one
+  tile's intensity on axis but in a lobe N times narrower, and the fill factor sends the rest into side lobes
+  `[Fan 2005]`; the radiance is the incoherent sum's. Random phase errors of rms σ reduce the on-axis intensity on
+  average by 1/N + (1 − 1/N) e^(−σ²) (→ e^(−σ²) for many channels): λ/20 of control for a 10 % loss `[Augst, Fan 2005]`.
+- **Spectral** (distinct wavelengths): a grating or dichroics overlap the colours on one axis; there is no interference
+  between colours, so intensities add, and the output has one channel's étendue with every channel's power — the
+  radiance adds — up to what the element's dispersion leaves uncorrected (a channel's linewidth or detuning times the
+  angular dispersion becomes a pointing) and the element's efficiency `[Loftus, Augst 2003]`.
+
+Beam quality is read from the second moments of the near and far fields `[ISO 11146]`: BPP = σ_x σ_θx, M² = 4π σ_x
+σ_θx/λ — defined at one wavelength only (a spectrally combined beam has a BPP, not an M²); a multimode channel enters
+as a far field M² times wider than its diffraction-limited one (the same power in an M² times larger cone), and is not
+combined coherently (its modes do not add as one field). The brightness P/(π (2σ_x)(2σ_y) π (2σ_θx)(2σ_θy)) is what
+separates the methods: power is bought by any of them, brightness only by the filled coherent and the spectral one.
+
 ## 7. Heat in a solid (`thermal.py`)
 
 What a beam does to a plate is heat conduction with a source at the surface (or, for a partly transparent material,
@@ -135,6 +163,11 @@ multiple reflections inside it (0.6–0.8 for steel, ~0.5 for aluminium) `[Steen
 - **[Kelson & Hardy]** I. Kelson, A. A. Hardy, "Strongly pumped fiber lasers", IEEE J. Quantum Electron. 34, 1570 (1998).
 - **[Smith]** R. G. Smith, "Optical power handling capacity of low loss optical fibers as determined by stimulated Raman and Brillouin scattering", Appl. Opt. 11, 2489 (1972); **[Agrawal]** G. P. Agrawal, *Nonlinear Fiber Optics*, 6th ed., Academic Press (2019).
 - **[Brown & Hoffman]** D. C. Brown, H. J. Hoffman, "Thermal, stress, and thermo-optic effects in high average power double-clad silica fiber lasers", IEEE J. Quantum Electron. 37, 207 (2001).
+- **[Fan 2005]** T. Y. Fan, "Laser beam combining for high-power, high-radiance sources", IEEE J. Sel. Top. Quantum Electron. 11, 567 (2005) — the étendue argument, filled vs tiled apertures, the fill-factor loss.
+- **[Augst]** S. J. Augst, T. Y. Fan, A. Sanchez, "Coherent beam combining and phase noise measurements of ytterbium fiber amplifiers", Opt. Lett. 29, 474 (2004); **[Augst 2003]** S. J. Augst et al., "Wavelength beam combining of ytterbium fiber lasers", Opt. Lett. 28, 331 (2003).
+- **[Loftus]** T. H. Loftus et al., "Spectrally beam-combined fiber lasers for high-average-power applications", IEEE J. Sel. Top. Quantum Electron. 13, 487 (2007).
+- **[Goodman]** J. W. Goodman, *Introduction to Fourier Optics*, 4th ed., W. H. Freeman (2017) — the Fraunhofer far field and Parseval.
+- **[ISO 11146]** ISO 11146-1:2021, *Lasers and laser-related equipment — Test methods for laser beam widths, divergence angles and beam propagation ratios* — the second-moment widths, BPP, M².
 - **[Carslaw & Jaeger]** H. S. Carslaw, J. C. Jaeger, *Conduction of Heat in Solids*, 2nd ed., Oxford (1959).
 - **[IEC 60825-4]** IEC 60825-4, *Safety of laser products — Part 4: Laser guards* (2006, amended 2011).
 - **[Steen & Mazumder]** W. M. Steen, J. Mazumder, *Laser Material Processing*, 4th ed., Springer (2010).

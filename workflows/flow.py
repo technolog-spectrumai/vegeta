@@ -146,6 +146,12 @@ flow.notebook("46_svarog", title="Svarog — from the Nd:YAG rod to the 1 kW wel
                      File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions", "fibre", "industrial", "guard", "air"))],
               screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: the fenix runs it takes are made in screening quality when the fenicsx interpreter exists
 
+flow.notebook("47_svarog_combining", title="Svarog-combining — the 1 kW and 2 kW devices built from 1, 2, 4 or 8 fibre-laser outputs: incoherent, coherent (filled, tiled) and spectral combining",
+              needs=[Package("vegeta.hyperion")],
+              takes=[File(f"46_svarog:{DATA}/reports/46_svarog.json")],
+              gives=[File(f"{DATA}/reports/47_svarog_combining.json", keys=("meta", "devices", "phase", "losses", "spectral"))],
+              auto=True)   # yanus_auto: runs notebook 46 for its report when it is missing
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

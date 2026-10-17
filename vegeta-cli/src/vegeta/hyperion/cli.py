@@ -1,4 +1,4 @@
-"""Command line interface: ``hyperion materials|material|lens|beam|cavity|laser``. Lengths in metres."""
+"""Command line interface: ``hyperion materials|material|lens|beam|cavity|laser|fibre|fibre-laser|combine``. Lengths in metres."""
 from __future__ import annotations
 
 import argparse
@@ -142,6 +142,22 @@ def cmd_fibre_laser(args) -> int:
     return 0 if s.output_W > 0 else 1
 
 
+def cmd_combine(args) -> int:
+    from .combining import CoherentCombiner, IncoherentCombiner, SpectralCombiner, channels, equivalent_gaussian
+    lams = [args.wavelength + (i - (args.n - 1) / 2) * args.spacing for i in range(args.n)] if args.method == "spectral" else None
+    layout = "overlap" if args.method in ("coherent-filled", "spectral") else args.layout
+    ch = channels(args.n, args.wavelength, args.power, args.w0, pitch=args.pitch, layout=layout, m2=args.m2, phases=args.phases, losses=args.losses, wavelengths=lams)
+    comb = {"incoherent": IncoherentCombiner(args.throughput), "coherent-filled": CoherentCombiner(args.throughput, "filled"),
+            "coherent-tiled": CoherentCombiner(args.throughput, "tiled"), "spectral": SpectralCombiner(max(args.spacing / 2, 1e-12), args.dispersion, args.throughput)}[args.method]
+    r = comb.combine(ch, n=args.grid)
+    one = equivalent_gaussian(r.power_out, args.wavelength, args.w0, r.grid, args.m2)
+    out = {"channels": [c.to_dict() for c in ch], **r.to_dict(),
+           "one_gaussian_of_the_same_power": {"brightness": one.brightness, "sigma_tx": one.sigma_tx, "I_far_axis": one.I_far_axis},
+           "brightness_vs_one_gaussian": r.brightness / one.brightness if one.brightness > 0 else math.nan}
+    _print(out, args.json)
+    return 0 if r.power_out > 1e-9 * r.power_in else 1
+
+
 def _add_fibre_args(p):
     p.add_argument("--core", type=float, required=True, help="core radius [m]")
     p.add_argument("--na", type=float, required=True, help="core NA")
@@ -222,6 +238,23 @@ def main(argv=None, prog: str = "hyperion") -> int:
     p.add_argument("--steps", type=int, default=300)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_fibre_laser)
+    p = sub.add_parser("combine", help="N fibre-laser outputs combined incoherently, coherently (filled or tiled aperture) or spectrally: power, far field, beam quality")
+    p.add_argument("--n", type=int, default=4, help="channels")
+    p.add_argument("--power", type=float, default=1.0, help="power per channel [W]")
+    p.add_argument("--w0", type=float, default=25e-6, help="each channel's waist [m]")
+    p.add_argument("--wavelength", type=float, default=1070e-9)
+    p.add_argument("--m2", type=float, default=1.0, help="each channel's M² (incoherent and spectral only)")
+    p.add_argument("--method", default="incoherent", choices=("incoherent", "coherent-filled", "coherent-tiled", "spectral"))
+    p.add_argument("--layout", default="ring", choices=("ring", "line", "hex", "overlap"))
+    p.add_argument("--pitch", type=float, default=None, help="neighbour spacing [m] (default 3.5 w0)")
+    p.add_argument("--phases", type=float, nargs="*", default=None, help="per channel [rad]")
+    p.add_argument("--losses", type=float, nargs="*", default=None, help="per channel, a fraction")
+    p.add_argument("--throughput", type=float, default=1.0, help="the combiner's own transmission (spectral: per channel)")
+    p.add_argument("--spacing", type=float, default=3e-9, help="spectral: the wavelength step between channels [m]")
+    p.add_argument("--dispersion", type=float, default=0.0, help="spectral: the residual angular dispersion [rad/m]")
+    p.add_argument("--grid", type=int, default=256)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_combine)
     args = ap.parse_args(argv)
     try:
         return args.func(args)

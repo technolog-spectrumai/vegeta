@@ -15,6 +15,11 @@ welding library it is designed on; the physics and the solvers are `docs/hyperio
   budget, the process fibre and head, the welds in steel and aluminium with their process windows.
 - [x] **51 the 2 kW variant**: two modules beam-combined (the industrial route, a 200 µm spot) against one stage pumped
   harder (the 100 µm spot, 220 W on one spool), the welds and the guard at 2 kW.
+- [x] **47 the combining of modules** (`hyperion.combining`, `svarog_combining.py`, branch `dev_beam_combo`): the 1 kW
+  and 2 kW from 1–8 complete fibre lasers — incoherent, coherent (filled, tiled), spectral; the power accounting, BPP/M²/
+  brightness against one Gaussian, the phase and loss sensitivities. Finding: every method delivers the power, only the
+  filled coherent and the spectral keep the brightness, and the 50 µm process fibre cannot use it — route A's incoherent
+  combiner stands for the welding devices.
 - [x] **49 the guard** (`hyperion.thermal`): the stray kilowatt at 20 m against plastics, brick, aluminium, steel — closed
   forms, the steady solve, the ablation transient only where it decides, verdicts per IEC 60825-4 class; the image
   `designs/data/figures/svarog_beam_vs_plastic_box.png`.
@@ -52,6 +57,9 @@ needed for that.
   need it; a single-mode marking laser would.
 - [ ] L.5 Other gain media (Yb:YAG, Nd:YVO₄, Ti:sapphire, CO₂) and the rod's folded cavities — other products.
 - [ ] L.6 The rod's mounts, printing and frame FEA (Dedalus, Mellonia, Talos) — the rod is not being built.
+- [ ] L.8 Beam combining beyond the model (`dev_beam_combo`): a multimode channel's coherent combining (the modes as
+  separate fields), polarisation, the grating's thermal lens and the combiner hardware, a remote-welding head whose focal
+  length would use the brightness — the case where coherent or spectral combining would pay for the device.
 - [ ] L.7 Fibre details outside the MVP: ASE and the noise figure of a weak-seed preamplifier, the few-mode coil's
   higher-mode stripping budget, the coupling of a free-space beam into a delivery fibre.
 
