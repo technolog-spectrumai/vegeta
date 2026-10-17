@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-pytest.importorskip("PyQt6.QtWidgets")
+try:
+    import PyQt6.QtWidgets  # noqa: F401
+except ImportError as exc:                      # not installed, or Qt's libraries missing (libEGL) on a headless machine
+    pytest.skip(f"PyQt6 not usable here: {exc}", allow_module_level=True)
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "workflows"))
