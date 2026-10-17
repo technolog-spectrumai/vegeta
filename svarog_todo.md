@@ -1,120 +1,56 @@
-# Svarog and Hyperion — what comes next (branch `dev_svarog`)
+# Svarog — the road to the industrial laser (branch `dev_svarog`)
 
-**The target is the industrial laser.** Svarog exists to arrive at a 1 kW fibre laser for welding metal and the guard
-that contains it (notebooks 48 and 49); the rod (46) and the fibre oscillator (47) are the steps that got there, kept as
-they are. Everything below is read against that target: an item is done when the industrial device needs it, skipped
-when it does not — the structural analysis of the laser itself is skipped (a coil on a cooled spool, a combiner, a
-catalogue head: nothing load-bearing), the rod's thermal FEA is skipped (the fibre has no thermal lens), the FFT optics
-is skipped for a multimode 50 µm process beam. What remains on the way to the industrial device, in order:
+Svarog exists to arrive at **one device: a 1 kW fibre laser for welding metal, with the guard that contains it.**
+Everything in this file is read against that device. Hyperion (`vegeta.hyperion`) is the optics, laser, fibre, heat and
+welding library it is designed on; the physics and the solvers are `docs/hyperion_physics.md`, `docs/hyperion_solvers.md`,
+`docs/svarog_physics.md`, `docs/svarog_solvers.md`.
 
-- [ ] I.1 **The guard's ablation in a field solver** (branch `dev_svarog_advanced`): FEniCSx → XDMF/VTK → PyVista → the
-  notebook — the barrier under the collimated beam as a 2-D axisymmetric (then 3-D) transient with the enthalpy method
-  and element removal, against `hyperion.thermal`'s cell model; and where FEniCS pays elsewhere in Vegeta
-  (`docs/fenics.md`).
-- [ ] I.2 **The welding head's optics**: the real lenses (ray tracing: spherical aberration of the 200 mm focusing lens at
-  NA 0.06, the focus shift from the lenses' heating), the cover slide, the process fibre's end cap — the spot as built.
-- [ ] I.3 **The weld pool beyond the energy balance**: a moving-source conduction solve (Rosenthal → the plate solver with
-  a moving beam) for the pool and the cooling rate; the keyhole's stability window (porosity, spatter) from the literature.
-- [ ] I.4 **The enclosure**: the sheet-metal panels from 49's verdict (steel 1.5 mm holds, plastic only for T1), the
-  interlocked head (the collimated beam must not exist outside it), the stripper and spool cooling as parts (Dedalus).
-- [ ] I.5 **Pulses for cutting and marking**: the Q-switched/MOPA pulsed variant of the same chain, SRS and
-  self-focusing as the walls.
+## Done — the chain that leads to the device
 
-The earlier roadmap, kept for the record:
+- [x] **46 the rod** (`svarog.py`): end-pumped Nd:YAG, the thermal lens, Magni's rule, zone I/II cavities — where pumping,
+  heat and modes were learnt; kept as the reference, not the source.
+- [x] **47 the fibre laser** (`svarog_fiber.py`, `hyperion.fibre`): the Yb double-clad oscillator between gratings and the
+  first amplifier — the architecture the device uses.
+- [x] **48 the industrial laser** (`svarog_industrial.py`, `hyperion.welding`): the 30/250 power stage to 1 kW, its heat
+  budget, the process fibre and head, the welds in steel and aluminium with their process windows.
+- [x] **49 the guard** (`hyperion.thermal`): the stray kilowatt at 20 m against plastics, brick, aluminium, steel — closed
+  forms, the steady solve, the ablation transient only where it decides, verdicts per IEC 60825-4 class; the image
+  `designs/data/figures/svarog_beam_vs_plastic_box.png`.
 
-Hyperion is Vegeta's general optics library (`vegeta.hyperion`: materials, paraxial ABCD elements, Gaussian beams,
-resonators, a four-level gain model); Svarog is the laser designed and analysed with it (`notebooks/46_svarog`,
-`notebooks/designs/svarog.py`). The first increment is a CW diode-end-pumped Nd:YAG at 1064 nm in a two-mirror cavity:
-the rod and its pump, the thermal lens, the cavity's mode and stability window over pump power, the beam out and a
-delivery train, a JSON report. Everything paraxial, pure numpy, nothing run on the machine.
+## MVP — what the device still needs before it is a design one could order parts for
 
-The items below are deliberately deferred, in the order they will be needed: each one answers the question the one
-before it raises. A stage is picked up cold from its text; the numbers of the first increment are the inputs.
+The line below is the MVP: the items above it make 48/49's numbers trustworthy enough to buy against; nothing below it is
+needed for that.
 
-## S.0 — The first increment (this branch)
-- [ ] S.0.1 `vegeta.hyperion`: `materials` (Sellmeier n(λ), dn/dT, κ: BK7, fused silica, Nd:YAG, sapphire, air), `elements`
-  (free space, thin and thick lens, curved and flat mirror at incidence, interface, slab, Brewster plate, thermal lens; a `Train`
-  with its product matrix), `beam` (`GaussianBeam`: q, w(z), R(z), M², through a train, mode overlap), `resonator` (round-trip
-  matrix, stability, eigenmode, spot sizes on every element, Gouy phase, FSR, finesse, linewidth, a parameter sweep), `gain`
-  (four-level end-pumped rod: absorption, threshold, slope, output vs pump, Rigrod's optimum coupler, the thermal lens); JSON
-  export, `Result`, CLI `vegeta hyperion material/lens/beam/cavity/laser`; tests against Kogelnik & Li, the lensmaker, Koechner;
-  `docs/hyperion.md`
-- [ ] S.0.2 `46_svarog`: the rod and pump, the thermal lens vs pump, the cavity on Hyperion with three revisions compared, the
-  stability window, the beam out and its delivery train, `designs/data/svarog_design.json` and `reports/46_svarog.json`;
-  the Yanus contract in `workflows/flow.py`
+- [ ] **M.1 The verdict's weakest input, measured or bounded**: the barriers' absorptivity at 1 µm (bare, painted, oxidised
+  steel and aluminium — 0.12 to 0.8) as a sweep in notebook 49, so each verdict carries its margin; the clear-sheet
+  transmission likewise. One afternoon; it decides whether the enclosure is 1.5 mm steel or needs a liner.
+- [ ] **M.2 The enclosure as parts** (Dedalus): the steel panels sized by 49, the interlocked head cover (the collimated
+  beam must not exist outside it), the stripper block and the water-cooled spool from 48's heat budget; the parts list.
+- [ ] **M.3 The weld trial plan**: 48's process windows as a test matrix (material, thickness, speed, focus position),
+  the measured penetration to recalibrate `melting_efficiency` and the keyhole absorptivity — the two stated numbers the
+  windows hang on.
+- [ ] **M.4 The welding head's optics as built**: ray tracing of the real 100/200 doublets (spherical aberration at
+  NA 0.06, the focus shift from the lenses' 2 W of heating), the cover slide, the fibre's end cap — the spot and its
+  depth of focus as delivered, against the paraxial 100 µm.
+- [ ] **M.5 The field ablation check** (`dev_svarog_advanced`, not run here): the same 10 mm polycarbonate and 1.5 mm steel
+  cases in FEniCSx (enthalpy method, element removal) → XDMF → PyVista, against `hyperion.thermal`'s cell model — the
+  validation of the cheap solver that 49's verdicts rest on.
 
-## S.1 — Ray tracing (the check on the paraxial numbers)
-Needed first: the moment the cavity has real curved mirrors at an angle and the delivery train has a real focusing lens,
-the paraxial matrices stop saying how big the aberrations are. Exact meridional (then skew) ray tracing through
-spherical surfaces, pure numpy, in `hyperion.rays`.
-- [ ] S.1.1 Sequential surfaces (sphere, plane; refraction by Snell, reflection) traced exactly; a fan of rays → the paraxial
-  focus in the small-height limit (the test), the spherical aberration of a singlet and of a curved mirror off axis (astigmatism
-  = the tangential/sagittal split the ABCD matrices already assume)
-- [ ] S.1.2 Spot diagrams and the geometric spot size at the work spot of Svarog's delivery train; the wavefront error of the
-  focusing lens against λ/4; which lens orientation and which bending minimise it
-- [ ] S.1.3 Misalignment: the 3×3 (augmented) ABCD matrices for tilted and decentred elements, the cavity axis walk and the
-  mode displacement per mirror tilt — the alignment tolerance S.3's mounts must hold
+———————————————————————————— MVP line ————————————————————————————
 
-## S.2 — Thermal analysis of the rod
-Needed next: the thermal lens of S.0 is a closed form (uniform pump absorption, radial conduction, a cooled barrel). Pushing
-the pump up asks what the temperature, the stress and the fracture limit really are, and where the closed form stops.
-- [ ] S.2.1 Analytic first, in `hyperion.gain`: the radial temperature profile of an end-pumped rod with the measured absorption
-  length, the thermally induced stress and the stress-fracture limit (Koechner's figures of merit), the stress-induced
-  birefringence and its depolarisation loss, the bulging end faces as a second lens term; the pump power at which each
-  limit is reached in Svarog's rod
-- [ ] S.2.2 The thermal lens with a non-uniform (Gaussian, top-hat fibre) pump: the aberrated lens as a radial map, its
-  paraxial part for the cavity and its residual as a phase screen (the input S.6's FFT propagation reads)
-- [ ] S.2.3 Talos heat transfer: a steady conduction case (CalculiX `*HEAT TRANSFER`) on the Dedalus rod and holder of S.3 —
-  the heat load from `gain`, convection or a cooled copper barrel as the boundary — against S.2.1's analytic profile
-  (the validation), then the coupled thermal-stress run of the same model; Talos grows a `thermal` case kind for this
+## Later — useful, not needed for the device
 
-## S.3 — Mechanical support: Dedalus mounts, Mellonia printing
-Needed once the cavity is frozen and its alignment tolerance (S.1.3) is known: the parts that hold the cavity at that
-tolerance, and how they are made.
-- [ ] S.3.1 `svarog_mechanics.py` on Dedalus: the base plate / rail, the mirror mounts (kinematic: two adjustment screws and a
-  pivot), the rod holder with its cooling barrel, the pump-fibre collimator holder, the output beam's lens mounts; STEP and STL
-  for every part, measurements, the parts list and mass
-- [ ] S.3.2 Mellonia: the printable parts (mounts, holders, covers) sliced with explicit settings — time, material, the walls
-  and infill that matter for stiffness; which parts stay metal (the rod barrel, the mirror cells) and why
-- [ ] S.3.3 A `47_svarog_build` notebook: the mechanical design, printing, the assembly order and the alignment procedure
-  written from S.1.3's sensitivities (which screw moves what, by how much per turn)
+- [ ] L.1 The weld pool beyond the energy balance: a moving-source transient (the plate solver with a moving beam) for the
+  pool shape and cooling rate; keyhole stability (porosity, spatter) from the literature.
+- [ ] L.2 Pulsed variants for cutting and marking (Q-switch / pulsed MOPA), with SRS and self-focusing as the walls.
+- [ ] L.3 The rod's thermal FEA, stress and fracture limits (Talos heat transfer) — the fibre device has no rod.
+- [ ] L.4 FFT physical optics (apertures, Fox–Li, the aberrated thermal lens) — a multimode 50 µm process beam does not
+  need it; a single-mode marking laser would.
+- [ ] L.5 Other gain media (Yb:YAG, Nd:YVO₄, Ti:sapphire, CO₂) and the rod's folded cavities — other products.
+- [ ] L.6 The rod's mounts, printing and frame FEA (Dedalus, Mellonia, Talos) — the rod is not being built.
+- [ ] L.7 Fibre details outside the MVP: ASE and the noise figure of a weak-seed preamplifier, the few-mode coil's
+  higher-mode stripping budget, the coupling of a free-space beam into a delivery fibre.
 
-## S.4 — FEA of the structure (Talos)
-Needed after S.3 exists: whether the printed frame holds the cavity within S.1.3's tolerance under its own weight, the
-screws' preload, handling and a temperature change.
-- [ ] S.4.1 Linear static on the Dedalus base and mounts: deflection of each mirror under gravity and preload → the mirror
-  tilt → the mode displacement through S.1.3; the stiffness ranking of the candidate frames
-- [ ] S.4.2 Thermal expansion of the frame (Talos thermal, from S.2.3): the cavity-length drift per kelvin, the frequency drift
-  and the mode-hopping rate; aluminium vs printed vs an Invar rail
-- [ ] S.4.3 Modes of the frame (Chronos's modal path on the Talos model): the first bending mode against the pump-diode fan
-  and bench vibration; the pointing jitter it implies
-
-## S.5 — New laser types
-Needed when Svarog's first laser works on paper: the same library on a different gain medium, cavity and regime. Each
-one adds what Hyperion lacks for it, in this order of growing distance from the CW Nd:YAG.
-- [ ] S.5.1 Q-switched Nd:YAG: the pulse build-up (the rate equations in time), pulse energy, width and peak power vs
-  repetition rate (an acousto-optic or passive Cr:YAG switch); the damage thresholds of the coatings against the peak fluence;
-  intracavity SHG to 532 nm (a KTP/LBO crystal as a `Slab` with phase matching and conversion efficiency)
-- [ ] S.5.2 Other crystals: Yb:YAG (quasi-three-level: reabsorption, the temperature-dependent threshold), Nd:YVO₄ (anisotropic,
-  a polarised output without a Brewster plate), Ti:sapphire (a broadband four-level medium, a Brewster-cut crystal, the
-  folded astigmatically compensated cavity S.1 and the tilted-mirror elements already describe)
-- [ ] S.5.3 A gas laser: CO₂ at 10.6 µm (a long tube, ZnSe optics, a large mode against the tube bore — the hard aperture S.6
-  computes), its discharge as a volume pump: Hyperion takes the gain profile as a `GainMedium` map and designs the
-  resonator on it
-- [x] S.5.4 The fibre laser as the source (done first, out of order, as Svarog-fiber — notebook 47, `hyperion.fibre`): a
-  step-index fibre's modes and bend loss, Yb:silica, the pump/signal power evolution of an FBG oscillator and of a seeded
-  amplifier, SRS and the core's temperature, the beam out and the same delivery train, against the rod. Still open: the
-  coupling of Svarog's rod beam into a delivery fibre (S.0's overlap), ASE and the noise figure of a weak-seed preamplifier,
-  the higher-mode stripping budget of a few-mode fibre's coil
-
-## S.6 — FFT physical optics
-Needed last, when the paraxial description stops explaining: hard apertures, diffraction losses, the real mode of an
-aperture-limited cavity, the aberrated thermal lens of S.2.2 and the M² of the beam that leaves it.
-- [ ] S.6.1 `hyperion.wave`: angular-spectrum and Fresnel propagation of a sampled field (numpy FFT; scipy optional), apertures
-  and phase screens, lenses as phase, the propagation through a `Train`; validated against the Gaussian beam's own w(z) and
-  the Airy pattern of a circular aperture
-- [ ] S.6.2 Fox–Li iteration on Svarog's cavity: the lowest-loss mode against S.0's eigenmode, the diffraction loss per round
-  trip vs mirror size, the transverse-mode discrimination an aperture buys
-- [ ] S.6.3 The output beam's M² and beam-quality budget: the aberrated thermal lens (S.2.2) and the lens train's aberrations
-  (S.1.2) propagated as fields, the second-moment widths along z, M² against the ISO 11146 fit — the number the paraxial model
-  took as an input
+Skipped on purpose: a structural analysis of the laser itself (a coil on a cooled spool, a combiner, a catalogue head —
+nothing load-bearing); the enclosure's panels are sheet metal sized by 49, M.2.
