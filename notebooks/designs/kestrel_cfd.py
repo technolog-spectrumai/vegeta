@@ -338,16 +338,26 @@ class CFDAirframe:
         return cls.from_records(cls.records(cfd_table), veh, source=source)
 
     def correction(self, alpha: float, mu: float) -> np.ndarray:
+        """ΔCL, ΔCD, ΔCm on the free-stream dynamic pressure at (α, μ). The blown samples are carried on the
+        **slipstream's** dynamic pressure (Δ · μ²: the forces a disk's slipstream puts on the wings scale with
+        (V + Δv)², not with V² — a hover sample at 1 m/s applied as a free-stream coefficient at 6 m/s would be 36 ×
+        the force) and turned back with the μ of the point asked for."""
         x = np.array([alpha, mu])
+        mu_a = float(np.clip(mu, 0.02, 1.0))
         if self._by_alpha:
             a = float(np.clip(alpha, self._X[0, 0], self._X[-1, 0]))
             return np.array([np.interp(a, self._X[:, 0], self._D[:, j]) for j in range(3)])
+        D_eff = self._D * (np.clip(self._X[:, 1:2], 0.02, 1.0) ** 2)
         if self._lin is not None:
-            v = self._lin(x[None])[0]
+            from scipy.interpolate import LinearNDInterpolator
+            try:
+                v = LinearNDInterpolator(self._X, D_eff)(x[None])[0]
+            except Exception:
+                v = np.array([np.nan] * 3)
             if np.all(np.isfinite(v)):
-                return v
+                return v / mu_a ** 2
         d = ((self._X - x) / np.array([math.radians(10.0), 0.2])) ** 2
-        return self._D[int(np.argmin(d.sum(1)))]
+        return D_eff[int(np.argmin(d.sum(1)))] / mu_a ** 2
 
 
 def sweep_comparison(cfd_table, veh) -> "pd.DataFrame":

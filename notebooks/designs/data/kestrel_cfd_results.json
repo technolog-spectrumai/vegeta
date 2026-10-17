@@ -2,22 +2,247 @@
  "campaigns": {
   "4Q-1": {
    "meta": {
-    "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
-    "aircraft": "Kestrel-4Q (round struts, NACA 0012, no elevons in the CAD)",
+    "source": "39_kestrel_tests",
     "quality": "screening",
-    "date": "2026-10-16"
+    "aircraft": "Kestrel-4Q",
+    "date": "2026-10-16",
+    "iterations": 400
    },
    "summary": {
-    "solved": 10,
-    "diverged": 2,
-    "FAILED": 12,
+    "solved": 29,
+    "diverged": 0,
+    "FAILED": 0,
     "NOT RUN": 0,
-    "n": 24,
-    "solved with rotor disks": 0,
-    "solved bare": 10,
-    "with rotor disks": 14
+    "n": 29,
+    "solved with rotor disks": 16,
+    "solved bare": 13,
+    "with rotor disks": 16
    },
    "records": [
+    {
+     "case": "forward 3 s: \u03b1 54\u00b0, 1.5 m/s, T 4.36/4.89 N",
+     "alpha_deg": 53.808677068212454,
+     "V": 1.5071651173382674,
+     "T_up": 4.356374976316147,
+     "T_lo": 4.889020554311809,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 3.03418484,
+     "CD": 2.41434509,
+     "Cm": 0.5220257535714286,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 45\u00b0, 2.2 m/s, T 4.46/5.10 N",
+     "alpha_deg": 44.99419007681861,
+     "V": 2.1948464912335583,
+     "T_up": 4.456735592611042,
+     "T_lo": 5.10001065513221,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 2.19115371,
+     "CD": 1.34578958,
+     "Cm": -0.3019431232142857,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 30\u00b0, 4.1 m/s, T 4.64/5.46 N",
+     "alpha_deg": 29.937868887779132,
+     "V": 4.058442467088732,
+     "T_up": 4.636255229352977,
+     "T_lo": 5.455518969368854,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 1.48433553,
+     "CD": 0.782067788,
+     "Cm": -0.3130736357142857,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 20\u00b0, 6.2 m/s, T 4.56/5.48 N",
+     "alpha_deg": 19.991426317601775,
+     "V": 6.1882991083806065,
+     "T_up": 4.563243555366123,
+     "T_lo": 5.478752077811691,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.877130447,
+     "CD": 0.123779356,
+     "Cm": -0.45528346785714285,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 15\u00b0, 7.8 m/s, T 4.18/5.11 N",
+     "alpha_deg": 14.98133948739128,
+     "V": 7.815846130195041,
+     "T_up": 4.183112543879873,
+     "T_lo": 5.109970430551219,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.712800335,
+     "CD": 0.145077245,
+     "Cm": -0.22708662857142858,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 10\u00b0, 10.0 m/s, T 2.90/3.83 N",
+     "alpha_deg": 9.977715278586974,
+     "V": 9.96580516152708,
+     "T_up": 2.9007481209588986,
+     "T_lo": 3.828793023451565,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.506474683,
+     "CD": -0.147335279,
+     "Cm": -0.3068298232142857,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 80\u00b0, 6.3 m/s, T 0.25/2.08 N",
+     "alpha_deg": 80.09880589760851,
+     "V": 6.348907525111371,
+     "T_up": 0.25000000000000067,
+     "T_lo": 2.078917660801732,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.181226393,
+     "CD": 0.772937433,
+     "Cm": -0.16647975285714284,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 60\u00b0, 8.2 m/s, T 0.25/2.81 N",
+     "alpha_deg": 60.058797622990916,
+     "V": 8.235858935489087,
+     "T_up": 0.2500000000000008,
+     "T_lo": 2.811866223449477,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.54340464,
+     "CD": 0.950977403,
+     "Cm": -0.23661481785714283,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 45\u00b0, 10.8 m/s, T 0.25/3.33 N",
+     "alpha_deg": 45.03059439128492,
+     "V": 10.75363335480624,
+     "T_up": 0.2500000000000282,
+     "T_lo": 3.3297388103281325,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.686524702,
+     "CD": 0.747207902,
+     "Cm": -0.19720541607142855,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 30\u00b0, 13.7 m/s, T 0.25/2.64 N",
+     "alpha_deg": 30.012772710363247,
+     "V": 13.703858793806312,
+     "T_up": 0.25000000005586864,
+     "T_lo": 2.641021327613318,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.598115529,
+     "CD": 0.449218553,
+     "Cm": -0.11483893964285713,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 20\u00b0, 15.0 m/s, T 0.25/1.49 N",
+     "alpha_deg": 20.016623428352563,
+     "V": 15.002775196768896,
+     "T_up": 0.2500000150143219,
+     "T_lo": 1.4926252995137943,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.607880709,
+     "CD": 0.267109016,
+     "Cm": -0.15315306392857142,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 15\u00b0, 15.4 m/s, T 0.25/1.32 N",
+     "alpha_deg": 15.013666001526214,
+     "V": 15.422417618961607,
+     "T_up": 0.25000015055222774,
+     "T_lo": 1.3160367088426397,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.529306967,
+     "CD": 0.201684826,
+     "Cm": -0.07512039625,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 10\u00b0, 15.7 m/s, T 0.25/1.44 N",
+     "alpha_deg": 10.002930084871847,
+     "V": 15.688785980911147,
+     "T_up": 0.2500030765008776,
+     "T_lo": 1.4402700917140152,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.532391929,
+     "CD": 0.136911555,
+     "Cm": -0.07583668428571429,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.13/4.13 N",
+     "alpha_deg": 90.0,
+     "V": 1.0,
+     "T_up": 4.134008871223465,
+     "T_lo": 4.134008871223465,
+     "rotor_disks": true,
+     "source": "hover",
+     "CL": 3.7227512,
+     "CD": 7.42933003,
+     "Cm": -3.477842696428571,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "cruise: \u03b1 5\u00b0, 16.0 m/s, T 0.83/0.83 N",
+     "alpha_deg": 5.291234112317725,
+     "V": 16.0,
+     "T_up": 0.8340958328880711,
+     "T_lo": 0.8340958328880711,
+     "rotor_disks": true,
+     "source": "cruise",
+     "CL": 0.338476288,
+     "CD": 0.0598147343,
+     "Cm": 0.004663572125,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "stall: \u03b1 10\u00b0, 11.5 m/s, T 0.58/0.58 N",
+     "alpha_deg": 9.672385919513653,
+     "V": 11.455931950925551,
+     "T_up": 0.5766582930328479,
+     "T_lo": 0.5766582930328479,
+     "rotor_disks": true,
+     "source": "stall",
+     "CL": 0.499408599,
+     "CD": 0.128236666,
+     "Cm": -0.04744838821428571,
+     "converged": false,
+     "iterations": 400
+    },
     {
      "case": "bare airframe, \u03b1 0\u00b0, 10 m/s",
      "alpha_deg": 0.0,
@@ -26,9 +251,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": -0.048798,
-     "CD": 0.053229,
-     "Cm": 0.02103,
+     "CL": -0.0515604885,
+     "CD": 0.0706418543,
+     "Cm": 0.019921594642857143,
      "converged": false,
      "iterations": 400
     },
@@ -40,9 +265,23 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.319246,
-     "CD": 0.08082,
-     "Cm": -0.030379,
+     "CL": 0.30591323,
+     "CD": 0.0848056672,
+     "Cm": -0.03469418214285714,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 8\u00b0, 10 m/s",
+     "alpha_deg": 8.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.403648762,
+     "CD": 0.108126829,
+     "Cm": -0.04001581571428572,
      "converged": false,
      "iterations": 400
     },
@@ -54,23 +293,51 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.507562,
-     "CD": 0.134349,
-     "Cm": -0.07048,
+     "CL": 0.512047294,
+     "CD": 0.132282999,
+     "Cm": -0.06669861928571427,
      "converged": false,
      "iterations": 400
     },
     {
-     "case": "bare airframe, \u03b1 15\u00b0, 10 m/s",
-     "alpha_deg": 15.0,
+     "case": "bare airframe, \u03b1 12\u00b0, 10 m/s",
+     "alpha_deg": 12.0,
      "V": 10.0,
      "T_up": 0.0,
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.541091,
-     "CD": 0.197516,
-     "Cm": -0.088153,
+     "CL": 0.462492542,
+     "CD": 0.14652168,
+     "Cm": -0.02054367410714286,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 14\u00b0, 10 m/s",
+     "alpha_deg": 14.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.529297829,
+     "CD": 0.181360477,
+     "Cm": -0.06993901910714284,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 16\u00b0, 10 m/s",
+     "alpha_deg": 16.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.522188652,
+     "CD": 0.201743981,
+     "Cm": -0.04242355285714285,
      "converged": false,
      "iterations": 400
     },
@@ -82,9 +349,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.571487,
-     "CD": 0.296818,
-     "Cm": -0.132917,
+     "CL": 0.569753321,
+     "CD": 0.293809806,
+     "Cm": -0.12225804267857142,
      "converged": false,
      "iterations": 400
     },
@@ -96,9 +363,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.571837,
-     "CD": 0.45992,
-     "Cm": -0.120245,
+     "CL": 0.586222008,
+     "CD": 0.456071183,
+     "Cm": -0.11475921803571427,
      "converged": false,
      "iterations": 400
     },
@@ -110,9 +377,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.614804,
-     "CD": 0.752433,
-     "Cm": -0.203169,
+     "CL": 0.638042087,
+     "CD": 0.766790108,
+     "Cm": -0.2070136214285714,
      "converged": false,
      "iterations": 400
     },
@@ -124,9 +391,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.449682,
-     "CD": 0.935665,
-     "Cm": -0.241783,
+     "CL": 0.480339889,
+     "CD": 0.932098304,
+     "Cm": -0.22231459285714283,
      "converged": false,
      "iterations": 400
     },
@@ -138,9 +405,9 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.207578,
-     "CD": 0.856935,
-     "Cm": -0.21171,
+     "CL": 0.213275731,
+     "CD": 0.849007855,
+     "Cm": -0.19984022857142855,
      "converged": false,
      "iterations": 400
     },
@@ -152,178 +419,213 @@
      "T_lo": 0.0,
      "rotor_disks": false,
      "source": "sweep",
-     "CL": 0.060415,
-     "CD": 0.767666,
-     "Cm": -0.229449,
+     "CL": 0.0292612617,
+     "CD": 0.764005956,
+     "Cm": -0.2331618767857143,
      "converged": false,
      "iterations": 400
     }
    ],
    "statuses": {
-    "forward 3 s: \u03b1 53\u00b0, 1.5 m/s, T 4.63/4.64 N": {
-     "status": "diverged",
-     "note": "diverged: |coefficients| beyond 1e90",
+    "forward 3 s: \u03b1 54\u00b0, 1.5 m/s, T 4.36/4.89 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 52.8861,
-     "V [m/s]": 1.50599
+     "\u03b1 [deg]": 53.808677068212454,
+     "V [m/s]": 1.5071651173382674
     },
-    "forward 3 s: \u03b1 45\u00b0, 2.1 m/s, T 4.73/4.80 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "forward 3 s: \u03b1 45\u00b0, 2.2 m/s, T 4.46/5.10 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 44.998494,
-     "V [m/s]": 2.095608
+     "\u03b1 [deg]": 44.99419007681861,
+     "V [m/s]": 2.1948464912335583
     },
-    "forward 3 s: \u03b1 30\u00b0, 3.8 m/s, T 4.91/5.11 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "forward 3 s: \u03b1 30\u00b0, 4.1 m/s, T 4.64/5.46 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 29.934512,
-     "V [m/s]": 3.832142
+     "\u03b1 [deg]": 29.937868887779132,
+     "V [m/s]": 4.058442467088732
     },
-    "forward 3 s: \u03b1 20\u00b0, 5.8 m/s, T 4.85/5.14 N": {
-     "status": "diverged",
-     "note": "diverged: |coefficients| beyond 1e90",
+    "forward 3 s: \u03b1 20\u00b0, 6.2 m/s, T 4.56/5.48 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 19.948691,
-     "V [m/s]": 5.824897
+     "\u03b1 [deg]": 19.991426317601775,
+     "V [m/s]": 6.1882991083806065
     },
-    "forward 3 s: \u03b1 15\u00b0, 7.3 m/s, T 4.54/4.88 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "forward 3 s: \u03b1 15\u00b0, 7.8 m/s, T 4.18/5.11 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 14.964813,
-     "V [m/s]": 7.345324
+     "\u03b1 [deg]": 14.98133948739128,
+     "V [m/s]": 7.815846130195041
     },
-    "forward 3 s: \u03b1 10\u00b0, 9.3 m/s, T 3.29/3.79 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "forward 3 s: \u03b1 10\u00b0, 10.0 m/s, T 2.90/3.83 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 9.985109,
-     "V [m/s]": 9.312609
+     "\u03b1 [deg]": 9.977715278586974,
+     "V [m/s]": 9.96580516152708
     },
-    "back 3 s: \u03b1 80\u00b0, 6.1 m/s, T 0.29/1.58 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 80\u00b0, 6.3 m/s, T 0.25/2.08 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 80.069949,
-     "V [m/s]": 6.134746
+     "\u03b1 [deg]": 80.09880589760851,
+     "V [m/s]": 6.348907525111371
     },
-    "back 3 s: \u03b1 60\u00b0, 7.8 m/s, T 0.25/1.98 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 60\u00b0, 8.2 m/s, T 0.25/2.81 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 60.063531,
-     "V [m/s]": 7.77732
+     "\u03b1 [deg]": 60.058797622990916,
+     "V [m/s]": 8.235858935489087
     },
-    "back 3 s: \u03b1 45\u00b0, 10.0 m/s, T 0.25/2.35 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 45\u00b0, 10.8 m/s, T 0.25/3.33 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 45.013034,
-     "V [m/s]": 10.013281
+     "\u03b1 [deg]": 45.03059439128492,
+     "V [m/s]": 10.75363335480624
     },
-    "back 3 s: \u03b1 30\u00b0, 13.0 m/s, T 0.25/2.02 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 30\u00b0, 13.7 m/s, T 0.25/2.64 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 30.015775,
-     "V [m/s]": 13.038355
+     "\u03b1 [deg]": 30.012772710363247,
+     "V [m/s]": 13.703858793806312
     },
-    "back 3 s: \u03b1 20\u00b0, 14.6 m/s, T 0.25/1.24 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 20\u00b0, 15.0 m/s, T 0.25/1.49 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 20.013643,
-     "V [m/s]": 14.648283
+     "\u03b1 [deg]": 20.016623428352563,
+     "V [m/s]": 15.002775196768896
     },
-    "back 3 s: \u03b1 15\u00b0, 15.2 m/s, T 0.25/1.16 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 15\u00b0, 15.4 m/s, T 0.25/1.32 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 15.085872,
-     "V [m/s]": 15.173742
+     "\u03b1 [deg]": 15.013666001526214,
+     "V [m/s]": 15.422417618961607
     },
-    "back 3 s: \u03b1 10\u00b0, 15.5 m/s, T 0.25/1.39 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "back 3 s: \u03b1 10\u00b0, 15.7 m/s, T 0.25/1.44 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 10.007747,
-     "V [m/s]": 15.535666
+     "\u03b1 [deg]": 10.002930084871847,
+     "V [m/s]": 15.688785980911147
     },
-    "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.15/4.15 N": {
-     "status": "FAILED",
-     "note": "step solver failed (log not in the notebook)",
+    "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.13/4.13 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
      "\u03b1 [deg]": 90.0,
      "V [m/s]": 1.0
     },
+    "cruise: \u03b1 5\u00b0, 16.0 m/s, T 0.83/0.83 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
+     "rotor disks": true,
+     "\u03b1 [deg]": 5.291234112317725,
+     "V [m/s]": 16.0
+    },
+    "stall: \u03b1 10\u00b0, 11.5 m/s, T 0.58/0.58 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
+     "rotor disks": true,
+     "\u03b1 [deg]": 9.672385919513653,
+     "V [m/s]": 11.455931950925551
+    },
     "bare airframe, \u03b1 0\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 0.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 5\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 5.0,
      "V [m/s]": 10.0
     },
+    "bare airframe, \u03b1 8\u00b0, 10 m/s": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
+     "rotor disks": false,
+     "\u03b1 [deg]": 8.0,
+     "V [m/s]": 10.0
+    },
     "bare airframe, \u03b1 10\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 10.0,
      "V [m/s]": 10.0
     },
-    "bare airframe, \u03b1 15\u00b0, 10 m/s": {
+    "bare airframe, \u03b1 12\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
-     "\u03b1 [deg]": 15.0,
+     "\u03b1 [deg]": 12.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 14\u00b0, 10 m/s": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
+     "rotor disks": false,
+     "\u03b1 [deg]": 14.0,
+     "V [m/s]": 10.0
+    },
+    "bare airframe, \u03b1 16\u00b0, 10 m/s": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
+     "rotor disks": false,
+     "\u03b1 [deg]": 16.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 20\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 20.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 30\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 30.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 45\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 45.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 60\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 60.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 75\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 75.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 90\u00b0, 10 m/s": {
      "status": "solved",
-     "note": "not converged in 400 iterations",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 90.0,
      "V [m/s]": 10.0
@@ -339,216 +641,623 @@
     "iterations": 400
    },
    "summary": {
-    "solved": 0,
+    "solved": 29,
     "diverged": 0,
     "FAILED": 0,
-    "NOT RUN": 29,
+    "NOT RUN": 0,
     "n": 29,
-    "solved with rotor disks": 0,
-    "solved bare": 0,
+    "solved with rotor disks": 16,
+    "solved bare": 13,
     "with rotor disks": 16
    },
-   "records": [],
+   "records": [
+    {
+     "case": "forward 3 s: \u03b1 54\u00b0, 1.5 m/s, T 4.18/4.68 N",
+     "alpha_deg": 54.08016143345531,
+     "V": 1.506047984067175,
+     "T_up": 4.177615221618758,
+     "T_lo": 4.683240132370107,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 2.64186441,
+     "CD": 3.32515321,
+     "Cm": -0.013949069285714284,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 45\u00b0, 2.2 m/s, T 4.27/4.89 N",
+     "alpha_deg": 44.98298217364456,
+     "V": 2.222933521428583,
+     "T_up": 4.2730866391595015,
+     "T_lo": 4.885657655238809,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 2.56326573,
+     "CD": 1.86543662,
+     "Cm": 0.10954172785714285,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 30\u00b0, 4.1 m/s, T 4.42/5.20 N",
+     "alpha_deg": 29.999092469813124,
+     "V": 4.119125549433969,
+     "T_up": 4.424536338085141,
+     "T_lo": 5.198090578952875,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 1.39087613,
+     "CD": 0.732415363,
+     "Cm": -0.31694966249999995,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 20\u00b0, 6.3 m/s, T 4.29/5.16 N",
+     "alpha_deg": 19.993022335559058,
+     "V": 6.303112692906527,
+     "T_up": 4.293205176238938,
+     "T_lo": 5.159803940400395,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.828978635,
+     "CD": 0.127082427,
+     "Cm": -0.44895858035714287,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 15\u00b0, 7.9 m/s, T 3.83/4.71 N",
+     "alpha_deg": 14.997958702367015,
+     "V": 7.934526021889453,
+     "T_up": 3.830209122065434,
+     "T_lo": 4.707774091865492,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.674723961,
+     "CD": 0.110801746,
+     "Cm": -0.20885411964285713,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "forward 3 s: \u03b1 10\u00b0, 10.1 m/s, T 2.57/3.45 N",
+     "alpha_deg": 9.983594668784615,
+     "V": 10.109585038307083,
+     "T_up": 2.5673563328072806,
+     "T_lo": 3.4525115946371527,
+     "rotor_disks": true,
+     "source": "forward 3 s",
+     "CL": 0.585612553,
+     "CD": -0.142515013,
+     "Cm": -0.2760069303571428,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 80\u00b0, 6.4 m/s, T 0.25/1.99 N",
+     "alpha_deg": 80.01748010663303,
+     "V": 6.375596741807687,
+     "T_up": 0.2502525426600749,
+     "T_lo": 1.992120305579216,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.209256178,
+     "CD": 0.844130167,
+     "Cm": -0.20650051785714285,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 60\u00b0, 8.3 m/s, T 0.25/2.68 N",
+     "alpha_deg": 60.041138153707074,
+     "V": 8.268063662103286,
+     "T_up": 0.25000000000000067,
+     "T_lo": 2.679476715614697,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.563098027,
+     "CD": 0.956714141,
+     "Cm": -0.24190898928571425,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 45\u00b0, 10.8 m/s, T 0.25/3.17 N",
+     "alpha_deg": 45.027340866676774,
+     "V": 10.818500391233057,
+     "T_up": 0.25000000000000067,
+     "T_lo": 3.1707735144455502,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.695713798,
+     "CD": 0.763472166,
+     "Cm": -0.1966937571428571,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 30\u00b0, 13.6 m/s, T 0.25/2.50 N",
+     "alpha_deg": 30.027293552750148,
+     "V": 13.633665041102791,
+     "T_up": 0.25000000000000067,
+     "T_lo": 2.499532656138512,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.589694649,
+     "CD": 0.44486598,
+     "Cm": -0.10853699714285714,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 20\u00b0, 14.6 m/s, T 0.25/1.41 N",
+     "alpha_deg": 20.00153830266146,
+     "V": 14.60868622376076,
+     "T_up": 0.2500000000000008,
+     "T_lo": 1.4090609610209615,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.602064261,
+     "CD": 0.268299529,
+     "Cm": -0.14878427142857142,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 15\u00b0, 14.9 m/s, T 0.25/1.22 N",
+     "alpha_deg": 15.084491405350585,
+     "V": 14.856328852295515,
+     "T_up": 0.2500000000000008,
+     "T_lo": 1.223551390125597,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.559157255,
+     "CD": 0.163797617,
+     "Cm": -0.026854715357142855,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "back 3 s: \u03b1 10\u00b0, 14.9 m/s, T 0.25/1.35 N",
+     "alpha_deg": 10.007951221370174,
+     "V": 14.89764449075106,
+     "T_up": 0.2500000000000008,
+     "T_lo": 1.3509614676566994,
+     "rotor_disks": true,
+     "source": "back 3 s",
+     "CL": 0.547260795,
+     "CD": 0.136878173,
+     "Cm": -0.07287971357142857,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.05/4.05 N",
+     "alpha_deg": 90.0,
+     "V": 1.0,
+     "T_up": 4.0480502785625,
+     "T_lo": 4.0480502785625,
+     "rotor_disks": true,
+     "source": "hover",
+     "CL": 3.42547286,
+     "CD": 7.22688095,
+     "Cm": -3.1978004999999996,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "cruise: \u03b1 5\u00b0, 16.0 m/s, T 0.36/0.36 N",
+     "alpha_deg": 5.181213294292749,
+     "V": 16.0,
+     "T_up": 0.35654482810438676,
+     "T_lo": 0.35654482810438676,
+     "rotor_disks": true,
+     "source": "cruise",
+     "CL": 0.326726581,
+     "CD": 0.0792220168,
+     "Cm": -0.03103603125,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "stall: \u03b1 10\u00b0, 11.3 m/s, T 0.33/0.33 N",
+     "alpha_deg": 9.672385919513653,
+     "V": 11.336204508246036,
+     "T_up": 0.3270832480694858,
+     "T_lo": 0.3270832480694858,
+     "rotor_disks": true,
+     "source": "stall",
+     "CL": 0.506129695,
+     "CD": 0.127978906,
+     "Cm": -0.04618029696428571,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 0\u00b0, 10 m/s",
+     "alpha_deg": 0.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": -0.0546137354,
+     "CD": 0.064999161,
+     "Cm": 0.022377868214285713,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 5\u00b0, 10 m/s",
+     "alpha_deg": 5.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.307697019,
+     "CD": 0.0810490471,
+     "Cm": -0.03346339178571429,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 8\u00b0, 10 m/s",
+     "alpha_deg": 8.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.41149963,
+     "CD": 0.100353276,
+     "Cm": -0.029957010714285713,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 10\u00b0, 10 m/s",
+     "alpha_deg": 10.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.520324727,
+     "CD": 0.128740456,
+     "Cm": -0.06033267232142857,
+     "converged": true,
+     "iterations": 255
+    },
+    {
+     "case": "bare airframe, \u03b1 12\u00b0, 10 m/s",
+     "alpha_deg": 12.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.473736472,
+     "CD": 0.147991019,
+     "Cm": -0.024676798928571424,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 14\u00b0, 10 m/s",
+     "alpha_deg": 14.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.528437398,
+     "CD": 0.182703857,
+     "Cm": -0.06595550178571429,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 16\u00b0, 10 m/s",
+     "alpha_deg": 16.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.525299327,
+     "CD": 0.210143168,
+     "Cm": -0.04680771160714286,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 20\u00b0, 10 m/s",
+     "alpha_deg": 20.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.568894692,
+     "CD": 0.295709556,
+     "Cm": -0.11626398214285714,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 30\u00b0, 10 m/s",
+     "alpha_deg": 30.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.594134051,
+     "CD": 0.465595596,
+     "Cm": -0.11656676357142856,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 45\u00b0, 10 m/s",
+     "alpha_deg": 45.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.629399789,
+     "CD": 0.765144145,
+     "Cm": -0.20302669999999998,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 60\u00b0, 10 m/s",
+     "alpha_deg": 60.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.471827657,
+     "CD": 0.915380823,
+     "Cm": -0.21663585357142853,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 75\u00b0, 10 m/s",
+     "alpha_deg": 75.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": 0.22483692,
+     "CD": 0.865911302,
+     "Cm": -0.20344562321428572,
+     "converged": false,
+     "iterations": 400
+    },
+    {
+     "case": "bare airframe, \u03b1 90\u00b0, 10 m/s",
+     "alpha_deg": 90.0,
+     "V": 10.0,
+     "T_up": 0.0,
+     "T_lo": 0.0,
+     "rotor_disks": false,
+     "source": "sweep",
+     "CL": -0.00333545352,
+     "CD": 0.752893616,
+     "Cm": -0.25555282321428574,
+     "converged": false,
+     "iterations": 400
+    }
+   ],
    "statuses": {
-    "forward 3 s: \u03b1 53\u00b0, 1.5 m/s, T 4.20/4.65 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 54\u00b0, 1.5 m/s, T 4.18/4.68 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 53.14645009830941,
-     "V [m/s]": 1.5020770376741281
+     "\u03b1 [deg]": 54.08016143345531,
+     "V [m/s]": 1.506047984067175
     },
-    "forward 3 s: \u03b1 45\u00b0, 2.1 m/s, T 4.29/4.81 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 45\u00b0, 2.2 m/s, T 4.27/4.89 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 44.9657838667163,
-     "V [m/s]": 2.1180802635903646
+     "\u03b1 [deg]": 44.98298217364456,
+     "V [m/s]": 2.222933521428583
     },
-    "forward 3 s: \u03b1 30\u00b0, 3.9 m/s, T 4.42/5.08 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 30\u00b0, 4.1 m/s, T 4.42/5.20 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 29.96110776590459,
-     "V [m/s]": 3.8796521368749968
+     "\u03b1 [deg]": 29.999092469813124,
+     "V [m/s]": 4.119125549433969
     },
-    "forward 3 s: \u03b1 20\u00b0, 5.9 m/s, T 4.31/5.05 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 20\u00b0, 6.3 m/s, T 4.29/5.16 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 19.98724330221859,
-     "V [m/s]": 5.896848191857861
+     "\u03b1 [deg]": 19.993022335559058,
+     "V [m/s]": 6.303112692906527
     },
-    "forward 3 s: \u03b1 15\u00b0, 7.4 m/s, T 3.95/4.70 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 15\u00b0, 7.9 m/s, T 3.83/4.71 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 14.963228303258285,
-     "V [m/s]": 7.429635528973113
+     "\u03b1 [deg]": 14.997958702367015,
+     "V [m/s]": 7.934526021889453
     },
-    "forward 3 s: \u03b1 10\u00b0, 9.4 m/s, T 2.75/3.54 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "forward 3 s: \u03b1 10\u00b0, 10.1 m/s, T 2.57/3.45 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 9.984976789134922,
-     "V [m/s]": 9.397519962045282
+     "\u03b1 [deg]": 9.983594668784615,
+     "V [m/s]": 10.109585038307083
     },
-    "back 3 s: \u03b1 80\u00b0, 6.1 m/s, T 0.34/1.69 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 80\u00b0, 6.4 m/s, T 0.25/1.99 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 80.18056371410985,
-     "V [m/s]": 6.14440924238798
+     "\u03b1 [deg]": 80.01748010663303,
+     "V [m/s]": 6.375596741807687
     },
-    "back 3 s: \u03b1 60\u00b0, 7.8 m/s, T 0.25/2.01 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 60\u00b0, 8.3 m/s, T 0.25/2.68 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 60.12453083775432,
-     "V [m/s]": 7.792916539784711
+     "\u03b1 [deg]": 60.041138153707074,
+     "V [m/s]": 8.268063662103286
     },
-    "back 3 s: \u03b1 45\u00b0, 10.0 m/s, T 0.25/2.34 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 45\u00b0, 10.8 m/s, T 0.25/3.17 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 45.06029527414179,
-     "V [m/s]": 10.031350957703237
+     "\u03b1 [deg]": 45.027340866676774,
+     "V [m/s]": 10.818500391233057
     },
-    "back 3 s: \u03b1 30\u00b0, 12.9 m/s, T 0.25/1.93 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 30\u00b0, 13.6 m/s, T 0.25/2.50 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 30.035806873143056,
-     "V [m/s]": 12.895433489027702
+     "\u03b1 [deg]": 30.027293552750148,
+     "V [m/s]": 13.633665041102791
     },
-    "back 3 s: \u03b1 20\u00b0, 14.2 m/s, T 0.25/1.12 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 20\u00b0, 14.6 m/s, T 0.25/1.41 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 20.00582153126555,
-     "V [m/s]": 14.157060607753053
+     "\u03b1 [deg]": 20.00153830266146,
+     "V [m/s]": 14.60868622376076
     },
-    "back 3 s: \u03b1 15\u00b0, 14.5 m/s, T 0.25/1.08 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 15\u00b0, 14.9 m/s, T 0.25/1.22 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 15.02038353640758,
-     "V [m/s]": 14.488180831983026
+     "\u03b1 [deg]": 15.084491405350585,
+     "V [m/s]": 14.856328852295515
     },
-    "back 3 s: \u03b1 10\u00b0, 14.6 m/s, T 0.25/1.30 N": {
-     "status": "NOT RUN",
-     "note": "",
+    "back 3 s: \u03b1 10\u00b0, 14.9 m/s, T 0.25/1.35 N": {
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
-     "\u03b1 [deg]": 10.002170223510051,
-     "V [m/s]": 14.597925349170797
+     "\u03b1 [deg]": 10.007951221370174,
+     "V [m/s]": 14.89764449075106
     },
     "hover: \u03b1 90\u00b0, 1.0 m/s, T 4.05/4.05 N": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
      "\u03b1 [deg]": 90.0,
      "V [m/s]": 1.0
     },
     "cruise: \u03b1 5\u00b0, 16.0 m/s, T 0.36/0.36 N": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
      "\u03b1 [deg]": 5.181213294292749,
      "V [m/s]": 16.0
     },
     "stall: \u03b1 10\u00b0, 11.3 m/s, T 0.33/0.33 N": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": true,
      "\u03b1 [deg]": 9.672385919513653,
      "V [m/s]": 11.336204508246036
     },
     "bare airframe, \u03b1 0\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 0.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 5\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 5.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 8\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 8.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 10\u00b0, 10 m/s": {
-     "status": "NOT RUN",
+     "status": "solved",
      "note": "",
      "rotor disks": false,
      "\u03b1 [deg]": 10.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 12\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 12.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 14\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 14.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 16\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 16.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 20\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 20.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 30\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 30.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 45\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 45.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 60\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 60.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 75\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 75.0,
      "V [m/s]": 10.0
     },
     "bare airframe, \u03b1 90\u00b0, 10 m/s": {
-     "status": "NOT RUN",
-     "note": "",
+     "status": "solved",
+     "note": "not converged in 400 iterations (the residual target was not reached)",
      "rotor disks": false,
      "\u03b1 [deg]": 90.0,
      "V [m/s]": 10.0
@@ -562,83 +1271,139 @@
     "date": "2026-10-16"
    },
    "summary": {
-    "solved": 0,
+    "solved": 8,
     "diverged": 0,
     "FAILED": 0,
-    "NOT RUN": 8
+    "NOT RUN": 0
    },
    "rows": {
     "NACA 0012, \u03b1 0\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 0.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 0012",
+     "status": "solved",
+     "CL": -0.033064051,
+     "CD": 0.0236947669,
+     "Cm (c/4, chord)": 0.0028447955,
+     "cl section estimate": -0.04133006374999999,
+     "iterations": 155,
+     "converged": true,
+     "cells": 60217,
+     "note": ""
     },
     "NACA 0012, \u03b1 4\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 4.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 0012",
+     "status": "solved",
+     "CL": 0.287803193,
+     "CD": 0.0340956995,
+     "Cm (c/4, chord)": 0.0001314332436,
+     "cl section estimate": 0.35975399125,
+     "iterations": 125,
+     "converged": true,
+     "cells": 61808,
+     "note": ""
     },
     "NACA 0012, \u03b1 8\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 8.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 0012",
+     "status": "solved",
+     "CL": 0.500641125,
+     "CD": 0.0787423458,
+     "Cm (c/4, chord)": -0.000280356166,
+     "cl section estimate": 0.62580140625,
+     "iterations": 109,
+     "converged": true,
+     "cells": 60882,
+     "note": ""
     },
     "NACA 0012, \u03b1 12\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 12.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 0012",
+     "status": "solved",
+     "CL": 0.541120706,
+     "CD": 0.123988817,
+     "Cm (c/4, chord)": 0.00587873572,
+     "cl section estimate": 0.6764008825,
+     "iterations": 143,
+     "converged": true,
+     "cells": 61220,
+     "note": ""
     },
     "NACA 23112 (k2/k1 0.03), \u03b1 0\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 0.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 23112, k\u2082/k\u2081 0.03",
+     "status": "solved",
+     "CL": -0.0530417617,
+     "CD": 0.0244750266,
+     "Cm (c/4, chord)": 0.0578381206,
+     "cl section estimate": -0.066302202125,
+     "iterations": 400,
+     "converged": false,
+     "cells": 61778,
+     "note": "not converged in 400 iterations"
     },
     "NACA 23112 (k2/k1 0.03), \u03b1 4\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 4.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 23112, k\u2082/k\u2081 0.03",
+     "status": "solved",
+     "CL": 0.227503685,
+     "CD": 0.0332162673,
+     "Cm (c/4, chord)": 0.0473006446,
+     "cl section estimate": 0.28437960625,
+     "iterations": 121,
+     "converged": true,
+     "cells": 61686,
+     "note": ""
     },
     "NACA 23112 (k2/k1 0.03), \u03b1 8\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 8.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 23112, k\u2082/k\u2081 0.03",
+     "status": "solved",
+     "CL": 0.442278438,
+     "CD": 0.0728398623,
+     "Cm (c/4, chord)": 0.043028252,
+     "cl section estimate": 0.5528480474999999,
+     "iterations": 110,
+     "converged": true,
+     "cells": 60235,
+     "note": ""
     },
     "NACA 23112 (k2/k1 0.03), \u03b1 12\u00b0, 16 m/s, AR 8 slab": {
-     "status": "NOT RUN",
      "\u03b1 [deg]": 12.0,
      "V [m/s]": 16.0,
      "Re (chord)": 153424.6575342466,
      "AR": 8.0,
-     "template": "rans_ksst_external",
-     "reads against": "the slab's lift slope \u2248 AR/(AR+2) = 0.80 of the section's"
+     "section": "NACA 23112, k\u2082/k\u2081 0.03",
+     "status": "solved",
+     "CL": 0.512871305,
+     "CD": 0.117561281,
+     "Cm (c/4, chord)": 0.0398148482,
+     "cl section estimate": 0.64108913125,
+     "iterations": 117,
+     "converged": true,
+     "cells": 61255,
+     "note": ""
     }
    }
   }
