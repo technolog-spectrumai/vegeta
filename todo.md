@@ -179,6 +179,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] W.1 `batch.yaml`: an ordered batch of chapters from one file (`workflows/batch.py`, `wf batch`, the GUI's Batch tab writes it) for the cloud; every run and batch ends with where its output file is
 - [x] 5r.21 The wing interference as a measure: `kestrel_flight.interference` (lattice gap sweep, Prandtl σ, monoplane equivalents) in notebooks 43 § 5 and 44, the CFD chapter K12 `wing-interference` (one wing / the pair / the equal-area monoplane at 0, 4, 8°, `summary["interference"]`), and `kestrel_compare.py`: FALCO, NISUS+, MERLIN, PEREGRINE scaled to Kestrel's mass and speed beside Kestrel as a monoplane
 - [ ] 5r.22 K12 with stagger and decalage as options (the lattice has them, the CAD does not), and the X-wing's panels in the same chapter once Y.9 gives it a CAD
+- [x] W.3 Batch: an estimate before the start (case counts from `--list`, seconds per case from the chapter's finished runs, else a rule of thumb, `expected_minutes` override), one progress bar over every case of the batch with the remaining time, written to the batch's status.json for the GUI
 - [ ] W.2 A batch step for a notebook (`notebook: 43_kestrel_study`), so a cloud batch can end with the report; and `wf batch --watch` for a batch running elsewhere (rsync + status.json)
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak

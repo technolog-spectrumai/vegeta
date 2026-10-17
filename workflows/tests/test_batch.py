@@ -98,3 +98,50 @@ def test_cli_batch_example_and_dry_run(tmp_path):
     f.write_text(out.stdout)
     out = subprocess.run([PY, str(ROOT / "workflows" / "cli.py"), str(f), "--dry-run"], capture_output=True, text=True, timeout=120)
     assert out.returncode == 0 and "airframe_cfd.py --chapter sweep" in out.stdout and "4 step(s)" in out.stdout
+
+
+def test_estimate_from_history_rule_of_thumb_and_expected_minutes(runs_tmp, tmp_path):
+    """The time per case comes from finished runs of the chapter (same quality first), else the kind's rule of thumb;
+    expected_minutes in the file wins; the dry run prints the total and the finishing time."""
+    import json as _json
+    d = runs_tmp / "kestrel" / "airframe-sweep" / "old_run"
+    d.mkdir(parents=True)
+    (d / "manifest.json").write_text(_json.dumps({"schema": 1, "run_id": "old_run", "workflow": "airframe_cfd", "created_at": "2026-10-17T09:00:00Z",
+                                                  "config": {"variant": "4Q-2", "quality": "screening"}, "planned_cases": ["a", "b", "c"]}))
+    (d / "status.json").write_text(_json.dumps({"state": "completed"}))
+    (d / "summary.json").write_text(_json.dumps({"cases": {"a": {"status": "solved", "duration_s": 100.0}, "b": {"status": "solved", "duration_s": 300.0}, "c": {"status": "FAILED"}}}))
+    b = batch.loads("name: e\nsteps:\n  - chapter: K1\n    variant: 4Q-2\n  - chapter: K2\n    variant: 4Q-2\n    options: {quality: fine}\n  - chapter: K9\n    variant: 4Q-2\n    expected_minutes: 12\n")
+    est = batch.estimate(b, count=False)
+    assert est[0]["cases"] == 3 and abs(est[0]["case_s"] - 200.0) < 1e-9 and "run(s) of the chapter" in est[0]["source"]
+    assert est[1]["case_s"] == batch.ESTIMATE_S[("cfd", "fine")] and est[1]["cases"] == 1          # no run of K2: the rule of thumb, 1 case assumed without --list
+    assert est[2]["seconds"] == 12 * 60 and "expected_minutes" in est[2]["source"]
+    lines = []
+    rep = batch.run(b, dry_run=True, count=False, log=lines.append)
+    assert rep["estimate"]["cases"] == 5 and any(l.startswith("estimated total:") and "would finish about" in l for l in lines)
+    assert batch.from_dict(batch._mini_yaml(batch.dumps(b))).steps[2].expected_minutes == 12
+
+
+def test_progress_and_eta_written_to_status(runs_tmp, tmp_path):
+    """While a step runs, the batch's status.json carries the cases done over every case of the batch, the fraction and
+    the remaining time; a finished batch reports the time against the estimate."""
+    import json as _json
+    seen = []
+
+    def launch(cmd, cwd, f):
+        out = Path(cmd[cmd.index("--out") + 1])
+        out.mkdir(parents=True)
+        (out / "manifest.json").write_text(_json.dumps({"schema": 1, "run_id": out.name, "workflow": "airframe_cfd", "created_at": "2026-10-17T10:00:00Z", "config": {"variant": "4Q-2"}, "planned_cases": ["x", "y"]}))
+        (out / "status.json").write_text(_json.dumps({"state": "completed", "cases": {"planned": 2, "done": 2}}))
+        (out / "summary.json").write_text(_json.dumps({"state": "completed", "counts": {"n": 2, "solved": 2}}))
+        seen.append(_json.loads((tmp_path / "b" / "status.json").read_text()))
+        return 0
+    b = batch.loads("name: p\nsteps:\n  - chapter: K1\n    variant: 4Q-2\n    expected_minutes: 10\n  - chapter: K2\n    variant: 4Q-2\n    expected_minutes: 10\n")
+    lines = []
+    rep = batch.run(b, launch=launch, log=lines.append, folder=tmp_path / "b", count=False)
+    assert rep["exit_code"] == 0 and rep["estimate"]["seconds"] == 1200 and "actual_seconds" in rep["estimate"]
+    st0, st1 = seen
+    assert st0["cases"]["planned"] == 2 and st0["cases"]["done"] == 0 and st0["eta_s"] == 1200 and st0["eta_at"]
+    assert st1["cases"]["done"] == 2 and st1["cases"]["planned"] == 3 and abs(st1["progress"] - 2 / 3) < 1e-9 and 0 < st1["eta_s"] <= 600   # step 1 turned out to be 2 cases: the total followed
+    final = _json.loads((tmp_path / "b" / "status.json").read_text())
+    assert final["state"] == "completed" and final["cases"]["done"] == 4 and final["eta_at"] is None
+    assert any(l.startswith("estimate:") for l in lines) and any(l.startswith("time:") for l in lines)
