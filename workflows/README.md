@@ -97,7 +97,7 @@ Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`
 
 All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`); `source activate.sh`
 activates it and defines `wf` (= `workflows/cli.py`) and `wfrun <book> …` (= the book's script). The quickest
-way is `workflows/cli.py` (or its PyQt6 window: `wf gui`, `workflows/requirements-gui.txt`) (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
+way is `workflows/cli.py` (or its PyQt6 window: `./workflows.sh` / `wf gui`, `workflows/requirements-gui.txt`) (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
 `resume`, `notebook`); the scripts below are what it calls.
 
 ```bash
