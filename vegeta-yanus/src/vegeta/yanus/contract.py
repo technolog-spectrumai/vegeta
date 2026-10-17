@@ -106,6 +106,21 @@ class File:
         return self.ref
 
 
+@dataclass(frozen=True)
+class Data:
+    """A data file a unit reads that no unit gives: committed source data (``required``, the default: the gate closes
+    when it is missing or lacks its ``keys``), or a **cache** a design module rebuilds when it is missing
+    (``cache=True``: never closes the gate; it says the first use will compute it, and ``note`` says how long)."""
+    path: str
+    required: bool = True
+    cache: bool = False
+    keys: tuple = ()
+    note: str = ""
+
+    def key(self, book: str | None = None) -> str:
+        return "data:" + self.path
+
+
 # ================================================================================================= units
 @dataclass
 class Kind:
@@ -341,8 +356,12 @@ class Flow:
                         continue
                     if not any(isinstance(g, File) and g.path == t.path for g in prod.gives):
                         errors.append(f"{u.ref}: takes {t.path} from {prod.ref}, which does not give it")
+                elif isinstance(t, Data):
+                    g = self.giver(t.path)
+                    if g is not None:
+                        errors.append(f"{u.ref}: takes Data({t.path!r}), which {g.ref} gives: take File('{g.name}:{t.path}') instead")
                 else:
-                    errors.append(f"{u.ref}: takes {t!r}: not a Run or a File")
+                    errors.append(f"{u.ref}: takes {t!r}: not a Run, a File or a Data")
             for g in u.gives:
                 if not isinstance(g, File) or g.producer:
                     errors.append(f"{u.ref}: gives {g!r}: a File with a bare path")

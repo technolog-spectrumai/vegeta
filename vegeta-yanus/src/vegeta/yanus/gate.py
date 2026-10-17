@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import pins as _pins
-from .contract import Chapter, File, Flow, Notebook, Run, Unit
+from .contract import Chapter, Data, File, Flow, Notebook, Run, Unit
 from .needs import check_need
 from .registry import current
 from .runs import RunView, read_run, runs_of
@@ -186,7 +186,7 @@ class Gate:
         for r in self.rows:
             if r.kind == "run" and r.usable:
                 inputs.append({"kind": "run", "key": r.key, "path": r.selection})
-            elif r.kind == "file" and r.usable:
+            elif r.kind in ("file", "data") and r.usable:
                 f = root / r.selection
                 st = read_stamp(f)
                 inputs.append({"kind": "file", "key": r.key, "path": r.selection, "sha256": (st or {}).get("sha256") or sha256_file(f)})
@@ -297,6 +297,27 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
             row.provenance = f"{st.get('producer')} {st.get('written_at', '')[:16]} (git {st.get('git')})" if st else ""
             row.fix = run_command(prod, None) if isinstance(prod, Chapter) else notebook_command(prod)
             g.inputs[key] = c["path"] if c["ok"] else None
+        elif isinstance(t, Data):
+            key = t.key()
+            f = root / t.path
+            role = "optional" if (t.cache or not t.required or screening) else "required"
+            row = Row(f"{t.path.rsplit('/', 1)[-1]} (data)", "data", role, selection=t.path, key=key)
+            if not f.exists():
+                row.status = ("missing — a cache: computed on first use" + (f" ({t.note})" if t.note else "")) if t.cache else "missing"
+                row.usable = False
+                row.fix = "" if t.cache else (t.note or f"a committed input: restore it with git checkout -- {t.path}")
+            elif missing_keys(f, t.keys):
+                row.status = "missing keys: " + ", ".join(missing_keys(f, t.keys))
+                row.fix = t.note or f"the file is incomplete: restore it with git checkout -- {t.path}"
+            elif f.stat().st_size == 0:
+                row.status = "empty file"
+                row.fix = t.note or f"restore it with git checkout -- {t.path}"
+            else:
+                row.usable = True
+                row.status = f"on file ({time.strftime('%Y-%m-%d %H:%M', time.localtime(f.stat().st_mtime))}, {f.stat().st_size / 1024:.0f} kB)" + (", a cache" if t.cache else "")
+            if t.cache and f.exists() and not row.usable:
+                row.role = "required"                          # a cache that is there but broken would fail its reader
+            g.inputs[key] = f if row.usable else None
         else:
             continue
         g.rows.append(row)

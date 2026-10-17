@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 from . import pins as _pins
-from .contract import Chapter, File, Flow, Notebook, Run
+from .contract import Chapter, Data, File, Flow, Notebook, Run
 from .gate import candidates, enter, runs_root
 from .needs import check_need
 from .registry import current
@@ -206,6 +206,15 @@ def cmd_check(a, flow) -> int:
                 (errors if a.strict else notes).append(f"{g.path}: modified since {st.get('producer')} stamped it ({st.get('written_at')})")
             elif fp.exists() and st is None:
                 notes.append(f"{g.path}: not stamped yet (run {u.name} through its gate)")
+    for u in flow.units():
+        for t in u.takes:
+            if isinstance(t, Data) and not (root / t.path).exists():
+                if t.cache:
+                    notes.append(f"{u.name}: cache {t.path} not built yet (computed on first use)")
+                elif t.required:
+                    errors.append(f"{u.name}: data {t.path} is missing" + (f" — {t.note}" if t.note else ""))
+                else:
+                    notes.append(f"{u.name}: optional data {t.path} is missing")
     for n in notes:
         print("note: " + n)
     for e in errors:

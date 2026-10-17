@@ -187,3 +187,28 @@ def test_file_inputs_keyed_by_their_take(repo):
     pins.set_pin(repo.root, "20_study", "demo/sweep@A", d)
     g = yanus.enter("20_study")
     assert g.inputs["demo/sweep@A"]["counts"]["n"] == 2 and g.inputs["10_maker:data/maker.json"] == p
+
+
+def test_data_takes(repo, capsys):
+    from vegeta.yanus import Data, FlowError
+    from vegeta.yanus import cli
+    repo.notebook("40_data", takes=[Data("data/source.json", keys=("rows",)), Data("data/cache.json", cache=True, note="~40 s"),
+                                    Data("data/extra.csv", required=False)])
+    with pytest.raises(GateClosed, match="source.json \\(data\\): missing"):
+        yanus.enter("40_data")
+    assert cli.main(["check"]) == 1 and "data data/source.json is missing" in capsys.readouterr().out
+    src = repo.root / "data" / "source.json"
+    src.write_text(json.dumps({"other": 1}))
+    with pytest.raises(GateClosed, match="missing keys: rows"):
+        yanus.enter("40_data")
+    src.write_text(json.dumps({"rows": []}))
+    g = yanus.enter("40_data")
+    rows = {r.key: r for r in g.rows}
+    assert rows["data:data/cache.json"].role == "optional" and "computed on first use (~40 s)" in rows["data:data/cache.json"].status
+    assert g.inputs["data:data/source.json"] == src and g.inputs["data:data/cache.json"] is None
+    (repo.root / "data" / "cache.json").write_text("")
+    with pytest.raises(GateClosed, match="cache.json \\(data\\): empty file"):
+        yanus.enter("40_data")
+    repo.notebook("41_bad", takes=[Data("data/maker.json")])                 # 10_maker gives it: a File take is required
+    with pytest.raises(FlowError, match="take File\\('10_maker:data/maker.json'\\)"):
+        repo.validate()

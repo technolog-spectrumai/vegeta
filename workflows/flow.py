@@ -11,10 +11,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 try:
-    from vegeta.yanus import AnyOf, Env, File, Flow, Package, Run, Tool  # noqa: F401
+    from vegeta.yanus import AnyOf, Data, Env, File, Flow, Package, Run, Tool  # noqa: F401
 except ImportError:                                            # a source tree without the editable install
     sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
-    from vegeta.yanus import AnyOf, Env, File, Flow, Package, Run, Tool  # noqa: F401,E402
+    from vegeta.yanus import AnyOf, Data, Env, File, Flow, Package, Run, Tool  # noqa: F401,E402
 
 flow = Flow("vegeta", root=ROOT)
 
@@ -80,16 +80,19 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
 
 # ================================================================================================= notebooks
 DATA = "notebooks/designs/data"
+KESTREL_DRIVE = Data(f"{DATA}/kestrel_drive.json", cache=True, note="the Boreas drive tables, ~40 s")
+MAPS = {"propellers": f"{DATA}/propeller_maps.json", "edf": f"{DATA}/edf_maps.json", "exotic": f"{DATA}/exotic_propeller_maps.json"}
 SECTION_BACKEND = AnyOf("section backend", Package("neuralfoil"), Tool("xfoil"), why="Zephyr's 2-D section polars",
                         fix="pip install 'vegeta-cli[sections]' (neuralfoil), or put xfoil on the PATH; ./install_local.sh installs it")
 
 flow.notebook("38_prop_lab", title="the resolved 9x6 propeller: CFD against Boreas, the calibration Kestrel reads",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas"), Package("vegeta.aeromant")],
-              gives=[File(f"{DATA}/prop_lab.json", keys=("meta", "calibration")), File(f"{DATA}/reports/38_prop_lab.json")])
+              gives=[File(f"{DATA}/prop_lab.json", keys=("meta", "calibration")), File(f"{DATA}/reports/38_prop_lab.json")],
+              takes=[KESTREL_DRIVE])
 
 flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one notebook to open for Kestrel)",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas")],
-              takes=[Run("kestrel/airframe-sweep", variant="4Q-1"),
+              takes=[KESTREL_DRIVE, Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections"), Run("kestrel/airframe-sweep", variant="4Q-1"),
                      Run("kestrel/airframe-sweep", variant="4Q-2", required=True),
                      Run("kestrel/airframe-sweep", variant="4Q-3"),
                      Run("kestrel/frame-and-joint", variant="4Q-2", required=True),
@@ -98,7 +101,8 @@ flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one n
               screening_env="KESTREL_SCREENING")
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
-              needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND])
+              needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
+              takes=[KESTREL_DRIVE])
 
 
 # ================================================================================================= the other notebooks
@@ -149,13 +153,15 @@ flow.notebook("24_velutina", title='Velutina — medical aid to the mountains',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.chronos"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")])
 flow.notebook("25_air_propeller", title='Air propellers — tractor and pusher, two and three blades: efficiency, CFD, flow movies, b',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              gives=[File(f"{DATA}/air_propeller_results.json")])
+              gives=[File(MAPS["propellers"], optional=True), File(f"{DATA}/air_propeller_results.json")])
 flow.notebook("25b_ducted_fan", title='The ducted fan (EDF) — efficiency, CFD, noise, vibration, stages',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              takes=[File(f"25_air_propeller:{DATA}/air_propeller_results.json")])
+              takes=[File(f"25_air_propeller:{DATA}/air_propeller_results.json")],
+              gives=[File(MAPS["edf"], optional=True)])
 flow.notebook("25c_exotic_propellers", title='Exotic propellers — six and twelve blades, tractor and pusher',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus")],
-              takes=[File(f"25_air_propeller:{DATA}/air_propeller_results.json")])
+              takes=[File(f"25_air_propeller:{DATA}/air_propeller_results.json")],
+              gives=[File(MAPS["exotic"], optional=True)])
 flow.notebook("26_merlin", title='MERLIN — the design',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")],
               gives=[File(f"{DATA}/merlin_design.json")])
@@ -164,35 +170,41 @@ flow.notebook("26b_merlin_mission", title='MERLIN — the mission: the race to t
               takes=[File(f"26_merlin:{DATA}/merlin_design.json")])
 flow.notebook("27_merlin_race", title="MERLIN's propulsor race — can a ducted fan win on the same battery?",
               needs=[],
-              takes=[File(f"26_merlin:{DATA}/merlin_design.json")])
+              takes=[File("25_air_propeller:" + MAPS["propellers"], required=True), File("25b_ducted_fan:" + MAPS["edf"]), File("25c_exotic_propellers:" + MAPS["exotic"]), File(f"26_merlin:{DATA}/merlin_design.json")])
 flow.notebook("28_microjet", title='Microjet — a model turbojet from cycle to CFD and FEA',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.talos")],
               gives=[File(f"{DATA}/microjet.json")])
 flow.notebook("28_peregrine", title='PEREGRINE — a falcon-inspired folding-wing farm drone',
               needs=[Package("vegeta.aeromant"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")],
-              gives=[File(f"{DATA}/peregrine_design.json")])
+              gives=[File(f"{DATA}/peregrine_design.json")],
+              takes=[File("25_air_propeller:" + MAPS["propellers"], required=True), File("25b_ducted_fan:" + MAPS["edf"]), File("25c_exotic_propellers:" + MAPS["exotic"])])
 flow.notebook("29_aguya", title='AGUYA — a turbojet sampler that reaches the fire at 150 m/s',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              takes=[File(f"28_microjet:{DATA}/microjet.json"), File(f"26_merlin:{DATA}/merlin_design.json")],
+              takes=[File("25_air_propeller:" + MAPS["propellers"], required=True), File("25b_ducted_fan:" + MAPS["edf"]), File("25c_exotic_propellers:" + MAPS["exotic"]), File(f"28_microjet:{DATA}/microjet.json"), File(f"26_merlin:{DATA}/merlin_design.json")],
               gives=[File(f"{DATA}/aguya_design.json")])
 flow.notebook("30_pekari_rover", title='Pekari Rover — a small tracked rover: machine, ground, drive train and track',
               needs=[Package("vegeta.chiron"), Package("vegeta.chronos"), Package("vegeta.dedalus"), Package("vegeta.talos")])
 flow.notebook("31_nisus", title='NISUS — the observation drone and its computer-vision sibling',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              gives=[File(f"{DATA}/nisus_design.json")])
+              gives=[File(f"{DATA}/nisus_design.json")],
+              takes=[Data(f"{DATA}/nisus_propulsion.json", cache=True, note="the NISUS propulsion map (Boreas)"), Data(f"{DATA}/nisus_component_sources.md")])
 flow.notebook("32_nisus_birds", title='NISUS-Zero — photographing birds up close: the mission software prototype',
-              needs=[Package("vegeta.mission")])
+              needs=[Package("vegeta.mission")],
+              takes=[Data(f"{DATA}/nisus_propulsion.json", cache=True, note="the NISUS propulsion map (Boreas)")])
 flow.notebook("33_nisus_plus", title='NISUS+ — the mountain survey drone',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              gives=[File(f"{DATA}/nisus_plus_design.json")])
+              gives=[File(f"{DATA}/nisus_plus_design.json")],
+              takes=[Data(f"{DATA}/nisus_plus_propulsion.json", cache=True, note="the NISUS+ drive (Boreas)")])
 flow.notebook("34_frame_study", title='Tail frames for the mountain aircraft — twin booms against a single tail',
               needs=[Package("vegeta.talos")],
               gives=[File(f"{DATA}/frame_study.json", keys=("status", "verdict"))])
 flow.notebook("35_falco", title='FALCO — the tractor mountain aircraft',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.dedalus"), Package("vegeta.talos")],
-              gives=[File(f"{DATA}/falco_design.json")])
+              gives=[File(f"{DATA}/falco_design.json")],
+              takes=[Data(f"{DATA}/falco_propulsion.json", cache=True, note="the FALCO drive (Boreas)")])
 flow.notebook("36_falco_balsa_wing", title='FALCO — the wing and the tail built up in balsa for the laser cutter',
               needs=[Package("vegeta.atropos"), Package("vegeta.dedalus")],
-              gives=[File(f"{DATA}/falco_balsa_wing.json")])
+              gives=[File(f"{DATA}/falco_balsa_wing.json")],
+              takes=[Data(f"{DATA}/falco_propulsion.json", cache=True, note="the FALCO drive (Boreas)")])
 flow.notebook("37_perseus_rover", title='Perseus — a tracked rover that cuts tree branches',
               needs=[Package("vegeta.chiron"), Package("vegeta.dedalus"), Package("vegeta.talos")])

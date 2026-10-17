@@ -255,3 +255,23 @@ All 41 notebooks in `notebooks/` have a contract in `workflows/flow.py`. The ear
   * A gate that is not in DEBUG refuses a debug-stamped input ("made in DEBUG (mocked numbers)").
   * A give missing in DEBUG is reported, not raised.
   * `File(..., optional=True)` declares a give that a mode may skip.
+
+## 14. Guarding against missing data
+
+A notebook's contract now names the data it reads. The gate checks every file before the first cell computes
+anything, instead of a design module failing halfway through or quietly falling back.
+
+* **`File("<producer>:<path>")`** is a file another notebook gives. For example, 27, 28_peregrine and 29 take the
+  propulsor libraries of 25, 25b and 25c. `propeller_maps.json` is **required**, because `propulsor_maps.load()`
+  raises without it; the other two are optional.
+* **`Data(path)`** is a file no unit gives:
+  * Committed source data (`nisus_component_sources.md`). A missing, empty or incomplete file (declared `keys`
+    absent) closes the gate, and the fix is `git checkout -- <path>`.
+  * A cache, `Data(path, cache=True)`, which a design module rebuilds when it is missing: `kestrel_drive.json`,
+    `kestrel_sections.json`, the NISUS, NISUS+ and FALCO propulsion maps. A missing cache only reports
+    "computed on first use (~40 s)". A cache that is there but empty or incomplete closes the gate, because it would
+    break its reader.
+* **`yn check`** fails on a required `Data` that is missing.
+* **The registry** refuses a `Data` take of a file some unit gives: take the producer's `File` instead.
+* **Gives a run may skip:** 25, 25b and 25c write their map library only when it is missing or
+  `AIR_PROP_MAPS=build`, so they give it with `optional=True`.
