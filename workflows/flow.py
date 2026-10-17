@@ -106,6 +106,10 @@ flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cant
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")])
 
+flow.notebook("46_svarog", title="Svarog — the CW diode-end-pumped Nd:YAG laser designed on Hyperion: pump, gain, thermal lens, three cavities, the beam out",
+              needs=[Package("vegeta.hyperion")],
+              gives=[File(f"{DATA}/svarog_design.json", keys=("kind", "design")), File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions"))])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

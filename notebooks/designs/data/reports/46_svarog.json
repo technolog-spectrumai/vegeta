@@ -1,0 +1,407 @@
+{
+ "meta": {
+  "notebook": "46_svarog",
+  "chosen": "D",
+  "design_pump_W": 20.0,
+  "wavelength": 1.064e-06,
+  "pump_wavelength": 8.08e-07,
+  "debug": false
+ },
+ "rod": {
+  "medium": {
+   "name": "Nd:YAG 1.0 at.%",
+   "sigma": 2.8e-23,
+   "tau": 0.00023,
+   "wavelength": 1.064e-06,
+   "pump_wavelength": 8.08e-07,
+   "alpha_pump": 400.0,
+   "eta_q": 0.9,
+   "eta_heat": 0.3,
+   "material": {
+    "name": "Nd:YAG",
+    "B": [
+     2.282,
+     3.27644
+    ],
+    "C": [
+     0.01185,
+     282.734
+    ],
+    "dn_dT": 7.3e-06,
+    "kappa": 13.0,
+    "alpha_T": 7.8e-06,
+    "nu": 0.25,
+    "model": "sellmeier",
+    "note": "Zelmon 1998 (undoped YAG Sellmeier); Nd:YAG dn/dT, \u03ba, \u03b1 as in Koechner"
+   },
+   "note": "\u03c3 2.8e-19 cm\u00b2, \u03c4 230 \u00b5s (Koechner); \u03b1 \u2248 4 /cm at 808 nm for 1 at.% (polarisation and diode linewidth move it); \u03b7_heat \u2248 0.3 for diode pumping (the quantum defect 0.24 plus non-radiative paths)"
+  },
+  "radius": 0.0015,
+  "length": 0.01,
+  "name": "rod"
+ },
+ "pump": {
+  "power_max": 30.0,
+  "core_radius": 0.0001,
+  "NA": 0.22,
+  "f_collimator": 0.025,
+  "f_focus": 0.1,
+  "spot_radius": 0.0004,
+  "w_effective": 0.00041513532276008023,
+  "design_power": 20.0,
+  "magnifications": {
+   "1.5": {
+    "spot on the face [\u00b5m]": 150.0,
+    "effective radius [\u00b5m]": 293.85887252490994,
+    "radius at the exit [\u00b5m]": 821.7152440311835,
+    "Rayleigh range in the rod [mm]": 1.862045478205287,
+    "thermal lens f at 20 W [mm]": 68.3508015544871,
+    "f at 30 W [mm]": 45.56720103632475,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 175.68595830301277,
+    "threshold at that mode [W]": 0.44552238540348027
+   },
+   "2.0": {
+    "spot on the face [\u00b5m]": 199.99999999999997,
+    "effective radius [\u00b5m]": 277.19856108343293,
+    "radius at the exit [\u00b5m]": 641.2624230845925,
+    "Rayleigh range in the rod [mm]": 3.309045424912323,
+    "thermal lens f at 20 W [mm]": 60.820213328972166,
+    "f at 30 W [mm]": 40.54680888598145,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 165.72545326168748,
+    "threshold at that mode [W]": 0.3964367045713654
+   },
+   "3.0": {
+    "spot on the face [\u00b5m]": 300.00000000000006,
+    "effective radius [\u00b5m]": 328.9366131230351,
+    "radius at the exit [\u00b5m]": 512.833986479906,
+    "Rayleigh range in the rod [mm]": 7.436017142113975,
+    "thermal lens f at 20 W [mm]": 85.64271543942348,
+    "f at 30 W [mm]": 57.09514362628232,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 196.65747574992503,
+    "threshold at that mode [W]": 0.5582340807603677
+   },
+   "4.0": {
+    "spot on the face [\u00b5m]": 399.99999999999994,
+    "effective radius [\u00b5m]": 415.1353227600802,
+    "radius at the exit [\u00b5m]": 516.228557175379,
+    "Rayleigh range in the rod [mm]": 13.194335879274716,
+    "thermal lens f at 20 W [mm]": 136.40973707137485,
+    "f at 30 W [mm]": 90.93982471424988,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 248.19208750742328,
+    "threshold at that mode [W]": 0.889142337326559
+   },
+   "5.0": {
+    "spot on the face [\u00b5m]": 500.0,
+    "effective radius [\u00b5m]": 510.06919909613754,
+    "radius at the exit [\u00b5m]": 572.7782946473318,
+    "Rayleigh range in the rod [mm]": 20.563328867546474,
+    "thermal lens f at 20 W [mm]": 205.9321692355534,
+    "f at 30 W [mm]": 137.28811282370225,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 304.94909094997246,
+    "threshold at that mode [W]": 1.3423016143563262
+   },
+   "6.0": {
+    "spot on the face [\u00b5m]": 600.0,
+    "effective radius [\u00b5m]": 607.8306822534773,
+    "radius at the exit [\u00b5m]": 651.6508094043579,
+    "Rayleigh range in the rod [mm]": 29.516178999965117,
+    "thermal lens f at 20 W [mm]": 292.4362683861291,
+    "f at 30 W [mm]": 194.9575122574194,
+    "Magni mode cap, 0\u201330 W window [\u00b5m]": 363.3966025260103,
+    "threshold at that mode [W]": 1.9061503436213547
+   }
+  }
+ },
+ "coupler": {
+  "table": {
+   "0.03": {
+    "threshold [W]": 0.3334283764974596,
+    "slope": 0.4792433320355213,
+    "output at 20 W [W]": 9.425073314562589,
+    "intracavity at 20 W [W]": 314.16911048541965
+   },
+   "0.05": {
+    "threshold [W]": 0.4922037938772023,
+    "slope": 0.5410811813304273,
+    "output at 20 W [W]": 10.55530141636215,
+    "intracavity at 20 W [W]": 211.106028327243
+   },
+   "0.08": {
+    "threshold [W]": 0.7303669199468164,
+    "slope": 0.5834266650867216,
+    "output at 20 W [W]": 11.2424177653402,
+    "intracavity at 20 W [W]": 140.5302220667525
+   },
+   "0.1": {
+    "threshold [W]": 0.889142337326559,
+    "slope": 0.5990541650444017,
+    "output at 20 W [W]": 11.448438880395244,
+    "intracavity at 20 W [W]": 114.48438880395244
+   },
+   "0.15": {
+    "threshold [W]": 1.2860808807759159,
+    "slope": 0.6212413563423423,
+    "output at 20 W [W]": 11.625860496107663,
+    "intracavity at 20 W [W]": 77.50573664071776
+   },
+   "0.2": {
+    "threshold [W]": 1.6830194242252727,
+    "slope": 0.6329628913676696,
+    "output at 20 W [W]": 11.593968986367813,
+    "intracavity at 20 W [W]": 57.96984493183906
+   }
+  },
+  "optimum": {
+   "T_opt": 0.1617328881469115,
+   "P_out": 11.630493848575155,
+   "T_opt_rigrod": 0.16187173474123454,
+   "g0": 2.519281678493852,
+   "pump_W": 20.0
+  },
+  "chosen_T": 0.1
+ },
+ "thermal_lens": {
+  "5": {
+   "heat [W]": 1.4725265416668987,
+   "f, dn/dT only [mm]": 654.7667379425992,
+   "f with stress and bulge [mm]": 545.6389482854994,
+   "dioptres": 1.8327137443948764,
+   "\u0394T centre\u2013barrel [K]": 3.217248851414786
+  },
+  "10": {
+   "heat [W]": 2.9450530833337973,
+   "f, dn/dT only [mm]": 327.3833689712996,
+   "f with stress and bulge [mm]": 272.8194741427497,
+   "dioptres": 3.665427488789753,
+   "\u0394T centre\u2013barrel [K]": 6.434497702829572
+  },
+  "15": {
+   "heat [W]": 4.4175796250006965,
+   "f, dn/dT only [mm]": 218.25557931419974,
+   "f with stress and bulge [mm]": 181.87964942849976,
+   "dioptres": 5.49814123318463,
+   "\u0394T centre\u2013barrel [K]": 9.651746554244358
+  },
+  "20": {
+   "heat [W]": 5.890106166667595,
+   "f, dn/dT only [mm]": 163.6916844856498,
+   "f with stress and bulge [mm]": 136.40973707137485,
+   "dioptres": 7.330854977579506,
+   "\u0394T centre\u2013barrel [K]": 12.868995405659144
+  },
+  "25": {
+   "heat [W]": 7.362632708334493,
+   "f, dn/dT only [mm]": 130.95334758851988,
+   "f with stress and bulge [mm]": 109.12778965709991,
+   "dioptres": 9.16356872197438,
+   "\u0394T centre\u2013barrel [K]": 16.08624425707393
+  },
+  "30": {
+   "heat [W]": 8.835159250001393,
+   "f, dn/dT only [mm]": 109.12778965709987,
+   "f with stress and bulge [mm]": 90.93982471424988,
+   "dioptres": 10.99628246636926,
+   "\u0394T centre\u2013barrel [K]": 19.303493108488716
+  }
+ },
+ "revisions": {
+  "A": {
+   "title": "textbook plano\u2013concave: separate dichroic HR, L 150 mm, R_oc 500 mm",
+   "length [mm]": 150.0,
+   "T": 0.1,
+   "stable": false,
+   "mode in rod [\u00b5m]": NaN,
+   "pump radius [\u00b5m]": 415.1353227600802,
+   "mode / pump": NaN,
+   "pump inside the mode": NaN,
+   "astigmatism w_t/w_s": NaN,
+   "spot on OC [\u00b5m]": NaN,
+   "threshold [W]": NaN,
+   "slope": NaN,
+   "output [W]": 0.0,
+   "thermal lens f [mm]": 136.40973707137485,
+   "stable from 0 W": true,
+   "window from [W]": NaN,
+   "window to [W]": NaN,
+   "FSR [MHz]": 947.8312598690667,
+   "linewidth [MHz]": 17.86855908852492,
+   "modes under the gain line": 126.60481362112576,
+   "beam out w0 [\u00b5m]": NaN,
+   "beam out divergence [mrad]": NaN,
+   "windows": [
+    [
+     0.0,
+     19.5
+    ]
+   ]
+  },
+  "B": {
+   "title": "compact zone I: HR on the rod's face, L 80 mm, R_oc 500 mm",
+   "length [mm]": 80.0,
+   "T": 0.1,
+   "stable": true,
+   "mode in rod [\u00b5m]": 209.36977913951276,
+   "pump radius [\u00b5m]": 415.1353227600802,
+   "mode / pump": 0.5043410369117497,
+   "pump inside the mode": 0.25435988151321887,
+   "astigmatism w_t/w_s": 1.0,
+   "spot on OC [\u00b5m]": 154.1242708966191,
+   "threshold [W]": 0.8289626789185012,
+   "slope": 0.5937528007519733,
+   "output [W]": 11.382857102712748,
+   "thermal lens f [mm]": 136.40973707137485,
+   "stable from 0 W": true,
+   "window from [W]": 0.0,
+   "window to [W]": 36.5,
+   "FSR [MHz]": 1700.534569173358,
+   "linewidth [MHz]": 32.05855695828279,
+   "modes under the gain line": 70.56604562783623,
+   "beam out w0 [\u00b5m]": 153.66700007284967,
+   "beam out divergence [mrad]": 2.2039977271567275,
+   "windows": [
+    [
+     0.0,
+     36.75
+    ]
+   ]
+  },
+  "C": {
+   "title": "folded: HR on the rod, arm 150 mm, concave fold R 150 mm at 10\u00b0, arm 90 mm, flat OC",
+   "length [mm]": 240.0,
+   "T": 0.1,
+   "stable": true,
+   "mode in rod [\u00b5m]": 197.20270786694093,
+   "pump radius [\u00b5m]": 415.1353227600802,
+   "mode / pump": 0.4750323498270721,
+   "pump inside the mode": 0.2256557333822298,
+   "astigmatism w_t/w_s": 0.9955400391019592,
+   "spot on OC [\u00b5m]": 161.45388409592908,
+   "threshold [W]": 0.8099931089558258,
+   "slope": 0.5937528007519733,
+   "output [W]": 11.394120338007147,
+   "thermal lens f [mm]": 136.40973707137485,
+   "stable from 0 W": true,
+   "window from [W]": 0.0,
+   "window to [W]": 38.5,
+   "FSR [MHz]": 604.063358478595,
+   "linewidth [MHz]": 11.48406088234523,
+   "modes under the gain line": 198.65465818392659,
+   "beam out w0 [\u00b5m]": 161.45388409592908,
+   "beam out divergence [mrad]": 2.0976994192243956,
+   "windows": [
+    [
+     0.0,
+     38.75
+    ]
+   ]
+  },
+  "D": {
+   "title": "zone II, high power: HR on the rod, L 220 mm, R_oc 150 mm (L > R_oc)",
+   "length [mm]": 220.0,
+   "T": 0.1,
+   "stable": true,
+   "mode in rod [\u00b5m]": 269.3904393265928,
+   "pump radius [\u00b5m]": 415.1353227600802,
+   "mode / pump": 0.648921988944511,
+   "pump inside the mode": 0.4210997477357001,
+   "astigmatism w_t/w_s": 1.0,
+   "spot on OC [\u00b5m]": 309.31648089937306,
+   "threshold [W]": 0.9391552386642377,
+   "slope": 0.5937528007519733,
+   "output [W]": 11.317429961741688,
+   "thermal lens f [mm]": 136.40973707137485,
+   "stable from 0 W": false,
+   "window from [W]": 13.0,
+   "window to [W]": 42.0,
+   "FSR [MHz]": 657.017339121918,
+   "linewidth [MHz]": 12.386121500051773,
+   "modes under the gain line": 182.6435816144153,
+   "beam out w0 [\u00b5m]": 214.7632044585464,
+   "beam out divergence [mrad]": 1.5770006773433376,
+   "windows": [
+    [
+     12.75,
+     42.25
+    ]
+   ]
+  }
+ },
+ "laser": {
+  "threshold_W": 0.9391552386642377,
+  "slope_efficiency": 0.5937528007519733,
+  "output_W": 11.317429961741688,
+  "intracavity_W": 113.17429961741688,
+  "small_signal_gain": 2.4064179242767185,
+  "w_rod": 0.0002693904393265928,
+  "w_rod_t": 0.0002693904393265928,
+  "w_rod_s": 0.0002693904393265928,
+  "f_thermal": 0.13640973707137485,
+  "T": 0.1,
+  "loss": 0.013000000000000001,
+  "heat_W": 5.890106166667595,
+  "rod_dT_centre_to_barrel": 12.868995405659144
+ },
+ "power_curves": {
+  "A": {
+   "lases from [W]": 1.0,
+   "output at 20 W [W]": 0.0,
+   "output at 30 W [W]": 0.0,
+   "mode at 20 W [\u00b5m]": NaN,
+   "mode at 30 W [\u00b5m]": NaN
+  },
+  "B": {
+   "lases from [W]": 1.0,
+   "output at 20 W [W]": 11.382857102712748,
+   "output at 30 W [W]": 17.286925248212075,
+   "mode at 20 W [\u00b5m]": 209.36977913951276,
+   "mode at 30 W [\u00b5m]": 241.93227721128594
+  },
+  "C": {
+   "lases from [W]": 1.0,
+   "output at 20 W [W]": 11.394120338007147,
+   "output at 30 W [W]": 17.311010027071156,
+   "mode at 20 W [\u00b5m]": 197.20270786694093,
+   "mode at 30 W [\u00b5m]": 218.98225315173465
+  },
+  "D": {
+   "lases from [W]": 13.0,
+   "output at 20 W [W]": 11.317429961741688,
+   "output at 30 W [W]": 17.2769811889097,
+   "mode at 20 W [\u00b5m]": 269.3904393265928,
+   "mode at 30 W [\u00b5m]": 250.79601875233715
+  }
+ },
+ "spectrum": {
+  "optical_length": 0.2281465344587882,
+  "round_trip_length": 0.4562930689175764,
+  "fsr": 657017339.121918,
+  "round_trip_time": 1.522029846786794e-09,
+  "survival": 0.8883108,
+  "loss_round_trip": 0.11168920000000004,
+  "photon_lifetime": 1.2851335114701583e-08,
+  "finesse": 53.044638640043345,
+  "linewidth": 12386121.500051774,
+  "Q": 22751351.06279975,
+  "longitudinal_modes_per_nm": 403.0515688754101,
+  "gouy_round_trip": 4.181591814555171,
+  "transverse_mode_spacing": 437258841.332229
+ },
+ "beam_out": {
+  "wavelength": 1.064e-06,
+  "w0": 0.0002147632044585464,
+  "z0": 0.13701887841610363,
+  "m2": 1.0,
+  "n": 1.0,
+  "name": "Svarog D",
+  "rayleigh_range": 0.1361845987411641,
+  "divergence": 0.0015770006773433375
+ },
+ "delivery": {
+  "f_collimator": 0.6341151366432067,
+  "collimator_at": 0.7711340150593103,
+  "w_collimated": 0.0010133524520213638,
+  "work_spot": 1.6663638374416926e-05,
+  "work_distance": 0.04985168859459188,
+  "depth_of_focus": 0.0016397510014745976
+ }
+}

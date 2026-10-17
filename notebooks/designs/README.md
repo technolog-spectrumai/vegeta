@@ -296,3 +296,13 @@ panels, each at its dihedral, height and rotor — the model flies any arrangeme
 `kestrel_xwing.py` (notebook 41: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
 `drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
 `cruise`).
+
+`svarog.py` (notebook 46, branch `dev_svarog`) is **Svarog**, the CW diode-end-pumped Nd:YAG laser on Hyperion
+(`import svarog as sv`): `ROD` (Ø3 × 10 mm, 1 at.%), `Pump` and `pump_train` / `pump_in_rod` (the fibre's beam imaged onto
+the rod's face, its radius inside the rod and the absorption-weighted effective radius), `REVISIONS` (A plano–concave with
+a separate dichroic HR, B the HR on the rod's face with a short concave coupler, C folded with a concave fold at an angle)
+built around the thermal lens at the absorption centroid (`cavity`), `operating_point` / `power_curve` (the laser with the
+mode its cavity really has at each pump power), `stability_sweep` / `stability_window`, `compare`, `output_beam` (through
+the coupler's substrate), `delivery_train` (collimator, stand-off, focusing lens, the work spot), `design_record`.
+`svarog_drawings.py` draws the cavity with its mode envelope, a beam train, the stability window, the power curves and the
+pump inside the rod.
