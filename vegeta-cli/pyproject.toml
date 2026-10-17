@@ -18,6 +18,7 @@ viz = ["pyvista>=0.44", "trame", "trame-vtk", "trame-vuetify", "ipywidgets", "op
 test = ["pytest"]
 sim = ["mujoco>=3.1", "scipy"]
 sections = ["neuralfoil"]
+fenics = ["fenics-dolfinx", "pyvista", "mpi4py", "petsc4py"]   # conda-forge installs these; pip cannot on most machines (docs/fenics.md)
 
 [project.scripts]
 vegeta = "vegeta.cli:main"
