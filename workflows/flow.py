@@ -100,6 +100,12 @@ flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one n
               gives=[File(f"{DATA}/reports/43_kestrel_study.json")],
               screening_env="KESTREL_SCREENING")
 
+flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cantilever panels, no bracing, against Kestrel-4Q",
+              needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
+              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE,
+                     Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
+              gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

@@ -173,6 +173,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] Y.4 Stamp the committed exports by running 38 (with OpenFOAM) and 43 through their gates on a solver machine
 - [x] Y.5 Rolled out to the other 38 notebooks: a contract each in `flow.py` (needs = the vegeta packages imported; gives = the files under `designs/data/`; takes = 25→25b/25c, 26→26b/27/29, 28_microjet→29, all optional), the entry gate after the imports, `GATE.leave()` last
 - [ ] Y.5b Tools as needs of the notebooks (ccx, OpenFOAM) once their CFD/FEA cells honour a missing solver the same way (today only DEBUG / `VEGETA_SKIP_OPENFOAM` do); pins for them after M.2
+- [x] Y.8 Kestrel-X (`45_kestrel_x`): the X-wing as its own study, compared with Kestrel-4Q from notebook 43's report; a loud warning and Kestrel-X alone when the report is missing
+- [ ] Y.9 Kestrel-X workflows: `kestrel_xwing` has no CAD yet (lattice, beams, the transition model only), so there is nothing to mesh. First a Dedalus model of the X (pod + four panels at ±45°, nacelles), then a book `kestrel-x` (code X) in `flow.py` with `airframe-sweep` (CFD, rotor disks as for K1) and `panels` (FEA: a cantilever panel with its tip motor), reusing `airframe_cfd.py` / `structure_fea.py` through a variant key
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
 

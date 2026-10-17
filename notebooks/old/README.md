@@ -19,7 +19,7 @@ cd notebooks && ../.venv/bin/jupyter nbconvert --to notebook --execute old/40_ke
 ```
 
 (or open it in JupyterLab started by `./jupyter.sh` and run it from there, with the working directory set to
-`notebooks/`). The X-wing comparison (41) and the back-transition remedies (42) are summarised in the new notebook's
+`notebooks/`). The X-wing study (41) lives on as **`45_kestrel_x`** (Kestrel-X, compared with notebook 43's Kestrel-4Q); the X-wing comparison (41) and the back-transition remedies (42) are summarised in the new notebook's
 § 9 and in `designs/kestrel3.md`; their full tables are in the dossier.
 
 ## The first "does it even work" notebooks (00–05)

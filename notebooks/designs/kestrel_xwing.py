@@ -333,3 +333,50 @@ def capsule_fit(L: dict, *, wall: float = 0.006) -> dict:
             "pod length [mm]": L["pod_length"] * 1000, "fits in line": needed <= L["pod_length"],
             "note": "the biplane stacks battery, capsule and electronics in its 274 mm of pod height; the X's pod must lay them end to end, "
                     "and the capsule's contents then sit far from the CG unless the battery slides to meet them"}
+
+
+# ================================================================================================= against the biplane (notebook 43)
+REPORT_43 = __import__("pathlib").Path(__file__).resolve().parent / "data" / "reports" / "43_kestrel_study.json"
+BANNER = "!" * 100
+
+
+def warn_missing(what: str, why: str, fix: str) -> None:
+    """A loud warning that does not stop the notebook: a banner on stdout and a ``UserWarning``."""
+    import warnings
+    print(f"\n{BANNER}\n!!  NOT FOUND: {what}\n!!  {why}\n!!  The comparison rows of Kestrel-4Q are left out; everything about Kestrel-X still runs.\n"
+          f"!!  To get them: {fix}\n{BANNER}\n")
+    warnings.warn(f"Kestrel-X: {what} not found — {why}", UserWarning, stacklevel=2)
+
+
+def _table(sec: dict) -> dict:
+    return {r["_index"]: {k: v for k, v in r.items() if k != "_index"} for r in sec.get("rows", [])}
+
+
+def biplane_reference(path=None) -> dict | None:
+    """Kestrel-4Q's numbers as notebook 43 exported them (``data/reports/43_kestrel_study.json``): per variant the mass,
+    Cd0, power and endurance, static margin, section, bracing and the transitions passed; for the main variant the
+    hover authority and the ground stance. ``None`` — with a loud warning — when the report is missing or unreadable:
+    the X-wing is then compared with nothing, never with invented numbers."""
+    import json
+    from pathlib import Path
+    p = Path(path) if path else REPORT_43
+    fix = "run notebook 43_kestrel_study (KESTREL_SCREENING=1 for a quick pass), then this notebook again"
+    if not p.exists():
+        warn_missing("Kestrel-4Q's design data (notebook 43's report)", f"{p} does not exist", fix)
+        return None
+    try:
+        doc = json.loads(p.read_text())
+        s = doc["sections"]
+        variants = _table(s["variants"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        warn_missing("Kestrel-4Q's design data (notebook 43's report)", f"{p} is unreadable ({type(exc).__name__}: {exc})", fix)
+        return None
+    trans = _table(s.get("transitions", {}))
+    for name, v in variants.items():
+        mine = [r for k, r in trans.items() if k.startswith(name + " ")]
+        v["transitions passed"] = f"{sum(bool(r.get('pass')) for r in mine)} of {len(mine)}" if mine else "—"
+    hover = _table(s.get("hover authority", {}))
+    pick = lambda key: next((r.get("angular acceleration [rad/s²]") for k, r in hover.items() if k.startswith(key)), None)
+    return {"source": f"{p.name} ({doc.get('exported', '?')})", "main": next((k for k in variants if k.endswith("4Q-2")), next(iter(variants), None)),
+            "variants": variants, "hover pitch [rad/s²]": pick("about y"), "hover heading [rad/s²]": pick("about the thrust axis"),
+            "ground": s.get("ground stance") or {}}
