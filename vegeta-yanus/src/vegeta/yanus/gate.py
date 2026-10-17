@@ -45,6 +45,11 @@ class Row:
                 "compatibility": self.compatibility, "usable": self.usable, "fix": self.fix}
 
 
+def strict_pins() -> bool:
+    """``YANUS_STRICT_PINS=1``: a notebook reads pinned runs only (an unpinned run take is NOT RUN / closes the gate)."""
+    return os.environ.get("YANUS_STRICT_PINS", "").strip().lower() in ("1", "true", "on", "yes")
+
+
 def runs_root(flow: Flow) -> Path:
     return Path(os.environ.get("VEGETA_WORKFLOW_RUNS") or Path(flow.root) / "workflows" / "runs")
 
@@ -225,8 +230,8 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
           deep: bool = True, raise_closed: bool = True, needs_required: bool = True, display: bool = False, debug: bool | None = None) -> Gate:
     """Check the unit's needs and takes (all of them), then open the gate or raise ``GateClosed``.
 
-    For a **notebook** each ``Run`` take reads the run **pinned** in ``notebooks/pins/<unit>.json`` (never one
-    picked by itself); for a **chapter** the newest usable run of each prerequisite chapter counts (the script's
+    For a **notebook** each ``Run`` take reads the run **pinned** in ``notebooks/pins/<unit>.json``; with no pin, the
+    newest usable run (finished, compatible), named as such in the table (``YANUS_STRICT_PINS=1``: pins only); for a **chapter** the newest usable run of each prerequisite chapter counts (the script's
     own check). ``fingerprints`` = ``{variant: fingerprint}`` already built (else the book builds them, only when
     ``deep``). ``screening`` (default: the notebook's ``screening_env`` = 1) makes every take optional. ``debug``
     (default: ``VEGETA_DEBUG`` on, as ``vegeta.mock`` reads it) = the numbers are mocked: inputs made in DEBUG are
@@ -250,6 +255,7 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
     for t in u.takes:
         role = "required" if (t.required and not screening) else "optional"
         if isinstance(t, Run):
+            auto = ""
             ch = flow.run_take_chapter(t, u)
             v = t.variant or variant
             key = t.key() if "/" in t.chapter else f"{ch.ref}" + (f"@{v}" if v else "")
@@ -258,21 +264,28 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
             if isinstance(u, Notebook):
                 val = pins.get(key)
                 if val is None:
-                    row.status = "not pinned" if key not in pins else "pinned to nothing"
                     cand = candidates(flow, ch, v, states=t.states, expected=expected, deep=deep)
-                    if cand:
-                        row.fix = f"yn pin {u.name} {ch.code}" + (f" --variant {v}" if v else "") + f" {_rel(flow, cand[0].root)}"
-                        row.status += f" — {len(cand)} usable run(s) on disk, newest {cand[0].run_id}"
-                    g.inputs[key] = None
-                    g.rows.append(row)
-                    continue
-                path = _pins.resolve(root, val)
-                row.selection = val
-                rv = read_run(path)
-                if rv.problem.startswith("not found"):
-                    for imp in flow.imports.values():
-                        if imp.marker and imp.marker in path.name:
-                            row.fix = f"wf {imp.name}   ({imp.title})"
+                    if cand and not strict_pins():
+                        rv = cand[0]                               # no pin: the newest usable run, said so in the table
+                        row.selection = _rel(flow, rv.root)
+                        auto = f"newest of {len(cand)} usable run(s), not pinned (yn pin to freeze it)"
+                    else:
+                        row.status = "not pinned" if key not in pins else "pinned to nothing"
+                        if cand:
+                            row.fix = f"yn pin {u.name} {ch.code}" + (f" --variant {v}" if v else "") + f" {_rel(flow, cand[0].root)}"
+                            row.status += f" — {len(cand)} usable run(s) on disk, newest {cand[0].run_id} (YANUS_STRICT_PINS=1: pins only)"
+                        g.inputs[key] = None
+                        g.selections[key] = None
+                        g.rows.append(row)
+                        continue
+                else:
+                    path = _pins.resolve(root, val)
+                    row.selection = val
+                    rv = read_run(path)
+                    if rv.problem.startswith("not found"):
+                        for imp in flow.imports.values():
+                            if imp.marker and imp.marker in path.name:
+                                row.fix = f"wf {imp.name}   ({imp.title})"
             else:
                 cand = candidates(flow, ch, v, states=t.states, expected=expected, deep=deep)
                 if not cand:
@@ -283,7 +296,7 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
                 rv = cand[0]
                 row.selection = _rel(flow, rv.root)
             ok, status, compat = judge_run(rv, ch, v, states=t.states, expected=expected, deep=deep)
-            row.usable, row.status, row.compatibility = ok, status, compat
+            row.usable, row.status, row.compatibility = ok, status + (f" — {auto}" if auto else ""), compat
             row.provenance = rv.provenance() if rv.manifest else ""
             g.inputs[key] = rv.summary if ok else None
             g.selections[key] = rv.root if ok else None

@@ -26,7 +26,8 @@ def test_pin_unpin_suggest(repo, capsys):
     assert cli.main(["pin", "20_study", "--suggest"]) == 0
     assert "yn pin 20_study D1 --variant A workflows/runs/demo/sweep/r1" in capsys.readouterr().out
     assert pins.read_pins(repo.root, "20_study") == {}                      # suggesting writes nothing
-    assert cli.main(["pin", "20_study", "D1", "--variant", "A", str(d)]) == 0
+    assert cli.main(["pin", "20_study", "D1", "--variant", "A", str(d)]) == 0     # the order the gate's fix prints
+    assert cli.main(["pin", "--variant", "A", "20_study", "D1", str(d)]) == 0
     assert pins.read_pins(repo.root, "20_study") == {"demo/sweep@A": "workflows/runs/demo/sweep/r1"}
     assert cli.main(["status", "20_study"]) == 0
     with pytest.raises(SystemExit, match="takes no demo/blown"):

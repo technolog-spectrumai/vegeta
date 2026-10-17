@@ -275,3 +275,17 @@ anything, instead of a design module failing halfway through or quietly falling 
 * **The registry** refuses a `Data` take of a file some unit gives: take the producer's `File` instead.
 * **Gives a run may skip:** 25, 25b and 25c write their map library only when it is missing or
   `AIR_PROP_MAPS=build`, so they give it with `optional=True`.
+
+## 15. The newest successful run, chosen by itself
+
+A notebook no longer stops on a run take that is not pinned while a usable run exists on disk.
+
+* **The rule:** with no pin, the gate takes the **newest usable run** of that chapter and variant, meaning completed,
+  with its `summary.json` and a fingerprint compatible with the current design (failed, running, partial and
+  incompatible runs are skipped). The table names the run and adds "newest of N usable run(s), not pinned (yn pin to
+  freeze it)". Nothing is hidden.
+* **A pin still wins.** Pin a run to freeze a study on it while newer runs arrive.
+* **`YANUS_STRICT_PINS=1`** restores the stricter rule: an unpinned take is NOT RUN, or closes the gate when it is
+  required, and the fix is the `yn pin` command.
+* **`yn pin 43 K11 --variant 4Q-2 <run dir>`** accepts `--variant` anywhere, including between the chapter and the run
+  directory. That is the order the gate prints, and the order that used to fail.

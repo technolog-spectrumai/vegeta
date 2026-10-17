@@ -102,18 +102,17 @@ def sections_status() -> dict:
 
 def runs_from_gate(gate) -> tuple[dict, set]:
     """The notebook's Yanus gate (``yanus.enter("43_kestrel_study")``: the runs pinned in
-    ``notebooks/pins/43_kestrel_study.json``) as the ``RUNS`` / ``REQUIRED`` pair ``prerequisites`` reads —
+    ``notebooks/pins/43_kestrel_study.json``, else the newest usable run it chose) as the ``RUNS`` / ``REQUIRED`` pair ``prerequisites`` reads —
     ``{"airframe_cfd": {variant: {campaign: run dir | None}}, "structure_fea": {variant: run dir | None}}`` and the
     required ``("airframe_cfd", variant, campaign)`` / ``("structure_fea", variant)``. Every run take of the
     contract appears (an unpinned one as ``None``: NOT RUN, or the error when it is required)."""
     from vegeta.yanus import Run
-    pins_ = __import__("vegeta.yanus.pins", fromlist=["read_pins"]).read_pins(gate.flow.root, gate.unit.name)
     runs, required = {"airframe_cfd": {}, "structure_fea": {}}, set()
     for t in gate.unit.takes:
         if not isinstance(t, Run):
             continue
         ch = gate.flow.chapter(t.chapter)
-        sel = pins_.get(t.key())
+        sel = gate.selections.get(t.key())                 # the pinned run, or the newest usable one the gate chose
         wf, v = ch.kind.workflow, t.variant
         if wf == "airframe_cfd":
             runs[wf].setdefault(v, {})[ch.campaign] = sel

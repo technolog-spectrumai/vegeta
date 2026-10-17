@@ -27,7 +27,21 @@ def test_closed_lists_everything(repo):
     assert roles["maker.json (10_maker)"] == ("optional", False)
 
 
-def test_pinned_run_opens_and_suggestion(repo):
+def test_unpinned_takes_the_newest_usable_run(repo, monkeypatch):
+    make_run(repo.root, "demo", "sweep", "r0", created="2026-10-17T09:00:00Z")
+    make_run(repo.root, "demo", "sweep", "r1", created="2026-10-17T10:00:00Z")
+    make_run(repo.root, "demo", "sweep", "r2", created="2026-10-17T11:00:00Z", state="failed")    # newest but unusable
+    g = yanus.enter("20_study")
+    row = next(r for r in g.rows if r.key == "demo/sweep@A")
+    assert row.usable and row.selection == "workflows/runs/demo/sweep/r1" and "not pinned" in row.status
+    assert g.selections["demo/sweep@A"].name == "r1"
+    monkeypatch.setenv("YANUS_STRICT_PINS", "1")
+    with pytest.raises(GateClosed, match="not pinned"):
+        yanus.enter("20_study")
+
+
+def test_pinned_run_opens_and_suggestion(repo, monkeypatch):
+    monkeypatch.setenv("YANUS_STRICT_PINS", "1")
     d = make_run(repo.root, "demo", "sweep", "r1")
     g = yanus.enter("20_study", raise_closed=False)
     row = next(r for r in g.rows if r.key == "demo/sweep@A")

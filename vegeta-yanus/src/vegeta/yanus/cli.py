@@ -142,6 +142,9 @@ def _run_key(flow, nb: Notebook, chapter: str, variant: str | None) -> str:
 
 
 def cmd_pin(a, flow) -> int:
+    if len(a.rest) > 2:
+        raise SystemExit("yn pin <notebook> <chapter> --variant V <run dir>")
+    a.chapter, a.path = (a.rest + [None, None])[:2]                 # --variant may come anywhere (argparse fills the rest after it)
     nb = flow.unit(a.unit)
     if not isinstance(nb, Notebook):
         raise SystemExit("pins are a notebook's choice of runs; a chapter takes the newest usable run of its prerequisites")
@@ -259,7 +262,7 @@ def parser(prog: str = "yn") -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("why", help="one unit's gate with every fix"); p.add_argument("unit"); p.add_argument("--variant"); p.add_argument("--deep", action="store_true")
     p = sub.add_parser("doctor", help="the needs of every unit on this machine"); p.add_argument("--json", action="store_true")
-    p = sub.add_parser("pin", help="the run a notebook reads"); p.add_argument("unit"); p.add_argument("chapter", nargs="?"); p.add_argument("path", nargs="?")
+    p = sub.add_parser("pin", help="the run a notebook reads"); p.add_argument("unit"); p.add_argument("rest", nargs="*", metavar="CHAPTER RUN_DIR")
     p.add_argument("--variant"); p.add_argument("--suggest", action="store_true"); p.add_argument("--deep", action="store_true")
     p = sub.add_parser("unpin", help="forget a pin"); p.add_argument("unit"); p.add_argument("chapter"); p.add_argument("--variant")
     p = sub.add_parser("check", help="registry, pins and stamps (CI)"); p.add_argument("--strict", action="store_true", help="a modified stamped file is an error")
@@ -271,7 +274,12 @@ def parser(prog: str = "yn") -> argparse.ArgumentParser:
 
 
 def main(argv=None, prog: str = "yn") -> int:
-    a = parser(prog).parse_args(sys.argv[1:] if argv is None else argv)
+    ap = parser(prog)
+    a, extra = ap.parse_known_args(sys.argv[1:] if argv is None else argv)
+    if extra and a.cmd == "pin" and not any(x.startswith("-") for x in extra):
+        a.rest += extra                                                 # yn pin 43 K1 --variant V <run>: the run dir after the option
+    elif extra:
+        ap.error("unrecognized arguments: " + " ".join(extra))
     if not a.cmd:
         parser(prog).print_help()
         return 0
