@@ -220,6 +220,8 @@ def cmd_status(args) -> int:
     d = _run_dir(args.run)
     m = runkit.read_json(d / "manifest.json") or {}
     st = runkit.read_json(d / "status.json") or {}
+    if st.get("batch"):
+        print(f"batch {st['batch']}: {st.get('state')} — {st.get('eta_text') or ''}" + (f" (finishing about {st['eta_at']})" if st.get("eta_at") else ""))
     chs = library.chapters(m.get("book")) if m.get("book") in BOOKS else {}
     code = chs.get(m.get("chapter"), {}).get("code", "?")
     print(f"run {d.name}\n  {code}  book {m.get('book')} · chapter {m.get('chapter', m.get('campaign'))} · config {m.get('config')}\n  created {m.get('created_at')} ({_age(m.get('created_at'))}) on {m.get('host')}\n  command {m.get('command')}")
@@ -319,7 +321,7 @@ def cmd_batch(args) -> int:
         sys.exit(f"{f}: {exc}")
     if args.detach and not args.dry_run:
         return _launch("workflows/cli.py", ["batch", str(f.resolve()), *(["--from", str(args.start)] if args.start > 1 else [])], detach=True, label=f"batch_{runkit.slug(b.name)}")
-    rep = _batch.run(b, source=f, dry_run=args.dry_run, start=args.start)
+    rep = _batch.run(b, source=f, dry_run=args.dry_run, start=args.start, progress=False if args.no_progress else None, count=not args.no_count)
     return rep["exit_code"]
 
 
@@ -429,7 +431,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("batch", help="run the chapters of a batch.yaml in order (the file: wf batch --example; the GUI writes one)"); p.add_argument("file", nargs="?")
     p.add_argument("--dry-run", action="store_true", help="print the commands only"); p.add_argument("--from", dest="start", type=int, default=1, metavar="N", help="start at step N")
     p.add_argument("--detach", action="store_true", help="run in the background (terminal output under workflows/runs/)"); p.add_argument("--example", action="store_true", help="print a template")
-    p.add_argument("--no-progress", action="store_true", help=argparse.SUPPRESS)        # the GUI adds it to every launch; the steps have no TTY anyway
+    p.add_argument("--no-progress", action="store_true", help="no progress bar (the GUI adds it; the estimate and the remaining time are still printed and in status.json)")
+    p.add_argument("--no-count", action="store_true", help="skip the chapters' --list before starting (the estimate then uses the last runs; a few seconds saved)")
     sub.add_parser("gui", help="the desktop interface (PyQt6): the tree, options, Run / Stop, the live log, the runs")
     sub.add_parser("cache", help="the cached cases per book")
     p = sub.add_parser("clean-cache", help="remove the cached cases (the runs keep their native results)"); p.add_argument("--book"); p.add_argument("-y", "--yes", action="store_true")

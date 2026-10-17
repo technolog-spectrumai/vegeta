@@ -596,8 +596,8 @@ class MainWindow(QMainWindow):
         state = st.get("state", "?")
         if planned:
             self.progress.setRange(0, planned)
-            self.progress.setValue(min(done, planned))
-            self.progress.setFormat(f"{done}/{planned} cases")
+            self.progress.setValue(int(min(done, planned)))
+            self.progress.setFormat(f"{done:g}/{planned} cases" + (f" · ~{st['eta_text'].rsplit('~', 1)[-1]}" if st.get("eta_text") and state == "running" else ""))
         else:
             self.progress.setRange(0, 0 if state == "running" else 1)
         hb = st.get("heartbeat") or {}
@@ -607,7 +607,8 @@ class MainWindow(QMainWindow):
         else:
             self.heartbeat_label.setText("")
         name = self.current_run.name if self.current_run else ""
-        self.status_label.setText(f"{name}: {state} — {done} of {planned} cases" + (f", {c.get('failed')} failed" if c.get("failed") else "") + (f", {c.get('reused')} reused" if c.get("reused") else ""))
+        eta = f" — about {st['eta_text'].split(', ', 1)[-1]}, finishing ~{st.get('eta_at', '')[-5:]}" if st.get("eta_text") and state == "running" else ""
+        self.status_label.setText(f"{name}: {state} — {done:g} of {planned} cases" + (f", {c.get('failed')} failed" if c.get("failed") else "") + (f", {c.get('reused')} reused" if c.get("reused") else "") + eta)
         self.stop_button.setEnabled(state == "running")
 
     def _on_run_finished(self, st: dict) -> None:

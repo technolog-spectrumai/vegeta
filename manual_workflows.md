@@ -89,7 +89,12 @@ fails that step, not the file). A failed step stops the batch unless `stop_on_fa
 (`step_NN_<code>.out`), `run.log` / `status.json` (the GUI follows it like a run) and **`batch.json`: every step, its
 state, exit code, run directory and summary file**. The last lines on the terminal repeat that table and the path of
 `batch.json`. Exit code 0 = every step completed, 3 = some did, 1 = none, 2 = the file is wrong (the message says
-which step). Results come back with `rsync -a cloud:vegeta/workflows/runs/ workflows/runs/` and the notebooks read
+which step). **Time and progress:** before it starts, the batch counts every step's cases and estimates the time
+(per case, from the finished runs of the same chapter on this machine, else a rule of thumb; `expected_minutes: 40`
+on a step overrides it) and prints the finishing time; while it runs, one progress bar spans every case of the batch
+with the remaining time re-estimated as the cases come in (the GUI's status bar and `wf status <batch folder>` show
+the same from its `status.json`); at the end it prints the time taken against the estimate. `--dry-run` shows the
+estimate without starting anything. Results come back with `rsync -a cloud:vegeta/workflows/runs/ workflows/runs/` and the notebooks read
 them as any other run (`yn pin`, or the newest usable run by itself).
 
 ## 3. Without a notebook: run a campaign and read the result
