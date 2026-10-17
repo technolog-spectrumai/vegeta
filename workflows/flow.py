@@ -75,6 +75,7 @@ kestrel.chapter("sections", kind="cfd", campaign="sections")                    
 kestrel.chapter("frame", kind="fea", campaign="frame")                                                   # K9
 kestrel.chapter("joint", kind="fea", campaign="joint", takes=[Run("frame")])                             # K10
 kestrel.chapter("frame-and-joint", kind="fea", campaign="all")                                           # K11
+kestrel.chapter("wing-interference", kind="cfd", campaign="interference")                                 # K12
 
 flow.add_import("import_legacy", title="import the first CFD campaign's results file into kestrel / airframe-sweep (once)",
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
@@ -98,6 +99,7 @@ flow.notebook("43_kestrel_study", title="Kestrel — the design study (the one n
                      Run("kestrel/airframe-sweep", variant="4Q-2", required=True),
                      Run("kestrel/airframe-sweep", variant="4Q-3"),
                      Run("kestrel/frame-and-joint", variant="4Q-2", required=True),
+                     Run("kestrel/wing-interference", variant="4Q-2"),
                      File(f"38_prop_lab:{DATA}/prop_lab.json", keys=("calibration",))],
               gives=[File(f"{DATA}/reports/43_kestrel_study.json")],
               screening_env="KESTREL_SCREENING", auto=True)                       # yanus_auto: runs K1 / K11 in screening quality when they are missing

@@ -91,6 +91,75 @@ def aero(p=None, *, n_span=20, n_chord=4) -> dict:
     return out
 
 
+def prandtl_sigma(gap_over_span: float) -> float:
+    """Prandtl's biplane interference factor σ for equal spans, fitted to his curve: σ ≈ (1 − 0.66 g/b) / (1.05 + 3.7 g/b).
+    The pair's induced drag over the equal-span monoplane's carrying the same lift is (1 + σ) / 2."""
+    gb = float(gap_over_span)
+    return (1 - 0.66 * gb) / (1.05 + 3.7 * gb)
+
+
+GAP_SWEEP = (0.10, 0.15, 0.20, 0.25, 0.30, 0.40)        # gap / span: Kestrel sits near 0.25–0.28
+
+
+def interference(p=None, *, gaps=GAP_SWEEP, n_span=16, n_chord=3) -> dict:
+    """The **measure of the wing interference** of the biplane, analytic (seconds): for the design's gap and for a
+    sweep of gap / span, the lattice's lift slope of the pair against one wing alone (the same per-area slope would
+    be 1: the shortfall is what the wings take from each other), its induced-drag factor against the equal-span,
+    equal-area monoplane (Munk: a biplane of the same span and lift has **less** induced drag than that monoplane
+    only through its higher per-wing aspect ratio; against the same span it has more, by (1 + σ) / 2), and Prandtl's
+    σ beside it. Returns ``{"design": {...}, "sweep": DataFrame, "equivalents": DataFrame, "notes": [...]}``.
+
+    Definitions (all coefficients per unit area of the planform they belong to):
+    - **lift interference factor** = CLα(pair, on 2 S_wing) / CLα(one wing alone, on S_wing)  — 1.0 = no interference;
+    - **induced drag vs the monoplane of the same span and area** = k(pair) / k(monoplane, chord 2c, on 2 S_wing);
+    - **Prandtl σ** and (1 + σ) / 2 = the pair's induced drag over the equal-span monoplane **of the same lift** (span loading);
+    - **monoplane equivalents**: the span a single wing of the same area would need for the pair's induced drag, and the
+      area it would need at the same span for the pair's lift slope × area (lift at a given α and speed)."""
+    import pandas as pd
+    base = kestrel.resolve(kestrel.overrides(p))
+    L0 = kestrel.layout(base)
+    rows = []
+    gbs = sorted(set(list(gaps) + [round(L0["gap"] / L0["span"], 4)]))
+    design_gb = L0["gap"] / L0["span"]
+    for gb in gbs:
+        q = kestrel.resolve(dict(kestrel.overrides(p), gap=gb * L0["span"] * 1000.0))
+        a = aero(q, n_span=n_span, n_chord=n_chord)
+        bi, one, mono = a["biplane"], a["one wing alone"], a["monoplane, same span and area"]
+        sig = prandtl_sigma(gb)
+        rows.append({"gap / span": gb, "gap / chord": gb * L0["span"] / L0["chord"], "design": abs(gb - design_gb) < 1e-6,
+                     "CLα pair [1/rad]": bi["CLa"], "CLα one wing [1/rad]": one["CLa"], "CLα monoplane 2c [1/rad]": mono["CLa"],
+                     "lift interference factor": bi["CLa"] / one["CLa"], "e pair (on the span)": bi["e"], "e monoplane 2c": mono["e"],
+                     "k pair": bi["k"], "k one wing": one["k"], "k monoplane 2c": mono["k"],
+                     "k pair / k monoplane 2c (lattice)": bi["k"] / mono["k"], "Prandtl σ": sig, "(1+σ)/2, same span and lift": (1 + sig) / 2,
+                     "pair lift / one wing's lift, same α": bi["CLa"] * bi["S"] / (one["CLa"] * one["S"]), "upper wing share": bi["upper share"]})
+    sweep = pd.DataFrame(rows).set_index("gap / span")
+    d = sweep[sweep["design"]].iloc[0]
+    # the monoplane equivalents of the design's pair
+    S2, b = L0["S_ref"], L0["span"]
+    k_pair, k_one, k_mono = float(d["k pair"]), float(d["k one wing"]), float(d["k monoplane 2c"])     # on each planform's own area
+    e_mono = d["e monoplane 2c"]
+    b_eq_drag = math.sqrt(S2 / (math.pi * e_mono * k_pair))                      # the single wing's span for the pair's k at the same area
+    cla_one = d["CLα one wing [1/rad]"]
+    S_eq_lift = d["CLα pair [1/rad]"] * S2 / cla_one                              # the single wing's area (at the design's chord → span) for the pair's lift
+    equivalents = pd.DataFrame({
+        "the pair as built": {"span [m]": b, "area [m²]": S2, "AR (per wing)": L0["span"] / L0["chord"], "CLα [1/rad]": d["CLα pair [1/rad]"], "k = CDi/CL²": k_pair, "e (on the span)": d["e pair (on the span)"]},
+        "monoplane, same span and area (chord 2c)": {"span [m]": b, "area [m²]": S2, "AR (per wing)": b ** 2 / S2, "CLα [1/rad]": d["CLα monoplane 2c [1/rad]"], "k = CDi/CL²": k_mono, "e (on the span)": e_mono},
+        "monoplane, same span and chord (one wing)": {"span [m]": b, "area [m²]": S2 / 2, "AR (per wing)": L0["span"] / L0["chord"], "CLα [1/rad]": cla_one, "k = CDi/CL²": k_one, "e (on the span)": 1 / (math.pi * (b ** 2 / (S2 / 2)) * k_one)},
+        "monoplane with the pair's induced drag, same area": {"span [m]": b_eq_drag, "area [m²]": S2, "AR (per wing)": b_eq_drag ** 2 / S2, "CLα [1/rad]": float("nan"), "k = CDi/CL²": k_pair, "e (on the span)": e_mono},
+        "monoplane with the pair's lift at a given α, same chord": {"span [m]": S_eq_lift / L0["chord"], "area [m²]": S_eq_lift, "AR (per wing)": S_eq_lift / L0["chord"] ** 2, "CLα [1/rad]": cla_one, "k = CDi/CL²": float("nan"), "e (on the span)": float("nan")},
+    }).T
+    design = {"gap / span": design_gb, "gap / chord": L0["gap_chord"], "lift interference factor": float(d["lift interference factor"]),
+              "lift lost to interference [%]": 100 * (1 - float(d["lift interference factor"])), "Prandtl σ": float(d["Prandtl σ"]),
+              "induced drag vs equal-span monoplane of the same lift, Prandtl": float(d["(1+σ)/2, same span and lift"]),
+              "induced drag vs monoplane of the same span and area, lattice": float(d["k pair / k monoplane 2c (lattice)"]),
+              "span a monoplane of the same area needs for the pair's induced drag [m]": b_eq_drag,
+              "area a monoplane of the same chord needs for the pair's lift [m²]": S_eq_lift, "upper wing share of the lift": float(d["upper wing share"])}
+    notes = ["lattice: inviscid, attached flow, small angles (the lift interference factor is a slope ratio at 0–4°); Prandtl's σ: the classical fit for equal spans, no stagger, no decalage",
+             "per-area coefficients: a factor of 1 means the two wings lift as if alone; the equal-span monoplane of the same area has half the aspect ratio, which is why the biplane beats it on induced drag while losing to it on lift slope per area",
+             "the CFD chapter K12 (wing-interference) measures the same three planforms with RANS at 0, 4, 8°: its factors replace these when its run is on file"]
+    return {"design": design, "sweep": sweep, "equivalents": equivalents, "notes": notes}
+
+
 def prop_cn_alpha(thrust_each: float, V: float, p=None, rho: float = RHO, *, calibrated: bool = True) -> float:
     """One propeller's normal-force slope dC_N/dα [1/rad] on q·A (free-stream q, disk area A) in De Young's
     blade-element form: 4.25 σₑ / (1 + 2 σₑ) · sin(β₀.₇₅ + 8°) · f(T_c), f = 1 + ½ (√(1 + 8 T_c / π) − 1), with the

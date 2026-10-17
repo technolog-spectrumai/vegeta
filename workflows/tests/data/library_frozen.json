@@ -1,11 +1,11 @@
 {
  "KINDS": {
   "cfd": {
-   "title": "CFD \u2014 the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)",
+   "title": "CFD — the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)",
    "script": "workflows/kestrel/airframe_cfd.py",
    "workflow": "airframe_cfd",
    "needs": "OpenFOAM (openfoam.com or .org); 4 cores recommended",
-   "time": "screening case 10\u201320 min, fine case ~1 h",
+   "time": "screening case 10–20 min, fine case ~1 h",
    "options": [
     [
      "--variant",
@@ -32,7 +32,7 @@
    ]
   },
   "fea": {
-   "title": "FEA \u2014 the carbon frame and the printed spar\u2013post joint (Talos: Gmsh + CalculiX)",
+   "title": "FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)",
    "script": "workflows/kestrel/structure_fea.py",
    "workflow": "structure_fea",
    "needs": "CalculiX ccx on the PATH, Gmsh (python module)",
@@ -58,7 +58,7 @@
  "BOOKS": {
   "kestrel": {
    "code": "K",
-   "title": "Kestrel-4Q \u2014 the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
+   "title": "Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
    "design": "notebooks/designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
    "variants": [
     "4Q-1",
@@ -127,6 +127,11 @@
     "frame-and-joint": {
      "kind": "fea",
      "campaign": "all",
+     "prerequisites": []
+    },
+    "wing-interference": {
+     "kind": "cfd",
+     "campaign": "interference",
      "prerequisites": []
     }
    }
@@ -245,6 +250,15 @@
    "prerequisites": [],
    "script": "workflows/kestrel/structure_fea.py",
    "workflow": "structure_fea"
+  },
+  "wing-interference": {
+   "code": "K12",
+   "n": 12,
+   "kind": "cfd",
+   "campaign": "interference",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
   }
  }
 }

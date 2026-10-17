@@ -48,7 +48,8 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
 │   ├── K5   airframe-blown         cruise + transitions                                          [after K1]
 │   ├── K6   airframe-sweep-fine    13 angles, 8–16° resolved
 │   ├── K7   airframe-all           sweep + blown
-│   └── K8   sections               the two finalist sections as slabs
+│   ├── K8   sections               the two finalist sections as slabs
+│   └── K12  wing-interference      one wing / the pair / the equal monoplane at 0, 4, 8°: the interference measured
 └── FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]

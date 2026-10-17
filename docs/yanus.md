@@ -1,7 +1,7 @@
 # Yanus — the door keeper (design, v0 — for review)
 
 > Status: **v1 implemented** on `dev_yanus` (plan: `docs/yanus_plan.md`; package: `vegeta-yanus/README.md`).
-> Kestrel first (K1–K11, notebooks 38, 43, 44), then every notebook in `notebooks/` (§ 13). See § 12 for where the implementation differs from this design.
+> Kestrel first (K1–K12, notebooks 38, 43, 44), then every notebook in `notebooks/` (§ 13). See § 12 for where the implementation differs from this design.
 
 Yanus guards the doors between Vegeta's notebooks and workflows. Like Janus it has two faces: one looks at what
 comes **in** (tools on the machine, prerequisite runs, imported files), one at what goes **out** (the files a

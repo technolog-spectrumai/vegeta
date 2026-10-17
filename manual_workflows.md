@@ -145,6 +145,7 @@ What the campaigns are:
 | K9 | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
 | K10 | `joint` | 1 | the printed spar–post joint (after K9) | minutes |
 | K11 | `frame-and-joint` | 5 | both | under an hour |
+| K12 | `wing-interference` | 9 bare (one wing, the pair, the equal-area monoplane at 0/4/8°) | the wing interference measured: the lift lost between the wings, the induced drag against a monoplane | an afternoon (screening) |
 
 Useful options: `--cases "α 12°"` runs only matching cases; `--max-cases 2` / `--max-minutes 90` bound a run (it ends
 `partial`, resumable); `--prepare-only` writes the cases without solving (to inspect a mesh setup); `--quiet` keeps

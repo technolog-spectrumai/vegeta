@@ -145,6 +145,8 @@ CFD_CAMPAIGNS = {
     "blown": "cruise + transitions: every rotor-disk case",
     "all": "sweep + blown",
     "sections": "the two finalist sections (NACA 0012, NACA 23112 k₂/k₁ 0.03) as extruded slabs at 0, 4, 8, 12° (Zephyr on file)",
+    "interference": f"the wing interference measured: one wing alone, the wing pair and the equal-span equal-area monoplane (chord 2c), bare, at "
+                    f"{', '.join(f'{a:g}' for a in kcfd.INTERFERENCE_ALPHAS)}° and {kcfd.SWEEP_V:g} m/s — the lift lost between the wings and the induced drag against the monoplane",
 }
 
 
@@ -158,6 +160,8 @@ def cfd_specs(variant: str, campaign: str, *, veh: kt.Vehicle | None = None) -> 
         import kestrel_section as ksec
         return {k: dict(v, props=False, slab=True, source="section", alpha_deg=v["alpha_deg"], V=v["V"], T_up=0.0, T_lo=0.0)
                 for k, v in ksec.cfd_specs([("NACA 0012", None), ("NACA 23112", 0.03)]).items()}
+    if campaign == "interference":
+        return {k: dict(v, props=False) for k, v in kcfd.interference_specs().items()}
     veh = veh or vehicle(variant)
     out = {}
     if campaign in ("sweep", "all"):
@@ -180,6 +184,8 @@ def cfd_case(name: str, spec: dict, workdir, *, variant: str, quality: str, veh:
     """The prepared-not-run Aeromant case of one spec in ``workdir`` (``kestrel_cfd.case`` / ``section_case``)."""
     if spec.get("slab"):
         return kcfd.section_case(workdir, spec, quality=quality, env=env)
+    if spec.get("planform"):
+        return kcfd.interference_case(workdir, spec, x_cg_m=veh.x_cg, quality=quality, env=env, p=params(variant))
     pt = {k: v for k, v in spec.items() if k not in ("props", "slab")}
     return kcfd.case(workdir, pt, x_cg_m=veh.x_cg, z_cg_m=veh.z_cg, quality=quality, props=bool(spec["props"]), env=env, p=params(variant))
 
@@ -222,17 +228,18 @@ def cfd_summary(*, variant: str, campaign: str, quality: str, specs: dict, recor
         row = {"status": r.status if r is not None else "NOT RUN", "process": r.process if r is not None else None, "converged": m.get("converged"),
                "iterations": m.get("iterations"), "cells": m.get("cells"), "alpha_deg": float(spec["alpha_deg"]), "V_m_s": float(max(spec["V"], 1.0)),
                "T_up_N": float(spec.get("T_up", 0.0)), "T_lo_N": float(spec.get("T_lo", 0.0)), "rotor_disks": bool(spec.get("props")), "slab": bool(spec.get("slab")),
+               "planform": spec.get("planform"),
                "source": spec.get("source", ""), "CL": m.get("CL"), "CD": m.get("CD"), "Cm": m.get("Cm (CG, chord)", m.get("Cm (c/4, chord)")),
                "Cd_scatter_last50": m.get("Cd scatter (last 50)"), "note": r.note if r is not None else "", "duration_s": r.duration_s if r is not None else None,
                "dir": (r.artifacts.get("case") if r is not None else None)}
         rows[name] = row
-        if row["status"] == "solved" and not spec.get("slab") and row["CL"] is not None:
+        if row["status"] == "solved" and not spec.get("slab") and not spec.get("planform") and row["CL"] is not None:
             recs.append({"case": name, "alpha_deg": row["alpha_deg"], "V": row["V_m_s"], "T_up": row["T_up_N"], "T_lo": row["T_lo_N"], "rotor_disks": row["rotor_disks"],
                          "source": row["source"], "CL": float(row["CL"]), "CD": float(row["CD"]), "Cm": float(row["Cm"]), "converged": row["converged"], "iterations": row["iterations"]})
     df = pd.DataFrame(rows).T if rows else pd.DataFrame()
     maps = {}
     if len(df):
-        bare = df[(df["status"] == "solved") & (~df["rotor_disks"].astype(bool)) & (~df["slab"].astype(bool))]
+        bare = df[(df["status"] == "solved") & (~df["rotor_disks"].astype(bool)) & (~df["slab"].astype(bool)) & (df["planform"].isna())]
         blown = df[(df["status"] == "solved") & (df["rotor_disks"].astype(bool))]
         for key, sub in (("bare_sweep", bare), ("blown_points", blown)):
             if len(sub):
@@ -252,8 +259,9 @@ def cfd_summary(*, variant: str, campaign: str, quality: str, specs: dict, recor
     counts["n"] = int(len(df))
     counts["solved with rotor disks"] = int(((df["status"] == "solved") & df["rotor_disks"].astype(bool)).sum()) if len(df) else 0
     counts["converged"] = int(df["converged"].fillna(False).astype(bool).sum()) if len(df) else 0
+    interference = kcfd.interference_factors(rows) if campaign == "interference" else None
     return {"schema": SCHEMA, "workflow": "airframe_cfd", "campaign": campaign, "description": CFD_CAMPAIGNS.get(campaign, ""), "variant": variant, "quality": quality,
-            "quality_settings": kcfd.QUALITY.get(quality), "design": fingerprint(variant, veh),
+            "quality_settings": kcfd.QUALITY.get(quality), "design": fingerprint(variant, veh), **({"interference": interference} if interference else {}),
             "reference": {"S_ref_m2": L["S_ref"], "chord_m": L["chord"], "l_ref_m": kcfd.l_ref(params(variant)), "x_cg_m": veh.x_cg, "z_cg_m": veh.z_cg,
                           "density_kg_m3": kcfd.RHO, "kinematic_viscosity_m2_s": kcfd.NU,
                           "frame": "wind axes; CL and CD on S_ref (both wings); Cm about the CG on the chord, nose-up positive; α the free-stream angle of attack",
