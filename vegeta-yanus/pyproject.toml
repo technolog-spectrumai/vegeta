@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-yanus"
+version = "0.1.0"
+description = "Yanus, the door keeper: the contracts between Vegeta's notebooks and workflows (needs, takes, gives), the gates that check them, pins, stamps and scaffolds"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+table = ["pandas"]
+
+[project.scripts]
+yn = "vegeta.yanus.cli:main"
+
+[project.entry-points."vegeta.commands"]
+yanus = "vegeta.yanus.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.yanus"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
