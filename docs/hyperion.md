@@ -64,7 +64,8 @@ the stress and end-bulging share as a stated fraction — of the order of 0.2 in
 eigenvalue u J₁(u)/J₀(u) = w K₁(w)/K₀(w), Bessel functions by quadrature so numpy suffices), `bend_loss(R, λ)` (Marcuse 1976
 with the 1.28 stress-optic factor; an order of magnitude, as the catalogue curves). `Dopant` (a (λ, σ_a, σ_e) table, τ, N),
 `YB_SILICA` (Paschotta's shape), `ions_for_absorption(fibre, dB/m, λ)` — the datasheet's absorption sets N. `ActiveFibre(fibre,
-dopant, length)`. `FibreLaser(active, λ_p, λ_s, R_hr, R_oc)`: the pump and both signal waves along z from the two-level rate
+dopant, length)` is the gain medium alone. `FibreLaser(active, λ_p, λ_s, R_hr, R_oc)` (alias `FibreOscillator`) composes it with the two
+reflectors' boundary conditions — the fibre is the guided path, the gratings the resonator: the pump and both signal waves along z from the two-level rate
 equations with the overlap factors (Kelson & Hardy 1998, no ASE), RK4 and a shooting on the circulating power so the waves meet
 the gratings' reflectivities; `solve(P)` → a `FibreSolution` (profiles, the inversion, the heat per metre, output, absorbed and
 unabsorbed pump), `threshold()` (the small-signal round trip reaching 1), `power_curve`, `length_sweep`. `FibreAmplifier(active,

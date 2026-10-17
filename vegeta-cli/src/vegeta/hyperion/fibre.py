@@ -196,7 +196,10 @@ def ions_for_absorption(fibre: Fibre, db_per_m: float, wavelength: float, dopant
 
 @dataclass(frozen=True)
 class ActiveFibre:
-    """``length`` metres of ``fibre`` doped with ``dopant``."""
+    """The gain medium and nothing else: ``length`` metres of ``fibre`` doped with ``dopant`` — the guided optical path
+    that amplifies. It is not a laser: an oscillator is this medium *composed with* two reflectors and their boundary
+    conditions (``FibreLaser`` / ``FibreOscillator``); an amplifier is this medium with a seed and no feedback
+    (``FibreAmplifier``)."""
     fibre: Fibre
     dopant: Dopant
     length: float
@@ -300,9 +303,11 @@ def _rk4(f, y0, z):
 
 @dataclass(frozen=True)
 class FibreLaser:
-    """An oscillator: the active fibre between a high reflector ``R_hr`` (at z = 0, the pump's end: co-pumped) and an
-    output grating ``R_oc``; ``pump_wavelength``, ``signal_wavelength`` (the gratings'). ``solve`` shoots on the
-    circulating power so the backward wave at the coupler equals R_oc × the forward one (Rigrod's boundary)."""
+    """An oscillator = the gain medium (``active``, the guided path) **composed with** the feedback: a high reflector
+    ``R_hr`` at z = 0 (the pump's end: co-pumped) and an output grating ``R_oc`` at z = L, which are the boundary
+    conditions P_s⁺(0) = R_hr P_s⁻(0) and P_s⁻(L) = R_oc P_s⁺(L). The fibre alone is not a resonator; the two gratings
+    make it one. ``pump_wavelength``, ``signal_wavelength`` (the gratings'). ``solve`` shoots on the circulating power
+    until both boundary conditions hold (Rigrod's)."""
     active: ActiveFibre
     pump_wavelength: float
     signal_wavelength: float
@@ -397,6 +402,9 @@ class FibreLaser:
     def to_dict(self) -> dict:
         return {"active": self.active.to_dict(), "pump_wavelength": self.pump_wavelength, "signal_wavelength": self.signal_wavelength, "R_hr": self.R_hr,
                 "R_oc": self.R_oc, "name": self.name}
+
+
+FibreOscillator = FibreLaser                                     # the name that says what it is
 
 
 @dataclass(frozen=True)
