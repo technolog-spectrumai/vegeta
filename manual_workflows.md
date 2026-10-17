@@ -8,7 +8,7 @@ is installed.
 ## 0. Set the shell up
 
 ```bash
-source env.sh        # activates .venv, defines  wf  (= workflows/cli.py)  and  wfrun <book> …  (= the book's script)
+source activate.sh        # activates .venv, defines  wf  (= workflows/cli.py)  and  wfrun <book> …  (= the book's script)
 wf                   # interactive
 ```
 Everything below also works as `.venv/bin/python workflows/cli.py …` without sourcing anything.

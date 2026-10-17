@@ -16,7 +16,7 @@
 A run is a directory under workflows/runs/<book>/<chapter>/ (the contract: workflows/README.md); solved cases are
 cached under workflows/cache/<book>/ and reused by later runs of the book. The scripts themselves
 (workflows/kestrel/*.py) stay usable directly — this tool only lists, explains, launches and watches them.
-`source env.sh` once per shell makes `wf` an alias of this tool inside the virtual environment.
+`source activate.sh` once per shell makes `wf` an alias of this tool inside the virtual environment.
 """
 from __future__ import annotations
 
