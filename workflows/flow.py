@@ -129,6 +129,11 @@ flow.notebook("49_svarog_guard", title="Svarog-guard — the stray kilowatt at 2
               takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",))],
               gives=[File(f"{DATA}/reports/49_svarog_guard.json", keys=("meta", "beams", "verdicts"))])
 
+flow.notebook("51_svarog_2kw", title="Svarog-2kW — two 1 kW modules combined, or one stage pumped harder: the welds at 2 kW and the guard re-screened",
+              needs=[Package("vegeta.hyperion")],
+              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",))],
+              gives=[File(f"{DATA}/reports/51_svarog_2kw.json", keys=("meta", "route_A", "route_B", "welds", "guard"))])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

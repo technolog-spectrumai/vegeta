@@ -110,8 +110,10 @@ thresholds, penetration curves and process windows in mild steel and aluminium (
 is its guard: the stray beam at 20 m (raw collimated, diverging, a keyhole reflection) against black, clear and
 laser-grade polycarbonate, brick, aluminium and steel — closed-form screening, a steady solve, and the enthalpy/ablation
 transient (`hyperion.thermal`) only where it decides, with verdicts per IEC 60825-4 class. The physics and the solvers:
-[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). What comes next, in
-order, is [`svarog_todo.md`](svarog_todo.md).
+[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). `51_svarog_2kw` doubles it two ways —
+two 1 kW modules beam-combined into a 100 µm fibre (M² 18, a 200 µm spot) or one stage on 400 W pump modules (2 kW through
+one 30/250 fibre, SRS margin 3.5×) — with the welds at 2 kW and the guard re-screened (1.5 mm steel still holds, at 1440 K).
+What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a

@@ -61,6 +61,49 @@ def power_stage(length: float, direction: str = "counter") -> hy.FibreAmplifier:
     return hy.FibreAmplifier(power_active(length), LAM_P, LAM, direction, name=f"Svarog-industrial power stage, {length:g} m")
 
 
+# ---------------------------------------------------------------------------------------------- the 2 kW variants (notebook 51)
+PUMP_400 = PumpModules(module_W=400.0, name="976 nm 400 W modules, (6+1)×1")                   # the single-stage route: brighter modules, same combiner
+DELIVERY_100 = wd.DeliveryFibre(core_radius=50e-6, NA=0.12, length=20.0, name="100/125 process fibre, 20 m")   # what a 2 kW combined beam needs
+
+
+@dataclass(frozen=True)
+class SignalCombiner:
+    """A (N+1)×1 signal combiner: ``n_inputs`` single-module fibres (core radius ``r_in``, NA ``na_in``) into one output
+    fibre (``r_out``, ``na_out``); the étendue adds — the output's r·NA must hold √N times an input's — and ``efficiency``."""
+    n_inputs: int = 2
+    r_in: float = 15e-6
+    na_in: float = 0.06
+    r_out: float = 50e-6
+    na_out: float = 0.12
+    efficiency: float = 0.97
+
+    @property
+    def fits(self) -> bool:
+        return self.n_inputs * (self.r_in * self.na_in) ** 2 <= (self.r_out * self.na_out) ** 2
+
+    @property
+    def bpp_out(self) -> float:
+        return self.r_out * self.na_out
+
+    def combined_W(self, per_module_W: float) -> float:
+        return self.n_inputs * per_module_W * self.efficiency
+
+
+def pump_for_target_with(length: float, seed_W: float, target_W: float, pump: PumpModules, n: int = 200) -> float:
+    """``pump_for_target`` with a chosen pump module set."""
+    amp = power_stage(length)
+    lo, hi = 0.0, pump.launched_max
+    if amp.solve(seed_W, hi, n).output_W < target_W:
+        return hi
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if amp.solve(seed_W, mid, n).output_W < target_W:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
 def power_stage_length_choice(seed_W: float, pump_W: float, lengths=None, within: float = 0.03, n: int = 200) -> dict:
     lengths = np.arange(4.0, 20.01, 1.0) if lengths is None else np.asarray(lengths, dtype=float)
     rows = []
@@ -111,12 +154,12 @@ DELIVERY = wd.DeliveryFibre(core_radius=25e-6, NA=0.12, length=20.0, name="50/12
 HEAD = wd.WeldHead(f_collimator=0.100, f_focus=0.200, name="welding head 100/200")
 
 
-def head_numbers(power_W: float) -> dict:
-    spot = HEAD.spot_radius(DELIVERY)
-    return {"bpp_mm_mrad": DELIVERY.bpp * 1e6, "m2": DELIVERY.m2(LAM), "collimated_radius": HEAD.collimated_radius(DELIVERY), "spot_radius": spot,
-            "cone_half_angle": HEAD.cone_half_angle(DELIVERY), "rayleigh_length": HEAD.rayleigh_length(DELIVERY),
+def head_numbers(power_W: float, delivery: wd.DeliveryFibre = DELIVERY, head: wd.WeldHead = HEAD) -> dict:
+    spot = head.spot_radius(delivery)
+    return {"bpp_mm_mrad": delivery.bpp * 1e6, "m2": delivery.m2(LAM), "collimated_radius": head.collimated_radius(delivery), "spot_radius": spot,
+            "cone_half_angle": head.cone_half_angle(delivery), "rayleigh_length": head.rayleigh_length(delivery),
             "mean_irradiance_W_per_cm2": power_W / (math.pi * spot ** 2) / 1e4,
-            "srs_delivery": hy.srs_threshold(hy.Fibre(DELIVERY.core_radius, DELIVERY.NA, 62.5e-6, alpha_signal=2.3e-3), DELIVERY.length, LAM)}
+            "srs_delivery": hy.srs_threshold(hy.Fibre(delivery.core_radius, delivery.NA, 62.5e-6, alpha_signal=2.3e-3), delivery.length, LAM)}
 
 
 # ---------------------------------------------------------------------------------------------- the welds
@@ -125,10 +168,10 @@ WELD_MATERIALS = {"mild steel": {"solid": th.MILD_STEEL, "absorption": 0.7, "thi
 SPEEDS = np.array([0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0]) / 60.0       # m/s
 
 
-def welds(power_W: float) -> dict:
+def welds(power_W: float, delivery: wd.DeliveryFibre = DELIVERY, head: wd.WeldHead = HEAD) -> dict:
     """Per material: the keyhole threshold at the head's spot, the penetration curve over the speeds, the process window
     per thickness (the fastest full-penetration speed and the speed with 20 % of depth in hand)."""
-    spot = HEAD.spot_radius(DELIVERY)
+    spot = head.spot_radius(delivery)
     out = {}
     for name, m in WELD_MATERIALS.items():
         out[name] = {"keyhole": wd.keyhole_threshold(m["solid"], spot), "curve": wd.penetration_curve(m["solid"], power_W, SPEEDS, spot, absorption=m["absorption"]),
@@ -155,11 +198,11 @@ class StrayBeam:
         return self.power / (math.pi * self.radius ** 2)
 
 
-def stray_beams(power_W: float, distance: float = DISTANCE) -> list[StrayBeam]:
+def stray_beams(power_W: float, distance: float = DISTANCE, delivery: wd.DeliveryFibre = DELIVERY, head: wd.WeldHead = HEAD) -> list[StrayBeam]:
     """The cases at ``distance``: the raw collimated beam (escaping before the focusing optic, or re-collimated by a
     reflector), the beam diverging past the focus, a keyhole back-reflection (a fifth of the power, diverging)."""
-    collimated = HEAD.collimated_radius(DELIVERY) + DELIVERY.core_radius / HEAD.f_collimator * distance
-    diverging = HEAD.cone_half_angle(DELIVERY) * distance
+    collimated = head.collimated_radius(delivery) + delivery.core_radius / head.f_collimator * distance
+    diverging = head.cone_half_angle(delivery) * distance
     return [StrayBeam("raw collimated beam", power_W, collimated, "tophat", "the worst case: the full power in a beam that stays small"),
             StrayBeam("diverging past the focus", power_W, diverging, "tophat", "the beam through the focus, or a flat workpiece's specular reflection"),
             StrayBeam("keyhole back-reflection", 0.2 * power_W, diverging, "tophat", "a fifth of the power thrown back out of the keyhole")]
@@ -264,11 +307,11 @@ def verdict(scr: dict, sim: th.HeatingResult | None) -> dict:
     return out
 
 
-def guard_study(power_W: float, barriers=None, beams=None, run: bool = True) -> dict:
+def guard_study(power_W: float, barriers=None, beams=None, run: bool = True, delivery: wd.DeliveryFibre = DELIVERY, head: wd.WeldHead = HEAD) -> dict:
     """Every barrier against every beam case: the screening for all, the simulation only where it decides, the verdict per
     class with the worst beam deciding the barrier's."""
     barriers = BARRIERS if barriers is None else barriers
-    beams = stray_beams(power_W) if beams is None else beams
+    beams = stray_beams(power_W, delivery=delivery, head=head) if beams is None else beams
     rows, sims = [], {}
     for b in barriers:
         worst = None

@@ -13,6 +13,8 @@ welding library it is designed on; the physics and the solvers are `docs/hyperio
   first amplifier — the architecture the device uses.
 - [x] **48 the industrial laser** (`svarog_industrial.py`, `hyperion.welding`): the 30/250 power stage to 1 kW, its heat
   budget, the process fibre and head, the welds in steel and aluminium with their process windows.
+- [x] **51 the 2 kW variant**: two modules beam-combined (the industrial route, a 200 µm spot) against one stage pumped
+  harder (the 100 µm spot, 220 W on one spool), the welds and the guard at 2 kW.
 - [x] **49 the guard** (`hyperion.thermal`): the stray kilowatt at 20 m against plastics, brick, aluminium, steel — closed
   forms, the steady solve, the ablation transient only where it decides, verdicts per IEC 60825-4 class; the image
   `designs/data/figures/svarog_beam_vs_plastic_box.png`.
@@ -33,7 +35,8 @@ needed for that.
 - [ ] **M.4 The welding head's optics as built**: ray tracing of the real 100/200 doublets (spherical aberration at
   NA 0.06, the focus shift from the lenses' 2 W of heating), the cover slide, the fibre's end cap — the spot and its
   depth of focus as delivered, against the paraxial 100 µm.
-- [ ] **M.5 The field ablation check** (`dev_svarog_advanced`, not run here): the same 10 mm polycarbonate and 1.5 mm steel
+- [x] **M.5 The field ablation check** (`dev_svarog_advanced`, smoke-tested with dolfinx 0.11: steady 1222 vs 1232 K on the
+  guard's steel, polycarbonate burn-through 26 vs 30 s): the same 10 mm polycarbonate and 1.5 mm steel
   cases in FEniCSx (enthalpy method, element removal) → XDMF → PyVista, against `hyperion.thermal`'s cell model — the
   validation of the cheap solver that 49's verdicts rest on.
 
