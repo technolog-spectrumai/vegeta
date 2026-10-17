@@ -7,8 +7,8 @@ from PyQt6.QtWidgets import QApplication, QStyleFactory
 
 LIGHT, DARK = "light", "dark"
 _mode = LIGHT
-STATE_COLORS = {LIGHT: {"completed": "#2e7d32", "running": "#1565c0", "partial": "#e65100", "prepared": "#6b6b6b", "failed": "#c62828", "cancelled": "#8e24aa"},
-                DARK: {"completed": "#81c784", "running": "#64b5f6", "partial": "#ffb74d", "prepared": "#9a9a9a", "failed": "#ff6b6b", "cancelled": "#ce93d8"}}
+STATE_COLORS = {LIGHT: {"completed": "#2e7d32", "running": "#1565c0", "partial": "#e65100", "prepared": "#6b6b6b", "failed": "#c62828", "cancelled": "#8e24aa", "none": "#6b6b6b"},
+                DARK: {"completed": "#81c784", "running": "#64b5f6", "partial": "#ffb74d", "prepared": "#9a9a9a", "failed": "#ff6b6b", "cancelled": "#ce93d8", "none": "#9a9a9a"}}
 
 
 def system_mode() -> str:

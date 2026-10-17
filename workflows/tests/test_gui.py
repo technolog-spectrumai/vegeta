@@ -44,4 +44,5 @@ def test_window_tree_and_chapter_panel(app):
     w.select_code("Z9")                                   # unknown: the status bar says so, the selection stays
     assert "no book with code" in w.status_label.text() and w.chapter[2]["code"] == "K10"
     assert w.runs_model.columnCount() == 7
+    assert "✔" in w.legend.text() and w.chapter_runs.text().startswith("runs so far")
     w.close()

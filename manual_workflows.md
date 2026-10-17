@@ -20,8 +20,9 @@ pip install PyQt6            # once (or: sudo apt install python3-pyqt6 libegl1 
 ./workflows.sh               # or: wf gui  (= .venv/bin/python workflows/gui)
 ```
 
-One window: the **tree** of books and chapters on the left (double-click a chapter, or type its code — `K2` — in
-the box); the chapter's **options** on the right (variant, quality or threads, mode: run / prepare only / list,
+One window: the **tree** of books and chapters on the left, each chapter marked with what happened to it so far —
+✔ completed, ▶ running, ◐ partial or cancelled, ○ prepared, ✘ failed, — not run — per variant from its latest run
+(double-click a chapter, or type its code — `K2` — in the box); the chapter's **options** on the right (variant, quality or threads, mode: run / prepare only / list,
 cache on or off, limits) with the exact command shown and a big **Run chapter** button; below, the **log** of the
 current run with a progress bar (cases done / planned) and the heartbeat in the status bar, and the **runs on
 disk** table with Follow / Resume / Stop / Notebook line / Open folder. A run starts detached, so closing the window

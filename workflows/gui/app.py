@@ -34,6 +34,9 @@ class MainWindow(QMainWindow):
         self.follower.finished.connect(self._on_run_finished)
         self.current_run: Path | None = None
         self.chapter: tuple[str, str, dict] | None = None
+        self.live_timer = QTimer(self)
+        self.live_timer.setInterval(5000)
+        self.live_timer.timeout.connect(self.refresh)
 
         self._build_toolbar()
         split = QSplitter(Qt.Orientation.Horizontal)
@@ -91,9 +94,12 @@ class MainWindow(QMainWindow):
         row.addStretch(1)
         lay.addLayout(row)
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["chapter", "what it is", "runs"])
+        self.tree.setHeaderLabels(["chapter", "status (latest run per variant)", "what it is"])
         self.tree.setColumnWidth(0, 230)
-        self.tree.setColumnWidth(1, 420)
+        self.tree.setColumnWidth(1, 300)
+        self.legend = QLabel("✔ completed   ▶ running   ◐ partial / cancelled   ○ prepared   ✘ failed   — not run")
+        self.legend.setProperty("role", "muted")
+        lay.addWidget(self.legend)
         self.tree.itemSelectionChanged.connect(self._on_tree_selection)
         self.tree.itemDoubleClicked.connect(lambda *_: self.run_chapter())
         lay.addWidget(self.tree, 1)
@@ -120,6 +126,9 @@ class MainWindow(QMainWindow):
         lay.addWidget(self.chapter_desc)
         lay.addWidget(self.chapter_meta)
         lay.addWidget(self.chapter_pre)
+        self.chapter_runs = QLabel("")
+        self.chapter_runs.setWordWrap(True)
+        lay.addWidget(self.chapter_runs)
 
         self.options_box = QGroupBox("Options")
         self.options_form = QFormLayout(self.options_box)
@@ -225,6 +234,7 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------------------------------------------- the tree
     def refresh(self) -> None:
         selected = self.chapter[2]["code"] if self.chapter else None
+        live = False
         self.tree.clear()
         for book, b in library.BOOKS.items():
             chs = library.chapters(book)
@@ -242,17 +252,23 @@ class MainWindow(QMainWindow):
                 for name, info in chs.items():
                     if info["kind"] != kind:
                         continue
-                    rs = library.runs_of(book, name)
-                    done = sum(1 for r in rs if r["state"] == "completed")
+                    cs = library.chapter_status(book, name)
                     pre = ("  [after " + ", ".join(chs[p]["code"] for p in info["prerequisites"]) + "]") if info["prerequisites"] else ""
-                    it = QTreeWidgetItem([f"{info['code']}  {name}", info["description"] + pre, (f"{done} completed" + (f", {len(rs) - done} other" if len(rs) - done else "")) if rs else ""])
+                    it = QTreeWidgetItem([f"{cs['mark']}  {info['code']}  {name}", cs["summary"], info["description"] + pre])
                     it.setData(0, CODE_ROLE, info["code"])
-                    it.setToolTip(1, info["description"])
+                    it.setToolTip(2, info["description"])
+                    it.setToolTip(1, "\n".join(f"{v}: {r['state']} — {r['run_id']}" for v, r in cs["latest"].items()) or "no run yet")
+                    if cs["runs"]:
+                        it.setForeground(1, theme.state_color(cs["overall"]))
+                        it.setForeground(0, theme.state_color(cs["overall"]))
                     k.addChild(it)
+                    if cs["overall"] == "running":
+                        live = True
         self.tree.expandAll()
         self.runs_model.refresh()
         if selected:
             self.select_code(selected)
+        self.live_timer.start() if live else self.live_timer.stop()      # while a run is live the tree follows it
 
     def select_code(self, code: str) -> None:
         try:
@@ -288,6 +304,9 @@ class MainWindow(QMainWindow):
         self.chapter_meta.setText(f"{kind['title']}\nneeds: {kind['needs']} · time: {kind['time']}")
         self.chapter_pre.setText(("prerequisites (same book): " + ", ".join(f"{chs[p]['code']} ({p})" for p in info["prerequisites"])) if info["prerequisites"] else "")
         self.chapter_pre.setVisible(bool(info["prerequisites"]))
+        cs = library.chapter_status(book, name)
+        self.chapter_runs.setText(("runs so far: " + cs["summary"] + f"  ({cs['counts']['completed']} completed, {cs['counts']['running']} running, {cs['counts']['failed']} failed, {cs['counts']['other']} other)")
+                                  if cs["runs"] else "runs so far: none")
         while self.options_form.rowCount():
             self.options_form.removeRow(0)
         self.option_widgets = {}
