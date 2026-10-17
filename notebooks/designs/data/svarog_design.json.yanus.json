@@ -2,8 +2,39 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "svarog_design.json",
- "git": "038d82af4ffd",
- "inputs": [],
+ "git": "e66d9bcabf62",
+ "inputs": [
+  {
+   "key": "fenix/guard-steady@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-steady/20261017-162422_1kW_screening"
+  },
+  {
+   "key": "fenix/guard-ablation@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-ablation/20261017-162526_1kW_screening"
+  },
+  {
+   "key": "fenix/sheet-distance@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/sheet-distance/20261017-163135_1kW_screening"
+  },
+  {
+   "key": "fenix/guard-steady@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-steady/20261017-172024_2kW_screening"
+  },
+  {
+   "key": "fenix/guard-ablation@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-ablation/20261017-164412_2kW_screening"
+  },
+  {
+   "key": "fenix/sheet-distance@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/sheet-distance/20261017-163201_2kW_screening"
+  }
+ ],
  "kind": "notebook",
  "needs": {
   "vegeta.hyperion": "found"
@@ -12,7 +43,7 @@
  "schema": null,
  "sha256": "eb6bbb0eadaa17da11eb3d3e2b94d350d9cc0bb01068e5164908e1083ae6da48",
  "size": 6294,
- "written_at": "2026-10-17T14:14:03Z",
- "written_ts": 1792246443.1772761,
+ "written_at": "2026-10-17T17:24:24Z",
+ "written_ts": 1792257864.9771118,
  "yanus": 1
 }

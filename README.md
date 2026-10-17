@@ -93,24 +93,26 @@ evaluated side by side, with a recommendation; then the recommendation (7 blades
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
-`46_svarog` (branch `dev_svarog`) is **Svarog**, a CW diode-end-pumped Nd:YAG laser designed on **Hyperion** (`designs/svarog.py`):
+`46_svarog` (branch `dev_svarog`) is **Svarog**, the whole laser series in one notebook, from the rod to the industrial device. Part I, a CW diode-end-pumped Nd:YAG laser designed on **Hyperion** (`designs/svarog.py`):
 the 808 nm fibre-coupled pump imaged onto a Ø3 × 10 mm rod and its effective radius inside it, threshold, slope, output and
 the optimum coupler (Rigrod), the pump's thermal lens, four cavity revisions (the textbook plano–concave, which the lens
 closes before the design pump; a compact one with the HR on the rod; a folded one with an astigmatic fold mirror; a zone-II
 cavity that the lens opens above 13 W) with their stability windows over the pump and the self-consistent power curves,
 Magni's rule on what the mode can be, the beam out through the coupler's substrate and a delivery train to a 17 µm work
-spot; the record in `designs/data/svarog_design.json` and `reports/46_svarog.json`. `47_svarog_fiber` is **Svarog-fiber**,
+spot; the record in `designs/data/svarog_design.json` and `reports/46_svarog.json`. Part II is **Svarog-fiber**,
 the fibre twin (`designs/svarog_fiber.py`, Hyperion's `fibre` module): a 10/125 Yb double-clad fibre between two Bragg
 gratings pumped at 976 nm — the fibres' modes and bend loss, the pump and both signal waves along the fibre from the rate
 equations, the length and coupler choices, a counter-pumped 20/125 amplifier stage, the coil radius, SRS and the core's
 temperature per cooling, the beam out on the same delivery train, and the rod and the fibre side by side at 20 W from
-46's record. `48_svarog_weld` is **Svarog-industrial**, the target of the series: the fibre MOPA scaled to 1 kW at the
+46's record. Parts III–IV are **Svarog-industrial**, the target of the series, with the 1 kW and the 2 kW devices analysed one after the other in every topic on one code path (`si.Device`): the fibre MOPA scaled to 1 kW at the
 workpiece (a 30/250 power stage, its heat budget, the 50 µm process fibre and the 100/200 welding head), the keyhole
-thresholds, penetration curves and process windows in mild steel and aluminium (`hyperion.welding`); `49_svarog_guard`
-is its guard: the stray beam at 20 m (raw collimated, diverging, a keyhole reflection) against black, clear and
+thresholds, penetration curves and process windows in mild steel and aluminium (`hyperion.welding`); then
+its guard: the stray beam at 20 m (raw collimated, diverging, a keyhole reflection) against black, clear and
 laser-grade polycarbonate, brick, aluminium and steel — closed-form screening, a steady solve, and the enthalpy/ablation
-transient (`hyperion.thermal`) only where it decides, with verdicts per IEC 60825-4 class. The physics and the solvers:
-[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). `51_svarog_2kw` doubles it two ways —
+transient (`hyperion.thermal`) only where it decides, with verdicts per IEC 60825-4 class; the collimated beam against
+distance on a 2 mm polycarbonate sheet, what the air takes (`hyperion.atmosphere`), and book **fenix**'s finite-element
+runs (FEniCSx in its own interpreter, `workflows/fenix/`) against the cell model. The physics and the solvers:
+[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). The 2 kW is carried through every topic two ways —
 two 1 kW modules beam-combined into a 100 µm fibre (M² 18, a 200 µm spot) or one stage on 400 W pump modules (2 kW through
 one 30/250 fibre, SRS margin 3.5×) — with the welds at 2 kW and the guard re-screened (1.5 mm steel still holds, at 1440 K).
 What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).

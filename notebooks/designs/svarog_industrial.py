@@ -368,3 +368,68 @@ def design_record(length: float, seed_W: float, pump_W: float, sol: fb.FibreSolu
             "welds": {m: {"keyhole": w["keyhole"], "window": w["window"]} for m, w in weld.items()},
             "guard": {"distance": DISTANCE, "exposure": EXPOSURE, "beams": [vars(b) for b in guard["beams"]],
                       "verdicts": [{k: v for k, v in r.items()} for r in guard["rows"]]}}
+
+
+# ================================================================================================== the devices, per topic
+@dataclass(frozen=True)
+class Device:
+    """One industrial laser, analysed topic by topic with the same code: ``target_W`` at the stage's output, ``pump`` the
+    modules on the (6+1)×1 combiner, ``seed_W`` (notebook 46 Part II's amplifier), ``delivery`` the process fibre, ``head``;
+    ``combined`` = the device is N identical modules of ``module`` beam-combined (route A of the 2 kW): the stage is the
+    module's, the power at the head the combiner's sum."""
+    name: str
+    target_W: float
+    pump: PumpModules
+    seed_W: float = SEED_DEFAULT
+    delivery: wd.DeliveryFibre = DELIVERY
+    head: wd.WeldHead = HEAD
+    combined: SignalCombiner | None = None
+    module: "Device | None" = None
+    note: str = ""
+
+    def stage(self, n: int = N_SWEEP) -> dict:
+        """The power stage: the length rule, the pump for the target, the solution, the budget — or, for a combined device,
+        its module's stage and the combiner's sum."""
+        if self.combined is not None:
+            m = self.module.stage(n)
+            per_module = m["sol"].output_W
+            delivered = self.combined.combined_W(per_module) * 10 ** (-0.3 / 10)
+            return {**m, "combined": self.combined, "per_module_W": per_module, "at_combiner_W": self.combined.combined_W(per_module), "delivered_W": delivered}
+        lc = power_stage_length_choice(self.seed_W, self.pump.launched_max, n=n)
+        L = lc["chosen_length"]
+        pump = pump_for_target_with(L, self.seed_W, self.target_W, self.pump, n=n)
+        sol = power_stage(L).solve(self.seed_W, pump, N_FINE)
+        bud = thermal_budget(sol, L)
+        lim = sf.limits(FIBRE_POWER, L, sol, sol.output_W)
+        return {"length": L, "length_choice": lc, "pump_W": pump, "sol": sol, "budget": bud, "limits": lim, "delivered_W": bud["delivered_W"],
+                "coil_radius": sf.coil_radius_for(FIBRE_POWER, L)}
+
+    def head_numbers(self, delivered_W: float) -> dict:
+        return head_numbers(delivered_W, self.delivery, self.head)
+
+    def welds(self, delivered_W: float) -> dict:
+        return welds(delivered_W, self.delivery, self.head)
+
+    def stray_beams(self, delivered_W: float, distance: float = DISTANCE) -> list:
+        return stray_beams(delivered_W, distance, self.delivery, self.head)
+
+    def guard(self, delivered_W: float) -> dict:
+        return guard_study(delivered_W, delivery=self.delivery, head=self.head)
+
+    def distance(self, delivered_W: float) -> list[dict]:
+        return guard_vs_distance(delivered_W, delivery=self.delivery, head=self.head)
+
+    @property
+    def variant(self) -> str:
+        return "2kW" if self.target_W >= 1500 else "1kW"
+
+
+def devices(seed_W: float = SEED_DEFAULT) -> dict:
+    """The lasers of the notebook: the 1 kW single stage, the 2 kW as two of them beam-combined (route A, the product), and
+    the 2 kW as one stage pumped harder (route B, the alternative)."""
+    one = Device("1 kW", POWER_TARGET, PUMP_POWER, seed_W, note="one 30/250 stage on six 220 W modules, a 50 µm process fibre")
+    comb = SignalCombiner(n_inputs=2, r_in=FIBRE_POWER.core_radius, na_in=FIBRE_POWER.NA, r_out=DELIVERY_100.core_radius, na_out=DELIVERY_100.NA)
+    two_a = Device("2 kW (A: two modules combined)", 2 * POWER_TARGET, PUMP_POWER, seed_W, DELIVERY_100, HEAD, comb, one,
+                   note="two 1 kW modules through a (2+1)×1 signal combiner into a 100 µm process fibre: M² 18, a 200 µm spot")
+    two_b = Device("2 kW (B: one stage, 400 W modules)", 2 * POWER_TARGET, PUMP_400, seed_W, note="one 30/250 stage on six 400 W modules; 2 kW through one fibre, 220 W of heat on one spool")
+    return {"1kW": one, "2kW": two_a, "2kW-B": two_b}

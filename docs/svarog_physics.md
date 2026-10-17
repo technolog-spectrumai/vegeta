@@ -1,7 +1,7 @@
 # Svarog — the physics of the device
 
 Svarog is a series of laser designs that leads to one industrial device: a 1 kW fibre laser for welding metal, with
-its guard. Each notebook is a step; this page says what physics each step stands on and what it found, with the Hyperion
+its guard. Each part of `46_svarog.ipynb` is a step (Parts III–IV carry the 1 kW and 2 kW devices through every topic together); this page says what physics each step stands on and what it found, with the Hyperion
 module that does the computing in brackets. The methods are in [hyperion_physics.md](hyperion_physics.md); how each
 notebook computes is in [svarog_solvers.md](svarog_solvers.md).
 

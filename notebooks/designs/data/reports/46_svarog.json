@@ -5,7 +5,13 @@
   "design_pump_W": 20.0,
   "wavelength": 1.064e-06,
   "pump_wavelength": 8.08e-07,
-  "debug": false
+  "debug": false,
+  "parts": [
+   "rod",
+   "fibre",
+   "industrial",
+   "guard"
+  ]
  },
  "rod": {
   "medium": {
@@ -403,5 +409,2795 @@
   "work_spot": 1.6663638374416926e-05,
   "work_distance": 0.04985168859459188,
   "depth_of_focus": 0.0016397510014745976
+ },
+ "fibre": {
+  "meta": {
+   "notebook": "47_svarog_fiber",
+   "pump_osc_W": 20.0,
+   "pump_amp_W": 50.0,
+   "wavelength": 1.07e-06,
+   "pump_wavelength": 9.76e-07,
+   "debug": false,
+   "rod_report": "designs/data/reports/46_svarog.json"
+  },
+  "fibres": {
+   "10/125 Yb double-clad": {
+    "core \u00d8 [\u00b5m]": 10.0,
+    "NA": 0.075,
+    "clad \u00d8 [\u00b5m]": 125.0,
+    "V at 1070": 2.202050925413407,
+    "V at 976": 2.4141336989675666,
+    "single-mode at 1070": true,
+    "cutoff [nm]": 979.7775349203415,
+    "MFD at 1070 [\u00b5m]": 11.707077582435787,
+    "\u0393_s": 0.7675920603886832,
+    "\u0393_p": 0.0064,
+    "absorption at 976 [dB/m]": 1.7000000000000002,
+    "absorption at 915 [dB/m]": 0.5100000000000001,
+    "Yb ions [1e25/m\u00b3]": 2.4464966613061665,
+    "far-field half-angle [mrad]": 58.185584885445365
+   },
+   "20/125 Yb double-clad": {
+    "core \u00d8 [\u00b5m]": 20.0,
+    "NA": 0.06,
+    "clad \u00d8 [\u00b5m]": 125.0,
+    "V at 1070": 3.523281480661451,
+    "V at 976": 3.8626139183481065,
+    "single-mode at 1070": false,
+    "cutoff [nm]": 1567.6440558725462,
+    "MFD at 1070 [\u00b5m]": 17.926264071320496,
+    "\u0393_s": 0.917047748761709,
+    "\u0393_p": 0.0256,
+    "absorption at 976 [dB/m]": 5.0,
+    "absorption at 915 [dB/m]": 1.5000000000000002,
+    "Yb ions [1e25/m\u00b3]": 1.798894603901593,
+    "far-field half-angle [mrad]": 37.999170029136714
+   }
+  },
+  "oscillator": {
+   "length": 9.0,
+   "R_hr_effective": 0.8622539540565198,
+   "R_oc": 0.1,
+   "length_choice": {
+    "rows": [
+     {
+      "length": 2.0,
+      "output_W": 7.290280330906115,
+      "unabsorbed_W": 11.356468243105272,
+      "absorbed_W": 8.643531756894728,
+      "efficiency": 0.36451401654530574,
+      "heat_peak_per_m": 0.48945547756698404,
+      "inversion_max": 0.18624718462527556
+     },
+     {
+      "length": 3.0,
+      "output_W": 10.284471877513466,
+      "unabsorbed_W": 7.831275239992837,
+      "absorbed_W": 12.168724760007162,
+      "efficiency": 0.5142235938756733,
+      "heat_peak_per_m": 0.5404644777258617,
+      "inversion_max": 0.15269578073035384
+     },
+     {
+      "length": 4.0,
+      "output_W": 12.329563567283582,
+      "unabsorbed_W": 5.400347235999229,
+      "absorbed_W": 14.599652764000771,
+      "efficiency": 0.6164781783641791,
+      "heat_peak_per_m": 0.5654914541094591,
+      "inversion_max": 0.1369136386967438
+     },
+     {
+      "length": 5.0,
+      "output_W": 13.721006125386435,
+      "unabsorbed_W": 3.724010378775096,
+      "absorbed_W": 16.275989621224905,
+      "efficiency": 0.6860503062693217,
+      "heat_peak_per_m": 0.5796318436251235,
+      "inversion_max": 0.12827496041923706
+     },
+     {
+      "length": 6.0,
+      "output_W": 14.662269135615237,
+      "unabsorbed_W": 2.568029924466404,
+      "absorbed_W": 17.431970075533595,
+      "efficiency": 0.7331134567807618,
+      "heat_peak_per_m": 0.5881848592464763,
+      "inversion_max": 0.12316725323324174
+     },
+     {
+      "length": 7.0,
+      "output_W": 15.29348617002419,
+      "unabsorbed_W": 1.7708805897487934,
+      "absorbed_W": 18.229119410251208,
+      "efficiency": 0.7646743085012095,
+      "heat_peak_per_m": 0.593533707170285,
+      "inversion_max": 0.12002323670748202
+     },
+     {
+      "length": 8.0,
+      "output_W": 15.71117634375925,
+      "unabsorbed_W": 1.221176605256423,
+      "absorbed_W": 18.778823394743576,
+      "efficiency": 0.7855588171879625,
+      "heat_peak_per_m": 0.5969197657356077,
+      "inversion_max": 0.11805428680788842
+     },
+     {
+      "length": 9.0,
+      "output_W": 15.981822840004039,
+      "unabsorbed_W": 0.8421077691299026,
+      "absorbed_W": 19.157892230870097,
+      "efficiency": 0.7990911420002019,
+      "heat_peak_per_m": 0.5990529093217921,
+      "inversion_max": 0.11682275047662574
+     },
+     {
+      "length": 10.0,
+      "output_W": 16.1512224923791,
+      "unabsorbed_W": 0.580706748624472,
+      "absorbed_W": 19.419293251375528,
+      "efficiency": 0.8075611246189551,
+      "heat_peak_per_m": 0.6003647411924488,
+      "inversion_max": 0.11606887520362513
+     },
+     {
+      "length": 11.0,
+      "output_W": 16.25092399270816,
+      "unabsorbed_W": 0.40044794857905947,
+      "absorbed_W": 19.59955205142094,
+      "efficiency": 0.812546199635408,
+      "heat_peak_per_m": 0.6011286626527047,
+      "inversion_max": 0.11563111372326065
+     },
+     {
+      "length": 12.0,
+      "output_W": 16.302661663762763,
+      "unabsorbed_W": 0.2761437857762646,
+      "absorbed_W": 19.723856214223737,
+      "efficiency": 0.8151330831881382,
+      "heat_peak_per_m": 0.6015227339543718,
+      "inversion_max": 0.11540565443174645
+     },
+     {
+      "length": 13.0,
+      "output_W": 16.321409098503935,
+      "unabsorbed_W": 0.1904252250181859,
+      "absorbed_W": 19.809574774981815,
+      "efficiency": 0.8160704549251967,
+      "heat_peak_per_m": 0.6016651354225253,
+      "inversion_max": 0.1153242433300123
+     },
+     {
+      "length": 14.0,
+      "output_W": 16.31748243582682,
+      "unabsorbed_W": 0.13131480181776367,
+      "absorbed_W": 19.868685198182238,
+      "efficiency": 0.8158741217913409,
+      "heat_peak_per_m": 0.601635326674977,
+      "inversion_max": 0.11534128235344213
+     },
+     {
+      "length": 15.0,
+      "output_W": 16.29798915226124,
+      "unabsorbed_W": 0.09055300988716569,
+      "absorbed_W": 19.909446990112833,
+      "efficiency": 0.814899457613062,
+      "heat_peak_per_m": 0.6014872104227028,
+      "inversion_max": 0.11542596831646362
+     },
+     {
+      "length": 16.0,
+      "output_W": 16.26782609130591,
+      "unabsorbed_W": 0.062444199354940604,
+      "absorbed_W": 19.93755580064506,
+      "efficiency": 0.8133913045652955,
+      "heat_peak_per_m": 0.6012575769896831,
+      "inversion_max": 0.11555733104140464
+     },
+     {
+      "length": 17.0,
+      "output_W": 16.23036701365941,
+      "unabsorbed_W": 0.04306072293754824,
+      "absorbed_W": 19.956939277062453,
+      "efficiency": 0.8115183506829705,
+      "heat_peak_per_m": 0.600971643079437,
+      "inversion_max": 0.115721017721379
+     },
+     {
+      "length": 18.0,
+      "output_W": 16.18793627780879,
+      "unabsorbed_W": 0.029694125318549733,
+      "absorbed_W": 19.97030587468145,
+      "efficiency": 0.8093968138904396,
+      "heat_peak_per_m": 0.60064674290742,
+      "inversion_max": 0.11590716822821202
+     },
+     {
+      "length": 19.0,
+      "output_W": 16.142135189834775,
+      "unabsorbed_W": 0.020476690364327966,
+      "absorbed_W": 19.97952330963567,
+      "efficiency": 0.8071067594917387,
+      "heat_peak_per_m": 0.6002948159700094,
+      "inversion_max": 0.11610899147153417
+     },
+     {
+      "length": 20.0,
+      "output_W": 16.094066854375043,
+      "unabsorbed_W": 0.014120464925115952,
+      "absorbed_W": 19.985879535074883,
+      "efficiency": 0.8047033427187522,
+      "heat_peak_per_m": 0.5999240971637594,
+      "inversion_max": 0.1163218019195397
+     }
+    ],
+    "best_length": 13.0,
+    "best_output_W": 16.321409098503935,
+    "chosen_length": 9.0,
+    "chosen_output_W": 15.981822840004039,
+    "chosen_unabsorbed_W": 0.8421077691299026,
+    "rule": "shortest within 3% of the best"
+   },
+   "coupler": {
+    "0.04": {
+     "output_W": 16.275674168406525,
+     "threshold_W": 0.2742296925304366,
+     "circulating_at_OC_W": 16.953827258756796,
+     "gain_db_one_way": 7.311524091137373,
+     "inversion_max": 0.15856056070855803
+    },
+    "0.07": {
+     "output_W": 16.12635533572076,
+     "threshold_W": 0.24862406325754094,
+     "circulating_at_OC_W": 17.340167027656733,
+     "gain_db_one_way": 6.096333829983829,
+     "inversion_max": 0.13221984710205384
+    },
+    "0.1": {
+     "output_W": 15.981822840004039,
+     "threshold_W": 0.2323667148913522,
+     "circulating_at_OC_W": 17.75758093333782,
+     "gain_db_one_way": 5.3218240251870235,
+     "inversion_max": 0.11682275047662574
+    },
+    "0.15": {
+     "output_W": 15.744146173947579,
+     "threshold_W": 0.2139419280271504,
+     "circulating_at_OC_W": 18.522524910526563,
+     "gain_db_one_way": 4.4413677278497214,
+     "inversion_max": 0.10055400743486505
+    },
+    "0.2": {
+     "output_W": 15.502408763665606,
+     "threshold_W": 0.20090440898146156,
+     "circulating_at_OC_W": 19.378010954582006,
+     "gain_db_one_way": 3.816674044677789,
+     "inversion_max": 0.08971647544309194
+    },
+    "0.3": {
+     "output_W": 14.981076400835775,
+     "threshold_W": 0.1825765992005124,
+     "circulating_at_OC_W": 21.40153771547968,
+     "gain_db_one_way": 2.9362177501831552,
+     "inversion_max": 0.07524247482744294
+    }
+   },
+   "threshold_W": 0.23237805981191073,
+   "slope": 0.8084959780729186,
+   "power_curve": {
+    "pump_W": [
+     0.0,
+     3.20625,
+     6.4125,
+     9.618749999999999,
+     12.825,
+     16.03125,
+     19.237499999999997,
+     22.443749999999998,
+     25.65
+    ],
+    "output_W": [
+     0.0,
+     2.404145504382246,
+     4.996383161471011,
+     7.588622985443273,
+     10.180863333322957,
+     12.773103888017989,
+     15.36534454536887,
+     17.957585261106416,
+     20.549826013216503
+    ],
+    "unabsorbed_W": [
+     0.0,
+     0.13500040174107383,
+     0.2700008034791976,
+     0.40500120521736926,
+     0.5400016069555527,
+     0.6750020086937414,
+     0.8100024104319309,
+     0.9450028121701232,
+     1.0800032139083158
+    ],
+    "heat_W": [
+     0.0,
+     0.34019051250168,
+     0.6840970938564694,
+     1.0280013947572315,
+     1.3719051442891361,
+     1.715808676164757,
+     2.059712100003357,
+     2.403615462394655,
+     2.747518786506746
+    ],
+    "inversion_max": [
+     0.0,
+     0.11786984095740288,
+     0.11724113583530178,
+     0.11703498686939671,
+     0.11693254187536314,
+     0.11687127485260983,
+     0.11683051315721636,
+     0.11680143820163667,
+     0.11677965411569567
+    ],
+    "slope": 0.8084959780729186,
+    "threshold_W": 0.23238089540322804
+   },
+   "output_W": 15.981822844235278,
+   "pump_W": 20.0,
+   "absorbed_W": 19.15789223540389,
+   "unabsorbed_W": 0.8421077645961118,
+   "gain_db": 5.3218240268959045,
+   "efficiency": 0.7990911422117639,
+   "heat_W": 2.141467202949477,
+   "peak_heat_per_m": 0.5990529093057522,
+   "inversion_max": 0.11682275048585976,
+   "inversion_min": 0.03033076505263751,
+   "note": ""
+  },
+  "amplifier": {
+   "length": 3.5,
+   "seed_W": 15.981822844235278,
+   "length_choice": {
+    "rows": [
+     {
+      "length": 1.0,
+      "output_W": 37.86770831405193,
+      "gain_db": 3.7464271091379135,
+      "unabsorbed_W": 25.57419055044401,
+      "heat_peak_per_m": 3.2269255164996267,
+      "inversion_max": 0.22131953028636991
+     },
+     {
+      "length": 1.5,
+      "output_W": 46.16760958595426,
+      "gain_db": 4.607110764495447,
+      "unabsorbed_W": 16.336006016028563,
+      "heat_peak_per_m": 3.458167345821955,
+      "inversion_max": 0.17997998654537964
+     },
+     {
+      "length": 2.0,
+      "output_W": 51.82676521886092,
+      "gain_db": 5.109277908041171,
+      "unabsorbed_W": 10.025694743304172,
+      "heat_peak_per_m": 3.5886219195545825,
+      "inversion_max": 0.16837013461140318
+     },
+     {
+      "length": 2.5,
+      "output_W": 55.414124080570964,
+      "gain_db": 5.399941605460533,
+      "unabsorbed_W": 6.00942084317929,
+      "heat_peak_per_m": 3.6624683378790546,
+      "inversion_max": 0.16188554004891953
+     },
+     {
+      "length": 3.0,
+      "output_W": 57.59289018214455,
+      "gain_db": 5.56742560985346,
+      "unabsorbed_W": 3.5528829027481024,
+      "heat_peak_per_m": 3.704445991127886,
+      "inversion_max": 0.15823117199309475
+     },
+     {
+      "length": 3.5,
+      "output_W": 58.880366677637426,
+      "gain_db": 5.663441936305248,
+      "unabsorbed_W": 2.083845470937331,
+      "heat_peak_per_m": 3.728319589367924,
+      "inversion_max": 0.15616386472348534
+     },
+     {
+      "length": 4.0,
+      "output_W": 59.625161615312734,
+      "gain_db": 5.71803256937156,
+      "unabsorbed_W": 1.2165849631333456,
+      "heat_peak_per_m": 3.7418304562311757,
+      "inversion_max": 0.15499758749245618
+     },
+     {
+      "length": 4.5,
+      "output_W": 60.04650433455917,
+      "gain_db": 5.748614173233311,
+      "unabsorbed_W": 0.7083628720740303,
+      "heat_peak_per_m": 3.7493793472704344,
+      "inversion_max": 0.15434714154908516
+     },
+     {
+      "length": 5.0,
+      "output_W": 60.277373591406345,
+      "gain_db": 5.7652800867762615,
+      "unabsorbed_W": 0.4118079434887887,
+      "heat_peak_per_m": 3.7534872148655403,
+      "inversion_max": 0.15399355094905448
+     },
+     {
+      "length": 5.5,
+      "output_W": 60.39685236065207,
+      "gain_db": 5.7738799326396135,
+      "unabsorbed_W": 0.23918984335586865,
+      "heat_peak_per_m": 3.7556052713534673,
+      "inversion_max": 0.15381133644285716
+     },
+     {
+      "length": 6.0,
+      "output_W": 60.45145269741569,
+      "gain_db": 5.777804294933087,
+      "unabsorbed_W": 0.13885584317096533,
+      "heat_peak_per_m": 3.756571426934879,
+      "inversion_max": 0.15372824167690682
+     },
+     {
+      "length": 6.5,
+      "output_W": 60.46835810799113,
+      "gain_db": 5.779018641288105,
+      "unabsorbed_W": 0.08058500816096686,
+      "heat_peak_per_m": 3.7568703443515052,
+      "inversion_max": 0.1537025360028235
+     },
+     {
+      "length": 7.0,
+      "output_W": 60.46339826620493,
+      "gain_db": 5.778662402036374,
+      "unabsorbed_W": 0.04675932594187702,
+      "heat_peak_per_m": 3.7567826566193205,
+      "inversion_max": 0.15371007664716033
+     },
+     {
+      "length": 7.5,
+      "output_W": 60.44577198014228,
+      "gain_db": 5.777396162459658,
+      "unabsorbed_W": 0.027129272088710306,
+      "heat_peak_per_m": 3.7564709580253557,
+      "inversion_max": 0.1537368818986165
+     },
+     {
+      "length": 8.0,
+      "output_W": 60.42081833454056,
+      "gain_db": 5.775602907480932,
+      "unabsorbed_W": 0.015739195029081172,
+      "heat_peak_per_m": 3.7560294869226074,
+      "inversion_max": 0.15377484978276965
+     },
+     {
+      "length": 8.5,
+      "output_W": 60.3916340211439,
+      "gain_db": 5.773504682295414,
+      "unabsorbed_W": 0.009130869465635003,
+      "heat_peak_per_m": 3.7555128745244097,
+      "inversion_max": 0.153819283832227
+     },
+     {
+      "length": 9.0,
+      "output_W": 60.360014400880054,
+      "gain_db": 5.771230224415329,
+      "unabsorbed_W": 0.0052970398105413275,
+      "heat_peak_per_m": 3.7549527951224535,
+      "inversion_max": 0.1538674610997961
+     },
+     {
+      "length": 9.5,
+      "output_W": 60.327000113880025,
+      "gain_db": 5.768854173755137,
+      "unabsorbed_W": 0.0030729072190211664,
+      "heat_peak_per_m": 3.7543676142714246,
+      "inversion_max": 0.15391780267095606
+     },
+     {
+      "length": 10.0,
+      "output_W": 60.29319425364311,
+      "gain_db": 5.766419805444212,
+      "unabsorbed_W": 0.0017826368075671587,
+      "heat_peak_per_m": 3.7537679812421216,
+      "inversion_max": 0.15396939293849446
+     }
+    ],
+    "best_length": 6.5,
+    "chosen_length": 3.5,
+    "chosen_output_W": 58.880366677637426,
+    "rule": "shortest within 3% of the best"
+   },
+   "counter": {
+    "output_W": 58.88036668695728,
+    "pump_W": 50.0,
+    "absorbed_W": 47.91615453948381,
+    "unabsorbed_W": 2.08384546051619,
+    "gain_db": 5.66344193699267,
+    "efficiency": 1.1776073337391457,
+    "heat_W": 4.556748240719039,
+    "peak_heat_per_m": 3.7283195895383434,
+    "inversion_max": 0.15616386470875762,
+    "inversion_min": 0.052703597301465725,
+    "note": ""
+   },
+   "co": {
+    "output_W": 58.73865165306054,
+    "pump_W": 50.0,
+    "absorbed_W": 47.918586777006404,
+    "unabsorbed_W": 2.0814132229935978,
+    "gain_db": 5.652976607852051,
+    "efficiency": 1.174773033061211,
+    "heat_W": 4.701477949142538,
+    "peak_heat_per_m": 2.3953258270594815,
+    "inversion_max": 0.29979548913393567,
+    "inversion_min": 0.03490895193917037,
+    "note": ""
+   }
+  },
+  "coil": {
+   "radius_for_0.05dB": {
+    "oscillator": 0.0465,
+    "amplifier": 0.051500000000000004
+   },
+   "V": {
+    "10/125 Yb double-clad": 2.202050925413407,
+    "20/125 Yb double-clad": 3.523281480661451
+   }
+  },
+  "limits": {
+   "oscillator": {
+    "srs": {
+     "P_threshold_W": 1933.5552053693164,
+     "L_eff": 8.90738616075724,
+     "A_eff": 1.0764326798354231e-10,
+     "stokes_wavelength": 1.1229028654609113e-06
+    },
+    "srs_margin": 108.88618287119128,
+    "temperatures": {
+     "still air": {
+      "dT_core_to_clad": 0.20904327640251508,
+      "dT_coating": 0.3304309954196665,
+      "dT_surface_to_sink": 76.27378535167306,
+      "dT_core_to_sink": 76.81325962349524,
+      "heat_per_m": 0.5990529093057522
+     },
+     "on a plate": {
+      "dT_core_to_clad": 0.20904327640251508,
+      "dT_coating": 0.3304309954196665,
+      "dT_surface_to_sink": 15.254757070334612,
+      "dT_core_to_sink": 15.794231342156793,
+      "heat_per_m": 0.5990529093057522
+     },
+     "on a cooled spool": {
+      "dT_core_to_clad": 0.20904327640251508,
+      "dT_coating": 0.3304309954196665,
+      "dT_surface_to_sink": 1.5254757070334612,
+      "dT_core_to_sink": 2.0649499788556427,
+      "heat_per_m": 0.5990529093057522
+     },
+     "in a water-cooled groove": {
+      "dT_core_to_clad": 0.20904327640251508,
+      "dT_coating": 0.3304309954196665,
+      "dT_surface_to_sink": 0.3813689267583653,
+      "dT_core_to_sink": 0.9208431985805469,
+      "heat_per_m": 0.5990529093057522
+     }
+    }
+   },
+   "amplifier": {
+    "srs": {
+     "P_threshold_W": 11584.311412384137,
+     "L_eff": 3.4859344765762668,
+     "A_eff": 2.5238844087391107e-10,
+     "stokes_wavelength": 1.1229028654609113e-06
+    },
+    "srs_margin": 196.7431941104097,
+    "temperatures": {
+     "still air": {
+      "dT_core_to_clad": 1.002977055670663,
+      "dT_coating": 2.0565000754967,
+      "dT_surface_to_sink": 474.70439368109885,
+      "dT_core_to_sink": 477.7638708122662,
+      "heat_per_m": 3.7283195895383434
+     },
+     "on a plate": {
+      "dT_core_to_clad": 1.002977055670663,
+      "dT_coating": 2.0565000754967,
+      "dT_surface_to_sink": 94.94087873621979,
+      "dT_core_to_sink": 98.00035586738716,
+      "heat_per_m": 3.7283195895383434
+     },
+     "on a cooled spool": {
+      "dT_core_to_clad": 1.002977055670663,
+      "dT_coating": 2.0565000754967,
+      "dT_surface_to_sink": 9.494087873621979,
+      "dT_core_to_sink": 12.553565004789341,
+      "heat_per_m": 3.7283195895383434
+     },
+     "in a water-cooled groove": {
+      "dT_core_to_clad": 1.002977055670663,
+      "dT_coating": 2.0565000754967,
+      "dT_surface_to_sink": 2.3735219684054947,
+      "dT_core_to_sink": 5.432999099572858,
+      "heat_per_m": 3.7283195895383434
+     }
+    }
+   }
+  },
+  "beam_out": {
+   "wavelength": 1.07e-06,
+   "w0": 8.963132035660248e-06,
+   "z0": 0.0,
+   "m2": 1.05,
+   "n": 1.0,
+   "name": "20/125 Yb double-clad output",
+   "rayleigh_range": 0.0002246448071863917,
+   "divergence": 0.03989912853059355
+  },
+  "delivery": {
+   "f_collimator": 0.025204537912983854,
+   "collimator_at": 0.025204537912983854,
+   "w_collimated": 0.001006617857848194,
+   "work_spot": 1.777457409085728e-05,
+   "work_distance": 0.050023366268149905,
+   "depth_of_focus": 0.0017768360112650021
+  },
+  "against_the_rod": {
+   "rows": {
+    "pump at the work point [W]": [
+     20.0,
+     20.0
+    ],
+    "output [W]": [
+     15.981822844235278,
+     11.317429961741688
+    ],
+    "optical efficiency": [
+     0.7990911422117639,
+     0.5658714980870844
+    ],
+    "threshold [W]": [
+     0.23237805981191073,
+     0.9391552386642377
+    ],
+    "slope": [
+     0.8084959780729186,
+     0.5937528007519733
+    ],
+    "heat in the gain medium [W]": [
+     2.141467202949477,
+     5.890106166667595
+    ],
+    "beam waist [\u00b5m]": [
+     8.963132035660248,
+     214.7632044585464
+    ],
+    "beam divergence [mrad]": [
+     39.89912853059355,
+     1.5770006773433376
+    ],
+    "M\u00b2": [
+     1.05,
+     1.0
+    ],
+    "work spot radius [\u00b5m]": [
+     17.77457409085728,
+     16.663638374416927
+    ],
+    "depth of focus [mm]": [
+     1.7768360112650021,
+     1.6397510014745977
+    ],
+    "collimator f [mm]": [
+     25.204537912983856,
+     634.1151366432067
+    ]
+   },
+   "have_rod": true,
+   "sensitivities": {
+    "fibre": "the gratings' wavelengths and temperature, splice losses, the pump diodes' wavelength against the 976 nm peak, bend loss, SRS at high power",
+    "rod": "the thermal lens (\u03b7_heat, the pump spot), the cavity's alignment, the mode\u2013pump overlap, the rod's fracture limit"
+   }
+  }
+ },
+ "industrial": {
+  "1kW": {
+   "name": "1 kW",
+   "delivered_W": 933.254301042445,
+   "stage": {
+    "length [m]": 10.0,
+    "pump launched [W]": 1077.0319689721573,
+    "stage out [W]": 1000.0000002630087,
+    "gain [dB]": 12.300294941375958,
+    "unabsorbed pump [W]": 28.558579816663674,
+    "efficiency on the pump": 0.9284775466946794,
+    "heat in the fibre [W]": 105.21456199401523,
+    "peak heat [W/m]": 37.567112334800186,
+    "inversion max": 0.12379797001281162,
+    "SRS margin": 7.020976121327996,
+    "coil radius [mm]": 49.5,
+    "delivered to the head [W]": 933.254301042445,
+    "per module [W]": NaN,
+    "after the combiner [W]": NaN
+   },
+   "budget": {
+    "active fibre heat [W]": 105.21456199401523,
+    "peak [W/m]": 37.567112334800186,
+    "core rise, water-cooled spool (h 2000) [K]": 40.35077856248824,
+    "core rise, cooled plate (h 500) [K]": 85.19321575577797,
+    "core rise, still air (h 10) [K]": 3014.89911238404,
+    "into the stripper [W]": 51.321358866839816,
+    "process fibre loss [W]": 66.74569922056367,
+    "absorbed per lens [W]": 1.86650860208489,
+    "lens centre rise [K]": 55.70236371219601,
+    "note": NaN
+   },
+   "head": {
+    "bpp_mm_mrad": 3.0,
+    "m2": 8.808203701653627,
+    "collimated_radius": 0.012,
+    "spot_radius": 5e-05,
+    "cone_half_angle": 0.06,
+    "rayleigh_length": 0.0008333333333333334,
+    "mean_irradiance_W_per_cm2": 11882562.813814152,
+    "srs_delivery": {
+     "P_threshold_W": 7255.6277027497,
+     "L_eff": 19.546972960558833,
+     "A_eff": 8.864097407345625e-10,
+     "stokes_wavelength": 1.1229028654609113e-06
+    }
+   },
+   "welds": {
+    "mild steel": {
+     "keyhole": {
+      "P_threshold_W": 37.47871017887093,
+      "I_threshold_W_per_cm2": 477193.7588540673,
+      "spot_radius": 5e-05,
+      "material": "mild steel"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.06766502900527795,
+       "v_with_margin": 0.05026505249942521,
+       "heat_input_J_per_m": 18566.663211047417,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.021154010271870183,
+       "v_with_margin": 0.01536380961807891,
+       "heat_input_J_per_m": 60743.67778836998,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.010314223953915012,
+       "v_with_margin": 0.007408432764474637,
+       "heat_input_J_per_m": 125971.89320764877,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.006106716610256164,
+       "v_with_margin": 0.004357187230295091,
+       "heat_input_J_per_m": 214187.33043042547,
+       "feasible": true
+      },
+      {
+       "thickness": 0.006,
+       "v_full_penetration": 0.0028682789553729723,
+       "v_with_margin": 0.0020309569103866814,
+       "heat_input_J_per_m": 459514.5747650349,
+       "feasible": true
+      }
+     ]
+    },
+    "aluminium": {
+     "keyhole": {
+      "P_threshold_W": 511.73860655039636,
+      "I_threshold_W_per_cm2": 6515658.304276332,
+      "spot_radius": 5e-05,
+      "material": "aluminium"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.06267811465704583,
+       "v_with_margin": 0.04478026786245687,
+       "heat_input_J_per_m": 20840.748516934887,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.017126572394475587,
+       "v_with_margin": 0.0120852068228016,
+       "heat_input_J_per_m": 77222.86550211454,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.007862238726818512,
+       "v_with_margin": 0.005521052141623972,
+       "heat_input_J_per_m": 169035.58906942979,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.004497342738916748,
+       "v_with_margin": 0.0031499654957184314,
+       "heat_input_J_per_m": 296274.45199351053,
+       "feasible": true
+      }
+     ]
+    }
+   }
+  },
+  "2kW": {
+   "name": "2 kW (A: two modules combined)",
+   "delivered_W": 1810.5133440223433,
+   "stage": {
+    "length [m]": 10.0,
+    "pump launched [W]": 1077.0319689721573,
+    "stage out [W]": 1000.0000002630087,
+    "gain [dB]": 12.300294941375958,
+    "unabsorbed pump [W]": 28.558579816663674,
+    "efficiency on the pump": 0.9284775466946794,
+    "heat in the fibre [W]": 105.21456199401523,
+    "peak heat [W/m]": 37.567112334800186,
+    "inversion max": 0.12379797001281162,
+    "SRS margin": 7.020976121327996,
+    "coil radius [mm]": 49.5,
+    "delivered to the head [W]": 1810.5133440223433,
+    "per module [W]": 1000.0000002630087,
+    "after the combiner [W]": 1940.0000005102368
+   },
+   "budget": {
+    "active fibre heat [W]": 105.21456199401523,
+    "peak [W/m]": 37.567112334800186,
+    "core rise, water-cooled spool (h 2000) [K]": 40.35077856248824,
+    "core rise, cooled plate (h 500) [K]": 85.19321575577797,
+    "core rise, still air (h 10) [K]": 3014.89911238404,
+    "into the stripper [W]": 51.321358866839816,
+    "process fibre loss [W]": 66.74569922056367,
+    "absorbed per lens [W]": 1.86650860208489,
+    "lens centre rise [K]": 55.70236371219601,
+    "note": "per module; two modules, two spools"
+   },
+   "head": {
+    "bpp_mm_mrad": 6.0,
+    "m2": 17.616407403307253,
+    "collimated_radius": 0.012,
+    "spot_radius": 0.0001,
+    "cone_half_angle": 0.06,
+    "rayleigh_length": 0.0016666666666666668,
+    "mean_irradiance_W_per_cm2": 5763042.964699863,
+    "srs_delivery": {
+     "P_threshold_W": 27812.55323146467,
+     "L_eff": 19.546972960558833,
+     "A_eff": 3.3978201623721448e-09,
+     "stokes_wavelength": 1.1229028654609113e-06
+    }
+   },
+   "welds": {
+    "mild steel": {
+     "keyhole": {
+      "P_threshold_W": 74.95742035774185,
+      "I_threshold_W_per_cm2": 238596.87942703365,
+      "spot_radius": 0.0001,
+      "material": "mild steel"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.09447099676750706,
+       "v_with_margin": 0.07181734736511054,
+       "heat_input_J_per_m": 25209.972387561415,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.03220755983675619,
+       "v_with_margin": 0.023900254421575468,
+       "heat_input_J_per_m": 75752.88999383786,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.0164502614636956,
+       "v_with_margin": 0.012042870347670952,
+       "heat_input_J_per_m": 150339.021491873,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.01003051267078019,
+       "v_with_margin": 0.00727845896606241,
+       "heat_input_J_per_m": 248749.54333936665,
+       "feasible": true
+      },
+      {
+       "thickness": 0.006,
+       "v_full_penetration": 0.004881313095816241,
+       "v_with_margin": 0.0035034751481110445,
+       "heat_input_J_per_m": 516776.41983517737,
+       "feasible": true
+      }
+     ]
+    },
+    "aluminium": {
+     "keyhole": {
+      "P_threshold_W": 1023.4772131007927,
+      "I_threshold_W_per_cm2": 3257829.152138166,
+      "spot_radius": 0.0001,
+      "material": "aluminium"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.10234286708056453,
+       "v_with_margin": 0.074396889050654,
+       "heat_input_J_per_m": 24335.87435073574,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.029635548815025538,
+       "v_with_margin": 0.021158941762820575,
+       "heat_input_J_per_m": 85567.29180112807,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.013938452326042568,
+       "v_with_margin": 0.009874425598294004,
+       "heat_input_J_per_m": 183353.78863304658,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.008080204592065807,
+       "v_with_margin": 0.00569932715974721,
+       "heat_input_J_per_m": 317671.4186210443,
+       "feasible": true
+      }
+     ]
+    }
+   }
+  },
+  "2kW-B": {
+   "name": "2 kW (B: one stage, 400 W modules)",
+   "delivered_W": 1866.5086021535988,
+   "stage": {
+    "length [m]": 10.0,
+    "pump launched [W]": 2230.059827709574,
+    "stage out [W]": 2000.00000059964,
+    "gain [dB]": 15.31059489817564,
+    "unabsorbed pump [W]": 70.8092038817635,
+    "efficiency on the pump": 0.8968369259643489,
+    "heat in the fibre [W]": 215.6066093574148,
+    "peak heat [W/m]": 77.13391030206077,
+    "inversion max": 0.13159856586466878,
+    "SRS margin": 3.510488060534772,
+    "coil radius [mm]": 49.5,
+    "delivered to the head [W]": 1866.5086021535988,
+    "per module [W]": NaN,
+    "after the combiner [W]": NaN
+   },
+   "budget": {
+    "active fibre heat [W]": 215.6066093574148,
+    "peak [W/m]": 77.13391030206077,
+    "core rise, water-cooled spool (h 2000) [K]": 82.84941643955182,
+    "core rise, cooled plate (h 500) [K]": 174.92123972390064,
+    "core rise, still air (h 10) [K]": 6190.280360968023,
+    "into the stripper [W]": 116.33476198379162,
+    "process fibre loss [W]": 133.49139844604133,
+    "absorbed per lens [W]": 3.7330172043071976,
+    "lens centre rise [K]": 111.40472742849299,
+    "note": NaN
+   },
+   "head": null,
+   "welds": {
+    "mild steel": {
+     "keyhole": {
+      "P_threshold_W": 37.47871017887093,
+      "I_threshold_W_per_cm2": 477193.7588540673,
+      "spot_radius": 5e-05,
+      "material": "mild steel"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.19767759508439572,
+       "v_with_margin": 0.15043213202199385,
+       "heat_input_J_per_m": 12407.64574074312,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.06766502900929582,
+       "v_with_margin": 0.05026505250247393,
+       "heat_input_J_per_m": 37133.32642120952,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.03464019459968219,
+       "v_with_margin": 0.025384183443199995,
+       "heat_input_J_per_m": 73530.37793514707,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.021154010273224468,
+       "v_with_margin": 0.01536380961907927,
+       "heat_input_J_per_m": 121487.35557330187,
+       "feasible": true
+      },
+      {
+       "thickness": 0.006,
+       "v_full_penetration": 0.010314223954599303,
+       "v_with_margin": 0.007408432764972952,
+       "heat_input_J_per_m": 251943.78640762536,
+       "feasible": true
+      }
+     ]
+    },
+    "aluminium": {
+     "keyhole": {
+      "P_threshold_W": 511.73860655039636,
+      "I_threshold_W_per_cm2": 6515658.304276332,
+      "spot_radius": 5e-05,
+      "material": "aluminium"
+     },
+     "window": [
+      {
+       "thickness": 0.001,
+       "v_full_penetration": 0.21577043866057008,
+       "v_with_margin": 0.15699554974721558,
+       "heat_input_J_per_m": 11888.926820912659,
+       "feasible": true
+      },
+      {
+       "thickness": 0.002,
+       "v_full_penetration": 0.06267811466127506,
+       "v_with_margin": 0.04478026786551487,
+       "heat_input_J_per_m": 41681.497032557745,
+       "feasible": true
+      },
+      {
+       "thickness": 0.003,
+       "v_full_penetration": 0.029520327415597337,
+       "v_with_margin": 0.02092390776779051,
+       "heat_input_J_per_m": 89204.58945182472,
+       "feasible": true
+      },
+      {
+       "thickness": 0.004,
+       "v_full_penetration": 0.017126572395676682,
+       "v_with_margin": 0.012085206823655352,
+       "heat_input_J_per_m": 154445.73099900372,
+       "feasible": true
+      }
+     ]
+    }
+   }
+  }
+ },
+ "guard": {
+  "1kW": {
+   "power_W": 933.254301042445,
+   "beams": [
+    {
+     "name": "raw collimated beam",
+     "power": 933.254301042445,
+     "radius": 0.017,
+     "shape": "tophat",
+     "note": "the worst case: the full power in a beam that stays small"
+    },
+    {
+     "name": "diverging past the focus",
+     "power": 933.254301042445,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "the beam through the focus, or a flat workpiece's specular reflection"
+    },
+    {
+     "name": "keyhole back-reflection",
+     "power": 186.650860208489,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "a fifth of the power thrown back out of the keyhole"
+    }
+   ],
+   "verdicts": [
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 97.65081897165608,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 0.04727148295342662,
+     "t_burn_through_lower_bound": 12.494902888158618,
+     "steady_rise_bound_K": 346641.1587665911,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 10017.87175472804,
+     "decision": "simulate",
+     "holds_s": 13.119648032566532,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.2498980577631724,
+     "simulated": true
+    },
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.01959797686306153,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1173622.7661573188,
+     "t_burn_through_lower_bound": 62258.339650340524,
+     "steady_rise_bound_K": 346641.1587665911,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1173622.7661573188,
+     "simulated": false
+    },
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.003919595372612306,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 29340569.153932977,
+     "t_burn_through_lower_bound": 311291.6982517026,
+     "steady_rise_bound_K": 69328.23175331824,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 29340569.153932977,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 13.119648032566532,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.2498980577631724,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 97.65081897165608,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 0.04727148295342662,
+     "t_burn_through_lower_bound": 24.989805776317237,
+     "steady_rise_bound_K": 173320.57938329555,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 9202.466022356693,
+     "decision": "simulate",
+     "holds_s": 26.489194122896237,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.4997961155263448,
+     "simulated": true
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.01959797686306153,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1173622.7661573188,
+     "t_burn_through_lower_bound": 124516.67930068105,
+     "steady_rise_bound_K": 173320.57938329555,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1173622.7661573188,
+     "simulated": false
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.003919595372612306,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 29340569.153932977,
+     "t_burn_through_lower_bound": 622583.3965034052,
+     "steady_rise_bound_K": 34664.11587665912,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 29340569.153932977,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 26.489194122896237,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.4997961155263448,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 94.56710889886695,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 0.050404670800410584,
+     "t_burn_through_lower_bound": 12.902345373642051,
+     "steady_rise_bound_K": 335694.59585817246,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.050404670800410584,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.018979093383175383,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 1251411.3261542772,
+     "t_burn_through_lower_bound": 64288.50289980814,
+     "steady_rise_bound_K": 335694.59585817246,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 1251411.3261542772,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0037958186766350764,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 31285283.153856922,
+     "t_burn_through_lower_bound": 321442.51449904067,
+     "steady_rise_bound_K": 67138.9191716345,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 31285283.153856922,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 0.0,
+      "source": "fails: transparent",
+      "T1": false,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.050404670800410584,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 94.56710889886695,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 0.050404670800410584,
+     "t_burn_through_lower_bound": 25.804690747284102,
+     "steady_rise_bound_K": 167847.29792908623,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.050404670800410584,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.018979093383175383,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 1251411.3261542772,
+     "t_burn_through_lower_bound": 128577.00579961628,
+     "steady_rise_bound_K": 167847.29792908623,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 1251411.3261542772,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0037958186766350764,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 31285283.153856922,
+     "t_burn_through_lower_bound": 642885.0289980813,
+     "steady_rise_bound_K": 33569.45958581725,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 31285283.153856922,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 0.0,
+      "source": "fails: transparent",
+      "T1": false,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.050404670800410584,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 94.56710889886695,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 0.050404670800410584,
+     "t_burn_through_lower_bound": 12.902345373642051,
+     "steady_rise_bound_K": 335694.59585817246,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 9779.867989293825,
+     "decision": "simulate",
+     "holds_s": 13.676486096060582,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.25804690747284104,
+     "simulated": true
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.018979093383175383,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 1251411.3261542772,
+     "t_burn_through_lower_bound": 64288.50289980814,
+     "steady_rise_bound_K": 335694.59585817246,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1251411.3261542772,
+     "simulated": false
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0037958186766350764,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 31285283.153856922,
+     "t_burn_through_lower_bound": 321442.51449904067,
+     "steady_rise_bound_K": 67138.9191716345,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 31285283.153856922,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 13.676486096060582,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.25804690747284104,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 94.56710889886695,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 0.050404670800410584,
+     "t_burn_through_lower_bound": 25.804690747284102,
+     "steady_rise_bound_K": 167847.29792908623,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 8924.840609836243,
+     "decision": "simulate",
+     "holds_s": 27.352972192121165,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.5160938149456821,
+     "simulated": true
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.018979093383175383,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 1251411.3261542772,
+     "t_burn_through_lower_bound": 128577.00579961628,
+     "steady_rise_bound_K": 167847.29792908623,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1251411.3261542772,
+     "simulated": false
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0037958186766350764,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 31285283.153856922,
+     "t_burn_through_lower_bound": 642885.0289980813,
+     "steady_rise_bound_K": 33569.45958581725,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 31285283.153856922,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 27.352972192121165,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.5160938149456821,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 77.09275181972849,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 2.28496420347825,
+     "t_burn_through_lower_bound": 221.60361994794036,
+     "steady_rise_bound_K": 20532.055094796957,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": 11957.274081630603,
+     "decision": "simulate",
+     "holds_s": Infinity,
+     "source": "simulation: steady",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 29.139058391999576,
+     "simulated": true
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.015472086997153843,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 56729466.50941079,
+     "t_burn_through_lower_bound": 1104184.1270762426,
+     "steady_rise_bound_K": 5525.909160499807,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 56729466.50941079,
+     "simulated": false
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0030944173994307683,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1418236662.73527,
+     "t_burn_through_lower_bound": 5520920.635381213,
+     "steady_rise_bound_K": 1105.1818320999614,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1418236662.73527,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "simulation: steady",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 29.139058391999576,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 12.334840291156556,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 10841.678726984755,
+     "t_burn_through_lower_bound": 32.99331632139368,
+     "steady_rise_bound_K": 153.25188071786133,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 10841.678726984755,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.0024755339195446147,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 269169490406.91068,
+     "t_burn_through_lower_bound": 164395.762985491,
+     "steady_rise_bound_K": 153.25188071786133,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 269169490406.91068,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.000495106783908923,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 6729237260172.767,
+     "t_burn_through_lower_bound": 821978.8149274549,
+     "steady_rise_bound_K": 30.65037614357226,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 6729237260172.767,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady bound",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 10841.678726984755,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 12.334840291156556,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 10841.678726984755,
+     "t_burn_through_lower_bound": 65.98663264278736,
+     "steady_rise_bound_K": 76.62594035893066,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 10841.678726984755,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.0024755339195446147,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 269169490406.91068,
+     "t_burn_through_lower_bound": 328791.525970982,
+     "steady_rise_bound_K": 76.62594035893066,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 269169490406.91068,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.000495106783908923,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 6729237260172.767,
+     "t_burn_through_lower_bound": 1643957.6298549098,
+     "steady_rise_bound_K": 15.32518807178613,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 6729237260172.767,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady bound",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 10841.678726984755,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 39.06032758866244,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 2231.435248521095,
+     "t_burn_through_lower_bound": 35.57521431037195,
+     "steady_rise_bound_K": 2426.4881113661377,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": 1221.625920941337,
+     "decision": "survives: steady solve",
+     "holds_s": Infinity,
+     "source": "survives: steady solve",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 2231.435248521095,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.007839190745224614,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 55400487677.74981,
+     "t_burn_through_lower_bound": 177260.58341500207,
+     "steady_rise_bound_K": 2426.4881113661377,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 55400487677.74981,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0015678381490449227,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1385012191943.7454,
+     "t_burn_through_lower_bound": 886302.9170750104,
+     "steady_rise_bound_K": 485.2976222732274,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1385012191943.7454,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady solve",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 2231.435248521095,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 39.06032758866244,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 2231.435248521095,
+     "t_burn_through_lower_bound": 71.1504286207439,
+     "steady_rise_bound_K": 1213.2440556830688,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 2231.435248521095,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.007839190745224614,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 55400487677.74981,
+     "t_burn_through_lower_bound": 354521.16683000413,
+     "steady_rise_bound_K": 1213.2440556830688,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 55400487677.74981,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0015678381490449227,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1385012191943.7454,
+     "t_burn_through_lower_bound": 1772605.8341500207,
+     "steady_rise_bound_K": 242.6488111366137,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1385012191943.7454,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady bound",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 2231.435248521095,
+      "worst_beam": "raw collimated beam"
+     }
+    }
+   ],
+   "distance": {
+    "10.0": {
+     "distance_m": 10.0,
+     "beam_radius_mm": 14.5,
+     "irradiance_W_per_cm2": 141.29087769101247,
+     "absorbed_W_per_cm2": 134.22633380646184,
+     "decision": "simulate",
+     "surface_damage_s": 0.07272119950824499,
+     "holds_s": 3.781502374428743,
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "20.0": {
+     "distance_m": 20.0,
+     "beam_radius_mm": 17.0,
+     "irradiance_W_per_cm2": 102.79033575963798,
+     "absorbed_W_per_cm2": 97.65081897165608,
+     "decision": "simulate",
+     "surface_damage_s": 0.09995922310526896,
+     "holds_s": 5.247859213026621,
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "50.0": {
+     "distance_m": 50.0,
+     "beam_radius_mm": 24.5,
+     "irradiance_W_per_cm2": 49.49005753358663,
+     "absorbed_W_per_cm2": 47.0155546569073,
+     "decision": "simulate",
+     "surface_damage_s": 0.20761426875064945,
+     "holds_s": 11.21117051253508,
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "100.0": {
+     "distance_m": 100.0,
+     "beam_radius_mm": 37.00000000000001,
+     "irradiance_W_per_cm2": 21.699347724277114,
+     "absorbed_W_per_cm2": 20.61438033806326,
+     "decision": "simulate",
+     "surface_damage_s": 0.47350926100731217,
+     "holds_s": 27.700291768927826,
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "200.0": {
+     "distance_m": 200.0,
+     "beam_radius_mm": 62.0,
+     "irradiance_W_per_cm2": 7.727993505342191,
+     "absorbed_W_per_cm2": 7.341593830075081,
+     "decision": "simulate",
+     "surface_damage_s": 1.8267008868632808,
+     "holds_s": 110.05872843351327,
+     "T1": true,
+     "T2": true,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    }
+   },
+   "fenix": {
+    "guard-steady": "/home/user/vegeta/workflows/runs/fenix/guard-steady/20261017-162422_1kW_screening",
+    "guard-ablation": "/home/user/vegeta/workflows/runs/fenix/guard-ablation/20261017-162526_1kW_screening",
+    "sheet-distance": "/home/user/vegeta/workflows/runs/fenix/sheet-distance/20261017-163135_1kW_screening"
+   }
+  },
+  "2kW": {
+   "power_W": 1810.5133440223433,
+   "beams": [
+    {
+     "name": "raw collimated beam",
+     "power": 1810.5133440223433,
+     "radius": 0.022,
+     "shape": "tophat",
+     "note": "the worst case: the full power in a beam that stays small"
+    },
+    {
+     "name": "diverging past the focus",
+     "power": 1810.5133440223433,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "the beam through the focus, or a flat workpiece's specular reflection"
+    },
+    {
+     "name": "keyhole back-reflection",
+     "power": 362.1026688044687,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "a fifth of the power thrown back out of the keyhole"
+    }
+   ],
+   "verdicts": [
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 113.11757885257998,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 0.035228228503863236,
+     "t_burn_through_lower_bound": 10.786453461757162,
+     "steady_rise_bound_K": 672483.8480071867,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 15251.185639508414,
+     "decision": "simulate",
+     "holds_s": 11.433640669462573,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.21572906923514323,
+     "simulated": true
+    },
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.03802007511433937,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 311835.1488355082,
+     "t_burn_through_lower_bound": 32091.927654814703,
+     "steady_rise_bound_K": 672483.8480071867,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 311835.1488355082,
+     "simulated": false
+    },
+    {
+     "barrier": "black polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0076040150228678756,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 7795878.720887706,
+     "t_burn_through_lower_bound": 160459.63827407348,
+     "steady_rise_bound_K": 134496.76960143735,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 7795878.720887706,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 11.433640669462573,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.21572906923514323,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 113.11757885257998,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 0.035228228503863236,
+     "t_burn_through_lower_bound": 21.572906923514324,
+     "steady_rise_bound_K": 336241.92400359333,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 11181.109223114685,
+     "decision": "simulate",
+     "holds_s": 22.651552269690004,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.43145813847028647,
+     "simulated": true
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.03802007511433937,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 311835.1488355082,
+     "t_burn_through_lower_bound": 64183.855309629405,
+     "steady_rise_bound_K": 336241.92400359333,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 311835.1488355082,
+     "simulated": false
+    },
+    {
+     "barrier": "black polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0076040150228678756,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 7795878.720887706,
+     "t_burn_through_lower_bound": 320919.27654814697,
+     "steady_rise_bound_K": 67248.38480071868,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 7795878.720887706,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 22.651552269690004,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.43145813847028647,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 109.54544478355113,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 0.037563180794821086,
+     "t_burn_through_lower_bound": 11.138185639857939,
+     "steady_rise_bound_K": 651247.5159648546,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.037563180794821086,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.036819441163360236,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 332503.8065028901,
+     "t_burn_through_lower_bound": 33138.403556602134,
+     "steady_rise_bound_K": 651247.5159648546,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 332503.8065028901,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.007363888232672049,
+     "transmitted_fraction": 0.8166157697774535,
+     "t_surface_damage_bound": 8312595.162572249,
+     "t_burn_through_lower_bound": 165692.01778301064,
+     "steady_rise_bound_K": 130249.50319297091,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 8312595.162572249,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 0.0,
+      "source": "fails: transparent",
+      "T1": false,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.037563180794821086,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 109.54544478355113,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 0.037563180794821086,
+     "t_burn_through_lower_bound": 22.276371279715878,
+     "steady_rise_bound_K": 325623.7579824273,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.037563180794821086,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.036819441163360236,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 332503.8065028901,
+     "t_burn_through_lower_bound": 66276.80711320427,
+     "steady_rise_bound_K": 325623.7579824273,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 332503.8065028901,
+     "simulated": false
+    },
+    {
+     "barrier": "clear polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.007363888232672049,
+     "transmitted_fraction": 0.7389045046528786,
+     "t_surface_damage_bound": 8312595.162572249,
+     "t_burn_through_lower_bound": 331384.0355660213,
+     "steady_rise_bound_K": 65124.751596485454,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "fails: transparent",
+     "holds_s": 0.0,
+     "source": "fails: transparent",
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 8312595.162572249,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 0.0,
+      "source": "fails: transparent",
+      "T1": false,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.037563180794821086,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 109.54544478355113,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 0.037563180794821086,
+     "t_burn_through_lower_bound": 11.138185639857939,
+     "steady_rise_bound_K": 651247.5159648546,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 14858.754772352024,
+     "decision": "simulate",
+     "holds_s": 11.806476778249442,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.22276371279715879,
+     "simulated": true
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.036819441163360236,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 332503.8065028901,
+     "t_burn_through_lower_bound": 33138.403556602134,
+     "steady_rise_bound_K": 651247.5159648546,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 332503.8065028901,
+     "simulated": false
+    },
+    {
+     "barrier": "laser-safety polycarbonate 5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.007363888232672049,
+     "transmitted_fraction": 5.214418038775767e-08,
+     "t_surface_damage_bound": 8312595.162572249,
+     "t_burn_through_lower_bound": 165692.01778301064,
+     "steady_rise_bound_K": 130249.50319297091,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 8312595.162572249,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 11.806476778249442,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.22276371279715879,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 109.54544478355113,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 0.037563180794821086,
+     "t_burn_through_lower_bound": 22.276371279715878,
+     "steady_rise_bound_K": 325623.7579824273,
+     "damage_rise_K": 426.85,
+     "steady_T_max": 10845.531132198295,
+     "decision": "simulate",
+     "holds_s": 23.390189843701723,
+     "source": "simulation: ablated through at the centre",
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "surface_damage_s": 0.44552742559431757,
+     "simulated": true
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.036819441163360236,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 332503.8065028901,
+     "t_burn_through_lower_bound": 66276.80711320427,
+     "steady_rise_bound_K": 325623.7579824273,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 332503.8065028901,
+     "simulated": false
+    },
+    {
+     "barrier": "laser-safety polycarbonate 10 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.007363888232672049,
+     "transmitted_fraction": 3.012759610316911e-15,
+     "t_surface_damage_bound": 8312595.162572249,
+     "t_burn_through_lower_bound": 331384.0355660213,
+     "steady_rise_bound_K": 65124.751596485454,
+     "damage_rise_K": 426.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 8312595.162572249,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": 23.390189843701723,
+      "source": "simulation: ablated through at the centre",
+      "T1": true,
+      "T2": false,
+      "T3": false,
+      "surface_damage_s": 0.44552742559431757,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 89.30335172572103,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1.7028287680880698,
+     "t_burn_through_lower_bound": 191.3033782592001,
+     "steady_rise_bound_K": 30779.417137563803,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": 13811.519410112869,
+     "decision": "simulate",
+     "holds_s": Infinity,
+     "source": "simulation: steady",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 18.866118853308322,
+     "simulated": true
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.03001584877447846,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 15073192.291797956,
+     "t_burn_through_lower_bound": 569167.0758124961,
+     "steady_rise_bound_K": 10720.263771369624,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 15073192.291797956,
+     "simulated": false
+    },
+    {
+     "barrier": "fired clay brick 65 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.006003169754895691,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 376829807.29494894,
+     "t_burn_through_lower_bound": 2845835.3790624808,
+     "steady_rise_bound_K": 2144.052754273925,
+     "damage_rise_K": 1156.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 376829807.29494894,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "simulation: steady",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 18.866118853308322,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 14.288536276115364,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 8079.567462184015,
+     "t_burn_through_lower_bound": 28.482083793305282,
+     "steady_rise_bound_K": 297.3086485926509,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 8079.567462184015,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.004802535803916552,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 71519154641.01144,
+     "t_burn_through_lower_bound": 84740.08401313968,
+     "steady_rise_bound_K": 297.3086485926509,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 71519154641.01144,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 1.5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0009605071607833107,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1787978866025.2854,
+     "t_burn_through_lower_bound": 423700.42006569833,
+     "steady_rise_bound_K": 59.46172971853019,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1787978866025.2854,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady bound",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 8079.567462184015,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 14.288536276115364,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 8079.567462184015,
+     "t_burn_through_lower_bound": 56.964167586610564,
+     "steady_rise_bound_K": 148.65432429632546,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 8079.567462184015,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.004802535803916552,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 71519154641.01144,
+     "t_burn_through_lower_bound": 169480.16802627937,
+     "steady_rise_bound_K": 148.65432429632546,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 71519154641.01144,
+     "simulated": false
+    },
+    {
+     "barrier": "aluminium 3 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0009605071607833107,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1787978866025.2854,
+     "t_burn_through_lower_bound": 847400.8401313967,
+     "steady_rise_bound_K": 29.730864859265093,
+     "damage_rise_K": 639.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1787978866025.2854,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady bound",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 8079.567462184015,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 45.24703154103199,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1662.9372703184413,
+     "t_burn_through_lower_bound": 30.710954457639247,
+     "steady_rise_bound_K": 4707.386936050306,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": 1443.2382014439352,
+     "decision": "survives: steady solve",
+     "holds_s": Infinity,
+     "source": "survives: steady solve",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1662.9372703184413,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.015208030045735751,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 14720078562.480024,
+     "t_burn_through_lower_bound": 91371.43475000108,
+     "steady_rise_bound_K": 4707.386936050306,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 14720078562.480024,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 1.5 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0030416060091471506,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 368001964062.00055,
+     "t_burn_through_lower_bound": 456857.1737500053,
+     "steady_rise_bound_K": 941.4773872100614,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 368001964062.00055,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady solve",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 1662.9372703184413,
+      "worst_beam": "raw collimated beam"
+     }
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "raw collimated beam",
+     "absorbed_irradiance_W_per_cm2": 45.24703154103199,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 1662.9372703184413,
+     "t_burn_through_lower_bound": 61.42190891527849,
+     "steady_rise_bound_K": 2353.693468025153,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": 1254.338597827957,
+     "decision": "survives: steady solve",
+     "holds_s": Infinity,
+     "source": "survives: steady solve",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 1662.9372703184413,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "diverging past the focus",
+     "absorbed_irradiance_W_per_cm2": 0.015208030045735751,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 14720078562.480024,
+     "t_burn_through_lower_bound": 182742.86950000215,
+     "steady_rise_bound_K": 2353.693468025153,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: energy bound",
+     "holds_s": Infinity,
+     "source": "survives: energy bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 14720078562.480024,
+     "simulated": false
+    },
+    {
+     "barrier": "mild steel 3 mm",
+     "beam": "keyhole back-reflection",
+     "absorbed_irradiance_W_per_cm2": 0.0030416060091471506,
+     "transmitted_fraction": 0.0,
+     "t_surface_damage_bound": 368001964062.00055,
+     "t_burn_through_lower_bound": 913714.3475000106,
+     "steady_rise_bound_K": 470.7386936050307,
+     "damage_rise_K": 1516.85,
+     "steady_T_max": NaN,
+     "decision": "survives: steady bound",
+     "holds_s": Infinity,
+     "source": "survives: steady bound",
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "surface_damage_s": 368001964062.00055,
+     "simulated": false,
+     "worst_for_barrier": {
+      "holds_s": Infinity,
+      "source": "survives: steady solve",
+      "T1": true,
+      "T2": true,
+      "T3": true,
+      "surface_damage_s": 1662.9372703184413,
+      "worst_beam": "raw collimated beam"
+     }
+    }
+   ],
+   "distance": {
+    "10.0": {
+     "distance_m": 10.0,
+     "beam_radius_mm": 17.0,
+     "irradiance_W_per_cm2": 199.41325137369768,
+     "absorbed_W_per_cm2": 189.44258880501278,
+     "decision": "simulate",
+     "surface_damage_s": 0.051525372734674724,
+     "holds_s": 2.7308447549377677,
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "20.0": {
+     "distance_m": 20.0,
+     "beam_radius_mm": 22.0,
+     "irradiance_W_per_cm2": 119.0711356342947,
+     "absorbed_W_per_cm2": 113.11757885257998,
+     "decision": "simulate",
+     "surface_damage_s": 0.0862916276940573,
+     "holds_s": 4.530310453938021,
+     "T1": false,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "50.0": {
+     "distance_m": 50.0,
+     "beam_radius_mm": 37.00000000000001,
+     "irradiance_W_per_cm2": 42.0967345850976,
+     "absorbed_W_per_cm2": 39.991897855842716,
+     "decision": "simulate",
+     "surface_damage_s": 0.244076938663563,
+     "holds_s": 13.424231626495986,
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "100.0": {
+     "distance_m": 100.0,
+     "beam_radius_mm": 62.0,
+     "irradiance_W_per_cm2": 14.992307400363849,
+     "absorbed_W_per_cm2": 14.242692030345657,
+     "decision": "simulate",
+     "surface_damage_s": 0.685340943917265,
+     "holds_s": 43.51914993874644,
+     "T1": true,
+     "T2": false,
+     "T3": false,
+     "source": "simulation: ablated through at the centre"
+    },
+    "200.0": {
+     "distance_m": 200.0,
+     "beam_radius_mm": 112.0,
+     "irradiance_W_per_cm2": 4.594262567522212,
+     "absorbed_W_per_cm2": 4.3645494391461,
+     "decision": "simulate",
+     "surface_damage_s": 3.653401773726561,
+     "holds_s": Infinity,
+     "T1": true,
+     "T2": true,
+     "T3": true,
+     "source": "simulation: steady"
+    }
+   },
+   "fenix": {
+    "guard-steady": "/home/user/vegeta/workflows/runs/fenix/guard-steady/20261017-172024_2kW_screening",
+    "guard-ablation": "/home/user/vegeta/workflows/runs/fenix/guard-ablation/20261017-164412_2kW_screening",
+    "sheet-distance": "/home/user/vegeta/workflows/runs/fenix/sheet-distance/20261017-163201_2kW_screening"
+   }
+  }
+ },
+ "air": {
+  "clear day": {
+   "attenuation_per_m": 5.1172898357239724e-05,
+   "db_per_km": 0.22224107379545194,
+   "visibility_m": 40000.0,
+   "transmission": {
+    "10.0": 0.9994884019273726,
+    "20.0": 0.9989770655873332,
+    "50.0": 0.9974446256240661,
+    "100.0": 0.9948957811863333,
+    "200.0": 0.9898176154223643
+   }
+  },
+  "wet day": {
+   "attenuation_per_m": 0.00023586449178619861,
+   "db_per_km": 1.0243464725966092,
+   "visibility_m": 8000.0,
+   "transmission": {
+    "10.0": 0.9976441344994134,
+    "20.0": 0.9952938191010836,
+    "50.0": 0.9882760429206366,
+    "100.0": 0.9766895370108721,
+    "200.0": 0.9539224517065117
+   }
+  },
+  "dusty town": {
+   "attenuation_per_m": 0.0007094460371921943,
+   "db_per_km": 3.0810849916069913,
+   "visibility_m": 4000.0,
+   "transmission": {
+    "10.0": 0.9929306459051489,
+    "20.0": 0.9859112675776162,
+    "50.0": 0.9651494667052052,
+    "100.0": 0.931513493081342,
+    "200.0": 0.8677173877926035
+   }
+  },
+  "foggy autumn morning": {
+   "attenuation_per_m": 0.01304,
+   "db_per_km": 56.63200044018404,
+   "visibility_m": 300.0,
+   "transmission": {
+    "10.0": 0.8777442629864621,
+    "20.0": 0.7704349912056476,
+    "50.0": 0.5210027286033344,
+    "100.0": 0.2714438432121197,
+    "200.0": 0.07368176001776582
+   }
+  }
  }
 }

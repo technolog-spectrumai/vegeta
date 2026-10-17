@@ -66,12 +66,12 @@ def probe() -> str | None:
 
 
 def power_of(variant: str) -> float:
-    """The delivered power of the variant from its notebook's report when it exists, else the recorded number."""
-    reports = {"1kW": ROOT / "notebooks/designs/data/reports/48_svarog_weld.json", "2kW": ROOT / "notebooks/designs/data/reports/51_svarog_2kw.json"}
-    p = reports.get(variant)
-    if p and p.exists():
-        d = json.loads(p.read_text())
-        return float(d["meta"]["delivered_W"] if variant == "1kW" else d["route_A"]["at_head_W"])
+    """The delivered power of the variant from notebook 46's record when it exists, else the recorded number."""
+    p = ROOT / "notebooks/designs/data/reports/46_svarog.json"
+    if p.exists():
+        d = json.loads(p.read_text()).get("industrial", {}).get(variant, {})
+        if d.get("delivered_W"):
+            return float(d["delivered_W"])
     return VARIANTS[variant]
 
 

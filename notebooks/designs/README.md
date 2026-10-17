@@ -312,7 +312,7 @@ the coupler's substrate), `delivery_train` (collimator, stand-off, focusing lens
 `svarog_drawings.py` draws the cavity with its mode envelope, a beam train, the stability window, the power curves and the
 pump inside the rod.
 
-`svarog_fiber.py` (notebook 47, branch `dev_svarog`) is **Svarog-fiber**, the Yb fibre laser on Hyperion's `fibre` module
+`svarog_fiber.py` (notebook 46 Part II, branch `dev_svarog`) is **Svarog-fiber**, the Yb fibre laser on Hyperion's `fibre` module
 (`import svarog_fiber as sf`): `FIBRE_OSC` / `FIBRE_AMP` (10/125 and 20/125 double-clad), `active` (doped to the datasheet's
 cladding absorption), `Pump` (976 nm diodes through a combiner, the étendue check), `Gratings` (with the splice excess loss
 folded into the HR), `oscillator` / `length_choice` / `coupler_choice`, `amplifier` / `amplifier_length_choice`, `coil` /
@@ -320,7 +320,7 @@ folded into the HR), `oscillator` / `length_choice` / `coupler_choice`, `amplifi
 `against_the_rod` (from 46's report), `design_record`. `svarog_fiber_drawings.py` draws the power evolution along the fibre,
 the length sweeps, the bend-loss curves and the power curves.
 
-`svarog_industrial.py` (notebooks 48 and 49, branch `dev_svarog`) is **Svarog-industrial**, the 1 kW welding laser and its
+`svarog_industrial.py` (notebook 46 Parts III–V, branch `dev_svarog`) is **Svarog-industrial**, the 1 kW welding laser and its
 guard (`import svarog_industrial as si`): `FIBRE_POWER` (30/250), `PumpModules` (six 220 W 976 nm modules, the étendue
 check), `power_stage` / `power_stage_length_choice` / `pump_for_target`, `thermal_budget` (the active fibre's heat and
 core rise per cooling, the stripper, the process fibre, the head's lenses), `DELIVERY` / `HEAD` / `head_numbers`,

@@ -53,6 +53,31 @@
      "4"
     ]
    ]
+  },
+  "thermal": {
+   "title": "plate heat transfer — steady state and the ablation transient (FEniCSx: dolfinx, PETSc)",
+   "script": "workflows/fenix/plate_thermal.py",
+   "workflow": "plate_thermal",
+   "needs": "the fenicsx interpreter (.fenicsx/env or VEGETA_FENICSX_PYTHON)",
+   "time": "steady: seconds a case; ablation: 10 s – 2 min a case",
+   "options": [
+    [
+     "--variant",
+     [
+      "1kW",
+      "2kW"
+     ],
+     "1kW"
+    ],
+    [
+     "--quality",
+     [
+      "screening",
+      "fine"
+     ],
+     "fine"
+    ]
+   ]
   }
  },
  "BOOKS": {
@@ -132,6 +157,32 @@
     "wing-interference": {
      "kind": "cfd",
      "campaign": "interference",
+     "prerequisites": []
+    }
+   }
+  },
+  "fenix": {
+   "code": "F",
+   "title": "fenix — Svarog's guard plates by finite elements (FEniCSx in its own interpreter, a process pipe per case)",
+   "design": "notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
+   "variants": [
+    "1kW",
+    "2kW"
+   ],
+   "chapters": {
+    "guard-steady": {
+     "kind": "thermal",
+     "campaign": "guard-steady",
+     "prerequisites": []
+    },
+    "guard-ablation": {
+     "kind": "thermal",
+     "campaign": "guard-ablation",
+     "prerequisites": []
+    },
+    "sheet-distance": {
+     "kind": "thermal",
+     "campaign": "sheet-distance",
      "prerequisites": []
     }
    }

@@ -69,9 +69,19 @@ Of 33 (barrier, beam) pairs, 6 are simulated; the others are decided by the boun
 bound decided each. The absorptivity of the barrier at 1 µm (bare aluminium 0.12, painted or oxidised up to 0.5) is the
 input to vary before trusting a verdict near a class boundary; the standard's test on the panel is the confirmation.
 
+## One notebook, and Yanus
+
+`46_svarog.ipynb` holds the series per topic: Part I the rod, Part II the fibre laser, Part III the industrial lasers —
+the 1 kW and the 2 kW devices (`si.Device`: the 2 kW as two 1 kW modules beam-combined, route B shown where it differs)
+analysed one after the other in each topic (stage, heat budget, delivery and head, welds) — Part IV their guard (stray
+beams, barriers, distance on the reference sheet, the air, the fenix runs), Part V the record: `svarog_design.json`,
+`svarog_fiber_design.json`, `svarog_industrial_design.json` and one `reports/46_svarog.json` (Part I's keys at the top,
+then `fibre`, `industrial` per device, `guard` per device, `air`), which the fenix book's `power_of` reads. The one
+contract takes the fenix runs (F1–F3, 1kW and 2kW; optional) and gives those four files.
+
 ## Yanus: the chain runs itself (auto mode)
 
-Notebooks 47, 48, 49 and 51 carry the `yanus_auto` flag with `SVAROG_SCREENING` as their screening switch: opening one
+The notebook carries the `yanus_auto` flag with `SVAROG_SCREENING` as their screening switch: opening one
 whose take is missing (48 without 47's report, 49 or 51 without 48's) makes the gate run the producer notebook
 headlessly first, with `SVAROG_SCREENING=1` — the design modules then solve with a third of the RK4 steps
 (`N_FINE` 100, `N_SWEEP` 40) and the guard on half the grid (`NR_GUARD` 12) — and then open with what is there; a

@@ -43,7 +43,7 @@ interpreter for each case — a JSON spec in, a `result.json` out: the process p
 writes a run directory per the runkit contract (manifest, status, run.log, cases, summary.json). Chapters: F1
 `guard-steady` (every barrier's steady state, Newton on the nonlinear radiation), F2 `guard-ablation` (the transients
 the closed-form screening could not decide), F3 `sheet-distance` (the reference 2 mm PC sheet at 10–200 m). Variants
-`1kW` and `2kW`. Notebooks 49 and 51 take the runs as optional inputs through Yanus; auto mode produces them in
+`1kW` and `2kW`. Notebook 46 (Part IV) takes the runs as optional inputs through Yanus; auto mode produces them in
 screening quality when the interpreter exists; without it the run is `failed` with every case NOT RUN and the
 notebook says so. `wf list` shows the book, `wf batch` can queue its chapters, `yn status` the notebooks that take them.
 

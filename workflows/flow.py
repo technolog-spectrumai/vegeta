@@ -137,29 +137,14 @@ flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cant
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
-flow.notebook("46_svarog", title="Svarog — the CW diode-end-pumped Nd:YAG laser designed on Hyperion: pump, gain, thermal lens, three cavities, the beam out",
+flow.notebook("46_svarog", title="Svarog — from the Nd:YAG rod to the 1 kW welding fibre laser, its welds, its guard and the 2 kW variant, in one notebook",
               needs=[Package("vegeta.hyperion")],
-              gives=[File(f"{DATA}/svarog_design.json", keys=("kind", "design")), File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions"))])
-
-flow.notebook("47_svarog_fiber", title="Svarog-fiber — the Yb fibre laser on Hyperion: the fibre and its modes, the FBG oscillator, an amplifier stage, the limits, the beam out, against the rod",
-              needs=[Package("vegeta.hyperion")],
-              takes=[File(f"46_svarog:{DATA}/reports/46_svarog.json", keys=("laser", "delivery"))],
-              gives=[File(f"{DATA}/svarog_fiber_design.json", keys=("kind", "design")), File(f"{DATA}/reports/47_svarog_fiber.json", keys=("meta", "oscillator", "amplifier"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
-
-flow.notebook("48_svarog_weld", title="Svarog-industrial — the 1 kW fibre laser for welding: the power stage, its heat budget, the process fibre and head, the welds in steel and aluminium",
-              needs=[Package("vegeta.hyperion")],
-              takes=[File(f"47_svarog_fiber:{DATA}/reports/47_svarog_fiber.json", keys=("amplifier",))],
-              gives=[File(f"{DATA}/svarog_industrial_design.json", keys=("kind", "design")), File(f"{DATA}/reports/48_svarog_weld.json", keys=("meta", "power_stage", "welds"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
-
-flow.notebook("49_svarog_guard", title="Svarog-guard — the stray kilowatt at 20 m against the barriers: closed forms, the steady solve, the transients that decide, IEC 60825-4 classes",
-              needs=[Package("vegeta.hyperion")],
-              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",)), Run("fenix/guard-ablation", variant="1kW"), Run("fenix/guard-steady", variant="1kW"), Run("fenix/sheet-distance", variant="1kW")],
-              gives=[File(f"{DATA}/reports/49_svarog_guard.json", keys=("meta", "beams", "verdicts"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
-
-flow.notebook("51_svarog_2kw", title="Svarog-2kW — two 1 kW modules combined, or one stage pumped harder: the welds at 2 kW and the guard re-screened",
-              needs=[Package("vegeta.hyperion")],
-              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",)), Run("fenix/guard-ablation", variant="2kW"), Run("fenix/sheet-distance", variant="2kW")],
-              gives=[File(f"{DATA}/reports/51_svarog_2kw.json", keys=("meta", "route_A", "route_B", "welds", "guard"))], screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: runs the notebook it takes from, headlessly, in screening quality
+              takes=[Run("fenix/guard-steady", variant="1kW"), Run("fenix/guard-ablation", variant="1kW"), Run("fenix/sheet-distance", variant="1kW"),
+                     Run("fenix/guard-steady", variant="2kW"), Run("fenix/guard-ablation", variant="2kW"), Run("fenix/sheet-distance", variant="2kW")],
+              gives=[File(f"{DATA}/svarog_design.json", keys=("kind", "design")), File(f"{DATA}/svarog_fiber_design.json", keys=("kind", "design")),
+                     File(f"{DATA}/svarog_industrial_design.json", keys=("kind", "design")),
+                     File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions", "fibre", "industrial", "guard", "air"))],
+              screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: the fenix runs it takes are made in screening quality when the fenicsx interpreter exists
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
