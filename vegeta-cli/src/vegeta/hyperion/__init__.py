@@ -14,7 +14,7 @@ from .beam import BeamTrace, GaussianBeam, lens_for_waist, propagate_q, q_from, 
 from .elements import (INF, BrewsterPlate, CurvedMirror, Element, FlatMirror, FreeSpace, Interface, Slab, ThermalLens, ThickLens,
                        ThinLens, Train, abcd_power, element_from_dict, is_mirror)
 from .export import load_design, save_design
-from .fibre import (YB_SILICA, ActiveFibre, Dopant, Fibre, FibreAmplifier, FibreLaser, FibreSolution, core_temperature, ions_for_absorption,
+from .fibre import (YB_SILICA, ActiveFibre, Dopant, Fibre, FibreAmplifier, FibreLaser, FibreOscillator, FibreSolution, core_temperature, ions_for_absorption,
                     srs_threshold)
 from .gain import ND_YAG, GainMedium, Laser, Rod, effective_pump_radius, medium, photon_energy, rod_temperature_rise, thermal_lens
 from .materials import AIR_STP, BK7, FUSED_SILICA, MATERIALS, SAPPHIRE, YAG, Material, get, index_of, names
@@ -28,7 +28,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "AIR_STP", "ActiveFibre", "BK7", "BeamTrace", "BrewsterPlate", "CommandRecord", "CurvedMirror", "Dopant", "Element", "FUSED_SILICA", "Fibre",
-    "FibreAmplifier", "FibreLaser", "FibreSolution", "FlatMirror", "FreeSpace", "GainMedium", "GaussianBeam", "INF", "Interface", "Laser",
+    "FibreAmplifier", "FibreLaser", "FibreOscillator", "FibreSolution", "FlatMirror", "FreeSpace", "GainMedium", "GaussianBeam", "INF", "Interface", "Laser",
     "MATERIALS", "Material", "Mode", "ND_YAG", "Resonator", "Result", "ResultError", "Rod", "SAPPHIRE", "Slab", "ThermalLens", "ThickLens",
     "ThinLens", "Train", "YAG", "YB_SILICA", "abcd_power", "core_temperature", "effective_pump_radius", "element_from_dict", "get", "index_of",
     "ions_for_absorption", "is_mirror", "kogelnik_li", "lens_for_waist", "load_design", "medium", "names", "photon_energy", "propagate_q", "q_from",

@@ -21,10 +21,12 @@ cavity `[gain, resonator]`. Three things decide it:
 
 The rod is where the physics of pumping, heat and modes is learnt; it is not the industrial source.
 
-## 47 — the fibre laser (Svarog-fiber): the cavity is the gain medium
+## 47 — the fibre laser (Svarog-fiber): the gain medium is the guided path, the gratings are the resonator
 
 In a Yb-doped double-clad fibre the pump is trapped in the inner cladding and crosses the core along metres of fibre
-(the (a/b)² overlap), the signal is the fibre's own LP₀₁ mode, the mirrors are fibre Bragg gratings: no thermal lens,
+(the (a/b)² overlap), the signal is the fibre's own LP₀₁ mode; the fibre alone amplifies, and only the two fibre Bragg gratings — the
+feedback and the boundary conditions — make it an oscillator (an amplifier is the same medium with a seed and no
+feedback): no thermal lens,
 no alignment, the heat spread over metres `[fibre]`. The rate equations along the fibre `[Kelson & Hardy]` give: a
 threshold of a fifth of a watt, a slope of 0.81 (the quantum limit λ_p/λ_s = 0.91 times the coupling), 16 W from 20 W of
 976 nm pump in 9 m of 10/125 fibre, and the length as a cost choice once ~90 % of the pump is absorbed. One amplifier

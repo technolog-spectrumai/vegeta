@@ -174,6 +174,31 @@ def delivery(beam: hy.GaussianBeam, w_collimated: float = 1.0e-3, f_focus: float
 
 
 # ------------------------------------------------------------------------------------------------ the comparison
+def rod_profiles(report46: dict | None, n: int = 200) -> dict | None:
+    """The rod's pump, inversion, circulating signal and heat along its 10 mm from notebook 46's record, on the same
+    footing as the fibre's `FibreSolution`: the pump decays as e^(−αz) (single pass, end-pumped), the heat is η_h times
+    the pump absorbed per metre, the inversion is the local four-level steady state saturated by the circulating
+    intensity (N₂ = R τ / (1 + I/I_sat), R the pump rate density in the overlap area), the signal is the circulating
+    power — nearly flat along a rod whose single-pass gain is a few per cent. None without the report."""
+    if not report46:
+        return None
+    las = report46["laser"]; rod = report46["rod"]; med = rod["medium"]; pump = report46["pump"]
+    alpha, L = med["alpha_pump"], rod["length"]
+    P = pump["design_power"]; w_p = pump["w_effective"]; w_l = las["w_rod"]
+    z = np.linspace(0.0, L, n)
+    Pp = P * np.exp(-alpha * z)
+    heat = med["eta_heat"] * alpha * Pp                                            # W/m
+    area = math.pi * (w_p ** 2 + w_l ** 2) / 2
+    hnu_p = hy.photon_energy(med["pump_wavelength"]); hnu_s = hy.photon_energy(med["wavelength"])
+    rate = med["eta_q"] * alpha * Pp / (hnu_p * area)                              # upper-level ions per m³ per s
+    i_sat = hnu_s / (med["sigma"] * med["tau"])
+    circ = las["intracavity_W"]
+    n2 = rate * med["tau"] / (1.0 + 2 * circ / (math.pi * w_l ** 2) / i_sat)       # saturated by the two-way circulating intensity
+    n_total = 1.38e26                                                               # Nd ions/m³ at 1.0 at.% in YAG
+    return {"z": z, "Pp": Pp, "Ps": np.full_like(z, circ), "inversion": n2 / n_total, "heat": heat, "length": L, "pump_W": P, "output_W": las["output_W"]}
+
+
+
 def against_the_rod(report46: dict | None, osc: fb.FibreSolution, osc_threshold: float, osc_slope: float, dl: dict, beam: hy.GaussianBeam, pump_W: float) -> dict:
     """The oscillator at the rod's design pump against notebook 46's record: efficiency, threshold, slope, the beam, the
     work spot, what each is sensitive to. Rows with the rod's numbers are empty when the report is missing."""
