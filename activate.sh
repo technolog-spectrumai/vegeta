@@ -47,6 +47,6 @@ python -c "import vegeta.aeromant, vegeta.talos, vegeta.boreas" 2>/dev/null || e
 _of="$(python -c "from vegeta import aeromant; e=aeromant.OpenFOAMEnvironment.detect(); print(e.flavor(), e.version())" 2>/dev/null || echo "not found")"
 _ccx="$(command -v ccx >/dev/null && echo found || echo "not found")"
 echo "Vegeta: python=$(command -v python)  root=$VEGETA_ROOT  OpenFOAM: $_of  CalculiX: $_ccx"
-echo "  wf                 interactive: pick a book, a chapter, run / prepare / list"
+echo "  wf                 interactive: the tree of books and chapters; pick one by code (K1, k2 …)"
 echo "  wf list | wf runs | wf status <run> | wf tail <run> | wf cache | wf clean-cache"
-echo "  wf run kestrel_airframe --detach --variant 4Q-2 --chapter stall --quality fine"
+echo "  wf K2 --detach --variant 4Q-2 --quality fine"

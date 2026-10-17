@@ -32,19 +32,34 @@ next long-running analysis (a thermal case, another aircraft's CFD) reuses as it
 
 ## Books and chapters
 
-A **book** is the part or assembly that is simulated — one design module, one set of variants, one results folder.
-A **chapter** is the scenario or problem solved on it — one named list of cases. The Kestrel books:
+A **book** is a design — a part or assembly we simulate: `kestrel` is the Kestrel aircraft, code **K**. Its
+**chapters** are the numbered studies on it, of every kind (CFD and FEA alike), chosen by code, case-insensitive:
+`K1`, `k2`, `K10`. `wf list` prints the tree:
 
-| book | part | chapters (→ prerequisite, same book) |
-|---|---|---|
-| `kestrel_airframe` | the whole aircraft with the propellers as rotor disks (Aeromant) | `sweep`, `sweep-fine`, `stall`, `cruise` → sweep, `transitions` → sweep, `blown` → sweep, `all`, `sections` |
-| `kestrel_frame` | the carbon truss and the printed spar–post joint (Talos) | `frame`, `joint` → frame, `all` |
+```
+kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
+├── CFD — the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)
+│   ├── K1   airframe-sweep         the bare airframe 0–90°: the model polar's reference
+│   ├── K2   airframe-stall         8–16°: CL max and the stall speed
+│   ├── K3   airframe-cruise        the cruise and the stall point with the rotor disks          [after K1]
+│   ├── K4   airframe-transitions   the transition points with the rotor disks, the hover        [after K1]
+│   ├── K5   airframe-blown         cruise + transitions                                          [after K1]
+│   ├── K6   airframe-sweep-fine    13 angles, 8–16° resolved
+│   ├── K7   airframe-all           sweep + blown
+│   └── K8   sections               the two finalist sections as slabs
+└── FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)
+    ├── K9   frame                  A, B, C, modes
+    ├── K10  joint                                                                                [after K9]
+    └── K11  frame-and-joint
+```
 
-The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/`, every cached case
+The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/` (e.g.
+`workflows/runs/kestrel/airframe-stall/20261017-101500_4Q-2_fine/`), every cached case
 `workflows/cache/<book>/<case key>.json`. A chapter's **prerequisites are chapters of the same book only**: a chapter
 does not start until each prerequisite has a completed run for the same variant with a compatible fingerprint
-(`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `workflows/library.py`; a new
-book is a new entry there and a new script.
+(`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `workflows/library.py`
+(`BOOKS`: the chapters in order, each with its kind, the script's campaign it maps to and its prerequisites;
+`KINDS`: the scripts); a new chapter is one line there, a new book a new entry and a new script.
 
 **Cache.** A case is identified by its key (template, every value, the geometry file's hash, the quality). When a
 run of a book asks for a case any earlier run of that book already solved, the case record is read back from
@@ -60,7 +75,7 @@ key contains the geometry and the values.
 workflows/
   README.md                    this file
   cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook / cache / clean-cache, or interactive
-  library.py                   the books and chapters, their prerequisites, the run folders
+  library.py                   the books (designs) and their numbered chapters (studies), prerequisites, the tree, the run folders
   runkit.py                    the run-directory contract: manifest, status, run.log, heartbeat, cancel, resume, summary
   kestrel/
     airframe_cfd.py            the whole aircraft with the propellers as rotor disks (Aeromant / OpenFOAM), one campaign per run
@@ -104,13 +119,13 @@ echo $!                                   # the PID (also in <run>/status.json)
 tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # watching a run
-tail -F workflows/runs/kestrel_airframe/<chapter>/<run id>/run.log
-cat workflows/runs/kestrel_airframe/<chapter>/<run id>/status.json
-tail -n 3 workflows/runs/kestrel_airframe/<chapter>/<run id>/cases/<case>/log.simpleFoam        # the native solver log
+tail -F workflows/runs/kestrel/<chapter>/<run id>/run.log
+cat workflows/runs/kestrel/<chapter>/<run id>/status.json
+tail -n 3 workflows/runs/kestrel/<chapter>/<run id>/cases/<case>/log.simpleFoam        # the native solver log
 
 # stopping, resuming
 kill -INT <pid>        # or Ctrl-C in the foreground: the running solver is stopped, the run ends 'cancelled', finished cases are kept
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel_airframe/<chapter>/<run id>
+.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/<chapter>/<run id>
 ```
 
 Closing Jupyter never stops a workflow: the scripts are separate processes that write to disk; the notebook only

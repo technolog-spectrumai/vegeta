@@ -18,10 +18,11 @@ Everything below also works as `.venv/bin/python workflows/cli.py …` without s
 A **workflow** is a script that runs the slow solver cases (CFD, FEA) and writes everything into one folder, the
 **run directory**. The **notebook** (`notebooks/43_kestrel_study.ipynb`) never runs a solver: it reads run
 directories you point it at, checks that they are finished and belong to the current design, and shows the numbers
-beside its own quick estimates. Workflows are organised in **books** (the part simulated: `kestrel_airframe`,
-`kestrel_frame`) and **chapters** (the scenario: `sweep`, `stall`, `cruise`, `transitions`…; `frame`, `joint`);
-results land in `workflows/runs/<book>/<chapter>/<run id>/`. Some chapters need another chapter of the same book
-first (`cruise` and `transitions` need a completed `sweep`; `joint` needs `frame`) — the tool tells you. Cases a book
+beside its own quick estimates. Workflows are organised in **books** (a design: `kestrel`, code **K**) and numbered **chapters** (the studies on
+it, CFD and FEA alike: K1 `airframe-sweep`, K2 `airframe-stall`, K3 `airframe-cruise`, K4 `airframe-transitions`,
+… K9 `frame`, K10 `joint`); you pick a chapter by its code, `K2` or `k2`. Results land in
+`workflows/runs/<book>/<chapter>/<run id>/`. Some chapters need another chapter of the same book first (K3, K4 and
+K5 need a completed K1; K10 needs K9) — the tool tells you. Cases a book
 already solved are **cached** and reused by later runs (`wf cache`, `wf clean-cache`, `--no-cache` to force). You can use the workflows without the notebook (the run directory is readable on its
 own) and the notebook without the workflows (a screening pass with the solver results marked NOT RUN).
 
@@ -32,10 +33,10 @@ One tool lists, explains, launches and watches every workflow. With no arguments
 ```bash
 wf                                       # interactive: book → chapter → variant/quality → run / prepare only / list; cache yes/no; confirm; detached or not
 wf list                                  # the books, their chapters (with prerequisites), runs and cache
-wf info kestrel_airframe stall --variant 4Q-2     # the exact cases a chapter would run
-wf run kestrel_airframe --detach --variant 4Q-2 --chapter stall --quality fine [--no-cache]
+wf info K2 --variant 4Q-2     # the exact cases a chapter would run
+wf K2 --detach --variant 4Q-2 --quality fine [--no-cache]
 wf cache                                 # the cached cases per book
-wf clean-cache [--book kestrel_airframe] # remove them (the runs keep their native results)
+wf clean-cache [--book kestrel] # remove them (the runs keep their native results)
 wf runs                                  # every run on disk: state, cases done, age
 wf status <run>                          # one run: heartbeat, last log lines, and what to do next
 wf tail <run>                            # follow its run.log
@@ -63,14 +64,14 @@ nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapte
 tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # 3. watch it
-tail -F workflows/runs/kestrel_airframe/stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
-cat workflows/runs/kestrel_airframe/stall/<run id>/status.json      # state, case counts, the case in progress
+tail -F workflows/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
+cat workflows/runs/kestrel/airframe-stall/<run id>/status.json      # state, case counts, the case in progress
 
 # 4. stop it if you must (Ctrl-C in the foreground, or:)
 kill -INT <pid>                                           # the pid is in status.json; finished cases are kept
 
 # 5. continue a stopped run
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel_airframe/stall/<run id>
+.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/airframe-stall/<run id>
 ```
 
 The script prints the run directory at the end. Inside it:
@@ -91,16 +92,16 @@ Reading the heartbeat: a healthy long run shows `advancing` most of the time and
 
 What the campaigns are:
 
-| book | chapter | cases | purpose | rough time (4 cores) |
+| code | chapter | cases | purpose | rough time (4 cores) |
 |---|---|---|---|---|
-| `kestrel_airframe` | `sweep` | 10 bare airframe angles 0–90° | checks the lattice: lift slope, Cd0, Cmα | an afternoon (screening) |
-| | `stall` | 5 bare angles 8–16° | CL max → stall speed → wing area | 1–2 h screening, ~5 h fine |
-| | `cruise` | 2 with rotor disks | level cruise and the stall point, blown (after `sweep`) | ~1 h |
-| | `transitions` | ~15 with rotor disks | the points the transitions fly (after `sweep`) | a day |
-| | `blown`, `all`, `sweep-fine`, `sections` | combinations / the section slabs | | |
-| `kestrel_frame` | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
-| | `joint` | 1 | the printed spar–post joint (after `frame`) | minutes |
-| | `all` | 5 | both | under an hour |
+| K1 | `airframe-sweep` | 10 bare airframe angles 0–90° | checks the lattice: lift slope, Cd0, Cmα | an afternoon (screening) |
+| K2 | `airframe-stall` | 5 bare angles 8–16° | CL max → stall speed → wing area | 1–2 h screening, ~5 h fine |
+| K3 | `airframe-cruise` | 2 with rotor disks | level cruise and the stall point, blown (after K1) | ~1 h |
+| K4 | `airframe-transitions` | ~15 with rotor disks | the points the transitions fly (after K1) | a day |
+| K5–K8 | `airframe-blown`, `airframe-sweep-fine`, `airframe-all`, `sections` | combinations / the section slabs | | |
+| K9 | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
+| K10 | `joint` | 1 | the printed spar–post joint (after K9) | minutes |
+| K11 | `frame-and-joint` | 5 | both | under an hour |
 
 Useful options: `--cases "α 12°"` runs only matching cases; `--max-cases 2` / `--max-minutes 90` bound a run (it ends
 `partial`, resumable); `--prepare-only` writes the cases without solving (to inspect a mesh setup); `--quiet` keeps
@@ -113,7 +114,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
 2. The **first code cell** has a dictionary `RUNS` with the run directories the notebook reads, for example
-   `RUNS["airframe_cfd"]["4Q-2"]["sweep"] = "workflows/runs/kestrel_airframe/stall/<run id>"`. Put your run directories there
+   `RUNS["airframe_cfd"]["4Q-2"]["sweep"] = "workflows/runs/kestrel/airframe-stall/<run id>"`. Put your run directories there
    (the workflow prints the exact line to paste when it finishes).
 3. Run the notebook. The prerequisite table shows, for every input: required or optional, which run, where it came
    from, whether it is compatible with the current design, and whether it is usable.
@@ -137,15 +138,15 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 .venv/bin/python workflows/kestrel/import_legacy.py
 ```
 
-It prints two directories under `workflows/runs/kestrel_airframe/sweep/` — the ones `RUNS` in the notebook points at by
+It prints two directories under `workflows/runs/kestrel/airframe-sweep/` (chapter K1) — the ones `RUNS` in the notebook points at by
 default. Replace them as real workflow runs arrive.
 
 ## 6. Order of work recommended now
 
 1. `import_legacy.py` (seconds) and the notebook in screening mode (two minutes): the baseline numbers.
-2. `wf run kestrel_airframe --variant 4Q-2 --chapter stall --quality fine` (hours): decides CL max, the stall speed and
+2. `wf K2 --variant 4Q-2 --quality fine` (hours): decides CL max, the stall speed and
    whether the wing must grow.
-3. `wf run kestrel_frame --variant 4Q-2 --chapter all` (under an hour): the frame's and the joint's margins.
+3. `wf K11 --variant 4Q-2` (under an hour): the frame's and the joint's margins.
 4. Notebook again in its default mode with both run directories in `RUNS`: the validated assessment.
    For a quick *what if* on the design (span, chord, section, propeller, motor, battery, spar) without any solver,
    `44_kestrel_fast.ipynb` compares candidates in about a minute (Zephyr sections, Boreas points, beam rules).

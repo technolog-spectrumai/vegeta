@@ -87,7 +87,7 @@ def test_notebook_prerequisites_raise_one_actionable_error_and_write_nothing(tmp
 
 def test_import_legacy_makes_completed_runs_that_say_they_are_assumed(tmp_path, fp2):
     roots = kcp.import_legacy(kcp.kcfd.RESULTS_JSON, tmp_path, keys=("4Q-2",))
-    assert len(roots) == 1 and roots[0].parent.name == "sweep" and roots[0].parents[1].name == "kestrel_airframe"
+    assert len(roots) == 1 and roots[0].parent.name == "airframe-sweep" and roots[0].parents[1].name == "kestrel"
     s = json.loads((roots[0] / "summary.json").read_text())
     assert s["state"] == "completed" and s["counts"]["n"] == 29 and s["counts"]["solved"] == 29 and "bare_sweep" in s["maps"]
     assert s["maps"]["bare_sweep"]["valid_domain"]["alpha_deg"] == [0.0, 90.0] and (roots[0] / "bare_sweep.csv").exists()
@@ -175,14 +175,22 @@ def test_cache_reuses_a_solved_case_across_runs_and_cleans(tmp_path, monkeypatch
 def test_library_chapters_and_prerequisites(tmp_path, monkeypatch, fp2):
     import library
     monkeypatch.setattr(library, "RUNS", tmp_path)
-    chs = library.chapters("kestrel_airframe")
-    assert chs["transitions"]["prerequisites"] == ("sweep",) and chs["sweep"]["prerequisites"] == () and chs["stall"]["description"]
-    missing = library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-2", expected=fp2)
-    assert len(missing) == 1 and "--chapter sweep" in missing[0]
-    assert library.check_prerequisites("kestrel_airframe", "sweep", variant="4Q-2", expected=fp2) == []
-    _fake_run(tmp_path / "kestrel_airframe" / "sweep" / "s1", fp2)
-    (tmp_path / "kestrel_airframe" / "sweep" / "s1" / "manifest.json").write_text(json.dumps({**json.loads((tmp_path / "kestrel_airframe" / "sweep" / "s1" / "manifest.json").read_text()), "book": "kestrel_airframe", "chapter": "sweep"}))
-    assert library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-2", expected=fp2) == []
-    assert library.check_prerequisites("kestrel_airframe", "transitions", variant="4Q-1", expected=kcp.fingerprint("4Q-1"))       # another variant: still missing
-    runs = library.runs_of("kestrel_airframe", "sweep")
-    assert runs and runs[0]["book"] == "kestrel_airframe" and runs[0]["chapter"] == "sweep" and runs[0]["variant"] == "4Q-2"
+    chs = library.chapters("kestrel")
+    assert chs["airframe-transitions"]["prerequisites"] == ("airframe-sweep",) and chs["airframe-sweep"]["prerequisites"] == () and chs["airframe-stall"]["description"]
+    assert chs["airframe-sweep"]["code"] == "K1" and chs["frame"]["kind"] == "fea" and chs["joint"]["prerequisites"] == ("frame",)
+    assert library.by_code("k3")[1] == "airframe-cruise" and library.by_code("K10")[1] == "joint" and library.by_code("kestrel/frame")[2]["code"] == "K9"
+    with pytest.raises(KeyError):
+        library.by_code("K99")
+    with pytest.raises(KeyError):
+        library.by_code("Z1")
+    assert library.chapter_of("kestrel", "cfd", "stall") == "airframe-stall" and library.chapter_of("kestrel", "fea", "all") == "frame-and-joint"
+    assert "K1" in library.tree(runs=False) and "[after K1]" in library.tree(runs=False) and "FEA" in library.tree(runs=False)
+    missing = library.check_prerequisites("kestrel", "airframe-transitions", variant="4Q-2", expected=fp2)
+    assert len(missing) == 1 and "--chapter sweep" in missing[0] and "wf K1" in missing[0]
+    assert library.check_prerequisites("kestrel", "airframe-sweep", variant="4Q-2", expected=fp2) == []
+    _fake_run(tmp_path / "kestrel" / "airframe-sweep" / "s1", fp2)
+    (tmp_path / "kestrel" / "airframe-sweep" / "s1" / "manifest.json").write_text(json.dumps({**json.loads((tmp_path / "kestrel" / "airframe-sweep" / "s1" / "manifest.json").read_text()), "book": "kestrel", "chapter": "airframe-sweep"}))
+    assert library.check_prerequisites("kestrel", "airframe-transitions", variant="4Q-2", expected=fp2) == []
+    assert library.check_prerequisites("kestrel", "airframe-transitions", variant="4Q-1", expected=kcp.fingerprint("4Q-1"))       # another variant: still missing
+    runs = library.runs_of("kestrel", "airframe-sweep")
+    assert runs and runs[0]["book"] == "kestrel" and runs[0]["chapter"] == "airframe-sweep" and runs[0]["code"] == "K1" and runs[0]["variant"] == "4Q-2"

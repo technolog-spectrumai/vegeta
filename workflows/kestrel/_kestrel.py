@@ -14,16 +14,17 @@ import runkit  # noqa: E402
 import library  # noqa: E402
 
 
-def chapter_args(ap, book: str) -> None:
-    """``--chapter`` (``--campaign`` is kept as an alias) with the book's chapters."""
-    ap.add_argument("--chapter", "--campaign", dest="chapter", default=list(library.BOOKS[book]["chapters"])[0], choices=tuple(library.BOOKS[book]["chapters"]),
-                    help="the scenario (the book's chapters: workflows/cli.py list)")
+def chapter_args(ap, book: str, kind: str) -> None:
+    """``--chapter`` (``--campaign`` is kept as an alias): this script's campaigns, each a chapter of the book."""
+    camps = [c["campaign"] for c in library.BOOKS[book]["chapters"].values() if c["kind"] == kind]
+    ap.add_argument("--chapter", "--campaign", dest="chapter", default=camps[0], choices=tuple(camps),
+                    help=f"the study (the {kind.upper()} chapters of book {book!r}: workflows/cli.py list)")
 
 
 def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: dict, ignore: bool) -> list[str]:
     missing = library.check_prerequisites(book, chapter, variant=variant, expected=expected)
     if missing and not ignore:
-        print(f"chapter {chapter!r} of {book!r} needs, in this book, a completed compatible run of its prerequisite chapter(s) first:")
+        print(f"chapter {library.chapters(book)[chapter]['code']} ({chapter}) of book {book!r} needs a completed compatible run of its prerequisite chapter(s) first:")
         for m in missing:
             print("  - " + m)
         print("(or --ignore-prerequisites, recorded in the manifest)")

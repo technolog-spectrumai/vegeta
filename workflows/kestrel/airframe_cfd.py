@@ -7,7 +7,7 @@ named campaign per run, written as a run directory the unified Kestrel notebook 
     .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter blown --prepare-only
     .venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/airframe_cfd/<run id>
 
-Book ``kestrel_airframe``; chapters (``kestrel_campaigns.CFD_CAMPAIGNS``, ``--chapter``; ``--campaign`` still works): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
+Book ``kestrel`` (code K), the CFD chapters; campaigns (``kestrel_campaigns.CFD_CAMPAIGNS``, ``--chapter``; ``--campaign`` still works): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
 ``stall`` 8–16° (5: CL max), ``cruise`` (2 blown), ``transitions`` (the 3 s transitions' points + hover, blown),
 ``blown`` (cruise + transitions), ``all`` (sweep + blown), ``sections`` (the two finalist sections as slabs, 8).
 A run does exactly the cases it lists (``--list``) — filtered with ``--cases``, bounded with ``--max-cases`` /
@@ -31,13 +31,14 @@ import kestrel_campaigns as kc  # noqa: E402
 import kestrel_cfd as kcfd  # noqa: E402
 
 WORKFLOW = "airframe_cfd"
-BOOK = "kestrel_airframe"
+BOOK = "kestrel"
+KIND = "cfd"
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variant", default="4Q-2", choices=tuple(kc.VARIANTS))
-    wk.chapter_args(ap, BOOK)
+    wk.chapter_args(ap, BOOK, KIND)
     ap.add_argument("--quality", default="screening", choices=tuple(kcfd.QUALITY))
     ap.add_argument("--processors", type=int, default=4, help="MPI ranks per case (meshing stays serial)")
     runkit.add_common_arguments(ap)
@@ -48,7 +49,7 @@ def main(argv=None) -> int:
         cfg = m.get("config") or {}
         if cfg:
             args.variant, args.chapter, args.quality = cfg.get("variant", args.variant), cfg.get("chapter", cfg.get("campaign", args.chapter)), cfg.get("quality", args.quality)
-    config = {"workflow": WORKFLOW, "book": BOOK, "chapter": args.chapter, "campaign": args.chapter, "variant": args.variant, "quality": args.quality}
+    config = {"workflow": WORKFLOW, "book": BOOK, "kind": KIND, "chapter": wk.library.chapter_of(BOOK, KIND, args.chapter) or args.chapter, "campaign": args.chapter, "variant": args.variant, "quality": args.quality}
 
     t0 = time.monotonic()
     veh = kc.vehicle(args.variant)
@@ -69,14 +70,15 @@ def main(argv=None) -> int:
         return 0
 
     fp = kc.fingerprint(args.variant, veh)
-    ignored = wk.prerequisites_or_exit(BOOK, args.chapter, variant=args.variant, expected=fp, ignore=args.ignore_prerequisites)
+    CHAPTER = wk.library.chapter_of(BOOK, KIND, args.chapter) or args.chapter
+    ignored = wk.prerequisites_or_exit(BOOK, CHAPTER, variant=args.variant, expected=fp, ignore=args.ignore_prerequisites)
     if args.resume:
         run = runkit.Run.open(args.resume, config=config, heartbeat_s=args.heartbeat, echo=not args.quiet)
     else:
-        out = Path(args.out) if args.out else wk.library.run_dir(BOOK, args.chapter, f"{args.variant}_{args.quality}")
+        out = Path(args.out) if args.out else wk.library.run_dir(BOOK, CHAPTER, f"{args.variant}_{args.quality}")
         run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names,
                                 versions={"openfoam": _openfoam_version()}, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    run.manifest.update(book=BOOK, chapter=args.chapter, prerequisites_ignored=ignored)
+    run.manifest.update(book=BOOK, chapter=CHAPTER, kind=KIND, prerequisites_ignored=ignored)
     runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
     cache = runkit.Cache(BOOK, enabled=not args.no_cache)
     run.log(f"cache {'off (--no-cache)' if args.no_cache else cache.dir}")
