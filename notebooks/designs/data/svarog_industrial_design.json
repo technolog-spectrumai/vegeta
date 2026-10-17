@@ -1,0 +1,310 @@
+{
+ "kind": "hyperion.design",
+ "notes": "Svarog-industrial: 10 m power stage, 1077 W pump, 1000 W out (notebook 48)",
+ "design": {
+  "name": "Svarog-industrial",
+  "wavelength": 1.07e-06,
+  "pump_wavelength": 9.76e-07,
+  "target_W": 1000.0,
+  "power_stage": {
+   "amplifier": {
+    "active": {
+     "fibre": {
+      "core_radius": 1.5e-05,
+      "NA": 0.06,
+      "clad_radius": 0.000125,
+      "coating_radius": 0.0002,
+      "clad_NA": 0.46,
+      "alpha_signal": 0.002302585092994046,
+      "alpha_pump": 0.002302585092994046,
+      "core_index": null,
+      "name": "30/250 Yb double-clad"
+     },
+     "dopant": {
+      "name": "Yb:silica",
+      "table": [
+       [
+        9e-07,
+        1.5e-25,
+        1e-26
+       ],
+       [
+        9.15e-07,
+        7.5e-25,
+        2.5e-26
+       ],
+       [
+        9.4e-07,
+        4e-25,
+        6e-26
+       ],
+       [
+        9.6e-07,
+        5e-25,
+        2e-25
+       ],
+       [
+        9.76e-07,
+        2.5e-24,
+        2.5e-24
+       ],
+       [
+        9.9e-07,
+        3e-25,
+        6e-25
+       ],
+       [
+        1.01e-06,
+        1.2e-25,
+        7e-25
+       ],
+       [
+        1.03e-06,
+        5e-26,
+        6e-25
+       ],
+       [
+        1.05e-06,
+        2e-26,
+        4e-25
+       ],
+       [
+        1.064e-06,
+        1.2e-26,
+        3.3e-25
+       ],
+       [
+        1.07e-06,
+        8e-27,
+        2.8e-25
+       ],
+       [
+        1.08e-06,
+        4e-27,
+        2.2e-25
+       ],
+       [
+        1.09e-06,
+        2e-27,
+        1.7e-25
+       ],
+       [
+        1.1e-06,
+        1e-27,
+        1.3e-25
+       ]
+      ],
+      "tau": 0.00085,
+      "N": 1.279213940552244e+25,
+      "kappa": 1.38,
+      "note": "Paschotta et al. 1997's germanosilicate shape, rounded; \u03c4 0.85 ms; N for ~1.7 dB/m cladding absorption of a 10/125 at 976 nm \u2014 the fibre's datasheet (absorption at 976 or 915 nm) sets N through ions_for_absorption"
+     },
+     "length": 10.0,
+     "name": "30/250 Yb double-clad, 10 m"
+    },
+    "pump_wavelength": 9.76e-07,
+    "signal_wavelength": 1.07e-06,
+    "pump_direction": "counter",
+    "name": "Svarog-industrial power stage, 10 m"
+   },
+   "fibre": {
+    "core_radius": 1.5e-05,
+    "NA": 0.06,
+    "clad_radius": 0.000125,
+    "coating_radius": 0.0002,
+    "clad_NA": 0.46,
+    "alpha_signal": 0.002302585092994046,
+    "alpha_pump": 0.002302585092994046,
+    "core_index": null,
+    "name": "30/250 Yb double-clad"
+   },
+   "seed_W": 58.88036668695728,
+   "pump_W": 1077.0319694317814,
+   "pump": {
+    "modules": 6,
+    "module_W": 220.0
+   },
+   "output_W": 1000.0000006630972,
+   "absorbed_W": 1048.4733895999595,
+   "unabsorbed_W": 28.55857983182174,
+   "gain_db": 12.300294943113519,
+   "efficiency": 0.9284775466699243,
+   "heat_W": 105.21456203817098,
+   "peak_heat_per_m": 37.56711235059092,
+   "inversion_max": 0.12379797001487344,
+   "inversion_min": 0.0758476307686711,
+   "note": "",
+   "coil_radius": 0.0495
+  },
+  "thermal_budget": {
+   "active_fibre_heat_W": 105.21456203817098,
+   "active_fibre_peak_W_per_m": 37.56711235059092,
+   "core_dT_per_cooling": {
+    "water-cooled spool (h 2000)": 40.35077857944904,
+    "cooled plate (h 500)": 85.19321579158756,
+    "still air (h 10)": 3014.8991136513046
+   },
+   "stripper_W": 51.32135889110501,
+   "delivery_loss_W": 66.74569924726791,
+   "delivered_W": 933.2543014158293,
+   "lens_absorbed_W_each": 1.8665086028316586,
+   "lens_centre_dT": 55.70236373448189,
+   "wall_plug_pump_W": null
+  },
+  "delivery": {
+   "core_radius": 2.5e-05,
+   "NA": 0.12,
+   "length": 20.0,
+   "name": "50/125 process fibre, 20 m",
+   "bpp_mm_mrad": 3.0
+  },
+  "head": {
+   "f_collimator": 0.1,
+   "f_focus": 0.2,
+   "name": "welding head 100/200"
+  },
+  "head_numbers": {
+   "bpp_mm_mrad": 3.0,
+   "m2": 8.808203701653627,
+   "collimated_radius": 0.012,
+   "spot_radius": 5e-05,
+   "cone_half_angle": 0.06,
+   "rayleigh_length": 0.0008333333333333334,
+   "mean_irradiance_W_per_cm2": 11882562.818568228,
+   "srs_delivery": {
+    "P_threshold_W": 7255.6277027497,
+    "L_eff": 19.546972960558833,
+    "A_eff": 8.864097407345625e-10,
+    "stokes_wavelength": 1.1229028654609113e-06
+   }
+  },
+  "beam_at_work": {
+   "_type": "GaussianBeam",
+   "wavelength": 1.07e-06,
+   "w0": 5e-05,
+   "z0": 0.0,
+   "m2": 8.808203701653627,
+   "n": 1.0,
+   "name": "welding head 100/200 focus",
+   "rayleigh_range": 0.0008333333333333334,
+   "divergence": 0.06
+  },
+  "welds": {
+   "mild steel": {
+    "keyhole": {
+     "P_threshold_W": 37.47871017887093,
+     "I_threshold_W_per_cm2": 477193.7588540673,
+     "spot_radius": 5e-05,
+     "material": "mild steel"
+    },
+    "window": [
+     {
+      "thickness": 0.001,
+      "v_full_penetration": 0.0676650290489466,
+      "v_with_margin": 0.050265052532560604,
+      "heat_input_J_per_m": 18566.66320623633,
+      "feasible": true
+     },
+     {
+      "thickness": 0.002,
+      "v_full_penetration": 0.021154010286589423,
+      "v_with_margin": 0.015363809628951418,
+      "heat_input_J_per_m": 60743.67776968635,
+      "feasible": true
+     },
+     {
+      "thickness": 0.003,
+      "v_full_penetration": 0.010314223961352365,
+      "v_with_margin": 0.007408432769890614,
+      "heat_input_J_per_m": 125971.89316595618,
+      "feasible": true
+     },
+     {
+      "thickness": 0.004,
+      "v_full_penetration": 0.006106716614753189,
+      "v_with_margin": 0.004357187233540949,
+      "heat_input_J_per_m": 214187.33035656193,
+      "feasible": true
+     },
+     {
+      "thickness": 0.006,
+      "v_full_penetration": 0.0028682789575361282,
+      "v_with_margin": 0.0020309569119317116,
+      "heat_input_J_per_m": 459514.5745993103,
+      "feasible": true
+     }
+    ]
+   },
+   "aluminium": {
+    "keyhole": {
+     "P_threshold_W": 511.73860655039636,
+     "I_threshold_W_per_cm2": 6515658.304276332,
+     "spot_radius": 5e-05,
+     "material": "aluminium"
+    },
+    "window": [
+     {
+      "thickness": 0.001,
+      "v_full_penetration": 0.06267811470301159,
+      "v_with_margin": 0.04478026789569294,
+      "heat_input_J_per_m": 20840.748509804955,
+      "feasible": true
+     },
+     {
+      "thickness": 0.002,
+      "v_full_penetration": 0.017126572407529902,
+      "v_with_margin": 0.012085206832080692,
+      "heat_input_J_per_m": 77222.86547371837,
+      "feasible": true
+     },
+     {
+      "thickness": 0.003,
+      "v_full_penetration": 0.007862238732901152,
+      "v_with_margin": 0.005521052145917742,
+      "heat_input_J_per_m": 169035.58900559857,
+      "feasible": true
+     },
+     {
+      "thickness": 0.004,
+      "v_full_penetration": 0.004497342742423714,
+      "v_with_margin": 0.003149965498184758,
+      "heat_input_J_per_m": 296274.4518800727,
+      "feasible": true
+     }
+    ]
+   }
+  },
+  "guard": {
+   "distance": 20.0,
+   "exposure": {
+    "T1": 10.0,
+    "T2": 100.0,
+    "T3": 30000.0
+   },
+   "beams": [
+    {
+     "name": "raw collimated beam",
+     "power": 933.2543014158293,
+     "radius": 0.017,
+     "shape": "tophat",
+     "note": "the worst case: the full power in a beam that stays small"
+    },
+    {
+     "name": "diverging past the focus",
+     "power": 933.2543014158293,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "the beam through the focus, or a flat workpiece's specular reflection"
+    },
+    {
+     "name": "keyhole back-reflection",
+     "power": 186.65086028316588,
+     "radius": 1.2,
+     "shape": "tophat",
+     "note": "a fifth of the power thrown back out of the keyhole"
+    }
+   ],
+   "verdicts": []
+  }
+ }
+}

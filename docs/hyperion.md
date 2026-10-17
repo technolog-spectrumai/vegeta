@@ -1,4 +1,8 @@
-# Hyperion — optics (materials, ABCD elements, Gaussian beams, resonators, a four-level laser)
+# Hyperion — optics (materials, ABCD elements, Gaussian beams, resonators, lasers, fibres, heat, welding)
+
+The physics behind each module, with references: [hyperion_physics.md](hyperion_physics.md); how each is solved and
+checked: [hyperion_solvers.md](hyperion_solvers.md). The device series built on it: [svarog_physics.md](svarog_physics.md),
+[svarog_solvers.md](svarog_solvers.md).
 
 Hyperion is the optics library: what a laser's cavity and beam are made of, on paper. Pure numpy; nothing is run on
 the machine and nothing is picked for you — the elements, their spacings, the wavelength, the pump, the mode, the
@@ -66,6 +70,16 @@ the gratings' reflectivities; `solve(P)` → a `FibreSolution` (profiles, the in
 unabsorbed pump), `threshold()` (the small-signal round trip reaching 1), `power_curve`, `length_sweep`. `FibreAmplifier(active,
 λ_p, λ_s, "co" | "counter")`: one pass of a seed, the counter-pump shot to its launched power. `srs_threshold` (Smith's
 16 A_eff/(g_R L_eff)), `core_temperature` (radial conduction through core, cladding, coating, and h to the sink).
+
+**Heat** (`thermal.py`): `Solid` (ρ, c, k, T_melt/L_melt, T_fail/L_fail, absorptivity at 1 µm, emissivity, an absorption
+depth for a partly transparent material, the failure mode melt/ablate) with `MILD_STEEL`, `STAINLESS`, `ALUMINIUM`,
+`BLACK_PC`, `CLEAR_PC`, `LASER_PC`, `BLACK_PE`, `BRICK`; the closed forms `semi_infinite_surface_rise`, `thin_plate_time_to`,
+`gaussian_steady_rise`; `steady_plate` (Jacobi on the r–z grid with convection and linearised radiation) and `heat_plate`
+(explicit enthalpy-method transient with ablation, the surface-damage and burn-through times, `HeatingResult.survives(t)`).
+
+**Welding** (`welding.py`): `DeliveryFibre` (BPP, M², its beam), `WeldHead` (spot, cone, collimated radius, Rayleigh
+length), `keyhole_threshold`, `rosenthal_pool`, `penetration` / `penetration_curve` / `speed_for_penetration` /
+`process_window`.
 
 ## Validation
 - Materials against the catalogues: N-BK7 n_d 1.5168, fused silica 1.4570 at 633 nm and 1.4496 at 1064 nm (Malitson), YAG

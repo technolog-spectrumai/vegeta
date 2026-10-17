@@ -1,5 +1,27 @@
 # Svarog and Hyperion — what comes next (branch `dev_svarog`)
 
+**The target is the industrial laser.** Svarog exists to arrive at a 1 kW fibre laser for welding metal and the guard
+that contains it (notebooks 48 and 49); the rod (46) and the fibre oscillator (47) are the steps that got there, kept as
+they are. Everything below is read against that target: an item is done when the industrial device needs it, skipped
+when it does not — the structural analysis of the laser itself is skipped (a coil on a cooled spool, a combiner, a
+catalogue head: nothing load-bearing), the rod's thermal FEA is skipped (the fibre has no thermal lens), the FFT optics
+is skipped for a multimode 50 µm process beam. What remains on the way to the industrial device, in order:
+
+- [ ] I.1 **The guard's ablation in a field solver** (branch `dev_svarog_advanced`): FEniCSx → XDMF/VTK → PyVista → the
+  notebook — the barrier under the collimated beam as a 2-D axisymmetric (then 3-D) transient with the enthalpy method
+  and element removal, against `hyperion.thermal`'s cell model; and where FEniCS pays elsewhere in Vegeta
+  (`docs/fenics.md`).
+- [ ] I.2 **The welding head's optics**: the real lenses (ray tracing: spherical aberration of the 200 mm focusing lens at
+  NA 0.06, the focus shift from the lenses' heating), the cover slide, the process fibre's end cap — the spot as built.
+- [ ] I.3 **The weld pool beyond the energy balance**: a moving-source conduction solve (Rosenthal → the plate solver with
+  a moving beam) for the pool and the cooling rate; the keyhole's stability window (porosity, spatter) from the literature.
+- [ ] I.4 **The enclosure**: the sheet-metal panels from 49's verdict (steel 1.5 mm holds, plastic only for T1), the
+  interlocked head (the collimated beam must not exist outside it), the stripper and spool cooling as parts (Dedalus).
+- [ ] I.5 **Pulses for cutting and marking**: the Q-switched/MOPA pulsed variant of the same chain, SRS and
+  self-focusing as the walls.
+
+The earlier roadmap, kept for the record:
+
 Hyperion is Vegeta's general optics library (`vegeta.hyperion`: materials, paraxial ABCD elements, Gaussian beams,
 resonators, a four-level gain model); Svarog is the laser designed and analysed with it (`notebooks/46_svarog`,
 `notebooks/designs/svarog.py`). The first increment is a CW diode-end-pumped Nd:YAG at 1064 nm in a two-mirror cavity:

@@ -20,6 +20,9 @@ from .gain import ND_YAG, GainMedium, Laser, Rod, effective_pump_radius, medium,
 from .materials import AIR_STP, BK7, FUSED_SILICA, MATERIALS, SAPPHIRE, YAG, Material, get, index_of, names
 from .resonator import Mode, Resonator, kogelnik_li, two_mirror
 from .result import CommandRecord, Result, ResultError
+from .thermal import (ALUMINIUM, BLACK_PC, BLACK_PE, BRICK, CLEAR_PC, LASER_PC, MILD_STEEL, SOLIDS, STAINLESS, HeatingResult, Solid,
+                      gaussian_steady_rise, heat_plate, irradiance, semi_infinite_surface_rise, solid, steady_plate, thin_plate_time_to)
+from .welding import DeliveryFibre, WeldHead, keyhole_threshold, penetration, penetration_curve, process_window, rosenthal_pool, speed_for_penetration
 
 __version__ = "0.1.0"
 
@@ -30,4 +33,7 @@ __all__ = [
     "ThinLens", "Train", "YAG", "YB_SILICA", "abcd_power", "core_temperature", "effective_pump_radius", "element_from_dict", "get", "index_of",
     "ions_for_absorption", "is_mirror", "kogelnik_li", "lens_for_waist", "load_design", "medium", "names", "photon_energy", "propagate_q", "q_from",
     "rod_temperature_rise", "save_design", "spot_from", "srs_threshold", "thermal_lens", "trace", "two_mirror",
+    "ALUMINIUM", "BLACK_PC", "BLACK_PE", "BRICK", "CLEAR_PC", "LASER_PC", "MILD_STEEL", "SOLIDS", "STAINLESS", "HeatingResult", "Solid",
+    "gaussian_steady_rise", "heat_plate", "irradiance", "semi_infinite_surface_rise", "solid", "steady_plate", "thin_plate_time_to",
+    "DeliveryFibre", "WeldHead", "keyhole_threshold", "penetration", "penetration_curve", "process_window", "rosenthal_pool", "speed_for_penetration",
 ]

@@ -314,3 +314,12 @@ folded into the HR), `oscillator` / `length_choice` / `coupler_choice`, `amplifi
 `coil_radius_for`, `limits` (SRS, the core's temperature per cooling), `beam_out`, `delivery` (Svarog's train),
 `against_the_rod` (from 46's report), `design_record`. `svarog_fiber_drawings.py` draws the power evolution along the fibre,
 the length sweeps, the bend-loss curves and the power curves.
+
+`svarog_industrial.py` (notebooks 48 and 49, branch `dev_svarog`) is **Svarog-industrial**, the 1 kW welding laser and its
+guard (`import svarog_industrial as si`): `FIBRE_POWER` (30/250), `PumpModules` (six 220 W 976 nm modules, the étendue
+check), `power_stage` / `power_stage_length_choice` / `pump_for_target`, `thermal_budget` (the active fibre's heat and
+core rise per cooling, the stripper, the process fibre, the head's lenses), `DELIVERY` / `HEAD` / `head_numbers`,
+`welds` (keyhole thresholds, penetration curves, process windows for steel and aluminium), `stray_beams` (the cases at
+20 m), `BARRIERS`, `screen` (the closed-form and steady-solve triage), `simulate`, `verdict`, `guard_study`,
+`design_record`. `svarog_industrial_drawings.py` draws the penetration curves and windows, the stray beam against
+distance, the guard's timeline against the IEC 60825-4 classes, a barrier's transient and field.

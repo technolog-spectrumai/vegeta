@@ -104,7 +104,14 @@ the fibre twin (`designs/svarog_fiber.py`, Hyperion's `fibre` module): a 10/125 
 gratings pumped at 976 nm — the fibres' modes and bend loss, the pump and both signal waves along the fibre from the rate
 equations, the length and coupler choices, a counter-pumped 20/125 amplifier stage, the coil radius, SRS and the core's
 temperature per cooling, the beam out on the same delivery train, and the rod and the fibre side by side at 20 W from
-46's record. What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
+46's record. `48_svarog_weld` is **Svarog-industrial**, the target of the series: the fibre MOPA scaled to 1 kW at the
+workpiece (a 30/250 power stage, its heat budget, the 50 µm process fibre and the 100/200 welding head), the keyhole
+thresholds, penetration curves and process windows in mild steel and aluminium (`hyperion.welding`); `49_svarog_guard`
+is its guard: the stray beam at 20 m (raw collimated, diverging, a keyhole reflection) against black, clear and
+laser-grade polycarbonate, brick, aluminium and steel — closed-form screening, a steady solve, and the enthalpy/ablation
+transient (`hyperion.thermal`) only where it decides, with verdicts per IEC 60825-4 class. The physics and the solvers:
+[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). What comes next, in
+order, is [`svarog_todo.md`](svarog_todo.md).
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a

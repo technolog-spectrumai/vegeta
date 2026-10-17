@@ -115,6 +115,16 @@ flow.notebook("47_svarog_fiber", title="Svarog-fiber — the Yb fibre laser on H
               takes=[File(f"46_svarog:{DATA}/reports/46_svarog.json", keys=("laser", "delivery"))],
               gives=[File(f"{DATA}/svarog_fiber_design.json", keys=("kind", "design")), File(f"{DATA}/reports/47_svarog_fiber.json", keys=("meta", "oscillator", "amplifier"))])
 
+flow.notebook("48_svarog_weld", title="Svarog-industrial — the 1 kW fibre laser for welding: the power stage, its heat budget, the process fibre and head, the welds in steel and aluminium",
+              needs=[Package("vegeta.hyperion")],
+              takes=[File(f"47_svarog_fiber:{DATA}/reports/47_svarog_fiber.json", keys=("amplifier",))],
+              gives=[File(f"{DATA}/svarog_industrial_design.json", keys=("kind", "design")), File(f"{DATA}/reports/48_svarog_weld.json", keys=("meta", "power_stage", "welds"))])
+
+flow.notebook("49_svarog_guard", title="Svarog-guard — the stray kilowatt at 20 m against the barriers: closed forms, the steady solve, the transients that decide, IEC 60825-4 classes",
+              needs=[Package("vegeta.hyperion")],
+              takes=[File(f"48_svarog_weld:{DATA}/reports/48_svarog_weld.json", keys=("meta",))],
+              gives=[File(f"{DATA}/reports/49_svarog_guard.json", keys=("meta", "beams", "verdicts"))])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

@@ -1,0 +1,25 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "48_svarog_weld.json",
+ "git": "202f88800591",
+ "inputs": [
+  {
+   "key": "47_svarog_fiber:notebooks/designs/data/reports/47_svarog_fiber.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/reports/47_svarog_fiber.json",
+   "sha256": "df21d321651c210cb6c7d3eb7bdcec1e429f94d2822fc22ce06675f1b9ae8c3d"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.hyperion": "found"
+ },
+ "producer": "48_svarog_weld",
+ "schema": null,
+ "sha256": "4d119ec0df149202b3f51f2fcb42bbb668e092840e633a3bb3bef45e41e3e248",
+ "size": 11150,
+ "written_at": "2026-10-17T15:15:10Z",
+ "written_ts": 1792250110.4024215,
+ "yanus": 1
+}
