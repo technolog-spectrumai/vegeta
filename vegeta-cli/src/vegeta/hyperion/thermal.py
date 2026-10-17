@@ -256,9 +256,10 @@ def heat_plate(solid: Solid | str, thickness: float, power: float, radius: float
     larger of 8 radii and 12 thicknesses) held at ``T0``. Explicit finite differences in r and z (``nr`` × ``nz`` cells),
     the enthalpy method for the latent heats, a cell that reaches the failure enthalpy is removed and the beam falls on
     the next. Stops at failure (``stop_at_failure``), at ``t_max``, or once steady (the hottest point moves less than
-    ``steady_tol`` K per second over the last ten seconds and nothing is melting). ``backend``: ``"auto"`` (FEniCSx when
-    installed — the tested finite-element route — else numpy), ``"numpy"``, ``"fenicsx"``."""
-    if _backend(backend) == "fenicsx":
+    ``steady_tol`` K per second over the last ten seconds and nothing is melting). ``backend``: ``"numpy"`` (the default
+    under ``"auto"`` for the transient: it has the stall detection the guard study needs) or ``"fenicsx"`` (the finite-element
+    transient of ``thermal_fenicsx``, when dolfinx is installed)."""
+    if backend == "fenicsx" and _backend(backend) == "fenicsx":            # "auto" keeps numpy for the transient: its stall detection is not in the FEM one yet
         from .thermal_fenicsx import heat_plate_fenicsx
         return heat_plate_fenicsx(solid, thickness, power, radius, t_max, shape, h, T0, nr, nz, r_max, stop_at_failure, record_every=record_every)
     s = solid if isinstance(solid, Solid) else SOLIDS[str(solid).lower()]

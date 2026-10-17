@@ -9,8 +9,8 @@ Axisymmetric r–z on a rectangle (r in [0, r_max], z in [−d, 0], the exposed 
 the weak form weighted by r. Steady: Newton on the nonlinear radiation (dolfinx's ``NonlinearProblem``). Transient:
 implicit Euler, the apparent-heat-capacity form of the enthalpy method (the latent heats spread over ±``band`` K),
 Picard on the capacity and the linearised radiation, ablation by cell deactivation once a cell held at the failure
-point has taken its latent heat of removal, the beam's source moved to the next live cell. Linear solves by PETSc
-(CG + hypre BoomerAMG). Installation: docs/fenics.md."""
+point has taken its latent heat of removal, the beam's source moved to the next live cell. Linear solves by PETSc (a direct LU
+on these small meshes; swap the options for CG + hypre on a big one). Installation: docs/fenics.md."""
 from __future__ import annotations
 
 import math
@@ -23,7 +23,6 @@ try:
     import ufl
     from dolfinx import fem, mesh
     from dolfinx.fem.petsc import LinearProblem, NonlinearProblem
-    from dolfinx.nls.petsc import NewtonSolver
     from mpi4py import MPI
     from petsc4py import PETSc
     HAVE_DOLFINX = True
@@ -80,13 +79,12 @@ def steady_plate_fenicsx(solid, thickness: float, power: float, radius: float, s
     loss = lambda Tf: h * (Tf - T0) + s.emissivity * SIGMA_SB * (Tf ** 4 - T0 ** 4)
     F = s.k * ufl.dot(ufl.grad(T), ufl.grad(v)) * r * ufl.dx - q * v * r * ds(1) + loss(T) * v * r * (ds(1) + ds(2))
     bc = fem.dirichletbc(PETSc.ScalarType(T0), fem.locate_dofs_topological(V, msh.topology.dim - 1, edge), V)
-    problem = NonlinearProblem(F, T, bcs=[bc])
-    solver = NewtonSolver(msh.comm, problem)
-    solver.rtol, solver.max_it = tol, 60
-    ksp = solver.krylov_solver
-    ksp.setType("cg")
-    ksp.getPC().setType("hypre")
-    its, converged = solver.solve(T)
+    problem = NonlinearProblem(F, T, bcs=[bc], petsc_options_prefix="hyperion_steady_",
+                               petsc_options={"snes_type": "newtonls", "snes_rtol": tol, "snes_atol": 1e-8, "snes_max_it": 80, "snes_linesearch_type": "bt",
+                                              "ksp_type": "preonly", "pc_type": "lu"})
+    problem.solve()
+    its = problem.solver.getIterationNumber()
+    converged = problem.solver.getConvergedReason() > 0
     vals = T.x.array
     coords = V.tabulate_dof_coordinates()
     on_axis = np.isclose(coords[:, 0], 0.0)
@@ -130,7 +128,7 @@ def heat_plate_fenicsx(solid, thickness: float, power: float, radius: float, t_m
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     bc = fem.dirichletbc(PETSc.ScalarType(T0), fem.locate_dofs_topological(V, msh.topology.dim - 1, edge), V)
     T_cell = fem.Function(D0)
-    expr = fem.Expression(T_k, D0.element.interpolation_points())
+    expr = fem.Expression(T_k, D0.element.interpolation_points)
 
     def capacity(Tf):
         rho_c = s.rho * s.c
@@ -157,7 +155,7 @@ def heat_plate_fenicsx(solid, thickness: float, power: float, radius: float, t_m
             h_rad = s.emissivity * SIGMA_SB * (T_k ** 2 + T0 ** 2) * (T_k + T0)
             a = (cap * u * v / dtc + k_eff * ufl.dot(ufl.grad(u), ufl.grad(v))) * r * ufl.dx + (h + h_rad) * u * v * r * (ds(1) + ds(2))
             L = (cap * T_n * v / dtc + src * v) * r * ufl.dx + (h + h_rad) * T0 * v * r * (ds(1) + ds(2))
-            T_new = LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "cg", "pc_type": "hypre"}).solve()
+            T_new = LinearProblem(a, L, bcs=[bc], petsc_options_prefix="hyperion_step_", petsc_options={"ksp_type": "preonly", "pc_type": "lu"}).solve()
             change = float(np.abs(T_new.x.array - T_k.x.array).max())
             T_k.x.array[:] = T_new.x.array
             if change < 0.5:

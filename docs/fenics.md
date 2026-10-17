@@ -25,6 +25,13 @@ shapes, so notebook 49 and the guard study switch solvers by installing dolfinx.
 `test_backend_dispatch_and_fenicsx_when_present` compares the two on an aluminium steady case (5 K) and a polycarbonate
 burn-through (25 %) and skips (NOT RUN) without dolfinx.
 
+**Smoke-tested here (dolfinx 0.11.0, conda-forge via micromamba):** the steady aluminium case 311 K (numpy Jacobi) against
+315 K (FEniCSx Newton, 2 iterations); the guard's 1.5 mm steel under the collimated kilowatt 1222 K against 1232 K
+(FEniCSx 0.5 s, Jacobi 3.6 s); the 10 mm black polycarbonate burn-through 26.2 s (cells, 24 × 10) against 30.4 s (FEM,
+13 s of compute) — the cell model is 16 % fast, its grid's coarseness, inside the margin 49's verdicts use.
+``backend="auto"`` takes FEniCSx for the steady solve and keeps numpy for the transient (whose stall detection the FEM
+version does not have yet); ``backend="fenicsx"`` forces the FEM transient.
+
 ## The first use: the guard's ablation (`advanced/svarog_ablation_fenicsx.py`, notebook 50)
 
 The barrier under the stray beam as a transient heat problem in r–z with the apparent-heat-capacity enthalpy method

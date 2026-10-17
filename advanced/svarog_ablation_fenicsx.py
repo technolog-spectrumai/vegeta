@@ -133,7 +133,7 @@ def run(args) -> dict:
             if change < 0.5:
                 break
         # removal: cells held at T_fail accumulate the energy that would have raised them; past L_fail they leave
-        T_cell = fem.Function(D0); T_cell.interpolate(fem.Expression(T_k, D0.element.interpolation_points()))
+        T_cell = fem.Function(D0); T_cell.interpolate(fem.Expression(T_k, D0.element.interpolation_points))
         hot = (T_cell.x.array >= T_live_fail - 20.0) & (alive_arr > 0.5)
         removed_energy.x.array[hot] += (src_arr[hot] * args.dt)     # the beam's energy into a cell that can no longer heat up
         gone = hot & (removed_energy.x.array >= s.rho * s.L_fail)
