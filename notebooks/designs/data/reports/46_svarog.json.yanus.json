@@ -1,0 +1,18 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "46_svarog.json",
+ "git": "038d82af4ffd",
+ "inputs": [],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.hyperion": "found"
+ },
+ "producer": "46_svarog",
+ "schema": null,
+ "sha256": "1193076a722207e5419a1b71527b82cbf606e6cd0e76419e415c04e9f0d7b954",
+ "size": 12738,
+ "written_at": "2026-10-17T14:14:03Z",
+ "written_ts": 1792246443.1795146,
+ "yanus": 1
+}
