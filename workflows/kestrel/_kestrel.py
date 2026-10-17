@@ -156,8 +156,12 @@ def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.B
 
 
 def closing(run: runkit.Run, code: int, *, hint: str, progress: "Progress | None" = None) -> None:
+    """The last lines of every run: where the output is (the summary file, or the partial one), then the status, the
+    log and the notebook / pin hint."""
     if progress:
         progress.close()
-    print(f"\nrun directory: {run.root}\n  status:  cat {run.root}/status.json\n  log:     tail -F {run.root}/run.log\n  {hint}")
+    summ = run.root / "summary.json" if (run.root / "summary.json").exists() else (run.root / "summary.partial.json" if (run.root / "summary.partial.json").exists() else None)
+    what = {0: "completed", 3: "partial — resume it: wf resume " + run.root.name, 1: "failed — read the log", 4: "nothing solved", 130: "cancelled — resume it: wf resume " + run.root.name}.get(code, f"exit {code}")
+    print(f"\n{what}\nresults: {summ if summ else run.root / 'cases/<case>/case.json  (no summary yet)'}\nrun directory: {run.root}\n  status:  cat {run.root}/status.json\n  log:     tail -F {run.root}/run.log\n  {hint}")
     run.close()
     sys.exit(code)

@@ -175,6 +175,11 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] Y.5b Tools as needs of the notebooks (ccx, OpenFOAM) once their CFD/FEA cells honour a missing solver the same way (today only DEBUG / `VEGETA_SKIP_OPENFOAM` do); pins for them after M.2
 - [x] Y.8 Kestrel-X (`45_kestrel_x`): the X-wing as its own study, compared with Kestrel-4Q from notebook 43's report; a loud warning and Kestrel-X alone when the report is missing
 - [ ] Y.9 Kestrel-X workflows: `kestrel_xwing` has no CAD yet (lattice, beams, the transition model only), so there is nothing to mesh. First a Dedalus model of the X (pod + four panels at ±45°, nacelles), then a book `kestrel-x` (code X) in `flow.py` with `airframe-sweep` (CFD, rotor disks as for K1) and `panels` (FEA: a cantilever panel with its tip motor), reusing `airframe_cfd.py` / `structure_fea.py` through a variant key
+- [x] Y.10 Auto mode: a notebook flagged `auto=True` (`yanus_auto`; 43, 45) runs its missing takes itself in screening quality (`Kind.screening` arguments, prerequisites first, producer notebooks headlessly) and its gate never closes; `yn auto <nb> [--dry-run]`, `YANUS_AUTO`, `YANUS_AUTO_MINUTES` (`docs/yanus.md` § 16)
+- [x] W.1 `batch.yaml`: an ordered batch of chapters from one file (`workflows/batch.py`, `wf batch`, the GUI's Batch tab writes it) for the cloud; every run and batch ends with where its output file is
+- [x] 5r.21 The wing interference as a measure: `kestrel_flight.interference` (lattice gap sweep, Prandtl σ, monoplane equivalents) in notebooks 43 § 5 and 44, the CFD chapter K12 `wing-interference` (one wing / the pair / the equal-area monoplane at 0, 4, 8°, `summary["interference"]`), and `kestrel_compare.py`: FALCO, NISUS+, MERLIN, PEREGRINE scaled to Kestrel's mass and speed beside Kestrel as a monoplane
+- [ ] 5r.22 K12 with stagger and decalage as options (the lattice has them, the CAD does not), and the X-wing's panels in the same chapter once Y.9 gives it a CAD
+- [ ] W.2 A batch step for a notebook (`notebook: 43_kestrel_study`), so a cloud batch can end with the report; and `wf batch --watch` for a batch running elsewhere (rsync + status.json)
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
 

@@ -239,6 +239,11 @@ design identity a run is made for and the tolerance it is read with), `CFD_CAMPA
 `cfd_outcome` / `cfd_summary`, `FEA_CAMPAIGNS` / `fea_cases` / `fea_outcome` / `fea_summary`, `import_legacy`,
 `check_run` / `require` / `command` / `find_runs`, `records_frame` / `airframe_correction`; nothing in it runs a solver
 (`workflows/tests` checks). `workflows_runkit.py` re-exports `workflows/runkit.py` for the design modules.
+`kestrel_compare.py`: the other Vegeta machines (FALCO, NISUS+, MERLIN, PEREGRINE, from their design files) scaled to
+Kestrel's mass and flown at its cruise speed, and Kestrel as a monoplane (same span and area; same span and chord) —
+biplane against monoplane in one table (`compare`, `verdict`); `kestrel_flight.interference` / `prandtl_sigma`: the wing-interference
+measure (the lattice's gap sweep, Prandtl's σ, the monoplane equivalents), the CFD chapter K12 (`wing-interference`:
+one wing, the pair, the equal monoplane) measures it with RANS and `kestrel_cfd.interference_factors` reads the run.
 `kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
 battery, bracing, spar…) → `params`, `section_polar` (Zephyr, cached), `propulsion` (Boreas points), `spar_rules` /
 `post_rules` (beam and Euler rules of thumb), `evaluate` / `compare` / `ratios` / `verdicts` / `plot_ratios`,
