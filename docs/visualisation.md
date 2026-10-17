@@ -42,5 +42,5 @@ Talos also draws mode shapes (`viz.plot_mode(modes_result, mode=1)`) and fatigue
 (`viz.plot_damage(fatigue_result, mesh)`); Chronos draws mission profiles, spectra, Campbell diagrams and
 cumulative-damage curves with matplotlib.
 
-See the notebooks: `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print`, `05_workflow`, and the two
+See the notebooks: `old/02_talos_fea`, `old/03_aeromant_cfd`, `old/04_mellonia_print`, `old/05_workflow`, and the two
 product-level ones, `08_quadcopter` and `09a_fixed_wing_design` / `09b_fixed_wing_durability`.

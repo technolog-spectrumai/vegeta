@@ -46,10 +46,10 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
 |---------|-----|------------|-------|----------|
-| Dedalus | `vegeta dedalus params/generate/measure` | exact box/hole volumes, STEP round trip | [docs/dedalus.md](docs/dedalus.md) | `01_dedalus_cad` |
-| Talos | `vegeta talos inspect/mesh/solve/results` | cantilever vs beam theory (−0.6 %), bar F/A, gravity | [docs/talos.md](docs/talos.md) | `02_talos_fea` |
-| Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `03_aeromant_cfd` |
-| Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
+| Dedalus | `vegeta dedalus params/generate/measure` | exact box/hole volumes, STEP round trip | [docs/dedalus.md](docs/dedalus.md) | `old/01_dedalus_cad` |
+| Talos | `vegeta talos inspect/mesh/solve/results` | cantilever vs beam theory (−0.6 %), bar F/A, gravity | [docs/talos.md](docs/talos.md) | `old/02_talos_fea` |
+| Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `old/03_aeromant_cfd` |
+| Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `old/04_mellonia_print` |
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
@@ -517,7 +517,7 @@ scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
 ./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
 ./test.sh                           # check the installation; prints OK/MISSING/FAILED per part
 ./test_openfoam.sh                  # test Aeromant against the OpenFOAM installation(s) on this machine (.com and .org)
-./jupyter.sh                        # JupyterLab from the venv; start with notebooks/00_smoke_test.ipynb
+./jupyter.sh                        # JupyterLab from the venv; the first-install smoke test is notebooks/old/00_smoke_test.ipynb
 source .venv/bin/activate           # for the vegeta command and the scripts below
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly

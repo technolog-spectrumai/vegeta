@@ -9,6 +9,8 @@ dist/
 # local run outputs (examples and notebooks write here)
 runs/
 notebooks/_runs/
+notebooks/old/_runs/
+notebooks/old/output/
 workflows/runs/
 workflows/cache/
 workflows/runs_*.out

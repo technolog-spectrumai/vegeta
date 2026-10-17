@@ -22,7 +22,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 2.6 Jupyter display via CadQuery's own visualisation; `plot_*` helpers (matplotlib)
 - [x] 2.7 Example designs: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Cube`
 - [x] 2.8 CLI: `dedalus generate`, `dedalus measure` (`--json`)
-- [x] 2.9 Tests (unit + CadQuery integration + CLI), `docs/dedalus.md`, `notebooks/01_dedalus_cad.ipynb`
+- [x] 2.9 Tests (unit + CadQuery integration + CLI), `docs/dedalus.md`, `notebooks/old/01_dedalus_cad.ipynb`
 
 ## Stage 3 — Talos (Gmsh + CalculiX, linear static)
 - [x] 3.1 Package skeleton (deps: gmsh, numpy, matplotlib, tqdm)
@@ -34,7 +34,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 3.7 `StructuralModel.mesh()` / `.solve()` (separate explicit steps), ccx runner
 - [x] 3.8 FRD/DAT parsers, `StructuralResult` (max displacement, von Mises, reactions, safety factor only with yield)
 - [x] 3.9 CLI: `talos inspect`, `talos mesh`, `talos solve`
-- [x] 3.10 Tests: unit (writers/parsers), integration (STEP→Gmsh, cantilever vs beam theory, axial bar, reactions), CLI; `docs/talos.md`, `notebooks/02_talos_fea.ipynb`
+- [x] 3.10 Tests: unit (writers/parsers), integration (STEP→Gmsh, cantilever vs beam theory, axial bar, reactions), CLI; `docs/talos.md`, `notebooks/old/02_talos_fea.ipynb`
 
 ## Stage 4 — Aeromant (OpenFOAM, template cases)
 - [x] 4.1 Package skeleton (deps: numpy, matplotlib, tqdm)
@@ -44,7 +44,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 4.5 Pipeline runner: blockMesh, features, snappyHexMesh, checkMesh, solver; `OpenFOAMEnvironment` (openfoam.com and openfoam.org case files)
 - [x] 4.6 Results: forceCoeffs parsing (Cd/Cl/Cm), checkMesh summary, residual/coefficient history plots
 - [x] 4.7 CLI: `aeromant templates`, `prepare`, `run`, `results`
-- [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/03_aeromant_cfd.ipynb`
+- [x] 4.8 Tests: unit (rendering, STL, parsers), integration (small known case, skip without OpenFOAM), CLI; `docs/aeromant.md`, `notebooks/old/03_aeromant_cfd.ipynb`
 - [x] 4.9 `test_openfoam.sh`: per-flavour check of both templates on the installations of the machine (the `org/` case files are validated this way on an openfoam.org machine, not in CI)
 
 ## Stage 5 — Mellonia (PrusaSlicer)
@@ -54,7 +54,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 5.4 `slice_stl` via PrusaSlicer CLI, G-code preserved
 - [x] 5.5 G-code parser: print time, filament (mm/cm³/g), cost, layer count, max Z
 - [x] 5.6 CLI: `mellonia slice`, `mellonia parse`
-- [x] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/04_mellonia_print.ipynb`
+- [x] 5.7 Tests: unit (parser, settings), integration (20 mm cube layer count/height, skip without PrusaSlicer), CLI; `docs/mellonia.md`, `notebooks/old/04_mellonia_print.ipynb`
 
 ## Stage 5b — Boreas (propeller/rotor BEMT, motor, battery)
 - [x] 5b.1 `vegeta.boreas`: `Propeller`, `Airfoil`, `solve`/`rpm_for_thrust`, `Motor`/`Battery`/`Propulsion`, `excitations`, JSON `export`; CLI `boreas point|for-thrust|map`; tests vs scaling laws and an APC static point

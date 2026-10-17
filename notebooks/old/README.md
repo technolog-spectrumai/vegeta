@@ -21,3 +21,18 @@ cd notebooks && ../.venv/bin/jupyter nbconvert --to notebook --execute old/40_ke
 (or open it in JupyterLab started by `./jupyter.sh` and run it from there, with the working directory set to
 `notebooks/`). The X-wing comparison (41) and the back-transition remedies (42) are summarised in the new notebook's
 § 9 and in `designs/kestrel3.md`; their full tables are in the dossier.
+
+## The first "does it even work" notebooks (00–05)
+
+`00_smoke_test` (every tool once, with mocks where a solver is missing), the per-tool introductions
+`01_dedalus_cad`, `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print` and `05_workflow` (the tools chained by
+hand, every step explicit) date from when the question was whether the tools ran at all. They stay as runnable
+examples and as the first thing to open after an install (`00_smoke_test`), but they are not design studies and are
+not on the Yanus gates. They read nothing from `designs/`; run from here they write their scratch files to
+`notebooks/old/_runs/` (gitignored):
+
+```bash
+.venv/bin/jupyter nbconvert --to notebook --execute notebooks/old/00_smoke_test.ipynb --output-dir /tmp
+```
+
+`scripts/run_notebooks.sh` runs `notebooks/*.ipynb` only; pass `old/00_smoke_test.ipynb` to it to include one.
