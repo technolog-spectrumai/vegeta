@@ -318,15 +318,17 @@ nacelles as the feet) and `export_stl`, the CFD specs and cases (`CFD_CAMPAIGNS`
 one panel's spar in its socket (`panel_cad`, `fea_cases`); `kestrel_xc_campaigns.py` is the adapter the workflow book
 `kestrel-x` (code X: `wf X1`–`X3`) runs through `workflows/kestrel_x/`, the shared scripts parametrised by book.
 `mini_raptor.py` (notebook **49** `49_mini_raptor`, auto, no takes): the mini raptors on a 5-inch racing stack — Apus
-Mini (economy: a biplane tailsitter), Alcotan (the chaser: a cruciform tailsitter, 6S and the 5x5), Gavilan (tight
-spaces: the racing frame's motor square in a short cell) — by first principles only: `STACK` / `PACKS` / `DRIVES`
+Mini (economy: a twin-motor monoplane tailsitter, the hover pitch by the elevons in the wash), Alcotan (the chaser: a
+cruciform tailsitter, 6S and the 5x5), Gavilan (tight spaces: the racing frame's motor square in a short biplane cell)
+— by first principles only: `STACK` / `PACKS` / `DRIVES`
 (Boreas tables cached in `data/mini_raptor_drive_*.json`), `layout` / `checks` (the disc clearances), `mass_table` /
 `budget`, `drag_buildup`, `induced_factor`, `performance` (power, Wh/km, range, the top speed thrust-limited and at the
 sustainable power, the banked turn, the hover, `braking` with the wing as an air brake, `reorientation`,
 `transition`), `quad` (the racing baseline on the same parts), `compare`, `targets`, `sensitivity`, the conceptual
 CAD `MiniRaptor` / `parts` / `render3d` / `ortho_views` / `export_cad` (STEP and STL into `data/cad/mini_raptor/`,
-ignored by git), `ALTERNATIVES` / `biplane_question` (the same briefs on one wing: why Apus is a cruciform and Gavilan
-keeps the cell), `export_design` → `data/mini_raptor_design.json`. `mini_raptor_print.py`: the designs as things to
+ignored by git), `ALTERNATIVES` / `biplane_question` (the same briefs as a biplane cell, a cruciform, a flat four-motor
+monoplane and twins, with `elevon_pitch_authority` for the hover pitch without a thrust lever: why Apus is a twin
+monoplane, Alcotan keeps four motors and Gavilan keeps the cell), `export_design` → `data/mini_raptor_design.json`. `mini_raptor_print.py`: the designs as things to
 build — `printed_parts` (pod halves, wing and fin segments standing on a root rib with the spar bore, motor mounts,
 post fittings and faired sleeves, split to a 250 × 210 × 210 mm bed), `stock` (motors, propellers, pack, stack, carbon
 tubes), `check_part` / `check_all` (bed fit in the print orientation, overhang area, shell + infill mass), `te_cut_for`

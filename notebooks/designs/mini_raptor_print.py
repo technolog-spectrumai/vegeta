@@ -84,6 +84,7 @@ def printed_parts(variant: str) -> dict:
     bore = cq.Workplane("XZ").center(spar_x, 0).circle(TUBE_OD["spar"] / 2 + 0.15).extrude(seg + 2).translate((0, seg + 1, 0))
     segment = segment.cut(bore)
     wings = 2 if L["layout"] == "biplane" else 1
+    n_mounts = L.get("n_motors", 4)
     out[f"wing segment ({seg:.0f} mm of {n_seg} per wing)"] = {"solid": segment, "count": n_seg * wings, "material": "LW_PLA", "orientation": Orientation(rotate_x=-90),
                                                               "note": f"stands on its root rib (span along z); trailing edge cut to {TE_MIN_MM:.1f} mm at {cut:.3f} c; the 6 mm spar tube through the bore glues the segments"}
     if L["layout"] == "cruciform":
@@ -97,7 +98,7 @@ def printed_parts(variant: str) -> dict:
     cup = cq.Workplane("YZ").circle(rm + 1.6).extrude(14.0).faces(">X").workplane().hole(2 * rm - 3.0, 11.0)      # a 3 mm floor with the bolt pattern, 11 mm of skirt
     boss = cq.Workplane("YZ").workplane(offset=14.0).rect(14.0, 9.0).extrude(x_le + 0.30 * c - p["prop_x"] - 14.0 + 12.0)
     mount = cup.union(boss).cut(cq.Workplane("YZ").workplane(offset=14.0).circle(TUBE_OD["spar"] / 2 + 0.15).extrude(200.0))
-    out["motor mount"] = {"solid": mount, "count": 4, "material": "PLA", "orientation": Orientation(rotate_y=-90), "note": "the cup takes the 2207's 16 × 16 bolt pattern (holes cut later); the strap slides on the spar tube to the station and is glued to the skin"}
+    out["motor mount"] = {"solid": mount, "count": n_mounts, "material": "PLA", "orientation": Orientation(rotate_y=-90), "note": "the cup takes the 2207's 16 × 16 bolt pattern (holes cut later); the strap slides on the spar tube to the station and is glued to the skin"}
     if L["layout"] == "biplane":
         fit = cq.Workplane("XY").box(16.0, 12.0, 12.0).faces(">Z").workplane().hole(TUBE_OD["post"] + 0.3, 9.0)
         out["post fitting"] = {"solid": fit, "count": 4, "material": "PLA", "orientation": Orientation(), "note": "glued to the wing at the post station, the 5 mm post tube in the hole"}
@@ -112,17 +113,18 @@ def stock(variant: str) -> pd.DataFrame:
     """The bought parts and the cut carbon tubes."""
     L = mr.layout(variant)
     pk = mr.PACKS[L["pack"]]
-    rows = [("motor 2207-class", 4, f"{mr.STACK['motor']['mass_kg'] * 1e3:.0f} g each", "off the shelf"),
-            (f"propeller 5x{mr.DRIVES[L['drive']]['pitch_in']:g} tri-blade", 4, "4 g each", "off the shelf"),
+    nm = L.get("n_motors", 4)
+    rows = [("motor 2207-class", nm, f"{mr.STACK['motor']['mass_kg'] * 1e3:.0f} g each", "off the shelf" + ("; two of the stack's four channels stay free" if nm == 2 else "")),
+            (f"propeller 5x{mr.DRIVES[L['drive']]['pitch_in']:g} tri-blade", nm, "4 g each", "off the shelf"),
             ("4-in-1 ESC + flight controller", 1, "30 g", "off the shelf; a tailsitter firmware (ArduPilot / INAV)"),
             ("FPV camera + VTX + antenna", 1, "35 g", "off the shelf"), ("receiver + GNSS", 1, "12 g", "off the shelf"),
             (f"pack {L['pack']}", 1, f"{pk['mass_kg'] * 1e3:.0f} g", "off the shelf"),
             (f"carbon tube {TUBE_OD['spar']:.0f} mm, wing spar", 2 if L["layout"] == "biplane" else 1, f"{L['span'] * 1e3:.0f} mm", "cut from stock")]
     if L["layout"] == "biplane":
         rows.append((f"carbon tube {TUBE_OD['post']:.0f} mm, interplane post", 2, f"{L['gap'] * 1e3:.0f} mm", "cut from stock"))
-    else:
+    elif L["layout"] == "cruciform":
         rows.append((f"carbon tube {TUBE_OD['spar']:.0f} mm, fin spar", 1, f"{2 * L['arm'] * 1e3:.0f} mm", "cut from stock, through the pod"))
-    rows.append((f"carbon rod {TUBE_OD['foot']:.0f} mm, feet", 4, f"{(L['x_feet'] - L['x_te']) * 1e3 + 10:.0f} mm", "cut from stock"))
+    rows.append((f"carbon rod {TUBE_OD['foot']:.0f} mm, feet", 4 if L["layout"] != "monoplane" else 2 + nm, f"{(L['x_feet'] - L['x_te']) * 1e3 + 10:.0f} mm", "cut from stock"))
     return pd.DataFrame(rows, columns=["item", "count", "size / mass", "source"])
 
 
@@ -174,7 +176,7 @@ def check_all(variant: str, parts: dict | None = None) -> pd.DataFrame:
 def structure_against_budget(variant: str, checks: pd.DataFrame) -> dict:
     """The printed structure (+ the tubes) against what the mass budget assumed for the structure."""
     L = mr.layout(variant)
-    tubes = (2 if L["layout"] == "biplane" else 1) * L["span"] * mr.SPAR_KG_M * 1e3 + (2 * L["gap"] * 0.014 * 1e3 if L["layout"] == "biplane" else 2 * L["arm"] * mr.SPAR_KG_M * 1e3) \
+    tubes = (2 if L["layout"] == "biplane" else 1) * L["span"] * mr.SPAR_KG_M * 1e3 + (2 * L["gap"] * 0.014 * 1e3 if L["layout"] == "biplane" else 2 * L["arm"] * mr.SPAR_KG_M * 1e3 if L["layout"] == "cruciform" else 0.0) \
         + 4 * (L["x_feet"] - L["x_te"] + 0.01) * 0.010 * 1e3                                  # 6 mm tube 20 g/m, 5 mm 14 g/m, 4 mm rod 10 g/m
     printed = float(checks["printed mass all [g]"].sum())
     b = mr.budget(L)

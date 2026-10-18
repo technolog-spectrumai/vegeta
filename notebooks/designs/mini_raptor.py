@@ -7,9 +7,10 @@ chaser takes the 5x5), the 4-in-1 ESC and the flight controller, the FPV camera 
 6S 1300 pack. The reference is the racing quad itself on the same parts (``quad``), not the table's rounded numbers.
 
 Three independent layouts:
-- **Apus Mini** — economy at the quad's speed and manoeuvre: one wing a third of a gate wide (0.50 × 0.17 m) on a
-  cruciform tailsitter, the motors at the tips of the wing and of two fins; 4S 1500. It began as a biplane cell
-  (``ALTERNATIVES``): the question "is the biplane the right cell?" (``biplane_question``) moved it to one wing.
+- **Apus Mini** — economy at the quad's speed and manoeuvre: one wing a third of a gate wide (0.50 × 0.17 m), two of
+  the stack's motors on it, the hover pitch from the elevons in the slipstream (as every two-motor tailsitter);
+  4S 1500. It began as a biplane cell and passed through a cruciform (``ALTERNATIVES``): the question "is the biplane
+  — or any four-motor cell — the right one?" (``biplane_question``) moved it to a twin-motor monoplane.
 - **Alcotan** — the chaser: a cruciform (+) tailsitter, a small highly loaded wing and two fins carrying the four motors
   at the arm tips (no posts, nothing between the discs), 6S and the steeper 5x5 for the pitch speed, a slender pod.
 - **Gavilan** — tight spaces: the racing frame's own motor square (155 mm) wrapped in a short biplane cell (span 0.31 m,
@@ -83,8 +84,8 @@ UNCERTAINTY = {"structure mass": 0.20, "Cd0": 0.30, "cl_max": 0.10, "drive power
 
 # ------------------------------------------------------------------------------------------------- the designs
 VARIANTS = {
-    "Apus Mini": {"layout": "cruciform", "title": "economy: the quad's speed and manoeuvre for a third of the power — one wing a third of a gate wide, the motors on fins", "drive": "4S 5x4.3",
-                  "span": 0.50, "chord": 0.17, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#2a9d8f"},
+    "Apus Mini": {"layout": "monoplane", "n_motors": 2, "title": "economy: one wing a third of a gate wide, two of the stack's motors, the hover pitch by the elevons in the slipstream", "drive": "4S 5x4.3",
+                  "span": 0.50, "chord": 0.17, "motor_y": 0.14, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#2a9d8f"},
     "Alcotan": {"layout": "cruciform", "title": "the chaser: sustained speed on 6S and the 5x5, the motors at the tips of a +", "drive": "6S 5x5",
                 "span": 0.42, "chord": 0.075, "arm": 0.14, "fin_chord": 0.065, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#e76f51"},
     "Gavilan": {"layout": "biplane", "title": "tight spaces: the racing frame's motor square in a short cell, the wing as a brake", "drive": "4S 5x4.3 light",
@@ -98,6 +99,12 @@ ALTERNATIVES = {
                                "span": 0.50, "chord": 0.085, "gap": 0.16, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#8ab17d"},
     "Apus with the span a gate forbids": {"layout": "cruciform", "title": "the same area at AR 5.9: span 0.71, half a gate — what span would buy if the course allowed it", "drive": "4S 5x4.3",
                                                      "span": 0.71, "chord": 0.12, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#b5c99a"},
+    "Apus flat: four motors in a row": {"layout": "monoplane", "n_motors": 4, "title": "one flat wing, the four discs in a row (0.62 m of span needed), the same area at AR 4.9", "drive": "4S 5x4.3",
+                                        "span": 0.64, "chord": 0.13, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#f4a261"},
+    "Apus cruciform: four motors on wing and fins": {"layout": "cruciform", "title": "the same wing with all four motors at the tips of a +: the full hover authority, two more motors and two fins to carry", "drive": "4S 5x4.3",
+                                                     "span": 0.50, "chord": 0.17, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#e9c46a"},
+    "Alcotan twin: two motors on one wing": {"layout": "monoplane", "n_motors": 2, "title": "the chaser with two motors: half the hover thrust, the same pack, the 5x5", "drive": "6S 5x5",
+                                             "span": 0.42, "chord": 0.075, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#f4a261"},
     "Gavilan on one wing (cruciform)": {"layout": "cruciform", "title": "the smallest cruciform that clears the discs (arms 0.10): span 0.36, over the hangar's 0.31", "drive": "4S 5x4.3 light",
                                         "span": 0.36, "chord": 0.17, "arm": 0.10, "fin_chord": 0.065, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.22, "pod_width": 0.046, "colour": "#6c757d"},
 }
@@ -138,12 +145,12 @@ def energy_wh(key: str) -> float:
     return pk["cells"] * 3.7 * pk["capacity_ah"] * 0.8
 
 
-def sustained_power_w(key: str) -> float:
+def sustained_power_w(key: str, n_motors: int = 4) -> float:
     """The electrical power the pack and the four motors sustain: the lesser of the pack's continuous C rating and
     the motors' continuous current, at the nominal voltage."""
     pk = PACKS[DRIVES[key]["pack"]]
     V = pk["cells"] * 3.7
-    return min(PACK_C_CONT * pk["capacity_ah"] * V, 4 * MOTOR_I_CONT_A * V)
+    return min(PACK_C_CONT * pk["capacity_ah"] * V, n_motors * MOTOR_I_CONT_A * V)
 
 
 def drive_summary(key: str) -> dict:
@@ -173,11 +180,29 @@ def layout(variant: str = MAIN) -> dict:
         if L["x_pod_nose"] > 0:                                   # the discs would cut the pod: the pod starts behind the propeller plane
             L["disc_to_pod"] = math.inf
             L["x_le"], L["x_te"], L["x_ac"], L["x_spar"] = x_le + 0.0, x_le + c, x_le + 0.25 * c, x_le + 0.30 * c
-    else:
+    elif v["layout"] == "cruciform":
         r = v["arm"]
         L.update(arm=r, fin_chord=v["fin_chord"], S_ref=b * c, AR=b / c, motor_y=r, motor_z=r, n_wings=1, fin_area=2 * (r - v["pod_width"] / 2) * v["fin_chord"],
                  disc_gap_span=r * math.sqrt(2) - 2 * R_PROP, disc_gap_vertical=r * math.sqrt(2) - 2 * R_PROP, disc_to_pod=r - R_PROP - v["pod_width"] / 2, x_pod_nose=0.0,
                  x_feet=x_le + c + 0.06, pitch_arm=r, roll_arm=r, gap_over_span=None)
+    else:                                                        # "monoplane": the motors in a row on the one wing, no fins, no posts
+        n = v["n_motors"]
+        if n == 4:
+            y_in = R_PROP + DISC_CLEARANCE / 2 + 0.0                 # the inner pair just clear of each other on the centre line
+            y_out = y_in + 2 * R_PROP + DISC_CLEARANCE
+            stations = [-y_out, -y_in, y_in, y_out]
+            disc_to_pod = y_in - R_PROP - v["pod_width"] / 2
+        else:
+            y_in = v.get("motor_y", 0.5 * b - R_PROP - DISC_CLEARANCE)
+            stations = [-y_in, y_in]
+            disc_to_pod = y_in - R_PROP - v["pod_width"] / 2
+        L.update(S_ref=b * c, AR=b / c, motor_y=stations[-1], motor_z=0.0, n_wings=1, fin_area=0.0, stations_y=stations, n_motors=n,
+                 disc_gap_span=min(b2 - b1 for b1, b2 in zip(stations[:-1], stations[1:])) - 2 * R_PROP, disc_gap_vertical=math.inf,
+                 disc_to_pod=disc_to_pod if disc_to_pod >= DISC_CLEARANCE else math.inf, x_pod_nose=0.0 if disc_to_pod >= DISC_CLEARANCE else 0.045 + 0.03,
+                 x_feet=x_le + c + 0.06, pitch_arm=0.0, roll_arm=stations[-1], gap_over_span=None)
+        if stations[-1] + R_PROP + DISC_CLEARANCE > b / 2:
+            L["span_needed"] = 2 * (stations[-1] + R_PROP + DISC_CLEARANCE)
+    L.setdefault("n_motors", 4)
     return L
 
 
@@ -191,6 +216,10 @@ def checks(L: dict) -> list[str]:
         out.append(f"the discs are {L['disc_to_pod'] * 1e3:.0f} mm from the pod")
     if L["span_over_gate"] > 0.5:
         out.append(f"the span is {L['span_over_gate']:.0%} of a racing gate")
+    if L.get("span_needed"):
+        out.append(f"the discs in a row need {L['span_needed'] * 1e3:.0f} mm of span")
+    if L["layout"] == "monoplane":
+        out.append("no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only (estimated, not flown)")
     if L["Re_20"] < 8e4:
         out.append(f"the chord Reynolds number at 20 m/s is {L['Re_20']:.0f}: thin sections lose cl max and gain drag below ~100 000")
     return out
@@ -206,8 +235,10 @@ def mass_table(L: dict) -> list[dict]:
         rows.append({"item": item, "mass_kg": m, "x": x, "y": y, "z": z, "group": group, "note": note, "rod": None})
     if L["layout"] == "biplane":
         stations = [(sy * L["motor_y"], sz * L["motor_z"]) for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1))]
-    else:
+    elif L["layout"] == "cruciform":
         stations = [(-L["arm"], 0.0), (L["arm"], 0.0), (0.0, L["arm"]), (0.0, -L["arm"])]
+    else:
+        stations = [(y, 0.0) for y in L["stations_y"]]
     for k, (y, z) in enumerate(stations):
         add(f"motor {k}", STACK["motor"]["mass_kg"], L["prop_x"] + 0.015, y, z, "propulsion", "2207-class")
         add(f"propeller {k}", STACK["propeller"]["mass_kg"], L["prop_x"], y, z, "propulsion", "5-inch tri-blade")
@@ -216,6 +247,8 @@ def mass_table(L: dict) -> list[dict]:
         for name, z in (("upper wing", L["gap"] / 2), ("lower wing", -L["gap"] / 2)):
             add(name, WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, z, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
         add("posts and fittings", POSTS_KG, L["x_spar"], 0.0, 0.0, "structure", "two carbon posts at the motor stations")
+    elif L["layout"] == "monoplane":
+        add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
     else:
         add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
         add("fins (2)", WING_AREAL_KG_M2 * L["fin_area"] * 1.1 + SPAR_KG_M * 2 * L["arm"], L["x_le"] + 0.40 * L["fin_chord"], 0.0, 0.0, "structure", "the vertical arms carrying two motors")
@@ -268,7 +301,8 @@ def drag_buildup(L: dict, *, V: float = 20.0, t: float = 0.10) -> dict:
     fr = lp / dp
     rows["pod"] = kf._cf(V * lp / NU) * (1 + 60 / fr ** 3 + fr / 400) * math.pi * dp * lp * 0.8
     dm = STACK["motor"]["d_m"]
-    rows["motors in their mounts (4)"] = 4 * (0.25 * math.pi * dm ** 2 / 4 + kf._cf(V * 0.05 / NU) * 1.3 * math.pi * dm * 0.05)
+    nm = L.get("n_motors", 4)
+    rows[f"motors in their mounts ({nm})"] = nm * (0.25 * math.pi * dm ** 2 / 4 + kf._cf(V * 0.05 / NU) * 1.3 * math.pi * dm * 0.05)
     if L["layout"] == "biplane":
         rows["posts (2), faired"] = 2 * POST_CD_FAIRED * POST_FAIRING_CHORD * (L["gap"] - 0.01)      # printed streamlined sleeves on the tubes
     rows["camera and antenna"] = 0.6 * 0.0006
@@ -302,6 +336,7 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
     k = induced_factor(L)["k"]
     E = energy_wh(L["drive"])
     cd90 = kf.viterna_cd90(L["AR"])
+    nm = L.get("n_motors", 4)
     rows = []
     for V in speeds:
         q = 0.5 * RHO * V * V
@@ -313,11 +348,11 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
             continue
         CD = cd0 + k * CL ** 2
         D = q * S * CD
-        T = 4 * float(tab.t_max(V))
+        T = nm * float(tab.t_max(V))
         if D > T:
             rows.append({"V [m/s]": V, "feasible": False, "note": "no thrust left"})
             continue
-        P = 4 * tab.power(D / 4, V) + fpv_W
+        P = nm * tab.power(D / nm, V) + fpv_W
         n_aero = L["cl_max"] * q * S / W
         n_sus = math.sqrt(max((T / (q * S) - cd0) / k, 0.0)) * q * S / W
         n = min(n_aero, n_sus, L["n_struct"])
@@ -327,22 +362,26 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
                      "turn radius [m]": r, "turn rate [deg/s]": math.degrees(G * math.sqrt(max(n * n - 1, 0)) / V), "limited by": "wing" if n == n_aero else "thrust" if n == n_sus else "structure"})
     df = pd.DataFrame(rows).set_index("V [m/s]")
     ok = df[df["feasible"]]
-    T0 = 4 * tab.T_max[0]
-    P_h = 4 * tab.power(W / 4, 0.0) + fpv_W
-    dT = tab.T_max[0] - W / 4                                         # what one motor can add above its hover share
-    alpha_pitch = 2 * dT * L["pitch_arm"] / max(ci["Iyy"], 1e-6)       # one pair up, the other down to the idle
-    alpha_roll = 2 * dT * L["roll_arm"] / max(ci["Ixx"], 1e-6)
+    T0 = nm * tab.T_max[0]
+    P_h = nm * tab.power(W / nm, 0.0) + fpv_W
+    dT = tab.T_max[0] - W / nm                                        # what one motor can add above its hover share
+    alpha_pitch = (nm / 2) * dT * L["pitch_arm"] / max(ci["Iyy"], 1e-6)       # one half up, the other down to the idle (0 for a flat monoplane: elevons only)
+    alpha_roll = (nm / 2) * dT * L["roll_arm"] / max(ci["Ixx"], 1e-6)
+    elev = elevon_pitch_authority(L, W, ci["Iyy"])
+    if L["layout"] == "monoplane":
+        alpha_pitch = elev["elevon pitch acceleration in the hover [rad/s²]"]
     V_s = math.sqrt(W / (0.5 * RHO * S * L["cl_max"]))
     at = lambda col, V: float(ok.loc[V, col]) if V in ok.index else np.nan
-    summary = {"layout": L["layout"], "drive": L["drive"], "mass [kg]": m, "wing area [m²]": S, "span [m]": L["span"], "wing loading [N/m²]": W / S, "aspect ratio": L["AR"],
+    summary = {"layout": L["layout"] + (f" ({nm} motors)" if nm != 4 else ""), "drive": L["drive"], "mass [kg]": m, "wing area [m²]": S, "span [m]": L["span"], "wing loading [N/m²]": W / S, "aspect ratio": L["AR"],
                "Cd0 at 20 m/s": float(drag_buildup(L)["Cd0"]) * cd0_scale, "CdA at 20 m/s [cm²]": float(drag_buildup(L)["CdA_m2"]) * 1e4 * cd0_scale, "induced k": k, "stall speed [m/s]": V_s,
                "hover thrust / weight": T0 / W, "hover power [W]": P_h, "hover endurance [min]": E / P_h * 60, "pitch acceleration in the hover [rad/s²]": alpha_pitch,
-               "roll acceleration in the hover [rad/s²]": alpha_roll, "power at 20 m/s [W]": at("electrical [W]", 20.0), "Wh/km at 20 m/s": at("Wh/km", 20.0), "L/D at 20 m/s": at("L/D", 20.0),
+               "roll acceleration in the hover [rad/s²]": alpha_roll, "hover pitch by": "elevons in the wash" if L["layout"] == "monoplane" else "differential thrust (+ elevons)",
+               "elevon pitch acceleration in the hover [rad/s²]": elev["elevon pitch acceleration in the hover [rad/s²]"], "power at 20 m/s [W]": at("electrical [W]", 20.0), "Wh/km at 20 m/s": at("Wh/km", 20.0), "L/D at 20 m/s": at("L/D", 20.0),
                "range at 20 m/s [km]": at("range [km]", 20.0), "best range [km]": float(ok["range [km]"].max()), "at [m/s]": float(ok["range [km]"].idxmax()), "least Wh/km": float(ok["Wh/km"].min()),
                "best endurance [min]": float(ok["endurance [min]"].max()), "top speed [m/s]": float(ok.index.max()), "top speed [km/h]": float(ok.index.max()) * 3.6,
                "power at top speed [W]": float(ok["electrical [W]"].iloc[-1]), "full-throttle endurance at top speed [s]": E / float(ok["electrical [W]"].iloc[-1]) * 3600,
-               "sustained power [W]": sustained_power_w(L["drive"]), "sustained top speed [m/s]": float(ok[ok["electrical [W]"] <= sustained_power_w(L["drive"])].index.max()),
-               "sustained top speed [km/h]": float(ok[ok["electrical [W]"] <= sustained_power_w(L["drive"])].index.max()) * 3.6, "n at 20 m/s (banked)": at("n", 20.0), "turn radius at 20 m/s (banked) [m]": at("turn radius [m]", 20.0),
+               "sustained power [W]": sustained_power_w(L["drive"], nm), "sustained top speed [m/s]": float(ok[ok["electrical [W]"] <= sustained_power_w(L["drive"], nm)].index.max()),
+               "sustained top speed [km/h]": float(ok[ok["electrical [W]"] <= sustained_power_w(L["drive"], nm)].index.max()) * 3.6, "n at 20 m/s (banked)": at("n", 20.0), "turn radius at 20 m/s (banked) [m]": at("turn radius [m]", 20.0),
                "turn radius at 40 m/s (banked) [m]": at("turn radius [m]", 40.0), "least banked turn radius [m]": float(ok["turn radius [m]"].min()), "at speed [m/s]": float(ok["turn radius [m]"].idxmin()),
                "span / gate": L["span_over_gate"], "energy [Wh]": E, "cd90": cd90}
     out = {"L": L, "table": df, "summary": summary, "cg": ci, "drive": tab, "mass_table": mass_table(L)}
@@ -350,6 +389,26 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
     summary.update(reorientation(out))
     summary.update(transition(out))
     return out
+
+
+def elevon_pitch_authority(L: dict, W: float, Iyy: float, *, deflection_deg: float = 30.0, cl_per_rad_flap: float = 2.5) -> dict:
+    """The hover pitch moment from the elevons in the propellers' wash: the wake's dynamic pressure at the wing (the
+    disc's induced speed from momentum theory at the hover thrust, taken at 1.4 × the disc value where the elevon
+    sits), the washed strip (one disc width × the chord) per motor, a flap lift slope of 2.5 per radian of deflection on
+    the 30 % elevon, the arm from the quarter chord to the elevon's centre of pressure. A first estimate; the biplane
+    and the cruciform have it in addition to their differential thrust."""
+    nm = L.get("n_motors", 4)
+    T_each = W / nm
+    A = math.pi * R_PROP ** 2
+    v_i = math.sqrt(T_each / (2 * RHO * A))
+    q = 0.5 * RHO * (1.4 * v_i) ** 2
+    strip = 2 * R_PROP * L["chord"]
+    n_washed = len([1 for st in (L.get("stations_y") or []) ]) or (2 if L["layout"] == "cruciform" else 4)     # the discs whose wash crosses a wing's elevon
+    dCL = cl_per_rad_flap * math.radians(deflection_deg) * 0.75                                   # a part-span flap's lift on the washed strip
+    F = q * strip * dCL
+    arm = 0.60 * L["chord"]                                                                       # the elevon's lift behind the CG near the quarter chord
+    M = n_washed * F * arm
+    return {"elevon pitch moment in the hover [N·m]": M, "elevon pitch acceleration in the hover [rad/s²]": M / max(Iyy, 1e-6), "wash speed at the elevon [m/s]": 1.4 * v_i}
 
 
 def braking(perf: dict, *, V0: float = 20.0, V_end: float = 4.0, tilt_max_deg: float = TILT_MAX_DEG) -> dict:
@@ -361,7 +420,8 @@ def braking(perf: dict, *, V0: float = 20.0, V_end: float = 4.0, tilt_max_deg: f
     L, m, tab = perf["L"], perf["summary"]["mass [kg]"], perf["drive"]
     W = m * G
     CdA_wing = perf["summary"]["cd90"] * L["S_ref"] + 1.0 * L["fin_area"]
-    CdA_rest = 1.1 * math.pi * L["pod_width"] * L["pod_length"] * 0.7 + 4 * 0.6 * math.pi * STACK["motor"]["d_m"] ** 2 / 4 + 2 * (L["pitch_arm"] + L["roll_arm"]) * 0.005 * 1.0
+    nm = L.get("n_motors", 4)
+    CdA_rest = 1.1 * math.pi * L["pod_width"] * L["pod_length"] * 0.7 + nm * 0.6 * math.pi * STACK["motor"]["d_m"] ** 2 / 4 + 2 * (L["pitch_arm"] + L["roll_arm"]) * 0.005 * 1.0
     thetas = np.radians(np.linspace(0.0, tilt_max_deg, 15))
 
     def decel(V):
@@ -369,7 +429,7 @@ def braking(perf: dict, *, V0: float = 20.0, V_end: float = 4.0, tilt_max_deg: f
         best = 0.0
         for th in thetas:
             n_need = 1 / math.cos(th)
-            if 4 * float(tab.t_max(V * math.sin(th))) / W < n_need:
+            if nm * float(tab.t_max(V * math.sin(th))) / W < n_need:
                 break
             a = G * math.tan(th) + q * (CdA_wing * math.cos(th) ** 2 + CdA_rest) / m
             best = max(best, a)
@@ -389,7 +449,7 @@ def reorientation(perf: dict, *, angle_deg: float = 90.0, use: float = 0.5) -> d
     ``use`` of the differential thrust the drives have (the controller keeps the rest for height and disturbances)."""
     th = math.radians(angle_deg)
     ap, ar = perf["summary"]["pitch acceleration in the hover [rad/s²]"] * use, perf["summary"]["roll acceleration in the hover [rad/s²]"] * use
-    return {"hover pitch-over 90° [s]": 2 * math.sqrt(th / ap), "hover roll 90° [s]": 2 * math.sqrt(th / ar)}
+    return {"hover pitch-over 90° [s]": 2 * math.sqrt(th / ap) if ap > 0 else np.nan, "hover roll 90° [s]": 2 * math.sqrt(th / ar)}
 
 
 def transition(perf: dict) -> dict:
@@ -398,13 +458,14 @@ def transition(perf: dict) -> dict:
     the economical speed at the load factor available and the radius it needs; the thrust / weight at the stall."""
     L, s, tab = perf["L"], perf["summary"], perf["drive"]
     W = s["mass [kg]"] * G
+    nm = L.get("n_motors", 4)
     V_t = 1.2 * s["stall speed [m/s]"]
     ok = perf["table"][perf["table"]["feasible"]]
     V_e = float(max(math.ceil(1.4 * s["stall speed [m/s]"]), s["at [m/s]"]))
     n = float(ok.loc[V_e, "n"]) if V_e in ok.index else np.nan
-    return {"transition speed 1.2 Vs [m/s]": V_t, "thrust / weight at 1.2 Vs": 4 * float(tab.t_max(V_t)) / W, "thrust / weight at Vs": 4 * float(tab.t_max(s["stall speed [m/s]"])) / W,
+    return {"transition speed 1.2 Vs [m/s]": V_t, "thrust / weight at 1.2 Vs": nm * float(tab.t_max(V_t)) / W, "thrust / weight at Vs": nm * float(tab.t_max(s["stall speed [m/s]"])) / W,
             "pull-up speed [m/s]": V_e, "pull-up radius into the hover [m]": V_e ** 2 / (G * (n - 1)) if n > 1 else np.inf, "pull-up n": n,
-            "transitions": "both with thrust to spare" if 4 * float(tab.t_max(V_t)) / W > 2 else "marginal: the climb-out leans on the wing"}
+            "transitions": ("both with thrust to spare" if nm * float(tab.t_max(V_t)) / W > 2 else "marginal: the climb-out leans on the wing") + ("; the hover pitch by elevons only" if L["layout"] == "monoplane" else "")}
 
 
 
@@ -467,7 +528,7 @@ def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0
 COMPARE_KEYS = ["layout", "mass [kg]", "span / gate", "top speed [km/h]", "power at top speed [W]", "full-throttle endurance at top speed [s]", "sustained power [W]", "sustained top speed [km/h]", "power at 20 m/s [W]", "Wh/km at 20 m/s", "least Wh/km", "range at 20 m/s [km]", "best range [km]", "at [m/s]",
                 "best endurance [min]", "stall speed [m/s]", "hover thrust / weight", "hover power [W]", "hover endurance [min]", "n at 20 m/s (banked)", "turn radius at 20 m/s (banked) [m]",
                 "turn radius at 40 m/s (banked) [m]", "least banked turn radius [m]", "brake deceleration at 20 m/s [g]", "brake 20→4 m/s distance [m]", "brake 20→4 m/s time [s]", "hover pitch-over 90° [s]",
-                "pitch acceleration in the hover [rad/s²]", "thrust / weight at 1.2 Vs", "pull-up speed [m/s]", "pull-up radius into the hover [m]", "transitions", "energy [Wh]"]
+                "pitch acceleration in the hover [rad/s²]", "hover pitch by", "thrust / weight at 1.2 Vs", "pull-up speed [m/s]", "pull-up radius into the hover [m]", "transitions", "energy [Wh]"]
 
 
 def compare(perf: dict, base: dict) -> pd.DataFrame:
@@ -487,6 +548,7 @@ def targets(perf: dict, base: dict) -> pd.DataFrame:
     s = perf["Apus Mini"]["summary"]
     rows["Apus Mini: less energy at the quad's 20 m/s"] = {"target": "Wh/km at 20 m/s < half the quad's", "value": f"{s['Wh/km at 20 m/s']:.2f} vs {b['Wh/km at 20 m/s']:.2f}", "met": s["Wh/km at 20 m/s"] < 0.5 * b["Wh/km at 20 m/s"]}
     rows["Apus Mini: comparable speed"] = {"target": "sustained top speed ≥ the quad's", "value": f"{s['sustained top speed [km/h]']:.0f} vs {b['sustained top speed [km/h]']:.0f} km/h", "met": s["sustained top speed [km/h]"] >= b["sustained top speed [km/h]"]}
+    rows["Apus Mini: hover pitch with elevons only"] = {"target": "a 90° pitch-over in the hover under 0.5 s (the quad: ~0.1 s)", "value": f"{s['hover pitch-over 90° [s]']:.2f} s at {s['pitch acceleration in the hover [rad/s²]']:.0f} rad/s²", "met": s["hover pitch-over 90° [s]"] < 0.5}
     rows["Apus Mini: comparable manoeuvre"] = {"target": "banked turn radius at 20 m/s ≤ the quad's at 45° bank (41 m)", "value": f"{s['turn radius at 20 m/s (banked) [m]']:.0f} m", "met": s["turn radius at 20 m/s (banked) [m]"] <= 41}
     s = perf["Alcotan"]["summary"]
     rows["Alcotan: faster sustained"] = {"target": "sustained top speed (pack 30C, motors 22 A) ≥ 1.25 × the quad's", "value": f"{s['sustained top speed [km/h]']:.0f} vs {b['sustained top speed [km/h]']:.0f} km/h", "met": s["sustained top speed [km/h]"] >= 1.25 * b["sustained top speed [km/h]"]}
@@ -505,7 +567,8 @@ def cad_params(variant: str = MAIN) -> dict:
     L = layout(variant)
     v = VARIANTS.get(variant) or ALTERNATIVES[variant]
     pk = PACKS[L["pack"]]
-    return dict(layout=L["layout"], span=L["span"] * 1e3, chord=L["chord"] * 1e3, gap=L.get("gap", 0.0) * 1e3, arm=L.get("arm", 0.0) * 1e3, fin_chord=L.get("fin_chord", 0.0) * 1e3,
+    return dict(layout=L["layout"], n_motors=L.get("n_motors", 4), motor_y_inner=(L["stations_y"][len(L["stations_y"]) // 2] if L["layout"] == "monoplane" else 0.0) * 1e3,
+                span=L["span"] * 1e3, chord=L["chord"] * 1e3, gap=L.get("gap", 0.0) * 1e3, arm=L.get("arm", 0.0) * 1e3, fin_chord=L.get("fin_chord", 0.0) * 1e3,
                 motor_y=L["motor_y"] * 1e3, motor_z=L["motor_z"] * 1e3, wing_le_x=L["x_le"] * 1e3, prop_x=L["prop_x"] * 1e3, pod_length=L["pod_length"] * 1e3, pod_width=L["pod_width"] * 1e3,
                 pod_nose_x=L["x_pod_nose"] * 1e3, camber=v["camber"], battery_l=pk["size_m"][0] * 1e3, battery_w=pk["size_m"][1] * 1e3, battery_h=pk["size_m"][2] * 1e3,
                 battery_x=(L["x_ac"] - 0.005) * 1e3 - pk["size_m"][0] * 1e3 / 2, x_feet=L["x_feet"] * 1e3)
@@ -519,7 +582,7 @@ class MiniRaptor(kestrel.Design):
     from vegeta.dedalus import Parameter as _P
     parameters = [
         _P("part", "aircraft", choices=("aircraft", "airframe", "envelopes")),
-        _P("layout", "biplane", choices=("biplane", "cruciform")),
+        _P("layout", "biplane", choices=("biplane", "cruciform", "monoplane")), _P("n_motors", 4, "", min=2, max=4), _P("motor_y_inner", 0.0, "mm", min=0),
         _P("span", 500.0, "mm", min=150), _P("chord", 85.0, "mm", min=30), _P("gap", 160.0, "mm", min=0), _P("arm", 140.0, "mm", min=0), _P("fin_chord", 65.0, "mm", min=0),
         _P("motor_y", 170.0, "mm", min=0), _P("motor_z", 80.0, "mm", min=0), _P("wing_le_x", 100.0, "mm", min=0), _P("prop_x", 45.0, "mm", min=0),
         _P("pod_length", 260.0, "mm", min=100), _P("pod_width", 50.0, "mm", min=20), _P("pod_nose_x", 0.0, "mm", min=0),
@@ -578,6 +641,9 @@ def parts(p: dict) -> dict:
             posts = ps if posts is None else posts.union(ps)
         out["posts"] = (posts, COLOURS["posts"])
         stations = [(sy * p["motor_y"], sz * p["motor_z"]) for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1))]
+    elif p["layout"] == "monoplane":
+        out["wings"] = (cq.Workplane("XZ").polyline(section(c, x_le)).close().extrude(p["span"] / 2, both=True), COLOURS["wings"])
+        stations = [(-p["motor_y"], 0.0), (p["motor_y"], 0.0)] if p["n_motors"] == 2 else [(-p["motor_y"], 0.0), (-p["motor_y_inner"], 0.0), (p["motor_y_inner"], 0.0), (p["motor_y"], 0.0)]
     else:
         out["wings"] = (cq.Workplane("XZ").polyline(section(c, x_le)).close().extrude(p["span"] / 2, both=True), COLOURS["wings"])
         fc = p["fin_chord"]
@@ -674,12 +740,18 @@ def ortho_views(prt: dict, L: dict, *, figsize=(16, 5.5), title: str = ""):
         dim(f, (b / 2 + 60, -g / 2), (b / 2 + 60, g / 2), f"gap {g:.0f}", off=(10, 0), rotation=90)
         dim(f, (mm(L["motor_y"]) - 63.5, -g / 2 - 100), (mm(L["motor_y"]) + 63.5, -g / 2 - 100), "disc 127")
         dim(s, (mm(L["x_le"]), g / 2 + 70), (mm(L["x_te"]), g / 2 + 70), f"chord {c:.0f}")
-    else:
+    elif L["layout"] == "cruciform":
         r = mm(L["arm"])
         dim(f, (-b / 2, r + 90), (b / 2, r + 90), f"span {b:.0f}")
         dim(f, (b / 2 + 60, -r), (b / 2 + 60, r), f"fin tips {2 * r:.0f}", off=(10, 0), rotation=90)
         dim(f, (r - 63.5, -r - 100), (r + 63.5, -r - 100), "disc 127")
         dim(s, (mm(L["x_le"]), r + 70), (mm(L["x_te"]), r + 70), f"chord {c:.0f}")
+    else:
+        y = mm(L["motor_y"])
+        dim(f, (-b / 2, 110), (b / 2, 110), f"span {b:.0f}")
+        dim(f, (-y, -100), (y, -100), f"motors {2 * y:.0f} apart")
+        dim(f, (y - 63.5, -140), (y + 63.5, -140), "disc 127")
+        dim(s, (mm(L["x_le"]), 90), (mm(L["x_te"]), 90), f"chord {c:.0f}")
     x0 = mm(L["x_pod_nose"])
     dim(t, (x0, -b / 2 - 70), (x0 + mm(L["pod_length"]), -b / 2 - 70), f"pod {mm(L['pod_length']):.0f}")
     dim(t, (mm(L["prop_x"]), b / 2 + 70), (mm(L["x_feet"]), b / 2 + 70), f"overall {mm(L['x_feet']) - mm(L['prop_x']):.0f}")
@@ -743,11 +815,12 @@ def export_design(perf: dict, base: dict, cad: dict, path=DATA / "mini_raptor_de
 def biplane_question(perf: dict) -> pd.DataFrame:
     """Apus and Gavilan against the same briefs on one wing (``ALTERNATIVES``): what the biplane cell costs and buys."""
     keys = ["layout", "span [m]", "span / gate", "mass [kg]", "wing area [m²]", "aspect ratio", "induced k", "Cd0 at 20 m/s", "CdA at 20 m/s [cm²]", "L/D at 20 m/s", "power at 20 m/s [W]", "Wh/km at 20 m/s",
-            "best range [km]", "stall speed [m/s]", "turn radius at 20 m/s (banked) [m]", "pitch acceleration in the hover [rad/s²]", "sustained top speed [km/h]"]
-    cols = {"Apus Mini (one wing, as designed)": perf["Apus Mini"]["summary"], "Gavilan (biplane, as designed)": perf["Gavilan"]["summary"]}
+            "best range [km]", "stall speed [m/s]", "turn radius at 20 m/s (banked) [m]", "hover thrust / weight", "hover power [W]", "hover pitch by", "pitch acceleration in the hover [rad/s²]", "hover pitch-over 90° [s]", "sustained top speed [km/h]", "top speed [km/h]"]
+    cols = {"Apus Mini (twin monoplane, as designed)": perf["Apus Mini"]["summary"], "Alcotan (cruciform, as designed)": perf["Alcotan"]["summary"], "Gavilan (biplane, as designed)": perf["Gavilan"]["summary"]}
     for a in ALTERNATIVES:
         cols[a] = performance(a)["summary"]
     df = pd.DataFrame({k: {kk: v.get(kk) for kk in keys} for k, v in cols.items()})
-    df.loc["disc rules"] = ["; ".join(checks(layout(v))) or "all hold" for v in ("Apus Mini", "Gavilan", *ALTERNATIVES)]
-    df.loc["parts to build"] = ["pod, 1 wing, 2 fins, 4 mounts" if layout(v)["layout"] == "cruciform" else "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts" for v in ("Apus Mini", "Gavilan", *ALTERNATIVES)]
+    names = ("Apus Mini", "Alcotan", "Gavilan", *ALTERNATIVES)
+    df.loc["disc rules"] = ["; ".join(checks(layout(v))) or "all hold" for v in names]
+    df.loc["parts to build"] = [{"cruciform": "pod, 1 wing, 2 fins, 4 mounts", "biplane": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts", "monoplane": f"pod, 1 wing, {layout(v).get('n_motors', 4)} mounts, big elevons"}[layout(v)["layout"]] for v in names]
     return df
