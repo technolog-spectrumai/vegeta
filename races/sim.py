@@ -34,12 +34,9 @@ def _flight(prop):
 
     class QuadFlight(dc.Flight):
         def reset(self, model, data, root_jnt):            # the same maths as dc.Flight.reset without a ChironLab
-            import mujoco
-            self.m0 = float(sum(model.body_mass[b] for b in range(model.nbody) if model.body_rootid[b] == model.jnt_bodyid[root_jnt]))
-            M = np.zeros((model.nv, model.nv))
-            mujoco.mj_fullM(model, M, data.qM)
-            a = int(model.jnt_dofadr[root_jnt])
-            self.J = np.diag(M[a + 3:a + 6, a + 3:a + 6]).copy()
+            body = int(model.jnt_bodyid[root_jnt])          # one free body: its mass and principal inertia come straight from the model (no mass matrix, no MuJoCo-version API)
+            self.m0 = float(model.body_subtreemass[body])
+            self.J = np.array(model.body_inertia[body], dtype=float).copy()
             w, z = self.omega_att, self.zeta_att
             self.kR = np.array([self.J[0] * w * w, self.J[1] * w * w, self.J[2] * self.omega_yaw ** 2])
             self.kW = np.array([2 * z * self.J[0] * w, 2 * z * self.J[1] * w, 2 * 0.9 * self.J[2] * self.omega_yaw])
