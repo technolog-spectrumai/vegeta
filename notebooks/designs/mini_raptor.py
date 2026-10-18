@@ -7,12 +7,13 @@ chaser takes the 5x5), the 4-in-1 ESC and the flight controller, the FPV camera 
 6S 1300 pack. The reference is the racing quad itself on the same parts (``quad``), not the table's rounded numbers.
 
 Three independent layouts:
-- **Apus Mini** — economy at the quad's speed and manoeuvre: one wing a third of a gate wide (0.50 × 0.17 m), two of
-  the stack's motors on it, the hover pitch from the elevons in the slipstream (as every two-motor tailsitter);
-  4S 1500. It began as a biplane cell and passed through a cruciform (``ALTERNATIVES``): the question "is the biplane
-  — or any four-motor cell — the right one?" (``biplane_question``) moved it to a twin-motor monoplane.
-- **Alcotan** — the chaser: a cruciform (+) tailsitter, a small highly loaded wing and two fins carrying the four motors
-  at the arm tips (no posts, nothing between the discs), 6S and the steeper 5x5 for the pitch speed, a slender pod.
+- **Apus Mini** — small, light, cheap and frugal: one 0.45 m wing (30 % of a gate), two of the stack's motors under
+  spinners, the lightest pack, the hover pitch from the elevons in the slipstream (as every two-motor tailsitter).
+  It began as a biplane cell and passed through a cruciform (``ALTERNATIVES``): the question "is the biplane — or any
+  four-motor cell — the right one?" (``biplane_question``) moved it to a twin-motor monoplane.
+- **Alcotan** — faster sustained flight in the open: a small, highly loaded wing, two motors in nacelles on 6S with
+  the steeper 5x5 for the pitch speed, a slender pod and nothing else in the stream; its four-motor cruciform is in
+  ``ALTERNATIVES`` (a chaser that must out-accelerate its target would take it back).
 - **Gavilan** — tight spaces: the racing frame's own motor square (155 mm) wrapped in a short biplane cell (span 0.31 m,
   a fifth of a gate; the only cell that carries four 5-inch discs on that square — a cruciform needs 0.36 m), faired
   posts, the lightest pack, the biggest thrust-to-weight and the lowest inertia; the wing is mostly a brake and a
@@ -88,12 +89,12 @@ UNCERTAINTY = {"structure mass": 0.20, "Cd0": 0.30, "cl_max": 0.10, "drive power
 
 # ------------------------------------------------------------------------------------------------- the designs
 VARIANTS = {
-    "Apus Mini": {"layout": "monoplane", "n_motors": 2, "title": "economy: one wing a third of a gate wide, two of the stack's motors, the hover pitch by the elevons in the slipstream", "drive": "4S 5x4.3",
-                  "span": 0.50, "chord": 0.17, "motor_y": 0.14, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#2a9d8f"},
-    "Alcotan": {"layout": "cruciform", "title": "the chaser: sustained speed on 6S and the 5x5, the motors at the tips of a +", "drive": "6S 5x5",
-                "span": 0.42, "chord": 0.075, "arm": 0.14, "fin_chord": 0.065, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#e76f51"},
-    "Gavilan": {"layout": "biplane", "title": "tight spaces: the racing frame's motor square in a short cell, the wing as a brake", "drive": "4S 5x4.3 light",
-                "span": 0.31, "chord": 0.100, "gap": 0.155, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.22, "pod_width": 0.046, "colour": "#264653"},
+    "Apus Mini": {"layout": "monoplane", "n_motors": 2, "title": "small, light, cheap, frugal: one 0.45 m wing, two of the stack's motors under spinners, the lightest pack; the hover pitch by the elevons in the wash", "drive": "4S 5x4.3 light",
+                  "span": 0.45, "chord": 0.15, "motor_y": 0.13, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.24, "pod_width": 0.046, "fairing": 0.4, "colour": "#2a9d8f"},
+    "Alcotan": {"layout": "monoplane", "n_motors": 2, "title": "faster sustained flight in the open: a small, highly loaded wing, two motors in nacelles on 6S with the 5x5, nothing else in the stream", "drive": "6S 5x5",
+                "span": 0.42, "chord": 0.08, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "fairing": 0.35, "colour": "#e76f51"},
+    "Gavilan": {"layout": "biplane", "title": "maximum agility in tight spaces: the racing frame's motor square in the shortest biplane cell, four motors, the lightest pack, the wing as a brake", "drive": "4S 5x4.3 light",
+                "span": 0.31, "chord": 0.100, "gap": 0.155, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.20, "pod_width": 0.046, "fairing": 1.0, "colour": "#264653"},
 }
 MAIN = "Apus Mini"
 # the question "is the biplane the right cell?": the same briefs on one wing (the cruciform carries the four motors on
@@ -105,10 +106,10 @@ ALTERNATIVES = {
                                                      "span": 0.71, "chord": 0.12, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#b5c99a"},
     "Apus flat: four motors in a row": {"layout": "monoplane", "n_motors": 4, "title": "one flat wing, the four discs in a row (0.62 m of span needed), the same area at AR 4.9", "drive": "4S 5x4.3",
                                         "span": 0.64, "chord": 0.13, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#f4a261"},
-    "Apus cruciform: four motors on wing and fins": {"layout": "cruciform", "title": "the same wing with all four motors at the tips of a +: the full hover authority, two more motors and two fins to carry", "drive": "4S 5x4.3",
+    "Apus cruciform: four motors on wing and fins": {"layout": "cruciform", "title": "Apus's wing with all four motors at the tips of a +: the full hover authority, two more motors and two fins to carry", "drive": "4S 5x4.3",
                                                      "span": 0.50, "chord": 0.17, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#e9c46a"},
-    "Alcotan twin: two motors on one wing": {"layout": "monoplane", "n_motors": 2, "title": "the chaser with two motors: half the hover thrust, the same pack, the 5x5", "drive": "6S 5x5",
-                                             "span": 0.42, "chord": 0.075, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#f4a261"},
+    "Alcotan cruciform: four motors": {"layout": "cruciform", "title": "the chaser as it was: the same wing, four motors at the tips of a +, the full hover thrust", "drive": "6S 5x5",
+                                       "span": 0.42, "chord": 0.075, "arm": 0.14, "fin_chord": 0.065, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#f4a261"},
     "X-C mini for the hangar": {"layout": "xwing", "phi_deg": 30.0, "motor_r": 0.15, "title": "Kestrel-X-C's cell on the 5-inch stack, the smallest that clears the discs: panels 0.16 m, a 0.40 m projected span", "drive": "4S 5x4.3 light",
                                 "chord": 0.07, "span": 0.0, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.22, "pod_width": 0.046, "colour": "#9b5de5"},
     "X-C mini for the race": {"layout": "xwing", "phi_deg": 30.0, "motor_r": 0.22, "title": "the same cell with Apus's span: panels 0.28 m, chord 0.09, 4S 1500", "drive": "4S 5x4.3",
@@ -176,7 +177,7 @@ def layout(variant: str = MAIN) -> dict:
     x_le = 0.095 if v["layout"] == "biplane" else 0.11
     L = {"variant": variant, "layout": v["layout"], "title": v["title"], "drive": v["drive"], "pack": DRIVES[v["drive"]]["pack"], "span": b, "chord": c, "R_prop": R_PROP,
          "pod_length": v["pod_length"], "pod_width": v["pod_width"], "x_le": x_le, "x_te": x_le + c, "x_ac": x_le + 0.25 * c, "x_spar": x_le + 0.30 * c, "prop_x": 0.045,
-         "cl_max": v["cl_max"], "n_struct": v["n_struct"], "camber": v["camber"], "colour": v["colour"], "span_over_gate": b / GATE_WIDTH, "Re_20": 20 * c / NU,
+         "cl_max": v["cl_max"], "n_struct": v["n_struct"], "camber": v["camber"], "colour": v["colour"], "fairing": v.get("fairing", 1.0), "span_over_gate": b / GATE_WIDTH, "Re_20": 20 * c / NU,
          "section": f"thin cambered section ({v['camber']:.0%} camber, 10 % thick); the elevons' reflex trims it"}
     if v["layout"] == "biplane":
         gap = v["gap"]
@@ -265,7 +266,7 @@ def mass_table(L: dict) -> list[dict]:
     for k, (y, z) in enumerate(stations):
         add(f"motor {k}", STACK["motor"]["mass_kg"] + STACK["motor"]["screws_kg"], L["prop_x"] + 0.02, y, z, "propulsion", "2207-class with its wires and screws")
         add(f"propeller {k}", STACK["propeller"]["mass_kg"], L["prop_x"], y, z, "propulsion", "5-inch tri-blade")
-        add(f"nacelle / mount {k}", NACELLE_KG, L["prop_x"] + 0.03, y, z, "structure", "printed")
+        add(f"nacelle / mount {k}", NACELLE_KG * (2.0 if L.get("fairing", 1.0) < 1 else 1.0), L["prop_x"] + 0.03, y, z, "structure", "printed" + (", with the spinner and the nacelle" if L.get("fairing", 1.0) < 1 else ""))
     if L["layout"] == "biplane":
         for name, z in (("upper wing", L["gap"] / 2), ("lower wing", -L["gap"] / 2)):
             add(name, WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, z, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
@@ -329,7 +330,8 @@ def drag_buildup(L: dict, *, V: float = 20.0, t: float = 0.10) -> dict:
     rows["pod"] = kf._cf(V * lp / NU) * (1 + 60 / fr ** 3 + fr / 400) * math.pi * dp * lp * 0.8
     dm = STACK["motor"]["d_m"]
     nm = L.get("n_motors", 4)
-    rows[f"motors in their mounts ({nm})"] = nm * (STACK["motor"]["cd_frontal"] * math.pi * dm ** 2 / 4 + kf._cf(V * 0.05 / NU) * 1.3 * math.pi * dm * 0.05)    # an open bell behind the prop
+    fair = L.get("fairing", 1.0)                                                        # 1: the open bell; < 1: a spinner and a nacelle
+    rows[f"motors in their mounts ({nm}){', faired' if fair < 1 else ''}"] = nm * (fair * STACK["motor"]["cd_frontal"] * math.pi * dm ** 2 / 4 + kf._cf(V * 0.07 / NU) * 1.3 * math.pi * dm * (0.07 if fair < 1 else 0.05))
     if L["layout"] == "biplane":
         rows["posts (2), faired"] = 2 * POST_CD_FAIRED * POST_FAIRING_CHORD * (L["gap"] - 0.01)      # printed streamlined sleeves on the tubes
     rows["camera and antenna"] = 0.6 * 0.0006
@@ -887,7 +889,7 @@ def biplane_question(perf: dict) -> pd.DataFrame:
     """Apus and Gavilan against the same briefs on one wing (``ALTERNATIVES``): what the biplane cell costs and buys."""
     keys = ["layout", "span [m]", "span / gate", "mass [kg]", "wing area [m²]", "aspect ratio", "induced k", "Cd0 at 20 m/s", "CdA at 20 m/s [cm²]", "L/D at 20 m/s", "power at 20 m/s [W]", "Wh/km at 20 m/s",
             "best range [km]", "stall speed [m/s]", "turn radius at 20 m/s (banked) [m]", "hover thrust / weight", "hover power [W]", "hover pitch by", "pitch acceleration in the hover [rad/s²]", "hover pitch-over 90° [s]", "sustained top speed [km/h]", "top speed [km/h]"]
-    cols = {"Apus Mini (twin monoplane, as designed)": perf["Apus Mini"]["summary"], "Alcotan (cruciform, as designed)": perf["Alcotan"]["summary"], "Gavilan (biplane, as designed)": perf["Gavilan"]["summary"]}
+    cols = {"Apus Mini (twin monoplane, as designed)": perf["Apus Mini"]["summary"], "Alcotan (twin monoplane, as designed)": perf["Alcotan"]["summary"], "Gavilan (biplane, as designed)": perf["Gavilan"]["summary"]}
     for a in ALTERNATIVES:
         cols[a] = performance(a)["summary"]
     df = pd.DataFrame({k: {kk: v.get(kk) for kk in keys} for k, v in cols.items()})
