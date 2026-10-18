@@ -68,7 +68,13 @@ def main(argv=None) -> int:
         run = runkit.Run.open(args.resume, config=config, heartbeat_s=args.heartbeat, echo=not args.quiet)
     else:
         out = Path(args.out) if args.out else wk.library.run_dir(BOOK, args.chapter, f"refquad_{args.quality}" + ("_mock" if args.mock else ""))
-        run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names, heartbeat_s=args.heartbeat, echo=not args.quiet)
+        versions = {}
+        try:
+            import mujoco
+            versions["mujoco"] = mujoco.__version__
+        except Exception:
+            versions["mujoco"] = None
+        run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names, versions=versions, heartbeat_s=args.heartbeat, echo=not args.quiet)
     run.manifest.update(book=BOOK, chapter=args.chapter, kind=KIND, prerequisites_ignored=ignored, yanus={"needs": wk.GATE["needs"]})
     runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
     bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"race {args.chapter}")
