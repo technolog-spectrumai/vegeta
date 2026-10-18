@@ -3,3 +3,4 @@ See README.md. ``python -m races --help``."""
 from . import courses, mock, path, refquad, replay, rules  # noqa: F401
 
 __all__ = ["courses", "mock", "path", "refquad", "replay", "rules"]
+from . import analysis, ingest  # noqa: E402,F401

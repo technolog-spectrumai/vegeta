@@ -184,3 +184,45 @@ def write(doc: dict, out: Path) -> Path:
     out = Path(out)
     out.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=_plain))
     return out
+
+
+# ================================================================================================= scanning for runs
+SCAN_ROOTS = (ROOT / "workflows" / "runs" / "races", ROOT / "races" / "runs", ROOT / "races" / "runs" / "notebook")
+
+
+def scan(roots=SCAN_ROOTS, *, extra=()) -> "pd.DataFrame":
+    """Every race run found where the workflows (``workflows/runs/races/<course>/<run>/``) and the thin CLI
+    (``races/runs/<course>_<aircraft>_<mode>/``) write them, plus any ``extra`` folders: course, run, state, mode,
+    quality, created, whether the lap's trajectory and stats are there, the videos, the sizes, the failure note."""
+    import pandas as pd
+    rows = []
+    for root in list(roots) + list(extra):
+        root = Path(root)
+        if not root.is_dir():
+            continue
+        for d in sorted(root.rglob("*")):
+            if not d.is_dir():
+                continue
+            is_run = (d / "manifest.json").exists() or (d / "stats.json").exists() or (d / "trajectory.npz").exists()
+            if not is_run or d.parent.name == "cases":                     # a case folder inside a run is not a run
+                continue
+            man = _read(d / "manifest.json") or {}
+            state, summ = _state(d) if (d / "manifest.json").exists() else (("cli run", None) if (d / "stats.json").exists() else ("files", None))
+            tr = d / "cases" / "race" / "trajectory.npz" if (d / "cases").is_dir() else d / "trajectory.npz"
+            st = d / "cases" / "race" / "stats.json" if (d / "cases").is_dir() else d / "stats.json"
+            videos = sorted(p.name for p in d.rglob("*.mp4")) + sorted(p.name for p in d.rglob("*.gif"))
+            note = (summ or {}).get("note") or (_read(d / "cases" / "race" / "case.json") or {}).get("note") if (d / "cases").is_dir() else None
+            course = man.get("campaign") or man.get("chapter") or (d.parent.name if d.parent.name in courses.COURSES else d.name.split("_")[0])
+            rows.append({"course": course, "run": str(d.relative_to(ROOT)) if ROOT in d.parents else str(d), "state": state, "mode": (summ or {}).get("mode") or (man.get("config") or {}).get("mock") and "mock" or ("mujoco" if man else ""),
+                         "quality": (summ or {}).get("quality") or (man.get("config") or {}).get("quality"), "created": man.get("created_at"), "trajectory": tr.exists(), "stats": st.exists(),
+                         "videos": ", ".join(videos), "size [MB]": round(sum(p.stat().st_size for p in d.rglob("*") if p.is_file()) / 1e6, 1), "note": (note or "")[:120]})
+    df = pd.DataFrame(rows, columns=["course", "run", "state", "mode", "quality", "created", "trajectory", "stats", "videos", "size [MB]", "note"])
+    return df.sort_values(["course", "run"]).reset_index(drop=True) if len(df) else df
+
+
+def expected_locations() -> dict:
+    """Where the files are supposed to be, for the scan's report when nothing is found."""
+    return {"workflow runs (wf R1–R4)": str(ROOT / "workflows" / "runs" / "races" / "<course>" / "<timestamp>_refquad_<quality>" / "cases" / "race" / "{trajectory.npz, stats.json, map.png, scene.xml}"),
+            "workflow videos": str(ROOT / "workflows" / "runs" / "races" / "<course>" / "<run>" / "cases" / "video-<camera>" / "<course>_<camera>.mp4"),
+            "thin CLI runs (python -m races run)": str(ROOT / "races" / "runs" / "<course>_refquad_<mode>" / "{trajectory.npz, stats.json, map.png, replay.gif}"),
+            "ingest file": str(ROOT / "ingest_race.json"), "notebook 50's export": str(ROOT / "notebooks" / "designs" / "data" / "four_races.json")}
