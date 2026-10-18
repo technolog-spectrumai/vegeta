@@ -192,6 +192,11 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
 
+## Stage R — Races (branch `dev_workflows2`)
+- [x] R.1 `races/`: four drone race environments in MuJoCo for the reference 5-inch quad (hangar with three floors, industrial zone, farm, quarry), parameterised course builders → MJCF scenes with zones, a starting grid, landmarks and four cameras; the reference quad from its component budget on the existing Boreas drive table; one set of rules and a referee (zones in order, checkpoints, collisions → reset / count / stop, lap completion); a mock flyer for development; the MuJoCo runner on Drongo's geometric controller (written, not run); maps, traces, GIF replays; CLI `python -m races`; smoke tests; notebook 50 `50_four_races` (mock)
+- [ ] R.2 Run the MuJoCo races by hand (`python -m races run --course <c>`), tune the controller's gains and the schedule's safety per course, render the onboard and chase cameras (`races.sim.render`), and record the real lap times beside the mock's
+- [ ] R.3 Other aircraft on the same courses (the mini raptors as tailsitters need their own force hook: `notebooks/designs/mini_races.py` is the draft), multi-lap races, a starting-grid start with four aircraft
+
 ## Stage 5s — Zephyr, 2-D wing sections (branch `dev_zephyr`)
 - [x] 5s.1 `vegeta.zephyr`: NACA 4-digit and 5-digit sections (plain and reflexed, the aft reflex adjustable), .dat files, plain flaps; thin-airfoil theory (α₀, Cm_c/4, a flap's τ) validated against Abbott & von Doenhoff; `analyze()` over NeuralFoil (optional, a confidence per point) and XFOIL (on the PATH, the command recorded); `Polar.summary()`, flap sweeps, JSON export; CLI `section/polar/flap/backends`; tests (backends skipped when missing), `docs/zephyr.md`
 - [ ] 5s.2 A section notebook: the candidates for a tailless wing (symmetric, cambered, reflexed) at low Re, NeuralFoil against XFOIL where both exist, the flap data, the Reynolds and n_crit sensitivity

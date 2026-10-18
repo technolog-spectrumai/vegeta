@@ -1,0 +1,1359 @@
+{
+ "schema": 1,
+ "notebook": "50_four_races",
+ "mode": "mock",
+ "aircraft": {
+  "all-up mass [kg]": 0.571,
+  "motor": "2207 1750 KV",
+  "voltage": "6S (22.2 V nominal)",
+  "propeller": "5x4.3 three-blade",
+  "pack": "6S 1300 mAh",
+  "static thrust per motor [N]": 18.426770584933678,
+  "hover thrust / weight": 13.158430912331623,
+  "hover power [W]": 101.51446667948024,
+  "usable energy [Wh]": 23.088000000000005,
+  "sustainable power [W]": 865.8,
+  "forward drag area [m\u00b2]": 0.016,
+  "propulsion source": "Boreas table mini_raptor_drive_6S_5x4p3.json"
+ },
+ "budget_g": {
+  "motors 2207 1750 KV (4)": 144.0,
+  "propellers 5x4.3x3 (4)": 18.0,
+  "4-in-1 ESC 45 A": 15.0,
+  "flight controller": 8.0,
+  "FPV camera": 9.0,
+  "video transmitter": 10.0,
+  "antenna": 5.0,
+  "receiver": 2.0,
+  "carbon X-frame 5 inch (220 mm)": 105.0,
+  "hardware, wiring, straps, capacitor": 25.0,
+  "battery 6S 1300 mAh": 230.0
+ },
+ "rules": {
+  "collision": "reset",
+  "reset_penalty_s": 5.0,
+  "max_collisions": 5,
+  "timeout_s": 300.0,
+  "reset_hover_s": 1.0
+ },
+ "courses": {
+  "hangar": {
+   "name": "Hangar \u2014 three floors",
+   "kind": "technical",
+   "length_m": 168.39992580790346,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -30.0,
+      0.0,
+      1.5
+     ],
+     "half": [
+      2.0,
+      2.0,
+      0.75
+     ]
+    },
+    {
+     "name": "door",
+     "kind": "gate",
+     "center": [
+      -20.0,
+      0.0,
+      1.6
+     ],
+     "half": [
+      0.6,
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "name": "ground floor",
+     "kind": "gate",
+     "center": [
+      -12.0,
+      1.0,
+      2.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "under the gantry",
+     "kind": "checkpoint",
+     "center": [
+      6.0,
+      0.0,
+      1.8
+     ],
+     "half": [
+      1.0,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "name": "back west",
+     "kind": "gate",
+     "center": [
+      -8.0,
+      -6.5,
+      2.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "under the stair opening",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      2.0
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "stair opening up",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      5.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "first floor",
+     "kind": "checkpoint",
+     "center": [
+      0.0,
+      2.0,
+      5.8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "under the east hole",
+     "kind": "gate",
+     "center": [
+      16.0,
+      -2.5,
+      5.8
+     ],
+     "half": [
+      1.2,
+      1.2,
+      0.9
+     ]
+    },
+    {
+     "name": "east hole up",
+     "kind": "gate",
+     "center": [
+      16.0,
+      -2.5,
+      9.6
+     ],
+     "half": [
+      1.2,
+      1.2,
+      0.9
+     ]
+    },
+    {
+     "name": "under the beams",
+     "kind": "gate",
+     "center": [
+      4.0,
+      2.0,
+      10.2
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "second floor west",
+     "kind": "checkpoint",
+     "center": [
+      -10.0,
+      3.0,
+      10.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "over the stair opening",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      9.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "stair opening down",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      5.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "ground again",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      1.8
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "to the window",
+     "kind": "gate",
+     "center": [
+      -10.0,
+      -5.5,
+      2.4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "window",
+     "kind": "gate",
+     "center": [
+      -12.8,
+      -9.0,
+      2.4
+     ],
+     "half": [
+      0.7,
+      0.6,
+      0.7
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -12.8,
+      -17.0,
+      2.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      1.5
+     ]
+    }
+   ],
+   "params": {
+    "length": 40.0,
+    "width": 18.0,
+    "height": 12.0,
+    "floor_gap": 4.0,
+    "gate_half": 0.9
+   },
+   "description": "a 40 \u00d7 18 \u00d7 12 m hangar with two mezzanine floors 4 m apart: in by the west door, under the gantry, up the stair opening, across the first floor, up through the east hole, under the roof beams, down both stair openings, out by a south window; 18 zones, about 190 m",
+   "recovery": "every floor is reached by the staircase; the windows open at 1.6 m; a downed aircraft on a floor or on a beam is reachable from the mezzanine with a pole"
+  },
+  "industrial": {
+   "name": "Industrial zone",
+   "kind": "technical",
+   "length_m": 484.82629880323947,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -30.0,
+      0.0,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "gap 1",
+     "kind": "gate",
+     "center": [
+      -5.0,
+      -3.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "under passage 1",
+     "kind": "gate",
+     "center": [
+      30.0,
+      -3.0,
+      2.6
+     ],
+     "half": [
+      1.0,
+      2.5,
+      0.9
+     ]
+    },
+    {
+     "name": "between",
+     "kind": "checkpoint",
+     "center": [
+      45.0,
+      -10.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 2",
+     "kind": "gate",
+     "center": [
+      60.0,
+      -6.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "under passage 2",
+     "kind": "gate",
+     "center": [
+      75.0,
+      -2.5,
+      2.6
+     ],
+     "half": [
+      1.0,
+      2.5,
+      0.9
+     ]
+    },
+    {
+     "name": "gap 3",
+     "kind": "checkpoint",
+     "center": [
+      95.0,
+      0.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "east of the plant",
+     "kind": "gate",
+     "center": [
+      117.0,
+      2.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the turn",
+     "kind": "gate",
+     "center": [
+      121.0,
+      22.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "water tower",
+     "kind": "gate",
+     "center": [
+      144.0,
+      32.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "round the last building",
+     "kind": "checkpoint",
+     "center": [
+      170.0,
+      8.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "back",
+     "kind": "gate",
+     "center": [
+      160.0,
+      -30.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "south of the last building",
+     "kind": "gate",
+     "center": [
+      125.0,
+      -30.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "over the red stack",
+     "kind": "gate",
+     "center": [
+      120.0,
+      -6.0,
+      15
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 2 again",
+     "kind": "checkpoint",
+     "center": [
+      70.0,
+      -2.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 1 again",
+     "kind": "gate",
+     "center": [
+      30.0,
+      8.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "home straight",
+     "kind": "gate",
+     "center": [
+      -10.0,
+      2.0,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -30.0,
+      0.0,
+      4.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    }
+   ],
+   "params": {
+    "scale": 1.0,
+    "gate_half": 1.5
+   },
+   "description": "seven buildings with 10\u201315 m gaps and two covered passages to fly under, a 470 m lap at 6\u20138 m round the far end and back",
+   "recovery": "all on the ground outside; the passages' decks are 4.2 m up (a ladder); roofs are not part of the route"
+  },
+  "farm": {
+   "name": "Farm",
+   "kind": "open",
+   "length_m": 358.9620492095217,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -20,
+      0,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "round the cottage",
+     "kind": "gate",
+     "center": [
+      -11,
+      15,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "behind it",
+     "kind": "gate",
+     "center": [
+      0,
+      25,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "and back",
+     "kind": "checkpoint",
+     "center": [
+      11,
+      15,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "to the barn",
+     "kind": "gate",
+     "center": [
+      20,
+      2.5,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "barn door",
+     "kind": "gate",
+     "center": [
+      29,
+      2.5,
+      3
+     ],
+     "half": [
+      1.0,
+      1.8,
+      1.2
+     ]
+    },
+    {
+     "name": "barn far door",
+     "kind": "checkpoint",
+     "center": [
+      51,
+      2.5,
+      3
+     ],
+     "half": [
+      1.0,
+      1.8,
+      1.2
+     ]
+    },
+    {
+     "name": "round the silo",
+     "kind": "gate",
+     "center": [
+      62,
+      12,
+      5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the long field",
+     "kind": "gate",
+     "center": [
+      110,
+      20,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "over the hedge",
+     "kind": "checkpoint",
+     "center": [
+      120,
+      -10,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "back over the field",
+     "kind": "gate",
+     "center": [
+      95,
+      -25,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "down to the trees",
+     "kind": "gate",
+     "center": [
+      74,
+      -22,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 1",
+     "kind": "gate",
+     "center": [
+      62,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 2",
+     "kind": "gate",
+     "center": [
+      54,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 3",
+     "kind": "gate",
+     "center": [
+      46,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 4",
+     "kind": "checkpoint",
+     "center": [
+      38,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 5",
+     "kind": "gate",
+     "center": [
+      30,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 6",
+     "kind": "gate",
+     "center": [
+      22,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the yard",
+     "kind": "gate",
+     "center": [
+      0,
+      -8,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -20,
+      0,
+      4.0
+     ],
+     "half": [
+      2.5,
+      2.5,
+      1.0
+     ]
+    }
+   ],
+   "params": {
+    "gate_half": 1.5
+   },
+   "description": "round the cottage, through the barn beside its posts, round the silo, a 60 m straight over the long field, over the hedge, back over the field, a slalom down the tree line, home over the yard: about 520 m",
+   "recovery": "open fields; the barn floor and the tree line are on foot; the roofs are not on the route"
+  },
+  "quarry": {
+   "name": "Quarry",
+   "kind": "open",
+   "length_m": 520.1905938644708,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -35,
+      -20,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "corridor in",
+     "kind": "gate",
+     "center": [
+      -32,
+      5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1a",
+     "kind": "gate",
+     "center": [
+      -20,
+      7.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1b",
+     "kind": "gate",
+     "center": [
+      -10,
+      2.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1c",
+     "kind": "gate",
+     "center": [
+      0,
+      7.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor out",
+     "kind": "checkpoint",
+     "center": [
+      12,
+      3,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "floor east",
+     "kind": "gate",
+     "center": [
+      38,
+      0,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "up to bench 1",
+     "kind": "gate",
+     "center": [
+      46.04493841850951,
+      16.75898702295777,
+      9.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "bench 1 north",
+     "kind": "checkpoint",
+     "center": [
+      8.50876070567959,
+      48.255579897598196,
+      9.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "bench 2 north-west",
+     "kind": "gate",
+     "center": [
+      -36.638893752132745,
+      43.66453325778175,
+      15.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "rim west",
+     "kind": "gate",
+     "center": [
+      -64.75265537596346,
+      5.6651232785977825,
+      21.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "down the ramp",
+     "kind": "checkpoint",
+     "center": [
+      -30.110877286148614,
+      -33.441517146482745,
+      8.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "floor south",
+     "kind": "gate",
+     "center": [
+      0,
+      -30,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "past the crusher",
+     "kind": "gate",
+     "center": [
+      8,
+      22,
+      3
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "under the conveyor",
+     "kind": "gate",
+     "center": [
+      20,
+      28,
+      2.4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "floor east again",
+     "kind": "gate",
+     "center": [
+      36,
+      10,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "corridor 2 in",
+     "kind": "gate",
+     "center": [
+      25,
+      -8,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2a",
+     "kind": "gate",
+     "center": [
+      12,
+      -10,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2b",
+     "kind": "checkpoint",
+     "center": [
+      -2,
+      -6,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2c",
+     "kind": "gate",
+     "center": [
+      -17,
+      -10,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -35,
+      -20,
+      4.5
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    }
+   ],
+   "params": {
+    "floor_r": 45.0,
+    "bench_h": 6.0,
+    "bench_w": 8.0,
+    "n_benches": 3,
+    "gate_half": 2.0
+   },
+   "description": "a pit with a 90 m floor and 3 benches 6 m tall: two winding corridors between the spoil heaps, the floor, up the benches to the rim, down the haul ramp, past the crusher and under the conveyor: about 600 m",
+   "recovery": "the benches are reached by the haul ramp; the heaps are walkable; nothing on the route is above a bench's top"
+  }
+ },
+ "races": {
+  "hangar": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 18.03999999999969,
+    "penalty [s]": 0.0,
+    "zones passed": "18 of 18",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 3,
+    "course": "Hangar \u2014 three floors",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 0.9116318958655216,
+    "Wh per km": 5.413493453111346,
+    "max speed [m/s]": 15.934365721385873,
+    "mean speed [m/s]": 9.334807417289708,
+    "peak power [W]": 701.0077804875701,
+    "mean power [W]": 176.25536117700764,
+    "course length [m]": 168.39992580790346,
+    "schedule time [s]": 24.83659601031644,
+    "racing time [s]": 18.619999999999692
+   },
+   "gate times": {
+    "door": 0.8800000000000007,
+    "ground floor": 1.3600000000000012,
+    "under the gantry": 3.4800000000000013,
+    "back west": 5.199999999999965,
+    "under the stair opening": 6.199999999999943,
+    "stair opening up": 6.7999999999999305,
+    "first floor": 8.479999999999896,
+    "under the east hole": 10.219999999999859,
+    "east hole up": 10.899999999999844,
+    "under the beams": 11.99999999999982,
+    "second floor west": 13.039999999999798,
+    "over the stair opening": 14.239999999999773,
+    "stair opening down": 14.759999999999762,
+    "ground again": 15.259999999999751,
+    "to the window": 16.339999999999726,
+    "window": 17.05999999999971,
+    "finish": 18.03999999999969
+   }
+  },
+  "industrial": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 28.479999999999468,
+    "penalty [s]": 0.0,
+    "zones passed": "18 of 18",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Industrial zone",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 1.884355677005871,
+    "Wh per km": 3.886661432470297,
+    "max speed [m/s]": 23.64935018144918,
+    "mean speed [m/s]": 17.02339532314777,
+    "peak power [W]": 1184.3087118469175,
+    "mean power [W]": 232.31782319250485,
+    "course length [m]": 484.82629880323947,
+    "schedule time [s]": 38.53362409526469,
+    "racing time [s]": 29.199999999999466
+   },
+   "gate times": {
+    "gap 1": 1.7800000000000016,
+    "under passage 1": 3.7999999999999914,
+    "between": 4.739999999999971,
+    "gap 2": 5.4599999999999556,
+    "under passage 2": 6.319999999999937,
+    "gap 3": 7.359999999999916,
+    "east of the plant": 8.719999999999887,
+    "the turn": 10.059999999999858,
+    "water tower": 11.619999999999825,
+    "round the last building": 13.879999999999777,
+    "back": 16.279999999999728,
+    "south of the last building": 18.599999999999678,
+    "over the red stack": 20.41999999999964,
+    "gap 2 again": 23.25999999999958,
+    "gap 1 again": 25.179999999999538,
+    "home straight": 26.9599999999995,
+    "finish": 28.479999999999468
+   }
+  },
+  "farm": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 25.479999999999528,
+    "penalty [s]": 0.0,
+    "zones passed": "20 of 20",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Farm",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 1.6232961323752413,
+    "Wh per km": 4.522194298672904,
+    "max speed [m/s]": 24.121017874093887,
+    "mean speed [m/s]": 14.087992512147894,
+    "peak power [W]": 1184.3087118469175,
+    "mean power [W]": 222.53869293796146,
+    "course length [m]": 358.9620492095217,
+    "schedule time [s]": 36.037637996214684,
+    "racing time [s]": 26.25999999999953
+   },
+   "gate times": {
+    "round the cottage": 1.220000000000001,
+    "behind it": 2.300000000000002,
+    "and back": 3.3000000000000007,
+    "to the barn": 4.3399999999999785,
+    "barn door": 4.899999999999967,
+    "barn far door": 6.61999999999993,
+    "round the silo": 7.4799999999999125,
+    "the long field": 10.579999999999846,
+    "over the hedge": 12.759999999999799,
+    "back over the field": 14.319999999999766,
+    "down to the trees": 15.239999999999746,
+    "tree 1": 16.119999999999727,
+    "tree 2": 17.199999999999704,
+    "tree 3": 18.41999999999968,
+    "tree 4": 19.619999999999653,
+    "tree 5": 20.839999999999627,
+    "tree 6": 22.0199999999996,
+    "the yard": 23.879999999999562,
+    "finish": 25.479999999999528
+   }
+  },
+  "quarry": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 33.97999999999984,
+    "penalty [s]": 0.0,
+    "zones passed": "21 of 21",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Quarry",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 2.1995645939582484,
+    "Wh per km": 4.228382096680737,
+    "max speed [m/s]": 22.24631733566205,
+    "mean speed [m/s]": 15.308728483357068,
+    "peak power [W]": 1255.5406692538527,
+    "mean power [W]": 227.67201087549427,
+    "course length [m]": 520.1905938644708,
+    "schedule time [s]": 48.72913515940673,
+    "racing time [s]": 34.77999999999984
+   },
+   "gate times": {
+    "corridor in": 3.0400000000000027,
+    "corridor 1a": 3.9399999999999866,
+    "corridor 1b": 4.759999999999969,
+    "corridor 1c": 5.61999999999995,
+    "corridor out": 6.499999999999932,
+    "floor east": 8.139999999999898,
+    "up to bench 1": 9.259999999999874,
+    "bench 1 north": 11.899999999999817,
+    "bench 2 north-west": 13.879999999999775,
+    "rim west": 16.47999999999972,
+    "down the ramp": 19.659999999999652,
+    "floor south": 21.499999999999613,
+    "past the crusher": 24.659999999999545,
+    "under the conveyor": 25.599999999999525,
+    "floor east again": 27.79999999999948,
+    "corridor 2 in": 29.17999999999945,
+    "corridor 2a": 30.05999999999943,
+    "corridor 2b": 30.99999999999941,
+    "corridor 2c": 31.999999999999527,
+    "finish": 33.97999999999984
+   }
+  }
+ }
+}
