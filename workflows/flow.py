@@ -77,6 +77,30 @@ kestrel.chapter("joint", kind="fea", campaign="joint", takes=[Run("frame")])    
 kestrel.chapter("frame-and-joint", kind="fea", campaign="all")                                           # K11
 kestrel.chapter("wing-interference", kind="cfd", campaign="interference")                                 # K12
 
+# ================================================================================================= book: kestrel-x (X)
+def _xc():
+    p = str(ROOT / "notebooks" / "designs")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import kestrel_xc_campaigns
+    return kestrel_xc_campaigns
+
+
+kestrel_x = flow.book("kestrel-x", "X", title="Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
+                      design="notebooks/designs/kestrel_xc.py; the notebook 48_kestrel_xc reads the runs", variants=("X-C", "X-C45", "X-CX"),
+                      fingerprint=lambda v: _xc().fingerprint(v), compatible=lambda e, f, ch=None: _xc().compare(e, f),
+                      describe=lambda: {**dict(_xc().CFD_CAMPAIGNS), **{f"fea:{k}": v for k, v in _xc().FEA_CAMPAIGNS.items()}})
+kestrel_x.kind("cfd", title="CFD — the bare X-C (Aeromant / OpenFOAM)", script="workflows/kestrel_x/airframe_cfd.py", workflow="airframe_cfd",
+               needs=[Tool.openfoam(probe=_openfoam), Package("vegeta.aeromant")], needs_text="OpenFOAM; 4 cores recommended", time="screening case 10–20 min, fine case ~1 h",
+               options=[("--variant", ("X-C", "X-C45", "X-CX"), "X-C"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")], screening=("--quality", "screening"))
+kestrel_x.kind("fea", title="FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)", script="workflows/kestrel_x/panel_fea.py", workflow="structure_fea",
+               needs=[Tool("ccx", why="the FEA solver", fix="install CalculiX (docs/installation.md)", version_cmd=("ccx", "-v")), Package("gmsh"), Package("vegeta.talos")],
+               needs_text="CalculiX ccx on the PATH, Gmsh (python module)", time="minutes", options=[("--variant", ("X-C", "X-C45", "X-CX"), "X-C"), ("--threads", None, "4")],
+               screening=("--element-size", "3", "--threads", "2"))
+kestrel_x.chapter("airframe-sweep", kind="cfd", campaign="sweep")        # X1
+kestrel_x.chapter("airframe-stall", kind="cfd", campaign="stall")        # X2
+kestrel_x.chapter("panel", kind="fea", campaign="panel")                 # X3
+
 flow.add_import("import_legacy", title="import the first CFD campaign's results file into kestrel / airframe-sweep (once)",
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
 
@@ -116,8 +140,15 @@ flow.notebook("46_kestrel_tandem", title="Kestrel-Q4T — the tandem-wing Kestre
                      Data(f"{DATA}/kestrel_drive_10x7_3.3Ah.json", cache=True, note="the 10x7 drive's Boreas table, ~40 s")],
               gives=[File(f"{DATA}/kestrel_tandem_design.json"), File(f"{DATA}/reports/46_kestrel_tandem.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
+flow.notebook("48_kestrel_xc", title="Kestrel-X-C — the X-wing made competitive: design, CAD, the CFD and FEA chapters, against X-A, X-B and Kestrel-4Q-2",
+              needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
+              takes=[Run("kestrel-x/airframe-sweep", variant="X-C"), Run("kestrel-x/airframe-stall", variant="X-C"), Run("kestrel-x/panel", variant="X-C"),
+                     File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE],
+              gives=[File(f"{DATA}/kestrel_xc_design.json"), File(f"{DATA}/reports/48_kestrel_xc.json")], auto=True)
+
 flow.notebook("47_kestrel_benchmark", title="Kestrel benchmark — the family on one table, read from notebooks 43, 45 and 46 (no physics)",
-              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json")],
+              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json"),
+                     File(f"48_kestrel_xc:{DATA}/kestrel_xc_design.json")],
               gives=[File(f"{DATA}/reports/47_kestrel_benchmark.json")], auto=True)
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",

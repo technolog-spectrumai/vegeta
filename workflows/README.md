@@ -54,7 +54,18 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]
     └── K11  frame-and-joint
+kestrel-x  (X)  Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)
+├── CFD — the bare X-C (Aeromant / OpenFOAM)
+│   ├── X1   airframe-sweep         the bare X-C 0–90° at 10 m/s: the lattice's cos² φ rule, Cd0, the deep stall
+│   └── X2   airframe-stall         8–16°: the panels' CL max at their dihedral
+└── FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)
+    └── X3   panel                  the 4 g pull-up with the tip motor's inertia, the first modes
 ```
+
+A second book reuses the same scripts: `workflows/kestrel_x/airframe_cfd.py` and `panel_fea.py` call the Kestrel
+scripts' `main(book="kestrel-x")`, which load the design adapter named in `CAMPAIGNS` (`kestrel_xc_campaigns`, the
+same interface as `kestrel_campaigns`); `library.kind_of(book, kind)` is what the CLI, the batch runner and the GUI
+read, so a chapter code carries its book.
 
 The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/` (e.g.
 `workflows/runs/kestrel/airframe-stall/20261017-101500_4Q-2_fine/`), every cached case

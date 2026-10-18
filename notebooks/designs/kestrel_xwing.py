@@ -196,11 +196,11 @@ def drag_buildup(L: dict, *, V: float = 16.0, t: float = 0.12) -> dict:
 
 
 # ================================================================================================= structure, stance
-def cantilever(L: dict, *, n: float = 4.0, mass_kg: float, spar_od_mm: float | None = None, wall_mm: float = 1.0) -> dict:
+def cantilever(L: dict, *, n: float = 4.0, mass_kg: float, spar_od_mm: float | None = None, wall_mm: float = 1.0, t: float = 0.12) -> dict:
     """One panel as a cantilever from the pod at load factor ``n``: its share of the lift (a quarter, elliptic along
     the panel, normal to the panel: the panel lift is the vertical share / cos φ), less the panel's and the tip
     motor's inertia; the root moment, a tube spar's stress (OD given, or the OD that keeps 200 MPa, ≤ 0.6 t c) and
-    tip deflection, the first bending frequency against the rotor's 1P."""
+    tip deflection, the first bending frequency against the rotor's 1P; ``t`` the section's thickness ratio."""
     import kestrel_structure as kst
     Lp, c, phi = L["panel_length"], L["chord"], L["phi"]
     lift_vert = n * mass_kg * G / 4
@@ -222,7 +222,7 @@ def cantilever(L: dict, *, n: float = 4.0, mass_kg: float, spar_od_mm: float | N
         f1_tip = 1 / (2 * math.pi) * math.sqrt(3 * E * I / (r_mot ** 3 * (motor_m + 0.24 * m_per * r_mot)))   # the motor on its arm
         return {"od": od, "I": I, "A": A, "sigma": sigma, "w_tip": w_tip, "f1": f1_tip}
 
-    od_max = 0.6 * 0.12 * c                                     # the tube inside the section's thickness
+    od_max = 0.6 * t * c                                        # the tube inside the section's thickness ratio t
     if spar_od_mm is None:                                      # sized on stress, deflection and the first mode together
         od = 0.006
         while True:

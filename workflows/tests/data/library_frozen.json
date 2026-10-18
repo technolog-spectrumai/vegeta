@@ -135,6 +135,33 @@
      "prerequisites": []
     }
    }
+  },
+  "kestrel-x": {
+   "code": "X",
+   "title": "Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
+   "design": "notebooks/designs/kestrel_xc.py; the notebook 48_kestrel_xc reads the runs",
+   "variants": [
+    "X-C",
+    "X-C45",
+    "X-CX"
+   ],
+   "chapters": {
+    "airframe-sweep": {
+     "kind": "cfd",
+     "campaign": "sweep",
+     "prerequisites": []
+    },
+    "airframe-stall": {
+     "kind": "cfd",
+     "campaign": "stall",
+     "prerequisites": []
+    },
+    "panel": {
+     "kind": "fea",
+     "campaign": "panel",
+     "prerequisites": []
+    }
+   }
   }
  },
  "IMPORTS": {

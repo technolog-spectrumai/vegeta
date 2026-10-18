@@ -308,3 +308,12 @@ effective slope: the rear's downwash factor), `stall` (the front-first stall rul
 panels at their own stations for the transition model), `cruise` trimmed by the rear elevator, `takeoff_roll`, `cantilever`,
 `elevator_power`, `front_view` / `side_view`, the CAD `KestrelQ4T` and `export_stl`. `kestrel_transition` panels now take
 `x_ac`, `x_le`, `prop_x`, `cl_scale` and `incidence` (a tandem's wings at different stations); a `z_rotor` of zero is allowed.
+`kestrel_xc.py` (notebook **48** `48_kestrel_xc`): Kestrel-X-C, the X-wing made competitive — `VARIANTS` (X-C at ±30°
+with the payload module; X-C45 the same at 45°; X-CX with the panels 0.21 m in chord: longer in x, not in span), `layout`
+on `kestrel_xwing`, `fuselage_geometry` (the blended fuselage from `FUSELAGE_STATIONS`: wetted area, volume, fineness),
+`drag_buildup` (the section thickness `t`, the filleted roots, the fuselage on its own wetted area, a flush camera
+window), `cantilever(t=)` (`kestrel_xwing`'s, the spar inside the section's depth), `make_vehicle` / `cruise`,
+`capsule_fit`, the CAD `KestrelXC` (tapered panels, the elliptical fuselage with the module on its axis, the tip
+nacelles as the feet) and `export_stl`, the CFD specs and cases (`CFD_CAMPAIGNS` sweep / stall) and the FEA case of
+one panel's spar in its socket (`panel_cad`, `fea_cases`); `kestrel_xc_campaigns.py` is the adapter the workflow book
+`kestrel-x` (code X: `wf X1`–`X3`) runs through `workflows/kestrel_x/`, the shared scripts parametrised by book.

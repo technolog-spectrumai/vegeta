@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 DATA = Path(__file__).resolve().parent / "data"
-SOURCES = {"43": DATA / "reports" / "43_kestrel_study.json", "45": DATA / "kestrel_x_design.json", "46": DATA / "kestrel_tandem_design.json"}
+SOURCES = {"43": DATA / "reports" / "43_kestrel_study.json", "45": DATA / "kestrel_x_design.json", "46": DATA / "kestrel_tandem_design.json", "48": DATA / "kestrel_xc_design.json"}
 MEASURES = ["family", "notebook", "mass [kg]", "wing area [m²]", "span [m]", "Cd0", "induced k", "CL max", "stall speed [m/s]", "L/D at 16 m/s", "power at 16 m/s [W]",
             "best endurance [min]", "hover T/W", "hover pitch [rad/s²]", "hover heading [rad/s²]", "transitions passed", "bracing", "ground handling"]
 BETTER = {"mass [kg]": "low", "Cd0": "low", "induced k": "low", "CL max": "high", "stall speed [m/s]": "low", "L/D at 16 m/s": "high", "power at 16 m/s [W]": "low",
@@ -113,6 +113,24 @@ def load(sources: dict | None = None) -> tuple[pd.DataFrame, list[str]]:
             notes.append(f"46: {p.name} unreadable ({type(exc).__name__}: {exc})")
     else:
         notes.append(f"46: {p} missing — run notebook 46_kestrel_tandem")
+    # ---- notebook 48: the X-C (and X-C45)
+    p = Path(src["48"])
+    if p.exists():
+        try:
+            doc = json.loads(p.read_text())
+            for name, c in doc["comparison"].items():
+                if not name.startswith("Kestrel-X-C"):
+                    continue
+                rows[name] = {"family": "X-wing (tail-sitter)", "notebook": "48", "mass [kg]": _num(c.get("mass [kg]")), "wing area [m²]": _num(c.get("wing area [m²]")), "span [m]": _num(c.get("projected span [m]")),
+                              "Cd0": _num(c.get("Cd0")), "induced k": _num(c.get("induced k")), "CL max": None, "stall speed [m/s]": _num(c.get("stall speed [m/s]")), "L/D at 16 m/s": _num(c.get("L/D at 16 m/s")),
+                              "power at 16 m/s [W]": _num(c.get("power at 16 m/s [W]")), "best endurance [min]": _num(c.get("endurance best [min]")), "hover T/W": None,
+                              "hover pitch [rad/s²]": _num(c.get("hover pitch [rad/s²]")), "hover heading [rad/s²]": _num(c.get("hover heading [rad/s²]")), "transitions passed": c.get("transitions passed", ""),
+                              "bracing": "none", "ground handling": "stands on the tip pods", "payload score": 1.0 if c.get("capsule fits") else 0.3}
+            notes.append(f"48: {p.name}; the X-C's payload constant is 1.0 where its module takes the capsule")
+        except (KeyError, ValueError, TypeError) as exc:
+            notes.append(f"48: {p.name} unreadable ({type(exc).__name__}: {exc})")
+    else:
+        notes.append(f"48: {p} missing — run notebook 48_kestrel_xc")
     cols = MEASURES + [c for c in ("best L/D", "balloon into the hover [m]") if any(c in r for r in rows.values())]
     df = pd.DataFrame(rows).T.reindex(columns=cols) if rows else pd.DataFrame(columns=cols)
     return df, notes
@@ -245,7 +263,8 @@ def derived(df: pd.DataFrame) -> pd.DataFrame:
         st.append(base * (0.5 if (res is not None and res < 2) else 1.0))
     out["structure score"] = st
     for key in ("ground score", "payload score", "evidence score", "launch score"):
-        out[key] = [FAMILY.get(f, {}).get(key) for f in out["family"]]
+        own = out[key] if key in out.columns else [None] * len(out)
+        out[key] = [o if (o is not None and not (isinstance(o, float) and math.isnan(o))) else FAMILY.get(f, {}).get(key) for o, f in zip(own, out["family"])]
     return out
 
 
