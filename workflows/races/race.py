@@ -20,6 +20,7 @@ import sys
 import time
 from pathlib import Path
 
+os.environ.setdefault("MUJOCO_GL", "egl")             # before the first `import mujoco`: the camera renderer's backend on a headless or Jupyter session (glfw/osmesa also work)
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "workflows" / "kestrel"))
 sys.path.insert(0, str(ROOT / "workflows"))
@@ -93,7 +94,6 @@ def main(argv=None) -> int:
             if args.mock:
                 res = mock.run_mock(course, rules=rules, safety=args.safety, v_cap=args.v_cap)
             else:
-                os.environ.setdefault("MUJOCO_GL", "egl")
                 from races import sim
                 res = sim.run_mujoco(course, rules=rules, safety=args.safety, v_cap=args.v_cap)
                 (case_dir / "scene.xml").write_text(res["xml"])

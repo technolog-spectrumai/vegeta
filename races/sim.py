@@ -11,8 +11,11 @@ position → attitude → mixer) follows the racing line's moving reference; the
 from __future__ import annotations
 
 import math
+import os
 import sys
 from pathlib import Path as _P
+
+os.environ.setdefault("MUJOCO_GL", "egl")             # the renderer's backend, read when mujoco is first imported
 from types import SimpleNamespace
 
 import numpy as np
