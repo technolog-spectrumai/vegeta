@@ -36,6 +36,27 @@ from unittest.mock import MagicMock
 import numpy as np
 
 ENV = "VEGETA_DEBUG"
+MIMIC = "vegeta.mock"
+
+
+def _mimesis():
+    """Mimesis (``mimesis/``, the common base for imitating expensive APIs): the label and the banner."""
+    try:
+        import mimesis
+    except ImportError:                                        # a source tree without the editable install
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "mimesis" / "src"))
+        import mimesis
+    return mimesis
+
+
+def label(record: dict) -> dict:
+    """A dict made under the mocks, labelled as one (``"mock": True``, the mimic, a note: Mimesis's convention)."""
+    return _mimesis().label(record, MIMIC)
+
+
+def is_mock(record) -> bool:
+    return _mimesis().is_mock(record)
 _saved: list[tuple[object, str, object]] = []
 calls: dict[str, int] = {}
 
@@ -449,7 +470,7 @@ def install() -> None:
 
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
-    print("vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked (fixed numbers), the result cache is off")
+    _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked (fixed numbers, NOT results), the result cache is off")
 
 
 def uninstall() -> None:

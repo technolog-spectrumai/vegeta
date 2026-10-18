@@ -28,8 +28,9 @@ How a run is checked. Everything is read from the existing runkit files (`manife
 2. `status.json` state is `completed` and `summary.json` is readable. Partial, failed or malformed runs are refused with the reason, and a dead `running` run counts as failed.
 3. The variant matches `config.variant`.
 4. Quality: if one was requested, `config.quality` must match (a string or a tuple of accepted values). A run that does not record its quality is refused when a quality was requested.
-5. Mock/debug runs are always refused: `manifest.mock == true`, or `config.quality` is `debug`/`mock`.
-   Small runkit change: `Run.create` records `"mock": true` when `VEGETA_DEBUG` is on or `vegeta.mock` is installed.
+5. Mock/debug runs are always refused: `mimesis.is_mock(manifest)` (Mimesis, `mimesis/`, copied from Alabastron;
+   runkit already writes `"mock": true` for runs made under `vegeta.mock` / `VEGETA_DEBUG`, docs/mimesis.md), or
+   `config.quality` is `debug`/`mock`.
 6. Compatibility uses the book's existing `compatible` hook (`kestrel_campaigns.compare`). `incompatible` → refused.
    `warnings` → accepted and labelled. If no fingerprint was given, or the book has no hook, the run is accepted and
    shown as **unverified**. It is never shown as compatible.

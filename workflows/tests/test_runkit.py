@@ -140,3 +140,17 @@ def test_progress_bars_are_silent_without_a_terminal_and_count_cases(tmp_path):
     bars.close()
     assert state == "completed" and run.echo_fn is print
     run.finish({}, state="completed"); run.close()
+
+
+def test_a_run_made_under_the_mocks_is_labelled_mock(tmp_path, monkeypatch):
+    import mimesis
+    monkeypatch.delenv("VEGETA_DEBUG", raising=False)
+    real = runkit.Run.create(tmp_path / "real", workflow="w", campaign="c", config={}, echo=False)
+    real.close()
+    assert not mimesis.is_mock(runkit.read_json(tmp_path / "real" / "manifest.json"))
+    monkeypatch.setenv("VEGETA_DEBUG", "1")
+    fake = runkit.Run.create(tmp_path / "fake", workflow="w", campaign="c", config={}, echo=False)
+    fake.close()
+    assert mimesis.is_mock(runkit.read_json(tmp_path / "fake" / "manifest.json"))
+    runkit.Run.open(tmp_path / "real", echo=False).close()                 # resumed under the mocks: mock from then on
+    assert mimesis.is_mock(runkit.read_json(tmp_path / "real" / "manifest.json"))

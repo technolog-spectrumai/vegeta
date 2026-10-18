@@ -99,6 +99,15 @@ def read_json(path) -> dict | None:
         return None
 
 
+def mock_active() -> bool:
+    """Whether this process runs under ``vegeta.mock`` (``VEGETA_DEBUG`` on, or the mocks installed): its run is then
+    labelled ``"mock": true`` in the manifest (Mimesis's convention) and is never read as an engineering result."""
+    if os.environ.get("VEGETA_DEBUG", "").strip().lower() in ("1", "true", "on", "yes"):
+        return True
+    m = sys.modules.get("vegeta.mock")
+    return bool(m is not None and m.installed())
+
+
 def tool_versions(extra: dict | None = None) -> dict:
     out = {"python": platform.python_version(), "platform": platform.platform()}
     try:
@@ -300,7 +309,7 @@ class Run:
         manifest = {"schema": SCHEMA, "run_id": run_id, "workflow": workflow, "campaign": campaign, "created_at": utc_now(), "host": socket.gethostname(),
                     "pid": os.getpid(), "command": shlex.join(sys.argv), "cwd": os.getcwd(), "config": config, "config_hash": sha256_json(config),
                     "inputs": {k: {"path": str(v), "sha256": sha256_file(v)} for k, v in (inputs or {}).items()}, "design": design or {},
-                    "tool_versions": tool_versions(versions), "planned_cases": list(planned_cases or []), "resumed": [],
+                    "tool_versions": tool_versions(versions), "planned_cases": list(planned_cases or []), "resumed": [], "mock": mock_active(),
                     "artifacts": {"run_log": "run.log", "status": "status.json", "cases": "cases/", "summary": None}}
         write_json_atomic(root / "manifest.json", manifest)
         run = cls(root, manifest, heartbeat_s=heartbeat_s, echo=echo)
@@ -325,6 +334,7 @@ class Run:
             raise ValueError(f"{root} was run with a different configuration (differs in {diff}); start a new run instead of resuming")
         manifest.setdefault("resumed", []).append({"at": utc_now(), "command": shlex.join(sys.argv), "pid": os.getpid()})
         manifest["pid"] = os.getpid()
+        manifest["mock"] = bool(manifest.get("mock")) or mock_active()      # resumed under the mocks: the whole run is mock
         write_json_atomic(root / "manifest.json", manifest)
         run = cls(root, manifest, heartbeat_s=heartbeat_s, echo=echo)
         for d in sorted(run.cases_dir.iterdir()) if run.cases_dir.is_dir() else []:

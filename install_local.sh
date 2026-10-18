@@ -109,7 +109,7 @@ else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
+step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, mimesis (the mocks' base), JupyterLab)"
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test,sim,sections]" \
@@ -118,6 +118,7 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zeph
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \
   -e "$ROOT/vegeta-yanus[test,table]" \
+  -e "$ROOT/mimesis[test]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 
