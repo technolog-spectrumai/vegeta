@@ -1,4 +1,4 @@
-# Raptors, rethought from the four races
+# Raptors redesign — from the four races
 
 Input: `data/race_design_factors.json` (real MuJoCo laps, 2026-10-18: hangar DNF 13/18,
 industrial 42.0 s with 1 collision, farm DNF, quarry DNF; reference 5-inch quad, 571 g).
@@ -54,7 +54,7 @@ The last two lines kill most of the old assumptions.
 - Trade-offs: 6-inch props slow the rate response (~15 % lower angular acceleration), a printed plate flexes.
 - Cost ≈ €255. Beats the reference on Wh/lap by ~35 % and on lap time by a few percent through mass alone.
 
-### Alcotan → "Alcotan-W", quad with a clip-on incidence wing for M-B/M-C (the one wing we keep)
+### Alcotan → "Hobo-W", quad with a clip-on incidence wing for M-B/M-C (the one wing we keep; a vagrant quad that hitches a wing)
 - Reference quad geometry, a single plank wing 0.8 m × 0.14 m (fits the 0.9 m footprint) clipped between the
   arms at +30° incidence to the frame: at 25° nose-down forward tilt the wing sees ~5°, lifts ~2/3 of the
   weight at 18 m/s, cuts cruise power roughly in half on the 50 m legs; at hover it is a vertical fence and costs
@@ -74,7 +74,7 @@ The last two lines kill most of the old assumptions.
 
 ## 5. Required parameters per mission (design targets, not laps)
 
-| | M-A Gavilan-D | M-B Apus-L | M-B/C Alcotan-W |
+| | M-A Gavilan-D | M-B Apus-L | M-B/C Hobo-W |
 |---|---|---|---|
 | footprint [m] | ≤ 0.30 | ≤ 0.35 | ≤ 0.90 (wing), passes 1.5 m gates |
 | hover T/W | ≥ 4 | ≥ 4 | ≥ 3.5 |
@@ -99,7 +99,7 @@ The last two lines kill most of the old assumptions.
 
 1. Gavilan-D: duct static thrust gain vs duct mass at 4-inch, and the 4S 850 endurance at hover power.
 2. Apus-L: 6-inch drive table (new cache), rate response vs reference.
-3. Alcotan-W: lift at 18 m/s and 5° for a 0.8 × 0.14 plank (Re ~1.7e5), roll inertia, and whether the
+3. Hobo-W: lift at 18 m/s and 5° for a 0.8 × 0.14 plank (Re ~1.7e5), roll inertia, and whether the
    autopilot banks in corners; the wing's hover-fence drag in the industrial crosswind corridors.
 4. Re-run the four races with each embodiment once the autopilot survives the hangar stair (todo R.2);
    until then the "required" rates and load factors are upper bounds, not targets.
