@@ -2,7 +2,7 @@
  "debug": false,
  "design_fingerprint": null,
  "file": "48_kimla.json",
- "git": "b9e440d9fa26",
+ "git": "db02adfc15f5",
  "inputs": [
   {
    "key": "data:notebooks/designs/data/kimla_specs.json",
@@ -23,9 +23,9 @@
  },
  "producer": "48_kimla",
  "schema": null,
- "sha256": "93331d447ace5268fa5cb70dbbdf4c9ceb246ac9afd93dcc8a75be6bd5e6e777",
- "size": 869725,
- "written_at": "2026-10-18T03:45:50Z",
- "written_ts": 1792295150.9683197,
+ "sha256": "517ac497208b369e9d956b0ff441f9e596dd9df98d1a3a3a51f2872f032e6ff7",
+ "size": 1027528,
+ "written_at": "2026-10-18T04:00:38Z",
+ "written_ts": 1792296038.808691,
  "yanus": 1
 }

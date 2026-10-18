@@ -159,6 +159,7 @@ flow.notebook("47_svarog_iii", title="Svarog III — four commercial fibre laser
 flow.notebook("48_kimla", title="KIMLA as a welding platform — 3 to 30 kW analysis scenarios on a hypothetical welding head: close-range welds, throughput, euro per metre, the stray beam at 20–200 m",
               needs=[Package("vegeta.hyperion")],
               takes=[Data(f"{DATA}/kimla_specs.json", keys=("sources", "scenarios", "assumptions"), note="KIMLA as found (its documents unreachable), the scenarios and the assumptions"),
+                     Data(f"{DATA}/kimla_endurance.json", required=False, keys=("meta", "rows"), note="the shields' hold times with the transients (python designs/kimla.py --endurance; minutes per scenario)"),
                      File(f"47_svarog_iii:{DATA}/reports/47_svarog_iii.json", keys=("welding",))],
               gives=[File(f"{DATA}/reports/48_kimla.json", keys=("meta", "scenarios", "welding", "throughput", "economics", "safety", "sensitivity", "validation_open"))])
 

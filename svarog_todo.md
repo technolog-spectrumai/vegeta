@@ -96,7 +96,9 @@ nothing load-bearing); the enclosure's panels are sheet metal sized by 49, M.2.
 - [x] **K.2** Close-range welds (three materials, 1–3 mm, butt and fillet): regime, the capped speed interval, pool, cooling,
   HAZ, distortion, the model's limitations; throughput with editable overheads, euro per metre; the capacity's sensitivity.
 - [x] **K.3** Stray-beam safety at 20–200 m: the beam past the focus and reflections against the eye's and the skin's limits
-  (no blink), the collimated fault apart, barriers INCOMPLETE until certified.
+  (no blink), the collimated fault apart, barriers INCOMPLETE until certified; the shields' endurance (aluminium 1 and
+  3 mm, polycarbonate 3 mm, steel 3 mm: the closed-form bounds in the notebook, the transients by `kimla.py --endurance`
+  recorded and read) and polycarbonate's fire risk (ignition flux, time to the ignition temperature).
 - [ ] **K.4** KIMLA's three documents against the input table, once reachable; a real welding-head configuration from a supplier.
 - [ ] **K.5** Weld trials per material, thickness and joint (and the humping limit with and without a wobble) before any speed,
   penetration or strength of notebook 48 is quoted; the handling overheads timed on the real cell.

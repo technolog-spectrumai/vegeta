@@ -115,7 +115,11 @@ the model's limitations per row (a pool narrower than the sheet, the thick-plate
 past the balance). `throughput` adds editable handling overheads per part, seam and metre; `opex_per_hour` and `capex` reuse
 notebook 47's sourced parameters with KIMLA's "> 30 %" wall-plug and an assumed gantry price; `stray_cases` evaluates the beam past
 the focus and specular reflections at 20–200 m against `sc.mpe_eye_1070` / `sc.mpe_skin_1070` for stated durations with no
-aversion response, `collimated_fault` apart; `barrier_assessment` applies 47's verdict rule. ~70 s; nothing recorded elsewhere.
+aversion response, `collimated_fault` apart; `barrier_assessment` applies 47's verdict rule. `shield_endurance` asks 46's
+question of four shields (Al 1 and 3 mm, black PC 3 mm, steel 3 mm): in the notebook `screen_bounds` (46's closed forms without
+the steady solve: transparent / steady bound / energy bound / undecided) and `fire_risk` (PC's absorbed flux against its
+ignition fluxes, the surface's time to the ignition temperature; metals do not burn); the steady solve and the transient only
+in `python designs/kimla.py --endurance`, recorded in `data/kimla_endurance.json` and read back. ~80 s in the notebook.
 
 ## One notebook, and Yanus
 

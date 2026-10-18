@@ -90,3 +90,19 @@ def test_sensitivity_and_record():
     assert set(rec) >= {"meta", "scenarios", "welding", "throughput", "economics", "safety", "sensitivity", "validation_open"} and rec["validation_open"]
     import json
     json.dumps(rec, default=km.sc._json_default)
+
+
+def test_shield_endurance_screening_and_fire():
+    rows = km.shield_endurance(scenarios={"6 kW": km.SCENARIOS["6 kW"]}, distances=(20.0, 200.0), run=False)
+    assert len(rows) == 2 * 4 * 2 and {r["shield"] for r in rows} == {"aluminium 1 mm", "aluminium 3 mm", "black polycarbonate 3 mm", "mild steel 3 mm"}
+    div = [r for r in rows if r["kind"] == "diverging" and r["distance_m"] == 200.0]
+    assert all(r["holds_s"] == math.inf and r["T3"] for r in div)                                   # metres wide past the focus at 200 m: every sheet holds by a bound
+    assert all(r["holds_s"] != r["holds_s"] or r["holds_s"] == math.inf for r in rows)               # without the recorded run nothing is a finite time
+    col = [r for r in rows if r["kind"] == "collimated" and r["material"] == "black polycarbonate" and r["distance_m"] == 20.0][0]
+    assert col["decision"].startswith("undecided") and math.isnan(col["holds_s"]) and col["t_burn_through_lower_bound_s"] > 0 and not col["simulated"]
+    assert col["combustible"] and col["fire_risk"].startswith("high") and 0 < col["t_ignition_bound_s"] < 10
+    metal = [r for r in rows if r["material"] == "aluminium"][0]
+    assert not metal["combustible"] and metal["t_ignition_bound_s"] == math.inf
+    assert all("not protection evidence" in r["note"] for r in rows)
+    assert km.shield_endurance_table(rows).shape == (8, 2)
+    assert km.load_endurance(Path("/nonexistent/kimla_endurance.json")) is None

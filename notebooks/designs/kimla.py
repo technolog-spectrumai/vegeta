@@ -396,3 +396,120 @@ def record(optic: dict, welds: list[dict], econ: pd.DataFrame, stray: pd.DataFra
             "validation_open": ["KIMLA's own documents (the three URLs) once reachable: the input table against them", "the welding head: a real configuration, its optics and gas nozzle, from a supplier",
                                 "weld trials per material, thickness and joint before any speed, penetration or strength is quoted", "the MPE constants against the current IEC 60825-1 edition",
                                 "the enclosure's panels: EN 12254 / IEC 60825-4 evidence for the irradiance and exposure", "the handling overheads timed on the real cell"]}
+
+
+# ================================================================================================== the shields' endurance, and fire
+SHIELDS = [si.Barrier(th.ALUMINIUM, 1e-3), si.Barrier(th.ALUMINIUM, 3e-3), si.Barrier(th.BLACK_PC, 3e-3), si.Barrier(th.MILD_STEEL, 3e-3)]
+FIRE = {"pc_piloted_flux": sc.Assumption("pc_piloted_flux", 25e3, 20e3, 30e3, "W/m²", "critical absorbed flux for the piloted ignition of polycarbonate (fire-safety handbooks: 20–30 kW/m²)"),
+        "pc_unpiloted_flux": sc.Assumption("pc_unpiloted_flux", 40e3, 35e3, 50e3, "W/m²", "critical flux for the unpiloted ignition of polycarbonate (assumed from the handbooks' class)"),
+        "pc_ignition_T": sc.Assumption("pc_ignition_T", 790.0, 750.0, 850.0, "K", "polycarbonate's ignition temperature (handbooks: ~480–580 °C; its decomposition T_fail 720 K is lower)")}
+ENDURANCE_PATH = DATA / "kimla_endurance.json"
+
+
+def fire_risk(barrier: si.Barrier, beam: si.StrayBeam) -> dict:
+    """Can the shield catch fire, and how soon: polycarbonate against its piloted and unpiloted ignition fluxes, and the
+    semi-infinite time for its surface to reach the ignition temperature (a lower bound: a thin sheet heats faster than
+    a semi-infinite one once the heat reaches its back, and the surface chars from T_fail on); aluminium and steel do
+    not burn (a paint or oil film on them can, and is not modelled)."""
+    s = barrier.solid
+    q = s.absorptivity * beam.mean_irradiance
+    if s.failure != "ablate":
+        return {"combustible": False, "fire_risk": "none: a metal sheet does not burn (a coating or oil film would)", "ignition_flux_ratio": 0.0, "t_ignition_bound_s": math.inf}
+    pil, spon, Ti = FIRE["pc_piloted_flux"], FIRE["pc_unpiloted_flux"], FIRE["pc_ignition_T"]
+    t_ign = (Ti.nominal - th.T_ROOM) ** 2 * math.pi * s.rho * s.c * s.k / (2 * q) ** 2 if q > 0 else math.inf
+    if q >= spon.low:
+        lvl = "high: above the unpiloted-ignition flux — it ignites by itself"
+    elif q >= pil.low:
+        lvl = "high: above the piloted-ignition flux — a spark or the weld's own plume ignites it"
+    elif q >= 0.3 * pil.low:
+        lvl = "moderate: a third of the piloted flux — chars under long exposure"
+    else:
+        lvl = "low: below a third of the piloted-ignition flux"
+    return {"combustible": True, "fire_risk": lvl, "ignition_flux_ratio": q / pil.nominal, "t_ignition_bound_s": t_ign}
+
+
+def screen_bounds(barrier: si.Barrier, beam: si.StrayBeam, T0: float = th.T_ROOM) -> dict:
+    """``si.screen``'s closed forms without its steady solve (seconds a case: that belongs to the recorded run): the
+    transmitted share, the semi-infinite time to surface damage, the lossless lower bound on the burn-through time, the
+    steady upper bound on the rise — and the decision: *fails: transparent*, *survives: steady bound*, *survives: energy
+    bound*, or *undecided* (the recorded run's steady solve and transient decide)."""
+    s, d = barrier.solid, barrier.thickness
+    q = s.absorptivity * beam.mean_irradiance
+    transmitted = s.transmitted(d)
+    damage_T = s.T_melt if s.failure == "melt" else s.T_fail
+    t_surface = (damage_T - T0) ** 2 * math.pi * s.rho * s.c * s.k / (2 * q) ** 2 if q > 0 else math.inf
+    t_lower = (s.enthalpy_to_fail(T0) * d / q) if (s.failure == "ablate" and q > 0) else (th.thin_plate_time_to(s, d, q, s.T_melt) if q > 0 else math.inf)
+    rise_bound = si.plate_steady_bound(s, d, s.absorptivity * beam.power, beam.radius, max(8 * beam.radius, 12 * d, 0.02))
+    if transmitted > 0.01:
+        decision = "fails: transparent"
+    elif rise_bound < damage_T - T0:
+        decision = "survives: steady bound"
+    elif t_lower > EXPOSURE["T3"]:
+        decision = "survives: energy bound"
+    else:
+        decision = "undecided: the recorded run's steady solve / transient decides"
+    return {"barrier": barrier.name, "beam": beam.name, "absorbed_irradiance_W_per_cm2": q / 1e4, "transmitted_fraction": transmitted, "t_surface_damage_bound": t_surface,
+            "t_burn_through_lower_bound": t_lower, "steady_rise_bound_K": rise_bound, "damage_rise_K": damage_T - T0, "steady_T_max": math.nan, "decision": decision}
+
+
+def shield_endurance(scenarios: dict[str, Scenario] = SCENARIOS, shields=SHIELDS, distances=SAFETY_DISTANCES, kinds=("diverging", "collimated"), run: bool = False,
+                     sheet_half: float = si.SHEET_HALF, t_max: float = si.SIMULATION_CAP_S) -> list[dict]:
+    """How long each shield protects against the beam past the focus and the collimated fault at each distance: 46's
+    route — ``si.screen`` (the closed forms: a transparent sheet 0 s; a steady or energy bound: for ever; the lower bound
+    on the burn-through time and the surface-damage time either way), the enthalpy/ablation transient (``th.heat_plate``)
+    only where the screening cannot decide and only with ``run=True`` (minutes: ``python designs/kimla.py --endurance``),
+    ``si.verdict`` for ``holds_s`` and the T1/T2/T3 classes — and the fire indicator. Design numbers, not evidence."""
+    rows = []
+    for k, s in scenarios.items():
+        opt = optics(s)
+        for kind in kinds:
+            for b in shields:
+                for d in distances:
+                    beam = stray_beam(s, d, kind, opt=opt)
+                    scr = si.screen(b, beam) if run else screen_bounds(b, beam)          # the steady solve and the transient belong to the recorded run
+                    sim = None
+                    if scr["decision"] == "simulate" and run:
+                        sim = th.heat_plate(b.solid, b.thickness, beam.power, beam.radius, t_max, shape=beam.shape, h=10.0, nr=si.NR_GUARD, nz=si._nz(b.thickness), r_max=sheet_half)
+                    v = si.verdict(scr, sim)
+                    rows.append({"scenario": k, "kind": kind, "shield": b.name, "material": b.solid.name, "thickness_mm": b.thickness * 1e3, "distance_m": d, "beam_radius_mm": beam.radius * 1e3,
+                                 "irradiance_W_per_cm2": beam.mean_irradiance / 1e4, "absorbed_W_per_cm2": scr["absorbed_irradiance_W_per_cm2"], "decision": scr["decision"],
+                                 "t_surface_damage_bound_s": scr["t_surface_damage_bound"], "t_burn_through_lower_bound_s": scr["t_burn_through_lower_bound"], "steady_rise_bound_K": scr["steady_rise_bound_K"],
+                                 "holds_s": v["holds_s"], **{c: v[c] for c in EXPOSURE}, "source": v["source"], "simulated": sim is not None, **fire_risk(b, beam),
+                                 "note": "cell-model / closed-form times for the guard's design; not protection evidence"})
+    return rows
+
+
+def shield_endurance_table(rows: list[dict], value: str = "holds_s") -> pd.DataFrame:
+    return pd.DataFrame(rows).pivot_table(index=["kind", "scenario", "shield"], columns="distance_m", values=value, aggfunc="first", dropna=False)
+
+
+def endurance_record(**kw) -> dict:
+    import datetime
+    rows = shield_endurance(run=True, **kw)
+    return {"meta": {"made": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "screening": si.SCREENING, "grid": {"nr": si.NR_GUARD, "r_max": si.SHEET_HALF, "t_max_s": si.SIMULATION_CAP_S},
+                     "route": "si.screen → th.heat_plate where undecided → si.verdict; the beam past the focus and the collimated fault", "shields": [b.name for b in SHIELDS],
+                     "caveat": "a cell-model time for the guard's design; not protection evidence (IEC 60825-4 asks for the test)"},
+            "rows": [{kk: (None if isinstance(vv, float) and math.isnan(vv) else ("inf" if vv == math.inf else vv)) for kk, vv in r.items()} for r in rows]}
+
+
+def load_endurance(path: Path = ENDURANCE_PATH) -> dict | None:
+    if not Path(path).exists():
+        return None
+    d = json.loads(Path(path).read_text())
+    for r in d["rows"]:
+        for key in ("holds_s", "t_ignition_bound_s", "t_burn_through_lower_bound_s", "t_surface_damage_bound_s"):
+            r[key] = math.inf if r[key] == "inf" else (math.nan if r[key] is None else r[key])
+    return d
+
+
+if __name__ == "__main__":
+    import argparse
+    import time as _t
+    ap = argparse.ArgumentParser(description="notebook 48: the recorded results the notebook reads")
+    ap.add_argument("--endurance", action="store_true", help=f"the shields' hold times with the transients (minutes per scenario) → {ENDURANCE_PATH}")
+    args = ap.parse_args()
+    if args.endurance:
+        t0 = _t.monotonic()
+        rec = endurance_record()
+        ENDURANCE_PATH.write_text(json.dumps(rec, indent=1))
+        print(f"wrote {ENDURANCE_PATH}: {len(rec['rows'])} rows in {_t.monotonic() - t0:.0f} s")
