@@ -114,10 +114,10 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         energy_J += P * control_dt
         contact = any(int(data.contact[i].geom1) in quad_geoms or int(data.contact[i].geom2) in quad_geoms for i in range(data.ncon))
         events += ref.update(float(data.time), data.qpos[qa:qa + 3].copy(), contact, data.time > hover_until)
-        if k % record_every == 0:
-            hist.append([data.time, *data.qpos[qa:qa + 3], *data.qvel[va:va + 3], float(thrust.sum()), P, float(np.linalg.norm(data.qvel[va:va + 3]))])
+        if k % record_every == 0:                                             # + the attitude and the body rates (races.metrics reads them)
+            hist.append([data.time, *data.qpos[qa:qa + 3], *data.qvel[va:va + 3], float(thrust.sum()), P, float(np.linalg.norm(data.qvel[va:va + 3])), *data.qpos[qa + 3:qa + 7], *data.qvel[va + 3:va + 6]])
         k += 1
-    H = np.array(hist)
+    H = np.array(hist).reshape(-1, 17)
     st = ref.stats()
     st.update({"course": course.name, "aircraft": "reference 5-inch quad", "mode": "mujoco", "energy [Wh]": energy_J / 3600, "Wh per km": energy_J / 3600 / (course.length() / 1e3),
                "max speed [m/s]": float(H[:, 9].max()) if len(H) else float("nan"), "mean speed [m/s]": course.length() / st["lap time [s]"] if st["status"] == "finished" else float("nan"),

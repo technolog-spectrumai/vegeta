@@ -64,3 +64,32 @@ def test_cli_list_build_and_mock_run(tmp_path, capsys):
     assert (tmp_path / "runs" / "hangar_refquad_mock" / "stats.json").exists()
     out = capsys.readouterr().out
     assert "finished" in out
+
+
+def test_metrics_and_envelope():
+    from races import metrics
+    c = courses.hangar()
+    r = mock.run_mock(c)
+    m = metrics.from_history(r["history"], path=r["path"])
+    assert 0.3 < m["peak lateral acceleration [g]"] < 4.0 and 0 < m["least turn radius above 3 m/s [m]"] < 50
+    assert 0 < m["peak roll / pitch rate (thrust-vector slew) [deg/s]"] < 3000 and m["tracking error to the racing line, RMS [m]"] < 2.0
+    e = metrics.envelope()
+    assert 8 < e["static thrust / weight"] < 16 and e["least turn radius at 20 m/s, 70° tilt [m]"] > 5
+    assert len(metrics.literature()) >= 4
+
+
+def test_chapter_script_with_the_mock(tmp_path):
+    """The workflow chapter (wf R1) under the run contract, on the mock: a completed run with the summary, the
+    statistics, the manoeuvre metrics and three videos (mp4 with ffmpeg, else gif)."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    script = Path(__file__).resolve().parents[2] / "workflows" / "races" / "race.py"
+    out = tmp_path / "run"
+    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--quality", "screening", "--out", str(out), "--no-progress", "--quiet", "--ignore-prerequisites"], capture_output=True, text=True, timeout=600)
+    assert p.returncode == 0, p.stdout[-2000:] + p.stderr[-2000:]
+    s = json.loads((out / "summary.json").read_text())
+    assert s["state"] == "completed" and s["counts"]["solved"] == 4 and s["mode"] == "mock"
+    assert s["stats"]["status"] == "finished" and "peak lateral acceleration [g]" in s["manoeuvre"]
+    assert set(s["videos"]) == {"chase", "onboard", "overview"} and all((out / v).exists() for v in s["videos"].values())
