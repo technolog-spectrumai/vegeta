@@ -154,3 +154,4 @@ def test_a_run_made_under_the_mocks_is_labelled_mock(tmp_path, monkeypatch):
     assert mimesis.is_mock(runkit.read_json(tmp_path / "fake" / "manifest.json"))
     runkit.Run.open(tmp_path / "real", echo=False).close()                 # resumed under the mocks: mock from then on
     assert mimesis.is_mock(runkit.read_json(tmp_path / "real" / "manifest.json"))
+    assert "MOCK run" in (tmp_path / "fake" / "run.log").read_text()

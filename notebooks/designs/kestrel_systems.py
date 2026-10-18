@@ -191,6 +191,8 @@ def prop_lab_calibration() -> dict:
     if not PROP_LAB_JSON.exists():
         return {"cl_scale": 1.0, "cd_scale": 1.0, "cn_factor": 1.0, "on_file": False, "meta": {}}
     doc = json.loads(PROP_LAB_JSON.read_text())
+    if doc.get("mock") is True:                            # a DEBUG record (Mimesis label): stub numbers, never a calibration
+        return {"cl_scale": 1.0, "cd_scale": 1.0, "cn_factor": 1.0, "on_file": False, "meta": doc.get("meta", {}), "rejected": ["a mock (DEBUG) record"]}
     cal = doc.get("calibration", {})
     if "applied" in cal:                                   # prop_lab.export put the fit through its gates
         ap = cal["applied"]

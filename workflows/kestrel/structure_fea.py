@@ -79,7 +79,7 @@ def main(argv=None) -> int:
         run.status(cases={**run.status().get("cases", {}), "planned": len(names)})
     run.log(f"{kc.VARIANTS[args.variant]}; {kc.FEA_CAMPAIGNS[args.chapter]}; {len(names)} case(s); CAD and models built in {time.monotonic() - t0:.0f} s")
     import shutil
-    if not shutil.which("ccx") and not args.prepare_only:
+    if not wk.MOCK and not shutil.which("ccx") and not args.prepare_only:
         run.finish({"note": "CalculiX (ccx) not found"}, state="failed", note="CalculiX (ccx) not found on PATH")
         wk.closing(run, 1, hint="install CalculiX (docs/installation.md) or use --prepare-only (CAD + mesh)")
     keys = {n: kc.fea_case_key(byname[n]) for n in names}
@@ -119,6 +119,8 @@ def main(argv=None) -> int:
 def _ccx_version():
     import shutil
     import subprocess
+    if wk.MOCK:
+        return "mock (vegeta.mock, no CalculiX)"
     if not shutil.which("ccx"):
         return None
     try:

@@ -33,6 +33,7 @@ blade passing, no tip vortex; a steady frame averages the once-per-revolution lo
 from __future__ import annotations
 
 import json
+import sys
 import math
 from pathlib import Path
 
@@ -327,6 +328,9 @@ def export(tab, path=PROP_LAB_JSON, *, meta: dict | None = None, keep_previous: 
                            "fitted": {"cl_scale": sec["cl_scale"], "cd_scale": sec["cd_scale"], "cn_factor": nf["cn_factor"]},
                            "section_fit": sec, "normal_force_fit": nf}, "cases": rows, "noise": {"listener": LISTENER, "rows": noise_rows}}
     path = Path(path)
+    mock = sys.modules.get("vegeta.mock")
+    if mock is not None and mock.installed():          # DEBUG: stub numbers, labelled and kept beside the calibration, never in it
+        doc, path, keep_previous = mock.label(doc), path.with_name(path.stem + "-mock" + path.suffix), False
     prev = load(path)
     if keep_previous and sec["cl_scale"] is None and nf["cn_factor"] is None and prev and prev.get("calibration", {}).get("accepted"):
         prev["last_listing"] = {"meta": meta or {}, "summary": doc["summary"]}

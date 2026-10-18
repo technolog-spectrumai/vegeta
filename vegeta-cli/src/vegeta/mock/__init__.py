@@ -23,6 +23,12 @@ so each cell runs and its tables fill, but the numbers mean nothing:
 - Mellonia: ``slice_stl`` writes a short synthetic G-code (read back with the real ``read_gcode``) instead of running
   PrusaSlicer.
 
+Every stub is a **Mimesis mimic** (``mimesis.available()`` lists them: ``talos.solve``, ``aeromant.run`` …) and every
+result it returns carries Mimesis's label in its metadata (``"mock": True``, the mimic's name, a note). Runs and
+caches written while the mocks are on go to ``workflows/runs-mock`` and ``workflows/cache-mock``
+(``mimesis.isolate_env``), and runkit marks their manifests ``"mock": true``: no mock number is ever read as a result.
+A workflow script honours the same switch: ``VEGETA_DEBUG=1 wf K1 --variant 4Q-2``.
+
 Nothing else is mocked: geometry, propeller and flight models, Chiron/MuJoCo episodes run as usual.
 ``mock.uninstall()`` puts the real functions back.
 """
@@ -57,6 +63,22 @@ def label(record: dict) -> dict:
 
 def is_mock(record) -> bool:
     return _mimesis().is_mock(record)
+
+
+_mm = _mimesis()
+ROOT = Path(__file__).resolve().parents[4]                  # the repository (an editable install of vegeta-cli)
+ISOLATED = {"VEGETA_WORKFLOW_RUNS": ROOT / "workflows" / "runs", "VEGETA_WORKFLOW_CACHE": ROOT / "workflows" / "cache"}
+_env_before: dict = {}
+
+
+def _meta(name: str, **extra) -> dict:
+    """A mocked result's metadata: what the real one carries, labelled as Mimesis labels a stub result."""
+    return _mm.label(extra, name)
+
+
+def available() -> list[str]:
+    """The mimics (the stubbed calculations), by name."""
+    return _mm.available()
 _saved: list[tuple[object, str, object]] = []
 calls: dict[str, int] = {}
 
@@ -104,6 +126,7 @@ MODES_HZ = [45.0, 110.0, 190.0, 320.0, 480.0, 650.0, 870.0, 1100.0, 1400.0, 1750
 N_NODES = 10
 
 
+@_mm.mimic("talos.mesh", labelled=False)
 def _talos_mesh(self, workdir, progress=False, *, cache=None):
     from vegeta.talos import model as tm
     from vegeta.talos.result import Result
@@ -112,7 +135,7 @@ def _talos_mesh(self, workdir, progress=False, *, cache=None):
     w.mkdir(parents=True, exist_ok=True)
     (w / tm.MESH_FILE).write_text("vegeta.mock: no mesh\n")
     res = Result(kind="talos.mesh", metrics=Metrics(n_nodes=400, n_elements=1000),
-                 metadata={"model": self.config(), "mesh_key": self._mesh_key(), "mock": True})
+                 metadata=_meta("talos.mesh", model=self.config(), mesh_key=self._mesh_key()))
     res.artifacts["mesh"] = w / tm.MESH_FILE
     res.artifacts["mesh_summary"] = res.save_json(w / tm.MESH_SUMMARY)
     return res
@@ -137,6 +160,7 @@ def _fea_metrics(model) -> Metrics:
     return m
 
 
+@_mm.mimic("talos.read_mesh", labelled=False)
 def mesh_data(path=None, regions=()):
     """A mocked ``read_mesh``: a ten-node line of tetrahedra, every region on two of its nodes."""
     from vegeta.talos.mesh import MeshData
@@ -148,6 +172,7 @@ def mesh_data(path=None, regions=()):
                     {r: ids[:2] for r in names}, {r: np.array([[1, 2, 3]]) for r in names})
 
 
+@_mm.mimic("talos.solve", labelled=False)
 def _talos_solve(self, workdir, *, executable="ccx", threads=1, timeout=None, progress=False, cancel=None, cache=None):
     from vegeta.talos.result import Result
     _count("talos.solve")
@@ -155,13 +180,14 @@ def _talos_solve(self, workdir, *, executable="ccx", threads=1, timeout=None, pr
     w.mkdir(parents=True, exist_ok=True)
     (w / "model.frd").write_text("vegeta.mock: no results\n")
     res = Result(kind="talos.solve", metrics=_fea_metrics(self),
-                 metadata={"model": self.config(), "solve_key": self._solve_key(), "mock": True})
+                 metadata=_meta("talos.solve", model=self.config(), solve_key=self._solve_key()))
     res.artifacts.update(mesh=w / "mesh.msh", frd=w / "model.frd")
     res.artifacts["summary"] = w / "summary.json"
     res.save_json(res.artifacts["summary"])
     return res
 
 
+@_mm.mimic("talos.solve_modes", labelled=False)
 def _talos_modes(self, workdir, n_modes=10, *, executable="ccx", threads=1, timeout=None, progress=False, cancel=None,
                  cache=None):
     from vegeta.talos.result import Result
@@ -169,7 +195,7 @@ def _talos_modes(self, workdir, n_modes=10, *, executable="ccx", threads=1, time
     w = Path(workdir)
     w.mkdir(parents=True, exist_ok=True)
     f = [MODES_HZ[i % len(MODES_HZ)] * (1 + i // len(MODES_HZ)) for i in range(int(n_modes))]
-    res = Result(kind="talos.modes", metadata={"model": self.config(), "n_modes": n_modes, "mock": True},
+    res = Result(kind="talos.modes", metadata=_meta("talos.solve_modes", model=self.config(), n_modes=n_modes),
                  metrics=Metrics(n_nodes=400, n_elements=1000, n_modes=len(f), frequencies_hz=f, first_frequency_hz=f[0],
                                  effective_modal_mass=[1.0 / len(f)] * len(f), total_effective_mass=1.0,
                                  point_mass_total=float(sum(m.mass for m in self.masses))))
@@ -179,6 +205,7 @@ def _talos_modes(self, workdir, n_modes=10, *, executable="ccx", threads=1, time
     return res
 
 
+@_mm.mimic("talos.read_frd", labelled=False)
 def frd_fields(path=None):
     """A mocked ``.frd`` read: ``N_NODES`` nodes along x, a uniaxial stress rising to 12 MPa, a small displacement."""
     from vegeta.talos import FieldResults
@@ -191,6 +218,7 @@ def frd_fields(path=None):
     return FieldResults(ids, coords, {"STRESS": stress, "DISP": disp, "NDTEMP": np.full((N_NODES, 1), 300.0)})
 
 
+@_mm.mimic("talos.assess_fatigue", labelled=False)
 def _assess_fatigue(unit_cases, spectrum, curve, *, workdir=None):
     from vegeta import talos
     _count("talos.assess_fatigue")
@@ -203,7 +231,7 @@ def _assess_fatigue(unit_cases, spectrum, curve, *, workdir=None):
     hot = int(np.argmax(damage))
     hours = spectrum.get("duration_s", 3600.0) / 3600.0
     d = float(damage[hot])
-    r = talos.Result(kind="talos.fatigue", metadata={"mock": True},
+    r = talos.Result(kind="talos.fatigue", metadata=_meta("talos.assess_fatigue"),
                      metrics=Metrics(damage_per_pass=d, passes_to_failure=1.0 / d, hours_to_failure=hours / d,
                                      spectrum_duration_h=hours, blocks=len(blocks), hotspot_node=int(fr.node_ids[hot]),
                                      hotspot_location=fr.coords[hot].tolist(), nodes_above_1pct=N_NODES))
@@ -243,9 +271,10 @@ def _cfd_result(case, kind="aeromant.results"):
     if "velocity" in p:
         m["velocity"] = p["velocity"]
     _template_metrics(m, p)
-    return Result(kind=kind, metrics=m, artifacts={"case": w}, metadata={"mock": True})
+    return Result(kind=kind, metrics=m, artifacts={"case": w}, metadata=_meta(kind))
 
 
+@_mm.mimic("aeromant.run", labelled=False)
 def _cfd_run(self, steps=None, *, progress=False, cancel=None, timeout=None, processors=1, cache=None):
     _count("aeromant.run")
     res = _cfd_result(self, "aeromant.run")
@@ -254,11 +283,13 @@ def _cfd_run(self, steps=None, *, progress=False, cancel=None, timeout=None, pro
     return res
 
 
+@_mm.mimic("aeromant.results", labelled=False)
 def _cfd_results(self, average_window=50):
     _count("aeromant.results")
     return _cfd_result(self)
 
 
+@_mm.mimic("aeromant.read_case_results", labelled=False)
 def _read_case_results(workdir, average_window=50):
     from vegeta.aeromant.result import Result
     _count("aeromant.read_case_results")
@@ -268,9 +299,10 @@ def _read_case_results(workdir, average_window=50):
     except Exception:
         p = {}
     m = _template_metrics(Metrics(CFD), p)
-    return Result(kind="aeromant.results", metrics=m, artifacts={"case": Path(workdir)}, metadata={"mock": True})
+    return Result(kind="aeromant.results", metrics=m, artifacts={"case": Path(workdir)}, metadata=_meta("aeromant.read_case_results"))
 
 
+@_mm.mimic("aeromant.read_results", labelled=False)
 def _read_results(case, time=None):
     """A mocked solved case as pyvista reads it (``internalMesh`` + ``boundary`` with a ``body`` patch): small real
     datasets with uniform U, p, k and nut, so code that walks the blocks runs."""
@@ -290,6 +322,7 @@ def _read_results(case, time=None):
     return pv.MultiBlock({"internalMesh": internal, "boundary": boundary})
 
 
+@_mm.mimic("aeromant.openfoam_sampler", labelled=False)
 def _openfoam_sampler(case, time=None):
     """A stream at the case's velocity (else 10 m/s) along x, valid everywhere, with a wake about the x axis: a 20 %
     deficit near the axis that varies four times around it (like four fins), so wake harmonics are not all zero."""
@@ -369,6 +402,7 @@ def _gcode(settings, n_layers=40, size=20.0) -> str:
     return "\n".join(out) + "\n"
 
 
+@_mm.mimic("mellonia.slice_stl", labelled=False)
 def _slice_stl(stl, settings, orientation, workdir, *, executable="prusa-slicer", timeout=None, cancel=None):
     from vegeta.mellonia import read_gcode
     from vegeta.mellonia.result import Result
@@ -381,7 +415,7 @@ def _slice_stl(stl, settings, orientation, workdir, *, executable="prusa-slicer"
     eff = w / "effective_config.ini"
     eff.write_text("# full configuration (vegeta.mock: no slicer was run)\n"
                    + "".join(f"{k} = {v}\n" for k, v in sorted(info.config.items())))
-    res = Result(kind="mellonia.slice", metrics=Metrics(info.metrics(), slicing_status="ok"), metadata={"mock": True},
+    res = Result(kind="mellonia.slice", metrics=Metrics(info.metrics(), slicing_status="ok"), metadata=_meta("mellonia.slice_stl"),
                  artifacts={"input_stl": Path(stl), "gcode": gcode, "effective_config": eff})
     unknown = sorted(k for k in settings.merged() if k not in info.config)     # as the real slice_stl checks
     if unknown:
@@ -470,6 +504,8 @@ def install() -> None:
 
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
+    _env_before.update({k: os.environ.get(k) for k in ISOLATED})
+    _mm.isolate_env(ISOLATED)                                   # runs and caches made now go to runs-mock / cache-mock
     _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked (fixed numbers, NOT results), the result cache is off")
 
 
@@ -478,3 +514,9 @@ def uninstall() -> None:
     while _saved:
         owner, name, orig = _saved.pop()
         setattr(owner, name, orig)
+    for k, v in _env_before.items():                            # the run and cache folders as they were
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+    _env_before.clear()

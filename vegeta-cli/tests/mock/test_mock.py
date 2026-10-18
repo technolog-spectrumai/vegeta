@@ -102,3 +102,27 @@ def test_slicing_and_suction_through_the_mocks(tmp_path, mocked):
     assert not typo.ok and "layer_heigth" in typo.messages[0]
     m = mock._template_metrics(mock.Metrics(), {"flow_rate": 0.2})
     assert m["fan_static_pressure_Pa"] > 0 and m["air_power_W"] == pytest.approx(0.2 * m["fan_static_pressure_Pa"])
+
+
+def test_the_stubs_are_mimesis_mimics_and_their_results_say_so(tmp_path, mocked):
+    import mimesis
+    for name in ("talos.mesh", "talos.solve", "talos.solve_modes", "talos.assess_fatigue", "aeromant.run", "aeromant.results",
+                 "aeromant.read_case_results", "mellonia.slice_stl"):
+        assert name in mimesis.available() and name in mock.available()
+    m = _model(tmp_path)
+    for r, name in ((m.solve(tmp_path / "w"), "talos.solve"), (m.solve_modes(tmp_path / "w", n_modes=3), "talos.solve_modes")):
+        assert mimesis.is_mock(r.metadata) and r.metadata["mimic"] == name and "not a result" in r.metadata["note"]
+    assert r.metadata["model"] == m.config()                                     # the real metadata is kept beside the label
+
+
+def test_runs_and_caches_made_under_the_mocks_live_apart(monkeypatch):
+    import os
+    monkeypatch.delenv("VEGETA_WORKFLOW_RUNS", raising=False)
+    monkeypatch.setenv("VEGETA_WORKFLOW_CACHE", "/somewhere/cache")
+    mock.install()
+    try:
+        assert os.environ["VEGETA_WORKFLOW_RUNS"].endswith("workflows/runs-mock")
+        assert os.environ["VEGETA_WORKFLOW_CACHE"] == "/somewhere/cache-mock"
+    finally:
+        mock.uninstall()
+    assert "VEGETA_WORKFLOW_RUNS" not in os.environ and os.environ["VEGETA_WORKFLOW_CACHE"] == "/somewhere/cache"

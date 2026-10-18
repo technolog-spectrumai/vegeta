@@ -10,6 +10,12 @@ for p in (ROOT / "workflows", ROOT / "notebooks" / "designs"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+from vegeta import mock  # noqa: E402
+
+# VEGETA_DEBUG=1: the solvers are Mimesis mimics (vegeta.mock), installed before ``library`` reads the run folders so the
+# run lands in workflows/runs-mock with "mock": true in its manifest — never read as an engineering result
+MOCK = mock.setup()
+
 import runkit  # noqa: E402
 import library  # noqa: E402
 
@@ -94,6 +100,8 @@ def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: di
 
 def pin_hint(run: runkit.Run) -> str:
     """The closing line that tells the engineer how a notebook reads this run (``yn pin``)."""
+    if run.manifest.get("mock"):
+        return "MOCK run (vegeta.mock / Mimesis): stub numbers, for testing the pipeline — no notebook reads it"
     pins = library.pin_commands(run.root, run.manifest)
     return ("notebook: " + "   |   ".join(pins)) if pins else "no notebook declares this chapter and variant in workflows/flow.py yet"
 

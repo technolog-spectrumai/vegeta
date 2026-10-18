@@ -315,6 +315,8 @@ class Run:
         run = cls(root, manifest, heartbeat_s=heartbeat_s, echo=echo)
         run.log(f"run {run_id} created: workflow {workflow}, campaign {campaign}, {len(planned_cases or [])} case(s) planned, config {manifest['config_hash'][:12]}")
         run.log(f"command: {manifest['command']}")
+        if manifest["mock"]:
+            run.log("MOCK run (vegeta.mock / Mimesis): the solvers are stubs, every number is a placeholder — not a result")
         run.status("prepared", cases={"planned": len(planned_cases or []), "done": 0, "reused": 0, "failed": 0, "running": None})
         return run
 

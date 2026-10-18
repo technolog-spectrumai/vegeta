@@ -148,6 +148,8 @@ def main(argv=None) -> int:
 
 
 def _openfoam_version():
+    if wk.MOCK:
+        return "mock (vegeta.mock, no OpenFOAM)"
     try:
         from vegeta import aeromant
         return aeromant.OpenFOAMEnvironment.detect().version()
