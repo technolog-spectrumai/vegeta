@@ -140,3 +140,22 @@ or rules that fix the pack small.
 
 Decision: the outdoor race kit is the Apus kit alone (6-inch props, lightest pack). The W kit is removed from
 the race programme and kept only as the open-range derivative, to be built when such a race exists.
+
+## 10. Kestrel-X-C (the ±30° X-wing) on these courses
+
+Its numbers: 1.77 kg, four 9-inch rotors, hover T/W 2.75, projected span 1.13 m, height 0.66 m, across the X 1.31 m
+in every roll attitude, wing area 0.18 m², wing-borne from ~12 m/s.
+
+**Indoor: DNF, by geometry.** The 1.2 m stair openings (footprint allowed 0.9 m) are 45 % too small for 1.31 m.
+With 2 m doors it still flies the whole lap as a 1.77 kg tailsitter in hover below its stall: ≤ 2.5 g lateral vs 4.3 g
+used, panel roll inertia an order above the quad's (150–250 °/s vs 750), 152° hairpins at 1.3 m out of reach,
+hover 240 W vs 120 W. Roughly 2× the lap time if it clears the walls.
+
+**Outdoor: DNF as laid out, slow finisher with wide gates.** 1.5 m gates leave < 0.1 m per side at 2.5 m RMS tracking.
+With 2.5 m gates: transition needs 12 m/s and 20–30 m each way, legs are 15–25 m median and end in 90° corners at
+~6 m/s; a 12 m/s banked turn at n = 2 is 8.5 m radius, wider than the corners; so it flies hover mode nearly
+everywhere with three times the mass to move. Only the quarry's 50 m legs allow a brief wing-borne dash.
+Gut estimate 1.4–1.6× the quad's lap outdoors.
+
+Where it belongs: open range, payload, endurance, chimneys ≥ 1.4 m (mission M-C). At 2–3× a race quad's cost it is
+the wrong purchase for these races.
