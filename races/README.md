@@ -72,6 +72,18 @@ body rates when recorded), the videos' names and sizes, the tail of run.log, eve
 note, the mock baseline, and a cross-course comparison. That file is what to hand over for analysis; the videos and
 scenes stay where they are.
 
+## Notebook 51 `51_race_ingest`: deep statistics and the design factors for the raptors
+`races/analysis.py` turns every lap into second-by-second kinematics (resets blanked), the speed regimes (hover,
+slow, cruise, fast: time, distance and energy shares), the percentiles behind the peaks, the braking and acceleration
+episodes, the corners and the straights one by one, the vertical content, the power duty, the closest approaches,
+and the course's own demands (openings, corners, legs). `design_factors` distils them into what an aircraft for these
+courses must do — hover thrust-to-weight, lateral g, turn radius, body rates, cruise and top speed, the stall-speed
+ceiling and the share of a lap below wing-borne speed, energy and power, footprint, braking, vertical speeds — per
+course and over all, with the margins stated; `factors_for_raptors` writes the compact hand-over to
+`notebooks/designs/data/race_design_factors.json` (the raptor design notebook's input: not connected yet). The
+notebook scans the run locations first (`ingest.scan`, `ingest.expected_locations`) and uses the mock where no lap
+is on file.
+
 ## Tuning the MuJoCo autopilot
 The first real laps (the hangar, 2026-10-18) showed the geometric controller lagging the racing line by metres where
 the mock lagged by 0.25 m, so the MuJoCo defaults are conservative: schedule `--safety 0.6`, `--tilt-max 60`,

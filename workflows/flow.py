@@ -164,6 +164,8 @@ races.chapter("quarry", kind="race", campaign="quarry")               # R4
 
 flow.notebook("50_four_races", title="Four races — the reference 5-inch quad round the hangar, the industrial zone, the farm and the quarry (MuJoCo runs when on file, the mock otherwise)",
               takes=[Run("races/hangar"), Run("races/industrial"), Run("races/farm"), Run("races/quarry")], gives=[File(f"{DATA}/four_races.json")], auto=True)
+flow.notebook("51_race_ingest", title="Race ingest — deep statistics of the race laps and the design factors for the raptors (scans the runs; the mock where none is on file)",
+              takes=[], gives=[File(f"{DATA}/race_design_factors.json")], auto=False)
 flow.notebook("49_mini_raptor", title="Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
               takes=[], gives=[File(f"{DATA}/mini_raptor_design.json"), File(f"{DATA}/reports/49_mini_raptor.json")], auto=True)
 

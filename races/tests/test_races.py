@@ -114,3 +114,18 @@ def test_ingest_digests_a_run_tree(tmp_path):
     assert doc["comparison"]["hangar"]["mujoco"]["lap time [s]"] > 0 and doc["courses"]["farm"]["run"] is None
     out = ingest.write(doc, tmp_path / "ingest_race.json")
     assert json.loads(out.read_text())["schema"] == 1
+
+
+def test_analysis_and_design_factors():
+    from races import analysis, ingest
+    c = courses.farm()
+    r = mock.run_mock(c)
+    R = analysis.lap_report(r["history"], c)
+    assert abs(R["regimes"]["time share"].sum() - 1.0) < 1e-6 and len(R["corners"]) > 3 and len(R["straights"]) > 2 and R["power"]["energy [Wh]"] > 0
+    df = analysis.design_factors({"farm (mock)": R, "hangar (mock)": analysis.lap_report(mock.run_mock(courses.hangar())["history"], courses.hangar())})
+    assert "all courses" in df.columns and df.loc["hover thrust / weight required", "all courses"] >= 2.0
+    f = analysis.factors_for_raptors(df)
+    assert len(f["reading"]) == 5 and "all_courses" in f and "margins" in f
+    assert set(ingest.expected_locations()) >= {"workflow runs (wf R1–R4)", "thin CLI runs (python -m races run)"}
+    sc = ingest.scan(roots=())
+    assert list(sc.columns)[:3] == ["course", "run", "state"]
