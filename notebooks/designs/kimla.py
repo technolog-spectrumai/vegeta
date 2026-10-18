@@ -513,3 +513,20 @@ if __name__ == "__main__":
         rec = endurance_record()
         ENDURANCE_PATH.write_text(json.dumps(rec, indent=1))
         print(f"wrote {ENDURANCE_PATH}: {len(rec['rows'])} rows in {_t.monotonic() - t0:.0f} s")
+
+
+def mock_endurance_record(scenarios: dict[str, Scenario] = SCENARIOS, **kw) -> dict:
+    """A **mock** of ``endurance_record`` for the notebook's debug mode and the tests: no transient runs — where the
+    screening is undecided the hold time is set to 3 × the lossless lower bound on the burn-through (a stand-in of the
+    cell model's usual ratio, nothing more) and the source says MOCK; the decided rows are the closed forms'. Never
+    written to ``ENDURANCE_PATH``: it exercises the read-back path only."""
+    rows = shield_endurance(scenarios, run=False, **kw)
+    for r in rows:
+        if r["decision"].startswith("undecided"):
+            r["holds_s"] = 3.0 * r["t_burn_through_lower_bound_s"]
+            for c, t in EXPOSURE.items():
+                r[c] = bool(r["holds_s"] > t)
+            r["source"] = "MOCK: 3 × the lossless lower bound (no transient was run)"
+            r["simulated"] = False
+    return {"meta": {"made": "MOCK", "screening": True, "grid": {"nr": 0, "r_max": si.SHEET_HALF, "t_max_s": si.SIMULATION_CAP_S}, "route": "MOCK — screen_bounds with 3 × the lower bound where undecided; no transient",
+                     "shields": [b.name for b in SHIELDS], "caveat": "a MOCK record for the notebook's debug mode and the tests: not a result"}, "rows": rows, "mock": True}

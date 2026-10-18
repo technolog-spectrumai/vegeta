@@ -119,7 +119,8 @@ aversion response, `collimated_fault` apart; `barrier_assessment` applies 47's v
 question of four shields (Al 1 and 3 mm, black PC 3 mm, steel 3 mm): in the notebook `screen_bounds` (46's closed forms without
 the steady solve: transparent / steady bound / energy bound / undecided) and `fire_risk` (PC's absorbed flux against its
 ignition fluxes, the surface's time to the ignition temperature; metals do not burn); the steady solve and the transient only
-in `python designs/kimla.py --endurance`, recorded in `data/kimla_endurance.json` and read back. ~80 s in the notebook.
+in `python designs/kimla.py --endurance`, recorded in `data/kimla_endurance.json` and read back; in debug mode
+`mock_endurance_record` (3 × the lower bound where undecided, labelled MOCK) stands in so the read-back path runs. ~80 s in the notebook.
 
 ## One notebook, and Yanus
 

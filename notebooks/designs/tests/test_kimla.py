@@ -106,3 +106,20 @@ def test_shield_endurance_screening_and_fire():
     assert all("not protection evidence" in r["note"] for r in rows)
     assert km.shield_endurance_table(rows).shape == (8, 2)
     assert km.load_endurance(Path("/nonexistent/kimla_endurance.json")) is None
+
+
+def test_mock_endurance_record_exercises_the_read_back_path(tmp_path):
+    import json
+    rec = km.mock_endurance_record(scenarios={"3 kW": km.SCENARIOS["3 kW"], "30 kW": km.SCENARIOS["30 kW"]})
+    assert rec["mock"] and rec["meta"]["made"] == "MOCK" and len(rec["rows"]) == 2 * 2 * 4 * 4
+    assert all(r["holds_s"] == r["holds_s"] for r in rec["rows"])                                   # nothing undecided after the mock
+    assert all("MOCK" in r["source"] for r in rec["rows"] if r["decision"].startswith("undecided")) and not any(r["simulated"] for r in rec["rows"])
+    tab = km.shield_endurance_table(rec["rows"])
+    assert tab.shape == (2 * 2 * 4, 4) and tab.notna().all().all()
+    pc = [r for r in rec["rows"] if r["material"] == "black polycarbonate" and r["kind"] == "collimated" and r["scenario"] == "30 kW" and r["distance_m"] == 20.0][0]
+    assert pc["holds_s"] == pytest.approx(3 * pc["t_burn_through_lower_bound_s"]) and not pc["T2"] and pc["combustible"]
+    p = tmp_path / "kimla_endurance.json"                                                           # the same serialisation and read-back as the real record
+    p.write_text(json.dumps({**rec, "rows": [{kk: (None if isinstance(vv, float) and math.isnan(vv) else ("inf" if vv == math.inf else vv)) for kk, vv in r.items()} for r in rec["rows"]]}, indent=1))
+    back = km.load_endurance(p)
+    assert back["mock"] and len(back["rows"]) == len(rec["rows"]) and all(r["holds_s"] in (math.inf,) or r["holds_s"] > 0 for r in back["rows"])
+    assert not km.ENDURANCE_PATH.exists() or json.loads(km.ENDURANCE_PATH.read_text()).get("mock") is not True   # the mock never lands on the data path

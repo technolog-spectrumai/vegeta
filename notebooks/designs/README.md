@@ -347,5 +347,5 @@ hypothetical head, every assumption with a range), `optics` / `optics_table` (th
 `weld_case` / `weld_matrix` / `weld_table` (regime, capped speed interval, pool, cooling, HAZ, distortion, limitations),
 `OVERHEADS` / `JOBS` / `throughput` / `capex` / `opex_per_hour` / `economics_table` / `capacity_sensitivity`, `stray_beam` /
 `stray_cases` / `collimated_fault` / `BARRIERS` / `barrier_assessment`, `SHIELDS` / `screen_bounds` / `fire_risk` /
-`shield_endurance` / `endurance_record` / `load_endurance` (the shields' hold times: bounds in the notebook, transients by `--endurance`), `record`. `kimla_drawings.py` draws the speed against power,
+`shield_endurance` / `endurance_record` / `load_endurance` / `mock_endurance_record` (the shields' hold times: bounds in the notebook, transients by `--endurance`, a MOCK record in debug mode), `record`. `kimla_drawings.py` draws the speed against power,
 the capacity and the euro per metre, the exposure against distance and the sensitivity tornado.
