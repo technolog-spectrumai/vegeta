@@ -140,7 +140,11 @@ def main(argv=None) -> int:
                "stats": st.get("stats"), "manoeuvre": st.get("manoeuvre"), "gate_times": st.get("gate times"), "videos": videos,
                "counts": {"n": len(names), "solved": sum(r.status == "solved" for r in rec.values()), "failed": sum(r.status == "FAILED" for r in rec.values())}}
     bars.close()
-    code = run.finish(summary, state=end_state)
+    race_rec = rec.get("race")
+    if end_state == "completed" and (race_rec is None or race_rec.status in ("FAILED", "NOT RUN")) and not args.prepare_only:
+        end_state = "failed"                                                   # no lap, no statistics: the gate must not hand this run to the notebook
+        summary["note"] = f"the race case did not run: {getattr(race_rec, 'note', '') or 'see run.log'}"
+    code = run.finish(summary, state=end_state, note=summary.get("note", ""))
     wk.closing(run, code, hint=wk.pin_hint(run))
     return code
 
