@@ -8,19 +8,14 @@
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
-# Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR] [--no-fenicsx] [--fenicsx-prefix DIR]
+# Usage: ./install_local.sh [--venv DIR] [--python EXE] [--system-python] [--skip-system] [--no-openfoam] [--openfoam-prefix DIR]
 #   --python EXE   interpreter for the venv (default: Ubuntu's /usr/bin/python3, not a conda one)
 #   --skip-system  skip apt and OpenFOAM installation (tools already installed or no sudo)
-#   --no-fenicsx   skip the FEniCSx environment (a conda-forge env made by micromamba, ~1.5 GB, 3–15 min; the fenix book's solver)
-#   --only-fenicsx run just that step (after a Ctrl-C, or to add it later); --fenicsx-prefix DIR puts it elsewhere (default .fenicsx)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/.venv"
 USE_VENV=1
-WITH_FENICSX=1
-ONLY_FENICSX=0
-FENICSX_PREFIX="$ROOT/.fenicsx"
 PYTHON_EXE=""
 WITH_OPENFOAM=1
 WITH_SYSTEM=1
@@ -36,9 +31,6 @@ while [ $# -gt 0 ]; do
     --no-openfoam) WITH_OPENFOAM=0; shift ;;
     --skip-system) WITH_SYSTEM=0; shift ;;
     --openfoam-prefix) FOAM_PREFIX="$2"; shift 2 ;;
-    --no-fenicsx) WITH_FENICSX=0; shift ;;
-    --only-fenicsx) ONLY_FENICSX=1; shift ;;
-    --fenicsx-prefix) FENICSX_PREFIX="$2"; shift 2 ;;
     -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -60,37 +52,8 @@ if [ -z "$PYTHON_EXE" ]; then
 fi
 [ -n "${CONDA_PREFIX:-}" ] && echo "note: conda environment '$CONDA_PREFIX' is active; the venv is built from $PYTHON_EXE instead"
 
-fenicsx_install() {
-  step "FEniCSx — dolfinx from conda-forge via micromamba (the fenix book's solver; the kernel \"Python (fenicsx)\")"
-  echo "    this downloads ~1.5 GB (PETSc, MPI, dolfinx) and takes 3–15 minutes; the solver prints its progress. Ctrl-C and rerun resumes."
-  echo "    skip it with --no-fenicsx; run only this step with --only-fenicsx; put it elsewhere with --fenicsx-prefix DIR"
-  MM="$FENICSX_PREFIX/bin/micromamba"
-  if [ ! -x "$MM" ]; then
-    mkdir -p "$FENICSX_PREFIX/bin"
-    arch="$(uname -m)"; case "$arch" in x86_64) mmarch=linux-64 ;; aarch64|arm64) mmarch=linux-aarch64 ;; *) mmarch=linux-64 ;; esac
-    echo "    downloading micromamba ($mmarch)"
-    curl -L --fail --progress-bar -o "$MM" "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-$mmarch" \
-      || { echo "micromamba download failed (network?); rerun later or install dolfinx yourself: docs/fenics.md" >&2; return 1; }
-    chmod +x "$MM"
-  fi
-  export MAMBA_ROOT_PREFIX="$FENICSX_PREFIX/root"
-  FPY="$FENICSX_PREFIX/env/bin/python"
-  if [ -x "$FPY" ] && "$FPY" -c 'import dolfinx' 2>/dev/null; then
-    echo "    environment $FENICSX_PREFIX/env already has dolfinx"
-  else
-    [ -d "$FENICSX_PREFIX/env" ] && { echo "    removing an incomplete environment from an interrupted run"; rm -rf "$FENICSX_PREFIX/env"; }
-    "$MM" create -y -p "$FENICSX_PREFIX/env" -c conda-forge python=3.12 fenics-dolfinx mpich numpy matplotlib pandas pyvista ipykernel pytest h5py \
-      || { echo "micromamba create failed: read the lines above (a solver or download error); rerun to resume, or --no-fenicsx" >&2; return 1; }
-  fi
-  "$FPY" -m pip install -q --no-deps -e "$ROOT/vegeta-cli" -e "$ROOT/vegeta-yanus"
-  "$FPY" -m ipykernel install --user --name fenicsx --display-name "Python (fenicsx)"
-  "$FPY" -c 'import dolfinx, pyvista; print("    dolfinx", dolfinx.__version__, "pyvista", pyvista.__version__, "— kernel Python (fenicsx) registered")'
-  echo "    activate.sh exports VEGETA_FENICSX_PYTHON=$FPY for the fenix book; test: .venv/bin/python workflows/fenix/plate_thermal.py --chapter guard-steady --list"
-}
-
-if [ "$ONLY_FENICSX" -eq 1 ]; then
-  fenicsx_install; exit $?
-fi
+# The FEniCSx environment (the laser books fenix and svarog) moved with the laser work to Alabastron:
+# https://github.com/technolog-spectrumai/alabastron (its install_local.sh builds it).
 
 step "Virtual environment"
 if [ "$USE_VENV" -eq 1 ]; then
@@ -173,11 +136,6 @@ if [ $status -eq 0 ]; then
   echo "  scripts/demo_cli.sh      # CAD -> FEA -> print -> CFD with the CLIs"
 else
   printf '\nSome checks failed (see MISSING above).\n' >&2
-fi
-if [ "$WITH_FENICSX" -eq 1 ]; then
-  fenicsx_install || { echo "FEniCSx not installed: hyperion.thermal uses its numpy solvers and the fenix book says NOT RUN; retry with ./install_local.sh --only-fenicsx" >&2; }
-else
-  step "Skipping FEniCSx (--no-fenicsx): hyperion.thermal uses its numpy solvers, the fenix book says NOT RUN"
 fi
 
 exit $status

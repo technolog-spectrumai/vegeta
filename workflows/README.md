@@ -54,10 +54,6 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]
     └── K11  frame-and-joint
-svarog   (S)  Svarog remote — the target and the shields under the beams of notebook 46 (variants = the standoff 20m / 50m / 100m)
-└── ablation — axisymmetric transient conduction with phase change and cell removal (FEniCSx / dolfinx)
-    ├── S1   target-ablation        the steel target under each set's summed beams, 2 s
-    └── S2   shield-ablation        aluminium / steel / black PC at 1, 3, 5 mm under one stray kW, 20–100 m past the focus
 ```
 
 The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/` (e.g.
@@ -230,10 +226,5 @@ A thermal analysis (a motor's or battery's heat path), another aircraft's CFD, a
 under `workflows/<project>/` that imports `runkit`, builds its cases from the project's design module, runs them in
 the same loop and writes the same files. Nothing in `runkit` is Kestrel-specific.
 
-
-## fenix (F)
-
-Svarog's guard plates by finite elements: a chapter script in the venv launches a dolfinx worker per case in the fenicsx
-interpreter (`VEGETA_FENICSX_PYTHON`, `.fenicsx/env` from install_local.sh) — a JSON spec in, `result.json` out — and
-writes the run like any chapter. F1 `guard-steady`, F2 `guard-ablation`, F3 `sheet-distance`; variants 1kW, 2kW;
-`--quality screening|fine`. Without the interpreter every case is NOT RUN. `docs/fenics.md`.
+The laser books `fenix` (F) and `svarog` (S) and their FEniCSx interpreter moved to
+[Alabastron](https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.

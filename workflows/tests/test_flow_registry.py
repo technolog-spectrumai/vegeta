@@ -80,27 +80,3 @@ def test_notebook_43_is_yanus_auto_and_its_plan_runs_screening_quality():
     assert all(s.argv[-2:] == ["--quality", "screening"] for s in cfd)
     assert all("--element-size" in s.argv for s in fea)
     assert all(s.state in ("planned", "skipped") for s in steps)        # a plan starts nothing
-
-
-def test_notebook_47_contract_is_all_optional_and_f4_is_steady_only():
-    from vegeta import yanus
-    nb = library.FLOW.notebooks["47_svarog_iii"]
-    assert not nb.auto                                                         # nothing is rerun silently
-    g = yanus.enter(nb, flow=library.FLOW, deep=False, raise_closed=False, auto=False)
-    keys = {r.key for r in g.rows}
-    assert any(k.startswith("fenix/shield-steady@") for k in keys) and any("46_svarog:" in k for k in keys)
-    assert library.by_code("f4")[1] == "shield-steady"
-    import sys
-    sys.path.insert(0, str(Path(library.ROOT) / "workflows" / "fenix"))
-    import plate_thermal
-    cases = plate_thermal.cases_of("shield-steady", "WFL-3000", "screening")
-    assert len(cases) == 45 and all(c["mode"] == "steady" for c in cases) and not any("t_max" in c for c in cases)
-
-
-def test_notebook_48_contract():
-    from vegeta import yanus
-    nb = library.FLOW.notebooks["48_kimla"]
-    assert not nb.auto
-    g = yanus.enter(nb, flow=library.FLOW, deep=False, raise_closed=False, auto=False)
-    keys = {r.key for r in g.rows}
-    assert any("kimla_specs.json" in k for k in keys) and any("47_svarog_iii:" in k for k in keys)

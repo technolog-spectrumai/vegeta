@@ -81,53 +81,8 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
 
 
-# ================================================================================================= book: svarog (S)
-def _sr():
-    p = str(ROOT / "notebooks" / "designs")
-    if p not in sys.path:
-        sys.path.insert(0, p)
-    import svarog_remote
-    return svarog_remote
-
-
-svarog = flow.book("svarog", "S", title="Svarog remote — the target and the shields under the beams of notebook 46, as FEniCSx transients (variants = the standoff)",
-                   design="notebooks/designs/svarog_remote.py (ablation_cases, ablation_fingerprint); the notebook 46_svarog_remote launches and reads the runs",
-                   variants=("20m", "50m", "100m"), fingerprint=lambda v: _sr().ablation_fingerprint(v))
-svarog.kind("ablation", title="ablation — axisymmetric transient conduction with phase change and cell removal (FEniCSx / dolfinx)", script="workflows/svarog/ablation_fenicsx.py",
-            workflow="svarog_ablation", needs=[Package("dolfinx"), Package("mpi4py"), Package("petsc4py")],
-            needs_text="dolfinx (conda-forge fenics-dolfinx, or the dolfinx/dolfinx Docker image)", time="a target case minutes, a shield case up to an hour (600 s of steel at 0.1 s steps)",
-            options=[("--variant", ("20m", "50m", "100m"), "20m")])
-svarog.chapter("target-ablation", kind="ablation", campaign="target")                                     # S1
-svarog.chapter("shield-ablation", kind="ablation", campaign="shield")                                     # S2
-
-
-# ================================================================================================= book: fenix (F)
-def _fenix():
-    p = str(ROOT / "workflows" / "fenix")
-    if p not in sys.path:
-        sys.path.insert(0, p)
-    import plate_thermal
-    return plate_thermal
-
-
-fenix = flow.book("fenix", "F", title="fenix — Svarog's guard plates by finite elements (FEniCSx in its own interpreter, a process pipe per case)",
-                  design="notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
-                  variants=("1kW", "2kW", "YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000"), fingerprint=lambda v: _fenix().fingerprint(v), compatible=lambda e, f, ch=None: _fenix().compatible(e, f, ch),
-                  describe=lambda: {"guard-steady": "every barrier's steady state under the collimated beam", "guard-ablation": "the transients the screening could not decide",
-                                    "sheet-distance": "the reference 2 mm PC sheet, 60 × 60 cm, at 10–200 m",
-                                    "shield-steady": "Svarog III: the nine shielding panels at 5–100 m under a commercial laser, steady state only (no burn-through)"})
-
-fenix.kind("thermal", title="plate heat transfer — steady state and the ablation transient (FEniCSx: dolfinx, PETSc)", script="workflows/fenix/plate_thermal.py",
-           workflow="plate_thermal", needs=[Tool("fenicsx", why="the finite-element solver, in its own conda-forge interpreter", fix="./install_local.sh (or --fenicsx-prefix), or VEGETA_FENICSX_PYTHON=…; docs/fenics.md",
-                                                 probe=lambda: _fenix().probe()), Package("vegeta.hyperion")],
-           needs_text="the fenicsx interpreter (.fenicsx/env or VEGETA_FENICSX_PYTHON)", time="steady: seconds a case; ablation: 10 s – 2 min a case",
-           options=[("--variant", ("1kW", "2kW", "YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000"), "1kW"), ("--quality", ("screening", "fine"), "fine")],
-           screening=("--quality", "screening"))
-
-fenix.chapter("guard-steady", kind="thermal", campaign="guard-steady")                                   # F1
-fenix.chapter("guard-ablation", kind="thermal", campaign="guard-ablation")                               # F2
-fenix.chapter("sheet-distance", kind="thermal", campaign="sheet-distance")                               # F3: the 2 mm PC sheet at 10–200 m
-fenix.chapter("shield-steady", kind="thermal", campaign="shield-steady")                                 # F4: Svarog III's shielding panels, steady state only
+# The laser work (books svarog and fenix, notebooks 46–48) moved to Alabastron on 2026-10-18:
+# https://github.com/technolog-spectrumai/alabastron
 
 
 # ================================================================================================= notebooks
@@ -158,38 +113,6 @@ flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cant
               takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE,
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
-
-flow.notebook("46_svarog", title="Svarog — from the Nd:YAG rod to the 1 kW welding fibre laser, its welds, its guard and the 2 kW variant, in one notebook",
-              needs=[Package("vegeta.hyperion")],
-              takes=[Run("fenix/guard-steady", variant="1kW"), Run("fenix/guard-ablation", variant="1kW"), Run("fenix/sheet-distance", variant="1kW"),
-                     Run("fenix/guard-steady", variant="2kW"), Run("fenix/guard-ablation", variant="2kW"), Run("fenix/sheet-distance", variant="2kW")],
-              gives=[File(f"{DATA}/svarog_design.json", keys=("kind", "design")), File(f"{DATA}/svarog_fiber_design.json", keys=("kind", "design")),
-                     File(f"{DATA}/svarog_industrial_design.json", keys=("kind", "design")),
-                     File(f"{DATA}/reports/46_svarog.json", keys=("meta", "laser", "revisions", "fibre", "industrial", "guard", "air"))],
-              screening_env="SVAROG_SCREENING", auto=True)   # yanus_auto: the fenix runs it takes are made in screening quality when the fenicsx interpreter exists
-
-flow.notebook("47_svarog_iii", title="Svarog III — four commercial fibre lasers on Hyperion: optics, energy balance, thin-sheet welds, shielding at 5–100 m",
-              needs=[Package("vegeta.hyperion")],
-              takes=[Data(f"{DATA}/svarog_commercial_specs.json", keys=("lasers",), note="the published limits, verbatim (unknowns stay null)"),
-                     Data(f"{DATA}/svarog_commercial_endurance.json", required=False, keys=("meta", "rows"), note="the sheets' hold times (python designs/svarog_commercial.py --endurance; minutes per laser)"),
-                     File(f"46_svarog:{DATA}/reports/46_svarog.json", keys=("industrial", "guard")),
-                     *[Run("fenix/shield-steady", variant=v) for v in ("YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000")]],
-              gives=[File(f"{DATA}/reports/47_svarog_iii.json", keys=("meta", "specs", "optics", "energy", "welding", "shielding", "endurance", "validation_open"))])   # nothing is rerun silently: the F4 runs are optional takes
-
-flow.notebook("48_kimla", title="KIMLA as a welding platform — 3 to 30 kW analysis scenarios on a hypothetical welding head: close-range welds, throughput, euro per metre, the stray beam at 20–200 m",
-              needs=[Package("vegeta.hyperion")],
-              takes=[Data(f"{DATA}/kimla_specs.json", keys=("sources", "scenarios", "assumptions"), note="KIMLA as found (its documents unreachable), the scenarios and the assumptions"),
-                     Data(f"{DATA}/kimla_endurance.json", required=False, keys=("meta", "rows"), note="the shields' hold times with the transients (python designs/kimla.py --endurance; minutes per scenario)"),
-                     File(f"47_svarog_iii:{DATA}/reports/47_svarog_iii.json", keys=("welding",))],
-              gives=[File(f"{DATA}/reports/48_kimla.json", keys=("meta", "scenarios", "welding", "throughput", "economics", "safety", "sensitivity", "validation_open"))])
-
-flow.notebook("46_svarog_remote", title="Svarog remote — welding at 20 m with many lasers crossing at one point (analytic, no runs)",
-              needs=[], takes=[],
-              gives=[File(f"{DATA}/svarog_remote.json")])
-
-flow.notebook("47_svarog_ablation", title="Svarog ablation — the target and the shields of notebook 46 as FEniCSx transients (book svarog), read when run",
-              needs=[], takes=[File(f"46_svarog_remote:{DATA}/svarog_remote.json")] + [Run(f"svarog/{ch}", variant=v) for ch in ("target-ablation", "shield-ablation") for v in ("20m", "50m", "100m")],
-              gives=[File(f"{DATA}/reports/47_svarog_ablation.json")])
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],

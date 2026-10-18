@@ -24,7 +24,6 @@ fi
 wf() { python "$VEGETA_ROOT/workflows/cli.py" "$@"; }
 yn() { python -m vegeta.yanus "$@"; }
 export VEGETA_YANUS_FLOW="$VEGETA_ROOT/workflows/flow.py"
-[ -x "$VEGETA_ROOT/.fenicsx/env/bin/python" ] && export VEGETA_FENICSX_PYTHON="${VEGETA_FENICSX_PYTHON:-$VEGETA_ROOT/.fenicsx/env/bin/python}"   # the fenix book's interpreter (install_local.sh)
 wfrun() {
   local book="$1"; shift
   local script
