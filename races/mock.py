@@ -22,7 +22,7 @@ def schedule(course, *, safety: float = 0.8, v_cap: float | None = None) -> Path
     W = refquad.MASS_KG * G
     tw = 0.7 * 4 * p.max_thrust_N / W
     a_lat = G * math.sqrt(max(tw * tw - 1.0, 0.0))
-    a_lat = min(a_lat, 3.0 * G)                                   # a pilot's 70° of tilt, not the motors' limit
+    a_lat = min(a_lat, 2.5 * G)                                   # a pilot's 70° of tilt (2.75 g) with margin, not the motors' limit
     v_top = v_cap or 28.0                                         # a sustainable racing pace for a 5-inch quad (the model's 34 m/s sustained level, minus margin)
     return Path(course.points, course.radii, a_lateral=a_lat, a_brake=min(0.4 * a_lat, 1.2 * G), a_accel=min(0.5 * a_lat, 1.5 * G), v_top=v_top, safety=safety)
 
@@ -37,7 +37,7 @@ def run_mock(course, *, rules: Rules | None = None, dt: float = 0.02, lookahead_
     prop = refquad.propulsion()
     m = refquad.MASS_KG
     W = m * G
-    a_lim = 0.7 * 4 * prop.max_thrust_N / m - G
+    a_lim = min(0.7 * 4 * prop.max_thrust_N / m - G, G * math.tan(math.radians(70.0)))      # the thrust's margin, and the 70° tilt a pilot flies
     p = np.array(course.zones[0].center, dtype=float)
     v = np.zeros(3)
     s = 0.0

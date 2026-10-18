@@ -162,6 +162,34 @@
      "prerequisites": []
     }
    }
+  },
+  "races": {
+   "code": "R",
+   "title": "Races — the reference 5-inch quad round four courses in MuJoCo (hangar, industrial zone, farm, quarry)",
+   "design": "races/ (refquad, courses, rules); the notebook 50_four_races reads the runs",
+   "variants": [],
+   "chapters": {
+    "hangar": {
+     "kind": "race",
+     "campaign": "hangar",
+     "prerequisites": []
+    },
+    "industrial": {
+     "kind": "race",
+     "campaign": "industrial",
+     "prerequisites": []
+    },
+    "farm": {
+     "kind": "race",
+     "campaign": "farm",
+     "prerequisites": []
+    },
+    "quarry": {
+     "kind": "race",
+     "campaign": "quarry",
+     "prerequisites": []
+    }
+   }
   }
  },
  "IMPORTS": {

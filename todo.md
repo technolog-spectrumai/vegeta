@@ -194,7 +194,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage R — Races (branch `dev_workflows2`)
 - [x] R.1 `races/`: four drone race environments in MuJoCo for the reference 5-inch quad (hangar with three floors, industrial zone, farm, quarry), parameterised course builders → MJCF scenes with zones, a starting grid, landmarks and four cameras; the reference quad from its component budget on the existing Boreas drive table; one set of rules and a referee (zones in order, checkpoints, collisions → reset / count / stop, lap completion); a mock flyer for development; the MuJoCo runner on Drongo's geometric controller (written, not run); maps, traces, GIF replays; CLI `python -m races`; smoke tests; notebook 50 `50_four_races` (mock)
-- [ ] R.2 Run the MuJoCo races by hand (`python -m races run --course <c>`), tune the controller's gains and the schedule's safety per course, render the onboard and chase cameras (`races.sim.render`), and record the real lap times beside the mock's
+- [x] R.1b The races as Yanus chapters: book `races` (R1–R4, `workflows/races/race.py`: the lap and three videos under the run contract, `--quality`, `--mock`), notebook 50 takes the runs (videos and statistics when on file, the mock otherwise, auto mode produces them); `races/metrics.py`: manoeuvrability statistics per lap (linear and rotational envelope, turning, tilt, thrust share, tracking error) with the aircraft's envelope and the literature
+- [ ] R.2 Run the MuJoCo races by hand (`wf R1`…`R4`), tune the controller's gains and the schedule's safety per course, check the camera rendering (MUJOCO_GL=egl), and record the real lap times and body rates beside the mock's
 - [ ] R.3 Other aircraft on the same courses (the mini raptors as tailsitters need their own force hook: `notebooks/designs/mini_races.py` is the draft), multi-lap races, a starting-grid start with four aircraft
 
 ## Stage 5s — Zephyr, 2-D wing sections (branch `dev_zephyr`)

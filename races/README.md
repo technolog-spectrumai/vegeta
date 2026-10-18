@@ -44,6 +44,25 @@ the speed schedule the aircraft's limits allow (the corner speed each zone's cle
 vector's lateral acceleration, braking and acceleration between zones, the top speed) and the autopilot's moving
 reference (`carrot`: short look-ahead, no corner cut larger than the zone, a return to a missed zone).
 
+## As workflow chapters (Yanus): book `races`, code R
+`wf R1`–`R4` (`workflows/races/race.py --chapter <course>`) run a course under the run contract: a run directory
+under `workflows/runs/races/<course>/` with the manifest, the case `race` (trajectory, stats, map) and the cases
+`video-chase`, `video-onboard`, `video-overview` (MuJoCo camera frames through ffmpeg when an OpenGL context exists —
+`MUJOCO_GL=egl` — else the matplotlib replay, said so in the case record), and `summary.json` with the statistics,
+the manoeuvre metrics and the video paths. Notebook 50 **takes** these runs through its gate: it shows the videos and
+the statistics of the runs on file; in auto mode (`YANUS_AUTO=1`) it runs the missing chapters itself in screening
+quality (short, small videos) first. `--quality fine` gives full-length videos; `--mock` runs the point-mass flyer
+under the same contract (the smoke tests).
+
+## Manoeuvrability statistics (`races/metrics.py`)
+From every recorded lap: peak acceleration and deceleration along the path, peak lateral acceleration, the load
+factor carried, the least turn radius above 3 m/s and the peak turn rate, peak roll / pitch / yaw rates and angular
+accelerations (the recorded body rates in MuJoCo; the thrust vector's slew and the heading in the mock), time to
+speed, tilt, the share of the lap near full thrust, the tracking error to the racing line. `envelope()` is what the
+reference quad could do from its drive table and an inertia estimate; `LITERATURE` the published reference values
+(Foehn et al. 2021: 1–20 m/s², 10 rad/s, thrust-to-weight 3.3–4; Swift, Nature 2023: over 100 km/h). Peaks are 99th
+percentiles, since differentiated samples spike at the zone hand-overs.
+
 ## Running
 ```
 python -m races list                              # the courses
