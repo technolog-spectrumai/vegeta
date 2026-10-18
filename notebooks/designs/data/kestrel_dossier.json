@@ -1,6 +1,6 @@
 {
  "dossier": "Kestrel",
- "stitched": "2026-10-18T03:31",
+ "stitched": "2026-10-18T03:36",
  "reports": {
   "38_prop_lab": {
    "notebook": "38_prop_lab",
@@ -14039,7 +14039,7 @@
   "49_mini_raptor": {
    "notebook": "49_mini_raptor",
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:31",
+   "exported": "2026-10-18T03:36",
    "meta": {
     "method": "first principles and empirical correlations; no CFD, no FEA; conceptual CAD",
     "cad": {
@@ -14190,6 +14190,12 @@
       "drive",
       "mass [kg]",
       "hover thrust / weight",
+      "vertical climb, thrust-limited [m/s]",
+      "power in that climb [W]",
+      "vertical climb at the sustainable power [m/s]",
+      "initial vertical acceleration from the hover [g]",
+      "end-on drag area [m²]",
+      "zoom climb from the top speed [m]",
       "hover power [W]",
       "hover endurance [min]",
       "pitch acceleration in the hover [rad/s²]",
@@ -14243,6 +14249,30 @@
       {
        "_index": "hover thrust / weight",
        "racing quad": 10.53
+      },
+      {
+       "_index": "vertical climb, thrust-limited [m/s]",
+       "racing quad": 36.5
+      },
+      {
+       "_index": "power in that climb [W]",
+       "racing quad": 2274.0
+      },
+      {
+       "_index": "vertical climb at the sustainable power [m/s]",
+       "racing quad": 22.0
+      },
+      {
+       "_index": "initial vertical acceleration from the hover [g]",
+       "racing quad": 9.525
+      },
+      {
+       "_index": "end-on drag area [m²]",
+       "racing quad": 0.0352
+      },
+      {
+       "_index": "zoom climb from the top speed [m]",
+       "racing quad": 69.78
       },
       {
        "_index": "hover power [W]",
@@ -14550,6 +14580,11 @@
       "brake deceleration at 20 m/s [g]",
       "brake 20→4 m/s distance [m]",
       "brake 20→4 m/s time [s]",
+      "vertical climb, thrust-limited [m/s]",
+      "vertical climb at the sustainable power [m/s]",
+      "power in that climb [W]",
+      "initial vertical acceleration from the hover [g]",
+      "zoom climb from the top speed [m]",
       "hover pitch-over 90° [s]",
       "pitch acceleration in the hover [rad/s²]",
       "hover pitch by",
@@ -14828,6 +14863,56 @@
        "Apus Mini (as printed)": 0.45,
        "Alcotan (as printed)": 0.48,
        "Gavilan (as printed)": 0.49
+      },
+      {
+       "_index": "vertical climb, thrust-limited [m/s]",
+       "5-inch racing quad": 36.5,
+       "Apus Mini": 55.5,
+       "Alcotan": 59.5,
+       "Gavilan": 59.5,
+       "Apus Mini (as printed)": 54.0,
+       "Alcotan (as printed)": 59.5,
+       "Gavilan (as printed)": 59.0
+      },
+      {
+       "_index": "vertical climb at the sustainable power [m/s]",
+       "5-inch racing quad": 22.0,
+       "Apus Mini": 53.5,
+       "Alcotan": 56.5,
+       "Gavilan": 42.5,
+       "Apus Mini (as printed)": 51.0,
+       "Alcotan (as printed)": 54.0,
+       "Gavilan (as printed)": 41.0
+      },
+      {
+       "_index": "power in that climb [W]",
+       "5-inch racing quad": 2274.0,
+       "Apus Mini": 721.0,
+       "Alcotan": 946.8,
+       "Gavilan": 1110.0,
+       "Apus Mini (as printed)": 727.8,
+       "Alcotan (as printed)": 1017.0,
+       "Gavilan (as printed)": 1182.0
+      },
+      {
+       "_index": "initial vertical acceleration from the hover [g]",
+       "5-inch racing quad": 9.525,
+       "Apus Mini": 4.716,
+       "Alcotan": 10.51,
+       "Gavilan": 9.049,
+       "Apus Mini (as printed)": 3.944,
+       "Alcotan (as printed)": 8.919,
+       "Gavilan (as printed)": 7.924
+      },
+      {
+       "_index": "zoom climb from the top speed [m]",
+       "5-inch racing quad": 69.78,
+       "Apus Mini": 195.9,
+       "Alcotan": 342.7,
+       "Gavilan": 208.8,
+       "Apus Mini (as printed)": 195.9,
+       "Alcotan (as printed)": 342.7,
+       "Gavilan (as printed)": 208.8
       },
       {
        "_index": "hover pitch-over 90° [s]",
@@ -17171,7 +17256,7 @@
   },
   "49_mini_raptor": {
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:31",
+   "exported": "2026-10-18T03:36",
    "sections": [
     "drives",
     "racing quad",

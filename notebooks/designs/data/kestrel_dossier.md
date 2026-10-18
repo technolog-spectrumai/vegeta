@@ -1,6 +1,6 @@
 # Kestrel — the design dossier
 
-*stitched 2026-10-18 03:31 from 8 report(s)*
+*stitched 2026-10-18 03:36 from 8 report(s)*
 
 | report | lines | exported |
 |---|---|---|
@@ -10,7 +10,7 @@
 | 41_xwing | 172 | 41_xwing — exported 2026-10-16 12:34 |
 | 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 09:37 |
 | 46_kestrel_tandem | 256 | 46_kestrel_tandem — exported 2026-10-17 22:33 |
-| 49_mini_raptor | 237 | 49_mini_raptor — exported 2026-10-18 03:31 |
+| 49_mini_raptor | 248 | 49_mini_raptor — exported 2026-10-18 03:36 |
 | 47_kestrel_benchmark | 133 | 47_kestrel_benchmark — exported 2026-10-18 01:49 |
 
 
@@ -2190,7 +2190,7 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 
 ## Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack
 
-*49_mini_raptor — exported 2026-10-18 03:31*
+*49_mini_raptor — exported 2026-10-18 03:36*
 
 | key | value |
 |---|---|
@@ -2224,6 +2224,12 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 | drive | 4S 5x4.3 |
 | mass [kg] | 0.5 |
 | hover thrust / weight | 10.5 |
+| vertical climb, thrust-limited [m/s] | 36.5 |
+| power in that climb [W] | 2.27e+03 |
+| vertical climb at the sustainable power [m/s] | 22 |
+| initial vertical acceleration from the hover [g] | 9.53 |
+| end-on drag area [m²] | 0.0352 |
+| zoom climb from the top speed [m] | 69.8 |
 | hover power [W] | 77.6 |
 | hover endurance [min] | 13.7 |
 | pitch acceleration in the hover [rad/s²] | 1.76e+03 |
@@ -2314,6 +2320,11 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 | brake deceleration at 20 m/s [g] | 3.55 | 7.23 | 4.79 | 4.75 | 6.27 | 4.51 | 4.26 |
 | brake 20→4 m/s distance [m] | 6.18 | 4.64 | 5.2 | 5.41 | 4.94 | 5.4 | 5.56 |
 | brake 20→4 m/s time [s] | 0.535 | 0.43 | 0.465 | 0.48 | 0.45 | 0.48 | 0.49 |
+| vertical climb, thrust-limited [m/s] | 36.5 | 55.5 | 59.5 | 59.5 | 54 | 59.5 | 59 |
+| vertical climb at the sustainable power [m/s] | 22 | 53.5 | 56.5 | 42.5 | 51 | 54 | 41 |
+| power in that climb [W] | 2.27e+03 | 721 | 947 | 1.11e+03 | 728 | 1.02e+03 | 1.18e+03 |
+| initial vertical acceleration from the hover [g] | 9.53 | 4.72 | 10.5 | 9.05 | 3.94 | 8.92 | 7.92 |
+| zoom climb from the top speed [m] | 69.8 | 196 | 343 | 209 | 196 | 343 | 209 |
 | hover pitch-over 90° [s] | 0.0844 | 0.226 | 0.0909 | 0.124 | 0.211 | 0.0916 | 0.125 |
 | pitch acceleration in the hover [rad/s²] | 1.76e+03 | 245 | 1.52e+03 | 813 | 284 | 1.5e+03 | 802 |
 | hover pitch by | — | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) |
