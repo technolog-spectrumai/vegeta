@@ -325,4 +325,10 @@ spaces: the racing frame's motor square in a short cell) — by first principles
 sustainable power, the banked turn, the hover, `braking` with the wing as an air brake, `reorientation`,
 `transition`), `quad` (the racing baseline on the same parts), `compare`, `targets`, `sensitivity`, the conceptual
 CAD `MiniRaptor` / `parts` / `render3d` / `ortho_views` / `export_cad` (STEP and STL into `data/cad/mini_raptor/`,
-ignored by git), `export_design` → `data/mini_raptor_design.json`.
+ignored by git), `ALTERNATIVES` / `biplane_question` (the same briefs on one wing: why Apus is a cruciform and Gavilan
+keeps the cell), `export_design` → `data/mini_raptor_design.json`. `mini_raptor_print.py`: the designs as things to
+build — `printed_parts` (pod halves, wing and fin segments standing on a root rib with the spar bore, motor mounts,
+post fittings and faired sleeves, split to a 250 × 210 × 210 mm bed), `stock` (motors, propellers, pack, stack, carbon
+tubes), `check_part` / `check_all` (bed fit in the print orientation, overhang area, shell + infill mass), `te_cut_for`
+(the trailing edge thickened to 1 mm), `structure_against_budget`, `slice_all` (Mellonia on every part when PrusaSlicer
+is on the PATH, else NOT RUN with the commands), `settings` (`PLA`, `LW_PLA` for `mellonia slice -s`).

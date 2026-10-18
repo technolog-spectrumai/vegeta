@@ -65,3 +65,29 @@ def test_cad_parts_build_valid():
         assert all(s.val().isValid() for s, _ in prt.values())
         assert {"pod", "wings", "motors", "propeller discs", "battery", "flight stack", "camera"} <= set(prt)
         assert ("posts" in prt) == (mr.layout(v)["layout"] == "biplane") and ("fins" in prt) == (mr.layout(v)["layout"] == "cruciform")
+
+
+def test_apus_is_one_wing_and_the_biplane_question_has_its_rows(PERF):
+    assert mr.layout("Apus Mini")["layout"] == "cruciform" and mr.layout("Gavilan")["layout"] == "biplane"
+    bq = mr.biplane_question(PERF)
+    assert "Apus as a biplane cell" in bq.columns and "Gavilan on one wing (cruciform)" in bq.columns
+    assert bq.loc["disc rules", "Gavilan on one wing (cruciform)"] != "all hold"            # the cruciform cannot sit on the quad's square
+    assert bq.loc["Cd0 at 20 m/s", "Apus Mini (one wing, as designed)"] < bq.loc["Cd0 at 20 m/s", "Apus as a biplane cell"]
+
+
+def test_printed_parts_fit_the_bed_and_the_checks_are_honest(tmp_path):
+    import mini_raptor_print as mp
+    for v in mr.VARIANTS:
+        parts = mp.printed_parts(v)
+        ck = mp.check_all(v, parts)
+        assert ck["fits the bed"].all() and ck["height ok"].all(), (v, ck[["size on the bed [mm]", "fits the bed"]])
+        assert (ck["overhang area wanting support [%]"] < 5).all()
+        sb = mp.structure_against_budget(v, ck)
+        assert sb["structure as built [g]"] > sb["structure in the budget [g]"]             # the honest finding: printed is heavier than budgeted
+        assert set(mp.stock(v)["source"]) <= {"off the shelf", "off the shelf; a tailsitter firmware (ArduPilot / INAV)", "cut from stock", "cut from stock, through the pod"}
+    assert 0.85 < mp.te_cut_for(85.0, 0.10) < 0.99
+    # the NOT RUN path needs no slicer
+    one = {k: parts[k] for k in list(parts)[:1]}
+    df = mp.slice_all("Gavilan", tmp_path, one, executable=None) if mp.slicer_available() is None else None
+    if df is not None:
+        assert df["status"].str.startswith("NOT RUN").all() and "command" in df

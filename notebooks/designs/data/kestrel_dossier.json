@@ -1,6 +1,6 @@
 {
  "dossier": "Kestrel",
- "stitched": "2026-10-18T03:11",
+ "stitched": "2026-10-18T03:21",
  "reports": {
   "38_prop_lab": {
    "notebook": "38_prop_lab",
@@ -14039,7 +14039,7 @@
   "49_mini_raptor": {
    "notebook": "49_mini_raptor",
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:11",
+   "exported": "2026-10-18T03:21",
    "meta": {
     "method": "first principles and empirical correlations; no CFD, no FEA; conceptual CAD",
     "cad": {
@@ -14048,9 +14048,9 @@
       "aircraft.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/apus_mini_aircraft.stl",
       "airframe.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/apus_mini_airframe.stl",
       "bbox_mm": [
-       260.9,
+       340.2,
        500.0,
-       287.0
+       407.0
       ]
      },
      "Alcotan": {
@@ -14408,13 +14408,13 @@
      "rows": [
       {
        "_index": "layout",
-       "Apus Mini": "biplane",
+       "Apus Mini": "cruciform",
        "Alcotan": "cruciform",
        "Gavilan": "biplane"
       },
       {
        "_index": "title",
-       "Apus Mini": "economy: the quad's speed and manoeuvre for a third of the power",
+       "Apus Mini": "economy: the quad's speed and manoeuvre for a third of the power — one wing a third of a gate wide, the motors on fins",
        "Alcotan": "the chaser: sustained speed on 6S and the 5x5, the motors at the tips of a +",
        "Gavilan": "tight spaces: the racing frame's motor square in a short cell, the wing as a brake"
       },
@@ -14438,7 +14438,7 @@
       },
       {
        "_index": "chord",
-       "Apus Mini": 0.085,
+       "Apus Mini": 0.17,
        "Alcotan": 0.075,
        "Gavilan": 0.1
       },
@@ -14456,31 +14456,31 @@
       },
       {
        "_index": "motor_y",
-       "Apus Mini": 0.1715,
+       "Apus Mini": 0.14,
        "Alcotan": 0.14,
        "Gavilan": 0.0765
       },
       {
        "_index": "motor_z",
-       "Apus Mini": 0.08,
+       "Apus Mini": 0.14,
        "Alcotan": 0.14,
        "Gavilan": 0.0775
       },
       {
        "_index": "disc_gap_span",
-       "Apus Mini": 0.216,
+       "Apus Mini": 0.07099,
        "Alcotan": 0.07099,
        "Gavilan": 0.026
       },
       {
        "_index": "disc_gap_vertical",
-       "Apus Mini": 0.033,
+       "Apus Mini": 0.07099,
        "Alcotan": 0.07099,
        "Gavilan": 0.028
       },
       {
        "_index": "disc_to_pod",
-       "Apus Mini": 0.083,
+       "Apus Mini": 0.0515,
        "Alcotan": 0.0515,
        "Gavilan": null
       },
@@ -14492,7 +14492,7 @@
       },
       {
        "_index": "Re_20",
-       "Apus Mini": 116400.0,
+       "Apus Mini": 232900.0,
        "Alcotan": 102700.0,
        "Gavilan": 137000.0
       },
@@ -14562,239 +14562,341 @@
       "5-inch racing quad",
       "Apus Mini",
       "Alcotan",
-      "Gavilan"
+      "Gavilan",
+      "Apus Mini (as printed)",
+      "Alcotan (as printed)",
+      "Gavilan (as printed)"
      ],
      "rows": [
       {
        "_index": "layout",
        "5-inch racing quad": "quad",
-       "Apus Mini": "biplane",
+       "Apus Mini": "cruciform",
        "Alcotan": "cruciform",
-       "Gavilan": "biplane"
+       "Gavilan": "biplane",
+       "Apus Mini (as printed)": "cruciform",
+       "Alcotan (as printed)": "cruciform",
+       "Gavilan (as printed)": "biplane"
       },
       {
        "_index": "mass [kg]",
        "5-inch racing quad": 0.5,
-       "Apus Mini": 0.5644,
+       "Apus Mini": 0.557,
        "Alcotan": 0.5724,
-       "Gavilan": 0.5177
+       "Gavilan": 0.5237,
+       "Apus Mini (as printed)": 0.6548,
+       "Alcotan (as printed)": 0.6639,
+       "Gavilan (as printed)": 0.5897
       },
       {
        "_index": "span / gate",
        "5-inch racing quad": 0.1667,
        "Apus Mini": 0.3333,
        "Alcotan": 0.28,
-       "Gavilan": 0.2067
+       "Gavilan": 0.2067,
+       "Apus Mini (as printed)": 0.3333,
+       "Alcotan (as printed)": 0.28,
+       "Gavilan (as printed)": 0.2067
       },
       {
        "_index": "top speed [km/h]",
        "5-inch racing quad": 133.2,
-       "Apus Mini": 219.6,
+       "Apus Mini": 230.4,
        "Alcotan": 295.2,
-       "Gavilan": 223.2
+       "Gavilan": 230.4,
+       "Apus Mini (as printed)": 230.4,
+       "Alcotan (as printed)": 295.2,
+       "Gavilan (as printed)": 230.4
       },
       {
        "_index": "power at top speed [W]",
        "5-inch racing quad": 827.0,
-       "Apus Mini": 1100.0,
+       "Apus Mini": 887.6,
        "Alcotan": 1601.0,
-       "Gavilan": 1224.0
+       "Gavilan": 920.7,
+       "Apus Mini (as printed)": 889.0,
+       "Alcotan (as printed)": 1602.0,
+       "Gavilan (as printed)": 922.1
       },
       {
        "_index": "full-throttle endurance at top speed [s]",
        "5-inch racing quad": 77.31,
-       "Apus Mini": 58.11,
+       "Apus Mini": 72.03,
        "Alcotan": 51.92,
-       "Gavilan": 45.27
+       "Gavilan": 60.18,
+       "Apus Mini (as printed)": 71.92,
+       "Alcotan (as printed)": 51.88,
+       "Gavilan (as printed)": 60.09
       },
       {
        "_index": "sustained power [W]",
        "5-inch racing quad": 666.0,
        "Apus Mini": 666.0,
        "Alcotan": 865.8,
-       "Gavilan": 577.2
+       "Gavilan": 577.2,
+       "Apus Mini (as printed)": 666.0,
+       "Alcotan (as printed)": 865.8,
+       "Gavilan (as printed)": 577.2
       },
       {
        "_index": "sustained top speed [km/h]",
        "5-inch racing quad": 122.4,
-       "Apus Mini": 190.8,
+       "Apus Mini": 216.0,
        "Alcotan": 262.8,
-       "Gavilan": 187.2
+       "Gavilan": 205.2,
+       "Apus Mini (as printed)": 216.0,
+       "Alcotan (as printed)": 262.8,
+       "Gavilan (as printed)": 205.2
       },
       {
        "_index": "power at 20 m/s [W]",
        "5-inch racing quad": 168.8,
-       "Apus Mini": 48.92,
+       "Apus Mini": 33.91,
        "Alcotan": 34.47,
-       "Gavilan": 50.23
+       "Gavilan": 38.7,
+       "Apus Mini (as printed)": 36.58,
+       "Alcotan (as printed)": 38.05,
+       "Gavilan (as printed)": 41.35
       },
       {
        "_index": "Wh/km at 20 m/s",
        "5-inch racing quad": 2.345,
-       "Apus Mini": 0.6795,
+       "Apus Mini": 0.471,
        "Alcotan": 0.4787,
-       "Gavilan": 0.6976
+       "Gavilan": 0.5375,
+       "Apus Mini (as printed)": 0.508,
+       "Alcotan (as printed)": 0.5285,
+       "Gavilan (as printed)": 0.5743
       },
       {
        "_index": "least Wh/km",
        "5-inch racing quad": 2.011,
-       "Apus Mini": 0.5368,
+       "Apus Mini": 0.4498,
        "Alcotan": 0.4773,
-       "Gavilan": 0.6295
+       "Gavilan": 0.5209,
+       "Apus Mini (as printed)": 0.4971,
+       "Alcotan (as printed)": 0.5285,
+       "Gavilan (as printed)": 0.566
       },
       {
        "_index": "range at 20 m/s [km]",
        "5-inch racing quad": 7.575,
-       "Apus Mini": 26.14,
+       "Apus Mini": 37.7,
        "Alcotan": 48.23,
-       "Gavilan": 22.06
+       "Gavilan": 28.63,
+       "Apus Mini (as printed)": 34.96,
+       "Alcotan (as printed)": 43.69,
+       "Gavilan (as printed)": 26.8
       },
       {
        "_index": "best range [km]",
        "5-inch racing quad": 8.83,
-       "Apus Mini": 33.08,
+       "Apus Mini": 39.48,
        "Alcotan": 48.37,
-       "Gavilan": 24.45
+       "Gavilan": 29.55,
+       "Apus Mini (as printed)": 35.73,
+       "Alcotan (as printed)": 43.69,
+       "Gavilan (as printed)": 27.2
       },
       {
        "_index": "at [m/s]",
        "5-inch racing quad": 15.0,
-       "Apus Mini": 14.0,
+       "Apus Mini": 17.0,
        "Alcotan": 19.0,
-       "Gavilan": 16.0
+       "Gavilan": 18.0,
+       "Apus Mini (as printed)": 18.0,
+       "Alcotan (as printed)": 20.0,
+       "Gavilan (as printed)": 18.0
       },
       {
        "_index": "best endurance [min]",
        "5-inch racing quad": 13.72,
-       "Apus Mini": 46.48,
+       "Apus Mini": 45.23,
        "Alcotan": 44.53,
-       "Gavilan": 29.64
+       "Gavilan": 32.24,
+       "Apus Mini (as printed)": 38.22,
+       "Alcotan (as printed)": 38.03,
+       "Gavilan (as printed)": 28.27
       },
       {
        "_index": "stall speed [m/s]",
        "5-inch racing quad": 0.0,
-       "Apus Mini": 10.31,
+       "Apus Mini": 10.24,
        "Alcotan": 17.5,
-       "Gavilan": 11.03
+       "Gavilan": 11.09,
+       "Apus Mini (as printed)": 11.11,
+       "Alcotan (as printed)": 18.85,
+       "Gavilan (as printed)": 11.77
       },
       {
        "_index": "hover thrust / weight",
        "5-inch racing quad": 10.53,
-       "Apus Mini": 9.325,
+       "Apus Mini": 9.448,
        "Alcotan": 11.51,
-       "Gavilan": 10.17
+       "Gavilan": 10.05,
+       "Apus Mini (as printed)": 8.037,
+       "Alcotan (as printed)": 9.919,
+       "Gavilan (as printed)": 8.924
       },
       {
        "_index": "hover power [W]",
        "5-inch racing quad": 77.62,
-       "Apus Mini": 89.64,
+       "Apus Mini": 88.26,
        "Alcotan": 100.1,
-       "Gavilan": 80.93
+       "Gavilan": 82.05,
+       "Apus Mini (as printed)": 107.9,
+       "Alcotan (as printed)": 120.1,
+       "Gavilan (as printed)": 94.38
       },
       {
        "_index": "hover endurance [min]",
        "5-inch racing quad": 13.73,
-       "Apus Mini": 11.89,
+       "Apus Mini": 12.07,
        "Alcotan": 13.84,
-       "Gavilan": 11.41
+       "Gavilan": 11.26,
+       "Apus Mini (as printed)": 9.876,
+       "Alcotan (as printed)": 11.54,
+       "Gavilan (as printed)": 9.785
       },
       {
        "_index": "n at 20 m/s (banked)",
        "5-inch racing quad": 2.924,
-       "Apus Mini": 3.762,
+       "Apus Mini": 3.811,
        "Alcotan": 1.306,
-       "Gavilan": 3.29
+       "Gavilan": 3.252,
+       "Apus Mini (as printed)": 3.242,
+       "Alcotan (as printed)": 1.126,
+       "Gavilan (as printed)": 2.888
       },
       {
        "_index": "turn radius at 20 m/s (banked) [m]",
        "5-inch racing quad": 14.84,
-       "Apus Mini": 11.24,
+       "Apus Mini": 11.09,
        "Alcotan": 48.56,
-       "Gavilan": 13.01
+       "Gavilan": 13.18,
+       "Apus Mini (as printed)": 13.22,
+       "Alcotan (as printed)": 78.88,
+       "Gavilan (as printed)": 15.05
       },
       {
        "_index": "turn radius at 40 m/s (banked) [m]",
        "5-inch racing quad": 59.36,
        "Apus Mini": 20.55,
        "Alcotan": 31.82,
-       "Gavilan": 20.55
+       "Gavilan": 20.55,
+       "Apus Mini (as printed)": 20.55,
+       "Alcotan (as printed)": 37.15,
+       "Gavilan (as printed)": 20.55
       },
       {
        "_index": "least banked turn radius [m]",
        "5-inch racing quad": 0.0,
-       "Apus Mini": 10.93,
+       "Apus Mini": 10.8,
        "Alcotan": 31.39,
-       "Gavilan": 12.49
+       "Gavilan": 12.64,
+       "Apus Mini (as printed)": 12.68,
+       "Alcotan (as printed)": 36.41,
+       "Gavilan (as printed)": 14.23
       },
       {
        "_index": "brake deceleration at 20 m/s [g]",
        "5-inch racing quad": 3.547,
-       "Apus Mini": 5.997,
+       "Apus Mini": 6.753,
        "Alcotan": 4.788,
-       "Gavilan": 4.804
+       "Gavilan": 4.751,
+       "Apus Mini (as printed)": 5.758,
+       "Alcotan (as printed)": 4.507,
+       "Gavilan (as printed)": 4.261
       },
       {
        "_index": "brake 20→4 m/s distance [m]",
        "5-inch racing quad": 6.181,
-       "Apus Mini": 5.019,
+       "Apus Mini": 4.822,
        "Alcotan": 5.203,
-       "Gavilan": 5.396
+       "Gavilan": 5.409,
+       "Apus Mini (as printed)": 5.152,
+       "Alcotan (as printed)": 5.396,
+       "Gavilan (as printed)": 5.563
       },
       {
        "_index": "brake 20→4 m/s time [s]",
        "5-inch racing quad": 0.535,
-       "Apus Mini": 0.455,
+       "Apus Mini": 0.445,
        "Alcotan": 0.465,
-       "Gavilan": 0.48
+       "Gavilan": 0.48,
+       "Apus Mini (as printed)": 0.465,
+       "Alcotan (as printed)": 0.48,
+       "Gavilan (as printed)": 0.49
       },
       {
        "_index": "hover pitch-over 90° [s]",
        "5-inch racing quad": 0.08441,
-       "Apus Mini": 0.1267,
+       "Apus Mini": 0.1168,
        "Alcotan": 0.09094,
-       "Gavilan": 0.1242
+       "Gavilan": 0.1243,
+       "Apus Mini (as printed)": 0.118,
+       "Alcotan (as printed)": 0.09164,
+       "Gavilan (as printed)": 0.1252
       },
       {
        "_index": "pitch acceleration in the hover [rad/s²]",
        "5-inch racing quad": 1764.0,
-       "Apus Mini": 783.3,
+       "Apus Mini": 921.5,
        "Alcotan": 1519.0,
-       "Gavilan": 814.9
+       "Gavilan": 813.4,
+       "Apus Mini (as printed)": 902.4,
+       "Alcotan (as printed)": 1496.0,
+       "Gavilan (as printed)": 802.0
       },
       {
        "_index": "thrust / weight at 1.2 Vs",
        "5-inch racing quad": null,
-       "Apus Mini": 8.171,
+       "Apus Mini": 8.286,
        "Alcotan": 9.427,
-       "Gavilan": 8.823
+       "Gavilan": 8.714,
+       "Apus Mini (as printed)": 6.968,
+       "Alcotan (as printed)": 7.999,
+       "Gavilan (as printed)": 7.668
       },
       {
        "_index": "pull-up speed [m/s]",
        "5-inch racing quad": null,
-       "Apus Mini": 15.0,
+       "Apus Mini": 17.0,
        "Alcotan": 25.0,
-       "Gavilan": 16.0
+       "Gavilan": 18.0,
+       "Apus Mini (as printed)": 18.0,
+       "Alcotan (as printed)": 27.0,
+       "Gavilan (as printed)": 18.0
       },
       {
        "_index": "pull-up radius into the hover [m]",
        "5-inch racing quad": null,
-       "Apus Mini": 20.55,
+       "Apus Mini": 16.8,
        "Alcotan": 61.25,
-       "Gavilan": 23.6
+       "Gavilan": 20.21,
+       "Apus Mini (as printed)": 20.31,
+       "Alcotan (as printed)": 70.66,
+       "Gavilan (as printed)": 24.66
       },
       {
        "_index": "transitions",
        "5-inch racing quad": "none needed",
        "Apus Mini": "both with thrust to spare",
        "Alcotan": "both with thrust to spare",
-       "Gavilan": "both with thrust to spare"
+       "Gavilan": "both with thrust to spare",
+       "Apus Mini (as printed)": "both with thrust to spare",
+       "Alcotan (as printed)": "both with thrust to spare",
+       "Gavilan (as printed)": "both with thrust to spare"
       },
       {
        "_index": "energy [Wh]",
        "5-inch racing quad": 17.76,
        "Apus Mini": 17.76,
        "Alcotan": 23.09,
-       "Gavilan": 15.39
+       "Gavilan": 15.39,
+       "Apus Mini (as printed)": 17.76,
+       "Alcotan (as printed)": 23.09,
+       "Gavilan (as printed)": 15.39
       }
      ]
     },
@@ -14820,13 +14922,13 @@
       {
        "_index": "Apus Mini: less energy at the quad's 20 m/s",
        "target": "Wh/km at 20 m/s < half the quad's",
-       "value": "0.68 vs 2.34",
+       "value": "0.47 vs 2.34",
        "met": true
       },
       {
        "_index": "Apus Mini: comparable speed",
        "target": "sustained top speed ≥ the quad's",
-       "value": "191 vs 122 km/h",
+       "value": "216 vs 122 km/h",
        "met": true
       },
       {
@@ -14862,7 +14964,7 @@
       {
        "_index": "Gavilan: the quad's hover agility",
        "target": "pitch acceleration in the hover ≥ the quad's",
-       "value": "815 vs 1764 rad/s²",
+       "value": "813 vs 1764 rad/s²",
        "met": false
       },
       {
@@ -14874,7 +14976,7 @@
       {
        "_index": "Gavilan: flies slower than the quad can",
        "target": "stall speed ≤ 12 m/s (a hangar's straights)",
-       "value": "11.0 m/s",
+       "value": "11.1 m/s",
        "met": true
       }
      ]
@@ -14908,16 +15010,16 @@
       {
        "_index": "n at 20 m/s (banked)",
        "5-inch racing quad": 2.924,
-       "Apus Mini": 3.762,
+       "Apus Mini": 3.811,
        "Alcotan": 1.306,
-       "Gavilan": 3.29
+       "Gavilan": 3.252
       },
       {
        "_index": "turn radius at 20 m/s (banked) [m]",
        "5-inch racing quad": 14.84,
-       "Apus Mini": 11.24,
+       "Apus Mini": 11.09,
        "Alcotan": 48.56,
-       "Gavilan": 13.01
+       "Gavilan": 13.18
       },
       {
        "_index": "turn radius at 40 m/s (banked) [m]",
@@ -14929,72 +15031,72 @@
       {
        "_index": "least banked turn radius [m]",
        "5-inch racing quad": 0.0,
-       "Apus Mini": 10.93,
+       "Apus Mini": 10.8,
        "Alcotan": 31.39,
-       "Gavilan": 12.49
+       "Gavilan": 12.64
       },
       {
        "_index": "pitch acceleration in the hover [rad/s²]",
        "5-inch racing quad": 1764.0,
-       "Apus Mini": 783.3,
+       "Apus Mini": 921.5,
        "Alcotan": 1519.0,
-       "Gavilan": 814.9
+       "Gavilan": 813.4
       },
       {
        "_index": "hover pitch-over 90° [s]",
        "5-inch racing quad": 0.08441,
-       "Apus Mini": 0.1267,
+       "Apus Mini": 0.1168,
        "Alcotan": 0.09094,
-       "Gavilan": 0.1242
+       "Gavilan": 0.1243
       },
       {
        "_index": "brake deceleration at 20 m/s [g]",
        "5-inch racing quad": 3.547,
-       "Apus Mini": 5.997,
+       "Apus Mini": 6.753,
        "Alcotan": 4.788,
-       "Gavilan": 4.804
+       "Gavilan": 4.751
       },
       {
        "_index": "brake 20→4 m/s distance [m]",
        "5-inch racing quad": 6.181,
-       "Apus Mini": 5.019,
+       "Apus Mini": 4.822,
        "Alcotan": 5.203,
-       "Gavilan": 5.396
+       "Gavilan": 5.409
       },
       {
        "_index": "brake 20→4 m/s time [s]",
        "5-inch racing quad": 0.535,
-       "Apus Mini": 0.455,
+       "Apus Mini": 0.445,
        "Alcotan": 0.465,
        "Gavilan": 0.48
       },
       {
        "_index": "stall speed [m/s]",
        "5-inch racing quad": 0.0,
-       "Apus Mini": 10.31,
+       "Apus Mini": 10.24,
        "Alcotan": 17.5,
-       "Gavilan": 11.03
+       "Gavilan": 11.09
       },
       {
        "_index": "thrust / weight at 1.2 Vs",
        "5-inch racing quad": null,
-       "Apus Mini": 8.171,
+       "Apus Mini": 8.286,
        "Alcotan": 9.427,
-       "Gavilan": 8.823
+       "Gavilan": 8.714
       },
       {
        "_index": "pull-up speed [m/s]",
        "5-inch racing quad": null,
-       "Apus Mini": 15.0,
+       "Apus Mini": 17.0,
        "Alcotan": 25.0,
-       "Gavilan": 16.0
+       "Gavilan": 18.0
       },
       {
        "_index": "pull-up radius into the hover [m]",
        "5-inch racing quad": null,
-       "Apus Mini": 20.55,
+       "Apus Mini": 16.8,
        "Alcotan": 61.25,
-       "Gavilan": 23.6
+       "Gavilan": 20.21
       },
       {
        "_index": "transitions",
@@ -15013,9 +15115,9 @@
       {
        "_index": "hover roll 90° [s]",
        "5-inch racing quad": null,
-       "Apus Mini": 0.1417,
+       "Apus Mini": 0.1121,
        "Alcotan": 0.09919,
-       "Gavilan": 0.1257
+       "Gavilan": 0.1258
       }
      ]
     },
@@ -15040,59 +15142,59 @@
       "rows": [
        {
         "_index": "power at 20 m/s [W]",
-        "as modelled": 48.92,
-        "Cd0 + 30 %": 60.35,
-        "cl max − 10 %": 48.92,
-        "mass + 7 % (structure + 20 %)": 49.62,
-        "all three": 61.05
+        "as modelled": 33.91,
+        "Cd0 + 30 %": 40.2,
+        "cl max − 10 %": 33.91,
+        "mass + 7 % (structure + 20 %)": 34.92,
+        "all three": 41.21
        },
        {
         "_index": "Wh/km at 20 m/s",
-        "as modelled": 0.6795,
-        "Cd0 + 30 %": 0.8382,
-        "cl max − 10 %": 0.6795,
-        "mass + 7 % (structure + 20 %)": 0.6892,
-        "all three": 0.8479
+        "as modelled": 0.471,
+        "Cd0 + 30 %": 0.5583,
+        "cl max − 10 %": 0.471,
+        "mass + 7 % (structure + 20 %)": 0.4851,
+        "all three": 0.5723
        },
        {
         "_index": "best range [km]",
-        "as modelled": 33.08,
-        "Cd0 + 30 %": 29.01,
-        "cl max − 10 %": 33.08,
-        "mass + 7 % (structure + 20 %)": 31.88,
-        "all three": 27.92
+        "as modelled": 39.48,
+        "Cd0 + 30 %": 34.71,
+        "cl max − 10 %": 39.48,
+        "mass + 7 % (structure + 20 %)": 37.87,
+        "all three": 33.29
        },
        {
         "_index": "sustained top speed [km/h]",
-        "as modelled": 190.8,
-        "Cd0 + 30 %": 180.0,
-        "cl max − 10 %": 190.8,
-        "mass + 7 % (structure + 20 %)": 190.8,
-        "all three": 180.0
+        "as modelled": 216.0,
+        "Cd0 + 30 %": 208.8,
+        "cl max − 10 %": 216.0,
+        "mass + 7 % (structure + 20 %)": 216.0,
+        "all three": 208.8
        },
        {
         "_index": "stall speed [m/s]",
-        "as modelled": 10.31,
-        "Cd0 + 30 %": 10.31,
-        "cl max − 10 %": 10.87,
-        "mass + 7 % (structure + 20 %)": 10.67,
-        "all three": 11.24
+        "as modelled": 10.24,
+        "Cd0 + 30 %": 10.24,
+        "cl max − 10 %": 10.8,
+        "mass + 7 % (structure + 20 %)": 10.6,
+        "all three": 11.17
        },
        {
         "_index": "turn radius at 20 m/s (banked) [m]",
-        "as modelled": 11.24,
-        "Cd0 + 30 %": 11.24,
-        "cl max − 10 %": 12.61,
-        "mass + 7 % (structure + 20 %)": 12.1,
-        "all three": 13.58
+        "as modelled": 11.09,
+        "Cd0 + 30 %": 11.09,
+        "cl max − 10 %": 12.43,
+        "mass + 7 % (structure + 20 %)": 11.93,
+        "all three": 13.39
        },
        {
         "_index": "hover power [W]",
-        "as modelled": 89.64,
-        "Cd0 + 30 %": 89.64,
-        "cl max − 10 %": 89.64,
-        "mass + 7 % (structure + 20 %)": 97.01,
-        "all three": 97.01
+        "as modelled": 88.26,
+        "Cd0 + 30 %": 88.26,
+        "cl max − 10 %": 88.26,
+        "mass + 7 % (structure + 20 %)": 95.54,
+        "all three": 95.54
        }
       ]
      },
@@ -15192,59 +15294,59 @@
       "rows": [
        {
         "_index": "power at 20 m/s [W]",
-        "as modelled": 50.23,
-        "Cd0 + 30 %": 60.6,
-        "cl max − 10 %": 50.23,
-        "mass + 7 % (structure + 20 %)": 51.62,
-        "all three": 62.0
+        "as modelled": 38.7,
+        "Cd0 + 30 %": 45.55,
+        "cl max − 10 %": 38.7,
+        "mass + 7 % (structure + 20 %)": 40.13,
+        "all three": 46.98
        },
        {
         "_index": "Wh/km at 20 m/s",
-        "as modelled": 0.6976,
-        "Cd0 + 30 %": 0.8417,
-        "cl max − 10 %": 0.6976,
-        "mass + 7 % (structure + 20 %)": 0.717,
-        "all three": 0.8611
+        "as modelled": 0.5375,
+        "Cd0 + 30 %": 0.6327,
+        "cl max − 10 %": 0.5375,
+        "mass + 7 % (structure + 20 %)": 0.5574,
+        "all three": 0.6525
        },
        {
         "_index": "best range [km]",
-        "as modelled": 24.45,
-        "Cd0 + 30 %": 21.51,
-        "cl max − 10 %": 24.45,
-        "mass + 7 % (structure + 20 %)": 23.33,
-        "all three": 20.51
+        "as modelled": 29.55,
+        "Cd0 + 30 %": 25.96,
+        "cl max − 10 %": 29.55,
+        "mass + 7 % (structure + 20 %)": 28.23,
+        "all three": 24.81
        },
        {
         "_index": "sustained top speed [km/h]",
-        "as modelled": 187.2,
-        "Cd0 + 30 %": 172.8,
-        "cl max − 10 %": 187.2,
-        "mass + 7 % (structure + 20 %)": 187.2,
-        "all three": 172.8
+        "as modelled": 205.2,
+        "Cd0 + 30 %": 194.4,
+        "cl max − 10 %": 205.2,
+        "mass + 7 % (structure + 20 %)": 205.2,
+        "all three": 194.4
        },
        {
         "_index": "stall speed [m/s]",
-        "as modelled": 11.03,
-        "Cd0 + 30 %": 11.03,
-        "cl max − 10 %": 11.62,
-        "mass + 7 % (structure + 20 %)": 11.41,
-        "all three": 12.02
+        "as modelled": 11.09,
+        "Cd0 + 30 %": 11.09,
+        "cl max − 10 %": 11.69,
+        "mass + 7 % (structure + 20 %)": 11.47,
+        "all three": 12.09
        },
        {
         "_index": "turn radius at 20 m/s (banked) [m]",
-        "as modelled": 13.01,
-        "Cd0 + 30 %": 13.01,
-        "cl max − 10 %": 14.63,
-        "mass + 7 % (structure + 20 %)": 14.02,
-        "all three": 15.8
+        "as modelled": 13.18,
+        "Cd0 + 30 %": 13.18,
+        "cl max − 10 %": 14.82,
+        "mass + 7 % (structure + 20 %)": 14.21,
+        "all three": 16.01
        },
        {
         "_index": "hover power [W]",
-        "as modelled": 80.93,
-        "Cd0 + 30 %": 80.93,
-        "cl max − 10 %": 80.93,
-        "mass + 7 % (structure + 20 %)": 87.69,
-        "all three": 87.69
+        "as modelled": 82.05,
+        "Cd0 + 30 %": 82.05,
+        "cl max − 10 %": 82.05,
+        "mass + 7 % (structure + 20 %)": 88.89,
+        "all three": 88.89
        }
       ]
      }
@@ -15280,6 +15382,250 @@
       {
        "_index": "quad CdA",
        "relative": 0.3
+      }
+     ]
+    },
+    "biplane question": {
+     "index": [
+      "layout",
+      "span [m]",
+      "span / gate",
+      "mass [kg]",
+      "wing area [m²]",
+      "aspect ratio",
+      "induced k",
+      "Cd0 at 20 m/s",
+      "CdA at 20 m/s [cm²]",
+      "L/D at 20 m/s",
+      "power at 20 m/s [W]",
+      "Wh/km at 20 m/s",
+      "best range [km]",
+      "stall speed [m/s]",
+      "turn radius at 20 m/s (banked) [m]",
+      "pitch acceleration in the hover [rad/s²]",
+      "sustained top speed [km/h]",
+      "disc rules",
+      "parts to build"
+     ],
+     "columns": [
+      "Apus Mini (one wing, as designed)",
+      "Gavilan (biplane, as designed)",
+      "Apus as a biplane cell",
+      "Apus with the span a gate forbids",
+      "Gavilan on one wing (cruciform)"
+     ],
+     "rows": [
+      {
+       "_index": "layout",
+       "Apus Mini (one wing, as designed)": "cruciform",
+       "Gavilan (biplane, as designed)": "biplane",
+       "Apus as a biplane cell": "biplane",
+       "Apus with the span a gate forbids": "cruciform",
+       "Gavilan on one wing (cruciform)": "cruciform"
+      },
+      {
+       "_index": "span [m]",
+       "Apus Mini (one wing, as designed)": 0.5,
+       "Gavilan (biplane, as designed)": 0.31,
+       "Apus as a biplane cell": 0.5,
+       "Apus with the span a gate forbids": 0.71,
+       "Gavilan on one wing (cruciform)": 0.36
+      },
+      {
+       "_index": "span / gate",
+       "Apus Mini (one wing, as designed)": 0.3333,
+       "Gavilan (biplane, as designed)": 0.2067,
+       "Apus as a biplane cell": 0.3333,
+       "Apus with the span a gate forbids": 0.4733,
+       "Gavilan on one wing (cruciform)": 0.24
+      },
+      {
+       "_index": "mass [kg]",
+       "Apus Mini (one wing, as designed)": 0.557,
+       "Gavilan (biplane, as designed)": 0.5237,
+       "Apus as a biplane cell": 0.5704,
+       "Apus with the span a gate forbids": 0.5613,
+       "Gavilan on one wing (cruciform)": 0.5101
+      },
+      {
+       "_index": "wing area [m²]",
+       "Apus Mini (one wing, as designed)": 0.085,
+       "Gavilan (biplane, as designed)": 0.062,
+       "Apus as a biplane cell": 0.085,
+       "Apus with the span a gate forbids": 0.0852,
+       "Gavilan on one wing (cruciform)": 0.0612
+      },
+      {
+       "_index": "aspect ratio",
+       "Apus Mini (one wing, as designed)": 2.941,
+       "Gavilan (biplane, as designed)": 1.55,
+       "Apus as a biplane cell": 2.941,
+       "Apus with the span a gate forbids": 5.917,
+       "Gavilan on one wing (cruciform)": 2.118
+      },
+      {
+       "_index": "induced k",
+       "Apus Mini (one wing, as designed)": 0.1203,
+       "Gavilan (biplane, as designed)": 0.1404,
+       "Apus as a biplane cell": 0.08135,
+       "Apus with the span a gate forbids": 0.05978,
+       "Gavilan on one wing (cruciform)": 0.167
+      },
+      {
+       "_index": "Cd0 at 20 m/s",
+       "Apus Mini (one wing, as designed)": 0.02489,
+       "Gavilan (biplane, as designed)": 0.03721,
+       "Apus as a biplane cell": 0.03081,
+       "Apus with the span a gate forbids": 0.02625,
+       "Gavilan on one wing (cruciform)": 0.03061
+      },
+      {
+       "_index": "CdA at 20 m/s [cm²]",
+       "Apus Mini (one wing, as designed)": 21.16,
+       "Gavilan (biplane, as designed)": 23.07,
+       "Apus as a biplane cell": 26.19,
+       "Apus with the span a gate forbids": 22.36,
+       "Gavilan on one wing (cruciform)": 18.74
+      },
+      {
+       "_index": "L/D at 20 m/s",
+       "Apus Mini (one wing, as designed)": 7.91,
+       "Gavilan (biplane, as designed)": 6.348,
+       "Apus as a biplane cell": 7.324,
+       "Apus with the span a gate forbids": 8.676,
+       "Gavilan on one wing (cruciform)": 6.781
+      },
+      {
+       "_index": "power at 20 m/s [W]",
+       "Apus Mini (one wing, as designed)": 33.91,
+       "Gavilan (biplane, as designed)": 38.7,
+       "Apus as a biplane cell": 36.87,
+       "Apus with the span a gate forbids": 31.65,
+       "Gavilan on one wing (cruciform)": 35.82
+      },
+      {
+       "_index": "Wh/km at 20 m/s",
+       "Apus Mini (one wing, as designed)": 0.471,
+       "Gavilan (biplane, as designed)": 0.5375,
+       "Apus as a biplane cell": 0.5121,
+       "Apus with the span a gate forbids": 0.4395,
+       "Gavilan on one wing (cruciform)": 0.4975
+      },
+      {
+       "_index": "best range [km]",
+       "Apus Mini (one wing, as designed)": 39.48,
+       "Gavilan (biplane, as designed)": 29.55,
+       "Apus as a biplane cell": 39.42,
+       "Apus with the span a gate forbids": 46.04,
+       "Gavilan on one wing (cruciform)": 31.09
+      },
+      {
+       "_index": "stall speed [m/s]",
+       "Apus Mini (one wing, as designed)": 10.24,
+       "Gavilan (biplane, as designed)": 11.09,
+       "Apus as a biplane cell": 10.37,
+       "Apus with the span a gate forbids": 10.27,
+       "Gavilan on one wing (cruciform)": 11.02
+      },
+      {
+       "_index": "turn radius at 20 m/s (banked) [m]",
+       "Apus Mini (one wing, as designed)": 11.09,
+       "Gavilan (biplane, as designed)": 13.18,
+       "Apus as a biplane cell": 11.37,
+       "Apus with the span a gate forbids": 11.15,
+       "Gavilan on one wing (cruciform)": 12.98
+      },
+      {
+       "_index": "pitch acceleration in the hover [rad/s²]",
+       "Apus Mini (one wing, as designed)": 921.5,
+       "Gavilan (biplane, as designed)": 813.4,
+       "Apus as a biplane cell": 781.5,
+       "Apus with the span a gate forbids": 1058.0,
+       "Gavilan on one wing (cruciform)": 874.8
+      },
+      {
+       "_index": "sustained top speed [km/h]",
+       "Apus Mini (one wing, as designed)": 216.0,
+       "Gavilan (biplane, as designed)": 205.2,
+       "Apus as a biplane cell": 212.4,
+       "Apus with the span a gate forbids": 219.6,
+       "Gavilan on one wing (cruciform)": 212.4
+      },
+      {
+       "_index": "disc rules",
+       "Apus Mini (one wing, as designed)": "all hold",
+       "Gavilan (biplane, as designed)": "all hold",
+       "Apus as a biplane cell": "all hold",
+       "Apus with the span a gate forbids": "all hold",
+       "Gavilan on one wing (cruciform)": "the discs on one wing are 14 mm apart; the upper and lower discs are 14 mm apart: two 5-inch discs need 142 mm; the discs are 14 mm from the pod"
+      },
+      {
+       "_index": "parts to build",
+       "Apus Mini (one wing, as designed)": "pod, 1 wing, 2 fins, 4 mounts",
+       "Gavilan (biplane, as designed)": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts",
+       "Apus as a biplane cell": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts",
+       "Apus with the span a gate forbids": "pod, 1 wing, 2 fins, 4 mounts",
+       "Gavilan on one wing (cruciform)": "pod, 1 wing, 2 fins, 4 mounts"
+      }
+     ]
+    },
+    "as built": {
+     "index": [
+      "printed parts [g]",
+      "carbon tubes [g]",
+      "structure as built [g]",
+      "structure in the budget [g]",
+      "difference [g]",
+      "verdict",
+      "source"
+     ],
+     "columns": [
+      "Apus Mini",
+      "Alcotan",
+      "Gavilan"
+     ],
+     "rows": [
+      {
+       "_index": "printed parts [g]",
+       "Apus Mini": 234.4,
+       "Alcotan": 205.0,
+       "Gavilan": 188.7
+      },
+      {
+       "_index": "carbon tubes [g]",
+       "Apus Mini": 18.4,
+       "Alcotan": 16.8,
+       "Gavilan": 19.14
+      },
+      {
+       "_index": "structure as built [g]",
+       "Apus Mini": 252.8,
+       "Alcotan": 221.8,
+       "Gavilan": 207.8
+      },
+      {
+       "_index": "structure in the budget [g]",
+       "Apus Mini": 155.0,
+       "Alcotan": 130.3,
+       "Gavilan": 141.8
+      },
+      {
+       "_index": "difference [g]",
+       "Apus Mini": 97.78,
+       "Alcotan": 91.53,
+       "Gavilan": 66.05
+      },
+      {
+       "_index": "verdict",
+       "Apus Mini": "the budget is light: the as-printed rows below carry the built mass",
+       "Alcotan": "the budget is light: the as-printed rows below carry the built mass",
+       "Gavilan": "the budget is light: the as-printed rows below carry the built mass"
+      },
+      {
+       "_index": "source",
+       "Apus Mini": "Mellonia (PrusaSlicer)",
+       "Alcotan": "Mellonia (PrusaSlicer)",
+       "Gavilan": "Mellonia (PrusaSlicer)"
       }
      ]
     }
@@ -16612,7 +16958,7 @@
   },
   "49_mini_raptor": {
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:11",
+   "exported": "2026-10-18T03:21",
    "sections": [
     "drives",
     "racing quad",
@@ -16621,7 +16967,9 @@
     "targets",
     "manoeuvre",
     "sensitivity",
-    "uncertainty"
+    "uncertainty",
+    "biplane question",
+    "as built"
    ]
   },
   "47_kestrel_benchmark": {
