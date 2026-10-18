@@ -127,3 +127,16 @@ kit vs ≈ €780 for three specialists.
 Weakest point: whether a ring on a 5-inch turns a 6 m/s glancing hit into a bounce or a tumble (ring stiffness,
 hit location) — the first thing to test in MuJoCo, since contact decides these courses; and the rails must be
 quick-change without loosening or nobody swaps between heats.
+
+## 9. Is the wing worth money for the outdoor races? No.
+
+The wing buys nothing for acceleration, braking (thrust/mass; it adds ~60 g ≈ 11 % mass ≈ 5 % slower legs),
+corners (6 m/s corner speed, under a quarter of the weight lifted) or top speed (rotors already ~70° tilted).
+It buys cruise power: at 18 m/s the 0.8 × 0.14 plank carries the weight and cruise power falls ~300 W → ~150 W.
+That saving has nowhere to go: sustained need 495 W vs 866 W available, 2.2 Wh/lap vs 23 Wh pack.
+Cashed as a smaller pack: ~20 s/lap above 15 m/s × 150 W ≈ 0.8 Wh/lap ≈ 2.5 Wh per 3-lap race ≈ 60 g of LiPo,
+which is the wing's own mass. A wash at 3 laps, a win from ~5 laps, clear past ~8 laps / 4 km, legs > 100 m,
+or rules that fix the pack small.
+
+Decision: the outdoor race kit is the Apus kit alone (6-inch props, lightest pack). The W kit is removed from
+the race programme and kept only as the open-range derivative, to be built when such a race exists.
