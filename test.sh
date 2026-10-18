@@ -59,7 +59,7 @@ assert r.returncode == 0, (r.stderr or r.stdout)[-300:]
 print('via', e.bashrc or ' '.join(e.prefix) or 'PATH')"
 optional sections "$PY" -c "import neuralfoil; print('neuralfoil', getattr(neuralfoil, '__version__', ''), '(Zephyr section polars; or xfoil on the PATH)')"
 check mujoco      "$PY" -c "import mujoco; print('mujoco', mujoco.__version__, '(physics engine of Chiron)')"
-for tool in dedalus talos aeromant mellonia boreas chronos chiron atropos zephyr; do
+for tool in dedalus talos aeromant mellonia boreas chronos chiron atropos zephyr hyperion; do
   check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
 done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"

@@ -81,3 +81,35 @@ def test_kestrel_fast_compares_two_candidates():
     v = kfa.verdicts(df)
     assert "targets met" in v.columns and int(v.loc["base", "targets met"]) >= 8
     assert abs(kfa.ratios(df, "base").loc["base"] - 1).max() < 1e-12
+
+
+def test_interference_measure_and_monoplane_equivalents():
+    """The analytic wing-interference measure: the factor is below 1 and rises with the gap, Prandtl's σ falls with it,
+    the pair beats the equal-span equal-area monoplane on induced drag, and the equivalents are consistent."""
+    import kestrel_flight as kf
+    r = kf.interference()
+    d, sw, eq = r["design"], r["sweep"], r["equivalents"]
+    assert 0.8 < d["lift interference factor"] < 0.95 and 0.3 < d["Prandtl σ"] < 0.5
+    assert 0.6 < d["induced drag vs monoplane of the same span and area, lattice"] < 0.8
+    assert sw["lift interference factor"].is_monotonic_increasing and sw["Prandtl σ"].is_monotonic_decreasing
+    assert abs(kf.prandtl_sigma(0.0) - 1 / 1.05) < 1e-9
+    assert eq.loc["the pair as built", "area [m²]"] == 2 * eq.loc["monoplane, same span and chord (one wing)", "area [m²]"]
+    assert eq.loc["monoplane with the pair's induced drag, same area", "span [m]"] > eq.loc["the pair as built", "span [m]"]
+    assert sw["design"].sum() == 1
+
+
+def test_other_machines_scaled_to_kestrel_size():
+    """kestrel_compare: Kestrel three ways and the design files on disk, all at one mass and speed; the sentences."""
+    import kestrel_compare as kcm
+    import kestrel_campaigns as kcp
+    ms = kcm.machines()
+    assert {"falco", "nisus_plus", "merlin", "peregrine"} <= set(ms)
+    df = kcm.compare(kcp.params("4Q-2"))
+    assert len(df) == 3 + len(ms) and df.index[0].startswith("Kestrel biplane")
+    bi, m2c, one = df.iloc[0], df.iloc[1], df.iloc[2]
+    assert abs(bi["area scaled [m²]"] - m2c["area scaled [m²]"]) < 1e-9 and abs(one["area scaled [m²]"] * 2 - bi["area scaled [m²]"]) < 1e-9
+    assert bi["k = CDi/CL²"] < m2c["k = CDi/CL²"]                              # the biplane's induced-drag edge over the thick monoplane
+    assert one["stall speed [m/s]"] > bi["stall speed [m/s]"] * 1.3            # the second wing is the stall speed
+    assert (df["span scaled [m]"].iloc[3:] > 1.1).all()                         # the monoplanes buy their L/D with span
+    v = kcm.verdict(df)
+    assert len(v) == 4 and "span" in v[2]

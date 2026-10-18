@@ -1,6 +1,7 @@
 """The Kestrel campaigns and what the notebook may do with their runs: compatibility, missing prerequisites,
 imported legacy results, prepare-only smoke, and the guarantee that the notebook launches no solver."""
 import json
+import math
 import re
 import subprocess
 import sys
@@ -24,6 +25,8 @@ def test_campaign_catalogue_sizes():
     assert len(kcp.cfd_specs("4Q-2", "sweep")) == 10 and len(kcp.cfd_specs("4Q-2", "stall")) == 5 and len(kcp.cfd_specs("4Q-2", "sweep-fine")) == 13
     cruise = kcp.cfd_specs("4Q-2", "cruise")
     assert len(cruise) == 2 and all(s["props"] for s in cruise.values())
+    inter = kcp.cfd_specs("4Q-2", "interference")
+    assert len(inter) == 9 and {s["planform"] for s in inter.values()} == {"single", "pair", "monoplane"} and not any(s["props"] for s in inter.values())
     with pytest.raises(ValueError):
         kcp.cfd_specs("4Q-2", "everything")
     assert runkit.select_cases(list(kcp.cfd_specs("4Q-1", "sweep")), "α 10°,α 15°") == ["bare airframe, α 10°, 10 m/s", "bare airframe, α 15°, 10 m/s"]
@@ -201,3 +204,27 @@ def test_library_chapters_and_prerequisites(tmp_path, monkeypatch, fp2):
     assert "✘" in library.tree() or "✔" in library.tree()
     runs = library.runs_of("kestrel", "airframe-sweep")
     assert runs and runs[0]["book"] == "kestrel" and runs[0]["chapter"] == "airframe-sweep" and runs[0]["code"] == "K1" and runs[0]["variant"] == "4Q-2"
+
+
+def test_interference_chapter_planforms_and_factors(tmp_path):
+    """K12: the three planform STLs build (the pair twice one wing's size), the case prepares with the planform's own
+    reference area, the factor fit reads lift loss and the k ratio off synthetic coefficients, and an empty summary
+    carries the block as NOT RUN."""
+    import kestrel_cfd as kcfd
+    from vegeta import aeromant
+    p, veh = kcp.params("4Q-2"), kcp.vehicle("4Q-2")
+    sizes = {pf: kcfd.planform_stl(tmp_path / "stl", pf, 4.0, veh.x_cg, p).stat().st_size for pf in ("single", "pair", "monoplane")}
+    assert 1.8 * sizes["single"] < sizes["pair"] < 2.2 * sizes["single"]
+    specs = kcp.cfd_specs("4Q-2", "interference")
+    c1 = kcp.cfd_case("one wing alone, α 4°, 10 m/s", specs["one wing alone, α 4°, 10 m/s"], tmp_path, variant="4Q-2", quality="screening", veh=veh, env=aeromant.OpenFOAMEnvironment(env={}))
+    c2 = kcp.cfd_case("the wing pair, α 4°, 10 m/s", specs["the wing pair, α 4°, 10 m/s"], tmp_path, variant="4Q-2", quality="screening", veh=veh, env=aeromant.OpenFOAMEnvironment(env={}))
+    assert abs(c2.parameters["reference_area"] - 2 * c1.parameters["reference_area"]) < 1e-9
+    rows = {f"{pf} {a}": {"planform": pf, "alpha_deg": a, "status": "solved", "converged": True, "CL": cla * math.radians(a), "CD": 0.02 + k * (cla * math.radians(a)) ** 2}
+            for pf, k, cla in (("single", 0.043, 4.58), ("pair", 0.059, 4.10), ("monoplane", 0.084, 3.58)) for a in (0, 4, 8)}
+    f = kcfd.interference_factors(rows)
+    assert f["label"] == "validated" and abs(f["factors"]["lift interference factor (mean over α > 0)"] - 4.10 / 4.58) < 1e-6
+    assert abs(f["factors"]["induced drag vs monoplane of the same span and area"] - 0.059 / 0.084) < 1e-6
+    rows["pair 8"]["converged"] = False
+    assert kcfd.interference_factors(rows)["label"] == "indicative"
+    summ = kcp.cfd_summary(variant="4Q-2", campaign="interference", quality="screening", specs=specs, records={}, veh=veh, run_root=tmp_path)
+    assert summ["interference"]["label"] == "NOT RUN" and summ["counts"]["n"] == 9 and summ["maps"] == {}

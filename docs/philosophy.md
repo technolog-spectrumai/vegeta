@@ -22,7 +22,9 @@ Vegeta is a collection of small Unix/Python engineering tools, not one large app
   directory (`manifest.json`, `status.json`, a continuously flushed `run.log`, `summary.json` only when complete).
 - A notebook may *require* a workflow's output and must then name the run it reads, check its state and its
   design fingerprint, and say exactly which command produces it when it is missing. It never launches a solver
-  silently — not behind an import, a plot or a loader — and never regenerates a missing analysis on its own.
+  silently — not behind an import, a plot or a loader — and never regenerates a missing analysis on its own. The
+  opt-in exception is a notebook flagged `yanus_auto` (`docs/yanus.md` § 16): its gate produces the missing runs in
+  screening quality, loudly, before the notebook starts.
 - Missing, stale, incompatible or failed results are **NOT RUN** in the notebook, with the analytical estimate
   visible and labelled; they are never replaced by an invented number. See `workflows/README.md`.
 

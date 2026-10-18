@@ -24,8 +24,10 @@ def test_no_other_vegeta_imports():
     assert bad == []
 
 
-def test_no_process_launch_outside_the_version_probe():
-    bad = [f"{p.name}: {n}" for p in SRC.rglob("*.py") if p.name != "needs.py" for n in _imports(p) if n in ("subprocess", "multiprocessing", "pty")]
+def test_no_process_launch_outside_the_version_probe_and_auto_mode():
+    """Yanus guards: only ``needs.py`` (the version probe) and ``auto.py`` (auto mode, the one face that drives) may
+    start a process."""
+    bad = [f"{p.name}: {n}" for p in SRC.rglob("*.py") if p.name not in ("needs.py", "auto.py") for n in _imports(p) if n in ("subprocess", "multiprocessing", "pty")]
     for p in SRC.rglob("*.py"):
         for node in ast.walk(ast.parse(p.read_text())):
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "os" and \

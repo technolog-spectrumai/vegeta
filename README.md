@@ -14,6 +14,7 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
 | **Atropos** | laser-cut flat parts | nothing (SVG + GRBL writers) | section + explicit rib spec, sheet and laser settings → ribs, nested sheets, SVG, G-code, time, material |
 | **Zephyr** | 2-D wing sections | NeuralFoil (optional) / XFOIL (optional) | NACA or .dat section + Re, n_crit, flap → thin-airfoil numbers, polar (cl, cd, cm, confidence), flap effectiveness, JSON |
+| **Hyperion** | optics: beams, lenses, mirrors, resonators, a laser's gain | nothing (numpy) | materials + ABCD elements + a Gaussian beam → spots, waists, cavity mode and stability, FSR/finesse/linewidth; a pumped rod → threshold, slope, output, thermal lens; JSON |
 | **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
 | **Fidia** | AI modelling | Dedalus + `vegeta-ai` (Claude) | prompt → checked 3D model (glTF/GLB, OBJ, STEP); design copilot; campaigns |
 
@@ -54,6 +55,7 @@ sweeps, then a GUI — see [`todo.md`](todo.md).
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
 | Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
 | Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
+| Hyperion | `vegeta hyperion materials/material/lens/beam/cavity/laser/fibre/fibre-laser` | Sellmeier vs the catalogues, thick lens vs the lensmaker and Hecht's principal planes (1e-12), Gaussian lens formula (Self) and its inverse (1e-9), five cavities vs Kogelnik & Li (1e-9), ring = unfolded linear, stability edges, Nd:YAG threshold/slope/Rigrod coupler (±0.002); fibres: Bessel values (1e-9), SMF-28's MFD (±0.2 µm), Rigrod's P⁺P⁻ invariant (1e-6), the quantum limit, energy conservation | [docs/hyperion.md](docs/hyperion.md) | `46_svarog`, `47_svarog_iii` |
 | Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
 | Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
@@ -90,6 +92,56 @@ against blade and hull modes, blade response and fatigue, the noise spectrum, an
 evaluated side by side, with a recommendation; then the recommendation (7 blades in nickel-aluminium bronze) made
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
+
+`46_svarog` (branch `dev_svarog`) is **Svarog**, the whole laser series in one notebook, from the rod to the industrial device. Part I, a CW diode-end-pumped Nd:YAG laser designed on **Hyperion** (`designs/svarog.py`):
+the 808 nm fibre-coupled pump imaged onto a Ø3 × 10 mm rod and its effective radius inside it, threshold, slope, output and
+the optimum coupler (Rigrod), the pump's thermal lens, four cavity revisions (the textbook plano–concave, which the lens
+closes before the design pump; a compact one with the HR on the rod; a folded one with an astigmatic fold mirror; a zone-II
+cavity that the lens opens above 13 W) with their stability windows over the pump and the self-consistent power curves,
+Magni's rule on what the mode can be, the beam out through the coupler's substrate and a delivery train to a 17 µm work
+spot; the record in `designs/data/svarog_design.json` and `reports/46_svarog.json`. Part II is **Svarog-fiber**,
+the fibre twin (`designs/svarog_fiber.py`, Hyperion's `fibre` module): a 10/125 Yb double-clad fibre between two Bragg
+gratings pumped at 976 nm — the fibres' modes and bend loss, the pump and both signal waves along the fibre from the rate
+equations, the length and coupler choices, a counter-pumped 20/125 amplifier stage, the coil radius, SRS and the core's
+temperature per cooling, the beam out on the same delivery train, and the rod and the fibre side by side at 20 W from
+46's record. Parts III–IV are **Svarog-industrial**, the target of the series, with the 1 kW and the 2 kW devices analysed one after the other in every topic on one code path (`si.Device`): the fibre MOPA scaled to 1 kW at the
+workpiece (a 30/250 power stage, its heat budget, the 50 µm process fibre and the 100/200 welding head), the keyhole
+thresholds, penetration curves and process windows in mild steel and aluminium (`hyperion.welding`); then
+its guard: the stray beam at 20 m (raw collimated, diverging, a keyhole reflection) against black, clear and
+laser-grade polycarbonate, brick, aluminium and steel — closed-form screening, a steady solve, and the enthalpy/ablation
+transient (`hyperion.thermal`) only where it decides, with verdicts per IEC 60825-4 class; the collimated beam against
+distance on a 2 mm polycarbonate sheet, what the air takes (`hyperion.atmosphere`), and book **fenix**'s finite-element
+runs (FEniCSx in its own interpreter, `workflows/fenix/`) against the cell model. The physics and the solvers:
+[docs/svarog_physics.md](docs/svarog_physics.md), [docs/svarog_solvers.md](docs/svarog_solvers.md). The 2 kW is carried through every topic two ways —
+two 1 kW modules beam-combined into a 100 µm fibre (M² 18, a 200 µm spot) or one stage on 400 W pump modules (2 kW through
+one 30/250 fibre, SRS margin 3.5×) — with the welds at 2 kW and the guard re-screened (1.5 mm steel still holds, at 1440 K).
+What comes next, in order, is [`svarog_todo.md`](svarog_todo.md).
+
+`47_svarog_iii` (branch `dev_svarog_iii`) is **Svarog III**, four commercial 1070 nm fibre lasers — IPG YLS-SM, Coherent
+FL2000C and FL2000CSM, nLIGHT WFL-3000 — on the same Hyperion physics (`designs/svarog_commercial.py`): their published limits
+verbatim with the unknowns kept (`designs/data/svarog_commercial_specs.json`), the beam each implies (BPP ⇄ M², the fibre by
+étendue, the core imaged or the embedded Gaussian through Svarog's head, the collimated beam's growth), the energy balance as
+bounded intervals with a sensitivity table, the thin-sheet welds in steel and aluminium at 1, 2, 3 mm (the keyhole threshold,
+the speed with a margin, the thin-plate Rosenthal field — pool, solidification, t8/5 or cooling rate, HAZ, a distortion index —
+all unvalidated and said so), and a shielding assessment at 5–100 m against polycarbonate, aluminium and wood in three surfaces
+each (60 base cases, 180 with the variants, the reflected beam too): the MPE, the NOHD, the OD ladder, the transmitted and
+reflected shares, non-destructive thermal bounds, wood's fire risk, seams and degraded sheets, and — recorded by a script, as 46's
+cell model — how long PC, steel and aluminium sheets at 1–3 mm stand the beam at each distance, with the welding speed, the
+cost per metre of weld, the shield an escape needs per thousand euro of source and the escape seconds per euro of panel on sourced
+economic parameters (listings, Eurostat) — and verdicts PASS / FAIL /
+INCOMPLETE in which PASS needs certified evidence, so none appears. Book fenix's F4 `shield-steady` runs the same panels by
+finite elements on request; the record is `reports/47_svarog_iii.json`.
+
+`48_kimla` (branch `dev_svarog_iii`) takes **KIMLA's fibre-laser cutting machines** (Finecut, Flashcut, Powercut, Extremecut — up to
+6, 12, 20, 30 kW as found; the maker's documents unreachable from the build environment, their URLs recorded) as hypothetical
+welding platforms at 3, 6, 12, 20 and 30 kW (`designs/kimla.py`): each tier with its own multimode process fibre and BPP range
+through one welding head; carbon steel, stainless and aluminium at 1, 2, 3 mm in butt and fillet joints — the regime, the speed the
+energy balance asks and the humping/feed cap that holds it (from 6 kW up the sheet, not the laser, sets the speed), the thin-plate
+pool, cooling, HAZ and distortion with the model's limitations stated; the throughput of a 100 mm seam and a 1 m assembly with
+editable handling overheads (the handling, not the arc, sets the parts per hour), the euro per hour and per metre; the stray beam
+past the focus and specular reflections at 20–200 m against the eye's and the skin's exposure limits for stated durations (no blink
+assumed in the infrared), the collimated fault apart, barriers INCOMPLETE until certified; the sensitivity of the capacity; the
+record `reports/48_kimla.json`. Analysis scenarios on a hypothetical head — nothing KIMLA sells, nothing validated.
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
@@ -511,11 +563,12 @@ Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reade
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
 rotors), Chronos time (missions, cyclic loads, life), Chiron the centaur who trained the heroes (legged robots
 walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculptor of the Parthenon —
-(AI modelling from a prompt), Zephyr the west wind (the air over a wing section). The workbench itself is Vegeta.
+(AI modelling from a prompt), Zephyr the west wind (the air over a wing section), Hyperion the Titan of light
+(optics: beams, mirrors, resonators), Svarog the smith of the sky who forges with fire (the laser designed on Hyperion). The workbench itself is Vegeta.
 
 ## Layout
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr}, tests/<tool>/
+vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr,hyperion}, tests/<tool>/
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`

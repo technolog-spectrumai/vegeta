@@ -1,14 +1,15 @@
 # Yanus — the door keeper (design, v0 — for review)
 
 > Status: **v1 implemented** on `dev_yanus` (plan: `docs/yanus_plan.md`; package: `vegeta-yanus/README.md`).
-> Kestrel first (K1–K11, notebooks 38, 43, 44), then every notebook in `notebooks/` (§ 13). See § 12 for where the implementation differs from this design.
+> Kestrel first (K1–K12, notebooks 38, 43, 44), then every notebook in `notebooks/` (§ 13). See § 12 for where the implementation differs from this design.
 
 Yanus guards the doors between Vegeta's notebooks and workflows. Like Janus it has two faces: one looks at what
 comes **in** (tools on the machine, prerequisite runs, imported files), one at what goes **out** (the files a
 notebook or workflow promised to export). It **guards, never drives**: it checks, blocks, explains and names the
 command that would fix things; it never launches a solver, a notebook or a chain of them (`rejected.md`: no
 automatic chaining, no DAG engine, no scheduler, no database, no YAML; `workflows/README.md`: a notebook never
-launches a solver silently).
+launches a solver silently). **One deliberate exception since v1.1: auto mode (§ 16)** — a notebook flagged
+`yanus_auto` runs what it is missing by itself, in screening quality, loudly and in the foreground.
 
 ## 1. The problem today
 
@@ -289,3 +290,39 @@ A notebook no longer stops on a run take that is not pinned while a usable run e
   required, and the fix is the `yn pin` command.
 * **`yn pin 43 K11 --variant 4Q-2 <run dir>`** accepts `--variant` anywhere, including between the chapter and the run
   directory. That is the order the gate prints, and the order that used to fail.
+
+## 16. Auto mode — the `yanus_auto` flag (v1.1)
+
+The rule above ("never drives") made every missing run a stop with a command to type. For the design notebooks that
+is the wrong default: an engineer opening 43 wants the picture now, in screening quality, and the fine runs later.
+So a notebook may carry the flag:
+
+```python
+flow.notebook("43_kestrel_study", …, screening_env="KESTREL_SCREENING", auto=True)      # yanus_auto
+kestrel.kind("cfd", …, screening=("--quality", "screening"))                          # what "coarse" means per kind
+kestrel.kind("fea", …, screening=("--element-size", "4", "--threads", "2"))
+```
+
+`yanus.enter("43_kestrel_study")` then:
+
+1. checks everything as before (needs, pins, files);
+2. for every take that is not usable, **produces it**: the chapter whose run it takes, with its prerequisite chapters
+   first, each with the kind's `screening` arguments (`YANUS_AUTO_MINUTES` adds `--max-minutes`); a producer notebook
+   headlessly (`jupyter nbconvert --execute`, with `YANUS_AUTO=1` so it produces its own inputs the same way). One
+   after the other, in the foreground, their output in the cell. A step whose needs are not on the machine (no
+   OpenFOAM, no ccx) is skipped with the reason; a step whose script fails is recorded as failed;
+3. checks again with **every take optional** and opens. It never raises `GateClosed`: a take that could not be made
+   is NOT RUN, its row says `NOT RUN — auto skipped/failed: why`, and `gate.auto` lists the steps (`yanus.auto.report`).
+
+What stays as before: the gate table, the pins (a run auto mode makes is the newest usable run, so an unpinned take
+reads it; a pin still wins), the stamps, `leave()`. What is new in the table: the header says `AUTO`, and the results
+of a screening-quality run are labelled by the notebook as before (`indicative`, never `validated`).
+
+Switches: `auto=True/False` on `enter`, `YANUS_AUTO=1/0` in the shell (wins over the registry flag), the flag in the
+registry. `VEGETA_DEBUG=1` runs nothing (the numbers are mocked). `yn status` marks the flagged notebooks `(auto)`;
+`yn auto 43 --dry-run` prints the plan, `yn auto 43` runs it without opening the notebook. `yn new notebook … --auto`
+scaffolds a flagged notebook. Flagged today: 43 (K1 of the variants it takes, K11) and 45 (notebook 43 for its report).
+
+The `rejected.md` entry on automatic chaining stands for CAD → FEA → CFD → print on every revision; auto mode is
+narrower: one notebook, its declared takes, screening quality, opt-in per notebook, nothing silent.
+

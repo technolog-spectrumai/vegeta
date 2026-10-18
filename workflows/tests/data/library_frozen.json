@@ -71,6 +71,35 @@
      "20m"
     ]
    ]
+  },
+  "thermal": {
+   "title": "plate heat transfer \u2014 steady state and the ablation transient (FEniCSx: dolfinx, PETSc)",
+   "script": "workflows/fenix/plate_thermal.py",
+   "workflow": "plate_thermal",
+   "needs": "the fenicsx interpreter (.fenicsx/env or VEGETA_FENICSX_PYTHON)",
+   "time": "steady: seconds a case; ablation: 10 s \u2013 2 min a case",
+   "options": [
+    [
+     "--variant",
+     [
+      "1kW",
+      "2kW",
+      "YLS-SM",
+      "FL2000C",
+      "FL2000CSM",
+      "WFL-3000"
+     ],
+     "1kW"
+    ],
+    [
+     "--quality",
+     [
+      "screening",
+      "fine"
+     ],
+     "fine"
+    ]
+   ]
   }
  },
  "BOOKS": {
@@ -146,6 +175,11 @@
      "kind": "fea",
      "campaign": "all",
      "prerequisites": []
+    },
+    "wing-interference": {
+     "kind": "cfd",
+     "campaign": "interference",
+     "prerequisites": []
     }
    }
   },
@@ -167,6 +201,41 @@
     "shield-ablation": {
      "kind": "ablation",
      "campaign": "shield",
+     "prerequisites": []
+    }
+   }
+  },
+  "fenix": {
+   "code": "F",
+   "title": "fenix \u2014 Svarog's guard plates by finite elements (FEniCSx in its own interpreter, a process pipe per case)",
+   "design": "notebooks/designs/svarog_industrial.py (the barriers and the stray beams); notebooks 49 and 51 read the runs",
+   "variants": [
+    "1kW",
+    "2kW",
+    "YLS-SM",
+    "FL2000C",
+    "FL2000CSM",
+    "WFL-3000"
+   ],
+   "chapters": {
+    "guard-steady": {
+     "kind": "thermal",
+     "campaign": "guard-steady",
+     "prerequisites": []
+    },
+    "guard-ablation": {
+     "kind": "thermal",
+     "campaign": "guard-ablation",
+     "prerequisites": []
+    },
+    "sheet-distance": {
+     "kind": "thermal",
+     "campaign": "sheet-distance",
+     "prerequisites": []
+    },
+    "shield-steady": {
+     "kind": "thermal",
+     "campaign": "shield-steady",
      "prerequisites": []
     }
    }
@@ -285,6 +354,15 @@
    "prerequisites": [],
    "script": "workflows/kestrel/structure_fea.py",
    "workflow": "structure_fea"
+  },
+  "wing-interference": {
+   "code": "K12",
+   "n": 12,
+   "kind": "cfd",
+   "campaign": "interference",
+   "prerequisites": [],
+   "script": "workflows/kestrel/airframe_cfd.py",
+   "workflow": "airframe_cfd"
   }
  }
 }

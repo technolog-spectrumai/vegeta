@@ -1,0 +1,31 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "48_kimla.json",
+ "git": "6f2e311a313f",
+ "inputs": [
+  {
+   "key": "data:notebooks/designs/data/kimla_specs.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/kimla_specs.json",
+   "sha256": "57cb36d7813a86a16d034dbf2ceb6c4418fab13298d058f1870efc674218d646"
+  },
+  {
+   "key": "47_svarog_iii:notebooks/designs/data/reports/47_svarog_iii.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/reports/47_svarog_iii.json",
+   "sha256": "ef0ba9812d853706507aae0cbae55b703998d99b8511f23a3153725f6e4f3322"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.hyperion": "found"
+ },
+ "producer": "48_kimla",
+ "schema": null,
+ "sha256": "517ac497208b369e9d956b0ff441f9e596dd9df98d1a3a3a51f2872f032e6ff7",
+ "size": 1027528,
+ "written_at": "2026-10-18T04:09:28Z",
+ "written_ts": 1792296568.30247,
+ "yanus": 1
+}

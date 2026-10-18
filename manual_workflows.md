@@ -59,12 +59,43 @@ wf tail <run>                            # follow its run.log
 wf stop <run>                            # stop it cleanly (finished cases are kept)
 wf resume <run>                          # continue it
 wf notebook <run>                        # the yn pin command that makes a notebook read this run
+wf batch batch.yaml [--dry-run|--detach] # a batch of chapters from one file, in strict order (section 2b)
 yn status | yn why 43 | yn doctor         # Yanus: what is ready, what blocks a notebook and why, what this machine can run
+yn auto 43 --dry-run                     # what notebook 43 would run by itself (its yanus_auto flag, section 4)
 ```
 
 `<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
 terminal output in `workflows/runs/<workflow>_<time>.out`, so logging out or closing Jupyter does not stop it.
-Everything below works without the tool too.
+Everything below works without the tool too. **Every run ends with the same lines**: the state, `results: <run>/summary.json`
+(or `summary.partial.json`), the run directory, and how to watch, resume or pin it.
+
+## 2b. A batch: many chapters, one file, any machine
+
+A batch is a YAML file with the chapters to run **in this order** — the hand-over from the desk where you decide to
+the box that computes (a cloud machine with OpenFOAM and CalculiX and nothing else, a workstation overnight):
+
+```bash
+wf batch --example > night.yaml          # a template: name, stop_on_failure, steps (chapter, variant, options, limits, mode, cache)
+$EDITOR night.yaml                       # or: Workflows window → set a chapter's options → "Add to batch" → Batch tab → Save batch.yaml
+wf batch night.yaml --dry-run            # the commands, in order; nothing starts
+wf batch night.yaml                      # runs them one after the other (--detach: in the background; --from 3: start at step 3)
+scp night.yaml cloud:vegeta/ && ssh cloud 'cd vegeta && source activate.sh && wf batch night.yaml'
+```
+
+Each step is the chapter's own script with an explicit `--out` run directory (`workflows/runs/<book>/<chapter>/<batch
+stamp>_<name>_s<step>_<variant>/`), its needs and prerequisites checked just before it starts (a missing prerequisite
+fails that step, not the file). A failed step stops the batch unless `stop_on_failure: false`. The batch keeps
+`workflows/runs/_batches/<stamp>_<name>/` with the YAML it ran, every script's terminal output
+(`step_NN_<code>.out`), `run.log` / `status.json` (the GUI follows it like a run) and **`batch.json`: every step, its
+state, exit code, run directory and summary file**. The last lines on the terminal repeat that table and the path of
+`batch.json`. Exit code 0 = every step completed, 3 = some did, 1 = none, 2 = the file is wrong (the message says
+which step). **Time and progress:** before it starts, the batch counts every step's cases and estimates the time
+(per case, from the finished runs of the same chapter on this machine, else a rule of thumb; `expected_minutes: 40`
+on a step overrides it) and prints the finishing time; while it runs, one progress bar spans every case of the batch
+with the remaining time re-estimated as the cases come in (the GUI's status bar and `wf status <batch folder>` show
+the same from its `status.json`); at the end it prints the time taken against the estimate. `--dry-run` shows the
+estimate without starting anything. Results come back with `rsync -a cloud:vegeta/workflows/runs/ workflows/runs/` and the notebooks read
+them as any other run (`yn pin`, or the newest usable run by itself).
 
 ## 3. Without a notebook: run a campaign and read the result
 
@@ -119,6 +150,7 @@ What the campaigns are:
 | K9 | `frame` | 4 (A, B, C, modes) | the carbon frame at ultimate load | minutes each |
 | K10 | `joint` | 1 | the printed spar–post joint (after K9) | minutes |
 | K11 | `frame-and-joint` | 5 | both | under an hour |
+| K12 | `wing-interference` | 9 bare (one wing, the pair, the equal-area monoplane at 0/4/8°) | the wing interference measured: the lift lost between the wings, the induced drag against a monoplane | an afternoon (screening) |
 
 Useful options: `--cases "α 12°"` runs only matching cases; `--max-cases 2` / `--max-minutes 90` bound a run (it ends
 `partial`, resumable); `--prepare-only` writes the cases without solving (to inspect a mesh setup); `--quiet` keeps
@@ -143,6 +175,14 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
      labelled as an estimate.
 4. For a quick look without any solver result: `KESTREL_SCREENING=1 ./jupyter.sh` (or set the variable in the
    kernel's environment). Everything becomes optional and the final assessment is marked *unvalidated*.
+4b. **Auto mode (`yanus_auto`).** Notebooks 43 and 45 carry the flag in `workflows/flow.py` (`auto=True`): when a
+   run they take is missing, the gate **runs the chapter itself, in screening quality** (`--quality screening`, a
+   coarse FEA mesh), prerequisites first, in the foreground with the output in the cell, then continues with what is
+   there — it never stops with an error. A solver that is not on the machine, or a run that failed, is NOT RUN with
+   the reason in the gate table; the results of such runs are labelled *indicative* as any screening run.
+   `yn auto 43 --dry-run` prints what it would start; `YANUS_AUTO_MINUTES=30` caps each run; `YANUS_AUTO=0` switches
+   it off for a session (and `YANUS_AUTO=1` switches it on for a notebook without the flag). Fine runs stay a `wf`
+   or a batch (2b) away.
 5. Section 10 of the notebook lists which campaigns to run next and why, with the commands ready to copy.
 
 The notebook takes about two minutes (it prints its measured runtime at the end). Closing it never stops a workflow

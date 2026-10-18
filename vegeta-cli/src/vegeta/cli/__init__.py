@@ -19,6 +19,7 @@ TOOLS = {
     "chiron": "legged-robot dynamics (MuJoCo): ChironLab episodes, locomotion metrics, paired trials",
     "atropos": "laser-cut flat parts (GRBL diode lasers): ribs, kerf, nesting -> SVG, G-code, time, material",
     "zephyr": "2-D wing sections: NACA geometry, thin-airfoil theory, polars (NeuralFoil / XFOIL), flaps",
+    "hyperion": "optics: materials, ABCD elements, Gaussian beams, resonators, a four-level laser's threshold and thermal lens",
 }
 
 
@@ -47,7 +48,7 @@ def usage() -> str:
         lines += [f"  {name:<10} (from {ep.dist.name if ep.dist else ep.value})" for name, ep in sorted(extra.items())]
     lines += ["", "Run 'vegeta <command> --help' for details.",
               "The tools are also available as the commands dedalus, talos, aeromant, mellonia, boreas, chronos, "
-              "chiron, atropos and zephyr."]
+              "chiron, atropos, zephyr and hyperion."]
     return "\n".join(lines)
 
 

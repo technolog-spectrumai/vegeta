@@ -1,0 +1,49 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "svarog_fiber_design.json",
+ "git": "e66d9bcabf62",
+ "inputs": [
+  {
+   "key": "fenix/guard-steady@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-steady/20261017-162422_1kW_screening"
+  },
+  {
+   "key": "fenix/guard-ablation@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-ablation/20261017-162526_1kW_screening"
+  },
+  {
+   "key": "fenix/sheet-distance@1kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/sheet-distance/20261017-163135_1kW_screening"
+  },
+  {
+   "key": "fenix/guard-steady@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-steady/20261017-172024_2kW_screening"
+  },
+  {
+   "key": "fenix/guard-ablation@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/guard-ablation/20261017-164412_2kW_screening"
+  },
+  {
+   "key": "fenix/sheet-distance@2kW",
+   "kind": "run",
+   "path": "workflows/runs/fenix/sheet-distance/20261017-163201_2kW_screening"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.hyperion": "found"
+ },
+ "producer": "46_svarog",
+ "schema": null,
+ "sha256": "c126fa182d2b164bb1c2abf9c70b9080f2be5f8bf6d0aad477988594c6f235ce",
+ "size": 6834,
+ "written_at": "2026-10-17T17:24:24Z",
+ "written_ts": 1792257864.979144,
+ "yanus": 1
+}

@@ -58,4 +58,4 @@ def test_run_by_code_shortcut_lists_cases():
     out = run("k2", "--variant", "4Q-1", "--list")
     assert out.returncode == 0 and "5 case(s)" in out.stdout and "--chapter stall" in out.stdout
     out = run("K99")
-    assert out.returncode != 0 and "K1–K11" in (out.stdout + out.stderr)
+    assert out.returncode != 0 and "K1–K12" in (out.stdout + out.stderr)

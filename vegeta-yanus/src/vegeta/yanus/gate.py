@@ -133,6 +133,13 @@ class Gate:
     variant: str | None = None
     left: list = field(default_factory=list)
     debug: bool = False
+    auto: list = field(default_factory=list)      # auto mode: the steps that ran (auto.Step) — empty when nothing was missing
+    auto_mode: bool = False
+
+    @property
+    def take_rows(self) -> list[Row]:
+        """The rows of the Run and File takes, in the order of ``unit.takes`` (the Data takes come last)."""
+        return [r for r in self.rows if r.kind in ("run", "file")]
 
     @property
     def closed(self) -> list[Row]:
@@ -151,8 +158,8 @@ class Gate:
         return pd.DataFrame([r.as_dict() for r in self.rows]).set_index("input") if self.rows else pd.DataFrame()
 
     def text(self) -> str:
-        head = f"{self.unit.kind_of_unit} {self.unit.ref}" + (" — screening: every take optional" if self.screening else "") + \
-            (" — DEBUG: mocked numbers, outputs stamped as such" if self.debug else "")
+        head = f"{self.unit.kind_of_unit} {self.unit.ref}" + (" — AUTO: what was missing was run in screening quality; the gate never closes" if self.auto_mode else "") + \
+            (" — screening: every take optional" if self.screening else "") + (" — DEBUG: mocked numbers, outputs stamped as such" if self.debug else "")
         lines = [head]
         w = max([len(r.input) for r in self.rows] + [10])
         for r in self.rows:
@@ -227,8 +234,15 @@ class Gate:
 
 
 def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fingerprints: dict | None = None, variant: str | None = None,
-          deep: bool = True, raise_closed: bool = True, needs_required: bool = True, display: bool = False, debug: bool | None = None) -> Gate:
+          deep: bool = True, raise_closed: bool = True, needs_required: bool = True, display: bool = False, debug: bool | None = None,
+          auto: bool | None = None, log=print, runner=None) -> Gate:
     """Check the unit's needs and takes (all of them), then open the gate or raise ``GateClosed``.
+
+    **Auto mode** (``auto=True``, ``YANUS_AUTO=1``, or the notebook's ``auto=True`` flag in the registry — its
+    ``yanus_auto``): the one case where Yanus drives. Every missing take is produced first — the chapters in
+    screening quality (prerequisites first), a producer notebook headlessly — in the foreground, then the gate is
+    checked again with every take optional, so it **never raises**: what could not be made is NOT RUN, and
+    ``gate.auto`` lists each step with its outcome (``auto.report``). DEBUG runs nothing (the numbers are mocked).
 
     For a **notebook** each ``Run`` take reads the run **pinned** in ``notebooks/pins/<unit>.json``; with no pin, the
     newest usable run (finished, compatible), named as such in the table (``YANUS_STRICT_PINS=1``: pins only); for a **chapter** the newest usable run of each prerequisite chapter counts (the script's
@@ -238,10 +252,34 @@ def enter(unit, *, flow: Flow | None = None, screening: bool | None = None, fing
     accepted, outputs are stamped as DEBUG and a missing one does not fail."""
     flow = current(flow)
     u = flow.unit(unit) if isinstance(unit, str) else unit
-    if screening is None:
-        screening = bool(isinstance(u, Notebook) and u.screening_env and os.environ.get(u.screening_env) == "1")
     if debug is None:
         debug = os.environ.get("VEGETA_DEBUG", "").strip().lower() in ("1", "true", "on", "yes")
+    from . import auto as _auto
+    if _auto.wanted(u, auto):
+        kw = dict(flow=flow, fingerprints=fingerprints, variant=variant, deep=deep, needs_required=needs_required, debug=debug)
+        first = _enter(u, screening=screening, raise_closed=False, display=False, **kw)
+        steps = [] if debug else _auto.drive(flow, first, log=log, runner=runner)
+        g = _enter(u, screening=True, raise_closed=False, display=False, **kw) if steps else first
+        g.auto, g.auto_mode = steps, True
+        for r in g.rows:                                   # every take is optional now: a missing one is NOT RUN, with why
+            if r.kind in ("run", "file") and not r.usable:
+                r.role = "optional"
+                hit = next((s for s in steps if (isinstance(s.unit, Chapter) and r.input.startswith(s.unit.code + " ")) or
+                            (isinstance(s.unit, Notebook) and f"({s.unit.name})" in r.input)), None)
+                if hit is not None:
+                    r.status = f"NOT RUN — auto {hit.state}" + (f": {hit.reason}" if hit.reason else "") + f"; {r.status}"
+        if steps:
+            log(_auto.report(steps))
+        if display:
+            _show(g)
+        return g
+    return _enter(u, flow=flow, screening=screening, fingerprints=fingerprints, variant=variant, deep=deep, raise_closed=raise_closed,
+                  needs_required=needs_required, display=display, debug=debug)
+
+
+def _enter(u, *, flow: Flow, screening, fingerprints, variant, deep, raise_closed, needs_required, display, debug) -> Gate:
+    if screening is None:
+        screening = bool(isinstance(u, Notebook) and u.screening_env and os.environ.get(u.screening_env) == "1")
     g = Gate(u, flow, started_ts=time.time(), screening=screening, variant=variant, debug=bool(debug))
     fps = _Fingerprints(fingerprints)
     root = Path(flow.root)
