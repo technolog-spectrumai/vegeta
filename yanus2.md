@@ -120,3 +120,21 @@ CLI `yn`:
     - Run their selection cells headless in a scratch copy with `VEGETA_DEBUG=1`. Expect no usable runs → the screening path, the labelled analytical estimate and the printed `wf` commands.
     - Full 43 execution may be too heavy; report it if so.
   - Other notebooks are checked statically.
+
+## Status (2026-10-18, `dev_yanus3`)
+Implemented as planned; `docs/yanus.md` describes the result.
+
+- **Tests:**
+  - Yanus: 28 passed (selection, quality, failed or malformed runs, explicit paths, mock exclusion, unverified compatibility, provenance, and every process launcher trapped).
+  - workflows: 40 passed, 1 skipped.
+  - Mimesis: 6 passed.
+  - vegeta.mock: 7 passed.
+- **Notebook 43**, executed in a scratch worktree:
+  - Default mode stops at the prerequisites with `wf K11 --variant 4Q-2`.
+  - `KESTREL_SCREENING=1` runs end to end: the explicit legacy K1 runs are read with "warnings", the others are NOT RUN, and `meta.runs` is in the report.
+- **Notebooks 45 and 44** run end to end. 45 reads 43's report as a file. 44 needs NeuralFoil.
+- **A real mocked K11 run** (`VEGETA_DEBUG=1`) is refused, both explicitly and when copied into `workflows/runs`. With `mock` flipped to false, it is accepted as compatible for 4Q-2 and refused for 4Q-1's fingerprint.
+- **Not verified:**
+  - Notebook 08b died in PyVista rendering (no display in the container).
+  - The other notebooks were only validated as JSON with every code cell compiled.
+  - No real CalculiX or OpenFOAM campaign was run.
