@@ -24,3 +24,11 @@ def test_scores_are_anchored_and_missions_weight_them():
     assert ((wt[list(kb.MISSIONS)].astype(float) >= 1) & (wt[list(kb.MISSIONS)].astype(float) <= 10)).all().all()
     assert wt.loc["Kestrel-4Q-2", "medical delivery (hover at the site)"] > wt.loc["Kestrel-Q4T1N-10", "medical delivery (hover at the site)"]
     assert abs(kb._scale(120.0, 120.0, 50.0) - 1) < 1e-9 and abs(kb._scale(50.0, 120.0, 50.0) - 10) < 1e-9 and kb._scale(None, 0, 1) is None
+
+
+def test_three_civilian_missions_score_as_one():
+    df, _ = kb.load()
+    civ = kb.group_scores(kb.weighted(kb.scores(df)))
+    assert "3-civilian-missions" in civ.columns and civ.index[0] == "Kestrel-4Q-2"           # the biplane leads the set as the notebooks stand
+    assert abs(sum(kb.MISSION_GROUPS["3-civilian-missions"].values()) - 1) < 1e-9
+    assert set(kb.CIVILIAN) == {"maritime rescue", "urgent industrial logistics", "emergency medical delivery"}

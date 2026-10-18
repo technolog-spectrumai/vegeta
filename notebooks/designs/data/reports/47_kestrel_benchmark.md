@@ -1,6 +1,6 @@
 # Kestrel benchmark — the family on one table and the mission scores (from notebooks 43, 45, 46)
 
-*47_kestrel_benchmark — exported 2026-10-18 01:43*
+*47_kestrel_benchmark — exported 2026-10-18 01:49*
 
 ## benchmark
 
@@ -48,52 +48,78 @@
 | ground handling | ground score | 0 | 1 | tail-sitters: tip-over angle and the wind that topples them; the tandem: skids and a sh… |
 | payload | payload score | 0 | 1 | does the medical capsule (72×72×160 mm) fit the pod near the CG |
 | evidence | evidence score | 0 | 1 | how much of the row rests on solver results (CFD, FEA) rather than the model |
+| confined launch and recovery | launch score | 0 | 1 | can it leave and come back to a vessel's deck or a shore without a strip: vertical take… |
 
 
 ## mission weights
 
-|  | mountain survey (cruise) | medical delivery (hover at the site) | pursuit (fast response) | field trials (build it first) |
-|---|---|---|---|---|
-| cruise economy | 0.25 | 0.05 | 0.15 | 0.1 |
-| endurance | 0.25 | 0.05 | 0.1 | 0.05 |
-| slow flight | 0.1 | 0.1 | 0.05 | 0.05 |
-| clean airframe | 0.05 | 0 | 0.2 | 0 |
-| hover authority | 0.05 | 0.2 | 0.1 | 0.1 |
-| transitions | 0.1 | 0.2 | 0.15 | 0.15 |
-| structure | 0.05 | 0.05 | 0.1 | 0.25 |
-| ground handling | 0.05 | 0.1 | 0.1 | 0.1 |
-| payload | 0.05 | 0.2 | 0 | 0 |
-| evidence | 0.05 | 0.05 | 0.05 | 0.2 |
+|  | mountain survey (cruise) | medical delivery (hover at the site) | pursuit (fast response) | field trials (build it first) | 3-civilian-missions: maritime rescue (primary) | 3-civilian-missions: urgent industrial logistics | 3-civilian-missions: emergency medical delivery |
+|---|---|---|---|---|---|---|---|
+| cruise economy | 0.25 | 0.05 | 0.15 | 0.1 | 0.15 | 0.15 | 0.15 |
+| endurance | 0.25 | 0.05 | 0.1 | 0.05 | 0.25 | 0.15 | 0.1 |
+| slow flight | 0.1 | 0.1 | 0.05 | 0.05 | 0.1 | 0.05 | 0.05 |
+| clean airframe | 0.05 | 0 | 0.2 | 0 | 0 | 0.05 | 0 |
+| hover authority | 0.05 | 0.2 | 0.1 | 0.1 | 0.1 | 0.05 | 0.1 |
+| transitions | 0.1 | 0.2 | 0.15 | 0.15 | 0.1 | 0.1 | 0.1 |
+| structure | 0.05 | 0.05 | 0.1 | 0.25 | 0 | 0.05 | 0.05 |
+| ground handling | 0.05 | 0.1 | 0.1 | 0.1 | 0 | 0 | 0 |
+| payload | 0.05 | 0.2 | 0 | 0 | 0.05 | 0.2 | 0.25 |
+| evidence | 0.05 | 0.05 | 0.05 | 0.2 | 0.05 | 0.05 | 0.05 |
+| confined launch and recovery | 0 | 0 | 0 | 0 | 0.2 | 0.15 | 0.15 |
 
 
 ## scores 1-10
 
-|  | cruise economy | endurance | slow flight | clean airframe | hover authority | transitions | structure | ground handling | payload | evidence |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Kestrel-4Q-1 | 2.26 | 5.54 | 5.63 | 1.6 | — | 10 | 3.7 | 4.6 | 10 | 3.7 |
-| Kestrel-4Q-2 | 8.83 | 9.33 | 7.66 | 8.66 | 9.84 | 7.43 | 6.4 | 4.6 | 10 | 3.7 |
-| Kestrel-4Q-3 | 8.8 | 9.28 | 7.66 | 8.66 | — | 6.4 | 6.4 | 4.6 | 10 | 3.7 |
-| Kestrel-X-A | 5.16 | 3.04 | 3.12 | 7.16 | 7.7 | 10 | 10 | 8.65 | 3.7 | 2.35 |
-| Kestrel-X-B | 2.23 | 3.94 | 7.48 | 7.87 | 6.06 | 8.5 | 10 | 8.65 | 3.7 | 2.35 |
-| Kestrel-Q4T1N-10 | 8.87 | 8.35 | 6.81 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 |
-| Kestrel-Q4T1P-10 | 8.84 | 8.43 | 7.04 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 |
-| Kestrel-Q4T1N-12 | 8.8 | 10 | 7.91 | 9.94 | 3.2 | 5.5 | 10 | 7.3 | 8.2 | 2.35 |
-| Kestrel-Q4T1-10 (flat) | 7.8 | 6.96 | 6.09 | 9.89 | 2.13 | 1 | 10 | 7.3 | 8.2 | 2.35 |
+|  | cruise economy | endurance | slow flight | clean airframe | hover authority | transitions | structure | ground handling | payload | evidence | confined launch and recovery |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-1 | 2.26 | 5.54 | 5.63 | 1.6 | — | 10 | 3.7 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-4Q-2 | 8.83 | 9.33 | 7.66 | 8.66 | 9.84 | 7.43 | 6.4 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-4Q-3 | 8.8 | 9.28 | 7.66 | 8.66 | — | 6.4 | 6.4 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-X-A | 5.16 | 3.04 | 3.12 | 7.16 | 7.7 | 10 | 10 | 8.65 | 3.7 | 2.35 | 9.55 |
+| Kestrel-X-B | 2.23 | 3.94 | 7.48 | 7.87 | 6.06 | 8.5 | 10 | 8.65 | 3.7 | 2.35 | 9.55 |
+| Kestrel-Q4T1N-10 | 8.87 | 8.35 | 6.81 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1P-10 | 8.84 | 8.43 | 7.04 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1N-12 | 8.8 | 10 | 7.91 | 9.94 | 3.2 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1-10 (flat) | 7.8 | 6.96 | 6.09 | 9.89 | 2.13 | 1 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
 
 
 ## weighted by mission
 
-|  | mountain survey (cruise) | mountain survey (cruise) · coverage | medical delivery (hover at the site) | medical delivery (hover at the site) · coverage | pursuit (fast response) | pursuit (fast response) · coverage | field trials (build it first) | field trials (build it first) · coverage |
-|---|---|---|---|---|---|---|---|---|
-| Kestrel-4Q-1 | 4.94 | 0.95 | 7.23 | 0.8 | 4.45 | 0.9 | 4.9 | 0.9 |
-| Kestrel-4Q-2 | 8.21 | 1 | 8.09 | 1 | 7.76 | 1 | 6.63 | 1 |
-| Kestrel-4Q-3 | 8 | 0.95 | 7.39 | 0.8 | 7.34 | 0.9 | 6.1 | 0.9 |
-| Kestrel-X-A | 5.34 | 1 | 6.48 | 1 | 6.92 | 1 | 6.93 | 1 |
-| Kestrel-X-B | 5.07 | 1 | 6.19 | 1 | 6.54 | 1 | 6.51 | 1 |
-| Kestrel-Q4T1N-10 | 7.58 | 1 | 6.29 | 1 | 7.44 | 1 | 6.5 | 1 |
-| Kestrel-Q4T1P-10 | 7.61 | 1 | 6.31 | 1 | 7.45 | 1 | 6.51 | 1 |
-| Kestrel-Q4T1N-12 | 8.09 | 1 | 6.46 | 1 | 7.7 | 1 | 6.62 | 1 |
-| Kestrel-Q4T1-10 (flat) | 6.39 | 1 | 4.96 | 1 | 6.36 | 1 | 5.5 | 1 |
+|  | mountain survey (cruise) | mountain survey (cruise) · coverage | medical delivery (hover at the site) | medical delivery (hover at the site) · coverage | pursuit (fast response) | pursuit (fast response) · coverage | field trials (build it first) | field trials (build it first) · coverage | 3-civilian-missions: maritime rescue (primary) | 3-civilian-missions: maritime rescue (primary) · coverage | 3-civilian-missions: urgent industrial logistics | 3-civilian-missions: urgent industrial logistics · coverage | 3-civilian-missions: emergency medical delivery | 3-civilian-missions: emergency medical delivery · coverage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-1 | 4.94 | 0.95 | 7.23 | 0.8 | 4.45 | 0.9 | 4.9 | 0.9 | 6.14 | 0.9 | 6.38 | 0.95 | 6.9 | 0.9 |
+| Kestrel-4Q-2 | 8.21 | 1 | 8.09 | 1 | 7.76 | 1 | 6.63 | 1 | 8.39 | 1 | 8.44 | 1 | 8.53 | 1 |
+| Kestrel-4Q-3 | 8 | 0.95 | 7.39 | 0.8 | 7.34 | 0.9 | 6.1 | 0.9 | 8.09 | 0.9 | 8.25 | 0.95 | 8.27 | 0.9 |
+| Kestrel-X-A | 5.34 | 1 | 6.48 | 1 | 6.92 | 1 | 6.93 | 1 | 5.83 | 1 | 5.92 | 1 | 5.98 | 1 |
+| Kestrel-X-B | 5.07 | 1 | 6.19 | 1 | 6.54 | 1 | 6.51 | 1 | 5.74 | 1 | 5.64 | 1 | 5.53 | 1 |
+| Kestrel-Q4T1N-10 | 7.58 | 1 | 6.29 | 1 | 7.44 | 1 | 6.5 | 1 | 6.16 | 1 | 6.87 | 1 | 6.54 | 1 |
+| Kestrel-Q4T1P-10 | 7.61 | 1 | 6.31 | 1 | 7.45 | 1 | 6.51 | 1 | 6.19 | 1 | 6.88 | 1 | 6.55 | 1 |
+| Kestrel-Q4T1N-12 | 8.09 | 1 | 6.46 | 1 | 7.7 | 1 | 6.62 | 1 | 6.66 | 1 | 7.17 | 1 | 6.74 | 1 |
+| Kestrel-Q4T1-10 (flat) | 6.39 | 1 | 4.96 | 1 | 6.36 | 1 | 5.5 | 1 | 5.01 | 1 | 5.97 | 1 | 5.64 | 1 |
+
+
+## 3-civilian-missions
+
+|  | 3-civilian-missions |   maritime rescue (primary) |   urgent industrial logistics |   emergency medical delivery |
+|---|---|---|---|---|
+| Kestrel-4Q-2 | 8.44 | 8.39 | 8.44 | 8.53 |
+| Kestrel-4Q-3 | 8.17 | 8.09 | 8.25 | 8.27 |
+| Kestrel-Q4T1N-12 | 6.81 | 6.66 | 7.17 | 6.74 |
+| Kestrel-Q4T1P-10 | 6.46 | 6.19 | 6.88 | 6.55 |
+| Kestrel-Q4T1N-10 | 6.43 | 6.16 | 6.87 | 6.54 |
+| Kestrel-4Q-1 | 6.39 | 6.14 | 6.38 | 6.9 |
+| Kestrel-X-A | 5.89 | 5.83 | 5.92 | 5.98 |
+| Kestrel-X-B | 5.66 | 5.74 | 5.64 | 5.53 |
+| Kestrel-Q4T1-10 (flat) | 5.41 | 5.01 | 5.97 | 5.64 |
+
+
+## 3-civilian-missions definitions
+
+|  | situation | payload | outcome | what the score weighs |
+|---|---|---|---|---|
+| maritime rescue | a person is reported overboard or in difficulty offshore | compact flotation equipment, search camera, optional thermal camera | locate the person, deliver accessible flotation and help rescuers maintain their position | endurance left after the transit (0.25), cruise economy (0.15), launch and recovery fro… |
+| urgent industrial logistics | a vessel, offshore installation or remote facility needs a small part to resume work | protected cargo pod with a spare part, tool or electronic component | deliver the correct item intact, avoiding a longer boat or road journey | the cargo pod (payload 0.20), the transit (cruise 0.15, endurance 0.15), a deck at both… |
+| emergency medical delivery | a clinic, vessel or remote team urgently needs medical supplies or sample transport | secured medical container, insulated and temperature-monitored where required | deliver the supplies within their required time and handling conditions | the secured container near the CG (payload 0.25), the transit (cruise 0.15, endurance 0… |
 
 
 ## notes

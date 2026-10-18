@@ -1,7 +1,7 @@
 {
  "notebook": "47_kestrel_benchmark",
  "title": "Kestrel benchmark — the family on one table and the mission scores (from notebooks 43, 45, 46)",
- "exported": "2026-10-18T01:43",
+ "exported": "2026-10-18T01:49",
  "meta": {},
  "sections": {
   "benchmark": {
@@ -433,7 +433,8 @@
     "structure",
     "ground handling",
     "payload",
-    "evidence"
+    "evidence",
+    "confined launch and recovery"
    ],
    "columns": [
     "measure",
@@ -511,6 +512,13 @@
      "1 point at": 0.0,
      "10 points at": 1.0,
      "why": "how much of the row rests on solver results (CFD, FEA) rather than the model"
+    },
+    {
+     "_index": "confined launch and recovery",
+     "measure": "launch score",
+     "1 point at": 0.0,
+     "10 points at": 1.0,
+     "why": "can it leave and come back to a vessel's deck or a shore without a strip: vertical take-off and landing, the wind it stands in"
     }
    ]
   },
@@ -525,13 +533,17 @@
     "structure",
     "ground handling",
     "payload",
-    "evidence"
+    "evidence",
+    "confined launch and recovery"
    ],
    "columns": [
     "mountain survey (cruise)",
     "medical delivery (hover at the site)",
     "pursuit (fast response)",
-    "field trials (build it first)"
+    "field trials (build it first)",
+    "3-civilian-missions: maritime rescue (primary)",
+    "3-civilian-missions: urgent industrial logistics",
+    "3-civilian-missions: emergency medical delivery"
    ],
    "rows": [
     {
@@ -539,70 +551,110 @@
      "mountain survey (cruise)": 0.25,
      "medical delivery (hover at the site)": 0.05,
      "pursuit (fast response)": 0.15,
-     "field trials (build it first)": 0.1
+     "field trials (build it first)": 0.1,
+     "3-civilian-missions: maritime rescue (primary)": 0.15,
+     "3-civilian-missions: urgent industrial logistics": 0.15,
+     "3-civilian-missions: emergency medical delivery": 0.15
     },
     {
      "_index": "endurance",
      "mountain survey (cruise)": 0.25,
      "medical delivery (hover at the site)": 0.05,
      "pursuit (fast response)": 0.1,
-     "field trials (build it first)": 0.05
+     "field trials (build it first)": 0.05,
+     "3-civilian-missions: maritime rescue (primary)": 0.25,
+     "3-civilian-missions: urgent industrial logistics": 0.15,
+     "3-civilian-missions: emergency medical delivery": 0.1
     },
     {
      "_index": "slow flight",
      "mountain survey (cruise)": 0.1,
      "medical delivery (hover at the site)": 0.1,
      "pursuit (fast response)": 0.05,
-     "field trials (build it first)": 0.05
+     "field trials (build it first)": 0.05,
+     "3-civilian-missions: maritime rescue (primary)": 0.1,
+     "3-civilian-missions: urgent industrial logistics": 0.05,
+     "3-civilian-missions: emergency medical delivery": 0.05
     },
     {
      "_index": "clean airframe",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.0,
      "pursuit (fast response)": 0.2,
-     "field trials (build it first)": 0.0
+     "field trials (build it first)": 0.0,
+     "3-civilian-missions: maritime rescue (primary)": 0.0,
+     "3-civilian-missions: urgent industrial logistics": 0.05,
+     "3-civilian-missions: emergency medical delivery": 0.0
     },
     {
      "_index": "hover authority",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.2,
      "pursuit (fast response)": 0.1,
-     "field trials (build it first)": 0.1
+     "field trials (build it first)": 0.1,
+     "3-civilian-missions: maritime rescue (primary)": 0.1,
+     "3-civilian-missions: urgent industrial logistics": 0.05,
+     "3-civilian-missions: emergency medical delivery": 0.1
     },
     {
      "_index": "transitions",
      "mountain survey (cruise)": 0.1,
      "medical delivery (hover at the site)": 0.2,
      "pursuit (fast response)": 0.15,
-     "field trials (build it first)": 0.15
+     "field trials (build it first)": 0.15,
+     "3-civilian-missions: maritime rescue (primary)": 0.1,
+     "3-civilian-missions: urgent industrial logistics": 0.1,
+     "3-civilian-missions: emergency medical delivery": 0.1
     },
     {
      "_index": "structure",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.05,
      "pursuit (fast response)": 0.1,
-     "field trials (build it first)": 0.25
+     "field trials (build it first)": 0.25,
+     "3-civilian-missions: maritime rescue (primary)": 0.0,
+     "3-civilian-missions: urgent industrial logistics": 0.05,
+     "3-civilian-missions: emergency medical delivery": 0.05
     },
     {
      "_index": "ground handling",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.1,
      "pursuit (fast response)": 0.1,
-     "field trials (build it first)": 0.1
+     "field trials (build it first)": 0.1,
+     "3-civilian-missions: maritime rescue (primary)": 0.0,
+     "3-civilian-missions: urgent industrial logistics": 0.0,
+     "3-civilian-missions: emergency medical delivery": 0.0
     },
     {
      "_index": "payload",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.2,
      "pursuit (fast response)": 0.0,
-     "field trials (build it first)": 0.0
+     "field trials (build it first)": 0.0,
+     "3-civilian-missions: maritime rescue (primary)": 0.05,
+     "3-civilian-missions: urgent industrial logistics": 0.2,
+     "3-civilian-missions: emergency medical delivery": 0.25
     },
     {
      "_index": "evidence",
      "mountain survey (cruise)": 0.05,
      "medical delivery (hover at the site)": 0.05,
      "pursuit (fast response)": 0.05,
-     "field trials (build it first)": 0.2
+     "field trials (build it first)": 0.2,
+     "3-civilian-missions: maritime rescue (primary)": 0.05,
+     "3-civilian-missions: urgent industrial logistics": 0.05,
+     "3-civilian-missions: emergency medical delivery": 0.05
+    },
+    {
+     "_index": "confined launch and recovery",
+     "mountain survey (cruise)": 0.0,
+     "medical delivery (hover at the site)": 0.0,
+     "pursuit (fast response)": 0.0,
+     "field trials (build it first)": 0.0,
+     "3-civilian-missions: maritime rescue (primary)": 0.2,
+     "3-civilian-missions: urgent industrial logistics": 0.15,
+     "3-civilian-missions: emergency medical delivery": 0.15
     }
    ]
   },
@@ -628,7 +680,8 @@
     "structure",
     "ground handling",
     "payload",
-    "evidence"
+    "evidence",
+    "confined launch and recovery"
    ],
    "rows": [
     {
@@ -642,7 +695,8 @@
      "structure": 3.7,
      "ground handling": 4.6,
      "payload": 10.0,
-     "evidence": 3.7
+     "evidence": 3.7,
+     "confined launch and recovery": 7.75
     },
     {
      "_index": "Kestrel-4Q-2",
@@ -655,7 +709,8 @@
      "structure": 6.4,
      "ground handling": 4.6,
      "payload": 10.0,
-     "evidence": 3.7
+     "evidence": 3.7,
+     "confined launch and recovery": 7.75
     },
     {
      "_index": "Kestrel-4Q-3",
@@ -668,7 +723,8 @@
      "structure": 6.4,
      "ground handling": 4.6,
      "payload": 10.0,
-     "evidence": 3.7
+     "evidence": 3.7,
+     "confined launch and recovery": 7.75
     },
     {
      "_index": "Kestrel-X-A",
@@ -681,7 +737,8 @@
      "structure": 10.0,
      "ground handling": 8.65,
      "payload": 3.7,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 9.55
     },
     {
      "_index": "Kestrel-X-B",
@@ -694,7 +751,8 @@
      "structure": 10.0,
      "ground handling": 8.65,
      "payload": 3.7,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 9.55
     },
     {
      "_index": "Kestrel-Q4T1N-10",
@@ -707,7 +765,8 @@
      "structure": 10.0,
      "ground handling": 7.3,
      "payload": 8.2,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 3.25
     },
     {
      "_index": "Kestrel-Q4T1P-10",
@@ -720,7 +779,8 @@
      "structure": 10.0,
      "ground handling": 7.3,
      "payload": 8.2,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 3.25
     },
     {
      "_index": "Kestrel-Q4T1N-12",
@@ -733,7 +793,8 @@
      "structure": 10.0,
      "ground handling": 7.3,
      "payload": 8.2,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 3.25
     },
     {
      "_index": "Kestrel-Q4T1-10 (flat)",
@@ -746,7 +807,8 @@
      "structure": 10.0,
      "ground handling": 7.3,
      "payload": 8.2,
-     "evidence": 2.35
+     "evidence": 2.35,
+     "confined launch and recovery": 3.25
     }
    ]
   },
@@ -770,7 +832,13 @@
     "pursuit (fast response)",
     "pursuit (fast response) · coverage",
     "field trials (build it first)",
-    "field trials (build it first) · coverage"
+    "field trials (build it first) · coverage",
+    "3-civilian-missions: maritime rescue (primary)",
+    "3-civilian-missions: maritime rescue (primary) · coverage",
+    "3-civilian-missions: urgent industrial logistics",
+    "3-civilian-missions: urgent industrial logistics · coverage",
+    "3-civilian-missions: emergency medical delivery",
+    "3-civilian-missions: emergency medical delivery · coverage"
    ],
    "rows": [
     {
@@ -782,7 +850,13 @@
      "pursuit (fast response)": 4.455,
      "pursuit (fast response) · coverage": 0.9,
      "field trials (build it first)": 4.9,
-     "field trials (build it first) · coverage": 0.9
+     "field trials (build it first) · coverage": 0.9,
+     "3-civilian-missions: maritime rescue (primary)": 6.137,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 0.9,
+     "3-civilian-missions: urgent industrial logistics": 6.384,
+     "3-civilian-missions: urgent industrial logistics · coverage": 0.95,
+     "3-civilian-missions: emergency medical delivery": 6.897,
+     "3-civilian-missions: emergency medical delivery · coverage": 0.9
     },
     {
      "_index": "Kestrel-4Q-2",
@@ -793,7 +867,13 @@
      "pursuit (fast response)": 7.756,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.631,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 8.385,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 8.443,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 8.535,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-4Q-3",
@@ -804,7 +884,13 @@
      "pursuit (fast response)": 7.343,
      "pursuit (fast response) · coverage": 0.9,
      "field trials (build it first)": 6.097,
-     "field trials (build it first) · coverage": 0.9
+     "field trials (build it first) · coverage": 0.9,
+     "3-civilian-missions: maritime rescue (primary)": 8.091,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 0.9,
+     "3-civilian-missions: urgent industrial logistics": 8.249,
+     "3-civilian-missions: urgent industrial logistics · coverage": 0.95,
+     "3-civilian-missions: emergency medical delivery": 8.266,
+     "3-civilian-missions: emergency medical delivery · coverage": 0.9
     },
     {
      "_index": "Kestrel-X-A",
@@ -815,7 +901,13 @@
      "pursuit (fast response)": 6.918,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.929,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 5.828,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 5.918,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 5.979,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-X-B",
@@ -826,7 +918,13 @@
      "pursuit (fast response)": 6.539,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.509,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 5.735,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 5.635,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 5.533,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-Q4T1N-10",
@@ -837,7 +935,13 @@
      "pursuit (fast response)": 7.436,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.5,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 6.157,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 6.865,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 6.541,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-Q4T1P-10",
@@ -848,7 +952,13 @@
      "pursuit (fast response)": 7.449,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.511,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 6.193,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 6.883,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 6.554,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-Q4T1N-12",
@@ -859,7 +969,13 @@
      "pursuit (fast response)": 7.696,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 6.621,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 6.659,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 7.167,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 6.741,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
     },
     {
      "_index": "Kestrel-Q4T1-10 (flat)",
@@ -870,7 +986,133 @@
      "pursuit (fast response)": 6.36,
      "pursuit (fast response) · coverage": 1.0,
      "field trials (build it first)": 5.496,
-     "field trials (build it first) · coverage": 1.0
+     "field trials (build it first) · coverage": 1.0,
+     "3-civilian-missions: maritime rescue (primary)": 5.011,
+     "3-civilian-missions: maritime rescue (primary) · coverage": 1.0,
+     "3-civilian-missions: urgent industrial logistics": 5.966,
+     "3-civilian-missions: urgent industrial logistics · coverage": 1.0,
+     "3-civilian-missions: emergency medical delivery": 5.64,
+     "3-civilian-missions: emergency medical delivery · coverage": 1.0
+    }
+   ]
+  },
+  "3-civilian-missions": {
+   "index": [
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3",
+    "Kestrel-Q4T1N-12",
+    "Kestrel-Q4T1P-10",
+    "Kestrel-Q4T1N-10",
+    "Kestrel-4Q-1",
+    "Kestrel-X-A",
+    "Kestrel-X-B",
+    "Kestrel-Q4T1-10 (flat)"
+   ],
+   "columns": [
+    "3-civilian-missions",
+    "  maritime rescue (primary)",
+    "  urgent industrial logistics",
+    "  emergency medical delivery"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-2",
+     "3-civilian-missions": 8.437,
+     "  maritime rescue (primary)": 8.385,
+     "  urgent industrial logistics": 8.443,
+     "  emergency medical delivery": 8.535
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "3-civilian-missions": 8.174,
+     "  maritime rescue (primary)": 8.091,
+     "  urgent industrial logistics": 8.249,
+     "  emergency medical delivery": 8.266
+    },
+    {
+     "_index": "Kestrel-Q4T1N-12",
+     "3-civilian-missions": 6.806,
+     "  maritime rescue (primary)": 6.659,
+     "  urgent industrial logistics": 7.167,
+     "  emergency medical delivery": 6.741
+    },
+    {
+     "_index": "Kestrel-Q4T1P-10",
+     "3-civilian-missions": 6.456,
+     "  maritime rescue (primary)": 6.193,
+     "  urgent industrial logistics": 6.883,
+     "  emergency medical delivery": 6.554
+    },
+    {
+     "_index": "Kestrel-Q4T1N-10",
+     "3-civilian-missions": 6.43,
+     "  maritime rescue (primary)": 6.157,
+     "  urgent industrial logistics": 6.865,
+     "  emergency medical delivery": 6.541
+    },
+    {
+     "_index": "Kestrel-4Q-1",
+     "3-civilian-missions": 6.389,
+     "  maritime rescue (primary)": 6.137,
+     "  urgent industrial logistics": 6.384,
+     "  emergency medical delivery": 6.897
+    },
+    {
+     "_index": "Kestrel-X-A",
+     "3-civilian-missions": 5.888,
+     "  maritime rescue (primary)": 5.828,
+     "  urgent industrial logistics": 5.918,
+     "  emergency medical delivery": 5.979
+    },
+    {
+     "_index": "Kestrel-X-B",
+     "3-civilian-missions": 5.66,
+     "  maritime rescue (primary)": 5.735,
+     "  urgent industrial logistics": 5.635,
+     "  emergency medical delivery": 5.533
+    },
+    {
+     "_index": "Kestrel-Q4T1-10 (flat)",
+     "3-civilian-missions": 5.407,
+     "  maritime rescue (primary)": 5.011,
+     "  urgent industrial logistics": 5.966,
+     "  emergency medical delivery": 5.64
+    }
+   ]
+  },
+  "3-civilian-missions definitions": {
+   "index": [
+    "maritime rescue",
+    "urgent industrial logistics",
+    "emergency medical delivery"
+   ],
+   "columns": [
+    "situation",
+    "payload",
+    "outcome",
+    "what the score weighs"
+   ],
+   "rows": [
+    {
+     "_index": "maritime rescue",
+     "situation": "a person is reported overboard or in difficulty offshore",
+     "payload": "compact flotation equipment, search camera, optional thermal camera",
+     "outcome": "locate the person, deliver accessible flotation and help rescuers maintain their position",
+     "what the score weighs": "endurance left after the transit (0.25), cruise economy (0.15), launch and recovery from a vessel or shore (0.20), holding position over the casualty in wind (hover 0.10), slow search flight (0.10), transitions (0.10)"
+    },
+    {
+     "_index": "urgent industrial logistics",
+     "situation": "a vessel, offshore installation or remote facility needs a small part to resume work",
+     "payload": "protected cargo pod with a spare part, tool or electronic component",
+     "outcome": "deliver the correct item intact, avoiding a longer boat or road journey",
+     "what the score weighs": "the cargo pod (payload 0.20), the transit (cruise 0.15, endurance 0.15), a deck at both ends (launch and recovery 0.15), transitions (0.10)"
+    },
+    {
+     "_index": "emergency medical delivery",
+     "situation": "a clinic, vessel or remote team urgently needs medical supplies or sample transport",
+     "payload": "secured medical container, insulated and temperature-monitored where required",
+     "outcome": "deliver the supplies within their required time and handling conditions",
+     "what the score weighs": "the secured container near the CG (payload 0.25), the transit (cruise 0.15, endurance 0.10), arriving where there is no strip (launch and recovery 0.15, hover 0.10), transitions (0.10)"
     }
    ]
   },

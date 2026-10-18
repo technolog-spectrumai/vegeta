@@ -165,21 +165,57 @@ CATEGORIES = {
     "ground handling": {"measure": "ground score", "worst": 0.0, "best": 1.0, "why": "tail-sitters: tip-over angle and the wind that topples them; the tandem: skids and a short roll but a strip needed"},
     "payload": {"measure": "payload score", "worst": 0.0, "best": 1.0, "why": "does the medical capsule (72×72×160 mm) fit the pod near the CG"},
     "evidence": {"measure": "evidence score", "worst": 0.0, "best": 1.0, "why": "how much of the row rests on solver results (CFD, FEA) rather than the model"},
+    "confined launch and recovery": {"measure": "launch score", "worst": 0.0, "best": 1.0, "why": "can it leave and come back to a vessel's deck or a shore without a strip: vertical take-off and landing, the wind it stands in"},
 }
 FAMILY = {   # the family constants the notebooks' text gives (0–1), with their source
-    "biplane (tail-sitter)": {"ground score": 0.4, "payload score": 1.0, "evidence score": 0.3,
-                              "notes": "ground: tips at 39° and 8.8 m/s broadside (43 § 8); payload: the capsule stacks in the 274 mm pod (43 Part II); evidence: an imported screening CFD sweep, 1 of 13 converged, FEA NOT RUN"},
-    "X-wing (tail-sitter)": {"ground score": 0.85, "payload score": 0.3, "evidence score": 0.15,
-                             "notes": "ground: tips at 60° and 16 m/s (45 § 5); payload: the capsule fits the section but not the pod's length, 462 of 430 mm (45 § 4c); evidence: model only, no CAD yet"},
-    "tandem (horizontal start)": {"ground score": 0.7, "payload score": 0.8, "evidence score": 0.15,
-                                  "notes": "ground: skids, a 3 m roll, no wind limit but a strip or a hand launch (46 § 5); payload: the pod is 0.82 m long, the capsule bay is not drawn yet; evidence: model only"},
+    "biplane (tail-sitter)": {"ground score": 0.4, "payload score": 1.0, "evidence score": 0.3, "launch score": 0.75,
+                              "notes": "ground: tips at 39° and 8.8 m/s broadside (43 § 8); launch: vertical from a deck, but it topples in 8.8 m/s of wind; payload: the capsule stacks in the 274 mm pod (43 Part II); evidence: an imported screening CFD sweep, 1 of 13 converged, FEA NOT RUN"},
+    "X-wing (tail-sitter)": {"ground score": 0.85, "payload score": 0.3, "evidence score": 0.15, "launch score": 0.95,
+                             "notes": "ground: tips at 60° and 16 m/s (45 § 5); launch: vertical from a deck and stands in 16 m/s; payload: the capsule fits the section but not the pod's length, 462 of 430 mm (45 § 4c); evidence: model only, no CAD yet"},
+    "tandem (horizontal start)": {"ground score": 0.7, "payload score": 0.8, "evidence score": 0.15, "launch score": 0.25,
+                                  "notes": "ground: skids, a 3 m roll, no wind limit but a strip or a hand launch (46 § 5); launch: a hand launch from a deck is possible, a landing back on it is not (belly landing on a strip or a net); payload: the pod is 0.82 m long, the capsule bay is not drawn yet; evidence: model only"},
 }
-MISSIONS = {   # weights per category (they sum to 1); the mission names are the Kestrel briefs'
-    "mountain survey (cruise)": {"cruise economy": 0.25, "endurance": 0.25, "slow flight": 0.10, "clean airframe": 0.05, "hover authority": 0.05, "transitions": 0.10, "structure": 0.05, "ground handling": 0.05, "payload": 0.05, "evidence": 0.05},
-    "medical delivery (hover at the site)": {"cruise economy": 0.05, "endurance": 0.05, "slow flight": 0.10, "clean airframe": 0.0, "hover authority": 0.20, "transitions": 0.20, "structure": 0.05, "ground handling": 0.10, "payload": 0.20, "evidence": 0.05},
-    "pursuit (fast response)": {"cruise economy": 0.15, "endurance": 0.10, "slow flight": 0.05, "clean airframe": 0.20, "hover authority": 0.10, "transitions": 0.15, "structure": 0.10, "ground handling": 0.10, "payload": 0.0, "evidence": 0.05},
-    "field trials (build it first)": {"cruise economy": 0.10, "endurance": 0.05, "slow flight": 0.05, "clean airframe": 0.0, "hover authority": 0.10, "transitions": 0.15, "structure": 0.25, "ground handling": 0.10, "payload": 0.0, "evidence": 0.20},
+MISSIONS = {   # weights per category (they sum to 1); the first four are the Kestrel briefs', the last three X-Wing-U's (one aircraft, three payload modules)
+    "mountain survey (cruise)": {"cruise economy": 0.25, "endurance": 0.25, "slow flight": 0.10, "clean airframe": 0.05, "hover authority": 0.05, "transitions": 0.10, "structure": 0.05, "ground handling": 0.05, "payload": 0.05, "evidence": 0.05, "confined launch and recovery": 0.0},
+    "medical delivery (hover at the site)": {"cruise economy": 0.05, "endurance": 0.05, "slow flight": 0.10, "clean airframe": 0.0, "hover authority": 0.20, "transitions": 0.20, "structure": 0.05, "ground handling": 0.10, "payload": 0.20, "evidence": 0.05, "confined launch and recovery": 0.0},
+    "pursuit (fast response)": {"cruise economy": 0.15, "endurance": 0.10, "slow flight": 0.05, "clean airframe": 0.20, "hover authority": 0.10, "transitions": 0.15, "structure": 0.10, "ground handling": 0.10, "payload": 0.0, "evidence": 0.05, "confined launch and recovery": 0.0},
+    "field trials (build it first)": {"cruise economy": 0.10, "endurance": 0.05, "slow flight": 0.05, "clean airframe": 0.0, "hover authority": 0.10, "transitions": 0.15, "structure": 0.25, "ground handling": 0.10, "payload": 0.0, "evidence": 0.20, "confined launch and recovery": 0.0},
+    # X-Wing-U: maritime rescue is the primary mission — reach the coordinates, then search, deliver flotation, hold contact until the boat arrives;
+    # the defining requirement is endurance left after the transit, then the launch from a vessel or the shore and holding position in wind
+    "3-civilian-missions: maritime rescue (primary)": {"cruise economy": 0.15, "endurance": 0.25, "slow flight": 0.10, "clean airframe": 0.0, "hover authority": 0.10, "transitions": 0.10, "structure": 0.0, "ground handling": 0.0, "payload": 0.05, "evidence": 0.05, "confined launch and recovery": 0.20},
+    # a small mission-critical part between known endpoints, often offshore: the cargo pod, the transit, the deck at both ends
+    "3-civilian-missions: urgent industrial logistics": {"cruise economy": 0.15, "endurance": 0.15, "slow flight": 0.05, "clean airframe": 0.05, "hover authority": 0.05, "transitions": 0.10, "structure": 0.05, "ground handling": 0.0, "payload": 0.20, "evidence": 0.05, "confined launch and recovery": 0.15},
+    # medicine, a diagnostic kit or a sample in a secured container with its handling conditions: the payload first, then arriving and leaving where there is no strip
+    "3-civilian-missions: emergency medical delivery": {"cruise economy": 0.15, "endurance": 0.10, "slow flight": 0.05, "clean airframe": 0.0, "hover authority": 0.10, "transitions": 0.10, "structure": 0.05, "ground handling": 0.0, "payload": 0.25, "evidence": 0.05, "confined launch and recovery": 0.15},
 }
+
+
+# the X-Wing-U set as one score: one aircraft flies all three with different payload modules, the rescue being primary
+MISSION_GROUPS = {"3-civilian-missions": {"3-civilian-missions: maritime rescue (primary)": 0.5, "3-civilian-missions: urgent industrial logistics": 0.25,
+                                          "3-civilian-missions: emergency medical delivery": 0.25}}
+CIVILIAN = {
+    "maritime rescue": {"situation": "a person is reported overboard or in difficulty offshore", "payload": "compact flotation equipment, search camera, optional thermal camera",
+                        "outcome": "locate the person, deliver accessible flotation and help rescuers maintain their position",
+                        "what the score weighs": "endurance left after the transit (0.25), cruise economy (0.15), launch and recovery from a vessel or shore (0.20), holding position over the casualty in wind (hover 0.10), slow search flight (0.10), transitions (0.10)"},
+    "urgent industrial logistics": {"situation": "a vessel, offshore installation or remote facility needs a small part to resume work", "payload": "protected cargo pod with a spare part, tool or electronic component",
+                                    "outcome": "deliver the correct item intact, avoiding a longer boat or road journey",
+                                    "what the score weighs": "the cargo pod (payload 0.20), the transit (cruise 0.15, endurance 0.15), a deck at both ends (launch and recovery 0.15), transitions (0.10)"},
+    "emergency medical delivery": {"situation": "a clinic, vessel or remote team urgently needs medical supplies or sample transport", "payload": "secured medical container, insulated and temperature-monitored where required",
+                                   "outcome": "deliver the supplies within their required time and handling conditions",
+                                   "what the score weighs": "the secured container near the CG (payload 0.25), the transit (cruise 0.15, endurance 0.10), arriving where there is no strip (launch and recovery 0.15, hover 0.10), transitions (0.10)"},
+}
+
+
+def group_scores(wt: pd.DataFrame, groups: dict | None = None) -> pd.DataFrame:
+    """A mission group's one score per airframe: the weighted mean of its missions' totals (``MISSION_GROUPS``)."""
+    groups = groups or MISSION_GROUPS
+    out = {}
+    for g, w in groups.items():
+        tot = sum(w.values())
+        out[g] = sum(pd.to_numeric(wt[m], errors="coerce") * wm for m, wm in w.items()) / tot
+        for m in w:
+            out[f"  {m.split(': ', 1)[-1]}"] = pd.to_numeric(wt[m], errors="coerce")
+    return pd.DataFrame(out).sort_values(list(groups)[0], ascending=False)
 
 
 def _scale(x, worst, best):
@@ -208,7 +244,7 @@ def derived(df: pd.DataFrame) -> pd.DataFrame:
         res = _num(r.get("spar reserve")) if "spar reserve" in out.columns else None
         st.append(base * (0.5 if (res is not None and res < 2) else 1.0))
     out["structure score"] = st
-    for key in ("ground score", "payload score", "evidence score"):
+    for key in ("ground score", "payload score", "evidence score", "launch score"):
         out[key] = [FAMILY.get(f, {}).get(key) for f in out["family"]]
     return out
 
@@ -274,11 +310,11 @@ def plot_missions(wt: pd.DataFrame, ax=None):
     names = [c for c in wt.columns if not c.endswith("coverage")]
     if ax is None:
         _, ax = plt.subplots(1, len(names), figsize=(4.2 * len(names), 0.45 * len(wt) + 1.8), sharey=False)
-    ax = np.atleast_1d(ax)
+    ax = np.atleast_1d(ax).ravel()
     for a, m in zip(ax, names):
         s = pd.to_numeric(wt[m], errors="coerce").sort_values(ascending=True)
         cov = wt[m + " · coverage"].reindex(s.index)
-        colors = ["#4682b4" if "Q4T1N-10" in i else ("#e0995a" if "4Q-2" in i else "#c8c8c8") for i in s.index]
+        colors = ["#4682b4" if "Q4T1N-10" in i else ("#e0995a" if "4Q-2" in i else ("#7bb37b" if "X-A" in i else "#c8c8c8")) for i in s.index]
         a.barh(range(len(s)), s.values, color=colors)
         for k, (v, c) in enumerate(zip(s.values, cov.values)):
             a.text(v + 0.1, k, f"{v:.1f}" + (f" ({c * 100:.0f} %)" if c < 0.999 else ""), va="center", fontsize=8)
