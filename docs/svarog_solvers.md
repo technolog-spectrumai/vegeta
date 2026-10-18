@@ -106,6 +106,17 @@ Closed forms only, under a minute; nothing is optimised and nothing is destroyed
 8. **The record** `reports/47_svarog_iii.json` (specs verbatim, assumptions, standards with "verify the edition",
    every section, `validation_open`) and the matrices as CSV under `output/47_svarog_iii/`.
 
+## 48 — KIMLA as a welding platform (`kimla.py`, notebook 48)
+
+The same closed forms on five power tiers (3–30 kW) with per-tier multimode optics: `weld_case` asks `wd.speed_for_penetration`
+for the joint's depth (butt 1.2 t; fillet 1.2 √2 t), takes the lower of that, the humping onset and the gantry's feed as the speed
+(the cap named, the surplus depth stated), then the thin-plate field, t8/5 / cooling rate, HAZ and the distortion index, and lists
+the model's limitations per row (a pool narrower than the sheet, the thick-plate regime, conduction mode, a keyhole aspect ratio
+past the balance). `throughput` adds editable handling overheads per part, seam and metre; `opex_per_hour` and `capex` reuse
+notebook 47's sourced parameters with KIMLA's "> 30 %" wall-plug and an assumed gantry price; `stray_cases` evaluates the beam past
+the focus and specular reflections at 20–200 m against `sc.mpe_eye_1070` / `sc.mpe_skin_1070` for stated durations with no
+aversion response, `collimated_fault` apart; `barrier_assessment` applies 47's verdict rule. ~70 s; nothing recorded elsewhere.
+
 ## One notebook, and Yanus
 
 `46_svarog.ipynb` holds the series per topic: Part I the rod, Part II the fibre laser, Part III the industrial lasers —

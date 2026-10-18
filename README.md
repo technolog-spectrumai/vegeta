@@ -132,6 +132,17 @@ economic parameters (listings, Eurostat) — and verdicts PASS / FAIL /
 INCOMPLETE in which PASS needs certified evidence, so none appears. Book fenix's F4 `shield-steady` runs the same panels by
 finite elements on request; the record is `reports/47_svarog_iii.json`.
 
+`48_kimla` (branch `dev_svarog_iii`) takes **KIMLA's fibre-laser cutting machines** (Finecut, Flashcut, Powercut, Extremecut — up to
+6, 12, 20, 30 kW as found; the maker's documents unreachable from the build environment, their URLs recorded) as hypothetical
+welding platforms at 3, 6, 12, 20 and 30 kW (`designs/kimla.py`): each tier with its own multimode process fibre and BPP range
+through one welding head; carbon steel, stainless and aluminium at 1, 2, 3 mm in butt and fillet joints — the regime, the speed the
+energy balance asks and the humping/feed cap that holds it (from 6 kW up the sheet, not the laser, sets the speed), the thin-plate
+pool, cooling, HAZ and distortion with the model's limitations stated; the throughput of a 100 mm seam and a 1 m assembly with
+editable handling overheads (the handling, not the arc, sets the parts per hour), the euro per hour and per metre; the stray beam
+past the focus and specular reflections at 20–200 m against the eye's and the skin's exposure limits for stated durations (no blink
+assumed in the infrared), the collimated fault apart, barriers INCOMPLETE until certified; the sensitivity of the capacity; the
+record `reports/48_kimla.json`. Analysis scenarios on a hypothetical head — nothing KIMLA sells, nothing validated.
+
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
 step, FEA of both leg links and the pins, lower-leg modes against stride harmonics, rainflow fatigue over three

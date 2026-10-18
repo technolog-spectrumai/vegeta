@@ -89,6 +89,18 @@ nothing load-bearing); the enclosure's panels are sheet metal sized by 49, M.2.
 - [ ] **III.9 A moving-source sheet-weld chapter** (the thin-plate field by finite elements with the keyhole as a cavity:
   L.1's first use) — deferred; the closed forms serve the comparison.
 
+## KIMLA as a welding platform (notebook 48, branch `dev_svarog_iii`)
+
+- [x] **K.1** KIMLA's cutters as found (documents unreachable: URLs recorded, dealer figures with their URLs, the conflicts
+  named) taken as hypothetical welding platforms at 3, 6, 12, 20, 30 kW with per-tier multimode optics (`designs/kimla.py`).
+- [x] **K.2** Close-range welds (three materials, 1–3 mm, butt and fillet): regime, the capped speed interval, pool, cooling,
+  HAZ, distortion, the model's limitations; throughput with editable overheads, euro per metre; the capacity's sensitivity.
+- [x] **K.3** Stray-beam safety at 20–200 m: the beam past the focus and reflections against the eye's and the skin's limits
+  (no blink), the collimated fault apart, barriers INCOMPLETE until certified.
+- [ ] **K.4** KIMLA's three documents against the input table, once reachable; a real welding-head configuration from a supplier.
+- [ ] **K.5** Weld trials per material, thickness and joint (and the humping limit with and without a wobble) before any speed,
+  penetration or strength of notebook 48 is quoted; the handling overheads timed on the real cell.
+
 ## Brokar — Svarog in the field and on Perseus (planned, not implemented)
 
 The next study after Svarog III, planned in a session on 2026-10-17 and **deferred**: **Brokar Field** (the 1 kW / 2 kW

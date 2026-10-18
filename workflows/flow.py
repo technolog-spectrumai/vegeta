@@ -156,6 +156,12 @@ flow.notebook("47_svarog_iii", title="Svarog III — four commercial fibre laser
                      *[Run("fenix/shield-steady", variant=v) for v in ("YLS-SM", "FL2000C", "FL2000CSM", "WFL-3000")]],
               gives=[File(f"{DATA}/reports/47_svarog_iii.json", keys=("meta", "specs", "optics", "energy", "welding", "shielding", "endurance", "validation_open"))])   # nothing is rerun silently: the F4 runs are optional takes
 
+flow.notebook("48_kimla", title="KIMLA as a welding platform — 3 to 30 kW analysis scenarios on a hypothetical welding head: close-range welds, throughput, euro per metre, the stray beam at 20–200 m",
+              needs=[Package("vegeta.hyperion")],
+              takes=[Data(f"{DATA}/kimla_specs.json", keys=("sources", "scenarios", "assumptions"), note="KIMLA as found (its documents unreachable), the scenarios and the assumptions"),
+                     File(f"47_svarog_iii:{DATA}/reports/47_svarog_iii.json", keys=("welding",))],
+              gives=[File(f"{DATA}/reports/48_kimla.json", keys=("meta", "scenarios", "welding", "throughput", "economics", "safety", "sensitivity", "validation_open"))])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

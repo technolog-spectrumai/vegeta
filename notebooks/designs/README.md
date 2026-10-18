@@ -340,3 +340,11 @@ and its cooling, HAZ and distortion indicators), `SHIELDS` / `shield_cases` / `s
 `shield_economics` (sourced economic parameters; `PRICES` / `speed_per_keur` / `shield_for_escape` / `escape_per_keur` the first allowances), `record` / `write_csvs`. `svarog_commercial_drawings.py` draws the beam quality against the limits,
 the stray beams against distance, the Gaussian against the imaged core, the energy budgets, the thin-plate fields, the welding
 comparison, the exposure against the MPE, the barrier indicator against distance and the verdict matrices.
+
+`kimla.py` (notebook 48, branch `dev_svarog_iii`) takes KIMLA's cutting machines as hypothetical welding platforms at 3–30 kW
+(`import kimla as km`): `SPECS` / `SCENARIOS` / `ASSUMPTIONS` (from `data/kimla_specs.json`: the figures found, the conflicts, the
+hypothetical head, every assumption with a range), `optics` / `optics_table` (the core imaged, per tier), `MATERIALS` / `JOINTS` /
+`weld_case` / `weld_matrix` / `weld_table` (regime, capped speed interval, pool, cooling, HAZ, distortion, limitations),
+`OVERHEADS` / `JOBS` / `throughput` / `capex` / `opex_per_hour` / `economics_table` / `capacity_sensitivity`, `stray_beam` /
+`stray_cases` / `collimated_fault` / `BARRIERS` / `barrier_assessment`, `record`. `kimla_drawings.py` draws the speed against power,
+the capacity and the euro per metre, the exposure against distance and the sensitivity tornado.

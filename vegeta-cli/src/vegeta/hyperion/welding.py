@@ -193,6 +193,17 @@ def _bessel_k0(x):
     return out
 
 
+def _bessel_k0e(x):
+    """e^x K₀(x): the scaled function that stays finite for any x (A&S 9.8.6's polynomial is already in this form; below
+    2 the product is taken directly)."""
+    x = np.asarray(x, dtype=float)
+    small = x <= 2.0
+    xl = np.where(small, 2.0, x)
+    z = 2.0 / xl
+    k_large = (1.25331414 + z * (-0.07832358 + z * (0.02189568 + z * (-0.01062446 + z * (0.00587872 + z * (-0.00251540 + z * 0.00053208)))))) / np.sqrt(xl)
+    return np.where(small, np.exp(np.where(small, x, 0.0)) * _bessel_k0(np.where(small, x, 1.0)), k_large)
+
+
 def thin_plate_field(material: Solid | str, absorbed_power: float, speed: float, thickness: float, xi, y, T0: float = T_ROOM) -> np.ndarray:
     """Rosenthal's moving **line** source through a thin plate (2-D, no gradient through the thickness, no surface
     losses): T − T0 = q/(2π k d) · exp(−v ξ/2κ) · K₀(v r/2κ), ξ the distance ahead of the source along the weld (negative
@@ -203,11 +214,11 @@ def thin_plate_field(material: Solid | str, absorbed_power: float, speed: float,
     kap = m.diffusivity
     r = np.hypot(xi, y)
     u = speed * np.maximum(r, 1e-12) / (2 * kap)
-    dT = absorbed_power / (2 * math.pi * m.k * thickness) * np.exp(-speed * xi / (2 * kap)) * _bessel_k0(u)
+    dT = absorbed_power / (2 * math.pi * m.k * thickness) * np.exp(-speed * xi / (2 * kap) - u) * _bessel_k0e(u)
     return np.minimum(T0 + dT, m.T_fail)
 
 
-def _isotherm_half_width(m: Solid, q: float, v: float, d: float, T_iso: float, T0: float, n: int = 400) -> tuple[float, float, float]:
+def _isotherm_half_width(m: Solid, q: float, v: float, d: float, T_iso: float, T0: float, n: int = 150) -> tuple[float, float, float]:
     """(half-width, length behind, length ahead) [m] of the T_iso isotherm of the thin-plate field, by bisection."""
     kap = m.diffusivity
     dT = T_iso - T0
@@ -215,7 +226,8 @@ def _isotherm_half_width(m: Solid, q: float, v: float, d: float, T_iso: float, T
 
     def excess(xi, y):
         r = math.hypot(xi, y)
-        return amp * math.exp(-v * xi / (2 * kap)) * float(_bessel_k0(v * max(r, 1e-12) / (2 * kap))) - dT
+        u = v * max(r, 1e-12) / (2 * kap)
+        return amp * math.exp(-v * xi / (2 * kap) - u) * float(_bessel_k0e(u)) - dT            # e^(−vξ/2κ) K₀(u) = e^(−vξ/2κ − u) · e^u K₀(u): finite behind a long tail
 
     if excess(1e-9, 0.0) <= 0:
         return 0.0, 0.0, 0.0

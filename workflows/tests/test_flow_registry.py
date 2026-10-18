@@ -95,3 +95,12 @@ def test_notebook_47_contract_is_all_optional_and_f4_is_steady_only():
     import plate_thermal
     cases = plate_thermal.cases_of("shield-steady", "WFL-3000", "screening")
     assert len(cases) == 45 and all(c["mode"] == "steady" for c in cases) and not any("t_max" in c for c in cases)
+
+
+def test_notebook_48_contract():
+    from vegeta import yanus
+    nb = library.FLOW.notebooks["48_kimla"]
+    assert not nb.auto
+    g = yanus.enter(nb, flow=library.FLOW, deep=False, raise_closed=False, auto=False)
+    keys = {r.key for r in g.rows}
+    assert any("kimla_specs.json" in k for k in keys) and any("47_svarog_iii:" in k for k in keys)
