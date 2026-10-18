@@ -53,38 +53,36 @@ def _fake_run(root, fp, *, state="completed", summary=True, workflow="airframe_c
         runkit.write_json_atomic(root / "summary.json", {"state": "completed", "counts": {"solved": 1, "n": 1, "converged": 1}, "records": [], "cases": {}})
 
 
-def test_check_run_missing_unfinished_incompatible_and_usable(tmp_path, fp2):
-    ck = kcp.check_run(None, workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert not ck["ok"] and ck["status"] == "not selected" and "airframe_cfd.py --variant 4Q-2 --chapter sweep" in ck["command"]
-    ck = kcp.check_run(tmp_path / "nowhere", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert not ck["ok"] and ck["status"].startswith("not found")
-    _fake_run(tmp_path / "running", fp2, state="running", summary=False)
-    ck = kcp.check_run(tmp_path / "running", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert not ck["ok"] and "running" in ck["status"] and "--resume" in ck["status"]
-    _fake_run(tmp_path / "other", fp2, design=kcp.fingerprint("4Q-1"))
-    ck = kcp.check_run(tmp_path / "other", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert not ck["ok"] and ck["status"].startswith("incompatible")           # the file exists and is complete: still not usable
-    _fake_run(tmp_path / "good", fp2)
-    ck = kcp.check_run(tmp_path / "good", workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert ck["ok"] and ck["compat"] == "compatible" and ck["summary"]["counts"]["solved"] == 1
-    with pytest.raises(kcp.PrerequisiteError, match="structure_fea.py --variant 4Q-2 --chapter all"):
-        kcp.require(kcp.check_run(None, workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2), what="FEA")
-    assert kcp.require(kcp.check_run(None, workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2), what="FEA", required=False) is None
-    ck = kcp.check_run(tmp_path / "good", workflow="structure_fea", variant="4Q-2", campaign="all", expected=fp2)
-    assert not ck["ok"] and "is a airframe_cfd run, not structure_fea" in ck["status"]      # a CFD run never passes as an FEA one
+def test_kestrel_runs_through_yanus_missing_unfinished_incompatible_and_usable(tmp_path, fp2):
+    from vegeta import yanus
+    base = tmp_path / "kestrel" / "airframe-sweep"
+    s = yanus.find("K1", variant="4Q-2", fingerprint=fp2, root=tmp_path)
+    assert not s.ok and s.command == "wf K1 --variant 4Q-2"
+    _fake_run(base / "running", fp2, state="running", summary=False)
+    _fake_run(base / "other", fp2, design=kcp.fingerprint("4Q-1"))
+    s = yanus.find("K1", variant="4Q-2", fingerprint=fp2, root=tmp_path)
+    assert not s.ok and {r for r, _ in s.skipped} == {"running", "other"}
+    assert yanus.find("K1", variant="4Q-2", fingerprint=fp2, run=base / "other").reasons[0].startswith("incompatible: CAD parameters differ")
+    _fake_run(base / "good", fp2)
+    s = yanus.find("K1", variant="4Q-2", fingerprint=fp2, run=base / "good")
+    assert s.ok and s.compatibility == "compatible" and s.summary["counts"]["solved"] == 1
+    assert not yanus.find("K9", variant="4Q-2", fingerprint=fp2, run=base / "good").ok          # a CFD run never passes as an FEA one
+    with pytest.raises(kcp.PrerequisiteError):                                    # one except catches both
+        raise kcp.PrerequisiteError("x")
+    assert issubclass(kcp.PrerequisiteError, yanus.RunUnusable)
 
 
 def test_notebook_prerequisites_raise_one_actionable_error_and_write_nothing(tmp_path, fp2, monkeypatch):
     import kestrel_study as kstu
-    runs = {"airframe_cfd": {"4Q-2": {"sweep": str(tmp_path / "missing")}}, "structure_fea": {"4Q-2": None}}
-    fps = {"4Q-2": fp2}
+    monkeypatch.setenv("VEGETA_WORKFLOW_RUNS", str(tmp_path))
+    sel = kstu.select_runs({v: fp2 for v in kstu.VARIANTS}, {("K1", "4Q-2"): tmp_path / "missing"}, inputs={("K1", "4Q-2"): True, ("K11", "4Q-2"): True})
     before = sorted(p.name for p in tmp_path.iterdir())
     with pytest.raises(kcp.PrerequisiteError) as exc:
-        kstu.prerequisites(runs, {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}, ("4Q-2",), fingerprints=fps)
+        kstu.prerequisites(sel, {("K1", "4Q-2"), ("K11", "4Q-2")})
     msg = str(exc.value)
-    assert "airframe_cfd.py --variant 4Q-2 --chapter sweep" in msg and "structure_fea.py --variant 4Q-2 --chapter all" in msg and "KESTREL_SCREENING" in msg
+    assert "wf K1 --variant 4Q-2" in msg and "wf K11 --variant 4Q-2" in msg and "KESTREL_SCREENING" in msg and "never runs a solver" in msg
     assert sorted(p.name for p in tmp_path.iterdir()) == before          # no run directory, no solver, nothing invented
-    table, summ = kstu.prerequisites(runs, set(), ("4Q-2",), fingerprints=fps)
+    table, summ = kstu.prerequisites(sel, set())
     assert list(table.loc[table["role"] == "optional"].index) and not summ["airframe_cfd"] and not summ["structure_fea"]
 
 
@@ -95,8 +93,9 @@ def test_import_legacy_makes_completed_runs_that_say_they_are_assumed(tmp_path, 
     assert s["state"] == "completed" and s["counts"]["n"] == 29 and s["counts"]["solved"] == 29 and "bare_sweep" in s["maps"]
     assert s["maps"]["bare_sweep"]["valid_domain"]["alpha_deg"] == [0.0, 90.0] and (roots[0] / "bare_sweep.csv").exists()
     assert all(r["converged"] in (True, False, None) for r in s["records"])
-    ck = kcp.check_run(roots[0], workflow="airframe_cfd", variant="4Q-2", campaign="sweep", expected=fp2)
-    assert ck["ok"] and ck["compat"] == "warnings" and any("assumed" in r for r in ck["reasons"]) and "imported" in ck["provenance"]
+    from vegeta import yanus
+    sel = yanus.find("K1", variant="4Q-2", fingerprint=fp2, run=roots[0])
+    assert sel.ok and sel.compatibility == "warnings" and any("assumed" in r for r in sel.compat_reasons) and "imported" in sel.run.provenance()
     # the notebook's reading of it: an unconverged screening sweep is indicative, never validated
     import kestrel_study as kstu
     c = kstu.cfd_sweep(s, kstu.build("4Q-2"))
@@ -117,7 +116,8 @@ def test_the_notebook_and_its_modules_launch_no_solver():
         text = (ROOT / "notebooks" / "designs" / mod).read_text()
         hits = [m.group(0) for m in SOLVER_CALLS.finditer(text)]
         assert not hits, (mod, hits)
-    assert "import_legacy" in src or "RUNS" in src                              # the selection is explicit in the notebook
+    assert "kstu.select_runs(FP, RUN)" in src and "legacy_" in src                # the selection is visible in the notebook: yanus.find, explicit runs
+    assert "yanus.enter" not in src and "GATE" not in src
 
 
 def test_scripts_list_without_writing(tmp_path):

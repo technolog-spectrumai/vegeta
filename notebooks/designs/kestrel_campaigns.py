@@ -14,8 +14,8 @@ checks, kept here so that both read the same definitions:
 - the **results contract**: one case's outcome from the tool's result (status, process, convergence, the numbers), the
   run's ``summary.json`` (scalars with their units and reference quantities, the case statuses, the validity domain of
   the sampled maps, CSV files for the curves) and the legacy import of the first campaign's results file;
-- the notebook side: ``load_cfd`` / ``load_fea`` by explicit run path, ``require_*`` raising ``PrerequisiteError`` with
-  the exact command that produces what is missing. Nothing here runs a solver.
+- the notebook side reads runs with Yanus (``yanus.find``: the newest usable run or an explicit one, checked with
+  ``compare`` through the registry's hook); ``PrerequisiteError`` is Yanus's ``RunUnusable``. Nothing here runs a solver.
 """
 from __future__ import annotations
 
@@ -389,103 +389,18 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
 
 # ================================================================================================= what the notebook reads
 try:
-    from vegeta.yanus import GateClosed as _GateClosed
+    from vegeta.yanus import RunUnusable as _RunUnusable
 except ImportError:                                                # pragma: no cover — vegeta-yanus/src is put on the path by _flow()
-    _GateClosed = RuntimeError
+    _RunUnusable = RuntimeError
 
 
-class PrerequisiteError(_GateClosed):
-    """A required workflow result is missing, unfinished, failed or incompatible; the message names the command.
-    (A Yanus ``GateClosed``: one ``except`` catches both.)"""
+class PrerequisiteError(_RunUnusable):
+    """A required workflow result is missing or unusable; the message names the command (a Yanus ``RunUnusable``)."""
 
 
 def command(workflow: str, *, variant: str, campaign: str, quality: str | None = None, extra: str = "") -> str:
     q = f" --quality {quality}" if quality and workflow == "airframe_cfd" else ""
     return f"{PYTHON} {SCRIPTS[workflow]} --variant {variant} --chapter {campaign}{q}{(' ' + extra) if extra else ''}"
-
-
-def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None, chapter: str | None = None) -> list[dict]:
-    """The runs on disk for the engineer to pick from (newest first), under ``workflows/runs/<book>/<chapter>/``:
-    id, chapter, variant, state, counts. Listing only — the notebook never picks one by itself."""
-    from workflows_runkit import list_runs, read_json
-    out = []
-    book = Path(base) / BOOK
-    if not book.is_dir():
-        return out
-    mine = {v for (w, _), v in CHAPTERS.items() if w == workflow}
-    for ch in sorted(book.iterdir()):
-        if not ch.is_dir() or ch.name not in mine or (chapter and ch.name not in (chapter, CHAPTERS.get((workflow, chapter)))):
-            continue
-        for r in list_runs(ch):
-            m = read_json(Path(r["run"]) / "manifest.json") or {}
-            v = (m.get("config") or {}).get("variant")
-            if variant and v != variant:
-                continue
-            out.append({**r, "book": BOOK, "chapter": ch.name, "variant": v, "quality": (m.get("config") or {}).get("quality")})
-    return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
-
-
-def _load(run_dir, workflow: str) -> dict:
-    from workflows_runkit import load_run
-    if run_dir is None:
-        return {"root": None, "manifest": None, "status": None, "summary": None, "partial": None}
-    p = Path(run_dir)
-    if not p.is_absolute():
-        p = ROOT / p
-    d = load_run(p)
-    if d["manifest"] and d["manifest"].get("workflow") != workflow:
-        raise PrerequisiteError(f"{p} is a {d['manifest'].get('workflow')} run, not {workflow}")
-    return d
-
-
-def check_run(run_dir, *, workflow: str, variant: str, campaign: str, expected: dict, blown: bool = False, quality: str | None = None,
-              states=("completed",)) -> dict:
-    """Everything the prerequisite table shows for one input: ``ok`` (usable), ``status`` text, the run's provenance,
-    the compatibility level and reasons, the summary when usable, and the ``command`` that would produce it."""
-    cmd = command(workflow, variant=variant, campaign=campaign, quality=quality)
-    out = {"run": None if run_dir is None else str(run_dir), "ok": False, "status": "not selected", "provenance": "", "compat": "", "reasons": [], "summary": None, "command": cmd, "manifest": None}
-    if run_dir is None:
-        return out
-    try:
-        d = _load(run_dir, workflow)
-    except PrerequisiteError as exc:
-        out["status"] = str(exc)
-        return out
-    m, st, s = d["manifest"], d["status"], d["summary"]
-    if m is None:
-        out["status"] = f"not found: {Path(run_dir)} has no manifest.json"
-        return out
-    out["manifest"] = m
-    prov = m.get("provenance") or {}
-    out["provenance"] = (f"imported from {Path(prov['imported_from']).name} ({prov.get('notebook')}, {prov.get('date')}, {prov.get('quality')}, {prov.get('iterations')} it)" if prov.get("imported_from")
-                         else f"{m.get('campaign')} run {m.get('run_id')} on {m.get('host')}, {m.get('created_at', '')[:10]}, {(m.get('config') or {}).get('quality', '')} "
-                              f"(git {(m.get('tool_versions') or {}).get('git')}{' dirty' if (m.get('tool_versions') or {}).get('git_dirty') else ''})")
-    state = (st or {}).get("state")
-    if state not in states or s is None:
-        out["status"] = f"run state '{state}' (no completed summary.json): " + ("still running or interrupted — resume it with --resume" if state in ("running", "prepared", "cancelled") else "failed — read run.log")
-        return out
-    cmp_ = compare(expected, m.get("design"), blown=blown)
-    out["compat"], out["reasons"] = cmp_["level"], cmp_["reasons"]
-    if cmp_["level"] == "incompatible":
-        out["status"] = "incompatible: " + "; ".join(cmp_["reasons"])
-        return out
-    c = s.get("counts", {})
-    out["summary"] = s
-    out["ok"] = True
-    out["status"] = f"completed: {c.get('solved', 0)} of {c.get('n', 0)} solved" + (f", {c.get('converged', 0)} converged" if "converged" in c else "") + \
-        (f", {c.get('FAILED', 0)} failed" if c.get("FAILED") else "") + (f", {c.get('diverged', 0)} diverged" if c.get("diverged") else "")
-    return out
-
-
-def require(check: dict, *, what: str, required: bool = True) -> dict | None:
-    """Raise ``PrerequisiteError`` for a required input that is not usable; return its summary otherwise (``None``
-    for an optional input that is not there: the notebook shows NOT RUN and its analytical estimate)."""
-    if check["ok"]:
-        return check["summary"]
-    if not required:
-        return None
-    raise PrerequisiteError(f"{what}: {check['status']}.\n  Produce it with:\n    {check['command']}\n  then pin the run directory it prints (yn pin 43_kestrel_study <chapter> --variant <v> <run dir>)."
-                            + ("\n  Available runs: workflows/runs/ (kestrel_campaigns.find_runs)" if check["run"] is None else ""))
 
 
 def records_frame(summary: dict):

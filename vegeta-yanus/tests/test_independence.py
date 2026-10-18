@@ -1,5 +1,5 @@
 """vegeta.yanus stands alone: it imports no other vegeta package, nothing of workflows/ or the design modules, and
-it starts no process except a tool's version probe (needs.py) — it guards, it never drives."""
+it starts no process except a tool's version probe (needs.py) — it reads and checks runs, it never starts one."""
 import ast
 from pathlib import Path
 
@@ -24,10 +24,9 @@ def test_no_other_vegeta_imports():
     assert bad == []
 
 
-def test_no_process_launch_outside_the_version_probe_and_auto_mode():
-    """Yanus guards: only ``needs.py`` (the version probe) and ``auto.py`` (auto mode, the one face that drives) may
-    start a process."""
-    bad = [f"{p.name}: {n}" for p in SRC.rglob("*.py") if p.name not in ("needs.py", "auto.py") for n in _imports(p) if n in ("subprocess", "multiprocessing", "pty")]
+def test_no_process_launch_outside_the_version_probe():
+    """Only ``needs.py`` (the ``--version`` probe of a tool, for ``yn doctor``) may start a process."""
+    bad = [f"{p.name}: {n}" for p in SRC.rglob("*.py") if p.name != "needs.py" for n in _imports(p) if n in ("subprocess", "multiprocessing", "pty")]
     for p in SRC.rglob("*.py"):
         for node in ast.walk(ast.parse(p.read_text())):
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "os" and \

@@ -70,14 +70,19 @@ def read_run(root) -> RunView:
         v.problem = f"not found: {root}"
         return v
     v.manifest = read_json(root / "manifest.json")
-    if v.manifest is None:
-        v.problem = f"not found: {root} has no manifest.json"
+    if not isinstance(v.manifest, dict):
+        v.manifest = None
+        v.problem = f"{root}: manifest.json is not readable JSON" if (root / "manifest.json").exists() else f"not found: {root} has no manifest.json"
         return v
     if v.manifest.get("schema") != SCHEMA:
         v.problem = f"run directory schema {v.manifest.get('schema')!r}, this Yanus reads schema {SCHEMA}"
         return v
-    v.status = read_json(root / "status.json") or {}
+    v.status = read_json(root / "status.json")
+    if not isinstance(v.status, dict):
+        v.status = {}
     v.summary = read_json(root / "summary.json")
+    if not isinstance(v.summary, dict):
+        v.summary = None
     v.partial = read_json(root / "summary.partial.json")
     v.state = v.status.get("state")
     if v.state == "running" and not _alive(v.status.get("pid")):
@@ -99,7 +104,7 @@ def runs_of(runs_root, book: str, chapter: str | None = None, *, variant: str | 
             if d.is_dir() and (d / "manifest.json").exists():
                 r = read_run(d)
                 r.extra["chapter"] = ch.name
-                if variant and r.variant != variant:
+                if variant and r.variant != variant and not r.problem:     # a broken run stays listed, with its problem
                     continue
                 out.append(r)
     return sorted(out, key=lambda r: r.created_at, reverse=True)

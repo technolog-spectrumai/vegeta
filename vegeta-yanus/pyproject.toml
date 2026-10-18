@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vegeta-yanus"
-version = "0.1.0"
-description = "Yanus, the door keeper: the contracts between Vegeta's notebooks and workflows (needs, takes, gives), the gates that check them, pins, stamps and scaffolds"
+version = "0.2.0"
+description = "Yanus: finds, reads and checks the saved runs of Vegeta's workflows (never starts one); the workflow registry wf reads"
 readme = "README.md"
 license = { text = "Proprietary - internal use only" }
 classifiers = ["Private :: Do Not Upload"]

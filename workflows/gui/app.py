@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
         rl.addWidget(self.runs_table, 1)
         rb = QHBoxLayout()
         for text, slot, tip in (("Follow", self.follow_selected, "Show this run's log and progress"), ("Resume", self.resume_selected, "Continue an interrupted or partial run"),
-                                ("Stop", self.stop_selected, "SIGINT to a running run"), ("Notebook line", self.notebook_selected, "Copy the yn pin command(s) of the notebooks that read this run"),
+                                ("Stop", self.stop_selected, "SIGINT to a running run"), ("Notebook line", self.notebook_selected, "Copy the yanus.find line a notebook reads this run with"),
                                 ("Open folder", self.open_selected, "The run directory in the file manager")):
             b = QPushButton(text)
             b.setToolTip(tip)

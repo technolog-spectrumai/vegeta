@@ -163,29 +163,26 @@ def runs_of(book: str, chapter: str | None = None, *, variant: str | None = None
 
 
 def latest_completed(book: str, chapter: str, *, variant: str, expected: dict | None = None) -> dict | None:
-    """The newest completed run of the chapter for the variant whose fingerprint is compatible with ``expected``."""
-    kc = _kc() if expected is not None else None
-    for r in runs_of(book, chapter, variant=variant):
-        if r["state"] != "completed" or not r["summary"]:
-            continue
-        if expected is not None:
-            from runkit import read_json
-            m = read_json(Path(r["run"]) / "manifest.json") or {}
-            if kc.compare(expected, m.get("design"))["level"] == "incompatible":
-                continue
-        return r
-    return None
+    """The newest usable run of the chapter for the variant (Yanus ``find``: completed, not a mock, compatible with
+    ``expected`` when given), as a ``runs_of`` row; ``None`` when there is none."""
+    from vegeta.yanus import find
+    sel = find(f"{book}/{chapter}", variant=variant, fingerprint=expected, flow=FLOW, root=RUNS)
+    if not sel.ok:
+        return None
+    return next((r for r in runs_of(book, chapter, variant=variant) if Path(r["run"]).resolve() == sel.run.root.resolve()), None)
 
 
 def check_prerequisites(book: str, chapter: str, *, variant: str, expected: dict | None = None) -> list[str]:
-    """The prerequisite chapters (same book) that have **no** completed compatible run for the variant, each with the
-    command that would make one. Empty when the chapter may start."""
+    """The prerequisite chapters (same book) that have **no** usable run for the variant, each with the command that
+    would make one. Empty when the chapter may start."""
+    from vegeta.yanus import find
     chs = chapters(book)
     missing = []
     for pre in BOOKS[book]["chapters"][chapter]["prerequisites"]:
-        if latest_completed(book, pre, variant=variant, expected=expected) is None:
+        sel = find(f"{book}/{pre}", variant=variant, fingerprint=expected, flow=FLOW, root=RUNS)
+        if not sel.ok:
             info = chs[pre]
-            missing.append(f"{info['code']} ({pre}) has no completed run for {variant}:  wf {info['code']} --variant {variant}   "
+            missing.append(f"{info['code']} ({pre}) has no usable run for {variant} ({'; '.join(sel.reasons)}):  wf {info['code']} --variant {variant}   "
                            f"(= {info['script']} --variant {variant} --chapter {info['campaign']})")
     return missing
 
@@ -230,7 +227,7 @@ def all_runs() -> list[dict]:
     return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
 
 
-# ----------------------------------------------------------------------------------------------- Yanus: needs and pins
+# ----------------------------------------------------------------------------------------------- Yanus: needs, reading a run
 def needs_status(book: str, chapter: str) -> dict:
     """The chapter's needs on this machine (Yanus): ``{"ok", "missing": [labels], "line": "✔ OpenFOAM v2406 · ✘ ccx"}``."""
     from vegeta.yanus import check_need
@@ -240,21 +237,15 @@ def needs_status(book: str, chapter: str) -> dict:
             "line": " · ".join(f"{'✔' if r.ok else '✘'} {r.need.label}" + (f" {r.version}" if r.ok and r.version and r.version != "found" else "") for r in res)}
 
 
-def pin_commands(run_dir, manifest: dict | None = None) -> list[str]:
-    """The ``yn pin`` command of every notebook that takes this run's chapter and variant (Yanus pins replace the
-    hand-edited ``RUNS`` dict); empty when no notebook reads it. ``manifest`` = the run's, when the caller holds it."""
+def read_snippet(run_dir, manifest: dict | None = None) -> str | None:
+    """The line a notebook uses to read this run explicitly (``yanus.find(..., run=...)``); ``None`` for a run of no
+    registered chapter, or a mock run (never read as a result)."""
     from runkit import read_json
     d = Path(run_dir)
     m = manifest if manifest is not None else (read_json(d / "manifest.json") or {})
     book, chapter, variant = m.get("book"), m.get("chapter"), (m.get("config") or {}).get("variant")
-    if book not in FLOW.books or chapter not in FLOW.books[book].chapters:
-        return []
-    from vegeta.yanus import Run
+    if m.get("mock") or book not in FLOW.books or chapter not in FLOW.books[book].chapters:
+        return None
     ch = FLOW.books[book].chapters[chapter]
     rel = d.resolve().relative_to(ROOT) if ROOT in d.resolve().parents else d
-    out = []
-    for nb in FLOW.notebooks.values():
-        for t in nb.takes:
-            if isinstance(t, Run) and t.chapter == ch.ref and t.variant in (None, variant):
-                out.append(f"yn pin {nb.name} {ch.code}" + (f" --variant {variant}" if t.variant else "") + f" {rel}")
-    return out
+    return f'yanus.find("{ch.code}"' + (f', variant="{variant}"' if variant else "") + f', run="{rel}")'

@@ -21,9 +21,8 @@ What follows from it, for every notebook in the repository:
   that produces it when it is missing — it never substitutes an invented result.
 - A notebook **never launches a solver silently**: not behind an import, not inside a plotting call, not in a
   "load or compute" helper. Expensive work that a notebook does itself (a Boreas table, a NeuralFoil polar — tens
-  of seconds) is announced in the cell that does it. The one loud exception: a notebook flagged `yanus_auto`
-  (`docs/yanus.md` § 16) runs the chapters it is missing in **screening quality**, in the foreground, through its
-  Yanus gate — the gate says what it started and the results are labelled indicative.
+  of seconds, a short solver call) is announced in the cell that does it. Yanus, which reads the runs, never starts
+  anything: a missing run is reported with the `wf` command that makes it.
 - A result that is missing, stale, incompatible, running or failed is **NOT RUN** in the notebook: the analytical
   estimate stays visible beside it, labelled as such; optional validation may stay NOT RUN, required inputs stop
   the notebook with an actionable exception.
@@ -62,13 +61,14 @@ The exported files follow the structure: every run is `workflows/runs/<book>/<ch
 does not start until each prerequisite has a completed run for the same variant with a compatible fingerprint
 (`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `workflows/flow.py` (Yanus, `docs/yanus.md`): the books, each chapter in order with its kind, the
 script's campaign it maps to and its prerequisite chapters (`takes=[Run(...)]`), each kind's script and what it needs
-on the machine, and the notebooks' contracts. `workflows/library.py` generates `BOOKS` / `KINDS` from it for `wf` and
+on the machine. `workflows/library.py` generates `BOOKS` / `KINDS` from it for `wf` and
 the GUI. A new chapter is one line there (`yn new chapter kestrel/<name> --kind fea`), a new book a new entry and a new
 script (`--new-kind` writes the skeleton).
 
-A notebook reads the runs **pinned** for it in `notebooks/pins/<notebook>.json` (`yn pin`, `wf notebook <run>` prints
-the command); its entry gate (`yanus.enter`) checks the pins, the tools and the other notebooks' files and raises one
-error with every fix; its exit gate (`GATE.leave()`) checks and stamps what it promised to write.
+A notebook reads a run with `yanus.find("K1", variant=…, fingerprint=…, quality=…)`: the newest usable run, or the
+directory it names with `run=` (`wf notebook <run>` prints that line). Yanus checks the state, the summary, the
+quality, the mock label and the design fingerprint, and says why a run is unusable and which `wf` command makes one
+(`docs/yanus.md`).
 
 **Cache.** A case is identified by its key (template, every value, the geometry file's hash, the quality). When a
 run of a book asks for a case any earlier run of that book already solved, the case record is read back from

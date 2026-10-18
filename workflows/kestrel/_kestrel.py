@@ -98,12 +98,12 @@ def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: di
     return GATE["missing"]
 
 
-def pin_hint(run: runkit.Run) -> str:
-    """The closing line that tells the engineer how a notebook reads this run (``yn pin``)."""
+def read_hint(run: runkit.Run) -> str:
+    """The closing line: how a notebook reads this run (``yanus.find``), or why none does."""
     if run.manifest.get("mock"):
         return "MOCK run (vegeta.mock / Mimesis): stub numbers, for testing the pipeline — no notebook reads it"
-    pins = library.pin_commands(run.root, run.manifest)
-    return ("notebook: " + "   |   ".join(pins)) if pins else "no notebook declares this chapter and variant in workflows/flow.py yet"
+    line = library.read_snippet(run.root, run.manifest)
+    return f"notebook: {line}   (or yanus.find(...) without run= for the newest usable run)" if line else "no chapter of workflows/flow.py matches this run"
 
 
 def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.Budget, rerun_failed: bool = False, case_dirs: dict | None = None,
@@ -165,7 +165,7 @@ def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.B
 
 def closing(run: runkit.Run, code: int, *, hint: str, progress: "Progress | None" = None) -> None:
     """The last lines of every run: where the output is (the summary file, or the partial one), then the status, the
-    log and the notebook / pin hint."""
+    log and the notebook hint (yanus.find)."""
     if progress:
         progress.close()
     summ = run.root / "summary.json" if (run.root / "summary.json").exists() else (run.root / "summary.partial.json" if (run.root / "summary.partial.json").exists() else None)

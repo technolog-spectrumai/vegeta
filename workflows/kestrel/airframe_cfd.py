@@ -143,7 +143,7 @@ def main(argv=None) -> int:
         run.add_artifact(k, run.root / mp["file"])
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=wk.pin_hint(run) + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
+    wk.closing(run, code, hint=wk.read_hint(run) + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
     return code
 
 

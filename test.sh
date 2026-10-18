@@ -66,7 +66,7 @@ check core        "$PY" -c "from vegeta import core; print('vegeta.core', core._
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
 optional mimesis  "$PY" -c "import mimesis; print('mimesis', mimesis.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
-optional yanus    "$PY" -c "from vegeta import yanus; f = yanus.load_flow('$ROOT/workflows/flow.py'); print('vegeta.yanus', yanus.__version__, f'(the door keeper: {len(f.units())} units in workflows/flow.py; yn doctor)')"
+optional yanus    "$PY" -c "from vegeta import yanus; f = yanus.load_flow('$ROOT/workflows/flow.py'); print('vegeta.yanus', yanus.__version__, f'(the saved-run reader: {len(f.chapters())} chapters in workflows/flow.py; yn find, yn doctor)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
 import tempfile
 from vegeta.fidia import execute

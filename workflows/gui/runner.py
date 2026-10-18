@@ -159,18 +159,5 @@ def resume_argv(run_dir: Path) -> list[str] | None:
 
 
 def notebook_line(run_dir: Path) -> str:
-    pins = library.pin_commands(run_dir)
-    if pins:
-        return "; ".join(pins)
-    m = runkit.read_json(Path(run_dir) / "manifest.json") or {}
-    cfg = m.get("config") or {}
-    rel = Path(run_dir).relative_to(ROOT) if ROOT in Path(run_dir).parents else Path(run_dir)
-    if m.get("workflow") == "airframe_cfd":
-        ch = m.get("chapter") or cfg.get("chapter")
-        camp = (library.BOOKS.get(m.get("book"), {}).get("chapters", {}).get(ch) or {}).get("campaign") or cfg.get("campaign", "sweep")
-        if camp == "legacy-import":
-            camp = "sweep"
-        return f'RUNS["airframe_cfd"]["{cfg.get("variant")}"]["{camp}"] = "{rel}"'
-    if m.get("workflow") == "structure_fea":
-        return f'RUNS["structure_fea"]["{cfg.get("variant")}"] = "{rel}"'
-    return f"# {m.get('workflow')}: not read by the notebook"
+    """The ``yanus.find(..., run=...)`` line a notebook reads this run with."""
+    return library.read_snippet(run_dir) or "no notebook reads this run (no registered chapter, or a mock run)"

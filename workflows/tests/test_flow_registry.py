@@ -32,13 +32,15 @@ def test_flow_validates_and_campaigns_share_it():
     assert kcp.SCRIPTS["import_legacy"] == library.IMPORTS["import_legacy"]["script"]
 
 
-def test_pin_commands_name_the_notebooks_that_read_a_run(tmp_path):
+def test_read_snippet_names_the_find_line_of_a_run(tmp_path):
     d = tmp_path / "r"
     d.mkdir()
     (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "kestrel", "chapter": "airframe-sweep", "config": {"variant": "4Q-2"}}))
-    assert library.pin_commands(d) == [f"yn pin 43_kestrel_study K1 --variant 4Q-2 {d}"]
-    (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "kestrel", "chapter": "airframe-stall", "config": {"variant": "4Q-2"}}))
-    assert library.pin_commands(d) == []
+    assert library.read_snippet(d) == f'yanus.find("K1", variant="4Q-2", run="{d}")'
+    (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "kestrel", "chapter": "airframe-sweep", "config": {"variant": "4Q-2"}, "mock": True}))
+    assert library.read_snippet(d) is None                                         # a mock run is read by no notebook
+    (d / "manifest.json").write_text(json.dumps({"schema": 1, "book": "other", "chapter": "x"}))
+    assert library.read_snippet(d) is None
 
 
 def test_needs_status():
@@ -58,25 +60,19 @@ def test_wf_run_stops_when_a_need_is_missing():
     assert out.returncode == 2 and "needs ccx" in out.stderr and "--prepare-only" in out.stderr
 
 
-def test_notebook_43_contract_matches_its_runs_shape():
+def test_notebook_43_reads_its_runs_with_yanus_and_stops_on_the_required_ones(tmp_path, monkeypatch):
+    import kestrel_campaigns as kcp
     import kestrel_study as kstu
-    from vegeta import yanus
-    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=False, auto=False)   # the manual shape (43 is yanus_auto)
-    runs, required = kstu.runs_from_gate(g)
-    assert set(runs["airframe_cfd"]) == {"4Q-1", "4Q-2", "4Q-3"} and "4Q-2" in runs["structure_fea"]
-    assert required == {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}
-    g = yanus.enter("43_kestrel_study", flow=library.FLOW, deep=False, raise_closed=False, screening=True, auto=False)
-    assert kstu.runs_from_gate(g)[1] == set()
-
-
-def test_notebook_43_is_yanus_auto_and_its_plan_runs_screening_quality():
-    from vegeta import yanus
-    nb = library.FLOW.notebooks["43_kestrel_study"]
-    assert nb.auto and library.FLOW.notebooks["45_kestrel_x"].auto
-    first = yanus.enter(nb, flow=library.FLOW, deep=False, raise_closed=False, auto=False)
-    steps = yanus.auto.plan(library.FLOW, first)
-    cfd = [s for s in steps if s.unit.kind and s.unit.kind.name == "cfd"]
-    fea = [s for s in steps if s.unit.kind and s.unit.kind.name == "fea"]
-    assert all(s.argv[-2:] == ["--quality", "screening"] for s in cfd)
-    assert all("--element-size" in s.argv for s in fea)
-    assert all(s.state in ("planned", "skipped") for s in steps)        # a plan starts nothing
+    import pytest
+    monkeypatch.setenv("VEGETA_WORKFLOW_RUNS", str(tmp_path))                     # no run on disk
+    fps = {v: kcp.fingerprint(v) for v in kstu.VARIANTS}
+    sel = kstu.select_runs(fps, {("K1", "4Q-2"): tmp_path / "legacy_gone"})
+    assert set(sel) == set(kstu.INPUTS) and not any(s.ok for s in sel.values())
+    assert sel[("K1", "4Q-2")].explicit and sel[("K1", "4Q-2")].command.startswith("wf import_legacy")     # an explicit run is never replaced
+    assert {k for k, req in kstu.INPUTS.items() if req} == {("K1", "4Q-2"), ("K11", "4Q-2")}
+    with pytest.raises(kcp.PrerequisiteError) as exc:
+        kstu.prerequisites(sel, {("K1", "4Q-2"), ("K11", "4Q-2")})
+    msg = str(exc.value)
+    assert "wf import_legacy" in msg and "wf K11 --variant 4Q-2" in msg and "KESTREL_SCREENING" in msg
+    table, summ = kstu.prerequisites(sel, set())                                   # screening: everything optional, NOT RUN
+    assert (table.loc[[s.label for s in sel.values()], "role"] == "optional").all() and summ == {"airframe_cfd": {}, "structure_fea": {}}

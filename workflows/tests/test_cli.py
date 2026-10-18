@@ -36,7 +36,7 @@ def test_runs_status_and_notebook_line_on_a_fake_run(tmp_path, monkeypatch):
     out = subprocess.run([sys.executable, str(CLI), "status", "demo_run"], capture_output=True, text=True, cwd=ROOT, env={**os.environ, **env}, timeout=120)
     assert out.returncode == 0 and "state completed" in out.stdout and "use it in the notebook" in out.stdout
     out = subprocess.run([sys.executable, str(CLI), "notebook", "demo_run"], capture_output=True, text=True, cwd=ROOT, env={**os.environ, **env}, timeout=120)
-    assert out.returncode == 0 and 'RUNS["airframe_cfd"]["4Q-2"]["stall"]' in out.stdout
+    assert out.returncode == 0 and 'yanus.find("K2", variant="4Q-2", run=' in out.stdout and "explicit run demo_run" in out.stdout
     out = subprocess.run([sys.executable, str(CLI), "stop", "demo_run"], capture_output=True, text=True, cwd=ROOT, env={**os.environ, **env}, timeout=120)
     assert out.returncode == 1 and "no running process" in out.stdout
 

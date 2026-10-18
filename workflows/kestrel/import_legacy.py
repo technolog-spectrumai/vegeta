@@ -35,9 +35,8 @@ def main(argv=None) -> int:
         print("nothing imported: no campaign of those keys in the file")
         return 1
     for r in roots:
-        for line in wk.library.pin_commands(r):
-            print(f"notebook: {line}")
-    print("(the import holds the bare sweep and the blown points of its campaign; notebooks/pins/43_kestrel_study.json pins them already)")
+        print(f"notebook: {wk.library.read_snippet(r)}")
+    print("(the import holds the bare sweep and the blown points of its campaign; notebook 43 reads them by explicit run directory)")
     return 0
 
 

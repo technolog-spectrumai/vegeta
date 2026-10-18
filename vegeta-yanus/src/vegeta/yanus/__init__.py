@@ -1,22 +1,20 @@
-"""Yanus — the door keeper between Vegeta's notebooks and workflows.
-
-Every unit (a notebook, a workflow chapter) declares in the project's flow registry (``workflows/flow.py``) what it
-**needs** on the machine, what it **takes** from other units and what it **gives**. ``enter`` checks the needs and
-the takes before the unit starts and raises one ``GateClosed`` with every fix; ``Gate.leave`` checks the gives and
-stamps them. Yanus guards; it drives only in **auto mode** (a notebook's ``auto=True`` flag, ``YANUS_AUTO=1``), where
-a missing take is produced in screening quality before the gate opens, and the gate never closes (``auto.py``).
+"""Yanus — finds, reads and checks the saved runs of Vegeta's workflows. It never starts a computation.
 
     from vegeta import yanus
-    gate = yanus.enter("43_kestrel_study")        # the gate table; GateClosed with the commands when closed
-    ...
-    gate.leave()                                  # the promised files written and stamped
+    sel = yanus.find("K1", variant="4Q-2", fingerprint=FP, quality="fine")      # the newest usable run (or run=<dir>)
+    display(sel)                       # which run, its state, quality and compatibility — or why none, with the wf command
+    summary = sel.require()            # RunUnusable when it is missing or unusable
+    report_meta["runs"] = {"K1": sel.provenance()}
+
+The workflow registry (``workflows/flow.py``: books, kinds, chapters, their needs and prerequisites) is read by ``wf``,
+the GUI and the scripts; ``check_chapter`` is a script's entry check; ``check_need`` the machine diagnostics.
 """
-from .contract import AnyOf, Book, Data, Chapter, Env, File, Flow, FlowError, Import, Kind, Need, Notebook, Package, Run, Tool, Unit
-from . import auto
-from .gate import Gate, GateClosed, Row, check_chapter, enter
+from .chapters import check_chapter
+from .contract import AnyOf, Book, Chapter, Env, Flow, FlowError, Import, Kind, Need, Package, Run, Tool
 from .needs import check_need, check_needs
 from .registry import current, find_flow_file, load_flow, use
+from .select import RunUnusable, Selection, check, command, find, runs_root, table
 
-__all__ = ["AnyOf", "Book", "Data", "Chapter", "Env", "File", "Flow", "FlowError", "Gate", "GateClosed", "Import", "Kind", "Need", "Notebook", "Package", "Row",
-           "Run", "Tool", "Unit", "auto", "check_chapter", "check_need", "check_needs", "current", "enter", "find_flow_file", "load_flow", "use"]
-__version__ = "0.1.0"
+__all__ = ["AnyOf", "Book", "Chapter", "Env", "Flow", "FlowError", "Import", "Kind", "Need", "Package", "Run", "RunUnusable", "Selection", "Tool",
+           "check", "check_chapter", "check_need", "check_needs", "command", "current", "find", "find_flow_file", "load_flow", "runs_root", "table", "use"]
+__version__ = "0.2.0"

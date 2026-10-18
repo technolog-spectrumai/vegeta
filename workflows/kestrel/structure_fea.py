@@ -112,7 +112,7 @@ def main(argv=None) -> int:
     summary = kc.fea_summary(variant=args.variant, campaign=args.chapter, cases=[byname[n] for n in names], records=run.records, veh=veh, run_root=run.root)
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=wk.pin_hint(run))
+    wk.closing(run, code, hint=wk.read_hint(run))
     return code
 
 

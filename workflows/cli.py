@@ -281,29 +281,15 @@ def cmd_stop(args) -> int:
 
 
 def cmd_notebook(args) -> int:
+    """The line a notebook reads this run with, and whether Yanus would accept it (a read: nothing is run)."""
     d = _run_dir(args.run)
-    for line in library.pin_commands(d):
-        print(line)
-    print("# the older RUNS form (notebooks not yet on Yanus pins):")
+    line = library.read_snippet(d)
+    print(line or "# no chapter of workflows/flow.py matches this run (or it is a mock run): no notebook reads it")
     m = runkit.read_json(d / "manifest.json") or {}
-    cfg = m.get("config") or {}
-    rel = d.relative_to(ROOT) if ROOT in d.parents else d
-    w = m.get("workflow")
-    if w == "airframe_cfd":
-        ch = m.get("chapter") or cfg.get("chapter")
-        camp = (BOOKS.get(m.get("book"), {}).get("chapters", {}).get(ch) or {}).get("campaign") or cfg.get("campaign", "sweep")
-        if camp == "legacy-import":
-            camp = "sweep"
-        print(f'RUNS["airframe_cfd"]["{cfg.get("variant")}"]["{camp}"] = "{rel}"')
-    elif w == "structure_fea":
-        print(f'RUNS["structure_fea"]["{cfg.get("variant")}"] = "{rel}"')
-    else:
-        print(f"# {w}: not read by the notebook")
-    st = (runkit.read_json(d / "status.json") or {}).get("state")
-    if st != "completed":
-        print(f"# note: the run's state is {st!r} — the notebook accepts completed runs only")
+    if line:
+        from vegeta.yanus import find
+        print("# " + find(f"{m.get('book')}/{m.get('chapter')}", variant=(m.get("config") or {}).get("variant"), run=d, flow=library.FLOW).text().replace("\n", "\n# "))
     return 0
-
 
 def cmd_batch(args) -> int:
     import batch as _batch

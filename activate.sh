@@ -5,7 +5,7 @@
 #     (the libraries import even without a pip install of the distributions)
 #   - defines `wf`  = the workflows tool (workflows/cli.py): wf list | wf info … | wf run … | wf runs | wf status … | wf cache
 #     and   `wfrun` = a book's script directly (wfrun kestrel_airframe --chapter stall …)
-#   - defines `yn`  = Yanus, the door keeper (vegeta-yanus): yn status | yn why 43 | yn doctor | yn pin … | yn new …
+#   - defines `yn`  = Yanus (vegeta-yanus), the saved-run reader: yn find K1 --variant 4Q-2 | yn doctor | yn validate | yn new chapter …
 # Nothing is run; sourcing only arranges the environment.
 if [ -n "${BASH_SOURCE:-}" ]; then _VEGETA_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; else _VEGETA_ROOT="$(pwd)"; fi
 export VEGETA_ROOT="$_VEGETA_ROOT"
@@ -53,4 +53,4 @@ echo "Vegeta: python=$(command -v python)  root=$VEGETA_ROOT  OpenFOAM: $_of  Ca
 echo "  wf                 interactive: the tree of books and chapters; pick one by code (K1, k2 …)"
 echo "  wf list | wf runs | wf status <run> | wf tail <run> | wf cache | wf clean-cache"
 echo "  wf K2 --detach --variant 4Q-2 --quality fine"
-echo "  yn status | yn why 43 | yn doctor | yn pin 43 K1 --variant 4Q-2 <run>   (Yanus: what is ready, what blocks, what to run)"
+echo "  yn find K1 --variant 4Q-2 | yn doctor   (Yanus: the run a notebook would read, or why none; what this machine can run)"

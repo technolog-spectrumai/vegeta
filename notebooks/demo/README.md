@@ -9,8 +9,7 @@ Short notebooks that show one feature of Vegeta each. They are not design studie
 | `10_agentic_design` | a bounded AI campaign: FEA on every candidate, criteria, budget, approval |
 | `15_fidia_prompt_to_3d` | Fidia: from a prompt to a checked 3D model (offline without a key) |
 
-They are on the Yanus gates, with their contracts in `workflows/flow.py` (`folder="demo"`). They read nothing from
-`designs/`. Their scratch files go to `notebooks/demo/_runs/`, which is gitignored. Run one with:
+They read no workflow runs and nothing from `designs/`. Their scratch files go to `notebooks/demo/_runs/`, which is gitignored. Run one with:
 
 ```bash
 .venv/bin/jupyter nbconvert --to notebook --execute notebooks/demo/15_fidia_prompt_to_3d.ipynb --output-dir /tmp

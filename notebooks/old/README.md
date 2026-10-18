@@ -28,7 +28,7 @@ cd notebooks && ../.venv/bin/jupyter nbconvert --to notebook --execute old/40_ke
 `01_dedalus_cad`, `02_talos_fea`, `03_aeromant_cfd`, `04_mellonia_print` and `05_workflow` (the tools chained by
 hand, every step explicit) date from when the question was whether the tools ran at all. They stay as runnable
 examples and as the first thing to open after an install (`00_smoke_test`), but they are not design studies and are
-not on the Yanus gates. They read nothing from `designs/`; run from here they write their scratch files to
+not kept up to date. They read nothing from `designs/`; run from here they write their scratch files to
 `notebooks/old/_runs/` (gitignored):
 
 ```bash

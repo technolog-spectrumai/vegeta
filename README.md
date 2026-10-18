@@ -22,8 +22,8 @@ Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes 
 
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
 `vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
-output, images, cancellation, usage) and **`vegeta-yanus`**, the door keeper between notebooks and workflows (every
-unit's needs, takes and gives in `workflows/flow.py`; the gates that check them; `yn status`; `docs/yanus.md`).
+output, images, cancellation, usage) and **`vegeta-yanus`**, which finds, reads and checks the saved runs of the workflows
+for the notebooks (`yanus.find`; it never starts one) and holds the workflow registry `workflows/flow.py` (`docs/yanus.md`).
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports

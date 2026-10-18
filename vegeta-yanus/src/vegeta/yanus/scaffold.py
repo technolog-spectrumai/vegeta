@@ -1,75 +1,8 @@
-"""scaffold — new units start from the shape the others share: a notebook with the common header and both gates,
-a chapter as a registry entry (and, for a new kind, a runkit script skeleton). Never overwrites a file."""
+"""scaffold — a new chapter starts from the shape the others share: a registry entry (and, for a new kind, a runkit
+script skeleton). Never overwrites a file."""
 from __future__ import annotations
 
-import json
-import re
 from pathlib import Path
-
-NAME = re.compile(r"^\d{2}[a-z]?_[a-z0-9_]+$")
-
-
-def _md(text: str) -> dict:
-    return {"cell_type": "markdown", "metadata": {}, "source": text.splitlines(keepends=True)}
-
-
-def _code(text: str) -> dict:
-    return {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": text.splitlines(keepends=True)}
-
-
-def notebook_doc(name: str, *, title: str = "", book: str | None = None) -> dict:
-    title = title or name.split("_", 1)[1].replace("_", " ")
-    cells = [
-        _md('<img src="logo.png" alt="Vegeta" width="240">'),
-        _md(f"# {title}\n\nWhat this notebook answers, on which methods, and what it hands to the next one.\n\n"
-            "**Its contract** is declared once in `workflows/flow.py` (`flow.notebook(\"" + name + "\", …)`): what it needs on the "
-            "machine, what it takes from the workflows and the other notebooks, what it gives. The gate below checks all of "
-            "it before anything is computed; the last cell checks that every promised file was written (`docs/yanus.md`)."),
-        _code("# DEBUG: test the notebook end to end before the full run. On: FEA and CFD are mocked (vegeta.mock: fixed numbers,\n"
-              "# seconds instead of hours, the result cache off). Turn it on here or from the shell:\n"
-              "#   VEGETA_DEBUG=1 jupyter nbconvert --to notebook --execute <notebook>.ipynb --output <notebook>-run.ipynb\n"
-              "DEBUG = False\nfrom vegeta import mock\nDEBUG = mock.setup(DEBUG)"),
-        _md("## 1. Prerequisites\n\nThe gate: the tools on this machine, the pinned workflow runs (`yn pin`) and the files of the other "
-            "notebooks, each with its status and provenance. A required input that is missing stops here with the command that "
-            "produces it; an optional one is NOT RUN and the analytic estimate stays visible."),
-        _code("import json, math, os, sys\nfrom pathlib import Path\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n"
-              "from IPython.display import display\nfrom vegeta import yanus\nsys.path.insert(0, \"designs\")\n\n"
-              "pd.set_option(\"display.max_colwidth\", 110); pd.set_option(\"display.width\", 230); pd.set_option(\"display.max_columns\", 40)\n"
-              f"OUT = Path(\"output/{name}\"); OUT.mkdir(parents=True, exist_ok=True)\n\n"
-              f"GATE = yanus.enter(\"{name}\", debug=DEBUG)          # raises GateClosed with every fix command when a required input is missing\n"
-              "display(GATE.table())\nINPUTS = GATE.inputs                        # take key → the run's summary / the file's path (None = NOT RUN)"),
-        _md("## 2. …"),
-        _code(""),
-        _md("## Exports\n\nEvery file this notebook gives (the `gives` of its contract) is written above; the gate checks each one was "
-            "written by this execution and stamps it (`<file>.yanus.json`) for the notebooks that read it."),
-        _code("STAMPS = GATE.leave()\nprint(f\"{len(STAMPS)} output(s) stamped\")"),
-    ]
-    for i, c in enumerate(cells):
-        c["id"] = f"{name[:2]}-yanus-{i:02d}"                    # nbformat 4.5 cell ids, stable for the diff
-    return {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python (vegeta)", "language": "python", "name": "vegeta"},
-                                         "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 5}
-
-
-def _append(flow_file: Path, text: str) -> None:
-    src = flow_file.read_text()
-    flow_file.write_text(src.rstrip("\n") + "\n" + text)
-
-
-def new_notebook(root, name: str, *, flow_file=None, title: str = "", book: str | None = None, auto: bool = False) -> list[Path]:
-    root = Path(root)
-    if not NAME.match(name):
-        raise ValueError(f"notebook name {name!r}: <two digits>_<snake_case> (e.g. 45_kestrel_thermal)")
-    nb = root / "notebooks" / f"{name}.ipynb"
-    if nb.exists():
-        raise FileExistsError(f"{nb} exists — Yanus never overwrites")
-    flow_file = Path(flow_file or root / "workflows" / "flow.py")
-    if f'flow.notebook("{name}"' in flow_file.read_text():
-        raise FileExistsError(f"{name} is already declared in {flow_file}")
-    nb.write_text(json.dumps(notebook_doc(name, title=title, book=book), indent=1, ensure_ascii=False) + "\n")
-    _append(flow_file, f'\nflow.notebook("{name}", title={title or name!r},\n              needs=[], takes=[], gives=[]' + (",\n              auto=True" if auto else "") +
-            ')        # yn new notebook: fill in the contract' + (" (yanus_auto: it runs what it is missing by itself, in screening quality)" if auto else "") + '\n')
-    return [nb, flow_file]
-
 
 CHAPTER_SCRIPT = '''#!/usr/bin/env python
 """{book}/{chapter} ({kind}) — {title}
@@ -145,6 +78,11 @@ def main(argv=None) -> int:
 if __name__ == "__main__":
     sys.exit(main())
 '''
+
+
+def _append(flow_file: Path, text: str) -> None:
+    src = flow_file.read_text()
+    flow_file.write_text(src.rstrip("\n") + "\n" + text)
 
 
 def new_chapter(root, ref: str, *, kind: str, campaign: str | None = None, flow_file=None, new_kind: bool = False, title: str = "",
