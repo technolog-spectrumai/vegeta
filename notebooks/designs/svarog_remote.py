@@ -476,11 +476,14 @@ ALUMINIUM = Metal("aluminium 6061", 170.0, 2700.0, 900.0, 925.0, 0.10)
 KEYHOLE_W_CM2 = 1e6     # the usual threshold on steel for a keyhole (10⁶ W/cm²); conduction welding below ~10⁵
 
 
-def rosenthal(metal: Metal, q_abs: float, v: float, *, T0: float = 293.0, grid_mm: float = 0.05, half_mm: float = 8.0) -> dict:
+def rosenthal(metal: Metal, q_abs: float, v: float, *, T0: float = 293.0, grid_mm: float | None = None, half_mm: float | None = None) -> dict:
     """Rosenthal's moving point source on a semi-infinite body, steady state: T − T0 = q / (2π k R) · exp(−v (R + x) / 2κ)
     with the source moving along −x at speed ``v`` (so the pool trails toward +x). Returns the melt pool's width, length
     and depth from the T = T_melt isotherm (conduction mode only: a point source overestimates the centre temperature
     and knows nothing of the keyhole)."""
+    r_melt = q_abs / (2 * np.pi * metal.k * (metal.T_melt - T0))            # the melt radius of the resting source: the grid follows it
+    half_mm = half_mm or max(8.0, 4 * r_melt * 1e3)
+    grid_mm = grid_mm or half_mm / 160
     s = np.arange(-half_mm, half_mm, grid_mm) * 1e-3
     X, Y = np.meshgrid(s, s)
     R = np.sqrt(X ** 2 + Y ** 2) + 1e-6
@@ -575,3 +578,147 @@ def diffuse_hazard_distance(P: float, reflectance: float, limit_W_m2: float) -> 
     """A Lambertian reflection of ``P`` with ``reflectance``: the distance at which its irradiance ρP cosθ/(π d²) falls
     to ``limit`` (θ = 0, normal to the surface)."""
     return float(np.sqrt(reflectance * P / (np.pi * limit_W_m2)))
+
+
+# ================================================================ 9. more beams, more power, farther (the scaling)
+# The kilowatt-class sources by power: single-mode up to ~2–3 kW; above that the fibre is multimode and the BPP grows.
+SOURCES_BY_POWER = {
+    1000.0: Laser("single-mode 1 kW (IPG YLR-1000-SM class)", 1000.0, 1.070e-6, 1.1, 5e-3, source="M² < 1.1"),
+    2000.0: Laser("single-mode 2 kW (IPG YLS-2000-SM class)", 2000.0, 1.070e-6, 1.3, 5e-3, source="M² ≈ 1.3", verify="M² at full power; some 2 kW SM units are 1.1–1.5"),
+    10000.0: Laser("multimode 10 kW (IPG YLS-10000, 100 µm fibre)", 10000.0, 1.070e-6, 7.3, 5e-3, source="BPP ≈ 2.5 mm·mrad (M² ≈ 7.3)",
+                   verify="BPP of the delivery fibre: 50 µm → ~2, 100 µm → ~4 mm·mrad"),
+}
+
+
+def gaussian_spot(P: float, w0: float, dx: float, n: int) -> dict:
+    """A Gaussian spot of power ``P`` and 1/e² radius ``w0`` on an n×n grid of pitch ``dx`` — the same dict shape as
+    ``psf`` gives, for the incoherent sums of beams the ray trace was not run for."""
+    x = (np.arange(n) - n // 2) * dx
+    X, Y = np.meshgrid(x, x)
+    I = 2 * P / (np.pi * w0 ** 2) * np.exp(-2 * (X ** 2 + Y ** 2) / w0 ** 2)
+    return {"I": I, "x": x, "dx": dx, "peak_W_cm2": float(I.max()) * 1e-4, "r86_mm": w0 * 1e3, "power_through_W": P}
+
+
+def scenario(n_beams: int, laser: Laser, L: float, *, w_in: float, efficiency: float, head_size: float = 0.080,
+             v: float = 0.01, metal: Metal = STEEL, pointing_sigma: float = 10e-6, rng=None) -> dict:
+    """N beams of one source class, the same head (beam radius ``w_in`` at L2), at the standoff ``L``: the spot from
+    the Gaussian budget times the traced head's ``efficiency`` (its peak over the ideal Gaussian's, the clipping and
+    the residual aberration), the summed power density and its regime, Rosenthal's pool, the ring and its
+    tolerances, and the Monte Carlo peak with ``pointing_sigma`` per head."""
+    sp = spot_at(laser, w_in, L)
+    w0 = sp["w0_mm"] * 1e-3
+    peak_each = sp["I0_W_cm2"] * efficiency
+    ring = ring_layout(n_beams, head_size)
+    cr = crossing(ring["ring_radius_m"], L, w0)
+    pool = rosenthal(metal, metal.absorptivity * n_beams * laser.power_W, v)
+    g = gaussian_spot(laser.power_W * efficiency, w0, w0 / 12, 512)       # the pitch follows the spot: 12 pixels per w0
+    mc = sum_of_spots(g, n_beams, pointing_sigma, L, rng=rng, trials=30)
+    total = n_beams * peak_each
+    return {"beams": n_beams, "P per beam [kW]": laser.power_W / 1e3, "total [kW]": n_beams * laser.power_W / 1e3, "source": laser.name, "M²": laser.M2, "L [m]": L,
+            "w0 [mm]": round(w0 * 1e3, 2), "z_R [m]": round(sp["zR_m"], 2), "peak per beam [W/cm²]": peak_each, "peak, all aligned [W/cm²]": total,
+            "regime": "keyhole" if total >= KEYHOLE_W_CM2 else ("conduction" if total >= 1e5 else "heating only"),
+            f"peak at σ = {pointing_sigma*1e6:.0f} µrad, mean [W/cm²]": mc["peak_mean_W_cm2"], "regime at σ": "keyhole" if mc["peak_p10_W_cm2"] >= KEYHOLE_W_CM2 else ("conduction" if mc["peak_p10_W_cm2"] >= 1e5 else "heating only"),
+            "pool width [mm]": round(pool["width_mm"], 1), "pool depth (conduction) [mm]": round(pool["depth_mm"], 1),
+            "ring radius [m]": round(ring["ring_radius_m"], 2), "axial tolerance [mm]": round(cr["axial_tolerance_m"] * 1e3, 1), "pointing tolerance [µrad]": round(cr["pointing_tolerance_urad"], 1),
+            "_pool": pool}
+
+
+# ============================================================== 11. the ablation studies (FEniCSx, book `svarog`)
+@dataclass(frozen=True)
+class AblationSolid:
+    """What the transient enthalpy solver needs of a material: the latent heats of melting and of removal (boiling
+    for the metals, decomposition for the plastic), the removal temperature, the emissivity. The thermal numbers are
+    the ones ``STEEL`` / ``SHIELDS`` use, so the closed forms and the FEM see the same inputs."""
+    name: str
+    rho: float
+    c: float
+    k: float
+    T_melt: float
+    L_melt: float
+    T_fail: float
+    L_fail: float
+    absorptivity: float
+    emissivity: float
+    failure: str          # "melt" (a metal: damage is melting, removal is boiling) or "decompose" (the plastic)
+
+
+ABLATION_SOLIDS = {
+    "mild_steel": AblationSolid("mild steel", 7800.0, 500.0, 35.0, 1790.0, 2.7e5, 3130.0, 6.1e6, 0.35, 0.6, "melt"),
+    "aluminium": AblationSolid("aluminium", 2700.0, 900.0, 170.0, 933.0, 4.0e5, 2740.0, 1.1e7, 0.10, 0.2, "melt"),
+    "black_pc": AblationSolid("black polycarbonate", 1200.0, 1250.0, 0.2, 420.0, 0.0, 720.0, 1.5e6, 0.90, 0.9, "decompose"),
+}
+
+ABLATION_VARIANTS = ("20m", "50m", "100m")
+# the sets at the target (beams × W per beam, the source class) and the shields (material × thickness, under one
+# stray kilowatt beam this far past the focus)
+TARGET_SETS = {"2x1kW": (2, 1000.0), "10x1kW": (10, 1000.0), "10x2kW": (10, 2000.0), "20x1kW": (20, 1000.0), "10x10kW": (10, 10000.0)}
+SHIELD_THICKNESS = (1e-3, 3e-3, 5e-3)
+SHIELD_PAST_FOCUS = (20.0, 50.0, 100.0)
+HEAD_W_IN = 0.0208               # the design head's 1/e² beam radius at L2 (notebook 46 §3.1: 2", ×8)
+HEAD_EFFICIENCY = 0.64           # its traced peak over the ideal Gaussian's (the clipping and the residual aberration)
+
+
+def ablation_fingerprint(variant: str) -> dict:
+    """The design a run is made for: the standoff, the head and the source classes. A change here makes old runs
+    incompatible, as Yanus wants."""
+    L = float(variant.rstrip("m"))
+    return {"standoff_m": L, "head_w_in_m": HEAD_W_IN, "head_efficiency": HEAD_EFFICIENCY,
+            "sources": {str(int(p)): {"M2": las.M2, "wavelength_m": las.wavelength_m} for p, las in SOURCES_BY_POWER.items()},
+            "solids": {k: s.name for k, s in ABLATION_SOLIDS.items()}}
+
+
+def ablation_cases(variant: str, campaign: str) -> dict:
+    """The explicit cases of a chapter at the standoff ``variant``. ``target``: the steel target under each set's
+    summed beams (the spot from the budget, the power the head passes); ``shield``: each shield sheet under one stray
+    kilowatt beam 20, 50 and 100 m past the focus. Every case names the solid, the sheet thickness, the beam's power
+    and 1/e² radius, and how long to follow it."""
+    L = float(variant.rstrip("m"))
+    out = {}
+    if campaign == "target":
+        for name, (n, P) in TARGET_SETS.items():
+            las = SOURCES_BY_POWER[P]
+            sp = spot_at(las, HEAD_W_IN, L)
+            out[name] = {"solid": "mild_steel", "thickness": 10e-3, "power": n * P * HEAD_EFFICIENCY, "radius": sp["w0_mm"] * 1e-3, "shape": "gaussian",
+                         "t_max": 2.0, "dt": 2e-4, "nr": 80, "nz": 40, "note": f"{n} × {P/1e3:g} kW ({las.name}) at {L:g} m"}
+    elif campaign == "shield":
+        las = SOURCES_BY_POWER[1000.0]
+        w0 = spot_at(las, HEAD_W_IN, L)["w0_mm"] * 1e-3
+        for key, s in ABLATION_SOLIDS.items():
+            for t in SHIELD_THICKNESS:
+                for d in SHIELD_PAST_FOCUS:
+                    w = stray_radius(HEAD_W_IN, L, d, w0)
+                    out[f"{key}_{t*1e3:g}mm_{d:g}m"] = {"solid": key, "thickness": t, "power": 1000.0 * HEAD_EFFICIENCY, "radius": w, "shape": "gaussian",
+                                                        "t_max": 120.0 if key == "black_pc" else 600.0, "dt": 0.02 if key == "black_pc" else 0.1, "nr": 60, "nz": 20,
+                                                        "note": f"{s.name} {t*1e3:g} mm, one stray kW {d:g} m past the focus of a {L:g} m head"}
+    else:
+        raise ValueError(f"unknown campaign {campaign!r}")
+    return out
+
+
+# ======================================================================= 12. the moving part: response, dwell, groove
+def tracking_budget(w0: float, L: float, v_part: float, a_part: float) -> dict:
+    """The spot must stay within w0/3 of the groove. A loop of latency τ that only follows lags v·τ; one that
+    predicts the velocity leaves ½·a·τ²; so τ_max = w0 / (3 v) without prediction, √(2 w0 / (3 a)) with it. Also the
+    angular rate and acceleration the steering mirror must deliver (half the target's, the mirror doubling angles),
+    and the pointing in angle — the same at every distance, since the spot grows with it."""
+    e = w0 / 3
+    return {"error budget [mm]": e * 1e3, "τ_max, following [ms]": e / v_part * 1e3, "τ_max, velocity predicted [ms]": np.sqrt(2 * e / a_part) * 1e3,
+            "mirror rate [mrad/s]": v_part / L * 1e3 / 2, "mirror acceleration [rad/s²]": a_part / L / 2, "pointing budget [µrad]": e / L * 1e6}
+
+
+def dwell_times(metal: Metal, I_abs: float, w0: float, pool_width: float) -> dict:
+    """How long the beams must stay on one spot. The surface melts after t_m = π (k ΔT_m / 2 q)² / κ (the 1-D
+    short-time rise ΔT = 2 q √(κ t / π) / k under an absorbed flux q); the pool reaches the spot's own scale after
+    w0² / κ and its steady width after (width/2)² / κ. The same t_m is how fast the beams must be blanked when the
+    loop loses the groove: the time the beam takes to melt whatever it lands on."""
+    dTm = metal.T_melt - 293.0
+    t_melt = np.pi * (metal.k * dTm / (2 * I_abs)) ** 2 / metal.kappa
+    return {"melt onset [ms]": t_melt * 1e3, "pool at spot scale [ms]": w0 ** 2 / metal.kappa * 1e3, "pool at full width [s]": (pool_width / 2) ** 2 / metal.kappa, "blanking time [ms]": t_melt * 1e3}
+
+
+def seam_sensor(L: float, D: float, *, lam: float = 0.6e-6, centroid_gain: float = 10.0) -> dict:
+    """A camera telescope of aperture ``D`` looking at the groove from ``L``: the diffraction resolution 1.22 λ L / D
+    and the position it can centroid a bright edge, a projected laser line or the weld's own glow to (resolution /
+    gain)."""
+    res = 1.22 * lam * L / D
+    return {"resolution [mm]": res * 1e3, "centroid [mm]": res / centroid_gain * 1e3}

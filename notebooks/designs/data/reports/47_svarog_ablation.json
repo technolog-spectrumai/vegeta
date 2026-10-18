@@ -1,0 +1,211 @@
+{
+ "head_w_beam_m": 0.020834986288145764,
+ "efficiency": 0.5932270338088168,
+ "ablation_runs": {
+  "launched": [],
+  "usable": [],
+  "dolfinx": false
+ },
+ "ablation": {
+  "target": [
+   {
+    "L [m]": 20.0,
+    "set": "2x1kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.0575",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 20.0,
+    "set": "10x1kW",
+    "regime (closed form)": "keyhole",
+    "melt onset, closed form [ms]": "0.0023",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 20.0,
+    "set": "10x2kW",
+    "regime (closed form)": "keyhole",
+    "melt onset, closed form [ms]": "0.00112",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 20.0,
+    "set": "20x1kW",
+    "regime (closed form)": "keyhole",
+    "melt onset, closed form [ms]": "0.000575",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 20.0,
+    "set": "10x10kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.0446",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 50.0,
+    "set": "2x1kW",
+    "regime (closed form)": "heating only",
+    "melt onset, closed form [ms]": "2.25",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 50.0,
+    "set": "10x1kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.0899",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 50.0,
+    "set": "10x2kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.0438",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 50.0,
+    "set": "20x1kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.0225",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 50.0,
+    "set": "10x10kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "1.74",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 100.0,
+    "set": "2x1kW",
+    "regime (closed form)": "heating only",
+    "melt onset, closed form [ms]": "35.9",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 100.0,
+    "set": "10x1kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "1.44",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 100.0,
+    "set": "10x2kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.701",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 100.0,
+    "set": "20x1kW",
+    "regime (closed form)": "conduction",
+    "melt onset, closed form [ms]": "0.359",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   },
+   {
+    "L [m]": 100.0,
+    "set": "10x10kW",
+    "regime (closed form)": "heating only",
+    "melt onset, closed form [ms]": "27.9",
+    "FEniCSx status": "NOT RUN",
+    "FEniCSx melt onset [ms]": "",
+    "FEniCSx boiling onset [ms]": "",
+    "ablated depth at 2 s [mm]": "",
+    "surface T at 2 s [K]": ""
+   }
+  ],
+  "shield_cases_read": 0
+ },
+ "runs": {
+  "svarog/target-ablation@20m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  },
+  "svarog/target-ablation@50m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  },
+  "svarog/target-ablation@100m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  },
+  "svarog/shield-ablation@20m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  },
+  "svarog/shield-ablation@50m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  },
+  "svarog/shield-ablation@100m": {
+   "status": "not pinned",
+   "usable": false,
+   "selection": "\u2014"
+  }
+ }
+}

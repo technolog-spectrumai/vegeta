@@ -381,8 +381,14 @@ t·i²(n²−1)/n³ is the traced optimum; the sign that also cancels the coma r
 traced wavefront (a Fraunhofer sum over the exit pupil), Rosenthal's pool for 2 heads (conduction, 2 × 1 mm) and
 10 heads (keyhole), the ring geometry that makes the beams cross (±2 cm of range, 3–10 µrad of pointing per head — the
 tracking is the hard part, not the optics), stray-beam shielding (aluminium holds and reflects, steel is the wall,
-black polycarbonate only for windows; the whole path enclosed) and a parts list with what to verify. Gives
-`designs/data/svarog_remote.json`.
+black polycarbonate only for windows; the whole path enclosed — the matrix 1/3/5 mm × 20–200 m), the bigger sets
+(10 × 2 kW and 20 × 1 kW keyhole at 20 m; 10 × 10 kW multimode only conducts; 50 and 100 m need 4"–8" heads), the
+moving part (a loop that predicts the velocity has ~17 ms; ~30 ms of held tracking makes a spot weld; a 100 mm camera
+aperture sees the groove at 20–50 m), the parts list with what to verify and what is custom, Gives `designs/data/svarog_remote.json`.
+**`47_svarog_ablation`** sets the **FEniCSx ablation studies** against 46's closed forms: book `svarog` (`wf list`: S1 the
+target, S2 the shields at 1/3/5 mm, variants = the standoff 20m/50m/100m; `workflows/svarog/ablation_fenicsx.py`,
+dolfinx from conda-forge). The engineer runs the six chapters (`wf S1 --variant 20m --detach`, …); the notebook prints
+the commands, launches them only with `SVAROG_LAUNCH=1`, and reads the runs on its next execution — NOT RUN otherwise.
 
 **Kestrel** — open **`43_kestrel_study`**: the one notebook for the design (geometry, mass budget, CG and
 inertia, propulsion and the hover, aerodynamics and the stall, trim and control, performance and energy, the

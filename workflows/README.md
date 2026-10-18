@@ -51,6 +51,10 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]
     └── K11  frame-and-joint
+svarog   (S)  Svarog remote — the target and the shields under the beams of notebook 46 (variants = the standoff 20m / 50m / 100m)
+└── ablation — axisymmetric transient conduction with phase change and cell removal (FEniCSx / dolfinx)
+    ├── S1   target-ablation        the steel target under each set's summed beams, 2 s
+    └── S2   shield-ablation        aluminium / steel / black PC at 1, 3, 5 mm under one stray kW, 20–100 m past the focus
 ```
 
 The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/` (e.g.

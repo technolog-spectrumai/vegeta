@@ -78,6 +78,26 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
 
 
+# ================================================================================================= book: svarog (S)
+def _sr():
+    p = str(ROOT / "notebooks" / "designs")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import svarog_remote
+    return svarog_remote
+
+
+svarog = flow.book("svarog", "S", title="Svarog remote — the target and the shields under the beams of notebook 46, as FEniCSx transients (variants = the standoff)",
+                   design="notebooks/designs/svarog_remote.py (ablation_cases, ablation_fingerprint); the notebook 46_svarog_remote launches and reads the runs",
+                   variants=("20m", "50m", "100m"), fingerprint=lambda v: _sr().ablation_fingerprint(v))
+svarog.kind("ablation", title="ablation — axisymmetric transient conduction with phase change and cell removal (FEniCSx / dolfinx)", script="workflows/svarog/ablation_fenicsx.py",
+            workflow="svarog_ablation", needs=[Package("dolfinx"), Package("mpi4py"), Package("petsc4py")],
+            needs_text="dolfinx (conda-forge fenics-dolfinx, or the dolfinx/dolfinx Docker image)", time="a target case minutes, a shield case up to an hour (600 s of steel at 0.1 s steps)",
+            options=[("--variant", ("20m", "50m", "100m"), "20m")])
+svarog.chapter("target-ablation", kind="ablation", campaign="target")                                     # S1
+svarog.chapter("shield-ablation", kind="ablation", campaign="shield")                                     # S2
+
+
 # ================================================================================================= notebooks
 DATA = "notebooks/designs/data"
 KESTREL_DRIVE = Data(f"{DATA}/kestrel_drive.json", cache=True, note="the Boreas drive tables, ~40 s")
@@ -109,6 +129,10 @@ flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cant
 flow.notebook("46_svarog_remote", title="Svarog remote — welding at 20 m with many lasers crossing at one point (analytic, no runs)",
               needs=[], takes=[],
               gives=[File(f"{DATA}/svarog_remote.json")])
+
+flow.notebook("47_svarog_ablation", title="Svarog ablation — the target and the shields of notebook 46 as FEniCSx transients (book svarog), read when run",
+              needs=[], takes=[File(f"46_svarog_remote:{DATA}/svarog_remote.json")] + [Run(f"svarog/{ch}", variant=v) for ch in ("target-ablation", "shield-ablation") for v in ("20m", "50m", "100m")],
+              gives=[File(f"{DATA}/reports/47_svarog_ablation.json")])
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],

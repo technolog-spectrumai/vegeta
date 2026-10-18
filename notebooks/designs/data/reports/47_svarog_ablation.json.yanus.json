@@ -1,0 +1,23 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "47_svarog_ablation.json",
+ "git": "c5fdbd85b9d3",
+ "inputs": [
+  {
+   "key": "46_svarog_remote:notebooks/designs/data/svarog_remote.json",
+   "kind": "file",
+   "path": "notebooks/designs/data/svarog_remote.json",
+   "sha256": "b3eefbaea7b5780a1a5f2f87e1a0a5bbf0e2d47cac77875031937b99f56ffe6a"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {},
+ "producer": "47_svarog_ablation",
+ "schema": null,
+ "sha256": "4843686d0ced472920f360a3387dcebe9a4193f63850a958dffa36daaf298532",
+ "size": 5586,
+ "written_at": "2026-10-18T10:02:29Z",
+ "written_ts": 1792317749.534548,
+ "yanus": 1
+}
