@@ -155,7 +155,7 @@ races = flow.book("races", "R", title="Races — the reference 5-inch quad round
                   design="races/ (refquad, courses, rules); the notebook 50_four_races reads the runs", variants=())
 races.kind("race", title="Race — the MuJoCo lap and its videos (chase, onboard, overview)", script="workflows/races/race.py", workflow="race",
            needs=[Package("mujoco")], needs_text="mujoco (pip); ffmpeg for the videos; an OpenGL context (MUJOCO_GL=egl) for camera views, else the replay",
-           time="a lap in under a minute; the videos a few minutes", options=[("--quality", ("screening", "fine"), "screening"), ("--collision", ("reset", "count", "stop"), "reset")],
+           time="a lap in under a minute; the videos a few minutes", options=[("--quality", ("screening", "fine"), "screening"), ("--collision", ("reset", "count", "stop"), "reset"), ("--safety", None, "0.6"), ("--tilt-max", None, "60"), ("--lookahead", None, "0.25")],
            screening=("--quality", "screening"))
 races.chapter("hangar", kind="race", campaign="hangar")               # R1
 races.chapter("industrial", kind="race", campaign="industrial")       # R2

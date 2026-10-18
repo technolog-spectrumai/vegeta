@@ -29,8 +29,8 @@ G = 9.81
 DESIGNS = _P(__file__).resolve().parents[1] / "notebooks" / "designs"
 
 
-def _flight(prop):
-    """Drongo's ``Flight`` with this quad's layout (its reset reads the mass matrix from MuJoCo)."""
+def _flight(prop, *, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_deg: float = 60.0):
+    """Drongo's ``Flight`` with this quad's layout (its reset reads the body's inertia from the model)."""
     if str(DESIGNS) not in sys.path:
         sys.path.insert(0, str(DESIGNS))
     import drongo_controller as dc
@@ -48,11 +48,15 @@ def _flight(prop):
             self.Ainv = np.linalg.inv(self.A)
             self.integral = np.zeros(3)
             self.last = {}
-    return QuadFlight(prop, omega_pos=2.5, tilt_max_deg=70.0, omega_att=18.0)
+    return QuadFlight(prop, omega_pos=omega_pos, tilt_max_deg=tilt_max_deg, omega_att=omega_att)
 
 
-def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004, lookahead_s: float = 0.35, duration: float | None = None, scene_xml: str | None = None,
-               record_every: int = 5, safety: float = 0.8, v_cap: float | None = None) -> dict:
+def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004, lookahead_s: float = 0.25, duration: float | None = None, scene_xml: str | None = None,
+               record_every: int = 5, safety: float = 0.6, v_cap: float | None = None, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_deg: float = 60.0) -> dict:
+    """The MuJoCo lap. The defaults are the first real laps' lesson (the hangar, 2026-10-18): the geometric controller
+    lags the racing line by metres where the mock lagged by 0.25 m, so the schedule runs at ``safety`` 0.6 of the
+    thrust-vector corner speed, the look-ahead is short and the tilt is capped at 60°; raise them course by course
+    (``wf R3 --safety 0.8 --tilt-max 70``) once a lap is clean."""
     import mujoco
     rules = rules or Rules()
     xml = scene_xml or courses.to_mjcf(course)
@@ -63,7 +67,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     qa, va = int(model.jnt_qposadr[jnt]), int(model.jnt_dofadr[jnt])
     quad_geoms = {g for g in range(model.ngeom) if model.geom_bodyid[g] == body}
     prop = refquad.propulsion()
-    flight = _flight(prop)
+    flight = _flight(prop, omega_pos=omega_pos, omega_att=omega_att, tilt_max_deg=tilt_max_deg)
     path = schedule(course, safety=safety, v_cap=v_cap)
     path.zone_half = np.array([min(z.half) for z in course.zones])
     ref = Referee(course, rules)
@@ -122,7 +126,8 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     st.update({"course": course.name, "aircraft": "reference 5-inch quad", "mode": "mujoco", "energy [Wh]": energy_J / 3600, "Wh per km": energy_J / 3600 / (course.length() / 1e3),
                "max speed [m/s]": float(H[:, 9].max()) if len(H) else float("nan"), "mean speed [m/s]": course.length() / st["lap time [s]"] if st["status"] == "finished" else float("nan"),
                "peak power [W]": float(H[:, 8].max()) if len(H) else float("nan"), "mean power [W]": float(H[:, 8].mean()) if len(H) else float("nan"), "course length [m]": course.length(),
-               "schedule time [s]": path.time_estimate(), "racing time [s]": float(data.time)})
+               "schedule time [s]": path.time_estimate(), "racing time [s]": float(data.time),
+               "controller": {"omega_pos": omega_pos, "omega_att": omega_att, "tilt_max_deg": tilt_max_deg, "lookahead_s": lookahead_s, "safety": safety, "v_cap": v_cap}})
     return {"stats": st, "history": H, "events": events, "gate times": ref.gate_times, "path": path, "referee": ref, "course": course, "xml": xml}
 
 

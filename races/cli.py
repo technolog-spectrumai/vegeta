@@ -27,7 +27,22 @@ def main(argv=None) -> int:
     r.add_argument("--out", default="races/runs", help="where the result (json + npz + png + gif) goes")
     r.add_argument("--gif", action="store_true", help="also write the replay GIF")
     r.add_argument("--param", action="append", default=[], help="course parameter, e.g. --param floor_gap=5")
+    g = sub.add_parser("ingest", help="digest every run under workflows/runs/races into one ingest_race.json (statistics recomputed from the trajectories)")
+    g.add_argument("--runs", default=None, help="the runs folder (default workflows/runs/races)")
+    g.add_argument("--out", default="ingest_race.json")
+    g.add_argument("--hz", type=float, default=2.0, help="the downsampled trajectory's rate")
+    g.add_argument("--no-mock", action="store_true", help="skip the mock baseline")
     a = ap.parse_args(argv)
+    if a.cmd == "ingest":
+        from . import ingest
+        doc = ingest.ingest(Path(a.runs) if a.runs else ingest.DEFAULT_RUNS, hz=a.hz, with_mock=not a.no_mock)
+        out = ingest.write(doc, Path(a.out))
+        got = [s for s, e in doc["courses"].items() if e.get("run")]
+        print(f"{out} ({out.stat().st_size / 1e3:.0f} kB): MuJoCo laps for {got or 'no course'}; {len(doc['other_runs'])} other run(s) listed")
+        for s, c in doc["comparison"].items():
+            m = c.get("mujoco")
+            print(f"  {s:11s}", (f"{m['status']}, lap {m['lap time [s]']} s, {m['collisions']} collision(s), {m['energy [Wh]']} Wh, max {m['max speed [m/s]']} m/s" if m else "no completed lap"))
+        return 0
     if a.cmd == "list":
         for slug, fn in courses.COURSES.items():
             c = fn()

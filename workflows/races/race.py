@@ -44,8 +44,12 @@ def main(argv=None) -> int:
     ap.add_argument("--quality", default="screening", choices=("screening", "fine"), help="video length and size; the screening timeout")
     ap.add_argument("--mock", action="store_true", help="the point-mass mock flyer instead of MuJoCo")
     ap.add_argument("--collision", default="reset", choices=("reset", "count", "stop"))
-    ap.add_argument("--safety", type=float, default=0.8)
-    ap.add_argument("--v-cap", type=float, default=None)
+    ap.add_argument("--safety", type=float, default=None, help="the schedule's share of the corner speed the thrust vector allows (MuJoCo default 0.6, mock 0.8)")
+    ap.add_argument("--v-cap", type=float, default=None, help="cap the schedule's top speed [m/s]")
+    ap.add_argument("--lookahead", type=float, default=0.25, help="the autopilot's look-ahead [s of flight]")
+    ap.add_argument("--omega-pos", type=float, default=2.5, help="the position loop's bandwidth [rad/s]")
+    ap.add_argument("--omega-att", type=float, default=18.0, help="the attitude loop's bandwidth [rad/s]")
+    ap.add_argument("--tilt-max", type=float, default=60.0, help="the largest tilt the position loop may ask for [deg]")
     ap.add_argument("--no-video", action="store_true")
     runkit.add_common_arguments(ap)
     args = ap.parse_args(argv)
@@ -54,7 +58,7 @@ def main(argv=None) -> int:
         if cfg:
             args.chapter, args.quality, args.mock = cfg.get("campaign", args.chapter), cfg.get("quality", args.quality), cfg.get("mock", args.mock)
     config = {"workflow": WORKFLOW, "book": BOOK, "kind": KIND, "chapter": args.chapter, "campaign": args.chapter, "variant": "refquad", "quality": args.quality, "mock": bool(args.mock),
-              "collision": args.collision, "safety": args.safety, "v_cap": args.v_cap}
+              "collision": args.collision, "safety": args.safety, "v_cap": args.v_cap, "lookahead": args.lookahead, "omega_pos": args.omega_pos, "omega_att": args.omega_att, "tilt_max": args.tilt_max}
     course = courses.build(args.chapter)
     fp = {"aircraft": "reference 5-inch quad", "mass_kg": refquad.MASS_KG, "course": course.slug, "course_params": course.params, "zones": len(course.zones)}
     names = ["race"] + ([] if args.no_video else [f"video-{c}" for c in CAMERAS])
@@ -92,10 +96,11 @@ def main(argv=None) -> int:
                 return {"status": "NOT RUN", "process": None, "note": "scene written only (--prepare-only)", "artifacts": {"scene": str(case_dir / "scene.xml")}}
             t0 = time.monotonic()
             if args.mock:
-                res = mock.run_mock(course, rules=rules, safety=args.safety, v_cap=args.v_cap)
+                res = mock.run_mock(course, rules=rules, safety=args.safety if args.safety is not None else 0.8, v_cap=args.v_cap)
             else:
                 from races import sim
-                res = sim.run_mujoco(course, rules=rules, safety=args.safety, v_cap=args.v_cap)
+                res = sim.run_mujoco(course, rules=rules, safety=args.safety if args.safety is not None else 0.6, v_cap=args.v_cap, lookahead_s=args.lookahead,
+                                     omega_pos=args.omega_pos, omega_att=args.omega_att, tilt_max_deg=args.tilt_max)
                 (case_dir / "scene.xml").write_text(res["xml"])
             state["result"] = res
             np.savez(case_dir / "trajectory.npz", history=res["history"])

@@ -63,6 +63,22 @@ reference quad could do from its drive table and an inertia estimate; `LITERATUR
 (Foehn et al. 2021: 1–20 m/s², 10 rad/s, thrust-to-weight 3.3–4; Swift, Nature 2023: over 100 km/h). Peaks are 99th
 percentiles, since differentiated samples spike at the zone hand-overs.
 
+## Digesting the results: `python -m races ingest`
+`races/ingest.py` walks `workflows/runs/races/`, takes the newest completed lap per course and writes one
+`ingest_race.json`: the run's manifest essentials and tool versions, the referee's statistics, the manoeuvre metrics
+recomputed from the trajectory, the per-zone splits (time, distance, mean and peak speed and power, energy, altitude
+band), the events, the collisions, the closest approach to any obstacle, a 2 Hz downsampled trajectory (with tilt and
+body rates when recorded), the videos' names and sizes, the tail of run.log, every other run's state and failure
+note, the mock baseline, and a cross-course comparison. That file is what to hand over for analysis; the videos and
+scenes stay where they are.
+
+## Tuning the MuJoCo autopilot
+The first real laps (the hangar, 2026-10-18) showed the geometric controller lagging the racing line by metres where
+the mock lagged by 0.25 m, so the MuJoCo defaults are conservative: schedule `--safety 0.6`, `--tilt-max 60`,
+`--lookahead 0.25`, `--omega-pos 2.5`, `--omega-att 18`. Raise them per course once a lap is clean
+(`wf R3 --safety 0.8 --tilt-max 70`); the manifest records them and the ingest file carries them under
+`referee.controller`.
+
 ## Running
 ```
 python -m races list                              # the courses
