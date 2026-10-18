@@ -93,3 +93,24 @@ def test_chapter_script_with_the_mock(tmp_path):
     assert s["state"] == "completed" and s["counts"]["solved"] == 4 and s["mode"] == "mock"
     assert s["stats"]["status"] == "finished" and "peak lateral acceleration [g]" in s["manoeuvre"]
     assert set(s["videos"]) == {"chase", "onboard", "overview"} and all((out / v).exists() for v in s["videos"].values())
+
+
+def test_ingest_digests_a_run_tree(tmp_path):
+    """The ingest over a runs tree with one completed (mock) chapter run: the digest has the lap, the splits, the
+    trajectory, the comparison and the other runs."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    from races import ingest
+    script = Path(__file__).resolve().parents[2] / "workflows" / "races" / "race.py"
+    run = tmp_path / "runs" / "hangar" / "20260101-000000_refquad_screening_mock"
+    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--no-video", "--out", str(run), "--no-progress", "--quiet", "--ignore-prerequisites"], capture_output=True, text=True, timeout=600)
+    assert p.returncode == 0, p.stdout[-1500:] + p.stderr[-1500:]
+    (tmp_path / "runs" / "farm" / "20260101-000001_refquad_screening").mkdir(parents=True)
+    doc = ingest.ingest(tmp_path / "runs", with_mock=False)
+    h = doc["courses"]["hangar"]["run"]
+    assert h["referee"]["status"] == "finished" and len(h["splits"]) == 17 and len(h["trajectory"]["t"]) > 10 and h["closest_approach"]["distance_m"] > 0
+    assert doc["comparison"]["hangar"]["mujoco"]["lap time [s]"] > 0 and doc["courses"]["farm"]["run"] is None
+    out = ingest.write(doc, tmp_path / "ingest_race.json")
+    assert json.loads(out.read_text())["schema"] == 1
