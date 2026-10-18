@@ -1,6 +1,6 @@
 # Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack
 
-*49_mini_raptor — exported 2026-10-18 03:36*
+*49_mini_raptor — exported 2026-10-18 03:38*
 
 | key | value |
 |---|---|
@@ -40,6 +40,10 @@
 | initial vertical acceleration from the hover [g] | 9.53 |
 | end-on drag area [m²] | 0.0352 |
 | zoom climb from the top speed [m] | 69.8 |
+| cross-section climbing [m] | 0.28 × 0.28 |
+| smallest square hatch [m] | 0.382 |
+| smallest slot [m] | 0.382 |
+| smallest round chimney [m] | 0.499 |
 | hover power [W] | 77.6 |
 | hover endurance [min] | 13.7 |
 | pitch acceleration in the hover [rad/s²] | 1.76e+03 |
@@ -135,6 +139,10 @@
 | power in that climb [W] | 2.27e+03 | 721 | 947 | 1.11e+03 | 728 | 1.02e+03 | 1.18e+03 |
 | initial vertical acceleration from the hover [g] | 9.53 | 4.72 | 10.5 | 9.05 | 3.94 | 8.92 | 7.92 |
 | zoom climb from the top speed [m] | 69.8 | 196 | 343 | 209 | 196 | 343 | 209 |
+| cross-section climbing [m] | 0.28 × 0.28 | 0.50 × 0.13 | 0.42 × 0.41 | 0.31 × 0.28 | 0.50 × 0.13 | 0.42 × 0.41 | 0.31 × 0.28 |
+| smallest square hatch [m] | 0.382 | 0.6 | 0.52 | 0.41 | 0.6 | 0.52 | 0.41 |
+| smallest slot [m] | 0.382 | 0.227 | 0.507 | 0.382 | 0.227 | 0.507 | 0.382 |
+| smallest round chimney [m] | 0.499 | 0.616 | 0.685 | 0.519 | 0.616 | 0.685 | 0.519 |
 | hover pitch-over 90° [s] | 0.0844 | 0.226 | 0.0909 | 0.124 | 0.211 | 0.0916 | 0.125 |
 | pitch acceleration in the hover [rad/s²] | 1.76e+03 | 245 | 1.52e+03 | 813 | 284 | 1.5e+03 | 802 |
 | hover pitch by | — | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) |

@@ -1,6 +1,6 @@
 {
  "dossier": "Kestrel",
- "stitched": "2026-10-18T03:36",
+ "stitched": "2026-10-18T03:38",
  "reports": {
   "38_prop_lab": {
    "notebook": "38_prop_lab",
@@ -14039,7 +14039,7 @@
   "49_mini_raptor": {
    "notebook": "49_mini_raptor",
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:36",
+   "exported": "2026-10-18T03:38",
    "meta": {
     "method": "first principles and empirical correlations; no CFD, no FEA; conceptual CAD",
     "cad": {
@@ -14196,6 +14196,10 @@
       "initial vertical acceleration from the hover [g]",
       "end-on drag area [m²]",
       "zoom climb from the top speed [m]",
+      "cross-section climbing [m]",
+      "smallest square hatch [m]",
+      "smallest slot [m]",
+      "smallest round chimney [m]",
       "hover power [W]",
       "hover endurance [min]",
       "pitch acceleration in the hover [rad/s²]",
@@ -14273,6 +14277,22 @@
       {
        "_index": "zoom climb from the top speed [m]",
        "racing quad": 69.78
+      },
+      {
+       "_index": "cross-section climbing [m]",
+       "racing quad": "0.28 × 0.28"
+      },
+      {
+       "_index": "smallest square hatch [m]",
+       "racing quad": 0.382
+      },
+      {
+       "_index": "smallest slot [m]",
+       "racing quad": 0.382
+      },
+      {
+       "_index": "smallest round chimney [m]",
+       "racing quad": 0.4988
       },
       {
        "_index": "hover power [W]",
@@ -14585,6 +14605,10 @@
       "power in that climb [W]",
       "initial vertical acceleration from the hover [g]",
       "zoom climb from the top speed [m]",
+      "cross-section climbing [m]",
+      "smallest square hatch [m]",
+      "smallest slot [m]",
+      "smallest round chimney [m]",
       "hover pitch-over 90° [s]",
       "pitch acceleration in the hover [rad/s²]",
       "hover pitch by",
@@ -14913,6 +14937,46 @@
        "Apus Mini (as printed)": 195.9,
        "Alcotan (as printed)": 342.7,
        "Gavilan (as printed)": 208.8
+      },
+      {
+       "_index": "cross-section climbing [m]",
+       "5-inch racing quad": "0.28 × 0.28",
+       "Apus Mini": "0.50 × 0.13",
+       "Alcotan": "0.42 × 0.41",
+       "Gavilan": "0.31 × 0.28",
+       "Apus Mini (as printed)": "0.50 × 0.13",
+       "Alcotan (as printed)": "0.42 × 0.41",
+       "Gavilan (as printed)": "0.31 × 0.28"
+      },
+      {
+       "_index": "smallest square hatch [m]",
+       "5-inch racing quad": 0.382,
+       "Apus Mini": 0.6,
+       "Alcotan": 0.52,
+       "Gavilan": 0.41,
+       "Apus Mini (as printed)": 0.6,
+       "Alcotan (as printed)": 0.52,
+       "Gavilan (as printed)": 0.41
+      },
+      {
+       "_index": "smallest slot [m]",
+       "5-inch racing quad": 0.382,
+       "Apus Mini": 0.227,
+       "Alcotan": 0.507,
+       "Gavilan": 0.382,
+       "Apus Mini (as printed)": 0.227,
+       "Alcotan (as printed)": 0.507,
+       "Gavilan (as printed)": 0.382
+      },
+      {
+       "_index": "smallest round chimney [m]",
+       "5-inch racing quad": 0.4988,
+       "Apus Mini": 0.6159,
+       "Alcotan": 0.6848,
+       "Gavilan": 0.5191,
+       "Apus Mini (as printed)": 0.6159,
+       "Alcotan (as printed)": 0.6848,
+       "Gavilan (as printed)": 0.5191
       },
       {
        "_index": "hover pitch-over 90° [s]",
@@ -17256,7 +17320,7 @@
   },
   "49_mini_raptor": {
    "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
-   "exported": "2026-10-18T03:36",
+   "exported": "2026-10-18T03:38",
    "sections": [
     "drives",
     "racing quad",

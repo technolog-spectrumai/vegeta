@@ -412,6 +412,7 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
                "span / gate": L["span_over_gate"], "energy [Wh]": E, "cd90": cd90}
     out = {"L": L, "table": df, "summary": summary, "cg": ci, "drive": tab, "mass_table": mass_table(L)}
     summary.update(vertical_climb(L, tab, m, float(drag_buildup(L)["CdA_m2"]) * cd0_scale, n_motors=nm, fpv_W=fpv_W, P_sustain=sustained_power_w(L["drive"], nm)))
+    summary.update(cross_section(L))
     summary["zoom climb from the top speed [m]"] = summary["top speed [m/s]"] ** 2 / (2 * G)
     summary.update(braking(out))
     summary.update(reorientation(out))
@@ -516,6 +517,23 @@ def vertical_climb(L: dict, tab, m: float, CdA_endon: float, *, n_motors: int = 
             "initial vertical acceleration from the hover [g]": n_motors * tab.T_max[0] / W - 1, "end-on drag area [m²]": CdA_endon}
 
 
+def cross_section(L: dict) -> dict:
+    """What the aircraft presents climbing along its axis (the hover attitude): its width and height over the discs
+    and the surfaces, the smallest square hatch it passes (plus 50 mm of clearance all round) and the smallest slot
+    (a letterbox the thin way), and the smallest round chimney (the diagonal)."""
+    R = R_PROP
+    if L["layout"] == "biplane":
+        w, h = L["span"], L["gap"] + 2 * R
+    elif L["layout"] == "cruciform":
+        w, h = max(L["span"], 2 * (L["arm"] + R)), 2 * (L["arm"] + R)
+    elif L["layout"] == "xwing":
+        w, h = L["span"], max(L["height"], 2 * (L["motor_z"] + R))
+    else:
+        w, h = L["span"], 2 * R
+    m = 0.05
+    return {"cross-section climbing [m]": f"{w:.2f} × {h:.2f}", "smallest square hatch [m]": max(w, h) + 2 * m, "smallest slot [m]": min(w, h) + 2 * m, "smallest round chimney [m]": math.hypot(w, h) + 2 * m}
+
+
 def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0, 86.0, 1.0), fpv_W: float = FPV_W, tilt_max_deg: float = TILT_MAX_DEG) -> dict:
     """The racing quad on the same drives and stack (``quad_mass_table``): tilted flight against speed (the body's drag
     area ``CdA_m2`` — a 5-inch frame at racing tilt, ± ``UNCERTAINTY['quad CdA']``), the power through the drives at
@@ -559,7 +577,8 @@ def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0
         s += V * dt
         t += dt
     summary = {"layout": "quad", "drive": drive, "mass [kg]": m, "hover thrust / weight": T0 / W, **vertical_climb({}, tab, m, 2.2 * CdA_m2, fpv_W=fpv_W, P_sustain=sustained_power_w(drive)),
-               "zoom climb from the top speed [m]": float(df.index.max()) ** 2 / (2 * G), "hover power [W]": P_h, "hover endurance [min]": E / P_h * 60,
+               "zoom climb from the top speed [m]": float(df.index.max()) ** 2 / (2 * G),
+               "cross-section climbing [m]": "0.28 × 0.28", "smallest square hatch [m]": 0.155 + 2 * R_PROP + 0.10, "smallest slot [m]": 0.155 + 2 * R_PROP + 0.10, "smallest round chimney [m]": math.hypot(0.282, 0.282) + 0.10, "hover power [W]": P_h, "hover endurance [min]": E / P_h * 60,
                "pitch acceleration in the hover [rad/s²]": alpha_tilt, "roll acceleration in the hover [rad/s²]": alpha_tilt, "yaw acceleration in the hover [rad/s²]": alpha_yaw,
                "power at 20 m/s [W]": float(df.loc[20.0, "electrical [W]"]), "Wh/km at 20 m/s": float(df.loc[20.0, "Wh/km"]), "range at 20 m/s [km]": float(df.loc[20.0, "range [km]"]),
                "best range [km]": float(df["range [km]"].max()), "at [m/s]": float(df["range [km]"].idxmax()), "least Wh/km": float(df["Wh/km"].min()), "best endurance [min]": float(df["endurance [min]"].max()),
@@ -575,7 +594,7 @@ def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0
 
 COMPARE_KEYS = ["layout", "mass [kg]", "span / gate", "top speed [km/h]", "power at top speed [W]", "full-throttle endurance at top speed [s]", "sustained power [W]", "sustained top speed [km/h]", "power at 20 m/s [W]", "Wh/km at 20 m/s", "least Wh/km", "range at 20 m/s [km]", "best range [km]", "at [m/s]",
                 "best endurance [min]", "stall speed [m/s]", "hover thrust / weight", "hover power [W]", "hover endurance [min]", "n at 20 m/s (banked)", "turn radius at 20 m/s (banked) [m]",
-                "turn radius at 40 m/s (banked) [m]", "least banked turn radius [m]", "brake deceleration at 20 m/s [g]", "brake 20→4 m/s distance [m]", "brake 20→4 m/s time [s]", "vertical climb, thrust-limited [m/s]", "vertical climb at the sustainable power [m/s]", "power in that climb [W]", "initial vertical acceleration from the hover [g]", "zoom climb from the top speed [m]", "hover pitch-over 90° [s]",
+                "turn radius at 40 m/s (banked) [m]", "least banked turn radius [m]", "brake deceleration at 20 m/s [g]", "brake 20→4 m/s distance [m]", "brake 20→4 m/s time [s]", "vertical climb, thrust-limited [m/s]", "vertical climb at the sustainable power [m/s]", "power in that climb [W]", "initial vertical acceleration from the hover [g]", "zoom climb from the top speed [m]", "cross-section climbing [m]", "smallest square hatch [m]", "smallest slot [m]", "smallest round chimney [m]", "hover pitch-over 90° [s]",
                 "pitch acceleration in the hover [rad/s²]", "hover pitch by", "thrust / weight at 1.2 Vs", "pull-up speed [m/s]", "pull-up radius into the hover [m]", "transitions", "energy [Wh]"]
 
 
