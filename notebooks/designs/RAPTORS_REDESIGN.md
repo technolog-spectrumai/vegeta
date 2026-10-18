@@ -91,7 +91,7 @@ The last two lines kill most of the old assumptions.
 
 - Reference quad ≈ €300 (carbon frame €45). Every raptor above is within ±€15 of it; the only expensive part
   anywhere is the FPV link (€55) and the 4-in-1 stack (€55–75).
-- Print time: ducts 4 × 40 min, Apus plate 2 h, Alcotan wing halves 2 × 1.5 h; all under 60 g per part, no supports
+- Print time: ducts 4 × 40 min, Apus plate 2 h, Hobo-W wing halves 2 × 1.5 h; all under 60 g per part, no supports
   if the wing is printed on its trailing edge with a 6 mm spar hole.
 - Servos were the cost and failure item of the old winged designs; none of the three uses one.
 
