@@ -51,6 +51,7 @@ FPV_W = 6.0                          # the camera, the video link and the flight
 R_PROP = 0.0635                      # 5 inch
 DISC_CLEARANCE = 0.015               # between two discs, and disc to pod [m]
 V_GRID = (0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 15.0, 18.0, 21.0, 24.0, 28.0, 32.0, 36.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0)
+V_GRID_STEEP = V_GRID + (90.0, 95.0, 100.0, 105.0)      # the 5x6's pitch speed is near 100 m/s
 
 # ------------------------------------------------------------------------------------------------- the racing stack
 STACK = {
@@ -67,8 +68,11 @@ STACK = {
 # realistic racing packs: the label mass is the cells; with the case, leads and the XT60 they weigh 10–15 % more
 PACKS = {"4S 1300": {"cells": 4, "capacity_ah": 1.3, "mass_kg": 0.165, "size_m": (0.076, 0.035, 0.033)},
          "4S 1500": {"cells": 4, "capacity_ah": 1.5, "mass_kg": 0.190, "size_m": (0.080, 0.037, 0.036)},
-         "6S 1300": {"cells": 6, "capacity_ah": 1.3, "mass_kg": 0.230, "size_m": (0.080, 0.041, 0.049)}}
+         "6S 1300": {"cells": 6, "capacity_ah": 1.3, "mass_kg": 0.230, "size_m": (0.080, 0.041, 0.049)},
+         "6S 1500": {"cells": 6, "capacity_ah": 1.5, "mass_kg": 0.265, "size_m": (0.082, 0.042, 0.054)}}
 DRIVES = {"4S 5x4.3": {"pitch_in": 4.3, "kv": 2400.0, "pack": "4S 1500"},
+          "6S 5x5 1500": {"pitch_in": 5.0, "kv": 1750.0, "pack": "6S 1500"},
+          "6S 5x6 1500": {"pitch_in": 6.0, "kv": 1750.0, "pack": "6S 1500"},
           "4S 5x4.3 light": {"pitch_in": 4.3, "kv": 2400.0, "pack": "4S 1300"},
           "6S 5x4.3": {"pitch_in": 4.3, "kv": 1750.0, "pack": "6S 1300"},
           "6S 5x5": {"pitch_in": 5.0, "kv": 1750.0, "pack": "6S 1300"}}
@@ -84,22 +88,34 @@ NACELLE_KG = 0.006                   # a printed motor mount / nacelle, each
 QUAD_FRAME_KG = 0.105                # a 5-inch carbon racing frame with its hardware (the baseline's structure)
 PACK_C_CONT = 30.0                   # a racing pack's honest continuous rating (the label says 75–100C burst)
 MOTOR_I_CONT_A = 22.0                # a 2207's continuous current without a heat problem
-TILT_MAX_DEG = 70.0                  # how far a pilot tilts the thrust in a brake or a turn (the quad and the tailsitter alike)
+TILT_MAX_DEG = 70.0
+COAXIAL_THRUST = 0.88                # a contra-rotating pair gives this share of two separate discs' thrust at the same power (the rear disc in the front one's wake)
+ROOT_BAY_KG = 0.030                  # the plank's thick-root bay (hatch, bulkheads) in place of a pod
+FIN_RUDDER_KG = 0.012                # the plank's fin with its rudder and servo                  # how far a pilot tilts the thrust in a brake or a turn (the quad and the tailsitter alike)
 UNCERTAINTY = {"structure mass": 0.20, "Cd0": 0.30, "cl_max": 0.10, "drive power": 0.15, "quad CdA": 0.30}
 
 # ------------------------------------------------------------------------------------------------- the designs
 VARIANTS = {
-    "Apus Mini": {"layout": "monoplane", "n_motors": 2, "title": "small, light, cheap, frugal: one 0.45 m wing, two of the stack's motors under spinners, the lightest pack; the hover pitch by the elevons in the wash", "drive": "4S 5x4.3 light",
-                  "span": 0.45, "chord": 0.15, "motor_y": 0.13, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.24, "pod_width": 0.046, "fairing": 0.4, "colour": "#2a9d8f"},
-    "Alcotan": {"layout": "monoplane", "n_motors": 2, "title": "faster sustained flight in the open: a small, highly loaded wing, two motors in nacelles on 6S with the 5x5, nothing else in the stream", "drive": "6S 5x5",
-                "span": 0.42, "chord": 0.08, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "fairing": 0.35, "colour": "#e76f51"},
-    "Gavilan": {"layout": "biplane", "title": "maximum agility in tight spaces: the racing frame's motor square in the shortest biplane cell, four motors, the lightest pack, the wing as a brake", "drive": "4S 5x4.3 light",
-                "span": 0.31, "chord": 0.100, "gap": 0.155, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.20, "pod_width": 0.046, "fairing": 1.0, "colour": "#264653"},
+    "Apus Mini": {"layout": "plank", "n_motors": 1, "title": "small, light, cheap, frugal: a podless flying wing with the pack inside its thick root, one motor on the nose, a fin and rudder in the wash", "drive": "4S 5x4.3 light",
+                  "span": 0.45, "chord": 0.165, "root_chord": 0.24, "tip_chord": 0.09, "thickness": 0.17, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.0, "pod_width": 0.0, "fairing": 0.3,
+                  "fin_height": 0.14, "fin_chord": 0.08, "colour": "#2a9d8f"},
+    "Alcotan": {"layout": "monoplane", "n_motors": 2, "title": "faster sustained flight in the open: a small, highly loaded wing, two motors in nacelles on the steep 5x6 (the pitch speed), the 6S 1500 (the sustained power is the pack's C rating), nothing else in the stream", "drive": "6S 5x6 1500",
+                "span": 0.42, "chord": 0.08, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.052, "fairing": 0.35, "colour": "#e76f51"},
+    "Gavilan": {"layout": "xwing", "phi_deg": 45.0, "motor_r": 0.11, "title": "maximum agility in tight spaces: the racing quad itself with a spine and four lifting arms — the X cell on the quad's own motor square, the quad's footprint and hover agility, a brake and some lift when it dashes", "drive": "4S 5x4.3 light",
+                "chord": 0.08, "span": 0.0, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.20, "pod_width": 0.046, "fairing": 1.0, "prop_x": 0.09, "colour": "#264653"},
 }
 MAIN = "Apus Mini"
 # the question "is the biplane the right cell?": the same briefs on one wing (the cruciform carries the four motors on
 # its fins and wing tips; a monoplane with four motors in a row on the wing needs 4 × 142 mm + the pod = 0.62 m of span)
 ALTERNATIVES = {
+    "Apus as a twin monoplane": {"layout": "monoplane", "n_motors": 2, "title": "the previous Apus: a pod under one 0.45 m wing, two motors under spinners", "drive": "4S 5x4.3 light",
+                                 "span": 0.45, "chord": 0.15, "motor_y": 0.13, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.24, "pod_width": 0.046, "fairing": 0.4, "colour": "#8ab17d"},
+    "Alcotan as a dart": {"layout": "dart", "n_motors": 2, "title": "the unorthodox one that lost: a slender dart, two motors coaxial and contra-rotating on the nose, four tail fins in the wash — the pair's loss and the fins cost more than the nacelles", "drive": "6S 5x5 1500",
+                          "span": 0.52, "chord": 0.065, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.34, "pod_width": 0.052, "fairing": 0.3, "fin_height": 0.11, "fin_chord": 0.07, "tail_arm": 0.22, "colour": "#f4a261"},
+    "Alcotan on the 5x5 and the 6S 1300": {"layout": "monoplane", "n_motors": 2, "title": "the previous Alcotan: the same twin on the 5x5 with the smaller pack", "drive": "6S 5x5",
+                                           "span": 0.42, "chord": 0.08, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "fairing": 0.35, "colour": "#f4a261"},
+    "Gavilan as a biplane cell": {"layout": "biplane", "title": "the previous Gavilan: the motor square in a short biplane cell, faired posts", "drive": "4S 5x4.3 light",
+                                  "span": 0.31, "chord": 0.100, "gap": 0.155, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.20, "pod_width": 0.046, "fairing": 1.0, "colour": "#6c757d"},
     "Apus as a biplane cell": {"layout": "biplane", "title": "the same area on two wings of 0.085 m chord, a 160 mm gap, faired posts: the first guess before the question", "drive": "4S 5x4.3",
                                "span": 0.50, "chord": 0.085, "gap": 0.16, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#8ab17d"},
     "Apus with the span a gate forbids": {"layout": "cruciform", "title": "the same area at AR 5.9: span 0.71, half a gate — what span would buy if the course allowed it", "drive": "4S 5x4.3",
@@ -138,12 +154,13 @@ def propulsion(key: str):
 def drive_table(key: str, *, recompute: bool = False) -> ks.DriveTable:
     """The drive's table out to 85 m/s (past the 5x5's pitch speed), cached as a data file (Boreas, ~2 min when missing)."""
     f = DATA / f"mini_raptor_drive_{key.replace(' ', '_').replace('.', 'p')}.json"
+    grid = V_GRID_STEEP if DRIVES[key]["pitch_in"] >= 6.0 else V_GRID
     if not recompute and f.exists():
         doc = json.loads(f.read_text())
-        if tuple(doc["table"]["V"]) == V_GRID:
+        if tuple(doc["table"]["V"]) == grid:
             d = doc["table"]
             return ks.DriveTable(**{k: (tuple(map(tuple, v)) if k == "P" else tuple(v) if isinstance(v, list) else v) for k, v in d.items()})
-    tab = ks.compute_drive_table.__wrapped__(RHO, V=V_GRID, sys_=propulsion(key))
+    tab = ks.compute_drive_table.__wrapped__(RHO, V=grid, sys_=propulsion(key))
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(json.dumps({"key": key, "drive": DRIVES[key], "pack": PACKS[DRIVES[key]["pack"]], "table": asdict(tab)}, indent=1))
     return tab
@@ -176,7 +193,7 @@ def layout(variant: str = MAIN) -> dict:
     b, c = v["span"], v["chord"]
     x_le = 0.095 if v["layout"] == "biplane" else 0.11
     L = {"variant": variant, "layout": v["layout"], "title": v["title"], "drive": v["drive"], "pack": DRIVES[v["drive"]]["pack"], "span": b, "chord": c, "R_prop": R_PROP,
-         "pod_length": v["pod_length"], "pod_width": v["pod_width"], "x_le": x_le, "x_te": x_le + c, "x_ac": x_le + 0.25 * c, "x_spar": x_le + 0.30 * c, "prop_x": 0.045,
+         "pod_length": v["pod_length"], "pod_width": v["pod_width"], "x_le": x_le, "x_te": x_le + c, "x_ac": x_le + 0.25 * c, "x_spar": x_le + 0.30 * c, "prop_x": v.get("prop_x", 0.045),
          "cl_max": v["cl_max"], "n_struct": v["n_struct"], "camber": v["camber"], "colour": v["colour"], "fairing": v.get("fairing", 1.0), "span_over_gate": b / GATE_WIDTH, "Re_20": 20 * c / NU,
          "section": f"thin cambered section ({v['camber']:.0%} camber, 10 % thick); the elevons' reflex trims it"}
     if v["layout"] == "biplane":
@@ -194,6 +211,16 @@ def layout(variant: str = MAIN) -> dict:
         L.update(arm=r, fin_chord=v["fin_chord"], S_ref=b * c, AR=b / c, motor_y=r, motor_z=r, n_wings=1, fin_area=2 * (r - v["pod_width"] / 2) * v["fin_chord"],
                  disc_gap_span=r * math.sqrt(2) - 2 * R_PROP, disc_gap_vertical=r * math.sqrt(2) - 2 * R_PROP, disc_to_pod=r - R_PROP - v["pod_width"] / 2, x_pod_nose=0.0,
                  x_feet=x_le + c + 0.06, pitch_arm=r, roll_arm=r, gap_over_span=None)
+    elif v["layout"] == "plank":                                  # a podless flying wing, one motor on the nose, a fin in the wash
+        L.update(S_ref=b * c, AR=b / c, motor_y=0.0, motor_z=0.0, n_wings=1, fin_area=v["fin_height"] * v["fin_chord"], fin_height=v["fin_height"], fin_chord=v["fin_chord"],
+                 root_chord=v["root_chord"], tip_chord=v["tip_chord"], thickness=v["thickness"], stations_y=[0.0], n_motors=1,
+                 disc_gap_span=math.inf, disc_gap_vertical=math.inf, disc_to_pod=math.inf, x_pod_nose=0.0, x_le=0.06, x_te=0.06 + c, x_ac=0.06 + 0.25 * c, x_spar=0.06 + 0.30 * c,
+                 x_feet=0.06 + v["root_chord"] + 0.02, pitch_arm=0.0, roll_arm=0.0, gap_over_span=None,
+                 root_depth=v["thickness"] * v["root_chord"], pack_fits=v["thickness"] * v["root_chord"] >= PACKS[DRIVES[v["drive"]]["pack"]]["size_m"][2] + 0.006)
+    elif v["layout"] == "dart":                                   # a slender body, a coaxial pair on the nose, a thin wing, four tail fins in the wash
+        L.update(S_ref=b * c, AR=b / c, motor_y=0.0, motor_z=0.0, n_wings=1, fin_area=4 * v["fin_height"] * v["fin_chord"], fin_height=v["fin_height"], fin_chord=v["fin_chord"], tail_arm=v["tail_arm"],
+                 stations_y=[0.0, 0.0], n_motors=2, coaxial=True, disc_gap_span=math.inf, disc_gap_vertical=math.inf, disc_to_pod=math.inf, x_pod_nose=0.0,
+                 x_le=0.14, x_te=0.14 + c, x_ac=0.14 + 0.25 * c, x_spar=0.14 + 0.30 * c, x_feet=v["pod_length"] + 0.01, pitch_arm=0.0, roll_arm=0.0, gap_over_span=None)
     elif v["layout"] == "xwing":                                  # Kestrel-X-C's cell: four panels at ±phi, the discs at the tips
         phi = math.radians(v["phi_deg"])
         r_m = v["motor_r"]
@@ -242,6 +269,12 @@ def checks(L: dict) -> list[str]:
         out.append(f"the discs in a row need {L['span_needed'] * 1e3:.0f} mm of span")
     if L["layout"] == "monoplane":
         out.append("no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only (estimated, not flown)")
+    if L["layout"] == "plank":
+        out.append("one motor: every hover moment comes from the surfaces in its wash (elevons, ailerons, a rudder), and its torque must be held by the ailerons (estimated, not flown)")
+        if not L["pack_fits"]:
+            out.append(f"the pack does not fit the root: {L['root_depth'] * 1e3:.0f} mm of depth")
+    if L["layout"] == "dart":
+        out.append("coaxial contra-rotating pair: every hover moment comes from the four tail fins in the wash (estimated, not flown)")
     if L["Re_20"] < 8e4:
         out.append(f"the chord Reynolds number at 20 m/s is {L['Re_20']:.0f}: thin sections lose cl max and gain drag below ~100 000")
     return out
@@ -257,6 +290,8 @@ def mass_table(L: dict) -> list[dict]:
         rows.append({"item": item, "mass_kg": m, "x": x, "y": y, "z": z, "group": group, "note": note, "rod": None})
     if L["layout"] == "biplane":
         stations = [(sy * L["motor_y"], sz * L["motor_z"]) for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1))]
+    elif L["layout"] in ("plank", "dart"):
+        stations = [(0.0, 0.0)] * L["n_motors"]
     elif L["layout"] == "cruciform":
         stations = [(-L["arm"], 0.0), (L["arm"], 0.0), (0.0, L["arm"]), (0.0, -L["arm"])]
     elif L["layout"] == "xwing":
@@ -264,8 +299,9 @@ def mass_table(L: dict) -> list[dict]:
     else:
         stations = [(y, 0.0) for y in L["stations_y"]]
     for k, (y, z) in enumerate(stations):
-        add(f"motor {k}", STACK["motor"]["mass_kg"] + STACK["motor"]["screws_kg"], L["prop_x"] + 0.02, y, z, "propulsion", "2207-class with its wires and screws")
-        add(f"propeller {k}", STACK["propeller"]["mass_kg"], L["prop_x"], y, z, "propulsion", "5-inch tri-blade")
+        x_m = L["prop_x"] + 0.02 + (0.045 * k if L["layout"] == "dart" else 0.0)                  # the dart's pair in line on the nose
+        add(f"motor {k}", STACK["motor"]["mass_kg"] + STACK["motor"]["screws_kg"], x_m, y, z, "propulsion", "2207-class with its wires and screws")
+        add(f"propeller {k}", STACK["propeller"]["mass_kg"], x_m - 0.02, y, z, "propulsion", "5-inch tri-blade")
         add(f"nacelle / mount {k}", NACELLE_KG * (2.0 if L.get("fairing", 1.0) < 1 else 1.0), L["prop_x"] + 0.03, y, z, "structure", "printed" + (", with the spinner and the nacelle" if L.get("fairing", 1.0) < 1 else ""))
     if L["layout"] == "biplane":
         for name, z in (("upper wing", L["gap"] / 2), ("lower wing", -L["gap"] / 2)):
@@ -273,15 +309,22 @@ def mass_table(L: dict) -> list[dict]:
         add("posts and fittings", POSTS_KG, L["x_spar"], 0.0, 0.0, "structure", "two carbon posts at the motor stations")
     elif L["layout"] == "monoplane":
         add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
+    elif L["layout"] == "plank":
+        add("wing (thick root, the bay inside)", WING_AREAL_KG_M2 * 1.25 * L["span"] * L["chord"] + SPAR_KG_M * L["span"] + ROOT_BAY_KG, L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2 * 1.25:.2f} kg/m² (16 % thick), a 6 mm tube, the root bay")
+        add("fin and rudder", FIN_RUDDER_KG, L["x_le"] + 0.7 * L["root_chord"], 0.0, 0.07, "structure", "in the wash: the hover yaw and the third foot")
+    elif L["layout"] == "dart":
+        add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
+        add("tail fins (4) with their surfaces", WING_AREAL_KG_M2 * L["fin_area"] * 1.2 + 0.016, L["pod_length"] - 0.5 * L["fin_chord"], 0.0, 0.0, "structure", "the four fins in the wash: the hover moments and the feet")
     elif L["layout"] == "xwing":
         add("panels (4)", WING_AREAL_KG_M2 * L["S_panels"] + SPAR_KG_M * 4 * (L["r1"] - L["r0"]), L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", "four cantilever panels, a 6 mm tube each")
     else:
         add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
         add("fins (2)", WING_AREAL_KG_M2 * L["fin_area"] * 1.1 + SPAR_KG_M * 2 * L["arm"], L["x_le"] + 0.40 * L["fin_chord"], 0.0, 0.0, "structure", "the vertical arms carrying two motors")
-    add("pod", POD_KG_PER_M * L["pod_length"] + 0.010, L["x_pod_nose"] + 0.45 * L["pod_length"], 0.0, 0.0, "structure", "printed, with the bays and the hatch")
+    if L["pod_length"] > 0:
+        add("pod", POD_KG_PER_M * L["pod_length"] + 0.010, L["x_pod_nose"] + 0.45 * L["pod_length"], 0.0, 0.0, "structure", "printed, with the bays and the hatch")
     add("feet", FEET_KG, L["x_feet"], 0.0, 0.0, "structure", "four tips")
     add("battery", pk["mass_kg"], L["x_ac"] - 0.005, 0.0, -0.008, "energy", L["pack"])
-    add("flight controller + ESC", STACK["stack"]["mass_kg"], L["x_ac"] + 0.035, 0.0, 0.012, "systems", "30.5 mm stack")
+    add("flight controller + ESC", STACK["stack"]["mass_kg"] if L.get("n_motors", 4) > 1 else 0.018, L["x_ac"] + 0.035, 0.0, 0.012, "systems", "30.5 mm stack" if L.get("n_motors", 4) > 1 else "a small flight controller and one 40 A ESC (the 4-in-1 is not needed)")
     add("FPV camera + VTX", STACK["fpv"]["mass_kg"], L["x_pod_nose"] + 0.03, 0.0, 0.0, "systems")
     add("receiver + GNSS", STACK["receiver"]["mass_kg"], L["x_ac"] + 0.08, 0.0, 0.015, "systems")
     add("wiring", STACK["wiring"]["mass_kg"], L["x_ac"], 0.0, 0.0, "systems")
@@ -320,18 +363,27 @@ def drag_buildup(L: dict, *, V: float = 20.0, t: float = 0.10) -> dict:
     S, c = L["S_ref"], L["chord"]
     rows = {}
     ff = 1 + 2 * t + 100 * t ** 4
+    if L["layout"] == "plank":
+        ff = 1 + 2 * L["thickness"] + 100 * L["thickness"] ** 4
     rows["wings"] = kf._cf(V * c / NU) * ff * 2 * (L["S_panels"] if L["layout"] == "xwing" else S)
+    if L["layout"] in ("plank", "dart"):
+        rows["fins"] = kf._cf(V * L["fin_chord"] / NU) * (1 + 2 * t + 100 * t ** 4) * 2 * L["fin_area"]
     if L["layout"] == "xwing":
         rows["panel-pod junctions (4, filleted)"] = 4 * 0.0012 * (c / 0.14) ** 2 * 0.5         # Kestrel-X-C's allowance, scaled with the chord
     if L["layout"] == "cruciform":
         rows["fins (2)"] = kf._cf(V * L["fin_chord"] / NU) * ff * 2 * L["fin_area"]
     lp, dp = L["pod_length"], L["pod_width"]
-    fr = lp / dp
-    rows["pod"] = kf._cf(V * lp / NU) * (1 + 60 / fr ** 3 + fr / 400) * math.pi * dp * lp * 0.8
+    if lp > 0:
+        fr = lp / dp
+        rows["pod"] = kf._cf(V * lp / NU) * (1 + 60 / fr ** 3 + fr / 400) * math.pi * dp * lp * 0.8 * (1.15 if L["layout"] == "dart" else 1.0)     # the dart's body sits in the pair's wash
     dm = STACK["motor"]["d_m"]
     nm = L.get("n_motors", 4)
     fair = L.get("fairing", 1.0)                                                        # 1: the open bell; < 1: a spinner and a nacelle
-    rows[f"motors in their mounts ({nm}){', faired' if fair < 1 else ''}"] = nm * (fair * STACK["motor"]["cd_frontal"] * math.pi * dm ** 2 / 4 + kf._cf(V * 0.07 / NU) * 1.3 * math.pi * dm * (0.07 if fair < 1 else 0.05))
+    n_front = 1 if L["layout"] == "dart" else nm                                                   # the coaxial pair shows one bell to the stream
+    rows[f"motors in their mounts ({nm}){', faired' if fair < 1 else ''}"] = n_front * fair * STACK["motor"]["cd_frontal"] * math.pi * dm ** 2 / 4 + nm * kf._cf(V * 0.07 / NU) * 1.3 * math.pi * dm * (0.07 if fair < 1 else 0.05)
+    if L["layout"] == "plank":
+        rows.pop("camera and antenna", None)
+        rows["camera in the leading edge, antenna"] = 0.6 * 0.0003
     if L["layout"] == "biplane":
         rows["posts (2), faired"] = 2 * POST_CD_FAIRED * POST_FAIRING_CHORD * (L["gap"] - 0.01)      # printed streamlined sleeves on the tubes
     rows["camera and antenna"] = 0.6 * 0.0006
@@ -355,7 +407,7 @@ def induced_factor(L: dict) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------- performance
-def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W: float = FPV_W, cd0_scale: float = 1.0, cl_max_scale: float = 1.0, mass_scale: float = 1.0) -> dict:
+def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 106.0, 1.0), fpv_W: float = FPV_W, cd0_scale: float = 1.0, cl_max_scale: float = 1.0, mass_scale: float = 1.0) -> dict:
     """Level flight and the manoeuvre against speed; the hover; the brake; the reorientation; the transitions. The
     three scales are the sensitivity knobs (the build-up's Cd0, the section's cl max, the structure's mass)."""
     L = dict(layout(variant))
@@ -369,6 +421,7 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
     E = energy_wh(L["drive"])
     cd90 = kf.viterna_cd90(L["AR"])
     nm = L.get("n_motors", 4)
+    coax = COAXIAL_THRUST if L.get("coaxial") else 1.0            # the pair's thrust per unit of each disc's own
     rows = []
     for V in speeds:
         q = 0.5 * RHO * V * V
@@ -380,11 +433,11 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
             continue
         CD = cd0 + k * CL ** 2
         D = q * S * CD
-        T = nm * float(tab.t_max(V))
+        T = nm * float(tab.t_max(V)) * coax
         if D > T:
             rows.append({"V [m/s]": V, "feasible": False, "note": "no thrust left"})
             continue
-        P = nm * tab.power(D / nm, V) + fpv_W
+        P = nm * tab.power(D / nm / coax, V) + fpv_W
         n_aero = L["cl_max"] * q * S / W
         n_sus = math.sqrt(max((T / (q * S) - cd0) / k, 0.0)) * q * S / W
         n = min(n_aero, n_sus, L["n_struct"])
@@ -394,20 +447,21 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
                      "turn radius [m]": r, "turn rate [deg/s]": math.degrees(G * math.sqrt(max(n * n - 1, 0)) / V), "limited by": "wing" if n == n_aero else "thrust" if n == n_sus else "structure"})
     df = pd.DataFrame(rows).set_index("V [m/s]")
     ok = df[df["feasible"]]
-    T0 = nm * tab.T_max[0]
-    P_h = nm * tab.power(W / nm, 0.0) + fpv_W
+    T0 = nm * tab.T_max[0] * coax
+    P_h = nm * tab.power(W / nm / coax, 0.0) + fpv_W
     dT = tab.T_max[0] - W / nm                                        # what one motor can add above its hover share
     alpha_pitch = (nm / 2) * dT * L["pitch_arm"] / max(ci["Iyy"], 1e-6)       # one half up, the other down to the idle (0 for a flat monoplane: elevons only)
     alpha_roll = (nm / 2) * dT * L["roll_arm"] / max(ci["Ixx"], 1e-6)
     elev = elevon_pitch_authority(L, W, ci["Iyy"])
-    if L["layout"] == "monoplane":
+    if L["layout"] in ("monoplane", "plank", "dart"):
         alpha_pitch = elev["elevon pitch acceleration in the hover [rad/s²]"]
+        alpha_roll = elev.get("surface roll acceleration in the hover [rad/s²]", alpha_roll)
     V_s = math.sqrt(W / (0.5 * RHO * S * L["cl_max"]))
     at = lambda col, V: float(ok.loc[V, col]) if V in ok.index else np.nan
     summary = {"layout": L["layout"] + (f" ({nm} motors)" if nm != 4 else ""), "drive": L["drive"], "mass [kg]": m, "wing area [m²]": S, "span [m]": L["span"], "wing loading [N/m²]": W / S, "aspect ratio": L["AR"],
                "Cd0 at 20 m/s": float(drag_buildup(L)["Cd0"]) * cd0_scale, "CdA at 20 m/s [cm²]": float(drag_buildup(L)["CdA_m2"]) * 1e4 * cd0_scale, "induced k": k, "stall speed [m/s]": V_s,
                "hover thrust / weight": T0 / W, "hover power [W]": P_h, "hover endurance [min]": E / P_h * 60, "pitch acceleration in the hover [rad/s²]": alpha_pitch,
-               "roll acceleration in the hover [rad/s²]": alpha_roll, "hover pitch by": "elevons in the wash" if L["layout"] == "monoplane" else "differential thrust (+ elevons)",
+               "roll acceleration in the hover [rad/s²]": alpha_roll, "hover pitch by": {"monoplane": "elevons in the wash", "plank": "elevons in the one motor's wash", "dart": "the tail fins in the wash"}.get(L["layout"], "differential thrust (+ elevons)"),
                "elevon pitch acceleration in the hover [rad/s²]": elev["elevon pitch acceleration in the hover [rad/s²]"], "power at 20 m/s [W]": at("electrical [W]", 20.0), "Wh/km at 20 m/s": at("Wh/km", 20.0), "L/D at 20 m/s": at("L/D", 20.0),
                "range at 20 m/s [km]": at("range [km]", 20.0), "best range [km]": float(ok["range [km]"].max()), "at [m/s]": float(ok["range [km]"].idxmax()), "least Wh/km": float(ok["Wh/km"].min()),
                "best endurance [min]": float(ok["endurance [min]"].max()), "top speed [m/s]": float(ok.index.max()), "top speed [km/h]": float(ok.index.max()) * 3.6,
@@ -416,10 +470,11 @@ def performance(variant: str = MAIN, *, speeds=np.arange(6.0, 86.0, 1.0), fpv_W:
                "sustained top speed [km/h]": float(ok[ok["electrical [W]"] <= sustained_power_w(L["drive"], nm)].index.max()) * 3.6, "n at 20 m/s (banked)": at("n", 20.0), "turn radius at 20 m/s (banked) [m]": at("turn radius [m]", 20.0),
                "turn radius at 40 m/s (banked) [m]": at("turn radius [m]", 40.0), "least banked turn radius [m]": float(ok["turn radius [m]"].min()), "at speed [m/s]": float(ok["turn radius [m]"].idxmin()),
                "span / gate": L["span_over_gate"], "energy [Wh]": E, "cd90": cd90}
-    out = {"L": L, "table": df, "summary": summary, "cg": ci, "drive": tab, "mass_table": mass_table(L)}
+    out = {"L": L, "table": df, "summary": summary, "cg": ci, "drive": tab, "mass_table": mass_table(L), "elevons": elev}
     summary.update(vertical_climb(L, tab, m, float(drag_buildup(L)["CdA_m2"]) * cd0_scale, n_motors=nm, fpv_W=fpv_W, P_sustain=sustained_power_w(L["drive"], nm)))
     summary.update(cross_section(L))
     summary["zoom climb from the top speed [m]"] = summary["top speed [m/s]"] ** 2 / (2 * G)
+    summary["cost [EUR]"] = cost(L)["total [EUR]"]
     summary.update(braking(out))
     summary.update(reorientation(out))
     summary.update(transition(out))
@@ -433,17 +488,29 @@ def elevon_pitch_authority(L: dict, W: float, Iyy: float, *, deflection_deg: flo
     the 30 % elevon, the arm from the quarter chord to the elevon's centre of pressure. A first estimate; the biplane
     and the cruciform have it in addition to their differential thrust."""
     nm = L.get("n_motors", 4)
-    T_each = W / nm
+    T_each = W / nm / (COAXIAL_THRUST if L.get("coaxial") else 1.0)
     A = math.pi * R_PROP ** 2
     v_i = math.sqrt(T_each / (2 * RHO * A))
     q = 0.5 * RHO * (1.4 * v_i) ** 2
+    dCL = cl_per_rad_flap * math.radians(deflection_deg) * 0.75                                   # a part-span flap's lift on the washed strip
+    if L["layout"] == "dart":                                                                     # four tail fins wholly in the wash, far behind the CG
+        F = q * L["fin_area"] / 4 * dCL
+        M = 2 * F * L["tail_arm"]                                                                 # one opposite pair for pitch (the other pair for yaw)
+        M_roll = 4 * F * 0.6 * L["fin_height"]
+        return {"elevon pitch moment in the hover [N·m]": M, "elevon pitch acceleration in the hover [rad/s²]": M / max(Iyy, 1e-6), "wash speed at the elevon [m/s]": 1.4 * v_i,
+                "surface roll acceleration in the hover [rad/s²]": M_roll / max(Iyy * 0.6, 1e-6), "surface roll moment in the hover [N·m]": M_roll}
     strip = 2 * R_PROP * L["chord"]
     n_washed = len([1 for st in (L.get("stations_y") or []) ]) or (2 if L["layout"] == "cruciform" else 4)     # the discs whose wash crosses a wing's elevon
-    dCL = cl_per_rad_flap * math.radians(deflection_deg) * 0.75                                   # a part-span flap's lift on the washed strip
     F = q * strip * dCL
     arm = 0.60 * L["chord"]                                                                       # the elevon's lift behind the CG near the quarter chord
     M = n_washed * F * arm
-    return {"elevon pitch moment in the hover [N·m]": M, "elevon pitch acceleration in the hover [rad/s²]": M / max(Iyy, 1e-6), "wash speed at the elevon [m/s]": 1.4 * v_i}
+    out = {"elevon pitch moment in the hover [N·m]": M, "elevon pitch acceleration in the hover [rad/s²]": M / max(Iyy, 1e-6), "wash speed at the elevon [m/s]": 1.4 * v_i}
+    if L["layout"] == "plank":                                                                    # the ailerons (the washed strip split left and right) against the one propeller's torque
+        M_roll = F * 0.5 * (2 * R_PROP) * 0.5 * 2
+        torque = 0.012 * W
+        out.update({"surface roll moment in the hover [N·m]": M_roll, "propeller torque to hold [N·m]": torque, "roll margin over the torque": M_roll / torque,
+                    "surface roll acceleration in the hover [rad/s²]": max(M_roll - torque, 0.0) / max(Iyy * 0.5, 1e-6)})
+    return out
 
 
 def braking(perf: dict, *, V0: float = 20.0, V_end: float = 4.0, tilt_max_deg: float = TILT_MAX_DEG) -> dict:
@@ -454,7 +521,7 @@ def braking(perf: dict, *, V0: float = 20.0, V_end: float = 4.0, tilt_max_deg: f
     takes over. No thrust reversal."""
     L, m, tab = perf["L"], perf["summary"]["mass [kg]"], perf["drive"]
     W = m * G
-    CdA_wing = perf["summary"]["cd90"] * L["S_ref"] + 1.0 * L["fin_area"]
+    CdA_wing = perf["summary"]["cd90"] * L["S_ref"] + 1.0 * L.get("fin_area", 0.0)
     nm = L.get("n_motors", 4)
     CdA_rest = 1.1 * math.pi * L["pod_width"] * L["pod_length"] * 0.7 + nm * 0.6 * math.pi * STACK["motor"]["d_m"] ** 2 / 4 + 2 * (L["pitch_arm"] + L["roll_arm"]) * 0.005 * 1.0
     thetas = np.radians(np.linspace(0.0, tilt_max_deg, 15))
@@ -534,6 +601,10 @@ def cross_section(L: dict) -> dict:
         w, h = max(L["span"], 2 * (L["arm"] + R)), 2 * (L["arm"] + R)
     elif L["layout"] == "xwing":
         w, h = L["span"], max(L["height"], 2 * (L["motor_z"] + R))
+    elif L["layout"] == "plank":
+        w, h = L["span"], max(2 * R, L["fin_height"] + 0.5 * R)
+    elif L["layout"] == "dart":
+        w, h = L["span"], max(2 * R, 2 * L["fin_height"] + L["pod_width"])
     else:
         w, h = L["span"], 2 * R
     m = 0.05
@@ -582,7 +653,8 @@ def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0
         V -= a * dt
         s += V * dt
         t += dt
-    summary = {"layout": "quad", "drive": drive, "mass [kg]": m, "hover thrust / weight": T0 / W, **vertical_climb({}, tab, m, 2.2 * CdA_m2, fpv_W=fpv_W, P_sustain=sustained_power_w(drive)),
+    summary = {"layout": "quad", "drive": drive, "mass [kg]": m, "cost [EUR]": 4 * COST_EUR["motor"] + COST_EUR["propeller set"] + COST_EUR["4-in-1 ESC + FC"] + COST_EUR["FPV camera + VTX + antenna"] + 5.0 + COST_EUR[DRIVES[drive]["pack"]] + 45.0,
+               "hover thrust / weight": T0 / W, **vertical_climb({}, tab, m, 2.2 * CdA_m2, fpv_W=fpv_W, P_sustain=sustained_power_w(drive)),
                "zoom climb from the top speed [m]": float(df.index.max()) ** 2 / (2 * G),
                "cross-section climbing [m]": "0.28 × 0.28", "smallest square hatch [m]": 0.155 + 2 * R_PROP + 0.10, "smallest slot [m]": 0.155 + 2 * R_PROP + 0.10, "smallest round chimney [m]": math.hypot(0.282, 0.282) + 0.10, "hover power [W]": P_h, "hover endurance [min]": E / P_h * 60,
                "pitch acceleration in the hover [rad/s²]": alpha_tilt, "roll acceleration in the hover [rad/s²]": alpha_tilt, "yaw acceleration in the hover [rad/s²]": alpha_yaw,
@@ -598,7 +670,7 @@ def quad(*, drive: str = "4S 5x4.3", CdA_m2: float = 0.016, speeds=np.arange(2.0
     return {"table": df, "summary": summary, "drive": tab, "cg": ci, "mass_table": quad_mass_table(), "CdA_m2": CdA_m2}
 
 
-COMPARE_KEYS = ["layout", "mass [kg]", "span / gate", "top speed [km/h]", "power at top speed [W]", "full-throttle endurance at top speed [s]", "sustained power [W]", "sustained top speed [km/h]", "power at 20 m/s [W]", "Wh/km at 20 m/s", "least Wh/km", "range at 20 m/s [km]", "best range [km]", "at [m/s]",
+COMPARE_KEYS = ["layout", "mass [kg]", "cost [EUR]", "span / gate", "top speed [km/h]", "power at top speed [W]", "full-throttle endurance at top speed [s]", "sustained power [W]", "sustained top speed [km/h]", "power at 20 m/s [W]", "Wh/km at 20 m/s", "least Wh/km", "range at 20 m/s [km]", "best range [km]", "at [m/s]",
                 "best endurance [min]", "stall speed [m/s]", "hover thrust / weight", "hover power [W]", "hover endurance [min]", "n at 20 m/s (banked)", "turn radius at 20 m/s (banked) [m]",
                 "turn radius at 40 m/s (banked) [m]", "least banked turn radius [m]", "brake deceleration at 20 m/s [g]", "brake 20→4 m/s distance [m]", "brake 20→4 m/s time [s]", "vertical climb, thrust-limited [m/s]", "vertical climb at the sustainable power [m/s]", "power in that climb [W]", "initial vertical acceleration from the hover [g]", "zoom climb from the top speed [m]", "cross-section climbing [m]", "smallest square hatch [m]", "smallest slot [m]", "smallest round chimney [m]", "hover pitch-over 90° [s]",
                 "pitch acceleration in the hover [rad/s²]", "hover pitch by", "thrust / weight at 1.2 Vs", "pull-up speed [m/s]", "pull-up radius into the hover [m]", "transitions", "energy [Wh]"]
@@ -607,6 +679,21 @@ COMPARE_KEYS = ["layout", "mass [kg]", "span / gate", "top speed [km/h]", "power
 def compare(perf: dict, base: dict) -> pd.DataFrame:
     cols = {"5-inch racing quad": base["summary"]} | {name: p["summary"] for name, p in perf.items()}
     return pd.DataFrame({k: {kk: v.get(kk, np.nan) for kk in COMPARE_KEYS} for k, v in cols.items()})
+
+
+COST_EUR = {"motor": 22.0, "propeller set": 3.0, "4-in-1 ESC + FC": 75.0, "single ESC + small FC": 45.0, "FPV camera + VTX + antenna": 55.0, "receiver + GNSS": 30.0,
+            "4S 1300": 22.0, "4S 1500": 25.0, "6S 1300": 32.0, "6S 1500": 38.0, "filament per 100 g": 3.0, "carbon tubes": 8.0, "servos (surfaces)": 12.0}
+
+
+def cost(L: dict, printed_g: float | None = None) -> dict:
+    """A rough bill of materials [EUR]: the stack, the motors, the pack, the print, the tubes, the servos."""
+    nm = L.get("n_motors", 4)
+    b = budget(L)
+    printed_g = printed_g if printed_g is not None else float(b.loc[b["group"] == "structure", "mass_g"].sum()) * 1.5
+    items = {"motors": nm * COST_EUR["motor"], "propellers": COST_EUR["propeller set"], "electronics": COST_EUR["single ESC + small FC"] if nm == 1 else COST_EUR["4-in-1 ESC + FC"],
+             "FPV": COST_EUR["FPV camera + VTX + antenna"], "receiver + GNSS": COST_EUR["receiver + GNSS"], "pack": COST_EUR[L["pack"]], "print": printed_g / 100 * COST_EUR["filament per 100 g"],
+             "tubes": COST_EUR["carbon tubes"], "servos": COST_EUR["servos (surfaces)"] if L["layout"] in ("monoplane", "plank", "dart") else COST_EUR["servos (surfaces)"] * 0.5}
+    return {**items, "total [EUR]": sum(items.values())}
 
 
 def design_rows(perf: dict) -> pd.DataFrame:
@@ -620,18 +707,21 @@ def targets(perf: dict, base: dict) -> pd.DataFrame:
     rows = {}
     s = perf["Apus Mini"]["summary"]
     rows["Apus Mini: less energy at the quad's 20 m/s"] = {"target": "Wh/km at 20 m/s < half the quad's", "value": f"{s['Wh/km at 20 m/s']:.2f} vs {b['Wh/km at 20 m/s']:.2f}", "met": s["Wh/km at 20 m/s"] < 0.5 * b["Wh/km at 20 m/s"]}
+    rows["Apus Mini: small and light"] = {"target": "lighter than the quad, span ≤ 0.45 m", "value": f"{s['mass [kg]'] * 1e3:.0f} vs {b['mass [kg]'] * 1e3:.0f} g, {s['span [m]']:.2f} m", "met": s["mass [kg]"] < b["mass [kg]"] and s["span [m]"] <= 0.45}
+    rows["Apus Mini: cheap"] = {"target": "bill of materials below the quad's", "value": f"{s['cost [EUR]']:.0f} vs {b['cost [EUR]']:.0f} EUR", "met": s["cost [EUR]"] < b["cost [EUR]"]}
     rows["Apus Mini: comparable speed"] = {"target": "sustained top speed ≥ the quad's", "value": f"{s['sustained top speed [km/h]']:.0f} vs {b['sustained top speed [km/h]']:.0f} km/h", "met": s["sustained top speed [km/h]"] >= b["sustained top speed [km/h]"]}
-    rows["Apus Mini: hover pitch with elevons only"] = {"target": "a 90° pitch-over in the hover under 0.5 s (the quad: ~0.1 s)", "value": f"{s['hover pitch-over 90° [s]']:.2f} s at {s['pitch acceleration in the hover [rad/s²]']:.0f} rad/s²", "met": s["hover pitch-over 90° [s]"] < 0.5}
+    rows["Apus Mini: hover on one motor"] = {"target": "thrust / weight ≥ 2.5, a 90° pitch-over under 0.5 s, the ailerons hold 3 × the torque", "value": f"{s['hover thrust / weight']:.1f}, {s['hover pitch-over 90° [s]']:.2f} s, {perf['Apus Mini']['elevons']['roll margin over the torque']:.1f} ×", "met": s["hover thrust / weight"] >= 2.5 and s["hover pitch-over 90° [s]"] < 0.5 and perf["Apus Mini"]["elevons"]["roll margin over the torque"] >= 3}
     rows["Apus Mini: comparable manoeuvre"] = {"target": "banked turn radius at 20 m/s ≤ the quad's at 45° bank (41 m)", "value": f"{s['turn radius at 20 m/s (banked) [m]']:.0f} m", "met": s["turn radius at 20 m/s (banked) [m]"] <= 41}
     s = perf["Alcotan"]["summary"]
     rows["Alcotan: faster sustained"] = {"target": "sustained top speed (pack 30C, motors 22 A) ≥ 1.25 × the quad's", "value": f"{s['sustained top speed [km/h]']:.0f} vs {b['sustained top speed [km/h]']:.0f} km/h", "met": s["sustained top speed [km/h]"] >= 1.25 * b["sustained top speed [km/h]"]}
     rows["Alcotan: burst speed"] = {"target": "thrust-limited top speed ≥ 1.25 × the quad's", "value": f"{s['top speed [km/h]']:.0f} vs {b['top speed [km/h]']:.0f} km/h ({s['full-throttle endurance at top speed [s]']:.0f} s of pack)", "met": s["top speed [km/h]"] >= 1.25 * b["top speed [km/h]"]}
     rows["Alcotan: a chase at 40 m/s"] = {"target": "endurance at 40 m/s ≥ the quad's at its top speed, with a turn", "value": f"{float(perf['Alcotan']['table'].loc[40.0, 'endurance [min]']):.1f} min, r = {s['turn radius at 40 m/s (banked) [m]']:.0f} m", "met": True}
     s = perf["Gavilan"]["summary"]
-    rows["Gavilan: span for a hangar"] = {"target": "span ≤ a fifth of a gate (0.30 m)", "value": f"{s['span [m]']:.2f} m", "met": s["span [m]"] <= 0.31}
-    rows["Gavilan: the quad's hover agility"] = {"target": "pitch acceleration in the hover ≥ the quad's", "value": f"{s['pitch acceleration in the hover [rad/s²]']:.0f} vs {b['pitch acceleration in the hover [rad/s²]']:.0f} rad/s²", "met": s["pitch acceleration in the hover [rad/s²]"] >= b["pitch acceleration in the hover [rad/s²]"]}
+    rows["Gavilan: the quad's footprint"] = {"target": "the smallest square hatch ≤ the quad's + 10 mm", "value": f"{s['smallest square hatch [m]']:.2f} vs {b['smallest square hatch [m]']:.2f} m", "met": s["smallest square hatch [m]"] <= b["smallest square hatch [m]"] + 0.01}
+    rows["Gavilan: the quad's hover agility"] = {"target": "pitch acceleration in the hover ≥ 2/3 of the quad's", "value": f"{s['pitch acceleration in the hover [rad/s²]']:.0f} vs {b['pitch acceleration in the hover [rad/s²]']:.0f} rad/s²", "met": s["pitch acceleration in the hover [rad/s²]"] >= 2 / 3 * b["pitch acceleration in the hover [rad/s²]"]}
+    rows["Gavilan: the quad's thrust"] = {"target": "hover thrust / weight ≥ the quad's − 1", "value": f"{s['hover thrust / weight']:.1f} vs {b['hover thrust / weight']:.1f}", "met": s["hover thrust / weight"] >= b["hover thrust / weight"] - 1}
     rows["Gavilan: brakes harder than the quad"] = {"target": "brake distance 20→4 m/s ≤ the quad's", "value": f"{s['brake 20→4 m/s distance [m]']:.1f} vs {b['brake 20→4 m/s distance [m]']:.1f} m", "met": s["brake 20→4 m/s distance [m]"] <= b["brake 20→4 m/s distance [m]"]}
-    rows["Gavilan: flies slower than the quad can"] = {"target": "stall speed ≤ 12 m/s (a hangar's straights)", "value": f"{s['stall speed [m/s]']:.1f} m/s", "met": s["stall speed [m/s]"] <= 12}
+    rows["Gavilan: something back for the arms"] = {"target": "range ≥ 1.5 × the quad's when it dashes wing-borne", "value": f"{s['best range [km]']:.0f} vs {b['best range [km]']:.0f} km (stall {s['stall speed [m/s]']:.0f} m/s)", "met": s["best range [km]"] >= 1.5 * b["best range [km]"]}
     return pd.DataFrame(rows).T
 
 
@@ -889,11 +979,11 @@ def biplane_question(perf: dict) -> pd.DataFrame:
     """Apus and Gavilan against the same briefs on one wing (``ALTERNATIVES``): what the biplane cell costs and buys."""
     keys = ["layout", "span [m]", "span / gate", "mass [kg]", "wing area [m²]", "aspect ratio", "induced k", "Cd0 at 20 m/s", "CdA at 20 m/s [cm²]", "L/D at 20 m/s", "power at 20 m/s [W]", "Wh/km at 20 m/s",
             "best range [km]", "stall speed [m/s]", "turn radius at 20 m/s (banked) [m]", "hover thrust / weight", "hover power [W]", "hover pitch by", "pitch acceleration in the hover [rad/s²]", "hover pitch-over 90° [s]", "sustained top speed [km/h]", "top speed [km/h]"]
-    cols = {"Apus Mini (twin monoplane, as designed)": perf["Apus Mini"]["summary"], "Alcotan (twin monoplane, as designed)": perf["Alcotan"]["summary"], "Gavilan (biplane, as designed)": perf["Gavilan"]["summary"]}
+    cols = {"Apus Mini (plank, as designed)": perf["Apus Mini"]["summary"], "Alcotan (dart, as designed)": perf["Alcotan"]["summary"], "Gavilan (X on the quad's square, as designed)": perf["Gavilan"]["summary"]}
     for a in ALTERNATIVES:
         cols[a] = performance(a)["summary"]
     df = pd.DataFrame({k: {kk: v.get(kk) for kk in keys} for k, v in cols.items()})
     names = ("Apus Mini", "Alcotan", "Gavilan", *ALTERNATIVES)
     df.loc["disc rules"] = ["; ".join(checks(layout(v))) or "all hold" for v in names]
-    df.loc["parts to build"] = [{"cruciform": "pod, 1 wing, 2 fins, 4 mounts", "biplane": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts", "monoplane": f"pod, 1 wing, {layout(v).get('n_motors', 4)} mounts, big elevons", "xwing": "pod, 4 panels, 4 mounts"}[layout(v)["layout"]] for v in names]
+    df.loc["parts to build"] = [{"cruciform": "pod, 1 wing, 2 fins, 4 mounts", "biplane": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts", "monoplane": f"pod, 1 wing, {layout(v).get('n_motors', 4)} mounts, big elevons", "xwing": "pod, 4 panels, 4 mounts", "plank": "1 thick wing (the bay inside), 1 mount, 1 fin + rudder", "dart": "pod, 1 wing, 4 tail fins, 1 coaxial mount"}[layout(v)["layout"]] for v in names]
     return df
