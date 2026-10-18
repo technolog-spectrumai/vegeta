@@ -317,3 +317,12 @@ window), `cantilever(t=)` (`kestrel_xwing`'s, the spar inside the section's dept
 nacelles as the feet) and `export_stl`, the CFD specs and cases (`CFD_CAMPAIGNS` sweep / stall) and the FEA case of
 one panel's spar in its socket (`panel_cad`, `fea_cases`); `kestrel_xc_campaigns.py` is the adapter the workflow book
 `kestrel-x` (code X: `wf X1`–`X3`) runs through `workflows/kestrel_x/`, the shared scripts parametrised by book.
+`mini_raptor.py` (notebook **49** `49_mini_raptor`, auto, no takes): the mini raptors on a 5-inch racing stack — Apus
+Mini (economy: a biplane tailsitter), Alcotan (the chaser: a cruciform tailsitter, 6S and the 5x5), Gavilan (tight
+spaces: the racing frame's motor square in a short cell) — by first principles only: `STACK` / `PACKS` / `DRIVES`
+(Boreas tables cached in `data/mini_raptor_drive_*.json`), `layout` / `checks` (the disc clearances), `mass_table` /
+`budget`, `drag_buildup`, `induced_factor`, `performance` (power, Wh/km, range, the top speed thrust-limited and at the
+sustainable power, the banked turn, the hover, `braking` with the wing as an air brake, `reorientation`,
+`transition`), `quad` (the racing baseline on the same parts), `compare`, `targets`, `sensitivity`, the conceptual
+CAD `MiniRaptor` / `parts` / `render3d` / `ortho_views` / `export_cad` (STEP and STL into `data/cad/mini_raptor/`,
+ignored by git), `export_design` → `data/mini_raptor_design.json`.

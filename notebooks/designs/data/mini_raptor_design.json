@@ -1,0 +1,1531 @@
+{
+ "schema": 1,
+ "notebook": "49_mini_raptor",
+ "method": "first principles and empirical correlations; no CFD, no FEA; conceptual CAD",
+ "uncertainty": {
+  "structure mass": 0.2,
+  "Cd0": 0.3,
+  "cl_max": 0.1,
+  "drive power": 0.15,
+  "quad CdA": 0.3
+ },
+ "stack": {
+  "motor": {
+   "name": "2207-class racing outrunner",
+   "mass_kg": 0.031,
+   "R_ohm": 0.06,
+   "I0_A": 1.0,
+   "I_max_A": 40.0,
+   "d_m": 0.028,
+   "l_m": 0.02
+  },
+  "propeller": {
+   "name": "5-inch three-blade racing propeller",
+   "mass_kg": 0.004,
+   "chord_root_m": 0.01,
+   "chord_max_m": 0.016,
+   "chord_tip_m": 0.006
+  },
+  "stack": {
+   "name": "flight controller + 4-in-1 ESC (30.5 mm stack)",
+   "mass_kg": 0.03,
+   "size_m": [
+    0.04,
+    0.04,
+    0.025
+   ]
+  },
+  "fpv": {
+   "name": "FPV camera + video transmitter + antenna",
+   "mass_kg": 0.035,
+   "size_m": [
+    0.025,
+    0.02,
+    0.02
+   ],
+   "vtx_size_m": [
+    0.035,
+    0.025,
+    0.01
+   ]
+  },
+  "receiver": {
+   "name": "receiver + GNSS puck (the tailsitter firmware wants a heading)",
+   "mass_kg": 0.012
+  },
+  "wiring": {
+   "name": "wiring, connectors, straps",
+   "mass_kg": 0.015
+  }
+ },
+ "packs": {
+  "4S 1300": {
+   "cells": 4,
+   "capacity_ah": 1.3,
+   "mass_kg": 0.15,
+   "size_m": [
+    0.075,
+    0.035,
+    0.03
+   ]
+  },
+  "4S 1500": {
+   "cells": 4,
+   "capacity_ah": 1.5,
+   "mass_kg": 0.17,
+   "size_m": [
+    0.08,
+    0.036,
+    0.032
+   ]
+  },
+  "6S 1300": {
+   "cells": 6,
+   "capacity_ah": 1.3,
+   "mass_kg": 0.21,
+   "size_m": [
+    0.08,
+    0.04,
+    0.045
+   ]
+  }
+ },
+ "drives": {
+  "4S 5x4.3": {
+   "pitch_in": 4.3,
+   "kv": 2400.0,
+   "pack": "4S 1500"
+  },
+  "4S 5x4.3 light": {
+   "pitch_in": 4.3,
+   "kv": 2400.0,
+   "pack": "4S 1300"
+  },
+  "6S 5x4.3": {
+   "pitch_in": 4.3,
+   "kv": 1750.0,
+   "pack": "6S 1300"
+  },
+  "6S 5x5": {
+   "pitch_in": 5.0,
+   "kv": 1750.0,
+   "pack": "6S 1300"
+  }
+ },
+ "quad baseline": {
+  "summary": {
+   "layout": "quad",
+   "drive": "4S 5x4.3",
+   "mass [kg]": 0.5,
+   "hover thrust / weight": 10.525326794397769,
+   "hover power [W]": 77.62261166746909,
+   "hover endurance [min]": 13.727958607795506,
+   "pitch acceleration in the hover [rad/s²]": 1763.6492595733837,
+   "roll acceleration in the hover [rad/s²]": 1763.6492595733837,
+   "yaw acceleration in the hover [rad/s²]": 16.46907035533294,
+   "power at 20 m/s [W]": 168.8135868917917,
+   "Wh/km at 20 m/s": 2.3446331512748846,
+   "range at 20 m/s [km]": 7.574745750883491,
+   "best range [km]": 8.829801104846151,
+   "at [m/s]": 15.0,
+   "least Wh/km": 2.011370334293555,
+   "best endurance [min]": 13.720160445707021,
+   "top speed [m/s]": 37.0,
+   "top speed [km/h]": 133.20000000000002,
+   "power at top speed [W]": 827.0124833056794,
+   "full-throttle endurance at top speed [s]": 77.30959482550888,
+   "sustained power [W]": 666.0,
+   "sustained top speed [m/s]": 34.0,
+   "sustained top speed [km/h]": 122.4,
+   "n at 20 m/s (banked)": 2.9238044001630863,
+   "turn radius at 20 m/s (banked) [m]": 14.840784271812538,
+   "turn radius at 20 m/s, 45° bank [m]": 40.77471967380224,
+   "turn radius at 40 m/s (banked) [m]": 59.36313708725015,
+   "least banked turn radius [m]": 0.0,
+   "span / gate": 0.16666666666666666,
+   "energy [Wh]": 17.76,
+   "stall speed [m/s]": 0.0,
+   "brake deceleration at 20 m/s [g]": 3.5466619250611457,
+   "brake 20→4 m/s distance [m]": 6.181444349059873,
+   "brake 20→4 m/s time [s]": 0.5350000000000004,
+   "hover pitch-over 90° [s]": 0.08441095656430397,
+   "hover yaw 90° [s]": 0.8735150452571742,
+   "transitions": "none needed"
+  },
+  "budget": [
+   {
+    "item": "motor 0",
+    "mass_kg": 0.031,
+    "x": 0.078,
+    "y": 0.078,
+    "z": 0.0,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "propeller 0",
+    "mass_kg": 0.004,
+    "x": 0.078,
+    "y": 0.078,
+    "z": 0.01,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "motor 1",
+    "mass_kg": 0.031,
+    "x": 0.078,
+    "y": -0.078,
+    "z": 0.0,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "propeller 1",
+    "mass_kg": 0.004,
+    "x": 0.078,
+    "y": -0.078,
+    "z": 0.01,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "motor 2",
+    "mass_kg": 0.031,
+    "x": -0.078,
+    "y": 0.078,
+    "z": 0.0,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "propeller 2",
+    "mass_kg": 0.004,
+    "x": -0.078,
+    "y": 0.078,
+    "z": 0.01,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "motor 3",
+    "mass_kg": 0.031,
+    "x": -0.078,
+    "y": -0.078,
+    "z": 0.0,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "propeller 3",
+    "mass_kg": 0.004,
+    "x": -0.078,
+    "y": -0.078,
+    "z": 0.01,
+    "group": "propulsion",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "frame",
+    "mass_kg": 0.105,
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "group": "structure",
+    "note": "5-inch carbon frame, arms, hardware",
+    "rod": null
+   },
+   {
+    "item": "battery",
+    "mass_kg": 0.17,
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.03,
+    "group": "energy",
+    "note": "4S 1500 on top",
+    "rod": null
+   },
+   {
+    "item": "flight controller + ESC",
+    "mass_kg": 0.03,
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "group": "systems",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "FPV camera + VTX",
+    "mass_kg": 0.035,
+    "x": 0.05,
+    "y": 0.0,
+    "z": 0.01,
+    "group": "systems",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "receiver",
+    "mass_kg": 0.005,
+    "x": -0.03,
+    "y": 0.0,
+    "z": 0.01,
+    "group": "systems",
+    "note": "",
+    "rod": null
+   },
+   {
+    "item": "wiring",
+    "mass_kg": 0.015,
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "group": "systems",
+    "note": "",
+    "rod": null
+   }
+  ],
+  "CdA_m2": 0.016
+ },
+ "designs": {
+  "Apus Mini": {
+   "layout": {
+    "variant": "Apus Mini",
+    "layout": "biplane",
+    "title": "economy: the quad's speed and manoeuvre for a third of the power",
+    "drive": "4S 5x4.3",
+    "pack": "4S 1500",
+    "span": 0.5,
+    "chord": 0.085,
+    "R_prop": 0.0635,
+    "pod_length": 0.26,
+    "pod_width": 0.05,
+    "x_le": 0.095,
+    "x_te": 0.18,
+    "x_ac": 0.11625,
+    "x_spar": 0.1205,
+    "prop_x": 0.045,
+    "cl_max": 1.0,
+    "n_struct": 8.0,
+    "camber": 0.03,
+    "colour": "#2a9d8f",
+    "span_over_gate": 0.3333333333333333,
+    "Re_20": 116438.35616438357,
+    "section": "thin cambered section (3% camber, 10 % thick); the elevons' reflex trims it",
+    "gap": 0.16,
+    "S_ref": 0.085,
+    "AR": 2.941176470588235,
+    "motor_y": 0.17149999999999999,
+    "motor_z": 0.08,
+    "gap_over_span": 0.32,
+    "n_wings": 2,
+    "disc_gap_span": 0.21599999999999997,
+    "disc_gap_vertical": 0.033,
+    "disc_to_pod": 0.08299999999999999,
+    "x_feet": 0.22999999999999998,
+    "x_pod_nose": 0.0,
+    "pitch_arm": 0.08,
+    "roll_arm": 0.17149999999999999,
+    "fin_area": 0.0
+   },
+   "rules": [],
+   "budget": [
+    {
+     "item": "motor 0",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": -0.17149999999999999,
+     "z": 0.08,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 0",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": -0.17149999999999999,
+     "z": 0.08,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 0",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": -0.17149999999999999,
+     "z": 0.08,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 1",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.17149999999999999,
+     "z": 0.08,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 1",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.17149999999999999,
+     "z": 0.08,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 1",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.17149999999999999,
+     "z": 0.08,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 2",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": -0.17149999999999999,
+     "z": -0.08,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 2",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": -0.17149999999999999,
+     "z": -0.08,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 2",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": -0.17149999999999999,
+     "z": -0.08,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 3",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.17149999999999999,
+     "z": -0.08,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 3",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.17149999999999999,
+     "z": -0.08,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 3",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.17149999999999999,
+     "z": -0.08,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "upper wing",
+     "mass_kg": 0.033375,
+     "x": 0.129,
+     "y": 0.0,
+     "z": 0.08,
+     "group": "structure",
+     "note": "0.55 kg/m² + a 6 mm tube",
+     "rod": null
+    },
+    {
+     "item": "lower wing",
+     "mass_kg": 0.033375,
+     "x": 0.129,
+     "y": 0.0,
+     "z": -0.08,
+     "group": "structure",
+     "note": "0.55 kg/m² + a 6 mm tube",
+     "rod": null
+    },
+    {
+     "item": "posts and fittings",
+     "mass_kg": 0.012,
+     "x": 0.1205,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "two carbon posts at the motor stations",
+     "rod": null
+    },
+    {
+     "item": "pod",
+     "mass_kg": 0.05160000000000001,
+     "x": 0.117,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "printed, with the bays and the hatch",
+     "rod": null
+    },
+    {
+     "item": "feet",
+     "mass_kg": 0.008,
+     "x": 0.22999999999999998,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "four tips",
+     "rod": null
+    },
+    {
+     "item": "battery",
+     "mass_kg": 0.17,
+     "x": 0.11125,
+     "y": 0.0,
+     "z": -0.008,
+     "group": "energy",
+     "note": "4S 1500",
+     "rod": null
+    },
+    {
+     "item": "flight controller + ESC",
+     "mass_kg": 0.03,
+     "x": 0.15125,
+     "y": 0.0,
+     "z": 0.012,
+     "group": "systems",
+     "note": "30.5 mm stack",
+     "rod": null
+    },
+    {
+     "item": "FPV camera + VTX",
+     "mass_kg": 0.035,
+     "x": 0.03,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "receiver + GNSS",
+     "mass_kg": 0.012,
+     "x": 0.19625,
+     "y": 0.0,
+     "z": 0.015,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "wiring",
+     "mass_kg": 0.015,
+     "x": 0.11625,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    }
+   ],
+   "summary": {
+    "layout": "biplane",
+    "drive": "4S 5x4.3",
+    "mass [kg]": 0.56435,
+    "wing area [m²]": 0.085,
+    "span [m]": 0.5,
+    "wing loading [N/m²]": 65.1326294117647,
+    "aspect ratio": 2.941176470588235,
+    "Cd0 at 20 m/s": 0.04525555445227775,
+    "CdA at 20 m/s [cm²]": 38.46722128443609,
+    "induced k": 0.08135472549118752,
+    "stall speed [m/s]": 10.312079654207384,
+    "hover thrust / weight": 9.325176569857152,
+    "hover power [W]": 89.63625677006532,
+    "hover endurance [min]": 11.888046627532365,
+    "pitch acceleration in the hover [rad/s²]": 783.3393711420122,
+    "roll acceleration in the hover [rad/s²]": 625.6423822334323,
+    "power at 20 m/s [W]": 48.92195606857179,
+    "Wh/km at 20 m/s": 0.679471612063497,
+    "L/D at 20 m/s": 5.212154842331591,
+    "range at 20 m/s [km]": 26.13795732549356,
+    "best range [km]": 33.084253590598586,
+    "at [m/s]": 14.0,
+    "least Wh/km": 0.5368112643486322,
+    "best endurance [min]": 46.48290583977742,
+    "top speed [m/s]": 61.0,
+    "top speed [km/h]": 219.6,
+    "power at top speed [W]": 1100.2166587717468,
+    "full-throttle endurance at top speed [s]": 58.112190440177926,
+    "sustained power [W]": 666.0,
+    "sustained top speed [m/s]": 53.0,
+    "sustained top speed [km/h]": 190.8,
+    "n at 20 m/s (banked)": 3.761555493961778,
+    "turn radius at 20 m/s (banked) [m]": 11.244487639930805,
+    "turn radius at 40 m/s (banked) [m]": 20.548527244810177,
+    "least banked turn radius [m]": 10.927562633050838,
+    "at speed [m/s]": 29.0,
+    "span / gate": 0.3333333333333333,
+    "energy [Wh]": 17.76,
+    "cd90": 1.1629411764705884,
+    "brake drag area, wing at 90° [m²]": 0.13429014764668248,
+    "brake deceleration at 20 m/s [g]": 5.997081344528978,
+    "brake 20→4 m/s distance [m]": 5.01917930874589,
+    "brake 20→4 m/s time [s]": 0.4550000000000003,
+    "brake drag-only deceleration at 20 m/s [g]": 5.942821678415491,
+    "hover pitch-over 90° [s]": 0.12665722088689804,
+    "hover roll 90° [s]": 0.14172349425354294,
+    "transition speed 1.2 Vs [m/s]": 12.37449558504886,
+    "thrust / weight at 1.2 Vs": 8.170623770233037,
+    "thrust / weight at Vs": 8.360396101584737,
+    "pull-up speed [m/s]": 15.0,
+    "pull-up radius into the hover [m]": 20.554076871191292,
+    "pull-up n": 2.1158749653535,
+    "transitions": "both with thrust to spare"
+   },
+   "cad": {
+    "aircraft.step": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/apus_mini_aircraft.step",
+    "aircraft.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/apus_mini_aircraft.stl",
+    "airframe.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/apus_mini_airframe.stl",
+    "bbox_mm": [
+     260.9,
+     500.0,
+     287.0
+    ]
+   }
+  },
+  "Alcotan": {
+   "layout": {
+    "variant": "Alcotan",
+    "layout": "cruciform",
+    "title": "the chaser: sustained speed on 6S and the 5x5, the motors at the tips of a +",
+    "drive": "6S 5x5",
+    "pack": "6S 1300",
+    "span": 0.42,
+    "chord": 0.075,
+    "R_prop": 0.0635,
+    "pod_length": 0.3,
+    "pod_width": 0.05,
+    "x_le": 0.11,
+    "x_te": 0.185,
+    "x_ac": 0.12875,
+    "x_spar": 0.1325,
+    "prop_x": 0.045,
+    "cl_max": 0.95,
+    "n_struct": 10.0,
+    "camber": 0.02,
+    "colour": "#e76f51",
+    "span_over_gate": 0.27999999999999997,
+    "Re_20": 102739.72602739725,
+    "section": "thin cambered section (2% camber, 10 % thick); the elevons' reflex trims it",
+    "arm": 0.14,
+    "fin_chord": 0.065,
+    "S_ref": 0.0315,
+    "AR": 5.6,
+    "motor_y": 0.14,
+    "motor_z": 0.14,
+    "n_wings": 1,
+    "fin_area": 0.014950000000000003,
+    "disc_gap_span": 0.07098989873223333,
+    "disc_gap_vertical": 0.07098989873223333,
+    "disc_to_pod": 0.05150000000000001,
+    "x_pod_nose": 0.0,
+    "x_feet": 0.245,
+    "pitch_arm": 0.14,
+    "roll_arm": 0.14,
+    "gap_over_span": null
+   },
+   "rules": [],
+   "budget": [
+    {
+     "item": "motor 0",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": -0.14,
+     "z": 0.0,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 0",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": -0.14,
+     "z": 0.0,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 0",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": -0.14,
+     "z": 0.0,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 1",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.14,
+     "z": 0.0,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 1",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.14,
+     "z": 0.0,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 1",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.14,
+     "z": 0.0,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 2",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.0,
+     "z": 0.14,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 2",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.0,
+     "z": 0.14,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 2",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.0,
+     "z": 0.14,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 3",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.0,
+     "z": -0.14,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 3",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.0,
+     "z": -0.14,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 3",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.0,
+     "z": -0.14,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "wing",
+     "mass_kg": 0.025724999999999998,
+     "x": 0.14,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "0.55 kg/m² + a 6 mm tube",
+     "rod": null
+    },
+    {
+     "item": "fins (2)",
+     "mass_kg": 0.014644750000000005,
+     "x": 0.136,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "the vertical arms carrying two motors",
+     "rod": null
+    },
+    {
+     "item": "pod",
+     "mass_kg": 0.058,
+     "x": 0.135,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "printed, with the bays and the hatch",
+     "rod": null
+    },
+    {
+     "item": "feet",
+     "mass_kg": 0.008,
+     "x": 0.245,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "four tips",
+     "rod": null
+    },
+    {
+     "item": "battery",
+     "mass_kg": 0.21,
+     "x": 0.12375,
+     "y": 0.0,
+     "z": -0.008,
+     "group": "energy",
+     "note": "6S 1300",
+     "rod": null
+    },
+    {
+     "item": "flight controller + ESC",
+     "mass_kg": 0.03,
+     "x": 0.16375,
+     "y": 0.0,
+     "z": 0.012,
+     "group": "systems",
+     "note": "30.5 mm stack",
+     "rod": null
+    },
+    {
+     "item": "FPV camera + VTX",
+     "mass_kg": 0.035,
+     "x": 0.03,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "receiver + GNSS",
+     "mass_kg": 0.012,
+     "x": 0.20875,
+     "y": 0.0,
+     "z": 0.015,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "wiring",
+     "mass_kg": 0.015,
+     "x": 0.12875,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    }
+   ],
+   "summary": {
+    "layout": "cruciform",
+    "drive": "6S 5x5",
+    "mass [kg]": 0.57236975,
+    "wing area [m²]": 0.0315,
+    "span [m]": 0.42,
+    "wing loading [N/m²]": 178.25229357142857,
+    "aspect ratio": 5.6,
+    "Cd0 at 20 m/s": 0.058303823791061554,
+    "CdA at 20 m/s [cm²]": 18.36570449418439,
+    "induced k": 0.06315672344916481,
+    "stall speed [m/s]": 17.502605904315153,
+    "hover thrust / weight": 11.505455582381234,
+    "hover power [W]": 100.11185009004636,
+    "hover endurance [min]": 13.83732294182956,
+    "pitch acceleration in the hover [rad/s²]": 1519.453417001077,
+    "roll acceleration in the hover [rad/s²]": 1277.3445562376046,
+    "power at 20 m/s [W]": 34.46911501386996,
+    "Wh/km at 20 m/s": 0.47873770852597164,
+    "L/D at 20 m/s": 7.9310700097546984,
+    "range at 20 m/s [km]": 48.22682564757164,
+    "best range [km]": 48.3707616678751,
+    "at [m/s]": 19.0,
+    "least Wh/km": 0.4773131371907596,
+    "best endurance [min]": 44.533167762322314,
+    "top speed [m/s]": 82.0,
+    "top speed [km/h]": 295.2,
+    "power at top speed [W]": 1600.7550768499302,
+    "full-throttle endurance at top speed [s]": 51.92349610632668,
+    "sustained power [W]": 865.8000000000001,
+    "sustained top speed [m/s]": 73.0,
+    "sustained top speed [km/h]": 262.8,
+    "n at 20 m/s (banked)": 1.3057335495474751,
+    "turn radius at 20 m/s (banked) [m]": 48.56404750999843,
+    "turn radius at 40 m/s (banked) [m]": 31.816046576540863,
+    "least banked turn radius [m]": 31.388812751054598,
+    "at speed [m/s]": 55.0,
+    "span / gate": 0.27999999999999997,
+    "energy [Wh]": 23.088000000000005,
+    "cd90": 1.2108,
+    "brake drag area, wing at 90° [m²]": 0.09365340033321076,
+    "brake deceleration at 20 m/s [g]": 4.788373819988868,
+    "brake 20→4 m/s distance [m]": 5.202713784856769,
+    "brake 20→4 m/s time [s]": 0.4650000000000003,
+    "brake drag-only deceleration at 20 m/s [g]": 4.0864289672272,
+    "hover pitch-over 90° [s]": 0.09094131650458567,
+    "hover roll 90° [s]": 0.09918611990370292,
+    "transition speed 1.2 Vs [m/s]": 21.003127085178182,
+    "thrust / weight at 1.2 Vs": 9.427492067830094,
+    "thrust / weight at Vs": 9.768012115480072,
+    "pull-up speed [m/s]": 25.0,
+    "pull-up radius into the hover [m]": 61.247806575946754,
+    "pull-up n": 2.0402086711679304,
+    "transitions": "both with thrust to spare"
+   },
+   "cad": {
+    "aircraft.step": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/alcotan_aircraft.step",
+    "aircraft.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/alcotan_aircraft.stl",
+    "airframe.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/alcotan_airframe.stl",
+    "bbox_mm": [
+     301.3,
+     420.0,
+     407.0
+    ]
+   }
+  },
+  "Gavilan": {
+   "layout": {
+    "variant": "Gavilan",
+    "layout": "biplane",
+    "title": "tight spaces: the racing frame's motor square in a short cell, the wing as a brake",
+    "drive": "4S 5x4.3 light",
+    "pack": "4S 1300",
+    "span": 0.31,
+    "chord": 0.1,
+    "R_prop": 0.0635,
+    "pod_length": 0.22,
+    "pod_width": 0.046,
+    "x_le": 0.095,
+    "x_te": 0.195,
+    "x_ac": 0.12,
+    "x_spar": 0.125,
+    "prop_x": 0.045,
+    "cl_max": 1.1,
+    "n_struct": 8.0,
+    "camber": 0.04,
+    "colour": "#264653",
+    "span_over_gate": 0.20666666666666667,
+    "Re_20": 136986.301369863,
+    "section": "thin cambered section (4% camber, 10 % thick); the elevons' reflex trims it",
+    "gap": 0.155,
+    "S_ref": 0.062,
+    "AR": 1.55,
+    "motor_y": 0.0765,
+    "motor_z": 0.0775,
+    "gap_over_span": 0.5,
+    "n_wings": 2,
+    "disc_gap_span": 0.025999999999999995,
+    "disc_gap_vertical": 0.027999999999999997,
+    "disc_to_pod": null,
+    "x_feet": 0.245,
+    "x_pod_nose": 0.075,
+    "pitch_arm": 0.0775,
+    "roll_arm": 0.0765,
+    "fin_area": 0.0
+   },
+   "rules": [],
+   "budget": [
+    {
+     "item": "motor 0",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": -0.0765,
+     "z": 0.0775,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 0",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": -0.0765,
+     "z": 0.0775,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 0",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": -0.0765,
+     "z": 0.0775,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 1",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.0765,
+     "z": 0.0775,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 1",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.0765,
+     "z": 0.0775,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 1",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.0765,
+     "z": 0.0775,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 2",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": -0.0765,
+     "z": -0.0775,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 2",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": -0.0765,
+     "z": -0.0775,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 2",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": -0.0765,
+     "z": -0.0775,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "motor 3",
+     "mass_kg": 0.031,
+     "x": 0.06,
+     "y": 0.0765,
+     "z": -0.0775,
+     "group": "propulsion",
+     "note": "2207-class",
+     "rod": null
+    },
+    {
+     "item": "propeller 3",
+     "mass_kg": 0.004,
+     "x": 0.045,
+     "y": 0.0765,
+     "z": -0.0775,
+     "group": "propulsion",
+     "note": "5-inch tri-blade",
+     "rod": null
+    },
+    {
+     "item": "nacelle / mount 3",
+     "mass_kg": 0.006,
+     "x": 0.075,
+     "y": 0.0765,
+     "z": -0.0775,
+     "group": "structure",
+     "note": "printed",
+     "rod": null
+    },
+    {
+     "item": "upper wing",
+     "mass_kg": 0.023250000000000003,
+     "x": 0.135,
+     "y": 0.0,
+     "z": 0.0775,
+     "group": "structure",
+     "note": "0.55 kg/m² + a 6 mm tube",
+     "rod": null
+    },
+    {
+     "item": "lower wing",
+     "mass_kg": 0.023250000000000003,
+     "x": 0.135,
+     "y": 0.0,
+     "z": -0.0775,
+     "group": "structure",
+     "note": "0.55 kg/m² + a 6 mm tube",
+     "rod": null
+    },
+    {
+     "item": "posts and fittings",
+     "mass_kg": 0.012,
+     "x": 0.125,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "two carbon posts at the motor stations",
+     "rod": null
+    },
+    {
+     "item": "pod",
+     "mass_kg": 0.045200000000000004,
+     "x": 0.174,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "printed, with the bays and the hatch",
+     "rod": null
+    },
+    {
+     "item": "feet",
+     "mass_kg": 0.008,
+     "x": 0.245,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "structure",
+     "note": "four tips",
+     "rod": null
+    },
+    {
+     "item": "battery",
+     "mass_kg": 0.15,
+     "x": 0.11499999999999999,
+     "y": 0.0,
+     "z": -0.008,
+     "group": "energy",
+     "note": "4S 1300",
+     "rod": null
+    },
+    {
+     "item": "flight controller + ESC",
+     "mass_kg": 0.03,
+     "x": 0.155,
+     "y": 0.0,
+     "z": 0.012,
+     "group": "systems",
+     "note": "30.5 mm stack",
+     "rod": null
+    },
+    {
+     "item": "FPV camera + VTX",
+     "mass_kg": 0.035,
+     "x": 0.105,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "receiver + GNSS",
+     "mass_kg": 0.012,
+     "x": 0.2,
+     "y": 0.0,
+     "z": 0.015,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    },
+    {
+     "item": "wiring",
+     "mass_kg": 0.015,
+     "x": 0.12,
+     "y": 0.0,
+     "z": 0.0,
+     "group": "systems",
+     "note": "",
+     "rod": null
+    }
+   ],
+   "summary": {
+    "layout": "biplane",
+    "drive": "4S 5x4.3 light",
+    "mass [kg]": 0.5177,
+    "wing area [m²]": 0.062,
+    "span [m]": 0.31,
+    "wing loading [N/m²]": 81.91350000000001,
+    "aspect ratio": 1.55,
+    "Cd0 at 20 m/s": 0.056351342163656386,
+    "CdA at 20 m/s [cm²]": 34.937832141466956,
+    "induced k": 0.14044818856459432,
+    "stall speed [m/s]": 11.026263132366875,
+    "hover thrust / weight": 10.165469185240262,
+    "hover power [W]": 80.9270641665515,
+    "hover endurance [min]": 11.411757111308955,
+    "pitch acceleration in the hover [rad/s²]": 814.8525219386705,
+    "roll acceleration in the hover [rad/s²]": 794.8987550457804,
+    "power at 20 m/s [W]": 50.22604467103452,
+    "Wh/km at 20 m/s": 0.6975839537643683,
+    "L/D at 20 m/s": 4.640324481374448,
+    "range at 20 m/s [km]": 22.064727717632035,
+    "best range [km]": 24.45156209134306,
+    "at [m/s]": 16.0,
+    "least Wh/km": 0.6294894347649657,
+    "best endurance [min]": 29.64189507636109,
+    "top speed [m/s]": 62.0,
+    "top speed [km/h]": 223.20000000000002,
+    "power at top speed [W]": 1223.9720016986607,
+    "full-throttle endurance at top speed [s]": 45.2716237978474,
+    "sustained power [W]": 577.2,
+    "sustained top speed [m/s]": 52.0,
+    "sustained top speed [km/h]": 187.20000000000002,
+    "n at 20 m/s (banked)": 3.290055973679552,
+    "turn radius at 20 m/s (banked) [m]": 13.008776608558565,
+    "turn radius at 40 m/s (banked) [m]": 20.548527244810177,
+    "least banked turn radius [m]": 12.493707685417833,
+    "at speed [m/s]": 31.0,
+    "span / gate": 0.20666666666666667,
+    "energy [Wh]": 15.392000000000003,
+    "cd90": 1.1379000000000001,
+    "brake drag area, wing at 90° [m²]": 0.09804815177808175,
+    "brake deceleration at 20 m/s [g]": 4.803670828423005,
+    "brake 20→4 m/s distance [m]": 5.395738237557556,
+    "brake 20→4 m/s time [s]": 0.4800000000000003,
+    "brake drag-only deceleration at 20 m/s [g]": 4.729969317679138,
+    "hover pitch-over 90° [s]": 0.12418393724333146,
+    "hover roll 90° [s]": 0.1257329263572263,
+    "transition speed 1.2 Vs [m/s]": 13.23151575884025,
+    "thrust / weight at 1.2 Vs": 8.822762143226091,
+    "thrust / weight at Vs": 9.04177387163936,
+    "pull-up speed [m/s]": 16.0,
+    "pull-up radius into the hover [m]": 23.602546195337123,
+    "pull-up n": 2.1056358231549135,
+    "transitions": "both with thrust to spare"
+   },
+   "cad": {
+    "aircraft.step": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/gavilan_aircraft.step",
+    "aircraft.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/gavilan_aircraft.stl",
+    "airframe.stl": "/home/user/vegeta/notebooks/designs/data/cad/mini_raptor/gavilan_airframe.stl",
+    "bbox_mm": [
+     252.0,
+     310.0,
+     282.0
+    ]
+   }
+  }
+ },
+ "comparison": {
+  "layout": {
+   "5-inch racing quad": "quad",
+   "Apus Mini": "biplane",
+   "Alcotan": "cruciform",
+   "Gavilan": "biplane"
+  },
+  "mass [kg]": {
+   "5-inch racing quad": 0.5,
+   "Apus Mini": 0.56435,
+   "Alcotan": 0.57236975,
+   "Gavilan": 0.5177
+  },
+  "span / gate": {
+   "5-inch racing quad": 0.16666666666666666,
+   "Apus Mini": 0.3333333333333333,
+   "Alcotan": 0.27999999999999997,
+   "Gavilan": 0.20666666666666667
+  },
+  "top speed [km/h]": {
+   "5-inch racing quad": 133.20000000000002,
+   "Apus Mini": 219.6,
+   "Alcotan": 295.2,
+   "Gavilan": 223.20000000000002
+  },
+  "power at top speed [W]": {
+   "5-inch racing quad": 827.0124833056794,
+   "Apus Mini": 1100.2166587717468,
+   "Alcotan": 1600.7550768499302,
+   "Gavilan": 1223.9720016986607
+  },
+  "full-throttle endurance at top speed [s]": {
+   "5-inch racing quad": 77.30959482550888,
+   "Apus Mini": 58.112190440177926,
+   "Alcotan": 51.92349610632668,
+   "Gavilan": 45.2716237978474
+  },
+  "sustained power [W]": {
+   "5-inch racing quad": 666.0,
+   "Apus Mini": 666.0,
+   "Alcotan": 865.8000000000001,
+   "Gavilan": 577.2
+  },
+  "sustained top speed [km/h]": {
+   "5-inch racing quad": 122.4,
+   "Apus Mini": 190.8,
+   "Alcotan": 262.8,
+   "Gavilan": 187.20000000000002
+  },
+  "power at 20 m/s [W]": {
+   "5-inch racing quad": 168.8135868917917,
+   "Apus Mini": 48.92195606857179,
+   "Alcotan": 34.46911501386996,
+   "Gavilan": 50.22604467103452
+  },
+  "Wh/km at 20 m/s": {
+   "5-inch racing quad": 2.3446331512748846,
+   "Apus Mini": 0.679471612063497,
+   "Alcotan": 0.47873770852597164,
+   "Gavilan": 0.6975839537643683
+  },
+  "least Wh/km": {
+   "5-inch racing quad": 2.011370334293555,
+   "Apus Mini": 0.5368112643486322,
+   "Alcotan": 0.4773131371907596,
+   "Gavilan": 0.6294894347649657
+  },
+  "range at 20 m/s [km]": {
+   "5-inch racing quad": 7.574745750883491,
+   "Apus Mini": 26.13795732549356,
+   "Alcotan": 48.22682564757164,
+   "Gavilan": 22.064727717632035
+  },
+  "best range [km]": {
+   "5-inch racing quad": 8.829801104846151,
+   "Apus Mini": 33.084253590598586,
+   "Alcotan": 48.3707616678751,
+   "Gavilan": 24.45156209134306
+  },
+  "at [m/s]": {
+   "5-inch racing quad": 15.0,
+   "Apus Mini": 14.0,
+   "Alcotan": 19.0,
+   "Gavilan": 16.0
+  },
+  "best endurance [min]": {
+   "5-inch racing quad": 13.720160445707021,
+   "Apus Mini": 46.48290583977742,
+   "Alcotan": 44.533167762322314,
+   "Gavilan": 29.64189507636109
+  },
+  "stall speed [m/s]": {
+   "5-inch racing quad": 0.0,
+   "Apus Mini": 10.312079654207384,
+   "Alcotan": 17.502605904315153,
+   "Gavilan": 11.026263132366875
+  },
+  "hover thrust / weight": {
+   "5-inch racing quad": 10.525326794397769,
+   "Apus Mini": 9.325176569857152,
+   "Alcotan": 11.505455582381234,
+   "Gavilan": 10.165469185240262
+  },
+  "hover power [W]": {
+   "5-inch racing quad": 77.62261166746909,
+   "Apus Mini": 89.63625677006532,
+   "Alcotan": 100.11185009004636,
+   "Gavilan": 80.9270641665515
+  },
+  "hover endurance [min]": {
+   "5-inch racing quad": 13.727958607795506,
+   "Apus Mini": 11.888046627532365,
+   "Alcotan": 13.83732294182956,
+   "Gavilan": 11.411757111308955
+  },
+  "n at 20 m/s (banked)": {
+   "5-inch racing quad": 2.9238044001630863,
+   "Apus Mini": 3.761555493961778,
+   "Alcotan": 1.3057335495474751,
+   "Gavilan": 3.290055973679552
+  },
+  "turn radius at 20 m/s (banked) [m]": {
+   "5-inch racing quad": 14.840784271812538,
+   "Apus Mini": 11.244487639930805,
+   "Alcotan": 48.56404750999843,
+   "Gavilan": 13.008776608558565
+  },
+  "turn radius at 40 m/s (banked) [m]": {
+   "5-inch racing quad": 59.36313708725015,
+   "Apus Mini": 20.548527244810177,
+   "Alcotan": 31.816046576540863,
+   "Gavilan": 20.548527244810177
+  },
+  "least banked turn radius [m]": {
+   "5-inch racing quad": 0.0,
+   "Apus Mini": 10.927562633050838,
+   "Alcotan": 31.388812751054598,
+   "Gavilan": 12.493707685417833
+  },
+  "brake deceleration at 20 m/s [g]": {
+   "5-inch racing quad": 3.5466619250611457,
+   "Apus Mini": 5.997081344528978,
+   "Alcotan": 4.788373819988868,
+   "Gavilan": 4.803670828423005
+  },
+  "brake 20→4 m/s distance [m]": {
+   "5-inch racing quad": 6.181444349059873,
+   "Apus Mini": 5.01917930874589,
+   "Alcotan": 5.202713784856769,
+   "Gavilan": 5.395738237557556
+  },
+  "brake 20→4 m/s time [s]": {
+   "5-inch racing quad": 0.5350000000000004,
+   "Apus Mini": 0.4550000000000003,
+   "Alcotan": 0.4650000000000003,
+   "Gavilan": 0.4800000000000003
+  },
+  "hover pitch-over 90° [s]": {
+   "5-inch racing quad": 0.08441095656430397,
+   "Apus Mini": 0.12665722088689804,
+   "Alcotan": 0.09094131650458567,
+   "Gavilan": 0.12418393724333146
+  },
+  "pitch acceleration in the hover [rad/s²]": {
+   "5-inch racing quad": 1763.6492595733837,
+   "Apus Mini": 783.3393711420122,
+   "Alcotan": 1519.453417001077,
+   "Gavilan": 814.8525219386705
+  },
+  "thrust / weight at 1.2 Vs": {
+   "5-inch racing quad": null,
+   "Apus Mini": 8.170623770233037,
+   "Alcotan": 9.427492067830094,
+   "Gavilan": 8.822762143226091
+  },
+  "pull-up speed [m/s]": {
+   "5-inch racing quad": null,
+   "Apus Mini": 15.0,
+   "Alcotan": 25.0,
+   "Gavilan": 16.0
+  },
+  "pull-up radius into the hover [m]": {
+   "5-inch racing quad": null,
+   "Apus Mini": 20.554076871191292,
+   "Alcotan": 61.247806575946754,
+   "Gavilan": 23.602546195337123
+  },
+  "transitions": {
+   "5-inch racing quad": "none needed",
+   "Apus Mini": "both with thrust to spare",
+   "Alcotan": "both with thrust to spare",
+   "Gavilan": "both with thrust to spare"
+  },
+  "energy [Wh]": {
+   "5-inch racing quad": 17.76,
+   "Apus Mini": 17.76,
+   "Alcotan": 23.088000000000005,
+   "Gavilan": 15.392000000000003
+  }
+ },
+ "targets": {
+  "Apus Mini: less energy at the quad's 20 m/s": {
+   "target": "Wh/km at 20 m/s < half the quad's",
+   "value": "0.68 vs 2.34",
+   "met": true
+  },
+  "Apus Mini: comparable speed": {
+   "target": "sustained top speed ≥ the quad's",
+   "value": "191 vs 122 km/h",
+   "met": true
+  },
+  "Apus Mini: comparable manoeuvre": {
+   "target": "banked turn radius at 20 m/s ≤ the quad's at 45° bank (41 m)",
+   "value": "11 m",
+   "met": true
+  },
+  "Alcotan: faster sustained": {
+   "target": "sustained top speed (pack 30C, motors 22 A) ≥ 1.25 × the quad's",
+   "value": "263 vs 122 km/h",
+   "met": true
+  },
+  "Alcotan: burst speed": {
+   "target": "thrust-limited top speed ≥ 1.25 × the quad's",
+   "value": "295 vs 133 km/h (52 s of pack)",
+   "met": true
+  },
+  "Alcotan: a chase at 40 m/s": {
+   "target": "endurance at 40 m/s ≥ the quad's at its top speed, with a turn",
+   "value": "8.3 min, r = 32 m",
+   "met": true
+  },
+  "Gavilan: span for a hangar": {
+   "target": "span ≤ a fifth of a gate (0.30 m)",
+   "value": "0.31 m",
+   "met": true
+  },
+  "Gavilan: the quad's hover agility": {
+   "target": "pitch acceleration in the hover ≥ the quad's",
+   "value": "815 vs 1764 rad/s²",
+   "met": false
+  },
+  "Gavilan: brakes harder than the quad": {
+   "target": "brake distance 20→4 m/s ≤ the quad's",
+   "value": "5.4 vs 6.2 m",
+   "met": true
+  },
+  "Gavilan: flies slower than the quad can": {
+   "target": "stall speed ≤ 12 m/s (a hangar's straights)",
+   "value": "11.0 m/s",
+   "met": true
+  }
+ }
+}

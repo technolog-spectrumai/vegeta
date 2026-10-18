@@ -150,6 +150,8 @@ flow.notebook("47_kestrel_benchmark", title="Kestrel benchmark — the family on
               takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json"),
                      File(f"48_kestrel_xc:{DATA}/kestrel_xc_design.json")],
               gives=[File(f"{DATA}/reports/47_kestrel_benchmark.json")], auto=True)
+flow.notebook("49_mini_raptor", title="Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
+              takes=[], gives=[File(f"{DATA}/mini_raptor_design.json"), File(f"{DATA}/reports/49_mini_raptor.json")], auto=True)
 
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
