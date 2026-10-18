@@ -1,0 +1,16 @@
+{
+ "debug": false,
+ "design_fingerprint": null,
+ "file": "svarog_remote.json",
+ "git": "9018cc28dcfb",
+ "inputs": [],
+ "kind": "notebook",
+ "needs": {},
+ "producer": "46_svarog_remote",
+ "schema": null,
+ "sha256": "2448f7c296591648eb61e7e4b0255970769606be8852ded9534500dec715a61e",
+ "size": 24594,
+ "written_at": "2026-10-18T09:29:54Z",
+ "written_ts": 1792315794.639094,
+ "yanus": 1
+}

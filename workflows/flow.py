@@ -106,6 +106,10 @@ flow.notebook("45_kestrel_x", title="Kestrel-X — the X-wing sibling: four cant
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")])
 
+flow.notebook("46_svarog_remote", title="Svarog remote — welding at 20 m with many lasers crossing at one point (analytic, no runs)",
+              needs=[], takes=[],
+              gives=[File(f"{DATA}/svarog_remote.json")])
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

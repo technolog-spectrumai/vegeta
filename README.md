@@ -370,6 +370,20 @@ study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch 
 (fitted R 0.13 Ω with the ESC) take the rest. `scenarios/falco_mission.py`, `scenarios/falco_birds.py`
 (`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
 
+**Svarog remote** (branch `dev_exp_laser`) — **`46_svarog_remote`**: can N kilowatt fibre lasers in separate heads be
+focused on one point 20 m away and weld a machine that is still moving? Designed from first principles in
+`designs/svarog_remote.py` (closed form and an exact ray trace; nothing runs longer than seconds): the Gaussian budget
+(w0 = BPP·L/w_in — single-mode sources with 2–3" optics, multimode ones would need 6" lenses), the head as a Galilean
+expander that focuses by its lens spacing (δ = f2²/L), the magnification-against-clipping trade, spherical aberration
+from the f-number and the orientation of a plano-convex L2 (keep it at 750 mm, curved face toward the target; a
+plane-parallel plate trims it by micrometres only), astigmatism and the tilted plate that cancels it (the tilt from
+t·i²(n²−1)/n³ is the traced optimum; the sign that also cancels the coma recovers the peak), the spot at 20 m from the
+traced wavefront (a Fraunhofer sum over the exit pupil), Rosenthal's pool for 2 heads (conduction, 2 × 1 mm) and
+10 heads (keyhole), the ring geometry that makes the beams cross (±2 cm of range, 3–10 µrad of pointing per head — the
+tracking is the hard part, not the optics), stray-beam shielding (aluminium holds and reflects, steel is the wall,
+black polycarbonate only for windows; the whole path enclosed) and a parts list with what to verify. Gives
+`designs/data/svarog_remote.json`.
+
 **Kestrel** — open **`43_kestrel_study`**: the one notebook for the design (geometry, mass budget, CG and
 inertia, propulsion and the hover, aerodynamics and the stall, trim and control, performance and energy, the
 structure, the transitions both ways, a final assessment) on inexpensive methods first — the mass table, Boreas, the
