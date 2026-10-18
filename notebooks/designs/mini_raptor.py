@@ -105,6 +105,10 @@ ALTERNATIVES = {
                                                      "span": 0.50, "chord": 0.17, "arm": 0.14, "fin_chord": 0.065, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#e9c46a"},
     "Alcotan twin: two motors on one wing": {"layout": "monoplane", "n_motors": 2, "title": "the chaser with two motors: half the hover thrust, the same pack, the 5x5", "drive": "6S 5x5",
                                              "span": 0.42, "chord": 0.075, "motor_y": 0.13, "cl_max": 0.95, "n_struct": 10.0, "camber": 0.02, "pod_length": 0.30, "pod_width": 0.050, "colour": "#f4a261"},
+    "X-C mini for the hangar": {"layout": "xwing", "phi_deg": 30.0, "motor_r": 0.15, "title": "Kestrel-X-C's cell on the 5-inch stack, the smallest that clears the discs: panels 0.16 m, a 0.40 m projected span", "drive": "4S 5x4.3 light",
+                                "chord": 0.07, "span": 0.0, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.22, "pod_width": 0.046, "colour": "#9b5de5"},
+    "X-C mini for the race": {"layout": "xwing", "phi_deg": 30.0, "motor_r": 0.22, "title": "the same cell with Apus's span: panels 0.28 m, chord 0.09, 4S 1500", "drive": "4S 5x4.3",
+                              "chord": 0.09, "span": 0.0, "cl_max": 1.0, "n_struct": 8.0, "camber": 0.03, "pod_length": 0.26, "pod_width": 0.050, "colour": "#7b2cbf"},
     "Gavilan on one wing (cruciform)": {"layout": "cruciform", "title": "the smallest cruciform that clears the discs (arms 0.10): span 0.36, over the hangar's 0.31", "drive": "4S 5x4.3 light",
                                         "span": 0.36, "chord": 0.17, "arm": 0.10, "fin_chord": 0.065, "cl_max": 1.1, "n_struct": 8.0, "camber": 0.04, "pod_length": 0.22, "pod_width": 0.046, "colour": "#6c757d"},
 }
@@ -185,6 +189,19 @@ def layout(variant: str = MAIN) -> dict:
         L.update(arm=r, fin_chord=v["fin_chord"], S_ref=b * c, AR=b / c, motor_y=r, motor_z=r, n_wings=1, fin_area=2 * (r - v["pod_width"] / 2) * v["fin_chord"],
                  disc_gap_span=r * math.sqrt(2) - 2 * R_PROP, disc_gap_vertical=r * math.sqrt(2) - 2 * R_PROP, disc_to_pod=r - R_PROP - v["pod_width"] / 2, x_pod_nose=0.0,
                  x_feet=x_le + c + 0.06, pitch_arm=r, roll_arm=r, gap_over_span=None)
+    elif v["layout"] == "xwing":                                  # Kestrel-X-C's cell: four panels at ±phi, the discs at the tips
+        phi = math.radians(v["phi_deg"])
+        r_m = v["motor_r"]
+        r1 = r_m + R_PROP + DISC_CLEARANCE
+        r0 = v["pod_width"] / 2
+        S_panels = 4 * (r1 - r0) * c
+        S_eff = S_panels * math.cos(phi) ** 2                      # the vertical lift of panels at ±phi
+        b_proj = 2 * r1 * math.cos(phi)
+        L.update(phi=phi, phi_deg=v["phi_deg"], motor_r=r_m, r0=r0, r1=r1, span=b_proj, span_over_gate=b_proj / GATE_WIDTH, height=2 * r1 * math.sin(phi), S_panels=S_panels, S_ref=S_eff,
+                 AR=b_proj ** 2 / S_eff, motor_y=r_m * math.cos(phi), motor_z=r_m * math.sin(phi), n_wings=1, fin_area=0.0,
+                 disc_gap_span=2 * r_m * math.cos(phi) - 2 * R_PROP, disc_gap_vertical=2 * r_m * math.sin(phi) - 2 * R_PROP, disc_to_pod=r_m - R_PROP - r0, x_pod_nose=0.0,
+                 x_feet=x_le + c + 0.06, pitch_arm=r_m * math.sin(phi), roll_arm=r_m * math.cos(phi), gap_over_span=None)
+        L["cl_max"] = v["cl_max"] * math.cos(phi)                   # the aircraft's vertical CL max on S_eff: each panel at its own cl max
     else:                                                        # "monoplane": the motors in a row on the one wing, no fins, no posts
         n = v["n_motors"]
         if n == 4:
@@ -237,6 +254,8 @@ def mass_table(L: dict) -> list[dict]:
         stations = [(sy * L["motor_y"], sz * L["motor_z"]) for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1))]
     elif L["layout"] == "cruciform":
         stations = [(-L["arm"], 0.0), (L["arm"], 0.0), (0.0, L["arm"]), (0.0, -L["arm"])]
+    elif L["layout"] == "xwing":
+        stations = [(sy * L["motor_y"], sz * L["motor_z"]) for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1))]
     else:
         stations = [(y, 0.0) for y in L["stations_y"]]
     for k, (y, z) in enumerate(stations):
@@ -249,6 +268,8 @@ def mass_table(L: dict) -> list[dict]:
         add("posts and fittings", POSTS_KG, L["x_spar"], 0.0, 0.0, "structure", "two carbon posts at the motor stations")
     elif L["layout"] == "monoplane":
         add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
+    elif L["layout"] == "xwing":
+        add("panels (4)", WING_AREAL_KG_M2 * L["S_panels"] + SPAR_KG_M * 4 * (L["r1"] - L["r0"]), L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", "four cantilever panels, a 6 mm tube each")
     else:
         add("wing", WING_AREAL_KG_M2 * L["span"] * L["chord"] + SPAR_KG_M * L["span"], L["x_le"] + 0.40 * L["chord"], 0.0, 0.0, "structure", f"{WING_AREAL_KG_M2} kg/m² + a 6 mm tube")
         add("fins (2)", WING_AREAL_KG_M2 * L["fin_area"] * 1.1 + SPAR_KG_M * 2 * L["arm"], L["x_le"] + 0.40 * L["fin_chord"], 0.0, 0.0, "structure", "the vertical arms carrying two motors")
@@ -294,7 +315,9 @@ def drag_buildup(L: dict, *, V: float = 20.0, t: float = 0.10) -> dict:
     S, c = L["S_ref"], L["chord"]
     rows = {}
     ff = 1 + 2 * t + 100 * t ** 4
-    rows["wings"] = kf._cf(V * c / NU) * ff * 2 * S
+    rows["wings"] = kf._cf(V * c / NU) * ff * 2 * (L["S_panels"] if L["layout"] == "xwing" else S)
+    if L["layout"] == "xwing":
+        rows["panel-pod junctions (4, filleted)"] = 4 * 0.0012 * (c / 0.14) ** 2 * 0.5         # Kestrel-X-C's allowance, scaled with the chord
     if L["layout"] == "cruciform":
         rows["fins (2)"] = kf._cf(V * L["fin_chord"] / NU) * ff * 2 * L["fin_area"]
     lp, dp = L["pod_length"], L["pod_width"]
@@ -316,6 +339,9 @@ def induced_factor(L: dict) -> dict:
     if L["layout"] == "biplane":
         sig = kf.prandtl_sigma(L["gap_over_span"])
         k = (1 + sig) / 2 / (math.pi * L["AR"]) / kf.OSWALD_VISCOUS
+    elif L["layout"] == "xwing":
+        sig = None
+        k = 1 / (math.pi * L["AR"] * 0.85) / kf.OSWALD_VISCOUS          # the X's lattice gave e ≈ 0.85 on the projected span (kestrel_xc)
     else:
         sig = None
         k = 1 / (math.pi * L["AR"]) / kf.OSWALD_VISCOUS
@@ -822,5 +848,5 @@ def biplane_question(perf: dict) -> pd.DataFrame:
     df = pd.DataFrame({k: {kk: v.get(kk) for kk in keys} for k, v in cols.items()})
     names = ("Apus Mini", "Alcotan", "Gavilan", *ALTERNATIVES)
     df.loc["disc rules"] = ["; ".join(checks(layout(v))) or "all hold" for v in names]
-    df.loc["parts to build"] = [{"cruciform": "pod, 1 wing, 2 fins, 4 mounts", "biplane": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts", "monoplane": f"pod, 1 wing, {layout(v).get('n_motors', 4)} mounts, big elevons"}[layout(v)["layout"]] for v in names]
+    df.loc["parts to build"] = [{"cruciform": "pod, 1 wing, 2 fins, 4 mounts", "biplane": "pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts", "monoplane": f"pod, 1 wing, {layout(v).get('n_motors', 4)} mounts, big elevons", "xwing": "pod, 4 panels, 4 mounts"}[layout(v)["layout"]] for v in names]
     return df

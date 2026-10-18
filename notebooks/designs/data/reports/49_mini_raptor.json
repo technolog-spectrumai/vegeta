@@ -1,7 +1,7 @@
 {
  "notebook": "49_mini_raptor",
  "title": "Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack",
- "exported": "2026-10-18T03:28",
+ "exported": "2026-10-18T03:31",
  "meta": {
   "method": "first principles and empirical correlations; no CFD, no FEA; conceptual CAD",
   "cad": {
@@ -1401,6 +1401,8 @@
     "Apus flat: four motors in a row",
     "Apus cruciform: four motors on wing and fins",
     "Alcotan twin: two motors on one wing",
+    "X-C mini for the hangar",
+    "X-C mini for the race",
     "Gavilan on one wing (cruciform)"
    ],
    "rows": [
@@ -1414,6 +1416,8 @@
      "Apus flat: four motors in a row": "monoplane",
      "Apus cruciform: four motors on wing and fins": "cruciform",
      "Alcotan twin: two motors on one wing": "monoplane (2 motors)",
+     "X-C mini for the hangar": "xwing",
+     "X-C mini for the race": "xwing",
      "Gavilan on one wing (cruciform)": "cruciform"
     },
     {
@@ -1426,6 +1430,8 @@
      "Apus flat: four motors in a row": 0.64,
      "Apus cruciform: four motors on wing and fins": 0.5,
      "Alcotan twin: two motors on one wing": 0.42,
+     "X-C mini for the hangar": 0.3958,
+     "X-C mini for the race": 0.517,
      "Gavilan on one wing (cruciform)": 0.36
     },
     {
@@ -1438,6 +1444,8 @@
      "Apus flat: four motors in a row": 0.4267,
      "Apus cruciform: four motors on wing and fins": 0.3333,
      "Alcotan twin: two motors on one wing": 0.28,
+     "X-C mini for the hangar": 0.2638,
+     "X-C mini for the race": 0.3447,
      "Gavilan on one wing (cruciform)": 0.24
     },
     {
@@ -1450,6 +1458,8 @@
      "Apus flat: four motors in a row": 0.5442,
      "Apus cruciform: four motors on wing and fins": 0.557,
      "Alcotan twin: two motors on one wing": 0.4757,
+     "X-C mini for the hangar": 0.5073,
+     "X-C mini for the race": 0.5616,
      "Gavilan on one wing (cruciform)": 0.5101
     },
     {
@@ -1462,6 +1472,8 @@
      "Apus flat: four motors in a row": 0.0832,
      "Apus cruciform: four motors on wing and fins": 0.085,
      "Alcotan twin: two motors on one wing": 0.0315,
+     "X-C mini for the hangar": 0.04316,
+     "X-C mini for the race": 0.07384,
      "Gavilan on one wing (cruciform)": 0.0612
     },
     {
@@ -1474,6 +1486,8 @@
      "Apus flat: four motors in a row": 4.923,
      "Apus cruciform: four motors on wing and fins": 2.941,
      "Alcotan twin: two motors on one wing": 5.6,
+     "X-C mini for the hangar": 3.63,
+     "X-C mini for the race": 3.62,
      "Gavilan on one wing (cruciform)": 2.118
     },
     {
@@ -1486,6 +1500,8 @@
      "Apus flat: four motors in a row": 0.07184,
      "Apus cruciform: four motors on wing and fins": 0.1203,
      "Alcotan twin: two motors on one wing": 0.06316,
+     "X-C mini for the hangar": 0.1146,
+     "X-C mini for the race": 0.1149,
      "Gavilan on one wing (cruciform)": 0.167
     },
     {
@@ -1498,6 +1514,8 @@
      "Apus flat: four motors in a row": 0.0242,
      "Apus cruciform: four motors on wing and fins": 0.02489,
      "Alcotan twin: two motors on one wing": 0.0399,
+     "X-C mini for the hangar": 0.06079,
+     "X-C mini for the race": 0.04602,
      "Gavilan on one wing (cruciform)": 0.03061
     },
     {
@@ -1510,6 +1528,8 @@
      "Apus flat: four motors in a row": 20.13,
      "Apus cruciform: four motors on wing and fins": 21.16,
      "Alcotan twin: two motors on one wing": 12.57,
+     "X-C mini for the hangar": 26.23,
+     "X-C mini for the race": 33.98,
      "Gavilan on one wing (cruciform)": 18.74
     },
     {
@@ -1522,6 +1542,8 @@
      "Apus flat: four motors in a row": 8.992,
      "Apus cruciform: four motors on wing and fins": 7.91,
      "Alcotan twin: two motors on one wing": 9.599,
+     "X-C mini for the hangar": 5.461,
+     "X-C mini for the race": 5.373,
      "Gavilan on one wing (cruciform)": 6.781
     },
     {
@@ -1534,6 +1556,8 @@
      "Apus flat: four motors in a row": 29.99,
      "Apus cruciform: four motors on wing and fins": 33.91,
      "Alcotan twin: two motors on one wing": 25.55,
+     "X-C mini for the hangar": 42.82,
+     "X-C mini for the race": 47.44,
      "Gavilan on one wing (cruciform)": 35.82
     },
     {
@@ -1546,6 +1570,8 @@
      "Apus flat: four motors in a row": 0.4165,
      "Apus cruciform: four motors on wing and fins": 0.471,
      "Alcotan twin: two motors on one wing": 0.3549,
+     "X-C mini for the hangar": 0.5948,
+     "X-C mini for the race": 0.6589,
      "Gavilan on one wing (cruciform)": 0.4975
     },
     {
@@ -1558,6 +1584,8 @@
      "Apus flat: four motors in a row": 46.83,
      "Apus cruciform: four motors on wing and fins": 39.48,
      "Alcotan twin: two motors on one wing": 65.06,
+     "X-C mini for the hangar": 26.85,
+     "X-C mini for the race": 30.46,
      "Gavilan on one wing (cruciform)": 31.09
     },
     {
@@ -1570,6 +1598,8 @@
      "Apus flat: four motors in a row": 10.23,
      "Apus cruciform: four motors on wing and fins": 10.24,
      "Alcotan twin: two motors on one wing": 15.96,
+     "X-C mini for the hangar": 14.74,
+     "X-C mini for the race": 11.86,
      "Gavilan on one wing (cruciform)": 11.02
     },
     {
@@ -1582,6 +1612,8 @@
      "Apus flat: four motors in a row": 11.06,
      "Apus cruciform: four motors on wing and fins": 11.09,
      "Alcotan twin: two motors on one wing": 33.65,
+     "X-C mini for the hangar": 26.4,
+     "X-C mini for the race": 15.32,
      "Gavilan on one wing (cruciform)": 12.98
     },
     {
@@ -1594,6 +1626,8 @@
      "Apus flat: four motors in a row": 9.671,
      "Apus cruciform: four motors on wing and fins": 9.448,
      "Alcotan twin: two motors on one wing": 6.921,
+     "X-C mini for the hangar": 10.37,
+     "X-C mini for the race": 9.37,
      "Gavilan on one wing (cruciform)": 10.32
     },
     {
@@ -1606,6 +1640,8 @@
      "Apus flat: four motors in a row": 85.87,
      "Apus cruciform: four motors on wing and fins": 88.26,
      "Alcotan twin: two motors on one wing": 98.27,
+     "X-C mini for the hangar": 78.98,
+     "X-C mini for the race": 89.13,
      "Gavilan on one wing (cruciform)": 79.51
     },
     {
@@ -1618,6 +1654,8 @@
      "Apus flat: four motors in a row": "elevons in the wash",
      "Apus cruciform: four motors on wing and fins": "differential thrust (+ elevons)",
      "Alcotan twin: two motors on one wing": "elevons in the wash",
+     "X-C mini for the hangar": "differential thrust (+ elevons)",
+     "X-C mini for the race": "differential thrust (+ elevons)",
      "Gavilan on one wing (cruciform)": "differential thrust (+ elevons)"
     },
     {
@@ -1630,6 +1668,8 @@
      "Apus flat: four motors in a row": 174.0,
      "Apus cruciform: four motors on wing and fins": 921.5,
      "Alcotan twin: two motors on one wing": 85.67,
+     "X-C mini for the hangar": 902.1,
+     "X-C mini for the race": 793.2,
      "Gavilan on one wing (cruciform)": 874.8
     },
     {
@@ -1642,6 +1682,8 @@
      "Apus flat: four motors in a row": 0.2687,
      "Apus cruciform: four motors on wing and fins": 0.1168,
      "Alcotan twin: two motors on one wing": 0.383,
+     "X-C mini for the hangar": 0.118,
+     "X-C mini for the race": 0.1259,
      "Gavilan on one wing (cruciform)": 0.1199
     },
     {
@@ -1654,6 +1696,8 @@
      "Apus flat: four motors in a row": 223.2,
      "Apus cruciform: four motors on wing and fins": 216.0,
      "Alcotan twin: two motors on one wing": 288.0,
+     "X-C mini for the hangar": 198.0,
+     "X-C mini for the race": 198.0,
      "Gavilan on one wing (cruciform)": 212.4
     },
     {
@@ -1666,6 +1710,8 @@
      "Apus flat: four motors in a row": 230.4,
      "Apus cruciform: four motors on wing and fins": 230.4,
      "Alcotan twin: two motors on one wing": 291.6,
+     "X-C mini for the hangar": 226.8,
+     "X-C mini for the race": 223.2,
      "Gavilan on one wing (cruciform)": 230.4
     },
     {
@@ -1678,6 +1724,8 @@
      "Apus flat: four motors in a row": "no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only (estimated, not flown)",
      "Apus cruciform: four motors on wing and fins": "all hold",
      "Alcotan twin: two motors on one wing": "no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only (estimated, not flown)",
+     "X-C mini for the hangar": "all hold",
+     "X-C mini for the race": "all hold",
      "Gavilan on one wing (cruciform)": "the discs on one wing are 14 mm apart; the upper and lower discs are 14 mm apart: two 5-inch discs need 142 mm; the discs are 14 mm from the pod"
     },
     {
@@ -1690,6 +1738,8 @@
      "Apus flat: four motors in a row": "pod, 1 wing, 4 mounts, big elevons",
      "Apus cruciform: four motors on wing and fins": "pod, 1 wing, 2 fins, 4 mounts",
      "Alcotan twin: two motors on one wing": "pod, 1 wing, 2 mounts, big elevons",
+     "X-C mini for the hangar": "pod, 4 panels, 4 mounts",
+     "X-C mini for the race": "pod, 4 panels, 4 mounts",
      "Gavilan on one wing (cruciform)": "pod, 1 wing, 2 fins, 4 mounts"
     }
    ]

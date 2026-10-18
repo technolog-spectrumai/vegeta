@@ -1,6 +1,6 @@
 # Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack
 
-*49_mini_raptor — exported 2026-10-18 03:28*
+*49_mini_raptor — exported 2026-10-18 03:31*
 
 | key | value |
 |---|---|
@@ -195,32 +195,32 @@
 
 ## biplane question
 
-|  | Apus Mini (twin monoplane, as designed) | Alcotan (cruciform, as designed) | Gavilan (biplane, as designed) | Apus as a biplane cell | Apus with the span a gate forbids | Apus flat: four motors in a row | Apus cruciform: four motors on wing and fins | Alcotan twin: two motors on one wing | Gavilan on one wing (cruciform) |
-|---|---|---|---|---|---|---|---|---|---|
-| layout | monoplane (2 motors) | cruciform | biplane | biplane | cruciform | monoplane | cruciform | monoplane (2 motors) | cruciform |
-| span [m] | 0.5 | 0.42 | 0.31 | 0.5 | 0.71 | 0.64 | 0.5 | 0.42 | 0.36 |
-| span / gate | 0.333 | 0.28 | 0.207 | 0.333 | 0.473 | 0.427 | 0.333 | 0.28 | 0.24 |
-| mass [kg] | 0.46 | 0.572 | 0.524 | 0.57 | 0.561 | 0.544 | 0.557 | 0.476 | 0.51 |
-| wing area [m²] | 0.085 | 0.0315 | 0.062 | 0.085 | 0.0852 | 0.0832 | 0.085 | 0.0315 | 0.0612 |
-| aspect ratio | 2.94 | 5.6 | 1.55 | 2.94 | 5.92 | 4.92 | 2.94 | 5.6 | 2.12 |
-| induced k | 0.12 | 0.0632 | 0.14 | 0.0814 | 0.0598 | 0.0718 | 0.12 | 0.0632 | 0.167 |
-| Cd0 at 20 m/s | 0.0181 | 0.0583 | 0.0372 | 0.0308 | 0.0262 | 0.0242 | 0.0249 | 0.0399 | 0.0306 |
-| CdA at 20 m/s [cm²] | 15.4 | 18.4 | 23.1 | 26.2 | 22.4 | 20.1 | 21.2 | 12.6 | 18.7 |
-| L/D at 20 m/s | 9.14 | 7.93 | 6.35 | 7.32 | 8.68 | 8.99 | 7.91 | 9.6 | 6.78 |
-| power at 20 m/s [W] | 26 | 34.5 | 38.7 | 36.9 | 31.6 | 30 | 33.9 | 25.6 | 35.8 |
-| Wh/km at 20 m/s | 0.361 | 0.479 | 0.538 | 0.512 | 0.44 | 0.417 | 0.471 | 0.355 | 0.497 |
-| best range [km] | 51 | 48.4 | 29.5 | 39.4 | 46 | 46.8 | 39.5 | 65.1 | 31.1 |
-| stall speed [m/s] | 9.31 | 17.5 | 11.1 | 10.4 | 10.3 | 10.2 | 10.2 | 16 | 11 |
-| turn radius at 20 m/s (banked) [m] | 9.06 | 48.6 | 13.2 | 11.4 | 11.2 | 11.1 | 11.1 | 33.7 | 13 |
-| hover thrust / weight | 5.72 | 11.5 | 10 | 9.23 | 9.38 | 9.67 | 9.45 | 6.92 | 10.3 |
-| hover power [W] | 87.5 | 100 | 82 | 90.8 | 89.1 | 85.9 | 88.3 | 98.3 | 79.5 |
-| hover pitch by | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) |
-| pitch acceleration in the hover [rad/s²] | 245 | 1.52e+03 | 813 | 782 | 1.06e+03 | 174 | 922 | 85.7 | 875 |
-| hover pitch-over 90° [s] | 0.226 | 0.0909 | 0.124 | 0.127 | 0.109 | 0.269 | 0.117 | 0.383 | 0.12 |
-| sustained top speed [km/h] | 223 | 263 | 205 | 212 | 220 | 223 | 216 | 288 | 212 |
-| top speed [km/h] | 223 | 295 | 230 | 227 | 230 | 230 | 230 | 292 | 230 |
-| disc rules | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold | all hold | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | the discs on one wing are 14 mm apart; the upper and lower discs are 14 mm apart: two 5… |
-| parts to build | pod, 1 wing, 2 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 4 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 2 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts |
+|  | Apus Mini (twin monoplane, as designed) | Alcotan (cruciform, as designed) | Gavilan (biplane, as designed) | Apus as a biplane cell | Apus with the span a gate forbids | Apus flat: four motors in a row | Apus cruciform: four motors on wing and fins | Alcotan twin: two motors on one wing | X-C mini for the hangar | X-C mini for the race | Gavilan on one wing (cruciform) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| layout | monoplane (2 motors) | cruciform | biplane | biplane | cruciform | monoplane | cruciform | monoplane (2 motors) | xwing | xwing | cruciform |
+| span [m] | 0.5 | 0.42 | 0.31 | 0.5 | 0.71 | 0.64 | 0.5 | 0.42 | 0.396 | 0.517 | 0.36 |
+| span / gate | 0.333 | 0.28 | 0.207 | 0.333 | 0.473 | 0.427 | 0.333 | 0.28 | 0.264 | 0.345 | 0.24 |
+| mass [kg] | 0.46 | 0.572 | 0.524 | 0.57 | 0.561 | 0.544 | 0.557 | 0.476 | 0.507 | 0.562 | 0.51 |
+| wing area [m²] | 0.085 | 0.0315 | 0.062 | 0.085 | 0.0852 | 0.0832 | 0.085 | 0.0315 | 0.0432 | 0.0738 | 0.0612 |
+| aspect ratio | 2.94 | 5.6 | 1.55 | 2.94 | 5.92 | 4.92 | 2.94 | 5.6 | 3.63 | 3.62 | 2.12 |
+| induced k | 0.12 | 0.0632 | 0.14 | 0.0814 | 0.0598 | 0.0718 | 0.12 | 0.0632 | 0.115 | 0.115 | 0.167 |
+| Cd0 at 20 m/s | 0.0181 | 0.0583 | 0.0372 | 0.0308 | 0.0262 | 0.0242 | 0.0249 | 0.0399 | 0.0608 | 0.046 | 0.0306 |
+| CdA at 20 m/s [cm²] | 15.4 | 18.4 | 23.1 | 26.2 | 22.4 | 20.1 | 21.2 | 12.6 | 26.2 | 34 | 18.7 |
+| L/D at 20 m/s | 9.14 | 7.93 | 6.35 | 7.32 | 8.68 | 8.99 | 7.91 | 9.6 | 5.46 | 5.37 | 6.78 |
+| power at 20 m/s [W] | 26 | 34.5 | 38.7 | 36.9 | 31.6 | 30 | 33.9 | 25.6 | 42.8 | 47.4 | 35.8 |
+| Wh/km at 20 m/s | 0.361 | 0.479 | 0.538 | 0.512 | 0.44 | 0.417 | 0.471 | 0.355 | 0.595 | 0.659 | 0.497 |
+| best range [km] | 51 | 48.4 | 29.5 | 39.4 | 46 | 46.8 | 39.5 | 65.1 | 26.9 | 30.5 | 31.1 |
+| stall speed [m/s] | 9.31 | 17.5 | 11.1 | 10.4 | 10.3 | 10.2 | 10.2 | 16 | 14.7 | 11.9 | 11 |
+| turn radius at 20 m/s (banked) [m] | 9.06 | 48.6 | 13.2 | 11.4 | 11.2 | 11.1 | 11.1 | 33.7 | 26.4 | 15.3 | 13 |
+| hover thrust / weight | 5.72 | 11.5 | 10 | 9.23 | 9.38 | 9.67 | 9.45 | 6.92 | 10.4 | 9.37 | 10.3 |
+| hover power [W] | 87.5 | 100 | 82 | 90.8 | 89.1 | 85.9 | 88.3 | 98.3 | 79 | 89.1 | 79.5 |
+| hover pitch by | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) |
+| pitch acceleration in the hover [rad/s²] | 245 | 1.52e+03 | 813 | 782 | 1.06e+03 | 174 | 922 | 85.7 | 902 | 793 | 875 |
+| hover pitch-over 90° [s] | 0.226 | 0.0909 | 0.124 | 0.127 | 0.109 | 0.269 | 0.117 | 0.383 | 0.118 | 0.126 | 0.12 |
+| sustained top speed [km/h] | 223 | 263 | 205 | 212 | 220 | 223 | 216 | 288 | 198 | 198 | 212 |
+| top speed [km/h] | 223 | 295 | 230 | 227 | 230 | 230 | 230 | 292 | 227 | 223 | 230 |
+| disc rules | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold | all hold | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold | the discs on one wing are 14 mm apart; the upper and lower discs are 14 mm apart: two 5… |
+| parts to build | pod, 1 wing, 2 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 4 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 2 mounts, big elevons | pod, 4 panels, 4 mounts | pod, 4 panels, 4 mounts | pod, 1 wing, 2 fins, 4 mounts |
 
 
 ## as built
