@@ -52,9 +52,6 @@ if [ -z "$PYTHON_EXE" ]; then
 fi
 [ -n "${CONDA_PREFIX:-}" ] && echo "note: conda environment '$CONDA_PREFIX' is active; the venv is built from $PYTHON_EXE instead"
 
-# The FEniCSx environment (the laser books fenix and svarog) moved with the laser work to Alabastron:
-# https://github.com/technolog-spectrumai/alabastron (its install_local.sh builds it).
-
 step "Virtual environment"
 if [ "$USE_VENV" -eq 1 ]; then
   if ! "$PYTHON_EXE" -c "import venv, ensurepip" >/dev/null 2>&1; then

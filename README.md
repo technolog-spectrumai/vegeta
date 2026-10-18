@@ -91,9 +91,8 @@ evaluated side by side, with a recommendation; then the recommendation (7 blades
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
-**Laser engineering moved to [Alabastron](https://github.com/technolog-spectrumai/alabastron)** (2026-10-18): Hyperion,
-the Svarog studies (`46_svarog`, `46_svarog_remote`, `47_svarog_iii`, `47_svarog_ablation`), `48_kimla`, the FEniCSx
-workflow books `fenix` and `svarog` and their FEniCSx environment. Their history stays here; Alabastron carries it on.
+**Laser engineering lives in [Alabastron](https://github.com/technolog-spectrumai/alabastron)** (moved 2026-10-18,
+with its notebooks, workflow books and solver environment).
 
 `16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
@@ -495,8 +494,8 @@ Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reade
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
 rotors), Chronos time (missions, cyclic loads, life), Chiron the centaur who trained the heroes (legged robots
 walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculptor of the Parthenon —
-(AI modelling from a prompt), Zephyr the west wind (the air over a wing section). The workbench itself is Vegeta; Hyperion and Svarog
-(the laser work) live on in Alabastron.
+(AI modelling from a prompt), Zephyr the west wind (the air over a wing section). The workbench itself is Vegeta; the laser
+work lives on in Alabastron.
 
 ## Layout
 ```

@@ -26,4 +26,4 @@ result = mm.call("solver.plate", spec, real=real_plate, mock=MODE.is_mock())
 
 Install: `pip install -e mimesis` (package `mimesis-mock`, import `mimesis`). Tests: `pytest mimesis/tests`.
 
-Status: proof of concept. Shared with Alabastron (its FEniCSx stubs, `alabastron.mock`); in Vegeta `vegeta.mock` labels and announces its mocks through it and runkit marks mock runs (docs/mimesis.md).
+Status: proof of concept. Shared with Alabastron (its solver stubs, `alabastron.mock`); in Vegeta `vegeta.mock` labels and announces its mocks through it and runkit marks mock runs (docs/mimesis.md).

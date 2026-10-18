@@ -226,5 +226,4 @@ A thermal analysis (a motor's or battery's heat path), another aircraft's CFD, a
 under `workflows/<project>/` that imports `runkit`, builds its cases from the project's design module, runs them in
 the same loop and writes the same files. Nothing in `runkit` is Kestrel-specific.
 
-The laser books `fenix` (F) and `svarog` (S) and their FEniCSx interpreter moved to
-[Alabastron](https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.
+The laser workflow books live in [Alabastron](https://github.com/technolog-spectrumai/alabastron).

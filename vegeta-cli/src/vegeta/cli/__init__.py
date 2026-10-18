@@ -47,7 +47,7 @@ def usage() -> str:
         lines += [f"  {name:<10} (from {ep.dist.name if ep.dist else ep.value})" for name, ep in sorted(extra.items())]
     lines += ["", "Run 'vegeta <command> --help' for details.",
               "The tools are also available as the commands dedalus, talos, aeromant, mellonia, boreas, chronos, "
-              "chiron, atropos and zephyr (the laser tool Hyperion moved to Alabastron)."]
+              "chiron, atropos and zephyr (the laser tool moved to Alabastron)."]
     return "\n".join(lines)
 
 

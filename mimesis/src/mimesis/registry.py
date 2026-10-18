@@ -1,4 +1,4 @@
-"""Mimics by name: ``@mimic("fenicsx.plate")`` registers a stub; ``call(name, ..., real=fn, mode=...)`` picks."""
+"""Mimics by name: ``@mimic("solver.plate")`` registers a stub; ``call(name, ..., real=fn, mode=...)`` picks."""
 from __future__ import annotations
 
 from typing import Callable

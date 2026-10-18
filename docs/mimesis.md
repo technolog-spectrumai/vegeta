@@ -1,7 +1,7 @@
 # Mimesis in Vegeta — how mock results are labelled
 
 `mimesis/` is a small package with no dependencies outside the standard library (`mimesis-mock`, import `mimesis`;
-its own README and tests). It was copied from Alabastron, which uses it for its FEniCSx stubs.
+its own README and tests). It was copied from Alabastron, which uses it for its laser-solver stubs.
 It sets the convention for imitating expensive APIs: a stub result says it is one (`"mock": true`, the mimic's name,
 a note), and a loud banner says when stubs are in force.
 

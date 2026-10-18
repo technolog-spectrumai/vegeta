@@ -81,7 +81,7 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
                 script="workflows/kestrel/import_legacy.py", marker="legacy_")
 
 
-# The laser work (books svarog and fenix, notebooks 46–48) moved to Alabastron on 2026-10-18:
+# The laser work (its books and notebooks) moved to Alabastron on 2026-10-18:
 # https://github.com/technolog-spectrumai/alabastron
 
 

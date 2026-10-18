@@ -302,4 +302,4 @@ panels, each at its dihedral, height and rotor — the model flies any arrangeme
 `drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
 `cruise`).
 
-The laser design modules (`svarog*.py`, `kimla*.py`) moved to Alabastron (https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.
+The laser design modules moved to Alabastron (https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.
