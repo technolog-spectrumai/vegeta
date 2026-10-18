@@ -116,6 +116,10 @@ flow.notebook("46_kestrel_tandem", title="Kestrel-Q4T — the tandem-wing Kestre
                      Data(f"{DATA}/kestrel_drive_10x7_3.3Ah.json", cache=True, note="the 10x7 drive's Boreas table, ~40 s")],
               gives=[File(f"{DATA}/kestrel_tandem_design.json"), File(f"{DATA}/reports/46_kestrel_tandem.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
+flow.notebook("47_kestrel_benchmark", title="Kestrel benchmark — the family on one table, read from notebooks 43, 45 and 46 (no physics)",
+              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json")],
+              gives=[File(f"{DATA}/reports/47_kestrel_benchmark.json")], auto=True)
+
 flow.notebook("44_kestrel_fast", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])

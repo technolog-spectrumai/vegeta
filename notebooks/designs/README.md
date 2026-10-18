@@ -244,7 +244,7 @@ Kestrel's mass and flown at its cruise speed, and Kestrel as a monoplane (same s
 biplane against monoplane in one table (`compare`, `verdict`); `kestrel_flight.interference` / `prandtl_sigma`: the wing-interference
 measure (the lattice's gap sweep, Prandtl's σ, the monoplane equivalents), the CFD chapter K12 (`wing-interference`:
 one wing, the pair, the equal monoplane) measures it with RANS and `kestrel_cfd.interference_factors` reads the run.
-`kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
+`kestrel_benchmark.py` (notebook **47** `47_kestrel_benchmark`): the family on one table read from the exports of 43, 45 and 46 (`load`, `ranks`), the scoring methodology — `CATEGORIES` scored 1–10 between the briefs' anchors, `FAMILY` constants from the notebooks' text, `MISSIONS` weight sets, `scores` / `weighted` / `plot_scores` / `plot_missions`. `kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
 battery, bracing, spar…) → `params`, `section_polar` (Zephyr, cached), `propulsion` (Boreas points), `spar_rules` /
 `post_rules` (beam and Euler rules of thumb), `evaluate` / `compare` / `ratios` / `verdicts` / `plot_ratios`,
 `default_candidates`; no solver. Notebooks 39–42 are in `notebooks/old/` (unchanged; see its README).
