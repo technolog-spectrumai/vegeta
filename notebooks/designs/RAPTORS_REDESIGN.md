@@ -103,3 +103,27 @@ The last two lines kill most of the old assumptions.
    autopilot banks in corners; the wing's hover-fence drag in the industrial crosswind corridors.
 4. Re-run the four races with each embodiment once the autopilot survives the hangar stair (todo R.2);
    until then the "required" rates and load factors are upper bounds, not targets.
+
+## 8. Hypothesis: one core, three overlapping configurations (recommended over three specialists)
+
+Lap time is thrust/mass, DNFs are contact; both are set by the shared parts (stack, motors, pack, arms).
+What separates indoor from outdoor is bolt-on: bumper rings, prop size, pack size, a wing.
+
+- **Hobo (core, universal):** 5-inch arms, 2207 stack, 6S 1000 (covers 6 Wh indoors / 8 Wh outdoors),
+  printed plate with pack bay and front/rear rails, ~430 g bare, footprint 0.30 m (fits 1.2 m holes with
+  0.45 m each side). Finishes all four courses as is.
+- **Gavilan kit (indoor):** four printed bumper rings / half-ducts on the arms (+40 g), 4S 850 in the same
+  bay (−60 g). Replaces the separate 4-inch Gavilan-D; keep that only for openings under ~0.8 m.
+- **Apus kit (outdoor):** 6-inch props, lightest pack that makes the race, rings off (−40 g, +44 % disc area).
+- **W kit:** the 0.8 m clip-on incidence plank on the rails (outdoor courses, open-range derivative).
+
+Cost of universality by first principles: rings carried outdoors ≈ +9 % mass ≈ +4 % lap time (√ law) plus
+ring drag above 15 m/s (~+2 %); the big pack carried indoors ≈ +3 %. Specialists win each course by 3–6 %;
+one DNF outweighs all of it over a series. Scored across mixed courses → the family wins; swap-per-race → specialists.
+
+Manufacturing: one plate, one ring, one wing, one rail; ~80 % of cost common. Family ≈ €300 core + €20–40 per
+kit vs ≈ €780 for three specialists.
+
+Weakest point: whether a ring on a 5-inch turns a 6 m/s glancing hit into a bounce or a tumble (ring stiffness,
+hit location) — the first thing to test in MuJoCo, since contact decides these courses; and the rails must be
+quick-change without loosening or nobody swaps between heats.
