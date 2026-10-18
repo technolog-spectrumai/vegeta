@@ -95,7 +95,7 @@ def printed_parts(variant: str) -> dict:
         fin = fin.cut(cq.Workplane("XZ").center(x_le + 0.25 * c - 0.25 * fc + 0.30 * fc, 0).circle(TUBE_OD["spar"] / 2 + 0.15).extrude(fin_len + 2).translate((0, fin_len + 1, 0)))
         out[f"fin ({fin_len:.0f} mm)"] = {"solid": fin, "count": 2, "material": "LW_PLA", "orientation": Orientation(rotate_x=-90), "note": "as the wing segments; the two fins' tubes pass through the pod's bulkhead"}
     rm = p["motor_diameter"] / 2
-    cup = cq.Workplane("YZ").circle(rm + 1.6).extrude(14.0).faces(">X").workplane().hole(2 * rm - 3.0, 11.0)      # a 3 mm floor with the bolt pattern, 11 mm of skirt
+    cup = cq.Workplane("YZ").circle(rm + 1.6).extrude(14.0).faces(">X").workplane().hole(2 * rm - 3.0, 11.0)      # a 3 mm floor with the 16 × 16 bolt pattern, 11 mm of skirt
     boss = cq.Workplane("YZ").workplane(offset=14.0).rect(14.0, 9.0).extrude(x_le + 0.30 * c - p["prop_x"] - 14.0 + 12.0)
     mount = cup.union(boss).cut(cq.Workplane("YZ").workplane(offset=14.0).circle(TUBE_OD["spar"] / 2 + 0.15).extrude(200.0))
     out["motor mount"] = {"solid": mount, "count": n_mounts, "material": "PLA", "orientation": Orientation(rotate_y=-90), "note": "the cup takes the 2207's 16 × 16 bolt pattern (holes cut later); the strap slides on the spar tube to the station and is glued to the skin"}

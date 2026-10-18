@@ -53,16 +53,20 @@ V_GRID = (0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 15.0, 18.0, 21.0, 24.0, 28.0, 32.
 
 # ------------------------------------------------------------------------------------------------- the racing stack
 STACK = {
-    "motor": {"name": "2207-class racing outrunner", "mass_kg": 0.031, "R_ohm": 0.06, "I0_A": 1.0, "I_max_A": 40.0, "d_m": 0.028, "l_m": 0.020},
-    "propeller": {"name": "5-inch three-blade racing propeller", "mass_kg": 0.004, "chord_root_m": 0.010, "chord_max_m": 0.016, "chord_tip_m": 0.006},
-    "stack": {"name": "flight controller + 4-in-1 ESC (30.5 mm stack)", "mass_kg": 0.030, "size_m": (0.040, 0.040, 0.025)},
-    "fpv": {"name": "FPV camera + video transmitter + antenna", "mass_kg": 0.035, "size_m": (0.025, 0.020, 0.020), "vtx_size_m": (0.035, 0.025, 0.010)},
-    "receiver": {"name": "receiver + GNSS puck (the tailsitter firmware wants a heading)", "mass_kg": 0.012},
-    "wiring": {"name": "wiring, connectors, straps", "mass_kg": 0.015},
+    # realistic catalogue values for a 2207 racing motor: 33–36 g with its wires, a 27.7 mm bell, 32 mm tall with the shaft and
+    # the prop nut, 16 × 16 mm bolt pattern; R and I0 at the light end of the class; the bell is an open bluff body behind the prop
+    "motor": {"name": "2207-class racing outrunner (e.g. 2207 1750/2400 KV)", "mass_kg": 0.035, "screws_kg": 0.002, "R_ohm": 0.045, "I0_A": 1.4, "I_max_A": 42.0, "d_m": 0.028, "l_m": 0.032,
+              "cd_frontal": 0.45, "bolt_pattern_m": 0.016},
+    "propeller": {"name": "5-inch three-blade racing propeller (5x4.3x3 class, 4–5 g)", "mass_kg": 0.0045, "chord_root_m": 0.010, "chord_max_m": 0.016, "chord_tip_m": 0.006},
+    "stack": {"name": "flight controller + 4-in-1 ESC 45–60 A (30.5 mm stack) + capacitor", "mass_kg": 0.032, "size_m": (0.040, 0.040, 0.025)},
+    "fpv": {"name": "FPV camera (micro, 9 g) + video transmitter (10 g) + antenna (5 g) + wires", "mass_kg": 0.030, "size_m": (0.021, 0.019, 0.021), "vtx_size_m": (0.035, 0.025, 0.010)},
+    "receiver": {"name": "receiver (2 g) + GNSS puck (8 g: the tailsitter firmware wants a heading)", "mass_kg": 0.012},
+    "wiring": {"name": "wiring, XT60, straps, foam", "mass_kg": 0.018},
 }
-PACKS = {"4S 1300": {"cells": 4, "capacity_ah": 1.3, "mass_kg": 0.150, "size_m": (0.075, 0.035, 0.030)},
-         "4S 1500": {"cells": 4, "capacity_ah": 1.5, "mass_kg": 0.170, "size_m": (0.080, 0.036, 0.032)},
-         "6S 1300": {"cells": 6, "capacity_ah": 1.3, "mass_kg": 0.210, "size_m": (0.080, 0.040, 0.045)}}
+# realistic racing packs: the label mass is the cells; with the case, leads and the XT60 they weigh 10–15 % more
+PACKS = {"4S 1300": {"cells": 4, "capacity_ah": 1.3, "mass_kg": 0.165, "size_m": (0.076, 0.035, 0.033)},
+         "4S 1500": {"cells": 4, "capacity_ah": 1.5, "mass_kg": 0.190, "size_m": (0.080, 0.037, 0.036)},
+         "6S 1300": {"cells": 6, "capacity_ah": 1.3, "mass_kg": 0.230, "size_m": (0.080, 0.041, 0.049)}}
 DRIVES = {"4S 5x4.3": {"pitch_in": 4.3, "kv": 2400.0, "pack": "4S 1500"},
           "4S 5x4.3 light": {"pitch_in": 4.3, "kv": 2400.0, "pack": "4S 1300"},
           "6S 5x4.3": {"pitch_in": 4.3, "kv": 1750.0, "pack": "6S 1300"},
@@ -123,7 +127,7 @@ def propulsion(key: str):
     pr = STACK["propeller"]
     dia, pitch = boreas.inches(5.0, d["pitch_in"])
     prop = boreas.Propeller.from_pitch(f"5x{d['pitch_in']:g}x3", dia, pitch, blades=3, chord_root_m=pr["chord_root_m"], chord_max_m=pr["chord_max_m"],
-                                       chord_tip_m=pr["chord_tip_m"], mass_kg=pr["mass_kg"], rotor_mass_kg=pr["mass_kg"] + 0.010)
+                                       chord_tip_m=pr["chord_tip_m"], mass_kg=pr["mass_kg"], rotor_mass_kg=pr["mass_kg"] + 0.012)
     m = STACK["motor"]
     motor = boreas.Motor(f"2207 {d['kv']:.0f} KV", kv_rpm_per_volt=d["kv"], resistance_ohm=m["R_ohm"], no_load_current_a=m["I0_A"], max_current_a=m["I_max_A"], mass_kg=m["mass_kg"])
     bat = boreas.Battery(d["pack"], cells=pk["cells"], capacity_ah=pk["capacity_ah"], usable_fraction=0.8, mass_kg=pk["mass_kg"])
@@ -259,7 +263,7 @@ def mass_table(L: dict) -> list[dict]:
     else:
         stations = [(y, 0.0) for y in L["stations_y"]]
     for k, (y, z) in enumerate(stations):
-        add(f"motor {k}", STACK["motor"]["mass_kg"], L["prop_x"] + 0.015, y, z, "propulsion", "2207-class")
+        add(f"motor {k}", STACK["motor"]["mass_kg"] + STACK["motor"]["screws_kg"], L["prop_x"] + 0.02, y, z, "propulsion", "2207-class with its wires and screws")
         add(f"propeller {k}", STACK["propeller"]["mass_kg"], L["prop_x"], y, z, "propulsion", "5-inch tri-blade")
         add(f"nacelle / mount {k}", NACELLE_KG, L["prop_x"] + 0.03, y, z, "structure", "printed")
     if L["layout"] == "biplane":
@@ -296,7 +300,7 @@ def quad_mass_table() -> list[dict]:
     def add(item, m, x, y, z, group, note=""):
         rows.append({"item": item, "mass_kg": m, "x": x, "y": y, "z": z, "group": group, "note": note, "rod": None})
     for k, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
-        add(f"motor {k}", STACK["motor"]["mass_kg"], sx * 0.078, sy * 0.078, 0.0, "propulsion")
+        add(f"motor {k}", STACK["motor"]["mass_kg"] + STACK["motor"]["screws_kg"], sx * 0.078, sy * 0.078, 0.0, "propulsion")
         add(f"propeller {k}", STACK["propeller"]["mass_kg"], sx * 0.078, sy * 0.078, 0.01, "propulsion")
     add("frame", QUAD_FRAME_KG, 0.0, 0.0, 0.0, "structure", "5-inch carbon frame, arms, hardware")
     add("battery", PACKS["4S 1500"]["mass_kg"], 0.0, 0.0, 0.03, "energy", "4S 1500 on top")
@@ -325,7 +329,7 @@ def drag_buildup(L: dict, *, V: float = 20.0, t: float = 0.10) -> dict:
     rows["pod"] = kf._cf(V * lp / NU) * (1 + 60 / fr ** 3 + fr / 400) * math.pi * dp * lp * 0.8
     dm = STACK["motor"]["d_m"]
     nm = L.get("n_motors", 4)
-    rows[f"motors in their mounts ({nm})"] = nm * (0.25 * math.pi * dm ** 2 / 4 + kf._cf(V * 0.05 / NU) * 1.3 * math.pi * dm * 0.05)
+    rows[f"motors in their mounts ({nm})"] = nm * (STACK["motor"]["cd_frontal"] * math.pi * dm ** 2 / 4 + kf._cf(V * 0.05 / NU) * 1.3 * math.pi * dm * 0.05)    # an open bell behind the prop
     if L["layout"] == "biplane":
         rows["posts (2), faired"] = 2 * POST_CD_FAIRED * POST_FAIRING_CHORD * (L["gap"] - 0.01)      # printed streamlined sleeves on the tubes
     rows["camera and antenna"] = 0.6 * 0.0006
@@ -720,7 +724,7 @@ def parts(p: dict) -> dict:
     motors, discs, feet = None, None, None
     rm = p["motor_diameter"] / 2
     for y, z in stations:
-        mt = cq.Workplane("YZ").workplane(offset=p["prop_x"] + 5.0).center(y, z).circle(rm).extrude(22.0)
+        mt = cq.Workplane("YZ").workplane(offset=p["prop_x"] + 5.0).center(y, z).circle(rm).extrude(STACK["motor"]["l_m"] * 1e3 - 6.0)
         mount = cq.Workplane("YZ").workplane(offset=p["prop_x"] + 27.0).center(y, z).circle(rm * 0.6).extrude(x_le + 0.35 * c - p["prop_x"] - 27.0 + 10.0)
         mt = mt.union(mount)
         motors = mt if motors is None else motors.union(mt)
