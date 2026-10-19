@@ -15,22 +15,35 @@ from pathlib import Path
 
 GRID = {"safety": (0.4, 0.5, 0.6, 0.7), "tilt_max_deg": (45.0, 60.0), "lookahead_s": (0.15, 0.25, 0.4), "omega_pos": (2.0, 2.5, 3.5)}
 QUICK = {"safety": (0.4, 0.55), "tilt_max_deg": (60.0,), "lookahead_s": (0.15, 0.3), "omega_pos": (2.5,)}   # 4 laps per course
+HANGAR2 = {"safety": (0.25, 0.35, 0.45), "v_cap": (3.0, 5.0, None), "omega_pos": (3.5, 5.0, 7.0), "lookahead_s": (0.3, 0.5),
+           "omega_att": (18.0, 28.0), "tilt_max_deg": (60.0,)}                   # round 2: slower and steadier for the stair descent
+
+
+def edges(course: str) -> dict:
+    """Round 2 for a course that finished: past the edges of round 1 (omega_pos and lookahead won at their maxima),
+    the safety around its winner."""
+    from races import autopilot
+    w = autopilot.tuned(course) or {"safety": 0.6, "tilt_max_deg": 60.0}
+    s = w.get("safety", 0.6)
+    return {"safety": tuple(sorted({round(max(0.2, s - 0.1), 2), s, round(min(0.9, s + 0.1), 2)})), "omega_pos": (3.5, 5.0, 7.0),
+            "lookahead_s": (0.4, 0.6), "tilt_max_deg": (w.get("tilt_max_deg", 60.0),)}
 OUT = Path(__file__).resolve().parent / "runs" / "tune"
 
 
 def main(argv=None) -> int:
-    from races import courses, sim
+    from races import autopilot, courses, sim
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
-    ap.add_argument("--quick", action="store_true", help="a small grid (8 tries per course)")
+    ap.add_argument("--quick", action="store_true", help="a small grid (4 tries per course)")
+    ap.add_argument("--round2", action="store_true", help="the second round: past the edges for the finished courses, a slow steady grid for the hangar")
     a = ap.parse_args(argv)
     print(f"tune: courses {a.courses}, {'quick' if a.quick else 'full'} grid", flush=True)
-    grid = QUICK if a.quick else GRID
     OUT.mkdir(parents=True, exist_ok=True)
     best_f = OUT / "best.json"
     best = json.loads(best_f.read_text()) if best_f.exists() else {}
     for slug in a.courses:
         c = courses.COURSES[slug]()
+        grid = QUICK if a.quick else (HANGAR2 if slug == "hangar" else edges(slug)) if a.round2 else GRID
         rows, keys = [], list(grid)
         total = 1
         for v in grid.values():
@@ -41,11 +54,16 @@ def main(argv=None) -> int:
             t0 = time.time()
             print(f"{slug} {n:3d}/{total}  flying {kw} …", flush=True)
             try:
-                st = sim.run_mujoco(c, **kw)["stats"]
+                res = sim.run_mujoco(c, **kw)
+                st, ev = res["stats"], res.get("events") or []
             except Exception as e:                                   # a crash of one try is a result, not the end
-                st = {"status": "error", "reason": f"{type(e).__name__}: {e}"}
+                st, ev = {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
+            zones = [e[1] for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and str(e[1]).startswith("zone")]
+            hits = [e for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and "collision" in str(e[1]).lower()]
             row = {**kw, "status": st.get("status"), "reason": st.get("reason", ""), "lap time [s]": st.get("lap time [s]"),
-                   "collisions": st.get("collisions"), "zones passed": st.get("zones passed"), "wall [s]": round(time.time() - t0, 1)}
+                   "collisions": st.get("collisions"), "zones passed": st.get("zones passed"),
+                   "last zone reached": zones[-1] if zones else "", "collisions at": "; ".join(f"{e[0]:.1f} s {e[1]}" for e in hits[:6]),
+                   "wall [s]": round(time.time() - t0, 1)}
             rows.append(row)
             print(f"{slug} {n:3d}/{total}  → {row['status']} {row['lap time [s]'] or ''} {row['zones passed'] or ''} {row['collisions'] or 0} hits, {row['wall [s]']} s{(' — ' + row['reason']) if row['reason'] else ''}", flush=True)
         import pandas as pd
@@ -54,10 +72,13 @@ def main(argv=None) -> int:
         ok = df[df["status"] == "finished"].sort_values(["lap time [s]", "collisions"])
         if len(ok):
             w = ok.iloc[0]
-            best[slug] = {"settings": {k: float(w[k]) for k in keys}, "lap time [s]": float(w["lap time [s]"]), "collisions": int(w["collisions"])}
+            best[slug] = {"settings": {k: (None if w[k] is None or w[k] != w[k] else float(w[k])) for k in keys}, "lap time [s]": float(w["lap time [s]"]), "collisions": int(w["collisions"])}
             print(f"== {slug}: FINISHED {w['lap time [s]']:.1f} s with {best[slug]['settings']}")
+            autopilot.record(slug, best[slug])
         else:
-            best[slug] = {"settings": None, "note": f"no finished lap in {len(df)} tries; closest: {df.iloc[0]['zones passed']}"}
+            far = df.sort_values("zones passed", key=lambda z: z.fillna("0 of").str.split(" ").str[0].astype(int), ascending=False).iloc[0]
+            best[slug] = {"settings": None, "note": f"no finished lap in {len(df)} tries; closest: {far['zones passed']}, last zone {far['last zone reached']!r}; collisions at {far['collisions at']}"}
+            autopilot.record(slug, best[slug])
             print(f"== {slug}: still DNF in all {len(df)} tries — see {OUT / (slug + '.csv')}")
         best_f.write_text(json.dumps(best, indent=1))
     print("written", best_f)
