@@ -1,7 +1,8 @@
-"""Notebook 43's side of the Kestrel exchange as it stands before the Porunga keys (todo S.11): its contract in
-notebooks/flow.py, its prerequisite errors, and the guarantee that it and its modules launch no solver."""
+"""Notebook 43's side of the Kestrel exchange: it finds the side labs' results in the Porunga cache by key, never by
+run directory; mock and real entries never mix; a missing required result stops with the command; nothing is launched."""
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,10 +11,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "designs"))
 import kestrel_campaigns as kcp  # noqa: E402
+import kestrel_keys as kk  # noqa: E402
 import kestrel_study as kstu  # noqa: E402
-from vegeta import yanus  # noqa: E402
+import porunga  # noqa: E402
 
-FLOW = yanus.load_flow(ROOT / "notebooks" / "flow.py")
 SOLVER_CALLS = re.compile(r"\.run\(|run_cases\(|\.ensure\(|\.solve\(|solve_modes\(|\.mesh\(|subprocess|os\.system|CFDCase\(")
 
 
@@ -22,54 +23,41 @@ def fp2():
     return kcp.fingerprint("4Q-2")
 
 
-def test_notebook_43_contract_matches_its_runs_shape():
-    g = yanus.enter("43_kestrel_study", flow=FLOW, deep=False, raise_closed=False, screening=False, auto=False)   # the manual shape (43 is yanus_auto)
-    runs, required = kstu.runs_from_gate(g)
-    assert set(runs["airframe_cfd"]) == {"4Q-1", "4Q-2", "4Q-3"} and "4Q-2" in runs["structure_fea"]
-    assert required == {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}
-    g = yanus.enter("43_kestrel_study", flow=FLOW, deep=False, raise_closed=False, screening=True, auto=False)
-    assert kstu.runs_from_gate(g)[1] == set()
+@pytest.fixture
+def cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("PORUNGA_DIR", str(tmp_path / "porunga"))
+    return tmp_path / "porunga"
 
 
-def test_notebook_43_is_yanus_auto_and_its_plan_runs_screening_quality():
-    nb = FLOW.notebooks["43_kestrel_study"]
-    assert nb.auto and FLOW.notebooks["45_kestrel_x"].auto
-    first = yanus.enter(nb, flow=FLOW, deep=False, raise_closed=False, auto=False)
-    steps = yanus.auto.plan(FLOW, first)
-    cfd = [s for s in steps if s.unit.kind and s.unit.kind.name == "cfd"]
-    fea = [s for s in steps if s.unit.kind and s.unit.kind.name == "fea"]
-    assert all(s.argv[-2:] == ["--quality", "screening"] for s in cfd)
-    assert all("--element-size" in s.argv for s in fea)
-    assert all(s.state in ("planned", "skipped") for s in steps)        # a plan starts nothing
+def test_side_lab_and_notebook_derive_the_same_key_in_separate_processes(fp2):
+    code = ("import sys; sys.path.insert(0, %r); import kestrel_keys as kk, kestrel_campaigns as kcp; "
+            "print(kk.airframe('4Q-2', 'sweep', 'fine', mock=False, fingerprint=kcp.fingerprint('4Q-2')))") % str(ROOT / "designs")
+    other = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.strip()
+    assert other == kk.airframe("4Q-2", "sweep", "fine", mock=False, fingerprint=fp2)
+    assert kk.airframe("4Q-2", "sweep", "fine", mock=True, fingerprint=fp2) != other              # mock is part of the identity
+    assert kk.airframe("4Q-2", "sweep", "screening", mock=False, fingerprint=fp2) != other
 
 
-def test_notebook_prerequisites_raise_one_actionable_error_and_write_nothing(tmp_path, fp2, monkeypatch):
-    runs = {"airframe_cfd": {"4Q-2": {"sweep": str(tmp_path / "missing")}}, "structure_fea": {"4Q-2": None}}
-    fps = {"4Q-2": fp2}
-    before = sorted(p.name for p in tmp_path.iterdir())
-    with pytest.raises(kcp.PrerequisiteError) as exc:
-        kstu.prerequisites(runs, {("airframe_cfd", "4Q-2", "sweep"), ("structure_fea", "4Q-2")}, ("4Q-2",), fingerprints=fps)
-    msg = str(exc.value)
-    assert "airframe_cfd.py --variant 4Q-2 --chapter sweep" in msg and "structure_fea.py --variant 4Q-2 --chapter all" in msg and "KESTREL_SCREENING" in msg
-    assert sorted(p.name for p in tmp_path.iterdir()) == before          # no run directory, no solver, nothing invented
-    table, summ = kstu.prerequisites(runs, set(), ("4Q-2",), fingerprints=fps)
-    assert list(table.loc[table["role"] == "optional"].index) and not summ["airframe_cfd"] and not summ["structure_fea"]
+def test_the_notebook_loads_what_a_side_lab_published_and_mocks_stay_apart(cache, fp2):
+    summ = {"state": "completed", "records": [], "quality": "fine", "counts": {"n": 0}}
+    porunga.save(kk.airframe("4Q-2", "sweep", "fine", mock=True, fingerprint=fp2), summ, metadata={"mock": True}, root=cache)
+    porunga.save(kk.structure("4Q-2", "all", mock=True, fingerprint=fp2), {"state": "completed", "counts": {}}, metadata={"mock": True}, root=cache)
+    table, got = kstu.inputs_from_cache(("4Q-2",), mock=True, fingerprints={"4Q-2": fp2})
+    assert got["airframe_cfd"]["4Q-2"]["sweep"] == summ and "MOCK" in table.loc["airframe CFD, 4Q-2, sweep", "status"]
+    with pytest.raises(kcp.PrerequisiteError, match="airframe_cfd.py --variant 4Q-2 --chapter sweep"):
+        kstu.inputs_from_cache(("4Q-2",), mock=False, fingerprints={"4Q-2": fp2})          # a real request never reads a mock
 
 
-def test_the_notebook_and_its_modules_launch_no_solver():
+def test_a_missing_optional_result_is_not_run_and_screening_needs_nothing(cache, fp2):
+    table, got = kstu.inputs_from_cache(("4Q-2",), mock=False, screening=True, fingerprints={"4Q-2": fp2})
+    assert not got["airframe_cfd"] and set(table["status"]) == {"NOT RUN (not in the cache)"}
+
+
+def test_the_notebook_and_its_modules_launch_no_solver_and_read_no_run_directory():
     nb = json.loads((ROOT / "notebooks" / "devices" / "43_kestrel_study.ipynb").read_text())
     src = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
     assert not SOLVER_CALLS.search(src), SOLVER_CALLS.search(src)
-    for mod in ("kestrel_study.py", "kestrel_campaigns.py"):
-        text = (ROOT / "designs" / mod).read_text()
-        hits = [m.group(0) for m in SOLVER_CALLS.finditer(text)]
+    assert "inputs_from_cache" in src and "side_labs/runs" not in src and "GATE" not in src
+    for mod in ("kestrel_study.py", "kestrel_campaigns.py", "kestrel_keys.py"):
+        hits = [m.group(0) for m in SOLVER_CALLS.finditer((ROOT / "designs" / mod).read_text())]
         assert not hits, (mod, hits)
-    assert "import_legacy" in src or "RUNS" in src                              # the selection is explicit in the notebook
-
-
-def test_the_notebook_reads_an_imported_sweep_as_indicative(tmp_path):
-    """An unconverged screening sweep (the legacy import) is indicative, never validated."""
-    roots = kcp.import_legacy(kcp.kcfd.RESULTS_JSON, tmp_path, keys=("4Q-2",))
-    s = json.loads((roots[0] / "summary.json").read_text())
-    c = kstu.cfd_sweep(s, kstu.build("4Q-2"))
-    assert c["label"].startswith("solver (unconverged") and c["n_bare"] == 13 and c["numbers"]["CFD"]["CL max below 20°"] < 0.6

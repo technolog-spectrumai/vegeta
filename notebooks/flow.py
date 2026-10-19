@@ -30,14 +30,10 @@ flow.notebook("38_prop_lab", folder="parts", title="the resolved 9x6 propeller: 
 
 flow.notebook("43_kestrel_study", folder="devices", title="Kestrel — the design study (the one notebook to open for Kestrel)",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas")],
-              takes=[KESTREL_DRIVE, Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections"), Run("kestrel/airframe-sweep", variant="4Q-1"),
-                     Run("kestrel/airframe-sweep", variant="4Q-2", required=True),
-                     Run("kestrel/airframe-sweep", variant="4Q-3"),
-                     Run("kestrel/frame-and-joint", variant="4Q-2", required=True),
-                     Run("kestrel/wing-interference", variant="4Q-2"),
+              takes=[KESTREL_DRIVE, Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections"),
                      File(f"38_prop_lab:{DATA}/prop_lab.json", keys=("calibration",))],
               gives=[File(f"{DATA}/reports/43_kestrel_study.json")],
-              screening_env="KESTREL_SCREENING", auto=True)                       # yanus_auto: runs K1 / K11 in screening quality when they are missing
+              screening_env="KESTREL_SCREENING")                                # the side-lab results come from the cache (kestrel_study.inputs_from_cache)
 
 flow.notebook("45_kestrel_x", folder="devices", title="Kestrel-X — the X-wing sibling: four cantilever panels, no bracing, against Kestrel-4Q",
               needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],

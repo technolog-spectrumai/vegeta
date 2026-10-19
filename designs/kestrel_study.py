@@ -100,76 +100,52 @@ def sections_status() -> dict:
         return {"on_file": False, "path": "designs/data/kestrel_sections.json", "note": f"vegeta.zephyr not importable ({exc}); the 0012's numbers stand in"}
 
 
-def runs_from_gate(gate) -> tuple[dict, set]:
-    """The notebook's Yanus gate (``yanus.enter("43_kestrel_study")``: the runs pinned in
-    ``notebooks/pins/43_kestrel_study.json``, else the newest usable run it chose) as the ``RUNS`` / ``REQUIRED`` pair ``prerequisites`` reads —
-    ``{"airframe_cfd": {variant: {campaign: run dir | None}}, "structure_fea": {variant: run dir | None}}`` and the
-    required ``("airframe_cfd", variant, campaign)`` / ``("structure_fea", variant)``. Every run take of the
-    contract appears (an unpinned one as ``None``: NOT RUN, or the error when it is required)."""
-    from vegeta.yanus import Run
-    runs, required = {"airframe_cfd": {}, "structure_fea": {}}, set()
-    for t in gate.unit.takes:
-        if not isinstance(t, Run):
-            continue
-        ch = gate.flow.chapter(t.chapter)
-        sel = gate.selections.get(t.key())                 # the pinned run, or the newest usable one the gate chose
-        wf, v = ch.kind.workflow, t.variant
-        if wf == "airframe_cfd":
-            runs[wf].setdefault(v, {})[ch.campaign] = sel
-            if t.required and not gate.screening:
-                required.add((wf, v, ch.campaign))
-        elif wf == "structure_fea":
-            runs[wf][v] = sel
-            if t.required and not gate.screening:
-                required.add((wf, v))
-    return runs, required
+# the side-lab results this study reads, by Porunga key (designs/kestrel_keys.py): (workflow, variant, campaign, required)
+TAKES = (("airframe_cfd", "4Q-1", "sweep", False), ("airframe_cfd", "4Q-2", "sweep", True), ("airframe_cfd", "4Q-3", "sweep", False),
+         ("structure_fea", "4Q-2", "all", True), ("airframe_cfd", "4Q-2", "interference", False))
 
 
-def prerequisites(runs: dict, required: set, variants=VARIANTS, *, fingerprints: dict | None = None):
-    """The prerequisite table and the usable summaries. ``runs`` =
-    ``{"airframe_cfd": {variant: {campaign: run dir | None}}, "structure_fea": {variant: run dir | None}}``;
-    ``required`` = a set of ``("airframe_cfd", variant, campaign)`` / ``("structure_fea", variant)``. Every row is
-    checked (existence, state, fingerprint) before a single exception lists **all** the missing required inputs with
-    their commands — never a substitute, never a solver launched here."""
+def inputs_from_cache(variants=VARIANTS, *, mock: bool = False, screening: bool = False, fingerprints: dict | None = None,
+                      takes=TAKES):
+    """The side-lab results as ``(table, summaries)`` — the shape ``prerequisites`` returned — read from the Porunga
+    cache by key: CFD in fine quality, else screening (labelled); FEA with the side lab's default mesh. ``mock``
+    looks up the mock entries (a DEBUG run of the notebook) instead of the real ones; the two never mix. A missing
+    required result (none when ``screening``) stops with one error listing the side-lab command for each; a missing
+    optional one is NOT RUN. Nothing is ever started from here."""
     import pandas as pd
+    import porunga
+    import kestrel_keys as kk
     fps = fingerprints or {v: kcp.fingerprint(v) for v in variants}
+    root = kk.cache_dir()
     rows, summaries, missing = [], {"airframe_cfd": {}, "structure_fea": {}}, []
-    pl = ks.prop_lab_calibration()
-    rows.append({"input": "prop_lab calibration (notebook 38)", "role": "optional", "selection": str(ks.PROP_LAB_JSON.relative_to(ROOT)), "status": (
-        f"on file: cl ×{pl['cl_scale']:.3f}, cd ×{pl['cd_scale']:.3f}, CNα ×{pl['cn_factor']:.3f} ({pl['meta'].get('date', '')})" if pl["on_file"]
-        else "NOT RUN or rejected: Boreas's generic blade section and De Young's normal force" + (f" (rejected: {'; '.join(pl['rejected'])[:120]})" if pl.get("rejected") else "")),
-        "provenance": pl["meta"].get("source", ""), "compatibility": "gates in prop_lab.GATES" if pl["on_file"] else "", "usable": pl["on_file"]})
-    ds = drive_table_status()
-    rows.append({"input": "drive tables (Boreas)", "role": "required", "selection": ds["path"], "status": ds["note"], "provenance": "kestrel_systems.compute_drive_table", "compatibility": "keyed on motor, propeller, battery, calibration", "usable": True})
-    ss = sections_status()
-    rows.append({"input": "section polars (Zephyr / NeuralFoil)", "role": "optional", "selection": ss["path"], "status": ss["note"], "provenance": "kestrel_section.table", "compatibility": "keyed on candidates, flap chord, n_crit", "usable": ss["on_file"]})
-    for v in variants:
-        for camp, rd in (runs.get("airframe_cfd", {}).get(v) or {}).items():
-            req = ("airframe_cfd", v, camp) in required
-            ck = kcp.check_run(rd, workflow="airframe_cfd", variant=v, campaign=camp, expected=fps[v], blown=camp in ("blown", "cruise", "transitions", "all"))
-            if rd and not ck["ok"] and "legacy_" in str(rd) and ck["status"].startswith("not found"):
-                ck["command"] = f"{kcp.PYTHON} {kcp.SCRIPTS['import_legacy']}"
-            rows.append({"input": f"airframe CFD, {v}, {camp}", "role": "required" if req else "optional", "selection": str(rd) if rd else "—", "status": ck["status"],
-                         "provenance": ck["provenance"], "compatibility": (ck["compat"] + (": " + "; ".join(ck["reasons"]) if ck["reasons"] else "")) if ck["compat"] else "", "usable": ck["ok"]})
-            if ck["ok"]:
-                summaries["airframe_cfd"].setdefault(v, {})[camp] = ck["summary"]
-            elif req:
-                missing.append((f"airframe CFD of Kestrel-{v}, campaign {camp}", ck))
-        rd = runs.get("structure_fea", {}).get(v)
-        if rd is not None or ("structure_fea", v) in required:
-            req = ("structure_fea", v) in required
-            ck = kcp.check_run(rd, workflow="structure_fea", variant=v, campaign="all", expected=fps[v])
-            rows.append({"input": f"structural FEA, {v}", "role": "required" if req else "optional", "selection": str(rd) if rd else "—", "status": ck["status"],
-                         "provenance": ck["provenance"], "compatibility": (ck["compat"] + (": " + "; ".join(ck["reasons"]) if ck["reasons"] else "")) if ck["compat"] else "", "usable": ck["ok"]})
-            if ck["ok"]:
-                summaries["structure_fea"][v] = ck["summary"]
-            elif req:
-                missing.append((f"structural FEA of Kestrel-{v}", ck))
+    for wf, v, camp, req in takes:
+        if v not in variants:
+            continue
+        req = req and not screening
+        if wf == "airframe_cfd":
+            tries = [(q, kk.airframe(v, camp, q, mock=mock, fingerprint=fps[v])) for q in ("fine", "screening")]
+            what = f"airframe CFD, {v}, {camp}"
+        else:
+            tries = [(None, kk.structure(v, camp, mock=mock, fingerprint=fps[v]))]
+            what = f"structural FEA, {v}"
+        hit = next(((q, k) for q, k in tries if porunga.check(k, root=root)), None)
+        if hit:
+            q, k = hit
+            e = porunga.load(k, root=root)
+            (summaries[wf].setdefault(v, {}).__setitem__(camp, e.data) if wf == "airframe_cfd" else summaries[wf].__setitem__(v, e.data))
+            status = f"in the cache{' (' + q + ')' if q else ''}" + ("  — MOCK, not an engineering result" if (e.metadata or {}).get("mock") else "")
+            rows.append({"input": what, "role": "required" if req else "optional", "key": k[:12], "status": status,
+                         "provenance": (e.metadata or {}).get("run_id", ""), "usable": True})
+        else:
+            cmd = kcp.command(wf, variant=v, campaign=camp, quality="fine" if wf == "airframe_cfd" else None)
+            rows.append({"input": what, "role": "required" if req else "optional", "key": tries[0][1][:12], "status": "NOT RUN (not in the cache)",
+                         "provenance": "", "usable": False})
+            if req:
+                missing.append((what, cmd))
     table = pd.DataFrame(rows).set_index("input")
     if missing:
-        lines = ["required workflow results are missing or unusable — this notebook never runs a solver in their place:"]
-        for what, ck in missing:
-            lines.append(f"  • {what}: {ck['status']}\n      run:  {ck['command']}\n      then pin its run directory: yn pin 43_kestrel_study <chapter code> --variant <v> <run dir>")
+        lines = ["required side-lab results are not in the cache — this notebook never runs a solver in their place:"]
+        lines += [f"  • {what}\n      run:  {cmd}" for what, cmd in missing]
         lines.append("  For an analytical screening pass without them: KESTREL_SCREENING=1 (the final assessment is then labelled unvalidated).")
         raise kcp.PrerequisiteError("\n".join(lines))
     return table, summaries

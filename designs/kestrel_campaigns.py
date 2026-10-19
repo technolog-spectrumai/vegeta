@@ -404,27 +404,6 @@ def command(workflow: str, *, variant: str, campaign: str, quality: str | None =
     return f"{PYTHON} {SCRIPTS[workflow]} --variant {variant} --chapter {campaign}{q}{(' ' + extra) if extra else ''}"
 
 
-def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None, chapter: str | None = None) -> list[dict]:
-    """The runs on disk for the engineer to pick from (newest first), under ``side_labs/runs/<book>/<chapter>/``:
-    id, chapter, variant, state, counts. Listing only — the notebook never picks one by itself."""
-    from side_labs_runkit import list_runs, read_json
-    out = []
-    book = Path(base) / BOOK
-    if not book.is_dir():
-        return out
-    mine = {v for (w, _), v in CHAPTERS.items() if w == workflow}
-    for ch in sorted(book.iterdir()):
-        if not ch.is_dir() or ch.name not in mine or (chapter and ch.name not in (chapter, CHAPTERS.get((workflow, chapter)))):
-            continue
-        for r in list_runs(ch):
-            m = read_json(Path(r["run"]) / "manifest.json") or {}
-            v = (m.get("config") or {}).get("variant")
-            if variant and v != variant:
-                continue
-            out.append({**r, "book": BOOK, "chapter": ch.name, "variant": v, "quality": (m.get("config") or {}).get("quality")})
-    return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
-
-
 def _load(run_dir, workflow: str) -> dict:
     from side_labs_runkit import load_run
     if run_dir is None:
@@ -485,7 +464,7 @@ def require(check: dict, *, what: str, required: bool = True) -> dict | None:
     if not required:
         return None
     raise PrerequisiteError(f"{what}: {check['status']}.\n  Produce it with:\n    {check['command']}\n  then pin the run directory it prints (yn pin 43_kestrel_study <chapter> --variant <v> <run dir>)."
-                            + ("\n  Available runs: side_labs/runs/ (kestrel_campaigns.find_runs)" if check["run"] is None else ""))
+                            + ("" if check["run"] is None else ""))
 
 
 def records_frame(summary: dict):
