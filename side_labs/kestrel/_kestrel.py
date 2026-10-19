@@ -153,6 +153,21 @@ def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.B
     return "completed"
 
 
+def publish(run: runkit.Run, key: str) -> str:
+    """Put a completed run's summary into the Porunga cache under ``key`` (designs/kestrel_keys.py); the readers find
+    it there by the same key. Anything but a completed run publishes nothing. Returns a line for the closing."""
+    summ = runkit.read_json(run.root / "summary.json")
+    if not summ or summ.get("state") != "completed":
+        return "cache: nothing published (the run is not completed)"
+    import kestrel_keys
+    import porunga
+    mock = bool(run.manifest.get("mock"))
+    porunga.save(key, summ, metadata={"run_id": run.manifest.get("run_id"), "run_dir": str(run.root), "mock": mock,
+                                      "label": "MOCK — not an engineering result" if mock else None},
+                 root=kestrel_keys.cache_dir())
+    return f"cache: published as {key[:12]}… in {kestrel_keys.cache_dir()}" + ("  (MOCK)" if mock else "")
+
+
 def closing(run: runkit.Run, code: int, *, hint: str, progress: "Progress | None" = None) -> None:
     """The last lines of every run: where the output is (the summary file, or the partial one), then the status, the
     log and the run-directory hint."""

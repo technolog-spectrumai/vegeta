@@ -143,7 +143,10 @@ def main(argv=None) -> int:
         run.add_artifact(k, run.root / mp["file"])
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=wk.pin_hint(run) + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else ""))
+    import kestrel_keys
+    pub = wk.publish(run, kestrel_keys.airframe(args.variant, args.chapter, args.quality, mock=bool(run.manifest.get("mock")),
+                                                fingerprint=summary["design"]))
+    wk.closing(run, code, hint=wk.pin_hint(run) + (f"  ({cache.hits} case(s) from the cache)" if cache.hits else "") + "\n  " + pub)
     return code
 
 

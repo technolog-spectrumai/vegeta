@@ -112,7 +112,10 @@ def main(argv=None) -> int:
     summary = kc.fea_summary(variant=args.variant, campaign=args.chapter, cases=[byname[n] for n in names], records=run.records, veh=veh, run_root=run.root)
     bars.close()
     code = run.finish(summary, state=state)
-    wk.closing(run, code, hint=wk.pin_hint(run))
+    import kestrel_keys
+    pub = wk.publish(run, kestrel_keys.structure(args.variant, args.chapter, element_size=args.element_size, n_modes=args.n_modes,
+                                                 mock=bool(run.manifest.get("mock")), fingerprint=summary["design"]))
+    wk.closing(run, code, hint=wk.pin_hint(run) + "\n  " + pub)
     return code
 
 
