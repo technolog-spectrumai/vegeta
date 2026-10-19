@@ -104,12 +104,16 @@ for m in ("mujoco", "numpy", "scipy", "pandas", "matplotlib", "tqdm", "pyvista",
 EOF
 }
 
-pytest_summary() {  # pytest_summary <dir> <args...>
+pytest_summary() {  # pytest_summary <dir> <args...> — live progress (file by file, with a count), then the failures
   local dir="$1"; shift
-  local out
-  out="$(cd "$dir" && "$PY" -m pytest -q -p no:cacheprovider "$@" 2>&1)"; local rc=$?
-  echo "$out" | grep -E "^(FAILED|ERROR)" | head -20 | sed 's/^/    /'
-  echo "  $(echo "$out" | tail -1)"
+  local out; out="$(mktemp)"
+  (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider -o console_output_style=count --tb=line "$@" 2>&1) \
+    | tee "$out" | awk '/::/ && / (PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS) / {f=$1; sub(/::.*/, "", f); if (f != last) {printf "    %s\n", f; last=f}
+                        if ($0 ~ / (FAILED|ERROR) /) {printf "      FAILED %s\n", $1} n++; if (n % 25 == 0) printf "      … %d tests\n", n}
+                        fflush()'
+  local rc=${PIPESTATUS[0]}
+  echo "  $(tail -1 "$out")"
+  rm -f "$out"
   return $rc
 }
 
