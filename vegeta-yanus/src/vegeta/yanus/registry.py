@@ -1,4 +1,4 @@
-"""registry — finding and loading the project's flow (``workflows/flow.py``) once per process."""
+"""registry — finding and loading the project's flow (``side_labs/flow.py``) once per process."""
 from __future__ import annotations
 
 import importlib.util
@@ -9,12 +9,12 @@ from pathlib import Path
 from .contract import Flow, FlowError
 
 ENV = "VEGETA_YANUS_FLOW"
-DEFAULT = Path("workflows") / "flow.py"
+DEFAULT = Path("notebooks") / "flow.py"
 _LOADED: dict[Path, Flow] = {}
 
 
 def find_flow_file(path=None, start=None) -> Path:
-    """``path``, else ``$VEGETA_YANUS_FLOW``, else ``workflows/flow.py`` in the current directory or a parent."""
+    """``path``, else ``$VEGETA_YANUS_FLOW``, else ``side_labs/flow.py`` in the current directory or a parent."""
     if path:
         return Path(path).resolve()
     if os.environ.get(ENV):
@@ -39,7 +39,7 @@ def load_flow(path=None, *, reload: bool = False, validate: bool = True) -> Flow
     if not isinstance(flow, Flow):
         raise FlowError(f"{p} defines no Flow named 'flow'")
     if flow.root is None:
-        flow.root = p.parents[1] if p.parent.name == "workflows" else p.parent
+        flow.root = p.parents[1] if p.parent.name == "side_labs" else p.parent
     if validate:
         flow.validate()
     _LOADED[p] = flow
