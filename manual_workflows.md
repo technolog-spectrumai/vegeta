@@ -1,6 +1,6 @@
 # Running the Kestrel workflows — a short manual
 
-This is the plain version of `workflows/README.md`: what to type, in which order, and what you get back. All
+This is the plain version of `side_labs/README.md`: what to type, in which order, and what you get back. All
 commands are run from the repository root on Ubuntu, with the virtual environment that `install_local.sh` made
 (`.venv`). OpenFOAM is needed for the CFD, CalculiX (`ccx`) and Gmsh for the FEA — `./test.sh --quick` tells you what
 is installed.
@@ -8,16 +8,16 @@ is installed.
 ## 0. Set the shell up
 
 ```bash
-source activate.sh        # activates .venv, defines  wf  (= workflows/cli.py)  and  wfrun <book> …  (= the book's script)
+source activate.sh        # activates .venv, defines  wf  (= side_labs/cli.py)  and  wfrun <book> …  (= the book's script)
 wf                   # interactive
 ```
-Everything below also works as `.venv/bin/python workflows/cli.py …` without sourcing anything.
+Everything below also works as `.venv/bin/python side_labs/cli.py …` without sourcing anything.
 
 ## 0b. The desktop interface
 
 ```bash
 pip install PyQt6            # once (or: sudo apt install python3-pyqt6 libegl1 libxkbcommon-x11-0 libxcb-cursor0)
-./workflows.sh               # or: wf gui  (= .venv/bin/python workflows/gui)
+./side_labs.sh               # or: wf gui  (= .venv/bin/python side_labs/gui)
 ```
 
 One window: the **tree** of books and chapters on the left, each chapter marked with what happened to it so far —
@@ -37,12 +37,12 @@ directories you point it at, checks that they are finished and belong to the cur
 beside its own quick estimates. Workflows are organised in **books** (a design: `kestrel`, code **K**) and numbered **chapters** (the studies on
 it, CFD and FEA alike: K1 `airframe-sweep`, K2 `airframe-stall`, K3 `airframe-cruise`, K4 `airframe-transitions`,
 … K9 `frame`, K10 `joint`); you pick a chapter by its code, `K2` or `k2`. Results land in
-`workflows/runs/<book>/<chapter>/<run id>/`. Some chapters need another chapter of the same book first (K3, K4 and
+`side_labs/runs/<book>/<chapter>/<run id>/`. Some chapters need another chapter of the same book first (K3, K4 and
 K5 need a completed K1; K10 needs K9) — the tool tells you. Cases a book
 already solved are **cached** and reused by later runs (`wf cache`, `wf clean-cache`, `--no-cache` to force). You can use the workflows without the notebook (the run directory is readable on its
 own) and the notebook without the workflows (a screening pass with the solver results marked NOT RUN).
 
-## 2. The easy way: `workflows/cli.py`
+## 2. The easy way: `side_labs/cli.py`
 
 One tool lists, explains, launches and watches every workflow. With no arguments it asks you what to run:
 
@@ -65,7 +65,7 @@ yn auto 43 --dry-run                     # what notebook 43 would run by itself 
 ```
 
 `<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
-terminal output in `workflows/runs/<workflow>_<time>.out`, so logging out or closing Jupyter does not stop it.
+terminal output in `side_labs/runs/<workflow>_<time>.out`, so logging out or closing Jupyter does not stop it.
 Everything below works without the tool too. **Every run ends with the same lines**: the state, `results: <run>/summary.json`
 (or `summary.partial.json`), the run directory, and how to watch, resume or pin it.
 
@@ -82,10 +82,10 @@ wf batch night.yaml                      # runs them one after the other (--deta
 scp night.yaml cloud:vegeta/ && ssh cloud 'cd vegeta && source activate.sh && wf batch night.yaml'
 ```
 
-Each step is the chapter's own script with an explicit `--out` run directory (`workflows/runs/<book>/<chapter>/<batch
+Each step is the chapter's own script with an explicit `--out` run directory (`side_labs/runs/<book>/<chapter>/<batch
 stamp>_<name>_s<step>_<variant>/`), its needs and prerequisites checked just before it starts (a missing prerequisite
 fails that step, not the file). A failed step stops the batch unless `stop_on_failure: false`. The batch keeps
-`workflows/runs/_batches/<stamp>_<name>/` with the YAML it ran, every script's terminal output
+`side_labs/runs/_batches/<stamp>_<name>/` with the YAML it ran, every script's terminal output
 (`step_NN_<code>.out`), `run.log` / `status.json` (the GUI follows it like a run) and **`batch.json`: every step, its
 state, exit code, run directory and summary file**. The last lines on the terminal repeat that table and the path of
 `batch.json`. Exit code 0 = every step completed, 3 = some did, 1 = none, 2 = the file is wrong (the message says
@@ -94,32 +94,32 @@ which step). **Time and progress:** before it starts, the batch counts every ste
 on a step overrides it) and prints the finishing time; while it runs, one progress bar spans every case of the batch
 with the remaining time re-estimated as the cases come in (the GUI's status bar and `wf status <batch folder>` show
 the same from its `status.json`); at the end it prints the time taken against the estimate. `--dry-run` shows the
-estimate without starting anything. Results come back with `rsync -a cloud:vegeta/workflows/runs/ workflows/runs/` and the notebooks read
+estimate without starting anything. Results come back with `rsync -a cloud:vegeta/side_labs/runs/ side_labs/runs/` and the notebooks read
 them as any other run (`yn pin`, or the newest usable run by itself).
 
 ## 3. Without a notebook: run a campaign and read the result
 
 ```bash
 # 1. see what a campaign contains (nothing is written)
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
 
 # 2. run it — in the foreground …
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
 
 #    … or detached, so you can log out (nohup), or in a tmux window
-nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4 \
-      > workflows/runs/stall.out 2>&1 &
-tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
+nohup .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4 \
+      > side_labs/runs/stall.out 2>&1 &
+tmux new -d -s kestrel '.venv/bin/python side_labs/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # 3. watch it (in a terminal a run shows two progress bars: the cases, and the solver inside the case)
-tail -F workflows/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
-cat workflows/runs/kestrel/airframe-stall/<run id>/status.json      # state, case counts, the case in progress
+tail -F side_labs/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
+cat side_labs/runs/kestrel/airframe-stall/<run id>/status.json      # state, case counts, the case in progress
 
 # 4. stop it if you must (Ctrl-C in the foreground, or:)
 kill -INT <pid>                                           # the pid is in status.json; finished cases are kept
 
 # 5. continue a stopped run
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/airframe-stall/<run id>
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --resume side_labs/runs/kestrel/airframe-stall/<run id>
 ```
 
 The script prints the run directory at the end. Inside it:
@@ -163,10 +163,10 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
 2. The notebook reads, for every chapter and variant, the **newest successful run** on disk (completed and compatible
-   with the current design) unless one is **pinned** in `notebooks/pins/43_kestrel_study.json`; the table says which. Pin a run with `yn pin 43 K1 --variant 4Q-2 workflows/runs/kestrel/airframe-sweep/<run id>` — the
+   with the current design) unless one is **pinned** in `notebooks/pins/43_kestrel_study.json`; the table says which. Pin a run with `yn pin 43 K1 --variant 4Q-2 side_labs/runs/kestrel/airframe-sweep/<run id>` — the
    workflow prints the exact command when it finishes, `yn pin 43 --suggest` lists the usable runs on disk (it writes
    nothing), and `yn why 43` shows the whole gate from the shell before you open the notebook. Which inputs are
-   required and which optional is the notebook's contract in `workflows/flow.py` (`docs/yanus.md`).
+   required and which optional is the notebook's contract in `side_labs/flow.py` (`docs/yanus.md`).
 3. Run the notebook. The prerequisite table shows, for every input: required or optional, which run, where it came
    from, whether it is compatible with the current design, and whether it is usable.
    - A **required** input that is missing, unfinished, failed or made for another design stops the notebook with an
@@ -175,7 +175,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
      labelled as an estimate.
 4. For a quick look without any solver result: `KESTREL_SCREENING=1 ./jupyter.sh` (or set the variable in the
    kernel's environment). Everything becomes optional and the final assessment is marked *unvalidated*.
-4b. **Auto mode (`yanus_auto`).** Notebooks 43 and 45 carry the flag in `workflows/flow.py` (`auto=True`): when a
+4b. **Auto mode (`yanus_auto`).** Notebooks 43 and 45 carry the flag in `side_labs/flow.py` (`auto=True`): when a
    run they take is missing, the gate **runs the chapter itself, in screening quality** (`--quality screening`, a
    coarse FEA mesh), prerequisites first, in the foreground with the output in the cell, then continues with what is
    there — it never stops with an error. A solver that is not on the machine, or a run that failed, is NOT RUN with
@@ -194,10 +194,10 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 `designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
 
 ```bash
-.venv/bin/python workflows/kestrel/import_legacy.py
+.venv/bin/python side_labs/kestrel/import_legacy.py
 ```
 
-It prints two directories under `workflows/runs/kestrel/airframe-sweep/` (chapter K1) — the ones the notebook's pins point at by
+It prints two directories under `side_labs/runs/kestrel/airframe-sweep/` (chapter K1) — the ones the notebook's pins point at by
 default. Re-pin (`yn pin 43 K1 --variant 4Q-2 <run>`) as real workflow runs arrive.
 
 ## 6. Order of work recommended now

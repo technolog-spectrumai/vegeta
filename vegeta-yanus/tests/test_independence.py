@@ -1,10 +1,10 @@
-"""vegeta.yanus stands alone: it imports no other vegeta package, nothing of workflows/ or the design modules, and
+"""vegeta.yanus stands alone: it imports no other vegeta package, nothing of side_labs/ or the design modules, and
 it starts no process except a tool's version probe (needs.py) — it guards, it never drives."""
 import ast
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "vegeta" / "yanus"
-PROJECT = ("runkit", "library", "flow", "kestrel", "workflows")
+PROJECT = ("runkit", "library", "flow", "kestrel", "side_labs")
 
 
 def _imports(p: Path):

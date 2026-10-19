@@ -7,7 +7,7 @@ Yanus guards the doors between Vegeta's notebooks and workflows. Like Janus it h
 comes **in** (tools on the machine, prerequisite runs, imported files), one at what goes **out** (the files a
 notebook or workflow promised to export). It **guards, never drives**: it checks, blocks, explains and names the
 command that would fix things; it never launches a solver, a notebook or a chain of them (`rejected.md`: no
-automatic chaining, no DAG engine, no scheduler, no database, no YAML; `workflows/README.md`: a notebook never
+automatic chaining, no DAG engine, no scheduler, no database, no YAML; `side_labs/README.md`: a notebook never
 launches a solver silently). **One deliberate exception since v1.1: auto mode (§ 16)** — a notebook flagged
 `yanus_auto` runs what it is missing by itself, in screening quality, loudly and in the foreground.
 
@@ -55,7 +55,7 @@ launches a solver silently). **One deliberate exception since v1.1: auto mode (�
 ## 4. The contract (Python, in the registry)
 
 ```python
-# workflows/flow.py — the one registry (replaces library.BOOKS' chapter map and kestrel_campaigns.CHAPTERS)
+# side_labs/flow.py — the one registry (replaces library.BOOKS' chapter map and kestrel_campaigns.CHAPTERS)
 from vegeta.yanus import Flow, Notebook, Chapter, Tool, Package, Env, Run, File
 
 flow = Flow("vegeta")
@@ -63,9 +63,9 @@ flow = Flow("vegeta")
 kestrel = flow.book("kestrel", code="K", variants=("4Q-1", "4Q-2", "4Q-3"),
                     compatible=lambda expected, found: kestrel_compare(expected, found))   # project callable
 
-cfd = dict(kind="cfd", script="workflows/kestrel/airframe_cfd.py",
+cfd = dict(kind="cfd", script="side_labs/kestrel/airframe_cfd.py",
            needs=[Tool.openfoam(), Package("vegeta.aeromant")])
-fea = dict(kind="fea", script="workflows/kestrel/structure_fea.py",
+fea = dict(kind="fea", script="side_labs/kestrel/structure_fea.py",
            needs=[Tool("ccx", version_cmd="ccx -v"), Package("gmsh"), Package("vegeta.talos")])
 
 kestrel.chapter("airframe-sweep", campaign="sweep", **cfd)                                   # K1
@@ -128,7 +128,7 @@ SUMM = gate.inputs                          # the usable summaries / file paths,
 `notebooks/pins/<unit>.json` (data, committed or not — Q2):
 
 ```json
-{"kestrel/airframe-sweep@4Q-2": "workflows/runs/kestrel/airframe-sweep/20261017-101500_4Q-2_fine"}
+{"kestrel/airframe-sweep@4Q-2": "side_labs/runs/kestrel/airframe-sweep/20261017-101500_4Q-2_fine"}
 ```
 
 * `yanus pin 43 K1 --variant 4Q-2 <run>` writes it (`wf notebook <run>` becomes this).
@@ -140,8 +140,8 @@ SUMM = gate.inputs                          # the usable summaries / file paths,
 
 * `vegeta yanus new notebook 45_thermal --book kestrel` → `notebooks/45_thermal.ipynb` with the standard header
   (logo, title, DEBUG/mock cell, imports + `sys.path`, `OUT = output/45_thermal`, `gate = yanus.enter(...)`),
-  a section skeleton, the `gate.leave()` cell; and a stub entry in `workflows/flow.py` to fill in.
-* `vegeta yanus new chapter kestrel/thermal --kind fea` → a runkit script skeleton under `workflows/kestrel/`
+  a section skeleton, the `gate.leave()` cell; and a stub entry in `side_labs/flow.py` to fill in.
+* `vegeta yanus new chapter kestrel/thermal --kind fea` → a runkit script skeleton under `side_labs/kestrel/`
   (argparse with `--variant/--resume/--no-cache/--ignore-prerequisites`, `Run.create`, the gate, the case loop)
   and its registry entry.
 * `vegeta yanus check --fix-header <nb>` (later): reports notebooks whose header drifted from the scaffold.
@@ -180,9 +180,9 @@ vegeta-yanus/
   tests/
 ```
 
-Project side: `workflows/flow.py` (the registry), `library.py` and `kestrel_campaigns.py` reduced to views over it,
+Project side: `side_labs/flow.py` (the registry), `library.py` and `kestrel_campaigns.py` reduced to views over it,
 notebook 43 switched to `yanus.enter`/pins, scripts call the gate. Registry found via `VEGETA_YANUS_FLOW`
-(default `workflows/flow.py`, set by `activate.sh`).
+(default `side_labs/flow.py`, set by `activate.sh`).
 
 ## 10. v1 scope (Kestrel first)
 
@@ -203,7 +203,7 @@ any runner (never — guard only).
   *Proposed: required → fail, optional → NOT RUN with "stale".*
 * **Q4 — Exit gate strictness.** Should a notebook that misses a promised output fail `run_notebooks.sh`?
   *Proposed: yes.*
-* **Q5 — Where the registry lives.** `workflows/flow.py` (proposed) vs a top-level `flow.py`.
+* **Q5 — Where the registry lives.** `side_labs/flow.py` (proposed) vs a top-level `flow.py`.
 * **Q6 — Name in the CLI.** `vegeta yanus …` only, or also a short `yn` alias next to `wf`?
 
 ## 12. As implemented (v1) — where it differs from the design above
@@ -213,7 +213,7 @@ any runner (never — guard only).
   * Pins: committed.
   * Stale input: closes the gate when required; NOT RUN when optional.
   * A missing promised output fails the run.
-  * Registry: `workflows/flow.py`.
+  * Registry: `side_labs/flow.py`.
   * Command line: `yn` and `vegeta yanus`.
 * **Staleness of files.** There is no design-fingerprint check. A file is stale when it changed after it was stamped,
   or when a stamped file it was made from was rewritten after it. Files written before Yanus are accepted as
@@ -232,7 +232,7 @@ any runner (never — guard only).
 
 ## 13. The rollout to every notebook
 
-All 41 notebooks in `notebooks/` have a contract in `workflows/flow.py`. The early notebooks 00–05 moved to
+All 41 notebooks in `notebooks/` have a contract in `side_labs/flow.py`. The early notebooks 00–05 moved to
 `notebooks/old/` and are left out, as are the other historical notebooks there.
 
 * **Needs** are the vegeta packages a notebook imports. Solvers (ccx, OpenFOAM) are not needs of notebooks yet: today

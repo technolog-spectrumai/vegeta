@@ -33,7 +33,7 @@ def test_unpinned_takes_the_newest_usable_run(repo, monkeypatch):
     make_run(repo.root, "demo", "sweep", "r2", created="2026-10-17T11:00:00Z", state="failed")    # newest but unusable
     g = yanus.enter("20_study")
     row = next(r for r in g.rows if r.key == "demo/sweep@A")
-    assert row.usable and row.selection == "workflows/runs/demo/sweep/r1" and "not pinned" in row.status
+    assert row.usable and row.selection == "side_labs/runs/demo/sweep/r1" and "not pinned" in row.status
     assert g.selections["demo/sweep@A"].name == "r1"
     monkeypatch.setenv("YANUS_STRICT_PINS", "1")
     with pytest.raises(GateClosed, match="not pinned"):
@@ -45,11 +45,11 @@ def test_pinned_run_opens_and_suggestion(repo, monkeypatch):
     d = make_run(repo.root, "demo", "sweep", "r1")
     g = yanus.enter("20_study", raise_closed=False)
     row = next(r for r in g.rows if r.key == "demo/sweep@A")
-    assert "1 usable run(s)" in row.status and row.fix.startswith("yn pin 20_study D1 --variant A workflows/runs/demo/sweep/r1")
+    assert "1 usable run(s)" in row.status and row.fix.startswith("yn pin 20_study D1 --variant A side_labs/runs/demo/sweep/r1")
     pins.set_pin(repo.root, "20_study", "demo/sweep@A", d)
     g = yanus.enter("20_study")
     assert g.ok and g.inputs["demo/sweep@A"]["counts"]["solved"] == 2
-    assert json.loads(pins.pin_file(repo.root, "20_study").read_text()) == {"demo/sweep@A": "workflows/runs/demo/sweep/r1"}
+    assert json.loads(pins.pin_file(repo.root, "20_study").read_text()) == {"demo/sweep@A": "side_labs/runs/demo/sweep/r1"}
 
 
 @pytest.mark.parametrize("kw,expect", [
@@ -70,7 +70,7 @@ def test_run_statuses(repo, kw, expect):
 
 
 def test_missing_legacy_pin_names_the_import(repo):
-    pins.set_pin(repo.root, "20_study", "demo/sweep@A", repo.root / "workflows/runs/demo/sweep/legacy_2026_A")
+    pins.set_pin(repo.root, "20_study", "demo/sweep@A", repo.root / "side_labs/runs/demo/sweep/legacy_2026_A")
     g = yanus.enter("20_study", raise_closed=False)
     row = next(r for r in g.rows if r.key == "demo/sweep@A")
     assert row.status.startswith("not found") and row.fix.startswith("wf import_old")

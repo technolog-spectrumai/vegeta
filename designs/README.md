@@ -234,11 +234,11 @@ transition vehicle), `variants_table`, `hover_analytic`, `envelope_vs_tools`, `b
 polar, labelled `validated` only when converged), `stall_decision`, `trim_table`, `control_table`, `structure_screen`,
 `fea_table` / `fea_against_frame`, `transitions` (the decision-relevant episodes only), `deceleration`, `performance`,
 `energy_budget`, `recommended_campaigns`, `assessment`, `Stopwatch` (the measured runtime). `kestrel_campaigns.py`
-(shared by the notebook and `workflows/kestrel/`): `VARIANTS`, `params` / `vehicle`, `fingerprint` / `compare` (the
+(shared by the notebook and `side_labs/kestrel/`): `VARIANTS`, `params` / `vehicle`, `fingerprint` / `compare` (the
 design identity a run is made for and the tolerance it is read with), `CFD_CAMPAIGNS` / `cfd_specs` / `cfd_case` /
 `cfd_outcome` / `cfd_summary`, `FEA_CAMPAIGNS` / `fea_cases` / `fea_outcome` / `fea_summary`, `import_legacy`,
 `check_run` / `require` / `command` / `find_runs`, `records_frame` / `airframe_correction`; nothing in it runs a solver
-(`workflows/tests` checks). `workflows_runkit.py` re-exports `workflows/runkit.py` for the design modules.
+(`side_labs/tests` checks). `side_labs_runkit.py` re-exports `side_labs/runkit.py` for the design modules.
 `kestrel_compare.py`: the other Vegeta machines (FALCO, NISUS+, MERLIN, PEREGRINE, from their design files) scaled to
 Kestrel's mass and flown at its cruise speed, and Kestrel as a monoplane (same span and area; same span and chord) —
 biplane against monoplane in one table (`compare`, `verdict`); `kestrel_flight.interference` / `prandtl_sigma`: the wing-interference

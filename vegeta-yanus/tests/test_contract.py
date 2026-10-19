@@ -42,7 +42,7 @@ def test_cycle_and_duplicates(tmp_path):
 
 
 def test_load_by_path_and_env(repo, tmp_path, monkeypatch):
-    p = tmp_path / "workflows" / "flow.py"
+    p = tmp_path / "side_labs" / "flow.py"
     fl = load_flow(p, reload=True)
     assert "01_x" in fl.notebooks and fl.root == tmp_path
     monkeypatch.setenv("VEGETA_YANUS_FLOW", str(p))

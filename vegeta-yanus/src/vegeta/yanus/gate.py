@@ -51,7 +51,7 @@ def strict_pins() -> bool:
 
 
 def runs_root(flow: Flow) -> Path:
-    return Path(os.environ.get("VEGETA_WORKFLOW_RUNS") or Path(flow.root) / "workflows" / "runs")
+    return Path(os.environ.get("VEGETA_WORKFLOW_RUNS") or Path(flow.root) / "side_labs" / "runs")
 
 
 def _rel(flow: Flow, p) -> str:

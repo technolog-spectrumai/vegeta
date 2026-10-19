@@ -6,13 +6,13 @@ run states in `library.chapter_status`). Nothing below is implemented yet.
 **Assumed answers to the design's open questions** (change any before approval and the plan follows):
 Q1 schema integer + required top-level keys · Q2 pins committed, a dangling pin = NOT RUN · Q3 stale: required →
 gate closed, optional → NOT RUN "stale" · Q4 a missing promised output fails the notebook run · Q5 registry in
-`workflows/flow.py` · Q6 `vegeta yanus …` plus `yn` (a script like `wf`).
+`side_labs/flow.py` · Q6 `vegeta yanus …` plus `yn` (a script like `wf`).
 
 **Hard constraints the plan keeps**
 
 * Guard only: no code path in Yanus starts a solver, a script or a notebook (a test greps for `subprocess`/`Popen`
   in the package; only `doctor`'s version probes may run `<tool> -v`/`--version`, with a timeout).
-* `vegeta-yanus` imports no other `vegeta.*` package and nothing from `workflows/` or `designs/`
+* `vegeta-yanus` imports no other `vegeta.*` package and nothing from `side_labs/` or `designs/`
   (an independence test, as in `vegeta-ai/tests/test_independence.py`). Stdlib only; pandas optional for the table.
 * Existing callers keep working unchanged: `wf`, the GUI (`library.BOOKS[..]["chapters"][..]["campaign"]`,
   `library.KINDS[kind]["needs"|"title"|"time"|"script"]`, `chapters`, `by_code`, `chapter_status`,
@@ -28,7 +28,7 @@ gate closed, optional → NOT RUN "stale" · Q4 a missing promised output fails 
    `test=["pytest"]`, `table=["pandas"]`, entry point `[project.entry-points."vegeta.commands"] yanus =
    "vegeta.yanus.cli:main"`, pytest `--import-mode=importlib`), `README.md`, `src/vegeta/yanus/__init__.py`, `tests/`.
 2. Wire it in: `install_local.sh` (`-e "$ROOT/vegeta-yanus[test]"`), `activate.sh` (src on PYTHONPATH,
-   `VEGETA_YANUS_FLOW=$ROOT/workflows/flow.py`, `yn` alias next to `wf`), `test.sh` (`optional` row like ai/fidia),
+   `VEGETA_YANUS_FLOW=$ROOT/side_labs/flow.py`, `yn` alias next to `wf`), `test.sh` (`optional` row like ai/fidia),
    `scripts/test_all.sh` (its tests).
 3. `tests/test_independence.py`: importing `vegeta.yanus` pulls in no `vegeta.<other>` module; no `subprocess`
    use outside `needs.py`.
@@ -55,29 +55,29 @@ the book, cycles (an error — Yanus refuses a cycle rather than becoming a DAG 
 input there"), a `File` take whose producer does not declare that `gives`, duplicate names/codes.
 
 `src/vegeta/yanus/registry.py` — `load_flow(path=None)`: `path` or `$VEGETA_YANUS_FLOW`, else walk up from cwd for
-`workflows/flow.py`; imports it by file path (like `designs/workflows_runkit.py` does) and returns its
+`side_labs/flow.py`; imports it by file path (like `designs/side_labs_runkit.py` does) and returns its
 `flow`.
 
 *Tests*: building a small flow; codes; every `validate()` error with its message; loading by path and by env var.
 
 ## Phase 2 — the Kestrel registry, one source of truth (1 day)
 
-1. `workflows/flow.py`: the `kestrel` book with K1–K11 exactly as `library.BOOKS` lists them today (same order,
+1. `side_labs/flow.py`: the `kestrel` book with K1–K11 exactly as `library.BOOKS` lists them today (same order,
    campaigns, prerequisites as `Run(...)` takes), the two kinds with their needs (OpenFOAM + `vegeta.aeromant`;
    `ccx`, `gmsh`, `vegeta.talos`), `compatible`/`fingerprint` delegating lazily to `kestrel_campaigns.compare` /
    `fingerprint` (lazy import keeps `wf list` fast); `IMPORTS["import_legacy"]`; notebooks 38, 43, 44 with their
    contracts (43's takes = today's `RUNS`/`REQUIRED` + `prop_lab.json`, drive tables and section polars as optional
    `File` takes; 38 gives `prop_lab.json`; 43 gives `data/reports/43_kestrel_study.json` and `kestrel_dossier.json`).
-2. `workflows/library.py`: `KINDS`, `BOOKS` and `IMPORTS` become **generated** from `flow` in the same dict shape
+2. `side_labs/library.py`: `KINDS`, `BOOKS` and `IMPORTS` become **generated** from `flow` in the same dict shape
    (so the GUI and `cli.py` keep working); `chapters`, `by_code`, `chapter_of` read the flow. Everything else in
    `library.py` (runs, `chapter_status`, `tree`) stays.
 3. `designs/kestrel_campaigns.py:41-48`: `CHAPTERS`, `SCRIPTS`, `PYTHON` derived from the flow (loaded by
-   path, like `workflows_runkit.py`) instead of a second copy.
+   path, like `side_labs_runkit.py`) instead of a second copy.
 4. Fix the stale docstrings found in review (`library.py` header numbering K8/K9; `airframe_cfd.py:8`,
    `structure_fea.py:8` run paths).
 
 *Tests*: a regression test that the generated `library.BOOKS`/`KINDS`/`chapters("kestrel")` equal a frozen copy of
-today's values (captured before the change); existing `workflows/tests/*` (cli, runkit, kestrel workflows, gui)
+today's values (captured before the change); existing `side_labs/tests/*` (cli, runkit, kestrel workflows, gui)
 pass unchanged.
 
 ## Phase 3 — reading the world (1½ days)
@@ -142,7 +142,7 @@ relationship; `leave()` fails for a missing and for a stale (pre-`enter`) output
 | `stamp <unit> <file>` | stamp an export made outside a notebook (rare; e.g. a hand-imported file) |
 | `new notebook <name> [--book]` / `new chapter <book>/<name> --kind cfd\|fea` | Phase 6 |
 
-`workflows/cli.py`: `wf notebook <run>` prints the `yanus pin …` command (and still the old `RUNS` line for one
+`side_labs/cli.py`: `wf notebook <run>` prints the `yanus pin …` command (and still the old `RUNS` line for one
 release). `wf run` calls the chapter gate before launching, so a missing tool fails at once and not in the
 detached run.
 
@@ -156,10 +156,10 @@ detached run.
   nbformat dependency) with the header the notebooks share today — logo cell, title, DEBUG/`mock.setup` cell,
   imports with `sys.path.insert(0, "designs")`, `OUT = Path("output/45_name")`, the `gate = yanus.enter(...)`
   cell with `display(gate.table())`, empty numbered sections, the final `gate.leave()` cell — and a
-  `flow.notebook("45_name", needs=[], takes=[], gives=[])` stub appended to `workflows/flow.py`. Refuses to
+  `flow.notebook("45_name", needs=[], takes=[], gives=[])` stub appended to `side_labs/flow.py`. Refuses to
   overwrite.
 * `new chapter kestrel/thermal --kind fea`: if the kind exists, only the registry entry (the kind's script takes
-  `--chapter`); with `--new-kind`, a runkit script skeleton under `workflows/<book>/` modelled on
+  `--chapter`); with `--new-kind`, a runkit script skeleton under `side_labs/<book>/` modelled on
   `structure_fea.py` (argparse with `runkit.add_common_arguments`, `Run.create`/`Run.open`, the chapter gate,
   `_kestrel.drive` with `Progress`, `closing`) plus the kind and chapter entries.
 
@@ -168,7 +168,7 @@ detached run.
 
 ## Phase 7 — migrate Kestrel onto the gates (1½ days)
 
-1. `workflows/kestrel/_kestrel.py`: `prerequisites_or_exit` → `yanus.check_chapter` (same signature/exit code,
+1. `side_labs/kestrel/_kestrel.py`: `prerequisites_or_exit` → `yanus.check_chapter` (same signature/exit code,
    needs added); both scripts unchanged otherwise. Manifest gains `yanus: {needs: {...}}` alongside
    `tool_versions`.
 2. Notebook **43**: the prerequisites cell becomes `gate = yanus.enter("43_kestrel_study")`; `RUNS` moves to
@@ -181,7 +181,7 @@ detached run.
 5. GUI (small): the chapter panel shows the needs check (✔/✘ per tool) from `yanus doctor`, and the Run button's
    prerequisite message uses the gate report text. No new GUI features beyond that.
 6. Docs: `docs/yanus.md` updated to "implemented", `vegeta-yanus/README.md` (how to declare a unit, the gates,
-   pins, CLI), `workflows/README.md` + `manual_workflows.md` (pins replace `RUNS`; `yn status`), `README.md`
+   pins, CLI), `side_labs/README.md` + `manual_workflows.md` (pins replace `RUNS`; `yn status`), `README.md`
    package list, `todo.md` entries for the roll-out (other notebooks, `designs/data/*.json`).
 
 *Verification*: workflow tests + `vegeta-yanus` tests green; notebook 43 executed in screening mode via

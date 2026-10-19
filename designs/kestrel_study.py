@@ -3,8 +3,8 @@
 The notebook is an engineering narrative; the arithmetic lives here so that each cell stays a few readable lines.
 Everything is **inexpensive**: the existing design modules (mass table, Boreas drive tables, the vortex lattice, the
 drag build-up, the plane frame, the reduced-order transition model) and the reading of workflow results from
-``workflows/runs/`` by explicit path. **Nothing here launches a solver** — the CFD (``workflows/kestrel/airframe_cfd.py``)
-and the FEA (``workflows/kestrel/structure_fea.py``) run on their own, and ``prerequisites`` says whether what they
+``side_labs/runs/`` by explicit path. **Nothing here launches a solver** — the CFD (``side_labs/kestrel/airframe_cfd.py``)
+and the FEA (``side_labs/kestrel/structure_fea.py``) run on their own, and ``prerequisites`` says whether what they
 produced exists, is finished and is compatible with the design as the notebook builds it.
 
 Every number is labelled with how it was obtained (``METHODS``): *analytic* (closed-form physics), *empirical* (a
@@ -536,7 +536,7 @@ def assessment(sets: dict, cfd: dict, fea_summaries: dict, trans: dict, perf: di
         checks.append(kl.check("CFD sweep: lift slope / lattice", num["CFD"]["CLα [1/rad]"] / num["model"]["CLα [1/rad]"], "between", (0.85, 1.15), note=f"{cf['label']}; {cf['n_converged']} of {cf['n_bare']} converged"))
         checks.append(kl.check("CFD sweep: CL max (< 20°) / polar", num["CFD"]["CL max below 20°"] / s["pol"].cl_max, "≥", 0.8, note=f"{cf['label']}: a 5° grid's lower bound; the fine stall campaign decides"))
     else:
-        checks.append(kl.check("CFD sweep on file", False, "==", True, note="NOT RUN: run workflows/kestrel/airframe_cfd.py --campaign sweep"))
+        checks.append(kl.check("CFD sweep on file", False, "==", True, note="NOT RUN: run side_labs/kestrel/airframe_cfd.py --campaign sweep"))
     fs = fea_summaries.get(main)
     if fs:
         solved = [c for c in fs["cases"].values() if c["status"] == "solved" and c["kind"] == "static"]
@@ -548,7 +548,7 @@ def assessment(sets: dict, cfd: dict, fea_summaries: dict, trans: dict, perf: di
         else:
             checks.append(kl.check("FEA cases solved", 0, "≥", 1, note=f"the run completed with {fs['counts']}"))
     else:
-        checks.append(kl.check("structural FEA on file", False, "==", True, note="NOT RUN: run workflows/kestrel/structure_fea.py; the plane frame's margins stand in (analytic)"))
+        checks.append(kl.check("structural FEA on file", False, "==", True, note="NOT RUN: run side_labs/kestrel/structure_fea.py; the plane frame's margins stand in (analytic)"))
     tab = kl.check_table(checks, f"Kestrel-{main} — final checks")
     held, of = tab.attrs["passes"], tab.attrs["of"]
     pur = perf["pursuit"]

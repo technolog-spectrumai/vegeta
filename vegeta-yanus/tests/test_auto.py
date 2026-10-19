@@ -29,8 +29,8 @@ def fake_runner(root, log):
 def auto_flow(root):
     flow = Flow("t", root=root)
     b = flow.book("demo", "D", variants=("A", "B"), fingerprint=lambda v: {"v": 1}, compatible=lambda e, f, ch=None: {"level": "compatible", "reasons": []})
-    b.kind("cfd", title="CFD", script="workflows/demo/cfd.py", workflow="wcfd", needs=[Package("json")], screening=("--quality", "screening"))
-    b.kind("fea", title="FEA", script="workflows/demo/fea.py", workflow="wfea", needs=[Tool("definitely-not-a-tool-xyz")])
+    b.kind("cfd", title="CFD", script="side_labs/demo/cfd.py", workflow="wcfd", needs=[Package("json")], screening=("--quality", "screening"))
+    b.kind("fea", title="FEA", script="side_labs/demo/fea.py", workflow="wfea", needs=[Tool("definitely-not-a-tool-xyz")])
     b.chapter("sweep", kind="cfd", campaign="sweep")
     b.chapter("blown", kind="cfd", campaign="blown", takes=[Run("sweep")])
     b.chapter("frame", kind="fea", campaign="frame")

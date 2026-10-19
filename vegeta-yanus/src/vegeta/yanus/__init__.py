@@ -1,6 +1,6 @@
 """Yanus — the door keeper between Vegeta's notebooks and workflows.
 
-Every unit (a notebook, a workflow chapter) declares in the project's flow registry (``workflows/flow.py``) what it
+Every unit (a notebook, a workflow chapter) declares in the project's flow registry (``side_labs/flow.py``) what it
 **needs** on the machine, what it **takes** from other units and what it **gives**. ``enter`` checks the needs and
 the takes before the unit starts and raises one ``GateClosed`` with every fix; ``Gate.leave`` checks the gives and
 stamps them. Yanus guards; it drives only in **auto mode** (a notebook's ``auto=True`` flag, ``YANUS_AUTO=1``), where

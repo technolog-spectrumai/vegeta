@@ -1,7 +1,7 @@
 # vegeta-yanus — the door keeper
 
 Yanus guards the doors between Vegeta's notebooks and workflows. Every **unit** (a notebook, a workflow chapter)
-declares once, in the project's registry `workflows/flow.py`, what it **needs** on the machine, what it **takes** from
+declares once, in the project's registry `side_labs/flow.py`, what it **needs** on the machine, what it **takes** from
 other units and what it **gives**. Two gates check the declarations: one when the unit starts, one when it ends.
 Yanus **guards**: it starts no solver, script or notebook; it prints the command that would, and an engineer types it.
 The one exception is **auto mode** (§ below): a notebook flagged `auto=True` runs what it is missing by itself, in
@@ -9,7 +9,7 @@ screening quality, and never throws. Design: `docs/yanus.md`.
 
 Stdlib only (pandas, when present, for the gate table). It imports no other vegeta package; a test enforces it.
 
-## Declaring a unit (`workflows/flow.py`)
+## Declaring a unit (`side_labs/flow.py`)
 
 ```python
 from vegeta.yanus import File, Flow, Package, Run, Tool
@@ -18,7 +18,7 @@ flow = Flow("vegeta", root=ROOT)
 kestrel = flow.book("kestrel", "K", variants=("4Q-1", "4Q-2", "4Q-3"),
                     fingerprint=lambda v: kestrel_campaigns.fingerprint(v),      # the design as it is now
                     compatible=lambda expected, found, chapter: ...)             # {"level", "reasons"} — the project's physics
-kestrel.kind("fea", title="FEA …", script="workflows/kestrel/structure_fea.py", workflow="structure_fea",
+kestrel.kind("fea", title="FEA …", script="side_labs/kestrel/structure_fea.py", workflow="structure_fea",
              needs=[Tool("ccx", version_cmd=("ccx", "-v")), Package("gmsh")])
 kestrel.chapter("frame", kind="fea", campaign="frame")                         # K9  (codes follow the order)
 kestrel.chapter("joint", kind="fea", campaign="joint", takes=[Run("frame")])   # K10, after K9
@@ -89,5 +89,5 @@ check the run states only.
 ## Tests
 
 `pytest` in this directory. The tests build a small flow with fake run directories in a temporary folder, so no
-solver is needed. `workflows/tests/test_flow_registry.py` checks the real registry against a frozen copy of the
+solver is needed. `side_labs/tests/test_flow_registry.py` checks the real registry against a frozen copy of the
 earlier `library` dicts.

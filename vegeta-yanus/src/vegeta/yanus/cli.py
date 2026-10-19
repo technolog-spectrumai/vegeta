@@ -140,7 +140,7 @@ def _run_key(flow, nb: Notebook, chapter: str, variant: str | None) -> str:
     key = ch.ref + (f"@{variant}" if variant else "")
     keys = [t.key() for t in nb.takes if isinstance(t, Run)]
     if key not in keys:
-        raise SystemExit(f"{nb.name} takes no {key}: its run takes are {', '.join(keys) or 'none'} (workflows/flow.py)")
+        raise SystemExit(f"{nb.name} takes no {key}: its run takes are {', '.join(keys) or 'none'} (side_labs/flow.py)")
     return key
 
 
@@ -272,14 +272,14 @@ def cmd_new(a, flow) -> int:
                                    takes=tuple(a.after or ()))
     for p in out:
         print(f"wrote {Path(p).resolve().relative_to(Path(flow.root).resolve())}")
-    print("next: fill in the contract in workflows/flow.py, then yn check")
+    print("next: fill in the contract in side_labs/flow.py, then yn check")
     return 0
 
 
 def parser(prog: str = "yn") -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog=prog, description="Yanus, the door keeper: the contracts between notebooks and workflows",
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__.split("\n\n", 1)[1])
-    ap.add_argument("--flow", default=None, help="the registry file (default $VEGETA_YANUS_FLOW, else workflows/flow.py)")
+    ap.add_argument("--flow", default=None, help="the registry file (default $VEGETA_YANUS_FLOW, else side_labs/flow.py)")
     sub = ap.add_subparsers(dest="cmd")
     p = sub.add_parser("status", help="every unit: ready / blocked / not run"); p.add_argument("unit", nargs="?")
     p.add_argument("--deep", action="store_true", help="also check each pinned run's compatibility with the design (builds the fingerprints)")

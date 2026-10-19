@@ -22,7 +22,7 @@ def notebook_doc(name: str, *, title: str = "", book: str | None = None) -> dict
     cells = [
         _md('<img src="logo.png" alt="Vegeta" width="240">'),
         _md(f"# {title}\n\nWhat this notebook answers, on which methods, and what it hands to the next one.\n\n"
-            "**Its contract** is declared once in `workflows/flow.py` (`flow.notebook(\"" + name + "\", …)`): what it needs on the "
+            "**Its contract** is declared once in `side_labs/flow.py` (`flow.notebook(\"" + name + "\", …)`): what it needs on the "
             "machine, what it takes from the workflows and the other notebooks, what it gives. The gate below checks all of "
             "it before anything is computed; the last cell checks that every promised file was written (`docs/yanus.md`)."),
         _code("# DEBUG: test the notebook end to end before the full run. On: FEA and CFD are mocked (vegeta.mock: fixed numbers,\n"
@@ -62,7 +62,7 @@ def new_notebook(root, name: str, *, flow_file=None, title: str = "", book: str 
     nb = root / "notebooks" / f"{name}.ipynb"
     if nb.exists():
         raise FileExistsError(f"{nb} exists — Yanus never overwrites")
-    flow_file = Path(flow_file or root / "workflows" / "flow.py")
+    flow_file = Path(flow_file or root / "side_labs" / "flow.py")
     if f'flow.notebook("{name}"' in flow_file.read_text():
         raise FileExistsError(f"{name} is already declared in {flow_file}")
     nb.write_text(json.dumps(notebook_doc(name, title=title, book=book), indent=1, ensure_ascii=False) + "\n")
@@ -75,10 +75,10 @@ CHAPTER_SCRIPT = '''#!/usr/bin/env python
 """{book}/{chapter} ({kind}) — {title}
 
     .venv/bin/python {script} --variant <variant> --chapter {campaign}
-    .venv/bin/python {script} --resume workflows/runs/{book}/<chapter>/<run id>
+    .venv/bin/python {script} --resume side_labs/runs/{book}/<chapter>/<run id>
 
-A thin workflow script (workflows/README.md): explicit inputs, the cases under a budget, one run directory. Its
-contract (needs, the prerequisite chapters) is in workflows/flow.py; the entry gate checks it before a case starts.
+A thin workflow script (side_labs/README.md): explicit inputs, the cases under a budget, one run directory. Its
+contract (needs, the prerequisite chapters) is in side_labs/flow.py; the entry gate checks it before a case starts.
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-for p in (ROOT / "workflows", ROOT / "designs", ROOT / "vegeta-yanus" / "src"):
+for p in (ROOT / "side_labs", ROOT / "designs", ROOT / "vegeta-yanus" / "src"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
@@ -150,20 +150,20 @@ if __name__ == "__main__":
 def new_chapter(root, ref: str, *, kind: str, campaign: str | None = None, flow_file=None, new_kind: bool = False, title: str = "",
                 takes: tuple = ()) -> list[Path]:
     """``ref`` = ``book/chapter``. With an existing ``kind`` only the registry entry is added (the kind's script takes
-    the new ``--chapter``); with ``new_kind`` the kind and a script skeleton under ``workflows/<book>/`` too."""
+    the new ``--chapter``); with ``new_kind`` the kind and a script skeleton under ``side_labs/<book>/`` too."""
     root = Path(root)
     if "/" not in ref:
         raise ValueError("a chapter is book/chapter, e.g. kestrel/thermal")
     book, chapter = ref.split("/", 1)
     campaign = campaign or chapter
-    flow_file = Path(flow_file or root / "workflows" / "flow.py")
+    flow_file = Path(flow_file or root / "side_labs" / "flow.py")
     src = flow_file.read_text()
     if f'.chapter("{chapter}"' in src:
         raise FileExistsError(f"chapter {chapter!r} is already declared in {flow_file}")
     out = [flow_file]
     lines = ["", f"# yn new chapter {ref} --kind {kind}"]
     if new_kind:
-        script = f"workflows/{book}/{kind}.py"
+        script = f"side_labs/{book}/{kind}.py"
         sp = root / script
         if sp.exists():
             raise FileExistsError(f"{sp} exists — Yanus never overwrites")

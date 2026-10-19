@@ -1,6 +1,6 @@
 """kestrel_campaigns — what the Kestrel workflows run and what the Kestrel notebook reads back.
 
-The engineering content of the thin scripts in ``workflows/kestrel/`` and of the unified notebook's prerequisite
+The engineering content of the thin scripts in ``side_labs/kestrel/`` and of the unified notebook's prerequisite
 checks, kept here so that both read the same definitions:
 
 - the **variants** (``4Q-1``, ``4Q-2``, ``4Q-3``: ``kestrel2.params``) and each one's **fingerprint** — the resolved
@@ -36,19 +36,19 @@ import kestrel2 as k2
 DESIGNS = Path(__file__).resolve().parent
 ROOT = DESIGNS.parent
 import os as _os
-RUNS_BASE = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "workflows" / "runs")
-BOOK = "kestrel"                                                                  # the book: workflows/runs/kestrel/<chapter>/
+RUNS_BASE = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "side_labs" / "runs")
+BOOK = "kestrel"                                                                  # the book: side_labs/runs/kestrel/<chapter>/
 
 
 def _flow():
-    """The one chapter map: ``workflows/flow.py`` (Yanus's registry), the same one ``workflows/library.py`` reads."""
+    """The one chapter map: ``side_labs/flow.py`` (Yanus's registry), the same one ``side_labs/library.py`` reads."""
     import sys
     try:
         from vegeta.yanus import load_flow
     except ImportError:
         sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
         from vegeta.yanus import load_flow
-    return load_flow(ROOT / "workflows" / "flow.py")
+    return load_flow(ROOT / "side_labs" / "flow.py")
 
 
 _BOOK = _flow().books[BOOK]
@@ -192,7 +192,7 @@ def cfd_case(name: str, spec: dict, workdir, *, variant: str, quality: str, veh:
 
 def cfd_case_key(case, quality: str) -> str:
     """What makes a solved case reusable: the template, every value and the geometry file's content."""
-    from workflows_runkit import sha256_file
+    from side_labs_runkit import sha256_file
     return _sha(json.dumps({"template": case.template.name, "parameters": case.parameters, "units": case.geometry_units, "quality": quality,
                             "stl": sha256_file(case.geometry)}, sort_keys=True, default=str))
 
@@ -339,7 +339,7 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
     contract, one per campaign key, so that the unified notebook reads them like any run. The provenance says what
     they are: screening quality, 400 iterations, imported — and the fingerprint is the variant's **as defined now**
     (the file carries none), which the compatibility check reports as an assumption, not a fact."""
-    from workflows_runkit import write_json_atomic, utc_now, sha256_file, tool_versions
+    from side_labs_runkit import write_json_atomic, utc_now, sha256_file, tool_versions
     doc = kcfd.load_records(results_json)
     if not doc:
         raise FileNotFoundError(f"{results_json} does not exist or holds no campaign")
@@ -355,7 +355,7 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
         root = Path(out_base) / BOOK / CHAPTERS[("airframe_cfd", "sweep")] / f"legacy_{meta.get('date', 'undated').replace('-', '')}_{variant}_{meta.get('source', 'import')}"
         root.mkdir(parents=True, exist_ok=True)
         specs, records = {}, {}
-        from workflows_runkit import CaseRecord
+        from side_labs_runkit import CaseRecord
         byname = {r["case"]: r for r in camp.get("records", [])}
         for name, st in camp.get("statuses", {}).items():
             rec = byname.get(name)
@@ -405,9 +405,9 @@ def command(workflow: str, *, variant: str, campaign: str, quality: str | None =
 
 
 def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None, chapter: str | None = None) -> list[dict]:
-    """The runs on disk for the engineer to pick from (newest first), under ``workflows/runs/<book>/<chapter>/``:
+    """The runs on disk for the engineer to pick from (newest first), under ``side_labs/runs/<book>/<chapter>/``:
     id, chapter, variant, state, counts. Listing only — the notebook never picks one by itself."""
-    from workflows_runkit import list_runs, read_json
+    from side_labs_runkit import list_runs, read_json
     out = []
     book = Path(base) / BOOK
     if not book.is_dir():
@@ -426,7 +426,7 @@ def find_runs(workflow: str, *, base=RUNS_BASE, variant: str | None = None, chap
 
 
 def _load(run_dir, workflow: str) -> dict:
-    from workflows_runkit import load_run
+    from side_labs_runkit import load_run
     if run_dir is None:
         return {"root": None, "manifest": None, "status": None, "summary": None, "partial": None}
     p = Path(run_dir)
@@ -485,7 +485,7 @@ def require(check: dict, *, what: str, required: bool = True) -> dict | None:
     if not required:
         return None
     raise PrerequisiteError(f"{what}: {check['status']}.\n  Produce it with:\n    {check['command']}\n  then pin the run directory it prints (yn pin 43_kestrel_study <chapter> --variant <v> <run dir>)."
-                            + ("\n  Available runs: workflows/runs/ (kestrel_campaigns.find_runs)" if check["run"] is None else ""))
+                            + ("\n  Available runs: side_labs/runs/ (kestrel_campaigns.find_runs)" if check["run"] is None else ""))
 
 
 def records_frame(summary: dict):

@@ -1,5 +1,5 @@
 """pins — the explicit choice of which run (or file) a unit reads: ``notebooks/pins/<unit>.json``,
-``{"kestrel/airframe-sweep@4Q-2": "workflows/runs/kestrel/airframe-sweep/<run id>"}``. Yanus never picks one by
+``{"kestrel/airframe-sweep@4Q-2": "side_labs/runs/kestrel/airframe-sweep/<run id>"}``. Yanus never picks one by
 itself; ``yanus pin`` writes them, ``yanus pin --suggest`` only prints candidates."""
 from __future__ import annotations
 

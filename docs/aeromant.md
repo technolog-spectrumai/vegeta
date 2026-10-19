@@ -230,7 +230,7 @@ Disk zones that would overlap (centres closer than `2 × zone_radius × diameter
 turn the STL and the disk centres together about the moment point and give the turned thrust axis
 (`kestrel.rotate`, `kestrel_cfd.disk_setup`). The forces on the airframe include the slipstream; the disks' thrust and
 in-plane force are in the solver log. Steady RANS beyond the stall is a time average at best: read the residuals and
-the force scatter. Notebook: `43_kestrel_study` (reads the runs); the campaigns run as the workflow `workflows/kestrel/airframe_cfd.py` (`workflows/README.md`); the historical `old/40_kestrel` and `old/39_kestrel_tests`.
+the force scatter. Notebook: `43_kestrel_study` (reads the runs); the campaigns run as the workflow `side_labs/kestrel/airframe_cfd.py` (`side_labs/README.md`); the historical `old/40_kestrel` and `old/39_kestrel_tests`.
 
 **Numerics of the rotor-disk templates** (`aircraft_rotor_disks`, `aircraft_quad_rotor_disks`, `hull_rotor_disk`):
 plain SIMPLE with the under-relaxation of OpenFOAM's rotorDisk tutorial (p 0.3, U 0.7, k and ω 0.7), not the SIMPLEC

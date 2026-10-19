@@ -3,7 +3,7 @@
 A **unit** is a notebook (``43_kestrel_study``) or a chapter of a book (``K3`` = ``kestrel/airframe-cruise``). Its
 contract names what it **needs** on the machine (``Tool``, ``Package``, ``Env``), what it **takes** from other units
 (``Run`` of a chapter, ``File`` another unit gives) and what it **gives** (``File``). A ``Flow`` holds every unit
-once; it is written in Python in the project (``workflows/flow.py``), never in a configuration file.
+once; it is written in Python in the project (``side_labs/flow.py``), never in a configuration file.
 """
 from __future__ import annotations
 
@@ -124,7 +124,7 @@ class Data:
 # ================================================================================================= units
 @dataclass
 class Kind:
-    """A kind of chapter = one workflow script (``cfd`` → ``workflows/kestrel/airframe_cfd.py``)."""
+    """A kind of chapter = one workflow script (``cfd`` → ``side_labs/kestrel/airframe_cfd.py``)."""
     name: str
     title: str
     script: str

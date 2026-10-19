@@ -23,7 +23,7 @@ Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes 
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
 `vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
 output, images, cancellation, usage) and **`vegeta-yanus`**, the door keeper between notebooks and workflows (every
-unit's needs, takes and gives in `workflows/flow.py`; the gates that check them; `yn status`; `docs/yanus.md`).
+unit's needs, takes and gives in `side_labs/flow.py`; the gates that check them; `yn status`; `docs/yanus.md`).
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports
@@ -380,7 +380,7 @@ structure, the transitions both ways, a final assessment) on inexpensive methods
 vortex lattice with Prandtl's biplane correlation, the drag build-up, NeuralFoil sections, beam and truss statics,
 the reduced-order transition model — each number labelled *analytic / empirical / solver / validated*, with the
 correlations' sources, ranges and uncertainties in a table. It runs in about two minutes (measured, § 11) and
-**launches no solver**: the long-running analyses are explicit **workflows** under `workflows/kestrel/` —
+**launches no solver**: the long-running analyses are explicit **workflows** under `side_labs/kestrel/` —
 `airframe_cfd.py` (the airframe in RANS with the four propellers as rotor disks: the bare sweeps, the decision-relevant
 stall angles, the cruise and the transition points, one named campaign per run) and `structure_fea.py` (the carbon
 frame and the printed joint in CalculiX) — launched from a shell, monitored with `tail -F <run>/run.log`, each
@@ -389,13 +389,13 @@ when complete, the native cases) that the notebook reads **by explicit path** an
 before use; a required result that is missing, stale, incompatible or failed stops it with the exact command to run,
 an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
 workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
-[workflows/README.md](workflows/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `workflows/cli.py` lists, explains, launches and watches
-them (interactive without arguments; `source activate.sh` makes it `wf`; `wf gui` or `./workflows.sh` opens the same as a PyQt6 window). Workflows are organised in **books** (a design:
-`kestrel`, code K) and numbered **chapters** (its studies, CFD and FEA alike, chosen as `wf K2`); runs land in `workflows/runs/<book>/<chapter>/`, a chapter's prerequisites
+[side_labs/README.md](side_labs/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `side_labs/cli.py` lists, explains, launches and watches
+them (interactive without arguments; `source activate.sh` makes it `wf`; `wf gui` or `./side_labs.sh` opens the same as a PyQt6 window). Workflows are organised in **books** (a design:
+`kestrel`, code K) and numbered **chapters** (its studies, CFD and FEA alike, chosen as `wf K2`); runs land in `side_labs/runs/<book>/<chapter>/`, a chapter's prerequisites
 are chapters of its own book, and solved cases are cached across runs (`wf cache`, `wf clean-cache`, `--no-cache`). **`44_kestrel_fast`** (`designs/kestrel_fast.py`) is the standalone one-minute
 comparator of candidate designs — span, chord, section, propeller, motor, battery, bracing, spar — on Zephyr sections,
 Boreas points and beam rules of thumb, no solver: for ranking ideas before the study and the workflows decide. The first campaign's results are imported as runs by
-`workflows/kestrel/import_legacy.py`. The resolved propeller stays in **`38_prop_lab`**, whose calibration the airframe
+`side_labs/kestrel/import_legacy.py`. The resolved propeller stays in **`38_prop_lab`**, whose calibration the airframe
 cases, the drive tables and the notebook read once it passed its gates. The notebooks that built the design — **39**
 `kestrel_tests`, **40** `kestrel`, **41** `xwing`, **42** `kestrel2` — are kept unchanged with their outputs in
 `notebooks/old/` (their story follows); `designs/kestrel3.md` is the 4Q-3 brief.

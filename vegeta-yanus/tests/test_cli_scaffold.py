@@ -24,11 +24,11 @@ def test_status_why_doctor(repo, capsys):
 def test_pin_unpin_suggest(repo, capsys):
     d = make_run(repo.root, "demo", "sweep", "r1")
     assert cli.main(["pin", "20_study", "--suggest"]) == 0
-    assert "yn pin 20_study D1 --variant A workflows/runs/demo/sweep/r1" in capsys.readouterr().out
+    assert "yn pin 20_study D1 --variant A side_labs/runs/demo/sweep/r1" in capsys.readouterr().out
     assert pins.read_pins(repo.root, "20_study") == {}                      # suggesting writes nothing
     assert cli.main(["pin", "20_study", "D1", "--variant", "A", str(d)]) == 0     # the order the gate's fix prints
     assert cli.main(["pin", "--variant", "A", "20_study", "D1", str(d)]) == 0
-    assert pins.read_pins(repo.root, "20_study") == {"demo/sweep@A": "workflows/runs/demo/sweep/r1"}
+    assert pins.read_pins(repo.root, "20_study") == {"demo/sweep@A": "side_labs/runs/demo/sweep/r1"}
     assert cli.main(["status", "20_study"]) == 0
     with pytest.raises(SystemExit, match="takes no demo/blown"):
         cli.main(["pin", "20_study", "D2", "--variant", "A", str(d)])
@@ -52,8 +52,8 @@ def test_stamp(repo, capsys):
 
 def test_new_notebook(tmp_path):
     (tmp_path / "notebooks").mkdir()
-    (tmp_path / "workflows").mkdir()
-    ff = tmp_path / "workflows" / "flow.py"
+    (tmp_path / "side_labs").mkdir()
+    ff = tmp_path / "side_labs" / "flow.py"
     ff.write_text("from vegeta.yanus import Flow, File, Run, Package\nflow = Flow('t')\n")
     out = scaffold.new_notebook(tmp_path, "45_thermal", title="thermal")
     nb = json.loads(out[0].read_text())
@@ -72,16 +72,16 @@ def test_new_notebook(tmp_path):
 
 
 def test_new_chapter(tmp_path):
-    (tmp_path / "workflows").mkdir()
-    ff = tmp_path / "workflows" / "flow.py"
+    (tmp_path / "side_labs").mkdir()
+    ff = tmp_path / "side_labs" / "flow.py"
     ff.write_text("from vegeta.yanus import Flow, Run\nflow = Flow('t')\nb = flow.book('kestrel', 'K')\n"
                   "b.kind('fea', title='FEA', script='s.py', workflow='w')\nb.chapter('frame', kind='fea', campaign='frame')\n")
     scaffold.new_chapter(tmp_path, "kestrel/thermal", kind="heat", new_kind=True, takes=("frame",))
-    sp = tmp_path / "workflows" / "kestrel" / "heat.py"
+    sp = tmp_path / "side_labs" / "kestrel" / "heat.py"
     py_compile.compile(str(sp), doraise=True)
     fl = load_flow(ff, reload=True)
     ch = fl.chapter("kestrel/thermal")
-    assert ch.code == "K2" and ch.prerequisites == ("frame",) and ch.kind.script == "workflows/kestrel/heat.py"
+    assert ch.code == "K2" and ch.prerequisites == ("frame",) and ch.kind.script == "side_labs/kestrel/heat.py"
     scaffold.new_chapter(tmp_path, "kestrel/joint", kind="fea")
     assert load_flow(ff, reload=True).chapter("K3").name == "joint"
     with pytest.raises(FileExistsError):

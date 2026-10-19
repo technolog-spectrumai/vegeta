@@ -15,7 +15,7 @@ a solver, a workflow or a notebook.
 ```python
 from vegeta import yanus
 sel = yanus.find("K1", variant="4Q-2", fingerprint=FP["4Q-2"], quality="fine")   # newest usable run
-sel = yanus.find("K1", variant="4Q-2", run="workflows/runs/kestrel/airframe-sweep/<id>")  # an explicit run
+sel = yanus.find("K1", variant="4Q-2", run="side_labs/runs/kestrel/airframe-sweep/<id>")  # an explicit run
 display(sel)            # chosen run, state, quality, compatibility, or why it was refused plus the wf command
 sel.ok, sel.summary     # summary.json dict when usable, else None
 sel.require()           # raises yanus.RunUnusable (reasons and command) when the notebook needs it
@@ -62,12 +62,12 @@ CLI `yn`:
 - `new chapter`: scaffold
 
 ## Callers and migration (audit done; each one is verified before moving on)
-- `workflows/flow.py`: remove all `flow.notebook(...)` entries, the `auto`/`screening` arguments and `fingerprint=`.
-- `workflows/library.py`:
+- `side_labs/flow.py`: remove all `flow.notebook(...)` entries, the `auto`/`screening` arguments and `fingerprint=`.
+- `side_labs/library.py`:
   - `pin_commands` → `read_snippets(run_dir)`, which prints the `yanus.find(..., run=...)` line.
   - Update its callers: `cli.py cmd_notebook`, `gui/runner.py`, `_kestrel.pin_hint`.
   - `latest_completed`/`check_prerequisites` reuse `yanus.find`.
-- `workflows/kestrel/_kestrel.py`: `check_chapter` keeps the same return shape, so the manifest's `yanus` entry, resume and the native artifacts stay unchanged.
+- `side_labs/kestrel/_kestrel.py`: `check_chapter` keeps the same return shape, so the manifest's `yanus` entry, resume and the native artifacts stay unchanged.
 - `designs/kestrel_campaigns.py`:
   - `PrerequisiteError` subclasses `RunUnusable`.
   - Delete `check_run`/`require`/`_load`, which duplicate `find`. Their tests move to the Yanus tests.
@@ -94,7 +94,7 @@ CLI `yn`:
 ## Docs
 - Rewrite `docs/yanus.md` and `vegeta-yanus/README.md` around `find` and `Selection`.
 - Delete `docs/yanus_plan.md`.
-- Fix the yanus/auto/pin mentions in `README.md`, `workflows/README.md`, `todo.md`, `manual_workflows.md` and `docs/philosophy.md`.
+- Fix the yanus/auto/pin mentions in `README.md`, `side_labs/README.md`, `todo.md`, `manual_workflows.md` and `docs/philosophy.md`.
 
 ## Verification
 - Rewrite `vegeta-yanus/tests` to cover:
@@ -107,7 +107,7 @@ CLI `yn`:
   - no fingerprint → unverified
   - `require()` message contains the `wf` command
   - **no-computation test**: patch `subprocess.*`, `os.system` and `os.exec*` to raise, then run `find`/`yn find`
-- `workflows/tests`: update `test_flow_registry` and `test_kestrel_workflows` (snippets, `check_prerequisites`).
+- `side_labs/tests`: update `test_flow_registry` and `test_kestrel_workflows` (snippets, `check_prerequisites`).
 - Notebooks: validate the JSON with nbformat, grep that no `GATE`/`yanus.enter` remains, compile every code cell.
   Do not execute campaigns.
 - Known limits:
