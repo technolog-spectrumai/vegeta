@@ -45,12 +45,15 @@
 #     workflow        side-labs exchange               --no-workflow  leaves it out
 #     notebook        notebooks-mock                   --no-notebook  leaves it out
 #   (a part's name runs that part alone: ./user_tests.sh design)
+#   --include-experiments   also the experiments: notebooks/exp/ (Kestrel, prop_lab) and their tests (test_kestrel*,
+#                           test_prop_lab, the Kestrel side lab and exchange tests); by default they are left out
 #   --- long runs (by name only) ---
 #   all               env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
 set -uo pipefail
 VERBOSE=0
+EXPERIMENTS=0
 EXCLUDE=()
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -60,8 +63,8 @@ SECTIONS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
-    -j) JOBS="$2"; shift 2 ;; -v|--verbose) VERBOSE=1; shift ;; --no-vegeta|--no-design|--no-workflow|--no-notebook) EXCLUDE+=("${1#--no-}"); shift ;;
-    -h|--help) sed -n '2,45p' "$0"; exit 0 ;;
+    -j) JOBS="$2"; shift 2 ;; -v|--verbose) VERBOSE=1; shift ;; --include-experiments) EXPERIMENTS=1; shift ;; --no-vegeta|--no-design|--no-workflow|--no-notebook) EXCLUDE+=("${1#--no-}"); shift ;;
+    -h|--help) sed -n '2,48p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -119,16 +122,21 @@ for m in ("mujoco", "numpy", "scipy", "pandas", "matplotlib", "tqdm", "pyvista",
 EOF
 }
 
+# the experiments (notebooks/exp/: Kestrel and prop_lab, to be redesigned) are left out unless --include-experiments
+EXP_TESTS=(designs/tests/test_kestrel.py designs/tests/test_kestrel2.py designs/tests/test_kestrel_fea.py designs/tests/test_kestrel_report.py
+           designs/tests/test_prop_lab.py side_labs/tests/test_kestrel_workflows.py notebooks/tests/test_kestrel_notebook.py)
+exp_ignores() { [ "$EXPERIMENTS" -eq 1 ] && return; for f in "${EXP_TESTS[@]}"; do [ -e "$ROOT/$f" ] && printf -- '--ignore=%s ' "$ROOT/$f"; done; }
+
 pytest_summary() {  # pytest_summary <dir> <args...>
   # default: one line per test as it finishes (ok / FAILED / skip, the test, [n/N]), then the failures' short reasons;
   # -v / --verbose: pytest's full output (every test, the tracebacks, print output)
   local dir="$1"; shift
   local out rc; out="$(mktemp)"
   if [ "$VERBOSE" -eq 1 ]; then
-    (cd "$dir" && "$PY" -m pytest -v -rfE -p no:cacheprovider ${MOCK_PLUGIN:-} "$@" 2>&1) | tee "$out" | sed 's/^/    /'
+    (cd "$dir" && "$PY" -m pytest -v -rfE -p no:cacheprovider ${MOCK_PLUGIN:-} $(exp_ignores) "$@" 2>&1) | tee "$out" | sed 's/^/    /'
     rc=${PIPESTATUS[0]}
   else
-    (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider ${MOCK_PLUGIN:-} -o console_output_style=count --tb=line "$@" 2>&1) | tee "$out" \
+    (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider ${MOCK_PLUGIN:-} $(exp_ignores) -o console_output_style=count --tb=line "$@" 2>&1) | tee "$out" \
       | awk '/::/ && / (PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)/ {
                st = ($0 ~ / PASSED/) ? "ok    " : ($0 ~ / (FAILED|ERROR)/) ? "FAILED" : "skip  ";
                n = ""; if (match($0, /\[ *[0-9]+\/[0-9]+\]/)) n = substr($0, RSTART, RLENGTH);
@@ -136,6 +144,7 @@ pytest_summary() {  # pytest_summary <dir> <args...>
     rc=${PIPESTATUS[0]}
     grep -E "^(FAILED|ERROR) " "$out" | head -20 | sed 's/^/    /'
   fi
+  [ "$rc" -eq 5 ] && rc=0                  # pytest 5: no test collected (e.g. every one of them an experiment)
   echo "  $(tail -1 "$out")"
   rm -f "$out"
   return $rc
@@ -201,7 +210,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
     notebooks-mock)
       hdr "notebooks with the mocks on (every one but the slow ones; scripts/debug_notebooks.sh --all for those)"
-      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" 2>&1 | tail -70 | sed 's/^/  /'
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -70 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     unit) sec_unit ;;
     physics) sec_physics ;;
@@ -242,7 +251,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT" components/tests assemblies/tests -m "not slow" || status=1 ;;
     notebooks-debug)
       hdr "Notebooks in DEBUG mode (vegeta.mock: FEA and CFD mocked)"
-      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" 2>&1 | tail -60 | sed 's/^/  /'
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -60 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     velutina)
       hdr "Velutina: design and flight-model tests"
