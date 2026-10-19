@@ -179,7 +179,7 @@ gap 0.28 m (the biplane's hover lever and σ), motors at ±0.35 m, cantilever sp
    `stagger`, `stagger_sign`), the take-off roll.
 2. **CAD** in `kestrel.py` or a sibling `KestrelQ4T` (Dedalus): the pod lengthened by the stagger, the two wings at
    their heights, pylons, skids, the fin; `part="airframe"` for the CFD STL as today.
-3. **Notebook 46 `46_kestrel_tandem`** (`yn new notebook --auto`): the three airframes and the control case against
+3. **Notebook 46 `46_kestrel_tandem`**: the three airframes and the control case against
    Kestrel-4Q-2 from notebook 43's report (as 45 does for the X-wing); sections: requirements, geometry, mass and
    CG, the lattice and the interference measure (§ 5 of 43 reused: the flat tandem's +42 %), trim and control
    authority, the hover geometry, performance, the take-off roll, the two transitions, structure (cantilever spar

@@ -22,8 +22,8 @@ Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes 
 
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
 `vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
-output, images, cancellation, usage) and **`vegeta-yanus`**, the door keeper between notebooks and workflows (every
-unit's needs, takes and gives in `side_labs/flow.py`; the gates that check them; `yn status`; `docs/yanus.md`).
+output, images, cancellation, usage). What a notebook or a side lab needs on the machine is checked by Ozaru's
+Yanus (`vendor/ozaru`); the side labs' books and chapters are declared in `side_labs/flow.py`.
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports
@@ -504,7 +504,6 @@ vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeroman
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
-vegeta-yanus/      the vegeta-yanus package: src/vegeta/yanus (contracts, gates, pins, stamps, scaffolds), adds `vegeta yanus` / `yn`
 notebooks/         devices/, parts/, scenarios/, races/, demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
 designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
 side_labs/         optional, expensive calculations (CFD, FEA, MuJoCo races) under the run contract; `wf` / ./side_labs.sh

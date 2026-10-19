@@ -1,0 +1,1401 @@
+{
+ "notebook": "45_kestrel_x",
+ "title": "Kestrel-X — notebook 45 (X-A and X-B against Kestrel-4Q, notebook 43)",
+ "exported": "2026-10-19T21:05",
+ "meta": {},
+ "sections": {
+  "variants": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "panel_length",
+    "chord",
+    "motor_r"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "panel_length": 0.5,
+     "chord": 0.14,
+     "motor_r": 0.46
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "panel_length": 0.7,
+     "chord": 0.2,
+     "motor_r": 0.66
+    }
+   ]
+  },
+  "layout": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "panel_length",
+    "chord",
+    "motor_r",
+    "span",
+    "span_projected",
+    "height",
+    "S_ref",
+    "AR_wing",
+    "h",
+    "motor_y",
+    "prop_gap",
+    "prop_to_pod",
+    "prop_beyond_tip",
+    "elevon_y_in",
+    "elevon_span_side"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "panel_length": 0.5,
+     "chord": 0.14,
+     "motor_r": 0.46,
+     "span": 1.11,
+     "span_projected": 0.7849,
+     "height": 0.7849,
+     "S_ref": 0.28,
+     "AR_wing": 7.929,
+     "h": 0.3253,
+     "motor_y": 0.46,
+     "prop_gap": 0.4219,
+     "prop_to_pod": 0.2907,
+     "prop_beyond_tip": 0.0193,
+     "elevon_y_in": 0.3457,
+     "elevon_span_side": 0.2093
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "panel_length": 0.7,
+     "chord": 0.2,
+     "motor_r": 0.66,
+     "span": 1.51,
+     "span_projected": 1.068,
+     "height": 1.068,
+     "S_ref": 0.56,
+     "AR_wing": 7.55,
+     "h": 0.4667,
+     "motor_y": 0.66,
+     "prop_gap": 0.7048,
+     "prop_to_pod": 0.4907,
+     "prop_beyond_tip": 0.0193,
+     "elevon_y_in": 0.5457,
+     "elevon_span_side": 0.2093
+    }
+   ]
+  },
+  "masses": {
+   "index": [
+    "propulsion",
+    "structure",
+    "systems",
+    "payload",
+    "margin"
+   ],
+   "columns": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "rows": [
+    {
+     "_index": "propulsion",
+     "X-A (the biplane's wing area)": 0.736,
+     "X-B (twice the wing area)": 0.736
+    },
+    {
+     "_index": "structure",
+     "X-A (the biplane's wing area)": 0.4784,
+     "X-B (twice the wing area)": 0.7688
+    },
+    {
+     "_index": "systems",
+     "X-A (the biplane's wing area)": 0.208,
+     "X-B (twice the wing area)": 0.208
+    },
+    {
+     "_index": "payload",
+     "X-A (the biplane's wing area)": 0.105,
+     "X-B (twice the wing area)": 0.105
+    },
+    {
+     "_index": "margin",
+     "X-A (the biplane's wing area)": 0.06,
+     "X-B (twice the wing area)": 0.06
+    }
+   ]
+  },
+  "spars": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "n",
+    "panel lift [N]",
+    "root moment [N·m]",
+    "spar OD [mm]",
+    "spar stress [MPa]",
+    "spar reserve",
+    "tip deflection [mm]",
+    "tip deflection / length",
+    "first bending, with the tip motor [Hz]",
+    "spar mass per panel [g]",
+    "sized by"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "n": 4.0,
+     "panel lift [N]": 22.02,
+     "root moment [N·m]": 2.311,
+     "spar OD [mm]": 9.0,
+     "spar stress [MPa]": 50.93,
+     "spar reserve": 7.854,
+     "tip deflection [mm]": 10.28,
+     "tip deflection / length": 0.02056,
+     "first bending, with the tip motor [Hz]": 12.32,
+     "spar mass per panel [g]": 19.48,
+     "sized by": "first mode"
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "n": 4.0,
+     "panel lift [N]": 26.04,
+     "root moment [N·m]": 3.492,
+     "spar OD [mm]": 13.5,
+     "spar stress [MPa]": 30.53,
+     "spar reserve": 13.1,
+     "tip deflection [mm]": 9.229,
+     "tip deflection / length": 0.01318,
+     "first bending, with the tip motor [Hz]": 12.26,
+     "spar mass per panel [g]": 42.61,
+     "sized by": "first mode"
+    }
+   ]
+  },
+  "hold point": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "CLα vertical [1/rad]",
+    "CLα / the biplane's",
+    "induced k",
+    "e (projected span)",
+    "AR projected",
+    "x_np [mm]",
+    "Cd0",
+    "CdA [cm²]"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "CLα vertical [1/rad]": 2.072,
+     "CLα / the biplane's": 0.4775,
+     "induced k": 0.1186,
+     "e (projected span)": 1.22,
+     "AR projected": 2.2,
+     "x_np [mm]": 235.0,
+     "Cd0": 0.03441,
+     "CdA [cm²]": 96.35
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "CLα vertical [1/rad]": 2.082,
+     "CLα / the biplane's": 0.4798,
+     "induced k": 0.1165,
+     "e (projected span)": 1.342,
+     "AR projected": 2.036,
+     "x_np [mm]": 250.0,
+     "Cd0": 0.03032,
+     "CdA [cm²]": 169.8
+    }
+   ]
+  },
+  "aerodynamics": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "CLa",
+    "k",
+    "e",
+    "AR_projected",
+    "S",
+    "x_np",
+    "CLa_flat_estimate"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "CLa": 2.072,
+     "k": 0.1186,
+     "e": 1.22,
+     "AR_projected": 2.2,
+     "S": 0.28,
+     "x_np": 0.235,
+     "CLa_flat_estimate": null
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "CLa": 2.082,
+     "k": 0.1165,
+     "e": 1.342,
+     "AR_projected": 2.036,
+     "S": 0.56,
+     "x_np": 0.25,
+     "CLa_flat_estimate": null
+    }
+   ]
+  },
+  "cruise tables": {
+   "X-A (the biplane's wing area)": {
+    "index": [
+     12.0,
+     16.0,
+     20.0
+    ],
+    "columns": [
+     "CL vertical",
+     "panel cl",
+     "feasible",
+     "note",
+     "α [deg]",
+     "L/D",
+     "drag [N]",
+     "upper rotor [N]",
+     "lower rotor [N]",
+     "trim by thrust",
+     "electrical [W]",
+     "endurance [min]",
+     "range [km]"
+    ],
+    "rows": [
+     {
+      "_index": 12.0,
+      "CL vertical": 0.6303,
+      "panel cl": 0.8914,
+      "feasible": false,
+      "note": "the panels stall",
+      "α [deg]": null,
+      "L/D": null,
+      "drag [N]": null,
+      "upper rotor [N]": null,
+      "lower rotor [N]": null,
+      "trim by thrust": null,
+      "electrical [W]": null,
+      "endurance [min]": null,
+      "range [km]": null
+     },
+     {
+      "_index": 16.0,
+      "CL vertical": 0.3546,
+      "panel cl": 0.5014,
+      "feasible": true,
+      "note": "",
+      "α [deg]": 9.805,
+      "L/D": 6.955,
+      "drag [N]": 2.238,
+      "upper rotor [N]": 0.3125,
+      "lower rotor [N]": 0.8066,
+      "trim by thrust": true,
+      "electrical [W]": 82.37,
+      "endurance [min]": 28.46,
+      "range [km]": 27.32
+     },
+     {
+      "_index": 20.0,
+      "CL vertical": 0.2269,
+      "panel cl": 0.3209,
+      "feasible": true,
+      "note": "",
+      "α [deg]": 6.275,
+      "L/D": 5.508,
+      "drag [N]": 2.826,
+      "upper rotor [N]": 0.4606,
+      "lower rotor [N]": 0.9525,
+      "trim by thrust": true,
+      "electrical [W]": 127.7,
+      "endurance [min]": 18.35,
+      "range [km]": 22.02
+     }
+    ]
+   },
+   "X-B (twice the wing area)": {
+    "index": [
+     12.0,
+     16.0,
+     20.0
+    ],
+    "columns": [
+     "CL vertical",
+     "panel cl",
+     "feasible",
+     "note",
+     "α [deg]",
+     "L/D",
+     "drag [N]",
+     "upper rotor [N]",
+     "lower rotor [N]",
+     "trim by thrust",
+     "electrical [W]",
+     "endurance [min]",
+     "range [km]"
+    ],
+    "rows": [
+     {
+      "_index": 12.0,
+      "CL vertical": 0.3728,
+      "panel cl": 0.5273,
+      "feasible": true,
+      "note": "",
+      "α [deg]": 10.26,
+      "L/D": 7.717,
+      "drag [N]": 2.386,
+      "upper rotor [N]": 0.3033,
+      "lower rotor [N]": 0.8899,
+      "trim by thrust": true,
+      "electrical [W]": 66.1,
+      "endurance [min]": 35.47,
+      "range [km]": 25.54
+     },
+     {
+      "_index": 16.0,
+      "CL vertical": 0.2097,
+      "panel cl": 0.2966,
+      "feasible": true,
+      "note": "",
+      "α [deg]": 5.772,
+      "L/D": 5.823,
+      "drag [N]": 3.162,
+      "upper rotor [N]": 0.4982,
+      "lower rotor [N]": 1.083,
+      "trim by thrust": true,
+      "electrical [W]": 107.8,
+      "endurance [min]": 21.76,
+      "range [km]": 20.89
+     },
+     {
+      "_index": 20.0,
+      "CL vertical": 0.1342,
+      "panel cl": 0.1898,
+      "feasible": true,
+      "note": "",
+      "α [deg]": 3.694,
+      "L/D": 4.111,
+      "drag [N]": 4.48,
+      "upper rotor [N]": 0.829,
+      "lower rotor [N]": 1.411,
+      "trim by thrust": true,
+      "electrical [W]": 174.9,
+      "endurance [min]": 13.4,
+      "range [km]": 16.08
+     }
+    ]
+   }
+  },
+  "section (Zephyr)": {
+   "index": [
+    "X-A (0012, panels)",
+    "X-B (0012, panels)",
+    "Kestrel-4Q (0012)",
+    "Kestrel-4Q-2 (NACA 23112 (k2/k1 0.03))"
+   ],
+   "columns": [
+    "section cl",
+    "section cd",
+    "trim elevon [deg]",
+    "Δcd of the trim",
+    "cd with the trim",
+    "section L/D (trimmed)",
+    "cl max",
+    "margin to stall",
+    "cl lost to the elevon"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (0012, panels)",
+     "section cl": 0.5014,
+     "section cd": 0.01333,
+     "trim elevon [deg]": -10.18,
+     "Δcd of the trim": 0.008899,
+     "cd with the trim": 0.02223,
+     "section L/D (trimmed)": 22.56,
+     "cl max": 1.06,
+     "margin to stall": 2.115,
+     "cl lost to the elevon": -0.5826
+    },
+    {
+     "_index": "X-B (0012, panels)",
+     "section cl": 0.2966,
+     "section cd": 0.01192,
+     "trim elevon [deg]": -6.139,
+     "Δcd of the trim": 0.003722,
+     "cd with the trim": 0.01564,
+     "section L/D (trimmed)": 18.96,
+     "cl max": 1.06,
+     "margin to stall": 3.575,
+     "cl lost to the elevon": -0.3514
+    },
+    {
+     "_index": "Kestrel-4Q (0012)",
+     "section cl": 0.38,
+     "section cd": 0.01244,
+     "trim elevon [deg]": -5.494,
+     "Δcd of the trim": 0.002915,
+     "cd with the trim": 0.01536,
+     "section L/D (trimmed)": 24.74,
+     "cl max": 1.06,
+     "margin to stall": 2.79,
+     "cl lost to the elevon": -0.3144
+    },
+    {
+     "_index": "Kestrel-4Q-2 (NACA 23112 (k2/k1 0.03))",
+     "section cl": 0.38,
+     "section cd": 0.01573,
+     "trim elevon [deg]": -0.3554,
+     "Δcd of the trim": 0.0002789,
+     "cd with the trim": 0.01601,
+     "section L/D (trimmed)": 23.74,
+     "cl max": 1.148,
+     "margin to stall": 3.021,
+     "cl lost to the elevon": -0.02111
+    }
+   ]
+  },
+  "capsule": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "pod section inside the walls [mm]",
+    "capsule fits the section",
+    "wall left beside the capsule [mm]",
+    "length needed in line [mm]",
+    "pod length [mm]",
+    "fits in line"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "pod section inside the walls [mm]": 98.0,
+     "capsule fits the section": true,
+     "wall left beside the capsule [mm]": 13.0,
+     "length needed in line [mm]": 462.0,
+     "pod length [mm]": 430.0,
+     "fits in line": false
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "pod section inside the walls [mm]": 98.0,
+     "capsule fits the section": true,
+     "wall left beside the capsule [mm]": 13.0,
+     "length needed in line [mm]": 462.0,
+     "pod length [mm]": 430.0,
+     "fits in line": false
+    }
+   ]
+  },
+  "standing on the tips": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)"
+   ],
+   "columns": [
+    "CG height above the ground [m]",
+    "least tip-over angle [deg]",
+    "footprint half-width [m]",
+    "wind that tips it [m/s]"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "CG height above the ground [m]": 0.226,
+     "least tip-over angle [deg]": 60.06,
+     "footprint half-width [m]": 0.3924,
+     "wind that tips it [m/s]": 16.41
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "CG height above the ground [m]": 0.28,
+     "least tip-over angle [deg]": 62.32,
+     "footprint half-width [m]": 0.5339,
+     "wind that tips it [m/s]": 13.57
+    }
+   ]
+  },
+  "transitions": {
+   "index": [
+    "X-A (the biplane's wing area) · forward · 1.5 · 0.0",
+    "X-A (the biplane's wing area) · forward · 1.5 · 6.0",
+    "X-A (the biplane's wing area) · forward · 3.0 · 0.0",
+    "X-A (the biplane's wing area) · forward · 3.0 · 6.0",
+    "X-A (the biplane's wing area) · forward · 5.0 · 0.0",
+    "X-A (the biplane's wing area) · forward · 5.0 · 6.0",
+    "X-A (the biplane's wing area) · back · 1.5 · 0.0",
+    "X-A (the biplane's wing area) · back · 1.5 · 6.0",
+    "X-A (the biplane's wing area) · back · 3.0 · 0.0",
+    "X-A (the biplane's wing area) · back · 3.0 · 6.0",
+    "X-A (the biplane's wing area) · back · 5.0 · 0.0",
+    "X-A (the biplane's wing area) · back · 5.0 · 6.0",
+    "X-B (twice the wing area) · forward · 1.5 · 0.0",
+    "X-B (twice the wing area) · forward · 1.5 · 6.0",
+    "X-B (twice the wing area) · forward · 3.0 · 0.0",
+    "X-B (twice the wing area) · forward · 3.0 · 6.0",
+    "X-B (twice the wing area) · forward · 5.0 · 0.0",
+    "X-B (twice the wing area) · forward · 5.0 · 6.0",
+    "X-B (twice the wing area) · back · 1.5 · 0.0",
+    "X-B (twice the wing area) · back · 1.5 · 6.0",
+    "X-B (twice the wing area) · back · 3.0 · 0.0",
+    "X-B (twice the wing area) · back · 3.0 · 6.0",
+    "X-B (twice the wing area) · back · 5.0 · 0.0",
+    "X-B (twice the wing area) · back · 5.0 · 6.0"
+   ],
+   "columns": [
+    "height loss [m]",
+    "height gain [m]",
+    "pitch error max [deg]",
+    "time stalled, free stream [s]",
+    "α blown max while stalled [deg]",
+    "moment shortfall [s]",
+    "least pitch margin",
+    "peak rotor thrust / T_max",
+    "elevon max [deg]",
+    "roll demand / authority",
+    "roll demand / rotors' authority",
+    "pass"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 1.5 · 0.0",
+     "height loss [m]": 4.169,
+     "height gain [m]": -5.799e-05,
+     "pitch error max [deg]": 6.89,
+     "time stalled, free stream [s]": 0.4,
+     "α blown max while stalled [deg]": 4.842,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8413,
+     "peak rotor thrust / T_max": 1.0,
+     "elevon max [deg]": 4.026,
+     "roll demand / authority": 0.2002,
+     "roll demand / rotors' authority": 1.626,
+     "pass": false
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 1.5 · 6.0",
+     "height loss [m]": 0.6988,
+     "height gain [m]": -4.14e-05,
+     "pitch error max [deg]": 5.636,
+     "time stalled, free stream [s]": 1.16,
+     "α blown max while stalled [deg]": 18.87,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8657,
+     "peak rotor thrust / T_max": 1.0,
+     "elevon max [deg]": 3.395,
+     "roll demand / authority": 0.1091,
+     "roll demand / rotors' authority": 1.928,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 3.0 · 0.0",
+     "height loss [m]": 0.2231,
+     "height gain [m]": 0.1286,
+     "pitch error max [deg]": 2.616,
+     "time stalled, free stream [s]": 1.22,
+     "α blown max while stalled [deg]": 8.564,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.9282,
+     "peak rotor thrust / T_max": 0.5329,
+     "elevon max [deg]": 1.82,
+     "roll demand / authority": 0.1089,
+     "roll demand / rotors' authority": 2.112,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 3.0 · 6.0",
+     "height loss [m]": 0.5761,
+     "height gain [m]": -4.14e-05,
+     "pitch error max [deg]": 2.386,
+     "time stalled, free stream [s]": 2.5,
+     "α blown max while stalled [deg]": 18.98,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.9514,
+     "peak rotor thrust / T_max": 0.5884,
+     "elevon max [deg]": 1.228,
+     "roll demand / authority": 0.1108,
+     "roll demand / rotors' authority": 2.581,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 5.0 · 0.0",
+     "height loss [m]": 1.153,
+     "height gain [m]": 0.1233,
+     "pitch error max [deg]": 1.533,
+     "time stalled, free stream [s]": 2.58,
+     "α blown max while stalled [deg]": 13.94,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.9194,
+     "peak rotor thrust / T_max": 0.5134,
+     "elevon max [deg]": 2.03,
+     "roll demand / authority": 0.1103,
+     "roll demand / rotors' authority": 2.553,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · forward · 5.0 · 6.0",
+     "height loss [m]": 1.641,
+     "height gain [m]": -4.14e-05,
+     "pitch error max [deg]": 1.441,
+     "time stalled, free stream [s]": 4.12,
+     "α blown max while stalled [deg]": 19.01,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8712,
+     "peak rotor thrust / T_max": 0.5761,
+     "elevon max [deg]": 3.234,
+     "roll demand / authority": 0.08203,
+     "roll demand / rotors' authority": 2.594,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 1.5 · 0.0",
+     "height loss [m]": 0.6287,
+     "height gain [m]": 3.979e-05,
+     "pitch error max [deg]": 5.299,
+     "time stalled, free stream [s]": 0.88,
+     "α blown max while stalled [deg]": 61.66,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8431,
+     "peak rotor thrust / T_max": 0.4807,
+     "elevon max [deg]": 3.762,
+     "roll demand / authority": 0.6842,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 1.5 · 6.0",
+     "height loss [m]": 0.6287,
+     "height gain [m]": 0.1517,
+     "pitch error max [deg]": 5.299,
+     "time stalled, free stream [s]": 0.88,
+     "α blown max while stalled [deg]": 61.66,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8278,
+     "peak rotor thrust / T_max": 0.464,
+     "elevon max [deg]": 4.163,
+     "roll demand / authority": 0.6842,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 3.0 · 0.0",
+     "height loss [m]": 1.321,
+     "height gain [m]": 0.1098,
+     "pitch error max [deg]": 2.428,
+     "time stalled, free stream [s]": 1.92,
+     "α blown max while stalled [deg]": 42.16,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8131,
+     "peak rotor thrust / T_max": 0.4578,
+     "elevon max [deg]": 4.525,
+     "roll demand / authority": 0.615,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 3.0 · 6.0",
+     "height loss [m]": 1.321,
+     "height gain [m]": 0.3676,
+     "pitch error max [deg]": 2.428,
+     "time stalled, free stream [s]": 1.92,
+     "α blown max while stalled [deg]": 42.16,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8598,
+     "peak rotor thrust / T_max": 0.407,
+     "elevon max [deg]": 3.37,
+     "roll demand / authority": 0.615,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 5.0 · 0.0",
+     "height loss [m]": 1.851,
+     "height gain [m]": 0.3693,
+     "pitch error max [deg]": 1.077,
+     "time stalled, free stream [s]": 4.52,
+     "α blown max while stalled [deg]": 33.79,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7976,
+     "peak rotor thrust / T_max": 0.4264,
+     "elevon max [deg]": 4.926,
+     "roll demand / authority": 0.2651,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A (the biplane's wing area) · back · 5.0 · 6.0",
+     "height loss [m]": 1.851,
+     "height gain [m]": 0.6551,
+     "pitch error max [deg]": 1.077,
+     "time stalled, free stream [s]": 4.52,
+     "α blown max while stalled [deg]": 33.79,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8393,
+     "peak rotor thrust / T_max": 0.4025,
+     "elevon max [deg]": 4.148,
+     "roll demand / authority": 0.2651,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 1.5 · 0.0",
+     "height loss [m]": 0.6841,
+     "height gain [m]": -7.589e-05,
+     "pitch error max [deg]": 7.259,
+     "time stalled, free stream [s]": 0.34,
+     "α blown max while stalled [deg]": 4.035,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.5114,
+     "peak rotor thrust / T_max": 1.0,
+     "elevon max [deg]": 12.26,
+     "roll demand / authority": 0.2039,
+     "roll demand / rotors' authority": 6.403,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 1.5 · 6.0",
+     "height loss [m]": 0.6587,
+     "height gain [m]": -5.626e-05,
+     "pitch error max [deg]": 5.762,
+     "time stalled, free stream [s]": 1.22,
+     "α blown max while stalled [deg]": 16.62,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.5819,
+     "peak rotor thrust / T_max": 1.0,
+     "elevon max [deg]": 10.49,
+     "roll demand / authority": 0.2031,
+     "roll demand / rotors' authority": 7.007,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 3.0 · 0.0",
+     "height loss [m]": 0.3188,
+     "height gain [m]": 0.08805,
+     "pitch error max [deg]": 2.596,
+     "time stalled, free stream [s]": 1.12,
+     "α blown max while stalled [deg]": 7.375,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.777,
+     "peak rotor thrust / T_max": 0.7092,
+     "elevon max [deg]": 5.599,
+     "roll demand / authority": 0.1839,
+     "roll demand / rotors' authority": 7.205,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 3.0 · 6.0",
+     "height loss [m]": 0.7582,
+     "height gain [m]": -5.626e-05,
+     "pitch error max [deg]": 2.187,
+     "time stalled, free stream [s]": 2.5,
+     "α blown max while stalled [deg]": 16.62,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7906,
+     "peak rotor thrust / T_max": 0.8302,
+     "elevon max [deg]": 5.244,
+     "roll demand / authority": 0.08966,
+     "roll demand / rotors' authority": 4.174,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 5.0 · 0.0",
+     "height loss [m]": 1.441,
+     "height gain [m]": 0.1392,
+     "pitch error max [deg]": 1.491,
+     "time stalled, free stream [s]": 2.44,
+     "α blown max while stalled [deg]": 12.28,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8159,
+     "peak rotor thrust / T_max": 0.8247,
+     "elevon max [deg]": 4.611,
+     "roll demand / authority": 0.1108,
+     "roll demand / rotors' authority": 5.561,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · forward · 5.0 · 6.0",
+     "height loss [m]": 2.142,
+     "height gain [m]": -5.626e-05,
+     "pitch error max [deg]": 1.699,
+     "time stalled, free stream [s]": 4.26,
+     "α blown max while stalled [deg]": 16.62,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8248,
+     "peak rotor thrust / T_max": 1.0,
+     "elevon max [deg]": 4.389,
+     "roll demand / authority": 0.1271,
+     "roll demand / rotors' authority": 6.027,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 1.5 · 0.0",
+     "height loss [m]": 0.2701,
+     "height gain [m]": 1.21,
+     "pitch error max [deg]": 5.378,
+     "time stalled, free stream [s]": 0.84,
+     "α blown max while stalled [deg]": 70.41,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7781,
+     "peak rotor thrust / T_max": 0.5675,
+     "elevon max [deg]": 5.441,
+     "roll demand / authority": 0.9896,
+     "roll demand / rotors' authority": 7.969,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 1.5 · 6.0",
+     "height loss [m]": 0.06011,
+     "height gain [m]": 1.21,
+     "pitch error max [deg]": 5.378,
+     "time stalled, free stream [s]": 0.84,
+     "α blown max while stalled [deg]": 70.41,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.847,
+     "peak rotor thrust / T_max": 0.4298,
+     "elevon max [deg]": 3.833,
+     "roll demand / authority": 0.9896,
+     "roll demand / rotors' authority": 7.969,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 3.0 · 0.0",
+     "height loss [m]": 0.5749,
+     "height gain [m]": 2.848,
+     "pitch error max [deg]": 2.689,
+     "time stalled, free stream [s]": 1.36,
+     "α blown max while stalled [deg]": 67.07,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.6886,
+     "peak rotor thrust / T_max": 0.5421,
+     "elevon max [deg]": 7.691,
+     "roll demand / authority": 0.8863,
+     "roll demand / rotors' authority": 7.196,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 3.0 · 6.0",
+     "height loss [m]": 0.1079,
+     "height gain [m]": 2.848,
+     "pitch error max [deg]": 2.689,
+     "time stalled, free stream [s]": 1.36,
+     "α blown max while stalled [deg]": 67.07,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7522,
+     "peak rotor thrust / T_max": 0.4885,
+     "elevon max [deg]": 6.284,
+     "roll demand / authority": 0.8863,
+     "roll demand / rotors' authority": 7.196,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 5.0 · 0.0",
+     "height loss [m]": 0.8828,
+     "height gain [m]": 3.724,
+     "pitch error max [deg]": 1.198,
+     "time stalled, free stream [s]": 1.7,
+     "α blown max while stalled [deg]": 57.29,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7777,
+     "peak rotor thrust / T_max": 0.5023,
+     "elevon max [deg]": 5.462,
+     "roll demand / authority": 0.7237,
+     "roll demand / rotors' authority": 6.688,
+     "pass": true
+    },
+    {
+     "_index": "X-B (twice the wing area) · back · 5.0 · 6.0",
+     "height loss [m]": 0.3875,
+     "height gain [m]": 3.724,
+     "pitch error max [deg]": 1.198,
+     "time stalled, free stream [s]": 1.7,
+     "α blown max while stalled [deg]": 57.29,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.7778,
+     "peak rotor thrust / T_max": 0.534,
+     "elevon max [deg]": 5.655,
+     "roll demand / authority": 0.7237,
+     "roll demand / rotors' authority": 6.688,
+     "pass": true
+    }
+   ]
+  },
+  "verdict": {
+   "X-A (the biplane's wing area)": {
+    "passes": 11,
+    "of": 12,
+    "failures": [
+     "forward 1.5 s, headwind 0 m/s: fails holds height"
+    ]
+   },
+   "X-B (twice the wing area)": {
+    "passes": 12,
+    "of": 12,
+    "failures": []
+   }
+  },
+  "back entry speeds": {
+   "index": [
+    "X-A, back entered at 16 m/s",
+    "X-A, back entered at 13 m/s",
+    "X-A, back entered at 11 m/s",
+    "X-B, back entered at 16 m/s",
+    "X-B, back entered at 13 m/s",
+    "X-B, back entered at 11 m/s"
+   ],
+   "columns": [
+    "height loss [m]",
+    "height gain [m]",
+    "pitch error max [deg]",
+    "time stalled, free stream [s]",
+    "α blown max while stalled [deg]",
+    "moment shortfall [s]",
+    "least pitch margin",
+    "peak rotor thrust / T_max",
+    "elevon max [deg]",
+    "roll demand / authority",
+    "roll demand / rotors' authority",
+    "pass"
+   ],
+   "rows": [
+    {
+     "_index": "X-A, back entered at 16 m/s",
+     "height loss [m]": 1.321,
+     "height gain [m]": 0.1098,
+     "pitch error max [deg]": 2.428,
+     "time stalled, free stream [s]": 1.92,
+     "α blown max while stalled [deg]": 42.16,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8131,
+     "peak rotor thrust / T_max": 0.4578,
+     "elevon max [deg]": 4.525,
+     "roll demand / authority": 0.615,
+     "roll demand / rotors' authority": 2.1,
+     "pass": true
+    },
+    {
+     "_index": "X-A, back entered at 13 m/s",
+     "height loss [m]": 2.89,
+     "height gain [m]": 0.5655,
+     "pitch error max [deg]": 2.319,
+     "time stalled, free stream [s]": 3.0,
+     "α blown max while stalled [deg]": 37.79,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8087,
+     "peak rotor thrust / T_max": 0.4505,
+     "elevon max [deg]": 4.64,
+     "roll demand / authority": 0.2767,
+     "roll demand / rotors' authority": 1.546,
+     "pass": true
+    },
+    {
+     "_index": "X-A, back entered at 11 m/s",
+     "height loss [m]": 2.93,
+     "height gain [m]": 0.6114,
+     "pitch error max [deg]": 2.223,
+     "time stalled, free stream [s]": 3.0,
+     "α blown max while stalled [deg]": 37.2,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.8042,
+     "peak rotor thrust / T_max": 0.6941,
+     "elevon max [deg]": 4.752,
+     "roll demand / authority": 0.2734,
+     "roll demand / rotors' authority": 1.523,
+     "pass": true
+    },
+    {
+     "_index": "X-B, back entered at 16 m/s",
+     "height loss [m]": 0.5749,
+     "height gain [m]": 2.848,
+     "pitch error max [deg]": 2.689,
+     "time stalled, free stream [s]": 1.36,
+     "α blown max while stalled [deg]": 67.07,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.6886,
+     "peak rotor thrust / T_max": 0.5421,
+     "elevon max [deg]": 7.691,
+     "roll demand / authority": 0.8863,
+     "roll demand / rotors' authority": 7.196,
+     "pass": true
+    },
+    {
+     "_index": "X-B, back entered at 13 m/s",
+     "height loss [m]": 1.18,
+     "height gain [m]": 0.09328,
+     "pitch error max [deg]": 2.587,
+     "time stalled, free stream [s]": 1.72,
+     "α blown max while stalled [deg]": 45.18,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.6889,
+     "peak rotor thrust / T_max": 0.551,
+     "elevon max [deg]": 7.68,
+     "roll demand / authority": 0.9005,
+     "roll demand / rotors' authority": 4.886,
+     "pass": true
+    },
+    {
+     "_index": "X-B, back entered at 11 m/s",
+     "height loss [m]": 2.773,
+     "height gain [m]": 0.4957,
+     "pitch error max [deg]": 2.521,
+     "time stalled, free stream [s]": 3.0,
+     "α blown max while stalled [deg]": 29.88,
+     "moment shortfall [s]": 0.0,
+     "least pitch margin": 0.6807,
+     "peak rotor thrust / T_max": 0.5587,
+     "elevon max [deg]": 7.885,
+     "roll demand / authority": 0.2921,
+     "roll demand / rotors' authority": 3.446,
+     "pass": true
+    }
+   ]
+  },
+  "against Kestrel-4Q (notebook 43)": {
+   "index": [
+    "X-A (the biplane's wing area)",
+    "X-B (twice the wing area)",
+    "Kestrel-4Q-1",
+    "Kestrel-4Q-2",
+    "Kestrel-4Q-3"
+   ],
+   "columns": [
+    "mass [kg]",
+    "wing area [m²]",
+    "projected span [m]",
+    "CLα vertical",
+    "induced k",
+    "Cd0",
+    "CdA [cm²]",
+    "α at 16 m/s [deg]",
+    "panel cl at 16 m/s",
+    "power at 16 m/s [W]",
+    "endurance best [min]",
+    "at [m/s]",
+    "hover pitch [rad/s²]",
+    "hover heading [rad/s²]",
+    "spar OD [mm]",
+    "tip-over [deg]",
+    "wind that tips it [m/s]",
+    "transitions passed",
+    "bracing"
+   ],
+   "rows": [
+    {
+     "_index": "X-A (the biplane's wing area)",
+     "mass [kg]": 1.587,
+     "wing area [m²]": 0.28,
+     "projected span [m]": 0.7849,
+     "CLα vertical": 2.072,
+     "induced k": 0.1186,
+     "Cd0": 0.03441,
+     "CdA [cm²]": 96.35,
+     "α at 16 m/s [deg]": 9.805,
+     "panel cl at 16 m/s": 0.5014,
+     "power at 16 m/s [W]": 82.37,
+     "endurance best [min]": 31.18,
+     "at [m/s]": 15.0,
+     "hover pitch [rad/s²]": 67.0,
+     "hover heading [rad/s²]": 1.811,
+     "spar OD [mm]": 9.0,
+     "tip-over [deg]": 60.06,
+     "wind that tips it [m/s]": 16.41,
+     "transitions passed": "11 of 12",
+     "bracing": "none"
+    },
+    {
+     "_index": "X-B (twice the wing area)",
+     "mass [kg]": 1.878,
+     "wing area [m²]": 0.56,
+     "projected span [m]": 1.068,
+     "CLα vertical": 2.082,
+     "induced k": 0.1165,
+     "Cd0": 0.03032,
+     "CdA [cm²]": 169.8,
+     "α at 16 m/s [deg]": 5.772,
+     "panel cl at 16 m/s": 0.2966,
+     "power at 16 m/s [W]": 107.8,
+     "endurance best [min]": 35.47,
+     "at [m/s]": 12.0,
+     "hover pitch [rad/s²]": 50.56,
+     "hover heading [rad/s²]": 0.9162,
+     "spar OD [mm]": 13.5,
+     "tip-over [deg]": 62.32,
+     "wind that tips it [m/s]": 13.57,
+     "transitions passed": "12 of 12",
+     "bracing": "none"
+    },
+    {
+     "_index": "Kestrel-4Q-1",
+     "mass [kg]": 1.686,
+     "wing area [m²]": 0.28,
+     "projected span [m]": 1.0,
+     "CLα vertical": 4.339,
+     "induced k": 0.05268,
+     "Cd0": 0.06655,
+     "CdA [cm²]": 186.3,
+     "α at 16 m/s [deg]": null,
+     "panel cl at 16 m/s": null,
+     "power at 16 m/s [W]": 110.2,
+     "endurance best [min]": 40.19,
+     "at [m/s]": null,
+     "hover pitch [rad/s²]": null,
+     "hover heading [rad/s²]": null,
+     "spar OD [mm]": null,
+     "tip-over [deg]": null,
+     "wind that tips it [m/s]": null,
+     "transitions passed": "3 of 3",
+     "bracing": "x, round"
+    },
+    {
+     "_index": "Kestrel-4Q-2",
+     "mass [kg]": 1.651,
+     "wing area [m²]": 0.28,
+     "projected span [m]": 1.0,
+     "CLα vertical": 4.339,
+     "induced k": 0.05268,
+     "Cd0": 0.02574,
+     "CdA [cm²]": 72.07,
+     "α at 16 m/s [deg]": null,
+     "panel cl at 16 m/s": null,
+     "power at 16 m/s [W]": 59.12,
+     "endurance best [min]": 57.04,
+     "at [m/s]": null,
+     "hover pitch [rad/s²]": 88.38,
+     "hover heading [rad/s²]": 2.094,
+     "spar OD [mm]": null,
+     "tip-over [deg]": 39.38,
+     "wind that tips it [m/s]": 8.811,
+     "transitions passed": "5 of 7",
+     "bracing": "posts, faired"
+    },
+    {
+     "_index": "Kestrel-4Q-3",
+     "mass [kg]": 1.651,
+     "wing area [m²]": 0.28,
+     "projected span [m]": 1.0,
+     "CLα vertical": 4.339,
+     "induced k": 0.05268,
+     "Cd0": 0.02574,
+     "CdA [cm²]": 72.07,
+     "α at 16 m/s [deg]": null,
+     "panel cl at 16 m/s": null,
+     "power at 16 m/s [W]": 59.33,
+     "endurance best [min]": 56.82,
+     "at [m/s]": null,
+     "hover pitch [rad/s²]": null,
+     "hover heading [rad/s²]": null,
+     "spar OD [mm]": null,
+     "tip-over [deg]": null,
+     "wind that tips it [m/s]": null,
+     "transitions passed": "3 of 5",
+     "bracing": "posts, faired"
+    }
+   ]
+  },
+  "drag vs speed, all four": {
+   "index": [
+    "Kestrel-4Q-1 (round struts, X, no elevons)",
+    "Kestrel-4Q-2 (elevons, faired posts, no X)",
+    "X-A",
+    "X-B"
+   ],
+   "columns": [
+    "V stall [m/s]",
+    "V of least drag [m/s]",
+    "least drag [N]",
+    "best L/D",
+    "drag at 16 m/s [N]",
+    "parasite at 16 [N]",
+    "induced at 16 [N]",
+    "power at 16 m/s [W]",
+    "least power [W]",
+    "V of least power [m/s]",
+    "V max, thrust = drag [m/s]",
+    "full thrust at 16 m/s [N]",
+    "thrust / drag at 16 m/s",
+    "power at V max [W]"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1 (round struts, X, no elevons)",
+     "V stall [m/s]": 10.91,
+     "V of least drag [m/s]": 11.0,
+     "least drag [N]": 2.152,
+     "best L/D": 7.683,
+     "drag at 16 m/s [N]": 3.286,
+     "parasite at 16 [N]": 2.922,
+     "induced at 16 [N]": 0.3645,
+     "power at 16 m/s [W]": 110.3,
+     "least power [W]": 59.83,
+     "V of least power [m/s]": 11.0,
+     "V max, thrust = drag [m/s]": 30.1,
+     "full thrust at 16 m/s [N]": 32.42,
+     "thrust / drag at 16 m/s": 9.865,
+     "power at V max [W]": 642.4
+    },
+    {
+     "_index": "Kestrel-4Q-2 (elevons, faired posts, no X)",
+     "V stall [m/s]": 10.8,
+     "V of least drag [m/s]": 12.0,
+     "least drag [N]": 1.2,
+     "best L/D": 13.49,
+     "drag at 16 m/s [N]": 1.378,
+     "parasite at 16 [N]": 1.029,
+     "induced at 16 [N]": 0.3495,
+     "power at 16 m/s [W]": 60.15,
+     "least power [W]": 40.08,
+     "V of least power [m/s]": 11.0,
+     "V max, thrust = drag [m/s]": 33.5,
+     "full thrust at 16 m/s [N]": 32.42,
+     "thrust / drag at 16 m/s": 23.52,
+     "power at V max [W]": 1493.0
+    },
+    {
+     "_index": "X-A",
+     "V stall [m/s]": 12.59,
+     "V of least drag [m/s]": 13.5,
+     "least drag [N]": 2.097,
+     "best L/D": 7.423,
+     "drag at 16 m/s [N]": 2.238,
+     "parasite at 16 [N]": 1.511,
+     "induced at 16 [N]": 0.7273,
+     "power at 16 m/s [W]": 86.77,
+     "least power [W]": 67.95,
+     "V of least power [m/s]": 13.0,
+     "V max, thrust = drag [m/s]": 32.48,
+     "full thrust at 16 m/s [N]": 32.42,
+     "thrust / drag at 16 m/s": 14.49,
+     "power at V max [W]": 1493.0
+    },
+    {
+     "_index": "X-B",
+     "V stall [m/s]": 9.682,
+     "V of least drag [m/s]": 10.5,
+     "least drag [N]": 2.307,
+     "best L/D": 7.981,
+     "drag at 16 m/s [N]": 3.162,
+     "parasite at 16 [N]": 2.662,
+     "induced at 16 [N]": 0.4999,
+     "power at 16 m/s [W]": 107.5,
+     "least power [W]": 58.27,
+     "V of least power [m/s]": 10.0,
+     "V max, thrust = drag [m/s]": 30.48,
+     "full thrust at 16 m/s [N]": 32.42,
+     "thrust / drag at 16 m/s": 10.25,
+     "power at V max [W]": 615.0
+    }
+   ]
+  },
+  "manoeuvrability at 16 m/s, all four": {
+   "index": [
+    "Kestrel-4Q-1 (round struts, X, no elevons)",
+    "Kestrel-4Q-2 (elevons, faired posts, no X)",
+    "X-A",
+    "X-B"
+   ],
+   "columns": [
+    "CL",
+    "thrust per rotor [N]",
+    "ΔT available [N]",
+    "pitch: rotors [rad/s²]",
+    "pitch: elevons [rad/s²]",
+    "pitch: total [rad/s²]",
+    "yaw: rotors [rad/s²]",
+    "roll: rotors' torque [N·m]",
+    "roll: elevons [N·m]",
+    "roll acceleration [rad/s²]",
+    "steady roll rate [deg/s]",
+    "load factor available",
+    "turn rate [deg/s]",
+    "turn radius [m]"
+   ],
+   "rows": [
+    {
+     "_index": "Kestrel-4Q-1 (round struts, X, no elevons)",
+     "CL": 0.3766,
+     "thrust per rotor [N]": 0.8216,
+     "ΔT available [N]": 0.5716,
+     "pitch: rotors [rad/s²]": 14.47,
+     "pitch: elevons [rad/s²]": 0.0,
+     "pitch: total [rad/s²]": 14.47,
+     "yaw: rotors [rad/s²]": 8.387,
+     "roll: rotors' torque [N·m]": 0.3941,
+     "roll: elevons [N·m]": 0.0,
+     "roll acceleration [rad/s²]": 3.707,
+     "steady roll rate [deg/s]": 22.75,
+     "load factor available": 2.151,
+     "turn rate [deg/s]": 66.86,
+     "turn radius [m]": 13.71
+    },
+    {
+     "_index": "Kestrel-4Q-2 (elevons, faired posts, no X)",
+     "CL": 0.3688,
+     "thrust per rotor [N]": 0.3445,
+     "ΔT available [N]": 0.09454,
+     "pitch: rotors [rad/s²]": 2.279,
+     "pitch: elevons [rad/s²]": 49.72,
+     "pitch: total [rad/s²]": 52.0,
+     "yaw: rotors [rad/s²]": 1.304,
+     "roll: rotors' torque [N·m]": 0.3941,
+     "roll: elevons [N·m]": 6.523,
+     "roll acceleration [rad/s²]": 61.16,
+     "steady roll rate [deg/s]": 399.4,
+     "load factor available": 2.196,
+     "turn rate [deg/s]": 68.67,
+     "turn radius [m]": 13.35
+    },
+    {
+     "_index": "X-A",
+     "CL": 0.3546,
+     "thrust per rotor [N]": 0.5595,
+     "ΔT available [N]": 0.3095,
+     "pitch: rotors [rad/s²]": 5.741,
+     "pitch: elevons [rad/s²]": 10.55,
+     "pitch: total [rad/s²]": 16.29,
+     "yaw: rotors [rad/s²]": 3.124,
+     "roll: rotors' torque [N·m]": 0.3941,
+     "roll: elevons [N·m]": 6.734,
+     "roll acceleration [rad/s²]": 55.3,
+     "steady roll rate [deg/s]": 349.8,
+     "load factor available": 1.615,
+     "turn rate [deg/s]": 44.55,
+     "turn radius [m]": 20.58
+    },
+    {
+     "_index": "X-B",
+     "CL": 0.2097,
+     "thrust per rotor [N]": 0.7906,
+     "ΔT available [N]": 0.5406,
+     "pitch: rotors [rad/s²]": 6.307,
+     "pitch: elevons [rad/s²]": 9.485,
+     "pitch: total [rad/s²]": 15.79,
+     "yaw: rotors [rad/s²]": 3.302,
+     "roll: rotors' torque [N·m]": 0.3941,
+     "roll: elevons [N·m]": 13.96,
+     "roll acceleration [rad/s²]": 46.97,
+     "steady roll rate [deg/s]": 189.4,
+     "load factor available": 2.731,
+     "turn rate [deg/s]": 89.25,
+     "turn radius [m]": 10.27
+    }
+   ]
+  }
+ }
+}

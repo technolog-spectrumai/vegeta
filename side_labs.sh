@@ -14,7 +14,7 @@ if [ ! -x "$VENV/bin/python" ]; then
 fi
 py="$VENV/bin/python"
 export VEGETA_ROOT="$PWD"
-export PYTHONPATH="$PWD/vegeta-cli/src:$PWD/vegeta-core/src:$PWD/vegeta-ai/src:$PWD/vegeta-fidia/src:$PWD/vegeta-yanus/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimesis/src:$PWD/vendor/ozaru/yanus/src:$PWD/side_labs:$PWD/designs${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD/vegeta-cli/src:$PWD/vegeta-core/src:$PWD/vegeta-ai/src:$PWD/vegeta-fidia/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimesis/src:$PWD/vendor/ozaru/yanus/src:$PWD/side_labs:$PWD/designs${PYTHONPATH:+:$PYTHONPATH}"
 
 if ! "$py" -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('PyQt6') else 1)"; then
   echo "Installing PyQt6 into $VENV (first use) ..."

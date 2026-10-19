@@ -116,14 +116,13 @@ step "Ozaru from vendor/ozaru ($(sed -n 's/^revision: //p' "$ROOT/vendor/OZARU_R
 "$PY" -m pip install --no-deps --no-build-isolation --no-index \
   -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimesis" -e "$ROOT/vendor/ozaru/yanus"
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
+step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test,sim,sections]" \
   mujoco \
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \
-  -e "$ROOT/vegeta-yanus[test,table]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 

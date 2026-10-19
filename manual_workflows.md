@@ -58,10 +58,7 @@ wf status <run>                          # one run: heartbeat, last log lines, a
 wf tail <run>                            # follow its run.log
 wf stop <run>                            # stop it cleanly (finished cases are kept)
 wf resume <run>                          # continue it
-wf notebook <run>                        # the yn pin command that makes a notebook read this run
 wf batch batch.yaml [--dry-run|--detach] # a batch of chapters from one file, in strict order (section 2b)
-yn status | yn why 43 | yn doctor         # Yanus: what is ready, what blocks a notebook and why, what this machine can run
-yn auto 43 --dry-run                     # what notebook 43 would run by itself (its yanus_auto flag, section 4)
 ```
 
 `<run>` is the run id (the directory name) or its path. `--detach` starts the script in its own session with its
@@ -94,8 +91,8 @@ which step). **Time and progress:** before it starts, the batch counts every ste
 on a step overrides it) and prints the finishing time; while it runs, one progress bar spans every case of the batch
 with the remaining time re-estimated as the cases come in (the GUI's status bar and `wf status <batch folder>` show
 the same from its `status.json`); at the end it prints the time taken against the estimate. `--dry-run` shows the
-estimate without starting anything. Results come back with `rsync -a cloud:vegeta/side_labs/runs/ side_labs/runs/` and the notebooks read
-them as any other run (`yn pin`, or the newest usable run by itself).
+estimate without starting anything. Results come back with `rsync -a cloud:vegeta/side_labs/runs/ side_labs/runs/` and each completed run
+publishes itself into the Porunga cache, where the notebooks find it by key.
 
 ## 3. Without a notebook: run a campaign and read the result
 
@@ -162,27 +159,16 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 ## 4. With the notebook
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
-2. The notebook reads, for every chapter and variant, the **newest successful run** on disk (completed and compatible
-   with the current design) unless one is in the Porunga cache under its key (`designs/kestrel_keys.py`; pins are gone); the table says which. A completed run publishes itself (`side_labs/runs/kestrel/airframe-sweep/<run id>`) — the
-   workflow prints the exact command when it finishes, `yn pin 43 --suggest` lists the usable runs on disk (it writes
-   nothing), and `yn why 43` shows the whole gate from the shell before you open the notebook. Which inputs are
-   required and which optional is the notebook's contract in `side_labs/flow.py` (`docs/yanus.md`).
-3. Run the notebook. The prerequisite table shows, for every input: required or optional, which run, where it came
-   from, whether it is compatible with the current design, and whether it is usable.
-   - A **required** input that is missing, unfinished, failed or made for another design stops the notebook with an
-     error that contains the command to run. Run it (section 2), pin the run directory it prints (`yn pin …`), run again.
-   - An **optional** input that is missing shows **NOT RUN** and the notebook's own estimate stands beside it,
+2. The notebook reads each side-lab result from the Porunga cache by its key (`designs/kestrel_keys.py`,
+   `docs/cache_identities.md`): a completed side-lab run publishes itself there, so there is nothing to pin. The
+   needs table at the top shows what this machine has.
+3. Run the notebook. Its input table shows, for every chapter and variant, whether the result is in the cache.
+   - A **required** result that is missing stops the notebook with the `wf` command that makes it. Run it
+     (section 2), then run the notebook again.
+   - An **optional** result that is missing shows **NOT RUN** and the notebook's own estimate stands beside it,
      labelled as an estimate.
 4. For a quick look without any solver result: `KESTREL_SCREENING=1 ./jupyter.sh` (or set the variable in the
    kernel's environment). Everything becomes optional and the final assessment is marked *unvalidated*.
-4b. **Auto mode (`yanus_auto`).** Notebooks 43 and 45 carry the flag in `side_labs/flow.py` (`auto=True`): when a
-   run they take is missing, the gate **runs the chapter itself, in screening quality** (`--quality screening`, a
-   coarse FEA mesh), prerequisites first, in the foreground with the output in the cell, then continues with what is
-   there — it never stops with an error. A solver that is not on the machine, or a run that failed, is NOT RUN with
-   the reason in the gate table; the results of such runs are labelled *indicative* as any screening run.
-   `yn auto 43 --dry-run` prints what it would start; `YANUS_AUTO_MINUTES=30` caps each run; `YANUS_AUTO=0` switches
-   it off for a session (and `YANUS_AUTO=1` switches it on for a notebook without the flag). Fine runs stay a `wf`
-   or a batch (2b) away.
 5. Section 10 of the notebook lists which campaigns to run next and why, with the commands ready to copy.
 
 The notebook takes about two minutes (it prints its measured runtime at the end). Closing it never stops a workflow
@@ -197,8 +183,8 @@ The first CFD campaign (October 2026, screening quality, unconverged) lives in
 .venv/bin/python side_labs/kestrel/import_legacy.py
 ```
 
-It prints two directories under `side_labs/runs/kestrel/airframe-sweep/` (chapter K1) — the ones the notebook's pins point at by
-default. Re-pin (`yn pin 43 K1 --variant 4Q-2 <run>`) as real workflow runs arrive.
+It prints two directories under `side_labs/runs/kestrel/airframe-sweep/` (chapter K1); real side-lab runs replace them
+in the cache as they arrive.
 
 ## 6. Order of work recommended now
 
@@ -206,7 +192,7 @@ default. Re-pin (`yn pin 43 K1 --variant 4Q-2 <run>`) as real workflow runs arri
 2. `wf K2 --variant 4Q-2 --quality fine` (hours): decides CL max, the stall speed and
    whether the wing must grow.
 3. `wf K11 --variant 4Q-2` (under an hour): the frame's and the joint's margins.
-4. Notebook again in its default mode with both runs pinned (`yn pin 43 K2 …`, `yn pin 43 K11 …`): the validated assessment.
+4. Notebook again in its default mode, with both results in the cache: the validated assessment.
    For a quick *what if* on the design (span, chord, section, propeller, motor, battery, spar) without any solver,
    `44_kestrel_fast.ipynb` compares candidates in about a minute (Zephyr sections, Boreas points, beam rules).
 5. Then `cruise` and `transitions` with the rotor disks, and `38_prop_lab` at fine quality for the propeller.

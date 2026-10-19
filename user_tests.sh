@@ -86,7 +86,7 @@ LOG="$ROOT/user_tests_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
 export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning" QT_QPA_PLATFORM=offscreen
 # the source tree importable without an install (activate.sh does the same); the mocks' cache stays out of the repo
-for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vegeta-yanus/src vendor/ozaru/porunga/src vendor/ozaru/mimesis/src vendor/ozaru/yanus/src side_labs designs; do
+for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vendor/ozaru/porunga/src vendor/ozaru/mimesis/src vendor/ozaru/yanus/src side_labs designs; do
   case ":${PYTHONPATH:-}:" in *":$ROOT/$_d:"*) ;; *) PYTHONPATH="$ROOT/$_d${PYTHONPATH:+:$PYTHONPATH}" ;; esac
 done
 # the mock sections never start a solver or call the AI API: CalculiX, OpenFOAM, PrusaSlicer and XFOIL are refused at the
@@ -96,7 +96,7 @@ mock_env() {  # mock_env on|off — set before every section
   if [ "$1" = on ]; then export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1; MOCK_PLUGIN="-p vegeta.mock.pytest_plugin"; unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
   else unset VEGETA_DEBUG VEGETA_NO_SOLVERS; MOCK_PLUGIN=""; [ -n "$KEY_SAVED" ] && export ANTHROPIC_API_KEY="$KEY_SAVED"; [ -n "$TOKEN_SAVED" ] && export ANTHROPIC_AUTH_TOKEN="$TOKEN_SAVED"; fi
 }
-export PYTHONPATH VEGETA_YANUS_FLOW="$ROOT/notebooks/flow.py" PORUNGA_DIR="${PORUNGA_DIR:-$(mktemp -d)/porunga}"
+export PYTHONPATH PORUNGA_DIR="${PORUNGA_DIR:-$(mktemp -d)/porunga}"
 status=0
 
 hdr() { printf '\n==================== %s ====================\n' "$1"; }
