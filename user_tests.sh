@@ -77,8 +77,8 @@ done
 # point they would start (VEGETA_NO_SOLVERS=1), and the API key is hidden; the long sections (by name) put them back
 KEY_SAVED="${ANTHROPIC_API_KEY:-}"; TOKEN_SAVED="${ANTHROPIC_AUTH_TOKEN:-}"
 mock_env() {  # mock_env on|off — set before every section
-  if [ "$1" = on ]; then export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1; unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
-  else unset VEGETA_DEBUG VEGETA_NO_SOLVERS; [ -n "$KEY_SAVED" ] && export ANTHROPIC_API_KEY="$KEY_SAVED"; [ -n "$TOKEN_SAVED" ] && export ANTHROPIC_AUTH_TOKEN="$TOKEN_SAVED"; fi
+  if [ "$1" = on ]; then export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1; MOCK_PLUGIN="-p vegeta.mock.pytest_plugin"; unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
+  else unset VEGETA_DEBUG VEGETA_NO_SOLVERS; MOCK_PLUGIN=""; [ -n "$KEY_SAVED" ] && export ANTHROPIC_API_KEY="$KEY_SAVED"; [ -n "$TOKEN_SAVED" ] && export ANTHROPIC_AUTH_TOKEN="$TOKEN_SAVED"; fi
 }
 export PYTHONPATH VEGETA_YANUS_FLOW="$ROOT/notebooks/flow.py" PORUNGA_DIR="${PORUNGA_DIR:-$(mktemp -d)/porunga}"
 status=0
@@ -112,10 +112,10 @@ pytest_summary() {  # pytest_summary <dir> <args...>
   local dir="$1"; shift
   local out rc; out="$(mktemp)"
   if [ "$VERBOSE" -eq 1 ]; then
-    (cd "$dir" && "$PY" -m pytest -v -rfE -p no:cacheprovider "$@" 2>&1) | tee "$out" | sed 's/^/    /'
+    (cd "$dir" && "$PY" -m pytest -v -rfE -p no:cacheprovider ${MOCK_PLUGIN:-} "$@" 2>&1) | tee "$out" | sed 's/^/    /'
     rc=${PIPESTATUS[0]}
   else
-    (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider -o console_output_style=count --tb=line "$@" 2>&1) | tee "$out" \
+    (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider ${MOCK_PLUGIN:-} -o console_output_style=count --tb=line "$@" 2>&1) | tee "$out" \
       | awk '/::/ && / (PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)/ {
                st = ($0 ~ / PASSED/) ? "ok    " : ($0 ~ / (FAILED|ERROR)/) ? "FAILED" : "skip  ";
                n = ""; if (match($0, /\[ *[0-9]+\/[0-9]+\]/)) n = substr($0, RSTART, RLENGTH);
@@ -168,7 +168,7 @@ for s in "${SECTIONS[@]}"; do
   case "$s" in
     env) sec_env ;;
     ozaru)
-      hdr "Ozaru (vendor/ozaru): Porunga, Mimesis, Yanus"
+      MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimesis, Yanus"
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"
