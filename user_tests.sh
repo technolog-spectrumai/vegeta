@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run the Chiron / Cleopatra / Persephone checks and benchmarks and print a compact report to paste back.
 #
-# Usage: ./user_tests.sh [SECTION ...] [--python EXE] [-j N] [-v|--verbose]
+# Usage: ./user_tests.sh [PART|SECTION ...] [--no-vegeta] [--no-design] [--no-workflow] [--no-notebook] [-v|--verbose] [--python EXE] [-j N]
 #   -v, --verbose   pytest's full output (tracebacks, prints); default: one line per test as it finishes
 #   env               versions, git commit, imports                                         (seconds)
 #   unit              chiron + cli + chronos test suites, designs tests          (~2-3 min)
@@ -39,13 +39,19 @@
 #   exchange          notebooks/tests: side lab -> Porunga key -> notebook, mock never read as real   (seconds)
 #   cli-mock          vegeta-cli: the mocks, the cache and the CLI tests                               (~1 min)
 #   notebooks-mock    every notebook but the slow ones, mocks on (scripts/debug_notebooks.sh)         (~30-60 min)
-#   mock (default)    env ozaru designs components side-labs exchange cli-mock notebooks-mock
+#   mock (default)    all four parts below, every one mocked (no solver, no AI API):
+#     vegeta          env ozaru cli-mock               --no-vegeta    leaves it out
+#     design          designs components               --no-design    leaves it out
+#     workflow        side-labs exchange               --no-workflow  leaves it out
+#     notebook        notebooks-mock                   --no-notebook  leaves it out
+#   (a part's name runs that part alone: ./user_tests.sh design)
 #   --- long runs (by name only) ---
 #   all               env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
 set -uo pipefail
 VERBOSE=0
+EXCLUDE=()
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PY=""
@@ -54,14 +60,21 @@ SECTIONS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
-    -j) JOBS="$2"; shift 2 ;; -v|--verbose) VERBOSE=1; shift ;;
-    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
+    -j) JOBS="$2"; shift 2 ;; -v|--verbose) VERBOSE=1; shift ;; --no-vegeta|--no-design|--no-workflow|--no-notebook) EXCLUDE+=("${1#--no-}"); shift ;;
+    -h|--help) sed -n '2,45p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
 [ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(mock)
 MOCK_SECTIONS=(env ozaru designs components side-labs exchange cli-mock notebooks-mock)
-EXP=(); for s in "${SECTIONS[@]}"; do case "$s" in mock) EXP+=("${MOCK_SECTIONS[@]}") ;; all) EXP+=(env unit physics cleopatra-smoke persephone-smoke) ;; *) EXP+=("$s") ;; esac; done
+declare -A PART=([vegeta]="env ozaru cli-mock" [design]="designs components" [workflow]="side-labs exchange" [notebook]="notebooks-mock")
+EXP=(); for s in "${SECTIONS[@]}"; do case "$s" in
+  mock) for part in vegeta design workflow notebook; do
+          case " ${EXCLUDE[*]:-} " in *" $part "*) echo "skipping the $part tests (--no-$part)" ;; *) EXP+=(${PART[$part]}) ;; esac
+        done ;;
+  vegeta|design|workflow|notebook) EXP+=(${PART[$s]}) ;;
+  all) EXP+=(env unit physics cleopatra-smoke persephone-smoke) ;;
+  *) EXP+=("$s") ;; esac; done
 SECTIONS=("${EXP[@]}")
 if [ -z "$PY" ]; then
   if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
