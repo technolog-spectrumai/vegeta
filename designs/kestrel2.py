@@ -109,34 +109,12 @@ COLS = ["height loss [m]", "height gain [m]", "pitch error max [deg]", "time sta
 
 
 def remedy_matrix(veh, *, remedies: dict | None = None, durations=(1.5, 3.0, 5.0), headwinds=(0.0, 6.0), gust_up=0.0, progress=False):
-    """The back transition for every remedy × schedule × headwind: the metrics table and the episodes."""
-    import pandas as pd
-    remedies = remedies or REMEDIES
-    jobs = [(r, tt, hw) for r in remedies for tt in durations for hw in headwinds]
-    it = jobs
-    if progress:
-        from tqdm.auto import tqdm
-        it = tqdm(jobs, desc=f"{veh.name}: back-transition remedies")
-    rows, eps = {}, {}
-    for r, tt, hw in it:
-        ep = kt.simulate(veh, "back", t_tr=tt, headwind=hw, gust_up=gust_up, **remedies[r])
-        rows[(r, tt, hw)] = ep.metrics
-        eps[(r, tt, hw)] = ep
-    df = pd.DataFrame(rows).T
-    df.index.names = ["remedy", "t_tr [s]", "headwind [m/s]"]
-    return df, eps
+    """The back transition for every remedy × schedule × headwind (vegeta.aeromant.transitions.remedy_matrix with
+    Kestrel's remedies): the metrics table and the episodes."""
+    return kt.remedy_matrix(veh, remedies or REMEDIES, kind="back", durations=durations, headwinds=headwinds, gust_up=gust_up, progress=progress)
 
 
-def remedy_verdict(df) -> "pd.DataFrame":
-    """Per remedy: passes, the worst balloon, the worst pitch error, the energy, and the gusts' fate when given."""
-    import pandas as pd
-    rows = {}
-    for r, sub in df.groupby(level=0, sort=False):
-        rows[r] = {"passes": f"{int(sub['pass'].astype(bool).sum())} of {len(sub)}", "worst height gain [m]": float(sub["height gain [m]"].astype(float).max()),
-                   "worst height loss [m]": float(sub["height loss [m]"].astype(float).max()), "worst pitch error [deg]": float(sub["pitch error max [deg]"].astype(float).max()),
-                   "worst roll demand / authority": float(sub["roll demand / authority"].astype(float).max()), "energy, 3 s still air [Wh]": float(sub.xs((3.0, 0.0), level=(1, 2))["energy [Wh]"].iloc[0]) if (3.0, 0.0) in [(a, b) for _, a, b in sub.index] else np.nan,
-                   "hover reached, 3 s [s]": float(sub.xs((3.0, 0.0), level=(1, 2))["hover reached at [s]"].iloc[0]) if (3.0, 0.0) in [(a, b) for _, a, b in sub.index] else np.nan}
-    return pd.DataFrame(rows).T
+remedy_verdict = kt.remedy_verdict
 
 
 def decelerate_level(veh, V0: float = 16.0, V1: float = V_SLOW, *, airbrake_deg: float = 0.0, reverse_N: float = 0.0, dt: float = 0.01) -> dict:

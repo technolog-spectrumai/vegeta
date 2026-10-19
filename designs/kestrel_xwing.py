@@ -279,7 +279,8 @@ def make_vehicle(variant: str = "X-A (the biplane's wing area)", *, name: str | 
                        "y_motor": L["motor_r"], "rotor": "up" if sz > 0 else "lo", "S": L["S_panel"]})
     return kt.Vehicle(name or variant, {"elevons": elevons}, L, ci["mass_kg"], ci["x_cg"], ci["z_cg"], ci["Iyy"], ci["Ixx"], pol,
                       drive or ks.drive_table(), elevons=elevons, panels=panels, z_rotor=L["motor_r"] * math.sin(phi),
-                      elevon_y_in=L["elevon_y_in"], lift_slope_vertical=pol.cl_alpha * math.cos(phi) ** 2)
+                      elevon_y_in=L["elevon_y_in"], lift_slope_vertical=pol.cl_alpha * math.cos(phi) ** 2,
+                      **kt.kestrel_rotors({"elevons": elevons}))
 
 
 def cruise(veh, *, speeds=np.arange(10.0, 27.0, 1.0), avionics_W: float = 13.0):
