@@ -30,7 +30,17 @@
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
-#   all (default)     env unit physics cleopatra-smoke persephone-smoke
+#   --- mock-only checks (no CFD, FEA or long simulations; the default) ---
+#   ozaru             vendor/ozaru: Porunga (cache), Mimesis (mocks), Yanus (requirement checks)       (seconds)
+#   designs           designs/tests, not the slow ones                                               (~10-20 min)
+#   components        components/tests (geometry only)                                               (~2 min)
+#   side-labs         side_labs/tests: run contract, campaigns, CLI, GUI, no notebook named here      (~3 min)
+#   exchange          notebooks/tests: side lab -> Porunga key -> notebook, mock never read as real   (seconds)
+#   cli-mock          vegeta-cli: the mocks, the cache and the CLI tests                               (~1 min)
+#   notebooks-mock    every notebook but the slow ones, mocks on (scripts/debug_notebooks.sh)         (~30-60 min)
+#   mock (default)    env ozaru designs components side-labs exchange cli-mock notebooks-mock
+#   --- long runs (by name only) ---
+#   all               env unit physics cleopatra-smoke persephone-smoke
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
 set -uo pipefail
@@ -43,17 +53,25 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
     -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,39p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
-[ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(env unit physics cleopatra-smoke persephone-smoke)
+[ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(mock)
+MOCK_SECTIONS=(env ozaru designs components side-labs exchange cli-mock notebooks-mock)
+EXP=(); for s in "${SECTIONS[@]}"; do case "$s" in mock) EXP+=("${MOCK_SECTIONS[@]}") ;; all) EXP+=(env unit physics cleopatra-smoke persephone-smoke) ;; *) EXP+=("$s") ;; esac; done
+SECTIONS=("${EXP[@]}")
 if [ -z "$PY" ]; then
   if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
 fi
 LOG="$ROOT/user_tests_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
-export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning"
+export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning" QT_QPA_PLATFORM=offscreen
+# the source tree importable without an install (activate.sh does the same); the mocks' cache stays out of the repo
+for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vegeta-yanus/src vendor/ozaru/porunga/src vendor/ozaru/mimesis/src vendor/ozaru/yanus/src side_labs designs; do
+  case ":${PYTHONPATH:-}:" in *":$ROOT/$_d:"*) ;; *) PYTHONPATH="$ROOT/$_d${PYTHONPATH:+:$PYTHONPATH}" ;; esac
+done
+export PYTHONPATH VEGETA_YANUS_FLOW="$ROOT/notebooks/flow.py" PORUNGA_DIR="${PORUNGA_DIR:-$(mktemp -d)/porunga}"
 status=0
 
 hdr() { printf '\n==================== %s ====================\n' "$1"; }
@@ -124,6 +142,28 @@ bench() {  # bench <robot> <scale>
 for s in "${SECTIONS[@]}"; do
   case "$s" in
     env) sec_env ;;
+    ozaru)
+      hdr "Ozaru (vendor/ozaru): Porunga, Mimesis, Yanus"
+      timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
+    designs)
+      hdr "designs/tests (not slow; mocks only, no solver)"
+      VEGETA_DEBUG=1 timed pytest_summary "$ROOT" designs/tests -m "not slow" || status=1 ;;
+    components)
+      hdr "components/tests (geometry only)"
+      timed pytest_summary "$ROOT" components/tests -m "not slow" || status=1 ;;
+    side-labs)
+      hdr "side_labs/tests: run contract, campaigns, CLI, GUI, separation from the notebooks (no solver run)"
+      timed pytest_summary "$ROOT" side_labs/tests -m "not slow" || status=1 ;;
+    exchange)
+      hdr "notebooks/tests: the side-lab result found by its Porunga key; mock and real never mix"
+      timed pytest_summary "$ROOT" notebooks/tests || status=1 ;;
+    cli-mock)
+      hdr "vegeta-cli: the mocks, the result cache, the CLI"
+      timed pytest_summary "$ROOT/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
+    notebooks-mock)
+      hdr "notebooks with the mocks on (every one but the slow ones; scripts/debug_notebooks.sh --all for those)"
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" 2>&1 | tail -70 | sed 's/^/  /'
+      rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     unit) sec_unit ;;
     physics) sec_physics ;;
     cleopatra-smoke) bench cleopatra smoke ;;
