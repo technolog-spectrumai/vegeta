@@ -61,7 +61,7 @@ refinement; off by default.
 
 A Gmsh "PLC Error: a segment and a facet intersect" almost always means a sliver in the geometry (a
 bolt hole 0.1 mm from an edge, a 0.4 mm edge left by a union) rather than a meshing setting: check the
-smallest edges of the CAD before changing the mesh (`notebooks/08_quadcopter` shows such a case).
+smallest edges of the CAD before changing the mesh (`notebooks/devices/08_quadcopter` shows such a case).
 
 ## Temperature (`RadialTemperature`)
 

@@ -110,7 +110,7 @@ SOLVER_CALLS = re.compile(r"\.run\(|run_cases\(|\.ensure\(|\.solve\(|solve_modes
 
 
 def test_the_notebook_and_its_modules_launch_no_solver():
-    nb = json.loads((ROOT / "notebooks" / "43_kestrel_study.ipynb").read_text())
+    nb = json.loads((ROOT / "notebooks" / "devices" / "43_kestrel_study.ipynb").read_text())
     src = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
     assert not SOLVER_CALLS.search(src), SOLVER_CALLS.search(src)
     for mod in ("kestrel_study.py", "kestrel_campaigns.py"):
