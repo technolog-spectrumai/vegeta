@@ -1,4 +1,4 @@
-"""Deep statistics of race laps and the design factors they imply (notebook 51 ``51_race_ingest``).
+"""Deep statistics of race laps and the design factors they imply (the race notebooks in notebooks/races/).
 
 From every lap's trajectory (``ingest_race.json`` or the run tree): the regimes a lap is flown in (hover, slow,
 cruise, fast: time and distance shares), the distributions of speed, acceleration, lateral g, load factor, power,

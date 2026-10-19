@@ -57,10 +57,11 @@ flow.notebook("47_kestrel_benchmark", folder="exp", title="Kestrel benchmark —
               takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json"),
                      File(f"48_kestrel_xc:{DATA}/kestrel_xc_design.json")],
               gives=[File(f"{DATA}/reports/47_kestrel_benchmark.json")], auto=True)
-flow.notebook("50_four_races", folder="races", title="Four races — the reference 5-inch quad round the hangar, the industrial zone, the farm and the quarry (MuJoCo runs when on file, the mock otherwise)",
-              takes=[Run("races/hangar"), Run("races/industrial"), Run("races/farm"), Run("races/quarry")], gives=[File(f"{DATA}/four_races.json")], auto=True)
-flow.notebook("51_race_ingest", folder="races", title="Race ingest — deep statistics of the race laps and the design factors for the raptors (scans the runs; the mock where none is on file)",
-              takes=[], gives=[File(f"{DATA}/race_design_factors.json")], auto=False)
+for _n, _slug in (("01_hangar", "hangar"), ("02_industrial", "industrial"), ("03_farm", "farm"), ("04_quarry", "quarry")):
+    flow.notebook(_n, folder="races", title=f"Race: {_slug} — the reference 5-inch quad's lap (mock flyer; MuJoCo and videos with GENERATE_VIDEO), exported under races/runs/notebook/",
+                  takes=[], gives=[], auto=False)
+flow.notebook("race_design_factors", folder="races", title="Race design factors — per course, pooled and worst-case requirements from the exported race runs (no race rerun)",
+              takes=[], gives=[File(f"{DATA}/races/race_design_factors.json")], auto=False)
 flow.notebook("49_mini_raptor", folder="devices", title="Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
               takes=[], gives=[File(f"{DATA}/mini_raptor_design.json"), File(f"{DATA}/reports/49_mini_raptor.json")], auto=True)
 
