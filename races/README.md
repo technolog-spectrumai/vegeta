@@ -1,7 +1,8 @@
 # Races — four drone race environments in MuJoCo for the reference 5-inch quad
 
 Four courses, one reference aircraft, one autopilot, one set of rules, a mock flyer for development, a thin CLI
-and notebook **50** (`notebooks/races/50_four_races.ipynb`; split per course in `notebooks/races/`). MuJoCo does the rigid body and the contacts; the aircraft's
+and one notebook per course in `notebooks/races/` (`01_hangar`, `02_industrial`, `03_farm`, `04_quarry`) with
+`race_design_factors` combining their exports. MuJoCo does the rigid body and the contacts; the aircraft's
 aerodynamics and propulsion are the existing models (the Boreas drive table of the 6S 5x4.3 2207 drive, the frame's
 drag area) and the flight controller is Drongo's geometric controller (`designs/drongo_controller.Flight`).
 Nothing is redesigned, no CFD, no FEA, no learning.
@@ -72,17 +73,26 @@ body rates when recorded), the videos' names and sizes, the tail of run.log, eve
 note, the mock baseline, and a cross-course comparison. That file is what to hand over for analysis; the videos and
 scenes stay where they are.
 
-## Notebook 51 `51_race_ingest`: deep statistics and the design factors for the raptors
-`races/analysis.py` turns every lap into second-by-second kinematics (resets blanked), the speed regimes (hover,
-slow, cruise, fast: time, distance and energy shares), the percentiles behind the peaks, the braking and acceleration
-episodes, the corners and the straights one by one, the vertical content, the power duty, the closest approaches,
-and the course's own demands (openings, corners, legs). `design_factors` distils them into what an aircraft for these
-courses must do — hover thrust-to-weight, lateral g, turn radius, body rates, cruise and top speed, the stall-speed
-ceiling and the share of a lap below wing-borne speed, energy and power, footprint, braking, vertical speeds — per
-course and over all, with the margins stated; `factors_for_raptors` writes the compact hand-over to
-`designs/data/race_design_factors.json` (the raptor design notebook's input: not connected yet). The
-notebook scans the run locations first (`ingest.scan`, `ingest.expected_locations`) and uses the mock where no lap
-is on file.
+## The race notebooks (`notebooks/races/`)
+Each course notebook sets the course up (its builder's parameters in `COURSE_PARAMS`), flies the mock lap (always,
+headless, seconds) and, with `GENERATE_VIDEO = True`, the MuJoCo lap and its videos (overview, chase, onboard: the
+recorded trajectory through the scene cameras). Every run is written by `races/export.py` to
+`races/runs/notebook/<course>/<stamp>_<simulator>/` (ignored by git): `timeseries.csv` (units in the summary),
+`events.json`, `summary.json` — status (finished or DNF and why), collisions, resets, lap time, elapsed simulated
+time and wall time, the provenance (course, model and configuration SHA-256, seed, timestep, simulator and version,
+git commit) and the artifacts. The run is written before any rendering, so a failed render keeps the data and is
+recorded under `artifacts.video_errors`.
+
+`race_design_factors` reads only those exports (`export.runs`, `export.read_lap`) and `races/requirements.py` keeps
+three views apart: **per course** (measured, no margins), **pooled** (all valid laps end to end, time-weighted) and
+the **worst-case envelope** (worst valid course × a stated margin = the requirement). DNF runs are listed and excluded;
+rows no run supports (hover thrust / weight, an endurance requirement) are `unavailable`, not numbers. It writes
+`designs/data/races/race_design_factors.json` and `race_design_factors_comparison.csv`. The earlier hand-over
+(`designs/data/race_design_factors.json`, notebook 51, now removed) is kept as it was; of its four MuJoCo laps only the industrial one
+finished (hangar, farm and quarry were DNF, six collisions each), yet their elapsed simulated time is listed as lap
+time and their statistics feed the requirements; its "all courses" column is the worst case, and its "hover thrust /
+weight required" is the manoeuvre load factor × 1.3 — read it with that in mind. `races/analysis.py`
+(`lap_report`, the plots, `design_factors`) is unchanged.
 
 ## Tuning the MuJoCo autopilot
 The first real laps (the hangar, 2026-10-18) showed the geometric controller lagging the racing line by metres where
