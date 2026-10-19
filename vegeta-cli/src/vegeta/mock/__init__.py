@@ -26,6 +26,7 @@ so each cell runs and its tables fill, but the numbers mean nothing:
 - Chiron: every ``Lab.run`` episode is cut to ``CHIRON_SECONDS`` simulated seconds (log marked ``mock``, outcome
   detail says MOCK) and ``viz.frames`` renders at most ``CHIRON_FRAMES`` small frames, so movies take seconds.
 
+- Transitions (``vegeta.aeromant.transitions.simulate``): time step 0.02 s instead of 0.002 s, holds of 0.5 s and 2 s.
 - Aero models: Boreas BEMT (``bemt.solve``, ``ducted.solve``) on 8 radial stations and at most 60 iterations, the
   designs' vortex lattice (``peregrine_flight.vlm``) on at most 4 spanwise by 1 chordwise panel per surface.
 
@@ -468,6 +469,14 @@ def _coarse_bemt(real, n=8):
     return solve
 
 
+def _coarse_transition(real):
+    def simulate(*args, dt=0.002, t_hold=1.5, t_after=6.0, **kw):
+        ep = real(*args, dt=max(float(dt), 0.02), t_hold=min(float(t_hold), 0.5), t_after=min(float(t_after), 2.0), **kw)
+        ep.options["mock"] = True
+        return ep
+    return simulate
+
+
 def install() -> None:
     """Put the mocks in place (idempotent) and switch the result cache off."""
     if _saved:
@@ -549,6 +558,14 @@ def install() -> None:
         for name, obj in list(vars(boreas).items()):          # the package's re-exports of the same function
             if obj is real:
                 _patch(boreas, name, coarse)
+    import sys as _sys
+    from vegeta.aeromant import transitions as atr          # the tailsitter transitions: 10x coarser steps, short holds
+    real_sim = atr.simulate
+    coarse_sim = _coarse_transition(real_sim)
+    _patch(atr, "simulate", coarse_sim)
+    for mod in list(_sys.modules.values()):                  # the modules that re-export it (kestrel_transition)
+        if mod is not atr and getattr(mod, "simulate", None) is real_sim:
+            _patch(mod, "simulate", coarse_sim)
     import importlib.util
     if importlib.util.find_spec("peregrine_flight") is not None:   # the designs' shared vortex lattice (designs/ on the path)
         import peregrine_flight
@@ -557,7 +574,7 @@ def install() -> None:
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
     _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
-                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice and BEMT coarse (NOT results), the result cache is off")
+                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice, BEMT and transitions coarse (NOT results), the result cache is off")
 
 
 def uninstall() -> None:
