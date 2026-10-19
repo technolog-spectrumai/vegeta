@@ -39,10 +39,14 @@ if [ -z "${DISPLAY:-}" ] && command -v Xvfb >/dev/null; then
 fi
 trap 'kill ${XVFB_PID:-} 2>/dev/null; restore' EXIT
 export VEGETA_DEBUG=1 PYVISTA_OFF_SCREEN=true PYVISTA_JUPYTER_BACKEND=static MPLBACKEND=Agg
+# Notebooks name either the "vegeta" or the "python3" kernel; a machine usually registers only one of them. Run every
+# notebook on whichever is installed (vegeta first) instead of failing in three seconds on "No such kernel".
+KERNEL=""; for k in vegeta python3; do jupyter kernelspec list 2>/dev/null | grep -qE "^\s*$k\s" && { KERNEL="$k"; break; }; done
 unset VEGETA_SKIP_OPENFOAM
 run_one() {
   local nb="$1" t0=$SECONDS
   local cmd=(jupyter nbconvert --to notebook --execute "$nb.ipynb" --output "$nb-run.ipynb" --ExecutePreprocessor.timeout=3600)
+  [ -n "$KERNEL" ] && cmd+=(--ExecutePreprocessor.kernel_name="$KERNEL")
   if "${cmd[@]}" >"$LOGS/$nb.log" 2>&1; then
     printf 'ok      %-40s %5s s\n' "$nb" $((SECONDS - t0))
   else
