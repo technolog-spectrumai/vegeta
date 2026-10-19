@@ -404,14 +404,15 @@ Notebooks own the analysis and its story. Side labs (`side_labs/`, formerly `sid
 calculations and fill the Porunga cache; neither imports, launches or names the other. The only exchange is a
 Porunga key built from a plain-JSON identity (`docs/cache_identities.md`) and its payload. Ozaru (`vendor/ozaru`,
 git subtree) supplies Porunga, Mimesis and Yanus (requirement checks).
-- [ ] S.1 Mock baseline: every notebook executed with the mocks on (no CFD, FEA or FEniCSx during the refactor)
-- [~] S.2 Vendor Ozaru (done: subtree 33702e4, update script), install it offline from `vendor/ozaru` in `install_local.sh`; `scripts/update_ozaru.sh`
-- [ ] S.3 Move the engineering design modules and data from `notebooks/designs/` to `designs/`
-- [ ] S.4 Rename `side_labs/` → `side_labs/` (`side_labs.sh` → `side_labs.sh`); drop every notebook reference from it
+- [x] S.1 Mock baseline: every notebook executed with the mocks on (no CFD, FEA or FEniCSx during the refactor); mocks on by default (DEBUG = True); notebooks split into devices/ parts/ scenarios/
+- [x] S.2 Vendor Ozaru (subtree 33702e4, signed), install it offline from `vendor/ozaru` in `install_local.sh`; `scripts/update_ozaru.sh`; duplicate `mimesis/` removed
+- [x] S.3 Move the engineering design modules and data from `notebooks/designs/` to `designs/`
+- [x] S.4 Rename `workflows/` → `side_labs/` (`workflows.sh` → `side_labs.sh`); drop every notebook reference from it (test: `side_labs/tests/test_separation.py`); notebook declarations in `notebooks/flow.py` until S.8
 - [ ] S.5 Cache identities: one plain-JSON identity per result type, built on each side independently; tests that the keys match
 - [ ] S.6 Side labs publish results with `porunga.save`; case reuse through Porunga instead of runkit's cache
 - [ ] S.7 Notebooks read results with `porunga.check` / `load`; on a miss they compute, mock explicitly, skip or explain — never start a side lab
 - [ ] S.8 Remove the old Yanus framework (contracts, gates, registry, pins, run selection, stamps, auto mode, scaffolding, `yn`)
 - [ ] S.9 Legacy results imported into Porunga explicitly
 - [ ] S.10 Mock baseline again: the same notebooks pass; key agreement, exchange and mock-separation tests
-- [ ] S.11 Docs: README, installation, side labs manual; offline check of a clean clone
+- [ ] S.11 Docs: README, installation, side labs manual (`side_labs/README.md` still speaks of notebooks); offline check of a clean clone
+- [ ] S.12 Check by hand later (left out of the fast mock checks): the long Chiron/MuJoCo notebooks and the demos that need an API key
