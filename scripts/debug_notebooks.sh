@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run notebooks end to end with the mocks on (DEBUG; FEA, CFD and slicing mocked by vegeta.mock) — never a real solver:
+# Run notebooks end to end with the mocks on (DEBUG; FEA, CFD and slicing mocked by vegeta.mock; VEGETA_NO_SOLVERS=1
+# refuses to start CalculiX, OpenFOAM, PrusaSlicer or XFOIL; the AI demos use scripted answers, never the API):
 #   scripts/debug_notebooks.sh                      # every notebook but the slow ones (SLOW below)
 #   scripts/debug_notebooks.sh --all                # the slow ones too (MuJoCo missions and movies: up to an hour each)
 #   scripts/debug_notebooks.sh 08_quadcopter 43     # those whose name starts with these
@@ -38,7 +39,7 @@ if [ -z "${DISPLAY:-}" ] && command -v Xvfb >/dev/null; then       # one virtual
   XVFB_PID=$!; export DISPLAY=":$DNUM"; sleep 1
 fi
 trap 'kill ${XVFB_PID:-} 2>/dev/null; restore' EXIT
-export VEGETA_DEBUG=1 PYVISTA_OFF_SCREEN=true PYVISTA_JUPYTER_BACKEND=static MPLBACKEND=Agg PORUNGA_DIR="$LOGS/porunga"
+export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1 PYVISTA_OFF_SCREEN=true PYVISTA_JUPYTER_BACKEND=static MPLBACKEND=Agg PORUNGA_DIR="$LOGS/porunga"
 run_one() {
   local path="$1" t0=$SECONDS; local nb; nb="$(basename "$path" .ipynb)"
   if (cd "$(dirname "$path")" && jupyter nbconvert --to notebook --execute "$nb.ipynb" --output-dir "$LOGS" --output "$nb-run.ipynb" \

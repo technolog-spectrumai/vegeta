@@ -71,6 +71,13 @@ export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning" QT_QPA_PLATFORM=offsc
 for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vegeta-yanus/src vendor/ozaru/porunga/src vendor/ozaru/mimesis/src vendor/ozaru/yanus/src side_labs designs; do
   case ":${PYTHONPATH:-}:" in *":$ROOT/$_d:"*) ;; *) PYTHONPATH="$ROOT/$_d${PYTHONPATH:+:$PYTHONPATH}" ;; esac
 done
+# the mock sections never start a solver or call the AI API: CalculiX, OpenFOAM, PrusaSlicer and XFOIL are refused at the
+# point they would start (VEGETA_NO_SOLVERS=1), and the API key is hidden; the long sections (by name) put them back
+KEY_SAVED="${ANTHROPIC_API_KEY:-}"; TOKEN_SAVED="${ANTHROPIC_AUTH_TOKEN:-}"
+mock_env() {  # mock_env on|off — set before every section
+  if [ "$1" = on ]; then export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1; unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
+  else unset VEGETA_DEBUG VEGETA_NO_SOLVERS; [ -n "$KEY_SAVED" ] && export ANTHROPIC_API_KEY="$KEY_SAVED"; [ -n "$TOKEN_SAVED" ] && export ANTHROPIC_AUTH_TOKEN="$TOKEN_SAVED"; fi
+}
 export PYTHONPATH VEGETA_YANUS_FLOW="$ROOT/notebooks/flow.py" PORUNGA_DIR="${PORUNGA_DIR:-$(mktemp -d)/porunga}"
 status=0
 
@@ -84,6 +91,8 @@ sec_env() {
   echo "  python   $PY ($("$PY" -c 'import platform; print(platform.python_version())'))"
   echo "  git      $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null) on $(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo ' (uncommitted changes)')"
   echo "  cpus     $JOBS"
+  echo "  solvers  $( [ -n "${VEGETA_NO_SOLVERS:-}" ] && echo 'blocked (VEGETA_NO_SOLVERS=1: no CalculiX, OpenFOAM, PrusaSlicer, XFOIL)' || echo 'allowed')"
+  echo "  AI API   $( [ -n "${ANTHROPIC_API_KEY:-}${ANTHROPIC_AUTH_TOKEN:-}" ] && echo 'key set' || echo 'no key: scripted answers')"
   "$PY" - <<'EOF'
 import importlib
 for m in ("mujoco", "numpy", "scipy", "pandas", "matplotlib", "tqdm", "pyvista", "vegeta.chiron", "vegeta.dedalus"):
@@ -140,6 +149,7 @@ bench() {  # bench <robot> <scale>
 }
 
 for s in "${SECTIONS[@]}"; do
+  case " ${MOCK_SECTIONS[*]} " in *" $s "*) mock_env on ;; *) mock_env off ;; esac
   case "$s" in
     env) sec_env ;;
     ozaru)
@@ -147,7 +157,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"
-      VEGETA_DEBUG=1 timed pytest_summary "$ROOT" designs/tests -m "not slow" || status=1 ;;
+      timed pytest_summary "$ROOT" designs/tests -m "not slow" || status=1 ;;
     components)
       hdr "components/tests (geometry only)"
       timed pytest_summary "$ROOT" components/tests -m "not slow" || status=1 ;;
