@@ -183,6 +183,7 @@ for s in "${SECTIONS[@]}"; do
       hdr "notebooks/tests: the side-lab result found by its Porunga key; mock and real never mix"
       timed pytest_summary "$ROOT" notebooks/tests || status=1 ;;
     cli-mock)
+      MOCK_PLUGIN=""                       # these tests install the mocks themselves; the solvers stay blocked
       hdr "vegeta-cli: the mocks, the result cache, the CLI"
       timed pytest_summary "$ROOT/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
     notebooks-mock)

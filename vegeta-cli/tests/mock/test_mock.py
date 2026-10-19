@@ -17,11 +17,16 @@ STEEL = talos.Material("steel", 210000.0, 0.3, density=7.85e-9, yield_strength=2
 def mocked(monkeypatch):
     monkeypatch.delenv("VEGETA_DEBUG", raising=False)
     monkeypatch.setenv("VEGETA_CACHE", "on")
+    session = mock.installed()                       # the mock plugin of the mock-only test runs installed them already
+    if session:
+        mock.uninstall()
     real = talos.StructuralModel.solve
     mock.install()
     yield real
     mock.uninstall()
     assert talos.StructuralModel.solve is real
+    if session:
+        mock.install()
 
 
 def _model(tmp_path, name="beam"):
