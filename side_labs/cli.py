@@ -176,7 +176,7 @@ def cmd_run(args) -> int:
         print(f"{info['code']} ({name}) needs {', '.join(ns['missing'])} on this machine — not found:", file=sys.stderr)
         for fx in dict.fromkeys(ns["fixes"]):
             print(f"  → {fx}", file=sys.stderr)
-        print(f"(or prepare the cases without solving: wf {info['code']} --prepare-only …; yn doctor shows what this machine can run)", file=sys.stderr)
+        print(f"(or prepare the cases without solving: wf {info['code']} --prepare-only …; wf info shows what this machine can run)", file=sys.stderr)
         return 2
     extra = ["--chapter", info["campaign"], *args.rest] + (["--no-cache"] if args.no_cache and "--no-cache" not in args.rest else [])
     return _launch(info["script"], extra, detach=args.detach, label=f"{info['code']}_{name}")

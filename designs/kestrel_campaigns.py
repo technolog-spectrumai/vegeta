@@ -41,13 +41,11 @@ BOOK = "kestrel"                                                                
 
 
 def _flow():
-    """The one chapter map: ``side_labs/flow.py`` (Yanus's registry), the same one ``side_labs/library.py`` reads."""
+    """The one chapter map: ``side_labs/flow.py`` (``side_labs/registry.py``), the same one ``side_labs/library.py`` reads."""
     import sys
-    try:
-        from vegeta.yanus import load_flow
-    except ImportError:
-        sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
-        from vegeta.yanus import load_flow
+    if str(ROOT / "side_labs") not in sys.path:
+        sys.path.insert(0, str(ROOT / "side_labs"))
+    from registry import load_flow
     return load_flow(ROOT / "side_labs" / "flow.py")
 
 
@@ -388,15 +386,8 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
 
 
 # ================================================================================================= what the notebook reads
-try:
-    from vegeta.yanus import GateClosed as _GateClosed
-except ImportError:                                                # pragma: no cover — vegeta-yanus/src is put on the path by _flow()
-    _GateClosed = RuntimeError
-
-
-class PrerequisiteError(_GateClosed):
-    """A required workflow result is missing, unfinished, failed or incompatible; the message names the command.
-    (A Yanus ``GateClosed``: one ``except`` catches both.)"""
+class PrerequisiteError(RuntimeError):
+    """A required workflow result is missing, unfinished, failed or incompatible; the message names the command."""
 
 
 def command(workflow: str, *, variant: str, campaign: str, quality: str | None = None, extra: str = "") -> str:

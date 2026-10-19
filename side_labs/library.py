@@ -44,14 +44,12 @@ def _kc():
 
 
 def _flow():
-    """The one registry, ``side_labs/flow.py`` (Yanus): the dicts below are views of it, in the shape ``wf`` and the
-    GUI read."""
+    """The one registry, ``side_labs/flow.py`` (``registry.py``): the dicts below are views of it, in the shape ``wf``
+    and the GUI read."""
     import sys
-    try:
-        from vegeta.yanus import load_flow
-    except ImportError:
-        sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
-        from vegeta.yanus import load_flow
+    if str(ROOT / "side_labs") not in sys.path:
+        sys.path.insert(0, str(ROOT / "side_labs"))
+    from registry import load_flow
     return load_flow(ROOT / "side_labs" / "flow.py")
 
 
@@ -235,10 +233,10 @@ def all_runs() -> list[dict]:
     return sorted(out, key=lambda r: r.get("created_at") or "", reverse=True)
 
 
-# ----------------------------------------------------------------------------------------------- Yanus: needs and pins
+# ----------------------------------------------------------------------------------------------- needs (Ozaru's Yanus)
 def needs_status(book: str, chapter: str) -> dict:
-    """The chapter's needs on this machine (Yanus): ``{"ok", "missing": [labels], "line": "✔ OpenFOAM v2406 · ✘ ccx"}``."""
-    from vegeta.yanus import check_need
+    """The chapter's needs on this machine: ``{"ok", "missing": [labels], "line": "✔ OpenFOAM v2406 · ✘ ccx"}``."""
+    from yanus import check_need
     ch = FLOW.books[book].chapters[chapter]
     res = [check_need(n) for n in ch.all_needs()]
     return {"ok": all(r.ok for r in res), "missing": [r.need.label for r in res if not r.ok], "fixes": [r.fix for r in res if not r.ok],

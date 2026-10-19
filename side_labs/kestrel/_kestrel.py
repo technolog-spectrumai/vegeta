@@ -83,12 +83,22 @@ GATE: dict = {"missing": [], "needs": {}}
 
 
 def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: dict, ignore: bool) -> list[str]:
-    """The script's entry gate (Yanus, ``side_labs/flow.py``): the chapter's needs (reported — a missing solver still
+    """The script's entry check (``side_labs/flow.py``): the chapter's needs (reported — a missing solver still
     allows ``--prepare-only``) and a completed compatible run of each prerequisite chapter for the variant; exits 2
     without one unless ``ignore`` (``--ignore-prerequisites``, recorded in the manifest). ``GATE`` keeps the result
-    for the manifest's ``yanus`` entry."""
-    from vegeta import yanus
-    GATE.update(yanus.check_chapter(f"{book}/{chapter}", variant=variant, expected=expected, ignore=ignore, flow=library.FLOW))
+    for the manifest's ``yanus`` entry (the needs)."""
+    ns = library.needs_status(book, chapter)
+    for label, fix in zip(ns["missing"], ns["fixes"]):
+        print(f"note: {label} not found on this machine ({fix})")
+    missing = library.check_prerequisites(book, chapter, variant=variant, expected=expected)
+    if missing and not ignore:
+        ch = library.FLOW.books[book].chapters[chapter]
+        print(f"chapter {ch.code} ({chapter}) of book {book!r} needs a completed compatible run of its prerequisite chapter(s) first:")
+        for m in missing:
+            print("  - " + m)
+        print("(or --ignore-prerequisites, recorded in the manifest)")
+        sys.exit(2)
+    GATE.update(missing=missing, needs={n: "missing" for n in ns["missing"]} | {"line": ns["line"]})
     return GATE["missing"]
 
 

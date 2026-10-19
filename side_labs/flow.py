@@ -10,11 +10,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-try:
-    from vegeta.yanus import AnyOf, Data, Env, File, Flow, Package, Run, Tool  # noqa: F401
-except ImportError:                                            # a source tree without the editable install
-    sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
-    from vegeta.yanus import AnyOf, Data, Env, File, Flow, Package, Run, Tool  # noqa: F401,E402
+if str(ROOT / "side_labs") not in sys.path:
+    sys.path.insert(0, str(ROOT / "side_labs"))
+from registry import AnyOf, Env, Flow, Package, Run, Tool  # noqa: E402,F401
 
 flow = Flow("vegeta", root=ROOT)
 
