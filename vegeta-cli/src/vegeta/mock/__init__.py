@@ -576,9 +576,12 @@ def install() -> None:
         real = mod.solve
         coarse = _coarse_bemt(real)
         _patch(mod, "solve", coarse)
-        for name, obj in list(vars(boreas).items()):          # the package's re-exports of the same function
-            if obj is real:
-                _patch(boreas, name, coarse)
+        for mname, m in list(__import__("sys").modules.items()):   # every module holding the same function (system.py, …)
+            if m is None or m is mod or not mname.startswith(("vegeta.", "vegeta")):
+                continue
+            for name, obj in list(vars(m).items()):
+                if obj is real:
+                    _patch(m, name, coarse)
     import sys as _sys
     from vegeta.zephyr import polar as zpolar               # NeuralFoil: a thin-airfoil polar instead of the network
     _patch(zpolar, "_neuralfoil", _thin_airfoil)
