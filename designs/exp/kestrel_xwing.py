@@ -337,7 +337,7 @@ def capsule_fit(L: dict, *, wall: float = 0.006) -> dict:
 
 
 # ================================================================================================= against the biplane (notebook 43)
-REPORT_43 = __import__("pathlib").Path(__file__).resolve().parent / "data" / "reports" / "43_kestrel_study.json"
+REPORT_43 = __import__("pathlib").Path(__file__).resolve().parents[1] / "data" / "reports" / "43_kestrel_study.json"
 BANNER = "!" * 100
 
 
