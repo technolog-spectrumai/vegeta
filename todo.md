@@ -192,11 +192,13 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] Y.6 A header drift check (`yn check --headers`) against the scaffold; `notebooks/old/` stays out
 - [ ] Y.7 Field-level schemas for the JSON exports, if the integer schema + keys proves too weak
 
-## Stage R — Races (branch `dev_workflows2`)
+## Stage R — Races (branch `dev_workflows2`, merged into the new layout; notebooks in `notebooks/races/`)
 - [x] R.1 `races/`: four drone race environments in MuJoCo for the reference 5-inch quad (hangar with three floors, industrial zone, farm, quarry), parameterised course builders → MJCF scenes with zones, a starting grid, landmarks and four cameras; the reference quad from its component budget on the existing Boreas drive table; one set of rules and a referee (zones in order, checkpoints, collisions → reset / count / stop, lap completion); a mock flyer for development; the MuJoCo runner on Drongo's geometric controller (written, not run); maps, traces, GIF replays; CLI `python -m races`; smoke tests; notebook 50 `50_four_races` (mock)
 - [x] R.1b The races as Yanus chapters: book `races` (R1–R4, `side_labs/races/race.py`: the lap and three videos under the run contract, `--quality`, `--mock`), notebook 50 takes the runs (videos and statistics when on file, the mock otherwise, auto mode produces them); `races/metrics.py`: manoeuvrability statistics per lap (linear and rotational envelope, turning, tilt, thrust share, tracking error) with the aircraft's envelope and the literature
 - [x] R.4 Notebook 51 `51_race_ingest` (`races/analysis.py`, `races/ingest.scan`): the laps' deep statistics (regimes, percentiles, braking, corners, straights, vertical, power duty, closest approaches, the courses' demands) and the design factors for the raptors → `designs/data/race_design_factors.json` (not connected to a design notebook yet); the first real hangar lap digested
 - [ ] R.2 Tune the MuJoCo autopilot per course (the first laps: the hangar flew 13 of 18 zones and crashed five times descending the top stair opening, tracking error 2.5 m RMS): `--safety`, `--tilt-max`, `--lookahead`, `--omega-pos` through `wf R1`–`R4`; `python -m races ingest` digests the runs into one ingest_race.json
+- [ ] R.5 One notebook per course (hangar, industrial, farm, quarry) with `GENERATE_VIDEO` for the MuJoCo lap and its videos, and a final notebook combining their exports into design requirements (branch `dev_races_refactor`)
+- [ ] R.6 `49_mini_raptor` and `designs/tests/test_mini_raptor.py` fail on `dev_workflows2` itself (7 tests; `layout 'plank'` not in the layout choices, the briefs' checks): bring the module and its tests back in line
 - [ ] R.3 Other aircraft on the same courses (the mini raptors as tailsitters need their own force hook: `designs/mini_races.py` is the draft), multi-lap races, a starting-grid start with four aircraft
 
 ## Stage 5s — Zephyr, 2-D wing sections (branch `dev_zephyr`)
@@ -415,7 +417,7 @@ the STX/Magnum track conversions.
 - [ ] 13.3 After every stage: run tests, fix regressions, update/remove documentation (ongoing; done for stages 1–9)
 
 ## Stage S — Authoritative notebooks, side labs, Ozaru
-Notebooks own the analysis and its story. Side labs (`side_labs/`, formerly `side_labs/`) run optional, expensive
+Notebooks own the analysis and its story. Side labs (`side_labs/`, formerly `workflows/`) run optional, expensive
 calculations and fill the Porunga cache; neither imports, launches or names the other. The only exchange is a
 Porunga key built from a plain-JSON identity (`docs/cache_identities.md`) and its payload. Ozaru (`vendor/ozaru`,
 git subtree) supplies Porunga, Mimesis and Yanus (requirement checks).
@@ -423,11 +425,13 @@ git subtree) supplies Porunga, Mimesis and Yanus (requirement checks).
 - [x] S.2 Vendor Ozaru (subtree 33702e4, signed), install it offline from `vendor/ozaru` in `install_local.sh`; `scripts/update_ozaru.sh`; duplicate `mimesis/` removed
 - [x] S.3 Move the engineering design modules and data from `notebooks/designs/` to `designs/`
 - [x] S.4 Rename `workflows/` → `side_labs/` (`workflows.sh` → `side_labs.sh`); drop every notebook reference from it (test: `side_labs/tests/test_separation.py`); notebook declarations in `notebooks/flow.py` until S.8
-- [ ] S.5 Cache identities: one plain-JSON identity per result type, built on each side independently; tests that the keys match
-- [ ] S.6 Side labs publish results with `porunga.save`; case reuse through Porunga instead of runkit's cache
-- [ ] S.7 Notebooks read results with `porunga.check` / `load`; on a miss they compute, mock explicitly, skip or explain — never start a side lab
-- [ ] S.8 Remove the old Yanus framework (contracts, gates, registry, pins, run selection, stamps, auto mode, scaffolding, `yn`)
-- [ ] S.9 Legacy results imported into Porunga explicitly
-- [ ] S.10 Mock baseline again: the same notebooks pass; key agreement, exchange and mock-separation tests
+- [x] S.5 Cache identities for Kestrel (`designs/kestrel_keys.py`, `docs/cache_identities.md`; key-agreement test)
+- [x] S.6 The Kestrel side labs publish with `porunga.save` (`side_labs/kestrel/_kestrel.publish`); runkit's case cache unchanged
+- [x] S.7 Notebook 43 reads with `porunga.check` / `load` (`kestrel_study.inputs_from_cache`); pins and `find_runs` removed; Kestrel moved to `notebooks/exp/`
+- [-] S.8 Remove the old Yanus framework: dropped for now, it keeps the needs tables working
+- [-] S.9 Legacy results into Porunga: parked
+- [x] S.10 Mock-only tests: `user_tests.sh` (vegeta, design, workflow, notebook parts; `--no-*`, `-v`, `--include-experiments`); `VEGETA_NO_SOLVERS=1` blocks CalculiX, OpenFOAM, PrusaSlicer and XFOIL; MuJoCo, the aero models (BEMT, lattice, transitions, NeuralFoil) and Gmsh mocked
+- [x] S.10b Notebook runner: one installed kernel for all (a dead `python3` kernelspec failed 26b, 27 and 28 in 2 s), at most 4 side by side, one retry of a start-up failure, the log's tail on a failure
+- [x] S.10c Experiments: Kestrel notebooks, `28_microjet` and the Kestrel-X design modules (`designs/exp/`) out of the default runs
 - [ ] S.11 Docs: README, installation, side labs manual (`side_labs/README.md` still speaks of notebooks); offline check of a clean clone
 - [ ] S.12 Check by hand later (left out of the fast mock checks): the long Chiron/MuJoCo notebooks and the demos that need an API key
