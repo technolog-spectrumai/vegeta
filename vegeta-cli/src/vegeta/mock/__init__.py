@@ -26,7 +26,10 @@ so each cell runs and its tables fill, but the numbers mean nothing:
 - Chiron: every ``Lab.run`` episode is cut to ``CHIRON_SECONDS`` simulated seconds (log marked ``mock``, outcome
   detail says MOCK) and ``viz.frames`` renders at most ``CHIRON_FRAMES`` small frames, so movies take seconds.
 
-The rule: in DEBUG nothing should take more than a few seconds.
+- Aero models: Boreas BEMT (``bemt.solve``, ``ducted.solve``) on 8 radial stations and at most 60 iterations, the
+  designs' vortex lattice (``peregrine_flight.vlm``) on at most 4 spanwise by 1 chordwise panel per surface.
+
+The rule: in DEBUG nothing should take more than a few seconds; CAD geometry runs as usual.
 ``mock.uninstall()`` puts the real functions back.
 """
 from __future__ import annotations
@@ -441,6 +444,21 @@ def _chiron_frames(real):
     return frames
 
 
+def _coarse_vlm(real):
+    def vlm(surfaces, *, n_span=12, n_chord=4, **kw):
+        ns = [min(int(n), 4) for n in n_span] if isinstance(n_span, (list, tuple)) else min(int(n_span), 4)
+        return real(surfaces, n_span=ns, n_chord=1, **kw)
+    return vlm
+
+
+def _coarse_bemt(real, n=8):
+    def solve(*args, n_stations=None, **kw):
+        if "iterations" in real.__code__.co_varnames:
+            kw["iterations"] = min(int(kw.get("iterations", 300)), 60)
+        return real(*args, n_stations=n, **kw)
+    return solve
+
+
 def install() -> None:
     """Put the mocks in place (idempotent) and switch the result cache off."""
     if _saved:
@@ -511,10 +529,24 @@ def install() -> None:
         _patch(clab.ChironLab, "run", _chiron_run(clab.ChironLab.run))
         _patch(cviz, "frames", _chiron_frames(cviz.frames))
 
+    from vegeta.boreas import bemt, ducted                # aero models on a coarse grid: the right shapes, quick
+    import vegeta.boreas as boreas
+    for mod in (bemt, ducted):
+        real = mod.solve
+        coarse = _coarse_bemt(real)
+        _patch(mod, "solve", coarse)
+        for name, obj in list(vars(boreas).items()):          # the package's re-exports of the same function
+            if obj is real:
+                _patch(boreas, name, coarse)
+    import importlib.util
+    if importlib.util.find_spec("peregrine_flight") is not None:   # the designs' shared vortex lattice (designs/ on the path)
+        import peregrine_flight
+        _patch(peregrine_flight, "vlm", _coarse_vlm(peregrine_flight.vlm))
+
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
     _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
-                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames (NOT results), the result cache is off")
+                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames and the lattice and BEMT coarse (NOT results), the result cache is off")
 
 
 def uninstall() -> None:
