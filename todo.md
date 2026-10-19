@@ -433,5 +433,5 @@ git subtree) supplies Porunga, Mimesis and Yanus (requirement checks).
 - [x] S.10 Mock-only tests: `user_tests.sh` (vegeta, design, workflow, notebook parts; `--no-*`, `-v`, `--include-experiments`); `VEGETA_NO_SOLVERS=1` blocks CalculiX, OpenFOAM, PrusaSlicer and XFOIL; MuJoCo, the aero models (BEMT, lattice, transitions, NeuralFoil) and Gmsh mocked
 - [x] S.10b Notebook runner: one installed kernel for all (a dead `python3` kernelspec failed 26b, 27 and 28 in 2 s), at most 4 side by side, one retry of a start-up failure, the log's tail on a failure
 - [x] S.10c Experiments: Kestrel notebooks, `28_microjet` and the Kestrel-X design modules (`designs/exp/`) out of the default runs
-- [ ] S.11 Docs: README, installation, side labs manual (`side_labs/README.md` still speaks of notebooks); offline check of a clean clone
+- [x] S.11 Docs: README (layout, notebooks / side labs / Ozaru, mock tests), installation (offline Ozaru, `user_tests.sh`), side labs README and manual (Porunga publishing, pins gone); offline check of a clean clone done (Ozaru 2.4)
 - [ ] S.12 Check by hand later (left out of the fast mock checks): the long Chiron/MuJoCo notebooks and the demos that need an API key
