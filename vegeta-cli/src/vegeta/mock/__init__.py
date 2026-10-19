@@ -40,12 +40,12 @@ MIMIC = "vegeta.mock"
 
 
 def _mimesis():
-    """Mimesis (``mimesis/``, the common base for imitating expensive APIs): the label and the banner."""
+    """Mimesis (``vendor/ozaru/mimesis``, the common base for imitating expensive APIs): the label and the banner."""
     try:
         import mimesis
     except ImportError:                                        # a source tree without the editable install
         import sys
-        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "mimesis" / "src"))
+        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "vendor" / "ozaru" / "mimesis" / "src"))
         import mimesis
     return mimesis
 

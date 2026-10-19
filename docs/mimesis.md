@@ -1,6 +1,6 @@
 # Mimesis in Vegeta — how mock results are labelled
 
-`mimesis/` is a small package with no dependencies outside the standard library (`mimesis-mock`, import `mimesis`;
+`vendor/ozaru/mimesis/` (part of Ozaru, shared with Alabastron by git subtree) is a small package with no dependencies outside the standard library (`mimesis-mock`, import `mimesis`;
 its own README and tests). It was copied from Alabastron, which uses it for its FEniCSx stubs.
 It sets the convention for imitating expensive APIs: a stub result says it is one (`"mock": true`, the mimic's name,
 a note), and a loud banner says when stubs are in force.
@@ -17,5 +17,5 @@ Vegeta has no Mimesis mimics registered yet (`mimesis.available()` is empty). `v
 directly. Moving its stubs to `@mimesis.mimic` with recorded schemas (`record_schema` / `check`) is a possible next
 step, not done.
 
-Install: `./install_local.sh` installs it (`-e mimesis[test]`). `activate.sh` puts `mimesis/src` on the path. Tests:
-`scripts/test_all.sh` (or `pytest mimesis/tests`).
+Install: `./install_local.sh` installs it offline from `vendor/ozaru/mimesis`. `activate.sh` puts its `src` on the path. Tests:
+`scripts/test_all.sh` (or `vendor/ozaru/scripts/test.sh`). Change it in Ozaru, then `scripts/update_ozaru.sh <ref>`.
