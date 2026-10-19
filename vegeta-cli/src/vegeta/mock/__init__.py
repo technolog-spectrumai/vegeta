@@ -23,7 +23,10 @@ so each cell runs and its tables fill, but the numbers mean nothing:
 - Mellonia: ``slice_stl`` writes a short synthetic G-code (read back with the real ``read_gcode``) instead of running
   PrusaSlicer.
 
-Nothing else is mocked: geometry, propeller and flight models, Chiron/MuJoCo episodes run as usual.
+- Chiron: every ``Lab.run`` episode is cut to ``CHIRON_SECONDS`` simulated seconds (log marked ``mock``, outcome
+  detail says MOCK) and ``viz.frames`` renders at most ``CHIRON_FRAMES`` small frames, so movies take seconds.
+
+The rule: in DEBUG nothing should take more than a few seconds.
 ``mock.uninstall()`` puts the real functions back.
 """
 from __future__ import annotations
@@ -407,6 +410,37 @@ def _real_or_placeholder_show(real):
     return show
 
 
+CHIRON_SECONDS = 3.0        # a mocked Chiron episode: at most this many simulated seconds
+CHIRON_FRAMES = 6           # a mocked render: at most this many frames, small
+
+
+def _chiron_run(real):
+    def run(self, controller, duration=None, rules=None, *args, **kwargs):
+        if duration is None and rules is not None:
+            duration = rules.timeout_s()
+        if duration is not None:
+            duration = min(float(duration), CHIRON_SECONDS)
+        kwargs["settle"] = min(float(kwargs.get("settle", 0.5)), 0.2)
+        ep = real(self, controller, duration, rules, *args, **kwargs)
+        try:
+            ep.log["mock"] = True
+            ep.outcome["detail"] = f"MOCK: cut at {CHIRON_SECONDS:g} s (vegeta.mock). " + str(ep.outcome.get("detail") or "")
+        except Exception:
+            pass
+        return ep
+    return run
+
+
+def _chiron_frames(real):
+    def frames(episode, camera="follow", every=1, size=(960, 540), *, start=0, stop=None, **kwargs):
+        log = episode.log if hasattr(episode, "log") else episode
+        n = len(log["t"]) if "t" in log else 1
+        stop = n if stop is None else min(stop, n)
+        every = max(1, (stop - start) // CHIRON_FRAMES)
+        return real(episode, camera=camera, every=every, size=(160, 90), start=start, stop=stop, **kwargs)
+    return frames
+
+
 def install() -> None:
     """Put the mocks in place (idempotent) and switch the result cache off."""
     if _saved:
@@ -468,9 +502,19 @@ def install() -> None:
     for owner in (mellonia, mslicer):
         _patch(owner, "slice_stl", _slice_stl)
 
+    try:                                                # Chiron needs MuJoCo; without it there is nothing to shorten
+        from vegeta.chiron import lab as clab
+        from vegeta.chiron import viz as cviz
+    except ImportError:
+        clab = cviz = None
+    if clab is not None:
+        _patch(clab.ChironLab, "run", _chiron_run(clab.ChironLab.run))
+        _patch(cviz, "frames", _chiron_frames(cviz.frames))
+
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
-    _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked (fixed numbers, NOT results), the result cache is off")
+    _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
+                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames (NOT results), the result cache is off")
 
 
 def uninstall() -> None:
