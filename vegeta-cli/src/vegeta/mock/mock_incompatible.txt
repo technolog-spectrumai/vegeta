@@ -1,0 +1,1 @@
+# tests that check the real MuJoCo / Gmsh / aero numbers: skipped by pytest_plugin when VEGETA_DEBUG is on
