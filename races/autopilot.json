@@ -1,0 +1,41 @@
+{
+ "_about": "The MuJoCo autopilot's tuned settings per course (races.tune; ./tune_autopilot.sh). races.autopilot.tuned(course) reads them; run_mujoco's defaults apply where a course has none.",
+ "industrial": {
+  "settings": {
+   "safety": 0.6,
+   "omega_pos": 3.5,
+   "lookahead_s": 0.6,
+   "tilt_max_deg": 60.0
+  },
+  "lap time [s]": 37.70800000000222,
+  "collisions": 0,
+  "date": "2026-10-19"
+ },
+ "farm": {
+  "settings": {
+   "safety": 0.6,
+   "tilt_max_deg": 60.0,
+   "lookahead_s": 0.4,
+   "omega_pos": 3.5
+  },
+  "lap time [s]": 36.668,
+  "collisions": 0,
+  "date": "2026-10-19"
+ },
+ "quarry": {
+  "settings": {
+   "safety": 0.5,
+   "tilt_max_deg": 60.0,
+   "lookahead_s": 0.4,
+   "omega_pos": 3.5
+  },
+  "lap time [s]": 49.7,
+  "collisions": 0,
+  "date": "2026-10-19"
+ },
+ "hangar": {
+  "settings": null,
+  "note": "DNF in all 72 laps of round 1 (best: 13 of 18 zones); round 2: ./tune_autopilot.sh --round2",
+  "date": "2026-10-19"
+ }
+}
