@@ -33,7 +33,7 @@ git fetch --no-tags "$REMOTE" "$REF"
 SHA=$(git rev-parse FETCH_HEAD)
 SHORT=$(git rev-parse --short FETCH_HEAD)
 
-if [[ -d $PREFIX ]]; then
+if [[ -n "$(git ls-files -- "$PREFIX" | head -1)" ]]; then
     git subtree merge --prefix="$PREFIX" --squash -m "Update vendored Ozaru to $SHORT" "$SHA"
 else
     git subtree add --prefix="$PREFIX" --squash -m "Vendor Ozaru $SHORT with git subtree" "$SHA"
