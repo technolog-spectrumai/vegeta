@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 GRID = {"safety": (0.4, 0.5, 0.6, 0.7), "tilt_max_deg": (45.0, 60.0), "lookahead_s": (0.15, 0.25, 0.4), "omega_pos": (2.0, 2.5, 3.5)}
-QUICK = {"safety": (0.4, 0.55), "tilt_max_deg": (60.0,), "lookahead_s": (0.15, 0.3), "omega_pos": (2.5,)}
+QUICK = {"safety": (0.4, 0.55), "tilt_max_deg": (60.0,), "lookahead_s": (0.15, 0.3), "omega_pos": (2.5,)}   # 4 laps per course
 OUT = Path(__file__).resolve().parent / "runs" / "tune"
 
 
@@ -24,6 +24,7 @@ def main(argv=None) -> int:
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
     ap.add_argument("--quick", action="store_true", help="a small grid (8 tries per course)")
     a = ap.parse_args(argv)
+    print(f"tune: courses {a.courses}, {'quick' if a.quick else 'full'} grid", flush=True)
     grid = QUICK if a.quick else GRID
     OUT.mkdir(parents=True, exist_ok=True)
     best_f = OUT / "best.json"
@@ -31,9 +32,14 @@ def main(argv=None) -> int:
     for slug in a.courses:
         c = courses.COURSES[slug]()
         rows, keys = [], list(grid)
+        total = 1
+        for v in grid.values():
+            total *= len(v)
+        print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — {total} laps to fly", flush=True)
         for n, vals in enumerate(itertools.product(*grid.values()), 1):
             kw = dict(zip(keys, vals))
             t0 = time.time()
+            print(f"{slug} {n:3d}/{total}  flying {kw} …", flush=True)
             try:
                 st = sim.run_mujoco(c, **kw)["stats"]
             except Exception as e:                                   # a crash of one try is a result, not the end
@@ -41,7 +47,7 @@ def main(argv=None) -> int:
             row = {**kw, "status": st.get("status"), "reason": st.get("reason", ""), "lap time [s]": st.get("lap time [s]"),
                    "collisions": st.get("collisions"), "zones passed": st.get("zones passed"), "wall [s]": round(time.time() - t0, 1)}
             rows.append(row)
-            print(f"{slug} {n:3d}  {kw}  → {row['status']} {row['lap time [s]'] or ''} {row['zones passed'] or ''} {row['collisions'] or 0} hits", flush=True)
+            print(f"{slug} {n:3d}/{total}  → {row['status']} {row['lap time [s]'] or ''} {row['zones passed'] or ''} {row['collisions'] or 0} hits, {row['wall [s]']} s{(' — ' + row['reason']) if row['reason'] else ''}", flush=True)
         import pandas as pd
         df = pd.DataFrame(rows)
         df.to_csv(OUT / f"{slug}.csv", index=False)
