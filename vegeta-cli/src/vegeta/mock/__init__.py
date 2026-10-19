@@ -124,6 +124,15 @@ def _talos_mesh(self, workdir, progress=False, *, cache=None):
     return res
 
 
+def _generate_mesh(geometry, units, regions, settings, msh_path, log_file, progress=None) -> dict:
+    """Gmsh mocked: a placeholder ``.msh`` and statistics in the real shape (``read_mesh`` is mocked too)."""
+    _count("talos.generate_mesh")
+    Path(msh_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(msh_path).write_text("vegeta.mock: no mesh\n")
+    return {"n_nodes": 400, "n_elements": 1000, "element_type": "tet10", "min_quality_sicn": 0.5, "mean_quality_sicn": 0.8,
+            "region_surfaces": {getattr(r, "name", str(r)): [] for r in regions}, "bbox": None, "gmsh_version": "mock"}
+
+
 def _fea_metrics(model) -> Metrics:
     """The keys and types of a real static summary (talos StructuralModel._summarise), with fixed values; the
     reactions balance the applied point forces."""
@@ -480,6 +489,8 @@ def install() -> None:
     from vegeta.talos import model as tmodel
     for owner in (tmesh, tviz, tmodel):
         _patch(owner, "read_mesh", mesh_data)
+    for owner in (tmesh, tmodel):
+        _patch(owner, "generate_mesh", _generate_mesh)       # Gmsh: never meshes under the mocks
     _patch(tviz, "animate", _animate)
     for name in ("plot_results", "plot_mode", "plot_damage", "plot_section", "export_vtu", "plot_deformed",
                  "plot_along_axis", "plot_von_mises_histogram", "plot_mesh", "plot_problem", "mesh_to_pyvista",
@@ -546,7 +557,7 @@ def install() -> None:
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
     _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
-                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames and the lattice and BEMT coarse (NOT results), the result cache is off")
+                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice and BEMT coarse (NOT results), the result cache is off")
 
 
 def uninstall() -> None:
