@@ -1,6 +1,7 @@
 """Slice an STL with the PrusaSlicer command line."""
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import threading
@@ -14,8 +15,15 @@ from .result import Result
 from .settings import Orientation, PrintSettings
 
 
+
+def _blocked(what) -> None:
+    """``VEGETA_NO_SOLVERS=1`` (the mock-only tests): no external tool may start; raise before anything is spawned."""
+    if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+        raise RuntimeError(f"solver blocked: VEGETA_NO_SOLVERS=1 (mock-only test) refused to start {what!r}")
+
 def prusaslicer_version(executable: Sequence[str]) -> str | None:
     try:
+        _blocked(executable)
         out = subprocess.run([*executable, "--help"], capture_output=True, text=True, timeout=60).stdout
     except (OSError, subprocess.SubprocessError):
         return None

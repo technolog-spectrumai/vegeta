@@ -23,6 +23,12 @@ NEURALFOIL_MODEL = "large"
 XFOIL_ITER = 200
 
 
+
+def _blocked(what) -> None:
+    """``VEGETA_NO_SOLVERS=1`` (the mock-only tests): no external tool may start; raise before anything is spawned."""
+    if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+        raise RuntimeError(f"solver blocked: VEGETA_NO_SOLVERS=1 (mock-only test) refused to start {what!r}")
+
 @dataclass
 class Polar:
     """A section's coefficients against the angle of attack at one Reynolds number. ``confidence`` is NeuralFoil's
@@ -97,7 +103,8 @@ def backends() -> dict:
         nf = getattr(neuralfoil, "__version__", None) or getattr(neuralfoil, "version", "installed")
     except ImportError:
         nf = None
-    return {"neuralfoil": nf, "xfoil": shutil.which(os.environ.get("XFOIL", "xfoil"))}
+    blocked = os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes")   # mock-only tests: no xfoil
+    return {"neuralfoil": nf, "xfoil": None if blocked else shutil.which(os.environ.get("XFOIL", "xfoil"))}
 
 
 def _neuralfoil(section: Section, alphas, Re, mach, n_crit, model_size) -> Polar:
@@ -125,6 +132,7 @@ def _xfoil(section: Section, alphas, Re, mach, n_crit, workdir, timeout) -> tupl
     t0 = time.time()
     started = datetime.now(timezone.utc).isoformat()
     try:
+        _blocked(exe)
         proc = subprocess.run([exe], input=script, capture_output=True, text=True, cwd=tmp, timeout=timeout)
         rec = CommandRecord([exe], str(tmp), proc.returncode, time.time() - t0, proc.stdout[-20000:], proc.stderr[-5000:], started)
     except subprocess.TimeoutExpired as exc:

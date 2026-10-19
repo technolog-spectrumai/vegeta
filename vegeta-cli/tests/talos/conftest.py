@@ -13,7 +13,8 @@ def _gmsh_ok():
 
 
 HAVE_GMSH = _gmsh_ok()
-HAVE_CCX = shutil.which("ccx") is not None
+NO_SOLVERS = __import__("os").environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes")
+HAVE_CCX = shutil.which("ccx") is not None and not NO_SOLVERS            # mock-only runs never start CalculiX
 DATA = Path(__file__).parent / "data"
 
 

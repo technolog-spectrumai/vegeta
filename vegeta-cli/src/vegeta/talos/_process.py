@@ -13,6 +13,12 @@ from typing import Callable, Mapping, Sequence
 from .result import CommandRecord
 
 
+
+def _blocked(what) -> None:
+    """``VEGETA_NO_SOLVERS=1`` (the mock-only tests): no external tool may start; raise before anything is spawned."""
+    if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+        raise RuntimeError(f"solver blocked: VEGETA_NO_SOLVERS=1 (mock-only test) refused to start {what!r}")
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -59,6 +65,7 @@ def run_command(
         return finish(None, error=f"executable '{exe}' not found on PATH")
 
     try:
+        _blocked(command)
         proc = subprocess.Popen(
             cmd, cwd=cwd, env=full_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.DEVNULL, text=True, errors="replace", bufsize=1,

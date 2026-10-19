@@ -4,12 +4,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable
 
+import os
 import numpy as np
 
 from ._process import run_command
 from .loads import Acceleration, Centrifugal, Displacement, FixedSupport, Force, PointMass, Pressure, RadialTemperature
 from .mesh import MeshData, consistent_nodal_forces, element_faces
 
+
+
+def _blocked(what) -> None:
+    """``VEGETA_NO_SOLVERS=1`` (the mock-only tests): no external tool may start; raise before anything is spawned."""
+    if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+        raise RuntimeError(f"solver blocked: VEGETA_NO_SOLVERS=1 (mock-only test) refused to start {what!r}")
 
 def nset(region: str) -> str:
     return f"N_{region.upper()}"
@@ -129,6 +136,7 @@ def ccx_version(executable: str = "ccx") -> str | None:
     import subprocess
 
     try:
+        _blocked(executable)
         out = subprocess.run([executable, "-v"], capture_output=True, text=True, timeout=30).stdout
     except (OSError, subprocess.SubprocessError):
         return None

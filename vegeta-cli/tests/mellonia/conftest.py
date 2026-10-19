@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 DATA = Path(__file__).parent / "data"
-HAVE_PRUSA = shutil.which("prusa-slicer") is not None
+HAVE_PRUSA = shutil.which("prusa-slicer") is not None and __import__("os").environ.get("VEGETA_NO_SOLVERS", "").strip().lower() not in ("1", "true", "on", "yes")
 
 
 def pytest_collection_modifyitems(config, items):

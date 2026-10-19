@@ -11,6 +11,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+
+def _no_solvers() -> bool:
+    return os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes")
+
+
+def _blocked(what) -> None:
+    """``VEGETA_NO_SOLVERS=1`` (the mock-only tests): no external tool may start; raise before anything is spawned."""
+    if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+        raise RuntimeError(f"solver blocked: VEGETA_NO_SOLVERS=1 (mock-only test) refused to start {what!r}")
+
 @dataclass
 class OpenFOAMEnvironment:
     """How OpenFOAM commands are launched.
@@ -60,6 +70,8 @@ class OpenFOAMEnvironment:
             # the installation's own bin directory must provide it (not another OpenFOAM earlier on PATH)
             script = (f'if [ -n "$FOAM_APPBIN" ]; then test -x "$FOAM_APPBIN/{executable}"; '
                       f'else command -v {shlex.quote(executable)} >/dev/null; fi')
+            if _no_solvers():
+                return False                           # mock-only tests: never started, so never available
             r = subprocess.run(self.command(["bash", "-c", script]), env={**os.environ, **self.env},
                                capture_output=True, text=True, timeout=60)
             return r.returncode == 0
@@ -78,6 +90,8 @@ class OpenFOAMEnvironment:
             if m and "$" not in m.group(1):
                 return m.group(1)
         try:
+            if _no_solvers():
+                return None                            # mock-only tests: not asked
             r = subprocess.run(self.command(["bash", "-c", 'echo "$WM_PROJECT_VERSION"']),
                                env={**os.environ, **self.env}, capture_output=True, text=True, timeout=60)
             v = r.stdout.strip().splitlines()[-1].strip() if r.stdout.strip() else ""
@@ -103,7 +117,9 @@ class OpenFOAMEnvironment:
     def candidates(cls) -> list["OpenFOAMEnvironment"]:
         """Installations found in well-known places: an already sourced environment, official
         openfoam.com/.org packages under /usr/lib/openfoam and /opt, conda environments, the
-        Debian/Ubuntu package."""
+        Debian/Ubuntu package. None while ``VEGETA_NO_SOLVERS=1`` (mock-only tests)."""
+        if os.environ.get("VEGETA_NO_SOLVERS", "").strip().lower() in ("1", "true", "on", "yes"):
+            return []
         found: list[OpenFOAMEnvironment] = []
         if os.environ.get("WM_PROJECT_DIR") and shutil.which("blockMesh"):
             found.append(cls())
