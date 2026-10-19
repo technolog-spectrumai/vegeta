@@ -24,5 +24,5 @@ def pytest_collection_modifyitems(config, items):
     names = {l.strip() for l in LIST.read_text().splitlines() if l.strip() and not l.startswith("#")}
     for item in items:
         nid = item.nodeid.split("/tests/", 1)[-1] if "/tests/" in item.nodeid else item.nodeid
-        if item.nodeid in names or nid in names or item.name in names:
+        if item.nodeid in names or nid in names or item.name in names or getattr(item, "originalname", None) in names:
             item.add_marker(pytest.mark.skip(reason="checks the real engine; skipped under the mocks"))
