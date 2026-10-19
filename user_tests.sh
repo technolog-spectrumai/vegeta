@@ -210,7 +210,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
     notebooks-mock)
       hdr "notebooks with the mocks on (every one but the slow ones; scripts/debug_notebooks.sh --all for those)"
-      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -70 | sed 's/^/  /'
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$(( JOBS < 4 ? JOBS : 4 ))" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -70 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     unit) sec_unit ;;
     physics) sec_physics ;;
@@ -251,7 +251,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT" components/tests assemblies/tests -m "not slow" || status=1 ;;
     notebooks-debug)
       hdr "Notebooks in DEBUG mode (vegeta.mock: FEA and CFD mocked)"
-      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$JOBS" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -60 | sed 's/^/  /'
+      t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$(( JOBS < 4 ? JOBS : 4 ))" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -60 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     velutina)
       hdr "Velutina: design and flight-model tests"

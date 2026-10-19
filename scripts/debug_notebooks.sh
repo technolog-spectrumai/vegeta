@@ -38,20 +38,31 @@ restore() {
 if [ -z "${DISPLAY:-}" ] && command -v Xvfb >/dev/null; then       # one virtual display for pyvista renders
   for n in $(seq 90 140); do [ -e "/tmp/.X$n-lock" ] || { DNUM=$n; break; }; done
   Xvfb ":$DNUM" -screen 0 1280x1024x24 >/dev/null 2>&1 &
-  XVFB_PID=$!; export DISPLAY=":$DNUM"; sleep 1
+  XVFB_PID=$!; export DISPLAY=":$DNUM"
+  for _ in $(seq 50); do [ -e "/tmp/.X11-unix/X$DNUM" ] && break; sleep 0.2; done   # wait until the display answers
+  sleep 0.5
 fi
+[ "$JOBS" -gt 4 ] && JOBS=4      # more simultaneous kernel starts race on ports and fail in seconds
 trap 'kill ${XVFB_PID:-} 2>/dev/null; restore' EXIT
 export VEGETA_DEBUG=1 VEGETA_NO_SOLVERS=1 PYVISTA_OFF_SCREEN=true PYVISTA_JUPYTER_BACKEND=static MPLBACKEND=Agg PORUNGA_DIR="$LOGS/porunga"
+exec_nb() {
+  (cd "$(dirname "$1")" && jupyter nbconvert --to notebook --execute "$2.ipynb" --output-dir "$LOGS" --output "$2-run.ipynb" \
+     --ExecutePreprocessor.timeout="$CELL") >"$LOGS/$2.log" 2>&1
+}
 run_one() {
-  local path="$1" t0=$SECONDS; local nb; nb="$(basename "$path" .ipynb)"
-  if (cd "$(dirname "$path")" && jupyter nbconvert --to notebook --execute "$nb.ipynb" --output-dir "$LOGS" --output "$nb-run.ipynb" \
-        --ExecutePreprocessor.timeout="$CELL") >"$LOGS/$nb.log" 2>&1; then
-    printf 'ok      %-40s %5s s\n' "$nb" $((SECONDS - t0))
+  local path="$1" t0=$SECONDS note=""; local nb; nb="$(basename "$path" .ipynb)"
+  exec_nb "$path" "$nb"; local rc=$?
+  if [ $rc -ne 0 ] && [ $((SECONDS - t0)) -lt 15 ]; then     # failed before any cell could run: a start-up failure, retry once
+    cp "$LOGS/$nb.log" "$LOGS/$nb.first.log"; sleep 2; t0=$SECONDS; note=" (retried after a start-up failure)"
+    exec_nb "$path" "$nb"; rc=$?
+  fi
+  if [ $rc -eq 0 ]; then
+    printf 'ok      %-40s %5s s%s\n' "$nb" $((SECONDS - t0)) "$note"
   else
-    printf 'FAILED  %-40s %5s s\n' "$nb" $((SECONDS - t0)); grep -E "Error|error" "$LOGS/$nb.log" | grep -v "^\s*File" | tail -3 | sed 's/^/        /'
+    printf 'FAILED  %-40s %5s s%s\n' "$nb" $((SECONDS - t0)) "$note"; tail -15 "$LOGS/$nb.log" | sed 's/^/        /'
   fi
 }
-export -f run_one; export LOGS CELL
+export -f exec_nb run_one; export LOGS CELL
 printf '%s\n' "${LIST[@]}" | xargs -P "$JOBS" -I{} bash -c 'run_one "$@"' _ {} | tee "$LOGS/summary.txt"
 echo "logs and executed notebooks: $LOGS"
 grep -q FAILED "$LOGS/summary.txt" && exit 1 || exit 0
