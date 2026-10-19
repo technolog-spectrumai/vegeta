@@ -163,7 +163,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
 2. The notebook reads, for every chapter and variant, the **newest successful run** on disk (completed and compatible
-   with the current design) unless one is **pinned** in `notebooks/pins/43_kestrel_study.json`; the table says which. Pin a run with `yn pin 43 K1 --variant 4Q-2 side_labs/runs/kestrel/airframe-sweep/<run id>` — the
+   with the current design) unless one is in the Porunga cache under its key (`designs/kestrel_keys.py`; pins are gone); the table says which. A completed run publishes itself (`side_labs/runs/kestrel/airframe-sweep/<run id>`) — the
    workflow prints the exact command when it finishes, `yn pin 43 --suggest` lists the usable runs on disk (it writes
    nothing), and `yn why 43` shows the whole gate from the shell before you open the notebook. Which inputs are
    required and which optional is the notebook's contract in `side_labs/flow.py` (`docs/yanus.md`).

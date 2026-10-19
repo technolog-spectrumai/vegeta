@@ -505,7 +505,11 @@ vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisio
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
 vegeta-yanus/      the vegeta-yanus package: src/vegeta/yanus (contracts, gates, pins, stamps, scaffolds), adds `vegeta yanus` / `yn`
-notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
+notebooks/         devices/, parts/, scenarios/, races/, demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
+designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
+side_labs/         optional, expensive calculations (CFD, FEA, MuJoCo races) under the run contract; `wf` / ./side_labs.sh
+races/             four MuJoCo race courses for the reference 5-inch quad (courses, rules, mock flyer, analysis, exports)
+vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimesis mocks, Yanus requirement checks); vendor/OZARU_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
 docs/              philosophy, result shape, installation, composition, per-package guides
@@ -514,8 +518,23 @@ install_local.sh   creates .venv, installs all dependencies and vegeta-cli
 test.sh            checks the installation (components + a short working run)
 test_openfoam.sh   tests the CFD tool against every OpenFOAM installation found (or given), both flavours
 jupyter.sh         starts JupyterLab from .venv
-scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
+scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh
+user_tests.sh      the mock-only test run (four parts: vegeta, design, workflow, notebook; no solver ever starts)
 ```
+
+## Notebooks, side labs and Ozaru
+- **Notebooks are authoritative**: they hold the analysis and its story. Every notebook starts with `DEBUG = True`:
+  the expensive solvers are mocked (`vegeta.mock`: FEA, CFD, slicing, MuJoCo episodes cut short, Gmsh meshes, coarse
+  BEMT / lattice / transitions, a thin-airfoil polar for NeuralFoil) and the results are labelled MOCK. Set
+  `DEBUG = False` (or `VEGETA_DEBUG=0`) for real results.
+- **Side labs** (`side_labs/`) run the optional, expensive calculations (hours of CFD or FEA) and only fill a cache.
+  Notebooks and side labs never import, launch or name each other; they meet through a **Porunga key** built from a
+  plain-JSON identity (`docs/cache_identities.md`), with `mock` part of it so mock and real results never mix.
+- **Ozaru** (`vendor/ozaru`, shared with Alabastron) supplies three stdlib-only libraries: **Porunga** (the cache:
+  `key`, `check`, `load`, `save`), **Mimesis** (mock building blocks: mimics, labels, schema checks) and **Yanus**
+  (requirement checks: `Tool`, `Package`, `Env`, `AnyOf`, `check_needs`, `table`). It is installed offline from the
+  vendored copy; `scripts/update_ozaru.sh REF` is the only command that contacts the Ozaru repository
+  (`--check` verifies the vendored copy against `vendor/OZARU_REVISION`).
 
 ## Quick start
 ```bash
@@ -527,6 +546,8 @@ source .venv/bin/activate           # for the vegeta command and the scripts bel
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly
 scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the CLIs
+./user_tests.sh                     # mock-only tests, one line per test, a log file (-v full output; --no-notebook etc.; --include-experiments)
+scripts/debug_notebooks.sh 08 26    # execute chosen notebooks with the mocks on (data files they write are put back)
 ```
 
 ## Licence

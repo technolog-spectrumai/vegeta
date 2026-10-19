@@ -1,4 +1,8 @@
-# Workflows — explicit, file-based long-running analyses
+# Side labs — explicit, file-based long-running analyses
+
+Side labs (formerly *workflows*) run the optional, expensive calculations and fill the Porunga cache; they never
+name a notebook (`side_labs/tests/test_separation.py`). A completed Kestrel run is published with `porunga.save`
+under the key of `designs/kestrel_keys.py`; a notebook derives the same key and loads it.
 
 (The short how-to for engineers is `manual_workflows.md` at the repository root; this file is the contract.)
 
@@ -84,6 +88,9 @@ on the machine, and the notebooks' contracts. `side_labs/library.py` generates `
 the GUI. A new chapter is one line there (`yn new chapter kestrel/<name> --kind fea`), a new book a new entry and a new
 script (`--new-kind` writes the skeleton).
 
+*(Superseded for Kestrel: the side labs publish a completed run into the Porunga cache and notebook 43 loads it by key
+— `designs/kestrel_keys.py`, `docs/cache_identities.md`; `notebooks/pins/` is gone. The text below describes the
+gate-based reading the other books still use.)*
 A notebook reads the runs **pinned** for it in `notebooks/pins/<notebook>.json` (`yn pin`, `wf notebook <run>` prints
 the command); its entry gate (`yanus.enter`) checks the pins, the tools and the other notebooks' files and raises one
 error with every fix; its exit gate (`GATE.leave()`) checks and stamps what it promised to write.

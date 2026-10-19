@@ -8,6 +8,12 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 source .venv/bin/activate
 ```
 
+The build never contacts GitHub: Ozaru (Porunga, Mimesis, Yanus) is installed from the vendored copy
+(`pip install --no-deps --no-build-isolation --no-index -e vendor/ozaru/{porunga,mimesis,yanus}`, done by
+`install_local.sh`), and `source activate.sh` puts the source trees, `side_labs/`, `designs/` and `designs/exp/` on
+`PYTHONPATH`; the Porunga cache is `$PORUNGA_DIR` if set, else `cache/porunga/` (ignored by git). Updating Ozaru is a maintainer step:
+`scripts/update_ozaru.sh <branch|tag|commit>` (git subtree, signed commits, Ozaru's tests run before the commit).
+
 ## Checking the installation
 ```bash
 ./test.sh               # components + a ~10 s working run through every tool; exit code 0 = OK
@@ -87,6 +93,13 @@ The CLI slices headless. If your build insists on a display, run it under `xvfb-
 (`slice_stl(..., executable=["xvfb-run", "-a", "prusa-slicer"])`).
 
 ## Tests
+`./user_tests.sh` is the everyday run: mock-only (`VEGETA_NO_SOLVERS=1` refuses to start CalculiX, OpenFOAM,
+PrusaSlicer or XFOIL; the AI demos never call the API), in four parts — vegeta (environment, Ozaru, the CLI mocks),
+design (`designs/tests`, `components`), workflow (side labs, the cache exchange), notebook (every notebook but the slow
+ones, with the mocks on, at most four side by side on one installed kernel). `--no-vegeta`, `--no-design`,
+`--no-workflow`, `--no-notebook` leave a part out; `-v` gives pytest's full output; `--include-experiments` adds
+`notebooks/exp/` and the Kestrel tests. Each run writes `user_tests_<date>.log`.
+
 `scripts/test_all.sh` runs the tests of each tool (`vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
 tool is missing; markers: `requires_cadquery`, `requires_gmsh`, `requires_ccx`, `requires_openfoam`,
 `requires_prusaslicer`, `slow`. Run only fast tests with `pytest -m "not slow"`.
