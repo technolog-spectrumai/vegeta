@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run the Chiron / Cleopatra / Persephone checks and benchmarks and print a compact report to paste back.
 #
-# Usage: ./user_tests.sh [SECTION ...] [--python EXE] [-j N]
+# Usage: ./user_tests.sh [SECTION ...] [--python EXE] [-j N] [-v|--verbose]
+#   -v, --verbose   pytest's full output (tracebacks, prints); default: one line per test as it finishes
 #   env               versions, git commit, imports                                         (seconds)
 #   unit              chiron + cli + chronos test suites, designs tests          (~2-3 min)
 #   physics           body-joint physics checks with their numbers: restoring torque,
@@ -44,6 +45,7 @@
 # Results: benchmark/<robot>/results/<scale>/ (results.json, *_runs.csv, configs.csv, raw/, plots/, report.md).
 # Everything is printed and also saved to user_tests_<date>.log.
 set -uo pipefail
+VERBOSE=0
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PY=""
@@ -52,8 +54,8 @@ SECTIONS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --python) PY="$2"; shift 2 ;;
-    -j) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,39p' "$0"; exit 0 ;;
+    -j) JOBS="$2"; shift 2 ;; -v|--verbose) VERBOSE=1; shift ;;
+    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
     *) SECTIONS+=("$1"); shift ;;
   esac
 done
@@ -104,14 +106,23 @@ for m in ("mujoco", "numpy", "scipy", "pandas", "matplotlib", "tqdm", "pyvista",
 EOF
 }
 
-pytest_summary() {  # pytest_summary <dir> <args...> — live progress (file by file, with a count), then the failures
+pytest_summary() {  # pytest_summary <dir> <args...>
+  # default: one line per test as it finishes (ok / FAILED / skip, the test, [n/N]), then the failures' short reasons;
+  # -v / --verbose: pytest's full output (every test, the tracebacks, print output)
   local dir="$1"; shift
-  local out; out="$(mktemp)"
-  (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider -o console_output_style=count --tb=line "$@" 2>&1) \
-    | tee "$out" | awk '/::/ && / (PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS) / {f=$1; sub(/::.*/, "", f); if (f != last) {printf "    %s\n", f; last=f}
-                        if ($0 ~ / (FAILED|ERROR) /) {printf "      FAILED %s\n", $1} n++; if (n % 25 == 0) printf "      … %d tests\n", n}
-                        fflush()'
-  local rc=${PIPESTATUS[0]}
+  local out rc; out="$(mktemp)"
+  if [ "$VERBOSE" -eq 1 ]; then
+    (cd "$dir" && "$PY" -m pytest -v -rfE -p no:cacheprovider "$@" 2>&1) | tee "$out" | sed 's/^/    /'
+    rc=${PIPESTATUS[0]}
+  else
+    (cd "$dir" && "$PY" -m pytest -v -p no:cacheprovider -o console_output_style=count --tb=line "$@" 2>&1) | tee "$out" \
+      | awk '/::/ && / (PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)/ {
+               st = ($0 ~ / PASSED/) ? "ok    " : ($0 ~ / (FAILED|ERROR)/) ? "FAILED" : "skip  ";
+               n = ""; if (match($0, /\[ *[0-9]+\/[0-9]+\]/)) n = substr($0, RSTART, RLENGTH);
+               printf "    %s %s %s\n", st, $1, n; fflush() }'
+    rc=${PIPESTATUS[0]}
+    grep -E "^(FAILED|ERROR) " "$out" | head -20 | sed 's/^/    /'
+  fi
   echo "  $(tail -1 "$out")"
   rm -f "$out"
   return $rc
