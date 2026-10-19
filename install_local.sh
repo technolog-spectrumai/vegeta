@@ -109,8 +109,14 @@ else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, mimesis (the mocks' base), JupyterLab)"
-"$PY" -m pip install --upgrade pip
+"$PY" -m pip install --upgrade pip setuptools wheel
+
+# Ozaru (Porunga, Mimesis, Yanus — shared with Alabastron) from the committed vendor/ozaru: no index, no fetch
+step "Ozaru from vendor/ozaru ($(sed -n 's/^revision: //p' "$ROOT/vendor/OZARU_REVISION" | cut -c1-12))"
+"$PY" -m pip install --no-deps --no-build-isolation --no-index \
+  -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimesis" -e "$ROOT/vendor/ozaru/yanus"
+
+step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, vegeta-yanus, JupyterLab)"
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test,sim,sections]" \
   mujoco \
@@ -118,7 +124,6 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zeph
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \
   -e "$ROOT/vegeta-yanus[test,table]" \
-  -e "$ROOT/mimesis[test]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 
