@@ -1,7 +1,7 @@
 """The closed loop for a simulation: the birds, the simulated detector, the mission stack and an aircraft.
 
 ``SimLoop`` holds the simulator side and feeds the stack each step; the aircraft is anything that gives a
-``NavState`` (the kinematic one here, the MuJoCo Nisus in notebooks/designs/nisus_birds.py). It records the truth at
+``NavState`` (the kinematic one here, the MuJoCo Nisus in designs/nisus_birds.py). It records the truth at
 ``sample_hz`` for the scores, judges every photo from the truth, and keeps what the video needs.
 ``run_kinematic`` flies a whole encounter with the kinematic aircraft in a few seconds of wall time.
 """

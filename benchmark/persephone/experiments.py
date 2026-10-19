@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DESIGNS = HERE.parents[1] / "notebooks" / "designs"
+DESIGNS = HERE.parents[1] / "designs"
 for _p in (str(DESIGNS), str(HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)

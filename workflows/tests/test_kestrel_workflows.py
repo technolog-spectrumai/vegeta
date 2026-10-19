@@ -114,7 +114,7 @@ def test_the_notebook_and_its_modules_launch_no_solver():
     src = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
     assert not SOLVER_CALLS.search(src), SOLVER_CALLS.search(src)
     for mod in ("kestrel_study.py", "kestrel_campaigns.py"):
-        text = (ROOT / "notebooks" / "designs" / mod).read_text()
+        text = (ROOT / "designs" / mod).read_text()
         hits = [m.group(0) for m in SOLVER_CALLS.finditer(text)]
         assert not hits, (mod, hits)
     assert "import_legacy" in src or "RUNS" in src                              # the selection is explicit in the notebook

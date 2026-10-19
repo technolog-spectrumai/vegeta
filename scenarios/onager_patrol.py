@@ -4,7 +4,7 @@
     xvfb-run -a python3 scenarios/onager_patrol.py                 # headless (pyvista needs a display)
     python3 scenarios/onager_patrol.py --response limp --fps 25
 
-The scenario is ``notebooks/designs/onager_scenario.py`` (the same one notebook 20 §7 runs): a gravel road
+The scenario is ``designs/onager_scenario.py`` (the same one notebook 20 §7 runs): a gravel road
 (RMS 15 mm) with a 120 mm speed bump at 3 m/s; at 6 s the front-left hub motor loses power, at 9 s the rear-right
 wheel seizes. ``drag`` keeps driving on the braked tyre; ``limp`` is the three-wheel limp (hull shifted forward,
 the seized wheel lifted, 1.5 m/s). Writes ``scenarios/output/onager_patrol_<response>.mp4`` and
@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import onager_robot as orb  # noqa: E402
 import onager_scenario as osc  # noqa: E402

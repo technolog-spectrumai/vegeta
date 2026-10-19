@@ -1,5 +1,5 @@
 """The "air" components (quad_frame, fixed_wing, aguya, merlin, velutina) build the same shapes as the originals in
-``notebooks/designs`` with default parameters: volume, surface area, bounding box and face count of every design and
+``designs`` with default parameters: volume, surface area, bounding box and face count of every design and
 of each ``part`` it can make (and, for MERLIN, each propulsion layout)."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import pytest
 
 pytest.importorskip("cadquery")
 
-DESIGNS = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")
+DESIGNS = str(Path(__file__).resolve().parents[2] / "designs")
 if DESIGNS not in sys.path:
     sys.path.append(DESIGNS)          # the originals use bare imports (``from fixed_wing import ...``)
 

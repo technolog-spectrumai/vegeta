@@ -84,7 +84,7 @@ class Run:
 @dataclass(frozen=True)
 class File:
     """A file one unit gives and another takes. On the giving side ``File(path, schema=2, keys=(…))``; on the taking
-    side ``File("38_prop_lab:notebooks/designs/data/prop_lab.json", min_schema=2)`` — the producer, a colon, the path
+    side ``File("38_prop_lab:designs/data/prop_lab.json", min_schema=2)`` — the producer, a colon, the path
     (relative to the repository root). ``keys`` = the top-level JSON keys that must be there. On the giving side
     ``optional=True`` = the unit may not write it on every run (a mode that skips it: no OpenFOAM, a quick pass)."""
     ref: str

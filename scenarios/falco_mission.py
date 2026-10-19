@@ -9,7 +9,7 @@ scenario (notebook 35, Part 11).
     python3 scenarios/falco_mission.py --no-movie                          # the numbers only
     python3 scenarios/falco_mission.py --list                              # the condition names
 
-The scenarios are ``notebooks/designs/falco_scenario.standard_scenarios()``: calm, the ridge lift of a south wind, the
+The scenarios are ``designs/falco_scenario.standard_scenarios()``: calm, the ridge lift of a south wind, the
 lee downdraft of a north wind, a hot day (ISA +20 °C), a storm warning (the return and the fastest descent) and the
 Jetson's failure. Writes ``scenarios/output/<Scenario.slug>.mp4`` (e.g. ``falco_calm.mp4``), the telemetry ``.csv`` and
 ``falco_mission.json`` (outcome, phases, energy by phase, the comparison).
@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import falco_scenario as fsc  # noqa: E402
 

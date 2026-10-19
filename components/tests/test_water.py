@@ -1,4 +1,4 @@
-"""The "water" components (survey_boat, submarine) build the same shapes as the originals in ``notebooks/designs``
+"""The "water" components (survey_boat, submarine) build the same shapes as the originals in ``designs``
 with default parameters: volume, surface area, bounding box and face count of each ``part`` every design can make."""
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 pytest.importorskip("cadquery")
 
-DESIGNS = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")
+DESIGNS = str(Path(__file__).resolve().parents[2] / "designs")
 if DESIGNS not in sys.path:
     sys.path.append(DESIGNS)          # the originals use bare imports
 

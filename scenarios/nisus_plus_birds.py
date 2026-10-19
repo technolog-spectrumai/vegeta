@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import nisus_plus_birds as fb  # noqa: E402
 

@@ -1,4 +1,4 @@
-"""A model-aircraft turbojet in CAD: the geometry (from ``notebooks/designs/turbojet.py``, notebook 28) — the radial
+"""A model-aircraft turbojet in CAD: the geometry (from ``designs/turbojet.py``, notebook 28) — the radial
 compressor impeller, the axial turbine wheel and the engine's outside.
 
 Frame: the engine axis is +X, the flow runs along +X (intake at small x), units mm. The impeller's inducer plane is
@@ -10,7 +10,7 @@ Frame: the engine axis is +X, the flow runs along +X (intake at small x), units 
 - **Engine** (``part="engine"``): the casing's outside with the intake bell-mouth and the nozzle with its tail cone.
 
 Geometry only: the compressor's CFD passage (``passage_profile``, ``compressor_surfaces``), the masses and the sizing
-from the Boreas cycle (``sized``) stay in ``notebooks/designs/turbojet.py``.
+from the Boreas cycle (``sized``) stay in ``designs/turbojet.py``.
 """
 import math
 

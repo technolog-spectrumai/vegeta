@@ -36,7 +36,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "workflows"))
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 import runkit  # noqa: E402
 
 import library  # noqa: E402

@@ -1,6 +1,6 @@
 """A kinematic fixed-wing aircraft that follows ``GuidanceCmd`` (course, height, airspeed) within a bank limit, a roll
 rate, a climb rate and a speed time constant: fast enough to test the whole mission software in seconds. The
-MuJoCo aircraft (notebooks/designs/nisus_*) replaces it for the full missions."""
+MuJoCo aircraft (designs/nisus_*) replaces it for the full missions."""
 from __future__ import annotations
 
 import math

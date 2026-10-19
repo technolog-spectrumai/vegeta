@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
-DESIGNS = REPO / "notebooks" / "designs"
+DESIGNS = REPO / "designs"
 for _p in (str(DESIGNS),):
     if _p not in sys.path:
         sys.path.insert(0, _p)

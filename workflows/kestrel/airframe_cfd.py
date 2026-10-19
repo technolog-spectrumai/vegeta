@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _kestrel as wk  # noqa: E402  (puts workflows/ and notebooks/designs/ on the path)
+import _kestrel as wk  # noqa: E402  (puts workflows/ and designs/ on the path)
 import runkit  # noqa: E402
 import kestrel_campaigns as kc  # noqa: E402
 import kestrel_cfd as kcfd  # noqa: E402

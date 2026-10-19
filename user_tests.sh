@@ -3,7 +3,7 @@
 #
 # Usage: ./user_tests.sh [SECTION ...] [--python EXE] [-j N]
 #   env               versions, git commit, imports                                         (seconds)
-#   unit              chiron + cli + chronos test suites, notebooks/designs tests          (~2-3 min)
+#   unit              chiron + cli + chronos test suites, designs tests          (~2-3 min)
 #   physics           body-joint physics checks with their numbers: restoring torque,
 #                     damping dissipation, c = 0 equivalence, model equivalence           (~1 min)
 #   cleopatra-smoke   benchmark/cleopatra/full_benchmark.py --scale smoke                  (~5-10 min)
@@ -90,14 +90,14 @@ sec_unit() {
   hdr "unit tests"
   echo "  vegeta-cli: chiron, cli, chronos"
   timed pytest_summary "$ROOT/vegeta-cli" tests/chiron tests/cli tests/chronos || status=1
-  echo "  notebooks/designs (Cleopatra, the robot dog and the Onager series in ChironLab, plot helpers)"
-  timed pytest_summary "$ROOT/notebooks/designs" tests || status=1
+  echo "  designs (Cleopatra, the robot dog and the Onager series in ChironLab, plot helpers)"
+  timed pytest_summary "$ROOT/designs" tests || status=1
 }
 
 sec_physics() {
   hdr "body-joint physics checks (numbers)"
   local out
-  out="$(cd "$ROOT/notebooks/designs" && "$PY" -m pytest -q -s -p no:cacheprovider tests/test_body_joint_physics.py 2>&1)"; local rc=$?
+  out="$(cd "$ROOT/designs" && "$PY" -m pytest -q -s -p no:cacheprovider tests/test_body_joint_physics.py 2>&1)"; local rc=$?
   echo "$out" | grep -vE "^\s*$|^\.+$|passed|warnings summary|^  /|DeprecationWarning" | head -60 | sed 's/^/  /'
   echo "  $(echo "$out" | tail -1)"
   [ $rc -eq 0 ] || status=1
@@ -140,7 +140,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     onager)
       hdr "Onager Sentinel: ChironLab tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_onager_chiron.py || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_onager_chiron.py || status=1
       hdr "Onager Sentinel on patrol: FL motor off, RR wheel seized — drag vs the three-wheel limp (MuJoCo, 2 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/onager_patrol.py" 2>&1 | grep -v "^\s*$" | tail -40 | sed 's/^/  /'
@@ -149,7 +149,7 @@ for s in "${SECTIONS[@]}"; do
       name=${s#onager-}
       case "$name" in atlas) script=onager_atlas_pallet.py ;; manus) script=onager_manus_tasks.py ;; *) script=onager_sweeper_street.py ;; esac
       hdr "Onager ${name}: ChironLab tests"
-      timed pytest_summary "$ROOT/notebooks/designs" "tests/test_onager_${name}.py" || status=1
+      timed pytest_summary "$ROOT/designs" "tests/test_onager_${name}.py" || status=1
       hdr "Onager ${name} mission in MuJoCo (1 movie)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/$script" 2>&1 | grep -v "^\s*$" | tail -25 | sed 's/^/  /'
@@ -157,7 +157,7 @@ for s in "${SECTIONS[@]}"; do
     jet)
       hdr "Microjet and AGUYA: cycle, templates, thermal FEA, CAD, mission"
       timed pytest_summary "$ROOT/vegeta-cli" tests/boreas/test_microjet.py tests/aeromant/test_compressible.py tests/talos/test_thermal.py || status=1
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_turbojet.py tests/test_aguya.py || status=1 ;;
+      timed pytest_summary "$ROOT/designs" tests/test_turbojet.py tests/test_aguya.py || status=1 ;;
     geometry)
       hdr "Components and assemblies: geometry only"
       timed pytest_summary "$ROOT" components/tests assemblies/tests -m "not slow" || status=1 ;;
@@ -167,29 +167,29 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s)\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     velutina)
       hdr "Velutina: design and flight-model tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_velutina.py || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_velutina.py || status=1
       hdr "Velutina flies medical aid to the mountain rescue site (hand-over at the wall; 1 movie)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/velutina_mission.py" 2>&1 | grep -v "^\s*$" | tail -10 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     merlin)
       hdr "MERLIN: design, race and plume tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_merlin.py tests/test_merlin_race.py || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_merlin.py tests/test_merlin_race.py || status=1
       hdr "MERLIN races to a fire 20 km out and samples its smoke (1 movie)"
       t0=$SECONDS; "$PY" "$ROOT/scenarios/merlin_mission.py" 2>&1 | grep -v "^\s*$\|movie frames" | tail -16 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     peregrine)
       hdr "PEREGRINE: vortex lattice, flight models, CAD and movie tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_peregrine.py || status=1 ;;
+      timed pytest_summary "$ROOT/designs" tests/test_peregrine.py || status=1 ;;
     drongo)
       hdr "Drongo: design, flight and delivery tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_drongo.py || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_drongo.py || status=1
       hdr "Drongo delivers a potato and a cream: drop into the net, place on the zone (2 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/drongo_delivery.py" 2>&1 | grep -v "^\s*$" | tail -10 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     nisus)
       hdr "NISUS: geometry, mass, energy, aerodynamics, structure and simulation tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus.py || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_nisus.py || status=1
       hdr "NISUS survey missions: OBS and Zero, calm / headwind / gusts / Jetson failure (MuJoCo, 6 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'
@@ -197,14 +197,14 @@ for s in "${SECTIONS[@]}"; do
     nisus-birds)
       hdr "NISUS bird photography: the mission software (vegeta.mission) and the MuJoCo seam"
       timed pytest_summary "$ROOT/vegeta-cli" tests/mission || status=1
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus_birds.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_nisus_birds.py -m "not slow" || status=1
       hdr "NISUS-Zero bird missions: reference, stock lens, Nano B01, pigeons, wind, Jetson failure (MuJoCo, 6 videos)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_birds.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -14 | sed 's/^/  /'
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and nisus_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     nisus-plus)
       hdr "NISUS+: geometry, atmosphere, mass, pack, drive and brake, flight, structure and simulation tests"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_nisus_plus.py tests/test_frame_study.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_nisus_plus.py tests/test_frame_study.py -m "not slow" || status=1
       hdr "NISUS+ mountain missions: calm / ridge lift / lee downdraft / hot day / storm escape / Jetson failure (MuJoCo, 6 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/nisus_plus_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'
@@ -216,7 +216,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and nisus_plus_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     falco)
       hdr "FALCO: the tractor's layout and parked propeller, CAD, mass, the sourced motor's fit, the drive, one fin, structure, the parking in MuJoCo"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_falco.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_falco.py -m "not slow" || status=1
       hdr "FALCO mountain missions: calm / ridge lift / lee downdraft / hot day / storm escape / Jetson failure, the propeller parked for the landing (MuJoCo, 6 movies)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"
       t0=$SECONDS; $XV "$PY" "$ROOT/scenarios/falco_mission.py" 2>&1 | grep -v "^\s*$\|WARN" | tail -12 | sed 's/^/  /'
@@ -228,7 +228,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) videos, photo tables and falco_birds.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     kestrel)
       hdr "Kestrel-4Q: zero-stagger layout, CAD, masses, the hold point (allocation rank), the biplane lattice, the transitions both ways, the CFD cases, the truss"
-      timed pytest_summary "$ROOT/notebooks/designs" tests/test_kestrel.py tests/test_prop_lab.py tests/test_kestrel_fea.py tests/test_kestrel_report.py tests/test_kestrel2.py -m "not slow" || status=1
+      timed pytest_summary "$ROOT/designs" tests/test_kestrel.py tests/test_prop_lab.py tests/test_kestrel_fea.py tests/test_kestrel_report.py tests/test_kestrel2.py -m "not slow" || status=1
       hdr "Kestrel workflows: the run-directory contract on a fake solver, the campaigns, missing prerequisites, the legacy import, no solver from the notebook"
       timed pytest_summary "$ROOT/workflows" tests -m "not slow" || status=1   # includes the CLI
       hdr "Kestrel-4Q transitions through the stall: 3 vehicles x forward/back x 1.5/3/5 s x still air/6 m/s headwind (model polar)"

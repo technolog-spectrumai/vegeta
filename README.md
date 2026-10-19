@@ -71,7 +71,7 @@ iterates a design with Claude; `demo/10_agentic_design` lets Claude run a bounde
 every candidate, criteria, budget, approval policy) in a workspace; `demo/15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
 with a scripted agent when no API key is set. Shared design files live in
-`notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 `11_rover_mechanics` (branch `dev_land`) is a small rugged-terrain rover: terrain profiles → quarter-car wheel
 loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
 arm modes and a speed–frequency diagram, rainflow fatigue, life, printing.
@@ -99,9 +99,9 @@ workflow books `fenix` and `svarog` and their FEniCSx environment. Their history
 foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
 step, FEA of both leg links and the pins, lower-leg modes against stride harmonics, rainflow fatigue over three
 missions, the trot as a sequence of leg angles with a movie, printing. Actuators, motors and joints for the dog and
-the Myropods come from one shared catalogue, `notebooks/designs/actuators.py` (explicit entries with sources, a
+the Myropods come from one shared catalogue, `designs/actuators.py` (explicit entries with sources, a
 selection helper and holding power). Walking is simulated by one shared stepping machine,
-`notebooks/designs/gait.py` (terrain, body pose from the ground, foot stepping, inverse and forward kinematics and joint
+`designs/gait.py` (terrain, body pose from the ground, foot stepping, inverse and forward kinematics and joint
 torques for dog legs and Myropod legs), written for the dog and reused for Cleopatra and Persephone (whose feet land on a pipe
 wall: `PipeContact`, `path_pose`). The **Myropods** (`dev_sikarian`) are a family of segmented walkers from one design file —
 four legs on every segment, so each segment stands and braces on its own: `17_myropod_persephone` is the chimney

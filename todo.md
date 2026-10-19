@@ -101,7 +101,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] 5m.7 A resolved-blade CFD of the installed pusher behind the pod (`rotor_mrf_installed`), propeller noise for the observation role
 
 ## Stage 5n — NISUS-Zero bird photography: the mission software (branch `dev_nisus`)
-- [x] 5n.1 Prototype in notebook `32_nisus_birds`: the general mission package `vegeta.mission` (messages, bus and executor, camera model, assumed Jetson/YOLOX compute budget, detector node with tiled search and target crop, ByteTrack-style multi-bird tracker with an IMM/EKF in camera coordinates and log range, OC-SORT re-update, target scheduler, stern photo-pass guidance with separation breakoffs, photo trigger, CLEAR-MOT/IDF1 scores) and `vegeta.mission.sim` (birds, simulated detector, kinematic aircraft, closed loop); `designs/nisus_birds.py` (the MuJoCo seam, mode 'birds' in the flight controller), `nisus_birds_movie.py`, `scenarios/nisus_birds.py`, tests in `vegeta-cli/tests/mission` and `notebooks/designs/tests/test_nisus_birds.py`
+- [x] 5n.1 Prototype in notebook `32_nisus_birds`: the general mission package `vegeta.mission` (messages, bus and executor, camera model, assumed Jetson/YOLOX compute budget, detector node with tiled search and target crop, ByteTrack-style multi-bird tracker with an IMM/EKF in camera coordinates and log range, OC-SORT re-update, target scheduler, stern photo-pass guidance with separation breakoffs, photo trigger, CLEAR-MOT/IDF1 scores) and `vegeta.mission.sim` (birds, simulated detector, kinematic aircraft, closed loop); `designs/nisus_birds.py` (the MuJoCo seam, mode 'birds' in the flight controller), `nisus_birds_movie.py`, `scenarios/nisus_birds.py`, tests in `vegeta-cli/tests/mission` and `designs/tests/test_nisus_birds.py`
 - [ ] 5n.2 YOLOX for real: export to ONNX, TensorRT engines (FP16, INT8 with calibration) on the Orin Nano Super, benchmark latency and power with tiling and crops; replace the ASSUMED `effective_tflops`/`overhead_ms` in `vegeta.mission.compute`; implement `YoloxTrtDetector`
 - [ ] 5n.3 Fit the simulated detector (`px50`, the score spread, false positives, box noise) on labelled flight video of birds from the IMX219 with the 6 mm lens; fine-tune YOLOX on birds seen from above and behind
 - [ ] 5n.4 Hardware in the loop: the mission stack on the Jetson with replayed video and the autopilot over MAVLink (or a ROS 2 bridge of the same messages)
@@ -274,7 +274,7 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   Horstmann); skid-turn steering moment and lateral resistance (minimum turn radius against motor torque), clutch-brake vs.
   regenerative (differential) steering; wear and internal losses; Talos FEA on the link/pin and the sprocket, fatigue, life
 - [x] 5j.1–5j.3 done in `30_pekari_rover` (real FEA; designs `pekari_rover.py`, `pekari_rover_robot.py`, `terramechanics.py`,
-  `gears.py`, `tracks.py`; tests `notebooks/designs/tests/test_pekari_rover.py`, `components/tests` CASES); the Chiron
+  `gears.py`, `tracks.py`; tests `designs/tests/test_pekari_rover.py`, `components/tests` CASES); the Chiron
   model came after (5j.1b). Follow-ups from the numbers:
   - [ ] 5j.3a Measure the track's internal loss (f_in = 0.035 + 0.002 v assumed: most of the resistance on soft soil)
   - [ ] 5j.3b Rubber pads or sharper grousers: the 30° climb fails on gravel (26°) and grass (20°) — traction, not power
@@ -334,10 +334,10 @@ rigid and it has only `Weld` equalities. Sources: Wikipedia "Continuous track" a
   `scenarios/terrain_race.py` → `scenarios/output/terrain_race_*.mp4` + JSON; per-segment success, time, energy (Wh/m), slip, max
   tilt, sinkage, stall; `benchmark/terrain_race/` with `run_trials` over terrain × drive × seed, report and success-rate heat
   maps from `stats.cell_rates`
-- [ ] 5j.8 Tests + docs: `components/pekari*.py` in `test_ground.py` `CASES`; `notebooks/designs/tests/test_pekari*.py`
+- [ ] 5j.8 Tests + docs: `components/pekari*.py` in `test_ground.py` `CASES`; `designs/tests/test_pekari*.py`
   (defaults == `DESIGN`, stored CAD numbers, mass budget, standing, flat drive) and
   `test_terrain_race.py` (course zones, hook forces, slow race); `terramechanics` against
-  published Wong examples; `notebooks/designs/README.md`, `scenarios/scenarios.md`
+  published Wong examples; `designs/README.md`, `scenarios/scenarios.md`
 
 ## Stage 5k — Catagon, the two-segment quad-track rover (later; a separate product from Pekari)
 Like Pekari, it carries a payload basket by default. Two body segments joined by an articulation joint (steering by articulation, plus pitch/roll oscillation between the

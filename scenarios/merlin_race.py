@@ -2,7 +2,7 @@
 
     python scenarios/merlin_race.py                 # every map of the library, 3 powers (~1 min)
 
-Reads the propulsor libraries (``notebooks/designs/data/*_maps.json`` from notebooks 25, 25b and 25c: propellers of 2 and 3
+Reads the propulsor libraries (``designs/data/*_maps.json`` from notebooks 25, 25b and 25c: propellers of 2 and 3
 blades, of 6 and 12 blades, and ducted fans of one to three stages; rebuild them with ``scenarios/propulsor_maps.py``), races each at 1900, 2700
 and 3500 W on the same 6S 8000 mAh pack — 5 km and back, 10 km reach, 10 km and back — and prints the fastest of each kind.
 Writes ``scenarios/output/merlin_race.csv`` (every configuration and power) and ``merlin_race.json`` (the winners).
@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 import merlin_race as mr  # noqa: E402
 
 OUT = ROOT / "scenarios" / "output"
@@ -22,7 +22,7 @@ OUT = ROOT / "scenarios" / "output"
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--library", type=Path, nargs="*", default=None, help="propulsor library files (default: every one in notebooks/designs/data)")
+    ap.add_argument("--library", type=Path, nargs="*", default=None, help="propulsor library files (default: every one in designs/data)")
     a = ap.parse_args(argv)
     import propulsor_maps as pm
     t0 = time.time()

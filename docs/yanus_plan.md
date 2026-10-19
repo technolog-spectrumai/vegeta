@@ -12,7 +12,7 @@ gate closed, optional → NOT RUN "stale" · Q4 a missing promised output fails 
 
 * Guard only: no code path in Yanus starts a solver, a script or a notebook (a test greps for `subprocess`/`Popen`
   in the package; only `doctor`'s version probes may run `<tool> -v`/`--version`, with a timeout).
-* `vegeta-yanus` imports no other `vegeta.*` package and nothing from `workflows/` or `notebooks/designs/`
+* `vegeta-yanus` imports no other `vegeta.*` package and nothing from `workflows/` or `designs/`
   (an independence test, as in `vegeta-ai/tests/test_independence.py`). Stdlib only; pandas optional for the table.
 * Existing callers keep working unchanged: `wf`, the GUI (`library.BOOKS[..]["chapters"][..]["campaign"]`,
   `library.KINDS[kind]["needs"|"title"|"time"|"script"]`, `chapters`, `by_code`, `chapter_status`,
@@ -55,7 +55,7 @@ the book, cycles (an error — Yanus refuses a cycle rather than becoming a DAG 
 input there"), a `File` take whose producer does not declare that `gives`, duplicate names/codes.
 
 `src/vegeta/yanus/registry.py` — `load_flow(path=None)`: `path` or `$VEGETA_YANUS_FLOW`, else walk up from cwd for
-`workflows/flow.py`; imports it by file path (like `notebooks/designs/workflows_runkit.py` does) and returns its
+`workflows/flow.py`; imports it by file path (like `designs/workflows_runkit.py` does) and returns its
 `flow`.
 
 *Tests*: building a small flow; codes; every `validate()` error with its message; loading by path and by env var.
@@ -71,7 +71,7 @@ input there"), a `File` take whose producer does not declare that `gives`, dupli
 2. `workflows/library.py`: `KINDS`, `BOOKS` and `IMPORTS` become **generated** from `flow` in the same dict shape
    (so the GUI and `cli.py` keep working); `chapters`, `by_code`, `chapter_of` read the flow. Everything else in
    `library.py` (runs, `chapter_status`, `tree`) stays.
-3. `notebooks/designs/kestrel_campaigns.py:41-48`: `CHAPTERS`, `SCRIPTS`, `PYTHON` derived from the flow (loaded by
+3. `designs/kestrel_campaigns.py:41-48`: `CHAPTERS`, `SCRIPTS`, `PYTHON` derived from the flow (loaded by
    path, like `workflows_runkit.py`) instead of a second copy.
 4. Fix the stale docstrings found in review (`library.py` header numbering K8/K9; `airframe_cfd.py:8`,
    `structure_fea.py:8` run paths).

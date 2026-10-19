@@ -22,7 +22,7 @@ from typing import Any, Callable
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-DESIGNS = ROOT / "notebooks" / "designs"
+DESIGNS = ROOT / "designs"
 
 
 @dataclass

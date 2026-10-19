@@ -22,7 +22,7 @@ propulsor's standing part for printing: the EDF duct with its vanes and centre r
 
 Beside the CAD: ``layout`` (the axial stations and the propulsor's place), ``fuselage_profile`` and
 ``edf_housing_params`` (the parameters of the EDF housing the nose is made of: ``ducted_fan.EDFHousing``'s). Geometry
-only: the analysis helpers (``wetted_areas``, ``drag_buildup``, ``outline``) stay in ``notebooks/designs/merlin.py``.
+only: the analysis helpers (``wetted_areas``, ``drag_buildup``, ``outline``) stay in ``designs/merlin.py``.
 """
 import math
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Activate the ready Vegeta environment (nothing is installed):   source activate.sh
 #   - activates the virtual environment (.venv, or $VEGETA_VENV)
-#   - exports VEGETA_ROOT and puts the Vegeta source trees, workflows/ and notebooks/designs/ on PYTHONPATH
+#   - exports VEGETA_ROOT and puts the Vegeta source trees, workflows/ and designs/ on PYTHONPATH
 #     (the libraries import even without a pip install of the distributions)
 #   - defines `wf`  = the workflows tool (workflows/cli.py): wf list | wf info … | wf run … | wf runs | wf status … | wf cache
 #     and   `wfrun` = a book's script directly (wfrun kestrel_airframe --chapter stall …)
@@ -42,7 +42,7 @@ export -f wf wfrun yn 2>/dev/null
 cd "$VEGETA_ROOT" || return
 # the Vegeta libraries and the workflow modules importable even without a pip install of the distributions
 _PP=""
-for _d in "$VEGETA_ROOT"/vegeta-cli/src "$VEGETA_ROOT"/vegeta-core/src "$VEGETA_ROOT"/vegeta-ai/src "$VEGETA_ROOT"/vegeta-fidia/src "$VEGETA_ROOT"/vegeta-yanus/src "$VEGETA_ROOT"/vendor/ozaru/porunga/src "$VEGETA_ROOT"/vendor/ozaru/mimesis/src "$VEGETA_ROOT"/vendor/ozaru/yanus/src "$VEGETA_ROOT"/workflows "$VEGETA_ROOT"/notebooks/designs; do
+for _d in "$VEGETA_ROOT"/vegeta-cli/src "$VEGETA_ROOT"/vegeta-core/src "$VEGETA_ROOT"/vegeta-ai/src "$VEGETA_ROOT"/vegeta-fidia/src "$VEGETA_ROOT"/vegeta-yanus/src "$VEGETA_ROOT"/vendor/ozaru/porunga/src "$VEGETA_ROOT"/vendor/ozaru/mimesis/src "$VEGETA_ROOT"/vendor/ozaru/yanus/src "$VEGETA_ROOT"/workflows "$VEGETA_ROOT"/designs; do
   [ -d "$_d" ] && _PP="${_PP:+$_PP:}$_d"
 done
 case ":${PYTHONPATH:-}:" in *":$VEGETA_ROOT/workflows:"*) ;; *) export PYTHONPATH="${_PP}${PYTHONPATH:+:$PYTHONPATH}" ;; esac

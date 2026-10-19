@@ -55,7 +55,7 @@ from vegeta.chiron import metrics as cm
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-DESIGNS = REPO / "notebooks" / "designs"                 # Cleopatra's robot, controller and the shared plot helpers
+DESIGNS = REPO / "designs"                 # Cleopatra's robot, controller and the shared plot helpers
 if str(DESIGNS) not in sys.path:
     sys.path.insert(0, str(DESIGNS))
 ROBOT = f"{DESIGNS / 'myropod_robot.py'}:cleopatra"

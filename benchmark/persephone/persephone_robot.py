@@ -1,6 +1,6 @@
 """Persephone as a Chiron robot: the 12-segment chimney Myropod of notebook 17, with Amendment D's body joints.
 
-Built from Cleopatra's building blocks (``notebooks/designs/myropod_robot.py``: segments, legs, head, the passive
+Built from Cleopatra's building blocks (``designs/myropod_robot.py``: segments, legs, head, the passive
 body joints and their 'spring' / 'spring_damper' treatments) with Persephone's geometry and mass budget and a loop
 over ``n_segments`` (12) instead of Cleopatra's three. NOT YET VALIDATED: written at the close of the build without
 running it; check it with ``user_tests.sh persephone-smoke`` before trusting any result.
@@ -30,7 +30,7 @@ from dataclasses import replace
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DESIGNS = HERE.parents[1] / "notebooks" / "designs"
+DESIGNS = HERE.parents[1] / "designs"
 if str(DESIGNS) not in sys.path:
     sys.path.insert(0, str(DESIGNS))
 

@@ -191,7 +191,7 @@ you started from a shell; re-run the notebook when a workflow has finished.
 ## 5. The first time
 
 The first CFD campaign (October 2026, screening quality, unconverged) lives in
-`notebooks/designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
+`designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
 
 ```bash
 .venv/bin/python workflows/kestrel/import_legacy.py

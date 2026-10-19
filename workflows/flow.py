@@ -21,7 +21,7 @@ flow = Flow("vegeta", root=ROOT)
 
 # ------------------------------------------------------------------------------------------------- the project's hooks
 def _kc():
-    p = str(ROOT / "notebooks" / "designs")
+    p = str(ROOT / "designs")
     if p not in sys.path:
         sys.path.insert(0, p)
     import kestrel_campaigns
@@ -48,7 +48,7 @@ def _kestrel_describe() -> dict:
 
 # ================================================================================================= book: kestrel (K)
 kestrel = flow.book("kestrel", "K", title="Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
-                    design="notebooks/designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
+                    design="designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
                     variants=("4Q-1", "4Q-2", "4Q-3"), fingerprint=lambda v: _kc().fingerprint(v), compatible=_kestrel_compatible,
                     describe=_kestrel_describe)
 
@@ -86,7 +86,7 @@ flow.add_import("import_legacy", title="import the first CFD campaign's results 
 
 
 # ================================================================================================= notebooks
-DATA = "notebooks/designs/data"
+DATA = "designs/data"
 KESTREL_DRIVE = Data(f"{DATA}/kestrel_drive.json", cache=True, note="the Boreas drive tables, ~40 s")
 MAPS = {"propellers": f"{DATA}/propeller_maps.json", "edf": f"{DATA}/edf_maps.json", "exotic": f"{DATA}/exotic_propeller_maps.json"}
 SECTION_BACKEND = AnyOf("section backend", Package("neuralfoil"), Tool("xfoil"), why="Zephyr's 2-D section polars",
@@ -120,7 +120,7 @@ flow.notebook("44_kestrel_fast", folder="devices", title="Kestrel fast: candidat
 
 
 # ================================================================================================= the other notebooks
-# Their needs (the vegeta packages they import), the files they hand to each other under notebooks/designs/data/ and
+# Their needs (the vegeta packages they import), the files they hand to each other under designs/data/ and
 # take from each other (all optional: each falls back to its own defaults when the file is missing). Their scratch
 # output (_runs/, output/) is not a give. Long CFD/FEA cells stay in the notebooks until they become workflows (todo M.2).
 flow.notebook("06_core_revisions", folder="demo", title='Vegeta Core — revisions, evaluations, NOT RUN',

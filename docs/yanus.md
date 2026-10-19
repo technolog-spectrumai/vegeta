@@ -238,7 +238,7 @@ All 41 notebooks in `notebooks/` have a contract in `workflows/flow.py`. The ear
 * **Needs** are the vegeta packages a notebook imports. Solvers (ccx, OpenFOAM) are not needs of notebooks yet: today
   a notebook copes with a missing solver only in DEBUG (mocks) or with `VEGETA_SKIP_OPENFOAM`, not uniformly (todo
   Y.5b).
-* **Gives** are the files a notebook writes under `notebooks/designs/data/` for others:
+* **Gives** are the files a notebook writes under `designs/data/` for others:
   * 25 `air_propeller_results.json`
   * 26 `merlin_design.json`
   * 28_microjet `microjet.json`

@@ -20,7 +20,7 @@ along +X; the fuselage axis at ``z = -fuselage_diameter/2`` (the wing on top of 
 FEA), ``nacelle`` (the engine pod with its pylon).
 
 Geometry only: the analysis helpers (``for_engine``, ``tank_volume_l``, ``wetted_areas``, ``drag_buildup``,
-``cfd_surfaces``, ``outline``) stay in ``notebooks/designs/aguya.py``.
+``cfd_surfaces``, ``outline``) stay in ``designs/aguya.py``.
 """
 import math
 

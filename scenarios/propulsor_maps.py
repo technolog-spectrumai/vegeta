@@ -1,5 +1,5 @@
 """Build the propulsor libraries — every propeller and ducted fan of the propulsion notebooks' design spaces as (airspeed x
-rpm) maps — and write them to ``notebooks/designs/data/`` for the reduced flight models (MERLIN, notebooks 26b and 27). The
+rpm) maps — and write them to ``designs/data/`` for the reduced flight models (MERLIN, notebooks 26b and 27). The
 same as the last section of each notebook, headless:
 
     python scenarios/propulsor_maps.py                      # all three (~12 min on 4 cores)
@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 import propulsor_maps as pm  # noqa: E402
 
 

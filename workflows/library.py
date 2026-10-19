@@ -36,7 +36,7 @@ CACHE = Path(_os.environ.get("VEGETA_WORKFLOW_CACHE") or ROOT / "workflows" / "c
 
 def _kc():
     import sys
-    p = str(ROOT / "notebooks" / "designs")
+    p = str(ROOT / "designs")
     if p not in sys.path:
         sys.path.insert(0, p)
     import kestrel_campaigns

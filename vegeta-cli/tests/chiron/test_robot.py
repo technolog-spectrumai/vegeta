@@ -115,7 +115,7 @@ def test_servo_helpers():
     assert s.torque_constant == pytest.approx(2.0) and s.resistance == pytest.approx(4.0)
     assert s.torque_limit(s.no_load_speed / 2) == pytest.approx(3.0)
 
-    class Act:  # duck-typed catalogue entry (notebooks/designs/actuators.py style)
+    class Act:  # duck-typed catalogue entry (designs/actuators.py style)
         key, stall_Nm, rated_Nm, stall_A, voltage_V, no_load_rpm = "smart servo 6 Nm", 6.0, 2.0, 3.0, 12.0, 55
         source = "datasheet"
 

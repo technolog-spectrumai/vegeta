@@ -88,7 +88,7 @@ class Servo:
     @classmethod
     def from_actuator(cls, act, *, kp, kd, armature=0.0):
         """From a catalogue entry with ``stall_Nm, rated_Nm, no_load_rpm, stall_A, voltage_V, source`` attributes
-        (duck-typed, e.g. ``notebooks/designs/actuators.py``)."""
+        (duck-typed, e.g. ``designs/actuators.py``)."""
         return cls.from_rpm(stall_torque=act.stall_Nm, rated_torque=act.rated_Nm, no_load_rpm=act.no_load_rpm,
                             stall_current=act.stall_A, voltage=act.voltage_V, kp=kp, kd=kd, armature=armature,
                             source=f"{getattr(act, 'key', '')}: {getattr(act, 'source', '')}".strip(": "))

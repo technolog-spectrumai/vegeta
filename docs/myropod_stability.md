@@ -6,8 +6,8 @@ It answers an engineer's review of notebook 18: prescribed kinematics (inverse k
 foot path) cannot demonstrate stability; that needs a dynamic simulation with gravity, inertia, friction,
 contacts and actuator limits, and a controlled, paired comparison of flexible and locked bodies.
 
-Code: `notebooks/designs/myropod_sim.py` (MuJoCo model, controller, trial runner),
-`notebooks/designs/locomotion_metrics.py` (metrics and statistics), `notebooks/designs/stability_experiments.py`
+Code: `designs/myropod_sim.py` (MuJoCo model, controller, trial runner),
+`designs/locomotion_metrics.py` (metrics and statistics), `designs/stability_experiments.py`
 (sweeps), notebook `20_cleopatra_stability.ipynb` (the experiment and its plots). Units are SI throughout
 (m, kg, s, N, N·m); the design files and `gait.py` work in mm and are converted at the boundary.
 
@@ -195,9 +195,9 @@ The simulation is built as a Vegeta tool rather than a notebook helper: **Chiron
 who trained the heroes) wraps MuJoCo, and **ChironLab** is its reusable environment — any robot described with
 Chiron's building blocks (or imported from MJCF) walks in it on any Chiron terrain, with any controller, under the
 same logging, disturbances and failure rules. The robot-specific parts stay with the designs:
-`notebooks/designs/myropod_robot.py` (Cleopatra and her treatments as a Chiron robot),
-`notebooks/designs/myropod_controller.py` (the fixed and adaptive gaits of §3 and §9.1), and
-`notebooks/designs/stability_experiments.py` (the trial lists of §7 and §9.3). The metrics of §6 and §9.2 and the
+`designs/myropod_robot.py` (Cleopatra and her treatments as a Chiron robot),
+`designs/myropod_controller.py` (the fixed and adaptive gaits of §3 and §9.1), and
+`designs/stability_experiments.py` (the trial lists of §7 and §9.3). The metrics of §6 and §9.2 and the
 statistics of §7 live in `vegeta.chiron.metrics` and `vegeta.chiron.stats`. Notebooks: `20_chiron_lab.ipynb`
 (the tool, shown on the robot dog and Cleopatra) and `21_cleopatra_stability.ipynb` (this study). Every number
 in §1–§9 is unchanged.
@@ -352,7 +352,7 @@ Recorded before any study trial (the benchmarks are run by the study owner, not 
    braking; about a third of knee samples run at or above it at 0.2 m/s. A real DC servo brakes there. Not changed
    (it would change §1); reported with the results.
 3. **Where the study lives**: `benchmark/cleopatra/full_benchmark.py` (trial lists in `benchmark/cleopatra/
-   experiments.py`, plots from `notebooks/designs/stability_plots.py` and `benchmark/_common.py`) replaces the
+   experiments.py`, plots from `designs/stability_plots.py` and `benchmark/_common.py`) replaces the
    notebooks 20/21 named in §10; outputs `results.json`, CSV (runs, configurations, raw time series), plots and
    `report.md`. `./user_tests.sh` runs the tests, the physics checks and the smoke benchmarks.
 4. **Course of the push experiment**: 2.0 m (not 1.5 m), so the 5 s recovery window after a push at 3.0 s ends

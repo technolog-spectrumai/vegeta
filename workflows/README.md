@@ -5,7 +5,7 @@
 A **workflow** is a thin script under `workflows/<project>/` that prepares explicit inputs, runs the selected solver
 cases, gathers the artifacts, parses the results and saves them into one **run directory**. It is launched by an
 engineer from a shell, runs unattended for as long as it needs, and leaves a record a notebook can read, check and
-cite. The engineering logic stays in the design modules (`notebooks/designs/*.py`) and the Vegeta tools; the
+cite. The engineering logic stays in the design modules (`designs/*.py`) and the Vegeta tools; the
 scripts only drive them. There is no scheduler, service, database, DAG engine or optimiser here, and none is planned:
 a workflow is Python, its configuration is Python, its results are files.
 
@@ -98,7 +98,7 @@ workflows/
 ```
 
 The engineering content of the Kestrel workflows — the variants and their fingerprints, the campaign catalogue, the
-case builders, the summary and the loaders — is `notebooks/designs/kestrel_campaigns.py`, shared with the notebook.
+case builders, the summary and the loaders — is `designs/kestrel_campaigns.py`, shared with the notebook.
 Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`, whose exported calibration
 (`designs/data/prop_lab.json`) the airframe cases and the drive tables read when it passed its gates.
 

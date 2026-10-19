@@ -68,10 +68,10 @@ CLI `yn`:
   - Update its callers: `cli.py cmd_notebook`, `gui/runner.py`, `_kestrel.pin_hint`.
   - `latest_completed`/`check_prerequisites` reuse `yanus.find`.
 - `workflows/kestrel/_kestrel.py`: `check_chapter` keeps the same return shape, so the manifest's `yanus` entry, resume and the native artifacts stay unchanged.
-- `notebooks/designs/kestrel_campaigns.py`:
+- `designs/kestrel_campaigns.py`:
   - `PrerequisiteError` subclasses `RunUnusable`.
   - Delete `check_run`/`require`/`_load`, which duplicate `find`. Their tests move to the Yanus tests.
-- `notebooks/designs/kestrel_study.py`:
+- `designs/kestrel_study.py`:
   - Delete `runs_from_gate`.
   - `prerequisites(selections, required)` builds the one table: prop_lab, drive tables and sections rows, plus one row per selection. It raises a list of all missing required runs with their commands.
 - **43_kestrel_study**:

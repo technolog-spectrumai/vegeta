@@ -6,7 +6,7 @@
     python3 scenarios/velutina_mission.py --seconds 40 --wind 12
     python3 scenarios/velutina_mission.py --mode turbine     # Velutina v2: the wind-turbine blade inspection
 
-The scenario is ``notebooks/designs/velutina_flight.py`` (the same one notebook 24 §7 and §10 run) with the notebook's
+The scenario is ``designs/velutina_flight.py`` (the same one notebook 24 §7 and §10 run) with the notebook's
 first design as a preset (mass budget, drag areas, the Boreas hover point and thrust limit, the 6S 8000 mAh pack): the
 valley depot, a fast climb along the route, the delivery at the site, the flight home. ``--mode turbine`` flies the v2
 inspection of ``velutina_inspection.py`` instead (the parked turbine, four passes per blade, the suspect-point dwells).
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import velutina_flight as vf  # noqa: E402
 import velutina_inspection as vi  # noqa: E402

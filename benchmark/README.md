@@ -48,7 +48,7 @@ runs says so. Damping is not assumed to win: the verdict per terrain, difficulty
 ## Code
 
 `_common.py` (metadata, results JSON, plot book, recovery and sensitivity plots, the report) is shared;
-`notebooks/designs/stability_plots.py` makes the comparative plots; `cleopatra/experiments.py` and
+`designs/stability_plots.py` makes the comparative plots; `cleopatra/experiments.py` and
 `persephone/experiments.py` hold the trial lists (`chiron.experiments.Trial`), the per-run metrics with the raw
 export, and the configuration tables; `persephone/persephone_robot.py` builds Persephone from Cleopatra's blocks
-(`notebooks/designs/myropod_robot.py`).
+(`designs/myropod_robot.py`).

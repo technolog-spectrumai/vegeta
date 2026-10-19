@@ -23,11 +23,11 @@ kestrel.kind("fea", title="FEA …", script="workflows/kestrel/structure_fea.py"
 kestrel.chapter("frame", kind="fea", campaign="frame")                         # K9  (codes follow the order)
 kestrel.chapter("joint", kind="fea", campaign="joint", takes=[Run("frame")])   # K10, after K9
 
-flow.notebook("38_prop_lab", gives=[File("notebooks/designs/data/prop_lab.json", keys=("meta", "calibration"))])
+flow.notebook("38_prop_lab", gives=[File("designs/data/prop_lab.json", keys=("meta", "calibration"))])
 flow.notebook("43_kestrel_study", needs=[Package("vegeta.boreas")],
               takes=[Run("kestrel/airframe-sweep", variant="4Q-2", required=True),
-                     File("38_prop_lab:notebooks/designs/data/prop_lab.json")],
-              gives=[File("notebooks/designs/data/reports/43_kestrel_study.json")],
+                     File("38_prop_lab:designs/data/prop_lab.json")],
+              gives=[File("designs/data/reports/43_kestrel_study.json")],
               screening_env="KESTREL_SCREENING")
 ```
 

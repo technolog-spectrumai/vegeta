@@ -1,5 +1,5 @@
 """The "ground" components (rover, robot_dog, myropod, apheloria and the Onager series) build the same shapes as the
-originals in ``notebooks/designs`` with default parameters: validity, solid and face counts, volume, surface area and
+originals in ``designs`` with default parameters: validity, solid and face counts, volume, surface area and
 bounding box of each ``part`` every design can make (plus the build variants: Myropod versions 2 and 3, Apheloria
 curled into the ball). The whole multi-segment crawlers take ~20 s a side, so they are marked slow; their parts run
 in the default tier."""
@@ -14,7 +14,7 @@ import pytest
 
 pytest.importorskip("cadquery")
 
-DESIGNS = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")
+DESIGNS = str(Path(__file__).resolve().parents[2] / "designs")
 if DESIGNS not in sys.path:
     sys.path.append(DESIGNS)          # the originals use bare imports
 

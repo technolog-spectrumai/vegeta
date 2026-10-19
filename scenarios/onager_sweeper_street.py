@@ -4,7 +4,7 @@
     xvfb-run -a python3 scenarios/onager_sweeper_street.py            # headless (pyvista needs a display)
     python3 scenarios/onager_sweeper_street.py --camera iso
 
-The scenario is ``notebooks/designs/onager_sweeper_scenario.py`` (the same one notebook 23 §7 runs): litter (cans,
+The scenario is ``designs/onager_sweeper_scenario.py`` (the same one notebook 23 §7 runs): litter (cans,
 packets) in the sweeping path, a 2.3 kg brick and a 0.6 kg box on the centre line. The Sweeper spins its disc broom,
 runs the fan (the CFD's suction, ``onager_sweeper_cfd.SUCTION``, acts on the litter under the hood: what reaches the
 duct is collected), sweeps at 1 m/s, stops at the brick, takes it with its left pincer and swings it back into the
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import onager_sweeper_scenario as oss  # noqa: E402
 

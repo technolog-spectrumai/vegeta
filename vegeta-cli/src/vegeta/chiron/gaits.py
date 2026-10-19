@@ -3,7 +3,7 @@
 Two descriptions of the same stride:
 
 * the **cycle fraction** ``c ∈ [0, 1)``: stance for ``c < duty``, swing for ``c ≥ duty`` (the convention of
-  ``notebooks/designs/gait.py``: ``phase = (t/T + phase_leg) % 1``, stance while ``phase < duty``);
+  ``designs/gait.py``: ``phase = (t/T + phase_leg) % 1``, stance while ``phase < duty``);
 * the **oscillator phase** ``φ ∈ [0, 2π)``: swing for ``φ ∈ [0, π)``, stance for ``φ ∈ [π, 2π)`` (Owaki et al.;
   the stability protocol in docs/, §9.1). The map is piecewise linear: stance ``c ∈ [0, duty) → φ = π + π c/duty``,
   swing ``c ∈ [duty, 1) → φ = π (c − duty)/(1 − duty)``.

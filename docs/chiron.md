@@ -8,7 +8,7 @@ blocks (or imported from MJCF) walks in it on any Chiron terrain with any contro
 disturbances and failure rules, and every run returns the same **episode log**, which `chiron.metrics` reads.
 
 It is **not** a controller-design tool (no optimisation, no learning, no trajectory planning), not a
-kinematic animator (`notebooks/designs/gait.py` does that) and not a structural tool (joint torques and
+kinematic animator (`designs/gait.py` does that) and not a structural tool (joint torques and
 contact forces go to Talos as load cases). Controllers and robots are yours; Chiron simulates them honestly.
 Nothing is guessed: masses, inertias, friction, servo data and gains, terrain sizes and failure thresholds
 are explicit inputs with their sources. Units are SI everywhere (m, kg, s, N, N·m, rad; degrees only where a
@@ -33,7 +33,7 @@ name says `_deg`). World frame: z up; a course runs along +x from x = 0.
 - Third-party models: `Robot.from_mjcf(xml, RobotMeta(feet, logged_bodies, joint_tags, servos, ...))`; its own
   actuators are replaced by Chiron servos.
 
-Robot-specific code lives with the designs, never in the package: `notebooks/designs/myropod_robot.py`
+Robot-specific code lives with the designs, never in the package: `designs/myropod_robot.py`
 (Cleopatra), `myropod_controller.py`, `robot_dog_robot.py`, `robot_dog_controller.py`, and for a wheeled
 machine `onager_robot.py` / `onager_controller.py` / `onager_scenario.py` (the Onager Sentinel: wheels are
 unlimited hinges driven by a `Servo` with `kp = 0`, i.e. a velocity loop on the hub motor's torque–speed line,
@@ -250,7 +250,7 @@ swings the rear segment's tail right, pitch + lifts it, roll is about +x. They d
 | `body_limit_pitch`, `body_limit_yaw`, `body_limit_roll` | rad | 0.785 (45°), 0.785 (45°), 0.349 (20°): stops at ±value |
 
 ```python
-import myropod_robot as mr, myropod_controller as mc      # notebooks/designs on sys.path
+import myropod_robot as mr, myropod_controller as mc      # designs on sys.path
 robot = mr.cleopatra("spring")                            # or "spring_damper"; keywords as in the table
 lab = mr.cleopatra_lab("spring_damper", terrain, robot_kw={"body_k_yaw": 4.0})   # LAB_OPTIONS: 0.25 ms step
 ep = lab.run(mc.adaptive(0.2), rules=mr.failure_rules(0.2), seed=3, info={"treatment": "spring_damper"})
@@ -259,9 +259,9 @@ p = myropod.Myropod().resolve(**mr.CLEO_MM, body_connection="spring")   # its pa
 robot = mr.robot_from_design(p)                           # geometry [mm] + body joints → the same robot
 ```
 ```bash
-dedalus params notebooks/designs/myropod.py:Myropod                           # lists the body_* parameters
-chiron run notebooks/designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 \
-    -p body_roll_axis=false --controller notebooks/designs/myropod_controller.py:fixed --terrain flat \
+dedalus params designs/myropod.py:Myropod                           # lists the body_* parameters
+chiron run designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 \
+    -p body_roll_axis=false --controller designs/myropod_controller.py:fixed --terrain flat \
     --course 1.5 --v-target 0.2 --timestep 0.00025 --seed 0 --out runs/s0
 ```
 `-p` values are Python literals: `8`, `8.0` and `"8"` build the same joint; bools accept true/false, 1/0,
@@ -272,7 +272,7 @@ The robot carries `treatment` (`spring`, `spring_damper`, `legacy:<name>`), `bod
 parameters (its chain is drawn straight unless `bend_*_deg` bend it; q0 is not drawn). The controllers take the
 leg lengths from the robot they are given.
 
-**Checks** (`notebooks/designs/tests/test_body_joint_physics.py`; numbers at the lab's 0.25 ms step, printed with
+**Checks** (`designs/tests/test_body_joint_physics.py`; numbers at the lab's 0.25 ms step, printed with
 `pytest -s`). *Model equivalence*: all 592 `MjModel` attributes compared — the two treatments differ only in
 `dof_damping` on the body DOFs and in the model's own name. *c = 0*: `spring_damper` with every `body_c_* = 0`
 reproduces `spring` bitwise (rough ground, both controllers; only the log's `robot` label differs). The other

@@ -4,7 +4,7 @@
     xvfb-run -a python3 scenarios/onager_manus_tasks.py            # headless (pyvista needs a display)
     python3 scenarios/onager_manus_tasks.py --camera iso
 
-The scenario is ``notebooks/designs/onager_manus_scenario.py`` (the same one notebook 22 §7 runs): a fence wire
+The scenario is ``designs/onager_manus_scenario.py`` (the same one notebook 22 §7 runs): a fence wire
 across the track at 1.15 m (Ø 3.15 mm, 1200 MPa: 7.5 kN to cut) and a 14 kg log further on. The Manus stops at the
 wire, puts its right pincer's cutter notch on it and closes — the wire parts only if both jaws squeeze it with the
 cutting force — drives through, crouches at the log, takes it with its left pincer's hooked jaws, lifts it, swings
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import onager_manus_scenario as oms  # noqa: E402
 

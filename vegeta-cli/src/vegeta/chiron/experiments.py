@@ -4,7 +4,7 @@ A **Trial** names everything one ChironLab run needs as plain data — the robot
 ``'file.py:function'`` (or ``'module:function'``) strings with their keyword arguments, the terrain spec, the seed,
 the course, the target speed, the failure-rule overrides, scheduled disturbances, the lab settings and the metric
 options — so it pickles, prints and hashes. Nothing robot-specific lives here; the study's own module builds its
-trial list (e.g. ``notebooks/designs/stability_experiments.py``).
+trial list (e.g. ``designs/stability_experiments.py``).
 
     trials = paired_trials(make_trial, {"treatment": ["spring", "spring_damper"], "level": [0.15, 0.25]},
                            paired_seeds(30))

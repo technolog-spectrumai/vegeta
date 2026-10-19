@@ -1,5 +1,5 @@
 """The "rotating" components (air_propeller, ducted_fan, turbojet) build the same shapes as the originals in
-``notebooks/designs`` with default parameters: volume, surface area, bounding box and face count of every design and of
+``designs`` with default parameters: volume, surface area, bounding box and face count of every design and of
 each ``part`` / ``layout`` it can make."""
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import pytest
 
 pytest.importorskip("cadquery")
 
-DESIGNS = str(Path(__file__).resolve().parents[2] / "notebooks" / "designs")
+DESIGNS = str(Path(__file__).resolve().parents[2] / "designs")
 if DESIGNS not in sys.path:
     sys.path.append(DESIGNS)          # the originals use bare imports
 

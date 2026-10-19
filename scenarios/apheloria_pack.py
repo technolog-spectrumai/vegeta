@@ -5,7 +5,7 @@
     python3 scenarios/apheloria_pack.py --only pack --fps 25
 
 Writes ``scenarios/output/apheloria_pack.mp4``, ``apheloria_unpack.mp4`` and ``apheloria_pack_unpack.json``
-(what the joints achieved). The robot is ``notebooks/designs/apheloria_robot.py`` (33.1 kg: head + 8 segments, 96
+(what the joints achieved). The robot is ``designs/apheloria_robot.py`` (33.1 kg: head + 8 segments, 96
 leg servos, 8 active body pitch joints of 60 N·m stall). Nothing is animated: a scripted controller only sets
 servo targets, and gravity, contacts and the actuators' torque–speed limits decide what the body actually does —
 including whether the curl closes (notebook 19 gives its curl-up joint a safety factor of only 1.13).
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import numpy as np  # noqa: E402
 

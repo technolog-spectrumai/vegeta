@@ -7,7 +7,7 @@ and landing — with a movie per scenario (notebook 31, Part 11).
     python3 scenarios/nisus_mission.py --no-movie                               # the numbers only
     python3 scenarios/nisus_mission.py --list                                   # the scenario names
 
-The scenarios are ``notebooks/designs/nisus_scenario.standard_scenarios()`` (the ones notebook 31 flies): Nisus-OBS and
+The scenarios are ``designs/nisus_scenario.standard_scenarios()`` (the ones notebook 31 flies): Nisus-OBS and
 Nisus-Zero in calm air and in a 6 m/s headwind with turbulence, Zero in gusts and with a Jetson failure (its power
 branch drops at 300 s; the flight controller returns on its own). Writes ``scenarios/output/<Scenario.slug>.mp4`` (e.g. ``nisus_Zero_headwind_6_ms.mp4``),
 the telemetry ``.csv`` and ``nisus_mission.json`` (outcome, phases, energy by phase, the comparison).
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import nisus_scenario as nsc  # noqa: E402
 

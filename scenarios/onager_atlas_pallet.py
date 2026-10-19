@@ -4,7 +4,7 @@
     xvfb-run -a python3 scenarios/onager_atlas_pallet.py           # headless (pyvista needs a display)
     python3 scenarios/onager_atlas_pallet.py --camera side --fps 25
 
-The scenario is ``notebooks/designs/onager_atlas_scenario.py`` (the same one notebook 21 §7 runs): a Euro pallet
+The scenario is ``designs/onager_atlas_scenario.py`` (the same one notebook 21 §7 runs): a Euro pallet
 with a 175 kg crate on a gravel yard; the Atlas drives up with its forks at travel height, lowers them to the
 openings, creeps in, lifts, tilts the mast back, carries the pallet 8 m, sets it down and backs out. Writes
 ``scenarios/output/onager_atlas_pallet.mp4`` and ``onager_atlas_pallet.json`` (the phase table).
@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "notebooks" / "designs"))
+sys.path.insert(0, str(ROOT / "designs"))
 
 import onager_atlas_scenario as oas  # noqa: E402
 

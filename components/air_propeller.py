@@ -1,4 +1,4 @@
-"""Air propeller on a pod with a pylon — tractor or pusher: the geometry (from ``notebooks/designs/air_propeller.py``,
+"""Air propeller on a pod with a pylon — tractor or pusher: the geometry (from ``designs/air_propeller.py``,
 notebook 25).
 
 One 10-inch propeller on the motor pod of a small fixed-wing drone, the pod hanging from a pylon (the wing or
@@ -13,7 +13,7 @@ behind it (tractor) or ends ``gap`` ahead of it (pusher).
 
 Geometry only: ``PropPod`` (with its ``pod_profile`` and ``pylon_x``) and the pylon's NACA 00xx section. The outline
 for the particle movies, the wake and installation-drag models, the pod friction and the sound synthesis stay in
-``notebooks/designs/air_propeller.py``.
+``designs/air_propeller.py``.
 """
 import math
 

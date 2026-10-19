@@ -59,7 +59,7 @@
   "kestrel": {
    "code": "K",
    "title": "Kestrel-4Q \u2014 the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
-   "design": "notebooks/designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
+   "design": "designs/kestrel.py and kestrel_campaigns.py; the notebook 43_kestrel_study reads the runs",
    "variants": [
     "4Q-1",
     "4Q-2",

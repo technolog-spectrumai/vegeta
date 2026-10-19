@@ -1,4 +1,4 @@
-"""Electric ducted fan (EDF) — the rotor and its standing parts: the geometry (from ``notebooks/designs/ducted_fan.py``,
+"""Electric ducted fan (EDF) — the rotor and its standing parts: the geometry (from ``designs/ducted_fan.py``,
 notebook 25b).
 
 A small rotor of many blades running in a duct, a row of stator vanes behind it that takes the swirl out, a centre
@@ -17,7 +17,7 @@ Angles about the axis: ``phi`` from +y towards +z, stator vane k at ``phi = 360 
 along +y.
 
 Geometry only: ``housing_geometry`` (the areas and lengths the performance and noise models take) and ``outline`` (the
-polygons for the particle movies) stay in ``notebooks/designs/ducted_fan.py``.
+polygons for the particle movies) stay in ``designs/ducted_fan.py``.
 """
 import math
 

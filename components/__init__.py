@@ -13,7 +13,7 @@ From ``notebooks/`` (the repository root on ``sys.path``)::
     from vegeta import dedalus
     frame_design = dedalus.load_design("components.quad_frame:QuadFrame")
 
-The designs are copies of ``notebooks/designs/`` (which stays as it is: the notebooks and ``benchmark/`` use it), cut to
+The designs are copies of ``designs/`` (which stays as it is: the notebooks and ``benchmark/`` use it), cut to
 their geometry, with package-relative imports; ``components/tests`` checks that each builds the same shapes as the
 original and imports no analysis.
 """

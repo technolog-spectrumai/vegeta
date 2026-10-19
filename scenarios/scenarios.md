@@ -77,7 +77,7 @@ Later: read the design from a JSON exported by the notebooks instead of the pres
 ## Apheloria packs and unpacks (MuJoCo)
 
 `xvfb-run -a python3 scenarios/apheloria_pack.py` (or `./user_tests.sh apheloria-movies`) simulates Apheloria
-(`notebooks/designs/apheloria_robot.py`: head + 8 segments, 33.1 kg, 96 leg servos, 8 active body pitch joints of
+(`designs/apheloria_robot.py`: head + 8 segments, 33.1 kg, 96 leg servos, 8 active body pitch joints of
 60 N·m stall) in MuJoCo through Chiron and writes `scenarios/output/apheloria_pack.mp4` (stand → tuck the legs →
 curl into the ball, neck first) and `apheloria_unpack.mp4` (from the ball → open tail first → stand), plus
 `apheloria_pack_unpack.json` with the body joints' final angles, peak torques and saturation. A scripted controller
@@ -86,19 +86,19 @@ sets only servo targets; whether the ball closes is decided by gravity, contacts
 ## Onager Sentinel on patrol (MuJoCo)
 
 `xvfb-run -a python3 scenarios/onager_patrol.py [--response drag|limp]` (or `./user_tests.sh onager`) drives the
-Onager Sentinel SX-1 (`notebooks/designs/onager_robot.py`: a 408 kg wheel-leg hybrid, eight 800 N·m joint
+Onager Sentinel SX-1 (`designs/onager_robot.py`: a 408 kg wheel-leg hybrid, eight 800 N·m joint
 modules as position servos, four 3 kW hub motors as velocity servos on their torque–speed lines) over a gravel
 road with a 120 mm speed bump at 3 m/s; at 6 s the front-left hub motor loses power (it freewheels), at 9 s the
 rear-right wheel seizes. Both responses slow to 1.5 m/s, one movie each: `onager_patrol_drag.mp4` (keep driving on
 three motors, the braked tyre skids) and `onager_patrol_limp.mp4` (the three-wheel limp: the hull shifts 0.4 m
 forward on the three good legs, the seized wheel lifts 100 mm); `onager_patrol.json` has the per-phase tables
 (speed, heading, tilt, corner loads, wheel torques and power, the seized wheel's drag). The scenario is
-`notebooks/designs/onager_scenario.py`, the same one notebook 20 §7 runs.
+`designs/onager_scenario.py`, the same one notebook 20 §7 runs.
 
 ## Onager Atlas moves a pallet (MuJoCo)
 
 `xvfb-run -a python3 scenarios/onager_atlas_pallet.py` (or `./user_tests.sh onager-atlas`): the forklift Onager
-(`notebooks/designs/onager_atlas_robot.py`, 726 kg, four-quadrant drives) picks a Euro pallet with a 175 kg crate
+(`designs/onager_atlas_robot.py`, 726 kg, four-quadrant drives) picks a Euro pallet with a 175 kg crate
 off a gravel yard (forks at travel height, stand-off, lower to the openings, creep in, lift, tilt back), carries it
 8 m at 1 m/s, sets it down and backs out. The pallet is a Chiron prop; whether it rides on the forks is contact
 physics. Writes `onager_atlas_pallet.mp4` and `onager_atlas_pallet.json` (the phase table: pallet height and tilt,
@@ -107,7 +107,7 @@ lift force, tilt torque, front knees against their stall, the lightest rear whee
 ## Onager Manus clears a blocked track (MuJoCo)
 
 `xvfb-run -a python3 scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-manus`): the two-arm Onager
-(`notebooks/designs/onager_manus_robot.py`, 458 kg) stops at a fence wire across the track (Ø 3.15 mm, 1200 MPa:
+(`designs/onager_manus_robot.py`, 458 kg) stops at a fence wire across the track (Ø 3.15 mm, 1200 MPa:
 7.5 kN to cut), puts its right pincer's cutter notch on it and closes — a scene hook releases the wire's weld only
 when both jaws squeeze it with the cutting force — drives through, crouches at a 14 kg log, takes it with the left
 pincer's hooked jaws, lifts it, swings it over the side, puts it down and drives on. Writes
@@ -116,7 +116,7 @@ pincer's hooked jaws, lifts it, swings it over the side, puts it down and drives
 ## Onager Sweeper cleans a street (MuJoCo)
 
 `xvfb-run -a python3 scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`): the street-cleaning
-Onager (`notebooks/designs/onager_sweeper_robot.py`, 590 kg: the chassis low in a fixed stance, a disc broom, a
+Onager (`designs/onager_sweeper_robot.py`, 590 kg: the chassis low in a fixed stance, a disc broom, a
 suction hood, two Manus arms, a basket on the roof) spins its broom, runs the fan — the suction is the CFD's air
 drag on the litter under the hood (`onager_sweeper_cfd.SUCTION`), what reaches the duct is collected — sweeps at
 1 m/s over cans and packets, stops at a 2.3 kg brick, takes it with its left pincer's hooked jaws and swings it
@@ -138,7 +138,7 @@ summary, phases, source estimate).
 
 `python scenarios/propulsor_maps.py [--kind propellers|exotic|edf] [-j N]` solves the design spaces of notebooks 25 (two and
 three blades), 25c (six and twelve) and 25b (ducted fans, one to three stages) over airspeed × rpm and writes
-`notebooks/designs/data/<kind>_maps.json` (about a minute for each propeller set, ten for the fans on four cores; the same as
+`designs/data/<kind>_maps.json` (about a minute for each propeller set, ten for the fans on four cores; the same as
 each notebook's last section). `python scenarios/merlin_race.py` races every map on MERLIN (notebook 26's design export when it
 exists) — 5 km and back, 10 km reach, 10 km and back, at 1900, 2700 and 3500 W on the same battery — and writes
 `merlin_race.csv` (every race) and `merlin_race.json` (the fastest of each kind).
@@ -150,7 +150,7 @@ xvfb-run -a python3 scenarios/nisus_mission.py                               # s
 xvfb-run -a python3 scenarios/nisus_mission.py --variant Zero --condition "Jetson failure"
 python3 scenarios/nisus_mission.py --no-movie                                # the numbers only
 ```
-Notebook 31's missions in MuJoCo through Chiron (`notebooks/designs/nisus_scenario.py`): Nisus-OBS and Nisus-Zero, hand
+Notebook 31's missions in MuJoCo through Chiron (`designs/nisus_scenario.py`): Nisus-OBS and Nisus-Zero, hand
 launch, climb, survey until the flight controller's energy manager calls the return, approach and landing. Writes
 `scenarios/output/nisus_<variant>_<condition>.mp4` and `.csv` and `nisus_mission.json`.
 
@@ -173,7 +173,7 @@ xvfb-run -a python3 scenarios/nisus_plus_mission.py                             
 xvfb-run -a python3 scenarios/nisus_plus_mission.py --condition "storm: weather escape"
 python3 scenarios/nisus_plus_mission.py --no-movie                                # the numbers only (~10 min)
 ```
-Notebook 33's missions in MuJoCo through Chiron (`notebooks/designs/nisus_plus_scenario.py`) over an analytic mountain valley
+Notebook 33's missions in MuJoCo through Chiron (`designs/nisus_plus_scenario.py`) over an analytic mountain valley
 (a MuJoCo height field, 10 x 9.5 km in 25 m cells): Nisus+ Zero launched by a light bungee from the valley meadow at 1200 m,
 a spiral climb to 3650 m (the air's density from the ISA at the aircraft's altitude), the terrain-following survey legs on
 the north face, the return, the crow + propeller-brake descent (with regeneration), the steep crow approach and the belly
@@ -201,7 +201,7 @@ xvfb-run -a python3 scenarios/falco_mission.py                                  
 xvfb-run -a python3 scenarios/falco_mission.py --condition "lee downdraft (north wind 10 m/s)"
 python3 scenarios/falco_mission.py --no-movie                                     # the numbers only (~10 min)
 ```
-Notebook 35's missions: NISUS+'s six conditions on Falco-Zero, the tractor (`notebooks/designs/falco_scenario.py`) — the
+Notebook 35's missions: NISUS+'s six conditions on Falco-Zero, the tractor (`designs/falco_scenario.py`) — the
 20x15 in the nose on the 8S3P pack, the single tail; the landing **parks the propeller**: on the 9° crow final below
 20 m the throttle goes to idle, the ESC's brake stops the blades and the parking routine marks them horizontal, the
 flare is flown on the pitch alone, a go-around un-parks it. The judge counts a touchdown with the blades not parked as a
@@ -214,7 +214,7 @@ xvfb-run -a python3 scenarios/falco_birds.py                                    
 xvfb-run -a python3 scenarios/falco_birds.py --scenario "alpine chough"
 python3 scenarios/falco_birds.py --no-movie
 ```
-NISUS+'s four hunts on Falco-Zero (`notebooks/designs/falco_birds.py`): the camera in the chin looks past the
+NISUS+'s four hunts on Falco-Zero (`designs/falco_birds.py`): the camera in the chin looks past the
 propeller's hub (the blades cross the top of the frame: computer vision masks them, accepted). Writes
 `scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.
 
