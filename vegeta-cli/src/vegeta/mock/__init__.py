@@ -27,6 +27,7 @@ so each cell runs and its tables fill, but the numbers mean nothing:
   detail says MOCK) and ``viz.frames`` renders at most ``CHIRON_FRAMES`` small frames, so movies take seconds.
 
 - Transitions (``vegeta.aeromant.transitions.simulate``): time step 0.02 s instead of 0.002 s, holds of 0.5 s and 2 s.
+- Zephyr's NeuralFoil polars: thin-airfoil theory (2π lift slope, stall near 12°, a quadratic drag polar).
 - Aero models: Boreas BEMT (``bemt.solve``, ``ducted.solve``) on 8 radial stations and at most 60 iterations, the
   designs' vortex lattice (``peregrine_flight.vlm``) on at most 4 spanwise by 1 chordwise panel per surface.
 
@@ -477,6 +478,26 @@ def _coarse_transition(real):
     return simulate
 
 
+def _thin_airfoil(section, alphas, Re, mach, n_crit, model_size):
+    """NeuralFoil mocked: a thin-airfoil polar — CL = 2π (α − α0) up to a stall near 12°, then falling off; CD a quadratic
+    polar; CM from the camber. The right shapes and signs at once, NOT a section analysis."""
+    from vegeta.zephyr.polar import Polar
+    _count("zephyr.neuralfoil")
+    a = np.radians(np.asarray(alphas, float))
+    try:
+        m = float(np.max(section.camber(np.linspace(0.0, 1.0, 51))))
+    except Exception:
+        m = 0.0
+    a0, a_st = -2.0 * m, np.radians(12.0)
+    cl_lin = 2 * np.pi * (a - a0)
+    cl_st = 2 * np.pi * (a_st - a0)
+    cl = np.where(np.abs(a) <= a_st, cl_lin, np.sign(a) * cl_st * np.exp(-(np.abs(a) - a_st) / np.radians(15.0)))
+    cd = 0.008 + 0.012 * cl ** 2 + np.where(np.abs(a) > a_st, 1.2 * np.sin(np.abs(a) - a_st) ** 2, 0.0)
+    cm = np.full_like(a, -np.pi / 2 * m)
+    return Polar(section.name, float(Re), np.asarray(alphas, float), cl, cd, cm, np.full_like(a, 0.5), "mock (thin airfoil)", mach, n_crit,
+                 notes="vegeta.mock: NeuralFoil mocked by thin-airfoil theory — NOT a result")
+
+
 def install() -> None:
     """Put the mocks in place (idempotent) and switch the result cache off."""
     if _saved:
@@ -559,6 +580,8 @@ def install() -> None:
             if obj is real:
                 _patch(boreas, name, coarse)
     import sys as _sys
+    from vegeta.zephyr import polar as zpolar               # NeuralFoil: a thin-airfoil polar instead of the network
+    _patch(zpolar, "_neuralfoil", _thin_airfoil)
     from vegeta.aeromant import transitions as atr          # the tailsitter transitions: 10x coarser steps, short holds
     real_sim = atr.simulate
     coarse_sim = _coarse_transition(real_sim)
@@ -574,7 +597,7 @@ def install() -> None:
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
     _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
-                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice, BEMT and transitions coarse (NOT results), the result cache is off")
+                      f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice, BEMT and transitions coarse, NeuralFoil thin-airfoil (NOT results), the result cache is off")
 
 
 def uninstall() -> None:
