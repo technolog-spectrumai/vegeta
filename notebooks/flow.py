@@ -62,7 +62,7 @@ for _n, _slug in (("01_hangar", "hangar"), ("02_industrial", "industrial"), ("03
                   takes=[], gives=[], auto=False)
 flow.notebook("race_design_factors", folder="races", title="Race design factors — per course, pooled and worst-case requirements from the exported race runs (no race rerun)",
               takes=[], gives=[File(f"{DATA}/races/race_design_factors.json")], auto=False)
-flow.notebook("49_mini_raptor", folder="devices", title="Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
+flow.notebook("49_mini_raptor", folder="exp", title="UNSTABLE — Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
               takes=[], gives=[File(f"{DATA}/mini_raptor_design.json"), File(f"{DATA}/reports/49_mini_raptor.json")], auto=True)
 
 flow.notebook("44_kestrel_fast", folder="exp", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",

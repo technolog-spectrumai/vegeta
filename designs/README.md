@@ -317,7 +317,7 @@ window), `cantilever(t=)` (`kestrel_xwing`'s, the spar inside the section's dept
 nacelles as the feet) and `export_stl`, the CFD specs and cases (`CFD_CAMPAIGNS` sweep / stall) and the FEA case of
 one panel's spar in its socket (`panel_cad`, `fea_cases`); `kestrel_xc_campaigns.py` is the adapter the workflow book
 `kestrel-x` (code X: `wf X1`–`X3`) runs through `side_labs/kestrel_x/`, the shared scripts parametrised by book.
-`mini_raptor.py` (notebook **49** `49_mini_raptor`, auto, no takes): the mini raptors on a 5-inch racing stack — Apus
+**UNSTABLE, parked in `exp/` (2026-10-19): the briefs were rethought and the redesign is unfinished; the races are flown by the reference quadcopter only.** `exp/mini_raptor.py` (notebook **49** `exp/49_mini_raptor`, auto, no takes): the mini raptors on a 5-inch racing stack — Apus
 Mini (economy: a twin-motor monoplane tailsitter, the hover pitch by the elevons in the wash), Alcotan (the chaser: a
 cruciform tailsitter, 6S and the 5x5), Gavilan (tight spaces: the racing frame's motor square in a short biplane cell)
 — by first principles only: `STACK` / `PACKS` / `DRIVES`

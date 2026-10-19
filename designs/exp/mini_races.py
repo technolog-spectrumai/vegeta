@@ -1,4 +1,9 @@
-"""DRAFT, not yet running (the Chiron robot definition fails validation; the autopilot is untested). Mini raptor races in MuJoCo (notebook 50 ``50_mini_races``): Apus Mini, Alcotan, Gavilan and the 5-inch racing
+"""UNSTABLE — an experiment, parked on 2026-10-19 (designs/exp/). The redesign of the briefs (Apus a one-motor plank,
+Alcotan a twin, Gavilan the X cell) is unfinished: the CAD, the printed parts, notebook 49 and the tests still
+describe the earlier layouts and fail. The designs may be re-examined later; they are not needed now. The races are
+flown by the reference 5-inch quadcopter only (races.refquad).
+
+DRAFT, not yet running (the Chiron robot definition fails validation; the autopilot is untested). Mini raptor races in MuJoCo (notebook 50 ``50_mini_races``): Apus Mini, Alcotan, Gavilan and the 5-inch racing
 quad flown round three courses — a three-floor hangar, an industrial zone, a farm — by the same autopilot, through
 Chiron's lab (``vegeta.chiron``: MuJoCo with scene hooks).
 

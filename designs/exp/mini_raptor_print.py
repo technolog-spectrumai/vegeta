@@ -1,4 +1,9 @@
-"""The mini raptors as things to build (notebook 49 § 3b): every printed part split to a 250 × 210 × 210 mm bed, the
+"""UNSTABLE — an experiment, parked on 2026-10-19 (designs/exp/). The redesign of the briefs (Apus a one-motor plank,
+Alcotan a twin, Gavilan the X cell) is unfinished: the CAD, the printed parts, notebook 49 and the tests still
+describe the earlier layouts and fail. The designs may be re-examined later; they are not needed now. The races are
+flown by the reference 5-inch quadcopter only (races.refquad).
+
+The mini raptors as things to build (notebook 49 § 3b): every printed part split to a 250 × 210 × 210 mm bed, the
 bought stock beside it (motors, propellers, carbon tubes, the pack and the stack), the in-house printability checks
 that need no slicer — bed fit in the chosen orientation, the trailing edge against the nozzle, the overhangs that would
 want support, the printed mass from the shell and the infill against the mass budget's structure — and the Mellonia

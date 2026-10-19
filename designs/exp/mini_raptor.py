@@ -1,4 +1,9 @@
-"""Mini raptors — Apus Mini, Alcotan, Gavilan (notebook 49 ``49_mini_raptor``): three first-guess tailsitters on a
+"""UNSTABLE — an experiment, parked on 2026-10-19 (designs/exp/). The redesign of the briefs (Apus a one-motor plank,
+Alcotan a twin, Gavilan the X cell) is unfinished: the CAD, the printed parts, notebook 49 and the tests still
+describe the earlier layouts and fail. The designs may be re-examined later; they are not needed now. The races are
+flown by the reference 5-inch quadcopter only (races.refquad).
+
+Mini raptors — Apus Mini, Alcotan, Gavilan (notebook 49 ``49_mini_raptor``): three first-guess tailsitters on a
 stock 5-inch FPV racing stack, by first principles and empirical correlations only — no CFD, no FEA, no optimisation,
 no long simulation. Conceptual geometry, not validated structure.
 
@@ -44,7 +49,7 @@ import kestrel_flight as kf
 import kestrel_systems as ks
 
 RHO, NU, G = 1.225, 1.46e-5, 9.81
-DATA = Path(__file__).resolve().parent / "data"
+DATA = Path(__file__).resolve().parents[1] / "data"                  # designs/data (this module lives in designs/exp/)
 CAD_DIR = DATA / "cad" / "mini_raptor"
 GATE_WIDTH = 1.5                     # a racing gate [m]
 FPV_W = 6.0                          # the camera, the video link and the flight controller
