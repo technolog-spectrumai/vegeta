@@ -4,8 +4,9 @@ import sys
 from pathlib import Path
 
 DESIGNS = str(Path(__file__).resolve().parents[1])
-if DESIGNS not in sys.path:
-    sys.path.insert(0, DESIGNS)
+for _p in (DESIGNS, str(Path(DESIGNS) / "exp")):          # exp/: the Kestrel-X experiments
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 def pytest_configure(config):

@@ -54,7 +54,25 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
     ├── K9   frame                  A, B, C, modes
     ├── K10  joint                                                                                [after K9]
     └── K11  frame-and-joint
+kestrel-x  (X)  Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)
+├── CFD — the bare X-C (Aeromant / OpenFOAM)
+│   ├── X1   airframe-sweep         the bare X-C 0–90° at 10 m/s: the lattice's cos² φ rule, Cd0, the deep stall
+│   └── X2   airframe-stall         8–16°: the panels' CL max at their dihedral
+└── FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)
+    └── X3   panel                  the 4 g pull-up with the tip motor's inertia, the first modes
+races  (R)  Races — the reference 5-inch quad round four courses in MuJoCo
+└── Race — the MuJoCo lap and its videos (chase, onboard, overview)
+    ├── R1   hangar
+    ├── R2   industrial
+    ├── R3   farm
+    └── R4   quarry
 ```
+(the races book: `races/README.md`; one chapter per course, `--quality screening|fine`, `--mock` for the point-mass flyer)
+
+A second book reuses the same scripts: `side_labs/kestrel_x/airframe_cfd.py` and `panel_fea.py` call the Kestrel
+scripts' `main(book="kestrel-x")`, which load the design adapter named in `CAMPAIGNS` (`kestrel_xc_campaigns`, the
+same interface as `kestrel_campaigns`); `library.kind_of(book, kind)` is what the CLI, the batch runner and the GUI
+read, so a chapter code carries its book.
 
 The exported files follow the structure: every run is `side_labs/runs/<book>/<chapter>/<run id>/` (e.g.
 `side_labs/runs/kestrel/airframe-stall/20261017-101500_4Q-2_fine/`), every cached case

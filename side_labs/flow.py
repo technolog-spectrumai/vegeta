@@ -77,6 +77,43 @@ kestrel.chapter("joint", kind="fea", campaign="joint", takes=[Run("frame")])    
 kestrel.chapter("frame-and-joint", kind="fea", campaign="all")                                           # K11
 kestrel.chapter("wing-interference", kind="cfd", campaign="interference")                                 # K12
 
+# ================================================================================================= book: kestrel-x (X)
+def _xc():
+    for p in (str(ROOT / "designs"), str(ROOT / "designs" / "exp")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import kestrel_xc_campaigns
+    return kestrel_xc_campaigns
+
+
+kestrel_x = flow.book("kestrel-x", "X", title="Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
+                      design="designs/exp/kestrel_xc.py", variants=("X-C", "X-C45", "X-CX"),
+                      fingerprint=lambda v: _xc().fingerprint(v), compatible=lambda e, f, ch=None: _xc().compare(e, f),
+                      describe=lambda: {**dict(_xc().CFD_CAMPAIGNS), **{f"fea:{k}": v for k, v in _xc().FEA_CAMPAIGNS.items()}})
+kestrel_x.kind("cfd", title="CFD — the bare X-C (Aeromant / OpenFOAM)", script="side_labs/kestrel_x/airframe_cfd.py", workflow="airframe_cfd",
+               needs=[Tool.openfoam(probe=_openfoam), Package("vegeta.aeromant")], needs_text="OpenFOAM; 4 cores recommended", time="screening case 10–20 min, fine case ~1 h",
+               options=[("--variant", ("X-C", "X-C45", "X-CX"), "X-C"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")], screening=("--quality", "screening"))
+kestrel_x.kind("fea", title="FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)", script="side_labs/kestrel_x/panel_fea.py", workflow="structure_fea",
+               needs=[Tool("ccx", why="the FEA solver", fix="install CalculiX (docs/installation.md)", version_cmd=("ccx", "-v")), Package("gmsh"), Package("vegeta.talos")],
+               needs_text="CalculiX ccx on the PATH, Gmsh (python module)", time="minutes", options=[("--variant", ("X-C", "X-C45", "X-CX"), "X-C"), ("--threads", None, "4")],
+               screening=("--element-size", "3", "--threads", "2"))
+kestrel_x.chapter("airframe-sweep", kind="cfd", campaign="sweep")        # X1
+kestrel_x.chapter("airframe-stall", kind="cfd", campaign="stall")        # X2
+kestrel_x.chapter("panel", kind="fea", campaign="panel")                 # X3
+
+# ================================================================================================= book: races (R)
+races = flow.book("races", "R", title="Races — the reference 5-inch quad round four courses in MuJoCo (hangar, industrial zone, farm, quarry)",
+                  design="races/ (refquad, courses, rules)", variants=())
+races.kind("race", title="Race — the MuJoCo lap and its videos (chase, onboard, overview)", script="side_labs/races/race.py", workflow="race",
+           needs=[Package("mujoco")], needs_text="mujoco (pip); ffmpeg for the videos; an OpenGL context (MUJOCO_GL=egl) for camera views, else the replay",
+           time="a lap in under a minute; the videos a few minutes", options=[("--quality", ("screening", "fine"), "screening"), ("--collision", ("reset", "count", "stop"), "reset"), ("--safety", None, "0.6"), ("--tilt-max", None, "60"), ("--lookahead", None, "0.25")],
+           screening=("--quality", "screening"))
+races.chapter("hangar", kind="race", campaign="hangar")               # R1
+races.chapter("industrial", kind="race", campaign="industrial")       # R2
+races.chapter("farm", kind="race", campaign="farm")                   # R3
+races.chapter("quarry", kind="race", campaign="quarry")               # R4
+
+
 flow.add_import("import_legacy", title="import the first CFD campaign's results file into kestrel / airframe-sweep (once)",
                 script="side_labs/kestrel/import_legacy.py", marker="legacy_")
 

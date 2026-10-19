@@ -56,7 +56,12 @@ def _flow():
 
 
 FLOW = _flow()
-KINDS = {k: kind.as_dict() for b in FLOW.books.values() for k, kind in b.kinds.items()}
+KINDS_BY_BOOK = {name: {k: kind.as_dict() for k, kind in b.kinds.items()} for name, b in FLOW.books.items()}
+KINDS = dict(KINDS_BY_BOOK["kestrel"])                       # the first book's kinds (kept for the callers that knew one book); kind_of(book, kind) for the rest
+
+
+def kind_of(book: str, kind: str) -> dict:
+    return KINDS_BY_BOOK[book][kind]
 BOOKS = {name: {"code": b.code, "title": b.title, "design": b.design, "variants": tuple(b.variants),
                 "chapters": {ch.name: {"kind": ch.kind.name, "campaign": ch.campaign, "prerequisites": ch.prerequisites} for ch in b.chapters.values()},
                 "describe": b.describe or (lambda: {})}
@@ -76,7 +81,7 @@ def chapters(book: str) -> dict:
     for n, (name, c) in enumerate(b["chapters"].items(), 1):
         key = c["campaign"] if c["kind"] == "cfd" else f"fea:{c['campaign']}"
         out[name] = {"code": f"{b['code']}{n}", "n": n, "kind": c["kind"], "campaign": c["campaign"], "description": desc.get(key, ""),
-                     "prerequisites": tuple(c["prerequisites"]), "script": KINDS[c["kind"]]["script"], "workflow": KINDS[c["kind"]]["workflow"]}
+                     "prerequisites": tuple(c["prerequisites"]), "script": KINDS_BY_BOOK[book][c["kind"]]["script"], "workflow": KINDS_BY_BOOK[book][c["kind"]]["workflow"]}
     return out
 
 
@@ -122,7 +127,7 @@ def tree(book: str | None = None, *, runs: bool = True) -> str:
                 kinds.append(info["kind"])
         for ki, kind in enumerate(kinds):
             last_kind = ki == len(kinds) - 1
-            lines.append(f"{'└── ' if last_kind else '├── '}{KINDS[kind]['title']}")
+            lines.append(f"{'└── ' if last_kind else '├── '}{KINDS_BY_BOOK[bname][kind]['title']}")
             items = [(n, i) for n, i in chs.items() if i["kind"] == kind]
             for j, (name, info) in enumerate(items):
                 branch = ("    " if last_kind else "│   ") + ("└── " if j == len(items) - 1 else "├── ")

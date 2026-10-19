@@ -129,7 +129,7 @@ def cmd_info(args) -> int:
 
 def _info_code(args) -> int:
     book, name, info = _chapter(args.chapter or args.book_or_code)
-    kind = library.KINDS[info["kind"]]
+    kind = library.kind_of(book, info["kind"])
     chs = library.chapters(book)
     print(f"{info['code']}  {name}  — book {book} ({BOOKS[book]['title']})\n  {kind['title']}\n  {info['description']}\n  needs: {kind['needs']} · time: {kind['time']}")
     if info["prerequisites"]:
@@ -189,7 +189,7 @@ def cmd_resume(args) -> int:
     st = runkit.read_json(d / "status.json") or {}
     if st.get("state") == "running" and _alive(st.get("pid")):
         sys.exit(f"{d.name} is still running (pid {st.get('pid')}); stop it first or wait")
-    return _launch(library.KINDS[kind]["script"], ["--resume", str(d), *args.rest], detach=args.detach, label=f"resume_{m.get('chapter', kind)}")
+    return _launch(library.kind_of(m.get("book", "kestrel"), kind)["script"], ["--resume", str(d), *args.rest], detach=args.detach, label=f"resume_{m.get('chapter', kind)}")
 
 
 def cmd_runs(args) -> int:
@@ -360,7 +360,7 @@ def interactive() -> int:
                 return cmd_stop(argparse.Namespace(run=r))
         return 0
     book, name, info = _chapter(pick)
-    kind = library.KINDS[info["kind"]]
+    kind = library.kind_of(book, info["kind"])
     chs = library.chapters(book)
     print(f"\n{info['code']}  {name}: {info['description']}\n  {kind['title']}\n  needs: {kind['needs']} · {kind['time']}")
     if info["prerequisites"]:

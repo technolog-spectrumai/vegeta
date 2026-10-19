@@ -432,3 +432,53 @@ def internal_layout(p=None, *, battery_x=None, capsule_kg=None, ax=None):
     ax.set(aspect="equal", xlabel="x [mm] (aft from the nose tip)", ylabel="z [mm]", title="the pod's internal layout (side view; grey: the nose and tail tapers)")
     ax.legend(loc="upper right", fontsize=8)
     return ax
+
+
+def xwing_3d(L, *, cg=None, ax=None, elev: float = 22.0, azim: float = -55.0):
+    """The X-wing in 3-D from its layout (no CAD yet: todo Y.9): the four panels as flat plates at ±45°, the pod as a
+    cylinder, the propeller discs, the tip foot rods; x aft, y right, z up, metres."""
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    if ax is None:
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection="3d")
+    phi = L["phi"]
+    c, x_le = L["chord"], L["x_le"]
+    polys, cols = [], []
+    for sy, sz in ((-1, 1), (1, 1), (-1, -1), (1, -1)):
+        e = np.array([0.0, sy * math.cos(phi), sz * math.sin(phi)])
+        a, b = L["r0"] * e, L["r1"] * e
+        polys.append([(x_le, a[1], a[2]), (x_le, b[1], b[2]), (x_le + c, b[1], b[2]), (x_le + c, a[1], a[2])])
+        cols.append(COL["wing"])
+        y_e = L["elevon_y_in"]
+        ae = y_e * e
+        xh = x_le + (1 - L["elevon_cf"]) * c
+        polys.append([(xh, ae[1], ae[2]), (xh, b[1], b[2]), (x_le + c, b[1], b[2]), (x_le + c, ae[1], ae[2])])
+        cols.append("#8a2be2")
+    ax.add_collection3d(Poly3DCollection(polys, facecolors=cols, edgecolors=COL["edge"], linewidths=0.6, alpha=0.85))
+    # the pod: a cylinder along x
+    t = np.linspace(0, 2 * math.pi, 24)
+    r = L["pod_width"] / 2
+    for x0, x1 in ((0.0, L["pod_length"]),):
+        X = np.array([[x0] * len(t), [x1] * len(t)])
+        ax.plot_surface(X, np.array([r * np.cos(t)] * 2), np.array([r * np.sin(t)] * 2), color="#d9d9d9", alpha=0.6, linewidth=0)
+    # the discs and the foot rods
+    for name, m in L["motors"].items():
+        ang = math.atan2(m["z"], m["y"])
+        u = np.array([0.0, -math.sin(ang), math.cos(ang)])          # in the disc plane, perpendicular to the panel's radius
+        v = np.array([0.0, math.cos(ang), math.sin(ang)])
+        pts = [(m["x"], m["y"] + L["R_prop"] * (math.cos(tt) * u[1] + math.sin(tt) * v[1]), m["z"] + L["R_prop"] * (math.cos(tt) * u[2] + math.sin(tt) * v[2])) for tt in t]
+        ax.add_collection3d(Poly3DCollection([pts], facecolors=COL["disc"], alpha=0.25, edgecolors=COL["edge"], linewidths=0.4))
+        ax.plot([m["x"], x_le + 0.6 * c], [m["y"], m["y"]], [m["z"], m["z"]], color="#333", lw=3)
+        ax.text(m["x"] - 0.03, m["y"] * 1.1, m["z"] * 1.1, name, fontsize=8)
+    for fy, fz in L["feet"]:
+        ax.plot([x_le + 0.6 * c, L["x_feet"]], [fy, fy], [fz, fz], color="#555", lw=1.5)
+    if cg is not None:
+        ax.scatter([cg["x_cg"]], [0.0], [cg.get("z_cg", 0.0)], color=COL["cg"], marker="x", s=80, linewidths=3)
+    lim = max(L["r1"], L["x_feet"] / 2) * 1.05
+    ax.set_xlim(0, L["x_feet"] * 1.05); ax.set_ylim(-lim, lim); ax.set_zlim(-lim, lim)
+    ax.set_box_aspect((L["x_feet"] * 1.05, 2 * lim, 2 * lim))
+    ax.set_xlabel("x [m] (nose at 0, aft →)"); ax.set_ylabel("y [m]"); ax.set_zlabel("z [m]")
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_title(f"{L['variant']}: the four panels at ±45°, the pod, the discs and the tip feet")
+    return ax

@@ -135,6 +135,61 @@
      "prerequisites": []
     }
    }
+  },
+  "kestrel-x": {
+   "code": "X",
+   "title": "Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
+   "design": "designs/exp/kestrel_xc.py",
+   "variants": [
+    "X-C",
+    "X-C45",
+    "X-CX"
+   ],
+   "chapters": {
+    "airframe-sweep": {
+     "kind": "cfd",
+     "campaign": "sweep",
+     "prerequisites": []
+    },
+    "airframe-stall": {
+     "kind": "cfd",
+     "campaign": "stall",
+     "prerequisites": []
+    },
+    "panel": {
+     "kind": "fea",
+     "campaign": "panel",
+     "prerequisites": []
+    }
+   }
+  },
+  "races": {
+   "code": "R",
+   "title": "Races — the reference 5-inch quad round four courses in MuJoCo (hangar, industrial zone, farm, quarry)",
+   "design": "races/ (refquad, courses, rules)",
+   "variants": [],
+   "chapters": {
+    "hangar": {
+     "kind": "race",
+     "campaign": "hangar",
+     "prerequisites": []
+    },
+    "industrial": {
+     "kind": "race",
+     "campaign": "industrial",
+     "prerequisites": []
+    },
+    "farm": {
+     "kind": "race",
+     "campaign": "farm",
+     "prerequisites": []
+    },
+    "quarry": {
+     "kind": "race",
+     "campaign": "quarry",
+     "prerequisites": []
+    }
+   }
   }
  },
  "IMPORTS": {

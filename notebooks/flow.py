@@ -41,6 +41,29 @@ flow.notebook("45_kestrel_x", folder="exp", title="Kestrel-X — the X-wing sibl
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
+flow.notebook("46_kestrel_tandem", folder="exp", title="Kestrel-Q4T — the tandem-wing Kestrel: Q4T1N-10 against Q4T1P-10, Q4T1N-12 and Kestrel-4Q-2 (notebook 43)",
+              needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
+              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE,
+                     Data(f"{DATA}/kestrel_drive_10x7_3.3Ah.json", cache=True, note="the 10x7 drive's Boreas table, ~40 s")],
+              gives=[File(f"{DATA}/kestrel_tandem_design.json"), File(f"{DATA}/reports/46_kestrel_tandem.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
+
+flow.notebook("48_kestrel_xc", folder="exp", title="Kestrel-X-C — the X-wing made competitive: design, CAD, the CFD and FEA chapters, against X-A, X-B and Kestrel-4Q-2",
+              needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
+              takes=[Run("kestrel-x/airframe-sweep", variant="X-C"), Run("kestrel-x/airframe-stall", variant="X-C"), Run("kestrel-x/panel", variant="X-C"),
+                     File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE],
+              gives=[File(f"{DATA}/kestrel_xc_design.json"), File(f"{DATA}/reports/48_kestrel_xc.json")], auto=True)
+
+flow.notebook("47_kestrel_benchmark", folder="exp", title="Kestrel benchmark — the family on one table, read from notebooks 43, 45 and 46 (no physics)",
+              takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), File(f"45_kestrel_x:{DATA}/kestrel_x_design.json"), File(f"46_kestrel_tandem:{DATA}/kestrel_tandem_design.json"),
+                     File(f"48_kestrel_xc:{DATA}/kestrel_xc_design.json")],
+              gives=[File(f"{DATA}/reports/47_kestrel_benchmark.json")], auto=True)
+flow.notebook("50_four_races", folder="races", title="Four races — the reference 5-inch quad round the hangar, the industrial zone, the farm and the quarry (MuJoCo runs when on file, the mock otherwise)",
+              takes=[Run("races/hangar"), Run("races/industrial"), Run("races/farm"), Run("races/quarry")], gives=[File(f"{DATA}/four_races.json")], auto=True)
+flow.notebook("51_race_ingest", folder="races", title="Race ingest — deep statistics of the race laps and the design factors for the raptors (scans the runs; the mock where none is on file)",
+              takes=[], gives=[File(f"{DATA}/race_design_factors.json")], auto=False)
+flow.notebook("49_mini_raptor", folder="devices", title="Mini raptors — Apus Mini, Alcotan, Gavilan on a 5-inch racing stack: first principles, conceptual CAD (no CFD, no FEA)",
+              takes=[], gives=[File(f"{DATA}/mini_raptor_design.json"), File(f"{DATA}/reports/49_mini_raptor.json")], auto=True)
+
 flow.notebook("44_kestrel_fast", folder="exp", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])
@@ -106,13 +129,13 @@ flow.notebook("25c_exotic_propellers", folder="parts", title='Exotic propellers 
 flow.notebook("26_merlin", folder="devices", title='MERLIN — the design',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.mellonia"), Package("vegeta.talos")],
               gives=[File(f"{DATA}/merlin_design.json")])
-flow.notebook("26b_merlin_mission", folder="scenarios", title='MERLIN — the mission: the race to the fire, the mountain, the smoke',
+flow.notebook("26b_merlin_mission", folder="races", title='MERLIN — the mission: the race to the fire, the mountain, the smoke',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus")],
               takes=[File(f"26_merlin:{DATA}/merlin_design.json")])
-flow.notebook("27_merlin_race", folder="scenarios", title="MERLIN's propulsor race — can a ducted fan win on the same battery?",
+flow.notebook("27_merlin_race", folder="races", title="MERLIN's propulsor race — can a ducted fan win on the same battery?",
               needs=[],
               takes=[File("25_air_propeller:" + MAPS["propellers"], required=True), File("25b_ducted_fan:" + MAPS["edf"]), File("25c_exotic_propellers:" + MAPS["exotic"]), File(f"26_merlin:{DATA}/merlin_design.json")])
-flow.notebook("28_microjet", folder="parts", title='Microjet — a model turbojet from cycle to CFD and FEA',
+flow.notebook("28_microjet", folder="exp", title='Microjet — a model turbojet from cycle to CFD and FEA',
               needs=[Package("vegeta.aeromant"), Package("vegeta.boreas"), Package("vegeta.core"), Package("vegeta.dedalus"), Package("vegeta.talos")],
               gives=[File(f"{DATA}/microjet.json")])
 flow.notebook("28_peregrine", folder="devices", title='PEREGRINE — a falcon-inspired folding-wing farm drone',

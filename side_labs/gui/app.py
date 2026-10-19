@@ -433,7 +433,7 @@ class MainWindow(QMainWindow):
                 if info["kind"] not in kinds:
                     kinds.append(info["kind"])
             for kind in kinds:
-                k = QTreeWidgetItem([kind.upper(), library.KINDS[kind]["title"], ""])
+                k = QTreeWidgetItem([kind.upper(), library.kind_of(bname, kind)["title"], ""])
                 k.setFlags(k.flags() & ~Qt.ItemFlag.ItemIsSelectable)
                 top.addChild(k)
                 for name, info in chs.items():
@@ -484,7 +484,7 @@ class MainWindow(QMainWindow):
 
     def _show_chapter(self) -> None:
         book, name, info = self.chapter
-        kind = library.KINDS[info["kind"]]
+        kind = library.kind_of(book, info["kind"])
         chs = library.chapters(book)
         self.chapter_title.setText(f"{info['code']}  {name}")
         self.chapter_desc.setText(info["description"])

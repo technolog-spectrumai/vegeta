@@ -124,7 +124,7 @@ EOF
 
 # the experiments (notebooks/exp/: Kestrel and prop_lab, to be redesigned) are left out unless --include-experiments
 EXP_TESTS=(designs/tests/test_kestrel.py designs/tests/test_kestrel2.py designs/tests/test_kestrel_fea.py designs/tests/test_kestrel_report.py
-           designs/tests/test_prop_lab.py side_labs/tests/test_kestrel_workflows.py notebooks/tests/test_kestrel_notebook.py)
+           designs/tests/test_prop_lab.py designs/tests/test_kestrel_tandem.py designs/tests/test_kestrel_benchmark.py side_labs/tests/test_kestrel_workflows.py notebooks/tests/test_kestrel_notebook.py)
 exp_ignores() { [ "$EXPERIMENTS" -eq 1 ] && return; for f in "${EXP_TESTS[@]}"; do [ -e "$ROOT/$f" ] && printf -- '--ignore=%s ' "$ROOT/$f"; done; }
 
 pytest_summary() {  # pytest_summary <dir> <args...>
@@ -194,7 +194,7 @@ for s in "${SECTIONS[@]}"; do
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"
-      timed pytest_summary "$ROOT" designs/tests -m "not slow" || status=1 ;;
+      timed pytest_summary "$ROOT" designs/tests $( [ "$EXPERIMENTS" -eq 1 ] && echo designs/exp/tests) -m "not slow" || status=1 ;;
     components)
       hdr "components/tests (geometry only)"
       timed pytest_summary "$ROOT" components/tests -m "not slow" || status=1 ;;

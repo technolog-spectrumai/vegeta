@@ -25,6 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "designs"))
+sys.path.insert(0, str(ROOT / "designs" / "exp"))      # the Kestrel-X experiments
 
 import kestrel_cfd as kcfd  # noqa: E402
 import kestrel_transition as kt  # noqa: E402

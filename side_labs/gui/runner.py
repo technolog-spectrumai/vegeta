@@ -155,4 +155,4 @@ def resume_argv(run_dir: Path) -> list[str] | None:
     kind = m.get("kind") or {"airframe_cfd": "cfd", "structure_fea": "fea"}.get(m.get("workflow"))
     if kind not in library.KINDS:
         return None
-    return [library.KINDS[kind]["script"], "--resume", str(run_dir)]
+    return [library.kind_of(m.get("book", "kestrel"), kind)["script"], "--resume", str(run_dir)]

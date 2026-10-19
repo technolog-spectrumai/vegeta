@@ -1,6 +1,6 @@
 # Kestrel — the design dossier
 
-*stitched 2026-10-17 09:37 from 5 report(s)*
+*stitched 2026-10-18 03:58 from 8 report(s)*
 
 | report | lines | exported |
 |---|---|---|
@@ -9,6 +9,9 @@
 | 40_kestrel | 917 | 40_kestrel — exported 2026-10-16 12:22 |
 | 41_xwing | 172 | 41_xwing — exported 2026-10-16 12:34 |
 | 43_kestrel_study | 467 | 43_kestrel_study — exported 2026-10-17 09:37 |
+| 46_kestrel_tandem | 256 | 46_kestrel_tandem — exported 2026-10-17 22:33 |
+| 49_mini_raptor | 256 | 49_mini_raptor — exported 2026-10-18 03:58 |
+| 47_kestrel_benchmark | 133 | 47_kestrel_benchmark — exported 2026-10-18 01:49 |
 
 
 ---
@@ -1920,4 +1923,661 @@ Pursuit: V max 33.3 m/s (thrust-limited), corner radius 9.6 m, best climb 30.9 m
 |---|---|
 | screening | yes |
 | required |  |
+
+
+
+---
+
+## Kestrel-Q4T — the tandem-wing Kestrel (Q4T1N-10 against Q4T1P-10, Q4T1N-12 and Kestrel-4Q-2)
+
+*46_kestrel_tandem — exported 2026-10-17 22:33*
+
+| key | value |
+|---|---|
+| main | Q4T1N-10 |
+| biplane_reference | 43_kestrel_study.json (2026-10-17T09:37) |
+| debug | no |
+
+
+## variants
+
+|  | span | chord | gap | stagger_c | sign | prop | battery_ah | title |
+|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 1 | 0.14 | 0.28 | 3 | -1 | 10x7 | 3.3 | front wing low, rear high — the design |
+| Q4T1P-10 | 1 | 0.14 | 0.28 | 3 | 1 | 10x7 | 3.3 | front wing high, rear low — the mirror |
+| Q4T1N-12 | 1.2 | 0.14 | 0.28 | 3 | -1 | 10x7 | 3.3 | the design at span 1.2 m |
+| Q4T1-10 (flat) | 1 | 0.14 | 0 | 3 | 0 | 10x7 | 3.3 | both wings in one plane — the control case |
+
+
+## layout
+
+|  | span | chord | gap | stagger | x_le_front | x_le_rear | z_front | z_rear | S_ref | AR_wing | AR_total | pod_length | pod_height | hover_pitch_lever |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 1 | 0.14 | 0.28 | 0.42 | 0.2 | 0.62 | -0.14 | 0.14 | 0.28 | 7.14 | 3.57 | 0.86 | 0.34 | 0.23 |
+| Q4T1P-10 | 1 | 0.14 | 0.28 | 0.42 | 0.2 | 0.62 | 0.14 | -0.14 | 0.28 | 7.14 | 3.57 | 0.86 | 0.34 | 0.23 |
+| Q4T1N-12 | 1.2 | 0.14 | 0.28 | 0.42 | 0.2 | 0.62 | -0.14 | 0.14 | 0.336 | 8.57 | 4.29 | 0.86 | 0.34 | 0.23 |
+| Q4T1-10 (flat) | 1 | 0.14 | 0 | 0.42 | 0.2 | 0.62 | 0 | 0 | 0.28 | 7.14 | 3.57 | 0.86 | 0.11 | 0 |
+
+*3 more columns not shown: prop_ground_clearance, prop_to_pod, elevon_y_in*
+
+
+## masses
+
+|  | Q4T1N-10 | Q4T1P-10 | Q4T1N-12 | Q4T1-10 (flat) |
+|---|---|---|---|---|
+| propulsion | 0.752 | 0.752 | 0.752 | 0.752 |
+| structure | 0.617 | 0.617 | 0.67 | 0.633 |
+| systems | 0.219 | 0.219 | 0.219 | 0.219 |
+| payload | 0.105 | 0.105 | 0.105 | 0.105 |
+| margin | 0.06 | 0.06 | 0.06 | 0.06 |
+
+
+## spars
+
+|  | n | half-wing lift [N] | root moment [N·m] | spar | spar stress [MPa] | spar reserve | tip deflection [mm] | tip deflection / half-span [%] | first bending, with the motor [Hz] | spar mass per wing [g] |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 4 | 22.7 | 2.45 | carbon Ø10×8 | 42.3 | 9.46 | 6.36 | 1.43 | 23.6 | 43.8 |
+| Q4T1P-10 | 4 | 22.7 | 2.45 | carbon Ø10×8 | 42.3 | 9.46 | 6.36 | 1.43 | 23.6 | 43.8 |
+| Q4T1N-12 | 4 | 23.4 | 3.3 | carbon Ø10×8 | 57 | 7.02 | 13.7 | 2.52 | 23.6 | 52.6 |
+| Q4T1-10 (flat) | 4 | 22.9 | 2.49 | carbon Ø10×8 | 43 | 9.31 | 6.44 | 1.45 | 23.6 | 43.8 |
+
+
+## lattice
+
+|  | CLα [1/rad] | CLα one wing | k = CDi/CL² | e (span) | k / the biplane's | x_np from the front LE [c] | front share at α 4° | front slope / alone | rear slope / alone (downwash) | CL at α 0 (decalage) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 4.23 | 4.58 | 0.0607 | 1.47 | 1.01 | 1.55 | 0.674 | 1.02 | 0.821 | 0.0659 |
+| Q4T1P-10 | 4.23 | 4.58 | 0.0607 | 1.47 | 1.01 | 1.61 | 0.674 | 1.02 | 0.821 | 0.0659 |
+| Q4T1N-12 | 4.43 | 4.8 | 0.0526 | 1.41 | 0.877 | 1.54 | 0.675 | 1.02 | 0.819 | 0.0688 |
+| Q4T1-10 (flat) | 3.65 | 4.58 | 0.0833 | 1.07 | 1.39 | 1.28 | 0.816 | 1.04 | 0.551 | 0.0442 |
+
+
+## Munk
+
+| Munk: the gap decides the induced drag, not the stagger | value |
+|---|---|
+| biplane k (lattice, gap 0.28, no stagger) | 0.0599 |
+| tandem flat k (lattice) | 0.0833 |
+| tandem N k (lattice) | 0.0607 |
+| flat / N (lattice) | 1.37 |
+| 1 / ((1+σ)/2) at gap/span 0.28 (Prandtl) | 1.44 |
+| N / biplane (lattice) | 1.01 |
+
+
+## stall rule
+
+|  | front share at trim | stalls first | CL max (aircraft) | rear wing cl at the front's stall | static margin [c] | static margin [stagger] | nose-down at the stall |
+|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 0.667 | front | 0.978 | 0.651 | 0.3 | 0.1 | yes |
+| Q4T1P-10 | 0.647 | front | 1.01 | 0.711 | 0.3 | 0.1 | yes |
+| Q4T1N-12 | 0.669 | front | 0.976 | 0.647 | 0.3 | 0.1 | yes |
+| Q4T1-10 (flat) | 0.725 | front | 0.9 | 0.494 | 0.21 | 0.0699 | yes |
+
+
+## drag areas
+
+|  | wings (2) | pod | nacelles (4) | pylons (2, faired) | skid legs (2, faired) and runners | fin | camera dome | pylons (4, faired) |
+|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 24.5 | 11 | 6.44 | 2.16 | 2.4 | 0.611 | 4.07 | — |
+| Q4T1P-10 | 24.5 | 11 | 6.44 | 2.16 | 2.4 | 0.611 | 4.07 | — |
+| Q4T1N-12 | 29.4 | 11 | 6.44 | 2.16 | 2.4 | 0.611 | 4.07 | — |
+| Q4T1-10 (flat) | 24.5 | 5.08 | 6.44 | — | 2.4 | 0.611 | 4.07 | 4.32 |
+
+
+## elevator
+
+|  | Cm_delta rear pair [1/rad] | Cm_delta front pair [1/rad] | rear arm [c] | front arm [c] | Cm_delta both, opposed [1/rad] |
+|---|---|---|---|---|---|
+| Q4T1N-10 | -0.309 | 0.106 | 2.35 | -0.648 | -0.415 |
+| Q4T1P-10 | -0.301 | 0.115 | 2.29 | -0.708 | -0.416 |
+| Q4T1N-12 | -0.366 | 0.125 | 2.36 | -0.644 | -0.492 |
+| Q4T1-10 (flat) | -0.223 | 0.0787 | 2.53 | -0.474 | -0.301 |
+
+
+## hover authority
+
+| key | value |
+|---|---|
+| Q4T1N-10 |                                                      most negative [N·m]  most positive… |
+| Q4T1P-10 |                                                      most negative [N·m]  most positive… |
+| Q4T1N-12 |                                                      most negative [N·m]  most positive… |
+| Q4T1-10 (flat) |                                                      most negative [N·m]  most positive… |
+
+
+## cruise tables
+
+| key | value |
+|---|---|
+| Q4T1N-10 |                CL  feasible note   α [deg]        L/D  drag [N]  elevator trim [deg]  Δ… |
+| Q4T1P-10 |                CL  feasible note   α [deg]        L/D  drag [N]  elevator trim [deg]  Δ… |
+| Q4T1N-12 |                CL  feasible note   α [deg]        L/D  drag [N]  elevator trim [deg]  Δ… |
+| Q4T1-10 (flat) |                CL  feasible note    α [deg]        L/D  drag [N]  elevator trim [deg]  … |
+
+
+## horizontal start
+
+|  | lifts off | stall speed [m/s] | lift-off speed [m/s] | ground roll [m] | time [s] | static T/W | CL on the ground | rolling friction |
+|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | yes | 10.1 | 11.6 | 2.74 | 0.42 | 3.35 | 0.287 | 0.08 |
+| Q4T1P-10 | yes | 9.97 | 11.5 | 2.74 | 0.42 | 3.35 | 0.287 | 0.08 |
+| Q4T1N-12 | yes | 9.39 | 10.8 | 2.43 | 0.4 | 3.25 | 0.301 | 0.08 |
+| Q4T1-10 (flat) | yes | 10.6 | 12.2 | 2.96 | 0.44 | 3.32 | 0.235 | 0.08 |
+
+
+## transitions
+
+| vehicle · direction · t_tr [s] · headwind [m/s] | height loss [m] | height gain [m] | pitch error max [deg] | time stalled, free stream [s] | α blown max while stalled [deg] | moment shortfall [s] | least pitch margin | peak rotor thrust / T_max | elevon max [deg] | roll demand / authority | pass |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 · forward · 1.5 · 0 | 1.03 | 0.0126 | 9.54 | 0.248 | 7.03 | 0 | 0.493 | 1 | 12.6 | 0.0064 | yes |
+| Q4T1N-10 · forward · 1.5 · 6 | 0.853 | 0.0655 | 7.46 | 1.03 | 21.4 | 0 | 0.554 | 1 | 11.2 | 0.0122 | yes |
+| Q4T1N-10 · forward · 3 · 0 | 0.686 | 0.295 | 4.59 | 0.844 | 11.4 | 0 | 0.532 | 0.65 | 11.7 | 0.0178 | yes |
+| Q4T1N-10 · forward · 3 · 6 | 0.804 | 0.0321 | 4.24 | 2.14 | 21.4 | 0 | 0.51 | 0.614 | 12.2 | 0.0233 | yes |
+| Q4T1N-10 · forward · 5 · 0 | 0.962 | 0.457 | 4.63 | 2.07 | 16.3 | 0 | 0.489 | 0.615 | 12.8 | 0.0274 | yes |
+| Q4T1N-10 · forward · 5 · 6 | 1.98 | 0.415 | 5.86 | 3.95 | 24.3 | 0 | 0.444 | 0.973 | 13.9 | 0.0312 | yes |
+| Q4T1N-10 · back · 1.5 · 0 | 0.675 | 18.2 | 7.55 | 0.736 | 33.2 | 0 | 0.292 | 0.607 | 17.7 | 0.153 | no |
+| Q4T1N-10 · back · 1.5 · 6 | 0.675 | 19 | 7.55 | 0.736 | 33.2 | 0 | 0.292 | 0.607 | 17.7 | 0.153 | no |
+| Q4T1N-10 · back · 3 · 0 | 0.676 | 44.4 | 4.89 | 0 | 0 | 0 | 0.489 | 0.523 | 12.8 | 0 | no |
+| Q4T1N-10 · back · 3 · 6 | 0.676 | 43.8 | 4.89 | 0 | 0 | 0 | 0.489 | 0.523 | 12.8 | 0.017 | no |
+| Q4T1N-10 · back · 5 · 0 | 0.676 | 52 | 2.91 | 0 | 0 | 0 | 0.56 | 0.455 | 11 | 0 | no |
+| Q4T1N-10 · back · 5 · 6 | 0.676 | 52.4 | 2.91 | 0 | 0 | 0 | 0.56 | 0.455 | 11 | 0.0188 | no |
+| Q4T1P-10 · forward · 1.5 · 0 | 1.08 | 0.011 | 9.25 | 0.244 | 6.34 | 0 | 0.563 | 1 | 10.9 | 0.00636 | yes |
+| Q4T1P-10 · forward · 1.5 · 6 | 0.824 | -2.89e-07 | 5.96 | 1.04 | 22.4 | 0 | 0.641 | 1 | 8.94 | 0.0137 | yes |
+| Q4T1P-10 · forward · 3 · 0 | 0.63 | 0.274 | 3.94 | 0.838 | 9.82 | 0 | 0.603 | 0.586 | 9.9 | 0.0185 | yes |
+| Q4T1P-10 · forward · 3 · 6 | 0.889 | -2.89e-07 | 2.83 | 2.27 | 22.5 | 0 | 0.602 | 0.587 | 9.93 | 0.0293 | yes |
+| Q4T1P-10 · forward · 5 · 0 | 1.29 | 0.404 | 2.2 | 2.27 | 18.1 | 0 | 0.581 | 0.533 | 10.5 | 0.0356 | yes |
+| Q4T1P-10 · forward · 5 · 6 | 1.67 | 0.438 | 2.5 | 3.87 | 24.3 | 0 | 0.577 | 0.543 | 10.6 | 0.0389 | yes |
+| Q4T1P-10 · back · 1.5 · 0 | 0.67 | 17.9 | 8.81 | 0.688 | 32.5 | 0 | 0.442 | 0.547 | 13.9 | 0.117 | no |
+| Q4T1P-10 · back · 1.5 · 6 | 0.67 | 19 | 8.81 | 0.688 | 32.5 | 0 | 0.442 | 0.547 | 13.9 | 0.117 | no |
+| Q4T1P-10 · back · 3 · 0 | 0.67 | 39 | 5.58 | 0 | 0 | 0 | 0.556 | 0.457 | 11.1 | 0 | no |
+| Q4T1P-10 · back · 3 · 6 | 0.67 | 38.7 | 5.58 | 0 | 0 | 0 | 0.556 | 0.457 | 11.1 | 0.0161 | no |
+| Q4T1P-10 · back · 5 · 0 | 0.67 | 45.1 | 3.14 | 0 | 0 | 0 | 0.623 | 0.393 | 9.4 | 0 | no |
+| Q4T1P-10 · back · 5 · 6 | 0.67 | 45.4 | 3.14 | 0 | 0 | 0 | 0.623 | 0.393 | 9.4 | 0.00925 | no |
+| Q4T1N-12 · forward · 1.5 · 0 | 1.11 | 0.00818 | 9.76 | 0.252 | 6.86 | 0 | 0.542 | 1 | 11.4 | 0.00412 | yes |
+| Q4T1N-12 · forward · 1.5 · 6 | 0.941 | 0.0187 | 7.67 | 1.03 | 20.3 | 0 | 0.583 | 1 | 10.4 | 0.00775 | yes |
+| Q4T1N-12 · forward · 3 · 0 | 0.794 | 0.246 | 4.92 | 0.894 | 11.3 | 0 | 0.531 | 0.661 | 11.7 | 0.0121 | yes |
+| Q4T1N-12 · forward · 3 · 6 | 1.11 | -2.02e-07 | 4.84 | 2.23 | 20.3 | 0 | 0.489 | 0.689 | 12.8 | 0.015 | yes |
+| Q4T1N-12 · forward · 5 · 0 | 1.6 | 0.399 | 5.71 | 2.24 | 16.4 | 0 | 0.425 | 0.83 | 14.4 | 0.0174 | yes |
+| Q4T1N-12 · forward · 5 · 6 | 2.78 | 0.684 | 6.07 | 4.07 | 23.7 | 0 | 0.365 | 1 | 15.9 | 0.0192 | yes |
+| Q4T1N-12 · back · 1.5 · 0 | 0.724 | 19.8 | 7.5 | 0.662 | 28.4 | 0 | 0.455 | 0.544 | 13.6 | 0.0604 | no |
+| Q4T1N-12 · back · 1.5 · 6 | 0.724 | 20.5 | 7.5 | 0.662 | 28.4 | 0 | 0.455 | 0.544 | 13.6 | 0.0604 | no |
+| Q4T1N-12 · back · 3 · 0 | 0.725 | 41.1 | 4.97 | 0 | 0 | 0 | 0.547 | 0.466 | 11.3 | 0 | no |
+| Q4T1N-12 · back · 3 · 6 | 0.725 | 40.6 | 4.97 | 0 | 0 | 0 | 0.547 | 0.466 | 11.3 | 0.0114 | no |
+| Q4T1N-12 · back · 5 · 0 | 0.726 | 47.4 | 2.99 | 0 | 0 | 0 | 0.61 | 0.406 | 9.73 | 0 | no |
+| Q4T1N-12 · back · 5 · 6 | 0.726 | 47.8 | 2.99 | 0 | 0 | 0 | 0.61 | 0.406 | 9.73 | 0.00873 | no |
+| Q4T1-10 (flat) · forward · 1.5 · 0 | 3.81 | 17.5 | 8.72 | 0 | 0 | 0 | 0 | 1 | 18.5 | 0.0278 | no |
+| Q4T1-10 (flat) · forward · 1.5 · 6 | 3.81 | 17.7 | 9.57 | 0 | 0 | 0 | 0 | 1 | 21 | 0.0194 | no |
+| Q4T1-10 (flat) · forward · 3 · 0 | 3.69 | 28.4 | 4.35 | 0 | 0 | 0 | 0 | 1 | 12.7 | 0 | no |
+| Q4T1-10 (flat) · forward · 3 · 6 | 3.69 | 28.6 | 5.14 | 0 | 0 | 0 | 0 | 1 | 21 | 0.0194 | no |
+| Q4T1-10 (flat) · forward · 5 · 0 | 2.31 | 49.2 | 1.54 | 0 | 0 | 0 | 0 | 1 | 12.1 | 0 | no |
+| Q4T1-10 (flat) · forward · 5 · 6 | 2.4 | 48.8 | 5.14 | 0 | 0 | 0 | 0 | 1 | 21 | 0.0194 | no |
+| Q4T1-10 (flat) · back · 1.5 · 0 | 0.694 | 154 | 6.42 | 0 | 0 | 0 | 0 | 1 | 9.87 | 0 | no |
+| Q4T1-10 (flat) · back · 1.5 · 6 | 0.694 | 152 | 6.42 | 0 | 0 | 0 | 0 | 1 | 9.87 | 0 | no |
+| Q4T1-10 (flat) · back · 3 · 0 | 0.695 | 180 | 3.35 | 0 | 0 | 0 | 0 | 1 | 7.6 | 0 | no |
+| Q4T1-10 (flat) · back · 3 · 6 | 0.695 | 178 | 3.35 | 0 | 0 | 0 | 0 | 1 | 7.6 | 0 | no |
+| Q4T1-10 (flat) · back · 5 · 0 | 0.696 | 211 | 1.59 | 0 | 0 | 0 | 0 | 1 | 6.46 | 0 | no |
+| Q4T1-10 (flat) · back · 5 · 6 | 0.696 | 209 | 1.59 | 0 | 0 | 0 | 0 | 1 | 6.46 | 0 | no |
+
+
+## verdict
+
+|  | passes | of | failures |
+|---|---|---|---|
+| Q4T1-10 (flat) | 0 | 12 | ['forward 1.5 s, headwind 0 m/s: fails holds height', 'forward 1.5 s, headwind 6 m/s: f… |
+| Q4T1N-10 | 6 | 12 | ['back 1.5 s, headwind 0 m/s: fails holds height', 'back 1.5 s, headwind 6 m/s: fails h… |
+| Q4T1N-12 | 6 | 12 | ['back 1.5 s, headwind 0 m/s: fails holds height', 'back 1.5 s, headwind 6 m/s: fails h… |
+| Q4T1P-10 | 6 | 12 | ['back 1.5 s, headwind 0 m/s: fails holds height', 'back 1.5 s, headwind 6 m/s: fails h… |
+
+
+## pull-up remedies
+
+|  | height loss [m] | height gain [m] | pitch error max [deg] | time stalled, free stream [s] | α blown max while stalled [deg] | moment shortfall [s] | least pitch margin | peak rotor thrust / T_max | elevon max [deg] | roll demand / authority | pass |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 3 s schedule | 0.676 | 44.4 | 4.89 | 0 | 0 | 0 | 0.489 | 0.523 | 12.8 | 0 | no |
+| 5 s schedule | 0.676 | 52 | 2.91 | 0 | 0 | 0 | 0.56 | 0.455 | 11 | 0 | no |
+| 3 s, descent 3 m/s into it | 0.00595 | 45.3 | 5.02 | 0 | 0 | 0 | 0.47 | 0.541 | 13.2 | 0.0561 | no |
+| 5 s, descent 3 m/s into it | 0.00595 | 52.8 | 3.01 | 0 | 0 | 0 | 0.546 | 0.469 | 11.3 | 0.0561 | no |
+| 3 s, entered at 12 m/s | 0.503 | 34.4 | 4.89 | 0 | 0 | 0 | 0.519 | 0.493 | 12 | 0 | no |
+
+
+## the fall out of the hover
+
+|  | height loss [m] | height gain [m] | pitch error max [deg] | α free-stream max in transition [deg] | time stalled, free stream [s] | α blown max while stalled [deg] | moment shortfall [s] | collective given way [s] | least pitch margin | peak rotor thrust / T_max | elevon max [deg] | roll demand / authority | roll demand / rotors' authority | speed at the end [m/s] |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10, 1.5 s | 1.03 | 0.0126 | 9.54 | 40.2 | 0.248 | 7.03 | 0 | 6.19 | 0.493 | 1 | 12.6 | 0.0064 | 0.0943 | 29.1 |
+| Q4T1N-10, 3.0 s | 0.686 | 0.295 | 4.59 | 49.7 | 0.844 | 11.4 | 0 | 6 | 0.532 | 0.65 | 11.7 | 0.0178 | 0.178 | 29.6 |
+| Q4T1P-10, 1.5 s | 1.08 | 0.011 | 9.25 | 40 | 0.244 | 6.34 | 0 | 6.18 | 0.563 | 1 | 10.9 | 0.00636 | 0.0951 | 27.9 |
+| Q4T1P-10, 3.0 s | 0.63 | 0.274 | 3.94 | 49.5 | 0.838 | 9.82 | 0 | 6 | 0.603 | 0.586 | 9.9 | 0.0185 | 0.186 | 28.3 |
+| Q4T1N-12, 1.5 s | 1.11 | 0.00818 | 9.76 | 39.7 | 0.252 | 6.86 | 0 | 6.19 | 0.542 | 1 | 11.4 | 0.00412 | 0.095 | 27.8 |
+| Q4T1N-12, 3.0 s | 0.794 | 0.246 | 4.92 | 49.4 | 0.894 | 11.3 | 0 | 6 | 0.531 | 0.661 | 11.7 | 0.0121 | 0.176 | 28.3 |
+| Q4T1-10 (flat), 1.5 s | 3.81 | 17.5 | 8.72 | 13.7 | 0 | 0 | 0 | 8.99 | 0 | 1 | 18.5 | 0.0278 | ∞ | 38.5 |
+| Q4T1-10 (flat), 3.0 s | 3.69 | 28.4 | 4.35 | 4.1 | 0 | 0 | 0 | 10.5 | 0 | 1 | 12.7 | 0 | 0 | 40.9 |
+
+*9 more columns not shown: distance [m], energy [Wh], duration [s], hover reached at [s], holds height, holds attitude, roll holds, diverged at [s]…*
+
+
+## against Kestrel-4Q-2 and between the variants
+
+|  | mass [kg] | wing area [m²] | span [m] | CLα [1/rad] | induced k | Cd0 | CL max (aircraft) | stall speed [m/s] | static margin [c] | front share at trim | L/D at 16 m/s | power at 16 m/s [W] | endurance best [min] | at [m/s] |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Q4T1N-10 | 1.75 | 0.28 | 1 | 4.23 | 0.0607 | 0.0201 | 0.978 | 10.1 | 0.3 | 0.667 | 12.7 | 58.8 | 52.7 | 11 |
+| Q4T1P-10 | 1.75 | 0.28 | 1 | 4.23 | 0.0607 | 0.0201 | 1.01 | 9.97 | 0.3 | 0.647 | 12.6 | 59.1 | 53 | 10 |
+| Q4T1N-12 | 1.81 | 0.336 | 1.2 | 4.43 | 0.0526 | 0.0184 | 0.976 | 9.39 | 0.3 | 0.669 | 13 | 59.3 | 60 | 10 |
+| Q4T1-10 (flat) | 1.77 | 0.28 | 1 | 3.65 | 0.0833 | 0.0186 | 0.9 | 10.6 | 0.21 | 0.725 | 10.9 | 67.1 | 46.5 | 12 |
+| Kestrel-4Q-2 (notebook 43) | 1.65 | 0.28 | 1 | — | — | 0.0257 | — | — | 0.0916 | — | — | 59.1 | — | — |
+
+*9 more columns not shown: elevator trim at 16 [deg], ground roll [m], hover pitch [rad/s²], hover heading [rad/s²], spar reserve, transitions passed, fall out of the hover, 3 s [m], balloon into the hover, 3 s [m]…*
+
+
+## drag vs speed
+
+|  | V stall [m/s] | V of least drag [m/s] | least drag [N] | best L/D | drag at 16 m/s [N] | parasite at 16 [N] | induced at 16 [N] | power at 16 m/s [W] | least power [W] | V of least power [m/s] | V max, thrust = drag [m/s] | full thrust at 16 m/s [N] | thrust / drag at 16 m/s | power at V max [W] |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-2 (biplane, faired posts) | 10.8 | 12.5 | 1.28 | 12.7 | 1.43 | 1.03 | 0.398 | 61.8 | 42.3 | 11 | 33.5 | 32.4 | 22.7 | 1.49e+03 |
+| Q4T1N-10 | 10.1 | 13.5 | 1.27 | 13.6 | 1.34 | 0.883 | 0.454 | 58.3 | 42.2 | 10.5 | — | 41.6 | 31.2 | — |
+| Q4T1P-10 | 9.97 | 13.5 | 1.27 | 13.6 | 1.34 | 0.883 | 0.454 | 58.3 | 42.1 | 10 | — | 41.6 | 31.2 | — |
+| Q4T1N-12 | 9.39 | 12.5 | 1.16 | 15.3 | 1.32 | 0.967 | 0.348 | 57.6 | 37.4 | 9.5 | — | 41.6 | 31.7 | — |
+
+
+## runtime [s]
+
+| key | value |
+|---|---|
+| total | 428 |
+
+
+
+---
+
+## Mini raptors — Apus Mini, Alcotan, Gavilan: three first-guess designs on a 5-inch racing stack
+
+*49_mini_raptor — exported 2026-10-18 03:58*
+
+| key | value |
+|---|---|
+| method | first principles and empirical correlations; no CFD, no FEA; conceptual CAD |
+| cad | {'Apus Mini': {'aircraft.step': '/home/user/vegeta/notebooks/designs/data/cad/mini_rapt… |
+
+
+## drives
+
+|  | 4S 5x4.3 | 4S 5x4.3 light | 6S 5x4.3 | 6S 5x5 |
+|---|---|---|---|---|
+| pack | 4S 1500 | 4S 1300 | 6S 1300 | 6S 1300 |
+| pack mass [kg] | 0.19 | 0.165 | 0.23 | 0.23 |
+| usable energy [Wh] | 17.8 | 15.4 | 23.1 | 23.1 |
+| propeller | 5x4.3 three-blade | 5x4.3 three-blade | 5x4.3 three-blade | 5x5 three-blade |
+| KV | 2.4e+03 | 2.4e+03 | 1.75e+03 | 1.75e+03 |
+| static thrust per motor [N] | 13.4 | 13.4 | 18.4 | 16.8 |
+| thrust at 20 m/s [N] | 10.9 | 10.9 | 15.4 | 14 |
+| thrust at 40 m/s [N] | 8.58 | 8.58 | 13 | 11.7 |
+| thrust at 60 m/s [N] | 2.88 | 2.88 | 6.38 | 9.92 |
+| power at 1.2 N static [W] | 18.6 | 18.6 | 20 | 21.2 |
+| power at 0.5 N, 20 m/s [W] | 22.1 | 22.1 | 24.3 | 22.4 |
+| electrical ceiling per motor [W] | 622 | 622 | 932 | 932 |
+
+
+## racing quad
+
+|  | racing quad |
+|---|---|
+| layout | quad |
+| drive | 4S 5x4.3 |
+| mass [kg] | 0.546 |
+| hover thrust / weight | 10 |
+| vertical climb, thrust-limited [m/s] | 37.5 |
+| power in that climb [W] | 2.42e+03 |
+| vertical climb at the sustainable power [m/s] | 22 |
+| initial vertical acceleration from the hover [g] | 9.03 |
+| end-on drag area [m²] | 0.0352 |
+| zoom climb from the top speed [m] | 73.6 |
+| cross-section climbing [m] | 0.28 × 0.28 |
+| smallest square hatch [m] | 0.382 |
+| smallest slot [m] | 0.382 |
+| smallest round chimney [m] | 0.499 |
+| hover power [W] | 91.2 |
+| hover endurance [min] | 11.7 |
+| pitch acceleration in the hover [rad/s²] | 1.58e+03 |
+| roll acceleration in the hover [rad/s²] | 1.58e+03 |
+| yaw acceleration in the hover [rad/s²] | 15.4 |
+| power at 20 m/s [W] | 180 |
+| Wh/km at 20 m/s | 2.5 |
+| range at 20 m/s [km] | 7.1 |
+| best range [km] | 7.93 |
+| at [m/s] | 15 |
+| least Wh/km | 2.24 |
+| best endurance [min] | 11.7 |
+| top speed [m/s] | 38 |
+| top speed [km/h] | 137 |
+| power at top speed [W] | 891 |
+| full-throttle endurance at top speed [s] | 71.8 |
+| sustained power [W] | 666 |
+| sustained top speed [m/s] | 34 |
+| sustained top speed [km/h] | 122 |
+| n at 20 m/s (banked) | 2.92 |
+| turn radius at 20 m/s (banked) [m] | 14.8 |
+| turn radius at 20 m/s, 45° bank [m] | 40.8 |
+| turn radius at 40 m/s (banked) [m] | 59.4 |
+| least banked turn radius [m] | 0 |
+| span / gate | 0.167 |
+| energy [Wh] | 17.8 |
+| stall speed [m/s] | 0 |
+| brake deceleration at 20 m/s [g] | 3.48 |
+| brake 20→4 m/s distance [m] | 6.25 |
+| brake 20→4 m/s time [s] | 0.54 |
+| hover pitch-over 90° [s] | 0.0891 |
+| hover yaw 90° [s] | 0.904 |
+| transitions | none needed |
+
+
+## designs
+
+|  | Apus Mini | Alcotan | Gavilan |
+|---|---|---|---|
+| layout | monoplane | cruciform | biplane |
+| title | economy: one wing a third of a gate wide, two of the stack's motors, the hover pitch by… | the chaser: sustained speed on 6S and the 5x5, the motors at the tips of a + | tight spaces: the racing frame's motor square in a short cell, the wing as a brake |
+| drive | 4S 5x4.3 | 6S 5x5 | 4S 5x4.3 light |
+| pack | 4S 1500 | 6S 1300 | 4S 1300 |
+| span | 0.5 | 0.42 | 0.31 |
+| chord | 0.17 | 0.075 | 0.1 |
+| S_ref | 0.085 | 0.0315 | 0.062 |
+| AR | 2.94 | 5.6 | 1.55 |
+| motor_y | 0.14 | 0.14 | 0.0765 |
+| motor_z | 0 | 0.14 | 0.0775 |
+| disc_gap_span | 0.153 | 0.071 | 0.026 |
+| disc_gap_vertical | ∞ | 0.071 | 0.028 |
+| disc_to_pod | 0.0515 | 0.0515 | ∞ |
+| span_over_gate | 0.333 | 0.28 | 0.207 |
+| Re_20 | 2.33e+05 | 1.03e+05 | 1.37e+05 |
+| cl_max | 1 | 0.95 | 1.1 |
+| n_struct | 8 | 10 | 8 |
+| section | thin cambered section (3% camber, 10 % thick); the elevons' reflex trims it | thin cambered section (2% camber, 10 % thick); the elevons' reflex trims it | thin cambered section (4% camber, 10 % thick); the elevons' reflex trims it |
+| rules | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold |
+
+
+## comparison
+
+|  | 5-inch racing quad | Apus Mini | Alcotan | Gavilan | Apus Mini (as printed) | Alcotan (as printed) | Gavilan (as printed) |
+|---|---|---|---|---|---|---|---|
+| layout | quad | monoplane (2 motors) | cruciform | biplane | monoplane (2 motors) | cruciform | biplane |
+| mass [kg] | 0.546 | 0.493 | 0.618 | 0.565 | 0.565 | 0.71 | 0.631 |
+| span / gate | 0.167 | 0.333 | 0.28 | 0.207 | 0.333 | 0.28 | 0.207 |
+| top speed [km/h] | 137 | 223 | 295 | 230 | 223 | 295 | 230 |
+| power at top speed [W] | 891 | 609 | 1.99e+03 | 1.06e+03 | 610 | 1.99e+03 | 1.06e+03 |
+| full-throttle endurance at top speed [s] | 71.8 | 105 | 41.8 | 52.5 | 105 | 41.8 | 52.4 |
+| sustained power [W] | 666 | 651 | 866 | 577 | 651 | 866 | 577 |
+| sustained top speed [km/h] | 122 | 223 | 245 | 194 | 223 | 245 | 194 |
+| power at 20 m/s [W] | 180 | 31.5 | 45.6 | 49.3 | 33.4 | 49.9 | 52.4 |
+| Wh/km at 20 m/s | 2.5 | 0.438 | 0.634 | 0.685 | 0.463 | 0.694 | 0.728 |
+| least Wh/km | 2.24 | 0.417 | 0.628 | 0.656 | 0.451 | 0.694 | 0.71 |
+| range at 20 m/s [km] | 7.1 | 40.6 | 36.4 | 22.5 | 38.3 | 33.3 | 21.1 |
+| best range [km] | 7.93 | 42.6 | 36.8 | 23.5 | 39.4 | 33.3 | 21.7 |
+| at [m/s] | 15 | 17 | 19 | 17 | 18 | 20 | 18 |
+| best endurance [min] | 11.7 | 49.3 | 32.3 | 26 | 43.1 | 27.7 | 22.9 |
+| stall speed [m/s] | 0 | 9.64 | 18.2 | 11.5 | 10.3 | 19.5 | 12.2 |
+| hover thrust / weight | 10 | 5.55 | 11.1 | 9.7 | 4.85 | 9.66 | 8.69 |
+| hover power [W] | 91.2 | 98.1 | 117 | 94.7 | 117 | 139 | 108 |
+| hover endurance [min] | 11.7 | 10.9 | 11.8 | 9.75 | 9.1 | 9.98 | 8.57 |
+| n at 20 m/s (banked) | 2.92 | 4.3 | 1.21 | 3.02 | 3.76 | 1.05 | 2.7 |
+| turn radius at 20 m/s (banked) [m] | 14.8 | 9.74 | 60.1 | 14.3 | 11.3 | 124 | 16.3 |
+| turn radius at 40 m/s (banked) [m] | 59.4 | 20.5 | 34.5 | 20.5 | 20.5 | 39.9 | 20.5 |
+| least banked turn radius [m] | 0 | 9.55 | 33.9 | 13.6 | 10.9 | 38.9 | 15.2 |
+| brake deceleration at 20 m/s [g] | 3.48 | 6.75 | 4.64 | 4.42 | 5.91 | 4.39 | 4.16 |
+| brake 20→4 m/s distance [m] | 6.25 | 4.79 | 5.31 | 5.52 | 5.08 | 5.47 | 5.66 |
+| brake 20→4 m/s time [s] | 0.54 | 0.44 | 0.475 | 0.49 | 0.46 | 0.485 | 0.5 |
+| vertical climb, thrust-limited [m/s] | 37.5 | 55.5 | 59.5 | 59.5 | 54.5 | 59.5 | 59 |
+| vertical climb at the sustainable power [m/s] | 22 | 51 | 52.5 | 40 | 48.5 | 50.5 | 38.5 |
+| power in that climb [W] | 2.42e+03 | 781 | 1.09e+03 | 1.26e+03 | 798 | 1.16e+03 | 1.31e+03 |
+| initial vertical acceleration from the hover [g] | 9.03 | 4.55 | 10.1 | 8.7 | 3.85 | 8.66 | 7.69 |
+| zoom climb from the top speed [m] | 73.6 | 196 | 343 | 209 | 196 | 343 | 209 |
+| cross-section climbing [m] | 0.28 × 0.28 | 0.50 × 0.13 | 0.42 × 0.41 | 0.31 × 0.28 | 0.50 × 0.13 | 0.42 × 0.41 | 0.31 × 0.28 |
+| smallest square hatch [m] | 0.382 | 0.6 | 0.52 | 0.41 | 0.6 | 0.52 | 0.41 |
+| smallest slot [m] | 0.382 | 0.227 | 0.507 | 0.382 | 0.227 | 0.507 | 0.382 |
+| smallest round chimney [m] | 0.499 | 0.616 | 0.685 | 0.519 | 0.616 | 0.685 | 0.519 |
+| hover pitch-over 90° [s] | 0.0891 | 0.217 | 0.0931 | 0.126 | 0.203 | 0.0937 | 0.127 |
+| pitch acceleration in the hover [rad/s²] | 1.58e+03 | 266 | 1.45e+03 | 786 | 305 | 1.43e+03 | 776 |
+| hover pitch by | — | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) |
+| thrust / weight at 1.2 Vs | — | 4.92 | 9.05 | 8.39 | 4.26 | 7.76 | 7.45 |
+| pull-up speed [m/s] | — | 17 | 26 | 17 | 18 | 28 | 18 |
+| pull-up radius into the hover [m] | — | 14 | 66.1 | 25 | 16.2 | 75.2 | 27.8 |
+| transitions | none needed | both with thrust to spare; the hover pitch by elevons only | both with thrust to spare | both with thrust to spare | both with thrust to spare; the hover pitch by elevons only | both with thrust to spare | both with thrust to spare |
+| energy [Wh] | 17.8 | 17.8 | 23.1 | 15.4 | 17.8 | 23.1 | 15.4 |
+
+
+## targets
+
+|  | target | value | met |
+|---|---|---|---|
+| Apus Mini: less energy at the quad's 20 m/s | Wh/km at 20 m/s < half the quad's | 0.44 vs 2.50 | yes |
+| Apus Mini: comparable speed | sustained top speed ≥ the quad's | 223 vs 122 km/h | yes |
+| Apus Mini: hover pitch with elevons only | a 90° pitch-over in the hover under 0.5 s (the quad: ~0.1 s) | 0.22 s at 266 rad/s² | yes |
+| Apus Mini: comparable manoeuvre | banked turn radius at 20 m/s ≤ the quad's at 45° bank (41 m) | 10 m | yes |
+| Alcotan: faster sustained | sustained top speed (pack 30C, motors 22 A) ≥ 1.25 × the quad's | 245 vs 122 km/h | yes |
+| Alcotan: burst speed | thrust-limited top speed ≥ 1.25 × the quad's | 295 vs 137 km/h (42 s of pack) | yes |
+| Alcotan: a chase at 40 m/s | endurance at 40 m/s ≥ the quad's at its top speed, with a turn | 6.2 min, r = 34 m | yes |
+| Gavilan: span for a hangar | span ≤ a fifth of a gate (0.30 m) | 0.31 m | yes |
+| Gavilan: the quad's hover agility | pitch acceleration in the hover ≥ the quad's | 786 vs 1584 rad/s² | no |
+| Gavilan: brakes harder than the quad | brake distance 20→4 m/s ≤ the quad's | 5.5 vs 6.2 m | yes |
+| Gavilan: flies slower than the quad can | stall speed ≤ 12 m/s (a hangar's straights) | 11.5 m/s | yes |
+
+
+## manoeuvre
+
+|  | 5-inch racing quad | Apus Mini | Alcotan | Gavilan |
+|---|---|---|---|---|
+| n at 20 m/s (banked) | 2.92 | 4.3 | 1.21 | 3.02 |
+| turn radius at 20 m/s (banked) [m] | 14.8 | 9.74 | 60.1 | 14.3 |
+| turn radius at 40 m/s (banked) [m] | 59.4 | 20.5 | 34.5 | 20.5 |
+| least banked turn radius [m] | 0 | 9.55 | 33.9 | 13.6 |
+| pitch acceleration in the hover [rad/s²] | 1.58e+03 | 266 | 1.45e+03 | 786 |
+| hover pitch-over 90° [s] | 0.0891 | 0.217 | 0.0931 | 0.126 |
+| brake deceleration at 20 m/s [g] | 3.48 | 6.75 | 4.64 | 4.42 |
+| brake 20→4 m/s distance [m] | 6.25 | 4.79 | 5.31 | 5.52 |
+| brake 20→4 m/s time [s] | 0.54 | 0.44 | 0.475 | 0.49 |
+| stall speed [m/s] | 0 | 9.64 | 18.2 | 11.5 |
+| thrust / weight at 1.2 Vs | — | 4.92 | 9.05 | 8.39 |
+| pull-up speed [m/s] | — | 17 | 26 | 17 |
+| pull-up radius into the hover [m] | — | 14 | 66.1 | 25 |
+| transitions | none needed | both with thrust to spare; the hover pitch by elevons only | both with thrust to spare | both with thrust to spare |
+| hover yaw 90° [s] (quad: torque) | 0.904 | — | — | — |
+| hover roll 90° [s] | — | 0.124 | 0.105 | 0.132 |
+
+
+## sensitivity
+
+| key | value |
+|---|---|
+| Apus Mini |                                     as modelled  Cd0 + 30 %  cl max − 10 %  mass + 7 % … |
+| Alcotan |                                     as modelled  Cd0 + 30 %  cl max − 10 %  mass + 7 % … |
+| Gavilan |                                     as modelled  Cd0 + 30 %  cl max − 10 %  mass + 7 % … |
+
+
+## uncertainty
+
+|  | relative |
+|---|---|
+| structure mass | 0.2 |
+| Cd0 | 0.3 |
+| cl_max | 0.1 |
+| drive power | 0.15 |
+| quad CdA | 0.3 |
+
+
+## biplane question
+
+|  | Apus Mini (twin monoplane, as designed) | Alcotan (cruciform, as designed) | Gavilan (biplane, as designed) | Apus as a biplane cell | Apus with the span a gate forbids | Apus flat: four motors in a row | Apus cruciform: four motors on wing and fins | Alcotan twin: two motors on one wing | X-C mini for the hangar | X-C mini for the race | Gavilan on one wing (cruciform) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| layout | monoplane (2 motors) | cruciform | biplane | biplane | cruciform | monoplane | cruciform | monoplane (2 motors) | xwing | xwing | cruciform |
+| span [m] | 0.5 | 0.42 | 0.31 | 0.5 | 0.71 | 0.64 | 0.5 | 0.42 | 0.396 | 0.517 | 0.36 |
+| span / gate | 0.333 | 0.28 | 0.207 | 0.333 | 0.473 | 0.427 | 0.333 | 0.28 | 0.264 | 0.345 | 0.24 |
+| mass [kg] | 0.493 | 0.618 | 0.565 | 0.616 | 0.607 | 0.59 | 0.603 | 0.509 | 0.548 | 0.608 | 0.551 |
+| wing area [m²] | 0.085 | 0.0315 | 0.062 | 0.085 | 0.0852 | 0.0832 | 0.085 | 0.0315 | 0.0432 | 0.0738 | 0.0612 |
+| aspect ratio | 2.94 | 5.6 | 1.55 | 2.94 | 5.92 | 4.92 | 2.94 | 5.6 | 3.63 | 3.62 | 2.12 |
+| induced k | 0.12 | 0.0632 | 0.14 | 0.0814 | 0.0598 | 0.0718 | 0.12 | 0.0632 | 0.115 | 0.115 | 0.167 |
+| Cd0 at 20 m/s | 0.0213 | 0.0755 | 0.046 | 0.0372 | 0.0326 | 0.0307 | 0.0313 | 0.0485 | 0.0733 | 0.0534 | 0.0395 |
+| CdA at 20 m/s [cm²] | 18.1 | 23.8 | 28.5 | 31.6 | 27.8 | 25.5 | 26.6 | 15.3 | 31.7 | 39.4 | 24.2 |
+| L/D at 20 m/s | 8.37 | 6.86 | 5.64 | 6.59 | 7.62 | 7.78 | 6.93 | 8.63 | 4.94 | 5 | 5.89 |
+| power at 20 m/s [W] | 31.5 | 45.6 | 49.3 | 46.5 | 40.5 | 38.8 | 43.6 | 31.9 | 54.1 | 58.6 | 46.5 |
+| Wh/km at 20 m/s | 0.438 | 0.634 | 0.685 | 0.645 | 0.563 | 0.539 | 0.606 | 0.443 | 0.751 | 0.813 | 0.645 |
+| best range [km] | 42.6 | 36.8 | 23.5 | 32.1 | 37.3 | 37.6 | 31.3 | 52.3 | 21.5 | 24.9 | 24.2 |
+| stall speed [m/s] | 9.64 | 18.2 | 11.5 | 10.8 | 10.7 | 10.7 | 10.7 | 16.5 | 15.3 | 12.3 | 11.5 |
+| turn radius at 20 m/s (banked) [m] | 9.74 | 60.1 | 14.3 | 12.4 | 12.1 | 12.1 | 12.1 | 37.9 | 29.6 | 16.8 | 14.1 |
+| hover thrust / weight | 5.55 | 11.1 | 9.7 | 8.89 | 9.02 | 9.28 | 9.09 | 6.74 | 9.99 | 9.02 | 9.94 |
+| hover power [W] | 98.1 | 117 | 94.7 | 105 | 103 | 99.5 | 102 | 111 | 91.6 | 103 | 92.2 |
+| hover pitch by | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | elevons in the wash | differential thrust (+ elevons) | differential thrust (+ elevons) | differential thrust (+ elevons) |
+| pitch acceleration in the hover [rad/s²] | 266 | 1.45e+03 | 786 | 764 | 1.02e+03 | 185 | 890 | 94.4 | 878 | 752 | 865 |
+| hover pitch-over 90° [s] | 0.217 | 0.0931 | 0.126 | 0.128 | 0.111 | 0.261 | 0.119 | 0.365 | 0.12 | 0.129 | 0.121 |
+| sustained top speed [km/h] | 223 | 245 | 194 | 202 | 209 | 209 | 205 | 288 | 191 | 191 | 198 |
+| top speed [km/h] | 223 | 295 | 230 | 227 | 230 | 230 | 230 | 288 | 227 | 223 | 230 |
+| disc rules | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold | all hold | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | no vertical thrust lever: the hover pitch comes from the elevons in the slipstream only… | all hold | all hold | the discs on one wing are 14 mm apart; the upper and lower discs are 14 mm apart: two 5… |
+| parts to build | pod, 1 wing, 2 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 2 wings, 2 posts + sleeves, 4 fittings, 4 mounts | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 4 mounts, big elevons | pod, 1 wing, 2 fins, 4 mounts | pod, 1 wing, 2 mounts, big elevons | pod, 4 panels, 4 mounts | pod, 4 panels, 4 mounts | pod, 1 wing, 2 fins, 4 mounts |
+
+
+## as built
+
+|  | Apus Mini | Alcotan | Gavilan |
+|---|---|---|---|
+| printed parts [g] | 187 | 205 | 189 |
+| carbon tubes [g] | 12.8 | 16.8 | 19.1 |
+| structure as built [g] | 200 | 222 | 208 |
+| structure in the budget [g] | 128 | 130 | 142 |
+| difference [g] | 71.9 | 91.5 | 66 |
+| verdict | the budget is light: the as-printed rows below carry the built mass | the budget is light: the as-printed rows below carry the built mass | the budget is light: the as-printed rows below carry the built mass |
+| source | Mellonia (PrusaSlicer) | Mellonia (PrusaSlicer) | Mellonia (PrusaSlicer) |
+
+
+
+---
+
+## Kestrel benchmark — the family on one table and the mission scores (from notebooks 43, 45, 46)
+
+*47_kestrel_benchmark — exported 2026-10-18 01:49*
+
+## benchmark
+
+|  | family | notebook | mass [kg] | wing area [m²] | span [m] | Cd0 | induced k | CL max | stall speed [m/s] | L/D at 16 m/s | power at 16 m/s [W] | best endurance [min] | hover T/W | hover pitch [rad/s²] |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-1 | biplane (tail-sitter) | 43 | 1.69 | 0.28 | 1 | 0.0665 | 0.0599 | 0.81 | 10.9 | 4.96 | 110 | 40.2 | 2.89 | — |
+| Kestrel-4Q-2 | biplane (tail-sitter) | 43 | 1.65 | 0.28 | 1 | 0.0257 | 0.0599 | 1.03 | 9.56 | 10.6 | 59.1 | 57 | 2.96 | 88.4 |
+| Kestrel-4Q-3 | biplane (tail-sitter) | 43 | 1.65 | 0.28 | 1 | 0.0257 | 0.0599 | 1.03 | 9.56 | 10.6 | 59.3 | 56.8 | 2.96 | — |
+| Kestrel-X-A | X-wing (tail-sitter) | 45 | 1.59 | 0.28 | 0.785 | 0.0344 | 0.145 | — | 12.6 | — | 87.6 | 29.1 | — | 67 |
+| Kestrel-X-B | X-wing (tail-sitter) | 45 | 1.88 | 0.56 | 1.07 | 0.0303 | 0.144 | — | 9.68 | — | 110 | 33.1 | — | 50.6 |
+| Kestrel-Q4T1N-10 | tandem (horizontal start) | 46 | 1.75 | 0.28 | 1 | 0.0201 | 0.0607 | 0.978 | 10.1 | 12.7 | 58.8 | 52.7 | — | 23 |
+| Kestrel-Q4T1P-10 | tandem (horizontal start) | 46 | 1.75 | 0.28 | 1 | 0.0201 | 0.0607 | 1.01 | 9.97 | 12.6 | 59.1 | 53 | — | 23 |
+| Kestrel-Q4T1N-12 | tandem (horizontal start) | 46 | 1.81 | 0.336 | 1.2 | 0.0184 | 0.0526 | 0.976 | 9.39 | 13 | 59.3 | 60 | — | 22 |
+| Kestrel-Q4T1-10 (flat) | tandem (horizontal start) | 46 | 1.77 | 0.28 | 1 | 0.0186 | 0.0833 | 0.9 | 10.6 | 10.9 | 67.1 | 46.5 | — | 11.3 |
+
+*6 more columns not shown: hover heading [rad/s²], transitions passed, bracing, ground handling, best L/D, balloon into the hover [m]*
+
+
+## ranks
+
+|  | mass [kg] | Cd0 | induced k | CL max | stall speed [m/s] | L/D at 16 m/s | power at 16 m/s [W] | best endurance [min] | hover T/W | hover pitch [rad/s²] | hover heading [rad/s²] | measures ranked | mean rank |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-2 | 2 | 5 | 2 | 1 | 2 | 5 | 3 | 2 | 1 | 1 | 1 | 11 | 2.27 |
+| Kestrel-4Q-3 | 2 | 5 | 2 | 1 | 2 | 5 | 4 | 3 | 1 | — | — | 9 | 2.78 |
+| Kestrel-Q4T1N-12 | 8 | 1 | 1 | 5 | 1 | 1 | 5 | 1 | — | 6 | 5 | 10 | 3.4 |
+| Kestrel-Q4T1N-10 | 5 | 3 | 5 | 4 | 6 | 2 | 1 | 5 | — | 4 | 2 | 10 | 3.7 |
+| Kestrel-Q4T1P-10 | 5 | 3 | 5 | 3 | 5 | 3 | 2 | 4 | — | 5 | 3 | 10 | 3.8 |
+| Kestrel-Q4T1-10 (flat) | 7 | 2 | 7 | 6 | 7 | 4 | 6 | 6 | — | 7 | — | 9 | 5.78 |
+| Kestrel-4Q-1 | 4 | 9 | 2 | 7 | 8 | 7 | 8 | 7 | 3 | — | — | 9 | 6.11 |
+| Kestrel-X-A | 1 | 8 | 9 | — | 9 | — | 7 | 9 | — | 2 | 4 | 8 | 6.12 |
+| Kestrel-X-B | 9 | 7 | 8 | — | 4 | — | 9 | 8 | — | 3 | 6 | 8 | 6.75 |
+
+
+## anchors
+
+|  | measure | 1 point at | 10 points at | why |
+|---|---|---|---|---|
+| cruise economy | power at 16 m/s [W] | 120 | 50 | electrical power in level flight at the 16 m/s survey speed |
+| endurance | best endurance [min] | 20 | 60 | best endurance on 80 % of the 4S 3300 pack |
+| slow flight | stall speed [m/s] | 14 | 8 | the stall speed: the launch, the landing and the entry into the hover |
+| clean airframe | Cd0 | 0.07 | 0.018 | zero-lift drag on the wing area: struts, pods, junctions |
+| hover authority | hover pitch [rad/s²] | 0 | 90 | pitch acceleration available in the hover (the weakest axis of a quad tail-sitter) |
+| transitions | transition pass fraction | 0 | 1 | share of the modelled hover↔cruise transitions that pass as is |
+| structure | structure score | 0 | 1 | no bracing and a spar reserve ≥ 2 score full; posts 0.6, an X truss 0.3; a reserve belo… |
+| ground handling | ground score | 0 | 1 | tail-sitters: tip-over angle and the wind that topples them; the tandem: skids and a sh… |
+| payload | payload score | 0 | 1 | does the medical capsule (72×72×160 mm) fit the pod near the CG |
+| evidence | evidence score | 0 | 1 | how much of the row rests on solver results (CFD, FEA) rather than the model |
+| confined launch and recovery | launch score | 0 | 1 | can it leave and come back to a vessel's deck or a shore without a strip: vertical take… |
+
+
+## mission weights
+
+|  | mountain survey (cruise) | medical delivery (hover at the site) | pursuit (fast response) | field trials (build it first) | 3-civilian-missions: maritime rescue (primary) | 3-civilian-missions: urgent industrial logistics | 3-civilian-missions: emergency medical delivery |
+|---|---|---|---|---|---|---|---|
+| cruise economy | 0.25 | 0.05 | 0.15 | 0.1 | 0.15 | 0.15 | 0.15 |
+| endurance | 0.25 | 0.05 | 0.1 | 0.05 | 0.25 | 0.15 | 0.1 |
+| slow flight | 0.1 | 0.1 | 0.05 | 0.05 | 0.1 | 0.05 | 0.05 |
+| clean airframe | 0.05 | 0 | 0.2 | 0 | 0 | 0.05 | 0 |
+| hover authority | 0.05 | 0.2 | 0.1 | 0.1 | 0.1 | 0.05 | 0.1 |
+| transitions | 0.1 | 0.2 | 0.15 | 0.15 | 0.1 | 0.1 | 0.1 |
+| structure | 0.05 | 0.05 | 0.1 | 0.25 | 0 | 0.05 | 0.05 |
+| ground handling | 0.05 | 0.1 | 0.1 | 0.1 | 0 | 0 | 0 |
+| payload | 0.05 | 0.2 | 0 | 0 | 0.05 | 0.2 | 0.25 |
+| evidence | 0.05 | 0.05 | 0.05 | 0.2 | 0.05 | 0.05 | 0.05 |
+| confined launch and recovery | 0 | 0 | 0 | 0 | 0.2 | 0.15 | 0.15 |
+
+
+## scores 1-10
+
+|  | cruise economy | endurance | slow flight | clean airframe | hover authority | transitions | structure | ground handling | payload | evidence | confined launch and recovery |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-1 | 2.26 | 5.54 | 5.63 | 1.6 | — | 10 | 3.7 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-4Q-2 | 8.83 | 9.33 | 7.66 | 8.66 | 9.84 | 7.43 | 6.4 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-4Q-3 | 8.8 | 9.28 | 7.66 | 8.66 | — | 6.4 | 6.4 | 4.6 | 10 | 3.7 | 7.75 |
+| Kestrel-X-A | 5.16 | 3.04 | 3.12 | 7.16 | 7.7 | 10 | 10 | 8.65 | 3.7 | 2.35 | 9.55 |
+| Kestrel-X-B | 2.23 | 3.94 | 7.48 | 7.87 | 6.06 | 8.5 | 10 | 8.65 | 3.7 | 2.35 | 9.55 |
+| Kestrel-Q4T1N-10 | 8.87 | 8.35 | 6.81 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1P-10 | 8.84 | 8.43 | 7.04 | 9.64 | 3.3 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1N-12 | 8.8 | 10 | 7.91 | 9.94 | 3.2 | 5.5 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+| Kestrel-Q4T1-10 (flat) | 7.8 | 6.96 | 6.09 | 9.89 | 2.13 | 1 | 10 | 7.3 | 8.2 | 2.35 | 3.25 |
+
+
+## weighted by mission
+
+|  | mountain survey (cruise) | mountain survey (cruise) · coverage | medical delivery (hover at the site) | medical delivery (hover at the site) · coverage | pursuit (fast response) | pursuit (fast response) · coverage | field trials (build it first) | field trials (build it first) · coverage | 3-civilian-missions: maritime rescue (primary) | 3-civilian-missions: maritime rescue (primary) · coverage | 3-civilian-missions: urgent industrial logistics | 3-civilian-missions: urgent industrial logistics · coverage | 3-civilian-missions: emergency medical delivery | 3-civilian-missions: emergency medical delivery · coverage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kestrel-4Q-1 | 4.94 | 0.95 | 7.23 | 0.8 | 4.45 | 0.9 | 4.9 | 0.9 | 6.14 | 0.9 | 6.38 | 0.95 | 6.9 | 0.9 |
+| Kestrel-4Q-2 | 8.21 | 1 | 8.09 | 1 | 7.76 | 1 | 6.63 | 1 | 8.39 | 1 | 8.44 | 1 | 8.53 | 1 |
+| Kestrel-4Q-3 | 8 | 0.95 | 7.39 | 0.8 | 7.34 | 0.9 | 6.1 | 0.9 | 8.09 | 0.9 | 8.25 | 0.95 | 8.27 | 0.9 |
+| Kestrel-X-A | 5.34 | 1 | 6.48 | 1 | 6.92 | 1 | 6.93 | 1 | 5.83 | 1 | 5.92 | 1 | 5.98 | 1 |
+| Kestrel-X-B | 5.07 | 1 | 6.19 | 1 | 6.54 | 1 | 6.51 | 1 | 5.74 | 1 | 5.64 | 1 | 5.53 | 1 |
+| Kestrel-Q4T1N-10 | 7.58 | 1 | 6.29 | 1 | 7.44 | 1 | 6.5 | 1 | 6.16 | 1 | 6.87 | 1 | 6.54 | 1 |
+| Kestrel-Q4T1P-10 | 7.61 | 1 | 6.31 | 1 | 7.45 | 1 | 6.51 | 1 | 6.19 | 1 | 6.88 | 1 | 6.55 | 1 |
+| Kestrel-Q4T1N-12 | 8.09 | 1 | 6.46 | 1 | 7.7 | 1 | 6.62 | 1 | 6.66 | 1 | 7.17 | 1 | 6.74 | 1 |
+| Kestrel-Q4T1-10 (flat) | 6.39 | 1 | 4.96 | 1 | 6.36 | 1 | 5.5 | 1 | 5.01 | 1 | 5.97 | 1 | 5.64 | 1 |
+
+
+## 3-civilian-missions
+
+|  | 3-civilian-missions |   maritime rescue (primary) |   urgent industrial logistics |   emergency medical delivery |
+|---|---|---|---|---|
+| Kestrel-4Q-2 | 8.44 | 8.39 | 8.44 | 8.53 |
+| Kestrel-4Q-3 | 8.17 | 8.09 | 8.25 | 8.27 |
+| Kestrel-Q4T1N-12 | 6.81 | 6.66 | 7.17 | 6.74 |
+| Kestrel-Q4T1P-10 | 6.46 | 6.19 | 6.88 | 6.55 |
+| Kestrel-Q4T1N-10 | 6.43 | 6.16 | 6.87 | 6.54 |
+| Kestrel-4Q-1 | 6.39 | 6.14 | 6.38 | 6.9 |
+| Kestrel-X-A | 5.89 | 5.83 | 5.92 | 5.98 |
+| Kestrel-X-B | 5.66 | 5.74 | 5.64 | 5.53 |
+| Kestrel-Q4T1-10 (flat) | 5.41 | 5.01 | 5.97 | 5.64 |
+
+
+## 3-civilian-missions definitions
+
+|  | situation | payload | outcome | what the score weighs |
+|---|---|---|---|---|
+| maritime rescue | a person is reported overboard or in difficulty offshore | compact flotation equipment, search camera, optional thermal camera | locate the person, deliver accessible flotation and help rescuers maintain their position | endurance left after the transit (0.25), cruise economy (0.15), launch and recovery fro… |
+| urgent industrial logistics | a vessel, offshore installation or remote facility needs a small part to resume work | protected cargo pod with a spare part, tool or electronic component | deliver the correct item intact, avoiding a longer boat or road journey | the cargo pod (payload 0.20), the transit (cruise 0.15, endurance 0.15), a deck at both… |
+| emergency medical delivery | a clinic, vessel or remote team urgently needs medical supplies or sample transport | secured medical container, insulated and temperature-monitored where required | deliver the supplies within their required time and handling conditions | the secured container near the CG (payload 0.25), the transit (cruise 0.15, endurance 0… |
+
+
+## notes
+
+| key | value |
+|---|---|
+| 0 | 43: 43_kestrel_study.json exported 2026-10-17T09:37; the hover authority is the main va… |
+| 1 | 45: kestrel_x_design.json missing — notebook 41's xwing_design.json (the same model, an… |
+| 2 | 45: xwing_design.json; the X's stall speed from its drag-vs-speed table (panel cl max),… |
+| 3 | 46: kestrel_tandem_design.json; main variant Q4T1N-10 |
 

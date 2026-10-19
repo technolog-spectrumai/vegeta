@@ -244,7 +244,7 @@ Kestrel's mass and flown at its cruise speed, and Kestrel as a monoplane (same s
 biplane against monoplane in one table (`compare`, `verdict`); `kestrel_flight.interference` / `prandtl_sigma`: the wing-interference
 measure (the lattice's gap sweep, Prandtl's σ, the monoplane equivalents), the CFD chapter K12 (`wing-interference`:
 one wing, the pair, the equal monoplane) measures it with RANS and `kestrel_cfd.interference_factors` reads the run.
-`kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
+`kestrel_benchmark.py` (notebook **47** `47_kestrel_benchmark`): the family on one table read from the exports of 43, 45 and 46 (`load`, `ranks`), the scoring methodology — `CATEGORIES` scored 1–10 between the briefs' anchors, `FAMILY` constants from the notebooks' text, `MISSIONS` weight sets, `scores` / `weighted` / `plot_scores` / `plot_missions`. `kestrel_fast.py` (notebook **44** `44_kestrel_fast`, standalone): `Candidate` (span, chord, gap, section, prop, motor,
 battery, bracing, spar…) → `params`, `section_polar` (Zephyr, cached), `propulsion` (Boreas points), `spar_rules` /
 `post_rules` (beam and Euler rules of thumb), `evaluate` / `compare` / `ratios` / `verdicts` / `plot_ratios`,
 `default_candidates`; no solver. Notebooks 39–42 are in `notebooks/old/` (unchanged; see its README).
@@ -300,6 +300,40 @@ panels, each at its dihedral, height and rotor — the model flies any arrangeme
 `summary_frame`, `trim_table`, `cfd_specs`) and `kestrel_cfd.section_stl` / `section_case` / `section_not_run_table`;
 `kestrel_xwing.py` (notebook 41: `VARIANTS`, `layout`, `checks`, `mass_table`, `quads` / `aero` on the lattice,
 `drag_buildup`, `cantilever` — the spar sized on stress, deflection and the first mode —, `stance`, `make_vehicle`,
-`cruise`).
+`cruise`). `kestrel_tandem.py` (notebook **46** `46_kestrel_tandem`, brief `kestrel_tandem.md`): the tandem-wing Kestrel-Q4T —
+`VARIANTS` (Q4T1N-10 the design; Q4T1P-10, Q4T1N-12, the flat Q4T1-10 as the control case), `layout` (stagger, gap, the
+low wing's pylons, skids), `mass_table`, `aero` on the staggered lattice with the front wing's decalage (each wing's
+effective slope: the rear's downwash factor), `stall` (the front-first stall rule and the aircraft's CL max), `drag_buildup`,
+`polar`, `drive` (another propeller's table through `kestrel_systems.drive_table_for`), `make_vehicle` (four half-wing
+panels at their own stations for the transition model), `cruise` trimmed by the rear elevator, `takeoff_roll`, `cantilever`,
+`elevator_power`, `front_view` / `side_view`, the CAD `KestrelQ4T` and `export_stl`. `kestrel_transition` panels now take
+`x_ac`, `x_le`, `prop_x`, `cl_scale` and `incidence` (a tandem's wings at different stations); a `z_rotor` of zero is allowed.
+`kestrel_xc.py` (notebook **48** `48_kestrel_xc`): Kestrel-X-C, the X-wing made competitive — `VARIANTS` (X-C at ±30°
+with the payload module; X-C45 the same at 45°; X-CX with the panels 0.21 m in chord: longer in x, not in span), `layout`
+on `kestrel_xwing`, `fuselage_geometry` (the blended fuselage from `FUSELAGE_STATIONS`: wetted area, volume, fineness),
+`drag_buildup` (the section thickness `t`, the filleted roots, the fuselage on its own wetted area, a flush camera
+window), `cantilever(t=)` (`kestrel_xwing`'s, the spar inside the section's depth), `make_vehicle` / `cruise`,
+`capsule_fit`, the CAD `KestrelXC` (tapered panels, the elliptical fuselage with the module on its axis, the tip
+nacelles as the feet) and `export_stl`, the CFD specs and cases (`CFD_CAMPAIGNS` sweep / stall) and the FEA case of
+one panel's spar in its socket (`panel_cad`, `fea_cases`); `kestrel_xc_campaigns.py` is the adapter the workflow book
+`kestrel-x` (code X: `wf X1`–`X3`) runs through `side_labs/kestrel_x/`, the shared scripts parametrised by book.
+`mini_raptor.py` (notebook **49** `49_mini_raptor`, auto, no takes): the mini raptors on a 5-inch racing stack — Apus
+Mini (economy: a twin-motor monoplane tailsitter, the hover pitch by the elevons in the wash), Alcotan (the chaser: a
+cruciform tailsitter, 6S and the 5x5), Gavilan (tight spaces: the racing frame's motor square in a short biplane cell)
+— by first principles only: `STACK` / `PACKS` / `DRIVES`
+(Boreas tables cached in `data/mini_raptor_drive_*.json`), `layout` / `checks` (the disc clearances), `mass_table` /
+`budget`, `drag_buildup`, `induced_factor`, `performance` (power, Wh/km, range, the top speed thrust-limited and at the
+sustainable power, the banked turn, the hover, `braking` with the wing as an air brake, `reorientation`,
+`transition`), `quad` (the racing baseline on the same parts), `compare`, `targets`, `sensitivity`, the conceptual
+CAD `MiniRaptor` / `parts` / `render3d` / `ortho_views` / `export_cad` (STEP and STL into `data/cad/mini_raptor/`,
+ignored by git), `ALTERNATIVES` / `biplane_question` (the same briefs as a biplane cell, a cruciform, a flat four-motor
+monoplane and twins, with `elevon_pitch_authority` for the hover pitch without a thrust lever: why Apus is a twin
+monoplane, Alcotan keeps four motors and Gavilan keeps the cell), `export_design` → `data/mini_raptor_design.json`. `mini_raptor_print.py`: the designs as things to
+build — `printed_parts` (pod halves, wing and fin segments standing on a root rib with the spar bore, motor mounts,
+post fittings and faired sleeves, split to a 250 × 210 × 210 mm bed), `stock` (motors, propellers, pack, stack, carbon
+tubes), `check_part` / `check_all` (bed fit in the print orientation, overhang area, shell + infill mass), `te_cut_for`
+(the trailing edge thickened to 1 mm), `structure_against_budget`, `slice_all` (Mellonia on every part when PrusaSlicer
+is on the PATH, else NOT RUN with the commands), `settings` (`PLA`, `LW_PLA` for `mellonia slice -s`).
+
 
 The laser design modules (`svarog*.py`, `kimla*.py`) moved to Alabastron (https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.

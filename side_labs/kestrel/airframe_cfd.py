@@ -27,17 +27,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _kestrel as wk  # noqa: E402  (puts side_labs/ and designs/ on the path)
 import runkit  # noqa: E402
-import kestrel_campaigns as kc  # noqa: E402
+import importlib  # noqa: E402
 import kestrel_cfd as kcfd  # noqa: E402
 
 WORKFLOW = "airframe_cfd"
 BOOK = "kestrel"
+CAMPAIGNS = {"kestrel": "kestrel_campaigns", "kestrel-x": "kestrel_xc_campaigns"}     # the book → its campaign module (the same interface)
+kc = None
 KIND = "cfd"
 
 
-def main(argv=None) -> int:
+def main(argv=None, book: str = "kestrel") -> int:
+    global BOOK, kc
+    BOOK = book
+    kc = importlib.import_module(CAMPAIGNS[book])
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--variant", default="4Q-2", choices=tuple(kc.VARIANTS))
+    ap.add_argument("--variant", default=getattr(kc, "DEFAULT_VARIANT", next(iter(kc.VARIANTS))), choices=tuple(kc.VARIANTS))
     wk.chapter_args(ap, BOOK, KIND)
     ap.add_argument("--quality", default="screening", choices=tuple(kcfd.QUALITY))
     ap.add_argument("--processors", type=int, default=4, help="MPI ranks per case (meshing stays serial)")

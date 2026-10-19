@@ -294,11 +294,25 @@ def drive_table(rho: float = RHO0, *, recompute: bool = False, save: bool = Fals
     return tab
 
 
+def drive_table_for(sys_, key: str, *, rho: float = RHO0, recompute: bool = False) -> DriveTable:
+    """A drive table for another propulsion system (``kestrel_fast.propulsion(candidate)``: a 10x7, a 4000 mAh pack),
+    cached in ``data/kestrel_drive_<key>.json`` (a cache: rebuilt with Boreas in ~40 s when missing)."""
+    f = DRIVE_JSON.with_name(f"kestrel_drive_{key}.json")
+    if not recompute and rho == RHO0 and f.exists():
+        d = json.loads(f.read_text())["table"]
+        return DriveTable(**{k: (tuple(map(tuple, v)) if k == "P" else tuple(v) if isinstance(v, list) else v) for k, v in d.items()})
+    tab = compute_drive_table.__wrapped__(rho, sys_=sys_)        # past the cache: a Propulsion is not hashable
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"key": key, "rho": rho, "table": asdict(tab)}, indent=1))
+    return tab
+
+
 @lru_cache(maxsize=4)
-def compute_drive_table(rho: float = RHO0, V=(0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0)) -> DriveTable:
+def compute_drive_table(rho: float = RHO0, V=(0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0), sys_=None) -> DriveTable:
     """Boreas's points for one drive (~40 s: BEMT and the motor model at every row), out to the inflow where the 9x6 at
-    full throttle has no thrust left (its pitch speed): the thrust-limited maximum speed lives there."""
-    sys_ = propulsion(rho)
+    full throttle has no thrust left (its pitch speed): the thrust-limited maximum speed lives there. ``sys_``:
+    another ``boreas.Propulsion`` than the standard drive's."""
+    sys_ = sys_ or propulsion(rho)
     t_max, kap = [], []
     t_grid = np.linspace(0.0, 9.0, 19)
     P = []

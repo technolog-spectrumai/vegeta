@@ -323,7 +323,7 @@ def validate(batch: Batch) -> list[str]:
         variants = library.BOOKS[book].get("variants") or ()
         if s.variant and variants and s.variant not in variants:
             problems.append(f"step {i} ({info['code']}): variant {s.variant!r} is not one of {', '.join(variants)}")
-        kind = library.KINDS[info["kind"]]
+        kind = library.kind_of(book, info["kind"])
         known = {o[0].lstrip("-") for o in kind.get("options", [])}
         for k in s.options:
             if known and k not in known and k not in ("processors", "threads", "quality", "element-size", "n-modes"):
