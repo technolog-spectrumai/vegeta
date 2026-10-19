@@ -32,7 +32,7 @@ Everything the window does, the command line does too; it computes nothing itsel
 ## 1. The idea in one paragraph
 
 A **workflow** is a script that runs the slow solver cases (CFD, FEA) and writes everything into one folder, the
-**run directory**. The **notebook** (`notebooks/devices/43_kestrel_study.ipynb`) never runs a solver: it reads run
+**run directory**. The **notebook** (`notebooks/exp/43_kestrel_study.ipynb`) never runs a solver: it reads run
 directories you point it at, checks that they are finished and belong to the current design, and shows the numbers
 beside its own quick estimates. Workflows are organised in **books** (a design: `kestrel`, code **K**) and numbered **chapters** (the studies on
 it, CFD and FEA alike: K1 `airframe-sweep`, K2 `airframe-stall`, K3 `airframe-cruise`, K4 `airframe-transitions`,

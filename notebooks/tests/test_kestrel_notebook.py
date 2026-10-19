@@ -54,7 +54,7 @@ def test_a_missing_optional_result_is_not_run_and_screening_needs_nothing(cache,
 
 
 def test_the_notebook_and_its_modules_launch_no_solver_and_read_no_run_directory():
-    nb = json.loads((ROOT / "notebooks" / "devices" / "43_kestrel_study.ipynb").read_text())
+    nb = json.loads((ROOT / "notebooks" / "exp" / "43_kestrel_study.ipynb").read_text())
     src = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
     assert not SOLVER_CALLS.search(src), SOLVER_CALLS.search(src)
     assert "inputs_from_cache" in src and "side_labs/runs" not in src and "GATE" not in src

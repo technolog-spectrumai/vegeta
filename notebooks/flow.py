@@ -23,25 +23,25 @@ MAPS = {"propellers": f"{DATA}/propeller_maps.json", "edf": f"{DATA}/edf_maps.js
 SECTION_BACKEND = AnyOf("section backend", Package("neuralfoil"), Tool("xfoil"), why="Zephyr's 2-D section polars",
                         fix="pip install 'vegeta-cli[sections]' (neuralfoil), or put xfoil on the PATH; ./install_local.sh installs it")
 
-flow.notebook("38_prop_lab", folder="parts", title="the resolved 9x6 propeller: CFD against Boreas, the calibration Kestrel reads",
+flow.notebook("38_prop_lab", folder="exp", title="the resolved 9x6 propeller: CFD against Boreas, the calibration Kestrel reads",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas"), Package("vegeta.aeromant")],
               gives=[File(f"{DATA}/prop_lab.json", keys=("meta", "calibration")), File(f"{DATA}/reports/38_prop_lab.json")],
               takes=[KESTREL_DRIVE])
 
-flow.notebook("43_kestrel_study", folder="devices", title="Kestrel — the design study (the one notebook to open for Kestrel)",
+flow.notebook("43_kestrel_study", folder="exp", title="Kestrel — the design study (the one notebook to open for Kestrel)",
               needs=[Package("vegeta.dedalus"), Package("vegeta.boreas")],
               takes=[KESTREL_DRIVE, Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections"),
                      File(f"38_prop_lab:{DATA}/prop_lab.json", keys=("calibration",))],
               gives=[File(f"{DATA}/reports/43_kestrel_study.json")],
               screening_env="KESTREL_SCREENING")                                # the side-lab results come from the cache (kestrel_study.inputs_from_cache)
 
-flow.notebook("45_kestrel_x", folder="devices", title="Kestrel-X — the X-wing sibling: four cantilever panels, no bracing, against Kestrel-4Q",
+flow.notebook("45_kestrel_x", folder="exp", title="Kestrel-X — the X-wing sibling: four cantilever panels, no bracing, against Kestrel-4Q",
               needs=[Package("vegeta.boreas"), Package("vegeta.dedalus")],
               takes=[File(f"43_kestrel_study:{DATA}/reports/43_kestrel_study.json"), KESTREL_DRIVE,
                      Data(f"{DATA}/kestrel_sections.json", cache=True, note="NeuralFoil polars of the candidate sections")],
               gives=[File(f"{DATA}/kestrel_x_design.json"), File(f"{DATA}/reports/45_kestrel_x.json")], auto=True)   # yanus_auto: runs notebook 43 for its report
 
-flow.notebook("44_kestrel_fast", folder="devices", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
+flow.notebook("44_kestrel_fast", folder="exp", title="Kestrel fast: candidate designs compared in a minute (analytic, no runs)",
               needs=[Package("vegeta.zephyr"), Package("vegeta.boreas"), SECTION_BACKEND],
               takes=[KESTREL_DRIVE])
 
