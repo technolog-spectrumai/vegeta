@@ -36,7 +36,7 @@ def test_bad_files_are_named():
 def test_argv_and_dry_run(capsys):
     b = batch.loads("name: t\nsteps:\n  - chapter: k2\n    variant: 4Q-1\n    options: {quality: fine}\n    mode: prepare\n    cache: false\n    limits: --max-cases 2\n    ignore_prerequisites: true\n")
     argv = batch.argv_for(b.steps[0], Path("/tmp/x"))
-    assert argv == ["workflows/kestrel/airframe_cfd.py", "--chapter", "stall", "--variant", "4Q-1", "--quality", "fine", "--prepare-only", "--no-cache", "--ignore-prerequisites",
+    assert argv == ["side_labs/kestrel/airframe_cfd.py", "--chapter", "stall", "--variant", "4Q-1", "--quality", "fine", "--prepare-only", "--no-cache", "--ignore-prerequisites",
                     "--max-cases", "2", "--out", "/tmp/x"]
     rep = batch.run(b, dry_run=True, log=lambda *_: None)
     assert rep["exit_code"] == 0 and rep["steps"][0]["chapter"] == "K2"
@@ -92,11 +92,11 @@ def test_prerequisite_is_checked_per_step_and_go_on_mode(runs_tmp, tmp_path):
 
 
 def test_cli_batch_example_and_dry_run(tmp_path):
-    out = subprocess.run([PY, str(ROOT / "workflows" / "cli.py"), "batch", "--example"], capture_output=True, text=True, timeout=120)
+    out = subprocess.run([PY, str(ROOT / "side_labs" / "cli.py"), "batch", "--example"], capture_output=True, text=True, timeout=120)
     assert out.returncode == 0 and "chapter: K1" in out.stdout
     f = tmp_path / "batch.yaml"
     f.write_text(out.stdout)
-    out = subprocess.run([PY, str(ROOT / "workflows" / "cli.py"), str(f), "--dry-run"], capture_output=True, text=True, timeout=120)
+    out = subprocess.run([PY, str(ROOT / "side_labs" / "cli.py"), str(f), "--dry-run"], capture_output=True, text=True, timeout=120)
     assert out.returncode == 0 and "airframe_cfd.py --chapter sweep" in out.stdout and "4 step(s)" in out.stdout
 
 

@@ -1,4 +1,4 @@
-"""runkit — the run-directory contract of Vegeta's long-running analyses (the ``workflows/`` scripts).
+"""runkit — the run-directory contract of Vegeta's long-running analyses (the ``side_labs/`` scripts).
 
 A workflow is a thin script that prepares explicit inputs, runs the selected solver cases, gathers the artifacts,
 parses the results and saves them. This module gives every such script the same **file-based** bookkeeping, nothing
@@ -524,7 +524,7 @@ def slug(name: str) -> str:
 
 # --------------------------------------------------------------------------------------------------- reading runs
 def load_run(root) -> dict:
-    """What a notebook reads: ``{"root", "manifest", "status", "summary"}`` — ``summary`` is the completed
+    """A run read back: ``{"root", "manifest", "status", "summary"}`` — ``summary`` is the completed
     ``summary.json`` or ``None`` (a ``summary.partial.json`` is returned under ``"partial"``, never as the summary)."""
     root = Path(root)
     return {"root": root, "manifest": read_json(root / "manifest.json"), "status": read_json(root / "status.json"),
@@ -549,7 +549,7 @@ def list_runs(base, workflow: str | None = None) -> list[dict]:
 
 def add_common_arguments(ap) -> None:
     """The arguments every workflow script shares."""
-    ap.add_argument("--out", default=None, help="the run directory (default workflows/runs/<workflow>/<timestamp>_<campaign>)")
+    ap.add_argument("--out", default=None, help="the run directory (default side_labs/runs/<workflow>/<timestamp>_<campaign>)")
     ap.add_argument("--resume", default=None, metavar="RUN_DIR", help="continue an interrupted run: finished cases are reused, the rest run")
     ap.add_argument("--rerun-failed", action="store_true", help="with --resume: run the cases that FAILED again (a diverged or solved case is kept)")
     ap.add_argument("--prepare-only", action="store_true", help="write the cases and the manifest, run no solver (status 'prepared')")
@@ -561,7 +561,7 @@ def add_common_arguments(ap) -> None:
     ap.add_argument("--heartbeat", type=float, default=30.0, help="seconds between heartbeats in run.log / status.json")
     ap.add_argument("--quiet", action="store_true", help="log to run.log only, not to the terminal")
     ap.add_argument("--no-progress", action="store_true", help="no progress bars (they are off anyway when the output is not a terminal, e.g. detached)")
-    ap.add_argument("--no-cache", action="store_true", help="solve every case even when an earlier run of this book solved it (the cache under workflows/cache/)")
+    ap.add_argument("--no-cache", action="store_true", help="solve every case even when an earlier run of this book solved it (the cache under side_labs/cache/)")
     ap.add_argument("--ignore-prerequisites", action="store_true", help="start the chapter although a prerequisite chapter of the book has no completed run")
 
 
@@ -573,14 +573,14 @@ def select_cases(names: list[str], filt: str | None) -> list[str]:
 
 
 def default_out(workflow: str, campaign: str, base=None) -> Path:
-    """``workflows/runs/<book>/<chapter>/<timestamp>_<label>`` (``workflow`` is the book, ``campaign`` the chapter
+    """``side_labs/runs/<book>/<chapter>/<timestamp>_<label>`` (``workflow`` is the book, ``campaign`` the chapter
     when given as ``"book/chapter"``; a bare name keeps the flat layout)."""
     base = Path(base) if base else Path(__file__).resolve().parent / "runs" / workflow
     return base / f"{stamp()}_{slug(campaign)}"
 
 
 class Cache:
-    """A content-addressed store of **finished** cases across runs of the same book: ``workflows/cache/<book>/<key>.json``
+    """A content-addressed store of **finished** cases across runs of the same book: ``side_labs/cache/<book>/<key>.json``
     holds the case record (status, metrics, artifacts pointing at the run that solved it) — a chapter asked for a
     case it has already solved, in any earlier run, reads it back instead of solving again. ``enabled=False`` turns
     it off for a run (``--no-cache``); ``clean`` empties it. Only ``solved`` and ``diverged`` cases are kept (a FAILED

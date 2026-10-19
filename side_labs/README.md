@@ -2,7 +2,7 @@
 
 (The short how-to for engineers is `manual_workflows.md` at the repository root; this file is the contract.)
 
-A **workflow** is a thin script under `workflows/<project>/` that prepares explicit inputs, runs the selected solver
+A **workflow** is a thin script under `side_labs/<project>/` that prepares explicit inputs, runs the selected solver
 cases, gathers the artifacts, parses the results and saves them into one **run directory**. It is launched by an
 engineer from a shell, runs unattended for as long as it needs, and leaves a record a notebook can read, check and
 cite. The engineering logic stays in the design modules (`designs/*.py`) and the Vegeta tools; the
@@ -29,7 +29,7 @@ What follows from it, for every notebook in the repository:
   the notebook with an actionable exception.
 - Compatible results are **reused**, never recomputed: a run carries the fingerprint of the design it was made for.
 
-The first workflows are Kestrel's (`workflows/kestrel/`); `runkit.py` is the shared run-directory bookkeeping the
+The first workflows are Kestrel's (`side_labs/kestrel/`); `runkit.py` is the shared run-directory bookkeeping the
 next long-running analysis (a thermal case, another aircraft's CFD) reuses as it is.
 
 ## Books and chapters
@@ -56,13 +56,13 @@ kestrel  (K)  Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter
     └── K11  frame-and-joint
 ```
 
-The exported files follow the structure: every run is `workflows/runs/<book>/<chapter>/<run id>/` (e.g.
-`workflows/runs/kestrel/airframe-stall/20261017-101500_4Q-2_fine/`), every cached case
-`workflows/cache/<book>/<case key>.json`. A chapter's **prerequisites are chapters of the same book only**: a chapter
+The exported files follow the structure: every run is `side_labs/runs/<book>/<chapter>/<run id>/` (e.g.
+`side_labs/runs/kestrel/airframe-stall/20261017-101500_4Q-2_fine/`), every cached case
+`side_labs/cache/<book>/<case key>.json`. A chapter's **prerequisites are chapters of the same book only**: a chapter
 does not start until each prerequisite has a completed run for the same variant with a compatible fingerprint
-(`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `workflows/flow.py` (Yanus, `docs/yanus.md`): the books, each chapter in order with its kind, the
+(`--ignore-prerequisites` overrides and is recorded in the manifest). The registry is `side_labs/flow.py` (Yanus, `docs/yanus.md`): the books, each chapter in order with its kind, the
 script's campaign it maps to and its prerequisite chapters (`takes=[Run(...)]`), each kind's script and what it needs
-on the machine, and the notebooks' contracts. `workflows/library.py` generates `BOOKS` / `KINDS` from it for `wf` and
+on the machine, and the notebooks' contracts. `side_labs/library.py` generates `BOOKS` / `KINDS` from it for `wf` and
 the GUI. A new chapter is one line there (`yn new chapter kestrel/<name> --kind fea`), a new book a new entry and a new
 script (`--new-kind` writes the skeleton).
 
@@ -72,16 +72,16 @@ error with every fix; its exit gate (`GATE.leave()`) checks and stamps what it p
 
 **Cache.** A case is identified by its key (template, every value, the geometry file's hash, the quality). When a
 run of a book asks for a case any earlier run of that book already solved, the case record is read back from
-`workflows/cache/<book>/` — status, convergence, coefficients, and the path of the run that holds the native files —
+`side_labs/cache/<book>/` — status, convergence, coefficients, and the path of the run that holds the native files —
 and logged as a cache hit; nothing is solved twice. Only `solved` and `diverged` cases are cached (a `FAILED` one is
-retried). `--no-cache` solves everything; `workflows/cli.py cache` shows the cache, `clean-cache [--book B]` empties
+retried). `--no-cache` solves everything; `side_labs/cli.py cache` shows the cache, `clean-cache [--book B]` empties
 it (the runs keep their native results). A cache hit is still subject to the run's design fingerprint, because the
 key contains the geometry and the values.
 
 ## Layout
 
 ```
-workflows/
+side_labs/
   README.md                    this file
   gui/                         the desktop interface (PyQt6): app.py the window, runner.py launching and following a run, models.py the runs table, theme.py
   cli.py                       the entry point: list / info / run / runs / status / tail / stop / resume / notebook / cache / clean-cache, or interactive
@@ -105,43 +105,43 @@ Resolved-propeller CFD is **not** a workflow: it stays in notebook `38_prop_lab`
 ## Running (Ubuntu)
 
 All commands from the repository root, with the virtual environment `install_local.sh` made (`.venv`); `source activate.sh`
-activates it and defines `wf` (= `workflows/cli.py`) and `wfrun <book> …` (= the book's script). The quickest
-way is `workflows/cli.py` (or its PyQt6 window: `./workflows.sh` / `wf gui`, `workflows/requirements-gui.txt`) (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
+activates it and defines `wf` (= `side_labs/cli.py`) and `wfrun <book> …` (= the book's script). The quickest
+way is `side_labs/cli.py` (or its PyQt6 window: `./side_labs.sh` / `wf gui`, `side_labs/requirements-gui.txt`) (no arguments: interactive; `list`, `info`, `run --detach`, `runs`, `status`, `tail`, `stop`,
 `resume`, `notebook`); the scripts below are what it calls.
 
 ```bash
 # what a campaign would do, without writing anything
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
-.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --list
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
+.venv/bin/python side_labs/kestrel/structure_fea.py --variant 4Q-2 --chapter all --list
 
 # prepare only: the cases written (STL, dictionaries / STEP, mesh), no solver — the run says 'prepared'
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --prepare-only
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --prepare-only
 
 # foreground
-.venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
 
 # detached with nohup (survives the terminal and Jupyter closing)
-nohup .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --processors 4 \
-      > workflows/runs/airframe_cfd_sweep.out 2>&1 &
+nohup .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --processors 4 \
+      > side_labs/runs/airframe_cfd_sweep.out 2>&1 &
 echo $!                                   # the PID (also in <run>/status.json)
 
 # detached in tmux (attach later with: tmux attach -t kestrel)
-tmux new -d -s kestrel '.venv/bin/python workflows/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
+tmux new -d -s kestrel '.venv/bin/python side_labs/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # watching a run
-tail -F workflows/runs/kestrel/<chapter>/<run id>/run.log
-cat workflows/runs/kestrel/<chapter>/<run id>/status.json
-tail -n 3 workflows/runs/kestrel/<chapter>/<run id>/cases/<case>/log.simpleFoam        # the native solver log
+tail -F side_labs/runs/kestrel/<chapter>/<run id>/run.log
+cat side_labs/runs/kestrel/<chapter>/<run id>/status.json
+tail -n 3 side_labs/runs/kestrel/<chapter>/<run id>/cases/<case>/log.simpleFoam        # the native solver log
 
 # stopping, resuming
 kill -INT <pid>        # or Ctrl-C in the foreground: the running solver is stopped, the run ends 'cancelled', finished cases are kept
-.venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/<chapter>/<run id>
+.venv/bin/python side_labs/kestrel/airframe_cfd.py --resume side_labs/runs/kestrel/<chapter>/<run id>
 ```
 
 Closing Jupyter never stops a workflow: the scripts are separate processes that write to disk; the notebook only
 reads the run directory, whenever it is next executed.
 
-Common options (every script): `--chapter` (`--campaign` still accepted), `--out DIR` (default `workflows/runs/<book>/<chapter>/<timestamp>_<label>`), `--no-cache`, `--ignore-prerequisites`,
+Common options (every script): `--chapter` (`--campaign` still accepted), `--out DIR` (default `side_labs/runs/<book>/<chapter>/<timestamp>_<label>`), `--no-cache`, `--ignore-prerequisites`,
 `--resume RUN_DIR`, `--rerun-failed`, `--prepare-only`, `--list`, `--cases TEXT[,TEXT]` (a name filter: a run does
 the cases it lists and never more), `--max-cases N`, `--max-minutes M` (no new case after that; the run ends
 `partial`, resumable), `--case-timeout S`, `--heartbeat S` (default 30), `--quiet`, `--no-progress`. CFD: `--quality screening|fine`,
@@ -155,8 +155,8 @@ under an hour. Measure your own: `run.log` records every case's duration.
 
 `wf batch file.yaml` runs an ordered list of chapters from one file — the way to hand the heavy runs to a cloud box:
 the GUI's Batch tab (or `wf batch --example`) writes it, any machine with the repository and the solvers runs it. The
-format and the folder it leaves behind (`workflows/runs/_batches/<stamp>_<name>/batch.json`: every step's state, exit
-code, run directory and summary file) are in `workflows/batch.py` and `manual_workflows.md` § 2b. Each step is the
+format and the folder it leaves behind (`side_labs/runs/_batches/<stamp>_<name>/batch.json`: every step's state, exit
+code, run directory and summary file) are in `side_labs/batch.py` and `manual_workflows.md` § 2b. Each step is the
 chapter's script with an explicit `--out`, so a batch never changes what a run is; a batch is an engineer's explicit
 list, not a scheduler (`rejected.md`).
 
@@ -223,7 +223,7 @@ rest from scratch. There is no solver checkpoint restart: an interrupted case st
 ## Room for the next workflows
 
 A thermal analysis (a motor's or battery's heat path), another aircraft's CFD, a durability campaign: a new script
-under `workflows/<project>/` that imports `runkit`, builds its cases from the project's design module, runs them in
+under `side_labs/<project>/` that imports `runkit`, builds its cases from the project's design module, runs them in
 the same loop and writes the same files. Nothing in `runkit` is Kestrel-specific.
 
 The laser books `fenix` (F) and `svarog` (S) and their FEniCSx interpreter moved to

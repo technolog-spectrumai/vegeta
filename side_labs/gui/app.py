@@ -19,7 +19,7 @@ import library
 import runkit
 from . import theme
 from .models import RunsModel
-from .runner import Launcher, RunFollower, command_for, notebook_line, resume_argv, stop_run
+from .runner import Launcher, RunFollower, command_for, resume_argv, stop_run
 
 ROOT = library.ROOT
 CODE_ROLE = Qt.ItemDataRole.UserRole
@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
             tb.addAction(a)
             return a
         self.act_refresh = action("Refresh", "F5", self.refresh, "Re-read the runs on disk")
-        self.act_runs_dir = action("Open runs folder", "Ctrl+O", lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(library.RUNS))), "Open workflows/runs in the file manager")
+        self.act_runs_dir = action("Open runs folder", "Ctrl+O", lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(library.RUNS))), "Open side_labs/runs in the file manager")
         self.act_import = action("Import legacy results", None, self.import_legacy, "The first CFD campaign's file into K1's folder (once)")
         self.act_cache = action("Cache…", None, self.show_cache, "The cached cases per book; clean them")
         self.act_theme = action("Light / dark", "Ctrl+Shift+L", self.toggle_theme, "Switch the theme")
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
         rl.addWidget(self.runs_table, 1)
         rb = QHBoxLayout()
         for text, slot, tip in (("Follow", self.follow_selected, "Show this run's log and progress"), ("Resume", self.resume_selected, "Continue an interrupted or partial run"),
-                                ("Stop", self.stop_selected, "SIGINT to a running run"), ("Notebook line", self.notebook_selected, "Copy the yn pin command(s) of the notebooks that read this run"),
+                                ("Stop", self.stop_selected, "SIGINT to a running run"),
                                 ("Open folder", self.open_selected, "The run directory in the file manager")):
             b = QPushButton(text)
             b.setToolTip(tip)
@@ -380,12 +380,12 @@ class MainWindow(QMainWindow):
             return
         b = self._batch()
         if QMessageBox.question(self, "Run batch", f"Run the {len(b.steps)} step(s) of {path.name} one after the other, detached?\n\n$ wf batch {path}\n\n"
-                                "Each step is a chapter run with its own run directory; the batch folder under workflows/runs/_batches/ keeps batch.json with every "
+                                "Each step is a chapter run with its own run directory; the batch folder under side_labs/runs/_batches/ keeps batch.json with every "
                                 "output file. The same file runs on any machine with the solvers.") != QMessageBox.StandardButton.Yes:
             return
         before = {p.name for p in (library.RUNS / "_batches").glob("*")} if (library.RUNS / "_batches").is_dir() else set()
         self.log_view.clear()
-        ok, cmd, _ = self.launcher.launch(["workflows/cli.py", "batch", str(path)], label=f"batch_{runkit.slug(b.name)}")
+        ok, cmd, _ = self.launcher.launch(["side_labs/cli.py", "batch", str(path)], label=f"batch_{runkit.slug(b.name)}")
         self.log_view.appendPlainText(f"$ {cmd}")
         if not ok:
             return
@@ -398,7 +398,7 @@ class MainWindow(QMainWindow):
                 break
             time.sleep(0.25)
         if bdir is None:
-            self.log_view.appendPlainText("(the batch folder appears under workflows/runs/_batches/ in a moment; press Refresh and follow its runs from the table)")
+            self.log_view.appendPlainText("(the batch folder appears under side_labs/runs/_batches/ in a moment; press Refresh and follow its runs from the table)")
             QTimer.singleShot(4000, self.refresh)
             return
         self.follow(bdir)
@@ -613,8 +613,6 @@ class MainWindow(QMainWindow):
 
     def _on_run_finished(self, st: dict) -> None:
         self.refresh()
-        if st.get("state") == "completed" and self.current_run:
-            self.log_view.appendPlainText(f"\nnotebook: {notebook_line(self.current_run)}")
 
     def stop_current(self) -> None:
         if self.current_run:
@@ -653,13 +651,6 @@ class MainWindow(QMainWindow):
         if ok:
             self.follow(Path(r["run"]))
 
-    def notebook_selected(self) -> None:
-        r = self._selected_run()
-        if r:
-            line = notebook_line(Path(r["run"]))
-            QApplication.clipboard().setText(line)
-            self.status_label.setText(f"copied: {line}")
-
     def open_selected(self) -> None:
         r = self._selected_run()
         if r:
@@ -678,7 +669,7 @@ class MainWindow(QMainWindow):
         text = "\n".join(f"{k}: {v['cases']} case(s), {v['kB']} kB" for k, v in st.items()) or "empty"
         box = QMessageBox(self)
         box.setWindowTitle("Cache")
-        box.setText("Solved cases reused across runs of a book (workflows/cache/):\n\n" + text)
+        box.setText("Solved cases reused across runs of a book (side_labs/cache/):\n\n" + text)
         clean = box.addButton("Clean cache", QMessageBox.ButtonRole.DestructiveRole)
         box.addButton(QMessageBox.StandardButton.Close)
         box.exec()

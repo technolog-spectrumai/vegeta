@@ -1,10 +1,10 @@
-"""``workflows/runkit.py`` importable from the design modules (the notebooks put ``designs/`` on the path, not
-``workflows/``): one source, re-exported here."""
+"""``side_labs/runkit.py`` importable from the design modules (the notebooks put ``designs/`` on the path, not
+``side_labs/``): one source, re-exported here."""
 import importlib.util as _ilu
 import sys as _sys
 from pathlib import Path as _Path
 
-_src = _Path(__file__).resolve().parents[1] / "workflows" / "runkit.py"
+_src = _Path(__file__).resolve().parents[1] / "side_labs" / "runkit.py"
 _spec = _ilu.spec_from_file_location("runkit", _src)
 _mod = _ilu.module_from_spec(_spec)
 _sys.modules.setdefault("runkit", _mod)

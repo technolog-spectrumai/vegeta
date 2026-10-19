@@ -2,12 +2,12 @@
 
 A **book** is a design (a part or assembly we simulate): ``kestrel`` is the book of the Kestrel aircraft, code **K**.
 Its **chapters** are the numbered studies on it — CFD studies, FEA studies, whatever the design needs — chosen by
-code: ``K1`` is the first chapter of ``kestrel``. Every run lands under ``workflows/runs/<book>/<chapter>/<run id>/``
-and every cached case under ``workflows/cache/<book>/``. A chapter may have **prerequisites — chapters of the same
+code: ``K1`` is the first chapter of ``kestrel``. Every run lands under ``side_labs/runs/<book>/<chapter>/<run id>/``
+and every cached case under ``side_labs/cache/<book>/``. A chapter may have **prerequisites — chapters of the same
 book only** — that must have a completed, compatible run for the same variant before it starts
 (``--ignore-prerequisites`` overrides, and says so in the manifest).
 
-The books, chapters, kinds and imports are declared once, in ``workflows/flow.py`` (Yanus's registry); ``KINDS``,
+The books, chapters, kinds and imports are declared once, in ``side_labs/flow.py`` (Yanus's registry); ``KINDS``,
 ``BOOKS`` and ``IMPORTS`` here are generated from it in the shape ``wf`` and the GUI read.
 
     kestrel  (K)  — Kestrel-4Q biplane quadrotor tailsitter
@@ -30,8 +30,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "workflows" / "runs")
-CACHE = Path(_os.environ.get("VEGETA_WORKFLOW_CACHE") or ROOT / "workflows" / "cache")
+RUNS = Path(_os.environ.get("VEGETA_WORKFLOW_RUNS") or ROOT / "side_labs" / "runs")
+CACHE = Path(_os.environ.get("VEGETA_WORKFLOW_CACHE") or ROOT / "side_labs" / "cache")
 
 
 def _kc():
@@ -44,7 +44,7 @@ def _kc():
 
 
 def _flow():
-    """The one registry, ``workflows/flow.py`` (Yanus): the dicts below are views of it, in the shape ``wf`` and the
+    """The one registry, ``side_labs/flow.py`` (Yanus): the dicts below are views of it, in the shape ``wf`` and the
     GUI read."""
     import sys
     try:
@@ -52,7 +52,7 @@ def _flow():
     except ImportError:
         sys.path.insert(0, str(ROOT / "vegeta-yanus" / "src"))
         from vegeta.yanus import load_flow
-    return load_flow(ROOT / "workflows" / "flow.py")
+    return load_flow(ROOT / "side_labs" / "flow.py")
 
 
 FLOW = _flow()
@@ -97,7 +97,7 @@ def by_code(code: str) -> tuple[str, str, dict]:
         book, name = s.split("/", 1)
         if book in BOOKS and name in BOOKS[book]["chapters"]:
             return book, name, chapters(book)[name]
-    raise KeyError(f"unknown chapter {code!r}: use a code such as K1 (workflows/cli.py list)")
+    raise KeyError(f"unknown chapter {code!r}: use a code such as K1 (side_labs/cli.py list)")
 
 
 def chapter_of(book: str, kind: str, campaign: str) -> str | None:
@@ -238,23 +238,3 @@ def needs_status(book: str, chapter: str) -> dict:
     res = [check_need(n) for n in ch.all_needs()]
     return {"ok": all(r.ok for r in res), "missing": [r.need.label for r in res if not r.ok], "fixes": [r.fix for r in res if not r.ok],
             "line": " · ".join(f"{'✔' if r.ok else '✘'} {r.need.label}" + (f" {r.version}" if r.ok and r.version and r.version != "found" else "") for r in res)}
-
-
-def pin_commands(run_dir, manifest: dict | None = None) -> list[str]:
-    """The ``yn pin`` command of every notebook that takes this run's chapter and variant (Yanus pins replace the
-    hand-edited ``RUNS`` dict); empty when no notebook reads it. ``manifest`` = the run's, when the caller holds it."""
-    from runkit import read_json
-    d = Path(run_dir)
-    m = manifest if manifest is not None else (read_json(d / "manifest.json") or {})
-    book, chapter, variant = m.get("book"), m.get("chapter"), (m.get("config") or {}).get("variant")
-    if book not in FLOW.books or chapter not in FLOW.books[book].chapters:
-        return []
-    from vegeta.yanus import Run
-    ch = FLOW.books[book].chapters[chapter]
-    rel = d.resolve().relative_to(ROOT) if ROOT in d.resolve().parents else d
-    out = []
-    for nb in FLOW.notebooks.values():
-        for t in nb.takes:
-            if isinstance(t, Run) and t.chapter == ch.ref and t.variant in (None, variant):
-                out.append(f"yn pin {nb.name} {ch.code}" + (f" --variant {variant}" if t.variant else "") + f" {rel}")
-    return out

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Import the first Kestrel CFD campaign (notebook 39's ``designs/data/kestrel_cfd_results.json``) as run directories
-of the workflow contract, one per campaign key (``4Q-1``, ``4Q-2``), so the unified notebook reads it like any run.
+"""Import the first Kestrel CFD campaign (``designs/data/kestrel_cfd_results.json``) as run directories
+of the workflow contract, one per campaign key (``4Q-1``, ``4Q-2``), like any other run.
 
-    .venv/bin/python workflows/kestrel/import_legacy.py
-    .venv/bin/python workflows/kestrel/import_legacy.py --results path/to/kestrel_cfd_results.json --out workflows/runs
+    .venv/bin/python side_labs/kestrel/import_legacy.py
+    .venv/bin/python side_labs/kestrel/import_legacy.py --results path/to/kestrel_cfd_results.json --out side_labs/runs
 
 The import keeps what the file holds — statuses, coefficients, convergence flags — and says what it is: screening
 quality, 400 iterations, no native case directories, and a design fingerprint **assumed** from the current source
-(the file recorded none). The notebook shows that assumption in its prerequisite table.
+(the file recorded none); the run says so.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import kestrel_cfd as kcfd  # noqa: E402
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", default=str(kcfd.RESULTS_JSON))
-    ap.add_argument("--out", default=str(kc.RUNS_BASE), help="the runs base directory (default workflows/runs)")
+    ap.add_argument("--out", default=str(kc.RUNS_BASE), help="the runs base directory (default side_labs/runs)")
     ap.add_argument("--keys", default="4Q-1,4Q-2")
     args = ap.parse_args(argv)
     roots = kc.import_legacy(args.results, args.out, keys=tuple(k.strip() for k in args.keys.split(",")))
@@ -34,10 +34,7 @@ def main(argv=None) -> int:
     if not roots:
         print("nothing imported: no campaign of those keys in the file")
         return 1
-    for r in roots:
-        for line in wk.library.pin_commands(r):
-            print(f"notebook: {line}")
-    print("(the import holds the bare sweep and the blown points of its campaign; notebooks/pins/43_kestrel_study.json pins them already)")
+    print("(the import holds the bare sweep and the blown points of its campaign)")
     return 0
 
 

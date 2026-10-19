@@ -10,15 +10,15 @@ code, case-insensitive: K1, k2, K10 …
     wf K2 --variant 4Q-2 --quality fine --detach [--no-cache]      # run chapter K2 (same as: wf run K2 …)
     wf runs                         # every run on disk: chapter code, state, cases done, age
     wf status <run>                 # one run: heartbeat, last log lines, what to do next
-    wf tail <run> | wf stop <run> | wf resume <run> | wf notebook <run>
+    wf tail <run> | wf stop <run> | wf resume <run>
     wf batch batch.yaml [--dry-run] [--from N] [--detach]       # an ordered batch of chapters from one file (wf batch --example)
     wf cache | wf clean-cache [--book kestrel] [-y]
     wf gui                          # the desktop interface (PyQt6): the same tree, Run / Stop, the live log and progress, the runs
     wf import_legacy                # the first CFD campaign's file into K1's folder (once)
 
-(``wf`` = ``workflows/cli.py`` after ``source activate.sh``.) A run is a directory under workflows/runs/<book>/<chapter>/
-(the contract: workflows/README.md); solved cases are cached under workflows/cache/<book>/ and reused by later runs of
-the book. The scripts (workflows/kestrel/*.py) stay usable directly — this tool only lists, explains, launches and
+(``wf`` = ``side_labs/cli.py`` after ``source activate.sh``.) A run is a directory under side_labs/runs/<book>/<chapter>/
+(the contract: side_labs/README.md); solved cases are cached under side_labs/cache/<book>/ and reused by later runs of
+the book. The scripts (side_labs/kestrel/*.py) stay usable directly — this tool only lists, explains, launches and
 watches them.
 """
 from __future__ import annotations
@@ -35,7 +35,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "workflows"))
+sys.path.insert(0, str(ROOT / "side_labs"))
 sys.path.insert(0, str(ROOT / "designs"))
 import runkit  # noqa: E402
 
@@ -74,7 +74,7 @@ def _run_dir(arg: str) -> Path:
         d = Path(r["run"])
         if d.name == arg or d.name.endswith(arg) or f"{r['book']}/{r['chapter']}/{d.name}" == arg:
             return d
-    sys.exit(f"no run directory {arg!r} (see: workflows/cli.py runs)")
+    sys.exit(f"no run directory {arg!r} (see: side_labs/cli.py runs)")
 
 
 def _all_runs() -> list[dict]:
@@ -103,12 +103,12 @@ def _ask(prompt: str, choices: list[str] | None = None, default: str | None = No
 # ----------------------------------------------------------------------------------------------- commands
 def cmd_list(args) -> int:
     print("Books are designs, chapters the numbered studies on them (choose by code: K1, k2 …); a chapter's prerequisites are\n"
-          "chapters of the same book. The rule: an analysis over ~15–30 min is a workflow, never a notebook cell (workflows/README.md).\n")
+          "chapters of the same book. The rule: an analysis over ~15–30 min is a side lab, run on its own (side_labs/README.md).\n")
     print(library.tree())
     for name, i in library.IMPORTS.items():
         print(f"\n{name:15s} {i['title']} — wf {name}")
     st = runkit.Cache.stats()
-    print("\ncache (solved cases reused across runs of a book, workflows/cache/): " + (", ".join(f"{k}: {v['cases']} case(s), {v['kB']} kB" for k, v in st.items()) if st else "empty"))
+    print("\ncache (solved cases reused across runs of a book, side_labs/cache/): " + (", ".join(f"{k}: {v['cases']} case(s), {v['kB']} kB" for k, v in st.items()) if st else "empty"))
     print("\nnext: wf info K2   ·   wf K2 --variant 4Q-2 --quality fine --detach   ·   wf runs")
     return 0
 
@@ -159,11 +159,11 @@ def _launch(script: str, extra: list[str], *, detach: bool, label: str) -> int:
     time.sleep(2.0)
     newest = _all_runs()[:1]
     if newest and newest[0].get("created_at"):
-        print(f"run directory: {newest[0]['run']}\n  watch:  workflows/cli.py tail {Path(newest[0]['run']).name}\n  status: workflows/cli.py status {Path(newest[0]['run']).name}")
+        print(f"run directory: {newest[0]['run']}\n  watch:  side_labs/cli.py tail {Path(newest[0]['run']).name}\n  status: side_labs/cli.py status {Path(newest[0]['run']).name}")
     elif label.startswith("batch_"):
         print(f"the batch folder appears under {RUNS.relative_to(ROOT)}/_batches/ as it starts: its batch.json names every step's run directory and summary file")
     else:
-        print("the run directory appears under workflows/runs/ once the cases are built (workflows/cli.py runs)")
+        print("the run directory appears under side_labs/runs/ once the cases are built (side_labs/cli.py runs)")
     return 0
 
 
@@ -201,7 +201,7 @@ def cmd_runs(args) -> int:
             book, name, _ = _chapter(args.book)
             runs = [r for r in runs if r["book"] == book and r["chapter"] == name]
     if not runs:
-        print("no runs under workflows/runs/ yet (workflows/cli.py list; workflows/cli.py run …; or import_legacy)")
+        print("no runs under side_labs/runs/ yet (side_labs/cli.py list; side_labs/cli.py run …; or import_legacy)")
         return 0
     print(f"{'code':5s} {'book / chapter':30s} {'run id':44s} {'variant':7s} {'state':10s} {'cases':14s} {'created':12s} summary")
     for r in runs:
@@ -250,15 +250,15 @@ def cmd_status(args) -> int:
     if state == "running" and alive:
         q = (hb or {}).get("quiet_for_s", 0) or 0
         print("  → healthy" if q < 900 else f"  → the solver log has been quiet for {q / 60:.0f} min: look at the native log before deciding it is stuck")
-        print(f"  → follow: workflows/cli.py tail {d.name}")
+        print(f"  → follow: side_labs/cli.py tail {d.name}")
     elif state == "running" and not alive:
-        print(f"  → the process is gone but the state says running (killed? rebooted?): resume with  workflows/cli.py resume {d.name}")
+        print(f"  → the process is gone but the state says running (killed? rebooted?): resume with  side_labs/cli.py resume {d.name}")
     elif state in ("cancelled", "partial", "prepared"):
-        print(f"  → continue with  workflows/cli.py resume {d.name}")
+        print(f"  → continue with  side_labs/cli.py resume {d.name}")
     elif state == "failed":
         print("  → read run.log above and the native logs under cases/; fix; a new run or --resume")
     elif state == "completed":
-        print(f"  → use it in the notebook:  workflows/cli.py notebook {d.name}")
+        print("  → completed: its results are in the run directory")
     return 0
 
 
@@ -276,33 +276,9 @@ def cmd_stop(args) -> int:
         return 1
     os.kill(int(pid), signal.SIGINT)
     print(f"SIGINT sent to pid {pid}: the running solver is stopped by its tool, the run ends 'cancelled' with the finished cases kept; "
-          f"then  workflows/cli.py resume {d.name}")
+          f"then  side_labs/cli.py resume {d.name}")
     return 0
 
-
-def cmd_notebook(args) -> int:
-    d = _run_dir(args.run)
-    for line in library.pin_commands(d):
-        print(line)
-    print("# the older RUNS form (notebooks not yet on Yanus pins):")
-    m = runkit.read_json(d / "manifest.json") or {}
-    cfg = m.get("config") or {}
-    rel = d.relative_to(ROOT) if ROOT in d.parents else d
-    w = m.get("workflow")
-    if w == "airframe_cfd":
-        ch = m.get("chapter") or cfg.get("chapter")
-        camp = (BOOKS.get(m.get("book"), {}).get("chapters", {}).get(ch) or {}).get("campaign") or cfg.get("campaign", "sweep")
-        if camp == "legacy-import":
-            camp = "sweep"
-        print(f'RUNS["airframe_cfd"]["{cfg.get("variant")}"]["{camp}"] = "{rel}"')
-    elif w == "structure_fea":
-        print(f'RUNS["structure_fea"]["{cfg.get("variant")}"] = "{rel}"')
-    else:
-        print(f"# {w}: not read by the notebook")
-    st = (runkit.read_json(d / "status.json") or {}).get("state")
-    if st != "completed":
-        print(f"# note: the run's state is {st!r} — the notebook accepts completed runs only")
-    return 0
 
 
 def cmd_batch(args) -> int:
@@ -320,7 +296,7 @@ def cmd_batch(args) -> int:
     except ValueError as exc:
         sys.exit(f"{f}: {exc}")
     if args.detach and not args.dry_run:
-        return _launch("workflows/cli.py", ["batch", str(f.resolve()), *(["--from", str(args.start)] if args.start > 1 else [])], detach=True, label=f"batch_{runkit.slug(b.name)}")
+        return _launch("side_labs/cli.py", ["batch", str(f.resolve()), *(["--from", str(args.start)] if args.start > 1 else [])], detach=True, label=f"batch_{runkit.slug(b.name)}")
     rep = _batch.run(b, source=f, dry_run=args.dry_run, start=args.start, progress=False if args.no_progress else None, count=not args.no_count)
     return rep["exit_code"]
 
@@ -337,10 +313,10 @@ def cmd_gui(args) -> int:
 def cmd_cache(args) -> int:
     st = runkit.Cache.stats()
     if not st:
-        print("the cache is empty (workflows/cache/): a case is stored when a run of its book solves it, and read back by any later run that asks for the same case")
+        print("the cache is empty (side_labs/cache/): a case is stored when a run of its book solves it, and read back by any later run that asks for the same case")
         return 0
     for k, v in st.items():
-        print(f"{k:20s} {v['cases']:5d} case(s)  {v['kB']:8.1f} kB   workflows/cache/{k}/")
+        print(f"{k:20s} {v['cases']:5d} case(s)  {v['kB']:8.1f} kB   side_labs/cache/{k}/")
     return 0
 
 
@@ -375,15 +351,13 @@ def interactive() -> int:
         r = _ask("a run id to inspect (empty to quit)", default="")
         if r:
             cmd_status(argparse.Namespace(run=r, lines=12))
-            act = _ask("action", ["nothing", "tail", "resume", "stop", "notebook line"], default="nothing")
+            act = _ask("action", ["nothing", "tail", "resume", "stop"], default="nothing")
             if act == "tail":
                 cmd_tail(argparse.Namespace(run=r, lines=30))
             elif act == "resume":
                 return cmd_resume(argparse.Namespace(run=r, rest=[], detach=_ask("detach (nohup-style)?", ["yes", "no"], default="yes") == "yes"))
             elif act == "stop":
                 return cmd_stop(argparse.Namespace(run=r))
-            elif act == "notebook line":
-                return cmd_notebook(argparse.Namespace(run=r))
         return 0
     book, name, info = _chapter(pick)
     kind = library.KINDS[info["kind"]]
@@ -430,7 +404,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("runs", help="the runs on disk (optionally of one book or chapter code)"); p.add_argument("book", nargs="?")
     p = sub.add_parser("batch", help="run the chapters of a batch.yaml in order (the file: wf batch --example; the GUI writes one)"); p.add_argument("file", nargs="?")
     p.add_argument("--dry-run", action="store_true", help="print the commands only"); p.add_argument("--from", dest="start", type=int, default=1, metavar="N", help="start at step N")
-    p.add_argument("--detach", action="store_true", help="run in the background (terminal output under workflows/runs/)"); p.add_argument("--example", action="store_true", help="print a template")
+    p.add_argument("--detach", action="store_true", help="run in the background (terminal output under side_labs/runs/)"); p.add_argument("--example", action="store_true", help="print a template")
     p.add_argument("--no-progress", action="store_true", help="no progress bar (the GUI adds it; the estimate and the remaining time are still printed and in status.json)")
     p.add_argument("--no-count", action="store_true", help="skip the chapters' --list before starting (the estimate then uses the last runs; a few seconds saved)")
     sub.add_parser("gui", help="the desktop interface (PyQt6): the tree, options, Run / Stop, the live log, the runs")
@@ -439,7 +413,6 @@ def main(argv=None) -> int:
     p = sub.add_parser("status", help="one run: state, heartbeat, last log lines, what next"); p.add_argument("run"); p.add_argument("-n", "--lines", type=int, default=8)
     p = sub.add_parser("tail", help="follow a run's log"); p.add_argument("run"); p.add_argument("-n", "--lines", type=int, default=30)
     p = sub.add_parser("stop", help="stop a running run (SIGINT)"); p.add_argument("run")
-    p = sub.add_parser("notebook", help="the RUNS line for the notebook"); p.add_argument("run")
     args = ap.parse_args(argv)
     if args.cmd is None:
         return interactive()
@@ -452,7 +425,7 @@ def main(argv=None) -> int:
                 args.rest = [a for a in args.rest if a != flag]
                 setattr(args, flag.strip("-").replace("-", "_"), True)
     return {"list": cmd_list, "info": cmd_info, "run": cmd_run, "resume": cmd_resume, "runs": cmd_runs, "status": cmd_status, "tail": cmd_tail, "stop": cmd_stop,
-            "notebook": cmd_notebook, "cache": cmd_cache, "clean-cache": cmd_clean_cache, "gui": cmd_gui, "batch": cmd_batch}[args.cmd](args)
+            "cache": cmd_cache, "clean-cache": cmd_clean_cache, "gui": cmd_gui, "batch": cmd_batch}[args.cmd](args)
 
 
 if __name__ == "__main__":

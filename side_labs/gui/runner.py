@@ -109,7 +109,7 @@ class Launcher(QObject):
         self.out_dir = library.RUNS
 
     def launch(self, argv: list[str], *, label: str) -> tuple[bool, str, Path | None]:
-        """Start ``python <argv>`` in its own session; the terminal output goes to ``workflows/runs/<label>_<time>.out``.
+        """Start ``python <argv>`` in its own session; the terminal output goes to ``side_labs/runs/<label>_<time>.out``.
         Returns (ok, command line, the new run directory when it already exists)."""
         before = {r["run"] for r in library.all_runs()}
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -156,21 +156,3 @@ def resume_argv(run_dir: Path) -> list[str] | None:
     if kind not in library.KINDS:
         return None
     return [library.KINDS[kind]["script"], "--resume", str(run_dir)]
-
-
-def notebook_line(run_dir: Path) -> str:
-    pins = library.pin_commands(run_dir)
-    if pins:
-        return "; ".join(pins)
-    m = runkit.read_json(Path(run_dir) / "manifest.json") or {}
-    cfg = m.get("config") or {}
-    rel = Path(run_dir).relative_to(ROOT) if ROOT in Path(run_dir).parents else Path(run_dir)
-    if m.get("workflow") == "airframe_cfd":
-        ch = m.get("chapter") or cfg.get("chapter")
-        camp = (library.BOOKS.get(m.get("book"), {}).get("chapters", {}).get(ch) or {}).get("campaign") or cfg.get("campaign", "sweep")
-        if camp == "legacy-import":
-            camp = "sweep"
-        return f'RUNS["airframe_cfd"]["{cfg.get("variant")}"]["{camp}"] = "{rel}"'
-    if m.get("workflow") == "structure_fea":
-        return f'RUNS["structure_fea"]["{cfg.get("variant")}"] = "{rel}"'
-    return f"# {m.get('workflow')}: not read by the notebook"

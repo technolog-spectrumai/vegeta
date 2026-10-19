@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """Kestrel airframe CFD — the whole aircraft with the four propellers as rotor disks (Aeromant / OpenFOAM), one
-named campaign per run, written as a run directory the unified Kestrel notebook reads.
+named campaign per run, written as a run directory.
 
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --list
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --variant 4Q-2 --chapter blown --prepare-only
-    .venv/bin/python workflows/kestrel/airframe_cfd.py --resume workflows/runs/kestrel/<chapter>/<run id>
+    .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
+    .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter sweep --list
+    .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter blown --prepare-only
+    .venv/bin/python side_labs/kestrel/airframe_cfd.py --resume side_labs/runs/kestrel/<chapter>/<run id>
 
 Book ``kestrel`` (code K), the CFD chapters; campaigns (``kestrel_campaigns.CFD_CAMPAIGNS``, ``--chapter``; ``--campaign`` still works): ``sweep`` the bare airframe 0–90° (10 cases), ``sweep-fine`` (13),
 ``stall`` 8–16° (5: CL max), ``cruise`` (2 blown), ``transitions`` (the 3 s transitions' points + hover, blown),
 ``blown`` (cruise + transitions), ``all`` (sweep + blown), ``sections`` (the two finalist sections as slabs, 8).
 A run does exactly the cases it lists (``--list``) — filtered with ``--cases``, bounded with ``--max-cases`` /
-``--max-minutes`` — and never more. Resolved propellers are prop_lab's (notebook 38), not this workflow's.
+``--max-minutes`` — and never more. Resolved propellers are prop_lab's calibration (designs/data/prop_lab.json), not this side lab's.
 
 Order of magnitude on 4 MPI ranks: a screening case 10–20 min (0.3–0.5 M cells, 400 iterations), a fine case ~1 h
 (×3 cells, 800 iterations): ``sweep`` at screening is an afternoon, ``all`` at fine is days — run it detached
-(``nohup`` / ``tmux``, see workflows/README.md) and watch ``tail -F <run>/run.log``.
+(``nohup`` / ``tmux``, see side_labs/README.md) and watch ``tail -F <run>/run.log``.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _kestrel as wk  # noqa: E402  (puts workflows/ and designs/ on the path)
+import _kestrel as wk  # noqa: E402  (puts side_labs/ and designs/ on the path)
 import runkit  # noqa: E402
 import kestrel_campaigns as kc  # noqa: E402
 import kestrel_cfd as kcfd  # noqa: E402

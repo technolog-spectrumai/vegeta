@@ -3,7 +3,7 @@
 The desktop interface (or an editor) writes the file; ``wf batch batch.yaml`` runs it — on this machine or on a
 cloud box that only has the repository, the solvers and a shell. The steps run one after the other, each as the
 chapter's own script with an explicit ``--out`` run directory, so the results land where the file says they will;
-the batch keeps its own folder under ``workflows/runs/_batches/<stamp>_<name>/`` with the YAML it ran, ``batch.json``
+the batch keeps its own folder under ``side_labs/runs/_batches/<stamp>_<name>/`` with the YAML it ran, ``batch.json``
 (every step: state, exit code, run directory, summary file), ``status.json`` and ``run.log`` (the GUI follows it like
 a run). The last lines of the terminal say where every output file is.
 
@@ -27,7 +27,7 @@ this layout.
 
 **Time and progress.** Before it starts, the batch counts every step's cases (the chapter's ``--list``, or the last
 run of the chapter) and takes a time per case from the finished runs of the same chapter and quality on this
-machine (``workflows/runs/``), else from the kind's rule of thumb (``ESTIMATE_S``); a step may say
+machine (``side_labs/runs/``), else from the kind's rule of thumb (``ESTIMATE_S``); a step may say
 ``expected_minutes`` itself. While it runs, one progress bar spans every case of the batch (tqdm, when the terminal
 is one), advancing as each step's ``status.json`` counts its cases, with the elapsed and the **remaining time**
 re-estimated from the cases done so far; the same numbers go to the batch's ``status.json`` (``progress``,

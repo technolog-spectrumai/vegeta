@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Start the Vegeta workflows desktop interface:   ./workflows.sh
-# (the PyQt6 window of workflows/gui — the tree of books and chapters, Run / Stop, the live log, the runs)
+# Start the Vegeta workflows desktop interface:   ./side_labs.sh
+# (the PyQt6 window of side_labs/gui — the tree of books and chapters, Run / Stop, the live log, the runs)
 #
 # Uses the project's virtual environment (.venv, or $VEGETA_VENV). PyQt6 is installed into it on first use when
 # missing; the Vegeta libraries themselves come from ./install_local.sh.
@@ -14,11 +14,11 @@ if [ ! -x "$VENV/bin/python" ]; then
 fi
 py="$VENV/bin/python"
 export VEGETA_ROOT="$PWD"
-export PYTHONPATH="$PWD/vegeta-cli/src:$PWD/vegeta-core/src:$PWD/vegeta-ai/src:$PWD/vegeta-fidia/src:$PWD/vegeta-yanus/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimesis/src:$PWD/vendor/ozaru/yanus/src:$PWD/workflows:$PWD/designs${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD/vegeta-cli/src:$PWD/vegeta-core/src:$PWD/vegeta-ai/src:$PWD/vegeta-fidia/src:$PWD/vegeta-yanus/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimesis/src:$PWD/vendor/ozaru/yanus/src:$PWD/side_labs:$PWD/designs${PYTHONPATH:+:$PYTHONPATH}"
 
 if ! "$py" -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('PyQt6') else 1)"; then
   echo "Installing PyQt6 into $VENV (first use) ..."
-  "$py" -m pip install --quiet --disable-pip-version-check -r workflows/requirements-gui.txt
+  "$py" -m pip install --quiet --disable-pip-version-check -r side_labs/requirements-gui.txt
 fi
 qt_hint() {
   echo "Qt could not start. On Ubuntu install the libraries it needs:" >&2
@@ -30,6 +30,6 @@ if ! err=$("$py" -c "from PyQt6 import QtWidgets" 2>&1); then
   exit 1
 fi
 status=0
-"$py" workflows/gui "$@" || status=$?
+"$py" side_labs/gui "$@" || status=$?
 [ "$status" -eq 134 ] && qt_hint        # abort: "could not load the Qt platform plugin"
 exit "$status"

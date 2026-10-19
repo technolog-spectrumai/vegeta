@@ -13,7 +13,7 @@ except ImportError as exc:                      # not installed, or Qt's librari
     pytest.skip(f"PyQt6 not usable here: {exc}", allow_module_level=True)
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "workflows"))
+sys.path.insert(0, str(ROOT / "side_labs"))
 
 
 @pytest.fixture(scope="module")
@@ -24,10 +24,10 @@ def app():
 
 def test_command_preview_and_helpers(app):
     import library
-    from gui.runner import command_for, notebook_line, resume_argv
+    from gui.runner import command_for, resume_argv
     book, name, info = library.by_code("K2")
     argv = command_for(info, {"--variant": "4Q-2", "--quality": "fine", "--processors": "4"}, mode="prepare", limits='--max-cases 1 --cases "α 12°"', cache=False)
-    assert argv[:3] == ["workflows/kestrel/airframe_cfd.py", "--chapter", "stall"] and "--prepare-only" in argv and "--no-cache" in argv and "α 12°" in argv
+    assert argv[:3] == ["side_labs/kestrel/airframe_cfd.py", "--chapter", "stall"] and "--prepare-only" in argv and "--no-cache" in argv and "α 12°" in argv
     assert resume_argv(ROOT / "nowhere") is None
 
 

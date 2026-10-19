@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-for p in (ROOT / "workflows", ROOT / "designs"):
+for p in (ROOT / "side_labs", ROOT / "designs"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
@@ -76,14 +76,14 @@ def chapter_args(ap, book: str, kind: str) -> None:
     """``--chapter`` (``--campaign`` is kept as an alias): this script's campaigns, each a chapter of the book."""
     camps = [c["campaign"] for c in library.BOOKS[book]["chapters"].values() if c["kind"] == kind]
     ap.add_argument("--chapter", "--campaign", dest="chapter", default=camps[0], choices=tuple(camps),
-                    help=f"the study (the {kind.upper()} chapters of book {book!r}: workflows/cli.py list)")
+                    help=f"the study (the {kind.upper()} chapters of book {book!r}: side_labs/cli.py list)")
 
 
 GATE: dict = {"missing": [], "needs": {}}
 
 
 def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: dict, ignore: bool) -> list[str]:
-    """The script's entry gate (Yanus, ``workflows/flow.py``): the chapter's needs (reported — a missing solver still
+    """The script's entry gate (Yanus, ``side_labs/flow.py``): the chapter's needs (reported — a missing solver still
     allows ``--prepare-only``) and a completed compatible run of each prerequisite chapter for the variant; exits 2
     without one unless ``ignore`` (``--ignore-prerequisites``, recorded in the manifest). ``GATE`` keeps the result
     for the manifest's ``yanus`` entry."""
@@ -93,10 +93,8 @@ def prerequisites_or_exit(book: str, chapter: str, *, variant: str, expected: di
 
 
 def pin_hint(run: runkit.Run) -> str:
-    """The closing line that tells the engineer how a notebook reads this run (``yn pin``)."""
-    pins = library.pin_commands(run.root, run.manifest)
-    return ("notebook: " + "   |   ".join(pins)) if pins else "no notebook declares this chapter and variant in workflows/flow.py yet"
-
+    """The closing line: where the run is (logs, cases); results reach readers only through the cache."""
+    return f"run directory: {run.root}"
 
 def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.Budget, rerun_failed: bool = False, case_dirs: dict | None = None,
           cache: runkit.Cache | None = None, progress: "Progress | None" = None) -> str:
@@ -157,7 +155,7 @@ def drive(run: runkit.Run, names: list[str], keys: dict, fn, *, budget: runkit.B
 
 def closing(run: runkit.Run, code: int, *, hint: str, progress: "Progress | None" = None) -> None:
     """The last lines of every run: where the output is (the summary file, or the partial one), then the status, the
-    log and the notebook / pin hint."""
+    log and the run-directory hint."""
     if progress:
         progress.close()
     summ = run.root / "summary.json" if (run.root / "summary.json").exists() else (run.root / "summary.partial.json" if (run.root / "summary.partial.json").exists() else None)
