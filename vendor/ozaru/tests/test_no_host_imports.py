@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LIBS = ("porunga", "mimesis", "yanus")
+LIBS = ("porunga", "mimesis", "yanus", "yax")
 
 
 def test_libraries_import_only_the_standard_library_and_themselves():
