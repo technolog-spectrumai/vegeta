@@ -232,59 +232,7 @@ def component_table(variant: str) -> pd.DataFrame:
 
 
 # ================================================================================================= batteries
-@dataclass(frozen=True)
-class Battery:
-    key: str
-    name: str
-    cells: int
-    chemistry: str
-    capacity_mah: float
-    mass_g: float
-    size_mm: tuple
-    c_rating: float
-    price: str
-    url: str
-    availability: str = "not confirmed"
-    cell_v_nominal: float = 3.7
-    note: str = ""
-
-    @property
-    def voltage(self):
-        return self.cells * self.cell_v_nominal
-
-    @property
-    def energy_wh(self):
-        return self.voltage * self.capacity_mah / 1000
-
-    @property
-    def max_current_a(self):
-        return self.c_rating * self.capacity_mah / 1000
-
-
-BATTERIES = [
-    Battery("gens-ace-3s-2200", "Gens Ace 3S 2200 mAh 45C G-Tech", 3, "LiPo", 2200, 190.0, (105, 34, 23), 45, "€24.99 (gensace.de)",
-            "https://gensace.de/collections/3s-lipo-battery", note=f"the reference pack; {SNIPPET}"),
-    Battery("tattu-3s-2200", "Tattu 3S 2200 mAh 45C", 3, "LiPo", 2200, 190.0, (107, 36, 24), 45, "not stated",
-            "https://www.motionew.com/shop/power-solution/battery-lipo-3s-2200mah-45c-tattu/", note=SNIPPET),
-    Battery("gnb-3s-3000-lihv", "GNB 3S 3000 mAh 120C LiHV", 3, "LiHV", 3000, 213.0, (109, 34, 30), 120, "not stated",
-            "https://www.gaoneng.shop/products/gaoneng-gnb-lihv-3s-11.4v-3000mah-120c-xt60-lipo-battery", cell_v_nominal=3.8,
-            note=f"LiHV: 3.8 V nominal, 4.35 V charged — the ESC and the regulators must accept 13.05 V (they do: 2-8S); {SNIPPET}"),
-    Battery("turnigy-3s-3000-nano", "Turnigy nano-tech 3S 3000 mAh 30C", 3, "LiPo", 3000, 215.0, (135, 44, 17), 30, "not stated",
-            "https://hobbyking.com/turnigy-nano-tech-3000mah-3s-30c-lipo-pack-wxt60.html", note=SNIPPET),
-    Battery("tattu-3s-3300", "Tattu 3S 3300 mAh 30C", 3, "LiPo", 3300, 248.0, (141, 44, 21), 30, "US$47.00",
-            "https://www.motionew.com/shop/power-solution/battery-lipo-3s-3300mah-30c-tattu/", note=SNIPPET),
-    Battery("gens-ace-3s-3300-60c", "Gens Ace 3S 3300 mAh 60C G-Tech", 3, "LiPo", 3300, 267.0, (136.5, 42.6, 21.6), 60, "not stated",
-            "https://genstattu.com/gens-ace-g-tech-3300mah-3s-11-1v-60c-lipo-battery-pack-with-xt60-plug/", note=SNIPPET),
-    Battery("turnigy-4s-2200", "Turnigy 4S 2200 mAh 40C", 4, "LiPo", 2200, 216.0, (106, 35, 29), 40, "not stated",
-            "https://hobbyking.com/turnigy-2200mah-4s-40c-lipo-pack-w-xt60.html", note=f"4S: the motor needs a lower KV or a smaller propeller (the X2216 KV1250 on 9x6 at 14.8 V exceeds 40 A static); {SNIPPET}"),
-    Battery("liion-3s2p-p42a", "Li-ion 3S2P Molicel P42A (assembled, US shop)", 3, "Li-ion", 8400, 450.0, (70, 48, 67), 10.7, "US$102",
-            "https://nexusbatterysystems.com/products/3s2p-42a", cell_v_nominal=3.6,
-            note=f"90 A pack claim (45 A per cell); 10.8 V nominal, 9.0 V at the end: the propulsion map at 11.1 V flatters it by ~5 %; no EU seller with a stated mass found; {SNIPPET}"),
-]
-
-
-def battery(key: str) -> Battery:
-    return next(b for b in BATTERIES if b.key == key)
+from ogma.batteries import BATTERIES, Battery, battery  # noqa: E402  the bought packs: Ogma
 
 
 def battery_table() -> pd.DataFrame:
