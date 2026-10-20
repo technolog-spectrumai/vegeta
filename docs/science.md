@@ -201,10 +201,33 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   - Velocity is limited to 0.2 per step.
   - There are 12 particles: one at the stored settings, the rest spread over the box by a Latin hypercube with a
     fixed seed, so a run can be repeated.
-  - The swarm stops after 15 iterations, or 4 without improvement, or once the swarm's radius is below 0.05.
-  - Pattern search then polishes the swarm's best to Δ_min.
+  - The swarm stops after 4 iterations without improvement, once the swarm's radius is below 0.05, or at its share of
+    the lap budget. `--pso-iterations` (default 15) is a **hard maximum**: reaching it always ends the swarm, even if
+    it is still improving (the log says so), and the polish starts from the best particle found.
+  - Pattern search then polishes the swarm's best to Δ_min. Its laps are reserved: `--polish-laps` (default 120) of
+    `--max-laps` (default 400) are kept for it whatever the swarm does.
   - PSO gives no proof of global optimality: no method does with a budget of laps on a black box. What it gives is a
     sample of the whole space, so a lone basin is unlikely to be missed. `--method gps` skips the swarm.
+- **Parallel and reproducible.** `-j N` flies a batch (a swarm generation, a complete poll) on N worker processes.
+  The batch is fixed before it flies and its results are read in a fixed order (the poll stays opportunistic in the
+  axis order), so `-j 1` and `-j N` give identical laps. Checked: 33 laps identical, 1.9 min against 0.7 min on 4
+  cores. The swarm's random numbers come from a seeded generator (`--seed`), whose state is saved.
+- **Cutting slow laps, only in the polish.** A polishing lap stops at 1.25 × the best finished lap known when its batch
+  starts + 5 s. A cut lap scores as a DNF, and the polish only compares with that incumbent, which it could not have
+  beaten anyway, so the decisions are unchanged. The swarm never cuts: each particle compares with its own best, which
+  a cut could change.
+- **Checkpoints and resume.** After every swarm and polishing iteration the whole state is written atomically
+  (temporary file, fsync, rename) to `races/runs/tune/<course>.ckpt.json`. That covers:
+  - the phase, the swarm's positions, velocities and personal and global bests, the generator's state and counters;
+  - the polish's point, Δ and counters;
+  - every lap flown, and the time spent.
+
+  A rerun with the same options resumes exactly where it stopped. Checked: interrupted once during the swarm and once
+  during the polish, the resumed runs flew the same laps as an uninterrupted one. A finished course is skipped; other
+  options are refused (`--fresh` starts over).
+- **Results and wording.** After every course, `best.json`, `races/autopilot.json` and the CSV of every lap are written,
+  with the time spent: swarm, polish, total, and wall time per lap. A search that ends no better than its start says
+  "no improvement found over the starting settings". It is never reported as proof of an optimum.
 - **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once and remembered. The search starts from
   the course's stored settings (`races/autopilot.json`), and only a faster finished lap replaces them.
 - **First result.** Industrial went from 37.7 s (the best of the grids) to **32.0 s with no collision**, converging
