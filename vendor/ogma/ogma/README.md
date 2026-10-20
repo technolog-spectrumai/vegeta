@@ -5,9 +5,9 @@ numpy only, SI units, organised by physics.
 
 | Module | Parts | Status |
 |---|---|---|
-| `og.units` | constants (g, ISA sea level, air), unit conversions | O0 |
-| `og.frames` | quaternions, rotations, Euler angles, frame conventions | O0 |
-| `og.mass` | mass items and shapes, budgets, CG and inertia, placing an item for a target CG | O1 |
+| `og.units` | constants (g, ISA sea level, air), unit conversions | done |
+| `og.frames` | quaternions, rotations, Euler angles, frame conventions | done |
+| `og.mass` | mass items and shapes (rod, plate, shell; box, sphere, cylinder, ellipsoid as MuJoCo), budgets, CG and inertia, placing an item for a target CG | done (O1) |
 | `og.gears`, `og.soil`, `og.tracks`, `og.cutting`, `og.motors` | moved from Vegeta's designs/ and Chiron | O2 |
 | `og.batteries`, `og.atmosphere`, `og.wind`, `og.propulsion`, `og.rotors`, `og.aero` | consolidated from Vegeta's machines | O3 |
 
