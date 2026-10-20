@@ -32,6 +32,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
+from ogma import mass as og_mass
 from ogma import motors as og_motors
 import pandas as pd
 
@@ -304,12 +305,10 @@ def mass_table(battery_key: str = DEFAULT_PACK, *, p=None, cad=None, cg_frac_mac
     if battery_x is None:
         target = L["x_mac_le"] + cg_frac_mac * L["mac"]
         m_rest, mx_rest = df["mass [g]"].sum(), (df["mass [g]"] * df["x [mm]"]).sum()
-        battery_x = (target * (m_rest + b.mass_g) - mx_rest) / b.mass_g
-        if battery_x < lo or battery_x > hi:
-            edge = lo if battery_x < lo else hi
-            cg = ((mx_rest + b.mass_g * edge) / (m_rest + b.mass_g) - L["x_mac_le"]) / L["mac"]
-            note = f"battery at the bay's {'front' if edge == lo else 'rear'} ({edge:.0f} mm): the CG is {cg:.1%} MAC instead of {cg_frac_mac:.0%}"
-            battery_x = edge
+        battery_x, clipped = og_mass.place_mass_for_cg(m_rest, mx_rest, b.mass_g, target, (lo, hi))
+        if clipped:
+            cg = (og_mass.cg_with(m_rest, mx_rest, b.mass_g, battery_x) - L["x_mac_le"]) / L["mac"]
+            note = f"battery at the bay's {'front' if battery_x == lo else 'rear'} ({battery_x:.0f} mm): the CG is {cg:.1%} MAC instead of {cg_frac_mac:.0%}"
     df.loc[f"battery {b.name}"] = {"group": "battery/retention", "mass [g]": b.mass_g, "x [mm]": battery_x, "y [mm]": 0.0, "z [mm]": z_b,
                                    "basis": f"calculated: {b.series * b.parallel} cells x {b.cell.mass_g:g} g + {b.pack_overhead:.0%} packing"}
     df.attrs.update(variant=variant, battery=b.key, battery_item=f"battery {b.name}", ballast_note=note, battery_x_range=(lo, hi), cg_target_frac=cg_frac_mac)

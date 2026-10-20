@@ -29,6 +29,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
+from ogma import mass as og_mass
 import pandas as pd
 
 import nisus
@@ -345,13 +346,11 @@ def mass_table(variant: str, battery_key: str = "gens-ace-3s-2200", *, p=None, c
     if battery_x is None:
         target = L["x_mac_le"] + cg_frac_mac * L["mac"]
         m_rest, mx_rest = df["mass [g]"].sum(), (df["mass [g]"] * df["x [mm]"]).sum()
-        battery_x = (target * (m_rest + b.mass_g) - mx_rest) / b.mass_g
-        if battery_x < lo:
-            note = f"battery at the bay's front ({lo:.0f} mm): the CG is {((mx_rest + b.mass_g * lo) / (m_rest + b.mass_g) - L['x_mac_le']) / L['mac']:.1%} MAC, aft of the target — add nose ballast or move the tray"
-            battery_x = lo
-        elif battery_x > hi:
-            note = f"battery at the bay's rear ({hi:.0f} mm): the CG is {((mx_rest + b.mass_g * hi) / (m_rest + b.mass_g) - L['x_mac_le']) / L['mac']:.1%} MAC, ahead of the target"
-            battery_x = hi
+        battery_x, clipped = og_mass.place_mass_for_cg(m_rest, mx_rest, b.mass_g, target, (lo, hi))
+        if clipped:
+            cg = (og_mass.cg_with(m_rest, mx_rest, b.mass_g, battery_x) - L["x_mac_le"]) / L["mac"]
+            note = (f"battery at the bay's front ({lo:.0f} mm): the CG is {cg:.1%} MAC, aft of the target — add nose ballast or move the tray"
+                    if battery_x == lo else f"battery at the bay's rear ({hi:.0f} mm): the CG is {cg:.1%} MAC, ahead of the target")
     df.loc[f"battery {b.name}"] = {"group": "battery/retention", "mass [g]": b.mass_g, "x [mm]": battery_x, "y [mm]": -22.0 if variant == "Zero" else 0.0, "z [mm]": z_b,
                                    "basis": f"sourced: {b.mass_g:g} g ({SNIPPET})"}
     df.attrs.update(variant=variant, battery=b.key, battery_item=f"battery {b.name}", jetson=jetson if variant == "Zero" else None, ballast_note=note,

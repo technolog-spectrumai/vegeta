@@ -48,19 +48,7 @@ def to_body(x_mm, y_mm, z_mm) -> tuple:
     return (-x_mm / 1000.0, -y_mm / 1000.0, z_mm / 1000.0)
 
 
-def quat_to_R(q) -> np.ndarray:
-    w, x, y, z = q
-    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
-                     [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
-                     [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]])
-
-
-def euler_from_R(R) -> tuple:
-    """(roll right-wing-down, pitch nose-up, heading from +x towards +y) [rad] of a Chiron body frame (x fwd, y left, z up)."""
-    pitch = math.asin(max(-1.0, min(1.0, R[2, 0])))
-    roll = math.atan2(R[2, 1], R[2, 2])
-    yaw = math.atan2(R[1, 0], R[0, 0])
-    return roll, pitch, yaw
+from ogma.frames import euler_from_R, quat_to_R  # noqa: E402,F401  rotations: Ogma
 
 
 # ================================================================================================= the robot

@@ -23,6 +23,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
+from ogma import mass as og_mass
 
 import kestrel
 
@@ -145,10 +146,7 @@ def mass_table(p=None, *, battery_x: float | None = None, x_cg_target: float | N
         target = L["x_le"] + X_CG_TARGET_FRAC * L["chord"] if x_cg_target is None else x_cg_target
         m = sum(i["mass_kg"] for i in items)
         mx = sum(i["mass_kg"] * i["x"] for i in items)
-        battery_x = (target * (m + mb) - mx) / mb
-        if not lo <= battery_x <= hi:
-            clipped = True
-            battery_x = float(np.clip(battery_x, lo, hi))
+        battery_x, clipped = og_mass.place_mass_for_cg(m, mx, mb, target, (lo, hi))
     z_batt = 0.5 * (kestrel.Kestrel4Q.bays(p)["battery"][4] + kestrel.Kestrel4Q.bays(p)["battery"][5]) / 1000
     items.append({"item": "battery", "mass_kg": mb, "x": battery_x, "y": 0.0, "z": z_batt, "group": "propulsion", "rod": None,
                   "clipped": clipped})

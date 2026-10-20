@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+from ogma import mass as og_mass
 
 import merlin_flight as mf
 import peregrine as pg
@@ -217,7 +218,7 @@ def mass_table(p, *, fold_deg=0.0, fold_servo=None, printed_lug_g=4.0, battery_x
         x_cg_target = a0["x_np"] - 0.10 * a0["c_ref"]
         m_rest = df["mass [kg]"].sum()
         mx_rest = (df["mass [kg]"] * df["x [m]"]).sum()
-        battery_x = (x_cg_target * (m_rest + bat[1] / 1000) - mx_rest) / (bat[1] / 1000)
+        battery_x = og_mass.place_mass_for_cg(m_rest, mx_rest, bat[1] / 1000, x_cg_target)[0]
     df.loc[bat[0]] = [bat[1] / 1000, battery_x, bat[2]]
     return df
 

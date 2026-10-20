@@ -4,7 +4,7 @@ Vegeta is the R&D notebook set: fast and dirty, and it stays that way (the bless
 Rules: the tools stay independent packages; the stable physics of standard parts comes from Ogma (`vendor/ogma`,
 `import ogma as og`); Piccolo never imports Vegeta, and a machine graduates there once its design is frozen.
 Check quickly with `./test.sh --smoke` and the mocked tests (`VEGETA_DEBUG=1`, `-p vegeta.mock.pytest_plugin`);
-the full suites are in `user_tests.sh`. Earlier stages (1–13, 5b–5t, R, S) and their open items: [`old_todo.md`](old_todo.md).
+the full suites are in `user_tests.sh`. Anything the refactor finds missing in Ogma is added to Ogma on the way. Earlier stages (1–13, 5b–5t, R, S) and their open items: [`old_todo.md`](old_todo.md).
 
 Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
@@ -30,8 +30,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V3.5 `og.propulsion`: `nisus_systems.PropulsionMap`, `nisus_plus_systems.NisusPlusDrive` (`ElectricDrive`), `merlin_flight.Unit`, `kestrel_systems.DriveTable`
 - [x] V3.6 `og.aero`: the Nisus and Nisus+ aero hooks (one stability model, crow optional; air angles and wrench), `kestrel_flight` `Polar`/`viterna_cd90`/`_cf`, `merlin_flight.Airframe`, `peregrine_flight.vlm`, the turbulent Cf copies (aguya, falco, merlin, nisus, peregrine, frame_study, air_propeller, merlin_flight)
 - [x] V3.7 `og.motors`: `falco_systems._static_point` and the frame study's static loop (`operating_point`), the Nisus+/Falco resistance fits, the Onager Atlas tilt, Pekari roller and Perseus arm servos (`lever`)
-- [ ] V3.8 The `quat_to_R` / `euler_from_R` copies (`nisus_robot`, `drongo_controller`) → `og.frames`
-- [ ] V3.9 The 7 battery-for-CG solves → `og.mass.place_for_cg`
+- [x] V3.8 The `quat_to_R` / `euler_from_R` copies (`nisus_robot`, `drongo_controller`) → `og.frames` (the parked `exp/mini_races.py` keeps its own)
+- [x] V3.9 The battery-for-CG solves of `kestrel_systems`, `kestrel_tandem`, `nisus_systems`, `nisus_plus_systems` (and so Falco), `peregrine_flight` → `og.mass.place_mass_for_cg` / `cg_with` (added to Ogma for tables that keep their own sums; tables identical before and after); `onager_robot`, `robot_dog_robot` (robotics, they graduate later) and the parked `exp/kestrel_xwing.py` keep theirs
 - [ ] V3.10 Velutina's wind → `og.wind`
 - [ ] V3.11 `G` / `RHO` unified on `og.units` (9.81 → 9.80665, 1.2 → 1.225): each golden that moves in its own commit, the reason written down
 - [ ] V3.12 Falco's `fuselage:` rows get their shape inertia (a reported number change)

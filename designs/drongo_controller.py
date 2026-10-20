@@ -43,11 +43,7 @@ from onager_controller import Phase, smooth
 __all__ = ["Ref", "Profile", "Flight", "Mission", "Plan", "delivery", "Phase", "smooth", "quat_to_R"]
 
 
-def quat_to_R(q) -> np.ndarray:
-    w, x, y, z = q
-    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
-                     [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
-                     [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]])
+from ogma.frames import quat_to_R  # noqa: E402,F401  rotations: Ogma
 
 
 @dataclass
