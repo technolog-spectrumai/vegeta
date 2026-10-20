@@ -155,35 +155,7 @@ def inertia_check(lab, table) -> dict:
 
 
 # ================================================================================================= wind
-@dataclass
-class Wind:
-    """The air's velocity [m/s, world]: ``steady`` (vx, vy, vz) plus turbulence — an Ornstein–Uhlenbeck process per
-    axis with standard deviation ``sigma`` (horizontal; half of it vertical) and time constant ``tau`` (a 200 m
-    length scale at cruise speed: an assumption standing in for a Dryden spectrum) — plus an optional discrete 1−cos
-    gust (``gust``: amplitude [m/s], start [s], duration [s], direction unit vector). Seeded: a trial repeats exactly."""
-    steady: tuple = (0.0, 0.0, 0.0)
-    sigma: float = 0.0
-    tau: float = 12.5
-    gust: tuple | None = None
-    seed: int = 0
-
-    def reset(self):
-        self.rng = np.random.default_rng(self.seed)
-        self.turb = np.zeros(3)
-
-    def step(self, dt):
-        if self.sigma > 0:
-            s = np.array([self.sigma, self.sigma, 0.5 * self.sigma])
-            a = math.exp(-dt / self.tau)
-            self.turb = a * self.turb + math.sqrt(1 - a * a) * s * self.rng.standard_normal(3)
-
-    def at(self, t) -> np.ndarray:
-        w = np.asarray(self.steady, float) + self.turb
-        if self.gust is not None:
-            amp, t0, dur, direction = self.gust
-            if t0 <= t <= t0 + dur:
-                w = w + amp * 0.5 * (1 - math.cos(2 * math.pi * (t - t0) / dur)) * np.asarray(direction, float)
-        return w
+from ogma.wind import Wind  # noqa: E402  steady + OU turbulence + 1−cos gust (MountainWind builds on it): Ogma
 
 
 # ================================================================================================= actuators
