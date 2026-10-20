@@ -4,17 +4,21 @@
 #   2. (default) a short working run through every tool: CAD -> FEA -> slicing -> CFD mesh (-> core)
 # Exit code 0 when everything needed works; tools that are not installed are reported as MISSING.
 #
-# Usage: ./test.sh [--quick] [--venv DIR] [--python EXE]
+# Usage: ./test.sh [--quick | --smoke] [--venv DIR] [--python EXE]
 #   --quick        component checks only (a few seconds)
+#   --smoke        the smoke regression suite (tests/smoke + tests/smoke/existing.txt), timed; under 30 s.
+#                  Run it after every significant change and before each commit (docs/testing.md).
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="${VEGETA_VENV:-$ROOT/.venv}"
 PY=""
 QUICK=0
+SMOKE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --quick) QUICK=1; shift ;;
+    --smoke) SMOKE=1; shift ;;
     --venv) VENV="$2"; shift 2 ;;
     --python) PY="$2"; shift 2 ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
@@ -27,6 +31,17 @@ if [ -z "$PY" ]; then
 fi
 BIN="$(dirname "$PY")"
 status=0
+
+if [ "$SMOKE" = 1 ]; then
+  cd "$ROOT"
+  mapfile -t EXISTING < <(grep -v '^\s*\(#\|$\)' tests/smoke/existing.txt)
+  XVFB=()       # off-screen VTK renders need a display; a headless machine gets a virtual one if it has xvfb-run
+  if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then XVFB=(xvfb-run -a); fi
+  TIMEFORMAT='vegeta smoke: %R s'
+  time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
+    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke "${EXISTING[@]}"
+  exit
+fi
 
 row() { printf '  %-8s %-13s %s\n' "$1" "$2" "$3"; }
 check() {  # check <label> <command...>
@@ -66,6 +81,7 @@ check core        "$PY" -c "from vegeta import core; print('vegeta.core', core._
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
 optional mimesis  "$PY" -c "import mimesis; print('mimesis', mimesis.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
+optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(design packages for Piccolo/Nomios/Ketos: vegeta.dedalus.export_yax)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
 import tempfile
 from vegeta.fidia import execute

@@ -1,0 +1,34 @@
+# Existing fast tests that run in ./test.sh --smoke next to tests/smoke (paths from the repository root; pytest
+# node ids work too). Slow and tool-dependent ones (CalculiX, OpenFOAM, PrusaSlicer, API keys) skip or stay out —
+# they run in scripts/test_all.sh and user_tests.sh.
+vegeta-cli/tests/cli
+vegeta-cli/tests/dedalus
+vegeta-cli/tests/talos
+vegeta-cli/tests/mellonia
+vegeta-cli/tests/chronos
+vegeta-cli/tests/atropos
+vegeta-cli/tests/zephyr
+vegeta-cli/tests/cache
+vegeta-cli/tests/mock
+vegeta-cli/tests/aeromant/test_cli.py
+vegeta-cli/tests/aeromant/test_compressible.py
+vegeta-cli/tests/aeromant/test_independence.py
+vegeta-cli/tests/aeromant/test_results.py
+vegeta-cli/tests/aeromant/test_rotor.py
+vegeta-cli/tests/aeromant/test_rotor_disks.py
+vegeta-cli/tests/aeromant/test_suction.py
+vegeta-cli/tests/aeromant/test_stl_templates.py
+vegeta-cli/tests/boreas/test_bemt.py
+vegeta-cli/tests/boreas/test_fan_noise.py
+vegeta-cli/tests/boreas/test_independence.py
+vegeta-cli/tests/boreas/test_microjet.py
+vegeta-cli/tests/boreas/test_wake.py
+vegeta-core/tests/test_workspace_revisions.py
+vegeta-ai/tests/test_cli.py
+vegeta-ai/tests/test_independence.py
+vegeta-ai/tests/test_provider.py
+vegeta-fidia/tests/test_agent.py
+vegeta-fidia/tests/test_checks.py
+vegeta-fidia/tests/test_contract.py
+vegeta-fidia/tests/test_export.py
+vegeta-fidia/tests/test_independence.py
