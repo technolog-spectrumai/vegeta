@@ -134,5 +134,5 @@ Decision: Ogma gains *strategies* for MuJoCo (O5), then CAD (O6), then Gazebo (O
 - **Vegeta application (after O6, user decision 2026-10-21):** Vegeta vendors Ogma (`vendor/ogma`, squashed
   subtree via `scripts/update_ogma.sh`; already in place since O0) and is reworked to stand on it: designs take
   parts, mass budgets, propulsion and aero from `og.*`, CAD from the O6 strategy, Yax export from Ogma.
-- **O7 Gazebo:** SDF inertials/links/joints, `MulticopterMotorModel` constants from a propulsion map, `DiffDrive`
+- **O7 Gazebo (deferred to Later, user decision 2026-10-21):** SDF inertials/links/joints, `MulticopterMotorModel` constants from a propulsion map, `DiffDrive`
   from a wheel pair — replacing the hand-copied values in Piccolo's drako/iguana SDF.

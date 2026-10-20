@@ -45,11 +45,9 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 ## Vegeta application
 - [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
 
-## O7 — Gazebo strategy
-- [ ] `og.gazebo` (SDF, lazy extra)
-
 ## Later — the other graduations
 - [ ] Drongo
 - [ ] Nisus / Nisus+ / Falco (+ `vegeta.mission` → `onboard`)
 - [ ] Onager series, Pekari, Perseus
 - [ ] robot dog, Myropods (Chiron leaves Vegeta)
+- [ ] O7 — Gazebo strategy: `og.gazebo` (SDF, lazy extra)
