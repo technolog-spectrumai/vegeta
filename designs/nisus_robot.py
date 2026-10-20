@@ -34,6 +34,7 @@ from vegeta.chiron import FootSpec, Geom, Link, PointMass, Robot
 import nisus
 import nisus_flight as nf
 import nisus_systems as ns
+from ogma import aero as og_aero
 
 G = 9.81
 RHO = 1.225
@@ -246,32 +247,7 @@ class Aero:
 
     # ---- the aerodynamic model
     def coefficients(self, alpha, beta, p_, q_, r_, delta, V):
-        c = self.c
-        da, de, dr = delta
-        ph, qh, rh = p_ * self.b / (2 * V), q_ * self.cbar / (2 * V), r_ * self.b / (2 * V)
-        CL_lin = c["CL0"] + c["CLa"] * alpha + c["CLq"] * qh + c["CLde"] * de
-        CD_lin = c["CD0"] + c["k"] * (c["CL0"] + c["CLa"] * alpha) ** 2 + c["CD_de"] * (de * de + dr * dr + 0.5 * da * da)
-        Cm_lin = c["Cm0"] + c["Cma"] * alpha + c["Cmq"] * qh + c["Cmde"] * de
-        a_s = math.radians(c["alpha_stall_deg"])
-        stalled = False
-        if self.post_stall:
-            # a smooth blend to a flat plate beyond the stall angle (assumption: CN = 2 sin α, a nose-down Cm of -0.15)
-            s = 1 / (1 + math.exp(-(abs(alpha) - a_s) / math.radians(1.5)))
-            stalled = s > 0.5
-            CN = 2.0 * math.sin(alpha) * (1 if alpha >= 0 else 1)
-            CL_fp = CN * math.cos(alpha) * 0.9 + c["CLde"] * de * 0.5
-            CD_fp = c["CD0"] + abs(CN * math.sin(alpha)) + 0.1
-            Cm_fp = -0.15 * math.copysign(1.0, alpha) + c["Cmde"] * de * 0.5 + c["Cmq"] * qh
-            CL = (1 - s) * CL_lin + s * CL_fp
-            CD = (1 - s) * CD_lin + s * CD_fp
-            Cm = (1 - s) * Cm_lin + s * Cm_fp
-        else:
-            CL, CD, Cm = CL_lin, CD_lin, Cm_lin
-        CLn = max(min(CL, 1.5), -1.0)                                  # the lift-dependent lateral terms follow the actual lift
-        CY = c["Cyb"] * beta + c["Cyp"] * ph + c["Cyr"] * rh + c["Cydr"] * dr
-        Cl = c["Clb"] * beta + c["Clp"] * ph + (CLn / 4 + (c["Clr"] - 0.1)) * rh + c["Clda"] * da + c["Cldr"] * dr
-        Cn = c["Cnb"] * beta + (-CLn / 8) * ph + c["Cnr"] * rh + (-0.2 * CLn * c["Clda"]) * da + c["Cndr"] * dr
-        return CL, CD, CY, Cl, Cm, Cn, stalled
+        return og_aero.stability_coefficients(self.c, alpha, beta, p_, q_, r_, delta, V, post_stall=self.post_stall)
 
     def __call__(self, lab):
         d = lab.data
@@ -288,25 +264,17 @@ class Aero:
         w_b = d.qvel[self.qv + 3:self.qv + 6].copy()                  # angular velocity, body frame (x fwd, y left, z up)
         wind = self.wind.at(t)
         v_air_b = R.T @ (v_w - wind)
-        u, v_right, w_down = v_air_b[0], -v_air_b[1], -v_air_b[2]      # aero body axes
-        V = float(np.linalg.norm(v_air_b))
+        V, alpha, beta, uvw = og_aero.air_angles(v_air_b)                # V, α, β and the aero body axes (u, v right, w down)
+        u = uvw[0]
         delta, thr = self.act.step(self.command[:3], self.command[3], dt)
         F_w = np.zeros(3); M_w = np.zeros(3)
         stalled = False
         CL = CD = 0.0
-        alpha = beta = 0.0
         p_, q_, r_ = w_b[0], -w_b[1], -w_b[2]
         if V > 1.0:
-            alpha = math.atan2(w_down, u)
-            beta = math.asin(max(-1.0, min(1.0, v_right / V)))
-            CL, CD, CY, Cl, Cm, Cn, stalled = self.coefficients(alpha, beta, p_, q_, r_, delta, V)
-            qS = 0.5 * self.rho * V * V * self.S
-            lift_dir = np.array([math.sin(alpha), 0.0, -math.cos(alpha)])          # aero body axes, perpendicular to the wind in the symmetry plane
-            drag_dir = -np.array([u, v_right, w_down]) / V
-            F_a = qS * (CL * lift_dir + CD * drag_dir + CY * np.array([0.0, 1.0, 0.0]))
-            M_a = qS * np.array([Cl * self.b, Cm * self.cbar, Cn * self.b])
-            F_b = np.array([F_a[0], -F_a[1], -F_a[2]])                            # aero → Chiron body
-            M_b = np.array([M_a[0], -M_a[1], -M_a[2]])
+            coeffs = self.coefficients(alpha, beta, p_, q_, r_, delta, V)
+            CL, CD, stalled = coeffs[0], coeffs[1], coeffs[6]
+            F_b, M_b = og_aero.aero_wrench(coeffs, V, alpha, uvw, self.rho, self.S, self.b, self.cbar)
             F_w, M_w = R @ F_b, R @ M_b
         # thrust along the tilted motor axis at the motor's position
         prop = self.pm.at(max(u, 0.0), thr) if thr > 1e-3 else {"thrust": 0.0, "electrical": 0.0, "rpm": 0.0}

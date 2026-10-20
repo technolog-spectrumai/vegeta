@@ -36,6 +36,8 @@ import math
 
 import cadquery as cq
 import numpy as np
+
+from ogma.aero import cf_turbulent
 from vegeta.dedalus import Design, Parameter
 
 from fixed_wing import FixedWing, naca4
@@ -700,8 +702,7 @@ def drag_buildup(p=None, speed: float = 16.0, nu: float = 1.5e-5, design=None) -
     a = wetted_areas(p, design)
 
     def cf(length):
-        re = max(speed * length / nu, 1e4)
-        return 0.455 / math.log10(re) ** 2.58
+        return cf_turbulent(speed * length / nu, re_min=1e4)
 
     t, tt = a["thickness"], a["tail_t_c"]
     f_pod = a["pod_length"] / a["pod_diameter"]

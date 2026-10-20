@@ -39,6 +39,7 @@ import nisus_plus
 import nisus_plus_systems as fs
 import nisus_robot as nr
 from nisus_robot import to_body, quat_to_R, euler_from_R
+from ogma import aero as og_aero
 
 G = 9.81
 BODY = "nisus_plus"
@@ -293,30 +294,7 @@ class NisusPlusAero(nr.Aero):
         return a["rho"], a["sigma"]
 
     def coefficients(self, alpha, beta, p_, q_, r_, delta, V, crow=0.0):
-        c = self.c
-        da, de, dr = delta
-        ph, qh, rh = p_ * self.b / (2 * V), q_ * self.cbar / (2 * V), r_ * self.b / (2 * V)
-        CL_lin = c["CL0"] + c["CLa"] * alpha + c["CLq"] * qh + c["CLde"] * de + crow * c["dCL_crow"]
-        k = c["k"] + crow * (c["k_crow"] - c["k"])
-        CD_lin = c["CD0"] + crow * c["dCD_crow"] + k * (c["CL0"] + c["CLa"] * alpha + crow * c["dCL_crow"]) ** 2 + c["CD_de"] * (de * de + dr * dr + 0.5 * da * da)
-        Cm_lin = c["Cm0"] + c["Cma"] * alpha + c["Cmq"] * qh + c["Cmde"] * de + crow * c["dCm_crow"]
-        a_s = math.radians(c["alpha_stall_deg"]) + crow * c["dCLmax_crow"] / c["CLa"]
-        stalled = False
-        if self.post_stall:
-            s = 1 / (1 + math.exp(-(abs(alpha) - a_s) / math.radians(1.5)))
-            stalled = s > 0.5
-            CN = 2.0 * math.sin(alpha)
-            CL_fp = CN * math.cos(alpha) * 0.9 + c["CLde"] * de * 0.5
-            CD_fp = c["CD0"] + crow * c["dCD_crow"] + abs(CN * math.sin(alpha)) + 0.1
-            Cm_fp = -0.15 * math.copysign(1.0, alpha) + c["Cmde"] * de * 0.5 + c["Cmq"] * qh
-            CL, CD, Cm = (1 - s) * CL_lin + s * CL_fp, (1 - s) * CD_lin + s * CD_fp, (1 - s) * Cm_lin + s * Cm_fp
-        else:
-            CL, CD, Cm = CL_lin, CD_lin, Cm_lin
-        CLn = max(min(CL, 1.5), -1.0)
-        CY = c["Cyb"] * beta + c["Cyp"] * ph + c["Cyr"] * rh + c["Cydr"] * dr
-        Cl = c["Clb"] * beta + c["Clp"] * ph + (CLn / 4 + (c["Clr"] - 0.1)) * rh + c["Clda"] * da + c["Cldr"] * dr
-        Cn = c["Cnb"] * beta + (-CLn / 8) * ph + c["Cnr"] * rh + (-0.2 * CLn * c["Clda"]) * da + c["Cndr"] * dr
-        return CL, CD, CY, Cl, Cm, Cn, stalled
+        return og_aero.stability_coefficients(self.c, alpha, beta, p_, q_, r_, delta, V, post_stall=self.post_stall, crow=crow)
 
     def _propulsor(self, u, thr, brake, rho):
         i_chg = self.pack.charge_limit_a(self.pack_T_C, self.soc)
@@ -343,25 +321,20 @@ class NisusPlusAero(nr.Aero):
         w_b = d.qvel[self.qv + 3:self.qv + 6].copy()
         wind = self.wind.at(t, pos)
         v_air_b = R.T @ (v_w - wind)
-        u, v_right, w_down = v_air_b[0], -v_air_b[1], -v_air_b[2]
-        V = float(np.linalg.norm(v_air_b))
+        V, alpha, beta, uvw = og_aero.air_angles(v_air_b)
+        u = uvw[0]
         cmd = self.command
         delta, thr = self.act.step(cmd[:3], cmd[3], dt)
         crow, brake = self.act.step_extra(cmd[4], cmd[5], dt)
         F_w = np.zeros(3); M_w = np.zeros(3)
         stalled = False
-        CL = CD = alpha = beta = 0.0
+        CL = CD = 0.0
         p_, q_, r_ = w_b[0], -w_b[1], -w_b[2]
         if V > 1.0:
-            alpha = math.atan2(w_down, u)
-            beta = math.asin(max(-1.0, min(1.0, v_right / V)))
-            CL, CD, CY, Cl, Cm, Cn, stalled = self.coefficients(alpha, beta, p_, q_, r_, delta, V, crow)
-            qS = 0.5 * rho * V * V * self.S
-            lift_dir = np.array([math.sin(alpha), 0.0, -math.cos(alpha)])
-            drag_dir = -np.array([u, v_right, w_down]) / V
-            F_a = qS * (CL * lift_dir + CD * drag_dir + CY * np.array([0.0, 1.0, 0.0]))
-            M_a = qS * np.array([Cl * self.b, Cm * self.cbar, Cn * self.b])
-            F_w, M_w = R @ np.array([F_a[0], -F_a[1], -F_a[2]]), R @ np.array([M_a[0], -M_a[1], -M_a[2]])
+            coeffs = self.coefficients(alpha, beta, p_, q_, r_, delta, V, crow)
+            CL, CD, stalled = coeffs[0], coeffs[1], coeffs[6]
+            F_b, M_b = og_aero.aero_wrench(coeffs, V, alpha, uvw, rho, self.S, self.b, self.cbar)
+            F_w, M_w = R @ F_b, R @ M_b
         if self.hold:
             prop = {"thrust": 0.0, "electrical": 0.0, "rpm": 0.0, "current": 0.0}
         else:

@@ -25,6 +25,8 @@ from pathlib import Path
 
 import cadquery as cq
 import numpy as np
+
+from ogma.aero import cf_turbulent
 from vegeta.dedalus import Design, Parameter
 
 LAYOUTS = ("tractor", "pusher")
@@ -171,7 +173,7 @@ def pod_friction(p, speed: float, nu: float = 1.5e-5):
     seg = np.pi * (r[1:] + r[:-1]) * np.hypot(np.diff(x), np.diff(r))          # frustum side areas
     L, d = p["pod_length"] / 1000.0, p["pod_diameter"] / 1000.0
     re = speed * L / nu
-    cf = 0.455 / math.log10(re) ** 2.58
+    cf = cf_turbulent(re)
     ff = 1 + 1.5 * (d / L) ** 1.5 + 7 * (d / L) ** 3
     return {"cd_area_m2": cf * ff * float(seg.sum()), "cf": cf, "form_factor": ff, "segment_area_m2": seg,
             "segment_x_m": 0.5 * (x[1:] + x[:-1]), "delta_tail_m": 0.37 * L * re ** -0.2}

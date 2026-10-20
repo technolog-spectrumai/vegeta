@@ -44,6 +44,16 @@ Yanus (`vendor/ozaru`); the side labs' books and chapters are declared in `side_
 - Nothing is guessed: supports, loads, materials, CFD values and print settings are explicit.
 - Nothing runs automatically: every analysis is started by the engineer.
 
+### The blessed imperfection rule
+Vegeta is design code: the larva, not the dragonfly. **Go fast and break things.** A design study does not have to
+be perfect, general or polished; it has to answer the design question. Rough models, duplicated helpers and
+half-finished studies are fine here. This is a silver rule, not a golden one: it is subjective and not strict.
+
+The other side of it: once a machine hatches into Piccolo, it is no longer a sketch. Piccolo takes frozen designs and
+holds them to a higher standard. The stable physics of standard parts lives in Ogma (`vendor/ogma`), with tests
+pinned to reference values. The way to check Vegeta quickly is `./test.sh --smoke` plus the mocked tests
+(`VEGETA_DEBUG=1`, `-p vegeta.mock.pytest_plugin`); the slow full suites are in `user_tests.sh`.
+
 ## Status
 Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
 notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded

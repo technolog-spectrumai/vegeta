@@ -217,10 +217,7 @@ def neutral_point(p=None, *, V: float = V_CRUISE, thrust_each: float = 0.6, x_cg
 
 
 # ================================================================================================= drag
-def _cf(Re):
-    """Mixed laminar–turbulent flat-plate friction (Prandtl–Schlichting with the 1700/Re transition term)."""
-    Re = max(Re, 1e4)
-    return max(0.455 / math.log10(Re) ** 2.58 - 1700.0 / Re, 1.328 / math.sqrt(Re))
+from ogma.aero import cf_mixed as _cf  # noqa: E402  mixed laminar–turbulent skin friction: Ogma
 
 
 def drag_buildup(p=None, *, V: float = V_CRUISE, faired: bool = False) -> dict:
@@ -254,42 +251,7 @@ def drag_buildup(p=None, *, V: float = V_CRUISE, faired: bool = False) -> dict:
 
 
 # ================================================================================================= the full-range polar
-@dataclass(frozen=True)
-class Polar:
-    """One lifting surface's coefficients over the whole range of α (radians in, coefficients on its own area):
-    attached flow on the lattice's slope with a parabolic polar, blended through ``alpha_stall`` (width ``width``) into
-    the separated flat plate CL = CD90/2 · sin 2α, CD = cd0 + CD90 sin² α. ``cm`` is about the quarter chord: 0 attached
-    (symmetric section) and −CN (x_cp − 1/4) separated, with x_cp = 1/4 + 1/4 |sin α| (mid-chord at 90°)."""
-    cl_alpha: float
-    cd0: float
-    k: float
-    cl_max: float
-    cd90: float
-    alpha0: float = 0.0
-    width: float = math.radians(1.5)
-    source: str = "model"
-
-    @property
-    def alpha_stall(self) -> float:
-        return self.alpha0 + self.cl_max / self.cl_alpha
-
-    def coefficients(self, alpha):
-        a = np.asarray(alpha, dtype=float)
-        a_w = np.arctan2(np.sin(a), np.cos(a))                        # wrapped to (−π, π]
-        att = self.cl_alpha * np.sin(a_w - self.alpha0) * np.cos(a_w - self.alpha0)     # linear near 0, bounded in reverse flow
-        sig = 1.0 / (1.0 + np.exp(-(np.abs(a_w) - self.alpha_stall) / self.width))
-        cl_s = 0.5 * self.cd90 * np.sin(2 * a_w)
-        cd_s = self.cd0 + self.cd90 * np.sin(a_w) ** 2
-        cl = (1 - sig) * att + sig * cl_s
-        cd = (1 - sig) * (self.cd0 + self.k * att ** 2) + sig * cd_s
-        cn_s = cl_s * np.cos(a_w) + cd_s * np.sin(a_w)
-        cm = -sig * cn_s * (0.25 * np.abs(np.sin(a_w)))
-        return cl, cd, cm
-
-
-def viterna_cd90(AR: float) -> float:
-    """Viterna & Janetzke's CD_max of a finite wing: 1.11 + 0.018 AR (AR ≤ 50)."""
-    return 1.11 + 0.018 * min(AR, 50.0)
+from ogma.aero import Polar, viterna_cd90  # noqa: E402  the full-range polar, Viterna's CD90: Ogma
 
 
 def polar(p=None, a: dict | None = None, d: dict | None = None, *, faired: bool = False) -> Polar:

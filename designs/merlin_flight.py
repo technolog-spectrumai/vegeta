@@ -33,29 +33,7 @@ RHO = 1.225
 
 
 # ------------------------------------------------------------------------------------------------- the airframe
-@dataclass
-class Airframe:
-    name: str
-    mass_kg: float
-    wing_area_m2: float
-    aspect_ratio: float
-    cd0: float
-    oswald: float = 0.8
-    cl_max: float = 1.2
-
-    @property
-    def k(self):
-        return 1.0 / (math.pi * self.aspect_ratio * self.oswald)
-
-    def drag(self, V, rho=RHO, n=1.0):
-        """Drag [N] at airspeed V in flight at load factor n (lift = n W)."""
-        V = np.maximum(np.asarray(V, float), 1e-3)
-        q = 0.5 * rho * V ** 2
-        cl = n * self.mass_kg * G / (q * self.wing_area_m2)
-        return q * self.wing_area_m2 * (self.cd0 + self.k * cl ** 2)
-
-    def stall_speed(self, rho=RHO, n=1.0):
-        return math.sqrt(2 * n * self.mass_kg * G / (rho * self.wing_area_m2 * self.cl_max))
+from ogma.aero import Airframe, cf_turbulent  # noqa: E402  the parabolic polar of a whole aircraft: Ogma
 
 
 # ------------------------------------------------------------------------------------------------- propulsors
@@ -98,7 +76,7 @@ def ducted_fan_unit(name, fan, airfoil, *, mass_kg, max_electrical_w, rpm_max, s
     def point(n, v):
         e = ducted.solve(fan, airfoil, n, v, rho)
         vj = max(e.exit_velocity, v)
-        cf = 0.455 / math.log10(max(vj * scrub_length_m / nu, 1e4)) ** 2.58
+        cf = cf_turbulent(vj * scrub_length_m / nu, re_min=1e4)
         scrub = cf * scrub_area_m2 * 0.5 * rho * (vj ** 2 - v ** 2)
         return e.thrust - ducted.nacelle_drag(fan, v, rho, nu) - scrub, e.power
 

@@ -44,6 +44,8 @@ from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
+
+from ogma.aero import cf_turbulent
 import pandas as pd
 
 import nisus_plus as npl
@@ -346,8 +348,7 @@ def wing_loading(F: list, p=None) -> pd.DataFrame:
 
 # ------------------------------------------------------------------------------------------------------- aerodynamics
 def _cf(length_m, V, nu):
-    re = V * length_m / nu
-    return 0.455 / math.log10(max(re, 1e4)) ** 2.58
+    return cf_turbulent(V * length_m / nu, re_min=1e4)
 
 
 def frame_drag(f: Frame, p=None, h_m: float = 3000.0) -> dict:

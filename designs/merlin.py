@@ -29,6 +29,8 @@ import math
 
 import cadquery as cq
 import numpy as np
+
+from ogma.aero import cf_turbulent
 from vegeta.dedalus import Parameter
 
 import ducted_fan as df
@@ -290,8 +292,7 @@ def drag_buildup(p, speed: float, nu: float = 1.5e-5) -> dict:
     a = wetted_areas(p)
 
     def cf(length):
-        re = max(speed * length / nu, 1e4)
-        return 0.455 / math.log10(re) ** 2.58
+        return cf_turbulent(speed * length / nu, re_min=1e4)
 
     t = a["thickness"]
     f = a["fuselage_length"] / a["fuselage_diameter"]

@@ -31,6 +31,8 @@ import math
 
 import cadquery as cq
 import numpy as np
+
+from ogma.aero import cf_turbulent
 from vegeta.dedalus import Parameter
 
 import nisus
@@ -441,8 +443,7 @@ class Falco(NisusPlus):
         a = self.wetted_areas(p)
 
         def cf(length):
-            re = max(speed * length / nu, 1e4)
-            return 0.455 / math.log10(re) ** 2.58
+            return cf_turbulent(speed * length / nu, re_min=1e4)
 
         t, tt = a["thickness"], a["tail_t_c"]
         f_pod = a["pod_length"] / a["pod_diameter"]
