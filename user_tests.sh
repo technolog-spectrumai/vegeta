@@ -4,6 +4,7 @@
 # Usage: ./user_tests.sh [PART|SECTION ...] [--no-vegeta] [--no-design] [--no-workflow] [--no-notebook] [-v|--verbose] [--python EXE] [-j N]
 #   -v, --verbose   pytest's full output (tracebacks, prints); default: one line per test as it finishes
 #   env               versions, git commit, imports                                         (seconds)
+#   smoke             ./test.sh --smoke: the smoke regression suite (imports, CLIs, boundaries, goldens, Yax export) (~30 s)
 #   unit              chiron + cli + chronos test suites, designs tests          (~2-3 min)
 #   physics           body-joint physics checks with their numbers: restoring torque,
 #                     damping dissipation, c = 0 equivalence, model equivalence           (~1 min)
@@ -69,8 +70,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(mock)
-MOCK_SECTIONS=(env ozaru designs components side-labs exchange cli-mock notebooks-mock)
-declare -A PART=([vegeta]="env ozaru cli-mock" [design]="designs components" [workflow]="side-labs exchange" [notebook]="notebooks-mock")
+MOCK_SECTIONS=(env smoke ozaru designs components side-labs exchange cli-mock notebooks-mock)
+declare -A PART=([vegeta]="env smoke ozaru cli-mock" [design]="designs components" [workflow]="side-labs exchange" [notebook]="notebooks-mock")
 EXP=(); for s in "${SECTIONS[@]}"; do case "$s" in
   mock) for part in vegeta design workflow notebook; do
           case " ${EXCLUDE[*]:-} " in *" $part "*) echo "skipping the $part tests (--no-$part)" ;; *) EXP+=(${PART[$part]}) ;; esac
@@ -189,6 +190,9 @@ for s in "${SECTIONS[@]}"; do
   case " ${MOCK_SECTIONS[*]} " in *" $s "*) mock_env on ;; *) mock_env off ;; esac
   case "$s" in
     env) sec_env ;;
+    smoke)
+      hdr "smoke regression suite (./test.sh --smoke)"
+      timed "$ROOT/test.sh" --smoke --python "$PY" 2>&1 | tail -4 | sed 's/^/  /'; [ "${PIPESTATUS[0]}" -eq 0 ] || status=1 ;;
     ozaru)
       MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimesis, Yanus"
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;

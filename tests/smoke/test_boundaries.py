@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ROBOTICS_IMPORTS = ("mujoco", "vegeta.chiron", "vegeta.mission", "chiron", "onboard", "races", "piccolo")
+HATCHED = ("races", "piccolo", "onboard")              # graduated to Piccolo: forbidden everywhere, moving lists or not
 
 ENGINEERING = ["vegeta-cli/src/vegeta", "vegeta-core/src", "vegeta-ai/src", "vegeta-fidia/src", "components",
                "assemblies", "designs", "side_labs", "scenarios", "examples"]
@@ -43,4 +44,14 @@ def test_engineering_code_imports_no_robotics():
 def test_vegeta_never_imports_piccolo():
     bad = [f"{p.relative_to(ROOT)}" for p in ROOT.rglob("*.py")
            if ".venv" not in p.parts and "vendor" not in p.parts and any(n.split(".")[0] == "piccolo" for n in imports(p))]
+    assert bad == []
+
+
+def test_nothing_imports_what_hatched():
+    bad = []
+    for p in sorted(ROOT.rglob("*.py")):
+        rel = p.relative_to(ROOT).as_posix()
+        if ".venv" in p.parts or "vendor" in p.parts or "__pycache__" in rel:
+            continue
+        bad += [f"{rel}: {n}" for n in imports(p) if n.split(".")[0] in HATCHED]
     assert bad == []

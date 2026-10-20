@@ -20,6 +20,12 @@ independent engineering tools, shipped together as one installable package, **`v
 Dedalus designs. Talos tests structures. Aeromant tests aerodynamics.
 Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes the engineer's work.
 
+**Vegeta is where machines are conceived and designed** — the dragonfly larva in the water. When a machine's design
+is frozen it hatches and learns to fly in **[Piccolo](https://github.com/technolog-spectrumai/piccolo)**, which never
+imports Vegeta: it receives the design as data (Yax packages) and standard-part physics (Ogma). The racing quad
+hatched first (2026-10-20: `races/` and the autopilot tuning are Piccolo's now); the other machines follow one at a
+time. See [ARCHITECTURE.md](ARCHITECTURE.md) and [MOVED.md](MOVED.md).
+
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
 `vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
 output, images, cancellation, usage). What a notebook or a side lab needs on the machine is checked by Ozaru's
@@ -504,17 +510,16 @@ vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeroman
 vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
 vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
 vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
-notebooks/         devices/, parts/, scenarios/, races/, demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
+notebooks/         devices/, parts/, scenarios/, races/ (the Merlin race), demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
 designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
-side_labs/         optional, expensive calculations (CFD, FEA, MuJoCo races) under the run contract; `wf` / ./side_labs.sh
-races/             four MuJoCo race courses for the reference 5-inch quad (courses, rules, mock flyer, analysis, exports)
+side_labs/         optional, expensive calculations (CFD, FEA) under the run contract; `wf` / ./side_labs.sh
 vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimesis mocks, Yanus requirement checks); vendor/OZARU_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
 docs/              philosophy, science (the methods and their limits), result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli
-test.sh            checks the installation (components + a short working run)
+test.sh            checks the installation (components + a short working run); --smoke: the smoke regression suite
 test_openfoam.sh   tests the CFD tool against every OpenFOAM installation found (or given), both flavours
 jupyter.sh         starts JupyterLab from .venv
 scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh

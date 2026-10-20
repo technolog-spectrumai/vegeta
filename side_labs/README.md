@@ -64,14 +64,8 @@ kestrel-x  (X)  Kestrel-X-C — the shallow X-wing with the payload module (vari
 │   └── X2   airframe-stall         8–16°: the panels' CL max at their dihedral
 └── FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)
     └── X3   panel                  the 4 g pull-up with the tip motor's inertia, the first modes
-races  (R)  Races — the reference 5-inch quad round four courses in MuJoCo
-└── Race — the MuJoCo lap and its videos (chase, onboard, overview)
-    ├── R1   hangar
-    ├── R2   industrial
-    ├── R3   farm
-    └── R4   quarry
 ```
-(the races book: `races/README.md`; one chapter per course, `--quality screening|fine`, `--mock` for the point-mass flyer)
+(the races book R graduated to Piccolo with the racing quad: `races/lab/race.py` there; MOVED.md)
 
 A second book reuses the same scripts: `side_labs/kestrel_x/airframe_cfd.py` and `panel_fea.py` call the Kestrel
 scripts' `main(book="kestrel-x")`, which load the design adapter named in `CAMPAIGNS` (`kestrel_xc_campaigns`, the
