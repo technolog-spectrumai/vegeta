@@ -178,7 +178,7 @@ def hangar(length=40.0, width=18.0, height=12.0, floor_gap=4.0, gate_half=0.9) -
              Zone("over the stair opening", (-L / 2 + 3.0, -Wd / 2 + 3.5, 2 * floor_gap + 1.6), (1.0, 1.0, 0.9), "gate", 1.0),
              Zone("stair opening down", (-L / 2 + 3.0, -Wd / 2 + 3.5, floor_gap + 1.6), (1.0, 1.0, 0.9), "gate", 1.0),
              Zone("ground again", (-L / 2 + 3.0, -Wd / 2 + 3.5, 1.8), (1.0, 1.0, 0.9), "gate", 1.0),
-             Zone("to the window", (-L / 2 + 10.0, -Wd / 2 + 3.5, 2.4), (1.5, 1.5, 1.0), "gate", 1.8),
+             Zone("to the window", (-L / 2 + 7.2, -Wd / 2 + 3.5, 2.4), (1.5, 1.5, 1.0), "gate", 1.8),        # square to the window (a diagonal approach clips its pier)
              Zone("window", (-L / 2 + 8.0 - 0.8, -Wd / 2, 2.4), (0.7, 0.6, 0.7), "gate", 0.6),
              Zone("finish", (-L / 2 + 7.2, -Wd / 2 - 8.0, 2.0), (2.0, 2.0, 1.5), "finish", 3.0)]
     zones[0].half = (2.0, 2.0, 0.75)
@@ -186,7 +186,7 @@ def hangar(length=40.0, width=18.0, height=12.0, floor_gap=4.0, gate_half=0.9) -
     return Course("Hangar — three floors", "hangar", "technical", (-L / 2 - 16.0, L / 2 + 6.0, -Wd / 2 - 12.0, Wd / 2 + 6.0), ob, zones, grid,
                   [("red tank by the door", (-L / 2 - 4.0, -8.0, 1.5)), ("yellow gantry", (6.0, 0.0, 3.4))],
                   f"a {L:.0f} × {Wd:.0f} × {H:.0f} m hangar with two mezzanine floors {floor_gap:.0f} m apart: in by the west door, under the gantry, up the stair opening, "
-                  "across the first floor, up through the east hole, under the roof beams, down both stair openings, out by a south window; 18 zones, about 190 m",
+                  "across the first floor, up through the east hole, under the roof beams, down both stair openings, out by a south window; 18 zones, about 165 m",
                   "every floor is reached by the staircase; the windows open at 1.6 m; a downed aircraft on a floor or on a beam is reachable from the mezzanine with a pole",
                   dict(length=length, width=width, height=height, floor_gap=floor_gap, gate_half=gate_half))
 
