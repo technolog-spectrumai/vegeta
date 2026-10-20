@@ -202,3 +202,28 @@ BATTERIES = [
 
 def battery(key: str) -> Battery:
     return next(b for b in BATTERIES if b.key == key)
+
+
+@dataclass(frozen=True)
+class NominalPack:
+    """A pack by its nominal numbers: cells in series × capacity, a usable fraction (Boreas's ``Battery``)."""
+    name: str
+    cells: int
+    capacity_ah: float
+    cell_voltage_nominal: float = 3.7
+    usable_fraction: float = 0.8
+    mass_kg: float = 0.0
+
+    @property
+    def voltage(self) -> float:
+        return self.cells * self.cell_voltage_nominal
+
+    @property
+    def energy_wh(self) -> float:
+        return self.voltage * self.capacity_ah
+
+    @property
+    def usable_wh(self) -> float:
+        return self.energy_wh * self.usable_fraction
+
+

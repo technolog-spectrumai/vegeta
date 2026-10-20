@@ -26,3 +26,10 @@ def test_cold_factor_and_bought_packs():
     assert np.allclose([ob.CELLS["P45B"].capacity_factor(T) for T in (-25, -15, 0, 10, 30)], G["cap_factor"])
     assert [{"key": b.key, "V": b.voltage, "Wh": b.energy_wh, "A": b.max_current_a} for b in ob.BATTERIES] == G["batteries"]
     assert ob.Cell is ob.LiIonCell and ob.Pack is ob.LiIonPack
+
+
+def test_nominal_pack_is_boreas_battery():
+    """Boreas's Battery (moved here): 4S 1.5 Ah at 3.7 V → 14.8 V, 22.2 Wh, 80 % usable."""
+    from ogma.batteries import NominalPack
+    b = NominalPack("4S 1500 mAh", cells=4, capacity_ah=1.5, usable_fraction=0.8, mass_kg=0.180)
+    assert (b.voltage, b.energy_wh, b.usable_wh) == (4 * 3.7, 4 * 3.7 * 1.5, 4 * 3.7 * 1.5 * 0.8)
