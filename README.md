@@ -514,6 +514,7 @@ notebooks/         devices/, parts/, scenarios/, races/ (the Merlin race), demo/
 designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
 side_labs/         optional, expensive calculations (CFD, FEA) under the run contract; `wf` / ./side_labs.sh
 vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimesis mocks, Yanus requirement checks); vendor/OZARU_REVISION
+vendor/ogma/       Ogma, vendored by git subtree (Yax design packages, standard-part physics `og`); vendor/OGMA_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
 docs/              philosophy, science (the methods and their limits), result shape, installation, composition, per-package guides
