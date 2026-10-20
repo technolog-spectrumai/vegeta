@@ -1,7 +1,7 @@
 # Ozaru is not one installable distribution: it holds three, each with its own pyproject.toml —
-#   porunga/  (a generic local cache)   mimesis/  (mocks)   yanus/  (requirement checks)
-# Hosts install them from vendor/ozaru:  pip install --no-deps --no-build-isolation --no-index -e porunga -e mimesis -e yanus
+#   porunga/  (a generic local cache)   mimezia/  (mocks)   yanus/  (requirement checks)
+# Hosts install them from vendor/ozaru:  pip install --no-deps --no-build-isolation --no-index -e porunga -e mimezia -e yanus
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "porunga/tests", "mimesis/tests", "yanus/tests"]
+testpaths = ["tests", "porunga/tests", "mimezia/tests", "yanus/tests"]
 addopts = "--import-mode=importlib"

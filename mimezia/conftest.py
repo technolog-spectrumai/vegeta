@@ -1,4 +1,4 @@
-"""Mimesis's tests run from the source tree without an install."""
+"""Mimezia's tests run from the source tree without an install."""
 import sys
 from pathlib import Path
 

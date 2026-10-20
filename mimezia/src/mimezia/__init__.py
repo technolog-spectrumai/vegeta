@@ -1,9 +1,9 @@
-"""Mimesis — imitation of expensive APIs for end-to-end testing before the long runs.
+"""Mimezia — imitation of expensive APIs for end-to-end testing before the long runs.
 
 A program that calls a slow or heavy API (a finite-element solver, an external tool) declares a **mode**
 (``mock`` | ``off`` | ``real``) and registers **mimics**: stubs that return what the real API returns — the same
 keys, types and shapes — filled with dumb but plausible numbers in milliseconds. Everything around the call stays
-real, so whole pipelines and notebooks run against the stubs. Mimesis keeps the stubs honest:
+real, so whole pipelines and notebooks run against the stubs. Mimezia keeps the stubs honest:
 
 - ``Mode``        the switch (an environment variable overrides the program's default; exported to child processes)
 - ``mimic``/``call``  the registry: a name per real API, the real function or the stub chosen by the mode
