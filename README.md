@@ -45,7 +45,8 @@ Yanus (`vendor/ozaru`); the side labs' books and chapters are declared in `side_
 - Nothing runs automatically: every analysis is started by the engineer.
 
 ### The blessed imperfection rule
-Vegeta is design code: the larva, not the dragonfly. **Go fast and break things.** A design study does not have to
+Vegeta is design code: the larva, not the dragonfly. Now that robotics has moved to Piccolo, Vegeta is the R&D
+notebook set, fast and dirty as it was at the beginning, and it stays that way. **Go fast and break things.** A design study does not have to
 be perfect, general or polished; it has to answer the design question. Rough models, duplicated helpers and
 half-finished studies are fine here. This is a silver rule, not a golden one: it is subjective and not strict.
 
