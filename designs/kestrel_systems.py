@@ -156,19 +156,12 @@ def mass_table(p=None, *, battery_x: float | None = None, x_cg_target: float | N
 
 
 def cg_inertia(table) -> dict:
-    """Mass, CG and the inertia tensor about the CG [kg m²] (point masses; rods along their axis: m l² / 12)."""
-    m = sum(i["mass_kg"] for i in table)
-    r = np.array([[i["x"], i["y"], i["z"]] for i in table])
-    w = np.array([i["mass_kg"] for i in table])
-    cg = (w[:, None] * r).sum(0) / m
-    d = r - cg
-    I = np.zeros((3, 3))
-    for wi, di, it in zip(w, d, table):
-        I += wi * (np.dot(di, di) * np.eye(3) - np.outer(di, di))
-        if it.get("rod"):
-            ax, ln = it["rod"]
-            k = wi * ln ** 2 / 12
-            I += k * (np.eye(3) - np.diag([ax == "x", ax == "y", ax == "z"]).astype(float))
+    """Mass, CG and the inertia tensor about the CG [kg m²] (point masses; rods along their axis: m l² / 12), computed
+    by Ogma (``og.mass``) from the rows."""
+    from ogma import mass as om
+    props = om.Budget([om.Item(i["item"], i["mass_kg"], (i["x"], i["y"], i["z"]), om.Rod(*i["rod"]) if i.get("rod") else None)
+                       for i in table]).properties()
+    m, cg, I = props.mass, props.com, props.inertia
     return {"mass_kg": m, "x_cg": cg[0], "y_cg": cg[1], "z_cg": cg[2], "I": I, "Ixx": I[0, 0], "Iyy": I[1, 1], "Izz": I[2, 2],
             "battery_x": next(i["x"] for i in table if i["item"] == "battery"),
             "battery_clipped": next(i.get("clipped", False) for i in table if i["item"] == "battery")}

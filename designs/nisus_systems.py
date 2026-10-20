@@ -434,29 +434,22 @@ def cg_inertia(table: pd.DataFrame, p=None, *, design=None) -> dict:
     d = nisus._design(design)
     p = nisus.resolve(p, d)
     L = type(d).layout(p)
-    m = table["mass [g]"].to_numpy() / 1000
-    r = table[["x [mm]", "y [mm]", "z [mm]"]].to_numpy() / 1000
-    M = m.sum()
-    cg = (m[:, None] * r).sum(0) / M
-    d = r - cg
-    I = np.zeros((3, 3))
-    for mi, di in zip(m, d):
-        I += mi * (np.dot(di, di) * np.eye(3) - np.outer(di, di))
-    own = np.zeros((3, 3))
+    from ogma import mass as om                                   # the sums: Ogma; the shape rules: this airframe's
     b, c = p["span"] / 1000, L["mac"] / 1000
-    for item, mi in zip(table.index, m):
+
+    def shape(item):
         if item.startswith("wing:"):
-            own += mi * np.diag([b ** 2 / 12, c ** 2 / 12, (b ** 2 + c ** 2) / 12])
-        elif item.startswith("pod:") and "shell" in item:
-            a_, b_, c_ = p["pod_length"] / 2000, p["pod_width"] / 2000, p["pod_height"] / 2000
-            own += mi / 3 * np.diag([b_ ** 2 + c_ ** 2, a_ ** 2 + c_ ** 2, a_ ** 2 + b_ ** 2])    # thin ellipsoidal shell
-        elif item.startswith("booms:"):
-            Lb = p["boom_length"] / 1000
-            own += mi * np.diag([0.0, Lb ** 2 / 12, Lb ** 2 / 12])
-        elif item.startswith("tail:"):
-            s, ct = p["tail_span"] / 1000, p["tail_chord"] / 1000
-            own += mi * np.diag([s ** 2 / 12, ct ** 2 / 12, (s ** 2 + ct ** 2) / 12])
-    I += own
+            return om.Plate(a=c, b=b, axes="xy")
+        if item.startswith("pod:") and "shell" in item:
+            return om.Shell(p["pod_length"] / 2000, p["pod_width"] / 2000, p["pod_height"] / 2000)   # thin ellipsoidal shell
+        if item.startswith("booms:"):
+            return om.Rod("x", p["boom_length"] / 1000)
+        if item.startswith("tail:"):
+            return om.Plate(a=p["tail_chord"] / 1000, b=p["tail_span"] / 1000, axes="xy")
+        return None
+    props = om.Budget([om.Item(item, row["mass [g]"] / 1000, (row["x [mm]"] / 1000, row["y [mm]"] / 1000, row["z [mm]"] / 1000), shape(item))
+                       for item, row in table.iterrows()]).properties()
+    M, cg, I = props.mass, props.com, props.inertia
     return {"mass_kg": float(M), "x_cg_m": float(cg[0]), "y_cg_m": float(cg[1]), "z_cg_m": float(cg[2]),
             "x_cg_frac_mac": float((cg[0] * 1000 - L["x_mac_le"]) / L["mac"]),
             "Ixx": float(I[0, 0]), "Iyy": float(I[1, 1]), "Izz": float(I[2, 2]), "Ixz": float(-I[0, 2]),
