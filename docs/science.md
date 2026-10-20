@@ -242,6 +242,9 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 
   The hangar's first finished lap is a slow, careful setting (safety 0.31, tilt limited to 50°, speed capped at
   9.8 m/s) that none of the earlier grids had tried.
+  A second search of the hangar with another seed (`--seed 1 --fresh`: a new swarm, starting from these settings) found
+  no improvement and converged back to the same point in 107 laps (1.6 min). This checks robustness; it does not prove
+  a global optimum.
 
 ## 10. Mocks and solver guards
 
