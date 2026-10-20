@@ -67,3 +67,18 @@ def test_place_for_cg_is_kestrels_battery_algebra():
     free, c2 = om.place_for_cg(om.Budget(items), batt["mass_kg"], target=0.2, bay=(-10, 10))
     full = om.Budget(items + [om.Item("battery", batt["mass_kg"], (free, 0, 0))]).properties()
     assert not c2 and full.com[0] == pytest.approx(0.2)
+
+
+def test_place_mass_for_cg_is_the_tables_algebra():
+    """Kestrel's and Nisus's lines: x = (target (m + mb) − mx) / mb, clipped to the bay; the CG note's (mx + mb x) / (m + mb)."""
+    g = G["kestrel"]
+    rest = [i for i in g["items"] if i["item"] != "battery"]
+    m = sum(i["mass_kg"] for i in rest)
+    mx = sum(i["mass_kg"] * i["x"] for i in rest)
+    mb = next(i for i in g["items"] if i["item"] == "battery")["mass_kg"]
+    for target in (0.05, 0.12, 0.2):
+        assert om.place_mass_for_cg(m, mx, mb, target) == ((target * (m + mb) - mx) / mb, False)
+        x, clipped = om.place_mass_for_cg(m, mx, mb, target, (0.08, 0.10))
+        free = (target * (m + mb) - mx) / mb
+        assert clipped == (not 0.08 <= free <= 0.10) and x == min(max(free, 0.08), 0.10)
+        assert om.cg_with(m, mx, mb, free) == pytest.approx(target)

@@ -108,6 +108,10 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `servo.py` until it vendors Ogma.
 - `og.__init__` now also lists the planned strategies `mujoco`, `cad`, `gazebo` (they say "planned").
 
+- `og.mass.place_mass_for_cg(mass, moment, kg, target, bay)` and `cg_with` (added along the Vegeta refactor, V3.9):
+  the battery-for-CG algebra for tables that keep their own sums (lists of dicts, DataFrames); `place_for_cg` (on a
+  `Budget`) now calls it. Rule from the user: anything Vegeta's refactor finds missing in Ogma is added on the way.
+
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager
   series/Pekari/Perseus and the robot dog/Myropods are deferred to todo.md's "Later" section; they stay in Vegeta
