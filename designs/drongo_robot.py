@@ -326,10 +326,9 @@ def pad_gap(q, g: dict | None = None) -> float:
 def rotor_layout(p: dict | None = None) -> tuple:
     """Rotor positions (4, 3) [m, frame] — arms at 45°, 135°, 225°, 315° — and spin signs (+1: the propeller's drag
     torque on the frame is +z)."""
+    from ogma import rotors
     g = geometry(p)
-    pos = np.array([[g["R"] * math.cos(math.radians(45 + 90 * k)), g["R"] * math.sin(math.radians(45 + 90 * k)),
-                     g["arm_h"] + 0.020] for k in range(4)])
-    return pos, np.array([1.0, -1.0, 1.0, -1.0])
+    return rotors.x_layout(g["R"], g["arm_h"] + 0.020)
 
 
 def _quat_z(angle: float) -> tuple:
@@ -454,12 +453,11 @@ class Rotors:
         cmd = np.clip(self.command, 0.0, self.prop.max_thrust_N)
         self.thrust += (cmd - self.thrust) * self.alpha
         T = self.thrust
+        from ogma import rotors
         R = d.xmat[self.root].reshape(3, 3)
-        zb = R[:, 2]
-        arms = (d.xpos[self.root] - d.xipos[self.root]) + self.pos @ R.T          # rotor hubs from the frame's COM
-        torque = np.cross(arms, np.outer(T, zb)).sum(axis=0) + zb * float(np.dot(self.spin, T)) * self.prop.torque_per_thrust_m
-        v = d.qvel[self.qv:self.qv + 3]
-        force = zb * T.sum() - 0.5 * self.rho * self.drag_area * float(np.linalg.norm(v)) * v
+        force, torque = rotors.wrench(T, R, self.pos, self.spin, self.prop.torque_per_thrust_m,
+                                      com_offset=d.xipos[self.root] - d.xpos[self.root])          # about the frame's COM
+        force = force + rotors.quadratic_drag(d.qvel[self.qv:self.qv + 3], self.drag_area, self.rho)
         lab.body_force(self.robot.root.name, force, torque)
         P = float(self.prop.electrical_power(T).sum())
         self.energy_J += P * dt

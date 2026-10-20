@@ -191,18 +191,9 @@ def prop_normal_force_slope(V: float, thrust_each: float, p=None, rho: float = R
 
 
 def induced_velocity(thrust, V, alpha_rad, A, rho=RHO, iterations=40):
-    """Glauert's induced velocity at a disk [m/s] in an inflow V at α to its axis (axial component V cos α)."""
-    if thrust <= 0:
-        return 0.0
-    va, vn = V * math.cos(alpha_rad), V * math.sin(alpha_rad)
-    vh = math.sqrt(thrust / (2 * rho * A))
-    vi = vh
-    for _ in range(iterations):
-        new = thrust / (2 * rho * A * math.sqrt(max(va + vi, 0.0) ** 2 + vn ** 2 + 1e-9))
-        vi = 0.5 * vi + 0.5 * new
-    if va < -2 * vh:                                # windmill-brake state: momentum theory fails; keep the hover value
-        vi = vh
-    return vi
+    """Glauert's induced velocity at a disk [m/s] in an inflow V at α to its axis (axial component V cos α): Ogma's."""
+    from ogma import rotors
+    return rotors.induced_velocity(thrust, V, alpha_rad, A, rho, iterations)
 
 
 def neutral_point(p=None, *, V: float = V_CRUISE, thrust_each: float = 0.6, x_cg: float, a: dict | None = None) -> dict:
