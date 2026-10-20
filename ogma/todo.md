@@ -32,11 +32,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [ ] unify `G` / `RHO` (each golden change its own commit)
 
 ## O4 — graduate machines to Piccolo
-- [x] racing quad (Piccolo v2)
-- [ ] Drongo
-- [ ] Nisus / Nisus+ / Falco (+ `vegeta.mission` → `onboard`)
-- [ ] Onager series, Pekari, Perseus
-- [ ] robot dog, Myropods (Chiron leaves Vegeta)
+- [x] racing quad (Piccolo v2) — the only graduation for now
 
 ## O5 — MuJoCo strategy
 - [ ] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra)
@@ -47,3 +43,9 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 
 ## O7 — Gazebo strategy
 - [ ] `og.gazebo` (SDF, lazy extra)
+
+## Later — the other graduations
+- [ ] Drongo
+- [ ] Nisus / Nisus+ / Falco (+ `vegeta.mission` → `onboard`)
+- [ ] Onager series, Pekari, Perseus
+- [ ] robot dog, Myropods (Chiron leaves Vegeta)

@@ -89,6 +89,9 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   could become `og.propulsion.DriveTable`.
 
 ### O4 — graduations
+- Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager
+  series/Pekari/Perseus and the robot dog/Myropods are deferred to todo.md's "Later" section; they stay in Vegeta
+  with Chiron and `vegeta.mission` until then.
 - Racing quad → Piccolo v2: `races/` with 34 commits of history, goldens matched Vegeta's pre-move values with
   Vegeta import-blocked. Races now use `og.rotors` (COM fix, see below).
 
