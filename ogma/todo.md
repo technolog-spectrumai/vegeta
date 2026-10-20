@@ -42,6 +42,9 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 ## O6 — CAD strategy
 - [ ] `og.cad` (CadQuery, lazy extra)
 
+## Vegeta application
+- [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
+
 ## O7 — Gazebo strategy
 - [ ] `og.gazebo` (SDF, lazy extra)
 
