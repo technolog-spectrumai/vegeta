@@ -26,6 +26,8 @@ from .path import Drops, carrot, resync
 from .rules import STUCK, Referee, Rules
 
 G = 9.81
+PILOT_COLUMNS = ["t", "v_ref", "p_err", "tilt_cmd", "tilt", "thrust_cmd", "thrust_max", "saturated", "mode"]
+PILOT_MODES = ["racing", "hover", "missed gate: back", "drop: approach", "drop: align", "drop: descend"]
 DESIGNS = _P(__file__).resolve().parents[1] / "designs"
 
 
@@ -95,7 +97,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     thrust = np.zeros(4)
     alpha = 1.0 - math.exp(-control_dt / prop.spin_up_s)
     n_sub = max(int(round(control_dt / model.opt.timestep)), 1)
-    s, t, hist, events, energy_J, hover_until = 0.0, 0.0, [], [], 0.0, 1.0
+    s, t, hist, pilot, events, energy_J, hover_until = 0.0, 0.0, [], [], [], 0.0, 1.0
     duration = duration or min(1.5 * path.time_estimate() + 30.0, rules.timeout_s + 10.0)
     k = 0
     while data.time < duration and ref.status == "racing":
@@ -105,7 +107,9 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
             data.qpos[qa:qa + 3] = ref.reset_request[0]; data.qpos[qa + 3:qa + 7] = (1, 0, 0, 0); data.qvel[va:va + 6] = 0.0
             hover_until = ref.reset_request[1]; s = path.s[ref.last_checkpoint]; flight.reset_integral(); ref.reset_request = None
             mujoco.mj_forward(model, data); p, v = data.qpos[qa:qa + 3].copy(), np.zeros(3)
+        parked = False
         if data.time < hover_until:
+            drops.mode = None
             r = dc.Ref(p=np.array(course.zones[ref.last_checkpoint].center if ref.resets else start, dtype=float), v=np.zeros(3), a=np.zeros(3), yaw=0.0)
         else:
             s = path.project(p, s)
@@ -119,7 +123,9 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         cmd = flight.thrusts(obs, r, 0.0, control_dt)
         zb = R[:, 2]
         v_axial = max(float(np.dot(v, zb)), 0.0)
-        cmd = np.clip(cmd, 0.0, prop.drive.t_max(v_axial))
+        t_max = prop.drive.t_max(v_axial)
+        cmd_raw = float(np.sum(cmd))
+        cmd = np.clip(cmd, 0.0, t_max)
         thrust += (cmd - thrust) * alpha
         arms = (pos_r - np.array([0.0, 0.0, 0.0])) @ R.T
         applied = thrust * k_thrust
@@ -136,6 +142,10 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         events += ref.update(float(data.time), data.qpos[qa:qa + 3].copy(), contact, data.time > hover_until)
         if k % record_every == 0:                                             # + the attitude and the body rates (races.metrics reads them)
             hist.append([data.time, *data.qpos[qa:qa + 3], *data.qvel[va:va + 3], float(thrust.sum()), P, float(np.linalg.norm(data.qvel[va:va + 3])), *data.qpos[qa + 3:qa + 7], *data.qvel[va + 3:va + 6]])
+            F = flight.last.get("F", np.array([0.0, 0.0, 1.0]))                 # what the autopilot asked for at this step (races.video_panel draws it)
+            mode = 1 if data.time < hover_until else {"approach": 3, "align": 4, "descend": 5}.get(drops.mode, 2 if parked else 0)
+            pilot.append([data.time, float(np.linalg.norm(r.v)), float(np.linalg.norm(p - r.p)), math.degrees(math.atan2(math.hypot(F[0], F[1]), F[2])),
+                          float(flight.last.get("tilt_deg", 0.0)), cmd_raw, 4.0 * float(t_max), float(bool(flight.last.get("saturated")) or cmd_raw > 4.0 * float(t_max) + 1e-9), mode])
         k += 1
     H = np.array(hist).reshape(-1, 17)
     st = ref.stats()
@@ -146,7 +156,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
                "peak power [W]": float(H[:, 8].max()) if len(H) else float("nan"), "mean power [W]": float(H[:, 8].mean()) if len(H) else float("nan"), "course length [m]": course.length(),
                "schedule time [s]": path.time_estimate(), "racing time [s]": float(data.time),
                "controller": {"omega_pos": omega_pos, "omega_att": omega_att, "tilt_max_deg": tilt_max_deg, "lookahead_s": lookahead_s, "safety": safety, "v_cap": v_cap}})
-    return {"stats": st, "history": H, "events": events, "gate times": ref.gate_times, "path": path, "referee": ref, "course": course, "xml": xml}
+    return {"stats": st, "history": H, "pilot": np.array(pilot).reshape(-1, len(PILOT_COLUMNS)), "events": events, "gate times": ref.gate_times, "path": path, "referee": ref, "course": course, "xml": xml}
 
 
 def frame_rows(t, *, fps: float = 30.0, speed: float = 1.0, every: int | None = None, max_frames: int | None = None) -> np.ndarray:
@@ -189,13 +199,67 @@ def _hud(img, lines: list[str]):
     return im
 
 
+CAMERA_NAMES = {"fpv": "FPV (on-board)", "chase": "chase (3rd person)", "overview": "overview", "grandstand": "grandstand", "onboard": "FPV (on-board)"}
+CHASE = {"distance": 2.2, "elevation": -14.0, "tau": 0.6, "min_distance": 0.5, "fovy": 60.0}     # the third-person camera: m behind, ° down, heading smoothing [s]
+
+
+def chase_headings(H, rows, *, tau: float = CHASE["tau"]) -> np.ndarray:
+    """The chase camera's heading [°] at each rendered row: the direction of flight (held while the quad is slow),
+    unwrapped and smoothed with a first-order lag of ``tau`` seconds so the view does not swing with every twitch."""
+    H = np.asarray(H)
+    raw, last = [], 0.0
+    for r in rows:
+        vx, vy = H[r, 4], H[r, 5]
+        if math.hypot(vx, vy) > 0.8:
+            last = math.atan2(vy, vx)
+        raw.append(last)
+    yaw = np.unwrap(np.array(raw))
+    out, y = [], yaw[0] if len(yaw) else 0.0
+    for k, r in enumerate(rows):
+        dt = float(H[r, 0] - H[rows[k - 1], 0]) if k else 0.0
+        y += (yaw[k] - y) * (1.0 - math.exp(-dt / tau)) if dt > 0 else 0.0
+        out.append(math.degrees(y))
+    return np.array(out)
+
+
+def _clear_distance(mujoco, model, data, origin, direction, limit: float, exclude_body: int) -> float:
+    """How far the camera may sit from ``origin`` along ``direction`` before a colliding geom: rays pass through the
+    non-colliding ones (the zones' transparent boxes, the pads)."""
+    p, gone = np.array(origin, dtype=float), 0.0
+    gid = np.zeros(1, dtype=np.int32)
+    for _ in range(8):
+        d = mujoco.mj_ray(model, data, p, direction, None, 1, exclude_body, gid)
+        if d < 0 or gone + d >= limit:
+            return limit
+        if model.geom_contype[gid[0]] or model.geom_conaffinity[gid[0]]:
+            return gone + d
+        gone += d + 1e-3
+        p = p + (d + 1e-3) * direction
+    return limit
+
+
+def _badge(path, height: int):
+    """The logo as an RGBA badge ``height`` pixels tall, rounded corners, slightly transparent."""
+    from PIL import Image, ImageDraw
+    im = Image.open(path).convert("RGBA")
+    im = im.resize((max(1, round(im.width * height / im.height)), height), Image.LANCZOS)
+    mask = Image.new("L", im.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, im.width - 1, im.height - 1], radius=max(2, height // 10), fill=int(255 * 0.88))
+    im.putalpha(mask)
+    return im
+
+
 def render(course, result: dict, out_dir, *, camera: str = "chase", size=(960, 540), every: int | None = 4, max_frames: int | None = 400,
-           fps: float = 30.0, speed: float = 1.0, hud: bool = False, label: str = "") -> list:
-    """Frames of a recorded run from one of the scene's cameras (``overview``, ``grandstand``, ``onboard``, ``chase``):
+           fps: float = 30.0, speed: float = 1.0, hud: bool = False, label: str = "", panel=None, logo=None) -> list:
+    """Frames of a recorded run from a camera: ``fpv`` (the quad's on-board camera, alias ``onboard``), ``chase`` (a
+    third-person camera behind the quad along its smoothed heading, pulled in front of walls: ``chase_headings``,
+    ``CHASE``), or the scene's ``overview`` and ``grandstand``:
     the quad's free joint is replayed along the recorded trajectory with its recorded attitude (``attitude``). Frames
     are every Nth row (``every``) or, with ``every=None``, picked by time (``frame_rows``: ``fps``, ``speed``).
-    ``hud`` writes the course, ``label``, time, speed, altitude, zones and collisions on every frame. Needs an
-    OpenGL context."""
+    ``hud`` writes the course, ``label``, time, speed, altitude, zones and collisions on every frame; ``logo`` (a
+    path) puts that image as a badge in the bottom right corner; ``panel`` (``races.video_panel.SidePanel``) is
+    drawn to the right of the view (the frame is then the view and the panel side by side). Needs an OpenGL
+    context."""
     import mujoco
     from PIL import Image
     out_dir = _P(out_dir)
@@ -206,25 +270,58 @@ def render(course, result: dict, out_dir, *, camera: str = "chase", size=(960, 5
     qa = int(model.jnt_qposadr[jnt])
     model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), int(size[0]))      # the offscreen framebuffer must hold the frame
     model.vis.global_.offheight = max(int(model.vis.global_.offheight), int(size[1]))
+    model.vis.map.znear = 0.02 / model.stat.extent                           # MuJoCo scales the clip planes by the extent: a 2 cm near plane, not 3–10 m
+    model.vis.map.zfar = 4.0 * max(model.stat.extent, 1.0) / model.stat.extent
+    model.vis.global_.fovy = CHASE["fovy"]                                   # the free (chase) camera's field of view
     renderer = mujoco.Renderer(model, size[1], size[0])
+    body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "quad")
     H = result["history"]
     ev = [(float(e[0]), str(e[1])) for e in result.get("events") or []]
     zone_t = [te for te, s in ev if s.startswith("zone")]
     hit_t = [te for te, s in ev if s.startswith("collision")]
+    badge = _badge(logo, max(24, int(size[1] * 0.16))) if logo else None
+    rows = frame_rows(H[:, 0], fps=fps, speed=speed, every=every, max_frames=max_frames)
+    view = "onboard" if camera in ("fpv", "onboard") else camera
+    if camera == "chase":
+        heads = chase_headings(H, rows)
+        cam = mujoco.MjvCamera()
+        cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        cam.elevation = CHASE["elevation"]
     paths = []
-    for i, r in enumerate(frame_rows(H[:, 0], fps=fps, speed=speed, every=every, max_frames=max_frames)):
+    for i, r in enumerate(rows):
         row = H[r]
         data.qpos[qa:qa + 3] = row[1:4]
         data.qpos[qa + 3:qa + 7] = attitude(row)
         mujoco.mj_forward(model, data)
-        renderer.update_scene(data, camera=camera)
+        if camera == "chase":
+            az, el = math.radians(heads[i]), math.radians(CHASE["elevation"])
+            back = -np.array([math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)])
+            room = _clear_distance(mujoco, model, data, row[1:4], back, CHASE["distance"] + 0.3, body)
+            cam.lookat[:] = row[1:4]
+            cam.azimuth = heads[i]
+            cam.distance = max(CHASE["min_distance"], min(CHASE["distance"], room - 0.3))
+            renderer.update_scene(data, camera=cam)
+        else:
+            renderer.update_scene(data, camera=view)
         img = renderer.render()
         im = Image.fromarray(img)
         if hud:
             tt = float(row[0])
-            im = _hud(img, [f"{course.name} | {camera}{' | ' + label if label else ''}",
+            im = _hud(img, [f"{course.name} | {CAMERA_NAMES.get(camera, camera)}{' | ' + label if label else ''}",
                             f"t {tt:5.1f} s   v {row[9]:4.1f} m/s   alt {row[3]:4.1f} m   zones {sum(z <= tt for z in zone_t)}/{len(course.zones) - 1}"
                             f"   collisions {sum(c <= tt for c in hit_t)}"])
+        if badge is not None:
+            m = max(4, size[1] // 60)
+            im = im.convert("RGBA")
+            im.alpha_composite(badge, (im.width - badge.width - m, im.height - badge.height - m))
+            im = im.convert("RGB")
+        if panel is not None:
+            side = Image.fromarray(panel.frame(float(row[0])))
+            w = im.width + side.width
+            both = Image.new("RGB", (w + w % 2, max(im.height, side.height) + max(im.height, side.height) % 2), (16, 20, 24))
+            both.paste(im, (0, 0))
+            both.paste(side, (im.width, 0))
+            im = both
         f = out_dir / f"{course.slug}_{camera}_{i:05d}.png"
         im.save(f)
         paths.append(f)

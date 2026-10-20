@@ -140,3 +140,38 @@ def test_video_frames_are_picked_by_time_and_show_the_recorded_attitude():
     row = np.zeros(17); row[4:6] = (0.0, 3.0); row[10:14] = (0.0, 2.0, 0.0, 0.0)     # banked 180° about x, flying north
     assert sim.attitude(row) == (0.0, 1.0, 0.0, 0.0)
     assert sim.attitude(row[:10]) == pytest.approx((np.cos(np.pi / 4), 0.0, 0.0, np.sin(np.pi / 4)))   # older histories: level, along the velocity
+
+
+def test_autopilot_telemetry_and_side_panel():
+    pytest.importorskip("mujoco")
+    import numpy as np
+    from races import autopilot, sim, video_panel
+    s = autopilot.tuned("hangar")
+    r = sim.run_mujoco(courses.hangar(), control_dt=0.004, duration=3.0, **s)
+    P, H = r["pilot"], r["history"]
+    assert P.shape == (len(H), len(sim.PILOT_COLUMNS)) and (P[:, 1] >= 0).all() and (P[:, 6] > 0).all()
+    assert (P[:, 3] <= s["tilt_max_deg"] + 1e-6).all() and sim.PILOT_MODES[int(P[0, 8])] == "hover"
+    panel = video_panel.SidePanel(courses.hangar(), r, s, (432, 540), label="nominal")
+    assert panel.frame(2.0).shape == (540, 432, 3)
+    panel.close()
+    old = {"history": H[:, :10], "events": r["events"]}                       # a lap recorded before the telemetry: physics only
+    p2 = video_panel.SidePanel(courses.hangar(), old, None, (432, 540))
+    assert p2.frame(1.0).shape == (540, 432, 3)
+    p2.close()
+
+
+def test_drop_guard_reports_its_phases():
+    import numpy as np
+    from races import mock
+    from races.path import Drops
+    c = courses.hangar()
+    path = mock.schedule(c)
+    d = Drops(path)
+    top = min(d.tops)
+    p_top = path.P[top]
+    d.adjust(path.s[top] - 1.0, top, p_top + [1.0, 0, 0], np.zeros(3), (p_top, np.zeros(3), np.zeros(3)))
+    assert d.mode == "approach"
+    d.adjust(path.s[top] + 0.1, top + 1, p_top + [0.9, 0, 0], np.zeros(3), (p_top, np.zeros(3), np.zeros(3)))
+    assert d.mode == "align"
+    d.adjust(path.s[top] + 0.2, top + 1, p_top, np.zeros(3), (p_top - [0, 0, 1.0], np.array([0, 0, -5.0]), np.zeros(3)))
+    assert d.mode == "descend"

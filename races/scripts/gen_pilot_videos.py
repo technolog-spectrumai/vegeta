@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """MuJoCo videos of the tuned autopilot (races/autopilot.json), to validate it by eye: every course flown with its
 tuned settings, rendered from the scene's cameras in real time with the recorded attitude and a HUD (time, speed,
-altitude, zones, collisions). Real MuJoCo, no mocks, no solver.
+altitude, zones, collisions), the Vegeta logo, and a side panel (races/video_panel.py) with the settings flown and
+the autopilot's live signals against the quad's physics: commanded and measured speed, tilt and thrust, the
+tracking error, the mode (racing, hover, the drop guard's phases). Real MuJoCo, no mocks, no solver.
 
-    python gen_pilot_videos.py                          # all four courses, cameras chase, onboard and overview, the whole lap in real time
+    python gen_pilot_videos.py                          # all four courses, cameras fpv, chase and overview, the whole lap in real time
     python gen_pilot_videos.py -j 4 --courses hangar    # laps in 4 worker processes
     python gen_pilot_videos.py --quality screening      # short and small (seconds); --quality fine: every second row, full size
     python gen_pilot_videos.py --speed 2                # played twice as fast
@@ -12,7 +14,8 @@ altitude, zones, collisions). Real MuJoCo, no mocks, no solver.
     python gen_pilot_videos.py --settings races/runs/tune/autopilot_hangar_24s_knife_edge.json
 
 Output: races/runs/videos/<course>/<stamp>_mujoco/ (timeseries, events, summary with provenance, one mp4 per camera)
-and races/runs/videos/index.json. Without a working OpenGL backend (EGL, OSMesa, GLFW) it writes the matplotlib
+and races/runs/videos/index.json; the mp4s are named <course>_fpv.mp4 (on-board, first person),
+<course>_chase.mp4 (third person behind the quad) and <course>_overview.mp4. Without a working OpenGL backend (EGL, OSMesa, GLFW) it writes the matplotlib
 replay instead, labelled as such. Exit 0 when every video was written, 1 if one failed, 2 when MuJoCo or the
 settings are missing."""
 import argparse
@@ -25,7 +28,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "races" / "runs" / "videos"
-CAMERAS = ("chase", "onboard", "overview")
+CAMERAS = ("fpv", "chase", "overview")                # fpv: the on-board first-person camera; chase: third person behind the quad
+LOGO = ROOT / "notebooks" / "logo.png"
 
 
 def _write_atomic(path: Path, obj):
@@ -63,6 +67,12 @@ def scenario(family: str, i: int, seed: int) -> dict:
     return next(s for s in validate.scenarios(i + 1, seed, (family,)) if s["i"] == i)
 
 
+def kw_settings(kw: dict) -> dict:
+    """The autopilot settings in a run_mujoco call (what the panel's table shows)."""
+    from races import converge
+    return {k: kw.get(k) for k in converge.KEYS}
+
+
 def fly_and_render(job: dict) -> dict:
     """One lap (a worker process): fly it, export it, render every camera. Returns the index entry and the log lines."""
     from races import courses, export, sim, validate, video
@@ -82,7 +92,8 @@ def fly_and_render(job: dict) -> dict:
         out = run_dir / f"{job['course']}_{cam}.mp4"
         try:
             if job["gl"]:
-                f = video.mujoco_video(c, lap, out, camera=cam, quality=job["quality"], speed=job["speed"], hud=True, label=job["label"])
+                f = video.mujoco_video(c, lap, out, camera=cam, quality=job["quality"], speed=job["speed"], hud=True, label=job["label"],
+                                       logo=job["logo"], panel=job["panel"], settings=kw_settings(kw))
                 if f is None:
                     raise RuntimeError("no mp4 written (ffmpeg missing on the PATH?)")
             else:
@@ -96,6 +107,7 @@ def fly_and_render(job: dict) -> dict:
     s["artifacts"]["videos"] = {k: Path(v).name for k, v in videos.items()}
     s["artifacts"]["video_errors"] = errors
     s["artifacts"]["renderer"] = "mujoco" if job["gl"] else "matplotlib replay (no OpenGL)"
+    s["artifacts"]["panel"], s["artifacts"]["logo"] = bool(job["panel"] and job["gl"]), bool(job["logo"] and job["gl"])
     (run_dir / "summary.json").write_text(json.dumps(s, indent=1, ensure_ascii=False))
     entry = {"course": job["course"], "label": job["label"], "status": st["status"], "lap time [s]": None if st["status"] != "finished" else round(st["lap time [s]"], 2),
              "collisions": st["collisions"], "zones passed": st["zones passed"], "run": str(run_dir.relative_to(ROOT)),
@@ -107,13 +119,16 @@ def main(argv=None, gl: bool = True) -> int:
     from races import courses, validate, video
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES), choices=list(courses.COURSES))
-    ap.add_argument("--cameras", nargs="*", default=list(CAMERAS), choices=("chase", "onboard", "overview", "grandstand"))
+    ap.add_argument("--cameras", nargs="*", default=list(CAMERAS), choices=("fpv", "chase", "overview", "grandstand"),
+                    help="fpv (on-board, first person), chase (third person following the quad), overview (the course from above), grandstand")
     ap.add_argument("--quality", default="lap", choices=list(video.QUALITY), help="lap (default: the whole lap in real time, 960×540, 30 fps), screening (short, small), fine")
     ap.add_argument("--speed", type=float, default=1.0, help="playback speed for --quality lap (default 1 = real time)")
     ap.add_argument("-j", "--jobs", type=int, default=1, help=f"laps in worker processes side by side (default 1; this machine has {os.cpu_count()} CPUs)")
     ap.add_argument("--settings", type=Path, default=None, help="an autopilot.json-format file instead of races/autopilot.json")
     ap.add_argument("--held-out", action="store_true", help="also the worst held-out lap of every family the latest ./test_autopilot.sh did not pass")
     ap.add_argument("--scenario", action="append", default=[], metavar="FAMILY:I", help="also one held-out scenario of races.validate (repeatable)")
+    ap.add_argument("--no-panel", action="store_true", help="no autopilot side panel (the 3D view alone)")
+    ap.add_argument("--no-logo", action="store_true", help="no Vegeta logo")
     ap.add_argument("--seed", type=int, default=None, help="the held-out seed for --scenario / --held-out (default: the latest report's, else races.validate.SEED)")
     a = ap.parse_args(argv)
 
@@ -126,7 +141,8 @@ def main(argv=None, gl: bool = True) -> int:
         if not settings:
             print(f"== {slug}: no tuned settings in {a.settings or 'races/autopilot.json'} — skipped", flush=True)
             continue
-        base = {"course": slug, "settings": settings, "cameras": a.cameras, "quality": a.quality, "speed": a.speed, "gl": gl}
+        base = {"course": slug, "settings": settings, "cameras": a.cameras, "quality": a.quality, "speed": a.speed, "gl": gl,
+                "panel": not a.no_panel, "logo": None if a.no_logo or not LOGO.exists() else str(LOGO)}
         jobs.append({**base, "label": "nominal", "mult": {}, "scenario": {}})
         picks = [(f, i) for f, i in held_out_worst(slug)] if a.held_out else []
         picks += [(s.rsplit(":", 1)[0], int(s.rsplit(":", 1)[1])) for s in a.scenario]
@@ -144,7 +160,8 @@ def main(argv=None, gl: bool = True) -> int:
           f"{'MuJoCo frames' if gl else 'matplotlib replay (no OpenGL)'}; {a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
     index = {"date": time.strftime("%Y-%m-%d %H:%M"), "settings file": str(a.settings or "races/autopilot.json"), "held-out seed": seed,
-             "renderer": "mujoco" if gl else "matplotlib replay (no OpenGL)", "quality": a.quality, "speed": a.speed, "laps": []}
+             "renderer": "mujoco" if gl else "matplotlib replay (no OpenGL)", "quality": a.quality, "speed": a.speed,
+             "panel": not a.no_panel and gl, "logo": not a.no_logo and gl, "laps": []}
     t0, failed = time.time(), 0
     if a.jobs > 1:
         from concurrent.futures import ProcessPoolExecutor

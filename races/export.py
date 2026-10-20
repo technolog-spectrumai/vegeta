@@ -86,6 +86,9 @@ def write_run(course, lap: dict, *, simulator: str, config: dict, seed: int | No
     H = np.asarray(lap["history"], dtype=float)
     cols = COLUMNS[:H.shape[1]] if H.ndim == 2 else COLUMNS[:0]
     np.savetxt(d / "timeseries.csv", H, delimiter=",", header=",".join(cols), comments="", fmt="%.6g")
+    if lap.get("pilot") is not None and len(lap["pilot"]):                     # the MuJoCo autopilot's own signals (races.sim.PILOT_COLUMNS)
+        from .sim import PILOT_COLUMNS
+        np.savetxt(d / "autopilot.csv", np.asarray(lap["pilot"], dtype=float), delimiter=",", header=",".join(PILOT_COLUMNS), comments="", fmt="%.6g")
     (d / "events.json").write_text(json.dumps(_plain([list(e) for e in lap["events"]]), indent=1))
     st = dict(lap["stats"])
     st.pop("controller", None)
@@ -97,7 +100,7 @@ def write_run(course, lap: dict, *, simulator: str, config: dict, seed: int | No
                "stats": st, "gate_times": lap.get("gate times"), "controller": lap["stats"].get("controller"),
                "provenance": provenance(course, simulator=simulator, config=config, seed=seed, timestep=timestep),
                "units": {c: UNITS[c] for c in cols},
-               "artifacts": {"timeseries": "timeseries.csv", "events": "events.json",
+               "artifacts": {"timeseries": "timeseries.csv", "events": "events.json", **({"autopilot": "autopilot.csv"} if lap.get("pilot") is not None and len(lap["pilot"]) else {}),
                              "videos": {k: str(v) for k, v in (videos or {}).items() if v}, "video_errors": video_errors or {}}}
     (d / "summary.json").write_text(json.dumps(_plain(summary), indent=1, ensure_ascii=False))
     return d

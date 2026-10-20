@@ -35,14 +35,24 @@ def frames_to_mp4(frames: list, out: Path, fps: int) -> Path | None:
 
 
 def mujoco_video(course, result: dict, out: Path, *, camera: str, quality: str = "screening", work_dir: Path | None = None,
-                 speed: float = 1.0, hud: bool = False, label: str = "") -> Path | None:
+                 speed: float = 1.0, hud: bool = False, label: str = "", logo=None, settings: dict | None = None,
+                 panel: bool = False) -> Path | None:
     """Render the run's trajectory from a scene camera (needs OpenGL: set MUJOCO_GL=egl or osmesa) and encode it;
-    ``speed`` (presets without ``every``), ``hud`` and ``label`` go to ``sim.render``."""
+    ``speed`` (presets without ``every``), ``hud``, ``label`` and ``logo`` go to ``sim.render``; ``panel`` adds the
+    autopilot's side panel (``races.video_panel``) with the ``settings`` flown."""
     from . import sim
     q = QUALITY[quality]
     work = Path(work_dir or Path(out).parent / f"frames_{camera}")
-    frames = sim.render(course, result, work, camera=camera, size=q["size"], every=q["every"], max_frames=q["max_frames"],
-                        fps=q["fps"], speed=speed, hud=hud, label=label)
+    side = None
+    if panel:
+        from .video_panel import SidePanel
+        side = SidePanel(course, result, settings, (int(0.8 * q["size"][1]), q["size"][1]), label=label)
+    try:
+        frames = sim.render(course, result, work, camera=camera, size=q["size"], every=q["every"], max_frames=q["max_frames"],
+                            fps=q["fps"], speed=speed, hud=hud, label=label, panel=side, logo=logo)
+    finally:
+        if side is not None:
+            side.close()
     mp4 = frames_to_mp4(frames, out, q["fps"])
     if mp4 is not None:
         shutil.rmtree(work, ignore_errors=True)
@@ -57,6 +67,7 @@ def matplotlib_video(course, result: dict, out: Path, *, camera: str = "chase", 
     import matplotlib.pyplot as plt
     from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
     q = QUALITY[quality]
+    camera = "onboard" if camera == "fpv" else camera
     H = result["history"]
     H = H[::max(q["every"] // 2, 1)]
     if len(H) > q["max_frames"]:
