@@ -131,8 +131,9 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
 - **Falco `fuselage:` rows get no shape inertia.** `nisus_systems.cg_inertia` picks shapes by item-name prefix and
   Falco's fuselage rows match none, so they count as point masses. Known, not yet changed; fixing it is a reported
   golden change.
-- **Constants drift.** About 60 local constants disagree: `G` 9.81 vs 9.80665, `RHO` 1.2 vs 1.225. Ogma keeps
-  `G_VEGETA` for now; unifying is its own commit per golden that moves, with the reason written down.
+- **Constants drift (resolved for the design models, V3.11).** `og.aero.Airframe.g` defaults to `G` = 9.80665
+  (its golden still checks Merlin's 9.81 numbers with `g=G_VEGETA`); Vegeta's design models take `G`/`RHO0` from
+  `og.units`. The Chiron robots and controllers keep 9.81 — Chiron's MuJoCo gravity — until they graduate.
 - **Velutina's wind** is a separate model, not yet on `og.wind`.
 - **Still duplicated in Vegeta:** three motor fits to a published point, two near-identical aero hooks, ~10 copies
   of the turbulent Cf formula, 7 battery-for-CG solves, 4 `quat_to_R`.

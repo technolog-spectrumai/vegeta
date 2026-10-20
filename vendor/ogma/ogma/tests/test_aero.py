@@ -31,7 +31,9 @@ def test_polar_is_kestrels():
 
 def test_airframe_is_merlins():
     g = G["airframe"]
-    af = aero.Airframe("t", 2.4, 0.5, 8.0, 0.03)
+    from ogma import units
+    assert aero.Airframe("t", 2.4, 0.5, 8.0, 0.03).g == units.G
+    af = aero.Airframe("t", 2.4, 0.5, 8.0, 0.03, g=units.G_VEGETA)    # Merlin's model as recorded (9.81)
     np.testing.assert_array_equal(af.drag(np.array(g["V"])), g["drag"])
     np.testing.assert_array_equal(af.drag(np.array(g["V"]), rho=1.1, n=2.0), g["drag_n2"])
     assert af.stall_speed() == g["stall"] and af.k == g["k"]
