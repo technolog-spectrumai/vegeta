@@ -9,7 +9,7 @@ more zones is progress before any lap finishes); a crash of the simulation = 200
 c₂r₂(g − x)], χ = 0.7298, c₁ = c₂ = 1.49618, positions clipped to [0, 1]^n, |v| ≤ 0.2. One particle starts at the
 stored settings, the others on a seeded Latin hypercube. It ends on the first of: ``iterations`` (a hard maximum —
 it always hands over to the polish then, even while still improving), ``stall`` iterations without a better global
-best, the swarm radius below ``radius_tol``, or its share of the lap budget.
+best, the swarm radius below ``radius_tol``, or its share of the evaluation budget.
 
 **GPS** (Torczon 1997; Audet & Dennis 2003): the 2n points x ± Δ·eᵢ are polled; the poll is flown completely (in
 parallel) and then read in a fixed order, the first improvement taken (an opportunistic poll, so the decisions do not
@@ -53,13 +53,13 @@ def _xd(v) -> dict:
 
 
 class PSO:
-    """The swarm. ``laps`` must offer ``prefetch(settings_list, stage, iteration, cut)`` (returns the number of laps
-    newly flown) and ``score(settings)``."""
+    """The swarm. ``laps`` is the objective (``races.laps.Laps``): ``prefetch(settings_list, stage, iteration, cut)``
+    (returns the number of candidates newly evaluated) and ``score(settings)``."""
 
     def __init__(self, start: dict, *, particles: int = 12, iterations: int = 15, seed: int = 0, stall: int = 4,
                  radius_tol: float = 0.05, budget: int = 280):
         self.cfg = dict(start=start, particles=particles, iterations=iterations, seed=seed, stall=stall, radius_tol=radius_tol, budget=budget)
-        self.it, self.laps_used, self.since, self.done, self.reason = 0, 0, 0, False, ""
+        self.it, self.evals_used, self.since, self.done, self.reason = 0, 0, 0, False, ""
         self.X = self.V = self.P = self.Pf = self.g = None
         self.gf = None
         self.rng_state = None
@@ -80,22 +80,22 @@ class PSO:
             X = (rng.permuted(np.tile(np.arange(m), (n, 1)), axis=1).T + rng.random((m, n))) / m
             X[0] = np.array([to_x(self.cfg["start"])[k] for k in KEYS])
             V = rng.uniform(-vmax, vmax, (m, n)) * 0.5
-            self.laps_used += laps.prefetch([to_settings(_xd(x)) for x in X], "pso", 0, cut=False)
+            self.evals_used += laps.prefetch([to_settings(_xd(x)) for x in X], "pso", 0, cut=False)
             F = np.array([laps.score(to_settings(_xd(x))) for x in X])
             self.X, self.V, self.P, self.Pf = X, V, X.copy(), F
             self.g, self.gf = X[F.argmin()].copy(), float(F.min())
-            log(f"pso iteration 0 (initial swarm): global best {self.gf:.2f}, laps {self.laps_used}")
+            log(f"pso iteration 0 (initial swarm): global best {self.gf:.2f}, evaluations {self.evals_used}")
         else:
             X, V, P, Pf, g = (np.array(a) for a in (self.X, self.V, self.P, self.Pf, self.g))
-            if self.laps_used + m > self.cfg["budget"]:
-                self.done, self.reason = True, f"PSO lap budget ({self.cfg['budget']}) reached"
+            if self.evals_used + m > self.cfg["budget"]:
+                self.done, self.reason = True, f"PSO evaluation budget ({self.cfg['budget']}) reached"
                 self.rng_state = rng.bit_generator.state
                 return
             self.it += 1
             r1, r2 = rng.random((m, n)), rng.random((m, n))
             V = np.clip(chi * (V + c1 * r1 * (P - X) + c2 * r2 * (g - X)), -vmax, vmax)
             X = np.clip(X + V, 0.0, 1.0)
-            self.laps_used += laps.prefetch([to_settings(_xd(x)) for x in X], "pso", self.it, cut=False)
+            self.evals_used += laps.prefetch([to_settings(_xd(x)) for x in X], "pso", self.it, cut=False)
             F = np.array([laps.score(to_settings(_xd(x))) for x in X])
             better = F < Pf
             P[better], Pf[better] = X[better], F[better]
@@ -106,7 +106,7 @@ class PSO:
                 self.since += 1
             self.X, self.V, self.P, self.Pf, self.g = X, V, P, Pf, g
             radius = float(np.max(np.linalg.norm(P - g, axis=1)))
-            log(f"pso iteration {self.it}: global best {self.gf:.2f}{' (improved)' if improved else ''}, swarm radius {radius:.3f}, laps {self.laps_used}")
+            log(f"pso iteration {self.it}: global best {self.gf:.2f}{' (improved)' if improved else ''}, swarm radius {radius:.3f}, evaluations {self.evals_used}")
             if self.it >= self.cfg["iterations"]:
                 self.done = True
                 self.reason = (f"PSO hard limit of {self.cfg['iterations']} iterations reached"
@@ -124,14 +124,14 @@ class PSO:
 
     def to_dict(self) -> dict:
         lst = lambda a: None if a is None else [list(map(float, r)) for r in a] if getattr(a, "ndim", 1) == 2 else list(map(float, a))
-        return {"cfg": self.cfg, "it": self.it, "laps_used": self.laps_used, "since": self.since, "done": self.done, "reason": self.reason,
+        return {"cfg": self.cfg, "it": self.it, "evals_used": self.evals_used, "since": self.since, "done": self.done, "reason": self.reason,
                 "X": lst(self.X), "V": lst(self.V), "P": lst(self.P), "Pf": lst(self.Pf), "g": lst(self.g), "gf": self.gf, "rng_state": self.rng_state}
 
     @classmethod
     def from_dict(cls, d: dict) -> "PSO":
         import numpy as np
         p = cls(**d["cfg"])
-        p.it, p.laps_used, p.since, p.done, p.reason, p.gf, p.rng_state = d["it"], d["laps_used"], d["since"], d["done"], d["reason"], d["gf"], d["rng_state"]
+        p.it, p.evals_used, p.since, p.done, p.reason, p.gf, p.rng_state = d["it"], d["evals_used"], d["since"], d["done"], d["reason"], d["gf"], d["rng_state"]
         for k in ("X", "V", "P", "Pf", "g"):
             setattr(p, k, None if d[k] is None else np.array(d[k], dtype=float))
         return p
@@ -144,26 +144,26 @@ class GPS:
                  budget: int = 120, patience: int = 0, tol: float = 0.2):
         self.cfg = dict(start=start, delta0=delta0, delta_min=delta_min, delta_max=delta_max, budget=budget, patience=patience, tol=tol)
         self.x = to_x(start)
-        self.delta, self.it, self.laps_used, self.stale, self.done, self.reason = delta0, 0, 0, 0, False, ""
+        self.delta, self.it, self.evals_used, self.stale, self.done, self.reason = delta0, 0, 0, 0, False, ""
         self.best_sc = None
 
     def step(self, laps, log=print):
         c = self.cfg
         if self.best_sc is None:                                  # the start point's own score (never cut)
-            self.laps_used += laps.prefetch([to_settings(self.x)], "gps", 0, cut=False)
+            self.evals_used += laps.prefetch([to_settings(self.x)], "gps", 0, cut=False)
             self.best_sc = laps.score(to_settings(self.x))
             log(f"gps start: score {self.best_sc:.2f}")
             return
         poll = [(k, d) for k in KEYS for d in (+self.delta, -self.delta) if 0.0 <= self.x[k] + d <= 1.0]
-        if self.laps_used + len(poll) > c["budget"]:
-            self.done, self.reason = True, f"polishing lap budget ({c['budget']}) reached at Δ = {self.delta:g} (not yet below {c['delta_min']:g})"
+        if self.evals_used + len(poll) > c["budget"]:
+            self.done, self.reason = True, f"polishing evaluation budget ({c['budget']}) reached at Δ = {self.delta:g} (not yet below {c['delta_min']:g})"
             log(f"gps: stopped — {self.reason}")
             return
         self.it += 1
         before = self.best_sc
         ys = [{**self.x, k: self.x[k] + d} for k, d in poll]      # the poll points, flown exactly as stored
         pts = [to_settings(y) for y in ys]
-        self.laps_used += laps.prefetch(pts, "gps", self.it, cut=True)
+        self.evals_used += laps.prefetch(pts, "gps", self.it, cut=True)
         moved = False
         for y, s in zip(ys, pts):                                 # opportunistic, in the fixed axis order
             sc = laps.score(s)
@@ -172,7 +172,7 @@ class GPS:
                 break
         self.delta = min(2 * self.delta, c["delta_max"]) if moved else self.delta / 2
         self.stale = self.stale + 1 if before - self.best_sc < c["tol"] else 0
-        log(f"gps iteration {self.it}: {'success' if moved else 'mesh local optimum'}, score {self.best_sc:.2f}, Δ → {self.delta:g}, laps {self.laps_used}")
+        log(f"gps iteration {self.it}: {'success' if moved else 'mesh local optimum'}, score {self.best_sc:.2f}, Δ → {self.delta:g}, evaluations {self.evals_used}")
         if self.delta < c["delta_min"]:
             self.done = True
             self.reason = f"converged: Δ = {self.delta:g} < Δ_min = {c['delta_min']:g} — a mesh local optimum at 1/{round(1 / c['delta_min'])} of every knob's range, not a proven global optimum"
@@ -185,12 +185,12 @@ class GPS:
         return to_settings(self.x)
 
     def to_dict(self) -> dict:
-        return {"cfg": self.cfg, "x": self.x, "delta": self.delta, "it": self.it, "laps_used": self.laps_used, "stale": self.stale,
+        return {"cfg": self.cfg, "x": self.x, "delta": self.delta, "it": self.it, "evals_used": self.evals_used, "stale": self.stale,
                 "done": self.done, "reason": self.reason, "best_sc": self.best_sc}
 
     @classmethod
     def from_dict(cls, d: dict) -> "GPS":
         g = cls(**d["cfg"])
-        for k in ("x", "delta", "it", "laps_used", "stale", "done", "reason", "best_sc"):
+        for k in ("x", "delta", "it", "evals_used", "stale", "done", "reason", "best_sc"):
             setattr(g, k, d[k])
         return g

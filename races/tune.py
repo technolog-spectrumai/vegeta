@@ -1,50 +1,25 @@
-"""Tune the MuJoCo autopilot per course (``races.sim.run_mujoco``), every lap refereed. The default is a particle
-swarm then a pattern-search polish (``races/converge.py``), checkpointed after every iteration to
-``races/runs/tune/<course>.ckpt.json`` and resumed from there; ``--quick`` / ``--round2`` are the earlier fixed grids.
-Writes ``races/runs/tune/<course>_converge.csv`` (every lap), ``best.json`` and ``races/autopilot.json`` after every
-course.
+"""Tune the MuJoCo autopilot per course (``races.sim.run_mujoco``), every lap refereed: a search strategy
+(``races.optimizers``: ``--cma``, the default, or ``--pso``) minimises the robust score of the candidates over the
+nominal lap and K training scenarios (``races.laps``, ``races.validate.training``).
 
-    python -m races.tune [--courses hangar farm] [-j 8] [--fresh]
+The driver knows no algorithm: it builds the strategy, calls ``step`` until it is done, times each phase, and
+checkpoints after every step to ``races/runs/tune/<course>.ckpt.json`` (atomically). A rerun with the same options
+resumes there and skips finished courses; other options are refused (``--fresh`` starts over). After every course:
+``races/runs/tune/<course>_converge.csv`` (every lap), ``best.json`` and ``races/autopilot.json``.
+
+    python -m races.tune [--courses hangar farm] [--cma | --pso] [-j 8] [--fresh]
 """
 from __future__ import annotations
 
 import argparse
-import os
-import itertools
+import dataclasses
 import json
+import os
 import time
 from pathlib import Path
-from races.rules import STUCK
 
-GRID = {"safety": (0.4, 0.5, 0.6, 0.7), "tilt_max_deg": (45.0, 60.0), "lookahead_s": (0.15, 0.25, 0.4), "omega_pos": (2.0, 2.5, 3.5)}
-QUICK = {"safety": (0.4, 0.55), "tilt_max_deg": (60.0,), "lookahead_s": (0.15, 0.3), "omega_pos": (2.5,)}   # 4 laps per course
-HANGAR2 = {"safety": (0.25, 0.35, 0.45), "v_cap": (3.0, 5.0, None), "omega_pos": (3.5, 5.0, 7.0), "lookahead_s": (0.3, 0.5),
-           "omega_att": (18.0, 28.0), "tilt_max_deg": (60.0,)}                   # round 2: slower and steadier for the stair descent
-
-
-def edges(course: str) -> dict:
-    """Round 2 for a course that finished: past the edges of round 1 (omega_pos and lookahead won at their maxima),
-    the safety around its winner."""
-    from races import autopilot
-    w = autopilot.tuned(course) or {"safety": 0.6, "tilt_max_deg": 60.0}
-    s = w.get("safety", 0.6)
-    return {"safety": tuple(sorted({round(max(0.2, s - 0.1), 2), s, round(min(0.9, s + 0.1), 2)})), "omega_pos": (3.5, 5.0, 7.0),
-            "lookahead_s": (0.4, 0.6), "tilt_max_deg": (w.get("tilt_max_deg", 60.0),)}
+SCHEMA = 4                                # 2: the drop guard, the window, the stuck label; 3: training scenarios; 4: strategies
 OUT = Path(__file__).resolve().parent / "runs" / "tune"
-
-
-def _fly_worker(job):
-    """One lap in a worker process (the course is built there; MuJoCo shares nothing between processes)."""
-    slug, kw, sc = job
-    from races import courses, sim
-    try:
-        res = sim.run_mujoco(courses.COURSES[slug](), scenario=sc or None, **kw)
-        return res["stats"], [list(e) for e in (res.get("events") or [])]
-    except Exception as e:                                       # a crash of one try is a result, not the end
-        return {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
-
-
-SCHEMA = 3                                                    # 2: the drop guard, the squared hangar window, the stuck label; 3: the training scenarios
 
 
 def _write_atomic(path: Path, obj) -> None:
@@ -57,288 +32,144 @@ def _write_atomic(path: Path, obj) -> None:
     os.replace(tmp, path)
 
 
-class Laps:
-    """Laps flown side by side and remembered (MuJoCo is deterministic: a setting is flown once per scenario).
-
-    Every candidate is flown on the training set ``train`` (``races.validate.training``: the nominal lap, index 0,
-    and K perturbed scenarios, the same for every candidate) and scored on the robust score: the mean of the worst
-    ⌈(K+1)/3⌉ of its K+1 lap scores (``races.validate.worst_mean``); with K = 0 it is the nominal lap's score.
-
-    ``prefetch(settings, stage, iteration, cut, js)`` flies the missing laps of a batch (the scenarios ``js``, default
-    all) on the pool (``jobs`` processes) and returns how many it flew; ``score(settings)`` reads them from memory.
-    ``cut`` (only with K = 0) stops the batch's laps at 1.25 × the best finished lap known when the batch starts + 5 s;
-    a cut lap scores as a DNF and can never beat that best. With K > 0 nothing is cut: a lap's score enters a tail
-    average, where a cut could change a comparison."""
-
-    def __init__(self, slug: str, jobs: int, train: list | None = None, cut: bool = True, memo: dict | None = None, rows: list | None = None):
-        import concurrent.futures as cf
-        self.slug, self.train = slug, list(train or [{"family": "nominal", "i": 0, "mult": {}, "scenario": {}}])
-        self.cut = cut and len(self.train) == 1
-        self.m = -(-len(self.train) // 3)
-        self.memo, self.rows = dict(memo or {}), list(rows or [])
-        self.pool = cf.ProcessPoolExecutor(max_workers=jobs) if jobs > 1 else None
-
-    @staticmethod
-    def key(s, j: int = 0) -> str:
-        return json.dumps([s, j], sort_keys=True)
-
-    def best_finished(self):
-        t = [r[0]["lap time [s]"] for r in self.memo.values() if r[0].get("status") == "finished"]
-        return min(t) if t else None
-
-    def prefetch(self, settings, stage, iteration, cut=False, js=None) -> int:
-        from races import validate
-        js = range(len(self.train)) if js is None else js
-        todo = [(s, j) for k, (s, j) in {self.key(s, j): (s, j) for s in settings for j in js}.items() if k not in self.memo]
-        if not todo:
-            return 0
-        b = self.best_finished()
-        duration = 1.25 * b + 5.0 if (cut and self.cut and b) else None
-        jobs = [(self.slug, {**validate.apply(s, self.train[j]["mult"]), **({"duration": duration} if duration else {})}, self.train[j]["scenario"]) for s, j in todo]
-        t0 = time.time()
-        results = list(self.pool.map(_fly_worker, jobs)) if self.pool else [_fly_worker(j) for j in jobs]
-        wall = (time.time() - t0) / len(todo)
-        for (s, j), (st, ev) in zip(todo, results):
-            if duration and st.get("status") == STUCK:
-                st["reason"] = f"cut at {duration:.0f} s (slower than the best, {b:.1f} s)"
-            self.memo[self.key(s, j)] = [st, ev, round(wall, 2)]
-            self.rows.append(_row(stage, iteration, s, st, ev, wall, j, self.train[j]["family"]))
-            print(f"{self.slug}   {stage} it {iteration} lap {len(self.memo):4d}  {s} [{j} {self.train[j]['family']}]  → {st.get('status')} {st.get('lap time [s]') or ''} "
-                  f"{st.get('zones passed') or ''}, score {_score(st):.2f}{(' — ' + st['reason']) if st.get('reason') else ''}", flush=True)
-        print(f"{self.slug}   batch of {len(todo)} lap(s) in {time.time() - t0:.1f} s wall ({wall:.1f} s per lap with {self.pool._max_workers if self.pool else 1} worker(s))", flush=True)
-        return len(todo)
-
-    def lap(self, s, j: int = 0):
-        return self.memo[self.key(s, j)][0]
-
-    def stats(self, s):
-        """The nominal lap's statistics (what autopilot.json and the notebooks report)."""
-        return self.lap(s, 0)
-
-    def scores(self, s, js=None) -> list:
-        return [_score(self.lap(s, j)) for j in (range(len(self.train)) if js is None else js)]
-
-    def score(self, s, js=None) -> float:
-        """The robust score over the scenarios ``js`` (default all); over part of them, a lower bound of the full one."""
-        from races import validate
-        return validate.worst_mean(self.scores(s, js), self.m)
-
-    def clean_rate(self, s) -> float:
-        L = [self.lap(s, j) for j in range(len(self.train))]
-        return sum(1 for st in L if st.get("status") == "finished" and not st.get("collisions")) / len(L)
-
-    def close(self):
-        if self.pool:
-            self.pool.shutdown()
-
-
-def _score(st):
+def fingerprint(a, cls, cfg) -> dict:
+    """Everything a checkpoint's laps and decisions depend on (JSON-normalised, as the checkpoint stores it)."""
     from races import converge
-    return converge.score(st)
+    extra = {}
+    if cls.name == "cma":
+        import cma
+        extra["cma"] = cma.__version__                            # a pickled CMA-ES state belongs to its package version
+    return json.loads(json.dumps({"schema": SCHEMA, "strategy": cls.name, "config": dataclasses.asdict(cfg), "train_k": a.train_k,
+                                  "train_seed": a.train_seed, "cut": not a.no_cut, "bounds": converge.BOUNDS, **extra}))
 
 
-def _row(stage, iteration, s, st, ev, wall, j=0, family="nominal"):
-    zones = [e[1] for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and str(e[1]).startswith("zone")]
-    hits = [e for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and "collision" in str(e[1]).lower()]
-    return {"stage": stage, "iteration": iteration, **s, "scenario": j, "family": family, "score": round(_score(st), 3), "status": st.get("status"), "reason": st.get("reason", ""),
-            "lap time [s]": st.get("lap time [s]"), "collisions": st.get("collisions"), "zones passed": st.get("zones passed"),
-            "last zone reached": zones[-1] if zones else "", "collisions at": "; ".join(f"{e[0]:.1f} s {e[1]}" for e in hits[:6]),
-            "wall per lap [s]": round(wall, 2)}
+class Checkpoint:
+    """One course's checkpoint: the fingerprint, the start, the strategy's state, the laps flown, the phase times."""
+
+    def __init__(self, path: Path, fp: dict, start: dict):
+        self.path = path
+        self.data = {"fingerprint": fp, "start": start, "strategy": None, "memo": {}, "rows": [], "time": {}, "result": None}
+
+    @classmethod
+    def load(cls, path: Path):
+        if not path.exists():
+            return None
+        ck = cls.__new__(cls)
+        ck.path, ck.data = path, json.loads(path.read_text())
+        return ck
+
+    def differs(self, fp: dict) -> list:
+        old = self.data.get("fingerprint", {})
+        return sorted(k for k in set(fp) | set(old) if fp.get(k) != old.get(k))
+
+    def save(self, strategy, laps) -> None:
+        self.data.update(strategy=strategy.state(), memo=laps.memo, rows=laps.rows)
+        _write_atomic(self.path, self.data)
 
 
-def fingerprint(a) -> dict:
+def result(strategy, laps, start: dict, objective: str, times: dict, jobs: int) -> tuple[dict, str]:
+    """The course's autopilot.json entry and its one-line summary."""
     from races import converge
-    return json.loads(json.dumps({"schema": SCHEMA, "method": a.method, "seed": a.seed, "particles": a.particles, "pso_iterations": a.pso_iterations,
-            "delta_min": a.delta_min, "max_laps": a.max_laps, "polish_laps": a.polish_laps, "patience": a.patience, "tol": a.tol,
-            "cut": not a.no_cut, "bounds": converge.BOUNDS, "train_k": a.train_k, "train_seed": a.train_seed}))                    # JSON-normalised (tuples → lists), as the checkpoint stores it
+    s0 = converge.to_settings(converge.to_x(start or {}))              # the start as the strategies fly it (CMA-ES samples around it)
+    laps.prefetch([s0], "start", 0)
+    start_sc, bs = laps.score(s0), strategy.best()
+    if laps.score(bs) >= start_sc - 1e-9:
+        bs, change = s0, "no improvement found over the starting settings"
+    else:
+        change = f"improved from {start_sc:.2f} to {laps.score(bs):.2f}"
+    bst, end_sc = laps.stats(bs), laps.score(bs)
+    total = sum(times.values())
+    timing = {**{f"{k} [min]": round(v / 60, 2) for k, v in times.items()}, "total [min]": round(total / 60, 2), "laps": len(laps.memo),
+              "evaluations": strategy.evals_used, "wall per lap [s]": round(total / max(len(laps.memo), 1), 2), "workers": jobs}
+    search = f"{strategy.name}: {strategy.reason}"
+    if bst.get("status") == "finished":
+        entry = {"settings": bs, "lap time [s]": float(bst["lap time [s]"]), "collisions": int(bst.get("collisions") or 0), "objective": objective,
+                 "score": round(end_sc, 3), "training clean rate": round(laps.clean_rate(bs), 3), "search": search, "change": change, "time": timing}
+        line = (f"FINISHED {bst['lap time [s]']:.1f} s, {bst.get('collisions') or 0} collisions (nominal); robust score {end_sc:.2f}, "
+                f"training clean rate {entry['training clean rate']:.2f} — {change} — {strategy.reason} — {bs}")
+    else:
+        import pandas as pd
+        far = pd.DataFrame(laps.rows).query("scenario == 0").sort_values("score").iloc[0]
+        entry = {"settings": None, "objective": objective, "search": search, "change": change, "time": timing,
+                 "note": f"no finished nominal lap; closest: {far['zones passed']}, last zone {far['last zone reached']!r}; collisions at {far['collisions at']}"}
+        line = f"still DNF — {change} — {strategy.reason}; {entry['note']}"
+    return entry, line
 
 
-def converge_course(slug, c, a, best, best_f) -> int:
-    """One course: PSO then polish (or one of them), checkpointed after every iteration, resumed when a compatible
-    checkpoint exists. Returns 0, or 2 when a checkpoint is incompatible."""
-    from races import autopilot, converge, validate
-    ckpt_f = OUT / f"{slug}.ckpt.json"
-    fp = fingerprint(a)
-    ck = json.loads(ckpt_f.read_text()) if ckpt_f.exists() and not a.fresh else None
-    if ck is not None and ck.get("fingerprint") != fp:
-        diff = sorted(k for k in set(fp) | set(ck.get("fingerprint", {})) if fp.get(k) != ck.get("fingerprint", {}).get(k))
-        print(f"== {slug}: the checkpoint {ckpt_f.name} was made with other options ({', '.join(diff)}): "
+def tune_course(slug: str, a, cls, cfg, best: dict, best_f: Path) -> int:
+    """One course, resumable. Returns 0, or 2 when a checkpoint was made with other options."""
+    from races import autopilot, courses, validate
+    from races.laps import Laps
+    c = courses.COURSES[slug]()
+    path = OUT / f"{slug}.ckpt.json"
+    fp = fingerprint(a, cls, cfg)
+    ck = None if a.fresh else Checkpoint.load(path)
+    if ck is not None and ck.differs(fp):
+        print(f"== {slug}: the checkpoint {path.name} was made with other options ({', '.join(ck.differs(fp))}): "
               f"rerun with the same options to resume it, or with --fresh to start over", flush=True)
         return 2
-    if ck and ck["phase"] == "done":
-        print(f"== {slug}: already done (checkpoint {ckpt_f.name}): {ck['result']['line']}  (--fresh to redo)", flush=True)
-        best[slug] = ck["result"]["entry"]
+    if ck is not None and ck.data["result"]:
+        print(f"== {slug}: already done (checkpoint {path.name}): {ck.data['result']['line']}  (--fresh to redo)", flush=True)
+        best[slug] = ck.data["result"]["entry"]
         return 0
     if ck is None:
-        start = autopilot.tuned(slug)
-        reserve = a.polish_laps if a.method != "pso" else 0
-        ck = {"fingerprint": fp, "start": start, "phase": "pso" if a.method != "gps" else "gps",
-              "pso": converge.PSO(start, particles=a.particles, iterations=a.pso_iterations, seed=a.seed, budget=max(a.particles, a.max_laps - reserve)).to_dict()
-              if a.method != "gps" else None,
-              "gps": None, "memo": {}, "rows": [], "time": {"pso_s": 0.0, "gps_s": 0.0}}
-        print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — {a.method} from {start or 'the defaults'}", flush=True)
+        ck = Checkpoint(path, fp, autopilot.tuned(slug))
+        strategy = cls(ck.data["start"], cfg)
+        print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — {cls.summary} from {ck.data['start'] or 'the defaults'}", flush=True)
     else:
-        print(f"== {slug}: resuming from {ckpt_f.name} — phase {ck['phase']}, {len(ck['memo'])} laps already flown "
-              f"(PSO {ck['time']['pso_s'] / 60:.1f} min, polishing {ck['time']['gps_s'] / 60:.1f} min so far)", flush=True)
-    print(f"   workers: {a.jobs} (this machine has {os.cpu_count()} CPUs; -j {os.cpu_count()} to use them all); "
-          f"lap budget {a.max_laps}, {a.polish_laps if a.method != 'pso' else 0} of them reserved for polishing", flush=True)
+        strategy = cls.restore(ck.data["start"], cfg, ck.data["strategy"])
+        print(f"== {slug}: resuming from {path.name} — phase {strategy.phase}, {len(ck.data['memo'])} laps already flown", flush=True)
     train = validate.training(a.train_k, a.train_seed)
-    laps = Laps(slug, a.jobs, train, cut=not a.no_cut, memo=ck["memo"], rows=ck["rows"])
+    laps = Laps(slug, a.jobs, train, cut=not a.no_cut, memo=ck.data["memo"], rows=ck.data["rows"], log=lambda m: print(m, flush=True))
     objective = (f"robust: the mean of the worst {laps.m} of {len(train)} laps (the nominal lap and {a.train_k} training scenarios, seed {a.train_seed})"
                  if a.train_k else "nominal: the nominal lap alone")
     print(f"   objective — {objective}", flush=True)
-    say = lambda m: print(f"{slug} {m}", flush=True)
-
-    def save():
-        ck["memo"], ck["rows"] = laps.memo, laps.rows
-        _write_atomic(ckpt_f, ck)
-
+    print(f"   workers: {a.jobs} (this machine has {os.cpu_count()} CPUs); budget {cfg.max_evals} evaluations of {len(train)} laps each", flush=True)
+    times = ck.data["time"]
     try:
-        if ck["phase"] == "pso":
-            pso = converge.PSO.from_dict(ck["pso"])
-            while not pso.done:
-                t0 = time.time()
-                pso.step(laps, log=say)
-                ck["time"]["pso_s"] += time.time() - t0
-                ck["pso"] = pso.to_dict()
-                save()
-            ck["phase"] = "gps" if a.method != "pso" else "final"
-            save()
-        if ck["phase"] == "gps":
-            if ck["gps"] is None:
-                origin = converge.PSO.from_dict(ck["pso"]).best() if ck["pso"] else (ck["start"] or {})
-                used = len(laps.memo)
-                g = converge.GPS(origin, delta_min=a.delta_min, budget=max(a.polish_laps, a.max_laps - used), patience=a.patience, tol=a.tol)
-                say(f"polishing from {'the PSO best' if ck['pso'] else 'the stored settings'}: {origin}")
-            else:
-                g = converge.GPS.from_dict(ck["gps"])
-            while not g.done:
-                t0 = time.time()
-                g.step(laps, log=say)
-                ck["time"]["gps_s"] += time.time() - t0
-                ck["gps"] = g.to_dict()
-                save()
-            ck["phase"] = "final"
-            save()
+        while not strategy.done:
+            t0, phase = time.time(), strategy.phase
+            strategy.step(laps, log=lambda m: print(f"{slug} {m}", flush=True))
+            times[phase] = times.get(phase, 0.0) + time.time() - t0
+            ck.save(strategy, laps)
+        entry, line = result(strategy, laps, ck.data["start"], objective, times, a.jobs)
     finally:
         laps.close()
-    # ---- the result
-    if ck["gps"]:
-        g = converge.GPS.from_dict(ck["gps"])
-        bs, why = g.best(), g.reason
-    else:
-        p = converge.PSO.from_dict(ck["pso"])
-        bs, why = p.best(), f"PSO only: {p.reason}"
-    bst = laps.stats(bs)
-    s0 = converge.to_settings(converge.to_x(ck["start"] or {}))          # the start as both searches fly it
-    start_sc = laps.score(s0) if laps.key(s0) in laps.memo else None
-    end_sc = laps.score(bs)
-    change = ("no improvement found over the starting settings" if start_sc is not None and end_sc >= start_sc - 1e-9
-              else f"improved from {start_sc:.2f} to {end_sc:.2f}" if start_sc is not None else f"best score {end_sc:.2f}")
-    t = ck["time"]
-    nl = len(laps.memo)
-    timing = {"pso [min]": round(t["pso_s"] / 60, 2), "polishing [min]": round(t["gps_s"] / 60, 2), "total [min]": round((t["pso_s"] + t["gps_s"]) / 60, 2),
-              "laps": nl, "wall per lap [s]": round((t["pso_s"] + t["gps_s"]) / max(nl, 1), 2), "workers": a.jobs}
     import pandas as pd
-    df = pd.DataFrame(laps.rows)
-    df.to_csv(OUT / f"{slug}_converge.csv", index=False)
-    if bst.get("status") == "finished":
-        entry = {"settings": bs, "lap time [s]": float(bst["lap time [s]"]), "collisions": int(bst.get("collisions") or 0), "objective": objective,
-                 "score": round(end_sc, 3), "training clean rate": round(laps.clean_rate(bs), 3), "search": why, "change": change, "time": timing}
-        line = (f"FINISHED {bst['lap time [s]']:.1f} s, {bst.get('collisions') or 0} collisions (nominal); robust score {end_sc:.2f}, "
-                f"training clean rate {entry['training clean rate']:.2f} — {change} — {why} — {bs}")
-    else:
-        far = df.sort_values("score").iloc[0]
-        entry = {"settings": None, "search": why, "change": change, "time": timing,
-                 "note": f"no finished lap; closest: {far['zones passed']}, last zone {far['last zone reached']!r}; collisions at {far['collisions at']}"}
-        line = f"still DNF — {change} — {why}; {entry['note']}"
+    pd.DataFrame(laps.rows).to_csv(OUT / f"{slug}_converge.csv", index=False)
     print(f"== {slug}: {line}", flush=True)
-    print(f"== {slug}: time — PSO {timing['pso [min]']} min, polishing {timing['polishing [min]']} min, total {timing['total [min]']} min, "
-          f"{nl} laps, {timing['wall per lap [s]']} s wall per lap with {a.jobs} worker(s)", flush=True)
+    print(f"== {slug}: time — " + ", ".join(f"{k} {v / 60:.2f} min" for k, v in times.items()) +
+          f", total {sum(times.values()) / 60:.2f} min, {len(laps.memo)} laps, {strategy.evals_used} evaluations, {a.jobs} worker(s)", flush=True)
     best[slug] = entry
     autopilot.record(slug, entry)
     _write_atomic(best_f, best)                                   # saved right after the course
-    ck["phase"], ck["result"] = "done", {"entry": entry, "line": line}
-    save()
+    ck.data["result"] = {"entry": entry, "line": line}
+    ck.save(strategy, laps)
     return 0
 
 
 def main(argv=None) -> int:
-    from races import autopilot, courses, sim
+    from races import courses, optimizers, validate
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
-    ap.add_argument("--quick", action="store_true", help="a small grid (4 tries per course)")
-    ap.add_argument("--method", choices=("pso+gps", "gps", "pso"), default="pso+gps",
-                    help="pso+gps (default): a particle swarm over the whole box, then pattern search from its best; gps: pattern search from the stored settings only")
+    ap.add_argument("--courses", nargs="*", default=list(courses.COURSES), choices=list(courses.COURSES))
     ap.add_argument("-j", "--jobs", type=int, default=1, help=f"worker processes flying laps side by side (default 1; this machine has {os.cpu_count()} CPUs)")
     ap.add_argument("--fresh", action="store_true", help="ignore and replace the courses' checkpoints (default: resume a compatible checkpoint, skip finished courses)")
-    ap.add_argument("--seed", type=int, default=0, help="the swarm's random seed (a run with the same seed and options is repeated exactly)")
-    ap.add_argument("--no-cut", action="store_true", help="polishing flies every lap to its end (default: laps slower than 1.25 × the best + 5 s are cut)")
-    ap.add_argument("--particles", type=int, default=12, help="PSO swarm size")
-    ap.add_argument("--pso-iterations", type=int, default=15, help="PSO hard maximum of iterations; then it always switches to polishing (default 15)")
-    ap.add_argument("--polish-laps", type=int, default=120, help="laps of --max-laps reserved for polishing (default 120)")
-    ap.add_argument("--delta-min", type=float, default=1 / 64, help="convergence: stop when the mesh size (a share of every knob's range) is below this")
-    ap.add_argument("--max-laps", type=int, default=400, help="the lap budget per course, PSO and polishing together (default 400)")
-    ap.add_argument("--patience", type=int, default=0, help="optional heuristic early stop after this many iterations gaining < --tol s (0 = off)")
-    ap.add_argument("--tol", type=float, default=0.2, help="see --patience")
     ap.add_argument("--train-k", type=int, default=6, help="training scenarios per candidate besides the nominal lap (default 6, one per perturbation family; 0 = the nominal lap alone)")
-    ap.add_argument("--train-seed", type=int, default=None, help="the training scenarios' seed (default races.validate.TRAIN_SEED; never the held-out seed)")
-    ap.add_argument("--round2", action="store_true", help="the second round: past the edges for the finished courses, a slow steady grid for the hangar")
+    ap.add_argument("--train-seed", type=int, default=validate.TRAIN_SEED, help=f"the training scenarios' seed (default {validate.TRAIN_SEED}; never the held-out seed {validate.SEED})")
+    ap.add_argument("--no-cut", action="store_true", help="with --train-k 0 only: fly every lap to its end (default: the PSO polish cuts laps slower than 1.25 × the best + 5 s)")
+    optimizers.add_arguments(ap)
     a = ap.parse_args(argv)
-    from races import validate
-    a.train_seed = validate.TRAIN_SEED if a.train_seed is None else a.train_seed
     if a.train_seed == validate.SEED:
         ap.error(f"--train-seed {a.train_seed} is the held-out validation seed")
-    mode = "quick grid" if a.quick else "round-2 grids" if a.round2 else a.method
-    print(f"tune: courses {a.courses}, {mode}; {a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
-    rc = 0
+    cls, cfg = optimizers.config(a)
+    print(f"tune: courses {a.courses}; {cls.summary} {dataclasses.asdict(cfg)}; {a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
     best_f = OUT / "best.json"
     best = json.loads(best_f.read_text()) if best_f.exists() else {}
+    rc = 0
     for slug in a.courses:
-        c = courses.COURSES[slug]()
-        if not (a.quick or a.round2):                                # the default: PSO, then the pattern-search polish
-            rc = converge_course(slug, c, a, best, best_f) or rc
-            continue
-        grid = QUICK if a.quick else (HANGAR2 if slug == "hangar" else edges(slug)) if a.round2 else GRID
-        rows, keys = [], list(grid)
-        total = 1
-        for v in grid.values():
-            total *= len(v)
-        print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — {total} laps to fly", flush=True)
-        for n, vals in enumerate(itertools.product(*grid.values()), 1):
-            kw = dict(zip(keys, vals))
-            t0 = time.time()
-            print(f"{slug} {n:3d}/{total}  flying {kw} …", flush=True)
-            try:
-                res = sim.run_mujoco(c, **kw)
-                st, ev = res["stats"], res.get("events") or []
-            except Exception as e:                                   # a crash of one try is a result, not the end
-                st, ev = {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
-            zones = [e[1] for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and str(e[1]).startswith("zone")]
-            hits = [e for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and "collision" in str(e[1]).lower()]
-            row = {**kw, "status": st.get("status"), "reason": st.get("reason", ""), "lap time [s]": st.get("lap time [s]"),
-                   "collisions": st.get("collisions"), "zones passed": st.get("zones passed"),
-                   "last zone reached": zones[-1] if zones else "", "collisions at": "; ".join(f"{e[0]:.1f} s {e[1]}" for e in hits[:6]),
-                   "wall [s]": round(time.time() - t0, 1)}
-            rows.append(row)
-            print(f"{slug} {n:3d}/{total}  → {row['status']} {row['lap time [s]'] or ''} {row['zones passed'] or ''} {row['collisions'] or 0} hits, {row['wall [s]']} s{(' — ' + row['reason']) if row['reason'] else ''}", flush=True)
-        import pandas as pd
-        df = pd.DataFrame(rows)
-        df.to_csv(OUT / f"{slug}.csv", index=False)
-        ok = df[df["status"] == "finished"].sort_values(["lap time [s]", "collisions"])
-        if len(ok):
-            w = ok.iloc[0]
-            best[slug] = {"settings": {k: (None if w[k] is None or w[k] != w[k] else float(w[k])) for k in keys}, "lap time [s]": float(w["lap time [s]"]), "collisions": int(w["collisions"])}
-            print(f"== {slug}: FINISHED {w['lap time [s]']:.1f} s with {best[slug]['settings']}")
-            autopilot.record(slug, best[slug])
-        else:
-            far = df.sort_values("zones passed", key=lambda z: z.fillna("0 of").str.split(" ").str[0].astype(int), ascending=False).iloc[0]
-            best[slug] = {"settings": None, "note": f"no finished lap in {len(df)} tries; closest: {far['zones passed']}, last zone {far['last zone reached']!r}; collisions at {far['collisions at']}"}
-            autopilot.record(slug, best[slug])
-            print(f"== {slug}: still DNF in all {len(df)} tries — see {OUT / (slug + '.csv')}")
-        best_f.write_text(json.dumps(best, indent=1))
-    print("written", best_f)
+        rc = tune_course(slug, a, cls, cfg, best, best_f) or rc
+    print("written", best_f, flush=True)
     return rc
 
 

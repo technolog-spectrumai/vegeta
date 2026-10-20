@@ -116,10 +116,10 @@ step "Ozaru from vendor/ozaru ($(sed -n 's/^revision: //p' "$ROOT/vendor/OZARU_R
 "$PY" -m pip install --no-deps --no-build-isolation --no-index \
   -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimesis" -e "$ROOT/vendor/ozaru/yanus"
 
-step "Python packages (vegeta-cli with MuJoCo for Chiron and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
+step "Python packages (vegeta-cli with MuJoCo for Chiron and the races (cma: their autopilot tuner) and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
 "$PY" -m pip install \
   -e "$ROOT/vegeta-cli[pandas,viz,test,sim,sections]" \
-  mujoco \
+  mujoco cma \
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \

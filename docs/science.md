@@ -159,9 +159,18 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   DNF laps never feed a requirement. A requirement no run supports (hover thrust/weight, endurance) is
   "unavailable", not a number.
 
-## 9. Tuning the race autopilot: generalized pattern search
+## 9. Tuning the race autopilot: CMA-ES (default) or PSO + pattern search
 
-`./tune_autopilot.sh` → `races/converge.py`.
+`./tune_autopilot.sh` → `races/tune.py` (the driver) → `races/optimizers.py` (the strategies) → `races/laps.py`
+(the objective).
+
+- **Structure (strategy pattern).** The driver knows no algorithm. It builds a strategy, calls `step()` until the
+  strategy is done, times each phase, and checkpoints `state()` after every step.
+  - `--cma` (the default) and `--pso` select the class. Each strategy's options are the fields of its `Config`
+    dataclass, and the driver turns them into command-line options.
+  - A new method is one class with `step`, `best`, `state` and `restore`, added to `STRATEGIES`.
+  - The fixed grids of the first rounds (`--quick`, `--round2`) and the `--method` flag were removed in this
+    refactor. The last commit that has them is `67a682e` (branch `dev_cma`).
 
 - **Problem.** Minimise a lap score f(x) over the controller's knobs x:
 
@@ -174,13 +183,45 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   | `tilt_max_deg` | tilt limit |
   | `v_cap` | speed cap |
 
-  Each knob is scaled to [0, 1] between physical bounds. f is a black box: one MuJoCo lap per evaluation,
-  deterministic, with no gradient.
-- **Score:**
+  Each knob is scaled to [0, 1] between physical bounds. f is a black box: MuJoCo laps, deterministic, with no
+  gradient.
+- **Objective: robust over training scenarios** (`--train-k`, default 6). Every candidate is flown on the nominal lap
+  and on K training scenarios, one per perturbation family of the validation (settings ±2 %, start, mass, thrust,
+  wind, combined; `races.validate.training`).
+  - The scenarios use seed 1, never the held-out seed of `./test_autopilot.sh`.
+  - Every candidate flies the same scenarios (common random numbers), so a comparison compares settings, not luck.
+  - f is the mean of the worst ⌈(K+1)/3⌉ lap scores, a tail average (CVaR-like).
+  - It was introduced because the single-lap objective overfitted: on held-out scenarios three courses scored clean
+    rates of 0.29, 0.02 and 0.29 (see the validation below).
+  - `--train-k 0` restores the single nominal lap.
+  - One evaluation (the budget unit, `--max-evals`) is one candidate, which is K+1 laps.
+- **Score of one lap:**
   - a finished lap scores lap time + 2 s per collision;
   - a DNF scores 1000 − 20 × zones passed, so more of the course is better before any lap finishes;
   - a crash of the simulation scores 2000.
-- **Method.** Generalized pattern search (GPS: Torczon 1997, *SIAM J. Optim.* 7(1); Audet & Dennis 2003, *SIAM J.
+- **CMA-ES (`--cma`, the default).** Hansen & Ostermeier (2001, *Evol. Comput.* 9(2)); Hansen (2016), "The CMA
+  evolution strategy: a tutorial", arXiv:1604.00772. It uses the PyPI package `cma`, installed by `install_local.sh`.
+  - Each generation samples λ candidates (default 4 + ⌊3 ln 6⌋ = 9) from N(m, σ²C). The mean moves to the
+    weighted best μ, and σ and the covariance C adapt to the ranking.
+  - Only ranks matter, so the jumps of DNF scores do no harm. The population averages over the rugged robust
+    score, which is why it suits this problem better than a fine local polish.
+  - The box is handled by `cma`'s boundary transformation.
+  - The start (m₀) is the stored settings, with σ₀ = 0.2 of each range.
+  - It stops on `cma`'s own criteria:
+    - `--tolfun` 0.1: recent scores span less than this;
+    - `--tolx` 0.001: steps below this share of each range;
+    - stagnation;
+    - `--generations` (40);
+    - `--max-evals` (300).
+  - The stop is reported as "a local result, not a proven global optimum".
+  - Reproducible: each generation's normal draws come from a generator seeded by (`--seed`, generation). `cma` would
+    otherwise use NumPy's global generator, which a saved state does not carry. The state is `cma`'s object, pickled
+    into the checkpoint, and its version is part of the fingerprint.
+  - Checked: a run interrupted after its first generation and resumed flew the same 36 laps as an uninterrupted one.
+  - CMA-ES samples around its start without flying it, so the driver flies the start once at the end. If nothing beat
+    it, the result is the start: "no improvement found over the starting settings".
+- **PSO, then pattern search (`--pso`).** This is the earlier search, kept intact; the details follow.
+- **Pattern-search polish.** Generalized pattern search (GPS: Torczon 1997, *SIAM J. Optim.* 7(1); Audet & Dennis 2003, *SIAM J.
   Optim.* 13(3)). At each iteration:
   1. Poll the 2n points x ± Δ·eᵢ (a positive spanning set of directions) and take the first that lowers f.
   2. On success, move there and expand the mesh: Δ ← min(2Δ, 0.25).
@@ -191,10 +232,10 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   - For a Lipschitz f (Audet & Dennis), the limit is Clarke-stationary in the polled directions.
   - Our f is **piecewise**: a lap that turns into a DNF jumps. The honest guarantee is therefore a **mesh local
     optimum at resolution Δ_min**. It is not a global optimum, and a different start can find a different one.
-  - `--max-laps` is a safety budget only, and is reported if it is what stopped the search. `--patience` is an
+  - `--max-evals` is a safety budget only, and is reported if it is what stopped the search. `--patience` is an
     optional heuristic early stop, off by default.
-- **Local minima: a global stage first.** Pattern search only refines from its start. By default
-  (`--method pso+gps`) a **particle swarm** searches the whole box first.
+- **Local minima: a global stage first.** Pattern search only refines from its start. With `--pso`, a
+  **particle swarm** searches the whole box first.
   - It uses Kennedy & Eberhart's PSO (1995) in Clerc & Kennedy's constriction form (2002, *IEEE Trans. Evol. Comput.*
     6(1)): v ← χ[v + c₁r₁(p − x) + c₂r₂(g − x)], with χ = 0.7298 and c₁ = c₂ = 1.49618. These are the parameters for
     which the particles' trajectories provably converge.
@@ -202,17 +243,19 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   - There are 12 particles: one at the stored settings, the rest spread over the box by a Latin hypercube with a
     fixed seed, so a run can be repeated.
   - The swarm stops after 4 iterations without improvement, once the swarm's radius is below 0.05, or at its share of
-    the lap budget. `--pso-iterations` (default 15) is a **hard maximum**: reaching it always ends the swarm, even if
+    the evaluation budget. `--pso-iterations` (default 15) is a **hard maximum**: reaching it always ends the swarm, even if
     it is still improving (the log says so), and the polish starts from the best particle found.
-  - Pattern search then polishes the swarm's best to Δ_min. Its laps are reserved: `--polish-laps` (default 120) of
-    `--max-laps` (default 400) are kept for it whatever the swarm does.
+  - Pattern search then polishes the swarm's best to Δ_min. Its evaluations are reserved: `--polish-evals` (default 120)
+    of `--max-evals` are kept for it whatever the swarm does.
   - PSO gives no proof of global optimality: no method does with a budget of laps on a black box. What it gives is a
-    sample of the whole space, so a lone basin is unlikely to be missed. `--method gps` skips the swarm.
+    sample of the whole space, so a lone basin is unlikely to be missed. `--pso-iterations 0` skips the swarm and
+    polishes the stored settings; `--polish-evals 0` is the swarm alone.
 - **Parallel and reproducible.** `-j N` flies a batch (a swarm generation, a complete poll) on N worker processes.
   The batch is fixed before it flies and its results are read in a fixed order (the poll stays opportunistic in the
   axis order), so `-j 1` and `-j N` give identical laps. Checked: 33 laps identical, 1.9 min against 0.7 min on 4
   cores. The swarm's random numbers come from a seeded generator (`--seed`), whose state is saved.
-- **Cutting slow laps, only in the polish.** A polishing lap stops at 1.25 × the best finished lap known when its batch
+- **Cutting slow laps, only in the PSO polish and only with `--train-k 0`.** Under the robust objective a lap's score
+  enters a tail average, where a cut could change a comparison, so nothing is cut. A polishing lap stops at 1.25 × the best finished lap known when its batch
   starts + 5 s. A cut lap scores as a DNF, and the polish only compares with that incumbent, which it could not have
   beaten anyway, so the decisions are unchanged. The swarm never cuts: each particle compares with its own best, which
   a cut could change.
@@ -228,9 +271,12 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 - **Results and wording.** After every course, `best.json`, `races/autopilot.json` and the CSV of every lap are written,
   with the time spent: swarm, polish, total, and wall time per lap. A search that ends no better than its start says
   "no improvement found over the starting settings". It is never reported as proof of an optimum.
-- **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once and remembered. The search starts from
-  the course's stored settings (`races/autopilot.json`), and only a faster finished lap replaces them.
-- **Results** (2026-10-20, all four courses, `-j 12`, default options, about 12 min in total). Every course
+- **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once per scenario and remembered. The search
+  starts from the course's stored settings (`races/autopilot.json`). An entry records its objective:
+  - under the same objective, only a better score replaces it;
+  - a result of another objective replaces it, because the scores do not compare.
+- **Results with the earlier single-lap objective and PSO** (2026-10-20, all four courses, `-j 12`, about 12 min in
+  total). Every course
   converged at Δ = 1/128 < Δ_min = 1/64: a mesh local optimum per course, not a proven global optimum.
 
   | course | before | after | collisions | laps | time |
