@@ -61,6 +61,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     ``start_offset`` [m] moves the start, ``mass_scale`` the quad's mass and inertia, ``thrust_scale`` every rotor's
     thrust, ``wind`` [m/s] the air the frame's drag acts against. Without it the lap is the nominal one."""
     import mujoco
+    from ogma import rotors
     rules = rules or Rules()
     xml = scene_xml or courses.to_mjcf(course)
     model = mujoco.MjModel.from_xml_string(xml)
@@ -123,11 +124,10 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         cmd_raw = float(np.sum(cmd))
         cmd = np.clip(cmd, 0.0, t_max)
         thrust += (cmd - thrust) * alpha
-        arms = (pos_r - np.array([0.0, 0.0, 0.0])) @ R.T
         applied = thrust * k_thrust
-        v_air = v - wind
-        force = zb * applied.sum() - 0.5 * refquad.RHO * refquad.CDA_FORWARD_M2 * np.linalg.norm(v_air) * v_air
-        torque = np.cross(arms, np.outer(applied, zb)).sum(axis=0) + zb * float(np.dot(spin, applied)) * prop.torque_per_thrust_m
+        force, torque = rotors.wrench(applied, R, pos_r, spin, prop.torque_per_thrust_m,        # about the COM (xfrc_applied acts there)
+                                      com_offset=data.xipos[body] - data.xpos[body])
+        force = force + rotors.quadratic_drag(v - wind, refquad.CDA_FORWARD_M2, refquad.RHO)
         data.xfrc_applied[body, :3] = force
         data.xfrc_applied[body, 3:] = torque
         for _ in range(n_sub):

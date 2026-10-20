@@ -69,23 +69,8 @@ class Flight:
 
     def mix(self, T: float, M: np.ndarray) -> tuple:
         """Rotor thrusts [N] for a collective thrust ``T`` and body torques ``M``; True when they had to be limited."""
-        lo, hi = self.idle * self.prop.max_thrust_N, self.prop.max_thrust_N
-        T = float(np.clip(T, 4 * lo, 4 * hi))
-        u = self.Ainv @ np.array([T, M[0], M[1], M[2]])
-        if lo - 1e-9 <= u.min() and u.max() <= hi + 1e-9:
-            return u, False
-        u = self.Ainv @ np.array([T, M[0], M[1], 0.0])                        # drop the yaw torque first
-        if not (lo - 1e-9 <= u.min() and u.max() <= hi + 1e-9):
-            k_lo, k_hi = 0.0, 1.0                                             # then scale roll and pitch
-            for _ in range(20):
-                k = 0.5 * (k_lo + k_hi)
-                v = self.Ainv @ np.array([T, k * M[0], k * M[1], 0.0])
-                if lo - 1e-9 <= v.min() and v.max() <= hi + 1e-9:
-                    k_lo = k
-                else:
-                    k_hi = k
-            u = self.Ainv @ np.array([T, k_lo * M[0], k_lo * M[1], 0.0])
-        return np.clip(u, lo, hi), True
+        from ogma import rotors
+        return rotors.mix(self.Ainv, T, M, self.idle * self.prop.max_thrust_N, self.prop.max_thrust_N)
 
     def attitude(self, R: np.ndarray, omega: np.ndarray, b3: np.ndarray, yaw: float) -> np.ndarray:
         """Body torques [N·m] that turn the frame's z axis onto ``b3`` at heading ``yaw``."""
