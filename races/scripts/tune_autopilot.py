@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """Tune the MuJoCo autopilot of the reference quad per race course (todo R.2): real MuJoCo, no mocks, no solver.
 
-    python tune_autopilot.py                  # all four courses: generalized pattern search until the mesh is below Δ_min (races/converge.py)
-    python tune_autopilot.py --delta-min 0.03 --max-laps 200   # a coarser convergence, a smaller safety budget
-    python tune_autopilot.py --round2         # the fixed grids instead (--quick: 4 laps per course)
-    python tune_autopilot.py --quick          # 4 laps per course, to see it work
+    python tune_autopilot.py                  # all four courses: a particle swarm (PSO), then a pattern-search polish (races/converge.py)
+    python tune_autopilot.py -j 8             # 8 worker processes flying laps side by side (default 1; it prints the CPU count)
     python tune_autopilot.py --courses hangar quarry
+    python tune_autopilot.py --pso-iterations 10 --polish-laps 150 --max-laps 400   # the swarm's hard limit, the polish's reserve
+    python tune_autopilot.py --method gps     # polish only, from the stored settings (--method pso: the swarm only)
+    python tune_autopilot.py --fresh          # start over instead of resuming
+    python tune_autopilot.py --round2 | --quick   # the earlier fixed grids
+
+Resumable: every PSO and polishing iteration is checkpointed to races/runs/tune/<course>.ckpt.json (atomically); a
+rerun with the same options continues where it stopped and skips finished courses; other options are refused (use
+--fresh). The same seed and options give the same laps whatever -j is.
 
 Every step prints a line; the whole output also goes to races/runs/tune/tune_<date>.log. Results:
-races/runs/tune/<course>.csv (every lap) and races/runs/tune/best.json (the winning settings per course)."""
+races/runs/tune/<course>_converge.csv (every lap), best.json and races/autopilot.json, written after every course,
+with the time spent (PSO, polishing, total, per lap)."""
 import os
 import subprocess
 import sys
