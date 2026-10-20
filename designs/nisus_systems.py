@@ -387,7 +387,7 @@ def cg_inertia(table: pd.DataFrame, p=None, *, design=None) -> dict:
     def shape(item):
         if item.startswith("wing:"):
             return om.Plate(a=c, b=b, axes="xy")
-        if item.startswith("pod:") and "shell" in item:
+        if item.startswith(("pod:", "fuselage:")) and "shell" in item:              # FALCO names its pod rows "fuselage:"
             return om.Shell(p["pod_length"] / 2000, p["pod_width"] / 2000, p["pod_height"] / 2000)   # thin ellipsoidal shell
         if item.startswith("booms:"):
             return om.Rod("x", p["boom_length"] / 1000)
