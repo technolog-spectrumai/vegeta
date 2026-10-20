@@ -45,7 +45,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 ## Vegeta application
 - [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
 
-## Later — the other graduations
+## Later
 - [ ] Drongo
 - [ ] Nisus / Nisus+ / Falco (+ `vegeta.mission` → `onboard`)
 - [ ] Onager series, Pekari, Perseus
