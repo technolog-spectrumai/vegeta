@@ -55,3 +55,33 @@ def test_neutral_scenario_is_the_nominal_lap():
     a = sim.run_mujoco(courses.industrial(), **kw)
     b = sim.run_mujoco(courses.industrial(), scenario={"start_offset": [0, 0, 0], "mass_scale": 1.0, "thrust_scale": 1.0, "wind": [0, 0, 0]}, **kw)
     assert (a["history"] == b["history"]).all() and a["stats"]["zones passed"] == b["stats"]["zones passed"]
+
+
+def test_training_set_is_fixed_and_disjoint_from_the_held_out_set():
+    t = validate.training(6)
+    assert t == validate.training(6) and t[0]["family"] == "nominal" and t[0]["scenario"] == {}
+    assert [s["family"] for s in t[1:]] == [f for f in validate.FAMILIES if f != "nominal"]
+    held = validate.scenarios(8)
+    assert not any(s["scenario"] and s["scenario"] == h["scenario"] for s in t for h in held)
+    with pytest.raises(ValueError):
+        validate.training(6, validate.SEED)
+
+
+def test_worst_mean_and_its_lower_bound():
+    s = [30.0, 31.0, 900.0, 32.0, 29.0, 40.0, 33.0]
+    assert validate.worst_mean(s) == pytest.approx((900 + 40 + 33) / 3) and validate.worst_mean([29.0]) == 29.0
+    for k in range(3, len(s)):                                     # over any part of the laps (at least m of them) it never exceeds the full score
+        assert validate.worst_mean(s[:k], 3) <= validate.worst_mean(s, 3)
+
+
+def test_record_compares_within_one_objective(tmp_path, monkeypatch):
+    from races import autopilot
+    monkeypatch.setattr(autopilot, "FILE", tmp_path / "autopilot.json")
+    autopilot.record("farm", {"settings": {"safety": 0.9}, "lap time [s]": 30.0})                   # a nominal-objective entry
+    rob = {"settings": {"safety": 0.6}, "lap time [s]": 36.0, "objective": "robust: …", "score": 40.0}
+    autopilot.record("farm", rob)
+    assert autopilot.tuned("farm") == {"safety": 0.6}                                          # another objective replaces it
+    autopilot.record("farm", {**rob, "settings": {"safety": 0.7}, "score": 45.0})
+    assert autopilot.tuned("farm") == {"safety": 0.6}                                          # a worse score of the same objective does not
+    autopilot.record("farm", {**rob, "settings": {"safety": 0.65}, "lap time [s]": 38.0, "score": 39.0})
+    assert autopilot.tuned("farm") == {"safety": 0.65}                                         # a better score does, though its lap is slower
