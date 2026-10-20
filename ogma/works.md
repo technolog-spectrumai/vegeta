@@ -128,9 +128,8 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
 - **Races COM-torque bug (fixed).** `races/sim.py` applied rotor torques about the body origin, not the COM
   (MuJoCo's `xfrc_applied` acts about the COM). Fixed in Piccolo by using `og.rotors.wrench`; the MuJoCo golden was
   re-recorded. **The user should re-tune `races/autopilot.json`** — the old gains were tuned on the wrong torques.
-- **Falco `fuselage:` rows get no shape inertia.** `nisus_systems.cg_inertia` picks shapes by item-name prefix and
-  Falco's fuselage rows match none, so they count as point masses. Known, not yet changed; fixing it is a reported
-  golden change.
+- **Falco `fuselage:` rows got no shape inertia (fixed in Vegeta 2026-10-21).** `nisus_systems.cg_inertia` now matches
+  `pod:` and `fuselage:` shell rows: Falco Iyy +4.4 %, Izz +1.8 %, Ixx +0.1 %.
 - **Constants drift (resolved for the design models, V3.11).** `og.aero.Airframe.g` defaults to `G` = 9.80665
   (its golden still checks Merlin's 9.81 numbers with `g=G_VEGETA`); Vegeta's design models take `G`/`RHO0` from
   `og.units`. The Chiron robots and controllers keep 9.81 — Chiron's MuJoCo gravity — until they graduate.

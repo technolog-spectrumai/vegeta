@@ -13,7 +13,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.mass` (shapes, Budget, `place_for_cg`)
 - [x] Vegeta `kestrel_systems.cg_inertia`, `nisus_systems.cg_inertia` over `og.mass`
 - [ ] the 7 battery-for-CG solves → `place_for_cg`
-- [ ] Falco `fuselage:` rows get their shape inertia (reported number change)
+- [x] Falco `fuselage:` rows get their shape inertia (Iyy +4.4 %, Izz +1.8 %)
 
 ## O2 — generic modules moved with history
 - [x] `og.gears`, `og.soil`, `og.tracks`, `og.cutting`, `og.actuators`
@@ -32,7 +32,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.aero` (Cf, Airframe, Polar, stability coefficients, aero wrench, vlm)
 - [x] Vegeta adopts `og.aero` (vegeta 8ae1f7a)
 - [x] Velutina wind → `og.wind`
-- [ ] unify `G` / `RHO` (each golden change its own commit)
+- [x] unify `G` / `RHO` on the design models (Chiron robots keep 9.81 until they graduate)
 
 ## O4 — graduate machines to Piccolo
 - [x] racing quad (Piccolo v2) — the only graduation for now
