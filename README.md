@@ -59,7 +59,7 @@ pinned to reference values. The way to check Vegeta quickly is `./test.sh --smok
 Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
 notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded
 evaluations, NOT RUN status; [docs/core.md](docs/core.md), `demo/06_core_revisions`). Next: comparison and
-sweeps, then a GUI — see [`todo.md`](todo.md).
+sweeps, then a GUI — see [`old_todo.md`](old_todo.md); the current work (the split, Ogma) is in [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
 |---------|-----|------------|-------|----------|

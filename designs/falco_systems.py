@@ -116,7 +116,7 @@ COMPONENTS = [
                      "ArduPilot has no propeller-stowing function (forum thread 'using magnetic position sensor on motor to stow the propeller', 2022: "
                      "a position-sensing ESC or a VESC in HFI mode are the suggestions), so the parking routine is a companion-computer script on "
                      "the Orin: brake to a stop with the ESC's active brake, read the sensor, nudge in reverse or forward to the horizontal mark",
-              note="to be proven on the bench: the brake's stopping angle and the nudge's repeatability (todo.md)"),
+              note="to be proven on the bench: the brake's stopping angle and the nudge's repeatability (old_todo.md)"),
     Component("ESC 80 A 3-8S, AM32 firmware (active freewheeling, brake, bidirectional)", "propulsion/ESC/wiring", 50.0, ZERO, _X_FW + 30.0, _Z_AXIS + 25.0, supply="battery", supply_v=BATTERY_V,
               p_idle_w=0.5, p_typ_w=0.5, p_peak_w=0.5, price_eur=60.0, kind="assumed",
               url="https://www.rotorama.com/product/pilotix-esc-4in1-pilotix-80a-am32-8s-cz",

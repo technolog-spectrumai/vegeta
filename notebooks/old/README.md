@@ -10,7 +10,7 @@ This directory keeps **39–42 unchanged**, with everything they produced still 
 figures), as the record of how the design got here. **38 `prop_lab` stays in `notebooks/`**: it is the live source of
 the propeller calibration the new notebook and the workflows read.
 
-They are not migrated or refactored (that is a separate item in `todo.md`), and they predate the workflow rule:
+They are not migrated or refactored (that is a separate item in `old_todo.md`), and they predate the workflow rule:
 39 runs the whole CFD and FEA campaign from its cells, 40 prepares FEA cases itself. To run one anyway, start the
 kernel in `notebooks/` (their paths are relative to it — `designs/`, `_runs/`, `output/`):
 

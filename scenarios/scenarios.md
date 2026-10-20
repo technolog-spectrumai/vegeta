@@ -72,7 +72,7 @@ and trim are missing. A free-surface scenario (interFoam, VOF) is a later step.
 - [ ] First real runs on a machine with OpenFOAM: disk thrust sign, mesh quality, measured run times → this file
 
 Later: read the design from a JSON exported by the notebooks instead of the presets; a free-surface boat
-(interFoam); resolved rotating propellers instead of disks (`todo.md` 4.12).
+(interFoam); resolved rotating propellers instead of disks (`old_todo.md` 4.12).
 
 ## Apheloria packs and unpacks (MuJoCo)
 
