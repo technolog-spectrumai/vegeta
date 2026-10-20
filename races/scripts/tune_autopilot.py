@@ -26,7 +26,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]          # the Piccolo repository
 OUT = ROOT / "races" / "runs" / "tune"
 BACKENDS = ("egl", "osmesa", "glfw", "")              # "" = MUJOCO_GL unset: MuJoCo's own choice
 
@@ -79,8 +79,7 @@ def bootstrap(out: Path, name: str, probes=(IMPORT_PROBE,)):
     sys.stdout = sys.stderr = Tee(sys.__stdout__, log.open("w"))
     say(f"repository {ROOT}")
     say(f"python {sys.executable} ({sys.version.split()[0]}); log {log}")
-    for p in (ROOT, ROOT / "designs", ROOT / "vegeta-cli" / "src", ROOT / "vegeta-core" / "src",
-              ROOT / "vendor" / "ozaru" / "porunga" / "src", ROOT / "vendor" / "ozaru" / "yanus" / "src"):
+    for p in (ROOT, ROOT / "races" / "scripts"):
         if p.is_dir() and str(p) not in sys.path:
             sys.path.insert(0, str(p))
     for k, probe in enumerate(probes):

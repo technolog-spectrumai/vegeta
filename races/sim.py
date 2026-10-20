@@ -3,7 +3,7 @@ the same referee and the same result format as the mock; run it yourself with ``
 
 The reference quad is the free body in the scene (``refquad.mjcf_body``); every control step the rotor hook puts the
 four thrusts (first-order lag, the drive table's limit at the axial inflow, the propellers' drag torques) and the
-frame's drag on it through ``data.xfrc_applied``; Drongo's geometric flight controller (``drongo_controller.Flight``:
+frame's drag on it through ``data.xfrc_applied``; Drongo's geometric flight controller (``races.flight.Flight``, copied from Vegeta's ``drongo_controller``:
 position → attitude → mixer) follows the racing line's moving reference; the referee reads the contacts from
 ``data.contact`` and the position; a reset teleports the free joint to the checkpoint. Cameras: ``overview``,
 ``grandstand`` (scene), ``onboard``, ``chase`` (quad); ``render`` makes frames from a recorded run with
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import math
 import os
-import sys
 from pathlib import Path as _P
 
 os.environ.setdefault("MUJOCO_GL", "egl")             # the renderer's backend, read when mujoco is first imported
@@ -28,14 +27,11 @@ from .rules import STUCK, Referee, Rules
 G = 9.81
 PILOT_COLUMNS = ["t", "v_ref", "p_err", "tilt_cmd", "tilt", "thrust_cmd", "thrust_max", "saturated", "mode"]
 PILOT_MODES = ["racing", "hover", "missed gate: back", "drop: approach", "drop: align", "drop: descend"]
-DESIGNS = _P(__file__).resolve().parents[1] / "designs"
 
 
 def _flight(prop, *, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_deg: float = 60.0):
     """Drongo's ``Flight`` with this quad's layout (its reset reads the body's inertia from the model)."""
-    if str(DESIGNS) not in sys.path:
-        sys.path.insert(0, str(DESIGNS))
-    import drongo_controller as dc
+    from . import flight as dc
 
     class QuadFlight(dc.Flight):
         def reset(self, model, data, root_jnt):            # the same maths as dc.Flight.reset without a ChironLab
@@ -93,7 +89,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         mujoco.mj_setConst(model, data)                                    # the derived constants follow (it uses data as scratch: the state is put back)
         data.qpos[:], data.qvel[:] = q, qd
         mujoco.mj_forward(model, data)
-    import drongo_controller as dc
+    from . import flight as dc
     thrust = np.zeros(4)
     alpha = 1.0 - math.exp(-control_dt / prop.spin_up_s)
     n_sub = max(int(round(control_dt / model.opt.timestep)), 1)

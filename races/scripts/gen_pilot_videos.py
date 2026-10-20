@@ -26,10 +26,10 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]          # the Piccolo repository
 OUT = ROOT / "races" / "runs" / "videos"
 CAMERAS = ("fpv", "chase", "overview")                # fpv: the on-board first-person camera; chase: third person behind the quad
-LOGO = ROOT / "notebooks" / "logo.png"
+LOGO = ROOT / "races" / "assets" / "logo.png"     # the logo the videos have carried since Vegeta
 
 
 def _write_atomic(path: Path, obj):
@@ -193,6 +193,7 @@ def _report(r: dict, index: dict) -> int:
 
 if __name__ == "__main__":
     sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "races" / "scripts"))      # tune_autopilot, its neighbour
     import tune_autopilot
     tune_autopilot.say = lambda msg: print(f"gen_pilot_videos: {msg}", flush=True)
     boot = tune_autopilot.bootstrap(OUT, "videos", probes=(tune_autopilot.RENDER_PROBE, tune_autopilot.IMPORT_PROBE))

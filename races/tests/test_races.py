@@ -79,15 +79,15 @@ def test_metrics_and_envelope():
 
 
 def test_chapter_script_with_the_mock(tmp_path):
-    """The workflow chapter (wf R1) under the run contract, on the mock: a completed run with the summary, the
+    """The race lab (races/lab/race.py; Vegeta's side-lab chapter R1 until the racing quad hatched), on the mock: a completed run with the summary, the
     statistics, the manoeuvre metrics and three videos (mp4 with ffmpeg, else gif)."""
     import json
     import subprocess
     import sys
     from pathlib import Path
-    script = Path(__file__).resolve().parents[2] / "side_labs" / "races" / "race.py"
+    script = Path(__file__).resolve().parents[2] / "races" / "lab" / "race.py"
     out = tmp_path / "run"
-    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--quality", "screening", "--out", str(out), "--no-progress", "--quiet", "--ignore-prerequisites"], capture_output=True, text=True, timeout=600)
+    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--quality", "screening", "--out", str(out), "--quiet"], capture_output=True, text=True, timeout=600)
     assert p.returncode == 0, p.stdout[-2000:] + p.stderr[-2000:]
     s = json.loads((out / "summary.json").read_text())
     assert s["state"] == "completed" and s["counts"]["solved"] == 4 and s["mode"] == "mock"
@@ -103,9 +103,9 @@ def test_ingest_digests_a_run_tree(tmp_path):
     import sys
     from pathlib import Path
     from races import ingest
-    script = Path(__file__).resolve().parents[2] / "side_labs" / "races" / "race.py"
+    script = Path(__file__).resolve().parents[2] / "races" / "lab" / "race.py"
     run = tmp_path / "runs" / "hangar" / "20260101-000000_refquad_screening_mock"
-    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--no-video", "--out", str(run), "--no-progress", "--quiet", "--ignore-prerequisites"], capture_output=True, text=True, timeout=600)
+    p = subprocess.run([sys.executable, str(script), "--chapter", "hangar", "--mock", "--no-video", "--out", str(run), "--quiet"], capture_output=True, text=True, timeout=600)
     assert p.returncode == 0, p.stdout[-1500:] + p.stderr[-1500:]
     (tmp_path / "runs" / "farm" / "20260101-000001_refquad_screening").mkdir(parents=True)
     doc = ingest.ingest(tmp_path / "runs", with_mock=False)

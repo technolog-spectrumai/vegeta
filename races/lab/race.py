@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Book races (code R): one chapter per course — the reference quad's MuJoCo lap and its videos — under the run
-contract (runkit): a run directory with the manifest, the cases, the summary.
+"""One race lab run: a course's reference-quad lap (MuJoCo, or the mock flyer) and its videos, in a run directory
+that ``python -m races ingest`` reads (manifest.json, status.json, run.log, cases/<case>/case.json + files,
+summary.json).
 
-    python side_labs/races/race.py --chapter farm [--quality screening|fine] [--mock] [--list]
+    python races/lab/race.py --chapter farm [--quality screening|fine] [--mock] [--list] [--out DIR]
 
 Cases: ``race`` (the lap: trajectory.npz, stats.json, map.png), then the videos ``video-chase``, ``video-onboard``,
 ``video-overview`` (MuJoCo camera frames through ffmpeg when an OpenGL context exists — set MUJOCO_GL=egl — else the
-matplotlib replay to mp4, said so in the case record). ``--quality screening`` (auto mode) makes short, small videos
-and a shorter timeout; ``--mock`` runs the point-mass flyer instead of MuJoCo (the smoke tests; the summary says
-``mode: mock``). The summary: ``counts``, ``stats`` (lap time, completion, collisions, energy, speeds, powers),
-``manoeuvre`` (``races.metrics``), ``gate_times``, ``videos`` (relative paths), ``course``, ``mode``.
+matplotlib replay to mp4, said so in the case record). ``--quality screening`` makes short, small videos and a
+shorter timeout; ``--mock`` runs the point-mass flyer instead of MuJoCo (``mode: mock`` in the summary). The summary:
+``counts``, ``stats`` (lap time, completion, collisions, energy, speeds, powers), ``manoeuvre`` (``races.metrics``),
+``gate_times``, ``videos`` (relative paths), ``course``, ``mode``.
+
+This was Vegeta's side-lab book R (``side_labs/races/race.py``, under the side labs' run contract); it graduated to
+Piccolo with the racing quad and now writes its own run directories (``Run`` below) in the same layout.
 """
 from __future__ import annotations
 
@@ -18,20 +22,65 @@ import json
 import os
 import sys
 import time
+import traceback
 from pathlib import Path
 
 os.environ.setdefault("MUJOCO_GL", "egl")             # before the first `import mujoco`: the camera renderer's backend on a headless or Jupyter session (glfw/osmesa also work)
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "side_labs" / "kestrel"))
-sys.path.insert(0, str(ROOT / "side_labs"))
 sys.path.insert(0, str(ROOT))
-import _kestrel as wk  # noqa: E402
-import runkit  # noqa: E402
+RUNS = ROOT / "races" / "runs" / "lab"                # races/ingest.py reads <RUNS>/<course>/<run>/
 
 WORKFLOW = "race"
 BOOK = "races"
 KIND = "race"
 CAMERAS = ("chase", "onboard", "overview")
+
+
+def _write_json(path: Path, doc) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str))
+    os.replace(tmp, path)
+
+
+class Run:
+    """A run directory: the manifest, the state, a log, one folder per case with its record, the summary."""
+
+    def __init__(self, root: Path, manifest: dict, echo: bool = True):
+        self.root, self.echo = Path(root), echo
+        self.cases_dir = self.root / "cases"
+        self.cases_dir.mkdir(parents=True, exist_ok=False)
+        self.manifest = {**manifest, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        _write_json(self.root / "manifest.json", self.manifest)
+        self.status("running")
+
+    def log(self, msg: str) -> None:
+        line = f"{time.strftime('%H:%M:%S')} {msg}"
+        with open(self.root / "run.log", "a") as f:
+            f.write(line + "\n")
+        if self.echo:
+            print(line, flush=True)
+
+    def status(self, state: str, **extra) -> None:
+        _write_json(self.root / "status.json", {"state": state, "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **extra})
+
+    def case(self, name: str, fn) -> dict:
+        d = self.cases_dir / name
+        d.mkdir(parents=True, exist_ok=True)
+        t0 = time.monotonic()
+        try:
+            rec = fn(name, d)
+        except Exception as e:                                             # a failed case is recorded, the run goes on
+            rec = {"status": "FAILED", "note": f"{type(e).__name__}: {e}"}
+            self.log(traceback.format_exc())
+        rec["elapsed_s"] = round(time.monotonic() - t0, 2)
+        _write_json(d / "case.json", rec)
+        self.log(f"{name}: {rec['status']} — {rec.get('note', '')}")
+        return rec
+
+    def finish(self, summary: dict, state: str) -> int:
+        _write_json(self.root / "summary.json", {**summary, "state": state})
+        self.status(state)
+        return 0 if state == "completed" else 1
 
 
 def main(argv=None) -> int:
@@ -51,43 +100,38 @@ def main(argv=None) -> int:
     ap.add_argument("--omega-att", type=float, default=18.0, help="the attitude loop's bandwidth [rad/s]")
     ap.add_argument("--tilt-max", type=float, default=60.0, help="the largest tilt the position loop may ask for [deg]")
     ap.add_argument("--no-video", action="store_true")
-    runkit.add_common_arguments(ap)
+    ap.add_argument("--list", action="store_true", help="list the cases and exit")
+    ap.add_argument("--cases", default=None, help="comma-separated subset of the cases")
+    ap.add_argument("--out", default=None, help="the run directory (default races/runs/lab/<course>/<time>_<quality>[_mock])")
+    ap.add_argument("--prepare-only", action="store_true", help="write the scene, run nothing")
+    ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
-    if args.resume:
-        cfg = (runkit.read_json(Path(args.resume) / "manifest.json") or {}).get("config") or {}
-        if cfg:
-            args.chapter, args.quality, args.mock = cfg.get("campaign", args.chapter), cfg.get("quality", args.quality), cfg.get("mock", args.mock)
     config = {"workflow": WORKFLOW, "book": BOOK, "kind": KIND, "chapter": args.chapter, "campaign": args.chapter, "variant": "refquad", "quality": args.quality, "mock": bool(args.mock),
               "collision": args.collision, "safety": args.safety, "v_cap": args.v_cap, "lookahead": args.lookahead, "omega_pos": args.omega_pos, "omega_att": args.omega_att, "tilt_max": args.tilt_max}
     course = courses.build(args.chapter)
     fp = {"aircraft": "reference 5-inch quad", "mass_kg": refquad.MASS_KG, "course": course.slug, "course_params": course.params, "zones": len(course.zones)}
     names = ["race"] + ([] if args.no_video else [f"video-{c}" for c in CAMERAS])
-    names = runkit.select_cases(names, args.cases)
+    if args.cases:
+        want = {c.strip() for c in args.cases.split(",")}
+        names = [n for n in names if n in want]
     if args.list:
         print(f"{course.name}: {course.length():.0f} m, {len(course.zones)} zones — {course.description}")
         for n in names:
             print(f"  {n:16s} {'the MuJoCo lap (or the mock with --mock)' if n == 'race' else 'video from the recorded lap'}")
         return 0
-    ignored = wk.prerequisites_or_exit(BOOK, args.chapter, variant="refquad", expected=fp, ignore=args.ignore_prerequisites)
-    if args.resume:
-        run = runkit.Run.open(args.resume, config=config, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    else:
-        out = Path(args.out) if args.out else wk.library.run_dir(BOOK, args.chapter, f"refquad_{args.quality}" + ("_mock" if args.mock else ""))
-        versions = {}
-        try:
-            import mujoco
-            versions["mujoco"] = mujoco.__version__
-        except Exception:
-            versions["mujoco"] = None
-        run = runkit.Run.create(out, workflow=WORKFLOW, campaign=args.chapter, config=config, design=fp, planned_cases=names, versions=versions, heartbeat_s=args.heartbeat, echo=not args.quiet)
-    run.manifest.update(book=BOOK, chapter=args.chapter, kind=KIND, prerequisites_ignored=ignored, yanus={"needs": wk.GATE["needs"]})
-    runkit.write_json_atomic(run.root / "manifest.json", run.manifest)
-    bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"race {args.chapter}")
+    out = Path(args.out) if args.out else RUNS / args.chapter / (time.strftime("%Y%m%d_%H%M%S") + f"_{args.quality}" + ("_mock" if args.mock else ""))
+    versions = {}
+    try:
+        import mujoco
+        versions["mujoco"] = mujoco.__version__
+    except Exception:
+        versions["mujoco"] = None
+    run = Run(out, {"workflow": WORKFLOW, "book": BOOK, "chapter": args.chapter, "campaign": args.chapter, "kind": KIND, "config": config,
+                    "design": fp, "planned_cases": names, "tool_versions": versions}, echo=not args.quiet)
     rules = Rules(collision=args.collision, timeout_s=120.0 if args.quality == "screening" else 300.0)
-    budget = runkit.Budget(args.max_cases, args.max_minutes, args.case_timeout)
     state = {"result": None}
 
-    def one(name, case_dir, cancel):
+    def one(name, case_dir):
         case_dir = Path(case_dir)
         case_dir.mkdir(parents=True, exist_ok=True)
         if name == "race":
@@ -137,26 +181,23 @@ def main(argv=None) -> int:
             how = "the matplotlib replay (no MuJoCo renderer)"
         return {"status": "solved", "process": "ok", "converged": True, "note": f"{made.name}: {how}", "metrics": {"bytes": made.stat().st_size}, "artifacts": {"video": str(made)}}
 
-    with run.signals():
-        run.status("running")
-        end_state = wk.drive(run, names, {n: f"{course.slug}:{n}:{args.quality}:{'mock' if args.mock else 'mujoco'}" for n in names}, one, budget=budget, rerun_failed=args.rerun_failed, cache=None, progress=bars)
-    if args.prepare_only:
-        end_state = "prepared"
-    rec = run.records
+    rec = {}
+    for n in names:
+        rec[n] = run.case(n, one)
+    end_state = "prepared" if args.prepare_only else "completed"
     res = state["result"]
     st = json.loads((run.cases_dir / "race" / "stats.json").read_text()) if (run.cases_dir / "race" / "stats.json").exists() else {}
-    videos = {n.split("-", 1)[1]: str(Path(r.artifacts["video"]).relative_to(run.root)) for n, r in rec.items() if n.startswith("video") and r.artifacts.get("video")}
+    videos = {n.split("-", 1)[1]: str(Path(r["artifacts"]["video"]).relative_to(run.root)) for n, r in rec.items() if n.startswith("video") and r.get("artifacts", {}).get("video")}
     summary = {"schema": 1, "book": BOOK, "chapter": args.chapter, "course": {"name": course.name, "slug": course.slug, "kind": course.kind, "length_m": course.length(), "zones": [z.name for z in course.zones], "params": course.params},
                "aircraft": refquad.summary(), "mode": "mock" if args.mock else "mujoco", "quality": args.quality, "rules": {k: v for k, v in rules.__dict__.items() if k != "text"},
                "stats": st.get("stats"), "manoeuvre": st.get("manoeuvre"), "gate_times": st.get("gate times"), "videos": videos,
-               "counts": {"n": len(names), "solved": sum(r.status == "solved" for r in rec.values()), "failed": sum(r.status == "FAILED" for r in rec.values())}}
-    bars.close()
+               "counts": {"n": len(names), "solved": sum(r["status"] == "solved" for r in rec.values()), "failed": sum(r["status"] == "FAILED" for r in rec.values())}}
     race_rec = rec.get("race")
-    if end_state == "completed" and (race_rec is None or race_rec.status in ("FAILED", "NOT RUN")) and not args.prepare_only:
+    if end_state == "completed" and (race_rec is None or race_rec["status"] in ("FAILED", "NOT RUN")):
         end_state = "failed"                                                   # no lap, no statistics: the run must not count as a lap
-        summary["note"] = f"the race case did not run: {getattr(race_rec, 'note', '') or 'see run.log'}"
-    code = run.finish(summary, state=end_state, note=summary.get("note", ""))
-    wk.closing(run, code, hint=wk.pin_hint(run))
+        summary["note"] = f"the race case did not run: {(race_rec or {}).get('note') or 'see run.log'}"
+    code = run.finish(summary, state=end_state)
+    print(f"race {args.chapter}: {end_state} — {run.root}")
     return code
 
 

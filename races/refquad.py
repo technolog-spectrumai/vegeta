@@ -3,7 +3,7 @@ three-blade propellers, a 4-in-1 ESC, a flight controller, an FPV camera and vid
 
 The all-up mass comes from the component budget (``BUDGET``); the motors are 1750 KV, the voltage 6S (22.2 V nominal,
 25.2 V full) — a 2400 KV motor is a 4S motor and would over-speed the 5x4.3 on 6S. The propulsion is the existing
-Boreas blade-element table for this exact drive (``designs/data/mini_raptor_drive_6S_5x4p3.json``: thrust
+Boreas blade-element table for this exact drive (``races/data/mini_raptor_drive_6S_5x4p3.json``, from Vegeta: thrust
 limit and electrical power against axial inflow, made by ``mini_raptor.drive_table``); when the file is missing, an
 analytic fallback of the same shape is used and said so. The MJCF body (``mjcf_body``) carries the frame, the arms,
 the motors and the propeller discs as collision geometry, an onboard FPV camera tilted up and a chase camera.
@@ -19,7 +19,7 @@ import numpy as np
 
 G, RHO = 9.81, 1.225
 ROOT = Path(__file__).resolve().parents[1]
-DRIVE_JSON = ROOT / "designs" / "data" / "mini_raptor_drive_6S_5x4p3.json"
+DRIVE_JSON = ROOT / "races" / "data" / "mini_raptor_drive_6S_5x4p3.json"   # Boreas's table, copied from Vegeta (races/data/PROVENANCE.md)
 
 #: the component budget [g], realistic catalogue values
 BUDGET = {

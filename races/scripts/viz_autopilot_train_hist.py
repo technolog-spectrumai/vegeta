@@ -12,11 +12,12 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]          # the Piccolo repository
 
 
 def main(argv=None) -> int:
     sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "races" / "scripts"))      # tune_autopilot, its neighbour
     from races import courses, trainviz
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--courses", nargs="*", default=None, choices=list(courses.COURSES), help="default: every course with a training history")

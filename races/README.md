@@ -1,10 +1,10 @@
 # Races — four drone race environments in MuJoCo for the reference 5-inch quad
 
 Four courses, one reference aircraft, one autopilot, one set of rules, a mock flyer for development, a thin CLI
-and one notebook per course in `notebooks/races/` (`01_hangar`, `02_industrial`, `03_farm`, `04_quarry`) with
+and one notebook per course in `races/notebooks/` (`01_hangar`, `02_industrial`, `03_farm`, `04_quarry`) with
 `race_design_factors` combining their exports. MuJoCo does the rigid body and the contacts; the aircraft's
 aerodynamics and propulsion are the existing models (the Boreas drive table of the 6S 5x4.3 2207 drive, the frame's
-drag area) and the flight controller is Drongo's geometric controller (`designs/drongo_controller.Flight`).
+drag area) and the flight controller is Drongo's geometric controller (`races/flight.py`, copied from Vegeta's `designs/drongo_controller.Flight` when the racing quad hatched).
 Nothing is redesigned, no CFD, no FEA, no learning.
 
 | course | kind | length | zones | what it is |
@@ -18,7 +18,7 @@ Nothing is redesigned, no CFD, no FEA, no learning.
 A carbon X-frame 5-inch racing quad: four **2207 1750 KV** motors on **6S** (22.2 V nominal; a 2400 KV 2207 is a 4S
 motor), 5x4.3 three-blade propellers, a 4-in-1 ESC, a flight controller, an FPV camera and video transmitter, a
 6S 1300 mAh pack. All-up mass **571 g** from the component budget (`refquad.BUDGET`). Propulsion: the Boreas table
-`designs/data/mini_raptor_drive_6S_5x4p3.json` (thrust limit and electrical power against axial inflow;
+`races/data/mini_raptor_drive_6S_5x4p3.json` (from Vegeta, `races/data/PROVENANCE.md`; thrust limit and electrical power against axial inflow;
 18.4 N static per motor, thrust-to-weight 13), with an analytic fallback that says so. Drag: 0.016 m² at racing tilt.
 
 ## Zones, rules, statistics (`races/rules.py`)
@@ -46,8 +46,8 @@ vector's lateral acceleration, braking and acceleration between zones, the top s
 reference (`carrot`: short look-ahead, no corner cut larger than the zone, a return to a missed zone).
 
 ## As workflow chapters (Yanus): book `races`, code R
-`wf R1`–`R4` (`side_labs/races/race.py --chapter <course>`) run a course under the run contract: a run directory
-under `side_labs/runs/races/<course>/` with the manifest, the case `race` (trajectory, stats, map) and the cases
+`python races/lab/race.py --chapter <course>` (in Vegeta: the side-lab chapters `wf R1`–`R4`) runs a course: a run directory
+under `races/runs/lab/<course>/` with the manifest, the case `race` (trajectory, stats, map) and the cases
 `video-chase`, `video-onboard`, `video-overview` (MuJoCo camera frames through ffmpeg when an OpenGL context exists —
 `MUJOCO_GL=egl` — else the matplotlib replay, said so in the case record), and `summary.json` with the statistics,
 the manoeuvre metrics and the video paths. Notebook 50 **takes** these runs through its gate: it shows the videos and
@@ -65,7 +65,7 @@ reference quad could do from its drive table and an inertia estimate; `LITERATUR
 percentiles, since differentiated samples spike at the zone hand-overs.
 
 ## Digesting the results: `python -m races ingest`
-`races/ingest.py` walks `side_labs/runs/races/`, takes the newest completed lap per course and writes one
+`races/ingest.py` walks `races/runs/lab/`, takes the newest completed lap per course and writes one
 `ingest_race.json`: the run's manifest essentials and tool versions, the referee's statistics, the manoeuvre metrics
 recomputed from the trajectory, the per-zone splits (time, distance, mean and peak speed and power, energy, altitude
 band), the events, the collisions, the closest approach to any obstacle, a 2 Hz downsampled trajectory (with tilt and
@@ -73,7 +73,7 @@ body rates when recorded), the videos' names and sizes, the tail of run.log, eve
 note, the mock baseline, and a cross-course comparison. That file is what to hand over for analysis; the videos and
 scenes stay where they are.
 
-## The race notebooks (`notebooks/races/`)
+## The race notebooks (`races/notebooks/`)
 Each course notebook sets the course up (its builder's parameters in `COURSE_PARAMS`), flies the mock lap (always,
 headless, seconds) and, with `GENERATE_VIDEO = True`, the MuJoCo lap and its videos (overview, chase, onboard: the
 recorded trajectory through the scene cameras). Every run is written by `races/export.py` to
@@ -87,8 +87,8 @@ recorded under `artifacts.video_errors`.
 three views apart: **per course** (measured, no margins), **pooled** (all valid laps end to end, time-weighted) and
 the **worst-case envelope** (worst valid course × a stated margin = the requirement). DNF runs are listed and excluded;
 rows no run supports (hover thrust / weight, an endurance requirement) are `unavailable`, not numbers. It writes
-`designs/data/races/race_design_factors.json` and `race_design_factors_comparison.csv`. The earlier hand-over
-(`designs/data/race_design_factors.json`, notebook 51, now removed) is kept as it was; of its four MuJoCo laps only the industrial one
+`races/data/design_factors/race_design_factors.json` and `race_design_factors_comparison.csv` (handed back to Vegeta's `designs/data/races/`). The earlier hand-over
+(Vegeta's `designs/data/race_design_factors.json`, notebook 51, now removed) is kept as it was; of its four MuJoCo laps only the industrial one
 finished (hangar, farm and quarry were DNF, six collisions each), yet their elapsed simulated time is listed as lap
 time and their statistics feed the requirements; its "all courses" column is the worst case, and its "hover thrust /
 weight required" is the manoeuvre load factor × 1.3 — read it with that in mind. `races/analysis.py`
@@ -98,7 +98,7 @@ weight required" is the manoeuvre load factor × 1.3 — read it with that in mi
 The first real laps (the hangar, 2026-10-18) showed the geometric controller lagging the racing line by metres where
 the mock lagged by 0.25 m, so the MuJoCo defaults are conservative: schedule `--safety 0.6`, `--tilt-max 60`,
 `--lookahead 0.25`, `--omega-pos 2.5`, `--omega-att 18`. Raise them per course once a lap is clean
-(`wf R3 --safety 0.8 --tilt-max 70`); the manifest records them and the ingest file carries them under
+(`python races/lab/race.py --chapter farm --safety 0.8 --tilt-max 70`); the manifest records them and the ingest file carries them under
 `referee.controller`.
 
 ## Running

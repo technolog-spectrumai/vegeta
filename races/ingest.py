@@ -1,11 +1,11 @@
-"""One file to hand over: ``ingest_race.json`` — every race run under ``side_labs/runs/races/`` digested into a single
+"""One file to hand over: ``ingest_race.json`` — every race run under ``races/runs/lab/`` digested into a single
 compact JSON: per course the newest completed run (its manifest essentials, the referee's statistics, the manoeuvre
 metrics recomputed from the trajectory, the gate splits with the speed and power over each split, the events, a
 downsampled trajectory, the collisions, the videos' names and sizes, the tail of run.log) plus every other run's
 state and failure note, the mock baseline for the same courses, and a cross-course comparison. No videos, no
 scene files: those stay where they are.
 
-    python -m races ingest                                  # side_labs/runs/races → ingest_race.json
+    python -m races ingest                                  # races/runs/lab → ingest_race.json
     python -m races ingest --runs <dir> --out <file> --hz 2 --no-mock
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ import numpy as np
 from . import courses, metrics, mock, refquad
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RUNS = ROOT / "side_labs" / "runs" / "races"
+DEFAULT_RUNS = ROOT / "races" / "runs" / "lab"              # races/lab/race.py (in Vegeta: side_labs/runs/races)
 
 
 def _read(p: Path):
@@ -187,11 +187,11 @@ def write(doc: dict, out: Path) -> Path:
 
 
 # ================================================================================================= scanning for runs
-SCAN_ROOTS = (ROOT / "side_labs" / "runs" / "races", ROOT / "races" / "runs", ROOT / "races" / "runs" / "notebook")
+SCAN_ROOTS = (ROOT / "races" / "runs" / "lab", ROOT / "races" / "runs", ROOT / "races" / "runs" / "notebook")
 
 
 def scan(roots=SCAN_ROOTS, *, extra=()) -> "pd.DataFrame":
-    """Every race run found where the workflows (``side_labs/runs/races/<course>/<run>/``) and the thin CLI
+    """Every race run found where the race lab (``races/runs/lab/<course>/<run>/``) and the thin CLI
     (``races/runs/<course>_<aircraft>_<mode>/``) write them, plus any ``extra`` folders: course, run, state, mode,
     quality, created, whether the lap's trajectory and stats are there, the videos, the sizes, the failure note."""
     import pandas as pd
@@ -222,7 +222,7 @@ def scan(roots=SCAN_ROOTS, *, extra=()) -> "pd.DataFrame":
 
 def expected_locations() -> dict:
     """Where the files are supposed to be, for the scan's report when nothing is found."""
-    return {"workflow runs (wf R1–R4)": str(ROOT / "side_labs" / "runs" / "races" / "<course>" / "<timestamp>_refquad_<quality>" / "cases" / "race" / "{trajectory.npz, stats.json, map.png, scene.xml}"),
-            "workflow videos": str(ROOT / "side_labs" / "runs" / "races" / "<course>" / "<run>" / "cases" / "video-<camera>" / "<course>_<camera>.mp4"),
+    return {"workflow runs (wf R1–R4)": str(ROOT / "races" / "runs" / "lab" / "<course>" / "<timestamp>_<quality>" / "cases" / "race" / "{trajectory.npz, stats.json, map.png, scene.xml}"),
+            "workflow videos": str(ROOT / "races" / "runs" / "lab" / "<course>" / "<run>" / "cases" / "video-<camera>" / "<course>_<camera>.mp4"),
             "thin CLI runs (python -m races run)": str(ROOT / "races" / "runs" / "<course>_refquad_<mode>" / "{trajectory.npz, stats.json, map.png, replay.gif}"),
             "ingest file": str(ROOT / "ingest_race.json"), "notebook 50's export": str(ROOT / "designs" / "data" / "four_races.json")}

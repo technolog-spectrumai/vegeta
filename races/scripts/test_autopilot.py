@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]          # the Piccolo repository
 OUT = ROOT / "races" / "runs" / "validate"
 
 
@@ -100,6 +100,7 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "races" / "scripts"))      # tune_autopilot, its neighbour
     import tune_autopilot
     tune_autopilot.say = lambda msg: print(f"test_autopilot: {msg}", flush=True)
     if tune_autopilot.bootstrap(OUT, "validate") is None:
