@@ -168,16 +168,30 @@ class Budget:
         return out
 
 
-def place_for_cg(budget: Budget, kg: float, target: float, bay: tuple, axis: int = 0) -> tuple:
-    """Where along ``axis`` an item of ``kg`` must sit for the assembly's CG to be at ``target``, clipped to
-    ``bay`` = (lo, hi): returns (position, clipped). The algebra every Vegeta mass table repeated for its battery."""
-    m = budget.mass
-    moment = float(sum(i.kg * i.pos[axis] for i in budget.items))
-    x = (target * (m + kg) - moment) / kg
+def place_mass_for_cg(mass: float, moment: float, kg: float, target: float, bay: tuple | None = None) -> tuple:
+    """Where an item of ``kg`` must sit for the CG of an assembly (``mass``, first ``moment`` = Σ m x along the axis,
+    any consistent units) plus the item to be at ``target``, clipped to ``bay`` = (lo, hi) if given: returns
+    (position, clipped). The algebra every Vegeta mass table repeated for its battery, for tables that keep their own
+    sums (lists of dicts, DataFrames)."""
+    x = (target * (mass + kg) - moment) / kg
+    if bay is None:
+        return float(x), False
     lo, hi = bay
     if lo <= x <= hi:
         return float(x), False
     return float(min(max(x, lo), hi)), True
+
+
+def cg_with(mass: float, moment: float, kg: float, x: float) -> float:
+    """The CG of an assembly (``mass``, ``moment``) once an item of ``kg`` sits at ``x``."""
+    return (moment + kg * x) / (mass + kg)
+
+
+def place_for_cg(budget: Budget, kg: float, target: float, bay: tuple, axis: int = 0) -> tuple:
+    """Where along ``axis`` an item of ``kg`` must sit for the budget's CG to be at ``target``, clipped to ``bay`` =
+    (lo, hi): returns (position, clipped)."""
+    moment = float(sum(i.kg * i.pos[axis] for i in budget.items))
+    return place_mass_for_cg(budget.mass, moment, kg, target, bay)
 
 
 def point_inertia(masses, positions) -> np.ndarray:
@@ -194,4 +208,4 @@ def solid_density_mass(volume_m3: float, density: float, fill: float = 1.0) -> f
 
 
 __all__ = ["Rod", "Plate", "Shell", "Box", "Sphere", "Cylinder", "Ellipsoid", "Item", "MassProperties", "Budget",
-           "place_for_cg", "point_inertia", "solid_density_mass"]
+           "place_for_cg", "place_mass_for_cg", "cg_with", "point_inertia", "solid_density_mass"]
