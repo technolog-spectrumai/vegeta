@@ -9,7 +9,7 @@ import importlib
 
 __version__ = "0.1.0"
 _MODULES = ("units", "frames", "mass", "gears", "soil", "tracks", "cutting", "actuators", "motors", "batteries", "atmosphere", "wind",
-            "propulsion", "rotors", "aero")
+            "propulsion", "rotors", "aero", "mujoco", "cad", "gazebo")
 
 
 def __getattr__(name):
