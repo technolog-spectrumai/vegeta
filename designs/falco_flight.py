@@ -32,10 +32,7 @@ from nisus_plus_flight import (FLAP_TAU, N_STRUCTURAL, V_NE_EAS, V_FE_EAS, V_CRU
                                glide_state, descent_table, best_descent, regen_table, downdraft_escape, operating_limits,
                                stall_table, gust_response, pull_up, AIRFOIL, TAIL_SECTION)
 
-try:
-    from vegeta.boreas import RHO0
-except Exception:                                                        # pragma: no cover
-    RHO0 = 1.225
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 G = 9.81
 NAME = "Falco-Zero"
 

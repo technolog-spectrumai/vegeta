@@ -27,8 +27,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-G = 9.80665
-RHO = 1.225
+from ogma.units import G  # noqa: E402  standard gravity: Ogma
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 
 
 @dataclass

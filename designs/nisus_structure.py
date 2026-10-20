@@ -41,7 +41,7 @@ import nisus_flight as nf
 import nisus_systems as ns
 
 G = 9.81
-RHO = 1.225
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 ULTIMATE = 1.5
 FOAM_LIGHTENING_SHARE = 0.25          # the share of the core's torsional stiffness lost to the lightening holes (= ns.FOAM_LIGHTENING, assumed)
 KNOCKDOWN = {"PETG printed": 0.70, "carbon tube": 0.80, "adhesive": 0.50, "XPS foam 30": 0.70}   # manufacturing variability (assumed)

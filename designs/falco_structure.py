@@ -30,10 +30,7 @@ import nisus_plus_structure as st
 import nisus_plus_systems as fs
 from nisus_structure import ULTIMATE, KNOCKDOWN, PETG, CARBON, BUILD_AXIS, PRINT_SETTINGS, FEACase, talos_material, across_layers, nominal_stress, summary_row  # noqa: F401
 
-try:
-    from vegeta.boreas import RHO0
-except Exception:                                                        # pragma: no cover
-    RHO0 = 1.225
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 G = 9.81
 V_C_EAS = st.V_C_EAS
 G_TUBE = fst.G_TUBE["roll-wrapped"]                                      # MPa, the roll-wrapped tube's shear modulus (frame study: assumption)

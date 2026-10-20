@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 from ogma import wind as og_wind
 
-G = 9.80665
+from ogma.units import G  # noqa: E402  standard gravity: Ogma
 RHO0, T0, LAPSE = 1.225, 288.15, 0.0065
 
 

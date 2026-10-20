@@ -40,10 +40,7 @@ from nisus_plus_systems import (G, atmosphere, density_altitude, atmosphere_tabl
                                 PHASES, phase_power, electrical_loads, servo_check, requirements, MissionPlan, mission_energy, level_power,
                                 max_roc, climb_profile, return_energy, NisusPlusDrive, V_GRID, drive_table)
 
-try:
-    from vegeta.boreas import RHO0
-except Exception:                                                        # pragma: no cover
-    RHO0 = 1.225
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 
 DATA = Path(__file__).resolve().parent / "data"
 ACCESS = "2026-10-10"

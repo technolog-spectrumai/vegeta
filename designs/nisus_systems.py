@@ -35,7 +35,7 @@ import pandas as pd
 import nisus
 
 G = 9.81
-RHO = 1.225
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 DATA = Path(__file__).resolve().parent / "data"
 ACCESS = "2026-10-09"
 SNIPPET = "search-index snippet of the cited page (2026-10-09); page not opened; availability not confirmed"

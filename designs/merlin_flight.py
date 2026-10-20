@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 
 G = 9.81
-RHO = 1.225
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 
 
 # ------------------------------------------------------------------------------------------------- the airframe

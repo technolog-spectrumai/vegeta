@@ -39,7 +39,7 @@ import kestrel
 import kestrel_systems as ks
 
 G = ks.G
-RHO = 1.225
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 NU = 1.46e-5
 MAIN = "Q4T1N-10"
 VARIANTS = {

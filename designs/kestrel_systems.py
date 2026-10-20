@@ -27,8 +27,8 @@ from ogma import mass as og_mass
 
 import kestrel
 
-G = 9.80665
-RHO0 = 1.225
+from ogma.units import G  # noqa: E402  standard gravity: Ogma
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 
 # ------------------------------------------------------------------------------------------------- the bought parts
 COMPONENTS = {

@@ -41,7 +41,7 @@ import nisus_systems as ns
 from nisus_systems import Component, MATERIALS, REGULATOR_EFF, JETSON_OPTIONS
 
 G = 9.81
-RHO0 = 1.225
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 DATA = Path(__file__).resolve().parent / "data"
 ACCESS = "2026-10-10"
 SNIPPET = "search-index snippet of the cited page (2026-10-10); page not opened; availability not confirmed"

@@ -28,10 +28,7 @@ from nisus_systems import MATERIALS, TAIL_SPAR, TIP_RODS
 
 from vegeta import atropos
 
-try:
-    from vegeta.boreas import RHO0
-except Exception:                                                        # pragma: no cover
-    RHO0 = 1.225
+from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 
 #: the build (mm unless said): stated assumptions, not sized here
 BALSA = dict(

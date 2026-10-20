@@ -37,7 +37,7 @@ import nisus_systems as ns
 from ogma import aero as og_aero
 
 G = 9.81
-RHO = 1.225
+from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 
 __all__ = ["G", "RHO", "to_body", "nisus_robot", "inertia_check", "Wind", "Actuators", "Aero", "LAB_OPTIONS", "quat_to_R", "euler_from_R"]
 
