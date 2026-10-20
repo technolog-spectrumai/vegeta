@@ -25,7 +25,7 @@ import pandas as pd
 __all__ = ["AIR", "DEBRIS", "SUCTION", "QUALITY", "terminal_velocity", "pickup_table", "suction_case", "sample_hood",
            "DebrisTracks", "debris_movie", "hood_frame"]
 
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 #: Air at 20 °C.
 AIR = {"density": 1.2, "kinematic_viscosity": 1.5e-5}
 #: Litter classes (inputs): mass [kg], frontal area [m²] (as it lies, seen by an upward flow), drag coefficient,

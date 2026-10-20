@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 
 

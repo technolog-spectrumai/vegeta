@@ -33,7 +33,7 @@ from nisus_plus_flight import (FLAP_TAU, N_STRUCTURAL, V_NE_EAS, V_FE_EAS, V_CRU
                                stall_table, gust_response, pull_up, AIRFOIL, TAIL_SECTION)
 
 from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 NAME = "Falco-Zero"
 
 

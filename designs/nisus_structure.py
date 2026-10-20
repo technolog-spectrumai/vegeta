@@ -40,7 +40,7 @@ import nisus
 import nisus_flight as nf
 import nisus_systems as ns
 
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 from ogma.units import RHO0 as RHO  # noqa: E402  ISA sea-level density: Ogma
 ULTIMATE = 1.5
 FOAM_LIGHTENING_SHARE = 0.25          # the share of the core's torsional stiffness lost to the lightening holes (= ns.FOAM_LIGHTENING, assumed)

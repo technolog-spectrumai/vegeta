@@ -31,7 +31,7 @@ import nisus_plus_systems as fs
 from nisus_structure import ULTIMATE, KNOCKDOWN, PETG, CARBON, BUILD_AXIS, PRINT_SETTINGS, FEACase, talos_material, across_layers, nominal_stress, summary_row  # noqa: F401
 
 from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 V_C_EAS = st.V_C_EAS
 G_TUBE = fst.G_TUBE["roll-wrapped"]                                      # MPa, the roll-wrapped tube's shear modulus (frame study: assumption)
 MOTOR_GROUP_KG = 0.450 + 0.117 + 0.030                                   # the AT5220, the 20x13, the spinner

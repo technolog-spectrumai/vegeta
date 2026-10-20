@@ -40,7 +40,7 @@ import nisus_plus
 import nisus_systems as ns
 from nisus_systems import Component, MATERIALS, REGULATOR_EFF, JETSON_OPTIONS
 
-G = 9.81
+from ogma.units import G  # noqa: E402  standard gravity (was 9.81): Ogma
 from ogma.units import RHO0  # noqa: E402  ISA sea-level density: Ogma
 DATA = Path(__file__).resolve().parent / "data"
 ACCESS = "2026-10-10"
