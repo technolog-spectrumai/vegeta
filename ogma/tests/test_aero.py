@@ -42,8 +42,9 @@ def test_vlm_is_peregrines():
     quads = [np.array(q) for q in G["quads"]]
     r = aero.vlm(quads, alpha_deg=4.0, incidence_deg=[2.0, 2.0, -1.0, -1.0], S_ref=0.258, c_ref=0.215, x_ref=0.06,
                  n_span=[8, 8, 4, 4], n_chord=3, hidden=[0.0, 0.0, 0.0, 0.0])
-    assert (r["CL"], r["CDi"], r["Cm"]) == (g["CL"], g["CDi"], g["Cm"])
-    np.testing.assert_array_equal(r["gamma"], g["gamma"])
+    # a linear solve: the last bit depends on the BLAS, so 1e-12 rather than bit-equal
+    assert (r["CL"], r["CDi"], r["Cm"]) == pytest.approx((g["CL"], g["CDi"], g["Cm"]), rel=1e-12)
+    np.testing.assert_allclose(r["gamma"], g["gamma"], rtol=1e-12)
 
 
 def test_vlm_flat_rectangle_near_helmbold():
