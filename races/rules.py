@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+STUCK = "stuck (time limit)"     # the stats' status of a lap the simulation stopped with the race still open
+
 
 @dataclass
 class Rules:

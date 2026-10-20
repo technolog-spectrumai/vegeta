@@ -12,7 +12,7 @@ import numpy as np
 
 from . import refquad
 from .path import Path, carrot, resync
-from .rules import Referee, Rules
+from .rules import STUCK, Referee, Rules
 
 G = 9.81
 
@@ -85,6 +85,8 @@ def run_mock(course, *, rules: Rules | None = None, dt: float = 0.02, lookahead_
         hist.append([t, *p, *v, T, P, float(np.linalg.norm(v))])
     H = np.array(hist)
     st = ref.stats()
+    if st["status"] == "racing":                                          # the loop ran out of time with the race still open
+        st["status"], st["reason"] = STUCK, f"no finish within the {max_time:.0f} s limit; last zone '{course.zones[max(ref.passed)].name}'"
     st.update({"course": course.name, "aircraft": "reference 5-inch quad", "mode": "mock", "energy [Wh]": energy_J / 3600, "Wh per km": energy_J / 3600 / (course.length() / 1e3),
                "max speed [m/s]": float(H[:, 9].max()), "mean speed [m/s]": course.length() / st["lap time [s]"] if st["status"] == "finished" else float("nan"),
                "peak power [W]": float(H[:, 8].max()), "mean power [W]": float(H[:, 8].mean()), "course length [m]": course.length(), "schedule time [s]": path.time_estimate(), "racing time [s]": t})
