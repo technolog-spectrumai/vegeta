@@ -511,7 +511,7 @@ races/             four MuJoCo race courses for the reference 5-inch quad (cours
 vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimesis mocks, Yanus requirement checks); vendor/OZARU_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
-docs/              philosophy, result shape, installation, composition, per-package guides
+docs/              philosophy, science (the methods and their limits), result shape, installation, composition, per-package guides
 examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
 install_local.sh   creates .venv, installs all dependencies and vegeta-cli
 test.sh            checks the installation (components + a short working run)
