@@ -117,9 +117,10 @@ def summarise(rows: list[dict]) -> dict:
                      "grade": grade(clean)}
     held = [r for r in rows if r["family"] != "nominal"]
     overall = sum(1 for r in held if r["lap time [s]"] is not None and r["collisions"] == 0) / len(held) if held else None
-    worst = min(fams.values(), key=lambda f: f["clean rate"]) if fams else None
+    out = {k: v for k, v in fams.items() if k != "nominal"}
+    worst = min(out, key=lambda k: out[k]["clean rate"]) if out and min(f["clean rate"] for f in out.values()) < 1.0 else None
     return {"nominal lap [s]": round(nominal, 2) if nominal is not None else None,
             "held-out clean rate": round(overall, 3) if overall is not None else None,
             "verdict": "pass" if fams and all(f["grade"] == "pass" for f in fams.values()) else ("fail" if any(f["grade"] == "fail" for f in fams.values()) else "weak"),
-            "weakest family": next((k for k, v in fams.items() if v is worst), None),
+            "weakest family": worst or "none",
             "families": fams}

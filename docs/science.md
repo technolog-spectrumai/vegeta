@@ -273,6 +273,41 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     rewards the edge of the feasible region. Scoring the worst of a few perturbed laps would fix that, at a few times
     the cost.
 
+- **Validation on held-out scenarios** (`./test_autopilot.sh`, `races/validate.py`). This is validation in the
+  machine-learning sense. The tuner fits each course's settings on one condition, the nominal lap. The validation flies
+  those settings on conditions the tuner never saw, drawn from a fixed seed (20261020). The tuner never perturbs the
+  world, and its swarm seeds are 0 and 1.
+  - **The scenario families:** the settings ±2 % (the tolerance of the tuned point), the start moved by ±0.5 m, the
+    mass and inertia ±5 % (the controller keeps believing the nominal quad), the thrust ±5 %, a steady wind up to
+    2 m/s, and all of these at once. Each family has its own random stream.
+  - **The nominal lap** is the training score. It must reproduce `autopilot.json`.
+  - **Metrics per family:**
+    - the clean rate (finished with no collision);
+    - the finish rate;
+    - the median and p90 lap;
+    - the gap: the median finished lap minus the nominal lap.
+  - **Grades on the clean rate:** pass at 0.8 or more, weak at 0.5 or more, otherwise fail. This is a convention, not a
+    requirement.
+  - **The report** is `races/runs/validate/report.json` (one line per family), with every lap in
+    `races/runs/validate/<course>.csv`. The exit code is 0 only when every course passes.
+  - **First result** (2026-10-20, 8 laps per family, 49 laps per course, 8.1 min with `-j 4`):
+
+    | course | held-out clean rate | verdict | weakest family |
+    |---|---|---|---|
+    | hangar | 1.00 | pass (every family, gaps ≤ 0.04 s) | none |
+    | industrial | 0.29 | fail | combined (0.00); wind 0.12 |
+    | farm | 0.02 | fail | everything ≤ 0.12, gaps of 19–42 s |
+    | quarry | 0.29 | fail | thrust ±5 % (0.00); wind 0.12 |
+
+    This is overfitting. Three courses were tuned to the edge of their nominal lap: industrial picks up a collision in
+    a 0.1 m/s tailwind, and the farm loses its clean lap when its settings move by 2 %. The hangar's settings come
+    from the slow 60 s search re-flown with the drop guard, so they sit well inside the region where laps finish, and
+    they generalise.
+    The cure is a robust tuning objective: score each setting by its result over a few held-out-style perturbations
+    (a training set of scenarios), and keep this seed for validation only.
+    The farm's nominal lap here (31.74 s) does not reproduce its stored 31.37 s, which the report flags as
+    `"reproduced": false`.
+
 ## 10. Mocks and solver guards
 
 - `vegeta.mock` (on with `DEBUG = True` in every notebook, or `VEGETA_DEBUG=1`) replaces the slow tools with fixed or
