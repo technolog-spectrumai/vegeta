@@ -111,11 +111,11 @@ fi
 
 "$PY" -m pip install --upgrade pip setuptools wheel
 
-# Ozaru (Porunga, Mimesis, Yanus — shared with Piccolo and Alabastron) and Ogma (Yax + standard-part physics — shared
+# Ozaru (Porunga, Mimezia, Yanus — shared with Piccolo and Alabastron) and Ogma (Yax + standard-part physics — shared
 # with Piccolo) from the committed vendor/ozaru and vendor/ogma: no index, no fetch
 step "Ozaru from vendor/ozaru ($(sed -n 's/^revision: //p' "$ROOT/vendor/OZARU_REVISION" | cut -c1-12))"
 "$PY" -m pip install --no-deps --no-build-isolation --no-index \
-  -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimesis" -e "$ROOT/vendor/ozaru/yanus" \
+  -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimezia" -e "$ROOT/vendor/ozaru/yanus" \
   -e "$ROOT/vendor/ogma/yax" -e "$ROOT/vendor/ogma/ogma"
 
 step "Python packages (vegeta-cli with MuJoCo for Chiron and the races (cma: their autopilot tuner) and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"

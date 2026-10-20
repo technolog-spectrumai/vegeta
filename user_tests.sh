@@ -33,7 +33,7 @@
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
 #   --- mock-only checks (no CFD, FEA or long simulations; the default) ---
-#   ozaru             vendor/ozaru: Porunga (cache), Mimesis (mocks), Yanus (requirement checks)       (seconds)
+#   ozaru             vendor/ozaru: Porunga (cache), Mimezia (mocks), Yanus (requirement checks)       (seconds)
 #   designs           designs/tests, not the slow ones                                               (~10-20 min)
 #   components        components/tests (geometry only)                                               (~2 min)
 #   side-labs         side_labs/tests: run contract, campaigns, CLI, GUI, no notebook named here      (~3 min)
@@ -87,7 +87,7 @@ LOG="$ROOT/user_tests_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
 export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning" QT_QPA_PLATFORM=offscreen
 # the source tree importable without an install (activate.sh does the same); the mocks' cache stays out of the repo
-for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vendor/ozaru/porunga/src vendor/ozaru/mimesis/src vendor/ozaru/yanus/src side_labs designs; do
+for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vendor/ozaru/porunga/src vendor/ozaru/mimezia/src vendor/ozaru/yanus/src side_labs designs; do
   case ":${PYTHONPATH:-}:" in *":$ROOT/$_d:"*) ;; *) PYTHONPATH="$ROOT/$_d${PYTHONPATH:+:$PYTHONPATH}" ;; esac
 done
 # the mock sections never start a solver or call the AI API: CalculiX, OpenFOAM, PrusaSlicer and XFOIL are refused at the
@@ -194,7 +194,7 @@ for s in "${SECTIONS[@]}"; do
       hdr "smoke regression suite (./test.sh --smoke)"
       timed "$ROOT/test.sh" --smoke --python "$PY" 2>&1 | tail -4 | sed 's/^/  /'; [ "${PIPESTATUS[0]}" -eq 0 ] || status=1 ;;
     ozaru)
-      MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimesis, Yanus"
+      MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimezia, Yanus"
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"

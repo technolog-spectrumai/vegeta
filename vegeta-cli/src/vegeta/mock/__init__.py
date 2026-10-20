@@ -47,24 +47,24 @@ ENV = "VEGETA_DEBUG"
 MIMIC = "vegeta.mock"
 
 
-def _mimesis():
-    """Mimesis (``vendor/ozaru/mimesis``, the common base for imitating expensive APIs): the label and the banner."""
+def _mimezia():
+    """Mimezia (``vendor/ozaru/mimezia``, the common base for imitating expensive APIs): the label and the banner."""
     try:
-        import mimesis
+        import mimezia
     except ImportError:                                        # a source tree without the editable install
         import sys
-        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "vendor" / "ozaru" / "mimesis" / "src"))
-        import mimesis
-    return mimesis
+        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "vendor" / "ozaru" / "mimezia" / "src"))
+        import mimezia
+    return mimezia
 
 
 def label(record: dict) -> dict:
-    """A dict made under the mocks, labelled as one (``"mock": True``, the mimic, a note: Mimesis's convention)."""
-    return _mimesis().label(record, MIMIC)
+    """A dict made under the mocks, labelled as one (``"mock": True``, the mimic, a note: Mimezia's convention)."""
+    return _mimezia().label(record, MIMIC)
 
 
 def is_mock(record) -> bool:
-    return _mimesis().is_mock(record)
+    return _mimezia().is_mock(record)
 _saved: list[tuple[object, str, object]] = []
 calls: dict[str, int] = {}
 
@@ -599,7 +599,7 @@ def install() -> None:
 
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"
-    _mimesis().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
+    _mimezia().banner("mock", "vegeta.mock: DEBUG run - FEA, CFD and slicing are mocked, Chiron episodes are cut to "
                       f"{CHIRON_SECONDS:g} s and movies to {CHIRON_FRAMES} frames, Gmsh meshes mocked, the lattice, BEMT and transitions coarse, NeuralFoil thin-airfoil (NOT results), the result cache is off")
 
 

@@ -8,8 +8,8 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 source .venv/bin/activate
 ```
 
-The build never contacts GitHub: Ozaru (Porunga, Mimesis, Yanus) is installed from the vendored copy
-(`pip install --no-deps --no-build-isolation --no-index -e vendor/ozaru/{porunga,mimesis,yanus}`, done by
+The build never contacts GitHub: Ozaru (Porunga, Mimezia, Yanus) is installed from the vendored copy
+(`pip install --no-deps --no-build-isolation --no-index -e vendor/ozaru/{porunga,mimezia,yanus}`, done by
 `install_local.sh`), and `source activate.sh` puts the source trees, `side_labs/`, `designs/` and `designs/exp/` on
 `PYTHONPATH`; the Porunga cache is `$PORUNGA_DIR` if set, else `cache/porunga/` (ignored by git). Updating Ozaru is a maintainer step:
 `scripts/update_ozaru.sh <branch|tag|commit>` (git subtree, signed commits, Ozaru's tests run before the commit).

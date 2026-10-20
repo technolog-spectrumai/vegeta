@@ -80,7 +80,7 @@ done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
-optional mimesis  "$PY" -c "import mimesis; print('mimesis', mimesis.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
+optional mimezia  "$PY" -c "import mimezia; print('mimezia', mimezia.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
 optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(vendor/ogma: design packages for Piccolo/Nomios/Ketos)')"
 optional ogma     "$PY" -c "import ogma; print('ogma', ogma.__version__, '(vendor/ogma: standard-part physics)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "

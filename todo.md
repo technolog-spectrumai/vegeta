@@ -422,9 +422,9 @@ the STX/Magnum track conversions.
 Notebooks own the analysis and its story. Side labs (`side_labs/`, formerly `workflows/`) run optional, expensive
 calculations and fill the Porunga cache; neither imports, launches or names the other. The only exchange is a
 Porunga key built from a plain-JSON identity (`docs/cache_identities.md`) and its payload. Ozaru (`vendor/ozaru`,
-git subtree) supplies Porunga, Mimesis and Yanus (requirement checks).
+git subtree) supplies Porunga, Mimezia and Yanus (requirement checks).
 - [x] S.1 Mock baseline: every notebook executed with the mocks on (no CFD, FEA or FEniCSx during the refactor); mocks on by default (DEBUG = True); notebooks split into devices/ parts/ scenarios/
-- [x] S.2 Vendor Ozaru (subtree 33702e4, signed), install it offline from `vendor/ozaru` in `install_local.sh`; `scripts/update_ozaru.sh`; duplicate `mimesis/` removed
+- [x] S.2 Vendor Ozaru (subtree 33702e4, signed), install it offline from `vendor/ozaru` in `install_local.sh`; `scripts/update_ozaru.sh`; duplicate `mimezia/` removed
 - [x] S.3 Move the engineering design modules and data from `notebooks/designs/` to `designs/`
 - [x] S.4 Rename `workflows/` → `side_labs/` (`workflows.sh` → `side_labs.sh`); drop every notebook reference from it (test: `side_labs/tests/test_separation.py`); notebook declarations in `notebooks/flow.py` until S.8
 - [x] S.5 Cache identities for Kestrel (`designs/kestrel_keys.py`, `docs/cache_identities.md`; key-agreement test)

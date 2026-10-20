@@ -524,7 +524,7 @@ vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, cop
 notebooks/         devices/, parts/, scenarios/, races/ (the Merlin race), demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
 designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
 side_labs/         optional, expensive calculations (CFD, FEA) under the run contract; `wf` / ./side_labs.sh
-vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimesis mocks, Yanus requirement checks); vendor/OZARU_REVISION
+vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimezia mocks, Yanus requirement checks); vendor/OZARU_REVISION
 vendor/ogma/       Ogma, vendored by git subtree (Yax design packages, standard-part physics `og`); vendor/OGMA_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
@@ -547,7 +547,7 @@ user_tests.sh      the mock-only test run (four parts: vegeta, design, workflow,
   Notebooks and side labs never import, launch or name each other; they meet through a **Porunga key** built from a
   plain-JSON identity (`docs/cache_identities.md`), with `mock` part of it so mock and real results never mix.
 - **Ozaru** (`vendor/ozaru`, shared with Alabastron) supplies three stdlib-only libraries: **Porunga** (the cache:
-  `key`, `check`, `load`, `save`), **Mimesis** (mock building blocks: mimics, labels, schema checks) and **Yanus**
+  `key`, `check`, `load`, `save`), **Mimezia** (mock building blocks: mimics, labels, schema checks) and **Yanus**
   (requirement checks: `Tool`, `Package`, `Env`, `AnyOf`, `check_needs`, `table`). It is installed offline from the
   vendored copy; `scripts/update_ozaru.sh REF` is the only command that contacts the Ozaru repository
   (`--check` verifies the vendored copy against `vendor/OZARU_REVISION`).

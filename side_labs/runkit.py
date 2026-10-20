@@ -101,7 +101,7 @@ def read_json(path) -> dict | None:
 
 def mock_active() -> bool:
     """Whether this process runs under ``vegeta.mock`` (``VEGETA_DEBUG`` on, or the mocks installed): its run is then
-    labelled ``"mock": true`` in the manifest (Mimesis's convention) and is never read as an engineering result."""
+    labelled ``"mock": true`` in the manifest (Mimezia's convention) and is never read as an engineering result."""
     if os.environ.get("VEGETA_DEBUG", "").strip().lower() in ("1", "true", "on", "yes"):
         return True
     m = sys.modules.get("vegeta.mock")

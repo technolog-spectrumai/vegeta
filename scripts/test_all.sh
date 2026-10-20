@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia, Ozaru (vendor/ozaru: Porunga, Mimesis, Yanus), Ogma (vendor/ogma: Yax, og),
+# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia, Ozaru (vendor/ozaru: Porunga, Mimezia, Yanus), Ogma (vendor/ogma: Yax, og),
 # components and assemblies (geometry only).
 # Extra args go to pytest, e.g. -m "not slow".
 set -uo pipefail
