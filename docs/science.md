@@ -193,6 +193,18 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     optimum at resolution Δ_min**. It is not a global optimum, and a different start can find a different one.
   - `--max-laps` is a safety budget only, and is reported if it is what stopped the search. `--patience` is an
     optional heuristic early stop, off by default.
+- **Local minima: a global stage first.** Pattern search only refines from its start. By default
+  (`--method pso+gps`) a **particle swarm** searches the whole box first.
+  - It uses Kennedy & Eberhart's PSO (1995) in Clerc & Kennedy's constriction form (2002, *IEEE Trans. Evol. Comput.*
+    6(1)): v ← χ[v + c₁r₁(p − x) + c₂r₂(g − x)], with χ = 0.7298 and c₁ = c₂ = 1.49618. These are the parameters for
+    which the particles' trajectories provably converge.
+  - Velocity is limited to 0.2 per step.
+  - There are 12 particles: one at the stored settings, the rest spread over the box by a Latin hypercube with a
+    fixed seed, so a run can be repeated.
+  - The swarm stops after 15 iterations, or 4 without improvement, or once the swarm's radius is below 0.05.
+  - Pattern search then polishes the swarm's best to Δ_min.
+  - PSO gives no proof of global optimality: no method does with a budget of laps on a black box. What it gives is a
+    sample of the whole space, so a lone basin is unlikely to be missed. `--method gps` skips the swarm.
 - **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once and remembered. The search starts from
   the course's stored settings (`races/autopilot.json`), and only a faster finished lap replaces them.
 - **First result.** Industrial went from 37.7 s (the best of the grids) to **32.0 s with no collision**, converging

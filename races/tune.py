@@ -35,6 +35,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
     ap.add_argument("--quick", action="store_true", help="a small grid (4 tries per course)")
+    ap.add_argument("--method", choices=("pso+gps", "gps", "pso"), default="pso+gps",
+                    help="pso+gps (default): a particle swarm over the whole box, then pattern search from its best; gps: pattern search from the stored settings only")
+    ap.add_argument("--particles", type=int, default=12, help="PSO swarm size")
+    ap.add_argument("--pso-iterations", type=int, default=15, help="PSO iterations at most")
     ap.add_argument("--delta-min", type=float, default=1 / 64, help="convergence: stop when the mesh size (a share of every knob's range) is below this")
     ap.add_argument("--max-laps", type=int, default=400, help="a safety budget of laps per course")
     ap.add_argument("--patience", type=int, default=0, help="optional heuristic early stop after this many iterations gaining < --tol s (0 = off)")
@@ -49,7 +53,7 @@ def main(argv=None) -> int:
         c = courses.COURSES[slug]()
         if not (a.quick or a.round2):                                # the default: the converging search
             from races import converge
-            print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — pattern search (GPS) from {autopilot.tuned(slug) or 'the defaults'}", flush=True)
+            print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — {a.method} search from {autopilot.tuned(slug) or 'the defaults'}", flush=True)
 
             def fly(kw):
                 try:
@@ -57,8 +61,19 @@ def main(argv=None) -> int:
                     return res["stats"], res.get("events") or []
                 except Exception as e:
                     return {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
-            bs, bst, rows, why = converge.search(c, fly, autopilot.tuned(slug), delta_min=a.delta_min, tol=a.tol, patience=a.patience, max_laps=a.max_laps,
-                                                 log=lambda m: print(f"{slug} {m}", flush=True))
+            say = lambda m: print(f"{slug} {m}", flush=True)
+            start, pso_rows = autopilot.tuned(slug), []
+            if a.method in ("pso+gps", "pso"):
+                gx, pso_rows = converge.pso(c, fly, start, particles=a.particles, iterations=a.pso_iterations, max_laps=a.max_laps, log=say)
+                start = converge.to_settings(gx)
+                say(f"pso best → {start}")
+            if a.method == "pso":
+                st, _ = fly(start)
+                bs, bst, rows, why = start, st, [], "pso only (no pattern-search polish)"
+            else:
+                bs, bst, rows, why = converge.search(c, fly, start, delta_min=a.delta_min, tol=a.tol, patience=a.patience,
+                                                     max_laps=max(20, a.max_laps - len(pso_rows)), log=say)
+            rows = pso_rows + [{"stage": "gps", **r} for r in rows]
             import pandas as pd
             df = pd.DataFrame(rows)
             df.to_csv(OUT / f"{slug}_converge.csv", index=False)
