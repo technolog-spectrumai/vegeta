@@ -59,44 +59,7 @@ class Airframe:
 
 
 # ------------------------------------------------------------------------------------------------- propulsors
-@dataclass
-class Unit:
-    """A propulsor tabulated over airspeed ``V`` (m/s) and ``rpm``: ``thrust[i, j]`` net thrust [N] on the aircraft,
-    ``power[i, j]`` shaft power [W]. Full throttle is the rpm at which the battery's electrical limit
-    ``max_electrical_w`` times ``drive_efficiency`` is reached, or ``rpm_max``, whichever comes first."""
-    name: str
-    V: np.ndarray
-    rpm: np.ndarray
-    thrust: np.ndarray
-    power: np.ndarray
-    mass_kg: float
-    max_electrical_w: float
-    drive_efficiency: float = 0.85
-    notes: str = ""
-
-    def _row(self, V):
-        V = float(np.clip(V, self.V[0], self.V[-1]))
-        i = min(int(np.searchsorted(self.V, V, side="right")) - 1, len(self.V) - 2)
-        t = (V - self.V[i]) / (self.V[i + 1] - self.V[i])
-        return (1 - t) * self.thrust[i] + t * self.thrust[i + 1], (1 - t) * self.power[i] + t * self.power[i + 1]
-
-    def full(self, V):
-        """(net thrust [N], electrical power [W], rpm) at full throttle and airspeed V."""
-        T, P = self._row(V)
-        p_max = self.max_electrical_w * self.drive_efficiency
-        if P[-1] <= p_max:
-            return float(T[-1]), float(P[-1] / self.drive_efficiency), float(self.rpm[-1])
-        n = float(np.interp(p_max, P, self.rpm))
-        return float(np.interp(n, self.rpm, T)), self.max_electrical_w, n
-
-    def electrical_power(self, V, T_net):
-        """Electrical power [W] for a net thrust ``T_net`` at V; ``inf`` if more than full throttle gives."""
-        T, P = self._row(V)
-        if T_net > self.full(V)[0] + 1e-9:
-            return math.inf
-        n = float(np.interp(T_net, T, self.rpm))           # T rises with rpm on the working branch
-        return float(np.interp(n, self.rpm, P)) / self.drive_efficiency
-
+from ogma.propulsion import Unit  # noqa: E402  a flight unit (full thrust, power): Ogma
 
 def _tabulate(point, V, rpm):
     T = np.zeros((len(V), len(rpm))); P = np.zeros_like(T)

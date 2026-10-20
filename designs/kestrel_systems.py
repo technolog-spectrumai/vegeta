@@ -231,39 +231,7 @@ def propulsion(rho: float = RHO0):
     return boreas.Propulsion(prop, airfoil, motor, bat, rho=rho)
 
 
-@dataclass(frozen=True)
-class DriveTable:
-    """One drive tabulated against the axial inflow ``V`` [m/s] (negative inflow is read as 0, beyond the table as its
-    last row): full-throttle thrust ``T_max`` [N] (current-limited rows held at the motor's current limit), the
-    torque-to-thrust ratio ``kappa`` [m] (reaction torque per newton of thrust, near the hover thrust), and the
-    electrical power over a thrust grid ``P[i, j]`` at ``V[i]``, ``T[j]``. ``T_min`` is the least thrust the controller
-    may command (the motor kept spinning: an ESC's idle)."""
-    V: tuple
-    T_max: tuple
-    kappa: tuple
-    T: tuple
-    P: tuple
-    T_min: float = 0.25
-    diameter: float = 0.2286
-    rpm_hover: float = 0.0
-    source: str = ""
-    P_cap: float = 370.0            # one drive's electrical ceiling [W]: the motor's current limit at the pack voltage (25 A × 14.8 V)
-
-    def t_max(self, v_axial):
-        return np.interp(np.maximum(v_axial, 0.0), self.V, self.T_max)
-
-    def kap(self, v_axial):
-        return np.interp(np.maximum(v_axial, 0.0), self.V, self.kappa)
-
-    def power(self, thrust, v_axial):
-        """Electrical power [W] of one drive at ``thrust`` [N] and axial inflow (bilinear in the table)."""
-        V, T, P = np.asarray(self.V), np.asarray(self.T), np.asarray(self.P)
-        v = float(np.clip(v_axial, V[0], V[-1]))
-        i = min(int(np.searchsorted(V, v, side="right")) - 1, len(V) - 2)
-        a = (v - V[i]) / (V[i + 1] - V[i])
-        row = np.minimum((1 - a) * P[i] + a * P[i + 1], self.P_cap)      # beyond the table's full thrust the rows extrapolate: cap them
-        return float(min(np.interp(max(float(thrust), 0.0), T, row), self.P_cap))
-
+from ogma.propulsion import DriveTable  # noqa: E402  the multirotor drive table: Ogma
 
 def _drive_key() -> dict:
     cal = prop_lab_calibration()
