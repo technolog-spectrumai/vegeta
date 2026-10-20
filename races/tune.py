@@ -35,6 +35,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
     ap.add_argument("--quick", action="store_true", help="a small grid (4 tries per course)")
+    ap.add_argument("--delta-min", type=float, default=1 / 64, help="convergence: stop when the mesh size (a share of every knob's range) is below this")
+    ap.add_argument("--max-laps", type=int, default=400, help="a safety budget of laps per course")
+    ap.add_argument("--patience", type=int, default=0, help="optional heuristic early stop after this many iterations gaining < --tol s (0 = off)")
+    ap.add_argument("--tol", type=float, default=0.2, help="see --patience")
     ap.add_argument("--round2", action="store_true", help="the second round: past the edges for the finished courses, a slow steady grid for the hangar")
     a = ap.parse_args(argv)
     print(f"tune: courses {a.courses}, {'quick' if a.quick else 'full'} grid", flush=True)
@@ -43,6 +47,32 @@ def main(argv=None) -> int:
     best = json.loads(best_f.read_text()) if best_f.exists() else {}
     for slug in a.courses:
         c = courses.COURSES[slug]()
+        if not (a.quick or a.round2):                                # the default: the converging search
+            from races import converge
+            print(f"== {slug}: {c.name}, {c.length():.0f} m, {len(c.zones)} zones — pattern search (GPS) from {autopilot.tuned(slug) or 'the defaults'}", flush=True)
+
+            def fly(kw):
+                try:
+                    res = sim.run_mujoco(c, **kw)
+                    return res["stats"], res.get("events") or []
+                except Exception as e:
+                    return {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
+            bs, bst, rows, why = converge.search(c, fly, autopilot.tuned(slug), delta_min=a.delta_min, tol=a.tol, patience=a.patience, max_laps=a.max_laps,
+                                                 log=lambda m: print(f"{slug} {m}", flush=True))
+            import pandas as pd
+            df = pd.DataFrame(rows)
+            df.to_csv(OUT / f"{slug}_converge.csv", index=False)
+            if bst.get("status") == "finished":
+                best[slug] = {"settings": bs, "lap time [s]": float(bst["lap time [s]"]), "collisions": int(bst.get("collisions") or 0), "search": why, "laps": len(df)}
+                print(f"== {slug}: FINISHED {bst['lap time [s]']:.1f} s, {bst.get('collisions') or 0} collisions — {why} — {bs}", flush=True)
+            else:
+                far = df.sort_values("score").iloc[0]
+                best[slug] = {"settings": None, "search": why, "laps": len(df),
+                              "note": f"no finished lap; closest: {far['zones passed']}, last zone {far['last zone reached']!r}; collisions at {far['collisions at']}"}
+                print(f"== {slug}: still DNF — {why}; {best[slug]['note']}", flush=True)
+            autopilot.record(slug, best[slug])
+            best_f.write_text(json.dumps(best, indent=1))
+            continue
         grid = QUICK if a.quick else (HANGAR2 if slug == "hangar" else edges(slug)) if a.round2 else GRID
         rows, keys = [], list(grid)
         total = 1
