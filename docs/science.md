@@ -372,6 +372,24 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     The farm's nominal lap here (31.74 s) does not reproduce its stored 31.37 s, which the report flags as
     `"reproduced": false`.
 
+- **Training history** (`./viz_autopilot_train_hist.sh [--animate]`; `races/trainviz.py`). It reads a course's
+  checkpoint, or its CSV, and writes to `races/runs/tune/train_hist/`.
+  - The laps are grouped into candidates per generation and scored as the tuner scored them. Candidates that racing
+    dropped are drawn hollow: their score is a lower bound.
+  - **Loss history:** every candidate, the best and median of each step, and the best so far, on a log scale (a DNF
+    scores near 1000, a lap 30–60).
+  - **The search plane:** six settings cannot be drawn as one cloud of dots, and a plot per pair of settings hides
+    how they move together. So the candidates' normalised settings go through a principal component analysis (SVD)
+    over the whole run, and are drawn on PC1 × PC2 with their share of the variance.
+    - CMA-ES's sampling distribution is drawn on the same plane: the 2σ ellipse of N(m, σ²C) projected (Wᵀσ²CW),
+      with the mean's path, as in the classic CMA-ES pictures.
+    - The checkpoint now records each generation's mean, σ and C.
+    - A loadings panel says which settings make each axis. The plane is a projection: points close on it may differ
+      in the four directions it omits.
+  - **The settings per step:** each setting in its own units, with the best so far and the CMA-ES mean (mapped into
+    the box), for reading off the values.
+  - `--animate`: a GIF of the plane, generation by generation.
+
 - **Videos of the tuned autopilot** (`./gen_pilot_videos.sh`; `races.sim.render`, `races.video`). Each course is
   flown in MuJoCo with its settings from `races/autopilot.json` and rendered from the scene's cameras (default
   `chase`, `onboard`, `overview`).
