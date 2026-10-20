@@ -26,7 +26,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.batteries`
 - [x] `og.rotors` (wrench about the COM; races fixed in Piccolo)
 - [x] `og.propulsion`
-- [ ] Vegeta adopts `og.propulsion` (Nisus, Nisus+, Merlin, Kestrel)
+- [x] Vegeta adopts `og.propulsion` (Nisus, Nisus+, Merlin, Kestrel)
 - [ ] `og.aero` (protocol, LinearDerivatives, Polar, aero_wrench, cf_turbulent, vlm)
 - [ ] Velutina wind → `og.wind`
 - [ ] unify `G` / `RHO` (each golden change its own commit)
