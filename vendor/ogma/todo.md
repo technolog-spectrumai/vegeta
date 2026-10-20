@@ -28,7 +28,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.propulsion`
 - [x] Vegeta adopts `og.propulsion` (Nisus, Nisus+, Merlin, Kestrel)
 - [x] `og.aero` (Cf, Airframe, Polar, stability coefficients, aero wrench, vlm)
-- [ ] Vegeta adopts `og.aero`
+- [x] Vegeta adopts `og.aero` (vegeta 8ae1f7a)
 - [ ] Velutina wind → `og.wind`
 - [ ] unify `G` / `RHO` (each golden change its own commit)
 
@@ -42,11 +42,12 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 ## O6 — CAD strategy
 - [ ] `og.cad` (CadQuery, lazy extra)
 
-## O7 — Gazebo strategy
-- [ ] `og.gazebo` (SDF, lazy extra)
+## Vegeta application
+- [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
 
-## Later — the other graduations
+## Later
 - [ ] Drongo
 - [ ] Nisus / Nisus+ / Falco (+ `vegeta.mission` → `onboard`)
 - [ ] Onager series, Pekari, Perseus
 - [ ] robot dog, Myropods (Chiron leaves Vegeta)
+- [ ] O7 — Gazebo strategy: `og.gazebo` (SDF, lazy extra)

@@ -131,5 +131,8 @@ Decision: Ogma gains *strategies* for MuJoCo (O5), then CAD (O6), then Gazebo (O
 - **O5 MuJoCo:** MJCF fragments (inertials, geoms, actuators from `og.motors`). Chiron keeps its contact/servo
   policy; Chiron's test pins Ogma shape inertia to `inertiafromgeom` per shape (1e-9).
 - **O6 CAD:** CadQuery geometry from parts; `export_yax`'s OCC mass properties move here from Vegeta's Dedalus.
-- **O7 Gazebo:** SDF inertials/links/joints, `MulticopterMotorModel` constants from a propulsion map, `DiffDrive`
+- **Vegeta application (after O6, user decision 2026-10-21):** Vegeta vendors Ogma (`vendor/ogma`, squashed
+  subtree via `scripts/update_ogma.sh`; already in place since O0) and is reworked to stand on it: designs take
+  parts, mass budgets, propulsion and aero from `og.*`, CAD from the O6 strategy, Yax export from Ogma.
+- **O7 Gazebo (deferred to Later, user decision 2026-10-21):** SDF inertials/links/joints, `MulticopterMotorModel` constants from a propulsion map, `DiffDrive`
   from a wheel pair — replacing the hand-copied values in Piccolo's drako/iguana SDF.
