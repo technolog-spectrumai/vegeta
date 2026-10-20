@@ -60,12 +60,11 @@ def pick_backend() -> str | None:
     return None
 
 
-def main(argv=None) -> int:
-    argv = sys.argv[1:] if argv is None else argv
-    OUT.mkdir(parents=True, exist_ok=True)
-    log = OUT / f"tune_{time.strftime('%Y%m%d_%H%M%S')}.log"
-    fh = log.open("w")
-    sys.stdout = sys.stderr = Tee(sys.__stdout__, fh)
+def bootstrap(out: Path, name: str):
+    """The log (tee), the source trees on sys.path, a MUJOCO_GL that imports; returns the log path, or None."""
+    out.mkdir(parents=True, exist_ok=True)
+    log = out / f"{name}_{time.strftime('%Y%m%d_%H%M%S')}.log"
+    sys.stdout = sys.stderr = Tee(sys.__stdout__, log.open("w"))
     say(f"repository {ROOT}")
     say(f"python {sys.executable} ({sys.version.split()[0]}); log {log}")
     for p in (ROOT, ROOT / "designs", ROOT / "vegeta-cli" / "src", ROOT / "vegeta-core" / "src",
@@ -75,19 +74,23 @@ def main(argv=None) -> int:
     b = pick_backend()
     if b is None:
         say("no MUJOCO_GL works: is mujoco installed in this python?  pip install mujoco  (or ./install_local.sh)")
-        return 1
-    if b:
-        os.environ["MUJOCO_GL"] = b
-    else:
-        os.environ.pop("MUJOCO_GL", None)
-        os.environ["MUJOCO_GL"] = ""                   # stop races.sim's setdefault("egl")
+        return None
+    os.environ["MUJOCO_GL"] = b                       # "" stops races.sim's setdefault("egl")
     try:
         import mujoco
         say(f"mujoco {mujoco.__version__}")
-        from races import tune
+        import races  # noqa: F401
     except Exception as e:
         say(f"cannot import mujoco / races ({type(e).__name__}: {e})")
+        return None
+    return log
+
+
+def main(argv=None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if bootstrap(OUT, "tune") is None:
         return 1
+    from races import tune
     say(f"starting races.tune {' '.join(argv) or '(all courses, full grid)'}")
     t0 = time.time()
     rc = tune.main(argv)

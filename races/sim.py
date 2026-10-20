@@ -87,6 +87,10 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     flight.reset(model, data, jnt)
     if sc.get("mass_scale", 1.0) != 1.0:                                   # after the reset: the controller keeps the nominal mass and inertia
         model.body_mass[body] *= sc["mass_scale"]; model.body_inertia[body] *= sc["mass_scale"]
+        q, qd = data.qpos.copy(), data.qvel.copy()
+        mujoco.mj_setConst(model, data)                                    # the derived constants follow (it uses data as scratch: the state is put back)
+        data.qpos[:], data.qvel[:] = q, qd
+        mujoco.mj_forward(model, data)
     import drongo_controller as dc
     thrust = np.zeros(4)
     alpha = 1.0 - math.exp(-control_dt / prop.spin_up_s)
