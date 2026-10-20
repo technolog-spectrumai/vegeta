@@ -11,7 +11,8 @@ numpy only, SI units, organised by physics.
 | `og.gears`, `og.soil`, `og.tracks`, `og.cutting`, `og.actuators` | moved from Vegeta's designs/ with history; reproduce it exactly | done (O2) |
 | `og.motors` | DC motor, the servo law (from Chiron), transmissions | O3 |
 | `og.atmosphere` | the ISA (+ΔT), Sutherland viscosity, density altitude; reproduces Vegeta's three copies | done (O3) |
-| `og.batteries`, `og.wind`, `og.propulsion`, `og.rotors`, `og.aero` | consolidated from Vegeta's machines | O3 |
+| `og.wind` | steady + OU turbulence + 1−cos gust (Nisus's model; terrain layers subclass it) | done (O3) |
+| `og.batteries`, `og.propulsion`, `og.rotors`, `og.aero`, `og.motors` | consolidated from Vegeta's machines | O3 |
 
 Tests: each moved piece reproduces the numbers Vegeta's code gave on fixed inputs (`tests/golden/`, recorded from
 Vegeta at the commit named in the file); published references on top where they exist.
