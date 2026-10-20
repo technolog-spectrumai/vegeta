@@ -287,7 +287,7 @@ def mass_table(p, *, fold_deg=0.0, fold_servo=None, printed_lug_g=4.0, battery_x
     fold. ``battery_x`` None: the battery is placed for a static margin of 10 % with the wing spread (as builders do
     it — the CG is set by the battery)."""
     import pandas as pd
-    import actuators as act
+    from ogma import actuators as act
     p = pg.resolve(p)
     variant = {"none": "A", "root": "C"}[p["wing_hinge"]] if p["span"] >= 1000 else "B"
     L = pg.Merlin.layout(p)

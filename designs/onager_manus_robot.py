@@ -31,7 +31,7 @@ import math
 
 from vegeta.chiron import ChironLab, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
+from ogma import actuators as act
 import onager_robot as orb
 
 __all__ = ["MANUS", "CAD", "PARTS_KG", "ARM_ACTUATORS", "ARM_GAINS", "JAW_ARMATURE", "ASSUMPTIONS", "SIDES",

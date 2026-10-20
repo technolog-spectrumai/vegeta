@@ -39,10 +39,10 @@ import numpy as np
 
 from vegeta.chiron import ChironLab, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
-import cutting
+from ogma import actuators as act
+from ogma import cutting
 import pekari_rover_robot as prr
-import tracks
+from ogma import tracks
 from perseus_rover import PERSEUS_ARM, PERSEUS_CHASSIS, PerseusRover
 
 __all__ = ["G", "Variant", "PERSEUS", "ARM_JOINTS", "design_params", "chassis_params", "cad_numbers", "arm_geometry",

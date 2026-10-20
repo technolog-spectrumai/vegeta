@@ -362,7 +362,7 @@ class MudHook:
         self.mu_mud, self.mu_dry, self.seed = mu_mud, mu_dry, seed
 
     def reset(self, lab):
-        import terramechanics as tm
+        from ogma import soil as tm
 
         self.lab = lab
         self.hull = lab._body_id("hull")

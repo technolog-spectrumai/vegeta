@@ -13,8 +13,8 @@ ENGINEERING = ["vegeta-cli/src/vegeta", "vegeta-core/src", "vegeta-ai/src", "veg
 # Robotics still in Vegeta until it moves to Piccolo/Chiron (docs/migration); emptied by the migration.
 MOVING = ["vegeta-cli/src/vegeta/chiron/*", "vegeta-cli/src/vegeta/mission/*", "designs/*_robot.py",
           "designs/*_controller.py", "designs/*_scenario.py", "designs/*_birds*.py", "designs/gait.py",
-          "designs/stability_plots.py", "designs/exp/mini_races.py", "designs/tests/*", "side_labs/races/*",
-          "scenarios/*", "designs/nisus_robot*.py", "designs/actuators.py"]
+          "designs/stability_plots.py", "designs/exp/mini_races.py", "designs/tests/*",
+          "scenarios/*", "designs/nisus_robot*.py"]
 KNOWN_COUPLING = {"vegeta-cli/src/vegeta/mock/__init__.py", "designs/onager_sweeper_cfd.py"}
 
 

@@ -40,7 +40,7 @@ import numpy as np
 
 from vegeta.chiron import FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
+from ogma import actuators as act
 
 __all__ = ["DRONGO", "CAD", "PARTS_G", "GRIPPER_PARTS_G", "MATERIALS", "FILL", "JAW_ACTUATOR", "PINION_RADIUS_M",
            "JAW_GAINS", "ASSUMPTIONS", "POTATO", "CREAM", "ITEMS", "NET", "GRIP_N", "G", "RHO_AIR", "DRAG_AREA_M2",

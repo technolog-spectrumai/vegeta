@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("mujoco")
 
-import actuators as act  # noqa: E402
+from ogma import actuators as act  # noqa: E402
 import onager_controller as oc  # noqa: E402
 import onager_robot as orb  # noqa: E402
 import onager_scenario as osc  # noqa: E402

@@ -25,3 +25,16 @@ and was carried into the new home with `git filter-repo` (`git log --full-histor
 The race laps' design factors come back as data: Piccolo writes `races/data/design_factors/`, hand it over to
 `designs/data/races/`. The Merlin race (`notebooks/races/26b_*`, `27_*`) and the mini raptors (`designs/exp/`) are
 designs and stay here.
+
+## 2026-10-20 — Standard-part physics moves to Ogma
+
+| Vegeta path | Ogma (`import ogma as og`) |
+|---|---|
+| `designs/gears.py` | `og.gears` |
+| `designs/terramechanics.py` | `og.soil` |
+| `designs/tracks.py` | `og.tracks` |
+| `designs/cutting.py` | `og.cutting` |
+| `designs/actuators.py` | `og.actuators` |
+
+`import actuators as act` is now `from ogma import actuators as act` (likewise `from ogma import soil as tm`). Ogma's
+tests prove the moved modules return exactly what these files returned. Vegeta carries Ogma in `vendor/ogma`.

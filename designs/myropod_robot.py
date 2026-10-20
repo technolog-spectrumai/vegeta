@@ -48,7 +48,7 @@ from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
-import actuators as act
+from ogma import actuators as act
 from vegeta import chiron as ch
 
 __all__ = ["CLEO_MM", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",

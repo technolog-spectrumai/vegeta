@@ -30,7 +30,7 @@ import pandas as pd
 
 from vegeta import chiron as ch
 
-import cutting
+from ogma import cutting
 import perseus_controller as pcc
 import perseus_robot as pbr
 

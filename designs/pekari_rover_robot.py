@@ -34,7 +34,7 @@ from dataclasses import replace
 
 from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
+from ogma import actuators as act
 
 __all__ = ["DESIGN", "CAD", "MATERIALS", "PARTS_KG", "ASSUMPTIONS", "DRIVE", "MOTOR", "PAYLOAD_KG", "G",
            "WHEEL_FILL", "LAB_OPTIONS", "SIDES", "design_params", "pekari", "pekari_lab", "roller_joints", "rollers", "cad_numbers", "geometry", "mass_budget", "masses", "cg", "total_mass"]

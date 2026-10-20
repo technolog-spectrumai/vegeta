@@ -28,7 +28,7 @@ import math
 
 from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
+from ogma import actuators as act
 
 __all__ = ["DOG", "CAD", "ASSUMPTIONS", "LEGS", "LEG_NAMES", "JOINTS", "DENSITY_G_MM3", "SHELL_T_MM",
            "OTHER_PARTS_G", "LAB_OPTIONS", "design_params", "cad_numbers", "geometry", "mass_budget", "dog_servo",

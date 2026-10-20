@@ -8,11 +8,11 @@ import math
 import numpy as np
 import pytest
 
-import actuators as act
-import gears
+from ogma import actuators as act
+from ogma import gears
 import pekari_rover_robot as prr
-import terramechanics as tm
-import tracks
+from ogma import soil as tm
+from ogma import tracks
 
 
 # ----------------------------------------------------------------------------------------------- design and CAD

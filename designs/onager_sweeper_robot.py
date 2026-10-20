@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from vegeta.chiron import ChironLab, Geom, Joint, Link, PointMass, Robot, Servo
 
-import actuators as act
+from ogma import actuators as act
 import onager_manus_robot as omr
 import onager_robot as orb
 
