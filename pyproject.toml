@@ -1,0 +1,7 @@
+# Ogma holds two distributions, each with its own pyproject.toml:
+#   yax/   (design packages, standard library only)    ogma/  (standard-part physics, numpy)
+# Hosts install them from vendor/ogma:  pip install --no-deps --no-build-isolation --no-index -e yax -e ogma
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "yax/tests", "ogma/tests"]
+addopts = "--import-mode=importlib"
