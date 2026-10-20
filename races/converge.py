@@ -102,3 +102,67 @@ def search(course, fly, start: dict | None = None, *, delta0: float = 0.125, del
             reason = f"early stop (heuristic): {patience} iterations gaining less than {tol} s"
             break
     return to_settings(x), best_st, rows, reason
+
+
+# ================================================================================================= global stage: PSO
+def pso(course, fly, start: dict | None = None, *, particles: int = 12, iterations: int = 15, seed: int = 0,
+        stall: int = 4, radius_tol: float = 0.05, max_laps: int = 400, log=print):
+    """Particle swarm optimisation with constriction (Kennedy & Eberhart 1995; Clerc & Kennedy 2002, *IEEE Trans.
+    Evol. Comput.* 6(1)): v ← χ[v + c₁r₁(p − x) + c₂r₂(g − x)], χ = 0.7298, c₁ = c₂ = 1.49618 (φ = 4.1, the
+    parameters with the proven convergence of the swarm's trajectories), positions clipped to [0, 1]^n, velocity
+    limited to 0.2 per step. The swarm samples the whole box, which is what guards against the local minima a pattern
+    search alone would settle into. One particle starts at ``start`` (the stored settings); the others are a Latin
+    hypercube. Stops on the first of: ``iterations``; no improvement of the global best in ``stall`` iterations; the
+    swarm's radius (largest distance of a particle's best from the global best) below ``radius_tol``. Returns
+    ``(best x, rows)`` for the GPS polish."""
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    keys = list(BOUNDS)
+    n = len(keys)
+    chi, c1, c2, vmax = 0.7298, 1.49618, 1.49618, 0.2
+    lhs = (rng.permuted(np.tile(np.arange(particles), (n, 1)), axis=1).T + rng.random((particles, n))) / particles
+    X = lhs
+    X[0] = np.array([to_x(start or {})[k] for k in keys])
+    V = rng.uniform(-vmax, vmax, (particles, n)) * 0.5
+    seen, rows = {}, []
+
+    def f(xv, it):
+        xd = {k: round(float(v), 6) for k, v in zip(keys, xv)}
+        key = tuple(sorted(xd.items()))
+        if key not in seen:
+            s = to_settings(xd)
+            st, ev = fly(s)
+            sc = score(st)
+            seen[key] = sc
+            rows.append({"stage": "pso", "iteration": it, **s, "score": round(sc, 3), "status": st.get("status"), "lap time [s]": st.get("lap time [s]"),
+                         "collisions": st.get("collisions"), "zones passed": st.get("zones passed")})
+            log(f"  pso lap {len(seen):3d}  it {it}  {s}  → {st.get('status')} {st.get('lap time [s]') or ''} {st.get('zones passed') or ''}, score {sc:.2f}")
+        return seen[key]
+
+    P = X.copy()
+    Pf = np.array([f(x, 0) for x in X])
+    g = P[Pf.argmin()].copy()
+    gf, since = Pf.min(), 0
+    for it in range(1, iterations + 1):
+        r1, r2 = rng.random((particles, n)), rng.random((particles, n))
+        V = np.clip(chi * (V + c1 * r1 * (P - X) + c2 * r2 * (g - X)), -vmax, vmax)
+        X = np.clip(X + V, 0.0, 1.0)
+        for i in range(particles):
+            if len(seen) >= max_laps:
+                break
+            fx = f(X[i], it)
+            if fx < Pf[i]:
+                P[i], Pf[i] = X[i].copy(), fx
+        if Pf.min() < gf - 1e-9:
+            g, gf, since = P[Pf.argmin()].copy(), Pf.min(), 0
+        else:
+            since += 1
+        radius = float(np.max(np.linalg.norm(P - g, axis=1)))
+        log(f"pso iteration {it}: global best {gf:.2f}, swarm radius {radius:.3f}, laps {len(seen)}")
+        if since >= stall:
+            log(f"pso: stopped — no improvement in {stall} iterations"); break
+        if radius < radius_tol:
+            log(f"pso: stopped — swarm radius {radius:.3f} < {radius_tol}"); break
+        if len(seen) >= max_laps:
+            log("pso: stopped — lap budget"); break
+    return {k: float(v) for k, v in zip(keys, g)}, rows
