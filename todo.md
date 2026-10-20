@@ -1,6 +1,6 @@
 # Ozaru — TODO
 
-A simple common layer: Porunga (cache), Mimesis (mocks), Yanus (requirement checks). Stdlib only, no host knowledge.
+A simple common layer: Porunga (cache), Mimesis (mocks), Yanus (requirement checks), Yax (design interchange). Stdlib only, no host knowledge.
 Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 1 — The three utilities
@@ -18,7 +18,13 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] 2.1 Vegeta vendors Ozaru 33702e4 (signed subtree commits), `scripts/update_ozaru.sh`
 - [x] 2.2 Vegeta installs porunga/mimesis/yanus offline from vendor/ozaru in `install_local.sh` (checked with networking off)
 - [x] 2.3 Alabastron vendors the same revision (subtree 33702e4, signed, same script) and installs it offline
-- [ ] 2.4 Offline check of both hosts: clean clone and source archive, network off
+- [x] 2.4 Offline check of both hosts: clean clone, fresh venv, `unshare -n` (no network, proxy unset): the vendored Ozaru installs with `--no-index`, its 32 tests pass, `update_ozaru.sh --check` matches c4711e8, the hosts import their key modules and mocks and pass their separation tests; no GitHub fetch in install or activate (one comment only)
+
+## Stage 2b — Yax (design interchange, Vegeta -> Piccolo / Nomios / Ketos)
+- [x] 2b.1 `yax/`: spec v1 (`docs/spec.md`), package write/load/check, stdlib STL + exact mesh mass properties, units and frames, `yax check|info`
+- [x] 2b.2 Test vector `examples/cube.yax` (exact), corruption, atomic replace, frames; `scripts/test.sh --smoke`
+- [ ] 2b.3 Vegeta writes Yax (`vegeta.dedalus.export_yax`), Piccolo vendors Ozaru and reads it
+- [ ] 2b.4 Nomios / Ketos read Yax (later; not part of the Vegeta/Piccolo split)
 
 ## Stage 3 — Later
 - [ ] 3.1 Porunga: an `entries()` listing for maintenance scripts, if a host needs one
