@@ -13,7 +13,8 @@ import numpy as np
 from . import replay
 
 QUALITY = {"screening": {"fps": 15, "size": (480, 270), "every": 8, "max_frames": 150, "seconds": 12.0},
-           "fine": {"fps": 30, "size": (960, 540), "every": 2, "max_frames": 2000, "seconds": 1e9}}
+           "fine": {"fps": 30, "size": (960, 540), "every": 2, "max_frames": 2000, "seconds": 1e9},
+           "lap": {"fps": 30, "size": (960, 540), "every": None, "max_frames": None, "seconds": 1e9}}     # the whole lap in real time (frames by time)
 
 
 def ffmpeg() -> str | None:
@@ -33,12 +34,15 @@ def frames_to_mp4(frames: list, out: Path, fps: int) -> Path | None:
     return out
 
 
-def mujoco_video(course, result: dict, out: Path, *, camera: str, quality: str = "screening", work_dir: Path | None = None) -> Path | None:
-    """Render the run's trajectory from a scene camera (needs OpenGL: set MUJOCO_GL=egl or osmesa) and encode it."""
+def mujoco_video(course, result: dict, out: Path, *, camera: str, quality: str = "screening", work_dir: Path | None = None,
+                 speed: float = 1.0, hud: bool = False, label: str = "") -> Path | None:
+    """Render the run's trajectory from a scene camera (needs OpenGL: set MUJOCO_GL=egl or osmesa) and encode it;
+    ``speed`` (presets without ``every``), ``hud`` and ``label`` go to ``sim.render``."""
     from . import sim
     q = QUALITY[quality]
     work = Path(work_dir or Path(out).parent / f"frames_{camera}")
-    frames = sim.render(course, result, work, camera=camera, size=q["size"], every=q["every"], max_frames=q["max_frames"])
+    frames = sim.render(course, result, work, camera=camera, size=q["size"], every=q["every"], max_frames=q["max_frames"],
+                        fps=q["fps"], speed=speed, hud=hud, label=label)
     mp4 = frames_to_mp4(frames, out, q["fps"])
     if mp4 is not None:
         shutil.rmtree(work, ignore_errors=True)

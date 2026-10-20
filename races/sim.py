@@ -149,30 +149,83 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     return {"stats": st, "history": H, "events": events, "gate times": ref.gate_times, "path": path, "referee": ref, "course": course, "xml": xml}
 
 
-def render(course, result: dict, out_dir, *, camera: str = "chase", size=(960, 540), every: int = 4, max_frames: int = 400) -> list:
+def frame_rows(t, *, fps: float = 30.0, speed: float = 1.0, every: int | None = None, max_frames: int | None = None) -> np.ndarray:
+    """The history rows a video shows: one per frame at ``fps`` with the lap played ``speed`` × (1 = real time,
+    whatever the history's step), or — given ``every`` — every Nth row (the older presets)."""
+    t = np.asarray(t, dtype=float)
+    if every:
+        idx = np.arange(0, len(t), int(every))
+    else:
+        idx = np.searchsorted(t, np.arange(t[0], t[-1] + 1e-9, speed / fps)).clip(0, len(t) - 1)
+    return idx[:max_frames] if max_frames else idx
+
+
+def attitude(row) -> tuple:
+    """The quad's attitude quaternion (w, x, y, z) at a history row: recorded (17 columns), else level and heading
+    along the velocity (older histories)."""
+    if len(row) >= 14:
+        q = np.asarray(row[10:14], dtype=float)
+        n = float(np.linalg.norm(q))
+        if n > 0.5:
+            return tuple(q / n)
+    yaw = math.atan2(row[5], row[4]) if math.hypot(row[4], row[5]) > 0.5 else 0.0
+    return (math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2))
+
+
+def _hud(img, lines: list[str]):
+    """A text strip at the top of a frame (PIL)."""
+    from PIL import Image, ImageDraw, ImageFont
+    im = Image.fromarray(img)
+    h = max(12, im.height // 32)
+    try:
+        font = ImageFont.load_default(size=h)
+    except TypeError:                                                   # Pillow < 10.1
+        font = ImageFont.load_default()
+    d = ImageDraw.Draw(im, "RGBA")
+    d.rectangle([0, 0, im.width, (h + 4) * len(lines) + 6], fill=(0, 0, 0, 140))
+    for k, s in enumerate(lines):
+        s = s.replace("—", "-").replace("–", "-").replace("≤", "<=").replace("±", "+/-")         # glyphs the default font lacks
+        d.text((8, 4 + (h + 4) * k), s, fill=(255, 255, 255, 255), font=font)
+    return im
+
+
+def render(course, result: dict, out_dir, *, camera: str = "chase", size=(960, 540), every: int | None = 4, max_frames: int | None = 400,
+           fps: float = 30.0, speed: float = 1.0, hud: bool = False, label: str = "") -> list:
     """Frames of a recorded run from one of the scene's cameras (``overview``, ``grandstand``, ``onboard``, ``chase``):
-    the quad's free joint is replayed along the recorded trajectory (position only; the attitude from the recorded
-    acceleration is not kept, so the onboard view is a pointing approximation). Needs an OpenGL context."""
+    the quad's free joint is replayed along the recorded trajectory with its recorded attitude (``attitude``). Frames
+    are every Nth row (``every``) or, with ``every=None``, picked by time (``frame_rows``: ``fps``, ``speed``).
+    ``hud`` writes the course, ``label``, time, speed, altitude, zones and collisions on every frame. Needs an
+    OpenGL context."""
     import mujoco
+    from PIL import Image
     out_dir = _P(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     model = mujoco.MjModel.from_xml_string(result.get("xml") or courses.to_mjcf(course))
     data = mujoco.MjData(model)
     jnt = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "quad_free")
     qa = int(model.jnt_qposadr[jnt])
+    model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), int(size[0]))      # the offscreen framebuffer must hold the frame
+    model.vis.global_.offheight = max(int(model.vis.global_.offheight), int(size[1]))
     renderer = mujoco.Renderer(model, size[1], size[0])
-    paths = []
     H = result["history"]
-    for i, row in enumerate(H[::every][:max_frames]):
+    ev = [(float(e[0]), str(e[1])) for e in result.get("events") or []]
+    zone_t = [te for te, s in ev if s.startswith("zone")]
+    hit_t = [te for te, s in ev if s.startswith("collision")]
+    paths = []
+    for i, r in enumerate(frame_rows(H[:, 0], fps=fps, speed=speed, every=every, max_frames=max_frames)):
+        row = H[r]
         data.qpos[qa:qa + 3] = row[1:4]
-        vx, vy = row[4], row[5]
-        yaw = math.atan2(vy, vx) if math.hypot(vx, vy) > 0.5 else 0.0
-        data.qpos[qa + 3:qa + 7] = (math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2))
+        data.qpos[qa + 3:qa + 7] = attitude(row)
         mujoco.mj_forward(model, data)
         renderer.update_scene(data, camera=camera)
         img = renderer.render()
-        from PIL import Image
-        f = out_dir / f"{course.slug}_{camera}_{i:04d}.png"
-        Image.fromarray(img).save(f)
+        im = Image.fromarray(img)
+        if hud:
+            tt = float(row[0])
+            im = _hud(img, [f"{course.name} | {camera}{' | ' + label if label else ''}",
+                            f"t {tt:5.1f} s   v {row[9]:4.1f} m/s   alt {row[3]:4.1f} m   zones {sum(z <= tt for z in zone_t)}/{len(course.zones) - 1}"
+                            f"   collisions {sum(c <= tt for c in hit_t)}"])
+        f = out_dir / f"{course.slug}_{camera}_{i:05d}.png"
+        im.save(f)
         paths.append(f)
     return paths

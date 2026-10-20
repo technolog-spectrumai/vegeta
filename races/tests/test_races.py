@@ -129,3 +129,14 @@ def test_analysis_and_design_factors():
     assert set(ingest.expected_locations()) >= {"workflow runs (wf R1–R4)", "thin CLI runs (python -m races run)"}
     sc = ingest.scan(roots=())
     assert list(sc.columns)[:3] == ["course", "run", "state"]
+
+
+def test_video_frames_are_picked_by_time_and_show_the_recorded_attitude():
+    import numpy as np
+    from races import sim
+    t = np.arange(0.0, 45.0 + 1e-9, 0.02)                          # a 45 s history at the recording step
+    assert len(sim.frame_rows(t, fps=30, speed=1.0)) == 1351 and len(sim.frame_rows(t, fps=30, speed=2.0)) == 676
+    assert list(sim.frame_rows(t, every=8, max_frames=3)) == [0, 8, 16]
+    row = np.zeros(17); row[4:6] = (0.0, 3.0); row[10:14] = (0.0, 2.0, 0.0, 0.0)     # banked 180° about x, flying north
+    assert sim.attitude(row) == (0.0, 1.0, 0.0, 0.0)
+    assert sim.attitude(row[:10]) == pytest.approx((np.cos(np.pi / 4), 0.0, 0.0, np.sin(np.pi / 4)))   # older histories: level, along the velocity

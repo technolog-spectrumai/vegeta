@@ -372,6 +372,24 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     The farm's nominal lap here (31.74 s) does not reproduce its stored 31.37 s, which the report flags as
     `"reproduced": false`.
 
+- **Videos of the tuned autopilot** (`./gen_pilot_videos.sh`; `races.sim.render`, `races.video`). Each course is
+  flown in MuJoCo with its settings from `races/autopilot.json` and rendered from the scene's cameras (default
+  `chase`, `onboard`, `overview`).
+  - The quad is replayed with its **recorded attitude**: the quaternion in the history. Earlier renders showed a level
+    quad facing along its velocity, which hides the banking.
+  - Frames are picked **by time**, so `--quality lap` plays the whole lap in real time at 30 fps and 960×540
+    (`--speed` 2 is twice as fast).
+  - A HUD shows the course, the camera, the label, time, speed, altitude, zones and collisions.
+  - `--held-out` also flies the worst lap of every family the latest `./test_autopilot.sh` did not pass. The scenario
+    is rebuilt from `races.validate` and its seed, and the index records whether the lap reproduces the validation run
+    (checked on industrial: 6 of 6 do). So a failure can be watched, not just counted.
+  - Without an OpenGL backend that really renders, the matplotlib replay is written instead, labelled. The backend is
+    probed by rendering one frame in a subprocess: EGL, then OSMesa, then GLFW.
+  - Output: `races/runs/videos/<course>/<stamp>_mujoco/` (the run export with provenance, one mp4 per camera) and
+    `races/runs/videos/index.json`.
+  - Fixed on the way: MuJoCo's default offscreen framebuffer (640×480) is enlarged to the frame size. Before, every
+    render above that size failed, including the notebooks' `fine` preset.
+
 ## 10. Mocks and solver guards
 
 - `vegeta.mock` (on with `DEBUG = True` in every notebook, or `VEGETA_DEBUG=1`) replaces the slow tools with fixed or
