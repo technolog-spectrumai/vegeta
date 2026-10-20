@@ -22,8 +22,8 @@ import numpy as np
 
 from . import courses, refquad
 from .mock import schedule
-from .path import carrot, resync
-from .rules import Referee, Rules
+from .path import Drops, carrot, resync
+from .rules import STUCK, Referee, Rules
 
 G = 9.81
 DESIGNS = _P(__file__).resolve().parents[1] / "designs"
@@ -70,6 +70,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     flight = _flight(prop, omega_pos=omega_pos, omega_att=omega_att, tilt_max_deg=tilt_max_deg)
     path = schedule(course, safety=safety, v_cap=v_cap)
     path.zone_half = np.array([min(z.half) for z in course.zones])
+    drops = Drops(path)
     ref = Referee(course, rules)
     pos_r, spin = refquad.rotor_layout()
     start = np.array(course.zones[0].center, dtype=float)
@@ -97,7 +98,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
             s = path.project(p, s)
             nz = min(ref.next, len(path.s) - 1)
             s, parked = resync(path, s, path.s[nz], nz >= len(path.s) - 1)
-            p_ref, v_ref, a_ref = carrot(path, s, nz, lookahead_s=lookahead_s, parked=parked)
+            p_ref, v_ref, a_ref = drops.adjust(s, nz, p, v, carrot(path, s, nz, lookahead_s=lookahead_s, parked=parked))
             yaw = math.atan2(v_ref[1], v_ref[0]) if np.linalg.norm(v_ref[:2]) > 0.5 else math.atan2(v[1], v[0]) if np.linalg.norm(v[:2]) > 0.5 else 0.0
             r = dc.Ref(p=p_ref, v=v_ref, a=a_ref, yaw=yaw)
         R = data.xmat[body].reshape(3, 3)
@@ -123,6 +124,8 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         k += 1
     H = np.array(hist).reshape(-1, 17)
     st = ref.stats()
+    if st["status"] == "racing":                                          # the loop ran out of time with the race still open
+        st["status"], st["reason"] = STUCK, f"no finish within the {duration:.0f} s limit; last zone '{course.zones[max(ref.passed)].name}'"
     st.update({"course": course.name, "aircraft": "reference 5-inch quad", "mode": "mujoco", "energy [Wh]": energy_J / 3600, "Wh per km": energy_J / 3600 / (course.length() / 1e3),
                "max speed [m/s]": float(H[:, 9].max()) if len(H) else float("nan"), "mean speed [m/s]": course.length() / st["lap time [s]"] if st["status"] == "finished" else float("nan"),
                "peak power [W]": float(H[:, 8].max()) if len(H) else float("nan"), "mean power [W]": float(H[:, 8].mean()) if len(H) else float("nan"), "course length [m]": course.length(),

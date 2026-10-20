@@ -97,3 +97,42 @@ def resync(path: Path, s: float, next_zone_s: float, is_last: bool) -> tuple:
     if s > next_zone_s + 1.0 and not is_last:
         return max(next_zone_s - 0.5, 0.0), True
     return s, False
+
+
+class Drops:
+    """The MuJoCo autopilot's guard for a drop: a zone where the line turns from level flight into a descent steeper
+    than 45° (the hangar's stair opening). Arriving with speed and looking past the corner, the reference jumps below
+    the aircraft, the geometric controller asks for almost no thrust, the rotors sit at idle and leave no roll or
+    pitch torque (the controller assumes unsaturated rotors), and the aircraft falls tumbling into the opening's edge.
+    So: approach the top and stop on it, wait over it until aligned (``ALIGN_M`` horizontally, below ``ALIGN_V``),
+    then descend along the steep segments at no more than ``DESCENT_V`` with the reference at most ``DESCENT_LEAD``
+    below. Fixed rules of the autopilot, not tuning knobs."""
+
+    ALIGN_M, ALIGN_V, DESCENT_V, DESCENT_LEAD, APPROACH_M, STEEP = 0.5, 0.8, 2.0, 1.0, 1.5, -0.7
+
+    def __init__(self, path: Path):
+        self.path = path
+        n = len(path.tan)
+        self.steep = [path.tan[i][2] < self.STEEP for i in range(n)]
+        self.tops = {i for i in range(1, n) if self.steep[i] and not self.steep[i - 1]}
+        self.released = set()
+
+    def adjust(self, s: float, nz: int, p, v, ref: tuple) -> tuple:
+        P = self.path
+        if nz in self.tops and P.s[nz] - s < self.APPROACH_M:              # approaching a top: stop on it (re-armed after a reset)
+            self.released.discard(nz)
+            return P.P[nz].copy(), np.zeros(3), np.zeros(3)
+        top = nz - 1
+        if top in self.tops and top not in self.released:                  # over the top: align before descending
+            if np.linalg.norm(p[:2] - P.P[top][:2]) < self.ALIGN_M and np.linalg.norm(v[:2]) < self.ALIGN_V:
+                self.released.add(top)
+            else:
+                return P.P[top].copy(), np.zeros(3), np.zeros(3)
+        p_ref, v_ref, a_ref = ref
+        if 0 <= nz - 1 < len(self.steep) and self.steep[nz - 1]:          # on the way down: slow, the reference close below
+            n = float(np.linalg.norm(v_ref))
+            v_ref = v_ref * min(1.0, self.DESCENT_V / max(n, 1e-9))
+            p_ref = p_ref.copy()
+            p_ref[2] = max(p_ref[2], p[2] - self.DESCENT_LEAD)
+            a_ref = np.zeros(3)
+        return p_ref, v_ref, a_ref

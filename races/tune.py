@@ -14,6 +14,7 @@ import itertools
 import json
 import time
 from pathlib import Path
+from races.rules import STUCK
 
 GRID = {"safety": (0.4, 0.5, 0.6, 0.7), "tilt_max_deg": (45.0, 60.0), "lookahead_s": (0.15, 0.25, 0.4), "omega_pos": (2.0, 2.5, 3.5)}
 QUICK = {"safety": (0.4, 0.55), "tilt_max_deg": (60.0,), "lookahead_s": (0.15, 0.3), "omega_pos": (2.5,)}   # 4 laps per course
@@ -43,7 +44,7 @@ def _fly_worker(job):
         return {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
 
 
-SCHEMA = 1
+SCHEMA = 2                                                    # 2: the drop guard, the squared hangar window, the stuck label
 
 
 def _write_atomic(path: Path, obj) -> None:
@@ -89,7 +90,7 @@ class Laps:
         results = list(self.pool.map(_fly_worker, jobs)) if self.pool else [_fly_worker(j) for j in jobs]
         wall = (time.time() - t0) / len(todo)
         for s, (st, ev) in zip(todo, results):
-            if duration and st.get("status") == "racing":
+            if duration and st.get("status") == STUCK:
                 st["reason"] = f"cut at {duration:.0f} s (slower than the best, {b:.1f} s)"
             self.memo[self.key(s)] = [st, ev, round(wall, 2)]
             self.rows.append(_row(stage, iteration, s, st, ev, wall))
