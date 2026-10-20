@@ -1,6 +1,6 @@
 # Ozaru — TODO
 
-A simple common layer: Porunga (cache), Mimesis (mocks), Yanus (requirement checks), Yax (design interchange). Stdlib only, no host knowledge.
+A simple common layer: Porunga (cache), Mimesis (mocks), Yanus (requirement checks). Stdlib only, no host knowledge.
 Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage 1 — The three utilities
@@ -23,8 +23,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage 2b — Yax (design interchange, Vegeta -> Piccolo / Nomios / Ketos)
 - [x] 2b.1 `yax/`: spec v1 (`docs/spec.md`), package write/load/check, stdlib STL + exact mesh mass properties, units and frames, `yax check|info`
 - [x] 2b.2 Test vector `examples/cube.yax` (exact), corruption, atomic replace, frames; `scripts/test.sh --smoke`
-- [ ] 2b.3 Vegeta writes Yax (`vegeta.dedalus.export_yax`), Piccolo vendors Ozaru and reads it
-- [ ] 2b.4 Nomios / Ketos read Yax (later; not part of the Vegeta/Piccolo split)
+- [x] 2b.3 Vegeta writes Yax (`vegeta.dedalus.export_yax`), Piccolo reads it
+- [x] 2b.4 Yax moved to Ogma (https://github.com/technolog-spectrumai/ogma) with its history: it belongs with the part physics; Ozaru stays three stdlib utilities
 
 ## Stage 3 — Later
 - [ ] 3.1 Porunga: an `entries()` listing for maintenance scripts, if a host needs one
