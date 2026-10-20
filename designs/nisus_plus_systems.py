@@ -32,6 +32,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
+from ogma import motors as og_motors
 import pandas as pd
 
 import nisus_plus
@@ -445,7 +446,7 @@ def motor_model(no_load_a: float = 1.6, max_current_a: float = 85.0):
     prop, af = propeller_15x8(), blade_section()
     P = PUBLISHED_STATIC
     rpm, I, V = P["rpm"], P["current"], P["voltage"]
-    R = (V - rpm / P["kv"]) / I
+    R = og_motors.fit_resistance(V, rpm, P["kv"], I)
     motor = boreas.Motor("T-Motor AT4125 KV540 (fitted)", kv_rpm_per_volt=P["kv"], resistance_ohm=R, no_load_current_a=no_load_a,
                          max_current_a=max_current_a, mass_kg=0.355, source=f"KV, the full-throttle point published ({P['source']}); R fitted (ESC and wires included), I0 assumed")
     op = boreas.solve(prop, af, rpm, 0.0, RHO0)

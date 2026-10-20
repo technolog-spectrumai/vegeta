@@ -29,6 +29,7 @@ from vegeta.chiron import ChironLab, Geom, Joint, Link, PointMass, Robot, Servo
 
 from ogma import actuators as act
 import onager_robot as orb
+from ogma import motors as og_motors
 
 __all__ = ["ATLAS", "CHASSIS", "CAD", "PARTS_KG", "FORKLIFT_KG", "COUNTERWEIGHT", "LIFT", "TILT", "TILT_LEVER",
            "ASSUMPTIONS", "LAB_OPTIONS", "design_params", "cad_numbers", "forklift_geometry", "forklift_masses",
@@ -143,8 +144,9 @@ def lift_servo() -> Servo:
 
 def tilt_servo() -> Servo:
     a = act.get_linear(TILT)
-    return Servo(stall_torque=a.stall_N * TILT_LEVER, rated_torque=a.rated_N * TILT_LEVER,
-                 no_load_speed=a.no_load_mm_s / 1000.0 / TILT_LEVER, stall_current=a.stall_A, voltage=a.voltage_V,
+    stall, w0 = og_motors.lever(a.stall_N, a.no_load_mm_s / 1000.0, TILT_LEVER)
+    return Servo(stall_torque=stall, rated_torque=og_motors.lever(a.rated_N, 0.0, TILT_LEVER)[0],
+                 no_load_speed=w0, stall_current=a.stall_A, voltage=a.voltage_V,
                  kp=2e5, kd=1e4, armature=20.0, source=f"{a.key} on a {TILT_LEVER:.2f} m lever: {a.source}",
                  four_quadrant=True)
 

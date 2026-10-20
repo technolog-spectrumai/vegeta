@@ -28,6 +28,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+from ogma import motors as og_motors
 import pandas as pd
 
 import falco
@@ -337,7 +338,7 @@ def motor_model(no_load_a: float | None = None, max_current_a: float | None = No
     max_current_a = D["max_a"] if max_current_a is None else max_current_a
     prop18, af = fst.propeller(18.0, 8.0), blade_section()
     rpm, I, V = P["rpm"], P["current"], P["voltage"]
-    R = (V - rpm / P["kv"]) / I
+    R = og_motors.fit_resistance(V, rpm, P["kv"], I)
     motor = boreas.Motor("T-Motor AT5220-A KV220 (fitted)", kv_rpm_per_volt=P["kv"], resistance_ohm=R, no_load_current_a=no_load_a,
                          max_current_a=max_current_a, mass_kg=D["mass_g"] / 1000,
                          source=f"KV, I0, the current limit and the full-throttle point published ({P['source']}); R fitted at the point (ESC and wires included)")
@@ -360,15 +361,8 @@ def _static_point(prop, af, kv, R, I0, V, kQ):
     """The static full-throttle point of a motor (kv, R, I0) on ``prop`` at the motor voltage ``V``: the rpm where the
     motor's torque meets the propeller's (calibrated by kQ); returns (rpm, current, torque)."""
     from vegeta import boreas
-    kt = 60 / (2 * math.pi * kv)
-    lo, hi = 300.0, kv * V
-    for _ in range(60):
-        n = 0.5 * (lo + hi)
-        Im = (V - n / kv) / R
-        Qm = kt * (Im - I0)
-        Qp = boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ
-        lo, hi = (n, hi) if Qm > Qp else (lo, n)
-    return n, (V - n / kv) / R, boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ
+    n, I = og_motors.operating_point(kv, R, I0, V, lambda n: boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ)
+    return n, I, boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ
 
 
 def drive_options(p=None, battery_key_6s: str = "6s4p-p45b", battery_key_8s: str = DEFAULT_PACK, progress: bool = False) -> pd.DataFrame:

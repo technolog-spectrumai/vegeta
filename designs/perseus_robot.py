@@ -44,6 +44,7 @@ from ogma import cutting
 import pekari_rover_robot as prr
 from ogma import tracks
 from perseus_rover import PERSEUS_ARM, PERSEUS_CHASSIS, PerseusRover
+from ogma import motors as og_motors
 
 __all__ = ["G", "Variant", "PERSEUS", "ARM_JOINTS", "design_params", "chassis_params", "cad_numbers", "arm_geometry",
            "arm_joints", "arm_ik", "arm_fk", "bar_point", "elevations_to_q", "q_to_elevations", "stow_q", "nominal_qpos",
@@ -632,8 +633,10 @@ def _servo(joint: str, p: dict, v: Variant) -> Servo:
         return replace(s, four_quadrant=act.get(key).self_locking)         # a brake holds: braking at any speed
     a = act.get_linear(key)
     lever_min, lever_nom = _lever_over_range(joint, p, v)
-    return Servo(stall_torque=a.stall_N * lever_min, rated_torque=a.rated_N * lever_min,
-                 no_load_speed=a.no_load_mm_s * 1e-3 / lever_nom, stall_current=a.stall_A, voltage=a.voltage_V,
+    stall = og_motors.lever(a.stall_N, 0.0, lever_min)[0]                   # the torque on the smallest lever,
+    w0 = og_motors.lever(0.0, a.no_load_mm_s * 1e-3, lever_nom)[1]          # the speed on the nominal one
+    return Servo(stall_torque=stall, rated_torque=og_motors.lever(a.rated_N, 0.0, lever_min)[0],
+                 no_load_speed=w0, stall_current=a.stall_A, voltage=a.voltage_V,
                  kp=kp, kd=kd, armature=arm, four_quadrant=a.self_locking,
                  source=f"{key} on the {joint}'s smallest lever {lever_min * 1e3:.0f} mm ({a.source})")
 

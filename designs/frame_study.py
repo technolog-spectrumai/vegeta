@@ -44,6 +44,7 @@ from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
+from ogma import motors as og_motors
 
 from ogma.aero import cf_turbulent
 import pandas as pd
@@ -454,14 +455,8 @@ def motor_for_prop(prop, *, V=None, I=None):
     def static(kv):
         R = m0.resistance_ohm
         kt = 60 / (2 * math.pi * kv)
-        lo, hi = 300.0, kv * V
-        for _ in range(60):                                              # the rpm where the motor's torque meets the propeller's
-            n = 0.5 * (lo + hi)
-            Im = (V - n / kv) / R
-            Qm = kt * (Im - m0.no_load_current_a)
-            Qp = boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ
-            lo, hi = (n, hi) if Qm > Qp else (lo, n)
-        return n, (V - n / kv) / R, R, kt
+        n, Im = og_motors.operating_point(kv, R, m0.no_load_current_a, V, lambda n: boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ)
+        return n, Im, R, kt
 
     lo, hi = 150.0, P["kv"]
     for _ in range(40):

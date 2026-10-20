@@ -35,6 +35,7 @@ from dataclasses import replace
 from vegeta.chiron import ChironLab, FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 
 from ogma import actuators as act
+from ogma import motors as og_motors
 
 __all__ = ["DESIGN", "CAD", "MATERIALS", "PARTS_KG", "ASSUMPTIONS", "DRIVE", "MOTOR", "PAYLOAD_KG", "G",
            "WHEEL_FILL", "LAB_OPTIONS", "SIDES", "design_params", "pekari", "pekari_lab", "roller_joints", "rollers", "cad_numbers", "geometry", "mass_budget", "masses", "cg", "total_mass"]
@@ -411,7 +412,8 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
 
     def roller_link(side, name, x, z, r, kind, parent_pos):
         sy = SIDES[side]
-        servo = Servo(stall_torque=F_stall / ROLLER_SHARE * r, rated_torque=F_rated / ROLLER_SHARE * r, no_load_speed=v0 / r,
+        stall, w0 = og_motors.lever(F_stall / ROLLER_SHARE, v0, r)
+        servo = Servo(stall_torque=stall, rated_torque=og_motors.lever(F_rated / ROLLER_SHARE, v0, r)[0], no_load_speed=w0,
                       stall_current=drive.stall_A, voltage=drive.voltage_V, kp=0.0, kd=kd_r,
                       armature=arm_r, source=f"{drive_key}, a third of the side's force per roller")
         jn = f"{side}_{name}"
