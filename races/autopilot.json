@@ -81,10 +81,10 @@
    "tilt_max_deg": 50.4747,
    "v_cap": 9.7945
   },
-  "lap time [s]": 60.12400000002371,
-  "collisions": 1,
+  "lap time [s]": 43.848,
+  "collisions": 0,
   "search": "converged: Δ = 0.0078125 < Δ_min = 0.015625 — a mesh local optimum at 1/64 of every knob's range, not a proven global optimum",
-  "change": "improved from 800.00 to 62.12",
+  "change": "re-flown 2026-10-20 after the drop guard and the squared window: 60.12 s with 1 collision → 43.85 s with 0; kept over the re-tune's 24.0 s point, which finished only 3 of 12 laps at ±1 % on each knob",
   "time": {
    "pso [min]": 3.09,
    "polishing [min]": 2.82,

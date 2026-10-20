@@ -245,6 +245,33 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   A second search of the hangar with another seed (`--seed 1 --fresh`: a new swarm, starting from these settings) found
   no improvement and converged back to the same point in 107 laps (1.6 min). This checks robustness; it does not prove
   a global optimum.
+- **The hangar's knife edge, and what fixed it** (2026-10-20). That 60.1 s point failed under small changes:
+  ±0.01 of safety, or a little more omega_pos, gave a DNF. Flying the laps showed two faults, neither a tuning problem:
+  - **The drop through the stair opening** (zones 12–13). The quad arrived over the opening at about twice the
+    schedule's speed, and the reference jumped below it. The controller (section 5) then asked for almost no thrust,
+    so all four rotors sat at idle. At idle the mixer has no differential thrust left, so it makes no roll or pitch
+    torque: the geometric controller of Lee et al. assumes rotors that are not saturated. The attitude drifted to 74°
+    and the quad fell into the gable and stair corner.
+    The fix is a drop guard in the autopilot (`races.path.Drops`), a fixed rule rather than a tuning knob. It applies
+    where the line turns into a descent steeper than 45°:
+    1. stop on the top point;
+    2. wait over it until within 0.5 m and below 0.8 m/s horizontally;
+    3. descend at no more than 2 m/s, with the reference at most 1 m below.
+    The mock's point-mass flyer has no attitude to lose and is unchanged.
+  - **The window** (zones 15–16). The tuned lap's one collision was the wall's pier beside the window, not the stair.
+    The gate before the window sat diagonal to the 1.6 m opening, so the quad cut the corner. It now sits square in
+    front of the window, which makes the course 165 m long.
+  - **The tuned settings now:** 43.8 s with 0 collisions. In 12 laps at changes of up to 0.3 in safety, 1 in
+    omega_pos and 10° of tilt, 10 laps finish clean.
+    The 2 failures are at safety 0.5 and 0.6, on the slab edge of the east-hole climb (zones 8–9). This is the known
+    weak spot at higher speeds.
+    The other three courses have no drop and fly the same laps as before.
+  - **A re-tune from there** (`-j 4 --fresh`: 245 laps, 10.4 min) converged to a mesh local optimum at 24.0 s with
+    0 collisions, but that point is a knife edge again. With ±1 % on each knob only 3 of 12 laps finish, and the rest
+    fail all over the course.
+    `races/autopilot.json` keeps the robust 43.8 s settings. The score has no term for robustness: one lap per setting
+    rewards the edge of the feasible region. Scoring the worst of a few perturbed laps would fix that, at a few times
+    the cost.
 
 ## 10. Mocks and solver guards
 
