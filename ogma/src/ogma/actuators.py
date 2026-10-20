@@ -1,4 +1,4 @@
-"""Actuator, motor and joint library shared by the product notebooks (robot dog, Myropods, the Onager series).
+"""og.actuators — actuator, motor and joint catalogue (moved from Vegeta's designs/actuators.py; history kept).
 
 A catalogue of explicit entries — every number is an engineer's input with a source, nothing is
 fitted — plus two helpers: pick the lightest actuator that holds a torque with a safety factor, and
@@ -7,7 +7,6 @@ motor dictionaries, so a change of catalogue reaches every machine.
 """
 from dataclasses import dataclass, asdict
 
-import pandas as pd
 
 
 @dataclass(frozen=True)
@@ -176,9 +175,10 @@ def joint(key: str) -> Joint:
     raise KeyError(f"no joint {key!r}; known: {[j.key for j in JOINTS]}")
 
 
-def table(kind: str | None = None) -> pd.DataFrame:
+def table(kind: str | None = None) -> "pandas.DataFrame":
     """The catalogue as a DataFrame indexed by key, lightest first (optionally one kind)."""
     rows = [a.as_dict() for a in CATALOG if kind is None or a.kind == kind]
+    import pandas as pd
     return pd.DataFrame(rows).set_index("key").drop(columns=["name"]).sort_values("mass_g")
 
 

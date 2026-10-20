@@ -24,7 +24,7 @@ sharpness). From it:
 
 Saws (``SAWS``) and woods (``WOODS``) are explicit catalogue entries with their sources, as ``actuators.py``.
 
-    import cutting
+    from ogma import cutting
     saw, wood = cutting.get_saw("chainsaw 2 kW, 36 V"), cutting.get_wood("softwood (spruce, pine), green")
     cutting.cut_time(0.10, saw, wood)          # s for a 100 mm branch
     cutting.cut_table([0.05, 0.10], [saw], [wood])
@@ -35,7 +35,6 @@ import math
 from dataclasses import asdict, dataclass
 
 import numpy as np
-import pandas as pd
 
 __all__ = ["G", "Saw", "Wood", "SAWS", "WOODS", "get_saw", "get_wood", "saw_table", "wood_table", "cut_area",
            "cut_rate_area", "cut_time", "chain_force", "feed_force", "head_loads", "branch_mass", "branch_moment",
@@ -131,11 +130,13 @@ def get_wood(key_or_wood) -> Wood:
     raise KeyError(f"no wood {key_or_wood!r}; known: {[w.key for w in WOODS]}")
 
 
-def saw_table() -> pd.DataFrame:
+def saw_table() -> "pandas.DataFrame":
+    import pandas as pd
     return pd.DataFrame([s.as_dict() for s in SAWS]).set_index("key")
 
 
-def wood_table() -> pd.DataFrame:
+def wood_table() -> "pandas.DataFrame":
+    import pandas as pd
     return pd.DataFrame([w.as_dict() for w in WOODS]).set_index("key")
 
 
@@ -263,7 +264,7 @@ def kickback_zone(saw: Saw, bar_width: float) -> dict:
     return {"nose_radius_m": r, "usable_bar_m": saw.bar_length - r, "rule": "cut with the bar's underside, nose clear"}
 
 
-def cut_table(diameters, saws, woods, feed: float = 1.0) -> pd.DataFrame:
+def cut_table(diameters, saws, woods, feed: float = 1.0) -> "pandas.DataFrame":
     """Cut time [s], energy [Wh] and the branch's green mass per metre, per diameter × saw × wood."""
     rows = []
     for saw in saws:
@@ -273,4 +274,5 @@ def cut_table(diameters, saws, woods, feed: float = 1.0) -> pd.DataFrame:
                 rows.append({"saw": saw.key, "wood": w.key, "d_mm": d * 1e3,
                              "cut_time_s": float(cut_time(d, saw, w, feed)), "energy_Wh": float(energy_per_cut(d, saw, w)),
                              "mass_per_m_kg": branch_mass(d, 1.0, w), "fits_bar": d <= saw.bar_length})
+    import pandas as pd
     return pd.DataFrame(rows)

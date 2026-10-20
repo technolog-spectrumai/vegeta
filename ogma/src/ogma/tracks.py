@@ -1,6 +1,6 @@
-"""Track mechanics of a two-track skid-steer vehicle (notebook 30, todo 5j.1 and 5j.3). SI: N, m, Pa, rad.
+"""og.tracks — track mechanics of a two-track skid-steer vehicle (moved from Vegeta's designs/tracks.py; history kept). SI: N, m, Pa, rad.
 
-* **resistance** — ``resistance``: soil compaction (``terramechanics``) or the rubber's rolling resistance on hard
+* **resistance** — ``resistance``: soil compaction (``og.soil``) or the rubber's rolling resistance on hard
   ground, the track's internal loss (belt bending, road-wheel and sprocket bearings, link hinges:
   f_in = f₀ + f₁ v, Wong's form), the grade and the air drag;
 * **traction** — ``tractive_limit``: what the ground gives (μW on hard ground, the soil's shear strength with the
@@ -22,7 +22,7 @@ import math
 
 import numpy as np
 
-import terramechanics as tm
+from . import soil as tm
 
 __all__ = ["RHO_AIR", "G", "ground_pressure", "internal_coefficient", "resistance", "tractive_limit",
            "road_wheel_loads", "sag", "derail_tension", "drive_tension", "lateral_coefficient", "skid_steer",

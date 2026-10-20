@@ -1,4 +1,4 @@
-"""Terramechanics for small ground vehicles (notebook 30 and the drive-type comparison of todo 5j.6): Bekker's
+"""og.soil — terramechanics for small ground vehicles (moved from Vegeta's designs/terramechanics.py; history kept): Bekker's
 pressure–sinkage law, Janosi–Hanamoto shear, Wong's closed forms for a track with uniform pressure, Rowland's mean
 maximum pressure, and the rigid-wheel counterparts. SI throughout: N, m, Pa, rad.
 
