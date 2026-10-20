@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """Tune the MuJoCo autopilot of the reference quad per race course (todo R.2): real MuJoCo, no mocks, no solver.
 
-    python tune_autopilot.py                  # all four courses: a particle swarm (PSO), then a pattern-search polish (races/converge.py)
+    python tune_autopilot.py                  # all four courses, CMA-ES (the default; the PyPI package cma)
+    python tune_autopilot.py --pso            # the particle swarm, then the pattern-search polish
     python tune_autopilot.py -j 8             # 8 worker processes flying laps side by side (default 1; it prints the CPU count)
     python tune_autopilot.py --courses hangar quarry
-    python tune_autopilot.py --pso-iterations 10 --polish-laps 150 --max-laps 400   # the swarm's hard limit, the polish's reserve
-    python tune_autopilot.py --method gps     # polish only, from the stored settings (--method pso: the swarm only)
+    python tune_autopilot.py --max-evals 300 --generations 40      # CMA-ES: the evaluation budget, the hard maximum of generations
+    python tune_autopilot.py --pso --pso-iterations 0               # PSO: polish the stored settings only (--polish-evals 0: the swarm only)
+    python tune_autopilot.py --train-k 0      # the nominal lap alone (the earlier objective; default: 6 training scenarios)
     python tune_autopilot.py --fresh          # start over instead of resuming
-    python tune_autopilot.py --round2 | --quick   # the earlier fixed grids
 
-Resumable: every PSO and polishing iteration is checkpointed to races/runs/tune/<course>.ckpt.json (atomically); a
-rerun with the same options continues where it stopped and skips finished courses; other options are refused (use
+Every candidate is scored over the nominal lap and K training scenarios (races/validate.py, seed 1, never the held-out
+seed of ./test_autopilot.sh): the mean of its worst ⌈(K+1)/3⌉ laps. The strategies are classes in races/optimizers.py.
+
+Resumable: every generation / iteration is checkpointed to races/runs/tune/<course>.ckpt.json (atomically); a rerun
+with the same options continues where it stopped and skips finished courses; other options are refused (use
 --fresh). The same seed and options give the same laps whatever -j is.
 
 Every step prints a line; the whole output also goes to races/runs/tune/tune_<date>.log. Results:
 races/runs/tune/<course>_converge.csv (every lap), best.json and races/autopilot.json, written after every course,
-with the time spent (PSO, polishing, total, per lap)."""
+with the time spent per phase."""
 import os
 import subprocess
 import sys
@@ -90,6 +94,13 @@ def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if bootstrap(OUT, "tune") is None:
         return 1
+    if "--pso" not in argv:
+        try:
+            import cma
+            say(f"cma {cma.__version__} (CMA-ES, the default strategy)")
+        except ImportError:
+            say("CMA-ES needs the PyPI package cma: pip install cma  (or ./install_local.sh), or use --pso")
+            return 1
     from races import tune
     say(f"starting races.tune {' '.join(argv) or '(all courses, full grid)'}")
     t0 = time.time()
