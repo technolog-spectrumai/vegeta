@@ -185,6 +185,7 @@ class CMAStrategy(Strategy):
             opts["popsize"] = cfg.popsize
         self.es = cma.CMAEvolutionStrategy(x0, cfg.sigma0, opts)
         self.gen, self.best_s, self.best_f = 0, None, None
+        self.history = []                                                  # per generation: mean, σ, C (the plots of races.trainviz)
 
     def step(self, objective: Objective, log=print) -> None:
         self.es.opts["randn"] = _Draws([self.cfg.seed, self.gen])
@@ -197,6 +198,8 @@ class CMAStrategy(Strategy):
             F = [objective.score(s) for s in S]
         self.evals_used += new
         self.es.tell(X, F)
+        self.history.append({"gen": self.gen, "mean": [float(v) for v in self.es.mean], "sigma": float(self.es.sigma),
+                             "C": np.asarray(self.es.C, dtype=float).round(10).tolist(), "best": float(min(F)), "median": float(np.median(F))})
         i = int(np.argmin(F))
         improved = self.best_f is None or F[i] < self.best_f - 1e-9
         if improved:
@@ -217,7 +220,7 @@ class CMAStrategy(Strategy):
 
     def state(self) -> dict:
         self.es.opts["randn"] = None                                       # the next step sets the generation's draws
-        return {**self._base_state(), "gen": self.gen, "best_s": self.best_s, "best_f": self.best_f,
+        return {**self._base_state(), "gen": self.gen, "best_s": self.best_s, "best_f": self.best_f, "history": self.history,
                 "es": base64.b64encode(pickle.dumps(self.es)).decode()}
 
     @classmethod
@@ -225,7 +228,7 @@ class CMAStrategy(Strategy):
         s = cls.__new__(cls)
         Strategy.__init__(s, start, cfg)
         s._load_base(state)
-        s.gen, s.best_s, s.best_f = state["gen"], state["best_s"], state["best_f"]
+        s.gen, s.best_s, s.best_f, s.history = state["gen"], state["best_s"], state["best_f"], state.get("history", [])
         s.es = pickle.loads(base64.b64decode(state["es"]))
         return s
 
