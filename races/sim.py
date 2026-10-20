@@ -52,11 +52,16 @@ def _flight(prop, *, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_d
 
 
 def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004, lookahead_s: float = 0.25, duration: float | None = None, scene_xml: str | None = None,
-               record_every: int = 5, safety: float = 0.6, v_cap: float | None = None, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_deg: float = 60.0) -> dict:
+               record_every: int = 5, safety: float = 0.6, v_cap: float | None = None, omega_pos: float = 2.5, omega_att: float = 18.0, tilt_max_deg: float = 60.0,
+               scenario: dict | None = None) -> dict:
     """The MuJoCo lap. The defaults are the first real laps' lesson (the hangar, 2026-10-18): the geometric controller
     lags the racing line by metres where the mock lagged by 0.25 m, so the schedule runs at ``safety`` 0.6 of the
     thrust-vector corner speed, the look-ahead is short and the tilt is capped at 60°; raise them course by course
-    (``wf R3 --safety 0.8 --tilt-max 70``) once a lap is clean."""
+    (``wf R3 --safety 0.8 --tilt-max 70``) once a lap is clean.
+
+    ``scenario`` (``races.validate``) changes the world, not the autopilot, which keeps believing the nominal quad:
+    ``start_offset`` [m] moves the start, ``mass_scale`` the quad's mass and inertia, ``thrust_scale`` every rotor's
+    thrust, ``wind`` [m/s] the air the frame's drag acts against. Without it the lap is the nominal one."""
     import mujoco
     rules = rules or Rules()
     xml = scene_xml or courses.to_mjcf(course)
@@ -73,11 +78,15 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     drops = Drops(path)
     ref = Referee(course, rules)
     pos_r, spin = refquad.rotor_layout()
-    start = np.array(course.zones[0].center, dtype=float)
+    sc = scenario or {}
+    start = np.array(course.zones[0].center, dtype=float) + np.asarray(sc.get("start_offset", (0.0, 0.0, 0.0)), dtype=float)
+    k_thrust, wind = float(sc.get("thrust_scale", 1.0)), np.asarray(sc.get("wind", (0.0, 0.0, 0.0)), dtype=float)
     data.qpos[qa:qa + 3] = start
     data.qpos[qa + 3:qa + 7] = (1, 0, 0, 0)
     mujoco.mj_forward(model, data)
     flight.reset(model, data, jnt)
+    if sc.get("mass_scale", 1.0) != 1.0:                                   # after the reset: the controller keeps the nominal mass and inertia
+        model.body_mass[body] *= sc["mass_scale"]; model.body_inertia[body] *= sc["mass_scale"]
     import drongo_controller as dc
     thrust = np.zeros(4)
     alpha = 1.0 - math.exp(-control_dt / prop.spin_up_s)
@@ -109,8 +118,10 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
         cmd = np.clip(cmd, 0.0, prop.drive.t_max(v_axial))
         thrust += (cmd - thrust) * alpha
         arms = (pos_r - np.array([0.0, 0.0, 0.0])) @ R.T
-        force = zb * thrust.sum() - 0.5 * refquad.RHO * refquad.CDA_FORWARD_M2 * np.linalg.norm(v) * v
-        torque = np.cross(arms, np.outer(thrust, zb)).sum(axis=0) + zb * float(np.dot(spin, thrust)) * prop.torque_per_thrust_m
+        applied = thrust * k_thrust
+        v_air = v - wind
+        force = zb * applied.sum() - 0.5 * refquad.RHO * refquad.CDA_FORWARD_M2 * np.linalg.norm(v_air) * v_air
+        torque = np.cross(arms, np.outer(applied, zb)).sum(axis=0) + zb * float(np.dot(spin, applied)) * prop.torque_per_thrust_m
         data.xfrc_applied[body, :3] = force
         data.xfrc_applied[body, 3:] = torque
         for _ in range(n_sub):
