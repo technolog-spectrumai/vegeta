@@ -148,3 +148,46 @@ def worst_mean(scores: list[float], m: int | None = None) -> float:
     m = m or -(-len(scores) // 3)
     return float(np.mean(sorted(scores, reverse=True)[:m]))
 
+
+
+# ------------------------------------------------------------------- the test campaign file (test_campaign.txt)
+REPO = __import__("pathlib").Path(__file__).resolve().parents[1]
+CAMPAIGN_FILE = REPO / "test_campaign.txt"
+
+
+def write_campaign(path, campaign_dir, *, date: str, settings, seed: int, verdict: str | None, files: list) -> None:
+    """The pointer to the latest ./test_autopilot.sh campaign (git ignores it): its folder, the settings it tested (a
+    snapshot), the held-out seed, the verdict and its files, paths relative to the repository. ./gen_pilot_videos.sh
+    reads it to fly exactly what was tested."""
+    import os
+    from pathlib import Path
+    rel = lambda p: os.path.relpath(Path(p).resolve(), REPO)
+    text = ["# the latest ./test_autopilot.sh campaign — read by ./gen_pilot_videos.sh (local, ignored by git)",
+            f"campaign: {rel(campaign_dir)}", f"date: {date}", f"settings: {rel(settings)}", f"seed: {seed}", f"verdict: {verdict or 'running'}",
+            "files:", *[f"  {rel(f)}" for f in files if Path(f).exists()]]
+    tmp = Path(str(path) + ".tmp")
+    tmp.write_text("\n".join(text) + "\n")
+    os.replace(tmp, path)
+
+
+def read_campaign(path=CAMPAIGN_FILE) -> dict | None:
+    """``write_campaign``'s file as a dict (absolute paths), or None when there is none."""
+    from pathlib import Path
+    path = Path(path)
+    if not path.exists():
+        return None
+    out, files = {}, []
+    for line in path.read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line.startswith("  "):
+            files.append(REPO / line.strip())
+        elif ":" in line:
+            k, v = line.split(":", 1)
+            out[k.strip()] = v.strip()
+    for k in ("campaign", "settings"):
+        if k in out:
+            out[k] = REPO / out[k]
+    out["seed"] = int(out.get("seed", SEED))
+    out["files"] = files
+    return out

@@ -85,3 +85,22 @@ def test_record_compares_within_one_objective(tmp_path, monkeypatch):
     assert autopilot.tuned("farm") == {"safety": 0.6}                                          # a worse score of the same objective does not
     autopilot.record("farm", {**rob, "settings": {"safety": 0.65}, "lap time [s]": 38.0, "score": 39.0})
     assert autopilot.tuned("farm") == {"safety": 0.65}                                         # a better score does, though its lap is slower
+
+
+def test_campaign_file_round_trip(tmp_path):
+    camp = validate.REPO / "races" / "runs" / "validate" / "_test_campaign"
+    camp.mkdir(parents=True, exist_ok=True)
+    try:
+        (camp / "settings.json").write_text("{}")
+        (camp / "report.json").write_text("{}")
+        f = tmp_path / "test_campaign.txt"
+        validate.write_campaign(f, camp, date="2026-10-20 18:00", settings=camp / "settings.json", seed=7, verdict="weak",
+                                files=[camp / "settings.json", camp / "report.json", camp / "missing.csv"])
+        c = validate.read_campaign(f)
+        assert c["campaign"] == camp and c["settings"] == camp / "settings.json" and c["seed"] == 7 and c["verdict"] == "weak"
+        assert c["files"] == [camp / "settings.json", camp / "report.json"]                 # only files that exist are listed
+        assert "races/runs/validate/_test_campaign" in f.read_text()                             # paths relative to the repository
+        assert validate.read_campaign(tmp_path / "none.txt") is None
+    finally:
+        import shutil
+        shutil.rmtree(camp)

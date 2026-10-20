@@ -352,8 +352,16 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     - the gap: the median finished lap minus the nominal lap.
   - **Grades on the clean rate:** pass at 0.8 or more, weak at 0.5 or more, otherwise fail. This is a convention, not a
     requirement.
-  - **The report** is `races/runs/validate/report.json` (one line per family), with every lap in
-    `races/runs/validate/<course>.csv`. The exit code is 0 only when every course passes.
+  - **Every run is a campaign** in its own folder, `races/runs/validate/<date>_<time>/`:
+    - `settings.json`, a snapshot of the settings tested;
+    - `report.json`, one line per family;
+    - `<course>.csv`, every lap.
+
+    The exit code is 0 only when every course passes. `test_campaign.txt`, at the repository root and ignored by git,
+    points to the latest campaign and lists its files. `./gen_pilot_videos.sh` reads it by default: it flies the
+    snapshot (exactly what was tested, even if `autopilot.json` changed since), takes `--held-out` from that
+    campaign's CSVs, and writes the videos into `<campaign>/videos/`. `--no-campaign` flies `races/autopilot.json` into
+    `races/runs/videos/`.
   - **First result** (2026-10-20, 8 laps per family, 49 laps per course, 8.1 min with `-j 4`):
 
     | course | held-out clean rate | verdict | weakest family |
@@ -403,8 +411,8 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     (checked on industrial: 6 of 6 do). So a failure can be watched, not just counted.
   - Without an OpenGL backend that really renders, the matplotlib replay is written instead, labelled. The backend is
     probed by rendering one frame in a subprocess: EGL, then OSMesa, then GLFW.
-  - Output: `races/runs/videos/<course>/<stamp>_mujoco/` (the run export with provenance, one mp4 per camera) and
-    `races/runs/videos/index.json`.
+  - Output: `<campaign>/videos/<course>/<stamp>_mujoco/` (the run export with provenance, one mp4 per camera) and
+    `<campaign>/videos/index.json`. Without a campaign it goes to `races/runs/videos/`.
   - **Cameras:**
     - `fpv` is the quad's on-board camera, tilted 30° up and moving with the recorded attitude.
     - `chase` is a third-person camera 2.2 m behind the quad along its heading. The heading is smoothed with a 0.6 s

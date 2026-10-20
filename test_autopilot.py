@@ -9,7 +9,10 @@ generalisation gap. Real MuJoCo, no mocks, no solver.
     python test_autopilot.py --courses hangar --families nominal "wind ≤ 2 m/s"
     python test_autopilot.py --settings races/runs/tune/autopilot_hangar_24s_knife_edge.json   # validate other settings
 
-Report: races/runs/validate/report.json (succinct, rewritten after every course) and <course>.csv (every lap).
+Every run is a campaign in its own folder, races/runs/validate/<date>_<time>/: settings.json (a snapshot of the
+settings tested), report.json (succinct, rewritten after every course) and <course>.csv (every lap). The file
+test_campaign.txt at the repository root (ignored by git) points to the latest campaign and lists its files;
+./gen_pilot_videos.sh reads it to fly exactly the settings tested.
 Exit 0 when every course passes, 1 when one is weak or fails, 2 when MuJoCo or the settings are missing. The same
 seed and options give the same laps whatever -j is."""
 import argparse
@@ -44,7 +47,7 @@ def dumps(report: dict) -> str:
     return text + "\n"
 
 
-def main(argv=None) -> int:
+def main(argv=None, log: Path | None = None) -> int:
     from races import courses, validate
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--courses", nargs="*", default=list(courses.COURSES))
@@ -53,14 +56,20 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=validate.SEED, help=f"the held-out set's seed (default {validate.SEED}; the tuner never flies it)")
     ap.add_argument("--families", nargs="*", default=list(validate.FAMILIES), choices=validate.FAMILIES)
     ap.add_argument("--settings", type=Path, default=None, help="an autopilot.json-format file to validate instead of races/autopilot.json")
-    ap.add_argument("--out", type=Path, default=OUT / "report.json")
+    ap.add_argument("--out", type=Path, default=None, help="the campaign folder (default races/runs/validate/<date>_<time>)")
+    ap.add_argument("--campaign-file", type=Path, default=validate.CAMPAIGN_FILE, help="the pointer to the campaign (default test_campaign.txt)")
     a = ap.parse_args(argv)
 
-    stored = json.loads((a.settings or ROOT / "races" / "autopilot.json").read_text())
+    src = a.settings or ROOT / "races" / "autopilot.json"
+    stored = json.loads(src.read_text())
+    camp = a.out or OUT / time.strftime("%Y%m%d_%H%M%S")
+    camp.mkdir(parents=True, exist_ok=True)
+    snapshot = camp / "settings.json"                                    # what was tested, kept even if autopilot.json changes later
+    snapshot.write_text(json.dumps({**stored, "_tested_from": str(src)}, indent=1, ensure_ascii=False) + "\n")
+    report_f = camp / "report.json"
     sc = validate.scenarios(a.n, a.seed, a.families)
     print(f"test_autopilot: {len(sc)} laps per course ({a.n} per family; families: {', '.join(a.families)}), seed {a.seed}, "
           f"{a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
-    a.out.parent.mkdir(parents=True, exist_ok=True)
     report = {"date": time.strftime("%Y-%m-%d %H:%M"), "settings file": str(a.settings or "races/autopilot.json"), "seed": a.seed,
               "laps per family": a.n, "grades": "per family on the clean rate (finished, 0 collisions): pass ≥ 0.8, weak ≥ 0.5, else fail",
               "verdict": None, "courses": {}}
@@ -85,7 +94,7 @@ def main(argv=None) -> int:
             print(f"   {fam:14s} {f['grade']:4s}  clean {f['clean rate']:.2f}  finish {f['finish rate']:.2f}  median {f['median lap [s]']}  gap {f['gap [s]']}", flush=True)
         print(f"   → {slug}: {s['verdict'].upper()} (held-out clean rate {s['held-out clean rate']}, weakest: {s['weakest family']}; "
               f"nominal {s['nominal lap [s]']} s vs stored {s['stored lap [s]']} s; {s['wall [min]']} min)", flush=True)
-        with (OUT / f"{slug}.csv").open("w", newline="") as fh:
+        with (camp / f"{slug}.csv").open("w", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=list(rows[0]))
             w.writeheader()
             for r in rows:
@@ -93,8 +102,10 @@ def main(argv=None) -> int:
         verdicts = [c["verdict"] for c in report["courses"].values()]
         report["verdict"] = "pass" if all(v == "pass" for v in verdicts) else ("fail" if "fail" in verdicts else "weak")
         report["wall [min]"] = round((time.time() - t_all) / 60, 2)
-        _write_atomic(a.out, dumps(report))
-    print(f"test_autopilot: {str(report['verdict']).upper()} in {(time.time() - t_all) / 60:.1f} min; report {a.out}", flush=True)
+        _write_atomic(report_f, dumps(report))
+        validate.write_campaign(a.campaign_file, camp, date=report["date"], settings=snapshot, seed=a.seed, verdict=report["verdict"],
+                                files=[snapshot, report_f, *[camp / f"{c}.csv" for c in report["courses"]], *([log] if log else [])])
+    print(f"test_autopilot: {str(report['verdict']).upper()} in {(time.time() - t_all) / 60:.1f} min; report {report_f}; campaign {a.campaign_file}", flush=True)
     return 0 if report["verdict"] == "pass" else 1
 
 
@@ -102,6 +113,7 @@ if __name__ == "__main__":
     sys.path.insert(0, str(ROOT))
     import tune_autopilot
     tune_autopilot.say = lambda msg: print(f"test_autopilot: {msg}", flush=True)
-    if tune_autopilot.bootstrap(OUT, "validate") is None:
+    boot = tune_autopilot.bootstrap(OUT, "validate")
+    if boot is None:
         sys.exit(2)
-    sys.exit(main())
+    sys.exit(main(log=boot[0]))

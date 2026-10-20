@@ -13,7 +13,12 @@ tracking error, the mode (racing, hover, the drop guard's phases). Real MuJoCo, 
     python gen_pilot_videos.py --scenario "wind ≤ 2 m/s:3"   # one held-out scenario (family:index of races.validate, --seed)
     python gen_pilot_videos.py --settings races/runs/tune/autopilot_hangar_24s_knife_edge.json
 
-Output: races/runs/videos/<course>/<stamp>_mujoco/ (timeseries, events, summary with provenance, one mp4 per camera)
+Which settings: by default the latest test campaign — test_campaign.txt, written by ./test_autopilot.sh — so the
+videos fly exactly the settings that were tested (its settings.json snapshot) and --held-out takes that campaign's
+failures; the videos then go into the campaign's folder (<campaign>/videos/). Without a campaign file (or with
+--no-campaign) they fly races/autopilot.json into races/runs/videos/. --settings overrides the settings either way.
+
+Output: <campaign>/videos/<course>/<stamp>_mujoco/ (else races/runs/videos/…) (timeseries, events, summary with provenance, one mp4 per camera)
 and races/runs/videos/index.json; the mp4s are named <course>_fpv.mp4 (on-board, first person),
 <course>_chase.mp4 (third person behind the quad) and <course>_overview.mp4. Without a working OpenGL backend (EGL, OSMesa, GLFW) it writes the matplotlib
 replay instead, labelled as such. Exit 0 when every video was written, 1 if one failed, 2 when MuJoCo or the
@@ -38,11 +43,11 @@ def _write_atomic(path: Path, obj):
     os.replace(tmp, path)
 
 
-def held_out_worst(slug: str) -> list[tuple[str, int]]:
-    """(family, index) of the worst held-out lap of every family not graded pass in the latest ./test_autopilot.sh
-    run of the course: a DNF with the fewest zones, else the most collisions, else the slowest lap."""
+def held_out_worst(slug: str, folder: Path) -> list[tuple[str, int]]:
+    """(family, index) of the worst held-out lap of every family not graded pass in the campaign's CSV of the course
+    (``folder``/<course>.csv): a DNF with the fewest zones, else the most collisions, else the slowest lap."""
     from races import validate
-    f = ROOT / "races" / "runs" / "validate" / f"{slug}.csv"
+    f = folder / f"{slug}.csv"
     if not f.exists():
         return []
     rows = list(csv.DictReader(f.open()))
@@ -83,7 +88,8 @@ def fly_and_render(job: dict) -> dict:
     st = lap["stats"]
     fly_s = time.time() - t0
     run_dir = export.write_run(c, lap, simulator="mujoco", config={"autopilot": job["settings"], "label": job["label"], "mult": job["mult"],
-                                                                   "scenario": job["scenario"]}, seed=None, timestep=kw["control_dt"], wall_s=fly_s, root=OUT)
+                                                                   "scenario": job["scenario"], "campaign": job.get("campaign")}, seed=None,
+                         timestep=kw["control_dt"], wall_s=fly_s, root=Path(job["out"]))
     log.append(f"{job['course']} [{job['label']}]: {st['status']} {st['lap time [s]']:.2f} s, {st['collisions']} collisions, "
                f"{st['zones passed']} zones — flown in {fly_s:.0f} s → {run_dir}")
     videos, errors = {}, {}
@@ -129,27 +135,39 @@ def main(argv=None, gl: bool = True) -> int:
     ap.add_argument("--scenario", action="append", default=[], metavar="FAMILY:I", help="also one held-out scenario of races.validate (repeatable)")
     ap.add_argument("--no-panel", action="store_true", help="no autopilot side panel (the 3D view alone)")
     ap.add_argument("--no-logo", action="store_true", help="no Vegeta logo")
-    ap.add_argument("--seed", type=int, default=None, help="the held-out seed for --scenario / --held-out (default: the latest report's, else races.validate.SEED)")
+    ap.add_argument("--seed", type=int, default=None, help="the held-out seed for --scenario / --held-out (default: the campaign's, else races.validate.SEED)")
+    ap.add_argument("--campaign", type=Path, default=validate.CAMPAIGN_FILE, help="the test campaign file to fly (default test_campaign.txt, from ./test_autopilot.sh)")
+    ap.add_argument("--no-campaign", action="store_true", help="ignore the campaign: fly races/autopilot.json into races/runs/videos")
     a = ap.parse_args(argv)
 
-    stored = json.loads((a.settings or ROOT / "races" / "autopilot.json").read_text())
-    report = ROOT / "races" / "runs" / "validate" / "report.json"
-    seed = a.seed if a.seed is not None else (json.loads(report.read_text()).get("seed") if report.exists() else validate.SEED)
+    camp = None if a.no_campaign else validate.read_campaign(a.campaign)
+    if camp is None and not a.no_campaign:
+        print(f"gen_pilot_videos: no campaign file {a.campaign} (run ./test_autopilot.sh first) — flying races/autopilot.json", flush=True)
+    settings_f = a.settings or (camp["settings"] if camp else ROOT / "races" / "autopilot.json")
+    if not Path(settings_f).exists():
+        print(f"gen_pilot_videos: the settings file {settings_f} does not exist", flush=True)
+        return 2
+    stored = json.loads(Path(settings_f).read_text())
+    seed = a.seed if a.seed is not None else (camp["seed"] if camp else validate.SEED)
+    csv_dir = camp["campaign"] if camp else ROOT / "races" / "runs" / "validate"
+    out = camp["campaign"] / "videos" if camp else OUT
+    if camp:
+        print(f"gen_pilot_videos: campaign {camp['campaign']} ({camp.get('date', '?')}, verdict {camp.get('verdict', '?')}); settings {settings_f}", flush=True)
     jobs = []
     for slug in a.courses:
         settings = (stored.get(slug) or {}).get("settings")
         if not settings:
             print(f"== {slug}: no tuned settings in {a.settings or 'races/autopilot.json'} — skipped", flush=True)
             continue
-        base = {"course": slug, "settings": settings, "cameras": a.cameras, "quality": a.quality, "speed": a.speed, "gl": gl,
+        base = {"course": slug, "settings": settings, "cameras": a.cameras, "quality": a.quality, "speed": a.speed, "gl": gl, "out": str(out),
+                "campaign": str(camp["campaign"]) if camp else None,
                 "panel": not a.no_panel, "logo": None if a.no_logo or not LOGO.exists() else str(LOGO)}
         jobs.append({**base, "label": "nominal", "mult": {}, "scenario": {}})
-        picks = [(f, i) for f, i in held_out_worst(slug)] if a.held_out else []
+        picks = [(f, i) for f, i in held_out_worst(slug, csv_dir)] if a.held_out else []
         picks += [(s.rsplit(":", 1)[0], int(s.rsplit(":", 1)[1])) for s in a.scenario]
         if a.held_out and not picks:
-            print(f"== {slug}: no failing held-out family in races/runs/validate/{slug}.csv (run ./test_autopilot.sh first?)", flush=True)
-        rows = {(r["family"], int(r["i"])): r for r in csv.DictReader((ROOT / "races" / "runs" / "validate" / f"{slug}.csv").open())} \
-            if (ROOT / "races" / "runs" / "validate" / f"{slug}.csv").exists() else {}
+            print(f"== {slug}: no failing held-out family in {csv_dir / (slug + '.csv')}", flush=True)
+        rows = {(r["family"], int(r["i"])): r for r in csv.DictReader((csv_dir / f"{slug}.csv").open())} if (csv_dir / f"{slug}.csv").exists() else {}
         for fam, i in dict.fromkeys(picks):
             sc = scenario(fam, i, seed)
             jobs.append({**base, "label": f"held-out: {fam} #{i}", "mult": sc["mult"], "scenario": sc["scenario"], "expect": rows.get((fam, i))})
@@ -158,8 +176,8 @@ def main(argv=None, gl: bool = True) -> int:
         return 2
     print(f"gen_pilot_videos: {len(jobs)} lap(s) × {len(a.cameras)} camera(s), quality {a.quality}, speed {a.speed}×, "
           f"{'MuJoCo frames' if gl else 'matplotlib replay (no OpenGL)'}; {a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
-    OUT.mkdir(parents=True, exist_ok=True)
-    index = {"date": time.strftime("%Y-%m-%d %H:%M"), "settings file": str(a.settings or "races/autopilot.json"), "held-out seed": seed,
+    out.mkdir(parents=True, exist_ok=True)
+    index = {"date": time.strftime("%Y-%m-%d %H:%M"), "campaign": str(camp["campaign"]) if camp else None, "settings file": str(settings_f), "held-out seed": seed,
              "renderer": "mujoco" if gl else "matplotlib replay (no OpenGL)", "quality": a.quality, "speed": a.speed,
              "panel": not a.no_panel and gl, "logo": not a.no_logo and gl, "laps": []}
     t0, failed = time.time(), 0
@@ -168,16 +186,16 @@ def main(argv=None, gl: bool = True) -> int:
         with ProcessPoolExecutor(min(a.jobs, len(jobs))) as ex:
             results = ex.map(fly_and_render, jobs)
             for r in results:
-                failed += _report(r, index)
+                failed += _report(r, index, out)
     else:
         for j in jobs:
-            failed += _report(fly_and_render(j), index)
+            failed += _report(fly_and_render(j), index, out)
     print(f"gen_pilot_videos: {sum(len(e['videos']) for e in index['laps'])} video(s), {failed} failed, in {(time.time() - t0) / 60:.1f} min; "
-          f"index {OUT / 'index.json'}", flush=True)
+          f"index {out / 'index.json'}", flush=True)
     return 1 if failed else 0
 
 
-def _report(r: dict, index: dict) -> int:
+def _report(r: dict, index: dict, out: Path) -> int:
     for line in r["log"]:
         print(line, flush=True)
     e, x = r["entry"], r["expect"]
@@ -187,7 +205,7 @@ def _report(r: dict, index: dict) -> int:
         if not same:
             print(f"   note: the validation run had {x['status']} {x['lap time [s]']} — the settings changed since ./test_autopilot.sh?", flush=True)
     index["laps"].append(e)
-    _write_atomic(OUT / "index.json", index)
+    _write_atomic(out / "index.json", index)
     return len(e["errors"])
 
 

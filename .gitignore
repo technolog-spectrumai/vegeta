@@ -35,4 +35,5 @@ vegeta.cache/
 notebooks/*-run.ipynb
 cache/porunga/
 races/runs/
+test_campaign.txt
 designs/data/cad/
