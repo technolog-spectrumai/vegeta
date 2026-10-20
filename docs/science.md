@@ -405,8 +405,27 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     probed by rendering one frame in a subprocess: EGL, then OSMesa, then GLFW.
   - Output: `races/runs/videos/<course>/<stamp>_mujoco/` (the run export with provenance, one mp4 per camera) and
     `races/runs/videos/index.json`.
-  - Fixed on the way: MuJoCo's default offscreen framebuffer (640×480) is enlarged to the frame size. Before, every
-    render above that size failed, including the notebooks' `fine` preset.
+  - **Cameras:**
+    - `fpv` is the quad's on-board camera, tilted 30° up and moving with the recorded attitude.
+    - `chase` is a third-person camera 2.2 m behind the quad along its heading. The heading is smoothed with a 0.6 s
+      lag. The camera is pulled in front of any colliding geometry by a MuJoCo ray cast from the quad.
+    - `overview` looks down on the whole course.
+    - The files are named `<course>_fpv.mp4`, `<course>_chase.mp4` and `<course>_overview.mp4`.
+  - **Logo and side panel.** The Vegeta logo is in the corner. To the right (`races.video_panel`, `--no-panel`) is
+    the autopilot panel:
+    - the six settings flown as bars, each normalised to its search range, with the value above and the name below;
+    - the mode now: racing, hover, a missed gate, or the drop guard's approach / align / descend;
+    - 10 s strip charts of commanded against measured speed, tilt (with its limit) and thrust (in weights, with the
+      drive limit, the limited commands shaded), and the tracking error with the altitude.
+
+    `run_mujoco` records these signals in `result["pilot"]` (`races.sim.PILOT_COLUMNS`), and the run export writes
+    them as `autopilot.csv`. The flight itself is unchanged: the same lap times.
+  - **Fixed on the way:**
+    - MuJoCo's default offscreen framebuffer (640×480) is enlarged to the frame size. Before, every render above that
+      size failed, including the notebooks' `fine` preset.
+    - MuJoCo scales the clip planes by the model's extent, and the scene's `znear` 0.05 made a near plane 3 m (hangar)
+      to 10 m (industrial) away. Everything closer was cut: the quad in the chase view and the ground below the camera
+      (the black lower half). Renders now use a 2 cm near plane.
 
 ## 10. Mocks and solver guards
 

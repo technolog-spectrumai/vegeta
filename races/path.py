@@ -116,20 +116,25 @@ class Drops:
         self.steep = [path.tan[i][2] < self.STEEP for i in range(n)]
         self.tops = {i for i in range(1, n) if self.steep[i] and not self.steep[i - 1]}
         self.released = set()
+        self.mode = None                                                   # the last decision: approach, align, descend or None (races.video_panel shows it)
 
     def adjust(self, s: float, nz: int, p, v, ref: tuple) -> tuple:
         P = self.path
+        self.mode = None
         if nz in self.tops and P.s[nz] - s < self.APPROACH_M:              # approaching a top: stop on it (re-armed after a reset)
             self.released.discard(nz)
+            self.mode = "approach"
             return P.P[nz].copy(), np.zeros(3), np.zeros(3)
         top = nz - 1
         if top in self.tops and top not in self.released:                  # over the top: align before descending
             if np.linalg.norm(p[:2] - P.P[top][:2]) < self.ALIGN_M and np.linalg.norm(v[:2]) < self.ALIGN_V:
                 self.released.add(top)
             else:
+                self.mode = "align"
                 return P.P[top].copy(), np.zeros(3), np.zeros(3)
         p_ref, v_ref, a_ref = ref
         if 0 <= nz - 1 < len(self.steep) and self.steep[nz - 1]:          # on the way down: slow, the reference close below
+            self.mode = "descend"
             n = float(np.linalg.norm(v_ref))
             v_ref = v_ref * min(1.0, self.DESCENT_V / max(n, 1e-9))
             p_ref = p_ref.copy()
