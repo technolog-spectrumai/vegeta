@@ -230,8 +230,18 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   "no improvement found over the starting settings". It is never reported as proof of an optimum.
 - **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once and remembered. The search starts from
   the course's stored settings (`races/autopilot.json`), and only a faster finished lap replaces them.
-- **First result.** Industrial went from 37.7 s (the best of the grids) to **32.0 s with no collision**, converging
-  at Δ = 1/32 in 99 laps. `lookahead_s` ended near its upper bound (0.99 of 1.0 s), so a wider bound may still pay.
+- **Results** (2026-10-20, all four courses, `-j 12`, default options, about 12 min in total). Every course
+  converged at Δ = 1/128 < Δ_min = 1/64: a mesh local optimum per course, not a proven global optimum.
+
+  | course | before | after | collisions | laps | time |
+  |---|---|---|---|---|---|
+  | hangar | DNF (13 of 18 zones) | 60.1 s | 1 (+5 s) | 215 | 5.9 min |
+  | industrial | 32.0 s | 29.4 s | 0 | 153 | 1.7 min |
+  | farm | 36.7 s | 31.4 s | 0 | 150 | 1.7 min |
+  | quarry | 49.7 s | 47.4 s | 0 | 205 | 3.1 min |
+
+  The hangar's first finished lap is a slow, careful setting (safety 0.31, tilt limited to 50°, speed capped at
+  9.8 m/s) that none of the earlier grids had tried.
 
 ## 10. Mocks and solver guards
 
