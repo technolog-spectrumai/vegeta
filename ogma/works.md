@@ -48,6 +48,7 @@ Published references (Shigley, Wong, ISA tables, datasheets) are added on top wh
 | `wind.json` | Vegeta 79cb849 — `nisus_robot.Wind(steady=(3,-1,0), sigma=1.5, tau=4, gust=…, seed=7)` |
 | `batteries.json` | Vegeta e918c97 — `nisus_plus_systems` LiIonCell/LiIonPack/CELLS, `nisus_systems` Battery/BATTERIES |
 | `rotors.json` | Vegeta 9a88dba — `drongo_robot.rotor_layout`, `Rotors` wrench, `drongo_controller.Flight.mix`, `kestrel_flight.induced_velocity` |
+| `aero.json` | Vegeta 81ffce9 — `nisus_robot.Aero.coefficients`, `NisusPlusAero.coefficients` (crow 0 and 0.6), `kestrel_flight` `_cf`/`Polar`/`viterna_cd90`, `merlin_flight.Airframe`, `peregrine_flight.vlm`, Aguya/frame_study Cf; synthetic but realistic coefficient table and states |
 | `propulsion.json` | Vegeta bbaf3bc — `nisus_systems.propulsion_map()`, `nisus_plus_systems.drive()`, `kestrel_systems.drive_table()`, `merlin_flight.Unit` |
 
 Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user runs it).
@@ -87,6 +88,16 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `RHO0 = RHO = 1.225`. The classes were extracted verbatim (AST spans) from Vegeta so the goldens hold bit-for-bit.
   Next: Vegeta imports them (`NisusPlusDrive = ElectricDrive` under the old name), Piccolo's `races/refquad.Drive`
   could become `og.propulsion.DriveTable`.
+
+- `og.aero`: `cf_turbulent(re, mach, re_min)` (the ten build-up copies; the Mach factor divides by exactly 1 at M = 0
+  so it is bit-identical to the plain form), `cf_mixed` (Kestrel), `Airframe` (Merlin; `g` field defaults to
+  `G_VEGETA`), `Polar` + `viterna_cd90` (Kestrel), `stability_coefficients(c, …, crow=0)` — Nisus and Nisus+ were
+  the same model; at crow = 0 they agree bit-for-bit, so one function serves both. `air_angles` + `aero_wrench`
+  are the generic core of `nisus_robot.Aero.__call__` (tested by properties: drag opposes the air velocity, lift is
+  up — the hook's MuJoCo loop can't run without mujoco). `vlm` and its lattice helpers copied verbatim from
+  `peregrine_flight` (no CadQuery needed); also checked against Helmbold (8 %, as Vegeta's own test).
+  Not taken: the Talos/Aeromant CFD and the per-machine `aero()`/`derivatives()` builders — they *compute*
+  coefficients and stay in Vegeta.
 
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager

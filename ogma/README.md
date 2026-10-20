@@ -15,7 +15,7 @@ numpy only, SI units, organised by physics.
 | `og.batteries` | Li-ion cells and packs (sag, cold, charge limits), bought packs; catalogues | done (O3) |
 | `og.rotors` | X layout, allocation, desaturating mixer, spin-up lag, wrench about the COM, frame drag, Glauert induced velocity | done (O3) |
 | `og.propulsion` | propulsion maps (signed T, Q on V × rpm), the electric drive (map + motor + ρ scaling), flight units, drive tables | done (O3) |
-| `og.aero` | coefficient protocol, linear derivatives, polars, aero wrench, Cf, VLM | O3 |
+| `og.aero` | skin friction (turbulent, mixed), Merlin's parabolic airframe, Kestrel's full-range polar, Nisus's stability coefficients (+ crow), air angles and aero wrench, Peregrine's vortex lattice | done (O3) |
 
 Tests: each moved piece reproduces the numbers Vegeta's code gave on fixed inputs (`tests/golden/`, recorded from
 Vegeta at the commit named in the file); published references on top where they exist.
