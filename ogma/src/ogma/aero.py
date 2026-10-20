@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .units import G_VEGETA
+from .units import G
 
 RHO = 1.225
 
@@ -44,7 +44,7 @@ def cf_mixed(Re: float) -> float:
 @dataclass
 class Airframe:
     """A whole aircraft's parabolic polar CD = cd0 + k CL², k = 1/(π AR e): drag at a load factor, stall speed.
-    ``g`` defaults to the 9.81 Vegeta's machines use (until the constants are unified)."""
+    ``g`` defaults to standard gravity (Merlin's own model used 9.81: pass ``g=G_VEGETA`` to reproduce it)."""
     name: str
     mass_kg: float
     wing_area_m2: float
@@ -52,7 +52,7 @@ class Airframe:
     cd0: float
     oswald: float = 0.8
     cl_max: float = 1.2
-    g: float = G_VEGETA
+    g: float = G
 
     @property
     def k(self):

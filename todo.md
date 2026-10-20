@@ -31,7 +31,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] Vegeta adopts `og.propulsion` (Nisus, Nisus+, Merlin, Kestrel)
 - [x] `og.aero` (Cf, Airframe, Polar, stability coefficients, aero wrench, vlm)
 - [x] Vegeta adopts `og.aero` (vegeta 8ae1f7a)
-- [ ] Velutina wind → `og.wind`
+- [x] Velutina wind → `og.wind`
 - [ ] unify `G` / `RHO` (each golden change its own commit)
 
 ## O4 — graduate machines to Piccolo
