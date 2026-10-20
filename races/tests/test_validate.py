@@ -44,6 +44,7 @@ def test_summary_and_grades():
     assert (w["clean rate"], w["finish rate"], w["median lap [s]"], w["gap [s]"], w["grade"]) == (0.8, 0.9, 31.0, 1.0, "pass")
     assert (m["clean rate"], m["grade"]) == (0.5, "weak")
     assert s["verdict"] == "weak" and s["weakest family"] == "mass ±5 %" and s["held-out clean rate"] == 0.65
+    assert validate.summarise([_row("nominal", 30.0), _row("mass ±5 %", 30.0)])["weakest family"] == "none"
     assert validate.grade(0.49) == "fail" and validate.summarise(rows + [_row("thrust ±5 %", None)])["verdict"] == "fail"
 
 
