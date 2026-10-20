@@ -9,7 +9,7 @@ numpy only, SI units, organised by physics.
 | `og.frames` | quaternions, rotations, Euler angles, frame conventions | done |
 | `og.mass` | mass items and shapes (rod, plate, shell; box, sphere, cylinder, ellipsoid as MuJoCo), budgets, CG and inertia, placing an item for a target CG | done (O1) |
 | `og.gears`, `og.soil`, `og.tracks`, `og.cutting`, `og.actuators` | moved from Vegeta's designs/ with history; reproduce it exactly | done (O2) |
-| `og.motors` | DC motor, the servo law (from Chiron), transmissions | O3 |
+| `og.motors` | DC motor (Boreas's), resistance fit and operating point, the servo law (Chiron's), levers and gearboxes | done (O3) |
 | `og.atmosphere` | the ISA (+ΔT), Sutherland viscosity, density altitude; reproduces Vegeta's three copies | done (O3) |
 | `og.wind` | steady + OU turbulence + 1−cos gust (Nisus's model; terrain layers subclass it) | done (O3) |
 | `og.batteries` | Li-ion cells and packs (sag, cold, charge limits), bought packs; catalogues | done (O3) |
