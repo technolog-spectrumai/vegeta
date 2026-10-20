@@ -49,23 +49,31 @@ def say(msg):
     print(f"tune_autopilot: {msg}", flush=True)
 
 
-def pick_backend() -> str | None:
-    """The MUJOCO_GL with which ``import mujoco`` works here (the laps need no renderer, but the import loads one)."""
+IMPORT_PROBE = "import mujoco"
+RENDER_PROBE = ("import mujoco; m = mujoco.MjModel.from_xml_string('<mujoco><worldbody><geom size=\\'1\\'/></worldbody></mujoco>'); "
+                "d = mujoco.MjData(m); mujoco.mj_forward(m, d); r = mujoco.Renderer(m, 32, 32); r.update_scene(d); r.render()")
+
+
+def pick_backend(probe: str = IMPORT_PROBE) -> str | None:
+    """The MUJOCO_GL with which ``probe`` works here, each tried in a subprocess: ``IMPORT_PROBE`` (the laps need no
+    renderer, but the import loads one) or ``RENDER_PROBE`` (a GL context that really renders a frame)."""
     if os.environ.get("MUJOCO_GL") is not None:
         say(f"MUJOCO_GL={os.environ['MUJOCO_GL']!r} (set by you)")
         return os.environ["MUJOCO_GL"]
     for b in BACKENDS:
         env = {k: v for k, v in os.environ.items() if k != "MUJOCO_GL"} | ({"MUJOCO_GL": b} if b else {})
-        p = subprocess.run([sys.executable, "-c", "import mujoco"], env=env, capture_output=True, text=True, timeout=120)
+        what = "renders" if probe == RENDER_PROBE else "imports"
+        p = subprocess.run([sys.executable, "-c", probe], env=env, capture_output=True, text=True, timeout=120)
         if p.returncode == 0:
-            say(f"MUJOCO_GL={b or '(unset)'}: mujoco imports")
+            say(f"MUJOCO_GL={b or '(unset)'}: mujoco {what}")
             return b
-        say(f"MUJOCO_GL={b or '(unset)'}: mujoco does not import ({(p.stderr.strip().splitlines() or ['?'])[-1][:120]})")
+        say(f"MUJOCO_GL={b or '(unset)'}: mujoco does not {what[:-1]} ({(p.stderr.strip().splitlines() or ['?'])[-1][:120]})")
     return None
 
 
-def bootstrap(out: Path, name: str):
-    """The log (tee), the source trees on sys.path, a MUJOCO_GL that imports; returns the log path, or None."""
+def bootstrap(out: Path, name: str, probes=(IMPORT_PROBE,)):
+    """The log (tee), the source trees on sys.path, a MUJOCO_GL for which the first workable of ``probes`` works;
+    returns (the log path, the index of that probe), or None."""
     out.mkdir(parents=True, exist_ok=True)
     log = out / f"{name}_{time.strftime('%Y%m%d_%H%M%S')}.log"
     sys.stdout = sys.stderr = Tee(sys.__stdout__, log.open("w"))
@@ -75,7 +83,12 @@ def bootstrap(out: Path, name: str):
               ROOT / "vendor" / "ozaru" / "porunga" / "src", ROOT / "vendor" / "ozaru" / "yanus" / "src"):
         if p.is_dir() and str(p) not in sys.path:
             sys.path.insert(0, str(p))
-    b = pick_backend()
+    for k, probe in enumerate(probes):
+        b = pick_backend(probe)
+        if b is not None:
+            break
+        if probe == RENDER_PROBE:
+            say("no MUJOCO_GL renders here (EGL, OSMesa or GLFW with a display are needed for MuJoCo frames)")
     if b is None:
         say("no MUJOCO_GL works: is mujoco installed in this python?  pip install mujoco  (or ./install_local.sh)")
         return None
@@ -87,7 +100,7 @@ def bootstrap(out: Path, name: str):
     except Exception as e:
         say(f"cannot import mujoco / races ({type(e).__name__}: {e})")
         return None
-    return log
+    return log, k
 
 
 def main(argv=None) -> int:
