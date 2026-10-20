@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+from ogma import wind as og_wind
 
 G = 9.80665
 RHO0, T0, LAPSE = 1.225, 288.15, 0.0065
@@ -123,9 +124,7 @@ class Wind:
     seed: int = 0
 
     def steady(self, altitude_m, base_altitude):
-        a = math.radians(self.direction_deg)
-        f = 1.0 + self.shear_per_km * max(0.0, (altitude_m - base_altitude)) / 1000.0
-        return -self.speed * f * np.array([math.cos(a), math.sin(a), 0.0])
+        return og_wind.from_direction(self.speed * og_wind.linear_shear(altitude_m, base_altitude, self.shear_per_km), self.direction_deg)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -233,10 +232,10 @@ def simulate(ac: Aircraft, terrain: Terrain, wind: Wind, plan: Plan, *, dt=0.05,
         alt = pos[2]
         rho = float(isa_density(alt))
         # wind: steady + gust (Ornstein–Uhlenbeck)
-        gust += (-gust / wind.gust_tau_s) * dt + wind.gust_sigma * math.sqrt(2 * dt / wind.gust_tau_s) * rng.standard_normal(3) * np.array([1, 1, 0.4])
+        gust = og_wind.ou_euler_step(gust, dt, wind.gust_sigma, wind.gust_tau_s, rng)
         w = wind.steady(alt, terrain.base) + gust
         # navigation error: a slow random walk the guidance cannot see (it steers the *estimated* position)
-        nav_err += (-nav_err / 20.0) * dt + ac.position_noise_m * math.sqrt(2 * dt / 20.0) * rng.standard_normal(3) * np.array([1, 1, 0.5])
+        nav_err = og_wind.ou_euler_step(nav_err, dt, ac.position_noise_m, 20.0, rng, (1.0, 1.0, 0.5))      # the navigation error: the same process
         pos_est = pos + nav_err
         # ---- guidance: velocity command
         if goal is None:                                    # set-down / hand-over: hold, release the capsule

@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+from ogma import wind as og_wind
 
 from velutina_flight import G, Aircraft, Wind, isa_density
 
@@ -99,7 +100,7 @@ class SiteWind(Wind):
     def mean(self, pos, turbine: Turbine):
         """Steady wind vector at ``pos`` (no gust): shear × tower shadow. Blowing along +x."""
         x, y, z = float(pos[0]), float(pos[1]), max(float(pos[2]), 2.0)
-        u = self.speed * (z / self.hub_height) ** self.shear_exponent
+        u = og_wind.power_law(self.speed, z, self.hub_height, self.shear_exponent)
         a = float(turbine.tower_diameter(z)) / 2
         r2 = x * x + y * y
         if z < turbine.hub_height - turbine.nacelle[2] / 2 and r2 > a * a:
@@ -294,9 +295,9 @@ def follow_path(ac: Aircraft, turbine: Turbine, wind: SiteWind, waypoints, *, dt
     while t < max_t and k < len(waypoints):
         goal, v_lim, dwell, label = waypoints[k]
         sigma = wind.gust_sigma * wind.turbulence_factor(pos, turbine)
-        gust += (-gust / wind.gust_tau_s) * dt + sigma * math.sqrt(2 * dt / wind.gust_tau_s) * rng.standard_normal(3) * np.array([1, 1, 0.4])
+        gust = og_wind.ou_euler_step(gust, dt, sigma, wind.gust_tau_s, rng)
         w = wind.mean(pos, turbine) + gust
-        nav += (-nav / 20.0) * dt + ac.position_noise_m * math.sqrt(2 * dt / 20.0) * rng.standard_normal(3) * np.array([1, 1, 0.5])
+        nav = og_wind.ou_euler_step(nav, dt, ac.position_noise_m, 20.0, rng, (1.0, 1.0, 0.5))
         pos_est = pos + nav
         to_goal = goal - pos_est
         dist = np.linalg.norm(to_goal)
