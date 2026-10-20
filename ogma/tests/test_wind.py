@@ -28,3 +28,21 @@ def test_turbulence_statistics():
         xs.append(w.turb.copy())
     xs = np.array(xs)
     assert np.allclose(xs.std(0), [2.0, 2.0, 1.0], rtol=0.05)
+
+
+def test_velutina_pieces():
+    """Velutina's steady wind (from a direction, +35 %/km shear), the site's power law above the tower's shadow and
+    its Euler gust line reproduce Vegeta exactly."""
+    import json
+    from pathlib import Path
+    from ogma import wind as ow
+    g = json.loads((Path(__file__).parent / "golden" / "wind.json").read_text())["velutina"]
+    for a, want in zip((300.0, 400.0, 900.0, 2400.0), g["steady"]):
+        assert ow.from_direction(8.0 * ow.linear_shear(a, 400.0, 0.35), 240.0).tolist() == want
+    for z, want in zip((80.0, 140.0), g["site"][2:]):
+        assert [ow.power_law(10.0, z, 80.0, 0.14), 0.0, 0.0] == want
+    rng = np.random.default_rng(11)
+    x = np.zeros(3)
+    for want in g["gust"]:
+        x = ow.ou_euler_step(x, 0.05, 2.5, 4.0, rng)
+        assert x.tolist() == want

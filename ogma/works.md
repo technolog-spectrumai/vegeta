@@ -112,6 +112,10 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   the battery-for-CG algebra for tables that keep their own sums (lists of dicts, DataFrames); `place_for_cg` (on a
   `Budget`) now calls it. Rule from the user: anything Vegeta's refactor finds missing in Ogma is added on the way.
 
+- `og.wind` building blocks (added for Velutina, V3.10): `from_direction`, `linear_shear`, `power_law`,
+  `ou_euler_step` (Euler–Maruyama OU with per-axis scale: Velutina varies sigma in the turbine's wake, so the
+  exact-discretisation `Wind` does not fit it). Golden: `wind.json["velutina"]` (Vegeta 965fbe7).
+
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager
   series/Pekari/Perseus and the robot dog/Myropods are deferred to todo.md's "Later" section; they stay in Vegeta
