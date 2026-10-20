@@ -19,7 +19,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.gears`, `og.soil`, `og.tracks`, `og.cutting`, `og.actuators`
 - [x] Vegeta designs import `og.*`
 - [x] `og.motors` (DC motor, servo law from Chiron, transmissions)
-- [ ] Vegeta adopts `og.motors`
+- [x] Vegeta adopts `og.motors`
 - [ ] Chiron takes its servo law from Ogma (Chiron vendors Ogma)
 
 ## O3 — consolidate duplicates
