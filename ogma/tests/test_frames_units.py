@@ -29,4 +29,4 @@ def test_units():
 def test_planned_modules_say_so():
     import pytest
     with pytest.raises(AttributeError, match="planned"):
-        og.aero
+        og.motors
