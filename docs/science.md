@@ -218,6 +218,24 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
     otherwise use NumPy's global generator, which a saved state does not carry. The state is `cma`'s object, pickled
     into the checkpoint, and its version is part of the fingerprint.
   - Checked: a run interrupted after its first generation and resumed flew the same 36 laps as an uninterrupted one.
+  - **Racing** (`--race`, on by default; after Maron & Moore 1997 and Birattari et al.'s F-race, 2002). It uses the
+    robust score's own bound.
+    1. Every candidate flies the first ⌈(K+1)/3⌉ scenarios, the nominal lap first. The worst m laps of a superset are
+       never better than those of a subset, so the mean of that part is a lower bound of the full score.
+    2. In the order of these bounds, the remaining scenarios are flown in parallel batches, while T, the μ-th best
+       full score, is tracked.
+    3. A candidate whose bound is ≥ T cannot reach the best μ, and neither can any after it, so their remaining laps
+       are not flown.
+
+    The update then uses only the best μ: the plain (μ/μ_w, λ) form, because `cma`'s "active" covariance update
+    would also weight the worst candidates. Those μ have exact scores. Every other candidate reports max(its bound,
+    the μ-th score) + 10⁻⁶, which does not depend on the batches. So racing changes the laps flown, never a decision:
+    `-j` and racing give the same run.
+    - Checked on a stand-in objective: the same CMA-ES mean in every generation with racing as without, and fewer
+      laps.
+    - On MuJoCo (industrial, K = 6, λ = 9): 16–20 of 63 laps saved per generation.
+    - The stop tests (`tolfun`, …) see the reported values, bounds included.
+    - `--no-race` flies everything and keeps the active update.
   - CMA-ES samples around its start without flying it, so the driver flies the start once at the end. If nothing beat
     it, the result is the start: "no improvement found over the starting settings".
 - **PSO, then pattern search (`--pso`).** This is the earlier search, kept intact; the details follow.
