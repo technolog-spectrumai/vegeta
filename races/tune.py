@@ -35,16 +35,16 @@ OUT = Path(__file__).resolve().parent / "runs" / "tune"
 
 def _fly_worker(job):
     """One lap in a worker process (the course is built there; MuJoCo shares nothing between processes)."""
-    slug, kw = job
+    slug, kw, sc = job
     from races import courses, sim
     try:
-        res = sim.run_mujoco(courses.COURSES[slug](), **kw)
+        res = sim.run_mujoco(courses.COURSES[slug](), scenario=sc or None, **kw)
         return res["stats"], [list(e) for e in (res.get("events") or [])]
     except Exception as e:                                       # a crash of one try is a result, not the end
         return {"status": "error", "reason": f"{type(e).__name__}: {e}"}, []
 
 
-SCHEMA = 2                                                    # 2: the drop guard, the squared hangar window, the stuck label
+SCHEMA = 3                                                    # 2: the drop guard, the squared hangar window, the stuck label; 3: the training scenarios
 
 
 def _write_atomic(path: Path, obj) -> None:
@@ -58,52 +58,74 @@ def _write_atomic(path: Path, obj) -> None:
 
 
 class Laps:
-    """Laps flown side by side and remembered (MuJoCo is deterministic: a setting is flown once).
+    """Laps flown side by side and remembered (MuJoCo is deterministic: a setting is flown once per scenario).
 
-    ``prefetch(settings, stage, iteration, cut)`` flies the missing laps of a batch on the pool (``jobs`` processes)
-    and returns how many it flew; ``score(settings)`` reads one from memory. With ``cut`` the batch's laps stop at
-    1.25 × the best finished lap known when the batch starts + 5 s (the same for every lap of the batch, so the result
-    does not depend on ``jobs``); a cut lap scores as a DNF and can never beat that best."""
+    Every candidate is flown on the training set ``train`` (``races.validate.training``: the nominal lap, index 0,
+    and K perturbed scenarios, the same for every candidate) and scored on the robust score: the mean of the worst
+    ⌈(K+1)/3⌉ of its K+1 lap scores (``races.validate.worst_mean``); with K = 0 it is the nominal lap's score.
 
-    def __init__(self, slug: str, jobs: int, cut: bool = True, memo: dict | None = None, rows: list | None = None):
+    ``prefetch(settings, stage, iteration, cut, js)`` flies the missing laps of a batch (the scenarios ``js``, default
+    all) on the pool (``jobs`` processes) and returns how many it flew; ``score(settings)`` reads them from memory.
+    ``cut`` (only with K = 0) stops the batch's laps at 1.25 × the best finished lap known when the batch starts + 5 s;
+    a cut lap scores as a DNF and can never beat that best. With K > 0 nothing is cut: a lap's score enters a tail
+    average, where a cut could change a comparison."""
+
+    def __init__(self, slug: str, jobs: int, train: list | None = None, cut: bool = True, memo: dict | None = None, rows: list | None = None):
         import concurrent.futures as cf
-        self.slug, self.cut = slug, cut
+        self.slug, self.train = slug, list(train or [{"family": "nominal", "i": 0, "mult": {}, "scenario": {}}])
+        self.cut = cut and len(self.train) == 1
+        self.m = -(-len(self.train) // 3)
         self.memo, self.rows = dict(memo or {}), list(rows or [])
         self.pool = cf.ProcessPoolExecutor(max_workers=jobs) if jobs > 1 else None
 
     @staticmethod
-    def key(s) -> str:
-        return json.dumps(s, sort_keys=True)
+    def key(s, j: int = 0) -> str:
+        return json.dumps([s, j], sort_keys=True)
 
     def best_finished(self):
         t = [r[0]["lap time [s]"] for r in self.memo.values() if r[0].get("status") == "finished"]
         return min(t) if t else None
 
-    def prefetch(self, settings, stage, iteration, cut) -> int:
-        todo = [s for k, s in {self.key(s): s for s in settings}.items() if k not in self.memo]
+    def prefetch(self, settings, stage, iteration, cut=False, js=None) -> int:
+        from races import validate
+        js = range(len(self.train)) if js is None else js
+        todo = [(s, j) for k, (s, j) in {self.key(s, j): (s, j) for s in settings for j in js}.items() if k not in self.memo]
         if not todo:
             return 0
         b = self.best_finished()
         duration = 1.25 * b + 5.0 if (cut and self.cut and b) else None
-        jobs = [(self.slug, {**s, **({"duration": duration} if duration else {})}) for s in todo]
+        jobs = [(self.slug, {**validate.apply(s, self.train[j]["mult"]), **({"duration": duration} if duration else {})}, self.train[j]["scenario"]) for s, j in todo]
         t0 = time.time()
         results = list(self.pool.map(_fly_worker, jobs)) if self.pool else [_fly_worker(j) for j in jobs]
         wall = (time.time() - t0) / len(todo)
-        for s, (st, ev) in zip(todo, results):
+        for (s, j), (st, ev) in zip(todo, results):
             if duration and st.get("status") == STUCK:
                 st["reason"] = f"cut at {duration:.0f} s (slower than the best, {b:.1f} s)"
-            self.memo[self.key(s)] = [st, ev, round(wall, 2)]
-            self.rows.append(_row(stage, iteration, s, st, ev, wall))
-            print(f"{self.slug}   {stage} it {iteration} lap {len(self.memo):3d}  {s}  → {st.get('status')} {st.get('lap time [s]') or ''} "
+            self.memo[self.key(s, j)] = [st, ev, round(wall, 2)]
+            self.rows.append(_row(stage, iteration, s, st, ev, wall, j, self.train[j]["family"]))
+            print(f"{self.slug}   {stage} it {iteration} lap {len(self.memo):4d}  {s} [{j} {self.train[j]['family']}]  → {st.get('status')} {st.get('lap time [s]') or ''} "
                   f"{st.get('zones passed') or ''}, score {_score(st):.2f}{(' — ' + st['reason']) if st.get('reason') else ''}", flush=True)
         print(f"{self.slug}   batch of {len(todo)} lap(s) in {time.time() - t0:.1f} s wall ({wall:.1f} s per lap with {self.pool._max_workers if self.pool else 1} worker(s))", flush=True)
         return len(todo)
 
-    def stats(self, s):
-        return self.memo[self.key(s)][0]
+    def lap(self, s, j: int = 0):
+        return self.memo[self.key(s, j)][0]
 
-    def score(self, s) -> float:
-        return _score(self.stats(s))
+    def stats(self, s):
+        """The nominal lap's statistics (what autopilot.json and the notebooks report)."""
+        return self.lap(s, 0)
+
+    def scores(self, s, js=None) -> list:
+        return [_score(self.lap(s, j)) for j in (range(len(self.train)) if js is None else js)]
+
+    def score(self, s, js=None) -> float:
+        """The robust score over the scenarios ``js`` (default all); over part of them, a lower bound of the full one."""
+        from races import validate
+        return validate.worst_mean(self.scores(s, js), self.m)
+
+    def clean_rate(self, s) -> float:
+        L = [self.lap(s, j) for j in range(len(self.train))]
+        return sum(1 for st in L if st.get("status") == "finished" and not st.get("collisions")) / len(L)
 
     def close(self):
         if self.pool:
@@ -115,10 +137,10 @@ def _score(st):
     return converge.score(st)
 
 
-def _row(stage, iteration, s, st, ev, wall):
+def _row(stage, iteration, s, st, ev, wall, j=0, family="nominal"):
     zones = [e[1] for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and str(e[1]).startswith("zone")]
     hits = [e for e in ev if isinstance(e, (list, tuple)) and len(e) > 1 and "collision" in str(e[1]).lower()]
-    return {"stage": stage, "iteration": iteration, **s, "score": round(_score(st), 3), "status": st.get("status"), "reason": st.get("reason", ""),
+    return {"stage": stage, "iteration": iteration, **s, "scenario": j, "family": family, "score": round(_score(st), 3), "status": st.get("status"), "reason": st.get("reason", ""),
             "lap time [s]": st.get("lap time [s]"), "collisions": st.get("collisions"), "zones passed": st.get("zones passed"),
             "last zone reached": zones[-1] if zones else "", "collisions at": "; ".join(f"{e[0]:.1f} s {e[1]}" for e in hits[:6]),
             "wall per lap [s]": round(wall, 2)}
@@ -128,13 +150,13 @@ def fingerprint(a) -> dict:
     from races import converge
     return json.loads(json.dumps({"schema": SCHEMA, "method": a.method, "seed": a.seed, "particles": a.particles, "pso_iterations": a.pso_iterations,
             "delta_min": a.delta_min, "max_laps": a.max_laps, "polish_laps": a.polish_laps, "patience": a.patience, "tol": a.tol,
-            "cut": not a.no_cut, "bounds": converge.BOUNDS}))                    # JSON-normalised (tuples → lists), as the checkpoint stores it
+            "cut": not a.no_cut, "bounds": converge.BOUNDS, "train_k": a.train_k, "train_seed": a.train_seed}))                    # JSON-normalised (tuples → lists), as the checkpoint stores it
 
 
 def converge_course(slug, c, a, best, best_f) -> int:
     """One course: PSO then polish (or one of them), checkpointed after every iteration, resumed when a compatible
     checkpoint exists. Returns 0, or 2 when a checkpoint is incompatible."""
-    from races import autopilot, converge
+    from races import autopilot, converge, validate
     ckpt_f = OUT / f"{slug}.ckpt.json"
     fp = fingerprint(a)
     ck = json.loads(ckpt_f.read_text()) if ckpt_f.exists() and not a.fresh else None
@@ -160,7 +182,11 @@ def converge_course(slug, c, a, best, best_f) -> int:
               f"(PSO {ck['time']['pso_s'] / 60:.1f} min, polishing {ck['time']['gps_s'] / 60:.1f} min so far)", flush=True)
     print(f"   workers: {a.jobs} (this machine has {os.cpu_count()} CPUs; -j {os.cpu_count()} to use them all); "
           f"lap budget {a.max_laps}, {a.polish_laps if a.method != 'pso' else 0} of them reserved for polishing", flush=True)
-    laps = Laps(slug, a.jobs, cut=not a.no_cut, memo=ck["memo"], rows=ck["rows"])
+    train = validate.training(a.train_k, a.train_seed)
+    laps = Laps(slug, a.jobs, train, cut=not a.no_cut, memo=ck["memo"], rows=ck["rows"])
+    objective = (f"robust: the mean of the worst {laps.m} of {len(train)} laps (the nominal lap and {a.train_k} training scenarios, seed {a.train_seed})"
+                 if a.train_k else "nominal: the nominal lap alone")
+    print(f"   objective — {objective}", flush=True)
     say = lambda m: print(f"{slug} {m}", flush=True)
 
     def save():
@@ -206,7 +232,7 @@ def converge_course(slug, c, a, best, best_f) -> int:
     bst = laps.stats(bs)
     s0 = converge.to_settings(converge.to_x(ck["start"] or {}))          # the start as both searches fly it
     start_sc = laps.score(s0) if laps.key(s0) in laps.memo else None
-    end_sc = converge.score(bst)
+    end_sc = laps.score(bs)
     change = ("no improvement found over the starting settings" if start_sc is not None and end_sc >= start_sc - 1e-9
               else f"improved from {start_sc:.2f} to {end_sc:.2f}" if start_sc is not None else f"best score {end_sc:.2f}")
     t = ck["time"]
@@ -217,8 +243,10 @@ def converge_course(slug, c, a, best, best_f) -> int:
     df = pd.DataFrame(laps.rows)
     df.to_csv(OUT / f"{slug}_converge.csv", index=False)
     if bst.get("status") == "finished":
-        entry = {"settings": bs, "lap time [s]": float(bst["lap time [s]"]), "collisions": int(bst.get("collisions") or 0), "search": why, "change": change, "time": timing}
-        line = f"FINISHED {bst['lap time [s]']:.1f} s, {bst.get('collisions') or 0} collisions — {change} — {why} — {bs}"
+        entry = {"settings": bs, "lap time [s]": float(bst["lap time [s]"]), "collisions": int(bst.get("collisions") or 0), "objective": objective,
+                 "score": round(end_sc, 3), "training clean rate": round(laps.clean_rate(bs), 3), "search": why, "change": change, "time": timing}
+        line = (f"FINISHED {bst['lap time [s]']:.1f} s, {bst.get('collisions') or 0} collisions (nominal); robust score {end_sc:.2f}, "
+                f"training clean rate {entry['training clean rate']:.2f} — {change} — {why} — {bs}")
     else:
         far = df.sort_values("score").iloc[0]
         entry = {"settings": None, "search": why, "change": change, "time": timing,
@@ -253,8 +281,14 @@ def main(argv=None) -> int:
     ap.add_argument("--max-laps", type=int, default=400, help="the lap budget per course, PSO and polishing together (default 400)")
     ap.add_argument("--patience", type=int, default=0, help="optional heuristic early stop after this many iterations gaining < --tol s (0 = off)")
     ap.add_argument("--tol", type=float, default=0.2, help="see --patience")
+    ap.add_argument("--train-k", type=int, default=6, help="training scenarios per candidate besides the nominal lap (default 6, one per perturbation family; 0 = the nominal lap alone)")
+    ap.add_argument("--train-seed", type=int, default=None, help="the training scenarios' seed (default races.validate.TRAIN_SEED; never the held-out seed)")
     ap.add_argument("--round2", action="store_true", help="the second round: past the edges for the finished courses, a slow steady grid for the hangar")
     a = ap.parse_args(argv)
+    from races import validate
+    a.train_seed = validate.TRAIN_SEED if a.train_seed is None else a.train_seed
+    if a.train_seed == validate.SEED:
+        ap.error(f"--train-seed {a.train_seed} is the held-out validation seed")
     mode = "quick grid" if a.quick else "round-2 grids" if a.round2 else a.method
     print(f"tune: courses {a.courses}, {mode}; {a.jobs} worker(s) of {os.cpu_count()} CPUs", flush=True)
     rc = 0

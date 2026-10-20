@@ -24,6 +24,7 @@ from __future__ import annotations
 import numpy as np
 
 SEED = 20261020
+TRAIN_SEED = 1                                                     # the tuner's training scenarios: another seed, so they never coincide with the held-out set
 FAMILIES = ("nominal", "settings ±2 %", "start ±0.5 m", "mass ±5 %", "thrust ±5 %", "wind ≤ 2 m/s", "combined")
 GRADES = (("pass", 0.8), ("weak", 0.5))
 
@@ -124,3 +125,26 @@ def summarise(rows: list[dict]) -> dict:
             "verdict": "pass" if fams and all(f["grade"] == "pass" for f in fams.values()) else ("fail" if any(f["grade"] == "fail" for f in fams.values()) else "weak"),
             "weakest family": worst or "none",
             "families": fams}
+
+
+def training(k: int, seed: int = TRAIN_SEED) -> list[dict]:
+    """The tuner's fixed training set (``races.tune``): index 0 is the nominal lap, then ``k`` scenarios taking the
+    perturbation families in turn (one of each for k = 6), drawn like the held-out set but from ``seed``. Every
+    candidate flies the same ones (common random numbers), so comparing two candidates compares settings, not luck."""
+    if seed == SEED:
+        raise ValueError(f"the training seed must differ from the held-out seed {SEED}")
+    pert = [f for f in FAMILIES if f != "nominal"]
+    per = {f: [s for s in scenarios(-(-k // len(pert)), seed) if s["family"] == f] for f in pert}
+    out = [{"family": "nominal", "i": 0, "mult": {}, "scenario": {}}]
+    for j in range(k):
+        out.append(per[pert[j % len(pert)]][j // len(pert)])
+    return out
+
+
+def worst_mean(scores: list[float], m: int | None = None) -> float:
+    """The robust score: the mean of the worst ``m`` scores (default ⌈n/3⌉) — a tail average (CVaR-like). For one
+    score it is that score. The worst ``m`` of a superset are never better than those of a subset, so the same mean
+    over part of the laps is a lower bound of the full one (``races.tune`` races on it)."""
+    m = m or -(-len(scores) // 3)
+    return float(np.mean(sorted(scores, reverse=True)[:m]))
+
