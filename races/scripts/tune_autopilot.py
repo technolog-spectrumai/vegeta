@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Tune the MuJoCo autopilot of the reference quad per race course (todo R.2): real MuJoCo, no mocks, no solver.
 
-    python tune_autopilot.py                  # all four courses, the full grid (72 laps each)
+    python tune_autopilot.py                  # all four courses: generalized pattern search until the mesh is below Δ_min (races/converge.py)
+    python tune_autopilot.py --delta-min 0.03 --max-laps 200   # a coarser convergence, a smaller safety budget
+    python tune_autopilot.py --round2         # the fixed grids instead (--quick: 4 laps per course)
     python tune_autopilot.py --quick          # 4 laps per course, to see it work
     python tune_autopilot.py --courses hangar quarry
 
