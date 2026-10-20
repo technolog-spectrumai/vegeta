@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-import mimesis as mm
+import mimezia as mm
 
 
 def test_mode_env_overrides_and_exports(monkeypatch):
-    m = mm.Mode("MIMESIS_TEST_MODE")
-    monkeypatch.delenv("MIMESIS_TEST_MODE", raising=False)
+    m = mm.Mode("MIMEZIA_TEST_MODE")
+    monkeypatch.delenv("MIMEZIA_TEST_MODE", raising=False)
     assert m.resolve() == "mock" and m.resolve("real") == "mock"           # exported: the first resolve wins in this process
-    monkeypatch.setenv("MIMESIS_TEST_MODE", "off")
+    monkeypatch.setenv("MIMEZIA_TEST_MODE", "off")
     assert m.resolve("real") == "off" and not m.is_mock() and not mm.Mode.launches("off") and mm.Mode.launches("mock")
-    monkeypatch.setenv("MIMESIS_TEST_MODE", "nonsense")
+    monkeypatch.setenv("MIMEZIA_TEST_MODE", "nonsense")
     with pytest.raises(ValueError):
         m.resolve()
 
@@ -34,10 +34,10 @@ def test_registry_dispatch_and_label():
 
 def test_isolation(monkeypatch, tmp_path):
     assert mm.isolated("a/runs") == "a/runs-mock" == mm.isolated("a/runs-mock") and mm.isolated(Path("r")) == Path("r-mock")
-    monkeypatch.setenv("MIMESIS_RUNS", str(tmp_path / "runs"))
-    monkeypatch.delenv("MIMESIS_CACHE", raising=False)
-    got = mm.isolate_env({"MIMESIS_RUNS": "x", "MIMESIS_CACHE": tmp_path / "cache"})
-    assert got == {"MIMESIS_RUNS": str(tmp_path / "runs-mock"), "MIMESIS_CACHE": str(tmp_path / "cache-mock")}
+    monkeypatch.setenv("MIMEZIA_RUNS", str(tmp_path / "runs"))
+    monkeypatch.delenv("MIMEZIA_CACHE", raising=False)
+    got = mm.isolate_env({"MIMEZIA_RUNS": "x", "MIMEZIA_CACHE": tmp_path / "cache"})
+    assert got == {"MIMEZIA_RUNS": str(tmp_path / "runs-mock"), "MIMEZIA_CACHE": str(tmp_path / "cache-mock")}
 
 
 def test_schema_record_and_check(tmp_path):
@@ -55,16 +55,16 @@ def test_schema_record_and_check(tmp_path):
 
 def test_interpreter_and_banner(monkeypatch, capsys, tmp_path):
     assert mm.interpreter(mock=True) == Path(sys.executable)
-    monkeypatch.setenv("MIMESIS_PY", str(tmp_path / "nope"))
-    assert mm.interpreter(mock=False, env="MIMESIS_PY") is None
-    assert mm.interpreter(mock=False, env="MIMESIS_PY", candidates=[sys.executable]) == Path(sys.executable)
+    monkeypatch.setenv("MIMEZIA_PY", str(tmp_path / "nope"))
+    assert mm.interpreter(mock=False, env="MIMEZIA_PY") is None
+    assert mm.interpreter(mock=False, env="MIMEZIA_PY", candidates=[sys.executable]) == Path(sys.executable)
     assert mm.banner("mock", "hello") == "hello" and "hello" in capsys.readouterr().out
 
 
 def test_standard_library_only():
     src = Path(mm.__file__).parent
     import ast
-    stdlib = set(sys.stdlib_module_names) | {"mimesis", "IPython"}
+    stdlib = set(sys.stdlib_module_names) | {"mimezia", "IPython"}
     for p in src.glob("*.py"):
         for n in ast.walk(ast.parse(p.read_text())):
             if isinstance(n, ast.Import):

@@ -1,7 +1,7 @@
 """Every stub result says it is one."""
 from __future__ import annotations
 
-NOTE = "MOCK (mimesis): stub numbers with the real schema — not a result"
+NOTE = "MOCK (mimezia): stub numbers with the real schema — not a result"
 
 
 def label(result: dict, name: str, note: str = NOTE) -> dict:

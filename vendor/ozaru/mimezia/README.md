@@ -1,4 +1,4 @@
-# Mimesis — imitating expensive APIs
+# Mimezia — imitating expensive APIs
 
 A small, standard-library-only base for running whole programs and notebooks against **stubs** of slow or heavy APIs
 (finite-element solvers, external tools) before any long run is made — without the stubs ever passing for results.
@@ -14,7 +14,7 @@ A small, standard-library-only base for running whole programs and notebooks aga
 | `interpreter(mock=…, env=…, candidates=…)` | the external interpreter a real API needs, or this one under mock |
 
 ```python
-import mimesis as mm
+import mimezia as mm
 MODE = mm.Mode("MYAPP_SOLVER", default="mock")
 
 @mm.mimic("solver.plate")
@@ -24,6 +24,6 @@ def plate_stub(spec):                     # same keys, types and shapes as the r
 result = mm.call("solver.plate", spec, real=real_plate, mock=MODE.is_mock())
 ```
 
-Install: `pip install -e mimesis` (package `mimesis-mock`, import `mimesis`). Tests: `pytest mimesis/tests`.
+Install: `pip install -e mimezia` (package `mimezia-mock`, import `mimezia`). Tests: `pytest mimezia/tests`.
 
 Status: proof of concept, part of Ozaru (a common layer shared by Vegeta and Alabastron). Hosts decide how their mocks use it.
