@@ -49,6 +49,7 @@ Published references (Shigley, Wong, ISA tables, datasheets) are added on top wh
 | `batteries.json` | Vegeta e918c97 — `nisus_plus_systems` LiIonCell/LiIonPack/CELLS, `nisus_systems` Battery/BATTERIES |
 | `rotors.json` | Vegeta 9a88dba — `drongo_robot.rotor_layout`, `Rotors` wrench, `drongo_controller.Flight.mix`, `kestrel_flight.induced_velocity` |
 | `aero.json` | Vegeta 81ffce9 — `nisus_robot.Aero.coefficients`, `NisusPlusAero.coefficients` (crow 0 and 0.6), `kestrel_flight` `_cf`/`Polar`/`viterna_cd90`, `merlin_flight.Airframe`, `peregrine_flight.vlm`, Aguya/frame_study Cf; synthetic but realistic coefficient table and states |
+| `motors.json` | Vegeta d8a4045 — `boreas.Motor`, `falco_systems._static_point` (BEMT replaced by Q = cQ n² while recording); Chiron 2f93887 — `servo` |
 | `propulsion.json` | Vegeta bbaf3bc — `nisus_systems.propulsion_map()`, `nisus_plus_systems.drive()`, `kestrel_systems.drive_table()`, `merlin_flight.Unit` |
 
 Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user runs it).
@@ -98,6 +99,14 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `peregrine_flight` (no CadQuery needed); also checked against Helmbold (8 %, as Vegeta's own test).
   Not taken: the Talos/Aeromant CFD and the per-machine `aero()`/`derivatives()` builders — they *compute*
   coefficients and stay in Vegeta.
+
+- `og.motors`: `DCMotor` (= Boreas's `Motor`, verbatim; alias `Motor`), `fit_resistance` (R = (V − rpm/Kv)/I, the
+  Nisus+/Falco fits), `operating_point` (Falco's `_static_point` / the frame study's bisection with the load as a
+  callable — the BEMT stays in Vegeta and is passed in), the servo law verbatim from Chiron (`torque_limit`,
+  `servo_torque`, `implicit_slope`, `saturation`), `lever` and `gearbox`. Boreas keeps its own `Motor` for now: the
+  tools are independent packages and Boreas is a tool, not a design (blessed imperfection). Chiron keeps its
+  `servo.py` until it vendors Ogma.
+- `og.__init__` now also lists the planned strategies `mujoco`, `cad`, `gazebo` (they say "planned").
 
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager
