@@ -1,0 +1,1606 @@
+{
+ "gears": {
+  "lewis_y": [
+   0.245,
+   0.303,
+   0.322,
+   0.368,
+   0.422,
+   0.46
+  ],
+  "lewis_bending": 77.63975155279503,
+  "contact_stress": [
+   630.3019328019412,
+   518.7077318342447
+  ],
+  "elastic_coefficient": 191.64567250641844,
+  "involute_profile": [
+   [
+    17.42365216654911,
+    1.63289472382896
+   ],
+   [
+    18.711859849196124,
+    1.753621854288363
+   ],
+   [
+    19.11600753338232,
+    1.7354325359712741
+   ],
+   [
+    19.524151792456333,
+    1.6693648689499059
+   ],
+   [
+    19.93440660885508,
+    1.5702733228959567
+   ],
+   [
+    20.345813096969994,
+    1.443082863876167
+   ],
+   [
+    20.757620096551335,
+    1.2904692662217858
+   ],
+   [
+    21.169164730792914,
+    1.1141375898942725
+   ],
+   [
+    21.579830242557016,
+    0.9152760992247622
+   ],
+   [
+    21.989026862476454,
+    0.6947644502195822
+   ],
+   [
+    21.989026862476454,
+    -0.6947644502195822
+   ],
+   [
+    21.579830242557016,
+    -0.9152760992247622
+   ],
+   [
+    21.169164730792914,
+    -1.1141375898942725
+   ],
+   [
+    20.757620096551335,
+    -1.2904692662217858
+   ],
+   [
+    20.345813096969994,
+    -1.443082863876167
+   ],
+   [
+    19.93440660885508,
+    -1.5702733228959567
+   ],
+   [
+    19.524151792456333,
+    -1.6693648689499059
+   ],
+   [
+    19.11600753338232,
+    -1.7354325359712741
+   ],
+   [
+    18.711859849196124,
+    -1.753621854288363
+   ],
+   [
+    17.42365216654911,
+    -1.63289472382896
+   ]
+  ],
+  "planetary": {
+   "z_sun": 12,
+   "z_planet": 24,
+   "z_ring": 60,
+   "n_planets": 3,
+   "ratio": 6.0,
+   "assembles": true,
+   "neighbours_clear": true
+  },
+  "stage_loads": {
+   "Ft_N": 319.4444444444444,
+   "pitch_radius_m": 0.006
+  },
+  "chain_efficiency": 0.9030699999999999,
+  "sn_cycles": 1046081.9186432146,
+  "sprocket_chordal": {
+   "pitch_radius_mm": 22.53910613381482,
+   "speed_variation": 0.04050702638550263,
+   "min_radius_mm": 21.62611396694674
+  },
+  "capstan": 2.5651065045437824,
+  "select_ratio": {
+   "rows": [
+    {
+     "ratio": 3.0,
+     "top_speed_rad_s": 0.0,
+     "motor_torque_climb_Nm": 15.686274509803923,
+     "climb_margin": 0.03825,
+     "speed_ok": false,
+     "climb_ok": false
+    },
+    {
+     "ratio": 3.5,
+     "top_speed_rad_s": 0.0,
+     "motor_torque_climb_Nm": 13.445378151260504,
+     "climb_margin": 0.044625,
+     "speed_ok": false,
+     "climb_ok": false
+    },
+    {
+     "ratio": 4.0,
+     "top_speed_rad_s": 0.0,
+     "motor_torque_climb_Nm": 11.764705882352942,
+     "climb_margin": 0.051,
+     "speed_ok": false,
+     "climb_ok": false
+    },
+    {
+     "ratio": 4.5,
+     "top_speed_rad_s": 0.0,
+     "motor_torque_climb_Nm": 10.457516339869281,
+     "climb_margin": 0.057374999999999995,
+     "speed_ok": false,
+     "climb_ok": false
+    },
+    {
+     "ratio": 5.0,
+     "top_speed_rad_s": 4.9279884762192845,
+     "motor_torque_climb_Nm": 9.411764705882353,
+     "climb_margin": 0.06375,
+     "speed_ok": false,
+     "climb_ok": false
+    },
+    {
+     "ratio": 5.5,
+     "top_speed_rad_s": 10.996337922142203,
+     "motor_torque_climb_Nm": 8.556149732620321,
+     "climb_margin": 0.07012499999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 6.0,
+     "top_speed_rad_s": 15.05774256622558,
+     "motor_torque_climb_Nm": 7.843137254901961,
+     "climb_margin": 0.0765,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 6.5,
+     "top_speed_rad_s": 17.787414026590305,
+     "motor_torque_climb_Nm": 7.239819004524888,
+     "climb_margin": 0.08287499999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 7.0,
+     "top_speed_rad_s": 19.611382711484907,
+     "motor_torque_climb_Nm": 6.722689075630252,
+     "climb_margin": 0.08925,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 7.5,
+     "top_speed_rad_s": 20.807062455148085,
+     "motor_torque_climb_Nm": 6.2745098039215685,
+     "climb_margin": 0.095625,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 8.0,
+     "top_speed_rad_s": 21.559949583459364,
+     "motor_torque_climb_Nm": 5.882352941176471,
+     "climb_margin": 0.102,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 8.5,
+     "top_speed_rad_s": 21.99690357897188,
+     "motor_torque_climb_Nm": 5.536332179930796,
+     "climb_margin": 0.10837499999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 9.0,
+     "top_speed_rad_s": 22.20636782493874,
+     "motor_torque_climb_Nm": 5.228758169934641,
+     "climb_margin": 0.11474999999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 9.5,
+     "top_speed_rad_s": 22.25102829982668,
+     "motor_torque_climb_Nm": 4.953560371517028,
+     "climb_margin": 0.12112499999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 10.0,
+     "top_speed_rad_s": 22.175948142986776,
+     "motor_torque_climb_Nm": 4.705882352941177,
+     "climb_margin": 0.1275,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 10.5,
+     "top_speed_rad_s": 22.013916775854845,
+     "motor_torque_climb_Nm": 4.481792717086836,
+     "climb_margin": 0.13387499999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 11.0,
+     "top_speed_rad_s": 21.78903995683733,
+     "motor_torque_climb_Nm": 4.278074866310161,
+     "climb_margin": 0.14024999999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 11.5,
+     "top_speed_rad_s": 21.51919353509744,
+     "motor_torque_climb_Nm": 4.092071611253197,
+     "climb_margin": 0.14662499999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 12.0,
+     "top_speed_rad_s": 21.21772816149969,
+     "motor_torque_climb_Nm": 3.9215686274509807,
+     "climb_margin": 0.153,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 12.5,
+     "top_speed_rad_s": 20.89467113916976,
+     "motor_torque_climb_Nm": 3.764705882352941,
+     "climb_margin": 0.159375,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 13.0,
+     "top_speed_rad_s": 20.55758506351831,
+     "motor_torque_climb_Nm": 3.619909502262444,
+     "climb_margin": 0.16574999999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 13.5,
+     "top_speed_rad_s": 20.21218867475399,
+     "motor_torque_climb_Nm": 3.485838779956427,
+     "climb_margin": 0.17212499999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 14.0,
+     "top_speed_rad_s": 19.86281069496548,
+     "motor_torque_climb_Nm": 3.361344537815126,
+     "climb_margin": 0.1785,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 14.5,
+     "top_speed_rad_s": 19.51272488205733,
+     "motor_torque_climb_Nm": 3.245436105476674,
+     "climb_margin": 0.18487499999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 15.0,
+     "top_speed_rad_s": 19.164399629741656,
+     "motor_torque_climb_Nm": 3.1372549019607843,
+     "climb_margin": 0.19125,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 15.5,
+     "top_speed_rad_s": 18.81968543988009,
+     "motor_torque_climb_Nm": 3.0360531309297913,
+     "climb_margin": 0.197625,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 16.0,
+     "top_speed_rad_s": 18.47995678582231,
+     "motor_torque_climb_Nm": 2.9411764705882355,
+     "climb_margin": 0.204,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 16.5,
+     "top_speed_rad_s": 18.14622019250627,
+     "motor_torque_climb_Nm": 2.8520499108734403,
+     "climb_margin": 0.21037499999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 17.0,
+     "top_speed_rad_s": 17.81919708529118,
+     "motor_torque_climb_Nm": 2.768166089965398,
+     "climb_margin": 0.21674999999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 17.5,
+     "top_speed_rad_s": 17.499387650248067,
+     "motor_torque_climb_Nm": 2.689075630252101,
+     "climb_margin": 0.22312499999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 18.0,
+     "top_speed_rad_s": 17.18712030286355,
+     "motor_torque_climb_Nm": 2.6143790849673203,
+     "climb_margin": 0.22949999999999998,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 18.5,
+     "top_speed_rad_s": 16.882590177844,
+     "motor_torque_climb_Nm": 2.5437201907790143,
+     "climb_margin": 0.235875,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 19.0,
+     "top_speed_rad_s": 16.585889192815593,
+     "motor_torque_climb_Nm": 2.476780185758514,
+     "climb_margin": 0.24224999999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 19.5,
+     "top_speed_rad_s": 16.2970296090618,
+     "motor_torque_climb_Nm": 2.413273001508296,
+     "climb_margin": 0.24862499999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 20.0,
+     "top_speed_rad_s": 16.015962547712668,
+     "motor_torque_climb_Nm": 2.3529411764705883,
+     "climb_margin": 0.255,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 20.5,
+     "top_speed_rad_s": 15.742592574240067,
+     "motor_torque_climb_Nm": 2.2955523672883786,
+     "climb_margin": 0.261375,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 21.0,
+     "top_speed_rad_s": 15.476789205359879,
+     "motor_torque_climb_Nm": 2.240896358543418,
+     "climb_margin": 0.26774999999999993,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 21.5,
+     "top_speed_rad_s": 15.21839599741055,
+     "motor_torque_climb_Nm": 2.188782489740082,
+     "climb_margin": 0.274125,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 22.0,
+     "top_speed_rad_s": 14.967237727360219,
+     "motor_torque_climb_Nm": 2.1390374331550803,
+     "climb_margin": 0.28049999999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 22.5,
+     "top_speed_rad_s": 14.723126064753908,
+     "motor_torque_climb_Nm": 2.0915032679738563,
+     "climb_margin": 0.286875,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 23.0,
+     "top_speed_rad_s": 14.48586404635347,
+     "motor_torque_climb_Nm": 2.0460358056265986,
+     "climb_margin": 0.29324999999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 23.5,
+     "top_speed_rad_s": 14.255249598479502,
+     "motor_torque_climb_Nm": 2.002503128911139,
+     "climb_margin": 0.299625,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 24.0,
+     "top_speed_rad_s": 14.031078300346572,
+     "motor_torque_climb_Nm": 1.9607843137254903,
+     "climb_margin": 0.306,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 24.5,
+     "top_speed_rad_s": 13.81314554142265,
+     "motor_torque_climb_Nm": 1.9207683073229291,
+     "climb_margin": 0.312375,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 25.0,
+     "top_speed_rad_s": 13.60124819436522,
+     "motor_torque_climb_Nm": 1.8823529411764706,
+     "climb_margin": 0.31875,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 25.5,
+     "top_speed_rad_s": 13.395185900373061,
+     "motor_torque_climb_Nm": 1.845444059976932,
+     "climb_margin": 0.325125,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 26.0,
+     "top_speed_rad_s": 13.194762044314945,
+     "motor_torque_climb_Nm": 1.809954751131222,
+     "climb_margin": 0.33149999999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 26.5,
+     "top_speed_rad_s": 12.999784481589494,
+     "motor_torque_climb_Nm": 1.7758046614872365,
+     "climb_margin": 0.337875,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 27.0,
+     "top_speed_rad_s": 12.810066066441072,
+     "motor_torque_climb_Nm": 1.7429193899782136,
+     "climb_margin": 0.34424999999999994,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 27.5,
+     "top_speed_rad_s": 12.625425021718824,
+     "motor_torque_climb_Nm": 1.7112299465240641,
+     "climb_margin": 0.350625,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 28.0,
+     "top_speed_rad_s": 12.445685182288496,
+     "motor_torque_climb_Nm": 1.680672268907563,
+     "climb_margin": 0.357,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 28.5,
+     "top_speed_rad_s": 12.270676138077562,
+     "motor_torque_climb_Nm": 1.651186790505676,
+     "climb_margin": 0.36337499999999995,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 29.0,
+     "top_speed_rad_s": 12.100233297732247,
+     "motor_torque_climb_Nm": 1.622718052738337,
+     "climb_margin": 0.36974999999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 29.5,
+     "top_speed_rad_s": 11.934197889838712,
+     "motor_torque_climb_Nm": 1.5952143569292123,
+     "climb_margin": 0.376125,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 30.0,
+     "top_speed_rad_s": 11.77241691541273,
+     "motor_torque_climb_Nm": 1.5686274509803921,
+     "climb_margin": 0.3825,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 30.5,
+     "top_speed_rad_s": 11.61474306273666,
+     "motor_torque_climb_Nm": 1.5429122468659595,
+     "climb_margin": 0.38887499999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 31.0,
+     "top_speed_rad_s": 11.461034593496459,
+     "motor_torque_climb_Nm": 1.5180265654648957,
+     "climb_margin": 0.39525,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 31.5,
+     "top_speed_rad_s": 11.31115520744713,
+     "motor_torque_climb_Nm": 1.4939309056956116,
+     "climb_margin": 0.40162499999999995,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 32.0,
+     "top_speed_rad_s": 11.164973891434313,
+     "motor_torque_climb_Nm": 1.4705882352941178,
+     "climb_margin": 0.408,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 32.5,
+     "top_speed_rad_s": 11.022364757460881,
+     "motor_torque_climb_Nm": 1.4479638009049773,
+     "climb_margin": 0.414375,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 33.0,
+     "top_speed_rad_s": 10.883206873560493,
+     "motor_torque_climb_Nm": 1.4260249554367201,
+     "climb_margin": 0.42074999999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 33.5,
+     "top_speed_rad_s": 10.747384090484916,
+     "motor_torque_climb_Nm": 1.4047410008779633,
+     "climb_margin": 0.4271249999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 34.0,
+     "top_speed_rad_s": 10.6147848665969,
+     "motor_torque_climb_Nm": 1.384083044982699,
+     "climb_margin": 0.43349999999999994,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 34.5,
+     "top_speed_rad_s": 10.485302092858923,
+     "motor_torque_climb_Nm": 1.3640238704177323,
+     "climb_margin": 0.43987499999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 35.0,
+     "top_speed_rad_s": 10.358832919399719,
+     "motor_torque_climb_Nm": 1.3445378151260505,
+     "climb_margin": 0.4462499999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 35.5,
+     "top_speed_rad_s": 10.235278584807755,
+     "motor_torque_climb_Nm": 1.3256006628003314,
+     "climb_margin": 0.452625,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 36.0,
+     "top_speed_rad_s": 10.114544249030319,
+     "motor_torque_climb_Nm": 1.3071895424836601,
+     "climb_margin": 0.45899999999999996,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 36.5,
+     "top_speed_rad_s": 9.99653883053677,
+     "motor_torque_climb_Nm": 1.2892828364222402,
+     "climb_margin": 0.465375,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 37.0,
+     "top_speed_rad_s": 9.881174848226392,
+     "motor_torque_climb_Nm": 1.2718600953895072,
+     "climb_margin": 0.47175,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 37.5,
+     "top_speed_rad_s": 9.768368268416891,
+     "motor_torque_climb_Nm": 1.2549019607843137,
+     "climb_margin": 0.47812499999999997,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 38.0,
+     "top_speed_rad_s": 9.658038357133359,
+     "motor_torque_climb_Nm": 1.238390092879257,
+     "climb_margin": 0.48449999999999993,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 38.5,
+     "top_speed_rad_s": 9.55010753782418,
+     "motor_torque_climb_Nm": 1.2223071046600458,
+     "climb_margin": 0.490875,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 39.0,
+     "top_speed_rad_s": 9.444501254555693,
+     "motor_torque_climb_Nm": 1.206636500754148,
+     "climb_margin": 0.4972499999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 39.5,
+     "top_speed_rad_s": 9.341147840678435,
+     "motor_torque_climb_Nm": 1.1913626209977664,
+     "climb_margin": 0.5036249999999999,
+     "speed_ok": true,
+     "climb_ok": false
+    },
+    {
+     "ratio": 40.0,
+     "top_speed_rad_s": 9.239978392911155,
+     "motor_torque_climb_Nm": 1.1764705882352942,
+     "climb_margin": 0.51,
+     "speed_ok": true,
+     "climb_ok": false
+    }
+   ],
+   "i_min": null,
+   "i_max": null
+  }
+ },
+ "soil": {
+  "soils": [
+   "dry sand",
+   "sandy loam",
+   "clayey soil",
+   "heavy clay",
+   "lean clay",
+   "snow",
+   "mud",
+   "asphalt",
+   "gravel",
+   "grass"
+  ],
+  "dry sand": {
+   "rigid_traction": 600.0,
+   "rigid_rolling_resistance": 100.0,
+   "bekker_k": 1535030.0,
+   "sinkage": 0.019332350567012144,
+   "pressure_sinkage": 32430.246353259547,
+   "track_sinkage": 0.023680162250036926,
+   "compaction": 42.28600401792307,
+   "max_thrust": 1666.1805357661733,
+   "thrust": 1451.6360237943475,
+   "drawbar": 1359.3500197764245,
+   "shear": 10094.259007993807,
+   "wheel_sinkage": 0.049349907789977235,
+   "wheel_compaction": 132.04791264732745,
+   "thrust_wheel": 112.03069829147799
+  },
+  "sandy loam": {
+   "rigid_traction": 600.0,
+   "rigid_rolling_resistance": 60.0,
+   "bekker_k": 1550173.3333333333,
+   "sinkage": 0.00199953122874956,
+   "pressure_sinkage": 133157.34891561288,
+   "track_sinkage": 0.002750242994303028,
+   "compaction": 6.066712487433151,
+   "max_thrust": 1810.9106807846108,
+   "thrust": 1577.7300980725192,
+   "drawbar": 1521.6633855850862,
+   "shear": 11073.052892308835,
+   "wheel_sinkage": 0.015195540652852444,
+   "wheel_compaction": 74.77261758504528,
+   "thrust_wheel": 74.3803281677542
+  },
+  "clayey soil": {
+   "rigid_traction": 400.0,
+   "rigid_rolling_resistance": 80.0,
+   "bekker_k": 780083.3333333334,
+   "sinkage": 0.0006573217350586919,
+   "pressure_sinkage": 135114.39674710218,
+   "track_sinkage": 0.001027065211029206,
+   "compaction": 2.567663027573015,
+   "max_thrust": 1174.5370162094807,
+   "thrust": 1115.066795906262,
+   "drawbar": 1062.4991328786891,
+   "shear": 8698.357169223473,
+   "wheel_sinkage": 0.011512448250112418,
+   "wheel_compaction": 67.85999778989805,
+   "thrust_wheel": 64.99379713398615
+  },
+  "heavy clay": {
+   "rigid_traction": 600.0,
+   "rigid_rolling_resistance": 50.0,
+   "bekker_k": 1640616.6666666667,
+   "sinkage": 1.8927752574642926e-15,
+   "pressure_sinkage": 1039998.905520169,
+   "track_sinkage": 1.0533208688629436e-14,
+   "compaction": 3.4955338568460655e-11,
+   "max_thrust": 10220.294108898326,
+   "thrust": 9911.36834238352,
+   "drawbar": 9861.368342383485,
+   "shear": 82420.35423626873,
+   "wheel_sinkage": 0.00021631782458391487,
+   "wheel_compaction": 10.755907943110524,
+   "thrust_wheel": 128.35136647142392
+  },
+  "lean clay": {
+   "rigid_traction": 500.0,
+   "rigid_rolling_resistance": 50.0,
+   "bekker_k": 1834223.3333333333,
+   "sinkage": 1.5413061421313052e-10,
+   "pressure_sinkage": 909654.4843091664,
+   "track_sinkage": 4.703693060703448e-10,
+   "compaction": 1.4699040814698293e-06,
+   "max_thrust": 9295.666372527618,
+   "thrust": 9014.68905144458,
+   "drawbar": 8964.689049974677,
+   "shear": 76211.08146323207,
+   "wheel_sinkage": 0.00044182263529503264,
+   "wheel_compaction": 14.836995564733142,
+   "thrust_wheel": 86.40918432326944
+  },
+  "snow": {
+   "rigid_traction": 300.0,
+   "rigid_rolling_resistance": 60.0,
+   "bekker_k": 225853.33333333334,
+   "sinkage": 0.21978709148716224,
+   "pressure_sinkage": 826.457475238416,
+   "track_sinkage": 0.2526800417776013,
+   "compaction": 364.4423679484633,
+   "max_thrust": 1137.8677366987647,
+   "thrust": 903.8010484979566,
+   "drawbar": 489.35868054949333,
+   "shear": 5844.265428366439,
+   "wheel_sinkage": 0.28275531587281455,
+   "wheel_compaction": 346.46970716641744,
+   "thrust_wheel": 110.24510079475107
+  },
+  "mud": {
+   "rigid_traction": 250.0,
+   "rigid_rolling_resistance": 100.0,
+   "bekker_k": 63333.333333333336,
+   "sinkage": 0.3157894736842105,
+   "pressure_sinkage": 1900.0,
+   "track_sinkage": 0.39473684210526316,
+   "compaction": 740.1315789473684,
+   "max_thrust": 548.3712969745666,
+   "thrust": 520.6056655904783,
+   "drawbar": -269.5259133568901,
+   "shear": 4074.4450759833676,
+   "wheel_sinkage": 0.3061649600826213,
+   "wheel_compaction": 328.0794397383758,
+   "thrust_wheel": 105.04989137808428
+  },
+  "asphalt": {
+   "rigid_traction": 800.0,
+   "rigid_rolling_resistance": 15.0,
+   "bekker_k": 1000000000000.0,
+   "sinkage": 0.0,
+   "pressure_sinkage": 30000000000.0,
+   "track_sinkage": 0.0,
+   "compaction": 0.0,
+   "max_thrust": 2370.0,
+   "thrust": 2250.0000168802762,
+   "drawbar": 2200.0000168802762,
+   "shear": 0.0,
+   "wheel_sinkage": 0.0,
+   "wheel_compaction": 0.0,
+   "thrust_wheel": 167.06473730406736
+  },
+  "gravel": {
+   "rigid_traction": 600.0,
+   "rigid_rolling_resistance": 30.0,
+   "bekker_k": 1000000000000.0,
+   "sinkage": 0.0,
+   "pressure_sinkage": 30000000000.0,
+   "track_sinkage": 0.0,
+   "compaction": 0.0,
+   "max_thrust": 1777.5,
+   "thrust": 1687.5000126602072,
+   "drawbar": 1637.5000126602072,
+   "shear": 0.0,
+   "wheel_sinkage": 0.0,
+   "wheel_compaction": 0.0,
+   "thrust_wheel": 125.29855297805052
+  },
+  "grass": {
+   "rigid_traction": 500.0,
+   "rigid_rolling_resistance": 60.0,
+   "bekker_k": 1000000000000.0,
+   "sinkage": 0.0,
+   "pressure_sinkage": 30000000000.0,
+   "track_sinkage": 0.0,
+   "compaction": 0.0,
+   "max_thrust": 1481.25,
+   "thrust": 1406.2500105501726,
+   "drawbar": 1356.2500105501726,
+   "shear": 0.0,
+   "wheel_sinkage": 0.0,
+   "wheel_compaction": 0.0,
+   "thrust_wheel": 104.41546081504211
+  },
+  "mmp_rowland": 14849.242404917497
+ },
+ "tracks": {
+  "ground_pressure": 12500.0,
+  "internal_coefficient": 0.038000000000000006,
+  "resistance": {
+   "compaction": 21.86957508844776,
+   "rolling": 0.0,
+   "internal": 112.26808384339174,
+   "grade": 520.944533000791,
+   "drag": 0.6890625,
+   "total": 655.7712544326305
+  },
+  "tractive_limit": 1763.6042522013863,
+  "road_wheel_loads": [
+   330.0,
+   360.0,
+   390.0,
+   420.0
+  ],
+  "road_wheel_loads_bogie": [
+   337.5,
+   337.5,
+   412.5,
+   412.5
+  ],
+  "sag": 4.4999999999999996e-05,
+  "derail_tension": 2250.0,
+  "drive_tension": {
+   "tight": 1300.0,
+   "slack": 500.0
+  },
+  "lateral_coefficient": 0.39344262295081966,
+  "skid_steer": {
+   "R_m": 2.0,
+   "mu_t": 0.39344262295081966,
+   "M_r_Nm": 236.06557377049182,
+   "F_outer_N": 472.1561475409836,
+   "F_inner_N": -472.10614754098367,
+   "v_outer": 1.125,
+   "v_inner": 0.875,
+   "P_clutch_brake_W": 531.1756659836066,
+   "P_braked_lost_W": 413.0928790983607,
+   "P_regenerative_W": 118.08278688524587
+  },
+  "min_turn_radius": 0.0,
+  "stability": {
+   "tip_uphill_deg": 56.309932474020215,
+   "tip_downhill_deg": 56.309932474020215,
+   "tip_side_deg": 45.0,
+   "step_m": 0.1,
+   "trench_m": 0.4
+  }
+ },
+ "cutting": {
+  "keys": [
+   [
+    "chainsaw 2 kW, 36 V",
+    "mini chainsaw 0.6 kW, 20 V"
+   ],
+   [
+    "softwood (spruce, pine), green",
+    "hardwood (oak, beech), green",
+    "garden shrub (hazel, privet, fruit), green",
+    "softwood, seasoned"
+   ]
+  ],
+  "get": [
+   "mini chainsaw 0.6 kW, 20 V",
+   "softwood, seasoned"
+  ],
+  "saw": {
+   "key": "chainsaw 2 kW, 36 V",
+   "power_W": 2000.0,
+   "efficiency": 0.7,
+   "chain_speed": 24.0,
+   "bar_length": 0.4,
+   "kerf": 0.0075,
+   "mass_kg": 6.5,
+   "voltage_V": 36.0,
+   "current_A": 55.0,
+   "source": "assumed: 36 V professional battery chainsaw class (2 kW motor, 3/8\" chain, 40 cm bar, 24 m/s); powerhead 4.5 kg without the battery, bar and chain 1.0 kg, the rover's mount and guard 1.0 kg; motor 0.85 \u00d7 chain drive 0.82 = 0.70 at the cut"
+  },
+  "wood": {
+   "key": "softwood (spruce, pine), green",
+   "density": 850.0,
+   "e_c": 35000000.0,
+   "E": 10000000000.0,
+   "MOR": 45000000.0,
+   "mu_steel": 0.4,
+   "source": "density: green spruce/pine 800-900 kg/m\u00b3 (Wood Handbook); e_c from the cut-time derivation in the module docstring (30 MJ/m\u00b3) rounded up for a chain in field condition; E and MOR green (Wood Handbook ch. 5)"
+  },
+  "cut_area": 0.007853981633974483,
+  "chain_force": 58.333333333333336,
+  "cut_rate_area": 0.005333333333333333,
+  "cut_time": 1.4726215563702156,
+  "feed_force": 87.5,
+  "head_loads": [
+   {
+    "feed_N": 87.5,
+    "chain_pull_N": 58.333333333333336,
+    "weight_N": 63.765,
+    "feed": [
+     0.0,
+     0.0,
+     -87.5
+    ],
+    "chain_pull": [
+     -58.333333333333336,
+     0.0,
+     0.0
+    ],
+    "weight": [
+     0.0,
+     0.0,
+     -63.765
+    ],
+    "total": [
+     -58.333333333333336,
+     0.0,
+     -151.265
+    ],
+    "resultant_N": 162.12303353557684
+   },
+   {
+    "feed_N": 131.25,
+    "chain_pull_N": 87.5,
+    "weight_N": 63.765,
+    "feed": [
+     0.0,
+     0.0,
+     131.25
+    ],
+    "chain_pull": [
+     -87.5,
+     0.0,
+     0.0
+    ],
+    "weight": [
+     0.0,
+     0.0,
+     -63.765
+    ],
+    "total": [
+     -87.5,
+     0.0,
+     67.485
+    ],
+    "resultant_N": 110.50101911294755
+   }
+  ],
+  "branch": [
+   13.351768777756622,
+   130.98085170979246
+  ],
+  "kerf_opens": [
+   {
+    "moment_Nm": 32.745212927448115,
+    "stress_MPa": 0.33353999999999995,
+    "stress_over_MOR": 0.0074119999999999985,
+    "opens": true,
+    "verdict": "opens: the top fibres are in tension"
+   },
+   {
+    "moment_Nm": 32.745212927448115,
+    "stress_MPa": 0.33353999999999995,
+    "stress_over_MOR": 0.0074119999999999985,
+    "opens": false,
+    "verdict": "pinches: the bottom fibres are in compression \u2014 undercut first, then cut from the top"
+   }
+  ],
+  "energy_per_cut": 0.9292341979834532,
+  "cuts_per_charge": 12.0,
+  "undercut_depth": 0.06666666666666667,
+  "max_branch_for_bar": 0.8,
+  "kickback_zone": {
+   "nose_radius_m": 0.025,
+   "usable_bar_m": 0.375,
+   "rule": "cut with the bar's underside, nose clear"
+  }
+ },
+ "actuators": {
+  "catalog": {
+   "sub-micro 9 g": {
+    "key": "sub-micro 9 g",
+    "kind": "servo",
+    "mass_g": 9.0,
+    "stall_Nm": 0.22,
+    "rated_Nm": 0.1,
+    "stall_A": 0.9,
+    "voltage_V": 7.4,
+    "no_load_rpm": 110,
+    "self_locking": false,
+    "source": "generic 9 g metal-gear micro servo datasheet"
+   },
+   "micro 13 g": {
+    "key": "micro 13 g",
+    "kind": "servo",
+    "mass_g": 13.0,
+    "stall_Nm": 0.32,
+    "rated_Nm": 0.14,
+    "stall_A": 1.1,
+    "voltage_V": 7.4,
+    "no_load_rpm": 100,
+    "self_locking": false,
+    "source": "generic 13 g servo datasheet"
+   },
+   "micro-metal 20 g": {
+    "key": "micro-metal 20 g",
+    "kind": "servo",
+    "mass_g": 20.0,
+    "stall_Nm": 0.55,
+    "rated_Nm": 0.22,
+    "stall_A": 1.4,
+    "voltage_V": 7.4,
+    "no_load_rpm": 90,
+    "self_locking": false,
+    "source": "generic 20 g metal-gear servo datasheet"
+   },
+   "mini 32 g": {
+    "key": "mini 32 g",
+    "kind": "servo",
+    "mass_g": 32.0,
+    "stall_Nm": 1.1,
+    "rated_Nm": 0.4,
+    "stall_A": 2.0,
+    "voltage_V": 7.4,
+    "no_load_rpm": 80,
+    "self_locking": false,
+    "source": "generic 32 g mini servo datasheet"
+   },
+   "standard 55 g": {
+    "key": "standard 55 g",
+    "kind": "servo",
+    "mass_g": 55.0,
+    "stall_Nm": 2.2,
+    "rated_Nm": 0.8,
+    "stall_A": 3.0,
+    "voltage_V": 7.4,
+    "no_load_rpm": 60,
+    "self_locking": false,
+    "source": "generic 55 g standard servo datasheet"
+   },
+   "micro-metal 22 g worm": {
+    "key": "micro-metal 22 g worm",
+    "kind": "servo",
+    "mass_g": 22.0,
+    "stall_Nm": 0.5,
+    "rated_Nm": 0.22,
+    "stall_A": 1.4,
+    "voltage_V": 7.4,
+    "no_load_rpm": 45,
+    "self_locking": true,
+    "source": "assumed: a 20 g servo with a worm output stage (self-locking, slower)"
+   },
+   "mini 32 g worm": {
+    "key": "mini 32 g worm",
+    "kind": "servo",
+    "mass_g": 36.0,
+    "stall_Nm": 1.0,
+    "rated_Nm": 0.4,
+    "stall_A": 2.0,
+    "voltage_V": 7.4,
+    "no_load_rpm": 40,
+    "self_locking": true,
+    "source": "assumed: a 32 g servo with a worm output stage (self-locking, slower)"
+   },
+   "standard 60 g worm": {
+    "key": "standard 60 g worm",
+    "kind": "servo",
+    "mass_g": 60.0,
+    "stall_Nm": 2.0,
+    "rated_Nm": 0.8,
+    "stall_A": 3.0,
+    "voltage_V": 7.4,
+    "no_load_rpm": 30,
+    "self_locking": true,
+    "source": "assumed: a 55 g servo with a worm output stage (self-locking, slower)"
+   },
+   "smart servo 6 Nm": {
+    "key": "smart servo 6 Nm",
+    "kind": "smart servo",
+    "mass_g": 70.0,
+    "stall_Nm": 6.0,
+    "rated_Nm": 2.0,
+    "stall_A": 3.0,
+    "voltage_V": 12.0,
+    "no_load_rpm": 55,
+    "self_locking": false,
+    "source": "serial-bus smart servo class, supplier datasheet"
+   },
+   "smart servo 12 Nm": {
+    "key": "smart servo 12 Nm",
+    "kind": "smart servo",
+    "mass_g": 120.0,
+    "stall_Nm": 12.0,
+    "rated_Nm": 4.0,
+    "stall_A": 4.5,
+    "voltage_V": 12.0,
+    "no_load_rpm": 45,
+    "self_locking": false,
+    "source": "serial-bus smart servo class, supplier datasheet"
+   },
+   "smart servo 25 Nm": {
+    "key": "smart servo 25 Nm",
+    "kind": "smart servo",
+    "mass_g": 250.0,
+    "stall_Nm": 25.0,
+    "rated_Nm": 8.0,
+    "stall_A": 6.0,
+    "voltage_V": 24.0,
+    "no_load_rpm": 40,
+    "self_locking": false,
+    "source": "serial-bus smart servo class, supplier datasheet"
+   },
+   "qdd 24 Nm": {
+    "key": "qdd 24 Nm",
+    "kind": "qdd",
+    "mass_g": 480.0,
+    "stall_Nm": 24.0,
+    "rated_Nm": 8.0,
+    "stall_A": 18.0,
+    "voltage_V": 24.0,
+    "no_load_rpm": 300,
+    "self_locking": false,
+    "source": "quasi-direct-drive leg module class (planetary 1:6), supplier datasheet"
+   },
+   "qdd 60 Nm": {
+    "key": "qdd 60 Nm",
+    "kind": "qdd",
+    "mass_g": 650.0,
+    "stall_Nm": 60.0,
+    "rated_Nm": 20.0,
+    "stall_A": 25.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 200,
+    "self_locking": false,
+    "source": "quasi-direct-drive module class (planetary 1:9), supplier datasheet"
+   },
+   "cycloidal 400 Nm, brake": {
+    "key": "cycloidal 400 Nm, brake",
+    "kind": "industrial module",
+    "mass_g": 6500.0,
+    "stall_Nm": 400.0,
+    "rated_Nm": 150.0,
+    "stall_A": 120.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 60,
+    "self_locking": true,
+    "source": "assumed: 48 V BLDC with a 1:40 cycloidal stage and a holding brake, light-industrial joint-module class"
+   },
+   "cycloidal 800 Nm, brake": {
+    "key": "cycloidal 800 Nm, brake",
+    "kind": "industrial module",
+    "mass_g": 11000.0,
+    "stall_Nm": 800.0,
+    "rated_Nm": 300.0,
+    "stall_A": 180.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 40,
+    "self_locking": true,
+    "source": "assumed: 48 V BLDC with a 1:60 cycloidal stage and a holding brake, light-industrial joint-module class"
+   },
+   "hub motor 3 kW": {
+    "key": "hub motor 3 kW",
+    "kind": "hub motor",
+    "mass_g": 9000.0,
+    "stall_Nm": 240.0,
+    "rated_Nm": 60.0,
+    "stall_A": 150.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 500,
+    "self_locking": false,
+    "source": "assumed: in-wheel BLDC hub motor class of light electric vehicles, 48 V, 3 kW peak (stall torque x no-load speed / 4)"
+   },
+   "harmonic 60 Nm, brake": {
+    "key": "harmonic 60 Nm, brake",
+    "kind": "industrial module",
+    "mass_g": 1600.0,
+    "stall_Nm": 60.0,
+    "rated_Nm": 25.0,
+    "stall_A": 15.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 40,
+    "self_locking": true,
+    "source": "assumed: 48 V BLDC with a 1:100 strain-wave gear and a holding brake, cobot wrist-joint class"
+   },
+   "harmonic 150 Nm, brake": {
+    "key": "harmonic 150 Nm, brake",
+    "kind": "industrial module",
+    "mass_g": 3200.0,
+    "stall_Nm": 150.0,
+    "rated_Nm": 60.0,
+    "stall_A": 30.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 30,
+    "self_locking": true,
+    "source": "assumed: 48 V BLDC with a 1:120 strain-wave gear and a holding brake, cobot elbow-joint class"
+   },
+   "jaw screw 6 kN": {
+    "key": "jaw screw 6 kN",
+    "kind": "linear (jaw-equivalent)",
+    "mass_g": 2200.0,
+    "stall_Nm": 360.0,
+    "rated_Nm": 120.0,
+    "stall_A": 20.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 9.5,
+    "self_locking": false,
+    "source": "assumed: 48 V ball-screw linear actuator, 6 kN stall, 60 mm/s no-load, acting on the jaw at a 60 mm lever: given here at the jaw pivot (6 kN x 0.06 m = 360 N m, 1.0 rad/s = 9.5 rpm)"
+   },
+   "broom drive 1.5 kW": {
+    "key": "broom drive 1.5 kW",
+    "kind": "gearmotor",
+    "mass_g": 9000.0,
+    "stall_Nm": 120.0,
+    "rated_Nm": 50.0,
+    "stall_A": 60.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 240,
+    "self_locking": false,
+    "source": "assumed: 48 V BLDC through a 1:12 planetary stage, brush-disc sweeper drive class (disc brooms run 100-200 rpm)"
+   },
+   "suction fan 4 kW": {
+    "key": "suction fan 4 kW",
+    "kind": "fan motor",
+    "mass_g": 8000.0,
+    "stall_Nm": 16.0,
+    "rated_Nm": 9.0,
+    "stall_A": 110.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 6000,
+    "self_locking": false,
+    "source": "assumed: 48 V outer-rotor BLDC blower motor class, 9 N m continuous at 4200 rpm (4 kW), direct drive on the impeller"
+   },
+   "BLDC 100 W, 24 V": {
+    "key": "BLDC 100 W, 24 V",
+    "kind": "motor",
+    "mass_g": 450.0,
+    "stall_Nm": 0.95,
+    "rated_Nm": 0.32,
+    "stall_A": 16.0,
+    "voltage_V": 24.0,
+    "no_load_rpm": 4000,
+    "self_locking": false,
+    "source": "assumed: 57 mm inrunner BLDC class, 24 V, 0.32 N m continuous at 3000 rpm (100 W), 3x peak"
+   },
+   "pekari drive 16:1 planetary": {
+    "key": "pekari drive 16:1 planetary",
+    "kind": "gearmotor",
+    "mass_g": 800.0,
+    "stall_Nm": 14.3,
+    "rated_Nm": 4.8,
+    "stall_A": 16.0,
+    "voltage_V": 24.0,
+    "no_load_rpm": 250,
+    "self_locking": false,
+    "source": "BLDC 100 W, 24 V through two planetary stages 4:1 x 4:1 (sun 18, planets 18, ring 54, module 0.8; efficiency 0.97 per stage): torques x 16 x 0.94, speed / 16; gearbox 350 g (notebook 30 \u00a75)"
+   },
+   "perseus track drive 1.5 kW, 48 V": {
+    "key": "perseus track drive 1.5 kW, 48 V",
+    "kind": "gearmotor",
+    "mass_g": 9000.0,
+    "stall_Nm": 160.0,
+    "rated_Nm": 60.0,
+    "stall_A": 45.0,
+    "voltage_V": 48.0,
+    "no_load_rpm": 150,
+    "self_locking": false,
+    "source": "assumed: 48 V 1.5 kW BLDC (4.8 N m continuous at 3000 rpm) through a 20:1 two-stage planetary (efficiency 0.94): 60 N m continuous, 160 N m stall at the sprocket, 150 rpm no-load; sized for the 180 kg Perseus on a 30 deg climb (perseus_robot.ASSUMPTIONS['drive'])"
+   },
+   "perseus mini drive 20:1 planetary": {
+    "key": "perseus mini drive 20:1 planetary",
+    "kind": "gearmotor",
+    "mass_g": 1100.0,
+    "stall_Nm": 30.0,
+    "rated_Nm": 10.0,
+    "stall_A": 20.0,
+    "voltage_V": 24.0,
+    "no_load_rpm": 200,
+    "self_locking": false,
+    "source": "assumed: 24 V 200 W inrunner BLDC (0.53 N m continuous at 3600 rpm, 3x peak) through two planetary stages 4:1 x 5:1 (efficiency 0.94): 10 N m continuous, 30 N m stall, 200 rpm no-load; the 30 kg Perseus Mini"
+   }
+  },
+  "linear": {
+   "lift screw 8 kN": {
+    "key": "lift screw 8 kN",
+    "kind": "ball screw + brake",
+    "mass_g": 12000.0,
+    "stall_N": 8000.0,
+    "rated_N": 3000.0,
+    "no_load_mm_s": 200.0,
+    "stall_A": 60.0,
+    "voltage_V": 48.0,
+    "self_locking": true,
+    "source": "assumed: 48 V BLDC on a 32 mm ball screw (10 mm lead) with a holding brake, forklift-retrofit class"
+   },
+   "tilt screw 12 kN": {
+    "key": "tilt screw 12 kN",
+    "kind": "ball screw + brake",
+    "mass_g": 6000.0,
+    "stall_N": 12000.0,
+    "rated_N": 5000.0,
+    "no_load_mm_s": 60.0,
+    "stall_A": 40.0,
+    "voltage_V": 48.0,
+    "self_locking": true,
+    "source": "assumed: 48 V electric cylinder (5 mm lead) with a brake, mast-tilt class"
+   },
+   "boom cylinder 12 kN": {
+    "key": "boom cylinder 12 kN",
+    "kind": "ball screw + brake",
+    "mass_g": 6500.0,
+    "stall_N": 12000.0,
+    "rated_N": 5000.0,
+    "no_load_mm_s": 60.0,
+    "stall_A": 40.0,
+    "voltage_V": 48.0,
+    "self_locking": true,
+    "source": "assumed: 48 V electric cylinder (ball screw, 5 mm lead) with a holding brake, 400 mm stroke, mini-excavator boom class; given at the rod"
+   },
+   "stick cylinder 8 kN": {
+    "key": "stick cylinder 8 kN",
+    "kind": "ball screw + brake",
+    "mass_g": 4500.0,
+    "stall_N": 8000.0,
+    "rated_N": 3500.0,
+    "no_load_mm_s": 80.0,
+    "stall_A": 30.0,
+    "voltage_V": 48.0,
+    "self_locking": true,
+    "source": "assumed: 48 V electric cylinder (ball screw, 6 mm lead) with a holding brake, 350 mm stroke"
+   }
+  },
+  "joints": {
+   "leg hip pin": {
+    "key": "leg hip pin",
+    "dof": 1,
+    "pin_diameter_mm": 5.0,
+    "range_deg": 60.0,
+    "description": "a leg's hip pin in a printed boss (Persephone)"
+   },
+   "two-axis body joint": {
+    "key": "two-axis body joint",
+    "dof": 2,
+    "pin_diameter_mm": 5.0,
+    "range_deg": 45.0,
+    "description": "pitch + yaw between two Persephone segments: tongue and fork, one pin per axis"
+   },
+   "two-axis body joint, large": {
+    "key": "two-axis body joint, large",
+    "dof": 2,
+    "pin_diameter_mm": 10.0,
+    "range_deg": 45.0,
+    "description": "Cleopatra and Apheloria body joints"
+   },
+   "dog hip / knee pin": {
+    "key": "dog hip / knee pin",
+    "dof": 1,
+    "pin_diameter_mm": 10.0,
+    "range_deg": 110.0,
+    "description": "robot dog leg pins in clevises"
+   },
+   "onager shoulder / knee pin": {
+    "key": "onager shoulder / knee pin",
+    "dof": 1,
+    "pin_diameter_mm": 40.0,
+    "range_deg": 100.0,
+    "description": "Onager Sentinel leg pins (steel, in the actuator output flange)"
+   },
+   "onager wheel axle": {
+    "key": "onager wheel axle",
+    "dof": 1,
+    "pin_diameter_mm": 45.0,
+    "range_deg": 360.0,
+    "description": "Onager Sentinel stub axle carrying the hub motor (continuous rotation)"
+   },
+   "manus arm pin": {
+    "key": "manus arm pin",
+    "dof": 1,
+    "pin_diameter_mm": 30.0,
+    "range_deg": 150.0,
+    "description": "Onager Manus arm joints (shoulder, elbow, wrist): pin in the module flange"
+   },
+   "manus jaw pin": {
+    "key": "manus jaw pin",
+    "dof": 1,
+    "pin_diameter_mm": 16.0,
+    "range_deg": 60.0,
+    "description": "Onager Manus pincer: both jaws on one hardened pin"
+   },
+   "sweeper broom spindle": {
+    "key": "sweeper broom spindle",
+    "dof": 1,
+    "pin_diameter_mm": 40.0,
+    "range_deg": 360.0,
+    "description": "Onager Sweeper disc broom: the drive's output spindle (continuous rotation)"
+   }
+  },
+  "derived": {
+   "sub-micro 9 g": [
+    1.513636363636364,
+    4.3999999999999995
+   ],
+   "micro 13 g": [
+    1.7806250000000006,
+    4.571428571428571
+   ],
+   "micro-metal 20 g": [
+    2.072,
+    5.0
+   ],
+   "mini 32 g": [
+    2.690909090909091,
+    5.5
+   ],
+   "standard 55 g": [
+    4.036363636363636,
+    5.5
+   ],
+   "micro-metal 22 g worm": [
+    0.0,
+    4.545454545454546
+   ],
+   "mini 32 g worm": [
+    0.0,
+    5.0
+   ],
+   "standard 60 g worm": [
+    0.0,
+    5.0
+   ],
+   "smart servo 6 Nm": [
+    6.0,
+    6.0
+   ],
+   "smart servo 12 Nm": [
+    9.0,
+    6.0
+   ],
+   "smart servo 25 Nm": [
+    23.04,
+    6.25
+   ],
+   "qdd 24 Nm": [
+    72.0,
+    6.0
+   ],
+   "qdd 60 Nm": [
+    199.99999999999997,
+    6.0
+   ],
+   "cycloidal 400 Nm, brake": [
+    0.0,
+    5.333333333333333
+   ],
+   "cycloidal 800 Nm, brake": [
+    0.0,
+    5.333333333333333
+   ],
+   "hub motor 3 kW": [
+    900.0,
+    8.0
+   ],
+   "harmonic 60 Nm, brake": [
+    0.0,
+    4.8
+   ],
+   "harmonic 150 Nm, brake": [
+    0.0,
+    5.0
+   ],
+   "jaw screw 6 kN": [
+    160.0,
+    6.0
+   ],
+   "broom drive 1.5 kW": [
+    600.0,
+    4.8
+   ],
+   "suction fan 4 kW": [
+    1485.0,
+    3.5555555555555554
+   ],
+   "BLDC 100 W, 24 V": [
+    64.67368421052632,
+    5.9375
+   ],
+   "pekari drive 16:1 planetary": [
+    64.44755244755244,
+    5.958333333333334
+   ],
+   "perseus track drive 1.5 kW, 48 V": [
+    405.0,
+    5.333333333333333
+   ],
+   "perseus mini drive 20:1 planetary": [
+    80.0,
+    6.0
+   ]
+  },
+  "select": [
+   "smart servo 12 Nm",
+   "harmonic 150 Nm, brake"
+  ]
+ }
+}
