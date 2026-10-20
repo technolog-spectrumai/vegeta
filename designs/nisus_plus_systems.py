@@ -47,21 +47,7 @@ ZERO = ("Zero",)
 
 
 # ================================================================================================= the atmosphere
-def atmosphere(h_m: float = 0.0, dT: float = 0.0) -> dict:
-    """The ISA troposphere at the geopotential altitude ``h_m`` [m] with a temperature offset ``dT`` [K] (a hot day:
-    +15 to +25 in summer in the Alps): density, pressure, temperature, dynamic and kinematic viscosity (Sutherland),
-    the speed of sound, σ = ρ/ρ0 and the density altitude."""
-    from vegeta.boreas.microjet import isa
-    a = isa(float(h_m), float(dT))
-    T, rho = a.temperature, a.density
-    mu = 1.458e-6 * T ** 1.5 / (T + 110.4)
-    return {"h_m": float(h_m), "dT": float(dT), "T_K": T, "T_C": T - 273.15, "p_Pa": a.pressure, "rho": rho, "mu": mu, "nu": mu / rho,
-            "a": a.speed_of_sound, "sigma": rho / RHO0, "density_altitude_m": density_altitude(rho)}
-
-
-def density_altitude(rho: float) -> float:
-    """The ISA altitude [m] with density ``rho`` (inverse of the standard troposphere)."""
-    return 288.15 / 0.0065 * (1 - (rho / RHO0) ** (1 / 4.2559))
+from ogma.atmosphere import atmosphere, density_altitude  # noqa: E402  the ISA (+ΔT), Sutherland ν, density altitude: Ogma
 
 
 def atmosphere_table(heights=(0, 1000, 1500, 2000, 3000, 4000, 4500, 5000, 6000), dT=0.0) -> pd.DataFrame:

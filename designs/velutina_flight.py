@@ -26,10 +26,7 @@ G = 9.80665
 RHO0, T0, LAPSE = 1.225, 288.15, 0.0065
 
 
-def isa_density(altitude_m):
-    """ISA troposphere density [kg/m^3]."""
-    t = T0 - LAPSE * np.asarray(altitude_m, dtype=float)
-    return RHO0 * (t / T0) ** (G / (LAPSE * 287.05) - 1.0)
+from ogma.atmosphere import density as isa_density  # noqa: E402  ISA troposphere density [kg/m^3], vectorised: Ogma
 
 
 # ---------------------------------------------------------------------------------------------------------------
