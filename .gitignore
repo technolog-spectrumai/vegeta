@@ -46,3 +46,6 @@ scenarios/output/
 side_labs/runs/
 side_labs/cache/
 benchmark/*/results/
+
+# K4TQ: drive maps made under the mocks are caches (rebuilt in seconds)
+labs/aero/designs/data/k4tq/drive_*_mock.json
