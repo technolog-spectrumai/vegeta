@@ -132,3 +132,86 @@ def test_nisus_flies_in_jsbsim_on_its_own_map(tmp_path):
     assert prop["grid"]["rpm"][0] < rpm < prop["grid"]["rpm"][-1]
     assert T == pytest.approx(lp.at(prop["grid"], "thrust_n", rpm, V), rel=0.03)
     assert g("moments/l-prop-lbsft") * rot["spin"] > 0                       # drag torque on the frame along spin · axis (+x forward)
+
+
+# ------------------------------------------------------------------------------------- selective export (features)
+from yax import features as ft  # noqa: E402
+
+
+def test_selective_export_withholds_and_says_so(tmp_path):
+    """Withheld features reach no file, no metadata and no side file; the USD records them; the inventory says
+    available / excluded / missing; the structure (links, joint tree) stays."""
+    reps = export.export("drongo", tmp_path / "drongo.usda", also=("sdf", "jsbsim"), exclude=("motors", "provenance"))
+    text = (tmp_path / "drongo.usda").read_text()
+    for marker in ("kF", "propulsion", "yax:producer", "sources", "2306"):
+        assert marker not in text, marker
+    m, _ = yax.read(tmp_path / "drongo.usda")
+    assert m.features["excluded"] == ["motors", "provenance"] and m.producer == {} and "propulsion" not in m.data and "ogma" not in m.data
+    inv = ft.inventory(m)
+    assert inv["motors"].status == ft.EXCLUDED and inv["provenance"].status == ft.EXCLUDED
+    assert inv["geometry"].status == inv["mass"].status == inv["materials"].status == ft.AVAILABLE and inv["sensors"].status == ft.MISSING
+    assert [lk.name for lk in m.links] == [lk.name for lk in export.machine("drongo")[0].links]
+    assert not list((tmp_path / "jsbsim" / "aircraft" / "drongo").rglob("prop_*.xml"))      # no propeller files
+    assert any("motors: withheld by the producer" in d for d in reps[2].dropped)           # the SDF report says so
+    only, _ = export.machine("nisus", include=("geometry", "mass"))
+    assert all(lk.inertia is None for lk in only.links) and all(j.kind == "fixed" for j in only.joints)
+    assert only.features["excluded"] == sorted(set(ft.FEATURES) - {"geometry", "mass"})
+    yax.save(only, tmp_path / "only.sdf")
+    assert "<inertia>" not in (tmp_path / "only.sdf").read_text()
+
+
+def test_full_is_the_default_and_the_flags_are_checked():
+    full, _ = export.machine("drongo")
+    assert full.features == {} and all(ft.inventory(full)[f].status != ft.EXCLUDED for f in ft.FEATURES)
+    assert export.selection(full=True) == (None, ()) and export.selection() == (None, ())
+    assert export.selection(["geometry"], ["mass"], spec={"include": ["joints"], "exclude": ["inertia"]}) == (("geometry", "joints"), ("mass", "inertia"))
+    with pytest.raises(ValueError):
+        export.selection(["geometry"], full=True)
+    with pytest.raises(ValueError):
+        export.selection(["colour"])
+
+
+def test_features_file_json_and_yaml(tmp_path):
+    (tmp_path / "f.json").write_text('{"exclude": ["strength", "connections"]}')
+    assert export.features_from_file(tmp_path / "f.json") == {"include": [], "exclude": ["strength", "connections"]}
+    pytest.importorskip("yaml")
+    (tmp_path / "f.yaml").write_text("include:\n  - geometry\n  - mass\nexclude:\n  - motors\n")
+    assert export.features_from_file(tmp_path / "f.yaml") == {"include": ["geometry", "mass"], "exclude": ["motors"]}
+    (tmp_path / "bad.yaml").write_text("features: [geometry]\n")
+    with pytest.raises(ValueError):
+        export.features_from_file(tmp_path / "bad.yaml")
+
+
+def test_consumer_requirements_report_and_never_override_the_flags(tmp_path, capsys):
+    piccolo = export.ROOT / "tools" / "consumers" / "piccolo.json"
+    reps = export.export("drongo", tmp_path / "d.usda", also=("sdf",), exclude=("inertia",), consumers=(piccolo,))
+    verdicts = [r for r in reps if isinstance(r, ft.Compatibility)]
+    assert [v.fmt for v in verdicts] == ["usd", "sdf"] and not verdicts[0].ok and verdicts[0].statuses["inertia"].status == ft.EXCLUDED
+    m, _ = yax.read(tmp_path / "d.usda")
+    assert all(lk.inertia is None for lk in m.links)                           # the requirement changed nothing
+    out = tmp_path / "e.usda"
+    assert export.main(["drongo", "--to", str(out), "--exclude", "inertia", "--consumer", str(piccolo)]) == 0
+    assert export.main(["drongo", "--to", str(out), "--exclude", "inertia", "--consumer", str(piccolo), "--strict"]) == 1
+    assert export.main(["drongo", "--to", str(out), "--full", "--consumer", str(piccolo), "--strict"]) == 0
+    printed = capsys.readouterr().out
+    assert "piccolo (usd): NOT served" in printed and "piccolo (usd): served" in printed and "exported:" in printed
+    assert "materials: available" in printed and "motors: available" in printed
+    (tmp_path / "f.yaml").write_text("exclude: [motors]\n")
+    pytest.importorskip("yaml")
+    assert export.main(["drongo", "--to", str(out), "--features", str(tmp_path / "f.yaml")]) == 0
+    assert "motors: excluded" in capsys.readouterr().out
+    with pytest.raises(ValueError):
+        export.main(["drongo", "--to", str(out), "--full", "--exclude", "mass"])
+
+
+@pytest.mark.parametrize("name", sorted(export.registry().names()))
+def test_every_machine_exports_its_structure_alone(name, tmp_path):
+    """A real design with only the structure (geometry, mass, inertia, joints): the rest withheld, round trip exact."""
+    keep = ("geometry", "mass", "inertia", "joints")
+    m, _ = export.machine(name, include=keep)
+    assert m.features["excluded"] == sorted(set(ft.FEATURES) - set(keep)) and m.producer == {}
+    assert not any(k in m.data for k in ("propulsion", "ogma", "materials", "provenance"))
+    yax.save(m, tmp_path / f"{name}.usda")
+    back, _ = yax.read(tmp_path / f"{name}.usda")
+    assert back.features == m.features and [lk.name for lk in back.links] == [lk.name for lk in m.links]
+    assert all(ft.inventory(back)[f].status == ft.EXCLUDED for f in ft.FEATURES if f not in keep)

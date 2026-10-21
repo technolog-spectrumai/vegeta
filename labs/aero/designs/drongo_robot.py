@@ -44,7 +44,7 @@ from ogma import actuators as act
 
 __all__ = ["DRONGO", "CAD", "PARTS_G", "GRIPPER_PARTS_G", "MATERIALS", "FILL", "JAW_ACTUATOR", "PINION_RADIUS_M",
            "JAW_GAINS", "ASSUMPTIONS", "POTATO", "CREAM", "ITEMS", "NET", "GRIP_N", "G", "RHO_AIR", "DRAG_AREA_M2",
-           "QUAD_EXPORT", "ASSUMED_PROPULSION", "Propulsion", "propulsion", "boreas_system", "design_params", "cad_numbers", "geometry",
+           "QUAD_EXPORT", "ASSUMED_PROPULSION", "Propulsion", "propulsion", "boreas_system", "materials_block", "design_params", "cad_numbers", "geometry",
            "mass_budget", "item_geometry", "grip_needed", "grip_holds", "net_catch", "jaw_servo", "rotor_layout",
            "drongo", "LAB_OPTIONS", "Rotors", "JAWS", "PADS", "JAW_JOINTS", "pad_gap"]
 
@@ -189,6 +189,13 @@ class Propulsion:
         return {"max thrust per rotor [N]": self.max_thrust_N, "spin-up time constant [s]": self.spin_up_s,
                 "drag torque / thrust [m]": self.torque_per_thrust_m, "battery [Wh]": self.battery_Wh,
                 "usable [Wh]": self.usable_Wh, "source": self.source}
+
+
+def materials_block() -> dict:
+    """The design's materials as Yax part data (``materials``, vendor/yax docs/interchange.md): the densities notebook
+    08 used for the printed parts, in SI, with their source — no strength values: the notebook fixed none."""
+    return {name: {"density_kg_m3": rho * 1e6, "source": "notebook 08 (designs/drongo_robot.MATERIALS, g/mm³)"}
+            for name, rho in MATERIALS.items()}
 
 
 def boreas_system() -> tuple:

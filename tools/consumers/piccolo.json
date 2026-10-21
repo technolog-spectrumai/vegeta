@@ -1,0 +1,15 @@
+{
+  "consumer": "piccolo",
+  "required": [
+    "geometry",
+    "mass",
+    "inertia",
+    "joints"
+  ],
+  "optional": [
+    "motors",
+    "sensors",
+    "provenance"
+  ],
+  "note": "Piccolo (ROS 2, Gazebo): the SDF model needs the links, their mass properties and the joint tree; motor constants reach its plugins through yax sync (vehicles/<app>.map.json); sensors it keeps its own. A Yax requirements file: python tools/export.py <machine> --to out/<machine>.usda --also sdf --consumer tools/consumers/piccolo.json"
+}
