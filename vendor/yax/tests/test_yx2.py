@@ -118,3 +118,20 @@ def test_yx2_meshes_are_inline(tmp_path):
     back, _ = yax.read(f)
     np.testing.assert_allclose(back.links[0].shapes[0].points, pts)
     assert back.links[0].shapes[0].faces.tolist() == faces.tolist()
+
+
+def test_rotated_poses_round_trip_exactly(tmp_path):
+    """USD's matrix decomposition rounds a quaternion; the exact pose shadows make the round trip bit-exact and the
+    text idempotent for links, shapes and point masses at odd angles."""
+    q = hub.qnorm((0.3, 0.5, -0.7, 0.11))
+    lk = hub.Link("b", pos=(0.1234567890123, -2 / 3, 1e-5), quat=q, mass=1.0, inertia=np.eye(3) * 0.01,
+                  shapes=[hub.Shape("s", "box", (0.1, 0.2, 0.3), pos=(1 / 7, 1 / 9, 1 / 11), quat=hub.qnorm((0.9, -0.2, 0.3, 0.4)))],
+                  point_masses=[("p", 0.1, (1 / 13, 0.0, -1 / 17))])
+    m = hub.Machine("odd", links=[lk])
+    f = tmp_path / "odd.yx2"
+    yax.save(m, f)
+    back, _ = yax.read(f)
+    assert back.links[0].pos == lk.pos and back.links[0].quat == q and back.links[0].shapes[0].pos == lk.shapes[0].pos
+    assert back.links[0].shapes[0].quat == lk.shapes[0].quat and back.links[0].point_masses == lk.point_masses
+    yax.save(back, tmp_path / "again.yx2")
+    assert (tmp_path / "again.yx2").read_text() == f.read_text()
