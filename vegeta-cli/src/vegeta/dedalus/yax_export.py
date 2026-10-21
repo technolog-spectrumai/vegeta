@@ -1,7 +1,8 @@
 """Export a geometry as a Yax design package (Ozaru's ``yax``): ``body.stl`` + ``yax.json``, optional STEP and parts.
 
 The package is what Piccolo, Nomios and Ketos read — they never import Vegeta. Lengths stay in the geometry's units
-(mm), Z up, X forward; mass properties come exactly from OpenCascade, the inertia in kg m^2 about the centre of mass.
+(mm), Z up, X forward; mass properties come exactly from OpenCascade through Ogma's CAD strategy (``og.cad``), the
+inertia in kg m^2 about the centre of mass.
 """
 from __future__ import annotations
 
@@ -11,27 +12,21 @@ from pathlib import Path
 from typing import Any
 
 FRAME = {"up": "+z", "forward": "+x"}
-_TO_M = {"mm": 1e-3, "m": 1.0}
+_TO_M = {"mm": 1e-3, "m": 1.0}                   # the same as og.cad.TO_M
 
 
 def mass_properties(geometry) -> dict[str, Any]:
-    """Volume, centre of mass and the inertia tensor about it for unit density (length^5), from OpenCascade."""
-    from OCP.BRepGProp import BRepGProp
-    from OCP.GProp import GProp_GProps
+    """Volume, centre of mass and the inertia tensor about it for unit density (length^5), from OpenCascade (Ogma's
+    CAD strategy, ``og.cad``)."""
+    from ogma import cad
 
-    props = GProp_GProps()
-    BRepGProp.VolumeProperties_s(geometry.shape.wrapped, props)
-    c, m = props.CentreOfMass(), props.MatrixOfInertia()
-    return {"volume": props.Mass(), "com": [c.X(), c.Y(), c.Z()],
-            "inertia": [[m.Value(i, j) for j in (1, 2, 3)] for i in (1, 2, 3)]}
+    return cad.mass_properties(geometry.shape)
 
 
 def _mass(props, units, mass_kg, density_kg_m3):
-    scale = _TO_M[units]
-    kg = mass_kg if mass_kg is not None else density_kg_m3 * props["volume"] * scale ** 3
-    per_volume = kg / props["volume"] * scale ** 2
-    return {"kg": kg, "com": props["com"], "inertia": [[v * per_volume for v in row] for row in props["inertia"]],
-            "source": "given" if mass_kg is not None else "density"}
+    from ogma import cad
+
+    return cad.mass_section(props, units, mass_kg, density_kg_m3)
 
 
 def _revision() -> str | None:

@@ -39,7 +39,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 
 ## Stage V4 — Vegeta application (after Ogma O6)
 - [ ] V4.1 Designs take their mass budgets, parts, propulsion and aero from `og.*` throughout
-- [ ] V4.2 CAD through Ogma's CAD strategy (`og.cad`); `export_yax`'s mass properties move to Ogma
+- [x] V4.2 Ogma's CAD strategy (`og.cad`, Ogma O6) carries the CAD ↔ physics link: `vegeta.dedalus.export_yax` takes its exact mass properties and the Yax mass section from `og.cad` (moved there); the designs' own geometry stays CadQuery in Dedalus (machine geometry is not Ogma's)
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
