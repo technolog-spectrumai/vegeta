@@ -9,7 +9,7 @@ from xml.sax.saxutils import quoteattr
 
 import numpy as np
 
-from .. import hub, stl
+from .. import hub, propulsion, stl
 from ..hub import Joint, Link, Machine, Report, Shape
 from .urdf import _resolve
 
@@ -181,7 +181,8 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     path = Path(path)
     rep = rep or Report("usd", str(path))
     mesh_dir = path.parent / f"{path.stem}_meshes"
-    hub.report_data(m, rep, keep=("sdf",))
+    hub.report_data(m, rep, keep=("sdf", propulsion.KEY))
+    propulsion.report_reduction(m, rep, "SDF")
     out = ['<?xml version="1.0"?>', '<sdf version="1.9">', f"  <model name={quoteattr(m.name)}>"]
     for lk in m.links:
         out.append(f"    <link name={quoteattr(lk.name)}>")

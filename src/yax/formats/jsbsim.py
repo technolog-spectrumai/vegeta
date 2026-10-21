@@ -11,11 +11,13 @@ in body axes.
 from __future__ import annotations
 
 import copy
+import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import numpy as np
 
+from .. import propulsion as pr
 from ..hub import Link, Machine, Report
 
 LENGTH = {"IN": 0.0254, "FT": 0.3048, "M": 1.0, "CM": 0.01, "MM": 0.001}
@@ -190,11 +192,14 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
         for extra in js.get("mass_balance_extra", []):
             mb.append(ET.fromstring(extra))
     fdm = ET.Element("fdm_config", (js or {}).get("attrib") or {"name": m.name, "version": "2.0", "release": "ALPHA"})
+    files = dict((js or {}).get("files", {}))
     if js:
         for tag, raw in js["sections"]:
             fdm.append(mb if tag == "mass_balance" else ET.fromstring(raw))
     else:
-        rep.drop("aerodynamics, propulsion, ground reactions (the source has none: a mass-and-balance shell, which JSBSim needs metrics for)")
+        blk = pr.block(m)
+        rep.drop(("aerodynamics, ground reactions" if blk else "aerodynamics, propulsion, ground reactions")
+                 + " (the source has none: a mass-and-balance shell, which JSBSim needs metrics for)")
         met = ET.SubElement(fdm, "metrics")
         for tag, unit in (("wingarea", "M2"), ("wingspan", "M"), ("chord", "M")):
             ET.SubElement(met, tag, unit=unit).text = "1"
@@ -203,8 +208,15 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             for a, v in zip("xyz", _S @ com):
                 ET.SubElement(l, a).text = _fmt(v)
         fdm.append(mb)
+        if blk:
+            fdm.append(_propulsion_xml(blk, rep, files))
+        aero = ET.SubElement(fdm, "aerodynamics")                               # JSBSim loads nothing without them
+        ET.SubElement(ET.SubElement(ET.SubElement(aero, "axis", name="DRAG"), "function", name="aero/force/zero"), "value").text = "0"
+        ET.SubElement(fdm, "ground_reactions")
+    if js and pr.block(m):
+        rep.drop("propulsion part data: not written (the aircraft's own propulsion section is kept verbatim)")
     from .. import hub
-    hub.report_data(m, rep, keep=("jsbsim",))
+    hub.report_data(m, rep, keep=("jsbsim", pr.KEY))
     for lk in m.links:
         if lk.shapes:
             rep.drop(f"{lk.name}: its shapes (a JSBSim aircraft has no geometry)")
@@ -212,9 +224,73 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     ET.indent(fdm, space="  ")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('<?xml version="1.0"?>\n' + ET.tostring(fdm, encoding="unicode") + "\n")
-    for rel, text in (js or {}).get("files", {}).items():
+    for rel, text in files.items():
         kind, name = rel.split("/", 1)
         d = path.parent / {"engine": "Engines", "system": "Systems", "aircraft": "."}[kind]
         d.mkdir(exist_ok=True)
         (d / name).write_text(text)
     return rep
+
+
+# ------------------------------------------------------------------------------------- propellers from part data
+def _orient(axis) -> tuple:
+    """JSBSim's thruster orientation (roll, pitch, yaw) [deg]: its +x (the thrust axis) along ``axis`` (machine
+    frame). Body axes are x forward, y right, z down: the x axis after yaw ψ and pitch θ is (cos θ cos ψ, cos θ sin ψ,
+    −sin θ)."""
+    b = _T @ (np.asarray(axis, float) / np.linalg.norm(axis))
+    return 0.0, math.degrees(math.asin(max(-1.0, min(1.0, -b[2])))) + 0.0, math.degrees(math.atan2(b[1], b[0])) + 0.0
+
+
+def _location(parent, pos, unit="IN"):
+    l = ET.SubElement(parent, "location", unit=unit)
+    for a, v in zip("xyz", _S @ np.asarray(pos, float) / LENGTH[unit]):
+        ET.SubElement(l, a).text = _fmt(v)
+
+
+def _table(parent, name, x, y):
+    t = ET.SubElement(parent, "table", name=name, type="internal")
+    ET.SubElement(t, "tableData").text = "\n" + "".join(f"      {_fmt(a)}  {_fmt(b)}\n" for a, b in zip(x, y)) + "    "
+
+
+def _propulsion_xml(blk: dict, rep: Report, files: dict):
+    """The <propulsion> section of the ``propulsion`` part data (``yax.propulsion``): one electric engine per rotor,
+    its propeller's C_THRUST and C_POWER against the advance ratio; the engine and propeller files go to ``files``.
+    JSBSim's sense is +1 for a propeller turning clockwise seen from behind (its reaction torque on the airframe is
+    −sense along the thrust axis); Yax's spin is +1 when the drag torque on the frame is along +axis: sense = −spin."""
+    sec = ET.Element("propulsion")
+    props = blk.get("propellers", {})
+    for r in pr.rotors(blk):
+        prop = props.get(r.get("propeller") or "")
+        if prop is None:
+            raise ValueError(f"rotor {r['name']}: no propeller {r.get('propeller')!r} in propulsion.propellers")
+        pname, mname = r["propeller"], r.get("motor") or f"{r['name']}_motor"
+        if f"engine/prop_{pname}.xml" not in files:
+            co, note = pr.coefficients(prop)
+            if note:
+                rep.drop(f"propulsion: propeller {pname}: {note}")
+            pe = ET.Element("propeller", name=pname)
+            ET.SubElement(pe, "ixx", unit="SLUG*FT2").text = _fmt(float(prop.get("inertia_kgm2", 0.0)) / INERTIA["SLUG*FT2"])
+            ET.SubElement(pe, "diameter", unit="IN").text = _fmt(float(prop["diameter_m"]) / LENGTH["IN"])
+            ET.SubElement(pe, "numblades").text = str(int(prop.get("blades", 2)))
+            _table(pe, "C_THRUST", co["J"], co["CT"])
+            _table(pe, "C_POWER", co["J"], co["CP"])
+            ET.indent(pe, space="  ")
+            files[f"engine/prop_{pname}.xml"] = '<?xml version="1.0"?>\n' + ET.tostring(pe, encoding="unicode") + "\n"
+        if f"engine/motor_{mname}.xml" not in files:
+            P, note = pr.motor_power(blk, r, prop)
+            if note:
+                rep.drop(f"propulsion: {note}")
+            me = ET.Element("electric_engine", name=mname)
+            ET.SubElement(me, "power", unit="WATTS").text = _fmt(P)
+            ET.indent(me, space="  ")
+            files[f"engine/motor_{mname}.xml"] = '<?xml version="1.0"?>\n' + ET.tostring(me, encoding="unicode") + "\n"
+        axis = r.get("axis", (1.0, 0.0, 0.0))
+        roll, pitch, yaw = _orient(axis)
+        eng = ET.SubElement(sec, "engine", file=f"motor_{mname}")       # JSBSim places the thruster, not the engine
+        th = ET.SubElement(eng, "thruster", file=f"prop_{pname}")
+        ET.SubElement(th, "sense").text = _fmt(-float(r.get("spin", -1)))
+        _location(th, r.get("pos", (0.0, 0.0, 0.0)))
+        o = ET.SubElement(th, "orient", unit="DEG")
+        for k, v in (("roll", roll), ("pitch", pitch), ("yaw", yaw)):
+            ET.SubElement(o, k).text = _fmt(v)
+    return sec
