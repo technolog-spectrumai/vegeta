@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-STUDIES = sorted((Path(__file__).resolve().parents[1] / "studies").glob("*.ipynb"))
+STUDIES = sorted((Path(__file__).resolve().parents[1] / "notebooks").glob("*.ipynb"))
 
 
 def _code(nb: Path) -> str:

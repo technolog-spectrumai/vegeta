@@ -6,7 +6,7 @@
 #   scripts/debug_notebooks.sh --include-experiments   # also labs/*/exp/ (Kestrel, the microjet: experiments)
 #   scripts/debug_notebooks.sh 08_quadcopter 43     # those whose name starts with these
 #   -j N  notebooks side by side (default 2);  -t S  per-cell time limit in seconds (default 1200)
-# Notebooks live in labs/<lab>/studies/ (and exp/); each runs in its own folder, its executed copy goes to
+# Notebooks live in labs/<lab>/notebooks/ (and exp/); each runs in its own folder, its executed copy goes to
 # a temporary log folder. Tracked files a notebook writes (labs/*/designs/data/*.json, ...) are put back afterwards.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,7 +17,7 @@ while [ $# -gt 0 ]; do
   case "$1" in -j) JOBS="$2"; shift 2 ;; -t) CELL="$2"; shift 2 ;; --all) ALL=1; shift ;; --include-experiments) EXP=1; shift ;; -h|--help) sed -n '2,8p' "$0"; exit 0 ;; *) ARGS+=("$1"); shift ;; esac
 done
 LIST=()
-FOLDERS=(studies); [ $EXP -eq 1 ] && FOLDERS+=(exp)     # exp/: limbo (Kestrel experiments), only when asked
+FOLDERS=(notebooks); [ $EXP -eq 1 ] && FOLDERS+=(exp)     # exp/: limbo (Kestrel experiments), only when asked
 for path in $(for f in "${FOLDERS[@]}"; do ls "$ROOT"/labs/*/"$f"/*.ipynb 2>/dev/null; done); do
   nb="$(basename "$path" .ipynb)"; case "$nb" in *-run) continue ;; esac
   if [ ${#ARGS[@]} -eq 0 ]; then

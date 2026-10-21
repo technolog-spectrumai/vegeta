@@ -13,7 +13,7 @@
 #   aero land legged marine studio
 #                one lab: its tests (not the slow ones), then its sims/ scripts (mocked: movies of a few frames)
 #   export       every registered machine through Yax to USD (tools/export.py), Drongo with its rotors
-#   notebooks    every lab's studies/ notebooks headless (also with --notebooks)                      (long)
+#   notebooks    every lab's notebooks/ headless (also with --notebooks)                      (long)
 #   --no-sims    the labs without their sims/ scripts
 #   -v           pytest's full output
 set -uo pipefail
@@ -110,8 +110,8 @@ sec_export() {
 
 sec_notebooks() {
   for lab in aero land legged marine studio; do
-    hdr "lab $lab: studies/ notebooks (mocked)"
-    timed "$PY" tools/lab.py run "$lab" studies; mark $? "$lab notebooks"
+    hdr "lab $lab: notebooks/ (mocked)"
+    timed "$PY" tools/lab.py run "$lab" notebooks; mark $? "$lab notebooks"
   done
 }
 

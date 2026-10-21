@@ -310,7 +310,7 @@ def family_of(rel: Path, kind: str) -> str:
     if kind == "test":
         return "tests"
     if rel.parts[0] == "labs" and len(rel.parts) > 3:                       # in a lab: the stage it runs from
-        return {"studies": "notebooks", "exp": "exp", "sims": "sims", "campaigns": "campaigns"}.get(rel.parts[2], "designs")
+        return {"notebooks": "notebooks", "exp": "exp", "sims": "sims", "campaigns": "campaigns"}.get(rel.parts[2], "designs")
     if kind == "notebook":
         return "notebooks"
     return {"designs": "designs", "races": "races", "scenarios": "scenarios", "side_labs": "side_labs",

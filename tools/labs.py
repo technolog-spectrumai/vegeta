@@ -7,7 +7,7 @@ break the rules.
 The layers::
 
     libs/   vegeta-* tool packages, ogma, labkit       never import labs/ or tools/
-    labs/<lab>/{studies,designs,sims,campaigns,exp,common,data,tests}
+    labs/<lab>/{notebooks,designs,sims,campaigns,exp,common,data,tests}
             a lab imports libs/ and itself, never another lab; nothing imports exp/ but exp/ and the lab's tests
     tools/  tests/  scripts/                           may import anything (they discover the labs)
     vendor/                                            libraries (Yax, Ozaru)
@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABS = ("aero", "land", "legged", "marine", "studio")
-STAGES = ("studies", "designs", "sims", "campaigns", "exp", "common", "data", "tests")
+STAGES = ("notebooks", "designs", "sims", "campaigns", "exp", "common", "data", "tests")
 
 # the old top-level layout, mapped to the labs until it is gone (phase 3 of the split)
 _LEGACY = (("legged", r"robot_dog|myropod|apheloria|cleopatra|persephone|gait|stability_plots|benchmark/"),
@@ -46,7 +46,7 @@ def place(path: str) -> tuple[str, str | None]:
         return "vendor", None
     if parts[0] in _LEGACY_DIRS:
         if parts[0] == "notebooks" and (parts[1] == "demo" or re.match(r"notebooks/old/0[0-5]_", path)):
-            return "studio", "studies"
+            return "studio", "notebooks"
         for lab, rx in _LEGACY:
             if re.search(rx, path):
                 return lab, "exp" if "/exp/" in path or "/old/" in path else "legacy"
@@ -111,7 +111,7 @@ def stages(root: Path = ROOT) -> dict:
             continue
         lab = lab_dir.name
         mach = _machines_of(lab_dir)
-        for stage in ("studies", "designs", "sims", "campaigns", "exp"):
+        for stage in ("notebooks", "designs", "sims", "campaigns", "exp"):
             for f in (lab_dir / stage).rglob("*"):
                 if f.suffix in (".py", ".ipynb") and "tests" not in f.parts:
                     for m in mach:
@@ -126,7 +126,7 @@ def stages(root: Path = ROOT) -> dict:
 
 
 def _stage_order(s):
-    return ("studies", "designs", "sims", "campaigns", "export", "exp").index(s)
+    return ("notebooks", "designs", "sims", "campaigns", "export", "exp").index(s)
 
 
 def _machines_of(lab_dir: Path) -> list[str]:

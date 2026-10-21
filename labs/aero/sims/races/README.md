@@ -1,7 +1,7 @@
 # Races — four drone race environments in MuJoCo for the reference 5-inch quad
 
 Four courses, one reference aircraft, one autopilot, one set of rules, a mock flyer for development, a thin CLI
-and one notebook per course in `races/notebooks/` (`01_hangar`, `02_industrial`, `03_farm`, `04_quarry`) with
+and one notebook per course in `labs/aero/notebooks/races/` (`01_hangar`, `02_industrial`, `03_farm`, `04_quarry`) with
 `race_design_factors` combining their exports. MuJoCo does the rigid body and the contacts; the aircraft's
 aerodynamics and propulsion are the existing models (the Boreas drive table of the 6S 5x4.3 2207 drive, the frame's
 drag area) and the flight controller is Drongo's geometric controller (`races/flight.py`, copied from Vegeta's `designs/drongo_controller.Flight` when the racing quad hatched).
@@ -73,7 +73,7 @@ body rates when recorded), the videos' names and sizes, the tail of run.log, eve
 note, the mock baseline, and a cross-course comparison. That file is what to hand over for analysis; the videos and
 scenes stay where they are.
 
-## The race notebooks (`races/notebooks/`)
+## The race notebooks (`labs/aero/notebooks/races/`)
 Each course notebook sets the course up (its builder's parameters in `COURSE_PARAMS`), flies the mock lap (always,
 headless, seconds) and, with `GENERATE_VIDEO = True`, the MuJoCo lap and its videos (overview, chase, onboard: the
 recorded trajectory through the scene cameras). Every run is written by `races/export.py` to

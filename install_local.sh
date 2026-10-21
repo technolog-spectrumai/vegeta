@@ -136,7 +136,7 @@ status=0
 
 if [ $status -eq 0 ]; then
   printf '\nAll dependencies installed. Next:\n'
-  echo "  ./jupyter.sh             # JupyterLab from the venv; open labs/studio/studies/00_smoke_test.ipynb (the first-install smoke test)"
+  echo "  ./jupyter.sh             # JupyterLab from the venv; open labs/studio/notebooks/00_smoke_test.ipynb (the first-install smoke test)"
   [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate   # for the vegeta command and scripts"
   echo "  ./test.sh                 # installation check with a short working run"
   echo "  ./test_openfoam.sh        # test the CFD tool against the OpenFOAM installation(s) on this machine"

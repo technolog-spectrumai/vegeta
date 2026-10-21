@@ -516,7 +516,7 @@ walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculpt
 (the laser work) live on in Alabastron.
 
 ## Layout
-Vegeta is labs on a common library layer. The loop each lab runs: tools from `libs/` → a few notebooks (`studies/`)
+Vegeta is labs on a common library layer. The loop each lab runs: tools from `libs/` → a few notebooks (`notebooks/`)
 → the survivors graduate to MuJoCo (`sims/`) and gather data → optimisation loops (`campaigns/`) → export to Piccolo
 (`designs/machines.py`, `tools/export.py`); what does not make it falls into `exp/` (limbo). Rinse and repeat.
 ```
@@ -530,7 +530,7 @@ libs/              the common layer — never imports labs/
                      controllers and kinematics, generic CAD parts
 labs/              one per domain; a lab imports libs/ and itself, never another lab (tools/labs.py check)
   aero/  land/  legged/  marine/  studio/
-    studies/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
+    notebooks/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
 tools/             lab.py (test, run, new-exp, promote, demote, export, readme), labs.py (the rules, the stages),
                    export.py (to Piccolo through Yax), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
 vendor/            ozaru/ (Porunga cache, Mimezia mocks, Yanus checks), yax/ (the design-format converter, USD hub)
@@ -562,7 +562,7 @@ scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.s
 ./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
 ./test.sh                           # check the installation; prints OK/MISSING/FAILED per part
 ./test_openfoam.sh                  # test Aeromant against the OpenFOAM installation(s) on this machine (.com and .org)
-./jupyter.sh                        # JupyterLab from the venv; the first-install smoke test is labs/studio/studies/00_smoke_test.ipynb
+./jupyter.sh                        # JupyterLab from the venv; the first-install smoke test is labs/studio/notebooks/00_smoke_test.ipynb
 source .venv/bin/activate           # for the vegeta command and the scripts below
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly

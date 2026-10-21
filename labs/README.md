@@ -1,7 +1,7 @@
 # labs/ — one per domain, each running the same loop
 
 ```
-libs/ tools ──► studies/ (notebooks) ──► designs/ ──► sims/ (MuJoCo) ──► campaigns/ (data, optimisation) ──► export ──► Piccolo
+libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ──► campaigns/ (data, optimisation) ──► export ──► Piccolo
                       │                                                                                     (tools/export.py)
                       └──► exp/ (limbo: what did not make it; nothing imports it)
 ```
