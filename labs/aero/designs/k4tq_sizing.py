@@ -1044,21 +1044,24 @@ def payload_range(variant: str = k4tq.MAIN, *, payloads=(0.0, 0.25, 0.5, 0.75, 1
 
 
 # ================================================================================================= the quadcopter references
-def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
+def quad_reference(name: str, prop_key: str, *, k4: dict, motor_key: str | None = None, arm_len: float | None = None) -> dict:
     """A quadcopter of the same size for the comparison: the same motors, pack, payload, cargo cartridge, temperature
     logging, avionics, parachute and growth margin; no wings, roots, fin or nacelles — four carbon arms and a short pod.
     Forward flight: the discs tilted for the drag, Glauert's induced power, the profile power from the BEMT hover
-    grown with μ², the body's parasite drag (CdA from the build-up of the pod, arms, motors and legs)."""
+    grown with μ², the body's parasite drag (CdA from the build-up of the pod, arms, motors and legs). ``motor_key``
+    another motor (its mass replaces K4TQ's), ``arm_len`` the centre-to-motor arm [m] (default the compact X)."""
     p = k4["p"]
     cat = k4tq.CATALOGUE
     pr = cat["propeller"][prop_key]
     D = pr["d_in"] * 0.0254
     R = D / 2
     A = math.pi * R ** 2
-    arm_len = max(0.55, 0.5 * (D + 0.06) * math.sqrt(2) * 1.0)            # the discs 60 mm apart on the X
+    arm_len = arm_len or max(0.55, 0.5 * (D + 0.06) * math.sqrt(2) * 1.0)  # the discs 60 mm apart on the X
     keep = [i for i in k4["items"] if i["group"] not in ("roots", "battery", "margin") and not i["item"].startswith(("wing panel", "spar", "fin", "nacelle", "power wiring", "fuselage", "propeller"))]
     m = sum(i["mass_kg"] for i in keep)
     m += 4 * pr["mass_kg"]
+    if motor_key and motor_key != p["motor"]:
+        m += 4 * (cat["motor"][motor_key]["mass_kg"] - cat["motor"][p["motor"]]["mass_kg"])
     tube_kg_m = 0.073
     m_arms = 4 * (tube_kg_m * arm_len + 0.025)                            # Ø16 tube + clamps
     m_pod = k4tq.FUSELAGE_AREAL_KG_M2 * (math.pi * 0.15 * 0.45 * 0.85)  # a 0.45 m pod around the cartridge
@@ -1067,10 +1070,14 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
     m += k4tq.GROWTH_MARGIN * m
     m += cat["battery"][p["battery"]]["mass_kg"]
     W = m * G
-    drv = drive(p, prop_key=prop_key)
+    drv = drive(p, prop_key=prop_key, motor_key=motor_key)
     hp = drive_point(drv, 0.0, W / 4)
     aw = k4tq.avionics_power(p)
     P_hover = 4 * hp["electrical_W"] + aw
+    if not hp["feasible"]:                                                 # this motor cannot lift it on this propeller
+        return {"name": name, "propeller": prop_key, "mass [kg]": m, "hover [W]": math.inf, "hover minutes": 0.0, "CdA [m²]": math.nan, "table": None,
+                "best range V [m/s]": math.nan, "range [km]": 0.0, "endurance [min]": 0.0, "max speed (T ≤ 80 % max) [m/s]": 0.0, "footprint [m]": math.nan,
+                "T/W": 4 * max_thrust(drv, 0.0) / W, "label": label("CALC"), "note": "cannot hover", "motor": motor_key or p["motor"], "arm [m]": arm_len, "drive": drv}
     eta_motor = hp["shaft_W"] / hp["electrical_W"]
     vh = og_rotors.hover_induced_velocity(W / 4, A)
     P0 = hp["shaft_W"] - 1.15 * (W / 4) * vh                              # profile power per rotor in the hover
@@ -1079,7 +1086,7 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
     usable = k4["battery"]["usable_wh"]
     T_max0 = max_thrust(drv, 0.0)
     rows = []
-    for V in np.arange(0.0, 22.0, 1.0):
+    for V in np.arange(0.0, 31.0, 1.0):
         Dp = 0.5 * RHO * V * V * CdA
         T = math.hypot(W, Dp) / 4
         a_tilt = math.atan2(Dp, W)
@@ -1099,12 +1106,15 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
     footprint = 2 * (arm_len + R)
     return {"name": name, "propeller": prop_key, "mass [kg]": m, "hover [W]": P_hover, "hover minutes": usable / P_hover * 60, "CdA [m²]": CdA,
             "table": df, "best range V [m/s]": best_r, "range [km]": float(feas["range [km]"].max()), "endurance [min]": float(feas["endurance [min]"].max()),
-            "max speed (T ≤ 80 % max) [m/s]": float(feas.index.max()), "footprint [m]": footprint, "T/W": 4 * max_thrust(drv, 0.0) / W, "label": label("CALC")}
+            "max speed (T ≤ 80 % max) [m/s]": float(feas.index.max()), "footprint [m]": footprint, "T/W": 4 * max_thrust(drv, 0.0) / W, "label": label("CALC"),
+            "motor": motor_key or p["motor"], "arm [m]": arm_len, "drive": drv, "eta motor": eta_motor}
 
 
 def quad_mission_radius(q: dict, k4: dict) -> float:
     """The quad's radius on the R3 mission (same hover, wind, reserve; no transitions; cruise at the best ground-km
     speed per leg)."""
+    if q["table"] is None:
+        return 0.0
     df = q["table"][q["table"]["T each / max"] < 0.8]
     if not len(df):
         return 0.0
