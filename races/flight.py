@@ -69,7 +69,7 @@ class Flight:
 
     def mix(self, T: float, M: np.ndarray) -> tuple:
         """Rotor thrusts [N] for a collective thrust ``T`` and body torques ``M``; True when they had to be limited."""
-        from ogma import rotors
+        from races import rotors
         return rotors.mix(self.Ainv, T, M, self.idle * self.prop.max_thrust_N, self.prop.max_thrust_N)
 
     def attitude(self, R: np.ndarray, omega: np.ndarray, b3: np.ndarray, yaw: float) -> np.ndarray:
