@@ -53,6 +53,11 @@ class DCMotor:
 Motor = DCMotor
 
 
+def kt(kv_rpm_per_volt: float) -> float:
+    """The torque constant [N m / A] of a motor of Kv [rpm/V]: 1 / Kv in rad/s per volt."""
+    return 60 / (2 * math.pi * kv_rpm_per_volt)
+
+
 def fit_resistance(voltage: float, rpm: float, kv: float, current: float) -> float:
     """The resistance that puts a motor of ``kv`` at a published point: R = (V − rpm/Kv) / I (whatever sits between
     the battery and the back-EMF — ESC, wires — is included)."""
@@ -191,5 +196,5 @@ def gearbox(torque, speed, ratio, efficiency: float = 1.0):
     return torque * ratio * efficiency, speed / ratio
 
 
-__all__ = ["DCMotor", "Motor", "fit_resistance", "operating_point", "torque_limit", "servo_torque", "implicit_slope",
+__all__ = ["DCMotor", "Motor", "kt", "fit_resistance", "operating_point", "torque_limit", "servo_torque", "implicit_slope",
            "saturation", "lever", "gearbox"]
