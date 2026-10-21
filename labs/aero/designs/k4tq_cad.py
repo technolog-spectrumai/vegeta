@@ -677,7 +677,8 @@ def render(path: Path, p: dict | None = None, *, info: dict | None = None, items
     info = info or {}
     txt = (f"K4TQ-{p['variant']} (Stage 2 CAD) — span {p['span'] * 1e3:.0f} mm, fuselage {p['fuselage_length'] * 1e3:.0f} mm, width with discs "
            f"{L['width_overall'] * 1e3:.0f} mm, props {p['prop']} on {k4tq.CATALOGUE['motor'][p['motor']]['name']}"
-           + (f"\nCAD mass {info['mass']:.2f} kg, payload {p['payload_kg']:.1f} kg" if "mass" in info else "")
+           + (f"\n{'mass (estimate × the F1 CAD factors)' if p.get('made_calibration') else 'CAD mass'} {info['mass']:.2f} kg, payload {p['payload_kg']:.1f} kg"
+              if "mass" in info else "")
            + f"; hatch marking: \"{k4tq.STANDARD_MARKING}\"")
     fig.text(0.01, 0.01, txt, fontsize=10, family="monospace")
     fig.tight_layout(rect=(0, 0.05, 1, 1))
@@ -705,8 +706,8 @@ def root_view(p: dict, L: dict, tilt_deg: float, fold_deg: float = 0.0):
 def annotate_root(ax, p, L, c):
     w = L["wings"]["front"]
     yh = w["y_hinge"] * MM
-    ax.text(c[0] - 60, yh + 20, c[2] + 55, "fold hinge pin (along the chord)\n+ Ø6 locking pin below", color="#3d4450", fontsize=8)
-    ax.text(c[0] + 10, (p["fuselage_width"] / 2 * MM) - 40, c[2] - 75, "6804 bearings ×2 in the 7075 block,\nservo + 16:48 gears (3:1), encoder", color="#3d4450", fontsize=8)
+    ax.text(c[0] - 60, yh + 20, c[2] + 55, "fold hinge pin (along the chord)\n+ locking pin below", color="#3d4450", fontsize=8)
+    ax.text(c[0] + 10, (p["fuselage_width"] / 2 * MM) - 40, c[2] - 75, f"{next(k for k in k4tq.CATALOGUE[p.get('root_set', 'root')] if k.startswith('bearings')).split(' (')[0]} ×2 in the 7075 block,\nservo + 16:48 gears (3:1), encoder", color="#3d4450", fontsize=8)
     ax.plot([c[0]] * 2, [10, w["y0"] * MM + 60], [c[2]] * 2, color="#c0392b", lw=1.4, ls="--")
     ax.text(c[0] - 80, w["y0"] * MM + 40, c[2] + 20, "tilt axis = stub + spar\n0° cruise … 90° hover", color="#c0392b", fontsize=8)
 

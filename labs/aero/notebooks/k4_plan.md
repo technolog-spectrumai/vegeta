@@ -64,8 +64,10 @@ Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report 
 | K4TQ-A2 | Cathy fully autonomous: Jetson Orin NX companion + stereo + downward perception (+0.29 kg, +27 W) | `k4tq.VARIANTS["A2"]` |
 | K4TQ-F1 "Freddy" | Cathy's airframe, front NACA 4415 / rear NACA 2415 (the NeuralFoil study, `exp/K4TQ_airfoils.ipynb`) | `k4tq.VARIANTS["F1"]` |
 | K4TQ-F2 | Freddy fully autonomous | `k4tq.VARIANTS["F2"]` |
+| K4TQ-G "Ginna" | Freddy × 1.35 sized to ≤ 12.5 kg: U8 II KV170 + 20x10, 12S3P, payload 2.6 kg (the mass limit binds) | `k4tq.SCALED["G"]` (`designs/k4tq_scaled.py`) |
+| K4TQ-B "Bertha" | Freddy × 1.85 sized to ≤ 24 kg (EU C-class line 25 kg − 1 kg): U12 II KV100 + 28x17, 12S4P, payload 5.15 kg | `k4tq.SCALED["B"]` — on `dev_kestrel5` |
 
-Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`); A2 against F2 in the climb, the descent and the manoeuvre in `exp/K4TQ_envelope.ipynb` (`designs/k4tq_envelope.py`); Cathy and Freddy against Q-13, Q-17 (K4TQ's footprint) and Q-17 heavy (K4TQ's mass) in `exp/K4TQ_quads.ipynb` (`designs/k4tq_quads.py`). E (equal tandem) and C (compact) are the Stage 1 studies.
+Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`); A2 against F2 in the climb, the descent and the manoeuvre in `exp/K4TQ_envelope.ipynb` (`designs/k4tq_envelope.py`); Cathy and Freddy against Q-13, Q-17 (K4TQ's footprint) and Q-17 heavy (K4TQ's mass) in `exp/K4TQ_quads.ipynb` (`designs/k4tq_quads.py`); Ginna and Bertha against Freddy in `exp/K4TQ_scaled.ipynb`. E (equal tandem) and C (compact) are the Stage 1 studies.
 
 ## Stage 2 — Parametric CAD and mechanical design
 *The selected configuration as a Dedalus/CadQuery assembly in three configurations, with the wing-root tilt-and-fold assembly designed as real hardware.*

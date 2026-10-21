@@ -58,6 +58,25 @@ CATALOGUE = {
                        "price_eur": 150.0, "source": "retailer listings: 63 mOhm, 170 g, 40 A / 180 s, 1000 W, 6-8S; I0 estimated (to verify)"},
         "MN505S-380": {"name": "T-Motor MN505-S KV380 (Navigator)", "kv": 380.0, "R_ohm": 0.028, "I0_A": 2.0, "I_max_A": 50.0, "mass_kg": 0.225,
                        "price_eur": 180.0, "source": "RobotShop / T-Motor store: 28 mOhm, 2.0 A idle at 15 V, 50 A / 180 s, 1200 W, 6S, 225 g"},
+        # K4TQ-B "Bertha" (the scaled design, 12S): the large multirotor / VTOL class — every value "to verify" on the datasheet
+        "U8L-150": {"name": "T-Motor U8 Lite KV150", "kv": 150.0, "R_ohm": 0.115, "I0_A": 0.7, "I_max_A": 30.0, "mass_kg": 0.244, "price_eur": 270.0,
+                    "source": "T-Motor U8 Lite class: 12S, 26–28\" props, ~244 g; R and I0 estimated (to verify)"},
+        "MN801S-150": {"name": "T-Motor MN801-S KV150 (Navigator)", "kv": 150.0, "R_ohm": 0.090, "I0_A": 0.9, "I_max_A": 40.0, "mass_kg": 0.320, "price_eur": 300.0,
+                       "source": "T-Motor MN801-S class: 12S, 26–30\" props, ~320 g; R and I0 estimated (to verify)"},
+        "U10II-100": {"name": "T-Motor U10 II KV100", "kv": 100.0, "R_ohm": 0.080, "I0_A": 0.9, "I_max_A": 45.0, "mass_kg": 0.410, "price_eur": 400.0,
+                      "source": "T-Motor U10 II class: 12S, 28–30\" props, ~410 g; R and I0 estimated (to verify)"},
+        "MN601S-180": {"name": "T-Motor MN601-S KV180 (Navigator)", "kv": 180.0, "R_ohm": 0.105, "I0_A": 0.7, "I_max_A": 30.0, "mass_kg": 0.200, "price_eur": 220.0,
+                       "source": "T-Motor MN601-S class: 12S, 20–22\" props, ~200 g; R and I0 estimated (to verify)"},
+        "MN701S-135": {"name": "T-Motor MN701-S KV135 (Navigator)", "kv": 135.0, "R_ohm": 0.095, "I0_A": 0.7, "I_max_A": 35.0, "mass_kg": 0.265, "price_eur": 260.0,
+                       "source": "T-Motor MN701-S class: 12S, 22–26\" props, ~265 g; R and I0 estimated (to verify)"},
+        "U12II-100": {"name": "T-Motor U12 II KV100", "kv": 100.0, "R_ohm": 0.040, "I0_A": 1.4, "I_max_A": 60.0, "mass_kg": 0.790, "price_eur": 620.0,
+                      "source": "T-Motor U12 II class: 12S, 28–32\" props, ~790 g, ~2.5 kW peak; R and I0 estimated (to verify)"},
+        "MN1005-90": {"name": "T-Motor MN1005 KV90 (Navigator)", "kv": 90.0, "R_ohm": 0.050, "I0_A": 1.2, "I_max_A": 50.0, "mass_kg": 0.560, "price_eur": 520.0,
+                      "source": "T-Motor MN1005 class: 12S, 28–32\" props, ~560 g; R and I0 estimated (to verify)"},
+        "U12II-120": {"name": "T-Motor U12 II KV120", "kv": 120.0, "R_ohm": 0.035, "I0_A": 1.6, "I_max_A": 60.0, "mass_kg": 0.790, "price_eur": 620.0,
+                      "source": "T-Motor U12 II class (KV120 winding): 12S, 28–30\" props, ~790 g; R and I0 estimated (to verify)"},
+        "U8II-170": {"name": "T-Motor U8 II KV170", "kv": 170.0, "R_ohm": 0.085, "I0_A": 0.8, "I_max_A": 35.0, "mass_kg": 0.250, "price_eur": 280.0,
+                     "source": "T-Motor U8 II class: 12S, 24–27\" props, ~250 g; R and I0 estimated (to verify)"},
     },
     "propeller": {   # diameter, pitch [in]; folding carbon-reinforced blades with a hub (mass per propeller incl. hub)
         "13x6.5": {"d_in": 13, "p_in": 6.5, "mass_kg": 0.032, "price_eur": 18.0, "source": "T-Motor T13x6.5 class (23.7 g fixed); folding hub +8 g"},
@@ -72,8 +91,23 @@ CATALOGUE = {
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
+        # K4TQ-B "Bertha": large carbon propellers on a folding hub (Mejzlik, CZ, makes this class in the EU) — "to verify"
+        "20x10": {"d_in": 20, "p_in": 10.0, "mass_kg": 0.085, "price_eur": 90.0, "source": "Mejzlik 20x10 carbon class + folding hub, to verify"},
+        "22x11": {"d_in": 22, "p_in": 11.0, "mass_kg": 0.100, "price_eur": 105.0, "source": "Mejzlik 22x11 carbon class + folding hub, to verify"},
+        "24x12": {"d_in": 24, "p_in": 12.0, "mass_kg": 0.115, "price_eur": 120.0, "source": "Mejzlik 24x12 carbon class + folding hub (~35 g), to verify"},
+        "26x13": {"d_in": 26, "p_in": 13.0, "mass_kg": 0.135, "price_eur": 140.0, "source": "Mejzlik 26x13 carbon class + folding hub, to verify"},
+        "27x14": {"d_in": 27, "p_in": 14.0, "mass_kg": 0.145, "price_eur": 150.0, "source": "Mejzlik 27x14 carbon class + folding hub, to verify"},
+        "28x14": {"d_in": 28, "p_in": 14.0, "mass_kg": 0.155, "price_eur": 160.0, "source": "Mejzlik 28x14 carbon class + folding hub, to verify"},
+        "24x15": {"d_in": 24, "p_in": 15.0, "mass_kg": 0.120, "price_eur": 125.0, "source": "Mejzlik 24x15 carbon class (cruise pitch, p/D 0.63 as K4TQ's 16x10) + folding hub, to verify"},
+        "26x16": {"d_in": 26, "p_in": 16.0, "mass_kg": 0.140, "price_eur": 145.0, "source": "Mejzlik 26x16 carbon class + folding hub, to verify"},
+        "28x17": {"d_in": 28, "p_in": 17.0, "mass_kg": 0.160, "price_eur": 165.0, "source": "Mejzlik 28x17 carbon class + folding hub, to verify"},
+        "30x18": {"d_in": 30, "p_in": 18.0, "mass_kg": 0.180, "price_eur": 185.0, "source": "Mejzlik 30x18 carbon class + folding hub, to verify"},
+        "32x16": {"d_in": 32, "p_in": 16.0, "mass_kg": 0.200, "price_eur": 200.0, "source": "Mejzlik 32x16 carbon class + folding hub, to verify"},
+        "30x15": {"d_in": 30, "p_in": 15.0, "mass_kg": 0.175, "price_eur": 180.0, "source": "Mejzlik 30x15 carbon class + folding hub, to verify"},
     },
     "esc": {"name": "40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)", "mass_kg": 0.028, "price_eur": 35.0, "source": "AIR 40A class, in the nacelle"},
+    "esc_hv": {"name": "60 A 12S FOC ESC (e.g. T-Motor ALPHA 60A HV / Hobbywing XRotor Pro HV)", "mass_kg": 0.075, "price_eur": 150.0,
+               "source": "12S 60 A class with the cooling fins in the nacelle's flow (K4TQ-B), to verify"},
     "battery": {   # Li-ion packs of Molicel P45B (og.batteries.CELLS: 4.5 Ah, 70 g per cell); +7 % for the BMS, wrap, leads
         "6S2P-P45B": {"cells_s": 6, "cells_p": 2, "capacity_ah": 9.0, "cell_v": 3.6, "mass_kg": 12 * 0.070 * 1.07, "max_A": 90.0, "price_eur": 160.0,
                       "source": "Molicel P45B (21700, 4.5 Ah, 45 A); pack assembly (spot welded, BMS balance leads)"},
@@ -110,18 +144,42 @@ CATALOGUE = {
         "temperature logger": {"mass_kg": 0.020, "price_eur": 60.0, "source": "independent logger with its own cell and flash, GNSS-timestamped, survives power loss (R7)"},
     },
     "root": {   # one wing root: the tilt drive and the fold hinge (Stage 2 designs it; these are the Stage 1 estimates)
-        "tilt servo": {"mass_kg": 0.062, "price_eur": 90.0, "source": "high-torque metal-gear digital servo, 30 kg·cm class (~2.9 N·m), standard 40 x 20 x 38 mm case"},
+        "tilt servo": {"mass_kg": 0.062, "price_eur": 90.0, "torque_Nm": 2.9, "source": "high-torque metal-gear digital servo, 30 kg·cm class (~2.9 N·m), standard 40 x 20 x 38 mm case"},
         "spur pair 16:48 m1.0": {"mass_kg": 0.018, "price_eur": 18.0, "source": "steel pinion on the servo spline + 7075/POM gear on the stub (catalogue spur gears, bored)"},
-        "bearings 6804-2RS (2)": {"mass_kg": 0.036, "price_eur": 10.0, "source": "20 x 32 x 7 deep groove, C 4.0 kN, C0 2.47 kN"},
+        "bearings 6804-2RS (2)": {"mass_kg": 0.036, "price_eur": 10.0, "C0_N": 2470.0, "source": "20 x 32 x 7 deep groove, C 4.0 kN, C0 2.47 kN"},
         "stub shaft + bearing block": {"mass_kg": 0.045, "price_eur": 45.0, "source": "7075 stub (Ø20 seats, Ø12 bore for the cables) + 7075 block bolted to the frame"},
-        "fold knuckles + pins": {"mass_kg": 0.035, "price_eur": 30.0, "source": "7075 inner/outer knuckles, Ø6 steel hinge pin, Ø6 hardened locking pin with spring and witness mark"},
+        "fold knuckles + pins": {"mass_kg": 0.035, "price_eur": 30.0, "pin_d_m": 0.006, "source": "7075 inner/outer knuckles, Ø6 steel hinge pin, Ø6 hardened locking pin with spring and witness mark"},
         "encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 magnetic encoder on the stub's inner end"},
         "fasteners + stops": {"mass_kg": 0.010, "price_eur": 5.0, "source": "hard stops −5° / 95°, M3/M4 A2-70, spar socket bond"},
+    },
+    "root_M": {   # the middle size (K4TQ-G "Ginna", or Bertha where it holds): estimates, to verify
+        "tilt servo": {"mass_kg": 0.110, "price_eur": 160.0, "torque_Nm": 6.5,
+                       "source": "high-torque digital servo, ~65 kg·cm class (~6.5 N·m), metal gears, 12S-capable BEC rail"},
+        "spur pair 16:48 m1.25": {"mass_kg": 0.035, "price_eur": 28.0, "source": "steel pinion + 7075 gear, m1.25"},
+        "bearings 6806-2RS (2)": {"mass_kg": 0.060, "price_eur": 14.0, "C0_N": 3600.0, "source": "30 x 42 x 7 deep groove, C0 ~3.6 kN (to verify)"},
+        "stub shaft + bearing block": {"mass_kg": 0.100, "price_eur": 65.0, "source": "7075 stub (Ø30 seats, Ø16 bore) + 7075 block"},
+        "fold knuckles + pins": {"mass_kg": 0.080, "price_eur": 45.0, "pin_d_m": 0.008, "source": "7075 knuckles, Ø8 hinge pin, Ø8 hardened locking pin"},
+        "encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 magnetic encoder"},
+        "fasteners + stops": {"mass_kg": 0.018, "price_eur": 8.0, "source": "hard stops, M4/M5 A4-80"},
+    },
+    "root_L": {   # one wing root of K4TQ-B "Bertha": the same architecture, the next hardware size up (estimates, to verify)
+        "tilt servo": {"mass_kg": 0.180, "price_eur": 250.0, "torque_Nm": 14.0,
+                       "source": "industrial brushless servo, ~140 kg·cm class (~14 N·m), CAN/RS485, metal case"},
+        "spur pair 16:48 m1.5": {"mass_kg": 0.060, "price_eur": 40.0, "source": "steel pinion + 7075 gear, m1.5"},
+        "bearings 6808-2RS (2)": {"mass_kg": 0.090, "price_eur": 20.0, "C0_N": 4500.0, "source": "40 x 52 x 7 deep groove, C0 ~4.5 kN (to verify)"},
+        "stub shaft + bearing block": {"mass_kg": 0.190, "price_eur": 90.0, "source": "7075 stub (Ø40 seats, Ø22 bore) + 7075 block"},
+        "fold knuckles + pins": {"mass_kg": 0.150, "price_eur": 70.0, "pin_d_m": 0.010, "source": "7075 knuckles, Ø10 hinge pin, Ø10 hardened locking pin"},
+        "encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 magnetic encoder"},
+        "fasteners + stops": {"mass_kg": 0.030, "price_eur": 12.0, "source": "hard stops, M5/M6 A4-80"},
     },
     "safety": {
         "recovery parachute": {"mass_kg": 0.160, "price_eur": 250.0, "source": "1 m² canopy + spring ejector (the four-rotor motor-out case; SORA mitigation)"},
     },
 }
+
+for _n in range(2, 9):                                           # K4TQ-B "Bertha": 12S·nP of the same cells
+    CATALOGUE["battery"][f"12S{_n}P-P45B"] = {"cells_s": 12, "cells_p": _n, "capacity_ah": 4.5 * _n, "cell_v": 3.6, "mass_kg": 12 * _n * 0.070 * 1.07,
+                                              "max_A": 45.0 * _n, "price_eur": 75.0 * _n + 40.0, "source": f"Molicel P45B 12S{_n}P (BMS, wrap, leads), to verify"}
 
 # areal and linear densities of the made parts (estimates, Stage 2 CAD replaces them)
 WING_AREAL_KG_M2 = 0.70           # glass/carbon skins on XPS foam, 12 % thick, both surfaces (without the spar)
@@ -131,7 +189,7 @@ NACELLE_KG = 0.022                # printed PA-CF nacelle with the ESC bay
 LEG_KG = 0.020
 WIRING_KG_M = 0.060               # one 6S power pair (2 × 14 AWG silicone) + a signal lead, per metre
 CARBON_TUBE = {"E": 80e9, "G": 4.5e9, "sigma_allow": 400e6, "rho": 1550.0, "source": "pultruded/roll-wrapped, as kestrel_structure.CARBON; G for torsion"}
-TUBES_MM = [(12, 10), (14, 12), (16, 14), (18, 16), (20, 18)]
+TUBES_MM = [(12, 10), (14, 12), (16, 14), (18, 16), (20, 18), (22, 20), (25, 22), (28, 25), (30, 27), (32, 29), (35, 32), (40, 36)]
 GROWTH_MARGIN = 0.07              # on the empty mass
 
 # ================================================================================================= the configurations
@@ -173,6 +231,9 @@ BASE = {
     "fin": True, "fin_area": None,    # None: the fin is sized by k4tq_sizing.directional (R9)
     "parachute": True,
     "autonomy": False,                # K4TQ-A2: the companion computer and the perception (CATALOGUE["autonomy"])
+    # K4TQ-B "Bertha": the scale of the airframe against K4TQ (``scaled``) and the hardware it takes
+    "scale": 1.0, "esc": "esc", "root_set": "root",
+    "made_calibration": None,         # {item prefix: CAD / estimate} — the made parts' estimates corrected by K4TQ-F1's CAD (Bertha has no CAD yet)
 }
 # Names (2026-10-21): the aircraft is K4TQ-A, "Cathy" (the larger rear wing — Stage 1's "B"); K4TQ-A2 is Cathy fully autonomous
 # (Stage 2's "AS"); E (equal tandem — Stage 1's "A") and C (compact) are the Stage 1 study configurations.
@@ -238,6 +299,35 @@ def params(variant: str = MAIN, **over) -> dict:
     elif p.get("cad_mass"):
         p.setdefault("cad_mass_status", "CAD (given)")
     return p
+
+
+LENGTH_KEYS = ("fuselage_length", "fuselage_width", "fuselage_height", "z_front", "z_rear", "span", "root_chord_front", "tip_chord_front",
+               "root_chord_rear", "tip_chord_rear", "root_gap", "root_length", "bearing_spacing", "stub_od", "gear_module", "hinge_pin_offset",
+               "lock_couple", "knuckle_spread", "motor_y", "prop_ahead_of_le", "leg_bottom_z", "cargo_box", "battery_box")
+
+
+def scaled(base_variant: str, s: float, **over) -> dict:
+    """The variant's changes with every length × ``s`` (the stations stay fractions of the fuselage): the geometry of
+    K4TQ-B "Bertha" and K4TQ-G "Ginna". The hardware (motor, propeller, pack, ESC, root parts) is chosen by the caller in
+    ``over``."""
+    base = {**BASE, **VARIANTS[base_variant]}
+    out = {k: (tuple(x * s for x in base[k]) if isinstance(base[k], tuple) else base[k] * s) for k in LENGTH_KEYS}
+    return {**VARIANTS[base_variant], **out, "scale": s, **over}
+
+
+# K4TQ-B "Bertha" and K4TQ-G "Ginna" (2026-10-21): Freddy scaled to a take-off mass limit (k4tq_scaled.size; ≤ 24 kg: the
+# 25 kg C-class line with a 1 kg margin; ≤ 12.5 kg) — the most payload on R3 with the hover rules and Freddy's stall speed
+MADE_CALIBRATION = {"wing root (tilt + fold)": 1.525, "wing panel": 1.026, "nacelle": 1.491, "fuselage shell + frames + hatch": 1.817, "fin (dorsal + ventral)": 1.612}      # K4TQ-F1's CAD / estimate for the made parts (no CAD of the scaled designs yet)
+SCALED = {
+    "B": dict(s=1.85, motor="U12II-100", prop="28x17", battery="12S4P-P45B", root_set="root_M", spar_tube_mm=(40, 36), payload_kg=5.15),
+    "G": dict(s=1.35, motor="U8II-170", prop="20x10", battery="12S3P-P45B", root_set="root", spar_tube_mm=(25, 22), payload_kg=2.6),
+}
+for _k, _v in SCALED.items():
+    _v = dict(_v)
+    _s = _v.pop("s")
+    VARIANTS[_k] = scaled("F1", _s, esc="esc_hv", made_calibration=MADE_CALIBRATION, variant=_k,
+                          title=f"K4TQ-{_k} \"{'Bertha' if _k == 'B' else 'Ginna'}\": K4TQ-F1 × {_s:g}, {_v['motor']} + {_v['prop']}, {_v['battery']}", **_v)
+NICKNAME.update({"B": "Bertha", "G": "Ginna"})
 
 
 def avionics_power(p: dict) -> float:
@@ -426,18 +516,21 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
         items.append({"item": name, "mass_kg": float(kg), "x": float(x), "y": float(y), "z": float(z), "group": group, "source": source})
 
     mot = cat["motor"][p["motor"]]
+    sc = p.get("scale", 1.0)                                      # K4TQ-B: the small made parts and the offsets grow with the airframe
+    esc = cat[p.get("esc", "esc")]
+    root = cat[p.get("root_set", "root")]
     od, idd = spar_tube(p)
     tube_kg_m = CARBON_TUBE["rho"] * math.pi / 4 * (od ** 2 - idd ** 2)
-    root_kg = sum(v["mass_kg"] for v in cat["root"].values())
+    root_kg = sum(v["mass_kg"] for v in root.values())
     for which in ("front", "rear"):
         w = L["wings"][which]
         for side in (-1, 1):
             s = "L" if side < 0 else "R"
             h = L["poses"][(which, side)]["cruise"]["hub"]
-            add(f"motor {which} {s}", mot["mass_kg"], h[0] + 0.03, h[1], h[2], "propulsion", mot["name"])
+            add(f"motor {which} {s}", mot["mass_kg"], h[0] + 0.03 * sc, h[1], h[2], "propulsion", mot["name"])
             add(f"propeller {which} {s}", pr["mass_kg"], h[0], h[1], h[2], "propulsion", pr["source"])
-            add(f"ESC {which} {s}", cat["esc"]["mass_kg"], h[0] + 0.07, h[1], h[2], "propulsion", cat["esc"]["name"])
-            add(f"nacelle {which} {s}", NACELLE_KG, h[0] + 0.06, h[1], h[2], "structure", "printed PA-CF")
+            add(f"ESC {which} {s}", esc["mass_kg"], h[0] + 0.07 * sc, h[1], h[2], "propulsion", esc["name"])
+            add(f"nacelle {which} {s}", NACELLE_KG * sc ** 2, h[0] + 0.06 * sc, h[1], h[2], "structure", "printed PA-CF")
             y_c = w["y_mac"]
             add(f"wing panel {which} {s}", WING_AREAL_KG_M2 * w["S_panel"], w["x_pivot"] + (0.42 - w["pivot_chord"]) * w["mac"], side * y_c, w["z"], "structure",
                 f"{WING_AREAL_KG_M2} kg/m² composite")
@@ -445,24 +538,24 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
             add(f"spar {which} {s}", tube_kg_m * spar_len, w["x_pivot"], side * (w["y0"] + w["semi_span"] / 2), w["z"], "structure",
                 f"carbon tube Ø{od * 1e3:.0f}×{idd * 1e3:.0f}")
             add(f"wing root (tilt + fold) {which} {s}", root_kg, w["x_pivot"], side * (w["y_hinge"] + p["root_length"] / 2), w["z"], "roots",
-                " + ".join(cat["root"]))
-            add(f"power wiring {which} {s}", WIRING_KG_M * (p["motor_y"] + 0.25), 0.5 * (w["x_pivot"] + L["fuselage_length"] * 0.5), side * p["motor_y"] / 2, 0.0, "systems")
+                " + ".join(root))
+            add(f"power wiring {which} {s}", WIRING_KG_M * (p["motor_y"] + 0.25 * sc), 0.5 * (w["x_pivot"] + L["fuselage_length"] * 0.5), side * p["motor_y"] / 2, 0.0, "systems")
     # fuselage: an ellipsoid-ended cylinder's wetted area
     Lf, bw, bh = L["fuselage_length"], p["fuselage_width"], p["fuselage_height"]
     S_wet_f = math.pi * math.sqrt((bw ** 2 + bh ** 2) / 2) * Lf * 0.78
     add("fuselage shell + frames + hatch", FUSELAGE_AREAL_KG_M2 * S_wet_f, 0.47 * Lf, 0, 0, "structure", f"{FUSELAGE_AREAL_KG_M2} kg/m² on {S_wet_f:.2f} m²")
     for (x, side) in ((L["wings"]["front"]["x_pivot"], -1), (L["wings"]["front"]["x_pivot"], 1), (L["wings"]["rear"]["x_pivot"], -1), (L["wings"]["rear"]["x_pivot"], 1)):
-        add(f"leg {'front' if x < 0.5 * Lf else 'rear'} {'L' if side < 0 else 'R'}", LEG_KG, x, side * 0.06, 0.5 * (p["leg_bottom_z"] - bh / 2), "structure")
+        add(f"leg {'front' if x < 0.5 * Lf else 'rear'} {'L' if side < 0 else 'R'}", LEG_KG * sc ** 2, x, side * 0.06 * sc, 0.5 * (p["leg_bottom_z"] - bh / 2), "structure")
     if p["fin"]:
-        S_fin = p["fin_area"] if p["fin_area"] else 0.030
+        S_fin = p["fin_area"] if p["fin_area"] else 0.030 * sc ** 2
         add("fin (dorsal + ventral)", FIN_AREAL_KG_M2 * S_fin, 0.93 * Lf, 0, 0.0, "structure", "sized by the directional stability")
     x_cargo = p["cargo_station"] * Lf
     for k, v in cat["cargo"].items():
-        add(k, v["mass_kg"], x_cargo, 0, 0.005, "cargo", v["source"])
+        add(k, v["mass_kg"] * (sc ** 2 if k == "insulated cartridge" else 1.0), x_cargo, 0, 0.005, "cargo", v["source"])
     add("payload", p["payload_kg"] if payload_kg is None else payload_kg, x_cargo, 0, 0.005, "payload", "medical load (R2)")
     for i, (k, v) in enumerate(cat["avionics"].items()):
-        add(k, v["mass_kg"], p["avionics_station"] * Lf + 0.012 * (i - 3), 0, 0.0, "avionics", v["source"])       # the tail bay behind the rear station (Stage 2 packing)
-    add("servo and signal wiring", 0.050, 0.5 * Lf, 0, 0, "systems")
+        add(k, v["mass_kg"], p["avionics_station"] * Lf + 0.012 * sc * (i - 3), 0, 0.0, "avionics", v["source"])       # the tail bay behind the rear station (Stage 2 packing)
+    add("servo and signal wiring", 0.050 * sc, 0.5 * Lf, 0, 0, "systems")
     if p.get("autonomy"):                                         # K4TQ-A2
         auto = cat["autonomy"]
         x_f = L["wings"]["front"]["x_pivot"]
@@ -472,7 +565,7 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
         for k, v in auto.items():
             add(k, v["mass_kg"], stations[k][0], 0, stations[k][1], "autonomy", v["source"])
     if p["parachute"]:
-        add("recovery parachute", cat["safety"]["recovery parachute"]["mass_kg"], p["parachute_station"] * Lf, 0, 0.0, "safety", cat["safety"]["recovery parachute"]["source"])
+        add("recovery parachute", cat["safety"]["recovery parachute"]["mass_kg"] * sc ** 3, p["parachute_station"] * Lf, 0, 0.0, "safety", cat["safety"]["recovery parachute"]["source"])
     cad = p.get("cad_mass") or {}
     if cad:                                                      # Stage 2.8: the CAD's masses replace the estimates, item by item
         for i in items:
@@ -480,11 +573,17 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
                 if i["item"].startswith(prefix):
                     i["source"] = f"CAD ({i['mass_kg'] * 1e3:.0f} g estimated → {kg * 1e3:.0f} g): " + i.get("source", "")
                     i["mass_kg"] = float(kg)
+    elif p.get("made_calibration"):                              # K4TQ-B: the estimates corrected as K4TQ-F1's CAD corrected its own
+        for i in items:
+            for prefix, f in p["made_calibration"].items():
+                if i["item"].startswith(prefix):
+                    i["source"] = f"estimate × {f:.2f} (CAD/estimate of K4TQ-F1): " + i.get("source", "")
+                    i["mass_kg"] *= float(f)
     empty = sum(i["mass_kg"] for i in items if i["group"] not in ("payload",))
     add("growth margin", GROWTH_MARGIN * empty, x_cargo, 0, 0, "margin", f"{GROWTH_MARGIN:.0%} of the empty mass")
     b = CATALOGUE["battery"][battery_key or p["battery"]]
     if p.get("battery_x"):                                       # Stage 2: two parallel half-packs at stations set by k4tq_sizing.pack
-        hx, hy, hz = battery_half_box(battery_key or p["battery"])
+        hx, hy, hz = battery_half_box(battery_key or p["battery"], across_of(p))
         for name, fx in zip(("A (nose)", "B (mid)"), p["battery_x"]):
             items.append({"item": f"battery {name} {battery_key or p['battery']} half", "mass_kg": b["mass_kg"] / 2, "x": fx * Lf, "y": 0.0,
                           "z": -p["fuselage_height"] / 2 + 0.010 + hz / 2, "group": "battery", "source": b["source"] + " — half of the pack, in parallel",
@@ -495,17 +594,23 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
     mx = sum(i["mass_kg"] * i["x"] for i in items)
     bay = (p["battery_bay"][0] * Lf, p["battery_bay"][1] * Lf)
     xb, clipped = og_mass.place_mass_for_cg(m, mx, b["mass_kg"], target, bay)
-    items.append({"item": f"battery {battery_key or p['battery']}", "mass_kg": b["mass_kg"], "x": xb, "y": 0.0, "z": -0.035, "group": "battery",
+    items.append({"item": f"battery {battery_key or p['battery']}", "mass_kg": b["mass_kg"], "x": xb, "y": 0.0, "z": -0.035 * sc, "group": "battery",
                   "source": b["source"], "clipped": clipped})
     return items
 
 
-def battery_half_box(key: str) -> tuple:
-    """The outer size [m] of one half-pack: its cells standing (21700: Ø21.5 × 70 mm, + wrap and BMS lead), three across."""
+def across_of(p: dict) -> int:
+    """Cells side by side across the fuselage floor: three in K4TQ, as many as the wider floor takes when scaled."""
+    return max(3, int((p["fuselage_width"] - 0.075) / 0.0215)) if p.get("scale", 1.0) > 1.0 else 3
+
+
+def battery_half_box(key: str, across: int = 3) -> tuple:
+    """The outer size [m] of one half-pack: its cells standing (21700: Ø21.5 × 70 mm, + wrap and BMS lead), ``across``
+    side by side."""
     bt = CATALOGUE["battery"][key]
     n = bt["cells_s"] * bt["cells_p"] // 2
-    nx = math.ceil(n / 3)
-    return (0.0215 * nx + 0.004, 0.0645 + 0.004, 0.074)
+    nx = math.ceil(n / across)
+    return (0.0215 * nx + 0.004, 0.0215 * across + 0.004, 0.074)
 
 
 def cg_inertia(items: list[dict]) -> dict:
@@ -535,10 +640,10 @@ def price(items: list[dict], p: dict) -> dict:
     """The bought parts' cost (EUR, estimates) — the made parts in Stage 4."""
     c = CATALOGUE
     rows = {"motors": 4 * c["motor"][p["motor"]]["price_eur"], "propellers (+2 spares)": 6 * c["propeller"][p["prop"]]["price_eur"],
-            "ESCs": 4 * c["esc"]["price_eur"], "battery": c["battery"][p["battery"]]["price_eur"],
+            "ESCs": 4 * c[p.get("esc", "esc")]["price_eur"], "battery": c["battery"][p["battery"]]["price_eur"],
             "avionics": sum(v["price_eur"] for v in c["avionics"].values()), "cargo + temperature logging": sum(v["price_eur"] for v in c["cargo"].values()),
             **({"autonomy (K4TQ-A2)": sum(v["price_eur"] for v in c["autonomy"].values())} if p.get("autonomy") else {}),
-            "wing roots (4)": 4 * sum(v["price_eur"] for v in c["root"].values())}
+            "wing roots (4)": 4 * sum(v["price_eur"] for v in c[p.get("root_set", "root")].values())}
     if p["parachute"]:
         rows["parachute"] = c["safety"]["recovery parachute"]["price_eur"]
     rows["total bought"] = sum(rows.values())

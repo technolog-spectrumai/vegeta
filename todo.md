@@ -84,6 +84,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] K4.7 Wing sections by flight phase (NeuralFoil, `designs/k4tq_sections.py`, `exp/K4TQ_airfoils.ipynb`): front NACA 4415, rear NACA 2415 → K4TQ-F1 "Freddy" / F2; the four designs compared in `exp/K4TQ_compare.ipynb`
 - [ ] K4.8 K4TQ-A1 / A2 (NACA 2412 front) leave 14.4 mm of section depth at the 120 mm front tip chord for a Ø16 spar that needs 18 mm: adopt K4TQ-F1's (Freddy's) sections, or taper the spar to Ø12 at the tip (Stage 4 structure decides)
 - [ ] K4.9 Run the section CFD check (`exp/K4TQ_airfoils.ipynb`, DEBUG = False, ~30–45 min) — confirm NeuralFoil's ranking before freezing Freddy
+- [ ] K4.11 K4TQ-G "Ginna" / K4TQ-B "Bertha" (`dev_kestrel5`): the CAD of the scaled roots and packing (the render's checks flag the frame/gear and the cartridge envelopes sized for Freddy), the transition corridor at the new scale, datasheets for the 12S motors (U8 II, U12 II) and the Mejzlik propellers, Bertha's thin R3 margin (≈6 Wh), the operation category (Bertha: specific category)
 - [-] K4.10 K4TQ-D1 "Dorothy" (the powered in-flight fold for smoke zones): studied on branch `dev_kestrel4`, rejected 2026-10-21 — +0.66 kg (D2 ~+0.95 kg) for a 20–30° tuck; see `rejected.md`
 - [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
 

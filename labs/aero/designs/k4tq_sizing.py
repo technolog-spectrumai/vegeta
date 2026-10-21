@@ -120,11 +120,15 @@ def _boreas_parts(p: dict, prop_key: str | None = None, motor_key: str | None = 
     return prop, boreas.Airfoil(), motor
 
 
-def drive(p: dict, *, prop_key: str | None = None, motor_key: str | None = None, cells: int = 6, v_cell: float = V_BATT_LOADED,
+def drive(p: dict, *, prop_key: str | None = None, motor_key: str | None = None, cells: int | None = None, v_cell: float = V_BATT_LOADED,
           V=tuple(range(0, 34, 2))) -> PropulsionMap:
     """The drive (one propeller on one motor) as an ``og.propulsion.PropulsionMap`` over airspeed × rpm from Boreas's
-    BEMT and the first-order motor, at the loaded pack voltage; cached in ``data/k4tq/`` per components and mode."""
+    BEMT and the first-order motor, at the loaded pack voltage (``cells`` in series: the pack's); cached in
+    ``data/k4tq/`` per components and mode."""
     prop_key, motor_key = prop_key or p["prop"], motor_key or p["motor"]
+    cells = cells or k4tq.CATALOGUE["battery"][p["battery"]]["cells_s"]
+    if p.get("scale", 1.0) > 1.0:                                        # K4TQ-B flies faster: the map to 44 m/s
+        V = tuple(range(0, 46, 2))
     return _drive(prop_key, motor_key, cells, v_cell, tuple(V), mocked())
 
 
@@ -286,16 +290,17 @@ def drag_buildup(L: dict, *, V: float = 20.0, n_running: int = 4) -> dict:
     fr = Lf / d
     S_wet = math.pi * math.sqrt((bw ** 2 + bh ** 2) / 2) * Lf * 0.78
     rows["fuselage"] = og_aero.cf_mixed(V * Lf / NU) * (1 + 60 / fr ** 3 + fr / 400) * S_wet
-    dn, ln = 0.045, 0.15
+    sc = p.get("scale", 1.0)
+    dn, ln = 0.045 * sc, 0.15 * sc
     rows["nacelles (4)"] = 4 * (og_aero.cf_mixed(V * ln / NU) * 1.25 * math.pi * dn * ln + 0.05 * math.pi * dn ** 2 / 4)
     leg_h = -p["leg_bottom_z"] - bh / 2
-    rows["legs (4, faired)"] = 4 * 0.12 * 0.010 * leg_h
+    rows["legs (4, faired)"] = 4 * 0.12 * 0.010 * sc * leg_h
     if p["fin"]:
-        S_fin = p["fin_area"] or 0.030
+        S_fin = p["fin_area"] or 0.030 * sc ** 2
         rows["fin"] = og_aero.cf_mixed(V * math.sqrt(S_fin) / NU) * 1.15 * 2.04 * S_fin
-    rows["root gaps (4)"] = 4 * ROOT_GAP_CDA
+    rows["root gaps (4)"] = 4 * ROOT_GAP_CDA * sc ** 2
     if n_running < 4:
-        rows[f"stopped propellers ({4 - n_running}, folded)"] = (4 - n_running) * FOLDED_BLADE_CDA
+        rows[f"stopped propellers ({4 - n_running}, folded)"] = (4 - n_running) * FOLDED_BLADE_CDA * sc ** 2
     total = sum(rows.values()) * INTERFERENCE
     return {"parts_m2": rows, "CdA_m2": total, "Cd0": total / L["S_ref"], "S_wet_fuselage": S_wet, "label": "ESTIMATE"}
 
@@ -305,6 +310,15 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
     """Layout, the lattice, the mass table with the battery placed for the stability's CG target (two passes: the fin
     area from the directional stability changes the mass), the stall rule, the polar."""
     p = k4tq.params(variant, **over)
+    if p.get("spar_tube_mm") == "auto":                                # K4TQ-B: the spar from the root loads (Ø16×14 first, then what they choose)
+        tube = (16, 14)
+        for _ in range(4):
+            v = vehicle(variant, **{**over, "spar_tube_mm": tube})
+            od, idd = (int(x) for x in root_loads(v)["spar chosen"].lstrip("Ø").split("×"))
+            if (od, idd) == tuple(tube):
+                return v
+            tube = (od, idd)
+        return v
     L = k4tq.layout(p)
     a = tandem(L)
     sec = sections(p)
@@ -340,22 +354,23 @@ def pack(p: dict, target: float, gap: float = 0.005) -> dict:
     its station), bounded by the front station's servo and the rear station's frame. Returns the parameters with
     ``battery_x``, ``cargo_station``, ``parachute_station`` and ``avionics_station`` set."""
     Lf = p["fuselage_length"]
+    sc = p.get("scale", 1.0)
     cx = p["cargo_box"][0]
-    hx = k4tq.battery_half_box(p["battery"])[0]
+    hx = k4tq.battery_half_box(p["battery"], k4tq.across_of(p))[0]
     L = k4tq.layout(p)
     x_f, x_r = L["wings"]["front"]["x_pivot"], L["wings"]["rear"]["x_pivot"]
-    xa = x_f - 0.032 - gap - hx / 2
-    lo = x_f + 0.050 + hx / 2                                       # half B behind the front servo
-    span = hx / 2 + gap + cx + 0.040 + 0.035                        # half B's centre to the parachute's aft face
-    hi = x_r - 0.035 - span
+    xa = x_f - 0.032 * sc - gap - hx / 2
+    lo = x_f + 0.050 * sc + hx / 2                                  # half B behind the front servo
+    span = hx / 2 + gap + cx + 0.040 * sc + 0.035 * sc              # half B's centre to the parachute's aft face
+    hi = x_r - 0.035 * sc - span
 
     def stations(sb):
         xc = sb + hx / 2 + gap + cx / 2
-        x_tail = x_r + 0.050 + 0.055                                        # the tail bay behind the rear station
+        x_tail = x_r + (0.050 + 0.055) * sc                                       # the tail bay behind the rear station
         if p.get("autonomy"):                                               # K4TQ-A2: the companion first (the wider section), the avionics behind it
-            return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf,
-                        companion_station=x_tail / Lf, avionics_station=(x_tail + 0.097) / Lf)
-        return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf, avionics_station=x_tail / Lf)
+            return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040 * sc) / Lf,
+                        companion_station=x_tail / Lf, avionics_station=(x_tail + 0.097 * sc) / Lf)
+        return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040 * sc) / Lf, avionics_station=x_tail / Lf)
     sb = lo
     for _ in range(3):
         q = stations(sb)
@@ -769,7 +784,9 @@ def root_loads(veh: dict) -> dict:
     b = w["semi_span"]
     share_f = veh["stall"]["front share at trim"]
     cat = k4tq.CATALOGUE
-    m_tip = cat["motor"][p["motor"]]["mass_kg"] + L["prop"]["mass_kg"] + cat["esc"]["mass_kg"] + k4tq.NACELLE_KG
+    sc = p.get("scale", 1.0)
+    root = cat[p.get("root_set", "root")]
+    m_tip = cat["motor"][p["motor"]]["mass_kg"] + L["prop"]["mass_kg"] + cat[p.get("esc", "esc")]["mass_kg"] + k4tq.NACELLE_KG * sc ** 2
     m_panel = k4tq.WING_AREAL_KG_M2 * w["S_panel"]
     r_mot = p["motor_y"] - w["y_hinge"]
     T_max = max_thrust(veh["drive"], 0.0)
@@ -788,8 +805,8 @@ def root_loads(veh: dict) -> dict:
     aero_cruise = q_max * w["S_panel"] * c * (abs(sec["cm0"]) + 0.6 * abs(w["pivot_chord"] - 0.25))
     q_tr = 0.5 * RHO * 14.0 ** 2
     aero_transition = q_tr * w["S_panel"] * c * 1.2 * 0.15                         # CN 1.2 with the centre of pressure at 0.40 c
-    mass_offset = N_LIMIT * G * (m_panel + m_tip) * 0.010                         # the panel + nacelle CG within 10 mm of the axis
-    thrust_offset = T_max * 0.003                                                  # thrust line within 3 mm of the axis
+    mass_offset = N_LIMIT * G * (m_panel + m_tip) * 0.010 * sc                        # the panel + nacelle CG within 10 mm of the axis
+    thrust_offset = T_max * 0.003 * sc                                                 # thrust line within 3 mm of the axis
     I_p = L["prop"]["mass_kg"] * L["prop"]["D"] ** 2 / 12 + 0.6e-4                  # propeller + motor bell
     omega = veh["drive"].at(0.0, 1.0)["rpm"] * 2 * math.pi / 60
     gyro = I_p * omega * 1.0                                                       # 1 rad/s aircraft yaw rate in cruise (H ⟂ tilt axis)
@@ -800,8 +817,11 @@ def root_loads(veh: dict) -> dict:
               "thrust-line offset": thrust_offset, "gyroscopic (1 rad/s yaw)": gyro, "tilt acceleration": accel}
     T_flight = max(aero_cruise, aero_transition) + mass_offset + thrust_offset + gyro + accel
     T_design = max(ULTIMATE * T_flight, handling)
-    servo = cat["root"]["tilt servo"]
-    servo_Nm, ratio = 2.9, p["z_gear"] / p["z_pinion"]
+    servo = root["tilt servo"]
+    servo_Nm, ratio = servo["torque_Nm"], p["z_gear"] / p["z_pinion"]
+    bearing = next(v for k, v in root.items() if k.startswith("bearings"))
+    C0 = bearing["C0_N"]
+    pin_r = next(v for k, v in root.items() if k.startswith("fold knuckles"))["pin_d_m"] / 2
     # the stub's two 6804 bearings (``bearing_spacing`` apart) take the root moment as a couple
     s_b = p["bearing_spacing"]
     F_bearing = M_ult / s_b + shear_ult / 2
@@ -840,9 +860,9 @@ def root_loads(veh: dict) -> dict:
             "root moment ultimate [N·m]": M_ult, "root shear ultimate [N]": shear_ult, "actuator torque budget (limit) [N·m]": budget,
             "actuator design torque [N·m]": T_design, "ground handling torque [N·m]": handling,
             "actuator available at the spar [N·m]": servo_Nm * ratio, "actuator reserve": servo_Nm * ratio / T_design, "actuator": servo["source"] + f", {ratio:g}:1",
-            "bearing radial (ultimate) [N]": F_bearing, "bearing static rating C0 [N]": 2470.0, "bearing static reserve": 2470.0 / F_bearing,
+            "bearing radial (ultimate) [N]": F_bearing, "bearing static rating C0 [N]": C0, "bearing static reserve": C0 / F_bearing,
             "fold lug force from the thrust (ultimate) [N]": F_lug, "locking pin force from the lift (ultimate) [N]": F_latch,
-            "locking pin shear stress, Ø6 double shear [MPa]": F_latch / (2 * math.pi * 0.003 ** 2) / 1e6,
+            "locking pin shear stress, double shear [MPa]": F_latch / (2 * math.pi * pin_r ** 2) / 1e6,
             "fold latch": "the locking pin carries the lift moment as a couple with the hinge pin: a structural pin in double shear, not a detent",
             "spar tubes": tdf, "spar chosen": chosen, "drive stiffness required [N·m/rad]": k_drive, "wing pitch mode on the drive [Hz]": f_pitch,
             "hover 1P [Hz]": rpm_h / 60, "divergence speed of the all-moving wing [m/s]": math.sqrt(2 * q_div / RHO) if math.isfinite(q_div) else math.inf,
