@@ -95,7 +95,9 @@ def _single(m, *, name: str, robot, prop, grid: dict, motor: dict, battery_v: fl
     red = {"prop": lp.reduced(grid, rpm=rpm_full, taken_at=f"static, full throttle ({rpm_full:g} rpm)", tau_up=tau_up,
                               tau_down=(2 * tau_up) if tau_up else None, check=(rpm_full, cruise))}
     rot = lp.rotor("prop", pos_w, axis_w, SPIN[name], entry["name"], mot["name"], link=robot.root.name)
-    return {"propulsion": lp.block([rot], [entry], [mot], reduced=red, source=f"{source}; {SPIN_SOURCE}")}
+    return {"propulsion": lp.block([rot], [entry], [mot], reduced=red, source=f"{source}; {SPIN_SOURCE}"),
+            "tags": {"data:propulsion/propellers*": "boreas", "data:propulsion/motors*": "fitted",     # the design's own tags
+                     "data:propulsion/rotors*": "assumed", "data:propulsion/reduced*": "assumed"}}
 
 
 def nisus(m) -> dict:
