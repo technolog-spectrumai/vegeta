@@ -223,3 +223,48 @@ def test_gazebo_plugins_and_sensors_survive_sdf_and_are_reported_elsewhere(tmp_p
     assert cam.get("type") == "camera" and cam.find("topic").text == "camera/image_raw"
     rep = yax.convert(src, tmp_path / "twins.xml")
     assert any("machine data 'sdf'" in d for d in rep.dropped) and any("link base: sdf data (1 sensor)" in d for d in rep.dropped)
+
+
+def test_sync_takes_only_the_mapped_physics(tmp_path):
+    """yax.sync: a design (USD with part data) updates a Gazebo model's masses, poses and plugin constants; sensors,
+    plugins, comments and every unmapped value stay; check mode reports drift before and nothing after."""
+    import xml.etree.ElementTree as ET
+    from yax.hub import Joint, Link, Machine
+    target = tmp_path / "twins.sdf"
+    target.write_text("<?xml version=\"1.0\"?>\n<!-- the team's header comment -->\n" + (HERE / "fixtures" / "twins.sdf").read_text().split("?>", 1)[1])
+    d = Machine("quad", links=[Link("frame", pos=(1.0, 2.0, 0.5), mass=1.4, com=(0.01, 0, 0), inertia=np.diag([0.02, 0.03, 0.04])),
+                                Link("prop_a", pos=(1.12, 2.12, 0.53), mass=0.008, inertia=np.diag([1e-6, 1e-6, 2e-6]))],
+                joints=[Joint("spin_a", "continuous", "frame", "prop_a", pos=(1.12, 2.12, 0.53), axis=(0, 0, 1))],
+                data={"ogma": {"rotors": [{"kF": 1.2e-5, "pos": [1.12, 2.12, 0.53]}]}})
+    yax.save(d, tmp_path / "quad.usda")
+    mp = {"design_root": "frame", "target_root": "base",
+          "links": {"frame": "base", "prop_a": "rotor_0"}, "joints": {"spin_a": "r0"}, "take": ["mass", "poses", "axes"],
+          "values": [{"target": "plugin[jointName='r0']/motorConstant", "from": "data.ogma.rotors.0.kF"}]}
+    before = yax.sync(tmp_path / "quad.usda", target, mapping=mp, check=True)
+    assert any("link base mass: 1.0 → 1.4" in c for c in before.changes) and any("motorConstant" in c for c in before.changes)
+    assert target.read_text().count("1.2e-05") == 0                         # check mode writes nothing
+    rep = yax.sync(tmp_path / "quad.usda", target, mapping=mp)
+    assert rep.changes == before.changes and rep.dropped == []
+    assert yax.sync(tmp_path / "quad.usda", target, mapping=mp, check=True).changes == []
+    text = target.read_text()
+    assert "<!-- the team's header comment -->" in text
+    model = ET.fromstring(text).find("model")
+    assert model.find("plugin/motorConstant").text == "1.2e-05"
+    assert model.find("link[@name='base']/sensor/topic").text == "camera/image_raw"            # behaviour untouched
+    assert model.find("link[@name='rotor_1']/inertial/mass").text.strip() == "0.05"           # unmapped untouched
+    pose = [float(x) for x in model.find("link[@name='rotor_0']/pose").text.split()]
+    np.testing.assert_allclose(pose[:3], [0.12, 0.12, 0.03], atol=1e-12)                       # relative to the root
+    m, _ = yax.read(target)
+    assert m.link("base").mass == 1.4 and m.link("rotor_0").mass == 0.008
+
+
+def test_lump_keeps_the_rigid_body():
+    """hub.lump: the rover as one rigid link has the compiled whole body's mass, centre and inertia at q = 0."""
+    m, _ = yax.read(ROVER)
+    one = hub.lump(m)
+    assert len(one.links) == 1 and not one.joints and len(one.links[0].shapes) == sum(len(lk.shapes) for lk in m.links)
+    model, data = _compiled(ROVER)
+    mujoco.mj_forward(model, data)
+    assert one.links[0].mass == pytest.approx(model.body_subtreemass[1], rel=1e-12)
+    com = np.asarray(one.links[0].pos) + hub.R(one.links[0].quat) @ np.asarray(one.links[0].com)
+    np.testing.assert_allclose(com, data.subtree_com[1], atol=1e-12)

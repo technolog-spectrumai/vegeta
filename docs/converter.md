@@ -55,3 +55,10 @@ silently.
 | Yax 1 package (`yax.json` + STL) | ✓ | — | legacy reader |
 
 Engines (`mujoco`, `cadquery`, `jsbsim`) are imported only by the format that needs them.
+
+## Sync: physics across team boundaries
+
+`yax.sync(design, target_sdf, mapping=…)` takes the physical numbers a map names from a design (any format; USD carries
+part data too) into an SDF another team owns, and nothing else: link masses, centres and inertias, link poses (relative
+to the mapped root links), joint axes and positions, single values inside plugins. The report lists every changed
+value (old → new); `check=True` writes nothing — a non-empty report is drift. The file's prolog and comments survive.

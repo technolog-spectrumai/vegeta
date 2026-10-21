@@ -14,7 +14,8 @@ from .package import Design, Invalid, check, describe, load, write
 from . import hub, stl, units
 from .convert import FORMATS, convert, detect, info, read, save, to_stage
 from .hub import Joint, Link, Machine, Report, Shape
+from .sync import sync
 
 __all__ = ["BODY", "NAME", "VERSION", "Design", "Invalid", "canonical", "check", "describe", "identity", "load",
            "stl", "units", "validate", "write", "hub", "FORMATS", "convert", "detect", "info", "read", "save", "to_stage",
-           "Joint", "Link", "Machine", "Report", "Shape"]
+           "Joint", "Link", "Machine", "Report", "Shape", "sync"]

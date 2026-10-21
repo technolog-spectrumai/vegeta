@@ -19,6 +19,19 @@ yax convert rover.xml rover.sdf        # or: python -m yax convert …
 yax show rover.sdf                     # links, joints, mass
 ```
 
+**Two teams, one machine — `yax sync`.** The designers' file and the simulation team's model live in their own feedback
+loops; the physical numbers the simulation takes from the design are synced explicitly, everything else stays the
+team's own:
+
+```bash
+yax sync design.usda models/drone/model.sdf --map drone.map.json           # rewrite only the mapped fields, report each
+yax sync design.usda models/drone/model.sdf --map drone.map.json --check   # CI: exit 1 when the model has drifted
+```
+
+The map names the links (masses, centres, inertias, poses), joints (axes, positions) and single values inside plugins
+(e.g. a motor model's `motorConstant` from the design's part data); sensors, controllers, topics, gains and comments are
+never touched (`src/yax/sync.py` documents the map).
+
 | Format | Read | Write | Checked by |
 |---|---|---|---|
 | USD | ✓ | ✓ | exact round trips (double-precision copies of USD's float attributes) |

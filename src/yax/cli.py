@@ -18,6 +18,12 @@ def main(argv=None) -> int:
     c.add_argument("--from", dest="src_fmt")
     c.add_argument("--to", dest="dst_fmt")
     sub.add_parser("show", help="links, joints and mass of a machine file").add_argument("file")
+    y = sub.add_parser("sync", help="take a design's physical numbers into an SDF model (only what the map names)")
+    y.add_argument("design")
+    y.add_argument("target")
+    y.add_argument("--map", required=True, dest="mapping")
+    y.add_argument("--check", action="store_true", help="write nothing; exit 1 if the model has drifted")
+    y.add_argument("--out", help="write here instead of in place")
     sub.add_parser("check", help="validate packages").add_argument("dirs", nargs="+")
     sub.add_parser("info", help="print a package's manifest summary").add_argument("dir")
     a = ap.parse_args(argv)
@@ -25,6 +31,11 @@ def main(argv=None) -> int:
         from .convert import convert
         print(convert(a.src, a.dst, src_fmt=a.src_fmt, dst_fmt=a.dst_fmt))
         return 0
+    if a.cmd == "sync":
+        from .sync import sync
+        rep = sync(a.design, a.target, mapping=a.mapping, check=a.check, out=a.out)
+        print(rep)
+        return 1 if a.check and (rep.changes or rep.dropped) else 0
     if a.cmd == "show":
         from .convert import info
         print(info(a.file))
