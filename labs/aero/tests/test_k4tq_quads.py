@@ -15,3 +15,10 @@ def test_quads_against_cathy():
     qh = kq.quad_same_mass("Q-17 heavy", "17x5.8", k4)
     assert qh["mass [kg]"] <= k4["mass"]["mass_kg"] and qh["pack"] != k4["p"]["battery"]
     assert qh["mission radius [km]"] > q17["mission radius [km]"]
+
+
+def test_fpv15_reference():
+    f0, f2 = kq.fpv15(0.0), kq.fpv15(2.0)
+    assert 1.8 < f0["mass with the pack [kg]"] < 3.0 and f0["T/W"] > 3.0
+    assert 25.0 < f0["max speed [m/s]"] <= 45.0                      # vendors list 90–150 km/h for the class
+    assert f2["hover minutes"] < f0["hover minutes"] and f2["max speed [m/s]"] <= f0["max speed [m/s]"]
