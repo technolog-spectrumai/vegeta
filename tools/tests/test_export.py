@@ -1,8 +1,13 @@
-"""V6.3: a machine leaves Vegeta only as standard files written through Yax (``designs/export.py``)."""
+"""V6.3: a machine leaves Vegeta only as standard files written through Yax (``tools/export.py``), from what the labs
+register (``vegeta.labkit.machines``)."""
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 yax = pytest.importorskip("yax")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import export  # noqa: E402
 
 
@@ -34,7 +39,7 @@ def test_unknown_machine_is_refused():
         export.machine("no_such_machine")
 
 
-@pytest.mark.parametrize("name", sorted(set(export.MACHINES) - {"drongo"}))
+@pytest.mark.parametrize("name", sorted(set(export.registry().names()) - {"drongo"}))
 def test_every_machine_goes_through_yax(name, tmp_path):
     m, _ = export.machine(name)
     assert m.links and all(lk.mass is None or lk.mass >= 0 for lk in m.links)

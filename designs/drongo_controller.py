@@ -38,7 +38,7 @@ import numpy as np
 from vegeta.chiron import Command
 
 import drongo_robot as dr
-from onager_controller import Phase, smooth
+from vegeta.labkit.control import Phase, smooth
 
 __all__ = ["Ref", "Profile", "Flight", "Mission", "Plan", "delivery", "Phase", "smooth", "quat_to_R"]
 

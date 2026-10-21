@@ -29,7 +29,8 @@ so each cell runs and its tables fill, but the numbers mean nothing:
 - Transitions (``vegeta.aeromant.transitions.simulate``): time step 0.02 s instead of 0.002 s, holds of 0.5 s and 2 s.
 - Zephyr's NeuralFoil polars: thin-airfoil theory (2π lift slope, stall near 12°, a quadratic drag polar).
 - Aero models: Boreas BEMT (``bemt.solve``, ``ducted.solve``) on 8 radial stations and at most 60 iterations, the
-  designs' vortex lattice (``peregrine_flight.vlm``) on at most 4 spanwise by 1 chordwise panel per surface.
+  designs' vortex lattice (``peregrine_flight.vlm``, registered by the design with ``on_install``) on at most 4
+  spanwise by 1 chordwise panel per surface.
 
 The rule: in DEBUG nothing should take more than a few seconds; CAD geometry runs as usual.
 ``mock.uninstall()`` puts the real functions back.
@@ -410,6 +411,24 @@ def _slice_stl(stl, settings, orientation, workdir, *, executable="prusa-slicer"
 
 
 # ------------------------------------------------------------------------------------------------ install
+_hooks: list = []
+
+
+def on_install(hook) -> None:
+    """Register ``hook()`` to run whenever the mocks are installed (now too, if they are): how lab code coarsens its
+    own expensive functions without this library naming it, e.g. a design's vortex lattice::
+
+        mock.on_install(lambda: mock.patch(module, "vlm", mock.coarse_vlm(module.vlm)))"""
+    _hooks.append(hook)
+    if installed():
+        hook()
+
+
+def patch(owner, name, new) -> None:
+    """Replace ``owner.name`` until ``uninstall()`` (for ``on_install`` hooks)."""
+    _patch(owner, name, new)
+
+
 def _patch(owner, name, new):
     _saved.append((owner, name, owner.__dict__[name] if isinstance(owner, type) and name in owner.__dict__
                    else getattr(owner, name)))
@@ -453,6 +472,11 @@ def _chiron_frames(real):
         every = max(1, (stop - start) // CHIRON_FRAMES)
         return real(episode, camera=camera, every=every, size=(160, 90), start=start, stop=stop, **kwargs)
     return frames
+
+
+def coarse_vlm(real):
+    """A vortex lattice on at most 4 spanwise by 1 chordwise panel per surface (for ``on_install`` hooks)."""
+    return _coarse_vlm(real)
 
 
 def _coarse_vlm(real):
@@ -592,10 +616,8 @@ def install() -> None:
     for mod in list(_sys.modules.values()):                  # the modules that re-export it (kestrel_transition)
         if mod is not atr and getattr(mod, "simulate", None) is real_sim:
             _patch(mod, "simulate", coarse_sim)
-    import importlib.util
-    if importlib.util.find_spec("peregrine_flight") is not None:   # the designs' shared vortex lattice (designs/ on the path)
-        import peregrine_flight
-        _patch(peregrine_flight, "vlm", _coarse_vlm(peregrine_flight.vlm))
+    for hook in _hooks:                                            # what the labs registered (on_install)
+        hook()
 
     os.environ["VEGETA_CACHE"] = "off"
     os.environ[ENV] = "1"

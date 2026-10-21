@@ -125,6 +125,7 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron and the races (cma: the
   -e "$ROOT/vegeta-core[test]" \
   -e "$ROOT/vegeta-ai[test]" \
   -e "$ROOT/vegeta-fidia[viz,test]" \
+  -e "$ROOT/libs/labkit[test]" \
   jupyterlab ipywidgets nbconvert nbformat ipykernel networkx
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
 

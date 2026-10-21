@@ -55,3 +55,18 @@ def test_nothing_imports_what_hatched():
             continue
         bad += [f"{rel}: {n}" for n in imports(p) if n.split(".")[0] in HATCHED]
     assert bad == []
+
+
+# ---------------------------------------------------------------------------------------- the labs (tools/labs.py)
+# Imports that still break the lab rules while the old layout is being moved into labs/ (phase 3 empties this list).
+LAB_RULES_PENDING = {"assemblies/tests/test_assemblies.py", "components/tests/test_air.py",
+                     "components/tests/test_ground.py", "components/tests/test_rotating.py"}
+
+
+def test_lab_rules():
+    """libs never import labs, a lab never imports another lab, nothing imports a lab's exp/ (tools/labs.py)."""
+    import sys
+    sys.path.insert(0, str(ROOT / "tools"))
+    import labs
+    bad = [v for v in labs.check(ROOT) if v.split(":")[0] not in LAB_RULES_PENDING]
+    assert bad == [], "\n".join(bad)

@@ -48,6 +48,7 @@ import numpy as np
 from vegeta.chiron import Command
 
 import onager_robot as orb
+from vegeta.labkit.control import Phase, smooth  # noqa: F401  (shared with the other labs' missions)
 
 __all__ = ["Failure", "Drive", "Stand", "yaw_of", "smooth", "Phase", "PhasedMission"]
 
@@ -55,7 +56,7 @@ __all__ = ["Failure", "Drive", "Stand", "yaw_of", "smooth", "Phase", "PhasedMiss
 def _ik(x_axle: float, z_down: float, L1: float, L2: float):
     """Two-link planar IK (``gait.ik_two_link_planar``): (a1, a2) [deg] for an axle ``x_axle`` ahead of the shoulder
     and ``z_down`` below it; None when out of reach."""
-    import gait
+    from vegeta.labkit import kinematics as gait
 
     return gait.ik_two_link_planar(x_axle, -z_down, L1, L2)
 
@@ -223,22 +224,6 @@ class Drive:
                 # feed-forward stays: a spring-applied brake carries the standing load without current)
         return Command(q_target=q_target, qd_target=qd_target, tau_ff=tau_ff)
 
-
-def smooth(u: float) -> float:
-    """Smoothstep on [0, 1] (0 below, 1 above)."""
-    u = min(max(u, 0.0), 1.0)
-    return u * u * (3 - 2 * u)
-
-
-@dataclass
-class Phase:
-    """One step of a mission: ``start(m, obs)`` once, then ``update(m, obs, tau) -> done`` every control step (tau:
-    time in the phase); ``timeout`` [s] ends it anyway (logged)."""
-
-    name: str
-    update: object
-    start: object = None
-    timeout: float = 30.0
 
 
 class PhasedMission:

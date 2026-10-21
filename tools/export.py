@@ -1,10 +1,10 @@
 """Export a machine as standard files through Yax: the one path from a Vegeta design to anyone who simulates it.
 
-    python designs/export.py drongo --to out/drongo.usda --also sdf urdf xml [--lump]
-    python designs/export.py --list
+    python tools/export.py drongo --to out/drongo.usda --also sdf urdf xml [--lump]
+    python tools/export.py --list
 
-A machine is its Chiron robot (``MACHINES``: the builders that already exist) plus the part data a simulator needs and
-MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models, from Ogma's laws and the
+A machine is what a lab registers in its ``designs/machines.py`` (``vegeta.labkit.machines``): its Chiron robot plus
+the part data a simulator needs and MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models, from Ogma's laws and the
 design's propulsion. The robot goes ``to_mjcf()`` → Yax (USD hub); the part data rides in the USD as ``data["ogma"]``
 (Yax keeps it; formats that cannot hold it report it). ``--lump`` writes the body as one rigid link at q = 0 minus the
 rotors (Gazebo's multicopters spin separate rotor links), with each rotor's own mass and inertia in the part data.
@@ -13,7 +13,6 @@ Who receives the files maps the names with ``yax sync`` (Piccolo: ``vehicles/<ap
 from __future__ import annotations
 
 import argparse
-import math
 import subprocess
 import sys
 import tempfile
@@ -21,62 +20,18 @@ from pathlib import Path
 
 import numpy as np
 
-HERE = Path(__file__).resolve().parent
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
+ROOT = Path(__file__).resolve().parents[1]
 
 
-# --------------------------------------------------------------------------------------------------------- machines
-def _drongo():
-    import drongo_robot as dr
-    return dr.drongo()
+def designs_dirs() -> list[Path]:
+    """Every lab's ``designs/`` (``labs/*/designs``; the old top-level ``designs/`` while it exists)."""
+    return sorted(ROOT.glob("labs/*/designs")) + ([ROOT / "designs"] if (ROOT / "designs" / "machines.py").exists() else [])
 
 
-def _drongo_parts(m) -> dict:
-    """Drongo's rotors for a multicopter simulator: positions in the machine frame, spin (+1: drag torque +z on the
-    frame), the propeller's mass and disk inertia, the motor model's constants. ω_max: 80 % of the no-load speed
-    (KV × V) of the 2306 2400 KV on 4S (assumed); kF = T_max / ω_max²; kM = drag torque / thrust; τ = spin-up."""
-    import drongo_robot as dr
-    prop = dr.propulsion()
-    pos, spin = dr.rotor_layout()
-    g = dr.geometry()
-    root = m.roots()[0]
-    Rr = _R(root.quat)
-    w_max = 0.8 * 2400.0 * 4 * 3.7 * 2 * math.pi / 60
-    kg = dr.PARTS_G["propellers 5x4.3 (4x)"] / 4 / 1000.0
-    r = g["prop_r"]
-    rotors = []
-    for p, s in zip(np.asarray(pos, float), np.asarray(spin, float)):
-        rotors.append({"pos": (np.asarray(root.pos) + Rr @ p).tolist(), "spin": int(s), "kg": kg,
-                       "inertia": [kg * r * r / 4, kg * r * r / 4, kg * r * r / 2], "radius": r,
-                       "kF": prop.max_thrust_N / w_max ** 2, "kM": prop.torque_per_thrust_m, "w_max": w_max,
-                       "tau_up": prop.spin_up_s, "tau_down": 2 * prop.spin_up_s, "T_max": prop.max_thrust_N})
-    return {"rotors": rotors, "source": f"{prop.source}; ω_max = 0.8 × KV × V (2400 KV, 4S; assumed)"}
-
-
-def _builder(module: str, fn: str):
-    def build():
-        import importlib
-        return getattr(importlib.import_module(module), fn)()
-    return build
-
-
-MACHINES = {                                          # name → (Chiron robot builder, part data or None)
-    "drongo": (_drongo, _drongo_parts),
-    **{name: (_builder(mod, fn), None) for name, (mod, fn) in {
-        "apheloria": ("apheloria_robot", "apheloria"), "falco": ("falco_robot", "falco_robot"),
-        "myropod": ("myropod_robot", "cleopatra"), "nisus": ("nisus_robot", "nisus_robot"),
-        "nisus_plus": ("nisus_plus_robot", "nisus_plus_robot"), "onager": ("onager_robot", "onager"),
-        "onager_atlas": ("onager_atlas_robot", "atlas"), "onager_manus": ("onager_manus_robot", "manus"),
-        "onager_sweeper": ("onager_sweeper_robot", "sweeper"), "pekari": ("pekari_rover_robot", "pekari"),
-        "perseus": ("perseus_robot", "perseus"), "perseus_mini": ("perseus_mini_robot", "mini"),
-        "robot_dog": ("robot_dog_robot", "dog_robot")}.items()},
-}
-
-
-def _R(q):
-    from yax import hub
-    return hub.R(q)
+def registry():
+    from vegeta.labkit import machines
+    machines.discover(*designs_dirs())
+    return machines
 
 
 # ----------------------------------------------------------------------------------------------------------- export
@@ -84,8 +39,8 @@ def machine(name: str, *, lump: bool = False):
     """The named machine as a ``yax.Machine`` (from its Chiron robot) with its part data in ``data["ogma"]``."""
     import yax
     from yax import hub
-    build, parts = MACHINES[name]
-    robot = build()
+    entry = registry().get(name)
+    robot, parts = entry.robot(), entry.parts
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp) / f"{name}.xml"
         p.write_text(robot.to_mjcf())
@@ -94,7 +49,8 @@ def machine(name: str, *, lump: bool = False):
     m.data.pop("mjcf", None)
     if parts:
         m.data["ogma"] = parts(m)
-    m.producer = {"tool": "vegeta.designs.export", "machine": name, "revision": _revision(), "lumped": lump}
+    m.producer = {"tool": "vegeta.tools.export", "machine": name, "lab": entry.lab, "revision": _revision(),
+                  "lumped": lump}
     if lump:
         rot = m.data.get("ogma", {}).get("rotors", [])
         m = hub.lump(m)
@@ -122,7 +78,7 @@ def _subtract(lk, rotors):
 
 def _revision() -> str | None:
     try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=HERE, capture_output=True, text=True,
+        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True,
                               timeout=5).stdout.strip() or None
     except (OSError, subprocess.SubprocessError):
         return None
@@ -148,7 +104,7 @@ def main(argv=None) -> int:
     ap.add_argument("--list", action="store_true")
     a = ap.parse_args(argv)
     if a.list or not a.machine:
-        print("\n".join(sorted(MACHINES)))
+        print("\n".join(registry().names()))
         return 0
     for rep in export(a.machine, a.to or f"{a.machine}.usda", also=a.also, lump=a.lump):
         print(rep)

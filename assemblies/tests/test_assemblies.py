@@ -16,7 +16,9 @@ HERE = Path(__file__).resolve().parents[1]
 MODULES = sorted(p.stem for p in HERE.glob("*.py") if p.stem not in ("__init__", "base"))
 SPECS = {"quadcopter": "Quadcopter", "fixed_wing": "FixedWingDrone", "survey_boat": "SurveyBoatAssembly",
          "submarine": "SubmarineAssembly"}
-ALLOWED = {"__future__", "math", "typing", "dataclasses", "numpy", "cadquery", "vegeta.dedalus", "components"}
+ALLOWED = {"__future__", "math", "typing", "dataclasses", "numpy", "cadquery", "vegeta.dedalus", "components",
+           "vegeta.labkit.assembly", "vegeta.labkit.propeller", "vegeta.labkit.motor"}      # labkit's geometry-only parts
+BASE = Path(__import__("vegeta.labkit.assembly", fromlist=["x"]).__file__)                 # the base class, in labkit
 
 
 def _imports(path):
@@ -35,7 +37,7 @@ def test_every_module_is_listed():
 
 @pytest.mark.parametrize("name", MODULES + ["base"])
 def test_imports_geometry_only(name):
-    bad = [m for m in _imports(HERE / f"{name}.py")
+    bad = [m for m in _imports(BASE if name == "base" else HERE / f"{name}.py")
            if not m.startswith(".") and m not in ALLOWED and not any(m.startswith(a + ".") for a in ALLOWED)]
     assert bad == [], f"assemblies/{name}.py imports {bad}: geometry only (analysis stays in the notebooks)"
 

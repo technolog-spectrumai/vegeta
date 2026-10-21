@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from vegeta.dedalus import Parameter
 
-from components.propeller import CATALOGUE, blade
+from vegeta.labkit.propeller import CATALOGUE, blade
 from components.survey_boat import SurveyBoat
 
-from .base import Assembly, component_parameters, pick, turned
+from vegeta.labkit.assembly import Assembly, component_parameters, pick, turned
 
 POD_LENGTH = 90.0           # mm: SurveyBoat._bracket extrudes the pod 90 mm aft of the bracket plate
 
@@ -16,7 +16,7 @@ class SurveyBoatAssembly(Assembly):
     """Boat + propeller. Boat parameters as ``SurveyBoat``."""
 
     parameters = component_parameters(SurveyBoat) + [
-        Parameter("propeller", "60 mm 3-blade marine", choices=tuple(CATALOGUE), description="components.propeller.CATALOGUE"),
+        Parameter("propeller", "60 mm 3-blade marine", choices=tuple(CATALOGUE), description="vegeta.labkit.propeller.CATALOGUE"),
         Parameter("propeller_gap", 10.0, "mm", min=0, description="propeller plane behind the pod"),
     ]
 

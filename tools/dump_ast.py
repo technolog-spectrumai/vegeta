@@ -361,7 +361,7 @@ def dump(root: Path, out_path: Path, body: bool = True) -> dict:
                 if name == "*":                                              # importlib with a variable
                     for sname in sorted(strings):
                         hit, how = res.resolve(sname, f)
-                        if hit is not None and how in ("local", "flat", "package"):
+                        if hit is not None and how == "local":               # a table of sibling modules
                             mod_xml.write(f"  <import name={quoteattr(sname)} line=\"{line}\" "
                                           f"target={quoteattr(hit.relative_to(root).as_posix())} how=\"string\" dynamic=\"1\"/>\n")
                     continue

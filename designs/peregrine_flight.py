@@ -1185,3 +1185,13 @@ __all__ = ["vlm", "aero", "cl_max", "fold_polar", "BOM_ITEMS", "SERVO_PRICE_EUR"
            "envelope_table", "BIRDS", "bird_table", "stoop", "terminal_speed", "gap_passage", "prop_hang", "hand_throw",
            "min_throw_speed", "roof_drop", "perched_wind", "hinge_loads", "Farm", "Flock", "herd", "Episode", "mission",
            "profile_figure", "render_movie", "decision_table", "weight_sensitivity"]
+
+
+def _coarse_in_debug():                                # VEGETA_DEBUG: the lattice on a few panels (vegeta.mock)
+    import sys
+    from vegeta import mock
+    mod = sys.modules[__name__]
+    mock.on_install(lambda: mock.patch(mod, "vlm", mock.coarse_vlm(mod.vlm)))
+
+
+_coarse_in_debug()

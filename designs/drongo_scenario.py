@@ -36,7 +36,7 @@ from vegeta.chiron.robot import TERRAIN_NAME
 
 import drongo_controller as dc
 import drongo_robot as dr
-from onager_controller import smooth
+from vegeta.labkit.control import smooth
 
 __all__ = ["Scene", "Watch", "item_props", "scenery", "make_lab", "run", "timeseries", "phase_table", "deliveries",
            "wait_times", "outcome", "time_budget", "activity", "ACTIVITIES", "sweep", "render_movie", "stills", "VARIANTS"]
@@ -672,7 +672,7 @@ def render_movie(ep, scene: Scene, path, *, speed: float = 2.0, fps: int = 25, s
     from vegeta.aeromant._watermark import watermark
     from vegeta.chiron import viz
 
-    from pekari_controller import end_card
+    from vegeta.labkit.movie import end_card
 
     log = ep.log
     t = np.asarray(log["t"])

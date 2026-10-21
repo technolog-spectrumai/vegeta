@@ -6,18 +6,18 @@ import math
 
 from vegeta.dedalus import Parameter
 
-from components.motor import Outrunner
-from components.propeller import CATALOGUE, blade
+from vegeta.labkit.motor import Outrunner
+from vegeta.labkit.propeller import CATALOGUE, blade
 from components.quad_frame import QuadFrame
 
-from .base import Assembly, component_parameters, pick
+from vegeta.labkit.assembly import Assembly, component_parameters, pick
 
 
 class Quadcopter(Assembly):
     """Frame + 4 motors + 4 propellers. Frame parameters as ``QuadFrame``; motor ones prefixed ``motor_``."""
 
     parameters = component_parameters(QuadFrame) + [
-        Parameter("propeller", "5x4.3 tri-blade", choices=tuple(CATALOGUE), description="components.propeller.CATALOGUE"),
+        Parameter("propeller", "5x4.3 tri-blade", choices=tuple(CATALOGUE), description="vegeta.labkit.propeller.CATALOGUE"),
         Parameter("motor_diameter", 29.0, "mm", min=5),
         Parameter("motor_height", 19.0, "mm", min=3, description="pad to the top of the bell"),
         Parameter("motor_shaft_length", 10.0, "mm", min=0, description="the propeller hub sits on the shaft"),

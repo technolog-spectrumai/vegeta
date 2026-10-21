@@ -11,6 +11,6 @@ geometry::
     parts = quad.generate_parts(wheelbase=280)        # {"frame": Shape, "motor_1": Shape, ..., "propeller_4": Shape}
     geometry = quad.generate(wheelbase=280)            # one compound (dedalus.Geometry)
 """
-from .base import Assembly, component_parameters, pick
+from vegeta.labkit.assembly import Assembly, component_parameters, pick
 
 __all__ = ["Assembly", "component_parameters", "pick"]

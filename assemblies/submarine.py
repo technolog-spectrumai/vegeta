@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from vegeta.dedalus import Parameter
 
-from components.propeller import CATALOGUE, blade
+from vegeta.labkit.propeller import CATALOGUE, blade
 from components.submarine import Submarine
 
-from .base import Assembly, component_parameters, pick, turned
+from vegeta.labkit.assembly import Assembly, component_parameters, pick, turned
 
 
 class SubmarineAssembly(Assembly):
     """Vehicle + propeller. Vehicle parameters as ``Submarine``."""
 
     parameters = component_parameters(Submarine) + [
-        Parameter("propeller", "120 mm 3-blade", choices=tuple(CATALOGUE), description="components.propeller.CATALOGUE"),
+        Parameter("propeller", "120 mm 3-blade", choices=tuple(CATALOGUE), description="vegeta.labkit.propeller.CATALOGUE"),
         Parameter("propeller_gap", 40.0, "mm", min=0, description="propeller plane behind the tail tip"),
     ]
 

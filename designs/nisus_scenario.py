@@ -408,7 +408,7 @@ def render_movie(ep, scn: Scenario, path, *, speed: float = 25.0, fps: int = 20,
     import cv2
     from vegeta.aeromant._watermark import watermark
     from vegeta.chiron import viz
-    from pekari_controller import end_card
+    from vegeta.labkit.movie import end_card
 
     log = ep.log
     t = np.asarray(log["t"])

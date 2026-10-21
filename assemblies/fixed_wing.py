@@ -6,16 +6,16 @@ from __future__ import annotations
 from vegeta.dedalus import Parameter
 
 from components.fixed_wing import FixedWing
-from components.propeller import CATALOGUE, blade
+from vegeta.labkit.propeller import CATALOGUE, blade
 
-from .base import Assembly, component_parameters, pick, turned
+from vegeta.labkit.assembly import Assembly, component_parameters, pick, turned
 
 
 class FixedWingDrone(Assembly):
     """Airframe (``FixedWing`` part='aircraft', its parameters) + 2 tractor propellers."""
 
     parameters = component_parameters(FixedWing) + [
-        Parameter("propeller", "9x6 electric", choices=tuple(CATALOGUE), description="components.propeller.CATALOGUE"),
+        Parameter("propeller", "9x6 electric", choices=tuple(CATALOGUE), description="vegeta.labkit.propeller.CATALOGUE"),
         Parameter("propeller_gap", 12.0, "mm", min=0, description="propeller plane ahead of the nacelle nose"),
     ]
 
