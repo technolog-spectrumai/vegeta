@@ -14,6 +14,7 @@ dependencies = ["numpy"]
 
 [project.optional-dependencies]
 test = ["pytest"]
+cad = ["cadquery>=2.4"]          # og.cad, imported lazily
 
 [tool.setuptools]
 package-dir = { "" = "src" }

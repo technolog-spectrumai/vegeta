@@ -116,6 +116,14 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `ou_euler_step` (Euler–Maruyama OU with per-axis scale: Velutina varies sigma in the turbine's wake, so the
   exact-discretisation `Wind` does not fit it). Golden: `wind.json["velutina"]` (Vegeta 965fbe7).
 
+### O6 — CAD strategy
+- `og.cad`: `mass_properties` (OCC GProp, moved verbatim from `vegeta.dedalus.yax_export`; takes a Workplane, a
+  Shape or a TopoDS_Shape), `mass_section` (the Yax `mass` block, was Dedalus's `_mass`), `properties` (→
+  `og.mass.MassProperties` in SI), `solid` (Box, Cylinder, Sphere → CadQuery, in mm by default). Golden
+  `cad.json` from Dedalus (Vegeta 15c4132); the solids agree with the budget shapes' MuJoCo formulas to 1e-6.
+  Thin shapes (rod, plate, shell) and ellipsoids raise: they are budget idealisations, the design's CAD builds them.
+  Tests skip without CadQuery (`pytest.importorskip`).
+
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager
   series/Pekari/Perseus and the robot dog/Myropods are deferred to todo.md's "Later" section; they stay in Vegeta

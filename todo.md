@@ -42,7 +42,8 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [ ] Chiron test: Ogma shape inertia == MuJoCo `inertiafromgeom`
 
 ## O6 — CAD strategy
-- [ ] `og.cad` (CadQuery, lazy extra)
+- [x] `og.cad` (CadQuery, lazy extra)
+- [ ] Vegeta's `export_yax` takes its mass properties from `og.cad`
 
 ## Vegeta application
 - [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
