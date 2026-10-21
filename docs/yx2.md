@@ -19,7 +19,8 @@ yax.formats.yx2.validate("drone.yx2")    # the problems, [] for a YX2 — also: 
    (`{"length": "m", "mass": "kg", "time": "s", "angle": "rad"}`) and `frame` (`{"up": "+z", "forward": "+x",
    "handed": "right", "pose": "machine frame at q = 0"}`). The stage metadata agrees: `upAxis = "Z"`,
    `metersPerUnit = 1`, `kilogramsPerUnit = 1`. Joint limits appear twice, as USD wants them (degrees on the joint
-   prim) and as Yax holds them (`yax:limits`, radians); readers take `yax:*`.
+   prim) and as Yax holds them (`yax:limits`, radians); readers take `yax:*`. Every link, shape and point mass carries
+   its pose exactly (`yax:pos`, `yax:quat`, double precision) beside USD's xform ops, whose matrix decomposition rounds.
 3. **The default prim is the machine**, an `Xform` with `customData` `yax = 2` and `name`, the articulation root.
    It carries `yax:features` always — `{"included": [...], "excluded": [...]}`, what the producer shared and
    withheld (`docs/interchange.md`) — and, when present, `yax:producer` and `yax:data`.
@@ -35,7 +36,7 @@ yax.formats.yx2.validate("drone.yx2")    # the problems, [] for a YX2 — also: 
    is its `yax:name`, and `yx2:id` spells it with its kind so two files, or a file and a consumer's model, refer to
    the same part by the same string (what `yax sync` maps on).
 7. **Closed vocabulary.** The only attributes in the `yax:` and `yx2:` namespaces are the ones above (`yax:name`,
-   `yax:kind`, `yax:pos`, `yax:axis`, `yax:limits`, `yax:drive`, `yax:data`, `yax:mass`, `yax:com`,
+   `yax:kind`, `yax:pos`, `yax:quat`, `yax:axis`, `yax:limits`, `yax:drive`, `yax:data`, `yax:mass`, `yax:com`,
    `yax:inertia`, `yax:role`, `yax:uri`, `yax:producer`, `yax:features`, `yx2:id`). New physics goes into part
    data under a documented key (`docs/interchange.md`) or into a new profile version — never into an ad-hoc attribute.
 8. **Canonical serialization.** Prims in machine order (links as the hub lists them, their shapes and point masses
