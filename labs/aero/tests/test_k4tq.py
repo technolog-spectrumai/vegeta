@@ -21,7 +21,7 @@ def test_requirements_marking_and_logging():
     assert "mandatory" in k4tq.REQUIREMENTS["R7 temperature logging"]
     cargo = k4tq.CATALOGUE["cargo"]
     assert "temperature logger" in cargo and "temperature sensors (2)" in cargo          # two channels + an independent logger
-    assert k4tq.params()["fuselage_length"] == 1.2 and k4tq.MAIN == "B"                 # the approved baseline
+    assert k4tq.params()["fuselage_length"] == 1.2 and k4tq.MAIN == "A"                 # the approved baseline: K4TQ-A "Cathy"
 
 
 def test_layout_clearances_and_poses():

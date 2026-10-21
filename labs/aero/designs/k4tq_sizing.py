@@ -52,7 +52,8 @@ OSWALD_VISCOUS = 0.90             # e = 0.9 × the lattice's
 INTERFERENCE = 1.10               # the build-up's junction allowance (as kestrel_flight)
 ROOT_GAP_CDA = 0.0004             # m² per wing root: the gap and the cartridge fairing of a rotating joint (ESTIMATE)
 FOLDED_BLADE_CDA = 0.0010         # m² per stopped propeller, blades folded along the nacelle (ESTIMATE)
-AVIONICS_W = 19.0                 # flight stack, telemetry, lights 12 W; the temperature logger and cartridge fan 3 W; servos 4 W
+AVIONICS_W = 19.0                 # flight stack, telemetry, lights 12 W; the temperature logger and cartridge fan 3 W; servos 4 W — the baseline's;
+                                  # every analysis takes the vehicle's own load from k4tq.avionics_power(p) (K4TQ-A2 adds the Jetson companion and perception)
 V_BATT_LOADED = 3.5               # V per cell, mid-discharge under load (Li-ion); sag case 3.3 V
 DOWNLOAD = 1.03                   # hover thrust over weight: the edge-on wings and the nacelles in the slipstream
 HOVER_FM_DRIVE = None             # (from the BEMT map)
@@ -335,8 +336,11 @@ def pack(p: dict, target: float, gap: float = 0.005) -> dict:
 
     def stations(sb):
         xc = sb + hx / 2 + gap + cx / 2
-        return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf,
-                    avionics_station=(x_r + 0.050 + 0.055) / Lf)            # the avionics in the tail bay behind the rear station
+        x_tail = x_r + 0.050 + 0.055                                        # the tail bay behind the rear station
+        if p.get("autonomy"):                                               # K4TQ-A2: the companion first (the wider section), the avionics behind it
+            return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf,
+                        companion_station=x_tail / Lf, avionics_station=(x_tail + 0.097) / Lf)
+        return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf, avionics_station=x_tail / Lf)
     sb = lo
     for _ in range(3):
         q = stations(sb)
@@ -368,6 +372,7 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
     S, kk = L["S_ref"], k_total(veh)
     Ewh = veh["battery"]["usable_wh"]
     CLmax = veh["stall"]["CL max (aircraft)"]
+    aw = k4tq.avionics_power(veh["p"])
     rows = []
     for V in speeds:
         q = 0.5 * RHO * V * V
@@ -381,9 +386,9 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
         if not dp["feasible"]:
             rows.append({"V [m/s]": V, "CL": CL, "L/D": CL / CD, "drag [N]": D, "thrust each [N]": T, "feasible": False})
             continue
-        P = n_running * dp["electrical_W"] + AVIONICS_W
+        P = n_running * dp["electrical_W"] + aw
         rows.append({"V [m/s]": V, "CL": CL, "L/D": CL / CD, "drag [N]": D, "thrust each [N]": T, "rpm": dp["rpm"], "throttle": dp["throttle"],
-                     "propulsive eff.": D * V / (P - AVIONICS_W), "electrical [W]": P, "endurance [min]": Ewh / P * 60, "range [km]": Ewh / P * V * 3.6,
+                     "propulsive eff.": D * V / (P - aw), "electrical [W]": P, "endurance [min]": Ewh / P * 60, "range [km]": Ewh / P * V * 3.6,
                      "feasible": True})
     cols = ["V [m/s]", "CL", "L/D", "drag [N]", "thrust each [N]", "rpm", "throttle", "propulsive eff.", "electrical [W]", "endurance [min]", "range [km]", "feasible"]
     df = pd.DataFrame(rows, columns=cols).set_index("V [m/s]")
@@ -415,7 +420,8 @@ def hover(veh: dict) -> dict:
     Tf, Tr = share_f * T_total / 2, (1 - share_f) * T_total / 2
     A = L["prop"]["A"]
     pf, pr = drive_point(m, 0.0, Tf), drive_point(m, 0.0, Tr)
-    P = 2 * (pf["electrical_W"] + pr["electrical_W"]) + AVIONICS_W
+    aw = k4tq.avionics_power(veh["p"])
+    P = 2 * (pf["electrical_W"] + pr["electrical_W"]) + aw
     P_ideal = 2 * (og_rotors.ideal_hover_power(Tf, A) + og_rotors.ideal_hover_power(Tr, A))
     P_shaft = 2 * (pf.get("shaft_W", math.nan) + pr.get("shaft_W", math.nan))
     T_max = max_thrust(m, 0.0)
@@ -423,7 +429,7 @@ def hover(veh: dict) -> dict:
     return {"weight [N]": W, "front share of the thrust": share_f, "thrust front each [N]": Tf, "thrust rear each [N]": Tr,
             "disc loading [N/m²]": T_total / (4 * A), "induced velocity [m/s]": og_rotors.hover_induced_velocity(T_total / 4, A),
             "ideal power [W]": P_ideal, "shaft power [W]": P_shaft, "figure of merit": P_ideal / P_shaft, "electrical [W]": P,
-            "rpm front": pf.get("rpm"), "current per front motor [A]": pf.get("current_A"), "pack current [A]": (P - AVIONICS_W) / m.battery_v,
+            "rpm front": pf.get("rpm"), "current per front motor [A]": pf.get("current_A"), "pack current [A]": (P - aw) / m.battery_v, "avionics and payload electronics [W]": aw,
             "T/W (loaded pack)": 4 * T_max / W, "T/W (sagged pack, 3.3 V/cell)": 4 * T_max * sag / W,
             "most loaded motor / its maximum": max(Tf, Tr) / T_max, "hover minutes on the usable pack": veh["battery"]["usable_wh"] / P * 60,
             "motor out": "four rotors: a motor out in the hover leaves no yaw/roll balance — the parachute is the mitigation (SORA)",
@@ -592,7 +598,7 @@ def _power(veh, V, g, tilts, share_f, T):
     for which, s in (("front", share_f), ("rear", 1 - share_f)):
         Va = max(V * math.cos(tilts[which] - g), 0.0)
         pts.append(drive_point(m, Va, s * T / 2))
-    P = 2 * (pts[0]["electrical_W"] + pts[1]["electrical_W"]) + AVIONICS_W
+    P = 2 * (pts[0]["electrical_W"] + pts[1]["electrical_W"]) + k4tq.avionics_power(veh["p"])
     return P, pts
 
 
@@ -600,7 +606,7 @@ def _power_smooth(veh, V, g, tilts, share_f, T) -> float:
     """Electrical power with a steep linear penalty beyond a motor's current-limited maximum (a smooth objective for
     the optimiser; the reported power is ``_power``'s)."""
     m = veh["drive"]
-    P = AVIONICS_W
+    P = k4tq.avionics_power(veh["p"])
     for which, s in (("front", share_f), ("rear", 1 - share_f)):
         Va = max(V * math.cos(tilts[which] - g), 0.0)
         t = max(s * T / 2, 0.0)
@@ -1010,7 +1016,8 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
     W = m * G
     drv = drive(p, prop_key=prop_key)
     hp = drive_point(drv, 0.0, W / 4)
-    P_hover = 4 * hp["electrical_W"] + AVIONICS_W
+    aw = k4tq.avionics_power(p)
+    P_hover = 4 * hp["electrical_W"] + aw
     eta_motor = hp["shaft_W"] / hp["electrical_W"]
     vh = og_rotors.hover_induced_velocity(W / 4, A)
     P0 = hp["shaft_W"] - 1.15 * (W / 4) * vh                              # profile power per rotor in the hover
@@ -1026,7 +1033,7 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
         vi = og_rotors.induced_velocity(T, V, math.pi / 2 - a_tilt, A)    # the disc axis ~ vertical: the flow at ~90° − tilt to it
         mu = V * math.cos(a_tilt) / omega_R
         P_shaft = 4 * (1.15 * T * (vi + V * math.sin(a_tilt)) + P0 * (1 + 4.65 * mu ** 2))
-        P_el = P_shaft / eta_motor + AVIONICS_W
+        P_el = P_shaft / eta_motor + aw
         rows.append({"V [m/s]": V, "electrical [W]": P_el, "endurance [min]": usable / P_el * 60, "range [km]": usable / P_el * V * 3.6,
                      "disc tilt [deg]": math.degrees(a_tilt), "T each / max": T / T_max0})
     df = pd.DataFrame(rows).set_index("V [m/s]")
@@ -1100,20 +1107,24 @@ def selection(evals: dict) -> pd.DataFrame:
     return df
 
 
+def _at(df: pd.DataFrame, V: float, col: str) -> float:
+    return float(df.loc[V, col]) if (isinstance(V, (int, float)) and math.isfinite(V) and V in df.index) else math.nan
+
+
 def comparison(evals: dict, quads: dict) -> pd.DataFrame:
     rows = {}
     for k, e in evals.items():
         v = e["veh"]
         rows[f"K4TQ-{k}"] = {"take-off mass [kg]": v["mass"]["mass_kg"], "payload [kg]": v["p"]["payload_kg"], "span / footprint [m]": v["L"]["width_overall"],
                              "hover [W]": e["hover"]["electrical [W]"], "T/W": e["hover"]["T/W (loaded pack)"],
-                             "cruise power at best range [W]": float(e["cruise2"].loc[e["best2"]["best range V [m/s]"], "electrical [W]"]),
+                             "cruise power at best range [W]": _at(e["cruise2"], e["best2"]["best range V [m/s]"], "electrical [W]"),
                              "best range V [m/s]": e["best2"]["best range V [m/s]"], "still-air range [km]": e["best2"]["range [km]"],
                              "endurance [min]": e["best2"]["endurance [min]"], "max speed [m/s]": e["best4"]["max level V [m/s]"],
                              "R3 mission closes": e["mission"]["closes"], "R3 margin [Wh]": e["mission"]["margin [Wh]"],
                              "stall speed [m/s]": stall_speed(v), "tilt-wing tax [kg]": k4tq.tilt_wing_tax(v["items"]), "bought parts [EUR]": e["price"]["total bought"]}
     for k, q in quads.items():
         rows[k] = {"take-off mass [kg]": q["mass [kg]"], "payload [kg]": 1.0, "span / footprint [m]": q["footprint [m]"], "hover [W]": q["hover [W]"], "T/W": q["T/W"],
-                   "cruise power at best range [W]": float(q["table"].loc[q["best range V [m/s]"], "electrical [W]"]), "best range V [m/s]": q["best range V [m/s]"],
+                   "cruise power at best range [W]": _at(q["table"], q["best range V [m/s]"], "electrical [W]"), "best range V [m/s]": q["best range V [m/s]"],
                    "still-air range [km]": q["range [km]"], "endurance [min]": q["hover minutes"], "max speed [m/s]": q["max speed (T ≤ 80 % max) [m/s]"],
                    "R3 mission closes": q["mission radius [km]"] >= MISSION["radius_km"], "R3 margin [Wh]": math.nan, "stall speed [m/s]": 0.0,
                    "tilt-wing tax [kg]": 0.0, "bought parts [EUR]": math.nan}
@@ -1122,7 +1133,7 @@ def comparison(evals: dict, quads: dict) -> pd.DataFrame:
     return df
 
 
-def run_all(variants=("A", "B", "C")) -> dict:
+def run_all(variants=("E", "A", "C", "A2")) -> dict:
     evals = {v: evaluate(v) for v in variants}
     k4 = evals[k4tq.MAIN]["veh"]
     q_same = f"Q-{k4['p']['prop'].split('x')[0]} ({k4['p']['prop']}, K4TQ's drive)"

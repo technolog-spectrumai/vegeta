@@ -91,6 +91,18 @@ CATALOGUE = {
         "airspeed sensor": {"mass_kg": 0.010, "price_eur": 45.0, "source": "MS4525 pitot (transition schedule needs airspeed)"},
         "remote ID + nav/status lights": {"mass_kg": 0.020, "price_eur": 60.0, "source": "EU direct remote ID, blue/white LEDs"},
     },
+    # K4TQ-A2 — the fully autonomous variant's companion computer and perception (estimates; Jetson power by its nvpmodel mode)
+    "autonomy": {
+        "companion computer (Jetson Orin NX 16 GB + carrier + heatsink/fan)": {"mass_kg": 0.150, "power_W": 20.0, "price_eur": 950.0,
+            "source": "NVIDIA Jetson Orin NX 16 GB module (10 / 15 / 25 W modes, up to 40 W MAXN Super) on a compact carrier with a fan heatsink; "
+                      "20 W average assumed (perception + planning); to verify on the bench"},
+        "forward stereo depth camera": {"mass_kg": 0.061, "power_W": 3.0, "price_eur": 300.0,
+            "source": "global-shutter stereo depth camera (OAK-D Lite / Pro class, ~61 g, 2.5–4.5 W), behind a window in the nose"},
+        "downward camera + rangefinder": {"mass_kg": 0.030, "power_W": 2.0, "price_eur": 150.0,
+            "source": "optical flow / downward camera + lidar rangefinder for the vertical landing on an unprepared pad"},
+        "12 V DC-DC for the companion": {"mass_kg": 0.025, "power_W": 0.0, "price_eur": 40.0, "efficiency": 0.92,
+            "source": "6S → 12 V 5 A step-down"},
+    },
     "cargo": {
         "insulated cartridge": {"mass_kg": 0.200, "price_eur": 90.0, "source": "VIP/EPP-lined removable shell 240 x 120 x 110 mm, ~1.2 l inner, latch"},
         "shock isolators (4)": {"mass_kg": 0.016, "price_eur": 12.0, "source": "silicone grommet isolators"},
@@ -124,7 +136,7 @@ GROWTH_MARGIN = 0.07              # on the empty mass
 
 # ================================================================================================= the configurations
 BASE = {
-    "variant": "A", "title": "equal tandem, 1.4 m, 1.2 m fuselage",
+    "variant": "E", "title": "equal tandem, 1.4 m, 1.2 m fuselage",
     # fuselage
     "fuselage_length": 1.20, "fuselage_width": 0.14, "fuselage_height": 0.16,   # 1.2 m: the length sweep (disc gap 159 mm), approved 2026-10-21
     "fuselage_section_n": 5.0,        # superellipse exponent of the mid-body section (Stage 2: room for the bearing blocks near the sides)
@@ -159,14 +171,20 @@ BASE = {
     "leg_bottom_z": -0.225,           # leg feet below the fuselage axis: clears the wing trailing edges (hover stance) and the discs (cruise stance)
     "fin": True, "fin_area": None,    # None: the fin is sized by k4tq_sizing.directional (R9)
     "parachute": True,
+    "autonomy": False,                # K4TQ-A2: the companion computer and the perception (CATALOGUE["autonomy"])
 }
+# Names (2026-10-21): the aircraft is K4TQ-A, "Cathy" (the larger rear wing — Stage 1's "B"); K4TQ-A2 is Cathy fully autonomous
+# (Stage 2's "AS"); E (equal tandem — Stage 1's "A") and C (compact) are the Stage 1 study configurations.
 VARIANTS = {
-    "A": {},
-    "B": {"title": "unequal tandem (larger rear wing, canard-like)", "root_chord_front": 0.16, "tip_chord_front": 0.12, "root_chord_rear": 0.24, "tip_chord_rear": 0.18},
+    "E": {},
+    "A": {"title": "K4TQ-A \"Cathy\": unequal tandem (larger rear wing, canard-like)", "root_chord_front": 0.16, "tip_chord_front": 0.12, "root_chord_rear": 0.24,
+          "tip_chord_rear": 0.18},
     "C": {"title": "compact, 1.2 m span, 0.9 m fuselage, 0.5 kg", "span": 1.20, "fuselage_length": 0.90, "root_chord_front": 0.18, "tip_chord_front": 0.13,
           "root_chord_rear": 0.18, "tip_chord_rear": 0.13, "motor_y": 0.53, "prop": "13x8", "payload_kg": 0.5},
 }
-MAIN = "B"                         # the larger rear wing at 1.2 m: approved 2026-10-21
+VARIANTS["A2"] = {**VARIANTS["A"], "title": "K4TQ-A2: Cathy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
+MAIN = "A"                         # Cathy: the larger rear wing at 1.2 m, approved 2026-10-21
+NICKNAME = {"A": "Cathy", "A2": "Cathy (autonomous)"}
 
 
 GEOMETRY_KEYS = ("fuselage_length", "fuselage_width", "fuselage_height", "fuselage_section_n", "x_pivot_front", "x_pivot_rear", "z_front", "z_rear",
@@ -203,6 +221,17 @@ def params(variant: str = MAIN, **over) -> dict:
     elif p.get("cad_mass"):
         p.setdefault("cad_mass_status", "CAD (given)")
     return p
+
+
+def avionics_power(p: dict) -> float:
+    """The electrical load besides the motors [W]: the flight stack, telemetry, lights (12 W), the temperature logger and the
+    cartridge fan (3 W), the tilt servos (4 W) — and for K4TQ-A2 the companion computer and the perception through its DC-DC."""
+    base = 19.0
+    if p.get("autonomy"):
+        a = CATALOGUE["autonomy"]
+        eta = a["12 V DC-DC for the companion"]["efficiency"]
+        base += sum(v["power_W"] for v in a.values()) / eta
+    return base
 
 
 def battery(p: dict) -> dict:
@@ -417,6 +446,14 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
     for i, (k, v) in enumerate(cat["avionics"].items()):
         add(k, v["mass_kg"], p["avionics_station"] * Lf + 0.012 * (i - 3), 0, 0.0, "avionics", v["source"])       # the tail bay behind the rear station (Stage 2 packing)
     add("servo and signal wiring", 0.050, 0.5 * Lf, 0, 0, "systems")
+    if p.get("autonomy"):                                         # K4TQ-A2
+        auto = cat["autonomy"]
+        x_f = L["wings"]["front"]["x_pivot"]
+        stations = {"companion computer (Jetson Orin NX 16 GB + carrier + heatsink/fan)": (p.get("companion_station", 0.85) * Lf, 0.0),   # the tail bay (CG), a NACA inlet
+                    "forward stereo depth camera": (0.105 * Lf / 1.2, 0.0), "downward camera + rangefinder": (x_f + 0.045, -p["fuselage_height"] / 2 + 0.012),
+                    "12 V DC-DC for the companion": (0.175 * Lf / 1.2, 0.03)}
+        for k, v in auto.items():
+            add(k, v["mass_kg"], stations[k][0], 0, stations[k][1], "autonomy", v["source"])
     if p["parachute"]:
         add("recovery parachute", cat["safety"]["recovery parachute"]["mass_kg"], p["parachute_station"] * Lf, 0, 0.0, "safety", cat["safety"]["recovery parachute"]["source"])
     cad = p.get("cad_mass") or {}
@@ -483,6 +520,7 @@ def price(items: list[dict], p: dict) -> dict:
     rows = {"motors": 4 * c["motor"][p["motor"]]["price_eur"], "propellers (+2 spares)": 6 * c["propeller"][p["prop"]]["price_eur"],
             "ESCs": 4 * c["esc"]["price_eur"], "battery": c["battery"][p["battery"]]["price_eur"],
             "avionics": sum(v["price_eur"] for v in c["avionics"].values()), "cargo + temperature logging": sum(v["price_eur"] for v in c["cargo"].values()),
+            **({"autonomy (K4TQ-A2)": sum(v["price_eur"] for v in c["autonomy"].values())} if p.get("autonomy") else {}),
             "wing roots (4)": 4 * sum(v["price_eur"] for v in c["root"].values())}
     if p["parachute"]:
         rows["parachute"] = c["safety"]["recovery parachute"]["price_eur"]

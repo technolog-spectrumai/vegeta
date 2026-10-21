@@ -287,8 +287,16 @@ def body_parts(p: dict, L: dict, items: list | None = None) -> dict:
     xa = p["avionics_station"] * Lf
     zt = max(v[0].solid.BoundingBox().zmax for k, v in P.items() if k.startswith("battery")) + 3.0
     xa = p["avionics_station"] * Lf
-    P["avionics tray"] = (Part(_box(xa - 55.0, xa + 55.0, -34, 34, -18, 18), "internal", ("bought", sum(i["mass_kg"] for i in av)), COLORS["internal"],
+    la, wa, ha = (80.0, 60.0, 30.0) if p.get("autonomy") else (110.0, 68.0, 36.0)   # A2: shorter, behind the companion, where the tail narrows
+    P["avionics tray"] = (Part(_box(xa - la / 2, xa + la / 2, -wa / 2, wa / 2, -ha / 2, ha / 2), "internal", ("bought", sum(i["mass_kg"] for i in av)), COLORS["internal"],
                                "flight controller, GNSS, telemetry, receiver, power module, pitot, remote ID", "internal"), "body")
+    if p.get("autonomy"):                                           # K4TQ-A2: the companion computer, the stereo camera, the downward module
+        for i in [i for i in items if i["group"] == "autonomy"]:
+            x, z = i["x"] * MM, i["z"] * MM
+            dims = {"companion": (100, 70, 45), "forward stereo": (28, 88, 18), "downward": (30, 30, 20), "12 V": (40, 25, 12)}
+            dx, dy, dz = next(v for k, v in dims.items() if k in i["item"])
+            P[i["item"].split(" (")[0]] = (Part(_box(x - dx / 2, x + dx / 2, -dy / 2, dy / 2, z - dz / 2, z + dz / 2), "internal", ("bought", i["mass_kg"]),
+                                                "#76b900" if "companion" in i["item"] else COLORS["internal"], i["source"], "internal"), "body")
     if p["parachute"]:
         xpc = p["parachute_station"] * Lf
         P["parachute"] = (Part(_cyl(35.0, 100.0, (xpc, 0, ztop - 105.0), (0, 0, 1)), "internal", ("bought", k4tq.CATALOGUE["safety"]["recovery parachute"]["mass_kg"]),
@@ -771,6 +779,8 @@ REVISIONS = [
      "two parallel half-packs (nose / behind the front station), cartridge and parachute behind half B solved for the CG, avionics in the tail bay",
      "the CAD found the pack inside the cartridge and the parachute in both; one pack could not reach the CG either way; the halves add redundancy"),
     ("masses", "Stage 1 estimates", "CAD masses (data/k4tq/cad_masses.json)", "the roots +53 %, the structure +23 %: the aircraft +12 % before the propulsion change"),
+    ("names", "configurations A (equal), B (larger rear wing), C", "K4TQ-A \"Cathy\" (Stage 1's B), K4TQ-A2 (Cathy autonomous), E (Stage 1's A), C",
+     "the aircraft named 2026-10-21"),
     ("propulsion and pack", "MN4014 KV400, 15x10, 6S2P", "MN501-S KV300, 16x10, 6S3P",
      "on the CAD masses the mission did not close (−18 Wh) and the sagged T/W fell to 1.43; the sweep (stage2_motor_sweep.csv) passes only with these"),
 ]

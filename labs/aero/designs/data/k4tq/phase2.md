@@ -92,7 +92,7 @@ Disc clearances [mm] (the nearest part that is not its own motor or spinner), ho
 Layout clearances (from `k4tq.layout`): hover disc to disc (front-rear) [m] 143 mm, hover disc separation along x [m] 134 mm, disc to fuselage side [m] 347 mm, disc beyond the wingtip [m] 123 mm, rear disc (cruise) to the front wing trailing edge [m] 331 mm, hover stance: wing trailing edge above the feet [m] 73 mm, cruise stance: lowest disc edge above the feet [m] -18 mm.
 
 
-Transport (fold 85°, blades folded on the wings, legs off): tube **Ø474 mm × 1546 mm** (inner).
+Transport (fold 85°, blades folded on the wings, legs off): tube **Ø478 mm × 1546 mm** (inner).
 
 
 Access: hatch over the cartridge (10 mm all round): True; cartridge lifts out vertically: True; battery reachable: through the cargo bay with the cartridge out (battery under the cartridge floor or ahead of it) — confirm in the render; root blocks: bolted to the frames from inside the cargo bay; the stub slides outboard through the skin after the knuckle is unbolted.
@@ -110,9 +110,9 @@ Access: hatch over the cartridge (10 mm all round): True; cartridge lifts out ve
 | propulsion | 1.012 | 1.012 | +0.0 % |
 | roots | 0.840 | 1.281 | +52.5 % |
 | safety | 0.160 | 0.160 | +0.0 % |
-| structure | 0.935 | 1.148 | +22.9 % |
+| structure | 0.935 | 1.156 | +23.7 % |
 | systems | 0.259 | 0.259 | +0.0 % |
-| total | 6.233 | 6.933 | +11.2 % |
+| total | 6.233 | 6.941 | +11.4 % |
 
 
 Take-off mass with the CAD masses: **6.93 kg**, CG x = 0.587 m (target 0.587); stations: half-packs at 0.289, 0.493 m, cartridge 0.652 m, parachute 0.812 m, avionics 1.005 m. The difference above 5 % sent Stage 1 back: `phase1.md` is regenerated on these masses (revision B).
