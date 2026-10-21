@@ -163,7 +163,7 @@ talos results runs/case                     # prints NOT RUN when nothing was so
 `solve` never meshes implicitly: if the geometry, regions or mesh settings changed since the last
 `mesh`, it fails and asks for a new mesh.
 
-## Validation (vegeta-cli/tests/talos/test_integration.py)
+## Validation (libs/vegeta-cli/tests/talos/test_integration.py)
 - Cantilever 200×20×10 mm, tip load 100 N: tip deflection within 3 % of Euler–Bernoulli
   (observed −0.6 %), root stress within 10 % of Mc/I, reactions balance the load.
 - Bar 100×10×10 mm in tension (force or pressure; C3D10 and C3D4) with symmetry supports:

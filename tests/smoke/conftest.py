@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-for p in (ROOT, ROOT / "designs", ROOT / "vegeta-cli" / "src", ROOT / "vegeta-core" / "src"):
+for p in (ROOT, ROOT / "designs", ROOT / "libs/vegeta-cli" / "src", ROOT / "libs/vegeta-core" / "src"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 os.environ.setdefault("MPLBACKEND", "Agg")

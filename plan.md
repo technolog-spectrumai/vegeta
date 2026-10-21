@@ -32,7 +32,7 @@ code. Human-authority rules (last section) apply to every step.
 ## Step 3 — `vegeta-ai` v0: proposals without a loop  · effort ~1–2 weeks
 
 - **Goal.** Test whether LLM proposals are useful on real parts before automating anything.
-- **Scope.** New distribution `vegeta-ai/` (`vegeta.ai`), depends on `vegeta-core`; optional extras
+- **Scope.** New distribution `libs/vegeta-ai/` (`vegeta.ai`), depends on `vegeta-core`; optional extras
   `[anthropic]`, `[openai]`.
   - `Proposal` types (data only): `ParameterProposal(changes, rationale)`, `AnalysisRequest(kind, name)`,
     `SourcePatchProposal(diff, rationale)`, `Stop(reason)`.

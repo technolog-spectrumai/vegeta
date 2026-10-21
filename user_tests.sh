@@ -87,7 +87,7 @@ LOG="$ROOT/user_tests_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
 export MPLBACKEND=Agg PYTHONWARNINGS="ignore::UserWarning" QT_QPA_PLATFORM=offscreen
 # the source tree importable without an install (activate.sh does the same); the mocks' cache stays out of the repo
-for _d in vegeta-cli/src vegeta-core/src vegeta-ai/src vegeta-fidia/src vendor/ozaru/porunga/src vendor/ozaru/mimezia/src vendor/ozaru/yanus/src side_labs designs; do
+for _d in libs/vegeta-cli/src libs/vegeta-core/src libs/vegeta-ai/src libs/vegeta-fidia/src vendor/ozaru/porunga/src vendor/ozaru/mimezia/src vendor/ozaru/yanus/src side_labs designs; do
   case ":${PYTHONPATH:-}:" in *":$ROOT/$_d:"*) ;; *) PYTHONPATH="$ROOT/$_d${PYTHONPATH:+:$PYTHONPATH}" ;; esac
 done
 # the mock sections never start a solver or call the AI API: CalculiX, OpenFOAM, PrusaSlicer and XFOIL are refused at the
@@ -154,7 +154,7 @@ pytest_summary() {  # pytest_summary <dir> <args...>
 sec_unit() {
   hdr "unit tests"
   echo "  vegeta-cli: chiron, cli, chronos"
-  timed pytest_summary "$ROOT/vegeta-cli" tests/chiron tests/cli tests/chronos || status=1
+  timed pytest_summary "$ROOT/libs/vegeta-cli" tests/chiron tests/cli tests/chronos || status=1
   echo "  designs (Cleopatra, the robot dog and the Onager series in ChironLab, plot helpers)"
   timed pytest_summary "$ROOT/designs" tests || status=1
 }
@@ -214,7 +214,7 @@ for s in "${SECTIONS[@]}"; do
     cli-mock)
       MOCK_PLUGIN=""                       # these tests install the mocks themselves; the solvers stay blocked
       hdr "vegeta-cli: the mocks, the result cache, the CLI"
-      timed pytest_summary "$ROOT/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
+      timed pytest_summary "$ROOT/libs/vegeta-cli" tests/mock tests/cache tests/cli || status=1 ;;
     notebooks-mock)
       hdr "notebooks with the mocks on (every one but the slow ones; scripts/debug_notebooks.sh --all for those)"
       t0=$SECONDS; "$ROOT/scripts/debug_notebooks.sh" -j "$(( JOBS < 4 ? JOBS : 4 ))" $( [ "$EXPERIMENTS" -eq 1 ] && echo --include-experiments) 2>&1 | tail -70 | sed 's/^/  /'
@@ -251,7 +251,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movie in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     jet)
       hdr "Microjet and AGUYA: cycle, templates, thermal FEA, CAD, mission"
-      timed pytest_summary "$ROOT/vegeta-cli" tests/boreas/test_microjet.py tests/aeromant/test_compressible.py tests/talos/test_thermal.py || status=1
+      timed pytest_summary "$ROOT/libs/vegeta-cli" tests/boreas/test_microjet.py tests/aeromant/test_compressible.py tests/talos/test_thermal.py || status=1
       timed pytest_summary "$ROOT/designs" tests/test_turbojet.py tests/test_aguya.py || status=1 ;;
     geometry)
       hdr "Components and assemblies: geometry only"
@@ -291,7 +291,7 @@ for s in "${SECTIONS[@]}"; do
       rc=${PIPESTATUS[0]}; printf '  (%s s, exit %s) movies, telemetry and nisus_mission.json in scenarios/output/\n' $((SECONDS - t0)) "$rc"; [ "$rc" -eq 0 ] || status=1 ;;
     nisus-birds)
       hdr "NISUS bird photography: the mission software (vegeta.mission) and the MuJoCo seam"
-      timed pytest_summary "$ROOT/vegeta-cli" tests/mission || status=1
+      timed pytest_summary "$ROOT/libs/vegeta-cli" tests/mission || status=1
       timed pytest_summary "$ROOT/designs" tests/test_nisus_birds.py -m "not slow" || status=1
       hdr "NISUS-Zero bird missions: reference, stock lens, Nano B01, pigeons, wind, Jetson failure (MuJoCo, 6 videos)"
       XV=""; command -v xvfb-run >/dev/null && [ -z "${DISPLAY:-}" ] && XV="xvfb-run -a"

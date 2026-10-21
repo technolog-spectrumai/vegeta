@@ -9,7 +9,7 @@ the reference that Chiron and Piccolo must reproduce after the move.
 
 | Suite (`-m "not slow"`) | Result | Time |
 |---|---|---|
-| vegeta-cli/tests/cli | 4 passed | 3 s |
+| libs/vegeta-cli/tests/cli | 4 passed | 3 s |
 | …/dedalus | 28 passed | 7 s |
 | …/talos | 35 passed, 23 skipped (no CalculiX) | 1 s |
 | …/aeromant | 87 passed, 4 deselected | 10 s |

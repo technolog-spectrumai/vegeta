@@ -13,7 +13,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 ## 1. Structures: finite elements (Talos: Gmsh + CalculiX)
 
 - **Elements.** Gmsh tetrahedra are written to CalculiX as linear **C3D4** or quadratic **C3D10**
-  (`vegeta-cli/src/vegeta/talos/mesh.py`). Quadratic is the default: linear tetrahedra lock in bending and are far too
+  (`libs/vegeta-cli/src/vegeta/talos/mesh.py`). Quadratic is the default: linear tetrahedra lock in bending and are far too
   stiff.
 - **Mesh.**
   - The size is set by `element_size` (Gmsh `MeshSizeMax`), with an optional minimum.
@@ -59,7 +59,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 - **Blade-element momentum theory (BEMT).**
   - Per annulus, the induced velocity is iterated to the balance of blade-element and momentum thrust, with swirl
     from the torque; hover is included.
-  - Prandtl's tip loss F = (2/π)·arccos(e^−f) is clipped to [0.05, 1] (`vegeta-cli/src/vegeta/boreas/bemt.py`).
+  - Prandtl's tip loss F = (2/π)·arccos(e^−f) is clipped to [0.05, 1] (`libs/vegeta-cli/src/vegeta/boreas/bemt.py`).
 - **Motor and battery.**
   - The motor is a first-order brushless model (Kv, winding resistance R, no-load current I0, current limit Imax).
   - The battery is cells × capacity.
@@ -96,7 +96,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   force to the wings'.
   - Static margin = (neutral point − CG) / mean chord.
   - Positive is stable; it is reported in % MAC.
-- **Tailsitter transitions** (`vegeta-cli/src/vegeta/aeromant/transitions.py`, `designs/kestrel_transition.py`):
+- **Tailsitter transitions** (`libs/vegeta-cli/src/vegeta/aeromant/transitions.py`, `designs/kestrel_transition.py`):
   - a pitch-plane simulation of hover ↔ wing-borne flight through the stall (α ≈ 90°);
   - the slipstream raises the dynamic pressure on the blown span;
   - rotor thrust has limits and lag;

@@ -100,6 +100,6 @@ ones, with the mocks on, at most four side by side on one installed kernel). `--
 `--no-workflow`, `--no-notebook` leave a part out; `-v` gives pytest's full output; `--include-experiments` adds
 `notebooks/exp/` and the Kestrel tests. Each run writes `user_tests_<date>.log`.
 
-`scripts/test_all.sh` runs the tests of each tool (`vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
+`scripts/test_all.sh` runs the tests of each tool (`libs/vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
 tool is missing; markers: `requires_cadquery`, `requires_gmsh`, `requires_ccx`, `requires_openfoam`,
 `requires_prusaslicer`, `slow`. Run only fast tests with `pytest -m "not slow"`.

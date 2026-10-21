@@ -74,7 +74,7 @@ atropos info rib.svg                         # page, paths per layer, lengths
 atropos settings my_settings.py:FINE
 ```
 
-## Validation (vegeta-cli/tests/atropos)
+## Validation (libs/vegeta-cli/tests/atropos)
 - A rectangle offset by k has area A + P·k + 4k² (1e-9); a circle's offset is a radius change (1e-3); a NACA
   outline offset by 0.1 mm changes its area by P·k (0.5 %).
 - A NACA 00xx section's area is 0.6851·t·c² (closed form of the thickness polynomial, 0.2 %).

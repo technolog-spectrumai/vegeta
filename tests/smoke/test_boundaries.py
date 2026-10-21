@@ -8,14 +8,14 @@ ROOT = Path(__file__).resolve().parents[2]
 ROBOTICS_IMPORTS = ("mujoco", "vegeta.chiron", "vegeta.mission", "chiron", "onboard", "races", "piccolo")
 HATCHED = ("piccolo", "onboard")                       # Piccolo's: forbidden everywhere, moving lists or not (the races came home)
 
-ENGINEERING = ["vegeta-cli/src/vegeta", "vegeta-core/src", "vegeta-ai/src", "vegeta-fidia/src", "components",
+ENGINEERING = ["libs/vegeta-cli/src/vegeta", "libs/vegeta-core/src", "libs/vegeta-ai/src", "libs/vegeta-fidia/src", "components",
                "assemblies", "designs", "side_labs", "scenarios", "examples"]
 # Robotics still in Vegeta until it moves to Piccolo/Chiron (docs/migration); emptied by the migration.
-MOVING = ["vegeta-cli/src/vegeta/chiron/*", "vegeta-cli/src/vegeta/mission/*", "designs/*_robot.py",
+MOVING = ["libs/vegeta-cli/src/vegeta/chiron/*", "libs/vegeta-cli/src/vegeta/mission/*", "designs/*_robot.py",
           "designs/*_controller.py", "designs/*_scenario.py", "designs/*_birds*.py", "designs/gait.py",
           "designs/stability_plots.py", "designs/exp/mini_races.py", "designs/tests/*",
           "scenarios/*", "designs/nisus_robot*.py"]
-KNOWN_COUPLING = {"vegeta-cli/src/vegeta/mock/__init__.py", "designs/onager_sweeper_cfd.py"}
+KNOWN_COUPLING = {"libs/vegeta-cli/src/vegeta/mock/__init__.py", "designs/onager_sweeper_cfd.py"}
 
 
 def imports(path):

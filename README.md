@@ -51,7 +51,7 @@ be perfect, general or polished; it has to answer the design question. Rough mod
 half-finished studies are fine here. This is a silver rule, not a golden one: it is subjective and not strict.
 
 The other side of it: once a machine hatches into Piccolo, it is no longer a sketch. Piccolo takes frozen designs and
-holds them to a higher standard. The stable physics of standard parts lives in Ogma (`ogma/`, the parts library), with tests
+holds them to a higher standard. The stable physics of standard parts lives in Ogma (`libs/ogma/`, the parts library), with tests
 pinned to reference values. The way to check Vegeta quickly is `./test.sh --smoke` plus the mocked tests
 (`VEGETA_DEBUG=1`, `-p vegeta.mock.pytest_plugin`); the slow full suites are in `user_tests.sh`.
 
@@ -517,15 +517,15 @@ walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculpt
 
 ## Layout
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr}, tests/<tool>/
-vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
-vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
-vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
+libs/vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr}, tests/<tool>/
+libs/vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
+libs/vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
+libs/vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
 notebooks/         devices/, parts/, scenarios/, races/ (the Merlin race), demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
 designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
 side_labs/         optional, expensive calculations (CFD, FEA) under the run contract; `wf` / ./side_labs.sh
 vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimezia mocks, Yanus requirement checks); vendor/OZARU_REVISION
-ogma/              Ogma, the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
+libs/ogma/              Ogma, the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
 vendor/yax/        Yax, vendored by git subtree: the design-format converter (USD hub; URDF, SDF, MJCF, JSBSim, STEP); vendor/YAX_REVISION
 components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
 assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md

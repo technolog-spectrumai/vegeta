@@ -70,10 +70,16 @@ def notebook_source(path: Path) -> str:
 def area_of(rel: Path) -> str:
     """The part of Vegeta a file belongs to: vegeta.<pkg> for the packages, the top-level directory otherwise."""
     p = rel.parts
+    if p[0] == "libs" and len(p) > 2:                                         # libs/<dist>/…: the library layer
+        if p[1] == "labkit":
+            return "vegeta.labkit"
+        p = p[1:]
+    if p[0] == "labs" and len(p) > 2:                                         # labs/<lab>/…
+        return "labs/" + p[1]
     if p[0].startswith("vegeta-"):
         if "src" in p and len(p) > p.index("src") + 2:
             return "vegeta." + p[p.index("src") + 2].removesuffix(".py")
-        if len(p) > 2 and p[1] == "tests":                                   # vegeta-cli/tests/<pkg>/…
+        if len(p) > 2 and p[1] == "tests":                                   # libs/vegeta-cli/tests/<pkg>/…
             pkg = p[2] if len(p) > 3 else p[0].removeprefix("vegeta-")
             return "vegeta." + pkg
         return "vegeta." + p[0].removeprefix("vegeta-")

@@ -43,7 +43,7 @@ if [ "$SMOKE" = 1 ]; then
     --deselect=races/tests/test_races.py::test_chapter_script_with_the_mock >"$RACES_LOG" 2>&1 &
   RACES_PID=$!
   time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
-    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke ogma/tests \
+    --deselect libs/vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke libs/ogma/tests \
     --ignore=tests/smoke/test_races_golden.py "${EXISTING[@]}"
   status=$?
   wait "$RACES_PID"; races=$?
@@ -92,7 +92,7 @@ optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__versi
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
 optional mimezia  "$PY" -c "import mimezia; print('mimezia', mimezia.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
 optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(vendor/yax: the design-format converter)')"
-check ogma        "$PY" -c "import ogma; print('ogma', ogma.__version__, '(ogma/: the parts library)')"
+check ogma        "$PY" -c "import ogma; print('ogma', ogma.__version__, '(libs/ogma/: the parts library)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
 import tempfile
 from vegeta.fidia import execute

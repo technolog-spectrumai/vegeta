@@ -312,7 +312,7 @@ notebooks 28 and 29 run them.
   (`FOAM FATAL IO ERROR: error in IOstream "sha1"`), so no force coefficients. Aeromant reports this
   with a hint instead of returning numbers.
 
-## Validation (vegeta-cli/tests/aeromant/test_integration.py)
+## Validation (libs/vegeta-cli/tests/aeromant/test_integration.py)
 Laminar sphere, Re = 100, ~49k cells: Cd = 1.100 vs Schiller–Naumann 1.092 (+0.7 %; test tolerance
 10 %), |Cl| < 0.02, converged in ~105 iterations (OpenFOAM v2412). The test harness picks the
 installation from `AEROMANT_TEST_OPENFOAM_PREFIX` / `AEROMANT_TEST_OPENFOAM_BASHRC` or `detect()`.

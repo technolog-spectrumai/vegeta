@@ -54,7 +54,7 @@ def _mimezia():
         import mimezia
     except ImportError:                                        # a source tree without the editable install
         import sys
-        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "vendor" / "ozaru" / "mimezia" / "src"))
+        sys.path.insert(0, str(Path(__file__).resolve().parents[5] / "vendor" / "ozaru" / "mimezia" / "src"))
         import mimezia
     return mimezia
 
