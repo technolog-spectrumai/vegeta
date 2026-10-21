@@ -1,7 +1,8 @@
-"""Yax's tests run from the source tree without an install."""
+"""Yax's tests run from the source tree without an install (``tests/helpers.py`` importable too)."""
 import sys
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parent / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+ROOT = Path(__file__).resolve().parent
+for p in (ROOT / "src", ROOT / "tests"):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))

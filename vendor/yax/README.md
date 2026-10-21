@@ -1,8 +1,37 @@
 # Yax
 
-**Yax 2 (in progress): the format converter.** Platforms exchange standard files — Piccolo URDF/SDF, Vegeta MJCF and
-JSBSim, CadQuery STEP, everyone USD — and Yax converts between them through a USD hub
-([docs/converter.md](docs/converter.md)). Yax imports no platform's code; Vegeta and Piccolo vendor it.
+**Design interchange through standard files.** Platforms exchange the files that are natural to them — Piccolo
+URDF and SDF (ROS, Gazebo), Vegeta MJCF (MuJoCo, Chiron) and JSBSim (flight models), CadQuery STEP — and USD as the
+universal file. Yax converts between them; every conversion passes through a USD stage (the hub) and reports what the
+target format cannot hold. Yax imports no platform's code; Vegeta and Piccolo vendor it. Design: [docs/converter.md](docs/converter.md).
+
+```python
+import yax
+
+report = yax.convert("rover.xml", "rover.urdf")    # MJCF → USD → URDF
+print(report)                                      # e.g. "dropped: joint wrist: spherical (no URDF joint) — written as fixed"
+m, rep = yax.read("c172x.xml")                     # JSBSim (detected from <fdm_config>) → yax.Machine
+yax.save(m, "c172x.usda")                          # the universal file
+```
+
+```bash
+yax convert rover.xml rover.sdf        # or: python -m yax convert …
+yax show rover.sdf                     # links, joints, mass
+```
+
+| Format | Read | Write | Checked by |
+|---|---|---|---|
+| USD | ✓ | ✓ | exact round trips (double-precision copies of USD's float attributes) |
+| MJCF | ✓ (compiled by MuJoCo) | ✓ | MuJoCo compiles it: same bodies, inertias, joints, geoms, actuators |
+| URDF | ✓ | ✓ | round trips relative to the root; capsules/ellipsoids as STL meshes, ball joints as fixed (reported) |
+| SDF 1.9 | ✓ | ✓ | round trips with absolute poses; drives reported (Gazebo plugins carry them) |
+| JSBSim | ✓ | ✓ | the C172X converted loads in JSBSim with the same mass, CG, inertia and aerodynamics (1e-12) |
+| STEP | ✓ (+ exact mass properties given a density) | ✓ | solid volumes equal the shapes' (1e-6) |
+| STL | ✓ | ✓ | — |
+| Yax 1 package | ✓ | (`yax.write`) | spec tests |
+
+Install: `pip install -e .` (numpy, usd-core) with the extras the formats need: `[mjcf]` MuJoCo, `[step]` CadQuery,
+`[jsbsim]` JSBSim, `[all]`. Tests: `./test.sh` (engines not installed → their tests skip), `./user_tests.sh` (verbose, logged).
 
 ## Yax 1 packages (still read)
 
