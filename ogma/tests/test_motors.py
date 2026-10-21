@@ -57,3 +57,8 @@ def test_transmissions_are_the_robots_hand_conversions():
     assert motors.lever(800.0, 25.0 / 1000.0, 0.12) == (800.0 * 0.12, 25.0 / 1000.0 / 0.12)
     assert motors.lever(300.0 / 0.4, 0.5, 0.03) == (300.0 / 0.4 * 0.03, 0.5 / 0.03)
     assert motors.gearbox(0.2, 900.0, 12.0, 0.9) == (0.2 * 12.0 * 0.9, 900.0 / 12.0)
+
+
+def test_kt_is_the_motors():
+    m = motors.DCMotor("m", 880.0, 0.1, 0.5, 25.0)
+    assert motors.kt(880.0) == m.kt == 60 / (2 * np.pi * 880.0)
