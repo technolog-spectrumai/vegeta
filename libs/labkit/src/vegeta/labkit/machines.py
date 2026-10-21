@@ -7,7 +7,8 @@ Each lab declares its machines in ``designs/machines.py``::
 
 ``register(name, build, parts=None)``: ``build`` is a callable returning a Chiron ``Robot``, or ``"module:function"``
 imported lazily from the lab's ``designs/`` (on ``sys.path`` once ``discover`` has run); ``parts(machine)`` returns the
-part data a simulator needs and MJCF cannot hold (rotor constants, wheel radii), kept in the USD as ``data["ogma"]``.
+part data a simulator needs and MJCF cannot hold, keyed by kind — ``{"ogma": …}`` (rotor constants, wheel radii),
+``{"propulsion": …}`` (propeller maps, ``vegeta.labkit.propulsion``) — merged into the machine's ``data`` (kept in the USD).
 ``discover(*designs_dirs)`` runs each lab's ``machines.py``; ``tools/export.py`` exports what is registered."""
 from __future__ import annotations
 

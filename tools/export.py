@@ -4,9 +4,11 @@
     python tools/export.py --list
 
 A machine is what a lab registers in its ``labs/aero/designs/machines.py`` (``vegeta.labkit.machines``): its Chiron robot plus
-the part data a simulator needs and MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models, from Ogma's laws and the
-design's propulsion. The robot goes ``to_mjcf()`` → Yax (USD hub); the part data rides in the USD as ``data["ogma"]``
-(Yax keeps it; formats that cannot hold it report it). ``--lump`` writes the body as one rigid link at q = 0 minus the
+the part data a simulator needs and MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models
+(``data["ogma"]``) and the propeller maps (``data["propulsion"]``, ``vegeta.labkit.propulsion``: geometry, CT/CP against the
+advance ratio, the grid, the motor, the reduced constants), from Ogma's laws, Boreas' maps and the design's propulsion. The
+robot goes ``to_mjcf()`` → Yax (USD hub); the part data rides in the USD (Yax keeps it; JSBSim gets the propellers as
+propeller files, SDF gets the reduction reported, the other formats report the loss). ``--lump`` writes the body as one rigid link at q = 0 minus the
 rotors (Gazebo's multicopters spin separate rotor links), with each rotor's own mass and inertia in the part data.
 Who receives the files maps the names with ``yax sync`` (Piccolo: ``vehicles/<app>.map.json``).
 """
@@ -48,7 +50,7 @@ def machine(name: str, *, lump: bool = False):
     m.name = name
     m.data.pop("mjcf", None)
     if parts:
-        m.data["ogma"] = parts(m)
+        m.data.update(parts(m))                                              # {"ogma": …, "propulsion": …}
     m.producer = {"tool": "vegeta.tools.export", "machine": name, "lab": entry.lab, "revision": _revision(),
                   "lumped": lump}
     if lump:
@@ -91,7 +93,11 @@ def export(name: str, to, *, also=(), lump: bool = False) -> list:
     to = Path(to)
     reports = [rin, yax.save(m, to)]
     for ext in also:
-        reports.append(yax.save(m, to.with_suffix("." + ext.lstrip("."))))
+        ext = ext.lstrip(".")
+        if ext == "jsbsim":                                                   # aircraft/<name>/<name>.xml, as JSBSim loads it
+            reports.append(yax.save(m, to.parent / "jsbsim" / "aircraft" / name / f"{name}.xml", fmt="jsbsim"))
+        else:
+            reports.append(yax.save(m, to.with_suffix("." + ext)))
     return reports
 
 
@@ -99,7 +105,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Export a Vegeta machine as standard files through Yax.")
     ap.add_argument("machine", nargs="?")
     ap.add_argument("--to", help="the main file (.usda/.usdc recommended)")
-    ap.add_argument("--also", nargs="*", default=[], help="more formats beside it: sdf urdf xml step stl")
+    ap.add_argument("--also", nargs="*", default=[], help="more formats beside it: sdf urdf xml step stl jsbsim (jsbsim/aircraft/<name>/)")
     ap.add_argument("--lump", action="store_true", help="one rigid body minus the rotors (multicopter simulators)")
     ap.add_argument("--list", action="store_true")
     a = ap.parse_args(argv)
