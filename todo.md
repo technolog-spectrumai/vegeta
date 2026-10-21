@@ -58,7 +58,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.3 `labs/{aero,land,legged,marine,studio}` in lifecycle folders (`studies, designs, sims, campaigns, exp, common, tests`); `components/` folded into `designs/`; all lab tests pass on mocks
 - [x] V7.4 `tools/lab.py` (test, run, new-exp, promote, demote, export, readme), generated lab READMEs (machines' stages); `user_tests.sh` mocks only, per lab
 - [x] V7.5 The graph effects measured (`docs/anatomy`): 0 cross-lab imports, 0 libs → lab imports, modularity 0.419 → 0.455, each lab reached by itself only (entropy 0), the libraries by several (0.57–0.99)
-- [ ] V7.6 Notebooks: replace the `sys.path.insert(0, "../designs")` cells with `bootstrap.lab("<lab>", DEBUG)` (new notebooks get it from `tools/lab.py new-exp`)
+- [x] V7.6 Notebooks start with `bootstrap.lab("<lab>", DEBUG)` (61 notebooks: the `sys.path.insert` cells and `mock.setup` replaced; every notebook's bootstrap and imports run on mocks)
 - [ ] V7.7 Fill each lab's `common/` with what its studies repeat; the tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py` …) into one `vegeta.cli` util
 - [ ] V7.8 Marine and studio get tests
 
