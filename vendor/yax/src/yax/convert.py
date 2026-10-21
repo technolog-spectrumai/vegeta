@@ -61,9 +61,9 @@ def save(m: Machine, path, fmt: str | None = None, *, report: Report | None = No
             path.unlink()
         hub.to_stage(m, path)
         return rep
-    if fmt != "yx2":                                                          # a withheld feature is a loss to know about
-        from .features import report_excluded                                 # (a YX2 says it itself, in yax:features)
-        report_excluded(m, rep)
+    if fmt != "yx2":                                                          # a withheld tag is a loss to know about
+        from .tags import report_withheld                                     # (a YX2 says it itself, in yax:tags)
+        report_withheld(m, rep)
     return _module(fmt).write(m, path, rep, **opts)
 
 
@@ -88,7 +88,7 @@ def info(path, fmt: str | None = None) -> str:
     m, rep = read(path, fmt)
     lines = [f"{m.name}: {len(m.links)} links, {len(m.joints)} joints, {m.total_mass():.6g} kg"
              + (f"; data: {', '.join(sorted(m.data))}" if m.data else "")
-             + (f"; excluded: {', '.join(m.features['excluded'])}" if m.features.get("excluded") else "")]
+             + (f"; withheld: {', '.join(m.tags['withheld'])}" if m.tags.get("withheld") else "")]
     for lk in m.links:
         lines.append(f"  link {lk.name}: {lk.mass if lk.mass is not None else '—'} kg, "
                      f"{len(lk.shapes)} shapes ({', '.join(s.kind for s in lk.shapes)})")
