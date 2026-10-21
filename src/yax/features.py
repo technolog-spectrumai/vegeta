@@ -53,6 +53,7 @@ JOINT_DATA = {"motors": ("motor",), "connections": ("connection",)}
 #: What each format can hold, natively or verbatim through USD (the writers report the rest).
 SUPPORT = {
     "usd": set(FEATURES),
+    "yx2": set(FEATURES),
     "mjcf": {"geometry", "mass", "inertia", "joints", "motors"},
     "urdf": {"geometry", "mass", "inertia", "joints"},
     "sdf": {"geometry", "mass", "inertia", "joints", "sensors"},

@@ -40,6 +40,7 @@ never touched (`src/yax/sync.py` documents the map).
 
 | Format | Read | Write | Checked by |
 |---|---|---|---|
+| **YX2** (`.yx2`) | ✓ | ✓ | the exchange file: a validated USD subset — units, frame, stable ids, feature metadata, canonical text (`write(read(f)) == f`); `yax check f.yx2`; [docs/yx2.md](docs/yx2.md) |
 | USD | ✓ | ✓ | exact round trips (double-precision copies of USD's float attributes) |
 | MJCF | ✓ (compiled by MuJoCo) | ✓ | MuJoCo compiles it: same bodies, inertias, joints, geoms, actuators |
 | URDF | ✓ | ✓ | round trips relative to the root; capsules/ellipsoids as STL meshes, ball joints as fixed (reported) |
