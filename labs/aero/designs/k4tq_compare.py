@@ -1,5 +1,6 @@
 """K4TQ — the designs side by side: K4TQ-A1 "Cathy", K4TQ-A2 (Cathy autonomous), K4TQ-F1 "Freddy" (front NACA 4415, rear
-NACA 2415: the NeuralFoil study's sections) and K4TQ-F2 (Freddy autonomous), or any ``k4tq`` variant (E, C) and parameter set.
+NACA 2415: the NeuralFoil study's sections), K4TQ-F2 (Freddy autonomous), K4TQ-D1 "Dorothy" (Freddy with the powered
+in-flight fold) and D2, or any ``k4tq`` variant (E, C) and parameter set.
 
 Everything comes from the design modules (``k4tq``, ``k4tq_sizing``, ``k4tq_sections``, ``k4tq_cad``): this module
 only evaluates and tabulates. Masses are the CAD's where ``data/k4tq/cad_masses.json`` holds the design's geometry

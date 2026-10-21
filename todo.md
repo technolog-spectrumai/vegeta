@@ -84,6 +84,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] K4.7 Wing sections by flight phase (NeuralFoil, `designs/k4tq_sections.py`, `exp/K4TQ_airfoils.ipynb`): front NACA 4415, rear NACA 2415 → K4TQ-F1 "Freddy" / F2; the four designs compared in `exp/K4TQ_compare.ipynb`
 - [ ] K4.8 K4TQ-A1 / A2 (NACA 2412 front) leave 14.4 mm of section depth at the 120 mm front tip chord for a Ø16 spar that needs 18 mm: adopt K4TQ-F1's (Freddy's) sections, or taper the spar to Ø12 at the tip (Stage 4 structure decides)
 - [ ] K4.9 Run the section CFD check (`exp/K4TQ_airfoils.ipynb`, DEBUG = False, ~30–45 min) — confirm NeuralFoil's ranking before freezing Freddy
+- [x] K4.10 K4TQ-D1 "Dorothy" (branch `dev_kestrel4`): the powered in-flight fold; the smoke-zone study (`exp/K4TQ_dorothy.ipynb`): a 20–30° V-tuck cuts the gust bump to 75–88 % and keeps 65–83 % of the roll authority; > 35° the folded stall speed passes the propellers' speed; folding adds drag (no speed gain)
+- [ ] K4.11 Dorothy's open items: the sagged-pack T/W 1.53 on 16x10 (< 1.6: 17x10 restores 1.78 at a 6 Wh R3 margin); D2 does not close the 1 kg mission; the fold-drive fairings' drag (4 × 6 cm² assumed: L/D 11.1 → 9.8) — the root-junction CFD (K4.1) decides; the smoke's heat on the motors, the ESCs and the Jetson's inlet
 - [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
 
 ## Stage V5 — Later: graduations to Piccolo

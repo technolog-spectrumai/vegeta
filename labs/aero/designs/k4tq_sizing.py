@@ -294,6 +294,8 @@ def drag_buildup(L: dict, *, V: float = 20.0, n_running: int = 4) -> dict:
         S_fin = p["fin_area"] or 0.030
         rows["fin"] = og_aero.cf_mixed(V * math.sqrt(S_fin) / NU) * 1.15 * 2.04 * S_fin
     rows["root gaps (4)"] = 4 * ROOT_GAP_CDA
+    if p.get("flight_fold"):
+        rows["fold-drive fairings (4)"] = 4 * FOLD_DRIVE_CDA
     if n_running < 4:
         rows[f"stopped propellers ({4 - n_running}, folded)"] = (4 - n_running) * FOLDED_BLADE_CDA
     total = sum(rows.values()) * INTERFERENCE
@@ -374,6 +376,9 @@ def k_total(veh: dict) -> float:
 
 
 PROFILE_ROUGHNESS = 1.10           # a built-up wing's profile drag over the clean section's (NeuralFoil, n_crit 6)
+FOLD_DRIVE_CDA = 0.0006           # m² per root: K4TQ-D1's fold gearmotor fairing on the inner clevis, outside the skin (ESTIMATE)
+DIVE_VNE = 35.0                   # m/s: Dorothy's never-exceed speed in the tuck (the structure re-checked to it in Stage 4)
+N_TUCK = 2.0                      # limit load factor with the wings folded (a pull-out from the dive)
 
 
 def profile_model(veh: dict):
@@ -405,6 +410,167 @@ def profile_model(veh: dict):
         wings = sum(v for k, v in d["parts_m2"].items() if k.startswith("wings")) * INTERFERENCE
         return (d["CdA_m2"] - wings) / L["S_ref"] + cd + k_ind * CL ** 2
     return CD
+
+
+def tuck(veh: dict, *, folds=(0.0, 30.0, 45.0, 60.0), gammas=(-10.0, -20.0, -30.0, -45.0, -60.0), V_ne: float = DIVE_VNE) -> pd.DataFrame:
+    """K4TQ-D1's V-tuck: the wings folded up by ``fold`` about their hinge pins (at tilt 0: the thrust still along the
+    chord, the propellers still control). Each wing's vertical lift falls with cos² fold (its normal force tilts and its
+    incidence in the stream falls with cos fold), its own stall at cl_max × cos fold, the induced drag rises as the
+    projected span (b cos fold) shrinks; the profile drag (the wetted area) does not change. For each fold and dive
+    angle γ: the steady speed with no thrust (drag = W sin|γ|, lift = W cos γ), the sink rate, and — where it is beyond
+    ``V_ne`` — the braking force needed there. The 1 g stall speed and the gust-response factor with the fold."""
+    L, W = veh["L"], veh["W"]
+    st = veh["stall"]
+    prof = profile_model(veh)
+    d = drag_buildup(L, n_running=0)
+    k_ind = veh["aero"]["k"] / OSWALD_VISCOUS
+    rows = []
+    for th in folds:
+        c = math.cos(math.radians(th))
+        for g in gammas:
+            sg, cg = math.sin(math.radians(-g)), math.cos(math.radians(g))
+
+            def drag(V):
+                q = 0.5 * RHO * V * V
+                CL = W * cg / (q * L["S_ref"])                       # the vertical lift coefficient
+                cl_panel = CL / c ** 2                                  # what the folded wings' own coefficient must be (on S)
+                base = prof(V, cl_panel * c, d) if prof else d["Cd0"] + k_total(veh) * (cl_panel * c) ** 2
+                ind = k_ind * CL ** 2
+                return q * L["S_ref"] * (base - k_ind * (cl_panel * c) ** 2 + ind / c ** 2), cl_panel
+            lo, hi = 8.0, 150.0
+            for _ in range(50):
+                mid = 0.5 * (lo + hi)
+                if drag(mid)[0] < W * sg:
+                    lo = mid
+                else:
+                    hi = mid
+            V = 0.5 * (lo + hi)
+            Dne, cl_ne = drag(V_ne)
+            stall_ok = drag(V)[1] * max(st["cl front / CL"], st["cl rear / CL"]) <= st["CL max (aircraft)"] * max(st["cl front / CL"], st["cl rear / CL"]) * c
+            rows.append({"fold [deg]": th, "dive γ [deg]": g, "steady dive speed, no thrust [m/s]": V, "sink [m/s]": V * sg,
+                         "within V_ne": V <= V_ne, "braking needed at V_ne [N]": max(W * sg - Dne, 0.0), "wings unstalled": bool(stall_ok),
+                         "1 g stall speed [m/s]": stall_speed(veh) / math.sqrt(c), "gust response (× unfolded)": c ** 2})
+    df = pd.DataFrame(rows).set_index(["fold [deg]", "dive γ [deg]"])
+    df.attrs["label"] = label("CALC")
+    df.attrs["V_ne"] = V_ne
+    return df
+
+
+def smoke_transit(veh: dict, *, folds=(0.0, 20.0, 30.0, 45.0, 60.0), zone_m: float = 150.0, gust: float = 6.0, dT: float = 50.0,
+                  roll_delta_deg: float = 5.0) -> pd.DataFrame:
+    """K4TQ-D1 through a smoke zone (a fire's plume: hot, turbulent, low visibility) with the wings folded up by ``fold``
+    (the V-tuck at tilt 0: the propellers still thrust along the chords and still control). The air ``dT`` hotter
+    (lighter: less lift and less thrust), a sharp-edged gust ``gust`` (alleviation 0.7). Per fold:
+
+    - the 1 g stall speed (the folded wings' vertical CL max = CL max × cos fold) and the transit speed (1.25 × it, at
+      least the best-range speed), the electrical power there and the thrust left;
+    - the gust's load-factor bump (the lift slope × cos² fold): what folding buys in the turbulence;
+    - manoeuvrability: the load factor the wings can pull at the transit speed (capped at the tuck's ``N_TUCK``), the
+      turn radius; roll authority from the wings' differential incidence ±``roll_delta_deg`` (lift × arm: cos³ fold),
+      pitch from the front/rear incidence (cos² fold), yaw from differential thrust (arm: cos fold), each against
+      unfolded;
+    - the time in the zone."""
+    L, W, p = veh["L"], veh["W"], veh["p"]
+    rho_h = RHO * 288.15 / (288.15 + dT)
+    st = veh["stall"]
+    a = veh["aero"]
+    prof = profile_model(veh)
+    d = drag_buildup(L, n_running=4)
+    k_ind = a["k"] / OSWALD_VISCOUS
+    V_br = best_speeds(cruise(veh, n_running=2))["best range V [m/s]"]
+    m = veh["drive"]
+    rows = []
+    base = None
+    for th in folds:
+        c = math.cos(math.radians(th))
+        Vs = math.sqrt(2 * W / (rho_h * L["S_ref"] * st["CL max (aircraft)"] * c))
+        V = max(1.25 * Vs, V_br)
+        q = 0.5 * rho_h * V * V
+        CL = W / (q * L["S_ref"])
+        cl_n = CL / c ** 2
+        cd_base = (prof(V, cl_n * c, d) - k_ind * (cl_n * c) ** 2) if prof else d["Cd0"]
+        D = q * L["S_ref"] * (cd_base + k_ind * CL ** 2 / c ** 2)
+        T_each = D / 4
+        Tmax = max_thrust(m, V) * rho_h / RHO
+        dp = drive_point(m, V, T_each * RHO / rho_h)                 # the map at sea level: the same thrust coefficient
+        P = 4 * dp["electrical_W"] * rho_h / RHO + k4tq.avionics_power(p) if dp["feasible"] else math.inf
+        dn = 0.7 * rho_h * V * a["CLa"] * c ** 2 * L["S_ref"] * gust / (2 * W)
+        n_aero = q * L["S_ref"] * st["CL max (aircraft)"] * c / W
+        n_max = min(n_aero, N_TUCK)
+        R = V * V / (G * math.sqrt(max(n_max ** 2 - 1, 1e-9))) if n_max > 1.0 else math.inf
+        roll = c ** 3
+        rows.append({"fold [deg]": th, "1 g stall in the hot air [m/s]": Vs, "transit speed [m/s]": V, "electrical [W]": P,
+                     "thrust used / available": T_each / Tmax, "gust bump Δn": dn, "gust bump (× unfolded)": c ** 2,
+                     "load factor available": n_max, "turn radius [m]": R, "roll authority (× unfolded)": roll, "pitch authority (× unfolded)": c ** 2,
+                     "yaw authority (× unfolded)": c, f"time in {zone_m:.0f} m [s]": zone_m / V, "span seen [m]": p["span"] * c + 2 * L["prop"]["R"] * 0.0})
+    df = pd.DataFrame(rows).set_index("fold [deg]")
+    df["within the propellers' speed"] = df["thrust used / available"].between(0.0, 0.85)
+    # the same transit speed for every fold (the slowest the most folded feasible case allows): the manoeuvring margin
+    Vc = float(df.loc[df["within the propellers' speed"], "transit speed [m/s]"].max())
+    qc = 0.5 * rho_h * Vc * Vc
+    df[f"load factor at {Vc:.0f} m/s"] = [min(qc * L["S_ref"] * st["CL max (aircraft)"] * math.cos(math.radians(th)) / W, N_TUCK) for th in df.index]
+    df[f"turn radius at {Vc:.0f} m/s [m]"] = [Vc * Vc / (G * math.sqrt(n * n - 1)) if n > 1.0 else math.inf for n in df[f"load factor at {Vc:.0f} m/s"]]
+    df.attrs.update(label=label("CALC"), rho_hot=rho_h, dT=dT, gust=gust, zone_m=zone_m, V_common=Vc)
+    return df
+
+
+def fold_level(veh: dict, *, folds=(0.0, 20.0, 30.0, 45.0), speeds=np.arange(18.0, 33.0, 1.0)) -> pd.DataFrame:
+    """Level flight at sea level with the wings folded up by ``fold`` (four motors): the drag split (profile — the wetted
+    area, unchanged by the fold —, induced — up by 1 / cos² fold for the same lift, the projected span shrinking —, the
+    rest), the electrical power, the thrust left. Does folding go faster? Only if it removed drag; it adds it."""
+    L, W, p = veh["L"], veh["W"], veh["p"]
+    st, a = veh["stall"], veh["aero"]
+    prof = profile_model(veh)
+    d = drag_buildup(L, n_running=4)
+    k_ind = a["k"] / OSWALD_VISCOUS
+    m = veh["drive"]
+    rows = []
+    for th in folds:
+        c = math.cos(math.radians(th))
+        for V in speeds:
+            q = 0.5 * RHO * V * V
+            CL = W / (q * L["S_ref"])
+            if CL > st["CL max (aircraft)"] * c / CRUISE_MIN_OVER_STALL ** 2:
+                continue
+            cl_n = CL / c ** 2
+            base = (prof(V, cl_n * c, d) - k_ind * (cl_n * c) ** 2) if prof else d["Cd0"]
+            ind = k_ind * CL ** 2 / c ** 2
+            wings = sum(v for k, v in d["parts_m2"].items() if k.startswith("wings")) * INTERFERENCE / L["S_ref"]
+            D = q * L["S_ref"] * (base + ind)
+            dp = drive_point(m, V, D / 4)
+            rows.append({"fold [deg]": th, "V [m/s]": V, "drag [N]": D, "induced share": ind / (base + ind), "electrical [W]":
+                         4 * dp["electrical_W"] + k4tq.avionics_power(p) if dp["feasible"] else math.inf, "feasible": dp["feasible"]})
+    df = pd.DataFrame(rows).set_index(["fold [deg]", "V [m/s]"])
+    df.attrs["label"] = label("CALC")
+    return df
+
+
+def hover_fold(veh: dict, folds=(0.0, 15.0, 30.0, 45.0)) -> pd.DataFrame:
+    """The fold in the hover (tilt 90°: the hinge pins vertical, the thrust still vertical): the footprint narrows, the
+    roll arms shrink by cos fold, the pitch arm (front to rear) and the yaw torque stay — a quad-like slow passage through
+    a narrow gap. The disc-to-structure clearance at each fold comes from the CAD (``k4tq_cad.interferences``)."""
+    p, L = veh["p"], veh["L"]
+    rows = []
+    for f in folds:
+        c = math.cos(math.radians(f))
+        r = p["motor_y"] - L["wings"]["front"]["y_hinge"]
+        rows.append({"fold [deg]": f, "width over the discs [m]": 2 * (L["wings"]["front"]["y_hinge"] + r * c + L["prop"]["R"]),
+                     "roll arm (× unfolded)": (L["wings"]["front"]["y_hinge"] + r * c) / p["motor_y"], "pitch arm (× unfolded)": 1.0, "yaw (rotor torques)": 1.0,
+                     "discs move aft [m]": r * math.sin(math.radians(f))})
+    df = pd.DataFrame(rows).set_index("fold [deg]")
+    df.attrs["label"] = "ESTIMATE"
+    return df
+
+
+def fold_drive_loads(veh: dict) -> dict:
+    """The fold drive's hinge moment in the tuck (the panel's root bending at ``N_TUCK``, ultimate) against what the
+    worm gearmotor and its 6:1 sector hold (~15 N·m), and the lock's role (fail-safe locked at fold 0)."""
+    r = root_loads(veh)
+    M_lim_tuck = r["root moment, cruise limit [N·m]"] * N_TUCK / N_LIMIT
+    M_ult = ULTIMATE * M_lim_tuck
+    held = 2.5 * 6.0
+    return {"hinge moment in the tuck, limit [N·m]": M_lim_tuck, "ultimate [N·m]": M_ult, "the drive holds [N·m]": held, "reserve": held / M_ult,
+            "unfolded flight": "the solenoid lock carries the full cruise moment (as Freddy's pin); the drive is unloaded", "label": "ESTIMATE"}
 
 
 def stall_speed(veh: dict, n: float = 1.0) -> float:

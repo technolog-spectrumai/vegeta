@@ -130,6 +130,9 @@ def polar(name: str, Re: float, *, cache: dict | None = None):
     near = [(abs(float(kk.split("|")[1]) - Re), kk) for kk in cache if kk.split("|")[0] == name and kk.split("|")[2] == f"{N_CRIT:g}"]
     if mock.installed() and near and min(near)[0] <= 0.15 * Re:           # the mocked sizing moves the Reynolds numbers a little: the nearest cached
         return Polar.from_dict(cache[min(near)[1]])
+    res = sorted(float(kk.split("|")[1]) for _, kk in near)
+    if near and (Re < res[0] or Re > res[-1]):                          # beyond the cached grid: its edge (the Re effect flattens out)
+        return Polar.from_dict(cache[min(near)[1]])
     if mock.installed():
         raise RuntimeError(f"{name} at Re {Re:.0f} is not in {CACHE.name} and the mocks are on: run k4tq_sections.study() once with the mocks off "
                            "(NeuralFoil takes milliseconds)")

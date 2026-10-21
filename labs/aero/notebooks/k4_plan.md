@@ -64,6 +64,8 @@ Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report 
 | K4TQ-A2 | Cathy fully autonomous: Jetson Orin NX companion + stereo + downward perception (+0.29 kg, +27 W) | `k4tq.VARIANTS["A2"]` |
 | K4TQ-F1 "Freddy" | Cathy's airframe, front NACA 4415 / rear NACA 2415 (the NeuralFoil study, `exp/K4TQ_airfoils.ipynb`) | `k4tq.VARIANTS["F1"]` |
 | K4TQ-F2 | Freddy fully autonomous | `k4tq.VARIANTS["F2"]` |
+| K4TQ-D1 "Dorothy" | Freddy + the powered in-flight fold (worm gearmotor + 6:1 sector per hinge, solenoid lock): the smoke-zone V-tuck, the narrow hover | `k4tq.VARIANTS["D1"]`, `exp/K4TQ_dorothy.ipynb` (branch `dev_kestrel4`) |
+| K4TQ-D2 | Dorothy fully autonomous | `k4tq.VARIANTS["D2"]` |
 
 Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`). E (equal tandem) and C (compact) are the Stage 1 studies.
 

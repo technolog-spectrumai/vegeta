@@ -91,6 +91,14 @@ CATALOGUE = {
         "airspeed sensor": {"mass_kg": 0.010, "price_eur": 45.0, "source": "MS4525 pitot (transition schedule needs airspeed)"},
         "remote ID + nav/status lights": {"mass_kg": 0.020, "price_eur": 60.0, "source": "EU direct remote ID, blue/white LEDs"},
     },
+    # K4TQ-D1 "Dorothy" — the powered in-flight fold (per wing root; estimates, to verify in Stage 4)
+    "fold_drive": {
+        "fold gearmotor (worm, self-locking)": {"mass_kg": 0.095, "price_eur": 45.0, "power_W": 15.0,
+            "source": "12 V worm gearmotor class, ~2.5 N·m, self-locking (holds any fold angle unpowered)"},
+        "fold sector gear 6:1 + bracket": {"mass_kg": 0.035, "price_eur": 30.0, "source": "7075 sector on the outer knuckle: ~15 N·m at the hinge"},
+        "lock solenoid (fail-safe locked)": {"mass_kg": 0.022, "price_eur": 25.0, "source": "spring-locked, powered open: replaces the manual locking pin"},
+        "fold encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 on the hinge pin"},
+    },
     # K4TQ-A2 — the fully autonomous variant's companion computer and perception (estimates; Jetson power by its nvpmodel mode)
     "autonomy": {
         "companion computer (Jetson Orin NX 16 GB + carrier + heatsink/fan)": {"mass_kg": 0.150, "power_W": 20.0, "price_eur": 950.0,
@@ -173,6 +181,8 @@ BASE = {
     "fin": True, "fin_area": None,    # None: the fin is sized by k4tq_sizing.directional (R9)
     "parachute": True,
     "autonomy": False,                # K4TQ-A2: the companion computer and the perception (CATALOGUE["autonomy"])
+    "flight_fold": False,             # K4TQ-D1: the powered fold, usable in flight up to "flight_fold_max_deg" (a V-tuck at tilt 0)
+    "flight_fold_max_deg": 60.0,
 }
 # Names (2026-10-21): the aircraft is K4TQ-A, "Cathy" (the larger rear wing — Stage 1's "B"); K4TQ-A2 is Cathy fully autonomous
 # (Stage 2's "AS"); E (equal tandem — Stage 1's "A") and C (compact) are the Stage 1 study configurations.
@@ -189,8 +199,12 @@ VARIANTS["F1"] = {**VARIANTS["A1"], "title": "K4TQ-F1 \"Freddy\": Cathy's airfra
                   "section_front": "NACA 4415", "section_rear": "NACA 2415"}
 VARIANTS["F"] = VARIANTS["F1"]                                  # the earlier name of Freddy
 VARIANTS["F2"] = {**VARIANTS["F1"], "title": "K4TQ-F2: Freddy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
+VARIANTS["D1"] = {**VARIANTS["F1"], "title": "K4TQ-D1 \"Dorothy\": Freddy with the powered in-flight fold (a V-tuck to 60°, on the propellers, for steep descents)",
+                  "flight_fold": True}
+VARIANTS["D2"] = {**VARIANTS["D1"], "title": "K4TQ-D2: Dorothy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
 MAIN = "A1"                        # Cathy: the larger rear wing at 1.2 m, approved 2026-10-21
-NICKNAME = {"A1": "Cathy", "A": "Cathy", "A2": "Cathy autonomous", "F1": "Freddy", "F": "Freddy", "F2": "Freddy autonomous"}
+NICKNAME = {"A1": "Cathy", "A": "Cathy", "A2": "Cathy autonomous", "F1": "Freddy", "F": "Freddy", "F2": "Freddy autonomous", "D1": "Dorothy",
+            "D2": "Dorothy autonomous"}
 
 
 def section_of(p: dict, which: str) -> str:
@@ -446,6 +460,9 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
                 f"carbon tube Ø{od * 1e3:.0f}×{idd * 1e3:.0f}")
             add(f"wing root (tilt + fold) {which} {s}", root_kg, w["x_pivot"], side * (w["y_hinge"] + p["root_length"] / 2), w["z"], "roots",
                 " + ".join(cat["root"]))
+            if p.get("flight_fold"):                                  # K4TQ-D1: the powered fold at the hinge
+                add(f"fold drive {which} {s}", sum(v["mass_kg"] for v in cat["fold_drive"].values()), w["x_pivot"] + 0.02,
+                    side * w["y_hinge"], w["z"], "roots", " + ".join(cat["fold_drive"]))
             add(f"power wiring {which} {s}", WIRING_KG_M * (p["motor_y"] + 0.25), 0.5 * (w["x_pivot"] + L["fuselage_length"] * 0.5), side * p["motor_y"] / 2, 0.0, "systems")
     # fuselage: an ellipsoid-ended cylinder's wetted area
     Lf, bw, bh = L["fuselage_length"], p["fuselage_width"], p["fuselage_height"]
@@ -538,6 +555,7 @@ def price(items: list[dict], p: dict) -> dict:
             "ESCs": 4 * c["esc"]["price_eur"], "battery": c["battery"][p["battery"]]["price_eur"],
             "avionics": sum(v["price_eur"] for v in c["avionics"].values()), "cargo + temperature logging": sum(v["price_eur"] for v in c["cargo"].values()),
             **({"autonomy (K4TQ-A2)": sum(v["price_eur"] for v in c["autonomy"].values())} if p.get("autonomy") else {}),
+            **({"fold drives (4, K4TQ-D1)": 4 * sum(v["price_eur"] for v in c["fold_drive"].values())} if p.get("flight_fold") else {}),
             "wing roots (4)": 4 * sum(v["price_eur"] for v in c["root"].values())}
     if p["parachute"]:
         rows["parachute"] = c["safety"]["recovery parachute"]["price_eur"]

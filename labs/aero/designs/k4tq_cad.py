@@ -881,3 +881,24 @@ def stage2(out: Path | None = None) -> dict:
           "\n\nInteractive view in Jupyter: `from vegeta.dedalus import viz; viz.show(viz.plot3d(*k4tq_cad.geometries(p, tilt_deg=90)))`.\n"]
     (out / "phase2.md").write_text("\n".join(md))
     return {"checks": ch, "fold_path": fp, "masses": cmp_, "files": files, "figures": figs}
+
+
+def render_dorothy(path: Path, p: dict, *, items: list | None = None, tuck_deg: float = 30.0, hover_fold_deg: float = 30.0) -> Path:
+    """K4TQ-D1's two in-flight folds: the V-tuck in cruise (tilt 0, the wings up ``tuck_deg``, the propellers forward) and
+    the narrowed hover (tilt 90, the wings swung aft ``hover_fold_deg``, the discs still horizontal)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(16, 7), dpi=110)
+    ext = lambda a: {k: v for k, v in a.items() if v.zone == "external"}          # noqa: E731
+    for i, (t, f, title, el, az) in enumerate(((0.0, tuck_deg, f"cruise V-tuck: tilt 0°, wings folded up {tuck_deg:.0f}° (propellers still forward)", 12, -150),
+                                               (90.0, hover_fold_deg, f"narrow hover: tilt 90°, wings swung aft {hover_fold_deg:.0f}° (discs still horizontal)", 30, -125))):
+        ax = fig.add_subplot(1, 2, i + 1, projection="3d")
+        _draw(ax, ext(assembly(p, t, f, items=items, discs=True)), elev=el, azim=az, title=title)
+    fig.text(0.01, 0.01, f"K4TQ-{p['variant']} (Dorothy): the powered fold — worm gearmotor + 6:1 sector at each hinge, fail-safe solenoid lock", fontsize=10,
+             family="monospace")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, facecolor="white")
+    plt.close(fig)
+    return path
