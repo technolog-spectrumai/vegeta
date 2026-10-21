@@ -39,7 +39,7 @@ if [ "$SMOKE" = 1 ]; then
   if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then XVFB=(xvfb-run -a); fi
   TIMEFORMAT='vegeta smoke: %R s'
   time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
-    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke "${EXISTING[@]}"
+    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke ogma/tests "${EXISTING[@]}"
   exit
 fi
 
@@ -81,8 +81,8 @@ check core        "$PY" -c "from vegeta import core; print('vegeta.core', core._
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
 optional mimezia  "$PY" -c "import mimezia; print('mimezia', mimezia.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
-optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(vendor/ogma: design packages for Piccolo/Nomios/Ketos)')"
-optional ogma     "$PY" -c "import ogma; print('ogma', ogma.__version__, '(vendor/ogma: standard-part physics)')"
+optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(vendor/yax: the design-format converter)')"
+check ogma        "$PY" -c "import ogma; print('ogma', ogma.__version__, '(ogma/: the parts library)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
 import tempfile
 from vegeta.fidia import execute

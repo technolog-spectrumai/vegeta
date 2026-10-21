@@ -37,4 +37,4 @@ designs and stay here.
 | `designs/actuators.py` | `og.actuators` |
 
 `import actuators as act` is now `from ogma import actuators as act` (likewise `from ogma import soil as tm`). Ogma's
-tests prove the moved modules return exactly what these files returned. Vegeta carries Ogma in `vendor/ogma`.
+tests prove the moved modules return exactly what these files returned. Ogma lives in Vegeta at `ogma/` (it came home from its own repo on 2026-10-21).

@@ -1,8 +1,7 @@
-"""Ogma's tests run from the source tree without an install (Yax next to it)."""
+"""Ogma's tests run from the source tree without an install."""
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-for p in (HERE / "src", HERE.parent / "yax" / "src"):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+SRC = Path(__file__).resolve().parent / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))

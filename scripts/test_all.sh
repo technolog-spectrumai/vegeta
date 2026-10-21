@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia, Ozaru (vendor/ozaru: Porunga, Mimezia, Yanus), Ogma (vendor/ogma: Yax, og),
+# Run the tests of each part on its own: the tools (vegeta-cli/tests/<tool>), vegeta-core, vegeta-ai, vegeta-fidia, Ozaru (vendor/ozaru: Porunga, Mimezia, Yanus), Yax (vendor/yax), Ogma (ogma/),
 # components and assemblies (geometry only).
 # Extra args go to pytest, e.g. -m "not slow".
 set -uo pipefail
@@ -10,7 +10,7 @@ for part in cli dedalus talos aeromant mellonia boreas chronos chiron atropos ze
   echo "=== $part ==="
   (cd "$ROOT/vegeta-cli" && python3 -m pytest -q "tests/$part" "$@") || status=1
 done
-for pkg in vegeta-core vegeta-ai vegeta-fidia vendor/ozaru vendor/ogma; do
+for pkg in vegeta-core vegeta-ai vegeta-fidia vendor/ozaru vendor/yax ogma; do
   [ -d "$ROOT/$pkg/tests" ] || continue
   echo "=== ${pkg#vegeta-} ==="
   (cd "$ROOT/$pkg" && python3 -m pytest -q "$@") || status=1

@@ -1,7 +1,7 @@
 # Vegeta — TODO
 
 Vegeta is the R&D notebook set: fast and dirty, and it stays that way (the blessed imperfection rule, README).
-Rules: the tools stay independent packages; the stable physics of standard parts comes from Ogma (`vendor/ogma`,
+Rules: the tools stay independent packages; the stable physics of standard parts comes from Ogma (`ogma/`,
 `import ogma as og`); Piccolo never imports Vegeta, and a machine graduates there once its design is frozen.
 Check quickly with `./test.sh --smoke` and the mocked tests (`VEGETA_DEBUG=1`, `-p vegeta.mock.pytest_plugin`);
 the full suites are in `user_tests.sh`. Anything the refactor finds missing in Ogma is added to Ogma on the way. Earlier stages (1–13, 5b–5t, R, S) and their open items: [`old_todo.md`](old_todo.md).
@@ -40,6 +40,12 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage V4 — Vegeta application (after Ogma O6)
 - [x] V4.1 Designs take their mass budgets, parts, propulsion and aero from `og.*` throughout: a sweep after V3 moved the last duplicates — the torque constant (`og.motors.kt`: `falco_systems`, `frame_study`), hover momentum theory (`og.rotors.hover_induced_velocity` / `ideal_hover_power`: `kestrel_loop`, `kestrel_study`), Velutina's ISA constants (`og.atmosphere`). Left on purpose: the Chiron robots and controllers (their servos, `cg`, `Drive`, 9.81 gravity) until they graduate (V5), and the parked `designs/exp/`
 - [x] V4.2 Ogma's CAD strategy (`og.cad`, Ogma O6) carries the CAD ↔ physics link: `vegeta.dedalus.export_yax` takes its exact mass properties and the Yax mass section from `og.cad` (moved there); the designs' own geometry stays CadQuery in Dedalus (machine geometry is not Ogma's)
+
+## Stage V6 — Standard files between platforms (2026-10-21)
+- [x] V6.1 Ogma comes home: the parts library moved from its own repo into `ogma/` with its history (`import ogma as og` unchanged); `vendor/ogma` removed; smoke runs `ogma/tests`
+- [x] V6.2 Yax moved to its own repo (`technolog-spectrumai/yax`) and becomes the format converter (USD hub); vendored at `vendor/yax` (`scripts/update_yax.sh`)
+- [ ] V6.3 Vegeta exchanges designs with Piccolo only as standard files (URDF/SDF/USD/MJCF/STEP/JSBSim) written through Yax
+- [ ] V6.4 `export_yax` (Yax 1 packages) gives way to standard-file exports
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
