@@ -129,3 +129,13 @@ def test_old_files_read_with_implied_tags(tmp_path):
     back, _ = yax.read(tmp_path / "plain.usda")
     assert back.tags == {} and tg.inventory(back)["00geom"] and "00sensor" not in tg.inventory(back)
     assert hub.lump(tg.select(m, drop=("00motor",))).tags["withheld"] == ["00motor"]
+
+
+def test_a_container_stays_while_a_kept_property_is_under_it():
+    m = rich()
+    tg.tag(m, "data:propulsion/propellers*", "boreas")
+    only = tg.select(m, keep=("00core", "boreas"))
+    assert set(only.data) == {"propulsion"} and set(only.data["propulsion"]) == {"propellers"}
+    assert only.data["propulsion"]["propellers"]["p"]["diameter_m"] == 0.2 and "00prop" in only.tags["withheld"]
+    none = tg.select(m, keep=("00core",))
+    assert none.data == {}
