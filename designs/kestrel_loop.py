@@ -17,6 +17,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from ogma import rotors as og_rotors
 
 import kestrel
 import kestrel_flight as kf
@@ -58,7 +59,7 @@ def envelope(p=None, *, mass_kg: float = 2.0, V: float = kf.V_CRUISE, assume: di
     Vs = math.sqrt(2 * W / (rho * S * a["CL max of the wings"]))
     T_rotor = W / 4
     A = L["A_disc"]
-    P_hover_ideal = 4 * T_rotor * math.sqrt(T_rotor / (2 * rho * A))
+    P_hover_ideal = 4 * og_rotors.ideal_hover_power(T_rotor, A, rho)
     P_hover = P_hover_ideal / a["figure of merit in the hover"]
     D = W / a["L/D at the cruise"]
     P_cruise = D * V / a["propulsive efficiency in cruise"] + a["avionics and payload power [W]"]

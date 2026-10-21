@@ -388,7 +388,7 @@ def drive_options(p=None, battery_key_6s: str = "6s4p-p45b", battery_key_8s: str
         limited = ""
         I_lim = min(M["max_a"], ESC_MAX_A * b.voltage / b.voltage)
         if I > I_lim:                                                   # the throttle held back to the current limit
-            kt = 60 / (2 * math.pi * M["kv"])
+            kt = og_motors.kt(M["kv"])
             Q_lim = kt * (I_lim - M["no_load_a"])
             n = n * math.sqrt(Q_lim / Q)
             lo, hi = 300.0, n * 1.2

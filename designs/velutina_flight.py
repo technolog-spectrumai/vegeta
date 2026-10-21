@@ -24,7 +24,7 @@ import numpy as np
 from ogma import wind as og_wind
 
 from ogma.units import G  # noqa: E402  standard gravity: Ogma
-RHO0, T0, LAPSE = 1.225, 288.15, 0.0065
+from ogma.atmosphere import LAPSE, RHO0, T0  # noqa: E402  ISA constants: Ogma
 
 
 from ogma.atmosphere import density as isa_density  # noqa: E402  ISA troposphere density [kg/m^3], vectorised: Ogma

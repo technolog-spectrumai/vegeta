@@ -22,6 +22,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+from ogma import rotors as og_rotors
 
 import kestrel
 import kestrel_campaigns as kcp
@@ -183,8 +184,8 @@ def hover_analytic(s: dict, *, FM: float = kl.ENVELOPE_ASSUMPTIONS["figure of me
     FM and a 0.8 drive efficiency."""
     T = s["ci"]["mass_kg"] * ks.G / 4
     A = s["L"]["A_disc"]
-    P_i = T ** 1.5 / math.sqrt(2 * ks.RHO0 * A)
-    return {"thrust per rotor [N]": T, "disc loading [N/m²]": T / A, "induced velocity [m/s]": math.sqrt(T / (2 * ks.RHO0 * A)), "ideal power, one rotor [W]": P_i,
+    P_i = og_rotors.ideal_hover_power(T, A, ks.RHO0)
+    return {"thrust per rotor [N]": T, "disc loading [N/m²]": T / A, "induced velocity [m/s]": og_rotors.hover_induced_velocity(T, A, ks.RHO0), "ideal power, one rotor [W]": P_i,
             f"electrical at FM {FM:g}, η 0.8, four rotors [W]": 4 * P_i / FM / 0.8, "Boreas FM": s["hover"]["figure_of_merit"], "Boreas electrical, four rotors [W]": s["hover"]["total_W"]}
 
 

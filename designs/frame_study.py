@@ -454,7 +454,7 @@ def motor_for_prop(prop, *, V=None, I=None):
 
     def static(kv):
         R = m0.resistance_ohm
-        kt = 60 / (2 * math.pi * kv)
+        kt = og_motors.kt(kv)
         n, Im = og_motors.operating_point(kv, R, m0.no_load_current_a, V, lambda n: boreas.solve(prop, af, n, 0.0, RHO0).torque * kQ)
         return n, Im, R, kt
 
