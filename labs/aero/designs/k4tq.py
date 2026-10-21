@@ -156,6 +156,7 @@ BASE = {
     "knuckle_spread": 0.028,          # the outer lugs' centres apart along the chord: the couple for the thrust moment
     "fold_transport_deg": 85.0,       # the packed fold (Stage 2.7: the fold path is clear 0–85°; at 88° the front tips reach the rear roots)
     "section": "NACA 2412", "decalage_deg": 1.5,
+    "section_front": None, "section_rear": None,      # one section per wing (None: "section"); K4TQ-F: NACA 4415 / NACA 2415 (k4tq_sections)
     # propulsion
     # Stage 2.8 revision (CAD masses, 6.9 kg): the MN4014 / 6S2P of Stage 1 no longer close the mission or the hover
     # margin — the motor × propeller × pack sweep on the CAD masses (data/k4tq/stage2_motor_sweep.csv) chose these
@@ -177,14 +178,23 @@ BASE = {
 # (Stage 2's "AS"); E (equal tandem — Stage 1's "A") and C (compact) are the Stage 1 study configurations.
 VARIANTS = {
     "E": {},
-    "A": {"title": "K4TQ-A \"Cathy\": unequal tandem (larger rear wing, canard-like)", "root_chord_front": 0.16, "tip_chord_front": 0.12, "root_chord_rear": 0.24,
-          "tip_chord_rear": 0.18},
+    "A1": {"title": "K4TQ-A1 \"Cathy\": unequal tandem (larger rear wing, canard-like), NACA 2412 on both wings", "root_chord_front": 0.16, "tip_chord_front": 0.12,
+           "root_chord_rear": 0.24, "tip_chord_rear": 0.18},
     "C": {"title": "compact, 1.2 m span, 0.9 m fuselage, 0.5 kg", "span": 1.20, "fuselage_length": 0.90, "root_chord_front": 0.18, "tip_chord_front": 0.13,
           "root_chord_rear": 0.18, "tip_chord_rear": 0.13, "motor_y": 0.53, "prop": "13x8", "payload_kg": 0.5},
 }
-VARIANTS["A2"] = {**VARIANTS["A"], "title": "K4TQ-A2: Cathy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
-MAIN = "A"                         # Cathy: the larger rear wing at 1.2 m, approved 2026-10-21
-NICKNAME = {"A": "Cathy", "A2": "Cathy (autonomous)"}
+VARIANTS["A"] = VARIANTS["A1"]                                  # the earlier name of Cathy
+VARIANTS["A2"] = {**VARIANTS["A1"], "title": "K4TQ-A2: Cathy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
+VARIANTS["F"] = {**VARIANTS["A1"], "title": "K4TQ-F: Cathy's airframe with the sections of the NeuralFoil study (front NACA 4415, rear NACA 2415)",
+                 "section_front": "NACA 4415", "section_rear": "NACA 2415"}
+VARIANTS["F2"] = {**VARIANTS["F"], "title": "K4TQ-F2: K4TQ-F fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
+MAIN = "A1"                        # Cathy: the larger rear wing at 1.2 m, approved 2026-10-21
+NICKNAME = {"A1": "Cathy", "A": "Cathy", "A2": "Cathy autonomous", "F": "", "F2": "autonomous"}
+
+
+def section_of(p: dict, which: str) -> str:
+    """The section of one wing: ``section_front`` / ``section_rear``, else ``section``."""
+    return p.get(f"section_{which}") or p["section"]
 
 
 GEOMETRY_KEYS = ("fuselage_length", "fuselage_width", "fuselage_height", "fuselage_section_n", "x_pivot_front", "x_pivot_rear", "z_front", "z_rear",
@@ -197,7 +207,10 @@ CAD_MASSES = Path(__file__).resolve().parent / "data" / "k4tq" / "cad_masses.jso
 def geometry_fingerprint(p: dict) -> str:
     import hashlib
     import json
-    return hashlib.sha256(json.dumps({k: p.get(k) for k in GEOMETRY_KEYS}, sort_keys=True).encode()).hexdigest()[:16]
+    g = {k: p.get(k) for k in GEOMETRY_KEYS}
+    if p.get("section_front") or p.get("section_rear"):              # per-wing sections (K4TQ-F): part of the geometry
+        g["sections"] = (section_of(p, "front"), section_of(p, "rear"))
+    return hashlib.sha256(json.dumps(g, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def params(variant: str = MAIN, **over) -> dict:
@@ -209,13 +222,17 @@ def params(variant: str = MAIN, **over) -> dict:
     p.update(VARIANTS[variant])
     p.update(over)
     p["variant"] = variant if not over else p.get("variant", variant)
+    if p["variant"] == "A":
+        p["variant"] = "A1"
     if p.get("cad_mass") == "auto":
         p["cad_mass"] = None
         p["cad_mass_status"] = "none: estimates used"
         if CAD_MASSES.exists():
             doc = json.loads(CAD_MASSES.read_text())
-            if doc.get("fingerprint") == geometry_fingerprint(p):
-                p["cad_mass"], p["cad_mass_status"] = doc["cad_mass"], "CAD"
+            designs = doc.get("designs") or ({doc["fingerprint"]: doc["cad_mass"]} if "fingerprint" in doc else {})
+            fp = geometry_fingerprint(p)
+            if fp in designs:
+                p["cad_mass"], p["cad_mass_status"] = designs[fp], "CAD"
             else:
                 p["cad_mass_status"] = "stale: estimates used"
     elif p.get("cad_mass"):

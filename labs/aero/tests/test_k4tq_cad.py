@@ -74,13 +74,14 @@ def test_fold_path_is_clear_in_steps(VEH):
 
 def test_cad_masses_are_current_and_fed_back(VEH):
     doc = json.loads(k4tq.CAD_MASSES.read_text())
-    assert doc["fingerprint"] == k4tq.geometry_fingerprint(VEH["p"]) and VEH["p"]["cad_mass_status"] == "CAD"
+    cm = doc["designs"][k4tq.geometry_fingerprint(VEH["p"])]
+    assert VEH["p"]["cad_mass_status"] == "CAD"
     roots = [i for i in VEH["items"] if i["item"].startswith("wing root")]
-    assert len(roots) == 4 and all(abs(i["mass_kg"] - doc["cad_mass"]["wing root (tilt + fold)"]) < 1e-12 for i in roots)
+    assert len(roots) == 4 and all(abs(i["mass_kg"] - cm["wing root (tilt + fold)"]) < 1e-12 for i in roots)
     rows = c.masses(VEH["p"], items=VEH["items"])
     assert abs(sum(r["mass_kg"] for r in rows) - c.mass_comparison(rows, VEH["items"])["total"]["CAD [kg]"]) < 1e-9
     root_now = c.cad_mass_params(VEH["p"], VEH["items"])["wing root (tilt + fold)"]
-    assert abs(root_now - doc["cad_mass"]["wing root (tilt + fold)"]) < 0.005                  # the JSON matches the CAD
+    assert abs(root_now - cm["wing root (tilt + fold)"]) < 0.005                               # the JSON matches the CAD
 
 
 def test_packing_puts_the_cg_on_target(VEH):

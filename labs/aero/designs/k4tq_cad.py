@@ -200,7 +200,7 @@ def wing_panel(L: dict, which: str, y_out: float | None = None) -> cq.Solid:
     wires = []
     for y in (w["y0"], y_out or w["y1"]):
         c = w["c_at"](y)
-        pts = [_v(((xi - pc) * c * MM, y * MM, zc * c * MM)) for xi, zc in _section(L["p"]["section"])]
+        pts = [_v(((xi - pc) * c * MM, y * MM, zc * c * MM)) for xi, zc in _section(k4tq.section_of(L["p"], which))]
         wires.append(cq.Wire.makePolygon(pts, close=True))
     return cq.Solid.makeLoft(wires, True)
 
@@ -437,8 +437,11 @@ def write_cad_masses(p: dict, items: list) -> Path:
     """Stage 2.8: the CAD masses for ``k4tq.params`` (``cad_mass = "auto"``), with the geometry's fingerprint."""
     import json
     cm = cad_mass_params(dict(p, cad_mass=None), items)
-    doc = {"fingerprint": k4tq.geometry_fingerprint(p), "cad_mass": cm, "note": "per item: one wing root, one wing panel, one spar, one nacelle, one leg; "
-           "the fuselage shell with its frames and the hatch; the fin pair. Written by k4tq_cad.write_cad_masses."}
+    old = json.loads(k4tq.CAD_MASSES.read_text()) if k4tq.CAD_MASSES.exists() else {}
+    designs = old.get("designs") or ({old["fingerprint"]: old["cad_mass"]} if "fingerprint" in old else {})
+    designs[k4tq.geometry_fingerprint(p)] = cm
+    doc = {"designs": designs, "note": "one entry per geometry fingerprint (k4tq.geometry_fingerprint): per item one wing root, one wing panel, one spar, "
+           "one nacelle, one leg; the fuselage shell with its frames and the hatch; the fin pair. Written by k4tq_cad.write_cad_masses."}
     k4tq.CAD_MASSES.parent.mkdir(parents=True, exist_ok=True)
     k4tq.CAD_MASSES.write_text(json.dumps(doc, indent=1))
     return k4tq.CAD_MASSES

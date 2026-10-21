@@ -91,8 +91,19 @@ def section_check(name: str = "NACA 2412", Re: float = 2.0e5) -> dict:
             "label": "MOCK" if mocked() else "CALC"}
 
 
-def section(p: dict) -> dict:
-    return {"name": p["section"], **SECTIONS[p["section"]], "source": SECTION_SOURCE}
+def section(p: dict, which: str = "front") -> dict:
+    name = k4tq.section_of(p, which)
+    return {"name": name, **SECTIONS[name], "source": SECTION_SOURCE}
+
+
+def sections(p: dict) -> dict:
+    return {w: section(p, w) for w in ("front", "rear")}
+
+
+def _tc(name: str) -> float:
+    """t/c from a NACA designation's last two digits (0.12 otherwise)."""
+    d = name.split()[-1]
+    return int(d[-2:]) / 100 if d.isdigit() else 0.12
 
 
 # ================================================================================================= drive maps
@@ -236,6 +247,8 @@ def cg_target(L: dict, a: dict) -> float:
 
 
 def stall(L: dict, a: dict, x_cg: float, sec: dict) -> dict:
+    """``sec``: one section for both wings, or {"front": …, "rear": …} — each wing at its own built-up cl_max."""
+    secs = sec if "front" in sec else {"front": sec, "rear": sec}
     """The tandem's stall rule (as ``kestrel_tandem.stall``, unequal areas): at trim each pair carries the share that
     balances the moments about the CG (lift at the MAC quarter chords); its lift coefficient is share × CL × S / S_pair;
     the pair with the higher one reaches the built-up cl_max first. The aircraft's CL max follows."""
@@ -245,10 +258,12 @@ def stall(L: dict, a: dict, x_cg: float, sec: dict) -> dict:
     S = L["S_ref"]
     load_f = share_f * S / wf["S_pair"]                 # cl_front / CL
     load_r = (1 - share_f) * S / wr["S_pair"]
-    cl_wing = BUILT_UP * sec["cl_max"]
-    first = "front" if load_f >= load_r else "rear"
-    CLmax = cl_wing / max(load_f, load_r)
+    cl_f, cl_r = BUILT_UP * secs["front"]["cl_max"], BUILT_UP * secs["rear"]["cl_max"]
+    first = "front" if cl_f / load_f <= cl_r / load_r else "rear"
+    CLmax = min(cl_f / load_f, cl_r / load_r)
+    cl_wing = cl_f if first == "front" else cl_r
     return {"front share at trim": share_f, "cl front / CL": load_f, "cl rear / CL": load_r, "stalls first": first, "wing cl_max (built-up)": cl_wing,
+            "front cl_max (built-up)": cl_f, "rear cl_max (built-up)": cl_r,
             "CL max (aircraft)": CLmax, "rear cl at the front's stall": CLmax * load_r, "nose-down stall": first == "front",
             "static margin [m]": a["x_np"] - x_cg, "static margin [MAC]": (a["x_np"] - x_cg) / L["c_ref"], "label": "ESTIMATE"}
 
@@ -265,7 +280,7 @@ def drag_buildup(L: dict, *, V: float = 20.0, n_running: int = 4) -> dict:
     rows = {}
     for which in ("front", "rear"):
         w = L["wings"][which]
-        rows[f"wings {which}"] = og_aero.cf_mixed(V * w["mac"] / NU) * _ff_wing() * 2.04 * w["S_pair"]
+        rows[f"wings {which}"] = og_aero.cf_mixed(V * w["mac"] / NU) * _ff_wing(_tc(k4tq.section_of(p, which))) * 2.04 * w["S_pair"]
     Lf, bw, bh = L["fuselage_length"], p["fuselage_width"], p["fuselage_height"]
     d = math.sqrt(bw * bh)
     fr = Lf / d
@@ -292,7 +307,7 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
     p = k4tq.params(variant, **over)
     L = k4tq.layout(p)
     a = tandem(L)
-    sec = section(p)
+    sec = sections(p)
     if p["fin"] and not p["fin_area"]:
         fin0 = directional(L, None, a, fin_area=0.0)
         p = dict(p, fin_area=fin0["fin area needed [m²]"])
@@ -358,6 +373,40 @@ def k_total(veh: dict) -> float:
     return veh["aero"]["k"] / OSWALD_VISCOUS + 0.008                       # + the sections' profile drag rise with cl
 
 
+PROFILE_ROUGHNESS = 1.10           # a built-up wing's profile drag over the clean section's (NeuralFoil, n_crit 6)
+
+
+def profile_model(veh: dict):
+    """CD(V, CL, build-up) with each wing's profile drag from its NeuralFoil polar (``k4tq_sections``, cached) at its own
+    lift coefficient (the tandem's split) and Reynolds number, × ``PROFILE_ROUGHNESS``; the rest of the build-up (fuselage,
+    nacelles, legs, fin, root gaps) and the lattice's induced drag as before. None when a polar is missing (the
+    build-up's flat-plate wings then)."""
+    try:
+        import k4tq_sections as ksec
+        cache = ksec.load_cache()
+        L, st = veh["L"], veh["stall"]
+        loads = {"front": st["cl front / CL"], "rear": st["cl rear / CL"]}
+        names = {w: k4tq.section_of(veh["p"], w) for w in loads}
+        for w in loads:                                            # one probe: the cache answers (or NeuralFoil, mocks off)
+            ksec.polar(names[w], 3e5, cache=cache)
+    except Exception:
+        return None
+    k_ind = veh["aero"]["k"] / OSWALD_VISCOUS
+
+    def CD(V, CL, d):
+        cd = 0.0
+        for w in ("front", "rear"):
+            wg = L["wings"][w]
+            pol = ksec.polar(names[w], V * wg["mac"] / NU, cache=cache)
+            cl = loads[w] * CL
+            s = pol.attached()
+            cdw = float(np.interp(cl, pol.cl[s], pol.cd[s])) if cl <= pol.cl[s][-1] else float(pol.cd[s][-1]) * 2.0
+            cd += PROFILE_ROUGHNESS * cdw * wg["S_pair"] / L["S_ref"]
+        wings = sum(v for k, v in d["parts_m2"].items() if k.startswith("wings")) * INTERFERENCE
+        return (d["CdA_m2"] - wings) / L["S_ref"] + cd + k_ind * CL ** 2
+    return CD
+
+
 def stall_speed(veh: dict, n: float = 1.0) -> float:
     return math.sqrt(2 * n * veh["W"] / (RHO * veh["L"]["S_ref"] * veh["stall"]["CL max (aircraft)"]))
 
@@ -370,6 +419,7 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
     L, W, m = veh["L"], veh["W"], veh["drive"]
     d = drag_buildup(L, n_running=n_running)
     S, kk = L["S_ref"], k_total(veh)
+    prof = profile_model(veh)
     Ewh = veh["battery"]["usable_wh"]
     CLmax = veh["stall"]["CL max (aircraft)"]
     aw = k4tq.avionics_power(veh["p"])
@@ -379,7 +429,10 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
         CL = W / (q * S)
         if CL > CLmax / CRUISE_MIN_OVER_STALL ** 2:
             continue
-        CD = d["Cd0"] + kk * CL ** 2
+        if prof:
+            CD = prof(V, CL, d)
+        else:
+            CD = d["Cd0"] + kk * CL ** 2
         D = q * S * CD
         T = D / n_running
         dp = drive_point(m, V, T)
@@ -471,7 +524,7 @@ def prop_sweep(veh: dict, props=("13x8", "14x8.5", "15x8", "15x10", "16x10", "17
 # ================================================================================================= transition corridor
 def _wing_polar(veh: dict, which: str) -> og_aero.Polar:
     w = veh["L"]["wings"][which]
-    sec = veh["section"]
+    sec = veh["section"][which]
     AR = w["AR_pair"]
     a = 2 * math.pi * 0.9 * AR / (AR + 2)
     return og_aero.Polar(cl_alpha=a, cd0=sec["cd0"] + 0.004, k=1 / (math.pi * AR * 0.85), cl_max=BUILT_UP * sec["cl_max"], cd90=og_aero.viterna_cd90(AR),
@@ -532,7 +585,7 @@ def _forces(veh: dict, V: float, gamma: float, tilts: dict, T_pair: dict) -> dic
             alphas[part] = math.degrees(alpha)
             if abs(alpha) > pol.alpha_stall:
                 stalled_span += frac
-            out["M"] += q * S * w["mac"] * (float(cm) + veh["section"]["cm0"] * (1 - min(abs(alpha) / pol.alpha_stall, 1.0)))
+            out["M"] += q * S * w["mac"] * (float(cm) + veh["section"][which]["cm0"] * (1 - min(abs(alpha) / pol.alpha_stall, 1.0)))
         # the wing force acts near the pivot (the AC is 0.05 c ahead of it along the chord: second order)
         x_w, z_w = w["x_pivot"], w["z"]
         out["M"] += -(x_w - x_cg) * Fz - (z_w - z_cg) * Fx
@@ -729,7 +782,7 @@ def root_loads(veh: dict) -> dict:
     M_ult = ULTIMATE * M_limit
     shear_ult = ULTIMATE * max(lift - N_LIMIT * G * (m_panel + m_tip), T_max)
     # actuator torque about the tilt axis (limit values)
-    sec = veh["section"]
+    sec = veh["section"]["front"]
     c = w["mac"]
     q_max = 0.5 * RHO * 30.0 ** 2
     aero_cruise = q_max * w["S_panel"] * c * (abs(sec["cm0"]) + 0.6 * abs(w["pivot_chord"] - 0.25))
@@ -1141,7 +1194,7 @@ def run_all(variants=("E", "A", "C", "A2")) -> dict:
     for q in quads.values():
         q["mission radius [km]"] = quad_mission_radius(q, k4)
     return {"evals": evals, "quads": quads, "comparison": comparison(evals, quads), "selection": selection(evals), "props": prop_sweep(k4), "payload_range": payload_range(k4tq.MAIN),
-            "section": section_check(k4["p"]["section"]), "materials": materials(), "launch": launch(k4), "mocked": mocked()}
+            "section": section_check(k4tq.section_of(k4["p"], "front")), "materials": materials(), "launch": launch(k4), "mocked": mocked()}
 
 
 # ================================================================================================= the report
@@ -1208,7 +1261,8 @@ def write_report(res: dict, out: Path = DATA) -> dict:
                                                    "CLα [1/rad]": a["CLa"], "k": a["k"], "e": a["e"], "front share at α=4°": a["front_share_alpha4"],
                                                    "rear slope / one pair alone (downwash)": a["slope_rear"], "front slope / one pair alone": a["slope_front"],
                                                    "neutral point x [m]": a["x_np"], **{k: x for k, x in v["stall"].items() if k != "label"},
-                                                   "stall speed [m/s]": stall_speed(v), "section": v["section"]["name"], "section source": v["section"]["source"]}, 3) + "\n")
+                                                   "stall speed [m/s]": stall_speed(v), "sections (front / rear)": f"{v['section']['front']['name']} / {v['section']['rear']['name']}",
+                                                   "section source": v["section"]["front"]["source"]}, 3) + "\n")
     md.append(f"\nSection check through Zephyr: {res['section']['label']} — cl_max {res['section']['cl_max']:.2f} (recorded {res['section']['recorded']['cl_max']:.2f}).\n")
     md.append("\n## 1.6 Cruise — " + lab + "\n")
     md.append("Two motors (rear pair stopped, blades folded):\n\n" + _df(A["cruise2"][A["cruise2"]["feasible"]].drop(columns=["feasible"]).iloc[::2]) + "\n")

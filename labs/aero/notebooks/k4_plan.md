@@ -56,6 +56,17 @@ Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report 
 - [x] 1.15 Configurations A / B / C compared; the same-size quadcopter references Q-13 and Q-best; the selection
 - [x] 1.16 Feasibility verdict, assumptions, uncertainties, initial BOM; report `data/k4tq/phase1.md` + spec JSON; tests
 
+## The designs (2026-10-21)
+
+| design | what | where |
+|---|---|---|
+| K4TQ-A1 "Cathy" | the baseline: larger rear wing, 1.2 m fuselage, MN501-S KV300 + 16x10, 6S3P, NACA 2412 both wings | `designs/k4tq.py` (`MAIN`) |
+| K4TQ-A2 | Cathy fully autonomous: Jetson Orin NX companion + stereo + downward perception (+0.29 kg, +27 W) | `k4tq.VARIANTS["A2"]` |
+| K4TQ-F | Cathy's airframe, front NACA 4415 / rear NACA 2415 (the NeuralFoil study, `exp/K4TQ_airfoils.ipynb`) | `k4tq.VARIANTS["F"]` |
+| K4TQ-F2 | K4TQ-F fully autonomous | `k4tq.VARIANTS["F2"]` |
+
+Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`). E (equal tandem) and C (compact) are the Stage 1 studies.
+
 ## Stage 2 — Parametric CAD and mechanical design
 *The selected configuration as a Dedalus/CadQuery assembly in three configurations, with the wing-root tilt-and-fold assembly designed as real hardware.*
 

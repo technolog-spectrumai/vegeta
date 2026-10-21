@@ -1,13 +1,23 @@
 {
- "fingerprint": "614ec55cfa9513ac",
- "cad_mass": {
-  "wing root (tilt + fold)": 0.3202464334663283,
-  "wing panel": 0.0741850187485314,
-  "spar": 0.04272958707963799,
-  "nacelle": 0.03281029101926722,
-  "leg": 0.010181421130688198,
-  "fuselage shell + frames + hatch": 0.4820208855543198,
-  "fin (dorsal + ventral)": 0.02659904874179923
+ "designs": {
+  "614ec55cfa9513ac": {
+   "wing root (tilt + fold)": 0.3202464334663283,
+   "wing panel": 0.0741850187485314,
+   "spar": 0.04272958707963799,
+   "nacelle": 0.03281029101926722,
+   "leg": 0.01216752658558921,
+   "fuselage shell + frames + hatch": 0.4820208855543198,
+   "fin (dorsal + ventral)": 0.02659904874179923
+  },
+  "85e69fcadd3bc100": {
+   "wing root (tilt + fold)": 0.3202464334663283,
+   "wing panel": 0.07541762919345268,
+   "spar": 0.04272958707963799,
+   "nacelle": 0.03281029101926722,
+   "leg": 0.01216752658558921,
+   "fuselage shell + frames + hatch": 0.4820208855543198,
+   "fin (dorsal + ventral)": 0.02659904874179923
+  }
  },
- "note": "per item: one wing root, one wing panel, one spar, one nacelle, one leg; the fuselage shell with its frames and the hatch; the fin pair. Written by k4tq_cad.write_cad_masses."
+ "note": "one entry per geometry fingerprint (k4tq.geometry_fingerprint): per item one wing root, one wing panel, one spar, one nacelle, one leg; the fuselage shell with its frames and the hatch; the fin pair. Written by k4tq_cad.write_cad_masses."
 }

@@ -21,7 +21,7 @@ def test_requirements_marking_and_logging():
     assert "mandatory" in k4tq.REQUIREMENTS["R7 temperature logging"]
     cargo = k4tq.CATALOGUE["cargo"]
     assert "temperature logger" in cargo and "temperature sensors (2)" in cargo          # two channels + an independent logger
-    assert k4tq.params()["fuselage_length"] == 1.2 and k4tq.MAIN == "A"                 # the approved baseline: K4TQ-A "Cathy"
+    assert k4tq.params()["fuselage_length"] == 1.2 and k4tq.MAIN == "A1"                # the approved baseline: K4TQ-A1 "Cathy"
 
 
 def test_layout_clearances_and_poses():
@@ -91,12 +91,12 @@ def test_cruise_power_is_drag_times_speed(VEH):
 
 
 def test_corridor_balances(VEH):
-    rows = {V: s.corridor_point(VEH, V) for V in (0.0, 8.0, 22.0)}
+    rows = {V: s.corridor_point(VEH, V) for V in (0.0, 8.0, 26.0)}
     for V, r in rows.items():
         assert r["feasible"], r
         assert abs(r["trim residual [N·m]"]) < 0.05 and abs(r.get("X residual [N]", 0.0)) < 0.2
     assert 80.0 < rows[0.0]["tilt [deg]"] < 100.0                    # the hover: about vertical (trimmed against the cambered wings' pull)
-    assert rows[22.0]["tilt [deg]"] < 10.0                                               # wing-borne
+    assert rows[26.0]["tilt [deg]"] < 10.0                                               # wing-borne (the CAD masses: from ~24 m/s)
 
 
 def test_root_loads_consistency(VEH):
