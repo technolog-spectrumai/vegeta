@@ -188,11 +188,14 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
         out.append(f"    <link name={quoteattr(lk.name)}>")
         out.append(_pose_xml(lk.pos, lk.quat, "      "))
         if lk.mass:
-            I = np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3)), float)
-            out += ["      <inertial>", _pose_xml(lk.com, (1, 0, 0, 0), "        "), f"        <mass>{lk.mass:.17g}</mass>",
-                    "        <inertia>" + "".join(f"<{k}>{v:.17g}</{k}>" for k, v in (("ixx", I[0, 0]), ("ixy", I[0, 1]), ("ixz", I[0, 2]),
-                                                                               ("iyy", I[1, 1]), ("iyz", I[1, 2]), ("izz", I[2, 2])))
-                    + "</inertia>", "      </inertial>"]
+            out += ["      <inertial>", _pose_xml(lk.com, (1, 0, 0, 0), "        "), f"        <mass>{lk.mass:.17g}</mass>"]
+            if lk.inertia is None:                                             # none in the source: not invented
+                rep.drop(f"link {lk.name}: no inertia in the source — none written (SDF's own default applies)")
+            else:
+                I = np.asarray(lk.inertia, float)
+                out.append("        <inertia>" + "".join(f"<{k}>{v:.17g}</{k}>" for k, v in (("ixx", I[0, 0]), ("ixy", I[0, 1]), ("ixz", I[0, 2]),
+                                                                                       ("iyy", I[1, 1]), ("iyz", I[1, 2]), ("izz", I[2, 2]))) + "</inertia>")
+            out.append("      </inertial>")
         for s in lk.shapes:
             q = s.quat
             if s.kind in ("cylinder", "capsule") and s.axis != "z":

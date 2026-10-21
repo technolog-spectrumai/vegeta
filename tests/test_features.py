@@ -74,6 +74,12 @@ def test_select_withholds_without_inventing(tmp_path):
             assert all(lk.mass is None for lk in cut.links)
             rep = yax.save(cut, tmp_path / "nomass.sdf")
             assert "<inertial>" not in (tmp_path / "nomass.sdf").read_text() and any("mass: withheld" in d for d in rep.dropped)
+        if feat == "inertia":                                                  # a mass without an inertia: no zero tensor invented
+            rep = yax.save(cut, tmp_path / "noinertia.sdf")
+            sdf = (tmp_path / "noinertia.sdf").read_text()
+            assert "<mass>2</mass>" in sdf and "<inertia>" not in sdf and any("no inertia in the source" in d for d in rep.dropped)
+            rep = yax.save(cut, tmp_path / "noinertia.urdf")
+            assert "<inertial>" not in (tmp_path / "noinertia.urdf").read_text() and any("mass is not written" in d for d in rep.dropped)
         if feat == "joints":
             assert all(j.kind == "fixed" and j.drive is None for j in cut.joints)
         if feat == "sensors":
