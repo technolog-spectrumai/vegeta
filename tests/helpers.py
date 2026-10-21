@@ -46,3 +46,24 @@ def assert_same(a, b, *, tol=1e-9, kinds=None, skip_joints=()):
             np.testing.assert_allclose(xb, xa, atol=tol, err_msg=f"joint {name} axis")
         if loa is not None:
             assert abs(loa - lob) <= tol and abs(hia - hib) <= tol, (name, loa, lob, hia, hib)
+
+
+def rich():
+    """A two-link machine holding something of every system tag (the tag and YX2 tests)."""
+    import numpy as np
+    base = hub.Link("base", mass=2.0, inertia=np.diag([0.1, 0.1, 0.1]), shapes=[hub.Shape("hull", "box", (0.3, 0.2, 0.1))],
+                    point_masses=[("battery", 0.3, (0.0, 0.0, 0.05))],
+                    data={"material": "al6061", "strength": {"allowable_pa": 2.4e8, "safety_factor": 1.5, "source": "notebook"},
+                          "aero": {"S_m2": 0.1}, "sensors": [{"name": "cam", "type": "camera", "pos": [0.1, 0, 0]}],
+                          "sdf": {"sensor": ["<sensor name='cam' type='camera'/>"], "plugin": ["<plugin name='x'/>"]}})
+    arm = hub.Link("arm", pos=(0.2, 0.0, 0.0), mass=0.5, inertia=np.diag([0.01, 0.01, 0.01]), shapes=[hub.Shape("rod", "capsule", (0.01, 0.2))])
+    j = hub.Joint("shoulder", "revolute", "base", "arm", pos=(0.2, 0.0, 0.0), axis=(0.0, 1.0, 0.0), lower=-1.0, upper=1.0,
+                  drive={"stiffness": 10.0, "damping": 1.0, "max_force": 5.0},
+                  data={"damping": 0.1, "motor": {"stall_nm": 2.0, "no_load_rad_s": 50.0, "source": "datasheet"}, "connection": {"type": "pin"}})
+    return hub.Machine("rich", links=[base, arm], joints=[j], producer={"tool": "test", "revision": "abc"},
+                       data={"materials": {"al6061": {"density_kg_m3": 2700.0, "E_pa": 69e9, "source": "handbook"}},
+                             "connections": [{"name": "b1", "links": ["base", "arm"], "type": "bolt", "spec": {"size": "M3"}}],
+                             "aerodynamics": {"reference": {"S_m2": 0.1}, "source": "cfd"},
+                             "propulsion": {"rotors": [{"name": "r0", "pos": [0, 0, 0], "axis": [0, 0, 1], "spin": 1, "propeller": "p", "motor": "mo"}],
+                                            "propellers": {"p": {"diameter_m": 0.2, "coefficients": {"J": [0, 1], "CT": [0.1, 0.0], "CP": [0.05, 0.01]}}},
+                                            "motors": {"mo": {"power_w": 100.0}}}})

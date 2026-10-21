@@ -19,11 +19,13 @@ yax convert rover.xml rover.sdf        # or: python -m yax convert …
 yax show rover.sdf                     # links, joints, mass
 ```
 
-**Features — what is shared, what is needed.** Every physical fact belongs to one feature (geometry, mass, inertia, joints,
-motors, materials, strength, connections, aerodynamics, sensors, provenance). A producer shares the features it chooses
-(`yax select src.usda dst.usda --exclude strength,connections`: withheld, never invented, and the file says so); a
-consumer asks whether a file serves it (`yax features dst.usda --to sdf --requirements piccolo.json`: each feature
-available, missing, excluded or unsupported by the format). The contract: [docs/interchange.md](docs/interchange.md).
+**Tags — what is shared, what is needed.** Every property of a machine carries tags: codes of up to 8 alphanumerics.
+The producer tags as it pleases (`boreas` on the maps a BEMT made) and keeps or withholds properties by tag
+(`yax select src.yx2 dst.yx2 --tag 'data:propulsion/*=boreas' --drop 00strgth`: withheld, never invented, and the file
+says so); the consumer validates the tags it needs (`yax tags dst.yx2 --to sdf --requirements piccolo.json`: present,
+absent, withheld or unsupported by the format). Codes starting with `00` are system tags Yax assigns from what a
+property is (`00geom`, `00mass`, `00inert`, `00joint`, `00motor`, …), so there is always something to validate against.
+The contract: [docs/interchange.md](docs/interchange.md).
 
 **Two teams, one machine — `yax sync`.** The designers' file and the simulation team's model live in their own feedback
 loops; the physical numbers the simulation takes from the design are synced explicitly, everything else stays the
@@ -40,7 +42,7 @@ never touched (`src/yax/sync.py` documents the map).
 
 | Format | Read | Write | Checked by |
 |---|---|---|---|
-| **YX2** (`.yx2`) | ✓ | ✓ | the exchange file: a validated USD subset — units, frame, stable ids, feature metadata, canonical text (`write(read(f)) == f`); `yax check f.yx2`; [docs/yx2.md](docs/yx2.md) |
+| **YX2** (`.yx2`) | ✓ | ✓ | the exchange file: a validated USD subset — units, frame, stable ids, tag table, canonical text (`write(read(f)) == f`); `yax check f.yx2`; [docs/yx2.md](docs/yx2.md) |
 | USD | ✓ | ✓ | exact round trips (double-precision copies of USD's float attributes) |
 | MJCF | ✓ (compiled by MuJoCo) | ✓ | MuJoCo compiles it: same bodies, inertias, joints, geoms, actuators |
 | URDF | ✓ | ✓ | round trips relative to the root; capsules/ellipsoids as STL meshes, ball joints as fixed (reported) |

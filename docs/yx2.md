@@ -22,8 +22,9 @@ yax.formats.yx2.validate("drone.yx2")    # the problems, [] for a YX2 — also: 
    prim) and as Yax holds them (`yax:limits`, radians); readers take `yax:*`. Every link, shape and point mass carries
    its pose exactly (`yax:pos`, `yax:quat`, double precision) beside USD's xform ops, whose matrix decomposition rounds; a primitive shape carries its exact `yax:size` beside the scaled prim.
 3. **The default prim is the machine**, an `Xform` with `customData` `yax = 2` and `name`, the articulation root.
-   It carries `yax:features` always — `{"included": [...], "excluded": [...]}`, what the producer shared and
-   withheld (`docs/interchange.md`) — and, when present, `yax:producer` and `yax:data`.
+   It carries `yax:tags` always — `{"table": {path: [codes]}, "withheld": [codes]}`, every property's tags with the
+   system tags included, and what the producer withheld (`docs/interchange.md`) — and, when present, `yax:producer`
+   and `yax:data`.
 4. **Links** are `Xform` children of the machine with `RigidBodyAPI`, `yax:name` (unique among links) and
    `yx2:id = "link:<name>"`. A link with `MassAPI` also carries the exact `yax:mass`, `yax:com`, `yax:inertia`
    (double precision). Its shapes are `Gprim` children with `yax:name` (unique per role within the link),
@@ -37,7 +38,7 @@ yax.formats.yx2.validate("drone.yx2")    # the problems, [] for a YX2 — also: 
    the same part by the same string (what `yax sync` maps on).
 7. **Closed vocabulary.** The only attributes in the `yax:` and `yx2:` namespaces are the ones above (`yax:name`,
    `yax:kind`, `yax:pos`, `yax:quat`, `yax:size`, `yax:axis`, `yax:limits`, `yax:drive`, `yax:data`, `yax:mass`, `yax:com`,
-   `yax:inertia`, `yax:role`, `yax:uri`, `yax:producer`, `yax:features`, `yx2:id`). New physics goes into part
+   `yax:inertia`, `yax:role`, `yax:uri`, `yax:producer`, `yax:tags`, `yx2:id`). New physics goes into part
    data under a documented key (`docs/interchange.md`) or into a new profile version — never into an ad-hoc attribute.
 8. **Canonical serialization.** Prims in machine order (links as the hub lists them, their shapes and point masses
    in order, then the joints scope), every JSON string with sorted keys and no whitespace, numbers as USD prints

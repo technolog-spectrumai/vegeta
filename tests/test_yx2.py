@@ -8,11 +8,10 @@ import numpy as np
 import pytest
 
 import yax
-from yax import features as ft
+from yax import tags as tg
 from yax import hub
 from yax.formats import yx2
-from helpers import assert_same
-from test_features import _rich
+from helpers import assert_same, rich as _rich
 
 HERE = Path(__file__).parent
 ROVER = HERE / "fixtures" / "rover.xml"
@@ -25,12 +24,12 @@ def test_yx2_round_trip_is_exact_and_idempotent(tmp_path):
     assert yax.save(m, f).dropped == []
     assert yx2.validate(f) == []
     text = f.read_text()
-    assert text.startswith("#usda 1.0") and 'dictionary yx2' in text and '"included"' in text and 'string yx2:id = "link:base"' in text
+    assert text.startswith("#usda 1.0") and 'dictionary yx2' in text and '"withheld"' in text and 'string yx2:id = "link:base"' in text
     assert 'yx2:id = "joint:shoulder"' in text and 'yx2:id = "shape:base/hull"' in text and 'yx2:id = "mass:base/battery"' in text
     back, _ = yax.read(f)
     assert_same(m, back)
     assert back.data == m.data and back.producer == m.producer
-    assert back.features == {"included": list(ft.FEATURES), "excluded": []}
+    assert back.tags == {"table": tg.table(m), "withheld": []} and back.tags["table"]["link:base/mass"] == ["00mass"]
     assert back.joints[0].drive == m.joints[0].drive and back.joints[0].data == m.joints[0].data
     assert back.links[0].data == m.links[0].data and back.links[0].point_masses == [("battery", 0.3, (0.0, 0.0, 0.05))]
     yax.save(back, tmp_path / "again.yx2")
@@ -39,18 +38,18 @@ def test_yx2_round_trip_is_exact_and_idempotent(tmp_path):
 
 
 def test_yx2_keeps_a_selection_and_reports_nothing(tmp_path):
-    m = ft.select(_rich(), exclude=("strength", "connections", "sensors"))
+    m = tg.select(_rich(), drop=("00strgth", "00conn", "00sensor"))
     f = tmp_path / "cut.yx2"
     yax.save(m, f)
     text = f.read_text()
     assert "allowable_pa" not in text and "M3" not in text and "cam" not in text
     back, _ = yax.read(f)
-    assert back.features["excluded"] == ["connections", "sensors", "strength"]
-    inv = ft.inventory(back)
-    assert inv["strength"].status == ft.EXCLUDED and inv["materials"].status == ft.AVAILABLE and inv["motors"].status == ft.AVAILABLE
+    assert back.tags["withheld"] == ["00conn", "00sensor", "00strgth"]
+    inv = tg.inventory(back)
+    assert inv["00strgth"] is None and inv["00matl"] and inv["00motor"]
     assert back.data["materials"] == m.data["materials"] and back.data["propulsion"] == m.data["propulsion"]
-    v = ft.check(back, ft.Requirements(required=("geometry", "mass", "materials"), optional=("strength",)), fmt="yx2")
-    assert v.ok and v.statuses["strength"].status == ft.EXCLUDED
+    v = tg.check(back, tg.Requirements(required=("00geom", "00mass", "00matl"), optional=("00strgth",)), fmt="yx2")
+    assert v.ok and v.statuses["00strgth"].status == tg.WITHHELD
     yax.save(back, tmp_path / "again.yx2")
     assert (tmp_path / "again.yx2").read_text() == text
 
@@ -104,7 +103,7 @@ def test_conversions_through_yx2_still_work(tmp_path):
         assert yx2.validate(tmp_path / f"back_{ext}.yx2") == []
     from yax import cli
     assert cli.main(["check", str(f)]) == 0 and cli.main(["check", str(tmp_path / "rover.xml")]) == 1
-    assert cli.main(["show", str(f)]) == 0 and cli.main(["features", str(f), "--to", "yx2", "--require", "geometry,motors"]) == 0
+    assert cli.main(["show", str(f)]) == 0 and cli.main(["tags", str(f), "--to", "yx2", "--require", "00geom,00motor"]) == 0
     assert yax.detect(f) == "yx2" and "yx2" in yax.FORMATS
 
 

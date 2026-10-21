@@ -3,8 +3,8 @@
 One self-contained ``usda`` text layer holding a machine the way the hub holds it, plus what an exchange needs and
 plain USD leaves open: the file says its **units** and **frame** outright (layer data ``yx2``), every component
 carries a **stable identifier** (``yx2:id``: ``link:<name>``, ``joint:<name>``, ``shape:<link>/<name>``,
-``mass:<link>/<name>``) that survives USD's path mangling, the **feature metadata** (``yax:features``: what the
-producer shared and withheld) is always present, and the **serialization is canonical**: usda text, prims in
+``mass:<link>/<name>``) that survives USD's path mangling, the **tag table** (``yax:tags``: every property's tags,
+system tags included, and what the producer withheld) is always present, and the **serialization is canonical**: usda text, prims in
 machine order, JSON part data with sorted keys and no whitespace, so the same machine gives the same bytes and
 ``write(read(f)) == f``.
 
@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .. import hub
+from .. import hub, tags
 from ..hub import JOINTS, Machine, Report
 from ..package import Invalid
 
@@ -26,7 +26,7 @@ UNITS = {"length": "m", "mass": "kg", "time": "s", "angle": "rad"}
 FRAME = {"up": "+z", "forward": "+x", "handed": "right", "pose": "machine frame at q = 0"}
 #: The closed vocabulary of Yax attributes (the subset): anything else in the ``yax:`` or ``yx2:`` namespace is a problem.
 ATTRS = {"yax:name", "yax:kind", "yax:pos", "yax:quat", "yax:size", "yax:axis", "yax:limits", "yax:drive", "yax:data",
-         "yax:mass", "yax:com", "yax:inertia", "yax:role", "yax:uri", "yax:producer", "yax:features", "yx2:id"}
+         "yax:mass", "yax:com", "yax:inertia", "yax:role", "yax:uri", "yax:producer", "yax:tags", "yx2:id"}
 ROLES = ("collision", "visual")
 
 
@@ -54,7 +54,6 @@ def _layer_from_text(text: str):
 def validate_stage(stage) -> list:
     """The problems of a stage against the YX2 profile; ``[]`` when it is one."""
     from pxr import UsdGeom, UsdPhysics
-    from ..features import FEATURES
     p = []
     ld = stage.GetRootLayer().customLayerData or {}
     y = ld.get("yx2")
@@ -79,20 +78,20 @@ def validate_stage(stage) -> list:
         p.append("root customData yax: expected 2")
     if not root.GetCustomDataByKey("name"):
         p.append("root customData name: the machine's name is required")
-    feats = hub._get(root, "yax:features")
+    t = hub._get(root, "yax:tags")
     try:
-        f = json.loads(feats) if feats else None
+        tg = json.loads(t) if t else None
     except ValueError:
-        f = None
-    if not isinstance(f, dict) or not isinstance(f.get("included"), list) or not isinstance(f.get("excluded"), list):
-        p.append("root yax:features: 'included' and 'excluded' lists are required")
+        tg = None
+    if not isinstance(tg, dict) or not isinstance(tg.get("table"), dict) or not isinstance(tg.get("withheld"), list):
+        p.append("root yax:tags: a 'table' {path: [codes]} and a 'withheld' list are required")
     else:
-        bad = sorted((set(f["included"]) | set(f["excluded"])) - set(FEATURES))
-        if bad:
-            p.append(f"root yax:features: unknown features {bad}")
-        if set(f["included"]) & set(f["excluded"]):
-            p.append("root yax:features: a feature cannot be both included and excluded")
-    for key in ("yax:producer", "yax:data", "yax:features"):
+        for code in {c for cs in tg["table"].values() for c in cs} | set(tg["withheld"]):
+            if not tags.CODE.match(str(code)):
+                p.append(f"root yax:tags: {code!r} is not a tag (1–8 alphanumerics)")
+        if "00core" in tg["withheld"]:
+            p.append("root yax:tags: 00core cannot be withheld")
+    for key in ("yax:producer", "yax:data", "yax:tags"):
         v = hub._get(root, key)
         if v and not _canonical(v):
             p.append(f"root {key}: not canonical JSON (sorted keys, no whitespace)")
@@ -179,11 +178,10 @@ def validate(path) -> list:
 
 # -------------------------------------------------------------------------------------------------------- read, write
 def stage_of(m: Machine):
-    """The machine as a YX2 stage (in memory): the hub's stage plus the layer data, the ids and the feature metadata."""
+    """The machine as a YX2 stage (in memory): the hub's stage plus the layer data, the ids and the tag table."""
     from pxr import Sdf, Usd
-    from ..features import FEATURES
     m2 = Machine(m.name, m.links, m.joints, m.data, m.producer,
-                 {"included": list(m.features.get("included", FEATURES)), "excluded": list(m.features.get("excluded", []))})
+                 {"table": tags.table(m), "withheld": list((m.tags or {}).get("withheld", []))})
     stage = hub.to_stage(m2)
     root = stage.GetDefaultPrim()
     for prim in Usd.PrimRange(root):
@@ -199,7 +197,7 @@ def stage_of(m: Machine):
             hub._attr(prim, "yx2:id", Sdf.ValueTypeNames.String, f"joint:{name}")
         elif name:
             hub._attr(prim, "yx2:id", Sdf.ValueTypeNames.String, f"shape:{hub._get(prim.GetParent(), 'yax:name')}/{name}")
-    for key in ("yax:producer", "yax:data", "yax:features"):
+    for key in ("yax:producer", "yax:data", "yax:tags"):
         a = root.GetAttribute(key)
         if a and a.HasAuthoredValue():
             a.Set(json.dumps(json.loads(a.Get()), sort_keys=True, separators=(",", ":")))

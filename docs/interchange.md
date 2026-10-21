@@ -1,80 +1,117 @@
-# The interchange contract — features
+# The interchange contract — tags
 
-Yax moves engineering data between platforms (Vegeta designs; Piccolo and other simulators consume) as **features**:
-independent categories a producer can include or withhold one by one, a consumer can require or use when present,
-and a format can or cannot hold. `yax.features` is the module; `yax features FILE` and `yax select SRC DST` the commands.
+Yax moves engineering data between platforms (Vegeta designs; Piccolo and other simulators consume) as **properties
+that carry tags**. A tag is a code of one to eight alphanumeric characters. The producer tags properties as it
+pleases and keeps or withholds them by tag; the consumer validates the file against the tags it needs. Neither has
+to know the other's groups — only the codes they agreed on. Codes beginning with `00` are **system tags**, reserved
+to Yax: it assigns them from what a property *is*, so a consumer can always validate against them, old-school.
+`yax.tags` is the module; `yax tags FILE` and `yax select SRC DST` the commands.
 
-## The features and where each one lives in the hub
+## Properties
 
-Everything is SI (m, kg, s, N, rad; angles in the hub in radians), every pose is in the machine frame at q = 0, and
-**names are identities**: a link, joint, shape, rotor, propeller, motor, material or connection is referred to by its
-name everywhere (the sync map, a consumer's own model, a report line). Unknown data keys are kept and ignored.
+Everything is SI (m, kg, s, N; angles in the hub in radians), every pose is in the machine frame at q = 0, and
+**names are identities**: a link, joint, shape, point mass, rotor, propeller, motor, material or connection is
+referred to by its name everywhere. A property is addressed by its **path**:
 
-| Feature | Hub fields | Part data (JSON in `yax:data`) |
+| Path | What | System tag |
 |---|---|---|
-| `geometry` | `Link.shapes` (collision and visual: box, sphere, ellipsoid, cylinder, capsule, mesh) | — |
-| `mass` | `Link.mass`, `Link.com`, `Link.point_masses` | — |
-| `inertia` | `Link.inertia` (about the centre of mass, link axes, kg m²) | — |
-| `joints` | `Joint.kind`, `pos`, `axis`, `lower`, `upper`; `Joint.data`: `damping`, `effort`, `velocity` | — |
-| `motors` | `Joint.drive` (PD: stiffness, damping, max_force) | `Joint.data["motor"]` — the nonlinear motor: `{"stall_nm", "no_load_rad_s", "rated_nm", "kt_nm_per_a", "R_ohm", "I0_a", "voltage_v", "gear_ratio", "torque_speed": {"rad_s": [...], "nm": [...]}, "source"}`; machine `propulsion` (docs/converter.md: rotors, propellers with CT/CP against J and the grid, motors, reduced constants); machine `ogma` (rotor constants) |
-| `materials` | — | machine `materials`: `{name: {"density_kg_m3", "E_pa", "nu", "yield_pa", "ultimate_pa", "source"}}`; `Link.data["material"]`: a name in the catalogue, or an entry of the same shape |
-| `strength` | — | machine `strength` and `Link.data["strength"]`: `{"allowable_pa", "safety_factor", "analysis": {"tool", "case", "max_stress_pa", "margin", "source"}}` — results of analyses that were run, never computed by Yax |
-| `connections` | — | machine `connections`: `[{"name", "links": [a, b], "type": "bolt" \| "weld" \| "bond" \| "pin" \| …, "spec": {…}, "rating": {"shear_n", "tension_n", "torque_nm", …}, "source"}]`; `Joint.data["connection"]` for a joint's own hardware |
-| `aerodynamics` | — | machine `aerodynamics`: `{"reference": {"S_m2", "b_m", "c_m", "frame"}, "coefficients": {…}, "derivatives": {…}, "polars": {…}, "source"}`; machine `jsbsim` (an aircraft's sections, verbatim); `Link.data["aero"]` for a lifting link |
-| `sensors` | — | `Link.data["sensors"]`: `[{"name", "type", "pos", "quat", "spec": {…}}]` in the link frame; the SDF sensors a Gazebo model carries verbatim (`Link.data["sdf"]["sensor"]`) |
-| `provenance` | `Machine.producer` (`tool`, `revision`, `machine`, `identity`, …) | machine `provenance` (anything more: who, when, the design's parameters) |
+| `link:<name>/pose` | the link's pose (its identity and place) | `00core` |
+| `link:<name>/mass` | mass and centre of mass | `00mass` |
+| `link:<name>/inertia` | the inertia tensor (about the centre of mass, link axes, kg m²) | `00inert` |
+| `link:<name>/collision:<shape>`, `link:<name>/visual:<shape>` | a shape | `00geom` |
+| `link:<name>/pmass:<name>` | a point mass | `00mass` |
+| `link:<name>/data:<key>[/<key>…]` | the link's part data, any depth | by key (below) |
+| `joint:<name>/tree` | parent, child, position, axis (the skeleton) | `00core` |
+| `joint:<name>/articulation` | kind, limits, passive damping, effort and velocity limits | `00joint` |
+| `joint:<name>/drive` | the PD drive | `00motor` |
+| `joint:<name>/data:<key>[/<key>…]` | the joint's part data | by key (below) |
+| `data:<key>[/<key>…]` | the machine's part data, any depth | by key (below) |
+| `producer` | the producer stamp (tool, revision, machine, identity) | `00prov` |
 
-The schemas in the table are the contract's **recommended** shapes; a producer may put more in each entry (readers
-keep what they do not know), never less than a `source` saying where a number comes from. Yax never fills a field a
-producer left out.
+`data:` paths reach every dictionary key at any depth: a tag on `data:propulsion` covers the block, a tag on
+`data:propulsion/propellers/apc` one propeller. Part data keys and the system tags they carry (unknown keys carry
+none until a producer tags them):
 
-## Status
-
-For a machine, each feature is
-
-- **available** — the machine holds it (the inventory says how much: "4 shapes", "2 rotors, 1 propellers, 1 motors");
-- **missing** — it holds none, and nobody withheld it (the producer had no such data, or a format on the way lost it:
-  its report said so);
-- **excluded** — the producer withheld it on purpose: `Machine.features["excluded"]` lists it, and the USD carries the
-  list (`yax:features` on the root prim), so a consumer can tell "not shared" from "not known";
-- **unsupported** — relative to a target format: the format has no place for it (`yax.features.SUPPORT`), whatever the
-  machine holds; the consumer reads it from the USD instead.
-
-| Format | Holds | Partial |
+| Key | Recommended shape | System tag |
 |---|---|---|
-| USD, YX2 | every feature (YX2: the validated subset, docs/yx2.md) | — |
-| MJCF | geometry, mass, inertia, joints, motors | motors: joint drives as position actuators only |
-| URDF | geometry, mass, inertia, joints | joints: ball joints as fixed, the drive's max force as the effort limit |
-| SDF | geometry, mass, inertia, joints, sensors | joints: no drives (a plugin carries them) |
-| JSBSim | mass, inertia, motors, aerodynamics | one rigid body; motors: propellers and electric engines from `propulsion` |
-| STEP, STL | geometry | — |
-| Yax 1 package | geometry, mass, inertia, provenance | mass: the whole body |
+| machine `propulsion`, `ogma` | docs/converter.md "Propulsion": rotors, propellers (CT/CP against J, the grid), motors, reduced constants | `00motor` |
+| joint `motor` | `{"stall_nm", "no_load_rad_s", "rated_nm", "kt_nm_per_a", "R_ohm", "I0_a", "voltage_v", "gear_ratio", "torque_speed": {"rad_s": [...], "nm": [...]}, "source"}` | `00motor` |
+| machine `materials`, link `material` | `{name: {"density_kg_m3", "E_pa", "nu", "yield_pa", "ultimate_pa", "source"}}`; a link names one or holds one | `00matl` |
+| machine `strength`, link `strength` | `{"allowable_pa", "safety_factor", "analysis": {"tool", "case", "max_stress_pa", "margin", "source"}}` — results of analyses that ran, never computed by Yax | `00strgth` |
+| machine `connections`, joint `connection` | `[{"name", "links": [a, b], "type", "spec": {…}, "rating": {"shear_n", "tension_n", "torque_nm"}, "source"}]` | `00conn` |
+| machine `aerodynamics`, `jsbsim`, link `aero` | `{"reference": {"S_m2", "b_m", "c_m", "frame"}, "coefficients", "derivatives", "polars", "source"}`; an aircraft's JSBSim sections verbatim | `00aero` |
+| machine `sensors`, link `sensors`; link `sdf/sensor` | `[{"name", "type", "pos", "quat", "spec": {…}}]` in the link frame; SDF sensors carried verbatim | `00sensor` |
+| machine `provenance` | anything more than the stamp: who, when, the design's parameters, sources | `00prov` |
+| machine `mjcf`, `sdf`; link `sdf/plugin` | another format's own data, verbatim | `00fmt` |
 
-## Selecting: what a producer shares
+A producer may put more in each entry (readers keep what they do not know), never less than a `source` saying where
+a number comes from. Yax never fills a field a producer left out.
 
-`yax.features.select(m, include=…, exclude=…)` (CLI: `yax select SRC DST --include a,b --exclude c`) returns a copy
-holding only the chosen features and records the rest in `features["excluded"]`. The rule is **withhold, never
-invent**: a withheld mass is `None` (writers leave the inertial out), withheld joints become fixed joints (the tree
-and the links' names and poses stay, so a consumer's references hold; drives go with them), withheld part data is
-gone, a withheld provenance is an empty producer stamp. Nothing a withheld feature contained reaches the file, its
-metadata or its side files (meshes, propeller files), and every writer of another format reports "withheld by the
-producer" so the loss is on record. A consumer's requirements never change what a producer shares.
+## System tags
+
+| Tag | Properties |
+|---|---|
+| `00core` | the skeleton: the machine's name, the links' identities and poses, the joint tree — always present, never withheld |
+| `00geom` | shapes (collision and visual), meshes |
+| `00mass` | masses, centres of mass, point masses |
+| `00inert` | inertia tensors |
+| `00joint` | articulation: joint kinds, axes, limits, passive damping, effort and velocity limits |
+| `00motor` | drives, joint motors, the propulsion block, ogma rotor constants |
+| `00matl` | materials: the catalogue and each link's |
+| `00strgth` | strength: allowables, safety factors, analysis results |
+| `00conn` | connections between links |
+| `00aero` | aerodynamics, JSBSim sections, per-link aero |
+| `00sensor` | sensors, SDF sensors carried verbatim |
+| `00prov` | the producer stamp and provenance data |
+| `00fmt` | another format's own data carried verbatim |
+
+Yax assigns these; a producer cannot (`ValueError`). Any other code is the producer's: `boreas` on the propeller
+maps a BEMT made, `nb08` on the numbers notebook 08 fixed, `weighed` on the masses that were put on a scale.
+
+## The tag table
+
+`Machine.tags` is `{"table": {path: [codes]}, "withheld": [codes]}`. The table lists every tagged property with all
+its codes, system tags included, so a file stands on its own (`yax.tags.table(m)` computes it; a YX2 always carries
+it as `yax:tags`); `withheld` lists the tags the producer dropped. A machine without a table reads as one with the
+system tags implied and nothing withheld — files written before tags existed are unchanged.
+
+```python
+tg.tag(m, "data:propulsion/propellers/*", "boreas")      # the producer's tag on a pattern of paths
+tg.inventory(m)                                           # tag → paths (None: withheld)
+cut = tg.select(m, keep=("00geom", "00mass", "boreas"))   # or drop=(...); 00core always stays
+```
+
+## Selecting: withhold, never invent
+
+`select` keeps the properties whose tags meet `keep` (any of) and none of `drop`. A dropped property is absent: a
+mass `None` (writers leave the inertial out), an articulation turned into a fixed joint (the tree and the links'
+names and poses stay, so a consumer's references hold; the drive goes with it), a data key gone at the path, an
+empty producer stamp. Nothing it contained reaches the file, its metadata or its side files, and every writer of
+another format reports "withheld by the producer". A consumer's requirements never change what a producer shares.
 
 ## Requirements: what a consumer needs
 
 ```python
-req = yax.features.Requirements(required=("geometry", "mass", "inertia"), optional=("motors", "sensors"), consumer="piccolo")
-verdict = yax.features.check(m, req, fmt="sdf")      # or: yax features drone.usda --to sdf --requirements piccolo.json
-verdict.ok                                           # every required feature available (and supported by sdf)
-print(verdict)                                       # piccolo (sdf): served / NOT served, then one line per feature
+req = yax.tags.Requirements(required=("00geom", "00mass", "00inert", "00joint"), optional=("00motor", "boreas"), consumer="piccolo")
+verdict = yax.tags.check(m, req, fmt="sdf")      # or: yax tags drone.yx2 --to sdf --requirements piccolo.json
+verdict.ok                                        # every required tag present (and reaching sdf)
+print(verdict)                                    # piccolo (sdf): served / NOT served, then one line per tag
 ```
 
-A requirements file is JSON: `{"consumer": "piccolo", "required": [...], "optional": [...]}`. The check reads the
-file as it is: it enables nothing, converts nothing, and a required feature that is `missing`, `excluded` or
-`unsupported` fails it (exit 1 on the command line), each with its reason. Optional features are reported, never
-failed.
+A requirements file is JSON: `{"consumer": "piccolo", "required": [...], "optional": [...]}`. Per tag the verdict
+is **present** (with how many properties, and how many of them a target format holds), **absent** (nothing carries
+it), **withheld** (the producer dropped it), or **unsupported** (the target format has no place for any of its
+properties — the consumer reads them from the YX2). The check enables nothing and converts nothing; a required tag
+that is not present fails it (exit 1 on the command line).
 
-## Compatibility
+## Format support
 
-Files written before features existed read as machines with an empty `features`: every feature they hold is
-available, every other is missing. `Machine.features` is the only new field; `yax:features` the only new attribute.
+| Format | Holds (property kinds) | Partial |
+|---|---|---|
+| USD, YX2 | everything | — |
+| MJCF | poses, masses, inertias, shapes, the tree, articulation, drives | `00motor`: joint drives as position actuators only |
+| URDF | poses, masses, inertias, shapes, the tree, articulation | `00joint`: ball joints as fixed, the drive's max force as the effort limit |
+| SDF | the same, plus verbatim SDF data (sensors, plugins) | `00joint`: no drives (a plugin carries them) |
+| JSBSim | masses and inertias (one rigid body), the propulsion block, JSBSim sections | `00motor`: propellers and electric engines from `propulsion` |
+| STEP, STL | poses, shapes | — |
+| Yax 1 package | poses, shapes, mass, inertia, the stamp | mass: the whole body |
