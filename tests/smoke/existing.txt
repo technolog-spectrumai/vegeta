@@ -32,3 +32,4 @@ vegeta-fidia/tests/test_checks.py
 vegeta-fidia/tests/test_contract.py
 vegeta-fidia/tests/test_export.py
 vegeta-fidia/tests/test_independence.py
+designs/tests/test_export.py

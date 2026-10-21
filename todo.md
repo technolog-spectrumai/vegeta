@@ -45,7 +45,11 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V6.1 Ogma comes home: the parts library moved from its own repo into `ogma/` with its history (`import ogma as og` unchanged); `vendor/ogma` removed; smoke runs `ogma/tests`
 - [x] V6.2 Yax moved to its own repo (`technolog-spectrumai/yax`) and becomes the format converter (USD hub); vendored at `vendor/yax` (`scripts/update_yax.sh`)
 - [x] V6.5 Chiron stays home: `vegeta.chiron` is the one Chiron (the robots are designed and tested here); the chiron repository is retired and Piccolo no longer vendors it — a graduated robot goes to Piccolo as MJCF written through Yax
-- [ ] V6.3 Vegeta exchanges designs with Piccolo only as standard files (URDF/SDF/USD/MJCF/STEP/JSBSim) written through Yax — prepared: Yax 2 converts every format (vendor/yax), Piccolo reads its fixtures and Gazebo models as standard files; next: Vegeta's export path (`export_yax` → `yax.convert`) per machine
+- [x] V6.3 Vegeta exchanges designs with Piccolo only as standard files (URDF/SDF/USD/MJCF/STEP/JSBSim) written through Yax
+  - [x] Yax 2 converts every format (vendor/yax); Piccolo reads its fixtures and Gazebo models as standard files
+  - [x] the export path: `python designs/export.py <machine> --to out/<machine>.usda --also sdf [--lump]` — Chiron robot → `to_mjcf()` → Yax; 14 machines (`--list`); `designs/tests/test_export.py` in smoke
+  - [x] part data in the USD as `data["ogma"]`: Drongo's rotors (position, spin, mass, disk inertia, kF = T_max/ω_max², kM, ω_max, τ up/down) for Gazebo's motor models; `--lump` = one rigid body minus the rotors
+  - [ ] part data for the rovers and walkers (wheel radii, servo limits) when Piccolo maps one (P2.8b)
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
