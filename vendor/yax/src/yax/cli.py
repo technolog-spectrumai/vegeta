@@ -1,5 +1,5 @@
-"""``yax convert SRC DST`` (any two formats, through USD), ``yax show FILE`` (links, joints, mass), and for Yax 1
-packages ``yax check DIR...`` (exit 1 on problems) and ``yax info DIR``."""
+"""``yax convert SRC DST`` (any two formats, through USD), ``yax show FILE`` (links, joints, mass), ``yax check FILE.yx2 | DIR...``
+(a YX2 file or a Yax 1 package; exit 1 on problems), ``yax info DIR``, ``yax features``, ``yax select``, ``yax sync``."""
 from __future__ import annotations
 
 import argparse
@@ -35,7 +35,7 @@ def main(argv=None) -> int:
     s_.add_argument("dst")
     s_.add_argument("--include", default="", help="comma-separated features to keep (default: all)")
     s_.add_argument("--exclude", default="", help="comma-separated features to withhold")
-    sub.add_parser("check", help="validate packages").add_argument("dirs", nargs="+")
+    sub.add_parser("check", help="validate .yx2 files and Yax 1 packages (exit 1 on problems)").add_argument("dirs", nargs="+")
     sub.add_parser("info", help="print a package's manifest summary").add_argument("dir")
     a = ap.parse_args(argv)
     if a.cmd == "convert":
@@ -73,7 +73,11 @@ def main(argv=None) -> int:
     if a.cmd == "check":
         status = 0
         for d in a.dirs:
-            problems = check(d)
+            if d.endswith(".yx2"):
+                from .formats.yx2 import validate as check_yx2
+                problems = check_yx2(d)
+            else:
+                problems = check(d)
             print(f"{d}: {'ok' if not problems else 'INVALID'}")
             for p in problems:
                 print(f"  - {p}")
