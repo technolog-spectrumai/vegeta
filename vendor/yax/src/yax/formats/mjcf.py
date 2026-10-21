@@ -109,10 +109,18 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     for j in m.joints:
         children.setdefault(j.parent, []).append(j)
     jointed = {j.child for j in m.joints}
+    geom_names = set()
+
+    def unique(name, owner):                                                   # MJCF geom names are model-wide
+        cand = name if name not in geom_names else f"{owner}_{name}"
+        n = 2
+        while cand in geom_names:
+            cand, n = f"{owner}_{name}_{n}", n + 1
+        geom_names.add(cand)
+        return cand
+
     massless = any((lk.mass or 0) <= 0 for lk in m.links if lk.name in jointed and m.parent_joint(lk.name).kind != "fixed")
-    for k in m.data:
-        if k != "mjcf":
-            rep.drop(f"machine data {k!r} (MJCF has no place for it)")
+    hub.report_data(m, rep, keep=("mjcf",))
 
     def body(lk: Link, parent: Link | None, joint: Joint | None, pad: str) -> list:
         if parent is None:
@@ -139,7 +147,7 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             out.append(f'{pad}  <inertial pos="{_f(lk.com)}" mass="{lk.mass:.17g}" '
                        f'fullinertia="{_f((I[0, 0], I[1, 1], I[2, 2], I[0, 1], I[0, 2], I[1, 2]))}"/>')
         for s in lk.shapes:
-            a = [f"name={quoteattr(s.name)}"]
+            a = [f"name={quoteattr(unique(s.name, lk.name))}"]
             if s.kind == "mesh":
                 mesh_dir.mkdir(parents=True, exist_ok=True)
                 fname = f"{hub._ident(lk.name)}__{hub._ident(s.name)}.stl"

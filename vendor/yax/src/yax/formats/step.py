@@ -122,8 +122,7 @@ def write(m: Machine, path, rep: Report | None = None, *, units: str = "mm") -> 
         rep.drop("mass properties (STEP has none)")
     if m.joints:
         rep.drop("joints (STEP carries geometry only; the parts are placed at q = 0)")
-    if m.data:
-        rep.drop("machine data (" + ", ".join(sorted(m.data)) + ")")
+    hub.report_data(m, rep)
     comp = cq.Compound.makeCompound([cq.Shape.cast(s) for s in shapes])
     cq.exporters.export(comp, str(path), exportType="STEP")
     return rep

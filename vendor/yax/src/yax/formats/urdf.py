@@ -169,8 +169,7 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     path = Path(path)
     rep = rep or Report("usd", str(path))
     mesh_dir = path.parent / f"{path.stem}_meshes"
-    for k in m.data:
-        rep.drop(f"machine data {k!r} (URDF has no place for it)")
+    hub.report_data(m, rep, keep=())
     frames = {}
     for lk in m.links:                                                          # URDF: a child frame is its joint frame
         j = m.parent_joint(lk.name)

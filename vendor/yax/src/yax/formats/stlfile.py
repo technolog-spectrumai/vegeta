@@ -36,5 +36,6 @@ def write(m: Machine, path, rep: Report | None = None, *, units: str = "mm") -> 
         rep.drop("mass properties (an STL has none)")
     if m.joints:
         rep.drop("joints (one mesh at q = 0)")
+    hub.report_data(m, rep)
     stl.write(path, tris)
     return rep
