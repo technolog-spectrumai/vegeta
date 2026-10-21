@@ -27,7 +27,8 @@ Property paths (``properties(m)``)::
 ``data:propulsion`` covers the block, a tag on ``data:propulsion/propellers/apc`` one propeller and its fields). ``Machine.tags`` is ``{"table": {path: [codes]}, "withheld":
 [codes]}``: the table lists every tagged property (system tags included, so the file stands on its own), ``withheld``
 the tags the producer dropped. Nothing is invented: a dropped property is absent (a mass ``None``, a joint fixed, a
-key gone), never defaulted.
+key gone), never defaulted. A container (a data block) stays while a property under it is kept: dropping ``00prop``
+with a producer tag kept on one propeller leaves the block holding that propeller and nothing else.
 """
 from __future__ import annotations
 
@@ -280,6 +281,8 @@ def select(m: Machine, keep=None, drop=()) -> Machine:
         if not ok:
             removed.append(p.path)
             withheld |= codes - (keep or set()) if keep is not None else codes & drop
+    gone = set(removed)                                                        # a container stays while something under it is kept
+    removed = [r for r in removed if not any(k.startswith(r + "/") for k in (p.path for p in properties(out)) if k not in gone)]
     removed.sort(key=lambda s: -s.count("/"))                                  # deepest first: a parent's removal is enough
     for path in removed:
         try:
