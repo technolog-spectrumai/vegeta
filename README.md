@@ -21,7 +21,7 @@ yax show rover.sdf                     # links, joints, mass
 
 **Tags — what is shared, what is needed.** Every property of a machine carries tags: codes of up to 8 alphanumerics.
 The producer tags as it pleases (`boreas` on the maps a BEMT made) and keeps or withholds properties by tag
-(`yax select src.yx2 dst.yx2 --tag 'data:propulsion/*=boreas' --drop 00strgth`: withheld, never invented, and the file
+(`yax select src.yx2 dst.yx2 --tag 'data:propulsion/*=boreas' --drop 00str`: withheld, never invented, and the file
 says so); the consumer validates the tags it needs (`yax tags dst.yx2 --to sdf --requirements piccolo.json`: present,
 absent, withheld or unsupported by the format). Codes starting with `00` are system tags Yax assigns from what a
 property is (`00geom`, `00mass`, `00inert`, `00joint`, `00motor`, …), so there is always something to validate against.

@@ -1,0 +1,15 @@
+{
+  "_what": "docs/engineering.md: a mock three-blade 5-inch propeller on a 2306 motor, as the machine's propulsion block must hold it",
+  "data:propulsion": {
+    "rotors": [{"name": "r0", "link": "prop0", "pos": [0.1, 0.1, 0.05], "axis": [0, 0, 1], "spin": 1, "propeller": "p5", "motor": "m2306"}],
+    "propellers": {"p5": {"blades": 3, "diameter_m": 0.127, "hub_radius_m": 0.006, "mass_kg": 0.004, "inertia_kgm2": 2e-06, "geometry_ref": "prop0",
+                          "coefficients": {"J": [0.0, 0.2, 0.4, 0.6], "CT": [0.12, 0.10, 0.07, 0.03], "CQ": [0.011, 0.010, 0.008, 0.005],
+                                           "CP": [0.069, 0.063, 0.050, 0.031], "rho_ref_kg_m3": 1.225, "rpm_band": [8000, 24000], "source": "mock BEMT"},
+                          "grid": {"rpm": [10000, 20000], "airspeed_m_s": [0.0, 5.0, 10.0], "rho": 1.225,
+                                   "thrust_n": [[1.2, 1.0, 0.7], [4.8, 4.3, 3.6]], "torque_nm": [[0.015, 0.013, 0.010], [0.060, 0.055, 0.047]]},
+                          "source": "mock", "validity": {"rpm": [8000, 24000]}}},
+    "motors": {"m2306": {"name": "2306-2400KV", "kind": "bldc", "kv_rpm_per_v": 2400, "resistance_ohm": 0.06, "no_load_current_a": 1.2,
+                         "max_current_a": 40, "rotor_inertia_kgm2": 1.5e-06, "limits": {"max_power_w": 330.0}, "source": "mock"}},
+    "source": "mock propulsion"
+  }
+}

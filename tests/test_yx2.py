@@ -38,18 +38,18 @@ def test_yx2_round_trip_is_exact_and_idempotent(tmp_path):
 
 
 def test_yx2_keeps_a_selection_and_reports_nothing(tmp_path):
-    m = tg.select(_rich(), drop=("00strgth", "00conn", "00sensor"))
+    m = tg.select(_rich(), drop=("00str", "00conn", "00sensor"))
     f = tmp_path / "cut.yx2"
     yax.save(m, f)
     text = f.read_text()
     assert "allowable_pa" not in text and "M3" not in text and "cam" not in text
     back, _ = yax.read(f)
-    assert back.tags["withheld"] == ["00conn", "00sensor", "00strgth"]
+    assert back.tags["withheld"] == ["00conn", "00sensor", "00str"]
     inv = tg.inventory(back)
-    assert inv["00strgth"] is None and inv["00matl"] and inv["00motor"]
+    assert inv["00str"] is None and inv["00mat"] and inv["00motor"]
     assert back.data["materials"] == m.data["materials"] and back.data["propulsion"] == m.data["propulsion"]
-    v = tg.check(back, tg.Requirements(required=("00geom", "00mass", "00matl"), optional=("00strgth",)), fmt="yx2")
-    assert v.ok and v.statuses["00strgth"].status == tg.WITHHELD
+    v = tg.check(back, tg.Requirements(required=("00geom", "00mass", "00mat"), optional=("00str",)), fmt="yx2")
+    assert v.ok and v.statuses["00str"].status == tg.WITHHELD
     yax.save(back, tmp_path / "again.yx2")
     assert (tmp_path / "again.yx2").read_text() == text
 

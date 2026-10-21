@@ -37,6 +37,7 @@ def main(argv=None) -> int:
     s_.add_argument("--drop", default="", help="comma-separated tags to withhold")
     s_.add_argument("--tag", action="append", default=[], metavar="PATTERN=CODE", help="tag the properties matching PATTERN with CODE (repeatable)")
     sub.add_parser("check", help="validate .yx2 files and Yax 1 packages (exit 1 on problems)").add_argument("dirs", nargs="+")
+    sub.add_parser("validate", help="a machine file's engineering blocks: schemas, units, references, frames; its tags (exit 1 on problems)").add_argument("file")
     sub.add_parser("info", help="print a package's manifest summary").add_argument("dir")
     a = ap.parse_args(argv)
     if a.cmd == "convert":
@@ -70,6 +71,19 @@ def main(argv=None) -> int:
         verdict = tags.check(m, req, a.fmt)
         print(verdict)
         return 0 if verdict.ok else 1
+    if a.cmd == "validate":
+        from . import schema, tags
+        from .convert import read
+        m, _ = read(a.file)
+        problems = schema.problems(m)
+        for path, codes in (m.tags or {}).get("table", {}).items():
+            for c in codes:
+                if not tags.CODE.match(str(c)):
+                    problems.append(f"tag {c!r} on {path}: not 1–8 alphanumerics")
+        print(f"{a.file}: {'ok' if not problems else 'INVALID'}")
+        for pr in problems:
+            print(f"  - {pr}")
+        return 1 if problems else 0
     if a.cmd == "show":
         from .convert import info
         print(info(a.file))

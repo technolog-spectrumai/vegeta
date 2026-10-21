@@ -62,8 +62,10 @@ def save(m: Machine, path, fmt: str | None = None, *, report: Report | None = No
         hub.to_stage(m, path)
         return rep
     if fmt != "yx2":                                                          # a withheld tag is a loss to know about
+        from .schema import report_losses
         from .tags import report_withheld                                     # (a YX2 says it itself, in yax:tags)
         report_withheld(m, rep)
+        report_losses(m, fmt, rep)                                            # what the format cannot carry of the blocks
     return _module(fmt).write(m, path, rep, **opts)
 
 
