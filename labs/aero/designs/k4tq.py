@@ -53,16 +53,20 @@ CATALOGUE = {
         "X4110S-400": {"name": "SunnySky X4110S KV400", "kv": 400.0, "R_ohm": 0.112, "I0_A": 0.9, "I_max_A": 26.0, "mass_kg": 0.149,
                        "price_eur": 70.0, "source": "retailer listings: 112 mOhm, 149 g, 26 A / 30 s, 6S"},
         "MN5006-450": {"name": "T-Motor MN5006 KV450 (Antigravity)", "kv": 450.0, "R_ohm": 0.060, "I0_A": 1.2, "I_max_A": 30.0, "mass_kg": 0.106,
-                       "price_eur": 110.0, "source": "retailer listings: 60 mOhm, 106 g with cable, 4-6S, P14-18; I0 and I_max estimated (to verify)"},
+                       "price_eur": 110.0, "cells_max": 6, "off_the_shelf": True,
+                       "source": "retailer listings: 60 mOhm, 106 g with cable, 4-6S, P14-18; I0 and I_max estimated (to verify)"},
         "MN501S-300": {"name": "T-Motor MN501-S KV300 (Navigator)", "kv": 300.0, "R_ohm": 0.063, "I0_A": 1.0, "I_max_A": 40.0, "mass_kg": 0.170,
-                       "price_eur": 150.0, "source": "retailer listings: 63 mOhm, 170 g, 40 A / 180 s, 1000 W, 6-8S; I0 estimated (to verify)"},
+                       "price_eur": 150.0, "cells_max": 8, "off_the_shelf": True,
+                       "source": "retailer listings: 63 mOhm, 170 g, 40 A / 180 s, 1000 W, 6-8S; I0 estimated (to verify)"},
         "MN505S-380": {"name": "T-Motor MN505-S KV380 (Navigator)", "kv": 380.0, "R_ohm": 0.028, "I0_A": 2.0, "I_max_A": 50.0, "mass_kg": 0.225,
-                       "price_eur": 180.0, "source": "RobotShop / T-Motor store: 28 mOhm, 2.0 A idle at 15 V, 50 A / 180 s, 1200 W, 6S, 225 g"},
+                       "price_eur": 180.0, "cells_max": 6, "off_the_shelf": True,
+                       "source": "RobotShop / T-Motor store: 28 mOhm, 2.0 A idle at 15 V, 50 A / 180 s, 1200 W, 6S, 225 g, 17–18\" props"},
         # K4TQ-B "Bertha" (the scaled design, 12S): the large multirotor / VTOL class — every value "to verify" on the datasheet
         "U8L-150": {"name": "T-Motor U8 Lite KV150", "kv": 150.0, "R_ohm": 0.115, "I0_A": 0.7, "I_max_A": 30.0, "mass_kg": 0.244, "price_eur": 270.0,
                     "source": "T-Motor U8 Lite class: 12S, 26–28\" props, ~244 g; R and I0 estimated (to verify)"},
-        "MN801S-150": {"name": "T-Motor MN801-S KV150 (Navigator)", "kv": 150.0, "R_ohm": 0.090, "I0_A": 0.9, "I_max_A": 40.0, "mass_kg": 0.320, "price_eur": 300.0,
-                       "source": "T-Motor MN801-S class: 12S, 26–30\" props, ~320 g; R and I0 estimated (to verify)"},
+        "MN801S-150": {"name": "T-Motor MN801-S KV150 (Navigator)", "kv": 150.0, "R_ohm": 0.050, "I0_A": 1.4, "I_max_A": 60.0, "mass_kg": 0.480, "price_eur": 330.0,
+                       "cells_max": 12, "off_the_shelf": True,
+                       "source": "T-Motor store / LIGPower datasheet: 6–12S, 50 mΩ, idle 1.4 A at 15 V, 60 A / 2800 W (180 s), 480 g with cable, 26–27\" props; price to verify"},
         "U10II-100": {"name": "T-Motor U10 II KV100", "kv": 100.0, "R_ohm": 0.080, "I0_A": 0.9, "I_max_A": 45.0, "mass_kg": 0.410, "price_eur": 400.0,
                       "source": "T-Motor U10 II class: 12S, 28–30\" props, ~410 g; R and I0 estimated (to verify)"},
         "MN601S-180": {"name": "T-Motor MN601-S KV180 (Navigator)", "kv": 180.0, "R_ohm": 0.105, "I0_A": 0.7, "I_max_A": 30.0, "mass_kg": 0.200, "price_eur": 220.0,
@@ -75,8 +79,16 @@ CATALOGUE = {
                       "source": "T-Motor MN1005 class: 12S, 28–32\" props, ~560 g; R and I0 estimated (to verify)"},
         "U12II-120": {"name": "T-Motor U12 II KV120", "kv": 120.0, "R_ohm": 0.035, "I0_A": 1.6, "I_max_A": 60.0, "mass_kg": 0.790, "price_eur": 620.0,
                       "source": "T-Motor U12 II class (KV120 winding): 12S, 28–30\" props, ~790 g; R and I0 estimated (to verify)"},
-        "U8II-170": {"name": "T-Motor U8 II KV170", "kv": 170.0, "R_ohm": 0.085, "I0_A": 0.8, "I_max_A": 35.0, "mass_kg": 0.250, "price_eur": 280.0,
-                     "source": "T-Motor U8 II class: 12S, 24–27\" props, ~250 g; R and I0 estimated (to verify)"},
+        # off the shelf (2026-10-21, T-Motor store datasheets): the 12S Navigator motors for 18–22" propellers
+        "MN601S-170": {"name": "T-Motor MN601-S KV170 (Navigator)", "kv": 170.0, "R_ohm": 0.115, "I0_A": 0.8, "I_max_A": 30.0, "mass_kg": 0.250, "price_eur": 200.0,
+                       "cells_max": 12, "off_the_shelf": True,
+                       "source": "T-Motor store: 6–12S, 115 mΩ, 30 A / 1500 W (180 s), 250 g with cable, 20–21\" props; I0 and price to verify"},
+        "MN605S-170": {"name": "T-Motor MN605-S KV170 (Navigator)", "kv": 170.0, "R_ohm": 0.065, "I0_A": 1.0, "I_max_A": 35.0, "mass_kg": 0.350, "price_eur": 250.0,
+                       "cells_max": 12, "off_the_shelf": True,
+                       "source": "T-Motor store: 6–12S, 65 mΩ, 35 A / 1700 W (180 s), 350 g with cable (a reseller: 327 g), 20–22\" props, 8.6 kg max thrust; I0 and price to verify"},
+        "U8II-170": {"name": "T-Motor U8 II KV170 (class)", "kv": 170.0, "R_ohm": 0.085, "I0_A": 0.8, "I_max_A": 35.0, "mass_kg": 0.250, "price_eur": 280.0,
+                     "off_the_shelf": False,
+                     "source": "an assumed U8 II class — no KV170 winding is listed (the U8 II comes as KV85/100/150/190); the real near-equivalent is the MN601-S KV170"},
     },
     "propeller": {   # diameter, pitch [in]; folding carbon-reinforced blades with a hub (mass per propeller incl. hub)
         "13x6.5": {"d_in": 13, "p_in": 6.5, "mass_kg": 0.032, "price_eur": 18.0, "source": "T-Motor T13x6.5 class (23.7 g fixed); folding hub +8 g"},
@@ -95,6 +107,22 @@ CATALOGUE = {
         "20x13": {"d_in": 20, "p_in": 13.0, "mass_kg": 0.090, "price_eur": 95.0, "source": "Mejzlik 20x13 carbon class + folding hub, to verify"},
         "20x14": {"d_in": 20, "p_in": 14.0, "mass_kg": 0.092, "price_eur": 98.0, "source": "Mejzlik 20x14 carbon class + folding hub, to verify"},
         "22x14": {"d_in": 22, "p_in": 14.0, "mass_kg": 0.105, "price_eur": 110.0, "source": "Mejzlik 22x14 carbon class + folding hub, to verify"},
+        # off the shelf, folding (2026-10-21): Aeronaut CAM Carbon (Z) blades on the 42 mm centre piece (EU: Lindinger, eBay.de —
+        # stock varies) and T-Motor's folding VTOL props; mass per propeller with the hub and the spinner (estimates)
+        "CAM16x13": {"d_in": 16, "p_in": 13.0, "mass_kg": 0.062, "price_eur": 75.0, "folding": True, "off_the_shelf": True,
+                     "source": "Aeronaut CAM Carbon 16x13 folding blades + 42 mm hub + spinner (listed at eBay.de, stock varies)"},
+        "CAM17x11": {"d_in": 17, "p_in": 11.0, "mass_kg": 0.066, "price_eur": 80.0, "folding": True, "off_the_shelf": True,
+                     "source": "Aeronaut CAM Carbon 17x11 folding blades + 42 mm hub + spinner"},
+        "CAM17x13": {"d_in": 17, "p_in": 13.0, "mass_kg": 0.068, "price_eur": 80.0, "folding": True, "off_the_shelf": True,
+                     "source": "Aeronaut CAM Carbon 17x13 folding blades + 42 mm hub + spinner"},
+        "CAM18x13": {"d_in": 18, "p_in": 13.0, "mass_kg": 0.075, "price_eur": 85.0, "folding": True, "off_the_shelf": True,
+                     "source": "Aeronaut CAM Carbon 18x13 folding blades + 42 mm hub + spinner"},
+        "CAM18x9": {"d_in": 18, "p_in": 9.0, "mass_kg": 0.070, "price_eur": 85.0, "folding": True, "off_the_shelf": True,
+                    "source": "Aeronaut CAM Carbon Z 18x9 folding blades + 42 mm hub + spinner"},
+        "MF2009": {"d_in": 20.4, "p_in": 7.3, "mass_kg": 0.075, "price_eur": 60.0, "folding": True, "off_the_shelf": True,
+                   "source": "T-Motor MF2009 folding polymer + CF, 20.4x7.3, 59 g + the folding base"},
+        "FA22.2": {"d_in": 22.2, "p_in": 7.2, "mass_kg": 0.085, "price_eur": 90.0, "folding": True, "off_the_shelf": True,
+                   "source": "T-Motor carbon folding 22.2x7.2, 69 g + the folding base"},
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
@@ -186,6 +214,8 @@ CATALOGUE = {
     },
 }
 
+CATALOGUE["battery"]["6S4P-P45B"] = {"cells_s": 6, "cells_p": 4, "capacity_ah": 18.0, "cell_v": 3.6, "mass_kg": 24 * 0.070 * 1.07, "max_A": 180.0,
+                                     "price_eur": 300.0, "source": "Molicel P45B 6S4P: the bigger pack for a bigger drive (K4TQ-F3 option), to verify"}
 for _n in range(2, 5):                                           # K4TQ-F3 "Freddy 3": 8S·nP of the same cells
     CATALOGUE["battery"][f"8S{_n}P-P45B"] = {"cells_s": 8, "cells_p": _n, "capacity_ah": 4.5 * _n, "cell_v": 3.6, "mass_kg": 8 * _n * 0.070 * 1.07,
                                              "max_A": 45.0 * _n, "price_eur": 55.0 * _n + 30.0, "source": f"Molicel P45B 8S{_n}P (BMS, wrap, leads), to verify"}
@@ -341,13 +371,18 @@ for _k, _v in SCALED.items():
     _s = _v.pop("s")
     VARIANTS[_k] = scaled("F1", _s, esc="esc_hv", made_calibration=MADE_CALIBRATION, variant=_k,
                           title=f"K4TQ-{_k} \"{'Bertha' if _k == 'B' else 'Ginna'}\": K4TQ-F1 × {_s:g}, {_v['motor']} + {_v['prop']}, {_v['battery']}", **_v)
-NICKNAME.update({"B": "Bertha", "G": "Ginna"})
+_g2 = {k: v for k, v in SCALED["G"].items() if k not in ("s", "payload_kg")}
+VARIANTS["G2"] = scaled("F2", SCALED["G"]["s"], esc="esc_hv", made_calibration=MADE_CALIBRATION, variant="G2", payload_kg=2.3,   # Ginna + the Jetson: the payload refilled to 12.5 kg
+                        title="K4TQ-G2: Ginna fully autonomous (the Jetson Orin NX + perception), Ginna's drive, 12.5 kg", **_g2)
+NICKNAME.update({"B": "Bertha", "G": "Ginna", "G2": "Ginna autonomous"})
 
 # K4TQ-F3 "Freddy 3" and K4TQ-G3 "Ginna 3" (2026-10-21): the Jetson (as A2) and bigger motors, to match or exceed the
-# 15-inch FPV quad's top speed with a payload (34.5 m/s; k4tq_fast: the motor × propeller × pack sweep, data/k4tq/sweep_*.csv)
+# 15-inch FPV quad's top speed with a payload (34.5 m/s) and keep the range of F2 / G2 (k4tq_fast: the off-the-shelf
+# motor × propeller × pack sweep, data/k4tq/sweep_*.csv)
 FAST = {
-    "F3": dict(motor="MN505S-380", prop="16x12", battery="6S3P-P45B", esc="esc", payload_kg=1.0, v_top=42.0),
-    "G3": dict(motor="MN801S-150", prop="20x14", battery="12S3P-P45B", esc="esc_hv", payload_kg=2.0, v_top=39.0, s=1.35),
+    # off the shelf (2026-10-21): T-Motor Navigator motors within their rated voltage, Aeronaut CAM Carbon folding blades
+    "F3": dict(motor="MN505S-380", prop="CAM16x13", battery="6S3P-P45B", esc="esc", payload_kg=1.0, v_top=45.0),
+    "G3": dict(motor="MN605S-170", prop="CAM17x13", battery="12S3P-P45B", esc="esc_hv", payload_kg=1.95, v_top=40.0, s=1.35),
 }
 for _k, _v in FAST.items():
     _v = dict(_v)

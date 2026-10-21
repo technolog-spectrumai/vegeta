@@ -1,6 +1,8 @@
 """K4TQ's fast autonomous designs: K4TQ-F3 "Freddy 3" and K4TQ-G3 "Ginna 3" — Freddy (1.2 m) and Ginna (Freddy × 1.35,
-≤ 12.5 kg) with the Jetson (K4TQ-A2's companion and perception) and a bigger drive, sized to **match or exceed the top
-speed of the 15-inch FPV quad carrying a payload** (``k4tq_quads.fpv15``: the same catalogue and drive model).
+≤ 12.5 kg) with the Jetson (K4TQ-A2's companion and perception) and a bigger, **off-the-shelf** drive (T-Motor Navigator
+motors within their rated voltage, Aeronaut CAM / T-Motor folding propellers), sized to **match or exceed the top speed
+of the 15-inch FPV quad carrying a payload** (``k4tq_quads.fpv15``: the same catalogue and drive model) while keeping
+the range of the autonomous designs they replace (F2, G2) — at least ``RANGE_KEEP`` of it.
 
 Why the drive: Freddy's 28 m/s is the propeller's pitch speed (16x10 at KV300 on 6S ≈ 27 m/s), not its power — the
 level drag at 35 m/s is only ≈ 0.5 kW of thrust power. So the sweep (``sweep``) runs motors × propellers (higher pitch)
@@ -27,14 +29,16 @@ import k4tq_sizing as sz
 SPEEDS = np.arange(14.0, 49.0, 1.0)
 FPV_PAYLOADS = (1.0, 2.0)
 ESC_FOR = {6: "esc", 8: "esc_8s", 12: "esc_hv"}
-CANDIDATES = {
-    "F3": {"motors": ("MN501S-300", "MN505S-380", "MN5006-450", "MN601S-180"), "props": ("16x10", "16x12", "16x13", "17x12"),
-           "packs": ("6S3P-P45B", "8S2P-P45B", "8S3P-P45B", "12S2P-P45B")},
-    "G3": {"motors": ("U8II-170", "U8L-150", "MN801S-150", "MN701S-135", "MN601S-180"), "props": ("20x10", "20x13", "20x14", "22x14"),
+CANDIDATES = {   # off the shelf only (``off_the_shelf`` in the catalogue: T-Motor Navigator motors, Aeronaut CAM / T-Motor folding props)
+    "F3": {"motors": ("MN501S-300", "MN505S-380", "MN601S-170", "MN605S-170"), "props": ("CAM16x13", "CAM17x11", "CAM17x13", "CAM18x13"),
+           "packs": ("6S3P-P45B", "6S4P-P45B", "8S2P-P45B", "8S3P-P45B", "12S2P-P45B")},
+    "G3": {"motors": ("MN601S-170", "MN605S-170", "MN801S-150"), "props": ("CAM17x13", "CAM18x13", "CAM18x9", "MF2009", "FA22.2"),
            "packs": ("12S2P-P45B", "12S3P-P45B", "12S4P-P45B")},
 }
 BASE = {"F3": ("F2", 1.0), "G3": ("F2", 1.35)}          # (the airframe's variant, scale) — Freddy autonomous; Ginna's scale
 NAMES = {"F3": "Freddy 3", "G3": "Ginna 3"}
+PARENT = {"F3": "F2", "G3": "G2"}                         # the autonomous designs they replace: the range to keep
+RANGE_KEEP = 0.90                                         # the still-air range at least 90 % of the parent's ("more or less the same")
 
 
 def target_speed() -> float:
@@ -84,6 +88,10 @@ def sweep(letter: str, *, log=print) -> pd.DataFrame:
     for mo in c["motors"]:
         for pr in c["props"]:
             for pk in c["packs"]:
+                cells = k4tq.CATALOGUE["battery"][pk]["cells_s"]
+                if cells > k4tq.CATALOGUE["motor"][mo].get("cells_max", 12):     # beyond the motor's rated voltage
+                    rows.append({"motor": mo, "prop": pr, "pack": pk, "meets the target": False, "note": f"the motor is rated to {k4tq.CATALOGUE['motor'][mo]['cells_max']}S"})
+                    continue
                 kw = dict(motor=mo, prop=pr, battery=pk, v_top=V_t)
                 try:
                     if letter == "F3":
@@ -128,7 +136,7 @@ def sweep(letter: str, *, log=print) -> pd.DataFrame:
 
 SPEED_MARGIN = 1.05                                             # the top speed ≥ 1.05 × the FPV's: the model's 1 m/s grid and its uncertainty
 MARGIN_MIN = 20.0                                               # Wh beyond R3's 20 % reserve: the wind or a cold pack must not end the mission
-PARENT_MOTOR = {"F3": "MN501S-300", "G3": "U8II-170"}         # Freddy's and Ginna's: "bigger motors" = heavier (more copper, more power) than these
+PARENT_MOTOR = {"F3": "MN501S-300", "G3": "U8II-170"}         # Freddy's and Ginna's (G2's): "bigger motors" = heavier (more copper, more power) than these
 
 
 def bigger(letter: str, motor: str) -> bool:
@@ -136,11 +144,18 @@ def bigger(letter: str, motor: str) -> bool:
     return m[motor]["mass_kg"] > m[PARENT_MOTOR[letter]]["mass_kg"] + 1e-9
 
 
+def parent_range(letter: str) -> float:
+    return sz.best_speeds(sz.cruise(sz.vehicle(PARENT[letter]), n_running=2, speeds=SPEEDS))["range [km]"]
+
+
 def pick(letter: str, df: pd.DataFrame) -> pd.Series:
-    """The design among the candidates that meet the target with a motor bigger than the parent's, ``MARGIN_MIN`` on R3
-    and ``SPEED_MARGIN`` on the speed: F3 the lightest (then the most R3 margin), G3 the most payload."""
+    """The design among the candidates that meet the target with a motor bigger than the parent's, ``MARGIN_MIN`` on R3,
+    ``SPEED_MARGIN`` on the speed and ``RANGE_KEEP`` of the parent's range: F3 the lightest (then the most R3 margin), G3
+    the most payload."""
+    r_parent = parent_range(letter)
     ok = df[df["meets the target"] & df["motor"].map(lambda mo: bigger(letter, mo)) & (df["R3 margin [Wh]"] >= MARGIN_MIN)
-            & (df["top speed [m/s]"] >= SPEED_MARGIN * df.attrs.get("target speed [m/s]", target_speed()))]
+            & (df["top speed [m/s]"] >= SPEED_MARGIN * df.attrs.get("target speed [m/s]", target_speed()))
+            & (df["still-air range [km]"] >= RANGE_KEEP * r_parent)]
     if not len(ok):
         raise ValueError(f"no {letter} candidate reaches {df.attrs.get('target speed [m/s]', 0):.1f} m/s with the rules")
     if letter == "F3":                                                  # the lightest; then the most R3 margin
@@ -148,7 +163,7 @@ def pick(letter: str, df: pd.DataFrame) -> pd.Series:
     return ok.sort_values(["payload [kg]", "R3 margin [Wh]"], ascending=[False, False]).iloc[0]
 
 
-def comparison(designs=("F2", "F3", "G", "G3"), fpv_payloads=(0.0, 1.0, 2.0)) -> pd.DataFrame:
+def comparison(designs=("F2", "F3", "G2", "G3"), fpv_payloads=(0.0, 1.0, 2.0)) -> pd.DataFrame:
     """The fast designs against their slower parents and the 15-inch FPV quad: mass with the pack, payload, top speed,
     range, hover."""
     rows = {}
