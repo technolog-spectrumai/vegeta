@@ -36,3 +36,6 @@ notebooks/*-run.ipynb
 cache/porunga/
 races/runs/
 designs/data/cad/
+
+# tools/dump_ast.py and tools/graph_metrics.py write the syntax-tree dump and the GraphML files here
+out/

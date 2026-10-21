@@ -1,0 +1,279 @@
+=== MODULE DEPENDENCY GRAPH (A -> B: A imports B) ===
+Modules: 704 | Import edges: 2455 (115 dynamic) | Density: 0.0050
+Weakly connected components: 29 | Strongly connected (>1 module): 6
+
+Fan-out / efferent coupling:
+  designs/export.py                                              30
+  vegeta-cli/src/vegeta/mock/__init__.py                         22
+  notebooks/devices/35_falco.ipynb                               20
+  notebooks/devices/23_onager_sweeper.ipynb                      18
+  notebooks/devices/31_nisus.ipynb                               17
+  notebooks/devices/33_nisus_plus.ipynb                          17
+  notebooks/devices/37_perseus_rover.ipynb                       17
+  ogma/src/ogma/__init__.py                                      17
+
+Fan-in / afferent coupling:
+  vegeta-cli/src/vegeta/dedalus/__init__.py                      115
+  vegeta-cli/src/vegeta/chiron/__init__.py                       59
+  vegeta-cli/src/vegeta/aeromant/__init__.py                     57
+  vegeta-cli/src/vegeta/mock/__init__.py                         56
+  vegeta-cli/src/vegeta/talos/__init__.py                        56
+  vendor/ozaru/yanus/src/yanus/__init__.py                       49
+  vegeta-cli/src/vegeta/boreas/__init__.py                       39
+  vegeta-cli/src/vegeta/dedalus/viz.py                           35
+
+PageRank:
+  vegeta-cli/src/vegeta/dedalus/__init__.py                      0.045
+  vegeta-cli/src/vegeta/dedalus/result.py                        0.020
+  vegeta-cli/src/vegeta/dedalus/design.py                        0.015
+  vegeta-cli/src/vegeta/chiron/__init__.py                       0.014
+  vegeta-cli/src/vegeta/dedalus/parameters.py                    0.012
+  vegeta-cli/src/vegeta/dedalus/geometry.py                      0.011
+  ogma/src/ogma/mass.py                                          0.010
+  ogma/src/ogma/units.py                                         0.009
+
+Betweenness:
+  vegeta-cli/src/vegeta/dedalus/__init__.py                      0.014
+  vegeta-cli/src/vegeta/dedalus/yax_export.py                    0.010
+  vendor/yax/src/yax/__init__.py                                 0.009
+  vegeta-cli/src/vegeta/mock/__init__.py                         0.007
+  vendor/yax/src/yax/convert.py                                  0.005
+  vegeta-cli/src/vegeta/boreas/__init__.py                       0.005
+  vegeta-cli/src/vegeta/talos/__init__.py                        0.004
+  designs/kestrel_campaigns.py                                   0.004
+
+Change blast radius (transitive importers):
+  ogma/src/ogma/mass.py                                          354
+  ogma/src/ogma/mujoco.py                                        350
+  vegeta-cli/src/vegeta/chiron/terrain.py                        322
+  vegeta-cli/src/vegeta/chiron/robot.py                          319
+  vegeta-cli/src/vegeta/dedalus/result.py                        305
+  vegeta-cli/src/vegeta/dedalus/geometry.py                      304
+  vegeta-cli/src/vegeta/dedalus/parameters.py                    304
+  vegeta-cli/src/vegeta/dedalus/design.py                        303
+
+Import cycles:
+  vegeta-cli/src/vegeta/mellonia/cli.py -> vegeta-cli/src/vegeta/mellonia/__main__.py -> vegeta-cli/src/vegeta/mellonia/cli.py
+  vegeta-cli/src/vegeta/atropos/__main__.py -> vegeta-cli/src/vegeta/atropos/cli.py -> vegeta-cli/src/vegeta/atropos/__main__.py
+  vegeta-core/src/vegeta/core/workspace.py -> vegeta-core/src/vegeta/core/design.py -> vegeta-core/src/vegeta/core/revision.py -> vegeta-core/src/vegeta/core/workspace.py
+  vegeta-core/src/vegeta/core/workspace.py -> vegeta-core/src/vegeta/core/revision.py -> vegeta-core/src/vegeta/core/workspace.py
+  vegeta-cli/src/vegeta/zephyr/export.py -> vegeta-cli/src/vegeta/zephyr/polar.py -> vegeta-cli/src/vegeta/zephyr/export.py
+  designs/merlin_flight.py -> designs/propulsor_maps.py -> designs/merlin_flight.py
+  vegeta-cli/src/vegeta/dedalus/yax_export.py -> vegeta-cli/src/vegeta/dedalus/__init__.py -> vegeta-cli/src/vegeta/dedalus/yax_export.py
+
+Area instability (0 = depended on, 1 = depends on others):
+  ogma                   0.00
+  vegeta.aeromant        0.00
+  ozaru                  0.00
+  vegeta.talos           0.00
+  vegeta.zephyr          0.00
+  vegeta.mission         0.00
+  vegeta.atropos         0.00
+  vegeta.mellonia        0.00
+  vegeta.ai              0.00
+  vegeta.chronos         0.00
+  vegeta.boreas          0.14
+  vegeta.dedalus         0.18
+  races                  0.33
+  vegeta.chiron          0.36
+  yax                    0.50
+  vegeta.core            0.58
+  components             0.62
+  assemblies             0.67
+  vegeta.fidia           0.67
+  designs                0.72
+  vegeta.cli             0.75
+  side_labs              0.86
+  vegeta.mock            0.90
+  benchmark              1.00
+  examples               1.00
+  notebooks              1.00
+  scenarios              1.00
+  tests                  1.00
+
+Isolated library modules: ['scenarios/falco_birds.py', 'side_labs/kestrel_x/airframe_cfd.py', 'tools/ast_report.py', 'tools/dump_ast.py']
+
+=== APPROXIMATE FUNCTION CALL GRAPH (caller -> callee) ===
+Functions: 7686 | Call edges: 14282 (3950 by method name) | with third-party effects: 1144
+
+Most called:
+  vegeta-cli/src/vegeta/chiron/lab.py::ChironLab.run                               67
+  designs/falco.py::resolve                                                        59
+  designs/nisus_plus.py::resolve                                                   57
+  vegeta-cli/src/vegeta/mock/__init__.py::setup                                    54
+  vegeta-cli/src/vegeta/aeromant/case.py::CFDCase.prepare                          50
+  vegeta-cli/src/vegeta/talos/model.py::StructuralModel.mesh                       50
+  vegeta-cli/src/vegeta/dedalus/design.py::Design.generate                         47
+  designs/kestrel.py::layout                                                       45
+
+Calling most others:
+  notebooks/devices/33_nisus_plus.ipynb::<module>                                  107
+  notebooks/devices/24_velutina.ipynb::<module>                                    106
+  notebooks/devices/08_quadcopter.ipynb::<module>                                  102
+  notebooks/devices/30_pekari_rover.ipynb::<module>                                100
+  notebooks/devices/31_nisus.ipynb::<module>                                       98
+  notebooks/devices/20_onager_sentinel.ipynb::<module>                             97
+  notebooks/old/40_kestrel.ipynb::<module>                                         96
+  notebooks/devices/37_perseus_rover.ipynb::<module>                               90
+
+Call betweenness (orchestration hotspots, sampled):
+  vegeta-cli/src/vegeta/chiron/lab.py::ChironLab.run                               7137.4
+  vegeta-fidia/src/vegeta/fidia/session.py::Session.run                            6784.6
+  vegeta-fidia/src/vegeta/fidia/session.py::Session._revise                        5120.1
+  vegeta-fidia/src/vegeta/fidia/session.py::Session.step                           4817.4
+  designs/kestrel_campaigns.py::fingerprint                                        3515.9
+  designs/kestrel_campaigns.py::vehicle                                            3122.0
+  designs/kestrel2.py::vehicles                                                    3064.4
+  designs/nisus_birds.py::run                                                      2997.1
+
+Recursion groups: [['designs/onager_controller.py::PhasedMission.reset', 'designs/onager_controller.py::Stand.reset'], ['designs/nisus_birds.py::BirdMission', 'designs/nisus_birds.py::BirdMission.__init__', 'designs/nisus_birds.py::BirdMission.reset'], ['designs/nisus_plus_robot.py::NisusPlusActuators.reset', 'designs/nisus_plus_robot.py::NisusPlusAero.reset'], ['vegeta-fidia/src/vegeta/fidia/campaign.py::Campaign.evaluate', 'vegeta-fidia/src/vegeta/fidia/campaign.py::Campaign.run'], ['vegeta-cli/src/vegeta/aeromant/movie.py::Tracer', 'vegeta-cli/src/vegeta/aeromant/movie.py::Tracer.__init__']]
+
+=== WHAT DOES IT SERVE ===
+area                  lines entries breadth entropy  owner         families
+designs               45000      61    0.47    0.65  notebooks     {'notebooks': 38, 'scenarios': 15, 'side_labs': 4, 'designs': 2, 'benchmark': 2}
+vegeta.chiron         10526      73    0.57    0.50  notebooks     {'notebooks': 54, 'scenarios': 11, 'designs': 2, 'cli': 2, 'vendor': 2, 'benchmark': 2}
+vegeta.aeromant        5176      65    0.50    0.58  notebooks     {'notebooks': 49, 'scenarios': 9, 'side_labs': 4, 'cli': 3}
+components             5151       9    0.07    0.00  notebooks     {'notebooks': 9}
+races                  4717      16    0.12    0.90  races         {'races': 7, 'notebooks': 5, 'cli': 2, 'benchmark': 2}
+side_labs              4715       7    0.05    0.00  side_labs     {'side_labs': 7}
+vegeta.fidia           4644       6    0.05    0.90  notebooks     {'notebooks': 3, 'cli': 1, 'side_labs': 1, 'agents': 1}
+vegeta.talos           3508      46    0.36    0.35  notebooks     {'notebooks': 43, 'cli': 3}
+ogma                   2918      62    0.48    0.68  notebooks     {'notebooks': 38, 'scenarios': 10, 'races': 6, 'side_labs': 4, 'designs': 2, 'benchmark': 2}
+vegeta.boreas          2731      56    0.43    0.43  notebooks     {'notebooks': 47, 'scenarios': 4, 'side_labs': 4, 'cli': 1}
+vegeta.mission         2694       5    0.04    0.97  notebooks     {'notebooks': 3, 'scenarios': 2}
+yax                    2427       4    0.03    0.81  vendor        {'vendor': 3, 'designs': 1}
+notebooks              2063      56    0.43    0.00  notebooks     {'notebooks': 56}
+vegeta.atropos         2034       4    0.03    0.81  cli           {'cli': 3, 'notebooks': 1}
+vegeta.dedalus         1713      52    0.40    0.35  notebooks     {'notebooks': 45, 'cli': 3, 'scenarios': 2, 'designs': 1, 'agents': 1}
+vegeta.core            1331      12    0.09    0.00  notebooks     {'notebooks': 12}
+vegeta.mellonia        1038      46    0.36    0.35  notebooks     {'notebooks': 43, 'cli': 3}
+vegeta.zephyr           896      45    0.35    0.46  notebooks     {'notebooks': 37, 'side_labs': 4, 'cli': 3, 'scenarios': 1}
+vegeta.chronos          857      15    0.12    0.35  notebooks     {'notebooks': 14, 'cli': 1}
+scenarios               838      18    0.14    0.00  scenarios     {'scenarios': 18}
+tools                   805       2    0.02    0.00  tools         {'tools': 2}
+ozaru                   803       6    0.05    0.65  notebooks     {'notebooks': 5, 'vendor': 1}
+benchmark               661       2    0.02    0.00  benchmark     {'benchmark': 2}
+vegeta.mock             583      54    0.42    0.00  notebooks     {'notebooks': 54}
+vegeta.ai               501       4    0.03    0.81  notebooks     {'notebooks': 3, 'cli': 1}
+assemblies              243       0    0.00    0.00  tests         {}  [TEST-ONLY]
+tests                   196       0    0.00    0.00  tests         {}  [TEST-ONLY]
+vegeta.cli               57       2    0.02    0.00  cli           {'cli': 2}
+examples                  0       0    0.00    0.00  nothing       {}
+library lines unreached by any entry's calls: 20366 / 85387; reached only by tests: 7694
+
+=== WHAT IS THE PURPOSE (products the entry points reach) ===
+  data files            114 entries (88%)  {'notebooks': 60, 'scenarios': 17, 'cli': 17, 'races': 7, 'side_labs': 6, 'vendor': 2, 'benchmark': 2, 'designs': 1, 'tools': 1, 'agents': 1}
+  figures                94 entries (73%)  {'notebooks': 59, 'scenarios': 14, 'cli': 13, 'races': 5, 'benchmark': 2, 'tools': 1}
+  tables                 73 entries (57%)  {'notebooks': 53, 'scenarios': 14, 'side_labs': 2, 'benchmark': 2, 'races': 2}
+  solver runs            65 entries (50%)  {'notebooks': 43, 'cli': 9, 'side_labs': 5, 'races': 3, 'benchmark': 2, 'designs': 1, 'scenarios': 1, 'tools': 1}
+  CAD geometry           48 entries (37%)  {'notebooks': 43, 'cli': 2, 'agents': 1, 'designs': 1, 'scenarios': 1}
+  video                  47 entries (36%)  {'notebooks': 29, 'scenarios': 13, 'cli': 3, 'races': 2}
+  meshes                 39 entries (30%)  {'notebooks': 36, 'cli': 3}
+  notebook display       39 entries (30%)  {'notebooks': 39}
+  physics simulation     37 entries (29%)  {'notebooks': 26, 'scenarios': 9, 'benchmark': 2}
+  optimisation           15 entries (12%)  {'notebooks': 10, 'races': 2, 'cli': 2, 'scenarios': 1}
+  exported models         7 entries (5%)  {'cli': 2, 'vendor': 2, 'benchmark': 2, 'designs': 1}
+  LLM answers             0 entries (0%)  {}
+
+Declared purpose (docstring of each area's most imported module):
+  designs              Kestrel-4Q — the parts, the masses, the centre of gravity, the inertia and the propulsion (notebook 40).
+  vegeta.chiron        Chiron — Vegeta's legged-robot dynamics tool, a wrapper on MuJoCo (Chiron, the centaur who trained the heroes).
+  vegeta.aeromant      Aeromant — standalone external aerodynamics on OpenFOAM.
+  components           MERLIN — a compact electric fixed-wing for rapid atmospheric sampling (notebook 26).
+  races                The four courses, parameterised, as Python objects and as MJCF scenes.
+  side_labs            runkit — the run-directory contract of Vegeta's long-running analyses (the ``side_labs/`` scripts).
+  vegeta.fidia         vegeta.fidia — AI modelling for Vegeta.
+  vegeta.talos         Talos — standalone linear static structural analysis (Gmsh + CalculiX).
+  ogma                 og.actuators — actuator, motor and joint catalogue (moved from Vegeta's designs/actuators.py; history kept).
+  vegeta.boreas        Boreas — propeller and rotor performance (blade element momentum theory) with a motor/battery model.
+  vegeta.mission       The messages the mission software exchanges:
+  vegeta.atropos       Atropos — flat parts for a GRBL diode laser:
+  vegeta.dedalus       Dedalus — standalone parametric CAD on CadQuery.
+  vegeta.core          vegeta.core — the Vegeta workbench:
+  vegeta.mellonia      Mellonia — standalone 3D-print manufacturability analysis with the PrusaSlicer CLI.
+  vegeta.zephyr        Zephyr — 2-D wing sections:
+  vegeta.chronos       Chronos — missions, cyclic loads and long-term life.
+  scenarios            Build the propulsor libraries — every propeller and ducted fan of the propulsion notebooks' design spaces as (airspeed x rpm) maps — and write them to ``designs/data/`` for the reduced flight models (
+  tools                What Vegeta is, from its syntax tree:
+  benchmark            Shared machinery of the Myropod benchmarks (benchmark/cleopatra, benchmark/persephone):
+  vegeta.mock          Mocks for the long simulations:
+  vegeta.ai            vegeta.ai — the connection to an AI provider, and nothing else.
+  assemblies           The assembly base class and the two helpers every assembly uses to expose and pass on a component's parameters.
+  vegeta.cli           ``vegeta`` command:
+  examples             Aeromant case for the Dedalus example streamlined body (run `dedalus generate` first).
+
+=== HOW IS IT ACHIEVED (mechanism funnels) ===
+
+figures: 94 entries, mean depth 0.47
+  chain:     [notebooks/scenarios/cli] → notebooks → designs → races → vegeta.chiron → (pyvista/matplotlib/mpl_toolkits)
+  funnels:   notebooks 54%, races 11%, vegeta.chiron 8%, scenarios 5%, designs 5%
+  modules:   viz.py 7%, viz.py 5%, 08_quadcopter.ipynb 4%, 12_boat_at_sea.ipynb 3%, viz.py 3%
+  mechanism: [('pyvista', 319), ('matplotlib', 272), ('mpl_toolkits', 12)]
+
+tables: 73 entries, mean depth 0.33
+  chain:     [notebooks/scenarios/side_labs] → notebooks → races → designs → (pandas)
+  funnels:   notebooks 55%, designs 22%, races 15%, scenarios 5%, benchmark 3%
+  modules:   kestrel_report.py 8%, 33_nisus_plus.ipynb 6%, 43_kestrel_study.ipynb 6%, analysis.py 5%, 31_nisus.ipynb 4%
+  mechanism: [('pandas', 487)]
+
+data files: 114 entries, mean depth 0.34
+  chain:     [notebooks/scenarios/cli] → notebooks → races → designs → vegeta.aeromant → vegeta.talos → (json/pathlib/shutil)
+  funnels:   vegeta.talos 27%, notebooks 27%, vegeta.aeromant 21%, designs 6%, vegeta.core 4%
+  modules:   model.py 19%, case.py 16%, revision.py 3%, cache.py 2%, session.py 2%
+  mechanism: [('json', 622), ('pathlib', 575), ('shutil', 244), ('pandas', 58), ('builtins', 37)]
+
+CAD geometry: 48 entries, mean depth 1.5
+  chain:     [notebooks/cli/agents] → notebooks → vegeta.dedalus → designs → (cadquery)
+  funnels:   designs 65%, notebooks 25%, vegeta.dedalus 9%, vegeta.fidia 0%, vegeta.core 0%
+  modules:   export.py 12%, nisus.py 10%, design.py 8%, nisus_plus.py 8%, 35_falco.ipynb 7%
+  mechanism: [('cadquery', 226)]
+
+meshes: 39 entries, mean depth 4.0
+  chain:     [notebooks/cli] → notebooks → vegeta.talos → vegeta.fidia → (gmsh/trimesh)
+  funnels:   vegeta.talos 61%, notebooks 21%, vegeta.fidia 13%, designs 3%, vegeta.core 2%
+  modules:   model.py 35%, mesh.py 19%, session.py 10%, viz.py 5%, revision.py 2%
+  mechanism: [('gmsh', 75), ('trimesh', 12)]
+
+solver runs: 65 entries, mean depth 2.58
+  chain:     [notebooks/cli/side_labs] → notebooks → races → side_labs → vegeta.aeromant → vegeta.talos → (subprocess)
+  funnels:   vegeta.talos 34%, notebooks 23%, vegeta.aeromant 23%, races 5%, vegeta.fidia 5%
+  modules:   model.py 26%, case.py 21%, ccx.py 6%, revision.py 3%, session.py 2%
+  mechanism: [('subprocess', 174)]
+
+physics simulation: 37 entries, mean depth 2.57
+  chain:     [notebooks/scenarios/benchmark] → notebooks → scenarios → designs → vegeta.chiron → (mujoco)
+  funnels:   vegeta.chiron 42%, notebooks 27%, designs 18%, scenarios 10%, benchmark 3%
+  modules:   lab.py 39%, nisus_plus_scenario.py 4%, nisus_scenario.py 3%, experiments.py 3%, drongo_scenario.py 2%
+  mechanism: [('mujoco', 37)]
+
+optimisation: 15 entries, mean depth 2.47
+  chain:     [notebooks/races/cli] → notebooks → vegeta.chiron → designs → races → vegeta.mission → (scipy/cma)
+  funnels:   designs 27%, notebooks 27%, races 22%, vegeta.chiron 16%, vegeta.mission 5%
+  modules:   kestrel_control.py 16%, optimizers.py 11%, metrics.py 11%, tune.py 8%, nisus_plus_birds.py 5%
+  mechanism: [('scipy', 13), ('cma', 2)]
+
+exported models: 7 entries, mean depth 3.57
+  chain:     [cli/vendor/benchmark] → designs → yax → vegeta.chiron → (pxr/chiron)
+  funnels:   yax 74%, vegeta.chiron 22%, benchmark 4%
+  modules:   cli.py 23%, convert.py 22%, hub.py 16%, __main__.py 12%, lab.py 10%
+  mechanism: [('pxr', 18), ('chiron', 5)]
+
+video: 47 entries, mean depth 1.34
+  chain:     [notebooks/scenarios/cli] → notebooks → scenarios → races → designs → vegeta.aeromant → vegeta.talos → vegeta.fidia → (cv2/PIL)
+  funnels:   notebooks 25%, designs 23%, vegeta.aeromant 13%, races 11%, scenarios 11%
+  modules:   nisus_birds_movie.py 12%, movie.py 6%, session.py 6%, viz.py 5%, _watermark.py 5%
+  mechanism: [('cv2', 154), ('PIL', 28)]
+
+LLM answers: 0 entries, mean depth None
+  chain:     [] → ()
+  funnels:   
+  modules:   
+  mechanism: []
+
+notebook display: 39 entries, mean depth 0.0
+  chain:     [notebooks] → notebooks → races → (IPython)
+  funnels:   notebooks 100%
+  modules:   15_fidia_prompt_to_3d.ipynb 100%
+  mechanism: [('IPython', 43)]
+
+Saved: docs/anatomy/graph_metrics.json, docs/anatomy/anatomy.svg, out/module_dependencies.graphml, function_calls.graphml

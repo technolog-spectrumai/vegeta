@@ -1,0 +1,2804 @@
+{
+ "totals": {
+  "modules": 704,
+  "lines": 131390,
+  "code": 101520,
+  "by_kind": {
+   "lib": 63465,
+   "test": 14271,
+   "script": 5160,
+   "notebook": 15324,
+   "vendor": 3300
+  },
+  "entries": {
+   "tests": 182,
+   "benchmark": 2,
+   "designs": 2,
+   "notebooks": 61,
+   "races": 7,
+   "scenarios": 18,
+   "side_labs": 7,
+   "tools": 2,
+   "cli": 25,
+   "agents": 1,
+   "vendor": 4
+  },
+  "imports_internal": 2455,
+  "unparsable": []
+ },
+ "areas": {
+  "assemblies": {
+   "files": 8,
+   "lines": 331,
+   "code": 216,
+   "comment": 1,
+   "docstring": 36,
+   "blank": 80,
+   "code_lib": 115,
+   "code_test": 101
+  },
+  "benchmark": {
+   "files": 6,
+   "lines": 1051,
+   "code": 776,
+   "comment": 10,
+   "docstring": 162,
+   "blank": 126,
+   "code_lib": 559,
+   "code_script": 217
+  },
+  "components": {
+   "files": 28,
+   "lines": 3864,
+   "code": 2900,
+   "comment": 97,
+   "docstring": 471,
+   "blank": 436,
+   "code_lib": 2628,
+   "code_test": 272
+  },
+  "designs": {
+   "files": 157,
+   "lines": 48883,
+   "code": 36537,
+   "comment": 972,
+   "docstring": 5654,
+   "blank": 6127,
+   "code_lib": 31480,
+   "code_script": 641,
+   "code_test": 4416
+  },
+  "examples": {
+   "files": 3,
+   "lines": 47,
+   "code": 30,
+   "comment": 0,
+   "docstring": 10,
+   "blank": 9,
+   "code_lib": 30
+  },
+  "notebooks": {
+   "files": 57,
+   "lines": 16669,
+   "code": 14956,
+   "comment": 250,
+   "docstring": 47,
+   "blank": 1418,
+   "code_notebook": 14910,
+   "code_test": 46
+  },
+  "ogma": {
+   "files": 33,
+   "lines": 3732,
+   "code": 2411,
+   "comment": 37,
+   "docstring": 599,
+   "blank": 725,
+   "code_test": 602,
+   "code_lib": 1809
+  },
+  "ozaru": {
+   "files": 22,
+   "lines": 1206,
+   "code": 864,
+   "comment": 7,
+   "docstring": 112,
+   "blank": 235,
+   "code_vendor": 864
+  },
+  "races": {
+   "files": 39,
+   "lines": 5691,
+   "code": 4397,
+   "comment": 47,
+   "docstring": 561,
+   "blank": 738,
+   "code_lib": 2873,
+   "code_script": 674,
+   "code_notebook": 414,
+   "code_test": 436
+  },
+  "scenarios": {
+   "files": 18,
+   "lines": 1439,
+   "code": 995,
+   "comment": 20,
+   "docstring": 230,
+   "blank": 230,
+   "code_script": 995
+  },
+  "side_labs": {
+   "files": 27,
+   "lines": 4551,
+   "code": 3635,
+   "comment": 38,
+   "docstring": 304,
+   "blank": 600,
+   "code_lib": 2430,
+   "code_script": 642,
+   "code_test": 563
+  },
+  "tests": {
+   "files": 7,
+   "lines": 326,
+   "code": 240,
+   "comment": 1,
+   "docstring": 20,
+   "blank": 66,
+   "code_test": 240
+  },
+  "tools": {
+   "files": 2,
+   "lines": 939,
+   "code": 769,
+   "comment": 17,
+   "docstring": 58,
+   "blank": 103,
+   "code_script": 769
+  },
+  "vegeta.aeromant": {
+   "files": 35,
+   "lines": 5977,
+   "code": 4800,
+   "comment": 51,
+   "docstring": 381,
+   "blank": 775,
+   "code_lib": 3413,
+   "code_script": 105,
+   "code_test": 1282
+  },
+  "vegeta.ai": {
+   "files": 9,
+   "lines": 518,
+   "code": 382,
+   "comment": 1,
+   "docstring": 30,
+   "blank": 106,
+   "code_lib": 255,
+   "code_test": 127
+  },
+  "vegeta.atropos": {
+   "files": 20,
+   "lines": 2237,
+   "code": 1728,
+   "comment": 27,
+   "docstring": 137,
+   "blank": 350,
+   "code_lib": 1229,
+   "code_script": 164,
+   "code_test": 335
+  },
+  "vegeta.boreas": {
+   "files": 20,
+   "lines": 3149,
+   "code": 2205,
+   "comment": 43,
+   "docstring": 486,
+   "blank": 465,
+   "code_lib": 1577,
+   "code_test": 628
+  },
+  "vegeta.chiron": {
+   "files": 25,
+   "lines": 10261,
+   "code": 7670,
+   "comment": 166,
+   "docstring": 1179,
+   "blank": 1387,
+   "code_lib": 4773,
+   "code_script": 410,
+   "code_test": 2487
+  },
+  "vegeta.chronos": {
+   "files": 10,
+   "lines": 795,
+   "code": 623,
+   "comment": 4,
+   "docstring": 47,
+   "blank": 123,
+   "code_lib": 536,
+   "code_test": 87
+  },
+  "vegeta.cli": {
+   "files": 3,
+   "lines": 105,
+   "code": 78,
+   "comment": 0,
+   "docstring": 6,
+   "blank": 22,
+   "code_lib": 54,
+   "code_script": 3,
+   "code_test": 21
+  },
+  "vegeta.core": {
+   "files": 12,
+   "lines": 1220,
+   "code": 975,
+   "comment": 9,
+   "docstring": 34,
+   "blank": 206,
+   "code_lib": 711,
+   "code_test": 264
+  },
+  "vegeta.dedalus": {
+   "files": 18,
+   "lines": 1568,
+   "code": 1180,
+   "comment": 16,
+   "docstring": 101,
+   "blank": 282,
+   "code_lib": 879,
+   "code_script": 96,
+   "code_test": 205
+  },
+  "vegeta.fidia": {
+   "files": 38,
+   "lines": 4719,
+   "code": 3706,
+   "comment": 33,
+   "docstring": 263,
+   "blank": 765,
+   "code_lib": 2706,
+   "code_script": 127,
+   "code_test": 873
+  },
+  "vegeta.mellonia": {
+   "files": 17,
+   "lines": 1242,
+   "code": 979,
+   "comment": 3,
+   "docstring": 60,
+   "blank": 207,
+   "code_lib": 716,
+   "code_script": 90,
+   "code_test": 173
+  },
+  "vegeta.mission": {
+   "files": 19,
+   "lines": 2404,
+   "code": 1835,
+   "comment": 10,
+   "docstring": 236,
+   "blank": 349,
+   "code_lib": 1636,
+   "code_test": 199
+  },
+  "vegeta.mock": {
+   "files": 4,
+   "lines": 797,
+   "code": 587,
+   "comment": 6,
+   "docstring": 67,
+   "blank": 146,
+   "code_lib": 460,
+   "code_test": 127
+  },
+  "vegeta.talos": {
+   "files": 33,
+   "lines": 3699,
+   "code": 2861,
+   "comment": 18,
+   "docstring": 252,
+   "blank": 593,
+   "code_lib": 2126,
+   "code_script": 111,
+   "code_test": 624
+  },
+  "vegeta.zephyr": {
+   "files": 10,
+   "lines": 981,
+   "code": 749,
+   "comment": 11,
+   "docstring": 70,
+   "blank": 153,
+   "code_lib": 470,
+   "code_script": 116,
+   "code_test": 163
+  },
+  "yax": {
+   "files": 24,
+   "lines": 2989,
+   "code": 2436,
+   "comment": 5,
+   "docstring": 166,
+   "blank": 397,
+   "code_vendor": 2436
+  }
+ },
+ "biggest_modules": [
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/lab.py",
+   "code": 1209
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/metrics.py",
+   "code": 943
+  },
+  {
+   "path": "designs/peregrine_flight.py",
+   "code": 929
+  },
+  {
+   "path": "designs/stability_plots.py",
+   "code": 849
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/templates/__init__.py",
+   "code": 825
+  },
+  {
+   "path": "notebooks/parts/25_air_propeller.ipynb",
+   "code": 822
+  },
+  {
+   "path": "notebooks/parts/14_submarine_propeller.ipynb",
+   "code": 803
+  },
+  {
+   "path": "designs/exp/mini_raptor.py",
+   "code": 799
+  },
+  {
+   "path": "designs/nisus.py",
+   "code": 654
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/experiments.py",
+   "code": 647
+  },
+  {
+   "path": "designs/nisus_systems.py",
+   "code": 645
+  },
+  {
+   "path": "designs/frame_study.py",
+   "code": 633
+  },
+  {
+   "path": "notebooks/devices/17_myropod_persephone.ipynb",
+   "code": 628
+  },
+  {
+   "path": "notebooks/old/40_kestrel.ipynb",
+   "code": 628
+  },
+  {
+   "path": "side_labs/gui/app.py",
+   "code": 628
+  },
+  {
+   "path": "designs/merlin_flight.py",
+   "code": 626
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/robot.py",
+   "code": 621
+  },
+  {
+   "path": "designs/exp/mini_races.py",
+   "code": 599
+  },
+  {
+   "path": "designs/drongo_scenario.py",
+   "code": 593
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/case.py",
+   "code": 579
+  },
+  {
+   "path": "designs/perseus_robot.py",
+   "code": 569
+  },
+  {
+   "path": "side_labs/batch.py",
+   "code": 568
+  },
+  {
+   "path": "notebooks/parts/25b_ducted_fan.ipynb",
+   "code": 563
+  },
+  {
+   "path": "designs/nisus_plus_systems.py",
+   "code": 558
+  },
+  {
+   "path": "notebooks/devices/30_pekari_rover.ipynb",
+   "code": 554
+  }
+ ],
+ "biggest_functions": [
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/transitions.py",
+   "qual": "simulate",
+   "lines": 218
+  },
+  {
+   "path": "side_labs/batch.py",
+   "qual": "run",
+   "lines": 205
+  },
+  {
+   "path": "designs/nisus_plus_controller.py",
+   "qual": "NisusPlusController.__call__",
+   "lines": 173
+  },
+  {
+   "path": "designs/drongo_controller.py",
+   "qual": "delivery",
+   "lines": 161
+  },
+  {
+   "path": "designs/nisus_controller.py",
+   "qual": "FlightController.__call__",
+   "lines": 159
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/metrics.py",
+   "qual": "trial_metrics",
+   "lines": 146
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/lab.py",
+   "qual": "ChironLab._index",
+   "lines": 138
+  },
+  {
+   "path": "designs/pekari_rover_robot.py",
+   "qual": "pekari",
+   "lines": 135
+  },
+  {
+   "path": "designs/onager_manus_controller.py",
+   "qual": "cut_and_clear",
+   "lines": 134
+  },
+  {
+   "path": "designs/velutina_flight.py",
+   "qual": "simulate",
+   "lines": 133
+  },
+  {
+   "path": "designs/onager_robot.py",
+   "qual": "onager",
+   "lines": 131
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/export.py",
+   "qual": "raw_frame",
+   "lines": 130
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/metrics.py",
+   "qual": "contact_force_feasibility",
+   "lines": 120
+  },
+  {
+   "path": "designs/drongo_scenario.py",
+   "qual": "Watch.__call__",
+   "lines": 116
+  },
+  {
+   "path": "designs/nisus_plus_flight.py",
+   "qual": "derivatives",
+   "lines": 116
+  },
+  {
+   "path": "races/lab/race.py",
+   "qual": "main",
+   "lines": 116
+  },
+  {
+   "path": "side_labs/kestrel/airframe_cfd.py",
+   "qual": "main",
+   "lines": 116
+  },
+  {
+   "path": "tools/ast_report.py",
+   "qual": "analyse",
+   "lines": 116
+  },
+  {
+   "path": "designs/merlin_flight.py",
+   "qual": "fly",
+   "lines": 112
+  },
+  {
+   "path": "designs/robot_dog_robot.py",
+   "qual": "dog_robot",
+   "lines": 112
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/boreas/fan_noise.py",
+   "qual": "interaction_tones",
+   "lines": 110
+  },
+  {
+   "path": "designs/stability_plots.py",
+   "qual": "synchronized_traces",
+   "lines": 109
+  },
+  {
+   "path": "vendor/yax/src/yax/formats/sdf.py",
+   "qual": "read",
+   "lines": 109
+  },
+  {
+   "path": "designs/merlin_flight.py",
+   "qual": "race",
+   "lines": 108
+  },
+  {
+   "path": "races/trainviz.py",
+   "qual": "figures",
+   "lines": 108
+  }
+ ],
+ "fan_in": [
+  {
+   "path": "vegeta-cli/src/vegeta/dedalus/__init__.py",
+   "n": 115
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/__init__.py",
+   "n": 59
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/__init__.py",
+   "n": 57
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/__init__.py",
+   "n": 56
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mock/__init__.py",
+   "n": 56
+  },
+  {
+   "path": "vendor/ozaru/yanus/src/yanus/__init__.py",
+   "n": 49
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/boreas/__init__.py",
+   "n": 39
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/dedalus/viz.py",
+   "n": 35
+  },
+  {
+   "path": "designs/kestrel_systems.py",
+   "n": 31
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/viz.py",
+   "n": 30
+  },
+  {
+   "path": "designs/kestrel.py",
+   "n": 29
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mellonia/__init__.py",
+   "n": 28
+  },
+  {
+   "path": "ogma/src/ogma/actuators.py",
+   "n": 26
+  },
+  {
+   "path": "designs/kestrel_flight.py",
+   "n": 26
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mellonia/examples.py",
+   "n": 21
+  },
+  {
+   "path": "races/courses.py",
+   "n": 21
+  },
+  {
+   "path": "designs/kestrel_transition.py",
+   "n": 20
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/viz.py",
+   "n": 20
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chronos/__init__.py",
+   "n": 20
+  },
+  {
+   "path": "races/refquad.py",
+   "n": 19
+  },
+  {
+   "path": "ogma/src/ogma/mujoco.py",
+   "n": 18
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/dedalus/examples.py",
+   "n": 18
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/viz.py",
+   "n": 18
+  },
+  {
+   "path": "ogma/src/ogma/units.py",
+   "n": 17
+  },
+  {
+   "path": "designs/nisus_plus.py",
+   "n": 17
+  }
+ ],
+ "fan_out": [
+  {
+   "path": "designs/export.py",
+   "n": 30
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mock/__init__.py",
+   "n": 22
+  },
+  {
+   "path": "notebooks/devices/35_falco.ipynb",
+   "n": 20
+  },
+  {
+   "path": "notebooks/devices/23_onager_sweeper.ipynb",
+   "n": 18
+  },
+  {
+   "path": "notebooks/devices/31_nisus.ipynb",
+   "n": 17
+  },
+  {
+   "path": "notebooks/devices/33_nisus_plus.ipynb",
+   "n": 17
+  },
+  {
+   "path": "notebooks/devices/37_perseus_rover.ipynb",
+   "n": 17
+  },
+  {
+   "path": "ogma/src/ogma/__init__.py",
+   "n": 17
+  },
+  {
+   "path": "designs/kestrel_study.py",
+   "n": 16
+  },
+  {
+   "path": "notebooks/devices/08_quadcopter.ipynb",
+   "n": 16
+  },
+  {
+   "path": "notebooks/devices/09a_fixed_wing_design.ipynb",
+   "n": 16
+  },
+  {
+   "path": "notebooks/devices/30_pekari_rover.ipynb",
+   "n": 16
+  },
+  {
+   "path": "notebooks/old/40_kestrel.ipynb",
+   "n": 16
+  },
+  {
+   "path": "notebooks/parts/25b_ducted_fan.ipynb",
+   "n": 16
+  },
+  {
+   "path": "notebooks/devices/09b_fixed_wing_durability.ipynb",
+   "n": 15
+  }
+ ],
+ "area_edges": [
+  {
+   "from": "notebooks",
+   "to": "designs",
+   "n": 194
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.dedalus",
+   "n": 83
+  },
+  {
+   "from": "designs",
+   "to": "ogma",
+   "n": 81
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.talos",
+   "n": 60
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.mock",
+   "n": 54
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.chiron",
+   "n": 51
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.aeromant",
+   "n": 48
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.dedalus",
+   "n": 46
+  },
+  {
+   "from": "notebooks",
+   "to": "ozaru",
+   "n": 46
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.mellonia",
+   "n": 39
+  },
+  {
+   "from": "components",
+   "to": "vegeta.dedalus",
+   "n": 24
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.boreas",
+   "n": 23
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.boreas",
+   "n": 23
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.aeromant",
+   "n": 21
+  },
+  {
+   "from": "scenarios",
+   "to": "designs",
+   "n": 21
+  },
+  {
+   "from": "side_labs",
+   "to": "designs",
+   "n": 19
+  },
+  {
+   "from": "notebooks",
+   "to": "ogma",
+   "n": 17
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.chronos",
+   "n": 14
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.mission",
+   "n": 13
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.chiron",
+   "n": 13
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.core",
+   "n": 12
+  },
+  {
+   "from": "notebooks",
+   "to": "components",
+   "n": 11
+  },
+  {
+   "from": "assemblies",
+   "to": "components",
+   "n": 10
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.aeromant",
+   "n": 10
+  },
+  {
+   "from": "benchmark",
+   "to": "vegeta.chiron",
+   "n": 9
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.talos",
+   "n": 9
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.mission",
+   "n": 8
+  },
+  {
+   "from": "vegeta.fidia",
+   "to": "vegeta.ai",
+   "n": 8
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.talos",
+   "n": 7
+  },
+  {
+   "from": "assemblies",
+   "to": "vegeta.dedalus",
+   "n": 6
+  },
+  {
+   "from": "benchmark",
+   "to": "designs",
+   "n": 6
+  },
+  {
+   "from": "races",
+   "to": "ogma",
+   "n": 6
+  },
+  {
+   "from": "scenarios",
+   "to": "vegeta.chiron",
+   "n": 6
+  },
+  {
+   "from": "side_labs",
+   "to": "ozaru",
+   "n": 6
+  },
+  {
+   "from": "tests",
+   "to": "races",
+   "n": 6
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.mellonia",
+   "n": 6
+  },
+  {
+   "from": "vegeta.fidia",
+   "to": "vegeta.dedalus",
+   "n": 5
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.zephyr",
+   "n": 4
+  },
+  {
+   "from": "side_labs",
+   "to": "vegeta.aeromant",
+   "n": 4
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.mission",
+   "n": 4
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.mellonia",
+   "n": 4
+  },
+  {
+   "from": "designs",
+   "to": "yax",
+   "n": 3
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.atropos",
+   "n": 3
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.fidia",
+   "n": 3
+  },
+  {
+   "from": "scenarios",
+   "to": "vegeta.aeromant",
+   "n": 3
+  },
+  {
+   "from": "vegeta.boreas",
+   "to": "ogma",
+   "n": 3
+  },
+  {
+   "from": "vegeta.chiron",
+   "to": "ogma",
+   "n": 3
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.boreas",
+   "n": 3
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.dedalus",
+   "n": 3
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.aeromant",
+   "n": 3
+  },
+  {
+   "from": "designs",
+   "to": "ozaru",
+   "n": 2
+  },
+  {
+   "from": "designs",
+   "to": "vegeta.mellonia",
+   "n": 2
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.ai",
+   "n": 2
+  },
+  {
+   "from": "notebooks",
+   "to": "vegeta.atropos",
+   "n": 2
+  },
+  {
+   "from": "side_labs",
+   "to": "vegeta.fidia",
+   "n": 2
+  },
+  {
+   "from": "side_labs",
+   "to": "vegeta.core",
+   "n": 2
+  },
+  {
+   "from": "tests",
+   "to": "components",
+   "n": 2
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.aeromant",
+   "n": 2
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.talos",
+   "n": 2
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.mellonia",
+   "n": 2
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.dedalus",
+   "n": 2
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.chiron",
+   "n": 2
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.zephyr",
+   "n": 2
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.talos",
+   "n": 2
+  },
+  {
+   "from": "yax",
+   "to": "ogma",
+   "n": 2
+  },
+  {
+   "from": "benchmark",
+   "to": "vegeta.core",
+   "n": 1
+  },
+  {
+   "from": "benchmark",
+   "to": "ogma",
+   "n": 1
+  },
+  {
+   "from": "components",
+   "to": "ogma",
+   "n": 1
+  },
+  {
+   "from": "components",
+   "to": "ozaru",
+   "n": 1
+  },
+  {
+   "from": "components",
+   "to": "vegeta.aeromant",
+   "n": 1
+  },
+  {
+   "from": "components",
+   "to": "vegeta.chiron",
+   "n": 1
+  },
+  {
+   "from": "designs",
+   "to": "side_labs",
+   "n": 1
+  },
+  {
+   "from": "examples",
+   "to": "vegeta.aeromant",
+   "n": 1
+  },
+  {
+   "from": "examples",
+   "to": "vegeta.talos",
+   "n": 1
+  },
+  {
+   "from": "examples",
+   "to": "vegeta.mellonia",
+   "n": 1
+  },
+  {
+   "from": "notebooks",
+   "to": "assemblies",
+   "n": 1
+  },
+  {
+   "from": "scenarios",
+   "to": "ogma",
+   "n": 1
+  },
+  {
+   "from": "scenarios",
+   "to": "vegeta.boreas",
+   "n": 1
+  },
+  {
+   "from": "scenarios",
+   "to": "vegeta.dedalus",
+   "n": 1
+  },
+  {
+   "from": "side_labs",
+   "to": "vegeta.talos",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.boreas",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.chronos",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.zephyr",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.talos",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.cli",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.chiron",
+   "n": 1
+  },
+  {
+   "from": "tests",
+   "to": "vegeta.dedalus",
+   "n": 1
+  },
+  {
+   "from": "vegeta.chiron",
+   "to": "races",
+   "n": 1
+  },
+  {
+   "from": "vegeta.chiron",
+   "to": "ozaru",
+   "n": 1
+  },
+  {
+   "from": "vegeta.chiron",
+   "to": "vegeta.core",
+   "n": 1
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.boreas",
+   "n": 1
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.chiron",
+   "n": 1
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.chronos",
+   "n": 1
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.zephyr",
+   "n": 1
+  },
+  {
+   "from": "vegeta.cli",
+   "to": "vegeta.atropos",
+   "n": 1
+  },
+  {
+   "from": "vegeta.dedalus",
+   "to": "ogma",
+   "n": 1
+  },
+  {
+   "from": "vegeta.dedalus",
+   "to": "yax",
+   "n": 1
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "ozaru",
+   "n": 1
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "designs",
+   "n": 1
+  },
+  {
+   "from": "vegeta.chiron",
+   "to": "vegeta.cli",
+   "n": 1
+  },
+  {
+   "from": "vegeta.mock",
+   "to": "vegeta.chronos",
+   "n": 1
+  },
+  {
+   "from": "vegeta.core",
+   "to": "ozaru",
+   "n": 1
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.mission",
+   "n": 1
+  },
+  {
+   "from": "vegeta.core",
+   "to": "vegeta.cli",
+   "n": 1
+  },
+  {
+   "from": "vegeta.fidia",
+   "to": "vegeta.talos",
+   "n": 1
+  },
+  {
+   "from": "vegeta.fidia",
+   "to": "vegeta.core",
+   "n": 1
+  },
+  {
+   "from": "yax",
+   "to": "vegeta.chiron",
+   "n": 1
+  }
+ ],
+ "cycles": [
+  [
+   "vegeta-cli/src/vegeta/dedalus/__init__.py",
+   "vegeta-cli/src/vegeta/dedalus/yax_export.py"
+  ],
+  [
+   "designs/merlin_flight.py",
+   "designs/propulsor_maps.py"
+  ],
+  [
+   "vegeta-cli/src/vegeta/zephyr/export.py",
+   "vegeta-cli/src/vegeta/zephyr/polar.py"
+  ],
+  [
+   "vegeta-core/src/vegeta/core/design.py",
+   "vegeta-core/src/vegeta/core/revision.py",
+   "vegeta-core/src/vegeta/core/workspace.py"
+  ],
+  [
+   "vegeta-cli/src/vegeta/atropos/__main__.py",
+   "vegeta-cli/src/vegeta/atropos/cli.py"
+  ],
+  [
+   "vegeta-cli/src/vegeta/mellonia/__main__.py",
+   "vegeta-cli/src/vegeta/mellonia/cli.py"
+  ]
+ ],
+ "external": {
+  "numpy": {
+   "benchmark": 2,
+   "components": 7,
+   "designs": 124,
+   "notebooks": 46,
+   "ogma": 27,
+   "races": 33,
+   "scenarios": 2,
+   "tests": 1,
+   "vegeta.aeromant": 20,
+   "vegeta.atropos": 8,
+   "vegeta.boreas": 16,
+   "vegeta.chiron": 20,
+   "vegeta.chronos": 4,
+   "vegeta.dedalus": 3,
+   "vegeta.mellonia": 2,
+   "vegeta.mission": 14,
+   "vegeta.mock": 1,
+   "vegeta.talos": 16,
+   "vegeta.zephyr": 5,
+   "vegeta.fidia": 11,
+   "yax": 11
+  },
+  "pandas": {
+   "benchmark": 4,
+   "designs": 109,
+   "notebooks": 52,
+   "ogma": 5,
+   "races": 14,
+   "scenarios": 2,
+   "vegeta.aeromant": 4,
+   "vegeta.chiron": 8,
+   "vegeta.chronos": 2,
+   "vegeta.dedalus": 1,
+   "vegeta.mission": 1,
+   "vegeta.talos": 1,
+   "vegeta.core": 1,
+   "vegeta.fidia": 2
+  },
+  "matplotlib": {
+   "benchmark": 6,
+   "designs": 55,
+   "notebooks": 49,
+   "races": 31,
+   "scenarios": 2,
+   "tools": 5,
+   "vegeta.aeromant": 5,
+   "vegeta.atropos": 6,
+   "vegeta.chronos": 4,
+   "vegeta.dedalus": 5,
+   "vegeta.mellonia": 5,
+   "vegeta.talos": 7,
+   "vegeta.fidia": 3
+  },
+  "pytest": {
+   "assemblies": 1,
+   "components": 5,
+   "designs": 32,
+   "notebooks": 1,
+   "ogma": 8,
+   "races": 4,
+   "side_labs": 5,
+   "tests": 6,
+   "vegeta.ai": 3,
+   "vegeta.mock": 3,
+   "vegeta.aeromant": 14,
+   "vegeta.atropos": 4,
+   "vegeta.boreas": 5,
+   "vegeta.chiron": 11,
+   "vegeta.chronos": 1,
+   "vegeta.dedalus": 5,
+   "vegeta.mellonia": 5,
+   "vegeta.mission": 1,
+   "vegeta.talos": 10,
+   "vegeta.zephyr": 2,
+   "vegeta.core": 4,
+   "vegeta.fidia": 12,
+   "ozaru": 3,
+   "yax": 2
+  },
+  "cadquery": {
+   "assemblies": 1,
+   "components": 20,
+   "designs": 46,
+   "notebooks": 3,
+   "ogma": 4,
+   "scenarios": 1,
+   "tests": 1,
+   "vegeta.dedalus": 6,
+   "vegeta.fidia": 2,
+   "yax": 3
+  },
+  "IPython": {
+   "notebooks": 45,
+   "races": 5,
+   "vegeta.fidia": 2,
+   "ozaru": 2
+  },
+  "tqdm": {
+   "benchmark": 2,
+   "designs": 11,
+   "notebooks": 20,
+   "scenarios": 1,
+   "side_labs": 3,
+   "vegeta.aeromant": 5,
+   "vegeta.chiron": 1,
+   "vegeta.talos": 2
+  },
+  "pyvista": {
+   "designs": 3,
+   "notebooks": 8,
+   "vegeta.aeromant": 2,
+   "vegeta.chiron": 1,
+   "vegeta.dedalus": 1,
+   "vegeta.mellonia": 1,
+   "vegeta.mock": 1,
+   "vegeta.talos": 1,
+   "vegeta.fidia": 5
+  },
+  "scipy": {
+   "designs": 6,
+   "notebooks": 1,
+   "vegeta.aeromant": 1,
+   "vegeta.boreas": 2,
+   "vegeta.chiron": 10,
+   "vegeta.mission": 2
+  },
+  "cv2": {
+   "designs": 15,
+   "vegeta.aeromant": 3,
+   "vegeta.chiron": 1,
+   "vegeta.talos": 2
+  },
+  "OCP": {
+   "ogma": 4,
+   "yax": 10
+  },
+  "PyQt6": {
+   "side_labs": 13
+  },
+  "pxr": {
+   "yax": 10
+  },
+  "trimesh": {
+   "vegeta.fidia": 9
+  },
+  "mpl_toolkits": {
+   "designs": 6,
+   "vegeta.dedalus": 1,
+   "vegeta.fidia": 1
+  },
+  "PIL": {
+   "races": 3,
+   "vegeta.fidia": 5
+  },
+  "gmsh": {
+   "notebooks": 2,
+   "vegeta.talos": 3,
+   "vegeta.core": 1
+  },
+  "cma": {
+   "races": 3
+  },
+  "neuralfoil": {
+   "vegeta.zephyr": 2
+  },
+  "terramechanics": {
+   "ogma": 1
+  },
+  "yaml": {
+   "side_labs": 1
+  },
+  "anthropic": {
+   "vegeta.ai": 1
+  }
+ },
+ "family_reach_code": {
+  "notebooks": 69594,
+  "tests": 64535,
+  "scenarios": 36872,
+  "designs": 24005,
+  "side_labs": 22586,
+  "cli": 19784,
+  "benchmark": 7674,
+  "races": 3703,
+  "vendor": 3333,
+  "tools": 769,
+  "agents": 766
+ },
+ "funnels": [
+  {
+   "path": "vegeta-cli/src/vegeta/mock/__init__.py",
+   "betweenness": 3461.9,
+   "entries": 54,
+   "families": [
+    "notebooks",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/dedalus/__init__.py",
+   "betweenness": 1737.7,
+   "entries": 79,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/dedalus/yax_export.py",
+   "betweenness": 1209.7,
+   "entries": 79,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vendor/yax/src/yax/__init__.py",
+   "betweenness": 1077.6,
+   "entries": 80,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests",
+    "vendor"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/boreas/__init__.py",
+   "betweenness": 907.9,
+   "entries": 75,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/peregrine_flight.py",
+   "betweenness": 750.3,
+   "entries": 69,
+   "families": [
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/__init__.py",
+   "betweenness": 711.0,
+   "entries": 65,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vendor/yax/src/yax/convert.py",
+   "betweenness": 541.1,
+   "entries": 82,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests",
+    "vendor"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/__init__.py",
+   "betweenness": 448.7,
+   "entries": 66,
+   "families": [
+    "cli",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vendor/ozaru/mimezia/src/mimezia/__init__.py",
+   "betweenness": 378.0,
+   "entries": 54,
+   "families": [
+    "notebooks",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/kestrel_campaigns.py",
+   "betweenness": 361.3,
+   "entries": 7,
+   "families": [
+    "notebooks",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/merlin_flight.py",
+   "betweenness": 313.9,
+   "entries": 71,
+   "families": [
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/model.py",
+   "betweenness": 287.5,
+   "entries": 68,
+   "families": [
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/case.py",
+   "betweenness": 260.5,
+   "entries": 69,
+   "families": [
+    "cli",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "side_labs/library.py",
+   "betweenness": 220.5,
+   "entries": 6,
+   "families": [
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/kestrel_systems.py",
+   "betweenness": 218.4,
+   "entries": 18,
+   "families": [
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/kestrel.py",
+   "betweenness": 212.3,
+   "entries": 18,
+   "families": [
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/peregrine.py",
+   "betweenness": 182.5,
+   "entries": 69,
+   "families": [
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/propulsor_maps.py",
+   "betweenness": 173.6,
+   "entries": 71,
+   "families": [
+    "designs",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/lab.py",
+   "betweenness": 168.4,
+   "entries": 73,
+   "families": [
+    "benchmark",
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/zephyr/polar.py",
+   "betweenness": 158.0,
+   "entries": 68,
+   "families": [
+    "cli",
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/nisus_plus_scenario.py",
+   "betweenness": 155.6,
+   "entries": 5,
+   "families": [
+    "notebooks",
+    "scenarios",
+    "tests"
+   ]
+  },
+  {
+   "path": "designs/kestrel_flight.py",
+   "betweenness": 155.0,
+   "entries": 18,
+   "families": [
+    "notebooks",
+    "scenarios",
+    "side_labs",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mellonia/__init__.py",
+   "betweenness": 146.7,
+   "entries": 59,
+   "families": [
+    "cli",
+    "notebooks",
+    "tests"
+   ]
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/chiron/__init__.py",
+   "betweenness": 144.2,
+   "entries": 28,
+   "families": [
+    "benchmark",
+    "cli",
+    "designs",
+    "notebooks",
+    "scenarios",
+    "tests"
+   ]
+  }
+ ],
+ "orphans": [
+  {
+   "path": "assemblies/quadcopter.py",
+   "code": 29
+  },
+  {
+   "path": "assemblies/submarine.py",
+   "code": 14
+  },
+  {
+   "path": "assemblies/survey_boat.py",
+   "code": 17
+  },
+  {
+   "path": "components/motor.py",
+   "code": 23
+  },
+  {
+   "path": "designs/exp/mini_races.py",
+   "code": 599
+  },
+  {
+   "path": "designs/rover.py",
+   "code": 72
+  },
+  {
+   "path": "designs/submarine.py",
+   "code": 84
+  },
+  {
+   "path": "designs/survey_boat.py",
+   "code": 63
+  },
+  {
+   "path": "designs/velutina.py",
+   "code": 139
+  },
+  {
+   "path": "examples/cli/body_cfd.py",
+   "code": 14
+  },
+  {
+   "path": "examples/cli/bracket_fea.py",
+   "code": 14
+  },
+  {
+   "path": "examples/cli/print_settings.py",
+   "code": 2
+  },
+  {
+   "path": "side_labs/flow.py",
+   "code": 73
+  },
+  {
+   "path": "side_labs/gui/__init__.py",
+   "code": 0
+  },
+  {
+   "path": "side_labs/kestrel_x/__init__.py",
+   "code": 0
+  }
+ ],
+ "test_only": [
+  {
+   "path": "assemblies/__init__.py",
+   "code": 2
+  },
+  {
+   "path": "components/__init__.py",
+   "code": 0
+  },
+  {
+   "path": "components/apheloria.py",
+   "code": 172
+  },
+  {
+   "path": "components/myropod.py",
+   "code": 227
+  },
+  {
+   "path": "components/onager.py",
+   "code": 124
+  },
+  {
+   "path": "components/onager_atlas.py",
+   "code": 107
+  },
+  {
+   "path": "components/onager_manus.py",
+   "code": 124
+  },
+  {
+   "path": "components/onager_sweeper.py",
+   "code": 147
+  },
+  {
+   "path": "components/quad_frame.py",
+   "code": 49
+  },
+  {
+   "path": "components/robot_dog.py",
+   "code": 110
+  },
+  {
+   "path": "components/rover.py",
+   "code": 72
+  },
+  {
+   "path": "components/submarine.py",
+   "code": 84
+  },
+  {
+   "path": "components/survey_boat.py",
+   "code": 63
+  },
+  {
+   "path": "components/velutina.py",
+   "code": 139
+  },
+  {
+   "path": "designs/robot_dog_controller.py",
+   "code": 184
+  },
+  {
+   "path": "designs/turbojet.py",
+   "code": 275
+  },
+  {
+   "path": "vegeta-ai/src/vegeta/ai/cli.py",
+   "code": 42
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mock/pytest_plugin.py",
+   "code": 18
+  },
+  {
+   "path": "vegeta-core/src/vegeta/core/cli.py",
+   "code": 178
+  }
+ ],
+ "unreferenced": [
+  {
+   "path": "designs/exp/mini_races.py",
+   "def": "draw_course",
+   "lines": 26
+  },
+  {
+   "path": "designs/kestrel_study.py",
+   "def": "envelope_vs_tools",
+   "lines": 16
+  },
+  {
+   "path": "benchmark/cleopatra/experiments.py",
+   "def": "study_metrics",
+   "lines": 11
+  },
+  {
+   "path": "designs/exp/mini_races.py",
+   "def": "quad_craft",
+   "lines": 11
+  },
+  {
+   "path": "designs/exp/mini_races.py",
+   "def": "tournament",
+   "lines": 10
+  },
+  {
+   "path": "benchmark/persephone/experiments.py",
+   "def": "study_metrics",
+   "lines": 9
+  },
+  {
+   "path": "designs/kestrel_study.py",
+   "def": "drive_table_status",
+   "lines": 8
+  },
+  {
+   "path": "designs/kestrel_study.py",
+   "def": "sections_status",
+   "lines": 7
+  },
+  {
+   "path": "side_labs/runkit.py",
+   "def": "default_out",
+   "lines": 5
+  },
+  {
+   "path": "benchmark/persephone/persephone_robot.py",
+   "def": "persephone_lab",
+   "lines": 4
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/cache.py",
+   "def": "disable",
+   "lines": 3
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/cache.py",
+   "def": "disable",
+   "lines": 3
+  },
+  {
+   "path": "designs/merlin_flight.py",
+   "def": "mf_airframe",
+   "lines": 2
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/aeromant/cache.py",
+   "def": "enable",
+   "lines": 2
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/talos/cache.py",
+   "def": "enable",
+   "lines": 2
+  }
+ ],
+ "test_referenced_only": [
+  {
+   "path": "components/myropod.py",
+   "def": "Myropod",
+   "lines": 285
+  },
+  {
+   "path": "designs/myropod.py",
+   "def": "Myropod",
+   "lines": 285
+  },
+  {
+   "path": "vegeta-core/src/vegeta/core/cli.py",
+   "def": "rev_main",
+   "lines": 99
+  },
+  {
+   "path": "components/rover.py",
+   "def": "Rover",
+   "lines": 77
+  },
+  {
+   "path": "designs/rover.py",
+   "def": "Rover",
+   "lines": 77
+  },
+  {
+   "path": "races/analysis.py",
+   "def": "design_factors",
+   "lines": 41
+  },
+  {
+   "path": "designs/kestrel_campaigns.py",
+   "def": "check_run",
+   "lines": 37
+  },
+  {
+   "path": "vegeta-core/src/vegeta/core/cli.py",
+   "def": "ws_main",
+   "lines": 36
+  },
+  {
+   "path": "races/ingest.py",
+   "def": "scan",
+   "lines": 28
+  },
+  {
+   "path": "assemblies/quadcopter.py",
+   "def": "Quadcopter",
+   "lines": 25
+  },
+  {
+   "path": "assemblies/fixed_wing.py",
+   "def": "FixedWingDrone",
+   "lines": 20
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/boreas/fan_noise.py",
+   "def": "tyler_sofrin_modes",
+   "lines": 20
+  },
+  {
+   "path": "races/analysis.py",
+   "def": "factors_for_raptors",
+   "lines": 16
+  },
+  {
+   "path": "assemblies/survey_boat.py",
+   "def": "SurveyBoatAssembly",
+   "lines": 14
+  },
+  {
+   "path": "assemblies/submarine.py",
+   "def": "SubmarineAssembly",
+   "lines": 12
+  },
+  {
+   "path": "designs/kestrel_campaigns.py",
+   "def": "require",
+   "lines": 9
+  },
+  {
+   "path": "designs/kestrel_fea.py",
+   "def": "frame_faces",
+   "lines": 8
+  },
+  {
+   "path": "designs/kestrel_fea.py",
+   "def": "regions_select",
+   "lines": 8
+  },
+  {
+   "path": "designs/gait.py",
+   "def": "fk_dog",
+   "lines": 6
+  },
+  {
+   "path": "races/ingest.py",
+   "def": "expected_locations",
+   "lines": 6
+  },
+  {
+   "path": "vegeta-cli/src/vegeta/mock/__init__.py",
+   "def": "uninstall",
+   "lines": 5
+  },
+  {
+   "path": "ogma/src/ogma/frames.py",
+   "def": "yaw_quat",
+   "lines": 3
+  },
+  {
+   "path": "ogma/src/ogma/rotors.py",
+   "def": "lag_alpha",
+   "lines": 3
+  },
+  {
+   "path": "ogma/src/ogma/units.py",
+   "def": "rpm_to_rad_s",
+   "lines": 2
+  },
+  {
+   "path": "ogma/src/ogma/units.py",
+   "def": "rad_s_to_rpm",
+   "lines": 2
+  }
+ ],
+ "serves": {
+  "assemblies": {
+   "families": {
+    "tests": 134,
+    "notebooks": 53
+   },
+   "features": 1,
+   "examples": [
+    "notebooks: notebooks/parts/36_falco_balsa_wing.ipynb"
+   ]
+  },
+  "benchmark": {
+   "families": {
+    "benchmark": 776
+   },
+   "features": 2,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py"
+   ]
+  },
+  "components": {
+   "families": {
+    "tests": 2843,
+    "notebooks": 1187
+   },
+   "features": 11,
+   "examples": [
+    "notebooks: notebooks/devices/26_merlin.ipynb",
+    "notebooks: notebooks/devices/29_aguya.ipynb",
+    "notebooks: notebooks/devices/30_pekari_rover.ipynb",
+    "notebooks: notebooks/devices/37_perseus_rover.ipynb",
+    "notebooks: notebooks/exp/28_microjet.ipynb",
+    "notebooks: notebooks/parts/25_air_propeller.ipynb",
+    "notebooks: notebooks/parts/25b_ducted_fan.ipynb",
+    "notebooks: notebooks/parts/25c_exotic_propellers.ipynb",
+    "notebooks: notebooks/parts/36_falco_balsa_wing.ipynb",
+    "notebooks: notebooks/races/26b_merlin_mission.ipynb",
+    "notebooks: notebooks/races/27_merlin_race.ipynb"
+   ]
+  },
+  "designs": {
+   "families": {
+    "tests": 34194,
+    "notebooks": 27976,
+    "scenarios": 20323,
+    "designs": 13759,
+    "side_labs": 6696,
+    "benchmark": 1791
+   },
+   "features": 81,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "designs: designs/export.py",
+    "designs: designs/myropod_robot.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb"
+   ]
+  },
+  "examples": {
+   "families": {},
+   "features": 0,
+   "examples": []
+  },
+  "notebooks": {
+   "families": {
+    "notebooks": 14910,
+    "tests": 46
+   },
+   "features": 56,
+   "examples": [
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb",
+    "notebooks: notebooks/devices/12_boat_at_sea.ipynb",
+    "notebooks: notebooks/devices/13_submarine.ipynb",
+    "notebooks: notebooks/devices/16_robot_dog.ipynb",
+    "notebooks: notebooks/devices/17_myropod_persephone.ipynb"
+   ]
+  },
+  "ogma": {
+   "families": {
+    "tests": 2411,
+    "designs": 1809,
+    "notebooks": 1794,
+    "scenarios": 1454,
+    "side_labs": 1300,
+    "cli": 621,
+    "benchmark": 342,
+    "races": 259,
+    "vendor": 204
+   },
+   "features": 102,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "cli: boreas",
+    "cli: chiron",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/chiron/cli.py",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "designs: designs/export.py",
+    "designs: designs/myropod_robot.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb"
+   ]
+  },
+  "ozaru": {
+   "families": {
+    "tests": 510,
+    "notebooks": 485,
+    "side_labs": 326,
+    "vendor": 245,
+    "benchmark": 10,
+    "cli": 10
+   },
+   "features": 65,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "cli: chiron",
+    "cli: vegeta-cli/src/vegeta/chiron/cli.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb"
+   ]
+  },
+  "races": {
+   "families": {
+    "races": 3444,
+    "tests": 3334,
+    "notebooks": 2443,
+    "cli": 85,
+    "benchmark": 85
+   },
+   "features": 16,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "cli: chiron",
+    "cli: vegeta-cli/src/vegeta/chiron/cli.py",
+    "notebooks: races/notebooks/01_hangar.ipynb",
+    "notebooks: races/notebooks/02_industrial.ipynb",
+    "notebooks: races/notebooks/03_farm.ipynb",
+    "notebooks: races/notebooks/04_quarry.ipynb",
+    "notebooks: races/notebooks/race_design_factors.ipynb",
+    "races: races/__main__.py",
+    "races: races/cli.py",
+    "races: races/lab/race.py"
+   ]
+  },
+  "scenarios": {
+   "families": {
+    "scenarios": 995
+   },
+   "features": 18,
+   "examples": [
+    "scenarios: scenarios/apheloria_pack.py",
+    "scenarios: scenarios/drongo_delivery.py",
+    "scenarios: scenarios/falco_birds.py",
+    "scenarios: scenarios/falco_mission.py",
+    "scenarios: scenarios/kestrel_transitions.py",
+    "scenarios: scenarios/merlin_mission.py",
+    "scenarios: scenarios/merlin_race.py",
+    "scenarios: scenarios/nisus_birds.py",
+    "scenarios: scenarios/nisus_mission.py",
+    "scenarios: scenarios/nisus_plus_birds.py",
+    "scenarios: scenarios/nisus_plus_mission.py",
+    "scenarios: scenarios/onager_atlas_pallet.py"
+   ]
+  },
+  "side_labs": {
+   "families": {
+    "side_labs": 2999,
+    "tests": 2920,
+    "notebooks": 149
+   },
+   "features": 8,
+   "examples": [
+    "notebooks: notebooks/exp/43_kestrel_study.ipynb",
+    "side_labs: side_labs/cli.py",
+    "side_labs: side_labs/gui/__main__.py",
+    "side_labs: side_labs/kestrel/airframe_cfd.py",
+    "side_labs: side_labs/kestrel/import_legacy.py",
+    "side_labs: side_labs/kestrel/structure_fea.py",
+    "side_labs: side_labs/kestrel_x/airframe_cfd.py",
+    "side_labs: side_labs/kestrel_x/panel_fea.py"
+   ]
+  },
+  "tests": {
+   "families": {
+    "tests": 240
+   },
+   "features": 0,
+   "examples": []
+  },
+  "tools": {
+   "families": {
+    "tools": 769
+   },
+   "features": 2,
+   "examples": [
+    "tools: tools/ast_report.py",
+    "tools: tools/dump_ast.py"
+   ]
+  },
+  "vegeta.aeromant": {
+   "families": {
+    "tests": 4797,
+    "scenarios": 3413,
+    "notebooks": 3413,
+    "side_labs": 2827,
+    "cli": 2423,
+    "designs": 31
+   },
+   "features": 80,
+   "examples": [
+    "cli: aeromant",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/aeromant/__main__.py",
+    "cli: vegeta-cli/src/vegeta/aeromant/cli.py",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "designs: designs/export.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb"
+   ]
+  },
+  "vegeta.ai": {
+   "families": {
+    "tests": 382,
+    "cli": 213,
+    "notebooks": 213
+   },
+   "features": 4,
+   "examples": [
+    "cli: fidia",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb"
+   ]
+  },
+  "vegeta.atropos": {
+   "families": {
+    "tests": 1728,
+    "cli": 1371,
+    "notebooks": 1229
+   },
+   "features": 6,
+   "examples": [
+    "cli: atropos",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/atropos/__main__.py",
+    "cli: vegeta-cli/src/vegeta/atropos/cli.py",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "notebooks: notebooks/parts/36_falco_balsa_wing.ipynb"
+   ]
+  },
+  "vegeta.boreas": {
+   "families": {
+    "tests": 2205,
+    "cli": 1577,
+    "side_labs": 1485,
+    "scenarios": 1485,
+    "designs": 1485,
+    "notebooks": 1485
+   },
+   "features": 75,
+   "examples": [
+    "cli: boreas",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "designs: designs/export.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb"
+   ]
+  },
+  "vegeta.chiron": {
+   "families": {
+    "tests": 7670,
+    "benchmark": 4593,
+    "cli": 4527,
+    "scenarios": 2527,
+    "notebooks": 2527,
+    "designs": 2347,
+    "side_labs": 851,
+    "vendor": 851
+   },
+   "features": 88,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "cli: chiron",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/chiron/cli.py",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "designs: designs/export.py",
+    "designs: designs/myropod_robot.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb"
+   ]
+  },
+  "vegeta.chronos": {
+   "families": {
+    "tests": 623,
+    "cli": 536,
+    "notebooks": 457
+   },
+   "features": 17,
+   "examples": [
+    "cli: chronos",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb",
+    "notebooks: notebooks/devices/12_boat_at_sea.ipynb",
+    "notebooks: notebooks/devices/13_submarine.ipynb",
+    "notebooks: notebooks/devices/16_robot_dog.ipynb",
+    "notebooks: notebooks/devices/17_myropod_persephone.ipynb",
+    "notebooks: notebooks/devices/18_myropod_cleopatra.ipynb"
+   ]
+  },
+  "vegeta.cli": {
+   "families": {
+    "tests": 75,
+    "cli": 57
+   },
+   "features": 2,
+   "examples": [
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py"
+   ]
+  },
+  "vegeta.core": {
+   "families": {
+    "tests": 975,
+    "notebooks": 533,
+    "cli": 77,
+    "side_labs": 77,
+    "benchmark": 77
+   },
+   "features": 19,
+   "examples": [
+    "benchmark: benchmark/cleopatra/full_benchmark.py",
+    "benchmark: benchmark/persephone/full_benchmark.py",
+    "cli: chiron",
+    "cli: vegeta-cli/src/vegeta/chiron/cli.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/24_velutina.ipynb",
+    "notebooks: notebooks/devices/26_merlin.ipynb",
+    "notebooks: notebooks/devices/28_peregrine.ipynb"
+   ]
+  },
+  "vegeta.dedalus": {
+   "families": {
+    "tests": 1177,
+    "notebooks": 879,
+    "side_labs": 793,
+    "scenarios": 793,
+    "designs": 793,
+    "cli": 767,
+    "agents": 538
+   },
+   "features": 84,
+   "examples": [
+    "agents: vegeta-fidia/src/vegeta/fidia/runner.py",
+    "cli: dedalus",
+    "cli: fidia",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "cli: vegeta-cli/src/vegeta/dedalus/__main__.py",
+    "cli: vegeta-cli/src/vegeta/dedalus/cli.py",
+    "designs: designs/export.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb"
+   ]
+  },
+  "vegeta.fidia": {
+   "families": {
+    "tests": 3579,
+    "notebooks": 2519,
+    "cli": 2350,
+    "side_labs": 981,
+    "agents": 228
+   },
+   "features": 8,
+   "examples": [
+    "agents: vegeta-fidia/src/vegeta/fidia/runner.py",
+    "cli: fidia",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "side_labs: side_labs/kestrel/airframe_cfd.py",
+    "side_labs: side_labs/kestrel/structure_fea.py",
+    "side_labs: side_labs/kestrel_x/panel_fea.py"
+   ]
+  },
+  "vegeta.mellonia": {
+   "families": {
+    "tests": 979,
+    "notebooks": 716,
+    "cli": 692
+   },
+   "features": 59,
+   "examples": [
+    "cli: mellonia",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "cli: vegeta-cli/src/vegeta/mellonia/__main__.py",
+    "cli: vegeta-cli/src/vegeta/mellonia/cli.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb"
+   ]
+  },
+  "vegeta.mission": {
+   "families": {
+    "tests": 1835,
+    "notebooks": 1636,
+    "scenarios": 1631
+   },
+   "features": 5,
+   "examples": [
+    "notebooks: notebooks/devices/33_nisus_plus.ipynb",
+    "notebooks: notebooks/devices/35_falco.ipynb",
+    "notebooks: notebooks/scenarios/32_nisus_birds.ipynb",
+    "scenarios: scenarios/nisus_birds.py",
+    "scenarios: scenarios/nisus_plus_birds.py"
+   ]
+  },
+  "vegeta.mock": {
+   "families": {
+    "tests": 587,
+    "notebooks": 442
+   },
+   "features": 54,
+   "examples": [
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb",
+    "notebooks: notebooks/devices/12_boat_at_sea.ipynb",
+    "notebooks: notebooks/devices/13_submarine.ipynb",
+    "notebooks: notebooks/devices/16_robot_dog.ipynb",
+    "notebooks: notebooks/devices/17_myropod_persephone.ipynb"
+   ]
+  },
+  "vegeta.talos": {
+   "families": {
+    "tests": 2858,
+    "notebooks": 2126,
+    "cli": 1940,
+    "side_labs": 1829,
+    "scenarios": 1829,
+    "designs": 1829
+   },
+   "features": 68,
+   "examples": [
+    "cli: talos",
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "cli: vegeta-cli/src/vegeta/talos/__main__.py",
+    "cli: vegeta-cli/src/vegeta/talos/cli.py",
+    "designs: designs/export.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb"
+   ]
+  },
+  "vegeta.zephyr": {
+   "families": {
+    "tests": 746,
+    "cli": 586,
+    "side_labs": 470,
+    "scenarios": 470,
+    "notebooks": 470
+   },
+   "features": 68,
+   "examples": [
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "cli: vegeta-cli/src/vegeta/zephyr/__main__.py",
+    "cli: vegeta-cli/src/vegeta/zephyr/cli.py",
+    "cli: zephyr",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb"
+   ]
+  },
+  "yax": {
+   "families": {
+    "vendor": 2033,
+    "tests": 1958,
+    "cli": 1952,
+    "side_labs": 1952,
+    "scenarios": 1952,
+    "designs": 1952,
+    "notebooks": 1952
+   },
+   "features": 82,
+   "examples": [
+    "cli: vegeta",
+    "cli: vegeta-cli/src/vegeta/cli/__main__.py",
+    "designs: designs/export.py",
+    "notebooks: notebooks/demo/06_core_revisions.ipynb",
+    "notebooks: notebooks/demo/07_ai_design_copilot.ipynb",
+    "notebooks: notebooks/demo/10_agentic_design.ipynb",
+    "notebooks: notebooks/demo/15_fidia_prompt_to_3d.ipynb",
+    "notebooks: notebooks/devices/08_quadcopter.ipynb",
+    "notebooks: notebooks/devices/09a_fixed_wing_design.ipynb",
+    "notebooks: notebooks/devices/09b_fixed_wing_durability.ipynb",
+    "notebooks: notebooks/devices/11_rover_mechanics.ipynb",
+    "notebooks: notebooks/devices/12_boat_at_sea.ipynb"
+   ]
+  }
+ },
+ "undeclared_imports": [
+  {
+   "name": "terramechanics",
+   "areas": {
+    "ogma": 1
+   }
+  },
+  {
+   "name": "PIL",
+   "areas": {
+    "races": 3,
+    "vegeta.fidia": 5
+   }
+  },
+  {
+   "name": "yaml",
+   "areas": {
+    "side_labs": 1
+   }
+  }
+ ],
+ "duplicates": [
+  {
+   "files": [
+    "components/pekari_rover.py",
+    "designs/pekari_rover.py"
+   ],
+   "code": 291
+  },
+  {
+   "files": [
+    "components/myropod.py",
+    "designs/myropod.py"
+   ],
+   "code": 227
+  },
+  {
+   "files": [
+    "vegeta-cli/src/vegeta/aeromant/cache.py",
+    "vegeta-cli/src/vegeta/talos/cache.py"
+   ],
+   "code": 189
+  },
+  {
+   "files": [
+    "components/velutina.py",
+    "designs/velutina.py"
+   ],
+   "code": 139
+  },
+  {
+   "files": [
+    "vegeta-cli/src/vegeta/aeromant/result.py",
+    "vegeta-cli/src/vegeta/atropos/result.py",
+    "vegeta-cli/src/vegeta/boreas/result.py",
+    "vegeta-cli/src/vegeta/chronos/result.py",
+    "vegeta-cli/src/vegeta/dedalus/result.py",
+    "vegeta-cli/src/vegeta/mellonia/result.py",
+    "vegeta-cli/src/vegeta/talos/result.py",
+    "vegeta-cli/src/vegeta/zephyr/result.py",
+    "vegeta-fidia/src/vegeta/fidia/result.py"
+   ],
+   "code": 118
+  },
+  {
+   "files": [
+    "vegeta-cli/src/vegeta/aeromant/_process.py",
+    "vegeta-cli/src/vegeta/mellonia/_process.py",
+    "vegeta-cli/src/vegeta/talos/_process.py"
+   ],
+   "code": 116
+  },
+  {
+   "files": [
+    "components/fixed_wing.py",
+    "designs/fixed_wing.py"
+   ],
+   "code": 112
+  },
+  {
+   "files": [
+    "components/submarine.py",
+    "designs/submarine.py"
+   ],
+   "code": 84
+  },
+  {
+   "files": [
+    "components/rover.py",
+    "designs/rover.py"
+   ],
+   "code": 72
+  },
+  {
+   "files": [
+    "components/survey_boat.py",
+    "designs/survey_boat.py"
+   ],
+   "code": 63
+  },
+  {
+   "files": [
+    "components/quad_frame.py",
+    "designs/quad_frame.py"
+   ],
+   "code": 49
+  },
+  {
+   "files": [
+    "vegeta-cli/src/vegeta/aeromant/_progress.py",
+    "vegeta-cli/src/vegeta/talos/_progress.py"
+   ],
+   "code": 38
+  },
+  {
+   "files": [
+    "vegeta-cli/src/vegeta/aeromant/_watermark.py",
+    "vegeta-cli/src/vegeta/talos/_watermark.py"
+   ],
+   "code": 31
+  }
+ ]
+}
