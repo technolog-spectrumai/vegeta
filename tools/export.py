@@ -1,10 +1,14 @@
 """Export a machine as standard files through Yax: the one path from a Vegeta design to anyone who simulates it.
 
-    python tools/export.py drongo --to out/drongo.usda --also sdf urdf xml [--lump]
-    python tools/export.py drongo --to out/drongo.usda --exclude strength,connections --consumer tools/consumers/piccolo.json
-    python tools/export.py drongo --to out/drongo.usda --features export.yaml     # include/exclude from a file
-    python tools/export.py drongo --to out/drongo.usda --full                     # everything, said explicitly
+    python tools/export.py drongo --to out/drongo.yx2 --also sdf urdf xml [--lump]
+    python tools/export.py drongo --to out/drongo.yx2 --exclude strength,connections --consumer tools/consumers/piccolo.json
+    python tools/export.py drongo --to out/drongo.yx2 --features export.yaml      # include/exclude from a file
+    python tools/export.py drongo --to out/drongo.yx2 --full                      # everything, said explicitly
     python tools/export.py --list
+
+The main file is a **YX2** (``.yx2``, the Yax 2 exchange file: a validated USD subset with the units, the frame, stable
+component ids, the feature metadata and a canonical text — ``vendor/yax/docs/yx2.md``); ``.usda`` gives the plain USD stage
+as before. Vegeta → YX2 → Yax → YX2 keeps every selected property byte for byte (``tools/tests/test_export.py``).
 
 A machine is what a lab registers in its ``labs/aero/designs/machines.py`` (``vegeta.labkit.machines``): its Chiron robot plus
 the part data a simulator needs and MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models
@@ -135,7 +139,7 @@ def _revision() -> str | None:
 
 
 def export(name: str, to, *, also=(), lump: bool = False, include=None, exclude=(), consumers=()) -> list:
-    """Write the machine at ``to`` (USD recommended) and in the formats ``also`` (suffixes) beside it, holding only the
+    """Write the machine at ``to`` (``.yx2`` recommended) and in the formats ``also`` (suffixes) beside it, holding only the
     chosen features; the reports, then — when ``consumers`` (requirements files) are given — one ``Compatibility``
     verdict per consumer and format, about the files as written."""
     m, rin = machine(name, lump=lump, include=include, exclude=exclude)
@@ -149,7 +153,7 @@ def write(m, to, *, also=(), consumers=()) -> list:
     name = m.name
     to = Path(to)
     reports = [yax.save(m, to)]
-    fmts = ["usd"]
+    fmts = [yax.detect(to, writing=True)]
     for ext in also:
         ext = ext.lstrip(".")
         if ext == "jsbsim":                                                   # aircraft/<name>/<name>.xml, as JSBSim loads it
@@ -168,7 +172,7 @@ def main(argv=None) -> int:
     from yax import features
     ap = argparse.ArgumentParser(description="Export a Vegeta machine as standard files through Yax, feature by feature.")
     ap.add_argument("machine", nargs="?")
-    ap.add_argument("--to", help="the main file (.usda/.usdc recommended)")
+    ap.add_argument("--to", help="the main file (default <machine>.yx2; .usda for plain USD)")
     ap.add_argument("--also", nargs="*", default=[], help="more formats beside it: sdf urdf xml step stl jsbsim (jsbsim/aircraft/<name>/)")
     ap.add_argument("--lump", action="store_true", help="one rigid body minus the rotors (multicopter simulators)")
     ap.add_argument("--include", default="", help=f"comma-separated features to export (default: all of {', '.join(features.FEATURES)})")
@@ -186,7 +190,7 @@ def main(argv=None) -> int:
     include, exclude = selection([x for x in a.include.split(",") if x], [x for x in a.exclude.split(",") if x], a.full, spec)
     m, rin = machine(a.machine, lump=a.lump, include=include, exclude=exclude)
     served = True
-    for rep in [rin, *write(m, a.to or f"{a.machine}.usda", also=a.also, consumers=a.consumer)]:
+    for rep in [rin, *write(m, a.to or f"{a.machine}.yx2", also=a.also, consumers=a.consumer)]:
         print(rep)
         if isinstance(rep, features.Compatibility):
             served &= rep.ok
