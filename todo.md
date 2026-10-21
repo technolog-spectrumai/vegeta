@@ -74,8 +74,9 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   - against fixes: a seal (brush or elastomer lip), a root disc fairing that turns with the wing, the cartridge sunk inside the fuselage line.
 
   Feed the result back into the drag build-up and the range.
-- [ ] K4.2 Stage 1: the transition corridor's pitch trim does not converge at 18–20 m/s (where the aircraft becomes wing-borne): finish the thrust-split + differential-tilt trim, then regenerate `designs/data/k4tq/phase1.md`
-- [ ] K4.3 Fuselage length: 1.0 / 1.1 / 1.2 m (the sweep favours config B at 1.2 m with 15x10: disc gap 159 mm, front motor at 64 % in the hover, best mission margin) — awaiting the decision
+- [x] K4.2 Stage 1: the transition corridor solved as one least-power balance per speed (tilt, rear differential tilt, thrust, split; SLSQP with continuation): trimmed everywhere; wing-borne from 21 m/s, the free span stalled 1–20 m/s (the CFD question, R10); `phase1.md` regenerated
+- [x] K4.3 Fuselage length: config B at 1.2 m with 15x10 (disc gap 159 mm, front motor at 63 % in the hover, the best R3 margin) — approved 2026-10-21
+- [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo

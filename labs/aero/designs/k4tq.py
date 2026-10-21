@@ -117,9 +117,9 @@ GROWTH_MARGIN = 0.07              # on the empty mass
 
 # ================================================================================================= the configurations
 BASE = {
-    "variant": "A", "title": "equal tandem, 1.4 m",
+    "variant": "A", "title": "equal tandem, 1.4 m, 1.2 m fuselage",
     # fuselage
-    "fuselage_length": 1.00, "fuselage_width": 0.14, "fuselage_height": 0.15,
+    "fuselage_length": 1.20, "fuselage_width": 0.14, "fuselage_height": 0.15,   # 1.2 m: the length sweep (disc gap 159 mm), approved 2026-10-21
     # wings: pivot stations (fraction of the fuselage length), heights (front low, rear high), planform
     "x_pivot_front": 0.30, "x_pivot_rear": 0.75, "z_front": -0.055, "z_rear": 0.055,   # low front wing, shoulder rear wing: gap 0.11 m
     "span": 1.40, "root_chord_front": 0.20, "tip_chord_front": 0.15, "root_chord_rear": 0.20, "tip_chord_rear": 0.15,
@@ -140,10 +140,10 @@ BASE = {
 VARIANTS = {
     "A": {},
     "B": {"title": "unequal tandem (larger rear wing, canard-like)", "root_chord_front": 0.16, "tip_chord_front": 0.12, "root_chord_rear": 0.24, "tip_chord_rear": 0.18},
-    "C": {"title": "compact, 1.2 m, 0.5 kg", "span": 1.20, "fuselage_length": 0.90, "root_chord_front": 0.18, "tip_chord_front": 0.13,
+    "C": {"title": "compact, 1.2 m span, 0.9 m fuselage, 0.5 kg", "span": 1.20, "fuselage_length": 0.90, "root_chord_front": 0.18, "tip_chord_front": 0.13,
           "root_chord_rear": 0.18, "tip_chord_rear": 0.13, "motor_y": 0.53, "prop": "13x8", "payload_kg": 0.5},
 }
-MAIN = "A"
+MAIN = "B"                         # the larger rear wing at 1.2 m: approved 2026-10-21
 
 
 def params(variant: str = MAIN, **over) -> dict:

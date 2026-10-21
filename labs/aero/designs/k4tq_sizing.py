@@ -59,6 +59,7 @@ HOVER_FM_DRIVE = None             # (from the BEMT map)
 N_LIMIT = 3.8                     # limit load factor (manoeuvre + alleviated gust, small UAV practice)
 ULTIMATE = 1.5                    # ultimate / limit
 PRINTED_FACTOR = 2.0              # additional factor on printed polymer parts
+SPAR_F1_MIN = 12.0                # Hz: the spar-alone first bending with the motor (the skins add stiffness; Stage 4 modal FEA decides) kept clear of the 30 Hz wing-pitch mode
 TILT_TIME_S = 2.0                 # a full 0→90° conversion of the wings (the transition schedule is slower; this is the actuator's sizing rate)
 
 
@@ -298,6 +299,13 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
     target = cg_target(L, a)
     items = k4tq.mass_table(L, x_cg_target=target)
     ci = k4tq.cg_inertia(items)
+    if p["fin"] and not over.get("fin_area"):                          # second pass: the fin for the real CG
+        need = directional(L, {"mass": ci}, a, fin_area=0.0)["fin area needed [m²]"]
+        if abs(need - p["fin_area"]) > 0.05 * p["fin_area"]:
+            p = dict(p, fin_area=need)
+            L = k4tq.layout(p)
+            items = k4tq.mass_table(L, x_cg_target=target)
+            ci = k4tq.cg_inertia(items)
     st = stall(L, a, ci["x_cg"], sec)
     d = drag_buildup(L)
     W = ci["mass_kg"] * G
@@ -496,7 +504,7 @@ def _forces(veh: dict, V: float, gamma: float, tilts: dict, T_pair: dict) -> dic
 
 
 def _tilts(tilt: float, delta: float) -> dict:
-    return {"front": tilt, "rear": float(np.clip(tilt - delta, -0.35, math.pi / 2))}
+    return {"front": tilt, "rear": float(np.clip(tilt - delta, -0.35, math.pi / 2 + 0.2))}
 
 
 def _solve_thrust(veh, V, gamma, tilts, share_f, W):
@@ -519,7 +527,7 @@ def _balance(veh, V, g, share_f, delta, W):
         tt = _tilts(tl, delta)
         T = _solve_thrust(veh, V, g, tt, share_f, W)
         return _forces(veh, V, g, tt, {"front": share_f * T, "rear": (1 - share_f) * T})["X"], T
-    grid = np.radians(np.arange(0.0, 90.01, 3.0))
+    grid = np.radians(np.arange(0.0, 90.01, 5.0))
     vals = [x_res(float(x)) for x in grid]
     roots = []
     for (a, (xa, _)), (b, (xb, _)) in zip(zip(grid, vals), zip(grid[1:], vals[1:])):
@@ -546,62 +554,92 @@ def _power(veh, V, g, tilts, share_f, T):
     return P, pts
 
 
-def corridor_point(veh: dict, V: float, gamma_deg: float = 0.0, *, share_bounds=(0.0, 1.0)) -> dict:
-    """One speed of the corridor (fuselage level, steady): the tilt and the thrust that balance X and Z — of several
-    balances the one with the least power (the wing-borne branch over the stalled, propeller-borne one); the pitch trimmed
-    by the front/rear thrust split and, where the split saturates, by the rear pair's differential tilt δ (the all-moving
-    wings are the elevator); power, stall state, the motors' margins."""
+def _power_smooth(veh, V, g, tilts, share_f, T) -> float:
+    """Electrical power with a steep linear penalty beyond a motor's current-limited maximum (a smooth objective for
+    the optimiser; the reported power is ``_power``'s)."""
+    m = veh["drive"]
+    P = AVIONICS_W
+    for which, s in (("front", share_f), ("rear", 1 - share_f)):
+        Va = max(V * math.cos(tilts[which] - g), 0.0)
+        t = max(s * T / 2, 0.0)
+        tmax = max_thrust(m, Va)
+        tc = min(t, tmax)
+        P += 2 * (m.electrical_for_thrust(Va, tc) if tc > 1e-6 else 0.0)
+        if t > tmax:
+            P += 2 * 400.0 * (t - tmax)
+    return P
+
+
+def _hover_point(veh, g, W) -> dict:
+    tt = _tilts(math.pi / 2, 0.0)
+    T = _solve_thrust(veh, 0.0, g, tt, 0.6, W)
+    m0 = _forces(veh, 0.0, g, tt, {"front": 0.0, "rear": T})["M"]
+    m1 = _forces(veh, 0.0, g, tt, {"front": T, "rear": 0.0})["M"]
+    s = float(np.clip(-m0 / (m1 - m0), 0.0, 1.0))
+    return {"x": np.array([math.pi / 2, 0.0, _solve_thrust(veh, 0.0, g, tt, s, W), s])}
+
+
+def corridor_point(veh: dict, V: float, gamma_deg: float = 0.0, *, x0=None) -> dict:
+    """One speed of the corridor (fuselage level, steady): the least-power state that balances X, Z and the pitching
+    moment — unknowns the tilt, the rear pair's differential tilt δ (rear = tilt − δ: the all-moving wings are the
+    elevator), the total thrust and the front share of it (SLSQP from ``x0``, the previous speed's state, and from the
+    balances of a tilt scan when that fails). Power, stall state and the motors' margins at the solution."""
+    from scipy.optimize import minimize
     W = veh["W"]
     g = math.radians(gamma_deg)
-    share_f, delta = 0.6, 0.0
-    for _ in range(5):
-        if V < 0.05:
-            tt = _tilts(math.pi / 2, 0.0)
-            roots = [(math.pi / 2, _solve_thrust(veh, V, g, tt, share_f, W))]
-        else:
-            roots = _balance(veh, V, g, share_f, delta, W)
-        if not roots:
-            return {"V [m/s]": V, "gamma [deg]": gamma_deg, "feasible": False, "note": "no balance at any tilt (drag above the thrust)"}
-        cands = []
-        for tl, T in roots:
-            P, pts = _power(veh, V, g, _tilts(tl, delta), share_f, T)
-            cands.append((P, tl, T))
-        P, tilt, T = min(cands)
-        tt = _tilts(tilt, delta)
-        # trim by the split (the moment is linear in it at a fixed total)
-        m0 = _forces(veh, V, g, tt, {"front": 0.0, "rear": T})["M"]
-        m1 = _forces(veh, V, g, tt, {"front": T, "rear": 0.0})["M"]
-        s = -m0 / (m1 - m0) if abs(m1 - m0) > 1e-9 else 0.5
-        if share_bounds[0] <= s <= share_bounds[1]:
-            new_share, new_delta = float(s), delta
-        else:
-            new_share = float(np.clip(s, *share_bounds))
-            def mres(d):
-                return abs(_forces(veh, V, g, _tilts(tilt, d), {"front": new_share * T, "rear": (1 - new_share) * T})["M"])
-            grid = np.radians(np.arange(-12.0, 12.01, 1.0))
-            d0 = float(grid[int(np.argmin([mres(float(d)) for d in grid]))])
-            fine = d0 + np.radians(np.arange(-1.0, 1.01, 0.1))
-            new_delta = float(fine[int(np.argmin([mres(float(d)) for d in fine]))])
-        converged = abs(new_share - share_f) < 2e-3 and abs(new_delta - delta) < math.radians(0.2)
-        share_f, delta = new_share, new_delta
-        if converged:
-            break
+    if V < 0.05 and x0 is None:
+        x0 = _hover_point(veh, g, W)["x"]                                 # the cambered wings in their own slipstream pull sideways-in-chord: trimmed by the tilt
+    if True:
+        cref = veh["L"]["c_ref"]
+
+        def f(x):
+            return _forces(veh, V, g, _tilts(x[0], x[1]), {"front": x[3] * x[2], "rear": (1 - x[3]) * x[2]})
+        cons = [{"type": "eq", "fun": lambda x: f(x)["X"] / W}, {"type": "eq", "fun": lambda x: (f(x)["Z"] - W) / W},
+                {"type": "eq", "fun": lambda x: f(x)["M"] / (W * cref)}]
+        obj = lambda x: _power_smooth(veh, V, g, _tilts(x[0], x[1]), x[3], x[2]) / 1000.0          # noqa: E731
+        bounds = [(-0.05, math.pi / 2 + 0.2), (math.radians(-12), math.radians(12)), (0.0, 3.0 * W), (0.0, 1.0)]
+        starts = [np.asarray(x0, float)] if x0 is not None else []
+        best = None
+
+        def run(xs):
+            r = minimize(obj, xs, method="SLSQP", bounds=bounds, constraints=cons, options={"maxiter": 200, "ftol": 1e-7})
+            ff = f(r.x)
+            res = max(abs(ff["X"]) / W, abs(ff["Z"] - W) / W, abs(ff["M"]) / (W * cref))
+            return r.x, res, obj(r.x)
+        for xs in starts:
+            xr, res, P = run(xs)
+            if res < 2e-3:
+                best = (P, xr, res)
+        if (best is None and V >= 0.05) or V >= 0.8 * stall_speed(veh):                 # fresh starts from the scan's balances (and near the stall always: the wing-borne branch)
+            for tl, T in _balance(veh, V, g, 0.6, 0.0, W) or [(math.radians(45.0), W)]:
+                for s0 in (0.7,):
+                    xr, res, P = run(np.array([tl, 0.0, T, s0]))
+                    if res < 2e-3 and (best is None or P < best[0]):
+                        best = (P, xr, res)
+        ok = best is not None
+        x = best[1] if ok else (np.asarray(x0, float) if x0 is not None else np.array([math.radians(45), 0.0, W, 0.6]))
+    tilt, delta, T, share_f = (float(v) for v in x)
     tt = _tilts(tilt, delta)
-    T = _solve_thrust(veh, V, g, tt, share_f, W)
-    f = _forces(veh, V, g, tt, {"front": share_f * T, "rear": (1 - share_f) * T})
+    fo = _forces(veh, V, g, tt, {"front": share_f * T, "rear": (1 - share_f) * T})
     P, pts = _power(veh, V, g, tt, share_f, T)
     return {"V [m/s]": V, "gamma [deg]": gamma_deg, "tilt [deg]": math.degrees(tilt), "rear differential [deg]": math.degrees(delta),
-            "thrust total [N]": T, "front share": share_f, "alpha front blown": f["parts"]["front"]["alpha blown [deg]"],
-            "alpha front free": f["parts"]["front"]["alpha free [deg]"], "alpha rear free": f["parts"]["rear"]["alpha free [deg]"],
-            "stalled span front": f["parts"]["front"]["stalled span"], "stalled span rear": f["parts"]["rear"]["stalled span"],
-            "wing lift [N]": f["parts"]["front"]["wing lift [N]"] + f["parts"]["rear"]["wing lift [N]"], "trim residual [N·m]": f["M"],
-            "X residual [N]": f["X"], "electrical [W]": P, "front motor / its max": share_f * T / 2 / pts[0]["T_max_N"],
-            "rear motor / its max": (1 - share_f) * T / 2 / pts[1]["T_max_N"], "balances found": len(roots),
-            "feasible": bool(pts[0]["feasible"] and pts[1]["feasible"] and abs(f["M"]) < 0.5), "note": ""}
+            "thrust total [N]": T, "front share": share_f, "alpha front blown": fo["parts"]["front"]["alpha blown [deg]"],
+            "alpha front free": fo["parts"]["front"]["alpha free [deg]"], "alpha rear free": fo["parts"]["rear"]["alpha free [deg]"],
+            "stalled span front": fo["parts"]["front"]["stalled span"], "stalled span rear": fo["parts"]["rear"]["stalled span"],
+            "wing lift [N]": fo["parts"]["front"]["wing lift [N]"] + fo["parts"]["rear"]["wing lift [N]"], "trim residual [N·m]": fo["M"],
+            "X residual [N]": fo["X"], "electrical [W]": P, "front motor / its max": share_f * T / 2 / pts[0]["T_max_N"],
+            "rear motor / its max": (1 - share_f) * T / 2 / pts[1]["T_max_N"],
+            "feasible": bool(ok and pts[0]["feasible"] and pts[1]["feasible"]), "note": "" if ok else "no balanced state found", "_x": [tilt, delta, T, share_f]}
 
 
 def corridor(veh: dict, *, speeds=np.arange(0.0, 24.0, 1.0), gamma_deg: float = 0.0) -> pd.DataFrame:
-    df = pd.DataFrame([corridor_point(veh, float(V), gamma_deg) for V in speeds]).set_index("V [m/s]")
+    """The corridor by continuation: each speed starts from the previous one's state."""
+    rows, x0 = [], None
+    for V in speeds:
+        r = corridor_point(veh, float(V), gamma_deg, x0=x0)
+        x0 = r.pop("_x")
+        rows.append(r)
+    df = pd.DataFrame(rows).set_index("V [m/s]")
     df.attrs["label"] = label("CALC")
     return df
 
@@ -687,7 +725,7 @@ def root_loads(veh: dict) -> dict:
         tubes.append({"tube": f"Ø{od_mm}×{id_mm}", "reserve (ultimate)": sa / sigma, "tip deflection at n_limit [% semi-span]": 100 * defl / b,
                       "first bending with the motor [Hz]": f1, "GJ [N·m²]": GJ, "mass per wing [g]": A * rho_c * (b + 0.03) * 1e3})
     tdf = pd.DataFrame(tubes).set_index("tube")
-    ok = tdf[(tdf["reserve (ultimate)"] >= 1.5) & (tdf["tip deflection at n_limit [% semi-span]"] <= 5.0)]
+    ok = tdf[(tdf["reserve (ultimate)"] >= 1.5) & (tdf["tip deflection at n_limit [% semi-span]"] <= 4.0) & (tdf["first bending with the motor [Hz]"] >= SPAR_F1_MIN)]
     chosen = ok.index[0] if len(ok) else tdf.index[-1]
     # tilt (pitch) mode of the wing on its drive and divergence of the all-moving wing
     k_drive = 120.0                                                                # N·m/rad at the spar: servo + 2:1 gears with the backlash taken up (requirement)
@@ -778,12 +816,18 @@ def launch(veh: dict, *, wind: float = 8.0, roof_speed_up: float = 1.25, gust_fa
     # half-tube of radius r they hit its walls unless the aircraft stands on top of it
     env = folded_best(L)
     r = (tube_id or env["tube inner diameter needed [m]"]) / 2
-    te_y, te_z = L["wings"]["front"]["y0"], k4tq.wing_point(L, "front", 1, L["wings"]["front"]["y0"], 1.0, math.pi / 2)[2]
-    inside_wall_y = math.sqrt(max(r ** 2 - (te_z + 0.0) ** 2, 0.0))
+    # standing in the open half-tube on its feet: the tube's axis is r above the feet; the hover stance's trailing edges
+    # (z_te, from y0 out to the tip) must stay above the wall z_w(y) = axis − √(r² − y²) for every y < r
+    w0 = L["wings"]["front"]
+    te_z = min(k4tq.wing_point(L, wh, 1, L["wings"][wh]["y0"], 1.0, math.pi / 2)[2] for wh in ("front", "rear"))
+    z_axis = p["leg_bottom_z"] + r
+    ys = np.linspace(w0["y0"], r, 20) if r > w0["y0"] else np.array([])
+    clear = bool(np.all(te_z > z_axis - np.sqrt(np.maximum(r ** 2 - ys ** 2, 0.0)))) if len(ys) else True
     tube = {"tube inner diameter [m]": 2 * r, "tube length [m]": env["length [m]"] + 0.05,
-            "wing trailing edge at the root (y, z) [m]": (te_y, te_z),
-            "verdict": "the closed tube (or its lid) is the pad: the aircraft stands on it on its four legs; from INSIDE the open half-tube the vertical "
-                       "wings' trailing edges meet the walls, so it is lifted out first" if te_y < inside_wall_y else "can stand inside the half-tube",
+            "hover-stance trailing edge below the axis [m]": z_axis - te_z, "stands inside the open half-tube": clear,
+            "verdict": "can take off from inside the open half-tube" if clear else
+                       "the closed tube (or its lid) is the pad: the aircraft stands on it on its four legs; inside the open half-tube the vertical wings' "
+                       "trailing edges cross the walls, so it is lifted out and set on the tube first",
             "ejection with in-flight unfolding": "rejected: spring ejection, in-flight unfold and tilt-up add failure modes without a civilian benefit"}
     # roof: mean wind × speed-up at the roof edge × gust factor
     Vg = wind * roof_speed_up * gust_factor
@@ -975,6 +1019,34 @@ def evaluate(variant: str) -> dict:
             "fold": folded_best(veh["L"]), "price": k4tq.price(veh["items"], veh["p"])}
 
 
+SELECTION = [
+    ("hover: most loaded motor ≤ 75 % of its maximum", lambda e: e["hover"]["most loaded motor / its maximum"] <= 0.75),
+    ("hover: T/W ≥ 1.6 on the sagged pack", lambda e: e["hover"]["T/W (sagged pack, 3.3 V/cell)"] >= 1.6),
+    ("R3 standard mission closes with 1 kg", lambda e: e["mission"]["closes"] and e["veh"]["p"]["payload_kg"] >= 1.0),
+    ("transition corridor continuous", lambda e: e["corridor_summary"]["continuous from hover to cruise"]),
+    ("front wing stalls first (nose-down)", lambda e: e["veh"]["stall"]["nose-down stall"]),
+    ("no layout clearance violated", lambda e: not k4tq.checks(e["veh"]["L"])),
+    ("hover discs ≥ 100 mm apart (rotor interference)", lambda e: e["veh"]["L"]["clearance"]["hover disc separation along x [m]"] >= 0.10),
+]
+
+
+def selection(evals: dict) -> pd.DataFrame:
+    """Each configuration against the selection criteria; among those that pass all, the larger R3 margin wins."""
+    rows = {}
+    for k, e in evals.items():
+        r = {name: bool(fn(e)) for name, fn in SELECTION}
+        r["passes all"] = all(r.values())
+        r["R3 margin [Wh]"] = e["mission"]["margin [Wh]"]
+        rows[f"K4TQ-{k}"] = r
+    df = pd.DataFrame(rows).T
+    ok = df[df["passes all"]]
+    df["selected"] = False
+    if len(ok):
+        df.loc[ok["R3 margin [Wh]"].astype(float).idxmax(), "selected"] = True
+    df.attrs["label"] = "ESTIMATE / " + label("CALC")
+    return df
+
+
 def comparison(evals: dict, quads: dict) -> pd.DataFrame:
     rows = {}
     for k, e in evals.items():
@@ -1003,7 +1075,7 @@ def run_all(variants=("A", "B", "C")) -> dict:
     quads = {"Q-13 (13x5.5)": quad_reference("Q-13", "13x5.5", k4=k4), "Q-best (17x5.8)": quad_reference("Q-best", "17x5.8", k4=k4)}
     for q in quads.values():
         q["mission radius [km]"] = quad_mission_radius(q, k4)
-    return {"evals": evals, "quads": quads, "comparison": comparison(evals, quads), "props": prop_sweep(k4), "payload_range": payload_range(k4tq.MAIN),
+    return {"evals": evals, "quads": quads, "comparison": comparison(evals, quads), "selection": selection(evals), "props": prop_sweep(k4), "payload_range": payload_range(k4tq.MAIN),
             "section": section_check(k4["p"]["section"]), "materials": materials(), "launch": launch(k4), "mocked": mocked()}
 
 
@@ -1054,7 +1126,9 @@ def write_report(res: dict, out: Path = DATA) -> dict:
               "Labels: ESTIMATE (hand formula / correlation), CALC (numerical model), MOCK (a mocked tool ran). No solver result is in this report.\n")
     md.append("## Verdict\n")
     md.append(verdict_text(res) + "\n")
-    md.append("## 1.15 Configurations and the quadcopter references\n")
+    md.append("## 1.15 Selection — " + res["selection"].attrs["label"] + "\n")
+    md.append(_df(res["selection"].rename_axis("config")) + f"\n\nBaseline: **K4TQ-{k4tq.MAIN}** (larger rear wing, 1.2 m fuselage, 15x10) — approved 2026-10-21 after the fuselage-length sweep.\n")
+    md.append("\n## 1.15 Configurations and the quadcopter references\n")
     md.append(_df(res["comparison"].rename_axis("config")) + "\n")
     md.append("\n## 1.3 Mass budget (A) — ESTIMATE\n")
     gdf = pd.DataFrame({"mass [kg]": k4tq.groups(v["items"])}).rename_axis("group")

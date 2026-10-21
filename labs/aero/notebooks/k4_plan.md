@@ -37,22 +37,24 @@ reports), `labs/aero/tests/test_k4tq*.py`, `labs/aero/campaigns/side_labs/` (boo
 ## Stage 1 — Engineering design and feasibility
 *First-principles sizing of the whole aircraft, compared with three alternatives and a same-size quadcopter, before any CAD.*
 
-- [ ] 1.1 Requirements, mission and operations (R1–R12) as data in `k4tq.py`; the component catalogue (motors, propellers, cells, avionics, actuators, bearings) with masses, prices and sources marked "to verify"
-- [ ] 1.2 Parameters and layout: fuselage, the two wing pairs (stations, heights, sweep, chord), pivot and fold-hinge axes, nacelles, the propeller poses in cruise / hover / folded
-- [ ] 1.3 Mass budget and CG (`og.mass`), the battery placed for the CG; growth margin
-- [ ] 1.4 Wing loading, required lift, stall speed; section choice from NeuralFoil polars (recorded constants under the mocks)
-- [ ] 1.5 Tandem interference: lattice (`og.aero.vlm`) — front downwash, rear-wing efficiency, lift split, neutral point, static margin, stall order
-- [ ] 1.6 Drag build-up, cruise thrust and power, range and endurance; two-motor cruise (rear pair stopped, blades folded) against four
-- [ ] 1.7 Hover: disc loading, induced power (actuator disc), BEMT figure of merit, hover endurance, T/W, motor-out note
-- [ ] 1.8 Propeller and motor selection: BEMT sweep of candidate propellers on candidate motors (hover against cruise compromise)
-- [ ] 1.9 Transition corridor: wing tilt against speed in level flight and descent, the blown and unblown wing angles, stall margin, thrust, power, pitch trim by thrust split
-- [ ] 1.10 Wing-root loads: bending, torsion, bearing loads, actuator torque (aero, inertia, thrust offset, gyroscopic)
-- [ ] 1.11 Safety factors and material requirements; first spar and bearing sizes
-- [ ] 1.12 Directional stability: Cnβ without a fin, the fin needed (R9)
-- [ ] 1.13 Launch and landing checks (R6): hand release, tube case as the pad, hospital roof (wind speed-up, gusts, downwash, ground hold)
-- [ ] 1.14 Mission energy (R3) and the payload–range trade (R2) with the standard and extended packs
-- [ ] 1.15 Configurations A / B / C compared; the same-size quadcopter references Q-13 and Q-best; the selection
-- [ ] 1.16 Feasibility verdict, assumptions, uncertainties, initial BOM; report `data/k4tq/phase1.md` + spec JSON; tests
+Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report `designs/data/k4tq/phase1.md`, tests `tests/test_k4tq.py` (12, ~9 s). Baseline **K4TQ-B**: larger rear wing, 1.2 m fuselage (approved after the length sweep), 15x10 on MN4014 KV400, 6S2P Li-ion, fin 523 cm², spar Ø16×14. Preliminary CAD views: `designs/data/k4tq/figures/k4tq_baseline.png`.
+
+- [x] 1.1 Requirements, mission and operations (R1–R12) as data in `k4tq.py`; the component catalogue (motors, propellers, cells, avionics, actuators, bearings) with masses, prices and sources marked "to verify"
+- [x] 1.2 Parameters and layout: fuselage, the two wing pairs (stations, heights, sweep, chord), pivot and fold-hinge axes, nacelles, the propeller poses in cruise / hover / folded
+- [x] 1.3 Mass budget and CG (`og.mass`), the battery placed for the CG; growth margin
+- [x] 1.4 Wing loading, required lift, stall speed; section choice from NeuralFoil polars (recorded constants under the mocks)
+- [x] 1.5 Tandem interference: lattice (`og.aero.vlm`) — front downwash, rear-wing efficiency, lift split, neutral point, static margin, stall order
+- [x] 1.6 Drag build-up, cruise thrust and power, range and endurance; two-motor cruise (rear pair stopped, blades folded) against four
+- [x] 1.7 Hover: disc loading, induced power (actuator disc), BEMT figure of merit, hover endurance, T/W, motor-out note
+- [x] 1.8 Propeller and motor selection: BEMT sweep of candidate propellers on candidate motors (hover against cruise compromise)
+- [x] 1.9 Transition corridor: wing tilt against speed in level flight and descent, the blown and unblown wing angles, stall margin, thrust, power, pitch trim by thrust split
+- [x] 1.10 Wing-root loads: bending, torsion, bearing loads, actuator torque (aero, inertia, thrust offset, gyroscopic)
+- [x] 1.11 Safety factors and material requirements; first spar and bearing sizes
+- [x] 1.12 Directional stability: Cnβ without a fin, the fin needed (R9)
+- [x] 1.13 Launch and landing checks (R6): hand release, tube case as the pad, hospital roof (wind speed-up, gusts, downwash, ground hold)
+- [x] 1.14 Mission energy (R3) and the payload–range trade (R2) with the standard and extended packs
+- [x] 1.15 Configurations A / B / C compared; the same-size quadcopter references Q-13 and Q-best; the selection
+- [x] 1.16 Feasibility verdict, assumptions, uncertainties, initial BOM; report `data/k4tq/phase1.md` + spec JSON; tests
 
 ## Stage 2 — Parametric CAD and mechanical design
 *The selected configuration as a Dedalus/CadQuery assembly in three configurations, with the wing-root tilt-and-fold assembly designed as real hardware.*

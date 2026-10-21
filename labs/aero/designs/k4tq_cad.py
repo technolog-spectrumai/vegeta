@@ -46,7 +46,7 @@ def _wing_solid(L: dict, which: str, side: int, tilt: float, fold: float, y_out:
         for xi, zc in sec:
             base = k4tq.wing_point(L, which, side, y, xi, tilt, fold)
             # the section's thickness/camber is normal to the chord: rotate it with the tilt (and the fold leaves z alone)
-            n = np.array([math.sin(tilt) * math.cos(fold), side * -math.sin(tilt) * math.sin(fold) * 0.0, math.cos(tilt)])
+            n = np.array([math.sin(tilt) * math.cos(fold), -side * math.sin(tilt) * math.sin(fold), math.cos(tilt)])
             pts.append(_v(base + zc * c * n))
         wires.append(cq.Wire.makePolygon(pts, close=True))
     return cq.Solid.makeLoft(wires, True)
@@ -231,9 +231,13 @@ def render(path: Path, p: dict | None = None, *, info: dict | None = None) -> Pa
 
 
 if __name__ == "__main__":
+    from vegeta import mock
+    mock.setup(True)
+    import k4tq_sizing
     out = Path(__file__).resolve().parent / "data" / "k4tq"
-    p = k4tq.params()
-    print(render(out / "figures" / "k4tq_first_cad.png", p))
+    v = k4tq_sizing.vehicle(k4tq.MAIN)                          # the baseline with its fin from the directional stability
+    print(render(out / "figures" / "k4tq_baseline.png", v["p"], info={"mass": v["mass"]["mass_kg"]}))
+    print(export(assembly(v["p"], 0.0, 0.0), out / "cad", "k4tq_baseline_cruise"))
 
 
 def compare_top(path: Path, variants: list[tuple[str, dict]], tilt_deg: float = 90.0) -> Path:
