@@ -279,8 +279,9 @@ def select(m: Machine, keep=None, drop=()) -> Machine:
         except (KeyError, StopIteration):
             pass                                                               # gone with its parent
     kept = table(out)
+    gone = {c for cs in full.values() for c in cs} - {c for cs in kept.values() for c in cs}   # tags that lost every property
     old = set((m.tags or {}).get("withheld", []))
-    out.tags = {"table": {p: c for p, c in kept.items()}, "withheld": sorted((old | withheld | drop) - {"00core"})}
+    out.tags = {"table": {p: c for p, c in kept.items()}, "withheld": sorted((old | withheld | drop | gone) - {"00core"})}
     return out
 
 
