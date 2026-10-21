@@ -61,8 +61,9 @@ def save(m: Machine, path, fmt: str | None = None, *, report: Report | None = No
             path.unlink()
         hub.to_stage(m, path)
         return rep
-    from .features import report_excluded
-    report_excluded(m, rep)                                                   # a withheld feature is a loss to know about
+    if fmt != "yx2":                                                          # a withheld feature is a loss to know about
+        from .features import report_excluded                                 # (a YX2 says it itself, in yax:features)
+        report_excluded(m, rep)
     return _module(fmt).write(m, path, rep, **opts)
 
 
