@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ROBOTICS_IMPORTS = ("mujoco", "vegeta.chiron", "vegeta.mission", "chiron", "onboard", "races", "piccolo")
-HATCHED = ("races", "piccolo", "onboard")              # graduated to Piccolo: forbidden everywhere, moving lists or not
+HATCHED = ("piccolo", "onboard")                       # Piccolo's: forbidden everywhere, moving lists or not (the races came home)
 
 ENGINEERING = ["vegeta-cli/src/vegeta", "vegeta-core/src", "vegeta-ai/src", "vegeta-fidia/src", "components",
                "assemblies", "designs", "side_labs", "scenarios", "examples"]

@@ -8,9 +8,16 @@ and was carried into the new home with `git filter-repo` (`git log --full-histor
 
 | Vegeta path | Now |
 |---|---|
-| `vegeta-cli/src/vegeta/chiron`, `vegeta-cli/tests/chiron`, `docs/chiron.md` | [technolog-spectrumai/chiron](https://github.com/technolog-spectrumai/chiron) (`import chiron`). Vegeta still carries `vegeta.chiron` until its last robot hatches. |
+| `vegeta-cli/src/vegeta/chiron`, `vegeta-cli/tests/chiron`, `docs/chiron.md` | [technolog-spectrumai/chiron](https://github.com/technolog-spectrumai/chiron) (`import chiron`) — retired 2026-10-21: `vegeta.chiron` is the one Chiron. |
 
-## 2026-10-20 — The racing quad hatches (Piccolo `dev_fusion_dance`)
+## 2026-10-21 — The races come home
+
+User decision: Piccolo is ROS-centric full simulation (Gazebo/ROS); the MuJoCo races stay in Vegeta. `races/`, its
+golden test and `docs/science_races.md` came back with their Piccolo history (`git filter-repo` + merge). They fly
+`ogma.rotors` again (the local copy `races/rotors.py` is gone) and `designs/data/mini_raptor_drive_6S_5x4p3.json`
+(the frozen copy is gone). The table below is history.
+
+## 2026-10-20 — The racing quad hatches (Piccolo `dev_fusion_dance`) — reverted 2026-10-21
 
 | Vegeta path | Piccolo path |
 |---|---|

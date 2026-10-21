@@ -70,8 +70,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(mock)
-MOCK_SECTIONS=(env smoke ozaru designs components side-labs exchange cli-mock notebooks-mock)
-declare -A PART=([vegeta]="env smoke ozaru cli-mock" [design]="designs components" [workflow]="side-labs exchange" [notebook]="notebooks-mock")
+MOCK_SECTIONS=(env smoke ozaru races designs components side-labs exchange cli-mock notebooks-mock)
+declare -A PART=([vegeta]="env smoke ozaru races cli-mock" [design]="designs components" [workflow]="side-labs exchange" [notebook]="notebooks-mock")
 EXP=(); for s in "${SECTIONS[@]}"; do case "$s" in
   mock) for part in vegeta design workflow notebook; do
           case " ${EXCLUDE[*]:-} " in *" $part "*) echo "skipping the $part tests (--no-$part)" ;; *) EXP+=(${PART[$part]}) ;; esac
@@ -196,6 +196,9 @@ for s in "${SECTIONS[@]}"; do
     ozaru)
       MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimezia, Yanus"
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
+    races)
+      MOCK_PLUGIN="" ; hdr "races/tests (MuJoCo laps, the lab's chapter script included)"
+      timed pytest_summary "$ROOT" races/tests || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"
       timed pytest_summary "$ROOT" designs/tests $( [ "$EXPERIMENTS" -eq 1 ] && echo designs/exp/tests) -m "not slow" || status=1 ;;

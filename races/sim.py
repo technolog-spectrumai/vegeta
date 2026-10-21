@@ -61,7 +61,7 @@ def run_mujoco(course, *, rules: Rules | None = None, control_dt: float = 0.004,
     ``start_offset`` [m] moves the start, ``mass_scale`` the quad's mass and inertia, ``thrust_scale`` every rotor's
     thrust, ``wind`` [m/s] the air the frame's drag acts against. Without it the lap is the nominal one."""
     import mujoco
-    from races import rotors
+    from ogma import rotors
     rules = rules or Rules()
     xml = scene_xml or courses.to_mjcf(course)
     model = mujoco.MjModel.from_xml_string(xml)

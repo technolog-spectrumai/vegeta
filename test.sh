@@ -38,9 +38,19 @@ if [ "$SMOKE" = 1 ]; then
   XVFB=()       # off-screen VTK renders need a display; a headless machine gets a virtual one if it has xvfb-run
   if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then XVFB=(xvfb-run -a); fi
   TIMEFORMAT='vegeta smoke: %R s'
+  RACES_LOG="$(mktemp)"                      # the races (MuJoCo laps, ~20 s) run beside the rest, as their own job
+  MPLBACKEND=Agg "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib races/tests tests/smoke/test_races_golden.py \
+    --deselect=races/tests/test_races.py::test_chapter_script_with_the_mock >"$RACES_LOG" 2>&1 &
+  RACES_PID=$!
   time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
-    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke ogma/tests "${EXISTING[@]}"
-  exit
+    --deselect vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke ogma/tests \
+    --ignore=tests/smoke/test_races_golden.py "${EXISTING[@]}"
+  status=$?
+  wait "$RACES_PID"; races=$?
+  echo "races: $(grep -E '(passed|failed|error)' "$RACES_LOG" | tail -1)"
+  [ "$races" -ne 0 ] && tail -30 "$RACES_LOG"
+  rm -f "$RACES_LOG"
+  exit $(( status || races ))
 fi
 
 row() { printf '  %-8s %-13s %s\n' "$1" "$2" "$3"; }

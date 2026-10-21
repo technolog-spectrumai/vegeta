@@ -12,8 +12,8 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V1.1 Smoke suite `./test.sh --smoke` (under 30 s) and the pre-move baseline (`docs/migration/baseline.md`, robotics goldens recorded before the move)
 - [x] V1.2 Yax design interchange (STL + `yax.json`) and `vegeta.dedalus.export_yax` (exact OCC mass properties, checked against the mesh integration)
 - [x] V1.3 Chiron to its own repo (`technolog-spectrumai/chiron`, history kept, `chiron.mock` split out of `vegeta.mock`); `vegeta.chiron` stays here until the last machine hatches
-- [x] V1.4 The racing quad hatched → Piccolo v2: `races/`, the autopilot scripts, the race notebooks, `side_labs/races`, the races book (history kept; path map in `MOVED.md`); `designs/drongo_controller.py` stays (Drongo has not hatched)
-- [x] V1.5 Boundary test: nothing in Vegeta imports `races` or Piccolo
+- [x] V1.4 (reverted 2026-10-21: the races came home — Piccolo is ROS-centric full simulation; `races/` flies `ogma.rotors` and `designs/data/`, its tests run in the smoke beside the rest) The racing quad hatched → Piccolo v2: `races/`, the autopilot scripts, the race notebooks, `side_labs/races`, the races book (history kept; path map in `MOVED.md`); `designs/drongo_controller.py` stays (Drongo has not hatched)
+- [x] V1.5 Boundary test: nothing in Vegeta imports Piccolo; engineering code imports no robotics (races included)
 - [x] V1.6 README: the blessed imperfection rule — go fast and break things; Vegeta stays the R&D notebook set
 
 ## Stage V2 — Ogma vendored (Ogma O0–O2)
