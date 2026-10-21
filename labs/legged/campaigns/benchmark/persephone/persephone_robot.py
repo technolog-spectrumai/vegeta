@@ -113,7 +113,3 @@ def persephone(body_connection: str = "spring_damper", *, n_segments: int = N_SE
     return robot
 
 
-def persephone_lab(body_connection: str = "spring_damper", terrain=None, **lab_kw) -> ch.ChironLab:
-    """A ChironLab with Persephone on ``terrain`` (default flat) with ``LAB`` (0.25 ms; not yet convergence-checked
-    for Persephone — run ``user_tests.sh persephone-smoke``)."""
-    return ch.ChironLab(persephone(body_connection), terrain, **{**LAB, **lab_kw})

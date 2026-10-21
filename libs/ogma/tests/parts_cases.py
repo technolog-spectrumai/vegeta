@@ -96,6 +96,6 @@ def cases(gears, tracks, soil, cutting, actuators):
     return plain(out)
 
 
-if __name__ == "__main__":                 # re-record from a Vegeta checkout: PYTHONPATH=<vegeta>/designs python parts_cases.py out.json
-    import gears, tracks, terramechanics, cutting, actuators
-    json.dump(cases(gears, tracks, terramechanics, cutting, actuators), open(sys.argv[1], "w"), indent=1)
+if __name__ == "__main__":                 # re-record: python parts_cases.py out.json (the modules live in Ogma now)
+    from ogma import actuators, cutting, gears, soil, tracks
+    json.dump(cases(gears, tracks, soil, cutting, actuators), open(sys.argv[1], "w"), indent=1)

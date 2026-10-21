@@ -7,9 +7,8 @@ import time
 from pathlib import Path
 from typing import Callable, Sequence
 
-from ._io import append_jsonl, environment, read_jsonl, utc_now, write_once
+from ._io import append_jsonl, check_name, environment, read_jsonl, utc_now, write_once
 from .evaluation import Evaluation, factory_record
-from .workspace import check_name
 
 LABELS = ("preferred", "rejected", "reference", "unclassified")
 

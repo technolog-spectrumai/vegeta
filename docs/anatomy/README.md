@@ -26,6 +26,13 @@ The split predicted the graph effects below; regenerating this report after it m
 | duplicated components | 2.5k lines (components ↔ designs) | 0 (`components/` folded into `designs/`) |
 | orphan modules | 15 | 17, all expected: the labs' `machines.py` (loaded by the registry), assemblies (loaded by spec), `exp/` limbo, CLI examples |
 
+Import cycles after the refactor (2026-10-21): `vegeta.core` (workspace ↔ revision ↔ design) and dedalus
+(`__init__` ↔ `yax_export`) are broken (`check_name` → `core/_io`, `__version__` → `dedalus/_version`); the atropos and
+mellonia `cli` ↔ `__main__` pairs were a dump artefact (the string `"__main__"`). Three stay, by design and only at call
+time: zephyr `polar` ↔ `export` (a polar saves itself; loading builds polars), `merlin_flight` ↔ `propulsor_maps` (the
+library builds MERLIN's units; MERLIN reads the library), and the side-lab book registry (books read the campaigns'
+fingerprints, campaigns read their chapters).
+
 Every machine's stage is now where its files are (`python tools/lab.py list`, the lab READMEs).
 
 ![anatomy](anatomy.svg)

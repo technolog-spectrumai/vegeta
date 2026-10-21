@@ -86,6 +86,6 @@ def export_yax(geometry, out: str | Path, *, name: str | None = None, mass_kg: f
 
 
 def _version() -> str:
-    from . import __version__
+    from ._version import __version__
 
     return __version__

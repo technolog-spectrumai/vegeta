@@ -12,7 +12,7 @@ from .plotting import measurements_table, plot_parameter_study, plot_views
 from .result import CommandRecord, Result, ResultError
 from .yax_export import export_yax
 
-__version__ = "0.1.0"
+from ._version import __version__  # noqa: F401  (the package version, read by yax_export too)
 
 __all__ = [
     "BuildError", "CommandRecord", "Design", "FunctionDesign", "Geometry", "Parameter", "ParameterSet",

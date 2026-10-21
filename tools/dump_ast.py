@@ -364,7 +364,7 @@ def dump(root: Path, out_path: Path, body: bool = True) -> dict:
                           f"dotted={quoteattr(dotted)} kind={quoteattr(kind)} main=\"{int(main)}\" sha1=\"{sha}\""
                           + "".join(f' {k}="{v}"' for k, v in lc.items()) + ">\n")
             strings = {c.value for c in ast.walk(tree) if isinstance(c, ast.Constant) and isinstance(c.value, str)
-                       and c.value.isidentifier()}
+                       and c.value.isidentifier() and not c.value.startswith("__")}         # "__main__" is no module
             for name, level, line, dynamic, names in imports(tree):
                 targets = []
                 if name == "*":                                              # importlib with a variable

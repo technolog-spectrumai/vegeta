@@ -15,7 +15,6 @@ validation.
 """
 from __future__ import annotations
 
-import json
 import math
 import os
 import time
@@ -82,25 +81,6 @@ def correlations_table():
 
 
 # ================================================================================================= prerequisites
-def drive_table_status() -> dict:
-    """Whether ``ks.drive_table()`` will read ``data/kestrel_drive.json`` or compute (Boreas, ~40 s): the notebook says
-    so before it happens — no expensive work hides in a loader."""
-    on_file = False
-    if ks.DRIVE_JSON.exists():
-        doc = json.loads(ks.DRIVE_JSON.read_text())
-        on_file = doc.get("components") == json.loads(json.dumps(ks._drive_key()))
-    return {"on_file": on_file, "path": str(ks.DRIVE_JSON.relative_to(ROOT)), "note": "on file for this motor, propeller, battery and calibration" if on_file else "will be computed here with Boreas (~40 s) and saved"}
-
-
-def sections_status() -> dict:
-    try:
-        import kestrel_section as ksec
-        ok = ksec.SECTIONS_JSON.exists()
-        return {"on_file": ok, "path": str(ksec.SECTIONS_JSON.relative_to(ROOT)), "note": "NeuralFoil polars on file" if ok else "missing: the 0012's numbers stand in (kestrel2.section_numbers)"}
-    except Exception as exc:
-        return {"on_file": False, "path": "designs/data/kestrel_sections.json", "note": f"vegeta.zephyr not importable ({exc}); the 0012's numbers stand in"}
-
-
 # the side-lab results this study reads, by Porunga key (designs/kestrel_keys.py): (workflow, variant, campaign, required)
 TAKES = (("airframe_cfd", "4Q-1", "sweep", False), ("airframe_cfd", "4Q-2", "sweep", True), ("airframe_cfd", "4Q-3", "sweep", False),
          ("structure_fea", "4Q-2", "all", True), ("airframe_cfd", "4Q-2", "interference", False))
@@ -214,24 +194,6 @@ def variants_table(sets: dict):
 def mass_groups(sets: dict):
     import pandas as pd
     return pd.DataFrame({f"Kestrel-{v}": ks.groups(s["table"]) for v, s in sets.items()}).T
-
-
-def envelope_vs_tools(s: dict) -> "pd.DataFrame":
-    """Iteration 0's envelope (spec + layout + five assumptions, analytic) against the tools, for the main variant."""
-    import pandas as pd
-    env = kl.envelope(s["p"], mass_kg=2.0)
-    c16 = s["cruise"].loc[V_CRUISE]
-    W = s["ci"]["mass_kg"] * ks.G
-    CL16 = W / (0.5 * ks.RHO0 * V_CRUISE ** 2 * s["L"]["S_ref"])
-    d = {"envelope [analytic]": {"take-off mass [kg]": env["take-off mass [kg]"], "cruise CL": env["cruise CL"], "CL max": env["CL max assumed"], "stall speed [m/s]": env["stall speed [m/s]"],
-                                 "hover power [W]": env["hover power, momentum theory [W]"], f"cruise power at {V_CRUISE:g} m/s [W]": env["cruise power [W]"], "L/D at the cruise": env["assumptions"]["L/D at the cruise"],
-                                 "endurance at the cruise [min]": env["endurance at the cruise [min]"], "static margin": env["static margin [chords]"]},
-         "tools [solver + empirical]": {"take-off mass [kg]": s["ci"]["mass_kg"], "cruise CL": CL16, "CL max": s["pol"].cl_max, "stall speed [m/s]": s["V_stall"], "hover power [W]": s["hover"]["total_W"],
-                                        f"cruise power at {V_CRUISE:g} m/s [W]": c16["electrical [W]"], "L/D at the cruise": c16["L/D"], "endurance at the cruise [min]": c16["endurance [min]"],
-                                        "static margin": s["np"]["static_margin"]}}
-    df = pd.DataFrame(d)
-    df["tools / envelope"] = df.iloc[:, 1] / df.iloc[:, 0]
-    return df
 
 
 # ================================================================================================= aerodynamics and the stall

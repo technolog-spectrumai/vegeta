@@ -5,17 +5,12 @@ import os
 import re
 from pathlib import Path
 
-from ._io import environment, read_json, utc_now, write_once
+from ._io import check_name, environment, read_json, utc_now, write_once
 
 SCHEMA = 1
-_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 _RID = re.compile(r"^r(\d+)$")
 
 
-def check_name(kind: str, name: str) -> str:
-    if not _NAME.match(name or ""):
-        raise ValueError(f"{kind} name {name!r} must start with a letter and use letters, digits, '_' or '-'")
-    return name
 
 
 class Workspace:

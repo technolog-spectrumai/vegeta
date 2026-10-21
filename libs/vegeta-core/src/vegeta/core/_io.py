@@ -1,6 +1,8 @@
 """Small file helpers: write-once JSON, append-only JSON lines, environment snapshot."""
 from __future__ import annotations
 
+import re
+
 import json
 import platform
 import sys
@@ -67,3 +69,10 @@ def environment() -> dict:
         except metadata.PackageNotFoundError:
             versions[dist] = None
     return {"python": sys.version.split()[0], "platform": platform.platform(), "packages": versions}
+
+_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
+
+def check_name(kind: str, name: str) -> str:
+    if not _NAME.match(name or ""):
+        raise ValueError(f"{kind} name {name!r} must start with a letter and use letters, digits, '_' or '-'")
+    return name

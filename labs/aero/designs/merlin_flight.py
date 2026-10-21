@@ -208,10 +208,6 @@ def build_merlins(p=None, *, max_electrical_w=1900.0, drive_efficiency=0.85, pit
     return out
 
 
-def mf_airframe(kind, mass, buildup, cd0):
-    return Airframe(f"MERLIN ({kind})", mass, buildup["planform"], buildup["aspect_ratio"], cd0)
-
-
 # ------------------------------------------------------------------------------------------------- the race
 DISTANCES_KM = (5.0, 8.0, 10.0, 20.0, 30.0)        # the fires the race is run to (notebook, scenario, tests)
 

@@ -572,13 +572,6 @@ def select_cases(names: list[str], filt: str | None) -> list[str]:
     return [n for n in names if any(w in n for w in wanted)]
 
 
-def default_out(workflow: str, campaign: str, base=None) -> Path:
-    """``side_labs/runs/<book>/<chapter>/<timestamp>_<label>`` (``workflow`` is the book, ``campaign`` the chapter
-    when given as ``"book/chapter"``; a bare name keeps the flat layout)."""
-    base = Path(base) if base else Path(__file__).resolve().parent / "runs" / workflow
-    return base / f"{stamp()}_{slug(campaign)}"
-
-
 class Cache:
     """A content-addressed store of **finished** cases across runs of the same book: ``side_labs/cache/<book>/<key>.json``
     holds the case record (status, metrics, artifacts pointing at the run that solved it) — a chapter asked for a
