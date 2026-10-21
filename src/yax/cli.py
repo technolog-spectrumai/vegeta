@@ -24,6 +24,17 @@ def main(argv=None) -> int:
     y.add_argument("--map", required=True, dest="mapping")
     y.add_argument("--check", action="store_true", help="write nothing; exit 1 if the model has drifted")
     y.add_argument("--out", help="write here instead of in place")
+    f = sub.add_parser("features", help="what a machine file holds per feature; with requirements, whether it serves a consumer")
+    f.add_argument("file")
+    f.add_argument("--to", dest="fmt", help="judge for this target format (unsupported features)")
+    f.add_argument("--require", default="", help="comma-separated features the consumer needs")
+    f.add_argument("--optional", default="", help="comma-separated features the consumer uses when present")
+    f.add_argument("--requirements", help='a JSON file {"consumer", "required", "optional"}')
+    s_ = sub.add_parser("select", help="write DST holding only the chosen features of SRC (the rest recorded as excluded)")
+    s_.add_argument("src")
+    s_.add_argument("dst")
+    s_.add_argument("--include", default="", help="comma-separated features to keep (default: all)")
+    s_.add_argument("--exclude", default="", help="comma-separated features to withhold")
     sub.add_parser("check", help="validate packages").add_argument("dirs", nargs="+")
     sub.add_parser("info", help="print a package's manifest summary").add_argument("dir")
     a = ap.parse_args(argv)
@@ -36,6 +47,25 @@ def main(argv=None) -> int:
         rep = sync(a.design, a.target, mapping=a.mapping, check=a.check, out=a.out)
         print(rep)
         return 1 if a.check and (rep.changes or rep.dropped) else 0
+    if a.cmd in ("features", "select"):
+        from . import features
+        from .convert import read, save
+        m, _ = read(a.src if a.cmd == "select" else a.file)
+        if a.cmd == "select":
+            inc = [x for x in a.include.split(",") if x] or None
+            exc = [x for x in a.exclude.split(",") if x]
+            print(save(features.select(m, inc, exc), a.dst))
+            return 0
+        print(features.describe(m))
+        req = features.Requirements.load(a.requirements) if a.requirements else None
+        if a.require or a.optional:
+            req = features.Requirements([x for x in a.require.split(",") if x], [x for x in a.optional.split(",") if x],
+                                        req.consumer if req else "")
+        if req is None:
+            return 0
+        verdict = features.check(m, req, a.fmt)
+        print(verdict)
+        return 0 if verdict.ok else 1
     if a.cmd == "show":
         from .convert import info
         print(info(a.file))

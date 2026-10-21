@@ -70,11 +70,15 @@ class Joint:
 
 @dataclass
 class Machine:
+    """``data``: part data by kind (``yax.features`` says which kind belongs to which feature); ``producer``: the
+    provenance stamp; ``features``: what the producer withheld (``{"excluded": [...], "included": [...]}``, set by
+    ``yax.features.select``; empty when nothing was withheld)."""
     name: str
     links: list = field(default_factory=list)
     joints: list = field(default_factory=list)
     data: dict = field(default_factory=dict)
     producer: dict = field(default_factory=dict)
+    features: dict = field(default_factory=dict)
 
     def link(self, name: str) -> Link:
         return next(lk for lk in self.links if lk.name == name)
@@ -119,8 +123,8 @@ def report_data(m: Machine, rep: Report, keep=()):
     for lk in m.links:
         for k, v in lk.data.items():
             if k not in keep and k != "free_joint":
-                what = ", ".join(f"{len(x)} {n}" for n, x in v.items()) if isinstance(v, dict) else k
-                rep.drop(f"link {lk.name}: {k} data ({what})")
+                what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if hasattr(x, "__len__")) if isinstance(v, dict) else ""
+                rep.drop(f"link {lk.name}: {k} data" + (f" ({what})" if what else ""))
 
 
 # --------------------------------------------------------------------------------------------------------- the maths
@@ -279,6 +283,8 @@ def to_stage(m: Machine, path: str | None = None):
         _attr(rp, "yax:producer", Sdf.ValueTypeNames.String, json.dumps(m.producer, sort_keys=True))
     if m.data:
         _attr(rp, "yax:data", Sdf.ValueTypeNames.String, json.dumps(m.data, sort_keys=True))
+    if m.features:
+        _attr(rp, "yax:features", Sdf.ValueTypeNames.String, json.dumps(m.features, sort_keys=True))
     UsdPhysics.ArticulationRootAPI.Apply(rp)
     paths = {}
     for lk in m.links:
@@ -430,6 +436,8 @@ def from_stage(stage) -> Machine:
         m.producer = json.loads(_get(root, "yax:producer"))
     if _get(root, "yax:data"):
         m.data = json.loads(_get(root, "yax:data"))
+    if _get(root, "yax:features"):
+        m.features = json.loads(_get(root, "yax:features"))
     cache = UsdGeom.XformCache(Usd.TimeCode.Default())
     names = {}
     for prim in Usd.PrimRange(root):
@@ -619,4 +627,4 @@ def lump(m: Machine, name: str | None = None) -> Machine:
         J = sum(I + mm * (np.dot(c - com_w, c - com_w) * np.eye(3) - np.outer(c - com_w, c - com_w)) for mm, c, I in parts)
         Rr = R(root.quat)
         out.mass, out.com, out.inertia = float(M), tuple(Rr.T @ (com_w - np.asarray(root.pos))), Rr.T @ J @ Rr
-    return Machine(name=m.name, links=[out], data=dict(m.data), producer=dict(m.producer))
+    return Machine(name=m.name, links=[out], data=dict(m.data), producer=dict(m.producer), features=dict(m.features))

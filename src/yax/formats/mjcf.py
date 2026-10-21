@@ -142,8 +142,14 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             if "damping" in joint.data:
                 a.append(f'damping="{joint.data["damping"]:.17g}"')
             out.append(f'{pad}  <joint {" ".join(a)}/>')
-        if lk.mass:
-            I = np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3)), float)
+        on_geom = None                                                          # mass without inertia: MuJoCo infers it
+        if lk.mass and lk.inertia is None:
+            if not lk.shapes:
+                raise ValueError(f"link {lk.name}: a mass without an inertia and without shapes — MJCF needs one or the other")
+            on_geom = lk.shapes[0]
+            rep.drop(f"link {lk.name}: its inertia (none in the source) is MuJoCo's from its first shape carrying the mass")
+        elif lk.mass:
+            I = np.asarray(lk.inertia, float)
             out.append(f'{pad}  <inertial pos="{_f(lk.com)}" mass="{lk.mass:.17g}" '
                        f'fullinertia="{_f((I[0, 0], I[1, 1], I[2, 2], I[0, 1], I[0, 2], I[1, 2]))}"/>')
         for s in lk.shapes:
@@ -164,7 +170,7 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
                 if typ in ("cylinder", "capsule") and s.axis != "z":
                     quat = hub.qnorm(hub.qmul(s.quat, hub.quat_from_R(hub._AXIS_FROM_Z[s.axis])))
                 a += [f'type="{typ}"', f'size="{_f(sz)}"']
-            a += [f'pos="{_f(s.pos)}"', f'quat="{_f(quat)}"', 'mass="0"']
+            a += [f'pos="{_f(s.pos)}"', f'quat="{_f(quat)}"', f'mass="{lk.mass:.17g}"' if s is on_geom else 'mass="0"']
             if s.role == "visual":
                 a.append('contype="0" conaffinity="0" group="1"')
             if s.rgba is not None:
