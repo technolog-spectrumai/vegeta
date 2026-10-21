@@ -32,3 +32,9 @@ winding, triangle budget, export round-trip) make a revision valid, and an inval
 output; the loop is bounded (iterations, minutes, tokens, patience), recorded and resumable; an approval hook
 (`approve="ask"`, `fidia run --confirm`) runs nothing without a yes; and its product is a model to look at and use,
 not an engineering verdict. The copilot's validation uses the same sandbox.
+
+## Rejected designs (aero lab)
+
+| Design | Why not |
+|---|---|
+| **K4TQ-D1 "Dorothy" / D2** — Freddy with a powered in-flight wing fold (worm gearmotor + 6:1 sector per hinge, solenoid lock) for passing smoke zones (2026-10-21) | +0.66 kg (D2 with the Jetson ~+0.95 kg over Freddy) for a 20–30° V-tuck that cuts the gust bump to 75–88 % while keeping 65–83 % of the roll authority; folding adds drag (no speed gain, top speed is the propellers'), > 35° the folded stall speed passes the propellers' speed; unfolded L/D 11.1 → 9.8 (the fold-drive fairings, estimated), sagged T/W 1.53 < 1.6, D2 does not close the 1 kg mission. The narrow hover (tilt 90, wings swung aft) needs no powered fold to be studied again. The study stays on branch `dev_kestrel4` (`exp/K4TQ_dorothy.ipynb`). |
