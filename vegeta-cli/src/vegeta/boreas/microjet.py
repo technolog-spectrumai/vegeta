@@ -68,8 +68,9 @@ class Atmosphere:
 
 def isa(altitude_m: float = 0.0, delta_t: float = 0.0) -> Atmosphere:
     """International Standard Atmosphere (troposphere), with a temperature offset ``delta_t``."""
-    t_std = 288.15 - 0.0065 * altitude_m
-    return Atmosphere(101325.0 * (t_std / 288.15) ** 5.2559, t_std + delta_t)
+    from ogma.atmosphere import isa as og_isa                     # the one ISA: Ogma (Boreas keeps its Atmosphere type)
+    a = og_isa(altitude_m, delta_t)
+    return Atmosphere(a.pressure, a.temperature)
 
 
 @dataclass(frozen=True)
