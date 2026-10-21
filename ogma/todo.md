@@ -1,5 +1,7 @@
 # Ogma — todo
 
+Ogma lives in Vegeta (`ogma/`) since 2026-10-21; Yax moved to its own repository (technolog-spectrumai/yax).
+
 Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known issues: [works.md](works.md).
 
 ## O0 — repo + Yax

@@ -175,3 +175,19 @@ Decision: Ogma gains *strategies* for MuJoCo (O5), then CAD (O6), then Gazebo (O
   parts, mass budgets, propulsion and aero from `og.*`, CAD from the O6 strategy, Yax export from Ogma.
 - **O7 Gazebo (deferred to Later, user decision 2026-10-21):** SDF inertials/links/joints, `MulticopterMotorModel` constants from a propulsion map, `DiffDrive`
   from a wheel pair — replacing the hand-copied values in Piccolo's drako/iguana SDF.
+
+## 2026-10-21 — Ogma comes home, Yax becomes the converter
+
+User decision: platforms exchange **standard files** (Piccolo URDF/SDF, Vegeta MJCF and JSBSim, CadQuery STEP, USD as
+the universal file). Yax becomes the converter between them, with USD as the hub, in its own repository
+(`technolog-spectrumai/yax`, history kept). Ogma, the parts library, moves into Vegeta at `ogma/` (history kept,
+`import ogma as og` unchanged); the Ogma repository is retired with a pointer.
+
+Consequences:
+- Piccolo and Chiron no longer depend on Ogma (Piccolo must not import Vegeta): Chiron's servo law is its own code
+  again, and the races keep a copy of `mix`, `wrench` and `quadratic_drag` in `races/rotors.py`.
+- Vegeta and Piccolo vendor Yax (`vendor/yax`, `scripts/update_yax.sh`).
+- Ogma's layer test now says: numpy and the standard library at import time, and never Vegeta, not even lazily
+  (Vegeta's designs import Ogma, never the reverse).
+- The Yax-side parts of the old rules (stdlib only) are Yax's own business now: Yax 2 depends on numpy and usd-core,
+  and its engines (mujoco, cadquery, jsbsim) are optional extras.
