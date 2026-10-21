@@ -116,6 +116,14 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `ou_euler_step` (Euler–Maruyama OU with per-axis scale: Velutina varies sigma in the turbine's wake, so the
   exact-discretisation `Wind` does not fit it). Golden: `wind.json["velutina"]` (Vegeta 965fbe7).
 
+### O5 — MuJoCo strategy
+- `og.mujoco`: `geom` (MuJoCo half sizes; cylinder/capsule along z, quat for x/y), `inertial` (fullinertia from a
+  `MassProperties`), `body` (a budget's inertial + visual non-colliding geoms; thin shapes and point masses count in
+  the inertial only), `model`, `compile_check` (the only place `mujoco` is imported). `og.mass.Capsule` added (MuJoCo's
+  formula: mass split by volume, hemispheres by parallel axes). Tests compile with MuJoCo: every solid shape's
+  `body_inertia` equals Ogma's to 1e-9, a five-item rover budget's mass/COM/principal inertias equal
+  `Budget.properties()`. MJCF *robots* (joints, contacts, servos) stay Chiron's.
+
 ### O6 — CAD strategy
 - `og.cad`: `mass_properties` (OCC GProp, moved verbatim from `vegeta.dedalus.yax_export`; takes a Workplane, a
   Shape or a TopoDS_Shape), `mass_section` (the Yax `mass` block, was Dedalus's `_mass`), `properties` (→
