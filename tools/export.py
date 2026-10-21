@@ -114,6 +114,8 @@ def machine(name: str, *, lump: bool = False, keep=None, drop=(), tag=()):
         m, rep = yax.read(p)
     m.name = name
     m.data.pop("mjcf", None)
+    from vegeta.labkit import motors as lm
+    lm.attach(m, robot)                                                       # the servos as motor blocks (00motor), not just PD drives
     design_tags = {}
     if parts:
         part = parts(m)                                                       # {"ogma": …, "propulsion": …, "materials": …, "tags": …}
