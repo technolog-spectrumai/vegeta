@@ -95,6 +95,24 @@ class Cylinder:
 
 
 @dataclass(frozen=True)
+class Capsule:
+    """A solid capsule: a cylinder of ``radius`` and full ``length`` along ``axis`` with a hemisphere on each end
+    (MuJoCo's ``inertiafromgeom``: the mass split by volume, the hemispheres moved out by parallel axes)."""
+    radius: float
+    length: float
+    axis: str = "z"
+
+    def inertia(self, m: float) -> np.ndarray:
+        r, h = self.radius, self.length
+        m_sph = m * 4 * r / (4 * r + 3 * h)                       # the two hemispheres' share of the volume
+        m_cyl = m - m_sph
+        i_sph = 2 * m_sph * r * r / 5
+        d = np.full(3, m_cyl * (3 * r * r + h * h) / 12 + i_sph + m_sph * h * (3 * r + 2 * h) / 8)
+        d[_AXES[self.axis]] = m_cyl * r * r / 2 + i_sph
+        return np.diag(d)
+
+
+@dataclass(frozen=True)
 class Ellipsoid:
     """A solid ellipsoid of semi-axes ``a``, ``b``, ``c``: m/5 (b²+c², …)."""
     a: float
@@ -207,5 +225,5 @@ def solid_density_mass(volume_m3: float, density: float, fill: float = 1.0) -> f
     return volume_m3 * density * fill
 
 
-__all__ = ["Rod", "Plate", "Shell", "Box", "Sphere", "Cylinder", "Ellipsoid", "Item", "MassProperties", "Budget",
+__all__ = ["Rod", "Plate", "Shell", "Box", "Sphere", "Cylinder", "Capsule", "Ellipsoid", "Item", "MassProperties", "Budget",
            "place_for_cg", "place_mass_for_cg", "cg_with", "point_inertia", "solid_density_mass"]

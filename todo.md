@@ -12,7 +12,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] `og.units`, `og.frames`
 - [x] `og.mass` (shapes, Budget, `place_for_cg`)
 - [x] Vegeta `kestrel_systems.cg_inertia`, `nisus_systems.cg_inertia` over `og.mass`
-- [ ] the 7 battery-for-CG solves → `place_for_cg`
+- [x] the battery-for-CG solves → `place_mass_for_cg` (5 design tables; robots later)
 - [x] Falco `fuselage:` rows get their shape inertia (Iyy +4.4 %, Izz +1.8 %)
 
 ## O2 — generic modules moved with history
@@ -38,15 +38,15 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] racing quad (Piccolo v2) — the only graduation for now
 
 ## O5 — MuJoCo strategy
-- [ ] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra)
-- [ ] Chiron test: Ogma shape inertia == MuJoCo `inertiafromgeom`
+- [x] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra); `og.mass.Capsule` added
+- [x] Ogma shape inertia == MuJoCo `inertiafromgeom` (Ogma's test_mujoco; Chiron's own test next)
 
 ## O6 — CAD strategy
 - [x] `og.cad` (CadQuery, lazy extra)
-- [ ] Vegeta's `export_yax` takes its mass properties from `og.cad`
+- [x] Vegeta's `export_yax` takes its mass properties from `og.cad`
 
 ## Vegeta application
-- [ ] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`)
+- [x] Vegeta vendors Ogma and builds its designs on it (`vendor/ogma`; Vegeta todo V3–V4 done 2026-10-21)
 
 ## Later
 - [ ] Drongo
