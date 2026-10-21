@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 from ogma import mass as og_mass
@@ -51,6 +52,12 @@ CATALOGUE = {
                        "price_eur": 95.0, "source": "retailer bench data: 67 mOhm, 1.3 A at 10 V no-load, 15x5 CF 26 N at 18.7 A on 6S; mass with cable to verify"},
         "X4110S-400": {"name": "SunnySky X4110S KV400", "kv": 400.0, "R_ohm": 0.112, "I0_A": 0.9, "I_max_A": 26.0, "mass_kg": 0.149,
                        "price_eur": 70.0, "source": "retailer listings: 112 mOhm, 149 g, 26 A / 30 s, 6S"},
+        "MN5006-450": {"name": "T-Motor MN5006 KV450 (Antigravity)", "kv": 450.0, "R_ohm": 0.060, "I0_A": 1.2, "I_max_A": 30.0, "mass_kg": 0.106,
+                       "price_eur": 110.0, "source": "retailer listings: 60 mOhm, 106 g with cable, 4-6S, P14-18; I0 and I_max estimated (to verify)"},
+        "MN501S-300": {"name": "T-Motor MN501-S KV300 (Navigator)", "kv": 300.0, "R_ohm": 0.063, "I0_A": 1.0, "I_max_A": 40.0, "mass_kg": 0.170,
+                       "price_eur": 150.0, "source": "retailer listings: 63 mOhm, 170 g, 40 A / 180 s, 1000 W, 6-8S; I0 estimated (to verify)"},
+        "MN505S-380": {"name": "T-Motor MN505-S KV380 (Navigator)", "kv": 380.0, "R_ohm": 0.028, "I0_A": 2.0, "I_max_A": 50.0, "mass_kg": 0.225,
+                       "price_eur": 180.0, "source": "RobotShop / T-Motor store: 28 mOhm, 2.0 A idle at 15 V, 50 A / 180 s, 1200 W, 6S, 225 g"},
     },
     "propeller": {   # diameter, pitch [in]; folding carbon-reinforced blades with a hub (mass per propeller incl. hub)
         "13x6.5": {"d_in": 13, "p_in": 6.5, "mass_kg": 0.032, "price_eur": 18.0, "source": "T-Motor T13x6.5 class (23.7 g fixed); folding hub +8 g"},
@@ -91,13 +98,13 @@ CATALOGUE = {
         "temperature logger": {"mass_kg": 0.020, "price_eur": 60.0, "source": "independent logger with its own cell and flash, GNSS-timestamped, survives power loss (R7)"},
     },
     "root": {   # one wing root: the tilt drive and the fold hinge (Stage 2 designs it; these are the Stage 1 estimates)
-        "tilt servo": {"mass_kg": 0.062, "price_eur": 90.0, "source": "high-torque metal-gear digital servo, 30 kg·cm class (~2.9 N·m)"},
-        "reduction 2:1": {"mass_kg": 0.015, "price_eur": 15.0, "source": "spur pair, anti-backlash, or a toothed belt"},
+        "tilt servo": {"mass_kg": 0.062, "price_eur": 90.0, "source": "high-torque metal-gear digital servo, 30 kg·cm class (~2.9 N·m), standard 40 x 20 x 38 mm case"},
+        "spur pair 16:48 m1.0": {"mass_kg": 0.018, "price_eur": 18.0, "source": "steel pinion on the servo spline + 7075/POM gear on the stub (catalogue spur gears, bored)"},
         "bearings 6804-2RS (2)": {"mass_kg": 0.036, "price_eur": 10.0, "source": "20 x 32 x 7 deep groove, C 4.0 kN, C0 2.47 kN"},
-        "housing": {"mass_kg": 0.040, "price_eur": 40.0, "source": "7075 machined core + printed cover"},
-        "fold hinge + structural latch": {"mass_kg": 0.030, "price_eur": 25.0, "source": "steel pin in bronze bushes, Ø6 hardened locking pin with spring and witness mark"},
-        "encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 magnetic encoder on the spar axis"},
-        "fasteners + clamp": {"mass_kg": 0.010, "price_eur": 5.0, "source": "spar clamp, M3/M4 A2-70"},
+        "stub shaft + bearing block": {"mass_kg": 0.045, "price_eur": 45.0, "source": "7075 stub (Ø20 seats, Ø12 bore for the cables) + 7075 block bolted to the frame"},
+        "fold knuckles + pins": {"mass_kg": 0.035, "price_eur": 30.0, "source": "7075 inner/outer knuckles, Ø6 steel hinge pin, Ø6 hardened locking pin with spring and witness mark"},
+        "encoder": {"mass_kg": 0.004, "price_eur": 12.0, "source": "AS5048 magnetic encoder on the stub's inner end"},
+        "fasteners + stops": {"mass_kg": 0.010, "price_eur": 5.0, "source": "hard stops −5° / 95°, M3/M4 A2-70, spar socket bond"},
     },
     "safety": {
         "recovery parachute": {"mass_kg": 0.160, "price_eur": 250.0, "source": "1 m² canopy + spring ejector (the four-rotor motor-out case; SORA mitigation)"},
@@ -119,19 +126,35 @@ GROWTH_MARGIN = 0.07              # on the empty mass
 BASE = {
     "variant": "A", "title": "equal tandem, 1.4 m, 1.2 m fuselage",
     # fuselage
-    "fuselage_length": 1.20, "fuselage_width": 0.14, "fuselage_height": 0.15,   # 1.2 m: the length sweep (disc gap 159 mm), approved 2026-10-21
+    "fuselage_length": 1.20, "fuselage_width": 0.14, "fuselage_height": 0.16,   # 1.2 m: the length sweep (disc gap 159 mm), approved 2026-10-21
+    "fuselage_section_n": 5.0,        # superellipse exponent of the mid-body section (Stage 2: room for the bearing blocks near the sides)
     # wings: pivot stations (fraction of the fuselage length), heights (front low, rear high), planform
-    "x_pivot_front": 0.30, "x_pivot_rear": 0.75, "z_front": -0.055, "z_rear": 0.055,   # low front wing, shoulder rear wing: gap 0.11 m
+    "x_pivot_front": 0.30, "x_pivot_rear": 0.75, "z_front": -0.040, "z_rear": 0.040,   # low front, high rear wing: gap 0.08 m (Stage 2: the stubs' bearing blocks inside the fuselage)
     "span": 1.40, "root_chord_front": 0.20, "tip_chord_front": 0.15, "root_chord_rear": 0.20, "tip_chord_rear": 0.15,
     "pivot_chord": 0.30,              # the spar (tilt axis) at this fraction of the local chord, straight across the span
+    # the wing root (Stage 2.3/2.4): the tilt drive inside the fuselage (stub shaft in two bearings, servo through 16:48
+    # spur gears, encoder), the fold hinge just outside the skin, turning with the wing, its pin along the chord
     "root_gap": 0.012,                # fuselage side to the fold hinge axis
-    "root_length": 0.045,             # fold hinge axis to the first wing rib (the tilt cartridge)
+    "root_length": 0.018,             # fold hinge axis to the first wing rib (the outer knuckle; 18 mm: the root plate swings clear of the inner clevis)
+    "bearing_spacing": 0.032,         # the two 6804 bearings of the stub, centre to centre
+    "stub_od": 0.020,                 # 7075 stub shaft at the bearing seats (6804 bore)
+    "gear_module": 1.0, "z_pinion": 16, "z_gear": 48,    # 3:1 spur reduction, the pinion aft of the stub
+    "hinge_pin_offset": 0.010,        # the fold pin sits this far toward the upper surface (aft in the hover): the wing folds aft
+    "lock_couple": 0.020,             # the locking pin this far from the hinge pin (both along the chord): the couple for the lift moment
+    "knuckle_spread": 0.028,          # the outer lugs' centres apart along the chord: the couple for the thrust moment
+    "fold_transport_deg": 85.0,       # the packed fold (Stage 2.7: the fold path is clear 0–85°; at 88° the front tips reach the rear roots)
     "section": "NACA 2412", "decalage_deg": 1.5,
     # propulsion
-    "motor": "MN4014-400", "prop": "15x10", "motor_y": 0.62, "prop_ahead_of_le": 0.065,   # 15x10: the Stage 1.8 sweep's choice
-    "battery": "6S2P-P45B", "payload_kg": 1.0,
+    # Stage 2.8 revision (CAD masses, 6.9 kg): the MN4014 / 6S2P of Stage 1 no longer close the mission or the hover
+    # margin — the motor × propeller × pack sweep on the CAD masses (data/k4tq/stage2_motor_sweep.csv) chose these
+    "motor": "MN501S-300", "prop": "16x10", "motor_y": 0.62, "prop_ahead_of_le": 0.065,
+    "battery": "6S3P-P45B", "payload_kg": 1.0,
+    "cad_mass": "auto",               # the CAD's masses (data/k4tq/cad_masses.json, written by k4tq_cad) replace the estimates when current
     # stations along the fuselage (fractions of its length): the cargo at the CG, the battery bay, the parachute
-    "cargo_station": 0.46, "battery_bay": (0.10, 0.70), "parachute_station": 0.56,
+    # Stage 2 packing (k4tq_sizing.pack): the battery at the aft end of the nose bay with the avionics above it, the
+    # cartridge where it puts the CG on the target, the parachute right behind the cartridge (its line near the CG)
+    "cargo_station": 0.46, "battery_bay": (0.12, 0.21), "parachute_station": 0.68, "avionics_station": 0.21,
+    "cargo_box": (0.240, 0.120, 0.110), "battery_box": (0.135, 0.047, 0.074),   # outer sizes [m]: the insulated cartridge, the 6S2P 21700 pack
     # undercarriage, fin, safety
     "leg_bottom_z": -0.225,           # leg feet below the fuselage axis: clears the wing trailing edges (hover stance) and the discs (cruise stance)
     "fin": True, "fin_area": None,    # None: the fin is sized by k4tq_sizing.directional (R9)
@@ -146,12 +169,39 @@ VARIANTS = {
 MAIN = "B"                         # the larger rear wing at 1.2 m: approved 2026-10-21
 
 
+GEOMETRY_KEYS = ("fuselage_length", "fuselage_width", "fuselage_height", "fuselage_section_n", "x_pivot_front", "x_pivot_rear", "z_front", "z_rear",
+                 "span", "root_chord_front", "tip_chord_front", "root_chord_rear", "tip_chord_rear", "pivot_chord", "root_gap", "root_length",
+                 "bearing_spacing", "stub_od", "gear_module", "z_pinion", "z_gear", "hinge_pin_offset", "lock_couple", "motor_y", "prop_ahead_of_le",
+                 "leg_bottom_z", "section")
+CAD_MASSES = Path(__file__).resolve().parent / "data" / "k4tq" / "cad_masses.json"
+
+
+def geometry_fingerprint(p: dict) -> str:
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps({k: p.get(k) for k in GEOMETRY_KEYS}, sort_keys=True).encode()).hexdigest()[:16]
+
+
 def params(variant: str = MAIN, **over) -> dict:
-    """The parameters of a configuration: ``BASE`` with the variant's changes and ``over``."""
+    """The parameters of a configuration: ``BASE`` with the variant's changes and ``over``. ``cad_mass = "auto"``
+    loads the CAD's masses when ``data/k4tq/cad_masses.json`` was written for this geometry (``cad_mass_status`` says
+    "CAD", "stale: estimates used" or "none: estimates used")."""
+    import json
     p = deepcopy(BASE)
     p.update(VARIANTS[variant])
     p.update(over)
     p["variant"] = variant if not over else p.get("variant", variant)
+    if p.get("cad_mass") == "auto":
+        p["cad_mass"] = None
+        p["cad_mass_status"] = "none: estimates used"
+        if CAD_MASSES.exists():
+            doc = json.loads(CAD_MASSES.read_text())
+            if doc.get("fingerprint") == geometry_fingerprint(p):
+                p["cad_mass"], p["cad_mass_status"] = doc["cad_mass"], "CAD"
+            else:
+                p["cad_mass_status"] = "stale: estimates used"
+    elif p.get("cad_mass"):
+        p.setdefault("cad_mass_status", "CAD (given)")
     return p
 
 
@@ -195,19 +245,35 @@ def _wing(p: dict, which: str) -> dict:
             "x_ac_mac": x_piv - (pc - 0.25) * mac, "chord_at_motor": c_at(p["motor_y"]), "AR_pair": (2 * y1) ** 2 / (2 * S), "c_at": c_at}
 
 
+def wing_frame(L: dict, which: str, side: int, tilt: float, fold: float = 0.0):
+    """The map from the wing's own frame to body axes. The wing frame: origin on the spar at the fuselage centreline,
+    x along the chord (+ aft), y along the spar (outboard), z the section's thickness (+ upper). The fold turns the
+    wing about the hinge pin — along the chord at (y_hinge, z = hinge_pin_offset), the span toward +z — then the tilt
+    turns everything about the spar (+ = leading edge up), then the side mirrors y. Folding is done at tilt 90°, where
+    the pin is vertical and the wing swings aft. Returns ``f(points (n, 3)) -> (n, 3)``."""
+    w = L["wings"][which]
+    yh, zh = w["y_hinge"], L["p"]["hinge_pin_offset"]
+    cf, sf, ct, st = math.cos(fold), math.sin(fold), math.cos(tilt), math.sin(tilt)
+
+    def f(P):
+        P = np.atleast_2d(np.asarray(P, float))
+        x, y, z = P[:, 0], P[:, 1], P[:, 2]
+        outer = y > yh - 1e-12
+        r, h = y - yh, z - zh
+        y1 = np.where(outer, yh + r * cf - h * sf, y)
+        z1 = np.where(outer, zh + r * sf + h * cf, z)
+        x2, z2 = x * ct + z1 * st, -x * st + z1 * ct
+        return np.c_[w["x_pivot"] + x2, side * y1, w["z"] + z2]
+    return f
+
+
 def wing_point(L: dict, which: str, side: int, y: float, xi: float, tilt: float, fold: float = 0.0) -> np.ndarray:
     """A point of a wing in body axes: spanwise station ``y`` (>0) on ``side`` (±1), chord fraction ``xi`` (0 leading edge,
-    1 trailing edge) at the wing's tilt (rad, about the spar; + = leading edge up) and fold (rad, about the vertical hinge;
-    + = swung aft)."""
+    1 trailing edge), on the chord line, at the tilt (rad, about the spar; + = leading edge up) and the fold (rad, about the
+    hinge pin; + = swung aft when folded at tilt 90°)."""
     w = L["wings"][which]
-    c = w["c_at"](y)
-    d = (xi - w["pivot_chord"]) * c                     # along the chord from the spar, + aft
-    x_rel, z_rel = d * math.cos(tilt), -d * math.sin(tilt)   # LE (d<0) goes up when the tilt is +
-    r = y - w["y_hinge"]                                # from the fold hinge, outboard
-    # fold: rotate (x_rel, r) about the hinge's vertical axis, the tip swinging aft
-    xf = x_rel * math.cos(fold) + r * math.sin(fold)
-    yf = -x_rel * math.sin(fold) + r * math.cos(fold)
-    return np.array([w["x_pivot"] + xf, side * (w["y_hinge"] + yf), w["z"] + z_rel])
+    d = (xi - w["pivot_chord"]) * w["c_at"](y)
+    return wing_frame(L, which, side, tilt, fold)([[d, y, 0.0]])[0]
 
 
 def prop_pose(L: dict, which: str, side: int, tilt: float, fold: float = 0.0) -> dict:
@@ -215,10 +281,10 @@ def prop_pose(L: dict, which: str, side: int, tilt: float, fold: float = 0.0) ->
     the spar (no thrust moment about the tilt axis), the disc ahead of the leading edge by ``prop_ahead_of_le``."""
     w = L["wings"][which]
     c = w["c_at"](L["p"]["motor_y"])
-    xi = -(L["p"]["prop_ahead_of_le"] / c)               # ahead of the leading edge, as a chord fraction (< 0)
-    hub = wing_point(L, which, side, L["p"]["motor_y"], xi, tilt, fold)
-    axis = np.array([-math.cos(tilt) * math.cos(fold), side * math.cos(tilt) * math.sin(fold), math.sin(tilt)])   # thrust direction
-    return {"hub": hub, "axis": axis, "arm": w["pivot_chord"] * c + L["p"]["prop_ahead_of_le"]}
+    arm = w["pivot_chord"] * c + L["p"]["prop_ahead_of_le"]
+    f = wing_frame(L, which, side, tilt, fold)
+    hub, ahead = f([[-arm, L["p"]["motor_y"], 0.0], [-arm - 1.0, L["p"]["motor_y"], 0.0]])
+    return {"hub": hub, "axis": ahead - hub, "arm": arm}
 
 
 def layout(p: dict | None = None) -> dict:
@@ -349,13 +415,27 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
         add(k, v["mass_kg"], x_cargo, 0, 0.005, "cargo", v["source"])
     add("payload", p["payload_kg"] if payload_kg is None else payload_kg, x_cargo, 0, 0.005, "payload", "medical load (R2)")
     for i, (k, v) in enumerate(cat["avionics"].items()):
-        add(k, v["mass_kg"], 0.14 + 0.03 * i, 0, 0.03, "avionics", v["source"])
+        add(k, v["mass_kg"], p["avionics_station"] * Lf + 0.012 * (i - 3), 0, 0.0, "avionics", v["source"])       # the tail bay behind the rear station (Stage 2 packing)
     add("servo and signal wiring", 0.050, 0.5 * Lf, 0, 0, "systems")
     if p["parachute"]:
-        add("recovery parachute", cat["safety"]["recovery parachute"]["mass_kg"], p["parachute_station"] * Lf, 0, 0.05, "safety", cat["safety"]["recovery parachute"]["source"])
+        add("recovery parachute", cat["safety"]["recovery parachute"]["mass_kg"], p["parachute_station"] * Lf, 0, 0.0, "safety", cat["safety"]["recovery parachute"]["source"])
+    cad = p.get("cad_mass") or {}
+    if cad:                                                      # Stage 2.8: the CAD's masses replace the estimates, item by item
+        for i in items:
+            for prefix, kg in cad.items():
+                if i["item"].startswith(prefix):
+                    i["source"] = f"CAD ({i['mass_kg'] * 1e3:.0f} g estimated → {kg * 1e3:.0f} g): " + i.get("source", "")
+                    i["mass_kg"] = float(kg)
     empty = sum(i["mass_kg"] for i in items if i["group"] not in ("payload",))
     add("growth margin", GROWTH_MARGIN * empty, x_cargo, 0, 0, "margin", f"{GROWTH_MARGIN:.0%} of the empty mass")
     b = CATALOGUE["battery"][battery_key or p["battery"]]
+    if p.get("battery_x"):                                       # Stage 2: two parallel half-packs at stations set by k4tq_sizing.pack
+        hx, hy, hz = battery_half_box(battery_key or p["battery"])
+        for name, fx in zip(("A (nose)", "B (mid)"), p["battery_x"]):
+            items.append({"item": f"battery {name} {battery_key or p['battery']} half", "mass_kg": b["mass_kg"] / 2, "x": fx * Lf, "y": 0.0,
+                          "z": -p["fuselage_height"] / 2 + 0.010 + hz / 2, "group": "battery", "source": b["source"] + " — half of the pack, in parallel",
+                          "clipped": False, "box": (hx, hy, hz)})
+        return items
     target = x_cg_target if x_cg_target is not None else L["wings"]["front"]["x_pivot"] + 0.45 * L["stagger"]
     m = sum(i["mass_kg"] for i in items)
     mx = sum(i["mass_kg"] * i["x"] for i in items)
@@ -364,6 +444,14 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
     items.append({"item": f"battery {battery_key or p['battery']}", "mass_kg": b["mass_kg"], "x": xb, "y": 0.0, "z": -0.035, "group": "battery",
                   "source": b["source"], "clipped": clipped})
     return items
+
+
+def battery_half_box(key: str) -> tuple:
+    """The outer size [m] of one half-pack: its cells standing (21700: Ø21.5 × 70 mm, + wrap and BMS lead), three across."""
+    bt = CATALOGUE["battery"][key]
+    n = bt["cells_s"] * bt["cells_p"] // 2
+    nx = math.ceil(n / 3)
+    return (0.0215 * nx + 0.004, 0.0645 + 0.004, 0.074)
 
 
 def cg_inertia(items: list[dict]) -> dict:

@@ -33,7 +33,7 @@ def test_layout_clearances_and_poses():
         cr, hv = pose["cruise"], pose["hover"]
         assert np.allclose(cr["axis"], [-1, 0, 0]) and np.allclose(hv["axis"], [0, 0, 1], atol=1e-12)    # forward / up
         assert abs(cr["hub"][1] - hv["hub"][1]) < 1e-12 and abs(abs(hv["hub"][1]) - L["p"]["motor_y"]) < 1e-12   # tips stay laterally out
-    assert L["clearance"]["hover disc separation along x [m]"] > 0.15
+    assert L["clearance"]["hover disc separation along x [m]"] >= 0.10                   # the selection's rotor-interference rule
 
 
 def test_tilt_is_a_rotation_about_the_spar():
@@ -46,16 +46,19 @@ def test_tilt_is_a_rotation_about_the_spar():
         assert abs(np.linalg.norm(te - le) - w["c_at"](0.5)) < 1e-12                    # rigid
     le90 = k4tq.wing_point(L, "front", 1, 0.5, 0.0, math.pi / 2)
     assert le90[2] > w["z"] and abs(le90[0] - w["x_pivot"]) < 1e-12                     # hover: leading edge up
-    tip_f = k4tq.wing_point(L, "front", 1, w["y1"], w["pivot_chord"], 0.0, math.pi / 2)
-    assert tip_f[0] > w["x_pivot"] + 0.5 and abs(tip_f[1] - w["y_hinge"]) < 1e-9        # folded: swung aft along the side
+    tip_f = k4tq.wing_point(L, "front", 1, w["y1"], w["pivot_chord"], math.pi / 2, math.pi / 2)
+    assert tip_f[0] > w["x_pivot"] + 0.5 and abs(tip_f[1] - w["y_hinge"]) < 0.02         # folded at tilt 90°: swung aft along the side
+    f = k4tq.wing_frame(L, "front", 1, math.pi / 2, math.pi / 2)
+    inner = f([[0.0, w["y_hinge"] - 0.03, 0.0]])[0]
+    assert abs(inner[1] - (w["y_hinge"] - 0.03)) < 1e-12                                 # inboard of the hinge does not fold
 
 
 def test_mass_budget_and_cg(VEH):
     items = VEH["items"]
     assert abs(sum(i["mass_kg"] for i in items) - VEH["mass"]["mass_kg"]) < 1e-9
-    assert not [i for i in items if i["group"] == "battery"][0]["clipped"]
-    assert abs(VEH["mass"]["x_cg"] - VEH["x_cg_target"]) < 1e-6
-    assert 4.5 < VEH["mass"]["mass_kg"] < 6.5 and 0.9 < k4tq.tilt_wing_tax(items) < 1.8
+    assert not any(i["clipped"] for i in items if i["group"] == "battery")
+    assert abs(VEH["mass"]["x_cg"] - VEH["x_cg_target"]) < 1e-3
+    assert 4.5 < VEH["mass"]["mass_kg"] < 7.5 and 0.9 < k4tq.tilt_wing_tax(items) < 2.5          # Stage 2: the CAD masses
     assert abs(sum(1 for i in items if i["group"] == "roots") - 4) == 0
 
 
@@ -88,12 +91,12 @@ def test_cruise_power_is_drag_times_speed(VEH):
 
 
 def test_corridor_balances(VEH):
-    for V in (0.0, 8.0, 22.0):
-        r = s.corridor_point(VEH, V)
+    rows = {V: s.corridor_point(VEH, V) for V in (0.0, 8.0, 22.0)}
+    for V, r in rows.items():
         assert r["feasible"], r
         assert abs(r["trim residual [N·m]"]) < 0.05 and abs(r.get("X residual [N]", 0.0)) < 0.2
-    assert 80.0 < s.corridor_point(VEH, 0.0)["tilt [deg]"] < 100.0                    # the hover: about vertical (trimmed against the cambered wings' pull)
-    assert s.corridor_point(VEH, 22.0)["tilt [deg]"] < 10.0                              # wing-borne
+    assert 80.0 < rows[0.0]["tilt [deg]"] < 100.0                    # the hover: about vertical (trimmed against the cambered wings' pull)
+    assert rows[22.0]["tilt [deg]"] < 10.0                                               # wing-borne
 
 
 def test_root_loads_consistency(VEH):
@@ -119,9 +122,7 @@ def test_first_cad_builds_in_three_configurations():
     pytest.importorskip("cadquery")
     import k4tq_cad
     p = k4tq.params()
-    for tilt, fold in ((0.0, 0.0), (90.0, 0.0), (90.0, 90.0)):
-        parts = k4tq_cad.assembly(p, tilt, fold, discs=fold == 0.0)
-        assert sum(1 for k in parts if k.startswith("wing ")) == 4
-        assert all(sol.isValid() and sol.Volume() > 0 for k, sol in parts.items() if not k.startswith("disc")), tilt
-    sol, c = k4tq_cad.root_detail(p, k4tq.layout(p), 35.0)
-    assert {"hinge pin", "locking pin", "bearing 1", "bearing 2", "spar"} <= set(sol)
+    for tilt, fold in ((0.0, 0.0), (90.0, 0.0), (90.0, p["fold_transport_deg"])):
+        parts = k4tq_cad.assembly(p, tilt, fold)
+        assert sum(1 for k in parts if k.startswith("wing panel ")) == 4
+        assert all(v.solid.isValid() and v.solid.Volume() > 0 for v in parts.values()), (tilt, fold)

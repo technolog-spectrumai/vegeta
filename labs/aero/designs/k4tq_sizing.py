@@ -297,6 +297,9 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
         p = dict(p, fin_area=fin0["fin area needed [m²]"])
         L = k4tq.layout(p)
     target = cg_target(L, a)
+    if "cargo_station" not in over:
+        p = pack(p, target)
+        L = k4tq.layout(p)
     items = k4tq.mass_table(L, x_cg_target=target)
     ci = k4tq.cg_inertia(items)
     if p["fin"] and not over.get("fin_area"):                          # second pass: the fin for the real CG
@@ -311,6 +314,40 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
     W = ci["mass_kg"] * G
     return {"variant": variant, "p": p, "L": L, "aero": a, "section": sec, "items": items, "mass": ci, "W": W, "stall": st, "drag": d,
             "x_cg_target": target, "battery": k4tq.battery(p), "drive": drive(p)}
+
+
+def pack(p: dict, target: float, gap: float = 0.005) -> dict:
+    """Stage 2 packing along the fuselage floor. The pack is split into two parallel halves (also a redundancy: one
+    failed half leaves half the energy): half A at the aft end of the nose bay, just ahead of the front wing station's
+    frame; the avionics in the tail bay behind the rear station (they balance the heavier nose); half B just behind the front station, then the cargo cartridge, then the
+    parachute (Ø70, its line near the CG) — that group slides as one until the CG is on the target (the CG is linear in
+    its station), bounded by the front station's servo and the rear station's frame. Returns the parameters with
+    ``battery_x``, ``cargo_station``, ``parachute_station`` and ``avionics_station`` set."""
+    Lf = p["fuselage_length"]
+    cx = p["cargo_box"][0]
+    hx = k4tq.battery_half_box(p["battery"])[0]
+    L = k4tq.layout(p)
+    x_f, x_r = L["wings"]["front"]["x_pivot"], L["wings"]["rear"]["x_pivot"]
+    xa = x_f - 0.032 - gap - hx / 2
+    lo = x_f + 0.050 + hx / 2                                       # half B behind the front servo
+    span = hx / 2 + gap + cx + 0.040 + 0.035                        # half B's centre to the parachute's aft face
+    hi = x_r - 0.035 - span
+
+    def stations(sb):
+        xc = sb + hx / 2 + gap + cx / 2
+        return dict(p, battery_x=(xa / Lf, sb / Lf), cargo_station=xc / Lf, parachute_station=(xc + cx / 2 + 0.040) / Lf,
+                    avionics_station=(x_r + 0.050 + 0.055) / Lf)            # the avionics in the tail bay behind the rear station
+    sb = lo
+    for _ in range(3):
+        q = stations(sb)
+        it = k4tq.mass_table(k4tq.layout(q))
+        M = sum(i["mass_kg"] for i in it)
+        Mx = sum(i["mass_kg"] * i["x"] for i in it)
+        mg = sum(i["mass_kg"] for i in it if i["group"] in ("cargo", "payload", "safety") or i["item"].startswith("battery B"))
+        sb = float(np.clip(sb + (target * M - Mx) / mg, lo, hi))
+    q = stations(sb)
+    q["packing_clipped"] = not (lo + 1e-6 < sb < hi - 1e-6)
+    return q
 
 
 def k_total(veh: dict) -> float:
@@ -348,7 +385,9 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
         rows.append({"V [m/s]": V, "CL": CL, "L/D": CL / CD, "drag [N]": D, "thrust each [N]": T, "rpm": dp["rpm"], "throttle": dp["throttle"],
                      "propulsive eff.": D * V / (P - AVIONICS_W), "electrical [W]": P, "endurance [min]": Ewh / P * 60, "range [km]": Ewh / P * V * 3.6,
                      "feasible": True})
-    df = pd.DataFrame(rows).set_index("V [m/s]")
+    cols = ["V [m/s]", "CL", "L/D", "drag [N]", "thrust each [N]", "rpm", "throttle", "propulsive eff.", "electrical [W]", "endurance [min]", "range [km]", "feasible"]
+    df = pd.DataFrame(rows, columns=cols).set_index("V [m/s]")
+    df["feasible"] = df["feasible"].fillna(False).astype(bool)
     df.attrs["label"] = label("CALC")
     df.attrs["n_running"] = n_running
     return df
@@ -356,6 +395,9 @@ def cruise(veh: dict, *, speeds=np.arange(10.0, 33.0, 1.0), n_running: int = 4) 
 
 def best_speeds(df: pd.DataFrame) -> dict:
     ok = df[df["feasible"]]
+    if not len(ok):
+        return {"best endurance V [m/s]": math.nan, "endurance [min]": 0.0, "best range V [m/s]": math.nan, "range [km]": 0.0, "max level V [m/s]": math.nan,
+                "L/D max": math.nan}
     return {"best endurance V [m/s]": float(ok["endurance [min]"].idxmax()), "endurance [min]": float(ok["endurance [min]"].max()),
             "best range V [m/s]": float(ok["range [km]"].idxmax()), "range [km]": float(ok["range [km]"].max()),
             "max level V [m/s]": float(ok.index.max()), "L/D max": float(ok["L/D"].max())}
@@ -389,7 +431,7 @@ def hover(veh: dict) -> dict:
 
 
 # ================================================================================================= propeller selection
-def prop_sweep(veh: dict, props=("13x6.5", "13x8", "14x7", "14x8.5", "15x5", "15x8", "15x10"), V_cruise: float = 21.0, V_dash: float = 26.0) -> pd.DataFrame:
+def prop_sweep(veh: dict, props=("13x8", "14x8.5", "15x8", "15x10", "16x10", "17x10"), V_cruise: float = 23.0, V_dash: float = 28.0) -> pd.DataFrame:
     """Each propeller on the motor: hover power at this vehicle's hover thrust, cruise power at V_cruise (4 and 2
     motors), thrust left at V_dash against the drag there, static T/W; the hover-against-cruise compromise."""
     L, W, p = veh["L"], veh["W"], veh["p"]
@@ -700,15 +742,16 @@ def root_loads(veh: dict) -> dict:
     T_flight = max(aero_cruise, aero_transition) + mass_offset + thrust_offset + gyro + accel
     T_design = max(ULTIMATE * T_flight, handling)
     servo = cat["root"]["tilt servo"]
-    servo_Nm, ratio = 2.9, 2.0
-    # bearings 6804 at 50 mm spacing take the root moment as a couple
-    s_b = 0.050
+    servo_Nm, ratio = 2.9, p["z_gear"] / p["z_pinion"]
+    # the stub's two 6804 bearings (``bearing_spacing`` apart) take the root moment as a couple
+    s_b = p["bearing_spacing"]
     F_bearing = M_ult / s_b + shear_ult / 2
-    # fold hinge: the vertical pin takes the lift moment as a couple on two lugs 60 mm apart; the latch takes the
-    # thrust's moment about the vertical hinge axis
-    F_lug = M_ult / 0.060
-    M_fold = ULTIMATE * T_max * r_mot
-    F_latch = M_fold / 0.030
+    # fold hinge (pin along the chord, outboard of the skin): the lift moment (about the chord) is held by the locking
+    # pin against the hinge pin (``lock_couple`` apart); the thrust's moment (about the thickness axis) by the outer
+    # lugs (``knuckle_spread`` apart along the chord)
+    M_thrust = ULTIMATE * T_max * r_mot
+    F_latch = M_ult / p["lock_couple"]
+    F_lug = M_thrust / p["knuckle_spread"]
     # spar tube
     E, Gm, sa, rho_c = (k4tq.CARBON_TUBE[k] for k in ("E", "G", "sigma_allow", "rho"))
     tubes = []
@@ -739,8 +782,9 @@ def root_loads(veh: dict) -> dict:
             "actuator design torque [N·m]": T_design, "ground handling torque [N·m]": handling,
             "actuator available at the spar [N·m]": servo_Nm * ratio, "actuator reserve": servo_Nm * ratio / T_design, "actuator": servo["source"] + f", {ratio:g}:1",
             "bearing radial (ultimate) [N]": F_bearing, "bearing static rating C0 [N]": 2470.0, "bearing static reserve": 2470.0 / F_bearing,
-            "fold hinge lug force (ultimate) [N]": F_lug, "fold latch force (ultimate) [N]": F_latch,
-            "fold latch": "the latch carries the thrust's moment about the vertical hinge: a structural locking pin, not a detent",
+            "fold lug force from the thrust (ultimate) [N]": F_lug, "locking pin force from the lift (ultimate) [N]": F_latch,
+            "locking pin shear stress, Ø6 double shear [MPa]": F_latch / (2 * math.pi * 0.003 ** 2) / 1e6,
+            "fold latch": "the locking pin carries the lift moment as a couple with the hinge pin: a structural pin in double shear, not a detent",
             "spar tubes": tdf, "spar chosen": chosen, "drive stiffness required [N·m/rad]": k_drive, "wing pitch mode on the drive [Hz]": f_pitch,
             "hover 1P [Hz]": rpm_h / 60, "divergence speed of the all-moving wing [m/s]": math.sqrt(2 * q_div / RHO) if math.isfinite(q_div) else math.inf,
             "label": "ESTIMATE"}
@@ -861,7 +905,7 @@ def folded_best(L: dict) -> dict:
     """The smallest tube over fold angles (70–90°) and the tilt (0, 45, 90°) at which the wings fold; the front folded
     wing must clear the rear root (its tip aft of it at a different height or outboard of it)."""
     best = None
-    for tilt in (0.0, 45.0, 90.0):
+    for tilt in (90.0,):                                        # the wings fold only at 90° (the hinge pin vertical)
         for fold in (70.0, 75.0, 80.0, 85.0, 90.0):
             env = k4tq.folded_envelope(L, fold, tilt)
             # clearance: the folded front wing (chord band) against the rear root fitting at y_hinge..y0, z_rear
@@ -883,6 +927,9 @@ def mission(veh: dict, *, radius_km: float | None = None, wind: float | None = N
     cr = cr if cr is not None else cruise(veh, n_running=2)
     h = hover(veh)
     ok = cr[cr["feasible"]]
+    if not len(ok):
+        return {"legs": {}, "energy used [Wh]": math.inf, "energy with reserve [Wh]": math.inf, "usable pack [Wh]": veh["battery"]["usable_wh"],
+                "margin [Wh]": -math.inf, "closes": False, "label": label("CALC"), "note": "no feasible cruise speed"}
     if P_transition is None:
         cor = cor if cor is not None else corridor(veh, speeds=np.arange(0.0, 18.0, 2.0))
         P_transition = float(cor[cor["feasible"]]["electrical [W]"].mean())
@@ -919,7 +966,7 @@ def payload_range(variant: str = k4tq.MAIN, *, payloads=(0.0, 0.25, 0.5, 0.75, 1
             cr = cruise(veh, n_running=2)
             P_tr = P_ref * (veh["W"] / ref["W"]) ** 1.5
             lo, hi = 0.0, 60.0
-            if not mission(veh, radius_km=0.0, cr=cr, P_transition=P_tr)["closes"]:
+            if not mission(veh, radius_km=0.0, cr=cr, P_transition=P_tr)["closes"]:      # (also when no cruise speed is feasible)
                 rad = 0.0
             else:
                 for _ in range(22):
@@ -984,6 +1031,10 @@ def quad_reference(name: str, prop_key: str, *, k4: dict) -> dict:
                      "disc tilt [deg]": math.degrees(a_tilt), "T each / max": T / T_max0})
     df = pd.DataFrame(rows).set_index("V [m/s]")
     feas = df[df["T each / max"] < 0.8]
+    if not len(feas):
+        return {"name": name, "propeller": prop_key, "mass [kg]": m, "hover [W]": P_hover, "hover minutes": usable / P_hover * 60, "CdA [m²]": CdA,
+                "table": df, "best range V [m/s]": math.nan, "range [km]": 0.0, "endurance [min]": 0.0, "max speed (T ≤ 80 % max) [m/s]": 0.0,
+                "footprint [m]": 2 * (arm_len + R), "T/W": 4 * max_thrust(drv, 0.0) / W, "label": label("CALC"), "note": "cannot hover below 80 % of its thrust"}
     best_r = float(feas["range [km]"].idxmax())
     footprint = 2 * (arm_len + R)
     return {"name": name, "propeller": prop_key, "mass [kg]": m, "hover [W]": P_hover, "hover minutes": usable / P_hover * 60, "CdA [m²]": CdA,
@@ -995,6 +1046,8 @@ def quad_mission_radius(q: dict, k4: dict) -> float:
     """The quad's radius on the R3 mission (same hover, wind, reserve; no transitions; cruise at the best ground-km
     speed per leg)."""
     df = q["table"][q["table"]["T each / max"] < 0.8]
+    if not len(df):
+        return 0.0
     w = MISSION["wind_m_s"]
     usable = k4["battery"]["usable_wh"] * (1 - MISSION["reserve_fraction"])
     hover_wh = MISSION["hover_total_s"] * q["hover [W]"] / 3600
@@ -1072,7 +1125,8 @@ def comparison(evals: dict, quads: dict) -> pd.DataFrame:
 def run_all(variants=("A", "B", "C")) -> dict:
     evals = {v: evaluate(v) for v in variants}
     k4 = evals[k4tq.MAIN]["veh"]
-    quads = {"Q-13 (13x5.5)": quad_reference("Q-13", "13x5.5", k4=k4), "Q-best (17x5.8)": quad_reference("Q-best", "17x5.8", k4=k4)}
+    q_same = f"Q-{k4['p']['prop'].split('x')[0]} ({k4['p']['prop']}, K4TQ's drive)"
+    quads = {q_same: quad_reference("Q-same", k4["p"]["prop"], k4=k4), "Q-best (17x5.8)": quad_reference("Q-best", "17x5.8", k4=k4)}
     for q in quads.values():
         q["mission radius [km]"] = quad_mission_radius(q, k4)
     return {"evals": evals, "quads": quads, "comparison": comparison(evals, quads), "selection": selection(evals), "props": prop_sweep(k4), "payload_range": payload_range(k4tq.MAIN),
@@ -1127,7 +1181,10 @@ def write_report(res: dict, out: Path = DATA) -> dict:
     md.append("## Verdict\n")
     md.append(verdict_text(res) + "\n")
     md.append("## 1.15 Selection — " + res["selection"].attrs["label"] + "\n")
-    md.append(_df(res["selection"].rename_axis("config")) + f"\n\nBaseline: **K4TQ-{k4tq.MAIN}** (larger rear wing, 1.2 m fuselage, 15x10) — approved 2026-10-21 after the fuselage-length sweep.\n")
+    bp = res["evals"][k4tq.MAIN]["veh"]["p"]
+    md.append(_df(res["selection"].rename_axis("config")) + f"\n\nBaseline: **K4TQ-{k4tq.MAIN}** (larger rear wing, {bp['fuselage_length']:.1f} m fuselage, {bp['prop']} on "
+              f"{k4tq.CATALOGUE['motor'][bp['motor']]['name']}, {bp['battery']}; masses: {bp.get('cad_mass_status', 'estimates')}) — the fuselage approved 2026-10-21; "
+              "the propulsion and the pack revised by Stage 2.8 (the CAD masses).\n")
     md.append("\n## 1.15 Configurations and the quadcopter references\n")
     md.append(_df(res["comparison"].rename_axis("config")) + "\n")
     md.append("\n## 1.3 Mass budget (A) — ESTIMATE\n")
@@ -1206,13 +1263,13 @@ ASSUMPTIONS = [
 def verdict_text(res: dict) -> str:
     cmp = res["comparison"]
     A = cmp.loc[f"K4TQ-{k4tq.MAIN}"]
-    q13, qb = cmp.loc["Q-13 (13x5.5)"], cmp.loc["Q-best (17x5.8)"]
+    q13, qb = cmp.loc[[k for k in cmp.index if k.startswith("Q-") and "best" not in k][0]], cmp.loc["Q-best (17x5.8)"]
     better_range = A["still-air range [km]"] / max(qb["still-air range [km]"], q13["still-air range [km]"])
     lines = [
-        f"- **Feasible on paper (ESTIMATE/{('MOCK' if res['mocked'] else 'CALC')})**: K4TQ-A takes off at {A['take-off mass [kg]']:.2f} kg with 1 kg of payload, "
+        f"- **Feasible on paper (ESTIMATE/{('MOCK' if res['mocked'] else 'CALC')})**: K4TQ-{k4tq.MAIN} takes off at {A['take-off mass [kg]']:.2f} kg with 1 kg of payload, "
         f"hovers on {A['hover [W]']:.0f} W (T/W {A['T/W']:.2f}) and cruises at {A['best range V [m/s]']:.0f} m/s on {A['cruise power at best range [W]']:.0f} W; "
         f"the R3 mission {'closes' if A['R3 mission closes'] else 'does NOT close'} (margin {A['R3 margin [Wh]']:.0f} Wh).",
-        f"- **Against the same-size quadcopters**: still-air range {A['still-air range [km]']:.0f} km against {q13['still-air range [km]']:.0f} km (Q-13) and "
+        f"- **Against the same-size quadcopters**: still-air range {A['still-air range [km]']:.0f} km against {q13['still-air range [km]']:.0f} km ({q13.name}) and "
         f"{qb['still-air range [km]']:.0f} km (Q-best) — ×{better_range:.1f}; top speed {A['max speed [m/s]']:.0f} against {qb['max speed [m/s]']:.0f} m/s; "
         f"but it hovers on {A['hover [W]'] / qb['hover [W]']:.2f}× Q-best's power, carries {A['tilt-wing tax [kg]']:.2f} kg of wings and mechanisms, "
         "and adds four actuators, four hinges and a conversion to the failure modes.",

@@ -74,8 +74,13 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   - against fixes: a seal (brush or elastomer lip), a root disc fairing that turns with the wing, the cartridge sunk inside the fuselage line.
 
   Feed the result back into the drag build-up and the range.
+
+  Stage 2 (2026-10-21) moved the tilt drive (stub, bearings, servo, gears) inside the fuselage: only the 12 mm fold knuckle, the hinge and locking pins and
+  the stub's passage through the skin remain in the flow. The CFD question narrows to that knuckle, its gap and the root plate at 0 / ±5° tilt.
 - [x] K4.2 Stage 1: the transition corridor solved as one least-power balance per speed (tilt, rear differential tilt, thrust, split; SLSQP with continuation): trimmed everywhere; wing-borne from 21 m/s, the free span stalled 1–20 m/s (the CFD question, R10); `phase1.md` regenerated
 - [x] K4.3 Fuselage length: config B at 1.2 m with 15x10 (disc gap 159 mm, front motor at 63 % in the hover, the best R3 margin) — approved 2026-10-21
+- [x] K4.5 Stage 2: the CAD masses (+12 %) broke the Stage 1 design (the mission −18 Wh, the sagged T/W 1.43): revised to MN501-S KV300, 16x10, 6S3P (`designs/data/k4tq/stage2_motor_sweep.csv`), Stage 1 rerun on the CAD masses (revision B)
+- [ ] K4.6 Motor data to verify with T-Motor's datasheets before the BOM (Stage 4): the MN501-S KV300's no-load current (estimated 1.0 A) and its 40 A / 180 s rating at the hover's 6S current; the MN5006 / MN505-S rows likewise
 - [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
 
 ## Stage V5 — Later: graduations to Piccolo
