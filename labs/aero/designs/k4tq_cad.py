@@ -234,3 +234,28 @@ if __name__ == "__main__":
     out = Path(__file__).resolve().parent / "data" / "k4tq"
     p = k4tq.params()
     print(render(out / "figures" / "k4tq_first_cad.png", p))
+
+
+def compare_top(path: Path, variants: list[tuple[str, dict]], tilt_deg: float = 90.0) -> Path:
+    """Top views (from above) of several parameter sets side by side, same scale: the hover disc gaps and the lengths."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(6 * len(variants), 7), dpi=110)
+    asm = [(t, p, assembly(p, tilt_deg, 0.0)) for t, p in variants]
+    P = np.vstack([np.array([(q.x, q.y, q.z) for q in s.tessellate(2.0)[0]]) for _, _, a in asm for k, s in a.items()])
+    lim = (P.min(0) - 20, P.max(0) + 20)
+    for i, (t, p, a) in enumerate(asm):
+        ax = fig.add_subplot(1, len(variants), i + 1, projection="3d")
+        _draw(ax, a, elev=90, azim=-90, title=t, lim=lim, alpha_disc=0.25)
+        L = k4tq.layout(p)
+        gap = L["clearance"]["hover disc separation along x [m]"] * 1e3
+        hf, hr = L["poses"][("front", 1)]["hover"]["hub"] * MM, L["poses"][("rear", 1)]["hover"]["hub"] * MM
+        R = L["prop"]["R"] * MM
+        ax.plot([hf[0] + R, hr[0] - R], [hf[1]] * 2, [hf[2] + 40] * 2, color="#c0392b", lw=2)
+        ax.text((hf[0] + hr[0]) / 2, hf[1] + 60, hf[2] + 40, f"{gap:.0f} mm", color="#c0392b", fontsize=10, ha="center")
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, facecolor="white")
+    plt.close(fig)
+    return path
