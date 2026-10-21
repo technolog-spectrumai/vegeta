@@ -185,11 +185,12 @@ VARIANTS = {
 }
 VARIANTS["A"] = VARIANTS["A1"]                                  # the earlier name of Cathy
 VARIANTS["A2"] = {**VARIANTS["A1"], "title": "K4TQ-A2: Cathy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
-VARIANTS["F"] = {**VARIANTS["A1"], "title": "K4TQ-F: Cathy's airframe with the sections of the NeuralFoil study (front NACA 4415, rear NACA 2415)",
-                 "section_front": "NACA 4415", "section_rear": "NACA 2415"}
-VARIANTS["F2"] = {**VARIANTS["F"], "title": "K4TQ-F2: K4TQ-F fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
+VARIANTS["F1"] = {**VARIANTS["A1"], "title": "K4TQ-F1 \"Freddy\": Cathy's airframe with the sections of the NeuralFoil study (front NACA 4415, rear NACA 2415)",
+                  "section_front": "NACA 4415", "section_rear": "NACA 2415"}
+VARIANTS["F"] = VARIANTS["F1"]                                  # the earlier name of Freddy
+VARIANTS["F2"] = {**VARIANTS["F1"], "title": "K4TQ-F2: Freddy fully autonomous (Jetson Orin NX companion, stereo + downward perception)", "autonomy": True}
 MAIN = "A1"                        # Cathy: the larger rear wing at 1.2 m, approved 2026-10-21
-NICKNAME = {"A1": "Cathy", "A": "Cathy", "A2": "Cathy autonomous", "F": "", "F2": "autonomous"}
+NICKNAME = {"A1": "Cathy", "A": "Cathy", "A2": "Cathy autonomous", "F1": "Freddy", "F": "Freddy", "F2": "Freddy autonomous"}
 
 
 def section_of(p: dict, which: str) -> str:
@@ -222,8 +223,7 @@ def params(variant: str = MAIN, **over) -> dict:
     p.update(VARIANTS[variant])
     p.update(over)
     p["variant"] = variant if not over else p.get("variant", variant)
-    if p["variant"] == "A":
-        p["variant"] = "A1"
+    p["variant"] = {"A": "A1", "F": "F1"}.get(p["variant"], p["variant"])
     if p.get("cad_mass") == "auto":
         p["cad_mass"] = None
         p["cad_mass_status"] = "none: estimates used"

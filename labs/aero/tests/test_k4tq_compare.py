@@ -1,4 +1,4 @@
-"""K4TQ-A1 / A2 / F / F2 compared: the per-wing sections reach the stall rule and the CAD, the Jetson reaches the power
+"""K4TQ-A1 / A2 / F1 / F2 compared: the per-wing sections reach the stall rule and the CAD, the Jetson reaches the power
 budget, the spar rule tells A from F (fast: no corridor, no extended mission)."""
 import k4tq
 import k4tq_compare as kc
@@ -13,4 +13,4 @@ def test_four_designs_compare():
     assert float(a2["electronics [W]"]) - float(a1["electronics [W]"]) > 20.0        # the Jetson and the perception
     assert float(f2["take-off mass [kg]"]) > float(f["take-off mass [kg]"])
     assert all(ev[v]["veh"]["p"]["cad_mass_status"] == "CAD" for v in kc.DESIGNS)
-    assert k4tq.section_of(ev["F"]["veh"]["p"], "front") == "NACA 4415" and k4tq.section_of(ev["F"]["veh"]["p"], "rear") == "NACA 2415"
+    assert k4tq.section_of(ev["F1"]["veh"]["p"], "front") == "NACA 4415" and k4tq.section_of(ev["F1"]["veh"]["p"], "rear") == "NACA 2415"

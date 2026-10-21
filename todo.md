@@ -81,9 +81,9 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] K4.3 Fuselage length: config B at 1.2 m with 15x10 (disc gap 159 mm, front motor at 63 % in the hover, the best R3 margin) — approved 2026-10-21
 - [x] K4.5 Stage 2: the CAD masses (+12 %) broke the Stage 1 design (the mission −18 Wh, the sagged T/W 1.43): revised to MN501-S KV300, 16x10, 6S3P (`designs/data/k4tq/stage2_motor_sweep.csv`), Stage 1 rerun on the CAD masses (revision B)
 - [ ] K4.6 Motor data to verify with T-Motor's datasheets before the BOM (Stage 4): the MN501-S KV300's no-load current (estimated 1.0 A) and its 40 A / 180 s rating at the hover's 6S current; the MN5006 / MN505-S rows likewise
-- [x] K4.7 Wing sections by flight phase (NeuralFoil, `designs/k4tq_sections.py`, `exp/K4TQ_airfoils.ipynb`): front NACA 4415, rear NACA 2415 → K4TQ-F / F2; the four designs compared in `exp/K4TQ_compare.ipynb`
-- [ ] K4.8 K4TQ-A1 / A2 (NACA 2412 front) leave 14.4 mm of section depth at the 120 mm front tip chord for a Ø16 spar that needs 18 mm: adopt K4TQ-F's sections, or taper the spar to Ø12 at the tip (Stage 4 structure decides)
-- [ ] K4.9 Run the section CFD check (`exp/K4TQ_airfoils.ipynb`, DEBUG = False, ~30–45 min) — confirm NeuralFoil's ranking before freezing F
+- [x] K4.7 Wing sections by flight phase (NeuralFoil, `designs/k4tq_sections.py`, `exp/K4TQ_airfoils.ipynb`): front NACA 4415, rear NACA 2415 → K4TQ-F1 "Freddy" / F2; the four designs compared in `exp/K4TQ_compare.ipynb`
+- [ ] K4.8 K4TQ-A1 / A2 (NACA 2412 front) leave 14.4 mm of section depth at the 120 mm front tip chord for a Ø16 spar that needs 18 mm: adopt K4TQ-F1's (Freddy's) sections, or taper the spar to Ø12 at the tip (Stage 4 structure decides)
+- [ ] K4.9 Run the section CFD check (`exp/K4TQ_airfoils.ipynb`, DEBUG = False, ~30–45 min) — confirm NeuralFoil's ranking before freezing Freddy
 - [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
 
 ## Stage V5 — Later: graduations to Piccolo
