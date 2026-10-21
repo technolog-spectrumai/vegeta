@@ -62,6 +62,21 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage K4 — K4TQ tilt-wing medical transport (plan: `labs/aero/notebooks/k4_plan.md`, `k4_work.md`)
+- [ ] K4.1 **Check the drag of the wing-turning mechanism.** Each wing root is a rotating joint (±90° tilt) next to a fixed fuselage, so it cannot be faired like a fixed wing root. Sources to quantify:
+  - the gap between the rotating root rib and the fuselage side (leakage from the pressure to the suction side: lost root lift, more induced drag);
+  - the 42 mm tilt cartridge and the fold-hinge lugs standing out of the fuselage line;
+  - any servo or gear bulge;
+  - the fairing step at intermediate tilt (transition) and at the cruise trim angles (±5°).
+
+  Stage 1 assumes 4 × 4 cm² of drag area for all of it (`k4tq_sizing.ROOT_GAP_CDA`, ESTIMATE). Check it:
+  - with a root-junction CFD case in Stage 3 (cruise at 0° and ±5° tilt, gap 1 / 2 / 4 mm);
+  - against fixes: a seal (brush or elastomer lip), a root disc fairing that turns with the wing, the cartridge sunk inside the fuselage line.
+
+  Feed the result back into the drag build-up and the range.
+- [ ] K4.2 Stage 1: the transition corridor's pitch trim does not converge at 18–20 m/s (where the aircraft becomes wing-borne): finish the thrust-split + differential-tilt trim, then regenerate `designs/data/k4tq/phase1.md`
+- [ ] K4.3 Fuselage length: 1.0 / 1.1 / 1.2 m (the sweep favours config B at 1.2 m with 15x10: disc gap 159 mm, front motor at 64 % in the hover, best mission margin) — awaiting the decision
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)
