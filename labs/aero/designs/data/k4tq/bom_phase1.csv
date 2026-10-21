@@ -1,0 +1,55 @@
+item,group,mass [g],make/buy,source / material
+motor front L,propulsion,150.0,buy,T-Motor MN4014 KV400 (Navigator)
+propeller front L,propulsion,48.0,buy,"APC 15x10E class, folding hub included"
+ESC front L,propulsion,28.0,buy,40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)
+nacelle front L,structure,22.0,make,printed PA-CF
+wing panel front L,structure,70.2,make,0.7 kg/m² composite
+spar front L,structure,43.5,make,carbon tube Ø16×14
+wing root (tilt + fold) front L,roots,197.0,hybrid,tilt servo + reduction 2:1 + bearings 6804-2RS (2) + housing + fold hinge + structural latch + encoder + fasteners + clamp
+power wiring front L,systems,52.2,make,
+motor front R,propulsion,150.0,buy,T-Motor MN4014 KV400 (Navigator)
+propeller front R,propulsion,48.0,buy,"APC 15x10E class, folding hub included"
+ESC front R,propulsion,28.0,buy,40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)
+nacelle front R,structure,22.0,make,printed PA-CF
+wing panel front R,structure,70.2,make,0.7 kg/m² composite
+spar front R,structure,43.5,make,carbon tube Ø16×14
+wing root (tilt + fold) front R,roots,197.0,hybrid,tilt servo + reduction 2:1 + bearings 6804-2RS (2) + housing + fold hinge + structural latch + encoder + fasteners + clamp
+power wiring front R,systems,52.2,make,
+motor rear L,propulsion,150.0,buy,T-Motor MN4014 KV400 (Navigator)
+propeller rear L,propulsion,48.0,buy,"APC 15x10E class, folding hub included"
+ESC rear L,propulsion,28.0,buy,40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)
+nacelle rear L,structure,22.0,make,printed PA-CF
+wing panel rear L,structure,70.2,make,0.7 kg/m² composite
+spar rear L,structure,43.5,make,carbon tube Ø16×14
+wing root (tilt + fold) rear L,roots,197.0,hybrid,tilt servo + reduction 2:1 + bearings 6804-2RS (2) + housing + fold hinge + structural latch + encoder + fasteners + clamp
+power wiring rear L,systems,52.2,make,
+motor rear R,propulsion,150.0,buy,T-Motor MN4014 KV400 (Navigator)
+propeller rear R,propulsion,48.0,buy,"APC 15x10E class, folding hub included"
+ESC rear R,propulsion,28.0,buy,40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)
+nacelle rear R,structure,22.0,make,printed PA-CF
+wing panel rear R,structure,70.2,make,0.7 kg/m² composite
+spar rear R,structure,43.5,make,carbon tube Ø16×14
+wing root (tilt + fold) rear R,roots,197.0,hybrid,tilt servo + reduction 2:1 + bearings 6804-2RS (2) + housing + fold hinge + structural latch + encoder + fasteners + clamp
+power wiring rear R,systems,52.2,make,
+fuselage shell + frames + hatch,structure,213.3,make,0.6 kg/m² on 0.36 m²
+leg front L,structure,20.0,make,
+leg front R,structure,20.0,make,
+leg rear L,structure,20.0,make,
+leg rear R,structure,20.0,make,
+fin (dorsal + ventral),structure,32.8,make,sized by the directional stability
+insulated cartridge,cargo,200.0,buy,"VIP/EPP-lined removable shell 240 x 120 x 110 mm, ~1.2 l inner, latch"
+shock isolators (4),cargo,16.0,buy,silicone grommet isolators
+temperature sensors (2),cargo,6.0,buy,"TMP117 class (±0.1 °C), two independent channels (R7)"
+temperature logger,cargo,20.0,buy,"independent logger with its own cell and flash, GNSS-timestamped, survives power loss (R7)"
+payload,payload,1000.0,make,medical load (R2)
+flight controller,avionics,40.0,buy,"ArduPilot H7 board (Pixhawk 6C mini class), QuadPlane tilt-wing support"
+GNSS + compass,avionics,30.0,buy,u-blox M10 module
+telemetry (LTE + 868 MHz),avionics,45.0,buy,LTE modem + 868 MHz link (EU band)
+RC receiver,avionics,8.0,buy,ELRS 868 MHz
+power module + BEC,avionics,30.0,buy,"6S power module, 5 V / 7.4 V BECs (servos)"
+airspeed sensor,avionics,10.0,buy,MS4525 pitot (transition schedule needs airspeed)
+remote ID + nav/status lights,avionics,20.0,buy,"EU direct remote ID, blue/white LEDs"
+servo and signal wiring,systems,50.0,make,
+recovery parachute,safety,160.0,buy,1 m² canopy + spring ejector (the four-rotor motor-out case; SORA mitigation)
+growth margin,margin,238.3,make,7% of the empty mass
+battery 6S2P-P45B,battery,898.8,buy,"Molicel P45B (21700, 4.5 Ah, 45 A); pack assembly (spot welded, BMS balance leads)"
