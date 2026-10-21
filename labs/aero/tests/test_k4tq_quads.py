@@ -22,3 +22,4 @@ def test_fpv15_reference():
     assert 1.8 < f0["mass with the pack [kg]"] < 3.0 and f0["T/W"] > 3.0
     assert 25.0 < f0["max speed [m/s]"] <= 45.0                      # vendors list 90–150 km/h for the class
     assert f2["hover minutes"] < f0["hover minutes"] and f2["max speed [m/s]"] <= f0["max speed [m/s]"]
+    assert 10.0 < f0["still-air range [km]"] < 60.0 and f2["R3 radius [km]"] < f0["R3 radius [km]"]
