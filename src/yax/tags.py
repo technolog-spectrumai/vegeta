@@ -186,7 +186,7 @@ def inventory(m: Machine) -> dict:
             out.setdefault(c, []).append(path)
     for c in (m.tags or {}).get("withheld", []):
         out.setdefault(c, None)
-    return dict(sorted(out.items()))
+    return {c: (sorted(v) if v is not None else None) for c, v in sorted(out.items())}
 
 
 def describe(m: Machine) -> str:
