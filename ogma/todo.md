@@ -38,8 +38,8 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] racing quad (Piccolo v2) — the only graduation for now
 
 ## O5 — MuJoCo strategy
-- [ ] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra)
-- [ ] Chiron test: Ogma shape inertia == MuJoCo `inertiafromgeom`
+- [x] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra); `og.mass.Capsule` added
+- [x] Ogma shape inertia == MuJoCo `inertiafromgeom` (Ogma's test_mujoco; Chiron's own test next)
 
 ## O6 — CAD strategy
 - [x] `og.cad` (CadQuery, lazy extra)
