@@ -10,9 +10,10 @@
 #                  recomputed, slowly, on the next real run)
 #   --runs         run outputs: labs/*/_runs, labs/*/output, labs/*/sims/output, the side labs' runs/, the benchmarks'
 #                  results/, runs/, fidia_runs/ — your results: kept unless asked
-#   --old-layout   untracked leftovers in the folders of the layout before labs/ (designs/, notebooks/, scenarios/,
-#                  races/, side_labs/, benchmark/, components/, assemblies/): old run outputs, NOT in git history —
-#                  gone for good (move what you want to keep into labs/<lab>/ first)
+#   --old-layout   the folders of the layouts before labs/ (designs/, notebooks/, scenarios/, races/, side_labs/,
+#                  benchmark/, components/, assemblies/, workflows/, advanced/, mimesis/, ogma/, vegeta-*/): what is left
+#                  there is untracked (stale install stubs, caches, old run outputs, NOT in git history). The notebook
+#                  caches move next to their notebook in labs/ first (they hold hours of CFD); the rest is deleted
 #   --all          all of the above
 #   -n, --dry-run  list what would go, with sizes, and delete nothing
 set -uo pipefail
@@ -22,7 +23,7 @@ DRY=0; CACHES=0; RUNS=0; OLD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -n|--dry-run) DRY=1 ;; --caches) CACHES=1 ;; --runs) RUNS=1 ;; --old-layout) OLD=1 ;;
-    --all) CACHES=1; RUNS=1; OLD=1 ;; -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    --all) CACHES=1; RUNS=1; OLD=1 ;; -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
     *) echo "unknown option: $1 (./clean.sh --help)" >&2; exit 2 ;;
   esac
   shift
@@ -55,11 +56,22 @@ if [ "$RUNS" -eq 1 ]; then
   done
 fi
 
+OLD_DIRS=(designs notebooks scenarios races side_labs benchmark components assemblies workflows advanced mimesis ogma
+          vegeta-cli vegeta-core vegeta-ai vegeta-fidia vegeta-yanus)
 if [ "$OLD" -eq 1 ]; then
-  echo "== the layout before labs/ (untracked leftovers)"
-  for d in designs notebooks scenarios races side_labs benchmark components assemblies; do
-    [ -d "$d" ] || continue
-    add "$d"                                                          # kept below if anything in it is tracked
+  echo "== the layout before labs/"
+  # the notebook caches (computed CFD/FEA results) follow their notebook: cache.notebook("31_nisus") reads
+  # ./31_nisus.cache next to the notebook, now labs/<lab>/<stage>/
+  for c in notebooks/*.cache notebooks/*/*.cache; do
+    [ -d "$c" ] || continue
+    stem="$(basename "$c" .cache)"
+    nb="$(ls labs/*/*/"$stem".ipynb 2>/dev/null | head -1)"
+    if [ -n "$nb" ] && [ ! -e "$(dirname "$nb")/$stem.cache" ]; then
+      if [ "$DRY" -eq 1 ]; then echo "  would move $c → $(dirname "$nb")/"; else mv "$c" "$(dirname "$nb")/" && echo "  moved $c → $(dirname "$nb")/"; fi
+    fi
+  done
+  for d in "${OLD_DIRS[@]}"; do
+    [ -d "$d" ] && add "$d"                                           # kept below if anything in it is tracked
   done
 fi
 
