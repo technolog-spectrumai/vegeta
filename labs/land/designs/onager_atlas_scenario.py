@@ -28,6 +28,7 @@ from vegeta import chiron as ch
 
 import onager_atlas_robot as oar
 import onager_controller as oc
+from vegeta.labkit.control import Phase, smooth
 import onager_robot as orb
 
 __all__ = ["PALLET", "Scene", "terrain", "props", "make_lab", "ForkliftMission", "pallet_job", "run", "timeseries",
@@ -133,7 +134,7 @@ def pallet_job(scene: Scene, *, v_carry: float = 1.0, fork_travel: float = 0.12,
             m.state.update(l0=m.lift, l1=m.fork_height(obs, z))
 
         def update(m, obs, tau):
-            m.lift = m.state["l0"] + (m.state["l1"] - m.state["l0"]) * oc.smooth(tau / T)
+            m.lift = m.state["l0"] + (m.state["l1"] - m.state["l0"]) * smooth(tau / T)
             return tau >= T
         return start, update
 
@@ -142,7 +143,7 @@ def pallet_job(scene: Scene, *, v_carry: float = 1.0, fork_travel: float = 0.12,
             m.state["a0"] = m.tilt
 
         def update(m, obs, tau):
-            m.tilt = m.state["a0"] + (a - m.state["a0"]) * oc.smooth(tau / T)
+            m.tilt = m.state["a0"] + (a - m.state["a0"]) * smooth(tau / T)
             return tau >= T
         return start, update
 
@@ -162,7 +163,7 @@ def pallet_job(scene: Scene, *, v_carry: float = 1.0, fork_travel: float = 0.12,
     stand_x = lambda m, obs: approach_x(m, obs) - (m.lab.robot.forklift["fork_L"] - heel_gap + tip_gap)   # noqa: E731
 
     phases = []
-    add = lambda name, upd, start=None, timeout=30.0: phases.append(oc.Phase(name, upd, start, timeout))  # noqa: E731
+    add = lambda name, upd, start=None, timeout=30.0: phases.append(Phase(name, upd, start, timeout))  # noqa: E731
     st, up = set_fork(fork_travel, 2.0)
     add("forks to travel height", up, st)
     add("drive to the pallet", go(stand_x, 1.0), lambda m, obs: pallet_now(m, obs), timeout=30.0)

@@ -238,7 +238,7 @@ polar, labelled `validated` only when converged), `stall_decision`, `trim_table`
 design identity a run is made for and the tolerance it is read with), `CFD_CAMPAIGNS` / `cfd_specs` / `cfd_case` /
 `cfd_outcome` / `cfd_summary`, `FEA_CAMPAIGNS` / `fea_cases` / `fea_outcome` / `fea_summary`, `import_legacy`,
 `check_run` / `require` / `command` / `find_runs`, `records_frame` / `airframe_correction`; nothing in it runs a solver
-(`labs/aero/campaigns/side_labs/tests` checks). `side_labs_runkit.py` re-exports `labs/aero/campaigns/side_labs/runkit.py` for the design modules.
+(`labs/aero/campaigns/side_labs/tests` checks). `side_labs_runkit.py` (removed 2026-10-21: the campaigns import `runkit` once `side_labs/` is on the path) re-exported `labs/aero/campaigns/side_labs/runkit.py` for the design modules.
 `kestrel_compare.py`: the other Vegeta machines (FALCO, NISUS+, MERLIN, PEREGRINE, from their design files) scaled to
 Kestrel's mass and flown at its cruise speed, and Kestrel as a monoplane (same span and area; same span and chord) —
 biplane against monoplane in one table (`compare`, `verdict`); `kestrel_flight.interference` / `prandtl_sigma`: the wing-interference

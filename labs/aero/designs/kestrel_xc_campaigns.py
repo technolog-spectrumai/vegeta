@@ -79,7 +79,8 @@ def cfd_case(name: str, spec: dict, workdir, *, variant: str, quality: str, veh,
 
 
 def cfd_case_key(case, quality: str) -> str:
-    from side_labs_runkit import sha256_file
+    import kestrel_campaigns  # noqa: F401  (its _flow() puts side_labs/ on sys.path)
+    from runkit import sha256_file
     return _sha(json.dumps({"template": case.template.name, "parameters": case.parameters, "units": case.geometry_units, "quality": quality, "stl": sha256_file(case.geometry)},
                            sort_keys=True, default=str))
 

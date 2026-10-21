@@ -48,17 +48,16 @@ import numpy as np
 from vegeta.chiron import Command
 
 import onager_robot as orb
-from vegeta.labkit.control import Phase, smooth  # noqa: F401  (shared with the other labs' missions)
 
-__all__ = ["Failure", "Drive", "Stand", "yaw_of", "smooth", "Phase", "PhasedMission"]
+__all__ = ["Failure", "Drive", "Stand", "yaw_of", "PhasedMission"]
 
 
 def _ik(x_axle: float, z_down: float, L1: float, L2: float):
-    """Two-link planar IK (``gait.ik_two_link_planar``): (a1, a2) [deg] for an axle ``x_axle`` ahead of the shoulder
+    """Two-link planar IK (``vegeta.labkit.kinematics.ik_two_link_planar``): (a1, a2) [deg] for an axle ``x_axle`` ahead of the shoulder
     and ``z_down`` below it; None when out of reach."""
-    from vegeta.labkit import kinematics as gait
+    from vegeta.labkit import kinematics
 
-    return gait.ik_two_link_planar(x_axle, -z_down, L1, L2)
+    return kinematics.ik_two_link_planar(x_axle, -z_down, L1, L2)
 
 
 def yaw_of(quat) -> float:

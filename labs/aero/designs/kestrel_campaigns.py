@@ -190,7 +190,7 @@ def cfd_case(name: str, spec: dict, workdir, *, variant: str, quality: str, veh:
 
 def cfd_case_key(case, quality: str) -> str:
     """What makes a solved case reusable: the template, every value and the geometry file's content."""
-    from side_labs_runkit import sha256_file
+    from runkit import sha256_file
     return _sha(json.dumps({"template": case.template.name, "parameters": case.parameters, "units": case.geometry_units, "quality": quality,
                             "stl": sha256_file(case.geometry)}, sort_keys=True, default=str))
 
@@ -337,7 +337,7 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
     contract, one per campaign key, so that the unified notebook reads them like any run. The provenance says what
     they are: screening quality, 400 iterations, imported — and the fingerprint is the variant's **as defined now**
     (the file carries none), which the compatibility check reports as an assumption, not a fact."""
-    from side_labs_runkit import write_json_atomic, utc_now, sha256_file, tool_versions
+    from runkit import write_json_atomic, utc_now, sha256_file, tool_versions
     doc = kcfd.load_records(results_json)
     if not doc:
         raise FileNotFoundError(f"{results_json} does not exist or holds no campaign")
@@ -353,7 +353,7 @@ def import_legacy(results_json=kcfd.RESULTS_JSON, out_base=RUNS_BASE, *, keys=("
         root = Path(out_base) / BOOK / CHAPTERS[("airframe_cfd", "sweep")] / f"legacy_{meta.get('date', 'undated').replace('-', '')}_{variant}_{meta.get('source', 'import')}"
         root.mkdir(parents=True, exist_ok=True)
         specs, records = {}, {}
-        from side_labs_runkit import CaseRecord
+        from runkit import CaseRecord
         byname = {r["case"]: r for r in camp.get("records", [])}
         for name, st in camp.get("statuses", {}).items():
             rec = byname.get(name)
@@ -396,7 +396,7 @@ def command(workflow: str, *, variant: str, campaign: str, quality: str | None =
 
 
 def _load(run_dir, workflow: str) -> dict:
-    from side_labs_runkit import load_run
+    from runkit import load_run
     if run_dir is None:
         return {"root": None, "manifest": None, "status": None, "summary": None, "partial": None}
     p = Path(run_dir)

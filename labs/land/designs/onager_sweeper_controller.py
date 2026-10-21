@@ -21,14 +21,13 @@ import math
 
 import numpy as np
 
-import onager_controller as oc
 import onager_manus_controller as omc
 import onager_manus_robot as omr
 import onager_sweeper_robot as osr
 
 __all__ = ["Mission", "sweep_and_clear", "PICK"]
 
-smooth, Phase = oc.smooth, oc.Phase
+from vegeta.labkit.control import Phase  # noqa: E402
 
 #: How each kind of pick-up is taken (inputs): a hook grasp — the jaws close until the hooked tips (40 mm inward,
 #: 220 mm from the pin) meet the object's sides, so for a width w the jaws stop at θ with 0.22 sin θ − 0.04 cos θ =

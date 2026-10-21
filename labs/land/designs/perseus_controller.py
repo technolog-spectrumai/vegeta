@@ -29,7 +29,6 @@ import numpy as np
 
 from vegeta.chiron import Command
 
-import onager_controller as oc
 import pekari_controller as pc
 import pekari_rover_robot as prr
 import perseus_robot as pbr
@@ -37,7 +36,7 @@ import perseus_robot as pbr
 __all__ = ["Phase", "CutMission", "smooth", "world_to_hull", "hull_to_world", "branch_job", "stand_distance",
            "branch_targets"]
 
-smooth, Phase = oc.smooth, oc.Phase
+from vegeta.labkit.control import Phase, smooth  # noqa: E402
 
 
 def _rot(quat) -> np.ndarray:

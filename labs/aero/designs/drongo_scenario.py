@@ -666,7 +666,7 @@ def _hud(img, lines, title):
 def render_movie(ep, scene: Scene, path, *, speed: float = 2.0, fps: int = 25, size=(960, 540), progress=False):
     """The delivery as a movie: Chiron's renderer (pyvista, from the log; needs ``log_geoms=True``) with a chase
     camera, a panel with the clock — how long the hungry people have waited —, the phase, height, speed and the
-    items' fate, the outcome on the last frame (``pekari_controller.end_card``) and the Vegeta watermark; MP4 through
+    items' fate, the outcome on the last frame (``vegeta.labkit.movie.end_card``) and the Vegeta watermark; MP4 through
     OpenCV. ``speed`` × real time, up to the end of the mission."""
     import cv2
     from vegeta.aeromant._watermark import watermark

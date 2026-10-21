@@ -34,7 +34,7 @@ import onager_manus_robot as omr
 __all__ = ["Phase", "Mission", "smooth", "world_to_hull", "cut_and_clear"]
 
 
-smooth, Phase = oc.smooth, oc.Phase
+from vegeta.labkit.control import Phase, smooth  # noqa: E402
 
 
 def world_to_hull(obs, p) -> np.ndarray:

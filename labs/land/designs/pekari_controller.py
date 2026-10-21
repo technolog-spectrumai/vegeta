@@ -38,11 +38,10 @@ import numpy as np
 from vegeta.chiron import Command
 
 import pekari_rover_robot as prr
-from vegeta.labkit.movie import end_card  # noqa: F401  (shared with the other labs' scenarios)
 
 __all__ = ["Leg", "MISSION", "COURSE", "TrackDrive", "yaw_of", "uneven_ground", "run", "timeseries", "leg_table",
            "micro_hills", "steep_hill", "mud_flat", "max_slope_deg", "MudHook", "TRIALS", "trial_rules", "run_trial",
-           "trial_table", "end_card"]
+           "trial_table"]
 
 
 def yaw_of(quat) -> float:
