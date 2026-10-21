@@ -131,6 +131,12 @@ Fast loop: `scripts/test.sh --smoke` (seconds). Full: `user_tests.sh` (the user 
   `cad.json` from Dedalus (Vegeta 15c4132); the solids agree with the budget shapes' MuJoCo formulas to 1e-6.
   Thin shapes (rod, plate, shell) and ellipsoids raise: they are budget idealisations, the design's CAD builds them.
   Tests skip without CadQuery (`pytest.importorskip`).
+- `og.cad` brought level with `og.mujoco` (2026-10-21): solids for all five shapes (capsule = cylinder ∪ two spheres,
+  ellipsoid = a stretched sphere via `gp_GTrsf`), thin shapes as `thin=` visual stand-ins, `assembly(budget)` (a
+  CadQuery Assembly, a part per shaped item, coloured by group), `assembly_properties(budget)` (= `Budget.properties()`
+  to 1e-5, solids from OpenCascade), `export` (STEP/STL). `mass_properties(precision=)`: OpenCascade's default fixed
+  rule is 0.4 % off on spline surfaces (the ellipsoid); `properties()` integrates adaptively to 1e-9 by default
+  (Dedalus's path keeps the default, its golden unchanged).
 
 ### O4 — graduations
 - Decision (2026-10-21): O4 is the racing quad only for now. Drongo, Nisus/Nisus+/Falco (+ `onboard`), the Onager

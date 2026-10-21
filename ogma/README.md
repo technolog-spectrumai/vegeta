@@ -16,7 +16,7 @@ numpy only, SI units, organised by physics.
 | `og.rotors` | X layout, allocation, desaturating mixer, spin-up lag, wrench about the COM, frame drag, Glauert induced velocity | done (O3) |
 | `og.propulsion` | propulsion maps (signed T, Q on V × rpm), the electric drive (map + motor + ρ scaling), flight units, drive tables | done (O3) |
 | `og.mujoco` | MuJoCo strategy: geoms (box, sphere, cylinder, capsule, ellipsoid) and explicit inertials from Ogma parts, budget bodies, `compile_check` (lazy `mujoco` extra) | done (O5) |
-| `og.cad` | CAD strategy (CadQuery, lazy `cad` extra): exact mass properties of a solid (from Dedalus), Yax mass section, `MassProperties` in SI, solids from budget shapes | done (O6) |
+| `og.cad` | CAD strategy (CadQuery, lazy `cad` extra): exact mass properties of a solid (from Dedalus), Yax mass section, `MassProperties` in SI, solids from every budget shape, assemblies from budgets (checked against the budget), STEP/STL export | done (O6) |
 | `og.aero` | skin friction (turbulent, mixed), Merlin's parabolic airframe, Kestrel's full-range polar, Nisus's stability coefficients (+ crow), air angles and aero wrench, Peregrine's vortex lattice | done (O3) |
 
 Tests: each moved piece reproduces the numbers Vegeta's code gave on fixed inputs (`tests/golden/`, recorded from
