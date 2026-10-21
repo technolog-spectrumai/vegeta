@@ -85,3 +85,13 @@ def induced_velocity(thrust, V, alpha_rad, A, rho=1.225, iterations=40):
     if va < -2 * vh:                                # windmill-brake state: momentum theory fails; keep the hover value
         vi = vh
     return vi
+
+
+def hover_induced_velocity(thrust: float, A: float, rho: float = 1.225) -> float:
+    """Momentum theory's induced velocity of a disk of area ``A`` in hover: √(T / (2 ρ A))."""
+    return math.sqrt(thrust / (2 * rho * A))
+
+
+def ideal_hover_power(thrust: float, A: float, rho: float = 1.225) -> float:
+    """Momentum theory's ideal (induced) hover power of one disk: T √(T / (2 ρ A))."""
+    return thrust * math.sqrt(thrust / (2 * rho * A))

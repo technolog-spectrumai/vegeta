@@ -33,3 +33,11 @@ def test_induced_velocity_and_drag():
     assert np.allclose(got, G["iv"], rtol=1e-14)
     assert np.allclose(rotors.quadratic_drag([10.0, 0, 0], 0.02, 1.2), [-1.2, 0, 0])
     assert math.isclose(rotors.lag_alpha(0.002, 0.035), 1 - math.exp(-0.002 / 0.035))
+
+
+def test_hover_momentum_theory():
+    from ogma import rotors as r
+    import math
+    T, A = 6.2, 0.0314
+    assert r.hover_induced_velocity(T, A) == math.sqrt(T / (2 * 1.225 * A)) == r.induced_velocity(T, 0.0, 0.0, A, iterations=0)
+    assert r.ideal_hover_power(T, A, 1.1) == T * math.sqrt(T / (2 * 1.1 * A))
