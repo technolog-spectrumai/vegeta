@@ -20,7 +20,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 - [x] Vegeta designs import `og.*`
 - [x] `og.motors` (DC motor, servo law from Chiron, transmissions)
 - [x] Vegeta adopts `og.motors`
-- [ ] Chiron takes its servo law from Ogma (Chiron vendors Ogma)
+- [x] Chiron takes its servo law from Ogma (Chiron vendors Ogma; chiron 2368d21, its test_ogma checks every shape)
 
 ## O3 — consolidate duplicates
 - [x] `og.atmosphere`
@@ -39,7 +39,7 @@ Progress of the Ogma refactoring (plan: O0–O7). Notes, decisions and known iss
 
 ## O5 — MuJoCo strategy
 - [x] `og.mujoco`: Ogma parts → MJCF fragments (lazy `mujoco` extra); `og.mass.Capsule` added
-- [x] Ogma shape inertia == MuJoCo `inertiafromgeom` (Ogma's test_mujoco; Chiron's own test next)
+- [x] Ogma shape inertia == MuJoCo `inertiafromgeom` (Ogma's test_mujoco and Chiron's test_ogma)
 
 ## O6 — CAD strategy
 - [x] `og.cad` (CadQuery, lazy extra)
