@@ -60,6 +60,8 @@ CATALOGUE = {
         "15x8": {"d_in": 15, "p_in": 8.0, "mass_kg": 0.045, "price_eur": 26.0, "source": "folding 15x8 class"},
         "14x8.5": {"d_in": 14, "p_in": 8.5, "mass_kg": 0.040, "price_eur": 22.0, "source": "APC 14x8.5E class, folding hub included"},
         "15x10": {"d_in": 15, "p_in": 10.0, "mass_kg": 0.048, "price_eur": 26.0, "source": "APC 15x10E class, folding hub included"},
+        "16x10": {"d_in": 16, "p_in": 10.0, "mass_kg": 0.055, "price_eur": 30.0, "source": "APC 16x10E class, folding hub included"},
+        "17x10": {"d_in": 17, "p_in": 10.0, "mass_kg": 0.062, "price_eur": 34.0, "source": "APC 17x10E class, folding hub included"},
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
