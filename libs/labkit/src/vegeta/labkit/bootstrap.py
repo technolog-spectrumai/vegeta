@@ -4,14 +4,14 @@
     from vegeta.labkit import bootstrap
     DEBUG = bootstrap.lab("aero", DEBUG)
 
-puts the lab's ``designs/``, ``common/`` and ``exp/`` on ``sys.path`` (the modules are imported by their plain names,
+puts the lab's ``designs/``, ``common/``, ``exp/`` and ``sims/`` on ``sys.path`` (the modules are imported by their plain names,
 ``import nisus_flight``) and installs the mocks when the debug switch is on (``VEGETA_DEBUG`` overrides it)."""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-FOLDERS = ("designs", "common", "exp")
+FOLDERS = ("designs", "common", "exp", "sims")       # sims/ last: its runnable scripts never shadow a design
 
 
 def root() -> Path:

@@ -8,27 +8,27 @@
 #   unit              chiron + cli + chronos test suites, designs tests          (~2-3 min)
 #   physics           body-joint physics checks with their numbers: restoring torque,
 #                     damping dissipation, c = 0 equivalence, model equivalence           (~1 min)
-#   cleopatra-smoke   benchmark/cleopatra/full_benchmark.py --scale smoke                  (~5-10 min)
-#   persephone-smoke  benchmark/persephone/full_benchmark.py --scale smoke                 (minutes; first run of Persephone)
+#   cleopatra-smoke   labs/legged/campaigns/benchmark/cleopatra/full_benchmark.py --scale smoke                  (~5-10 min)
+#   persephone-smoke  labs/legged/campaigns/benchmark/persephone/full_benchmark.py --scale smoke                 (minutes; first run of Persephone)
 #   cleopatra-pilot   ... --scale pilot (a few seeds of every experiment)                  (~1 h on 4 cores)
 #   cleopatra         the FULL Cleopatra benchmark (6440 runs; several hours; resumable)
 #   persephone        the FULL Persephone benchmark (1140 runs; long; resumable)
-#   apheloria-movies  scenarios/apheloria_pack.py: Apheloria packs into its ball and unpacks (2 movies)
-#   onager            Onager Sentinel: the ChironLab tests, then scenarios/onager_patrol.py (2 movies; ~5 min)
-#   onager-atlas      Onager Atlas (forklift): tests, then scenarios/onager_atlas_pallet.py (1 movie; ~3 min)
-#   onager-manus      Onager Manus (pincers): tests, then scenarios/onager_manus_tasks.py (1 movie; ~4 min)
-#   onager-sweeper    Onager Sweeper (street cleaner): tests, then scenarios/onager_sweeper_street.py (1 movie; ~5 min)
-#   velutina          Velutina (mountain medical courier): tests, then scenarios/velutina_mission.py (1 movie; ~2 min)
-#   merlin            MERLIN (wildfire sampler): tests, then scenarios/merlin_mission.py (race table + 1 movie; ~3 min)
+#   apheloria-movies  labs/legged/sims/apheloria_pack.py: Apheloria packs into its ball and unpacks (2 movies)
+#   onager            Onager Sentinel: the ChironLab tests, then labs/land/sims/onager_patrol.py (2 movies; ~5 min)
+#   onager-atlas      Onager Atlas (forklift): tests, then labs/land/sims/onager_atlas_pallet.py (1 movie; ~3 min)
+#   onager-manus      Onager Manus (pincers): tests, then labs/land/sims/onager_manus_tasks.py (1 movie; ~4 min)
+#   onager-sweeper    Onager Sweeper (street cleaner): tests, then labs/land/sims/onager_sweeper_street.py (1 movie; ~5 min)
+#   velutina          Velutina (mountain medical courier): tests, then labs/aero/sims/velutina_mission.py (1 movie; ~2 min)
+#   merlin            MERLIN (wildfire sampler): tests, then labs/aero/sims/merlin_mission.py (race table + 1 movie; ~3 min)
 #   peregrine         PEREGRINE (folding-wing farm drone): the lattice, flight-model and CAD tests (~30 s)
-#   drongo            Drongo (potato and cream delivery): tests, then scenarios/drongo_delivery.py (2 movies; ~4 min)
-#   nisus             NISUS (OBS / Zero survey drone): tests, then scenarios/nisus_mission.py (6 missions + movies; ~25 min)
-#   nisus-birds       NISUS-Zero bird photography: vegeta.mission tests, then scenarios/nisus_birds.py (6 missions + videos; ~30 min)
-#   nisus-plus        NISUS+ (mountain survey drone): tests, then scenarios/nisus_plus_mission.py (6 mountain missions + movies; ~20 min)
-#   nisus-plus-birds  Nisus+ Zero chasing birds in the mountains: scenarios/nisus_plus_birds.py (4 hunts + videos; ~25 min)
-#   falco             FALCO (tractor mountain aircraft): tests, then scenarios/falco_mission.py (6 missions, the propeller parked; ~20 min)
-#   falco-birds       Falco-Zero chasing birds in the mountains: scenarios/falco_birds.py (4 hunts + videos; ~25 min)
-#   kestrel           Kestrel-4Q (biplane quadrotor tailsitter): tests, then scenarios/kestrel_transitions.py (the transition matrix; ~3 min; --cfd needs OpenFOAM)
+#   drongo            Drongo (potato and cream delivery): tests, then labs/aero/sims/drongo_delivery.py (2 movies; ~4 min)
+#   nisus             NISUS (OBS / Zero survey drone): tests, then labs/aero/sims/nisus_mission.py (6 missions + movies; ~25 min)
+#   nisus-birds       NISUS-Zero bird photography: vegeta.mission tests, then labs/aero/sims/nisus_birds.py (6 missions + videos; ~30 min)
+#   nisus-plus        NISUS+ (mountain survey drone): tests, then labs/aero/sims/nisus_plus_mission.py (6 mountain missions + movies; ~20 min)
+#   nisus-plus-birds  Nisus+ Zero chasing birds in the mountains: labs/aero/sims/nisus_plus_birds.py (4 hunts + videos; ~25 min)
+#   falco             FALCO (tractor mountain aircraft): tests, then labs/aero/sims/falco_mission.py (6 missions, the propeller parked; ~20 min)
+#   falco-birds       Falco-Zero chasing birds in the mountains: labs/aero/sims/falco_birds.py (4 hunts + videos; ~25 min)
+#   kestrel           Kestrel-4Q (biplane quadrotor tailsitter): tests, then labs/aero/sims/kestrel_transitions.py (the transition matrix; ~3 min; --cfd needs OpenFOAM)
 #   jet               Microjet and AGUYA: cycle, compressible templates, thermal FEA deck, CAD and mission tests (~1 min)
 #   geometry          components/ and assemblies/: geometry-only CAD (designs, arrangements; ~2 min, no solver)
 #   notebooks-debug   every notebook end to end with FEA and CFD mocked (scripts/debug_notebooks.sh; minutes)
@@ -36,7 +36,7 @@
 #   ozaru             vendor/ozaru: Porunga (cache), Mimezia (mocks), Yanus (requirement checks)       (seconds)
 #   designs           designs/tests, not the slow ones                                               (~10-20 min)
 #   components        components/tests (geometry only)                                               (~2 min)
-#   side-labs         side_labs/tests: run contract, campaigns, CLI, GUI, no notebook named here      (~3 min)
+#   side-labs         labs/aero/campaigns/side_labs/tests: run contract, campaigns, CLI, GUI, no notebook named here      (~3 min)
 #   exchange          notebooks/tests: side lab -> Porunga key -> notebook, mock never read as real   (seconds)
 #   cli-mock          vegeta-cli: the mocks, the cache and the CLI tests                               (~1 min)
 #   notebooks-mock    every notebook but the slow ones, mocks on (scripts/debug_notebooks.sh)         (~30-60 min)
@@ -124,8 +124,8 @@ EOF
 }
 
 # the experiments (notebooks/exp/: Kestrel and prop_lab, to be redesigned) are left out unless --include-experiments
-EXP_TESTS=(designs/tests/test_kestrel.py designs/tests/test_kestrel2.py designs/tests/test_kestrel_fea.py designs/tests/test_kestrel_report.py
-           designs/tests/test_prop_lab.py designs/tests/test_kestrel_tandem.py designs/tests/test_kestrel_benchmark.py side_labs/tests/test_kestrel_workflows.py notebooks/tests/test_kestrel_notebook.py)
+EXP_TESTS=(labs/aero/tests/test_kestrel.py labs/aero/tests/test_kestrel2.py labs/aero/tests/test_kestrel_fea.py labs/aero/tests/test_kestrel_report.py
+           labs/aero/tests/test_prop_lab.py labs/aero/tests/test_kestrel_tandem.py labs/aero/tests/test_kestrel_benchmark.py labs/aero/campaigns/side_labs/tests/test_kestrel_workflows.py labs/aero/tests/test_kestrel_notebook.py)
 exp_ignores() { [ "$EXPERIMENTS" -eq 1 ] && return; for f in "${EXP_TESTS[@]}"; do [ -e "$ROOT/$f" ] && printf -- '--ignore=%s ' "$ROOT/$f"; done; }
 
 pytest_summary() {  # pytest_summary <dir> <args...>
@@ -197,17 +197,17 @@ for s in "${SECTIONS[@]}"; do
       MOCK_PLUGIN="" ; hdr "Ozaru (vendor/ozaru): Porunga, Mimezia, Yanus"
       timed pytest_summary "$ROOT/vendor/ozaru" || status=1 ;;
     races)
-      MOCK_PLUGIN="" ; hdr "races/tests (MuJoCo laps, the lab's chapter script included)"
-      timed pytest_summary "$ROOT" races/tests || status=1 ;;
+      MOCK_PLUGIN="" ; hdr "labs/aero/sims/races/tests (MuJoCo laps, the lab's chapter script included)"
+      timed pytest_summary "$ROOT" labs/aero/sims/races/tests || status=1 ;;
     designs)
       hdr "designs/tests (not slow; mocks only, no solver)"
-      timed pytest_summary "$ROOT" designs/tests $( [ "$EXPERIMENTS" -eq 1 ] && echo designs/exp/tests) -m "not slow" || status=1 ;;
+      timed pytest_summary "$ROOT" designs/tests $( [ "$EXPERIMENTS" -eq 1 ] && echo labs/aero/exp/tests) -m "not slow" || status=1 ;;
     components)
       hdr "components/tests (geometry only)"
       timed pytest_summary "$ROOT" components/tests -m "not slow" || status=1 ;;
     side-labs)
-      hdr "side_labs/tests: run contract, campaigns, CLI, GUI, separation from the notebooks (no solver run)"
-      timed pytest_summary "$ROOT" side_labs/tests -m "not slow" || status=1 ;;
+      hdr "labs/aero/campaigns/side_labs/tests: run contract, campaigns, CLI, GUI, separation from the notebooks (no solver run)"
+      timed pytest_summary "$ROOT" labs/aero/campaigns/side_labs/tests -m "not slow" || status=1 ;;
     exchange)
       hdr "notebooks/tests: the side-lab result found by its Porunga key; mock and real never mix"
       timed pytest_summary "$ROOT" notebooks/tests || status=1 ;;

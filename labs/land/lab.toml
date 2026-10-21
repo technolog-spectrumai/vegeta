@@ -1,0 +1,3 @@
+name = "land"
+title = "Land lab — what rolls and tracks"
+machines = ["onager", "onager_atlas", "onager_manus", "onager_sweeper", "pekari", "perseus", "perseus_mini", "rover"]

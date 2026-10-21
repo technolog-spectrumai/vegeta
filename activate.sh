@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Activate the ready Vegeta environment (nothing is installed):   source activate.sh
 #   - activates the virtual environment (.venv, or $VEGETA_VENV)
-#   - exports VEGETA_ROOT and puts the Vegeta source trees, side_labs/ and designs/ on PYTHONPATH
+#   - exports VEGETA_ROOT and puts the Vegeta source trees, and the aero side labs on PYTHONPATH
 #     (the libraries import even without a pip install of the distributions)
-#   - defines `wf`  = the workflows tool (side_labs/cli.py): wf list | wf info … | wf run … | wf runs | wf status … | wf cache
+#   - defines `wf`  = the workflows tool (labs/aero/campaigns/side_labs/cli.py): wf list | wf info … | wf run … | wf runs | wf status … | wf cache
 #     and   `wfrun` = a book's script directly (wfrun kestrel_airframe --chapter stall …)
 # Nothing is run; sourcing only arranges the environment.
 if [ -n "${BASH_SOURCE:-}" ]; then _VEGETA_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; else _VEGETA_ROOT="$(pwd)"; fi
@@ -20,13 +20,13 @@ if [ -n "${BASH_VERSION:-}" ] && [ "${0##*/}" = "activate.sh" ]; then
   echo "activate.sh: source it, do not run it:   source activate.sh" >&2
   exit 1
 fi
-wf() { python "$VEGETA_ROOT/side_labs/cli.py" "$@"; }
+wf() { python "$VEGETA_ROOT/labs/aero/campaigns/side_labs/cli.py" "$@"; }
 wfrun() {
   local book="$1"; shift
   local script
   script="$(python - "$book" <<'PY'
 import sys
-sys.path.insert(0, sys.argv[0] and __import__("os").environ["VEGETA_ROOT"] + "/side_labs")
+sys.path.insert(0, sys.argv[0] and __import__("os").environ["VEGETA_ROOT"] + "/labs/aero/campaigns/side_labs")
 import library
 b = sys.argv[1]
 print(library.BOOKS[b]["script"] if b in library.BOOKS else library.IMPORTS.get(b, {}).get("script", ""))
@@ -39,10 +39,10 @@ export -f wf wfrun yn 2>/dev/null
 cd "$VEGETA_ROOT" || return
 # the Vegeta libraries and the workflow modules importable even without a pip install of the distributions
 _PP=""
-for _d in "$VEGETA_ROOT"/libs/vegeta-cli/src "$VEGETA_ROOT"/libs/vegeta-core/src "$VEGETA_ROOT"/libs/vegeta-ai/src "$VEGETA_ROOT"/libs/vegeta-fidia/src "$VEGETA_ROOT"/libs/labkit/src "$VEGETA_ROOT"/libs/ogma/src "$VEGETA_ROOT"/vendor/ozaru/porunga/src "$VEGETA_ROOT"/vendor/ozaru/mimezia/src "$VEGETA_ROOT"/vendor/ozaru/yanus/src "$VEGETA_ROOT"/side_labs "$VEGETA_ROOT"/designs "$VEGETA_ROOT"/designs/exp; do
+for _d in "$VEGETA_ROOT"/libs/vegeta-cli/src "$VEGETA_ROOT"/libs/vegeta-core/src "$VEGETA_ROOT"/libs/vegeta-ai/src "$VEGETA_ROOT"/libs/vegeta-fidia/src "$VEGETA_ROOT"/libs/labkit/src "$VEGETA_ROOT"/libs/ogma/src "$VEGETA_ROOT"/vendor/ozaru/porunga/src "$VEGETA_ROOT"/vendor/ozaru/mimezia/src "$VEGETA_ROOT"/vendor/ozaru/yanus/src "$VEGETA_ROOT"/labs/aero/campaigns/side_labs; do
   [ -d "$_d" ] && _PP="${_PP:+$_PP:}$_d"
 done
-case ":${PYTHONPATH:-}:" in *":$VEGETA_ROOT/side_labs:"*) ;; *) export PYTHONPATH="${_PP}${PYTHONPATH:+:$PYTHONPATH}" ;; esac
+case ":${PYTHONPATH:-}:" in *":$VEGETA_ROOT/labs/aero/campaigns/side_labs:"*) ;; *) export PYTHONPATH="${_PP}${PYTHONPATH:+:$PYTHONPATH}" ;; esac
 python -c "import vegeta.aeromant, vegeta.talos, vegeta.boreas" 2>/dev/null || echo "activate.sh: the vegeta libraries do not import (missing dependencies?) — run ./install_local.sh or ./test.sh --quick" >&2
 _of="$(python -c "from vegeta import aeromant; e=aeromant.OpenFOAMEnvironment.detect(); print(e.flavor(), e.version())" 2>/dev/null || echo "not found")"
 _ccx="$(command -v ccx >/dev/null && echo found || echo "not found")"

@@ -26,7 +26,7 @@ Vegeta is a collection of small Unix/Python engineering tools, not one large app
   opt-in exception is a notebook flagged `yanus_auto` (`docs/yanus.md` § 16): its gate produces the missing runs in
   screening quality, loudly, before the notebook starts.
 - Missing, stale, incompatible or failed results are **NOT RUN** in the notebook, with the analytical estimate
-  visible and labelled; they are never replaced by an invented number. See `side_labs/README.md`.
+  visible and labelled; they are never replaced by an invented number. See `labs/aero/campaigns/side_labs/README.md`.
 
 ## Configuration in Python
 All configuration is done through the Python API (dataclasses, keyword arguments). There are no

@@ -4,7 +4,7 @@ Moved from Vegeta's `docs/science.md` §9 when the racing quad hatched (2026-10-
 
 ## 9. Tuning the race autopilot: CMA-ES (default) or PSO + pattern search
 
-`./tune_autopilot.sh` → `races/tune.py` (the driver) → `races/optimizers.py` (the strategies) → `races/laps.py`
+`./tune_autopilot.sh` → `labs/aero/sims/races/tune.py` (the driver) → `labs/aero/sims/races/optimizers.py` (the strategies) → `labs/aero/sims/races/laps.py`
 (the objective).
 
 - **Structure (strategy pattern).** The driver knows no algorithm. It builds a strategy, calls `step()` until the
@@ -129,11 +129,11 @@ Moved from Vegeta's `docs/science.md` §9 when the racing quad hatched (2026-10-
   A rerun with the same options resumes exactly where it stopped. Checked: interrupted once during the swarm and once
   during the polish, the resumed runs flew the same laps as an uninterrupted one. A finished course is skipped; other
   options are refused (`--fresh` starts over).
-- **Results and wording.** After every course, `best.json`, `races/autopilot.json` and the CSV of every lap are written,
+- **Results and wording.** After every course, `best.json`, `labs/aero/sims/races/autopilot.json` and the CSV of every lap are written,
   with the time spent: swarm, polish, total, and wall time per lap. A search that ends no better than its start says
   "no improvement found over the starting settings". It is never reported as proof of an optimum.
 - **Bookkeeping.** MuJoCo is deterministic, so every setting is flown once per scenario and remembered. The search
-  starts from the course's stored settings (`races/autopilot.json`). An entry records its objective:
+  starts from the course's stored settings (`labs/aero/sims/races/autopilot.json`). An entry records its objective:
   - under the same objective, only a better score replaces it;
   - a result of another objective replaces it, because the scores do not compare.
 - **Results with the earlier single-lap objective and PSO** (2026-10-20, all four courses, `-j 12`, about 12 min in
@@ -176,11 +176,11 @@ Moved from Vegeta's `docs/science.md` §9 when the racing quad hatched (2026-10-
   - **A re-tune from there** (`-j 4 --fresh`: 245 laps, 10.4 min) converged to a mesh local optimum at 24.0 s with
     0 collisions, but that point is a knife edge again. With ±1 % on each knob only 3 of 12 laps finish, and the rest
     fail all over the course.
-    `races/autopilot.json` keeps the robust 43.8 s settings. The score has no term for robustness: one lap per setting
+    `labs/aero/sims/races/autopilot.json` keeps the robust 43.8 s settings. The score has no term for robustness: one lap per setting
     rewards the edge of the feasible region. Scoring the worst of a few perturbed laps would fix that, at a few times
     the cost.
 
-- **Validation on held-out scenarios** (`./test_autopilot.sh`, `races/validate.py`). This is validation in the
+- **Validation on held-out scenarios** (`./test_autopilot.sh`, `labs/aero/sims/races/validate.py`). This is validation in the
   machine-learning sense. The tuner fits each course's settings on one condition, the nominal lap. The validation flies
   those settings on conditions the tuner never saw, drawn from a fixed seed (20261020). The tuner never perturbs the
   world, and its swarm seeds are 0 and 1.
@@ -215,7 +215,7 @@ Moved from Vegeta's `docs/science.md` §9 when the racing quad hatched (2026-10-
     The farm's nominal lap here (31.74 s) does not reproduce its stored 31.37 s, which the report flags as
     `"reproduced": false`.
 
-- **Training history** (`./viz_autopilot_train_hist.sh [--animate]`; `races/trainviz.py`). It reads a course's
+- **Training history** (`./viz_autopilot_train_hist.sh [--animate]`; `labs/aero/sims/races/trainviz.py`). It reads a course's
   checkpoint, or its CSV, and writes to `races/runs/tune/train_hist/`.
   - The laps are grouped into candidates per generation and scored as the tuner scored them. Candidates that racing
     dropped are drawn hollow: their score is a lower bound.
@@ -234,7 +234,7 @@ Moved from Vegeta's `docs/science.md` §9 when the racing quad hatched (2026-10-
   - `--animate`: a GIF of the plane, generation by generation.
 
 - **Videos of the tuned autopilot** (`./gen_pilot_videos.sh`; `races.sim.render`, `races.video`). Each course is
-  flown in MuJoCo with its settings from `races/autopilot.json` and rendered from the scene's cameras (default
+  flown in MuJoCo with its settings from `labs/aero/sims/races/autopilot.json` and rendered from the scene's cameras (default
   `chase`, `onboard`, `overview`).
   - The quad is replayed with its **recorded attitude**: the quaternion in the history. Earlier renders showed a level
     quad facing along its velocity, which hides the banking.

@@ -14,11 +14,11 @@ if [ ! -x "$VENV/bin/python" ]; then
 fi
 py="$VENV/bin/python"
 export VEGETA_ROOT="$PWD"
-export PYTHONPATH="$PWD/vegeta-cli/src:$PWD/vegeta-core/src:$PWD/vegeta-ai/src:$PWD/vegeta-fidia/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimezia/src:$PWD/vendor/ozaru/yanus/src:$PWD/side_labs:$PWD/designs${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD/libs/vegeta-cli/src:$PWD/libs/vegeta-core/src:$PWD/libs/vegeta-ai/src:$PWD/libs/vegeta-fidia/src:$PWD/libs/labkit/src:$PWD/libs/ogma/src:$PWD/vendor/ozaru/porunga/src:$PWD/vendor/ozaru/mimezia/src:$PWD/vendor/ozaru/yanus/src:$PWD/labs/aero/campaigns/side_labs:$PWD/labs/aero/designs:$PWD/labs/aero/exp${PYTHONPATH:+:$PYTHONPATH}"
 
 if ! "$py" -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('PyQt6') else 1)"; then
   echo "Installing PyQt6 into $VENV (first use) ..."
-  "$py" -m pip install --quiet --disable-pip-version-check -r side_labs/requirements-gui.txt
+  "$py" -m pip install --quiet --disable-pip-version-check -r labs/aero/campaigns/side_labs/requirements-gui.txt
 fi
 qt_hint() {
   echo "Qt could not start. On Ubuntu install the libraries it needs:" >&2

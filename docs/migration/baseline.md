@@ -28,8 +28,8 @@ the reference that Chiron and Piccolo must reproduce after the move.
 | components | 138 passed, 11 deselected | 103 s |
 | assemblies | 16 passed | 23 s |
 | designs/tests | 405 passed, 20 deselected | 9 min 24 s |
-| races/tests | 42 passed | 47 s |
-| side_labs/tests | 36 passed, 1 skipped, 1 deselected | 87 s |
+| labs/aero/sims/races/tests | 42 passed | 47 s |
+| labs/aero/campaigns/side_labs/tests | 36 passed, 1 skipped, 1 deselected | 87 s |
 | notebooks/tests | 4 passed | 4 s |
 
 Problems that came from the environment, not from the code. They are fixed in the container and listed here because they will show up again on a fresh machine:

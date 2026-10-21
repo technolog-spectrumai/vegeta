@@ -12,9 +12,10 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-for p in (ROOT, ROOT / "designs", ROOT / "libs/vegeta-cli" / "src", ROOT / "libs/vegeta-core" / "src"):
+for p in (ROOT, ROOT / "libs/vegeta-cli" / "src", ROOT / "libs/vegeta-core" / "src",       # tests/ may import any lab
+          *sorted(ROOT.glob("labs/*/designs")), *sorted(ROOT.glob("labs/*/exp")), ROOT / "labs" / "aero" / "sims"):
     if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+        sys.path.append(str(p))
 os.environ.setdefault("MPLBACKEND", "Agg")
 
 GOLDEN = Path(__file__).with_name("golden.json")

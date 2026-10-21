@@ -3,11 +3,11 @@
 # refuses to start CalculiX, OpenFOAM, PrusaSlicer or XFOIL; the AI demos use scripted answers, never the API):
 #   scripts/debug_notebooks.sh                      # every notebook but the slow ones (SLOW below)
 #   scripts/debug_notebooks.sh --all                # the slow ones too (MuJoCo missions and movies: up to an hour each)
-#   scripts/debug_notebooks.sh --include-experiments   # also notebooks/exp/ (Kestrel, the microjet: experiments)
+#   scripts/debug_notebooks.sh --include-experiments   # also labs/*/exp/ (Kestrel, the microjet: experiments)
 #   scripts/debug_notebooks.sh 08_quadcopter 43     # those whose name starts with these
 #   -j N  notebooks side by side (default 2);  -t S  per-cell time limit in seconds (default 1200)
-# Notebooks live in notebooks/{devices,parts,scenarios,races,demo}/; each runs in its own folder, its executed copy goes to
-# a temporary log folder. Tracked files a notebook writes (designs/data/*.json, ...) are put back afterwards.
+# Notebooks live in labs/<lab>/studies/ (and exp/); each runs in its own folder, its executed copy goes to
+# a temporary log folder. Tracked files a notebook writes (labs/*/designs/data/*.json, ...) are put back afterwards.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 JOBS=2; CELL=1200; ALL=0; EXP=0
@@ -17,8 +17,8 @@ while [ $# -gt 0 ]; do
   case "$1" in -j) JOBS="$2"; shift 2 ;; -t) CELL="$2"; shift 2 ;; --all) ALL=1; shift ;; --include-experiments) EXP=1; shift ;; -h|--help) sed -n '2,8p' "$0"; exit 0 ;; *) ARGS+=("$1"); shift ;; esac
 done
 LIST=()
-FOLDERS=(devices parts scenarios races demo); [ $EXP -eq 1 ] && FOLDERS+=(exp)     # exp/: the experiments (Kestrel), only when asked
-for path in $(for f in "${FOLDERS[@]}"; do ls "$ROOT/notebooks/$f"/*.ipynb 2>/dev/null; done); do
+FOLDERS=(studies); [ $EXP -eq 1 ] && FOLDERS+=(exp)     # exp/: limbo (Kestrel experiments), only when asked
+for path in $(for f in "${FOLDERS[@]}"; do ls "$ROOT"/labs/*/"$f"/*.ipynb 2>/dev/null; done); do
   nb="$(basename "$path" .ipynb)"; case "$nb" in *-run) continue ;; esac
   if [ ${#ARGS[@]} -eq 0 ]; then
     skip=0; [ $ALL -eq 0 ] && for s in $SLOW; do case "$nb" in "$s"*) skip=1 ;; esac; done
@@ -29,7 +29,7 @@ for path in $(for f in "${FOLDERS[@]}"; do ls "$ROOT/notebooks/$f"/*.ipynb 2>/de
 done
 LOGS="$(mktemp -d)"
 SNAP="$LOGS/tracked"; mkdir -p "$SNAP"
-git -C "$ROOT" ls-files -z notebooks designs | grep -zv '\.ipynb$' | (cd "$ROOT" && xargs -0 -r cp --parents -t "$SNAP" 2>/dev/null)
+git -C "$ROOT" ls-files -z labs | grep -zv '\.ipynb$' | (cd "$ROOT" && xargs -0 -r cp --parents -t "$SNAP" 2>/dev/null)
 restore() {
   (cd "$SNAP" && find . -type f -print0) | while IFS= read -r -d '' f; do
     cmp -s "$SNAP/$f" "$ROOT/$f" || { cp "$SNAP/$f" "$ROOT/$f"; echo "restored ${f#./} (written by a mocked run)"; }

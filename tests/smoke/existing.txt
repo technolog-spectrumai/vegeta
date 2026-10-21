@@ -34,3 +34,4 @@ libs/vegeta-fidia/tests/test_export.py
 libs/vegeta-fidia/tests/test_independence.py
 tools/tests/test_export.py
 libs/labkit/tests
+tests/labs

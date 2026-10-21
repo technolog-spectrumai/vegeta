@@ -4,7 +4,7 @@ import pytest
 
 
 def test_dedalus_component_measurements(golden):
-    from components.quad_frame import QuadFrame
+    from quad_frame import QuadFrame
     m = QuadFrame().generate(wheelbase=180.0).measure()
     golden("dedalus.quad_frame_180", {k: m[k] for k in ("volume", "surface_area", "center_of_mass", "bbox_min",
                                                           "bbox_max", "n_faces")}, rel=1e-7, abs=1e-6)

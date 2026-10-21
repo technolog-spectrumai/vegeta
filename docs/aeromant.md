@@ -230,7 +230,7 @@ Disk zones that would overlap (centres closer than `2 × zone_radius × diameter
 turn the STL and the disk centres together about the moment point and give the turned thrust axis
 (`kestrel.rotate`, `kestrel_cfd.disk_setup`). The forces on the airframe include the slipstream; the disks' thrust and
 in-plane force are in the solver log. Steady RANS beyond the stall is a time average at best: read the residuals and
-the force scatter. Notebook: `43_kestrel_study` (reads the runs); the campaigns run as the workflow `side_labs/kestrel/airframe_cfd.py` (`side_labs/README.md`); the historical `old/40_kestrel` and `old/39_kestrel_tests`.
+the force scatter. Notebook: `43_kestrel_study` (reads the runs); the campaigns run as the workflow `labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py` (`labs/aero/campaigns/side_labs/README.md`); the historical `old/40_kestrel` and `old/39_kestrel_tests`.
 
 **Numerics of the rotor-disk templates** (`aircraft_rotor_disks`, `aircraft_quad_rotor_disks`, `hull_rotor_disk`):
 plain SIMPLE with the under-relaxation of OpenFOAM's rotorDisk tutorial (p 0.3, U 0.7, k and ω 0.7), not the SIMPLEC
@@ -260,7 +260,7 @@ the losses downstream of it), the flow actually drawn (a check: it must equal `f
 hood walls, the air power `Q × Δp`. The gap flow is resolved by the `gap_level` refinement box (road to half the
 body's height). `designs/onager_sweeper_cfd.QUALITY` holds two presets: `fast` (8 cells per L_ref,
 levels 3/1/2, 150 iterations: ~110 k cells for the Sweeper's hood, a minute or two on 4 cores) and `fine` (12 cells,
-levels 3/2/3, 400 iterations: ~0.9 M cells, ~15 min). `designs/onager_sweeper_cfd.py` reads the lip inflow and the hood's upward speed off the
+levels 3/2/3, 400 iterations: ~0.9 M cells, ~15 min). `labs/land/designs/onager_sweeper_cfd.py` reads the lip inflow and the hood's upward speed off the
 field, compares them with the litter classes' terminal speeds, and runs litter particles through the field for a
 movie.
 
@@ -295,7 +295,7 @@ writes each as `<name>.stl` and passes their bounding boxes and areas to the tem
 - **Running a speed line:** start near choke with `first_order=1`, then raise the back pressure. The steady solver does
   not find surge.
 
-`designs/turbojet.py` (`compressor_surfaces`) and `designs/aguya.py` (`cfd_surfaces`) write these STLs from CAD;
+`labs/aero/designs/turbojet.py` (`compressor_surfaces`) and `labs/aero/designs/aguya.py` (`cfd_surfaces`) write these STLs from CAD;
 notebooks 28 and 29 run them.
 
 ## OpenFOAM installations

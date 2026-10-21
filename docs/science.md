@@ -88,7 +88,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 
 ## 5. Stability and control (aircraft)
 
-- **Vortex lattice** (`designs/peregrine_flight.py`): horseshoe vortices on flat panels, Kutta–Joukowski forces,
+- **Vortex lattice** (`labs/aero/designs/peregrine_flight.py`): horseshoe vortices on flat panels, Kutta–Joukowski forces,
   induced drag in the Trefftz plane.
   - It gives the lift slope CLα, the induced factor k = CDi/CL², the span efficiency e and the wings' neutral point.
   - The biplane uses 20 spanwise × 4 chordwise panels.
@@ -96,7 +96,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   force to the wings'.
   - Static margin = (neutral point − CG) / mean chord.
   - Positive is stable; it is reported in % MAC.
-- **Tailsitter transitions** (`libs/vegeta-cli/src/vegeta/aeromant/transitions.py`, `designs/kestrel_transition.py`):
+- **Tailsitter transitions** (`libs/vegeta-cli/src/vegeta/aeromant/transitions.py`, `labs/aero/designs/kestrel_transition.py`):
   - a pitch-plane simulation of hover ↔ wing-borne flight through the stall (α ≈ 90°);
   - the slipstream raises the dynamic pressure on the blown span;
   - rotor thrust has limits and lag;
@@ -104,12 +104,12 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   - a transition passes when pitch is tracked within 10° without tail slide or a height loss beyond the limit;
   - roll and yaw are not simulated (6 DOF is open).
 - **Attitude control (multirotors):** a geometric controller on SO(3) (Lee, Leok & McClamroch 2010,
-  `designs/drongo_controller.py`). It needs no Euler angles and has no singularity at large tilt.
+  `labs/aero/designs/drongo_controller.py`). It needs no Euler angles and has no singularity at large tilt.
 
 ## 6. Buoyancy, hydrostatics and boat stability
 
 **Not modelled yet.**
-- The hulls (`designs/survey_boat.py`, a hard-chine V-bottom; `designs/submarine.py`, a Myring body of revolution)
+- The hulls (`labs/marine/designs/survey_boat.py`, a hard-chine V-bottom; `labs/marine/designs/submarine.py`, a Myring body of revolution)
   can export the outer solid "for hydrostatics". Nothing in the repository yet computes:
   - displacement against waterline;
   - the centre of buoyancy, the metacentric height GM, the righting arm GZ;
@@ -117,7 +117,7 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
 - The intended method is the textbook one: integrate the submerged volume of the CAD solid at a waterline and
   heel, then GM = KB + BM − KG with BM = I_wp / ∇.
 - Free-surface resistance needs an interFoam template (todo 5e.2).
-- (The word "buoyant" in `designs/merlin_flight.py` is the Briggs rise of a smoke plume, not hydrostatics.)
+- (The word "buoyant" in `labs/aero/designs/merlin_flight.py` is the Briggs rise of a smoke plume, not hydrostatics.)
 
 ## 7. Fatigue and life (Chronos, Talos)
 
@@ -142,15 +142,15 @@ key (`docs/cache_identities.md`), so it can never stand in for a real one.
   - The line's speed schedule comes from the corner speed each zone's clearance allows, braking, acceleration and
     the top speed.
   - A look-ahead "carrot" is the reference point.
-- **Rules (the referee, `races/rules.py`):**
+- **Rules (the referee, `labs/aero/sims/races/rules.py`):**
   - zones count only in order;
   - checkpoints are reset points;
   - a collision resets to the last checkpoint with a 5 s penalty;
   - more than five collisions, or 300 s, is a **DNF** (did not finish);
   - lap time includes penalties.
-- **The mock flyer** (`races/mock.py`) is a point mass with a saturated position–velocity loop under the same referee
+- **The mock flyer** (`labs/aero/sims/races/mock.py`) is a point mass with a saturated position–velocity loop under the same referee
   and drive table. It is for developing courses and notebooks, not for numbers.
-- **Design requirements** (`races/requirements.py`) keep three views apart:
+- **Design requirements** (`labs/aero/sims/races/requirements.py`) keep three views apart:
   - per course (measured, no margins);
   - pooled (all valid laps end to end, percentiles weighted by time);
   - the worst-case envelope × stated margins: speed 1.1, acceleration 1.2, lateral g 1.2, load factor 1.3, body

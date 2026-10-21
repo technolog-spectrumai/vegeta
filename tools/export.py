@@ -3,7 +3,7 @@
     python tools/export.py drongo --to out/drongo.usda --also sdf urdf xml [--lump]
     python tools/export.py --list
 
-A machine is what a lab registers in its ``designs/machines.py`` (``vegeta.labkit.machines``): its Chiron robot plus
+A machine is what a lab registers in its ``labs/aero/designs/machines.py`` (``vegeta.labkit.machines``): its Chiron robot plus
 the part data a simulator needs and MJCF cannot hold — rotor positions, spins and motor constants for Gazebo's motor models, from Ogma's laws and the
 design's propulsion. The robot goes ``to_mjcf()`` → Yax (USD hub); the part data rides in the USD as ``data["ogma"]``
 (Yax keeps it; formats that cannot hold it report it). ``--lump`` writes the body as one rigid link at q = 0 minus the
@@ -24,8 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def designs_dirs() -> list[Path]:
-    """Every lab's ``designs/`` (``labs/*/designs``; the old top-level ``designs/`` while it exists)."""
-    return sorted(ROOT.glob("labs/*/designs")) + ([ROOT / "designs"] if (ROOT / "designs" / "machines.py").exists() else [])
+    """Every lab's ``designs/`` (``labs/*/designs``)."""
+    return sorted(ROOT.glob("labs/*/designs"))
 
 
 def registry():

@@ -39,8 +39,8 @@ if [ "$SMOKE" = 1 ]; then
   if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then XVFB=(xvfb-run -a); fi
   TIMEFORMAT='vegeta smoke: %R s'
   RACES_LOG="$(mktemp)"                      # the races (MuJoCo laps, ~20 s) run beside the rest, as their own job
-  MPLBACKEND=Agg "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib races/tests tests/smoke/test_races_golden.py \
-    --deselect=races/tests/test_races.py::test_chapter_script_with_the_mock >"$RACES_LOG" 2>&1 &
+  MPLBACKEND=Agg "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib labs/aero/sims/races/tests tests/smoke/test_races_golden.py \
+    --deselect=labs/aero/sims/races/tests/test_races.py::test_chapter_script_with_the_mock >"$RACES_LOG" 2>&1 &
   RACES_PID=$!
   time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
     --deselect libs/vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke libs/ogma/tests \

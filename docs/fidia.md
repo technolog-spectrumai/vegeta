@@ -19,7 +19,7 @@ fidia run "a desk lamp with a round base and a conical shade" --out runs/lamp --
 fidia resume runs/lamp --feedback "make the shade red and 20 % larger"
 fidia show runs/lamp
 ```
-Notebook: `notebooks/demo/15_fidia_prompt_to_3d.ipynb` (runs offline without a key).
+Notebook: `labs/studio/studies/15_fidia_prompt_to_3d.ipynb` (runs offline without a key).
 
 ```python
 from vegeta.fidia import Limits, Session, agent_from_config, demo_agent

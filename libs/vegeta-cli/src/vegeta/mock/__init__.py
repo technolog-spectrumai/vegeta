@@ -609,6 +609,8 @@ def install() -> None:
     import sys as _sys
     from vegeta.zephyr import polar as zpolar               # NeuralFoil: a thin-airfoil polar instead of the network
     _patch(zpolar, "_neuralfoil", _thin_airfoil)
+    _real_backends = zpolar.backends                         # the mocked NeuralFoil counts as installed
+    _patch(zpolar, "backends", lambda: {**_real_backends(), "neuralfoil": True})
     from vegeta.aeromant import transitions as atr          # the tailsitter transitions: 10x coarser steps, short holds
     real_sim = atr.simulate
     coarse_sim = _coarse_transition(real_sim)

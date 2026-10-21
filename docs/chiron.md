@@ -8,7 +8,7 @@ blocks (or imported from MJCF) walks in it on any Chiron terrain with any contro
 disturbances and failure rules, and every run returns the same **episode log**, which `chiron.metrics` reads.
 
 It is **not** a controller-design tool (no optimisation, no learning, no trajectory planning), not a
-kinematic animator (`designs/gait.py` does that) and not a structural tool (joint torques and
+kinematic animator (`labs/legged/designs/gait.py` does that) and not a structural tool (joint torques and
 contact forces go to Talos as load cases). Controllers and robots are yours; Chiron simulates them honestly.
 Nothing is guessed: masses, inertias, friction, servo data and gains, terrain sizes and failure thresholds
 are explicit inputs with their sources. Units are SI everywhere (m, kg, s, N, N·m, rad; degrees only where a
@@ -33,7 +33,7 @@ name says `_deg`). World frame: z up; a course runs along +x from x = 0.
 - Third-party models: `Robot.from_mjcf(xml, RobotMeta(feet, logged_bodies, joint_tags, servos, ...))`; its own
   actuators are replaced by Chiron servos.
 
-Robot-specific code lives with the designs, never in the package: `designs/myropod_robot.py`
+Robot-specific code lives with the designs, never in the package: `labs/legged/designs/myropod_robot.py`
 (Cleopatra), `myropod_controller.py`, `robot_dog_robot.py`, `robot_dog_controller.py`, and for a wheeled
 machine `onager_robot.py` / `onager_controller.py` / `onager_scenario.py` (the Onager Sentinel: wheels are
 unlimited hinges driven by a `Servo` with `kp = 0`, i.e. a velocity loop on the hub motor's torque–speed line,
@@ -179,8 +179,8 @@ Trials, not frames, are the observations, and comparisons are paired on seeds: `
 from vegeta.chiron import experiments as ex
 
 def make(body, level, seed):          # protocol §12.3: body_connection = spring | spring_damper
-    return ex.Trial(robot="designs/myropod_robot.py:cleopatra", robot_kwargs={"body_connection": body},
-                    controller="designs/myropod_controller.py:fixed", seed=seed, v_target=0.2, course_m=1.5,
+    return ex.Trial(robot="labs/legged/designs/myropod_robot.py:cleopatra", robot_kwargs={"body_connection": body},
+                    controller="labs/legged/designs/myropod_controller.py:fixed", seed=seed, v_target=0.2, course_m=1.5,
                     terrain={"kind": "rough", "rms": level * 0.18, "correlation_length": 0.0425, "start": 0.3,
                              "level": level}, lab_kwargs={"timestep": 0.00025}, info={"payload": "head"})
 
@@ -207,9 +207,9 @@ ep = ex.rerun_with_log(trials[0], log_geoms=True)                       # the fu
 
 ## CLI
 ```bash
-chiron info designs/myropod_robot.py:cleopatra -p body_connection=spring      # masses, bodies, joints, servos
-chiron run designs/myropod_robot.py:cleopatra -p body_connection=spring_damper -p body_k_pitch=8 \
-    --controller designs/myropod_controller.py:adaptive --terrain rough:0.027 -t correlation_length=0.0425 \
+chiron info labs/legged/designs/myropod_robot.py:cleopatra -p body_connection=spring      # masses, bodies, joints, servos
+chiron run labs/legged/designs/myropod_robot.py:cleopatra -p body_connection=spring_damper -p body_k_pitch=8 \
+    --controller labs/legged/designs/myropod_controller.py:adaptive --terrain rough:0.027 -t correlation_length=0.0425 \
     -t start=0.3 --seed 3 --course 1.5 --v-target 0.2 --timestep 0.00025 --payload head --out runs/r3
 chiron run ... --push "segment 2:3:3.0:0.05"                                  # BODY:IMPULSE[N s]:T_START:DURATION
 chiron metrics runs/r3/episode.npz --json
@@ -259,20 +259,20 @@ p = myropod.Myropod().resolve(**mr.CLEO_MM, body_connection="spring")   # its pa
 robot = mr.robot_from_design(p)                           # geometry [mm] + body joints → the same robot
 ```
 ```bash
-dedalus params designs/myropod.py:Myropod                           # lists the body_* parameters
-chiron run designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 \
-    -p body_roll_axis=false --controller designs/myropod_controller.py:fixed --terrain flat \
+dedalus params labs/legged/designs/myropod.py:Myropod                           # lists the body_* parameters
+chiron run labs/legged/designs/myropod_robot.py:cleopatra -p body_connection=spring -p body_k_pitch=8 \
+    -p body_roll_axis=false --controller labs/legged/designs/myropod_controller.py:fixed --terrain flat \
     --course 1.5 --v-target 0.2 --timestep 0.00025 --seed 0 --out runs/s0
 ```
 `-p` values are Python literals: `8`, `8.0` and `"8"` build the same joint; bools accept true/false, 1/0,
 yes/no, on/off; `-p body_connection=rigid` exits 2 (legacy). In trials: `ex.Trial(robot=
-"designs/myropod_robot.py:cleopatra", robot_kwargs={"body_connection": "spring", ...}, lab_kwargs=mr.LAB_OPTIONS)`.
+"labs/legged/designs/myropod_robot.py:cleopatra", robot_kwargs={"body_connection": "spring", ...}, lab_kwargs=mr.LAB_OPTIONS)`.
 The robot carries `treatment` (`spring`, `spring_damper`, `legacy:<name>`), `body_params` (the values as built:
 `spring` reports c = 0) and `connection`; the log's `robot` is `cleopatra <treatment>`. The CAD ignores the body
 parameters (its chain is drawn straight unless `bend_*_deg` bend it; q0 is not drawn). The controllers take the
 leg lengths from the robot they are given.
 
-**Checks** (`designs/tests/test_body_joint_physics.py`; numbers at the lab's 0.25 ms step, printed with
+**Checks** (`labs/legged/tests/test_body_joint_physics.py`; numbers at the lab's 0.25 ms step, printed with
 `pytest -s`). *Model equivalence*: all 592 `MjModel` attributes compared — the two treatments differ only in
 `dof_damping` on the body DOFs and in the model's own name. *c = 0*: `spring_damper` with every `body_c_* = 0`
 reproduces `spring` bitwise (rough ground, both controllers; only the log's `robot` label differs). The other
@@ -312,6 +312,6 @@ within 0.25 % (0.998–1.000 c).
 - A servo is a PD loop clipped to the stall line; no current limit, thermal model, backlash or compliance
   beyond `armature`. The electrical cost of transport is an estimate from stall data.
 - Height-field resolution (5 mm) and the time step are numerical choices: check convergence for your robot
-  (Cleopatra needs 0.25 ms; see `designs/myropod_robot.py`).
+  (Cleopatra needs 0.25 ms; see `labs/legged/designs/myropod_robot.py`).
 
-Benchmarks: `benchmark/cleopatra/full_benchmark.py` and `benchmark/persephone/full_benchmark.py` (the study of docs/myropod_stability.md; see benchmark/README.md); `./user_tests.sh` runs the checks and the smoke benchmarks.
+Benchmarks: `labs/legged/campaigns/benchmark/cleopatra/full_benchmark.py` and `labs/legged/campaigns/benchmark/persephone/full_benchmark.py` (the study of docs/myropod_stability.md; see labs/legged/campaigns/benchmark/README.md); `./user_tests.sh` runs the checks and the smoke benchmarks.

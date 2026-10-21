@@ -1,6 +1,6 @@
 # Running the Kestrel workflows — a short manual
 
-This is the plain version of `side_labs/README.md`: what to type, in which order, and what you get back. All
+This is the plain version of `labs/aero/campaigns/side_labs/README.md`: what to type, in which order, and what you get back. All
 commands are run from the repository root on Ubuntu, with the virtual environment that `install_local.sh` made
 (`.venv`). OpenFOAM is needed for the CFD, CalculiX (`ccx`) and Gmsh for the FEA — `./test.sh --quick` tells you what
 is installed.
@@ -8,10 +8,10 @@ is installed.
 ## 0. Set the shell up
 
 ```bash
-source activate.sh        # activates .venv, defines  wf  (= side_labs/cli.py)  and  wfrun <book> …  (= the book's script)
+source activate.sh        # activates .venv, defines  wf  (= labs/aero/campaigns/side_labs/cli.py)  and  wfrun <book> …  (= the book's script)
 wf                   # interactive
 ```
-Everything below also works as `.venv/bin/python side_labs/cli.py …` without sourcing anything.
+Everything below also works as `.venv/bin/python labs/aero/campaigns/side_labs/cli.py …` without sourcing anything.
 
 ## 0b. The desktop interface
 
@@ -32,7 +32,7 @@ Everything the window does, the command line does too; it computes nothing itsel
 ## 1. The idea in one paragraph
 
 A **workflow** is a script that runs the slow solver cases (CFD, FEA) and writes everything into one folder, the
-**run directory**. The **notebook** (`notebooks/exp/43_kestrel_study.ipynb`) never runs a solver: it reads run
+**run directory**. The **notebook** (`labs/aero/exp/43_kestrel_study.ipynb`) never runs a solver: it reads run
 directories you point it at, checks that they are finished and belong to the current design, and shows the numbers
 beside its own quick estimates. Workflows are organised in **books** (a design: `kestrel`, code **K**) and numbered **chapters** (the studies on
 it, CFD and FEA alike: K1 `airframe-sweep`, K2 `airframe-stall`, K3 `airframe-cruise`, K4 `airframe-transitions`,
@@ -42,7 +42,7 @@ K5 need a completed K1; K10 needs K9) — the tool tells you. Cases a book
 already solved are **cached** and reused by later runs (`wf cache`, `wf clean-cache`, `--no-cache` to force). You can use the workflows without the notebook (the run directory is readable on its
 own) and the notebook without the workflows (a screening pass with the solver results marked NOT RUN).
 
-## 2. The easy way: `side_labs/cli.py`
+## 2. The easy way: `labs/aero/campaigns/side_labs/cli.py`
 
 One tool lists, explains, launches and watches every workflow. With no arguments it asks you what to run:
 
@@ -98,15 +98,15 @@ publishes itself into the Porunga cache, where the notebooks find it by key.
 
 ```bash
 # 1. see what a campaign contains (nothing is written)
-.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
+.venv/bin/python labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --list
 
 # 2. run it — in the foreground …
-.venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
+.venv/bin/python labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4
 
 #    … or detached, so you can log out (nohup), or in a tmux window
-nohup .venv/bin/python side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4 \
+nohup .venv/bin/python labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py --variant 4Q-2 --chapter stall --quality fine --processors 4 \
       > side_labs/runs/stall.out 2>&1 &
-tmux new -d -s kestrel '.venv/bin/python side_labs/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
+tmux new -d -s kestrel '.venv/bin/python labs/aero/campaigns/side_labs/kestrel/structure_fea.py --variant 4Q-2 --chapter all --threads 4'
 
 # 3. watch it (in a terminal a run shows two progress bars: the cases, and the solver inside the case)
 tail -F side_labs/runs/kestrel/airframe-stall/<run id>/run.log      # one line per case start/finish, a heartbeat every 30 s
@@ -116,7 +116,7 @@ cat side_labs/runs/kestrel/airframe-stall/<run id>/status.json      # state, cas
 kill -INT <pid>                                           # the pid is in status.json; finished cases are kept
 
 # 5. continue a stopped run
-.venv/bin/python side_labs/kestrel/airframe_cfd.py --resume side_labs/runs/kestrel/airframe-stall/<run id>
+.venv/bin/python labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py --resume side_labs/runs/kestrel/airframe-stall/<run id>
 ```
 
 The script prints the run directory at the end. Inside it:
@@ -159,7 +159,7 @@ Variants: `4Q-1` (round struts, X bracing), `4Q-2` (elevons, faired posts, the r
 ## 4. With the notebook
 
 1. Start JupyterLab with `./jupyter.sh` and open `43_kestrel_study.ipynb`.
-2. The notebook reads each side-lab result from the Porunga cache by its key (`designs/kestrel_keys.py`,
+2. The notebook reads each side-lab result from the Porunga cache by its key (`labs/aero/designs/kestrel_keys.py`,
    `docs/cache_identities.md`): a completed side-lab run publishes itself there, so there is nothing to pin. The
    needs table at the top shows what this machine has.
 3. Run the notebook. Its input table shows, for every chapter and variant, whether the result is in the cache.
@@ -177,10 +177,10 @@ you started from a shell; re-run the notebook when a workflow has finished.
 ## 5. The first time
 
 The first CFD campaign (October 2026, screening quality, unconverged) lives in
-`designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
+`labs/aero/designs/data/kestrel_cfd_results.json`. Turn it into run directories once, so the notebook can read it:
 
 ```bash
-.venv/bin/python side_labs/kestrel/import_legacy.py
+.venv/bin/python labs/aero/campaigns/side_labs/kestrel/import_legacy.py
 ```
 
 It prints two directories under `side_labs/runs/kestrel/airframe-sweep/` (chapter K1); real side-lab runs replace them

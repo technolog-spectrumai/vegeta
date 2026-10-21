@@ -27,7 +27,7 @@ def test_cube_is_exact(tmp_path):
 
 
 def test_component_round_trip(tmp_path, golden):
-    from components.quad_frame import QuadFrame
+    from quad_frame import QuadFrame
     from vegeta.dedalus import export_yax
     g = QuadFrame().generate(wheelbase=180.0)
     d = export_yax(g, tmp_path / "frame.yax", name="quad_frame", mass_kg=0.05, stl_tolerance=0.05)

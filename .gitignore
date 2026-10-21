@@ -8,24 +8,24 @@ dist/
 .venv/
 # local run outputs (examples and notebooks write here)
 runs/
-notebooks/_runs/
-notebooks/old/_runs/
-notebooks/old/output/
-notebooks/demo/_runs/
-notebooks/demo/output/
-side_labs/runs/
-side_labs/cache/
-side_labs/runs_*.out
+labs/*/_runs/
+labs/*/exp/_runs/
+labs/*/exp/output/
+labs/studio/_runs/
+labs/studio/output/
+labs/aero/campaigns/side_labs/runs/
+labs/aero/campaigns/side_labs/cache/
+labs/aero/campaigns/side_labs/runs_*.out
 fidia_runs/
-notebooks/output/
-scenarios/output/
-benchmark/*/results/
+labs/*/output/
+labs/*/sims/output/
+labs/legged/campaigns/benchmark/*/results/
 user_tests_*.log
 assembly_tests_*.log
 MUJOCO_LOG.TXT
-designs/data/air_propeller_results.json
-designs/data/aguya_design.json
-designs/data/microjet.json
+labs/aero/designs/data/air_propeller_results.json
+labs/aero/designs/data/aguya_design.json
+labs/aero/designs/data/microjet.json
 
 # notebook simulation caches (vegeta.cache): local only, delete when the code changes
 *.cache/
@@ -35,7 +35,14 @@ vegeta.cache/
 notebooks/*-run.ipynb
 cache/porunga/
 races/runs/
-designs/data/cad/
+labs/aero/designs/data/cad/
 
 # tools/dump_ast.py and tools/graph_metrics.py write the syntax-tree dump and the GraphML files here
 out/
+# run outputs left in the old layout's folders (before labs/)
+notebooks/
+designs/data/air_propeller_results.json
+scenarios/output/
+side_labs/runs/
+side_labs/cache/
+benchmark/*/results/

@@ -10,7 +10,7 @@ a note), and a loud banner says when stubs are in force.
 | piece | what it does here |
 |---|---|
 | `vegeta.mock` (the notebooks' `DEBUG` / `VEGETA_DEBUG` switch) | still patches Talos, Aeromant and Mellonia with fixed numbers. When it installs, it shows a `mimezia.banner`. `mock.label(d)` / `mock.is_mock(d)` label a dict made under the mocks. |
-| `side_labs/runkit.py` | every new run's `manifest.json` carries `"mock": true` or `false` (`runkit.mock_active()`: `VEGETA_DEBUG` on, or the mocks installed). A run resumed under the mocks becomes mock. |
+| `labs/aero/campaigns/side_labs/runkit.py` | every new run's `manifest.json` carries `"mock": true` or `false` (`runkit.mock_active()`: `VEGETA_DEBUG` on, or the mocks installed). A run resumed under the mocks becomes mock. |
 | Yanus (saved-run reader) | refuses any run that `mimezia.is_mock(manifest)` marks as mock. Mock numbers are never read as engineering results. |
 
 Vegeta has no Mimezia mimics registered yet (`mimezia.available()` is empty). `vegeta.mock` still patches the tools

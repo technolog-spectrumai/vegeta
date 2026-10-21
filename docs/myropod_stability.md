@@ -13,7 +13,7 @@ Code: `designs/myropod_sim.py` (MuJoCo model, controller, trial runner),
 
 ## 1. Robot: Cleopatra, as in notebook 18
 
-Geometry (`designs/myropod.py` with notebook 18's `CLEO` parameters): 3 segments 150 × 110 × 70 mm, joint gap 20 mm
+Geometry (`labs/legged/designs/myropod.py` with notebook 18's `CLEO` parameters): 3 segments 150 × 110 × 70 mm, joint gap 20 mm
 (pitch 0.170 m), head 130 mm long, femur 80 mm, tibia 100 mm, leg Ø16 mm, foot pad Ø24 mm, hip pairs at ±37.5 mm
 from the segment centre, hips at y = ±61 mm (seg_width/2 + 6), standing hip angle 40°, knee 85° (tibia below
 horizontal): foot 70.0 mm outward and 151.0 mm below the hip.
@@ -195,8 +195,8 @@ The simulation is built as a Vegeta tool rather than a notebook helper: **Chiron
 who trained the heroes) wraps MuJoCo, and **ChironLab** is its reusable environment — any robot described with
 Chiron's building blocks (or imported from MJCF) walks in it on any Chiron terrain, with any controller, under the
 same logging, disturbances and failure rules. The robot-specific parts stay with the designs:
-`designs/myropod_robot.py` (Cleopatra and her treatments as a Chiron robot),
-`designs/myropod_controller.py` (the fixed and adaptive gaits of §3 and §9.1), and
+`labs/legged/designs/myropod_robot.py` (Cleopatra and her treatments as a Chiron robot),
+`labs/legged/designs/myropod_controller.py` (the fixed and adaptive gaits of §3 and §9.1), and
 `designs/stability_experiments.py` (the trial lists of §7 and §9.3). The metrics of §6 and §9.2 and the
 statistics of §7 live in `vegeta.chiron.metrics` and `vegeta.chiron.stats`. Notebooks: `20_chiron_lab.ipynb`
 (the tool, shown on the robot dog and Cleopatra) and `21_cleopatra_stability.ipynb` (this study). Every number
@@ -206,7 +206,7 @@ in §1–§9 is unchanged.
 
 Recorded before any stability trial has run. Where it differs from §2, this section governs.
 
-**11.1 What existed before.** Notebook 18's Cleopatra gait is kinematic: `designs/gait.py` places feet on
+**11.1 What existed before.** Notebook 18's Cleopatra gait is kinematic: `labs/legged/designs/gait.py` places feet on
 planned paths with inverse kinematics; there is no gravity, inertia, contact force or actuator limit, so nothing
 in it shows physical stability. The physics engine for this study is MuJoCo through Chiron (§10).
 
@@ -231,7 +231,7 @@ Treatments run: `rigid`, `flexible` (pitch + roll), `flexible+yaw` (pitch + roll
 `locked`, `flexible` (pitch + yaw) and `flexible+roll` (§2) are retired.
 
 **11.3 Configuration.** The mode and every per-axis parameter are parameters of the Myropod design
-(`designs/myropod.py`, visible with `dedalus params designs/myropod.py:Myropod`) and are passed through
+(`labs/legged/designs/myropod.py`, visible with `dedalus params labs/legged/designs/myropod.py:Myropod`) and are passed through
 Chiron's CLI (`chiron run ... -p body_connection=flexible -p roll_stiffness=8`), so the CAD, the dynamics model and
 the runs read one configuration.
 
@@ -351,8 +351,8 @@ Recorded before any study trial (the benchmarks are run by the study owner, not 
 2. **Known limitation**: §1's symmetric torque–speed bound gives no torque beyond the no-load speed, also when
    braking; about a third of knee samples run at or above it at 0.2 m/s. A real DC servo brakes there. Not changed
    (it would change §1); reported with the results.
-3. **Where the study lives**: `benchmark/cleopatra/full_benchmark.py` (trial lists in `benchmark/cleopatra/
-   experiments.py`, plots from `designs/stability_plots.py` and `benchmark/_common.py`) replaces the
+3. **Where the study lives**: `labs/legged/campaigns/benchmark/cleopatra/full_benchmark.py` (trial lists in `benchmark/cleopatra/
+   experiments.py`, plots from `labs/legged/designs/stability_plots.py` and `labs/legged/campaigns/benchmark/_common.py`) replaces the
    notebooks 20/21 named in §10; outputs `results.json`, CSV (runs, configurations, raw time series), plots and
    `report.md`. `./user_tests.sh` runs the tests, the physics checks and the smoke benchmarks.
 4. **Course of the push experiment**: 2.0 m (not 1.5 m), so the 5 s recovery window after a push at 3.0 s ends
