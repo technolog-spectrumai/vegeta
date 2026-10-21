@@ -19,6 +19,12 @@ yax convert rover.xml rover.sdf        # or: python -m yax convert …
 yax show rover.sdf                     # links, joints, mass
 ```
 
+**Features — what is shared, what is needed.** Every physical fact belongs to one feature (geometry, mass, inertia, joints,
+motors, materials, strength, connections, aerodynamics, sensors, provenance). A producer shares the features it chooses
+(`yax select src.usda dst.usda --exclude strength,connections`: withheld, never invented, and the file says so); a
+consumer asks whether a file serves it (`yax features dst.usda --to sdf --requirements piccolo.json`: each feature
+available, missing, excluded or unsupported by the format). The contract: [docs/interchange.md](docs/interchange.md).
+
 **Two teams, one machine — `yax sync`.** The designers' file and the simulation team's model live in their own feedback
 loops; the physical numbers the simulation takes from the design are synced explicitly, everything else stays the
 team's own:
