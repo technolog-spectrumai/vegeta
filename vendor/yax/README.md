@@ -37,8 +37,8 @@ never touched (`src/yax/sync.py` documents the map).
 | USD | ✓ | ✓ | exact round trips (double-precision copies of USD's float attributes) |
 | MJCF | ✓ (compiled by MuJoCo) | ✓ | MuJoCo compiles it: same bodies, inertias, joints, geoms, actuators |
 | URDF | ✓ | ✓ | round trips relative to the root; capsules/ellipsoids as STL meshes, ball joints as fixed (reported) |
-| SDF 1.9 | ✓ | ✓ | round trips with absolute poses; drives reported (Gazebo plugins carry them) |
-| JSBSim | ✓ | ✓ | the C172X converted loads in JSBSim with the same mass, CG, inertia and aerodynamics (1e-12) |
+| SDF 1.9 | ✓ | ✓ | round trips with absolute poses; drives reported (Gazebo plugins carry them); a propeller map is reported as its reduced constants (kF, kM, where taken) for a motor plugin |
+| JSBSim | ✓ | ✓ | the C172X converted loads in JSBSim with the same mass, CG, inertia and aerodynamics (1e-12); a propeller map in the `propulsion` part data becomes a propeller + electric engine whose thrust and power JSBSim reproduces (1e-4) |
 | STEP | ✓ (+ exact mass properties given a density) | ✓ | solid volumes equal the shapes' (1e-6) |
 | STL | ✓ | ✓ | — |
 | Yax 1 package | ✓ | (`yax.write`) | spec tests |
