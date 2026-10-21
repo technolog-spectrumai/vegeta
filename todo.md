@@ -45,8 +45,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V6.1 Ogma comes home: the parts library moved from its own repo into `ogma/` with its history (`import ogma as og` unchanged); `vendor/ogma` removed; smoke runs `ogma/tests`
 - [x] V6.2 Yax moved to its own repo (`technolog-spectrumai/yax`) and becomes the format converter (USD hub); vendored at `vendor/yax` (`scripts/update_yax.sh`)
 - [x] V6.5 Chiron stays home: `vegeta.chiron` is the one Chiron (the robots are designed and tested here); the chiron repository is retired and Piccolo no longer vendors it — a graduated robot goes to Piccolo as MJCF written through Yax
-- [ ] V6.3 Vegeta exchanges designs with Piccolo only as standard files (URDF/SDF/USD/MJCF/STEP/JSBSim) written through Yax
-- [ ] V6.4 `export_yax` (Yax 1 packages) gives way to standard-file exports
+- [ ] V6.3 Vegeta exchanges designs with Piccolo only as standard files (URDF/SDF/USD/MJCF/STEP/JSBSim) written through Yax — prepared: Yax 2 converts every format (vendor/yax), Piccolo reads its fixtures and Gazebo models as standard files; next: Vegeta's export path (`export_yax` → `yax.convert`) per machine
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
