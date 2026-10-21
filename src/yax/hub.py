@@ -375,6 +375,8 @@ def _shape_to_usd(stage, p, s: Shape):
     prim = g.GetPrim()
     _attr(prim, "yax:name", Sdf.ValueTypeNames.String, s.name)
     _exact_pose(prim, s.pos, s.quat)
+    if s.kind != "mesh":                                                        # exact sizes (a scale op's decomposition rounds)
+        _attr(prim, "yax:size", Sdf.ValueTypeNames.DoubleArray, Vt.DoubleArray([float(v) for v in s.size]))
     _attr(prim, "yax:role", Sdf.ValueTypeNames.Token, s.role)
     if s.role == "collision":
         UsdPhysics.CollisionAPI.Apply(prim)
@@ -544,6 +546,16 @@ def _shape_from_usd(prim, M, k) -> Shape | None:
             o = UsdGeom.Gprim(prim).GetDisplayOpacityAttr().Get()
             rgba = (*map(float, c[0]), float(o[0]) if o else 1.0)
     kw = dict(name=name, pos=pos, quat=quat, role=role, rgba=rgba)
+    exact = _get(prim, "yax:size")
+    if exact is not None and not prim.IsA(UsdGeom.Mesh):                        # exact, as written
+        size = tuple(float(v) for v in exact)
+        if prim.IsA(UsdGeom.Cube):
+            return Shape(kind="box", size=size, **kw)
+        if prim.IsA(UsdGeom.Sphere):
+            return Shape(kind="sphere" if len(size) == 1 else "ellipsoid", size=size, **kw)
+        if prim.IsA(UsdGeom.Cylinder) or prim.IsA(UsdGeom.Capsule):
+            g = UsdGeom.Cylinder(prim) if prim.IsA(UsdGeom.Cylinder) else UsdGeom.Capsule(prim)
+            return Shape(kind="cylinder" if prim.IsA(UsdGeom.Cylinder) else "capsule", size=size, axis=(g.GetAxisAttr().Get() or "Z").lower(), **kw)
     if prim.IsA(UsdGeom.Cube):
         e = UsdGeom.Cube(prim).GetSizeAttr().Get() * k
         return Shape(kind="box", size=tuple(e * s for s in scale), **kw)

@@ -25,8 +25,8 @@ VERSION = "0.1"
 UNITS = {"length": "m", "mass": "kg", "time": "s", "angle": "rad"}
 FRAME = {"up": "+z", "forward": "+x", "handed": "right", "pose": "machine frame at q = 0"}
 #: The closed vocabulary of Yax attributes (the subset): anything else in the ``yax:`` or ``yx2:`` namespace is a problem.
-ATTRS = {"yax:name", "yax:kind", "yax:pos", "yax:quat", "yax:axis", "yax:limits", "yax:drive", "yax:data", "yax:mass",
-         "yax:com", "yax:inertia", "yax:role", "yax:uri", "yax:producer", "yax:features", "yx2:id"}
+ATTRS = {"yax:name", "yax:kind", "yax:pos", "yax:quat", "yax:size", "yax:axis", "yax:limits", "yax:drive", "yax:data",
+         "yax:mass", "yax:com", "yax:inertia", "yax:role", "yax:uri", "yax:producer", "yax:features", "yx2:id"}
 ROLES = ("collision", "visual")
 
 
