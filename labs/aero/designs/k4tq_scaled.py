@@ -1,5 +1,5 @@
-"""K4TQ scaled up to a take-off mass limit: K4TQ-B "Bertha" (≤ 24 kg: under the 25 kg C-class line with a 1 kg safety
-margin) and K4TQ-G "Ginna" (≤ 12.5 kg).
+"""K4TQ scaled up to a take-off mass limit: K4TQ-G "Ginna" (≤ 12.5 kg) and K4TQ-B "Bertha" (≤ 24 kg: under the 25 kg
+C-class line with a 1 kg safety margin — parked 2026-10-21, too heavy; kept in ``k4tq.VARIANTS``).
 
 The airframe is K4TQ-F1 "Freddy" with every length × s (``k4tq.scaled``: the stations stay fractions of the fuselage,
 the cargo cartridge grows with it); the hardware goes up a class — 12S Li-ion packs of the same cells, 12S FOC ESCs,
@@ -58,17 +58,21 @@ def build(s: float, **kw) -> dict:
     return sz.vehicle(BASE_DESIGN, **over(s, **kw))
 
 
-def _fill(s, limit, kw):
-    """The vehicle with the payload that brings the take-off mass to ``limit`` (linear in the payload; a second step
-    for the spar the heavier aircraft takes)."""
-    v = build(s, **{**kw, "payload_kg": 0.0})
+def _fill_with(make, limit):
+    """``make(payload_kg=…)`` with the payload that brings the take-off mass to ``limit`` (linear in the payload; up to
+    three steps for the spar the heavier aircraft takes)."""
+    v = make(payload_kg=0.0)
     pay = 0.0
     for _ in range(3):
         pay = max(pay + limit - v["mass"]["mass_kg"], 0.0)
-        v = build(s, **{**kw, "payload_kg": pay})
+        v = make(payload_kg=pay)
         if v["mass"]["mass_kg"] <= limit + 1e-3:
             break
     return v, pay
+
+
+def _fill(s, limit, kw):
+    return _fill_with(lambda **k: build(s, **{**kw, **k}), limit)
 
 
 def hover_ok(v: dict) -> tuple[bool, dict]:
@@ -185,7 +189,7 @@ def variant_dict(letter: str, s: float, kw: dict) -> dict:
     return {**o, "variant": letter, "title": title, "spar_tube_mm": tuple(spar), "made_calibration": {k: round(v, 3) for k, v in cal.items()}}
 
 
-def summary(designs=("B", "G"), reference=("F1",)) -> pd.DataFrame:
+def summary(designs=("G",), reference=("F1",)) -> pd.DataFrame:
     """The sized designs against Freddy: masses, payload, mission, hover, cruise, stall, the root and the spar."""
     rows = {}
     for d in list(reference) + list(designs):

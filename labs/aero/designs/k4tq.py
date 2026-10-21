@@ -88,6 +88,13 @@ CATALOGUE = {
         "15x10": {"d_in": 15, "p_in": 10.0, "mass_kg": 0.048, "price_eur": 26.0, "source": "APC 15x10E class, folding hub included"},
         "16x10": {"d_in": 16, "p_in": 10.0, "mass_kg": 0.055, "price_eur": 30.0, "source": "APC 16x10E class, folding hub included"},
         "17x10": {"d_in": 17, "p_in": 10.0, "mass_kg": 0.062, "price_eur": 34.0, "source": "APC 17x10E class, folding hub included"},
+        # K4TQ-F3 / G3 (the fast designs): higher pitch for the pitch speed the 34.5 m/s top speed needs — "to verify"
+        "16x12": {"d_in": 16, "p_in": 12.0, "mass_kg": 0.058, "price_eur": 32.0, "source": "APC 16x12E class, folding hub included"},
+        "16x13": {"d_in": 16, "p_in": 13.0, "mass_kg": 0.060, "price_eur": 34.0, "source": "folding 16x13 carbon class (Mejzlik / Aeronaut CAM folding class), to verify"},
+        "17x12": {"d_in": 17, "p_in": 12.0, "mass_kg": 0.065, "price_eur": 36.0, "source": "APC 17x12E class, folding hub included"},
+        "20x13": {"d_in": 20, "p_in": 13.0, "mass_kg": 0.090, "price_eur": 95.0, "source": "Mejzlik 20x13 carbon class + folding hub, to verify"},
+        "20x14": {"d_in": 20, "p_in": 14.0, "mass_kg": 0.092, "price_eur": 98.0, "source": "Mejzlik 20x14 carbon class + folding hub, to verify"},
+        "22x14": {"d_in": 22, "p_in": 14.0, "mass_kg": 0.105, "price_eur": 110.0, "source": "Mejzlik 22x14 carbon class + folding hub, to verify"},
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
@@ -106,6 +113,8 @@ CATALOGUE = {
         "30x15": {"d_in": 30, "p_in": 15.0, "mass_kg": 0.175, "price_eur": 180.0, "source": "Mejzlik 30x15 carbon class + folding hub, to verify"},
     },
     "esc": {"name": "40 A 6S BLHeli_32 / AM32 (e.g. T-Motor AIR 40A)", "mass_kg": 0.028, "price_eur": 35.0, "source": "AIR 40A class, in the nacelle"},
+    "esc_8s": {"name": "60 A 8S BLHeli_32 / AM32 (e.g. T-Motor F55A PRO II 8S class)", "mass_kg": 0.040, "price_eur": 60.0,
+               "source": "8S 60 A class in the nacelle (K4TQ-F3), to verify"},
     "esc_hv": {"name": "60 A 12S FOC ESC (e.g. T-Motor ALPHA 60A HV / Hobbywing XRotor Pro HV)", "mass_kg": 0.075, "price_eur": 150.0,
                "source": "12S 60 A class with the cooling fins in the nacelle's flow (K4TQ-B), to verify"},
     "battery": {   # Li-ion packs of Molicel P45B (og.batteries.CELLS: 4.5 Ah, 70 g per cell); +7 % for the BMS, wrap, leads
@@ -177,6 +186,9 @@ CATALOGUE = {
     },
 }
 
+for _n in range(2, 5):                                           # K4TQ-F3 "Freddy 3": 8S·nP of the same cells
+    CATALOGUE["battery"][f"8S{_n}P-P45B"] = {"cells_s": 8, "cells_p": _n, "capacity_ah": 4.5 * _n, "cell_v": 3.6, "mass_kg": 8 * _n * 0.070 * 1.07,
+                                             "max_A": 45.0 * _n, "price_eur": 55.0 * _n + 30.0, "source": f"Molicel P45B 8S{_n}P (BMS, wrap, leads), to verify"}
 for _n in range(2, 9):                                           # K4TQ-B "Bertha": 12S·nP of the same cells
     CATALOGUE["battery"][f"12S{_n}P-P45B"] = {"cells_s": 12, "cells_p": _n, "capacity_ah": 4.5 * _n, "cell_v": 3.6, "mass_kg": 12 * _n * 0.070 * 1.07,
                                               "max_A": 45.0 * _n, "price_eur": 75.0 * _n + 40.0, "source": f"Molicel P45B 12S{_n}P (BMS, wrap, leads), to verify"}
@@ -233,6 +245,8 @@ BASE = {
     "autonomy": False,                # K4TQ-A2: the companion computer and the perception (CATALOGUE["autonomy"])
     # K4TQ-B "Bertha": the scale of the airframe against K4TQ (``scaled``) and the hardware it takes
     "scale": 1.0, "esc": "esc", "root_set": "root",
+    "v_max_design": 30.0,             # m/s: the speed the actuator's aerodynamic torque is sized for (K4TQ-F3 / G3: their top speed + 10 %)
+    "v_map_max": None,                # m/s: the drive maps' airspeed range (None: 32, the scaled designs 44)
     "made_calibration": None,         # {item prefix: CAD / estimate} — the made parts' estimates corrected by K4TQ-F1's CAD (Bertha has no CAD yet)
 }
 # Names (2026-10-21): the aircraft is K4TQ-A, "Cathy" (the larger rear wing — Stage 1's "B"); K4TQ-A2 is Cathy fully autonomous
@@ -328,6 +342,24 @@ for _k, _v in SCALED.items():
     VARIANTS[_k] = scaled("F1", _s, esc="esc_hv", made_calibration=MADE_CALIBRATION, variant=_k,
                           title=f"K4TQ-{_k} \"{'Bertha' if _k == 'B' else 'Ginna'}\": K4TQ-F1 × {_s:g}, {_v['motor']} + {_v['prop']}, {_v['battery']}", **_v)
 NICKNAME.update({"B": "Bertha", "G": "Ginna"})
+
+# K4TQ-F3 "Freddy 3" and K4TQ-G3 "Ginna 3" (2026-10-21): the Jetson (as A2) and bigger motors, to match or exceed the
+# 15-inch FPV quad's top speed with a payload (34.5 m/s; k4tq_fast: the motor × propeller × pack sweep, data/k4tq/sweep_*.csv)
+FAST = {
+    "F3": dict(motor="MN505S-380", prop="16x12", battery="6S3P-P45B", esc="esc", payload_kg=1.0, v_top=42.0),
+    "G3": dict(motor="MN801S-150", prop="20x14", battery="12S3P-P45B", esc="esc_hv", payload_kg=2.0, v_top=39.0, s=1.35),
+}
+for _k, _v in FAST.items():
+    _v = dict(_v)
+    _top, _s = _v.pop("v_top"), _v.pop("s", 1.0)
+    _common = dict(autonomy=True, v_map_max=48, v_max_design=round(1.1 * _top, 1), root_set="root", **_v)
+    _nick = "Freddy 3" if _k == "F3" else "Ginna 3"
+    _title = f"K4TQ-{_k} \"{_nick}\": {'Freddy' if _k == 'F3' else 'Ginna'} + the Jetson, {_v['motor']} + {_v['prop']}, {_v['battery']} (top {_top:g} m/s)"
+    if _s == 1.0:
+        VARIANTS[_k] = {**VARIANTS["F2"], **_common, "spar_tube_mm": (16, 14), "variant": _k, "title": _title}
+    else:
+        VARIANTS[_k] = scaled("F2", _s, made_calibration=MADE_CALIBRATION, spar_tube_mm=(25, 22), variant=_k, title=_title, **_common)
+NICKNAME.update({"F3": "Freddy 3", "G3": "Ginna 3"})
 
 
 def avionics_power(p: dict) -> float:

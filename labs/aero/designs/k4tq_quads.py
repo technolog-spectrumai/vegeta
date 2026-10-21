@@ -360,7 +360,7 @@ def fpv15(payload_kg: float = 0.0, *, prop: str = "15x8", motor: str = "MN5006-4
             "R3 radius [km]": sz.quad_mission_radius(q, {"battery": bat}), "table": tab, "label": sz.label("CALC")}
 
 
-def speed_mass_table(designs=("A1", "F1", "G", "B"), fpv_payloads=(0.0, 1.0, 2.0)) -> pd.DataFrame:
+def speed_mass_table(designs=("A1", "F1", "G"), fpv_payloads=(0.0, 1.0, 2.0)) -> pd.DataFrame:
     """Mass with the pack (empty of payload, and at take-off), the top level speed and the range: the K4TQ designs (four
     motors for the top speed, two for the cruise; the sweep to 44 m/s) against the 15-inch FPV quad. Range: still air
     at the best-range speed on the usable pack, and the R3 radius (2 min hover, 20 % reserve, 8 m/s wind)."""

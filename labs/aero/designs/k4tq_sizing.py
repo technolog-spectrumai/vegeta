@@ -127,7 +127,9 @@ def drive(p: dict, *, prop_key: str | None = None, motor_key: str | None = None,
     ``data/k4tq/`` per components and mode."""
     prop_key, motor_key = prop_key or p["prop"], motor_key or p["motor"]
     cells = cells or k4tq.CATALOGUE["battery"][p["battery"]]["cells_s"]
-    if p.get("scale", 1.0) > 1.0:                                        # K4TQ-B flies faster: the map to 44 m/s
+    if p.get("v_map_max"):                                               # K4TQ-F3 / G3: the fast designs' maps
+        V = tuple(range(0, int(p["v_map_max"]) + 2, 2))
+    elif p.get("scale", 1.0) > 1.0:                                      # K4TQ-B flies faster: the map to 44 m/s
         V = tuple(range(0, 46, 2))
     return _drive(prop_key, motor_key, cells, v_cell, tuple(V), mocked())
 
@@ -801,7 +803,7 @@ def root_loads(veh: dict) -> dict:
     # actuator torque about the tilt axis (limit values)
     sec = veh["section"]["front"]
     c = w["mac"]
-    q_max = 0.5 * RHO * 30.0 ** 2
+    q_max = 0.5 * RHO * p.get("v_max_design", 30.0) ** 2
     aero_cruise = q_max * w["S_panel"] * c * (abs(sec["cm0"]) + 0.6 * abs(w["pivot_chord"] - 0.25))
     q_tr = 0.5 * RHO * 14.0 ** 2
     aero_transition = q_tr * w["S_panel"] * c * 1.2 * 0.15                         # CN 1.2 with the centre of pressure at 0.40 c
@@ -813,7 +815,7 @@ def root_loads(veh: dict) -> dict:
     I_theta = m_tip * (w["pivot_chord"] * w["c_at"](p["motor_y"]) + p["prop_ahead_of_le"]) ** 2 + m_panel * c ** 2 / 12
     accel = I_theta * (math.pi / 2) / (0.5 * TILT_TIME_S) ** 2 * 2
     handling = 20.0 * 0.06                                                        # a person holds a tip: 20 N at 60 mm from the axis
-    budget = {"aerodynamic, cruise at 30 m/s": aero_cruise, "aerodynamic, transition (separated)": aero_transition, "mass offset at n_limit": mass_offset,
+    budget = {f"aerodynamic, cruise at {p.get('v_max_design', 30.0):g} m/s": aero_cruise, "aerodynamic, transition (separated)": aero_transition, "mass offset at n_limit": mass_offset,
               "thrust-line offset": thrust_offset, "gyroscopic (1 rad/s yaw)": gyro, "tilt acceleration": accel}
     T_flight = max(aero_cruise, aero_transition) + mass_offset + thrust_offset + gyro + accel
     T_design = max(ULTIMATE * T_flight, handling)
