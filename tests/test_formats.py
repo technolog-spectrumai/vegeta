@@ -194,3 +194,32 @@ def test_detect_and_cli(tmp_path, capsys):
     assert cli.main(["show", str(tmp_path / "r.sdf")]) == 0
     out = capsys.readouterr().out
     assert "5 links, 4 joints" in out
+
+
+def test_repeated_shape_names(tmp_path):
+    """Gazebo models name a link's collision and visual alike, and every rotor's shape alike (Piccolo's drako_drone):
+    USD prims and MJCF geoms stay unique, the names are kept."""
+    m, _ = yax.read(HERE / "fixtures" / "twins.sdf")
+    yax.save(m, tmp_path / "twins.usda")
+    back, _ = yax.read(tmp_path / "twins.usda")
+    assert [s.name for s in back.link("rotor_0").shapes] == ["disk", "disk"]
+    yax.convert(HERE / "fixtures" / "twins.sdf", tmp_path / "twins.xml")
+    model, _ = _compiled(tmp_path / "twins.xml")
+    assert model.body_subtreemass[1] == pytest.approx(1.1) and model.ngeom == 5
+
+
+def test_gazebo_plugins_and_sensors_survive_sdf_and_are_reported_elsewhere(tmp_path):
+    """A Gazebo model's plugins (motor models, controllers) and sensors (cameras) go through USD verbatim and come back
+    in SDF; formats that cannot hold them (MJCF, URDF) report them."""
+    import xml.etree.ElementTree as ET
+    src = HERE / "fixtures" / "twins.sdf"
+    assert yax.convert(src, tmp_path / "twins.usda").dropped == []
+    rep = yax.convert(tmp_path / "twins.usda", tmp_path / "back.sdf")
+    assert rep.dropped == []
+    model = ET.parse(tmp_path / "back.sdf").getroot().find("model")
+    plug = model.find("plugin")
+    assert plug.get("name") == "gz::sim::systems::MulticopterMotorModel" and plug.find("motorConstant").text == "8.54858e-06"
+    cam = model.find("link[@name='base']/sensor")
+    assert cam.get("type") == "camera" and cam.find("topic").text == "camera/image_raw"
+    rep = yax.convert(src, tmp_path / "twins.xml")
+    assert any("machine data 'sdf'" in d for d in rep.dropped) and any("link base: sdf data (1 sensor)" in d for d in rep.dropped)

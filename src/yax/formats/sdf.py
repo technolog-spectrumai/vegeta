@@ -92,6 +92,10 @@ def read(path) -> tuple[Machine, Report]:
 
     for name, el in raw.items():
         lk = Link(name=name)
+        kept = {t: [ET.tostring(c, encoding="unicode").strip() for c in el.findall(t)] for t in ("sensor", "plugin")}
+        kept = {t: v for t, v in kept.items() if v}
+        if kept:
+            lk.data["sdf"] = kept
         lk.pos, lk.quat = link_pose(name)
         ine = el.find("inertial")
         if ine is not None:
@@ -152,6 +156,11 @@ def read(path) -> tuple[Machine, Report]:
         if dyn is not None and dyn.find("damping") is not None:
             j.data["damping"] = _vals(dyn, "damping", 1)[0]
         m.joints.append(j)
+    known = {"link", "joint", "pose", "static", "plugin"}
+    plugins = [ET.tostring(c, encoding="unicode").strip() for c in model.findall("plugin")]
+    extra = [ET.tostring(c, encoding="unicode").strip() for c in model if c.tag not in known]
+    if plugins or extra:
+        m.data["sdf"] = {k: v for k, v in (("plugins", plugins), ("extra", extra)) if v}
     if model.find("static") is not None and (model.find("static").text or "").strip() == "true":
         for lk in m.roots():
             if m.parent_joint(lk.name) is None:
@@ -172,8 +181,7 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     path = Path(path)
     rep = rep or Report("usd", str(path))
     mesh_dir = path.parent / f"{path.stem}_meshes"
-    for k in m.data:
-        rep.drop(f"machine data {k!r} (SDF has no place for it outside plugins)")
+    hub.report_data(m, rep, keep=("sdf",))
     out = ['<?xml version="1.0"?>', '<sdf version="1.9">', f"  <model name={quoteattr(m.name)}>"]
     for lk in m.links:
         out.append(f"    <link name={quoteattr(lk.name)}>")
@@ -211,6 +219,9 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             out.append(f"      </{s.role}>")
         for name, kg, pos in lk.point_masses:
             rep.drop(f"point mass {name} as a separate element (its mass is in {lk.name}'s inertial)")
+        for t in ("sensor", "plugin"):
+            for raw_el in lk.data.get("sdf", {}).get(t, []):
+                out += ["      " + line for line in raw_el.splitlines()]
         out.append("    </link>")
     for j in m.joints:
         child = m.link(j.child)
@@ -235,6 +246,8 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
         if j.drive:
             rep.drop(f"joint {j.name}: its drive (SDF has no actuator element; a Gazebo controller plugin carries it)")
         out.append("    </joint>")
+    for raw_el in m.data.get("sdf", {}).get("extra", []) + m.data.get("sdf", {}).get("plugins", []):
+        out += ["    " + line for line in raw_el.splitlines()]
     out += ["  </model>", "</sdf>"]
     path.write_text("\n".join(out) + "\n")
     return rep

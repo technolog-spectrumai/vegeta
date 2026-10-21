@@ -203,9 +203,8 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             for a, v in zip("xyz", _S @ com):
                 ET.SubElement(l, a).text = _fmt(v)
         fdm.append(mb)
-    for k in m.data:
-        if k != "jsbsim":
-            rep.drop(f"machine data {k!r} (JSBSim has no place for it)")
+    from .. import hub
+    hub.report_data(m, rep, keep=("jsbsim",))
     for lk in m.links:
         if lk.shapes:
             rep.drop(f"{lk.name}: its shapes (a JSBSim aircraft has no geometry)")

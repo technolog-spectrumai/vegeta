@@ -106,6 +106,19 @@ class Report:
         return head + (": nothing dropped" if not self.dropped else ":\n  dropped: " + "\n  dropped: ".join(self.dropped))
 
 
+def report_data(m: Machine, rep: Report, keep=()):
+    """Report the format-specific data a writer cannot carry (``keep``: the keys it writes back)."""
+    for k, v in m.data.items():
+        if k not in keep:
+            what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if isinstance(x, list)) if isinstance(v, dict) else ""
+            rep.drop(f"machine data {k!r}{f' ({what})' if what else ''}: the target format has no place for it")
+    for lk in m.links:
+        for k, v in lk.data.items():
+            if k not in keep and k != "free_joint":
+                what = ", ".join(f"{len(x)} {n}" for n, x in v.items()) if isinstance(v, dict) else k
+                rep.drop(f"link {lk.name}: {k} data ({what})")
+
+
 # --------------------------------------------------------------------------------------------------------- the maths
 def qmul(a, b):
     w1, x1, y1, z1 = a
@@ -285,8 +298,13 @@ def to_stage(m: Machine, path: str | None = None):
                 _attr(prim, "yax:inertia", Sdf.ValueTypeNames.DoubleArray, Vt.DoubleArray(list(np.ravel(lk.inertia).astype(float))))
         if lk.data:
             _attr(prim, "yax:data", Sdf.ValueTypeNames.String, json.dumps(lk.data, sort_keys=True))
-        for s in lk.shapes:
-            _shape_to_usd(stage, p.AppendChild(_ident(s.name)), s)
+        used = set()
+        for s in lk.shapes:                                                    # visual and collision may share a name
+            ident, n = _ident(s.name), 2
+            while ident in used:
+                ident, n = f"{_ident(s.name)}_{n}", n + 1
+            used.add(ident)
+            _shape_to_usd(stage, p.AppendChild(ident), s)
         for name, kg, pos in lk.point_masses:
             pm = UsdGeom.Xform.Define(stage, p.AppendChild(_ident("pm_" + name)))
             _set_pose(pm, pos, (1.0, 0.0, 0.0, 0.0))
