@@ -19,16 +19,17 @@ pytest.importorskip("mujoco")
 def test_properties_and_system_tags():
     m = rich()
     paths = {p.path: p for p in tg.properties(m)}
-    assert paths["link:base/pose"].system == "00core" and paths["link:base/mass"].system == "00mass"
-    assert paths["link:base/inertia"].system == "00inert" and paths["link:base/collision:hull"].system == "00geom"
-    assert paths["link:base/pmass:battery"].system == "00mass" and paths["link:base/data:material"].system == "00matl"
-    assert paths["link:base/data:strength/allowable_pa"].system == "00strgth" and paths["link:base/data:sdf/sensor"].system == "00sensor"
-    assert paths["link:base/data:sdf/plugin"].system == "00fmt"
-    assert paths["joint:shoulder/tree"].system == "00core" and paths["joint:shoulder/articulation"].system == "00joint"
-    assert paths["joint:shoulder/drive"].system == "00motor" and paths["joint:shoulder/data:motor/stall_nm"].system == "00motor"
-    assert paths["joint:shoulder/data:connection"].system == "00conn" and paths["joint:shoulder/data:damping"].system == "00joint"
-    assert paths["data:propulsion/propellers/p/coefficients"].system == "00motor" and paths["data:materials/al6061"].system == "00matl"
-    assert paths["producer"].system == "00prov"
+    assert paths["link:base/pose"].system == ("00core",) and paths["link:base/mass"].system == ("00mass",)
+    assert paths["link:base/inertia"].system == ("00inert",) and paths["link:base/collision:hull"].system == ("00geom",)
+    assert paths["link:base/pmass:battery"].system == ("00mass",) and paths["link:base/data:material"].system == ("00mat",)
+    assert paths["link:base/data:strength/allowable_pa"].system == ("00str",) and paths["link:base/data:sdf/sensor"].system == ("00sensor",)
+    assert paths["link:base/data:sdf/plugin"].system == ("00fmt",)
+    assert paths["joint:shoulder/tree"].system == ("00core",) and paths["joint:shoulder/articulation"].system == ("00joint",)
+    assert paths["joint:shoulder/drive"].system == ("00motor",) and paths["joint:shoulder/data:motor/stall_nm"].system == ("00motor",)
+    assert paths["joint:shoulder/data:connection"].system == ("00conn",) and paths["joint:shoulder/data:damping"].system == ("00joint",)
+    assert paths["data:propulsion/propellers/p/coefficients"].system == ("00prop",) and paths["data:materials/al6061"].system == ("00mat",)
+    assert paths["data:propulsion/motors/mo"].system == ("00prop", "00motor")       # a property in two categories
+    assert paths["producer"].system == ("00prov",)
     t = tg.table(m)
     assert t["link:base/mass"] == ["00mass"] and "link:base/pose" in t and set(tg.inventory(m)) >= set(tg.SYSTEM) - {"00fmt"} | {"00fmt"}
     assert all(tg.CODE.match(c) for c in tg.SYSTEM) and all(tg.is_system(c) for c in tg.SYSTEM)
@@ -39,7 +40,7 @@ def test_producer_tags_and_their_rules():
     m = rich()
     assert tg.tag(m, "data:propulsion/propellers/*", "boreas") == 6                 # the propeller and everything under it
     assert tg.tag(m, "link:*/mass", "nb08") == 2
-    assert tg.table(m)["data:propulsion/propellers/p"] == ["00motor", "boreas"] and tg.table(m)["link:arm/mass"] == ["00mass", "nb08"]
+    assert tg.table(m)["data:propulsion/propellers/p"] == ["00prop", "boreas"] and tg.table(m)["link:arm/mass"] == ["00mass", "nb08"]
     assert {"data:propulsion/propellers/p", "data:propulsion/propellers/p/coefficients/CT"} <= set(tg.inventory(m)["boreas"])
     assert tg.tag(m, "data:propulsion/propellers/p", "apc") == 1                      # a pattern without a star: one path
     for bad in ("00mine", "nine_char", "toolongcode", "", "a b", "é"):
@@ -55,11 +56,11 @@ def test_producer_tags_and_their_rules():
 def test_select_keeps_and_drops_by_tag_without_inventing(tmp_path):
     m = rich()
     tg.tag(m, "data:propulsion/*", "boreas")
-    cut = tg.select(m, drop=("00strgth", "00conn", "boreas"))
+    cut = tg.select(m, drop=("00str", "00conn", "boreas"))
     assert "strength" not in cut.links[0].data and "connections" not in cut.data and "connection" not in cut.joints[0].data
     assert cut.data["propulsion"] == {}                                        # its tagged children went; the key stays, empty
-    assert cut.tags["withheld"] == ["00conn", "00strgth", "boreas"] and "link:base/data:strength" not in cut.tags["table"]
-    assert tg.inventory(cut)["00strgth"] is None and tg.inventory(cut)["00matl"]
+    assert cut.tags["withheld"] == ["00conn", "00str", "boreas"] and "link:base/data:strength" not in cut.tags["table"]
+    assert tg.inventory(cut)["00str"] is None and tg.inventory(cut)["00mat"]
     assert tg.describe(m) != tg.describe(cut) and "strength" in m.links[0].data   # the source is untouched
     only = tg.select(m, keep=("00geom", "00mass"))
     assert all(lk.inertia is None for lk in only.links) and all(j.kind == "fixed" and j.drive is None for j in only.joints)
@@ -94,20 +95,22 @@ def test_consumer_check_against_system_and_producer_tags():
     v = tg.check(cut, req)
     assert not v.ok and [s.tag for s in v.unmet] == ["boreas"] and v.statuses["boreas"].status == tg.WITHHELD
     rover, _ = yax.read(ROVER)
-    v = tg.check(rover, tg.Requirements(required=("00strgth",)))
-    assert v.statuses["00strgth"].status == tg.ABSENT and "NOT served" in str(v)
+    v = tg.check(rover, tg.Requirements(required=("00str",)))
+    assert v.statuses["00str"].status == tg.ABSENT and "NOT served" in str(v)
     v = tg.check(rover, tg.Requirements(required=("00motor",)), fmt="mjcf")
     assert v.ok and "position actuators" in v.statuses["00motor"].detail
+    v = tg.check(m, tg.Requirements(required=("00prop",)), fmt="jsbsim")
+    assert v.ok and "coefficients against J" in v.statuses["00prop"].detail
 
 
 def test_cli_tags_and_select(tmp_path, capsys):
     from yax import cli
     assert cli.main(["tags", str(ROVER)]) == 0
     out = capsys.readouterr().out
-    assert "00geom:" in out and "00core:" in out and "00matl" not in out
+    assert "00geom:" in out and "00core:" in out and "00mat" not in out
     assert cli.main(["tags", str(ROVER), "--require", "00geom,00mass", "--optional", "00sensor", "--to", "sdf"]) == 0
     assert "served" in capsys.readouterr().out
-    assert cli.main(["tags", str(ROVER), "--require", "00strgth"]) == 1
+    assert cli.main(["tags", str(ROVER), "--require", "00str"]) == 1
     assert cli.main(["select", str(ROVER), str(tmp_path / "r.yx2"), "--tag", "link:*/mass=weighed", "--drop", "00inert,00motor"]) == 0
     m, _ = yax.read(tmp_path / "r.yx2")
     assert m.tags["withheld"] == ["00inert", "00motor"] and all(lk.inertia is None for lk in m.links) and not any(j.drive for j in m.joints)

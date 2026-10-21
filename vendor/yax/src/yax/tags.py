@@ -10,9 +10,10 @@ always validate against them::
     00core    the skeleton — the machine's name, the links' identities and poses, the joint tree (never withheld)
     00geom    shapes (collision and visual, meshes)                 00mass    masses, centres of mass, point masses
     00inert   inertia tensors                                       00joint   articulation: kinds, axes, limits, damping
-    00motor   drives, joint motors, the propulsion block, ogma      00matl    materials (catalogue and per link)
-    00strgth  strength                                              00conn    connections
-    00aero    aerodynamics, JSBSim sections, per-link aero          00sensor  sensors (and SDF sensors carried verbatim)
+    00motor   drives, motor models, the propulsion motors, ogma     00prop    propulsion: rotors, propellers, maps, reduced constants
+    00mat     materials (catalogue and per link)                    00str     structural strength
+    00conn    connections                                           00aero    aerodynamics, JSBSim sections, per-link aero
+    00sensor  sensors (and SDF sensors carried verbatim)
     00prov    the producer stamp, provenance data                   00fmt     another format's own data carried verbatim
 
 Property paths (``properties(m)``)::
@@ -22,8 +23,8 @@ Property paths (``properties(m)``)::
     joint:<name>/tree          joint:<name>/articulation joint:<name>/drive     joint:<name>/data:<key>[/<key>…]
     data:<key>[/<key>…]        producer
 
-``data:`` paths reach every dictionary key at any depth (a tag on ``data:propulsion`` covers the block; a tag on
-``data:propulsion/propellers/apc`` one propeller). ``Machine.tags`` is ``{"table": {path: [codes]}, "withheld":
+``data:`` paths reach every dictionary key at any depth; a tag on a path covers everything under it (a tag on
+``data:propulsion`` covers the block, a tag on ``data:propulsion/propellers/apc`` one propeller and its fields). ``Machine.tags`` is ``{"table": {path: [codes]}, "withheld":
 [codes]}``: the table lists every tagged property (system tags included, so the file stands on its own), ``withheld``
 the tags the producer dropped. Nothing is invented: a dropped property is absent (a mass ``None``, a joint fixed, a
 key gone), never defaulted.
@@ -42,19 +43,23 @@ from .hub import Joint, Machine, Report
 CODE = re.compile(r"^[A-Za-z0-9]{1,8}$")
 SYSTEM_PREFIX = "00"
 SYSTEM = {"00core": "the skeleton: the machine's name, the links' identities and poses, the joint tree",
-          "00geom": "shapes (collision and visual), meshes", "00mass": "masses, centres of mass, point masses",
+          "00geom": "geometry: shapes (collision and visual), meshes", "00mass": "mass properties: masses, centres of mass, point masses",
           "00inert": "inertia tensors", "00joint": "articulation: joint kinds, axes, limits, passive damping",
-          "00motor": "drives, joint motors, the propulsion block, ogma rotor constants",
-          "00matl": "materials: the catalogue and each link's", "00strgth": "strength: allowables, safety factors, analysis results",
-          "00conn": "connections between links", "00aero": "aerodynamics: coefficients, JSBSim sections, per-link aero",
+          "00motor": "motors and actuators: joint drives, motor models (stall, no-load, curves, transmission), the propulsion motors",
+          "00prop": "propulsion: rotors, propellers (geometry, CT/CP/CQ against J, performance maps), reduced rotor constants",
+          "00mat": "materials: the catalogue and each link's", "00str": "structural strength: allowables, safety factors, analysis results",
+          "00conn": "physical connections between links", "00aero": "aerodynamics: coefficients, tables, reference points, JSBSim sections",
           "00sensor": "sensors, SDF sensors carried verbatim", "00prov": "the producer stamp and provenance data",
           "00fmt": "another format's own data carried verbatim (mjcf, sdf plugins)"}
 #: Machine data keys → system tag (the contract); unknown keys get no system tag (a producer tags them).
-DATA_TAGS = {"propulsion": "00motor", "ogma": "00motor", "materials": "00matl", "strength": "00strgth", "connections": "00conn",
-             "aerodynamics": "00aero", "jsbsim": "00aero", "sensors": "00sensor", "provenance": "00prov", "mjcf": "00fmt", "sdf": "00fmt"}
-LINK_DATA_TAGS = {"motor": "00motor", "material": "00matl", "strength": "00strgth", "aero": "00aero", "sensors": "00sensor",
-                  "sdf": "00fmt", "free_joint": "00core"}
-JOINT_DATA_TAGS = {"motor": "00motor", "connection": "00conn", "damping": "00joint", "effort": "00joint", "velocity": "00joint"}
+DATA_TAGS = {"propulsion": ("00prop",), "ogma": ("00prop", "00motor"), "motors": ("00motor",), "materials": ("00mat",),
+             "strength": ("00str",), "connections": ("00conn",), "aerodynamics": ("00aero",), "jsbsim": ("00aero",),
+             "sensors": ("00sensor",), "provenance": ("00prov",), "mjcf": ("00fmt",), "sdf": ("00fmt",)}
+#: Deeper data paths that carry more system tags than their block (a property may belong to several categories).
+DATA_PATH_TAGS = {"data:propulsion/motors": ("00motor",)}
+LINK_DATA_TAGS = {"motor": ("00motor",), "material": ("00mat",), "strength": ("00str",), "aero": ("00aero",), "sensors": ("00sensor",),
+                  "sdf": ("00fmt",), "free_joint": ("00core",)}
+JOINT_DATA_TAGS = {"motor": ("00motor",), "connection": ("00conn",), "damping": ("00joint",), "effort": ("00joint",), "velocity": ("00joint",)}
 KINDS = ("pose", "mass", "inertia", "shape", "pmass", "tree", "articulation", "drive", "data", "producer")
 #: What each format holds, by property kind (a tag is unsupported when none of its properties' kinds are).
 SUPPORT = {"usd": set(KINDS), "yx2": set(KINDS),
@@ -65,11 +70,12 @@ SUPPORT = {"usd": set(KINDS), "yx2": set(KINDS),
            "package": {"pose", "shape", "mass", "inertia", "producer"}}
 #: Data paths a format holds beyond the kinds above (prefix match).
 SUPPORT_DATA = {"sdf": ("data:sdf", "link:*/data:sdf"), "jsbsim": ("data:propulsion", "data:jsbsim"), "mjcf": ("data:mjcf",)}
-PARTIAL = {("mjcf", "00motor"): "joint drives as position actuators; no motor curves, no propellers",
+PARTIAL = {("mjcf", "00motor"): "joint drives as position actuators; no motor models, no propellers",
            ("urdf", "00joint"): "ball joints as fixed; the drive's max force as the effort limit",
            ("sdf", "00joint"): "no drives (a plugin carries them)",
            ("jsbsim", "00mass"): "one rigid body: the links' masses lumped at q = 0",
-           ("jsbsim", "00motor"): "propellers and electric engines from the propulsion block; no joint drives"}
+           ("jsbsim", "00motor"): "propellers and electric engines from the propulsion block; no joint drives",
+           ("jsbsim", "00prop"): "the propellers' coefficients against J and the motors' power; not the grids or stations"}
 
 
 def is_system(code: str) -> bool:
@@ -90,15 +96,16 @@ def check_code(code: str, *, system_ok: bool = False) -> str:
 class Property:
     path: str
     kind: str
-    system: str | None            # the system tag Yax assigns, None for data under an unknown key
+    system: tuple                 # the system tags Yax assigns (a property may belong to several categories); () under an unknown key
 
 
 def _data_paths(prefix: str, d, system, out: list):
     for k, v in d.items():
         p = f"{prefix}/{k}"
-        out.append(Property(p, "data", system))
+        sys_ = tuple(system) + tuple(t for pre, ts in DATA_PATH_TAGS.items() if p == pre or p.startswith(pre + "/") for t in ts if t not in system)
+        out.append(Property(p, "data", sys_))
         if isinstance(v, dict):
-            _data_paths(p, v, system, out)
+            _data_paths(p, v, sys_, out)
 
 
 def properties(m: Machine) -> list:
@@ -106,42 +113,42 @@ def properties(m: Machine) -> list:
     out = []
     for lk in m.links:
         L = f"link:{lk.name}"
-        out.append(Property(f"{L}/pose", "pose", "00core"))
+        out.append(Property(f"{L}/pose", "pose", ("00core",)))
         if lk.mass is not None:
-            out.append(Property(f"{L}/mass", "mass", "00mass"))
+            out.append(Property(f"{L}/mass", "mass", ("00mass",)))
         if lk.inertia is not None:
-            out.append(Property(f"{L}/inertia", "inertia", "00inert"))
+            out.append(Property(f"{L}/inertia", "inertia", ("00inert",)))
         for s in lk.shapes:
-            out.append(Property(f"{L}/{s.role}:{s.name}", "shape", "00geom"))
+            out.append(Property(f"{L}/{s.role}:{s.name}", "shape", ("00geom",)))
         for n, _, _ in lk.point_masses:
-            out.append(Property(f"{L}/pmass:{n}", "pmass", "00mass"))
+            out.append(Property(f"{L}/pmass:{n}", "pmass", ("00mass",)))
         for k, v in lk.data.items():
-            sys_ = LINK_DATA_TAGS.get(k)
+            sys_ = LINK_DATA_TAGS.get(k, ())
             out.append(Property(f"{L}/data:{k}", "data", sys_))
             if k == "sdf" and isinstance(v, dict):                             # verbatim SDF: sensors are sensors
                 for kk, vv in v.items():
-                    out.append(Property(f"{L}/data:sdf/{kk}", "data", "00sensor" if kk == "sensor" else "00fmt"))
+                    out.append(Property(f"{L}/data:sdf/{kk}", "data", ("00sensor",) if kk == "sensor" else ("00fmt",)))
             elif isinstance(v, dict):
                 _data_paths(f"{L}/data:{k}", v, sys_, out)
     for j in m.joints:
         J = f"joint:{j.name}"
-        out.append(Property(f"{J}/tree", "tree", "00core"))
+        out.append(Property(f"{J}/tree", "tree", ("00core",)))
         if j.kind != "fixed" or j.lower is not None:
-            out.append(Property(f"{J}/articulation", "articulation", "00joint"))
+            out.append(Property(f"{J}/articulation", "articulation", ("00joint",)))
         if j.drive:
-            out.append(Property(f"{J}/drive", "drive", "00motor"))
+            out.append(Property(f"{J}/drive", "drive", ("00motor",)))
         for k, v in j.data.items():
-            sys_ = JOINT_DATA_TAGS.get(k)
+            sys_ = JOINT_DATA_TAGS.get(k, ())
             out.append(Property(f"{J}/data:{k}", "data", sys_))
             if isinstance(v, dict):
                 _data_paths(f"{J}/data:{k}", v, sys_, out)
     for k, v in m.data.items():
-        sys_ = DATA_TAGS.get(k)
+        sys_ = DATA_TAGS.get(k, ())
         out.append(Property(f"data:{k}", "data", sys_))
         if isinstance(v, dict):
             _data_paths(f"data:{k}", v, sys_, out)
     if m.producer:
-        out.append(Property("producer", "producer", "00prov"))
+        out.append(Property("producer", "producer", ("00prov",)))
     return out
 
 
@@ -150,9 +157,10 @@ def table(m: Machine) -> dict:
     given = (m.tags or {}).get("table", {})
     out = {}
     for p in properties(m):
-        codes = set(given.get(p.path, ()))
-        if p.system:
-            codes.add(p.system)
+        codes = set(p.system)
+        parts = p.path.split("/")
+        for i in range(1, len(parts) + 1):                                     # a producer's tag covers the subtree under its path
+            codes |= {c for c in given.get("/".join(parts[:i]), ()) if not is_system(c) or i == len(parts)}
         if codes:
             out[p.path] = sorted(codes)
     return out

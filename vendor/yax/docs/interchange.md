@@ -34,10 +34,11 @@ none until a producer tags them):
 
 | Key | Recommended shape | System tag |
 |---|---|---|
-| machine `propulsion`, `ogma` | docs/converter.md "Propulsion": rotors, propellers (CT/CP against J, the grid), motors, reduced constants | `00motor` |
-| joint `motor` | `{"stall_nm", "no_load_rad_s", "rated_nm", "kt_nm_per_a", "R_ohm", "I0_a", "voltage_v", "gear_ratio", "torque_speed": {"rad_s": [...], "nm": [...]}, "source"}` | `00motor` |
-| machine `materials`, link `material` | `{name: {"density_kg_m3", "E_pa", "nu", "yield_pa", "ultimate_pa", "source"}}`; a link names one or holds one | `00matl` |
-| machine `strength`, link `strength` | `{"allowable_pa", "safety_factor", "analysis": {"tool", "case", "max_stress_pa", "margin", "source"}}` — results of analyses that ran, never computed by Yax | `00strgth` |
+| machine `propulsion` | docs/engineering.md: rotors, propellers (CT/CP/CQ against J, the grid), motors, reduced constants | `00prop` (its `motors` also `00motor`) |
+| machine `ogma` | reduced rotor constants (Gazebo's motor model) | `00prop`, `00motor` |
+| machine `motors`, joint `motor` | docs/engineering.md: the motor model (stall, no-load, curve, constants, inertia, limits, transmission); a joint names a catalogue motor or holds one | `00motor` |
+| machine `materials`, link `material` | `{name: {"density_kg_m3", "E_pa", "nu", "yield_pa", "ultimate_pa", "source"}}`; a link names one or holds one | `00mat` |
+| machine `strength`, link `strength` | `{"allowable_pa", "safety_factor", "analysis": {"tool", "case", "max_stress_pa", "margin", "source"}}` — results of analyses that ran, never computed by Yax | `00str` |
 | machine `connections`, joint `connection` | `[{"name", "links": [a, b], "type", "spec": {…}, "rating": {"shear_n", "tension_n", "torque_nm"}, "source"}]` | `00conn` |
 | machine `aerodynamics`, `jsbsim`, link `aero` | `{"reference": {"S_m2", "b_m", "c_m", "frame"}, "coefficients", "derivatives", "polars", "source"}`; an aircraft's JSBSim sections verbatim | `00aero` |
 | machine `sensors`, link `sensors`; link `sdf/sensor` | `[{"name", "type", "pos", "quat", "spec": {…}}]` in the link frame; SDF sensors carried verbatim | `00sensor` |
@@ -56,9 +57,10 @@ a number comes from. Yax never fills a field a producer left out.
 | `00mass` | masses, centres of mass, point masses |
 | `00inert` | inertia tensors |
 | `00joint` | articulation: joint kinds, axes, limits, passive damping, effort and velocity limits |
-| `00motor` | drives, joint motors, the propulsion block, ogma rotor constants |
-| `00matl` | materials: the catalogue and each link's |
-| `00strgth` | strength: allowables, safety factors, analysis results |
+| `00motor` | motors and actuators: joint drives, motor models, the propulsion motors, ogma rotor constants |
+| `00prop` | propulsion: rotors, propellers (geometry, coefficients, maps), reduced rotor constants |
+| `00mat` | materials: the catalogue and each link's |
+| `00str` | strength: allowables, safety factors, analysis results |
 | `00conn` | connections between links |
 | `00aero` | aerodynamics, JSBSim sections, per-link aero |
 | `00sensor` | sensors, SDF sensors carried verbatim |
