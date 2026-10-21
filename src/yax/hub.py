@@ -275,6 +275,7 @@ def to_stage(m: Machine, path: str | None = None):
         if lk.mass is not None:
             mapi = UsdPhysics.MassAPI.Apply(prim)
             mapi.CreateMassAttr(float(lk.mass))
+            _attr(prim, "yax:mass", Sdf.ValueTypeNames.Double, float(lk.mass))
             mapi.CreateCenterOfMassAttr(Gf.Vec3f(*map(float, lk.com)))
             _attr(prim, "yax:com", Sdf.ValueTypeNames.Double3, Gf.Vec3d(*map(float, lk.com)))
             if lk.inertia is not None:
@@ -418,7 +419,7 @@ def from_stage(stage) -> Machine:
         names[prim.GetPath()] = lk.name
         if prim.HasAPI(UsdPhysics.MassAPI):
             mapi = UsdPhysics.MassAPI(prim)
-            lk.mass = float(mapi.GetMassAttr().Get())
+            lk.mass = float(_get(prim, "yax:mass", mapi.GetMassAttr().Get()))
             com = _get(prim, "yax:com") or mapi.GetCenterOfMassAttr().Get()
             lk.com = tuple(float(v) * (1 if _get(prim, "yax:com") else k) for v in com)
             Ia = _get(prim, "yax:inertia")

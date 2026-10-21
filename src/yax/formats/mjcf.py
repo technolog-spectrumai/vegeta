@@ -70,6 +70,7 @@ def read(path, *, xml: str | None = None) -> tuple[Machine, Report]:
             jt = int(model.jnt_type[j])
             jname = nm(mujoco.mjtObj.mjOBJ_JOINT, j, f"joint{j}")
             if jt == 0:                                                         # free: the root floats
+                lk.data["free_joint"] = jname
                 continue
             child = bname[b] if i == len(joints) - 1 else f"{bname[b]}__{jname}"
             if child != bname[b]:                                               # several dofs on one body: massless links
@@ -94,7 +95,7 @@ def read(path, *, xml: str | None = None) -> tuple[Machine, Report]:
 
 
 def _f(v) -> str:
-    return " ".join(f"{float(x):.12g}" for x in np.ravel(v))
+    return " ".join(f"{float(x):.17g}" for x in np.ravel(v))
 
 
 def write(m: Machine, path, rep: Report | None = None) -> Report:
@@ -120,7 +121,7 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             pos, quat = hub.to_frame(lk.pos, lk.quat, parent.pos, parent.quat)
         out = [f'{pad}<body name={quoteattr(lk.name)} pos="{_f(pos)}" quat="{_f(quat)}">']
         if joint is None:
-            out.append(f'{pad}  <freejoint name={quoteattr(lk.name + "_free")}/>')
+            out.append(f'{pad}  <freejoint name={quoteattr(lk.data.get("free_joint", lk.name + "_free"))}/>')
         elif joint.kind != "fixed":
             Rl = hub.R(lk.quat).T
             jp = Rl @ (np.asarray(joint.pos) - np.asarray(lk.pos))
@@ -131,11 +132,11 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
             if joint.lower is not None and joint.upper is not None and joint.kind in ("revolute", "prismatic"):
                 a.append(f'limited="true" range="{_f((joint.lower, joint.upper))}"')
             if "damping" in joint.data:
-                a.append(f'damping="{joint.data["damping"]:.12g}"')
+                a.append(f'damping="{joint.data["damping"]:.17g}"')
             out.append(f'{pad}  <joint {" ".join(a)}/>')
         if lk.mass:
             I = np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3)), float)
-            out.append(f'{pad}  <inertial pos="{_f(lk.com)}" mass="{lk.mass:.12g}" '
+            out.append(f'{pad}  <inertial pos="{_f(lk.com)}" mass="{lk.mass:.17g}" '
                        f'fullinertia="{_f((I[0, 0], I[1, 1], I[2, 2], I[0, 1], I[0, 2], I[1, 2]))}"/>')
         for s in lk.shapes:
             a = [f"name={quoteattr(s.name)}"]
@@ -143,14 +144,14 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
                 mesh_dir.mkdir(parents=True, exist_ok=True)
                 fname = f"{hub._ident(lk.name)}__{hub._ident(s.name)}.stl"
                 pts, faces = np.asarray(s.points, float), np.asarray(s.faces, int)
-                stl.write_binary(mesh_dir / fname, [tuple(map(tuple, pts[f])) for f in faces])
+                stl.write(mesh_dir / fname, [tuple(map(tuple, pts[f])) for f in faces])
                 assets.append(f'    <mesh name={quoteattr(fname[:-4])} file={quoteattr(str(Path(mesh_dir.name) / fname))}/>')
                 a += ['type="mesh"', f'mesh={quoteattr(fname[:-4])}']
                 quat = s.quat
             else:
                 typ = s.kind
-                sz = {"sphere": s.size[:1], "ellipsoid": s.size, "box": np.asarray(s.size) / 2,
-                      "cylinder": (s.size[0], s.size[1] / 2), "capsule": (s.size[0], s.size[1] / 2)}[typ]
+                sz = (s.size[:1] if typ == "sphere" else s.size if typ == "ellipsoid" else np.asarray(s.size) / 2
+                      if typ == "box" else (s.size[0], s.size[1] / 2))
                 quat = s.quat
                 if typ in ("cylinder", "capsule") and s.axis != "z":
                     quat = hub.qnorm(hub.qmul(s.quat, hub.quat_from_R(hub._AXIS_FROM_Z[s.axis])))
@@ -177,17 +178,17 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     actuators = []
     for j in m.joints:
         if j.drive and j.kind in ("revolute", "continuous", "prismatic"):
-            a = [f'joint={quoteattr(j.name)}', f'kp="{j.drive.get("stiffness", 0.0):.12g}"']
+            a = [f'joint={quoteattr(j.name)}', f'kp="{j.drive.get("stiffness", 0.0):.17g}"']
             if j.drive.get("damping"):
-                a.append(f'kv="{j.drive["damping"]:.12g}"')
+                a.append(f'kv="{j.drive["damping"]:.17g}"')
             if j.drive.get("max_force"):
-                a.append(f'forcelimited="true" forcerange="{-j.drive["max_force"]:.12g} {j.drive["max_force"]:.12g}"')
+                a.append(f'forcelimited="true" forcerange="{-j.drive["max_force"]:.17g} {j.drive["max_force"]:.17g}"')
             actuators.append(f'    <position name={quoteattr(j.name + "_drive")} {" ".join(a)}/>')
     opt = m.data.get("mjcf", {})
     head = [f'<mujoco model={quoteattr(m.name)}>',
             '  <compiler angle="radian"' + (' boundmass="1e-9" boundinertia="1e-12"' if massless else "") + "/>"]
     if opt:
-        head.append(f'  <option timestep="{opt.get("timestep", 0.002):.12g}" gravity="{_f(opt.get("gravity", (0, 0, -9.81)))}"/>')
+        head.append(f'  <option timestep="{opt.get("timestep", 0.002):.17g}" gravity="{_f(opt.get("gravity", (0, 0, -9.81)))}"/>')
     if massless:
         rep.drop("massless jointed links (several dofs on one body): given MuJoCo's minimum mass 1e-9 kg")
     xml = head + (["  <asset>", *assets, "  </asset>"] if assets else []) + ["  <worldbody>", *lines, "  </worldbody>"]
