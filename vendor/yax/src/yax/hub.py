@@ -96,6 +96,7 @@ class Report:
     source: str
     target: str
     dropped: list = field(default_factory=list)
+    changes: list = field(default_factory=list)                 # yax.sync: every value it changed (old → new)
 
     def drop(self, what: str):
         if what not in self.dropped:
@@ -103,7 +104,10 @@ class Report:
 
     def __str__(self):
         head = f"{self.source} → {self.target}"
-        return head + (": nothing dropped" if not self.dropped else ":\n  dropped: " + "\n  dropped: ".join(self.dropped))
+        if not self.dropped and not self.changes:
+            return head + ": nothing dropped"
+        lines = [f"  changed: {c}" for c in self.changes] + [f"  dropped: {d}" for d in self.dropped]
+        return head + ":\n" + "\n".join(lines)
 
 
 def report_data(m: Machine, rep: Report, keep=()):
@@ -591,3 +595,28 @@ def tessellate(s: Shape, n: int = 24) -> tuple:
 
 _AXIS_FROM_Z = {"z": np.eye(3), "x": np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], float),
                 "y": np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], float)}
+
+
+def lump(m: Machine, name: str | None = None) -> Machine:
+    """The whole machine as one rigid link at q = 0, in its root's frame: total mass, centre and inertia, every shape
+    moved onto it; joints gone (for simulators that model the body as one rigid frame)."""
+    root = m.roots()[0]
+    parts = []
+    out = Link(name=name or root.name, pos=root.pos, quat=root.quat, data=dict(root.data))
+    for lk in m.links:
+        Rl = R(lk.quat)
+        if lk.mass:
+            parts.append((lk.mass, np.asarray(lk.pos) + Rl @ np.asarray(lk.com),
+                          Rl @ np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3))) @ Rl.T))
+        for s in lk.shapes:
+            p, q = to_frame(*from_frame(s.pos, s.quat, lk.pos, lk.quat), root.pos, root.quat)
+            out.shapes.append(Shape(**{**s.__dict__, "pos": p, "quat": q, "name": s.name if lk is root else f"{lk.name}_{s.name}"}))
+        out.point_masses += [(n, kg, tuple(to_frame(from_frame(pp, (1, 0, 0, 0), lk.pos, lk.quat)[0], (1, 0, 0, 0), root.pos, root.quat)[0]))
+                             for n, kg, pp in lk.point_masses]
+    M = sum(p[0] for p in parts)
+    if M > 0:
+        com_w = sum(mm * c for mm, c, _ in parts) / M
+        J = sum(I + mm * (np.dot(c - com_w, c - com_w) * np.eye(3) - np.outer(c - com_w, c - com_w)) for mm, c, I in parts)
+        Rr = R(root.quat)
+        out.mass, out.com, out.inertia = float(M), tuple(Rr.T @ (com_w - np.asarray(root.pos))), Rr.T @ J @ Rr
+    return Machine(name=m.name, links=[out], data=dict(m.data), producer=dict(m.producer))
