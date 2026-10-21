@@ -103,7 +103,8 @@ def kind_of(rel: Path) -> str:
 def package_roots(root: Path) -> list[Path]:
     """Directories on sys.path for absolute imports: every */src (the distributions), plus the repository root."""
     roots = [p for p in root.rglob("src") if p.is_dir() and not (set(p.relative_to(root).parts) & SKIP_DIRS)]
-    return sorted(roots) + [root]
+    labs = [d for d in sorted(root.glob("labs/*/*")) if d.is_dir() and d.name in ("designs", "common", "exp", "sims")]
+    return sorted(roots) + labs + [root]                                     # a lab's folders are on its sys.path
 
 
 def dotted_index(root: Path, files: list[Path]) -> dict[str, Path]:
@@ -308,6 +309,8 @@ def family_of(rel: Path, kind: str) -> str:
     a = area_of(rel)
     if kind == "test":
         return "tests"
+    if rel.parts[0] == "labs" and len(rel.parts) > 3:                       # in a lab: the stage it runs from
+        return {"studies": "notebooks", "exp": "exp", "sims": "sims", "campaigns": "campaigns"}.get(rel.parts[2], "designs")
     if kind == "notebook":
         return "notebooks"
     return {"designs": "designs", "races": "races", "scenarios": "scenarios", "side_labs": "side_labs",
@@ -392,6 +395,12 @@ def dump(root: Path, out_path: Path, body: bool = True) -> dict:
                     else:
                         mod_xml.write(f"  <import name={quoteattr(tname)} line=\"{line}\" "
                                       f"external={quoteattr(tname.lstrip('.').split('.')[0])}{d}/>\n")
+            for c in ast.walk(tree):                                         # "../designs/velutina.py": loaded by path
+                if isinstance(c, ast.Constant) and isinstance(c.value, str) and c.value.endswith(".py") and "\n" not in c.value:
+                    hit = (f.parent / c.value).resolve()
+                    if hit.is_file() and hit != f.resolve() and root in hit.parents:
+                        mod_xml.write(f"  <import name={quoteattr(c.value)} line=\"{c.lineno}\" "
+                                      f"target={quoteattr(hit.relative_to(root).as_posix())} how=\"path\" dynamic=\"1\"/>\n")
             for dd in definitions(tree):
                 mod_xml.write("  <def" + "".join(f" {k}={quoteattr(str(v))}" for k, v in dd.items()) + "/>\n")
             if err:

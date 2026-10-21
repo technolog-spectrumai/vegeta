@@ -52,6 +52,16 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
   - [x] Piccolo takes it: `vehicles/received/drongo.usda` → `drako_drongo` through `yax sync` (Piccolo P2.8b)
   - [ ] part data for the rovers and walkers (wheel radii, servo limits) when Piccolo maps one — a wheeled diff-drive rover for Iguana first
 
+## Stage V7 — Labs on a common library layer (2026-10-21)
+- [x] V7.1 The lab rules hold in place: `libs/labkit` (bootstrap, machine registry, control, movie, kinematics, parts); `vegeta.mock.on_install` (designs coarsen themselves); the export reads each lab's `designs/machines.py`; `tools/labs.py check` in smoke
+- [x] V7.2 The libraries live in `libs/` (vegeta-cli, -core, -ai, -fidia, ogma, labkit)
+- [x] V7.3 `labs/{aero,land,legged,marine,studio}` in lifecycle folders (`studies, designs, sims, campaigns, exp, common, tests`); `components/` folded into `designs/`; all lab tests pass on mocks
+- [x] V7.4 `tools/lab.py` (test, run, new-exp, promote, demote, export, readme), generated lab READMEs (machines' stages); `user_tests.sh` mocks only, per lab
+- [x] V7.5 The graph effects measured (`docs/anatomy`): 0 cross-lab imports, 0 libs → lab imports, modularity 0.419 → 0.455, each lab reached by itself only (entropy 0), the libraries by several (0.57–0.99)
+- [ ] V7.6 Notebooks: replace the `sys.path.insert(0, "../designs")` cells with `bootstrap.lab("<lab>", DEBUG)` (new notebooks get it from `tools/lab.py new-exp`)
+- [ ] V7.7 Fill each lab's `common/` with what its studies repeat; the tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py` …) into one `vegeta.cli` util
+- [ ] V7.8 Marine and studio get tests
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)

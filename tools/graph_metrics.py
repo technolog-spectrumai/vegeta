@@ -726,14 +726,61 @@ def _rel(p: Path) -> str:
         return str(p)
 
 
+def partition(dep, mods) -> dict:
+    """The lab layout's numbers (tools/labs.py): edges across labs and from libs into labs, the modularity of the
+    labs + library packages, and each lab's instability."""
+    from networkx.algorithms.community import modularity
+    sys.path.insert(0, str(ROOT / "tools"))
+    import labs as L
+    group = {}
+    for p, m in mods.items():
+        g, _ = L.place(p)
+        group[p] = f"lib:{m.area}" if g in ("libs", "vendor") else g
+    cross = lib_lab = 0
+    out_n, in_n = Counter(), Counter()
+    for a, b in dep.edges():
+        ga, gb = L.place(a)[0], L.place(b)[0]
+        if ga in L.LABS and gb in L.LABS and ga != gb:
+            cross += 1
+        if ga == "libs" and gb in L.LABS:
+            lib_lab += 1
+        if group[a] != group[b]:
+            out_n[group[a]] += 1
+            in_n[group[b]] += 1
+    U = dep.to_undirected()
+    comms = defaultdict(set)
+    for n in U:
+        comms[group[n]].add(n)
+    inst = {g: round(out_n[g] / (out_n[g] + in_n[g]), 2) for g in sorted(set(group.values())) if out_n[g] + in_n[g]}
+    # which labs reach a part: the entropy over the labs of the entry points whose imports reach it
+    import networkx as nx
+    reach = defaultdict(Counter)
+    for p, m in mods.items():
+        g = L.place(p)[0]
+        if g in L.LABS and m.kind in ("notebook", "script"):
+            for q in nx.descendants(dep, p) | {p}:
+                reach[group[q]][g] += 1
+    lab_entropy = {g: round(entropy(c), 3) for g, c in sorted(reach.items())}
+    return {"cross_lab_edges": cross, "lib_to_lab_edges": lib_lab, "violations": L.check(ROOT),
+            "modularity_labs_and_lib_packages": round(modularity(U, list(comms.values())), 3), "groups": len(comms),
+            "instability": inst, "labs_reaching_entropy": lab_entropy,
+            "labs_reaching": {g: dict(c) for g, c in sorted(reach.items())}, "stages": L.stages(ROOT)}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("xml", nargs="?", default=str(ROOT / "out" / "vegeta_ast.xml.gz"))
+    ap.add_argument("--check", action="store_true", help="only the lab rules (tools/labs.py); exit 1 on a violation")
     ap.add_argument("--out", default=str(ROOT / "docs" / "anatomy"))
     ap.add_argument("--graphml", default=str(ROOT / "out"))
     a = ap.parse_args(argv)
+    if a.check:
+        sys.path.insert(0, str(ROOT / "tools"))
+        import labs as L
+        return L.main(["check"])
     mods, entries = load(Path(a.xml))
     st, dep, calls = analyse(mods, entries)
+    st["partition"] = partition(dep, mods)
     Path(a.out).mkdir(parents=True, exist_ok=True)
     (Path(a.out) / "graph_metrics.json").write_text(json.dumps(st, indent=1, default=list) + "\n")
     Path(a.graphml).mkdir(parents=True, exist_ok=True)
@@ -741,6 +788,13 @@ def main(argv=None) -> int:
     nx.write_graphml(calls, Path(a.graphml) / "function_calls.graphml")
     draw_anatomy(st, Path(a.out) / "anatomy.svg")
     report(st)
+    pt = st["partition"]
+    print("\n=== THE LAB LAYOUT ===")
+    print(f"cross-lab import edges: {pt['cross_lab_edges']} | libs → lab edges: {pt['lib_to_lab_edges']} | "
+          f"rule violations: {len(pt['violations'])} | modularity (labs + lib packages): "
+          f"{pt['modularity_labs_and_lib_packages']} over {pt['groups']} groups")
+    print("instability (0 = only depended on, 1 = only depends):", pt["instability"])
+    print("entropy over the labs reaching a part (0: one lab, 1: every lab alike):", pt["labs_reaching_entropy"])
     print(f"\nSaved: {_rel(Path(a.out) / 'graph_metrics.json')}, {_rel(Path(a.out) / 'anatomy.svg')}, "
           f"{_rel(Path(a.graphml))}/module_dependencies.graphml, function_calls.graphml")
     return 0

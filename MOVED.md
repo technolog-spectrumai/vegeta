@@ -4,6 +4,29 @@ Vegeta conceives and designs machines; a machine whose design is frozen hatches 
 (ARCHITECTURE.md). These paths left Vegeta. **Their history stays in this repository's git** (`git log -- <old path>`)
 and was carried into the new home with `git filter-repo` (`git log --full-history` there reaches back).
 
+## 2026-10-21 — Labs: libs/ + labs/<lab>/<stage>/
+
+Moved with `git mv` (history: `git log --follow <new path>`). Module names are unchanged (`import nisus_flight`);
+`vegeta.labkit.bootstrap.lab("<lab>")` puts a lab's folders on `sys.path`.
+
+| was | now |
+|---|---|
+| `vegeta-cli/`, `vegeta-core/`, `vegeta-ai/`, `vegeta-fidia/`, `ogma/` | `libs/…` (same packages, same import names) |
+| `designs/<machine>*.py`, `designs/data/` | `labs/<lab>/designs/` (aero, land, legged, marine by machine) |
+| `designs/exp/` | `labs/aero/exp/` (Kestrel-X — `kestrel_xwing`, `kestrel_xc`, `kestrel_xc_campaigns` — left limbo for `designs/`: they are imported) |
+| `designs/tests/`, `designs/exp/tests/` | `labs/<lab>/tests/`, `labs/aero/exp/tests/` |
+| `designs/export.py`, its machine table | `tools/export.py` + each lab's `designs/machines.py` (`vegeta.labkit.machines`) |
+| `notebooks/{devices,parts,scenarios,races}/` | `labs/<lab>/studies/` |
+| `notebooks/{exp,old}/` (Kestrel, prop lab, microjet, mini raptor) | `labs/aero/exp/` |
+| `notebooks/demo/`, `notebooks/old/00–05` (tool tutorials) | `labs/studio/studies/` |
+| `scenarios/*.py`, `*.sh` | `labs/<lab>/sims/`; `scenarios/run_scenario.py` → `tools/run_scenario.py` |
+| `races/` | `labs/aero/sims/races/` |
+| `side_labs/` | `labs/aero/campaigns/side_labs/` (`./side_labs.sh`, `wf` unchanged) |
+| `benchmark/` | `labs/legged/campaigns/benchmark/` |
+| `components/` (geometry copies of `designs/`) | removed: the `designs/` modules are the one copy (supersets); `propeller.py`, `motor.py` → `vegeta.labkit` |
+| `assemblies/` | `labs/aero/designs/{quadcopter,fixed_wing}_assembly.py`, `labs/marine/designs/{submarine,survey_boat}_assembly.py`; the base class → `vegeta.labkit.assembly`; tests → `tests/labs/` |
+| `onager_controller.{smooth,Phase}`, `pekari_controller.end_card`, `gait.ik_two_link_planar` | `vegeta.labkit.{control,movie,kinematics}` (the old names still re-export them) |
+
 ## 2026-10-20 — Chiron becomes its own repository
 
 | Vegeta path | Now |

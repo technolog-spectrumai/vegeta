@@ -11,6 +11,23 @@ python tools/graph_metrics.py     # networkx: dependency + call graphs, the thre
 Revision 4c241f8 + the tools (2026-10-21). Every number below is in `stats.json` or `graph_metrics.json`. The full
 printed report is `graph_metrics.txt`.
 
+## After the labs (2026-10-21, `libs/` + `labs/<lab>/<stage>/`)
+
+The split predicted the graph effects below; regenerating this report after it measured them:
+
+| metric | before | after |
+|---|---|---|
+| imports crossing labs | 7 production + ~25 tests/registries | **0** (enforced: `tools/labs.py check`, in smoke) |
+| libraries importing lab code | 15 | **0** |
+| modularity (labs + each library package) | 0.419 (29 directories) | **0.455** (25 groups) |
+| who reaches a lab (entropy over labs) | `designs` served everyone | **0.0** for every lab: each lab is reached by itself only |
+| who reaches a library (entropy over labs) | — | 0.57–0.99: the shared core (Chiron 0.767, Ogma 0.567, labkit 0.886) |
+| instability | `designs` 0.72 | labs 0.98–1.0 (pure consumers), labkit 0.13, the tools 0.0–0.05 |
+| duplicated components | 2.5k lines (components ↔ designs) | 0 (`components/` folded into `designs/`) |
+| orphan modules | 15 | 17, all expected: the labs' `machines.py` (loaded by the registry), assemblies (loaded by spec), `exp/` limbo, CLI examples |
+
+Every machine's stage is now where its files are (`python tools/lab.py list`, the lab READMEs).
+
 ![anatomy](anatomy.svg)
 
 ## The size of it

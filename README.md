@@ -516,27 +516,30 @@ walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculpt
 (the laser work) live on in Alabastron.
 
 ## Layout
+Vegeta is labs on a common library layer. The loop each lab runs: tools from `libs/` → a few notebooks (`studies/`)
+→ the survivors graduate to MuJoCo (`sims/`) and gather data → optimisation loops (`campaigns/`) → export to Piccolo
+(`designs/machines.py`, `tools/export.py`); what does not make it falls into `exp/` (limbo). Rinse and repeat.
 ```
-libs/vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr}, tests/<tool>/
-libs/vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
-libs/vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
-libs/vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
-notebooks/         devices/, parts/, scenarios/, races/ (the Merlin race), demo/ (run by default), exp/ (experiments: Kestrel, microjet), old/ (archive)
-designs/           the engineering design modules and their data (designs/data/), shared by notebooks and side labs; exp/ for the experiments
-side_labs/         optional, expensive calculations (CFD, FEA) under the run contract; `wf` / ./side_labs.sh
-vendor/ozaru/      Ozaru, vendored by git subtree (Porunga cache, Mimezia mocks, Yanus requirement checks); vendor/OZARU_REVISION
-libs/ogma/              Ogma, the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
-vendor/yax/        Yax, vendored by git subtree: the design-format converter (USD hub; URDF, SDF, MJCF, JSBSim, STEP); vendor/YAX_REVISION
-components/        geometry only: the machines' parametric CAD designs (Dedalus Design classes) the notebooks may use
-assemblies/        geometry only: components arranged into machines (quadcopter, fixed wing, boat, submarine); see assemblies/README.md
-docs/              philosophy, science (the methods and their limits), result shape, installation, composition, per-package guides
-examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
-install_local.sh   creates .venv, installs all dependencies and vegeta-cli
-test.sh            checks the installation (components + a short working run); --smoke: the smoke regression suite
-test_openfoam.sh   tests the CFD tool against every OpenFOAM installation found (or given), both flavours
-jupyter.sh         starts JupyterLab from .venv
-scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh
-user_tests.sh      the mock-only test run (four parts: vegeta, design, workflow, notebook; no solver ever starts)
+libs/              the common layer — never imports labs/
+  vegeta-cli/        the tools: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr,mission,mock}
+  vegeta-core/       workspaces and revisions (`vegeta ws|rev`)
+  vegeta-ai/         the connection to the AI provider (`vegeta ai`)
+  vegeta-fidia/      prompt-to-3D, copilot, campaigns (`vegeta fidia`)
+  ogma/              the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
+  labkit/            what every lab uses (`vegeta.labkit`): the notebook bootstrap, the machine registry, shared
+                     controllers and kinematics, generic CAD parts
+labs/              one per domain; a lab imports libs/ and itself, never another lab (tools/labs.py check)
+  aero/  land/  legged/  marine/  studio/
+    studies/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
+tools/             lab.py (test, run, new-exp, promote, demote, export, readme), labs.py (the rules, the stages),
+                   export.py (to Piccolo through Yax), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
+vendor/            ozaru/ (Porunga cache, Mimezia mocks, Yanus checks), yax/ (the design-format converter, USD hub)
+tests/             smoke/ (./test.sh --smoke), labs/ (across labs: the assemblies)
+docs/              philosophy, science, per-package guides, anatomy/ (what Vegeta is, from its syntax tree)
+install_local.sh   creates .venv, installs everything (libs/ editable)
+test.sh            checks the installation; --smoke: the smoke regression suite
+user_tests.sh      everything, mocks only: env, layout, smoke, libs, each lab's tests and sims, export
+scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh, update_yax.sh
 ```
 
 ## Notebooks, side labs and Ozaru
