@@ -539,6 +539,7 @@ docs/              philosophy, science, per-package guides, anatomy/ (what Veget
 install_local.sh   creates .venv, installs everything (libs/ editable)
 test.sh            checks the installation; --smoke: the smoke regression suite
 user_tests.sh      everything, mocks only: env, layout, smoke, libs, each lab's tests and sims, export
+clean.sh           caches, old logs, out/; --caches, --runs, --old-layout, --all (-n: dry run)
 scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh, update_yax.sh
 ```
 
