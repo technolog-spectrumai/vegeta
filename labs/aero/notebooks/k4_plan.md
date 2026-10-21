@@ -65,7 +65,7 @@ Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report 
 | K4TQ-F1 "Freddy" | Cathy's airframe, front NACA 4415 / rear NACA 2415 (the NeuralFoil study, `exp/K4TQ_airfoils.ipynb`) | `k4tq.VARIANTS["F1"]` |
 | K4TQ-F2 | Freddy fully autonomous | `k4tq.VARIANTS["F2"]` |
 
-Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`). E (equal tandem) and C (compact) are the Stage 1 studies.
+Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`); A2 against F2 in the climb, the descent and the manoeuvre in `exp/K4TQ_envelope.ipynb` (`designs/k4tq_envelope.py`). E (equal tandem) and C (compact) are the Stage 1 studies.
 
 ## Stage 2 — Parametric CAD and mechanical design
 *The selected configuration as a Dedalus/CadQuery assembly in three configurations, with the wing-root tilt-and-fold assembly designed as real hardware.*
