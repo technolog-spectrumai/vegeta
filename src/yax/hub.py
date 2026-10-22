@@ -114,15 +114,20 @@ class Report:
         return head + ":\n" + "\n".join(lines)
 
 
+#: Blocks yax.schema.report_losses reports itself (with what they hold), so the generic lines below leave them out.
+SCHEMA_KEYS = {"materials", "connections", "strength", "motors", "propulsion", "aerodynamics", "assembly"}
+LINK_SCHEMA_KEYS = {"material", "strength", "aero"}
+
+
 def report_data(m: Machine, rep: Report, keep=()):
     """Report the format-specific data a writer cannot carry (``keep``: the keys it writes back)."""
     for k, v in m.data.items():
-        if k not in keep:
+        if k not in keep and k not in SCHEMA_KEYS:
             what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if isinstance(x, list)) if isinstance(v, dict) else ""
             rep.drop(f"machine data {k!r}{f' ({what})' if what else ''}: the target format has no place for it")
     for lk in m.links:
         for k, v in lk.data.items():
-            if k not in keep and k != "free_joint":
+            if k not in keep and k != "free_joint" and k not in LINK_SCHEMA_KEYS:
                 what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if hasattr(x, "__len__")) if isinstance(v, dict) else ""
                 rep.drop(f"link {lk.name}: {k} data" + (f" ({what})" if what else ""))
 
