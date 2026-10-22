@@ -273,6 +273,74 @@ def _stage3(m: Machine, p: list):
             check_aero(lk.data["aero"], f"link:{lk.name}/data:aero", p, m)
 
 
+ASSEMBLY = {"name": (STR, False), "root": (STR, False), "components": (DICT, True), "source": (STR, False), "validity": (DICT, False)}
+COMPONENT = {"link": (STR, True), "parent": (STR, False), "kind": (STR, False), "detachable": (BOOL, False), "connection": (STR, False),
+             "attachment": (DICT, False), "separation": (DICT, False), "material": (STR, False), "children": (LIST, False),
+             "source": (STR, False), "validity": (DICT, False)}
+ATTACHMENT = {"frame": (STR, False), "pos": (LIST, False), "quat": (LIST, False), "axis": (LIST, False), "source": (STR, False)}
+SEPARATION = {"limits": (DICT, False), "criterion": (DICT, False), "calibrated": (BOOL, False), "basis": (STR, False),
+              "source": (STR, False), "validity": (DICT, False)}
+SEPARATION_LIMITS = CONN_LIMITS
+BLOCKS.update({"assembly": ("machine", ASSEMBLY, ("00detach",))})
+
+
+def check_assembly(d, where: str, p: list, m: Machine):
+    _check(d, ASSEMBLY, where, p)
+    if not isinstance(d, dict) or not isinstance(d.get("components"), dict):
+        return
+    names = {lk.name for lk in m.links}
+    conns = m.data.get("connections") if isinstance(m.data.get("connections"), dict) else {}
+    materials = m.data.get("materials") if isinstance(m.data.get("materials"), dict) else {}
+    comps = d["components"]
+    if "root" in d and d["root"] not in comps:
+        p.append(f"{where}: root {d['root']!r} is not a component")
+    for cid, c in comps.items():
+        w = f"{where}/components/{cid}"
+        _check(c, COMPONENT, w, p, nested={"attachment": ATTACHMENT, "separation": SEPARATION})
+        if not isinstance(c, dict):
+            continue
+        if c.get("link") not in names:
+            p.append(f"{w}: link {c.get('link')!r} is not a link of the machine")
+        par = c.get("parent")
+        if par is not None and par not in comps:
+            p.append(f"{w}: parent {par!r} is not a component")
+        if par == cid:
+            p.append(f"{w}: a component cannot be its own parent")
+        if "connection" in c and c["connection"] not in conns:
+            p.append(f"{w}: connection {c['connection']!r} is not in data['connections']")
+        if "material" in c and c["material"] not in materials:
+            p.append(f"{w}: material {c['material']!r} is not in data['materials']")
+        if c.get("detachable") and par is None:
+            p.append(f"{w}: a detachable component needs a parent to detach from")
+        at = c.get("attachment")
+        if isinstance(at, dict):
+            fr = at.get("frame", "parent")
+            if fr not in ("parent", "machine") and not (isinstance(fr, str) and fr.startswith("link:") and fr[5:] in names):
+                p.append(f"{w}/attachment: frame must be 'parent' (default), 'machine' or 'link:<name>'")
+            for key, n in (("pos", 3), ("quat", 4), ("axis", 3)):
+                if key in at and not (isinstance(at[key], (list, tuple)) and len(at[key]) == n and all(_num(x) for x in at[key])):
+                    p.append(f"{w}/attachment: {key} must be {n} numbers")
+        sep = c.get("separation")
+        if isinstance(sep, dict):
+            if isinstance(sep.get("limits"), dict):
+                _check(sep["limits"], SEPARATION_LIMITS, f"{w}/separation/limits", p)
+            if sep.get("calibrated") and not sep.get("source"):
+                p.append(f"{w}/separation: a calibrated criterion needs its source")
+    for cid in comps:                                                          # a cycle of parents
+        seen, cur = set(), cid
+        while isinstance(comps.get(cur), dict) and comps[cur].get("parent") is not None:
+            if cur in seen:
+                p.append(f"{where}: components {sorted(seen)} form a cycle of parents")
+                break
+            seen.add(cur)
+            cur = comps[cur]["parent"]
+
+
+def _stage4(m: Machine, p: list):
+    if "assembly" in m.data:
+        check_assembly(m.data["assembly"], "data:assembly", p, m)
+
+
 # ------------------------------------------------------------------------------------------------------- checking
 def _num(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
@@ -291,6 +359,8 @@ def _check(d, schema: dict, where: str, p: list, *, nested: dict | None = None):
         if req and k not in d:
             p.append(f"{where}: {k} is required")
     for k, v in d.items():
+        if v is None:                                                          # null: the producer says "none", not a value
+            continue
         typ = schema.get(k, star)[0] if (k in schema or star) else None
         if typ is None:
             if _num(v) and not _unit_ok(k) and k not in DIMLESS:
@@ -409,7 +479,7 @@ def problems(m: Machine) -> list:
     return p
 
 
-_EXTRA_CHECKS = [_stage2, _stage3]                                                      # the later stages' checks
+_EXTRA_CHECKS = [_stage2, _stage3, _stage4]                                                      # the later stages' checks
 
 
 # --------------------------------------------------------------------------------------------------------- losses
@@ -455,6 +525,11 @@ def report_losses(m: Machine, fmt: str, rep: Report) -> None:
     for lk in m.links:
         if "aero" in lk.data:
             rep.drop(f"link {lk.name}: its aerodynamics ({_aero_what(lk.data['aero'])}) — {fmt} has no place for it")
+    if "assembly" in m.data and isinstance(m.data["assembly"].get("components"), dict):
+        comps = m.data["assembly"]["components"]
+        n_d = sum(1 for c in comps.values() if isinstance(c, dict) and c.get("detachable"))
+        rep.drop(f"data:assembly: the assembly ({len(comps)} components, {n_d} detachable, their attachments and separation limits) — "
+                 f"{fmt} has no place for it; the links themselves are written")
     if "propulsion" in m.data:
         d = m.data["propulsion"]
         if fmt == "jsbsim":

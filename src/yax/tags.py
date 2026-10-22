@@ -13,7 +13,7 @@ always validate against them::
     00motor   drives, motor models, the propulsion motors, ogma     00prop    propulsion: rotors, propellers, maps, reduced constants
     00mat     materials (catalogue and per link)                    00str     structural strength
     00conn    connections                                           00aero    aerodynamics, JSBSim sections, per-link aero
-    00sensor  sensors (and SDF sensors carried verbatim)
+    00sensor  sensors (and SDF sensors carried verbatim)         00detach  the assembly: parent–child, attachments, separation
     00prov    the producer stamp, provenance data                   00fmt     another format's own data carried verbatim
 
 Property paths (``properties(m)``)::
@@ -51,9 +51,10 @@ SYSTEM = {"00core": "the skeleton: the machine's name, the links' identities and
           "00mat": "materials: the catalogue and each link's", "00str": "structural strength: allowables, safety factors, analysis results",
           "00conn": "physical connections between links", "00aero": "aerodynamics: coefficients, tables, reference points, JSBSim sections",
           "00sensor": "sensors, SDF sensors carried verbatim", "00prov": "the producer stamp and provenance data",
-          "00fmt": "another format's own data carried verbatim (mjcf, sdf plugins)"}
+          "00fmt": "another format's own data carried verbatim (mjcf, sdf plugins)",
+          "00detach": "detachable components: the assembly's parent–child relations, attachments, separation limits"}
 #: Machine data keys → system tag (the contract); unknown keys get no system tag (a producer tags them).
-DATA_TAGS = {"propulsion": ("00prop",), "ogma": ("00prop", "00motor"), "motors": ("00motor",), "materials": ("00mat",),
+DATA_TAGS = {"propulsion": ("00prop",), "ogma": ("00prop", "00motor"), "motors": ("00motor",), "materials": ("00mat",), "assembly": ("00detach",),
              "strength": ("00str",), "connections": ("00conn",), "aerodynamics": ("00aero",), "jsbsim": ("00aero",),
              "sensors": ("00sensor",), "provenance": ("00prov",), "mjcf": ("00fmt",), "sdf": ("00fmt",)}
 #: Deeper data paths that carry more system tags than their block (a property may belong to several categories).
