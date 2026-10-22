@@ -71,7 +71,7 @@ def test_drongo_propulsion_block_matches_its_rotors(tmp_path):
     assert np.all(np.diff(co["J"]) > 0) and co["J"][0] == 0 and 0.05 < co["CT"][0] < 0.3 and 0 < co["CP"][0] < 0.2
     assert np.asarray(grid["thrust_n"]).shape == (len(grid["rpm"]), len(grid["airspeed_m_s"])) and grid["rho"] == 1.225
     (mot,) = blk["motors"].values()
-    assert mot["kv"] == 2400 and 0 < mot["power_w"] < mot["battery_v"] * mot["I_max_A"]
+    assert mot["kv_rpm_per_v"] == 2400 and 0 < mot["power_w"] < mot["voltage_v"] * mot["max_current_a"]
     assert blk["battery"]["cells"] == 4
     assert any("propulsion: rotor rotor0: its propeller map reduced to kF" in d for d in reps[-1].dropped)
     assert any("ogma" in d for d in reps[-1].dropped)
@@ -94,7 +94,7 @@ def test_propulsion_blocks_are_consistent(name):
         assert p["coefficients"]["CT"][0] == pytest.approx(ct0, rel=0.05)      # Boreas: no Reynolds effect, CT(0) ~ constant
         assert p["inertia_kgm2"] > 0 and p["mass_kg"] > 0
     for mo in blk["motors"].values():
-        assert mo["power_w"] > 0 and (("I_max_A" not in mo) or mo["power_w"] < mo["battery_v"] * mo["I_max_A"])
+        assert mo["power_w"] > 0 and (("max_current_a" not in mo) or mo["power_w"] < mo["voltage_v"] * mo["max_current_a"])
     for red in blk["reduced"].values():
         assert red["kF"] > 0 and red["kM"] > 0 and red["w_max"] > 0 and red["residual"] >= 0
 

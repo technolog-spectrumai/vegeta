@@ -8,7 +8,7 @@ Layers, deepest first — a consumer takes the deepest one its engine can use::
 
     rotors      name, link, pos and axis (machine frame), spin (+1: drag torque on the frame along +axis), propeller, motor
     propellers  blades, diameter, hub radius, stations, mass, inertia about the shaft, coefficients {J, CT, CP}, grid
-    motors      power_w (what a JSBSim electric engine takes), kv, R_ohm, I0_A, I_max_A, battery_v, esc_eff
+    motors      power_w (what a JSBSim electric engine takes), kv_rpm_per_v, resistance_ohm, no_load_current_a, max_current_a, voltage_v, esc_efficiency
     reduced     per rotor: kF (T = kF ω²), kM (Q = kM T), w_max, tau_up, tau_down, taken_at, residual
 
 A **grid** is ``{"rpm": [...], "airspeed_m_s": [...], "rho": ρ, "thrust_n": [[...]], "torque_nm": [[...]],
@@ -102,8 +102,9 @@ def motor_entry(name: str, power_w: float, *, kv: float | None = None, R_ohm: fl
                 I_max_A: float | None = None, battery_v: float | None = None, esc_eff: float | None = None, source: str = "") -> dict:
     """A ``motors`` entry: ``power_w`` (the shaft power a JSBSim electric engine delivers at full throttle) and the
     DC-motor constants a consumer modelling the electric chain needs."""
-    out = {"name": name, "power_w": float(power_w)}
-    for k, v in (("kv", kv), ("R_ohm", R_ohm), ("I0_A", I0_A), ("I_max_A", I_max_A), ("battery_v", battery_v), ("esc_eff", esc_eff)):
+    out = {"name": name, "kind": "bldc", "limits": {"max_power_w": float(power_w)}, "power_w": float(power_w)}
+    for k, v in (("kv_rpm_per_v", kv), ("resistance_ohm", R_ohm), ("no_load_current_a", I0_A), ("max_current_a", I_max_A),
+                 ("voltage_v", battery_v), ("esc_efficiency", esc_eff)):                 # the contract's names (vendor/yax docs/engineering.md)
         if v is not None:
             out[k] = float(v)
     if source:
