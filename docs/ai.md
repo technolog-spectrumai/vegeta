@@ -47,7 +47,7 @@ reply.data, reply.text, reply.usage.tokens, reply.usage.cost_usd(), reply.model,
   exception (raised) or a function of the call — and records every call (`.calls`: system, messages, schema,
   images, effort). It is how Fidia's tests and its offline demo run without a key.
 - **The protocol:** any object with `call(system, messages, *, schema, images, effort, max_tokens, cancel) -> Reply`
-  and `describe() -> dict` is a provider. An OpenAI provider is planned (`old_todo.md` 12.2).
+  and `describe() -> dict` is a provider. An OpenAI provider is planned (`docs/old_todo.md` 12.2).
 
 Rules (from `docs/philosophy.md`): the AI never changes anything silently; it never decides loads, materials or
 boundary conditions; its answers are data until the engineer, or a deterministic check, accepts them.

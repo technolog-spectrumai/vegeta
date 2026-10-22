@@ -98,7 +98,7 @@ kestrel_x.kind("fea", title="FEA — one panel's carbon spar in its socket (Talo
 kestrel_x.chapter("airframe-sweep", kind="cfd", campaign="sweep")        # X1
 kestrel_x.chapter("airframe-stall", kind="cfd", campaign="stall")        # X2
 kestrel_x.chapter("panel", kind="fea", campaign="panel")                 # X3
-# (book R, races, graduated to Piccolo with the racing quad: races/lab/race.py there; MOVED.md)
+# (book R, races, graduated to Piccolo with the racing quad: races/lab/race.py there; docs/MOVED.md)
 
 
 flow.add_import("import_legacy", title="import the first CFD campaign's results file into kestrel / airframe-sweep (once)",

@@ -27,7 +27,7 @@ Montezuma (the simulated site) takes Vegeta's robots the same way. `tools/publis
 looks into `exports/` as a Yax exchange file (`.yx2`) with a manifest, and consumers fetch that folder without
 Vegeta's code. The racing quad
 hatched first (2026-10-20: `races/` and the autopilot tuning are Piccolo's now); the other machines follow one at a
-time. See [ARCHITECTURE.md](ARCHITECTURE.md) and [MOVED.md](MOVED.md).
+time. See [ARCHITECTURE.md](ARCHITECTURE.md) and [MOVED.md](docs/MOVED.md).
 
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
 `vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
@@ -62,7 +62,7 @@ pinned to reference values. The way to check Vegeta quickly is `./test.sh --smok
 Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
 notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded
 evaluations, NOT RUN status; [docs/core.md](docs/core.md), `demo/06_core_revisions`). Next: comparison and
-sweeps, then a GUI — see [`old_todo.md`](old_todo.md); the current work (the split, Ogma) is in [`todo.md`](todo.md).
+sweeps, then a GUI — see [`old_todo.md`](docs/old_todo.md); the current work (the split, Ogma) is in [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
 |---------|-----|------------|-------|----------|
@@ -409,7 +409,7 @@ when complete, the native cases) that the notebook reads **by explicit path** an
 before use; a required result that is missing, stale, incompatible or failed stops it with the exact command to run,
 an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
 workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
-[labs/aero/campaigns/side_labs/README.md](labs/aero/campaigns/side_labs/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `labs/aero/campaigns/side_labs/cli.py` lists, explains, launches and watches
+[labs/aero/campaigns/side_labs/README.md](labs/aero/campaigns/side_labs/README.md); the short how-to is [manual_workflows.md](docs/manual_workflows.md); `labs/aero/campaigns/side_labs/cli.py` lists, explains, launches and watches
 them (interactive without arguments; `source activate.sh` makes it `wf`; `wf gui` or `./side_labs.sh` opens the same as a PyQt6 window). Workflows are organised in **books** (a design:
 `kestrel`, code K) and numbered **chapters** (its studies, CFD and FEA alike, chosen as `wf K2`); runs land in `side_labs/runs/<book>/<chapter>/`, a chapter's prerequisites
 are chapters of its own book, and solved cases are cached across runs (`wf cache`, `wf clean-cache`, `--no-cache`). **`44_kestrel_fast`** (`labs/aero/designs/kestrel_fast.py`) is the standalone one-minute

@@ -1,7 +1,7 @@
 # Exploration: Vegeta as an AI-assisted, closed-loop engineering platform
 
 Status: exploration only, nothing implemented. Branch `exp`, based on `main` (`cb3ddaa`).
-Companion files: `plan.md` (recommended course of action), `rejected.md` (ideas not to pursue and why).
+Part 2 below is the recommended course of action; Part 3 lists the ideas not to pursue and why.
 
 Calibration used throughout: 1–3 engineers now, at most ~10 in two years; Anthropic and OpenAI API
 access; everything runs on engineers' Ubuntu workstations today, with a possible move to the cloud
@@ -81,7 +81,7 @@ Each component answers the same 13 questions. A summary table follows in §2.10.
    *runs* analyses contradicts "nothing runs automatically" unless it is explicitly scoped and budgeted.
 4. **Implementation complexity.** Medium if built as a *proposal-driven campaign* on `vegeta.core`:
    acceptance criteria object, a `Proposal` type, a `Campaign` loop with limits, an approval policy.
-   High if built as an autonomous agent with tool access (see `rejected.md`).
+   High if built as an autonomous agent with tool access (see Part 3).
 5. **Infra/operational cost.** LLM tokens (a proposal step is a few thousand tokens; with Claude Opus 5
    at $5/$25 per MTok a 20-iteration campaign is under a dollar), plus the compute the analyses already
    cost. No new services.
@@ -495,3 +495,155 @@ before any budget is spent on running them automatically.
   [Institutional knowledge graph for small organisations](https://www.smarason.is/en/blog/building-institutional-knowledge-graph-neo4j);
   [Neo4j knowledge graph use case](https://neo4j.com/use-cases/knowledge-graph/);
   [Multi-agent framework leveraging knowledge graphs for virtual commissioning (arXiv 2606.03255)](https://arxiv.org/pdf/2606.03255).
+
+---
+
+## Part 2 — Plan: from open-loop workbench to controlled, AI-assisted iteration
+
+Derived from Part 1. Ordered by value per unit of complexity; each step is useful on its own and
+none requires a server, a database or an agent framework. Effort is for one engineer familiar with the
+code. Human-authority rules (last section) apply to every step.
+
+### Step 1 — Comparison and explicit sweeps (Stage 11)  · effort ~1 week
+
+- **Goal.** Deterministic building blocks any loop needs, valuable on their own.
+- **Scope.** `ws.compare(rids, metrics=None) -> Table` over existing results only (never generates);
+  `ws.sweep(design, grid: dict[str, list], base=rev, analyses=[("fea", "static", factory)], limits=...)`
+  creating revisions explicitly and running the named analyses with a wall-clock / count limit;
+  CLI `vegeta ws compare`, `vegeta ws sweep`; results recorded like any evaluation; a sweep record
+  (`sweeps/<name>.json`) listing revisions and limits.
+- **Done when.** Compare works on a workspace with NOT RUN cells; a 3×3 sweep on the bracket runs with a
+  limit and records every revision; tests + notebook `07_compare_sweep.ipynb`.
+- **Risks.** Temptation to add optimisation logic — do not; a grid is a grid.
+
+### Step 2 — Acceptance criteria and verdicts  · effort ~3–4 days
+
+- **Goal.** Make "is this design acceptable" a machine-readable, recorded statement.
+- **Scope.** `Criteria(name, constraints=[Constraint("fea:static", "safety_factor_yield", ">=", 2.0), ...],
+  objective=Objective("dedalus", "volume", "min"))`; `criteria.evaluate(revision) -> Verdict`
+  (`pass`/`fail`/`incomplete` with per-constraint values, NOT RUN → incomplete); verdicts written to
+  `annotations.jsonl`; `ws.status(criteria=...)` shows them. Only metrics that exist in evaluation
+  records; no derived physics.
+- **Done when.** Verdicts appear in status; a constraint on a NOT RUN analysis yields `incomplete`, never
+  `fail`; tests.
+- **Risks.** Engineers writing criteria on mesh-dependent peaks; mitigate with docs and a `note` field
+  explaining the choice of metric (mandatory).
+
+### Step 3 — `vegeta-ai` v0: proposals without a loop  · effort ~1–2 weeks
+
+- **Goal.** Test whether LLM proposals are useful on real parts before automating anything.
+- **Scope.** New distribution `libs/vegeta-ai/` (`vegeta.ai`), depends on `vegeta-core`; optional extras
+  `[anthropic]`, `[openai]`.
+  - `Proposal` types (data only): `ParameterProposal(changes, rationale)`, `AnalysisRequest(kind, name)`,
+    `SourcePatchProposal(diff, rationale)`, `Stop(reason)`.
+  - `Proposer` protocol: `propose(context: dict, criteria, n=3) -> list[Proposal]`,
+    `explain(context: dict) -> str`. Context = `ws.status()` rows + verdicts + parameter tables, as JSON.
+  - Adapters: `ClaudeProposer` (official `anthropic` SDK, structured output against the proposal JSON
+    schema, adaptive thinking, model default `claude-opus-5`), `OpenAIProposer` (official `openai` SDK,
+    structured output). Model IDs and prices are configuration values.
+  - `ws.apply(proposal, note=...)`: parameter proposal → `branch()` (runs nothing); source patch →
+    written to `proposals/<id>.diff`, shown, applied only by an explicit `accept()`; every proposal and
+    decision appended to `proposals.jsonl` with prompt/response hashes and token usage.
+  - CLI: `vegeta ai explain -w ws`, `vegeta ai propose -w ws --criteria criteria.py:CR`, `vegeta ai apply <id>`.
+- **Done when.** On the bracket workspace, `propose` returns bounded parameter proposals; `apply` creates
+  revisions; nothing runs; tests use a `FakeProposer` (no network); one adapter test each behind an
+  API-key skip.
+- **Risks.** Proposals outside parameter bounds (validate with the design's `ParameterSet`, reject and
+  record); provider API drift (pin SDK versions; keep the adapter ≤ 150 lines).
+
+### Step 4 — Controlled campaign loop  · effort ~2 weeks, only after Step 3 has been used on real parts
+
+- **Goal.** Bounded, recorded closed loop: propose → (approve) → apply → run named analyses → verdict →
+  repeat, under hard limits.
+- **Scope.** `Campaign(workspace, design, criteria, analyses, proposer, budget=Budget(max_iterations,
+  max_evaluations={"fea": 20, "cfd": 4}, wall_clock_s, max_tokens|max_cost_usd), stop=StopRules(
+  criteria_met=True, no_progress_after=5), policy=Policy(auto_apply="parameters_within_bounds" |
+  "none", approval=callback))`; `campaign.run()` is the single explicit action; state persisted after
+  every step to `campaigns/<name>/campaign.json` + `events.jsonl` (resumable, inspectable, `NOT RUN`
+  semantics untouched); terminal states `done | budget_exhausted | no_progress | stopped | failed`.
+  Default policy: approval required for everything; auto-apply of parameter proposals is opt-in and
+  bounded by the design's parameter ranges plus optional tighter campaign bounds.
+- **Done when.** A campaign on the bracket reaches SF ≥ 2 at minimal volume within limits using the
+  `FakeProposer`; a token/cost budget stops it; interrupting (`cancel` event) stops the running solver
+  through the tools' existing cancel support; every event is on disk.
+- **Risks.** Runs blocking a workstation — wall-clock budget is mandatory; loops chasing artefacts —
+  criteria notes and the metric guidance in `docs/`.
+
+### Step 5 — Docker image  · effort ~2–3 days
+
+- **Goal.** The validated toolchain as one image; the path to CI and to the cloud.
+- **Scope.** `Dockerfile` mirroring `install_local.sh` (Ubuntu 24.04, apt tools, conda-forge OpenFOAM,
+  venv with `vegeta-cli`, `vegeta-core`, later `vegeta-ai`); `docker run -v $PWD/runs:/runs vegeta test`
+  runs `test.sh`; Jupyter exposed on request; image built in CI and pushed to a private registry.
+- **Done when.** `test.sh` passes inside the image; the sphere CFD validation runs inside it.
+- **Risks.** Image size (several GB) — acceptable; keep one image, no Compose.
+
+### Step 6 — Results export and inspection  · effort ~2 days
+
+- **Scope.** `talos.export_vtu(result)` (nodes, displacement, von Mises) + docs for ParaView and
+  `pyvista` in Jupyter; Aeromant already leaves the OpenFOAM case for ParaView (`paraFoam`/`foamToVTK`
+  noted in docs).
+- **Done when.** A VTU from the cantilever opens in ParaView with the fields; notebook cell with pyvista.
+
+### Step 7 — Evaluate on a real part  · continuous
+
+- Run Steps 1–3 (then 4) on a real bracket/arm/mount from a current project. Record in
+  `lessons.jsonl` what the proposals got right and wrong. Decide from evidence whether the campaign
+  (Step 4) and independent reviews are worth extending.
+
+### Later (entry criteria, not dates)
+
+| Item | Start when |
+|---|---|
+| Parallel independent review (second provider critiques a proposal before expensive runs) | a campaign has spent ≥ 1 CFD-hour on a bad proposal |
+| Read-only MCP server (stdio) | an engineer uses Claude Code / an IDE agent on engineering tasks weekly |
+| Studio (face picking, results viewer) + its API layer | Stage 10 is scheduled; choose FastAPI vs remote MCP by the client |
+| Cloud deployment (image on a VM, shared runs storage, secrets) | a second team, or workstations too slow for CFD |
+| Neo4j derived index + graph-RAG | ≥ ~10 engineers or ≥ ~5 projects with part/lesson reuse |
+
+### Human-authority rules for every step
+
+1. The AI proposes data; Vegeta applies it through the public API; the engineer starts every campaign.
+2. Loads, materials, boundary conditions, mesh settings, CFD templates/values and print settings are
+   never changed by a proposal without explicit approval; they define the question, not the answer.
+3. Source patches are diffs, validated (build succeeds, parameters intact, measurements sane) and
+   accepted explicitly; never executed from a chat, MCP or API call unattended.
+4. Verdicts come from criteria on tool metrics; the LLM explains, it does not judge.
+5. Every proposal, decision, budget and stop is recorded in the workspace files.
+
+---
+
+## Part 3 — Rejected ideas (and why)
+
+Ideas considered during the exploration in Part 1 that should not be pursued now. "Rejected" means
+not worth its complexity at 1–10 engineers on workstations; some may return under the entry criteria
+in Part 2.
+
+| Idea | Why not |
+|---|---|
+| **Fully autonomous optimisation loop** (LLM runs CAD/FEA/CFD until it is "happy") | Contradicts the founding rule that nothing runs automatically; LLMs do not know physics and will optimise mesh artefacts (support-edge stress peaks, coarse-mesh Cd); unbounded compute. Bounded campaigns with criteria and approvals (Part 2, Step 4) keep the value. |
+| **Multi-agent "engineering team"** (CAD agent, FEA agent, CFD agent, manufacturing agent negotiating) | The specialists' knowledge already lives in deterministic code, templates and explicit configuration; agent-to-agent chatter is expensive, non-reproducible and unauditable; consensus between models is not evidence. One proposer + deterministic workflow gives the same outcomes with a fraction of the moving parts. |
+| **Orchestrator agent that calls Vegeta tools directly** (bash/MCP with write access deciding what runs) | Moves control from code to the model; every tool call then needs its own budget and approval wrapper; harder to reproduce than a recorded campaign. Possible later over an MCP/API layer, under the same campaign controls. |
+| **Letting the LLM judge results** ("does this look acceptable?") | Replaces physics with opinion. Verdicts must come from criteria evaluated on tool metrics; the model may explain and suggest, never decide. *Exception: Fidia's review of rendered views (see below) scores appearance only; validity is decided by deterministic checks.* |
+| **Neo4j now** | Two projects and 1–3 engineers would leave the graph empty and unmaintained; it duplicates provenance the workspace files already hold; a service to run, back up and learn (Cypher, ontology). File-based `decisions.jsonl` / `lessons.jsonl` with stable evaluation ids and artifact hashes give most of the value and make a later importer mechanical. |
+| **Storing artifacts (STEP/STL/mesh/FRD/cases/G-code) in a database** | Large, binary, already reproducible from records; keep on disk or object storage and reference by hash + path. |
+| **FastAPI + database server now** | No server exists in the deployment model; the Python API and CLI are the API; a server brings auth, queues, concurrency on file workspaces and uptime with no user for it yet. Build it when Studio or the cloud move needs it, and choose the shape (FastAPI vs remote MCP) by the client. |
+| **Docker Compose on laptops** | There are no services to compose; a single image covers reproducibility and the cloud option. Compose (or Kubernetes) belongs with a server. |
+| **Agent frameworks as a core dependency** (LangChain/LangGraph/CrewAI/AutoGen-style) | Their loops and "stop" primitives are not reliably enforced, their abstractions hide token spend and tool calls, and they churn faster than Vegeta. Two thin adapters over official SDKs and a hand-written, deterministic campaign loop are smaller and inspectable. |
+| **A generic "LLM abstraction layer" covering tool use, streaming and agents for both providers** | Lowest-common-denominator adapters lose the features that make proposals reliable (strict structured outputs, thinking/effort). Keep the contract narrow: `propose` and `explain` with JSON schemas. |
+| **Executing LLM-written CadQuery code unattended** | It is arbitrary code execution on the engineer's machine; also silently changes design intent. Patches are diffs, validated and explicitly accepted. *Exception: Fidia (below).* |
+| **Write-capable MCP tools from chat clients without campaign controls** | Bypasses budgets and approvals; MCP servers run with the developer's privileges and are exposed to prompt injection through tool descriptions and results. Read-only first; writes only through the same policy machinery as campaigns. |
+| **Custom 3D renderer / web viewer now** | A product of its own; the original spec forbids unnecessary renderers. VTU export + ParaView/pyvista and CadQuery's viewer cover inspection until Studio. |
+| **Automatic chaining CAD → FEA → CFD → print** ("run everything on every revision") | Wastes hours of CFD on variants that fail FEA; hides the engineer's choice of what to test. Sweeps and campaigns name their analyses explicitly and are budgeted. The narrow, opt-in exception is Yanus **auto mode** (`docs/yanus.md` § 16): a notebook flagged `yanus_auto` produces its own declared takes in screening quality, loudly, in the foreground. A `batch.yaml` (`wf batch`) is an engineer's explicit, ordered list of chapters, not chaining. |
+| **Keeping a second, editable copy of results for the LLM** (summaries the model rewrites) | Creates drift between what was measured and what is reported. The model reads the recorded metrics; its explanations are stored separately and marked as such. |
+| **Environment/config files for AI settings** (YAML for prompts, budgets, models) | Violates the Python-configuration rule; budgets, criteria and policies are Python objects recorded in the workspace. API keys stay in environment variables because they connect to an external service. |
+
+### A written exception: Fidia prompt-to-3D
+Fidia (`docs/fidia.md`) runs LLM-written CadQuery in a loop and lets a model review the rendered result. It is
+allowed because: the code never runs in the engineer's Python process (a subprocess with an import allow-list, no
+API keys in its environment, time, memory and file-size limits, the process group killed on timeout or cancel;
+network isolation with a wrapper); the review is advice — only deterministic checks (B-rep validity, watertight,
+winding, triangle budget, export round-trip) make a revision valid, and an invalid revision can never become the
+output; the loop is bounded (iterations, minutes, tokens, patience), recorded and resumable; an approval hook
+(`approve="ask"`, `fidia run --confirm`) runs nothing without a yes; and its product is a model to look at and use,
+not an engineering verdict. The copilot's validation uses the same sandbox.
