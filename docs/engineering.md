@@ -122,7 +122,23 @@ reported ("data:connections: the connections (2 entries) — sdf has no place fo
 
 ## Aerodynamics — `00aero`
 
-*Stage 3 — written when implemented.*
+The machine's `data["aerodynamics"]` (the whole machine's) or a link's `data["aero"]` (one component's: a wing, a
+canopy, a fuselage) hold what an analysis, a test or a maker stated — never a force, never a coefficient Yax made up.
+
+| Field | Meaning |
+|---|---|
+| `name`, `method` | identity; `analytic`, `cfd`, `experiment`, `manufacturer`, `assumed`, `fitted` |
+| `reference` | `{"area_m2", "length_m", "span_m", "chord_m", "diameter_m", "source"}` — the normalisation every coefficient uses |
+| `frame`, `axes` | `frame` is `machine` (default) or `link:<name>`; `axes` says the convention (`{"x": "forward", "y": "left", "z": "up", "alpha": "nose up positive", "beta": "nose left positive", "wind": "stability axes"}`) |
+| `reference_point_m`, `center_of_pressure_m` | where the moments are taken about, where the resultant acts (in `frame`) |
+| `coefficients` | scalar coefficients: `{"CD": …, "CL": …, "Cm": …, "CD0", "CL0", "Cm0", "k", "e", "CLalpha", "CLmax", …}` (numbers only) |
+| `derivatives` | stability and control derivatives, numbers, named as the producer names them (`CLq`, `Cma`, `Cnr`, `CLde`, …; per radian unless the name says `_deg`) |
+| `tables` | `[{"name", "inputs": {axis: [increasing values], …}, "values": {coefficient: nested lists of the inputs' shape}, "source", "validity"}]` with axes among `alpha_deg`, `beta_deg`, `re`, `mach`, `v_m_s`, `rpm`, `flap_deg`, `J` — orientation, Reynolds, airspeed and nonlinear maps |
+| `assumptions`, `source`, `validity` | what the numbers assume (list of strings), where they come from, the ranges they hold in |
+
+What a format keeps: USD and YX2 everything; JSBSim writes only an aircraft's own verbatim sections (`data["jsbsim"]`),
+not this block — reported; every other format nothing, reported, and when the block holds tables the report says
+that no constant was substituted for them.
 
 ## Assemblies and detachable components — `00detach`
 
