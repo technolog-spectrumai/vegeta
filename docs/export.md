@@ -48,6 +48,14 @@ propulsion files); Drongo's materials catalogue (notebook 08's densities); the p
 `notes`, and the export's producer stamp with the git revision). Strength, connections, aerodynamics and sensors are
 absent until a design hands them over through its parts function — the export runs no FEA or CFD to fill them.
 
+## Engineering blocks
+
+Beside the tags, the export carries the engineering blocks of `vendor/yax/docs/engineering.md` wherever a design
+states them: joint motors from the Chiron servos and the Ogma units they came from (`vegeta.labkit.motors`), the
+propulsion maps (`labkit.propulsion`), materials and connections (`labkit.materials`), aerodynamics from the design
+files (`labkit.aero`), and the assembly from the joint tree (`labkit.detach`). Nothing is computed for the export
+and nothing is invented: a design that states no fastener exports none. Progress and limitations: `docs/export2.md`.
+
 ## Consumers
 
 A consumer declares the tags it needs in a Yax requirements file (`tools/consumers/piccolo.json`: required and
