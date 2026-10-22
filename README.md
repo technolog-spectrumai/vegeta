@@ -22,7 +22,10 @@ Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes 
 
 **Vegeta is where machines are conceived and designed** — the dragonfly larva in the water. When a machine's design
 is frozen it hatches and learns to fly in **[Piccolo](https://github.com/technolog-spectrumai/piccolo)**, which never
-imports Vegeta: it receives the design as data (Yax packages) and standard-part physics (Ogma). The racing quad
+imports Vegeta: it receives the design as data (Yax packages) and standard-part physics (Ogma).
+Montezuma (the simulated site) takes Vegeta's robots the same way. `tools/publish.py` writes each machine with its CAD
+looks into `exports/` as a Yax exchange file (`.yx2`) with a manifest, and consumers fetch that folder without
+Vegeta's code. The racing quad
 hatched first (2026-10-20: `races/` and the autopilot tuning are Piccolo's now); the other machines follow one at a
 time. See [ARCHITECTURE.md](ARCHITECTURE.md) and [MOVED.md](MOVED.md).
 
@@ -518,7 +521,8 @@ walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculpt
 ## Layout
 Vegeta is labs on a common library layer. The loop each lab runs: tools from `libs/` → a few notebooks (`notebooks/`)
 → the survivors graduate to MuJoCo (`sims/`) and gather data → optimisation loops (`campaigns/`) → export to Piccolo
-(`designs/machines.py`, `tools/export.py`); what does not make it falls into `exp/` (limbo). Rinse and repeat.
+(`designs/machines.py`, `tools/export.py`, `tools/publish.py` → `exports/`); what does not make it falls into `exp/`
+(limbo). Rinse and repeat.
 ```
 libs/              the common layer — never imports labs/
   vegeta-cli/        the tools: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr,mission,mock}
@@ -532,7 +536,10 @@ labs/              one per domain; a lab imports libs/ and itself, never another
   aero/  land/  legged/  marine/  studio/
     notebooks/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
 tools/             lab.py (test, run, new-exp, promote, demote, export, readme), labs.py (the rules, the stages),
-                   export.py (to Piccolo through Yax), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
+                   export.py (to Piccolo through Yax), publish.py (exports/), consumers/ (each consumer's Yax
+                   requirements: piccolo, perkun, montezuma), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
+exports/           the published machines: <machine>.yx2 with their CAD looks, MANIFEST.json (sha256, consumers served,
+                   source commit); written by tools/publish.py, never by hand
 vendor/            ozaru/ (Porunga cache, Mimezia mocks, Yanus checks), yax/ (the design-format converter, USD hub)
 tests/             smoke/ (./test.sh --smoke), labs/ (across labs: the assemblies)
 docs/              philosophy, science, per-package guides, anatomy/ (what Vegeta is, from its syntax tree)
