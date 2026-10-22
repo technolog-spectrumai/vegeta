@@ -38,7 +38,7 @@ from ogma import actuators as act
 from ogma import motors as og_motors
 
 __all__ = ["DESIGN", "CAD", "MATERIALS", "PARTS_KG", "ASSUMPTIONS", "DRIVE", "MOTOR", "PAYLOAD_KG", "G",
-           "WHEEL_FILL", "LAB_OPTIONS", "SIDES", "design_params", "pekari", "pekari_lab", "roller_joints", "rollers", "cad_numbers", "geometry", "mass_budget", "masses", "cg", "total_mass"]
+           "WHEEL_FILL", "LAB_OPTIONS", "SIDES", "design_params", "materials_block", "connections_block", "pekari", "pekari_lab", "roller_joints", "rollers", "cad_numbers", "geometry", "mass_budget", "masses", "cg", "total_mass"]
 
 G = 9.81
 PAYLOAD_KG = 5.0
@@ -70,6 +70,25 @@ CAD = {
     "basket_volume": 401053.5,
     "basket_com": (0.0, 0.0, 42.41),
 }
+
+def materials_block() -> dict:
+    """The design's materials as Yax part data (vendor/yax docs/engineering.md ``00mat``): the densities notebook 30
+    used, in SI, with their source — no elastic or strength values: the notebook fixed none."""
+    from vegeta.labkit import materials as lmat
+    return lmat.from_densities(MATERIALS, kg_m3_per_unit=1e9, source="notebook 30 (designs/pekari_rover_robot.MATERIALS, kg/mm³)",
+                               classes={"Al 6061-T6 hull shell": "metal", "Al 5754 basket sheet": "metal",
+                                        "PA6-GF30 links, sprockets, wheels": "polymer", "steel pins (42CrMo4)": "metal"})
+
+
+def connections_block(m, p: dict | None = None) -> dict:
+    """The rollers' axles as pinned connections (``00conn``): the design states one axle diameter for every wheel
+    and roller (``DESIGN['axle_diameter']``) and the track width they span; no strength limits (the notebook sized
+    none for the axles), so none are written."""
+    from vegeta.labkit import materials as lmat
+    p = design_params() if p is None else p
+    return lmat.axles(m, diameter_m=p["axle_diameter"] * 1e-3, length_m=p["track_width"] * 1e-3, which=lambda j: "bogie" not in j.name,
+                      source="notebook 30: DESIGN['axle_diameter'] and ['track_width'] (the bogie pivots are joints, not axles)")
+
 
 #: Densities [kg/mm³].
 MATERIALS = {"Al 6061-T6 hull shell": 2.70e-6, "Al 5754 basket sheet": 2.66e-6, "PA6-GF30 links, sprockets, wheels": 1.36e-6,
