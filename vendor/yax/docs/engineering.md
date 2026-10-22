@@ -162,4 +162,4 @@ repeated here, and no debris geometry exists — a detached component is its lin
 Tags: every property under `data:assembly` carries `00detach`; a consumer that needs the parts' physics asks for
 `00geom`, `00mass`, `00inert`, `00mat`, `00conn` beside it. What a format keeps: USD and YX2 everything; every other
 format writes the links and nothing of the assembly (reported). Yax never generates fragments, never decides what
-separates: Ukko or any other consumer does, from this block and the connections.
+separates: Perkun or any other consumer does, from this block and the connections.

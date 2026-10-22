@@ -12,7 +12,7 @@ Yax `dev_export2` (`vendor/YAX_REVISION`). Not merged; the stacked PRs below `de
 | 2 materials, strength, connections | material (isotropic, orthotropic, composite layup, optional calibrated failure), component strength, connections | `labkit.materials` (Talos, density tables, axles); Pekari materials and axle pins, Drongo frame material |
 | 3 aerodynamics | machine and link aero: reference, frame, points, coefficients, derivatives, n-D tables | `labkit.aero`; Falco and Nisus+ derivatives from their design files |
 | 4 detachable | `data["assembly"]`: components refer to links and connections; separation limits; `00detach` | `labkit.detach` (from the joint tree); Drongo and Pekari assemblies, none declared detachable |
-| integration | — | `tools/tests/test_export2_integration.py`, `tools/consumers/ukko.json` |
+| integration | — | `tools/tests/test_export2_integration.py`, `tools/consumers/perkun.json` |
 
 ## System tags
 

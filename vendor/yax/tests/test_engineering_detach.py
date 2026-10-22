@@ -53,20 +53,20 @@ def test_assembly_matches_the_oracle(tmp_path):
 
 def test_filtering_by_component_related_tags(tmp_path):
     m = _assembly()
-    ukko = tg.Requirements(required=("00core", "00geom", "00mass", "00inert", "00detach", "00conn"), optional=("00mat", "00str"), consumer="ukko")
-    assert tg.check(m, ukko, fmt="yx2").ok
+    perkun = tg.Requirements(required=("00core", "00geom", "00mass", "00inert", "00detach", "00conn"), optional=("00mat", "00str"), consumer="perkun")
+    assert tg.check(m, perkun, fmt="yx2").ok
     parts = tg.select(m, keep=("00core", "00geom", "00mass", "00inert", "00detach", "00conn"))
     assert set(parts.data) == {"assembly", "connections"} and "material" not in parts.link("body").data and parts.link("arm").mass == 0.03
     assert schema.problems(parts) == ["data:assembly/components/body: material 'petg-cf' is not in data['materials']",
                                       "data:assembly/components/arm: material 'petg-cf' is not in data['materials']"]   # dependents of excluded data, said
-    v = tg.check(parts, ukko)
+    v = tg.check(parts, perkun)
     assert v.ok and v.statuses["00mat"].status == tg.WITHHELD
     no = tg.select(m, drop=("00detach",))
     assert "assembly" not in no.data and no.data["connections"] and no.tags["withheld"] == ["00detach"]
     yax.save(no, tmp_path / "no.yx2")
     text = (tmp_path / "no.yx2").read_text()
     assert "separation" not in text and "mock pull test" not in text and "body-arm-bolts" in text
-    v = tg.check(yax.read(tmp_path / "no.yx2")[0], ukko)
+    v = tg.check(yax.read(tmp_path / "no.yx2")[0], perkun)
     assert not v.ok and v.statuses["00detach"].status == tg.WITHHELD
 
 
