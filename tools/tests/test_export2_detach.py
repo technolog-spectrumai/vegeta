@@ -1,7 +1,7 @@
 """Stage 4B — detachable components through the real Vegeta → Yax export on a mock assembly: a Chiron robot with a
 body, an arm, a motor and a propeller as links on fixed and spinning joints, whose parts function states which come
 off, through which connection, with which separation limits (the fixture Yax's own tests use). The assembly comes
-from the robot's joint tree (labkit.detach); the physics stays on the links. No MuJoCo simulation, no Ukko."""
+from the robot's joint tree (labkit.detach); the physics stays on the links. No MuJoCo simulation, no Perkun."""
 import json
 import sys
 from pathlib import Path
@@ -70,17 +70,17 @@ def test_assembly_from_the_joint_tree_matches_the_oracle(registered, tmp_path):
     assert "separation" not in (tmp_path / "q.sdf").read_text() and "<link name=\"prop\">" in (tmp_path / "q.sdf").read_text()
 
 
-def test_ukko_style_selection_and_validation(registered, tmp_path):
-    ukko = export.ROOT / "tools" / "consumers" / "ukko.json"
+def test_perkun_style_selection_and_validation(registered, tmp_path):
+    perkun = export.ROOT / "tools" / "consumers" / "perkun.json"
     m, _ = export.machine("mockquadarm", keep=("00core", "00geom", "00mass", "00inert", "00mat", "00conn", "00detach"))
-    reps = export.write(m, tmp_path / "u.yx2", consumers=(ukko,))
+    reps = export.write(m, tmp_path / "u.yx2", consumers=(perkun,))
     v = next(r for r in reps if isinstance(r, tg.Compatibility))
-    assert v.ok and v.requirements.consumer == "ukko" and v.statuses["00detach"].status == tg.PRESENT
+    assert v.ok and v.requirements.consumer == "perkun" and v.statuses["00detach"].status == tg.PRESENT
     assert "pulltest" in m.tags["withheld"] or "pulltest" in tg.inventory(m)              # a producer tag on kept properties stays
     m, _ = export.machine("mockquadarm", drop=("00detach",))
     assert "assembly" not in m.data and m.data["connections"]
-    export.write(m, tmp_path / "n.yx2", consumers=(ukko,))
+    export.write(m, tmp_path / "n.yx2", consumers=(perkun,))
     text = (tmp_path / "n.yx2").read_text()
     assert "separation" not in text and "mock pull test" not in text
-    v = tg.check(yax.read(tmp_path / "n.yx2")[0], tg.Requirements.load(ukko))
+    v = tg.check(yax.read(tmp_path / "n.yx2")[0], tg.Requirements.load(perkun))
     assert not v.ok and v.statuses["00detach"].status == tg.WITHHELD

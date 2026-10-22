@@ -1,5 +1,5 @@
 """The whole data path on one mock machine holding every engineering block: mock Vegeta object → tools/export.py →
-Yax property model → YX2 and USD → Yax → consumer validation (Piccolo's and Ukko's requirement files). The expected
+Yax property model → YX2 and USD → Yax → consumer validation (Piccolo's and Perkun's requirement files). The expected
 blocks are the stage fixtures; nothing after the mock producer is mocked. No solver runs."""
 import json
 import sys
@@ -73,11 +73,11 @@ def test_the_whole_data_path(registered, tmp_path):
     for tag in ("00core", "00geom", "00mass", "00inert", "00joint", "00motor", "00prop", "00mat", "00str", "00conn", "00aero", "00detach", "00prov",
                 "mockbemt", "cfd", "analytic"):
         assert inv.get(tag), tag
-    piccolo, ukko = export.ROOT / "tools" / "consumers" / "piccolo.json", export.ROOT / "tools" / "consumers" / "ukko.json"
-    reps = export.write(m, tmp_path / "all.yx2", also=("usda", "sdf", "xml"), consumers=(piccolo, ukko))
+    piccolo, perkun = export.ROOT / "tools" / "consumers" / "piccolo.json", export.ROOT / "tools" / "consumers" / "perkun.json"
+    reps = export.write(m, tmp_path / "all.yx2", also=("usda", "sdf", "xml"), consumers=(piccolo, perkun))
     verdicts = [r for r in reps if isinstance(r, tg.Compatibility)]
     assert [(v.requirements.consumer, v.fmt, v.ok) for v in verdicts] == [("piccolo", "yx2", True), ("piccolo", "usd", True), ("piccolo", "sdf", True), ("piccolo", "mjcf", True),
-                                                                        ("ukko", "yx2", True), ("ukko", "usd", True), ("ukko", "sdf", False), ("ukko", "mjcf", False)]
+                                                                        ("perkun", "yx2", True), ("perkun", "usd", True), ("perkun", "sdf", False), ("perkun", "mjcf", False)]
     assert verdicts[6].statuses["00detach"].status == tg.UNSUPPORTED and verdicts[6].statuses["00conn"].status == tg.UNSUPPORTED   # SDF: read them from the YX2
     for f in ("all.yx2", "all.usda"):
         back, _ = yax.read(tmp_path / f)
@@ -110,10 +110,10 @@ def test_selective_export_of_the_whole_machine(registered, tmp_path):
         "data:connections/panel-bond: material 'al6061-t6' is not in data['materials']",
         "data:assembly/components/body: material 'petg-cf' is not in data['materials']",
         "data:assembly/components/panel: material 'cfrp-t300' is not in data['materials']"])
-    export.write(m, tmp_path / "ukko.yx2", consumers=(export.ROOT / "tools" / "consumers" / "ukko.json",))
-    text = (tmp_path / "ukko.yx2").read_text()
+    export.write(m, tmp_path / "perkun.yx2", consumers=(export.ROOT / "tools" / "consumers" / "perkun.json",))
+    text = (tmp_path / "perkun.yx2").read_text()
     for leak in ("stall_torque", "youngs_modulus", "CLalpha", "kv_rpm_per_v", "allowable_stress"):
         assert leak not in text, leak
     assert {"00motor", "00prop", "00mat", "00str", "00aero", "00prov", "mockbemt", "cfd", "analytic"} <= set(m.tags["withheld"])
-    back, _ = yax.read(tmp_path / "ukko.yx2")
-    assert tg.check(back, tg.Requirements.load(export.ROOT / "tools" / "consumers" / "ukko.json")).ok
+    back, _ = yax.read(tmp_path / "perkun.yx2")
+    assert tg.check(back, tg.Requirements.load(export.ROOT / "tools" / "consumers" / "perkun.json")).ok
