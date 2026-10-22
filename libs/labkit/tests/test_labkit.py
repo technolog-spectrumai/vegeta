@@ -79,6 +79,6 @@ def test_propulsion_block_from_a_synthetic_grid():
     with pytest.raises(ValueError):
         lp.max_shaft_power(grid, battery_v=1.0, voltage_for=volt)
     blk = lp.block([lp.rotor("r0", (0, 0, 0), (0, 0, 2), 1, "p", "m")], [{"name": "p"}], [lp.motor_entry("m", Pm, kv=2400)], reduced={"r0": red})
-    assert blk["rotors"][0]["axis"] == [0.0, 0.0, 1.0] and blk["motors"]["m"]["kv"] == 2400
+    assert blk["rotors"][0]["axis"] == [0.0, 0.0, 1.0] and blk["motors"]["m"]["kv_rpm_per_v"] == 2400
     with pytest.raises(KeyError):
         lp.block([lp.rotor("r0", (0, 0, 0), (0, 0, 1), 1, "p", "x")], [{"name": "p"}], [])
