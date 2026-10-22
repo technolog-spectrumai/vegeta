@@ -6,6 +6,7 @@
     python tools/export.py drongo --to out/drongo.yx2 --tag 'data:propulsion/*=boreas'        # a producer tag
     python tools/export.py drongo --to out/drongo.yx2 --tags export.yaml                      # keep/drop/tag from a file
     python tools/export.py drongo --to out/drongo.yx2 --full                                  # everything, said explicitly
+    python tools/export.py pekari --to out/pekari.yx2 --no-visual                       # without the CAD looks
     python tools/export.py --list
 
 The main file is a **YX2** (``.yx2``, the Yax 2 exchange file: a validated USD subset with the units, the frame, stable
@@ -99,10 +100,11 @@ def selection(keep=None, drop=(), full: bool = False, spec: dict | None = None, 
 
 
 # ----------------------------------------------------------------------------------------------------------- export
-def machine(name: str, *, lump: bool = False, keep=None, drop=(), tag=()):
+def machine(name: str, *, lump: bool = False, keep=None, drop=(), tag=(), visual: bool = True):
     """The named machine as a ``yax.Machine`` (from its Chiron robot) with its part data, its tags (the system tags,
-    the design's, and ``tag``'s ``(pattern, code)`` pairs), holding only the properties whose tags meet ``keep`` (default:
-    all) and none of ``drop`` — the rest withheld by Yax's ``select``, never invented."""
+    the design's, and ``tag``'s ``(pattern, code)`` pairs) and its CAD design as a visual mesh (``visual``), holding
+    only the properties whose tags meet ``keep`` (default: all) and none of ``drop`` — the rest withheld by Yax's
+    ``select``, never invented."""
     import yax
     from yax import hub
     from yax import tags as tg
@@ -131,6 +133,8 @@ def machine(name: str, *, lump: bool = False, keep=None, drop=(), tag=()):
         m = hub.lump(m)
         if rot:                                                                # the rotors spin as their own links
             _subtract(m.links[0], rot)
+    if visual and entry.visual is not None:                                   # the CAD design, the machine's looks
+        attach_visual(m, entry.visual)
     for pattern, codes in design_tags.items():                                # the design's own tags
         for code in ([codes] if isinstance(codes, str) else codes):
             tg.tag(m, pattern, code)
@@ -139,6 +143,18 @@ def machine(name: str, *, lump: bool = False, keep=None, drop=(), tag=()):
     if keep is not None or drop:
         m = tg.select(m, keep, drop)
     return m, rep
+
+
+def attach_visual(m, design, max_triangles: int | None = None):
+    """The design's CAD as the root link's visual mesh ``cad`` (``vegeta.labkit.visual``: light, placed over the
+    robot's shapes); Yax tags it ``00geom``."""
+    from yax import hub
+    from vegeta.labkit import visual as lv
+    pts, faces = lv.mesh(design, max_triangles or lv.MAX_TRIANGLES)
+    uri = design if isinstance(design, str) else getattr(design, "__name__", type(design).__name__)
+    m.links[0].shapes.append(hub.Shape(name="cad", kind="mesh", role="visual", points=lv.place(pts, m), faces=faces,
+                                       uri=f"vegeta designs:{uri}"))
+    return m
 
 
 def _subtract(lk, rotors):
@@ -166,11 +182,12 @@ def _revision() -> str | None:
         return None
 
 
-def export(name: str, to, *, also=(), lump: bool = False, keep=None, drop=(), tag=(), consumers=()) -> list:
+def export(name: str, to, *, also=(), lump: bool = False, keep=None, drop=(), tag=(), consumers=(),
+           visual: bool = True) -> list:
     """Write the machine at ``to`` (``.yx2`` recommended) and in the formats ``also`` (suffixes) beside it, holding only the
     properties chosen by tag; the reports, then — when ``consumers`` (requirements files) are given — one ``Compatibility``
     verdict per consumer and format, about the files as written."""
-    m, rin = machine(name, lump=lump, keep=keep, drop=drop, tag=tag)
+    m, rin = machine(name, lump=lump, keep=keep, drop=drop, tag=tag, visual=visual)
     return [rin, *write(m, to, also=also, consumers=consumers)]
 
 
@@ -210,6 +227,7 @@ def main(argv=None) -> int:
     ap.add_argument("--tags", help="a YAML or JSON file with keep and drop lists and a tag mapping")
     ap.add_argument("--consumer", action="append", default=[], help="a Yax requirements file (JSON): report whether the export serves it")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a consumer is not served")
+    ap.add_argument("--no-visual", action="store_true", help="leave out the CAD design's visual mesh")
     ap.add_argument("--list", action="store_true")
     a = ap.parse_args(argv)
     if a.list or not a.machine:
@@ -217,7 +235,7 @@ def main(argv=None) -> int:
         return 0
     spec = tags_from_file(a.tags) if a.tags else None
     keep, drop, tag = selection([x for x in a.keep.split(",") if x], [x for x in a.drop.split(",") if x], a.full, spec, a.tag)
-    m, rin = machine(a.machine, lump=a.lump, keep=keep, drop=drop, tag=tag)
+    m, rin = machine(a.machine, lump=a.lump, keep=keep, drop=drop, tag=tag, visual=not a.no_visual)
     served = True
     for rep in [rin, *write(m, a.to or f"{a.machine}.yx2", also=a.also, consumers=a.consumer)]:
         print(rep)
