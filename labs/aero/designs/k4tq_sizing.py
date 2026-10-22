@@ -302,7 +302,8 @@ def drag_buildup(L: dict, *, V: float = 20.0, n_running: int = 4) -> dict:
         rows["fin"] = og_aero.cf_mixed(V * math.sqrt(S_fin) / NU) * 1.15 * 2.04 * S_fin
     rows["root gaps (4)"] = 4 * ROOT_GAP_CDA * sc ** 2
     if n_running < 4:
-        rows[f"stopped propellers ({4 - n_running}, folded)"] = (4 - n_running) * FOLDED_BLADE_CDA * sc ** 2
+        rigid = k4tq.CATALOGUE["propeller"][p["prop"]].get("folding", True) is False          # a rigid propeller stopped edge-on: ×4
+        rows[f"stopped propellers ({4 - n_running}, {'rigid' if rigid else 'folded'})"] = (4 - n_running) * FOLDED_BLADE_CDA * sc ** 2 * (4.0 if rigid else 1.0)
     total = sum(rows.values()) * INTERFERENCE
     return {"parts_m2": rows, "CdA_m2": total, "Cd0": total / L["S_ref"], "S_wet_fuselage": S_wet, "label": "ESTIMATE"}
 

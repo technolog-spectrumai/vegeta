@@ -123,6 +123,13 @@ CATALOGUE = {
                    "source": "T-Motor MF2009 folding polymer + CF, 20.4x7.3, 59 g + the folding base"},
         "FA22.2": {"d_in": 22.2, "p_in": 7.2, "mass_kg": 0.085, "price_eur": 90.0, "folding": True, "off_the_shelf": True,
                    "source": "T-Motor carbon folding 22.2x7.2, 69 g + the folding base"},
+        # off the shelf, rigid (K4TQ-H3 / J3): APC thin electric — the stopped rear pair cannot fold (``folding`` False: its drag ×4)
+        "APC20x10E": {"d_in": 20, "p_in": 10.0, "mass_kg": 0.095, "price_eur": 40.0, "folding": False, "off_the_shelf": True,
+                      "source": "APC 20x10E (LP20010E), rigid; in stock at Galaxus (EU) 2026-10"},
+        "APC22x10E": {"d_in": 22, "p_in": 10.0, "mass_kg": 0.115, "price_eur": 48.0, "folding": False, "off_the_shelf": True,
+                      "source": "APC 22x10E (LP22010E), rigid; Gator-RC / Motion RC (stock varies)"},
+        "APC22x12E": {"d_in": 22, "p_in": 12.0, "mass_kg": 0.120, "price_eur": 50.0, "folding": False, "off_the_shelf": True,
+                      "source": "APC 22x12E (LP22012E), rigid; Gator-RC (stock varies)"},
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
