@@ -5,7 +5,8 @@ that carry tags**. A tag is a code of one to eight alphanumeric characters. The 
 pleases and keeps or withholds them by tag; the consumer validates the file against the tags it needs. Neither has
 to know the other's groups — only the codes they agreed on. Codes beginning with `00` are **system tags**, reserved
 to Yax: it assigns them from what a property *is*, so a consumer can always validate against them, old-school.
-`yax.tags` is the module; `yax tags FILE` and `yax select SRC DST` the commands.
+`yax.tags` is the module; `yax tags FILE` and `yax select SRC DST` the commands. What the blocks hold — their fields, units,
+frames and what each format loses of them — is the engineering contract, docs/engineering.md (`yax validate FILE`).
 
 ## Properties
 
@@ -66,6 +67,7 @@ a number comes from. Yax never fills a field a producer left out.
 | `00sensor` | sensors, SDF sensors carried verbatim |
 | `00prov` | the producer stamp and provenance data |
 | `00fmt` | another format's own data carried verbatim |
+| `00detach` | the assembly: components, parent–child relations, attachments, separation limits (docs/engineering.md) |
 
 Yax assigns these; a producer cannot (`ValueError`). Any other code is the producer's: `boreas` on the propeller
 maps a BEMT made, `nb08` on the numbers notebook 08 fixed, `weighed` on the masses that were put on a scale.
@@ -90,6 +92,25 @@ mass `None` (writers leave the inertial out), an articulation turned into a fixe
 names and poses stay, so a consumer's references hold; the drive goes with it), a data key gone at the path, an
 empty producer stamp. Nothing it contained reaches the file, its metadata or its side files, and every writer of
 another format reports "withheld by the producer". A consumer's requirements never change what a producer shares.
+
+## Filtering rules
+
+`select(m, keep, drop)` decides property by property, from the full table (system tags Yax assigns, producer tags
+given on the path or on any path above it):
+
+| Case | Rule |
+|---|---|
+| a property with **no tags** (data under a key no schema knows, untagged by the producer) | kept when `keep` is not given; dropped by any `keep` (nothing meets it); never dropped by `drop` |
+| **multiple tags** | kept when *any* of its tags is in `keep`; dropped when *any* is in `drop` (`drop` wins) |
+| **system and user tags** on one property | the same rule, the two kinds alike: `keep=("boreas",)` keeps a `00prop` map that also carries `boreas` |
+| **unknown tags** (a code the reader never heard of) | preserved in the table and the file; a consumer that does not need it ignores it |
+| a **required tag missing** from the file | `check` says `absent` (nothing ever carried it) or `withheld` (the producer dropped it, or every property carrying it); the verdict fails |
+| a property **dependent on excluded data** (a strength naming a dropped material, a rotor naming a dropped propeller, a component naming a dropped connection) | the referring property stays as it is — never rewritten — and `schema.problems` names the dangling reference, so the consumer sees what it depends on |
+| a **container** (a data block) whose children are partly kept | stays, holding the kept children only |
+| `00core` | never dropped: names, poses, the joint tree |
+
+An excluded value reaches nothing: the hub's copy no longer holds it, every writer writes from the hub, side files
+(JSBSim engine files, meshes) are produced from the hub after selection, and the YX2 table lists only what is there.
 
 ## Requirements: what a consumer needs
 
