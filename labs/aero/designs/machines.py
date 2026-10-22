@@ -23,7 +23,8 @@ def _drongo_parts(m) -> dict:
                      "data:propulsion/battery*": "nb08", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
 
 
-machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts)
+machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts, visual="drongo:Drongo")
+machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcopter")
 machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
 machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
 machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)

@@ -1,8 +1,8 @@
 """The machines this lab exports (``tools/export.py``): name → the Chiron robot builder (``vegeta.labkit.machines``)."""
 from vegeta.labkit import machines
 
-machines.register("onager", "onager_robot:onager")
-machines.register("onager_atlas", "onager_atlas_robot:atlas")
+machines.register("onager", "onager_robot:onager", visual="onager:OnagerSentinel")
+machines.register("onager_atlas", "onager_atlas_robot:atlas", visual="onager_atlas:OnagerAtlas")
 machines.register("onager_manus", "onager_manus_robot:manus")
 machines.register("onager_sweeper", "onager_sweeper_robot:sweeper")
 def _pekari_parts(m) -> dict:
@@ -25,6 +25,7 @@ def _pekari_parts(m) -> dict:
             "tags": {"data:materials*": "nb30", "data:connections*": "nb30"}}
 
 
-machines.register("pekari", "pekari_rover_robot:pekari", parts=_pekari_parts)
-machines.register("perseus", "perseus_robot:perseus")
-machines.register("perseus_mini", "perseus_mini_robot:mini")
+machines.register("pekari", "pekari_rover_robot:pekari", parts=_pekari_parts, visual="pekari_rover:PekariRover")
+machines.register("perseus", "perseus_robot:perseus", visual="perseus_rover:PerseusRover")
+machines.register("rover", "rover_robot:rover", visual="rover:Rover")
+machines.register("perseus_mini", "perseus_mini_robot:mini", visual="perseus_rover:PerseusMini")
