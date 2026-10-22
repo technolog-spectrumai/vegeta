@@ -42,7 +42,7 @@ r2.run_fea("static", static)
 r2.run_print("flat", GENERIC_PLA_0_2MM, mellonia.Orientation())
 ws.status()
 ```
-Real output (from `notebooks/06_core_revisions.ipynb`):
+Real output (from `labs/studio/notebooks/06_core_revisions.ipynb`):
 ```
 rev  design   parent  label         changes        CAD          fea:static               print:flat
 ---  -------  ------  ------------  -------------  -----------  -----------------------  -----------------

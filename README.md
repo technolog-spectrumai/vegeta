@@ -12,15 +12,24 @@ independent engineering tools, shipped together as one installable package, **`v
 | **Talos** | linear static FEA | Gmsh + CalculiX | STEP + explicit config → mesh, `.inp`, `.frd`/`.dat`, summary |
 | **Aeromant** | aerodynamics / CFD | OpenFOAM | STL + template case + explicit values → case, logs, Cd/Cl/Cm |
 | **Mellonia** | 3D-print manufacturability | PrusaSlicer | STL + explicit print settings → G-code, time, material |
+| **Atropos** | laser-cut flat parts | nothing (SVG + GRBL writers) | section + explicit rib spec, sheet and laser settings → ribs, nested sheets, SVG, G-code, time, material |
+| **Zephyr** | 2-D wing sections | NeuralFoil (optional) / XFOIL (optional) | NACA or .dat section + Re, n_crit, flap → thin-airfoil numbers, polar (cl, cd, cm, confidence), flap effectiveness, JSON |
 | **Vegeta Core** | workbench | the four above | workspaces, immutable revisions, recorded evaluations, NOT RUN |
 | **Fidia** | AI modelling | Dedalus + `vegeta-ai` (Claude) | prompt → checked 3D model (glTF/GLB, OBJ, STEP); design copilot; campaigns |
 
 Dedalus designs. Talos tests structures. Aeromant tests aerodynamics.
 Mellonia tests manufacturability. Fidia sculpts from a prompt. Vegeta organizes the engineer's work.
 
+**Vegeta is where machines are conceived and designed** — the dragonfly larva in the water. When a machine's design
+is frozen it hatches and learns to fly in **[Piccolo](https://github.com/technolog-spectrumai/piccolo)**, which never
+imports Vegeta: it receives the design as data (Yax packages) and standard-part physics (Ogma). The racing quad
+hatched first (2026-10-20: `races/` and the autopilot tuning are Piccolo's now); the other machines follow one at a
+time. See [ARCHITECTURE.md](ARCHITECTURE.md) and [MOVED.md](MOVED.md).
+
 Vegeta Core, Fidia and the AI connection are their own distributions next to `vegeta-cli`:
-`vegeta-core`, **`vegeta-fidia`** and `vegeta-ai` (the provider layer only: keys, model, structured
-output, images, cancellation, usage).
+`vegeta-core`, **`vegeta-fidia`**, `vegeta-ai` (the provider layer only: keys, model, structured
+output, images, cancellation, usage). What a notebook or a side lab needs on the machine is checked by Ozaru's
+Yanus (`vendor/ozaru`); the side labs' books and chapters are declared in `labs/aero/campaigns/side_labs/flow.py`.
 
 ## Principles
 - The four engineering tools are **independent** subpackages (`vegeta.dedalus`, ...): none imports
@@ -35,21 +44,35 @@ output, images, cancellation, usage).
 - Nothing is guessed: supports, loads, materials, CFD values and print settings are explicit.
 - Nothing runs automatically: every analysis is started by the engineer.
 
+### The blessed imperfection rule
+Vegeta is design code: the larva, not the dragonfly. Now that robotics has moved to Piccolo, Vegeta is the R&D
+notebook set, fast and dirty as it was at the beginning, and it stays that way. **Go fast and break things.** A design study does not have to
+be perfect, general or polished; it has to answer the design question. Rough models, duplicated helpers and
+half-finished studies are fine here. This is a silver rule, not a golden one: it is subjective and not strict.
+
+The other side of it: once a machine hatches into Piccolo, it is no longer a sketch. Piccolo takes frozen designs and
+holds them to a higher standard. The stable physics of standard parts lives in Ogma (`libs/ogma/`, the parts library), with tests
+pinned to reference values. The way to check Vegeta quickly is `./test.sh --smoke` plus the mocked tests
+(`VEGETA_DEBUG=1`, `-p vegeta.mock.pytest_plugin`); the slow full suites are in `user_tests.sh`.
+
 ## Status
 Stages 1–9 are implemented: the four independent tools (Python API, CLI, validated tests, docs,
 notebooks) and Vegeta Core (workspaces, immutable revisions, branching, labels, recorded
-evaluations, NOT RUN status; [docs/core.md](docs/core.md), `06_core_revisions`). Next: comparison and
-sweeps, then a GUI — see [`todo.md`](todo.md).
+evaluations, NOT RUN status; [docs/core.md](docs/core.md), `demo/06_core_revisions`). Next: comparison and
+sweeps, then a GUI — see [`old_todo.md`](old_todo.md); the current work (the split, Ogma) is in [`todo.md`](todo.md).
 
 | package | CLI | validation | guide | notebook |
 |---------|-----|------------|-------|----------|
-| Dedalus | `vegeta dedalus params/generate/measure` | exact box/hole volumes, STEP round trip | [docs/dedalus.md](docs/dedalus.md) | `01_dedalus_cad` |
-| Talos | `vegeta talos inspect/mesh/solve/results` | cantilever vs beam theory (−0.6 %), bar F/A, gravity | [docs/talos.md](docs/talos.md) | `02_talos_fea` |
-| Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `03_aeromant_cfd` |
-| Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `04_mellonia_print` |
+| Dedalus | `vegeta dedalus params/generate/measure` | exact box/hole volumes, STEP round trip | [docs/dedalus.md](docs/dedalus.md) | `old/01_dedalus_cad` |
+| Talos | `vegeta talos inspect/mesh/solve/results` | cantilever vs beam theory (−0.6 %), bar F/A, gravity | [docs/talos.md](docs/talos.md) | `old/02_talos_fea` |
+| Aeromant | `vegeta aeromant templates/prepare/run/results` | sphere Re=100 Cd 1.100 vs 1.092 | [docs/aeromant.md](docs/aeromant.md) | `old/03_aeromant_cfd` |
+| Mellonia | `vegeta mellonia slice/parse` | layer counts, solid cube volume (+0.9 %) | [docs/mellonia.md](docs/mellonia.md) | `old/04_mellonia_print` |
 | Boreas | `vegeta boreas point/for-thrust/map` | T~n², P~n³, momentum limit, APC 10x4.7 static point | [docs/boreas.md](docs/boreas.md) | propeller parts of `08_`, `09_` |
 | Chronos | `vegeta chronos spectrum/life` | ASTM E1049 rainflow example, DAF = 1/2ζ at resonance, Miner sums | [docs/chronos.md](docs/chronos.md) | life parts of `08_`, `09_` |
-| Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `15_fidia_prompt_to_3d`, `07_`, `10_` |
+| Atropos | `vegeta atropos rib/nest/info/settings` | offset areas (A + P·k + 4k², 1e-9), NACA 00xx area 0.6851·t·c² (0.2 %), skin let-in = t × arc length (5 %), nesting with no overlap inside the margins, G-code G1 length = passes × contour length (1e-3) | [docs/atropos.md](docs/atropos.md) | `36_falco_balsa_wing` |
+| Zephyr | `vegeta zephyr section/polar/flap/backends` | thin-airfoil α₀ and Cm vs Abbott & von Doenhoff (2412: −2.08°, −0.053; reflexed 230-series Cm = 0), each backend vs theory (α₀ ±0.6°, Cm₀ ±0.012), XFOIL vs NeuralFoil ΔCl 0.05 | [docs/zephyr.md](docs/zephyr.md) | — (`vegeta zephyr` and the API; a section notebook is on the to-do list) |
+| Chiron | `vegeta chiron info/run/metrics/render` | foot forces = m·g (1 %), contact decoding = `mj_contactForce` (1e-9), impulse Δv = J/m (1 %), servo torque–speed line, foot Jacobians = `mj_jac` (1e-12), bitwise-reproducible paired trials | [docs/chiron.md](docs/chiron.md) | `benchmark/cleopatra`, `benchmark/persephone` |
+| Fidia | `vegeta fidia run/resume/show/propose/accept` | sandbox walls (timeout, memory, no keys), watertight/winding checks, glTF/GLB/OBJ re-import with trimesh and VTK | [docs/fidia.md](docs/fidia.md) | `demo/15_fidia_prompt_to_3d`, `demo/07_`, `demo/10_` |
 
 Product-level notebooks — one notebook per machine, the whole workflow on one design with revisions,
 visualisation and a JSON record: `08_quadcopter` (printed X-frame: load cases, three revisions, drag with a
@@ -60,12 +83,12 @@ fatigue on the FEA stress fields and a fleet-usage life) and the twin-motor fixe
 resulting drag polar with the same CFD/noise/blade/video treatment, then the whole aircraft in flight with its
 propellers as rotor disks; it ends with a hand-off file) and `09b_fixed_wing_durability` (wing modes, missions
 and life, then the whole fuselage over a long full-battery mission; it starts from 09a's hand-off, or recorded
-values). `07_ai_design_copilot`
-iterates a design with Claude; `10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
-every candidate, criteria, budget, approval policy) in a workspace; `15_fidia_prompt_to_3d` goes from a
+values). `demo/07_ai_design_copilot`
+iterates a design with Claude; `demo/10_agentic_design` lets Claude run a bounded parameter campaign (FEA on
+every candidate, criteria, budget, approval policy) in a workspace; `demo/15_fidia_prompt_to_3d` goes from a
 prompt to an exported 3D model (plan, sandboxed build, checks, renders, review, feedback) and runs offline
 with a scripted agent when no API key is set. Shared design files live in
-`notebooks/designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
+`designs/`. Every movie a notebook makes is written to `notebooks/output/<notebook>/`. The OpenFOAM cells run when you run them (`VEGETA_SKIP_OPENFOAM=1` skips them).
 `11_rover_mechanics` (branch `dev_land`) is a small rugged-terrain rover: terrain profiles → quarter-car wheel
 loads → arm, chassis and pin stresses over the operating cases (rocky peak, hill climbing, mud, heavy payload),
 arm modes and a speed–frequency diagram, rainflow fatigue, life, printing.
@@ -85,10 +108,399 @@ evaluated side by side, with a recommendation; then the recommendation (7 blades
 quieter one measure at a time — skew, an anti-singing trailing edge, a damping alloy, a larger slower propeller,
 fins moved upstream — each kept only if it is quieter without breaking a criterion.
 
-Scenarios (scripts, not notebooks): `scenarios/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
+**Laser engineering moved to [Alabastron](https://github.com/technolog-spectrumai/alabastron)** (2026-10-18): Hyperion,
+the Svarog studies (`46_svarog`, `46_svarog_remote`, `47_svarog_iii`, `47_svarog_ablation`), `48_kimla`, the FEniCSx
+workflow books `fenix` and `svarog` and their FEniCSx environment. Their history stays here; Alabastron carries it on.
+
+`16_robot_dog` (branch `dev_sikarian`) is a 13 kg quadruped for patrols and stairs: CAD with a payload deck,
+foot forces per gait (duty factor), joint torques over a stance, stairs and slopes with a payload, a drop from a
+step, FEA of both leg links and the pins, lower-leg modes against stride harmonics, rainflow fatigue over three
+missions, the trot as a sequence of leg angles with a movie, printing. Actuators, motors and joints for the dog and
+the Myropods come from one shared catalogue, `designs/actuators.py` (explicit entries with sources, a
+selection helper and holding power). Walking is simulated by one shared stepping machine,
+`labs/legged/designs/gait.py` (terrain, body pose from the ground, foot stepping, inverse and forward kinematics and joint
+torques for dog legs and Myropod legs), written for the dog and reused for Cleopatra and Persephone (whose feet land on a pipe
+wall: `PipeContact`, `path_pose`). The **Myropods** (`dev_sikarian`) are a family of segmented walkers from one design file —
+four legs on every segment, so each segment stands and braces on its own: `17_myropod_persephone` is the chimney
+crawler (twelve 60 mm segments, 48 legs, a tether) in three versions — v1 the crawler (fit in flues and elbows,
+bracing on soot and the servo class it needs, climb power and the tether, leg and shell FEA, a thermal limit in a
+warm flue, the comms and power links, gait dynamics, leg fatigue), v2 transport into the chimney (coiled in a carry
+case around its tether drum, the flue-mouth insertion guide, the push-in / anchor-and-pull / emergency-retreat
+forces, case FEA), v3 two pincers on the head (grip, head moment, pincer FEA), and its gait from the hearth into the flue: 48 legs joint by
+joint on the pipe wall through a 90° knee, with a step table and a movie; `18_myropod_cleopatra` is the
+three-segment 12-legged walker (gaits, actuator torques, limb loss and the support polygon on three legs, leg FEA,
+endurance, and its gait on open terrain: twelve legs joint by joint, the body joints between segments, a movie); `19_myropod_apheloria` (`labs/legged/designs/apheloria.py`) is the modular pill millipede that rolls into a ball
+(configurations and module masses, ball geometry, rolling and a drop, the curl-up joint moment, plate and leg FEA,
+endurance).
+
+Project Onager — land robots (branch `dev_sikarian`): `20_onager_sentinel` (`labs/land/designs/onager.py`) is the Onager
+Sentinel SX-1, a 380 kg wheel-leg reconnaissance unit: CAD of the hull, turret, mast and four wheel-legs against
+the datasheet envelope; mass budget and CG; wheel mode (resistance vs the hub motors' torque–speed line, grades,
+the 0–38 km/h run, range and endurance); walking mode (stance torques, the joint modules and the speed they
+allow); ISO 8608 terrains through a quarter car with the active leg as suspension, hull vibration PSDs, pitch,
+leg and mast modes from Talos and a frequency diagram; static FEA of both leg plates, stub axle and knee pin; the
+actuators under Chiron's servo model (a stand-up from the crouch, currents and the battery); and in MuJoCo through
+ChironLab a patrol on gravel with a speed bump where a hub motor fails and a wheel seizes, two responses compared —
+drag vs the three-wheel limp — with a movie each. `labs/land/designs/onager_robot.py`, `onager_controller.py` and
+`onager_scenario.py` are the Sentinel in ChironLab; `labs/land/sims/onager_patrol.py` (or `./user_tests.sh onager`)
+re-runs the patrol and writes the movies. `21_onager_atlas` (`labs/land/designs/onager_atlas.py`) is the forklift: the Sentinel
+chassis in a logistics stance with a tilting mast, lift carriage and forks (load chart and tipping, the stance's
+knee torques, lift and tilt screws, fork FEA and mast modes, a quarter car with the pallet, and in MuJoCo a pallet
+job — approach, lift, carry 8 m, set down — with a movie). `22_onager_manus` (`labs/land/designs/onager_manus.py`) has two
+manipulator arms with pincers (workspace and joint torques, the cutting envelope, why the jaws have hooked tips,
+jaw and arm FEA, and in MuJoCo a track blocked by a wire it cuts — the wire parts only when both jaws squeeze it
+with the cutting force — and a log it lifts off the track, with a movie). `labs/land/sims/onager_atlas_pallet.py` and
+`labs/land/sims/onager_manus_tasks.py` (or `./user_tests.sh onager-atlas` / `onager-manus`) re-run them. `23_onager_sweeper`
+(`labs/land/designs/onager_sweeper.py`) is the street cleaner: the chassis low in a fixed stance, a bulky rounded body, a disc
+broom with a suction hood behind it, the Manus arms and a basket on the roof (mass budget, broom and fan sizing,
+power and endurance, the arms' reach to the road and the basket; the suction in CFD — Aeromant's new `suction_hood`
+template: the depression, the lip inflow, which litter the hood lifts, a litter-particle movie; basket and hood FEA,
+the broom's and fan's unbalance against their modes; and in MuJoCo a street with litter the hood vacuums — the CFD's
+drag on Chiron props — and a brick and a box the pincers load into the basket, with a movie);
+`labs/land/sims/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`) re-runs it.
+
+**Drongo** (branch `dev_potato`): `08b_quadcopter_potato` gives notebook 08's quadcopter a job. Drongo is that quad
+(`labs/aero/designs/drongo.py`, `Drongo(QuadFrame)`) with two skids and a rack-and-pinion pincer. It takes a 200 g potato (a sphere)
+and then a 412 g cup of cream (a cylinder) from a basket (an open cube) in the supply zone to hungry people 36 m away, in two variants:
+- **drop** — into a net the people hold; the item falls at most 5 m onto it, or the net tears. The net is not simulated:
+  the catch happens at its plane, and its arrest is an assumed stretch.
+- **place** — lowered calmly until it touches the drop zone, then let go.
+
+The flight is MuJoCo through Chiron: rotor thrusts with lag and limits as a scene hook, a geometric flight controller,
+the items as free bodies held by friction. A judge compares the contact forces with each item's squeeze, impact and
+net-arrest limits. The propulsion is notebook 08's Boreas export when it exists, otherwise stated assumptions.
+With the defaults nothing is spoilt. The hungry people wait **63 s** for both items when they are dropped and **72 s**
+when placed. A faster cruise gains little; cruising lower (5.2 m) gains most. The notebook ends with a movie per variant;
+`labs/aero/sims/drongo_delivery.py` (or `./user_tests.sh drongo`) re-runs them.
+
+**Velutina** (branch `dev_velutina`): `24_velutina` (`labs/aero/designs/velutina.py`, `labs/aero/designs/velutina_flight.py`) is a printed
+medical courier for the mountains — a slim body whose ogive nose is the medical capsule (with a grab handle), four pusher
+propellers on short arms near the tail, cruciform fins, an emergency parachute in the tail cone; it flies 8 km and 1800 m
+up at 40 m/s and delivers by setting the capsule down on a pad or by **hand-over**, hovering at a rock face or a tree
+where a person takes it (the same airframe for flood rescue, rescue-team resupply and environmental sampling). The notebook:
+mass budget from the CAD, a hand estimate of the drag areas with the propeller zones as actuator disks and a rudimentary
+Aeromant screening at 0° and 10° (a `fast` preset; `VELUTINA_CFD=full` for a real run), Boreas propulsion at the depot and
+in the thin air at the site, Talos FEA of the arm, the capsule and the body shell (the parachute's opening shock is the weak
+case — the bridle goes to the arm frame next), modes against the rotor lines, the mission in a reduced 6-DOF flight model
+with wind and gusts (set-down precision, station-keeping at the wall with GNSS vs a wall-relative sensor, energy reserve),
+Chronos spectra and arm fatigue, printing, a rendered movie of the flight; `labs/aero/sims/velutina_mission.py` (or
+`./user_tests.sh velutina`) re-runs the mission. **Velutina v2** (`labs/aero/designs/velutina_inspection.py`, notebook §11–12) is
+the same airframe with a camera nose inspecting the blades of a parked onshore wind turbine (a half-real 2 MW machine):
+wind shear and the tower's wind shadow, a camera model that sets the scan speed (motion blur, frame overlap) and the dwell
+time at a suspect point (sharp frames inside a tolerance, from the simulated station keeping in the tower's wake), four
+passes per blade along the leading edge, both sides and the trailing edge, the flight, the energy and the number of
+battery charges, and a movie (`labs/aero/sims/velutina_mission.py --mode turbine`). To do: the parachute in CFD, propeller
+guards, four rotor disks in the whole-aircraft CFD, the camera nose as a CAD part and a blade-relative sensor.
+
+**Air propellers** (branch `dev_crazy_prop`): `25_air_propeller` (`labs/aero/designs/air_propeller.py`) is a 10 × 6 inch propeller on
+the motor pod and pylon of a 3 kg fixed-wing drone, **tractor first, then pusher**, each with **two and three blades**:
+aerodynamic efficiency from Boreas (η, C_T, C_P against J, η across the flight envelope at the thrust the drag polar needs,
+loading along the blade); the air the blades meet (the pylon's leading-edge blockage ahead of a tractor, its viscous wake
+behind it for a pusher) and the load on a blade over a revolution (with a Sears attenuation); OpenFOAM — the isolated
+propellers (`rotor_mrf`), the installed ones (the new `rotor_mrf_installed`: rotating blades, standing pod and pylon, forces
+apart → propeller and net efficiency), each over an rpm sweep, and the pod alone (its drag and the wake on the propeller plane);
+**efficiency against rpm in six panels** — alone, tractor, pusher × two and three blades — at five airspeeds, with the
+installation's effective wake (`boreas.wake.effective_inflow`) and thrust deduction (`installation_drag`), where the aircraft
+flies, and the CFD sweep; 3D particles and a movie of tracer
+balls through the four configurations with the pod drawn in; the blade in Talos spinning (the new `talos.Centrifugal`) and
+loaded, weak points, modes, a Campbell diagram with spin stiffening, a stress movie; fatigue under the pusher's
+once-per-revolution pulse; noise as Lowson's rotating dipoles (the new `boreas.wake.rotating_tones`) plus Schlegel–King–Mull
+vortex noise (`boreas.vortex_noise`), dB and dB(A) (`boreas.a_weighting`), directivity, and the four sounds as WAV files at one
+common scale. The CFD runs a **smoke test** by default (`AIR_PROP_CFD=smoke`, 20 cases of ~20 s); `AIR_PROP_CFD=full` (32 cases)
+is the real run. The committed notebook is unexecuted (run it to get the outputs).
+
+**MERLIN** (branch `dev_merlin`): `26_merlin` (`labs/aero/designs/merlin.py`, `labs/aero/designs/merlin_flight.py`) is a compact electric
+fixed-wing for **rapid atmospheric sampling** — it leaves a launch stand, dashes to a reported wildfire, flies crosswind
+passes through the smoke with a forward gas sensor and comes home for a belly landing — and asks **which propulsor gets
+it to a fire 5, 8, 10, 20 or 30 km away fastest**: a nose **ducted fan** (the jet leaves as a ring around the fuselage), a
+**tractor** or a **pusher** propeller, on one battery and one power limit. Nothing is designed twice: `Merlin` subclasses
+09's `FixedWing` (wing, tail, sections) and builds its nose duct from 25's `EDFHousing`; the fan is `boreas.ducted` with
+25's fitted losses, the propellers are Boreas BEMT in `air_propeller.installation_wake`'s effective wake with
+`installation_drag`'s thrust deduction. The notebook: three variants in CAD, a drag build-up, wing FEA (pull-up and a dash
+gust), optional RANS per variant; thrust and power against speed; the race (climb, accelerate, dash at the fastest speed
+the energy for the way home allows) with the reach (first data by radio), return and landing times, on flat ground and
+to a fire 600 m up a mountain (a gentle climb all along the dash); the winner as a rotor disk in CFD (optional); the mission through a Gaussian smoke
+plume (Briggs rise, Pasquill–Gifford spread), the fire's heat release recovered from the passes, and a movie with the
+smoke as particles. With the defaults the **pusher** is fastest at all three distances, the tractor a few seconds behind,
+the ducted fan close only at 10 km (its jet costs twice the energy per kilometre). `labs/aero/sims/merlin_mission.py` (or
+`./user_tests.sh merlin`) re-runs the race and the movie; `MERLIN_QUICK=1` runs the notebook as a quick check.
+
+**The propulsion notebooks and the race** (branch `dev_rave`): each notebook computes its own propulsors and exports them;
+the flight notebooks import and only fly. `25_air_propeller` compares two and three blades, tractor and pusher, and exports
+its results (`designs/data/air_propeller_results.json`) and its propeller maps; `25b_ducted_fan` is the EDF (efficiency, CFD,
+noise, vibration, **multi-stage fans** — two or three fan rings, `boreas.ducted`'s `stages`) compared with notebook 25's
+export when it exists, and exports the fan maps; `25c_exotic_propellers` is six and twelve blades against notebook 25's two
+and three, and exports their maps. The maps (`labs/aero/designs/data/propeller_maps.json`, `exotic_propeller_maps.json`,
+`edf_maps.json`; `labs/aero/designs/propulsor_maps.py`) hold every design of a space solved over airspeed × rpm. MERLIN is split the
+same way: `26_merlin` designs the aircraft and exports it (`labs/aero/designs/data/merlin_design.json`), `26b_merlin_mission` flies the
+race to the fire, the mountain and the smoke mission from that export and the maps, and `27_merlin_race` asks whether any
+reasonable ducted fan — 70–120 mm, any pitch and nozzle, a well-made duct, one to three stages, up to 3500 W from the same
+battery — beats the propellers (two to twelve blades) in a 5 km out-and-back and a 10 km race: none does, and even a
+lossless duct does not. `labs/aero/sims/propulsor_maps.py [--kind ...]` rebuilds the maps, `labs/aero/sims/merlin_race.py` re-runs the race.
+
+**PEREGRINE** (branch `dev_peregrine`): `28_peregrine` (`labs/aero/designs/peregrine.py`, `labs/aero/designs/peregrine_flight.py`) is a cheap,
+light electric fixed-wing inspired by the peregrine falcon that keeps wild animals and pest bird flocks off the crops with
+the noise of its propeller (no acoustics: the sound does the job) — it patrols, stoops at a deer, flies between trees and
+houses, herds a starling flock off the field, rests on the farmhouse ridge and starts again by hanging on its propeller.
+The question: **does a wing that sweeps back in flight (the falcon's tuck) justify its engineering cost?** Three wings on
+MERLIN's tractor body — A large fixed, B small fixed, C A's wing on two hinges (0–60° in flight, 85° stowed) — go through
+the same tasks: a calculated bill of materials and lab hours, CAD, a new **vortex lattice** for the folded wing
+(streamwise strips; checked against Helmbold and the elliptic wing), stability and trim against the fold, notebook 25's
+propeller, envelopes, an agility chart against the pest birds and the peregrine, the stoop, the narrowest gap between
+trees, boids flocks herded off the crop (after Paranjape et al.), prop-hang, hand throw and roof drop, wind on a perched
+aircraft, wing and hinge-lug FEA with the fold servo from `actuators.py`, printing, the whole sortie as a movie, and a
+decision table with a weight sensitivity. Findings with the defaults: a true root hinge collides beyond ~10° (the hinge
+belongs at 30 % of the half span, the falcon's "elbow"); the tuck buys almost nothing in the stoop (it keeps the area)
+but lets a stowed wing stay on a windy ridge (~9.7 m/s against ~6.5) and cuts the gust load in a dive; it costs ~95 g,
+~35 EUR of parts and ~105 lab hours, and the small fixed wing B wins most weightings. The committed notebook is
+unexecuted; `PEREGRINE_QUICK=1` runs it as a quick check; `./user_tests.sh peregrine` runs its tests.
+**Microjet and AGUYA** (branch `dev_jet`): `28_microjet` builds a model turbojet in the workbench. It has a 1-D cycle
+on its operating line (`vegeta.boreas.microjet`: a radial compressor, a choked or unchoked NGV and nozzle, and turbine
+work = compressor work), calibrated to a datasheet's thrust, fuel flow and EGT for 100, 140 and 200 N classes. Its
+impeller, turbine wheel and casing are in CAD (`labs/aero/designs/turbojet.py`). The compressor runs in compressible MRF CFD, one
+speed-line point per back pressure (Aeromant `compressor_mrf`). The wheels run in FEA spinning and hot (Talos
+`Centrifugal` + `RadialTemperature`, with stiffness and yield at temperature). The notebook exports
+`designs/data/microjet.json`. `29_aguya` puts that engine into **AGUYA** (`labs/aero/designs/aguya.py`, `labs/aero/designs/aguya_flight.py`), a
+turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the jet, and the fuel tank in the fuselage.
+- **Sizing:** it flies the mission with fuel burn and sizes the tank per range.
+- **Speed:** it reaches a fire 10 km out in about 80 s (MERLIN's best is about 157 s) and one 30 km out in about 200 s, at
+  about 160 m/s.
+- **Jet and exhaust:** it checks the hot jet against the V-tail (a free-jet estimate, then compressible CFD with the
+  running engine, Aeromant `jet_external`) and whether the sensor samples its own exhaust.
+- **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
+  80 m/s) and its vibration modes.
+
+**Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
+wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
+- **Machine:** a hull between two track modules (rear drive sprocket, front idler on a tensioner slide, four road wheels
+  on two bogies, a return roller, a belt of 51 PA6-GF30 links with steel pins); CAD `labs/land/designs/pekari_rover.py`, numbers
+  and mass budget `labs/land/designs/pekari_rover_robot.py`.
+- **Ground:** ground pressure and Rowland's MMP, Bekker–Wong sinkage, compaction and thrust–slip per soil
+  (`designs/terramechanics.py`), against the same load on the wheeled rover's wheels; resistance, traction, top speed per
+  grade, the steepest grade per soil, range and endurance; tip-over, step, trench, road-wheel loads (`designs/tracks.py`).
+- **Drive train:** the gear ratio window, a 16:1 two-stage planetary, Lewis and Hertz per stage, FEA on the sun pinion,
+  tooth life over a patrol mission (`designs/gears.py`, Chronos).
+- **Track:** belt tension, sag and derailing, pins by hand, FEA on a link and on the sprocket, link fatigue and hinge
+  wear, skid steering (turning moment, pivot turns, clutch-brake vs regenerative power).
+- **MuJoCo:** the rover in Chiron, with its tracks as rows of rollers, drives 3 m, makes a 90° turn and drives 2 m on
+  rough ground with a log and stones. It produces the path, the side forces against the hand numbers, and a movie
+  (`labs/land/designs/pekari_controller.py`). Three trials then run the unchanged rover under failure rules, each movie ending
+  at the frame where the mission fails: micro-hills of the rover's own radius with 15° slopes (crossed), a 30° hill
+  (it stalls at the foot of the ramp: traction, as the hand calculation said) and moving, water-ish mud (crossed,
+  pushed sideways).
+The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
+quad-track **Catagon** is its own product (todo 5k).
+
+**NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
+**Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
+return-to-home) and **Nisus-Zero** (the same aircraft with an NVIDIA Jetson for onboard computer vision, its camera, power
+branch and data link). The notebook is the first engineering approximation:
+- **Geometry:** CAD of every part (`labs/aero/designs/nisus.py`, a `FixedWing` subclass) with STEP/STL exports, a dimensioned
+  three-view, the exploded assembly, the internal placement of both variants and the propeller's swept disk against the
+  booms, the wing, the tail and the ground (`labs/aero/designs/nisus_drawings.py`).
+- **Construction and mass:** materials by function (XPS, balsa D-box, carbon tubes, PETG / LW-PLA / TPU prints), load paths,
+  mass budgets from the CAD and a sourced component table (`labs/aero/designs/nisus_systems.py`; market research of 2026-10-09 in
+  `labs/aero/designs/data/nisus_component_sources.md`, no availability confirmed), CG, inertia, wing loading.
+- **Electronics and propulsion:** per-variant load tables with duty cycles and regulator losses, the power branches, the
+  propulsion requirement calculated before the selection (SunnySky X2216 KV1250 + APC 9×6E on 3S, fitted to the published
+  static point; Boreas BEMT map), ESC and battery comparison.
+- **Analyses:** the vortex lattice and a tagged derivative table (`labs/aero/designs/nisus_flight.py`), whole-aircraft RANS with the
+  propeller as a rotor disk (`labs/aero/designs/nisus_cfd.py`), load cases from the flight envelope with hand checks and Talos FEA of the
+  spars, a boom, the boom fitting, the motor mount and the battery tray (`labs/aero/designs/nisus_structure.py`), trim, CG range, control,
+  stall, turns, gusts, pull-up, approach and provisional operating limits.
+- **Mission:** the ten-minute survey's energy by phase (Wh, kWh, %), a derated pack, a return calculated from the route with
+  the 20 % reserve, the battery iteration, the Jetson's 15–20 W sensitivity and the Orin substitution; then the missions in
+  MuJoCo through Chiron (`labs/aero/designs/nisus_robot.py`, `nisus_controller.py`, `nisus_scenario.py`): hand launch, climb, survey,
+  energy-triggered return, approach and landing for OBS (a scripted pilot) and Zero (the computer's waypoints), in calm air,
+  a headwind, gusts and with a Jetson failure, with movies (chase and ground views, a synthetic onboard view, overlays).
+`labs/aero/sims/nisus_mission.py` (or `./user_tests.sh nisus`) re-runs the missions. The FEA and CFD cells run when the notebook
+runs (`NISUS_FEA=0`, `VEGETA_SKIP_OPENFOAM=1` skip them: NOT RUN); `NISUS_QUICK=1` flies only the calm missions.
+
+`32_nisus_birds` is Nisus-Zero's bird-photography mission software, a prototype: track several birds, pick them one by
+one, fly stern photo passes for close-ups, come home. The flight software is a general package, **`vegeta.mission`**
+(no simulator, no ROS 2): typed messages on an in-process bus with a deterministic executor; the detector node (tiled
+search and a target crop, latency; YOLOX is **not run**: `SimDetector` stands in, `YoloxTrtDetector` is the stub for the
+TensorRT engine), an assumed Jetson compute budget (`compute`), a multi-bird tracker (ByteTrack-style association, an
+IMM/EKF per bird in the camera's coordinates with log range from the bird's size, OC-SORT re-update), target selection
+with hysteresis, photo-pass guidance with separation breakoffs, the shutter, and CLEAR-MOT/IDF1 scores.
+`vegeta.mission.sim` holds the birds (species presets, thermals, flocks, flight from the drone), the simulated detector
+and a kinematic aircraft. `labs/aero/designs/nisus_birds.py` plugs the stack into the MuJoCo Nisus-Zero (the flight controller's
+mode 'birds'), `labs/aero/designs/nisus_birds_movie.py` renders the video (synthetic onboard view with boxes and tracks, chase
+view, map, photo log). `labs/aero/sims/nisus_birds.py` (or `./user_tests.sh nisus-birds`) flies the six bird scenarios.
+
+**NISUS+** (formerly FALCO; branch `dev_falco` — the name FALCO now belongs to the tractor redesign): `33_nisus_plus` is NISUS's bigger mountain sibling, one variant only, **Nisus+ Zero**
+(autonomous, Jetson Orin Nano Super onboard): a 2.4 m, ~5.3 kg twin-boom pusher built to climb fast, descend fast and
+work up to ~4500 m density altitude from valley meadows. It is an "energy plane": a 6S4P 21700 Li-ion pack (~335 Wh) and a
+T-Motor AT4125 KV540 class drive with a fixed 15-inch propeller.
+- **Geometry:** `labs/aero/designs/nisus_plus.py` (`NisusPlus(Nisus)`): a two-piece wing with a carbon spar joiner (transport pieces ≤ 1.2 m),
+  cut flaps and ailerons that can be posed (crow: flaps +55°, ailerons −25°), a bigger pod, booms and tail; drawings with the
+  crow and transport views in `labs/aero/designs/nisus_plus_drawings.py`. NISUS gained only backward-compatible `design=` seams.
+- **Systems:** `labs/aero/designs/nisus_plus_systems.py`: ISA with ΔT and Sutherland viscosity, the mass table and CG, a Li-ion pack model
+  (OCV, resistance and capacity against temperature, no charging below 5 °C), the drive fitted to the published AT4125 point,
+  a signed Boreas BEMT map that keeps the windmill and brake region (ESC active braking and regeneration), mission energy
+  over a climb–survey–descent route (sources in `labs/aero/designs/data/nisus_plus_component_sources.md`).
+- **Analyses:** `labs/aero/designs/nisus_plus_flight.py` (lattice with flap/aileron panels, crow increments, the envelope and ceiling
+  against altitude, climb strategy, descent table, `regen_table`, downdraft escape, launch), `labs/aero/designs/nisus_plus_structure.py`
+  (EAS gusts, hand checks, Talos FEA of the spar, joiner, boom, fitting, motor mount and tray), `labs/aero/designs/nisus_plus_cfd.py`
+  (Aeromant cases at 3000 m air, crow and brake disk).
+- **Answers:** climb 12 m/s at sea level and 9 m/s at 4500 m; crow + propeller brake sink ~14 m/s at 22 m/s EAS; fast climbs
+  are the cheapest in energy; **regeneration does not pay in energy** (~2.6 Wh per 1000 m, under 2 % of the pack, none when
+  the pack is cold) — the braked propeller is kept for its drag.
+- **Mountain missions** in MuJoCo through Chiron over an analytic massif heightfield (`labs/aero/designs/nisus_plus_robot.py`: altitude-aware
+  `NisusPlusAero`, `MountainWind` with shear, slope lift and lee sink; `nisus_plus_controller.py`: a TECS-style energy controller with
+  crow and brake allocation, terrain floor and look-ahead, bungee launch, climb orbit, terrain-following slope survey, crow
+  spiral descent, 9° crow approach and flare; `nisus_plus_scenario.py`: calm, ridge lift, lee downdraft, hot day, weather escape,
+  Jetson failure, with movies). `labs/aero/designs/nisus_plus_birds.py` flies NISUS-Zero's bird mission software (`vegeta.mission`) on
+  NISUS+ after golden eagles, griffon vultures and alpine choughs over the slope (`nisus_plus_birds_movie.py`).
+`labs/aero/sims/nisus_plus_mission.py` and `labs/aero/sims/nisus_plus_birds.py` (or `./user_tests.sh nisus-plus`, `nisus-plus-birds`) re-run them;
+`NISUS_PLUS_QUICK=1` flies only the calm mission and one bird hunt in the notebook.
+
+`34_frame_study` is the structural comparison study that prepares FALCO, the tractor redesign (a large propeller, a
+simple tail, more efficiency): NISUS+'s twin booms against a single tail (`labs/aero/designs/frame_study.py`). The frames by hand
+and in Talos (the tubes, the stabiliser's spar, a rod per fin carrying the side load at the fin's aerodynamic centre;
+the symmetric pull-out and the asymmetric gust, the first modes with the tail's masses), what the tail puts into the
+wing (the spar and the rear tube at the boom fittings), and — marked beside the structure for each variant — the
+aerodynamic efficiency (the frame's drag, Cd0, L/D, the mission's energy, the propeller's efficiency) and the speed
+and acceleration (top speed, the acceleration at the launch and cruise speeds, 15 → 25 m/s, the best climb) with each
+propeller on a motor of the AT4125's class wound for it. Findings: moving NISUS+'s booms apart for a 20" pusher is
+rejected (the wing's main spar fails its tail case, crow loses a quarter of its span); the single tail is 213 g
+lighter, three times stiffer in bending, puts nothing into the wing's spars, and must be a roll-wrapped tube (torsion);
+with the 20x13 the package is −11 % mission energy and +20 % climb against NISUS+ as built.
+
+**FALCO** (`35_falco`, branch `dev_falco`) is the tractor the study prepared, one variant, **Falco-Zero**: NISUS+'s
+wing, pack cells, Orin and missions on MERLIN's round fuselage (spinner, cowl, cylinder, tail cone, the FALCO-109 marking
+raised on both sides), a **T-Motor AT5220-A KV220** sourced with its published bench table turning an **APC 20x15E** in
+the nose, the pack re-connected **8S3P** (the same 24 cells and box: the KV220 needs the volts — the 6S option gives
+0.5 kW shaft), a conventional tail on **one roll-wrapped 30/28 tube** in a keel socket with a single dorsal fin and the
+elevator and rudder servos on the end fitting. The landing is a belly landing with the **propeller parked horizontal**:
+on the final below 20 m the ESC's active brake stops the blades and a Hall sensor on the hub marks the horizontal (the
+routine is a companion-computer script, ArduPilot has none; a bench item), the keel keeps the spinner 83 mm clear, a
+blade straight down would be 150 mm in the meadow. Code: `labs/aero/designs/falco.py` (`Falco(NisusPlus)`: the layout with the
+parked and blade-down clearances, the bays, the parts), `falco_systems.py` (components with sources in
+`data/falco_component_sources.md`, the motor fit, `drive_options`, the 8S drive `data/falco_propulsion.json`, the mass
+table through NISUS+'s seams), `falco_flight.py` (the derivatives with one fin, the tractor's installation effects from
+`air_propeller`, `propeller_trade` — the frame study's 20x13 cruises near its zero-thrust advance ratio, the 20x15 is the
+pick — and `compare_with_nisus_plus`), `falco_structure.py` (the tail tube A/B and modes on the frame study's machinery,
+the keel socket, the firewall, the gyroscopic and blade-strike rows), `falco_cfd.py` (the nose rotor disk: NOT RUN),
+`falco_drawings.py` (the parked-propeller clearance drawing), `falco_robot.py` (`FalcoAero` with the ``parked`` state),
+`falco_controller.py` (the flare parks the propeller; a go-around un-parks it), `falco_scenario.py` / `falco_birds.py`
+(the six mountain missions and the four bird hunts, the judge counting a touchdown with the blades not parked as a blade
+strike). NISUS+'s modules gained only backward-compatible `design=` / `sim=` seams. Against NISUS+ on the same mission:
+static thrust +6 %, climb and acceleration +13-15 %, cruise power −3-4 %, mission energy −5 %, survey time +7 %; the
+study's −11 % needed a motor of the AT4125's loss class wound for the 20-inch propeller — the sourced AT5220's losses
+(fitted R 0.13 Ω with the ESC) take the rest. `labs/aero/sims/falco_mission.py`, `labs/aero/sims/falco_birds.py`
+(`./user_tests.sh falco`, `falco-birds`) re-run the missions; `tests/test_falco.py`.
+
+**Kestrel** — open **`43_kestrel_study`**: the one notebook for the design (geometry, mass budget, CG and
+inertia, propulsion and the hover, aerodynamics and the stall, trim and control, performance and energy, the
+structure, the transitions both ways, a final assessment) on inexpensive methods first — the mass table, Boreas, the
+vortex lattice with Prandtl's biplane correlation, the drag build-up, NeuralFoil sections, beam and truss statics,
+the reduced-order transition model — each number labelled *analytic / empirical / solver / validated*, with the
+correlations' sources, ranges and uncertainties in a table. It runs in about two minutes (measured, § 11) and
+**launches no solver**: the long-running analyses are explicit **workflows** under `side_labs/kestrel/` —
+`airframe_cfd.py` (the airframe in RANS with the four propellers as rotor disks: the bare sweeps, the decision-relevant
+stall angles, the cruise and the transition points, one named campaign per run) and `structure_fea.py` (the carbon
+frame and the printed joint in CalculiX) — launched from a shell, monitored with `tail -F <run>/run.log`, each
+leaving a run directory (`manifest.json` with the design fingerprint, `status.json`, `run.log`, `summary.json` only
+when complete, the native cases) that the notebook reads **by explicit path** and checks for state and compatibility
+before use; a required result that is missing, stale, incompatible or failed stops it with the exact command to run,
+an optional one stays NOT RUN beside its analytical estimate. The rule behind it (an analysis over ~15–30 minutes is a
+workflow, never a notebook cell; a notebook never regenerates a missing analysis) is in `docs/philosophy.md` and
+[labs/aero/campaigns/side_labs/README.md](labs/aero/campaigns/side_labs/README.md); the short how-to is [manual_workflows.md](manual_workflows.md); `labs/aero/campaigns/side_labs/cli.py` lists, explains, launches and watches
+them (interactive without arguments; `source activate.sh` makes it `wf`; `wf gui` or `./side_labs.sh` opens the same as a PyQt6 window). Workflows are organised in **books** (a design:
+`kestrel`, code K) and numbered **chapters** (its studies, CFD and FEA alike, chosen as `wf K2`); runs land in `side_labs/runs/<book>/<chapter>/`, a chapter's prerequisites
+are chapters of its own book, and solved cases are cached across runs (`wf cache`, `wf clean-cache`, `--no-cache`). **`44_kestrel_fast`** (`labs/aero/designs/kestrel_fast.py`) is the standalone one-minute
+comparator of candidate designs — span, chord, section, propeller, motor, battery, bracing, spar — on Zephyr sections,
+Boreas points and beam rules of thumb, no solver: for ranking ideas before the study and the workflows decide. The first campaign's results are imported as runs by
+`labs/aero/campaigns/side_labs/kestrel/import_legacy.py`. The resolved propeller stays in **`38_prop_lab`**, whose calibration the airframe
+cases, the drive tables and the notebook read once it passed its gates. The notebooks that built the design — **39**
+`kestrel_tests`, **40** `kestrel`, **41** `xwing`, **42** `kestrel2` — are kept unchanged with their outputs in
+`notebooks/old/` (their story follows); `labs/aero/designs/kestrel3.md` is the 4Q-3 brief.
+
+*History.* Kestrel was five notebooks numbered in the order they were run — **38** `prop_lab` (the propeller alone in CFD:
+its calibration feeds everything after it), **39** `kestrel_tests` (the CFD and FEA campaign of the airframes), **40**
+`kestrel` (the design loop, reading both), **41** `xwing` (the alternative airframe, reading 40's record), **42**
+`kestrel2` (4Q-2 against 4Q-1 and the case for 4Q-3) — each ending with a JSON report in
+`designs/data/reports/` stitched into `labs/aero/designs/data/kestrel_dossier.json`. **Kestrel-4Q** (`40_kestrel`, branch `dev_kestrel`) is a concept study of a zero-stagger, truss-braced biplane
+quadrotor **tailsitter**: two equal straight wings with their leading edges at one station (zero stagger is built into
+the CAD, not a parameter), a pod across the gap with the camera in the nose, carbon posts and an X of diagonals, four
+**fixed** propellers whose thrust axes are all parallel to the pod (no tilt: the whole aircraft pitches 90°), a fin
+plate and six feet to stand on. The question: **does it fly through its transitions** — hover → cruise and back,
+through the stall — on its motors, propellers and controller? The specification's hold point first: in a tailsitter
+the thrust axis is the body axis, so fore–aft rotor offsets carry no lever and the 2 × 2 layout is a quadcopter's X seen
+from above; the allocation matrix has full rank **only with the diagonal pairs counter-rotating** — the mirror-symmetric
+"each side's rotors alike" loses the hover's heading. The biplane in PEREGRINE's vortex lattice lands on Prandtl's
+biplane factor (induced drag 0.71 of the monoplane's); the round bracing is ~70 % of Cd0 (fair the struts); the
+propellers ahead of the CG are destabilising and the CG alone sets the margin (no tail). The transitions are flown in a
+pitch-plane model with each wing split into its blown and free-stream spans (`kestrel_transition`): forward and back,
+three schedule lengths, headwind, gusts, three vehicles, the back transition's strategies, a roll check for one wing
+side stalling first. The CFD (`kestrel_cfd`, Aeromant's new **`aircraft_quad_rotor_disks`**: four rotor disks each at its
+own rpm) solves the airframe at the points the transitions fly and feeds the coefficients back into the model as a
+correction; NOT RUN where there is no OpenFOAM. The truss as a plane frame (braced / posts / none) and the ground
+stance close it. The notebook is built as a **design loop** (`kestrel_loop.py`): iteration 0 is the envelope — the
+spec's numbers, the layout's lengths and five assumptions, nothing else; the tools are plugged in and every number
+is checked against its target (`check_table`), the knob that fails is turned (the battery's station, the effectors,
+the schedule, the entry speed) and the loop goes round; then the CFD on file is plugged in (iteration 3) and the matrix
+flown again; an `IterationLog` closes the notebook with the path from the envelope to Kestrel-4Q-2. **A failed
+computation is a result**: a CFD case that fails or diverges is listed with its reason and left out of the correction
+(`kestrel_cfd.table`: `solved` / `diverged` / `FAILED` / `NOT RUN`), a transition that diverges is a failed
+transition. The first OpenFOAM campaign (on another machine) solved the ten bare-airframe cases — the model's lift
+slope within 2 %, its Cd0 a fifth conservative, its stall harsher than the CFD's — and lost all fourteen blown cases to
+the solver's numerics; the rotor-disk templates now run plain SIMPLE with a velocity cap. **`39_kestrel_tests`** is the
+test campaign: every case for Kestrel-4Q, Kestrel-4Q-2 and the two finalist sections at the quality it is given
+(`KESTREL_CFD_QUALITY`, `KESTREL_CFD_ONLY`, `KESTREL_CFD_SWEEP_ONLY`), failures accepted and counted, the solved cases
+written to `labs/aero/designs/data/kestrel_cfd_results.json` for notebook 40 to read (`kestrel_cfd.plug_in`). The airframe
+cases carry the propellers as **discs only**; the propeller itself is measured first in **`38_prop_lab`**
+(`labs/aero/designs/prop_lab.py`): the 9×6 alone, resolved in a rotating frame — the hover at three speeds, axial inflow 4–24 m/s,
+the inflow at 15–90° to the axis on Aeromant's new **`rotor_mrf_oblique`** (free-stream lateral faces, the normal force
+and the propeller's pitching moment in the metrics) — each case beside Boreas's blade-element numbers and De Young's
+normal force. Its calibration (two scales on the blade section fitted on thrust and torque together, one factor on the
+normal-force slope; `labs/aero/designs/data/prop_lab.json`; applied only when it passes its gates — a fit that fits, scales
+within 0.7–1.3, the normal force averaged over two frozen-rotor blade azimuths — else written down as rejected with
+the reason) is read by `kestrel_systems.propulsion` (the drive tables, `rpm_for`,
+the rotor disks' polar) and `kestrel_flight.prop_cn_alpha`, so notebooks 39 and 39 fly on the measured propeller once
+41 has run; the campaign's points now include the level cruise and the stall beside the hover and both transitions.
+prop_lab also turns the loads into **noise** — the blade-passing frequency and its harmonics (Gutin on the measured
+thrust and torque), the broadband, dB(A) at a bystander — and renders the sound as WAV files: one rotor in the hover,
+in cruise, at a transition point, the four rotors beating in the hover, the transition as a glide from the hover rpm
+to the cruise rpm (`output/38_prop_lab/sound/`). The **structure goes through Talos** too (`kestrel_fea.py`, notebook
+38 § 8b, run in 40): the carbon frame as solid tubes for the X-braced and the posts-only truss — the 4 g pull-up with the
+lift elliptic along the spars, the 75 % wing, the heading manoeuvre's torsion (one diagonal pair at full thrust, the
+other at idle), the modes with the motor units — and the printed spar–post joint with its across-layer tension, each
+read against the plane frame's numbers; prepared and NOT RUN where CalculiX is missing, a failed case a result.
+Every Kestrel notebook ends with the **dossier** (`kestrel_report.py`): its tables, verdicts, checks and statuses as
+**JSON** in `designs/data/reports/<notebook>.json` (every table as index / columns / rows, four significant figures)
+and as compact Markdown beside it, stitched into `labs/aero/designs/data/kestrel_dossier.json` / `.md` — paste the JSON into a
+conversation and the design continues from the numbers (`kestrel_report.load_json()`, `paste()`). **`42_kestrel2`**
+(`labs/aero/designs/kestrel2.py`) takes 38's two aircraft on: 4Q-1's transition figures (exported by 38) beside 4Q-2's, the back
+transition's remedies for the clean aircraft that balloons — the crow-brake elevons, a pitch bulge past the vertical,
+reverse thrust on bidirectional drives, a descent into the transition, the level deceleration first — through the
+matrix and the gusts; the two as flying machines (endurance and range against speed, V max, climb, dive, acceleration,
+the corner and sustained turns, the horizontal-plane authority: the pursuit table); and **Kestrel-4Q-3** — 4Q-2's
+airframe with reverse-capable drives, wider elevons and the braking autopilot — flown through the same tables. **Part II (Kestrel-4Q-2)** adds the requirement that arrived with it — a **medical payload bay**: a removable
+insulated capsule (72 × 72 × 160 mm, up to 0.5 kg) on the pod's axis, the battery on the floor under it and the
+electronics above, the pod grown to a 220 mm constant mid-body behind an ellipsoidal nose (`Kestrel4Q.bays`,
+`bay_checks`; the capsule's cost in CG, margin, hover thrust-to-weight, endurance and the transitions) — and
+develops the verdict's four changes as CAD variants, proving or disproving each against Part I: elevons on the blown outer panels (`elevons`, hinge moments against a 9 g servo, their authority
+in the hover and in cruise, the transitions), faired struts (`strut_fairing`: the sleeves' mass and broadside area
+against the drag they save), a reflexed section on **Zephyr** (`kestrel_section.py`: NeuralFoil polars of NACA 0012
+against the reflexed 230/240-series, the elevon's flap data, the trim each section asks of the elevons, Aeromant slab
+cases as the CFD check — NOT RUN until `dev_zephyr` is merged), and lighter bracing (`bracing`: the motor stations'
+stiffness and first modes per truss); then the four together against 4Q. **`41_xwing`** is the X-wing of the same
+motors, battery and pod with no bracing at all (`kestrel_xwing.py`: four cantilever panels at ±45° — half the vertical
+lift slope of the same area laid flat, the spars sized as cantilevers with tip motors, the panels' section on Zephyr,
+flown in the same panel model) against Kestrel-4Q and 4Q-2. Code:
+`labs/aero/designs/kestrel.py`, `kestrel_systems.py`, `kestrel_control.py`, `kestrel_flight.py`, `kestrel_transition.py` (a list
+of lifting panels: the biplane's four flat ones or the X-wing's four at 45°), `kestrel_cfd.py`, `kestrel_structure.py`,
+`kestrel_section.py`, `kestrel_xwing.py`, `kestrel_drawings.py`; `tests/test_kestrel.py`; `labs/aero/sims/kestrel_transitions.py
+--part2`.
+
+Benchmarks (`benchmark/`, branch `dev_sikarian`): `labs/legged/campaigns/benchmark/cleopatra/full_benchmark.py` runs Cleopatra's pre-registered body-joint study in MuJoCo through Chiron — spring-only vs spring–damper intersegment joints × baseline vs load-feedback control over flat, bumpy, cross-slope and rough ground, speed sweeps, pushes, the undulation onset and damping/roll sensitivity (docs/myropod_stability.md) — and saves results.json, CSV, raw time series, plots and a report; `labs/legged/campaigns/benchmark/persephone/full_benchmark.py` does the same for Persephone on the hearth (not yet validated; no flue). `./user_tests.sh` runs the test suites, the physics checks and the smoke benchmarks and prints a report to paste back.
+
+Scenarios (scripts, not notebooks): `labs/aero/sims/air_video.sh [-j N]` builds the whole fixed-wing aircraft, runs one
 CFD case with both propellers as rotor disks and writes a particle movie to `scenarios/output/`; on `dev_sea`
-also `scenarios/sub_video.sh` (submarine) and `scenarios/boat_video.sh` (boat, double body, no free surface) — see
-[scenarios/scenarios.md](scenarios/scenarios.md).
+also `labs/marine/sims/sub_video.sh` (submarine) and `labs/marine/sims/boat_video.sh` (boat, double body, no free surface) — see
+[labs/aero/sims/scenarios.md](labs/aero/sims/scenarios.md).
 
 More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) ·
 [installation](docs/installation.md) · [composition through files](docs/composition.md) ·
@@ -98,35 +510,65 @@ More: [philosophy](docs/philosophy.md) · [result shape](docs/result-shape.md) �
 Every tool is a figure from Greek myth, one word, easy to say in a meeting:
 Dedalus the craftsman (CAD), Talos the bronze giant (structure), Aeromant "reader of the air" (CFD),
 Mellonia the goddess of bees and their wax (3D printing), Boreas the north wind (propellers and
-rotors), Chronos time (missions, cyclic loads, life), Fidia — Phidias, the sculptor of the Parthenon —
-(AI modelling from a prompt). The workbench itself is Vegeta.
+rotors), Chronos time (missions, cyclic loads, life), Chiron the centaur who trained the heroes (legged robots
+walking in MuJoCo; ChironLab is where they train), Fidia — Phidias, the sculptor of the Parthenon —
+(AI modelling from a prompt), Zephyr the west wind (the air over a wing section). The workbench itself is Vegeta; Hyperion and Svarog
+(the laser work) live on in Alabastron.
 
 ## Layout
+Vegeta is labs on a common library layer. The loop each lab runs: tools from `libs/` → a few notebooks (`notebooks/`)
+→ the survivors graduate to MuJoCo (`sims/`) and gather data → optimisation loops (`campaigns/`) → export to Piccolo
+(`designs/machines.py`, `tools/export.py`); what does not make it falls into `exp/` (limbo). Rinse and repeat.
 ```
-vegeta-cli/        the vegeta-cli package: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos}, tests/<tool>/
-vegeta-core/       the vegeta-core package: src/vegeta/core (workspaces, revisions), adds `vegeta ws|rev`
-vegeta-ai/         the vegeta-ai package: src/vegeta/ai (connection to the AI provider), adds `vegeta ai check|models`
-vegeta-fidia/      the vegeta-fidia package: src/vegeta/fidia (prompt-to-3D, copilot, campaigns), adds `vegeta fidia`
-notebooks/         one notebook per package, the workflow, core, AI copilot and two product designs
-docs/              philosophy, result shape, installation, composition, per-package guides
-examples/cli/      input files for the CLI demo (Talos model, Aeromant case, Mellonia settings)
-install_local.sh   creates .venv, installs all dependencies and vegeta-cli
-test.sh            checks the installation (components + a short working run)
-test_openfoam.sh   tests the CFD tool against every OpenFOAM installation found (or given), both flavours
-jupyter.sh         starts JupyterLab from .venv
-scripts/           test_all.sh, run_notebooks.sh, demo_cli.sh
+libs/              the common layer — never imports labs/
+  vegeta-cli/        the tools: src/vegeta/{cli,dedalus,talos,aeromant,mellonia,boreas,chronos,chiron,atropos,zephyr,mission,mock}
+  vegeta-core/       workspaces and revisions (`vegeta ws|rev`)
+  vegeta-ai/         the connection to the AI provider (`vegeta ai`)
+  vegeta-fidia/      prompt-to-3D, copilot, campaigns (`vegeta fidia`)
+  ogma/              the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
+  labkit/            what every lab uses (`vegeta.labkit`): the notebook bootstrap, the machine registry, shared
+                     controllers and kinematics, generic CAD parts
+labs/              one per domain; a lab imports libs/ and itself, never another lab (tools/labs.py check)
+  aero/  land/  legged/  marine/  studio/
+    notebooks/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
+tools/             lab.py (test, run, new-exp, promote, demote, export, readme), labs.py (the rules, the stages),
+                   export.py (to Piccolo through Yax), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
+vendor/            ozaru/ (Porunga cache, Mimezia mocks, Yanus checks), yax/ (the design-format converter, USD hub)
+tests/             smoke/ (./test.sh --smoke), labs/ (across labs: the assemblies)
+docs/              philosophy, science, per-package guides, anatomy/ (what Vegeta is, from its syntax tree)
+install_local.sh   creates .venv, installs everything (libs/ editable)
+test.sh            checks the installation; --smoke: the smoke regression suite
+user_tests.sh      everything, mocks only: env, layout, smoke, libs, each lab's tests and sims, export
+clean.sh           caches, old logs, out/; --caches, --runs, --old-layout, --all (-n: dry run)
+scripts/           test_all.sh, run_notebooks.sh, debug_notebooks.sh, demo_cli.sh, update_ozaru.sh, update_yax.sh
 ```
+
+## Notebooks, side labs and Ozaru
+- **Notebooks are authoritative**: they hold the analysis and its story. Every notebook starts with `DEBUG = True`:
+  the expensive solvers are mocked (`vegeta.mock`: FEA, CFD, slicing, MuJoCo episodes cut short, Gmsh meshes, coarse
+  BEMT / lattice / transitions, a thin-airfoil polar for NeuralFoil) and the results are labelled MOCK. Set
+  `DEBUG = False` (or `VEGETA_DEBUG=0`) for real results.
+- **Side labs** (`side_labs/`) run the optional, expensive calculations (hours of CFD or FEA) and only fill a cache.
+  Notebooks and side labs never import, launch or name each other; they meet through a **Porunga key** built from a
+  plain-JSON identity (`docs/cache_identities.md`), with `mock` part of it so mock and real results never mix.
+- **Ozaru** (`vendor/ozaru`, shared with Alabastron) supplies three stdlib-only libraries: **Porunga** (the cache:
+  `key`, `check`, `load`, `save`), **Mimezia** (mock building blocks: mimics, labels, schema checks) and **Yanus**
+  (requirement checks: `Tool`, `Package`, `Env`, `AnyOf`, `check_needs`, `table`). It is installed offline from the
+  vendored copy; `scripts/update_ozaru.sh REF` is the only command that contacts the Ozaru repository
+  (`--check` verifies the vendored copy against `vendor/OZARU_REVISION`).
 
 ## Quick start
 ```bash
 ./install_local.sh                  # .venv first, then apt tools, OpenFOAM, vegeta-cli, JupyterLab
 ./test.sh                           # check the installation; prints OK/MISSING/FAILED per part
 ./test_openfoam.sh                  # test Aeromant against the OpenFOAM installation(s) on this machine (.com and .org)
-./jupyter.sh                        # JupyterLab from the venv; start with notebooks/00_smoke_test.ipynb
+./jupyter.sh                        # JupyterLab from the venv; the first-install smoke test is labs/studio/notebooks/00_smoke_test.ipynb
 source .venv/bin/activate           # for the vegeta command and the scripts below
 scripts/test_all.sh                 # each package tested on its own
 scripts/run_notebooks.sh            # execute the notebooks headlessly
 scripts/demo_cli.sh                 # CAD -> FEA -> print -> CFD using only the CLIs
+./user_tests.sh                     # mock-only tests, one line per test, a log file (-v full output; --no-notebook etc.; --include-experiments)
+scripts/debug_notebooks.sh 08 26    # execute chosen notebooks with the mocks on (data files they write are put back)
 ```
 
 ## Licence

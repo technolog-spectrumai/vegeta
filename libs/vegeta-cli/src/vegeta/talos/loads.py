@@ -1,0 +1,150 @@
+"""Supports and loads. All values are explicit and in the model's unit system."""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class FixedSupport:
+    """All three translations of the region's nodes fixed to zero."""
+
+    region: str
+
+
+@dataclass(frozen=True)
+class Displacement:
+    """Prescribed translations; ``None`` leaves that direction free."""
+
+    region: str
+    ux: float | None = None
+    uy: float | None = None
+    uz: float | None = None
+
+    def __post_init__(self):
+        if self.ux is None and self.uy is None and self.uz is None:
+            raise ValueError(f"Displacement on {self.region!r} constrains nothing; give ux, uy and/or uz")
+
+    def dofs(self):
+        return [(i + 1, v) for i, v in enumerate((self.ux, self.uy, self.uz)) if v is not None]
+
+
+@dataclass(frozen=True)
+class Force:
+    """Total force vector on a surface region, distributed as a uniform traction (consistent nodal loads)."""
+
+    region: str
+    fx: float = 0.0
+    fy: float = 0.0
+    fz: float = 0.0
+
+    def __post_init__(self):
+        if self.fx == 0 and self.fy == 0 and self.fz == 0:
+            raise ValueError(f"Force on {self.region!r} is zero")
+
+    @property
+    def vector(self):
+        return (self.fx, self.fy, self.fz)
+
+
+@dataclass(frozen=True)
+class Pressure:
+    """Uniform pressure on a surface region. Positive pushes into the solid (CalculiX convention)."""
+
+    region: str
+    value: float
+
+    def __post_init__(self):
+        if self.value == 0:
+            raise ValueError(f"Pressure on {self.region!r} is zero")
+
+
+@dataclass(frozen=True)
+class Acceleration:
+    """Body acceleration on the whole solid (length unit / s^2), e.g. gravity (0, 0, -9810) in mm.
+    Requires the material density."""
+
+    ax: float = 0.0
+    ay: float = 0.0
+    az: float = 0.0
+
+    def __post_init__(self):
+        if self.ax == 0 and self.ay == 0 and self.az == 0:
+            raise ValueError("Acceleration is zero")
+
+    @property
+    def vector(self):
+        return (self.ax, self.ay, self.az)
+
+
+@dataclass(frozen=True)
+class Centrifugal:
+    """Rotation of the whole solid at ``rpm`` about the axis through ``point`` along ``axis`` (model units):
+    the centrifugal body force rho omega^2 r (CalculiX ``CENTRIF``), e.g. a spinning propeller blade.
+    Requires the material density. The sense of rotation does not matter for this load."""
+
+    rpm: float
+    point: tuple = (0.0, 0.0, 0.0)
+    axis: tuple = (0.0, 0.0, 1.0)
+
+    def __post_init__(self):
+        if not self.rpm > 0:
+            raise ValueError("Centrifugal rpm must be > 0")
+        if len(self.point) != 3 or len(self.axis) != 3 or not any(self.axis):
+            raise ValueError("Centrifugal needs a 3-component point and a non-zero 3-component axis")
+
+    @property
+    def omega(self) -> float:
+        return self.rpm * 2 * math.pi / 60
+
+
+@dataclass(frozen=True)
+class RadialTemperature:
+    """A steady temperature field that depends on the distance from an axis: ``temperatures`` [K] at ``radii`` (model
+    length units) from the axis through ``point`` along ``axis``, linear in between and constant beyond the ends — a
+    turbine disc runs hot at the rim and cooler at the bore. The material's ``thermal_expansion`` turns it into
+    thermal strain (stress where the expansion is restrained); a ``temperature_table`` makes the stiffness and the
+    yield strength follow it. Stress-free at the material's ``reference_temperature``."""
+
+    radii: tuple
+    temperatures: tuple
+    point: tuple = (0.0, 0.0, 0.0)
+    axis: tuple = (0.0, 0.0, 1.0)
+
+    def __post_init__(self):
+        r, t = list(self.radii), list(self.temperatures)
+        if len(r) < 1 or len(r) != len(t):
+            raise ValueError("RadialTemperature needs as many temperatures as radii (at least one)")
+        if any(b <= a for a, b in zip(r, r[1:])) or r[0] < 0:
+            raise ValueError("RadialTemperature radii must be >= 0 and increasing")
+        if any(x <= 0 for x in t):
+            raise ValueError("RadialTemperature temperatures are absolute (K) and must be > 0")
+        if len(self.point) != 3 or len(self.axis) != 3 or not any(self.axis):
+            raise ValueError("RadialTemperature needs a 3-component point and a non-zero 3-component axis")
+
+    def at(self, coords):
+        """Temperatures [K] at points ``(N, 3)``."""
+        import numpy as np
+
+        c = np.atleast_2d(np.asarray(coords, dtype=float)) - np.asarray(self.point, dtype=float)
+        a = np.asarray(self.axis, dtype=float)
+        a = a / np.linalg.norm(a)
+        r = np.linalg.norm(c - np.outer(c @ a, a), axis=1)
+        return np.interp(r, np.asarray(self.radii, float), np.asarray(self.temperatures, float))
+
+
+@dataclass(frozen=True)
+class PointMass:
+    """A lumped mass (a motor, a battery) attached to the nodes of a surface region, shared equally
+    between them. Mass unit follows the unit system (tonne in mm-N-MPa, kg in m-N-Pa)."""
+
+    region: str
+    mass: float
+
+    def __post_init__(self):
+        if self.mass <= 0:
+            raise ValueError(f"PointMass on {self.region!r} must be positive")
+
+
+Support = FixedSupport | Displacement
+Load = Force | Pressure | Acceleration | Centrifugal | RadialTemperature

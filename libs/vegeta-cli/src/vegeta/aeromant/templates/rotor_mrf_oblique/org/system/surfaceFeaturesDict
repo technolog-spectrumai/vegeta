@@ -1,0 +1,22 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      surfaceFeaturesDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+surfaces ("body.stl");
+
+includedAngle       150;
+
+subsetFeatures
+{
+    nonManifoldEdges    no;
+    openEdges           yes;
+}
+
+// ************************************************************************* //

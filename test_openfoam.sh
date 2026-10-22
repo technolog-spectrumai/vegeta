@@ -6,7 +6,7 @@
 #   2. for every flavour found: prepares and runs the sphere case of each template through every
 #      pipeline step (laminar Re = 100 checked against the Schiller-Naumann drag correlation; RANS k-omega
 #      SST as a pipeline smoke test); logs are kept when something fails
-#   3. --pytest: additionally runs vegeta-cli/tests/aeromant against those installations
+#   3. --pytest: additionally runs libs/vegeta-cli/tests/aeromant against those installations
 # Exit code 0 when every flavour found passes. Nothing is installed; files go to a temporary work directory.
 #
 # Usage: ./test_openfoam.sh [options]
@@ -361,14 +361,14 @@ PYEOF
 
 if [ "$PYTEST" -eq 1 ]; then
   echo
-  echo "Aeromant test suite (vegeta-cli/tests/aeromant; it picks one installation per flavour itself)"
+  echo "Aeromant test suite (libs/vegeta-cli/tests/aeromant; it picks one installation per flavour itself)"
   if ! "$PY" -c "import pytest" 2>/dev/null; then
     echo "  pytest is not installed for $PY (pip install -e 'vegeta-cli[test]')"; status=1
   else
     [ -n "${BASHRCS[0]:-}" ] && export AEROMANT_TEST_OPENFOAM_BASHRC="${BASHRCS[0]}"
     [ -n "${PREFIXES[0]:-}" ] && export AEROMANT_TEST_OPENFOAM_PREFIX="${PREFIXES[0]}"
     MARK=(); [ "$QUICK" -eq 1 ] && MARK=(-m "not slow")
-    (cd "$ROOT/vegeta-cli" && "$PY" -m pytest -q "${MARK[@]}" tests/aeromant) || status=1
+    (cd "$ROOT/libs/vegeta-cli" && "$PY" -m pytest -q "${MARK[@]}" tests/aeromant) || status=1
   fi
 fi
 

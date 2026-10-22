@@ -45,7 +45,10 @@ The STEP geometry is converted to the chosen length unit by OpenCascade on impor
 - Supports: `FixedSupport(region)`, `Displacement(region, ux=None, uy=None, uz=None)`.
 - Loads: `Force(region, fx, fy, fz)` — total force distributed as a uniform traction with consistent
   nodal loads; `Pressure(region, value)` — positive pushes into the solid (CalculiX convention);
-  `Acceleration(ax, ay, az)` — body load on the whole solid, needs `density`.
+  `Acceleration(ax, ay, az)` — body load on the whole solid, needs `density`;
+  `Centrifugal(rpm, point=(0, 0, 0), axis=(0, 0, 1))` — the solid spinning about an axis (CalculiX `CENTRIF`,
+  ρ ω² r), e.g. a propeller blade; needs `density`. Validated against a rotating rod (reaction m ω² r_cg, tip
+  stretch ρ ω² L³ / 3E).
 
 ## Meshing notes
 Second-order meshes place mid-side nodes on curved geometry (holes, fillets), which can invert an
@@ -58,7 +61,21 @@ refinement; off by default.
 
 A Gmsh "PLC Error: a segment and a facet intersect" almost always means a sliver in the geometry (a
 bolt hole 0.1 mm from an edge, a 0.4 mm edge left by a union) rather than a meshing setting: check the
-smallest edges of the CAD before changing the mesh (`notebooks/08_quadcopter` shows such a case).
+smallest edges of the CAD before changing the mesh (`notebooks/devices/08_quadcopter` shows such a case).
+
+## Temperature (`RadialTemperature`)
+
+`RadialTemperature(radii, temperatures, point, axis)` is a steady temperature field [K] that depends on the distance
+from an axis. It interpolates linearly between the given radii (a turbine disc: cool bore, hot rim and blades). One
+field per model.
+
+- **Material:** it needs `thermal_expansion` (1/K, stress-free at `reference_temperature`) and/or a `temperature_table`
+  of rows `(T, E, nu, yield)`. With a table, the stiffness follows the temperature (CalculiX `*ELASTIC` with temperature
+  columns), and the **safety factor** becomes the lowest nodal ratio of the yield at that node's temperature to its von
+  Mises stress (`safety_factor_temperature` and `safety_factor_location` say where).
+- **Deck:** `*INITIAL CONDITIONS, TYPE=TEMPERATURE` at the reference temperature, `*EXPANSION`, and `*TEMPERATURE` per node.
+- **Combining:** combine it with `Centrifugal` for a spinning hot wheel (notebook 28).
+- **Limit:** creep is not in it.
 
 ## Modal analysis and point masses
 ```python
@@ -108,6 +125,34 @@ Artifacts kept in the work directory: `mesh.msh`, `gmsh.log`, `mesh_summary.json
 Field data: `talos.read_frd(result.artifacts["frd"])` → nodes, displacement, stress, von Mises.
 Plots: `plot_deformed`, `plot_von_mises_histogram`, `plot_along_axis` (matplotlib figures).
 
+## Solving only when needed, and many models at once
+`model.ensure(workdir, run=True, threads=1)` returns the static result and computes only what is missing: a
+`summary.json` solved with exactly these inputs (`model.key`: geometry hash, units, regions, mesh settings, material,
+supports, loads) is read back; otherwise the model is meshed (only when the mesh is missing or out of date) and solved.
+A changed load re-solves on the same mesh. `run=False` runs nothing and returns a failed result saying NOT RUN.
+`result.metadata["reused"]` says which happened; a read-back result plots like a fresh one.
+
+`talos.solve_models(models, workdirs, threads=1, run=True, progress=False)` does that for a list, one model after the
+other (Gmsh is one process-wide state; CalculiX parallelises one solve with `threads`), and resumes when called again.
+
+## Caching a result next to the notebook (`cache=`)
+A long solve runs once and is then loaded from a file next to the notebook:
+```python
+from vegeta import cache
+cache.notebook("08_quadcopter")                               # entries in ./08_quadcopter.cache/
+base.mesh(RUNS / "mesh", cache="frame_mesh")                 # an existing entry's mesh is copied into the workdir
+r = model.solve(case_dir("thrust"), cache="frame_thrust")
+modes = base.solve_modes(case_dir("modal"), n_modes=8, cache="frame_modes")
+rs = talos.solve_models(models, dirs, cache=True)            # entries named <parent>/<workdir>
+```
+The entry exists: it is loaded and nothing runs. It does not: the model is solved and, when it succeeds, saved as
+`<name>.json` (the `Result`) plus `<name>.files/` with copies of the `.frd`, `.dat`, mesh and logs; the loaded result's
+artifacts point at those copies, so `read_frd`, the plots and `assess_fatigue` work from the cache alone. **Nothing
+checks whether the model or the code changed: delete the entry (`cache.clear("frame_thrust")`) or the folder
+(`cache.clear()`: only the entries it wrote) when they do.** A name used for a mesh cannot be read back as a solve. Failed results are not saved. `VEGETA_CACHE=off` (or `cache.disable()`) runs
+everything. Without `cache.notebook(...)` the notebook is detected in Jupyter / VS Code, else `./vegeta.cache` is used.
+The caches are gitignored (`*.cache/`).
+
 ## CLI
 ```
 talos inspect part.step --units mm-N-MPa [--json]
@@ -118,7 +163,7 @@ talos results runs/case                     # prints NOT RUN when nothing was so
 `solve` never meshes implicitly: if the geometry, regions or mesh settings changed since the last
 `mesh`, it fails and asks for a new mesh.
 
-## Validation (vegeta-cli/tests/talos/test_integration.py)
+## Validation (libs/vegeta-cli/tests/talos/test_integration.py)
 - Cantilever 200×20×10 mm, tip load 100 N: tip deflection within 3 % of Euler–Bernoulli
   (observed −0.6 %), root stress within 10 % of Mc/I, reactions balance the load.
 - Bar 100×10×10 mm in tension (force or pressure; C3D10 and C3D4) with symmetry supports:

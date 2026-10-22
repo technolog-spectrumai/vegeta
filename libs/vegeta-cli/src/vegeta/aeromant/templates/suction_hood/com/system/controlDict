@@ -1,0 +1,72 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         {{ITERATIONS}};
+deltaT          1;
+writeControl    timeStep;
+writeInterval   {{ITERATIONS}};
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable false;
+
+functions
+{
+    suctionPressure
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        regionType      patch;
+        name            suction;
+        operation       areaAverage;
+        fields          (p);
+    }
+    suctionFlow
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        regionType      patch;
+        name            suction;
+        operation       sum;
+        fields          (phi);
+    }
+    hoodPressure
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        regionType      patch;
+        name            body;
+        operation       areaAverage;
+        fields          (p);
+    }
+}
+
+// ************************************************************************* //

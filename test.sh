@@ -4,17 +4,21 @@
 #   2. (default) a short working run through every tool: CAD -> FEA -> slicing -> CFD mesh (-> core)
 # Exit code 0 when everything needed works; tools that are not installed are reported as MISSING.
 #
-# Usage: ./test.sh [--quick] [--venv DIR] [--python EXE]
+# Usage: ./test.sh [--quick | --smoke] [--venv DIR] [--python EXE]
 #   --quick        component checks only (a few seconds)
+#   --smoke        the smoke regression suite (tests/smoke + tests/smoke/existing.txt), timed; under 30 s.
+#                  Run it after every significant change and before each commit (docs/testing.md).
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="${VEGETA_VENV:-$ROOT/.venv}"
 PY=""
 QUICK=0
+SMOKE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --quick) QUICK=1; shift ;;
+    --smoke) SMOKE=1; shift ;;
     --venv) VENV="$2"; shift 2 ;;
     --python) PY="$2"; shift 2 ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
@@ -27,6 +31,27 @@ if [ -z "$PY" ]; then
 fi
 BIN="$(dirname "$PY")"
 status=0
+
+if [ "$SMOKE" = 1 ]; then
+  cd "$ROOT"
+  mapfile -t EXISTING < <(grep -v '^\s*\(#\|$\)' tests/smoke/existing.txt)
+  XVFB=()       # off-screen VTK renders need a display; a headless machine gets a virtual one if it has xvfb-run
+  if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then XVFB=(xvfb-run -a); fi
+  TIMEFORMAT='vegeta smoke: %R s'
+  RACES_LOG="$(mktemp)"                      # the races (MuJoCo laps, ~20 s) run beside the rest, as their own job
+  MPLBACKEND=Agg "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib labs/aero/sims/races/tests tests/smoke/test_races_golden.py \
+    --deselect=labs/aero/sims/races/tests/test_races.py::test_chapter_script_with_the_mock >"$RACES_LOG" 2>&1 &
+  RACES_PID=$!
+  time MPLBACKEND=Agg "${XVFB[@]}" "$PY" -m pytest -q -p no:cacheprovider --import-mode=importlib -m "not slow" \
+    --deselect libs/vegeta-cli/tests/dedalus/test_cli.py::test_console_script_runs tests/smoke libs/ogma/tests \
+    --ignore=tests/smoke/test_races_golden.py "${EXISTING[@]}"
+  status=$?
+  wait "$RACES_PID"; races=$?
+  echo "races: $(grep -E '(passed|failed|error)' "$RACES_LOG" | tail -1)"
+  [ "$races" -ne 0 ] && tail -30 "$RACES_LOG"
+  rm -f "$RACES_LOG"
+  exit $(( status || races ))
+fi
 
 row() { printf '  %-8s %-13s %s\n' "$1" "$2" "$3"; }
 check() {  # check <label> <command...>
@@ -57,12 +82,17 @@ e = aeromant.OpenFOAMEnvironment.detect()
 r = subprocess.run(e.command(['blockMesh', '-help']), env={**os.environ, **e.env}, capture_output=True, text=True)
 assert r.returncode == 0, (r.stderr or r.stdout)[-300:]
 print('via', e.bashrc or ' '.join(e.prefix) or 'PATH')"
-for tool in dedalus talos aeromant mellonia boreas chronos; do
+optional sections "$PY" -c "import neuralfoil; print('neuralfoil', getattr(neuralfoil, '__version__', ''), '(Zephyr section polars; or xfoil on the PATH)')"
+check mujoco      "$PY" -c "import mujoco; print('mujoco', mujoco.__version__, '(physics engine of Chiron)')"
+for tool in dedalus talos aeromant mellonia boreas chronos chiron atropos zephyr; do
   check "$tool" "$PY" -c "from vegeta import $tool; print('vegeta.$tool', $tool.__version__)"
 done
 check core        "$PY" -c "from vegeta import core; print('vegeta.core', core.__version__)"
 optional ai       "$PY" -c "from vegeta import ai; print('vegeta.ai', ai.__version__, '(provider connection; needs ANTHROPIC_API_KEY for live calls)')"
 optional fidia    "$PY" -c "from vegeta import fidia; print('vegeta.fidia', fidia.__version__, '(prompt-to-3D, copilot, campaigns; offline demo without a key)')"
+optional mimezia  "$PY" -c "import mimezia; print('mimezia', mimezia.__version__, '(the mocks\' base: vegeta.mock labels and banners through it)')"
+optional yax      "$PY" -c "import yax; print('yax', 'spec', yax.VERSION, '(vendor/yax: the design-format converter)')"
+check ogma        "$PY" -c "import ogma; print('ogma', ogma.__version__, '(libs/ogma/: the parts library)')"
 [ "$QUICK" -eq 0 ] && optional fidia-run "$PY" -c "
 import tempfile
 from vegeta.fidia import execute

@@ -1,0 +1,235 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+  Four propellers as rotor disks (blade-element source terms, each disk its own rpm): the blade geometry and the section polar
+  come from Boreas (radius [m], twist [deg], chord [m]; alpha [deg], Cd, Cl). Thrust is along "axis".
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvOptions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+disk1
+{
+    type            rotorDisk;
+    selectionMode   cellZone;
+    cellZone        disk1;
+    fields          (U);
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{DISK1_CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    rpm             {{DISK1_RPM}};
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrimCoeffs
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flapCoeffs
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+
+disk2
+{
+    type            rotorDisk;
+    selectionMode   cellZone;
+    cellZone        disk2;
+    fields          (U);
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{DISK2_CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    rpm             {{DISK2_RPM}};
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrimCoeffs
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flapCoeffs
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+
+disk3
+{
+    type            rotorDisk;
+    selectionMode   cellZone;
+    cellZone        disk3;
+    fields          (U);
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{DISK3_CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    rpm             {{DISK3_RPM}};
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrimCoeffs
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flapCoeffs
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+
+disk4
+{
+    type            rotorDisk;
+    selectionMode   cellZone;
+    cellZone        disk4;
+    fields          (U);
+
+    nBlades         {{BLADES}};
+    tipEffect       {{TIP_EFFECT}};
+    inletFlowType   local;
+    inletVelocity   ({{INLET_VELOCITY}});
+    geometryMode    specified;
+    origin          ({{DISK4_CENTER}});
+    axis            ({{DISK_AXIS}});
+    refDirection    ({{REF_DIRECTION}});
+    rpm             {{DISK4_RPM}};
+    trimModel       fixedTrim;      // v2012+ name (v1912: fixed)
+    rhoRef          {{DENSITY}};
+    rhoInf          {{DENSITY}};
+
+    fixedTrimCoeffs
+    {
+        theta0      0;
+        theta1c     0;
+        theta1s     0;
+    }
+    flapCoeffs
+    {
+        beta0       0;
+        beta1c      0;
+        beta2s      0;
+    }
+    blade
+    {
+        data
+        (
+{{BLADE_DATA}}
+        );
+    }
+    profiles
+    {
+        section
+        {
+            type    lookup;
+            data
+            (
+{{PROFILE_DATA}}
+            );
+        }
+    }
+}
+
+
+// a divergence guard, not a model: |U| is capped well above any physical speed in the case (the blade tip speed is the
+// most a rotor disk can give the air), so a diverging iteration is clamped instead of overflowing to 1e300
+limitU
+{
+    type            limitVelocity;
+    active          yes;
+    selectionMode   all;
+    max             {{U_LIMIT}};
+}
+
+// ************************************************************************* //
