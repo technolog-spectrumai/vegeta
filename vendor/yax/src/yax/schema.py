@@ -196,6 +196,83 @@ def _stage2(m: Machine, p: list):
                 check_connection(name, d, f"data:connections/{name}", p, m, materials)
 
 
+AERO = {"name": (STR, False), "reference": (DICT, False), "frame": (STR, False), "reference_point_m": (LIST, False),
+        "center_of_pressure_m": (LIST, False), "axes": (DICT, False), "coefficients": (DICT, False), "derivatives": (DICT, False),
+        "tables": (LIST, False), "method": (STR, False), "source": (STR, False), "validity": (DICT, False), "assumptions": (LIST, False)}
+AERO_REFERENCE = {"area_m2": (NUM, False), "length_m": (NUM, False), "span_m": (NUM, False), "chord_m": (NUM, False),
+                  "diameter_m": (NUM, False), "source": (STR, False)}
+AERO_METHODS = ("analytic", "cfd", "experiment", "manufacturer", "assumed", "fitted")
+AERO_INPUTS = ("alpha_deg", "beta_deg", "re", "mach", "v_m_s", "rpm", "flap_deg", "J")
+AERO_COEFFICIENTS = ("CD", "CL", "CY", "Cl", "Cm", "Cn", "CX", "CZ", "CA", "CN", "CD0", "CL0", "Cm0", "k", "e", "CLalpha", "CLmax")
+DIMLESS |= set(AERO_COEFFICIENTS) | {"re", "mach", "alpha0", "oswald"}
+BLOCKS.update({"aerodynamics": ("machine", AERO, ("00aero",)), "aero": ("link", AERO, ("00aero",))})
+
+
+def check_aero(d, where: str, p: list, m: Machine):
+    _check(d, AERO, where, p, nested={"reference": AERO_REFERENCE})
+    if not isinstance(d, dict):
+        return
+    names = {lk.name for lk in m.links}
+    fr = d.get("frame", "machine")
+    if fr != "machine" and not (isinstance(fr, str) and fr.startswith("link:") and fr[5:] in names):
+        p.append(f"{where}: frame must be 'machine' or 'link:<name>' of a link")
+    for key in ("reference_point_m", "center_of_pressure_m"):
+        if key in d and not (isinstance(d[key], (list, tuple)) and len(d[key]) == 3 and all(_num(x) for x in d[key])):
+            p.append(f"{where}: {key} must be three numbers in {fr}")
+    if "method" in d and d["method"] not in AERO_METHODS:
+        p.append(f"{where}: method must be one of {AERO_METHODS}")
+    co = d.get("coefficients")
+    if isinstance(co, dict):
+        for k, v in co.items():
+            if not _num(v):
+                p.append(f"{where}/coefficients: {k} must be a number (a table goes in 'tables')")
+    de = d.get("derivatives")
+    if isinstance(de, dict):
+        for k, v in de.items():
+            if not _num(v):
+                p.append(f"{where}/derivatives: {k} must be a number")
+    for i, t in enumerate(d.get("tables") or []):
+        w = f"{where}/tables/{i}"
+        if not isinstance(t, dict) or not isinstance(t.get("inputs"), dict) or not isinstance(t.get("values"), dict):
+            p.append(f"{w}: a table is {{'name'?, 'inputs': {{axis: [...]}}, 'values': {{coefficient: nested lists}}, 'source'?, 'validity'?}}")
+            continue
+        axes = list(t["inputs"])
+        bad = [a for a in axes if a not in AERO_INPUTS]
+        if bad:
+            p.append(f"{w}: inputs {bad} are not among {AERO_INPUTS}")
+        shape = []
+        for a in axes:
+            v = t["inputs"][a]
+            if not (isinstance(v, (list, tuple)) and len(v) > 0 and all(_num(x) for x in v)):
+                p.append(f"{w}/inputs/{a}: a list of numbers is required")
+                break
+            if len(v) > 1 and any(b <= c for c, b in zip(v, v[1:])):
+                p.append(f"{w}/inputs/{a}: must be increasing")
+            shape.append(len(v))
+        else:
+            for k, arr in t["values"].items():
+                if _shape(arr) != shape:
+                    p.append(f"{w}/values/{k}: shape must be {shape} ({' × '.join(axes)}), got {_shape(arr)}")
+
+
+def _shape(arr) -> list:
+    out = []
+    while isinstance(arr, (list, tuple)):
+        out.append(len(arr))
+        if not arr:
+            break
+        arr = arr[0]
+    return out
+
+
+def _stage3(m: Machine, p: list):
+    if "aerodynamics" in m.data:
+        check_aero(m.data["aerodynamics"], "data:aerodynamics", p, m)
+    for lk in m.links:
+        if "aero" in lk.data:
+            check_aero(lk.data["aero"], f"link:{lk.name}/data:aero", p, m)
+
+
 # ------------------------------------------------------------------------------------------------------- checking
 def _num(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
@@ -332,7 +409,7 @@ def problems(m: Machine) -> list:
     return p
 
 
-_EXTRA_CHECKS = [_stage2]                                                      # the later stages' checks
+_EXTRA_CHECKS = [_stage2, _stage3]                                                      # the later stages' checks
 
 
 # --------------------------------------------------------------------------------------------------------- losses
@@ -365,6 +442,19 @@ def report_losses(m: Machine, fmt: str, rep: Report) -> None:
         for key, what in (("material", "its material"), ("strength", "its strength limits")):
             if key in lk.data:
                 rep.drop(f"link {lk.name}: {what} — {fmt} has no place for it")
+    def _aero_what(d):
+        n_t = len(d.get("tables") or [])
+        n_c = len(d.get("coefficients") or {}) + len(d.get("derivatives") or {})
+        return f"{n_c} coefficients" + (f", {n_t} tables" if n_t else "")
+    if "aerodynamics" in m.data and fmt != "jsbsim":
+        rep.drop(f"data:aerodynamics: the aerodynamics ({_aero_what(m.data['aerodynamics'])}) — {fmt} has no place for it"
+                 + ("; a table is not a constant: none was substituted" if (m.data["aerodynamics"].get("tables")) else ""))
+    if "aerodynamics" in m.data and fmt == "jsbsim":
+        rep.drop(f"data:aerodynamics: the aerodynamics block ({_aero_what(m.data['aerodynamics'])}) is not written as JSBSim aerodynamics "
+                 "(only an aircraft's own verbatim sections are); the block stays in the YX2")
+    for lk in m.links:
+        if "aero" in lk.data:
+            rep.drop(f"link {lk.name}: its aerodynamics ({_aero_what(lk.data['aero'])}) — {fmt} has no place for it")
     if "propulsion" in m.data:
         d = m.data["propulsion"]
         if fmt == "jsbsim":
