@@ -6,13 +6,13 @@ renders, and *prepared* (never auto-run) CalculiX / Gmsh / MuJoCo scripts.
 
 **Everything is a preliminary engineering estimate.** Each number is tagged in code (`provenance.py`): `VERIFIED`
 (cited constant), `CALCULATED` (a script here), `ASSUMED` (a design choice or class-typical value, with its reason).
-`REPORT.md` is generated from the models (`python -m auseklis.report`) and lists all 49+ assumptions. No commercial part
+**`satellite.md` documents every design choice and describes the satellite subsystem by subsystem.** `REPORT.md` is generated from the models (`python -m auseklis.report`) and lists all 49+ assumptions. No commercial part
 numbers are used yet: component selection needs datasheet verification and is not done.
 
 ## Run it
 
 ```bash
-python tools/lab.py test space                 # 30 tests, mocks on, ~30 s, no solver
+python tools/lab.py test space                 # 33 tests, mocks on, ~30 s, no solver
 python -m auseklis.report [REPORT.md]          # from labs/space/exp: regenerate the tables
 python -c "from auseklis.render import render; render('A', 'a.png')"     # matplotlib 3-D views (renders/ holds A, B, C)
 python -c "from auseklis import cad; cad.export_step('a.step', variant='A')"

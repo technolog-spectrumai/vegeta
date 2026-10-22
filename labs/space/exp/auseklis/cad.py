@@ -143,7 +143,7 @@ class Auseklis(Assembly):
         if p["dish_diameter"] > 0:
             r = p["dish_diameter"] / 2
             dish = cq.Workplane("XZ").moveTo(0, 0).threePointArc((r * 0.6, 0.12 * r), (r, 0.38 * r)).lineTo(r, 0.38 * r + 4).threePointArc((r * 0.6, 0.12 * r + 4), (0, 4)).close().revolve(360, (0, 0, 0), (0, 1, 0))
-            out["xband_dish"] = dish.translate((-0.25 * X, -0.25 * Y, Z / 2 + 230)).union(cyl(8, 230, "z", at=(-0.25 * X, -0.25 * Y, Z / 2 + 115)))
+            out["xband_dish"] = dish.translate((0.15 * X, -0.25 * Y, Z / 2 + 230)).union(cyl(8, 230, "z", at=(0.15 * X, -0.25 * Y, Z / 2 + 115)))
         for i, y in enumerate((-0.25 * Y, 0.25 * Y)):                    # star trackers with sun baffles, on the zenith face
             out[f"star_tracker_{i}"] = cyl(45, 130, "z", at=(-0.3 * X, y, Z / 2 + 65))
         out["lidar"] = cyl(60, 90, "x", at=(X / 2 + 45, 0.25 * Y, 0.25 * Z)).union(cq.Workplane("XY").sphere(55).translate((X / 2 + 110, 0.25 * Y, 0.25 * Z)))
@@ -175,9 +175,10 @@ class Auseklis(Assembly):
             out.update({"capture_arm_base": base, "capture_arm_link1": link1.union(elbow), "capture_arm_link2": link2.union(wrist),
                         "capture_gripper": fingers})
         elif v == "B":                                                   # docking adapter: ring + capture cone
-            ring = cyl(260, 40, "x", at=(x0 + 20, 0, 0)).cut(cyl(215, 60, "x", at=(x0 + 20, 0, 0)))
-            cone = cq.Workplane("YZ").circle(215).workplane(offset=170).circle(60).loft().translate((x0 + 20, 0, 0))
-            out.update({"docking_ring": ring, "docking_cone": cone.cut(cq.Workplane("YZ").circle(190).workplane(offset=170).circle(40).loft().translate((x0 + 20, 0, 0)))})
+            # ring and cone stay inside r = 180 mm: the LiDAR and cameras sit >= 205 mm off the axis and must keep a clear view
+            ring = cyl(180, 40, "x", at=(x0 + 20, 0, 0)).cut(cyl(140, 60, "x", at=(x0 + 20, 0, 0)))
+            cone = cq.Workplane("YZ").circle(175).workplane(offset=170).circle(60).loft().translate((x0 + 40, 0, 0))
+            out.update({"docking_ring": ring, "docking_cone": cone.cut(cq.Workplane("YZ").circle(150).workplane(offset=170).circle(40).loft().translate((x0 + 40, 0, 0)))})
         else:                                                            # short boom + three-finger compliant gripper
             boom = cyl(40, p["arm_length"] * 0.45, "x", at=(x0 + p["arm_length"] * 0.225, 0, 0))
             hub = cyl(70, 90, "x", at=(x0 + p["arm_length"] * 0.45 + 45, 0, 0))

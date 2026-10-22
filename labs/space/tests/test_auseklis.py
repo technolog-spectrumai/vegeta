@@ -178,6 +178,25 @@ def test_cad_builds_and_closes_with_budget(key):
     assert np.all(np.linalg.eigvalsh(I) > 0)
 
 
+# contacts that are intended: panel-mounted equipment touching the bus, joints between arm links
+INTENDED = {("bus_shell", "wheels"), ("capture_arm_link1", "capture_arm_link2")}
+
+
+@pytest.mark.parametrize("key", "ABC")
+def test_no_unintended_part_interference(key):
+    import itertools
+    from auseklis import cad
+    d = cad.Auseklis()
+    parts = d.parts(d.resolve(variant=key))
+    for a, b in itertools.combinations(parts, 2):
+        if (a, b) in INTENDED or (a == "bus_shell" and b.startswith("rcs_")):
+            continue
+        ba, bb = parts[a].BoundingBox(), parts[b].BoundingBox()
+        if ba.xmax < bb.xmin or bb.xmax < ba.xmin or ba.ymax < bb.ymin or bb.ymax < ba.ymin or ba.zmax < bb.zmin or bb.zmax < ba.zmin:
+            continue
+        assert parts[a].intersect(parts[b]).Volume() < 1e3, f"{a} intersects {b} in variant {key}"
+
+
 def test_oversized_tank_is_refused():
     from auseklis import cad
     with pytest.raises(ValueError):
