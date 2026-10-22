@@ -13,6 +13,7 @@ def _drongo_parts(m) -> dict:
     computed, ``nb08`` on what notebook 08 fixed (its materials, its motor and battery), ``assumed`` on the rotor
     constants that are assumptions (ogma.rotors: T_max, spin-up; see ASSUMED_PROPULSION)."""
     import drongo_robot as dr
+    m.link("drongo").data["material"] = "PETG-CF"                               # the frame (QuadFrame, PETG-CF, notebook 08)
     return {**pp.drongo(m), "materials": dr.materials_block(),
             "tags": {"data:propulsion/propellers*": "boreas", "data:materials*": "nb08", "data:propulsion/motors*": "nb08",
                      "data:propulsion/battery*": "nb08", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
