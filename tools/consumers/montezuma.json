@@ -1,6 +1,23 @@
 {
   "consumer": "montezuma",
-  "required": ["00core", "00geom", "00mass"],
-  "optional": ["00inert", "00joint", "00motor", "00prov"],
-  "note": "Montezuma (the site simulator; technolog-spectrumai/montezuma): it draws each robot from the machine's visual mesh (the CAD design, the root link's visual 'cad') and reads the machine's mass and provenance; its own physics keeps its speeds and turning. A Yax requirements file of tag codes: python tools/export.py <machine> --to out/<machine>.yx2 --consumer tools/consumers/montezuma.json (Montezuma: scripts/update_designs.sh)"
+  "required": [
+    "00core",
+    "00geom",
+    "00mass"
+  ],
+  "optional": [
+    "00inert",
+    "00joint",
+    "00motor",
+    "00prov"
+  ],
+  "note": "Montezuma (the site simulator; technolog-spectrumai/montezuma): it draws each robot from the machine's visual mesh (the CAD design, the root link's visual 'cad') and reads the machine's mass and provenance; its own physics keeps its speeds and turning. A Yax requirements file of tag codes: python tools/export.py <machine> --to out/<machine>.yx2 --consumer tools/consumers/montezuma.json (Montezuma takes them from exports/, published by tools/publish.py: its scripts/update_designs.sh)",
+  "machines": [
+    "onager",
+    "onager_atlas",
+    "pekari",
+    "perseus",
+    "quad",
+    "rover"
+  ]
 }
