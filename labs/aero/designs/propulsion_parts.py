@@ -133,16 +133,29 @@ def _drive_machine(m, *, name: str, robot, dr, prop, pos_body, downthrust_deg: f
                    prop_source=f"{notes.get('propeller', '')}; section: {notes.get('section', '')}; {notes.get('brake region', '')}; {notes.get('limits', '')}")
 
 
+def _design_aero(name: str, json_name: str, source: str) -> dict:
+    """The aircraft's aerodynamics block from its design file (``00aero``): the derivatives the notebook computed
+    (analytic, body axes) with their reference geometry — loaded, not recomputed."""
+    import json
+    from pathlib import Path
+    from vegeta.labkit import aero as la
+    doc = json.loads((Path(__file__).resolve().parent / "data" / json_name).read_text())
+    return la.from_design_json(doc, name=name, source=source)
+
+
 def nisus_plus(m) -> dict:
-    """NISUS+'s 15x8 pusher on the AT4125 (``data/nisus_plus_propulsion.json``)."""
+    """NISUS+'s 15x8 pusher on the AT4125 (``data/nisus_plus_propulsion.json``) and its aerodynamics (``data/nisus_plus_design.json``)."""
     import nisus_plus_robot as npr
     import nisus_plus_systems as nps
     import nisus_robot as nr
     robot = npr.nisus_plus_robot()
     p, L = robot.params, robot.layout
-    return _drive_machine(m, name="nisus_plus", robot=robot, dr=nps.drive(), prop=nps.propeller_15x8(), pos_body=nr.to_body(L["prop_x"], 0.0, p["motor_z"]),
-                          downthrust_deg=p["motor_downthrust_deg"], tau_up=npr.NisusPlusActuators.tau_throttle,
-                          source="nisus_plus_systems.drive (Boreas BEMT on the 15x8, the fitted AT4125); thrust line: nisus_robot.Aero (prop_x, motor_z, down-thrust)")
+    out = _drive_machine(m, name="nisus_plus", robot=robot, dr=nps.drive(), prop=nps.propeller_15x8(), pos_body=nr.to_body(L["prop_x"], 0.0, p["motor_z"]),
+                         downthrust_deg=p["motor_downthrust_deg"], tau_up=npr.NisusPlusActuators.tau_throttle,
+                         source="nisus_plus_systems.drive (Boreas BEMT on the 15x8, the fitted AT4125); thrust line: nisus_robot.Aero (prop_x, motor_z, down-thrust)")
+    out["aerodynamics"] = _design_aero("Nisus+ Zero", "nisus_plus_design.json", "designs/data/nisus_plus_design.json (nisus_plus_flight.derivatives)")
+    out["tags"]["data:aerodynamics*"] = "analytic"
+    return out
 
 
 def falco(m) -> dict:
@@ -152,6 +165,9 @@ def falco(m) -> dict:
     import nisus_robot as nr
     robot = fr.falco_robot()
     p, L = robot.params, robot.layout
-    return _drive_machine(m, name="falco", robot=robot, dr=fsy.drive(), prop=fsy.propeller(), pos_body=nr.to_body(L["prop_x"], 0.0, L["motor_z"]),
-                          downthrust_deg=p["motor_downthrust_deg"], tau_up=fr.NisusPlusActuators.tau_throttle,
-                          source="falco_systems.drive (Boreas BEMT on the 20x15, the fitted AT5220-A KV220); thrust line: falco_robot (prop_x, motor_z, down-thrust)")
+    out = _drive_machine(m, name="falco", robot=robot, dr=fsy.drive(), prop=fsy.propeller(), pos_body=nr.to_body(L["prop_x"], 0.0, L["motor_z"]),
+                         downthrust_deg=p["motor_downthrust_deg"], tau_up=fr.NisusPlusActuators.tau_throttle,
+                         source="falco_systems.drive (Boreas BEMT on the 20x15, the fitted AT5220-A KV220); thrust line: falco_robot (prop_x, motor_z, down-thrust)")
+    out["aerodynamics"] = _design_aero("Falco-Zero", "falco_design.json", "designs/data/falco_design.json (falco_flight.derivatives)")
+    out["tags"]["data:aerodynamics*"] = "analytic"
+    return out
