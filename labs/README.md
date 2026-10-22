@@ -12,6 +12,7 @@ libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ─
 | [land](land/README.md) | what rolls and tracks | Onager (Sentinel, Atlas, Manus, Sweeper), Pekari, Perseus, Rover |
 | [legged](legged/README.md) | what walks | Robot dog, Myropods (Cleopatra, Persephone, Apheloria), the benchmarks |
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine |
+| [space](space/README.md) | what orbits: LEO servicing, rendezvous, capture | Auseklis (debris-removal servicer, exp/) |
 | [studio](studio/README.md) | the tools themselves: tutorials, the workbench, AI design | — |
 
 The rules (`python tools/labs.py check`, in smoke): a lab imports `libs/` and itself, never another lab; nothing
