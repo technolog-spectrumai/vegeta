@@ -2,7 +2,7 @@
 
     yax.convert("rover.xml", "rover.urdf")            # MJCF → USD → URDF; returns a Report of what URDF cannot hold
     m, report = yax.read("c172x.xml")                 # → a hub.Machine (JSBSim detected from <fdm_config>)
-    yax.save(m, "c172x.usda")                         # the universal file
+    yax.save(m, "c172x.yx2")                          # the exchange file (a validated USD subset, docs/yx2.md); .usda: plain USD
 """
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ from pathlib import Path
 from . import hub
 from .hub import Machine, Report
 
-FORMATS = ("usd", "mjcf", "urdf", "sdf", "jsbsim", "step", "stl", "package")
-_MODULE = {"mjcf": "mjcf", "urdf": "urdf", "sdf": "sdf", "jsbsim": "jsbsim", "step": "step", "stl": "stlfile", "package": "package"}
-_SUFFIX = {".usd": "usd", ".usda": "usd", ".usdc": "usd", ".urdf": "urdf", ".sdf": "sdf", ".step": "step", ".stp": "step", ".stl": "stl"}
+FORMATS = ("usd", "yx2", "mjcf", "urdf", "sdf", "jsbsim", "step", "stl", "package")
+_MODULE = {"yx2": "yx2", "mjcf": "mjcf", "urdf": "urdf", "sdf": "sdf", "jsbsim": "jsbsim", "step": "step", "stl": "stlfile", "package": "package"}
+_SUFFIX = {".usd": "usd", ".usda": "usd", ".usdc": "usd", ".yx2": "yx2", ".urdf": "urdf", ".sdf": "sdf", ".step": "step", ".stp": "step", ".stl": "stl"}
 _TAG = {"mujoco": "mjcf", "fdm_config": "jsbsim", "robot": "urdf", "sdf": "sdf"}
 
 
@@ -61,8 +61,9 @@ def save(m: Machine, path, fmt: str | None = None, *, report: Report | None = No
             path.unlink()
         hub.to_stage(m, path)
         return rep
-    from .features import report_excluded
-    report_excluded(m, rep)                                                   # a withheld feature is a loss to know about
+    if fmt != "yx2":                                                          # a withheld feature is a loss to know about
+        from .features import report_excluded                                 # (a YX2 says it itself, in yax:features)
+        report_excluded(m, rep)
     return _module(fmt).write(m, path, rep, **opts)
 
 

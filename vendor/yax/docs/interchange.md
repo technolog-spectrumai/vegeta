@@ -42,7 +42,7 @@ For a machine, each feature is
 
 | Format | Holds | Partial |
 |---|---|---|
-| USD | every feature | — |
+| USD, YX2 | every feature (YX2: the validated subset, docs/yx2.md) | — |
 | MJCF | geometry, mass, inertia, joints, motors | motors: joint drives as position actuators only |
 | URDF | geometry, mass, inertia, joints | joints: ball joints as fixed, the drive's max force as the effort limit |
 | SDF | geometry, mass, inertia, joints, sensors | joints: no drives (a plugin carries them) |

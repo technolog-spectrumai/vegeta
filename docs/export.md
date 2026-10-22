@@ -1,8 +1,11 @@
 # Export — what leaves Vegeta, feature by feature
 
-A machine leaves Vegeta as standard files written through Yax (`tools/export.py`, `python tools/lab.py export`): a USD
-file (the universal one) and whatever formats a consumer reads beside it (SDF, URDF, MJCF, STEP, STL, JSBSim). What a
-machine *is* comes from its lab's `designs/machines.py`: the Chiron robot and the part data the design computed.
+A machine leaves Vegeta as standard files written through Yax (`tools/export.py`, `python tools/lab.py export`): a
+**YX2** file (`.yx2`, the Yax 2 exchange file — a validated subset of USD that states its units and frame, gives every
+link, joint and shape a stable id, always says which features it holds and which were withheld, and serializes
+canonically: `vendor/yax/docs/yx2.md`; `.usda` is the plain USD stage) and whatever formats a consumer reads beside it
+(SDF, URDF, MJCF, STEP, STL, JSBSim). What a machine *is* comes from its lab's `designs/machines.py`: the Chiron robot
+and the part data the design computed. Vegeta → YX2 → Yax → YX2 keeps every selected property byte for byte.
 
 ## Features
 
@@ -11,11 +14,11 @@ joints, motors, materials, strength, connections, aerodynamics, sensors, provena
 independently:
 
 ```bash
-python tools/export.py drongo --to out/drongo.usda --also sdf                         # everything (the default)
-python tools/export.py drongo --to out/drongo.usda --full                             # everything, said explicitly
-python tools/export.py drongo --to out/drongo.usda --exclude motors,provenance        # withhold two
-python tools/export.py drongo --to out/drongo.usda --include geometry,mass,inertia    # the structure alone
-python tools/export.py drongo --to out/drongo.usda --features export.yaml             # include/exclude lists from a file
+python tools/export.py drongo --to out/drongo.yx2 --also sdf                         # everything (the default)
+python tools/export.py drongo --to out/drongo.yx2 --full                             # everything, said explicitly
+python tools/export.py drongo --to out/drongo.yx2 --exclude motors,provenance        # withhold two
+python tools/export.py drongo --to out/drongo.yx2 --include geometry,mass,inertia    # the structure alone
+python tools/export.py drongo --to out/drongo.yx2 --features export.yaml             # include/exclude lists from a file
 ```
 
 A withheld feature reaches no file, no metadata and no side file: Yax's `select` withholds and never invents (a
@@ -47,7 +50,7 @@ available, missing, excluded, or unsupported by that format — and `--strict` e
 requirements never change what is exported: the flags decide, the consumer's file only judges the result.
 
 ```bash
-python tools/export.py drongo --to out/drongo.usda --also sdf --exclude inertia --consumer tools/consumers/piccolo.json
+python tools/export.py drongo --to out/drongo.yx2 --also sdf --exclude inertia --consumer tools/consumers/piccolo.json
 # piccolo (usd): NOT served
 #   required inertia: excluded (withheld by the producer)
 ```

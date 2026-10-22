@@ -215,3 +215,52 @@ def test_every_machine_exports_its_structure_alone(name, tmp_path):
     back, _ = yax.read(tmp_path / f"{name}.usda")
     assert back.features == m.features and [lk.name for lk in back.links] == [lk.name for lk in m.links]
     assert all(ft.inventory(back)[f].status == ft.EXCLUDED for f in ft.FEATURES if f not in keep)
+
+
+# ------------------------------------------------------------------------------------------------ YX2 (stage 0)
+from yax.formats import yx2  # noqa: E402
+
+
+def _yx2_round_trip(name, tmp_path, **sel):
+    """Vegeta → YX2 → Yax → YX2: the second file is the first, byte for byte; what Yax read is what was selected."""
+    f = tmp_path / f"{name}.yx2"
+    m0, _ = export.machine(name, **sel)
+    reps = export.write(m0, f)
+    assert reps[0].dropped == [] and yx2.validate(f) == []
+    m1, _ = yax.read(f)
+    yax.save(m1, tmp_path / "again.yx2")
+    assert (tmp_path / "again.yx2").read_text() == f.read_text()
+    assert m1.data == m0.data and m1.producer == m0.producer and m1.features["excluded"] == m0.features.get("excluded", [])
+    assert [lk.name for lk in m1.links] == [lk.name for lk in m0.links] and [j.name for j in m1.joints] == [j.name for j in m0.joints]
+    for a, b in zip(m0.links, m1.links):
+        assert a.mass == b.mass and tuple(a.com) == tuple(b.com) and (a.inertia is None) == (b.inertia is None)
+        if a.inertia is not None:
+            np.testing.assert_array_equal(a.inertia, b.inertia)
+        assert [(s.name, s.kind, s.role) for s in a.shapes] == [(s.name, s.kind, s.role) for s in b.shapes]
+    for a, b in zip(m0.joints, m1.joints):
+        assert (a.kind, a.parent, a.child, a.lower, a.upper, a.drive, a.data) == (b.kind, b.parent, b.child, b.lower, b.upper, b.drive, b.data)
+    assert {s.status for f_, s in ft.inventory(m1).items()} == {s.status for f_, s in ft.inventory(m0).items()}
+    return f, m1
+
+
+def test_yx2_is_the_main_file_and_keeps_every_selected_property(tmp_path):
+    f, m = _yx2_round_trip("drongo", tmp_path)
+    text = f.read_text()
+    assert 'dictionary yx2' in text and 'string yx2:id = "link:drongo"' in text and '"included"' in text
+    assert m.features == {"included": list(ft.FEATURES), "excluded": []} and "propulsion" in m.data and "materials" in m.data
+    f, m = _yx2_round_trip("drongo", tmp_path / "cut", exclude=("motors", "provenance"))
+    text = f.read_text()
+    assert "propulsion" not in text and "yax:producer" not in text and m.features["excluded"] == ["motors", "provenance"]
+    assert ft.inventory(m)["motors"].status == ft.EXCLUDED and ft.inventory(m)["materials"].status == ft.AVAILABLE
+    piccolo = export.ROOT / "tools" / "consumers" / "piccolo.json"
+    reps = export.export("drongo", tmp_path / "c" / "drongo.yx2", also=("sdf",), consumers=(piccolo,))
+    assert [r.fmt for r in reps if isinstance(r, ft.Compatibility)] == ["yx2", "sdf"] and all(r.ok for r in reps if isinstance(r, ft.Compatibility))
+    assert export.main(["drongo", "--to", str(tmp_path / "m" / "d.yx2"), "--also", "usda", "sdf", "--exclude", "inertia"]) == 0
+    assert yx2.validate(tmp_path / "m" / "d.yx2") == [] and (tmp_path / "m" / "d.usda").exists() and (tmp_path / "m" / "d.sdf").exists()
+    assert "<inertia>" not in (tmp_path / "m" / "d.sdf").read_text()
+
+
+@pytest.mark.parametrize("name", sorted(export.registry().names()))
+def test_every_machine_round_trips_through_yx2(name, tmp_path):
+    _yx2_round_trip(name, tmp_path)
+    _yx2_round_trip(name, tmp_path / "structure", include=("geometry", "mass", "inertia", "joints"))

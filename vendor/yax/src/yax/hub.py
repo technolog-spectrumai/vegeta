@@ -294,6 +294,7 @@ def to_stage(m: Machine, path: str | None = None):
         _set_pose(xf, lk.pos, lk.quat)
         prim = xf.GetPrim()
         _attr(prim, "yax:name", Sdf.ValueTypeNames.String, lk.name)
+        _exact_pose(prim, lk.pos, lk.quat)
         UsdPhysics.RigidBodyAPI.Apply(prim)
         if lk.mass is not None:
             mapi = UsdPhysics.MassAPI.Apply(prim)
@@ -318,6 +319,7 @@ def to_stage(m: Machine, path: str | None = None):
         for name, kg, pos in lk.point_masses:
             pm = UsdGeom.Xform.Define(stage, p.AppendChild(_ident("pm_" + name)))
             _set_pose(pm, pos, (1.0, 0.0, 0.0, 0.0))
+            _attr(pm.GetPrim(), "yax:pos", Sdf.ValueTypeNames.Double3, Gf.Vec3d(*map(float, pos)))
             _attr(pm.GetPrim(), "yax:kind", Sdf.ValueTypeNames.Token, "point_mass")
             _attr(pm.GetPrim(), "yax:name", Sdf.ValueTypeNames.String, name)
             _attr(pm.GetPrim(), "yax:mass", Sdf.ValueTypeNames.Double, float(kg))
@@ -329,6 +331,13 @@ def to_stage(m: Machine, path: str | None = None):
     if path:
         stage.GetRootLayer().Save()
     return stage
+
+
+def _exact_pose(prim, pos, quat):
+    """Double-precision copies of a pose (USD's matrix decomposition rounds): what readers take first."""
+    from pxr import Gf, Sdf
+    _attr(prim, "yax:pos", Sdf.ValueTypeNames.Double3, Gf.Vec3d(*map(float, pos)))
+    _attr(prim, "yax:quat", Sdf.ValueTypeNames.Double4, Gf.Vec4d(*map(float, quat)))
 
 
 def _shape_to_usd(stage, p, s: Shape):
@@ -365,6 +374,9 @@ def _shape_to_usd(stage, p, s: Shape):
     _set_pose(g, s.pos, s.quat, scale)
     prim = g.GetPrim()
     _attr(prim, "yax:name", Sdf.ValueTypeNames.String, s.name)
+    _exact_pose(prim, s.pos, s.quat)
+    if s.kind != "mesh":                                                        # exact sizes (a scale op's decomposition rounds)
+        _attr(prim, "yax:size", Sdf.ValueTypeNames.DoubleArray, Vt.DoubleArray([float(v) for v in s.size]))
     _attr(prim, "yax:role", Sdf.ValueTypeNames.Token, s.role)
     if s.role == "collision":
         UsdPhysics.CollisionAPI.Apply(prim)
@@ -445,7 +457,11 @@ def from_stage(stage) -> Machine:
             continue
         W = cache.GetLocalToWorldTransform(prim)
         pos, quat, _ = _decompose(W)
-        lk = Link(name=_get(prim, "yax:name") or prim.GetName(), pos=tuple(v * k for v in pos), quat=quat)
+        if _get(prim, "yax:pos") is not None:                                   # exact, as written
+            pos, quat, k_ = tuple(float(v) for v in _get(prim, "yax:pos")), tuple(float(v) for v in _get(prim, "yax:quat")), 1.0
+        else:
+            k_ = k
+        lk = Link(name=_get(prim, "yax:name") or prim.GetName(), pos=tuple(float(v) * k_ for v in pos), quat=quat)
         names[prim.GetPath()] = lk.name
         if prim.HasAPI(UsdPhysics.MassAPI):
             mapi = UsdPhysics.MassAPI(prim)
@@ -467,8 +483,12 @@ def from_stage(stage) -> Machine:
             if child.HasAPI(UsdPhysics.RigidBodyAPI):
                 break
             if _get(child, "yax:kind") == "point_mass":
-                p, _, _ = _decompose(cache.GetLocalToWorldTransform(child) * Winv)
-                lk.point_masses.append((_get(child, "yax:name") or child.GetName(), float(_get(child, "yax:mass")), tuple(v * k for v in p)))
+                if _get(child, "yax:pos") is not None:
+                    p = tuple(float(v) for v in _get(child, "yax:pos"))
+                else:
+                    p, _, _ = _decompose(cache.GetLocalToWorldTransform(child) * Winv)
+                    p = tuple(v * k for v in p)
+                lk.point_masses.append((_get(child, "yax:name") or child.GetName(), float(_get(child, "yax:mass")), p))
                 continue
             s = _shape_from_usd(child, cache.GetLocalToWorldTransform(child) * Winv, k)
             if s is not None:
@@ -515,6 +535,8 @@ def _shape_from_usd(prim, M, k) -> Shape | None:
 
     pos, quat, scale = _decompose(M)
     pos = tuple(v * k for v in pos)
+    if _get(prim, "yax:pos") is not None:                                       # exact, as written
+        pos, quat = tuple(float(v) for v in _get(prim, "yax:pos")), tuple(float(v) for v in _get(prim, "yax:quat"))
     name = _get(prim, "yax:name") or prim.GetName()
     role = _get(prim, "yax:role") or ("collision" if prim.HasAPI(UsdPhysics.CollisionAPI) else "visual")
     rgba = None
@@ -524,6 +546,16 @@ def _shape_from_usd(prim, M, k) -> Shape | None:
             o = UsdGeom.Gprim(prim).GetDisplayOpacityAttr().Get()
             rgba = (*map(float, c[0]), float(o[0]) if o else 1.0)
     kw = dict(name=name, pos=pos, quat=quat, role=role, rgba=rgba)
+    exact = _get(prim, "yax:size")
+    if exact is not None and not prim.IsA(UsdGeom.Mesh):                        # exact, as written
+        size = tuple(float(v) for v in exact)
+        if prim.IsA(UsdGeom.Cube):
+            return Shape(kind="box", size=size, **kw)
+        if prim.IsA(UsdGeom.Sphere):
+            return Shape(kind="sphere" if len(size) == 1 else "ellipsoid", size=size, **kw)
+        if prim.IsA(UsdGeom.Cylinder) or prim.IsA(UsdGeom.Capsule):
+            g = UsdGeom.Cylinder(prim) if prim.IsA(UsdGeom.Cylinder) else UsdGeom.Capsule(prim)
+            return Shape(kind="cylinder" if prim.IsA(UsdGeom.Cylinder) else "capsule", size=size, axis=(g.GetAxisAttr().Get() or "Z").lower(), **kw)
     if prim.IsA(UsdGeom.Cube):
         e = UsdGeom.Cube(prim).GetSizeAttr().Get() * k
         return Shape(kind="box", size=tuple(e * s for s in scale), **kw)
