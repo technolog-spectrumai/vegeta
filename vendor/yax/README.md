@@ -25,7 +25,9 @@ The producer tags as it pleases (`boreas` on the maps a BEMT made) and keeps or 
 says so); the consumer validates the tags it needs (`yax tags dst.yx2 --to sdf --requirements piccolo.json`: present,
 absent, withheld or unsupported by the format). Codes starting with `00` are system tags Yax assigns from what a
 property is (`00geom`, `00mass`, `00inert`, `00joint`, `00motor`, …), so there is always something to validate against.
-The contract: [docs/interchange.md](docs/interchange.md).
+The contract: [docs/interchange.md](docs/interchange.md); what the engineering blocks hold (motors, propulsion, materials,
+strength, connections, aerodynamics, assemblies), in which units and frames, and what each format loses of them:
+[docs/engineering.md](docs/engineering.md) (`yax validate FILE`).
 
 **Two teams, one machine — `yax sync`.** The designers' file and the simulation team's model live in their own feedback
 loops; the physical numbers the simulation takes from the design are synced explicitly, everything else stays the
