@@ -16,7 +16,12 @@ def _pekari_parts(m) -> dict:
     for lk in m.links:
         if lk.name in links:
             lk.data["material"] = links[lk.name]
-    return {"materials": prr.materials_block(), "connections": prr.connections_block(m),
+    from vegeta.labkit import detach as ld
+    kinds = {"hull": "body", **{lk.name: ("bogie" if "bogie" in lk.name else "roller") for lk in m.links if lk.name != "hull"}}
+    asm = ld.from_joint_tree(m, name="Pekari Rover", kinds=kinds,
+                             source="pekari_rover_robot: the hull, its bogies and rollers on their axles; no component is declared detachable "
+                                    "(notebook 30 fixes no separation)")
+    return {"materials": prr.materials_block(), "connections": prr.connections_block(m), "assembly": asm,
             "tags": {"data:materials*": "nb30", "data:connections*": "nb30"}}
 
 

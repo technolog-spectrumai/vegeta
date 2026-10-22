@@ -14,7 +14,11 @@ def _drongo_parts(m) -> dict:
     constants that are assumptions (ogma.rotors: T_max, spin-up; see ASSUMED_PROPULSION)."""
     import drongo_robot as dr
     m.link("drongo").data["material"] = "PETG-CF"                               # the frame (QuadFrame, PETG-CF, notebook 08)
-    return {**pp.drongo(m), "materials": dr.materials_block(),
+    from vegeta.labkit import detach as ld
+    asm = ld.from_joint_tree(m, name="Drongo", kinds={"drongo": "body"},
+                             source="drongo_robot: the frame and its jaw carriages (the propellers and motors are geoms of the frame, not links; "
+                                    "no component is declared detachable — notebook 08b fixes no separation)")
+    return {**pp.drongo(m), "materials": dr.materials_block(), "assembly": asm,
             "tags": {"data:propulsion/propellers*": "boreas", "data:materials*": "nb08", "data:propulsion/motors*": "nb08",
                      "data:propulsion/battery*": "nb08", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
 
