@@ -142,4 +142,24 @@ that no constant was substituted for them.
 
 ## Assemblies and detachable components — `00detach`
 
-*Stage 4 — written when implemented.*
+The machine's `data["assembly"]` says how the links are put together and which of them the design means to come
+off: `{"name", "root": component id, "components": {id: component}, "source", "validity"}`. A component **refers**
+to a link for its geometry, mass, centre of mass and inertia (`00geom`, `00mass`, `00inert` on the link), to the
+materials catalogue for what it is made of, to `data["connections"]` for how it is held: nothing physical is
+repeated here, and no debris geometry exists — a detached component is its link.
+
+| Field | Meaning |
+|---|---|
+| `link` | the link holding its physics (identity) |
+| `parent` | the component it is attached to (`null` for the root) |
+| `kind` | `body`, `arm`, `motor`, `propeller`, `panel`, `cover`, `leg`, … (informative) |
+| `detachable` | `true` only when the design means it to separate; needs a `parent` |
+| `connection` | the name of the connection in `data["connections"]` that holds it (its type, geometry, fasteners, strength) |
+| `attachment` | `{"frame": "parent" (default: the parent's link frame) / "machine" / "link:<name>", "pos", "quat", "axis", "source"}` — where it is attached |
+| `separation` | `{"limits": {"tension_n", "shear_n", "moment_nm", "torque_nm", "energy_j", "safety_factor", "basis"}, "criterion": {…}, "calibrated": bool, "basis": "datasheet" / "test" / "analysis" / "assumed", "source", "validity"}` — the separation the producer *knows*; a calibrated criterion must say its source. Yax predicts nothing |
+| `material`, `children`, `source`, `validity` | a catalogue name; the child ids (informative, the parents are the truth); provenance; ranges |
+
+Tags: every property under `data:assembly` carries `00detach`; a consumer that needs the parts' physics asks for
+`00geom`, `00mass`, `00inert`, `00mat`, `00conn` beside it. What a format keeps: USD and YX2 everything; every other
+format writes the links and nothing of the assembly (reported). Yax never generates fragments, never decides what
+separates: Ukko or any other consumer does, from this block and the connections.

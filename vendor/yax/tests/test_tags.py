@@ -31,7 +31,7 @@ def test_properties_and_system_tags():
     assert paths["data:propulsion/motors/mo"].system == ("00prop", "00motor")       # a property in two categories
     assert paths["producer"].system == ("00prov",)
     t = tg.table(m)
-    assert t["link:base/mass"] == ["00mass"] and "link:base/pose" in t and set(tg.inventory(m)) >= set(tg.SYSTEM) - {"00fmt"} | {"00fmt"}
+    assert t["link:base/mass"] == ["00mass"] and "link:base/pose" in t and set(tg.inventory(m)) >= set(tg.SYSTEM) - {"00detach"}   # no assembly in the fixture
     assert all(tg.CODE.match(c) for c in tg.SYSTEM) and all(tg.is_system(c) for c in tg.SYSTEM)
     assert "00core" in tg.describe(m) and "00geom: 2 properties" in tg.describe(m)
 
