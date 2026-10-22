@@ -4,7 +4,7 @@ Side labs (formerly *workflows*) run the optional, expensive calculations and fi
 name a notebook (`side_labs/tests/test_separation.py`). A completed Kestrel run is published with `porunga.save`
 under the key of `designs/kestrel_keys.py`; a notebook derives the same key and loads it.
 
-(The short how-to for engineers is `manual_workflows.md` at the repository root; this file is the contract.)
+(The short how-to for engineers is `docs/manual_workflows.md`; this file is the contract.)
 
 A **workflow** is a thin script under `side_labs/<project>/` that prepares explicit inputs, runs the selected solver
 cases, gathers the artifacts, parses the results and saves them into one **run directory**. It is launched by an
@@ -65,7 +65,7 @@ kestrel-x  (X)  Kestrel-X-C — the shallow X-wing with the payload module (vari
 └── FEA — one panel's carbon spar in its socket (Talos: Gmsh + CalculiX)
     └── X3   panel                  the 4 g pull-up with the tip motor's inertia, the first modes
 ```
-(the races book R graduated to Piccolo with the racing quad: `races/lab/race.py` there; MOVED.md)
+(the races book R graduated to Piccolo with the racing quad: `races/lab/race.py` there; docs/MOVED.md)
 
 A second book reuses the same scripts: `side_labs/kestrel_x/airframe_cfd.py` and `panel_fea.py` call the Kestrel
 scripts' `main(book="kestrel-x")`, which load the design adapter named in `CAMPAIGNS` (`kestrel_xc_campaigns`, the
@@ -170,9 +170,9 @@ under an hour. Measure your own: `run.log` records every case's duration.
 `wf batch file.yaml` runs an ordered list of chapters from one file — the way to hand the heavy runs to a cloud box:
 the GUI's Batch tab (or `wf batch --example`) writes it, any machine with the repository and the solvers runs it. The
 format and the folder it leaves behind (`side_labs/runs/_batches/<stamp>_<name>/batch.json`: every step's state, exit
-code, run directory and summary file) are in `side_labs/batch.py` and `manual_workflows.md` § 2b. Each step is the
+code, run directory and summary file) are in `side_labs/batch.py` and `docs/manual_workflows.md` § 2b. Each step is the
 chapter's script with an explicit `--out`, so a batch never changes what a run is; a batch is an engineer's explicit
-list, not a scheduler (`rejected.md`).
+list, not a scheduler (`docs/exploration.md` Part 3).
 
 ## Reading a run: the logs
 

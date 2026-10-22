@@ -169,8 +169,8 @@ as another backend with the same contract (source in → `result.json` + `parts.
 Setup for that later: `pip install bpy==5.0.1` in a Python 3.11 environment, or `apt install blender`; renders
 with Cycles on CPU (`bpy.context.scene.cycles.device = "CPU"`) or EEVEE with a GPU.
 
-## Why this is allowed (the exception to `rejected.md`)
-`rejected.md` rejects "executing LLM-written CadQuery unattended" and "letting the LLM judge results". Fidia's
+## Why this is allowed (the exception to `docs/exploration.md` Part 3)
+`docs/exploration.md` Part 3 rejects "executing LLM-written CadQuery unattended" and "letting the LLM judge results". Fidia's
 loop is the narrow exception, on these conditions: the code never runs in your Python process (the sandbox above,
 no keys, resource walls); the review is advice — only Vegeta's deterministic checks make a revision valid, and an
 invalid revision can never become the output; the loop is bounded (iterations, time, tokens, patience) and every
