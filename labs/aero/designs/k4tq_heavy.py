@@ -20,14 +20,15 @@ import k4tq_sizing as sz
 PAYLOAD = {"H3": 3.5, "J3": 4.5}
 NAMES = {"H3": "Hanna 3", "J3": "Joanna 3"}
 SCALES = {"H3": (1.40, 1.44, 1.48, 1.52), "J3": (1.50, 1.54, 1.58, 1.62)}
-MOTORS = ("MN605S-170", "MN801S-150")
-PROPS = ("CAM18x13", "APC20x10E", "APC22x10E", "APC22x12E")     # the folding CAM 18x13 and the bigger rigid APCs (folding ones of 20"+ are low pitch: they cannot cruise)
-PACKS = ("12S3P-P45B", "12S4P-P45B", "12S5P-P45B", "12S6P-P45B")
+FRONT = (("MN605S-170", "CAM18x13"), ("MN605S-170", "CAM17x13"), ("MN801S-150", "CAM18x13"))   # cruise + hover: high pitch, folding
+REAR = (("MN801S-150", "FA22.2"), ("MN801S-150", "MF2009"), ("MN605S-170", "FA22.2"), ("MN605S-170", "MF2009"))   # hover only: big, low pitch, folding (stopped in cruise)
+PACKS = ("12S3P-P45B", "12S4P-P45B", "12S5P-P45B")
 RANGE_KEEP = 0.90
 
 
-def over(s: float, *, motor: str, prop: str, battery: str, payload_kg: float, root_set: str = "root", spar="auto") -> dict:
-    return k4tq.scaled("F2", s, motor=motor, prop=prop, battery=battery, esc="esc_hv", root_set=root_set, spar_tube_mm=spar, payload_kg=payload_kg,
+def over(s: float, *, motor: str, prop: str, battery: str, payload_kg: float, root_set: str = "root", spar="auto",
+         motor_rear: str | None = None, prop_rear: str | None = None) -> dict:
+    return k4tq.scaled("F2", s, motor=motor, prop=prop, motor_rear=motor_rear, prop_rear=prop_rear, battery=battery, esc="esc_hv", root_set=root_set, spar_tube_mm=spar, payload_kg=payload_kg,
                        autonomy=True, v_map_max=48, v_max_design=40.0, made_calibration=k4tq.MADE_CALIBRATION, cad_mass=None)
 
 
@@ -44,14 +45,14 @@ def sweep(letter: str, *, log=print) -> pd.DataFrame:
     r_min = RANGE_KEEP * ginna3_range()
     rows = []
     for s in SCALES[letter]:
-        for mo in MOTORS:
-            for pr in PROPS:
+        for mo, pr in FRONT:
+            for mr, prr in REAR:
                 for pk in PACKS:
-                    kw = dict(motor=mo, prop=pr, battery=pk, payload_kg=pay)
+                    kw = dict(motor=mo, prop=pr, motor_rear=mr, prop_rear=prr, battery=pk, payload_kg=pay)
                     try:
                         v = build(s, **kw)
                         if sz.stall_speed(v) > ks.STALL_MAX + 0.05:
-                            rows.append({"scale": s, "motor": mo, "prop": pr, "pack": pk, "ok": False, "note": "stall above 18 m/s"})
+                            rows.append({"scale": s, "motor": mo, "prop": pr, "rear": f"{mr} + {prr}", "pack": pk, "ok": False, "note": "stall above 18 m/s"})
                             continue
                         for rs in ("root", "root_M", "root_L"):
                             vr = build(s, **kw, root_set=rs, spar=v["p"]["spar_tube_mm"])
@@ -59,12 +60,12 @@ def sweep(letter: str, *, log=print) -> pd.DataFrame:
                                 break
                         e = kf.evaluate(vr)
                     except Exception as ex:                                   # noqa: BLE001 — a drive outside its map
-                        rows.append({"scale": s, "motor": mo, "prop": pr, "pack": pk, "ok": False, "note": f"{type(ex).__name__}: {str(ex)[:40]}"})
+                        rows.append({"scale": s, "motor": mo, "prop": pr, "rear": f"{mr} + {prr}", "pack": pk, "ok": False, "note": f"{type(ex).__name__}: {str(ex)[:40]}"})
                         continue
                     hover_min = vr["battery"]["usable_wh"] / e["hover [W]"] * 60
                     ok = e["hover ok"] and e["R3 closes"] and e["root ok"] and e["still-air range [km]"] >= r_min and e["stall [m/s]"] <= ks.STALL_MAX + 0.05
-                    rows.append({"scale": s, "motor": mo, "prop": pr, "pack": pk, "root set": rs, **e, "hover minutes": hover_min, "ok": ok, "note": ""})
-                    log(f"  {letter} s{s:.2f} {mo} {pr} {pk} {rs}: {e['take-off mass [kg]']:.2f} kg, top {e['top speed [m/s]']:.0f} m/s, "
+                    rows.append({"scale": s, "motor": mo, "prop": pr, "rear": f"{mr} + {prr}", "pack": pk, "root set": rs, **e, "hover minutes": hover_min, "ok": ok, "note": ""})
+                    log(f"  {letter} s{s:.2f} {mo} {pr} / rear {mr} {prr} {pk} {rs}: {e['take-off mass [kg]']:.2f} kg, top {e['top speed [m/s]']:.0f} m/s, "
                         f"range {e['still-air range [km]']:.0f} km, hover {hover_min:.1f} min, T/W {e['T/W sagged']:.2f}, ok {ok}")
     df = pd.DataFrame(rows)
     df.attrs["label"] = sz.label("CALC")
@@ -86,7 +87,7 @@ def comparison(designs=("G3", "H3", "J3")) -> pd.DataFrame:
         e = kf.evaluate(v)
         p = v["p"]
         rows[f"K4TQ-{d} ({k4tq.NICKNAME.get(d, '')})"] = {
-            "scale": p.get("scale", 1.0), "fuselage × span [m]": f"{p['fuselage_length']:.2f} × {p['span']:.2f}", "motor / propeller": f"{p['motor']} / {p['prop']}",
+            "scale": p.get("scale", 1.0), "fuselage × span [m]": f"{p['fuselage_length']:.2f} × {p['span']:.2f}", "motor / propeller": f"{p['motor']} / {p['prop']}" + (f"; rear {p['motor_rear']} / {p['prop_rear']}" if p.get("prop_rear") else ""),
             "pack": p["battery"], "payload [kg]": p["payload_kg"], "take-off mass [kg]": e["take-off mass [kg]"],
             "mass with the pack, no payload [kg]": e["take-off mass [kg]"] - p["payload_kg"], "top speed [km/h]": 3.6 * e["top speed [m/s]"],
             "still-air range [km]": e["still-air range [km]"], "R3 radius [km]": ks.radius(v), "hover [W]": e["hover [W]"],

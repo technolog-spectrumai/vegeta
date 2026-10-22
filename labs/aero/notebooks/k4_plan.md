@@ -68,6 +68,8 @@ Done 2026-10-21 (mocks on): `designs/k4tq.py`, `designs/k4tq_sizing.py`, report 
 | K4TQ-G2 | Ginna + the Jetson, Ginna's drive, 12.5 kg, 2.3 kg payload, 57 km | `k4tq.VARIANTS["G2"]` |
 | K4TQ-F3 "Freddy 3" | Freddy + the Jetson, off the shelf: T-Motor MN505-S KV380 + Aeronaut CAM 16x13 folding on 6S3P: top 45 m/s (162 km/h) ≥ the 15" FPV quad's 124 km/h with payload; 7.50 kg, 1 kg payload, 59 km (F2: 54) | `k4tq.FAST["F3"]` (`designs/k4tq_fast.py`, `exp/K4TQ_freddy3.ipynb`) |
 | K4TQ-G3 "Ginna 3" | Freddy × 1.32 + the Jetson, off the shelf: T-Motor MN605-S KV170 + Aeronaut CAM 17x13 folding on 12S3P: top 40 m/s (144 km/h); 12.47 kg, **2.1 kg payload** (required), 83 km (G2: 57) | `k4tq.FAST["G3"]` (`exp/K4TQ_ginna3.ipynb`) |
+| K4TQ-H3 "Hanna 3" | Freddy × 1.74 + the Jetson, two drives (front MN801-S + APC 22x12E rigid; rear MN801-S + T-Motor FA24.2 folding, hover only), 12S6P: 21.4 kg, **3.5 kg**, 84 km, T/W 1.70, 115 km/h | `k4tq.HEAVY["H3"]` (`designs/k4tq_heavy.py`, `exp/K4TQ_heavy.ipynb`) |
+| K4TQ-J3 "Joanna 3" | Freddy × 1.77, the same drives, 12S6P: 22.7 kg, **4.5 kg**, 81 km, T/W 1.60, 115 km/h | `k4tq.HEAVY["J3"]` |
 | ~~K4TQ-B "Bertha"~~ | parked 2026-10-21 (too heavy): Freddy × 1.85 sized to ≤ 24 kg, U12 II KV100 + 28x17, 12S4P, payload 5.15 kg | `k4tq.SCALED["B"]` (kept) |
 
 Compared in `exp/K4TQ_compare.ipynb` (`designs/k4tq_compare.py`); A2 against F2 in the climb, the descent and the manoeuvre in `exp/K4TQ_envelope.ipynb` (`designs/k4tq_envelope.py`); Cathy and Freddy against Q-13, Q-17 (K4TQ's footprint) and Q-17 heavy (K4TQ's mass) in `exp/K4TQ_quads.ipynb` (`designs/k4tq_quads.py`); Ginna and Bertha against Freddy in `exp/K4TQ_scaled.ipynb`. E (equal tandem) and C (compact) are the Stage 1 studies.

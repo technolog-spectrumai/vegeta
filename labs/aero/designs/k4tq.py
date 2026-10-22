@@ -130,6 +130,10 @@ CATALOGUE = {
                       "source": "APC 22x10E (LP22010E), rigid; Gator-RC / Motion RC (stock varies)"},
         "APC22x12E": {"d_in": 22, "p_in": 12.0, "mass_kg": 0.120, "price_eur": 50.0, "folding": False, "off_the_shelf": True,
                       "source": "APC 22x12E (LP22012E), rigid; Gator-RC (stock varies)"},
+        "FA24.2": {"d_in": 24.2, "p_in": 7.9, "mass_kg": 0.110, "price_eur": 110.0, "folding": True, "off_the_shelf": True,
+                   "source": "T-Motor carbon folding 24.2x7.9 (getfpv.com), + the folding base"},
+        "FA29.2": {"d_in": 29.2, "p_in": 9.5, "mass_kg": 0.160, "price_eur": 150.0, "folding": True, "off_the_shelf": True,
+                   "source": "T-Motor FA29.2x9.5 carbon folding (mabrobotics.pl, EU), + the folding base"},
         "12x8": {"d_in": 12, "p_in": 8.0, "mass_kg": 0.030, "price_eur": 16.0, "source": "APC 12x8E class, folding hub included"},
         "13x5.5": {"d_in": 13, "p_in": 5.5, "mass_kg": 0.030, "price_eur": 18.0, "source": "multirotor 13x5.5 CF class (quadcopter reference)"},
         "17x5.8": {"d_in": 17, "p_in": 5.8, "mass_kg": 0.050, "price_eur": 35.0, "source": "T-Motor P17x5.8 (the MN4014 KV400's recommended 6S propeller)"},
@@ -283,6 +287,7 @@ BASE = {
     # K4TQ-B "Bertha": the scale of the airframe against K4TQ (``scaled``) and the hardware it takes
     "scale": 1.0, "esc": "esc", "root_set": "root",
     "v_max_design": 30.0,             # m/s: the speed the actuator's aerodynamic torque is sized for (K4TQ-F3 / G3: their top speed + 10 %)
+    "motor_rear": None, "prop_rear": None,   # K4TQ-H3 / J3: the rear pair's own drive (hover and transition only; stopped and folded in cruise)
     "v_map_max": None,                # m/s: the drive maps' airspeed range (None: 32, the scaled designs 44)
     "made_calibration": None,         # {item prefix: CAD / estimate} — the made parts' estimates corrected by K4TQ-F1's CAD (Bertha has no CAD yet)
 }
@@ -402,6 +407,23 @@ for _k, _v in FAST.items():
     else:
         VARIANTS[_k] = scaled("F2", _s, made_calibration=MADE_CALIBRATION, spar_tube_mm=(25, 22), variant=_k, title=_title, **_common)
 NICKNAME.update({"F3": "Freddy 3", "G3": "Ginna 3"})
+
+# K4TQ-H3 "Hanna 3" (3.5 kg) and K4TQ-J3 "Joanna 3" (4.5 kg), 2026-10-22: Ginna 3 grown for payload and hover, not speed
+# (k4tq_heavy: the sweep, data/k4tq/sweep_H3/J3.csv). Off the shelf, two drives: the front pair cruises and hovers on rigid
+# APC 22x12E, the rear pair hovers only on T-Motor FA24.2 folding (stopped and folded in cruise); MN801-S KV150 all round
+HEAVY = {
+    "H3": dict(s=1.74, payload_kg=3.5, battery="12S6P-P45B", root_set="root_M", spar_tube_mm=(32, 29)),
+    "J3": dict(s=1.77, payload_kg=4.5, battery="12S6P-P45B", root_set="root_M", spar_tube_mm=(35, 32)),
+}
+for _k, _v in HEAVY.items():
+    _v = dict(_v)
+    _s = _v.pop("s")
+    _nick = "Hanna 3" if _k == "H3" else "Joanna 3"
+    VARIANTS[_k] = scaled("F2", _s, motor="MN801S-150", prop="APC22x12E", motor_rear="MN801S-150", prop_rear="FA24.2", esc="esc_hv",
+                          autonomy=True, v_map_max=48, v_max_design=40.0, made_calibration=MADE_CALIBRATION, variant=_k,
+                          title=f"K4TQ-{_k} \"{_nick}\": Ginna 3 grown × {_s / 1.32:.2f} for {_v['payload_kg']:g} kg — MN801-S + APC 22x12E front, "
+                                f"MN801-S + FA24.2 folding rear (hover only), {_v['battery']}", **_v)
+NICKNAME.update({"H3": "Hanna 3", "J3": "Joanna 3"})
 
 
 def avionics_power(p: dict) -> float:
@@ -601,8 +623,10 @@ def mass_table(L: dict, *, payload_kg: float | None = None, battery_key: str | N
         for side in (-1, 1):
             s = "L" if side < 0 else "R"
             h = L["poses"][(which, side)]["cruise"]["hub"]
-            add(f"motor {which} {s}", mot["mass_kg"], h[0] + 0.03 * sc, h[1], h[2], "propulsion", mot["name"])
-            add(f"propeller {which} {s}", pr["mass_kg"], h[0], h[1], h[2], "propulsion", pr["source"])
+            mo_w = cat["motor"][p["motor_rear"]] if (which == "rear" and p.get("motor_rear")) else mot
+            pr_w = cat["propeller"][p["prop_rear"]] if (which == "rear" and p.get("prop_rear")) else pr
+            add(f"motor {which} {s}", mo_w["mass_kg"], h[0] + 0.03 * sc, h[1], h[2], "propulsion", mo_w["name"])
+            add(f"propeller {which} {s}", pr_w["mass_kg"], h[0], h[1], h[2], "propulsion", pr_w["source"])
             add(f"ESC {which} {s}", esc["mass_kg"], h[0] + 0.07 * sc, h[1], h[2], "propulsion", esc["name"])
             add(f"nacelle {which} {s}", NACELLE_KG * sc ** 2, h[0] + 0.06 * sc, h[1], h[2], "structure", "printed PA-CF")
             y_c = w["y_mac"]
@@ -713,7 +737,9 @@ def tilt_wing_tax(items: list[dict]) -> float:
 def price(items: list[dict], p: dict) -> dict:
     """The bought parts' cost (EUR, estimates) — the made parts in Stage 4."""
     c = CATALOGUE
-    rows = {"motors": 4 * c["motor"][p["motor"]]["price_eur"], "propellers (+2 spares)": 6 * c["propeller"][p["prop"]]["price_eur"],
+    mr, prr = p.get("motor_rear") or p["motor"], p.get("prop_rear") or p["prop"]
+    rows = {"motors": 2 * c["motor"][p["motor"]]["price_eur"] + 2 * c["motor"][mr]["price_eur"],
+            "propellers (+2 spares)": 3 * c["propeller"][p["prop"]]["price_eur"] + 3 * c["propeller"][prr]["price_eur"],
             "ESCs": 4 * c[p.get("esc", "esc")]["price_eur"], "battery": c["battery"][p["battery"]]["price_eur"],
             "avionics": sum(v["price_eur"] for v in c["avionics"].values()), "cargo + temperature logging": sum(v["price_eur"] for v in c["cargo"].values()),
             **({"autonomy (K4TQ-A2)": sum(v["price_eur"] for v in c["autonomy"].values())} if p.get("autonomy") else {}),

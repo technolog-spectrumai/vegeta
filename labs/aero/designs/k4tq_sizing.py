@@ -302,7 +302,7 @@ def drag_buildup(L: dict, *, V: float = 20.0, n_running: int = 4) -> dict:
         rows["fin"] = og_aero.cf_mixed(V * math.sqrt(S_fin) / NU) * 1.15 * 2.04 * S_fin
     rows["root gaps (4)"] = 4 * ROOT_GAP_CDA * sc ** 2
     if n_running < 4:
-        rigid = k4tq.CATALOGUE["propeller"][p["prop"]].get("folding", True) is False          # a rigid propeller stopped edge-on: ×4
+        rigid = k4tq.CATALOGUE["propeller"][p.get("prop_rear") or p["prop"]].get("folding", True) is False          # a rigid propeller stopped edge-on: ×4
         rows[f"stopped propellers ({4 - n_running}, {'rigid' if rigid else 'folded'})"] = (4 - n_running) * FOLDED_BLADE_CDA * sc ** 2 * (4.0 if rigid else 1.0)
     total = sum(rows.values()) * INTERFERENCE
     return {"parts_m2": rows, "CdA_m2": total, "Cd0": total / L["S_ref"], "S_wet_fuselage": S_wet, "label": "ESTIMATE"}
@@ -346,7 +346,8 @@ def vehicle(variant: str = k4tq.MAIN, **over) -> dict:
     d = drag_buildup(L)
     W = ci["mass_kg"] * G
     return {"variant": variant, "p": p, "L": L, "aero": a, "section": sec, "items": items, "mass": ci, "W": W, "stall": st, "drag": d,
-            "x_cg_target": target, "battery": k4tq.battery(p), "drive": drive(p)}
+            "x_cg_target": target, "battery": k4tq.battery(p), "drive": drive(p),
+            "drive_rear": drive(p, prop_key=p.get("prop_rear") or p["prop"], motor_key=p.get("motor_rear") or p["motor"])}
 
 
 def pack(p: dict, target: float, gap: float = 0.005) -> dict:
@@ -490,19 +491,22 @@ def hover(veh: dict) -> dict:
     share_f = (xr - x_cg) / (xr - xf)
     Tf, Tr = share_f * T_total / 2, (1 - share_f) * T_total / 2
     A = L["prop"]["A"]
-    pf, pr = drive_point(m, 0.0, Tf), drive_point(m, 0.0, Tr)
+    mr = veh.get("drive_rear", m)
+    pq = veh["p"].get("prop_rear")
+    A_r = math.pi * (k4tq.CATALOGUE["propeller"][pq]["d_in"] * 0.0254 / 2) ** 2 if pq else A
+    pf, pr = drive_point(m, 0.0, Tf), drive_point(mr, 0.0, Tr)
     aw = k4tq.avionics_power(veh["p"])
     P = 2 * (pf["electrical_W"] + pr["electrical_W"]) + aw
-    P_ideal = 2 * (og_rotors.ideal_hover_power(Tf, A) + og_rotors.ideal_hover_power(Tr, A))
+    P_ideal = 2 * (og_rotors.ideal_hover_power(Tf, A) + og_rotors.ideal_hover_power(Tr, A_r))
     P_shaft = 2 * (pf.get("shaft_W", math.nan) + pr.get("shaft_W", math.nan))
-    T_max = max_thrust(m, 0.0)
+    T_max, T_max_r = max_thrust(m, 0.0), max_thrust(mr, 0.0)
     sag = (3.3 / V_BATT_LOADED) ** 2
     return {"weight [N]": W, "front share of the thrust": share_f, "thrust front each [N]": Tf, "thrust rear each [N]": Tr,
             "disc loading [N/m²]": T_total / (4 * A), "induced velocity [m/s]": og_rotors.hover_induced_velocity(T_total / 4, A),
             "ideal power [W]": P_ideal, "shaft power [W]": P_shaft, "figure of merit": P_ideal / P_shaft, "electrical [W]": P,
             "rpm front": pf.get("rpm"), "current per front motor [A]": pf.get("current_A"), "pack current [A]": (P - aw) / m.battery_v, "avionics and payload electronics [W]": aw,
-            "T/W (loaded pack)": 4 * T_max / W, "T/W (sagged pack, 3.3 V/cell)": 4 * T_max * sag / W,
-            "most loaded motor / its maximum": max(Tf, Tr) / T_max, "hover minutes on the usable pack": veh["battery"]["usable_wh"] / P * 60,
+            "T/W (loaded pack)": 2 * (T_max + T_max_r) / W, "T/W (sagged pack, 3.3 V/cell)": 2 * (T_max + T_max_r) * sag / W,
+            "most loaded motor / its maximum": max(Tf / T_max, Tr / T_max_r), "hover minutes on the usable pack": veh["battery"]["usable_wh"] / P * 60,
             "motor out": "four rotors: a motor out in the hover leaves no yaw/roll balance — the parachute is the mitigation (SORA)",
             "label": label("CALC")}
 
@@ -789,10 +793,12 @@ def root_loads(veh: dict) -> dict:
     cat = k4tq.CATALOGUE
     sc = p.get("scale", 1.0)
     root = cat[p.get("root_set", "root")]
-    m_tip = cat["motor"][p["motor"]]["mass_kg"] + L["prop"]["mass_kg"] + cat[p.get("esc", "esc")]["mass_kg"] + k4tq.NACELLE_KG * sc ** 2
+    m_tip = max(cat["motor"][p["motor"]]["mass_kg"] + L["prop"]["mass_kg"],
+                cat["motor"][p.get("motor_rear") or p["motor"]]["mass_kg"] + cat["propeller"][p.get("prop_rear") or p["prop"]]["mass_kg"]) \
+        + cat[p.get("esc", "esc")]["mass_kg"] + k4tq.NACELLE_KG * sc ** 2
     m_panel = k4tq.WING_AREAL_KG_M2 * w["S_panel"]
     r_mot = p["motor_y"] - w["y_hinge"]
-    T_max = max_thrust(veh["drive"], 0.0)
+    T_max = max(max_thrust(veh["drive"], 0.0), max_thrust(veh.get("drive_rear", veh["drive"]), 0.0))   # the stronger pair's root
     # bending at the fold hinge (the outboard of it is the cantilever)
     lift = N_LIMIT * W * share_f / 2
     M_cruise = lift * (w["y0"] - w["y_hinge"] + 4 * b / (3 * math.pi)) - N_LIMIT * G * (m_panel * (r_mot * 0.55) + m_tip * r_mot)

@@ -58,6 +58,8 @@ def _accel_k4(v: dict, *, up: bool) -> tuple[float, float]:
     """(seconds to 100 km/h or nan, the speed reached [m/s]) — K4TQ from the hover."""
     W, m = v["W"], v["mass"]["mass_kg"]
     drv, L = v["drive"], v["L"]
+    drr = v.get("drive_rear", drv)
+    thrust = lambda Va: 2 * sz.max_thrust(drv, Va) + 2 * sz.max_thrust(drr, Va)          # noqa: E731 — the front and the rear pair (K4TQ-H3 / J3: two drives)
     S, CLm = L["S_ref"], 0.9 * v["stall"]["CL max (aircraft)"]
     d = sz.drag_buildup(L)
     k = sz.k_total(v)
@@ -66,7 +68,7 @@ def _accel_k4(v: dict, *, up: bool) -> tuple[float, float]:
     if up:
         CdA = p["fuselage_length"] * p["fuselage_width"] + 0.05
         while t < 30.0:
-            a = (4 * sz.max_thrust(drv, V) - W * sz.DOWNLOAD - 0.5 * RHO * V * V * CdA) / m
+            a = (thrust(V) - W * sz.DOWNLOAD - 0.5 * RHO * V * V * CdA) / m
             if a <= 1e-3:
                 break
             V += a * dt
@@ -79,7 +81,7 @@ def _accel_k4(v: dict, *, up: bool) -> tuple[float, float]:
     while t < 30.0:
         q = 0.5 * RHO * V * V
         Lw = min(W, q * S * CLm)
-        T = 4 * sz.max_thrust(drv, V * math.cos(tilt))
+        T = thrust(V * math.cos(tilt))
         Tv = max(W * sz.DOWNLOAD - Lw, 0.0)
         need = math.asin(min(Tv / T, 1.0)) if T > 0 else math.pi / 2    # the lowest tilt that still holds the weight
         tilt = max(need, tilt - rate * dt)

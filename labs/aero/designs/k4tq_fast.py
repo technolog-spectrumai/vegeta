@@ -63,7 +63,9 @@ def build(letter: str, **kw) -> dict:
 
 
 def top_speed(v: dict) -> float:
-    return sz.best_speeds(sz.cruise(v, n_running=4, speeds=SPEEDS))["max level V [m/s]"]
+    """Four motors — or the front pair alone where the rear pair has its own hover-only drive (K4TQ-H3 / J3)."""
+    n = 2 if v["p"].get("prop_rear") else 4
+    return sz.best_speeds(sz.cruise(v, n_running=n, speeds=SPEEDS))["max level V [m/s]"]
 
 
 def evaluate(v: dict) -> dict:
