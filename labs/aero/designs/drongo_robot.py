@@ -44,7 +44,7 @@ from ogma import actuators as act
 
 __all__ = ["DRONGO", "CAD", "PARTS_G", "GRIPPER_PARTS_G", "MATERIALS", "FILL", "JAW_ACTUATOR", "PINION_RADIUS_M",
            "JAW_GAINS", "ASSUMPTIONS", "POTATO", "CREAM", "ITEMS", "NET", "GRIP_N", "G", "RHO_AIR", "DRAG_AREA_M2",
-           "QUAD_EXPORT", "ASSUMED_PROPULSION", "Propulsion", "propulsion", "design_params", "cad_numbers", "geometry",
+           "QUAD_EXPORT", "ASSUMED_PROPULSION", "Propulsion", "propulsion", "boreas_system", "materials_block", "design_params", "cad_numbers", "geometry",
            "mass_budget", "item_geometry", "grip_needed", "grip_holds", "net_catch", "jaw_servo", "rotor_layout",
            "drongo", "LAB_OPTIONS", "Rotors", "JAWS", "PADS", "JAW_JOINTS", "pad_gap"]
 
@@ -189,6 +189,30 @@ class Propulsion:
         return {"max thrust per rotor [N]": self.max_thrust_N, "spin-up time constant [s]": self.spin_up_s,
                 "drag torque / thrust [m]": self.torque_per_thrust_m, "battery [Wh]": self.battery_Wh,
                 "usable [Wh]": self.usable_Wh, "source": self.source}
+
+
+def materials_block() -> dict:
+    """The design's materials as Yax part data (``materials``, vendor/yax docs/interchange.md): the densities notebook
+    08 used for the printed parts, in SI, with their source — no strength values: the notebook fixed none."""
+    return {name: {"density_kg_m3": rho * 1e6, "source": "notebook 08 (designs/drongo_robot.MATERIALS, g/mm³)"}
+            for name, rho in MATERIALS.items()}
+
+
+def boreas_system() -> tuple:
+    """Notebook 08's propulsion system as Boreas objects — the 5x4.3 tri-blade (generic planform), its section, the
+    2306-2400KV and the 4S 1500 mAh pack — for the propeller map the export hands Yax (``propulsion_parts.drongo``).
+    The numbers are the notebook's (§ the propeller and drive); nothing is solved here."""
+    from vegeta import boreas
+    d, pitch = boreas.inches(5, 4.3)
+    prop = boreas.Propeller.from_pitch("5x4.3 tri-blade", d, pitch, blades=3, chord_root_m=0.010, chord_max_m=0.016, chord_tip_m=0.006,
+                                       mass_kg=PARTS_G["propellers 5x4.3 (4x)"] / 4 / 1000.0, rotor_mass_kg=0.020,
+                                       notes="generic planform; fit chord/beta to the real propeller for better numbers")
+    airfoil = boreas.Airfoil(name="thin cambered section", cl_alpha=2 * math.pi * 0.9, alpha0_deg=-3.0, cl_max=1.1, cd0=0.025, k=0.045,
+                             source="assumed for a moulded 5-inch blade at Re ~ 1e5")
+    motor = boreas.Motor("2306-2400KV", kv_rpm_per_volt=2400, resistance_ohm=0.06, no_load_current_a=1.2, max_current_a=40, mass_kg=0.030,
+                         source="notebook 08's 2306-2400KV (datasheet-style values)")
+    battery = boreas.Battery("4S 1500 mAh", cells=4, capacity_ah=1.5, usable_fraction=0.8, mass_kg=0.180)
+    return prop, airfoil, motor, battery
 
 
 def propulsion(path=QUAD_EXPORT) -> Propulsion:

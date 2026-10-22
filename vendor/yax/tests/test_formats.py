@@ -268,3 +268,108 @@ def test_lump_keeps_the_rigid_body():
     assert one.links[0].mass == pytest.approx(model.body_subtreemass[1], rel=1e-12)
     com = np.asarray(one.links[0].pos) + hub.R(one.links[0].quat) @ np.asarray(one.links[0].com)
     np.testing.assert_allclose(com, data.subtree_com[1], atol=1e-12)
+
+
+# ------------------------------------------------------------------------------------------ propulsion part data
+def _propulsion(axis=(1.0, 0.0, 0.0), spin=1, *, grid=False, power=True):
+    """A rotor at x = 0.3 m with a synthetic propeller: CT = 0.10 − 0.08 J, CP = 0.05 − 0.02 J, D = 0.254 m."""
+    J = np.linspace(0.0, 1.2, 13)
+    prop = {"blades": 2, "diameter_m": 0.254, "inertia_kgm2": 2e-5}
+    if grid:                                                                   # the same law on an rpm × airspeed grid
+        rpm, V, D, rho = np.array([6000.0, 9000.0, 12000.0]), np.array([0.0, 5.08, 10.16, 15.24]), 0.254, 1.225
+        n = (rpm / 60)[:, None]
+        Jg = V[None, :] / (n * D)
+        prop["grid"] = {"rpm": rpm.tolist(), "airspeed_m_s": V.tolist(), "rho": rho,
+                        "thrust_n": ((0.10 - 0.08 * Jg) * rho * n ** 2 * D ** 4).tolist(),
+                        "torque_nm": ((0.05 - 0.02 * Jg) * rho * n ** 3 * D ** 5 / (2 * np.pi * n)).tolist()}
+    else:
+        prop["coefficients"] = {"J": J.tolist(), "CT": (0.10 - 0.08 * J).tolist(), "CP": (0.05 - 0.02 * J).tolist()}
+    return {"rotors": [{"name": "r0", "pos": [0.3, 0.0, 0.0], "axis": list(axis), "spin": spin, "propeller": "p", "motor": "m"}],
+            "propellers": {"p": prop}, "motors": {"m": {"power_w": 500.0} if power else {"kv": 2400}}}
+
+
+def _plane(name, blk):
+    return hub.Machine(name, links=[hub.Link("airframe", mass=2.0, inertia=np.diag([0.05, 0.08, 0.1]))], data={"propulsion": blk})
+
+
+def _fly(root, name, *, vt_kts, steps=12000):
+    import jsbsim
+    f = jsbsim.FGFDMExec(str(root))
+    f.set_debug_level(0)
+    assert f.load_model(name)
+    f.set_dt(1e-4)                                                             # a small propeller spins up fast
+    f.set_property_value("ic/h-sl-ft", 0.0)
+    f.set_property_value("ic/vt-kts", vt_kts)
+    f.set_property_value("fcs/throttle-cmd-norm", 1.0)
+    f.run_ic()
+    for _ in range(steps):
+        f.run()
+    g = f.get_property_value
+    return {"rpm": g("propulsion/engine/propeller-rpm"), "J": g("propulsion/engine/advance-ratio"),
+            "thrust_n": g("propulsion/engine/thrust-lbs") * 4.4482216152605,
+            "power_w": g("propulsion/engine/propeller-power-ftlbps") * 1.3558179483314004,
+            "rho": g("atmosphere/rho-slugs_ft3") * 515.378818,
+            "moments_nm": [g(f"moments/{a}-prop-lbsft") * 1.3558179483314004 for a in "lmn"]}
+
+
+def test_jsbsim_propeller_from_part_data(tmp_path):
+    """A propeller map in the propulsion part data becomes a JSBSim propeller file (C_THRUST, C_POWER against J) on
+    an electric engine: JSBSim's thrust and power at the settled rpm are the table's CT ρ n² D⁴ and CP ρ n³ D⁵, and
+    the reaction torque on the airframe is along +axis for spin +1 (sense = −spin)."""
+    pytest.importorskip("jsbsim")
+    root = tmp_path / "root"
+    for d in ("engine", "systems"):
+        (root / d).mkdir(parents=True)
+    yax.save(_plane("tractor", _propulsion()), tmp_path / "tractor.usda")   # the block rides through USD untouched
+    m, _ = yax.read(tmp_path / "tractor.usda")
+    assert m.data["propulsion"] == _propulsion()
+    rep = yax.save(m, root / "aircraft" / "tractor" / "tractor.xml", fmt="jsbsim")
+    assert not any("propulsion" in d for d in rep.dropped) and any("aerodynamics, ground reactions" in d for d in rep.dropped)
+    assert (root / "aircraft" / "tractor" / "Engines" / "prop_p.xml").exists()
+    r = _fly(root, "tractor", vt_kts=30)
+    n, D = r["rpm"] / 60, 0.254
+    assert 0.3 < r["J"] < 1.0
+    assert r["thrust_n"] == pytest.approx((0.10 - 0.08 * r["J"]) * r["rho"] * n ** 2 * D ** 4, rel=1e-4)
+    assert r["power_w"] == pytest.approx((0.05 - 0.02 * r["J"]) * r["rho"] * n ** 3 * D ** 5, rel=1e-4)
+    assert r["power_w"] == pytest.approx(500.0, rel=1e-2)                     # the electric motor's power, settled
+    assert r["moments_nm"][0] > 0                                              # drag torque on the frame along +x
+    for spin in (1, -1):                                                       # a rotor pointing up: yaw moment
+        name = f"rotor_{spin:+d}"
+        yax.save(_plane(name, _propulsion(axis=(0.0, 0.0, 1.0), spin=spin)), root / "aircraft" / name / f"{name}.xml", fmt="jsbsim")
+        r = _fly(root, name, vt_kts=0, steps=6000)
+        assert r["thrust_n"] > 10 and r["moments_nm"][2] * spin < 0           # JSBSim's n is about z down: +axis = −n
+        assert r["moments_nm"][1] == pytest.approx(0.3 * r["thrust_n"], rel=2e-2)   # the thrust at x = 0.3 m pitches
+
+
+def test_jsbsim_propeller_grid_collapses_to_coefficients(tmp_path):
+    """Without coefficients, the rpm × airspeed grid is collapsed onto the advance ratio (reported), and a motor
+    without a power takes the map's maximum shaft power (reported)."""
+    from yax import propulsion
+    blk = _propulsion(grid=True, power=False)
+    co, note = propulsion.coefficients(blk["propellers"]["p"])
+    J = np.asarray(co["J"])
+    np.testing.assert_allclose(co["CT"], 0.10 - 0.08 * J, atol=1e-12)
+    np.testing.assert_allclose(co["CP"], 0.05 - 0.02 * J, atol=1e-12)
+    assert "collapsed" in note and len(J) == 8                                 # 3 × 4 points, 8 distinct J (J = 0 thrice, 0.2 and 0.4 twice)
+    rep = yax.save(_plane("g", blk), tmp_path / "g" / "g.xml", fmt="jsbsim")
+    assert any("collapsed to CT(J), CP(J)" in d for d in rep.dropped) and any("motor power assumed" in d for d in rep.dropped)
+    text = (tmp_path / "g" / "Engines" / "prop_p.xml").read_text()
+    assert 'name="C_THRUST"' in text and 'name="C_POWER"' in text and "<numblades>2</numblades>" in text
+    with pytest.raises(ValueError):
+        propulsion.coefficients({"name": "x"})
+
+
+def test_sdf_reports_the_propulsion_reduction(tmp_path):
+    """SDF has no propeller element: the report names, per rotor, the reduced constants a motor plugin carries (and
+    where they were taken), or that none were given; the block itself survives USD and is dropped by MJCF generically."""
+    blk = _propulsion()
+    rep = yax.save(_plane("q", blk), tmp_path / "q.sdf")
+    assert any("rotor r0: its propeller map (SDF has no propeller element and no reduced constants" in d for d in rep.dropped)
+    blk["reduced"] = {"r0": {"kF": 8.5e-6, "kM": 0.016, "w_max": 1100.0, "tau_up": 0.0125, "tau_down": 0.025,
+                             "taken_at": "hover", "residual": 0.31}}
+    rep = yax.save(_plane("q", blk), tmp_path / "q2.sdf")
+    line = next(d for d in rep.dropped if d.startswith("propulsion: rotor r0"))
+    assert "reduced to kF = 8.5e-06, kM = 0.016 at hover, residual 0.31" in line and "yax sync" in line
+    assert not any("machine data 'propulsion'" in d for d in rep.dropped) and any("data:propulsion: the propellers' maps" in d for d in rep.dropped)
+    rep = yax.save(_plane("q", blk), tmp_path / "q.xml")
+    assert any("data:propulsion: the propellers' maps (1 propellers, 1 rotors)" in d for d in rep.dropped)

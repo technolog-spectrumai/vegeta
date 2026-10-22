@@ -23,6 +23,8 @@ class Actuator:
     no_load_rpm: float
     self_locking: bool = False   # worm / lead-screw output or a holding brake: holds a load with the motor unpowered
     source: str = ""
+    gear_ratio: float | None = None       # the transmission between the bare motor and the output, when the entry states it
+    gear_efficiency: float | None = None  # its overall efficiency, when the entry states it
 
     @property
     def name(self) -> str:
@@ -97,16 +99,16 @@ CATALOG = [
              "assumed: 57 mm inrunner BLDC class, 24 V, 0.32 N m continuous at 3000 rpm (100 W), 3x peak"),
     Actuator("pekari drive 16:1 planetary", "gearmotor", 800.0, 14.3, 4.8, 16.0, 24.0, 250, False,
              "BLDC 100 W, 24 V through two planetary stages 4:1 x 4:1 (sun 18, planets 18, ring 54, module 0.8; "
-             "efficiency 0.97 per stage): torques x 16 x 0.94, speed / 16; gearbox 350 g (notebook 30 §5)"),
+             "efficiency 0.97 per stage): torques x 16 x 0.94, speed / 16; gearbox 350 g (notebook 30 §5)", 16.0, 0.97 ** 2),
     # the track drives of the Perseus branch-cutting rovers (notebooks 37 and 38): a 180 kg forestry machine and a
     # 30 kg garden machine on the Pekari track architecture
     Actuator("perseus track drive 1.5 kW, 48 V", "gearmotor", 9000.0, 160.0, 60.0, 45.0, 48.0, 150, False,
              "assumed: 48 V 1.5 kW BLDC (4.8 N m continuous at 3000 rpm) through a 20:1 two-stage planetary "
              "(efficiency 0.94): 60 N m continuous, 160 N m stall at the sprocket, 150 rpm no-load; sized for the 180 kg "
-             "Perseus on a 30 deg climb (perseus_robot.ASSUMPTIONS['drive'])"),
+             "Perseus on a 30 deg climb (perseus_robot.ASSUMPTIONS['drive'])", 20.0, 0.94),
     Actuator("perseus mini drive 20:1 planetary", "gearmotor", 1100.0, 30.0, 10.0, 20.0, 24.0, 200, False,
              "assumed: 24 V 200 W inrunner BLDC (0.53 N m continuous at 3600 rpm, 3x peak) through two planetary "
-             "stages 4:1 x 5:1 (efficiency 0.94): 10 N m continuous, 30 N m stall, 200 rpm no-load; the 30 kg Perseus Mini"),
+             "stages 4:1 x 5:1 (efficiency 0.94): 10 N m continuous, 30 N m stall, 200 rpm no-load; the 30 kg Perseus Mini", 20.0, 0.94),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),

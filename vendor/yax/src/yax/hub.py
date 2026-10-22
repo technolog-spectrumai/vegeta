@@ -70,11 +70,15 @@ class Joint:
 
 @dataclass
 class Machine:
+    """``data``: part data by kind (``yax.tags`` says which system tag each kind carries); ``producer``: the provenance
+    stamp; ``tags``: the property groups — ``{"table": {path: [codes]}, "withheld": [codes]}`` (``yax.tags``; empty
+    when the producer tagged nothing and withheld nothing: the system tags are then implied)."""
     name: str
     links: list = field(default_factory=list)
     joints: list = field(default_factory=list)
     data: dict = field(default_factory=dict)
     producer: dict = field(default_factory=dict)
+    tags: dict = field(default_factory=dict)
 
     def link(self, name: str) -> Link:
         return next(lk for lk in self.links if lk.name == name)
@@ -110,17 +114,22 @@ class Report:
         return head + ":\n" + "\n".join(lines)
 
 
+#: Blocks yax.schema.report_losses reports itself (with what they hold), so the generic lines below leave them out.
+SCHEMA_KEYS = {"materials", "connections", "strength", "motors", "propulsion", "aerodynamics", "assembly"}
+LINK_SCHEMA_KEYS = {"material", "strength", "aero"}
+
+
 def report_data(m: Machine, rep: Report, keep=()):
     """Report the format-specific data a writer cannot carry (``keep``: the keys it writes back)."""
     for k, v in m.data.items():
-        if k not in keep:
+        if k not in keep and k not in SCHEMA_KEYS:
             what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if isinstance(x, list)) if isinstance(v, dict) else ""
             rep.drop(f"machine data {k!r}{f' ({what})' if what else ''}: the target format has no place for it")
     for lk in m.links:
         for k, v in lk.data.items():
-            if k not in keep and k != "free_joint":
-                what = ", ".join(f"{len(x)} {n}" for n, x in v.items()) if isinstance(v, dict) else k
-                rep.drop(f"link {lk.name}: {k} data ({what})")
+            if k not in keep and k != "free_joint" and k not in LINK_SCHEMA_KEYS:
+                what = ", ".join(f"{len(x)} {n}" for n, x in v.items() if hasattr(x, "__len__")) if isinstance(v, dict) else ""
+                rep.drop(f"link {lk.name}: {k} data" + (f" ({what})" if what else ""))
 
 
 # --------------------------------------------------------------------------------------------------------- the maths
@@ -279,6 +288,8 @@ def to_stage(m: Machine, path: str | None = None):
         _attr(rp, "yax:producer", Sdf.ValueTypeNames.String, json.dumps(m.producer, sort_keys=True))
     if m.data:
         _attr(rp, "yax:data", Sdf.ValueTypeNames.String, json.dumps(m.data, sort_keys=True))
+    if m.tags:
+        _attr(rp, "yax:tags", Sdf.ValueTypeNames.String, json.dumps(m.tags, sort_keys=True))
     UsdPhysics.ArticulationRootAPI.Apply(rp)
     paths = {}
     for lk in m.links:
@@ -288,6 +299,7 @@ def to_stage(m: Machine, path: str | None = None):
         _set_pose(xf, lk.pos, lk.quat)
         prim = xf.GetPrim()
         _attr(prim, "yax:name", Sdf.ValueTypeNames.String, lk.name)
+        _exact_pose(prim, lk.pos, lk.quat)
         UsdPhysics.RigidBodyAPI.Apply(prim)
         if lk.mass is not None:
             mapi = UsdPhysics.MassAPI.Apply(prim)
@@ -312,6 +324,7 @@ def to_stage(m: Machine, path: str | None = None):
         for name, kg, pos in lk.point_masses:
             pm = UsdGeom.Xform.Define(stage, p.AppendChild(_ident("pm_" + name)))
             _set_pose(pm, pos, (1.0, 0.0, 0.0, 0.0))
+            _attr(pm.GetPrim(), "yax:pos", Sdf.ValueTypeNames.Double3, Gf.Vec3d(*map(float, pos)))
             _attr(pm.GetPrim(), "yax:kind", Sdf.ValueTypeNames.Token, "point_mass")
             _attr(pm.GetPrim(), "yax:name", Sdf.ValueTypeNames.String, name)
             _attr(pm.GetPrim(), "yax:mass", Sdf.ValueTypeNames.Double, float(kg))
@@ -323,6 +336,13 @@ def to_stage(m: Machine, path: str | None = None):
     if path:
         stage.GetRootLayer().Save()
     return stage
+
+
+def _exact_pose(prim, pos, quat):
+    """Double-precision copies of a pose (USD's matrix decomposition rounds): what readers take first."""
+    from pxr import Gf, Sdf
+    _attr(prim, "yax:pos", Sdf.ValueTypeNames.Double3, Gf.Vec3d(*map(float, pos)))
+    _attr(prim, "yax:quat", Sdf.ValueTypeNames.Double4, Gf.Vec4d(*map(float, quat)))
 
 
 def _shape_to_usd(stage, p, s: Shape):
@@ -359,6 +379,9 @@ def _shape_to_usd(stage, p, s: Shape):
     _set_pose(g, s.pos, s.quat, scale)
     prim = g.GetPrim()
     _attr(prim, "yax:name", Sdf.ValueTypeNames.String, s.name)
+    _exact_pose(prim, s.pos, s.quat)
+    if s.kind != "mesh":                                                        # exact sizes (a scale op's decomposition rounds)
+        _attr(prim, "yax:size", Sdf.ValueTypeNames.DoubleArray, Vt.DoubleArray([float(v) for v in s.size]))
     _attr(prim, "yax:role", Sdf.ValueTypeNames.Token, s.role)
     if s.role == "collision":
         UsdPhysics.CollisionAPI.Apply(prim)
@@ -430,6 +453,8 @@ def from_stage(stage) -> Machine:
         m.producer = json.loads(_get(root, "yax:producer"))
     if _get(root, "yax:data"):
         m.data = json.loads(_get(root, "yax:data"))
+    if _get(root, "yax:tags"):
+        m.tags = json.loads(_get(root, "yax:tags"))
     cache = UsdGeom.XformCache(Usd.TimeCode.Default())
     names = {}
     for prim in Usd.PrimRange(root):
@@ -437,7 +462,11 @@ def from_stage(stage) -> Machine:
             continue
         W = cache.GetLocalToWorldTransform(prim)
         pos, quat, _ = _decompose(W)
-        lk = Link(name=_get(prim, "yax:name") or prim.GetName(), pos=tuple(v * k for v in pos), quat=quat)
+        if _get(prim, "yax:pos") is not None:                                   # exact, as written
+            pos, quat, k_ = tuple(float(v) for v in _get(prim, "yax:pos")), tuple(float(v) for v in _get(prim, "yax:quat")), 1.0
+        else:
+            k_ = k
+        lk = Link(name=_get(prim, "yax:name") or prim.GetName(), pos=tuple(float(v) * k_ for v in pos), quat=quat)
         names[prim.GetPath()] = lk.name
         if prim.HasAPI(UsdPhysics.MassAPI):
             mapi = UsdPhysics.MassAPI(prim)
@@ -459,8 +488,12 @@ def from_stage(stage) -> Machine:
             if child.HasAPI(UsdPhysics.RigidBodyAPI):
                 break
             if _get(child, "yax:kind") == "point_mass":
-                p, _, _ = _decompose(cache.GetLocalToWorldTransform(child) * Winv)
-                lk.point_masses.append((_get(child, "yax:name") or child.GetName(), float(_get(child, "yax:mass")), tuple(v * k for v in p)))
+                if _get(child, "yax:pos") is not None:
+                    p = tuple(float(v) for v in _get(child, "yax:pos"))
+                else:
+                    p, _, _ = _decompose(cache.GetLocalToWorldTransform(child) * Winv)
+                    p = tuple(v * k for v in p)
+                lk.point_masses.append((_get(child, "yax:name") or child.GetName(), float(_get(child, "yax:mass")), p))
                 continue
             s = _shape_from_usd(child, cache.GetLocalToWorldTransform(child) * Winv, k)
             if s is not None:
@@ -507,6 +540,8 @@ def _shape_from_usd(prim, M, k) -> Shape | None:
 
     pos, quat, scale = _decompose(M)
     pos = tuple(v * k for v in pos)
+    if _get(prim, "yax:pos") is not None:                                       # exact, as written
+        pos, quat = tuple(float(v) for v in _get(prim, "yax:pos")), tuple(float(v) for v in _get(prim, "yax:quat"))
     name = _get(prim, "yax:name") or prim.GetName()
     role = _get(prim, "yax:role") or ("collision" if prim.HasAPI(UsdPhysics.CollisionAPI) else "visual")
     rgba = None
@@ -516,6 +551,16 @@ def _shape_from_usd(prim, M, k) -> Shape | None:
             o = UsdGeom.Gprim(prim).GetDisplayOpacityAttr().Get()
             rgba = (*map(float, c[0]), float(o[0]) if o else 1.0)
     kw = dict(name=name, pos=pos, quat=quat, role=role, rgba=rgba)
+    exact = _get(prim, "yax:size")
+    if exact is not None and not prim.IsA(UsdGeom.Mesh):                        # exact, as written
+        size = tuple(float(v) for v in exact)
+        if prim.IsA(UsdGeom.Cube):
+            return Shape(kind="box", size=size, **kw)
+        if prim.IsA(UsdGeom.Sphere):
+            return Shape(kind="sphere" if len(size) == 1 else "ellipsoid", size=size, **kw)
+        if prim.IsA(UsdGeom.Cylinder) or prim.IsA(UsdGeom.Capsule):
+            g = UsdGeom.Cylinder(prim) if prim.IsA(UsdGeom.Cylinder) else UsdGeom.Capsule(prim)
+            return Shape(kind="cylinder" if prim.IsA(UsdGeom.Cylinder) else "capsule", size=size, axis=(g.GetAxisAttr().Get() or "Z").lower(), **kw)
     if prim.IsA(UsdGeom.Cube):
         e = UsdGeom.Cube(prim).GetSizeAttr().Get() * k
         return Shape(kind="box", size=tuple(e * s for s in scale), **kw)
@@ -619,4 +664,4 @@ def lump(m: Machine, name: str | None = None) -> Machine:
         J = sum(I + mm * (np.dot(c - com_w, c - com_w) * np.eye(3) - np.outer(c - com_w, c - com_w)) for mm, c, I in parts)
         Rr = R(root.quat)
         out.mass, out.com, out.inertia = float(M), tuple(Rr.T @ (com_w - np.asarray(root.pos))), Rr.T @ J @ Rr
-    return Machine(name=m.name, links=[out], data=dict(m.data), producer=dict(m.producer))
+    return Machine(name=m.name, links=[out], data=dict(m.data), producer=dict(m.producer), tags=dict(m.tags))

@@ -10,6 +10,7 @@ never each other. What two labs need lives here:
 | `control` | mission building blocks: `Phase` (one step of a mission), `smooth` (smoothstep) |
 | `movie` | `end_card` (a movie's last frame with the outcome on it) |
 | `kinematics` | `ik_two_link_planar` (a two-link leg in its plane) |
+| `propulsion` | propeller maps as Yax part data: grids from Boreas maps, Ogma propulsion maps and electric drives → the `propulsion` block (geometry, CT/CP against J, the grid, the motor, the reduced two-constant model with its residual) |
 | `propeller`, `motor`, `assembly` | the generic CAD parts (Dedalus designs) and the assembly base class |
 
 A module moves here (`tools/lab.py promote`) when a second lab needs it; until then it stays in its lab.

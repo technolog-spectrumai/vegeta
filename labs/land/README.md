@@ -31,5 +31,5 @@ A notebook starts with::
 | perseus_mini |  | ● |  |  | ● |  |
 | rover | ● | ● |  |  |  |  |
 
-`export` = registered in `designs/machines.py`, sent to Piccolo with `python tools/lab.py export <machine> --to <file>.usda`.
+`export` = registered in `designs/machines.py`, sent to Piccolo with `python tools/lab.py export <machine> --to <file>.yx2`.
 The rules (`tools/labs.py check`): this lab imports `libs/` and itself, never another lab.

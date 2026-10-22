@@ -5,9 +5,12 @@ Each lab declares its machines in ``designs/machines.py``::
     from vegeta.labkit import machines
     machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts)
 
-``register(name, build, parts=None)``: ``build`` is a callable returning a Chiron ``Robot``, or ``"module:function"``
+``register(name, build, parts=None, visual=None)``: ``build`` is a callable returning a Chiron ``Robot``, or ``"module:function"``
 imported lazily from the lab's ``designs/`` (on ``sys.path`` once ``discover`` has run); ``parts(machine)`` returns the
-part data a simulator needs and MJCF cannot hold (rotor constants, wheel radii), kept in the USD as ``data["ogma"]``.
+part data a simulator needs and MJCF cannot hold, keyed by kind — ``{"ogma": …}`` (rotor constants, wheel radii),
+``{"propulsion": …}`` (propeller maps, ``vegeta.labkit.propulsion``) — merged into the machine's ``data`` (kept in the USD).
+``visual`` names the CAD design the machine looks like (``"module:Class"``, a class or a callable returning
+geometry): the export carries it as the root link's visual mesh (``vegeta.labkit.visual``).
 ``discover(*designs_dirs)`` runs each lab's ``machines.py``; ``tools/export.py`` exports what is registered."""
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ class Machine:
     build: object                                    # callable or "module:function"
     parts: Callable | None = None
     lab: str | None = None
+    visual: object = None                            # the CAD design: "module:Class", a class or a callable
 
     def robot(self):
         if callable(self.build):
@@ -37,10 +41,10 @@ _REGISTRY: dict[str, Machine] = {}
 _current_lab: list[str | None] = [None]
 
 
-def register(name: str, build, parts: Callable | None = None) -> Machine:
+def register(name: str, build, parts: Callable | None = None, visual=None) -> Machine:
     if name in _REGISTRY and _REGISTRY[name].lab != _current_lab[0]:
         raise ValueError(f"machine {name!r} is registered by two labs ({_REGISTRY[name].lab}, {_current_lab[0]})")
-    m = Machine(name, build, parts, _current_lab[0])
+    m = Machine(name, build, parts, _current_lab[0], visual)
     _REGISTRY[name] = m
     return m
 

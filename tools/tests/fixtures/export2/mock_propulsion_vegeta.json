@@ -1,0 +1,12 @@
+{
+  "_what": "a mock design's propulsion block, as its parts function hands it to the export (fixed numbers, no BEMT)",
+  "data:propulsion": {
+    "rotors": [{"name": "r0", "link": "body", "pos": [0.1, 0.1, 0.05], "axis": [0, 0, 1], "spin": 1, "propeller": "p5", "motor": "m2306"}],
+    "propellers": {"p5": {"blades": 3, "diameter_m": 0.127, "mass_kg": 0.004, "inertia_kgm2": 2e-06,
+                          "coefficients": {"J": [0.0, 0.3, 0.6], "CT": [0.12, 0.08, 0.03], "CQ": [0.011, 0.009, 0.005], "CP": [0.069, 0.057, 0.031], "source": "mock"},
+                          "source": "mock", "validity": {"rpm": [8000, 24000]}}},
+    "motors": {"m2306": {"name": "2306-2400KV", "kind": "bldc", "kv_rpm_per_v": 2400, "resistance_ohm": 0.06, "no_load_current_a": 1.2,
+                         "max_current_a": 40, "source": "mock"}},
+    "source": "mock propulsion"
+  }
+}

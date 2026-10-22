@@ -2,37 +2,29 @@
 needs that MJCF cannot hold (``vegeta.labkit.machines``)."""
 from __future__ import annotations
 
-import math
-
-import numpy as np
-
 from vegeta.labkit import machines
 
+# The propellers leave as Yax part data (propulsion_parts: Drongo's rotors for Gazebo and the full propulsion block,
+# the fixed wings' maps from their propulsion files); the export's --also jsbsim writes them as JSBSim propellers.
+import propulsion_parts as pp  # noqa: E402
 
 def _drongo_parts(m) -> dict:
-    """Drongo's rotors for a multicopter simulator: positions in the machine frame, spin (+1: drag torque +z on the
-    frame), the propeller's mass and disk inertia, the motor model's constants. ω_max: 80 % of the no-load speed
-    (KV × V) of the 2306 2400 KV on 4S (assumed); kF = T_max / ω_max²; kM = drag torque / thrust; τ = spin-up."""
+    """Drongo's part data and the design's own tags on it (vendor/yax docs/interchange.md): ``boreas`` on what the BEMT
+    computed, ``nb08`` on what notebook 08 fixed (its materials, its motor and battery), ``assumed`` on the rotor
+    constants that are assumptions (ogma.rotors: T_max, spin-up; see ASSUMED_PROPULSION)."""
     import drongo_robot as dr
-    from yax import hub
-    prop = dr.propulsion()
-    pos, spin = dr.rotor_layout()
-    g = dr.geometry()
-    root = m.roots()[0]
-    Rr = hub.R(root.quat)
-    w_max = 0.8 * 2400.0 * 4 * 3.7 * 2 * math.pi / 60
-    kg = dr.PARTS_G["propellers 5x4.3 (4x)"] / 4 / 1000.0
-    r = g["prop_r"]
-    rotors = []
-    for p, s in zip(np.asarray(pos, float), np.asarray(spin, float)):
-        rotors.append({"pos": (np.asarray(root.pos) + Rr @ p).tolist(), "spin": int(s), "kg": kg,
-                       "inertia": [kg * r * r / 4, kg * r * r / 4, kg * r * r / 2], "radius": r,
-                       "kF": prop.max_thrust_N / w_max ** 2, "kM": prop.torque_per_thrust_m, "w_max": w_max,
-                       "tau_up": prop.spin_up_s, "tau_down": 2 * prop.spin_up_s, "T_max": prop.max_thrust_N})
-    return {"rotors": rotors, "source": f"{prop.source}; ω_max = 0.8 × KV × V (2400 KV, 4S; assumed)"}
+    m.link("drongo").data["material"] = "PETG-CF"                               # the frame (QuadFrame, PETG-CF, notebook 08)
+    from vegeta.labkit import detach as ld
+    asm = ld.from_joint_tree(m, name="Drongo", kinds={"drongo": "body"},
+                             source="drongo_robot: the frame and its jaw carriages (the propellers and motors are geoms of the frame, not links; "
+                                    "no component is declared detachable — notebook 08b fixes no separation)")
+    return {**pp.drongo(m), "materials": dr.materials_block(), "assembly": asm,
+            "tags": {"data:propulsion/propellers*": "boreas", "data:materials*": "nb08", "data:propulsion/motors*": "nb08",
+                     "data:propulsion/battery*": "nb08", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
 
 
-machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts)
-machines.register("falco", "falco_robot:falco_robot")
-machines.register("nisus", "nisus_robot:nisus_robot")
-machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot")
+machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts, visual="drongo:Drongo")
+machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcopter")
+machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
+machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
+machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)

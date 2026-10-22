@@ -2,7 +2,7 @@
 
     yax.convert("rover.xml", "rover.urdf")            # MJCF → USD → URDF; returns a Report of what URDF cannot hold
     m, report = yax.read("c172x.xml")                 # → a hub.Machine (JSBSim detected from <fdm_config>)
-    yax.save(m, "c172x.usda")                         # the universal file
+    yax.save(m, "c172x.yx2")                          # the exchange file (a validated USD subset, docs/yx2.md); .usda: plain USD
 """
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ from pathlib import Path
 from . import hub
 from .hub import Machine, Report
 
-FORMATS = ("usd", "mjcf", "urdf", "sdf", "jsbsim", "step", "stl", "package")
-_MODULE = {"mjcf": "mjcf", "urdf": "urdf", "sdf": "sdf", "jsbsim": "jsbsim", "step": "step", "stl": "stlfile", "package": "package"}
-_SUFFIX = {".usd": "usd", ".usda": "usd", ".usdc": "usd", ".urdf": "urdf", ".sdf": "sdf", ".step": "step", ".stp": "step", ".stl": "stl"}
+FORMATS = ("usd", "yx2", "mjcf", "urdf", "sdf", "jsbsim", "step", "stl", "package")
+_MODULE = {"yx2": "yx2", "mjcf": "mjcf", "urdf": "urdf", "sdf": "sdf", "jsbsim": "jsbsim", "step": "step", "stl": "stlfile", "package": "package"}
+_SUFFIX = {".usd": "usd", ".usda": "usd", ".usdc": "usd", ".yx2": "yx2", ".urdf": "urdf", ".sdf": "sdf", ".step": "step", ".stp": "step", ".stl": "stl"}
 _TAG = {"mujoco": "mjcf", "fdm_config": "jsbsim", "robot": "urdf", "sdf": "sdf"}
 
 
@@ -61,6 +61,11 @@ def save(m: Machine, path, fmt: str | None = None, *, report: Report | None = No
             path.unlink()
         hub.to_stage(m, path)
         return rep
+    if fmt != "yx2":                                                          # a withheld tag is a loss to know about
+        from .schema import report_losses
+        from .tags import report_withheld                                     # (a YX2 says it itself, in yax:tags)
+        report_withheld(m, rep)
+        report_losses(m, fmt, rep)                                            # what the format cannot carry of the blocks
     return _module(fmt).write(m, path, rep, **opts)
 
 
@@ -84,7 +89,8 @@ def convert(src, dst, *, src_fmt: str | None = None, dst_fmt: str | None = None,
 def info(path, fmt: str | None = None) -> str:
     m, rep = read(path, fmt)
     lines = [f"{m.name}: {len(m.links)} links, {len(m.joints)} joints, {m.total_mass():.6g} kg"
-             + (f"; data: {', '.join(sorted(m.data))}" if m.data else "")]
+             + (f"; data: {', '.join(sorted(m.data))}" if m.data else "")
+             + (f"; withheld: {', '.join(m.tags['withheld'])}" if m.tags.get("withheld") else "")]
     for lk in m.links:
         lines.append(f"  link {lk.name}: {lk.mass if lk.mass is not None else '—'} kg, "
                      f"{len(lk.shapes)} shapes ({', '.join(s.kind for s in lk.shapes)})")

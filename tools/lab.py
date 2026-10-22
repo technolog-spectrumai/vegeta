@@ -8,7 +8,7 @@
     python tools/lab.py demote aero mini_raptor           # a machine's modules and notebooks to exp/ (git mv)
     python tools/lab.py promote aero kestrel_xwing        # back from exp/ to designs/ (or notebooks/ for a notebook)
     python tools/lab.py promote aero gait --to-libs       # a module two labs need → libs/labkit (vegeta.labkit.<name>)
-    python tools/lab.py export drongo --to out/drongo.usda --lump    # to Piccolo, as standard files (tools/export.py)
+    python tools/lab.py export drongo --to out/drongo.yx2 --lump    # to Piccolo, as standard files (tools/export.py)
     python tools/lab.py check                             # the lab rules (tools/labs.py)
     python tools/lab.py readme                            # regenerate every lab's README.md (folders, machines' stages)
 
@@ -184,7 +184,7 @@ A notebook starts with::
 
 """ + ("\n".join(rows) if len(rows) > 2 else "(none yet)") + """
 
-`export` = registered in `designs/machines.py`, sent to Piccolo with `python tools/lab.py export <machine> --to <file>.usda`.
+`export` = registered in `designs/machines.py`, sent to Piccolo with `python tools/lab.py export <machine> --to <file>.yx2`.
 The rules (`tools/labs.py check`): this lab imports `libs/` and itself, never another lab.
 """
         (d / "README.md").write_text(text)

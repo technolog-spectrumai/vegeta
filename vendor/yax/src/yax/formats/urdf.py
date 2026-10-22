@@ -180,9 +180,11 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     for lk in m.links:
         fp, fq = frames[lk.name]
         out.append(f"  <link name={quoteattr(lk.name)}>")
-        if lk.mass:
+        if lk.mass and lk.inertia is None:                                     # URDF's inertial needs both: not invented
+            rep.drop(f"link {lk.name}: no inertia in the source — its mass is not written either (URDF's inertial needs both)")
+        elif lk.mass:
             cp, _ = hub.to_frame(hub.from_frame(lk.com, (1, 0, 0, 0), lk.pos, lk.quat)[0], lk.quat, fp, fq)
-            I = np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3)), float)
+            I = np.asarray(lk.inertia, float)
             out += [f"    <inertial>", f'      <origin xyz="{_f(cp)}" rpy="0 0 0"/>', f'      <mass value="{lk.mass:.17g}"/>',
                     f'      <inertia ixx="{I[0, 0]:.17g}" ixy="{I[0, 1]:.17g}" ixz="{I[0, 2]:.17g}" iyy="{I[1, 1]:.17g}" '
                     f'iyz="{I[1, 2]:.17g}" izz="{I[2, 2]:.17g}"/>', "    </inertial>"]

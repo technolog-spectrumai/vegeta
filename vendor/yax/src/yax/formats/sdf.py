@@ -9,7 +9,7 @@ from xml.sax.saxutils import quoteattr
 
 import numpy as np
 
-from .. import hub, stl
+from .. import hub, propulsion, stl
 from ..hub import Joint, Link, Machine, Report, Shape
 from .urdf import _resolve
 
@@ -181,17 +181,21 @@ def write(m: Machine, path, rep: Report | None = None) -> Report:
     path = Path(path)
     rep = rep or Report("usd", str(path))
     mesh_dir = path.parent / f"{path.stem}_meshes"
-    hub.report_data(m, rep, keep=("sdf",))
+    hub.report_data(m, rep, keep=("sdf", propulsion.KEY))
+    propulsion.report_reduction(m, rep, "SDF")
     out = ['<?xml version="1.0"?>', '<sdf version="1.9">', f"  <model name={quoteattr(m.name)}>"]
     for lk in m.links:
         out.append(f"    <link name={quoteattr(lk.name)}>")
         out.append(_pose_xml(lk.pos, lk.quat, "      "))
         if lk.mass:
-            I = np.asarray(lk.inertia if lk.inertia is not None else np.zeros((3, 3)), float)
-            out += ["      <inertial>", _pose_xml(lk.com, (1, 0, 0, 0), "        "), f"        <mass>{lk.mass:.17g}</mass>",
-                    "        <inertia>" + "".join(f"<{k}>{v:.17g}</{k}>" for k, v in (("ixx", I[0, 0]), ("ixy", I[0, 1]), ("ixz", I[0, 2]),
-                                                                               ("iyy", I[1, 1]), ("iyz", I[1, 2]), ("izz", I[2, 2])))
-                    + "</inertia>", "      </inertial>"]
+            out += ["      <inertial>", _pose_xml(lk.com, (1, 0, 0, 0), "        "), f"        <mass>{lk.mass:.17g}</mass>"]
+            if lk.inertia is None:                                             # none in the source: not invented
+                rep.drop(f"link {lk.name}: no inertia in the source — none written (SDF's own default applies)")
+            else:
+                I = np.asarray(lk.inertia, float)
+                out.append("        <inertia>" + "".join(f"<{k}>{v:.17g}</{k}>" for k, v in (("ixx", I[0, 0]), ("ixy", I[0, 1]), ("ixz", I[0, 2]),
+                                                                                       ("iyy", I[1, 1]), ("iyz", I[1, 2]), ("izz", I[2, 2]))) + "</inertia>")
+            out.append("      </inertial>")
         for s in lk.shapes:
             q = s.quat
             if s.kind in ("cylinder", "capsule") and s.axis != "z":
