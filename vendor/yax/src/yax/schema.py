@@ -51,7 +51,7 @@ CURVE = {"speed_rpm": (LIST, False), "speed_rad_s": (LIST, False), "torque_nm": 
          "power_w": (LIST, False), "efficiency": (LIST, False), "voltage_v": (NUM, False), "source": (STR, False)}
 DIMLESS = {"gear_ratio", "efficiency", "duty_cycle", "kF", "kM", "spin", "blades", "solidity", "ct", "cp", "cq", "eta",
            "CT", "CP", "CQ", "J", "safety_factor", "nu", "poisson", "margin", "residual", "unconverged_points",
-           "rho"}                                                              # rho: the propulsion grid's density [kg/m³], kept for the maps Boreas wrote
+           "rho", "esc_efficiency", "power_w_fraction"}                       # rho: the propulsion grid's density [kg/m³], kept for the maps Boreas wrote
 
 #: block key → (where, schema, system tags)
 BLOCKS = {
