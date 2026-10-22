@@ -76,9 +76,49 @@ file and an electric engine per rotor; the grids, stations and validity do not r
 in the file (the reduced constants reach a motor plugin through `yax sync`; reported); MJCF, URDF, STEP, STL nothing
 (reported).
 
-## Materials, strength, connections — `00mat`, `00str`, `00conn`
+## Materials — `00mat`
 
-*Stage 2 — written when implemented.*
+The machine's `data["materials"]` is a catalogue `{name: material}`; a link's `data["material"]` is a name in it (the
+usual) or a material of its own. A material is **intrinsic**: what the stuff is, whatever part is made of it.
+
+| Field | Meaning |
+|---|---|
+| `name` (= its key), `class` | identity (`"al6061-t6"`, `"cfrp-t300-epoxy"`), class (`metal`, `polymer`, `composite`, `wood`, …) |
+| `density_kg_m3`, `youngs_modulus_pa`, `poisson_ratio` (−1, 0.5), `shear_modulus_pa` | elastic constants — `G` is never derived from `E` and ν here |
+| `yield_strength_pa`, `ultimate_strength_pa`, `compressive_strength_pa`, `shear_strength_pa`, `fracture_toughness_pa_sqrt_m`, `elongation_at_break`, `hardness` | strength and toughness, as the datasheet or test gives them |
+| `anisotropy` | `isotropic`, `orthotropic`, `transversely isotropic`, `anisotropic` |
+| `orthotropic` | `{"E1_pa", "E2_pa", "E3_pa", "G12_pa", "G13_pa", "G23_pa", "nu12", "nu13", "nu23", "Xt_pa", "Xc_pa", "Yt_pa", "Yc_pa", "S_pa"}` in the material's own axes |
+| `composite` | `{"fibre", "matrix", "fibre_volume_fraction", "layup": [{"angle_deg", "thickness_m"?, "material"?}, …] (bottom to top), "ply_thickness_m", "reference_axis": [x, y, z], "frame": "link:<name>" — the axis angles count from, "source"}` |
+| `failure` | an **optional, calibrated** criterion: `{"criterion": "von_mises" / "max_stress" / "tsai_wu" / "hashin" / …, "parameters": {…}, "calibrated": bool, "source", "validity"}` — reported as given; Yax computes no failure |
+| `thermal`, `source`, `validity` | expansion and conductivity if known; provenance; ranges |
+
+## Strength — `00str`
+
+A link's `data["strength"]` (or the machine's) is **component-specific**: what *this part* is allowed, as sized or
+as analysed — not what its material can take. `{"material": a catalogue name, "allowable_stress_pa",
+"allowable_strain", "safety_factor", "limit_load_n", "ultimate_load_n", "limit_moment_nm", "ultimate_moment_nm",
+"fatigue": {…}, "analysis": {"tool", "kind" (static / modal / fatigue / impact), "case", "max_stress_pa",
+"max_displacement_m", "margin", "date", "source"}, "source", "validity"}`. A static FEA result is a static result:
+it is not a validated impact or fracture threshold, and nothing here turns it into one.
+
+## Connections — `00conn`
+
+The machine's `data["connections"]` is `{name: connection}`: how two links are joined, physically.
+
+| Field | Meaning |
+|---|---|
+| `name` (= its key), `type` | `bolt`, `screw`, `rivet`, `weld`, `bond`, `pin`, `press`, `snap`, `clamp`, `magnet`, `detachable`, `other` |
+| `links` | the two link names it joins (identities) |
+| `frame`, `pos`, `quat`, `axis` | where it is: `frame` is `machine` (default) or `link:<name>`; `pos` [m], `quat` (w, x, y, z), `axis` the fastener or weld axis |
+| `geometry` | `{"diameter_m", "length_m", "area_m2", "width_m", "thickness_m", "pattern": [[x, y, z], …] (fastener positions in `frame`), "count", "shape"}` |
+| `fasteners` | `{"count", "size": "M3", "grade": "8.8", "material": a catalogue name, "preload_n", "torque_nm", "pitch_m", "source"}` |
+| `material` | the weld or adhesive, a catalogue name |
+| `limits` | `{"tension_n", "compression_n", "shear_n", "moment_nm", "torque_nm", "energy_j", "safety_factor", "basis": "datasheet" / "test" / "analysis" / "assumed"}` — the connection's own strength, stated by the producer |
+| `detachable` | `true` when the design means it to come off (stage 4 says how; the `assembly` block refers to it) |
+| `source`, `validity` | provenance and ranges |
+
+What a format keeps of materials, strength and connections: USD and YX2 everything; every other format nothing, each
+reported ("data:connections: the connections (2 entries) — sdf has no place for it").
 
 ## Aerodynamics — `00aero`
 

@@ -370,6 +370,6 @@ def test_sdf_reports_the_propulsion_reduction(tmp_path):
     rep = yax.save(_plane("q", blk), tmp_path / "q2.sdf")
     line = next(d for d in rep.dropped if d.startswith("propulsion: rotor r0"))
     assert "reduced to kF = 8.5e-06, kM = 0.016 at hover, residual 0.31" in line and "yax sync" in line
-    assert not any("machine data 'propulsion'" in d for d in rep.dropped)
+    assert not any("machine data 'propulsion'" in d for d in rep.dropped) and any("data:propulsion: the propellers' maps" in d for d in rep.dropped)
     rep = yax.save(_plane("q", blk), tmp_path / "q.xml")
-    assert any("machine data 'propulsion' (1 rotors)" in d for d in rep.dropped)
+    assert any("data:propulsion: the propellers' maps (1 propellers, 1 rotors)" in d for d in rep.dropped)

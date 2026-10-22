@@ -72,6 +72,130 @@ GRID = {"rpm": (LIST, True), "airspeed_m_s": (LIST, True), "rho": (NUM, False), 
         "efficiency": (LIST, False), "unconverged_points": (NUM, False), "power_limit": (DICT, False)}
 
 
+MATERIAL = {"name": (STR, False), "class": (STR, False), "density_kg_m3": (NUM, False), "youngs_modulus_pa": (NUM, False),
+            "poisson_ratio": (NUM, False), "shear_modulus_pa": (NUM, False), "yield_strength_pa": (NUM, False),
+            "ultimate_strength_pa": (NUM, False), "compressive_strength_pa": (NUM, False), "shear_strength_pa": (NUM, False),
+            "fracture_toughness_pa_sqrt_m": (NUM, False), "elongation_at_break": (NUM, False), "hardness": (NUM, False),
+            "anisotropy": (STR, False), "orthotropic": (DICT, False), "composite": (DICT, False), "failure": (DICT, False),
+            "thermal": (DICT, False), "source": (STR, False), "validity": (DICT, False)}
+ORTHOTROPIC = {"E1_pa": (NUM, False), "E2_pa": (NUM, False), "E3_pa": (NUM, False), "G12_pa": (NUM, False), "G13_pa": (NUM, False),
+               "G23_pa": (NUM, False), "nu12": (NUM, False), "nu13": (NUM, False), "nu23": (NUM, False),
+               "Xt_pa": (NUM, False), "Xc_pa": (NUM, False), "Yt_pa": (NUM, False), "Yc_pa": (NUM, False), "S_pa": (NUM, False)}
+COMPOSITE = {"fibre": (STR, False), "matrix": (STR, False), "fibre_volume_fraction": (NUM, False), "layup": (LIST, False),
+             "ply_thickness_m": (NUM, False), "reference_axis": (LIST, False), "frame": (STR, False), "source": (STR, False)}
+FAILURE = {"criterion": (STR, True), "parameters": (DICT, False), "calibrated": (BOOL, False), "source": (STR, False), "validity": (DICT, False)}
+STRENGTH = {"material": (STR, False), "allowable_stress_pa": (NUM, False), "allowable_strain": (NUM, False), "safety_factor": (NUM, False),
+            "limit_load_n": (NUM, False), "ultimate_load_n": (NUM, False), "limit_moment_nm": (NUM, False), "ultimate_moment_nm": (NUM, False),
+            "fatigue": (DICT, False), "analysis": (DICT, False), "source": (STR, False), "validity": (DICT, False)}
+ANALYSIS = {"tool": (STR, False), "kind": (STR, False), "case": (STR, False), "max_stress_pa": (NUM, False), "max_displacement_m": (NUM, False),
+            "margin": (NUM, False), "date": (STR, False), "source": (STR, False)}
+CONNECTION = {"name": (STR, True), "type": (STR, True), "links": (LIST, True), "frame": (STR, False), "pos": (LIST, False), "quat": (LIST, False),
+              "axis": (LIST, False), "geometry": (DICT, False), "fasteners": (DICT, False), "material": (STR, False),
+              "limits": (DICT, False), "detachable": (BOOL, False), "source": (STR, False), "validity": (DICT, False)}
+CONNECTION_TYPES = ("bolt", "screw", "rivet", "weld", "bond", "pin", "press", "snap", "clamp", "magnet", "detachable", "other")
+CONN_GEOMETRY = {"diameter_m": (NUM, False), "length_m": (NUM, False), "area_m2": (NUM, False), "width_m": (NUM, False),
+                 "thickness_m": (NUM, False), "pattern": (LIST, False), "count": (NUM, False), "shape": (STR, False)}
+FASTENERS = {"count": (NUM, False), "size": (STR, False), "grade": (STR, False), "material": (STR, False), "preload_n": (NUM, False),
+             "torque_nm": (NUM, False), "pitch_m": (NUM, False), "source": (STR, False)}
+CONN_LIMITS = {"tension_n": (NUM, False), "compression_n": (NUM, False), "shear_n": (NUM, False), "moment_nm": (NUM, False),
+               "torque_nm": (NUM, False), "energy_j": (NUM, False), "safety_factor": (NUM, False), "basis": (STR, False)}
+DIMLESS |= {"poisson_ratio", "nu12", "nu13", "nu23", "elongation_at_break", "hardness", "fibre_volume_fraction", "allowable_strain", "count"}
+BLOCKS.update({
+    "materials": ("machine", {"*": (DICT, False)}, ("00mat",)),
+    "material": ("link", MATERIAL, ("00mat",)),
+    "strength": ("link|machine", STRENGTH, ("00str",)),
+    "connections": ("machine", {"*": (DICT, False)}, ("00conn",)),
+})
+
+
+def check_material(d, where: str, p: list):
+    _check(d, MATERIAL, where, p, nested={"orthotropic": ORTHOTROPIC, "composite": COMPOSITE, "failure": FAILURE})
+    if not isinstance(d, dict):
+        return
+    if _num(d.get("poisson_ratio")) and not -1 < d["poisson_ratio"] < 0.5:
+        p.append(f"{where}: poisson_ratio must be in (-1, 0.5)")
+    for k in ("density_kg_m3", "youngs_modulus_pa", "shear_modulus_pa", "yield_strength_pa", "ultimate_strength_pa", "fracture_toughness_pa_sqrt_m"):
+        if _num(d.get(k)) and d[k] <= 0:
+            p.append(f"{where}: {k} must be > 0")
+    if d.get("anisotropy") not in (None, "isotropic", "orthotropic", "transversely isotropic", "anisotropic"):
+        p.append(f"{where}: anisotropy must be isotropic, orthotropic, transversely isotropic or anisotropic")
+    comp = d.get("composite")
+    if isinstance(comp, dict) and isinstance(comp.get("layup"), (list, tuple)):
+        for i, ply in enumerate(comp["layup"]):
+            if not isinstance(ply, dict) or not _num(ply.get("angle_deg")):
+                p.append(f"{where}/composite/layup/{i}: a ply is {{'angle_deg', 'thickness_m'?, 'material'?}}")
+
+
+def check_strength(d, where: str, p: list, materials: dict):
+    _check(d, STRENGTH, where, p, nested={"analysis": ANALYSIS})
+    if isinstance(d, dict):
+        if "material" in d and d["material"] not in materials:
+            p.append(f"{where}: material {d['material']!r} is not in data['materials']")
+        if _num(d.get("safety_factor")) and d["safety_factor"] <= 0:
+            p.append(f"{where}: safety_factor must be > 0")
+
+
+def check_connection(name, d, where: str, p: list, m: Machine, materials: dict):
+    _check(d, CONNECTION, where, p, nested={"geometry": CONN_GEOMETRY, "fasteners": FASTENERS, "limits": CONN_LIMITS})
+    if not isinstance(d, dict):
+        return
+    if d.get("name") != name:
+        p.append(f"{where}: name must be {name!r} (its key)")
+    if d.get("type") not in CONNECTION_TYPES:
+        p.append(f"{where}: type must be one of {CONNECTION_TYPES}")
+    names = {lk.name for lk in m.links}
+    links = d.get("links")
+    if isinstance(links, (list, tuple)):
+        if len(links) != 2 or not all(isinstance(x, str) for x in links):
+            p.append(f"{where}: links must name two links")
+        else:
+            for x in links:
+                if x not in names:
+                    p.append(f"{where}: link {x!r} is not a link of the machine")
+    fr = d.get("frame", "machine")
+    if fr != "machine" and not (fr.startswith("link:") and fr[5:] in names):
+        p.append(f"{where}: frame must be 'machine' or 'link:<name>' of a link")
+    for key, n in (("pos", 3), ("quat", 4), ("axis", 3)):
+        if key in d and not (isinstance(d[key], (list, tuple)) and len(d[key]) == n and all(_num(x) for x in d[key])):
+            p.append(f"{where}: {key} must be {n} numbers")
+    if "material" in d and d["material"] not in materials:
+        p.append(f"{where}: material {d['material']!r} is not in data['materials']")
+    fa = d.get("fasteners")
+    if isinstance(fa, dict) and "material" in fa and fa["material"] not in materials and not isinstance(fa["material"], str):
+        p.append(f"{where}/fasteners: material must be a name")
+
+
+def _stage2(m: Machine, p: list):
+    materials = m.data.get("materials")
+    if materials is not None and not isinstance(materials, dict):
+        p.append("data:materials: a dictionary name → material is required")
+        materials = {}
+    materials = materials or {}
+    for name, d in materials.items():
+        check_material(d, f"data:materials/{name}", p)
+        if isinstance(d, dict) and "name" in d and d["name"] != name:
+            p.append(f"data:materials/{name}: name must be {name!r} (its key)")
+    for lk in m.links:
+        if "material" in lk.data:
+            mat = lk.data["material"]
+            if isinstance(mat, str):
+                if mat not in materials:
+                    p.append(f"link:{lk.name}/data:material: material {mat!r} is not in data['materials']")
+            else:
+                check_material(mat, f"link:{lk.name}/data:material", p)
+        if "strength" in lk.data:
+            check_strength(lk.data["strength"], f"link:{lk.name}/data:strength", p, materials)
+    if "strength" in m.data:
+        check_strength(m.data["strength"], "data:strength", p, materials)
+    conns = m.data.get("connections")
+    if conns is not None:
+        if not isinstance(conns, dict):
+            p.append("data:connections: a dictionary name → connection is required")
+        else:
+            for name, d in conns.items():
+                check_connection(name, d, f"data:connections/{name}", p, m, materials)
+
+
 # ------------------------------------------------------------------------------------------------------- checking
 def _num(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
@@ -208,7 +332,7 @@ def problems(m: Machine) -> list:
     return p
 
 
-_EXTRA_CHECKS = []                                                             # later stages register their checks here
+_EXTRA_CHECKS = [_stage2]                                                      # the later stages' checks
 
 
 # --------------------------------------------------------------------------------------------------------- losses
@@ -233,6 +357,14 @@ def report_losses(m: Machine, fmt: str, rep: Report) -> None:
             rep.drop(f"joint {j.name}: its motor model ({what}) — {fmt} keeps {holds.get('motor', 'nothing of it')}")
     if "motors" in m.data and fmt not in ("usd", "yx2"):
         rep.drop(f"data:motors: the motor catalogue ({len(m.data['motors'])} motors) — {fmt} has no place for it")
+    for key, what in (("materials", "the materials catalogue"), ("connections", "the connections"), ("strength", "the machine's strength data")):
+        if key in m.data:
+            n = len(m.data[key]) if isinstance(m.data[key], dict) else 1
+            rep.drop(f"data:{key}: {what} ({n} entries) — {fmt} has no place for it")
+    for lk in m.links:
+        for key, what in (("material", "its material"), ("strength", "its strength limits")):
+            if key in lk.data:
+                rep.drop(f"link {lk.name}: {what} — {fmt} has no place for it")
     if "propulsion" in m.data:
         d = m.data["propulsion"]
         if fmt == "jsbsim":

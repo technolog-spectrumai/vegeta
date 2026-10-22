@@ -1,0 +1,32 @@
+{
+  "_what": "docs/engineering.md: an aluminium frame and a composite panel bolted and bonded, as the file must hold them",
+  "data:materials": {
+    "al6061-t6": {"name": "al6061-t6", "class": "metal", "density_kg_m3": 2700.0, "youngs_modulus_pa": 68900000000.0, "poisson_ratio": 0.33,
+                  "shear_modulus_pa": 26000000000.0, "yield_strength_pa": 276000000.0, "ultimate_strength_pa": 310000000.0,
+                  "fracture_toughness_pa_sqrt_m": 29000000.0, "elongation_at_break": 0.12, "anisotropy": "isotropic",
+                  "source": "mock handbook values (the alloy's typical sheet)"},
+    "cfrp-t300": {"name": "cfrp-t300", "class": "composite", "density_kg_m3": 1600.0, "anisotropy": "orthotropic",
+                  "orthotropic": {"E1_pa": 135000000000.0, "E2_pa": 10000000000.0, "G12_pa": 5000000000.0, "nu12": 0.3,
+                                  "Xt_pa": 1500000000.0, "Xc_pa": 1200000000.0, "Yt_pa": 50000000.0, "Yc_pa": 250000000.0, "S_pa": 70000000.0},
+                  "composite": {"fibre": "T300", "matrix": "epoxy", "fibre_volume_fraction": 0.6, "ply_thickness_m": 0.000125,
+                                "layup": [{"angle_deg": 0}, {"angle_deg": 45}, {"angle_deg": -45}, {"angle_deg": 90}],
+                                "reference_axis": [1, 0, 0], "frame": "link:panel", "source": "mock layup"},
+                  "failure": {"criterion": "tsai_wu", "parameters": {"F12_star": -0.5}, "calibrated": true, "source": "mock coupon tests", "validity": {"temperature_c": [-20, 60]}},
+                  "source": "mock datasheet"}
+  },
+  "link:frame/data:material": "al6061-t6",
+  "link:panel/data:material": "cfrp-t300",
+  "link:frame/data:strength": {"material": "al6061-t6", "allowable_stress_pa": 184000000.0, "safety_factor": 1.5, "limit_load_n": 800.0,
+                               "analysis": {"tool": "mock FEA", "kind": "static", "case": "4 g landing", "max_stress_pa": 95000000.0, "margin": 0.94, "source": "mock run"},
+                               "source": "mock sizing"},
+  "data:connections": {
+    "frame-panel-bolts": {"name": "frame-panel-bolts", "type": "bolt", "links": ["frame", "panel"], "frame": "link:frame", "pos": [0.1, 0.0, 0.02],
+                          "quat": [1, 0, 0, 0], "axis": [0, 0, 1],
+                          "geometry": {"diameter_m": 0.003, "count": 4, "pattern": [[0.09, -0.02, 0.02], [0.11, -0.02, 0.02], [0.09, 0.02, 0.02], [0.11, 0.02, 0.02]]},
+                          "fasteners": {"count": 4, "size": "M3", "grade": "8.8", "preload_n": 1200.0, "torque_nm": 1.1, "source": "mock torque table"},
+                          "limits": {"tension_n": 4000.0, "shear_n": 2400.0, "basis": "datasheet"}, "source": "mock design"},
+    "panel-bond": {"name": "panel-bond", "type": "bond", "links": ["frame", "panel"], "frame": "link:panel", "pos": [0.0, 0.0, -0.001],
+                   "geometry": {"area_m2": 0.004, "thickness_m": 0.0002, "shape": "strip"}, "material": "al6061-t6",
+                   "limits": {"shear_n": 1600.0, "tension_n": 900.0, "basis": "assumed"}, "detachable": true, "source": "mock adhesive datasheet"}
+  }
+}
