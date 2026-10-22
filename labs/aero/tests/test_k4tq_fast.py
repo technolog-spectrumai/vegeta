@@ -21,4 +21,4 @@ def test_fast_designs_meet_the_fpv_speed_and_keep_the_range():
         assert e["hover ok"] and e["R3 closes"] and e["R3 margin [Wh]"] >= kf.MARGIN_MIN and e["root ok"]
         assert e["still-air range [km]"] >= kf.RANGE_KEEP * kf.parent_range(d)
     assert sz.vehicle("G3")["mass"]["mass_kg"] <= ks.LIMITS["G"] + 0.01
-    assert k4tq.params("F3")["payload_kg"] == 1.0
+    assert k4tq.params("F3")["payload_kg"] == 1.0 and k4tq.params("G3")["payload_kg"] >= 2.1

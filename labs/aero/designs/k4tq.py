@@ -382,7 +382,7 @@ NICKNAME.update({"B": "Bertha", "G": "Ginna", "G2": "Ginna autonomous"})
 FAST = {
     # off the shelf (2026-10-21): T-Motor Navigator motors within their rated voltage, Aeronaut CAM Carbon folding blades
     "F3": dict(motor="MN505S-380", prop="CAM16x13", battery="6S3P-P45B", esc="esc", payload_kg=1.0, v_top=45.0),
-    "G3": dict(motor="MN605S-170", prop="CAM17x13", battery="12S3P-P45B", esc="esc_hv", payload_kg=1.95, v_top=40.0, s=1.35),
+    "G3": dict(motor="MN605S-170", prop="CAM17x13", battery="12S3P-P45B", esc="esc_hv", payload_kg=2.1, v_top=40.0, s=1.32),   # 2.1 kg (MUST, 2026-10-22): × 1.32 keeps 12.5 kg and the stall at 18 m/s
 }
 for _k, _v in FAST.items():
     _v = dict(_v)
