@@ -69,7 +69,7 @@ def drongo(m) -> dict:
     yr = []
     for k, (q, s) in enumerate(zip(rotors, np.asarray(spin, float))):
         name = f"rotor{k}"
-        yr.append(lp.rotor(name, q["pos"], (0.0, 0.0, 1.0), int(s), entry["name"], mot["name"], link=f"prop{k}"))
+        yr.append(lp.rotor(name, q["pos"], (0.0, 0.0, 1.0), int(s), entry["name"], mot["name"], link=m.roots()[0].name))   # on the frame: the propellers are its geoms
         red[name] = lp.reduced(grid, rpm=w_max * 60 / (2 * math.pi), taken_at=f"full throttle (T_max {p.max_thrust_N:g} N at ω_max, ogma.rotors)",
                                tau_up=p.spin_up_s, tau_down=2 * p.spin_up_s, check=(rpm_h, 0.0), kF=q["kF"], kM=q["kM"])
     blk = lp.block(yr, [entry], [mot], reduced=red,
