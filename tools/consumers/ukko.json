@@ -1,6 +1,0 @@
-{
-  "consumer": "ukko",
-  "required": ["00core", "00geom", "00mass", "00inert", "00conn", "00detach"],
-  "optional": ["00mat", "00str", "00motor", "00prop", "00aero", "00prov"],
-  "note": "Ukko (collision, damage, fragmentation, debris; a future repository): it needs every component's geometry, mass and inertia, how the components are held together and which come off; materials and strength refine what it does with them. A Yax requirements file of tag codes: python tools/export.py <machine> --to out/<machine>.yx2 --consumer tools/consumers/ukko.json"
-}
