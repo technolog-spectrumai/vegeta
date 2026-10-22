@@ -1,0 +1,133 @@
+{
+ "format": "vegeta-exports/1",
+ "machines": {
+  "drongo": {
+   "bytes": 234087,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "drongo.yx2",
+   "joints": 2,
+   "lab": "aero",
+   "links": 3,
+   "mass_kg": 0.5869,
+   "sha256": "664e4f2245f7dcda7d6cd2b7745a0f223ddd7a7283e630661bc207fd7c569649",
+   "visual_triangles": 4316
+  },
+  "onager": {
+   "bytes": 262978,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "onager.yx2",
+   "joints": 12,
+   "lab": "land",
+   "links": 13,
+   "mass_kg": 407.5796,
+   "sha256": "e761d8d7266cf0db6958b5516ceb9ba6ff8e76079653f8a3b69ed88e66be5d19",
+   "visual_triangles": 4928
+  },
+  "onager_atlas": {
+   "bytes": 313296,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "onager_atlas.yx2",
+   "joints": 14,
+   "lab": "land",
+   "links": 15,
+   "mass_kg": 726.232,
+   "sha256": "93217ba172b32a44653d56c311db53b964afc0c4814bba998cebdc4b0b91fb31",
+   "visual_triangles": 5768
+  },
+  "pekari": {
+   "bytes": 368736,
+   "consumers": {
+    "montezuma": true,
+    "perkun": true,
+    "piccolo": true
+   },
+   "file": "pekari.yx2",
+   "joints": 26,
+   "lab": "land",
+   "links": 27,
+   "mass_kg": 23.9905,
+   "sha256": "60f589f2fc5c29f5ee3ddf27fb573a48bd30b34be372a6f05e7676276ff2c1ae",
+   "visual_triangles": 4726
+  },
+  "perseus": {
+   "bytes": 398388,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "perseus.yx2",
+   "joints": 40,
+   "lab": "land",
+   "links": 41,
+   "mass_kg": 180.5595,
+   "sha256": "9c300faa5abc801d06d8438efd3136769516980bc7bec38fcd18fe23430a3e7a",
+   "visual_triangles": 5202
+  },
+  "perseus_mini": {
+   "bytes": 377000,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "perseus_mini.yx2",
+   "joints": 30,
+   "lab": "land",
+   "links": 31,
+   "mass_kg": 33.9417,
+   "sha256": "e2a3e57e02ffaca858aca25cf1d994bc010e340d862146cb8335db0cce14feed",
+   "visual_triangles": 5748
+  },
+  "quad": {
+   "bytes": 224357,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "quad.yx2",
+   "joints": 0,
+   "lab": "aero",
+   "links": 1,
+   "mass_kg": 0.4813,
+   "sha256": "45d076504afc7daeb03f74d21fa46437963b0deb6e9190b464194f6a156b70d9",
+   "visual_triangles": 5673
+  },
+  "rover": {
+   "bytes": 196743,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "rover.yx2",
+   "joints": 8,
+   "lab": "land",
+   "links": 9,
+   "mass_kg": 2.0854,
+   "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
+   "visual_triangles": 4212
+  }
+ },
+ "published": "2026-10-22T16:51:50Z",
+ "vegeta": {
+  "branch": "dev_yax",
+  "commit": "7f0f003cb60d9a256f37f4bd48f85dd624d21655",
+  "dirty": false,
+  "repo": "technolog-spectrumai/vegeta"
+ },
+ "yax": "65b8dc138942e02ba9aa7de6cbd504b56a5d0b23"
+}
