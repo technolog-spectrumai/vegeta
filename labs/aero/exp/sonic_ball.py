@@ -38,18 +38,63 @@ from sonic_flow import HEADER, HERE, WEDGE_DEG, Conditions, Gas, Mesh, Rig, _fie
 
 @dataclass(frozen=True)
 class Ball:
+    """The rubber projectile sealing the bore: a ball (``shape="sphere"``) or a cylinder with a hemispherical or
+    paraboloidal head (``"hemisphere"``, ``"paraboloid"``) of total ``length``.
+
+    While it seals the bore the gas sees only its rear face and its mass, so the CFD gives every shape the same sealing
+    slug one diameter long (``piston``) and the shape's own mass. The head matters for the contact length (friction)
+    and for the flight after the muzzle. Heads: the hemisphere is D/2 long; the paraboloid is D long (min(D, L - D/2)
+    for the shortest bodies, so at least half a diameter of cylinder seals)."""
     diameter: float = 10.0             # mm: the bore, a tight fit
     density: float = 1100.0            # kg/m3, solid rubber
     rear_x: float = 25.0               # mm from the container: 5 mm after the valve seat
-    friction: float = 10.0             # N, sliding friction of the squeezed ball (0-D model only)
-    stop_front_mm: float = 96.0        # end the CFD when the ball front reaches this (pipe exit at 100)
+    stop_front_mm: float = 96.0        # end the CFD when the slug front reaches this (pipe exit at 100)
+    shape: str = "sphere"              # sphere | hemisphere | paraboloid
+    length: float = 0.0                # mm, total length of a cylinder + head (not used for the sphere)
+    mu: float = 0.7                    # rubber on steel, sliding
+    contact_pressure: float = 0.15e6   # Pa, from the interference fit: gives the 10 mm ball ~10 N (3 mm band)
+    sphere_band: float = 3.0           # mm, contact band of a squeezed ball
+
+    @property
+    def L(self) -> float:
+        return self.diameter if self.shape == "sphere" else self.length
+
+    @property
+    def head_length(self) -> float:
+        D = self.diameter
+        return {"sphere": D / 2, "hemisphere": D / 2, "paraboloid": min(D, self.length - D / 2)}[self.shape]
+
+    @property
+    def contact_length(self) -> float:
+        """mm of the body pressed on the bore wall: the cylinder (or the ball's band)."""
+        return self.sphere_band if self.shape == "sphere" else self.length - self.head_length
+
+    @property
+    def volume(self) -> float:
+        """m3"""
+        R, D = self.diameter * 0.5e-3, self.diameter * 1e-3
+        if self.shape == "sphere":
+            return math.pi / 6 * D ** 3
+        cyl = math.pi * R * R * self.contact_length * 1e-3
+        head = 2 / 3 * math.pi * R ** 3 if self.shape == "hemisphere" else 0.5 * math.pi * R * R * self.head_length * 1e-3
+        return cyl + head
 
     @property
     def mass(self) -> float:
-        return self.density * math.pi / 6 * (self.diameter * 1e-3) ** 3
+        return self.density * self.volume
+
+    @property
+    def friction(self) -> float:
+        """N, sliding friction of the squeezed rubber: mu * contact pressure * contact area (0-D model and the
+        CFD-plus-friction estimate; the CFD body itself slides freely)."""
+        return self.mu * self.contact_pressure * math.pi * self.diameter * 1e-3 * self.contact_length * 1e-3
 
     def centre(self, rig: Rig) -> float:
         return self.rear_x + self.diameter / 2
+
+
+def projectile(head: str, l_over_d: float, diameter: float = 10.0, **kw) -> Ball:
+    return Ball(diameter=diameter, shape=head, length=l_over_d * diameter, **kw)
 
 
 # -- CAD ---------------------------------------------------------------------------------------------------------------
@@ -420,7 +465,10 @@ def solve(case: Path, gas: Gas, rig: Rig = Rig(), cond: Conditions = BALL_CONDIT
     meta = case / "sonic_ball.json"
     if (case / "ball_done.json").exists() and meta.exists():
         have = json.loads(meta.read_text())
-        if all(have.get(k) == v for k, v in want.items()):
+        defaults = dict(gas={}, rig=asdict(Rig()), conditions=asdict(Conditions()), mesh=asdict(Mesh()), ball=asdict(Ball()))
+        # fields added to the dataclasses later count as their defaults in older finished cases
+        if all({**{k: d for k, d in defaults[sec].items() if k not in have.get(sec, {})}, **have.get(sec, {})}.get(k) == v
+               for sec, vals in want.items() for k, v in vals.items()):
             return case
     if not run:
         raise FileNotFoundError(f"{case} is not solved for these inputs (run=True solves it)")
@@ -536,7 +584,7 @@ def axis_profiles(case: Path, fields=("p", "Ma", "T"), x_range=(-0.02, 0.16)):
 
 
 # -- bore sweep --------------------------------------------------------------------------------------------------------
-SWEEP_DIAMETERS = (5.0, 7.0, 10.0, 12.0, 15.0, 20.0)
+SWEEP_DIAMETERS = (7.0, 10.0, 12.0, 15.0)
 
 
 def bore_setup(d: float, cells_per_radius: int = 5):
@@ -570,3 +618,100 @@ def sweep(gas: Gas, diameters=SWEEP_DIAMETERS, root: Path = HERE / "output" / "s
         m = muzzle(ball_track(case), ball, rig)
         rows.append(dict(diameter_mm=d, ball_mass_g=ball.mass * 1e3, **m))
     return rows
+
+
+# -- projectile shapes: cylinder + hemispherical or paraboloidal head ---------------------------------------------------
+LD_VALUES = (1, 2, 3, 4, 5, 6, 8, 10)
+
+
+def force_vs_travel(case: Path) -> tuple[np.ndarray, np.ndarray]:
+    """The CFD's net gas force on the body [N] against its rear face's travel [m] (frictionless run)."""
+    tr = ball_track(case)
+    files = sorted((Path(case) / "postProcessing/ballForces").glob("*/force.dat"), key=lambda p: float(p.parent.name))
+    f = np.vstack([sf._dat(p)[1] for p in files])
+    F = np.interp(tr["t"], f[:, 0], f[:, 1]) * 360.0 / WEDGE_DEG
+    x = tr["x"] - tr["x"][0]
+    # at rest (x ~ 0) the force builds up in time: the body breaks away once it beats friction, so keep the peak
+    rest = x < 1e-6
+    moving = ~rest & np.concatenate([[True], np.diff(x) > 0])
+    return np.concatenate([[0.0], x[moving]]), np.concatenate([[F[rest].max() if rest.any() else F[0]], F[moving]])
+
+
+def exit_with_friction(x: np.ndarray, F: np.ndarray, mass: float, friction: float, travel: float) -> float:
+    """Exit speed [m/s] from the gas force along the bore and a constant sliding friction:
+    v² = (2/m) ∫ (F - friction) dx over the travel. 0 when the body stalls (or never breaks away)."""
+    xs = np.linspace(0.0, travel, 400)
+    Fx = np.interp(xs, x, F)                     # past the tracked end: the last force
+    if Fx[0] <= friction:
+        return 0.0
+    work = np.concatenate([[0.0], np.cumsum(0.5 * (Fx[1:] + Fx[:-1] - 2 * friction) * np.diff(xs))])
+    if work.min() < 0:
+        return 0.0
+    return math.sqrt(2 * work[-1] / mass)
+
+
+def shape_sweep(gas: Gas = sf.AIR, ld_values=LD_VALUES, root: Path = HERE / "output" / "sonic_ball", run: bool = True,
+                cells_per_radius: int = 5, on_chunk=None, cfd_head: str = "paraboloid") -> dict:
+    """Coupled CFD (frictionless) for the ``cfd_head`` series of L/D; returns the cases, their masses, exit speeds and
+    force-vs-travel curves. Rig: the 10 mm bore; every body's rear runs the same 65 mm to the muzzle."""
+    rig, _, mesh = bore_setup(10.0, cells_per_radius)
+    out = {"ld": [], "mass": [], "speed": [], "x": [], "F": [], "case": []}
+    for ld in ld_values:
+        b = projectile(cfd_head, ld)
+        case = solve(Path(root) / f"shape_{gas.name}_{cfd_head}_ld{ld:g}", gas, rig, BALL_CONDITIONS, mesh, b, run=run,
+                     chunk=50e-6, on_chunk=on_chunk)
+        x, F = force_vs_travel(case)
+        out["ld"].append(ld); out["mass"].append(b.mass); out["case"].append(case)
+        out["speed"].append(muzzle(ball_track(case), b, rig)["speed"])
+        out["x"].append(x); out["F"].append(F)
+    return out
+
+
+def force_for_mass(sweep_out: dict, mass: float):
+    """Gas force vs travel for a body of ``mass``: interpolated (linearly in mass) between the two CFD runs that
+    bracket it. The force depends on the mass only through how fast the body runs away from the gas behind it."""
+    ms = np.array(sweep_out["mass"])
+    i = int(np.clip(np.searchsorted(ms, mass), 1, len(ms) - 1))
+    w = (mass - ms[i - 1]) / (ms[i] - ms[i - 1])
+    x = np.linspace(0, max(sweep_out["x"][i - 1][-1], sweep_out["x"][i][-1]), 400)
+    F = (1 - w) * np.interp(x, sweep_out["x"][i - 1], sweep_out["F"][i - 1]) + w * np.interp(x, sweep_out["x"][i], sweep_out["F"][i])
+    return x, F
+
+
+def profile(b: Ball, n: int = 40) -> list[tuple[float, float]]:
+    """Half profile (x from the rear face, r), mm, closed along the axis: cylinder then head."""
+    R, Lc, h = b.diameter / 2, b.contact_length, b.head_length
+    if b.shape == "sphere":
+        a = np.linspace(-np.pi / 2, np.pi / 2, n)
+        return [(R + R * math.sin(t), R * math.cos(t)) for t in a][::-1] + [(0.0, 0.0)]
+    pts = [(0.0, 0.0), (0.0, R), (Lc, R)]
+    s = np.linspace(0, 1, n)[1:]
+    if b.shape == "hemisphere":
+        pts += [(Lc + R * math.sin(t * math.pi / 2), R * math.cos(t * math.pi / 2)) for t in s]
+    else:                                           # paraboloid: r = R sqrt(1 - (x - Lc)/h)
+        pts += [(Lc + h * t, R * math.sqrt(max(1 - t, 0.0))) for t in s]
+    return pts
+
+
+def make_projectile_cad(out: Path, bodies: dict[str, Ball]) -> dict:
+    """STEP + STL of each body (revolved from ``profile``, axis +x, rear face at x = 0); measured volumes."""
+    import cadquery as cq
+    from vegeta.dedalus import Design, Parameter
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    report = {}
+    for name, b in bodies.items():
+        pts = profile(b)
+
+        class Body(Design):
+            parameters = [Parameter("diameter", b.diameter, "mm", min=1)]
+
+            def build(self, p, pts=pts):
+                wp = cq.Workplane("XY").polyline([pts[0]] + [q for q in pts[1:] if q[1] > 1e-9] + [(pts[-1][0], 0.0)]).close()
+                return wp.revolve(360, (0, 0, 0), (1, 0, 0))
+        g = Body().generate()
+        g.export_step(out / f"{name}.step")
+        g.export_stl(out / f"{name}.stl", tolerance=0.02)
+        m = g.measure()
+        report[name] = dict(volume_mm3=m["volume"], mass_g=m["volume"] * 1e-9 * b.density * 1e3, mass_model_g=b.mass * 1e3)
+    return report

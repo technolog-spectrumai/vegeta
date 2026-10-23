@@ -225,3 +225,46 @@ def report(cases_dir: Path, out: Path, gases=("air", "co2"), cond: sf.Conditions
         }
     (out / "summary.json").write_text(json.dumps(summ, indent=1, default=float))
     return summ
+
+
+def mach_maps(cases: dict, times_ms, rig: sf.Rig = sf.Rig(), x_range=(-15.0, 230.0), r_max=45.0, vmax=3.5, title=""):
+    """r–x Mach maps (the wedge mirrored about the axis) at the written time nearest each of ``times_ms``: one row per
+    time, one column per case (``{label: case_dir}``); the pipe walls drawn in grey. Returns the figure."""
+    plt = _style()
+    import matplotlib.tri as mtri
+    labels = list(cases)
+    fig, axes = plt.subplots(len(times_ms), len(labels), figsize=(7.2 * len(labels), 2.05 * len(times_ms)),
+                             squeeze=False, sharex=True, sharey=True)
+    Rp, w = rig.pipe_bore / 2, rig.pipe_wall
+    levels = np.linspace(0, vmax, 36)
+    im = None
+    for j, lab in enumerate(labels):
+        case = Path(cases[lab])
+        avail = _times(case)
+        for i, tm in enumerate(times_ms):
+            ax = axes[i][j]
+            t = min(avail, key=lambda v: abs(v - tm * 1e-3))
+            x, rr, ma = mach_slice(case, t)
+            x, rr = x * 1e3, rr * 1e3
+            k = (x > x_range[0] - 5) & (x < x_range[1] + 5) & (rr < r_max + 5)
+            X, Y, M = np.r_[x[k], x[k]], np.r_[rr[k], -rr[k]], np.r_[ma[k], ma[k]]
+            tri = mtri.Triangulation(X, Y)
+            xm, ym = X[tri.triangles].mean(1), np.abs(Y[tri.triangles]).mean(1)
+            span = np.ptp(X[tri.triangles], axis=1)
+            # no gas in the pipe wall or the container wall; no long triangles bridging the solid
+            # no gas between the container's end wall and the ambient around the pipe; no triangles bridging solids
+            tri.set_mask(((xm < rig.pipe_length) & (xm > 0) & (ym > Rp)) | (span > 12))
+            im = ax.tricontourf(tri, M, levels=levels, cmap="magma", extend="max")
+            for s in (1, -1):
+                ax.fill_between([0, rig.pipe_length], s * Rp, s * (Rp + w), color="#8a8984", lw=0)   # pipe wall
+                ax.fill_between([-1.5, 0], s * Rp, s * r_max, color="#8a8984", lw=0)                 # container end wall
+            ax.set_xlim(*x_range); ax.set_ylim(-r_max, r_max); ax.set_aspect("equal"); ax.grid(False)
+            ax.set_title(f"{lab},  t = {t * 1e3:.3g} ms", loc="left", fontsize=9.5)
+            if j == 0:
+                ax.set_ylabel("r [mm]")
+        axes[-1][j].set_xlabel("x [mm]   (container ends at 0, pipe exit at %g)" % rig.pipe_length)
+    cb = fig.colorbar(im, ax=axes, shrink=0.5, pad=0.01, aspect=30)
+    cb.set_label("Mach number")
+    if title:
+        fig.suptitle(title, x=0.42, y=1.0)
+    return fig

@@ -550,6 +550,14 @@ def run_case(case: Path, env=None, timeout: float | None = None, steps=STEPS, pr
     return records
 
 
+def resume_case(case: Path, processors: int = 2, env=None) -> list:
+    """Continue an interrupted decomposed run from its latest written time, then reconstruct."""
+    import re as _re
+    cd = Path(case) / "system/controlDict"
+    cd.write_text(_re.sub(r"startFrom\s+\w+;", "startFrom       latestTime;", cd.read_text()))
+    return run_case(case, env, steps=(("mpirun", "-np", str(processors), "rhoCentralFoam", "-parallel"), ("reconstructPar",)))
+
+
 # -- reading the results ---------------------------------------------------------------------------------------------
 def _dat(path: Path) -> tuple[list[str], np.ndarray]:
     cols, rows = [], []
@@ -574,7 +582,12 @@ def _fo(case: Path, name: str) -> Path:
 def _series(case, name):
     f = _fo(case, name)
     parts = [_dat(p)[1] for p in (f if isinstance(f, list) else [f])]
-    return np.vstack(parts)
+    n = min(p.shape[1] for p in parts)
+    a = np.vstack([p[:, :n] for p in parts])
+    # a restart from an earlier written time repeats the overlap: keep the later run's rows, in time order
+    a = a[::-1]
+    _, first = np.unique(a[:, 0], return_index=True)
+    return a[np.sort(first)][np.argsort(a[np.sort(first), 0])]
 
 
 def histories(case: Path) -> dict[str, np.ndarray]:
@@ -687,25 +700,31 @@ def blowdown(gas: Gas, rig: Rig = Rig(), cond: Conditions = Conditions(), real: 
 # -- shell entry -------------------------------------------------------------------------------------------------------
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("what", choices=("cad", "case", "run", "report"), help="cad: STEP/STL; case: write the cases; "
+    ap.add_argument("what", choices=("cad", "case", "run", "resume", "report"), help="cad: STEP/STL; case: write the cases; "
                     "run: write and solve them; report: plots and summary from solved cases")
     ap.add_argument("--gas", nargs="+", default=list(GASES), choices=list(GASES))
     ap.add_argument("--out", default=str(HERE / "output" / "sonic_flow"), help="cases and CAD (git-ignored)")
     ap.add_argument("--results", default=str(HERE / "sonic_flow_results"), help="plots and summary (committed)")
     ap.add_argument("--end-time", type=float, default=Conditions.end_time)
     ap.add_argument("--processors", type=int, default=1, help="MPI ranks per case")
+    ap.add_argument("--write-interval", type=float, default=Conditions.write_interval, help="field output, s")
+    ap.add_argument("--tag", default="", help="case folder suffix, e.g. _startup")
     a = ap.parse_args(argv)
-    out, cond = Path(a.out), replace(Conditions(), end_time=a.end_time)
+    out, cond = Path(a.out), replace(Conditions(), end_time=a.end_time, write_interval=a.write_interval)
     out.mkdir(parents=True, exist_ok=True)
     if a.what == "cad":
         print(json.dumps(make_cad(Path(a.results) / "cad"), indent=1, default=str))
     if a.what in ("case", "run"):
         for g in a.gas:
-            c = write_case(out / g, GASES[g], cond=cond)
+            c = write_case(out / (g + a.tag), GASES[g], cond=cond)
             print("case", c)
             if a.what == "run":
                 run_case(c, processors=a.processors)
                 print(json.dumps(summary(histories(c), GASES[g]), indent=1))
+    if a.what == "resume":
+        for g in a.gas:
+            resume_case(out / (g + a.tag), a.processors)
+            print(json.dumps(summary(histories(out / (g + a.tag)), GASES[g]), indent=1))
     if a.what == "report":
         import sonic_flow_report
         sonic_flow_report.report(out, Path(a.results), a.gas, cond)
