@@ -525,8 +525,10 @@ def gun(gas: Gas, rig: Rig = Rig(), cond: Conditions = Conditions(), ball: Ball 
         crit = (2 / (g + 1)) ** (g / (g - 1))
         if r <= crit:
             mdot = cd * A * p0 / math.sqrt(R * T0) * math.sqrt(g) * (2 / (g + 1)) ** ((g + 1) / (2 * (g - 1)))
-        else:
+        elif r < 1.0:
             mdot = cd * A * p0 / math.sqrt(R * T0) * math.sqrt(2 * g / (g - 1) * (r ** (2 / g) - r ** ((g + 1) / g)))
+        else:                                  # the driver gas has caught up with the container: no inflow
+            mdot = 0.0
         M = u / aa
         pf = cond.p_amb * (1 + ga * (ga + 1) / 4 * M * M + ga * M * math.sqrt(1 + ((ga + 1) / 4) ** 2 * M * M))
         F = A * (pb - pf)
