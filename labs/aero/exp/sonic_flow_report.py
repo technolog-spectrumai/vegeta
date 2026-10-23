@@ -16,9 +16,7 @@ INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 
 
 def _style():
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt                  # no backend forced: inline in a notebook, Agg headless
     plt.rcParams.update({
         "figure.facecolor": "#fcfcfb", "axes.facecolor": "#fcfcfb", "axes.edgecolor": MUTED, "axes.labelcolor": INK,
         "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.8, "axes.spines.top": False, "axes.spines.right": False,
