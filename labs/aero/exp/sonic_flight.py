@@ -89,14 +89,13 @@ def exit_states(root=None, contact_pressure: float = 0.15e6) -> dict:
     for head in ("hemisphere", "paraboloid"):
         for ld in sb.LD_VALUES:
             b = sb.projectile(head, ld, contact_pressure=contact_pressure)
-            bodies[f"{head} L/D {ld}"] = (10.0, b, root / f"shape_air_paraboloid_ld{ld}")
+            bodies[f"{head} L/D {ld}"] = (10.0, b, root / f"shape_air_{head}_ld{ld}")
     out, ratios, pending = {}, [], []
     for name, (d, b, case) in bodies.items():
         rig = sb.bore_setup(d)[0]
         travel = (rig.pipe_length - b.rear_x - b.diameter) * 1e-3
         g = sb.gun(sf.AIR, rig, ball=b)
-        same_mass = case.name.startswith("sweep") or b.shape == "paraboloid"
-        if (case / "ball_done.json").exists() and same_mass:
+        if (case / "ball_done.json").exists():
             x, F = sb.force_vs_travel(case)
             v = exit_with_friction_(x, F, b, travel)
             out[name] = dict(ball=b, v=v, source="CFD + friction")
