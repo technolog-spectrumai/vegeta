@@ -160,5 +160,12 @@ Tasks:
   camera + video link, hours per deployment; tethered aerostat vs free-flying micro blimp, sized against a design sea
   wind, cost vs operability; with and without a thermal camera (`designs/zeppelin_micro.py`, `campaigns/strato/zeppelin_micro_study.py`, `tests/test_zeppelin_micro.py`;
   Dedalus `with_*` switches and a `tether` part for the aerostat CAD)
+- [x] V8.20 Campaign complete; conclusions in `labs/aero/designs/STRATO.md` (feasible in the stratosphere from ~35–50 m in
+  summer and ~80 m year-round at 50°N; the 15 m demonstrator cannot reach it; limits: envelope mass, the payload's night
+  power, battery, helium leakage, winter winds). Fixed on the way: the endurance sim's ballast drop now keeps a 1 %
+  margin (it declared a sealed ship lost on a knife-edge equilibrium); sensitivity is deterministic (the re-optimised
+  one is dominated by optimiser noise, ±50 kg)
+- [ ] V8.21 Next: ERA5 winds for a real site; Aeromant CFD of the hull and Talos FEM of the fins on a workstation; a
+  laminate datasheet; a longer optimiser budget (or a gradient polish) for the payload numbers
 - [-] V8.17 Later: graduation to Piccolo (export through Yax; control and autonomy there), FEM of the envelope as a
   membrane (Talos is solid-element only), unsteady CFD

@@ -1,0 +1,73 @@
+{
+ "base_payload": 537.7520215566977,
+ "base_seeds": [
+  537.7520215566977,
+  600.7757273234683,
+  506.2918725059167
+ ],
+ "noise": 94.48385481755167,
+ "rows": [
+  {
+   "estimate": "laminate areal mass",
+   "low_factor": 0.7,
+   "high_factor": 1.3,
+   "payload_low": 696.527543758619,
+   "payload_high": 685.8021774517031,
+   "resolved": false
+  },
+  {
+   "estimate": "PV efficiency",
+   "low_factor": 0.85,
+   "high_factor": 1.15,
+   "payload_low": 446.19057392706384,
+   "payload_high": 401.22584405129874,
+   "resolved": false
+  },
+  {
+   "estimate": "battery specific energy",
+   "low_factor": 0.8,
+   "high_factor": 1.2,
+   "payload_low": 324.01453760876007,
+   "payload_high": 691.0340077713547,
+   "resolved": true
+  },
+  {
+   "estimate": "helium leak rate",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 560.4869787581983,
+   "payload_high": 465.80715901515435,
+   "resolved": true
+  },
+  {
+   "estimate": "envelope-gas heat transfer",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 537.7520215566977,
+   "payload_high": 537.7520215566977,
+   "resolved": false
+  },
+  {
+   "estimate": "wind variability",
+   "low_factor": 0.7,
+   "high_factor": 1.3,
+   "payload_low": 346.8230324577145,
+   "payload_high": 362.64528224328717,
+   "resolved": false
+  },
+  {
+   "estimate": "payload power",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 745.2406387884027,
+   "payload_high": 219.54776258789792,
+   "resolved": true
+  }
+ ],
+ "plots": [
+  "sensitivity.png"
+ ],
+ "method": "a full optimisation per case (seed 0); the base case with three seeds gives the noise band",
+ "seconds": 3059.479403734207,
+ "quick": false
+}

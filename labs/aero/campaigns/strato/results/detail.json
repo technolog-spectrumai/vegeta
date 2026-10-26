@@ -12,6 +12,7 @@
     "altitude": 18240.34513375276,
     "payload_mass": 537.7520215566977,
     "payload_power": null,
+    "payload_power_night": null,
     "battery_energy": 81062.39119770603,
     "battery": "li-ion",
     "pv": "gaas",
@@ -42,6 +43,7 @@
    "solar_area": 644.9259915913738,
    "payload": 537.7520215566977,
    "payload_power": 5377.520215566978,
+   "payload_power_night": 5377.520215566978,
    "system_mass": 2260.4337585103262,
    "masses": {
     "envelope": 682.3249285974557,
@@ -84,7 +86,7 @@
    "cdv": 0.043251777249625596,
    "gas_life_days": 60.17654232539395,
    "endurance_days": 60.17654232539395,
-   "battery_hours": 13.41717348821446
+   "battery_hours": 12.197430443831328
   },
   "held": true,
   "soc_min_pct": 28.359833177326788,
@@ -109,6 +111,7 @@
     "altitude": 18240.34513375276,
     "payload_mass": 537.7520215566977,
     "payload_power": null,
+    "payload_power_night": null,
     "battery_energy": 81062.39119770603,
     "battery": "li-ion",
     "pv": "gaas",
@@ -139,6 +142,7 @@
    "solar_area": 644.9259915913738,
    "payload": 537.7520215566977,
    "payload_power": 5377.520215566978,
+   "payload_power_night": 5377.520215566978,
    "system_mass": 2260.4337585103262,
    "masses": {
     "envelope": 682.3249285974557,
@@ -180,8 +184,8 @@
    "drag_p90": 646.421734410109,
    "cdv": 0.03739722589299047,
    "gas_life_days": 60.17654232539395,
-   "endurance_days": 0.5590488953422692,
-   "battery_hours": 13.41717348821446
+   "endurance_days": 0.508226268492972,
+   "battery_hours": 12.197430443831328
   },
   "held": false,
   "soc_min_pct": 10.0,
@@ -193,29 +197,29 @@
  },
  "endurance/sealed/Jul": {
   "on_station": 1.0,
-  "lost_at_s": 1287000.0,
-  "gas_lost_kg": 6.544541337427347,
+  "lost_at_s": null,
+  "gas_lost_kg": 13.063634283456679,
   "vented_kg": 0.0,
   "max_dist_km": 2.266809756320424e-15,
-  "min_altitude": 12000.000000009095,
-  "ballast_left": 108.00027953162407,
+  "min_altitude": 18240.256610299184,
+  "ballast_left": 64.41854474836126,
   "feasible": true,
   "problems": [],
-  "days_simulated": 14.875
+  "days_simulated": 29.979166666666668
  },
  "endurance/sealed/Jan": {
-  "on_station": 0.09593837535014006,
-  "lost_at_s": 2570400.0,
-  "gas_lost_kg": 12.965321494413388,
+  "on_station": 0.10347222222222222,
+  "lost_at_s": null,
+  "gas_lost_kg": 13.063634283456679,
   "vented_kg": 0.0,
   "max_dist_km": 2425.103976935236,
-  "min_altitude": 12000.000000009095,
-  "ballast_left": 72.28836355654721,
+  "min_altitude": 18240.256610299184,
+  "ballast_left": 64.34068333438134,
   "feasible": false,
   "problems": [
    "energy does not close even in calm air: the array cannot carry avionics and payload through the day and the battery through the night in month 1"
   ],
-  "days_simulated": 29.729166666666668
+  "days_simulated": 29.979166666666668
  },
  "endurance/vented/Jul": {
   "on_station": 1.0,
@@ -268,6 +272,7 @@
   "altitude": 18240.34513375276,
   "payload_mass": 537.7520215566977,
   "payload_power": null,
+  "payload_power_night": null,
   "battery_energy": 81062.39119770603,
   "battery": "li-ion",
   "pv": "gaas",
@@ -286,6 +291,6 @@
   "endurance.png",
   "ascent.png"
  ],
- "seconds": 9.26068902015686,
+ "seconds": 11.703599691390991,
  "quick": false
 }

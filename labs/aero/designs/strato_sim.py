@@ -277,8 +277,9 @@ def endurance(c: sd.Configuration, days: int = 30, dt: float = 900.0, seed: int 
             gas_mass = cell.gas_mass
         z_eq = equilibrium_altitude(c, gas_mass, mass_fixed + ballast, dT)
         if ballast_policy and (math.isnan(z_eq) or z_eq < d.altitude - 300.0) and ballast > 0:
-            # drop just enough ballast to float at the design altitude (or all of it)
-            need = mass_fixed + ballast - lift(c, gas_mass, d.altitude, dT)["net_lift"]
+            # drop enough ballast to float at the design altitude with 1 % of the mass to spare (or all of it): a
+            # drop that only just balances leaves the equilibrium on a knife edge
+            need = mass_fixed + ballast - lift(c, gas_mass, d.altitude, dT)["net_lift"] + 0.01 * mass_fixed
             drop = min(ballast, max(need, 0.0))
             ballast -= drop
             z_eq = equilibrium_altitude(c, gas_mass, mass_fixed + ballast, dT)

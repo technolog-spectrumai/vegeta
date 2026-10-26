@@ -48,6 +48,9 @@ VERIFIED = [
 ]
 
 
+DEMO_REQ = {"availability": 0.5, "gas_life": 30.0, "payload": 1.0}     # run.DEMO (kept here so the report needs no import)
+
+
 def write(out: Path) -> Path:
     atm, wind, fam, pv, det = (_load(out, n) for n in ("atmosphere", "wind", "family", "pv", "detail"))
     sw_, sens, par, sea, con = (_load(out, n) for n in ("sweeps", "sensitivity", "pareto", "seasons", "constraints"))
@@ -86,8 +89,20 @@ def write(out: Path) -> Path:
               f"**{f(b['design']['altitude'] / 1000, 1)} km** with {f(b['payload'])} kg of payload in July (best of the "
               f"altitude search; fineness {f(b['design']['fineness'], 2)}).")
         elif b:
-            w(f"- **The 15 m demonstrator found no feasible float altitude** in 6–22 km for July "
-              f"(least-bad design: {'; '.join(b.get('problems', [])) or 'missed the requirements'}).")
+            why = "; ".join(b.get("problems", []))
+            if not why:
+                sc = DEMO_REQ
+                misses = []
+                if b.get("availability", 1) < sc["availability"]:
+                    misses.append(f"on station only {f(b['availability'] * 100, 0)} % of days (needs {f(sc['availability'] * 100, 0)} %)")
+                if b.get("gas_life_days", 1e9) < sc["gas_life"]:
+                    misses.append(f"gas life {f(b['gas_life_days'], 0)} days (needs {f(sc['gas_life'], 0)})")
+                if b.get("payload", 1e9) < sc["payload"]:
+                    misses.append(f"payload {f(b['payload'])} kg (needs {f(sc['payload'])})")
+                why = "; ".join(misses) or "missed the requirements"
+            w(f"- **The 15 m demonstrator has no design that meets its July requirements** at any altitude in 6–22 km. "
+              f"The best found floats at {f(b['design']['altitude'] / 1000, 1)} km but {why}: down there the wind is too strong "
+              f"for its propulsion and battery.")
         s15 = [r for r in rows if r["scenario"] == "summer" and float(r["length"]) == 15.0]
         if s15:
             w(f"  At 20 km a 15 m hull of fineness {f(s15[0]['fineness'], 2)} lifts {f(s15[0]['net_lift'])} kg in all; "
@@ -102,7 +117,7 @@ def write(out: Path) -> Path:
             w(f"- **Optimiser noise**: the base case repeated with three seeds gives {', '.join(f(v) for v in sens['base_seeds'])} kg "
               f"(spread {f(sens['noise'])} kg); sensitivities smaller than that are not resolved.")
         top = max(sens["rows"], key=lambda r: abs((r["payload_high"] or 0) - (r["payload_low"] or 0)))
-        w(f"- **The limiting estimate** for the {f(80, 0)} m reference ship is **{top['estimate']}**: "
+        w(f"- **Re-optimised (noisy) sensitivity** for the {f(80, 0)} m reference ship, largest swing: **{top['estimate']}**: "
           f"×{top['low_factor']:g} → {f(top['payload_low'])} kg, ×{top['high_factor']:g} → {f(top['payload_high'])} kg "
           f"(base {f(sens['base_payload'])} kg of maximum payload).")
     if pv:
@@ -115,10 +130,16 @@ def write(out: Path) -> Path:
         es, ev = det.get("endurance/sealed/Jul"), det.get("endurance/vented/Jul")
         if es and ev:
             lost = ev["lost_at_s"]
-            w(f"- **Sealed vs vented** (reference ship, July): sealed holds {f(es['min_altitude'] / 1000, 2)} km or more for "
-              f"{f(es['days_simulated'], 0)} days ({f(es['on_station'] * 100, 0)} % of the time on station); vented "
-              + (f"is lost after {f(lost / 86400, 1)} days (venting by day, sinking by night; {f(ev['vented_kg'])} kg of helium vented)."
-                 if lost is not None else f"stays up for {f(ev['days_simulated'], 0)} days with {f(ev['ballast_left'])} kg of ballast left."))
+            sealed = (f"sealed holds {f(es['min_altitude'] / 1000, 2)} km or more for {f(es['days_simulated'], 0)} days "
+                      f"({f(es['on_station'] * 100, 0)} % of the time on station, {f(es['ballast_left'])} kg of ballast left)"
+                      if es["lost_at_s"] is None else f"sealed is lost after {f(es['lost_at_s'] / 86400, 1)} days")
+            if not ev.get("feasible", True):
+                vented = f"the vented variant of the same ship does not float ({'; '.join(ev['problems'])}): its ballonet is extra mass"
+            elif lost is not None:
+                vented = f"vented is lost after {f(lost / 86400, 1)} days (venting by day, sinking by night; {f(ev['vented_kg'])} kg vented)"
+            else:
+                vented = f"vented stays up for {f(ev['days_simulated'], 0)} days with {f(ev['ballast_left'])} kg of ballast left"
+            w(f"- **Sealed vs vented** (reference ship, July): {sealed}; {vented}.")
     if img:
         if img.get("design"):
             v = img["verdict"]
@@ -136,42 +157,57 @@ def write(out: Path) -> Path:
           f"(~{f(b['operable_fraction'] * 100, 0)} % of hours at sea).")
     w("")
 
-    # ------------------------------------------------------------------------------------------- Zeppelin-Micro
-    if micro and micro.get("best"):
-        m_ = micro["mission"]
-        w("## Zeppelin-Micro: the cheapest maritime imaging airship\n")
-        w("It stays in the troposphere, so it is a Zeppelin; the Strato name is kept for ships that float in the stratosphere.\n")
-        w(f"A daylight camera with a video link lifted to {f(m_['altitude'], 0)} m above the sea for {f(m_['hours'], 0)} h per "
-          f"deployment, working in winds up to {f(m_['design_wind'], 0)} m/s at that height. Tethered aerostat (no propulsion; "
-          "camera on a small battery, video by radio, an unpowered Dyneema line) against a free-flying micro blimp "
-          "(electric propellers that out-fly the design wind by 3 m/s, a battery for the hours). Masses, prices and the "
-          "sea-wind statistics are estimates (`designs/zeppelin_micro.py`); the costs compare options, they do not price a product.\n")
-        w(table([r for r in micro["rows"] if r.get("feasible")], [
-            ("concept", lambda r: r["concept"], False), ("envelope", lambda r: r["design"]["envelope"], False),
-            ("fin scale", lambda r: f(r["design"]["fin_scale"], 1), True),
-            ("L × D [m]", lambda r: f"{f(r['length'], 2)} × {f(r['diameter'], 2)}", True), ("V [m³]", lambda r: f(r["volume"], 1), True),
-            ("mass [kg]", lambda r: f(r["system_mass"], 1), True), ("propulsion [W]", lambda r: f(r["propulsion_w"], 0), True),
-            ("battery [Wh]", lambda r: f(r["battery_wh"], 0), True), ("build [€]", lambda r: f(r["build_cost"], 0), True),
-            ("ground [€]", lambda r: f(r["ground_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
-            ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
-        w("")
-        th = micro.get("thermal", {}).get("best")
-        if th:
-            b = micro["best"]
-            w("With and without a thermal camera (each the cheapest sized option):\n")
-            w(table([dict(cam="daylight", **b), dict(cam="daylight + thermal", **th)], [
-                ("camera", lambda r: r["cam"], False), ("concept", lambda r: r["concept"], False),
-                ("L × D [m]", lambda r: f"{f(r['length'], 2)} × {f(r['diameter'], 2)}", True), ("V [m³]", lambda r: f(r["volume"], 1), True),
-                ("mass [kg]", lambda r: f(r["system_mass"], 1), True), ("payload power [W]", lambda r: f(r["loads_w"], 0), True),
-                ("build [€]", lambda r: f(r["build_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
-                ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
-            w("")
-        w(table(micro["altitude"], [("altitude [m]", lambda r: f(r["altitude"], 0), True), ("length [m]", lambda r: f(r["length"], 2), True),
-                                    ("volume [m³]", lambda r: f(r["volume"], 1), True), ("mass [kg]", lambda r: f(r["system_mass"], 1), True),
-                                    ("build [€]", lambda r: f(r["build_cost"], 0), True)]))
-        w("")
-        for p_ in micro["plots"]:
-            w(f"![Zeppelin-Micro]({p_})\n")
+    # ------------------------------------------------------------------------------------------- family
+    if fam:
+        w("## The 15–120 m family (optimised)\n")
+        w("Each ship is the differential-evolution optimum of its length: the highest payload that passes the "
+          "feasibility gate and meets the scenario; where nothing meets it, the least-bad design found is shown "
+          "(\"meets\" = no) with the reasons.\n")
+        if sens and sens.get("noise") is not None:
+            w(f"The optimiser does not reliably find the true optimum: three seeds of the 80 m summer search spread by "
+              f"{f(sens['noise'], 0)} kg of payload. Read the payloads as \"at least this much\", ±{f(sens['noise'] / 2, 0)} kg or so; "
+              "where a larger ship shows less payload than a smaller one, or summer less than year-round, the search fell short, "
+              "not the physics. Which lengths meet a scenario is robust (the margins are large); the payload numbers are not.\n")
+        w(table(fam["table"], [
+            ("scenario", lambda r: r["scenario"], False), ("L [m]", lambda r: f(r["length"], 0), True),
+            ("D [m]", lambda r: f(r["diameter"]), True), ("V [m³]", lambda r: f(r["volume"], 0), True),
+            ("alt [km]", lambda r: f(r["altitude"] / 1000, 1), True), ("payload [kg]", lambda r: f(r["payload"]), True),
+            ("mass [kg]", lambda r: f(r["system_mass"], 0), True), ("net lift [kg]", lambda r: f(r["net_lift"], 0), True),
+            ("battery [kWh]", lambda r: f(r["battery_wh"] / 1000), True), ("prop [kW]", lambda r: f(r["propulsion_w"] / 1000), True),
+            ("array [m²]", lambda r: f(r["solar_area"], 0), True), ("avail.", lambda r: f(r["availability"] * 100, 0, "%"), True),
+            ("gas life [d]", lambda r: f(r["gas_life_days"], 0), True), ("meets", lambda r: f(r["meets"]), False),
+            ("problems", lambda r: r["problems"] or "", False)]))
+        w("\n![family](family.png)\n")
+    if cad and cad.get("plots"):
+        w("Optimised ships (CAD, STEP files in `results/cad/`):\n")
+        for p in cad["plots"]:
+            w(f"![{p}]({p})\n")
+
+    # ------------------------------------------------------------------------------------------- detail
+    if det:
+        w("## Reference ship: day and night, endurance, ascent\n")
+        w(table([dict(month=k, **v) for k, v in det.items() if k in ("Jul", "Dec")], [
+            ("month", lambda r: r["month"], False), ("array [kWh/day]", lambda r: f(r["solar_kwh"], 0), True),
+            ("loads at p90 wind [kWh/day]", lambda r: f(r["loads_kwh"], 0), True), ("battery low [% usable]", lambda r: f(r["soc_min_pct"], 0), True),
+            ("held all day", lambda r: f(r["held"]), False), ("noon superheat [K]", lambda r: f(r["superheat_max"]), True),
+            ("superpressure [Pa]", lambda r: f"{f(r['dp_min'], 0)} – {f(r['dp_max'], 0)}", True)]))
+        w("\n![day cycle](day_cycle.png)\n")
+        infeasible = [k.split("/", 1)[1] for k, v in det.items() if k.startswith("endurance/") and not v.get("feasible", True) and v["days_simulated"] == 0]
+        if infeasible:
+            w(f"Not simulated, because the configuration does not float: {', '.join(infeasible)}.\n")
+        w(table([dict(case=k.split("/", 1)[1], **v) for k, v in det.items() if k.startswith("endurance/") and v["days_simulated"] > 0], [
+            ("case", lambda r: r["case"], False), ("days", lambda r: f(r["days_simulated"], 1), True),
+            ("on station", lambda r: f(r["on_station"] * 100, 0, "%"), True), ("lowest [km]", lambda r: f(r["min_altitude"] / 1000, 2), True),
+            ("farthest [km]", lambda r: f(r["max_dist_km"], 1), True), ("He lost [kg]", lambda r: f(r["gas_lost_kg"]), True),
+            ("vented [kg]", lambda r: f(r["vented_kg"]), True), ("ballast left [kg]", lambda r: f(r["ballast_left"]), True),
+            ("lost after [d]", lambda r: f(r["lost_at_s"] / 86400 if r["lost_at_s"] is not None else None, 1), True)]))
+        w("\n![endurance](endurance.png)\n")
+        w(table([dict(case=k.split("/", 1)[1], **v) for k, v in det.items() if k.startswith("ascent/")], [
+            ("gas system", lambda r: r["case"], False), ("float [km]", lambda r: f(r["float_altitude"] / 1000, 2), True),
+            ("to 99 % [h]", lambda r: f(r["time_to_99pct_s"] / 3600 if r["time_to_99pct_s"] else None, 2), True),
+            ("max rate [m/s]", lambda r: f(r["max_rate"], 2), True), ("drift [km]", lambda r: f(r["drift_km"], 0), True),
+            ("superpressure at top [Pa]", lambda r: f(r["dp_top"], 0), True), ("vented [kg]", lambda r: f(r["vented_kg"]), True)]))
+        w("\n![ascent](ascent.png)\n")
 
     # ------------------------------------------------------------------------------------------- Strato-Sigma
     if img and img.get("design"):
@@ -221,49 +257,42 @@ def write(out: Path) -> Path:
         for p_ in sig_ir.get("plots", []):
             w(f"![Strato-Sigma thermal]({p_})\n")
 
-    # ------------------------------------------------------------------------------------------- family
-    if fam:
-        w("## The 15–120 m family (optimised)\n")
-        w("Each ship is the differential-evolution optimum of its length: the highest payload that passes the "
-          "feasibility gate and meets the scenario; where nothing meets it, the least-bad design found is shown "
-          "(\"meets\" = no) with the reasons.\n")
-        w(table(fam["table"], [
-            ("scenario", lambda r: r["scenario"], False), ("L [m]", lambda r: f(r["length"], 0), True),
-            ("D [m]", lambda r: f(r["diameter"]), True), ("V [m³]", lambda r: f(r["volume"], 0), True),
-            ("alt [km]", lambda r: f(r["altitude"] / 1000, 1), True), ("payload [kg]", lambda r: f(r["payload"]), True),
-            ("mass [kg]", lambda r: f(r["system_mass"], 0), True), ("net lift [kg]", lambda r: f(r["net_lift"], 0), True),
-            ("battery [kWh]", lambda r: f(r["battery_wh"] / 1000), True), ("prop [kW]", lambda r: f(r["propulsion_w"] / 1000), True),
-            ("array [m²]", lambda r: f(r["solar_area"], 0), True), ("avail.", lambda r: f(r["availability"] * 100, 0, "%"), True),
-            ("gas life [d]", lambda r: f(r["gas_life_days"], 0), True), ("meets", lambda r: f(r["meets"]), False),
-            ("problems", lambda r: r["problems"] or "", False)]))
-        w("\n![family](family.png)\n")
-    if cad and cad.get("plots"):
-        w("Optimised ships (CAD, STEP files in `results/cad/`):\n")
-        for p in cad["plots"]:
-            w(f"![{p}]({p})\n")
-
-    # ------------------------------------------------------------------------------------------- detail
-    if det:
-        w("## Reference ship: day and night, endurance, ascent\n")
-        w(table([dict(month=k, **v) for k, v in det.items() if k in ("Jul", "Dec")], [
-            ("month", lambda r: r["month"], False), ("array [kWh/day]", lambda r: f(r["solar_kwh"], 0), True),
-            ("loads at p90 wind [kWh/day]", lambda r: f(r["loads_kwh"], 0), True), ("battery low [% usable]", lambda r: f(r["soc_min_pct"], 0), True),
-            ("held all day", lambda r: f(r["held"]), False), ("noon superheat [K]", lambda r: f(r["superheat_max"]), True),
-            ("superpressure [Pa]", lambda r: f"{f(r['dp_min'], 0)} – {f(r['dp_max'], 0)}", True)]))
-        w("\n![day cycle](day_cycle.png)\n")
-        w(table([dict(case=k.split("/", 1)[1], **v) for k, v in det.items() if k.startswith("endurance/")], [
-            ("case", lambda r: r["case"], False), ("days", lambda r: f(r["days_simulated"], 1), True),
-            ("on station", lambda r: f(r["on_station"] * 100, 0, "%"), True), ("lowest [km]", lambda r: f(r["min_altitude"] / 1000, 2), True),
-            ("farthest [km]", lambda r: f(r["max_dist_km"], 1), True), ("He lost [kg]", lambda r: f(r["gas_lost_kg"]), True),
-            ("vented [kg]", lambda r: f(r["vented_kg"]), True), ("ballast left [kg]", lambda r: f(r["ballast_left"]), True),
-            ("lost after [d]", lambda r: f(r["lost_at_s"] / 86400 if r["lost_at_s"] is not None else None, 1), True)]))
-        w("\n![endurance](endurance.png)\n")
-        w(table([dict(case=k.split("/", 1)[1], **v) for k, v in det.items() if k.startswith("ascent/")], [
-            ("gas system", lambda r: r["case"], False), ("float [km]", lambda r: f(r["float_altitude"] / 1000, 2), True),
-            ("to 99 % [h]", lambda r: f(r["time_to_99pct_s"] / 3600 if r["time_to_99pct_s"] else None, 2), True),
-            ("max rate [m/s]", lambda r: f(r["max_rate"], 2), True), ("drift [km]", lambda r: f(r["drift_km"], 0), True),
-            ("superpressure at top [Pa]", lambda r: f(r["dp_top"], 0), True), ("vented [kg]", lambda r: f(r["vented_kg"]), True)]))
-        w("\n![ascent](ascent.png)\n")
+    # ------------------------------------------------------------------------------------------- Zeppelin-Micro
+    if micro and micro.get("best"):
+        m_ = micro["mission"]
+        w("## Zeppelin-Micro: the cheapest maritime imaging airship\n")
+        w("It stays in the troposphere, so it is a Zeppelin; the Strato name is kept for ships that float in the stratosphere.\n")
+        w(f"A daylight camera with a video link lifted to {f(m_['altitude'], 0)} m above the sea for {f(m_['hours'], 0)} h per "
+          f"deployment, working in winds up to {f(m_['design_wind'], 0)} m/s at that height. Tethered aerostat (no propulsion; "
+          "camera on a small battery, video by radio, an unpowered Dyneema line) against a free-flying micro blimp "
+          "(electric propellers that out-fly the design wind by 3 m/s, a battery for the hours). Masses, prices and the "
+          "sea-wind statistics are estimates (`designs/zeppelin_micro.py`); the costs compare options, they do not price a product.\n")
+        w(table([r for r in micro["rows"] if r.get("feasible")], [
+            ("concept", lambda r: r["concept"], False), ("envelope", lambda r: r["design"]["envelope"], False),
+            ("fin scale", lambda r: f(r["design"]["fin_scale"], 1), True),
+            ("L × D [m]", lambda r: f"{f(r['length'], 2)} × {f(r['diameter'], 2)}", True), ("V [m³]", lambda r: f(r["volume"], 1), True),
+            ("mass [kg]", lambda r: f(r["system_mass"], 1), True), ("propulsion [W]", lambda r: f(r["propulsion_w"], 0), True),
+            ("battery [Wh]", lambda r: f(r["battery_wh"], 0), True), ("build [€]", lambda r: f(r["build_cost"], 0), True),
+            ("ground [€]", lambda r: f(r["ground_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
+            ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
+        w("")
+        th = micro.get("thermal", {}).get("best")
+        if th:
+            b = micro["best"]
+            w("With and without a thermal camera (each the cheapest sized option):\n")
+            w(table([dict(cam="daylight", **b), dict(cam="daylight + thermal", **th)], [
+                ("camera", lambda r: r["cam"], False), ("concept", lambda r: r["concept"], False),
+                ("L × D [m]", lambda r: f"{f(r['length'], 2)} × {f(r['diameter'], 2)}", True), ("V [m³]", lambda r: f(r["volume"], 1), True),
+                ("mass [kg]", lambda r: f(r["system_mass"], 1), True), ("payload power [W]", lambda r: f(r["loads_w"], 0), True),
+                ("build [€]", lambda r: f(r["build_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
+                ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
+            w("")
+        w(table(micro["altitude"], [("altitude [m]", lambda r: f(r["altitude"], 0), True), ("length [m]", lambda r: f(r["length"], 2), True),
+                                    ("volume [m³]", lambda r: f(r["volume"], 1), True), ("mass [kg]", lambda r: f(r["system_mass"], 1), True),
+                                    ("build [€]", lambda r: f(r["build_cost"], 0), True)]))
+        w("")
+        for p_ in micro["plots"]:
+            w(f"![Zeppelin-Micro]({p_})\n")
 
     for data, title, img in ((sw_, "Payload and altitude sensitivity", "sweeps.png"), (loc, "Sensitivity to the estimates (deterministic)", "local_sensitivity.png"),
                              (sens, "Sensitivity to the estimates (re-optimised; optimiser noise shown)", "sensitivity.png"),

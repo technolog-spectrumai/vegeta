@@ -104,7 +104,44 @@ close even in calm air. Flagged: static instability in pitch/yaw (needs active c
 shape needing more than its valve setting. Scenario requirements (availability, gas life, payload) are not physics:
 the optimiser treats them as constraints and the report says which design met them.
 
-## Conclusions
+## Conclusions (campaign of 2026-10-26; numbers from `campaigns/strato/results/report.md`)
 
-See the section of the same name at the end of `campaigns/strato/results/report.md` and the summary in `todo.md`
-(Stage V8); filled in from the campaign results.
+All numbers below come from models built on the estimates listed above (component data, wind climatology); read
+them as engineering estimates, not measured performance.
+
+1. **Feasible, in the stratosphere, from about 35–50 m.** A sealed, solar-electric, helium superpressure airship
+   holds station at about 18 km over 50°N:
+   - **in summer** (June–August, on station ≥ 90 % of days, ≥ 60 days of gas): the smallest optimised general ship is
+     50 m (about 140 kg of payload); the imaging-only **Strato-Sigma** is 34.4 m (35.6 m with a day-and-night thermal
+     camera);
+   - **year-round** (≥ 50 % of days on station in the worst month): the smallest is 80 m (about 390 kg of payload).
+   In the 30-day July simulation the 80 m ship held 18.2 km and its station all month with ballast to spare.
+2. **The 15 m × 3.5 m demonstrator cannot reach the stratosphere.** At 20 km its hull lifts about 24 kg in all and
+   its envelope alone weighs about 30 kg. Its best design floats at about 6 km and holds station on only about 20 % of
+   July days.
+3. **What limits it** (deterministic sensitivity of the 80 m ship, summer, base 538 kg of payload):
+   - **lift versus envelope mass**: square–cube, ±20 % of payload for ±30 % of laminate mass. It decides the minimum
+     size; the envelope is 30–46 % of the mass;
+   - **the payload's night power**: the largest lever, 354–618 kg for 20–5 W per kg of payload;
+   - **battery specific energy**: −100 kg for −20 %;
+   - **helium leakage**: −108 kg for twice the leak rate;
+   - **winter winds and short days**: a year-round ship carries 2.5 times the summer ship's battery;
+   - **wind variability**: −70 kg for 30 % more.
+   **Not limiting in summer**: PV efficiency (energy is in surplus) and the thermal model's least certain coefficient.
+   GaAs beats CIGS by about 16 % of payload in summer and 25 % year-round, through the array's mass.
+4. **The best configurations** (all optimiser picks): fat hulls (fineness 2.5–3.2), floating at the bottom of the band
+   (18.0–18.6 km, the densest air above the summer wind minimum), one ply of Zylon-class laminate, a sealed
+   superpressure hull with a night reserve. Vented designs are not viable here: the 80 m ship's vented variant does not
+   even float, because of its ballonet.
+5. **Below the stratosphere it is a Zeppelin, not a Strato.** **Zeppelin-Micro**, a maritime imaging airship at
+   200 m, is cheapest as a tethered aerostat: about 6.2 m × 2.1 m, 6.5 kg, roughly €7.4k in its first year (estimate);
+   about 6.6 m and €11.7k with a thermal camera.
+6. **What is not settled.**
+   - The optimiser's payloads scatter by about ±50 kg between seeds (which lengths meet a scenario is robust).
+   - The winds are a parametric climatology, not ERA5 data.
+   - The hull CFD and fin FEM are not run (no OpenFOAM or CalculiX in the build container).
+   - Station-keeping is an energy and airspeed budget, not a controller (that is Piccolo's job).
+   - Static pitch/yaw stability is marginal; the ships need active control.
+
+   Next: real wind data for a site, CFD of the hull, a laminate datasheet, and a longer optimiser budget for the
+   payload numbers.
