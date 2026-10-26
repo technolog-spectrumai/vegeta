@@ -54,6 +54,7 @@ def write(out: Path) -> Path:
     cad = _load(out, "cad")
     img = _load(out, "sigma")
     micro = _load(out, "zeppelin_micro")
+    sig_ir = _load(out, "sigma_thermal")
     L = []
     w = L.append
     quick = any(r and r.get("quick") for r in (atm, wind, fam, pv, det, sw_, sens, par, sea, con, cad))
@@ -199,6 +200,20 @@ def write(out: Path) -> Path:
           f"Ascent: {f(a['time_to_99pct_s'] / 3600 if a['time_to_99pct_s'] else None, 1)} h to float, drift {f(a['drift_km'], 0)} km.\n")
         for p_ in img["plots"]:
             w(f"![Strato-Sigma]({p_})\n")
+
+    if img and img.get("design") and sig_ir and sig_ir.get("design"):
+        w("### Strato-Sigma with and without a thermal camera\n")
+        w(f"Thermal variant: {sig_ir['payload_note']}.\n")
+        rows = [("daylight only", img), ("daylight + thermal, day and night", sig_ir)]
+        w(table(rows, [("camera", lambda r: r[0], False), ("length [m]", lambda r: f(r[1]["length"], 2), True),
+                       ("D [m]", lambda r: f(r[1]["verdict"]["diameter"], 2), True), ("V [m³]", lambda r: f(r[1]["verdict"]["volume"], 0), True),
+                       ("payload [kg / W day / W night]", lambda r: f"{f(r[1]['payload']['payload_mass'])} / {f(r[1]['payload']['payload_power'], 0)} / {f(r[1]['payload']['payload_power_night'], 0)}", True),
+                       ("mass [kg]", lambda r: f(r[1]["verdict"]["system_mass"], 1), True), ("envelope [kg]", lambda r: f(r[1]["verdict"]["masses"]["envelope"], 1), True),
+                       ("battery [kWh]", lambda r: f(r[1]["design"]["battery_energy"] / 1000, 1), True),
+                       ("days on station, Jun–Aug worst", lambda r: f(r[1]["verdict"]["availability"] * 100, 0, "%"), True)]))
+        w("")
+        for p_ in sig_ir.get("plots", []):
+            w(f"![Strato-Sigma thermal]({p_})\n")
 
     # ------------------------------------------------------------------------------------------- family
     if fam:
