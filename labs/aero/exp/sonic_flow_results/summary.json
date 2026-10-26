@@ -1,0 +1,112 @@
+{
+ "conditions": {
+  "p0": 5000000.0,
+  "T0": 293.15,
+  "p_amb": 101325.0,
+  "T_amb": 293.15,
+  "end_time": 0.01,
+  "write_interval": 0.0005,
+  "cfl": 0.4
+ },
+ "rig": {
+  "pipe_bore": 10.0,
+  "pipe_length": 100.0,
+  "pipe_wall": 2.0,
+  "valve_x": 20.0,
+  "container_volume_l": 1.0,
+  "container_bore": 100.0,
+  "container_wall": 5.0,
+  "ambient_length": 200.0,
+  "ambient_radius": 100.0
+ },
+ "cfd": {
+  "air": {
+   "gas": "air",
+   "end_time_ms": 9.9999617,
+   "exit_velocity_peak_m_s": 544.058071,
+   "exit_velocity_end_m_s": 373.556238,
+   "exit_velocity_mean_2nd_half_m_s": 378.8072439539824,
+   "exit_mach_end": 1.29490577,
+   "exit_pressure_end_bar": 13.311588400000002,
+   "exit_temperature_end_K": 207.760382,
+   "mass_flow_peak_kg_s": 0.764203716,
+   "mass_flow_end_kg_s": 0.65202677568,
+   "released_mass_g": 6.9191782804468795,
+   "container_pressure_end_bar": 41.920719500000004,
+   "container_temperature_end_K": 278.756238,
+   "container_mass_start_g": 59.33251044,
+   "container_mass_end_g": 52.313732783999995,
+   "first_choked_ms": 0.11000444000000001,
+   "choked_fraction": 0.9890175179590588
+  },
+  "co2": {
+   "gas": "co2",
+   "end_time_ms": 10.000079,
+   "exit_velocity_peak_m_s": 460.86882,
+   "exit_velocity_end_m_s": 303.583037,
+   "exit_velocity_mean_2nd_half_m_s": 305.5118679718627,
+   "exit_mach_end": 1.2864981,
+   "exit_pressure_end_bar": 15.0341779,
+   "exit_temperature_end_K": 229.989558,
+   "mass_flow_peak_kg_s": 0.9142808832,
+   "mass_flow_end_kg_s": 0.822864096,
+   "released_mass_g": 8.444543610743114,
+   "container_pressure_end_bar": 43.945378600000005,
+   "container_temperature_end_K": 284.821057,
+   "container_mass_start_g": 90.16656696,
+   "container_mass_end_g": 81.56535480000001,
+   "first_choked_ms": 0.13610453,
+   "choked_fraction": 0.9864470820156885
+  }
+ },
+ "zero_d": {
+  "air": {
+   "ideal": {
+    "gamma": 1.3999195619210372,
+    "exit_velocity_start_m_s": 313.35090917100035,
+    "exit_velocity_end_m_s": 303.8855871610541,
+    "mass_flow_start_kg_s": 0.9268485728368829,
+    "container_mass_g": 59.50125572230374,
+    "released_mass_g": 8.461515851874553,
+    "container_p_end_bar": 40.3376517672287,
+    "container_T_end_K": 275.70724941255435
+   },
+   "real": {
+    "exit_velocity_start_m_s": 312.6515426112655,
+    "exit_velocity_end_m_s": 301.1234041634766,
+    "mass_flow_start_kg_s": 0.9462383791418983,
+    "container_mass_g": 60.24029787362278,
+    "released_mass_g": 8.59676108392262,
+    "container_p_end_bar": 39.83680830186031,
+    "container_T_end_K": 274.2034924497484,
+    "throat_T_K": 242.07237104598207,
+    "throat_p_bar": 26.07087632066132,
+    "throat_vapour_quality": null
+   }
+  },
+  "co2": {
+   "ideal": {
+    "gamma": 1.2875186171493098,
+    "exit_velocity_start_m_s": 249.68692189133014,
+    "exit_velocity_end_m_s": 245.35828893815162,
+    "mass_flow_start_kg_s": 1.1096678486435994,
+    "container_mass_g": 90.4230063652827,
+    "released_mass_g": 10.357186417288014,
+    "container_p_end_bar": 42.75117891304251,
+    "container_T_end_K": 283.0738660484304
+   },
+   "real": {
+    "exit_velocity_start_m_s": 187.17112589085198,
+    "exit_velocity_end_m_s": 187.80483396500222,
+    "mass_flow_start_kg_s": 1.2967263008161587,
+    "container_mass_g": 140.86894032184853,
+    "released_mass_g": 12.2381741764567,
+    "container_p_end_bar": 44.534503911465535,
+    "container_T_end_K": 284.80794144446986,
+    "throat_T_K": 267.6637750912139,
+    "throat_p_bar": 30.054490672895056,
+    "throat_vapour_quality": 0.924116434999797
+   }
+  }
+ }
+}
