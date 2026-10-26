@@ -48,7 +48,7 @@ def test_cad_hull_matches_profile():
 def test_every_part_builds_and_is_valid():
     d = strato.StratoAirship()
     for part in strato.PARTS:
-        m = d.generate(part=part).measure()
+        m = d.generate(part=part, with_tether=True).measure()
         assert m["valid"], part
     assert d.generate(part="airship").measure()["n_solids"] == 1      # one connected ship
 
@@ -57,3 +57,12 @@ def test_cad_refuses_bad_array():
     from vegeta.dedalus.design import BuildError
     with pytest.raises((ValueError, BuildError)):
         strato.StratoAirship().generate(solar_x0=0.7, solar_x1=0.2)
+
+
+def test_tethered_variant():
+    over = dict(length=6.2, diameter=2.07, with_solar=False, with_propellers=False, with_structure=False, with_tether=True)
+    assert strato.StratoAirship().generate(**over).measure()["n_solids"] == 1      # the lines reach the hull
+    assert set(strato.parts(**over)) == {"hull", "fins", "gondola", "battery", "tether"}
+    from vegeta.dedalus.design import BuildError
+    with pytest.raises((ValueError, BuildError)):
+        strato.StratoAirship().generate(part="solar", with_solar=False)

@@ -14,6 +14,8 @@ Frame: hull axis along +X from the nose tip (+X aft), Z up, Y to starboard. ``pa
 - ``solar``       the conformal solar array on top of the hull (drawn 0.004·D thick to be visible)
 - ``propellers``  the stern pusher, the two vectoring propellers, their nacelles and outriggers
 - ``structure``   the nose-cone battens and the bottom keel
+- ``tether``      confluence lines from four hull patches to the tether point below, and a stub of the tether
+  (``with_tether``; Strato-Micro's aerostat)
 
 The parts are placed where ``strato_geometry.Layout`` puts them; they are not sized by physics yet.
 """
@@ -26,7 +28,8 @@ from vegeta.dedalus import Design, Parameter
 
 import strato_geometry as sg
 
-PARTS = ("airship", "hull", "fins", "gondola", "battery", "solar", "propellers", "structure")
+PARTS = ("airship", "hull", "fins", "gondola", "battery", "solar", "propellers", "structure", "tether")
+OPTIONAL = ("solar", "propellers", "structure", "tether")   # parts a variant can leave out (``with_*`` parameters)
 MM = 1000.0
 _N_PROFILE = 61                   # spline points along the hull profile
 _TAIL_CUT = 0.04                  # the tail is closed where r = _TAIL_CUT·R (the stern hub covers the point)
@@ -46,6 +49,10 @@ class StratoAirship(Design):
         Parameter("solar_x1", 0.72, "", min=0.0, max=1.0, description="array end / length"),
         Parameter("fin_span", 0.55, "", min=0.1, max=2.0, description="fin span / diameter"),
         Parameter("fin_root_chord", 0.14, "", min=0.02, max=0.4, description="fin root chord / length"),
+        Parameter("with_solar", True, "", description="the solar array (Strato-Micro has none)"),
+        Parameter("with_propellers", True, "", description="propulsion (a tethered aerostat has none)"),
+        Parameter("with_structure", True, "", description="nose battens and keel"),
+        Parameter("with_tether", False, "", description="confluence lines and the tether stub (a tethered aerostat)"),
     ]
 
     # ---------------------------------------------------------------- model
@@ -200,13 +207,39 @@ class StratoAirship(Design):
                     "battery": lambda: self._gondola(m, battery=True),
                     "solar": lambda: self._solar(m),
                     "propellers": lambda: self._propellers(m),
-                    "structure": lambda: self._structure(m)}
+                    "structure": lambda: self._structure(m),
+                    "tether": lambda: self._tether(m)}
         if part != "airship":
+            if part in OPTIONAL and not p[f"with_{part}"]:
+                raise ValueError(f"part {part!r} is switched off (with_{part}=False)")
             return builders[part]()
         out = builders["hull"]()
-        for name in ("fins", "gondola", "solar", "propellers", "structure"):
+        for name in ("fins", "gondola", "solar", "propellers", "structure", "tether"):
+            if name in OPTIONAL and not p[f"with_{name}"]:
+                continue
             out = out.union(builders[name]())
         return out
+
+    def _tether(self, m: sg.Strato):
+        """Four confluence lines from patches at 30 % and 60 % of the length, ±40° below the side, to the tether
+        point 0.7 D under the centre of buoyancy, and 0.5 D of tether below it (drawn 0.6 % of D thick)."""
+        h = m.hull
+        D, xc = h.diameter, h.centre_of_buoyancy
+        conf = cq.Vector(xc * MM, 0.0, -(h.radius + 0.7 * D) * MM)
+        rod = 0.003 * D * MM
+        out = None
+        for xf in (0.30, 0.60):
+            x = xf * h.length
+            r = float(h.r([x])[0])
+            for side in (1, -1):
+                a = math.radians(40.0)
+                top = cq.Vector(x * MM, side * r * math.sin(a) * MM, -r * math.cos(a) * MM)
+                v = conf - top
+                line = cq.Workplane("XY").add(cq.Solid.makeCylinder(rod, v.Length, top, v.normalized()))
+                out = line if out is None else out.union(line)
+        stub = cq.Workplane("XY").add(cq.Solid.makeCylinder(1.5 * rod, 0.5 * D * MM, conf, cq.Vector(0, 0, -1)))
+        ring = cq.Workplane("XY").add(cq.Solid.makeSphere(4 * rod, conf))
+        return out.union(stub).union(ring)
 
     def _fins(self, m: sg.Strato):
         lay = m.layout
@@ -220,7 +253,9 @@ class StratoAirship(Design):
 def parts(**overrides) -> dict:
     """Every part as its own ``Geometry`` (the coloured assembly views and the per-part STEP files)."""
     d = StratoAirship()
-    return {name: d.generate(part=name, **overrides) for name in PARTS if name != "airship"}
+    p = d.resolve(**overrides)
+    return {name: d.generate(part=name, **overrides) for name in PARTS
+            if name != "airship" and (name not in OPTIONAL or p[f"with_{name}"])}
 
 
 def for_length(length: float, fineness: float = 15.0 / 3.5) -> dict:

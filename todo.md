@@ -156,5 +156,9 @@ Tasks:
   ground station (no relay to aircraft; ~4.5 kg, 50 W by day, 0 W at night), summer (Jun–Aug, 50°N), on station ≥ 90 %
   of days, ≥ 60 days of gas: `Design.payload_power_night`, `strato_study.smallest_length`, campaign stage `sigma`
   (`results/sigma.json`, `sigma.png`, `cad/strato_sigma_<L>m.step` and parts, report section)
+- [x] V8.19 **Strato-Micro** (2026-10-26): the cheapest maritime imaging airship at a few hundred metres — daylight
+  camera + video link, hours per deployment; tethered aerostat vs free-flying micro blimp, sized against a design sea
+  wind, cost vs operability (`designs/strato_micro.py`, `campaigns/strato/micro.py`, `tests/test_strato_micro.py`;
+  Dedalus `with_*` switches and a `tether` part for the aerostat CAD)
 - [-] V8.17 Later: graduation to Piccolo (export through Yax; control and autonomy there), FEM of the envelope as a
   membrane (Talos is solid-element only), unsteady CFD

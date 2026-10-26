@@ -21,7 +21,8 @@ import strato  # noqa: E402
 import strato_geometry as sg  # noqa: E402
 
 COLORS = {"hull": "#d9dde3", "fins": "#e07a5f", "gondola": "#3d405b", "battery": "#f2cc8f",
-          "solar": "#1d3557", "propellers": "#81b29a", "structure": "#9a8c98"}
+          "solar": "#1d3557", "propellers": "#81b29a", "structure": "#9a8c98",
+          "tether": "#52514e"}
 
 
 def export(length: float, out: Path, stl: bool = True) -> dict:

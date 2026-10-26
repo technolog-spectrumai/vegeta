@@ -39,3 +39,4 @@ tests/labs
 labs/aero/tests/test_strato_models.py
 labs/aero/tests/test_strato_golden.py
 labs/aero/tests/test_strato_campaign.py
+labs/aero/tests/test_strato_micro.py
