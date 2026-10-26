@@ -1,0 +1,161 @@
+{
+ "design": {
+  "length": 80.0,
+  "fineness": 2.5320029852605055,
+  "altitude": 18561.595373558295,
+  "payload_mass": 389.8350043970354,
+  "payload_power": null,
+  "payload_power_night": null,
+  "battery_energy": 202956.8619694832,
+  "battery": "li-ion",
+  "pv": "gaas",
+  "solar_half_angle_deg": 30.870911425206145,
+  "solar_x0": 0.18,
+  "solar_x1": 0.72,
+  "propulsion_power": 29535.56625201247,
+  "laminate": "zylon",
+  "gas_system": "sealed",
+  "fin_scale": 0.84022394458748,
+  "valve_dp": 30.0,
+  "night_superpressure": 49.243250255343895
+ },
+ "rows": [
+  {
+   "month": 1,
+   "superheat_day": 22.87392892098663,
+   "dp_max": 841.1380596550152,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 11848.351400909685,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 468.0519376264905,
+   "loads_kwh": 809.5935986673442
+  },
+  {
+   "month": 2,
+   "superheat_day": 26.475876383747618,
+   "dp_max": 957.963906914727,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 13493.971492823941,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 701.6913641820271,
+   "loads_kwh": 772.0008161295477
+  },
+  {
+   "month": 3,
+   "superheat_day": 31.857663177657315,
+   "dp_max": 1132.5172030051954,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 15952.745966915798,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1018.9248994258662,
+   "loads_kwh": 513.0685055031744
+  },
+  {
+   "month": 4,
+   "superheat_day": 38.39069551837247,
+   "dp_max": 1344.4100876932216,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 18937.489468078806,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1375.5789703629575,
+   "loads_kwh": 278.7999267215108
+  },
+  {
+   "month": 5,
+   "superheat_day": 43.53856867986252,
+   "dp_max": 1511.376610635124,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 21289.395927780653,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1641.675885318106,
+   "loads_kwh": 166.20060315266247
+  },
+  {
+   "month": 6,
+   "superheat_day": 45.661434886470886,
+   "dp_max": 1580.2298201197327,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 22259.268841852194,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1761.2917837421953,
+   "loads_kwh": 138.43057388752223
+  },
+  {
+   "month": 7,
+   "superheat_day": 45.550800527681304,
+   "dp_max": 1576.6414966266066,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 22208.723372890614,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1690.324955693527,
+   "loads_kwh": 134.36968098268048
+  },
+  {
+   "month": 8,
+   "superheat_day": 43.49667600626151,
+   "dp_max": 1510.017860365163,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 21270.25644112946,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1453.7756963715217,
+   "loads_kwh": 139.22224389631626
+  },
+  {
+   "month": 9,
+   "superheat_day": 39.09560521316081,
+   "dp_max": 1367.2731841671803,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 19259.541238328584,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 1122.2080646134714,
+   "loads_kwh": 167.38810816585348
+  },
+  {
+   "month": 10,
+   "superheat_day": 32.33240747048677,
+   "dp_max": 1147.9150967321075,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 16169.642175113942,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 786.5175898899164,
+   "loads_kwh": 279.8539031284384
+  },
+  {
+   "month": 11,
+   "superheat_day": 25.797423835677193,
+   "dp_max": 935.9589236179745,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 13184.007187109366,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 513.579950094941,
+   "loads_kwh": 514.1900380156326
+  },
+  {
+   "month": 12,
+   "superheat_day": 22.560432230335834,
+   "dp_max": 830.9700833374691,
+   "dp_min": 99.2432502553439,
+   "hoop_line_load": 11705.124311059742,
+   "allowable": 22500.0,
+   "plies": 1,
+   "solar_kwh": 407.81696389983637,
+   "loads_kwh": 772.7924861383415
+  }
+ ],
+ "plots": [
+  "constraints.png"
+ ],
+ "seconds": 2.2969558238983154,
+ "quick": false
+}
