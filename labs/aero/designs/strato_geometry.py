@@ -17,6 +17,7 @@ Frame (shared with the CAD): x along the hull axis from the nose tip (+x aft), z
 from __future__ import annotations
 
 import math
+from functools import cached_property
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -74,27 +75,27 @@ class Hull:
         x = self.stations(n)
         return x, self.r(x)
 
-    @property
+    @cached_property
     def volume(self) -> float:
         """Enclosed volume [m³]: ∫ π r² dx."""
         x, r = self.profile()
         return float(np.trapezoid(math.pi * r ** 2, x))
 
-    @property
+    @cached_property
     def surface_area(self) -> float:
         """Wetted (envelope) area [m²]: ∫ 2π r √(1 + r'²) dx, from the polyline (exact in the limit)."""
         x, r = self.profile()
         ds = np.hypot(np.diff(x), np.diff(r))
         return float(np.sum(math.pi * (r[1:] + r[:-1]) * ds))
 
-    @property
+    @cached_property
     def centre_of_buoyancy(self) -> float:
         """x of the volume's centroid [m] (the centre of buoyancy on the axis)."""
         x, r = self.profile()
         a = math.pi * r ** 2
         return float(np.trapezoid(a * x, x) / np.trapezoid(a, x))
 
-    @property
+    @cached_property
     def prismatic_coefficient(self) -> float:
         """V / (π R² L): 1 for a cylinder, 2/3 for an ellipsoid."""
         return self.volume / (math.pi * self.radius ** 2 * self.length)
@@ -158,7 +159,7 @@ class Strato:
     def scaled(self, length: float, fineness: float | None = None) -> "Strato":
         return replace(self, hull=self.hull.scaled(length, fineness))
 
-    @property
+    @cached_property
     def solar_area(self) -> float:
         h, lay = self.hull, self.layout
         return h.top_area(lay.solar_x0 * h.length, lay.solar_x1 * h.length, lay.solar_half_angle_deg)
@@ -169,12 +170,49 @@ class Strato:
         h, lay = self.hull, self.layout
         return 0.5 * (lay.fin_root_chord + lay.fin_tip_chord) * h.length * lay.fin_span * h.diameter
 
+    def facets(self, n_x: int = 40, n_phi: int = 36) -> dict:
+        """The envelope as ``n_x`` × ``n_phi`` flat facets: centre (body frame), outward unit normal (body frame),
+        area [m²], and the fraction of the facet the solar array covers. Body frame: x aft from the nose tip, y starboard,
+        z up; φ is measured from the top towards starboard."""
+        h, lay = self.hull, self.layout
+        xe = h.stations(n_x + 1)
+        xc = 0.5 * (xe[1:] + xe[:-1])
+        r_e = h.r(xe)
+        ds = np.hypot(np.diff(xe), np.diff(r_e))
+        rc = 0.5 * (r_e[1:] + r_e[:-1])
+        drdx = np.diff(r_e) / np.diff(xe)
+        phi = (np.arange(n_phi) + 0.5) * 2 * math.pi / n_phi
+        X, PHI = np.meshgrid(xc, phi, indexing="ij")
+        R = np.broadcast_to(rc[:, None], X.shape)
+        slope = np.broadcast_to(drdx[:, None], X.shape)
+        centre = np.stack([X, R * np.sin(PHI), R * np.cos(PHI)], -1).reshape(-1, 3)
+        normal = np.stack([-slope, np.sin(PHI), np.cos(PHI)], -1)
+        normal = (normal / np.linalg.norm(normal, axis=-1, keepdims=True)).reshape(-1, 3)
+        area = (np.broadcast_to((rc * ds)[:, None], X.shape) * (2 * math.pi / n_phi)).reshape(-1)
+        # the array's share of each facet (fractional at its edges, so the array area is exact to the facet sums)
+        w_phi = 360.0 / n_phi
+        dphi = np.degrees(np.minimum(PHI, 2 * math.pi - PHI))
+        f_phi = np.clip((lay.solar_half_angle_deg - (dphi - 0.5 * w_phi)) / w_phi, 0.0, 1.0)
+        x0, x1 = lay.solar_x0 * h.length, lay.solar_x1 * h.length
+        f_x = np.clip((np.minimum(xe[1:], x1) - np.maximum(xe[:-1], x0)) / np.diff(xe), 0.0, 1.0)
+        array = (f_phi * f_x[:, None]).reshape(-1)
+        return {"centre": centre, "normal": normal, "area": area, "array": array}
+
     def summary(self) -> dict:
         h = self.hull
         return {"length_m": h.length, "diameter_m": h.diameter, "fineness": h.fineness, "volume_m3": h.volume,
                 "envelope_area_m2": h.surface_area, "centre_of_buoyancy_m": h.centre_of_buoyancy,
                 "prismatic_coefficient": h.prismatic_coefficient, "solar_area_m2": self.solar_area,
                 "fin_area_m2": self.fin_planform_area * self.layout.fin_count}
+
+
+def body_to_enu(heading_deg: float) -> np.ndarray:
+    """Rotation matrix from the body frame (x aft, y starboard, z up) to east-north-up for a ship whose nose points
+    to ``heading_deg`` (from north, clockwise), level."""
+    p = math.radians(heading_deg)
+    nose = np.array([math.sin(p), math.cos(p), 0.0])
+    starboard = np.array([math.cos(p), -math.sin(p), 0.0])
+    return np.column_stack([-nose, starboard, [0.0, 0.0, 1.0]])
 
 
 DEMONSTRATOR = Strato()                                     # 15 m × 3.5 m
