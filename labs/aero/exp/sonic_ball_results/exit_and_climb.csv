@@ -1,0 +1,21 @@
+body,mass_g,exit_v_m_s,exit_KE_J,v_at_50m,KE_at_50m,Cd_exit,source
+ball Ø7 mm,0.198,264.2,6.9,8.7,0.01,0.741,CFD + friction
+ball Ø10 mm,0.576,231.0,15.37,29.0,0.24,0.599,CFD + friction
+ball Ø12 mm,0.995,212.5,22.48,38.8,0.75,0.535,CFD + friction
+ball Ø15 mm,1.944,190.7,35.34,49.4,2.37,0.485,CFD + friction
+hemisphere L/D 1,0.72,207.8,15.54,122.2,5.38,0.156,CFD + friction
+hemisphere L/D 2,1.584,144.6,16.57,108.5,9.32,0.172,CFD + friction
+hemisphere L/D 3,2.448,113.7,15.82,90.4,10.01,0.188,CFD (mass-interpolated) + friction
+hemisphere L/D 4,3.312,92.6,14.19,74.6,9.21,0.204,CFD (mass-interpolated) + friction
+hemisphere L/D 5,4.176,77.3,12.49,61.6,7.93,0.22,CFD (mass-interpolated) + friction
+hemisphere L/D 6,5.04,65.5,10.81,50.6,6.45,0.236,CFD (mass-interpolated) + friction
+hemisphere L/D 8,6.768,45.7,7.06,28.9,2.83,0.268,CFD (mass-interpolated) + friction
+hemisphere L/D 10,8.495,26.1,2.9,0.0,0.0,0.3,CFD (mass-interpolated) + friction
+paraboloid L/D 1,0.648,217.1,15.27,125.2,5.08,0.148,CFD + friction
+paraboloid L/D 2,1.296,161.0,16.81,116.8,8.84,0.162,CFD + friction
+paraboloid L/D 3,2.16,124.4,16.71,98.4,10.45,0.178,CFD + friction
+paraboloid L/D 4,3.024,100.1,15.13,80.9,9.9,0.194,CFD + friction
+paraboloid L/D 5,3.888,83.0,13.38,66.9,8.69,0.21,CFD + friction
+paraboloid L/D 6,4.752,70.4,11.78,55.5,7.33,0.226,CFD + friction
+paraboloid L/D 8,6.48,50.0,8.11,34.3,3.82,0.258,CFD + friction
+paraboloid L/D 10,8.207,31.0,3.95,0.0,0.0,0.29,CFD + friction

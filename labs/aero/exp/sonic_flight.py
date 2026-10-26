@@ -100,6 +100,14 @@ def exit_states(root=None, contact_pressure: float = 0.15e6) -> dict:
             v = exit_with_friction_(x, F, b, travel)
             out[name] = dict(ball=b, v=v, source="CFD + friction")
             ratios.append(v / g["u"][-1] if g["u"][-1] > 0 else 1.0)
+        elif b.shape == "hemisphere" and all((root / f"shape_air_paraboloid_ld{ld}" / "ball_done.json").exists() for ld in sb.LD_VALUES):
+            # in the bore only the mass matters: the gas force of the paraboloid runs, interpolated to this mass
+            para = {"mass": [], "x": [], "F": []}
+            for ld in sb.LD_VALUES:
+                x, F = sb.force_vs_travel(root / f"shape_air_paraboloid_ld{ld}")
+                para["mass"].append(sb.projectile("paraboloid", ld).mass); para["x"].append(x); para["F"].append(F)
+            x, F = sb.force_for_mass(para, b.mass)
+            out[name] = dict(ball=b, v=exit_with_friction_(x, F, b, travel), source="CFD (mass-interpolated) + friction")
         else:
             pending.append((name, b, g["u"][-1]))
     k = float(np.mean(ratios)) if ratios else 1.0
