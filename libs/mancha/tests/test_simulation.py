@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import pytest
 
-from mancha import (D3Q19, InvalidParameterError, NumericalInstabilityError, Simulation, UnitConverter)
+from mancha import D3Q19, InvalidParameterError, NumericalInstabilityError, Simulation, UnitConverter
 from mancha.boundaries import sphere
 
 

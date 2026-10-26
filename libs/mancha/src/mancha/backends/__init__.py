@@ -13,7 +13,7 @@ def create_backend(name: str, **kwargs: Any) -> Backend:
     if name == "numpy":
         return NumpyBackend(**kwargs)
     if name == "triton":
-        from .triton_backend import TritonBackend   # torch and triton are optional dependencies
+        from .triton_backend import TritonBackend  # torch and triton are optional dependencies
 
         return TritonBackend(**kwargs)
     raise ValueError(f"unknown backend {name!r}; choose from {BACKENDS}")

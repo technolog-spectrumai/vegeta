@@ -296,7 +296,8 @@ class Simulation:
         units = UnitConverter(**meta["units"]) if meta["units"] else None
         dtype = kwargs.pop("dtype", meta["dtype"] if name == meta["backend"] else None)
         sim = cls(shape=meta["shape"], collision=from_parameters(meta["collision"]), backend=name, dtype=dtype,
-                  density=meta["reference_density"], force=meta.get("force"), units=units, check_interval=meta["check_interval"],
+                  density=meta["reference_density"], force=meta.get("force"), units=units,
+                  check_interval=meta["check_interval"],
                   history_interval=meta["history_interval"], **kwargs)
         sim.boundaries = BoundaryConditions.from_dict(meta["boundaries"])
         sim._dirty = True

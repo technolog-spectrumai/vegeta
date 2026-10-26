@@ -54,7 +54,7 @@ class Backend(ABC):
     def health(self) -> tuple[bool, float]:
         """``(all populations finite, max |u| over fluid nodes)``, computed on the device."""
 
-    def synchronize(self) -> None:
+    def synchronize(self) -> None:  # noqa: B027 - a no-op default is intended
         """Wait for queued device work (no-op on the CPU)."""
 
     def memory_bytes(self) -> int:

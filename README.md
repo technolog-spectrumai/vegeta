@@ -532,6 +532,8 @@ libs/              the common layer — never imports labs/
   ogma/              the parts library (`import ogma as og`): standard-part physics, CAD and MuJoCo strategies
   labkit/            what every lab uses (`vegeta.labkit`): the notebook bootstrap, the machine registry, shared
                      controllers and kinematics, generic CAD parts
+  mancha/            the lattice Boltzmann solver (`import mancha`): D3Q19 on NumPy and Triton GPUs, standalone
+                     (imports nothing from Vegeta or Ogma); its own tests (`libs/mancha/test.sh`), plan in its todo.md
 labs/              one per domain; a lab imports libs/ and itself, never another lab (tools/labs.py check)
   aero/  land/  legged/  marine/  studio/
     notebooks/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml

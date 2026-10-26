@@ -66,6 +66,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage M — Mancha, the lattice Boltzmann solver (2026-10-26)
+A standalone library in `libs/mancha/` (Basilisk Systems; imports nothing from Vegeta or Ogma). Its plan and
+progress: [`libs/mancha/todo.md`](libs/mancha/todo.md).
+- [x] M.A NumPy D3Q19 reference solver with analytical regression tests
+- [x] M.B Triton backend, agreeing with the reference (interpreter) and compiling for sm_80/sm_90
+- [x] M.C validation benchmarks (`libs/mancha/benchmarks/validate.py`, results in `libs/mancha/docs/validation.md`)
+- [ ] M.D GPU performance measured and tuned (needs a machine with an NVIDIA GPU)
+- [x] M.E API, VTK/JSON/checkpoint output, examples, docs, CI workflow (`.github/workflows/mancha.yml`)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)

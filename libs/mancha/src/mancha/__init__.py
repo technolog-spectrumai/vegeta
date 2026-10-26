@@ -4,8 +4,13 @@ __version__ = "0.1.0"
 
 from .boundaries import FACES, BoundaryConditions  # noqa: E402
 from .collision import BGK, CollisionModel  # noqa: E402
-from .errors import (BackendUnavailableError, InsufficientMemoryError, InvalidParameterError,  # noqa: E402
-                     ManchaError, NumericalInstabilityError)
+from .errors import (  # noqa: E402
+    BackendUnavailableError,
+    InsufficientMemoryError,
+    InvalidParameterError,
+    ManchaError,
+    NumericalInstabilityError,
+)
 from .lattice import D3Q19  # noqa: E402
 from .simulation import Record, Simulation  # noqa: E402
 from .units import UnitConverter  # noqa: E402
