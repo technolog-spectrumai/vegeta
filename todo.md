@@ -115,7 +115,7 @@ Layout (stratosphere physics in its own files; verified physics separated from e
   (assumptions, sources, verified vs estimate table).
 
 Tasks:
-- [ ] V8.0 `dev_strato` branch; this plan; answers to the open questions folded in
+- [ ] V8.0 `dev_strato` branch (done); this plan (done); answers to the open questions folded in
 - [ ] V8.1 `og.stratosphere`: USSA-1976 layers to 86 km, geopotential ↔ geometric altitude, gravity vs altitude;
   tests vs the USSA-1976 tables (e.g. 20 km: 216.65 K, 5474.9 Pa, 0.08803 kg/m³) and vs `og.atmosphere` below 11 km
 - [ ] V8.2 `og.lifting_gas`: buoyancy, sealed vs vented, superheat, ballonet / pressure height; tests by hand
@@ -124,7 +124,7 @@ Tasks:
   values for given dates and latitudes, day length at solstices/equinoxes
 - [ ] V8.4 `og.envelope`: membrane stresses, required thickness for a safety factor, laminate catalogue; tests vs
   closed-form cylinder/sphere results
-- [ ] V8.5 Parametric geometry + CAD: 15 m × 3.5 m demonstrator (fineness 4.3), scaling to 30–80 m (scale by length
+- [~] V8.5 (CAD and pictures done: `designs/strato.py`, `strato_geometry.py`, `campaigns/strato/cad.py`, `tests/test_strato_cad.py`; HTML viewer open) Parametric geometry + CAD: 15 m × 3.5 m demonstrator (fineness 4.3), scaling to 30–80 m (scale by length
   with fineness free); STEP/STL/glTF; interactive 3D (pyvista in the notebook, a self-contained HTML viewer for the
   report); analytic volume/area within 0.5 % of the CAD measurement (test)
 - [ ] V8.6 Mass budget and CG/CB, trim ballast; stability (CB above CG, metacentric height, fin volume vs Munk moment)
