@@ -72,6 +72,7 @@ progress: [`libs/mancha/todo.md`](libs/mancha/todo.md).
 - [x] M.A NumPy D3Q19 reference solver with analytical regression tests
 - [x] M.B Triton backend, agreeing with the reference (interpreter) and compiling for sm_80/sm_90
 - [x] M.C validation benchmarks (`libs/mancha/benchmarks/validate.py`, results in `libs/mancha/docs/validation.md`)
+  and an OpenFOAM cross-check (cube in a duct, `libs/mancha/docs/openfoam.md`)
 - [ ] M.D GPU performance measured and tuned (needs a machine with an NVIDIA GPU)
 - [x] M.E API, VTK/JSON/checkpoint output, examples, docs, CI workflow (`.github/workflows/mancha.yml`)
 

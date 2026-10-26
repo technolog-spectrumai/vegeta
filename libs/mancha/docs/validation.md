@@ -7,7 +7,8 @@ Two kinds of evidence, kept apart:
 * **Validation benchmarks** (`benchmarks/validate.py`, `benchmarks/openfoam/cube_in_duct.py`): refinement series
   against exact solutions, published data and an independent solver. The numbers below were measured with those
   scripts — NumPy backend, float64, on the development container's CPU (x86-64), Mancha 0.1.0 — and their JSON
-  records are written to `results/` when the scripts run. Nothing is quoted that was not measured.
+  records are written to `results/` when the scripts run; the records behind this page are kept in
+  [`records/`](records/). Nothing is quoted that was not measured.
 
 Lattice units throughout unless stated. "Error" is relative unless stated.
 
@@ -101,7 +102,10 @@ a prediction.
 
 ## 7. Independent solver: OpenFOAM, cube in a duct
 
-See [openfoam.md](openfoam.md).
+Steady flow past a wall-mounted cube in a duct (Re ≈ 39), compared point by point with OpenFOAM
+(simpleFoam) on identical grids: velocity fields within 0.015 U_b RMS beyond the inlet region at n = 12,
+pressure drop within 1.4 %, reattachment length within 2 %, drag 7 % higher than OpenFOAM at the same grid and
+5 % above OpenFOAM's finest grid, with the two codes converging towards each other. Details: [openfoam.md](openfoam.md).
 
 ## Findings that changed the code or the docs
 

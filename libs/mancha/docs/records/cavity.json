@@ -1,0 +1,62 @@
+{
+ "case": "cavity",
+ "backend": "numpy",
+ "quick": false,
+ "mancha_version": "0.1.0",
+ "platform": {
+  "python": "3.13.17",
+  "machine": "x86_64",
+  "processor": "x86_64"
+ },
+ "wall_time_s": 708.185838978,
+ "result": {
+  "reference": "Ghia, Ghia & Shin (1982), Tables I, II, V",
+  "runs": [
+   {
+    "n": 32,
+    "reynolds": 100.0,
+    "steps": 22000,
+    "residual": 6.939350466874276e-09,
+    "vortex_centre": [
+     0.609375,
+     0.734375
+    ],
+    "vortex_centre_error": 0.007825039936000299,
+    "ghia_u_max_abs_error": 0.010386248585122937,
+    "ghia_v_max_abs_error": 0.006107771699042974,
+    "mass": 1023.9999999977198,
+    "wall_time_s": 24.266709509999828
+   },
+   {
+    "n": 64,
+    "reynolds": 100.0,
+    "steps": 42000,
+    "residual": 7.1313932867174984e-09,
+    "vortex_centre": [
+     0.6171875,
+     0.7265625
+    ],
+    "vortex_centre_error": 0.007837509968095787,
+    "ghia_u_max_abs_error": 0.005516262865018939,
+    "ghia_v_max_abs_error": 0.0077857759135055715,
+    "mass": 4095.999999983988,
+    "wall_time_s": 115.5115518130001
+   },
+   {
+    "n": 128,
+    "reynolds": 100.0,
+    "steps": 79000,
+    "residual": 8.879306985528331e-09,
+    "vortex_centre": [
+     0.61328125,
+     0.73046875
+    ],
+    "vortex_centre_error": 0.00555079526959878,
+    "ghia_u_max_abs_error": 0.005295713581204203,
+    "ghia_v_max_abs_error": 0.008766281247436891,
+    "mass": 16383.999999896307,
+    "wall_time_s": 567.986509052
+   }
+  ]
+ }
+}

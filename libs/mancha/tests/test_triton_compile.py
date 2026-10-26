@@ -1,6 +1,7 @@
 """The Triton kernels compile for real NVIDIA targets (sm_80, sm_90) without a GPU: catches code the interpreter
 accepts but the compiler rejects, and register spills."""
 import inspect
+import os
 import re
 import shutil
 import subprocess
@@ -10,6 +11,9 @@ import pytest
 
 triton = pytest.importorskip("triton")
 pytest.importorskip("torch")
+if os.environ.get("TRITON_INTERPRET", "0") not in ("", "0"):
+    pytest.skip("kernels are interpreted functions under TRITON_INTERPRET; nothing to compile",
+                allow_module_level=True)
 from triton.backends.compiler import GPUTarget  # noqa: E402
 from triton.compiler import ASTSource  # noqa: E402
 

@@ -310,16 +310,19 @@ def cube_force(U: np.ndarray, P: np.ndarray, n: int, nu: float) -> np.ndarray:
 
 # ------------------------------------------------------------------------------------------- comparison
 def recirculation_length(u: np.ndarray, n: int) -> float:
-    """Length (in h) of reversed flow behind the cube on the floor line through its centre (first node above
-    the floor), measured from the cube's downstream face."""
+    """Reattachment distance (in h) behind the cube on the floor line through its centre (first node above the
+    floor): where the last stretch of reversed flow ends, measured from the cube's downstream face. Taking the last
+    reversal rather than the first forward node skips the small counter-rotating vortex in the corner at the
+    cube's base, which fine grids resolve."""
     line = u[0, (CUBE_X0 + 1) * n:, 0, int(1.5 * n)]
-    if line[0] >= 0:
+    rev = np.flatnonzero(line < 0)
+    if rev.size == 0:
         return 0.0
-    k = int(np.argmax(line >= 0))                      # first node with forward flow again
-    if line[k] < 0:
+    k = int(rev[-1])                                   # last reversed node
+    if k + 1 >= line.size:
         return float(line.size / n)                    # reversed all the way to the outlet
-    frac = line[k - 1] / (line[k - 1] - line[k])       # linear zero crossing between nodes k−1 and k
-    return float((k - 0.5 + frac) / n)                 # node j sits (j + ½)/n behind the face
+    frac = line[k] / (line[k] - line[k + 1])           # linear zero crossing between nodes k and k+1
+    return float((k + 0.5 + frac) / n)                 # node j sits (j + ½)/n behind the face
 
 
 def compare(m: dict[str, Any], f: dict[str, Any]) -> dict[str, Any]:
@@ -327,7 +330,11 @@ def compare(m: dict[str, Any], f: dict[str, Any]) -> dict[str, Any]:
     fluid = ~m["solid"]
     um, uf = m["u"], f["u"]
     ok = fluid & np.isfinite(uf[0])
-    diff = np.sqrt(((um - uf) ** 2).sum(axis=0))[ok]
+    full = np.sqrt(((um - uf) ** 2).sum(axis=0))
+    diff = full[ok]
+    beyond = ok.copy()
+    beyond[: n] = False            # the inlet corners differ by construction (wall precedence at Mancha's inlet edges)
+    where = np.unravel_index(np.argmax(np.where(ok, full, -1.0)), full.shape)
     # pressure drop between the planes 1 h after the inlet and 1 h before the outlet (plane averages)
     i0, i1 = n, (LENGTH - 1) * n
     dp_m = float(m["p"][i0].mean() - m["p"][i1].mean())
@@ -343,6 +350,9 @@ def compare(m: dict[str, Any], f: dict[str, Any]) -> dict[str, Any]:
             "recirculation_length": {"mancha": recirculation_length(um, n), "openfoam": recirculation_length(uf, n)},
             "pressure_drop": {"mancha": dp_m, "openfoam": dp_f, "rel_diff": dp_m / dp_f - 1},
             "velocity_diff_rms": float(np.sqrt((diff ** 2).mean())), "velocity_diff_max": float(diff.max()),
+            "velocity_diff_max_at_h": [float((i + 0.5) / n) for i in where],
+            "velocity_diff_rms_beyond_1h": float(np.sqrt((full[beyond] ** 2).mean())),
+            "velocity_diff_max_beyond_1h": float(full[beyond].max()),
             "profiles": profiles}
 
 
@@ -409,9 +419,12 @@ def main(argv: list[str] | None = None) -> None:
         results.append(row)
         print(f"   Cd diff {c['cd']['rel_diff']:+.2%}, recirculation {c['recirculation_length']}, "
               f"Δp diff {c['pressure_drop']['rel_diff']:+.2%}, |Δu| rms {c['velocity_diff_rms']:.4f} "
-              f"max {c['velocity_diff_max']:.4f}", flush=True)
+              f"max {c['velocity_diff_max']:.4f}; beyond x = h: rms {c['velocity_diff_rms_beyond_1h']:.4f} "
+              f"max {c['velocity_diff_max_beyond_1h']:.4f}", flush=True)
+        previous = json.loads((out / "cube_in_duct.json").read_text()) if (out / "cube_in_duct.json").exists() else {}
         (out / "cube_in_duct.json").write_text(json.dumps(
-            {"mancha_version": __version__, "backend": args.backend, "case": "wall-mounted cube in a duct",
+            {"openfoam_reference": previous.get("openfoam_reference", []), "mancha_version": __version__,
+             "backend": args.backend, "case": "wall-mounted cube in a duct",
              "geometry_h": {"length": LENGTH, "height": HEIGHT, "width": WIDTH, "cube_x0": CUBE_X0},
              "openfoam": "simpleFoam (laminar, Gauss linear, SIMPLEC), " + args.openfoam_bashrc,
              "results": results}, indent=1))
@@ -425,7 +438,8 @@ def main(argv: list[str] | None = None) -> None:
                           "pressure_drop": float(np.nanmean(f["p"][n]) - np.nanmean(f["p"][(LENGTH - 1) * n]))})
         print(f"OpenFOAM reference n={n}: {reference[-1]}", flush=True)
         record = json.loads((out / "cube_in_duct.json").read_text()) if (out / "cube_in_duct.json").exists() else {}
-        record["openfoam_reference"] = reference
+        record["openfoam_reference"] = [r for r in record.get("openfoam_reference", []) if r["n"] not in
+                                        {x["n"] for x in reference}] + reference
         (out / "cube_in_duct.json").write_text(json.dumps(record, indent=1))
     plot(results, out)
 

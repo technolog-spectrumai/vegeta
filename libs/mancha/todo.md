@@ -41,24 +41,31 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` partly done (see not
       interpreter and ahead-of-time compilation have been exercised)
 
 ## Phase C — Validation (scientific benchmarks, `benchmarks/`)
-- [ ] C1 Taylor–Green grid refinement (decay-rate error, observed order)
-- [ ] C2 Poiseuille channel (L2 error vs analytical, grid refinement)
-- [ ] C3 lid-driven cavity Re=100 against Ghia et al. (1982) centreline data
-- [ ] C4 sphere in a channel: drag by momentum exchange, wake length; compared with the Schiller–Naumann
-      correlation (unconfined) and the blockage stated
-- [ ] C5 uniform rest / uniform flow preservation reported with mass drift
+- [x] C1 Taylor–Green grid refinement (decay-rate error, observed order): n = 16–128, order 2.6 / 1.85
+- [x] C2 Poiseuille channel (L2 error vs analytical, grid refinement): order 2.000 at τ = 0.8, 1, 1.5
+- [x] C2b inlet/outlet channel: profile, flux conservation, delivered flux deficit measured
+- [x] C3 lid-driven cavity Re=100 against Ghia et al. (1982): n = 32, 64, 128
+- [~] C4 sphere in a periodic box: D = 8 at Re = 20 done; D = 12, 16 and Re = 100 stopped (CPU time) — rerun on
+      a GPU (`benchmarks/validate.py sphere --backend triton`)
+- [x] C5 uniform rest / uniform flow preservation reported with mass drift
+- [x] C6 OpenFOAM cross-check: wall-mounted cube in a duct, Re ≈ 39, identical grids n = 8, 12, OpenFOAM alone
+      at n = 16, 24 (`benchmarks/openfoam/cube_in_duct.py`, `docs/openfoam.md`)
+- [ ] C7 Mancha cube series at n = 16, 24 on a GPU, to narrow the drag bracket (4.02–4.22)
 
 ## Phase D — Performance
-- [ ] D1 `benchmarks/performance.py`: MLUPS, wall time, memory, effective bandwidth for 64³/128³/256³
+- [x] D1 `benchmarks/performance.py`: MLUPS, wall time, memory, effective bandwidth for 64³/128³/256³ (skips
+      sizes that do not fit, with the reason)
 - [ ] D2 Nsight profiling and tuning (needs an NVIDIA GPU — not available in the development container)
 - [ ] D3 documented MLUPS (only measured numbers, with the GPU named)
 
 ## Phase E — Usability
-- [ ] E1 NumPy output, JSON metadata, checkpoints (save/restore)
-- [ ] E2 VTK export (`.vti` through PyVista when installed, a dependency-free writer otherwise)
-- [ ] E3 plots: velocity profiles, convergence histories (matplotlib, optional)
-- [ ] E4 README, docs (numerics, memory layout, boundaries and their limits, units, extension points)
-- [ ] E5 examples (the README example runs as written), CI workflow
+- [x] E1 NumPy output, JSON metadata, checkpoints (save/restore, also across backends)
+- [x] E2 VTK export (`.vti`, a dependency-free writer; `to_pyvista`; read back through PyVista in the tests)
+- [x] E3 plots: velocity profiles, convergence histories (matplotlib, optional)
+- [x] E4 README, docs (numerics, memory layout, boundaries and their limits, GPU, validation, OpenFOAM, extending)
+- [x] E5 examples (duct flow = the README example, physical units, cavity, sphere wake), CI workflow
+      (`.github/workflows/mancha.yml`: NumPy tests, Triton interpreter + sm_80/sm_90 compilation, opt-in GPU job)
+- [ ] E6 packaging beyond the editable install (wheel, version policy) — when a consumer needs it
 
 ## Later (design hooks only, nothing implemented)
 - [-] TRT / MRT / cumulant collision (CollisionModel kinds)

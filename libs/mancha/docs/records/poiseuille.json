@@ -1,0 +1,142 @@
+{
+ "case": "poiseuille",
+ "backend": "numpy",
+ "quick": false,
+ "mancha_version": "0.1.0",
+ "platform": {
+  "python": "3.13.17",
+  "machine": "x86_64",
+  "processor": "x86_64"
+ },
+ "wall_time_s": 131.436587421,
+ "result": {
+  "note": "halfway bounce-back + BGK: the wall slip depends on tau, so the error is second order at fixed tau and vanishes at tau = 1/2 + sqrt(3/16)",
+  "runs": [
+   {
+    "ny": 8,
+    "steps": 2000,
+    "residual": 7.411372977073598e-11,
+    "l2_error_rel": 0.0111244262957749,
+    "linf_error_rel": 0.00812499999997946,
+    "mass_drift_rel": -1.3866685577568205e-13,
+    "wall_time_s": 0.9069338540000444,
+    "tau": 0.8
+   },
+   {
+    "ny": 16,
+    "steps": 6500,
+    "residual": 7.32877614210928e-11,
+    "l2_error_rel": 0.0027813850554373855,
+    "linf_error_rel": 0.002031250012305384,
+    "mass_drift_rel": -4.4808601273871323e-13,
+    "wall_time_s": 2.950114572999837,
+    "tau": 0.8
+   },
+   {
+    "ny": 32,
+    "steps": 23500,
+    "residual": 8.913822140704827e-11,
+    "l2_error_rel": 0.0006953507409971997,
+    "linf_error_rel": 0.0005078126467245037,
+    "mass_drift_rel": -1.6135981439902025e-12,
+    "wall_time_s": 11.760464880999962,
+    "tau": 0.8
+   },
+   {
+    "ny": 64,
+    "steps": 87500,
+    "residual": 8.89523792580181e-11,
+    "l2_error_rel": 0.00017383834150112016,
+    "linf_error_rel": 0.0001269538365447631,
+    "mass_drift_rel": -5.995981489093084e-12,
+    "wall_time_s": 51.09796008699982,
+    "tau": 0.8
+   },
+   {
+    "ny": 8,
+    "steps": 1500,
+    "residual": 6.877576994288068e-12,
+    "l2_error_rel": 0.0071310424973833105,
+    "linf_error_rel": 0.00520833333337422,
+    "mass_drift_rel": -6.694644838489691e-14,
+    "wall_time_s": 0.43511213100009627,
+    "tau": 1.0
+   },
+   {
+    "ny": 16,
+    "steps": 4500,
+    "residual": 6.5790985217092466e-12,
+    "l2_error_rel": 0.0017829391311110436,
+    "linf_error_rel": 0.0013020833333287664,
+    "mass_drift_rel": -2.277067423506196e-13,
+    "wall_time_s": 1.234568450000097,
+    "tau": 1.0
+   },
+   {
+    "ny": 32,
+    "steps": 14500,
+    "residual": 9.435735606121922e-11,
+    "l2_error_rel": 0.0004457375041109714,
+    "linf_error_rel": 0.000325520829498843,
+    "mass_drift_rel": -7.857048345272233e-13,
+    "wall_time_s": 4.595769342999802,
+    "tau": 1.0
+   },
+   {
+    "ny": 64,
+    "steps": 54000,
+    "residual": 8.488047378389135e-11,
+    "l2_error_rel": 0.00011143409567431563,
+    "linf_error_rel": 8.13801987384604e-05,
+    "mass_drift_rel": -2.9188873540419995e-12,
+    "wall_time_s": 19.563684989999956,
+    "tau": 1.0
+   },
+   {
+    "ny": 8,
+    "steps": 1000,
+    "residual": 2.0573134581590346e-11,
+    "l2_error_rel": 0.0927035524654632,
+    "linf_error_rel": 0.0677083333333427,
+    "mass_drift_rel": -2.4091839634365906e-14,
+    "wall_time_s": 0.256274613999949,
+    "tau": 1.5
+   },
+   {
+    "ny": 16,
+    "steps": 2500,
+    "residual": 8.920068648214964e-12,
+    "l2_error_rel": 0.02317820870547366,
+    "linf_error_rel": 0.01692708333344943,
+    "mass_drift_rel": -8.593126210598712e-14,
+    "wall_time_s": 0.6690913459999592,
+    "tau": 1.5
+   },
+   {
+    "ny": 32,
+    "steps": 8000,
+    "residual": 2.9039872391070364e-11,
+    "l2_error_rel": 0.0057945884349691655,
+    "linf_error_rel": 0.004231770832979558,
+    "mass_drift_rel": -2.8510527272374025e-13,
+    "wall_time_s": 2.7156374010000945,
+    "tau": 1.5
+   },
+   {
+    "ny": 64,
+    "steps": 28000,
+    "residual": 8.556598626068594e-11,
+    "l2_error_rel": 0.0014486475216897768,
+    "linf_error_rel": 0.0010579427039665546,
+    "mass_drift_rel": -9.958700530887654e-13,
+    "wall_time_s": 13.79573330900007,
+    "tau": 1.5
+   }
+  ],
+  "observed_order_l2": {
+   "0.8": 1.9999513140918068,
+   "1.0": 1.9999542309881386,
+   "1.5": 1.9999529309389033
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "case": "channel",
+ "backend": "numpy",
+ "quick": false,
+ "mancha_version": "0.1.0",
+ "platform": {
+  "python": "3.13.17",
+  "machine": "x86_64",
+  "processor": "x86_64"
+ },
+ "wall_time_s": 160.18863700499992,
+ "result": {
+  "steps": 27000,
+  "residual": 5.364992505231672e-09,
+  "station": 192,
+  "profile_l2_error_rel": 0.000451531054937697,
+  "peak_ratio": 1.4979977781138483,
+  "flux_inlet": 0.633333333389412,
+  "flux_outlet": 0.6333333509668051,
+  "flux_variation_rel": 2.7753842937661304e-08,
+  "inflow_mean_over_u_in": 0.9707448051433455,
+  "wall_time_s": 159.85291037399998
+ }
+}

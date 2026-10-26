@@ -43,7 +43,9 @@ def test_recirculation_length():
     U[0, start:start + 6, 0, int(1.5 * N)] = -0.5        # nodes 0..5 behind the cube reversed
     U[0, start + 6, 0, int(1.5 * N)] = 0.5                # crossing halfway between nodes 5 and 6
     assert np.isclose(C.recirculation_length(U, N), (5 + 0.5 + 0.5) / N)
-    U[0, start, 0, int(1.5 * N)] = 0.1
+    U[0, start, 0, int(1.5 * N)] = 0.1                    # a corner vortex at the base does not change it
+    assert np.isclose(C.recirculation_length(U, N), (5 + 0.5 + 0.5) / N)
+    U[0, start:start + 6, 0, int(1.5 * N)] = 0.2
     assert C.recirculation_length(U, N) == 0.0
 
 

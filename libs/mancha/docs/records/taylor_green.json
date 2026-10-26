@@ -1,0 +1,59 @@
+{
+ "case": "taylor_green",
+ "backend": "numpy",
+ "quick": false,
+ "mancha_version": "0.1.0",
+ "platform": {
+  "python": "3.13.17",
+  "machine": "x86_64",
+  "processor": "x86_64"
+ },
+ "wall_time_s": 61.20178454200004,
+ "result": {
+  "note": "2D Taylor-Green vortex at fixed tau and lattice velocity (diffusive scaling of the time is not applied: Ma fixed, so the error is the spatial one plus a fixed Ma^2 part)",
+  "runs": [
+   {
+    "n": 16,
+    "steps": 56,
+    "decay_rate": 0.013245274879633156,
+    "decay_rate_exact": 0.012337005501361699,
+    "decay_rate_error_rel": 0.07362154277804334,
+    "velocity_l2_error_rel": 0.025121810403100138,
+    "mass_drift_rel": -5.773159728050814e-15,
+    "wall_time_s": 0.03854503799993836
+   },
+   {
+    "n": 32,
+    "steps": 225,
+    "decay_rate": 0.003138263927344019,
+    "decay_rate_exact": 0.0030842513753404246,
+    "decay_rate_error_rel": 0.017512370241751896,
+    "velocity_l2_error_rel": 0.00608354626802868,
+    "mass_drift_rel": -2.2648549702353193e-14,
+    "wall_time_s": 0.11059164099992813
+   },
+   {
+    "n": 64,
+    "steps": 899,
+    "decay_rate": 0.0007739362628614534,
+    "decay_rate_exact": 0.0007710628438351062,
+    "decay_rate_error_rel": 0.0037265691756789288,
+    "velocity_l2_error_rel": 0.0014057224629840082,
+    "mass_drift_rel": -8.948397578478764e-14,
+    "wall_time_s": 3.4243857630001457
+   },
+   {
+    "n": 128,
+    "steps": 3596,
+    "decay_rate": 0.0001928200319932041,
+    "decay_rate_exact": 0.00019276571095877654,
+    "decay_rate_error_rel": 0.00028179822104967833,
+    "velocity_l2_error_rel": 0.0005717545969843018,
+    "mass_drift_rel": -3.5771385853422544e-13,
+    "wall_time_s": 56.69845842199993
+   }
+  ],
+  "observed_order_decay_rate": 2.632041941975598,
+  "observed_order_velocity_l2": 1.8485802466238888
+ }
+}
