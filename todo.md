@@ -72,7 +72,9 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [-] V5.3 The Onager series, Pekari, Perseus
 - [-] V5.4 The robot dog and the Myropods (Chiron and MuJoCo leave Vegeta with them)
 
-## Stage V8 — Strato: a solar-electric stratospheric airship (HAPS), branch `dev_strato` (2026-10-26) — PLAN, awaiting approval
+## Stage V8 — Strato: a solar-electric stratospheric airship (HAPS), branch `dev_strato` (2026-10-26)
+Approved 2026-10-26: physics in Ogma, SciPy optimiser, the 15 m demonstrator reported as it is, built-in wind
+climatology; GaAs array baseline, CIGS alternative. Assumptions and the verified/estimate table: `labs/aero/designs/STRATO.md`.
 Question: can a solar-electric, helium-filled airship hold station at 18–22 km over Europe for weeks or months with a
 communications or observation payload, which engineering factor limits it, and which configurations are feasible?
 Vegeta does the engineering only (geometry, physics, energy, sizing, optimisation); station-keeping *control* and
@@ -115,40 +117,40 @@ Layout (stratosphere physics in its own files; verified physics separated from e
   (assumptions, sources, verified vs estimate table).
 
 Tasks:
-- [ ] V8.0 `dev_strato` branch (done); this plan (done); answers to the open questions folded in
-- [ ] V8.1 `og.stratosphere`: USSA-1976 layers to 86 km, geopotential ↔ geometric altitude, gravity vs altitude;
+- [x] V8.0 `dev_strato` branch; this plan; the answers folded in
+- [x] V8.1 `og.stratosphere`: USSA-1976 layers to 86 km, geopotential ↔ geometric altitude, gravity vs altitude;
   tests vs the USSA-1976 tables (e.g. 20 km: 216.65 K, 5474.9 Pa, 0.08803 kg/m³) and vs `og.atmosphere` below 11 km
-- [ ] V8.2 `og.lifting_gas`: buoyancy, sealed vs vented, superheat, ballonet / pressure height; tests by hand
+- [x] V8.2 `og.lifting_gas`: buoyancy, sealed vs vented, superheat, ballonet / pressure height; tests by hand
   calculation and conservation (mass of gas constant when sealed; vented loses gas above pressure height)
-- [ ] V8.3 `og.solar`: solar position (NOAA algorithm), irradiance on tilted/curved surfaces; tests vs NOAA calculator
+- [x] V8.3 `og.solar`: solar position (NOAA algorithm), irradiance on tilted/curved surfaces; tests vs NOAA calculator
   values for given dates and latitudes, day length at solstices/equinoxes
-- [ ] V8.4 `og.envelope`: membrane stresses, required thickness for a safety factor, laminate catalogue; tests vs
+- [x] V8.4 `og.envelope`: membrane stresses, required thickness for a safety factor, laminate catalogue; tests vs
   closed-form cylinder/sphere results
-- [~] V8.5 (CAD and pictures done: `designs/strato.py`, `strato_geometry.py`, `campaigns/strato/cad.py`, `tests/test_strato_cad.py`; HTML viewer open) Parametric geometry + CAD: 15 m × 3.5 m demonstrator (fineness 4.3), scaling to 30–80 m (scale by length
+- [x] V8.5 (`designs/strato.py`, `strato_geometry.py`, `campaigns/strato/cad.py`, `viewer.py` — three.js page, `tests/test_strato_cad.py`) Parametric geometry + CAD: 15 m × 3.5 m demonstrator (fineness 4.3), scaling to 30–80 m (scale by length
   with fineness free); STEP/STL/glTF; interactive 3D (pyvista in the notebook, a self-contained HTML viewer for the
   report); analytic volume/area within 0.5 % of the CAD measurement (test)
-- [ ] V8.6 Mass budget and CG/CB, trim ballast; stability (CB above CG, metacentric height, fin volume vs Munk moment)
-- [ ] V8.7 Aerodynamics: hull + appendage drag vs Re at altitude; validation vs published wind-tunnel drag of airship
+- [x] V8.6 (`strato_design.py`) Mass budget and CG/CB, trim ballast; stability (CB above CG, metacentric height, fin volume vs Munk moment)
+- [x] V8.7 (`strato_aero.py`; the Aeromant case NOT RUN: no OpenFOAM here) Aerodynamics: hull + appendage drag vs Re at altitude; validation vs published wind-tunnel drag of airship
   hulls (Hoerner, Akron/ZRS-4 model) within the stated band; one Aeromant RANS case template (NOT RUN here)
-- [ ] V8.8 Thermal: gas superheat day/night and its effect on lift and superpressure
-- [ ] V8.9 Energy: PV + battery + loads over 24 h by date and latitude; energy-closure verdict; seasonal maps 40–60°N
-- [ ] V8.10 Wind and station-keeping: monthly profile 15–25 km, required airspeed and propulsive power, % time on
+- [x] V8.8 (`strato_thermal.py`) Thermal: gas superheat day/night and its effect on lift and superpressure
+- [x] V8.9 (`strato_sim.day_cycle`, `availability`) Energy: PV + battery + loads over 24 h by date and latitude; energy-closure verdict; seasonal maps 40–60°N
+- [x] V8.10 (`strato_wind.py`, `strato_sim`) Wind and station-keeping: monthly profile 15–25 km, required airspeed and propulsive power, % time on
   station, best altitude per month
-- [ ] V8.11 Simulations: ascent 0 → 20 km (sealed and vented), float equilibrium, day/night cycles, wind disturbance
+- [x] V8.11 (`strato_sim`: `day_cycle`, `endurance`, `ascent`; campaign stages detail/sweeps/constraints) Simulations: ascent 0 → 20 km (sealed and vented), float equilibrium, day/night cycles, wind disturbance
   (profile + `og.wind` turbulence/gusts), payload and altitude sensitivity, structural and thermal limits, multi-day
   endurance (power, SOC, altitude, superpressure, position drift)
-- [ ] V8.12 Feasibility gate: reject designs that do not float (lift < mass), overstress the envelope, cannot close the
+- [x] V8.12 (`strato_feasibility.py`) Feasibility gate: reject designs that do not float (lift < mass), overstress the envelope, cannot close the
   24 h energy balance, cannot exceed the wind, are statically unstable, or need negative masses/areas — every reason
   reported, nothing silently clipped
-- [ ] V8.13 Optimisation: design vector (length, fineness, solar coverage, battery energy, propulsion power, float
+- [x] V8.13 (`strato_study.py`: SciPy differential evolution + payload polish, Sobol sampling, non-dominated filter) Optimisation: design vector (length, fineness, solar coverage, battery energy, propulsion power, float
   altitude, payload) → objectives (endurance/station-keeping %, payload ↑; mass, drag, energy ↓) under the feasibility
   constraints; single-objective by the chosen optimiser, Pareto fronts by non-dominated sorting of a sampled/evolved
   population; seeds fixed, runs reproducible
-- [ ] V8.14 Outputs: 15/30/50/80 m comparison table, mass and energy budgets, sweeps, Pareto fronts, feasibility report
+- [x] V8.14 (`campaigns/strato/run.py`, `report.py` → `results/report.md`; notebook `37_strato.ipynb`) Outputs: 15/30/50/80 m comparison table, mass and energy budgets, sweeps, Pareto fronts, feasibility report
   (Markdown + HTML), the notebook; every number written by a run, none typed in by hand
-- [ ] V8.15 Tests: Ogma unit tests in `libs/ogma/tests`, lab tests in `labs/aero/tests/test_strato*.py` (mocks, fast,
+- [x] V8.15 (`libs/ogma/tests/test_{stratosphere,lifting_gas,solar,envelope}.py`; `labs/aero/tests/test_strato_{cad,models,golden,campaign}.py`) Tests: Ogma unit tests in `libs/ogma/tests`, lab tests in `labs/aero/tests/test_strato*.py` (mocks, fast,
   added to smoke), regression goldens for the four reference designs; `./test.sh --smoke` green; existing goldens
   unchanged
-- [ ] V8.16 `STRATO.md`: assumptions, sources, the verified/estimate split, the conclusion and the limiting factors
+- [x] V8.16 `STRATO.md`: assumptions, sources, the verified/estimate split, the conclusion and the limiting factors
 - [-] V8.17 Later: graduation to Piccolo (export through Yax; control and autonomy there), FEM of the envelope as a
   membrane (Talos is solid-element only), unsteady CFD
