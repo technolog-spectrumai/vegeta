@@ -59,7 +59,13 @@ def gross_lift_at(d_length: float, fineness: float, altitude: float) -> float:
     return hull.volume * lg.net_lift_per_volume(a.pressure, a.temperature, gas=cat.GAS.gas, purity=cat.GAS.purity)
 
 
-def decode(x, length: float, sc: Scenario) -> sd.Design:
+def decode(x, length: float, sc: Scenario, fixed: dict | None = None) -> sd.Design:
+    """The design of vector ``x``; ``fixed`` overrides Design fields after decoding (e.g. a given payload)."""
+    d = _decode(x, length, sc)
+    return replace(d, **fixed) if fixed else d
+
+
+def _decode(x, length: float, sc: Scenario) -> sd.Design:
     v = dict(zip(NAMES, map(float, x)))
     hull = sd.ship_of(sd.Design(length=length, fineness=v["fineness"])).hull
     lift = gross_lift_at(length, v["fineness"], v["altitude"])
@@ -121,27 +127,32 @@ def penalty(r: dict, sc: Scenario) -> float:
     return p + 2.0 * len(other)
 
 
-def _cost(x, length, sc, objective="payload"):
-    d = decode(x, length, sc)
+def _cost(x, length, sc, objective="payload", fixed=None):
+    d = decode(x, length, sc, fixed)
     r = evaluate_season(d, sc)
     pen = penalty(r, sc)
     if pen > 0:
         return 1.0 + pen
     if objective == "altitude":
         return -d.altitude / 20000.0
+    if objective == "surplus":
+        return -r["surplus_lift"] / max(r["net_lift"], 1e-9)
     # the payload as a share of the float lift keeps the costs of different sizes comparable
     return -d.payload_mass / gross_lift_at(length, d.fineness, d.altitude)
 
 
 def optimize(length: float, sc: Scenario = SUMMER, *, seed: int = 0, maxiter: int = 25, popsize: int = 8,
-             workers: int = 4, objective: str = "payload", bounds: dict | None = None, x0=None) -> dict:
+             workers: int = 4, objective: str = "payload", bounds: dict | None = None, x0=None,
+             fixed: dict | None = None) -> dict:
     """The best design of ``length`` [m] that meets ``sc``: the highest payload (``objective="payload"``) or the
     highest float altitude (``"altitude"``); ``bounds`` overrides entries of ``SPACE`` by name. ``result['best']`` is
     the seasonal verdict (``meets`` False when nothing in the bounds met the scenario: then it is the least-bad
-    design found, the one that missed by the least). ``x0`` seeds the population with a known design (warm start)."""
+    design found, the one that missed by the least). ``x0`` seeds the population with a known design (warm start).
+    ``objective="surplus"`` maximises the spare lift (for a ``fixed`` payload: is there any design that carries it?);
+    ``fixed`` sets Design fields the search does not touch."""
     from scipy.optimize import differential_evolution
     b = [tuple((bounds or {}).get(name, (lo, hi))) for name, lo, hi in SPACE]
-    kw = dict(args=(length, sc, objective), seed=seed, maxiter=maxiter, popsize=popsize, tol=1e-6, polish=False,
+    kw = dict(args=(length, sc, objective, fixed), seed=seed, maxiter=maxiter, popsize=popsize, tol=1e-6, polish=False,
               updating="deferred", init="sobol", x0=None if x0 is None else np.clip(x0, *np.array(b).T))
     if workers > 1:
         import multiprocessing as mp
@@ -149,9 +160,9 @@ def optimize(length: float, sc: Scenario = SUMMER, *, seed: int = 0, maxiter: in
             res = differential_evolution(_cost, b, workers=pool.map, **kw)
     else:
         res = differential_evolution(_cost, b, **kw)
-    d = decode(res.x, length, sc)
+    d = decode(res.x, length, sc, fixed)
     best = evaluate_season(d, sc)
-    if objective == "payload" and meets(best, sc):
+    if objective == "payload" and not fixed and meets(best, sc):
         # polish: the search leaves some surplus lift; raise the payload (all else fixed) while the scenario holds
         mp = max_payload(d, sc, lo=d.payload_mass, tol=max(0.5, 1e-3 * d.payload_mass))
         if mp["payload"] == mp["payload"] and mp["payload"] > d.payload_mass:
@@ -159,6 +170,32 @@ def optimize(length: float, sc: Scenario = SUMMER, *, seed: int = 0, maxiter: in
     return {"length": length, "scenario": sc.name, "objective": objective, "x": encode(d).tolist(), "design": asdict(d),
             "best": best, "meets": meets(best, sc), "cost": float(res.fun), "evaluations": int(res.nfev), "seed": seed,
             "bounds": b}
+
+
+def smallest_length(sc: Scenario, fixed: dict, lo: float = 15.0, hi: float = 60.0, tol: float = 1.0, **kw) -> dict:
+    """The shortest hull [m] in [lo, hi] for which the optimiser finds a design that carries ``fixed`` (a given
+    payload) and meets ``sc``: bisection on the length, an optimisation (``objective="surplus"``) at each step.
+    ``runs`` keeps every step. A length is "possible" only if the search found a design; "impossible" means none was
+    found within the bounds and the budget (an optimiser cannot prove that none exists)."""
+    runs = {}
+
+    def ok(L):
+        r = optimize(L, sc, objective="surplus", fixed=fixed, **kw)
+        runs[L] = r
+        print(f"  {L:6.2f} m  meets={r['meets']}  surplus={r['best'].get('surplus_lift', float('nan')):8.2f} kg", flush=True)
+        return r["meets"]
+
+    if not ok(hi):
+        return {"length": float("nan"), "runs": runs}
+    if ok(lo):
+        return {"length": lo, "runs": runs}
+    while hi - lo > tol:
+        mid = round(0.5 * (lo + hi), 2)
+        if ok(mid):
+            hi = mid
+        else:
+            lo = mid
+    return {"length": hi, "best": runs[hi], "runs": runs}
 
 
 def sample(length: float, sc: Scenario, n: int, seed: int = 0, workers: int = 4) -> list[dict]:

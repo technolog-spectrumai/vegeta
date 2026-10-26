@@ -44,7 +44,8 @@ class Design:
     fineness: float = 15.0 / 3.5
     altitude: float = 20000.0              # m, float altitude (geometric)
     payload_mass: float = 5.0              # kg
-    payload_power: float | None = None     # W; None = catalogue W/kg × payload mass
+    payload_power: float | None = None     # W by day; None = catalogue W/kg × payload mass
+    payload_power_night: float | None = None   # W at night; None = the same as by day (e.g. 0 for a daylight camera)
     battery_energy: float = 3000.0         # Wh nameplate
     battery: str = "li-ion"
     pv: str = "gaas"
@@ -114,6 +115,11 @@ class Configuration:
     def payload_power(self) -> float:
         d = self.design
         return d.payload_power if d.payload_power is not None else cat.PAYLOAD_POWER_PER_KG * d.payload_mass
+
+    @property
+    def payload_power_night(self) -> float:
+        d = self.design
+        return d.payload_power_night if d.payload_power_night is not None else self.payload_power
 
     @property
     def masses(self) -> dict:

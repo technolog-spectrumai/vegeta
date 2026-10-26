@@ -486,9 +486,79 @@ def stage_cad(out: Path, quick: bool) -> dict:
     return {"ships": made, "plots": [f"cad/views_opt_{t}.png" for t in made] if not quick else []}
 
 
+IMAGING = {"payload_mass": 4.5, "payload_power": 50.0, "payload_power_night": 0.0}
+IMAGING_NOTE = ("daylight EO camera on a small gimbal (~3 kg, 25 W) + S/X-band downlink to a ground station (~1.5 kg, "
+                "25 W), both off at night; no relay to aircraft (estimates)")
+
+
+def stage_imaging(out: Path, quick: bool) -> dict:
+    """The smallest Strato that carries the imaging payload (``IMAGING``) through the summer scenario: bisection on
+    the length, an optimisation of everything else at each step (the payload fixed), then the winner's details."""
+    import strato
+    sys.path.insert(0, str(HERE))
+    from cad import views
+    kw = dict(maxiter=3 if quick else 12, popsize=4 if quick else 8, bounds={"payload_fraction": (0.0, 1e-9)})
+    s = sst.smallest_length(sst.SUMMER, IMAGING, lo=30.0, hi=50.0 if not quick else 80.0, tol=4.0 if quick else 1.0, **kw)
+    res = {"payload": IMAGING, "payload_note": IMAGING_NOTE, "scenario": asdict(sst.SUMMER), "length": s["length"],
+           "steps": {str(L): {"meets": r["meets"], "surplus_lift": r["best"].get("surplus_lift"),
+                              "problems": r["best"].get("problems")} for L, r in s["runs"].items()}}
+    if "best" not in s:
+        res["plots"] = []
+        return res
+    best = s["best"]
+    d = sd.Design(**best["design"])
+    res["design"] = asdict(d)
+    res["verdict"] = best["best"]
+    months = {}
+    for mo in (5, 6, 7, 8, 9):
+        r = sf.evaluate(d, sd.Mission(month=mo), n_days=1000)
+        months[sw.MONTHS[mo - 1]] = {k: r[k] for k in ("feasible", "availability", "surplus_lift", "superheat_day", "v_energy",
+                                                        "energy_solar_wh", "problems")}
+    res["months"] = months
+    r = sf.evaluate(d, sd.Mission(month=7), detail=True)
+    c, sh = r["configuration"], r["ship"]
+    cyc = ss.day_cycle(c, min(r["wind_p90"], sh.v_max), ship=sh)
+    e = ss.endurance(c, days=5 if quick else 30, dt=1800.0)
+    a = ss.ascent(c, dt=4.0)
+    res["endurance"] = {k: e[k] for k in ("on_station", "lost_at_s", "gas_lost_kg", "max_dist_km", "min_altitude", "ballast_left")}
+    res["ascent"] = {k: a[k] for k in ("float_altitude", "max_rate", "time_to_99pct_s", "drift_km", "dp_top")}
+    res["masses"] = r["masses"]
+    fig, ax = plt.subplots(1, 3, figsize=(15, 4))
+    t = cyc["t"] / 3600
+    ax[0].plot(t, cyc["solar"] / 1e3, color=SERIES[3], label="array output")
+    ax[0].plot(t, (cyc["load"] + cyc["prop"]) / 1e3, color=SERIES[0], label="loads + propulsion")
+    ax[0].set(xlabel="hours from 00:00 UTC, 15 July", ylabel="kW", title=f"Power at the 90th-percentile wind ({r['wind_p90']:.1f} m/s)")
+    ax[0].legend(fontsize=8)
+    ax[1].plot(t, cyc["soc"] / sh.usable_wh * 100, color=SERIES[2])
+    ax[1].axhline(sh.reserve_wh / sh.usable_wh * 100, color=MUTED, linestyle=":", linewidth=1)
+    ax[1].set(xlabel="hours from 00:00 UTC, 15 July", ylabel="% of usable energy", title="Battery")
+    groups = sorted(r["masses"], key=lambda g: -r["masses"][g])
+    ax[2].barh(groups, [r["masses"][g] for g in groups], color=SERIES[0])
+    for i, g in enumerate(groups):
+        ax[2].text(r["masses"][g], i, f" {r['masses'][g]:.1f}", va="center", color=INK2, fontsize=8)
+    ax[2].invert_yaxis()
+    ax[2].set(xlabel="kg", title=f"Mass budget ({r['system_mass']:.0f} kg; net lift {r['net_lift']:.0f} kg)")
+    ax[2].grid(axis="y", visible=False)
+    res["plots"] = [save(fig, out, "imaging.png")]
+    ship = sd.ship_of(d)
+    over = {"length": d.length, "diameter": ship.hull.diameter, "solar_half_angle_deg": d.solar_half_angle_deg,
+            "fin_span": ship.layout.fin_span, "fin_root_chord": ship.layout.fin_root_chord}
+    (out / "cad").mkdir(exist_ok=True)
+    tag = f"{d.length:g}m"
+    strato.StratoAirship().generate(**over).export_step(out / "cad" / f"strato_imaging_{tag}.step")
+    for name, g in strato.parts(**over).items():
+        (out / "cad" / f"imaging_{tag}_parts").mkdir(exist_ok=True)
+        g.export_step(out / "cad" / f"imaging_{tag}_parts" / f"{name}.step")
+    if not quick:
+        views(strato.parts(**over), out / "cad" / f"views_imaging_{tag}.png", f"Strato imaging, {tag} (summer)")
+        res["plots"].append(f"cad/views_imaging_{tag}.png")
+    return res
+
+
 STAGES = {"atmosphere": stage_atmosphere, "wind": stage_wind, "family": stage_family, "pv": stage_pv,
           "detail": stage_detail, "sweeps": stage_sweeps, "sensitivity": stage_sensitivity, "pareto": stage_pareto,
-          "seasons": stage_seasons, "constraints": stage_constraints, "cad": stage_cad}
+          "seasons": stage_seasons, "constraints": stage_constraints, "cad": stage_cad,
+          "imaging": stage_imaging}
 
 
 def main(argv=None) -> int:

@@ -45,8 +45,11 @@ class Ship:
         self.v_max = sa.max_speed(ship, d.propulsion_power, d.altitude)
         self.v_grid = np.linspace(0.0, max(self.v_max, 1.0), 41)
         self.p_grid = np.array([sa.electric_power(ship, v, d.altitude)["power"] for v in self.v_grid])
+        # loads by day; at night the payload's night power, plus heaters for the batteries and the payload
         self.loads = cat.STRUCTURE.avionics_power + c.payload_power
-        self.night_extra = cat.STRUCTURE.night_heater_fraction * self.loads
+        self.loads_night = (cat.STRUCTURE.avionics_power + c.payload_power_night
+                            + cat.STRUCTURE.night_heater_fraction * self.loads)
+        self.night_extra = self.loads_night - self.loads
         bat = c.battery
         self.usable_wh = d.battery_energy * bat.max_dod
         self.reserve_wh = c.mission.battery_reserve * self.usable_wh

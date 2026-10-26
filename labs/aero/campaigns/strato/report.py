@@ -51,6 +51,7 @@ def write(out: Path) -> Path:
     atm, wind, fam, pv, det = (_load(out, n) for n in ("atmosphere", "wind", "family", "pv", "detail"))
     sw_, sens, par, sea, con = (_load(out, n) for n in ("sweeps", "sensitivity", "pareto", "seasons", "constraints"))
     cad = _load(out, "cad")
+    img = _load(out, "imaging")
     L = []
     w = L.append
     quick = any(r and r.get("quick") for r in (atm, wind, fam, pv, det, sw_, sens, par, sea, con, cad))
@@ -106,7 +107,49 @@ def write(out: Path) -> Path:
               f"{f(es['days_simulated'], 0)} days ({f(es['on_station'] * 100, 0)} % of the time on station); vented "
               + (f"is lost after {f(lost / 86400, 1)} days (venting by day, sinking by night; {f(ev['vented_kg'])} kg of helium vented)."
                  if lost is not None else f"stays up for {f(ev['days_simulated'], 0)} days with {f(ev['ballast_left'])} kg of ballast left."))
+    if img:
+        if img.get("design"):
+            v = img["verdict"]
+            w(f"- **The smallest imaging Strato** ({img['payload_note']}) for the summer scenario is **{f(img['length'], 1)} m** "
+              f"long ({f(v['diameter'], 1)} m diameter, {f(v['volume'], 0)} m³, {f(v['system_mass'], 0)} kg at "
+              f"{f(img['design']['altitude'] / 1000, 1)} km); the envelope is {f(v['masses'].get('envelope'), 0)} kg of it.")
+        else:
+            w(f"- **No imaging Strato up to {max(float(k) for k in img['steps']):g} m** met the summer scenario.")
     w("")
+
+    # ------------------------------------------------------------------------------------------- imaging
+    if img and img.get("design"):
+        v, d = img["verdict"], img["design"]
+        w("## The smallest ship for imaging (summer)\n")
+        w(f"Payload: {img['payload_note']}: {f(img['payload']['payload_mass'])} kg, {f(img['payload']['payload_power'], 0)} W by day, "
+          f"{f(img['payload']['payload_power_night'], 0)} W at night. Found by bisection on the length with an optimisation of "
+          "everything else at each step (`strato_study.smallest_length`); \"impossible\" below means the search found no design "
+          "within the bounds, not a proof that none exists.\n")
+        w(table([dict(L=k, **x) for k, x in sorted(img["steps"].items(), key=lambda kv: float(kv[0]))], [
+            ("length [m]", lambda r: f(float(r["L"]), 2), True), ("meets", lambda r: f(r["meets"]), False),
+            ("surplus lift [kg]", lambda r: f(r["surplus_lift"]), True), ("problems", lambda r: "; ".join(r["problems"] or []), False)]))
+        w("")
+        w(table([{"k": k, "v": x} for k, x in (
+            ("length × diameter [m]", f"{f(d['length'], 1)} × {f(v['diameter'], 2)} (fineness {f(d['fineness'], 2)})"),
+            ("volume [m³]", f(v["volume"], 0)), ("float altitude [km]", f(d["altitude"] / 1000, 2)),
+            ("system mass / net lift [kg]", f"{f(v['system_mass'], 1)} / {f(v['net_lift'], 1)}"),
+            ("battery [kWh]", f(d["battery_energy"] / 1000, 2)), ("propulsion [kW]", f(d["propulsion_power"] / 1000, 2)),
+            ("array [m²]", f(v["solar_area"], 0)), ("envelope plies", f(v["plies"], 0)),
+            ("superpressure night–noon [Pa]", f"{f(v['dp_min'], 0)} – {f(v['dp_max'], 0)}"),
+            ("days on station (worst of Jun–Aug)", f(v["availability"] * 100, 0, "%")),
+            ("gas life [days]", f(v["gas_life_days"], 0)))],
+            [("", lambda r: r["k"], False), ("", lambda r: r["v"], True)]))
+        w("")
+        w(table([dict(month=k, **x) for k, x in img["months"].items()], [
+            ("month", lambda r: r["month"], False), ("feasible", lambda r: f(r["feasible"]), False),
+            ("days on station", lambda r: f(r["availability"] * 100, 0, "%"), True), ("surplus [kg]", lambda r: f(r["surplus_lift"]), True),
+            ("noon superheat [K]", lambda r: f(r["superheat_day"]), True), ("problems", lambda r: "; ".join(r["problems"]), False)]))
+        e, a = img["endurance"], img["ascent"]
+        w(f"\n30 days in July: {f(e['on_station'] * 100, 0)} % of the time on station, lowest {f(e['min_altitude'] / 1000, 2)} km, "
+          f"{f(e['gas_lost_kg'], 2)} kg of helium lost{'' if e['lost_at_s'] is None else ', lost after ' + f(e['lost_at_s'] / 86400, 1) + ' days'}. "
+          f"Ascent: {f(a['time_to_99pct_s'] / 3600 if a['time_to_99pct_s'] else None, 1)} h to float, drift {f(a['drift_km'], 0)} km.\n")
+        for p_ in img["plots"]:
+            w(f"![imaging]({p_})\n")
 
     # ------------------------------------------------------------------------------------------- family
     if fam:

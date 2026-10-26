@@ -46,7 +46,7 @@ def evaluate(d: sd.Design, m: sd.Mission = sd.Mission(), *, passes: int = 2, n_d
         problems.append("energy does not close even in calm air: the array cannot carry avionics and payload through "
                         f"the day and the battery through the night in month {m.month}")
     gas_life = ss.gas_life_days(c) if c.surplus_lift >= 0 else 0.0
-    battery_hours = sh.usable_wh / max(sh.loads, 1e-9)
+    battery_hours = sh.usable_wh / max(sh.loads_night, 1e-9)
     endurance = (gas_life if d.gas_system == "sealed" else math.nan) if av["calm_closes"] else battery_hours / 24.0
     wind = av["wind_p90"]
     drag = sa.drag(c.ship, wind, d.altitude).total
@@ -54,7 +54,7 @@ def evaluate(d: sd.Design, m: sd.Mission = sd.Mission(), *, passes: int = 2, n_d
         "feasible": not problems, "problems": problems, "warnings": warnings, "design": asdict(d),
         "mission": asdict(m), "length": d.length, "diameter": c.ship.hull.diameter, "volume": c.ship.hull.volume,
         "envelope_area": c.ship.hull.surface_area, "solar_area": c.ship.solar_area, "payload": d.payload_mass,
-        "payload_power": c.payload_power, "system_mass": c.system_mass, "masses": c.masses, "gas_mass": c.gas_mass,
+        "payload_power": c.payload_power, "payload_power_night": c.payload_power_night, "system_mass": c.system_mass, "masses": c.masses, "gas_mass": c.gas_mass,
         "gross_lift": c.gross_lift, "net_lift": c.net_lift, "surplus_lift": c.surplus_lift,
         "max_float_altitude": sd.max_float_altitude(c), "plies": c.plies, "dp_min": c.dp_min, "dp_max": c.dp_max,
         "hoop_line_load": c.hoop_line_load, "bending_moment": c.bending_moment,

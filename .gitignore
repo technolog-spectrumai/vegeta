@@ -51,3 +51,4 @@ benchmark/*/results/
 labs/aero/campaigns/strato/cad/*/*.stl
 labs/aero/campaigns/strato/cad/strato_3d.html
 labs/aero/campaigns/strato/results/run.log
+labs/aero/campaigns/strato/results/imaging.log
