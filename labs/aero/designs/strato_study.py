@@ -41,6 +41,7 @@ class Scenario:
     lat: float = 50.0
     min_availability: float = 0.9 # fraction of days on station, in the worst month of ``months``
     min_gas_life: float = 60.0    # days
+    min_payload: float = 0.0      # kg
     pv: str = "gaas"
     laminate: str = "zylon"
     battery: str = "li-ion"
@@ -103,7 +104,8 @@ def evaluate_season(d: sd.Design, sc: Scenario, n_days: int = 600) -> dict:
 
 
 def meets(r: dict, sc: Scenario) -> bool:
-    return bool(r.get("feasible")) and r["availability"] >= sc.min_availability and r["gas_life_days"] >= sc.min_gas_life
+    return (bool(r.get("feasible")) and r["availability"] >= sc.min_availability and r["gas_life_days"] >= sc.min_gas_life
+            and r.get("payload", 0.0) >= sc.min_payload)
 
 
 def penalty(r: dict, sc: Scenario) -> float:
@@ -113,31 +115,50 @@ def penalty(r: dict, sc: Scenario) -> float:
     p = 0.0
     p += max(0.0, -r["surplus_lift"]) / max(r["net_lift"], 1e-9) * 10
     p += max(0.0, sc.min_availability - r["availability"]) * 5
-    p += max(0.0, sc.min_gas_life - r["gas_life_days"]) / sc.min_gas_life
+    p += max(0.0, sc.min_gas_life - r["gas_life_days"]) / max(sc.min_gas_life, 1.0)
+    p += max(0.0, sc.min_payload - r.get("payload", 0.0)) / max(sc.min_payload, 1.0)
     other = [q for q in r["problems"] if not q.startswith("does not float")]
     return p + 2.0 * len(other)
 
 
-def _cost(x, length, sc):
+def _cost(x, length, sc, objective="payload"):
     d = decode(x, length, sc)
     r = evaluate_season(d, sc)
     pen = penalty(r, sc)
-    # the payload counts only once the design meets the scenario; the lift reference keeps costs comparable
-    scale = gross_lift_at(length, d.fineness, d.altitude)
-    return (-d.payload_mass / scale if pen == 0 else 1.0 + pen)
+    if pen > 0:
+        return 1.0 + pen
+    if objective == "altitude":
+        return -d.altitude / 20000.0
+    # the payload as a share of the float lift keeps the costs of different sizes comparable
+    return -d.payload_mass / gross_lift_at(length, d.fineness, d.altitude)
 
 
 def optimize(length: float, sc: Scenario = SUMMER, *, seed: int = 0, maxiter: int = 25, popsize: int = 8,
-             workers: int = 4, x0=None) -> dict:
-    """The highest-payload design of ``length`` [m] that meets ``sc``; ``result['best']`` is its seasonal verdict
-    (``meets`` False when nothing in the bounds met the scenario: then it is the least-bad design found)."""
+             workers: int = 4, objective: str = "payload", bounds: dict | None = None, x0=None) -> dict:
+    """The best design of ``length`` [m] that meets ``sc``: the highest payload (``objective="payload"``) or the
+    highest float altitude (``"altitude"``); ``bounds`` overrides entries of ``SPACE`` by name. ``result['best']`` is
+    the seasonal verdict (``meets`` False when nothing in the bounds met the scenario: then it is the least-bad
+    design found, the one that missed by the least). ``x0`` seeds the population with a known design (warm start)."""
     from scipy.optimize import differential_evolution
-    res = differential_evolution(_cost, BOUNDS, args=(length, sc), seed=seed, maxiter=maxiter, popsize=popsize,
-                                 tol=1e-6, polish=False, workers=workers, updating="deferred", init="sobol", x0=x0)
+    b = [tuple((bounds or {}).get(name, (lo, hi))) for name, lo, hi in SPACE]
+    kw = dict(args=(length, sc, objective), seed=seed, maxiter=maxiter, popsize=popsize, tol=1e-6, polish=False,
+              updating="deferred", init="sobol", x0=None if x0 is None else np.clip(x0, *np.array(b).T))
+    if workers > 1:
+        import multiprocessing as mp
+        with mp.get_context("fork").Pool(workers) as pool:
+            res = differential_evolution(_cost, b, workers=pool.map, **kw)
+    else:
+        res = differential_evolution(_cost, b, **kw)
     d = decode(res.x, length, sc)
     best = evaluate_season(d, sc)
-    return {"length": length, "scenario": sc.name, "x": res.x.tolist(), "design": asdict(d), "best": best,
-            "meets": meets(best, sc), "cost": float(res.fun), "evaluations": int(res.nfev), "seed": seed}
+    if objective == "payload" and meets(best, sc):
+        # polish: the search leaves some surplus lift; raise the payload (all else fixed) while the scenario holds
+        mp = max_payload(d, sc, lo=d.payload_mass, tol=max(0.5, 1e-3 * d.payload_mass))
+        if mp["payload"] == mp["payload"] and mp["payload"] > d.payload_mass:
+            d, best = replace(d, payload_mass=mp["payload"]), mp["result"]
+    return {"length": length, "scenario": sc.name, "objective": objective, "x": encode(d).tolist(), "design": asdict(d),
+            "best": best, "meets": meets(best, sc), "cost": float(res.fun), "evaluations": int(res.nfev), "seed": seed,
+            "bounds": b}
 
 
 def sample(length: float, sc: Scenario, n: int, seed: int = 0, workers: int = 4) -> list[dict]:

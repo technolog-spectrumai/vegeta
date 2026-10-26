@@ -1,7 +1,7 @@
 """og.stratosphere — the U.S. Standard Atmosphere 1976 from sea level to 86 km, and gravity that falls with altitude.
 
 ``og.atmosphere`` is the troposphere only (one linear lapse rate): above 11 km it is wrong (at 20 km its density is
-~8 % low and keeps diverging). This module is the full 1976 model for vehicles that fly in the stratosphere
+~7 % high, its temperature 60 K low, and both keep diverging). This module is the full 1976 model for vehicles that fly in the stratosphere
 (balloons, airships, HAPS): seven layers of linear temperature in *geopotential* altitude, hydrostatic pressure, ideal-
 gas density. Constants and layer bases as published (NOAA/NASA/USAF, *U.S. Standard Atmosphere, 1976*, NOAA-S/T 76-1562,
 Table 4 and eqs. 18, 23, 33a/b); the tests check the published table values at 0, 11, 20, 25 and 30 km.
