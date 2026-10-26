@@ -576,10 +576,55 @@ def _smallest_imaging(out: Path, quick: bool, payload: dict, note: str, tag_name
     return res
 
 
+def stage_local_sensitivity(out: Path, quick: bool) -> dict:
+    """A deterministic sensitivity, free of optimiser luck: the reference optimum's hull, altitude and layout are
+    kept; under each changed estimate only the battery (on a fixed grid of factors) and the payload (bisection,
+    ``max_payload``) are re-sized. It answers "how much payload does this ship gain or lose", not "what would a
+    re-optimised ship do"."""
+    fam = json.loads((out / "family.json").read_text())
+    d0 = sd.Design(**fam["summer"][str(REFERENCE)]["design"])
+    grid = (0.8, 1.0, 1.25) if quick else (0.6, 0.8, 1.0, 1.25, 1.5, 2.0)
+
+    def best_payload():
+        top = (float("nan"), None)
+        for k in grid:
+            d = replace(d0, battery_energy=d0.battery_energy * k, payload_mass=0.0)
+            p = sst.max_payload(d, sst.SUMMER, tol=2.0 if quick else 1.0)["payload"]
+            if p == p and (top[0] != top[0] or p > top[0]):
+                top = (p, k)
+        return top
+
+    base, kb = best_payload()
+    print(f"  base: {base:.1f} kg (battery ×{kb})", flush=True)
+    rows = []
+    for name, lo, hi in (SENSITIVITY[:2] if quick else SENSITIVITY):
+        vals = {}
+        for fct in (lo, hi):
+            with _patched(name, fct):
+                vals[fct] = best_payload()
+            print(f"  {name:28s} ×{fct:<4g} → {vals[fct][0]:8.1f} kg (battery ×{vals[fct][1]})", flush=True)
+        rows.append({"estimate": name, "low_factor": lo, "high_factor": hi, "payload_low": vals[lo][0], "payload_high": vals[hi][0],
+                     "battery_low": vals[lo][1], "battery_high": vals[hi][1]})
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    order = sorted(rows, key=lambda r: abs(np.nan_to_num(r["payload_high"]) - np.nan_to_num(r["payload_low"])))
+    for i, r in enumerate(order):
+        ax.barh(i, np.nan_to_num(r["payload_low"], nan=0.0) - base, color=SERIES[0], height=0.6, label="low factor" if i == 0 else None)
+        ax.barh(i, np.nan_to_num(r["payload_high"], nan=0.0) - base, color=SERIES[1], height=0.6, label="high factor" if i == 0 else None)
+    ax.set_yticks(range(len(order)), [f"{r['estimate']} (×{r['low_factor']:g} / ×{r['high_factor']:g})" for r in order])
+    ax.axvline(0, color=INK2, linewidth=1)
+    ax.set(xlabel=f"change of the maximum payload [kg] (base {base:.0f} kg)",
+           title=f"Which estimate matters ({REFERENCE:g} m ship, summer; hull fixed, battery and payload re-sized)")
+    ax.legend(fontsize=8, loc="lower right")
+    return {"base_payload": base, "base_battery_factor": kb, "rows": rows, "design": asdict(d0),
+            "plots": [save(fig, out, "local_sensitivity.png")],
+            "method": "hull, altitude and layout of the reference optimum fixed; battery on a grid, payload by bisection"}
+
+
 STAGES = {"atmosphere": stage_atmosphere, "wind": stage_wind, "family": stage_family, "pv": stage_pv,
           "detail": stage_detail, "sweeps": stage_sweeps, "sensitivity": stage_sensitivity, "pareto": stage_pareto,
           "seasons": stage_seasons, "constraints": stage_constraints, "cad": stage_cad,
-          "sigma": stage_sigma, "sigma_thermal": stage_sigma_thermal}
+          "sigma": stage_sigma, "sigma_thermal": stage_sigma_thermal,
+          "local_sensitivity": stage_local_sensitivity}
 
 
 def main(argv=None) -> int:

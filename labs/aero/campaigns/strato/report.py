@@ -55,6 +55,7 @@ def write(out: Path) -> Path:
     img = _load(out, "sigma")
     micro = _load(out, "zeppelin_micro")
     sig_ir = _load(out, "sigma_thermal")
+    loc = _load(out, "local_sensitivity")
     L = []
     w = L.append
     quick = any(r and r.get("quick") for r in (atm, wind, fam, pv, det, sw_, sens, par, sea, con, cad))
@@ -91,6 +92,11 @@ def write(out: Path) -> Path:
         if s15:
             w(f"  At 20 km a 15 m hull of fineness {f(s15[0]['fineness'], 2)} lifts {f(s15[0]['net_lift'])} kg in all; "
               f"its envelope alone weighs {f(_mass(fam, '15.0', 'envelope'))} kg.")
+    if loc and loc.get("rows"):
+        ranked = sorted(loc["rows"], key=lambda r: -abs((r["payload_high"] or 0) - (r["payload_low"] or 0)))
+        w(f"- **What limits the reference ship** (hull fixed, battery and payload re-sized; base {f(loc['base_payload'])} kg): "
+          + "; ".join(f"{r['estimate']} ×{r['low_factor']:g}/×{r['high_factor']:g} → {f(r['payload_low'], 0)}/{f(r['payload_high'], 0)} kg"
+                      for r in ranked[:4]) + ".")
     if sens and sens.get("rows"):
         if sens.get("noise") is not None:
             w(f"- **Optimiser noise**: the base case repeated with three seeds gives {', '.join(f(v) for v in sens['base_seeds'])} kg "
@@ -259,7 +265,8 @@ def write(out: Path) -> Path:
             ("superpressure at top [Pa]", lambda r: f(r["dp_top"], 0), True), ("vented [kg]", lambda r: f(r["vented_kg"]), True)]))
         w("\n![ascent](ascent.png)\n")
 
-    for data, title, img in ((sw_, "Payload and altitude sensitivity", "sweeps.png"), (sens, "Sensitivity to the estimates", "sensitivity.png"),
+    for data, title, img in ((sw_, "Payload and altitude sensitivity", "sweeps.png"), (loc, "Sensitivity to the estimates (deterministic)", "local_sensitivity.png"),
+                             (sens, "Sensitivity to the estimates (re-optimised; optimiser noise shown)", "sensitivity.png"),
                              (par, "Pareto fronts", "pareto.png"), (sea, "Seasonal operation at European latitudes", "seasons.png"),
                              (con, "Structural and thermal constraints", "constraints.png"), (atm, "Atmosphere", "atmosphere.png"),
                              (wind, "Winds", "wind.png")):
