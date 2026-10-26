@@ -73,10 +73,7 @@ def run_mancha(n: int, reynolds: float, backend: str, tol: float, max_steps: int
     rho, u = sim.density(), sim.velocity()
     flux = (rho * u[0]).sum(axis=(1, 2))                        # mass flux through each x plane
     bulk = float(flux[-1] / (ny * nz))                          # ρ ≈ 1: the bulk velocity at the outlet
-    force = sim.solid_force()
-    # Momentum exchange sees the absolute pressure cs²ρ. Only the top face is wetted in y (the cube stands on the
-    # floor), so remove the outlet reference pressure cs²·1 acting on it to get the gauge lift OpenFOAM reports.
-    force[1] += n * n / 3.0
+    force = sim.solid_force()      # gauge pressure (reference density 1 = the outlet): comparable with OpenFOAM
     q = 0.5 * bulk ** 2 * n ** 2                                # dynamic pressure × frontal area h²
     return {"n": n, "steps": sim.steps_done, "residual": change, "wall_time_s": time.perf_counter() - t0,
             "bulk_velocity": bulk, "reynolds": bulk * n / viscosity, "viscosity": viscosity,

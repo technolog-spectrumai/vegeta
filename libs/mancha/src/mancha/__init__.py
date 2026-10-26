@@ -3,7 +3,7 @@ Triton GPU backend. Lattice units throughout; :class:`UnitConverter` converts to
 __version__ = "0.1.0"
 
 from .boundaries import FACES, BoundaryConditions  # noqa: E402
-from .collision import BGK, CollisionModel  # noqa: E402
+from .collision import BGK, CollisionModel, RegularizedBGK  # noqa: E402
 from .errors import (  # noqa: E402
     BackendUnavailableError,
     InsufficientMemoryError,
@@ -11,10 +11,12 @@ from .errors import (  # noqa: E402
     ManchaError,
     NumericalInstabilityError,
 )
+from .frames import RotatingFrame  # noqa: E402
 from .lattice import D3Q19  # noqa: E402
 from .simulation import Record, Simulation  # noqa: E402
+from .turbulence import WALE  # noqa: E402
 from .units import UnitConverter  # noqa: E402
 
 __all__ = ["BGK", "D3Q19", "FACES", "BackendUnavailableError", "BoundaryConditions", "CollisionModel",
            "InsufficientMemoryError", "InvalidParameterError", "ManchaError", "NumericalInstabilityError", "Record",
-           "Simulation", "UnitConverter", "__version__"]
+           "RegularizedBGK", "RotatingFrame", "Simulation", "UnitConverter", "WALE", "__version__"]

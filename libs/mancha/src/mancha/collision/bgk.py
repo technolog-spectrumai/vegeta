@@ -62,11 +62,12 @@ class BGK(CollisionModel):
         return viscosity_from_tau(self.tau)
 
     def collide(self, f: np.ndarray, rho: np.ndarray, u: np.ndarray, c: np.ndarray, w: np.ndarray,
-                force: np.ndarray | None = None) -> np.ndarray:
+                force: np.ndarray | None = None, nu_t: np.ndarray | None = None) -> np.ndarray:
         feq = equilibrium(rho, u, c, w).astype(f.dtype, copy=False)
-        out = f - (f - feq) * f.dtype.type(self.omega)
+        omega = self.omega if nu_t is None else 1.0 / (3.0 * (self.viscosity + nu_t) + 0.5)
+        out = f - (f - feq) * (np.asarray(omega, dtype=f.dtype))
         if force is not None and np.any(force):
-            out += guo_source(u, c, w, force, self.omega).astype(f.dtype, copy=False)
+            out += guo_source(u, c, w, force, omega).astype(f.dtype, copy=False)
         return out
 
     def parameters(self) -> dict[str, Any]:
@@ -76,11 +77,14 @@ class BGK(CollisionModel):
         return f"BGK(tau={self.tau!r})"
 
 
-def guo_source(u: np.ndarray, c: np.ndarray, w: np.ndarray, force: np.ndarray, omega: float) -> np.ndarray:
-    """Guo's forcing term ``(1 − ω/2) w_i [3 (c_i − u) + 9 (c_i·u) c_i]·F`` for a uniform force ``F[3]``."""
+def guo_source(u: np.ndarray, c: np.ndarray, w: np.ndarray, force: np.ndarray, omega) -> np.ndarray:
+    """Guo's forcing term ``(1 − ω/2) w_i [3 (c_i − u) + 9 (c_i·u) c_i]·F``; ``F`` is ``[3]`` (uniform) or
+    ``[3, ...]`` (per node), ``omega`` a scalar or a per-node array."""
     force = np.asarray(force, dtype=u.dtype)
-    cf = c.astype(u.dtype) @ force                                    # c_i·F, shape (q,)
-    uf = np.tensordot(force, u, axes=(0, 0))                          # u·F
+    if force.ndim == 1:
+        force = force.reshape((3,) + (1,) * (u.ndim - 1))
+    cf = np.tensordot(c.astype(u.dtype), force, axes=(1, 0))         # c_i·F, shape (q, ...)
+    uf = (u * force).sum(axis=0)                                      # u·F
     cu = np.tensordot(c.astype(u.dtype), u, axes=(1, 0))              # c_i·u
     shape = (-1,) + (1,) * (u.ndim - 1)
-    return (1.0 - 0.5 * omega) * w.reshape(shape) * (3.0 * (cf.reshape(shape) - uf) + 9.0 * cu * cf.reshape(shape))
+    return (1.0 - 0.5 * np.asarray(omega)) * w.reshape(shape) * (3.0 * (cf - uf) + 9.0 * cu * cf)

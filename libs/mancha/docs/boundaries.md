@@ -24,6 +24,14 @@ All conditions act on the *pull*: the population arriving at node `x_b` along `c
 | pressure | `f_i = −f_ī* + 2 w_i ρ_out [1 + 9/2 (c_i·u)² − 3/2 u²]` | anti-bounce-back, `u = u*(x_b)` |
 | solid voxel | `f_i = f_ī*(x_b)` | halfway bounce-back on the staircase |
 
+## In a rotating frame
+
+With `Simulation(frame=RotatingFrame(...))` the face velocities (inlet, wall) are lab-frame values; each link
+uses `u − Ω×r` at its halfway point, so a velocity face becomes the rotating frame's far field and a lab-fixed
+x wall slides in its plane. Walls on the lateral faces (y, z) are refused: they would cut through the rotation.
+Solid voxels are static in the frame (they rotate in the lab — blades, hub). The pressure outlet is unchanged
+(pressure is frame-invariant). The frame speed at a velocity face counts towards the Mach-number checks.
+
 ## Edges and corners: precedence
 
 A diagonal direction at an edge or corner node can leave the box through two or three faces at once. The
@@ -73,5 +81,8 @@ bounce-back). Solid voxels must not touch a non-periodic face if their force is 
 (`momentum_exchange_force` ignores links that leave the box). A one-voxel-thick plate blocks the flow but has no
 interior: both sides bounce independently, which is correct for halfway bounce-back.
 
-**Force on solids.** Momentum exchange `F = Σ 2 c_i f_i*(x)` over fluid→solid links (stationary body). With a
-body force, the Guo correction to the exchanged momentum is not applied (O(F) error).
+**Force on solids.** Momentum exchange `F = Σ 2 c_i (f_i*(x) − w_i ρ_ref)` over fluid→solid links (body static
+in the simulation frame), moments about any point with the links' halfway points (`Simulation.solid_load`).
+Subtracting the reference state makes the pressure gauge, so parts of a body (`part=`: a blade on a hub) get
+correct loads; closed bodies are unchanged. With a body force, the Guo correction to the exchanged momentum is
+not applied (O(F) error).

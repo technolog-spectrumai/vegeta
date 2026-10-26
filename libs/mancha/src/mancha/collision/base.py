@@ -23,9 +23,10 @@ class CollisionModel(ABC):
 
     @abstractmethod
     def collide(self, f: np.ndarray, rho: np.ndarray, u: np.ndarray, c: np.ndarray, w: np.ndarray,
-                force: np.ndarray | None = None) -> np.ndarray:
+                force: np.ndarray | None = None, nu_t: np.ndarray | None = None) -> np.ndarray:
         """Post-collision populations from pre-collision ``f[q, ...]``, its density ``rho`` and velocity
-        ``u[3, ...]``, and an optional body-force density ``force[3]`` (``u`` then already includes ``F/2ρ``)."""
+        ``u[3, ...]``, an optional body-force density ``force`` (``[3]`` uniform or ``[3, ...]`` per node; ``u``
+        then already includes ``F/2ρ``) and an optional eddy viscosity ``nu_t[...]`` added to the model's."""
 
     @abstractmethod
     def parameters(self) -> dict[str, Any]:

@@ -75,13 +75,17 @@ def taylor_green(n: int = 32, viscosity: float = 0.02, u0: float = 0.04, steps: 
             "mass_drift_rel": (sim.mass() - m0) / m0, "simulation": sim}
 
 
-def poiseuille(ny: int = 16, viscosity: float = 1 / 6, u_max: float = 0.02, nx: int = 4, nz: int = 1,
+def poiseuille(ny: int = 16, viscosity: float | None = 1 / 6, u_max: float = 0.02, nx: int = 4, nz: int = 1,
                max_steps: int = 40000, tol: float = 1e-9, backend: str = "numpy", **kw: Any) -> dict[str, Any]:
     """Body-force-driven channel between walls at ``y−``/``y+`` (halfway: at ``y = −½`` and ``ny − ½``),
     periodic in x and z. Compares the steady profile with the parabola ``F/(2ν) y'(h − y')``, ``h = ny``."""
     h = float(ny)
+    if viscosity is None:
+        viscosity = kw["collision"].viscosity
+    else:
+        kw["viscosity"] = viscosity
     force = 8.0 * viscosity * u_max / h ** 2
-    sim = Simulation(shape=(nx, ny, nz), viscosity=viscosity, force=(force, 0.0, 0.0), backend=backend, **kw)
+    sim = Simulation(shape=(nx, ny, nz), force=(force, 0.0, 0.0), backend=backend, **kw)
     sim.set_boundary("y-", "wall").set_boundary("y+", "wall")
     m0 = sim.mass()
     steps, change = _steady(sim, max_steps, 500, tol)

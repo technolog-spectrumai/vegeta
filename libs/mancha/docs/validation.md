@@ -107,10 +107,53 @@ Steady flow past a wall-mounted cube in a duct (Re ≈ 39), compared point by po
 pressure drop within 1.4 %, reattachment length within 2 %, drag 7 % higher than OpenFOAM at the same grid and
 5 % above OpenFOAM's finest grid, with the two codes converging towards each other. Details: [openfoam.md](openfoam.md).
 
+## 8. Rotating frame and LES
+
+Measured with the NumPy backend (float64); the same cases are regression tests in `tests/test_frame_les.py`,
+and `tests/test_triton.py` checks the Triton kernels against them (agreement to float32 round-off).
+
+**Fluid at rest in the lab, seen from the rotating frame** (6 × 20 × 20, ω = 0.004, far-field velocity faces,
+ν = 0.05, 2 000 steps): a rigid rotation up to 0.046 lattice units. Lab-frame velocity left: 8.1e-5; density
+variation 9.7e-6. The density is the discriminating quantity — the Coriolis force of a rigid rotation is a
+gradient that pressure can absorb: with the Coriolis sign flipped the density varied by 5.8e-3, without it by
+2.9e-3 (300–600 × more).
+
+**Co-rotating container** (a cylinder static in the frame, ω = 0.006): relative velocity 7e-9; the density
+follows the centrifugal profile exp(3ω²r²/2) to 2.4e-7 across a 1.05 % variation.
+
+**Uniform axial flow through the rotating frame** (inlet, outlet, far-field faces, U = 0.03): lab velocity
+error below 1e-3.
+
+**Regularized BGK, forced Poiseuille** (L2 error of the profile; BGK in brackets):
+
+| τ | ny = 8 | ny = 16 | ny = 32 |
+|---|---|---|---|
+| 0.6 | 1.57e-2 (2.03e-2) | 3.92e-3 (5.06e-3) | 9.81e-4 (1.27e-3) |
+| 0.8 | 4.28e-3 (1.11e-2) | 1.07e-3 (2.78e-3) | 2.67e-4 (6.95e-4) |
+| 1.2 | 1.85e-2 (3.45e-2) | 4.64e-3 (8.63e-3) | 1.16e-3 (2.16e-3) |
+
+Second order, 1.3–2.6 × smaller than BGK. Couette flow exact (≤ 2e-12) with both.
+
+**Stability at τ → ½** (3D Taylor–Green, 32³, U = 0.05, ν = 1e-4, Re ≈ 2 500 on the box scale, 3 000 steps):
+BGK blew up within the first few hundred steps; BGK + WALE later, but also blew up; regularized BGK ran stably
+(E/E₀ = 0.195 at the end) and so did regularized BGK + WALE (E/E₀ = 0.167, the extra decay being the eddy
+viscosity). This is a stability result, not a turbulence validation: the reference test for LES (the Re = 1 600
+Taylor–Green dissipation curve at 128³–256³) needs GPU time.
+
 ## Findings that changed the code or the docs
 
 * **Moving-wall density.** With the local density in the moving-wall correction, the closed cavity gained 0.8 %
   mass (n = 32) through uncancelled lid-corner terms. The reference density is used now; mass is conserved.
+* **WALE and rotation.** WALE is not zero in solid-body rotation (only in pure shear). In a rotating frame the
+  far field is a solid-body rotation, so WALE is evaluated on the lab-frame gradient; a test checks the far field
+  gets no eddy viscosity.
+* **Forces on parts of a body.** Momentum exchange sees the absolute pressure cs²ρ; on a part of a body (a blade
+  on a hub, the cube on the floor) the unwetted contact face left it uncancelled — half a cube showed 33 × the
+  whole cube's drag. Forces are now gauge (relative to the reference density); closed bodies are unchanged.
+* **Regularized collision with a force** needed the first-order Hermite term (see numerics.md); found by the
+  Poiseuille test, which did not converge without it.
+* **A wrong exponent in the GPU WALE kernel** ((S^d:S^d)^{3/4} instead of ^{5/4}) was caught by the CPU/GPU
+  agreement test; a direct test of the kernel's WALE viscosity now guards it.
 * **Pressure outlet at low viscosity.** In a duct walled on all four sides, the anti-bounce-back outlet
   oscillates without settling (density at the outlet swinging between 0.63 and 1.38) at ν = 0.005 (τ = 0.515),
   4 cells per cube height; it is steady at ν ≥ 0.0075 in the same duct, and the quasi-2D channel is steady even at

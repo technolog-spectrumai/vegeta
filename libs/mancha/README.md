@@ -5,8 +5,9 @@ Triton, with a readable NumPy reference implementation. Named after La Mancha, D
 windmills. Developed for Basilisk Systems as a standalone scientific library; long-term targets are propeller
 aerodynamics, vortex dynamics, hydrodynamics and aeroacoustics.
 
-This first version is **the solver only**: D3Q19, BGK, static geometry. No moving or rotating geometry,
-turbulence models, acoustics, OpenFOAM coupling or machine learning yet ([docs/extending.md](docs/extending.md)
+The solver only: D3Q19, BGK and regularized BGK, static geometry, a rotating reference frame (geometry that
+turns with the frame, e.g. an isolated propeller) and WALE LES. No moving geometry in the lab frame, grid
+refinement, acoustics, OpenFOAM coupling or machine learning yet ([docs/extending.md](docs/extending.md)
 lists the extension points).
 
 ```python
@@ -46,14 +47,16 @@ units appear — see `examples/physical_units.py` and [docs/numerics.md](docs/nu
 | | |
 |---|---|
 | Lattice | D3Q19, second-order equilibrium |
-| Collision | BGK/SRT (`viscosity=`, `tau=` or `collision=`); `CollisionModel` interface for TRT/MRT/cumulant |
+| Collision | BGK/SRT (`viscosity=`, `tau=` or `collision=`), regularized BGK (`RegularizedBGK`, stable as τ → ½); `CollisionModel` interface for TRT/MRT/cumulant |
 | Forcing | uniform body force, Guo scheme (`force=`) |
+| Rotating frame | `frame=RotatingFrame(omega, center)`: Coriolis + centrifugal forcing, lab-frame face velocities, `absolute_velocity()` |
+| LES | `turbulence=WALE(c_w)`: WALE eddy viscosity (lab-frame gradient in a rotating frame) |
 | Streaming | pull, fused with collision, double-buffered, structure-of-arrays `f[q, x, y, z]` |
 | Boundaries | periodic; halfway bounce-back walls, stationary or moving (tangential); velocity inlet; pressure outlet (anti-bounce-back); static voxel solids — [docs/boundaries.md](docs/boundaries.md) |
 | Backends | `numpy` (float64 or float32, the reference), `triton` (FP32, CUDA; CPU only under Triton's interpreter) |
 | Safety | τ ≤ ½ refused, τ near ½ warned, Mach > 0.1 warned, ≥ cs refused; NaN/Inf or `|u| > cs` raise `NumericalInstabilityError`; VRAM checked before allocating (`InsufficientMemoryError`) |
 | Output | NumPy arrays, `.npy`, VTK ImageData `.vti` (no dependency; `to_pyvista` with PyVista), JSON metadata, monitored history, checkpoints (`checkpoint` / `Simulation.restore`, also across backends), plots |
-| Diagnostics | mass, kinetic energy, errors and observed order, momentum-exchange force on solids |
+| Diagnostics | mass, kinetic energy, errors and observed order, momentum-exchange force and moment on solids or parts of them (gauge pressure) |
 
 ## Install and test
 

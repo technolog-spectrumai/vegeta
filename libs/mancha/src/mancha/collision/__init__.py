@@ -1,4 +1,4 @@
-"""Collision models. Only BGK for now; :class:`CollisionModel` is the extension point (TRT, MRT, cumulant)."""
+"""Collision models: BGK and regularized BGK; :class:`CollisionModel` is the extension point (TRT, MRT, cumulant)."""
 from __future__ import annotations
 
 from typing import Any
@@ -6,8 +6,9 @@ from typing import Any
 from .base import CollisionModel
 from .bgk import BGK, tau_from_viscosity, viscosity_from_tau
 from .equilibrium import equilibrium, moments
+from .regularized import RegularizedBGK
 
-_MODELS: dict[str, type[CollisionModel]] = {BGK.kind: BGK}
+_MODELS: dict[str, type[CollisionModel]] = {BGK.kind: BGK, RegularizedBGK.kind: RegularizedBGK}
 
 
 def from_parameters(params: dict[str, Any]) -> CollisionModel:
@@ -19,5 +20,5 @@ def from_parameters(params: dict[str, Any]) -> CollisionModel:
     return _MODELS[kind](**params)
 
 
-__all__ = ["BGK", "CollisionModel", "equilibrium", "from_parameters", "moments", "tau_from_viscosity",
+__all__ = ["BGK", "CollisionModel", "RegularizedBGK", "equilibrium", "from_parameters", "moments", "tau_from_viscosity",
            "viscosity_from_tau"]

@@ -13,7 +13,16 @@ pytest.importorskip("triton")
 if not torch.cuda.is_available() and os.environ.get("TRITON_INTERPRET", "0") in ("", "0"):
     pytest.skip("no CUDA and TRITON_INTERPRET is not set", allow_module_level=True)
 
-from mancha import BGK, D3Q19, InvalidParameterError, NumericalInstabilityError, Simulation  # noqa: E402
+from mancha import (  # noqa: E402
+    BGK,
+    D3Q19,
+    WALE,
+    InvalidParameterError,
+    NumericalInstabilityError,
+    RegularizedBGK,
+    RotatingFrame,
+    Simulation,
+)
 from mancha.backends import triton_kernels as K  # noqa: E402
 from mancha.backends.triton_backend import link_mask  # noqa: E402
 from mancha.boundaries import sphere  # noqa: E402
@@ -169,3 +178,101 @@ def test_unknown_collision_kind_is_refused():
 
     with pytest.raises(InvalidParameterError):
         Simulation(shape=SHAPE, collision=Other(0.8), backend="triton")
+
+
+# ---------------------------------------------------------------- rotating frame, WALE, regularized collision
+FRAME = RotatingFrame(0.004, center=(3.0, 2.5))
+
+
+def test_rotating_frame_far_field_inlet_outlet():
+    def setup(s):
+        s.set_boundary("x-", "velocity", velocity=(0.02, 0, 0)).set_boundary("x+", "pressure", density=1.0)
+        for face in ("y-", "y+", "z-", "z+"):
+            s.set_boundary(face, "velocity", velocity=(0.02, 0, 0))
+    _agree(*_pair(setup, viscosity=0.05, frame=FRAME))
+
+
+def test_rotating_frame_with_blade_and_end_walls():
+    blade = np.zeros(SHAPE, bool)
+    blade[4:6, 1:6, 2:4] = True                    # an off-axis block, static in the frame
+
+    def setup(s):
+        s.set_boundary("x-", "wall").set_boundary("x+", "wall")
+        s.set_solid(blade)
+    a, b = _pair(setup, viscosity=0.05, frame=FRAME, force=(1e-5, 0, 0))
+    _agree(a, b)
+    fa, ma = a.solid_load()
+    fb, mb = b.solid_load()
+    assert np.allclose(fa, fb, atol=1e-5) and np.allclose(ma, mb, atol=1e-4)
+
+
+def test_wale_with_walls_and_solids():
+    mask = np.zeros(SHAPE, bool)
+    mask[4:6, 2:4, 2:4] = True
+
+    def setup(s):
+        s.set_boundary("y-", "wall").set_boundary("y+", "wall", velocity=(0.04, 0, 0.01))
+        s.set_boundary("z-", "velocity", velocity=(0.01, 0, 0.02)).set_boundary("z+", "pressure", density=1.0)
+        s.set_solid(mask)
+    _agree(*_pair(setup, viscosity=0.002, turbulence=WALE(0.5)))
+
+
+def test_regularized_with_force():
+    _agree(*_pair(lambda s: (s.set_boundary("y-", "wall"), s.set_boundary("y+", "wall")),
+                  collision=RegularizedBGK(0.56), force=(1e-5, 2e-6, 0.0)))
+
+
+def test_everything_together():
+    mask = np.zeros(SHAPE, bool)
+    mask[4:6, 1:3, 2:5] = True
+
+    def setup(s):
+        s.set_boundary("x-", "velocity", velocity=(0.02, 0, 0)).set_boundary("x+", "pressure", density=1.0)
+        for face in ("y-", "y+", "z-", "z+"):
+            s.set_boundary(face, "velocity", velocity=(0.02, 0, 0))
+        s.set_solid(mask)
+    _agree(*_pair(setup, collision=RegularizedBGK(0.505), frame=FRAME, turbulence=WALE(), force=(2e-6, 0, 0)),
+           tol=3e-5)
+
+
+def test_wale_kernel_matches_the_reference():
+    """The kernel's WALE viscosity on a random field, periodic and with walls and a solid, rotating frame or not
+    (a wrong exponent here once passed every other test that ran few steps)."""
+    import triton
+    import triton.language as tl
+
+    from mancha.turbulence import to_lab_gradient, velocity_gradient, wale_viscosity
+
+    @triton.jit
+    def probe(m_ptr, links_ptr, out_ptr, nx, ny, nz, N, cw2, om, PX: tl.constexpr, HAS_SOLID: tl.constexpr,
+              HAS_FRAME: tl.constexpr, BLOCK: tl.constexpr):
+        node = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
+        valid = node < N
+        z = node % nz
+        y = (node // nz) % ny
+        x = node // (ny * nz)
+        if HAS_SOLID:
+            links = tl.load(links_ptr + node, mask=valid, other=0)
+        else:
+            links = tl.zeros(node.shape, tl.int32)
+        nut = K._wale(m_ptr, node, x, y, z, nx, ny, nz, N, valid, links, cw2, om, PX, True, True, HAS_SOLID,
+                      HAS_FRAME)
+        tl.store(out_ptr + node, nut, mask=valid)
+
+    shape = (6, 5, 4)
+    n = int(np.prod(shape))
+    u = (0.02 * RNG.standard_normal((3,) + shape)).astype(np.float32)
+    solid = np.zeros(shape, bool)
+    solid[2, 1:3, 1] = True
+    u[:, solid] = 0.0
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    for periodic_x, with_solid, om in ((True, False, 0.0), (False, True, 0.0), (False, True, 0.003)):
+        out = torch.zeros(n, device=device)
+        links = torch.from_numpy(link_mask(solid, D3Q19().c)).to(device)
+        probe[(triton.cdiv(n, 64),)](torch.from_numpy(u.copy()).to(device), links, out, *shape, n, 0.25, om,
+                                     PX=periodic_x, HAS_SOLID=with_solid, HAS_FRAME=om != 0.0, BLOCK=64)
+        g = velocity_gradient(u.astype(np.float64), solid if with_solid else None, (periodic_x, True, True))
+        if om:
+            to_lab_gradient(g, om)
+        ref = wale_viscosity(g, 0.5).reshape(-1)
+        assert np.abs(out.cpu().numpy() - ref).max() < 1e-4 * ref.max()

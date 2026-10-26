@@ -28,6 +28,44 @@ Poiseuille reference uses.
 LES model with a per-node τ are new subclasses plus a kernel each — streaming and boundaries do not change
 ([extending.md](extending.md)).
 
+**Regularized BGK** (`mancha.RegularizedBGK`, Latt & Chopard 2006): before relaxing, `f − f^eq` is replaced by
+its projection on the first two Hermite polynomials, `w_i [3 c_i·J + 9/2 (c_i c_i − I/3):Π]` with
+`J = Σ c_i (f_i − f_i^eq)`, `Π = Σ c_i c_i (f_i − f_i^eq)`. Same viscosity as BGK; the non-hydrodynamic modes
+that make BGK blow up as τ → ½ are removed. The first-order term is needed with a force: Guo's half-force
+velocity leaves `J = −F/2`, and a second-order-only projection made forced Poiseuille flow wrong by 10–35 %
+(non-converging) until it was kept. Use it whenever τ is close to ½, and always with LES.
+
+## Large-eddy simulation (WALE)
+
+`Simulation(turbulence=WALE(c_w=0.325))` adds the WALE eddy viscosity (Nicoud & Ducros 1999),
+`ν_t = (C_w Δ)² (S^d:S^d)^{3/2} / [(S:S)^{5/2} + (S^d:S^d)^{5/4}]`, Δ = 1 cell, and relaxes each node with
+`τ = 3(ν + ν_t) + ½`. The velocity gradient is a central difference of the *previous* step's velocity (one
+pass over memory per step); a solid neighbour or one beyond a non-periodic face is replaced by the node's own
+velocity. WALE vanishes in pure shear and grows as y³ near walls, so laminar boundary layers keep their
+molecular viscosity; it does respond to rotation, so in a rotating frame it is evaluated on the lab-frame
+gradient (`g + ∇(Ω×r)`), otherwise the frame's rigid far-field rotation would get a spurious
+ν_t = C_w² (2/3)^{1/4} ω ≈ 0.90 C_w² ω everywhere. C_w = 0.325 is OpenFOAM's default; Nicoud & Ducros quote 0.55–0.6 for isotropic turbulence.
+
+What it does not do on its own: on plain BGK at τ = 0.5003 (3D Taylor–Green, 32³) it delayed the blow-up but did
+not prevent it — the instability there is BGK's, not under-resolution. With `RegularizedBGK` the same case ran
+stably ([validation.md](validation.md#8-rotating-frame-and-les)). No turbulent flow has been validated against
+reference data yet.
+
+## Rotating reference frame
+
+`Simulation(frame=RotatingFrame(omega, center=(y_c, z_c)))` solves in a frame rotating at `omega` (rad per
+step) about the axis `(·, y_c, z_c)` along +x. Geometry rotating with the frame — a propeller — is static; an
+isolated propeller in uniform inflow becomes steady. The fluid gets the fictitious forces
+`ρ[−2Ω×u − Ω×(Ω×r)]` through Guo's forcing; the Coriolis force depends on the velocity it changes, so the
+half-force velocity is solved exactly (`u + Ω×u = b`, a 2×2 system per node; `mancha.frames.solve_velocity`).
+
+Conventions: velocities *given* (initial fields, face inlet and wall velocities) are lab-frame velocities and
+are converted per node (`u − Ω×r` at the wall's halfway point); `Simulation.velocity()` is relative to the frame,
+`absolute_velocity()` adds Ω×r back. Pressure is frame-invariant, so a pressure outlet stays uniform. Only the x
+faces can be walls (a lab-fixed end plate slides in its plane); laterally use far-field velocity faces or solid
+voxels. Lattice Mach: the frame speed ω r at the farthest fluid node is part of the flow speed and must stay
+well below cs — it sets the domain radius and the rotation rate together.
+
 ## Time step
 
 The stored state is the **post-collision** population `f*` at time `t`. One step, for every node `x`:

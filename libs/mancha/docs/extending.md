@@ -11,8 +11,9 @@ For the GPU, write a fused kernel with the same signature as `stream_collide_bgk
 `triton_backend.KERNELS`. The pull/boundary helper `_pull` is shared, so only the relaxation part
 (`_relax_store`) changes. TRT is the natural next step: it removes the τ-dependent wall slip of bounce-back.
 
-Turbulence modelling (Smagorinsky) is a collision model with a per-node τ computed from the non-equilibrium
-stress — local, so it fits the fused kernel.
+Turbulence: WALE is implemented (`mancha.turbulence`, per-node τ from the velocity gradient); another eddy
+viscosity model (Vreman, σ-model) is a function of the same gradient plus a branch in the kernel's `_wale`.
+Regularized BGK exists; the cumulant model (D3Q27) is the next collision model for high Reynolds numbers.
 
 ## Boundaries
 
@@ -20,7 +21,8 @@ New face kinds get a code in `boundaries.Kind` (its value is its precedence), a 
 `NumpyBackend._stream` and in `triton_kernels._pull`. Non-uniform inlet profiles need a per-node velocity
 array instead of the per-face table.
 
-**Moving and rotating geometry** (propellers) needs: a per-link wall velocity in the bounce-back
+**Rotating geometry in a rotating frame** is implemented (`mancha.frames`): enough for an isolated propeller
+in uniform inflow. **Moving geometry in the lab frame** (rotor–stator, installed propellers) still needs: a per-link wall velocity in the bounce-back
 (`+ 6 w_i ρ₀ c_i·u_w(x)`), refilling of nodes that become fluid, interpolated bounce-back (Bouzidi) for
 second-order curved walls, and the force by momentum exchange in the moving frame. The link mask is where a
 per-step update would go; the solid mask is static today by design.

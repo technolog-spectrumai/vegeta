@@ -67,8 +67,23 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` partly done (see not
       (`.github/workflows/mancha.yml`: NumPy tests, Triton interpreter + sm_80/sm_90 compilation, opt-in GPU job)
 - [ ] E6 packaging beyond the editable install (wheel, version policy) — when a consumer needs it
 
+## Phase F — Toward propellers (2026-10-27)
+Target: an air propeller (UIUC database: measured CT/CP against J and the blade geometry) — chord Re 5e4–1e5,
+tip Mach 0.2–0.4. Reliable at that Re needs a GPU, LES, a stable collision model and (later) grid refinement.
+- [x] F1 rotating reference frame (x axis): Coriolis + centrifugal Guo forcing with the implicit velocity,
+      lab-frame face velocities, `absolute_velocity()`, both backends; exact-solution tests (rigid far field,
+      co-rotating container, axial flow)
+- [x] F2 WALE LES (lab-frame gradient in a rotating frame), both backends; kernel probe test
+- [x] F3 regularized BGK (with the first-order term for forcing), both backends
+- [x] F4 gauge momentum exchange, forces and moments on parts of bodies (blades on a hub)
+- [ ] F5 propeller geometry from a section table → voxels (blades + hub), a UIUC APC prop chosen with the user
+- [ ] F6 Mancha vs OpenFOAM `SRFSimpleFoam` on the identical voxel geometry at low Re (CPU)
+- [ ] F7 LES validation: Taylor–Green Re = 1 600 dissipation against the DNS reference (GPU)
+- [ ] F8 full-Re air propeller on a GPU against UIUC CT/CP (needs F5, F7; cumulant collision and refinement
+      for accuracy)
+- [-] interpolated bounce-back, cumulant D3Q27, grid refinement, moving geometry in the lab frame
+
 ## Later (design hooks only, nothing implemented)
 - [-] TRT / MRT / cumulant collision (CollisionModel kinds)
-- [-] moving and rotating boundaries (interpolated bounce-back, per-link wall velocity)
-- [-] turbulence modelling (Smagorinsky: a per-cell tau in the collision model)
+- [-] moving boundaries in the lab frame (interpolated bounce-back, per-link wall velocity)
 - [-] aeroacoustics (probes, FW-H outside the solver)

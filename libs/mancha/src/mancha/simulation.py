@@ -15,12 +15,14 @@ import numpy as np
 
 from . import __version__
 from .backends import Backend, create_backend
-from .backends.numpy_backend import rest_populations
+from .backends.numpy_backend import rest_populations, state_velocity
 from .boundaries import FACES, BoundaryConditions, Kind, validate_mask
 from .collision import BGK, CollisionModel, from_parameters, tau_from_viscosity
-from .diagnostics import kinetic_energy, momentum_exchange_force, total_mass
+from .diagnostics import kinetic_energy, momentum_exchange, total_mass
 from .errors import InvalidParameterError, NumericalInstabilityError
+from .frames import RotatingFrame
 from .lattice import D3Q19
+from .turbulence import WALE
 from .units import CS2, UnitConverter
 
 MACH_WARN = 0.1                  # lattice speed above which compressibility errors (≈ Ma²) exceed ~3 %
@@ -46,6 +48,11 @@ class Simulation:
     :class:`~mancha.units.UnitConverter`) is optional and only used to report physical quantities. Every face
     starts periodic; change it with :meth:`set_boundary`.
 
+    ``frame`` (a :class:`~mancha.frames.RotatingFrame`) runs the solver in a frame rotating about an axis along
+    x; velocities given to the simulation (initial fields, face velocities) are then lab-frame velocities and
+    :meth:`velocity` is relative to the frame (:meth:`absolute_velocity` adds Ω×r). ``turbulence`` (a
+    :class:`~mancha.turbulence.WALE`) adds a WALE eddy viscosity (LES).
+
     The state is checked every ``check_interval`` steps (and after every :meth:`run`): non-finite populations or
     a node faster than the lattice speed of sound raise :class:`~mancha.errors.NumericalInstabilityError`.
     """
@@ -55,6 +62,7 @@ class Simulation:
                  collision: CollisionModel | None = None, backend: str = "numpy", dtype: Any = None,
                  density: float = 1.0, velocity: Sequence[float] = (0.0, 0.0, 0.0),
                  force: Sequence[float] | None = None, units: UnitConverter | None = None,
+                 frame: RotatingFrame | None = None, turbulence: WALE | None = None,
                  block_size: int | None = None, device: str | None = None,
                  check_interval: int = 100, history_interval: int | None = None):
         self.lattice = lattice or D3Q19()
@@ -76,13 +84,15 @@ class Simulation:
         if self.force is not None and (len(self.force) != 3 or not all(map(math.isfinite, self.force))):
             raise InvalidParameterError(f"force must be three finite numbers, got {force!r}")
         self.units = units
+        self.frame = frame if frame is not None and frame.omega != 0.0 else None
+        self.turbulence = turbulence
         self.backend_name = backend
         if dtype is None:
             dtype = np.float64 if backend == "numpy" else np.float32
         self.dtype = np.dtype(dtype)
         kwargs: dict[str, Any] = dict(lattice=self.lattice, shape=self.shape, collision=self.collision,
                                       dtype=self.dtype, rest_density=self.reference_density,
-                                      force=self.force)
+                                      force=self.force, frame=self.frame, turbulence=self.turbulence)
         if backend == "triton":
             kwargs.update(block_size=block_size, device=device)
         elif block_size is not None or device is not None:
@@ -101,9 +111,26 @@ class Simulation:
         """Set a face condition: ``"periodic"``, ``"wall"`` (``velocity=`` for a moving lid),
         ``"velocity"`` (``velocity=``) or ``"pressure"`` (``density=``). Values in lattice units."""
         self.boundaries.set(face, kind, **params)
-        _check_speed(self.boundaries[face].velocity, f"the {face} velocity")
+        cond = self.boundaries[face]
+        if self.frame is not None and cond.kind in (Kind.WALL, Kind.MOVING_WALL) and face[0] != "x":
+            raise InvalidParameterError(f"a wall on {face} would cut through the rotating frame's flow; with a "
+                                        "rotating frame only the x faces (normal to the axis) can be walls — use "
+                                        "velocity (far-field) or periodic faces laterally, or a solid mask")
+        if cond.kind in (Kind.WALL, Kind.MOVING_WALL, Kind.VELOCITY):
+            _check_speed(self._face_speed(face), f"the {face} velocity (relative to the frame)")
         self._dirty = True
         return self
+
+    def _face_speed(self, face: str) -> float:
+        """Largest frame-relative speed a face condition imposes (its lab velocity minus Ω×r on the face)."""
+        u = np.asarray(self.boundaries[face].velocity, dtype=np.float64)
+        if self.frame is None:
+            return float(np.linalg.norm(u))
+        axis, side = "xyz".index(face[0]), face[1]
+        idx = [slice(None)] * 3
+        idx[axis] = 0 if side == "-" else -1
+        rel = u.reshape(3, 1, 1, 1) - self.frame.frame_velocity(self.shape)
+        return float(np.sqrt((rel[(slice(None),) + tuple(idx)] ** 2).sum(axis=0)).max())
 
     def set_solid(self, mask: np.ndarray | None) -> "Simulation":
         """Static solid voxels (``True`` = solid), replacing any previous mask; ``None`` removes them."""
@@ -118,16 +145,18 @@ class Simulation:
     def initialize(self, density: float | np.ndarray = 1.0, velocity: Sequence[float] | np.ndarray = (0, 0, 0)
                    ) -> "Simulation":
         """Set the populations to the equilibrium of the given density and velocity (scalars or fields
-        ``[nx, ny, nz]`` / ``[3, nx, ny, nz]``). Resets the step counter and the history."""
+        ``[nx, ny, nz]`` / ``[3, nx, ny, nz]``; lab-frame velocities when a rotating frame is set). Resets the
+        step counter and the history."""
         rho = np.broadcast_to(np.asarray(density, dtype=np.float64), self.shape)
         u = np.asarray(velocity, dtype=np.float64)
         u = np.broadcast_to(u.reshape(3, 1, 1, 1) if u.ndim == 1 else u, (3,) + self.shape)
         if not (np.isfinite(rho).all() and np.isfinite(u).all()) or (rho <= 0).any():
             raise InvalidParameterError("the initial density must be positive and the fields finite")
-        _check_speed(float(np.sqrt((u * u).sum(axis=0)).max()), "the initial velocity")
-        if self.force is not None:   # the stored state carries ρu + F/2 (Guo), so the reported velocity is u
-            u = u + np.asarray(self.force).reshape(3, 1, 1, 1) / (2.0 * rho)
-        f = rest_populations(self.lattice, rho, u, self.dtype)
+        if self.frame is not None:
+            u = u - self.frame.frame_velocity(self.shape)
+        _check_speed(float(np.sqrt((u * u).sum(axis=0)).max()), "the initial velocity (relative to the frame)")
+        # the stored state carries ρu + F/2 (Guo, with the frame's forces), so the reported velocity is u
+        f = rest_populations(self.lattice, rho, state_velocity(u, rho, self.force, self.frame), self.dtype)
         if self.solid is not None:
             f[:, self.solid] = (self.lattice.w * self.reference_density)[:, None]
         self.backend.set_populations(f)
@@ -194,8 +223,17 @@ class Simulation:
         return self.backend.density()
 
     def velocity(self) -> np.ndarray:
-        """Velocity ``[3, nx, ny, nz]``; zero in solid voxels."""
+        """Velocity ``[3, nx, ny, nz]`` (relative to the rotating frame, if any); zero in solid voxels."""
         return self.backend.velocity()
+
+    def absolute_velocity(self) -> np.ndarray:
+        """Lab-frame velocity ``u + Ω×r`` (the same as :meth:`velocity` without a rotating frame)."""
+        u = self.velocity()
+        if self.frame is not None:
+            u = u + self.frame.frame_velocity(self.shape)
+            if self.solid is not None:
+                u[:, self.solid] = 0.0
+        return u
 
     def pressure(self) -> np.ndarray:
         """Gauge pressure ``cs² (ρ − ρ_ref)`` in lattice units."""
@@ -211,12 +249,26 @@ class Simulation:
         return kinetic_energy(self.density() if rho is None else rho, self.velocity() if u is None else u,
                               self.solid)
 
-    def solid_force(self) -> np.ndarray:
-        """Force on the solid voxels by momentum exchange (lattice units; :meth:`UnitConverter.force` converts)."""
+    def solid_force(self, part: np.ndarray | None = None) -> np.ndarray:
+        """Force on the solid voxels (or on the subset ``part`` of them) by momentum exchange, lattice units
+        (:meth:`UnitConverter.force` converts)."""
+        return self.solid_load(part)[0]
+
+    def solid_load(self, part: np.ndarray | None = None, origin: Sequence[float] | None = None
+                   ) -> tuple[np.ndarray, np.ndarray]:
+        """Force and moment about ``origin`` (default: a point on the rotating frame's axis, else the grid
+        origin) on the solid voxels, or on the subset ``part``, by momentum exchange (lattice units), with the
+        pressure taken relative to the reference density (gauge). The x component of the moment about a point
+        on the axis is the torque about the axis."""
         if self.solid is None:
             raise InvalidParameterError("no solid mask is set")
+        if origin is None:
+            origin = (0.0, *self.frame.center) if self.frame is not None else (0.0, 0.0, 0.0)
+        if part is not None and (np.asarray(part) & ~self.solid).any():
+            raise InvalidParameterError("part must be a subset of the solid mask")
         periodic = tuple(self.boundaries.faces[2 * a].kind == Kind.PERIODIC for a in range(3))
-        return momentum_exchange_force(self.populations(), self.solid, self.lattice.c, periodic)
+        return momentum_exchange(self.populations(), self.solid, self.lattice.c, periodic, part=part,
+                                 origin=origin, w=self.lattice.w, reference_density=self.reference_density)
 
     @property
     def viscosity(self) -> float:
@@ -238,6 +290,8 @@ class Simulation:
             "viscosity_lattice": self.collision.viscosity,
             "reference_density": self.reference_density,
             "force": None if self.force is None else list(self.force),
+            "frame": None if self.frame is None else self.frame.to_dict(),
+            "turbulence": None if self.turbulence is None else self.turbulence.to_dict(),
             "boundaries": self.boundaries.to_dict(),
             "solid_voxels": 0 if self.solid is None else int(self.solid.sum()),
             "backend": self.backend_name,
@@ -297,6 +351,8 @@ class Simulation:
         dtype = kwargs.pop("dtype", meta["dtype"] if name == meta["backend"] else None)
         sim = cls(shape=meta["shape"], collision=from_parameters(meta["collision"]), backend=name, dtype=dtype,
                   density=meta["reference_density"], force=meta.get("force"), units=units,
+                  frame=RotatingFrame.from_dict(meta["frame"]) if meta.get("frame") else None,
+                  turbulence=WALE.from_dict(meta.get("turbulence")),
                   check_interval=meta["check_interval"],
                   history_interval=meta["history_interval"], **kwargs)
         sim.boundaries = BoundaryConditions.from_dict(meta["boundaries"])

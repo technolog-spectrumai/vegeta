@@ -10,9 +10,11 @@ import os
 import numpy as np
 
 from ..boundaries import BoundaryConditions, Kind
-from ..collision import BGK, CollisionModel
+from ..collision import BGK, CollisionModel, RegularizedBGK
 from ..errors import BackendUnavailableError, InsufficientMemoryError, InvalidParameterError
+from ..frames import RotatingFrame
 from ..lattice import D3Q19
+from ..turbulence import WALE
 from .base import Backend
 
 try:
@@ -23,7 +25,8 @@ except ImportError as exc:   # pragma: no cover - depends on the installation
 
 from . import triton_kernels as K
 
-KERNELS = {BGK.kind: K.stream_collide_bgk}   # collision kind -> fused kernel; TRT/MRT/cumulant add entries here
+# collision kind -> (fused kernel, its REGULARIZED switch); TRT/MRT/cumulant add entries here
+KERNELS = {BGK.kind: (K.stream_collide, False), RegularizedBGK.kind: (K.stream_collide, True)}
 
 DEFAULT_BLOCK = 128      # one node per thread with 4 warps: 44–80 registers on sm_80, no spills
 INT32_LIMIT = 2 ** 31 - 1
@@ -43,10 +46,11 @@ def default_device() -> str:
                                   "interpreter); use backend='numpy' otherwise")
 
 
-def required_bytes(shape: tuple[int, int, int], q: int = 19, with_solid: bool = True) -> int:
-    """Device memory of the solver state: two population buffers, the link mask and the macroscopic buffer."""
+def required_bytes(shape: tuple[int, int, int], q: int = 19, with_solid: bool = True, les: bool = False) -> int:
+    """Device memory of the solver state: two population buffers, the link mask, the macroscopic buffer and,
+    with LES, two velocity buffers."""
     n = int(np.prod(shape))
-    return 2 * q * n * 4 + (4 * n if with_solid else 0) + 4 * n * 4
+    return 2 * q * n * 4 + (4 * n if with_solid else 0) + 4 * n * 4 + (2 * 3 * n * 4 if les else 0)
 
 
 class TritonBackend(Backend):
@@ -54,14 +58,14 @@ class TritonBackend(Backend):
 
     def __init__(self, lattice: D3Q19, shape: tuple[int, int, int], collision: CollisionModel,
                  dtype: np.dtype = np.float32, rest_density: float = 1.0,
-                 force: tuple[float, float, float] | None = None, block_size: int | None = None,
-                 device: str | None = None):
+                 force: tuple[float, float, float] | None = None, frame: RotatingFrame | None = None,
+                 turbulence: WALE | None = None, block_size: int | None = None, device: str | None = None):
         if np.dtype(dtype) != np.float32:
             raise InvalidParameterError("the triton backend computes in float32 only")
         if collision.kind not in KERNELS:
             raise InvalidParameterError(f"the triton backend has no kernel for collision model {collision.kind!r}")
-        super().__init__(lattice, shape, collision, dtype, rest_density, force)
-        self._kernel = KERNELS[collision.kind]
+        super().__init__(lattice, shape, collision, dtype, rest_density, force, frame, turbulence)
+        self._kernel, self._regularized = KERNELS[collision.kind]
         self.device = torch.device(device or default_device())
         if self.device.type == "cpu" and not interpreter_active():
             raise BackendUnavailableError("CPU tensors need TRITON_INTERPRET=1")
@@ -70,11 +74,16 @@ class TritonBackend(Backend):
             raise InvalidParameterError(f"block_size must be a power of two >= 16, got {self.block}")
         self.n = int(np.prod(shape))
         self._int64 = lattice.q * self.n > INT32_LIMIT
-        self._check_memory(required_bytes(shape, lattice.q))
+        self._check_memory(required_bytes(shape, lattice.q, les=self.turbulence is not None))
         try:
             self.f = torch.empty((lattice.q,) + shape, dtype=torch.float32, device=self.device)
             self._buf = torch.empty_like(self.f)
             self._macro = torch.empty((4,) + shape, dtype=torch.float32, device=self.device)
+            if self.turbulence is not None:       # previous / new step velocity for the WALE gradient
+                self._u_prev = torch.zeros((3,) + shape, dtype=torch.float32, device=self.device)
+                self._u_new = torch.zeros_like(self._u_prev)
+            else:
+                self._u_prev = self._u_new = torch.zeros(1, dtype=torch.float32, device=self.device)
         except torch.OutOfMemoryError as exc:     # the estimate was optimistic (fragmentation, other processes)
             self.f = self._buf = self._macro = None
             raise InsufficientMemoryError(f"out of device memory allocating a {shape} grid: {exc}") from exc
@@ -105,9 +114,16 @@ class TritonBackend(Backend):
             self._links = torch.from_numpy(link_mask(self.solid, self.lattice.c)).to(self.device)
         else:
             self._links = torch.zeros(1, dtype=torch.int32, device=self.device)
+        self._sync_velocity()
 
     def set_populations(self, f: np.ndarray) -> None:
         self.f.copy_(torch.from_numpy(np.ascontiguousarray(f, dtype=np.float32)))
+        self._sync_velocity()
+
+    def _sync_velocity(self) -> None:
+        """LES: the 'previous step' velocity is that of the current state (as the NumPy backend does)."""
+        if self.turbulence is not None:
+            self._u_prev.copy_(self._macroscopic()[1:])
 
     def populations(self) -> np.ndarray:
         return self.f.cpu().numpy()
@@ -115,24 +131,38 @@ class TritonBackend(Backend):
     def _grid(self) -> tuple[int]:
         return (triton.cdiv(self.n, self.block),)
 
+    def _frame_args(self) -> tuple[float, float, float]:
+        if self.frame is None:
+            return 0.0, 0.0, 0.0
+        return float(self.frame.omega), float(self.frame.center[0]), float(self.frame.center[1])
+
     def step(self, steps: int = 1) -> None:
         fx, fy, fz = (float(v) for v in (self.force if self.force is not None else (0.0, 0.0, 0.0)))
+        om, yc, zc = self._frame_args()
         k0, k1, k2, k3, k4, k5 = self._codes
         omega = 1.0 / self.collision.tau
+        nu0 = float(self.collision.viscosity)
+        cw2 = float(self.turbulence.c_w ** 2) if self.turbulence is not None else 0.0
         nx, ny, nz = self.shape
         grid = self._grid()
         for _ in range(steps):
             self._kernel[grid](
-                self.f, self._buf, self._links, self._faces, nx, ny, nz, self.n, omega, self.rest_density,
-                fx, fy, fz, K0=k0, K1=k1, K2=k2, K3=k3, K4=k4, K5=k5, HAS_SOLID=self.solid is not None,
-                HAS_FACES=self._has_faces, HAS_PRESSURE=self._has_pressure, HAS_FORCE=self.force is not None,
-                INT64=self._int64, BLOCK=self.block)
+                self.f, self._buf, self._links, self._faces, self._u_prev, self._u_new, nx, ny, nz, self.n, omega,
+                nu0, cw2, self.rest_density, fx, fy, fz, om, yc, zc, K0=k0, K1=k1, K2=k2, K3=k3, K4=k4, K5=k5,
+                HAS_SOLID=self.solid is not None, HAS_FACES=self._has_faces, HAS_PRESSURE=self._has_pressure,
+                HAS_FORCE=self.force is not None or self.frame is not None, HAS_FRAME=self.frame is not None,
+                HAS_LES=self.turbulence is not None, REGULARIZED=self._regularized, INT64=self._int64,
+                BLOCK=self.block)
             self.f, self._buf = self._buf, self.f
+            if self.turbulence is not None:
+                self._u_prev, self._u_new = self._u_new, self._u_prev
 
     def _macroscopic(self) -> torch.Tensor:
         fx, fy, fz = (float(v) for v in (self.force if self.force is not None else (0.0, 0.0, 0.0)))
-        K.macroscopic[self._grid()](self.f, self._links, self._macro, self.n, fx, fy, fz,
-                                    HAS_SOLID=self.solid is not None, INT64=self._int64, BLOCK=self.block)
+        om, yc, zc = self._frame_args()
+        K.macroscopic[self._grid()](self.f, self._links, self._macro, self.shape[1], self.shape[2], self.n, fx, fy,
+                                    fz, om, yc, zc, HAS_SOLID=self.solid is not None,
+                                    HAS_FRAME=self.frame is not None, INT64=self._int64, BLOCK=self.block)
         return self._macro
 
     def density(self) -> np.ndarray:
@@ -153,7 +183,7 @@ class TritonBackend(Backend):
             torch.cuda.synchronize(self.device)
 
     def memory_bytes(self) -> int:
-        return required_bytes(self.shape, self.lattice.q, self.solid is not None)
+        return required_bytes(self.shape, self.lattice.q, self.solid is not None, self.turbulence is not None)
 
 
 def link_mask(solid: np.ndarray, c: np.ndarray) -> np.ndarray:
