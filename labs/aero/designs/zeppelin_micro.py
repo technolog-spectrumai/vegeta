@@ -1,5 +1,6 @@
-"""Strato-Micro — the cheapest helium airship that lifts a daylight camera with a video link to a few hundred metres
-over the sea, for a few hours (Stage V8.19). Two concepts, sized with the same physics and compared:
+"""Zeppelin-Micro — the cheapest helium airship that lifts a daylight camera with a video link to a few hundred metres
+over the sea, for a few hours (Stage V8.19). It never leaves the troposphere,
+so it is a Zeppelin, not a Strato: the Strato name is kept for ships that float in the stratosphere. Two concepts, sized with the same physics and compared:
 
 - **tethered** (an aerostat on a line from the vessel): no propulsion; the wind is held by the tether. Sized so that
   its free lift holds the tether within ``max_tether_angle`` of the vertical at the design wind, with the line's own
@@ -51,7 +52,11 @@ class Catalogue:
                         "life; ~3 %/day lost"),
     })
     fin: Part = Part(0.20, 60.0, note="foam-core or inflated fins: kg and € per m² of planform")
-    camera: Part = Part(0.8, 1500.0, 12.0, "daylight EO camera on a 2-axis gimbal")
+    cameras: dict = field(default_factory=lambda: {
+        "eo": Part(0.8, 1500.0, 12.0, "daylight EO camera on a 2-axis gimbal"),
+        "eo-ir": Part(2.0, 4500.0, 25.0, "daylight EO + uncooled LWIR thermal camera on a stabilised 2-axis gimbal "
+                      "(finds people in the water at night)"),
+    })
     video_link: Part = Part(0.2, 500.0, 4.0, "digital video link to the vessel, 5–10 km")
     avionics_tethered: Part = Part(0.15, 150.0, 2.0, "power board, GPS/attitude for image tagging, beacon")
     avionics_free: Part = Part(0.35, 400.0, 6.0, "flight controller, GPS, telemetry, failsafe valve")
@@ -110,6 +115,7 @@ class MicroDesign:
     free_lift_margin: float = 0.10    # of the gross lift, kept as positive free lift (gusts, cooling; tethered)
     speed_margin: float = 3.0         # m/s of airspeed above the design wind (free-flying)
     battery_reserve: float = 0.25     # of the battery (free-flying: return and landing)
+    camera: str = "eo"                # "eo" (daylight) or "eo-ir" (daylight + thermal)
 
 
 def _ship(length: float, d: MicroDesign) -> sg.Strato:
@@ -131,11 +137,12 @@ def evaluate(length: float, d: MicroDesign, m: Mission = Mission(), cat: Catalog
     gross = air.density * h.volume
     net = gross - gas                                         # kg of static lift
     fin_area = ship.fin_planform_area * ship.layout.fin_count
-    loads = cat.camera.power + cat.video_link.power
+    cam = cat.cameras[d.camera]
+    loads = cam.power + cat.video_link.power
     parts = {"envelope": (env.mass * h.surface_area * 1.1, env.cost * h.surface_area),
              "fins": (cat.fin.mass * fin_area, cat.fin.cost * fin_area),
              "gondola": (cat.gondola.mass, cat.gondola.cost),
-             "camera": (cat.camera.mass, cat.camera.cost), "video link": (cat.video_link.mass, cat.video_link.cost)}
+             "camera": (cam.mass, cam.cost), "video link": (cat.video_link.mass, cat.video_link.cost)}
     out = {"concept": d.concept, "length": length, "diameter": h.diameter, "volume": h.volume, "area": h.surface_area,
            "gross_lift": gross, "gas_mass": gas, "net_lift": net, "superpressure": dp, "hoop_line_load": hoop,
            "helium_m3_stp": gas / lg.gas_density(101325.0, 288.15, "helium", 0.98)}
@@ -210,13 +217,13 @@ def size(d: MicroDesign, m: Mission = Mission(), cat: Catalogue = CAT, wind: Sea
     return r
 
 
-def cheapest(m: Mission = Mission(), cat: Catalogue = CAT, wind: SeaWind = SEA) -> dict:
+def cheapest(m: Mission = Mission(), cat: Catalogue = CAT, wind: SeaWind = SEA, camera: str = "eo") -> dict:
     """Both concepts with both envelopes, sized; the cheapest first-year cost (build + ground + a year of helium)."""
     rows = []
     for concept in ("tethered", "free"):
         for env in cat.envelopes:
             for fin in ((1.4, 1.0) if concept == "tethered" else (1.0, 0.7)):
-                r = size(MicroDesign(concept=concept, envelope=env, fin_scale=fin), m, cat, wind)
+                r = size(MicroDesign(concept=concept, envelope=env, fin_scale=fin, camera=camera), m, cat, wind)
                 if r.get("feasible"):
                     r["first_year_cost"] = r["build_cost"] + r["ground_cost"] + r["helium_cost_per_year"]
                 rows.append(r)

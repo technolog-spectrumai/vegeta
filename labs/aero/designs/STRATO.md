@@ -18,13 +18,14 @@ the summer scenario (June–August at 50°N, on station ≥ 90 % of days, ≥ 60
 bisection on the length with the rest of the design optimised at each step. Campaign stage `sigma`; results in the
 report's "Strato-Sigma" section.
 
-## Strato-Micro
+## Zeppelin-Micro
 
-The cheapest maritime imaging airship: a daylight camera with a video link at a few hundred metres over the sea, for
+The cheapest maritime imaging airship (it stays in the troposphere, so it is a Zeppelin, not a Strato; the
+Strato name is kept for ships that float in the stratosphere): a daylight camera with a video link at a few hundred metres over the sea, for
 hours per deployment. A tethered aerostat (no propulsion; the line holds it in the wind) is compared with a
 free-flying micro blimp, both sized against a design sea wind with the same physics; parts, prices and the sea wind
-are estimates (`strato_micro.py`), and the costs compare options rather than price a product. Study script
-`campaigns/strato/micro.py`; results in the report's "Strato-Micro" section.
+are estimates (`zeppelin_micro.py`), and the costs compare options rather than price a product. Study script
+`campaigns/strato/zeppelin_micro_study.py`; results in the report's "Zeppelin-Micro" section.
 
 ## Files
 

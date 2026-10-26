@@ -1,7 +1,8 @@
-"""Strato-Micro study: the cheapest maritime imaging airship at a few hundred metres, tethered vs free-flying
-(Stage V8.19). Writes ``results/micro.json``, ``micro.png``, and the CAD of both sized ships (STEP, parts, views).
+"""Zeppelin-Micro study: the cheapest maritime imaging airship at a few hundred metres, tethered vs free-flying,
+with a daylight camera or a daylight + thermal camera (Stage V8.19). Writes ``results/zeppelin_micro.json``,
+``zeppelin_micro.png``, ``zeppelin_micro_thermal.png`` and the CAD of the sized ships (STEP, parts, views).
 
-    python labs/aero/campaigns/strato/micro.py [--out DIR] [--quick]
+    python labs/aero/campaigns/strato/zeppelin_micro_study.py [--out DIR] [--quick]
 """
 from __future__ import annotations
 
@@ -17,20 +18,41 @@ sys.path.insert(0, str(HERE.parents[1] / "designs"))
 sys.path.insert(0, str(HERE))
 
 import strato  # noqa: E402
-import strato_micro as mi  # noqa: E402
+import zeppelin_micro as mi  # noqa: E402
 from run import INK2, MUTED, SERIES, jdump, plt, save, style  # noqa: E402
 
 WINDS = np.arange(6.0, 20.01, 1.0)
 
 
 def variant_overrides(r: dict) -> dict:
-    """The Dedalus parameters of a sized Strato-Micro ship."""
+    """The Dedalus parameters of a sized Zeppelin-Micro ship."""
     d = r["design"]
     ship = mi._ship(r["length"], mi.MicroDesign(**d))
     tethered = d["concept"] == "tethered"
     return {"length": r["length"], "diameter": ship.hull.diameter, "fin_span": ship.layout.fin_span,
             "fin_root_chord": ship.layout.fin_root_chord, "with_solar": False, "with_structure": False,
             "with_propellers": not tethered, "with_tether": tethered}
+
+
+def _thermal_plot(eo: dict, ir: dict, out: Path) -> str:
+    """Daylight vs daylight + thermal: size, mass and first-year cost of each sized option."""
+    rows = [(f"{r['concept']}, {r['design']['envelope']}, fins ×{r['design']['fin_scale']:g}", r, q)
+            for r in eo["rows"] for q in ir["rows"]
+            if r.get("feasible") and q.get("feasible") and r["concept"] == q["concept"]
+            and r["design"]["envelope"] == q["design"]["envelope"] and r["design"]["fin_scale"] == q["design"]["fin_scale"]]
+    fig, ax = plt.subplots(1, 3, figsize=(16, 4.2), sharey=True)
+    y = np.arange(len(rows))
+    for a_, key, label, scale in ((ax[0], "length", "hull length [m]", 1.0), (ax[1], "system_mass", "mass [kg]", 1.0),
+                                  (ax[2], "first_year_cost", "first-year cost [k€] (estimate)", 1e-3)):
+        a_.barh(y - 0.2, [r[key] * scale for _, r, _ in rows], height=0.38, color=SERIES[0], label="daylight camera")
+        a_.barh(y + 0.2, [q[key] * scale for _, _, q in rows], height=0.38, color=SERIES[1], label="daylight + thermal")
+        a_.set_xlabel(label)
+        a_.grid(axis="y", visible=False)
+    ax[0].set_yticks(y, [n for n, _, _ in rows])
+    ax[0].invert_yaxis()
+    ax[0].legend(fontsize=8, loc="lower right")
+    fig.suptitle("Zeppelin-Micro with and without a thermal camera (200 m, 12 m/s design wind, 4 h)", x=0.01, ha="left")
+    return save(fig, out, "zeppelin_micro_thermal.png")
 
 
 def main(argv=None) -> int:
@@ -43,8 +65,11 @@ def main(argv=None) -> int:
     style()
     m = mi.Mission()
     best = mi.cheapest(m)
-    res = {"name": "Strato-Micro", "mission": asdict(m), "sea_wind": asdict(mi.SEA),
-           "catalogue_notes": {k: v.note for k, v in mi.CAT.envelopes.items()}, "rows": best["rows"], "best": best["best"]}
+    thermal = mi.cheapest(m, camera="eo-ir")
+    res = {"name": "Zeppelin-Micro", "mission": asdict(m), "sea_wind": asdict(mi.SEA),
+           "catalogue_notes": {k: v.note for k, v in mi.CAT.envelopes.items()}, "rows": best["rows"], "best": best["best"],
+           "thermal": {"rows": thermal["rows"], "best": thermal["best"]},
+           "cameras": {k: asdict(v) for k, v in mi.CAT.cameras.items()}}
 
     # cost and size against the design wind (how much weather it still works in), both concepts, TPU-nylon
     sweep = {}
@@ -85,25 +110,29 @@ def main(argv=None) -> int:
     ax[2].grid(axis="y", visible=False)
     ax[2].set(xlabel="parts cost [€] (estimate)", title=f"Cheapest: {b['concept']}, {b['design']['envelope']}, {b['length']:.1f} m")
     ax[2].set_xlim(0, max(b["costs"].values()) * 1.7)
-    res["plots"] = [save(fig, out, "micro.png")]
+    res["plots"] = [save(fig, out, "zeppelin_micro.png")]
+
+    res["plots"].append(_thermal_plot(best, thermal, out))
 
     from cad import views
-    for key, r in (("tethered", min((x for x in best["rows"] if x.get("feasible") and x["concept"] == "tethered"), key=lambda x: x["first_year_cost"])),
-                   ("free", min((x for x in best["rows"] if x.get("feasible") and x["concept"] == "free"), key=lambda x: x["first_year_cost"]))):
+    cheapest_of = lambda rows, concept: min((x for x in rows if x.get("feasible") and x["concept"] == concept),  # noqa: E731
+                                           key=lambda x: x["first_year_cost"])
+    for key, r in (("tethered", cheapest_of(best["rows"], "tethered")), ("free", cheapest_of(best["rows"], "free")),
+                   ("tethered_thermal", cheapest_of(thermal["rows"], "tethered"))):
         over = variant_overrides(r)
         tag = f"{key}_{r['length']:.1f}m"
-        strato.StratoAirship().generate(**over).export_step(out / "cad" / f"strato_micro_{tag}.step")
+        strato.StratoAirship().generate(**over).export_step(out / "cad" / f"zeppelin_micro_{tag}.step")
         parts = strato.parts(**over)
-        (out / "cad" / f"strato_micro_{tag}_parts").mkdir(exist_ok=True)
+        (out / "cad" / f"zeppelin_micro_{tag}_parts").mkdir(exist_ok=True)
         for name, g in parts.items():
-            g.export_step(out / "cad" / f"strato_micro_{tag}_parts" / f"{name}.step")
+            g.export_step(out / "cad" / f"zeppelin_micro_{tag}_parts" / f"{name}.step")
         if not a.quick:
-            views(parts, out / "cad" / f"views_micro_{tag}.png", f"Strato-Micro, {key}, {r['length']:.1f} m")
-            res["plots"].append(f"cad/views_micro_{tag}.png")
-        res[f"cad_{key}"] = {"step": f"cad/strato_micro_{tag}.step", "overrides": over}
+            views(parts, out / "cad" / f"views_zeppelin_micro_{tag}.png", f"Zeppelin-Micro, {key.replace('_', ' ')}, {r['length']:.1f} m")
+            res["plots"].append(f"cad/views_zeppelin_micro_{tag}.png")
+        res[f"cad_{key}"] = {"step": f"cad/zeppelin_micro_{tag}.step", "overrides": over}
     res["quick"] = a.quick
-    jdump(res, out / "micro.json")
-    print(f"micro: best {b['concept']} {b['design']['envelope']} {b['length']:.2f} m, first year €{b['first_year_cost']:,.0f}")
+    jdump(res, out / "zeppelin_micro.json")
+    print(f"zeppelin-micro: best {b['concept']} {b['design']['envelope']} {b['length']:.2f} m, first year €{b['first_year_cost']:,.0f}")
     return 0
 
 

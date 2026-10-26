@@ -1,11 +1,11 @@
-"""Strato-Micro (Stage V8.19): the maritime aerostat and micro blimp — lift at sea level, the tether's lean, the
+"""Zeppelin-Micro (Stage V8.19): the maritime aerostat and micro blimp — lift at sea level, the tether's lean, the
 sizing search, the free-flyer's power, and the wind statistics."""
 import math
 from dataclasses import replace
 
 import pytest
 
-import strato_micro as mi
+import zeppelin_micro as mi
 
 
 def test_sea_level_lift_per_volume():
@@ -53,3 +53,10 @@ def test_cheapest_is_reported():
     c = mi.cheapest()
     assert c["best"]["feasible"] and c["best"]["first_year_cost"] == min(
         r["first_year_cost"] for r in c["rows"] if r.get("feasible"))
+
+
+def test_thermal_camera_costs_size_and_money():
+    eo = mi.size(mi.MicroDesign())
+    ir = mi.size(mi.MicroDesign(camera="eo-ir"))
+    assert ir["length"] > eo["length"] and ir["system_mass"] > eo["system_mass"]
+    assert ir["build_cost"] - eo["build_cost"] > 3000 * (1 + mi.CAT.fabrication_overhead) * 0.99   # the camera itself

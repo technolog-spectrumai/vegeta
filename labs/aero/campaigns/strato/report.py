@@ -43,7 +43,7 @@ VERIFIED = [
     ("Gas superheat, cell temperature", "strato_thermal", "estimate: two-node lumped model, assumed coefficients"),
     ("Stratospheric winds over Europe", "strato_wind", "estimate: parametric climatology, not ERA5 data"),
     ("Component masses, efficiencies, strengths", "strato_catalogue", "estimate: technology-class values, not datasheets"),
-    ("Sea wind, cheap-part masses and prices (Strato-Micro)", "strato_micro", "estimate: Weibull sea wind, retail order of magnitude"),
+    ("Sea wind, cheap-part masses and prices (Zeppelin-Micro)", "zeppelin_micro", "estimate: Weibull sea wind, retail order of magnitude"),
     ("CFD of the hull, FEM of the fins", "Aeromant / Talos", "NOT RUN (OpenFOAM and CalculiX not installed here)"),
 ]
 
@@ -53,7 +53,7 @@ def write(out: Path) -> Path:
     sw_, sens, par, sea, con = (_load(out, n) for n in ("sweeps", "sensitivity", "pareto", "seasons", "constraints"))
     cad = _load(out, "cad")
     img = _load(out, "sigma")
-    micro = _load(out, "micro")
+    micro = _load(out, "zeppelin_micro")
     L = []
     w = L.append
     quick = any(r and r.get("quick") for r in (atm, wind, fam, pv, det, sw_, sens, par, sea, con, cad))
@@ -119,22 +119,23 @@ def write(out: Path) -> Path:
             w(f"- **No Strato-Sigma (imaging) up to {max(float(k) for k in img['steps']):g} m** met the summer scenario.")
     if micro and micro.get("best"):
         b = micro["best"]
-        w(f"- **Strato-Micro**, a maritime imaging airship at {f(micro['mission']['altitude'], 0)} m: the cheapest is "
+        w(f"- **Zeppelin-Micro**, a maritime imaging airship at {f(micro['mission']['altitude'], 0)} m: the cheapest is "
           f"**{b['concept']}**, {b['design']['envelope']}, **{f(b['length'], 1)} m × {f(b['diameter'], 1)} m** "
           f"({f(b['volume'], 0)} m³, {f(b['system_mass'], 1)} kg), about **€{f(b['first_year_cost'] / 1000, 1)}k** in its "
           f"first year (estimate) for a {f(micro['mission']['design_wind'], 0)} m/s design wind "
           f"(~{f(b['operable_fraction'] * 100, 0)} % of hours at sea).")
     w("")
 
-    # ------------------------------------------------------------------------------------------- Strato-Micro
+    # ------------------------------------------------------------------------------------------- Zeppelin-Micro
     if micro and micro.get("best"):
         m_ = micro["mission"]
-        w("## Strato-Micro: the cheapest maritime imaging airship\n")
+        w("## Zeppelin-Micro: the cheapest maritime imaging airship\n")
+        w("It stays in the troposphere, so it is a Zeppelin; the Strato name is kept for ships that float in the stratosphere.\n")
         w(f"A daylight camera with a video link lifted to {f(m_['altitude'], 0)} m above the sea for {f(m_['hours'], 0)} h per "
           f"deployment, working in winds up to {f(m_['design_wind'], 0)} m/s at that height. Tethered aerostat (no propulsion; "
           "camera on a small battery, video by radio, an unpowered Dyneema line) against a free-flying micro blimp "
           "(electric propellers that out-fly the design wind by 3 m/s, a battery for the hours). Masses, prices and the "
-          "sea-wind statistics are estimates (`designs/strato_micro.py`); the costs compare options, they do not price a product.\n")
+          "sea-wind statistics are estimates (`designs/zeppelin_micro.py`); the costs compare options, they do not price a product.\n")
         w(table([r for r in micro["rows"] if r.get("feasible")], [
             ("concept", lambda r: r["concept"], False), ("envelope", lambda r: r["design"]["envelope"], False),
             ("fin scale", lambda r: f(r["design"]["fin_scale"], 1), True),
@@ -144,12 +145,23 @@ def write(out: Path) -> Path:
             ("ground [€]", lambda r: f(r["ground_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
             ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
         w("")
+        th = micro.get("thermal", {}).get("best")
+        if th:
+            b = micro["best"]
+            w("With and without a thermal camera (each the cheapest sized option):\n")
+            w(table([dict(cam="daylight", **b), dict(cam="daylight + thermal", **th)], [
+                ("camera", lambda r: r["cam"], False), ("concept", lambda r: r["concept"], False),
+                ("L × D [m]", lambda r: f"{f(r['length'], 2)} × {f(r['diameter'], 2)}", True), ("V [m³]", lambda r: f(r["volume"], 1), True),
+                ("mass [kg]", lambda r: f(r["system_mass"], 1), True), ("payload power [W]", lambda r: f(r["loads_w"], 0), True),
+                ("build [€]", lambda r: f(r["build_cost"], 0), True), ("helium/yr [€]", lambda r: f(r["helium_cost_per_year"], 0), True),
+                ("first year [€]", lambda r: f(r["first_year_cost"], 0), True)]))
+            w("")
         w(table(micro["altitude"], [("altitude [m]", lambda r: f(r["altitude"], 0), True), ("length [m]", lambda r: f(r["length"], 2), True),
                                     ("volume [m³]", lambda r: f(r["volume"], 1), True), ("mass [kg]", lambda r: f(r["system_mass"], 1), True),
                                     ("build [€]", lambda r: f(r["build_cost"], 0), True)]))
         w("")
         for p_ in micro["plots"]:
-            w(f"![Strato-Micro]({p_})\n")
+            w(f"![Zeppelin-Micro]({p_})\n")
 
     # ------------------------------------------------------------------------------------------- Strato-Sigma
     if img and img.get("design"):

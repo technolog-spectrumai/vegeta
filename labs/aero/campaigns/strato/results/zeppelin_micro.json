@@ -1,5 +1,5 @@
 {
- "name": "Strato-Micro",
+ "name": "Zeppelin-Micro",
  "mission": {
   "altitude": 200.0,
   "hours": 4.0,
@@ -79,7 +79,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -152,7 +153,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -225,7 +227,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -298,7 +301,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -364,7 +368,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -430,7 +435,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -496,7 +502,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -562,7 +569,8 @@
     "max_tether_angle": 45.0,
     "free_lift_margin": 0.1,
     "speed_margin": 3.0,
-    "battery_reserve": 0.25
+    "battery_reserve": 0.25,
+    "camera": "eo"
    },
    "mission": {
     "altitude": 200.0,
@@ -636,7 +644,8 @@
    "max_tether_angle": 45.0,
    "free_lift_margin": 0.1,
    "speed_margin": 3.0,
-   "battery_reserve": 0.25
+   "battery_reserve": 0.25,
+   "camera": "eo"
   },
   "mission": {
    "altitude": 200.0,
@@ -645,6 +654,662 @@
    "deployments_per_year": 100
   },
   "first_year_cost": 7423.9299367393
+ },
+ "thermal": {
+  "rows": [
+   {
+    "concept": "tethered",
+    "length": 6.796875,
+    "diameter": 2.265625,
+    "volume": 16.07557275596772,
+    "area": 36.1061360859518,
+    "gross_lift": 19.317234314573756,
+    "gas_mass": 3.005509427901839,
+    "net_lift": 16.311724886671918,
+    "superpressure": 103.82267992035231,
+    "hoop_line_load": 108.51369853528176,
+    "helium_m3_stp": 15.78572822148822,
+    "system_mass": 9.670893114451133,
+    "line_length": 311.12698372208087,
+    "line_mass": 0.9333809511662426,
+    "drag_hull": 29.60450898999937,
+    "drag_line": 61.60001688275414,
+    "free_lift_N": 65.12431289904896,
+    "tether_angle": 44.93220069266842,
+    "tension": 85.5261525400041,
+    "tether_sf": 70.15398006116963,
+    "battery_wh": 145.88235294117646,
+    "propulsion_w": 0.0,
+    "feasible": true,
+    "masses": {
+     "envelope": 4.766009963345638,
+     "fins": 1.3944256347656254,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.15,
+     "battery": 0.8104575163398693,
+     "confluence lines": 0.1
+    },
+    "costs": {
+     "envelope": 1624.776123867831,
+     "fins": 418.3276904296876,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 150.0,
+     "battery": 87.52941176470587,
+     "confluence lines": 80.0
+    },
+    "ground_costs": {
+     "winch": 900.0,
+     "tether": 186.67619023324852
+    },
+    "build_cost": 9388.291532577781,
+    "ground_cost": 1086.6761902332485,
+    "helium_fill_cost": 394.6432055372055,
+    "helium_cost_per_year": 1835.0909057480058,
+    "loads_w": 31.0,
+    "surplus_lift": 6.6408317722207855,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "tethered",
+     "fineness": 3.0,
+     "envelope": "tpu-nylon",
+     "fin_scale": 1.4,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 12310.058628559036
+   },
+   {
+    "concept": "tethered",
+    "length": 6.5703125,
+    "diameter": 2.1901041666666665,
+    "volume": 14.521005331307283,
+    "area": 33.739178275872746,
+    "gross_lift": 17.449186211042196,
+    "gas_mass": 2.7148655347073305,
+    "net_lift": 14.734320676334866,
+    "superpressure": 103.82267992035231,
+    "hoop_line_load": 104.896575250768,
+    "helium_m3_stp": 14.259189836810226,
+    "system_mass": 8.628831746508979,
+    "line_length": 311.12698372208087,
+    "line_mass": 0.9333809511662426,
+    "drag_hull": 24.216013635550315,
+    "drag_line": 61.60001688275414,
+    "free_lift_N": 59.87439301367703,
+    "tether_angle": 44.853687942917105,
+    "tension": 78.00385143577259,
+    "tether_sf": 76.91927885048504,
+    "battery_wh": 145.88235294117646,
+    "propulsion_w": 0.0,
+    "feasible": true,
+    "masses": {
+     "envelope": 4.453571532415203,
+     "fins": 0.6648026977539064,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.15,
+     "battery": 0.8104575163398693,
+     "confluence lines": 0.1
+    },
+    "costs": {
+     "envelope": 1518.2630224142736,
+     "fins": 199.44080932617192,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 150.0,
+     "battery": 87.52941176470587,
+     "confluence lines": 80.0
+    },
+    "ground_costs": {
+     "winch": 900.0,
+     "tether": 186.67619023324852
+    },
+    "build_cost": 8981.54155438144,
+    "ground_cost": 1086.6761902332485,
+    "helium_fill_cost": 356.47974592025565,
+    "helium_cost_per_year": 1657.630818529189,
+    "loads_w": 31.0,
+    "surplus_lift": 6.105488929825887,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "tethered",
+     "fineness": 3.0,
+     "envelope": "tpu-nylon",
+     "fin_scale": 1.0,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 11725.848563143878
+   },
+   {
+    "concept": "tethered",
+    "length": 6.3046875,
+    "diameter": 2.1015625,
+    "volume": 12.830078147211532,
+    "area": 31.066303368793804,
+    "gross_lift": 15.417281213322337,
+    "gas_mass": 2.398727648310178,
+    "net_lift": 13.018553565012159,
+    "superpressure": 103.82267992035231,
+    "hoop_line_load": 100.65581002066206,
+    "helium_m3_stp": 12.598750275765482,
+    "system_mass": 6.760619904402917,
+    "line_length": 311.12698372208087,
+    "line_mass": 0.9333809511662426,
+    "drag_hull": 25.77869476571812,
+    "drag_line": 61.60001688275414,
+    "free_lift_N": 61.36936513281361,
+    "tether_angle": 44.891852697433364,
+    "tension": 80.16582725661507,
+    "tether_sf": 74.84485853047684,
+    "battery_wh": 145.88235294117646,
+    "propulsion_w": 0.0,
+    "feasible": true,
+    "masses": {
+     "envelope": 2.0503760223403913,
+     "fins": 1.1997863657226564,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.15,
+     "battery": 0.8104575163398693,
+     "confluence lines": 0.1
+    },
+    "costs": {
+     "envelope": 372.7956404255257,
+     "fins": 359.9359097167969,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 150.0,
+     "battery": 87.52941176470587,
+     "confluence lines": 80.0
+    },
+    "ground_costs": {
+     "winch": 900.0,
+     "tether": 186.67619023324852
+    },
+    "build_cost": 7750.326202383786,
+    "ground_cost": 1086.6761902332485,
+    "helium_fill_cost": 314.9687568941371,
+    "helium_cost_per_year": 3763.876644884938,
+    "loads_w": 31.0,
+    "surplus_lift": 6.2579336606092415,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "tethered",
+     "fineness": 3.0,
+     "envelope": "pe-film",
+     "fin_scale": 1.4,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 12600.879037501973
+   },
+   {
+    "concept": "tethered",
+    "length": 6.09375,
+    "diameter": 2.03125,
+    "volume": 11.584905767308566,
+    "area": 29.022292501906566,
+    "gross_lift": 13.921018094753714,
+    "gas_mass": 2.1659286442577685,
+    "net_lift": 11.755089450495946,
+    "superpressure": 103.82267992035231,
+    "hoop_line_load": 97.28814351439462,
+    "helium_m3_stp": 11.376028505509737,
+    "system_mass": 5.9977891730282025,
+    "line_length": 311.12698372208087,
+    "line_mass": 0.9333809511662426,
+    "drag_hull": 21.07632760633242,
+    "drag_line": 61.60001688275414,
+    "free_lift_N": 56.45982876602905,
+    "tether_angle": 44.99623259312646,
+    "tension": 73.36904244614507,
+    "tether_sf": 81.77836046319084,
+    "battery_wh": 145.88235294117646,
+    "propulsion_w": 0.0,
+    "feasible": true,
+    "masses": {
+     "envelope": 1.9154713051258334,
+     "fins": 0.5718603515625001,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.15,
+     "battery": 0.8104575163398693,
+     "confluence lines": 0.1
+    },
+    "costs": {
+     "envelope": 348.2675100228788,
+     "fins": 171.55810546875003,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 150.0,
+     "battery": 87.52941176470587,
+     "confluence lines": 80.0
+    },
+    "ground_costs": {
+     "winch": 900.0,
+     "tether": 186.67619023324852
+    },
+    "build_cost": 7484.1937840704195,
+    "ground_cost": 1086.6761902332485,
+    "helium_fill_cost": 284.4007126377434,
+    "helium_cost_per_year": 3398.5885160210337,
+    "loads_w": 31.0,
+    "surplus_lift": 5.757300277467744,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "tethered",
+     "fineness": 3.0,
+     "envelope": "pe-film",
+     "fin_scale": 1.0,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 11969.458490324701
+   },
+   {
+    "concept": "free",
+    "length": 7.6640625,
+    "diameter": 2.5546875,
+    "volume": 23.047069932587608,
+    "area": 45.90717033929538,
+    "gross_lift": 27.69454357306735,
+    "gas_mass": 4.311449932580673,
+    "net_lift": 23.383093640486678,
+    "superpressure": 162.2229373755505,
+    "hoop_line_load": 191.18523394956148,
+    "helium_m3_stp": 22.64487219518882,
+    "system_mass": 23.365706529236117,
+    "propulsion_w": 1066.1606548616062,
+    "mean_power_w": 380.5845286896463,
+    "battery_wh": 2333.1061259769617,
+    "airspeed": 15.0,
+    "feasible": "True",
+    "masses": {
+     "envelope": 6.05974648478699,
+     "fins": 0.9045629516601565,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.35,
+     "propulsion": 0.6396963929169637,
+     "battery": 12.96170069987201
+    },
+    "costs": {
+     "envelope": 2065.822665268292,
+     "fins": 271.36888549804695,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 400.0,
+     "propulsion": 266.54016371540155,
+     "battery": 1399.863675586177
+    },
+    "ground_costs": {
+     "charger and spares": 300.0
+    },
+    "build_cost": 11941.994237584897,
+    "ground_cost": 300.0,
+    "helium_fill_cost": 566.1218048797206,
+    "helium_cost_per_year": 2632.466392690701,
+    "loads_w": 35.0,
+    "surplus_lift": 0.01738711125056014,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "free",
+     "fineness": 3.0,
+     "envelope": "tpu-nylon",
+     "fin_scale": 1.0,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 14874.460630275598
+   },
+   {
+    "concept": "free",
+    "length": 7.296875,
+    "diameter": 2.4322916666666665,
+    "volume": 19.890666059525994,
+    "area": 41.61369329025839,
+    "gross_lift": 23.90164647801832,
+    "gas_mass": 3.720976726853694,
+    "net_lift": 20.18066975116463,
+    "superpressure": 162.2229373755505,
+    "hoop_line_load": 182.0254928734866,
+    "helium_m3_stp": 19.543551180806226,
+    "system_mass": 20.17487411626921,
+    "propulsion_w": 886.4289530234253,
+    "mean_power_w": 316.0275314803071,
+    "battery_wh": 1970.6808784859347,
+    "airspeed": 15.0,
+    "feasible": "True",
+    "masses": {
+     "envelope": 5.493007514314108,
+     "fins": 0.4017821274414064,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.35,
+     "propulsion": 0.5318573718140551,
+     "battery": 10.948227102699638
+    },
+    "costs": {
+     "envelope": 1872.6161980616275,
+     "fins": 120.53463823242191,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 400.0,
+     "propulsion": 221.60723825585632,
+     "battery": 1182.4085270915607
+    },
+    "ground_costs": {
+     "charger and spares": 300.0
+    },
+    "build_cost": 11183.958252051832,
+    "ground_cost": 300.0,
+    "helium_fill_cost": 488.58877952015564,
+    "helium_cost_per_year": 2271.937824768724,
+    "loads_w": 35.0,
+    "surplus_lift": 0.005795634895420676,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "free",
+     "fineness": 3.0,
+     "envelope": "tpu-nylon",
+     "fin_scale": 0.7,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 13755.896076820556
+   },
+   {
+    "concept": "free",
+    "length": 6.9921875,
+    "diameter": 2.3307291666666665,
+    "volume": 17.501602000036282,
+    "area": 38.211015534746394,
+    "gross_lift": 21.030824334990335,
+    "gas_mass": 3.2740509307179524,
+    "net_lift": 17.756773404272383,
+    "superpressure": 162.2229373755505,
+    "hoop_line_load": 174.4248566614319,
+    "helium_m3_stp": 17.196179022371098,
+    "system_mass": 17.74279821297782,
+    "propulsion_w": 900.9325617699959,
+    "mean_power_w": 321.77210493465196,
+    "battery_wh": 2002.9311154226077,
+    "airspeed": 15.0,
+    "feasible": "True",
+    "masses": {
+     "envelope": 2.5219270252932624,
+     "fins": 0.7529165649414064,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.35,
+     "propulsion": 0.5405595370619976,
+     "battery": 11.127395085681155
+    },
+    "costs": {
+     "envelope": 458.53218641695673,
+     "fins": 225.87496948242188,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 400.0,
+     "propulsion": 225.23314044249898,
+     "battery": 1201.7586692535647
+    },
+    "ground_costs": {
+     "charger and spares": 300.0
+    },
+    "build_cost": 9576.748706994302,
+    "ground_cost": 300.0,
+    "helium_fill_cost": 429.90447555927744,
+    "helium_cost_per_year": 5137.358482933365,
+    "loads_w": 35.0,
+    "surplus_lift": 0.013975191294562705,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "free",
+     "fineness": 3.0,
+     "envelope": "pe-film",
+     "fin_scale": 1.0,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 15014.107189927667
+   },
+   {
+    "concept": "free",
+    "length": 6.6484375,
+    "diameter": 2.2161458333333335,
+    "volume": 15.045179644577681,
+    "area": 34.54630712060033,
+    "gross_lift": 18.079061002120238,
+    "gas_mass": 2.814524317148009,
+    "net_lift": 15.264536684972228,
+    "superpressure": 162.2229373755505,
+    "hoop_line_load": 165.84977990934087,
+    "helium_m3_stp": 14.782624047293213,
+    "system_mass": 15.26412148325469,
+    "propulsion_w": 747.0107935338938,
+    "mean_power_w": 266.46164610437665,
+    "battery_wh": 1692.4162588315883,
+    "airspeed": 15.0,
+    "feasible": "True",
+    "masses": {
+     "envelope": 2.2800562699596223,
+     "fins": 0.33354618811035164,
+     "gondola": 0.25,
+     "camera": 2.0,
+     "video link": 0.2,
+     "avionics": 0.35,
+     "propulsion": 0.44820647612033626,
+     "battery": 9.40231254906438
+    },
+    "costs": {
+     "envelope": 414.555685447204,
+     "fins": 100.06385643310549,
+     "gondola": 150.0,
+     "camera": 4500.0,
+     "video link": 500.0,
+     "avionics": 400.0,
+     "propulsion": 186.75269838347344,
+     "battery": 1015.4497552989529
+    },
+    "ground_costs": {
+     "charger and spares": 300.0
+    },
+    "build_cost": 9083.52749445342,
+    "ground_cost": 300.0,
+    "helium_fill_cost": 369.56560118233034,
+    "helium_cost_per_year": 4416.308934128847,
+    "loads_w": 35.0,
+    "surplus_lift": 0.0004152017175371725,
+    "operable_fraction": 0.6466044892326481,
+    "design": {
+     "concept": "free",
+     "fineness": 3.0,
+     "envelope": "pe-film",
+     "fin_scale": 0.7,
+     "max_tether_angle": 45.0,
+     "free_lift_margin": 0.1,
+     "speed_margin": 3.0,
+     "battery_reserve": 0.25,
+     "camera": "eo-ir"
+    },
+    "mission": {
+     "altitude": 200.0,
+     "hours": 4.0,
+     "design_wind": 12.0,
+     "deployments_per_year": 100
+    },
+    "first_year_cost": 13799.836428582266
+   }
+  ],
+  "best": {
+   "concept": "tethered",
+   "length": 6.5703125,
+   "diameter": 2.1901041666666665,
+   "volume": 14.521005331307283,
+   "area": 33.739178275872746,
+   "gross_lift": 17.449186211042196,
+   "gas_mass": 2.7148655347073305,
+   "net_lift": 14.734320676334866,
+   "superpressure": 103.82267992035231,
+   "hoop_line_load": 104.896575250768,
+   "helium_m3_stp": 14.259189836810226,
+   "system_mass": 8.628831746508979,
+   "line_length": 311.12698372208087,
+   "line_mass": 0.9333809511662426,
+   "drag_hull": 24.216013635550315,
+   "drag_line": 61.60001688275414,
+   "free_lift_N": 59.87439301367703,
+   "tether_angle": 44.853687942917105,
+   "tension": 78.00385143577259,
+   "tether_sf": 76.91927885048504,
+   "battery_wh": 145.88235294117646,
+   "propulsion_w": 0.0,
+   "feasible": true,
+   "masses": {
+    "envelope": 4.453571532415203,
+    "fins": 0.6648026977539064,
+    "gondola": 0.25,
+    "camera": 2.0,
+    "video link": 0.2,
+    "avionics": 0.15,
+    "battery": 0.8104575163398693,
+    "confluence lines": 0.1
+   },
+   "costs": {
+    "envelope": 1518.2630224142736,
+    "fins": 199.44080932617192,
+    "gondola": 150.0,
+    "camera": 4500.0,
+    "video link": 500.0,
+    "avionics": 150.0,
+    "battery": 87.52941176470587,
+    "confluence lines": 80.0
+   },
+   "ground_costs": {
+    "winch": 900.0,
+    "tether": 186.67619023324852
+   },
+   "build_cost": 8981.54155438144,
+   "ground_cost": 1086.6761902332485,
+   "helium_fill_cost": 356.47974592025565,
+   "helium_cost_per_year": 1657.630818529189,
+   "loads_w": 31.0,
+   "surplus_lift": 6.105488929825887,
+   "operable_fraction": 0.6466044892326481,
+   "design": {
+    "concept": "tethered",
+    "fineness": 3.0,
+    "envelope": "tpu-nylon",
+    "fin_scale": 1.0,
+    "max_tether_angle": 45.0,
+    "free_lift_margin": 0.1,
+    "speed_margin": 3.0,
+    "battery_reserve": 0.25,
+    "camera": "eo-ir"
+   },
+   "mission": {
+    "altitude": 200.0,
+    "hours": 4.0,
+    "design_wind": 12.0,
+    "deployments_per_year": 100
+   },
+   "first_year_cost": 11725.848563143878
+  }
+ },
+ "cameras": {
+  "eo": {
+   "mass": 0.8,
+   "cost": 1500.0,
+   "power": 12.0,
+   "note": "daylight EO camera on a 2-axis gimbal"
+  },
+  "eo-ir": {
+   "mass": 2.0,
+   "cost": 4500.0,
+   "power": 25.0,
+   "note": "daylight EO + uncooled LWIR thermal camera on a stabilised 2-axis gimbal (finds people in the water at night)"
+  }
  },
  "sweep": {
   "tethered": [
@@ -1069,12 +1734,14 @@
   }
  ],
  "plots": [
-  "micro.png",
-  "cad/views_micro_tethered_6.2m.png",
-  "cad/views_micro_free_6.2m.png"
+  "zeppelin_micro.png",
+  "zeppelin_micro_thermal.png",
+  "cad/views_zeppelin_micro_tethered_6.2m.png",
+  "cad/views_zeppelin_micro_free_6.2m.png",
+  "cad/views_zeppelin_micro_tethered_thermal_6.6m.png"
  ],
  "cad_tethered": {
-  "step": "cad/strato_micro_tethered_6.2m.step",
+  "step": "cad/zeppelin_micro_tethered_6.2m.step",
   "overrides": {
    "length": 6.1953125,
    "diameter": 2.0651041666666665,
@@ -1087,7 +1754,7 @@
   }
  },
  "cad_free": {
-  "step": "cad/strato_micro_free_6.2m.step",
+  "step": "cad/zeppelin_micro_free_6.2m.step",
   "overrides": {
    "length": 6.1640625,
    "diameter": 2.0546875,
@@ -1097,6 +1764,19 @@
    "with_structure": false,
    "with_propellers": true,
    "with_tether": false
+  }
+ },
+ "cad_tethered_thermal": {
+  "step": "cad/zeppelin_micro_tethered_thermal_6.6m.step",
+  "overrides": {
+   "length": 6.5703125,
+   "diameter": 2.1901041666666665,
+   "fin_span": 0.55,
+   "fin_root_chord": 0.14,
+   "with_solar": false,
+   "with_structure": false,
+   "with_propellers": false,
+   "with_tether": true
   }
  },
  "quick": false
