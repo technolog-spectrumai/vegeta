@@ -91,6 +91,9 @@ def write(out: Path) -> Path:
             w(f"  At 20 km a 15 m hull of fineness {f(s15[0]['fineness'], 2)} lifts {f(s15[0]['net_lift'])} kg in all; "
               f"its envelope alone weighs {f(_mass(fam, '15.0', 'envelope'))} kg.")
     if sens and sens.get("rows"):
+        if sens.get("noise") is not None:
+            w(f"- **Optimiser noise**: the base case repeated with three seeds gives {', '.join(f(v) for v in sens['base_seeds'])} kg "
+              f"(spread {f(sens['noise'])} kg); sensitivities smaller than that are not resolved.")
         top = max(sens["rows"], key=lambda r: abs((r["payload_high"] or 0) - (r["payload_low"] or 0)))
         w(f"- **The limiting estimate** for the {f(80, 0)} m reference ship is **{top['estimate']}**: "
           f"×{top['low_factor']:g} → {f(top['payload_low'])} kg, ×{top['high_factor']:g} → {f(top['payload_high'])} kg "

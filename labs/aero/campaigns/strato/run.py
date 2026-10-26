@@ -341,26 +341,28 @@ SENSITIVITY = (("laminate areal mass", 0.7, 1.3), ("PV efficiency", 0.85, 1.15),
 
 
 def stage_sensitivity(out: Path, quick: bool) -> dict:
-    """The estimates' effect on the reference ship's best payload (summer scenario), one at a time: each case re-runs
-    the optimiser warm-started from the reference optimum (so battery, propulsion, fineness, altitude… re-size)."""
-    fam = json.loads((out / "family.json").read_text())
-    x0 = np.array(fam["summer"][str(REFERENCE)]["x"])
-    kw = dict(maxiter=2 if quick else 8, popsize=3 if quick else 6, x0=x0, seed=2)
+    """The estimates' effect on the reference ship's best payload (summer scenario), one at a time: each case is a
+    full optimisation (same budget, seed 0), and the base case is repeated with three seeds — the spread of those is
+    the optimiser's own noise, and an effect smaller than it is not resolved."""
+    kw = dict(maxiter=2 if quick else 10, popsize=3 if quick else 8)
 
-    def best(tag):
-        r = sst.optimize(REFERENCE, sst.SUMMER, **kw)
+    def best(tag, seed=0):
+        r = sst.optimize(REFERENCE, sst.SUMMER, seed=seed, **kw)
         v = r["best"]["payload"] if r["meets"] else float("nan")
         print(f"  {tag:40s} payload {v:8.1f} kg", flush=True)
-        return v, r
+        return v
 
-    base, _ = best("base")
+    seeds = [best(f"base (seed {k})", k) for k in ((0,) if quick else (0, 1, 2))]
+    base = seeds[0]
+    noise = (max(seeds) - min(seeds)) if len(seeds) > 1 else float("nan")
     rows = []
     for name, lo, hi in (SENSITIVITY[:2] if quick else SENSITIVITY):
         vals = {}
         for fct in (lo, hi):
             with _patched(name, fct):
-                vals[fct], r = best(f"{name} ×{fct:g}")
-        rows.append({"estimate": name, "low_factor": lo, "high_factor": hi, "payload_low": vals[lo], "payload_high": vals[hi]})
+                vals[fct] = best(f"{name} ×{fct:g}")
+        rows.append({"estimate": name, "low_factor": lo, "high_factor": hi, "payload_low": vals[lo], "payload_high": vals[hi],
+                     "resolved": bool(abs(vals[hi] - vals[lo]) > noise) if noise == noise else None})
     fig, ax = plt.subplots(figsize=(9, 4.5))
     order = sorted(rows, key=lambda r: abs(np.nan_to_num(r["payload_high"]) - np.nan_to_num(r["payload_low"])))
     for i, r in enumerate(order):
@@ -372,8 +374,11 @@ def stage_sensitivity(out: Path, quick: bool) -> dict:
     ax.axvline(0, color=INK2, linewidth=1)
     ax.set(xlabel=f"change of the maximum payload [kg] (base {base:.0f} kg)", title=f"Which estimate matters: the {REFERENCE:g} m ship, summer")
     ax.legend(fontsize=8, loc="lower right")
-    return {"base_payload": base, "rows": rows, "plots": [save(fig, out, "sensitivity.png")],
-            "method": "re-optimised per case (differential evolution warm-started from the reference optimum)"}
+    ax.axvspan(-noise / 2, noise / 2, color=GRID, alpha=0.8, linewidth=0, label="optimiser noise (3 seeds)") if noise == noise else None
+    ax.legend(fontsize=8, loc="lower right")
+    return {"base_payload": base, "base_seeds": seeds, "noise": noise, "rows": rows,
+            "plots": [save(fig, out, "sensitivity.png")],
+            "method": "a full optimisation per case (seed 0); the base case with three seeds gives the noise band"}
 
 
 def stage_pareto(out: Path, quick: bool) -> dict:
