@@ -1,0 +1,271 @@
+{
+ "payload": [
+  {
+   "value": 0.0,
+   "surplus_lift": 767.3948304170908,
+   "availability": 1.0,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 89.62533692611629,
+   "surplus_lift": 657.9330828835361,
+   "availability": 1.0,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 179.25067385223258,
+   "surplus_lift": 548.4711543113372,
+   "availability": 0.999,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 268.87601077834887,
+   "surplus_lift": 439.00918910846735,
+   "availability": 0.998,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 358.50134770446516,
+   "surplus_lift": 329.5470775420338,
+   "availability": 0.997,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 448.12668463058145,
+   "surplus_lift": 220.08496597560043,
+   "availability": 0.996,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 537.7520215566977,
+   "surplus_lift": 110.62285440916685,
+   "availability": 0.987,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 627.3773584828141,
+   "surplus_lift": 1.1606316916258947,
+   "availability": 0.965,
+   "feasible": true,
+   "wind_p90": 7.067611874473021,
+   "problems": []
+  },
+  {
+   "value": 717.0026954089303,
+   "surplus_lift": -108.30159765557937,
+   "availability": 0.867,
+   "feasible": false,
+   "wind_p90": 7.067611874473021,
+   "problems": [
+    "does not float at 18.2 km: lift 2370.8 kg < mass 2479.1 kg"
+   ]
+  },
+  {
+   "value": 806.6280323350466,
+   "surplus_lift": -217.76382700278373,
+   "availability": 0.0,
+   "feasible": false,
+   "wind_p90": 7.067611874473021,
+   "problems": [
+    "does not float at 18.2 km: lift 2370.7 kg < mass 2588.5 kg",
+    "energy does not close even in calm air: the array cannot carry avionics and payload through the day and the battery through the night in month 7"
+   ]
+  },
+  {
+   "value": 896.2533692611629,
+   "surplus_lift": -327.226056349989,
+   "availability": 0.0,
+   "feasible": false,
+   "wind_p90": 7.067611874473021,
+   "problems": [
+    "does not float at 18.2 km: lift 2370.6 kg < mass 2697.8 kg",
+    "energy does not close even in calm air: the array cannot carry avionics and payload through the day and the battery through the night in month 7"
+   ]
+  },
+  {
+   "value": 985.8787061872792,
+   "surplus_lift": -436.68828569719335,
+   "availability": 0.0,
+   "feasible": false,
+   "wind_p90": 7.067611874473021,
+   "problems": [
+    "does not float at 18.2 km: lift 2370.5 kg < mass 2807.1 kg",
+    "energy does not close even in calm air: the array cannot carry avionics and payload through the day and the battery through the night in month 7"
+   ]
+  },
+  {
+   "value": 1075.5040431133955,
+   "surplus_lift": -546.1505150443982,
+   "availability": 0.0,
+   "feasible": false,
+   "wind_p90": 7.067611874473021,
+   "problems": [
+    "does not float at 18.2 km: lift 2370.3 kg < mass 2916.5 kg",
+    "energy does not close even in calm air: the array cannot carry avionics and payload through the day and the battery through the night in month 7"
+   ]
+  }
+ ],
+ "altitude": [
+  {
+   "value": 17000.0,
+   "surplus_lift": 620.3864234162279,
+   "availability": 0.926,
+   "feasible": true,
+   "wind_p90": 8.639697726602106,
+   "problems": []
+  },
+  {
+   "value": 17500.0,
+   "surplus_lift": 402.8724153687417,
+   "availability": 0.973,
+   "feasible": true,
+   "wind_p90": 7.4984458329377075,
+   "problems": []
+  },
+  {
+   "value": 18000.0,
+   "surplus_lift": 201.79737543938836,
+   "availability": 0.985,
+   "feasible": true,
+   "wind_p90": 7.122256315694712,
+   "problems": []
+  },
+  {
+   "value": 18500.0,
+   "surplus_lift": 15.916680379514673,
+   "availability": 0.987,
+   "feasible": true,
+   "wind_p90": 7.255573982811422,
+   "problems": []
+  },
+  {
+   "value": 19000.0,
+   "surplus_lift": -155.91989087257252,
+   "availability": 0.983,
+   "feasible": false,
+   "wind_p90": 7.687615926043754,
+   "problems": [
+    "does not float at 19.0 km: lift 2104.5 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 19500.0,
+   "surplus_lift": -314.7753303335635,
+   "availability": 0.976,
+   "feasible": false,
+   "wind_p90": 8.455005580984414,
+   "problems": [
+    "does not float at 19.5 km: lift 1945.7 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 20000.0,
+   "surplus_lift": -461.6320280814932,
+   "availability": 0.967,
+   "feasible": false,
+   "wind_p90": 9.258213507612474,
+   "problems": [
+    "does not float at 20.0 km: lift 1798.8 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 20500.0,
+   "surplus_lift": -600.6069659699692,
+   "availability": 0.956,
+   "feasible": false,
+   "wind_p90": 10.086318120319003,
+   "problems": [
+    "does not float at 20.5 km: lift 1659.8 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 21000.0,
+   "surplus_lift": -729.1577010095666,
+   "availability": 0.933,
+   "feasible": false,
+   "wind_p90": 10.95300109194562,
+   "problems": [
+    "does not float at 21.0 km: lift 1531.3 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 21500.0,
+   "surplus_lift": -847.712245124319,
+   "availability": 0.91,
+   "feasible": false,
+   "wind_p90": 11.814871641363723,
+   "problems": [
+    "does not float at 21.5 km: lift 1412.7 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 22000.0,
+   "surplus_lift": -956.8468457086042,
+   "availability": 0.869,
+   "feasible": false,
+   "wind_p90": 12.682842385390504,
+   "problems": [
+    "does not float at 22.0 km: lift 1303.6 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 22500.0,
+   "surplus_lift": -1057.3786984461158,
+   "availability": 0.833,
+   "feasible": false,
+   "wind_p90": 13.54695634587313,
+   "problems": [
+    "does not float at 22.5 km: lift 1203.1 kg < mass 2260.4 kg"
+   ]
+  },
+  {
+   "value": 23000.0,
+   "surplus_lift": -1149.9966966660133,
+   "availability": 0.795,
+   "feasible": false,
+   "wind_p90": 14.420464559567833,
+   "problems": [
+    "does not float at 23.0 km: lift 1110.4 kg < mass 2260.4 kg"
+   ]
+  }
+ ],
+ "design": {
+  "length": 80.0,
+  "fineness": 3.134507511754153,
+  "altitude": 18240.34513375276,
+  "payload_mass": 537.7520215566977,
+  "payload_power": null,
+  "battery_energy": 81062.39119770603,
+  "battery": "li-ion",
+  "pv": "gaas",
+  "solar_half_angle_deg": 35.94685033501685,
+  "solar_x0": 0.18,
+  "solar_x1": 0.72,
+  "propulsion_power": 24346.587905234926,
+  "laminate": "zylon",
+  "gas_system": "sealed",
+  "fin_scale": 0.7104215154164171,
+  "valve_dp": 30.0,
+  "night_superpressure": 13.523240205350447
+ },
+ "plots": [
+  "sweeps.png"
+ ],
+ "note": "two y-axes on one plot only to share the swept x; each axis is labelled with its own measure",
+ "seconds": 5.417664527893066,
+ "quick": false
+}
