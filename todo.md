@@ -152,5 +152,9 @@ Tasks:
   added to smoke), regression goldens for the four reference designs; `./test.sh --smoke` green; existing goldens
   unchanged
 - [x] V8.16 `STRATO.md`: assumptions, sources, the verified/estimate split, the conclusion and the limiting factors
+- [ ] V8.18 **Strato-mini** (2026-10-26): the smallest Strato for imaging only — a daylight EO camera + a downlink to a
+  ground station (no relay to aircraft; ~4.5 kg, 50 W by day, 0 W at night), summer (Jun–Aug, 50°N), on station ≥ 90 %
+  of days, ≥ 60 days of gas: `Design.payload_power_night`, `strato_study.smallest_length`, campaign stage `mini`
+  (`results/mini.json`, `mini.png`, `cad/strato_mini_<L>m.step` and parts, report section)
 - [-] V8.17 Later: graduation to Piccolo (export through Yax; control and autonomy there), FEM of the envelope as a
   membrane (Talos is solid-element only), unsteady CFD
