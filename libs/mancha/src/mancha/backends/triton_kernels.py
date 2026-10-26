@@ -20,18 +20,18 @@ import triton
 import triton.language as tl
 
 # (cx, cy, cz, weight, opposite) in D3Q19 order — see mancha.lattice.d3q19
-W0 = 1.0 / 3.0
-W1 = 1.0 / 18.0
-W2 = 1.0 / 36.0
+_W = (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
 VELOCITIES = (
-    (0, 0, 0, W0, 0),
-    (1, 0, 0, W1, 2), (-1, 0, 0, W1, 1), (0, 1, 0, W1, 4), (0, -1, 0, W1, 3), (0, 0, 1, W1, 6), (0, 0, -1, W1, 5),
-    (1, 1, 0, W2, 8), (-1, -1, 0, W2, 7), (1, -1, 0, W2, 10), (-1, 1, 0, W2, 9),
-    (1, 0, 1, W2, 12), (-1, 0, -1, W2, 11), (1, 0, -1, W2, 14), (-1, 0, 1, W2, 13),
-    (0, 1, 1, W2, 16), (0, -1, -1, W2, 15), (0, 1, -1, W2, 18), (0, -1, 1, W2, 17),
+    (0, 0, 0, _W[0], 0),
+    (1, 0, 0, _W[1], 2), (-1, 0, 0, _W[1], 1), (0, 1, 0, _W[1], 4), (0, -1, 0, _W[1], 3), (0, 0, 1, _W[1], 6),
+    (0, 0, -1, _W[1], 5),
+    (1, 1, 0, _W[2], 8), (-1, -1, 0, _W[2], 7), (1, -1, 0, _W[2], 10), (-1, 1, 0, _W[2], 9),
+    (1, 0, 1, _W[2], 12), (-1, 0, -1, _W[2], 11), (1, 0, -1, _W[2], 14), (-1, 0, 1, _W[2], 13),
+    (0, 1, 1, _W[2], 16), (0, -1, -1, _W[2], 15), (0, 1, -1, _W[2], 18), (0, -1, 1, _W[2], 17),
 )
-SOLID_BIT = 19
-PERIODIC, PRESSURE, VELOCITY, MOVING_WALL, WALL = 0, 1, 2, 3, 4
+W0, W1, W2 = (tl.constexpr(w) for w in _W)
+SOLID_BIT = tl.constexpr(19)
+PERIODIC, PRESSURE, VELOCITY, MOVING_WALL, WALL = (tl.constexpr(k) for k in range(5))
 
 
 @triton.jit
@@ -143,19 +143,20 @@ def stream_collide_bgk(f_ptr, out_ptr, links_ptr, faces_ptr, nx, ny, nz, N, omeg
     ubz = tl.zeros(node.shape, tl.float32)
     usq_b = tl.zeros(node.shape, tl.float32)
     if HAS_PRESSURE:
-        m = valid
-        if K0 == 1:
-            m = m & (x == 0)
-        elif K1 == 1:
-            m = m & (x == nx - 1)
-        else:
-            m = m & (x < 0)
-        mp = m
-        if K0 == 1 and K1 == 1:
-            mp = valid & ((x == 0) | (x == nx - 1))
-        my = valid & (((y == 0) & (K2 == 1)) | ((y == ny - 1) & (K3 == 1)))
-        mz = valid & (((z == 0) & (K4 == 1)) | ((z == nz - 1) & (K5 == 1)))
-        mp = mp | my | mz
+        mp = tl.zeros(node.shape, tl.int1)
+        if K0 == PRESSURE:
+            mp = mp | (x == 0)
+        if K1 == PRESSURE:
+            mp = mp | (x == nx - 1)
+        if K2 == PRESSURE:
+            mp = mp | (y == 0)
+        if K3 == PRESSURE:
+            mp = mp | (y == ny - 1)
+        if K4 == PRESSURE:
+            mp = mp | (z == 0)
+        if K5 == PRESSURE:
+            mp = mp | (z == nz - 1)
+        mp = mp & valid
         g0 = _local(f_ptr, node, N, mp, 0)
         g1 = _local(f_ptr, node, N, mp, 1)
         g2 = _local(f_ptr, node, N, mp, 2)
@@ -183,26 +184,44 @@ def stream_collide_bgk(f_ptr, out_ptr, links_ptr, faces_ptr, nx, ny, nz, N, omeg
         ubz = (g5 - g6 + g11 - g12 - g13 + g14 + g15 - g16 - g17 + g18 - 0.5 * fz) / rb
         usq_b = ubx * ubx + uby * uby + ubz * ubz
 
-    a = (f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b)
-    f0 = _pull(*a, 0, 0, 0, 0, W0, 0, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f1 = _pull(*a, 1, 1, 0, 0, W1, 2, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f2 = _pull(*a, 2, -1, 0, 0, W1, 1, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f3 = _pull(*a, 3, 0, 1, 0, W1, 4, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f4 = _pull(*a, 4, 0, -1, 0, W1, 3, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f5 = _pull(*a, 5, 0, 0, 1, W1, 6, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f6 = _pull(*a, 6, 0, 0, -1, W1, 5, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f7 = _pull(*a, 7, 1, 1, 0, W2, 8, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f8 = _pull(*a, 8, -1, -1, 0, W2, 7, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f9 = _pull(*a, 9, 1, -1, 0, W2, 10, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f10 = _pull(*a, 10, -1, 1, 0, W2, 9, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f11 = _pull(*a, 11, 1, 0, 1, W2, 12, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f12 = _pull(*a, 12, -1, 0, -1, W2, 11, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f13 = _pull(*a, 13, 1, 0, -1, W2, 14, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f14 = _pull(*a, 14, -1, 0, 1, W2, 13, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f15 = _pull(*a, 15, 0, 1, 1, W2, 16, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f16 = _pull(*a, 16, 0, -1, -1, W2, 15, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f17 = _pull(*a, 17, 0, 1, -1, W2, 18, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
-    f18 = _pull(*a, 18, 0, -1, 1, W2, 17, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f0 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                0, 0, 0, 0, W0, 0, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f1 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                1, 1, 0, 0, W1, 2, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f2 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                2, -1, 0, 0, W1, 1, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f3 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                3, 0, 1, 0, W1, 4, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f4 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                4, 0, -1, 0, W1, 3, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f5 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                5, 0, 0, 1, W1, 6, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f6 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                6, 0, 0, -1, W1, 5, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f7 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                7, 1, 1, 0, W2, 8, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f8 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                8, -1, -1, 0, W2, 7, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f9 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                9, 1, -1, 0, W2, 10, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f10 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                10, -1, 1, 0, W2, 9, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f11 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                11, 1, 0, 1, W2, 12, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f12 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                12, -1, 0, -1, W2, 11, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f13 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                13, 1, 0, -1, W2, 14, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f14 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                14, -1, 0, 1, W2, 13, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f15 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                15, 0, 1, 1, W2, 16, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f16 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                16, 0, -1, -1, W2, 15, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f17 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                17, 0, 1, -1, W2, 18, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
+    f18 = _pull(f_ptr, faces_ptr, node, x, y, z, nx, ny, nz, N, valid, links, rho_ref, ubx, uby, ubz, usq_b,
+                18, 0, -1, 1, W2, 17, K0, K1, K2, K3, K4, K5, HAS_SOLID, HAS_FACES)
 
     rho = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15 + f16 + f17 + f18
     rho = tl.where(valid, rho, 1.0)
@@ -214,27 +233,44 @@ def stream_collide_bgk(f_ptr, out_ptr, links_ptr, faces_ptr, nx, ny, nz, N, omeg
     uf = ux * fx + uy * fy + uz * fz
     guo = 1.0 - 0.5 * omega
 
-    b = (out_ptr, node, N, valid)
-    c = (rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo, solid_node, rho_ref)
-    _relax_store(*b, f0, *c, 0, 0, 0, 0, W0, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f1, *c, 1, 1, 0, 0, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f2, *c, 2, -1, 0, 0, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f3, *c, 3, 0, 1, 0, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f4, *c, 4, 0, -1, 0, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f5, *c, 5, 0, 0, 1, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f6, *c, 6, 0, 0, -1, W1, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f7, *c, 7, 1, 1, 0, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f8, *c, 8, -1, -1, 0, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f9, *c, 9, 1, -1, 0, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f10, *c, 10, -1, 1, 0, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f11, *c, 11, 1, 0, 1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f12, *c, 12, -1, 0, -1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f13, *c, 13, 1, 0, -1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f14, *c, 14, -1, 0, 1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f15, *c, 15, 0, 1, 1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f16, *c, 16, 0, -1, -1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f17, *c, 17, 0, 1, -1, W2, HAS_FORCE, HAS_SOLID)
-    _relax_store(*b, f18, *c, 18, 0, -1, 1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f0, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 0, 0, 0, 0, W0, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f1, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 1, 1, 0, 0, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f2, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 2, -1, 0, 0, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f3, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 3, 0, 1, 0, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f4, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 4, 0, -1, 0, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f5, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 5, 0, 0, 1, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f6, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 6, 0, 0, -1, W1, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f7, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 7, 1, 1, 0, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f8, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 8, -1, -1, 0, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f9, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 9, 1, -1, 0, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f10, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 10, -1, 1, 0, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f11, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 11, 1, 0, 1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f12, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 12, -1, 0, -1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f13, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 13, 1, 0, -1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f14, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 14, -1, 0, 1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f15, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 15, 0, 1, 1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f16, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 16, 0, -1, -1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f17, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 17, 0, 1, -1, W2, HAS_FORCE, HAS_SOLID)
+    _relax_store(out_ptr, node, N, valid, f18, rho, ux, uy, uz, usq, fx, fy, fz, uf, omega, guo,
+                 solid_node, rho_ref, 18, 0, -1, 1, W2, HAS_FORCE, HAS_SOLID)
 
 
 @triton.jit

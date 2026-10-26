@@ -30,11 +30,15 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` partly done (see not
 - [x] A7 regression tests: rest state, uniform flow, Taylor–Green decay rate, Poiseuille profile, mass conservation
 
 ## Phase B — GPU solver (Triton)
-- [ ] B1 fused pull-stream-collide kernel, SoA, configurable block size
-- [ ] B2 boundaries in the kernel (same precedence), solid mask
-- [ ] B3 GPU macroscopic fields kernel
-- [ ] B4 CPU/GPU agreement tests (every boundary type), interpreter fallback
-- [ ] B5 VRAM estimate and a clean error before allocating
+- [x] B1 fused pull-stream-collide kernel, SoA, configurable block size (default 128: one node per thread)
+- [x] B2 boundaries in the kernel (same precedence), solid links as a per-node bit mask (one 4-byte load)
+- [x] B3 GPU macroscopic fields kernel; health check (finite, max |u|) on the device
+- [x] B4 CPU/GPU agreement tests (every boundary kind on every axis, mixed precedence, solids, force, block
+      sizes, cross-backend checkpoints): `tests/test_triton.py`, run under Triton's interpreter here
+- [x] B4b the kernels compile for sm_80 and sm_90 without a GPU, no register spills (`tests/test_triton_compile.py`)
+- [x] B5 VRAM estimate before allocating (`InsufficientMemoryError`), OOM during allocation re-raised as such
+- [ ] B6 run `tests/test_triton.py` on a real CUDA GPU (no GPU in the development container: only the
+      interpreter and ahead-of-time compilation have been exercised)
 
 ## Phase C — Validation (scientific benchmarks, `benchmarks/`)
 - [ ] C1 Taylor–Green grid refinement (decay-rate error, observed order)
