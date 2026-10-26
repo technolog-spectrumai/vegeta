@@ -486,20 +486,20 @@ def stage_cad(out: Path, quick: bool) -> dict:
     return {"ships": made, "plots": [f"cad/views_opt_{t}.png" for t in made] if not quick else []}
 
 
-MINI_PAYLOAD = {"payload_mass": 4.5, "payload_power": 50.0, "payload_power_night": 0.0}
-MINI_NOTE = ("daylight EO camera on a small gimbal (~3 kg, 25 W) + S/X-band downlink to a ground station (~1.5 kg, "
+EOL_PAYLOAD = {"payload_mass": 4.5, "payload_power": 50.0, "payload_power_night": 0.0}
+EOL_NOTE = ("daylight EO camera on a small gimbal (~3 kg, 25 W) + S/X-band downlink to a ground station (~1.5 kg, "
                 "25 W), both off at night; no relay to aircraft (estimates)")
 
 
-def stage_mini(out: Path, quick: bool) -> dict:
-    """Strato-mini: the smallest Strato that carries the imaging payload (``MINI_PAYLOAD``) through the summer scenario: bisection on
+def stage_eol(out: Path, quick: bool) -> dict:
+    """Strato-EOL: the smallest Strato that carries the imaging payload (``EOL_PAYLOAD``) through the summer scenario: bisection on
     the length, an optimisation of everything else at each step (the payload fixed), then the winner's details."""
     import strato
     sys.path.insert(0, str(HERE))
     from cad import views
     kw = dict(maxiter=3 if quick else 12, popsize=4 if quick else 8, bounds={"payload_fraction": (0.0, 1e-9)})
-    s = sst.smallest_length(sst.SUMMER, MINI_PAYLOAD, lo=30.0, hi=50.0 if not quick else 80.0, tol=4.0 if quick else 1.0, **kw)
-    res = {"name": "Strato-mini", "payload": MINI_PAYLOAD, "payload_note": MINI_NOTE, "scenario": asdict(sst.SUMMER), "length": s["length"],
+    s = sst.smallest_length(sst.SUMMER, EOL_PAYLOAD, lo=30.0, hi=50.0 if not quick else 80.0, tol=4.0 if quick else 1.0, **kw)
+    res = {"name": "Strato-EOL", "payload": EOL_PAYLOAD, "payload_note": EOL_NOTE, "scenario": asdict(sst.SUMMER), "length": s["length"],
            "steps": {str(L): {"meets": r["meets"], "surplus_lift": r["best"].get("surplus_lift"),
                               "problems": r["best"].get("problems")} for L, r in s["runs"].items()}}
     if "best" not in s:
@@ -539,26 +539,26 @@ def stage_mini(out: Path, quick: bool) -> dict:
     ax[2].invert_yaxis()
     ax[2].set(xlabel="kg", title=f"Mass budget ({r['system_mass']:.0f} kg; net lift {r['net_lift']:.0f} kg)")
     ax[2].grid(axis="y", visible=False)
-    res["plots"] = [save(fig, out, "mini.png")]
+    res["plots"] = [save(fig, out, "eol.png")]
     ship = sd.ship_of(d)
     over = {"length": d.length, "diameter": ship.hull.diameter, "solar_half_angle_deg": d.solar_half_angle_deg,
             "fin_span": ship.layout.fin_span, "fin_root_chord": ship.layout.fin_root_chord}
     (out / "cad").mkdir(exist_ok=True)
     tag = f"{d.length:g}m"
-    strato.StratoAirship().generate(**over).export_step(out / "cad" / f"strato_mini_{tag}.step")
+    strato.StratoAirship().generate(**over).export_step(out / "cad" / f"strato_eol_{tag}.step")
     for name, g in strato.parts(**over).items():
-        (out / "cad" / f"strato_mini_{tag}_parts").mkdir(exist_ok=True)
-        g.export_step(out / "cad" / f"strato_mini_{tag}_parts" / f"{name}.step")
+        (out / "cad" / f"strato_eol_{tag}_parts").mkdir(exist_ok=True)
+        g.export_step(out / "cad" / f"strato_eol_{tag}_parts" / f"{name}.step")
     if not quick:
-        views(strato.parts(**over), out / "cad" / f"views_mini_{tag}.png", f"Strato-mini, {tag} (imaging, summer)")
-        res["plots"].append(f"cad/views_mini_{tag}.png")
+        views(strato.parts(**over), out / "cad" / f"views_eol_{tag}.png", f"Strato-EOL, {tag} (imaging, summer)")
+        res["plots"].append(f"cad/views_eol_{tag}.png")
     return res
 
 
 STAGES = {"atmosphere": stage_atmosphere, "wind": stage_wind, "family": stage_family, "pv": stage_pv,
           "detail": stage_detail, "sweeps": stage_sweeps, "sensitivity": stage_sensitivity, "pareto": stage_pareto,
           "seasons": stage_seasons, "constraints": stage_constraints, "cad": stage_cad,
-          "mini": stage_mini}
+          "eol": stage_eol}
 
 
 def main(argv=None) -> int:

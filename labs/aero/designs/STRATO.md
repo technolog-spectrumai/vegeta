@@ -10,13 +10,13 @@ Piccolo, which receives a frozen design through Yax when Strato graduates (V8.17
 **Results.** `labs/aero/campaigns/strato/results/report.md` is written by the campaign from its result files (every
 number in it comes from a run). The conclusions below quote it.
 
-## Strato-mini
+## Strato-EOL
 
 The smallest member of the family, for imaging only: a daylight EO camera on a small gimbal (~3 kg, 25 W) and an
 S/X-band downlink to a ground station (~1.5 kg, 25 W), both off at night, no relay to aircraft (estimates). Sized for
 the summer scenario (June–August at 50°N, on station ≥ 90 % of days, ≥ 60 days of gas) by `strato_study.smallest_length`:
-bisection on the length with the rest of the design optimised at each step. Campaign stage `mini`; results in the
-report's "Strato-mini" section.
+bisection on the length with the rest of the design optimised at each step. Campaign stage `eol`; results in the
+report's "Strato-EOL" section.
 
 ## Files
 
