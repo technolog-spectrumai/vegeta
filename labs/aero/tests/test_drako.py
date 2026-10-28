@@ -128,3 +128,12 @@ def test_export_carries_six_rotors_with_their_motor():
     assert len(b["rotors"]) == 6 and list(b["motors"]) == ["T-Motor U12 II KV120"]
     assert sorted(r["spin"] for r in m.data["ogma"]["rotors"]) == [-1, -1, -1, 1, 1, 1]
     assert all(abs(r["residual"]) < 0.05 for r in b["reduced"].values())
+
+
+def test_structural_cad_is_one_valid_solid_and_every_region_selects_faces(tmp_path):
+    pytest.importorskip("cadquery")
+    for part, cad in (("arm", dfea.arm_cad(P)), ("frame", dfea.frame_cad(P))):
+        assert cad.val().isValid() and len(cad.solids().vals()) == 1
+        for c in dfea.cases(tmp_path, P):
+            if c.part == part:
+                assert all(n > 0 for n in dfea.regions_select(cad, c.model.regions).values()), c.name

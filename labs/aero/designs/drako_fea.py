@@ -35,6 +35,7 @@ CARBON_PLATE = dict(name="carbon plate 0/90", E=50000.0, nu=0.30, rho=1.55e-9, s
 MOTOR_MASS = 0.95 + 0.15          # kg: motor + ESC + propeller
 MOTOR_TORQUE = 6.3                # N m at full throttle (drako_robot.full_throttle)
 MARGIN = 3.0                      # mm around region boxes
+CLAMP_LENGTH = 40.0               # mm: the arm clamp block between the plates (structural CAD only)
 
 
 def params(**over):
@@ -112,14 +113,66 @@ def arm_frequency_check(p=None, margin=0.20):
 
 
 # ------------------------------------------------------------------------------------------- the CAD
+def _tube(a, b, ro, ri):
+    import cadquery as cq
+    a, b = cq.Vector(*a), cq.Vector(*b)
+    d = b - a
+    return cq.Workplane("XY").add(cq.Solid.makeCylinder(ro, d.Length, a, d).cut(cq.Solid.makeCylinder(ri, d.Length, a, d)))
+
+
+def _structural_arm(p, angle_deg=0.0, clamp=False):
+    """One arm for the FEA: the tube in two segments split at the plate edge (so the clamp's region and the free
+    span are separate faces; Talos selects whole faces), the motor mount as a boss from the tube's axis up to the
+    mount face (the CAD's disc only touches the tube along a line), and with ``clamp`` the clamp block that ties the
+    tube to both plates (the CAD leaves 5 mm of air either side)."""
+    import cadquery as cq
+    a, R = arm_geometry(p), p["wheelbase"] / 2
+    ro, ri, z = p["arm_diameter"] / 2, p["arm_diameter"] / 2 - p["arm_wall"], a["z"]
+    root_in = _tube((a["r_in"], 0, z), (a["root"], 0, z), ro, ri)
+    free = _tube((a["root"], 0, z), (R + p["mount_diameter"] / 2, 0, z), ro, ri)
+    ztop = z + ro + p["mount_thickness"]
+    boss = cq.Workplane("XY").center(R, 0).circle(p["mount_diameter"] / 2).extrude(ztop - z).translate((0, 0, z))
+    boss = boss.cut(cq.Workplane("YZ").center(0, z).circle(ri).extrude(p["mount_diameter"], both=True).translate((R, 0, 0)))
+    arm = root_in.union(free, clean=False).union(boss, clean=False)
+    if clamp:
+        t, gap = p["plate_thickness"], p["plate_gap"]
+        L = CLAMP_LENGTH                                              # the clamp at the plate edge, inside the plates
+        blk = (cq.Workplane("XY").box(L, p["arm_diameter"] + 8, gap).translate((a["root"] - 5 - L / 2, 0, t + gap / 2))
+               .cut(cq.Workplane("YZ").center(0, z).circle(ri).extrude(a["root"], both=True)))
+        arm = arm.union(blk, clean=False)
+    return arm.rotate((0, 0, 0), (0, 0, 1), angle_deg)
+
+
 def arm_cad(p=None):
-    p = p or params(part="arm")
-    return Drako().build({**p, "part": "arm"})
+    return _structural_arm(p or params())
 
 
 def frame_cad(p=None):
-    p = p or params(part="frame")
-    return Drako().build({**p, "part": "frame"})
+    """Plates + six structural arms with their clamps, for the FEA."""
+    p = p or params()
+    d = Drako()
+    out = d._plates(p)
+    for k in range(6):
+        out = out.union(_structural_arm(p, 60.0 * k, clamp=True), clean=False)
+    return out
+
+
+def regions_select(shape, regions) -> dict:
+    """How many faces each region selects, by the faces' bounding boxes as Gmsh sees them (a face lying inside a
+    ``SurfacesInBox`` box; a planar face on a ``SurfacesOnPlane`` plane) — checked without a mesher. 0 = a region that
+    would hold nothing."""
+    faces = [f.BoundingBox() for f in shape.val().Faces()]
+    out = {}
+    for r in regions:
+        if hasattr(r, "box"):
+            x0, y0, z0, x1, y1, z1 = r.box
+            out[r.name] = sum(x0 <= b.xmin and b.xmax <= x1 and y0 <= b.ymin and b.ymax <= y1 and z0 <= b.zmin and b.zmax <= z1
+                              for b in faces)
+        else:
+            k = "xyz".index(r.axis)
+            out[r.name] = sum(abs((b.xmin, b.ymin, b.zmin)[k] - r.value) < 1e-3 and abs((b.xmax, b.ymax, b.zmax)[k] - r.value) < 1e-3
+                              for b in faces)
+    return out
 
 
 def export_step(shape, path):
