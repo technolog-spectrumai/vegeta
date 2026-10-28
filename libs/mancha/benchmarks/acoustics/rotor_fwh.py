@@ -101,7 +101,9 @@ def run_mancha(args, cache: Path) -> dict:
         last = (T, Q)
     pos, Fl = sim.solid_links(part=blades)
     fc, fn = solid_faces(sim.solid)
-    out = {"pressure": (sim.density() - 1.0) / 3.0, "link_pos": pos, "link_force": Fl, "face_pos": fc,
+    rho = sim.density()
+    out = {"pressure": (rho - 1.0) / 3.0, "density": rho, "velocity": sim.velocity(),   # velocity: frame-relative
+           "link_pos": pos, "link_force": Fl, "face_pos": fc,
            "face_normal": fn, "mask": mask, "blades": blades, "history": np.array(history)}
     meta = {"D": D, "omega": omega, "U": U, "centre": list(centre), "x0": x0, "shape": [nx, ny, ny],
             "thrust": float(history[-1][1]), "torque": float(history[-1][2]), "steps": sim.steps_done,
