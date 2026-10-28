@@ -74,5 +74,32 @@ ncu --kernel-name stream_collide_bgk --launch-skip 30 --launch-count 1 --set ful
 Look at DRAM throughput (target: near peak), achieved occupancy (register-limited at 145 registers with
 `BLOCK=256`, hence the default 128) and L2 hit rate of the shifted loads.
 
-**Measured results: none yet.** The backend was developed in a container without a GPU; no GPU timings exist
+## Measured CPU throughput and GPU estimates (2026-10-28)
+
+Measured, NumPy backend (float64) on the development container (4-core Intel Xeon), `benchmarks/performance.py`
+with 20 timed steps:
+
+| case | 32³ | 64³ |
+|---|---|---|
+| periodic BGK | 3.6 MLUPS | 2.4 MLUPS |
+| channel (inlet, outlet, walls) | 3.3 | 2.3 |
+| sphere (+ solids) | 3.1 | 2.1 |
+| propeller physics (frame + regularized BGK + WALE + sponge + solids) | 0.9 | 0.7 |
+
+NumPy is the readable reference, not a fast CPU code; a compiled multi-core CPU backend would likely reach tens to
+~150 MLUPS here (an expectation, not measured).
+
+**GPU: estimates only.** MLUPS ≈ achieved bandwidth / bytes per node and step: 152 B (periodic), 156 B (solids),
+≈ 180 B (propeller physics, assuming WALE's neighbour reads mostly hit cache). Assumed achieved fraction of peak
+bandwidth: 50–80 % for plain BGK (48 registers), 30–60 % for the propeller physics (161 registers limit
+occupancy).
+
+| GPU (peak bandwidth, memory) | periodic BGK | propeller physics | nodes that fit (propeller physics) |
+|---|---|---|---|
+| T4 (320 GB/s, 16 GB) | 1 000–1 700 MLUPS | 500–1 100 | ~70 M |
+| RTX 4090 (1.0 TB/s, 24 GB) | 3 300–5 300 | 1 700–3 400 | ~110 M |
+| A100 80 GB (2.0 TB/s) | 6 700–10 700 | 3 400–6 800 | ~400 M |
+| H100 SXM (3.35 TB/s, 80 GB) | 11 000–17 600 | 5 600–11 000 | ~400 M |
+
+**Measured GPU results: none yet.** The backend was developed in a container without a GPU; no GPU timings exist
 and none are quoted. Record them in [validation.md](validation.md#performance) with the GPU named when measured.

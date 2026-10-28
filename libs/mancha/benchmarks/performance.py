@@ -30,7 +30,15 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from mancha import InsufficientMemoryError, Simulation, __version__  # noqa: E402
+from mancha import (  # noqa: E402
+    WALE,
+    InsufficientMemoryError,
+    RegularizedBGK,
+    RotatingFrame,
+    Simulation,
+    Sponge,
+    __version__,
+)
 from mancha.boundaries import sphere  # noqa: E402
 
 BYTES_PER_NODE = 2 * 19 * 4
@@ -38,6 +46,18 @@ BYTES_PER_NODE = 2 * 19 * 4
 
 def build(case: str, n: int, backend: str, block: int | None) -> Simulation:
     kw: dict[str, Any] = {"block_size": block} if backend == "triton" else {}
+    if case == "propeller":
+        # the propeller configuration: rotating frame, regularized BGK, WALE LES, lateral sponge, far-field
+        # velocity faces, inlet/outlet and a solid body (a sphere stands in for the rotor's voxels)
+        c = (n - 1) / 2
+        sim = Simulation(shape=(n, n, n), collision=RegularizedBGK(0.51), turbulence=WALE(), backend=backend,
+                         frame=RotatingFrame(0.04 / (n / 3), center=(c, c)), sponge=Sponge(max(4.0, n / 12), 0.05),
+                         velocity=(0.01, 0, 0), **kw)
+        sim.set_boundary("x-", "velocity", velocity=(0.01, 0, 0)).set_boundary("x+", "pressure", density=1.0)
+        for face in ("y-", "y+", "z-", "z+"):
+            sim.set_boundary(face, "velocity", velocity=(0.01, 0, 0))
+        sim.set_solid(sphere(sim.shape, (n / 3, c, c), n / 8))
+        return sim
     sim = Simulation(shape=(n, n, n), viscosity=0.02, backend=backend, velocity=(0.02, 0, 0), **kw)
     if case in ("channel", "sphere"):
         sim.set_boundary("x-", "velocity", velocity=(0.02, 0, 0)).set_boundary("x+", "pressure", density=1.0)
@@ -61,7 +81,11 @@ def measure(case: str, n: int, backend: str, steps: int, warmup: int, block: int
         sim = build(case, n, backend, block)
     except InsufficientMemoryError as exc:
         return {**row, "skipped": str(exc)}
-    sim.run(warmup)                       # compiles the kernel, warms caches; includes the health check
+    import warnings
+
+    with warnings.catch_warnings():       # the propeller case warns about its fast far-field corners
+        warnings.simplefilter("ignore")
+        sim.run(warmup)                   # compiles the kernel, warms caches; includes the health check
     sim.backend.synchronize()
     t0 = time.perf_counter()
     sim.backend.step(steps)               # no health checks inside the timed region
@@ -103,7 +127,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--steps", type=int, default=200)
     ap.add_argument("--warmup", type=int, default=20)
     ap.add_argument("--block", type=int, default=None, help="Triton block size (default: the backend's)")
-    ap.add_argument("--case", default="periodic", choices=["periodic", "channel", "sphere"])
+    ap.add_argument("--case", default="periodic", choices=["periodic", "channel", "sphere", "propeller"])
     ap.add_argument("--out", default="results/performance.json")
     args = ap.parse_args(argv)
     rows = []
