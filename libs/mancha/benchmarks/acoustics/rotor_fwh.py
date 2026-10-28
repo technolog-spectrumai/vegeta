@@ -275,6 +275,40 @@ def plot(out: Path, run: dict, near_series: dict, far: list, period: float, R: f
     fig.savefig(out / "rotor_far.png", dpi=140)
     plt.close(fig)
 
+    # one-page summary: waveform at one probe, BPF amplitude at every probe, far-field directivity
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), gridspec_kw={"width_ratios": [1.3, 1.0, 1.0]})
+    key = "rotor plane, 1.5 R" if "rotor plane, 1.5 R" in near_series else names[0]
+    t, wm, wf, wl, wt = near_series[key]
+    rev = (t - t[0]) / period
+    axes[0].plot(rev, wm, "-", lw=2.4, color="0.6", label="Mancha (direct LBM pressure)")
+    axes[0].plot(rev, wf, "--", lw=1.4, color="C0", label="FW-H from Mancha's blade surface")
+    axes[0].set(xlabel="revolutions", ylabel="p' [lattice]", title=f"Near field, probe {key}")
+    axes[0].legend(fontsize=8)
+    axes[0].grid(alpha=0.3)
+    amps_m = [harmonics(near_series[n][0], near_series[n][1], 2.0 / period, 1)[0] for n in names]
+    amps_f = [harmonics(near_series[n][0], near_series[n][2], 2.0 / period, 1)[0] for n in names]
+    xs = np.arange(len(names))
+    axes[1].bar(xs - 0.2, amps_m, 0.4, color="0.6", label="Mancha")
+    axes[1].bar(xs + 0.2, amps_f, 0.4, color="C0", label="FW-H")
+    for i, (a, b) in enumerate(zip(amps_m, amps_f)):
+        axes[1].text(i + 0.2, b, f"{b / a:.2f}", ha="center", va="bottom", fontsize=7)
+    axes[1].set_xticks(xs, [n.replace(", ", "\n") for n in names], fontsize=7)
+    axes[1].set(ylabel="BPF amplitude, rms [lattice]", title="Near field, every probe (label: FW-H / Mancha)")
+    axes[1].legend(fontsize=8)
+    axes[1].grid(alpha=0.3, axis="y")
+    axes[2].semilogy(ang, [f["fwh_loading_static"][0] for f in far], "-", color="C0", label="FW-H loading")
+    axes[2].semilogy(ang, [f["fwh_thickness"][0] for f in far], "-", color="C1", label="FW-H thickness")
+    axes[2].semilogy(ang, [f["gutin_0.8R"][0] for f in far], "o", mfc="none", color="k", label="Gutin (same T, Q)")
+    axes[2].set(xlabel="angle from the axis ahead [deg]", ylabel="BPF rms at 20 wavelengths [lattice]",
+                title="Far field, 1 × BPF")
+    axes[2].legend(fontsize=8)
+    axes[2].grid(alpha=0.3, which="both")
+    fig.suptitle(f"Rotor D = {D} cells: FW-H vs Mancha's own pressure vs Gutin — no measured data exist for this "
+                 "synthetic rotor", fontsize=10)
+    fig.tight_layout()
+    fig.savefig(out / "rotor_summary.png", dpi=140)
+    plt.close(fig)
+
     h = np.asarray(run["history"])
     fig, ax = plt.subplots(figsize=(6, 3.4))
     ax.plot(h[:, 0] / period, h[:, 1], "o-", ms=3, label="thrust T")
