@@ -1,6 +1,9 @@
 import math
 
-import cadquery as cq
+try:
+    import cadquery as cq
+except ImportError:                 # the sizing and the studies run without the CAD
+    cq = None
 from vegeta.dedalus import Design, Parameter
 
 
