@@ -95,3 +95,14 @@ def test_cfd_cases_prepare_and_run_under_the_mocks(tmp_path):
     assert (tab["status"] == "solved").all(), tab
     assert (tmp_path / "cfd" / "loaded_40" / "system").is_dir()   # prepare is real: the OpenFOAM case is written
     assert dcfd.frontal_area_m2(P, True) > dcfd.frontal_area_m2(P, False)
+
+
+def test_robot_mass_is_the_sizing_and_the_latches_are_joints():
+    pytest.importorskip("mujoco")
+    import drako_robot as dk
+    r = dk.drako()
+    xml = r.to_mjcf()
+    assert all(f"{n}_hinge" in xml for n in dk.LATCHES)
+    import mujoco
+    mdl = mujoco.MjModel.from_xml_string(xml)
+    assert float(mdl.body_mass.sum()) == pytest.approx(drako.Drako.sizing(P)["empty_kg"], rel=1e-3)

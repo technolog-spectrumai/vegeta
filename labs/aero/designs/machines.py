@@ -28,3 +28,4 @@ machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcop
 machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
 machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
 machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)
+machines.register("drako", "drako_robot:drako", visual="drako:Drako")
