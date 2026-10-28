@@ -176,6 +176,19 @@ def propagate(run: dict, diameter_m: float, distance: float, per_rev: int) -> di
     return results, series
 
 
+def tonal(t: np.ndarray, p: np.ndarray, f0: float, count: int = HARMONICS) -> np.ndarray:
+    """The part of ``p`` at the first ``count`` multiples of ``f0`` (projection over whole periods)."""
+    dt = t[1] - t[0]
+    n = int(np.floor((t[-1] - t[0] + dt) * f0) / f0 / dt + 1e-6)
+    tt = t - t[0]
+    out = np.zeros_like(p)
+    for m in range(1, count + 1):
+        e = np.exp(-2j * np.pi * m * f0 * tt)
+        a = 2.0 * (p[:n] * e[:n]).sum() / n
+        out += np.real(a * np.conj(e))
+    return out
+
+
 def _store(rec: dict, h: np.ndarray, bpf: float) -> None:
     f = bpf * np.arange(1, len(h) + 1)
     levels = spl(h)
@@ -227,10 +240,13 @@ def plot(results: dict, series: dict, out: Path, tag: str) -> None:
     ax = axes[1][1]
     t, sig = series[90]
     n = int(2 * (1 / case["bpf_hz"]) / (t[1] - t[0]))
-    for m in ("solid", "permeable_closed", "permeable_open"):
-        c, st = STYLE[m]
-        ax.plot(t[:n] * 1e3, (sig[m][:n] - sig[m][:n].mean()) * 1e3, st.replace("o", "").replace("s", ""),
-                color=c, label=LABELS[m])
+    for m in ("solid", "permeable_closed"):
+        c, _ = STYLE[m]
+        raw = sig[m] - sig[m].mean()
+        ax.plot(t[:n] * 1e3, raw[:n] * 1e3, "-", color=c, alpha=0.3, lw=0.8)
+        ax.plot(t[:n] * 1e3, tonal(t, raw, case["bpf_hz"])[:n] * 1e3, "-", color=c, lw=1.6,
+                label=LABELS[m] + " — tones 1–5×BPF")
+    ax.plot([], [], "-", color="0.6", alpha=0.4, label="raw signal (faint)")
     ax.set(xlabel="time [ms]", ylabel="p' [mPa]", title="Waveform at 90° (two blade passages)")
     ax.grid(alpha=0.3)
     ax.legend(fontsize=7)
