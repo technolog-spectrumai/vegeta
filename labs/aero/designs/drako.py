@@ -11,7 +11,7 @@ class Drako(Design):
     """Drako: a heavy-lift hexacopter for lifting and transporting packages (10 kg design, 15 kg maximum; tote 600 x 400 x 350 mm).
 
     Six carbon-tube arms (``arm_count`` = 6, flat-six layout: one arm straight forward) bolted between two carbon
-    centre plates; 30-inch propellers on 12S motors at a 1650 mm motor-to-motor diagonal. Under the lower plate hangs a
+    centre plates; 30x10 propellers on 12S 120 kV motors at a 1650 mm motor-to-motor diagonal. Under the lower plate hangs a
     cargo cradle: a rectangular frame with four hook latches, one servo each, that close on a standard tote's lip. The
     package is held between four tall landing legs on two skids, so Drako lands over a package, latches it and takes
     off; at the drop point it lands (or hovers low) and opens the latches. x forward (along arm 0), y left, z up; z = 0
@@ -48,12 +48,12 @@ class Drako(Design):
         Parameter("payload", 10.0, "kg", min=0, description="design payload (25 min point)"),
         Parameter("max_payload", 15.0, "kg", min=0, description="maximum payload"),
         Parameter("battery_cells", 12, "", min=6, description="12S semi-solid Li-ion (44.4 V nominal), hot-swappable 2 x 6S"),
-        Parameter("battery_capacity", 60.0, "Ah", min=1),
+        Parameter("battery_capacity", 64.0, "Ah", min=1),
         Parameter("show_bought", True, "", description="draw motors, propellers, battery and the package"),
     ]
 
     # ---- sizing: plain momentum theory with a figure of merit, round masses from catalogue parts
-    MASSES_KG = {"frame (plates, folding arms, gear, cradle)": 4.0, "6 x motor 12S 100 kV + 80 A FOC ESC": 6 * 0.95,
+    MASSES_KG = {"frame (plates, folding arms, gear, cradle)": 4.0, "6 x motor 12S 120 kV + 80 A FOC ESC": 6 * 0.95,
                  "6 x 30-inch carbon propeller": 6 * 0.15,
                  "FC (triple IMU), dual GNSS, 45 km datalink, camera, wiring": 0.9,
                  "latches (4 servos) and package sensor": 0.6}
@@ -64,10 +64,11 @@ class Drako(Design):
         return p["battery_cells"] * 3.7 * p["battery_capacity"] / 260.0
 
     @classmethod
-    def sizing(cls, p, rho=1.225, figure_of_merit=0.70, max_thrust_per_motor=13.0, reserve=0.15, eta_drive=0.85,
+    def sizing(cls, p, rho=1.225, figure_of_merit=0.666, max_thrust_per_motor=13.85, reserve=0.15, eta_drive=0.85,
                mission_factor=0.70, cda_body=0.25, cda_package=0.15):
         """Take-off mass, hover power, endurance and one-motor-out margin [SI, kg]. ``max_thrust_per_motor`` in kgf is
-        the motor/propeller catalogue figure at full throttle; ``reserve`` the battery fraction left at landing."""
+        the 30x10 at 80 % of 120 kV x 44.4 V (4262 rpm) from Boreas BEMT (``drako_robot.boreas_system``), and
+        ``figure_of_merit`` that BEMT's static figure of merit; ``reserve`` the battery fraction left at landing."""
         g = 9.81
         empty = sum(cls.MASSES_KG.values()) + cls.battery_mass(p)
         mtow = empty + p["payload"]
@@ -175,7 +176,7 @@ class Drako(Design):
         R, z = p["wheelbase"] / 2, self._arm_z(p) + p["arm_diameter"] / 2 + p["mount_thickness"]
         rp = p["prop_diameter"] * 25.4 / 2
         top = 2 * p["plate_thickness"] + p["plate_gap"]
-        out = cq.Workplane("XY").box(300, 160, 110).translate((0, 0, top + 55))          # 12S 60 Ah
+        out = cq.Workplane("XY").box(300, 160, 110).translate((0, 0, top + 55))          # 12S 64 Ah
         for a in self._arm_angles(p):
             cx, cy = R * math.cos(math.radians(a)), R * math.sin(math.radians(a))
             out = out.union(cq.Workplane("XY").center(cx, cy).circle(50).extrude(45).translate((0, 0, z)))

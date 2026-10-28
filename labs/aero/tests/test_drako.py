@@ -106,3 +106,25 @@ def test_robot_mass_is_the_sizing_and_the_latches_are_joints():
     import mujoco
     mdl = mujoco.MjModel.from_xml_string(xml)
     assert float(mdl.body_mass.sum()) == pytest.approx(drako.Drako.sizing(P)["empty_kg"], rel=1e-3)
+
+
+def test_rotor_full_throttle_is_the_sizing_thrust_and_the_arm_is_supercritical():
+    import drako_robot as dk
+    ft = dk.full_throttle()
+    assert ft["thrust_N"] / 9.81 == pytest.approx(13.85, rel=0.01)
+    assert ft["figure_of_merit"] == pytest.approx(0.666, abs=0.01)
+    assert ft["power_W"] / 0.9 / 44.4 < 80                       # within the ESC's current
+    assert dfea.arm_frequency_check(P)["ok"]
+
+
+def test_export_carries_six_rotors_with_their_motor():
+    pytest.importorskip("mujoco")
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools"))
+    import export
+    m, _ = export.machine("drako", visual=False)
+    b = m.data["propulsion"]
+    assert len(b["rotors"]) == 6 and list(b["motors"]) == ["12S 120 kV outrunner"]
+    assert sorted(r["spin"] for r in m.data["ogma"]["rotors"]) == [-1, -1, -1, 1, 1, 1]
+    assert all(abs(r["residual"]) < 0.05 for r in b["reduced"].values())

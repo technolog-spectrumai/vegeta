@@ -47,6 +47,38 @@ def rotor_layout(p: dict | None = None):
            [1 if k % 2 == 0 else -1 for k in range(6)]
 
 
+#: The drive (Boreas objects): the 30x10 two-blade carbon propeller (generic planform), its section, the 12S 120 kV
+#: motor and the 12S 64 Ah pack. Full throttle is 80 % of KV x V (4262 rpm): 13.85 kgf per rotor in the BEMT.
+SPIN_UP_S = 0.12                                                # 30-inch rotor, 0 -> full thrust time constant (assumed)
+PROP_KG, ROTOR_KG = 0.15, 0.25                                  # propeller; propeller + motor bell (spinning)
+
+
+def boreas_system(p: dict | None = None) -> tuple:
+    from vegeta import boreas
+    p = design_params(p)
+    d, pitch = boreas.inches(p["prop_diameter"], 10)
+    prop = boreas.Propeller.from_pitch("30x10 carbon two-blade", d, pitch, blades=2, chord_root_m=0.045, chord_max_m=0.065,
+                                       chord_tip_m=0.025, mass_kg=PROP_KG, rotor_mass_kg=ROTOR_KG,
+                                       notes="generic planform of the 30x10 heavy-lift carbon class; fit to the bought propeller")
+    airfoil = boreas.Airfoil(name="carbon prop section", cl_alpha=2 * math.pi * 0.9, alpha0_deg=-4.0, cl_max=1.3, cd0=0.012, k=0.03,
+                             source="assumed for a moulded carbon blade at Re ~ 4e5")
+    motor = boreas.Motor("12S 120 kV outrunner", kv_rpm_per_volt=120, resistance_ohm=0.045, no_load_current_a=1.6,
+                         max_current_a=80, mass_kg=0.80, source="heavy-lift 12S outrunner class (datasheet-style values, assumed)")
+    battery = boreas.Battery("12S 64 Ah semi-solid", cells=p["battery_cells"], capacity_ah=p["battery_capacity"],
+                             usable_fraction=0.85, mass_kg=Drako.battery_mass(p))
+    return prop, airfoil, motor, battery
+
+
+def full_throttle(p: dict | None = None) -> dict:
+    """The rotor at full throttle from the BEMT: rpm, thrust [N], torque [N m], shaft power [W], kM = Q / T [m]."""
+    from vegeta.boreas import bemt
+    prop, airfoil, motor, battery = boreas_system(p)
+    rpm = 0.8 * motor.kv_rpm_per_volt * battery.voltage
+    r = bemt.solve(prop, airfoil, rpm)
+    return {"rpm": rpm, "thrust_N": r.thrust, "torque_Nm": r.torque, "power_W": r.power, "kM": r.torque / r.thrust,
+            "w_max": rpm * 2 * math.pi / 60, "figure_of_merit": r.figure_of_merit}
+
+
 def latch_servo() -> Servo:
     a = act.get(LATCH_ACTUATOR)
     kp, kd, arm = LATCH_GAINS

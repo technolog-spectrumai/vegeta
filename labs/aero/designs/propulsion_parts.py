@@ -80,6 +80,46 @@ def drongo(m) -> dict:
     return {"ogma": ogma, "propulsion": blk}
 
 
+def drako(m) -> dict:
+    """Drako's six rotors: the ``ogma.rotors`` record (Gazebo's motor model) and the full ``propulsion`` block — the
+    30x10's BEMT map, the 12S 120 kV motor, the reduced constants at full throttle, checked at hover."""
+    import drako_robot as dk
+    prop, airfoil, motor, battery = dk.boreas_system()
+    ft = dk.full_throttle()
+    pos, spin = dk.rotor_layout()
+    r = prop.diameter / 2
+    kg, w_max = dk.PROP_KG, ft["w_max"]
+    rotors = []
+    for q, s in zip(np.asarray(pos, float), spin):
+        pw, _ = lp.in_machine_frame(m, q, (0.0, 0.0, 1.0))
+        rotors.append({"pos": pw, "spin": int(s), "kg": kg, "inertia": [kg * r * r / 4, kg * r * r / 4, kg * r * r / 2], "radius": r,
+                       "kF": ft["thrust_N"] / w_max ** 2, "kM": ft["kM"], "w_max": w_max,
+                       "tau_up": dk.SPIN_UP_S, "tau_down": 2 * dk.SPIN_UP_S, "T_max": ft["thrust_N"]})
+    ogma = {"rotors": rotors, "source": f"Boreas BEMT of the 30x10 at ω_max = 0.8 × KV × V ({motor.kv_rpm_per_volt:g} KV, "
+                                        f"{battery.cells}S); spin-up assumed"}
+    grid = lp.grid_from_boreas(prop, airfoil, np.linspace(1000.0, 4800.0, 9), [0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0], RHO0)
+    entry = lp.propeller_entry(prop, grid, inertia_kgm2=dk.ROTOR_KG * r * r / 2,
+                               source=f"drako_robot.boreas_system: Boreas BEMT, {airfoil.name} ({airfoil.source}); {prop.notes}")
+    P, _ = lp.max_shaft_power(grid, battery_v=battery.voltage, i_max=motor.max_current_a, voltage_for=motor.voltage_for)
+    mot = lp.motor_entry(motor.name, P, kv=motor.kv_rpm_per_volt, R_ohm=motor.resistance_ohm, I0_A=motor.no_load_current_a,
+                         I_max_A=motor.max_current_a, battery_v=battery.voltage, esc_eff=0.96,
+                         source=f"{motor.source}; power_w: the map's largest shaft power within the pack and the current limit")
+    hover = m.total_mass() * 9.81 / len(rotors)
+    rpm_h = lp.rpm_for_thrust(grid, hover)
+    yr, red = [], {}
+    for k, (q, s) in enumerate(zip(rotors, spin)):
+        name = f"rotor{k}"
+        yr.append(lp.rotor(name, q["pos"], (0.0, 0.0, 1.0), int(s), entry["name"], mot["name"], link=m.roots()[0].name))
+        red[name] = lp.reduced(grid, rpm=ft["rpm"], taken_at=f"full throttle (T_max {ft['thrust_N']:.1f} N at ω_max)",
+                               tau_up=dk.SPIN_UP_S, tau_down=2 * dk.SPIN_UP_S, check=(rpm_h, 0.0), kF=q["kF"], kM=q["kM"])
+    blk = lp.block(yr, [entry], [mot], reduced=red,
+                   battery={"name": battery.name, "cells": battery.cells, "capacity_ah": battery.capacity_ah,
+                            "usable_fraction": battery.usable_fraction, "voltage_v": battery.voltage},
+                   source=f"rotors: drako_robot.rotor_layout; map: drako_robot.boreas_system; residual checked at hover "
+                          f"({hover:.1f} N per rotor, empty)")
+    return {"ogma": ogma, "propulsion": blk}
+
+
 # ------------------------------------------------------------------------------------------------- the fixed wings
 def _single(m, *, name: str, robot, prop, grid: dict, motor: dict, battery_v: float, i_max: float | None, pos_body, downthrust_deg: float,
             tau_up: float | None, source: str, prop_source: str, power_limit: tuple | None = None) -> dict:

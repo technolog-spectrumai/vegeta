@@ -3,7 +3,7 @@
 Cases (``cases``), loads ultimate (x ``ULTIMATE``) on the 15 kg maximum take-off mass:
 
 - **arm_full_thrust**: one arm clamped over its length inside the plate sandwich, the motor mount carrying the motor's
-  full catalogue thrust (13 kgf) up and the motor's reaction torque, less the motor's weight.
+  full catalogue thrust (13.85 kgf) up and the motor's reaction torque, less the motor's weight.
 - **arm_modes**: the same arm with the motor and propeller as a point mass on the mount — read against the rotor's
   1/rev and 2/rev (blade passing) at hover (``rotor_rpm``).
 - **frame_manoeuvre**: plates + six arms, the lower plate's underside held (where battery, cradle and package hang),
@@ -33,7 +33,7 @@ CARBON_TUBE = dict(name="roll-wrapped carbon tube", E=70000.0, nu=0.30, rho=1.55
 CARBON_PLATE = dict(name="carbon plate 0/90", E=50000.0, nu=0.30, rho=1.55e-9, strength=400.0,
                     source="woven 3K carbon sheet class (assumed)")
 MOTOR_MASS = 0.95 + 0.15          # kg: motor + ESC + propeller
-MOTOR_TORQUE = 2.5                # N m at full thrust (30-inch, 13 kgf class; catalogue order of magnitude)
+MOTOR_TORQUE = 2.5                # N m at full thrust (30-inch, 13.85 kgf class; catalogue order of magnitude)
 MARGIN = 3.0                      # mm around region boxes
 
 
@@ -61,7 +61,7 @@ def arm_geometry(p):
     return dict(root=rh, r_in=r_in, length=R - rh, z=p["plate_thickness"] + p["plate_gap"] / 2)
 
 
-def arm_reference(p=None, thrust_kgf=13.0):
+def arm_reference(p=None, thrust_kgf=13.85):
     """Cantilever tube from the plate edge to the motor, ultimate thrust less the motor weight at the tip."""
     p = p or params()
     a = arm_geometry(p)
@@ -73,7 +73,8 @@ def arm_reference(p=None, thrust_kgf=13.0):
     sigma = M * ro / I
     E = CARBON_TUBE["E"]
     k = 3 * E * I / a["length"] ** 3                                 # N/mm
-    m_tip = MOTOR_MASS * 1e-3                                        # t
+    m_arm = math.pi * (ro ** 2 - ri ** 2) * a["length"] * CARBON_TUBE["rho"]
+    m_tip = MOTOR_MASS * 1e-3 + 0.24 * m_arm                         # t: the tube's effective share (Rayleigh)
     f1 = math.sqrt(k / m_tip) / (2 * math.pi)
     return {"length [mm]": a["length"], "tip force, ultimate [N]": F, "root bending stress [MPa]": sigma,
             "torsion shear [MPa]": tau, "von Mises [MPa]": math.sqrt(sigma ** 2 + 3 * tau ** 2),
@@ -82,16 +83,32 @@ def arm_reference(p=None, thrust_kgf=13.0):
             "f1 bending, motor as point mass [Hz]": f1}
 
 
-def rotor_rpm(p=None, ct=0.11):
-    """Hover rpm at the design and maximum mass from T = Ct rho n^2 D^4 (Ct of a 30-inch two-blade prop)."""
+def rotor_rpm(p=None):
+    """Hover rpm and the 1P / 2P (blade passing) frequencies at the empty, design and maximum mass, from the 30x10's
+    Boreas BEMT (``drako_robot.boreas_system``)."""
+    from vegeta.boreas import bemt
+    import drako_robot as dk
     p = p or params()
     s = Drako.sizing(p)
-    D = p["prop_diameter"] * 0.0254
+    prop, airfoil, _, _ = dk.boreas_system(p)
     out = {}
-    for key, m in (("design", s["tow_design_kg"]), ("max", s["mtow_max_kg"])):
-        n = math.sqrt(m * G / 6 / (ct * 1.225 * D ** 4))
+    for key, m in (("empty", s["empty_kg"]), ("design", s["tow_design_kg"]), ("max", s["mtow_max_kg"])):
+        n = bemt.rpm_for_thrust(prop, airfoil, m * G / 6).rpm / 60
         out[key] = {"rpm": 60 * n, "1P [Hz]": n, "2P [Hz]": 2 * n}
     return out
+
+
+def arm_frequency_check(p=None, margin=0.20):
+    """Where the arm's first bending mode sits against the rotor's 1P band (empty to maximum mass) and 2P band. The
+    design is **supercritical**: f1 below the whole 1P band by ``margin``, so the rotor passes the mode only while it
+    spins up, and a softer clamp than the beam's ideal one only lowers f1 further away. (Above the 1P band the gap to
+    the 2P band is 58-62 Hz at 20 % margin: too narrow to hit with a tube and a clamp.)"""
+    f1 = arm_reference(p)["f1 bending, motor as point mass [Hz]"]
+    r = rotor_rpm(p)
+    lo1, hi1 = r["empty"]["1P [Hz]"], r["max"]["1P [Hz]"]
+    lo2 = r["empty"]["2P [Hz]"]
+    return {"f1 [Hz]": f1, "1P band [Hz]": (lo1, hi1), "2P band [Hz]": (lo2, r["max"]["2P [Hz]"]),
+            "below 1P by": 1 - f1 / lo1, "ok": f1 <= (1 - margin) * lo1 or (1 + margin) * hi1 <= f1 <= lo2 / (1 + margin)}
 
 
 # ------------------------------------------------------------------------------------------- the CAD
@@ -132,14 +149,14 @@ def arm_cases(workdir, p=None, *, step=None, element_size=4.0):
                                           a["root"] + MARGIN, ra + MARGIN, a["z"] + ra + MARGIN))
     regions = [clamp, _mount_box(p, 0.0, "mount")]
     mat, mesh = talos_material(CARBON_TUBE), talos.MeshSettings(element_size=element_size, order=2)
-    F = ULTIMATE * (13.0 - MOTOR_MASS) * G
+    F = ULTIMATE * (13.85 - MOTOR_MASS) * G
     # the reaction torque as a couple on the mount face: +-fy over the mount's diameter is not expressible as one
     # Force on one region, so it is carried in the reference (arm_reference) and the case takes the thrust
     static = talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("clamp")],
                                    [talos.Force("mount", fz=F)], mesh, name="arm_full_thrust")
     modes = talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("clamp")], [], mesh,
                                   masses=[talos.PointMass("mount", MOTOR_MASS * 1e-3)], name="arm_modes")
-    return [FEACase("arm_full_thrust", "arm", "13 kgf thrust at the mount, ultimate, arm clamped in the plates", static,
+    return [FEACase("arm_full_thrust", "arm", "13.85 kgf thrust at the mount, ultimate, arm clamped in the plates", static,
                     strength=CARBON_TUBE["strength"]),
             FEACase("arm_modes", "arm", "arm with motor + propeller as a point mass", modes, kind="modes")]
 
@@ -152,7 +169,7 @@ def frame_cases(workdir, p=None, *, step=None, element_size=6.0):
     mat, mesh = talos_material(CARBON_TUBE), talos.MeshSettings(element_size=element_size, order=2)
     mmax = Drako.sizing(p)["mtow_max_kg"]
     t_pull = 2.0 * mmax * G / 6                                       # 2 g pull-up, per motor
-    t_full = 13.0 * G
+    t_full = 13.85 * G
     w_motor = MOTOR_MASS * G
     sup = [talos.FixedSupport("plate_under")]
     man = [talos.Force(f"M{k}", fz=ULTIMATE * (t_pull - 2 * w_motor)) for k in range(6)]   # 2 g on the motor too
@@ -207,7 +224,7 @@ def table(cases_, results, p=None):
     cases the first frequencies and the nearest rotor harmonic at hover."""
     import pandas as pd
     rpm = rotor_rpm(p)
-    harmonics = [rpm[k][h] for k in ("design", "max") for h in ("1P [Hz]", "2P [Hz]")]
+    harmonics = [rpm[k][h] for k in ("empty", "design", "max") for h in ("1P [Hz]", "2P [Hz]")]
     rows = {}
     for c in cases_:
         r = results.get(c.name)
@@ -233,3 +250,4 @@ if __name__ == "__main__":
     for k, v in arm_reference().items():
         print(f"{k:40s} {v:10.2f}")
     print(rotor_rpm())
+    print(arm_frequency_check())

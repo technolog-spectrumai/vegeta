@@ -28,4 +28,13 @@ machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcop
 machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
 machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
 machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)
-machines.register("drako", "drako_robot:drako", visual="drako:Drako")
+def _drako_parts(m) -> dict:
+    """Drako's rotors and drive (propulsion_parts.drako), the frame's material and the tags: ``boreas`` on the BEMT map,
+    ``assumed`` on the motor, the battery and the reduced constants (catalogue-class values, drako_robot)."""
+    m.link("drako").data["material"] = "carbon"
+    return {**pp.drako(m), "tags": {"data:propulsion/propellers*": "boreas", "data:propulsion/motors*": "assumed",
+                                    "data:propulsion/battery*": "assumed", "data:ogma*": "assumed",
+                                    "data:propulsion/reduced*": "assumed"}}
+
+
+machines.register("drako", "drako_robot:drako", parts=_drako_parts, visual="drako:Drako")
