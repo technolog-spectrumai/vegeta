@@ -128,11 +128,12 @@ def propagate(run: dict, diameter_m: float, distance: float, per_rev: int) -> di
     surfaces["thickness"] = SourceSurface("solid", tau, kf["y"], kf["v"], np.full(len(run["face_pos"]), dx * dx),
                                           n=kf["n"], p=np.zeros(kf["y"].shape[:2]), vdot=kf["vdot"],
                                           ndot=kf["ndot"])
-    rho_f, u_f = run["density"], run["velocity"]
+    rho_f, u_f, p_f = run["density"], run["velocity"], run["pressure"]   # gauge pressure, lattice units
     for name, caps in (("permeable_closed", (True, True)), ("permeable_open", (True, False))):
         pts, nrm, area = cylinder(1.4 * R, x0 - 0.5 * D, x0 + 0.75 * D, centre, caps=caps)
         inframe = rotate_x(pts - axis_pt, -ang) + axis_pt           # the lab-fixed panels seen from the frame
         rho = trilinear(rho_f, inframe)
+        pg = trilinear(p_f, inframe)
         u_rel = np.stack([trilinear(u_f[k], inframe) for k in range(3)], -1)
         r_frame = inframe - axis_pt
         u_abs_frame = u_rel + np.stack([np.zeros_like(rho), -om * r_frame[..., 2], om * r_frame[..., 1]], -1)
@@ -143,7 +144,7 @@ def propagate(run: dict, diameter_m: float, distance: float, per_rev: int) -> di
         y = np.broadcast_to(to_m(pts), (len(tau),) + pts.shape)
         zero = np.zeros_like(y)
         surfaces[name] = SourceSurface("permeable", tau, y, zero, area * dx * dx, n=np.broadcast_to(nrm, y.shape),
-                                       p=(rho - 1.0) / 3.0 * ps, rho=rho * RHO_AIR, u=u_med, vdot=zero,
+                                       p=pg * ps, rho=rho * RHO_AIR, u=u_med, vdot=zero,
                                        ndot=np.zeros_like(y))
     T, Q = run["thrust"] * fs, run["torque"] * fs * dx
     results = {"angles": ANGLES, "frequencies_hz": [m * bpf for m in range(1, HARMONICS + 1)], "methods": {}}

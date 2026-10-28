@@ -82,7 +82,7 @@ def run_mancha(args, cache: Path) -> dict:
     mask, blades = rotor_mask((nx, ny, ny), centre, R, x0, 0.2 * D, 2.0, 0.8 * D)
     frame = RotatingFrame(omega, center=centre)
     sim = Simulation(shape=(nx, ny, ny), collision=RegularizedBGK(3 * args.viscosity + 0.5), frame=frame,
-                     velocity=(U, 0, 0), check_interval=250, sponge=sponge)
+                     velocity=(U, 0, 0), check_interval=250, sponge=sponge, backend=args.backend)
     sim.set_boundary("x-", "velocity", velocity=(U, 0, 0)).set_boundary("x+", "pressure", density=1.0)
     for face in ("y-", "y+", "z-", "z+"):
         sim.set_boundary(face, "velocity", velocity=(U, 0, 0))
@@ -132,6 +132,7 @@ def main(argv=None) -> None:
     ap.add_argument("--diameter", type=int, default=24)
     ap.add_argument("--tip-speed", type=float, default=0.04)
     ap.add_argument("--box", type=float, default=3.0, help="box width in diameters (lateral)")
+    ap.add_argument("--backend", default="numpy", choices=["numpy", "triton"])
     ap.add_argument("--advance", type=float, default=0.5)
     ap.add_argument("--viscosity", type=float, default=0.005)
     ap.add_argument("--max-steps", type=int, default=20000)
