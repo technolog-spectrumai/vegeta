@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..boundaries import BoundaryConditions, Kind, link_groups
+from ..boundaries import BoundaryConditions, Kind, Sponge, link_groups
 from ..collision import CollisionModel, equilibrium, moments
 from ..frames import RotatingFrame, fictitious_force, solve_velocity
 from ..lattice import D3Q19
@@ -27,8 +27,9 @@ class NumpyBackend(Backend):
     def __init__(self, lattice: D3Q19, shape: tuple[int, int, int], collision: CollisionModel,
                  dtype: np.dtype = np.float64, rest_density: float = 1.0,
                  force: tuple[float, float, float] | None = None, frame: RotatingFrame | None = None,
-                 turbulence: WALE | None = None):
-        super().__init__(lattice, shape, collision, dtype, rest_density, force, frame, turbulence)
+                 turbulence: WALE | None = None, sponge: Sponge | None = None):
+        super().__init__(lattice, shape, collision, dtype, rest_density, force, frame, turbulence, sponge)
+        self._nu_sponge = None if sponge is None else sponge.field(shape)
         self._c, self._w, self._opp = lattice.c, lattice.w, lattice.opposite
         self.f = np.empty((lattice.q,) + shape, dtype=self.dtype)
         self._buf = np.empty_like(self.f)
@@ -114,6 +115,8 @@ class NumpyBackend(Backend):
             nu_t = wale_viscosity(grad, self.turbulence.c_w)
             if self.solid is not None:
                 nu_t[self.solid] = 0.0
+        if self._nu_sponge is not None:
+            nu_t = self._nu_sponge if nu_t is None else nu_t + self._nu_sponge
         b = j.copy()
         if self.force is not None:
             b += (0.5 * self.force).reshape(3, 1, 1, 1) / rho

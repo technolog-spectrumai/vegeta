@@ -16,9 +16,9 @@ import numpy as np
 from . import __version__
 from .backends import Backend, create_backend
 from .backends.numpy_backend import rest_populations, state_velocity
-from .boundaries import FACES, BoundaryConditions, Kind, validate_mask
+from .boundaries import FACES, BoundaryConditions, Kind, Sponge, validate_mask
 from .collision import BGK, CollisionModel, from_parameters, tau_from_viscosity
-from .diagnostics import kinetic_energy, momentum_exchange, total_mass
+from .diagnostics import kinetic_energy, momentum_exchange, momentum_exchange_links, total_mass
 from .errors import InvalidParameterError, NumericalInstabilityError
 from .frames import RotatingFrame
 from .lattice import D3Q19
@@ -51,7 +51,8 @@ class Simulation:
     ``frame`` (a :class:`~mancha.frames.RotatingFrame`) runs the solver in a frame rotating about an axis along
     x; velocities given to the simulation (initial fields, face velocities) are then lab-frame velocities and
     :meth:`velocity` is relative to the frame (:meth:`absolute_velocity` adds Ω×r). ``turbulence`` (a
-    :class:`~mancha.turbulence.WALE`) adds a WALE eddy viscosity (LES).
+    :class:`~mancha.turbulence.WALE`) adds a WALE eddy viscosity (LES). ``sponge`` (a
+    :class:`~mancha.boundaries.Sponge`) raises the viscosity smoothly near chosen faces.
 
     The state is checked every ``check_interval`` steps (and after every :meth:`run`): non-finite populations or
     a node faster than the lattice speed of sound raise :class:`~mancha.errors.NumericalInstabilityError`.
@@ -62,7 +63,7 @@ class Simulation:
                  collision: CollisionModel | None = None, backend: str = "numpy", dtype: Any = None,
                  density: float = 1.0, velocity: Sequence[float] = (0.0, 0.0, 0.0),
                  force: Sequence[float] | None = None, units: UnitConverter | None = None,
-                 frame: RotatingFrame | None = None, turbulence: WALE | None = None,
+                 frame: RotatingFrame | None = None, turbulence: WALE | None = None, sponge: Sponge | None = None,
                  block_size: int | None = None, device: str | None = None,
                  check_interval: int = 100, history_interval: int | None = None):
         self.lattice = lattice or D3Q19()
@@ -86,13 +87,15 @@ class Simulation:
         self.units = units
         self.frame = frame if frame is not None and frame.omega != 0.0 else None
         self.turbulence = turbulence
+        self.sponge = sponge
         self.backend_name = backend
         if dtype is None:
             dtype = np.float64 if backend == "numpy" else np.float32
         self.dtype = np.dtype(dtype)
         kwargs: dict[str, Any] = dict(lattice=self.lattice, shape=self.shape, collision=self.collision,
                                       dtype=self.dtype, rest_density=self.reference_density,
-                                      force=self.force, frame=self.frame, turbulence=self.turbulence)
+                                      force=self.force, frame=self.frame, turbulence=self.turbulence,
+                                      sponge=self.sponge)
         if backend == "triton":
             kwargs.update(block_size=block_size, device=device)
         elif block_size is not None or device is not None:
@@ -270,6 +273,15 @@ class Simulation:
         return momentum_exchange(self.populations(), self.solid, self.lattice.c, periodic, part=part,
                                  origin=origin, w=self.lattice.w, reference_density=self.reference_density)
 
+    def solid_links(self, part: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+        """Wall points and per-link forces on the body (gauge), whose sum is :meth:`solid_force` — the surface
+        loading for acoustic analogies (``mancha.acoustics``)."""
+        if self.solid is None:
+            raise InvalidParameterError("no solid mask is set")
+        periodic = tuple(self.boundaries.faces[2 * a].kind == Kind.PERIODIC for a in range(3))
+        return momentum_exchange_links(self.populations(), self.solid, self.lattice.c, periodic, part=part,
+                                       w=self.lattice.w, reference_density=self.reference_density)
+
     @property
     def viscosity(self) -> float:
         return self.collision.viscosity
@@ -292,6 +304,7 @@ class Simulation:
             "force": None if self.force is None else list(self.force),
             "frame": None if self.frame is None else self.frame.to_dict(),
             "turbulence": None if self.turbulence is None else self.turbulence.to_dict(),
+            "sponge": None if self.sponge is None else self.sponge.to_dict(),
             "boundaries": self.boundaries.to_dict(),
             "solid_voxels": 0 if self.solid is None else int(self.solid.sum()),
             "backend": self.backend_name,
@@ -352,7 +365,7 @@ class Simulation:
         sim = cls(shape=meta["shape"], collision=from_parameters(meta["collision"]), backend=name, dtype=dtype,
                   density=meta["reference_density"], force=meta.get("force"), units=units,
                   frame=RotatingFrame.from_dict(meta["frame"]) if meta.get("frame") else None,
-                  turbulence=WALE.from_dict(meta.get("turbulence")),
+                  turbulence=WALE.from_dict(meta.get("turbulence")), sponge=Sponge.from_dict(meta.get("sponge")),
                   check_interval=meta["check_interval"],
                   history_interval=meta["history_interval"], **kwargs)
         sim.boundaries = BoundaryConditions.from_dict(meta["boundaries"])

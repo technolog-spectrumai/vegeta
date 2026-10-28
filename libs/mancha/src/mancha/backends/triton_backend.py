@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from ..boundaries import BoundaryConditions, Kind
+from ..boundaries import BoundaryConditions, Kind, Sponge
 from ..collision import BGK, CollisionModel, RegularizedBGK
 from ..errors import BackendUnavailableError, InsufficientMemoryError, InvalidParameterError
 from ..frames import RotatingFrame
@@ -59,12 +59,13 @@ class TritonBackend(Backend):
     def __init__(self, lattice: D3Q19, shape: tuple[int, int, int], collision: CollisionModel,
                  dtype: np.dtype = np.float32, rest_density: float = 1.0,
                  force: tuple[float, float, float] | None = None, frame: RotatingFrame | None = None,
-                 turbulence: WALE | None = None, block_size: int | None = None, device: str | None = None):
+                 turbulence: WALE | None = None, sponge: Sponge | None = None, block_size: int | None = None,
+                 device: str | None = None):
         if np.dtype(dtype) != np.float32:
             raise InvalidParameterError("the triton backend computes in float32 only")
         if collision.kind not in KERNELS:
             raise InvalidParameterError(f"the triton backend has no kernel for collision model {collision.kind!r}")
-        super().__init__(lattice, shape, collision, dtype, rest_density, force, frame, turbulence)
+        super().__init__(lattice, shape, collision, dtype, rest_density, force, frame, turbulence, sponge)
         self._kernel, self._regularized = KERNELS[collision.kind]
         self.device = torch.device(device or default_device())
         if self.device.type == "cpu" and not interpreter_active():
@@ -145,10 +146,15 @@ class TritonBackend(Backend):
         cw2 = float(self.turbulence.c_w ** 2) if self.turbulence is not None else 0.0
         nx, ny, nz = self.shape
         grid = self._grid()
+        sp = self.sponge
+        s0, s1, s2, s3, s4, s5 = sp.flags() if sp is not None else (False,) * 6
+        sp_w = float(sp.width) if sp is not None else 1.0
+        sp_nu = float(sp.viscosity) if sp is not None else 0.0
         for _ in range(steps):
             self._kernel[grid](
                 self.f, self._buf, self._links, self._faces, self._u_prev, self._u_new, nx, ny, nz, self.n, omega,
-                nu0, cw2, self.rest_density, fx, fy, fz, om, yc, zc, K0=k0, K1=k1, K2=k2, K3=k3, K4=k4, K5=k5,
+                nu0, cw2, self.rest_density, fx, fy, fz, om, yc, zc, sp_w, sp_nu, K0=k0, K1=k1, K2=k2, K3=k3, K4=k4,
+                K5=k5, SP0=s0, SP1=s1, SP2=s2, SP3=s3, SP4=s4, SP5=s5, HAS_SPONGE=sp is not None,
                 HAS_SOLID=self.solid is not None, HAS_FACES=self._has_faces, HAS_PRESSURE=self._has_pressure,
                 HAS_FORCE=self.force is not None or self.frame is not None, HAS_FRAME=self.frame is not None,
                 HAS_LES=self.turbulence is not None, REGULARIZED=self._regularized, INT64=self._int64,

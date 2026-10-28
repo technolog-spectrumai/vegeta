@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ..boundaries import BoundaryConditions
+from ..boundaries import BoundaryConditions, Sponge
 from ..collision import CollisionModel
 from ..frames import RotatingFrame
 from ..lattice import D3Q19
@@ -21,7 +21,8 @@ class Backend(ABC):
 
     def __init__(self, lattice: D3Q19, shape: tuple[int, int, int], collision: CollisionModel, dtype: np.dtype,
                  rest_density: float = 1.0, force: tuple[float, float, float] | None = None,
-                 frame: RotatingFrame | None = None, turbulence: WALE | None = None):
+                 frame: RotatingFrame | None = None, turbulence: WALE | None = None,
+                 sponge: Sponge | None = None):
         self.lattice = lattice
         self.shape = shape
         self.collision = collision
@@ -30,6 +31,7 @@ class Backend(ABC):
         self.force = None if force is None or not any(force) else np.asarray(force, dtype=np.float64)
         self.frame = frame if frame is not None and frame.omega != 0.0 else None
         self.turbulence = turbulence
+        self.sponge = sponge
 
     @abstractmethod
     def configure(self, boundaries: BoundaryConditions, solid: np.ndarray | None) -> None:

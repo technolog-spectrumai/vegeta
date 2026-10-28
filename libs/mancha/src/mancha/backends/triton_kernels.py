@@ -153,6 +153,15 @@ def _local(f_ptr, node, N, m, I: tl.constexpr):
 
 
 @triton.jit
+def _sponge(nu_x, d, sp_w, sp_nu, ON: tl.constexpr):
+    """Sponge viscosity ``sp_nu ((w − d)/w)²`` within ``w`` of a face (``d`` from its halfway plane); max-combined."""
+    if ON:
+        a = (sp_w - d) / sp_w
+        nu_x = tl.maximum(nu_x, tl.where(d < sp_w, sp_nu * a * a, 0.0))
+    return nu_x
+
+
+@triton.jit
 def _neighbour(m_ptr, node, nb, N, valid, use_own, ux, uy, uz):
     """Previous-step velocity at node ``nb``, or the node's own where ``use_own`` (solid / beyond a wall face)."""
     m = valid & (~use_own)
@@ -258,11 +267,13 @@ def _wale(mprev_ptr, node, x, y, z, nx, ny, nz, N, valid, links, cw2, om,
 
 @triton.jit
 def stream_collide(f_ptr, out_ptr, links_ptr, faces_ptr, mprev_ptr, mnew_ptr, nx, ny, nz, N, omega, nu0, cw2,
-                   rho_ref, fx, fy, fz, om, yc, zc,
+                   rho_ref, fx, fy, fz, om, yc, zc, sp_w, sp_nu,
                    K0: tl.constexpr, K1: tl.constexpr, K2: tl.constexpr, K3: tl.constexpr, K4: tl.constexpr,
-                   K5: tl.constexpr, HAS_SOLID: tl.constexpr, HAS_FACES: tl.constexpr, HAS_PRESSURE: tl.constexpr,
-                   HAS_FORCE: tl.constexpr, HAS_FRAME: tl.constexpr, HAS_LES: tl.constexpr,
-                   REGULARIZED: tl.constexpr, INT64: tl.constexpr, BLOCK: tl.constexpr):
+                   K5: tl.constexpr, SP0: tl.constexpr, SP1: tl.constexpr, SP2: tl.constexpr, SP3: tl.constexpr,
+                   SP4: tl.constexpr, SP5: tl.constexpr, HAS_SPONGE: tl.constexpr, HAS_SOLID: tl.constexpr,
+                   HAS_FACES: tl.constexpr, HAS_PRESSURE: tl.constexpr, HAS_FORCE: tl.constexpr,
+                   HAS_FRAME: tl.constexpr, HAS_LES: tl.constexpr, REGULARIZED: tl.constexpr, INT64: tl.constexpr,
+                   BLOCK: tl.constexpr):
     """One time step for ``BLOCK`` nodes: pull (with boundaries), moments, collision (BGK or regularized, with
     Guo forcing for a uniform force and the rotating frame's forces, WALE eddy viscosity), store."""
     pid = tl.program_id(0)
@@ -404,15 +415,25 @@ def stream_collide(f_ptr, out_ptr, links_ptr, faces_ptr, mprev_ptr, mnew_ptr, nx
         Fz = fz + 0.0 * ux
     usq = ux * ux + uy * uy + uz * uz
     uf = ux * Fx + uy * Fy + uz * Fz
+    nu_x = 0.0 * ux                                             # extra viscosity: sponge + WALE
+    if HAS_SPONGE:
+        nu_x = _sponge(nu_x, x.to(tl.float32) + 0.5, sp_w, sp_nu, SP0)
+        nu_x = _sponge(nu_x, (nx - 0.5) - x.to(tl.float32), sp_w, sp_nu, SP1)
+        nu_x = _sponge(nu_x, y.to(tl.float32) + 0.5, sp_w, sp_nu, SP2)
+        nu_x = _sponge(nu_x, (ny - 0.5) - y.to(tl.float32), sp_w, sp_nu, SP3)
+        nu_x = _sponge(nu_x, z.to(tl.float32) + 0.5, sp_w, sp_nu, SP4)
+        nu_x = _sponge(nu_x, (nz - 0.5) - z.to(tl.float32), sp_w, sp_nu, SP5)
     if HAS_LES:
         nut = _wale(mprev_ptr, node, x, y, z, nx, ny, nz, N, valid, links, cw2, om, K0 == PERIODIC, K2 == PERIODIC,
                     K4 == PERIODIC, HAS_SOLID, HAS_FRAME)
-        om_loc = 1.0 / (3.0 * (nu0 + nut) + 0.5)
+        om_loc = 1.0 / (3.0 * (nu0 + nut + nu_x) + 0.5)
         keep = valid
         zero = tl.zeros(node.shape, tl.float32)
         tl.store(mnew_ptr + node, tl.where(solid_node, zero, ux), mask=keep)
         tl.store(mnew_ptr + N + node, tl.where(solid_node, zero, uy), mask=keep)
         tl.store(mnew_ptr + 2 * N + node, tl.where(solid_node, zero, uz), mask=keep)
+    elif HAS_SPONGE:
+        om_loc = 1.0 / (3.0 * (nu0 + nu_x) + 0.5)
     else:
         om_loc = omega + 0.0 * ux
     guo = 1.0 - 0.5 * om_loc

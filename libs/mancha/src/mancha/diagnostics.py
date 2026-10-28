@@ -82,3 +82,56 @@ def momentum_exchange_force(f: np.ndarray, solid: np.ndarray, c: np.ndarray, per
                             ) -> np.ndarray:
     """The force of :func:`momentum_exchange` alone (absolute pressure, no reference subtracted)."""
     return momentum_exchange(f, solid, c, periodic)[0]
+
+
+def momentum_exchange_links(f: np.ndarray, solid: np.ndarray, c: np.ndarray, periodic=(True, True, True),
+                            part: np.ndarray | None = None, w: np.ndarray | None = None,
+                            reference_density: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
+    """The individual links of :func:`momentum_exchange`: wall points ``x + c_i/2`` ``[nl, 3]`` (node
+    coordinates) and the force each link puts on the body ``[nl, 3]`` (gauge with ``reference_density``). Their
+    sum is the force of :func:`momentum_exchange`; they are the surface loading for acoustic analogies."""
+    shape = solid.shape
+    target_mask = solid if part is None else (np.asarray(part, dtype=bool) & solid)
+    fluid = ~solid
+    positions, forces = [], []
+    for i, ci in enumerate(c):
+        if not ci.any():
+            continue
+        target = np.roll(target_mask, shift=tuple(-ci), axis=(0, 1, 2))
+        valid = np.ones(shape, dtype=bool)
+        for a in range(3):
+            if ci[a] != 0 and not periodic[a]:
+                sl = [slice(None)] * 3
+                sl[a] = -1 if ci[a] > 0 else 0
+                valid[tuple(sl)] = False
+        links = target & fluid & valid
+        if not links.any():
+            continue
+        ref = 0.0 if w is None else float(w[i]) * reference_density
+        fl = 2.0 * (f[i][links].astype(np.float64) - ref)
+        positions.append(np.argwhere(links) + 0.5 * ci)
+        forces.append(np.outer(fl, ci))
+    if not positions:
+        return np.zeros((0, 3)), np.zeros((0, 3))
+    return np.concatenate(positions).astype(np.float64), np.concatenate(forces)
+
+
+def solid_faces(solid: np.ndarray, part: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """The voxel faces between solid voxels (or the subset ``part``) and fluid: face centres ``[nf, 3]`` (node
+    coordinates, halfway between the two nodes — where bounce-back puts the wall) and unit normals pointing
+    into the fluid ``[nf, 3]``; each face has unit area. Faces on the box boundary are not included."""
+    body = solid if part is None else (np.asarray(part, dtype=bool) & solid)
+    centres, normals = [], []
+    for axis in range(3):
+        for sign in (1, -1):
+            e = np.zeros(3)
+            e[axis] = sign
+            nb = np.roll(solid, shift=-sign, axis=axis)              # the neighbour at x + e
+            face = body & ~nb
+            sl = [slice(None)] * 3
+            sl[axis] = -1 if sign > 0 else 0
+            face[tuple(sl)] = False                                   # no wrap-around faces
+            idx = np.argwhere(face)
+            centres.append(idx + 0.5 * e)
+            normals.append(np.broadcast_to(e, idx.shape))
+    return np.concatenate(centres).astype(np.float64), np.concatenate(normals).astype(np.float64)

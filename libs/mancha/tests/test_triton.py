@@ -222,6 +222,16 @@ def test_regularized_with_force():
                   collision=RegularizedBGK(0.56), force=(1e-5, 2e-6, 0.0)))
 
 
+def test_sponge_with_frame():
+    from mancha import Sponge
+
+    def setup(s):
+        for face in ("y-", "y+", "z-", "z+"):
+            s.set_boundary(face, "velocity", velocity=(0.01, 0, 0))
+    _agree(*_pair(setup, collision=RegularizedBGK(0.52), frame=FRAME,
+                  sponge=Sponge(width=2.5, viscosity=0.05, faces=("y-", "y+", "z+"))))
+
+
 def test_everything_together():
     mask = np.zeros(SHAPE, bool)
     mask[4:6, 1:3, 2:5] = True
@@ -231,8 +241,10 @@ def test_everything_together():
         for face in ("y-", "y+", "z-", "z+"):
             s.set_boundary(face, "velocity", velocity=(0.02, 0, 0))
         s.set_solid(mask)
-    _agree(*_pair(setup, collision=RegularizedBGK(0.505), frame=FRAME, turbulence=WALE(), force=(2e-6, 0, 0)),
-           tol=3e-5)
+    from mancha import Sponge
+
+    _agree(*_pair(setup, collision=RegularizedBGK(0.505), frame=FRAME, turbulence=WALE(), force=(2e-6, 0, 0),
+                  sponge=Sponge(width=2.0, viscosity=0.03)), tol=3e-5)
 
 
 def test_wale_kernel_matches_the_reference():

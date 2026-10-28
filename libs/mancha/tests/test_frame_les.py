@@ -213,3 +213,43 @@ def test_regularized_les_survives_where_bgk_blows_up():
     e0 = les.kinetic_energy()
     les.run(1500)
     assert 0 < les.kinetic_energy() < e0
+
+
+# ---------------------------------------------------------------------------------------------------- sponge
+def test_sponge_profile():
+    from mancha import Sponge
+
+    s = Sponge(width=4.0, viscosity=0.05, faces=("y-", "z+"))
+    nu = s.field((3, 10, 10))
+    assert np.isclose(nu[0, 0, 5], 0.05 * (3.5 / 4) ** 2)          # y = 0 is 0.5 from the y− wall
+    assert nu[0, 5, 5] == 0.0 and nu[0, 9, 5] == 0.0              # interior, and y+ is not listed
+    assert np.isclose(nu[0, 5, 9], 0.05 * (3.5 / 4) ** 2)
+    with pytest.raises(InvalidParameterError):
+        Sponge(width=0, viscosity=0.1)
+
+
+@pytest.mark.slow
+def test_sponge_stabilises_the_rotating_far_field():
+    """Far-field velocity faces with fast frame speeds at the box edges blow up at low viscosity; a viscous
+    sponge along them cures it and leaves the interior close to the exact (lab-at-rest) state."""
+    import warnings
+
+    from mancha import Sponge
+
+    ny = 34
+    c = (ny - 1) / 2
+
+    def far_field(sponge):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sim = Simulation(shape=(4, ny, ny), collision=RegularizedBGK(0.515), sponge=sponge,
+                             frame=RotatingFrame(0.0075, center=(c, c)), check_interval=50)
+        for face in ("y-", "y+", "z-", "z+"):
+            sim.set_boundary(face, "velocity", velocity=(0, 0, 0))
+        return sim
+
+    with pytest.raises(NumericalInstabilityError):
+        far_field(None).run(1000)
+    sim = far_field(Sponge(width=6, viscosity=0.05)).run(1500)
+    inner = np.sqrt((sim.absolute_velocity() ** 2).sum(0))[:, 6:-6, 6:-6]
+    assert inner.max() < 2e-3                    # against frame speeds up to 0.17

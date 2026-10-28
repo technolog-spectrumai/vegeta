@@ -2,7 +2,7 @@
 Triton GPU backend. Lattice units throughout; :class:`UnitConverter` converts to and from physical units."""
 __version__ = "0.1.0"
 
-from .boundaries import FACES, BoundaryConditions  # noqa: E402
+from .boundaries import FACES, BoundaryConditions, Sponge  # noqa: E402
 from .collision import BGK, CollisionModel, RegularizedBGK  # noqa: E402
 from .errors import (  # noqa: E402
     BackendUnavailableError,
@@ -19,4 +19,4 @@ from .units import UnitConverter  # noqa: E402
 
 __all__ = ["BGK", "D3Q19", "FACES", "BackendUnavailableError", "BoundaryConditions", "CollisionModel",
            "InsufficientMemoryError", "InvalidParameterError", "ManchaError", "NumericalInstabilityError", "Record",
-           "RegularizedBGK", "RotatingFrame", "Simulation", "UnitConverter", "WALE", "__version__"]
+           "RegularizedBGK", "RotatingFrame", "Simulation", "Sponge", "UnitConverter", "WALE", "__version__"]
