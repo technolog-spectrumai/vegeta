@@ -1,0 +1,36 @@
+{
+ "mancha_version": "0.1.0",
+ "backend": "numpy",
+ "case": "periodic",
+ "block": null,
+ "device": {
+  "python": "3.13.17",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "numpy": "2.5.4"
+ },
+ "results": [
+  {
+   "case": "periodic",
+   "n": 32,
+   "nodes": 32768,
+   "steps": 20,
+   "wall_time_s": 0.18023689900019235,
+   "mlups": 3.6361033930088897,
+   "state_bytes": 9994240,
+   "effective_bandwidth_gb_s": 0.5526877157373512,
+   "max_speed": 0.02000000000000003
+  },
+  {
+   "case": "periodic",
+   "n": 64,
+   "nodes": 262144,
+   "steps": 20,
+   "wall_time_s": 2.22818304699922,
+   "mlups": 2.352984422469594,
+   "state_bytes": 79953920,
+   "effective_bandwidth_gb_s": 0.35765363221537827,
+   "max_speed": 0.02000000000000003
+  }
+ ]
+}

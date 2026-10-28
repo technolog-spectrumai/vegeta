@@ -101,5 +101,9 @@ occupancy).
 | A100 80 GB (2.0 TB/s) | 6 700–10 700 | 3 400–6 800 | ~400 M |
 | H100 SXM (3.35 TB/s, 80 GB) | 11 000–17 600 | 5 600–11 000 | ~400 M |
 
+![speed chart](records/speed_chart.png)
+
+FW-H post-processing (CPU, measured): 0.64 s per observer for the D = 16 rotor (1 396 surface elements × 1 440 source samples), about 3 million element-samples per second (`records/fwh_speed.json`).
+
 **Measured GPU results: none yet.** The backend was developed in a container without a GPU; no GPU timings exist
 and none are quoted. Record them in [validation.md](validation.md#performance) with the GPU named when measured.
