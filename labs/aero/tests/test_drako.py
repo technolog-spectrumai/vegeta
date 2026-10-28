@@ -125,6 +125,6 @@ def test_export_carries_six_rotors_with_their_motor():
     import export
     m, _ = export.machine("drako", visual=False)
     b = m.data["propulsion"]
-    assert len(b["rotors"]) == 6 and list(b["motors"]) == ["12S 120 kV outrunner"]
+    assert len(b["rotors"]) == 6 and list(b["motors"]) == ["T-Motor U12 II KV120"]
     assert sorted(r["spin"] for r in m.data["ogma"]["rotors"]) == [-1, -1, -1, 1, 1, 1]
     assert all(abs(r["residual"]) < 0.05 for r in b["reduced"].values())

@@ -125,7 +125,7 @@ def drako(overrides: dict | None = None, *, name: str = "Drako") -> Robot:
                   role="body", rgba=CARBON) for k, z in (("lower", t / 2), ("upper", 1.5 * t + gap))]
     pos, _ = rotor_layout(p)
     motor = next(v for k, v in m.items() if k.startswith("6 x motor")) / 6
-    prop = next(v for k, v in m.items() if k.startswith("6 x 30-inch")) / 6
+    prop = next(v for k, v in m.items() if k.startswith("6 x T-Motor 30x10.5")) / 6
     rp = p["prop_diameter"] * 25.4 / 2 * mm
     for k in range(6):
         c, s = math.cos(math.radians(60 * k)), math.sin(math.radians(60 * k))
