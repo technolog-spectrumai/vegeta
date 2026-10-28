@@ -2,7 +2,7 @@
  "format": "vegeta-exports/1",
  "machines": {
   "drako": {
-   "bytes": 182466,
+   "bytes": 201806,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -12,8 +12,8 @@
    "joints": 4,
    "lab": "aero",
    "links": 5,
-   "mass_kg": 22.3462,
-   "sha256": "32f453b7129d23adf7e733a4d61bce57574c5cf0ced6a9fba5403ff612aaedf6",
+   "mass_kg": 23.0292,
+   "sha256": "9aa4637c93ff26b7a83dd3e96b0d3f6505f92eb4e075d9f72f73f89399062c0d",
    "visual_triangles": 3226
   },
   "drongo": {
@@ -137,10 +137,10 @@
    "visual_triangles": 4212
   }
  },
- "published": "2026-10-28T17:08:14Z",
+ "published": "2026-10-28T17:13:41Z",
  "vegeta": {
   "branch": "dev_drako",
-  "commit": "b75dba61b3379596612933b31c89e590bde4c19b",
+  "commit": "dd5ecd4f003f5bafd660975abe65af68360cd90f",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
