@@ -67,14 +67,14 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
 ## Stage M — Mancha, the lattice Boltzmann solver (2026-10-26)
-A standalone library in `libs/mancha/` (Basilisk Systems; imports nothing from Vegeta or Ogma). Its plan and
-progress: [`libs/mancha/todo.md`](libs/mancha/todo.md).
+Moved to its own repository, https://github.com/technolog-spectrumai/mancha (2026-10-28; history kept), with
+the OpenFOAM launcher adapted from Aeromant (`mancha.openfoam`). Its plan and progress live in that repo's todo.md.
 - [x] M.A NumPy D3Q19 reference solver with analytical regression tests
 - [x] M.B Triton backend, agreeing with the reference (interpreter) and compiling for sm_80/sm_90
-- [x] M.C validation benchmarks (`libs/mancha/benchmarks/validate.py`, results in `libs/mancha/docs/validation.md`)
-  and an OpenFOAM cross-check (cube in a duct, `libs/mancha/docs/openfoam.md`)
+- [x] M.C validation benchmarks (`benchmarks/validate.py`, results in `docs/validation.md`)
+  and an OpenFOAM cross-check (cube in a duct, `docs/openfoam.md`)
 - [ ] M.D GPU performance measured and tuned (needs a machine with an NVIDIA GPU)
-- [x] M.E API, VTK/JSON/checkpoint output, examples, docs, CI workflow (`.github/workflows/mancha.yml`)
+- [x] M.E API, VTK/JSON/checkpoint output, examples, docs, CI workflow
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
