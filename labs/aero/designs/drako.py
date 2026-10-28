@@ -11,7 +11,7 @@ class Drako(Design):
     """Drako: a heavy-lift hexacopter for lifting and transporting packages (10 kg design, 15 kg maximum; tote 600 x 400 x 350 mm).
 
     Six carbon-tube arms (``arm_count`` = 6, flat-six layout: one arm straight forward) bolted between two carbon
-    centre plates; 30x10 propellers on 12S 120 kV motors at a 1650 mm motor-to-motor diagonal. Under the lower plate hangs a
+    centre plates; T-Motor 30x10.5 propellers on U12 II KV120 motors at a 1650 mm motor-to-motor diagonal. Under the lower plate hangs a
     cargo cradle: a rectangular frame with four hook latches, one servo each, that close on a standard tote's lip. The
     package is held between four tall landing legs on two skids, so Drako lands over a package, latches it and takes
     off; at the drop point it lands (or hovers low) and opens the latches. x forward (along arm 0), y left, z up; z = 0
@@ -53,8 +53,8 @@ class Drako(Design):
     ]
 
     # ---- sizing: plain momentum theory with a figure of merit, round masses from catalogue parts
-    MASSES_KG = {"frame (plates, folding arms, gear, cradle)": 4.0, "6 x motor 12S 120 kV + 80 A FOC ESC": 6 * 0.95,
-                 "6 x 30-inch carbon propeller": 6 * 0.15,
+    MASSES_KG = {"frame (plates, folding arms, gear, cradle)": 4.0, "6 x motor T-Motor U12 II KV120 + 100 A FOC ESC": 6 * 0.95,
+                 "6 x T-Motor 30x10.5 carbon propeller": 6 * 0.15,
                  "FC (triple IMU), dual GNSS, 45 km datalink, camera, wiring": 0.9,
                  "latches (4 servos) and package sensor": 0.6}
 
@@ -64,11 +64,11 @@ class Drako(Design):
         return p["battery_cells"] * 3.7 * p["battery_capacity"] / 260.0
 
     @classmethod
-    def sizing(cls, p, rho=1.225, figure_of_merit=0.666, max_thrust_per_motor=13.85, reserve=0.15, eta_drive=0.85,
+    def sizing(cls, p, rho=1.225, figure_of_merit=0.661, max_thrust_per_motor=17.6, reserve=0.15, eta_drive=0.85,
                mission_factor=0.70, cda_body=0.25, cda_package=0.15):
         """Take-off mass, hover power, endurance and one-motor-out margin [SI, kg]. ``max_thrust_per_motor`` in kgf is
-        the 30x10 at 80 % of 120 kV x 44.4 V (4262 rpm) from Boreas BEMT (``drako_robot.boreas_system``), and
-        ``figure_of_merit`` that BEMT's static figure of merit; ``reserve`` the battery fraction left at landing."""
+        the U12 II KV120 + 30x10.5 at full throttle on 44.4 V (4889 rpm, 81 A) from Boreas fitted to the listing
+        (``drako_robot.full_throttle``), and ``figure_of_merit`` that BEMT's static figure of merit; ``reserve`` the battery fraction left at landing."""
         g = 9.81
         empty = sum(cls.MASSES_KG.values()) + cls.battery_mass(p)
         mtow = empty + p["payload"]

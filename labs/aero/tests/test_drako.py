@@ -111,9 +111,9 @@ def test_robot_mass_is_the_sizing_and_the_latches_are_joints():
 def test_rotor_full_throttle_is_the_sizing_thrust_and_the_arm_is_supercritical():
     import drako_robot as dk
     ft = dk.full_throttle()
-    assert ft["thrust_N"] / 9.81 == pytest.approx(13.85, rel=0.01)
-    assert ft["figure_of_merit"] == pytest.approx(0.666, abs=0.01)
-    assert ft["power_W"] / 0.9 / 44.4 < 80                       # within the ESC's current
+    assert ft["thrust_N"] / 9.81 == pytest.approx(17.6, rel=0.01)            # the sizing's max_thrust_per_motor
+    assert ft["current_A"] < dk.ESC_MAX_A
+    assert dk.datasheet_check()["thrust_kgf"] == pytest.approx(dk.DATASHEET["max_thrust_kgf"], rel=0.01)
     assert dfea.arm_frequency_check(P)["ok"]
 
 

@@ -3,7 +3,7 @@
 Cases (``cases``), loads ultimate (x ``ULTIMATE``) on the 15 kg maximum take-off mass:
 
 - **arm_full_thrust**: one arm clamped over its length inside the plate sandwich, the motor mount carrying the motor's
-  full catalogue thrust (13.85 kgf) up and the motor's reaction torque, less the motor's weight.
+  full catalogue thrust (17.6 kgf) up and the motor's reaction torque, less the motor's weight.
 - **arm_modes**: the same arm with the motor and propeller as a point mass on the mount — read against the rotor's
   1/rev and 2/rev (blade passing) at hover (``rotor_rpm``).
 - **frame_manoeuvre**: plates + six arms, the lower plate's underside held (where battery, cradle and package hang),
@@ -33,7 +33,7 @@ CARBON_TUBE = dict(name="roll-wrapped carbon tube", E=70000.0, nu=0.30, rho=1.55
 CARBON_PLATE = dict(name="carbon plate 0/90", E=50000.0, nu=0.30, rho=1.55e-9, strength=400.0,
                     source="woven 3K carbon sheet class (assumed)")
 MOTOR_MASS = 0.95 + 0.15          # kg: motor + ESC + propeller
-MOTOR_TORQUE = 2.5                # N m at full thrust (30-inch, 13.85 kgf class; catalogue order of magnitude)
+MOTOR_TORQUE = 6.3                # N m at full throttle (drako_robot.full_throttle)
 MARGIN = 3.0                      # mm around region boxes
 
 
@@ -61,7 +61,7 @@ def arm_geometry(p):
     return dict(root=rh, r_in=r_in, length=R - rh, z=p["plate_thickness"] + p["plate_gap"] / 2)
 
 
-def arm_reference(p=None, thrust_kgf=13.85):
+def arm_reference(p=None, thrust_kgf=17.6):
     """Cantilever tube from the plate edge to the motor, ultimate thrust less the motor weight at the tip."""
     p = p or params()
     a = arm_geometry(p)
@@ -84,7 +84,7 @@ def arm_reference(p=None, thrust_kgf=13.85):
 
 
 def rotor_rpm(p=None):
-    """Hover rpm and the 1P / 2P (blade passing) frequencies at the empty, design and maximum mass, from the 30x10's
+    """Hover rpm and the 1P / 2P (blade passing) frequencies at the empty, design and maximum mass, from the 30x10.5's
     Boreas BEMT (``drako_robot.boreas_system``)."""
     from vegeta.boreas import bemt
     import drako_robot as dk
@@ -149,14 +149,14 @@ def arm_cases(workdir, p=None, *, step=None, element_size=4.0):
                                           a["root"] + MARGIN, ra + MARGIN, a["z"] + ra + MARGIN))
     regions = [clamp, _mount_box(p, 0.0, "mount")]
     mat, mesh = talos_material(CARBON_TUBE), talos.MeshSettings(element_size=element_size, order=2)
-    F = ULTIMATE * (13.85 - MOTOR_MASS) * G
+    F = ULTIMATE * (17.6 - MOTOR_MASS) * G
     # the reaction torque as a couple on the mount face: +-fy over the mount's diameter is not expressible as one
     # Force on one region, so it is carried in the reference (arm_reference) and the case takes the thrust
     static = talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("clamp")],
                                    [talos.Force("mount", fz=F)], mesh, name="arm_full_thrust")
     modes = talos.StructuralModel(step, "mm-N-MPa", mat, regions, [talos.FixedSupport("clamp")], [], mesh,
                                   masses=[talos.PointMass("mount", MOTOR_MASS * 1e-3)], name="arm_modes")
-    return [FEACase("arm_full_thrust", "arm", "13.85 kgf thrust at the mount, ultimate, arm clamped in the plates", static,
+    return [FEACase("arm_full_thrust", "arm", "17.6 kgf thrust at the mount, ultimate, arm clamped in the plates", static,
                     strength=CARBON_TUBE["strength"]),
             FEACase("arm_modes", "arm", "arm with motor + propeller as a point mass", modes, kind="modes")]
 
@@ -169,7 +169,7 @@ def frame_cases(workdir, p=None, *, step=None, element_size=6.0):
     mat, mesh = talos_material(CARBON_TUBE), talos.MeshSettings(element_size=element_size, order=2)
     mmax = Drako.sizing(p)["mtow_max_kg"]
     t_pull = 2.0 * mmax * G / 6                                       # 2 g pull-up, per motor
-    t_full = 13.85 * G
+    t_full = 17.6 * G
     w_motor = MOTOR_MASS * G
     sup = [talos.FixedSupport("plate_under")]
     man = [talos.Force(f"M{k}", fz=ULTIMATE * (t_pull - 2 * w_motor)) for k in range(6)]   # 2 g on the motor too

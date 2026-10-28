@@ -82,7 +82,7 @@ def drongo(m) -> dict:
 
 def drako(m) -> dict:
     """Drako's six rotors: the ``ogma.rotors`` record (Gazebo's motor model) and the full ``propulsion`` block — the
-    30x10's BEMT map, the 12S 120 kV motor, the reduced constants at full throttle, checked at hover."""
+    T-Motor 30x10.5's map (Boreas, fitted to the listing), the U12 II KV120, the reduced constants at full throttle, checked at hover."""
     import drako_robot as dk
     prop, airfoil, motor, battery = dk.boreas_system()
     ft = dk.full_throttle()
@@ -95,9 +95,9 @@ def drako(m) -> dict:
         rotors.append({"pos": pw, "spin": int(s), "kg": kg, "inertia": [kg * r * r / 4, kg * r * r / 4, kg * r * r / 2], "radius": r,
                        "kF": ft["thrust_N"] / w_max ** 2, "kM": ft["kM"], "w_max": w_max,
                        "tau_up": dk.SPIN_UP_S, "tau_down": 2 * dk.SPIN_UP_S, "T_max": ft["thrust_N"]})
-    ogma = {"rotors": rotors, "source": f"Boreas BEMT of the 30x10 at ω_max = 0.8 × KV × V ({motor.kv_rpm_per_volt:g} KV, "
-                                        f"{battery.cells}S); spin-up assumed"}
-    grid = lp.grid_from_boreas(prop, airfoil, np.linspace(1000.0, 4800.0, 9), [0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0], RHO0)
+    ogma = {"rotors": rotors, "source": f"Boreas (BEMT + motor) at full throttle on {battery.cells}S, fitted to "
+                                        f"{dk.DATASHEET['source']}; spin-up assumed"}
+    grid = lp.grid_from_boreas(prop, airfoil, np.linspace(1000.0, 5200.0, 9), [0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0], RHO0)
     entry = lp.propeller_entry(prop, grid, inertia_kgm2=dk.ROTOR_KG * r * r / 2,
                                source=f"drako_robot.boreas_system: Boreas BEMT, {airfoil.name} ({airfoil.source}); {prop.notes}")
     P, _ = lp.max_shaft_power(grid, battery_v=battery.voltage, i_max=motor.max_current_a, voltage_for=motor.voltage_for)
