@@ -129,12 +129,13 @@ def bat(p=None):
                             for q in zs.bat_wing_points(p, sy))
         r = p["bone_radius"] * mm
         wing = bk.chain_through(f"{side}_wing", [sh, el, wr], [[X, Z], Z], [r * 1.4, r * 1.2], origin=origin,
-                                servo=bk.servo(big), actuator_kg=_kg(big), names=["shoulder", "elbow"])
+                                servo=bk.servo(big), actuator_kg=_kg(big), names=["shoulder", "elbow"],
+                                joint_range=(-3.0, 3.0))                 # a bat's elbow and fingers fold ~180°
         elbow_link = wing.children[0]
         for i, t in enumerate(tips):
             elbow_link.children.append(bk.chain_through(f"{side}_finger{i}", [wr, t], [Z], [r * 0.8], origin=el,
                                                         servo=bk.servo(small), actuator_kg=_kg(small),
-                                                        names=["wrist"]))
+                                                        names=["wrist"], joint_range=(-3.0, 3.0)))
         hip = (-p["body_length"] * 0.3 * mm, sy * p["body_width"] * 0.3 * mm, z - p["body_height"] * 0.3 * mm)
         foot = (-p["body_length"] * 0.35 * mm, sy * p["body_width"] * 0.35 * mm, 8.0 * mm)
         children += [wing, bk.chain_through(side, [hip, foot], [Y], [r], origin=origin, servo=bk.servo(small),
@@ -160,7 +161,9 @@ def octopus(p=None, name="Kraken", root_geoms=None, root_masses=None, notes=None
         pts = bk.scaled(zs.octopus_arm_points(p, i))
         n = len(pts) - 1
         r = p["arm_radius"] * mm
-        arms.append(bk.chain_through(f"arm{i}", pts, [[Z, Y]] * n, [r * (1 - 0.8 * k / n) for k in range(n)],
+        phi = 2 * math.pi * (i + 0.5) / int(p["arms"])
+        bend = (-math.sin(phi), math.cos(phi), 0.0)                       # across the arm: curls it up and down
+        arms.append(bk.chain_through(f"arm{i}", pts, [[Z, bend]] * n, [r * (1 - 0.8 * k / n) for k in range(n)],
                                      origin=origin, servo=bk.servo(key), actuator_kg=_kg(key),
                                      names=[f"s{k}" for k in range(n)]))
     geoms = root_geoms if root_geoms is not None else [bk.sphere("head", rh, rho=bk.DENSITY["shell"], rgba=bk.GREY)]

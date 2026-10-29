@@ -133,7 +133,7 @@ def bat_wing_points(p, sy: int):
     elbow = step(sh, p["humerus_length"], 10 + 80 * f)
     wrist = step(elbow, p["forearm_length"], -10 - 80 * f)
     spread = p["finger_spread_deg"]
-    tips = [step(wrist, p["finger_length"] * (1 - 0.15 * i), (1 - f) * (i * spread / 2 - 5) + f * (90 + 4 * i))
+    tips = [step(wrist, p["finger_length"] * (1 - 0.15 * i), (1 - f) * (i * spread / 2 - 5) + f * (80 + 4 * i))
             for i in range(3)]
     return sh, elbow, wrist, tips
 
