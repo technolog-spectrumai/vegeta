@@ -46,6 +46,111 @@
    "sha256": "a61c609d5c3d4e2f7466ab2b5d043883af169ef307d0e7e95929f8a99d04cee6",
    "visual_triangles": 5372
   },
+  "monster_centaur": {
+   "bytes": 331606,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_centaur.yx2",
+   "joints": 24,
+   "lab": "legged",
+   "links": 25,
+   "mass_kg": 154.4225,
+   "sha256": "97a271224fc65f5eaeb181328a53e87f09eb8aa4c54d5d36898231c7d6d4fdab",
+   "visual_triangles": 4944
+  },
+  "monster_ghoul": {
+   "bytes": 324058,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_ghoul.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 39.5183,
+   "sha256": "0bb4d3dbf26e6e83ef5a48e50899abfac71624047ea64915a9ee120e84ce4238",
+   "visual_triangles": 5502
+  },
+  "monster_leech": {
+   "bytes": 287033,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_leech.yx2",
+   "joints": 20,
+   "lab": "legged",
+   "links": 21,
+   "mass_kg": 67.559,
+   "sha256": "ced40ada924942431734b6448f1aa2184e752a281315b6ae77e2417c992fae0f",
+   "visual_triangles": 4680
+  },
+  "monster_leshy": {
+   "bytes": 328949,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_leshy.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 79.0875,
+   "sha256": "da4ced883ca1e306a3f472a4735d7278c06153d7e7d57d371e6fef0cfafd866b",
+   "visual_triangles": 5964
+  },
+  "monster_wolf": {
+   "bytes": 298227,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wolf.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 53.6741,
+   "sha256": "b3bae373ce1534785534dc3df81fe6a1fe1382f07947fcc6bf275d3ea11f4ab4",
+   "visual_triangles": 5154
+  },
+  "monster_wraith": {
+   "bytes": 664404,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wraith.yx2",
+   "joints": 96,
+   "lab": "legged",
+   "links": 97,
+   "mass_kg": 31.4783,
+   "sha256": "6411e30df4b6c55a2aa91a0e69b8136dd833bed201618697d1dd1c4809a4e985",
+   "visual_triangles": 4910
+  },
+  "monster_wyvern": {
+   "bytes": 304647,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wyvern.yx2",
+   "joints": 14,
+   "lab": "legged",
+   "links": 15,
+   "mass_kg": 33.1414,
+   "sha256": "05b4ce3947dea62790972b6b07f891aa322ac696dd6c57eaaccfa5d5eb6844a7",
+   "visual_triangles": 5641
+  },
   "onager": {
    "bytes": 262978,
    "consumers": {
@@ -257,10 +362,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-10-29T09:59:45Z",
+ "published": "2026-10-29T10:11:19Z",
  "vegeta": {
-  "branch": "dev_zoomorphic",
-  "commit": "aac4d5f9a6a3df0bd49fc1610c85ebb736bd59f9",
+  "branch": "dev_monsters",
+  "commit": "610a4f5867ca03a8c8dbacf138d80cf4310779c2",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
