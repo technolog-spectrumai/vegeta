@@ -31,6 +31,21 @@
    "sha256": "664e4f2245f7dcda7d6cd2b7745a0f223ddd7a7283e630661bc207fd7c569649",
    "visual_triangles": 4316
   },
+  "humanoid": {
+   "bytes": 315333,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "humanoid.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 44.3847,
+   "sha256": "a61c609d5c3d4e2f7466ab2b5d043883af169ef307d0e7e95929f8a99d04cee6",
+   "visual_triangles": 5372
+  },
   "onager": {
    "bytes": 262978,
    "consumers": {
@@ -137,10 +152,10 @@
    "visual_triangles": 4212
   }
  },
- "published": "2026-10-28T17:21:07Z",
+ "published": "2026-10-29T09:47:00Z",
  "vegeta": {
-  "branch": "dev_drako",
-  "commit": "f1fdd19de86f35b046b754791fbac724e5e6c2a5",
+  "branch": "dev_humanoid",
+  "commit": "ba5f9c613ef9888af86745447b59639c2d204425",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
