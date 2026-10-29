@@ -1,0 +1,153 @@
+{
+ "format": "vegeta-regis-monsters/1",
+ "monsters": {
+  "ghoul": {
+   "bounds_m": {
+    "max": [
+     0.168,
+     1.5591,
+     0.2399
+    ],
+    "min": [
+     -0.095,
+     0.0,
+     -0.2399
+    ]
+   },
+   "bytes": 97576,
+   "design": "labs/legged/designs/humanoid.py:Humanoid",
+   "file": "ghoul.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "body"
+   ],
+   "sha256": "80823d8ce36b6e45a7f910e952d722d6834b7103a0641865dba8e9fac16adfb4",
+   "triangles": 5372,
+   "what": "the humanoid walker"
+  },
+  "hound": {
+   "bounds_m": {
+    "max": [
+     0.395,
+     0.4364,
+     0.181
+    ],
+    "min": [
+     -0.3219,
+     -0.0166,
+     -0.181
+    ]
+   },
+   "bytes": 95256,
+   "design": "labs/legged/designs/robot_dog.py:RobotDog",
+   "file": "hound.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "body"
+   ],
+   "sha256": "c122403a1f0e36c5cf08c2ad74cef6b24e052ffb498f368ae9877cdc6a592ff8",
+   "triangles": 5262,
+   "what": "the Cerberus robot dog"
+  },
+  "leshy": {
+   "bounds_m": {
+    "max": [
+     1.2881,
+     2.1,
+     0.804
+    ],
+    "min": [
+     -1.2938,
+     0.0008,
+     -0.804
+    ]
+   },
+   "bytes": 88988,
+   "design": "labs/land/designs/onager.py:OnagerSentinel",
+   "file": "leshy.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "body"
+   ],
+   "sha256": "6c5f83ef711546d0c13fc6816c69af42ede253c884dbdb1307dffe1c8ffd1b79",
+   "triangles": 4928,
+   "what": "the Onager Sentinel land robot"
+  },
+  "vampire": {
+   "bounds_m": {
+    "max": [
+     0.1519,
+     0.0351,
+     0.1451
+    ],
+    "min": [
+     -0.1233,
+     0.0,
+     -0.1451
+    ]
+   },
+   "bytes": 100108,
+   "design": "labs/aero/designs/quadcopter_assembly.py:Quadcopter",
+   "file": "vampire.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "body"
+   ],
+   "sha256": "341843452cde8c0ab9ad9c8a8deaed35547512959d09320aa074327173f965f2",
+   "triangles": 5673,
+   "what": "the X-frame quadcopter"
+  },
+  "wraith": {
+   "bounds_m": {
+    "max": [
+     0.8975,
+     2.948,
+     0.8951
+    ],
+    "min": [
+     -0.8951,
+     0.0,
+     -0.8951
+    ]
+   },
+   "bytes": 52720,
+   "design": "labs/regis/designs/balloon.py:Balloon",
+   "file": "wraith.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "envelope",
+    "neck",
+    "load_ring",
+    "lines",
+    "gondola"
+   ],
+   "sha256": "3cd19cfc02cc5e05c2334e6ea6b952e8e8633c1cdd8fef6917bdf6d0b3bb52ad",
+   "triangles": 2212,
+   "what": "a tethered survey balloon"
+  },
+  "wyvern": {
+   "bounds_m": {
+    "max": [
+     1.206,
+     0.166,
+     1.0944
+    ],
+    "min": [
+     -1.206,
+     -0.45,
+     -1.0944
+    ]
+   },
+   "bytes": 60612,
+   "design": "labs/aero/designs/drako.py:Drako",
+   "file": "wyvern.glb",
+   "frame": "glTF: Y up, metres, x forward; rest pose (no joints or motions)",
+   "parts": [
+    "body"
+   ],
+   "sha256": "3523db796e7de5e63e5e31ae353b58345a671a463bddfd9cbe8c3388f56c807b",
+   "triangles": 3226,
+   "what": "the Drako heavy-lift hexacopter"
+  }
+ }
+}
