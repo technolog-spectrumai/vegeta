@@ -7,7 +7,7 @@ mountain (a 900 m Gaussian peak) north-east whose shoulder carries the **hut** o
 houses. Every pad is levelled over 25 m and blended into the slope by 45 m. MuJoCo sees the terrain as a height field
 every 10 m (``CELL_M``); the pads, houses, the hut and trees are scenery boxes and cylinders.
 
-**The packages** (``Scene.packages``): totes of 600 x 400 x 350 mm standing on the pads — medical supplies (10 kg) at the
+**The packages** (``Scene.packages``): totes of 600 x 400 x 350 mm waiting in a row east of each pad's centre (Drako hops over to one, and delivers on the centre) — medical supplies (10 kg) at the
 helipad for the hut, samples (4 kg) at the hut for the valley, groceries (8 kg) at the helipad for the village. Each is
 a free body. Drako lands over one (it stands between the skids, under the cradle), closes the latches and the
 ``Cargo`` hook welds it to the frame at the pose it has then (the hooks under the tote's lip; the latch geoms are drawn
@@ -56,13 +56,14 @@ def rho(z):
 @dataclass
 class Wind:
     """Mean wind ``speed`` [m/s] at 10 m above the ground, blowing **from** ``from_deg`` (meteorological: 270 = from
-    the west), growing with height above the ground as (h / 10)^``shear``; ``speedup`` the extra fraction over the
+    the west), growing with height above the ground as (h / 10)^``shear`` up to ``shear_top_m`` (the boundary layer); ``speedup`` the extra fraction over the
     mountain's top (a Gaussian about the peak, as hill speed-up); ``gust`` the turbulence intensity (sigma / mean)
     with a ``gust_time_s`` correlation time; ``seed`` fixes the gusts."""
 
     speed: float = 0.0
     from_deg: float = 270.0
     shear: float = 0.14
+    shear_top_m: float = 150.0
     speedup: float = 0.4
     gust: float = 0.2
     gust_time_s: float = 3.0
@@ -86,7 +87,7 @@ class Wind:
         """The air's velocity [m/s, world] at ``p`` and time ``t`` (``ground_z`` the terrain under ``p``)."""
         if self.calm:
             return np.zeros(3)
-        h = max(float(p[2]) - float(ground_z), 1.0)
+        h = min(max(float(p[2]) - float(ground_z), 1.0), self.shear_top_m)
         u = self.speed * (h / 10.0) ** self.shear
         if peak is not None:
             d2 = (p[0] - peak[0]) ** 2 + (p[1] - peak[1]) ** 2
@@ -117,7 +118,7 @@ class Scene:
         "medical": {"mass_kg": 10.0, "at": "helipad", "to": "hut", "rgba": (0.85, 0.15, 0.15, 1.0)},
         "samples": {"mass_kg": 4.0, "at": "hut", "to": "helipad", "rgba": (0.15, 0.45, 0.85, 1.0)},
         "groceries": {"mass_kg": 8.0, "at": "helipad", "to": "village", "rgba": (0.20, 0.65, 0.25, 1.0)}})
-    spare_spot_m: float = 6.0                                   # a second tote on a pad waits this far east of it
+    spare_spot_m: float = 6.0                                   # totes wait in a row east of the pad's centre
 
     def __post_init__(self):
         self._pad_z = {k: self._raw(np.array(x), np.array(y)) for k, (x, y) in self.pads.items()}
@@ -127,7 +128,7 @@ class Scene:
             n = seen.get(pk["at"], 0)
             seen[pk["at"]] = n + 1
             x, y = self.pads[pk["at"]]
-            self.package_xy[name] = (x + n * self.spare_spot_m, y)
+            self.package_xy[name] = (x + (n + 1) * self.spare_spot_m, y)    # the pad's centre is where Drako delivers
 
     def _raw(self, x, y):
         px, py, ph, ps = self.peak
@@ -363,13 +364,15 @@ def run(lab, scene: Scene, plan: dcn.Plan | None = None, duration: float = 2400.
     """The whole route of ``plan``; stops when the mission is finished."""
     plan = plan or dcn.Plan()
     mission = dcn.Mission(dcn.mission(scene, plan), dcn.Flight(**(flight_kw or {})),
-                          name=f"Drako cargo, wind {scene.wind.speed:g} m/s")
-    start = scene.spot(plan.route[0][2]) if plan.route[0][2] else scene.pad(plan.route[0][0])
+                          name=f"Drako cargo, wind {scene.wind.speed:g} m/s", plan=plan)
+    lab.scene = scene
+    start = scene.pad(plan.route[0][0])
     ep = lab.run(mission, duration=duration, rules=None, settle=1.0, seed=seed, base_pos=tuple(start[:2]),
                  info={"controller": mission.name, "treatment": f"wind {scene.wind.speed:g}"},
                  stop_when=lambda lab_: mission.finished)
     ep.log["mission"] = [list(x) for x in mission.log]
-    ep.log["mission_finished"] = mission.finished
+    ep.log["mission_finished"] = mission.finished and not mission.aborted
+    ep.log["aborted"] = mission.aborted
     ep.log["records"] = {k: dict(v) for k, v in lab.cargo.records.items()}
     ep.log["air_history"] = np.asarray(lab.air.history, float).reshape(-1, 19)
     ep.log["energy_Wh"] = lab.air.energy_Wh
@@ -385,6 +388,7 @@ def outcome(ep) -> dict:
     missing = [k for k, r in recs.items() if r["delivered"] is None]
     ok = ep.log["mission_finished"] and not missing and ep.log["min_soc"] > 0.0
     why = "delivered" if ok else ("battery empty" if ep.log["min_soc"] <= 0 else
+                                  ep.log["aborted"] if ep.log["aborted"] else
                                   ("not delivered: " + ", ".join(missing) if missing else "mission not finished"))
     return {"success": bool(ok), "reason": why, "energy_Wh": ep.log["energy_Wh"], "min_soc": ep.log["min_soc"],
             "t_end": float(ep.log["air_history"][-1, 0]) if len(ep.log["air_history"]) else float("nan")}

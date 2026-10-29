@@ -110,8 +110,9 @@ class Mission:
     """Phases in order on top of ``Flight``. Phases set ``ref``, ``mode`` ('air' / 'ground' with ``ground_share``),
     ``latches`` ('open' / 'closed') and ``payload`` (the package carried: its manifest entry). ``log``: [t, phase, note]."""
 
-    def __init__(self, phases, flight: Flight, *, name="Drako cargo"):
+    def __init__(self, phases, flight: Flight, *, name="Drako cargo", plan=None):
         self.phases, self.flight, self.name = list(phases), flight, name
+        self.plan = plan or Plan()
 
     def reset(self, lab, seed=None):
         self.lab = lab
@@ -123,6 +124,7 @@ class Mission:
         self.mode, self.ground_share, self.payload, self.latches = "ground", 0.0, None, "open"
         self.i, self.t0, self.started, self.t_prev = 0, 0.0, False, None
         self.log, self.state = [], {}
+        self.aborted = None
 
     @property
     def phase(self):
@@ -143,8 +145,17 @@ class Mission:
     def note(self, obs, text):
         self.log.append([float(obs.t), self.phase, text])
 
+    def abort(self, obs, why):
+        """Land where Drako is: straight down to the approach height, then the touchdown (``emergency_phases``)."""
+        self.aborted = why
+        self.note(obs, f"ABORT: {why}")
+        self.phases = self.phases[:self.i] + emergency_phases(self.plan)
+        self.started = False
+
     def __call__(self, obs):
         t = float(obs.t)
+        if self.aborted is None and self.mode == "air" and self.lab.air.soc < self.plan.abort_soc:
+            self.abort(obs, f"battery at {100 * self.lab.air.soc:.0f} %")
         dt = 0.0 if self.t_prev is None else t - self.t_prev
         self.t_prev = t
         while self.i < len(self.phases):
@@ -177,7 +188,8 @@ class Mission:
 class Plan:
     """How Drako flies (SI). ``route``: [(from pad, to pad, the package carried or None)];
     ``v_loaded`` / ``v_empty`` cruise speeds; ``clearance_m`` above the highest terrain in a ``corridor_m`` band;
-    ``swap_battery_at`` the pads where the battery is swapped while landed."""
+    ``swap_battery_at`` the pads where the battery is swapped while landed; ``abort_soc`` the charge at which Drako
+    lands where it is; ``hop_alt_m`` / ``v_hop`` the hop from the pad's centre to a waiting package."""
 
     route: list = field(default_factory=lambda: [("helipad", "hut", "medical"), ("hut", "helipad", "samples"),
                                                  ("helipad", "village", "groceries"), ("village", "helipad", None)])
@@ -193,6 +205,9 @@ class Plan:
     corridor_m: float = 60.0
     latch_s: float = 1.5
     swap_battery_at: tuple = ("helipad",)
+    abort_soc: float = 0.10
+    hop_alt_m: float = 6.0
+    v_hop: float = 1.5
 
 
 def cruise_altitude(scene, a, b, plan: Plan) -> float:
@@ -205,6 +220,51 @@ def cruise_altitude(scene, a, b, plan: Plan) -> float:
     pts = [a + u * si + n * o for si in s for o in (-plan.corridor_m, 0.0, plan.corridor_m)]
     P = np.array(pts)
     return float(np.max(scene.height(P[:, 0], P[:, 1]))) + plan.clearance_m
+
+
+def _touchdown(plan, label):
+    def start(m, obs):
+        m.state["held"] = 0.0
+
+    def update(m, obs, tau):
+        v = plan.v_touchdown
+        m.ref.v, m.ref.a = np.array([0.0, 0.0, -v]), np.zeros(3)
+        m.ref.p = m.ref.p + m.ref.v * m.lab.control_dt
+        load = float(np.sum(obs.foot_normal_force))
+        z, vz = float(obs.base_pos[2]), float(obs.body_linvel[0][2])
+        stalled = vz > -v / 3 and m.ref.p[2] < z - 0.02 and tau > 0.5
+        m.state["held"] = m.state["held"] + m.lab.control_dt if (load > 0.3 * m.mass * G or stalled) else 0.0
+        if m.state["held"] >= 0.2:
+            m.ref.p, m.ref.v = np.array([float(obs.base_pos[0]), float(obs.base_pos[1]), z - 0.03]), np.zeros(3)
+            m.note(obs, f"landed {label} at {float(obs.base_pos[0]):.1f}, {float(obs.base_pos[1]):.1f} m")
+            return True
+        return False
+    return start, update
+
+
+def _spool_down(T=1.0):
+    def start(m, obs):
+        m.mode = "ground"
+        m.state["s0"] = 0.6
+
+    def update(m, obs, tau):
+        m.ground_share = m.state["s0"] * (1.0 - smooth(tau / T))
+        return tau >= T
+    return start, update
+
+
+def emergency_phases(plan: Plan) -> list:
+    """Down where Drako is to the approach height above the terrain, touch down, spool down (the map is known)."""
+    def target(m, obs):
+        p = np.asarray(obs.base_pos, float)
+        return np.array([p[0], p[1], float(m.lab.scene.height(p[0], p[1])) + m.leg_h + plan.approach_m])
+    st, up = _move(target, plan.v_descent, plan.a_vertical, settle_tol=1.0, max_extra=60.0)
+    out = [Phase("emergency descent", up, st, 600.0)]
+    st, up = _touchdown(plan, "(emergency)")
+    out.append(Phase("emergency touchdown", up, st, 120.0))
+    st, up = _spool_down()
+    out.append(Phase("emergency spool down", up, st, 10.0))
+    return out
 
 
 def mission(scene, plan: Plan | None = None) -> list:
@@ -227,34 +287,8 @@ def mission(scene, plan: Plan | None = None) -> list:
             return tau > 2.5
         return start, update
 
-    def touchdown(label):
-        def start(m, obs):
-            m.state["held"] = 0.0
-
-        def update(m, obs, tau):
-            v = plan.v_touchdown
-            m.ref.v, m.ref.a = np.array([0.0, 0.0, -v]), np.zeros(3)
-            m.ref.p = m.ref.p + m.ref.v * m.lab.control_dt
-            load = float(np.sum(obs.foot_normal_force))
-            z, vz = float(obs.base_pos[2]), float(obs.body_linvel[0][2])
-            stalled = vz > -v / 3 and m.ref.p[2] < z - 0.02 and tau > 0.5
-            m.state["held"] = m.state["held"] + m.lab.control_dt if (load > 0.3 * m.mass * G or stalled) else 0.0
-            if m.state["held"] >= 0.2:
-                m.ref.p, m.ref.v = np.array([float(obs.base_pos[0]), float(obs.base_pos[1]), z - 0.03]), np.zeros(3)
-                m.note(obs, f"landed {label} at {float(obs.base_pos[0]):.1f}, {float(obs.base_pos[1]):.1f} m")
-                return True
-            return False
-        return start, update
-
-    def spool_down(T=1.0):
-        def start(m, obs):
-            m.mode = "ground"
-            m.state["s0"] = 0.6
-
-        def update(m, obs, tau):
-            m.ground_share = m.state["s0"] * (1.0 - smooth(tau / T))
-            return tau >= T
-        return start, update
+    touchdown = lambda label: _touchdown(plan, label)  # noqa: E731
+    spool_down = _spool_down
 
     def latch(pkg):
         def start(m, obs):
@@ -290,10 +324,26 @@ def mission(scene, plan: Plan | None = None) -> list:
             m.note(obs, f"battery swapped at the {pad}")
         return start, wait(30.0)
 
+    def add_hop(frm, to, pkg):
+        """Lift off, move ``hop_alt_m`` above the ground over to the package, land over it."""
+        st, up = takeoff()
+        add(f"lift off for the {pkg}", up, st, timeout=10.0)
+        st, up = _move(lambda m, obs, frm=frm: np.array([frm[0], frm[1], frm[2] + m.leg_h + plan.hop_alt_m]),
+                       plan.v_climb, plan.a_vertical, settle_tol=0.3)
+        add("up to hop height", up, st, timeout=60.0)
+        st, up = _move(lambda m, obs, to=to: np.array([to[0], to[1], to[2] + m.leg_h + plan.hop_alt_m]),
+                       plan.v_hop, plan.a_vertical, settle_tol=0.08, max_extra=10.0)
+        add(f"hop over the {pkg}", up, st, timeout=60.0)
+        st, up = _touchdown(plan, f"over the {pkg}")
+        add(f"land over the {pkg}", up, st, timeout=60.0)
+        st, up = _spool_down()
+        add(f"spool down over the {pkg}", up, st)
+
     carried = None
     for k, (a, b, pkg) in enumerate(plan.route):
         pa, pb = scene.pad(a), scene.pad(b)
         if pkg:
+            add_hop(pa, scene.spot(pkg), pkg)
             st, up = latch(pkg)
             add(f"latch the {pkg} at the {a}", up, st)
         carried = pkg
@@ -304,8 +354,9 @@ def mission(scene, plan: Plan | None = None) -> list:
         st, up = _move(lambda m, obs, alt=alt: np.array([m.ref.p[0], m.ref.p[1], alt]), plan.v_climb, plan.a_vertical,
                        settle_tol=1.0, max_extra=10.0)
         add(f"climb to {alt:.0f} m", up, st)
-        st, up = _move(lambda m, obs, pb=pb, alt=alt: np.array([pb[0], pb[1], alt]), v, plan.a_cruise, settle_tol=2.0,
-                       max_extra=30.0)
+        L = float(np.linalg.norm(np.asarray(pb[:2]) - np.asarray(pa[:2])))
+        st, up = _move(lambda m, obs, pb=pb, alt=alt: np.array([pb[0], pb[1], alt]), v, plan.a_cruise, settle_tol=3.0,
+                       max_extra=L / 2.0)                          # a headwind: keep going until Drako is there
         add(f"cruise to the {b}" + (f" with the {pkg}" if pkg else ""), up, st)
         st, up = _move(lambda m, obs, pb=pb: np.array([pb[0], pb[1], pb[2] + m.leg_h + plan.approach_m]),
                        plan.v_descent, plan.a_vertical, settle_tol=0.5, max_extra=20.0)

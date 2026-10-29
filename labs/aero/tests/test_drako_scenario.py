@@ -44,11 +44,12 @@ def test_rho_falls_with_altitude():
 def test_drako_latches_the_tote_and_lifts_it():
     sc = ds.Scene()
     lab = ds.make_lab(sc)
-    ep = ds.run(lab, sc, duration=15.0)
+    ep = ds.run(lab, sc, duration=42.0)                                            # hop over the tote, latch, climb
     log = ep.log["mission"]
     assert any("medical latched" in note for _, _, note in log)
     i = ep.log["props"].index("medical")
     z_tote = np.asarray(ep.log["prop_pos"])[-1][i][2]
     ts = ds.timeseries(ep)
     assert ts.z.iloc[-1] > 20.0 and z_tote > 18.0                                  # climbing at 4 m/s with it
+    assert any("landed over the medical at 6.0" in note for _, _, note in log)
     assert 3000 < ts.P_W.iloc[-1] < 5000                                           # ~33 kg climbing: the sizing's 4 kW
