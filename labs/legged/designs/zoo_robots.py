@@ -35,11 +35,11 @@ def _egg_mass(L, W, H, rho=bk.DENSITY["shell"]):
     return math.pi / 6 * L * W * H * rho
 
 
-def quadruped(p, name, key, extra_links=None, notes="", payload_kg=0.0):
+def quadruped(p, name, key, extra_links=None, notes="", payload_kg=0.0, with_head=True):
     """A four-legged robot from a ``zoo_specs`` quadruped dict: a trunk (egg torso as a box, neck and head fixed
     on it), four legs through ``zoo_specs.leg_points`` with a two-axis hip (roll, pitch), a knee and, for
     three-segment legs, an ankle; feet ``FL``, ``FR``, ``RL``, ``RR``. ``extra_links(p, trunk_origin_m)``: more
-    child links (trunks, arms) on the trunk."""
+    child links (trunks, arms) on the trunk; ``with_head`` False: no neck and head on the trunk (a centaur)."""
     sv, m_act = bk.servo(key), _kg(key)
     bc = tuple(c * mm for c in zs.body_centre(p))
     L, W, H = p["body_length"] * mm, p["body_width"] * mm, p["body_height"] * mm
@@ -60,7 +60,8 @@ def quadruped(p, name, key, extra_links=None, notes="", payload_kg=0.0):
                                      foot_r=p["foot_radius"] * mm, actuator_kg=m_act, names=names))
     children = legs + (extra_links(p, bc) if extra_links else [])
     masses = [PointMass("battery_and_electronics", payload_kg)] if payload_kg else []
-    trunk = Link("trunk", pos=bc, log=True, group="body", geoms=[torso, neck, head], masses=masses,
+    trunk = Link("trunk", pos=bc, log=True, group="body", geoms=[torso, neck, head] if with_head else [torso],
+                 masses=masses,
                  children=children)
     return bk.robot(name, trunk, notes, {"geometry": "designs/zoo_specs.py", "actuators": f"ogma.actuators: {key}",
                                          "masses": "body_kit.DENSITY × shape volumes + listed payload"})

@@ -26,8 +26,9 @@ P = {"pelvis_width": 260.0, "pelvis_depth": 150.0, "pelvis_height": 110.0, "tors
 PARTS_KG = {"battery 14S 10 Ah": 4.2, "computer, IMU, cameras": 1.2, "frame and wiring": 3.0}
 
 
-def talia(name: str = "Talia"):
-    p = P
+def talia(name: str = "Talia", overrides: dict | None = None, notes: str | None = None):
+    """Talia (or a variant: ``overrides`` of ``P`` [mm])."""
+    p = dict(P, **(overrides or {}))
     leg_servo, arm_servo = bk.servo("qdd 60 Nm", kp=300.0, kd=3.0), bk.servo("qdd 24 Nm", kp=60.0, kd=0.8)
     act_leg, act_arm = 0.65, 0.48
     Wp, Dp, Hp = p["pelvis_width"] * mm, p["pelvis_depth"] * mm, p["pelvis_height"] * mm
@@ -92,5 +93,4 @@ def talia(name: str = "Talia"):
     sources = {"geometry": "designs/humanoid.py (Humanoid parameter defaults)",
                "masses": "body_kit.DENSITY × shape volumes + humanoid_robot.PARTS_KG",
                "actuators": "ogma.actuators: qdd 60 Nm (legs, waist), qdd 24 Nm (arms)"}
-    r = bk.robot(name, pelvis, "Talia: 1.56 m biped humanoid, 21 actuated joints (design stage).", sources)
-    return r
+    return bk.robot(name, pelvis, notes or "Talia: 1.56 m biped humanoid, 21 actuated joints (design stage).", sources)
