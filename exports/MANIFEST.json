@@ -272,7 +272,7 @@
    "visual_triangles": 5206
   },
   "zoo_snake": {
-   "bytes": 334812,
+   "bytes": 335249,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -283,14 +283,14 @@
    "lab": "legged",
    "links": 33,
    "mass_kg": 14.8813,
-   "sha256": "b20c5b95344a26f35b7f2067ed565228e8f2270ffb3670de17555654a36eda72",
+   "sha256": "366c80aa1ac5621a802b91f676d28dc33fb3aade3049f1432f7c2ab458034f82",
    "visual_triangles": 3960
   }
  },
- "published": "2026-10-29T10:45:28Z",
+ "published": "2026-10-29T10:55:43Z",
  "vegeta": {
   "branch": "dev_zoomorphic",
-  "commit": "c1f8f54448bacf31148841d8cecced94009f8a63",
+  "commit": "89d4ce382dec8a33a4c57a87c1adbbb2bff7f624",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
