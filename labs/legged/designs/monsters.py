@@ -7,6 +7,8 @@ from vegeta.dedalus import Design, Parameter
 import monster_specs as ms
 import shape_kit as sk
 import zoo_specs as zs
+import fantasy_humanoid_specs as fh
+import fantasy_humanoids as fhu
 from humanoid import Humanoid
 from zoo_others import Octopus, Snake
 from zoo_quadruped import Deer, Dog, Quadruped, parameters_of
@@ -204,32 +206,26 @@ class Wraith(Design):
         return sk.union_all([env, gon] + fins + struts + [self.arm(p, i) for i in range(int(p["arms"]))])
 
 
-_GHOUL_EXTRA = [Parameter("claw_length", ms.GHOUL["claw_length"], "mm", min=0, description="three claws per hand"),
+_GHOUL_EXTRA = [Parameter("pincer_length", fh.PINCER["pincer_length"], "mm", min=20, description="each jaw"),
+                Parameter("pincer_open_deg", fh.PINCER["pincer_open_deg"], "deg", min=0, max=60,
+                          description="each jaw out from the forearm's line"),
                 Parameter("ridge_spikes", ms.GHOUL["ridge_spikes"], "", min=0, description="spikes down the spine")]
 
 
 class Ghoul(Humanoid):
-    """The ghoul: Talia the humanoid gone feral — a narrow waist, thin legs bent deep at the knee, long arms with
-    three claws on each hand, a small head with big eyes and a ridge of spikes down the back."""
+    """The ghoul: Talia the humanoid gone feral — a narrow waist, thin legs bent deep at the knee, long arms ending
+    in a pincer each (two hooked, toothed jaws past the hand, ``fantasy_humanoids.pincer``), a small head with big
+    eyes and a ridge of spikes down the back."""
 
     parameters = sk.with_defaults(Humanoid.parameters, **{k: v for k, v in ms.GHOUL.items()
-                                                           if k not in ("claw_length", "ridge_spikes")}) + _GHOUL_EXTRA
+                                                           if k not in ("ridge_spikes",)}) + _GHOUL_EXTRA
 
     def build(self, p):
         robot = super().build(p)
         if p["part"] != "humanoid":
             return robot
         hh = self.hip_height(p)
-        zs_ = hh + p["pelvis_height"] / 2 + p["torso_height"] - p["arm_diameter"] * 0.6
-        e = math.radians(p["elbow_bend_deg"])
-        extra = []
-        for sy in (-1, 1):
-            y = sy * (p["torso_width"] / 2 + 10 + p["arm_diameter"] * 0.5)
-            hx = p["forearm_length"] * math.sin(e)
-            hz = zs_ - p["upper_arm_length"] - p["forearm_length"] * math.cos(e) - p["arm_diameter"] * 0.6
-            for k in (-1, 0, 1):
-                extra.append(sk.capsule((hx, y + k * 14, hz), (hx + p["claw_length"] * 0.5, y + k * 22,
-                                                                hz - p["claw_length"]), 6.0))
+        extra = [fhu.pincer(p, sy, p["pincer_length"], p["pincer_open_deg"]) for sy in (-1, 1)]
         n = int(p["ridge_spikes"])
         z0 = hh + p["pelvis_height"] / 2
         for i in range(n):

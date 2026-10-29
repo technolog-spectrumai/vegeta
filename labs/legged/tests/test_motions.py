@@ -19,8 +19,9 @@ MOTIONS = {"humanoid_motions": {"walk", "wave"},
            "monster_motions:wolf": {"walk", "trot", "bound"}, "monster_motions:leshy": {"walk", "trot"},
            "monster_motions:centaur": {"walk", "trot", "reach", "wave"},
            "monster_motions:leech": {"inchworm", "swim"}, "monster_motions:wraith": {"drift", "grab"},
-           "monster_motions:ghoul": {"shamble", "lunge"}, "monster_motions:wyvern": {"hover", "grab"},
-           "fantasy_motions:chest": {"open", "close"}}
+           "monster_motions:ghoul": {"shamble", "lunge", "pinch"}, "monster_motions:wyvern": {"hover", "grab"},
+           "fantasy_motions:chest": {"open", "close"},
+           "fantasy_humanoid_motions:ork": {"stomp", "sweep", "block"}}
 
 
 class _Mod:
@@ -60,7 +61,7 @@ def test_checks(machine):
 def test_block(machine):
     _, mod, _, ms = machine
     b = mod.parts(None)
-    assert b["tags"] == {"data:motions*": "motion"}
+    assert b["tags"]["data:motions*"] == "motion"
     data = b["motions"]
     assert data["format"] == "vegeta-motions/1" and set(data["motions"]) == {m.name for m in ms}
     for d in data["motions"].values():

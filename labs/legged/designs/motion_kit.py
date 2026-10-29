@@ -240,7 +240,7 @@ def joint_cycle(kin, name, fn, *, period, frames=32, loop=True, kind="cycle", so
         for j, v in fn(t).items():
             q[kin.index[j]] = v
         Q.append(np.clip(q, kin.lo, kin.hi))
-    raw = [[fn(t).get(j, 0.0) for j in kin.names] for t in ts]
+    raw = [[fn(t).get(j, kin.q0[k]) for k, j in enumerate(kin.names)] for t in ts]
     clipped = float(np.max(np.abs(np.asarray(raw) - np.asarray(Q))))
     joints = _moving(kin, Q)
     cols = [kin.index[j] for j in joints]
@@ -250,11 +250,14 @@ def joint_cycle(kin, name, fn, *, period, frames=32, loop=True, kind="cycle", so
 
 
 def ik_transition(kin, name, keyposes, *, duration, frames=24, loop=False, source="", params=None, joints=None,
-                  extra=None):
+                  extra=None, q_start=None):
     """A motion through ``keyposes`` = [(fraction of the duration, [(body, local, goal), …]), …] solved by IK and
-    eased between (smooth steps); ``extra(t, q)`` adds direct joint values (a claw closing)."""
+    eased between (smooth steps); ``extra(t, q)`` adds direct joint values (a claw closing); ``q_start``
+    {joint: rad} seeds the first solve (a pose near the goal, past a local minimum)."""
     ts = [duration * i / frames for i in range(frames + (0 if loop else 1))]
     Q, q, worst = [], kin.q0.copy(), 0.0
+    for j, v in (q_start or {}).items():
+        q[kin.index[j]] = v
     joints = joints or kin.actuated
     for t in ts:
         u = t / duration

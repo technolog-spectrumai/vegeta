@@ -9,7 +9,8 @@ an animal or of the humanoid, or a new body plan, with its parameter defaults [m
 * **Hirudo** (giant leech) — Naga the snake: fewer, fatter, flattened segments, a sucker at each end;
 * **Leshy** (forest spirit) — Cerva the deer: taller, a long beard of twigs and huge branching antlers;
 * **Wraith** — a helium balloon with a gondola and octopus arms hanging from it;
-* **Ghoul** — Talia the humanoid: thin limbs, long clawed arms, deeply bent knees, a dorsal ridge.
+* **Ghoul** — Talia the humanoid: thin limbs, long arms with a pincer on each hand, deeply bent knees, a dorsal
+  ridge.
 """
 from __future__ import annotations
 
@@ -60,8 +61,7 @@ GHOUL = {"pelvis_width": 230.0, "torso_width": 280.0, "torso_depth": 150.0, "tor
          "hip_spacing": 160.0, "thigh_length": 400.0, "shin_length": 420.0, "leg_width": 55.0, "leg_thickness": 45.0,
          "joint_boss_diameter": 70.0, "knee_bend_deg": 32.0, "upper_arm_length": 420.0, "forearm_length": 420.0,
          "arm_diameter": 50.0, "elbow_bend_deg": 35.0, "neck_length": 50.0, "head_width": 150.0, "head_depth": 200.0,
-         "head_height": 180.0, "eye_diameter": 40.0, "battery_bay_depth": 0.0, "claw_length": 160.0,
-         "ridge_spikes": 6.0}
+         "head_height": 180.0, "eye_diameter": 40.0, "battery_bay_depth": 0.0, "ridge_spikes": 6.0}
 
 
 # --------------------------------------------------------------------------------------------------- wyvern
