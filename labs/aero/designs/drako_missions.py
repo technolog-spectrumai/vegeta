@@ -32,7 +32,9 @@ def one(args):
     legs, dels = ds.legs(ep), ds.deliveries(ep)
     legs.to_csv(out / f"{name}_legs.csv", index=False)
     dels.to_csv(out / f"{name}_deliveries.csv")
-    ds.plot_mission(ep, scene, out / f"{name}.png", title=f"Drako cargo route, {name}: {WEATHERS[name]}")
+    w = WEATHERS[name]
+    weather = f"{w['speed']:g} m/s from {w['from_deg']:g} deg, gusts {100 * w['gust']:.0f} %" if w["speed"] else "calm"
+    ds.plot_mission(ep, scene, out / f"{name}.png", title=f"Drako, {name}: {weather}")
     (out / f"{name}_mission.json").write_text(json.dumps(ep.log["mission"], indent=0, default=float))
     o = ep.outcome
     return {"weather": name, **WEATHERS[name], "success": o["success"], "reason": o["reason"],
