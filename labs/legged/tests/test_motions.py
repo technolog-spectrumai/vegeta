@@ -19,7 +19,8 @@ MOTIONS = {"humanoid_motions": {"walk", "wave"},
            "monster_motions:wolf": {"walk", "trot", "bound"}, "monster_motions:leshy": {"walk", "trot"},
            "monster_motions:centaur": {"walk", "trot", "reach", "wave"},
            "monster_motions:leech": {"inchworm", "swim"}, "monster_motions:wraith": {"drift", "grab"},
-           "monster_motions:ghoul": {"shamble", "lunge"}, "monster_motions:wyvern": {"hover", "grab"}}
+           "monster_motions:ghoul": {"shamble", "lunge"}, "monster_motions:wyvern": {"hover", "grab"},
+           "fantasy_motions:chest": {"open", "close"}}
 
 
 class _Mod:
