@@ -4,7 +4,8 @@ village, in calm air or in wind.
 **The map** (``Scene``; x east, y north, z up, metres). A valley floor at z = 0 with the **helipad** at the origin; a
 mountain (a 900 m Gaussian peak) north-east whose shoulder carries the **hut** on a levelled pad at about 550 m,
 2.7 km from the helipad; the **village** 1.7 km south-west on a low hill (about 70 m), its landing square between
-houses. Every pad is levelled over 25 m and blended into the slope by 45 m. MuJoCo sees the terrain as a height field
+houses. Every pad is levelled over 25 m, blended into the slope by 45 m, and carries a 30 x 30 m concrete slab
+(``SLAB``: totes and skids stand on box contacts, which MuJoCo resolves without the jitter a box shows on the height field). MuJoCo sees the terrain as a height field
 every 10 m (``CELL_M``); the pads, houses, the hut and trees are scenery boxes and cylinders.
 
 **The packages** (``Scene.packages``): totes of 600 x 400 x 350 mm waiting in a row east of each pad's centre (Drako hops over to one, and delivers on the centre) — medical supplies (10 kg) at the
@@ -42,6 +43,7 @@ from ogma import rotors
 
 RHO0, G = 1.225, 9.81
 CELL_M = 10.0
+SLAB = (15.0, 0.05)                              # m: each pad a concrete slab, half-side and thickness, on the levelled ground
 CDA_BODY, CDA_TOTE = 0.25, 0.15                  # m^2: Drako.sizing's cda_body, cda_package (drako_cfd measures them)
 TOTE = (0.60, 0.40, 0.35)                        # m: the tote Drako's cradle is drawn for
 #: 4 ms physics, the flight controller at 83 Hz; elliptic friction cones with a high impedance ratio and the no-slip
@@ -151,13 +153,21 @@ class Scene:
         return z
 
     def pad(self, name) -> tuple:
+        """The pad's centre on its slab's top."""
         x, y = self.pads[name]
-        return (x, y, float(self._pad_z[name]))
+        return (x, y, float(self._pad_z[name]) + SLAB[1])
+
+    def surface(self, x, y) -> float:
+        """What stands under (x, y): a pad's slab top, or the terrain."""
+        for k, (cx, cy) in self.pads.items():
+            if abs(x - cx) <= SLAB[0] and abs(y - cy) <= SLAB[0]:
+                return float(self._pad_z[k]) + SLAB[1]
+        return float(self.height(x, y))
 
     def spot(self, package) -> tuple:
         """Where a package waits (and where Drako lands to latch it)."""
         x, y = self.package_xy[package]
-        return (x, y, float(self.height(x, y)))
+        return (x, y, self.surface(x, y))
 
     def terrain(self) -> ch.Custom:
         return ch.Custom(self.height, name="drako valley, mountain and village")
@@ -176,11 +186,13 @@ def scenery(scene: Scene) -> list:
     """Pads (discs with an H), the hut, the village's houses round its square, a few trees; fixed, drawn and colliding."""
     out = []
     for k, name in enumerate(scene.pads):
-        x, y, z = scene.pad(name)
-        g = [ch.Geom(f"{name}_pad", "cylinder", (6.0, 0.02), pos=(0, 0, 0.02), role="visual", rgba=(0.30, 0.30, 0.32, 1.0)),
-             ch.Geom(f"{name}_H1", "box", (0.3, 2.0, 0.005), pos=(-1.2, 0, 0.045), role="visual", rgba=(1, 1, 1, 1)),
-             ch.Geom(f"{name}_H2", "box", (0.3, 2.0, 0.005), pos=(1.2, 0, 0.045), role="visual", rgba=(1, 1, 1, 1)),
-             ch.Geom(f"{name}_H3", "box", (1.2, 0.3, 0.005), pos=(0, 0, 0.045), role="visual", rgba=(1, 1, 1, 1))]
+        x, y, z = scene.pad(name)                                       # z: the slab's top
+        a, t = SLAB
+        g = [ch.Geom(f"{name}_slab", "box", (a, a, t / 2), pos=(0, 0, -t / 2), rgba=(0.62, 0.62, 0.60, 1.0)),
+             ch.Geom(f"{name}_ring", "cylinder", (6.0, 0.002), pos=(0, 0, 0.002), role="visual", rgba=(0.30, 0.30, 0.32, 1.0)),
+             ch.Geom(f"{name}_H1", "box", (0.3, 2.0, 0.002), pos=(-1.2, 0, 0.005), role="visual", rgba=(1, 1, 1, 1)),
+             ch.Geom(f"{name}_H2", "box", (0.3, 2.0, 0.002), pos=(1.2, 0, 0.005), role="visual", rgba=(1, 1, 1, 1)),
+             ch.Geom(f"{name}_H3", "box", (1.2, 0.3, 0.002), pos=(0, 0, 0.005), role="visual", rgba=(1, 1, 1, 1))]
         out.append(ch.Prop(ch.Link(f"{name}_site", pos=(x, y, z), geoms=g)))
     hx, hy, hz = scene.pad("hut")
     out.append(ch.Prop(ch.Link("hut", pos=(hx - 15, hy + 12, hz), geoms=[
@@ -370,7 +382,8 @@ def run(lab, scene: Scene, plan: dcn.Plan | None = None, duration: float = 2400.
                           name=f"Drako cargo, wind {scene.wind.speed:g} m/s", plan=plan)
     lab.scene = scene
     start = scene.pad(plan.route[0][0])
-    ep = lab.run(mission, duration=duration, rules=None, settle=1.0, seed=seed, base_pos=tuple(start[:2]),
+    base = (start[0], start[1], start[2] + lab.nominal_base_height + 0.005)     # on the slab, not the terrain under it
+    ep = lab.run(mission, duration=duration, rules=None, settle=1.0, seed=seed, base_pos=base,
                  info={"controller": mission.name, "treatment": f"wind {scene.wind.speed:g}"},
                  stop_when=lambda lab_: mission.finished)
     ep.log["mission"] = [list(x) for x in mission.log]

@@ -19,7 +19,7 @@ def test_pads_are_level_and_the_route_clears_the_terrain():
     for n in sc.pads:
         x, y, z = sc.pad(n)
         ring = sc.height(x + 20 * np.cos(np.linspace(0, 6.28, 12)), y + 20 * np.sin(np.linspace(0, 6.28, 12)))
-        assert np.allclose(ring, z, atol=1e-6)
+        assert np.allclose(ring, z - ds.SLAB[1], atol=1e-6)                     # the slab stands on level ground
     hut = sc.pad("hut")[2]
     assert 450 < hut < 650 and 40 < sc.pad("village")[2] < 120
     alt = dcn.cruise_altitude(sc, sc.pad("helipad")[:2], sc.pad("hut")[:2], dcn.Plan())
@@ -44,7 +44,7 @@ def test_rho_falls_with_altitude():
 def test_drako_latches_the_tote_and_lifts_it():
     sc = ds.Scene()
     lab = ds.make_lab(sc)
-    ep = ds.run(lab, sc, duration=42.0)                                            # hop over the tote, latch, climb
+    ep = ds.run(lab, sc, duration=50.0)                                            # hop over the tote, align, latch, climb
     log = ep.log["mission"]
     assert any("medical latched" in note for _, _, note in log)
     i = ep.log["props"].index("medical")

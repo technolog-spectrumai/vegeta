@@ -208,6 +208,10 @@ class Plan:
     latch_retries: int = 2
     swap_battery_at: tuple = ("helipad",)
     abort_soc: float = 0.10
+    align_m: float = 0.10
+    align_tol_m: float = 0.05
+    align_s: float = 1.0
+    abort_tol_m: float = 0.12
     hop_alt_m: float = 6.0
     v_hop: float = 1.5
 
@@ -224,11 +228,34 @@ def cruise_altitude(scene, a, b, plan: Plan) -> float:
     return float(np.max(scene.height(P[:, 0], P[:, 1]))) + plan.clearance_m
 
 
-def _touchdown(plan, label):
+def _touchdown(plan, label, over=None):
+    """Down at ``v_touchdown`` until the skids carry Drako. ``over`` (x, y, z of the ground under a tote): first hold
+    ``align_m`` above the tote's top until within ``align_tol_m`` of it for ``align_s``; on the way down, a gust that
+    puts Drako more than ``abort_tol_m`` off sends it back up to that hold."""
     def start(m, obs):
         m.state["held"] = 0.0
+        m.state["aligned"] = 0.0 if over is not None else None
 
     def update(m, obs, tau):
+        p = np.asarray(obs.base_pos, float)
+        if over is not None:
+            err = math.hypot(p[0] - over[0], p[1] - over[1])
+            z_hold = over[2] + m.leg_h + plan.align_m
+            if m.state["aligned"] is not None and m.state["aligned"] < plan.align_s:
+                if m.ref.p[2] < z_hold - 1e-6:                            # back up after a gust: at the climb speed
+                    m.ref.p[2] = min(z_hold, m.ref.p[2] + plan.v_touchdown * m.lab.control_dt)
+                m.ref.p[:2] = over[:2]
+                m.ref.v, m.ref.a = np.zeros(3), np.zeros(3)
+                speed = float(np.linalg.norm(obs.body_linvel[0]))
+                ok = err < plan.align_tol_m and speed < 0.15 and abs(p[2] - z_hold) < 0.1
+                m.state["aligned"] = m.state["aligned"] + m.lab.control_dt if ok else 0.0
+                return False
+            if err > plan.abort_tol_m and float(np.sum(obs.foot_normal_force)) < 0.3 * m.mass * G:
+                m.state["aligned"], m.state["held"] = 0.0, 0.0
+                m.state["realign"] = m.state.get("realign", 0) + 1
+                m.note(obs, f"blown {err:.2f} m off the tote: back up to realign")
+                return False
+            m.ref.p[:2] = over[:2]
         v = plan.v_touchdown
         m.ref.v, m.ref.a = np.array([0.0, 0.0, -v]), np.zeros(3)
         m.ref.p = m.ref.p + m.ref.v * m.lab.control_dt
@@ -259,7 +286,7 @@ def emergency_phases(plan: Plan) -> list:
     """Down where Drako is to the approach height above the terrain, touch down, spool down (the map is known)."""
     def target(m, obs):
         p = np.asarray(obs.base_pos, float)
-        return np.array([p[0], p[1], float(m.lab.scene.height(p[0], p[1])) + m.leg_h + plan.approach_m])
+        return np.array([p[0], p[1], m.lab.scene.surface(p[0], p[1]) + m.leg_h + plan.approach_m])
     st, up = _move(target, plan.v_descent, plan.a_vertical, settle_tol=1.0, max_extra=60.0)
     out = [Phase("emergency descent", up, st, 600.0)]
     st, up = _touchdown(plan, "(emergency)")
@@ -347,8 +374,11 @@ def mission(scene, plan: Plan | None = None) -> list:
         st, up = _move(lambda m, obs, to=to: np.array([to[0], to[1], to[2] + m.leg_h + plan.hop_alt_m]),
                        plan.v_hop, plan.a_vertical, settle_tol=0.08, max_extra=10.0)
         out.append(Phase(f"hop over the {pkg}", up, st, 60.0))
-        st, up = _touchdown(plan, f"over the {pkg}")
-        out.append(Phase(f"land over the {pkg}", up, st, 60.0))
+        st, up = _move(lambda m, obs, to=to: np.array([to[0], to[1], to[2] + m.leg_h + plan.align_m]),
+                       plan.v_touchdown * 2, plan.a_vertical, settle_tol=0.08, max_extra=20.0)
+        out.append(Phase(f"down to the {pkg}", up, st, 60.0))
+        st, up = _touchdown(plan, f"over the {pkg}", over=to)
+        out.append(Phase(f"land over the {pkg}", up, st, 180.0))
         st, up = _spool_down()
         out.append(Phase(f"spool down over the {pkg}", up, st, 900.0))
         return out
