@@ -113,7 +113,8 @@ def latch_servo() -> Servo:
                  source=f"{a.key}: {a.source}")
 
 
-def drako(overrides: dict | None = None, *, name: str = "Drako") -> Robot:
+def drako(overrides: dict | None = None, *, name: str = "Drako", latch_contact: bool = True) -> Robot:
+    """``latch_contact`` False draws the hooks without contacts (a scenario that holds the package by a weld)."""
     p = design_params(overrides)
     mm = 1e-3
     m = mass_budget(p)
@@ -171,9 +172,9 @@ def drako(overrides: dict | None = None, *, name: str = "Drako") -> Robot:
         latches.append(Link(name_, joints=[Joint(f"{name_}_hinge", "hinge", axis=(-sy, 0.0, 0.0), pos=(x, y, zc - b / 2),
                                                  range=(-0.05, LATCH_OPEN_RAD + 0.05), tag="latch", servo=latch_servo())],
                             geoms=[Geom(f"{name_}_arm", "box", (0.015, 0.003, 0.020), pos=(x, y, zc - b / 2 - 0.020),
-                                        mass=hook_kg * 0.7, role="link", rgba=RED),
+                                        mass=hook_kg * 0.7, role="link" if latch_contact else "visual", rgba=RED),
                                    Geom(f"{name_}_tip", "box", (0.015, 0.006, 0.003), pos=(x, y - sy * 0.006, zc - b / 2 - 0.037),
-                                        mass=hook_kg * 0.3, role="link", rgba=RED)]))
+                                        mass=hook_kg * 0.3, role="link" if latch_contact else "visual", rgba=RED)]))
     robot = Robot(name, Link("drako", log=True, geoms=geoms, masses=masses, children=latches), feet=feet,
                   nominal_qpos={f"{n}_hinge": 0.0 for n in LATCHES},
                   notes="Drako: heavy-lift cargo hexacopter, 1650 mm, 6 x 30-inch, 12S 60 Ah; payload up to 15 kg (not a link)",
