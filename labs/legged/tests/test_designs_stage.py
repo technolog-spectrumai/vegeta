@@ -4,8 +4,19 @@ import pytest
 
 import body_kit  # noqa: F401
 import humanoid_robot as hr
+import zoo_robots as zr
 
-ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0))}
+#: name -> (builder, actuated joints, mass range [kg])
+ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
+          "zoo_dog": (zr.dog, 16, (15.0, 35.0)), "zoo_bear": (zr.bear, 12, (60.0, 160.0)),
+          "zoo_deer": (zr.deer, 16, (20.0, 50.0)), "zoo_elephant": (zr.elephant, 28, (400.0, 1200.0)),
+          "zoo_snake": (zr.snake, 32, (8.0, 25.0)), "zoo_bat": (zr.bat, 14, (1.0, 4.0)),
+          "zoo_octopus": (zr.octopus, 128, (25.0, 70.0))}
+
+#: CAD designs that must build as one valid solid: (module, class, overrides)
+CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + \
+      [("zoo_others", "Snake", {}), ("zoo_others", "Bat", {}), ("zoo_others", "Bat", {"fold": 1.0}),
+       ("zoo_others", "Octopus", {})]
 
 
 @pytest.mark.parametrize("name", sorted(ROBOTS))
@@ -26,3 +37,21 @@ def test_humanoid_cad():
     for part in ("humanoid", "trunk", "thigh", "shin", "foot"):
         assert d.generate(part=part).measure()["valid"]
     assert humanoid.Humanoid.total_height(defaults) == pytest.approx(1559.1, abs=0.1)
+
+
+@pytest.mark.parametrize("mod,cls,kw", CAD, ids=lambda v: str(v))
+def test_cad_builds(mod, cls, kw):
+    pytest.importorskip("cadquery")
+    import importlib
+
+    m = getattr(importlib.import_module(mod), cls)().generate(**kw).measure()
+    assert m["valid"] and m["n_solids"] == 1
+
+
+def test_registered():
+    from pathlib import Path
+
+    from vegeta.labkit import machines
+
+    machines.discover(Path(__file__).resolve().parents[1] / "designs")
+    assert set(ROBOTS) <= set(machines.names())

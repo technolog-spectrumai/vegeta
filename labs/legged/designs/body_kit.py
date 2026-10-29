@@ -16,7 +16,7 @@ from vegeta.chiron import FootSpec, Geom, Joint, Link, PointMass, Robot, Servo
 from ogma import actuators as act
 
 __all__ = ["DENSITY", "servo", "box_mass", "capsule_mass", "sphere_mass", "box", "capsule", "sphere", "chain",
-           "feet_of", "robot"]
+           "feet_of", "robot", "chain_through", "scaled"]
 
 #: kg/m³ of the printed and machined parts (shells are solid-equivalent densities: a printed part at ~40 % infill).
 DENSITY = {"shell": 450.0, "limb": 600.0, "foam": 60.0, "rubber": 1100.0}
@@ -110,3 +110,39 @@ def feet_of(root: Link, body: str) -> list:
 
 def robot(name: str, root: Link, notes: str, sources: dict) -> Robot:
     return Robot(name, root, feet=feet_of(root, root.name), notes=notes, sources=sources)
+
+
+def chain_through(prefix: str, points, axes, radii, *, origin=(0.0, 0.0, 0.0), servo: Servo | None = None,
+                  foot_r: float | None = None, rho=DENSITY["limb"], actuator_kg: float = 0.0,
+                  joint_range=(-1.6, 1.6), names=None) -> Link:
+    """A serial chain through ``points`` [m, world frame; ``origin`` = the parent link's world position]: link i has a hinge
+    (or two, if ``axes[i]`` is a list) at points[i] and a capsule of ``radii[i]`` to points[i+1]. ``foot_r``: a
+    foot sphere (role 'foot', named ``prefix``) at the last point. Joint names ``f'{prefix}_{names[i]}'`` (default
+    ``j0``, ``j1``, …; a two-axis joint gets ``_a``/``_b``)."""
+    n = len(points) - 1
+    names = names or [f"j{i}" for i in range(n)]
+    links = []
+    for i in range(n):
+        a, b = points[i], points[i + 1]
+        rel = tuple(b[k] - a[k] for k in range(3))
+        ax = axes[i] if isinstance(axes[i], list) else [axes[i]]
+        joints = [Joint(f"{prefix}_{names[i]}" + ("" if len(ax) == 1 else "_" + "ab"[k]), axis=tuple(x),
+                        range=joint_range, tag=names[i], servo=servo, leg=prefix if foot_r else None)
+                  for k, x in enumerate(ax)]
+        geoms = [capsule(f"{prefix}_{names[i]}_seg", radii[min(i, len(radii) - 1)], (0, 0, 0), rel, rho=rho)]
+        masses = [PointMass(f"{prefix}_{names[i]}_actuator", actuator_kg * len(ax))] if actuator_kg else []
+        links.append(Link(f"{prefix}_{names[i]}_link", pos=tuple(a[k] - (points[i - 1][k] if i else origin[k])
+                                                                 for k in range(3)),
+                          joints=joints, geoms=geoms, masses=masses))
+    if foot_r:
+        tip = tuple(points[-1][k] - points[-2][k] for k in range(3))
+        links[-1].geoms.append(Geom(prefix, "sphere", (foot_r,), pos=tip, mass=sphere_mass(foot_r, DENSITY["rubber"]),
+                                    role="foot", friction=(0.8, 0.005, 0.0001), rgba=BLACK))
+    for i in range(n - 1, 0, -1):
+        links[i - 1].children.append(links[i])
+    return links[0]
+
+
+def scaled(points, s=1e-3):
+    """mm → m."""
+    return [tuple(c * s for c in p) for p in points]
