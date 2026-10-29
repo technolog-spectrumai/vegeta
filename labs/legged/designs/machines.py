@@ -4,7 +4,17 @@ from vegeta.labkit import machines
 machines.register("apheloria", "apheloria_robot:apheloria")
 machines.register("myropod", "myropod_robot:cleopatra")
 machines.register("robot_dog", "robot_dog_robot:dog_robot")
-machines.register("humanoid", "humanoid_robot:talia", visual="humanoid:Humanoid")
+
+
+def _motions(module):
+    """The machine's motions (``<module>.parts``: ``data:motions``, tag ``motion``), imported when exported."""
+    def parts(m):
+        import importlib
+        return importlib.import_module(module).parts(m)
+    return parts
+
+
+machines.register("humanoid", "humanoid_robot:talia", parts=_motions("humanoid_motions"), visual="humanoid:Humanoid")
 
 # zoomorphic designs (design stage: CAD + robot model, no simulation yet)
 machines.register("zoo_dog", "zoo_robots:dog", visual="zoo_quadruped:Dog")
