@@ -35,10 +35,17 @@ machines.register("zoo_octopus", "zoo_robots:octopus", parts=_motions("zoo_motio
                   visual="zoo_others:Octopus")
 
 # monsters (design stage: CAD + robot model, no simulation yet)
-machines.register("monster_wolf", "monster_robots:wolf", visual="monsters:Wolf")
-machines.register("monster_wyvern", "monster_robots:wyvern", visual="monsters:Wyvern")
-machines.register("monster_centaur", "monster_robots:centaur", visual="monsters:Centaur")
-machines.register("monster_leech", "monster_robots:leech", visual="monsters:Leech")
-machines.register("monster_leshy", "monster_robots:leshy", visual="monsters:Leshy")
-machines.register("monster_wraith", "monster_robots:wraith", visual="monsters:Wraith")
-machines.register("monster_ghoul", "monster_robots:ghoul", visual="monsters:Ghoul")
+machines.register("monster_wolf", "monster_robots:wolf", parts=_motions("monster_motions:parts_wolf"),
+                  visual="monsters:Wolf")
+machines.register("monster_wyvern", "monster_robots:wyvern", parts=_motions("monster_motions:parts_wyvern"),
+                  visual="monsters:Wyvern")
+machines.register("monster_centaur", "monster_robots:centaur", parts=_motions("monster_motions:parts_centaur"),
+                  visual="monsters:Centaur")
+machines.register("monster_leech", "monster_robots:leech", parts=_motions("monster_motions:parts_leech"),
+                  visual="monsters:Leech")
+machines.register("monster_leshy", "monster_robots:leshy", parts=_motions("monster_motions:parts_leshy"),
+                  visual="monsters:Leshy")
+machines.register("monster_wraith", "monster_robots:wraith", parts=_motions("monster_motions:parts_wraith"),
+                  visual="monsters:Wraith")
+machines.register("monster_ghoul", "monster_robots:ghoul", parts=_motions("monster_motions:parts_ghoul"),
+                  visual="monsters:Ghoul")

@@ -15,7 +15,11 @@ MOTIONS = {"humanoid_motions": {"walk", "wave"},
            "zoo_motions:elephant": {"walk", "trunk_swing", "trunk_lift"},
            "zoo_motions:snake": {"slither", "sidewind"}, "zoo_motions:bat": {"fold", "unfold", "flap"},
            "zoo_motions:octopus": {"crawl", "pulse", "reach"},
-           "myriapod_motions:cleopatra": {"walk", "turn"}, "myriapod_motions:apheloria": {"walk", "curl", "uncurl"}}
+           "myriapod_motions:cleopatra": {"walk", "turn"}, "myriapod_motions:apheloria": {"walk", "curl", "uncurl"},
+           "monster_motions:wolf": {"walk", "trot", "bound"}, "monster_motions:leshy": {"walk", "trot"},
+           "monster_motions:centaur": {"walk", "trot", "reach", "wave"},
+           "monster_motions:leech": {"inchworm", "swim"}, "monster_motions:wraith": {"drift", "grab"},
+           "monster_motions:ghoul": {"shamble", "lunge"}, "monster_motions:wyvern": {"hover", "grab"}}
 
 
 class _Mod:
@@ -45,7 +49,7 @@ def test_checks(machine):
     for m in ms:
         c = m.check
         assert c.get("ik_error_max_m", 0.0) < 0.005, (m.name, c)
-        assert c["limit_margin_min_rad"] >= 0.0, (m.name, c)
+        assert m.kind == "rates" or c["limit_margin_min_rad"] >= 0.0, (m.name, c)
         assert c.get("clipped_max_rad", 0.0) < 1e-6, (m.name, c)
         assert c.get("stance_height_spread_m", 0.0) < 0.005, (m.name, c)
         assert np.all(np.isfinite(m.Q)) and m.Q.shape == (len(m.t), len(m.joints))
@@ -85,3 +89,15 @@ def test_myriapod_gait_is_the_controllers():
     assert walk.period == pytest.approx(p.stride / p.v_target)
     assert {f["duty"] for f in walk.feet.values()} == {p.duty}
     assert turn.base["velocity_m_s"][2] < 0                     # the longer left stride turns it right
+
+
+def test_wyvern_hovers_on_its_weight():
+    import monster_motions as mm
+
+    kin, ms = mm.motions_wyvern()
+    hover = {m.name: m for m in ms}["hover"]
+    w = hover.rates
+    assert len(w) == 6 and sum(1 for v in w.values() if v > 0) == 3                 # three each way: no net torque
+    n = abs(w["rotor0_spin"]) / (2 * np.pi)
+    D = 2 * mm.ms.WYVERN["rotor_radius"] * 1e-3
+    assert 6 * mm.C_T * mm.RHO * n ** 2 * D ** 4 == pytest.approx(kin.robot.total_mass() * 9.81, rel=1e-9)
