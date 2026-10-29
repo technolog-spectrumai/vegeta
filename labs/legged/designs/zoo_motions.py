@@ -94,6 +94,14 @@ def motions_elephant(robot=None):
 
 
 # ------------------------------------------------------------------------------------------------- snake
+def _rz(a):
+    return np.array([[math.cos(a), -math.sin(a), 0.0], [math.sin(a), math.cos(a), 0.0], [0.0, 0.0, 1.0]])
+
+
+def _ry(a):
+    return np.array([[math.cos(a), 0.0, math.sin(a)], [0.0, 1.0, 0.0], [-math.sin(a), 0.0, math.cos(a)]])
+
+
 def serpenoid(kin, p, name, *, alpha=0.5, waves=1.5, period=2.0, pitch=0.0, pitch_lag=math.pi / 2, sideways=False,
               source="zoo_motions.serpenoid"):
     """Hirose's serpenoid: joint i turns α sin(ωt − iβ) relative to its neighbour (β = 2π · waves / n), measured
@@ -118,26 +126,34 @@ def serpenoid(kin, p, name, *, alpha=0.5, waves=1.5, period=2.0, pitch=0.0, pitc
                     "keyframe, keeping the body's mean axis still (the head wags, the body does not swing)"}
     m = mk.joint_cycle(kin, name, fn, period=period, base=base, source=source,
                        params={"alpha_rad": alpha, "waves_on_body": waves, "pitch_rad": pitch})
-    yaw = []
+    yaw, pit = [], []
     for t in m.t:                                                         # segment headings relative to the head
-        h, hs = 0.0, []
+        h, e, hs, es = 0.0, 0.0, [], []
         for i in range(n):
             h += alpha * math.sin(w * t - i * beta)
+            e += pitch * math.sin(w * t - i * beta - pitch_lag)
             hs.append(h)
-        yaw.append(round(-sum(hs) / n, 5))
-    m.base["yaw_rad"] = yaw
-    if pitch:                                                             # lift the base so the lowest segment
+            es.append(e)
+        yaw.append(-sum(hs) / n)
+        pit.append(-sum(es) / n)
+    m.base["yaw_rad"] = [round(v, 5) for v in yaw]
+    if pitch:                                                             # level the body's mean, then lift the
+        m.base["pitch_rad"] = [round(v, 5) for v in pit]                  # base so its lowest segment rests on
         r = [(p["body_radius"] + (p["tail_radius"] - p["body_radius"]) * i / max(n - 1, 1)) * mm for i in range(n)]
-        dz = []                                                           # rests on the ground, none below it
+        dz = []                                                           # the ground, none below it
         for k in range(len(m.t)):
             q = kin.q0.copy()
             for j, v in zip(m.joints, m.Q[k]):
                 q[kin.index[j]] = v
             kin.set(q)
-            z = [kin.data.xpos[kin.body(f"seg_{i:02d}_link")][2] for i in range(n)]
+            o = kin.data.xpos[kin.body("head")]
+            R = _rz(yaw[k]) @ _ry(pit[k])
+            z = [(o + R @ (kin.data.xpos[kin.body(f"seg_{i:02d}_link")] - o))[2] for i in range(n)]
             dz.append(round(max(ri - zi for ri, zi in zip(r, z)), 5))
         m.base["z_offset_m"] = dz
-        m.base["note"] += "; z_offset_m: the base raised per keyframe so the lowest segment touches the ground"
+        m.base["note"] += ("; pitch_rad: the head's pitch per keyframe, levelling the body's mean; z_offset_m: the "
+                           "base raised per keyframe so the lowest segment touches the ground (yaw, then pitch, about "
+                           "the head)")
     return m
 
 
