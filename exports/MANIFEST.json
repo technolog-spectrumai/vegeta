@@ -1,6 +1,21 @@
 {
  "format": "vegeta-exports/1",
  "machines": {
+  "apheloria": {
+   "bytes": 1003979,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "apheloria.yx2",
+   "joints": 104,
+   "lab": "legged",
+   "links": 105,
+   "mass_kg": 33.116,
+   "sha256": "5026fe16b9d1745dd6a9f20855b56ea9379f95250a3399b3c3d717ad2cb90c2c",
+   "visual_triangles": 5584
+  },
   "drako": {
    "bytes": 202123,
    "consumers": {
@@ -30,6 +45,141 @@
    "mass_kg": 0.5869,
    "sha256": "664e4f2245f7dcda7d6cd2b7745a0f223ddd7a7283e630661bc207fd7c569649",
    "visual_triangles": 4316
+  },
+  "humanoid": {
+   "bytes": 324045,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "humanoid.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 44.3847,
+   "sha256": "ec4f515c58a6e3238b5c6e4d3539cdea16ee65c6c3f83be78d7495377d83a608",
+   "visual_triangles": 5372
+  },
+  "monster_centaur": {
+   "bytes": 348925,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_centaur.yx2",
+   "joints": 24,
+   "lab": "legged",
+   "links": 25,
+   "mass_kg": 154.4225,
+   "sha256": "69c48ff63c05ec73de7c5bd488a97a88c2b7e33553fda7105eb5cb4dc8ce9120",
+   "visual_triangles": 4944
+  },
+  "monster_ghoul": {
+   "bytes": 333947,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_ghoul.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 39.5183,
+   "sha256": "2e4a4ff621afbc28ef5c6771752263f87733457387535863ab25891628f447bb",
+   "visual_triangles": 5502
+  },
+  "monster_leech": {
+   "bytes": 300063,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_leech.yx2",
+   "joints": 20,
+   "lab": "legged",
+   "links": 21,
+   "mass_kg": 67.559,
+   "sha256": "5fa7545b1043a0087e90bad6d09e64a68135268833f82b5a5f5fa0b7212c0e3e",
+   "visual_triangles": 4680
+  },
+  "monster_leshy": {
+   "bytes": 341404,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_leshy.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 79.0875,
+   "sha256": "b8696de1141aa4c1ae6134211782907bd031bb5c2b216db0fac0f71143b66102",
+   "visual_triangles": 5964
+  },
+  "monster_wolf": {
+   "bytes": 316963,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wolf.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 53.6741,
+   "sha256": "d129ccdc846487542c638151a6915cf8a3e333bc4d20c805a440b634e7583d62",
+   "visual_triangles": 5154
+  },
+  "monster_wraith": {
+   "bytes": 696808,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wraith.yx2",
+   "joints": 96,
+   "lab": "legged",
+   "links": 97,
+   "mass_kg": 31.4783,
+   "sha256": "7b6e1404dc9c161681d5aaad4c2540cd6184be225ceb3dae2a8e75f34f7b9a35",
+   "visual_triangles": 4910
+  },
+  "monster_wyvern": {
+   "bytes": 309400,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "monster_wyvern.yx2",
+   "joints": 14,
+   "lab": "legged",
+   "links": 15,
+   "mass_kg": 33.1414,
+   "sha256": "8684680131f03a79e7bf45da9079e9a3fbe958a1f183d5dfea3843e9ff251a0c",
+   "visual_triangles": 5641
+  },
+  "myropod": {
+   "bytes": 517931,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "myropod.yx2",
+   "joints": 43,
+   "lab": "legged",
+   "links": 44,
+   "mass_kg": 6.1697,
+   "sha256": "f156227e3a5ca418427c839b3510b59d154444d339186cf4a613d932f0dc4d42",
+   "visual_triangles": 5836
   },
   "onager": {
    "bytes": 262978,
@@ -135,12 +285,117 @@
    "mass_kg": 2.0854,
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
+  },
+  "zoo_bat": {
+   "bytes": 194373,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_bat.yx2",
+   "joints": 14,
+   "lab": "legged",
+   "links": 15,
+   "mass_kg": 1.9605,
+   "sha256": "1d048896ada53159c4ba2fd63e72bc2a26795827cefafa14fa05aac08f98f156",
+   "visual_triangles": 2471
+  },
+  "zoo_bear": {
+   "bytes": 296980,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_bear.yx2",
+   "joints": 12,
+   "lab": "legged",
+   "links": 13,
+   "mass_kg": 105.2893,
+   "sha256": "d8239816581345df7f0e45f73ae2be4fea6bf0dab84279932e962115884c3512",
+   "visual_triangles": 5479
+  },
+  "zoo_deer": {
+   "bytes": 327572,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_deer.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 32.087,
+   "sha256": "c60ac169452b3769871b5eab19b402c42a6106af70ed0f2cca28e46c77630a4f",
+   "visual_triangles": 5419
+  },
+  "zoo_dog": {
+   "bytes": 328043,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_dog.yx2",
+   "joints": 16,
+   "lab": "legged",
+   "links": 17,
+   "mass_kg": 23.278,
+   "sha256": "ac1018a5d8ed08e0bd91eab7c5a5d2aec3866943912b7a07554cc62168e5553c",
+   "visual_triangles": 5396
+  },
+  "zoo_elephant": {
+   "bytes": 376366,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_elephant.yx2",
+   "joints": 28,
+   "lab": "legged",
+   "links": 29,
+   "mass_kg": 814.8181,
+   "sha256": "83ec014a7afb4fcfcf291ebedeacb9befccc2c8a7c3e5d98dd42747abec1070a",
+   "visual_triangles": 5400
+  },
+  "zoo_octopus": {
+   "bytes": 906514,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_octopus.yx2",
+   "joints": 128,
+   "lab": "legged",
+   "links": 129,
+   "mass_kg": 43.3018,
+   "sha256": "9650876f0ae525b246da53ebd23fba048f0a28b071cf00053be0566b7668e344",
+   "visual_triangles": 5206
+  },
+  "zoo_snake": {
+   "bytes": 335249,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "zoo_snake.yx2",
+   "joints": 32,
+   "lab": "legged",
+   "links": 33,
+   "mass_kg": 14.8813,
+   "sha256": "a390f943cba0bfa39d2c999222c9fd15de05c15902d9b6dad3d73c059ce1614d",
+   "visual_triangles": 3960
   }
  },
- "published": "2026-10-28T17:21:07Z",
+ "published": "2026-10-29T10:57:46Z",
  "vegeta": {
-  "branch": "dev_drako",
-  "commit": "f1fdd19de86f35b046b754791fbac724e5e6c2a5",
+  "branch": "dev_monsters",
+  "commit": "700bff18cc648e747180b6681c58a23cd6eea57d",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
