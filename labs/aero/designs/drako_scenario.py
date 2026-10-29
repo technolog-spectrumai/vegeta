@@ -44,7 +44,10 @@ RHO0, G = 1.225, 9.81
 CELL_M = 10.0
 CDA_BODY, CDA_TOTE = 0.25, 0.15                  # m^2: Drako.sizing's cda_body, cda_package (drako_cfd measures them)
 TOTE = (0.60, 0.40, 0.35)                        # m: the tote Drako's cradle is drawn for
-LAB_OPTIONS = dict(timestep=0.004, control_dt=0.012, log_dt=0.2, cone="pyramidal", integrator="implicitfast")
+#: 4 ms physics, the flight controller at 83 Hz; elliptic friction cones with a high impedance ratio and the no-slip
+#: solver: a waiting tote stays put (pyramidal cones let it creep ~9 mm a minute, enough to miss the latches).
+LAB_OPTIONS = dict(timestep=0.004, control_dt=0.012, log_dt=0.2, cone="elliptic", impratio=10.0, noslip_iterations=4,
+                   integrator="implicitfast")
 
 
 def rho(z):
@@ -403,27 +406,30 @@ def timeseries(ep) -> pd.DataFrame:
 
 
 def legs(ep) -> pd.DataFrame:
-    """One row per leg (take off → spool down): time, distance flown, energy, peak power, lowest charge, peak wind."""
+    """One row per leg (take off from a pad → spool down on the next): time, distance flown, energy, peak power,
+    lowest charge, peak wind, the largest rotor thrust as a share of full throttle."""
     ts = timeseries(ep)
-    log = ep.log["mission"]
-    starts = [t for t, n, note in log if note == "start" and n.startswith("take off")]
-    ends = [t for t, n, note in log if note == "done" and n.startswith("spool down")]
-    names = [n.replace("take off from the ", "") for t, n, note in log if note == "start" and n.startswith("take off")]
-    dests = [n.replace("spool down on the ", "") for t, n, note in log if note == "done" and n.startswith("spool down")]
-    rows = []
-    for a, b, f, to in zip(starts, ends, names, dests):
-        s = ts[(ts.t >= a) & (ts.t <= b)]
-        if len(s) < 2:
-            continue
-        xyz = s[["x", "y", "z"]].to_numpy()
-        dt = np.diff(s.t.to_numpy(), prepend=s.t.iloc[0])
-        wind = np.linalg.norm(s[["wx", "wy", "wz"]].to_numpy(), axis=1)
-        rows.append({"leg": f"{f} -> {to}", "time [min]": (b - a) / 60,
-                     "distance [km]": float(np.linalg.norm(np.diff(xyz, axis=0), axis=1).sum()) / 1000,
-                     "climb [m]": float(xyz[:, 2].max() - xyz[0, 2]), "energy [Wh]": float((s.P_W * dt).sum() / 3600),
-                     "peak power [kW]": float(s.P_W.max()) / 1000, "lowest charge [%]": 100 * float(s.soc.min()),
-                     "peak wind [m/s]": float(wind.max()),
-                     "max thrust share": float(s[["T1", "T2", "T3", "T4", "T5", "T6"]].to_numpy().max() / dk.full_throttle()["thrust_N"])})
+    rows, cur = [], None
+    t_max = dk.full_throttle()["thrust_N"]
+    for t, n, note in ep.log["mission"]:
+        if note == "start" and n.startswith("take off from the "):
+            cur = (t, n[len("take off from the "):])
+        elif note == "done" and cur and (n.startswith("spool down on the ") or n == "emergency spool down"):
+            a, frm = cur
+            to = n[len("spool down on the "):] if n.startswith("spool down on the ") else "emergency landing"
+            cur = None
+            s = ts[(ts.t >= a) & (ts.t <= t)]
+            if len(s) < 2:
+                continue
+            xyz = s[["x", "y", "z"]].to_numpy()
+            dt = np.diff(s.t.to_numpy(), prepend=s.t.iloc[0])
+            wind = np.linalg.norm(s[["wx", "wy", "wz"]].to_numpy(), axis=1)
+            rows.append({"leg": f"{frm} -> {to}", "time [min]": (t - a) / 60,
+                         "distance [km]": float(np.linalg.norm(np.diff(xyz, axis=0), axis=1).sum()) / 1000,
+                         "climb [m]": float(xyz[:, 2].max() - xyz[0, 2]), "energy [Wh]": float((s.P_W * dt).sum() / 3600),
+                         "peak power [kW]": float(s.P_W.max()) / 1000, "lowest charge [%]": 100 * float(s.soc.min()),
+                         "peak wind [m/s]": float(wind.max()),
+                         "max thrust share": float(s[["T1", "T2", "T3", "T4", "T5", "T6"]].to_numpy().max() / t_max)})
     return pd.DataFrame(rows)
 
 

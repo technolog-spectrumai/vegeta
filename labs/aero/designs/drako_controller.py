@@ -125,6 +125,7 @@ class Mission:
         self.i, self.t0, self.started, self.t_prev = 0, 0.0, False, None
         self.log, self.state = [], {}
         self.aborted = None
+        self.memory = {}
 
     @property
     def phase(self):
@@ -204,6 +205,7 @@ class Plan:
     clearance_m: float = 50.0
     corridor_m: float = 60.0
     latch_s: float = 1.5
+    latch_retries: int = 2
     swap_battery_at: tuple = ("helipad",)
     abort_soc: float = 0.10
     hop_alt_m: float = 6.0
@@ -291,19 +293,29 @@ def mission(scene, plan: Plan | None = None) -> list:
     spool_down = _spool_down
 
     def latch(pkg):
-        def start(m, obs):
+        """Close the latches; if the tote is not under the cradle, open them, hop over it again and retry."""
+        def start_self(m, obs):
             m.latches = "closed"
 
-        def update(m, obs, tau):
+        def up_self(m, obs, tau):
             if tau < plan.latch_s:
                 return False
             if m.cargo.latch(pkg, obs.t):
                 m.payload = scene.packages[pkg]
                 m.note(obs, f"{pkg} latched ({m.payload['mass_kg']:g} kg)")
-            else:
-                m.note(obs, f"{pkg} not under the cradle: nothing latched")
+                return True
+            tries = m.memory.get(pkg, 0)
+            if tries < plan.latch_retries:
+                m.memory[pkg] = tries + 1
+                m.latches = "open"
+                m.note(obs, f"{pkg} not under the cradle: lift off and land over it again (retry {tries + 1})")
+                here = np.asarray(obs.base_pos, float)
+                m.phases[m.i + 1:m.i + 1] = hop_phases(here - np.array([0, 0, m.leg_h]), scene.spot(pkg), pkg) + \
+                    [Phase(f"latch the {pkg} (retry {tries + 1})", up_self, start_self, 900.0)]
+                return True
+            m.note(obs, f"{pkg} not under the cradle: nothing latched, flying on without it")
             return True
-        return start, update
+        return start_self, up_self
 
     def unlatch(pkg):
         def start(m, obs):
@@ -324,20 +336,25 @@ def mission(scene, plan: Plan | None = None) -> list:
             m.note(obs, f"battery swapped at the {pad}")
         return start, wait(30.0)
 
-    def add_hop(frm, to, pkg):
+    def hop_phases(frm, to, pkg):
         """Lift off, move ``hop_alt_m`` above the ground over to the package, land over it."""
+        out = []
         st, up = takeoff()
-        add(f"lift off for the {pkg}", up, st, timeout=10.0)
+        out.append(Phase(f"lift off for the {pkg}", up, st, 10.0))
         st, up = _move(lambda m, obs, frm=frm: np.array([frm[0], frm[1], frm[2] + m.leg_h + plan.hop_alt_m]),
                        plan.v_climb, plan.a_vertical, settle_tol=0.3)
-        add("up to hop height", up, st, timeout=60.0)
+        out.append(Phase("up to hop height", up, st, 60.0))
         st, up = _move(lambda m, obs, to=to: np.array([to[0], to[1], to[2] + m.leg_h + plan.hop_alt_m]),
                        plan.v_hop, plan.a_vertical, settle_tol=0.08, max_extra=10.0)
-        add(f"hop over the {pkg}", up, st, timeout=60.0)
+        out.append(Phase(f"hop over the {pkg}", up, st, 60.0))
         st, up = _touchdown(plan, f"over the {pkg}")
-        add(f"land over the {pkg}", up, st, timeout=60.0)
+        out.append(Phase(f"land over the {pkg}", up, st, 60.0))
         st, up = _spool_down()
-        add(f"spool down over the {pkg}", up, st)
+        out.append(Phase(f"spool down over the {pkg}", up, st, 900.0))
+        return out
+
+    def add_hop(frm, to, pkg):
+        phases.extend(hop_phases(frm, to, pkg))
 
     carried = None
     for k, (a, b, pkg) in enumerate(plan.route):
