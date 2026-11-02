@@ -19,6 +19,15 @@ arm and a work arm.
 | endurance | 6–8 h per dive |
 | autonomy | NVIDIA Jetson AGX Orin 64GB (15–60 W) |
 
+## Decisions (round 3)
+
+| question | decision |
+|---|---|
+| launch and recovery | davit or A-frame from a workboat (CTV / survey vessel); Scampi swims to the turbine and back |
+| first tool skid | cleaning brush + CP / UT probe: clean a weld or anode, then measure cathodic protection and wall thickness |
+| sourcing | buy the thrusters (T500 class), design the arms in-house (oil-filled, electric, the hold-and-work pair) |
+| next step | MuJoCo scenario at a monopile: boat → pile in a tidal current, clamp with the hold arm, clean and probe a weld, land on the seabed (the Lobster's water model) |
+
 ## v0 numbers (`python labs/marine/designs/scampi.py`)
 
 * 1.5 × 0.8 × 0.56 m without arms; **118 kg** in air; displaces 115 L; +0.5 kg buoyant; 43 L syntactic foam.
@@ -43,7 +52,6 @@ endurance for cost per unit, which offshore wind's repetitive shallow work rewar
 
 ## Open questions (next rounds)
 
-* thrusters and arms: bought (which) or ours
-* launch and recovery: davit cage, or a seabed dock/garage for wind-farm residency
-* first tool skid to build: cleaning brush, CP/UT probe, cutter, or a cable-protection fitting tool
+* the work and hold arms: joint torques for brushing and probing, link sizing, sealing (oil-filled, compensated)
+* the davit's launch cage: does Scampi ride in a cage through the splash zone, or hang from a latch
 * navigation near monopiles: DVL loses lock close to the pile; sonar SLAM or a pile-relative camera mode
