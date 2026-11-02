@@ -1,4 +1,4 @@
-"""Echeneis (Echeneis naucrates, the live sharksucker remora): a tethered hull crawler for large merchant ships — it
+"""Echensis (Echeneis naucrates, the live sharksucker remora): a tethered hull crawler for large merchant ships — it
 swims from the quay to the hull, holds on with magnetic tracks and a suction thruster, cleans with fouling capture
 and inspects on the same pass. Scampi's sibling (``scampi.py``): the same Jetson autonomy, cameras, UT/CP probe and
 water physics, a different vehicle.
@@ -39,6 +39,15 @@ REQUIREMENTS = {
     "clean_window_h": 12.0,         # a port call's working window
     "capture": "fouling drawn into a hood and pumped ashore through a filter (in-water cleaning with capture)",
 }
+#: The cleaning heads on the quick-change mount (swath [m], speed [m/s], reaction [N] along the hull, power on the
+#: robot [W], power on the quay [W], what it is for). Values are class estimates to measure on a prototype.
+HEADS = {
+    "brushes": dict(swath_m=0.95, speed_m_s=0.25, reaction_N=120.0, robot_W=700.0, quay_W=0.0, mass_kg=4.0, volume_L=3.0,
+                    fouling="slime, weed, light shell: frequent grooming (the fuel-saving case)"),
+    "cavitation": dict(swath_m=0.60, speed_m_s=0.10, reaction_N=60.0, robot_W=120.0, quay_W=15000.0, mass_kg=9.0, volume_L=4.0,
+                       fouling="barnacles, tubeworms: heavy fouling; high-pressure water from a quay pump down the tether"),
+}
+
 PARTS = {   # mass in air [kg], volume [L], power [W]
     "Jetson AGX Orin + carrier": (0.9, 0.0, 40.0),
     "cameras (4) + lights (4)": (3.0, 1.2, 150.0),
@@ -46,14 +55,18 @@ PARTS = {   # mass in air [kg], volume [L], power [W]
     "INS + depth + hull-relative odometry": (1.5, 0.6, 15.0),
     "4 swim thrusters (T200 class)": (4 * 0.35, 4 * 0.15, 0.0),
     "track drives (2 x geared BLDC, sealed)": (2 * 3.5, 2 * 1.2, 0.0),
-    "brush drives (2 x BLDC)": (2 * 2.5, 2 * 0.9, 0.0),
+    "head drives (2 x BLDC)": (2 * 2.5, 2 * 0.9, 0.0),
+    "capture pump, onboard (sealed BLDC centrifugal)": (6.0, 2.5, 0.0),
+    "head quick-change plate (wet-mate power, data, slurry port)": (2.0, 0.8, 0.0),
+    "forward sonar (hull features: bilge keel, appendages)": (1.2, 0.5, 25.0),
 }
 
 
-class Echeneis(Design):
+class Echensis(Design):
     parameters = [
         Parameter("part", "vehicle", choices=("vehicle", "chassis", "track", "head", "suction", "housing", "tether"),
                   description="what to build"),
+        Parameter("head_type", "brushes", choices=tuple(HEADS), description="the cleaning head on the quick-change mount"),
         Parameter("length", 1000.0, "mm", min=400, description="chassis length (without the head)"),
         Parameter("width", 800.0, "mm", min=300),
         Parameter("height", 260.0, "mm", min=100, description="hull to the top of the chassis"),
@@ -64,8 +77,7 @@ class Echeneis(Design):
         Parameter("suction_N", 400.0, "N", min=0, description="suction thruster pull (T500 class at the duct; assumed)"),
         Parameter("brush_diameter", 500.0, "mm", min=100, description="each of the two brush discs"),
         Parameter("head_length", 560.0, "mm", min=100, description="the cleaning head ahead of the chassis"),
-        Parameter("crawl_speed", 0.25, "m/s", min=0.01, description="cleaning speed along the hull"),
-        Parameter("hood_inlet_speed", 0.3, "m/s", min=0.05, description="water speed into the hood's rim (holds the loosened fouling)"),
+                Parameter("hood_inlet_speed", 0.3, "m/s", min=0.05, description="water speed into the hood's rim (holds the loosened fouling)"),
         Parameter("rim_gap", 15.0, "mm", min=3, description="gap between the hood's skirt and the hull"),
         Parameter("hose_diameter", 100.0, "mm", min=20, description="return hose to the quay's filter"),
         Parameter("hose_length", 60.0, "m", min=5),
@@ -78,7 +90,7 @@ class Echeneis(Design):
     # ------------------------------------------------------------------------------------------- sizing
     @staticmethod
     def p(over=None):
-        return {q.name: q.default for q in Echeneis.parameters} | (over or {})
+        return {q.name: q.default for q in Echensis.parameters} | (over or {})
 
     @classmethod
     def masses(cls, p):
@@ -88,7 +100,7 @@ class Echeneis(Design):
             "chassis + hood (HDPE, Al brackets)": (18.0, 17.0),
             "magnetic tracks (NdFeB blocks, steel links, rubber)": (2 * 9.0, 2 * 1.6),
             "suction thruster (T500 class) + duct": (2.0, 1.0),
-            "brush discs + hood rim": (4.0, 3.0),
+            f"cleaning head ({p['head_type']}) + hood": (HEADS[p["head_type"]]["mass_kg"], HEADS[p["head_type"]]["volume_L"]),
             "electronics housing": (5.0 + 2.0, math.pi * (p["housing_od"] / 2000) ** 2 * p["housing_length"] / 1000 * 1000),
             "foam (syntactic 300 m class)": (0.0, 0.0),
         }
@@ -111,7 +123,8 @@ class Echeneis(Design):
         L, W, H = p["length"] / 1000, p["width"] / 1000, p["height"] / 1000
         drag = 0.5 * RHO_SW * 1.1 * (W * H) * REQUIREMENTS["current_m_s"] ** 2
         lift = 0.5 * RHO_SW * 0.3 * (L * W) * REQUIREMENTS["current_m_s"] ** 2   # the current pulls it off the hull
-        brush_F = 120.0                                                    # the discs' net scrubbing reaction [N] (assumed)
+        hd = HEADS[p["head_type"]]
+        brush_F = hd["reaction_N"]                                         # the head's net reaction along the hull
         contact = 2 * L * 0.9                                              # track length on the hull [m]
         f_mag = p["magnet_N_per_m"] * contact
         mu = 0.45                                                          # rubber on wet painted steel
@@ -123,12 +136,13 @@ class Echeneis(Design):
         k2 = (0.5 / REQUIREMENTS["current_m_s"]) ** 2
         cases["composite hull, inspection at 0.5 m/s"] = (p["suction_N"] - lift * k2, w_water + drag * k2)
         grip = {k: {"normal_N": n, "tangential_N": t, "margin": (mu * n) / (SAFETY_GRIP * t) - 1} for k, (n, t) in cases.items()}
-        # cleaning rate: the two discs' swath at the crawl speed, 85 % efficient lanes (overlap, turns)
-        swath = 2 * p["brush_diameter"] / 1000 * 0.95
-        rate = swath * p["crawl_speed"] * 3600 * 0.85                      # m^2/h
+        # cleaning rate: the head's swath at its speed, 85 % efficient lanes (overlap, turns)
+        swath = hd["swath_m"]
+        rate = swath * hd["speed_m_s"] * 3600 * 0.85                       # m^2/h
         hulls = {k: {"hours": a / rate, "robots_for_window": math.ceil(a / rate / REQUIREMENTS["clean_window_h"])}
                  for k, a in REQUIREMENTS["hull_area_m2"].items()}
-        # capture: the hood's rim draws water in at hood_inlet_speed; the flow goes up the hose to the quay's filter
+        # capture: the hood's rim draws water in at hood_inlet_speed; the onboard pump pushes it up the hose to the
+        # quay's filter (no suction lift: no cavitation, no hose collapse, any hose length)
         rim = 2 * (swath + p["head_length"] / 1000) * p["rim_gap"] / 1000
         Q = rim * p["hood_inlet_speed"]
         D = p["hose_diameter"] / 1000
@@ -138,16 +152,16 @@ class Echeneis(Design):
         head = f * p["hose_length"] / D * v * v / (2 * G) + 1.5 * v * v / (2 * G) + 3.0   # + filter (3 m, assumed)
         pump_W = RHO_SW * G * Q * head / 0.5
         hotel = sum(w for _, _, w in PARTS.values())
-        drive_W = 2 * 0.5 * (cases["vertical side, crawling up"][1]) * p["crawl_speed"] / 0.5 + 60.0
-        brush_W = 2 * 350.0                                                # two discs on fouled paint (assumed)
+        drive_W = 2 * 0.5 * (cases["vertical side, crawling up"][1]) * hd["speed_m_s"] / 0.5 + 60.0
+        brush_W = hd["robot_W"]
         suction_W = 900.0                                                  # T500 class at ~400 N bollard pull
         total = hotel + drive_W + brush_W + suction_W + pump_W
         return {"mass_in_air_kg": m_air, "dry_mass_kg": m_dry, "foam_L": V_f * 1000, "in_water_kg": net_down,
                 "items": items, "drag_N": drag, "lift_N": lift, "magnet_N": f_mag, "grip": grip,
                 "clean_rate_m2_h": rate, "hulls": hulls,
                 "capture_flow_L_s": Q * 1000, "hose_speed_m_s": v, "hose_head_m": head, "pump_W": pump_W,
-                "power_W": {"hotel": hotel, "tracks": drive_W, "brushes": brush_W, "suction": suction_W, "capture pump": pump_W,
-                            "total": total},
+                "power_W": {"hotel": hotel, "tracks": drive_W, "head": brush_W, "suction": suction_W, "capture pump": pump_W,
+                            "total": total}, "quay_W": hd["quay_W"], "head": p["head_type"],
                 "tether_current_A": total / p["tether_voltage"]}
 
     # ------------------------------------------------------------------------------------------- CAD
@@ -176,11 +190,17 @@ class Echeneis(Design):
         hood = (cq.Workplane("XY").box(hl, hw, 110).edges("|Z").fillet(40).translate((x, 0, 30 + 55))
                 .cut(cq.Workplane("XY").box(hl - 20, hw - 20, 100).translate((x, 0, 30 + 45))))
         out = hood
-        for s in (1, -1):
-            disc = cq.Workplane("XY").center(x, s * d / 2 * 0.95).circle(d / 2).extrude(30).translate((0, 0, 8))
-            out = out.union(disc)
-        port = cq.Workplane("XY").center(x, 0).circle(p["hose_diameter"] / 2 + 8).extrude(120).translate((0, 0, 130))
-        return out.union(port)
+        if p["head_type"] == "brushes":
+            for s in (1, -1):
+                disc = cq.Workplane("XY").center(x, s * d / 2 * 0.95).circle(d / 2).extrude(30).translate((0, 0, 8))
+                out = out.union(disc)
+        else:                                                              # one rotating bar of cavitation nozzles
+            bar = self._box(40, HEADS["cavitation"]["swath_m"] * 1000, 30, (x, 0, 40))
+            out = out.union(bar).union(cq.Workplane("XY").center(x, 0).circle(45).extrude(60).translate((0, 0, 40)))
+        pump = (cq.Workplane("YZ").center(0, 190).circle(70).extrude(110, both=True).translate((x - hl * 0.2, 0, 0))
+                .union(cq.Workplane("XY").center(x, 0).circle(40).extrude(70).translate((0, 0, 120))))   # the capture pump
+        plate = self._box(24, hw - 120, 120, (L / 2 + 12, 0, 90))                                       # quick-change mount
+        return out.union(pump).union(plate)
 
     def _suction(self, p):
         d = p["suction_duct"]
@@ -208,7 +228,7 @@ class Echeneis(Design):
 
     def build(self, p):
         if cq is None:
-            raise ImportError("Echeneis's CAD needs CadQuery")
+            raise ImportError("Echensis's CAD needs CadQuery")
         part = p["part"]
         single = {"chassis": self._chassis, "head": self._head, "suction": self._suction, "housing": self._housing,
                   "tether": self._tether}
@@ -222,7 +242,7 @@ class Echeneis(Design):
 
 
 if __name__ == "__main__":
-    s = Echeneis.sizing()
+    s = Echensis.sizing()
     print(f"mass in air {s['mass_in_air_kg']:.1f} kg (dry {s['dry_mass_kg']:.1f}), foam {s['foam_L']:.1f} L, {s['in_water_kg']:g} kg heavy in water")
     print(f"current drag {s['drag_N']:.0f} N, lift-off {s['lift_N']:.0f} N, magnets {s['magnet_N']:.0f} N")
     for k, g in s["grip"].items():

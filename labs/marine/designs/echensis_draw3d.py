@@ -1,6 +1,6 @@
-"""Echeneis in 3D (matplotlib, from the CadQuery tessellation) on a patch of hull, and its sizing.
+"""Echensis in 3D (matplotlib, from the CadQuery tessellation) on a patch of hull, and its sizing.
 
-    python echeneis_draw3d.py [out.png]
+    python echensis_draw3d.py [out.png]
 """
 import sys
 
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-from echeneis import REQUIREMENTS, Echeneis
+from echensis import REQUIREMENTS, Echensis
 
 COLOURS = {"chassis": "#f39c12", "tracks": "#2c3e50", "head": "#16a085", "suction": "#7f8c8d", "housing": "#95a5a6",
            "thrusters": "#202020", "tether": "#c0392b"}
@@ -23,7 +23,7 @@ def _tris(shape, tol=3.0):
 
 
 def draw(ax, p, elev=28, azim=-55):
-    d = Echeneis()
+    d = Echensis()
     parts = {"chassis": d._chassis(p), "tracks": d._track(p, 1).union(d._track(p, -1)), "head": d._head(p),
              "suction": d._suction(p), "housing": d._housing(p), "thrusters": d._swim_thrusters(p), "tether": d._tether(p)}
     for name, shp in parts.items():
@@ -37,14 +37,15 @@ def draw(ax, p, elev=28, azim=-55):
     ax.set_xlabel("x crawl [mm]"); ax.set_ylabel("y [mm]"); ax.set_zlabel("out of the hull [mm]")
 
 
-def main(out="echeneis_3d.png"):
-    p = Echeneis.p()
-    s = Echeneis.sizing()
+def main(out="echensis_3d.png"):
+    p = Echensis.p()
+    s = Echensis.sizing()
+    cav = Echensis.sizing({"head_type": "cavitation"})
     fig = plt.figure(figsize=(18, 9.5))
     ax = fig.add_subplot(1, 2, 1, projection="3d")
     draw(ax, p)
-    ax.set_title("Echeneis on the hull (red): magnetic tracks, cleaning head with capture hood (green),\n"
-                 "suction thruster, swim thrusters, tether + return hose (red)")
+    ax.set_title("Echensis on the hull (red): magnetic tracks, cleaning head with capture hood (green),\n"
+                 "onboard capture pump, quick-change mount, suction thruster, swim thrusters, tether + hose (red)")
     tx = fig.add_subplot(1, 2, 2)
     tx.axis("off")
     g = s["grip"]
@@ -55,13 +56,15 @@ def main(out="echeneis_3d.png"):
         ["grip, vertical side", f"margin {g['vertical side, crawling up']['margin']:+.2f} in {REQUIREMENTS['current_m_s']:g} m/s (x2 safety)"],
         ["grip, flat bottom", f"margin {g['flat bottom, upside down']['margin']:+.2f} upside down"],
         ["composite hulls", f"suction only, inspection at 0.5 m/s: margin {g['composite hull, inspection at 0.5 m/s']['margin']:+.2f}"],
-        ["cleaning", f"{s['clean_rate_m2_h']:.0f} m2/h ({2 * p['brush_diameter'] / 1000:.1f} m swath at {p['crawl_speed']:g} m/s)"],
+        ["cleaning (brushes)", f"{s['clean_rate_m2_h']:.0f} m2/h; cavitation head (swap): {cav['clean_rate_m2_h']:.0f} m2/h + {cav['quay_W'] / 1000:.0f} kW quay pump"],
     ] + [[f"  {k}", f"{h['hours']:.0f} h alone, {h['robots_for_window']} robot(s) in 12 h"] for k, h in s["hulls"].items()] + [
         ["capture", f"{s['capture_flow_L_s']:.0f} L/s up a {p['hose_diameter']:.0f} mm hose ({s['hose_head_m']:.1f} m head): pump {s['pump_W'] / 1000:.1f} kW"],
         ["power", f"{s['power_W']['total'] / 1000:.1f} kW down the tether at {p['tether_voltage']:.0f} V DC ({s['tether_current_A']:.1f} A)"],
         ["inspection", "UT thickness + CP probe, 4 cameras, photogrammetry; Jetson AGX Orin"],
+        ["navigation", "hull map: odometry + depth + inclination + camera features; sonar"],
+        ["capture pump", "onboard, pushes the slurry up the hose (no suction lift)"],
     ]
-    tab = tx.table(cellText=rows, colLabels=["", "Echeneis v0"], loc="upper center", cellLoc="left", colWidths=[0.28, 0.72])
+    tab = tx.table(cellText=rows, colLabels=["", "Echensis v1"], loc="upper center", cellLoc="left", colWidths=[0.28, 0.72])
     tab.auto_set_font_size(False); tab.set_fontsize(10); tab.scale(1, 1.8)
     fig.tight_layout()
     fig.savefig(out, dpi=100)
