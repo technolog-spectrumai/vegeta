@@ -1,6 +1,6 @@
-"""Emerita (Emerita analoga, the Pacific mole crab: it burrows in the swash zone, where cables come ashore, and sweeps
-the water with feathery antennae): a hybrid cable AUV. It cruises a torpedo hull along a buried cable for 60-100 km
-on one dive, tracking it with a magnetic coil array on the nose (the antennae), and hovers or lands to inspect, mark
+"""Nephro (after Nephrops norvegicus, the Norway lobster: it digs its burrows in the muddy shelf floor the cables are
+buried in, and feels its way with long antennae; first drafted as Emerita, after the mole crab): a hybrid cable AUV.
+It cruises a torpedo hull along a buried cable for 60-100 km on one dive, tracking it with a magnetic coil array on the nose (the antennae), and hovers or lands to inspect, mark
 and lift it at a fault. Scampi's sibling (``scampi.py``): the same housings, Jetson autonomy and water model.
 
 Requirements (``REQUIREMENTS``, from the design questions): wind export and array cables first, then telecom; route
@@ -56,7 +56,7 @@ PARTS = {
 }
 
 
-class Emerita(Design):
+class Nephro(Design):
     parameters = [
         Parameter("part", "vehicle", choices=("vehicle", "body", "antennae", "arm", "skids"), description="what to build"),
         Parameter("length", 3000.0, "mm", min=1000),
@@ -79,7 +79,7 @@ class Emerita(Design):
 
     @staticmethod
     def p(over=None):
-        return {q.name: q.default for q in Emerita.parameters} | (over or {})
+        return {q.name: q.default for q in Nephro.parameters} | (over or {})
 
     @staticmethod
     def _housing(p, length):
@@ -205,7 +205,7 @@ class Emerita(Design):
 
     def build(self, p):
         if cq is None:
-            raise ImportError("Emerita's CAD needs CadQuery")
+            raise ImportError("Nephro's CAD needs CadQuery")
         parts = {"body": self._body, "antennae": self._antennae, "arm": self._arm, "skids": self._skids}
         if p["part"] in parts:
             return parts[p["part"]](p)
@@ -216,7 +216,7 @@ class Emerita(Design):
 
 
 if __name__ == "__main__":
-    s = Emerita.sizing()
+    s = Nephro.sizing()
     for k, h in s["housings"].items():
         print(f"{k:12s} housing: buckling {h['buckling_MPa']:.1f} MPa vs {h['design_pressure_MPa']:.1f} (margin {h['buckling_margin']:+.2f}), "
               f"{h['mass_kg']:.1f} kg, {h['volume_L']:.0f} L")

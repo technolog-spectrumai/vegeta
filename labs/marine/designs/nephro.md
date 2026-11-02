@@ -1,7 +1,7 @@
-# Emerita — design brief (v0)
+# Nephro — design brief (v0)
 
-Named after *Emerita analoga*, the Pacific mole crab: it burrows in the swash zone where cables come ashore, and
-sweeps the water with feathery antennae. Emerita is a hybrid cable AUV in the Scampi family (`scampi.md`). It cruises a
+Named after *Nephrops norvegicus*, the Norway lobster, which digs its burrows in the muddy shelf floor that cables
+are buried in and feels its way with long antennae (first drafted as Emerita, after the mole crab). Nephro is a hybrid cable AUV in the Scampi family (`scampi.md`). It cruises a
 torpedo hull along a buried cable, tracking it with a coil array on the nose (the "antennae"), and hovers or lands to
 inspect, mark and lift the cable at a fault. It shares Scampi's housings, Jetson autonomy and water model.
 
@@ -16,7 +16,7 @@ inspect, mark and lift the cable at a fault. It shares Scampi's housings, Jetson
 
 Scampi's open frame cannot do this: 165 Wh/km at 1 m/s gives ~27 km on its pack. A body of revolution needs ~63 Wh/km.
 
-## v0 numbers (`python labs/marine/designs/emerita.py`)
+## v0 numbers (`python labs/marine/designs/nephro.py`)
 
 * 3.0 m × Ø0.40 m; **165 kg** in air, +1 kg buoyant. Two Al 6061-T6 housings Ø280 × 10 mm (battery 1.0 m,
   electronics 0.55 m): buckling 7.0 MPa against 4.5 MPa (margin +0.56). They are 51 kg of the mass: a composite
@@ -37,4 +37,4 @@ Scampi's open frame cannot do this: 165 Wh/km at 1 m/s gives ~27 km on its pack.
 * the coil array's reach: burial depth it can measure at 2 m altitude, and on an HVDC export cable (no AC field: needs a tone)
 * landing beside a cable in a current: the skids and tunnel thrusters against 1 m/s
 * launch and recovery of a 3 m, 165 kg vehicle from a CTV-size boat (Scampi's davit is rated for ~120 kg)
-* shallow landings (the mole crab's zone): surf, turbid water, a vehicle 3 m long in 3–5 m of water
+* shallow landings (the cable's landfall): surf, turbid water, a vehicle 3 m long in 3–5 m of water

@@ -1,7 +1,7 @@
-"""Emerita in 3D (matplotlib, from the CadQuery tessellation): cruising over a buried cable, and hovering with the
+"""Nephro in 3D (matplotlib, from the CadQuery tessellation): cruising over a buried cable, and hovering with the
 arm out; and its sizing.
 
-    python emerita_draw3d.py [out.png]
+    python nephro_draw3d.py [out.png]
 """
 import sys
 
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-from emerita import REQUIREMENTS, Emerita
+from nephro import REQUIREMENTS, Nephro
 
 COLOURS = {"body": "#f1c40f", "antennae": "#e74c3c", "arm": "#2980b9", "skids": "#2c3e50"}
 
@@ -23,7 +23,7 @@ def _tris(shape, tol=4.0):
 
 
 def draw(ax, p, altitude_mm, elev=18, azim=-60):
-    d = Emerita()
+    d = Nephro()
     for name, shp in {"body": d._body(p), "antennae": d._antennae(p), "arm": d._arm(p), "skids": d._skids(p)}.items():
         c = COLOURS[name]
         ax.add_collection3d(Poly3DCollection(_tris(shp), facecolors=c, edgecolors=c, linewidths=0.0, shade=True))
@@ -38,15 +38,15 @@ def draw(ax, p, altitude_mm, elev=18, azim=-60):
     ax.set_xlabel("x [mm]"); ax.set_ylabel("y [mm]"); ax.set_zlabel("z [mm]")
 
 
-def main(out="emerita_3d.png"):
-    p = Emerita.p()
-    s = Emerita.sizing()
+def main(out="nephro_3d.png"):
+    p = Nephro.p()
+    s = Nephro.sizing()
     fig = plt.figure(figsize=(19, 10))
     ax = fig.add_subplot(2, 2, 1, projection="3d")
     draw(ax, p, REQUIREMENTS["survey_altitude_m"] * 1000 * 0.4)
     ax.set_title("survey: the coil array (red 'antennae') tracks the buried cable, arm stowed")
     ax2 = fig.add_subplot(2, 2, 3, projection="3d")
-    draw(ax2, Emerita.p({"arm_pose": "deployed"}), 0.0, elev=6, azim=-90)
+    draw(ax2, Nephro.p({"arm_pose": "deployed"}), 0.0, elev=6, azim=-90)
     ax2.set_title("at a fault: landed on its skids, the arm out to lift and tag the cable")
     tx = fig.add_subplot(1, 2, 2)
     tx.axis("off")
@@ -64,7 +64,7 @@ def main(out="emerita_3d.png"):
         ["hover", "2 stern + 4 tunnel thrusters; 5-DOF folding arm in a belly bay; low skids"],
         ["autonomy", "Jetson AGX Orin; INS + DVL, reset by the cable itself and USBL fixes"],
     ]
-    tab = tx.table(cellText=rows, colLabels=["", "Emerita v0"], loc="upper center", cellLoc="left", colWidths=[0.18, 0.82])
+    tab = tx.table(cellText=rows, colLabels=["", "Nephro v0"], loc="upper center", cellLoc="left", colWidths=[0.18, 0.82])
     tab.auto_set_font_size(False); tab.set_fontsize(10); tab.scale(1, 1.9)
     fig.tight_layout()
     fig.savefig(out, dpi=95)

@@ -1,12 +1,12 @@
-"""Emerita v0: the housings hold at 300 m, everything fits inside the hull, the range meets 60-100 km at survey speed
+"""Nephro v0: the housings hold at 300 m, everything fits inside the hull, the range meets 60-100 km at survey speed
 and 1.5 m/s sits near the best speed; the CAD builds where CadQuery is."""
 import pytest
 
-from emerita import REQUIREMENTS, Emerita
+from nephro import REQUIREMENTS, Nephro
 
 
 def test_range_housings_and_fit():
-    s = Emerita.sizing()
+    s = Nephro.sizing()
     assert all(h["buckling_margin"] > 0 for h in s["housings"].values())
     assert s["fits"] and s["foam_L"] >= 0
     lo, hi = REQUIREMENTS["range_km"]
@@ -16,10 +16,10 @@ def test_range_housings_and_fit():
 
 
 def test_a_bigger_battery_goes_further():
-    assert Emerita.sizing({"battery_kwh": 10.0})["range_km"] > Emerita.sizing()["range_km"]
+    assert Nephro.sizing({"battery_kwh": 10.0})["range_km"] > Nephro.sizing()["range_km"]
 
 
 def test_cad_builds_in_both_poses():
     pytest.importorskip("cadquery")
     for pose in ("stowed", "deployed"):
-        assert Emerita().build(Emerita.p({"arm_pose": pose})).val().isValid()
+        assert Nephro().build(Nephro.p({"arm_pose": pose})).val().isValid()
