@@ -83,10 +83,25 @@ Anything worn and powered is treated as a medical device from the first drawing:
 Teleoperation (P1–P6) also has a risk file: the robot, not the glove, is the hazard there (the pincer's force and
 speed limits, the clutch, the watchdog).
 
+## Decisions (round 3: teleoperation)
+
+| question | decision |
+|---|---|
+| gloves | **two**, one per pincer: the left hand drives the left pincer, the right hand the right (the primitives take N gloves) |
+| mapping | **position and rate, switchable**: position (the jaw opening follows the thumb–index pinch, squeezing past contact commands grip force) for normal work; rate (finger flexion sets the closing speed) for fine adjustment; a clutch gesture freezes the pincer to relax or re-centre the hand; a switch gesture changes the mode |
+| latency | **measured first**: `link` models latency, jitter and loss; P2 sweeps them and finds where grasping starts to fail, and the budget is set from that |
+| demonstrations | **everything**: raw glove samples and the estimated hand pose; the robot's commands and states (joints, jaw opening, grip force); contact forces and object poses; camera video (rendered now, real later), all on one clock |
+
+### The demonstration record
+
+One recording is a folder: `meta.json` (who, which robot and gloves, calibrations, the mapping and its mode
+switches, the software revision), a time-series file per stream on one clock (`glove_<side>`, `hand_<side>`,
+`robot_command`, `robot_state`, `contacts`, `objects`), and the videos (`camera_<name>.mp4`) with their frame
+timestamps. The streams are columnar (Parquet or NPZ) so they load straight into training code. Replay reads the
+same folder.
+
 ## Open questions (next round)
 
-* one glove or **two** (one per pincer, both hands), and which hand leads
-* mapping style: position (the pincer follows the fingers) or rate (the fingers set a speed); a clutch to re-centre
-* the latency budget the teleop must meet (the robot's control rate, the link, the feedback)
-* the demonstration format: what is recorded for teaching (hand, robot, contacts, video) and in which file format
-* the users the glove is sized for: hand-size range, left/right, and later the exoskeletons' users
+* the glove's sizes: the hand-size range to cover, left and right
+* the switch and clutch gestures: which ones are unambiguous and never happen by accident during grasping
+* the latency sweep's tasks: which picks and passes in P2 define "grasping fails"
