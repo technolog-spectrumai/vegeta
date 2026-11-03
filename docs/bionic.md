@@ -56,6 +56,16 @@ MuJoCo scenes that use it live in a lab.
 | **P5** | the puppet arm: a scaled printed copy of the Manus arm (Dedalus) with magnetic encoders; teach by posing, record, replay in MuJoCo | joint tracking error; repeatability |
 | **P6** | the whole arm from the glove: the wrist IMU (+ a tracker) → arm IK; the glove keeps the pincers | reach tasks in MuJoCo |
 
+## P1 done (2026-11-03)
+
+`libs/vegeta-bionic`: `hand` (20 joints, per-user sizes, fingertip kinematics, key poses), `sensors` (Hall angle,
+IMU, encoder, each unit's errors from a seed), `motions` (calibration routine, grasp cycles, wrist tour), `glove`
+(`SimGlove`: 14 sensed joints, the IMU), `estimate` (per-sensor calibration from held poses, the magnetometer's
+hard-iron fit, a Mahony filter), `link` (versioned binary message, an in-process transport with latency, jitter, loss
+and stale-message dropping), `safety` (`Watchdog`, `Limits`), `RISK.md`. Measured on the simulated glove: sensed joints
+under 2° rms after calibration; unsensed DIPs ~3–5° rms (tendon coupling); the pinch aperture ~1.4 mm rms; the wrist
+~2.7° mean once the magnetometer is calibrated (8° without: the hard-iron offset, not the filter, was the error).
+
 ## TODO: assistive exoskeletons (not now)
 
 Each starts from the glove's primitives and gets its own risk file before any powered prototype is worn.

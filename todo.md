@@ -69,7 +69,7 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 ## Stage B — vegeta-bionic: glove teleoperation, the puppet arm, assistive exoskeletons (2026-11-03)
 The plan is `docs/bionic.md`.
 - [x] B0 the plan and the design decisions (`docs/bionic.md`)
-- [ ] B1 `libs/vegeta-bionic` skeleton: hand, sensors, SimGlove, estimate, link (in-process); the risk file
+- [x] B1 `libs/vegeta-bionic` skeleton: hand, sensors, SimGlove, estimate, link (in-process); the risk file (`libs/vegeta-bionic/RISK.md`); 12 tests
 - [ ] B2 retarget + vibration feedback + teleop: a scripted hand drives Onager Manus's two pincers in MuJoCo; demonstrations recorded and replayed
 - [ ] B3 the glove's CAD (printed mounts, three hand sizes); choose the electronics; link over serial/UDP
 - [ ] B4 force feedback in simulation: a brake, then a motor, on the glove's linkages; haptic-loop stability with delay

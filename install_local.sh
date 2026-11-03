@@ -4,7 +4,7 @@
 #   - system tools: CalculiX (ccx), PrusaSlicer, Gmsh/CadQuery runtime libraries, xvfb
 #   - OpenFOAM v2412 from conda-forge (the Ubuntu 'openfoam' package cannot run forceCoeffs)
 #   - into the virtual environment: vegeta-cli (editable: vegeta.dedalus/talos/aeromant/mellonia),
-#     vegeta-core (vegeta.core: workspaces, revisions), vegeta-ai (AI provider connection), vegeta-fidia (AI modelling: prompt-to-3D, copilot, campaigns)
+#     vegeta-core (vegeta.core: workspaces, revisions), vegeta-bionic (vegeta.bionic: hand, glove, calibration, links), vegeta-ai (AI provider connection), vegeta-fidia (AI modelling: prompt-to-3D, copilot, campaigns)
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
@@ -123,6 +123,7 @@ step "Python packages (vegeta-cli with MuJoCo for Chiron and the races (cma: the
   -e "$ROOT/libs/vegeta-cli[pandas,viz,test,sim,sections]" \
   mujoco cma usd-core jsbsim \
   -e "$ROOT/libs/vegeta-core[test]" \
+  -e "$ROOT/libs/vegeta-bionic[test]" \
   -e "$ROOT/libs/vegeta-ai[test]" \
   -e "$ROOT/libs/vegeta-fidia[viz,test]" \
   -e "$ROOT/libs/labkit[test]" \
