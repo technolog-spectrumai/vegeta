@@ -47,6 +47,7 @@ ROPE = dict(radius=0.005, length=0.40, mass=0.04, mu=0.9)
 TRAY = dict(inner=0.16, wall=0.01, height=0.06)
 PENDULUM = dict(length=0.55, angle_deg=25.0, mass=0.20)
 TASKS = ("pick_place", "handover", "rope", "catch")
+JOG_SPEED, JOG_TURN = 0.15, math.radians(60.0)    # the interface's jog limits for the arms (mocked operator UI)
 LAB_OPTIONS = dict(timestep=0.0005, control_dt=0.002, log_dt=0.02, integrator="implicitfast", cone="elliptic",
                    impratio=10.0, noslip_iterations=3)
 
@@ -63,6 +64,7 @@ def bench(jaw_mu: float = 0.9) -> Robot:
     arms, masses = [], []
     for side in omr.SIDES:
         base, yaw_mass, _, _ = omr._arm(side, p, cad, jaw_mu)
+        _add_roll(base, side, omr.arm_geometry(p))
         arms.append(base)
         masses.append(yaw_mass)
     g = omr.arm_geometry(p)
@@ -80,6 +82,23 @@ def bench(jaw_mu: float = 0.9) -> Robot:
     return robot
 
 
+def _add_roll(base: Link, side: str, g: dict) -> None:
+    """A wrist roll between the palm and the jaws (about the pincer's axis), driven like the wrist (harmonic 60 Nm).
+    Manus's arms have none: both pincers' jaws then open in their arm's vertical plane, and in a hand-over the jaws of
+    one always cross the other's — the bench adds it, and a two-handed Manus arm would need it."""
+    palm = base.children[0].children[0].children[0]
+    jaws = palm.children
+    for j in jaws:
+        j.pos = (0.0, 0.0, 0.0)
+    roll = Link(f"{side}_roll_link", pos=(g["Lp"], 0.0, 0.0),
+                joints=[ch.Joint(f"{side}_roll", axis=(1, 0, 0), range=(-math.pi, math.pi), tag="roll", servo=omr._servo("wrist"))],
+                geoms=[Geom(f"{side}_roll_hub", "cylinder", (g["jaw_d"] * 0.5, 0.012), pos=(0.012, 0.0, 0.0),
+                            quat=(math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0), mass=0.6, role="link",
+                            rgba=(0.30, 0.31, 0.27, 1.0))],
+                children=jaws)
+    palm.children = [roll]
+
+
 def base_height(robot) -> float:
     return SHOULDER_HEIGHT - robot.arm["z"]
 
@@ -92,7 +111,7 @@ def _box(name, half, pos, rgba, mass=None, friction=(0.8, 0.005, 0.0001)):
 def table_prop() -> ch.Prop:
     (x0, x1), (y0, y1) = TABLE["x"], TABLE["y"]
     return ch.Prop(Link("table", pos=((x0 + x1) / 2, (y0 + y1) / 2, TABLE_TOP),
-                        geoms=[_box("table_top", ((x1 - x0) / 2, (y1 - y0) / 2, 0.02), (0, 0, -0.02), (0.6, 0.5, 0.4, 1.0))]))
+                        geoms=[_box("table_top", ((x1 - x0) / 2, (y1 - y0) / 2, 0.05), (0, 0, -0.05), (0.6, 0.5, 0.4, 1.0))]))
 
 
 def block_prop(name, xy, z=None, rgba=(0.85, 0.2, 0.2, 1.0)) -> ch.Prop:
@@ -114,9 +133,9 @@ def tray_prop(xy) -> ch.Prop:
 def rope_prop(xy) -> ch.Prop:
     r, L = ROPE["radius"], ROPE["length"]
     return ch.Prop(Link("rope", pos=(xy[0], xy[1], TABLE_TOP + r + 0.001),
-                        geoms=[Geom("rope_g", "capsule", (r,), fromto=(-L / 2, 0, 0, L / 2, 0, 0), mass=ROPE["mass"],
+                        geoms=[Geom("rope_g", "capsule", (r,), fromto=(0, -L / 2, 0, 0, L / 2, 0), mass=ROPE["mass"],   # across the jaws
                                     friction=(ROPE["mu"], 0.01, 0.0001), rgba=(0.9, 0.75, 0.2, 1.0))]),
-                   free=True, condim=4)
+                   free=True, condim=4, solref=(0.002, 1.0))                     # a stiff contact: a thin, light body
 
 
 def pendulum_prop(pivot) -> ch.Prop:
@@ -143,11 +162,13 @@ def task_scene(name: str) -> Task:
         return Task(name, [table_prop(), block_prop("block", (x, yl)), tray_prop((x, yl - 0.30))],
                     {"pick": (x, yl), "place": (x, yl - 0.30)})
     if name == "handover":
-        return Task(name, [table_prop(), block_prop("block", (x, yl))], {"pick": (x, yl), "meet": (x - 0.05, 0.0)})
+        return Task(name, [table_prop(), block_prop("block", (x, yl))], {"pick": (x, yl), "meet": (1.55, 0.0)})
     if name == "rope":
         return Task(name, [table_prop(), rope_prop((x, yl))], {"pick": (x, yl)})
     if name == "catch":
-        pivot = (x + 0.02, yl, TABLE_TOP + 0.75)
+        # the swing's far end straight ahead of the left shoulder: the pincer points along +x into it (no yaw)
+        a = math.radians(PENDULUM["angle_deg"])
+        pivot = (x + 0.02, yl + PENDULUM["length"] * math.sin(a), TABLE_TOP + 0.75)
         return Task(name, [table_prop(), pendulum_prop(pivot)], {"pivot": pivot})
     raise KeyError(name)
 
@@ -212,6 +233,8 @@ class BenchController:
         self.kp_jaw = omr.ARM_GAINS["jaw"][0]
         self.g = omr.arm_geometry()
         self.arm_q = {s: None for s in omr.SIDES}
+        self.jog = {s: None for s in omr.SIDES}                     # where the interface's jog has brought each pin
+        self.roll_cmd = {}
         self.s.on_reset(lab, self)
 
     def __call__(self, obs):
@@ -223,6 +246,7 @@ class BenchController:
             names = omr.arm_joints(side)
             arm = cmds["arm"][side]
             if arm is not None:
+                arm = self._jogged(side, obs, arm)
                 ik = omr.arm_ik(arm[0], arm[1], side)
                 if ik is not None:
                     self.arm_q[side] = ik
@@ -230,6 +254,12 @@ class BenchController:
                 self.arm_q[side] = tuple(float(obs.q[self.idx[n]]) for n in names[:4])
             for n, v in zip(names[:4], self.arm_q[side]):
                 q_t[n], qd_t[n], ff[n] = float(v), 0.0, float(bias[self.dof[n]])
+            # the roll jogs at JOG_TURN: a step to the servo runs it at its no-load speed into a limit cycle
+            r0 = self.roll_cmd.get(side, 0.0)
+            r1 = float(cmds["roll"][side])
+            dr = JOG_TURN * self.lab.control_dt
+            self.roll_cmd[side] = r1 if abs(r1 - r0) <= dr else r0 + math.copysign(dr, r1 - r0)
+            q_t[f"{side}_roll"], qd_t[f"{side}_roll"] = self.roll_cmd[side], 0.0
             pc = cmds["pincer"][side]
             half = min(pc.opening / 2.0, 0.95 * self.g["Lj"])
             q_open = math.asin(half / self.g["Lj"])
@@ -241,6 +271,24 @@ class BenchController:
                 else:
                     q_t[n] = q_open
         return Command(q_target=q_t, qd_target=qd_t, tau_ff=ff)
+
+    def _jogged(self, side, obs, arm):
+        """The interface jogs a pin towards its commanded pose at ``JOG_SPEED`` [m/s] and ``JOG_TURN`` [rad/s], from
+        where the pin is when the first command arrives."""
+        target, el = np.asarray(arm[0], float), float(arm[1])
+        if self.jog[side] is None:
+            q = [float(obs.q[self.idx[n]]) for n in omr.arm_joints(side)[:4]]
+            p0, el0 = omr.arm_fk(q, side)
+            self.jog[side] = [np.asarray(p0, float), float(el0)]
+        p, e = self.jog[side]
+        dt = self.lab.control_dt
+        d = target - p
+        L = float(np.linalg.norm(d))
+        step = JOG_SPEED * dt
+        p = target.copy() if L <= step else p + d / L * step
+        e = el if abs(el - e) <= JOG_TURN * dt else e + math.copysign(JOG_TURN * dt, el - e)
+        self.jog[side] = [p, e]
+        return p, e
 
 
 # ----------------------------------------------------------------------------------------------- the session
@@ -269,22 +317,33 @@ class Session:
         self.lab, self.ctrl = lab, ctrl
         self.sensing = Sensing(lab, [p.name for p in self.task.props if p.free or p.name == "pendulum"])
 
+    def bench_frame(self):
+        """The bench's actual orientation and position (world): the hull frame the arms' IK and FK work in."""
+        d = self.lab.data
+        b = self.lab._body_id("bench")
+        return d.xmat[b].reshape(3, 3).copy(), d.xpos[b].copy()
+
+    def to_bench(self, p_world):
+        Rb, pb = self.bench_frame()
+        return Rb.T @ (np.asarray(p_world, float) - pb)
+
     def step(self, t, obs):
         c = self.sensing.contacts()
         self.contact_now = c
         objs = self.sensing.objects()
         pins = {}
+        Rb, pb = self.bench_frame()
         for side in omr.SIDES:
             q = [float(obs.q[self.ctrl.idx[n]]) for n in omr.arm_joints(side)]
-            (px, py, pz), el = omr.arm_fk(q, side)
-            pins[side] = (np.array([px, py, pz + base_height(self.lab.robot)]), el, q[4])
+            p_hull, el = omr.arm_fk(q, side)
+            pins[side] = (pb + Rb @ np.asarray(p_hull), el, q[4])
         self.seen.put(t, {"objects": objs, "pins": pins, "t": t})
         seen = self.seen.get(t)
         self.ui.apply(t, self.sides)
         hands, arm_cmd = self.operator(t, seen, {s: self.sides[s].seen_contact(t) for s in omr.SIDES})
         self.arm_link.put(t, arm_cmd)
         arm_now = self.arm_link.get(t) or {s: None for s in omr.SIDES}
-        out = {"arm": {}, "pincer": {}, "contact": {}}
+        out = {"arm": {}, "pincer": {}, "contact": {}, "roll": {}}
         for side in omr.SIDES:
             ts = self.sides[side]
             ts.operator_hand(t, hands[side])
@@ -294,7 +353,8 @@ class Session:
             ts.feedback(t, touching, force)
             out["pincer"][side], out["contact"][side] = pc, touching
             a = arm_now.get(side)
-            out["arm"][side] = None if a is None else (np.array(a[0]) - np.array([0, 0, base_height(self.lab.robot)]), a[1])
+            out["arm"][side] = None if a is None else (self.to_bench(a[0]), a[1])
+            out["roll"][side] = 0.0 if a is None or len(a) < 3 else a[2]
             if self.rec and int(round(t / self.lab.control_dt)) % 5 == 0:
                 self.rec.add(f"hand_{side}", t, joints_true=hands[side].vector(),
                              joints_est=(est.vector() if est is not None else np.full(20, np.nan)))
@@ -328,6 +388,7 @@ class Operator:
         self.k = 0
         self.t_step = 0.0
         self.target = {s: None for s in omr.SIDES}
+        self.roll = {s: 0.0 for s in omr.SIDES}                       # the wrist roll the interface commands
         self.hand = {s: key_pose("flat") for s in omr.SIDES}
         self.hand_from = dict(self.hand)
         self.hand_goal = dict(self.hand)
@@ -341,7 +402,15 @@ class Operator:
         self.hand_from[side], self.hand_goal[side], self.hand_t0[side] = self.hand[side], pose, t
 
     def move(self, side, p, elevation=-math.pi / 2):
-        self.target[side] = (tuple(p), elevation)
+        self.target[side] = (tuple(p), elevation, self.roll[side])
+
+    def set_roll(self, side, angle):
+        def step(t, seen, felt):
+            self.roll[side] = angle
+            if self.target[side] is not None:
+                self.target[side] = (self.target[side][0], self.target[side][1], angle)
+            return t - self.t_step > abs(angle) / JOG_TURN + 0.5            # the roll's jog, and a moment to settle
+        return step
 
     def at(self, seen, side, p, tol=None):
         if seen is None:
@@ -386,6 +455,13 @@ class Operator:
     def wait(self, T):
         return lambda t, seen, felt: t - self.t_step >= T
 
+    def freeze_hand(self, side):
+        """Stop the hand where it is (the operator felt contact): the grip is the squeeze made in the feedback's delay."""
+        def step(t, seen, felt):
+            self.set_hand(side, self.hand[side], t)
+            return True
+        return step
+
     _poses = {}
 
     def _pose(self, name, u):
@@ -411,18 +487,18 @@ class PickPlace(Operator):
         tgt = self.s.task.targets
         grasp_z = grasp_pin_z(TABLE_TOP + BLOCK["size"] / 2)
         return [self.hand_to(L, "pinch", 0.25),                                  # open the jaws wide
-                self.go(L, lambda s: (tgt["pick"][0] + 0.02, tgt["pick"][1], grasp_z + self.approach_h), tol=0.02),
-                self.go(L, lambda s: (_obj(s, "block")[0] + 0.02, _obj(s, "block")[1], grasp_z), tol=0.01),
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], grasp_z + self.approach_h), tol=0.02),
+                self.go(L, lambda s: (_obj(s, "block")[0], _obj(s, "block")[1], grasp_z), tol=0.01),
                 self.hand_to(L, "pinch", 0.75),                                  # close onto the block
                 self.until_felt(L),
                 self.hand_to(L, "pinch", 1.0),                                   # squeeze
                 self.wait(0.3),
-                self.go(L, lambda s: (tgt["pick"][0] + 0.02, tgt["pick"][1], grasp_z + 0.15), tol=0.02),
-                self.go(L, lambda s: (tgt["place"][0] + 0.02, tgt["place"][1], grasp_z + 0.15), tol=0.02),
-                self.go(L, lambda s: (tgt["place"][0] + 0.02, tgt["place"][1], grasp_z + 0.04), tol=0.015),
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], grasp_z + 0.15), tol=0.02),
+                self.go(L, lambda s: (tgt["place"][0], tgt["place"][1], grasp_z + 0.15), tol=0.02),
+                self.go(L, lambda s: (tgt["place"][0], tgt["place"][1], grasp_z + 0.04), tol=0.015),
                 self.hand_to(L, "pinch", 0.25),                                  # let go
                 self.wait(0.5),
-                self.go(L, lambda s: (tgt["place"][0] + 0.02, tgt["place"][1], grasp_z + 0.2), tol=0.03)]
+                self.go(L, lambda s: (tgt["place"][0], tgt["place"][1], grasp_z + 0.2), tol=0.03)]
 
     def success(self, lab, sensing) -> bool:
         b = sensing.objects()["block"]
@@ -432,24 +508,39 @@ class PickPlace(Operator):
 
 
 class Handover(Operator):
+    """Left picks the block and lifts it to the meeting point; there it rolls the block so that its free faces face
+    the right arm; the right pincer, rolled 90 deg (its jaws opening horizontally), comes in level along its own line
+    of approach and grips those faces; the left lets go and withdraws. Needs the bench's wrist roll (``_add_roll``)."""
+
     def steps(self):
         L, R = "L", "R"
         tgt = self.s.task.targets
         grasp_z = grasp_pin_z(TABLE_TOP + BLOCK["size"] / 2)
-        mz = TABLE_TOP + 0.30
-        meet = tgt["meet"]
+        lift = 0.30
+        meet = np.array([tgt["meet"][0], tgt["meet"][1]])
+        g = omr.arm_geometry()
+        shoulder = {sd: np.array([g["x"], omr.SIDES[sd] * g["y"]]) for sd in omr.SIDES}
+        u = {sd: (meet - shoulder[sd]) / np.linalg.norm(meet - shoulder[sd]) for sd in omr.SIDES}
+        th = {sd: math.atan2(u[sd][1], u[sd][0]) for sd in omr.SIDES}
+        roll_L = th["R"] - th["L"]                        # the left jaws' faces turned to face the right arm's line
+
+        def r_pin(s, back):
+            b = _obj(s, "block")
+            return (b[0] - back * u["R"][0], b[1] - back * u["R"][1], b[2])
+
         return [self.hand_to(L, "pinch", 0.25),
-                self.go(L, lambda s: (tgt["pick"][0] + 0.02, tgt["pick"][1], grasp_z + self.approach_h), tol=0.02),
-                self.go(L, lambda s: (_obj(s, "block")[0] + 0.02, _obj(s, "block")[1], grasp_z), tol=0.01),
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], grasp_z + self.approach_h), tol=0.02),
+                self.go(L, lambda s: (_obj(s, "block")[0], _obj(s, "block")[1], grasp_z), tol=0.01),
                 self.hand_to(L, "pinch", 0.75), self.until_felt(L), self.hand_to(L, "pinch", 1.0), self.wait(0.3),
-                self.go(L, lambda s: (meet[0], meet[1] + 0.03, mz), elevation=-math.pi / 2, tol=0.02),
-                self.hand_to(R, "pinch", 0.25),
-                # the right pincer comes in level, from the side, below the left jaws
-                self.go(R, lambda s: (_obj(s, "block")[0] - 0.05, _obj(s, "block")[1] - 0.10, _obj(s, "block")[2]), elevation=0.0, tol=0.02),
-                self.go(R, lambda s: (_obj(s, "block")[0] - 0.20, _obj(s, "block")[1], _obj(s, "block")[2]), elevation=0.0, tol=0.015),
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], grasp_z + lift), tol=0.02),
+                self.go(L, lambda s: (meet[0], meet[1], grasp_z + lift), tol=0.015),
+                self.set_roll(L, roll_L),
+                self.hand_to(R, "pinch", 0.25), self.set_roll(R, math.pi / 2),
+                self.go(R, lambda s: r_pin(s, 0.32), elevation=0.0, tol=0.02),
+                self.go(R, lambda s: r_pin(s, 0.19), elevation=0.0, tol=0.012),
                 self.hand_to(R, "pinch", 0.75), self.until_felt(R), self.hand_to(R, "pinch", 1.0), self.wait(0.3),
                 self.hand_to(L, "pinch", 0.25), self.wait(0.5),
-                self.go(L, lambda s: (meet[0], meet[1] + 0.20, mz + 0.10), tol=0.03),
+                self.go(L, lambda s: (meet[0], meet[1], grasp_z + lift + 0.15), tol=0.03),
                 self.wait(1.0)]
 
     def success(self, lab, sensing) -> bool:
@@ -462,12 +553,13 @@ class Rope(Operator):
     def steps(self):
         L = "L"
         tgt = self.s.task.targets
-        z = grasp_pin_z(TABLE_TOP + ROPE["radius"], into=0.012)
-        return [self.hand_to(L, "pinch", 0.45),
-                self.go(L, lambda s: (tgt["pick"][0] - 0.04, tgt["pick"][1], z + self.approach_h), elevation=-math.pi / 2, tol=0.02),
-                self.go(L, lambda s: (_obj(s, "rope")[0] - 0.04, _obj(s, "rope")[1], z), elevation=-math.pi / 2, tol=0.006),
-                self.hand_to(L, "pinch", 0.93), self.until_felt(L, force=2.0), self.hand_to(L, "pinch", 1.0), self.wait(0.3),
-                self.go(L, lambda s: (tgt["pick"][0] - 0.04, tgt["pick"][1], z + 0.25), tol=0.03),
+        z = grasp_pin_z(TABLE_TOP + ROPE["radius"], into=0.0)        # tips at the rope's centre: the open jaws' corners dip lower
+        return [self.hand_to(L, "pinch", 0.72),                                 # opened just enough for a 10 mm rope
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], z + self.approach_h), elevation=-math.pi / 2, tol=0.02),
+                self.go(L, lambda s: (_obj(s, "rope")[0], tgt["pick"][1], z), elevation=-math.pi / 2, tol=0.012),
+                self.hand_to(L, "pinch", 0.92), self.until_felt(L, force=2.0),
+                self.hand_to(L, "pinch", 0.935), self.wait(0.3),                 # a gentle squeeze: a wedge on a round rope
+                self.go(L, lambda s: (tgt["pick"][0], tgt["pick"][1], z + 0.25), tol=0.03),
                 self.wait(1.0)]
 
     def success(self, lab, sensing) -> bool:
@@ -475,8 +567,8 @@ class Rope(Operator):
 
 
 class Catch(Operator):
-    """The pincer waits level with its jaws open at the end of the block's swing; the operator closes when the block
-    looks inside the jaws and (nearly) still."""
+    """The pincer waits level with its jaws open at the end of the block's swing (the block is released once it is
+    there); the operator closes as the block comes in — early, by ``lead_m``, as a person anticipates a swing."""
 
     def steps(self):
         L = "L"
@@ -484,20 +576,39 @@ class Catch(Operator):
         a = math.radians(PENDULUM["angle_deg"])
         Lp = PENDULUM["length"]
         end = pv + np.array([0.0, -Lp * math.sin(a), -Lp * math.cos(a)])          # the swing's far end (it starts at +a)
-        pin = end - np.array([0.16, 0.0, 0.0])                                      # the block 160 mm out along the jaws
+        # the block 190 mm out along the jaws, where the open wedge is wide enough; the pin at its arrival height
+        pin = end - np.array([0.19, 0.0, 0.008])
 
-        return [self.hand_to(L, "pinch", 0.2),
+        def release(t, seen, felt):
+            self.s.lab.set_weld("hold_swing", False)                           # the scene lets the block go
+            self.s.events.append((t, "swing released"))
+            return True
+
+        return [self.hand_to(L, "pinch", self.open_u),
                 self.go(L, lambda s: tuple(pin), elevation=0.0, tol=0.01),
+                self.wait(0.5), release,
                 self.wait_swing(end),
-                self.hand_to(L, "pinch", 1.0, wait=0.15), self.until_felt(L, force=2.0, timeout=1.0), self.wait(1.5)]
+                self.hand_to(L, "pinch", 1.0, wait=0.0),                         # close fast...
+                self.until_felt(L, force=2.0, timeout=1.0), self.freeze_hand(L),     # ...and stop on the first buzz
+                self.wait(1.5)]
+
+    lead_m = 0.10          # the operator anticipates: closes while the block is still this far from the swing's end
+    open_u = 0.40          # the jaws open enough that the block clears them on its way in, no wider
 
     def wait_swing(self, end):
-        """Close when the seen block is within 25 mm of the swing's end (and the arm is in place)."""
+        """Close when the seen block is within ``lead_m`` of the swing's end and coming towards it."""
+        last = {}
+
         def step(t, seen, felt):
             if seen is None:
                 return False
             bob = seen["objects"].get("bob")
-            return bob is not None and float(np.linalg.norm(bob - end)) < 0.025 and t - self.t_step > 0.5
+            if bob is None:
+                return False
+            d = float(np.linalg.norm(bob - end))
+            closing = "d" in last and d < last["d"]
+            last["d"] = d
+            return d < self.lead_m and closing and t - self.t_step > 0.2
         return step
 
     def success(self, lab, sensing) -> bool:
@@ -513,23 +624,25 @@ def make_lab(task: Task, robot=None, **kwargs):
     robot = robot or bench()
     opts = dict(LAB_OPTIONS)
     opts.update(kwargs)
-    welds = [ch.Weld("bench_fixed", "bench", None, active=True)]
+    welds = [ch.Weld("bench_fixed", "bench", None, active=True, solref=(0.001, 1.0))]   # stiff: the arms' loads
+    if task.name == "catch":                                                   # the block held at its release angle
+        welds.append(ch.Weld("hold_swing", "pendulum", None, active=True))
     return ch.ChironLab(robot, ch.Flat(), props=task.props, welds=welds, **opts)
 
 
-def _fix_bench(lab):
-    """Weld the bench to the world where it stands now (the weld's relative pose set from the current state)."""
+def _fix_bench(lab, body="bench", weld="bench_fixed"):
+    """Weld ``body`` to the world where it is now (the weld's relative pose set from the current state)."""
     import mujoco
     m, d = lab.model, lab.data
-    b = lab._body_id("bench")
-    e = lab._weld_id["bench_fixed"]
+    b = lab._body_id(body)
+    e = lab._weld_id[weld]
     qinv = np.zeros(4)
     mujoco.mju_negQuat(qinv, d.xquat[b])
     R = d.xmat[b].reshape(3, 3)
     m.eq_data[e, 0:3] = 0.0
     m.eq_data[e, 3:6] = R.T @ (np.zeros(3) - d.xpos[b])
     m.eq_data[e, 6:10] = qinv
-    lab.set_weld("bench_fixed", True)
+    lab.set_weld(weld, True)
 
 
 def start_pose(task_name: str) -> dict:
@@ -545,3 +658,63 @@ def start_pose(task_name: str) -> dict:
     if task_name == "catch":
         q["swing"] = math.radians(PENDULUM["angle_deg"])
     return q
+
+
+def run_task(name: str, *, latency_s: float = 0.02, jitter_s: float = 0.0, loss: float = 0.0, seed: int = 0,
+             duration: float = 30.0, record_to=None) -> dict:
+    """One task end to end: the bench, the scene, two gloves and the operator; the outcome, and the recording when
+    ``record_to`` is a folder."""
+    import mujoco
+    task = task_scene(name)
+    lab = make_lab(task)
+    session = Session(task, latency_s=latency_s, jitter_s=jitter_s, loss=loss, seed=seed, record=record_to is not None)
+    ctrl = BenchController(session)
+    q0 = start_pose(name)
+    orig_reset = session.on_reset
+
+    def on_reset(lab_, ctrl_):
+        m, d = lab_.model, lab_.data
+        for n, v in q0.items():
+            j = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, n)
+            if j >= 0:
+                d.qpos[m.jnt_qposadr[j]] = v
+                d.qvel[m.jnt_dofadr[j]] = 0.0
+        mujoco.mj_forward(m, d)
+        _fix_bench(lab_)
+        if name == "catch":
+            _fix_bench(lab_, "pendulum", "hold_swing")
+        orig_reset(lab_, ctrl_)
+    session.on_reset = on_reset
+    base = (0.0, 0.0, base_height(lab.robot))
+    ep = lab.run(ctrl, duration=duration, rules=None, settle=0.0, seed=seed, base_pos=base,
+                 info={"controller": f"glove teleop: {name}", "treatment": f"latency {latency_s * 1000:.0f} ms"},
+                 stop_when=lambda lab_: session.operator.done_t is not None and lab_.time > session.operator.done_t + 0.3)
+    op = session.operator
+    ok = bool(op.success(lab, session.sensing)) and op.done_t is not None
+    out = {"task": name, "latency_ms": latency_s * 1000, "seed": seed, "success": ok,
+           "time_s": float(op.done_t) if op.done_t is not None else float("nan"),
+           "steps_done": op.k, "steps": len(op.plan), "sim_s": float(lab.time),
+           "link": {s: session.sides[s].channel.link.stats() for s in omr.SIDES}}
+    if record_to is not None:
+        session.rec.meta["outcome"] = {k: v for k, v in out.items() if k != "link"}
+        session.rec.meta["operator_steps"] = op.log
+        out["recording"] = str(session.rec.save(record_to))
+    return out
+
+
+def latency_sweep(latencies_ms=(10, 50, 100, 200, 300, 500), seeds=(0, 1), tasks=TASKS, processes: int = 4):
+    """Every task at every round-trip latency (split evenly between the downlink and the uplink) and seed: success
+    and completion time — where grasping starts to fail sets the latency budget (``docs/bionic.md``)."""
+    from concurrent.futures import ProcessPoolExecutor
+    import pandas as pd
+    jobs = [(t, l / 1000.0, s) for t in tasks for l in latencies_ms for s in seeds]
+    with ProcessPoolExecutor(processes) as ex:
+        rows = list(ex.map(_sweep_one, jobs))
+    return pd.DataFrame(rows)
+
+
+def _sweep_one(job):
+    t, l, s = job
+    r = run_task(t, latency_s=l, seed=s)
+    r.pop("link", None)
+    return r
