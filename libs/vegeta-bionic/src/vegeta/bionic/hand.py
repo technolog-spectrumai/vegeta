@@ -120,14 +120,16 @@ def key_pose(name: str) -> HandPose:
     return HandPose(j)
 
 
-def fingertips(pose: HandPose, size: HandSize) -> dict:
-    """Fingertip positions [m] in the hand frame (wrist at the origin; see the module) for each finger."""
+def finger_chains(pose: HandPose, size: HandSize) -> dict:
+    """Each finger's joint centres [m, hand frame], from its base to its tip: the thumb (CMC, MCP, IP, tip), the
+    fingers (metacarpal base, MCP, PIP, DIP, tip). What a glove's rings, sensor pods and links are placed on."""
     s = 1.0 if size.side == "R" else -1.0
     out = {}
     for f in FINGERS:
         mc, pp, mp, dp = size.segments[f]
         y0, splay = _BASE[f]
         base = np.array([0.0, s * y0 * size.breadth, 0.0])
+        pts = [base.copy()]
         if f == "thumb":
             flex = [pose.joints["thumb_cmc_flex"], pose.joints["thumb_mcp"], pose.joints["thumb_ip"]]
             lengths = [mc, pp, dp]
@@ -136,6 +138,7 @@ def fingertips(pose: HandPose, size: HandSize) -> dict:
             abd = splay + pose.joints[f"{f}_abd"]
             # the metacarpal is fixed in the palm; the chain flexes from the MCP head
             base = base + np.array([mc, s * math.tan(splay) * mc, 0.0])
+            pts.append(base.copy())
             lengths = [pp, mp, dp]
         p, theta = base.copy(), 0.0
         if f == "thumb":
@@ -146,13 +149,20 @@ def fingertips(pose: HandPose, size: HandSize) -> dict:
                 theta += a
                 yaw = splay - theta
                 p = p + L * np.array([math.cos(lift) * math.cos(yaw), s * math.cos(lift) * math.sin(yaw), -math.sin(lift)])
+                pts.append(p.copy())
         else:
             heading = np.array([math.cos(abd), s * math.sin(abd), 0.0])
             for a, L in zip(flex, lengths):
                 theta += a
                 p = p + L * (math.cos(theta) * heading + np.array([0.0, 0.0, -math.sin(theta)]))
-        out[f] = p
+                pts.append(p.copy())
+        out[f] = pts
     return out
+
+
+def fingertips(pose: HandPose, size: HandSize) -> dict:
+    """Fingertip positions [m] in the hand frame (wrist at the origin; see the module) for each finger."""
+    return {f: pts[-1] for f, pts in finger_chains(pose, size).items()}
 
 
 def pinch_aperture(pose: HandPose, size: HandSize) -> float:

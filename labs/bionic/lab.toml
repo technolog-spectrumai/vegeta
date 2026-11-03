@@ -1,0 +1,3 @@
+name = "bionic"
+title = "Bionic lab — gloves, puppet arms, assistive exoskeletons"
+machines = ["glove"]
