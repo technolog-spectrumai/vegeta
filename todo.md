@@ -66,6 +66,19 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage B — vegeta-bionic: glove teleoperation, the puppet arm, assistive exoskeletons (2026-11-03)
+The plan is `docs/bionic.md`.
+- [x] B0 the plan and the design decisions (`docs/bionic.md`)
+- [ ] B1 `libs/vegeta-bionic` skeleton: hand, sensors, SimGlove, estimate, link (in-process); the risk file
+- [ ] B2 retarget + vibration feedback + teleop: a scripted hand drives Onager Manus's two pincers in MuJoCo; demonstrations recorded and replayed
+- [ ] B3 the glove's CAD (printed mounts, three hand sizes); choose the electronics; link over serial/UDP
+- [ ] B4 force feedback in simulation: a brake, then a motor, on the glove's linkages; haptic-loop stability with delay
+- [ ] B5 the puppet arm: a scaled printed copy of the Manus arm with magnetic encoders; teach, record, replay
+- [ ] B6 the whole arm from the glove (wrist IMU + tracker → arm IK)
+- [ ] TODO exoskeleton: grip assist (fingers) — risk file first
+- [ ] TODO exoskeleton: wrist and forearm support (wrist extension)
+- [ ] TODO exoskeleton: elbow and shoulder support (against gravity)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)
