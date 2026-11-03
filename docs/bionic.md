@@ -66,6 +66,32 @@ and stale-message dropping), `safety` (`Watchdog`, `Limits`), `RISK.md`. Measure
 under 2° rms after calibration; unsensed DIPs ~3–5° rms (tendon coupling); the pinch aperture ~1.4 mm rms; the wrist
 ~2.7° mean once the magnetometer is calibrated (8° without: the hard-iron offset, not the filter, was the error).
 
+## P2 done (2026-11-03)
+
+`retarget` (position and rate modes, clutch with re-reference, grip force past contact), `haptics` (an ERM motor,
+contact force → vibration), `teleop` (glove channel, delay line, the operator's interface mocked: clutch and mode
+from scheduled events), `record` (the demonstration folder). The bench: `labs/land/designs/manus_teleop.py`, Onager
+Manus's two arms (with a wrist roll) and straight-jawed pincers on a fixed base; a scripted operator acts on the
+delayed state it sees. All four tasks succeed at 20 ms and their demonstrations record.
+
+The latency sweep (round trip split evenly between down- and uplink; seeds 0 and 1 gave identical outcomes;
+`labs/land/designs/manus_teleop_latency.csv`):
+
+| round trip | pick and place | hand-over | rope | catch |
+|---|---|---|---|---|
+| 10 ms | ✓ 8.7 s | ✓ 16.5 s | ✓ 5.7 s | ✓ 3.5 s |
+| 50 ms | ✓ 8.9 s | ✓ 16.8 s | ✓ 5.8 s | ✓ 3.6 s |
+| 100 ms | ✓ 9.3 s | ✓ 17.3 s | ✓ 6.0 s | ✗ |
+| 200 ms | ✓ 10.0 s | ✓ 18.1 s | ✓ 6.4 s | ✗ |
+| 300 ms | ✓ 10.7 s | ✓ 19.0 s | ✓ 6.8 s | ✗ |
+| 500 ms | ✓ 12.1 s | ✓ 20.8 s | ✓ 7.6 s | ✗ |
+
+Grasping a still object never fails up to 500 ms; it only gets slower (about +40 % at 500 ms, the operator waits
+for each move to show). Catching a moving one fails from 100 ms: the jaws close after the block has left the slot.
+**Latency budget: ≤ 50 ms round trip for dynamic tasks; up to 500 ms acceptable, at a time cost, for static ones.**
+The operator is scripted: a human adapts (anticipates the swing) and a human-in-the-loop test should move the catch
+limit; the budget is the scripted lower bound.
+
 ## TODO: assistive exoskeletons (not now)
 
 Each starts from the glove's primitives and gets its own risk file before any powered prototype is worn.
@@ -114,4 +140,4 @@ same folder.
 
 * the glove's sizes: the hand-size range to cover, left and right
 * the switch and clutch gestures: which ones are unambiguous and never happen by accident during grasping
-* the latency sweep's tasks: which picks and passes in P2 define "grasping fails"
+* ~~the latency sweep's tasks~~: answered in P2 (still grasps tolerate 500 ms, the catch needs ≤ 50 ms)
