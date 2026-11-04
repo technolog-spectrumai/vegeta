@@ -105,7 +105,7 @@ The design is **Halka** (ion ring; decided in round 1).
 | **P0** | this plan; the branch `dev_plasma` | pushed |
 | **P1** ✓ | `vegeta-fulgur` `gas`, `climate`, `corona`, `breakdown`, `supply`, `thruster`: the 0-D/1-D toolkit against the literature | 17 benchmark tests pass; `docs/plasma_p1.png` |
 | **P2** ✓ | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | 21 tests; masses within 25 % of the video (under: the frames are the least certain part); drawings sent |
-| **P3** | `field` + `charge` + the integral `ehd`: the 2-D axisymmetric solve of one emitter–ground ring pair, then the full presets; `halka_fulgur.py` | Fulgur's velocity and power for the Mark IV within tolerance of 4.1 m/s / 50 W; the +17 % and +26 % trends have the right sign; a hypothesis for the 4B's loss |
+| **P3** (2/3) | `ehd` on FiPy: the corona solved on the ring section; `halka_fulgur.py` | ✓ the coaxial benchmark within 3 % of the exact solution; ✓ the Mark 4C section solved (thrust = I dz/μ); open: the jet (OpenFOAM export) and the trends (+17 % teeth, +26 % spacing, the 4B's loss) |
 | **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
 | **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
 
@@ -160,6 +160,34 @@ print), the bronze emitter strips with every tooth drawn on request (1 mm pitch,
 at the grounds), the standoffs (the creepage path), screws and terminals. `masses()` from volumes and materials:
 Mark IV 161 g (video 209), 4B 401 g (513), 4C 401 g (484) — all under, the frames being the least certain part; the
 4C is not yet lighter than the 4B in the model. `halka_draw3d.py` → `halka_3d.png`, `halka_3d_detail.png`; 21 tests.
+
+## P3 so far (2026-11-04): the corona solved
+
+`vegeta.fulgur.ehd` on **FiPy**: Poisson with the ions' space charge and the ions' steady drift–diffusion
+(upwind), the Kaptzov condition held by adjusting the injected charge (warm start, adaptive relaxation; the ions
+settle, not only the current). Three geometries: FiPy's cylindrical grid, a planar section with the r weight in
+the coefficients (Gmsh meshes: `ring_section` builds a preset's rings with the emitter as a rounded edge of
+radius `edge_r`, the teeth's effective tip), and a plain slab.
+
+**Benchmark**: the coaxial wire-to-cylinder corona has an exact space-charge solution; the solver matches its
+current within 3 % from 1.3× to 10× onset on both the grid and the Gmsh section, the current is conserved across
+the gap to 0.3 %, and `∫ρE dV = I d/μ` holds to 2 %. Townsend's 1914 formula sits 10–15 % under the exact one.
+
+**The Mark 4C solved** (32 k cells, 10–30 s a voltage): onset 17.6 kV for the 0.1 mm modelled edge (the real
+teeth start lower: the onset is the least certain output, ±30 %); 20 kV → 1.7 mA, 9.8 gf, 33 W; 23 kV → 3.2 mA,
+17.8 gf, 73 W; 26 kV → 4.9 mA, 27.5 gf, 128 W. **The finding: thrust = I·dz/μ**, with dz the grounds' axial
+offset (the convergence), within 5 % at every offset tried — the ions travel mostly radially between the rings,
+the radial momentum cancels between the inner and outer grounds, and only the axial part is thrust. So the
+convergence is not a refinement, it is the whole mechanism of a ring thruster: thrust per watt = dz/(μV) — at 20 kV,
+2.0 mN/W at dz = 8 mm, 2.9 at 12, 3.9 at 16, 5.0 at 20 — while the current at a fixed voltage falls with the longer
+gap (3.3 → 0.1 mA). The 1-D model now carries the axial projection; its presets' dz were raised to 10–12 mm,
+which reconciles the video's thrust and power better than the 8 mm first read off the screenshots. `labs/plasma/
+designs/halka_fulgur.py` (sweep, offset sweep, the figure `halka_fulgur.png`; the 1-D numbers under the mocks).
+
+Lessons from the solver, kept as tests: FiPy's cell gradient on a cylindrical grid carries a φ/r term, its face
+gradient does not; a constraint added in a loop accumulates; the ions need an outflow on every face but the
+emitter's; Gmsh arcs stay under π and a line belongs to one physical group; the hub ring must not touch its
+neighbour.
 
 ## Arcs: predicted, not simulated
 

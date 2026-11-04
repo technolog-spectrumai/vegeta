@@ -54,7 +54,7 @@ class RingThruster:
             for g in near:
                 d = math.hypot(g.radius - e.radius, g.z - e.z) - g.tip_radius
                 out.append(Gap(d=d, r=e.tip_radius, length=2 * math.pi * e.radius * e.edges,
-                               collection=self.collection / len(near)))
+                               collection=self.collection / len(near), axial=abs(g.z - e.z) / (d + g.tip_radius)))
         return out
 
     def estimate(self, V: float, air: Air = DRY) -> dict:
@@ -110,11 +110,13 @@ def _rings(radii_roles, dz=0.0, tip=50e-6, ground_section=3e-3):
 
 
 # --- Plasma Channel's generations (all dimensions estimated from the screenshots: the rings' radii from a ~150 mm
-# Mark IV on a kitchen scale and the Form 4's 200 mm build for the 4B; the gaps from the ring pitch)
+# Mark IV on a kitchen scale and the Form 4's 200 mm build for the 4B; the gaps from the ring pitch; the axial
+# offsets dz — the convergence — from the 2-D solve's finding that the thrust is I dz / mu: 10-12 mm reconciles the
+# video's thrust and power better than the 8 mm first read off the screenshots)
 MARK4 = RingThruster(
     "mark4",
     _rings([(0.072, "ground"), (0.061, "emitter"), (0.050, "ground"), (0.039, "emitter"), (0.028, "ground")],
-           dz=0.009, tip=50e-6, ground_section=6e-3),
+           dz=0.010, tip=50e-6, ground_section=6e-3),
     hub_radius=0.025, outer_radius=0.075, creepage=0.014, mass_kg=0.209,
     notes="dual convergence: 3 copper-plated printed grounds, 2 serrated bronze emitters; 50 W; 3.5 m/s at 78 % RH, 4.1 at 50 %",
     estimated=("radii", "gap", "tip_radius", "creepage", "hub"))
@@ -122,7 +124,7 @@ MARK4 = RingThruster(
 MARK4B = RingThruster(
     "mark4b",
     _rings([(0.096, "ground"), (0.082, "emitter"), (0.068, "ground"), (0.054, "emitter"), (0.040, "ground"),
-            (0.030, "ground")], dz=0.008, tip=40e-6, ground_section=3e-3),
+            (0.030, "ground")], dz=0.012, tip=40e-6, ground_section=3e-3),
     hub_radius=0.010, outer_radius=0.100, creepage=0.018, mass_kg=0.513,
     notes="3x the flow area, 4 nickel-plated grounds, 2 loop emitters with longer sharper teeth, hollow-bolt gap adjustment; 3.6 m/s max",
     estimated=("radii", "gap", "tip_radius", "creepage", "hub"))

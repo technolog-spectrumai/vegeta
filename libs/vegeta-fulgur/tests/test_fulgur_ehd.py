@@ -61,3 +61,18 @@ def test_townsend_is_the_approximation(problem):
     # Townsend's 1914 formula underestimates the exact solution by ~10-15 % here; the solver follows the exact one
     V = 2.5 * V0
     assert townsend_coaxial_current(V, V0, A, R, L) < exact_current(V) < 1.25 * townsend_coaxial_current(V, V0, A, R, L)
+
+
+def test_ring_section_builds_and_solves_coarsely():
+    from vegeta.fulgur.ehd import ring_section
+    from vegeta.fulgur.thruster import MARK4C
+    rings = [(r.radius, r.role, r.z) for r in MARK4C.rings]
+    mesh, em, gr, edge = ring_section(rings, r_outer=0.16, z_lo=-0.06, z_hi=0.10, lc_edge=40e-6, lc_ground=1.5e-3, lc_far=12e-3)
+    assert np.asarray(mesh.cellVolumes).min() > 0                            # no degenerate cells (the hub ring is narrowed)
+    assert np.asarray(edge).sum() > 0 and (np.asarray(em) & np.asarray(edge)).sum() == np.asarray(edge).sum()
+    prob = CoronaProblem(mesh, em, gr, DRY.peek_field(0.1e-3, 0.9), geometry="planar_axi", inject=edge)
+    r = prob.solve(22e3)
+    dz = 0.012
+    assert r.converged and r.current > 0
+    assert r.force_z == pytest.approx(r.current * dz / MU, rel=0.2)          # thrust = I dz / mu
+    assert abs(r.force_r) < 0.5 * r.force_z                                   # the radial parts mostly cancel

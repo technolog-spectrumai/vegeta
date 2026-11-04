@@ -8,7 +8,10 @@ Relations (positive DC corona in air, the unipolar drift region doing the work):
 * current: ``I = C V (V - V0)`` (Townsend 1914, Warburg): per metre of emitter edge ``C = 2 k eps0 mu L / d^2``
   (the wire-to-plane form of Sigmond's saturation current; ``k = collection`` is the fraction of it a ring ground
   collects — the one fitted geometry factor of this model, 0.6 from the Mark IV's 50 W; the 2-D solve replaces it);
-* thrust: ``T = I d / mu`` (all the ions' momentum goes to the neutrals); thrust per watt ``T / P = d / (mu V)``;
+* thrust: ``T = I d_axial / mu`` — all the ions' momentum goes to the neutrals, but only its component along the
+  thrust axis is thrust: ``axial = d_z / d`` for a gap whose vector is not along the axis (ring to ring: mostly
+  radial, and the radial parts cancel between the inner and outer grounds — the 2-D solve, ``ehd``, found
+  ``T = I dz / mu`` within 5 %); thrust per watt ``T / P = d_axial / (mu V)``;
 * the jet: ``T = rho A v^2`` at the exit area ``A`` (a free jet with no losses through the rings).
 """
 from __future__ import annotations
@@ -30,6 +33,7 @@ class Gap:
     length: float
     collection: float = 0.6
     roughness: float = 0.9
+    axial: float = 1.0                 # d_z / d: the fraction of the gap along the thrust axis
 
     def onset_voltage(self, air: Air = DRY) -> float:
         return air.peek_field(self.r, self.roughness) * self.r * math.log(4.0 * self.d / self.r) / 2.0
@@ -43,7 +47,7 @@ class Gap:
         return 0.0 if V <= V0 else self.current_constant(air) * V * (V - V0)
 
     def thrust(self, V: float, air: Air = DRY) -> float:
-        return self.current(V, air) * self.d / air.mobility()
+        return self.current(V, air) * self.d * self.axial / air.mobility()
 
     def power(self, V: float, air: Air = DRY) -> float:
         return self.current(V, air) * V
@@ -69,5 +73,5 @@ def thrust_from_velocity(v: float, area: float, air: Air = DRY) -> float:
 def voltage_for_thrust(gap: Gap, thrust: float, air: Air = DRY) -> float:
     """The voltage at which ``gap`` makes ``thrust`` (the positive root of C V (V - V0) d / mu = T)."""
     C, V0 = gap.current_constant(air), gap.onset_voltage(air)
-    I = thrust * air.mobility() / gap.d
+    I = thrust * air.mobility() / (gap.d * gap.axial)
     return (V0 + math.sqrt(V0 * V0 + 4.0 * I / C)) / 2.0
