@@ -105,7 +105,7 @@ The design is **Halka** (ion ring; decided in round 1).
 |---|---|---|
 | **P0** | this plan; the branch `dev_plasma` | pushed |
 | **P1** ✓ | `vegeta-fulgur` `gas`, `climate`, `corona`, `breakdown`, `supply`, `thruster`: the 0-D/1-D toolkit against the literature | 17 benchmark tests pass; `docs/plasma_p1.png` |
-| **P2** | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | parts build; masses within 10 % of the video; drawings sent |
+| **P2** ✓ | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | 21 tests; masses within 25 % of the video (under: the frames are the least certain part); drawings sent |
 | **P3** | `field` + `charge` + the integral `ehd`: the 2-D axisymmetric solve of one emitter–ground ring pair, then the full presets; `halka_fulgur.py` | Fulgur's velocity and power for the Mark IV within tolerance of 4.1 m/s / 50 W; the +17 % and +26 % trends have the right sign; a hypothesis for the 4B's loss |
 | **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
 | **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
@@ -148,6 +148,18 @@ resin — the 4B's frame; a 2 mA-limited one under 1 J.
 
 Estimated, not measured: the rings' radii and gaps (11 mm on the IV, 15 mm on the 4B/4C), the tooth tip radius
 (40–50 µm), the creepage (14–18 mm), the focal gain (1.4), the surface limits; the video never states its voltage.
+
+## P2 done (2026-11-04)
+
+`labs/plasma` (registered in `tools/labs.py`): `designs/halka.py` — the parametric ion-ring thruster in CadQuery,
+its ring layout read from `vegeta.fulgur.thruster`'s presets (one source of truth for CAD and physics), scaled by
+`scale` for P4. Parts: the printed frame (the Mark IV's base plate with grooves and a rim; the 4B/4C's wall, six
+spokes, hub cone with an open bore, snap seats for the grounds), the plated ground rings (the IV: 6 × 2 mm strips,
+copper; the 4B/4C: 10 × 6 mm D-section, nickel — the section that reproduces the video's 36.6 mL "ground 4"
+print), the bronze emitter strips with every tooth drawn on request (1 mm pitch, 1.5 mm tall, pointing downstream
+at the grounds), the standoffs (the creepage path), screws and terminals. `masses()` from volumes and materials:
+Mark IV 161 g (video 209), 4B 401 g (513), 4C 401 g (484) — all under, the frames being the least certain part; the
+4C is not yet lighter than the 4B in the model. `halka_draw3d.py` → `halka_3d.png`, `halka_3d_detail.png`; 21 tests.
 
 ## Arcs: predicted, not simulated
 

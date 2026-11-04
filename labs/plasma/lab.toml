@@ -1,0 +1,3 @@
+name = "plasma"
+title = "Plasma lab — what pushes air without blades"
+machines = ["halka"]
