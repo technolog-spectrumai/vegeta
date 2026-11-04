@@ -106,7 +106,7 @@ The design is **Halka** (ion ring; decided in round 1).
 | **P1** ✓ | `vegeta-fulgur` `gas`, `climate`, `corona`, `breakdown`, `supply`, `thruster`: the 0-D/1-D toolkit against the literature | 17 benchmark tests pass; `docs/plasma_p1.png` |
 | **P2** ✓ | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | 21 tests; masses within 25 % of the video (under: the frames are the least certain part); drawings sent |
 | **P3** ✓ | `ehd` on FiPy: the corona solved on the ring section; `jet`: the integral jet and the OpenFOAM sources; `halka_fulgur.py`, `halka_cfd.py`, `halka_trends.py` | the coaxial benchmark within 3 % of the exact solution; the Mark 4C solved (thrust = I dz/μ); the three trends have the right sign (+8 % teeth vs +17 %, +20 % spacing-and-grounds vs +26 %, the 4B slower at each step); the CFD case prepared with the sources, run where OpenFOAM is |
-| **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
+| **P4** ✓ | the scaling study: the 1-D model calibrated on nine 2-D solves, swept over diameter, offset, stages and voltage at a spark margin; masses of thruster, supply and battery; Warsaw's year | `halka_scaling.png`: hover is out of reach with the supply aboard (T/W ≤ 0.11), a winged demonstrator is marginal (margin 1.05–1.12 at L/D 10); the supply's mass per watt is the deciding estimate |
 | **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
 
 ## Decisions taken in v0
@@ -212,6 +212,39 @@ the case, mocked in the tests.
 A fourth check, free: the first attempt at trend 2 moved the *radial* pitch and gave −10 %; the Mark III's
 spacing is axial (a straight multi-stage thruster), and the model only agreed once the geometry was the right
 one — a reminder that the preset's geometry, not the solver, is now the limit of the agreement.
+
+## P4 done (2026-11-04): the scaling study and the demonstrator decision
+
+`vegeta.fulgur.scaling`: a `Family` (diameter, ring pitch, the grounds' offset dz, stages, hub) with the P3
+laws — thrust `I dz/μ`, thrust per watt `dz/(μV)`, stages adding — and the 1-D current law **calibrated on the
+2-D solve**: nine `ehd` solutions over pitch 11–18 mm × dz 8–16 mm, each at 0.85 of its gap's spark voltage, give
+`k_current` 1.83 (spread 17 %) and `k_onset` 4.35 (the 0.1 mm edge's real onset is 4× the hyperboloid formula's).
+Masses: a *flight build* (carbon/foam frame 600 g/m², 3 mm aluminium tube grounds 25 g/m, the bronze emitters) —
+the printed replica is 4–7× heavier — plus the supply (60 g + 2.5 g/W, the P1 estimate) and a 2-minute battery at
+150 Wh/kg. `labs/plasma/designs/halka_scaling.py`, `halka_scaling.png`.
+
+What the sweep says (dry air, spark margin 1.2):
+
+* thrust per watt is set by dz and V alone: 4.4 mN/W at dz 20 mm and 23 kV, whatever the diameter;
+* thrust grows with diameter² and stages: Ø0.5 m × 3 stages at dz 12 mm gives 218 gf for 720 W; Ø1.2 m × 3 at
+  dz 20 mm, 1.96 kgf for 4.35 kW;
+* **the hover wall**: thrust over the weight of thruster + supply + battery saturates at **0.11** from Ø0.3 m up
+  — the supply (1.86 kg of the 3.0 kg at Ø0.5 m) and the battery scale with the power exactly as the thrust does,
+  so a bigger thruster buys nothing. Hover with the supply aboard is out of reach by a factor of nine, and would
+  stay so even with a 1 g/W converter (T/W ≈ 0.25);
+* **the winged route**: a glider at L/D 10 needs T/W 0.1, which Ø ≥ 0.3 m at dz 20 mm with 2–3 stages just gives
+  (margin 1.05–1.12) — the MIT 2018 ion plane's regime. The smallest: Ø0.3 m, 3 stages, dz 20 mm, 115 gf, 256 W,
+  1.14 kg all-in;
+* **humidity**: the Ø0.5 m thruster gives 275–285 gf from March to September, 140 in October, 20–65 gf in
+  December–February (surface-limited), **nothing on a rainy day** (the wet-surface limit falls under onset), 245 gf
+  indoors. An outdoor demonstrator is a summer one, or needs the standoffs redesigned for creepage.
+
+**Decision by the rule of round 1** (attempt; scale up if too weak; none if it cannot work): *scaling up does not
+help hover* — the wall is a ratio, not a size — so no hover demonstrator. A **winged demonstrator** is marginal
+and hinges on the one number this study cannot settle on paper: the supply's mass per watt. The next step before
+any build is to pin it: a real converter spec (or a weighed one) at 20–25 kV and 300–700 W; at 2.5 g/W the
+demonstrator is marginal, at 1 g/W it flies with margin 2. Honest alternative if the supply stays heavy: the
+thruster on a tether (supply on the ground), which demonstrates the thrust and the control but not flight.
 
 ## Arcs: predicted, not simulated
 
