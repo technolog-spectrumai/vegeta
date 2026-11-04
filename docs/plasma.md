@@ -86,27 +86,27 @@ RF noise; the toolkit reports the supply current and the ozone rate with every r
 
 A new lab, *what pushes air without blades*, registered in `tools/labs.py`. Stage by stage, as the others:
 
-* `designs/ionring.py` — the parametric ring thruster in CadQuery (dedalus): printed frame with spokes and clip
+* `designs/halka.py` — the parametric ring thruster in CadQuery (dedalus): printed frame with spokes and clip
   seats, N plated ground rings, M emitter rings with teeth, hub cone, the convergence as axial offsets; presets
   `mark4`, `mark4b`, `mark4c` from the table above; `bom()` with masses (checked against 209 / 513 / 484 g) and
   the plating areas; `draw3d` pictures;
-* `designs/ionring_fulgur.py` — the study: for each preset, Fulgur's onset voltage, `I(V)`, thrust, exit velocity
+* `designs/halka_fulgur.py` — the study: for each preset, Fulgur's onset voltage, `I(V)`, thrust, exit velocity
   and power against the video's columns; the serrated/square and the gap/voltage experiments reproduced;
-* `designs/ionring_cfd.py` — the Aeromant case with the EHD body force, prepared, run where OpenFOAM is;
+* `designs/halka_cfd.py` — the Aeromant case with the EHD body force, prepared, run where OpenFOAM is;
 * `tests/` — every part builds; the presets' masses; Fulgur's numbers within the stated tolerance of the video
   (loose: ±30 % on velocity, the power within a factor of 2 of 50 W for the Mark IV);
 * later `sims/`: the thruster on a vehicle in MuJoCo with the thrust curve as the actuator.
 
-The thruster's own name (for Vegeta's version, not the replica) is an open question below.
+The design is **Halka** (ion ring; decided in round 1).
 
 ## Phases
 
 | phase | what | done when |
 |---|---|---|
 | **P0** | this plan; the branch `dev_plasma` | pushed |
-| **P1** | `vegeta-fulgur` `gas`, `corona`, `validate`, `mock`: the 0-D/1-D toolkit against the literature | the benchmark tests pass; a `T/P` vs `d/V` plot matching Masuyama & Barrett |
-| **P2** | `labs/plasma/designs/ionring.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | parts build; masses within 10 % of the video; drawings sent |
-| **P3** | `field` + `charge` + the integral `ehd`: the 2-D axisymmetric solve of one emitter–ground ring pair, then the full presets; `ionring_fulgur.py` | Fulgur's velocity and power for the Mark IV within tolerance of 4.1 m/s / 50 W; the +17 % and +26 % trends have the right sign; a hypothesis for the 4B's loss |
+| **P1** ✓ | `vegeta-fulgur` `gas`, `climate`, `corona`, `breakdown`, `supply`, `thruster`: the 0-D/1-D toolkit against the literature | 17 benchmark tests pass; `docs/plasma_p1.png` |
+| **P2** | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | parts build; masses within 10 % of the video; drawings sent |
+| **P3** | `field` + `charge` + the integral `ehd`: the 2-D axisymmetric solve of one emitter–ground ring pair, then the full presets; `halka_fulgur.py` | Fulgur's velocity and power for the Mark IV within tolerance of 4.1 m/s / 50 W; the +17 % and +26 % trends have the right sign; a hypothesis for the 4B's loss |
 | **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
 | **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
 
@@ -128,6 +128,26 @@ The thruster's own name (for Vegeta's version, not the replica) is an open quest
 | the HV supply | modelled simply: a voltage source with a series resistance, a current limit and a stored capacitance; mass and efficiency from a curve, not a circuit |
 | humidity | two design conditions: Warsaw year-round (the monthly RH and temperature range) and dry indoor air |
 | CFD | OpenFOAM via Aeromant: the P4 body-force export is run, not only prepared |
+
+## P1 done (2026-11-04)
+
+`libs/vegeta-fulgur` (`vegeta.fulgur`): `gas` (Air: density, mobility, Peek, breakdown and stability fields, net
+ionisation), `climate` (Warsaw's months, a rainy day, the dry room), `corona` (the 1-D corona: onset, the
+Townsend current law per metre of edge, thrust `I d/μ`, the jet), `breakdown` (the four criteria → spark margin),
+`supply` (operating point with fold-back, input power, mass, a spark's energy), `thruster` (ring thrusters, the
+Mark IV / 4B / 4C presets with their geometry estimated), 17 tests, `RISK.md`, `docs/plasma_p1.png`.
+
+The 1-D model has one fitted factor, `collection` = 0.6, set so the Mark IV draws 50 W at a spark margin above 1:
+that gives 18 kV, 2.8 mA, 17 gf, a mean exit velocity of 3.0 m/s and 4.2 m/s at the focal point (the video: 4.1).
+It then **predicts** the Mark 4C: 25 gf at 21 kV / 71 W with 3.6 m/s at the focal point (the video: 25 gf, 3.7 m/s),
+at a spark margin of 1.06 — "as much power as I want before it self-destructs". Both run at ~1.5 MV/m mean field,
+3.3–3.5 mN/W. Through Warsaw's year the 4C's limit is the air gap from March to September (~31 gf at 23 kV) and the
+wet resin surface from October to February (23–30 gf); a rainy day halves it (11 gf at 14 kV); the dry room gives
+29 gf. A 50 W supply without a current trip delivers 1.5 kJ into a 30 s arc, seven times what softens a gram of
+resin — the 4B's frame; a 2 mA-limited one under 1 J.
+
+Estimated, not measured: the rings' radii and gaps (11 mm on the IV, 15 mm on the 4B/4C), the tooth tip radius
+(40–50 µm), the creepage (14–18 mm), the focal gain (1.4), the surface limits; the video never states its voltage.
 
 ## Arcs: predicted, not simulated
 
