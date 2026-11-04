@@ -170,7 +170,10 @@ class ChannelModel:
         self.F.setValue(np.asarray(self.n.value) * vv)
         self.te.setValue(np.clip(self.te.value, self.te_min, self.te_max))
         self.t += dt
-        self.history.append((self.t, J * self.A))
+        n_now, F_now = np.asarray(self.n.value), np.asarray(self.F.value)
+        i_exit = int(np.searchsorted(self.z, self.ch.L))
+        thrust_now = self.m_i * F_now[-1] * (F_now[-1] / max(n_now[-1], self.n_floor)) * self.A
+        self.history.append((self.t, J * self.A, thrust_now, F_now[i_exit] * self.A))
 
     def run(self, t_end: float = 100e-6, dt: float = 1e-8, every: int = 1) -> dict:
         steps = int(round(t_end / dt))
@@ -185,6 +188,8 @@ class ChannelModel:
         last = t > t[-1] * (1 - tail)
         I_mean = float(I[last].mean())
         I_amp = float(I[last].max() - I[last].min()) / 2
+        thrust_mean = float(hist[last, 2].mean())                             # over the breathing cycles
+        flux_mean = float(hist[last, 3].mean())
         # the breathing frequency from the dominant line of the tail
         f_breath = float("nan")
         if last.sum() > 16:
@@ -202,7 +207,8 @@ class ChannelModel:
         thrust = float(self.m_i * F[-1] * v[-1] * self.A)                   # momentum flux at the domain's end
         S = n * nn * k_ionisation(te, self.propellant)
         return {"I_d": I_mean, "I_amp": I_amp, "I_rel_amp": I_amp / I_mean if I_mean else float("nan"), "f_breathing_Hz": f_breath,
-                "thrust": thrust, "mass_utilisation": mdot_ions / self.mdot, "v_exit": float(v[-1]), "te_max": float(te.max()),
+                "thrust": thrust_mean, "thrust_now": thrust, "mass_utilisation": flux_mean * self.m_i / self.mdot,
+                "mass_utilisation_now": mdot_ions / self.mdot, "v_exit": float(v[-1]), "te_max": float(te.max()),
                 "z_ionisation_peak": float(self.z[np.argmax(S)]), "z_te_peak": float(self.z[np.argmax(te)]),
                 "profiles": {"z": self.z, "n": n, "n_n": nn, "v": v, "T_e": te, "E": self.E, "phi": phi, "S": S, "B": self.B},
                 "history": hist, "t_end": float(self.t)}

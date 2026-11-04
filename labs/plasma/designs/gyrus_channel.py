@@ -40,9 +40,10 @@ def model(p=None, n_cells: int = 100, **kw) -> ChannelModel:
     return ChannelModel(ch, lambda zz: float(np.interp(zz, z, b)), p["v_d"], pt.mdot_a, n_cells=n_cells, **kw)
 
 
-def run(t_end_us: float = 300.0, out="gyrus_channel.npz", dt: float = 2e-8, n_cells: int = 80, report_every_us: float = 20.0) -> dict:
+def run(t_end_us: float = 300.0, out="gyrus_channel.npz", dt: float = 2e-8, n_cells: int = 80, report_every_us: float = 20.0,
+        alpha_in: float = 1.0 / 160.0) -> dict:
     p = {q.name: q.default for q in Gyrus.parameters}
-    mdl = model(p, n_cells=n_cells)
+    mdl = model(p, n_cells=n_cells, alpha_in=alpha_in)
     pt = point_for_power(p["power"], p["v_d"])
     t = 0.0
     while t < t_end_us - 1e-9:
@@ -54,7 +55,7 @@ def run(t_end_us: float = 300.0, out="gyrus_channel.npz", dt: float = 2e-8, n_ce
     s = mdl.summary(tail=0.6)
     pr = s["profiles"]
     np.savez(out, history=s["history"], **{k: v for k, v in pr.items()}, L=mdl.ch.L, I_d=s["I_d"], I_amp=s["I_amp"], f=s["f_breathing_Hz"],
-             thrust=s["thrust"], eta_m=s["mass_utilisation"], v_exit=s["v_exit"], I_0d=pt.i_d, thrust_0d=pt.thrust, V_d=p["v_d"])
+             thrust=s["thrust"], eta_m=s["mass_utilisation"], v_exit=s["v_exit"], I_0d=pt.i_d, thrust_0d=pt.thrust, V_d=p["v_d"], alpha_in=alpha_in)
     return s
 
 
@@ -81,8 +82,9 @@ def plot(inp="gyrus_channel.npz", out="gyrus_channel.png"):
             ax2 = ax.twinx(); ax2.plot(z, d["B"] * 1e4, color=GREY, lw=1, ls=":"); ax2.set_ylabel("B [G]", color=MUTED)
         if key == "n":
             ax2 = ax.twinx(); ax2.plot(z, d["S"] / d["S"].max(), color=ORANGE, lw=1, ls=":"); ax2.set_ylabel("ionisation rate (normalised)", color=ORANGE)
-    fig.suptitle(f"Gyrus-300 channel, 1-D fluid at {float(d['V_d']):.0f} V: mean I_d {float(d['I_d']):.2f} A (0-D {float(d['I_0d']):.2f}), thrust {float(d['thrust'])*1e3:.1f} mN (0-D {float(d['thrust_0d'])*1e3:.1f}), "
-                 f"mass utilisation {float(d['eta_m']):.2f}, ions leave at {float(d['v_exit'])/1e3:.1f} km/s", color=INK, fontsize=11)
+    alpha = f", Bohm 1/{1/float(d['alpha_in']):.0f} in the channel" if "alpha_in" in d else ""
+    fig.suptitle(f"Gyrus-300 channel, 1-D fluid at {float(d['V_d']):.0f} V{alpha}: mean I_d {float(d['I_d']):.2f} A (0-D {float(d['I_0d']):.2f}), "
+                 f"mean thrust {float(d['thrust'])*1e3:.1f} mN (0-D {float(d['thrust_0d'])*1e3:.1f}), mass utilisation {float(d['eta_m']):.2f}, ions leave at {float(d['v_exit'])/1e3:.1f} km/s", color=INK, fontsize=11)
     fig.tight_layout()
     fig.savefig(out, dpi=100)
     return out
@@ -95,5 +97,6 @@ if __name__ == "__main__":
         args = sys.argv[2:] if sys.argv[1:2] == ["run"] else sys.argv[1:]
         t_end = float(args[0]) if args else 300.0
         out = args[1] if len(args) > 1 else "gyrus_channel.npz"
-        s = run(t_end, out)
+        alpha = 1.0 / float(args[2]) if len(args) > 2 else 1.0 / 160.0
+        s = run(t_end, out, alpha_in=alpha)
         print("saved", out)
