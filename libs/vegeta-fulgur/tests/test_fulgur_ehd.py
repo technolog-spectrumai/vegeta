@@ -51,7 +51,7 @@ def test_current_matches_the_exact_solution(problem, factor):
 
 def test_force_identity_and_conservation(problem):
     r = problem.solve(3.0 * V0, open_boundary=False)
-    assert -r.force_r == pytest.approx(r.current * (R - A) / MU, rel=0.03)   # ∫ rho E dV = I d / mu
+    assert r.force_r == pytest.approx(r.current * (R - A) / MU, rel=0.03)    # ∫ rho E dV = I d / mu, outward
     rc = np.asarray(problem.mesh.cellCenters[0])
     I_r = 2 * math.pi * rc * L * np.asarray(problem.rho.value) * MU * problem._E_cell()[0]
     assert I_r.max() / I_r.min() < 1.03                                       # the same current at every radius
