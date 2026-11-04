@@ -1,0 +1,136 @@
+# Fulgur and the bladeless turbine — plan (v0)
+
+Two things, in order:
+
+1. **`vegeta-fulgur`** (`libs/vegeta-fulgur`, imported as `vegeta.fulgur`): a reusable cold-plasma toolkit. Its
+   first physics is the corona discharge in air and the thrust it makes (electrohydrodynamic, "ionic" thrust). Later
+   physics (dielectric-barrier discharge actuators for flow control, plasma igniters, ozone, sterilisation) reuses
+   the same field, chemistry and transport pieces.
+2. **A bladeless turbine** for electric, noiseless transport. We begin by **recreating the small prototype** from
+   Plasma Channel's video *I Built A Bladeless Turbine For Silent Flight* (the transcript and the screenshots in this
+   session), in CAD and in Fulgur, and check Fulgur's numbers against what the video measured. Only when Fulgur
+   reproduces the small one do we scale up.
+
+The toolkit is tested against published measurements first, the replica second: the video's numbers are from a
+garage (a vane anemometer, 78 % humidity, an unstated voltage), so they bound Fulgur, they do not calibrate it.
+
+## What the video gives us
+
+Four generations; all ring electrodes, radial symmetry, air pulled through the rings along the axis.
+
+| model | layout | mass | velocity (anemometer, at the focal point) | power | thrust |
+|---|---|---|---|---|---|
+| Mark III (2023) | multi-stage: 3 sections × 3 segments, straight | — | 2.6–2.7 m/s; 3.3 m/s after wider electrode spacing and larger grounds (+26 %) | — | — |
+| Mark IV | single stage, **dual convergence**: 3 copper-plated printed ground rings + 2 serrated bronze emitter rings; outer and inner streams converge at the rim and again ~100 mm downstream | 209 g | 2.7 / 3.2 / 3.5 m/s at low / medium / full power (78 % RH); **4.1 m/s** at 50 % RH | **50 W** | — |
+| Mark 4B | 3× the flow area of IV, as large as the Form 4 prints (~200 mm): 4 nickel-plated ground rings, 2 plain bronze loop emitters with longer, sharper teeth, hollow-bolt threading to adjust the gap | 513 g | 2.5 / 2.8 / 3.1 / 3.6 m/s; focal point 150 mm back | — | — |
+| Mark 4C | 4B without the threading, less restriction, lighter | 484 g | 2.7 m/s low, **3.7 m/s** max | — | **~25 gf** (pendulum: 499 g at 470 mm, 24 mm deflection) |
+
+Measured sensitivities worth reproducing:
+
+* serrated emitter edge vs square teeth: **+17 %** velocity;
+* wider electrode spacing and larger grounds on the Mark III: **+26 %**;
+* **more gap + more voltage made it worse** on the 4B (two steps, each slower), ending in a short that melted the
+  frame — the opposite of the 1-D theory, so something else limits it (the sheath of ions reaching the next ring,
+  the frame's surface conduction, the supply's current limit);
+* humidity: shorts at 78 % RH; the same thruster gave 3.5 → 4.1 m/s going from 78 % to 50 % RH.
+
+What the screenshots add (estimates, to be refined as parameters, never hard-coded):
+
+* Mark IV: 5 concentric rings of ~6 mm tall strip on a green printed base, outer diameter ~150 mm (it sits on a
+  kitchen scale), 6 printed supports between rings, clear resin, 4 mm-ish screws; the emitters are bronze strip,
+  teeth ~1 mm pitch, bent to rings and brazed;
+* Mark 4B: a blue printed frame, 6 spokes, clip seats for 4 ground rings of 3 mm round section, outer ring ~200 mm,
+  a central cone (hub) with an open 20 mm bore, emitter loops of ~2 mm bronze; the Onshape model "Ionic Thrust Wing"
+  shows the grounds as D-section rings and the convergence as the inner rings sitting downstream of the outer ones;
+* Form 4 print: "Mark 4B ground 4", 3 h 43 min, 36.6 mL of resin, printed on edge.
+
+## The physics Fulgur must get right
+
+A corona at the sharp emitter ionises air; ions drift to the ground ring through the gap `d` at mobility
+`μ ≈ 2.0×10⁻⁴ m²/(V·s)` (positive ions, dry air), colliding with neutrals on the way; the neutrals are the jet.
+
+* one-dimensional limit: thrust `T = I·d/μ`, thrust per watt `T/P = d/(μ·V)` — longer gaps and lower voltages are
+  *more* efficient per watt, which is why the Mark III gained from spacing and why the 4B's loss is interesting;
+* the current: `I = C·V·(V − V₀)` (Townsend/Warburg), onset `V₀` from Peek's law with the emitter's tip radius; the
+  teeth lower `V₀` and raise `C`, which is the serration's +17 %;
+* the jet: momentum flux `T = ρ·A·v²` at the exit area; for the 4C, 0.245 N at 3.7 m/s needs `A ≈ 0.015 m²`
+  (a 140 mm equivalent disc, consistent with a ~200 mm ring with a hub) — a first check that the velocity and
+  thrust the video reports agree with each other;
+* the power the 4C must have drawn: with `d ≈ 20 mm` and `V ≈ 30 kV`, `T/P ≈ 3.3 mN/W`, so 0.245 N ≈ **75 W**; the
+  Mark IV's stated 50 W at 4.1 m/s over a smaller area sits on the same curve. Fulgur's first result is this curve;
+* humidity: water lowers the mobility slightly and the breakdown field a lot (surface conduction on the resin);
+  Fulgur models it as a mobility and onset correction plus a surface-flashover limit on the printed supports;
+* what it cannot be: an EHD thruster's `T/P` is ~2–20 mN/W; a vehicle needs thrust ≥ weight, so at 5 mN/W a 1 kg
+  craft needs 2 kW and a supply lighter than that. The plan keeps this limit visible from the first number.
+
+## `vegeta-fulgur` — what it holds
+
+numpy + scipy only (sparse solvers), no OpenFOAM; the CFD step is *prepared* for Aeromant and run elsewhere, as
+Drako's CFD is.
+
+| module | what | first version |
+|---|---|---|
+| `gas` | air: density, ion mobility (species, temperature, pressure, humidity), Peek onset field, breakdown field | tables and the standard fits |
+| `corona` | 0-D/1-D: onset voltage for a tooth/wire/point, the `C·V·(V−V₀)` current law, 1-D thrust and `T/P`, velocity at an exit area | analytic; validated on wire-to-cylinder data |
+| `field` | the electrostatic field: Poisson on a 2-D axisymmetric finite-volume grid (`∇²φ = −ρ_q/ε₀`), conductors as Dirichlet boundaries, the frame as a dielectric | sparse direct solve |
+| `charge` | ion transport: drift–diffusion `∂ρ_q/∂t + ∇·(ρ_q μ E − D ∇ρ_q) = 0`, the Kaptzov condition at the emitter (the field stays at onset; the charge injected adjusts), iterated with `field` until the current converges | upwind FV, steady by pseudo-time |
+| `ehd` | the body force `f = ρ_q·E` and the flow it drives: first an integral jet model (momentum balance per ring pair, losses through the rings), then an `fvOptions` body-force export for Aeromant/OpenFOAM | integral model; the export prepared with mocks |
+| `thruster` | ring-electrode builders: concentric emitter/ground rings with radius, axial offset (convergence), gap, tooth pitch, section → the 2-D axisymmetric section Fulgur solves, and the 3-D CAD inputs the lab's design uses | Mark IV, 4B, 4C presets |
+| `validate` | the published benchmarks as tests: Peek's onset; wire-to-cylinder `I(V)`; Masuyama & Barrett (2013) `T/P` vs `d/V`; Moreau et al. (2013) velocity profiles | each a test with a tolerance |
+| `mock` | fixed numbers under `vegeta.mock`, so the lab's tests run without the solvers | — |
+
+`RISK.md` from the start: high voltage (tens of kV), ozone and NOx production, fire on resin frames (the 4B melted),
+RF noise; the toolkit reports the supply current and the ozone rate with every result.
+
+## The lab: `labs/plasma`
+
+A new lab, *what pushes air without blades*, registered in `tools/labs.py`. Stage by stage, as the others:
+
+* `designs/ionring.py` — the parametric ring thruster in CadQuery (dedalus): printed frame with spokes and clip
+  seats, N plated ground rings, M emitter rings with teeth, hub cone, the convergence as axial offsets; presets
+  `mark4`, `mark4b`, `mark4c` from the table above; `bom()` with masses (checked against 209 / 513 / 484 g) and
+  the plating areas; `draw3d` pictures;
+* `designs/ionring_fulgur.py` — the study: for each preset, Fulgur's onset voltage, `I(V)`, thrust, exit velocity
+  and power against the video's columns; the serrated/square and the gap/voltage experiments reproduced;
+* `designs/ionring_cfd.py` — the Aeromant case with the EHD body force, prepared, run where OpenFOAM is;
+* `tests/` — every part builds; the presets' masses; Fulgur's numbers within the stated tolerance of the video
+  (loose: ±30 % on velocity, the power within a factor of 2 of 50 W for the Mark IV);
+* later `sims/`: the thruster on a vehicle in MuJoCo with the thrust curve as the actuator.
+
+The thruster's own name (for Vegeta's version, not the replica) is an open question below.
+
+## Phases
+
+| phase | what | done when |
+|---|---|---|
+| **P0** | this plan; the branch `dev_plasma` | pushed |
+| **P1** | `vegeta-fulgur` `gas`, `corona`, `validate`, `mock`: the 0-D/1-D toolkit against the literature | the benchmark tests pass; a `T/P` vs `d/V` plot matching Masuyama & Barrett |
+| **P2** | `labs/plasma/designs/ionring.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | parts build; masses within 10 % of the video; drawings sent |
+| **P3** | `field` + `charge` + the integral `ehd`: the 2-D axisymmetric solve of one emitter–ground ring pair, then the full presets; `ionring_fulgur.py` | Fulgur's velocity and power for the Mark IV within tolerance of 4.1 m/s / 50 W; the +17 % and +26 % trends have the right sign; a hypothesis for the 4B's loss |
+| **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
+| **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
+
+## Decisions taken in v0
+
+* the toolkit is `vegeta-fulgur`, a separate distribution like `vegeta-bionic`, numpy + scipy, no CFD inside;
+* 2-D axisymmetric is the resolution: the rings are axisymmetric but for the teeth and spokes, which enter as
+  effective parameters (tooth pitch sets the emitter's onset and current per length, spokes as blockage);
+* the replica keeps the video's geometry as *parameters with estimated defaults*, each marked estimated until
+  measured;
+* validation order: literature → video; the video's numbers are checks, not fits.
+
+## Open questions (ask before P2)
+
+1. The name for Vegeta's own thruster (the replica is `ionring`); a Latin name, as the other machines.
+2. The transport target for P5: a drone-sized demonstrator (hundreds of grams of thrust) or a model of a
+   passenger-scale craft on paper only? EHD thrust per watt decides what is honest here.
+3. The HV supply: model it (mass, efficiency, current limit, which explains the 4B) or treat it as ideal in P1–P3?
+4. Humidity: Warsaw's year-round range as the design condition, or dry air with a derating?
+5. Is OpenFOAM available anywhere to run the P4 export, or do we stay with the integral jet model?
+
+## Sources
+
+* Plasma Channel, *I Built A Bladeless Turbine For Silent Flight* (transcript and screenshots in this session).
+* Masuyama, K., Barrett, S. R. H. (2013). On the performance of electrohydrodynamic propulsion. *Proc. R. Soc. A*.
+* Moreau, E., Benard, N., Lan-Sun-Luk, J.-D., Chabriat, J.-P. (2013). Electrohydrodynamic force produced by a wire-to-cylinder DC corona discharge in air at atmospheric pressure. *J. Phys. D*.
+* Peek, F. W. (1929). *Dielectric Phenomena in High Voltage Engineering* (the onset law).
