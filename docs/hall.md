@@ -64,7 +64,7 @@ magnetised checks, the magnetostatic solve and the field map.
 | **H1** ✓ | `fulgur.hall`: performance, scaling, the magnetised checks, the reluctance circuit; tests against the SPT-100 and BHT-200 published numbers | SPT-100: 85 mN / 1608 s vs 83 / 1600; BHT-200: 14.6 mN / 1468 s vs 12.8 / 1390 (+14 %) |
 | **H2** ✓ | the Gyrus-300 CAD, masses, drawings | 8 parts build; 514 g; `gyrus_3d.png` |
 | **H3** ✓ | magnetostatics on FiPy: the circuit's field map, the radial field at the exit plane against the target, the coil's ampere-turns adjusted | 410 G at the exit (target 410), 38 G at the anode, peak 414 G at 0.87 L; 293 At per coil; `gyrus_fulgur.png` |
-| **H4** ✓ | a 1-D channel model (quasi-neutral fluid: ionisation, ion momentum, the electron mobility across B with an anomalous term): the discharge current, the ionisation zone, the potential profile — the step from the efficiency chain to the physics | `gyrus_channel.png`: the breathing mode at 42–44 kHz; the mean current 0.60 A at Bohm 1/160 against the chain's 1.07 A — not within 20 %: the anomalous transport coefficient is the calibration every Hall model needs, and the test (T5) is what sets it |
+| **H4** ✓ | a 1-D channel model (quasi-neutral fluid: ionisation, ion momentum, the electron mobility across B with an anomalous term): the discharge current, the ionisation zone, the potential profile — the step from the efficiency chain to the physics | `gyrus_channel.png`, `gyrus_channel_b64.png`: the breathing mode at 31–44 kHz; the mean current 0.49–0.60 A against the chain's 1.07 A — not within 20 %: the breathing is too deep in this simplest closure, the anomalous transport and the wall losses are the calibration every Hall model needs, and the test (T5) is what sets them |
 | **H5** ✓ | thermal (the anode's and the walls' power), wall erosion and life, the vacuum test-stand plan (chamber, pumping, thrust balance) | `gyrus_life.png`: the bare body runs at 324 °C (too hot for the coils' wire and for SmCo), a Ø137 mm radiator brings it to 184 °C; 0.47 mm per 1000 h at the exit → ~8 500 h on a 2 mm wall; a 12 000 l/s xenon-pumped chamber; a six-step test plan |
 
 ## H1–H3 done (2026-11-04)
@@ -110,10 +110,16 @@ zone sits at 3–8 mm, between the anode and the field peak.
 
 **The 20 % criterion is not met, and that is the result**: the mean current depends on the one coefficient the
 model cannot supply itself, the anomalous electron transport (the Bohm `α`), and on the wall-loss factors. In the
-literature these are *calibrated on a thruster's measured current*, never predicted; the second run at `α = 1/64`
-(below) says how far that knob reaches. The honest reading: the 1-D model gives the structure — where things
-happen, at what frequency, how the current responds to the knobs — and the test (T5, the 1 MHz current probe,
-and T3's map) fixes the numbers.
+literature these are *calibrated on a thruster's measured current*, never predicted. The second run, at `α = 1/64`
+(`gyrus_channel_b64.png`), did not close the gap: mean current 0.49 A, breathing at 31–37 kHz, and — averaged over
+the cycles — 5 mN of thrust and a mass utilisation of 0.22 (the base run: 0.60 A; its cycle average was not
+recorded). The breathing in both runs is far deeper than real thrusters show (±170 % against the ±20–50 %
+measured): during the empty half of each cycle the neutrals pass the channel un-ionised, which is where the
+utilisation and the current go. That is the model's known weakness in this simplest form (the wall-loss and the
+electron-energy closures set the depth), not a property of Gyrus. The honest reading: the 1-D model gives the
+structure — where things happen, at what frequency, how the current responds to the knobs — and the test (T5, the
+1 MHz current probe, and T3's map) fixes the numbers; the design numbers stay the 0-D chain's, which the two
+reference thrusters anchor.
 
 Lessons kept as tests: the field's clip must not break the potential constraint (a bisection on `J` with bounded
 `E` instead of a clip-and-shift); past the exit ions leave and never re-enter (a zero-gradient outflow becomes an
