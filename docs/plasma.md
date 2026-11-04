@@ -119,14 +119,33 @@ The thruster's own name (for Vegeta's version, not the replica) is an open quest
   measured;
 * validation order: literature → video; the video's numbers are checks, not fits.
 
-## Open questions (ask before P2)
+## Decisions (round 1)
 
-1. The name for Vegeta's own thruster (the replica is `ionring`); a Latin name, as the other machines.
-2. The transport target for P5: a drone-sized demonstrator (hundreds of grams of thrust) or a model of a
-   passenger-scale craft on paper only? EHD thrust per watt decides what is honest here.
-3. The HV supply: model it (mass, efficiency, current limit, which explains the 4B) or treat it as ideal in P1–P3?
-4. Humidity: Warsaw's year-round range as the design condition, or dry air with a derating?
-5. Is OpenFOAM available anywhere to run the P4 export, or do we stay with the integral jet model?
+| question | decision |
+|---|---|
+| the design's name | **Halka** (ion ring): `labs/plasma/designs/halka.py`, the video's generations as its presets `mark4`, `mark4b`, `mark4c` |
+| the P5 target | attempt a demonstrator; if the turbine is too weak, scale it up; if it does not work, no demonstrator — the scaling study (P4) decides, honestly |
+| the HV supply | modelled simply: a voltage source with a series resistance, a current limit and a stored capacitance; mass and efficiency from a curve, not a circuit |
+| humidity | two design conditions: Warsaw year-round (the monthly RH and temperature range) and dry indoor air |
+| CFD | OpenFOAM via Aeromant: the P4 body-force export is run, not only prepared |
+
+## Arcs: predicted, not simulated
+
+Fulgur solves the corona (steady, cold, at the teeth) and predicts the breakdown that ends it; it does not simulate
+the arc channel itself (a thermal plasma at thousands of kelvin whose simulation tells a designer nothing). Per
+design point and humidity it reports a **spark margin** = breakdown voltage / operating voltage, from:
+
+1. **inception** — the Meek/Raether streamer criterion along field lines from the teeth: the integral of air's net
+   ionisation coefficient exceeding ~18–20, on the field *with* the corona's space charge (which shields it: why
+   30 kV over 20 mm can run without a spark);
+2. **propagation** — the streamer stability field (positive streamers need a mean ~0.5 MV/m in dry air to cross),
+   checked against standard point–plane breakdown curves as a test;
+3. **surface flashover** — the tangential field and creepage distance along each printed support between rings,
+   derated by humidity (surface conduction on wet resin: the video's 78 % day);
+4. **the spark's energy** — from the supply model, ½CV² plus current × arc voltage × time until the supply folds
+   back, against the resin's melting energy: what melted the 4B's frame, and what current limit would have saved it.
+
+The thruster is designed to a margin, not to the edge.
 
 ## Sources
 
