@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "Proprietary - internal use only" }
 classifiers = ["Private :: Do Not Upload"]
 requires-python = ">=3.10"
-dependencies = ["numpy", "scipy"]
+dependencies = ["numpy", "scipy", "fipy"]
 
 [project.optional-dependencies]
 test = ["pytest"]

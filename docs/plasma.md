@@ -72,8 +72,7 @@ Drako's CFD is.
 |---|---|---|
 | `gas` | air: density, ion mobility (species, temperature, pressure, humidity), Peek onset field, breakdown field | tables and the standard fits |
 | `corona` | 0-D/1-D: onset voltage for a tooth/wire/point, the `C·V·(V−V₀)` current law, 1-D thrust and `T/P`, velocity at an exit area | analytic; validated on wire-to-cylinder data |
-| `field` | the electrostatic field: Poisson on a 2-D axisymmetric finite-volume grid (`∇²φ = −ρ_q/ε₀`), conductors as Dirichlet boundaries, the frame as a dielectric | sparse direct solve |
-| `charge` | ion transport: drift–diffusion `∂ρ_q/∂t + ∇·(ρ_q μ E − D ∇ρ_q) = 0`, the Kaptzov condition at the emitter (the field stays at onset; the charge injected adjusts), iterated with `field` until the current converges | upwind FV, steady by pseudo-time |
+| `ehd` (solve) | on FiPy: Poisson `∇²φ = −ρ_q/ε₀` (electrodes Dirichlet, the frame a dielectric) coupled to the ions' drift–diffusion `∇·(ρ_q μ E − D ∇ρ_q) = 0`, the Kaptzov condition at the emitter (the field stays at onset; the injected charge adjusts), iterated until the current converges; Gmsh meshes of the ring section | the coaxial benchmark first (exact), then the rings |
 | `ehd` | the body force `f = ρ_q·E` and the flow it drives: first an integral jet model (momentum balance per ring pair, losses through the rings), then an `fvOptions` body-force export for Aeromant/OpenFOAM | integral model; the export prepared with mocks |
 | `thruster` | ring-electrode builders: concentric emitter/ground rings with radius, axial offset (convergence), gap, tooth pitch, section → the 2-D axisymmetric section Fulgur solves, and the 3-D CAD inputs the lab's design uses | Mark IV, 4B, 4C presets |
 | `validate` | the published benchmarks as tests: Peek's onset; wire-to-cylinder `I(V)`; Masuyama & Barrett (2013) `T/P` vs `d/V`; Moreau et al. (2013) velocity profiles | each a test with a tolerance |
@@ -128,6 +127,7 @@ The design is **Halka** (ion ring; decided in round 1).
 | the HV supply | modelled simply: a voltage source with a series resistance, a current limit and a stored capacitance; mass and efficiency from a curve, not a circuit |
 | humidity | two design conditions: Warsaw year-round (the monthly RH and temperature range) and dry indoor air |
 | CFD | OpenFOAM via Aeromant: the P4 body-force export is run, not only prepared |
+| the PDE solver | **not our own**: FiPy (NIST's finite-volume library; Poisson + drift-diffusion with implicit convection, axisymmetric grids, Gmsh meshes) for the field and the ions; Gmsh for the ring sections; OpenFOAM for the jet. Fulgur's `ehd` is the Kaptzov loop and the bookkeeping around them, not a solver |
 
 ## P1 done (2026-11-04)
 
