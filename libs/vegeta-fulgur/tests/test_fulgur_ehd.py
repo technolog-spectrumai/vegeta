@@ -76,3 +76,18 @@ def test_ring_section_builds_and_solves_coarsely():
     assert r.converged and r.current > 0
     assert r.force_z == pytest.approx(r.current * dz / MU, rel=0.2)          # thrust = I dz / mu
     assert abs(r.force_r) < 0.5 * r.force_z                                   # the radial parts mostly cancel
+
+
+def test_force_zones_and_openfoam_sources(tmp_path):
+    from vegeta.fulgur.jet import force_zones, write_openfoam_sources, convergence_angle
+    from vegeta.fulgur.ehd import ring_section
+    from vegeta.fulgur.thruster import MARK4C
+    rings = [(r.radius, r.role, r.z) for r in MARK4C.rings]
+    mesh, em, gr, edge = ring_section(rings, r_outer=0.16, z_lo=-0.06, z_hi=0.10, lc_edge=40e-6, lc_ground=1.5e-3, lc_far=12e-3)
+    prob = CoronaProblem(mesh, em, gr, DRY.peek_field(0.1e-3, 0.9), geometry="planar_axi", inject=edge)
+    r = prob.solve(22e3)
+    zones = force_zones(prob, np.linspace(0, 0.13, 9), np.linspace(-0.02, 0.035, 6))
+    assert sum(z["force_z"] for z in zones) == pytest.approx(r.force_z, rel=0.05)     # the binning keeps the force
+    assert 0.0 < convergence_angle(prob, 0.068) < 1.2
+    w = write_openfoam_sources(tmp_path, zones)
+    assert w["zones"] == len(zones) and (tmp_path / "system" / "fvOptions").read_text().count("cellZone        ehd") == len(zones)

@@ -105,7 +105,7 @@ The design is **Halka** (ion ring; decided in round 1).
 | **P0** | this plan; the branch `dev_plasma` | pushed |
 | **P1** ✓ | `vegeta-fulgur` `gas`, `climate`, `corona`, `breakdown`, `supply`, `thruster`: the 0-D/1-D toolkit against the literature | 17 benchmark tests pass; `docs/plasma_p1.png` |
 | **P2** ✓ | `labs/plasma/designs/halka.py`: the Mark IV / 4B / 4C replicas in CAD, masses, pictures | 21 tests; masses within 25 % of the video (under: the frames are the least certain part); drawings sent |
-| **P3** (2/3) | `ehd` on FiPy: the corona solved on the ring section; `halka_fulgur.py` | ✓ the coaxial benchmark within 3 % of the exact solution; ✓ the Mark 4C section solved (thrust = I dz/μ); open: the jet (OpenFOAM export) and the trends (+17 % teeth, +26 % spacing, the 4B's loss) |
+| **P3** ✓ | `ehd` on FiPy: the corona solved on the ring section; `jet`: the integral jet and the OpenFOAM sources; `halka_fulgur.py`, `halka_cfd.py`, `halka_trends.py` | the coaxial benchmark within 3 % of the exact solution; the Mark 4C solved (thrust = I dz/μ); the three trends have the right sign (+8 % teeth vs +17 %, +20 % spacing-and-grounds vs +26 %, the 4B slower at each step); the CFD case prepared with the sources, run where OpenFOAM is |
 | **P4** | the scaling study: thrust, power and mass versus diameter, ring count, stages and voltage; humidity and the surface-flashover limit; the `fvOptions` export | a design chart: thrust per kg and per W reachable, honest about the T/W ≥ 1 wall |
 | **P5** | the bigger designs: a multi-stage, multi-ring thruster sized from P4, its HV supply's mass, the vehicle concept and MuJoCo sim | the next plan |
 
@@ -188,6 +188,30 @@ Lessons from the solver, kept as tests: FiPy's cell gradient on a cylindrical gr
 gradient does not; a constraint added in a loop accumulates; the ions need an outflow on every face but the
 emitter's; Gmsh arcs stay under π and a line belongs to one physical group; the hub ring must not touch its
 neighbour.
+
+## P3 done (2026-11-04): the jet and the trends
+
+**The jet.** `vegeta.fulgur.jet`: the integral model (mean exit velocity from the momentum flux through the open
+exit area, the jet's convergence half-angle from the force field's radial over axial parts, a focal distance and a
+capped focal gain — the estimate the CFD replaces) and the CFD export: `force_zones` bins the solved `ρ_q E` into
+annular cell zones, `write_openfoam_sources` writes them as `fvOptions` momentum sources (`vectorSemiImplicitSource`,
+absolute newtons per zone) with the `topoSetDict` that makes the zones and a `run.sh` with `topoSet` before the
+solver. `labs/plasma/designs/halka_cfd.py` prepares the Aeromant case (`rans_ksst_external`, the frame and the
+ground rings as the body with the thrust axis turned to +x, a residual 0.5 m/s inflow as the static rotor template
+does) and writes the sources into it; the binning keeps the force to 5 %. Not run here (no OpenFOAM): `run.sh` in
+the case, mocked in the tests.
+
+**The video's three trends** (`halka_trends.py`, coarse meshes; velocity goes as the square root of thrust):
+
+| trend | video | solved | note |
+|---|---|---|---|
+| serrated vs square teeth | +17 % velocity | **+8 %** | a 0.1 vs 0.2 mm effective edge at 23 kV: the right sign, half the size — the teeth as an axisymmetric edge is the coarsest part of the model |
+| the Mark III's wider spacing and larger grounds | +26 % | **+20 %** | in two halves: the axial spacing grown at each layout's spark limit alone gives −2 % (thrust ∝ dz, current ∝ V(V−V0)/d², at the limit they cancel); the larger grounds give the rest (+22 %): a bigger cathode collects more current |
+| the 4B: more axial gap at the voltage ceiling | slower, twice | **−9 %, then −16 %** | dz 8 → 12 → 16 mm at 24 kV: the current collapses faster than dz grows — the hollow-bolt threading moved the grounds the wrong way for a supply at its ceiling |
+
+A fourth check, free: the first attempt at trend 2 moved the *radial* pitch and gave −10 %; the Mark III's
+spacing is axial (a straight multi-stage thruster), and the model only agreed once the geometry was the right
+one — a reminder that the preset's geometry, not the solver, is now the limit of the agreement.
 
 ## Arcs: predicted, not simulated
 

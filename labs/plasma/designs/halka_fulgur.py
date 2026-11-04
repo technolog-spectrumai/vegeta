@@ -45,11 +45,11 @@ def section(preset: str = "mark4c", dz: float | None = None, edge_r: float = EDG
 
 
 def solve_section(preset: str, V: float, air: Air = DRY, dz: float | None = None, edge_r: float = EDGE_R, lc: float = 1.0,
-                  problem=None) -> dict:
+                  problem=None, params=None) -> dict:
     """The corona of the preset at ``V``: current, thrust (the axial force on the air), the radial force, power,
     thrust per watt, the onset voltage of the modelled edge; ``problem`` reuses a built ``CoronaProblem``."""
     if problem is None:
-        mesh, em, gr, edge = section(preset, dz, edge_r, lc)
+        mesh, em, gr, edge = section(preset, dz, edge_r, lc, params)
         problem = CoronaProblem(mesh, em, gr, air.peek_field(edge_r, 0.9), air=air, geometry="planar_axi", inject=edge)
     problem.rho.setValue(0.0)                                   # the Laplace field of the modelled edge: its onset
     problem._solve_poisson(1e3)
@@ -82,7 +82,7 @@ def one_d(preset: str, V: float, air: Air = DRY, dz: float | None = None) -> dic
 
 
 # --- the mock: the 1-D model's numbers at once
-def _mock_solve_section(preset, V, air=DRY, dz=None, edge_r=EDGE_R, lc=1.0, problem=None):
+def _mock_solve_section(preset, V, air=DRY, dz=None, edge_r=EDGE_R, lc=1.0, problem=None, params=None):
     from vegeta import mock
     e = one_d(preset, V, air, dz)
     return mock.label({"preset": preset, "V": V, "I": e["I"], "thrust": e["thrust"], "force_r": 0.0, "power": e["power"],
