@@ -65,7 +65,7 @@ magnetised checks, the magnetostatic solve and the field map.
 | **H2** ✓ | the Gyrus-300 CAD, masses, drawings | 8 parts build; 514 g; `gyrus_3d.png` |
 | **H3** ✓ | magnetostatics on FiPy: the circuit's field map, the radial field at the exit plane against the target, the coil's ampere-turns adjusted | 410 G at the exit (target 410), 38 G at the anode, peak 414 G at 0.87 L; 293 At per coil; `gyrus_fulgur.png` |
 | **H4** | a 1-D channel model (quasi-neutral fluid: ionisation, ion momentum, the electron mobility across B with an anomalous term): the discharge current, the ionisation zone, the potential profile — the step from the efficiency chain to the physics | the discharge current within 20 % of the 0-D at the design point |
-| **H5** | thermal (the anode's and the walls' power), wall erosion and life, the vacuum test-stand plan (chamber, pumping, thrust balance) | a test plan |
+| **H5** ✓ | thermal (the anode's and the walls' power), wall erosion and life, the vacuum test-stand plan (chamber, pumping, thrust balance) | `gyrus_life.png`: the bare body runs at 324 °C (too hot for the coils' wire and for SmCo), a Ø137 mm radiator brings it to 184 °C; 0.47 mm per 1000 h at the exit → ~8 500 h on a 2 mm wall; a 12 000 l/s xenon-pumped chamber; a six-step test plan |
 
 ## H1–H3 done (2026-11-04)
 
@@ -89,6 +89,37 @@ four outer together.
 the solve uses): BN channel 23 g, anode with its 24-hole distributor 36 g, iron core + plate + inner pole 207 g,
 screen + outer pole 124 g, coils and cores 63 g, the cathode placeholder 60 g: **514 g**. The iron is two thirds of
 it — the permanent-magnet trade (H5) is the obvious diet.
+
+## H5 done (2026-11-04): heat, wear, test
+
+`vegeta.fulgur.hall_life` and `labs/plasma/designs/gyrus_life.py`, `gyrus_life.png`. Budgets, not measurements.
+
+**Where the 300 W go**: 203 W in the beam; of the 98 W of losses, 44 W to the channel walls, 24 W to the anode,
+21 W radiated and carried off by the plume, 8 W into the cathode coupling (the class's published split).
+
+**Temperatures in vacuum** (lumps radiating, no convection): the bare body (iron, 0.0086 m² of radiating face)
+settles at **324 °C**, the channel front at 490 °C, the anode at 570 °C, the coils at 330 °C — over the 200 °C of
+ordinary magnet wire and the 300 °C of SmCo. This is the finding of H5: at 300 W this geometry cannot shed its heat
+from its own faces. A **Ø137 mm black radiator disc** on the back (0.03 m² more) brings the body to 184 °C and the
+coils under 190 °C; the alternative is ceramic-insulated wire and a body at 300+ °C, which the SmCo option would
+not survive. The thermal design is a radiator, decided here.
+
+**Erosion and life**: the Bohm flux to the exit wall (3.8×10²⁰ ions/m²s at ~180 eV, yield 0.034 on BN) erodes
+**0.47 mm per 1 000 h**; with the usual halving as the wall recedes, the 2 mm wall lasts **~8 500 h** — the SPT
+class's figure — for a total impulse of ~600 kN·s on ~40 kg of xenon. Life is set by the wall, not the magnets or
+the cathode; a thicker exit wall (3 mm) buys 50 % more.
+
+**Magnets instead of coils**: 1.6 mm of SmCo in the loop supplies the 2 × 293 ampere-turns; it saves 110 g and
+1.4 W, and loses the field scan in test. With the radiator the body sits under SmCo's limit; without it, no. The
+decision: **coils for the first unit** (the test needs the B scan), magnets for the flight unit once the field is
+known.
+
+**The test stand**: 1.3 mg/s of xenon is 0.24 mbar·l/s; holding the background under 2×10⁻⁵ mbar needs
+**12 000 l/s** of xenon pumping — a ≥ 1 m × 2 m chamber with cryopanels, not a bell jar. A 50 mN thrust balance
+at 0.2 mN resolution, a 0–400 V / 3 A discharge supply, two coil channels, the cathode's keeper and heater, two
+flow controllers; a 1 MHz current probe for the breathing mode, a Faraday probe and an RPA for the plume,
+thermocouples at the lumps. The plan: cathode alone → first light at 200 V → the performance map (200–350 V,
+0.8–1.5 mg/s, the coil scan) → a 2 h thermal soak → the oscillation spectrum → 100 h of wear.
 
 ## Decisions (v0)
 
