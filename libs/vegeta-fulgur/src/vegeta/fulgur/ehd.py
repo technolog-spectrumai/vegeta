@@ -166,13 +166,15 @@ class CoronaProblem:
         for k in range(outer):
             rho_old = self.rho.value.copy()
             self._solve_ions(r)
-            self.rho.setValue(relax * self.rho.value + (1 - relax) * rho_old)
+            rho_new = self.rho.value.copy()
+            self.rho.setValue(relax * rho_new + (1 - relax) * rho_old)
             self._solve_poisson(V)
             e = self.field_at(self.emitter)
             I = self.current()
             field_ok = abs(e - self.e_onset) < tol * self.e_onset
             current_ok = I_prev is not None and I > 0 and abs(I - I_prev) < tol * I
-            settled = settled + 1 if (field_ok and current_ok) else 0
+            charge_ok = np.abs(rho_new - rho_old).max() < tol * max(rho_new.max(), 1e-30)   # the ions have settled too
+            settled = settled + 1 if (field_ok and current_ok and charge_ok) else 0
             if settled >= 2:
                 fz, fr = self.force()
                 self._warm = (self.rho.value.copy(), r)
@@ -180,7 +182,7 @@ class CoronaProblem:
             if I_prev is not None:
                 dI = I - I_prev
                 if dI_prev is not None and dI * dI_prev < 0:        # the current oscillates: relax harder
-                    relax = max(relax * 0.7, 0.1)
+                    relax = max(relax * 0.7, 0.25)
                 dI_prev = dI
             I_prev = I
             # Kaptzov: more charge lowers the emitter's field; move the injection by the field's ratio, and damp
