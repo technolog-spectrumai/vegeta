@@ -1,0 +1,49 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "workboat",
+ "kind": "boat",
+ "parts": [
+  {
+   "model": "workboat_hull",
+   "color": [
+    0.851,
+    0.867,
+    0.878
+   ]
+  },
+  {
+   "model": "workboat_cabin",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "workboat_crane",
+   "color": [
+    0.953,
+    0.612,
+    0.071
+   ]
+  }
+ ],
+ "size": [
+  12.0,
+  4.6,
+  1.9
+ ],
+ "mass_kg": 14000.0,
+ "max_speed_m_s": 6.0,
+ "thrust_N": 18000.0,
+ "cd": [
+  0.35,
+  1.2,
+  1.0
+ ],
+ "carries": [
+  "shrimp"
+ ],
+ "price_eur": 900000
+}

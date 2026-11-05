@@ -1,0 +1,22 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "pen",
+ "kind": "pen",
+ "parts": [
+  {
+   "model": "pen_collar",
+   "color": [
+    0.106,
+    0.106,
+    0.106
+   ]
+  }
+ ],
+ "circumference_m": 160.0,
+ "radius_m": 25.465,
+ "net_depth_m": 25.0,
+ "cone_depth_m": 8.0,
+ "net_area_m2": 6135,
+ "volume_m3": 56362
+}
