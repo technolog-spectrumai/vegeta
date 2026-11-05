@@ -1,8 +1,10 @@
 """Shrimp: the smallest of the family (Scampi, Echensis, Cyclopterus, Nephro, Squilla: ``scampi.md`` and on) — a
 backpack-held craft for aquaculture work. One person carries it to the pen, drops it in by hand, flies it from a
 tablet on a 50 m tether, and packs it back. Jobs: net inspection (holes, biofouling, mooring lines), mortality
-spotting and counting, feeding and behaviour observation, water sampling and probing at depth; a Jetson Orin Nano
-aboard runs the family's net-following and hole/mort detection so the operator supervises rather than pilots.
+spotting and counting, feeding and behaviour observation, water sampling, and the daily oxygen profile (the probe
+pod is standard). The brain is on the surface: the family's net-following and hole/mort detection run on a Jetson
+Orin Nano in the tether box, the vehicle keeps only a microcontroller (thrusters, IMU, depth, the video encoder) and
+an auto-surface reflex (round 2 of ``shrimp.md``).
 
 Requirements (``REQUIREMENTS``): the whole kit in one backpack under 10 kg; the vehicle under 5 kg and hand-launched;
 50 m depth (nets are 20–40 m); works in the pen's current; fish-safe (ducted, guarded thrusters, no sharp edges);
@@ -38,9 +40,9 @@ REQUIREMENTS = {
 }
 #: Bought parts: (mass kg, volume L, average power W, price EUR) — class values, not quotes.
 PARTS = {
-    "Jetson Orin Nano 8GB + carrier": (0.15, 0.0, 10.0, 350.0),
+    "vehicle MCU (thrusters, IMU, depth) + video encoder": (0.05, 0.02, 3.0, 60.0),
     "6 micro ducted thrusters with guards (60 mm)": (6 * 0.14, 6 * 0.06, 0.0, 6 * 110.0),
-    "camera (4K, low light) + 2 dimmable lights": (0.25, 0.15, 12.0, 350.0),
+    "camera (4K, low light) + 2 dimmable white/red lights + strobe": (0.27, 0.16, 12.0, 380.0),
     "IMU + depth + leak sensors": (0.05, 0.02, 1.0, 150.0),
     "tether interface (Ethernet over 2-wire)": (0.05, 0.02, 2.0, 120.0),
     "Li-ion battery 100 Wh, 14.4 V + BMS (swappable)": (0.60, 0.35, 0.0, 120.0),
@@ -51,15 +53,16 @@ PARTS = {
 #: What stays on the surface: (mass kg, price EUR).
 SURFACE = {
     "tether 50 m, 3 mm, neutral + hand reel": (1.60, 650.0),
-    "rugged tablet + gamepad + tether box": (1.20, 900.0),
+    "tether box with the Jetson Orin Nano (the brain) + rugged tablet + gamepad": (1.40, 1250.0),
     "backpack, spare battery, charger": (1.40, 220.0),
 }
 TOOLS = {   # mass kg, volume L, power W while working, price EUR, what
-    "none": (0.0, 0.0, 0.0, 0.0, "camera only"),
+    "probe": (0.30, 0.20, 2.0, 650.0, "the standard pod: dissolved oxygen, temperature, salinity, logged with depth (the daily O2 profile)"),
     "sampler": (0.35, 0.30, 5.0, 180.0, "a 250 mL syringe sampler, triggered at depth: water for lab analysis"),
-    "probe": (0.30, 0.20, 2.0, 650.0, "a pod with dissolved oxygen, temperature and salinity probes, logged with depth"),
-    "clip": (0.45, 0.30, 15.0, 420.0, "a six-clip magazine: closes a small hole (to ~0.1 m) with polymer clips, the big ones are reported"),
+    "tags": (0.25, 0.20, 3.0, 120.0, "a magazine of six numbered clip-on tags: marks a hole or a damaged line for the divers; nothing is repaired"),
+    "none": (0.0, 0.0, 0.0, 0.0, "camera only"),
 }
+PROFILE = {"depth_m": 40.0, "vertical_m_s": 0.5, "dwell_s": 10.0}        # the oxygen profile dive: down the net's depth and back
 TETHER_D, TETHER_CD = 0.003, 1.2
 
 
@@ -67,7 +70,7 @@ class Shrimp(Design):
     parameters = [
         Parameter("part", "vehicle", choices=("vehicle", "shell", "housing", "thrusters", "lights", "tool_body", "handle", "skids"),
                   description="what to build"),
-        Parameter("tool", "none", choices=tuple(TOOLS), description="the tool on the port"),
+        Parameter("tool", "probe", choices=tuple(TOOLS), description="the tool on the port"),
         Parameter("length", 360.0, "mm", min=200),
         Parameter("width", 230.0, "mm", min=120),
         Parameter("height", 130.0, "mm", min=80),
@@ -121,11 +124,12 @@ class Shrimp(Design):
         net_area = 160.0 * 30.0 + math.pi * (160 / (2 * math.pi)) ** 2 * 1.2
         rate = p["camera_swath_m"] * p["inspect_speed"] * 3600 * 0.8
         price = sum(c for _, _, _, c in PARTS.values()) + sum(c for _, c in SURFACE.values()) + tc
+        profile_min = (2 * PROFILE["depth_m"] / PROFILE["vertical_m_s"] + PROFILE["dwell_s"] * (PROFILE["depth_m"] / 5)) / 60
         return {"mass_in_air_kg": m, "displacement_L": V * 1000, "trim_kg": trim_kg, "backpack_kg": backpack,
                 "v_max_m_s": v_max, "thrust_fwd_N": T_fwd, "hull_drag_N": hull_drag, "tether_drag_N": tether_drag,
                 "hold_margin": hold_margin, "current_max_m_s": u_max, "tether_max_at_0.5_m": tether_max,
                 "hotel_W": hotel, "swim_W": swim_W, "dive_h": dive_h, "net_area_m2": net_area, "inspect_rate_m2_h": rate,
-                "pen_inspection_h": net_area / rate, "dives_per_pen": (net_area / rate) / dive_h,
+                "pen_inspection_h": net_area / rate, "dives_per_pen": (net_area / rate) / dive_h, "profile_min": profile_min,
                 "kit_price_eur": price, "price_all_tools_eur": price - tc + sum(t[3] for t in TOOLS.values())}
 
     # ------------------------------------------------------------------------------------------- CAD
@@ -184,7 +188,7 @@ class Shrimp(Design):
             return cq.Workplane("YZ").workplane(offset=L * 0.05).center(0, -14).circle(14).extrude(140)
         if p["tool"] == "probe":
             return cq.Workplane("XY").box(70, 40, 24).edges("|X").fillet(6).translate((L * 0.22, 0, -12))
-        return cq.Workplane("XY").box(90, 36, 22).edges("|Z").fillet(5).translate((L * 0.28, 0, -11))   # clip magazine
+        return cq.Workplane("XY").box(70, 30, 18).edges("|Z").fillet(5).translate((L * 0.28, 0, -9))    # the tag magazine
 
     def _handle(self, p):
         L, H = p["length"], p["height"]
@@ -218,4 +222,4 @@ if __name__ == "__main__":
               f"hold margin {s['hold_margin']:+.2f} at 25 m tether, dive {s['dive_h']:.1f} h, kit EUR {s['kit_price_eur']:.0f}")
     s = Shrimp.sizing()
     print(f"current max at 25 m tether {s['current_max_m_s']:.2f} m/s; tether max at 0.5 m/s {s['tether_max_at_0.5_m']:.0f} m; "
-          f"pen {s['pen_inspection_h']:.1f} h = {s['dives_per_pen']:.1f} dives; all tools EUR {s['price_all_tools_eur']:.0f}")
+          f"pen {s['pen_inspection_h']:.1f} h = {s['dives_per_pen']:.1f} dives; an O2 profile {s['profile_min']:.0f} min; all tools EUR {s['price_all_tools_eur']:.0f}")

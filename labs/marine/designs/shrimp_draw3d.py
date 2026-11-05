@@ -38,9 +38,9 @@ def draw(ax, p, elev=18, azim=-50, net=True):
 
 def main(out="shrimp_3d.png"):
     fig = plt.figure(figsize=(18, 10))
-    views = [("none", 18, -50, "camera only, beside the net"), ("sampler", 18, -50, "with the 250 mL syringe sampler"),
-             ("probe", 18, -50, "with the O₂ / temperature / salinity pod"), ("clip", 18, -50, "with the six-clip magazine"),
-             ("none", 90, -90, "from above: four vectored, two vertical thrusters, the handle"), ("none", -25, -120, "from below: the tool port under the nose, the skids")]
+    views = [("probe", 18, -50, "standard: the O₂ / temperature / salinity pod, beside the net"), ("sampler", 18, -50, "with the 250 mL syringe sampler"),
+             ("tags", 18, -50, "with the six-tag magazine (marks damage for the divers)"), ("none", 18, -50, "camera only"),
+             ("probe", 90, -90, "from above: four vectored, two vertical thrusters, the handle"), ("probe", -25, -120, "from below: the tool port under the nose, the skids")]
     for k, (tool, el, az, title) in enumerate(views):
         ax = fig.add_subplot(2, 3, k + 1, projection="3d")
         draw(ax, Shrimp.p({"tool": tool}), el, az, net=(k < 4))

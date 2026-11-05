@@ -21,6 +21,7 @@ def test_the_tether_sets_the_envelope():
     assert Shrimp.sizing({"tether_exposed_m": 50.0})["hold_margin"] < 0   # the full 50 m out in 0.5 m/s: no
     assert 20 < s["tether_max_at_0.5_m"] < 60
     assert 2 < s["dives_per_pen"] < 6
+    assert 3 < s["profile_min"] < 10                                  # the daily oxygen profile is a short dive
 
 
 def test_cad_builds_with_each_tool():
