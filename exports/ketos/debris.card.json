@@ -1,0 +1,58 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "debris",
+ "kind": "debris",
+ "parts": [
+  {
+   "model": "debris_drum",
+   "color": [
+    0.141,
+    0.443,
+    0.639
+   ]
+  },
+  {
+   "model": "debris_tube",
+   "color": [
+    0.565,
+    0.58,
+    0.592
+   ]
+  },
+  {
+   "model": "debris_coil",
+   "color": [
+    0.431,
+    0.173,
+    0.0
+   ]
+  },
+  {
+   "model": "debris_grating",
+   "color": [
+    0.718,
+    0.584,
+    0.043
+   ]
+  }
+ ],
+ "kinds": {
+  "drum": {
+   "model": "debris_drum",
+   "mass_kg": 30.0
+  },
+  "tube": {
+   "model": "debris_tube",
+   "mass_kg": 25.0
+  },
+  "coil": {
+   "model": "debris_coil",
+   "mass_kg": 120.0
+  },
+  "grating": {
+   "model": "debris_grating",
+   "mass_kg": 60.0
+  }
+ }
+}

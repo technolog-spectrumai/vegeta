@@ -303,5 +303,79 @@ class Manifold(Design):
         return _compound([frame.val(), panel.val()])
 
 
+class ResidentDock(Design):
+    """The resident drone's subsea dock on the jacket (Ketos Oil stage 3): a garage frame clamped to a leg at -80 m,
+    an open-ended tube the AUV backs into, an inductive charging coupler and a fibre/wet-mate connection to the
+    topside. z = 0 the garage's middle height, x out of the garage's mouth."""
+    parameters = [
+        Parameter("length", 3.0, "m"),
+        Parameter("width", 1.6, "m"),
+        Parameter("height", 1.4, "m"),
+        Parameter("depth", 80.0, "m"),
+        Parameter("charge_kw", 2.0, "kW", description="inductive charger (class value)"),
+        Parameter("mass_kg", 1800.0, "kg"),
+        Parameter("price_eur", 900000.0, "EUR", description="garage, charger, topside fibre and power (assumed)"),
+    ]
+
+    @staticmethod
+    def p(over=None):
+        return {q.name: q.default for q in ResidentDock.parameters} | (over or {})
+
+    def build(self, p):
+        if cq is None:
+            raise ImportError("the dock's CAD needs CadQuery")
+        L, W, H = p["length"] * MM, p["width"] * MM, p["height"] * MM
+        s = []
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                s.append(cq.Solid.makeCylinder(60, L, cq.Vector(-L / 2, sy * W / 2, sz * H / 2), cq.Vector(1, 0, 0)))
+        for x in (-L / 2, 0.0, L / 2 - 120):
+            s.append(cq.Solid.makeBox(120, W + 120, 120, cq.Vector(x, -W / 2 - 60, -H / 2 - 60)))
+            s.append(cq.Solid.makeBox(120, W + 120, 120, cq.Vector(x, -W / 2 - 60, H / 2 - 60)))
+        s.append(cq.Solid.makeBox(200, W * 0.6, H * 0.6, cq.Vector(-L / 2 - 200, -W * 0.3, -H * 0.3)))   # the charger
+        s.append(cq.Solid.makeBox(500, 300, H * 1.6, cq.Vector(-L / 2 - 700, -150, -H * 0.8)))           # the leg clamp
+        return _compound(s)
+
+
+class RiserClamp(Design):
+    """A two-half riser clamp (the riser's guide on the jacket): bolted halves round the riser, an arm to the leg."""
+    parameters = [Parameter("riser_d", 0.406, "m"), Parameter("arm", 1.5, "m"), Parameter("height", 0.6, "m")]
+
+    @staticmethod
+    def p(over=None):
+        return {q.name: q.default for q in RiserClamp.parameters} | (over or {})
+
+    def build(self, p):
+        if cq is None:
+            raise ImportError("the clamp's CAD needs CadQuery")
+        R, H = p["riser_d"] * MM / 2, p["height"] * MM
+        ring = cq.Solid.makeCylinder(R + 80, H, cq.Vector(0, 0, -H / 2)).cut(cq.Solid.makeCylinder(R, H, cq.Vector(0, 0, -H / 2)))
+        s = [ring, cq.Solid.makeBox(p["arm"] * MM, 160, H * 0.6, cq.Vector(-p["arm"] * MM - R, -80, -H * 0.3))]
+        for sy in (-1, 1):
+            s.append(cq.Solid.makeBox(140, 60, H, cq.Vector(-70, sy * (R + 80) - 30, -H / 2)))
+        return _compound(s)
+
+
+class Debris(Design):
+    """Dropped objects on the seabed (class shapes): a scaffold tube, an oil drum, a coil of wire rope, a grating."""
+    parameters = [Parameter("kind", "drum", choices=("drum", "tube", "coil", "grating"))]
+
+    @staticmethod
+    def p(over=None):
+        return {q.name: q.default for q in Debris.parameters} | (over or {})
+
+    def build(self, p):
+        if cq is None:
+            raise ImportError("the debris CAD needs CadQuery")
+        k = p["kind"]
+        if k == "drum":
+            return cq.Workplane("XY").add(cq.Solid.makeCylinder(290, 880, cq.Vector(-440, 0, 290), cq.Vector(1, 0, 0)))
+        if k == "tube":
+            return cq.Workplane("XY").add(cq.Solid.makeCylinder(24, 6000, cq.Vector(-3000, 0, 24), cq.Vector(1, 0, 0)))
+        if k == "coil":
+            return cq.Workplane("XY").add(cq.Solid.makeTorus(450, 80, cq.Vector(0, 0, 80)))
+        return cq.Workplane("XY").box(1500, 1000, 40).translate((0, 0, 20))
+
+
 if __name__ == "__main__":
     print(Jacket.sizing())

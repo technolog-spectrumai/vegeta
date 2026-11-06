@@ -22,3 +22,7 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 | manifold | `oil_platform.py` `Manifold` | a subsea manifold with the ROV valve panel (class-4 buckets, hot stabs) |
 
     python labs/marine/designs/ketos_export.py exports/ketos
+| squilla | `squilla.py` (arms stowed) | Ketos Oil's resident drone: the 2.2 m intervention AUV, 4.5 kWh, docked on the jacket |
+| resident_dock | `oil_platform.py` `ResidentDock` | Squilla's garage on a leg at -80 m: inductive charger, fibre to the topside |
+| riser_clamp | `oil_platform.py` `RiserClamp` | a riser guide clamp (two bolted halves, an arm to the leg) |
+| debris | `oil_platform.py` `Debris` | dropped objects on the seabed: drum, scaffold tube, wire coil, grating |

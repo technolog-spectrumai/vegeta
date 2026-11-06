@@ -350,9 +350,69 @@ def manifold():
     return card, models
 
 
+def squilla():
+    """Squilla, the intervention AUV, as Ketos Oil's resident drone (stage 3): docked on the jacket, battery-powered."""
+    from squilla import Squilla
+    d = Squilla()
+    p = Squilla.p() | {"arm_pose": "stowed"}
+    s = Squilla.sizing()
+    parts = [("squilla_body", "body", "#e74c3c"), ("squilla_arms", "arms", "#2c3e50"), ("squilla_skids", "skids", "#7f8c8d")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 4.0) for n, k, c in parts]
+    dz = _centre_z(models)
+    L, R = p["length"] / 1000, p["diameter"] / 2000
+    th = [{"at": [round(-L / 2, 3), round(sy * R * 0.6, 3), 0.0], "axis": [1.0, 0.0, 0.0], "max_N": 157.0} for sy in (1, -1)]
+    th += [{"at": [round(x * L, 3), 0.0, 0.0], "axis": [0.0, 0.0, 1.0], "max_N": 50.0} for x in (0.3, 0.15, -0.15, -0.3)]
+    th += [{"at": [round(x * L, 3), 0.0, 0.0], "axis": [0.0, 1.0, 0.0], "max_N": 50.0} for x in (0.3, 0.15, -0.15, -0.3)]
+    card = CARD | {"name": "squilla", "kind": "rov", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [L, 2 * R + 0.2, 2 * R + 0.25], "mass_kg": round(s["mass_in_air_kg"], 1),
+                   "displacement_L": round(s["mass_in_air_kg"] / 1.025 + 1.0, 1), "net_buoyancy_kg": 1.0, "cd": [0.3, 1.0, 1.1],
+                   "thrusters": th, "battery_Wh": p["battery_kwh"] * 1000, "hotel_W": round(s["work_W"] * 0.4, 1),
+                   "work_W": round(s["work_W"], 1), "transit_W": round(s["transit_W"], 1), "max_depth_m": 300.0,
+                   "transit_speed_m_s": 1.0, "inspect_speed_m_s": 0.3, "camera_swath_m": 1.5,
+                   "tools": {"camera": {"what": "stereo + polarisation + imaging sonar"}, "cp": {"what": "CP stab on the hold arm"},
+                             "ut": {"what": "UT thickness probe"}, "cutter": {"what": "raptorial cutter-gripper, 3 kN"}},
+                   "lift_kg": 8.0, "tether": None, "resident": True, "price_eur": 450000}
+    return card, models
+
+
+def resident_dock():
+    """Squilla's dock on the jacket: the garage, the charger, the fibre to the topside."""
+    from oil_platform import ResidentDock
+    d = ResidentDock()
+    p = ResidentDock.p()
+    models = [_mesh(d.build(p), "resident_dock_frame", _hex("#16a085"), 20.0)]
+    card = CARD | {"name": "resident_dock", "kind": "dock", "parts": [{"model": "resident_dock_frame", "color": models[0]["color"]}],
+                   "size": [p["length"], p["width"], p["height"]], "depth_m": p["depth"], "charge_W": p["charge_kw"] * 1000,
+                   "mass_kg": p["mass_kg"], "comms": "fibre", "price_eur": p["price_eur"]}
+    return card, models
+
+
+def riser_clamp():
+    from oil_platform import RiserClamp
+    d = RiserClamp()
+    p = RiserClamp.p()
+    models = [_mesh(d.build(p), "riser_clamp_body", _hex("#d4ac0d"), 10.0)]
+    card = CARD | {"name": "riser_clamp", "kind": "structure", "parts": [{"model": "riser_clamp_body", "color": models[0]["color"]}],
+                   "size": [p["arm"] + p["riser_d"] + 0.16, p["riser_d"] + 0.16, p["height"]], "riser_d_m": p["riser_d"]}
+    return card, models
+
+
+def debris():
+    """Dropped objects for the seabed survey: one card, a mesh per kind (z = 0 on the seabed)."""
+    from oil_platform import Debris
+    d = Debris()
+    cols = {"drum": "#2471a3", "tube": "#909497", "coil": "#6e2c00", "grating": "#b7950b"}
+    models = [_mesh(d.build({"kind": k}), f"debris_{k}", _hex(c), 10.0) for k, c in cols.items()]
+    card = CARD | {"name": "debris", "kind": "debris", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "kinds": {k: {"model": f"debris_{k}", "mass_kg": w} for k, w in
+                             {"drum": 30.0, "tube": 25.0, "coil": 120.0, "grating": 60.0}.items()}}
+    return card, models
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
             "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
-            "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold}
+            "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold,
+            "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris}
 
 
 def export(out, only=None):

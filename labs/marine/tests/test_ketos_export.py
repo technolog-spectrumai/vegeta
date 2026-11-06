@@ -101,3 +101,16 @@ def test_oil_field_export(tmp_path):
     m = json.load(open(tmp_path / "manifold.card.json"))
     assert len(m["valves"]) == 6 and len(m["hot_stabs"]) == 2
     assert json.load(open(tmp_path / "tms.card.json"))["tether"]["length_m"] == 250.0
+
+
+def test_oil_stage3_export(tmp_path):
+    ketos_export.export(str(tmp_path), {"squilla", "resident_dock", "riser_clamp", "debris"})
+    sq = json.load(open(tmp_path / "squilla.card.json"))
+    assert sq["kind"] == "rov" and sq["resident"] is True and sq["tether"] is None and sq["battery_Wh"] == 4500
+    assert len(sq["thrusters"]) == 10 and 100 < sq["mass_kg"] < 200
+    _meshes(tmp_path, sq)
+    dock = json.load(open(tmp_path / "resident_dock.card.json"))
+    assert dock["kind"] == "dock" and dock["charge_W"] > 0 and dock["depth_m"] == 80.0
+    deb = json.load(open(tmp_path / "debris.card.json"))
+    assert set(deb["kinds"]) == {"drum", "tube", "coil", "grating"} and len(_meshes(tmp_path, deb)) == 4
+    _meshes(tmp_path, json.load(open(tmp_path / "riser_clamp.card.json")))
