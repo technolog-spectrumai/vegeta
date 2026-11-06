@@ -8,7 +8,7 @@ reads. The meshes come from the CadQuery models; the numbers from each design's 
 
 The card is the contract between Vegeta and Ketos (``ketos.card`` 1.0):
 
-    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"boat"|"pen"|"barge",
+    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge",
      "parts":[{"model":"cyclopterus_hull","color":[r,g,b]}], "size":[L,W,H], "mass_kg":..., "displacement_L":...,
      "thrusters":[{"at":[x,y,z],"axis":[ax,ay,az],"max_N":...}], "battery_Wh":..., "hotel_W":..., "tools":{...}, ...}
 """
@@ -160,7 +160,109 @@ def feed_barge():
     return card, models
 
 
-MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge}
+#: Scampi's tool skids on the belly bay (mass kg, power W while working, price EUR, what): class estimates (assumed),
+#: the cleaning skid's 250 W from scampi.energy_profile.
+SCAMPI_TOOLS = {
+    "cleaning": (12.0, 250.0, 18000.0, "rotary brush skid: marine growth off mooring lines, chains and anchors"),
+    "cp": (2.0, 2.0, 6000.0, "CP + contact probe on the hold arm: anode and chain potential readings"),
+    "survey": (6.0, 60.0, 25000.0, "seabed survey skid: profiler + sidescan for the moorings' footprints and the mort pile"),
+}
+
+
+def scampi():
+    """The work-class AUV for the farm's moorings (lines, chains, anchors) and the seabed under the pens."""
+    from scampi import Scampi, THRUSTER, PARTS
+    d = Scampi()
+    p = {q.name: q.default for q in Scampi.parameters} | {"arm_pose": "folded"}
+    s = Scampi.sizing()
+    th = None
+    for at, a in d.thruster_layout(p):
+        t = d._thruster(p, at, a)
+        th = t if th is None else th.union(t)
+    th = th.union(d._housing(p, "electronics")).union(d._housing(p, "battery"))
+    body = d._frame(p).union(d._fairing(p)).union(d._foam(p))
+    for sx in (1, -1):
+        for sy in (1, -1):
+            body = body.union(d._skid(p, sx, sy))
+    arms = d.build(p | {"part": "work_arm"}).union(d.build(p | {"part": "hold_arm"})).union(d._tool_skid(p))
+    parts = [("scampi_body", body, "#f1c40f"), ("scampi_thrusters", th, "#222222"), ("scampi_arms", arms, "#c0392b")]
+    models = [_mesh(sh, n, _hex(c), 5.0) for n, sh, c in parts]
+    dz = _centre_z(models)
+    thrusters = [{"at": [round(x / 1000, 3), round(y / 1000, 3), round(z / 1000 - dz, 3)], "axis": [round(c, 4) for c in a],
+                  "max_N": THRUSTER["forward_N"]} for (x, y, z), a in d.thruster_layout(p)]
+    # price: the bought parts and housings at class prices (assumed), x 1.6 build and margin -> ~EUR 190 k
+    card = CARD | {"name": "scampi", "kind": "rov", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"] / 1000, p["width"] / 1000, p["height"] / 1000],
+                   "mass_kg": round(s["mass_in_air_kg"], 2), "displacement_L": round(s["displacement_L"], 2),
+                   "net_buoyancy_kg": s["net_buoyancy_kg"], "cd": [0.9, 1.0, 1.1], "thrusters": thrusters,
+                   "battery_Wh": p["battery_kwh"] * 1000, "hotel_W": round(s["hotel_W"], 1),
+                   "max_depth_m": 300.0, "inspect_speed_m_s": 0.3,            # scampi.energy_profile's inspection pass
+                   "camera_swath_m": 2.5,                                       # 4 cameras at ~1.5 m stand-off (assumed)
+                   "tools": {k: {"mass_kg": v[0], "power_W": v[1], "price_eur": v[2], "what": v[3]} for k, v in SCAMPI_TOOLS.items()},
+                   "tether": None, "resident": True, "price_eur": 190000}
+    return card, models
+
+
+def echensis():
+    """The tethered hull crawler: cleans (with capture) and inspects a ship's hull alongside. z = 0 the hull (the
+    tracks' contact plane), z out of the hull; x the crawl direction, the crawler (chassis + head) centred in x, y."""
+    from echensis import Echensis, HEADS
+    d = Echensis()
+    p = Echensis.p()
+    s = Echensis.sizing()
+    hd = HEADS[p["head_type"]]
+    body = d._chassis(p).union(d._suction(p)).union(d._housing(p))
+    parts = [("echensis_body", body, "#16a085"), ("echensis_tracks", d._track(p, 1).union(d._track(p, -1)), "#222222"),
+             ("echensis_head", d._head(p).union(d._swim_thrusters(p)), "#e67e22")]
+    models = [_mesh(sh, n, _hex(c), 4.0) for n, sh, c in parts]
+    _x_centre(models)
+    pw = s["power_W"]
+    card = CARD | {"name": "echensis", "kind": "crawler", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [round((p["length"] + p["head_length"]) / 1000, 3), round(2 * p["brush_diameter"] * 0.95 / 1000 + 0.06, 3),
+                            round(p["height"] / 1000 + p["housing_od"] / 1000, 3)],
+                   "mass_kg": round(s["mass_in_air_kg"], 2),
+                   "displacement_L": round((s["mass_in_air_kg"] - s["in_water_kg"]) / 1.025, 2),   # 2 kg heavy in water
+                   "crawl_speed_m_s": hd["speed_m_s"], "clean_width_m": hd["swath_m"],
+                   "capture_efficiency": 0.9,          # class value: in-water cleaning with capture is held to >= 90 %
+                   "adhesion_N": round(s["magnet_N"] + p["suction_N"], 1),
+                   "clean_power_W": round(pw["total"] - pw["hotel"], 1), "hotel_W": round(pw["hotel"], 1),
+                   "tether": {"length_m": p["hose_length"], "diameter_m": 0.12, "cd": 1.2},   # the 100 mm hose + power/fibre
+                   "probes": ["ut", "cp"],
+                   "swim_speed_m_s": 0.5,              # four T200-class swim thrusters, ~100 kg: class value
+                   "price_eur": 240000}                # crawler + quay filter unit, class estimate (assumed)
+    return card, models
+
+
+def ship_hull():
+    """A 120 m merchant ship's hull alongside (Echensis's work): z = 0 the waterline, x = 0 midship, y = 0 centreline."""
+    from merchant_hull import MerchantHull
+    d = MerchantHull()
+    p = MerchantHull.p()
+    models = [_mesh(d.build(p), "ship_hull", _hex("#8e2b2b"), 150.0, ang=0.6)]
+    card = CARD | {"name": "ship_hull", "kind": "hull", "parts": [{"model": "ship_hull", "color": models[0]["color"]}],
+                   "length_m": p["length"], "beam_m": p["beam"], "draft_m": p["draft"], "depth_m": p["depth"],
+                   "wetted_area_m2": round(1.7 * p["length"] * p["draft"] + p["cb"] * p["length"] * p["beam"], 1)}   # Denny-Mumford
+    return card, models
+
+
+def wellboat():
+    """The 75 m wellboat that comes alongside the pens for delice treatment: z = 0 the waterline, centred."""
+    from wellboat import Wellboat
+    d = Wellboat()
+    p = Wellboat.p()
+    s = Wellboat.sizing()
+    parts = [("wellboat_hull", "hull", "#1f3a5f"), ("wellboat_house", "house", "#ecf0f1"), ("wellboat_wells", "wells", "#f1c40f"),
+             ("wellboat_crane", "crane", "#e67e22")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 120.0, ang=0.6) for n, k, c in parts]
+    _x_centre(models)
+    card = CARD | {"name": "wellboat", "kind": "boat", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"], p["beam"], p["depth"]], "mass_kg": round(s["mass_kg"]), "max_speed_m_s": p["max_speed"],
+                   "wells_m3": round(s["wells_m3"]), "treatment": ["freshwater", "thermal"], "price_eur": round(p["price_eur"])}
+    return card, models
+
+
+MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
+            "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat}
 
 
 def export(out, only=None):

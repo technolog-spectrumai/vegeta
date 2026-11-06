@@ -1,0 +1,179 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "scampi",
+ "kind": "rov",
+ "parts": [
+  {
+   "model": "scampi_body",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  },
+  {
+   "model": "scampi_thrusters",
+   "color": [
+    0.133,
+    0.133,
+    0.133
+   ]
+  },
+  {
+   "model": "scampi_arms",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  }
+ ],
+ "size": [
+  1.5,
+  0.8,
+  0.56
+ ],
+ "mass_kg": 117.95,
+ "displacement_L": 115.09,
+ "net_buoyancy_kg": 0.5,
+ "cd": [
+  0.9,
+  1.0,
+  1.1
+ ],
+ "thrusters": [
+  {
+   "at": [
+    0.651,
+    0.301,
+    0.044
+   ],
+   "axis": [
+    0.7071,
+    0.7071,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    0.651,
+    -0.301,
+    0.044
+   ],
+   "axis": [
+    0.7071,
+    -0.7071,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    -0.651,
+    0.301,
+    0.044
+   ],
+   "axis": [
+    -0.7071,
+    0.7071,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    -0.651,
+    -0.301,
+    0.044
+   ],
+   "axis": [
+    -0.7071,
+    -0.7071,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    0.495,
+    0.318,
+    0.22
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    0.495,
+    -0.318,
+    0.22
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    -0.495,
+    0.318,
+    0.22
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    -0.495,
+    -0.318,
+    0.22
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 157.0
+  }
+ ],
+ "battery_Wh": 4500.0,
+ "hotel_W": 237.0,
+ "max_depth_m": 300.0,
+ "inspect_speed_m_s": 0.3,
+ "camera_swath_m": 2.5,
+ "tools": {
+  "cleaning": {
+   "mass_kg": 12.0,
+   "power_W": 250.0,
+   "price_eur": 18000.0,
+   "what": "rotary brush skid: marine growth off mooring lines, chains and anchors"
+  },
+  "cp": {
+   "mass_kg": 2.0,
+   "power_W": 2.0,
+   "price_eur": 6000.0,
+   "what": "CP + contact probe on the hold arm: anode and chain potential readings"
+  },
+  "survey": {
+   "mass_kg": 6.0,
+   "power_W": 60.0,
+   "price_eur": 25000.0,
+   "what": "seabed survey skid: profiler + sidescan for the moorings' footprints and the mort pile"
+  }
+ },
+ "tether": null,
+ "resident": true,
+ "price_eur": 190000
+}

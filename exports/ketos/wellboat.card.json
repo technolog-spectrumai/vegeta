@@ -1,0 +1,53 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "wellboat",
+ "kind": "boat",
+ "parts": [
+  {
+   "model": "wellboat_hull",
+   "color": [
+    0.122,
+    0.227,
+    0.373
+   ]
+  },
+  {
+   "model": "wellboat_house",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "wellboat_wells",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  },
+  {
+   "model": "wellboat_crane",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  75.0,
+  16.0,
+  8.0
+ ],
+ "mass_kg": 5166000,
+ "max_speed_m_s": 6.0,
+ "wells_m3": 2730,
+ "treatment": [
+  "freshwater",
+  "thermal"
+ ],
+ "price_eur": 55000000
+}

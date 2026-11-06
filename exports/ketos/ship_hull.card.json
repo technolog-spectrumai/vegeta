@@ -1,0 +1,21 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "ship_hull",
+ "kind": "hull",
+ "parts": [
+  {
+   "model": "ship_hull",
+   "color": [
+    0.557,
+    0.169,
+    0.169
+   ]
+  }
+ ],
+ "length_m": 120.0,
+ "beam_m": 20.0,
+ "draft_m": 7.5,
+ "depth_m": 11.0,
+ "wetted_area_m2": 3402.0
+}
