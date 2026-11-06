@@ -77,3 +77,27 @@ def test_ship_hull_and_wellboat_export(tmp_path):
 def test_merchant_hull_block_coefficient():
     from merchant_hull import MerchantHull
     assert MerchantHull.sizing()["cb_measured"] == pytest.approx(0.78, abs=0.03)
+
+
+def test_oil_field_export(tmp_path):
+    """Ketos Oil's machines: the work-class ROV, the jacket (its structure as data), the DP vessel, the TMS, the manifold."""
+    from oil_platform import Jacket
+    g = Jacket.members()
+    kinds = {m["kind"] for m in g["members"]}
+    assert {"leg", "brace", "horizontal", "conductor", "riser", "caisson"} <= kinds
+    assert g["levels"][-1] == -110.0 and len([m for m in g["members"] if m["kind"] == "leg"]) == 16
+    assert all(a["p"][2] < 0 for a in g["anodes"]) and len(g["anodes"]) > 40
+    ketos_export.export(str(tmp_path), {"homarus", "jacket", "dp_vessel", "tms", "manifold"})
+    h = json.load(open(tmp_path / "homarus.card.json"))
+    assert h["kind"] == "rov" and h["power"] == "umbilical" and len(h["thrusters"]) == 7 and 3000 < h["mass_kg"] < 5000
+    assert h["tether"]["from"] == "tms" and h["tether"]["length_m"] == 250.0
+    zs = [z for m in _meshes(tmp_path, h) for z in m["vertices"][2::3]]
+    assert abs(max(zs) + min(zs)) < 0.01
+    j = json.load(open(tmp_path / "jacket.card.json"))
+    js = _meshes(tmp_path, j)
+    assert min(z for m in js for z in m["vertices"][2::3]) <= -109.9 and j["members"] == g["members"]
+    v = json.load(open(tmp_path / "dp_vessel.card.json"))
+    assert v["lars"]["max_hs_m"] == 3.0 and v["lars"]["overboard"][1] < -10 and 80 < _meshes(tmp_path, v)[0]["size"][0] < 95
+    m = json.load(open(tmp_path / "manifold.card.json"))
+    assert len(m["valves"]) == 6 and len(m["hot_stabs"]) == 2
+    assert json.load(open(tmp_path / "tms.card.json"))["tether"]["length_m"] == 250.0

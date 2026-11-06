@@ -261,8 +261,98 @@ def wellboat():
     return card, models
 
 
+def homarus():
+    """The work-class ROV for the oil field (Ketos Oil): umbilical-powered, from a TMS on the vessel's LARS."""
+    from homarus import Homarus, TOOLS
+    d = Homarus()
+    p = Homarus.p()
+    s = Homarus.sizing()
+    parts = [("homarus_frame", "frame", "#7f8c8d"), ("homarus_foam", "foam", "#f1c40f"), ("homarus_thrusters", "thrusters", "#222222"),
+             ("homarus_arms", "arms", "#c0392b"), ("homarus_skid", "skid", "#2c3e50")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 12.0) for n, k, c in parts]
+    dz = _centre_z(models)
+    th = Homarus.thruster_layout(p)
+    thrusters = [{"at": [round(x / 1000, 3), round(y / 1000, 3), round(z / 1000 - dz, 3)], "axis": [round(c, 4) for c in a],
+                  "max_N": (p["h_thrust_kn"] if a[2] == 0 else p["v_thrust_kn"]) * 1000} for (x, y, z), a in th]
+    card = CARD | {"name": "homarus", "kind": "rov", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"] / 1000, p["width"] / 1000, p["height"] / 1000 + 0.3],
+                   "mass_kg": p["mass_kg"], "displacement_L": round(s["displacement_L"], 1),
+                   "net_buoyancy_kg": p["net_buoyancy_kg"], "cd": [0.9, 1.0, 1.1], "thrusters": thrusters,
+                   "thruster_W": round(s["thruster_W"]), "battery_Wh": None, "power": "umbilical",
+                   "hpu_W": p["hpu_kw"] * 1000, "hotel_W": s["hotel_W"], "max_depth_m": p["rating_m"],
+                   "transit_speed_m_s": 0.8, "inspect_speed_m_s": 0.25, "camera_swath_m": 2.0,
+                   "tools": {k: {"mass_kg": v[0], "power_W": v[1], "price_eur": v[2], "what": v[3]} for k, v in TOOLS.items()},
+                   "manipulators": [{"side": "right", "functions": 7, "reach_m": 1.5, "lift_kg": 270},
+                                    {"side": "left", "functions": 5, "reach_m": 1.2, "lift_kg": 450}],
+                   "tether": {"length_m": p["tether_m"], "diameter_m": 0.032, "cd": 1.2, "from": "tms"},
+                   "resident": False, "price_eur": round(s["price_eur"])}
+    return card, models
+
+
+def jacket():
+    """The oil platform's jacket in 110 m (Ketos Oil): the mesh by part and the structure as data on the card."""
+    from oil_platform import Jacket
+    d = Jacket()
+    p = Jacket.p()
+    g = Jacket.members(p)
+    parts = [("jacket_structure", "structure", "#c9a227"), ("jacket_anodes", "anodes", "#b0b7bf"),
+             ("jacket_conductors", "conductors", "#5d6d7e"), ("jacket_risers", "risers", "#1c2833"),
+             ("jacket_topside", "topside", "#95a5a6")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 90.0, ang=0.6) for n, k, c in parts]
+    card = CARD | {"name": "jacket", "kind": "structure", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "water_depth_m": p["water_depth"], "deck_m": p["deck"], "batter": p["batter"], "half_top_m": p["half_top"],
+                   "top_m": p["top"], "levels": g["levels"], "members": g["members"], "nodes": g["nodes"],
+                   "anodes": g["anodes"], "anode_kg": p["anode_kg"], "sizing": Jacket.sizing(p)}
+    return card, models
+
+
+def dp_vessel():
+    """The DP2 IMR/ROV support vessel (Ketos Oil): z = 0 the waterline, centred; the LARS on the starboard side."""
+    from oil_platform import SupportVessel
+    d = SupportVessel()
+    p = SupportVessel.p()
+    parts = [("dp_vessel_hull", "hull", "#1f618d"), ("dp_vessel_house", "house", "#ecf0f1"), ("dp_vessel_lars", "lars", "#e67e22")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 120.0, ang=0.6) for n, k, c in parts]
+    dx = _x_centre(models)
+    ob = d.overboard(p)
+    card = CARD | {"name": "dp_vessel", "kind": "boat", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"], p["beam"], p["depth"]], "draft_m": p["draft"], "mass_kg": 6.5e6,
+                   "max_speed_m_s": 6.5, "dp": {"class": 2, "max_wind_m_s": p["dp_wind_m_s"], "max_current_m_s": p["dp_current_m_s"]},
+                   "lars": {"overboard": [round(ob[0] - dx, 2), round(ob[1], 2), 0.0], "max_hs_m": p["lars_hs_m"],
+                            "winch_m_min": 30.0},
+                   "carries": ["homarus", "tms"], "day_rate_eur": p["day_rate_eur"]}
+    return card, models
+
+
+def tms():
+    """The top-hat tether management system: the ROV's garage on the lift umbilical, its 250 m excursion tether."""
+    from oil_platform import Tms
+    d = Tms()
+    p = Tms.p()
+    models = [_mesh(d.build(p), "tms_body", _hex("#d35400"), 15.0)]
+    _centre_z(models)
+    card = CARD | {"name": "tms", "kind": "tms", "parts": [{"model": "tms_body", "color": models[0]["color"]}],
+                   "size": [p["diameter"] + 0.8, p["diameter"] + 0.8, p["height"]], "mass_kg": p["mass_kg"],
+                   "tether": {"length_m": p["tether_m"], "diameter_m": p["tether_d"], "cd": 1.2},
+                   "umbilical": {"diameter_m": p["umbilical_d"], "cd": 1.2, "length_m": 600.0}}
+    return card, models
+
+
+def manifold():
+    """A subsea production manifold with an ROV valve panel (stage 4 of Ketos Oil): z = 0 the mudmat's sole."""
+    from oil_platform import Manifold
+    d = Manifold()
+    p = Manifold.p()
+    models = [_mesh(d.build(p | {"part": "frame"}), "manifold_frame", _hex("#f4d03f"), 40.0),
+              _mesh(d.build(p | {"part": "panel"}), "manifold_panel", _hex("#2e86c1"), 20.0)]
+    card = CARD | {"name": "manifold", "kind": "structure", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"], p["width"], p["height"]]} | Manifold.panel(p)
+    return card, models
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
-            "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat}
+            "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
+            "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold}
 
 
 def export(out, only=None):

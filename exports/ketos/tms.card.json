@@ -1,0 +1,32 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "tms",
+ "kind": "tms",
+ "parts": [
+  {
+   "model": "tms_body",
+   "color": [
+    0.827,
+    0.329,
+    0.0
+   ]
+  }
+ ],
+ "size": [
+  3.4000000000000004,
+  3.4000000000000004,
+  1.8
+ ],
+ "mass_kg": 3200.0,
+ "tether": {
+  "length_m": 250.0,
+  "diameter_m": 0.032,
+  "cd": 1.2
+ },
+ "umbilical": {
+  "diameter_m": 0.042,
+  "cd": 1.2,
+  "length_m": 600.0
+ }
+}
