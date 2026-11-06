@@ -18,21 +18,36 @@ Echensis's hull navigation (`echensis.md`) scaled down, Shrimp's "the structure 
 
 ## v0 numbers (`python labs/marine/designs/mysis.py`)
 
-* The unit: 620 × 360 × 240 mm round one Ø130 × 400 mm tube; **18.0 kg** in air (a 25 kg case), 0.6 kg of lead to
-  trim; six T200-class thrusters: 85 N forward, **1.65 m/s**; holds on the hull in 0.5 m/s with a ×5 margin.
-* Grooming: a 0.35 m brush at 0.4 m/s with 15 % lane overlap and 75 % lane efficiency, **320 m²/h**; 416 W on the
-  hull → **1.1 h** a battery (500 Wh); surveying 3.3 h.
+* The unit (round 2): 620 × 360 × 240 mm round one Ø130 × 400 mm tube; **17.6 kg** in air (a 25 kg case), 0.8 kg
+  of lead to trim; four T200-class thrusters: 60 N forward, **1.39 m/s**; the 80 N pad's grip holds the lane in a
+  0.5 m/s cross-current with 40 % to spare.
+* Grooming: a 0.35 m brush at 0.4 m/s with 15 % lane overlap and 75 % lane efficiency, **320 m²/h**; 397 W on the
+  hull → **1.1 h** a battery (500 Wh); surveying 3.6 h.
 * **The group**: with two bays on the node, a unit spends 46 % of its time on the hull (1.1 h on, 1.25 h charging),
   so six units keep about three at work: **890 m²/h**. A 180 m bulker's wetted hull (9 000 m², 169 lanes) takes
   **10 h: one shift** with six, 15 h with four, 60 h alone. The acoustic link carries six units' reports (0.5 Hz,
   100 bytes) with a ×2 margin; a USBL fix every 6 s and 5 cm of dead-reckoning drift between fixes.
-* Price (class prices): **€19.1k** a unit; **€14.0k** the node; the fleet of six **€128k**.
+* Price (class prices, round 2): **€18.6k** a unit; **€14.0k** the node; the fleet of six **€125k**.
 
 ## What the group buys
 
 One unit is a 60 h job; six are a shift, with the same supervisor and the same boat. The lanes are the unit of work:
 each unit takes the next free lane from the shared map, reports it done, and the map is the record the ship's
 superintendent gets. A unit that fails lifts off, surfaces and strobes; its lane goes back into the pool.
+
+## Decisions (round 2): four thrusters, not six
+
+Six was the ROV reflex (four vectored plus two vertical: all six degrees of freedom, with redundancy). What the job
+needs: surge, heave and yaw to swim and land; **roll**, because a belly pad meeting a vertical ship side means
+rolling 90° against the passive stability; surge and yaw on the lane. Sway was there to hold the lane in a
+cross-current — the pad's grip does that instead — and the big verticals were there to out-pull the magnets at
+lift-off, which a **servo clutch** on the magnets (lifted 10 mm, the pull drops from 80 N to ~5 N) makes free.
+
+So: **two horizontals in differential and two verticals**; the pad raised to 80 N (press margin ×2, grip 24 N
+against 17 N of broadside drag at 0.5 m/s: +40 %); lift-off margin ×12 through the clutch. The unit loses 0.4 kg,
+0.3 L and €500 (×6 for the fleet), 1.65 → 1.39 m/s, and the controller loses a dimension. It also loses the
+redundancy a single ROV wants, which in a group is the right trade: a failed unit lifts off, surfaces and strobes,
+and its lane goes back in the pool. `thrusters` stays a parameter (4 or 6) so the comparison is one call.
 
 ## Open questions (next round)
 

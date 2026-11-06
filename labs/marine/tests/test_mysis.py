@@ -29,6 +29,13 @@ def test_a_ship_in_a_shift():
     assert Mysis.sizing({"group": 1})["shift_h"] > 4 * g["shift_h"]
 
 
+def test_four_thrusters_against_six():
+    four, six = Mysis.sizing({"thrusters": 4}), Mysis.sizing({"thrusters": 6})
+    assert four["mass_in_air_kg"] < six["mass_in_air_kg"] and four["unit_price_eur"] < six["unit_price_eur"]
+    assert four["hold_margin"] > 0                                   # the pad's grip holds the lane without sway
+    assert four["liftoff_margin"] > 1                                # the clutch lets go: lift-off is easy
+
+
 def test_cad_builds():
     pytest.importorskip("cadquery")
     assert Mysis().build(Mysis.p()).val().isValid()

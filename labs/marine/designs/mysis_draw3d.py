@@ -61,7 +61,7 @@ def draw_group(ax, p, n=4):
 def main(out="mysis_3d.png"):
     p = Mysis.p()
     fig = plt.figure(figsize=(18, 11))
-    draw_unit(fig.add_subplot(2, 3, 1, projection="3d"), p, 20, -50, "the unit: dome, lights, four vectored and two vertical thrusters")
+    draw_unit(fig.add_subplot(2, 3, 1, projection="3d"), p, 20, -50, "the unit: dome, lights, two horizontal and two vertical thrusters")
     draw_unit(fig.add_subplot(2, 3, 2, projection="3d"), p, -28, -120, "from below: the brush head (the magnetic roller pad round it) and the four altimeters")
     draw_unit(fig.add_subplot(2, 3, 3, projection="3d"), p, 90, -90, "from above: the USBL transponder, the modem, the handles")
     draw_group(fig.add_subplot(2, 1, 2, projection="3d"), p)

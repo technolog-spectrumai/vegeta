@@ -14,9 +14,12 @@ Requirements (``REQUIREMENTS``): a unit under 20 kg and one-person portable in a
 six on one node; a ship's hull in one 12 h shift; under EUR 20k a unit and EUR 15k a node.
 
 Layout (x forward, y left, z up; z = 0 the brush's face, the hull side): a rounded shell round one Ø130 × 400 mm
-tube; the brush head under the belly; six ducted thrusters (four vectored horizontal at 45°, two vertical that press
-the brush to the hull); four altimeters at the corners; the camera dome in the nose, lights beside it; the USBL
-transponder and the modem on top; two carry handles.
+tube; the brush head under the belly inside the magnetic roller pad (its magnets on a servo clutch: lifted 10 mm
+to let go); four ducted thrusters — two horizontal in differential (surge, yaw) and two vertical (heave, and the
+roll a belly pad needs to meet a vertical ship side); no sway: the pad's friction holds the lane. Six (the ROV
+reflex: four vectored plus two vertical) was the first layout; four is what the job needs, and a unit's redundancy
+matters less in a group than its price. Four altimeters at the corners; the camera dome in the nose, lights beside
+it; the USBL transponder and the modem on top; two carry handles.
 
 ``part``: ``vehicle``, ``shell``, ``housing``, ``thrusters``, ``brush``, ``altimeters``, ``lights``, ``top``, ``handles``.
 """
@@ -45,7 +48,7 @@ REQUIREMENTS = {
 #: Bought parts per unit: (mass kg, volume L, average power W, price EUR) — class values, not quotes.
 PARTS = {
     "Jetson Orin NX 16GB + carrier": (0.30, 0.0, 15.0, 900.0),
-    "6 ducted thrusters with guards (T200 class)": (6 * 0.35, 6 * 0.15, 0.0, 6 * 300.0),
+    "ducted thrusters with guards (T200 class), each": (0.35, 0.15, 0.0, 300.0),      # times the thruster count
     "camera (stereo) + 4 lights": (1.20, 0.50, 40.0, 1500.0),
     "4 altimeters (hull distance, attitude)": (0.60, 0.25, 4.0, 1000.0),
     "IMU + depth + leak": (0.30, 0.10, 3.0, 800.0),
@@ -54,11 +57,13 @@ PARTS = {
     "LiFePO4 battery 500 Wh, 24 V + BMS": (3.50, 2.60, 0.0, 900.0),
     "tube Ø130 x 400 (Al, 60 m) + dome": (2.80, 5.30, 0.0, 1400.0),
     "shell, frame, foam, handles": (2.20, 6.50, 0.0, 2000.0),
-    "magnetic roller pad (NdFeB blocks on 3 rollers, 40 N preload on steel)": (0.40, 0.10, 0.0, 250.0),
+    "magnetic roller pad (NdFeB blocks on 3 rollers, 80 N on steel) + servo clutch": (0.65, 0.18, 1.0, 360.0),
     "assembly, cabling, test": (0.50, 0.10, 0.0, 2000.0),
 }
 BRUSH = {"mass": 2.8, "volume": 1.4, "power_W": 200.0, "width_m": 0.35, "press_N": 40.0, "price": 1400.0}
-PAD_PRELOAD_N = 40.0                                            # the magnetic pad's pull on steel (set by the magnets' standoff)
+PAD_PRELOAD_N = 80.0                                            # the magnetic pad's pull on steel, engaged
+PAD_RELEASED_N = 5.0                                            # with the clutch lifting the blocks 10 mm
+PAD_MU = 0.3                                                    # the rollers' lateral grip on a wet, slimy hull (assumed)
 NODE = {   # on the workboat or a buoy: (mass kg, price EUR)
     "USBL head + acoustic modem (surface)": (6.0, 7000.0),
     "GPS + 4G/Wi-Fi + the group's computer": (3.0, 2500.0),
@@ -78,6 +83,7 @@ class Mysis(Design):
         Parameter("height", 240.0, "mm", min=120),
         Parameter("tube_d", 130.0, "mm", min=80),
         Parameter("duct", 100.0, "mm", min=50, description="thruster duct with guard, outer"),
+        Parameter("thrusters", 4, "", min=3, max=6, description="4: two horizontal differential + two vertical; 6: four vectored + two vertical"),
         Parameter("thrust_each_N", 30.0, "N", min=5, description="each thruster's bollard thrust (T200 class at 24 V)"),
         Parameter("thruster_W", 350.0, "W", min=20),
         Parameter("groom_speed", 0.4, "m/s", min=0.05, description="along the lane while brushing"),
@@ -97,35 +103,41 @@ class Mysis(Design):
         """The unit: mass, trim, speed, pressing and holding, power and endurance, cleaning rate, price. The group:
         lanes, the shift on one hull, the acoustic link and positioning budget, the rotation through the node's bays."""
         p = cls.p(over)
-        m = sum(a for a, _, _, _ in PARTS.values()) + BRUSH["mass"]
-        V = (sum(b for _, b, _, _ in PARTS.values()) + BRUSH["volume"]) / 1000
+        n_t = int(p["thrusters"])
+        each = PARTS["ducted thrusters with guards (T200 class), each"]
+        extra = n_t - 1                                                       # the parts list counts one thruster
+        m = sum(a for a, _, _, _ in PARTS.values()) + extra * each[0] + BRUSH["mass"]
+        V = (sum(b for _, b, _, _ in PARTS.values()) + extra * each[1] + BRUSH["volume"]) / 1000
         net_up = 0.2
         trim_kg = RHO_SW * V - m - net_up
         L, W, H = p["length"] / 1000, p["width"] / 1000, p["height"] / 1000
         cda_fwd = 0.7 * W * H
-        T_fwd = 4 * p["thrust_each_N"] * math.cos(math.radians(45))
+        n_h = int(p["thrusters"]) - 2
+        T_fwd = n_h * p["thrust_each_N"] * (math.cos(math.radians(45)) if n_h == 4 else 1.0)
+        T_sway = 4 * p["thrust_each_N"] * math.cos(math.radians(45)) if n_h == 4 else 0.0
         T_press = 2 * p["thrust_each_N"]
         v_max = math.sqrt(T_fwd / (0.5 * RHO_SW * cda_fwd))
         u = REQUIREMENTS["current_m_s"]
         hull_drag = 0.5 * RHO_SW * u * u * (0.9 * L * H)                      # broadside to a current along the ship
         # on the hull: the magnetic pad gives the brush's press for nothing (steel); the vertical pair lands and lifts
         # off (it must beat the pad: the lift-off margin); friction from the preload helps hold the lane
-        hold_margin = (T_fwd + 0.3 * PAD_PRELOAD_N) / hull_drag - 1
+        hold_margin = (T_sway + PAD_MU * PAD_PRELOAD_N) / hull_drag - 1       # the cross-current: sway thrust or the pad's grip
         press_margin = PAD_PRELOAD_N / BRUSH["press_N"] - 1
-        liftoff_margin = T_press / PAD_PRELOAD_N - 1
+        liftoff_margin = T_press / PAD_RELEASED_N - 1                          # the clutch lets go first
         # power: hotel + brush + driving the lane against drag and the pad's rolling friction
         hotel = sum(w for _, _, w, _ in PARTS.values())
         k_T = p["thruster_W"] / p["thrust_each_N"] ** 1.5                     # W per N^1.5 (propeller: P ~ T^1.5)
         press_W = 0.0
-        drive_N = 0.5 * RHO_SW * cda_fwd * p["groom_speed"] ** 2 + 0.15 * PAD_PRELOAD_N + 0.2 * BRUSH["press_N"]
-        drive_W = 4 * k_T * (drive_N / 4 / math.cos(math.radians(45))) ** 1.5
+        drive_N = 0.5 * RHO_SW * cda_fwd * p["groom_speed"] ** 2 + 0.08 * PAD_PRELOAD_N + 0.2 * BRUSH["press_N"]   # hard rollers roll at ~0.08
+        per = (lambda N: N / 4 / math.cos(math.radians(45))) if n_h == 4 else (lambda N: N / 2)
+        drive_W = n_h * k_T * per(drive_N) ** 1.5
         groom_W = hotel + BRUSH["power_W"] + press_W + drive_W
         survey_N = 0.5 * RHO_SW * cda_fwd * p["survey_speed"] ** 2
-        survey_W = hotel + 4 * k_T * (survey_N / 4 / math.cos(math.radians(45))) ** 1.5
+        survey_W = hotel + n_h * k_T * per(survey_N) ** 1.5
         usable = 0.9 * p["battery_wh"]
         groom_h, survey_h = usable / groom_W, usable / survey_W
         rate = BRUSH["width_m"] * (1 - p["lane_overlap"]) * p["groom_speed"] * 3600 * 0.75   # m2/h, 75 % lane efficiency
-        unit_price = sum(c for _, _, _, c in PARTS.values()) + BRUSH["price"]
+        unit_price = sum(c for _, _, _, c in PARTS.values()) + extra * each[3] + BRUSH["price"]
         # the group
         n = int(p["group"])
         bays = 2
@@ -166,9 +178,13 @@ class Mysis(Design):
         L, W, H = p["length"], p["width"], p["height"]
         c = math.cos(math.radians(45))
         out = []
-        for sx in (1, -1):
-            for sy in (1, -1):
-                out.append(((sx * L * 0.30, sy * (W / 2 + p["duct"] * 0.3), H * 0.5 + 40), (sx * c, sy * c, 0)))
+        if int(p["thrusters"]) >= 6:
+            for sx in (1, -1):
+                for sy in (1, -1):
+                    out.append(((sx * L * 0.30, sy * (W / 2 + p["duct"] * 0.3), H * 0.5 + 40), (sx * c, sy * c, 0)))
+        else:
+            for sy in (1, -1):                                                 # two along the sides, pushing forward
+                out.append(((-L * 0.22, sy * (W / 2 + p["duct"] * 0.3), H * 0.5 + 40), (1, 0, 0)))
         for sx in (1, -1):
             out.append(((sx * L * 0.14, 0, H + 40 + p["duct"] * 0.05), (0, 0, 1)))
         return out
@@ -240,7 +256,7 @@ class Mysis(Design):
 
 if __name__ == "__main__":
     s = Mysis.sizing()
-    print(f"unit: {s['mass_in_air_kg']:.1f} kg (case {s['case_kg']:.0f} kg), trim {s['trim_kg']:+.2f} kg, {s['v_max_m_s']:.2f} m/s, pad {s['press_N']:.0f} N "
+    print(f"unit ({Mysis.p()['thrusters']} thrusters): {s['mass_in_air_kg']:.1f} kg (case {s['case_kg']:.0f} kg), trim {s['trim_kg']:+.2f} kg, {s['v_max_m_s']:.2f} m/s, pad {s['press_N']:.0f} N "
           f"(press margin {s['press_margin']:+.2f}, lift-off {s['liftoff_margin']:+.2f}), hold {s['hold_margin']:+.2f}; groom {s['groom_W']:.0f} W -> {s['groom_h']:.1f} h, survey {s['survey_h']:.1f} h; "
           f"{s['rate_m2_h']:.0f} m2/h; EUR {s['unit_price_eur']:.0f}")
     for n in (1, 2, 4, 6):
