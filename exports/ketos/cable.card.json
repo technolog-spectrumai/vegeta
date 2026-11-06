@@ -1,0 +1,26 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "cable",
+ "kind": "cable",
+ "parts": [
+  {
+   "model": "cable_segment",
+   "color": [
+    0.09,
+    0.125,
+    0.165
+   ]
+  }
+ ],
+ "segment_m": 10.0,
+ "diameter_m": 0.24,
+ "kg_per_m_air": 90.0,
+ "kg_per_m_water": 44.0,
+ "mbr_m": 4.0,
+ "armour": "single wire, galvanised steel",
+ "cores": 3,
+ "kv": 220,
+ "fibre": true,
+ "tension_max_kN": 120.0
+}

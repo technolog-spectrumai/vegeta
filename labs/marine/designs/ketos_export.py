@@ -409,10 +409,111 @@ def debris():
     return card, models
 
 
+def nephro():
+    """Nephro, the cable AUV (Ketos Cable): follows a buried cable on its coil-array tracker, surveys the route."""
+    from nephro import Nephro, PARTS as NPARTS, REQUIREMENTS
+    d = Nephro()
+    p = Nephro.p()
+    s = Nephro.sizing()
+    parts = [("nephro_body", "body", "#f39c12"), ("nephro_antennae", "antennae", "#2c3e50"), ("nephro_arm", "arm", "#c0392b"),
+             ("nephro_skids", "skids", "#7f8c8d")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 4.0) for n, k, c in parts]
+    dz = _centre_z(models)
+    L, R = p["length"] / 1000, p["diameter"] / 2000
+    th = [{"at": [round(-L / 2, 3), round(sy * (R * 0.25 + 0.09), 3), round(-dz, 3)], "axis": [1.0, 0.0, 0.0], "max_N": 120.0}
+          for sy in (1, -1)]
+    th += [{"at": [round(x, 3), 0.0, round(-dz, 3)], "axis": [0.0, 0.0, 1.0], "max_N": 50.0} for x in (0.18 * L, -0.22 * L)]
+    th += [{"at": [round(x + 0.16, 3), 0.0, round(-dz, 3)], "axis": [0.0, 1.0, 0.0], "max_N": 50.0} for x in (0.18 * L, -0.22 * L)]
+    card = CARD | {"name": "nephro", "kind": "rov", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [L + 0.5, p["antenna_span"] / 1000, 2 * R + 0.2], "mass_kg": round(s["mass_in_air_kg"], 1),
+                   "displacement_L": round((s["mass_in_air_kg"] + 1.0) / 1.025, 1), "net_buoyancy_kg": 1.0, "cd": [0.25, 1.0, 1.1],
+                   "thrusters": th, "battery_Wh": p["battery_kwh"] * 1000, "hotel_W": round(s["hotel_W"], 1),
+                   "survey_W": round(s["survey_W"], 1), "hover_W": round(s["hover_W"], 1), "max_depth_m": REQUIREMENTS["depth_m"],
+                   "transit_speed_m_s": 1.5, "survey_speed_m_s": REQUIREMENTS["survey_speed_m_s"],
+                   "survey_altitude_m": REQUIREMENTS["survey_altitude_m"], "range_km": round(s["range_km"], 1),
+                   "inspect_speed_m_s": 0.5, "camera_swath_m": 3.0,
+                   "tracker": {"kind": "3-axis coil array (active tone / passive field)", "span_m": p["antenna_span"] / 1000,
+                               "dob_max_m": 3.0, "dob_sigma_m": 0.08, "lateral_sigma_m": 0.15},
+                   "sensors": [k for k in NPARTS if any(w in k for w in ("sonar", "multibeam", "profiler", "tracker", "cameras", "DVL", "INS"))],
+                   "tools": {"camera": {"what": "2 cameras + lights"}, "tracker": {"what": "coil array: cable position and depth of burial"},
+                             "mbes": {"what": "multibeam: bathymetry, exposures, free spans"}, "sbp": {"what": "sub-bottom profiler: burial in soft sediment"},
+                             "gripper": {"what": "5-DOF arm: lift and tag the cable, place markers"}},
+                   "tether": None, "resident": False, "price_eur": 420000}
+    return card, models
+
+
+def trencher():
+    """The jetting ROV trencher (Ketos Cable stage 3): umbilical-powered from the cable vessel, tracks on the seabed."""
+    from subsea_cable import JetTrencher, SOILS
+    d = JetTrencher()
+    p = JetTrencher.p()
+    s = JetTrencher.sizing()
+    parts = [("trencher_frame", "frame", "#34495e"), ("trencher_foam", "foam", "#f1c40f"), ("trencher_thrusters", "thrusters", "#222222"),
+             ("trencher_swords", "swords", "#e67e22"), ("trencher_tracks", "tracks", "#1b2631")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 30.0) for n, k, c in parts]
+    dz = _centre_z(models)
+    thrusters = [{"at": [round(x, 3), round(y, 3), round(z - dz, 3)], "axis": [round(c, 4) for c in a], "max_N": p["thrust_kn"] * 1000}
+                 for (x, y, z), a in JetTrencher.thruster_layout(p)]
+    card = CARD | {"name": "trencher", "kind": "trencher", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"], p["width"], p["height"]], "mass_kg": p["mass_kg"], "displacement_L": round(s["displacement_L"], 1),
+                   "net_buoyancy_kg": round(-(p["mass_kg"] - s["displacement_L"] * 1.025), 1), "cd": [1.0, 1.1, 1.2],
+                   "thrusters": thrusters, "thruster_W": round(s["thruster_W"]), "battery_Wh": None, "power": "umbilical",
+                   "power_W": s["power_W"], "jet_W": p["jet_kw"] * 1000, "hotel_W": p["hotel_kw"] * 1000, "max_depth_m": p["rating_m"],
+                   "transit_speed_m_s": 0.6, "on_tracks_N": round(s["on_tracks_N"]), "trench_width_m": p["trench_width"],
+                   "sword_depth_m": p["sword_depth"], "max_trench_speed_m_h": p["max_speed_m_h"], "jet_eff": p["jet_eff"],
+                   "soils": {k: {"specific_kJ_m3": v["specific_kJ_m3"], "max_depth_m": v["max_depth_m"]} for k, v in SOILS.items()},
+                   "trench_m_h": s["trench_m_h"],
+                   "tether": {"length_m": p["umbilical_m"], "diameter_m": 0.06, "cd": 1.2, "from": "vessel"},
+                   "resident": False, "price_eur": p["price_eur"], "day_rate_eur": p["day_rate_eur"]}
+    return card, models
+
+
+def cable_vessel():
+    """The cable-lay and repair vessel (Ketos Cable): carousel, stern chute, jointing container, the trencher's LARS."""
+    from subsea_cable import CableVessel
+    d = CableVessel()
+    p = CableVessel.p()
+    s = CableVessel.sizing()
+    parts = [("cable_vessel_hull", "hull", "#922b21"), ("cable_vessel_house", "house", "#ecf0f1"), ("cable_vessel_deck", "deck", "#e67e22")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 150.0, ang=0.6) for n, k, c in parts]
+    dx = _x_centre(models)
+    ob = CableVessel.overboard(p)
+    card = CARD | {"name": "cable_vessel", "kind": "boat", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"], p["beam"], p["depth"]], "draft_m": p["draft"], "mass_kg": 1.4e7, "max_speed_m_s": 6.0,
+                   "dp": {"class": 2, "max_wind_m_s": p["dp_wind_m_s"], "max_current_m_s": p["dp_current_m_s"]},
+                   "chute": [round(ob["chute"][0] - dx, 2), 0.0, 0.0],
+                   "lars": {"overboard": [round(ob["lars"][0] - dx, 2), round(ob["lars"][1], 2), 0.0], "max_hs_m": p["lars_hs_m"]},
+                   "carousel_t": p["carousel_t"], "carousel_km": round(s["carousel_km"], 1), "lay_speed_m_h": p["lay_speed_m_h"],
+                   "crane_t": p["crane_t"], "joint_hs_m": p["joint_hs_m"], "carries": ["trencher", "homarus", "nephro"],
+                   "day_rate_eur": p["day_rate_eur"]}
+    return card, models
+
+
+def cable():
+    """A 10 m cable segment (the viewer strings it along the route) and the cable's properties."""
+    from subsea_cable import CableSegment, CABLE
+    p = CableSegment.p()
+    models = [_mesh(CableSegment().build(p), "cable_segment", _hex("#17202a"), 5.0)]
+    card = CARD | {"name": "cable", "kind": "cable", "parts": [{"model": "cable_segment", "color": models[0]["color"]}],
+                   "segment_m": p["length"]} | CABLE
+    return card, models
+
+
+def cable_joint():
+    from subsea_cable import CableJoint
+    p = CableJoint.p()
+    models = [_mesh(CableJoint().build(p), "cable_joint_body", _hex("#d4ac0d"), 10.0)]
+    card = CARD | {"name": "cable_joint", "kind": "joint", "parts": [{"model": "cable_joint_body", "color": models[0]["color"]}],
+                   "size": [p["length"] + 2 * p["restrictor"], p["diameter"], p["diameter"]], "mass_kg": p["mass_kg"],
+                   "joint_h": p["joint_h"], "price_eur": p["price_eur"]}
+    return card, models
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
             "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
             "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold,
-            "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris}
+            "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
+            "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint}
 
 
 def export(out, only=None):

@@ -26,3 +26,8 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 | resident_dock | `oil_platform.py` `ResidentDock` | Squilla's garage on a leg at -80 m: inductive charger, fibre to the topside |
 | riser_clamp | `oil_platform.py` `RiserClamp` | a riser guide clamp (two bolted halves, an arm to the leg) |
 | debris | `oil_platform.py` `Debris` | dropped objects on the seabed: drum, scaffold tube, wire coil, grating |
+| nephro | `nephro.py` | Ketos Cable's cable AUV: 3 m torpedo, 8 kWh, the coil-array cable tracker (depth of burial), MBES, SBP; ~100 km a dive |
+| trencher | `subsea_cable.py` `JetTrencher` | Ketos Cable's jetting ROV trencher: 16 t, 2 x 300 kW jet pumps, 3 m swords, tracks; speed by soil on the card |
+| cable_vessel | `subsea_cable.py` `CableVessel` | the 130 m cable-lay and repair vessel: 7000 t carousel, stern chute, jointing container, the trencher's LARS |
+| cable | `subsea_cable.py` `CableSegment` | a 10 m segment of a 3-core 220 kV export cable (0.24 m, 90 kg/m, MBR 4 m) |
+| cable_joint | `subsea_cable.py` `CableJoint` | a rigid universal repair joint with its bend restrictors (96 h to make one) |
