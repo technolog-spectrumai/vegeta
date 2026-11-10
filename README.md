@@ -288,6 +288,12 @@ bay 300 km out to a vessel, releases it in a slow pass and flies home. The engin
   from the sill and the tail, a 0.6 m² drogue on a static line (3.5 g at the opening), the arms swinging out on sprung
   hinges at 15 m/s, rotor start, drogue cut, hover 6 s and 46 m below the pass; 400 scattered releases put the pass
   at 120 m or more. Without the drogue the arms do not open into the airstream.
+- **Medicine to a flooded town** (`albatros_flood.py`, `labs/aero/sims/albatros_flood.py`; MuJoCo): the bay loaded with six
+  ÉMERILLONs (ER2 with a 0.5 kg medicine pod; the same 110 kg Albatros, a 1.8 m bay), released in one pass over a river
+  town of eastern Poland or Lithuania in 2.4 m of water. Each flies to its roof and drops a saddle bag across the ridge
+  beside the people, or lands on a flat roof, then lands on the school to be collected: six roofs and 21 people within
+  17 s of the release, 66 min after a launch 300 km away. A single box slides off most pitched roofs. The vaccine box's
+  cold chain (it needs its phase-change pack for the cold bay at altitude); a movie and stills from MuJoCo's renderer.
 
 **Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
 wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).

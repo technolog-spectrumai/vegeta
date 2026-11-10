@@ -108,6 +108,7 @@ class BayOption:
     name: str
     vehicles: tuple                # the multirotors in the bay
     note: str = ""
+    abreast: int = 1               # how many lie side by side across the bay
 
     @property
     def count(self) -> int:
@@ -129,8 +130,9 @@ class BayOption:
         """The bay the airframe must give [m] (vehicles in a row along the fuselage, ``clearance`` around each), the
         fuselage's cross-section around it (the bay's width plus the two side walls and frames; its height plus the
         wing's carry-through and the systems tunnel above it), and the mass of the release gear and doors."""
-        length = sum(v.folded_m[0] + clearance for v in self.vehicles) + clearance
-        width = max(v.folded_m[1] for v in self.vehicles) + 2 * clearance
+        rows = math.ceil(self.count / self.abreast)
+        length = rows * (max(v.folded_m[0] for v in self.vehicles) + clearance) + clearance
+        width = self.abreast * max(v.folded_m[1] for v in self.vehicles) + (self.abreast + 1) * clearance
         height = max(v.folded_m[2] for v in self.vehicles) + clearance
         return {"length_m": length, "width_m": width, "height_m": height, "fuselage_width_m": width + 0.06,
                 "fuselage_height_m": height + 0.14, "volume_l": length * width * height * 1000,
