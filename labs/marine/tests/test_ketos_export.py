@@ -136,6 +136,7 @@ def test_carrier_and_drones_export(tmp_path):
     c = json.load(open(tmp_path / "pinna.card.json"))
     assert c["kind"] == "boat" and c["autonomous"] and c["crew"] == 0 and len(c["flight_deck"]["pads"]) == 4
     assert c["haul_min_per_basket"] < 3.0 and c["packing"]["crate_kg"] == 5.0 and "colregs" in c["autonomy"]
+    assert c["unmanned"] and {"swap_robot", "crate_loader", "basket_gantry"} <= set(c["robots"])
     _meshes(tmp_path, c)
     for name, kind in (("gannet", "vtol"), ("fulmar", "fixed_wing")):
         a = json.load(open(tmp_path / f"{name}.card.json"))

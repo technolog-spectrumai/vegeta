@@ -16,7 +16,7 @@ from fulmar import Fulmar  # noqa: E402
 from gannet import Gannet  # noqa: E402
 
 COLOURS = {"hulls": "#34495e", "deck": "#95a5a6", "house": "#ecf0f1", "flight_deck": "#7f8c8d", "pads": "#f1c40f",
-           "catapult": "#c0392b", "net": ("#2c3e50", 0.35), "mast": "#d0d3d4", "davits": "#e67e22"}
+           "catapult": "#c0392b", "net": ("#2c3e50", 0.35), "mast": "#d0d3d4", "davits": "#e67e22", "robots": "#27ae60"}
 
 
 def _tris(shape, tol=30.0, move=(0, 0, 0), rot=0.0):
@@ -67,15 +67,15 @@ def draw_drone(ax, shape, col, lim, title):
 
 def main(out="pinna_3d.png"):
     fig = plt.figure(figsize=(20, 12))
-    draw_vessel(fig.add_axes([0.0, 0.38, 0.5, 0.55], projection="3d"), 28, -135, "from aft quarter: the Walrus davits, the recovery net, the four pads")
-    draw_vessel(fig.add_axes([0.5, 0.38, 0.5, 0.55], projection="3d"), 32, 35, "from the bow: the autonomy mast, the catapult, the processing house")
+    draw_vessel(fig.add_axes([0.0, 0.38, 0.5, 0.55], projection="3d"), 28, -135, "from aft quarter: the Walrus davits, the basket gantry, the net, the four pads under the swap gantry (robots green)")
+    draw_vessel(fig.add_axes([0.5, 0.38, 0.5, 0.55], projection="3d"), 32, 35, "from the bow: the autonomy mast, the catapult, the crate loader's rail; no wheelhouse, no crew")
     gs, fs = Gannet.sizing(), Fulmar.sizing()
     draw_drone(fig.add_axes([0.05, 0.0, 0.4, 0.38], projection="3d"), Gannet().build(Gannet.p()), "#1f618d", 1200,
                f"Gannet: {gs['mtow_kg']} kg cargo quad, 5 kg crate, radius {gs['radius_km']} km, hover {gs['hover_W']} W, deck Hs {gs['deck_hs_limit_m']} m")
     draw_drone(fig.add_axes([0.55, 0.0, 0.4, 0.38], projection="3d"), Fulmar().build(Fulmar.p()), "#f39c12", 2000,
                f"Fulmar: {fs['mtow_kg']} kg, 3.6 m fixed-wing, 5 kg, radius {fs['radius_km']} km, {fs['wh_per_km']} Wh/km, catapult + net")
     s = Pinna.sizing()
-    fig.suptitle(f"Pinna — autonomous drone-carrier catamaran (no crew): {s['length_m']:.0f} x {s['beam_m']:.0f} m, {s['displacement_t']:.0f} t, "
+    fig.suptitle(f"Pinna — unmanned, robot-run drone-carrier catamaran ({s['robots']} robots, no crew): {s['length_m']:.0f} x {s['beam_m']:.0f} m, {s['displacement_t']:.0f} t, "
                  f"{s['service_kn']:.0f} kn ({s['service_kW']} kW), {s['bed_load_kW']:.0f} kW on the bed; 4 pads ({s['vtol_recoveries_per_h']:.0f} recoveries/h), "
                  f"catapult {s['fixed_wing_launches_per_h']:.0f}/h, net {s['fixed_wing_recoveries_per_h']:.0f}/h; packs {s['pack_kg_h']} kg/h; €{s['price_eur']/1e6:.2f}M", fontsize=12)
     fig.savefig(out, dpi=90)

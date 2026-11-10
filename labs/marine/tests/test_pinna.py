@@ -2,7 +2,7 @@
 deck's rates beat the packer, no crew aboard, the CAD builds."""
 import pytest
 
-from pinna import AUTONOMY, Pinna
+from pinna import AUTONOMY, ROBOTS, Pinna
 
 
 def test_floats_and_powers():
@@ -16,6 +16,15 @@ def test_deck_keeps_up_and_no_crew():
     assert s["crew"] == 0 and {"radar", "ais", "colregs", "supervision"} <= set(AUTONOMY)
     assert s["air_kg_h_vtol_deck_limit"] > 200 and s["pack_kg_h"] >= 200 and s["baskets_per_h"] > 20
     assert s["deck_spots"]["vtol_pads"] == 4 and s["price_eur"] < 5e6
+
+
+def test_every_task_has_a_robot():
+    for k in ("davit", "basket_gantry", "packing_cell", "crate_loader", "swap_robot", "deck_tug", "cleaner"):
+        r = ROBOTS[k]
+        assert r["count"] >= 1 and r["cycle_s"] > 0 and r["power_kW"] > 0 and r["price_eur"] > 0 and r["faults_per_day"] >= 0
+    p = Pinna.p()
+    assert ROBOTS["basket_gantry"]["cycle_s"] == p["basket_haul_s"] and ROBOTS["packing_cell"]["cycle_s"] == p["pack_s"]
+    assert ROBOTS["crate_loader"]["payload_kg"] >= p["crate_kg"] and ROBOTS["davit"]["count"] == p["davits"]
 
 
 def test_cad_builds():

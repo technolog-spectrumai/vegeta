@@ -78,6 +78,14 @@
     0.494,
     0.133
    ]
+  },
+  {
+   "model": "pinna_robots",
+   "color": [
+    0.153,
+    0.682,
+    0.376
+   ]
   }
  ],
  "size": [
@@ -116,6 +124,86 @@
   "colregs": "COLREGs rules 8-17 in the autopilot: give way / stand on, a closest-approach limit of 0.3 nm",
   "supervision": "one shore operator per 3 vessels: alarms, a remote takeover (teleop) when a fault asks"
  },
+ "robots": {
+  "davit": {
+   "count": 4,
+   "what": "an automatic davit with a latch cradle: a Walrus over the side and back, the tether reel paced to it",
+   "reach_m": 2.5,
+   "payload_kg": 60.0,
+   "cycle_s": 300.0,
+   "power_kW": 1.5,
+   "faults_per_day": 0.05,
+   "fix_min": 10.0,
+   "price_eur": 38000.0
+  },
+  "basket_gantry": {
+   "count": 1,
+   "what": "a gantry over the Walrus deck: grabs the float line, winches the basket, tips it onto the wash conveyor, sends it back down",
+   "reach_m": 9.0,
+   "payload_kg": 40.0,
+   "cycle_s": 90.0,
+   "power_kW": 1.5,
+   "faults_per_day": 0.3,
+   "fix_min": 8.0,
+   "price_eur": 85000.0
+  },
+  "packing_cell": {
+   "count": 1,
+   "what": "wash, vision grader, a 6-axis arm: clams and flake ice into a 5 kg crate, lid, label (harvest time, cell)",
+   "reach_m": 1.6,
+   "payload_kg": 10.0,
+   "cycle_s": 60.0,
+   "power_kW": 6.0,
+   "faults_per_day": 0.4,
+   "fix_min": 6.0,
+   "price_eur": 160000.0
+  },
+  "crate_loader": {
+   "count": 1,
+   "what": "an arm on a rail along the flight deck and down the lift: a crate from the store to a Gannet's hook or a Fulmar's pod",
+   "reach_m": 12.0,
+   "payload_kg": 8.0,
+   "cycle_s": 40.0,
+   "power_kW": 1.0,
+   "faults_per_day": 0.3,
+   "fix_min": 6.0,
+   "price_eur": 70000.0
+  },
+  "swap_robot": {
+   "count": 1,
+   "what": "a gantry between the pads and the battery room: the pack out of a locked drone's sled, a charged one in",
+   "reach_m": 12.0,
+   "payload_kg": 8.0,
+   "cycle_s": 90.0,
+   "power_kW": 1.0,
+   "faults_per_day": 0.3,
+   "fix_min": 8.0,
+   "price_eur": 90000.0
+  },
+  "deck_tug": {
+   "count": 1,
+   "what": "a low tug with a gripper: drones between the pads, the lift and the catapult cradle; a Fulmar out of the net",
+   "reach_m": 14.0,
+   "payload_kg": 30.0,
+   "cycle_s": 60.0,
+   "power_kW": 0.8,
+   "faults_per_day": 0.1,
+   "fix_min": 10.0,
+   "price_eur": 45000.0
+  },
+  "cleaner": {
+   "count": 1,
+   "what": "a magnetic crawler: washes the pads' grids, the deck, the radar and camera windows; inspects welds and the net",
+   "reach_m": 0.0,
+   "payload_kg": 5.0,
+   "cycle_s": 1800.0,
+   "power_kW": 0.4,
+   "faults_per_day": 0.05,
+   "fix_min": 15.0,
+   "price_eur": 30000.0
+  }
+ },
+ "unmanned": true,
  "carries": [
   "walrus",
   "gannet",
@@ -198,6 +286,6 @@
   "pack_kg_h": 300,
   "baskets_per_h": 40
  },
- "price_eur": 3927780,
+ "price_eur": 4039780,
  "day_rate_eur": 1400.0
 }

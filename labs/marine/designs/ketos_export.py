@@ -577,11 +577,11 @@ def clam_boat():
 def pinna():
     """Pinna, the autonomous drone-carrier catamaran (Ketos Clams stages 6-8): Walrus davits and reels, the basket
     robot and the packer, four VTOL pads, the catapult and the recovery net, the autonomy mast. z = 0 the waterline."""
-    from pinna import AUTONOMY, LOADS, Pinna
+    from pinna import AUTONOMY, LOADS, ROBOTS, Pinna
     d, p, s = Pinna(), Pinna.p(), Pinna.sizing()
     parts = [("pinna_hulls", "hulls", "#34495e"), ("pinna_deck", "deck", "#95a5a6"), ("pinna_house", "house", "#ecf0f1"),
              ("pinna_flight_deck", "flight_deck", "#7f8c8d"), ("pinna_pads", "pads", "#f1c40f"), ("pinna_catapult", "catapult", "#c0392b"),
-             ("pinna_net", "net", "#2c3e50"), ("pinna_mast", "mast", "#d0d3d4"), ("pinna_davits", "davits", "#e67e22")]
+             ("pinna_net", "net", "#2c3e50"), ("pinna_mast", "mast", "#d0d3d4"), ("pinna_davits", "davits", "#e67e22"), ("pinna_robots", "robots", "#27ae60")]
     models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 40.0) for n, k, c in parts]
     z_fd = (d._z_deck(p) + 3600 + 150) / 1000
     card = CARD | {"name": "pinna", "kind": "boat", "autonomous": True, "crew": 0, "operators_ashore": round(s["operators_ashore"], 3),
@@ -590,7 +590,7 @@ def pinna():
                    "displacement_t": s["displacement_t"], "mass_kg": round(1000 * (s["lightship_t"] + s["deadweight_t"])),
                    "service_kn": s["service_kn"], "max_kn": s["max_kn"], "service_kW": s["service_kW"], "bed_load_kW": s["bed_load_kW"],
                    "power_W": round(1000 * s["bed_load_kW"]), "battery_kWh": p["battery_kwh"], "endurance_days": s["endurance_days"],
-                   "fuel_l_h_on_bed": s["fuel_l_h_on_bed"], "loads_kW": {k: round(v, 2) for k, v in LOADS.items()}, "autonomy": AUTONOMY,
+                   "fuel_l_h_on_bed": s["fuel_l_h_on_bed"], "loads_kW": {k: round(v, 2) for k, v in LOADS.items()}, "autonomy": AUTONOMY, "robots": ROBOTS, "unmanned": True,
                    "carries": ["walrus", "gannet", "fulmar"], "davits": p["davits"], "tether_reels": p["davits"], "usbl": True,
                    "haul_min_per_basket": p["basket_haul_s"] / 60.0, "basket_robot": True,
                    "packing": {"crate_kg": p["crate_kg"], "pack_s": p["pack_s"], "store_kg": p["crate_store_kg"], "ice": True},

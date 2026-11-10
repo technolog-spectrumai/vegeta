@@ -1,6 +1,7 @@
 """Pinna: an autonomous drone-carrier catamaran for the clam bed (Ketos Clams stages 6-8), named after *Pinna
 nobilis*, the noble pen shell of the Mediterranean that grows pearls and spins sea silk. It replaces the crewed
-``clam_boat`` (the farm workboat with davits): an **uncrewed surface vessel** that lies over the bed on dynamic
+``clam_boat`` (the farm workboat with davits): a fully **unmanned surface vessel** - no crew at any time, not even in transit: every task aboard is a robot's
+(``ROBOTS``) - that lies over the bed on dynamic
 positioning, runs four Walrus crawlers on automatic davits and tether reels, hauls their baskets with a robot,
 grades and packs the clams into 5 kg iced crates, and sends the crates ashore by air - Gannet cargo quads
 (``labs/aero/designs/gannet.py``) from four landing pads, Fulmar fixed-wings (``fulmar.py``) off a pneumatic
@@ -24,7 +25,14 @@ What is on it, aft to forward (x forward, y left, z up from the waterline; mm in
 * the **autonomy mast** forward: X- and S-band radar, AIS, a 360 deg lidar ring and day/IR cameras, dual RTK
   GNSS + INS, satcom (LEO) and 4G/LTE domes, UHF and the drones' 900 MHz / LTE links, ADS-B in for the air picture,
   the horn and the lights of a vessel not under command. COLREGs collision avoidance in the autopilot; no
-  wheelhouse - a small transit console in the mast's base for a delivery crew in port.
+  wheelhouse, no accommodation, no console aboard: it transits to and from port under its own autonomy, watched
+  from shore;
+* **the robots** (``ROBOTS``, each a card with its reach, payload, cycle time, power, failure rate and price): the
+  davit robots launch and recover the Walruses; the basket gantry hauls and empties the baskets; the grading and
+  packing cell packs the crates; the crate-loader arm on a rail along the flight deck puts the crates into the
+  Gannets' hooks and the Fulmars' pods; the battery-swap robot changes the packs on the pads and in the hangar;
+  the deck tug moves drones between the pads, the lift and the catapult; a cleaning and inspection crawler keeps
+  the deck, the pads' grids and the sensors clean.
 
 The numbers (``sizing``; class values for 24 m workcats and USVs, assumed, no vendor's vessel): displacement from
 the demihulls' block coefficient, the resistance by a total coefficient at the service speed, the electrical
@@ -60,6 +68,24 @@ DEADWEIGHT = {"fuel (diesel, 10 days)": 9.0, "fresh water + ice": 3.0, "crate st
 LOADS = {"DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": 45.0, "4 Walruses on their tethers": 4 * 0.371 + 0.5,
          "davits + reels (average)": 2.0, "basket robot": 1.5, "processing line + vision grader": 6.0, "chiller + ice": 5.0,
          "drone chargers (12 at 1C)": 16.0, "autonomy: radars, lidar, cameras, compute, comms": 2.5, "hotel": 2.0}
+#: The robots aboard (class values, assumed): what each does, its reach (m), payload (kg), cycle time (s), power
+#: (kW average while working), failures a day (each needs a remote reset or a takeover) and price (EUR).
+ROBOTS = {
+    "davit": {"count": 4, "what": "an automatic davit with a latch cradle: a Walrus over the side and back, the tether reel paced to it",
+              "reach_m": 2.5, "payload_kg": 60.0, "cycle_s": 300.0, "power_kW": 1.5, "faults_per_day": 0.05, "fix_min": 10.0, "price_eur": 38000.0},
+    "basket_gantry": {"count": 1, "what": "a gantry over the Walrus deck: grabs the float line, winches the basket, tips it onto the wash conveyor, sends it back down",
+                      "reach_m": 9.0, "payload_kg": 40.0, "cycle_s": 90.0, "power_kW": 1.5, "faults_per_day": 0.3, "fix_min": 8.0, "price_eur": 85000.0},
+    "packing_cell": {"count": 1, "what": "wash, vision grader, a 6-axis arm: clams and flake ice into a 5 kg crate, lid, label (harvest time, cell)",
+                     "reach_m": 1.6, "payload_kg": 10.0, "cycle_s": 60.0, "power_kW": 6.0, "faults_per_day": 0.4, "fix_min": 6.0, "price_eur": 160000.0},
+    "crate_loader": {"count": 1, "what": "an arm on a rail along the flight deck and down the lift: a crate from the store to a Gannet's hook or a Fulmar's pod",
+                     "reach_m": 12.0, "payload_kg": 8.0, "cycle_s": 40.0, "power_kW": 1.0, "faults_per_day": 0.3, "fix_min": 6.0, "price_eur": 70000.0},
+    "swap_robot": {"count": 1, "what": "a gantry between the pads and the battery room: the pack out of a locked drone's sled, a charged one in",
+                   "reach_m": 12.0, "payload_kg": 8.0, "cycle_s": 90.0, "power_kW": 1.0, "faults_per_day": 0.3, "fix_min": 8.0, "price_eur": 90000.0},
+    "deck_tug": {"count": 1, "what": "a low tug with a gripper: drones between the pads, the lift and the catapult cradle; a Fulmar out of the net",
+                 "reach_m": 14.0, "payload_kg": 30.0, "cycle_s": 60.0, "power_kW": 0.8, "faults_per_day": 0.1, "fix_min": 10.0, "price_eur": 45000.0},
+    "cleaner": {"count": 1, "what": "a magnetic crawler: washes the pads' grids, the deck, the radar and camera windows; inspects welds and the net",
+                "reach_m": 0.0, "payload_kg": 5.0, "cycle_s": 1800.0, "power_kW": 0.4, "faults_per_day": 0.05, "fix_min": 15.0, "price_eur": 30000.0},
+}
 #: The autonomy suite: (what, why).
 AUTONOMY = {"radar": "X- and S-band ARPA: targets out to 12 nm, the collision avoidance's tracks",
             "ais": "class A transponder: the others see it, it sees them",
@@ -72,7 +98,7 @@ AUTONOMY = {"radar": "X- and S-band ARPA: targets out to 12 nm, the collision av
 
 class Pinna(Design):
     parameters = [
-        Parameter("part", "vessel", choices=("vessel", "hulls", "deck", "house", "flight_deck", "pads", "catapult", "net", "mast", "davits")),
+        Parameter("part", "vessel", choices=("vessel", "hulls", "deck", "house", "flight_deck", "pads", "catapult", "net", "mast", "davits", "robots")),
         Parameter("length", 24000.0, "mm"),
         Parameter("beam", 10000.0, "mm", description="overall"),
         Parameter("hull_beam", 2800.0, "mm", description="each demihull"),
@@ -122,9 +148,10 @@ class Pinna(Design):
         fuel_l_h = (load / 0.85) * 0.25 / 0.84                       # 250 g/kWh at the shaft, 0.84 kg/L
         fuel_days = DEADWEIGHT["fuel (diesel, 10 days)"] * 1000 / 0.84 / fuel_l_h / 24
         pad_rate = p["pads"] * 3600.0 / p["pad_cycle_s"]
-        price = {"hulls + machinery": 2.3e6, "autonomy suite (sensors, compute, comms, COLREGs, certification)": 0.55e6,
-                 "flight deck automation (pads, swap robot, catapult, net)": 0.42e6, "processing + packing + chiller": 0.26e6,
-                 "4 davits + reels + basket robot": 0.24e6, "drones: 8 Gannet, 3 Fulmar, packs": 8 * 9800 + 3 * 21000 + 24 * 450 + 9 * 620}
+        robots_eur = sum(r["count"] * r["price_eur"] for r in ROBOTS.values())
+        price = {"hulls + machinery": 2.3e6, "robots aboard": robots_eur, "autonomy suite (sensors, compute, comms, COLREGs, certification)": 0.55e6,
+                 "flight deck (pads, catapult, net, lift)": 0.24e6, "processing line + chiller": 0.1e6,
+                 "4 tether reels": 0.06e6, "drones: 8 Gannet, 3 Fulmar, packs": 8 * 9800 + 3 * 21000 + 24 * 450 + 9 * 620}
         return {"length_m": L, "beam_m": p["beam"] / 1000, "draught_m": T, "displacement_t": round(disp_t, 1),
                 "lightship_t": round(light, 1), "deadweight_t": round(dwt, 2), "draught_margin_t": round(disp_t - light - dwt, 1),
                 "wetted_m2": round(wetted, 1), "resistance_kN": round(R / 1000, 1), "service_kn": p["service_kn"],
@@ -137,6 +164,7 @@ class Pinna(Design):
                 "crates_per_h": round(3600 / p["pack_s"]), "pack_kg_h": round(3600 / p["pack_s"] * p["crate_kg"]),
                 "baskets_per_h": round(3600 / p["basket_haul_s"]), "air_kg_h_vtol_deck_limit": round(pad_rate * p["crate_kg"]),
                 "charging_kW": LOADS["drone chargers (12 at 1C)"], "crew": 0, "operators_ashore": 1 / 3,
+                "robots": sum(r["count"] for r in ROBOTS.values()), "robot_faults_per_day": round(sum(r["count"] * r["faults_per_day"] for r in ROBOTS.values()), 2),
                 "price": price, "price_eur": round(sum(price.values())), "day_rate_eur": 1400.0}
 
     # --- CAD ---------------------------------------------------------------------------------------------------
@@ -209,10 +237,33 @@ class Pinna(Design):
                 solids.append(cq.Solid.makeCylinder(500, 900, cq.Vector(x, s * (y - 1800), z + 500), cq.Vector(0, 1, 0)))
         return cq.Workplane("XY").newObject([cq.Compound.makeCompound(solids)])
 
+    def _robots(self, p):
+        """The robots' frames: the basket gantry over the Walrus deck, the crate loader's rail along the flight
+        deck's starboard edge (with the arm), the swap gantry across the pads, the deck tug, the cleaner."""
+        z, zf = self._z_deck(p), self._z_deck(p) + 3600 + 150
+        B = p["beam"]
+        s = []
+        for y in (B / 2 - 300, -B / 2 + 300):                                   # the basket gantry's legs and beam
+            s.append(cq.Solid.makeBox(250, 250, 3400, cq.Vector(-10800, y - 125, z)))
+        s.append(cq.Solid.makeBox(300, B - 600, 300, cq.Vector(-10950, -B / 2 + 300, z + 3400)))
+        s.append(cq.Solid.makeBox(500, 500, 700, cq.Vector(-11050, 1500, z + 2700)))        # the trolley + winch
+        s.append(cq.Solid.makeBox(12000, 200, 150, cq.Vector(-9000, -4600, zf)))           # the crate loader's rail
+        s.append(cq.Solid.makeBox(500, 400, 500, cq.Vector(-4500, -4700, zf + 150)))        # its carriage
+        s.append(cq.Solid.makeCylinder(90, 1400, cq.Vector(-4250, -4500, zf + 650), cq.Vector(0.3, 0.6, 0.75)))
+        for x in (-8000, -800):                                                 # the swap gantry over the pads
+            for y in (4500, -4300):
+                s.append(cq.Solid.makeBox(160, 160, 2400, cq.Vector(x - 80, y - 80, zf)))
+        s.append(cq.Solid.makeBox(7400, 200, 200, cq.Vector(-8000, 4400, zf + 2400)))
+        s.append(cq.Solid.makeBox(7400, 200, 200, cq.Vector(-8000, -4400, zf + 2400)))
+        s.append(cq.Solid.makeBox(200, 9000, 250, cq.Vector(-4500, -4500, zf + 2400)))     # the bridge, at mid-travel
+        s.append(cq.Solid.makeBox(1200, 800, 400, cq.Vector(-1000, 3200, zf)))              # the deck tug
+        s.append(cq.Solid.makeBox(600, 500, 200, cq.Vector(2500, -2000, zf)))               # the cleaner
+        return cq.Workplane("XY").newObject([cq.Compound.makeCompound(s)])
+
     def build(self, p):
         if cq is None:
             raise ImportError("Pinna's CAD needs CadQuery")
-        parts = {"hulls": self._hulls, "deck": self._deck, "house": self._house, "flight_deck": self._flight_deck, "pads": self._pads,
+        parts = {"robots": self._robots, "hulls": self._hulls, "deck": self._deck, "house": self._house, "flight_deck": self._flight_deck, "pads": self._pads,
                  "catapult": self._catapult, "net": self._net, "mast": self._mast, "davits": self._davits}
         if p["part"] in parts:
             return parts[p["part"]](p)
