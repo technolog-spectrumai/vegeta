@@ -26,13 +26,13 @@ def draw(ax, p, elev, azim, title, bed=True):
         col, alpha = (c, 1.0) if isinstance(c, str) else c
         ax.add_collection3d(Poly3DCollection(_tris(d.build({**p, "part": name})), facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=True))
     if bed:
-        X, Y = np.meshgrid(np.linspace(-900, 900, 2), np.linspace(-700, 700, 2))
+        X, Y = np.meshgrid(np.linspace(-650, 650, 2), np.linspace(-650, 650, 2))
         ax.plot_surface(X, Y, np.zeros_like(X), color="#d9c89e", alpha=0.5)
         rng = np.random.default_rng(3)
-        pts = rng.uniform([-850, -650], [850, 650], (60, 2))
+        pts = rng.uniform([-620, -620], [620, 620], (60, 2))
         ax.scatter(pts[:, 0], pts[:, 1], np.full(60, 2.0), s=12, color="#6e5a3a", marker="o")             # the shows
-    ax.set_xlim(-900, 900); ax.set_ylim(-900, 900); ax.set_zlim(-300, 1500)
-    ax.set_box_aspect((1800, 1800, 1800)); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
+    ax.set_xlim(-650, 650); ax.set_ylim(-650, 650); ax.set_zlim(-250, 1050)
+    ax.set_box_aspect((1300, 1300, 1300)); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
 
 
 def main(out="odobenus_3d.png"):
