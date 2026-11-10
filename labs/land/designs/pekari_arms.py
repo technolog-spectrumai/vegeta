@@ -38,7 +38,7 @@ from dataclasses import dataclass, field, replace
 
 from ogma import actuators as act
 
-__all__ = ["G", "ArmSpec", "PEKARI_ARM", "PUMBA_MAIN_ARM", "PUMBA_AUX_ARM", "JOINTS", "joint_names", "arm_dof",
+__all__ = ["G", "ArmSpec", "PEKARI_ARM", "PUMBA_MAIN_ARM", "CALYDON_MAIN_ARM", "CALYDON_AUX_ARM", "JOINTS", "joint_names", "arm_dof",
            "masses", "total_mass", "fk", "ik", "pose", "mass_points", "gravity_torques", "rated_load", "load_curve",
            "workspace", "reach", "arm_power", "links"]
 
@@ -441,9 +441,32 @@ PEKARI_ARM = ArmSpec(
                             "on the same flange, same mass budget"},
 )
 
-#: Pumba's main arm: a 6-DOF heavy arm (wrist yaw added), 1.9 m reach.
+#: Pumba's main arm: the 6-DOF layout of Calydon's heavy arm one size down — 1.58 m reach, ~45 kg, 30 kg at 1.0 m.
 PUMBA_MAIN_ARM = ArmSpec(
-    name="Pumba heavy arm",
+    name="Pumba main arm",
+    upper=0.70, fore=0.62, tool=0.26, upper_section=(0.09, 0.12), fore_section=(0.075, 0.09), wall=0.004,
+    pedestal=(0.12, 0.10),
+    drives={"yaw": "cycloidal 400 Nm, brake", "shoulder": "cycloidal 800 Nm, brake", "elbow": "cycloidal 400 Nm, brake",
+            "wrist_pitch": "harmonic 150 Nm, brake", "wrist_yaw": "harmonic 60 Nm, brake",
+            "wrist_roll": "harmonic 60 Nm, brake", "grip": "jaw screw 6 kN"},
+    gripper="two-jaw grab (debris, drums, boxes), quick coupler", gripper_kg=5.0, jaw_length=0.16,
+    parts_kg={"brackets, cabling, covers, quick coupler": 3.5},
+    ranges=dict(_COMMON_RANGES),
+    gains={"yaw": (10000.0, 400.0, 0.5), "shoulder": (40000.0, 1500.0, 1.5), "elbow": (20000.0, 800.0, 0.8),
+           "wrist_pitch": (6000.0, 150.0, 0.2), "wrist_yaw": (1500.0, 40.0, 0.1), "wrist_roll": (1500.0, 40.0, 0.1),
+           "grip": (1000.0, 30.0, 0.1)},
+    poses={"folded": {"shoulder": -173.0, "elbow": 176.0, "wrist_pitch": 15.0},
+           "deployed": {"shoulder": -35.0, "elbow": 75.0, "wrist_pitch": 50.0},
+           "reach": {"shoulder": 0.0, "elbow": 0.0, "wrist_pitch": 0.0}},
+    rated_payload_kg=30.0, rated_reach=1.00,
+    assumptions={"tubes": "4 mm Al 6082 box sections; deflection and stresses open (as Calydon's)",
+                 "drives": "light-industrial cycloidal and strain-wave modules with brakes (catalogue class values)",
+                 "rated_payload": "30 kg at 1.0 m (peak, SF 1.5); heavier lifts are Calydon's"},
+)
+
+#: Calydon's main arm: a 6-DOF heavy arm (wrist yaw added), 1.9 m reach.
+CALYDON_MAIN_ARM = ArmSpec(
+    name="Calydon heavy arm",
     upper=0.85, fore=0.75, tool=0.32, upper_section=(0.12, 0.16), fore_section=(0.10, 0.12), wall=0.005,
     pedestal=(0.14, 0.13),
     drives={"yaw": "cycloidal 800 Nm, brake", "shoulder": "cycloidal 1600 Nm, brake", "elbow": "cycloidal 800 Nm, brake",
@@ -465,9 +488,9 @@ PUMBA_MAIN_ARM = ArmSpec(
                  "rated_payload": "60 kg at 1.2 m (peak, SF 1.5) is the design value; rated_load gives the curve"},
 )
 
-#: Pumba's second arm: the light arm's layout, stronger (Pekari's arm scaled to 1.2 m).
-PUMBA_AUX_ARM = ArmSpec(
-    name="Pumba auxiliary arm",
+#: Calydon's second arm: the light arm's layout, stronger (Pekari's arm scaled to 1.2 m).
+CALYDON_AUX_ARM = ArmSpec(
+    name="Calydon auxiliary arm",
     upper=0.55, fore=0.48, tool=0.20, upper_section=(0.07, 0.09), fore_section=(0.06, 0.07), wall=0.003,
     pedestal=(0.10, 0.08),
     drives={"yaw": "harmonic 60 Nm, brake", "shoulder": "harmonic 150 Nm, brake", "elbow": "harmonic 60 Nm, brake",

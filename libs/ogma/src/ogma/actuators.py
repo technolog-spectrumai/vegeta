@@ -109,18 +109,22 @@ CATALOG = [
     Actuator("perseus mini drive 20:1 planetary", "gearmotor", 1100.0, 30.0, 10.0, 20.0, 24.0, 200, False,
              "assumed: 24 V 200 W inrunner BLDC (0.53 N m continuous at 3600 rpm, 3x peak) through two planetary "
              "stages 4:1 x 5:1 (efficiency 0.94): 10 N m continuous, 30 N m stall, 200 rpm no-load; the 30 kg Perseus Mini", 20.0, 0.94),
-    # the Pekari family (Pekari-2M and Pumba, docs/pekari_pumba.md): light cobot joints for the 2M's arms, a 1600 N m
-    # shoulder for Pumba's main arm and Pumba's track drive. All four are class values, not a chosen product.
+    # the Pekari family (Pekari-2M, Pumba, Calydon; docs/pekari_pumba.md): light cobot joints for the 2M's arms, a 1600 N m
+    # shoulder for Calydon's main arm and Calydon's track drive. All four are class values, not a chosen product.
     Actuator("harmonic 12 Nm, brake", "industrial module", 520.0, 12.0, 5.0, 5.0, 48.0, 50, True,
              "assumed: 48 V frameless BLDC with a 1:100 strain-wave gear and a holding brake, small cobot wrist class"),
     Actuator("harmonic 30 Nm, brake", "industrial module", 900.0, 30.0, 12.0, 8.0, 48.0, 45, True,
              "assumed: 48 V BLDC with a 1:100 strain-wave gear and a holding brake, small cobot elbow class"),
     Actuator("cycloidal 1600 Nm, brake", "industrial module", 19000.0, 1600.0, 600.0, 260.0, 48.0, 20, True,
              "assumed: 48 V BLDC with a 1:80 cycloidal stage and a holding brake, heavy-manipulator shoulder class"),
-    Actuator("pumba track drive 4 kW, 48 V", "gearmotor", 18000.0, 450.0, 158.0, 120.0, 48.0, 150, False,
+    Actuator("pumba track drive 2.5 kW, 48 V", "gearmotor", 11000.0, 320.0, 110.0, 80.0, 48.0, 140, False,
+             "assumed: 48 V 2.5 kW peak BLDC (4.4 N m continuous at 3500 rpm, 3500 rpm no-load) through a 25:1 two-stage "
+             "planetary (efficiency 0.94): 110 N m continuous, 320 N m stall at the sprocket, 140 rpm no-load (8 km/h on "
+             "Pumba's 150 mm sprocket); sized for the light Pumba loaded on a 20 deg grade (pumba_robot.PUMBA)", 25.0, 0.94),
+    Actuator("calydon track drive 4 kW, 48 V", "gearmotor", 18000.0, 450.0, 158.0, 120.0, 48.0, 150, False,
              "assumed: 48 V 4 kW peak BLDC (6.0 N m continuous at 4000 rpm, 4200 rpm no-load) through a 28:1 two-stage "
              "planetary (efficiency 0.94): 158 N m continuous, 450 N m stall at the sprocket, 150 rpm no-load (8 km/h on "
-             "Pumba's 144 mm sprocket); sized for Pumba loaded on a 20 deg grade (pumba_robot.PUMBA)", 28.0, 0.94),
+             "Calydon's 144 mm sprocket); sized for Calydon loaded on a 20 deg grade (calydon_robot.CALYDON)", 28.0, 0.94),
 ]
 JOINTS = [
     Joint("leg hip pin", 1, 5.0, 60.0, "a leg's hip pin in a printed boss (Persephone)"),

@@ -1,5 +1,6 @@
 """Pekari-2M and the family's CAD (Dedalus/CadQuery): the Pekari Rover's chassis (``pekari_rover.PekariRover``)
-with the platform's arms on the roof in a named pose and its stabilizers (Pumba: ``pumba.Pumba``).
+with the platform's arms on the roof in a named pose and its stabilizers (Pumba: ``pumba.Pumba``, Calydon:
+``calydon.Calydon``).
 
 The geometry of the arms comes from ``pekari_arms`` (lengths, sections, pedestals) and ``pekari_family`` (mounts,
 stabilizer pads) so the CAD, the mass budget and the Chiron model share one description. The arm parts are simple

@@ -1,12 +1,12 @@
-"""Pumba's CAD (Dedalus/CadQuery): the family's CAD (``pekari_2m._FamilyCAD``) on Pumba's chassis — the heavy
-6-DOF arm and the auxiliary arm on the front corners, the deck between them, four swing-out stabilizers.
+"""Pumba's CAD (Dedalus/CadQuery): the family's CAD (``pekari_2m._FamilyCAD``) on the light Pumba's chassis — the
+6-DOF main arm and Pekari-2M's arm on the front corners, the deck between them, two swing-out front stabilizers.
+The tracks are drawn as Pekari's link belt: the envelope of Pumba's rubber band track. Calydon: ``calydon.Calydon``.
 
-``part`` as ``pekari_2m.Pekari2M``; ``stabilizers``: ``stowed`` (legs folded against the hull sides), ``deployed``
-(pads on the ground) or ``none``.
+``part`` as ``pekari_2m.Pekari2M``; ``stabilizers``: ``stowed``, ``deployed`` or ``none``.
 """
 from pekari_2m import _make
 from pumba_robot import CHASSIS
 
 Pumba = _make("Pumba", "pumba_robot:PUMBA", CHASSIS,
-              "Pumba: the heavy Pekari derivative — reinforced, wider chassis, a 6-DOF heavy arm and an auxiliary arm, "
-              "four stabilizers, the equipment deck.")
+              "Pumba: the light heavy derivative — a WILK-class chassis, a 6-DOF main arm and Pekari-2M's arm, two "
+              "front stabilizers, the equipment deck.")

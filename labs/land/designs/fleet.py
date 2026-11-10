@@ -614,12 +614,13 @@ class Coordinator:
         return clusters
 
     def debris_tasks(self, t):
-        """A clear_debris task per newly seen debris pile (needs ``heavy_lift``; the operator approves)."""
+        """A clear_debris task per newly seen debris pile (needs ``heavy_lift``: the grab clears it piece by piece, ≤ 30 kg
+        a piece; the operator approves)."""
         ids = set(int(v) for v in np.unique(self.map.debris) if v > 0)
         for d in sorted(ids - self._known_debris):
             cells = np.argwhere(self.map.debris == d)
             c = tuple(cells[len(cells) // 2])
-            tk = Task(f"clear_debris{d}", "clear_debris", self.map.xy(c), tags=frozenset({"heavy_lift"}), lift_kg=40.0,
+            tk = Task(f"clear_debris{d}", "clear_debris", self.map.xy(c), tags=frozenset({"heavy_lift"}), lift_kg=30.0,
                       duration_s=60.0 * len(cells) * self.map.res ** 2 / 0.25, priority=3, requires_approval=True,
                       reach_m=1.0, debris_id=d)
             self.add(tk, t)

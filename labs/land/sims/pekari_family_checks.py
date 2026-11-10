@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pekari-2M and Pumba — the checks behind docs/pekari_pumba.md, one run: the headline numbers, the lift capacity
+"""Pekari-2M, Pumba and Calydon — the checks behind docs/pekari_pumba.md, one run: the headline numbers, the lift capacity
 against reach (arm and stability limits, with and without Pumba's stabilizers), the drive on grades, the
 manipulator workspaces, the MuJoCo stand tests (folded / deployed with the rated loads) and the two platforms to
 scale (CAD, with a 1.8 m person for scale).
@@ -26,10 +26,11 @@ import pekari_arms as pa  # noqa: E402
 import pekari_family as pf  # noqa: E402
 import pekari_2m_robot as p2  # noqa: E402
 import pumba_robot as pu  # noqa: E402
+import calydon_robot as cr  # noqa: E402
 
 OUT = ROOT / "labs" / "land" / "sims" / "output"
 DOCS = ROOT / "docs" / "figures"
-PLATFORMS = (p2.PEKARI_2M, pu.PUMBA)
+PLATFORMS = (p2.PEKARI_2M, pu.PUMBA, cr.CALYDON)
 
 
 def numbers() -> dict:
@@ -61,8 +62,10 @@ def numbers() -> dict:
 def stand_tests() -> dict:
     out = {}
     cases = [(p2.PEKARI_2M, "folded", {}, False), (p2.PEKARI_2M, "deployed", {"L": 5.0, "R": 5.0}, False),
-             (pu.PUMBA, "folded", {}, False), (pu.PUMBA, "deployed", {"main": 60.0, "aux": 8.0}, False),
-             (pu.PUMBA, "deployed", {"main": 60.0, "aux": 8.0}, True)]
+             (pu.PUMBA, "folded", {}, False), (pu.PUMBA, "deployed", {"main": 30.0, "aux": 5.0}, False),
+             (pu.PUMBA, "deployed", {"main": 30.0, "aux": 5.0}, True),
+             (cr.CALYDON, "folded", {}, False), (cr.CALYDON, "deployed", {"main": 60.0, "aux": 8.0}, False),
+             (cr.CALYDON, "deployed", {"main": 60.0, "aux": 8.0}, True)]
     for pl, pose, loads, st in cases:
         key = f"{pl.name} {pose}{' loads ' + str(loads) if loads else ''}{' stabilizers' if st else ''}"
         out[key] = pf.stand_test(pl, pose, loads=loads, stabilizers_deployed=st)
@@ -74,7 +77,7 @@ def fig_lift(path):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.2))
     for ax, pl in zip(axes, PLATFORMS):
         for m in pl.mounts:
             R = pa.reach(m.arm)
@@ -88,7 +91,7 @@ def fig_lift(path):
         ax.set_title(f"{pl.name}: what an arm may lift")
         ax.set_xlabel("horizontal reach from the shoulder [m]")
         ax.set_ylabel("load in the gripper [kg]")
-        ax.set_ylim(0, 160 if pl is pu.PUMBA else 15)
+        ax.set_ylim(0, {"Pekari-2M": 15, "Pumba": 80, "Calydon": 160}[pl.name])
         ax.grid(alpha=0.3)
         ax.legend(fontsize=7)
     fig.tight_layout()
@@ -100,12 +103,12 @@ def fig_workspace(path):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
+    fig, axes = plt.subplots(1, 3, figsize=(17, 4.6))
     for ax, pl in zip(axes, PLATFORMS):
         for m, c in zip(pl.mounts, ("tab:orange", "tab:blue")):
             sh = pf.shoulder(pl, m)
             for elev, mk, lab in ((-math.pi / 2, "s", "tool down"), (0.0, ".", "tool level")):
-                pts = pa.workspace(m.arm, elev, n=45, z_span=(-sh[2], 1.6 if pl is pu.PUMBA else 1.0))
+                pts = pa.workspace(m.arm, elev, n=45, z_span=(-sh[2], {"Pekari-2M": 1.0, "Pumba": 1.4, "Calydon": 1.6}[pl.name]))
                 ax.scatter([m.x + r for r, _ in pts], [sh[2] + z for _, z in pts], s=4, marker=mk, color=c, alpha=0.35,
                            label=f"{m.name} ({lab})")
         g = pf.geometry(pl)
@@ -131,18 +134,20 @@ def fig_scale(path):
     import numpy as np
     from matplotlib.collections import PolyCollection
 
+    import calydon
     import pekari_2m
     import pumba
 
     shapes = []
-    for cls, pl, color in ((pekari_2m.Pekari2M, p2.PEKARI_2M, (0.95, 0.45, 0.05)), (pumba.Pumba, pu.PUMBA, (0.98, 0.78, 0.05))):
+    for cls, pl, color in ((pekari_2m.Pekari2M, p2.PEKARI_2M, (0.95, 0.45, 0.05)), (pumba.Pumba, pu.PUMBA, (0.98, 0.78, 0.05)),
+                             (calydon.Calydon, cr.CALYDON, (0.85, 0.60, 0.10))):
         for pose, stab in (("folded", "stowed"), ("deployed", "deployed")):
             g = cls().generate(arm_pose=pose, stabilizers=stab)
             shp = g.shape.val() if hasattr(g.shape, "val") else g.shape
             verts, tris = shp.tessellate(2.0, 0.5)
             v = np.array([(p.x, p.y, p.z) for p in verts]) / 1e3
             shapes.append((f"{pl.name}, {pose}", v, np.array(tris), np.array(color)))
-    fig, ax = plt.subplots(figsize=(15, 3.6))
+    fig, ax = plt.subplots(figsize=(20, 3.6))
     x0 = 0.0
     for name, v, tris, color in shapes:
         dx = x0 - v[:, 0].min()
@@ -163,7 +168,7 @@ def fig_scale(path):
     ax.set_aspect("equal")
     ax.set_xlabel("m")
     ax.set_yticks([0, 0.5, 1.0, 1.5, 2.0])
-    ax.set_title("Pekari-2M and Pumba to scale (side views of the CAD; stabilizers deployed with the arms)")
+    ax.set_title("Pekari-2M, Pumba and Calydon to scale (side views of the CAD; stabilizers deployed with the arms)")
     fig.tight_layout()
     fig.savefig(path, dpi=130)
 
@@ -189,7 +194,7 @@ def main(argv=None) -> int:
             shutil.copy(OUT / name, DOCS / name)
     for pl in PLATFORMS:
         s = res[pl.name]["summary"]
-        print(f"{pl.name}: {s['mass_empty_kg']:.0f} kg empty, {s['mass_loaded_kg']:.0f} kg loaded, "
+        print(f"{pl.name}: {s['mass_empty_kg']:.0f} kg empty ({pu.chassis_mass(pl):.0f} kg without arms and stabilizers), {s['mass_loaded_kg']:.0f} kg loaded, "
               f"{s['overall_m'][0]:.2f} x {s['overall_m'][1]:.2f} x {s['overall_m'][2]:.2f} m folded, "
               f"{s['v_max_m_s'] * 3.6:.1f} km/h, {s['endurance_h']:.1f} h")
     for k, v in res.get("stand_tests", {}).items():

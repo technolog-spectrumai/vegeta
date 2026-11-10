@@ -110,7 +110,7 @@ def test_scenario_completes_every_operator_task(scenario):
 def test_capabilities_decide_who_does_what(scenario):
     _, res = scenario
     t = res["tasks"]
-    assert t["clear_debris1"]["agent"] == "PUMBA" and t["pump_to_plant_room"]["agent"] == "PUMBA"
+    assert t["clear_debris1"]["agent"] == "PUMBA" and t["pump_to_plant_room"]["agent"] == "PUMBA"   # the light Pumba
     assert t["inspect_control_room"]["agent"] in ("P1", "P2")          # only Pekari-2M fits under the pipe rack
     assert t["aerial_survey"]["agent"] == "UAV"
     assert t["pump_to_plant_room"]["done_t"] > t["clear_debris1"]["done_t"]

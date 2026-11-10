@@ -1,4 +1,4 @@
-"""The Pekari family — Pekari-2M and Pumba (docs/pekari_pumba.md): the shared arm description, the platforms' mass,
+"""The Pekari family — Pekari-2M, Pumba and Calydon (docs/pekari_pumba.md): the shared arm description, the platforms' mass,
 CG, stability, lift capacity, drive and power, the CAD and the Chiron (MuJoCo) models.
 
 Run: python tools/lab.py test land -- -k pekari_family
@@ -13,12 +13,13 @@ import pekari_family as pf
 import pekari_rover_robot as prr
 import pekari_2m_robot as p2
 import pumba_robot as pu
+import calydon_robot as cr
 
-PLATFORMS = [p2.PEKARI_2M, pu.PUMBA]
+PLATFORMS = [p2.PEKARI_2M, pu.PUMBA, cr.CALYDON]
 
 
 # ----------------------------------------------------------------------------------------------- the arms
-@pytest.mark.parametrize("arm", [pa.PEKARI_ARM, pa.PUMBA_MAIN_ARM, pa.PUMBA_AUX_ARM], ids=lambda a: a.name)
+@pytest.mark.parametrize("arm", [pa.PEKARI_ARM, pa.PUMBA_MAIN_ARM, pa.CALYDON_MAIN_ARM, pa.CALYDON_AUX_ARM], ids=lambda a: a.name)
 def test_ik_fk_round_trip_and_ranges(arm):
     R = pa.reach(arm)
     for r, z, elev in ((0.5 * R, -0.2, -math.pi / 2), (0.7 * R, 0.1, 0.0), (0.4 * R, 0.3, -math.pi / 4)):
@@ -30,7 +31,7 @@ def test_ik_fk_round_trip_and_ranges(arm):
     assert pa.ik(arm, (R * 1.05, 0.0, 0.0), 0.0) is None
 
 
-@pytest.mark.parametrize("arm", [pa.PEKARI_ARM, pa.PUMBA_MAIN_ARM, pa.PUMBA_AUX_ARM], ids=lambda a: a.name)
+@pytest.mark.parametrize("arm", [pa.PEKARI_ARM, pa.PUMBA_MAIN_ARM, pa.CALYDON_MAIN_ARM, pa.CALYDON_AUX_ARM], ids=lambda a: a.name)
 def test_rated_payload_is_within_the_drives(arm):
     """The stated rating holds at its reach (stall / 1.5), the curve falls with reach, and at the rating every
     pitch joint is inside its module's peak torque over the safety factor."""
@@ -53,10 +54,10 @@ def test_gravity_torque_hand_value():
     assert pa.gravity_torques(arm, q)["shoulder"] == pytest.approx(expect, rel=1e-9)
 
 
-def test_dof_and_the_pumba_main_arm_has_six():
+def test_dof_and_the_main_arms_have_six():
     assert pa.arm_dof(pa.PEKARI_ARM) == 5
-    assert pa.arm_dof(pa.PUMBA_MAIN_ARM) == 6
-    assert "wrist_yaw" in pa.PUMBA_MAIN_ARM.drives
+    for arm in (pa.PUMBA_MAIN_ARM, pa.CALYDON_MAIN_ARM):
+        assert pa.arm_dof(arm) == 6 and "wrist_yaw" in arm.drives
 
 
 # ----------------------------------------------------------------------------------------------- the platforms
@@ -84,8 +85,23 @@ def test_platform_classes_and_relative_scale():
     assert sp["overall_m"][0] <= w["length_m"] and sp["overall_m"][1] <= w["width_m"]
     assert pu.PUMBA.payload_range_kg == (100.0, 200.0)
     assert sp["v_max_m_s"] == pytest.approx(w["v_max_m_s"], rel=0.12)
-    # the heavy derivative: wider, longer, heavier
-    assert sp["overall_m"][1] / s2["overall_m"][1] > 1.8 and sp["mass_empty_kg"] / s2["mass_empty_kg"] > 5
+    # the heavy derivative: wider, longer, heavier; Calydon heavier still, the same envelope class
+    sc = pf.summary(cr.CALYDON)
+    assert sp["overall_m"][1] / s2["overall_m"][1] > 1.8 and sp["mass_empty_kg"] / s2["mass_empty_kg"] > 3.5
+    assert sc["overall_m"][0] <= w["length_m"] and sc["overall_m"][1] <= w["width_m"]
+    assert sc["mass_empty_kg"] > 1.6 * sp["mass_empty_kg"]
+
+
+def test_pumba_chassis_is_wilk_class():
+    """Pumba without its arms and stabilizers weighs no more than WILK's reported 180 kg empty; with them it stays
+    well under Calydon. The band track replaced the links and pins in the budget."""
+    assert pu.chassis_mass() <= pu.WILK_REFERENCE["empty_kg"]
+    assert pf.total_mass(pu.PUMBA) < 250.0
+    rows = pf.mass_budget(pu.PUMBA)
+    assert not any(k.startswith("track pins") for k in rows)
+    band = next(v for k, v in rows.items() if k.startswith("track links: rubber band"))
+    assert band == pytest.approx(2 * pf.geometry(pu.PUMBA)["belt_length"] * pu.BAND_TRACK_KG_M)
+    assert pu.chassis_mass(cr.CALYDON) > 1.5 * pu.chassis_mass()
 
 
 @pytest.mark.parametrize("pl", PLATFORMS, ids=lambda p: p.name)
@@ -109,18 +125,20 @@ def test_stability_margin_geometry():
     assert st["margin_m"] == pytest.approx(expect, abs=1e-9)
 
 
-def test_pumba_stabilizers_raise_the_tipping_load():
-    for r in (1.2, 1.6):
-        free = pf.tipping_load(pu.PUMBA, "main", r, math.pi / 2)
-        stab = pf.tipping_load(pu.PUMBA, "main", r, math.pi / 2, stabilizers_deployed=True)
+@pytest.mark.parametrize("pl,r", [(pu.PUMBA, 1.0), (cr.CALYDON, 1.2)], ids=["Pumba", "Calydon"])
+def test_stabilizers_raise_the_tipping_load(pl, r):
+    for rr in (r, pa.reach(pl.mount("main").arm) * 0.9):
+        free = pf.tipping_load(pl, "main", rr, math.pi / 2)
+        stab = pf.tipping_load(pl, "main", rr, math.pi / 2, stabilizers_deployed=True)
         assert stab > 1.3 * free
-    cap = pf.lift_capacity(pu.PUMBA, "main", 1.2)
-    assert cap["capacity_kg"] >= pu.PUMBA.mount("main").arm.rated_payload_kg
-    assert cap["limit"] == "arm"                                     # the arm, not the tipping line, limits Pumba
+    cap = pf.lift_capacity(pl, "main", r)
+    assert cap["capacity_kg"] >= pl.mount("main").arm.rated_payload_kg
+    assert cap["limit"] == "arm"                                     # the arm, not the tipping line, limits it
 
 
 def test_lift_capacity_beyond_reach_is_zero():
-    assert pf.lift_capacity(pu.PUMBA, "aux", 1.6)["capacity_kg"] == 0.0
+    assert pf.lift_capacity(cr.CALYDON, "aux", 1.6)["capacity_kg"] == 0.0
+    assert pf.lift_capacity(pu.PUMBA, "aux", 1.2)["capacity_kg"] == 0.0
 
 
 @pytest.mark.parametrize("pl", PLATFORMS, ids=lambda p: p.name)
@@ -140,6 +158,7 @@ def test_power_and_endurance(pl):
 
 def test_capabilities_drive_the_fleet():
     c2, cp = pf.capabilities(p2.PEKARI_2M), pf.capabilities(pu.PUMBA)
+    assert {"heavy_lift", "heavy_transport", "dual_arm"} <= pf.capabilities(cr.CALYDON)["tags"]
     assert {"confined", "dual_arm", "manipulate", "thermal"} <= c2["tags"]
     assert {"heavy_lift", "heavy_transport", "dual_arm"} <= cp["tags"] and "confined" not in cp["tags"]
     assert c2["payload_kg"] == 40.0 and cp["payload_kg"] == 200.0
@@ -147,7 +166,8 @@ def test_capabilities_drive_the_fleet():
 
 def test_shared_interfaces():
     """One electrical bus, one arm convention, one joint naming for both."""
-    assert p2.PEKARI_2M.bus_V == pu.PUMBA.bus_V == 48.0
+    assert p2.PEKARI_2M.bus_V == pu.PUMBA.bus_V == cr.CALYDON.bus_V == 48.0
+    assert pu.PUMBA.mount("aux").arm is pa.PEKARI_ARM                # one arm module across the family
     for pl in PLATFORMS:
         for m in pl.mounts:
             names = pa.joint_names(m.arm, f"{m.name}_")
@@ -157,10 +177,11 @@ def test_shared_interfaces():
 # ----------------------------------------------------------------------------------------------- CAD
 def test_cad_defaults_match_the_platforms():
     pytest.importorskip("cadquery")
+    import calydon
     import pekari_2m
     import pumba
 
-    for cls, pl in ((pekari_2m.Pekari2M, p2.PEKARI_2M), (pumba.Pumba, pu.PUMBA)):
+    for cls, pl in ((pekari_2m.Pekari2M, p2.PEKARI_2M), (pumba.Pumba, pu.PUMBA), (calydon.Calydon, cr.CALYDON)):
         p = cls().resolve()
         assert {k: p[k] for k in pl.chassis} == pl.chassis
 
@@ -178,14 +199,19 @@ def test_stored_cad_numbers_match_a_rebuild():
 
 def test_cad_envelopes():
     pytest.importorskip("cadquery")
+    import calydon
     import pekari_2m
     import pumba
 
     d = pekari_2m.Pekari2M().generate().measure()["dimensions"]
     assert d[1] == pytest.approx(580.0, abs=1.0) and d[2] < 450.0
     d = pumba.Pumba().generate().measure()["dimensions"]
-    assert d[0] < 1800.0 and d[1] == pytest.approx(1150.0, abs=1.0)
+    assert d[0] < 1700.0 and d[1] == pytest.approx(1080.0, abs=1.0)
     d = pumba.Pumba().generate(stabilizers="deployed", arm_pose="deployed").measure()["dimensions"]
+    assert d[1] == pytest.approx(2 * 720.0 + 160.0, abs=2.0)          # pads at y = ±0.72 m, 80 mm radius
+    d = calydon.Calydon().generate().measure()["dimensions"]
+    assert d[0] < 1800.0 and d[1] == pytest.approx(1150.0, abs=1.0)
+    d = calydon.Calydon().generate(stabilizers="deployed", arm_pose="deployed").measure()["dimensions"]
     assert d[1] == pytest.approx(2 * 800.0 + 180.0, abs=2.0)          # pads at y = ±0.80 m, 90 mm radius
 
 
@@ -202,9 +228,12 @@ def test_chiron_model_mass_matches_the_budget(pl):
 @pytest.mark.parametrize("pl,pose,loads,stab", [
     (p2.PEKARI_2M, "folded", {}, False),
     (p2.PEKARI_2M, "deployed", {"L": 5.0, "R": 5.0}, False),
-    (pu.PUMBA, "deployed", {"main": 60.0, "aux": 8.0}, False),
-    (pu.PUMBA, "deployed", {"main": 60.0, "aux": 8.0}, True),
-], ids=["2M-folded", "2M-deployed-5kg", "pumba-deployed-rated", "pumba-stabilized"])
+    (pu.PUMBA, "deployed", {"main": 30.0, "aux": 5.0}, False),
+    (pu.PUMBA, "deployed", {"main": 30.0, "aux": 5.0}, True),
+    (cr.CALYDON, "deployed", {"main": 60.0, "aux": 8.0}, False),
+    (cr.CALYDON, "deployed", {"main": 60.0, "aux": 8.0}, True),
+], ids=["2M-folded", "2M-deployed-5kg", "pumba-deployed-rated", "pumba-stabilized", "calydon-deployed-rated",
+        "calydon-stabilized"])
 def test_stands_and_holds_the_rated_loads(pl, pose, loads, stab):
     pytest.importorskip("mujoco")
     res = pf.stand_test(pl, pose, loads=loads, stabilizers_deployed=stab, duration=1.0)

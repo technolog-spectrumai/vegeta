@@ -1,6 +1,7 @@
 """The Pekari family (``docs/pekari_pumba.md``): one description and one set of calculations for every tracked
 platform built on the Pekari Rover's architecture with manipulators — **Pekari-2M** (``pekari_2m_robot``, the light
-dual-arm response platform) and **Pumba** (``pumba_robot``, the heavy dual-arm derivative). The Pekari Rover itself
+dual-arm response platform), **Pumba** (``pumba_robot``, the heavy dual-arm derivative at WILK-class mass) and
+**Calydon** (``calydon_robot``, the first, heavier Pumba design: more lift, 444 kg). The Pekari Rover itself
 (``pekari_rover_robot``) is untouched: a ``Platform`` is its chassis parameters plus arms, stabilizers and a
 parts list, and every chassis number comes from ``pekari_rover_robot`` (``prr``) with the platform's keywords —
 the way Perseus (``perseus_robot``) builds on it.
@@ -95,6 +96,7 @@ class Platform:
     colors: dict = field(default_factory=dict)
     assumptions: dict = field(default_factory=dict)
     bom_extra: dict = field(default_factory=dict)  # item -> (qty, EUR low, EUR high): what is not a catalogue drive
+    band_track_kg_m: float = 0.0          # > 0: a rubber band track of this mass per metre instead of PA6 links + pins
 
     @property
     def n_bogies(self) -> int:
@@ -167,7 +169,14 @@ def chassis_budget(pl: Platform) -> dict:
     """``prr.mass_budget`` of the chassis (cached per platform)."""
     k = _key(pl, "budget", id(pl))
     if k not in _CACHE:
-        _CACHE[k] = prr.mass_budget(chassis_params(pl), pl.cad, pl.parts_kg, **_budget_kw(pl))
+        b = prr.mass_budget(chassis_params(pl), pl.cad, pl.parts_kg, **_budget_kw(pl))
+        if pl.band_track_kg_m > 0:
+            # a moulded rubber band (steel cords, inner drive and guide lugs) replaces the hinged links and their pins;
+            # its row keeps the "track links" prefix so prr.masses places it on the belt's centroid
+            b = {k: v for k, v in b.items() if not k.startswith(("track links", "track pins"))}
+            L = geometry(pl)["belt_length"]
+            b[f"track links: rubber band track 2x{L:.2f} m ({pl.band_track_kg_m:g} kg/m)"] = 2 * L * pl.band_track_kg_m
+        _CACHE[k] = b
     return dict(_CACHE[k])
 
 
@@ -513,6 +522,7 @@ def robot(pl: Platform, *, payload_kg: float | None = None, pose_name: str = "fo
     # within 3 % (tuned by the drive test, tests/test_pekari_family.py)
     chassis_kw.setdefault("roller_kd", 0.5 * prr.ROLLER_KD * total_mass(pl, payload) / PEKARI_LOADED_KG)
     r = prr.pekari(params=chassis_params(pl), payload_kg=payload, cad=pl.cad, parts_kg=pl.parts_kg, drive=pl.drive,
+                   budget=chassis_budget(pl),
                    shell_t_mm=pl.shell_t_mm, materials=pl.materials, wheel_fill=pl.wheel_fill, n_bogies=pl.n_bogies,
                    name=pl.name, extra_children=children, extra_hull_masses=hull_masses, extra_mass_kg=m_extra,
                    extra_moment_kgm=mom, payload_pos=payload_point(pl), track_mu=pl.track_mu,
@@ -595,7 +605,9 @@ def stand_test(pl: Platform, pose_name: str = "folded", *, stabilizers_deployed:
 #: quotes (no supplier was asked); the drives' own entries are class values too (ogma.actuators).
 PRICE_EUR = {
     "perseus mini drive 20:1 planetary": (250.0, 600.0),
-    "pumba track drive 4 kW, 48 V": (2500.0, 5000.0),
+    "calydon track drive 4 kW, 48 V": (2500.0, 5000.0),
+    "pumba track drive 2.5 kW, 48 V": (1800.0, 3800.0),
+    "stick cylinder 8 kN": (1200.0, 2500.0),
     "harmonic 12 Nm, brake": (600.0, 1400.0),
     "harmonic 30 Nm, brake": (900.0, 2000.0),
     "harmonic 60 Nm, brake": (1500.0, 3000.0),
