@@ -17,6 +17,12 @@ import emerillon_flight as ef
 import emerillon_market as mk
 
 TEAM_COLOR = {"A": "0.84 0.15 0.16 1", "B": "0.12 0.47 0.71 1"}
+PALETTE = ("#d62728", "#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22")
+
+
+def rgba(color: str) -> str:
+    """A '#rrggbb' colour as MuJoCo's 'r g b a'."""
+    return " ".join(f"{int(color[i:i + 2], 16) / 255:.3f}" for i in (1, 3, 5)) + " 1"
 
 
 @dataclass
@@ -44,6 +50,11 @@ class Arena:
     def start(self, team: str, slot: int = 0) -> np.ndarray:
         s = -1.0 if team == "A" else 1.0
         return np.array([s * self.start_x, (slot - 0.0) * 3.0, self.start_z])
+
+    def ring_start(self, i: int, n: int, radius: float = 14.0) -> np.ndarray:
+        """Start ``i`` of ``n`` on a circle round the centre (the group chases)."""
+        ang = 2 * math.pi * i / n
+        return np.array([radius * math.cos(ang), 0.8 * radius * math.sin(ang), self.start_z + 0.5 * (i % 2)])
 
     def balloons(self) -> np.ndarray:
         """Where the balloons start: spread over the middle of the field, clear of the starts and the hoops."""
@@ -76,9 +87,9 @@ def body_numbers(variant: str) -> dict:
             "reach": math.hypot(r + g["prop_d"] / 2, max(x_cg, g["length"] - x_cg))}
 
 
-def drone_xml(name: str, variant: str, team: str, pos) -> str:
+def drone_xml(name: str, variant: str, color: str, pos) -> str:
     n = body_numbers(variant)
-    col = TEAM_COLOR[team]
+    col = rgba(color)
     rb = n["d"] / 2
     z0, z1 = n["z_tail"] + rb, n["z_nose"] - rb
     geoms = [f'<geom name="{name}_body" type="capsule" fromto="0 0 {z0:.4f} 0 0 {z1:.4f}" size="{rb:.4f}" rgba="{col}" mass="0"/>']
@@ -105,7 +116,7 @@ def hoop_xml(team: str, a: Arena, segments: int = 20) -> str:
 
 
 def to_mjcf(a: Arena, drones: list) -> str:
-    """The scene. ``drones``: (name, variant, team, start position). Balloons are free bodies with their weight taken
+    """The scene. ``drones``: (name, variant, colour '#rrggbb', start position). Balloons are free bodies with their weight taken
     off (``gravcomp``) and a little damping: they drift where the match pushes them."""
     bal = []
     for i, p in enumerate(a.balloons()):

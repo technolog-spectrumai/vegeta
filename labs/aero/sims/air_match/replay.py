@@ -10,6 +10,11 @@ import numpy as np
 COLOR = {"A": "#d62728", "B": "#1f77b4"}
 
 
+def _score(result) -> str:
+    sc = result["score"]
+    return "  ".join(f"{k} {v:g}" for k, v in sc.items()) if len(sc) != 2 or set(sc) != {"A", "B"} else f"A {sc['A']} : {sc['B']} B"
+
+
 def _field(ax, a, side=False):
     L, W = a.length / 2, a.width / 2
     if side:
@@ -43,7 +48,7 @@ def summary(result: dict, path=None):
         top.add_patch(plt.Circle(bal[-1, i, :2], a.balloon_radius, color="#f0a500", alpha=0.7))
         side.plot(bal[:, i, 0], bal[:, i, 2], color="#f0a500", lw=0.8, alpha=0.6)
     for name, p in result["players"].items():
-        h, c = p["hist"], COLOR[p["team"]]
+        h, c = p["hist"], p.get("color") or COLOR[p["team"]]
         top.plot(h["x"], h["y"], color=c, lw=0.6, alpha=0.7, label=f"{name} — {p['pilot']} ({p['variant']})")
         hold = h["token"] > 0.5
         top.scatter(h["x"][hold], h["y"][hold], s=5, color=c)
@@ -56,17 +61,18 @@ def summary(result: dict, path=None):
             k = int(np.searchsorted(p["hist"]["t"], e["t"])) - 2
             k = min(max(k, 0), len(p["hist"]["t"]) - 1)
             m, sz, col = mark[e["what"]]
-            top.scatter([p["hist"]["x"][k]], [p["hist"]["y"][k]], marker=m, s=sz, color=COLOR[p["team"]], edgecolors=col, zorder=5)
+            pc = p.get("color") or COLOR[p["team"]]
+            top.scatter([p["hist"]["x"][k]], [p["hist"]["y"][k]], marker=m, s=sz, color=pc, edgecolors=col, zorder=5)
             if e["what"] == "goal":
-                line.axvline(e["t"], color=COLOR[p["team"]], lw=2)
+                line.axvline(e["t"], color=pc, lw=2)
     top.legend(fontsize=8, loc="upper center", ncol=2)
-    top.set_title(f"score  A {result['score']['A']} : {result['score']['B']} B   ({result['duration']:.0f} s)   ★ goal  ◆ tag  ✕ fault   dots: carrying the token")
+    top.set_title(f"{_score(result)}   ({result['duration']:.0f} s)   ★ goal  ◆ tag  ✕ fault   dots: carrying the token", fontsize=10)
     line.set(xlabel="s", yticks=[], xlim=(0, result["duration"]), title="who holds the token (bars: goals)")
     txt.axis("off")
     lines = [f"winner: {result['winner'] or 'a draw'}", ""]
     for name, p in result["players"].items():
-        lines += [f"{name} {p['pilot']} ({p['variant']}, team {p['team']})", f"   goals {p['goals']}  fouls {p['fouls']}  crashes {p['crashes']}",
-                  f"   {p['energy_wh']:.1f} of {p['pack_wh']:.0f} Wh, max {p['max_speed'] * 3.6:.0f} km/h", ""]
+        lines += [f"{name} {p['pilot']} ({p['variant']})  goals {p['goals']}  held {p.get('hold_s', 0):.0f} s  hoops {p.get('hoops', 0)}",
+                  f"   fouls {p['fouls']}  crashes {p['crashes']}  {p['energy_wh']:.1f} Wh  max {p['max_speed'] * 3.6:.0f} km/h"]
     lines.append("events")
     for e in result["events"]:
         if e["what"] == "token":
@@ -74,10 +80,14 @@ def summary(result: dict, path=None):
         elif e["what"] == "tag":
             lines.append(f" {e['t']:5.1f}  TAG {e['who']} takes it from {e['from']}")
         elif e["what"] == "goal":
-            lines.append(f" {e['t']:5.1f}  GOAL {e['who']}  {e['score']['A']}:{e['score']['B']}")
+            lines.append(f" {e['t']:5.1f}  GOAL {e['who']}  " + ":".join(str(v) for v in e["score"].values()))
+        elif e["what"] == "hoop":
+            lines.append(f" {e['t']:5.1f}  HOOP {e['who']} +{e['points']:g}")
+        elif e["what"] == "formation":
+            lines.append(f" {e['t']:5.1f}  → {e['to']} in {e['seconds']} s")
         elif e["what"] in ("foul", "crash"):
             lines.append(f" {e['t']:5.1f}  {e['what']} {e['who']} ({e['on']})")
-    txt.text(0, 1, "\n".join(lines[:58]), va="top", family="monospace", fontsize=7.5)
+    txt.text(0, 1, "\n".join(lines[:70]), va="top", family="monospace", fontsize=6.8)
     fig.tight_layout()
     if path:
         fig.savefig(path, dpi=110)
@@ -107,7 +117,7 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
     side.set_aspect("equal")
     art = {}
     for name, p in players.items():
-        c = COLOR[p["team"]]
+        c = p.get("color") or COLOR[p["team"]]
         art[name] = (top.plot([], [], color=c, lw=3, solid_capstyle="round")[0], top.plot([], [], color=c, lw=0.8, alpha=0.5)[0],
                      side.plot([], [], color=c, lw=3, solid_capstyle="round")[0], top.plot([], [], "o", ms=16, mfc="none", mec="k", mew=1.5)[0])
     tok = top.plot([], [], "o", ms=9, color="#2ca02c", mec="k")[0]
@@ -136,8 +146,17 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         tk, holder = result["token_hist"][k]
         tok.set_data([tk[0]], [tk[1]]) if holder is None else tok.set_data([], [])
         tok_s.set_data([tk[0]], [tk[2]]) if holder is None else tok_s.set_data([], [])
-        sc = next((s for tt, s in reversed(goals) if tt <= tf), {"A": 0, "B": 0})
-        title.set_text(f"A {sc['A']} : {sc['B']} B     t = {tf:5.1f} s     (ring: carrying the token; green: the free token)")
+        if "formation" in result:
+            f = result["formation"]
+            kk = min(int(np.searchsorted(f["t"], tf)), len(f["t"]) - 1)
+            shape = ("changing" if f["morphing"][kk] > 0.5 else "") + (" wedge" if f["wedge"][kk] > 0.5 else " column")
+            title.set_text(f"formation chase   t = {tf:5.1f} s   {shape.strip()}   slot error {f['err_mean'][kk]:.2f} m   closest pair {f['closest'][kk]:.2f} m")
+        elif goals or set(result["score"]) == {"A", "B"}:
+            sc = next((s for tt, s in reversed(goals) if tt <= tf), {"A": 0, "B": 0})
+            title.set_text(f"A {sc['A']} : {sc['B']} B     t = {tf:5.1f} s     (ring: carrying the token; green: the free token)")
+        else:
+            held = "  ".join(f"{n} {float(np.sum(p['hist']['token'][:k + 1]) * (t[1] - t[0])):.0f}s" for n, p in players.items())
+            title.set_text(f"token chase   t = {tf:5.1f} s   held: {held}")
         fig.canvas.draw()
         img = np.asarray(fig.canvas.buffer_rgba())[:, :, :3]
         out.write(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
@@ -169,3 +188,52 @@ def mujoco_video(result: dict, path, camera: str = "grandstand", fps: int = 30, 
         out.write(cv2.cvtColor(r.render(), cv2.COLOR_RGB2BGR))
     out.release()
     return Path(path)
+
+
+def formation_summary(result: dict, path=None):
+    """The formation chase on one sheet: the tracks over the course, the slot error and the closest pair against time
+    with the shape flown (wedge shaded), and the numbers."""
+    import matplotlib.pyplot as plt
+    a, f = result["arena"], result["formation"]
+    fig = plt.figure(figsize=(16, 9))
+    gs = fig.add_gridspec(3, 2, height_ratios=[2.2, 1, 1], width_ratios=[2.4, 1])
+    top, e1, e2, txt = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[2, 0]), fig.add_subplot(gs[:, 1])
+    _field(top, a)
+    c = f["course"]
+    top.plot(np.append(c[:, 0], c[0, 0]), np.append(c[:, 1], c[0, 1]), ":", color="k", lw=0.8, label="the course")
+    bal = result["balloons"]
+    for i in range(bal.shape[1] if bal.ndim == 3 else 0):
+        top.plot(bal[:, i, 0], bal[:, i, 1], color="#f0a500", lw=0.6, alpha=0.5)
+        top.add_patch(plt.Circle(bal[-1, i, :2], a.balloon_radius, color="#f0a500", alpha=0.7))
+    t_end = f["t"][-1]
+    for name, p in result["players"].items():
+        h = p["hist"]
+        last = h["t"] > t_end - 6.0
+        top.plot(h["x"], h["y"], color=p["color"], lw=0.4, alpha=0.35)
+        top.plot(h["x"][last], h["y"][last], color=p["color"], lw=1.6, label=name)
+        top.plot(h["x"][-1], h["y"][-1], "o", color=p["color"], ms=5, mec="k")
+    top.legend(fontsize=7, ncol=5, loc="upper center")
+    top.set_title("formation chase: seven behind the hare (thick: the last six seconds)")
+    for ax_, key, lab in ((e1, "err_mean", "mean slot error [m]"), (e2, "closest", "closest pair, centre to centre [m]")):
+        ax_.fill_between(f["t"], 0, 1, where=f["wedge"] > 0.5, transform=ax_.get_xaxis_transform(), color="#1f77b4", alpha=0.10, label="wedge")
+        ax_.fill_between(f["t"], 0, 1, where=f["morphing"] > 0.5, transform=ax_.get_xaxis_transform(), color="#ff7f0e", alpha=0.18, label="changing")
+        ax_.plot(f["t"], f[key], color="k", lw=0.9)
+        ax_.set(ylabel=lab, xlim=(0, t_end))
+        ax_.grid(alpha=0.3)
+    e1.plot(f["t"], f["err_max"], color="0.6", lw=0.6)
+    e1.legend(fontsize=7, loc="upper right")
+    e2.axhline(f["summary"]["touching_at_m"], color="#7f0000", ls=":", lw=0.8)
+    e2.axhline(f["spacing"], color="0.5", ls="--", lw=0.8)
+    e2.set_xlabel("s")
+    txt.axis("off")
+    sm = f["summary"]
+    lines = [f"{k.replace('_', ' ')}: {v:.2f}" if isinstance(v, float) else f"{k.replace('_', ' ')}: {v}" for k, v in sm.items() if k != "hoops_flown"]
+    lines += ["", "hoops flown through:"] + [f"   {k}: {v}" for k, v in sm["hoops_flown"].items()] + ["", "changes of formation (Hungarian assignment):"]
+    lines += [f" {ch['t']:5.1f} s → {ch['to']:6s} {ch['seconds']:.1f} s  crossings {ch['crossings']} (numbers kept: {ch['kept_numbers_crossings']})" for ch in f["changes"]]
+    lines += ["", "faults:"] + [f" {e['t']:5.1f}  {e['what']} {e['who']} ({e.get('on', e.get('hoop', ''))})" for e in result["events"] if e["what"] in ("foul", "crash", "missed")]
+    txt.text(0, 1, "\n".join(lines[:64]), va="top", family="monospace", fontsize=7.2)
+    fig.tight_layout()
+    if path:
+        fig.savefig(path, dpi=110)
+    return fig
+

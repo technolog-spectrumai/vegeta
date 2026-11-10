@@ -4,6 +4,9 @@
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --seed 3 --duration 120 --variants ER1 ER2
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --plain                  # no token: a point for whoever flies through the other hoop
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --series 10              # ten matches, the table only
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode formation          # step 2: seven in formation chase a hare through both hoops
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode chase3             # step 3: three, every one for itself, chase the token
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode chase7             # step 4: seven of them
     MUJOCO_GL=egl .venv/bin/python labs/aero/sims/emerillon_air_match.py --camera grandstand   # also a MuJoCo camera video (needs OpenGL)
 
 Rules: a point for flying through the other side's hoop; with the token (the default) only its carrier scores and the
@@ -27,14 +30,30 @@ from air_match import match  # noqa: E402
 OUT = HERE / "output"
 
 
+def play(mode, duration, seed, kw):
+    if mode == "formation":
+        from air_match import formation
+        return formation.fly(7, duration, seed)
+    if mode in ("chase3", "chase7"):
+        return match.chase(int(mode[-1]), duration, seed, kw["variants"][0], kw["n_balloons"])
+    return match.play(duration, seed=seed, **kw)
+
+
 def line(seed, r):
     c = r["counts"]
+    if "formation" in r:
+        s = r["formation"]["summary"]
+        return (f"seed {seed}: formation of {s['members']}  laps {s['laps']}  slot error wedge {s['slot_error_wedge_m']:.2f} m, column {s['slot_error_column_m']:.2f} m  "
+                f"closest pair {s['closest_pair_m']:.2f} m  changes {s['changes']}  missed hoops {s['missed_hoops']}  contacts {s['contacts']}")
+    if set(r["score"]) != {"A", "B"}:
+        return (f"seed {seed}: " + "  ".join(f"{k} {v:g}" for k, v in r["score"].items()) + f"  winner {r['winner']}  tags {c['tag']}  hoops {c['hoop']}  fouls {c['foul']}  crashes {c['crash']}")
     return (f"seed {seed}: A {r['score']['A']} : {r['score']['B']} B  winner {r['winner'] or 'draw'}  tags {c['tag']}  fouls {c['foul']}  crashes {c['crash']}  " +
             "  ".join(f"{n} {p['energy_wh']:.1f} Wh" for n, p in r["players"].items()))
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7"])
     ap.add_argument("--duration", type=float, default=60.0)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--variants", nargs=2, default=["ER2", "ER2"], choices=["ER1", "ER2"])
@@ -48,18 +67,18 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     kw = dict(variants=tuple(args.variants), score="over" if args.over else "through", n_balloons=args.balloons, possession=not args.plain)
     if args.quick or os.environ.get("VEGETA_DEBUG") == "1":
-        print(line(args.seed, match.play(6.0, seed=args.seed, **kw)))
+        print(line(args.seed, play(args.mode, 6.0, args.seed, kw)))
         return 0
     if args.series:
         wins = {"A": 0, "B": 0, None: 0}
         for s in range(args.seed, args.seed + args.series):
-            r = match.play(args.duration, seed=s, **kw)
-            wins[r["winner"]] += 1
+            r = play(args.mode, args.duration, s, kw)
+            wins[r["winner"]] = wins.get(r["winner"], 0) + 1
             print(line(s, r))
-        print(f"A wins {wins['A']}, B wins {wins['B']}, draws {wins[None]}")
+        print("wins:", {k: v for k, v in wins.items() if v})
         return 0
     t0 = time.time()
-    r = match.play(args.duration, seed=args.seed, **kw)
+    r = play(args.mode, args.duration, args.seed, kw)
     print(line(args.seed, r))
     for e in r["events"]:
         print("  ", {k: v for k, v in e.items() if k != "pos"})
@@ -67,15 +86,15 @@ def main(argv=None) -> int:
     matplotlib.use("Agg")
     from air_match import replay
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = OUT / f"air_match_{args.seed}"
-    replay.summary(r, stem.with_suffix(".png"))
+    stem = OUT / (f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}_{args.seed}")
+    (replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
     files = [stem.with_suffix(".png")]
     if not args.no_video:
         files.append(replay.video(r, stem.with_suffix(".mp4")))
     if args.camera:
         files.append(replay.mujoco_video(r, OUT / f"air_match_{args.seed}_{args.camera}.mp4", camera=args.camera))
     stem.with_suffix(".json").write_text(json.dumps({"score": r["score"], "faults": r["faults"], "winner": r["winner"], "counts": r["counts"], "duration": r["duration"],
-                                                     "events": r["events"], "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
+                                                     "events": r["events"], "formation": (r["formation"]["summary"] | {"changes": r["formation"]["changes"]}) if "formation" in r else None, "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
     print("written:", ", ".join(str(f) for f in files if f), f"and {stem.with_suffix('.json')}  ({time.time() - t0:.0f} s)")
     return 0
 

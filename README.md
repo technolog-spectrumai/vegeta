@@ -350,8 +350,21 @@ thrust limit with their reaction torques, and the airframe's drag and normal for
 the carrier lines up on the hoop's axis and flies through, the chaser flies to where the carrier will be and sits a metre
 beside it, both steer round what the next second and a half brings too close. `emerillon_air_match.py` plays a match and writes a
 summary sheet, a replay video (matplotlib; a MuJoCo camera video with `--camera` where OpenGL exists) and a JSON; `--series N`
-plays N seeds. Over six seeds of 60 s: one to five goals a match, two to four tags, zero to four crashes, no fouls. Not modelled:
-the aircraft's aerodynamic moments, the balloons' air.
+plays N seeds. Over six seeds of 60 s: two or three goals a match, four to six tags, zero to two crashes. Not modelled:
+the aircraft's aerodynamic moments, the balloons' air. **Step 2, the formation chase** (`--mode formation`, `air_match/formation.py`):
+seven Émerillons chase a hare (an eighth aircraft) round a racetrack through both hoops. They hang on a reference that rides the
+hare's own track 5 m behind it: a **wedge** on the straights, a **column** that follows the reference's path like a train
+through the turns and single file through the rings, then the wedge again. Every change re-assigns the slots by the
+Hungarian algorithm (the least sum of squared moves) and moves them over on a smoothstep; a member's command is its slot's
+velocity plus a gain on the slot error, with separation as a reflex on top. **The swarm algorithms are Nomios's**
+(`technolog-spectrumai/nomios`, `main`: the wedge and column layouts, the path-following column, the assignment, the morph, the
+member controller), re-written in `air_match/swarm.py` — Vegeta does not import Nomios. One 60 s run: two laps, mean slot error
+0.6 m in column and 1.0 m in wedge, the closest pair 1.2 m centre to centre (they touch at 0.68 m), ten changes of two seconds,
+no hoop missed, two contacts (both in the launch). **Steps 3 and 4, the group token chase** (`--mode chase3`, `--mode chase7`,
+`match.chase`): every aircraft for itself — a point per second carrying the token, five for a hoop flown through with it, a tag
+takes it. Three play cleanly (seven to eleven tags and one to seven faults a minute over three seeds); **seven is rough**: 25 to
+35 tags and 8 to 25 faults a minute, most of them aircraft cornered by six chasers into the ground or out of the field — the
+rule-based pilots need a better escape, the next thing to do.
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and

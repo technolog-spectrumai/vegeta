@@ -273,3 +273,9 @@ hoops), `--over` scores by flying over the hoop instead of through it. Writes `l
 tracks, the events, who held the token), `.mp4` (a replay from above and from the side) and `.json`; `--camera` adds a MuJoCo
 camera video where OpenGL exists (`MUJOCO_GL=egl`). `--series N` prints N matches' results.
 
+`--mode formation` (step 2): seven Émerillons chase a hare round a racetrack through both hoops in formation — a wedge on the
+straights, a column that follows the leader's path through the turns and single file through the rings; the swarm algorithms are
+Nomios's (`air_match/swarm.py`). `--mode chase3` and `--mode chase7` (steps 3 and 4): a group token chase, every aircraft for itself
+— a point per second carrying the token, five for a hoop flown through with it, a tag takes it. They write
+`air_formation_<seed>` / `air_chase3_<seed>` / `air_chase7_<seed>` `.png`, `.mp4`, `.json`.
+

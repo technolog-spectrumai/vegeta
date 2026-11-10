@@ -16,7 +16,7 @@ from air_match import match  # noqa: E402
 def test_arena_compiles_with_the_hoops_on_two_metre_sticks():
     a = ar.Arena()
     assert a.hoop_stick == 2.0 and a.hoops["A"][2] == pytest.approx(2.0 + a.hoop_radius) and a.hoops["A"][0] == -a.hoops["B"][0]
-    m = mujoco.MjModel.from_xml_string(ar.to_mjcf(a, [("a1", "ER2", "A", a.start("A")), ("b1", "ER1", "B", a.start("B"))]))
+    m = mujoco.MjModel.from_xml_string(ar.to_mjcf(a, [("a1", "ER2", "#d62728", a.start("A")), ("b1", "ER1", "#1f77b4", a.start("B"))]))
     for name, v in (("a1", "ER2"), ("b1", "ER1")):
         b = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, name)
         assert float(m.body_subtreemass[b]) == pytest.approx(ef.mass_budget(ef.VARIANTS[v]).mass, rel=1e-3)
@@ -69,3 +69,56 @@ def test_closest_approach():
     assert t == pytest.approx(2.0) and np.allclose(miss, [0.0, 1.0, 0.0])
     t, miss = match._closest(np.array([10.0, 1.0, 0.0]), np.array([5.0, 0.0, 0.0]), 3.0)
     assert t == 0.0 and math.isclose(float(np.linalg.norm(miss)), math.hypot(10.0, 1.0))
+
+
+# ------------------------------------------------------------------------------- steps 2-4: the swarm, the formation, the group chase
+def test_swarm_layouts_and_the_assignment():
+    import itertools
+    from air_match import swarm as sw
+    w = sw.wedge_offsets(7, 2.4)
+    assert np.allclose(w[0], 0) and np.allclose(np.linalg.norm(w[1]), 2.4) and np.allclose(np.linalg.norm(w[3] - w[1]), 2.4)
+    assert math.degrees(math.atan2(abs(w[1][1]), -w[1][0])) == pytest.approx(sw.WEDGE_ANGLE) and w[1][1] == -w[2][1]
+    assert np.allclose(sw.column_offsets(4, 2.0)[:, 0], [0, -2, -4, -6])
+    rng = np.random.default_rng(3)
+    cost = rng.uniform(0, 10, (6, 6)).tolist()
+    best = min(sum(cost[i][p[i]] for i in range(6)) for p in itertools.permutations(range(6)))
+    a = sw.min_cost_assignment(cost)
+    assert sorted(a) == list(range(6)) and sum(cost[i][a[i]] for i in range(6)) == pytest.approx(best)
+    here, there = [tuple(x) for x in sw.wedge_offsets(7, 2.4)], [tuple(x) for x in sw.column_offsets(7, 2.4)]
+    m = sw.Morph(here, there, 14.0, 0.0)
+    assert sw.MORPH_T[0] <= m.T <= sw.MORPH_T[1] and m.crossings <= sw.Morph.count_crossings(here, there, list(range(7)))
+    assert sw.smoothstep(0.0) == (0.0, 0.0) and sw.smoothstep(1.0) == (1.0, 0.0) and sw.smoothstep(0.5)[0] == 0.5
+    push = sw.separation((0, 0, 0), [(1.0, 0, 0), (9.0, 0, 0)], reach=0.7)
+    assert push[0] < 0 and push[1] == 0 and np.allclose(sw.separation((0, 0, 0), [(5.0, 0, 0)], reach=0.7), 0)
+    ref = sw.PathReference((0, 0, 3), 0.0, keep_m=10.0)
+    for k in range(1, 200):
+        ref.update((0.05 * k, 0, 3), (5.0, 0, 0), 0.01)
+    p, v = ref.path_slot(4.0)
+    assert p[0] == pytest.approx(ref.pos[0] - 4.0, abs=0.3) and v[0] == pytest.approx(5.0)
+    p, v = ref.rigid_slot((-2.0, 1.0, 0.0))
+    assert np.allclose(p, ref.pos + (-2.0, 1.0, 0.0)) and np.allclose(v, (5.0, 0, 0))
+
+
+def test_the_formation_changes_shape_and_threads_a_hoop():
+    from air_match import formation
+    r = formation.fly(7, 26.0, seed=1)
+    s = r["formation"]["summary"]
+    assert s["members"] == 7 and s["changes"] >= 3 and {c["to"] for c in r["formation"]["changes"]} == {"wedge", "column"}
+    assert all(c["crossings"] <= c["kept_numbers_crossings"] for c in r["formation"]["changes"])
+    assert sum(1 for n, k in s["hoops_flown"].items() if n != "hare" and k >= 1) >= 6          # single file through the first hoop
+    assert s["closest_pair_m"] > s["touching_at_m"] and s["slot_error_column_m"] < 1.5 and s["gap_to_hare_m"] < 9.0
+    f = r["formation"]
+    assert f["wedge"].max() == 1.0 and f["wedge"].min() == 0.0 and len(f["t"]) == len(r["players"]["f1"]["hist"]["t"])
+
+
+@pytest.mark.parametrize("n", [3, 7])
+def test_the_group_chase_counts_the_seconds_with_the_token(n):
+    r = match.chase(n, 20.0, seed=2)
+    assert len(r["players"]) == n == len(r["score"]) and r["rules"].mode == "keepaway"
+    held = sum(p["hold_s"] for p in r["players"].values())
+    assert 5.0 < held <= 20.0 and r["counts"]["tag"] >= 1 and r["counts"]["goal"] == 0
+    assert sum(r["score"].values()) == pytest.approx(held + sum(p["bonus"] for p in r["players"].values()), abs=0.1 * n)
+    for p in r["players"].values():
+        dt = p["hist"]["t"][1] - p["hist"]["t"][0]
+        assert p["hold_s"] <= float(p["hist"]["token"].sum()) * dt + 1.5        # the seconds counted are in the record (a restart's wait is not counted)
+    assert r["winner"] == max(r["score"], key=r["score"].get)
