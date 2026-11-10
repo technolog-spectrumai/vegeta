@@ -326,7 +326,10 @@ reserve; ER1 makes its 4 km on ER2's pack, ER2 its 7 km on two packs in parallel
 the tabulated drive: times, speeds, energy and margins, not handling; `labs/aero/sims/emerillon_mission.py` writes a figure per
 flight): to a wildfire and back at the fastest pace the pack allows, a chase round a mountain, a chase of a boat over the sea in
 a gusty crosswind, the climb to the ceiling target with a flat fall back, and a fast climb over Warsaw with a swoop and a slow
-landing on the roof of the Palace of Culture and Science. **The solver runs are a workflow book**, `emerillon` (code **E**,
+landing on the roof of the Palace of Culture and Science. **Long range** (`range_curve`, `range_options`, the `range` scenario: out against a 5 m/s wind to the radius of action and
+back): there is a best-range speed far below the top speed — about 140 km/h — and at it ER1 goes about 8 km and ER2 about
+11 km as built (five minutes in the air), about 18 km on two packs (`ef.LONG`); flat out ER2's range is under 4 km. A sprinter:
+range is what wings are for. **The solver runs are a workflow book**, `emerillon` (code **E**,
 `labs/aero/designs/emerillon_campaigns.py` behind the shared Kestrel scripts): **E1** `airframe-drag` (the solid aircraft in axial
 flow at three speeds: the drag area and the margin the build-up needs), **E2** `airframe-alpha` (0–90° of incidence: the normal
 force of the trim and the braking), **E3** `arm` (one printed arm: thrust, a 5 g manoeuvre, a landing knock, and its modes

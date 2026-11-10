@@ -12,7 +12,9 @@ with their copper loss and cool in the propeller's wash.
 - ``envelope(variant)`` — thrust, electrical power and copper loss over (altitude, axial airspeed, throttle).
 - ``Sim`` — the integrator: guidance gives a wanted velocity, the wanted force follows, the axis and the throttle obey
   within their limits; wind, terrain and obstacles come from the scenario.
-- ``SCENARIOS`` — ``wildfire`` (out to a fire and back, at the fastest speed the pack allows), ``mountain`` (catch a
+- ``cruise_power``, ``range_curve``, ``range_options`` — level flight: power against speed, the best-range speed, the
+  range and the radius of action on each pack.
+- ``SCENARIOS`` — ``range`` (out against the wind to the radius of action and back at the best-range speed), ``wildfire`` (out to a fire and back, at the fastest speed the pack allows), ``mountain`` (catch a
   target circling a mountain, come back), ``sea`` (catch a boat in a crosswind with gusts, low over the water),
   ``climb`` (straight up to the variant's ceiling target — 4 km for ER1, 7 km for ER2 — and back down),
   ``palace`` (a fast climb over Warsaw, a swoop, and a slow landing on the roof of the Palace of Culture and Science).
@@ -187,6 +189,59 @@ def ceiling_options(variant: str) -> list[dict]:
                          "top speed [km/h]": round(ef.top_speed(c)["kmh"]), "climb [Wh]": round(r["climb_wh"], 1), "landing [Wh]": round(r["land_wh"], 1),
                          "pack [Wh]": round(r["pack_wh"], 1), "reaches [m]": r["energy_ceiling_m"], "target met": r["reaches_target"],
                          "time to target [s]": round(r["time_s"])})
+    return rows
+
+
+# =============================================================================================================== range
+def cruise_power(variant, V: float, altitude: float = 0.0) -> dict:
+    """Level flight at ``V`` and ``altitude``: the body's incidence, the thrust it takes (``ef.trim`` on the build-up's
+    drag), the throttle and the electrical power from the envelope, and the watt-hours per kilometre through the air."""
+    env = envelope(variant)
+    air = ef.air_at(altitude)
+    cda = ef.drag_buildup(env["config"], max(V, 3.0), air=air)["CdA"]
+    alpha, T = ef.trim(env["config"], max(V, 0.5), env["mass"], cda, air["rho"])
+    v_ax = V * math.cos(alpha)
+    u = throttle_for(env, altitude, v_ax, T)
+    T_got, P, Q = thrust_at(env, altitude, v_ax, u)
+    return {"V": V, "alpha_deg": math.degrees(alpha), "thrust": T, "throttle": u, "power_w": P, "copper_w": Q, "wh_per_km": P / max(V, 0.1) / 3.6,
+            "flies": bool(T_got >= 0.98 * T)}
+
+
+def range_curve(variant, altitude: float = 0.0, headwind: float = 0.0, n: int = 40) -> dict:
+    """Range against airspeed in level flight: the power, the watt-hours per kilometre over the ground (a ``headwind``
+    [m/s] takes its share), the still-air endurance and the range on the pack less the reserve and one take-off and
+    landing. Returns the rows and the best-range and best-endurance speeds."""
+    env = envelope(variant)
+    usable = (1.0 - RESERVE) * env["wh"] - thrust_at(env, altitude, 0.0, throttle_for(env, altitude, 0.0, env["mass"] * G))[1] * ef.HOVER_S / 3600.0
+    rows = []
+    for V in np.linspace(8.0, 0.97 * env["v_top"], n):
+        c = cruise_power(variant, float(V), altitude)
+        if not c["flies"] or V - headwind < 1.0:
+            continue
+        t = usable * 3600.0 / c["power_w"]
+        rows.append({**c, "ground_ms": V - headwind, "endurance_s": t, "range_km": (V - headwind) * t / 1000.0})
+    best, longest = max(rows, key=lambda r: r["range_km"]), max(rows, key=lambda r: r["endurance_s"])
+    return {"variant": variant if isinstance(variant, str) else variant.label(), "altitude": altitude, "headwind": headwind, "rows": rows, "usable_wh": usable,
+            "pack_wh": env["wh"], "mass_g": env["mass"] * 1e3, "best_range_ms": best["V"], "range_km": best["range_km"], "radius_km": best["range_km"] / 2,
+            "range_time_s": best["endurance_s"], "best_endurance_ms": longest["V"], "endurance_s": longest["endurance_s"],
+            "hover_endurance_s": usable * 3600.0 / thrust_at(env, altitude, 0.0, throttle_for(env, altitude, 0.0, env["mass"] * G))[1],
+            "range_at_top_km": rows[-1]["range_km"], "wh_per_km": best["wh_per_km"]}
+
+
+def range_options(variant: str, altitude: float = 0.0) -> list[dict]:
+    """The variant's range with each pack of the catalogue, one or two in parallel: mass, price, top speed, the
+    best-range speed, the range and the radius of action (out and back), the endurance."""
+    import dataclasses
+    base = ef.VARIANTS[variant]
+    rows = []
+    for bat in mk.BATTERIES:
+        for n_par in (1, 2):
+            c = dataclasses.replace(base, battery=bat.key, n_parallel=n_par)
+            r = range_curve(c, altitude)
+            rows.append({"pack": f"{n_par} x {bat.name}", "as built": c == base, "mass [g]": round(r["mass_g"]), "price [USD]": mk.price(c),
+                         "pack [Wh]": round(r["pack_wh"], 1), "best-range speed [km/h]": round(r["best_range_ms"] * 3.6), "range [km]": round(r["range_km"], 1),
+                         "radius [km]": round(r["radius_km"], 1), "Wh/km": round(r["wh_per_km"], 2), "endurance [min]": round(r["endurance_s"] / 60, 1),
+                         "range at top speed [km]": round(r["range_at_top_km"], 1)})
     return rows
 
 
@@ -428,7 +483,9 @@ def _flight(sim: Sim) -> Flight:
     if touch:
         m.update(touchdown_sink_ms=touch[-1]["sink"], touchdown_drift_ms=touch[-1]["drift"], touchdown_miss_m=touch[-1]["miss"])
     for e in sim.events:
-        if e["leg"] in ("caught", "at the fire", "top of climb", "over the roof"):
+        if e["leg"] == "turn point":
+            m["turn_point_km"] = float(np.hypot(e["pos"][0], e["pos"][1])) / 1000.0
+        if e["leg"] in ("caught", "at the fire", "top of climb", "over the roof", "turn point"):
             m[f"t_{e['leg'].replace(' ', '_')}_s"] = e["t"]
     why = []
     if any(e["leg"].startswith("TIME OUT") for e in sim.events):
@@ -587,6 +644,29 @@ def _palace(variant, env, pace):
             Leg("land", to=(px, py, roof), speed=2.5, name="land on the roof")]
 
 
+# -------------------------------------------------------------------------------------------------------------- range
+RANGE_SHARE = 0.90                                                   # the turn point at this share of the predicted radius of action
+RANGE_ALT = 120.0
+RANGE_WIND = 5.0                                                     # a steady wind from the east: against it out, with it home
+
+
+def _range_wind(sim, pos, t):
+    return og_wind.from_direction(og_wind.power_law(RANGE_WIND, max(pos[2], 2.0), 10.0, 0.14), 0.0)
+
+
+def _range(variant, env, pace):
+    """Out against the wind to the turn point and back, at the best-range airspeed (``pace`` scales the distance)."""
+    wind = float(og_wind.power_law(RANGE_WIND, RANGE_ALT, 10.0, 0.14))
+    rc = range_curve(env["config"])
+    v = rc["best_range_ms"]
+    # out and back in a wind: the time out at v - w, home at v + w, on the same power
+    usable_s = rc["range_time_s"]
+    d = pace * RANGE_SHARE * usable_s / (1.0 / (v - wind) + 1.0 / (v + wind))
+    return [Leg("climb", to=(0, 0, RANGE_ALT), speed=8.0, full=False, name="take-off"),
+            Leg("goto", to=(d, 0.0, RANGE_ALT), speed=v - wind, radius=40, name="outbound"), _mark("turn point"),
+            Leg("goto", to=(0.0, 0.0, 40.0), speed=v + wind, speed_end=4.0, radius=8, name="homebound"), Leg("land", to=(0, 0, 0), speed=6.0, name="land")]
+
+
 SCENARIOS = {
     "wildfire": Scenario("wildfire", "to a wildfire 2 km out, round the smoke and back", _wildfire, paced=True, t_max=400.0,
                          features={"fire": FIRE, "floor": 30.0},
@@ -599,6 +679,10 @@ SCENARIOS = {
                     notes=f"wind {SEA_WIND:g} m/s from the north with {SEA_GUST:g} m/s gusts; the boat runs at {BOAT_V * 3.6:.0f} km/h and zigzags"),
     "climb": Scenario("climb", "a climb to the ceiling target and back", _climb, t_max=1500.0, features={"floor": 0.0},
                       notes="straight up from sea level at the economy climb speed, a flat fall with the motors stopped, a catch and a landing"),
+    "range": Scenario("range", "long range: out against the wind to the radius of action and back", _range, wind=_range_wind, t_max=5400.0,
+                      features={"floor": 30.0, "wind": (RANGE_WIND, 0.0)},
+                      notes=f"at the best-range airspeed, {RANGE_ALT:g} m up, a steady {RANGE_WIND:g} m/s wind at 10 m from the east (a headwind out); "
+                            f"the turn point at {RANGE_SHARE:.0%} of the predicted radius"),
     "palace": Scenario("palace", "a fast climb over Warsaw, a swoop, a slow landing on the roof of the Palace of Culture", _palace,
                        start=PALACE_START, alt0=PALACE["ground_asl"], wind=_palace_wind, terrain=_palace_terrain,
                        obstacles=((0.0, 0.0, PALACE["spire_radius"], PALACE["roof"], PALACE["spire_top"]),), t_max=500.0,
@@ -610,9 +694,10 @@ SCENARIOS = {
 def fly_all(variants=("ER1", "ER2"), scenarios=None) -> dict:
     """Every variant through every scenario; the climb also with the variant's high-altitude pack (key ``ER1 high``)."""
     out = {(v, s): fly(v, s) for v in variants for s in (scenarios or SCENARIOS)}
-    if "climb" in (scenarios or SCENARIOS):
-        for v in variants:
-            out[(f"{v} high", "climb")] = fly(v, "climb", config=ef.HIGH[v])
+    for s in ("climb", "range"):
+        if s in (scenarios or SCENARIOS):
+            for v in variants:
+                out[(f"{v} high", s)] = fly(v, s, config=ef.HIGH[v] if s == "climb" else ef.LONG[v])
     return out
 
 
@@ -624,7 +709,7 @@ def table(flights: dict) -> list[dict]:
         rows.append({"variant": v, "scenario": s, "ok": f.ok, "why not": "; ".join(f.why), "pace": round(f.pace, 2), "time [s]": round(m["time_s"], 1),
                      "distance [km]": round(m["distance_km"], 2), "max [km/h]": round(m["max_kmh"]), "top altitude [m]": round(m["max_altitude_m"]),
                      "energy [Wh]": round(m["energy_wh"], 1), "pack left [%]": round(100 * m["reserve"]), "motors [C]": round(m["max_motor_C"]),
-                     "max g": round(m["max_g"], 1), "caught at [s]": m.get("t_caught_s"),
+                     "max g": round(m["max_g"], 1), "caught at [s]": m.get("t_caught_s"), "turn point [km]": None if m.get("turn_point_km") is None else round(m["turn_point_km"], 2),
                      "touchdown [m/s]": m.get("touchdown_sink_ms"), "miss [m]": m.get("touchdown_miss_m")})
     return rows
 

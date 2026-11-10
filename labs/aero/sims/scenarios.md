@@ -240,7 +240,7 @@ budget, knee and fastest picks — for any rpm and inside the propeller makers' 
 `labs/aero/designs/data/emerillon_trade.json`, which notebook 37 reads. About a minute and a half; no solver, no MuJoCo.
 `--quick` (and the mocks) evaluate a dozen builds and write nothing.
 
-## ÉMERILLON ER1 and ER2: five flights and the altitude question
+## ÉMERILLON ER1 and ER2: six flights, the altitude and the range questions
 
 `python labs/aero/sims/emerillon_mission.py [--variant ER1 ER2] [--scenario wildfire mountain sea climb palace] [--ceiling] [--quick]`.
 A point-mass simulation with a body axis (`labs/aero/designs/emerillon_mission.py`): the four propellers push along the axis (the
@@ -248,6 +248,9 @@ drive tabulated over altitude, axial airspeed and throttle), the air gives the b
 body, the axis slews to where the wanted force points. Times, speeds, energy and margins — not handling. Writes
 `labs/aero/sims/output/emerillon_<variant>_<scenario>.png` and `emerillon_missions.json`.
 
+- `range` — out against a 5 m/s wind to 90 % of the predicted radius of action and back, at the best-range airspeed, 120 m up; flown as
+  built and with the long-range packs (`ef.LONG`, the rows `ER1 high` / `ER2 high`). `--range` prints the analysis alone: power and
+  Wh/km against speed, the range and radius on each pack of the catalogue.
 - `wildfire` — to a fire 2 km out, round the smoke, back and land, at the fastest pace (share of the top speed) that still lands
   with a 20 % reserve.
 - `mountain` — a target circles a 900 m peak at 520 m and 137 km/h; catch it (12 m), come home. The base is 600 m above the sea.

@@ -4,9 +4,10 @@ flight and one summary: ``labs/aero/sims/output/emerillon_<variant>_<scenario>.p
     .venv/bin/python labs/aero/sims/emerillon_mission.py                               # both variants, all five scenarios (about a minute)
     .venv/bin/python labs/aero/sims/emerillon_mission.py --variant ER2 --scenario palace sea
     .venv/bin/python labs/aero/sims/emerillon_mission.py --ceiling                     # the altitude question: 4 km for ER1, 7 km for ER2, and the packs that get there
+    .venv/bin/python labs/aero/sims/emerillon_mission.py --range                       # the range question: best-range speed, radius of action, the packs
     .venv/bin/python labs/aero/sims/emerillon_mission.py --quick                       # two short flights, nothing written (the mocks do this)
 
-Scenarios: ``wildfire`` (out to a fire, round the smoke, back), ``mountain`` (catch a target circling a mountain),
+Scenarios: ``range`` (out against the wind to the radius of action and back at the best-range speed), ``wildfire`` (out to a fire, round the smoke, back), ``mountain`` (catch a target circling a mountain),
 ``sea`` (catch a boat in a crosswind), ``climb`` (to the ceiling target and back), ``palace`` (a fast climb over Warsaw,
 a swoop, a slow landing on the roof of the Palace of Culture and Science). A point-mass simulation: times, speeds,
 energy and margins — not handling. No solver, no MuJoCo.
@@ -42,11 +43,27 @@ def ceilings() -> dict:
     return out
 
 
+def ranges() -> dict:
+    out = {}
+    for v in ef.VARIANTS:
+        r = mi.range_curve(v)
+        print(f"\n{ef.VARIANT_NAME[v]}: best range {r['range_km']:.1f} km (a radius of {r['radius_km']:.1f} km) at {r['best_range_ms'] * 3.6:.0f} km/h and "
+              f"{r['wh_per_km']:.2f} Wh/km, in {r['range_time_s'] / 60:.1f} min; at top speed {r['range_at_top_km']:.1f} km; "
+              f"longest in the air {r['endurance_s'] / 60:.1f} min at {r['best_endurance_ms'] * 3.6:.0f} km/h (hover {r['hover_endurance_s'] / 60:.1f} min)")
+        rows = mi.range_options(v)
+        for o in rows:
+            print(f"   {o['pack']:<40s} {o['mass [g]']:5d} g  {o['price [USD]']:7.0f} USD  range {o['range [km]']:5.1f} km  radius {o['radius [km]']:4.1f} km"
+                  f"  at {o['best-range speed [km/h]']:3d} km/h  {o['endurance [min]']:4.1f} min{'  (as built)' if o['as built'] else ''}")
+        out[v] = {"range": {k: x for k, x in r.items() if k != "rows"}, "options": rows}
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variant", nargs="*", default=list(ef.VARIANTS), choices=list(ef.VARIANTS))
     ap.add_argument("--scenario", nargs="*", default=list(mi.SCENARIOS), choices=list(mi.SCENARIOS))
     ap.add_argument("--ceiling", action="store_true", help="only the altitude analysis")
+    ap.add_argument("--range", action="store_true", help="only the range analysis")
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args(argv)
     quick = args.quick or os.environ.get("VEGETA_DEBUG") == "1"
@@ -56,8 +73,12 @@ def main(argv=None) -> int:
             f = mi.fly(v, s, dt=0.05)
             print(f"{v} {s}: {'OK' if f.ok else 'NOT OK: ' + '; '.join(f.why)} — {f.metrics['time_s']:.0f} s, {f.metrics['energy_wh']:.1f} Wh")
         return 0
-    summary = {"ceilings": ceilings()}
+    summary = {}
+    if not args.range:
+        summary["ceilings"] = ceilings()
     if not args.ceiling:
+        summary["ranges"] = ranges()
+    if not (args.ceiling or args.range):
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt

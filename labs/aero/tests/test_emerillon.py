@@ -230,6 +230,29 @@ def test_the_climb_scenario_agrees_with_the_slices():
     assert mi.fly("ER1", "climb", dt=0.05, config=ef.HIGH["ER1"]).ok
 
 
+def test_range_has_a_best_speed_far_below_the_top_speed():
+    mi = pytest.importorskip("emerillon_mission")
+    for v in ef.VARIANTS:
+        r = mi.range_curve(v)
+        top = ef.top_speed(ef.VARIANTS[v])["V"]
+        assert 0.25 * top < r["best_range_ms"] < 0.65 * top and r["range_km"] > 1.5 * r["range_at_top_km"]
+        assert r["best_endurance_ms"] < r["best_range_ms"] and r["endurance_s"] >= r["hover_endurance_s"]
+        assert r["range_km"] == pytest.approx(r["usable_wh"] / r["wh_per_km"], rel=1e-6)
+        assert mi.range_curve(v, headwind=8.0)["range_km"] < r["range_km"] and mi.range_curve(v, headwind=8.0)["best_range_ms"] >= r["best_range_ms"]
+        assert mi.range_curve(ef.LONG[v])["range_km"] > 1.5 * r["range_km"]
+    rows = mi.range_options("ER2")
+    assert sum(o["as built"] for o in rows) == 1 and max(o["range [km]"] for o in rows) < 25.0          # a sprinter, whatever the pack
+
+
+def test_the_long_range_flight_meets_the_prediction():
+    mi = pytest.importorskip("emerillon_mission")
+    f = mi.fly("ER1", "range")
+    r = mi.range_curve("ER1")
+    assert f.ok, f.why
+    assert f.metrics["turn_point_km"] == pytest.approx(0.9 * r["radius_km"], rel=0.12)                 # the wind and the climb take a little
+    assert mi.RESERVE <= f.metrics["reserve"] < mi.RESERVE + 0.10 and f.metrics["touchdown_sink_ms"] <= 1.2   # it uses what the analysis said
+
+
 # --------------------------------------------------------------------------------------------- the workflow book (E)
 def test_campaigns_catalogue_and_fingerprint():
     ec = pytest.importorskip("emerillon_campaigns")

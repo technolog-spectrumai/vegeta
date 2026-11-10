@@ -583,5 +583,8 @@ TARGET = {"ER1": {"kmh": 261.0, "ceiling_m": 4000.0}, "ER2": {"kmh": 383.0, "cei
 # analysis of emerillon_mission.ceiling_options passes smaller ones that the simulated catch and landing do not)
 HIGH = {"ER1": Config("eco2807-1300", "apc6x6e", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1),
         "ER2": Config("eco2807-1300", "apc7x10", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 2)}   # lands a little under the reserve
+# the long-range fit: two Tattu 1700 mAh in parallel — as far as the heavier 2 Ah pair, lighter and cheaper (emerillon_mission.range_options)
+LONG = {"ER1": Config("eco2807-1300", "apc6x6e", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 2),
+        "ER2": Config("eco2807-1300", "apc7x10", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 2)}
 DESIGN = ER2
 RECORD_BUILD = Config("v3120-900", "own7x13", "apd-120f3", "tattu-r6-1700-160c", 2, 2)   # the fast end of the front
