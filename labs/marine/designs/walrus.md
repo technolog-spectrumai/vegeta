@@ -19,15 +19,23 @@ lane map (`mysis.md`) laid on the seabed.
 | shifts | **two** 8 h shifts a day: the crawler does not care about daylight, the boat's crew does |
 | price | under **€30k** |
 
+## The hull (`walrus_hull_3d.png`)
+
+A rounded HDPE fairing in two halves over the frame between the tracks, 12 mm thick, 420 mm to the top: open at
+the nose for the camera, the lights and the arms; bored for the two vertical thrusters; the basket hatch on top (the
+basket releases through it on its float line); the tether port at the back; flanks flared over the tracks so the
+crawler slides over weed and stones instead of catching. 3 kg, €950; it is what it swims in and what the crew
+grabs.
+
 ## v0 numbers (`python labs/marine/designs/walrus.py`)
 
-* 900 × 700 × 380 mm; the crawler **33 kg** (45 kg with the tether and reel, which stay on the boat); sits 1.8 kg
-  heavy on the bed; the vertical pair lifts it empty with a ×3 margin; swims at 0.42 m/s.
+* 900 × 700 × 420 mm over the hull; the crawler **36 kg** (48 kg with the tether and reel, which stay on the boat);
+  sits 2.8 kg heavy on the bed; the vertical pair lifts it empty with a ×2 margin; swims at 0.42 m/s.
 * **Picking-limited**: a 6 s cycle per picker, two pickers → **1 200 clams/h** at any bed density above ~5/m² (it
   crawls at the pace the pickers set, ~0.01 m/s on a rich bed); **36 kg/h** of Manila clams; a basket every 33 min;
   **543 kg a day** in two shifts — **3.6× a hand-harvest diver** — over ~380 m² of bed.
 * Power from the boat: 370 W, a ×1.7 margin on a 1 kW tether supply.
-* Price (class prices): **€28.8k** with the arms, the swim and the USBL; at €6/kg the day's take pays it back in about a week of harvest days — the
+* Price (class prices): **€29.8k** with the arms, the swim, the USBL and the hull; at €6/kg the day's take pays it back in about a week of harvest days — the
   season, not the machine, is the limit.
 
 ## What the selectivity buys

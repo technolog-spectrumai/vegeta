@@ -22,7 +22,10 @@ electronics tube on top; the camera and lights looking down ahead of the gantry;
 the swath, z plunge) carrying the jet nozzle and the soft gripper; the basket at the back over the sizing chute;
 two vertical thrusters; the tether at the rear.
 
-``part``: ``vehicle``, ``tracks``, ``frame``, ``housing``, ``gantry``, ``basket``, ``thrusters``, ``lights``.
+``part``: ``vehicle``, ``hull``, ``tracks``, ``frame``, ``housing``, ``gantry``, ``basket``, ``thrusters``, ``lights``, ``arms``.
+The ``hull`` is the fairing it swims in: a rounded shell over the frame between the tracks, open at the front for
+the camera and the arms, bored for the vertical thrusters, with the basket hatch on top and the tether port at the
+back; the flanks flare over the tracks so the crawler slides over weed and stones.
 """
 from __future__ import annotations
 
@@ -60,6 +63,7 @@ PARTS = {
     "tether 150 m (48 V power + fibre, neutral) + reel + topside": (12.0, 0.0, 0.0, 4500.0),
     "electronics tube (Al, 30 m)": (2.5, 4.0, 0.0, 900.0),
     "frame, skids, foam, cabling": (6.5, 17.5, 0.0, 2700.0),
+    "hull fairing (HDPE shell, two halves)": (3.0, 2.0, 0.0, 950.0),
     "assembly, test": (0.5, 0.1, 0.0, 2500.0),
 }
 CLAM = {"mass_kg": 0.03, "legal_fraction": 0.6, "price_eur_per_kg": 6.0}       # a Manila clam; 60 % of a bed above size
@@ -67,7 +71,7 @@ CLAM = {"mass_kg": 0.03, "legal_fraction": 0.6, "price_eur_per_kg": 6.0}       #
 
 class Walrus(Design):
     parameters = [
-        Parameter("part", "vehicle", choices=("vehicle", "tracks", "frame", "housing", "gantry", "basket", "thrusters", "lights", "arms"),
+        Parameter("part", "vehicle", choices=("vehicle", "hull", "tracks", "frame", "housing", "gantry", "basket", "thrusters", "lights", "arms"),
                   description="what to build"),
         Parameter("length", 900.0, "mm", min=400),
         Parameter("width", 700.0, "mm", min=300),
@@ -198,6 +202,26 @@ class Walrus(Design):
         cam = cq.Workplane("XY").box(90, 60, 50).translate((L * 0.35, 0, 195))
         return out.union(cam)
 
+    def _hull(self, p):
+        """The fairing: a rounded shell from the deck up over the tube and the basket, open at the nose, bored for
+        the vertical thrusters, with a basket hatch; flanks flaring over the tracks."""
+        L, W, tw = p["length"], p["width"], p["track_w"]
+        inner_w = W - 2 * tw - 20
+        top = 420.0
+        shell = (cq.Workplane("XY").box(L * 0.86, inner_w + 2 * tw + 10, top - 150).edges("|X").fillet(60).edges("|Y").fillet(80)
+                 .translate((-L * 0.03, 0, 150 + (top - 150) / 2)))
+        shell = shell.cut(cq.Workplane("XY").box(L * 0.86 - 24, inner_w + 2 * tw - 14, top - 150 - 24).edges("|X").fillet(50).edges("|Y").fillet(70)
+                          .translate((-L * 0.03, 0, 150 + (top - 150) / 2)))                       # a 12 mm shell
+        # the tracks' tunnels: the flanks sit over the tracks, open underneath
+        for sy in (1, -1):
+            shell = shell.cut(cq.Workplane("XY").box(L, tw + 10, 160).translate((0, sy * (W / 2 - tw / 2), 80)))
+        shell = shell.cut(cq.Workplane("XY").box(L * 0.3, inner_w - 40, 220).translate((L * 0.38, 0, 260)))       # the nose opening: camera, lights, arms
+        for sx in (1, -1):
+            shell = shell.cut(cq.Workplane("XY").circle(58).extrude(80).translate((sx * L * 0.35, 0, top - 60)))    # the vertical thrusters' bores
+        shell = shell.cut(cq.Workplane("XY").box(230, inner_w - 60, 40).translate((-L * 0.28, 0, top)))             # the basket hatch
+        shell = shell.cut(cq.Workplane("YZ").workplane(offset=-L * 0.5).center(0, 300).circle(25).extrude(60))       # the tether port
+        return shell
+
     def _arms(self, p):
         """Two one-joint arms on the front corners: a shoulder block, an upper link angled down, a flat paddle."""
         L, W, tw = p["length"], p["width"], p["track_w"]
@@ -215,7 +239,7 @@ class Walrus(Design):
 
     def build(self, p):
         parts = {"tracks": self._tracks, "frame": self._frame, "housing": self._housing, "gantry": self._gantry,
-                 "basket": self._basket, "thrusters": self._thrusters, "lights": self._lights, "arms": self._arms}
+                 "basket": self._basket, "thrusters": self._thrusters, "lights": self._lights, "arms": self._arms, "hull": self._hull}
         if p["part"] in parts:
             return parts[p["part"]](p)
         out = None
