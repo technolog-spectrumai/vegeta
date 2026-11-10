@@ -64,7 +64,7 @@ PARTS = {
 
 class Dolphin(Design):
     parameters = [
-        Parameter("part", "vehicle", choices=("vehicle", "hull", "sail", "hangar", "pad", "wetwell", "propulsor", "drone"),
+        Parameter("part", "vehicle", choices=("vehicle", "hull", "sail", "hangar", "bay", "hatch", "pad", "wetwell", "propulsor", "drone"),
                   description="what to build"),
         Parameter("length", 3600.0, "mm", min=1500),
         Parameter("hull_d", 600.0, "mm", min=300),
@@ -139,11 +139,17 @@ class Dolphin(Design):
         mast = cq.Workplane("XY").circle(25).extrude(400).translate((L * 0.12 + 150, 0, D + 300))
         return sail.union(mast)
 
-    def _hangar(self, p):
+    def _bay(self, p):
         L, D = p["length"], p["hull_d"]
-        bay = cq.Workplane("XY").box(1250, 420, 330).translate((-L * 0.2, 0, D - 165))
-        hatch = cq.Workplane("XY").box(1250, 440, 20).translate((-L * 0.2, 0, D + 10))
-        return bay.union(hatch)
+        return cq.Workplane("XY").box(1250, 420, 330).translate((-L * 0.2, 0, D - 165))
+
+    def _hatch(self, p):
+        """The hangar hatch, hinged along its +Y edge (Ketos swings it about that line)."""
+        L, D = p["length"], p["hull_d"]
+        return cq.Workplane("XY").box(1250, 440, 20).translate((-L * 0.2, 0, D + 10))
+
+    def _hangar(self, p):
+        return self._bay(p).union(self._hatch(p))
 
     def _pad(self, p):
         L, D = p["length"], p["hull_d"]
@@ -185,6 +191,8 @@ class Dolphin(Design):
     def build(self, p):
         parts = {"hull": self._hull, "sail": self._sail, "hangar": self._hangar, "pad": self._pad, "wetwell": self._wetwell,
                  "propulsor": self._propulsor, "drone": self._drone}
+        if p["part"] in ("bay", "hatch"):
+            return getattr(self, "_" + p["part"])(p)
         if p["part"] in parts:
             return parts[p["part"]](p)
         out = None

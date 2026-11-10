@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
 
 
 def mesh_json(name, shape, color, scale=1e-3, tol=2.0):
-    """A Ketos mesh (``name``, ``closed``, ``color``, ``size``, ``vertices``, ``triangles``) from a CadQuery shape."""
+    """A Ketos mesh (``name``, ``closed``, ``color``, ``size``, ``vertices``, ``triangles``) from a CadQuery shape: the
+    vertices a flat list of metres (x, y, z, x, y, z, ...), the triangles a flat list of vertex indices."""
     verts, tris, off = [], [], 0
     for s in shape.solids().vals():
         v, t = s.tessellate(tol, 0.5)
@@ -26,7 +27,7 @@ def mesh_json(name, shape, color, scale=1e-3, tol=2.0):
     xs, ys, zs = (sorted(c[i] for c in verts) for i in range(3))
     return {"name": name, "source": "vegeta (CadQuery): tools/ketos_export_pearl.py", "closed": True, "color": list(color),
             "size": [round(xs[-1] - xs[0], 3), round(ys[-1] - ys[0], 3), round(zs[-1] - zs[0], 3)],
-            "vertices": verts, "triangles": tris}
+            "vertices": [c for q in verts for c in q], "triangles": [i for t in tris for i in t]}
 
 
 def export(out_dir: Path):
@@ -37,22 +38,31 @@ def export(out_dir: Path):
     # --- Dolphin: x forward along the hull, z up from the keel (the design's frame already)
     p = Dolphin.p()
     s = Dolphin.sizing(p)
-    parts = [("dolphin_hull", "hull", (0.17, 0.37, 0.54)), ("dolphin_sail", "sail", (0.20, 0.27, 0.33)), ("dolphin_hangar", "hangar", (0.50, 0.55, 0.60)),
-             ("dolphin_pad", "pad", (0.90, 0.49, 0.13)), ("dolphin_wetwell", "wetwell", (0.75, 0.22, 0.17)), ("dolphin_propulsor", "propulsor", (0.13, 0.13, 0.13))]
+    # the fixed parts of the card; the hatch and the lift's pad are separate meshes the sim poses itself (the hatch
+    # swings about its hinge, the pad rides the lift), so each has its origin on its own axis of motion
+    parts = [("dolphin_hull", "hull", (0.17, 0.37, 0.54)), ("dolphin_sail", "sail", (0.20, 0.27, 0.33)), ("dolphin_bay", "bay", (0.50, 0.55, 0.60)),
+             ("dolphin_wetwell", "wetwell", (0.75, 0.22, 0.17)), ("dolphin_propulsor", "propulsor", (0.13, 0.13, 0.13))]
     d = Dolphin()
+    L, D = p["length"], p["hull_d"]
+    hinge = (-L * 0.2, 220.0, D + 20.0)                          # the hatch's hinge line (along X), in the hull's frame [mm]
+    pad = (-L * 0.2, 0.0, D + 20.0)                              # the pad's centre on the deck, the lift up [mm]
     card = {"schema": "ketos.card", "version": "1.0", "name": "dolphin", "kind": "submarine",
             "parts": [{"model": n, "color": list(c)} for n, _, c in parts],
             "size": [p["length"] / 1000, p["hull_d"] / 1000, (p["hull_d"] + 500) / 1000], "mass_kg": round(s["mass_kg"], 1),
             "cruise_m_s": p["cruise"], "max_speed_m_s": 2.0, "prop_W": round(s["prop_W"], 1), "hotel_W": round(s["hotel_W"], 1),
             "battery_kwh": 12.0, "depth_m": 60.0, "freeboard_m": p["freeboard"] / 1000, "surface_rate_m_s": 0.5,
-            "hangar": {"drones": 2, "hatch_s": 60.0, "lift_s": 60.0, "charge_h": EMERILLION["charge_h"]},
+            "hangar": {"drones": 2, "hatch_s": 60.0, "lift_s": 60.0, "charge_h": EMERILLION["charge_h"], "lift_travel_m": 0.32,
+                       "bay_length_m": 1.25, "pad": [round(c / 1000, 3) for c in pad], "hatch_hinge": [round(c / 1000, 3) for c in hinge],
+                       "hatch_open_rad": 2.1, "hatch_model": "dolphin_hatch", "pad_model": "dolphin_pad"},
             "pearl_cell": {"oysters_per_h": 400.0, "capsule_pearls": 200, "capsule_kg": 0.2},
             "wet_well": {"baskets": 4, "hook_s": 90.0}, "price_eur": round(s["price_eur"])}
     for n, part, c in parts:
         (out_dir / f"{n}.json").write_text(json.dumps(mesh_json(n, d.build({**p, "part": part}), c)))
+    (out_dir / "dolphin_hatch.json").write_text(json.dumps(mesh_json("dolphin_hatch", d.build({**p, "part": "hatch"}).translate(tuple(-c for c in hinge)), (0.50, 0.55, 0.60))))
+    (out_dir / "dolphin_pad.json").write_text(json.dumps(mesh_json("dolphin_pad", d.build({**p, "part": "pad"}).translate(tuple(-c for c in pad)), (0.90, 0.49, 0.13))))
     (out_dir / "dolphin.card.json").write_text(json.dumps(card, indent=1))
-    # --- Emerillion: the design's frame has the nose at the origin along +X; Ketos wants x forward, z up, the
-    # lowest point at z = 0; a tail-sitter stands on its fins, so the card carries both poses as the sim's business
+    # --- Emerillion: the design's frame has the nose at the origin along +X; for Ketos the origin goes to the tail
+    # end on the fuselage's axis (x forward, z up): a tail-sitter pitched 90 deg about that point stands on its fins
     pe = Emerillion.p()
     e = Emerillion()
     eparts = [("emerillion_fuselage", "fuselage", (0.95, 0.77, 0.06)), ("emerillion_wing", "wing", (0.95, 0.77, 0.06)),
@@ -63,9 +73,9 @@ def export(out_dir: Path):
              "size": [pe["length"] / 1000, pe["span"] / 1000, (pe["fin_span"] * 2 + pe["fuselage_d"]) / 1000], "mass_kg": round(mass_kg(), 2),
              "payload_kg": 0.2, "thrust_to_weight": round(h["thrust_to_weight"], 2), "hover_W": round(h["hover_W"]), "cruise_m_s": 28.0, "cruise_W": 420.0,
              "climb_m_s": 2.0, "descent_m_s": 1.5, "battery_wh": 222.0, "reserve": 0.2, "range_km_reserve": round(r["range_km_reserve"], 1),
-             "stall_m_s": round(r["stall_m_s"], 1), "charge_h": 1.0, "tail_sitter": True, "price_eur": 4800}
+             "stall_m_s": round(r["stall_m_s"], 1), "charge_h": 1.0, "tail_sitter": True, "origin": "the tail end, on the axis", "price_eur": 4800}
     for n, part, c in eparts:
-        shape = e.build({**pe, "part": part}).translate((0, 0, pe["fin_span"] + pe["fuselage_d"] * 0.2))   # the pads at z = 0 when it lies level
+        shape = e.build({**pe, "part": part}).rotate((0, 0, 0), (0, 0, 1), 180).translate((pe["length"], 0, 0))   # the nose forward (+x), the tail at the origin
         (out_dir / f"{n}.json").write_text(json.dumps(mesh_json(n, shape, c, tol=1.0)))
     (out_dir / "emerillion.card.json").write_text(json.dumps(ecard, indent=1))
     return [str(out_dir / "dolphin.card.json"), str(out_dir / "emerillion.card.json")]
