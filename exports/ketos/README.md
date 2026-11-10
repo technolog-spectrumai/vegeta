@@ -31,3 +31,6 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 | cable_vessel | `subsea_cable.py` `CableVessel` | the 130 m cable-lay and repair vessel: 7000 t carousel, stern chute, jointing container, the trencher's LARS |
 | cable | `subsea_cable.py` `CableSegment` | a 10 m segment of a 3-core 220 kV export cable (0.24 m, 90 kg/m, MBR 4 m) |
 | cable_joint | `subsea_cable.py` `CableJoint` | a rigid universal repair joint with its bend restrictors (96 h to make one) |
+| pinna | `pinna.py` `Pinna` | the autonomous drone-carrier catamaran (no crew): 24 x 10 m, 108 t, Walrus davits, basket robot, crate packer, 4 VTOL pads, catapult, recovery net, autonomy mast |
+| gannet | aero `gannet.py` `Gannet` | the cargo quad (air card, `air: vtol`): 16.4 kg with a 5 kg crate, 28" rotors, 1150 Wh, radius 13.5 km, deck Hs 2 m |
+| fulmar | aero `fulmar.py` `Fulmar` (on `fixed_wing.FixedWing`) | the long-haul fixed-wing (air card, `air: fixed_wing`): 3.6 m, 20 kg with 5 kg, 8.5 Wh/km, radius 65 km, catapult + net |

@@ -8,9 +8,15 @@ reads. The meshes come from the CadQuery models; the numbers from each design's 
 
 The card is the contract between Vegeta and Ketos (``ketos.card`` 1.0):
 
-    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge",
+    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air",
      "parts":[{"model":"cyclopterus_hull","color":[r,g,b]}], "size":[L,W,H], "mass_kg":..., "displacement_L":...,
      "thrusters":[{"at":[x,y,z],"axis":[ax,ay,az],"max_N":...}], "battery_Wh":..., "hotel_W":..., "tools":{...}, ...}
+
+An ``air`` card (a drone that flies: Gannet, Fulmar) has ``air`` ("vtol" | "fixed_wing"), ``mass_kg`` (empty, with
+the pack), ``mtow_kg``, ``payload_kg``, ``battery_Wh`` / ``usable_Wh``, ``cruise_m_s``, ``power_cruise_W`` (+ ``_empty``),
+``power_hover_W`` (+ ``_empty``; None for a fixed-wing), ``wh_per_km`` (+ ``_empty``), ``range_km``, ``radius_km``,
+``endurance_min``, ``wind_limit_m_s``, ``deck_hs_limit_m`` (the landing on a deck's sea-state limit), ``launch`` and
+``recovery`` ("pad" | "catapult" | "net"), ``swap_s``.
 """
 from __future__ import annotations
 
@@ -568,12 +574,97 @@ def clam_boat():
     return card, []
 
 
+def pinna():
+    """Pinna, the autonomous drone-carrier catamaran (Ketos Clams stages 6-8): Walrus davits and reels, the basket
+    robot and the packer, four VTOL pads, the catapult and the recovery net, the autonomy mast. z = 0 the waterline."""
+    from pinna import AUTONOMY, LOADS, Pinna
+    d, p, s = Pinna(), Pinna.p(), Pinna.sizing()
+    parts = [("pinna_hulls", "hulls", "#34495e"), ("pinna_deck", "deck", "#95a5a6"), ("pinna_house", "house", "#ecf0f1"),
+             ("pinna_flight_deck", "flight_deck", "#7f8c8d"), ("pinna_pads", "pads", "#f1c40f"), ("pinna_catapult", "catapult", "#c0392b"),
+             ("pinna_net", "net", "#2c3e50"), ("pinna_mast", "mast", "#d0d3d4"), ("pinna_davits", "davits", "#e67e22")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 40.0) for n, k, c in parts]
+    z_fd = (d._z_deck(p) + 3600 + 150) / 1000
+    card = CARD | {"name": "pinna", "kind": "boat", "autonomous": True, "crew": 0, "operators_ashore": round(s["operators_ashore"], 3),
+                   "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [s["length_m"], s["beam_m"], round(p["hull_depth"] / 1000 + 7.8, 1)], "draught_m": s["draught_m"],
+                   "displacement_t": s["displacement_t"], "mass_kg": round(1000 * (s["lightship_t"] + s["deadweight_t"])),
+                   "service_kn": s["service_kn"], "max_kn": s["max_kn"], "service_kW": s["service_kW"], "bed_load_kW": s["bed_load_kW"],
+                   "power_W": round(1000 * s["bed_load_kW"]), "battery_kWh": p["battery_kwh"], "endurance_days": s["endurance_days"],
+                   "fuel_l_h_on_bed": s["fuel_l_h_on_bed"], "loads_kW": {k: round(v, 2) for k, v in LOADS.items()}, "autonomy": AUTONOMY,
+                   "carries": ["walrus", "gannet", "fulmar"], "davits": p["davits"], "tether_reels": p["davits"], "usbl": True,
+                   "haul_min_per_basket": p["basket_haul_s"] / 60.0, "basket_robot": True,
+                   "packing": {"crate_kg": p["crate_kg"], "pack_s": p["pack_s"], "store_kg": p["crate_store_kg"], "ice": True},
+                   "hold_kg": p["crate_store_kg"],
+                   "flight_deck": {"z_m": round(z_fd, 2), "pads": [[x / 1000, y / 1000] for x, y in d._pad_at(p)], "pad_cycle_s": p["pad_cycle_s"],
+                                   "land_lock_s": 40.0, "crate_load_s": 40.0, "swap_s": 90.0, "launch_s": 30.0,
+                                   "catapult": {"at": [-0.2, 0.0], "cycle_s": p["catapult_cycle_s"], "stroke_m": 7.0},
+                                   "net": {"at": [-9.1, 0.0], "cycle_s": p["net_cycle_s"], "size_m": [6.0, 4.0]},
+                                   "deck_hs_limit_m": p["deck_hs_limit"], "hangar": {"gannet": p["hangar_gannets"], "fulmar": p["hangar_fulmars"]},
+                                   "packs": {"gannet": p["gannet_packs"], "fulmar": p["fulmar_packs"]}, "charger_kW": round(s["charging_kW"] / 12, 2), "chargers": 12},
+                   "rates": {k: s[k] for k in ("vtol_launches_per_h", "vtol_recoveries_per_h", "fixed_wing_launches_per_h", "fixed_wing_recoveries_per_h",
+                                               "crates_per_h", "pack_kg_h", "baskets_per_h")},
+                   "price_eur": s["price_eur"], "day_rate_eur": s["day_rate_eur"]}
+    return card, models
+
+
+def _aero():
+    aero = os.path.join(HERE, "..", "..", "aero", "designs")
+    if aero not in sys.path:
+        sys.path.insert(0, aero)
+
+
+def gannet():
+    """Gannet, the cargo quad (labs/aero/designs/gannet.py): an air card - mass, payload, cruise, range, the pack,
+    the power at cruise and in the hover, the wind and deck limits. z = 0 the skids' bottom."""
+    _aero()
+    from gannet import Gannet
+    d, p, s = Gannet(), Gannet.p(), Gannet.sizing()
+    parts = [("gannet_body", "body", "#1f618d"), ("gannet_arms", "arms", "#17202a"), ("gannet_rotors", "rotors", "#aab7b8"),
+             ("gannet_skids", "skids", "#566573"), ("gannet_crate", "crate", "#f5f5f5")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 6.0) for n, k, c in parts]
+    _x_centre(models)
+    card = CARD | {"name": "gannet", "kind": "air", "air": "vtol", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [round(2 * p["arm"] / math.sqrt(2) / 1000 + p["prop_in"] * 0.0254, 2)] * 2 + [0.55],
+                   "mass_kg": s["empty_kg"], "mtow_kg": s["mtow_kg"], "payload_kg": p["payload_kg"], "battery_Wh": p["battery_wh"],
+                   "usable_Wh": s["usable_Wh"], "cruise_m_s": p["cruise"], "climb_m_s": 4.0, "cruise_alt_m": 60.0,
+                   "power_cruise_W": s["cruise_W"], "power_cruise_empty_W": s["cruise_empty_W"],
+                   "power_hover_W": s["hover_W"], "power_hover_empty_W": s["hover_empty_W"],
+                   "wh_per_km": s["wh_per_km"], "wh_per_km_empty": s["wh_per_km_empty"], "range_km": s["range_km"], "radius_km": s["radius_km"],
+                   "endurance_min": s["endurance_hover_min"], "wind_limit_m_s": s["wind_limit_m_s"], "deck_hs_limit_m": s["deck_hs_limit_m"],
+                   "launch": "pad", "recovery": "pad", "swap_s": s["swap_s"], "reserve": 0.15, "price_eur": s["price_eur"]}
+    return card, models
+
+
+def fulmar():
+    """Fulmar, the long-haul fixed-wing (labs/aero/designs/fulmar.py, on fixed_wing.FixedWing): an air card;
+    catapult launch and net recovery. Nose toward +x (the CAD's x runs aft: mirrored)."""
+    _aero()
+    from fulmar import Fulmar
+    d, p, s = Fulmar(), Fulmar.p(), Fulmar.sizing()
+    models = [_mesh(d.build(p | {"part": "aircraft"}), "fulmar_body", _hex("#f39c12"), 6.0)]
+    for m in models:
+        m["vertices"][0::3] = [-x for x in m["vertices"][0::3]]
+        m["vertices"][1::3] = [-y for y in m["vertices"][1::3]]
+    _x_centre(models)
+    card = CARD | {"name": "fulmar", "kind": "air", "air": "fixed_wing", "parts": [{"model": "fulmar_body", "color": models[0]["color"]}],
+                   "size": [round(p["fuselage_length"] / 1000, 2), p["span"] / 1000, 0.6],
+                   "mass_kg": s["empty_kg"], "mtow_kg": s["mtow_kg"], "payload_kg": p["payload_kg"], "battery_Wh": p["battery_wh"],
+                   "usable_Wh": s["usable_Wh"], "cruise_m_s": p["cruise"], "climb_m_s": 3.0, "cruise_alt_m": 150.0, "stall_m_s": s["stall_m_s"],
+                   "power_cruise_W": s["cruise_W"], "power_cruise_empty_W": s["cruise_empty_W"], "power_hover_W": None, "power_hover_empty_W": None,
+                   "wh_per_km": s["wh_per_km"], "wh_per_km_empty": s["wh_per_km_empty"], "range_km": s["range_km"], "radius_km": s["radius_km"],
+                   "endurance_min": s["endurance_min"], "wind_limit_m_s": s["wind_limit_m_s"], "deck_hs_limit_m": s["deck_hs_limit_m"],
+                   "launch": "catapult", "launch_m_s": s["launch_m_s"], "recovery": "net", "swap_s": 120.0, "reserve": 0.15,
+                   "price_eur": s["price_eur"]}
+    return card, models
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
             "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
             "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold,
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
-            "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat}
+            "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
+            "pinna": pinna, "gannet": gannet, "fulmar": fulmar}
 
 
 def export(out, only=None):

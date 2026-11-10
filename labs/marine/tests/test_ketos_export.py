@@ -129,3 +129,21 @@ def test_walrus_clams_export(tmp_path):
     assert b["capacity_kg"] == 20.0 and _meshes(tmp_path, b)
     boat = json.load(open(tmp_path / "clam_boat.card.json"))
     assert boat["carries"] == ["walrus"] and boat["parts"][0]["model"] == "workboat_hull"
+
+
+def test_carrier_and_drones_export(tmp_path):
+    ketos_export.export(str(tmp_path), {"pinna", "gannet", "fulmar"})
+    c = json.load(open(tmp_path / "pinna.card.json"))
+    assert c["kind"] == "boat" and c["autonomous"] and c["crew"] == 0 and len(c["flight_deck"]["pads"]) == 4
+    assert c["haul_min_per_basket"] < 3.0 and c["packing"]["crate_kg"] == 5.0 and "colregs" in c["autonomy"]
+    _meshes(tmp_path, c)
+    for name, kind in (("gannet", "vtol"), ("fulmar", "fixed_wing")):
+        a = json.load(open(tmp_path / f"{name}.card.json"))
+        assert a["kind"] == "air" and a["air"] == kind and a["payload_kg"] == 5.0
+        for k in ("mass_kg", "cruise_m_s", "range_km", "battery_Wh", "power_cruise_W", "wind_limit_m_s", "deck_hs_limit_m"):
+            assert a[k] and a[k] > 0, k
+        _meshes(tmp_path, a)
+    g = json.load(open(tmp_path / "gannet.card.json"))
+    assert g["power_hover_W"] > g["power_cruise_W"] and g["recovery"] == "pad"
+    f = json.load(open(tmp_path / "fulmar.card.json"))
+    assert f["power_hover_W"] is None and f["launch"] == "catapult" and f["wh_per_km"] < g["wh_per_km"]

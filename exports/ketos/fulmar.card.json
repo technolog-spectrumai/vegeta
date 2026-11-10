@@ -1,0 +1,48 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "fulmar",
+ "kind": "air",
+ "air": "fixed_wing",
+ "parts": [
+  {
+   "model": "fulmar_body",
+   "color": [
+    0.953,
+    0.612,
+    0.071
+   ]
+  }
+ ],
+ "size": [
+  2.1,
+  3.6,
+  0.6
+ ],
+ "mass_kg": 15.2,
+ "mtow_kg": 20.2,
+ "payload_kg": 5.0,
+ "battery_Wh": 1600.0,
+ "usable_Wh": 1088,
+ "cruise_m_s": 26.0,
+ "climb_m_s": 3.0,
+ "cruise_alt_m": 150.0,
+ "stall_m_s": 14.4,
+ "power_cruise_W": 792,
+ "power_cruise_empty_W": 739,
+ "power_hover_W": null,
+ "power_hover_empty_W": null,
+ "wh_per_km": 8.46,
+ "wh_per_km_empty": 7.9,
+ "range_km": 128.6,
+ "radius_km": 65.5,
+ "endurance_min": 82.4,
+ "wind_limit_m_s": 15.0,
+ "deck_hs_limit_m": 3.0,
+ "launch": "catapult",
+ "launch_m_s": 18.0,
+ "recovery": "net",
+ "swap_s": 120.0,
+ "reserve": 0.15,
+ "price_eur": 21000.0
+}

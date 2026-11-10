@@ -1,0 +1,78 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "gannet",
+ "kind": "air",
+ "air": "vtol",
+ "parts": [
+  {
+   "model": "gannet_body",
+   "color": [
+    0.122,
+    0.38,
+    0.553
+   ]
+  },
+  {
+   "model": "gannet_arms",
+   "color": [
+    0.09,
+    0.125,
+    0.165
+   ]
+  },
+  {
+   "model": "gannet_rotors",
+   "color": [
+    0.667,
+    0.718,
+    0.722
+   ]
+  },
+  {
+   "model": "gannet_skids",
+   "color": [
+    0.337,
+    0.396,
+    0.451
+   ]
+  },
+  {
+   "model": "gannet_crate",
+   "color": [
+    0.961,
+    0.961,
+    0.961
+   ]
+  }
+ ],
+ "size": [
+  1.79,
+  1.79,
+  0.55
+ ],
+ "mass_kg": 11.44,
+ "mtow_kg": 16.44,
+ "payload_kg": 5.0,
+ "battery_Wh": 1150.0,
+ "usable_Wh": 782,
+ "cruise_m_s": 15.0,
+ "climb_m_s": 4.0,
+ "cruise_alt_m": 60.0,
+ "power_cruise_W": 1564,
+ "power_cruise_empty_W": 907,
+ "power_hover_W": 2090,
+ "power_hover_empty_W": 1224,
+ "wh_per_km": 28.96,
+ "wh_per_km_empty": 16.8,
+ "range_km": 27.0,
+ "radius_km": 13.5,
+ "endurance_min": 22.4,
+ "wind_limit_m_s": 14.0,
+ "deck_hs_limit_m": 2.0,
+ "launch": "pad",
+ "recovery": "pad",
+ "swap_s": 90.0,
+ "reserve": 0.15,
+ "price_eur": 9800.0
+}

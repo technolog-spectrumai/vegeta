@@ -1,0 +1,203 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "pinna",
+ "kind": "boat",
+ "autonomous": true,
+ "crew": 0,
+ "operators_ashore": 0.333,
+ "parts": [
+  {
+   "model": "pinna_hulls",
+   "color": [
+    0.204,
+    0.286,
+    0.369
+   ]
+  },
+  {
+   "model": "pinna_deck",
+   "color": [
+    0.584,
+    0.647,
+    0.651
+   ]
+  },
+  {
+   "model": "pinna_house",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "pinna_flight_deck",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  },
+  {
+   "model": "pinna_pads",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  },
+  {
+   "model": "pinna_catapult",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  },
+  {
+   "model": "pinna_net",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "pinna_mast",
+   "color": [
+    0.816,
+    0.827,
+    0.831
+   ]
+  },
+  {
+   "model": "pinna_davits",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  24.0,
+  10.0,
+  11.0
+ ],
+ "draught_m": 1.5,
+ "displacement_t": 108.0,
+ "mass_kg": 96350,
+ "service_kn": 10.0,
+ "max_kn": 14.6,
+ "service_kW": 170,
+ "bed_load_kW": 82.0,
+ "power_W": 82000,
+ "battery_kWh": 350.0,
+ "endurance_days": 15.6,
+ "fuel_l_h_on_bed": 28.7,
+ "loads_kW": {
+  "DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": 45.0,
+  "4 Walruses on their tethers": 1.98,
+  "davits + reels (average)": 2.0,
+  "basket robot": 1.5,
+  "processing line + vision grader": 6.0,
+  "chiller + ice": 5.0,
+  "drone chargers (12 at 1C)": 16.0,
+  "autonomy: radars, lidar, cameras, compute, comms": 2.5,
+  "hotel": 2.0
+ },
+ "autonomy": {
+  "radar": "X- and S-band ARPA: targets out to 12 nm, the collision avoidance's tracks",
+  "ais": "class A transponder: the others see it, it sees them",
+  "lidar_cameras": "360 deg lidar ring, day and IR cameras: small craft, buoys, swimmers, the drones on deck",
+  "gnss_ins": "dual RTK GNSS + fibre-optic INS: DP over the bed, the pads' motion for the drones",
+  "comms": "LEO satcom + 4G/LTE + UHF to shore; 900 MHz + LTE to the drones; ADS-B in",
+  "colregs": "COLREGs rules 8-17 in the autopilot: give way / stand on, a closest-approach limit of 0.3 nm",
+  "supervision": "one shore operator per 3 vessels: alarms, a remote takeover (teleop) when a fault asks"
+ },
+ "carries": [
+  "walrus",
+  "gannet",
+  "fulmar"
+ ],
+ "davits": 4,
+ "tether_reels": 4,
+ "usbl": true,
+ "haul_min_per_basket": 1.5,
+ "basket_robot": true,
+ "packing": {
+  "crate_kg": 5.0,
+  "pack_s": 60.0,
+  "store_kg": 2000.0,
+  "ice": true
+ },
+ "hold_kg": 2000.0,
+ "flight_deck": {
+  "z_m": 5.85,
+  "pads": [
+   [
+    -6.2,
+    2.4
+   ],
+   [
+    -6.2,
+    -2.4
+   ],
+   [
+    -2.6,
+    2.4
+   ],
+   [
+    -2.6,
+    -2.4
+   ]
+  ],
+  "pad_cycle_s": 170.0,
+  "land_lock_s": 40.0,
+  "crate_load_s": 40.0,
+  "swap_s": 90.0,
+  "launch_s": 30.0,
+  "catapult": {
+   "at": [
+    -0.2,
+    0.0
+   ],
+   "cycle_s": 240.0,
+   "stroke_m": 7.0
+  },
+  "net": {
+   "at": [
+    -9.1,
+    0.0
+   ],
+   "cycle_s": 300.0,
+   "size_m": [
+    6.0,
+    4.0
+   ]
+  },
+  "deck_hs_limit_m": 2.0,
+  "hangar": {
+   "gannet": 8,
+   "fulmar": 3
+  },
+  "packs": {
+   "gannet": 24,
+   "fulmar": 9
+  },
+  "charger_kW": 1.33,
+  "chargers": 12
+ },
+ "rates": {
+  "vtol_launches_per_h": 240.0,
+  "vtol_recoveries_per_h": 84.7,
+  "fixed_wing_launches_per_h": 15.0,
+  "fixed_wing_recoveries_per_h": 12.0,
+  "crates_per_h": 60,
+  "pack_kg_h": 300,
+  "baskets_per_h": 40
+ },
+ "price_eur": 3927780,
+ "day_rate_eur": 1400.0
+}
