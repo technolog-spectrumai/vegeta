@@ -509,11 +509,67 @@ def cable_joint():
     return card, models
 
 
+def walrus():
+    """Walrus, the clam-picking seabed crawler (Ketos Clams): tracks, a belly gantry with soft grippers and a pulsed
+    jet, two digging arms, baskets on float lines, tethered to the harvest boat. z = 0 the track bottom (on the bed)."""
+    from walrus import Walrus, PARTS, CLAM, REQUIREMENTS
+    d = Walrus()
+    p = Walrus.p()
+    s = Walrus.sizing()
+    parts = [("walrus_tracks", "tracks", "#1b2631"), ("walrus_frame", "frame", "#7f8c8d"), ("walrus_housing", "housing", "#2e86c1"),
+             ("walrus_gantry", "gantry", "#e67e22"), ("walrus_basket", "basket", "#f4d03f"), ("walrus_thrusters", "thrusters", "#222222"),
+             ("walrus_lights", "lights", "#ecf0f1"), ("walrus_arms", "arms", "#c0392b")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 4.0) for n, k, c in parts]
+    _x_centre(models)
+    card = CARD | {"name": "walrus", "kind": "crawler", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [p["length"] / 1000, p["width"] / 1000, p["height"] / 1000],
+                   "mass_kg": round(s["mass_wet_vehicle_kg"], 2), "mass_with_tether_kg": round(s["mass_in_air_kg"], 2),
+                   "sink_kg": round(s["sink_kg"], 2), "lift_margin": round(s["lift_margin"], 2),
+                   "crawl_speed_m_s": p["crawl_speed"], "swath_m": p["swath"], "pickers": p["pickers"], "pick_s": p["pick_s"],
+                   "jet": {"kind": "pulsed water jet + nozzle", "power_W": PARTS["jet pump + nozzle (pulsed)"][2]},
+                   "arms": {"count": 2, "dig_depth_m": p["dig_depth"] / 1000, "dig_fraction": p["dig_fraction"],
+                            "dig_m3_h": round(s["dig_m3_h"], 3), "duty": round(s["dig_duty"], 3)},
+                   "basket": {"kg": p["basket_kg"], "litres": 30, "count": 2, "swap_min": s["trip_min"], "on": "float line"},
+                   "sizing_chute": True, "clam": CLAM,
+                   "swim_speed_m_s": round(s["v_swim_m_s"], 3), "transit_m": p["transit_m"], "nav_error_m": round(s["nav_error_m"], 2),
+                   "hold_current_m_s": 0.5 * math.sqrt(1 + s["hold_current_margin"]),
+                   "battery_Wh": None, "power": "tether", "power_W": round(s["power_W"], 1), "boat_power_W": p["boat_power_W"],
+                   "hotel_W": round(sum(w for _, _, w, _ in PARTS.values()), 1),
+                   "tether": {"length_m": 150.0, "diameter_m": 0.012, "cd": 1.2, "from": "clam_boat"},
+                   "max_depth_m": REQUIREMENTS["depth_m"], "shift_h": 8.0, "shifts": p["shifts"],
+                   "rate_per_h": round(s["rate_per_h"]), "rate_kg_h": round(s["rate_kg_h"], 2), "day_kg": round(s["day_kg"], 1),
+                   "price_eur": round(s["price_eur"])}
+    return card, models
+
+
+def clam_basket():
+    """The 30 L basket on its float line: released full from the crawler's back, hauled by the crew."""
+    from walrus import Walrus
+    p = Walrus.p()
+    models = [_mesh(Walrus()._basket(p), "clam_basket_body", _hex("#f4d03f"), 4.0)]
+    _x_centre(models)
+    _centre_z(models)
+    card = CARD | {"name": "clam_basket", "kind": "basket", "parts": [{"model": "clam_basket_body", "color": models[0]["color"]}],
+                   "capacity_kg": p["basket_kg"], "litres": 30, "mass_kg": 1.5, "float_line_m": 35.0, "haul_min": 3.0}
+    return card, models
+
+
+def clam_boat():
+    """The harvest boat Walrus works from: the farm workboat's hull (its meshes), a davit per crawler, the tether
+    reels and topside, the USBL head, a sorting table and chilled clam bins."""
+    card, _ = workboat()
+    card = card | {"name": "clam_boat", "carries": ["walrus"], "davits": 4, "tether_reels": 4, "usbl": True,
+                   "hold_kg": 3000.0, "crew": 2, "haul_min_per_basket": 3.0, "power_W": 6000.0, "day_rate_eur": 1200.0,
+                   "price_eur": 450000}
+    return card, []
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
             "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
             "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold,
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
-            "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint}
+            "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
+            "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat}
 
 
 def export(out, only=None):
