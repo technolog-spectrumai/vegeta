@@ -36,7 +36,7 @@ OUT = HERE / "output"
 def play(mode, duration, seed, kw):
     if mode == "circus":
         from air_match import circus
-        return circus.race(seed, kw.get("laps", 3), wind=kw.get("wind"), duration=max(duration, 150.0))
+        return circus.race(seed, kw.get("laps", 3), wind=kw.get("wind"), duration=max(duration, 150.0), n_balloons=kw.get("circus_balloons", 14))
     if mode == "formation":
         from air_match import formation
         return formation.fly(7, duration, seed)
@@ -80,15 +80,16 @@ def main(argv=None) -> int:
     if args.mode == "circus":
         from air_match import circus
         kw["laps"] = args.laps
+        kw["circus_balloons"] = args.balloons if args.balloons != 8 else 14            # --balloons: how many over the track (default 14)
         kw["wind"] = None if args.wind is None else dict(circus.WIND, speed=args.wind, gust=0.0 if args.wind == 0 else circus.WIND["gust"])
         if args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
             import pandas as pd
-            t = circus.tournament(args.tournament, args.seed, args.laps, wind=kw["wind"],
+            t = circus.tournament(args.tournament, args.seed, args.laps, wind=kw["wind"], n_balloons=kw["circus_balloons"],
                                   progress=lambda i, rc: print(f"race {i + 1} (seed {rc['seed']}): " + " > ".join(rc["order"]) + f"   {rc['time']} s, {rc['faults']} faults", flush=True))
             pd.set_option("display.width", 250); pd.set_option("display.max_colwidth", 70)
             print(pd.DataFrame(t["table"]).to_string(index=False))
             OUT.mkdir(parents=True, exist_ok=True)
-            tag = "" if args.wind is None else f"_wind{args.wind:g}"
+            tag = ("" if args.wind is None else f"_wind{args.wind:g}") + ("" if kw["circus_balloons"] == 14 else f"_balloons{kw['circus_balloons']}")
             (OUT / f"air_circus_tournament{tag}.json").write_text(json.dumps(t, indent=1, default=float))
             print("written:", OUT / f"air_circus_tournament{tag}.json")
             return 0

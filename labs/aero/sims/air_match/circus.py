@@ -74,7 +74,7 @@ class Stadium(ar.Arena):
         while len(pts) < self.n_balloons:
             p = np.array([rng.uniform(-0.46, 0.46) * self.length, rng.uniform(-0.45, 0.45) * self.width, rng.uniform(2.0, 9.0)])
             if abs(p[1]) > self.spina_w / 2 + 2.0 or abs(p[0]) > self.half + 3.0:
-                if all(np.linalg.norm(p - q) > 5.0 for q in pts) and not (abs(p[0]) < 22.0 and p[1] < 0):   # the grid is clear
+                if all(np.linalg.norm(p - q) > (5.0 if self.n_balloons <= 20 else 3.0) for q in pts) and not (abs(p[0]) < 22.0 and p[1] < 0):   # the grid is clear
                     pts.append(p)
         return np.array(pts)
 
@@ -304,8 +304,8 @@ class Race(mt.Match):
         return r
 
 
-def race(seed: int = 1, laps: int = 3, strategies=None, grid=None, wind: dict | None = None, duration: float = 150.0) -> dict:
-    return Race(strategies, seed, laps, duration, grid=grid, wind=wind).run()
+def race(seed: int = 1, laps: int = 3, strategies=None, grid=None, wind: dict | None = None, duration: float = 150.0, n_balloons: int = 14) -> dict:
+    return Race(strategies, seed, laps, duration, grid=grid, wind=wind, n_balloons=n_balloons).run()
 
 
 def solo(strategy: Strategy, laps: int = 3, wind: dict | None = None, balloons: int = 0, seed: int = 1) -> dict:
@@ -313,7 +313,7 @@ def solo(strategy: Strategy, laps: int = 3, wind: dict | None = None, balloons: 
     return Race([strategy], seed, laps, 120.0, wind=wind, n_balloons=balloons).run()
 
 
-def tournament(n: int = 7, seed: int = 1, laps: int = 3, strategies=None, wind: dict | None = None, progress=None) -> dict:
+def tournament(n: int = 7, seed: int = 1, laps: int = 3, strategies=None, wind: dict | None = None, progress=None, n_balloons: int = 14) -> dict:
     """``n`` races of all the strategies against each other, the grid turned one place each race: per strategy the
     wins, the mean place, the races finished, the mean race time, the best lap and the faults per race."""
     strats = list(strategies or STRATEGIES)
@@ -322,7 +322,7 @@ def tournament(n: int = 7, seed: int = 1, laps: int = 3, strategies=None, wind: 
     races = []
     for i in range(n):
         grid = [(j + i) % k for j in range(k)]
-        r = Race(strats, seed + i, laps, grid=grid, wind=wind).run()
+        r = Race(strats, seed + i, laps, grid=grid, wind=wind, n_balloons=n_balloons).run()
         races.append({"seed": seed + i, "order": [s["strategy"] for s in r["race"]["standings"]], "winner": r["race"]["winner"],
                       "time": r["race"]["standings"][0]["time_s"], "faults": sum(s["faults"] for s in r["race"]["standings"])})
         for s in r["race"]["standings"]:
