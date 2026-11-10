@@ -52,8 +52,8 @@ a slope), its weakest direction is as strong as B's, it lifts for the least powe
 power ahead than A. The horizontal four sit in the deck's corners vectored 45 deg (front pair toward the bow, rear
 pair toward the stern, crossed); the vertical four over the tracks. Thrust per watt at full: 0.61 N/W against v0's
 0.24 (x2.5), at 1323 rpm instead of ~5100. The crawler gains 2.1 kg (sits 2.9 kg on the bed, lift margin
-+1.37), swims at 0.43 m/s, and the price rises to EUR 30.4k: **EUR 0.4k over the 30k target** - the owner's
-call (layout B would stay under it, without roll control).
++1.37), swims at 0.43 m/s, and the price rises to EUR 30.4k: **EUR 0.4k over the 30k target, approved by the owner** (layout C kept; was the owner's
+call - layout B would have stayed under it, without roll control).
 
 ## What the selectivity buys
 
