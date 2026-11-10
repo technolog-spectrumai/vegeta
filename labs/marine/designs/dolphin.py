@@ -43,9 +43,9 @@ REQUIREMENTS = {
 }
 #: The Emerillion as Dolphin sees it (``labs/aero/designs/emerillion.py`` is the design): the numbers the hangar,
 #: the pad and the flight plan use.
-EMERILLION = {"mass_kg": 3.33, "span_m": 1.4, "folded_span_m": 0.25, "length_m": 1.05, "payload_kg": 0.2,
-              "cruise_m_s": 22.0, "hover_W": 1500.0, "cruise_W": 350.0, "battery_wh": 222.0, "hover_s": 60.0,
-              "charge_h": 1.0, "price_eur": 4800.0}
+EMERILLION = {"mass_kg": 3.11, "span_m": 0.7, "folded_span_m": 0.25, "length_m": 1.05, "payload_kg": 0.2,
+              "cruise_m_s": 28.0, "hover_W": 1270.0, "cruise_W": 420.0, "battery_wh": 222.0, "hover_s": 60.0,
+              "charge_h": 1.0, "price_eur": 4800.0}      # the X-wing: two 80 mm EDFs in the wing-tip pods
 #: Bought and built parts: (mass kg, volume L, average power W, price EUR) — class values, not quotes.
 PARTS = {
     "hull (GRP, Ø600 x 3600, 60 m) + frames + foam": (118.0, 175.0, 0.0, 40000.0),
@@ -125,11 +125,12 @@ class Dolphin(Design):
     def _hull(self, p):
         L, D = p["length"], p["hull_d"]
         z = D / 2
-        body = cq.Workplane("YZ").center(0, z).circle(D / 2).extrude(L * 0.55, both=True)
+        # the parallel body is 0.6 L, the hemispherical nose D/2, the tail cone 0.3 L: 3.54 m of the 3.6 m length
+        body = cq.Workplane("YZ").center(0, z).circle(D / 2).extrude(L * 0.3, both=True)
         nose = cq.Workplane("XY").add(cq.Solid.makeSphere(D / 2, cq.Vector(0, 0, 0))).val().scale(1.0)
-        nose = cq.Workplane("XY").add(nose).translate((L * 0.55, 0, z))
-        nose = nose.intersect(cq.Workplane("XY").box(L, D * 2, D * 2).translate((L * 0.55 + L / 2, 0, z)))
-        tail = cq.Workplane("XY").add(cq.Solid.makeCone(D / 2, 60, L * 0.3, cq.Vector(-L * 0.55, 0, z), cq.Vector(-1, 0, 0)))
+        nose = cq.Workplane("XY").add(nose).translate((L * 0.3, 0, z))
+        nose = nose.intersect(cq.Workplane("XY").box(L, D * 2, D * 2).translate((L * 0.3 + L / 2, 0, z)))
+        tail = cq.Workplane("XY").add(cq.Solid.makeCone(D / 2, 60, L * 0.3, cq.Vector(-L * 0.3, 0, z), cq.Vector(-1, 0, 0)))
         return body.union(nose).union(tail)
 
     def _sail(self, p):
@@ -158,23 +159,26 @@ class Dolphin(Design):
 
     def _propulsor(self, p):
         L, D = p["length"], p["hull_d"]
-        duct = cq.Workplane("YZ").workplane(offset=-L * 0.85 - 60).center(0, D / 2).circle(150).circle(135).extrude(130)
-        hub = cq.Workplane("YZ").workplane(offset=-L * 0.85 - 40).center(0, D / 2).circle(40).extrude(90)
+        duct = cq.Workplane("YZ").workplane(offset=-L * 0.6 - 60).center(0, D / 2).circle(150).circle(135).extrude(130)
+        hub = cq.Workplane("YZ").workplane(offset=-L * 0.6 - 40).center(0, D / 2).circle(40).extrude(90)
         fins = None
         for a in (0, 90, 180, 270):
-            f = cq.Workplane("XY").box(220, 10, 180).translate((-L * 0.78, 0, D / 2 + 150)).rotate((-L * 0.78, 0, D / 2), (-L * 0.78 + 1, 0, D / 2), a)
+            f = cq.Workplane("XY").box(220, 10, 180).translate((-L * 0.55, 0, D / 2 + 150)).rotate((-L * 0.55, 0, D / 2), (-L * 0.55 + 1, 0, D / 2), a)
             fins = f if fins is None else fins.union(f)
         return duct.union(hub).union(fins)
 
     def _drone(self, p):
-        """An Emerillion standing nose-up on the pad (a stand-in: fuselage, wing, four fin legs)."""
+        """An Emerillion standing nose-up on the pad (a stand-in for the X-wing: fuselage, the 0.7 m wing with its
+        two tip pods, four X fins as the legs)."""
         L, D = p["length"], p["hull_d"]
         x0, z0 = -L * 0.2, D + 36
-        fus = cq.Workplane("XY").circle(38).extrude(1050).translate((x0, 0, z0 + 40))
-        wing = cq.Workplane("XY").box(140, 1400, 18).translate((x0, 0, z0 + 650))
+        fus = cq.Workplane("XY").circle(45).extrude(1050).translate((x0, 0, z0 + 40))
+        wing = cq.Workplane("XY").box(160, 600, 18).translate((x0, 0, z0 + 560))
+        for sy in (1, -1):
+            wing = wing.union(cq.Workplane("XY").circle(47).extrude(260).translate((x0, sy * 302, z0 + 440)))
         legs = None
         for a in (45, 135, 225, 315):
-            leg = cq.Workplane("XY").box(150, 8, 220).translate((x0 + 95, 0, z0 + 110)).rotate((x0, 0, 0), (x0, 0, 1), a)
+            leg = cq.Workplane("XY").box(130, 6, 180).translate((x0 + 110, 0, z0 + 130)).rotate((x0, 0, 0), (x0, 0, 1), a)
             legs = leg if legs is None else legs.union(leg)
         return fus.union(wing).union(legs)
 

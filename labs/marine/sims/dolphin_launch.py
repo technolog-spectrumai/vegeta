@@ -5,8 +5,10 @@ level flight. No OpenGL here: the frames are drawn from the model's geoms with m
 
     python dolphin_launch.py [out.mp4]      # ~25 s of simulation; a minute to render
 
-The drone is a point-mass-with-attitude model of the Emerillion (3.3 kg, 44 N of thrust, a 0.3 m² wing at Cl up to
-1.0): thrust along its axis, a PD on its attitude (torques about the centre of mass), lift once it has airspeed.
+The drone is a point-mass-with-attitude model of the X-wing Emerillion (3.1 kg, 44 N from the two wing-tip fans, a
+0.7 x 0.16 m wing at Cl up to 1.2, so it needs ~19 m/s before the wing carries it): thrust along its axis, a PD on
+its attitude (torques about the centre of mass), lift once it has airspeed. The geoms are the X-wing's: the slender
+fuselage with its canopy, the short wing with a fan pod at each tip, the four tail fins it stands on.
 It is the launch *sequence* — timing, clearances, the hull's motion under the drone — not the aerodynamics.
 """
 from __future__ import annotations
@@ -21,7 +23,7 @@ import mujoco
 import numpy as np
 
 RHO_AIR, G = 1.2, 9.81
-DRONE = dict(mass=3.3, thrust_max=44.0, wing_area=0.3, cl_max=1.0, span=1.4, length=1.05)
+DRONE = dict(mass=3.11, thrust_max=44.0, wing_area=0.7 * 0.16, cl_max=1.2, span=0.7, length=1.05)
 HULL = dict(length=3.6, d=0.6)
 
 XML = f"""
@@ -35,9 +37,9 @@ XML = f"""
   <worldbody>
     <geom name="sea" type="plane" size="30 30 0.1" rgba="0.45 0.65 0.85 1" pos="0 0 0" contype="3" conaffinity="3"/>
     <body name="hull" mocap="true" pos="0 0 0.05" childclass="hullg">
-      <geom name="hull_body" type="cylinder" size="0.3 1.6" euler="0 90 0" rgba="0.17 0.37 0.54 1" pos="0 0 0.3"/>
-      <geom name="hull_nose" type="sphere" size="0.3" pos="1.6 0 0.3" rgba="0.17 0.37 0.54 1"/>
-      <geom name="hull_tail" type="cylinder" size="0.12 0.4" euler="0 90 0" pos="-2.0 0 0.3" rgba="0.17 0.37 0.54 1"/>
+      <geom name="hull_body" type="cylinder" size="0.3 1.08" euler="0 90 0" rgba="0.17 0.37 0.54 1" pos="0 0 0.3"/>
+      <geom name="hull_nose" type="sphere" size="0.3" pos="1.08 0 0.3" rgba="0.17 0.37 0.54 1"/>
+      <geom name="hull_tail" type="cylinder" size="0.14 0.5" euler="0 90 0" pos="-1.58 0 0.3" rgba="0.17 0.37 0.54 1"/>
       <geom name="sail" type="box" size="0.25 0.09 0.15" pos="0.45 0 0.75" rgba="0.2 0.27 0.33 1"/>
       <geom name="mast" type="cylinder" size="0.02 0.2" pos="0.6 0 1.1" rgba="0.2 0.27 0.33 1"/>
       <geom name="bay" type="box" size="0.62 0.21 0.02" pos="-0.72 0 0.58" rgba="0.5 0.55 0.6 1"/>
@@ -53,13 +55,16 @@ XML = f"""
     </body>
     <body name="drone" pos="-0.72 0 0.42" childclass="droneg">
       <freejoint name="drone"/>
-      <geom name="fus" type="capsule" size="0.04 0.5" pos="0 0 0.55" rgba="0.95 0.77 0.06 1" mass="2.3"/>
-      <geom name="wing" type="box" size="0.07 0.7 0.01" pos="0 0 0.7" rgba="0.95 0.77 0.06 1" mass="0.6"/>
-      <geom name="leg1" type="box" size="0.07 0.004 0.11" pos="0.14 0.14 0.12" euler="0 0 45" rgba="0.3 0.3 0.3 1" mass="0.1"/>
-      <geom name="leg2" type="box" size="0.07 0.004 0.11" pos="-0.14 0.14 0.12" euler="0 0 -45" rgba="0.3 0.3 0.3 1" mass="0.1"/>
-      <geom name="leg3" type="box" size="0.07 0.004 0.11" pos="-0.14 -0.14 0.12" euler="0 0 45" rgba="0.3 0.3 0.3 1" mass="0.1"/>
-      <geom name="leg4" type="box" size="0.07 0.004 0.11" pos="0.14 -0.14 0.12" euler="0 0 -45" rgba="0.3 0.3 0.3 1" mass="0.1"/>
-      <site name="cg" pos="0 0 0.45"/>
+      <geom name="fus" type="capsule" size="0.045 0.47" pos="0 0 0.6" rgba="0.95 0.77 0.06 1" mass="1.9"/>
+      <geom name="canopy" type="ellipsoid" size="0.07 0.045 0.11" pos="0.05 0 0.74" rgba="0.55 0.75 0.9 1" mass="0.05"/>
+      <geom name="wing" type="box" size="0.08 0.3 0.009" pos="0 0 0.5" rgba="0.95 0.77 0.06 1" mass="0.3"/>
+      <geom name="pod1" type="cylinder" size="0.047 0.13" pos="0 0.303 0.5" rgba="0.3 0.3 0.3 1" mass="0.33"/>
+      <geom name="pod2" type="cylinder" size="0.047 0.13" pos="0 -0.303 0.5" rgba="0.3 0.3 0.3 1" mass="0.33"/>
+      <geom name="fin1" type="box" size="0.065 0.003 0.09" pos="0.1 0.1 0.12" euler="0 0 45" rgba="0.3 0.3 0.3 1" mass="0.05"/>
+      <geom name="fin2" type="box" size="0.065 0.003 0.09" pos="-0.1 0.1 0.12" euler="0 0 -45" rgba="0.3 0.3 0.3 1" mass="0.05"/>
+      <geom name="fin3" type="box" size="0.065 0.003 0.09" pos="-0.1 -0.1 0.12" euler="0 0 45" rgba="0.3 0.3 0.3 1" mass="0.05"/>
+      <geom name="fin4" type="box" size="0.065 0.003 0.09" pos="0.1 -0.1 0.12" euler="0 0 -45" rgba="0.3 0.3 0.3 1" mass="0.05"/>
+      <site name="cg" pos="0 0 0.5"/>
     </body>
   </worldbody>
   <equality>
@@ -183,13 +188,16 @@ def _cyl(c, R, r, hl, n=12, caps=True):
     return out
 
 
-def _sphere(c, r, n=6):
+def _sphere(c, r, n=6, R=None):
+    """A sphere of radius ``r``, or with ``r`` a 3-vector and ``R`` the ellipsoid's axes."""
     out = []
+    rr = np.broadcast_to(np.asarray(r, float), (3,))
+    R = np.eye(3) if R is None else R
     th, ph = np.linspace(0, np.pi, n + 1), np.linspace(0, 2 * np.pi, 2 * n + 1)
     for i in range(n):
         for j in range(2 * n):
             pts = [(th[i], ph[j]), (th[i + 1], ph[j]), (th[i + 1], ph[j + 1]), (th[i], ph[j + 1])]
-            out.append(np.array([[r * math.sin(a) * math.cos(b), r * math.sin(a) * math.sin(b), r * math.cos(a)] for a, b in pts]) + c)
+            out.append(np.array([[rr[0] * math.sin(a) * math.cos(b), rr[1] * math.sin(a) * math.sin(b), rr[2] * math.cos(a)] for a, b in pts]) @ R.T + c)
     return out
 
 
@@ -204,6 +212,8 @@ def draw_frame(ax, snap, t):
             polys = _cyl(c, R, sz[0], sz[1], caps=False) + _sphere(c + R[:, 2] * sz[1], sz[0], 4) + _sphere(c - R[:, 2] * sz[1], sz[0], 4)
         elif gtype == mujoco.mjtGeom.mjGEOM_SPHERE:
             polys = _sphere(c, sz[0])
+        elif gtype == mujoco.mjtGeom.mjGEOM_ELLIPSOID:
+            polys = _sphere(c, sz[:3], 5, R)
         else:
             continue
         ax.add_collection3d(Poly3DCollection(polys, facecolors=[rgba], edgecolors=[rgba * [0.6, 0.6, 0.6, 1]], linewidths=0.2, shade=True))
@@ -216,7 +226,7 @@ def draw_frame(ax, snap, t):
     ax.plot_surface(X, Y, np.zeros_like(X), color="#7fb3d5", alpha=0.35)
     ax.set_xlim(mid[0] - span, mid[0] + span); ax.set_ylim(mid[1] - span, mid[1] + span); ax.set_zlim(max(mid[2] - span, -0.5), max(mid[2] - span, -0.5) + 2 * span)
     ax.set_box_aspect((1, 1, 1)); ax.view_init(elev=14, azim=-50); ax.set_axis_off()
-    phase = ("hatch opening" if t < SEQ["lift"][0] else "the lift raises the drone" if t < SEQ["release"] else
+    phase = ("hatch opening" if t < SEQ["lift"][0] else "the lift raises the X-wing" if t < SEQ["release"] else
              "hover climb" if t < SEQ["pitch_over"] else "pitch-over into level flight")
     ax.set_title(f"t = {t:4.1f} s — {phase};  drone at {dz:.1f} m, {snap['speed']:.1f} m/s", fontsize=11, loc="left")
 
