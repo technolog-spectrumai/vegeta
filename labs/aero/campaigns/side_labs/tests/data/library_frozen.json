@@ -1,11 +1,11 @@
 {
  "KINDS": {
   "cfd": {
-   "title": "CFD \u2014 the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)",
+   "title": "CFD — the airframe with the propellers as rotor disks (Aeromant / OpenFOAM)",
    "script": "labs/aero/campaigns/side_labs/kestrel/airframe_cfd.py",
    "workflow": "airframe_cfd",
    "needs": "OpenFOAM (openfoam.com or .org); 4 cores recommended",
-   "time": "screening case 10\u201320 min, fine case ~1 h",
+   "time": "screening case 10–20 min, fine case ~1 h",
    "options": [
     [
      "--variant",
@@ -32,7 +32,7 @@
    ]
   },
   "fea": {
-   "title": "FEA \u2014 the carbon frame and the printed spar\u2013post joint (Talos: Gmsh + CalculiX)",
+   "title": "FEA — the carbon frame and the printed spar–post joint (Talos: Gmsh + CalculiX)",
    "script": "labs/aero/campaigns/side_labs/kestrel/structure_fea.py",
    "workflow": "structure_fea",
    "needs": "CalculiX ccx on the PATH, Gmsh (python module)",
@@ -58,7 +58,7 @@
  "BOOKS": {
   "kestrel": {
    "code": "K",
-   "title": "Kestrel-4Q \u2014 the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
+   "title": "Kestrel-4Q — the zero-stagger biplane quadrotor tailsitter (variants 4Q-1, 4Q-2, 4Q-3)",
    "design": "designs/kestrel.py and kestrel_campaigns.py",
    "variants": [
     "4Q-1",
@@ -138,7 +138,7 @@
   },
   "kestrel-x": {
    "code": "X",
-   "title": "Kestrel-X-C \u2014 the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
+   "title": "Kestrel-X-C — the shallow X-wing with the payload module (variants X-C, X-C45, X-CX)",
    "design": "designs/exp/kestrel_xc.py",
    "variants": [
     "X-C",
@@ -159,6 +159,32 @@
     "panel": {
      "kind": "fea",
      "campaign": "panel",
+     "prerequisites": []
+    }
+   }
+  },
+  "emerillon": {
+   "code": "E",
+   "title": "Émerillon — the electric speed quadcopter (variants ER1, ER2)",
+   "design": "designs/emerillon.py, emerillon_flight.py and emerillon_campaigns.py",
+   "variants": [
+    "ER1",
+    "ER2"
+   ],
+   "chapters": {
+    "airframe-drag": {
+     "kind": "cfd",
+     "campaign": "drag",
+     "prerequisites": []
+    },
+    "airframe-alpha": {
+     "kind": "cfd",
+     "campaign": "alpha",
+     "prerequisites": []
+    },
+    "arm": {
+     "kind": "fea",
+     "campaign": "arm",
      "prerequisites": []
     }
    }

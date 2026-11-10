@@ -26,7 +26,7 @@ import importlib  # noqa: E402
 
 WORKFLOW = "structure_fea"
 BOOK = "kestrel"
-CAMPAIGNS = {"kestrel": "kestrel_campaigns", "kestrel-x": "kestrel_xc_campaigns"}     # the book → its campaign module (the same interface)
+CAMPAIGNS = {"kestrel": "kestrel_campaigns", "kestrel-x": "kestrel_xc_campaigns", "emerillon": "emerillon_campaigns"}     # the book → its campaign module (the same interface)
 kc = None
 KIND = "fea"
 
@@ -61,6 +61,9 @@ def main(argv=None, book: str = "kestrel") -> int:
         for c in cases:
             if c.name in names:
                 print(f"  {c.name:18s} {c.part:6s} {c.kind:7s} {c.description}")
+        if hasattr(kc, "list_footer"):                               # a book that is not a Kestrel says its own last line
+            print("\n" + kc.list_footer(veh, KIND))
+            return 0
         print(f"\nvehicle: {veh.name}, {veh.mass:.3f} kg; materials carbon {kc.kfe.CARBON['strength']} MPa, PETG {kc.kfe.PETG['strength']} / {kc.kfe.PETG['strength_z']} MPa across layers; ultimate ×{kc.kfe.ULTIMATE}")
         return 0
 

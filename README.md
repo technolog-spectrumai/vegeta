@@ -317,7 +317,21 @@ speed, the run, the trade with its front and three picks (budget, knee, fastest;
 limits), sensitivities (drag margin 1.0–2.5, printed mass, the price spread), the arm in Talos and the prints. Everything is
 a hand model or a shop listing: nothing is measured, the propeller maps are uncalibrated. `labs/aero/sims/emerillon_trade.py`
 re-runs the trade (a minute and a half) into `labs/aero/designs/data/emerillon_trade.json`; `EMERILLON_TRADE=run` re-runs
-it in the notebook. The committed notebook is unexecuted. (MERLIN keeps its name: it is still the wildfire sampler of 26, 26b
+it in the notebook. The committed notebook is unexecuted. **Two variants** (`ef.VARIANTS`): **ER1**, the cheapest build that
+flies the run (APC 6x6E, a CNHL 6S 1300 mAh: about 383 USD, 261 km/h), and **ER2**, the knee (383 km/h). **Altitude**
+(`emerillon_mission.ceiling`, an economy climb in slices): thrust is not the limit — at 7 km the static thrust is still
+several times the weight — the pack is: as built ER1 reaches about 3.5 km and ER2 about 4.5 km with a landing and a 20 %
+reserve; ER1 makes its 4 km on ER2's pack, ER2 its 7 km on two packs in parallel, landing a little under the reserve
+(`ef.HIGH`, `ceiling_options`). **Five flights** (`labs/aero/designs/emerillon_mission.py`, a point-mass simulation with a body axis on
+the tabulated drive: times, speeds, energy and margins, not handling; `labs/aero/sims/emerillon_mission.py` writes a figure per
+flight): to a wildfire and back at the fastest pace the pack allows, a chase round a mountain, a chase of a boat over the sea in
+a gusty crosswind, the climb to the ceiling target with a flat fall back, and a fast climb over Warsaw with a swoop and a slow
+landing on the roof of the Palace of Culture and Science. **The solver runs are a workflow book**, `emerillon` (code **E**,
+`labs/aero/designs/emerillon_campaigns.py` behind the shared Kestrel scripts): **E1** `airframe-drag` (the solid aircraft in axial
+flow at three speeds: the drag area and the margin the build-up needs), **E2** `airframe-alpha` (0–90° of incidence: the normal
+force of the trim and the braking), **E3** `arm` (one printed arm: thrust, a 5 g manoeuvre, a landing knock, and its modes
+against the rotor's 1P) — `wf E1 --variant ER2 --prepare-only` writes the cases, `wf E1 --variant ER2 --detach` runs them; none
+has been run. (MERLIN keeps its name: it is still the wildfire sampler of 26, 26b
 and 27, and PEREGRINE and FALCO are built on its body.)
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —

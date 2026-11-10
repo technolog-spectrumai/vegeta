@@ -35,6 +35,7 @@ import math
 from dataclasses import asdict, dataclass
 
 import numpy as np
+from ogma import atmosphere as og_atm
 from ogma import mass as og_mass
 from ogma.aero import cf_turbulent
 from ogma.units import G, NU_AIR as NU, RHO0 as RHO
@@ -167,15 +168,28 @@ def mass_budget(c: Config) -> og_mass.Budget:
     return b
 
 
+# =============================================================================================================== air
+def air_at(altitude: float = 0.0) -> dict:
+    """The standard atmosphere at ``altitude`` [m] as the flight model reads it: rho, a (speed of sound), nu, T_C."""
+    if not altitude:
+        return SEA_LEVEL
+    a = og_atm.atmosphere(float(altitude))
+    return {"rho": a["rho"], "a": a["a"], "nu": a["nu"], "T_C": a["T_C"], "h": float(altitude)}
+
+
+SEA_LEVEL = {"rho": RHO, "a": A_SOUND, "nu": NU, "T_C": 15.0, "h": 0.0}
+
+
 # ============================================================================================================== drag
-def drag_buildup(c: Config, V: float, slip: float = 1.0, margin: float | None = None) -> dict:
+def drag_buildup(c: Config, V: float, slip: float = 1.0, margin: float | None = None, air: dict | None = None) -> dict:
     """Drag area CdA [m2] at ``V``: friction x form factor per component, the arms and pods at the slipstream's dynamic
     pressure (``slip`` = q_slipstream / q), interference, then ``margin``. Returns the components and the total."""
-    g, M = geometry(c), V / A_SOUND
+    air = air or SEA_LEVEL
+    g, M = geometry(c), V / air["a"]
     margin = DRAG_MARGIN if margin is None else margin
 
     def cf(length):
-        return cf_turbulent(max(V * length / NU, 1e4), M)
+        return cf_turbulent(max(V * length / air["nu"], 1e4), M)
 
     f = g["length"] / g["d"]
     body = cf(g["length"]) * (1 + 60 / f ** 3 + f / 400) * g["s_body"]                       # Raymer, body of revolution
@@ -284,10 +298,13 @@ def pack_resistance(c: Config) -> float:
     return r_cell * c.cells / c.n_parallel
 
 
-def drive(c: Config, V: float, rho: float = RHO) -> dict:
+def drive(c: Config, V: float, rho: float | None = None, *, air: dict | None = None, throttle: float | None = None) -> dict:
     """Four motors at full throttle at airspeed ``V`` — or at the throttle the tightest current limit allows (motor
     burst, ESC rating, the pack at ``CELL_V_MIN``): rpm, per-motor current and thrust, the bus voltage with its sag,
-    the electrical and shaft powers, which limit holds."""
+    the electrical and shaft powers, which limit holds. ``air`` (``air_at``) moves it to altitude; ``throttle`` caps
+    the throttle (a part-throttle point)."""
+    air = air or SEA_LEVEL
+    rho, a_snd = (air["rho"] if rho is None else rho), air["a"]
     motor, esc, pm = mk.part(c.motor), mk.part(c.esc), propeller_map(c.propeller)
     D = pm["D"]
     kt = 60.0 / (2 * math.pi * motor.kv)
@@ -298,7 +315,7 @@ def drive(c: Config, V: float, rho: float = RHO) -> dict:
 
     def torque(rpm):
         n = rpm / 60.0
-        _, cp = coefficients(pm, V / (n * D), math.pi * n * D / A_SOUND)
+        _, cp = coefficients(pm, V / (n * D), math.pi * n * D / a_snd)
         return cp * rho * n ** 3 * D ** 5 / (2 * math.pi * n)
 
     def at(volts):                                                    # the rpm where the motor meets the propeller
@@ -316,13 +333,14 @@ def drive(c: Config, V: float, rho: float = RHO) -> dict:
             v_bus = 0.5 * v_bus + 0.5 * (c.cells * CELL_OCV - i_pack * r_pack)
         return rpm, i_m, i_pack, v_bus
 
-    u, limit = 1.0, "voltage"
+    u, limit = (1.0, "voltage") if throttle is None else (float(throttle), "throttle")
+    u_top = u
     rpm, i_m, i_pack, v_bus = state(u)
     if i_m > i_lim or i_pack > i_pack_max:
         limit = "motor current" if motor.max_a <= esc.max_a else "ESC current"
         if i_pack / i_pack_max > i_m / i_lim:
             limit = "battery"
-        lo, hi = 0.05, 1.0
+        lo, hi = 0.05, u_top
         for _ in range(18):
             u = 0.5 * (lo + hi)
             rpm, i_m, i_pack, v_bus = state(u)
@@ -330,18 +348,18 @@ def drive(c: Config, V: float, rho: float = RHO) -> dict:
         u = lo
         rpm, i_m, i_pack, v_bus = state(u)
     n = rpm / 60.0
-    J, Mt = V / (n * D), math.pi * n * D / A_SOUND
+    J, Mt = V / (n * D), math.pi * n * D / a_snd
     ct, cp = coefficients(pm, J, Mt)
     T, P = ct * rho * n ** 2 * D ** 4, cp * rho * n ** 3 * D ** 5
-    return {"V": V, "throttle": u, "limit": limit, "rpm": rpm, "J": J, "tip_mach": math.hypot(Mt, V / A_SOUND),
+    return {"V": V, "throttle": u, "limit": limit, "rpm": rpm, "J": J, "tip_mach": math.hypot(Mt, V / a_snd), "rho": rho,
             "current": i_m, "pack_current": i_pack, "bus_v": v_bus, "cell_v": v_bus / c.cells, "thrust": 4 * T, "shaft_w": 4 * P,
             "electric_w": i_pack * v_bus, "prop_eff": (T * V / P) if P > 0 else 0.0,
             "copper_w": i_m ** 2 * motor.r_ohm, "disk_area": math.pi * D * D / 4}
 
 
-def _slip(d: dict, rho: float = RHO) -> float:
+def _slip(d: dict) -> float:
     """Dynamic pressure in the slipstream over the free stream's, from one propeller's thrust (momentum theory)."""
-    V, T = max(d["V"], 1.0), max(d["thrust"] / 4, 0.0)
+    V, T, rho = max(d["V"], 1.0), max(d["thrust"] / 4, 0.0), d["rho"]
     vi = 0.5 * (-V + math.sqrt(V * V + 2 * T / (rho * d["disk_area"])))
     return ((V + 2 * vi) / V) ** 2
 
@@ -358,10 +376,10 @@ def normal_force_area(c: Config, alpha: float) -> float:
     return 2 * g["frontal"] * sa * ca + 1.2 * plan * sa * sa + 2.5 * arms * sa * ca
 
 
-def trim(c: Config, V: float, mass: float, CdA0: float) -> tuple:
+def trim(c: Config, V: float, mass: float, CdA0: float, rho: float = RHO) -> tuple:
     """Level flight at ``V``: the body's angle of attack [rad] at which the thrust (along the body) and the body's own
     normal force carry the weight while the thrust's forward part pays the drag, and the thrust that takes [N]."""
-    q, W = 0.5 * RHO * V * V, mass * G
+    q, W = 0.5 * rho * V * V, mass * G
 
     def thrust(a):
         return q * (CdA0 + normal_force_area(c, a) * math.sin(a)) / math.cos(a)
@@ -373,28 +391,29 @@ def trim(c: Config, V: float, mass: float, CdA0: float) -> tuple:
     return hi, thrust(hi)
 
 
-def balance(c: Config, V: float, mass: float | None = None) -> dict:
-    """Thrust against what level flight needs at ``V``: the drag (pods and arms in the slipstream) and the weight,
-    carried by the body flying at a small angle of attack (``trim``)."""
+def balance(c: Config, V: float, mass: float | None = None, altitude: float = 0.0) -> dict:
+    """Thrust against what level flight needs at ``V`` (and ``altitude``): the drag (pods and arms in the slipstream)
+    and the weight, carried by the body flying at a small angle of attack (``trim``)."""
     m = mass_budget(c).mass if mass is None else mass
-    d = drive(c, V)
-    q = 0.5 * RHO * V * V
-    db = drag_buildup(c, V, slip=min(_slip(d), 4.0))
-    alpha, need = trim(c, V, m, db["CdA"])
+    air = air_at(altitude)
+    d = drive(c, V, air=air)
+    q = 0.5 * air["rho"] * V * V
+    db = drag_buildup(c, V, slip=min(_slip(d), 4.0), air=air)
+    alpha, need = trim(c, V, m, db["CdA"], air["rho"])
     return {**d, "drag": q * db["CdA"], "CdA": db["CdA"], "need": need, "excess": d["thrust"] - need,
             "alpha_deg": math.degrees(alpha), "mass": m}
 
 
-def top_speed(c: Config, mass: float | None = None) -> dict:
-    """The fastest level speed: the last airspeed where the thrust still covers drag and weight."""
+def top_speed(c: Config, mass: float | None = None, altitude: float = 0.0) -> dict:
+    """The fastest level speed (at ``altitude``): the last airspeed where the thrust still covers drag and weight."""
     m = mass_budget(c).mass if mass is None else mass
     lo, hi = 15.0, 290.0
-    if balance(c, lo, m)["excess"] < 0:
-        return {**balance(c, lo, m), "V": 0.0, "kmh": 0.0}
+    if balance(c, lo, m, altitude)["excess"] < 0:
+        return {**balance(c, lo, m, altitude), "V": 0.0, "kmh": 0.0}
     for _ in range(22):
         V = 0.5 * (lo + hi)
-        lo, hi = (V, hi) if balance(c, V, m)["excess"] > 0 else (lo, V)
-    b = balance(c, lo, m)
+        lo, hi = (V, hi) if balance(c, V, m, altitude)["excess"] > 0 else (lo, V)
+    b = balance(c, lo, m, altitude)
     return {**b, "kmh": lo * 3.6}
 
 
@@ -555,5 +574,14 @@ RECORD = {"name": "Peregreen V4 (Luke and Mike Bell)", "kmh": 657.59, "date": "2
           "what": "fastest ground speed by a battery-powered remote-controlled quadcopter, the mean of two opposite runs",
           "motors": "four T-Motor 3120 at 900 KV", "airframe": "3D printed (PETG, PA6-CF, TPU), propellers under 40,000 rpm",
           "source": "https://newatlas.com/drones/luke-mike-bell-peregreen-v4-guinness-speed/"}
-DESIGN = Config()                                                                   # the knee: shelf parts, about 400 USD
+ER2 = Config()                                                                      # the knee: shelf parts, about 400 USD
+ER1 = Config("eco2807-1300", "apc6x6e", "speedybee-f405v4-55", "cnhl-1300-100c", 1, 1)   # the cheapest build that flies the run
+VARIANTS = {"ER1": ER1, "ER2": ER2}
+VARIANT_NAME = {"ER1": "Émerillon ER1 — the budget build", "ER2": "Émerillon ER2 — the knee build"}
+TARGET = {"ER1": {"kmh": 261.0, "ceiling_m": 4000.0}, "ER2": {"kmh": 383.0, "ceiling_m": 7000.0}}   # what each has to do
+# the packs that carry each variant to its ceiling target and back in the flown climb, with the reserve (the slice
+# analysis of emerillon_mission.ceiling_options passes smaller ones that the simulated catch and landing do not)
+HIGH = {"ER1": Config("eco2807-1300", "apc6x6e", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1),
+        "ER2": Config("eco2807-1300", "apc7x10", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 2)}   # lands a little under the reserve
+DESIGN = ER2
 RECORD_BUILD = Config("v3120-900", "own7x13", "apd-120f3", "tattu-r6-1700-160c", 2, 2)   # the fast end of the front

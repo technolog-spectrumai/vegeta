@@ -167,3 +167,110 @@ def test_mass_budget_and_printed_parts():
     assert groups["airframe"] * 1e3 == pytest.approx(sum(ef.printed_masses(DESIGN).values()), rel=1e-6)
     x_cg, geo = b.properties().com[0], ef.geometry(DESIGN)
     assert geo["x_prop"] < x_cg < geo["nose"] + geo["cyl"]                                        # it hangs below its propellers
+
+
+# ------------------------------------------------------------------------------------------ ER1, ER2, altitude, flights
+def test_variants_meet_their_speeds_and_the_air_thins():
+    for v, c in ef.VARIANTS.items():
+        assert ef.top_speed(c)["kmh"] == pytest.approx(ef.TARGET[v]["kmh"], abs=4.0)
+    sea, high = ef.air_at(0.0), ef.air_at(7000.0)
+    assert high["rho"] == pytest.approx(0.59, abs=0.01) and high["a"] < sea["a"] and high["T_C"] == pytest.approx(-30.5, abs=0.5)
+    d0, d7 = ef.drive(ef.ER2, 0.5), ef.drive(ef.ER2, 0.5, air=high)
+    assert d7["thrust"] < d0["thrust"] and d7["thrust"] / (ef.mass_budget(ef.ER2).mass * ef.G) > 2.0      # thrust is not what stops it
+    half = ef.drive(ef.ER2, 30.0, throttle=0.5)
+    assert half["limit"] == "throttle" and half["thrust"] < 0.7 * ef.drive(ef.ER2, 30.0)["thrust"]
+
+
+def test_envelope_is_the_drive_and_inverts():
+    mi = pytest.importorskip("emerillon_mission")
+    env = mi.envelope("ER1")
+    v = env["V"][4]
+    d = ef.drive(ef.ER1, v, air=ef.air_at(mi.H_GRID[2]), throttle=mi.U_GRID[3])
+    T, P, _ = mi.thrust_at(env, mi.H_GRID[2], v, mi.U_GRID[3])
+    assert T == pytest.approx(d["thrust"], rel=1e-6) and P == pytest.approx(d["electric_w"], rel=1e-6)
+    u = mi.throttle_for(env, 1000.0, 20.0, 0.5 * mi.thrust_at(env, 1000.0, 20.0, 1.0)[0])
+    assert mi.thrust_at(env, 1000.0, 20.0, u)[0] == pytest.approx(0.5 * mi.thrust_at(env, 1000.0, 20.0, 1.0)[0], rel=0.01)
+    assert mi.throttle_for(env, 0.0, 0.0, 1e6) == 1.0 and mi.thrust_at(env, 0.0, 0.0, 0.0)[0] == 0.0
+
+
+def test_ceilings_are_set_by_the_pack_not_the_thrust():
+    mi = pytest.importorskip("emerillon_mission")
+    for v in ef.VARIANTS:
+        c = mi.ceiling(v)
+        assert c["static_tw_at_target"] > 2.5 and c["climb_wh"] > c["potential_wh"]          # it can hang there; the climb costs more than m g h
+        assert not c["reaches_target"] and c["energy_ceiling_m"] < c["target_m"]             # as built, neither gets there with the reserve
+        assert mi.ceiling(v, mode="fast")["climb_wh"] > c["climb_wh"]                        # full throttle is the dear way up
+    assert mi.ceiling(ef.HIGH["ER1"], 4000.0)["reaches_target"] and mi.ceiling(ef.HIGH["ER2"], 7000.0)["reaches_target"]
+    rows = mi.ceiling_options("ER2")
+    assert sum(r["as built"] for r in rows) == 1 and any(r["target met"] for r in rows)
+
+
+@pytest.mark.parametrize("variant,scenario", [("ER1", "palace"), ("ER2", "mountain"), ("ER2", "sea")])
+def test_scenarios_fly_and_land(variant, scenario):
+    mi = pytest.importorskip("emerillon_mission")
+    f = mi.fly(variant, scenario)
+    m = f.metrics
+    assert f.ok, f.why
+    assert m["touchdown_sink_ms"] <= 1.2 and m["touchdown_miss_m"] <= 1.0 and m["reserve"] >= mi.RESERVE
+    assert m["max_kmh"] <= 1.25 * ef.top_speed(ef.VARIANTS[variant])["kmh"] and m["max_g"] <= 7.0
+    if scenario == "palace":
+        assert f.hist["z"][-1] == pytest.approx(mi.PALACE["roof"], abs=0.1) and m["min_obstacle_clearance_m"] > 3.0
+        assert m["max_altitude_m"] > mi.PALACE["ground_asl"] + 1100.0
+    else:
+        assert m["t_caught_s"] < 60.0
+
+
+def test_the_climb_scenario_agrees_with_the_slices():
+    mi = pytest.importorskip("emerillon_mission")
+    f = mi.fly("ER1", "climb", dt=0.05)
+    top = next(e for e in f.events if e["leg"] == "top of climb")
+    assert f.metrics["max_altitude_m"] == pytest.approx(4000.0, abs=30.0)
+    assert top["wh"] == pytest.approx(mi.ceiling("ER1")["climb_wh"], rel=0.12)
+    assert not f.ok and any("pack" in w for w in f.why)                                      # as built: up, but not down with the reserve
+    assert mi.fly("ER1", "climb", dt=0.05, config=ef.HIGH["ER1"]).ok
+
+
+# --------------------------------------------------------------------------------------------- the workflow book (E)
+def test_campaigns_catalogue_and_fingerprint():
+    ec = pytest.importorskip("emerillon_campaigns")
+    assert len(ec.cfd_specs("ER2", "drag")) == 3 and len(ec.cfd_specs("ER1", "alpha")) == 8
+    assert max(s["V"] for s in ec.cfd_specs("ER2", "drag").values()) == pytest.approx(ec.vehicle("ER2").V_top, abs=0.01)
+    with pytest.raises(ValueError):
+        ec.cfd_specs("ER2", "everything")
+    fp = ec.fingerprint("ER2")
+    assert ec.compare(fp, fp)["level"] == "compatible" and ec.compare(fp, ec.fingerprint("ER1"))["level"] == "incompatible"
+    assert ec.compare(fp, dict(fp, mass_kg=fp["mass_kg"] * 1.1))["level"] == "incompatible" and ec.compare(fp, None)["level"] == "incompatible"
+    assert "Mach" in ec.list_footer(ec.vehicle("ER2"), "cfd") and "PA6-CF" in ec.list_footer(ec.vehicle("ER2"), "fea")
+
+
+def test_arm_boxes_take_one_face_each_and_the_cases_are_built(tmp_path):
+    ec = pytest.importorskip("emerillon_campaigns")
+    em = pytest.importorskip("emerillon")
+    for v in ("ER1", "ER2"):
+        arm = em.Emerillon().generate(part="arm", **ec.params(v)).shape
+        for name, b in ec.arm_regions(ec.params(v)).items():
+            inside = [f for f in arm.Faces() if all(b[i] <= lo and hi <= b[i + 3] for i, (lo, hi) in enumerate(
+                zip((f.BoundingBox().xmin, f.BoundingBox().ymin, f.BoundingBox().zmin), (f.BoundingBox().xmax, f.BoundingBox().ymax, f.BoundingBox().zmax))))]
+            assert len(inside) == 1, (v, name)
+    cases = ec.fea_cases("ER2", "arm", tmp_path)
+    assert [c.name for c in cases] == ["arm_A", "arm_B", "arm_C", "arm_modes"] and cases[-1].kind == "modes"
+    assert (tmp_path / "cad" / "emerillon_ER2_arm.step").exists() and len({ec.fea_case_key(c) for c in cases}) == 4
+    beam = ec.arm_beam("ER2")
+    assert beam["stress_side_MPa"] < ec.PA6CF["strength"] and beam["f1_thin_Hz"] < beam["rotor_1P_Hz"]   # the rotor runs through the arm's first mode
+
+
+def test_book_is_registered_and_prepares_cfd_cases_without_a_solver(tmp_path):
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[3]
+    side = root / "labs" / "aero" / "campaigns" / "side_labs"
+    sys.path.insert(0, str(side))
+    import library
+    assert library.BOOKS["emerillon"]["code"] == "E" and library.by_code("e3")[1] == "arm"
+    out = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(side / "emerillon" / "airframe_cfd.py"), "--variant", "ER1", "--chapter", "drag", "--prepare-only", "--cases", "100 %",
+                        "--out", str(out), "--quiet"], capture_output=True, text=True, timeout=300)
+    assert r.returncode in (0, 3), r.stdout[-800:] + r.stderr[-800:]
+    case = next((out / "cases").glob("ER1_a00.0_V*_screening"))
+    assert (case / "system" / "controlDict").exists() and (case / "system" / "snappyHexMeshDict").exists() and list((out / "cases" / "stl").glob("*.stl"))
