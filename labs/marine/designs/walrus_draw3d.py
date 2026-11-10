@@ -1,5 +1,5 @@
-"""Odobenus in 3D (matplotlib, from the CadQuery tessellation): on a patch of clam bed from three sides; the harvest
-numbers.    python odobenus_draw3d.py [out.png]"""
+"""Walrus in 3D (matplotlib, from the CadQuery tessellation): on a patch of clam bed from three sides; the harvest
+numbers.    python walrus_draw3d.py [out.png]"""
 import sys
 
 import matplotlib
@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-from odobenus import Odobenus
+from walrus import Walrus
 
 COLOURS = {"tracks": "#222222", "frame": "#7f8c8d", "housing": ("#9fc5e8", 0.6), "gantry": "#e67e22", "basket": "#c0392b",
-           "thrusters": "#2c3e50", "lights": "#f1c40f"}
+           "thrusters": "#2c3e50", "lights": "#f1c40f", "arms": "#8e6b3e"}
 
 
 def _tris(shape, tol=2.5):
@@ -21,7 +21,7 @@ def _tris(shape, tol=2.5):
 
 
 def draw(ax, p, elev, azim, title, bed=True):
-    d = Odobenus()
+    d = Walrus()
     for name, c in COLOURS.items():
         col, alpha = (c, 1.0) if isinstance(c, str) else c
         ax.add_collection3d(Poly3DCollection(_tris(d.build({**p, "part": name})), facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=True))
@@ -35,14 +35,14 @@ def draw(ax, p, elev, azim, title, bed=True):
     ax.set_box_aspect((1300, 1300, 1300)); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
 
 
-def main(out="odobenus_3d.png"):
-    p = Odobenus.p()
+def main(out="walrus_3d.png"):
+    p = Walrus.p()
     fig = plt.figure(figsize=(18, 6.5))
-    draw(fig.add_subplot(1, 3, 1, projection="3d"), p, 22, -50, "on the bed: tracks, the down-looking camera and lights ahead of the gantry")
-    draw(fig.add_subplot(1, 3, 2, projection="3d"), p, 20, 130, "from behind: the basket over the sizing chute, the two vertical thrusters")
-    draw(fig.add_subplot(1, 3, 3, projection="3d"), p, -30, -60, "from below: the gantry's two grippers and jet nozzle in the swath", bed=False)
-    s = Odobenus.sizing()
-    fig.suptitle(f"Odobenus v0 — the clam picker: {s['mass_wet_vehicle_kg']:.0f} kg crawler ({s['mass_in_air_kg']:.0f} with the tether), sits {s['sink_kg']:.0f} kg on the bed; "
+    draw(fig.add_subplot(1, 3, 1, projection="3d"), p, 22, -50, "on the bed: the digging arms, camera and lights ahead of the gantry")
+    draw(fig.add_subplot(1, 3, 2, projection="3d"), p, 20, 130, "from behind: the basket, the vertical pair, the horizontal pair it swims with")
+    draw(fig.add_subplot(1, 3, 3, projection="3d"), p, -30, -60, "from below: the gantry's grippers and jet in the swath", bed=False)
+    s = Walrus.sizing()
+    fig.suptitle(f"Walrus v0 — the clam picker with digging arms: {s['mass_wet_vehicle_kg']:.0f} kg crawler ({s['mass_in_air_kg']:.0f} with the tether), sits {s['sink_kg']:.0f} kg on the bed; "
                  f"{s['rate_per_h']:.0f} clams/h with two pickers, {s['rate_kg_h']:.0f} kg/h, {s['day_kg']:.0f} kg a day in two shifts ({s['vs_diver']:.1f}× a diver); €{s['price_eur']/1e3:.0f}k, payback {s['payback_days']:.0f} days", fontsize=11)
     fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=0.9, wspace=0.0)
     fig.savefig(out, dpi=95)
