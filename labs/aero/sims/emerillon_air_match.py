@@ -36,7 +36,8 @@ OUT = HERE / "output"
 def play(mode, duration, seed, kw):
     if mode == "circus":
         from air_match import circus
-        return circus.race(seed, kw.get("laps", 3), wind=kw.get("wind"), duration=max(duration, 150.0), n_balloons=kw.get("circus_balloons", 14))
+        return circus.race(seed, kw.get("laps", 3), kw.get("field"), wind=kw.get("wind"), duration=max(duration, 150.0), n_balloons=kw.get("circus_balloons", 14),
+                           slipstream=kw.get("slipstream", True))
     if mode == "formation":
         from air_match import formation
         return formation.fly(7, duration, seed)
@@ -65,6 +66,9 @@ def main(argv=None) -> int:
     ap.add_argument("--tournament", type=int, default=0, help="circus: this many races of the seven strategies, the grid turned each time")
     ap.add_argument("--wind", type=float, default=None, help="circus: the wind at 10 m [m/s] (default 5)")
     ap.add_argument("--laps", type=int, default=3)
+    ap.add_argument("--field", default="mixed", choices=["mixed", "fixed"], help="circus: four fixed and three adaptive strategies, or the seven fixed ones")
+    ap.add_argument("--no-slipstream", action="store_true", help="circus: no wake behind the aircraft")
+    ap.add_argument("--gusts", action="store_true", help="circus: a wind that changes during the race (speed, direction, gust fronts)")
     ap.add_argument("--duration", type=float, default=60.0)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--variants", nargs=2, default=["ER2", "ER2"], choices=["ER1", "ER2"])
@@ -80,16 +84,20 @@ def main(argv=None) -> int:
     if args.mode == "circus":
         from air_match import circus
         kw["laps"] = args.laps
+        kw["field"] = circus.FIELD if args.field == "mixed" else circus.STRATEGIES
+        kw["slipstream"] = not args.no_slipstream
         kw["circus_balloons"] = args.balloons if args.balloons != 8 else 14            # --balloons: how many over the track (default 14)
         kw["wind"] = None if args.wind is None else dict(circus.WIND, speed=args.wind, gust=0.0 if args.wind == 0 else circus.WIND["gust"])
+        if args.gusts:
+            kw["wind"] = dict(circus.CHANGING, speed=circus.WIND["speed"] if args.wind is None else args.wind)
         if args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
             import pandas as pd
-            t = circus.tournament(args.tournament, args.seed, args.laps, wind=kw["wind"], n_balloons=kw["circus_balloons"],
+            t = circus.tournament(args.tournament, args.seed, args.laps, kw["field"], wind=kw["wind"], n_balloons=kw["circus_balloons"], slipstream=kw["slipstream"],
                                   progress=lambda i, rc: print(f"race {i + 1} (seed {rc['seed']}): " + " > ".join(rc["order"]) + f"   {rc['time']} s, {rc['faults']} faults", flush=True))
             pd.set_option("display.width", 250); pd.set_option("display.max_colwidth", 70)
             print(pd.DataFrame(t["table"]).to_string(index=False))
             OUT.mkdir(parents=True, exist_ok=True)
-            tag = ("" if args.wind is None else f"_wind{args.wind:g}") + ("" if kw["circus_balloons"] == 14 else f"_balloons{kw['circus_balloons']}")
+            tag = ("_gusts" if args.gusts else "") + ("_fixed" if args.field == "fixed" else "") + ("_nowake" if args.no_slipstream else "") + ("" if args.wind is None else f"_wind{args.wind:g}") + ("" if kw["circus_balloons"] == 14 else f"_balloons{kw['circus_balloons']}")
             (OUT / f"air_circus_tournament{tag}.json").write_text(json.dumps(t, indent=1, default=float))
             print("written:", OUT / f"air_circus_tournament{tag}.json")
             return 0
@@ -118,7 +126,7 @@ def main(argv=None) -> int:
     matplotlib.use("Agg")
     from air_match import replay
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = OUT / (f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}_{args.seed}")
+    stem = OUT / (f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}{'_gusts' if getattr(args, 'gusts', False) else ''}_{args.seed}")
     (replay.race_summary if "race" in r else replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
     files = [stem.with_suffix(".png")]
     if not args.no_video:

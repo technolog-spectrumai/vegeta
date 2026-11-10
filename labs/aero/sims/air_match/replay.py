@@ -130,6 +130,7 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         c = p.get("color") or COLOR[p["team"]]
         art[name] = (top.plot([], [], color=c, lw=3, solid_capstyle="round")[0], top.plot([], [], color=c, lw=0.8, alpha=0.5)[0],
                      side.plot([], [], color=c, lw=3, solid_capstyle="round")[0], top.plot([], [], "o", ms=16, mfc="none", mec="k", mew=1.5)[0])
+    wind_arrow = top.quiver([-a.length / 2 + 14], [a.width / 2 - 8], [0.0], [0.0], color="#1f77b4", scale=1.0, scale_units="xy", angles="xy", width=0.004) if "race" in result else None
     tok = top.plot([], [], "o", ms=9, color="#2ca02c", mec="k")[0]
     tok_s = side.plot([], [], "o", ms=9, color="#2ca02c", mec="k")[0]
     title = top.set_title("")
@@ -159,7 +160,13 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         if "race" in result:
             lapn = {n: int(sum(1 for e in result["events"] if e["what"] == "lap" and e["who"] == n and e["t"] <= tf)) for n in players}
             lead = sorted(players, key=lambda n: (-lapn[n], n))
-            title.set_text(f"circus race   t = {tf:5.1f} s   laps: " + "  ".join(f"{n} {lapn[n]}" for n in lead))
+            wh = result["race"].get("wind_hist")
+            wtxt = ""
+            if wh is not None and len(wh):
+                kw_ = min(int(np.searchsorted(wh[:, 0], tf)), len(wh) - 1)
+                wtxt = f"   wind {wh[kw_, 1]:.0f} m/s from {(wh[kw_, 2] + 180) % 360:.0f}°"
+                wind_arrow.set_UVC(wh[kw_, 3], wh[kw_, 4])
+            title.set_text(f"circus race   t = {tf:5.1f} s{wtxt}   laps: " + "  ".join(f"{n} {lapn[n]}" for n in lead))
         elif "formation" in result:
             f = result["formation"]
             kk = min(int(np.searchsorted(f["t"], tf)), len(f["t"]) - 1)
@@ -281,7 +288,13 @@ def race_summary(result: dict, path=None):
     top.legend([hand[i] for i in order], [lab[i] for i in order], fontsize=8, ncol=7, loc="upper center")
     w = race["wind"]
     top.annotate("", xy=(0.12, 0.08), xytext=(0.03, 0.08), xycoords="axes fraction", arrowprops=dict(arrowstyle="->", color="#1f77b4", lw=2))
-    top.text(0.03, 0.11, f"wind {w['speed']:g} m/s", transform=top.transAxes, color="#1f77b4", fontsize=9)
+    top.text(0.03, 0.11, f"wind {w['speed']:g} m/s" + (" on average, changing" if w.get("changing") else ""), transform=top.transAxes, color="#1f77b4", fontsize=9)
+    wh = race.get("wind_hist")
+    if w.get("changing") and wh is not None and len(wh):
+        tw = prog.twinx()
+        tw.plot(wh[:, 0], wh[:, 1], color="#1f77b4", lw=0.9, alpha=0.8)
+        tw.plot(wh[:, 0], wh[:, 2] / 10.0, color="#17becf", lw=0.7, alpha=0.8, ls="--")
+        tw.set_ylabel("wind at 10 m: speed [m/s] (solid), direction / 10 [deg] (dashed)", color="#1f77b4", fontsize=8)
     top.set_title(f"circus race, {race['laps']} laps, anticlockwise — winner: {race['winner'] or 'nobody finished'}   (✕ a fault: back to the last gate)")
     prog.set(xlabel="s", ylabel="laps completed", ylim=(0, race["laps"] + 0.3), title="laps against time (dotted: a fault)")
     prog.grid(alpha=0.3)

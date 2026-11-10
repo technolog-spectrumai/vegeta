@@ -167,3 +167,56 @@ def test_a_race_ranks_its_racers():
     assert all(s["faults"] == sum(1 for e in r["race"]["faults"] if e["who"] == s["strategy"]) for s in st)
     laps = [e for e in r["events"] if e["what"] == "lap"]
     assert len(laps) == len(done) and all(e["time"] > 10.0 for e in laps)
+
+
+def test_the_slipstream_is_behind_an_aircraft_and_nowhere_else():
+    from air_match import circus
+    r = circus.Race([circus.BY_NAME["hot"], circus.BY_NAME["inside"]], seed=1, laps=1, wind=dict(circus.WIND, speed=0.0, gust=0.0), n_balloons=2)
+    lead, me = r.players
+    r.data.qvel[lead.va:lead.va + 3] = (30.0, 0.0, 0.0)
+    p0 = r.pos(lead)
+    behind, beside, ahead, far = p0 + (-4.0, 0, 0), p0 + (-4.0, 4.0, 0), p0 + (4.0, 0, 0), p0 + (-40.0, 0, 0)
+    w = r.wake_at(me, behind)
+    assert 2.0 < w[0] < 30.0 * circus.WAKE["gain"] and abs(w[1]) < 1e-9                    # the air follows it
+    assert np.linalg.norm(r.wake_at(me, beside)) < 0.05 * w[0] and np.allclose(r.wake_at(me, ahead), 0) and np.allclose(r.wake_at(me, far), 0)
+    assert np.linalg.norm(r.wake_at(me, p0 + (-10.0, 0, 0))) < w[0]                        # fading with distance
+    assert np.allclose(r.wake_at(lead, behind), 0)                                         # nobody drafts itself (the other one stands still)
+    off = circus.Race([circus.BY_NAME["hot"], circus.BY_NAME["inside"]], seed=1, laps=1, n_balloons=2, slipstream=False)
+    off.data.qvel[off.players[0].va:off.players[0].va + 3] = (30.0, 0.0, 0.0)
+    assert np.allclose(off.wake_at(off.players[1], off.pos(off.players[0]) + (-4.0, 0, 0)), 0)
+
+
+def test_adaptive_strategies_change_what_they_fly():
+    from air_match import circus
+    assert {s.kind for s in circus.ADAPTIVE} == {"draft", "adapt", "temper"} and len(circus.FIELD) == 7
+    r = circus.Race(circus.FIELD, seed=1, laps=1)
+    by = {p.name: p for p in r.players}
+    hot0 = circus.BY_NAME["tempered"]
+    assert r.adapt(by["tempered"], hot0, 0.0, 50.0, math.inf).a_lat == hot0.a_lat
+    r.state["tempered"]["faults"] = 2
+    cooled = r.adapt(by["tempered"], hot0, 0.0, 50.0, math.inf)
+    assert cooled.a_lat < hot0.a_lat and cooled.caution > hot0.caution and cooled.v_air < hot0.v_air
+    r.state["tempered"]["bold"] = 4                                                        # clean laps give it back
+    assert r.adapt(by["tempered"], hot0, 0.0, 50.0, math.inf).a_lat == hot0.a_lat
+    ad, me = circus.BY_NAME["adaptive"], by["adaptive"]
+    p = r.pos(me)
+    for i, b in enumerate(r.balloons):                                                     # every balloon far away: the low line
+        q = r.balloon_qadr[i]
+        r.data.qpos[q:q + 3] = (-100.0, 25.0 + i, 5.0)
+    mujoco.mj_forward(r.model, r.data)
+    assert r.adapt(me, ad, 0.0, 50.0, math.inf).height == ad.height
+    r.data.qpos[r.balloon_qadr[0]:r.balloon_qadr[0] + 3] = (p[0] + 12.0, -ad.radius, 4.0)  # one on its line ahead: up and over
+    mujoco.mj_forward(r.model, r.data)
+    assert r.adapt(me, ad, 0.0, 50.0, math.inf).height > 10.0
+    assert circus.BY_NAME["hot"] is r.adapt(by["hot"], circus.BY_NAME["hot"], 0.0, 50.0, math.inf)   # a fixed one stays what it is
+
+
+def test_a_changing_wind_changes():
+    from air_match import circus
+    r = circus.Race([circus.BY_NAME["middle"]], seed=3, laps=1, duration=25.0, wind=circus.CHANGING, n_balloons=6).run()
+    wh = r["race"]["wind_hist"]
+    assert wh[:, 1].std() > 0.5 and np.ptp(wh[:, 2]) > 20.0 and wh[:, 1].min() >= 0.0       # speed and direction wander
+    assert all(4.0 <= f["ms"] <= 8.0 for f in r["race"]["gust_fronts"])
+    steady = circus.Race([circus.BY_NAME["middle"]], seed=3, laps=1, duration=6.0, n_balloons=6).run()
+    sh = steady["race"]["wind_hist"]
+    assert np.allclose(sh[:, 1], circus.WIND["speed"]) and np.allclose(sh[:, 2], 0.0) and not steady["race"]["gust_fronts"]

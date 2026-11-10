@@ -126,7 +126,7 @@ class Player:
                 ctl.last = {}
             def mix(ctl, T, M):                                     # keep thrust on the rotors when the nose is far from where it should
                 return super().mix(max(float(T), 0.6 * ctl.m0 * G), M)   # point: without it there is no torque to turn it back (it tumbled)
-        self.ctl = Ctl(self.prop, omega_pos=2.6, omega_att=20.0, tilt_max_deg=58.0)
+        self.ctl = Ctl(self.prop, omega_pos=2.6, omega_att=20.0, tilt_max_deg=getattr(self, "tilt_max_deg", 58.0))
         self.ctl.reset()
 
     def place(self, data, t: float, hold: float):
@@ -206,6 +206,10 @@ class Match:
 
     def wind_at(self, p) -> np.ndarray:
         return np.zeros(3)
+
+    def air_for(self, me: Player, p) -> np.ndarray:
+        """The air's velocity where ``me`` flies (a subclass adds the others' wakes to the wind)."""
+        return self.wind_at(p)
 
     def others(self, me: Player) -> list:
         return [q for q in self.players if q is not me]
@@ -394,7 +398,7 @@ class Match:
         me.thrust += (1.0 - math.exp(-dt / SPIN_UP)) * (cmd - me.thrust)
         T = me.thrust
         # the air on the airframe: axial drag and a normal force, as emerillon_mission
-        va = v - self.wind_at(p)                                    # the air it flies through
+        va = v - self.air_for(me, p)                                # the air it flies through
         V = float(np.linalg.norm(va))
         aero = np.zeros(3)
         if V > 0.5:
