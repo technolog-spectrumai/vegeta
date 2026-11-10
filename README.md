@@ -310,6 +310,49 @@ wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on it
 The arms, the drive-type comparison and the terrain race against the other drives come next (todo 5j.4–5j.7); the two-segment
 quad-track **Catagon** is its own product (todo 5k).
 
+**ÉMERILLON** (`37_emerillon`; `labs/aero/designs/emerillon.py`, `emerillon_flight.py`, `emerillon_market.py`) is an electric
+**speed quadcopter** — the merlin in French, the falcon that outruns its prey in level flight — in the layout the record
+machines converged on (the Bells' Peregreen V4: 657.59 km/h): a printed bullet that stands on its tail, lifts off on four
+rotors, pitches over and flies nose-first. The question is **speed against price**: `emerillon_market.py` is a priced
+catalogue of the bought parts (motors, propellers, ESCs, 6S packs, the electronics, filament) with the shop, the spread
+between shops and a `kind` per row (`sourced` / `partly` / `assumed`; prices from a web search of 2026-11-10, in USD);
+`emerillon_flight.py` builds every combination the catalogue allows (336), sizes the airframe around its parts, and gives
+each a top speed: a drag build-up with a margin, Boreas's BEMT with a **Mach-aware blade section** (`MachAirfoil`:
+Prandtl–Glauert, Korn's drag divergence, Lock's drag rise — Boreas alone has no compressibility and the tips go transonic),
+four motors on a sagging pack under the motor's, the ESC's and the pack's current limits, the body trimmed on its own lift,
+the run from a hover with its field length, energy for two passes and the windings' temperature rise. The front between price
+and speed has three steps: **around 400 USD the speed is the propeller's pitch** (a 3-dollar propeller with more pitch is worth
+100 km/h; Kestrel's lesson), a plateau to 1,100 USD where bigger motors on shelf propellers buy little, then 12S and one
+ESC per motor to about 640 km/h for about 1,340 USD — with two parts no shop sells (a 3120 wound to 900 KV and a 7-inch
+propeller of about 13 inches of pitch, proof-spun). ÉMERILLON as drawn is the knee: an EMAX ECO II 2807 1300 KV, an APC 7x10,
+the SpeedyBee F405 stack and one Tattu R-Line 6S 1700 mAh — about 400 USD and about 380 km/h by this model, all on a shelf.
+The notebook: the record and the requirements, the market tables, what the experimental Kestrel studies teach (and the
+margins that put into the model), CAD (`Emerillon`: body, four strut arms with motor pods, four fins; parts `aircraft`,
+`arm`, `nose`), mass and bill of materials, drag (an optional RANS replaces the margin), the propeller maps, the drive, top
+speed, the run, the trade with its front and three picks (budget, knee, fastest; also inside the propeller makers' rpm
+limits), sensitivities (drag margin 1.0–2.5, printed mass, the price spread), the arm in Talos and the prints. Everything is
+a hand model or a shop listing: nothing is measured, the propeller maps are uncalibrated. `labs/aero/sims/emerillon_trade.py`
+re-runs the trade (a minute and a half) into `labs/aero/designs/data/emerillon_trade.json`; `EMERILLON_TRADE=run` re-runs
+it in the notebook. The committed notebook is unexecuted. **Two variants** (`ef.VARIANTS`): **ER1**, the cheapest build that
+flies the run (APC 6x6E, a CNHL 6S 1300 mAh: about 383 USD, 261 km/h), and **ER2**, the knee (383 km/h). **Altitude**
+(`emerillon_mission.ceiling`, an economy climb in slices): thrust is not the limit — at 7 km the static thrust is still
+several times the weight — the pack is: as built ER1 reaches about 3.5 km and ER2 about 4.5 km with a landing and a 20 %
+reserve; ER1 makes its 4 km on ER2's pack, ER2 its 7 km on two packs in parallel, landing a little under the reserve
+(`ef.HIGH`, `ceiling_options`). **Five flights** (`labs/aero/designs/emerillon_mission.py`, a point-mass simulation with a body axis on
+the tabulated drive: times, speeds, energy and margins, not handling; `labs/aero/sims/emerillon_mission.py` writes a figure per
+flight): to a wildfire and back at the fastest pace the pack allows, a chase round a mountain, a chase of a boat over the sea in
+a gusty crosswind, the climb to the ceiling target with a flat fall back, and a fast climb over Warsaw with a swoop and a slow
+landing on the roof of the Palace of Culture and Science. **Long range** (`range_curve`, `range_options`, the `range` scenario: out against a 5 m/s wind to the radius of action and
+back): there is a best-range speed far below the top speed — about 140 km/h — and at it ER1 goes about 8 km and ER2 about
+11 km as built (five minutes in the air), about 18 km on two packs (`ef.LONG`); flat out ER2's range is under 4 km. A sprinter:
+range is what wings are for. **The solver runs are a workflow book**, `emerillon` (code **E**,
+`labs/aero/designs/emerillon_campaigns.py` behind the shared Kestrel scripts): **E1** `airframe-drag` (the solid aircraft in axial
+flow at three speeds: the drag area and the margin the build-up needs), **E2** `airframe-alpha` (0–90° of incidence: the normal
+force of the trim and the braking), **E3** `arm` (one printed arm: thrust, a 5 g manoeuvre, a landing knock, and its modes
+against the rotor's 1P) — `wf E1 --variant ER2 --prepare-only` writes the cases, `wf E1 --variant ER2 --detach` runs them; none
+has been run. (MERLIN keeps its name: it is still the wildfire sampler of 26, 26b
+and 27, and PEREGRINE and FALCO are built on its body.)
+
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
 return-to-home) and **Nisus-Zero** (the same aircraft with an NVIDIA Jetson for onboard computer vision, its camera, power

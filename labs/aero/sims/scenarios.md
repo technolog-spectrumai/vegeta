@@ -231,3 +231,34 @@ python3 scenarios/kestrel_transitions.py --part2         # + Kestrel-4Q-2 (elevo
 ```
 Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
 transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.
+
+## ÉMERILLON's trade: speed against price
+
+`python labs/aero/sims/emerillon_trade.py [--quick]`. Evaluates every build `emerillon_flight.candidates()` allows (motor ×
+propeller × 6S pack × series/parallel, with the cheapest ESC that fits), prints the front of top speed against price with the
+budget, knee and fastest picks — for any rpm and inside the propeller makers' limits — and writes
+`labs/aero/designs/data/emerillon_trade.json`, which notebook 37 reads. About a minute and a half; no solver, no MuJoCo.
+`--quick` (and the mocks) evaluate a dozen builds and write nothing.
+
+## ÉMERILLON ER1 and ER2: six flights, the altitude and the range questions
+
+`python labs/aero/sims/emerillon_mission.py [--variant ER1 ER2] [--scenario wildfire mountain sea climb palace] [--ceiling] [--quick]`.
+A point-mass simulation with a body axis (`labs/aero/designs/emerillon_mission.py`): the four propellers push along the axis (the
+drive tabulated over altitude, axial airspeed and throttle), the air gives the build-up's axial drag and a normal force on the
+body, the axis slews to where the wanted force points. Times, speeds, energy and margins — not handling. Writes
+`labs/aero/sims/output/emerillon_<variant>_<scenario>.png` and `emerillon_missions.json`.
+
+- `range` — out against a 5 m/s wind to 90 % of the predicted radius of action and back, at the best-range airspeed, 120 m up; flown as
+  built and with the long-range packs (`ef.LONG`, the rows `ER1 high` / `ER2 high`). `--range` prints the analysis alone: power and
+  Wh/km against speed, the range and radius on each pack of the catalogue.
+- `wildfire` — to a fire 2 km out, round the smoke, back and land, at the fastest pace (share of the top speed) that still lands
+  with a 20 % reserve.
+- `mountain` — a target circles a 900 m peak at 520 m and 137 km/h; catch it (12 m), come home. The base is 600 m above the sea.
+- `sea` — a boat at 90 km/h zigzags; catch it from 1.2 km, hold 12 m over it for 5 s, come home; 14 m/s crosswind with gusts.
+- `climb` — to the ceiling target (ER1 4 km, ER2 7 km) at the economy speed, a flat fall with the motors stopped, a catch and a
+  landing; flown as built and with the high-altitude pack (`ef.HIGH`, the rows `ER1 high` / `ER2 high`).
+- `palace` — a full-throttle climb to 1,200 m over Warsaw, a swoop, a slow approach and a landing at 0.8 m/s on the roof of the
+  Palace of Culture and Science beside the spire (an obstacle), in a gusty city wind.
+
+`--ceiling` prints the altitude analysis alone: the economy climb's energy against each pack of the catalogue.
+

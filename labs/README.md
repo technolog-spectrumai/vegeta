@@ -8,7 +8,7 @@ libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ─
 
 | lab | what | machines |
 |---|---|---|
-| [aero](aero/README.md) | what flies: fixed-wing, VTOL (Kestrel), multirotors, propulsion, the races | Nisus, Nisus+, Falco, Merlin, Peregrine, Aguya, Velutina, Drongo, Kestrel |
+| [aero](aero/README.md) | what flies: fixed-wing, VTOL (Kestrel), multirotors, propulsion, the races | Nisus, Nisus+, Falco, Merlin, Émerillon, Peregrine, Aguya, Velutina, Drongo, Kestrel |
 | [land](land/README.md) | what rolls and tracks | Onager (Sentinel, Atlas, Manus, Sweeper), Pekari, Perseus, Rover |
 | [legged](legged/README.md) | what walks | Robot dog, Myropods (Cleopatra, Persephone, Apheloria), the benchmarks |
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine, Scampi, Echensis, Cyclopterus, Nephro, Squilla, Shrimp |

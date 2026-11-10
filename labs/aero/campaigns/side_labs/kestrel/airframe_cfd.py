@@ -32,7 +32,7 @@ import kestrel_cfd as kcfd  # noqa: E402
 
 WORKFLOW = "airframe_cfd"
 BOOK = "kestrel"
-CAMPAIGNS = {"kestrel": "kestrel_campaigns", "kestrel-x": "kestrel_xc_campaigns"}     # the book → its campaign module (the same interface)
+CAMPAIGNS = {"kestrel": "kestrel_campaigns", "kestrel-x": "kestrel_xc_campaigns", "emerillon": "emerillon_campaigns"}     # the book → its campaign module (the same interface)
 kc = None
 KIND = "cfd"
 
@@ -64,13 +64,16 @@ def main(argv=None, book: str = "kestrel") -> int:
         print(f"no case of campaign {args.chapter} matches --cases {args.cases!r}; the campaign has: " + ", ".join(specs))
         return 2
     if args.list:
-        tab = kcfd.not_run_table({n: specs[n] for n in names if not specs[n].get("slab")})
+        tab = getattr(kc, "not_run_table", kcfd.not_run_table)({n: specs[n] for n in names if not specs[n].get("slab")})   # a book may bring its own table
         print(f"{args.variant} / {args.chapter} ({args.quality}): {len(names)} case(s) — {kc.CFD_CAMPAIGNS[args.chapter]}")
         if len(tab):
             print(tab.to_string())
         slabs = [n for n in names if specs[n].get("slab")]
         if slabs:
             print("section slabs:\n  " + "\n  ".join(slabs))
+        if hasattr(kc, "list_footer"):                               # a book that is not a Kestrel says its own last line
+            print("\n" + kc.list_footer(veh, KIND))
+            return 0
         print(f"\nvehicle: {veh.name}, {veh.mass:.3f} kg, CG x {veh.x_cg * 1000:.1f} mm; prop_lab calibration {'on file' if kc.ks.prop_lab_calibration()['on_file'] else 'not on file (generic blade section)'}")
         return 0
 
@@ -89,7 +92,7 @@ def main(argv=None, book: str = "kestrel") -> int:
     run.log(f"cache {'off (--no-cache)' if args.no_cache else cache.dir}")
     bars = wk.Progress(run, len(names), enabled=not (args.no_progress or args.quiet), desc=f"{args.chapter} {args.variant}")
     run.log(f"{kc.VARIANTS[args.variant]}; {kc.CFD_CAMPAIGNS[args.chapter]}; quality {args.quality} {kcfd.QUALITY[args.quality]}; "
-            f"{args.processors} MPI rank(s) per case; prop_lab {'on file' if fp['prop_lab']['on_file'] else 'not on file'}")
+            f"{args.processors} MPI rank(s) per case; prop_lab {'on file' if fp.get('prop_lab', {}).get('on_file') else 'not on file'}")
     budget = runkit.Budget(args.max_cases, args.max_minutes, args.case_timeout)
 
     env = None

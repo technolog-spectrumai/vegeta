@@ -98,6 +98,31 @@ kestrel_x.kind("fea", title="FEA — one panel's carbon spar in its socket (Talo
 kestrel_x.chapter("airframe-sweep", kind="cfd", campaign="sweep")        # X1
 kestrel_x.chapter("airframe-stall", kind="cfd", campaign="stall")        # X2
 kestrel_x.chapter("panel", kind="fea", campaign="panel")                 # X3
+
+# ================================================================================================ book: emerillon (E)
+def _ec():
+    p = str(ROOT / "labs" / "aero" / "designs")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import emerillon_campaigns
+    return emerillon_campaigns
+
+
+emerillon = flow.book("emerillon", "E", title="Émerillon — the electric speed quadcopter (variants ER1, ER2)",
+                      design="designs/emerillon.py, emerillon_flight.py and emerillon_campaigns.py", variants=("ER1", "ER2"),
+                      fingerprint=lambda v: _ec().fingerprint(v), compatible=lambda e, f, ch=None: _ec().compare(e, f),
+                      describe=lambda: {**dict(_ec().CFD_CAMPAIGNS), **{f"fea:{k}": v for k, v in _ec().FEA_CAMPAIGNS.items()}})
+emerillon.kind("cfd", title="CFD — the solid aircraft without propellers (Aeromant / OpenFOAM, incompressible RANS)",
+               script="labs/aero/campaigns/side_labs/emerillon/airframe_cfd.py", workflow="airframe_cfd",
+               needs=[Tool.openfoam(probe=_openfoam), Package("vegeta.aeromant")], needs_text="OpenFOAM; 4 cores recommended", time="screening case 10–20 min, fine case ~1 h",
+               options=[("--variant", ("ER1", "ER2"), "ER2"), ("--quality", ("screening", "fine"), "screening"), ("--processors", None, "4")], screening=("--quality", "screening"))
+emerillon.kind("fea", title="FEA — one printed arm with its pod (Talos: Gmsh + CalculiX)", script="labs/aero/campaigns/side_labs/emerillon/arm_fea.py", workflow="structure_fea",
+               needs=[Tool("ccx", why="the FEA solver", fix="install CalculiX (docs/installation.md)", version_cmd=("ccx", "-v")), Package("gmsh"), Package("vegeta.talos")],
+               needs_text="CalculiX ccx on the PATH, Gmsh (python module)", time="minutes", options=[("--variant", ("ER1", "ER2"), "ER2"), ("--threads", None, "4")],
+               screening=("--element-size", "3", "--threads", "2"))
+emerillon.chapter("airframe-drag", kind="cfd", campaign="drag")          # E1
+emerillon.chapter("airframe-alpha", kind="cfd", campaign="alpha")        # E2
+emerillon.chapter("arm", kind="fea", campaign="arm")                     # E3
 # (book R, races, graduated to Piccolo with the racing quad: races/lab/race.py there; docs/MOVED.md)
 
 

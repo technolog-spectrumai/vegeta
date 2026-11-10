@@ -66,6 +66,25 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage V8 — ÉMERILLON, the speed quadcopter (2026-11-10)
+- [x] V8.1 The market: `labs/aero/designs/emerillon_market.py` — motors, propellers, ESCs, 6S packs, electronics and filament with price, shop, spread and `kind` (web search of 2026-11-10); `bom`, `price` (low / used / high)
+- [x] V8.2 The flight model: `emerillon_flight.py` — airframe from the parts, mass budget (`og.mass`), drag build-up with a margin, Boreas with a Mach-aware section and propeller maps, the drive under its current limits and the pack's sag, trim on body lift, top speed, the run, `evaluate`
+- [x] V8.3 The trade: 336 builds, the front of speed against price, budget / knee / fastest, also inside the propeller makers' rpm limits; `labs/aero/sims/emerillon_trade.py` → `designs/data/emerillon_trade.json`
+- [x] V8.4 CAD: `emerillon.py` (`Emerillon`: body, arms, pods, fins; `aircraft`, `arm`, `nose`), sized by `cad_parameters(config)`; defaults = the knee build
+- [x] V8.5 `37_emerillon` (unexecuted; runs on the mocks), `labs/aero/tests/test_emerillon.py`, README
+- [x] V8.5b ER1 (261 km/h) and ER2 (383 km/h) as named variants; the model at altitude (`air_at`: density, speed of sound, viscosity through the drive, the drag and the trim)
+- [x] V8.5c Altitude: `emerillon_mission.ceiling` / `ceiling_options` — the pack, not the thrust, sets it (ER1 ~3.5 km, ER2 ~4.5 km as built); `ef.HIGH` the packs for 4 km and 7 km
+- [x] V8.5d The flights: `emerillon_mission.py` (point mass with a body axis, the drive tabulated over altitude, speed and throttle) and five scenarios — wildfire, mountain, sea, climb, palace; `labs/aero/sims/emerillon_mission.py`
+- [x] V8.5d2 Long range: `cruise_power`, `range_curve`, `range_options` (the best-range speed ~140 km/h; ER1 ~8 km, ER2 ~11 km as built, ~18 km on two packs: `ef.LONG`) and the `range` scenario (out against the wind to 90 % of the radius and back)
+- [x] V8.5e Book `emerillon` (E) in the side labs: E1 `airframe-drag`, E2 `airframe-alpha` (CFD), E3 `arm` (FEA) — `emerillon_campaigns.py` behind the shared scripts; prepared, **not run** (CFD cases written with `--prepare-only`; the FEA mesh needs Gmsh, not on the machine that wrote this)
+- [ ] V8.5f Run E1–E3 for ER1 and ER2 on the workstation; put E1's margin in place of `DRAG_MARGIN` and E2's normal force in place of `normal_force_area`; read E3's modes against the rotor's 1P (the beam rule puts the arm's first mode at 100–150 Hz, below 1P at top speed: the rotors run through it)
+- [ ] V8.6 A bench run of the knee build's motor and propeller (static thrust, current, rpm) to calibrate the propeller map — nothing here is measured
+- [ ] V8.7 CFD: the solid aircraft at the design's top speed (the notebook's cell, NOT RUN so far) for the drag margin; the fast build at Mach 0.5 on the compressible template; the propellers as rotor disks
+- [ ] V8.8 The lab's own high-pitch 7-inch blade (`prop_lab`), its FEA spinning (`talos.Centrifugal`) and a proof spin; real blade tables in place of the generic planforms
+- [ ] V8.9 The pitch-over, the stability of the bullet with its fins (neutral point against the CG) and the braking with attitude dynamics (Chiron / MuJoCo: the scenarios are a point mass so far); the propellers' own normal force in the trim; the descents (the flat fall, the tail-first catch: vortex-ring state is not modelled); a cold pack at altitude
+- [ ] V8.10 Quotes for the rows marked `assumed` (the 3120 at 900 KV, the own propellers, the 7x7E), a pack larger than 2 Ah with a real C rating, PETG and PA6-CF slicer profiles
+- [ ] V8.11 MERLIN and ÉMERILLON are the same bird in two languages: decide whether MERLIN is renamed (26, 26b, 27, `merlin*.py`, the sims and tests; PEREGRINE and FALCO import it)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)

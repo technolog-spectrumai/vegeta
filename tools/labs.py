@@ -29,7 +29,7 @@ STAGES = ("notebooks", "designs", "sims", "campaigns", "exp", "common", "data", 
 _LEGACY = (("legged", r"robot_dog|myropod|apheloria|cleopatra|persephone|gait|stability_plots|benchmark/"),
            ("marine", r"survey_boat|submarine|boat"),
            ("land", r"rover|pekari|perseus|onager|sweeper|atlas|manus|sentinel"),
-           ("aero", r"kestrel|nisus|falco|merlin|peregrine|aguya|albatros|velutina|drongo|fixed_wing|quad_frame|frame_study|"
+           ("aero", r"kestrel|nisus|falco|merlin|emerillon|peregrine|aguya|albatros|velutina|drongo|fixed_wing|quad_frame|frame_study|"
                     r"prop_lab|propulsor|air_propeller|ducted_fan|turbojet|microjet|mini_ra|xwing|quadcopter|exotic|"
                     r"races/|side_labs/|\bxc\b|propeller"))
 _LEGACY_DIRS = ("designs", "notebooks", "scenarios", "components", "assemblies", "side_labs", "races", "benchmark")
