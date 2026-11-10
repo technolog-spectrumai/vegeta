@@ -586,6 +586,80 @@
    }
   }
  },
+ "release": {
+  "package": {
+   "mass_kg": 16.381489252015207,
+   "folded_m": [
+    0.7982029025675542,
+    0.5192571250924016,
+    0.23914592827270922
+   ]
+  },
+  "pass_speed": 39.383378566012226,
+  "drogue": {
+   "drag_area_m2": 0.6,
+   "line_m": 3.0
+  },
+  "eject_speed": 3.0,
+  "eject_speed_needed": 2.495453102110332,
+  "separation": {
+   "sill_gap_m": 0.02840646162462203,
+   "time_out_of_bay_s": 0.07,
+   "tail_gap_m": 0.10637934941996197,
+   "aircraft_dn": 0.22831284671490315,
+   "drag_decel_g": 1.6785401352877878,
+   "time_past_tail_s": 0.494,
+   "drop_at_tail_m": 2.9577347344441316,
+   "tail_x_m": 1.714328152943838,
+   "line_taut_s": 0.456,
+   "eject_speed": 3.0
+  },
+  "events": {
+   "drogue out": 0.4900000000000003,
+   "arms released": 2.549999999999968,
+   "arms locked": 3.004999999999958,
+   "drogue cut": 3.1649999999999547,
+   "hover": 5.824999999999898
+  },
+  "height_lost_m": 45.82705764915548,
+  "downrange_m": 58.544384095970265,
+  "peak_g_opening": 3.47787871157336,
+  "peak_g_recovery": 2.2978145497221316,
+  "arm": {
+   "locked": true,
+   "time_s": 0.45150000000000035,
+   "lock_energy_j": 0.9149618167215803,
+   "tip_speed": 2.2179009843959245,
+   "air_moment_nm": 0.2144978992618816,
+   "spring_margin": 2.3310251602489935,
+   "stalled_at_deg": null
+  },
+  "arm_at_pass_speed": {
+   "locked": false,
+   "time_s": null,
+   "lock_energy_j": 0.0,
+   "tip_speed": 0.0,
+   "air_moment_nm": 6.087980676684273,
+   "spring_margin": 0.08212903860140329,
+   "stalled_at_deg": 0.0
+  },
+  "without_drogue": {
+   "arms released": 0.6000000000000004,
+   "failed": "an arm does not reach its lock in this airstream"
+  },
+  "monte_carlo": {
+   "success": 0.99,
+   "failures": {
+    "no hover within the time limit": 4
+   },
+   "height_p50_m": 46.72348323672318,
+   "height_p99_m": 72.09675177306518,
+   "pass_height_m": 120.12093971633148,
+   "g_p99": 4.786921179474713,
+   "downrange_p05_m": 27.96854432087556,
+   "downrange_p95_m": 94.4430985332047
+  }
+ },
  "sensitivities": [
   {
    "case": "2 kg cargo, 150.0 km",

@@ -164,3 +164,33 @@ def test_cad(designs):
         al.Albatros.layout(al.Albatros().resolve(**dict(p, bay_width=p["fuselage_width"])))
     o = al.outline(p)
     assert len(o["rotors"]) == 4 and len(o["side"]) >= 4
+
+
+# ------------------------------------------------------------------------------------------------ the release
+def test_the_release_of_the_multirotor(designs, option):
+    import albatros_drop as Dr
+    cat = designs["catapult"]
+    pk = Dr.package(option.vehicles[0])
+    v = F.launch(cat)["release_speed"]
+    assert pk.drag_area(0.0) < pk.drag_area(0.5) < pk.drag_area(1.0)
+    r = Dr.simulate(pk, v)
+    ev = r["events"]
+    assert r["ok"] and r["within_load_limit"] and r["locks_without_buffer"]
+    assert ev["drogue out"] < ev["arms released"] < ev["arms locked"] < ev["drogue cut"] < ev["hover"]
+    assert 20 < r["height_lost_m"] < 100 and r["speed_at_unfold"] < Dr.Sequence().unfold_speed
+    assert r["track"]["speed"][-1] < 1.0 or abs(r["track"]["thrust"][-1] - pk.weight) < 0.2 * pk.weight
+    # the drogue is what makes the unfolding possible: the arms do not open into the pass's airstream
+    assert Dr.unfold_arm(pk, side_speed=0.0)["locked"] and not Dr.unfold_arm(pk, side_speed=v)["locked"]
+    assert 5 < Dr.unfold_speed_limit(pk) < v
+    assert not Dr.without_drogue(pk, v)["ok"]
+    # a bigger drogue: a harder opening, less height
+    small, big = Dr.simulate(pk, v, drogue=Dr.Drogue(drag_area_m2=0.3)), Dr.simulate(pk, v, drogue=Dr.Drogue(drag_area_m2=1.5))
+    assert big["peak_g_opening"] > small["peak_g_opening"] and big["height_lost_m"] < small["height_lost_m"]
+    assert Dr.simulate(pk, v, height_m=10.0)["events"]["failed"] == "it reaches the sea"
+    assert Dr.simulate(pk, v, rotors_out=1)["ok"]                                  # a hexacopter on four rotors
+    mc = Dr.monte_carlo(pk, v, 60)
+    assert mc["success"] > 0.9 and mc["height_p99_m"] >= mc["height_p50_m"] and mc["pass_height_m"] > mc["height_p99_m"]
+    m = cat.mtow_kg - 0.45 * cat.fuel_kg
+    slow, fast = Dr.separation(pk, cat.params, v, m, eject_speed=1.0), Dr.separation(pk, cat.params, v, m, eject_speed=4.0)
+    assert fast["sill_gap_m"] > slow["sill_gap_m"] and fast["tail_gap_m"] > 0 and 0.05 < fast["aircraft_dn"] < 0.6
+    assert 0.5 < Dr.eject_speed_needed(pk, cat.params, v, m) < 15
