@@ -262,3 +262,14 @@ body, the axis slews to where the wanted force points. Times, speeds, energy and
 
 `--ceiling` prints the altitude analysis alone: the economy climb's energy against each pack of the catalogue.
 
+## The air match: two Émerillons, two hoops, balloons (MuJoCo; branch `dev_air_match`)
+
+`python labs/aero/sims/emerillon_air_match.py [--seed 1] [--duration 60] [--variants ER2 ER2] [--balloons 8] [--plain] [--over]
+[--series N] [--no-video] [--camera grandstand] [--quick]`. A 1 v 1 match in MuJoCo (`labs/aero/sims/air_match/`): a point for
+flying through the other side's hoop (a ring of 0.9 m radius on a 2 m stick); with the token (the default) only its carrier scores
+and the other takes it by flying within 2 m of the carrier for 0.35 s without touching; a contact with the other aircraft or a
+balloon is a foul, with the ground or a hoop a crash, and both cost 3 s at the start. `--plain` drops the token (a race to the
+hoops), `--over` scores by flying over the hoop instead of through it. Writes `labs/aero/sims/output/air_match_<seed>.png` (the
+tracks, the events, who held the token), `.mp4` (a replay from above and from the side) and `.json`; `--camera` adds a MuJoCo
+camera video where OpenGL exists (`MUJOCO_GL=egl`). `--series N` prints N matches' results.
+

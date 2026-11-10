@@ -85,6 +85,16 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] V8.10 Quotes for the rows marked `assumed` (the 3120 at 900 KV, the own propellers, the 7x7E), a pack larger than 2 Ah with a real C rating, PETG and PA6-CF slicer profiles
 - [ ] V8.11 MERLIN and ÉMERILLON are the same bird in two languages: decide whether MERLIN is renamed (26, 26b, 27, `merlin*.py`, the sims and tests; PEREGRINE and FALCO import it)
 
+## Stage V9 — The air match (branch `dev_air_match`, 2026-11-10)
+- [x] V9.1 The arena in MuJoCo (`labs/aero/sims/air_match/arena.py`): the field, a hoop on a 2 m stick at each end, drifting balloons (free bodies, weight taken off), the Émerillons as rigid bodies from the mass budget
+- [x] V9.2 The match (`match.py`): the races' geometric controller on a nose-up body, the rotor hook (lagged thrusts, the drive's limit, reaction torques, drag and normal force), the referee (goals through the hoop, fouls on aircraft and balloons, crashes, restarts), rule-based pilots
+- [x] V9.3 The chase: a token only whose carrier scores, taken by a tag (within 2 m for 0.35 s, no contact); `--plain` plays without it
+- [x] V9.4 `emerillon_air_match.py` (a match, `--series`), the summary sheet and the replay video (`replay.py`), `labs/aero/tests/test_air_match.py`
+- [ ] V9.5 A MuJoCo camera video (`replay.mujoco_video`, written, not run: no OpenGL on the machine that wrote it)
+- [ ] V9.6 2 v 2 and 3 v 3 (the arena's start slots and the token rules are per team already; the pilots need passing and marking), three hoops a side
+- [ ] V9.7 Pilots that learn or search (the rule-based ones never feint); a keeper; a foul-drawing rule that cannot be gamed
+- [ ] V9.8 Aerodynamic moments and propeller wash on the balloons; the pack and the windings over a match (the energy is counted, nothing is limited)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)

@@ -337,6 +337,22 @@ against the rotor's 1P) — `wf E1 --variant ER2 --prepare-only` writes the case
 has been run. (MERLIN keeps its name: it is still the wildfire sampler of 26, 26b
 and 27, and PEREGRINE and FALCO are built on its body.)
 
+**The air match** (branch `dev_air_match`; `labs/aero/sims/air_match/`, `labs/aero/sims/emerillon_air_match.py`) puts two Émerillons into
+**MuJoCo** to play a hoop game, 1 v 1 to start with: a hoop on a 2 m stick at each end of a 60 × 30 m field, eight slow
+balloons drifting between them. A point for flying **through the other side's hoop**; touching the other aircraft or a balloon
+is a **foul**, the ground, a hoop or leaving the field a **crash** — either sends the aircraft back to its start for 3 s. To make
+them chase each other there is a **token** (a switch: `--plain` plays without it): it waits somewhere in the middle of the
+field, the first aircraft through it carries it, only the carrier scores, and the other takes it by a **tag** — flying within
+2 m of the carrier for 0.35 s without touching it. Each Émerillon is a free rigid body (mass and inertia from the mass budget,
+a capsule body, four pods and propeller disks for the contacts) with its nose along the body's z axis, so the races' geometric
+quad controller (`races.flight.Flight`) flies it as it stands; the rotor hook applies four lagged thrusts under the drive's
+thrust limit with their reaction torques, and the airframe's drag and normal force. The pilots are rule-based (no learning):
+the carrier lines up on the hoop's axis and flies through, the chaser flies to where the carrier will be and sits a metre
+beside it, both steer round what the next second and a half brings too close. `emerillon_air_match.py` plays a match and writes a
+summary sheet, a replay video (matplotlib; a MuJoCo camera video with `--camera` where OpenGL exists) and a JSON; `--series N`
+plays N seeds. Over six seeds of 60 s: one to five goals a match, two to four tags, zero to four crashes, no fouls. Not modelled:
+the aircraft's aerodynamic moments, the balloons' air.
+
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
 return-to-home) and **Nisus-Zero** (the same aircraft with an NVIDIA Jetson for onboard computer vision, its camera, power
