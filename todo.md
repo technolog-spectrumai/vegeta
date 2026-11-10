@@ -85,6 +85,26 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] V8.10 Quotes for the rows marked `assumed` (the 3120 at 900 KV, the own propellers, the 7x7E), a pack larger than 2 Ah with a real C rating, PETG and PA6-CF slicer profiles
 - [ ] V8.11 MERLIN and ÉMERILLON are the same bird in two languages: decide whether MERLIN is renamed (26, 26b, 27, `merlin*.py`, the sims and tests; PEREGRINE and FALCO import it)
 
+## Stage V9 — The Pekari family: Pekari-2M, Pumba and the fleet (2026-11-10, branch `dev_pumba`)
+Design note: [`docs/pekari_pumba.md`](docs/pekari_pumba.md). The Pekari Rover itself is unchanged; both machines build on `pekari_rover_robot` as Perseus does.
+- [x] V9.1 Architecture assessment: what exists (Pekari Rover, the variant pattern, Manus/Perseus arms, Ogma, Chiron, Dedalus, Yax export) and what does not (no fleet, shared-map, comms or supervision layer; no WOTAN/MIMIR/Wagenburg; Chiron is one robot per world)
+- [x] V9.2 WILK (Stohid Technology) as a reference: manufacturer-reported 180 kg / 200 kg / 8 km/h / 1700 x 1170 x 700 mm in `pumba_robot.WILK_REFERENCE`; the principles taken, not its geometry. The trade press disagrees on whether WILK is tracked or wheeled (open: a datasheet or photographs)
+- [x] V9.3 `pekari_arms.py`: one arm description (5-7 DOF, Manus conventions): IK/FK, statics, rated load against reach (peak / SF 1.5 and continuous), workspace, power, the Chiron link tree; three arms (Pekari-2M light, Pumba main 6-DOF, Pumba aux)
+- [x] V9.4 `pekari_family.py`: `Platform` (chassis + arm mounts + stabilizers + parts), mass and CG in 3-D, support polygon and tip-over, lift capacity (min(arm, 0.75 x tipping)), drive check, power and endurance, capabilities (the fleet contract), BOM and cost, the Chiron robot, a MuJoCo stand test
+- [x] V9.5 Pekari-2M (`pekari_2m_robot.py`, CAD `pekari_2m.Pekari2M`): Pekari one size up, two 5-DOF arms (5 kg at 0.5 m), 55 kg empty, 30 kg (20-40) on the deck, 0.58 m wide, 0.42-0.45 m high folded
+- [x] V9.6 Pumba (`pumba_robot.py`, CAD `pumba.Pumba`): WILK-class envelope, 6-DOF main arm (60 kg at 1.2 m, 1.92 m reach) + 5-DOF aux arm, four stabilizers, 444 kg empty, 150 kg (100-200) on the deck, 8 km/h, 4.8 kWh
+- [x] V9.7 Ogma actuator catalogue: `harmonic 12 Nm, brake`, `harmonic 30 Nm, brake`, `cycloidal 1600 Nm, brake`, `pumba track drive 4 kW, 48 V` (class values, assumed)
+- [x] V9.8 `fleet.py`: deterministic heterogeneous fleet — capability auction, width/headroom-aware A*, shared map (time-stamped merge), frontier exploration, debris tasks, reassignment on failure / blocked path, comms-loss recovery (return to last link, offline completion reported, duplicates cancelled), supervisor (e-stop on a separate safety radio, hold, approvals, pre-approval), drone and third-party profiles
+- [x] V9.9 `fleet_scenario.py` + `sims/fleet_response.py`: two Pekari-2M, Pumba and a drone at a collapsed industrial hall — every operator task done in 392 s with a drive fault, comms loss and an e-stop; deterministic
+- [x] V9.10 `sims/pekari_family_checks.py`: numbers, lift / workspace / to-scale figures (`docs/figures/`), MuJoCo stand tests; registered `pekari_2m` and `pumba` for export (YX2 written for both)
+- [x] V9.11 Tests: `labs/land/tests/test_pekari_family.py`, `test_fleet.py` (51 tests; the whole land lab passes on mocks with MuJoCo and CadQuery installed)
+- [ ] V9.12 Arm controller with gravity feed-forward and a MuJoCo pick-and-place with real contacts (a box from the deck; Pumba's grab on a beam); wrist-camera models
+- [ ] V9.13 Pumba structure: main-arm tube deflection and stresses, the steel subframe (Talos FEA); track links and pins at 600 kg — decide steel-rubber or band track; bring the chassis mass toward the WILK class (294 kg now)
+- [ ] V9.14 MuJoCo tip test on a side slope with the arm at reach, with and without stabilizers, against `pf.tipping_load`; brakes holding on power loss
+- [ ] V9.15 Fleet: robots as obstacles (deconfliction), multi-robot tasks (two robots on one load), battery-aware scheduling with charging, scenario sweeps (fault times, comm ranges); message schemas with a ROS 2 mapping for Piccolo; a learned policy only as a challenger to the deterministic baseline
+- [ ] V9.16 A notebook for Pekari-2M and Pumba (as 30 / 37); quotes for the strain-wave and cycloidal modules, the track drive and the battery (the BOM is class prices: EUR 20-47 k / 68-143 k per unit, parts only); a bench test of one arm joint at its rated torque
+- [ ] V9.17 Pre-existing failures seen while checking (not from this work, present on the base commit): `libs/ogma/tests/test_parts.py::test_module_reproduces_vegeta[actuators]` (the golden predates the `gear_ratio` / `gear_efficiency` fields) and four export tests in `tools/tests/test_export.py` (`test_selective_export_withholds_and_says_so`, `test_design_and_user_tags`, `test_consumer_requirements_report_and_never_override_the_flags`, `test_yx2_is_the_main_file_and_keeps_every_selected_property`)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)
