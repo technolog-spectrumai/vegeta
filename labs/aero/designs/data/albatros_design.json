@@ -1,0 +1,734 @@
+{
+ "requirements": {
+  "cargo_kg": 10.0,
+  "radius_km": 300.0,
+  "headwind_out": 0.0,
+  "cruise_altitude_m": 6000.0,
+  "min_cruise_speed": null,
+  "start_s": 45.0,
+  "takeoff_hover_s": 25.0,
+  "transition_s": 20.0,
+  "release_hover_s": 60.0,
+  "landing_hover_s": 60.0,
+  "restart_s": 40.0,
+  "reserve": 0.15,
+  "hover_margin": 1.25,
+  "wing_loading": 250.0,
+  "aspect_ratio": 10.0,
+  "sweep_deg": 20.0,
+  "cl_max": 1.3,
+  "oswald": 0.8,
+  "descent_sink": 5.0
+ },
+ "bay": {
+  "option": "one cargo hexacopter",
+  "summary": {
+   "vehicles": 1,
+   "rotors each": 6,
+   "cargo delivered [kg]": 10.0,
+   "largest single item [kg]": 10.0,
+   "each vehicle, empty [kg]": 6.38,
+   "dropped mass [kg]": 16.38,
+   "cargo / dropped": 0.61,
+   "propeller [m]": 0.56,
+   "unfolded span [m]": 1.73,
+   "bay L x W x H [m]": "0.88 x 0.60 x 0.28",
+   "fuselage W x H [m]": "0.66 x 0.42",
+   "bay fittings [kg]": 2.4,
+   "one rotor out": "flies on"
+  },
+  "bay": {
+   "length_m": 0.8782029025675543,
+   "width_m": 0.5992571250924016,
+   "height_m": 0.27914592827270923,
+   "fuselage_width_m": 0.6592571250924015,
+   "fuselage_height_m": 0.41914592827270925,
+   "volume_l": 146.90594528941642,
+   "fittings_kg": 2.441942713241523
+  },
+  "multirotor": {
+   "cargo": 10.0,
+   "battery": 1.268422272052125,
+   "motors, controllers, propellers": 1.9920293915086091,
+   "frame and arm hinges": 2.8010382803224334,
+   "flight controller, GNSS, link, hook, lights": 0.32
+  },
+  "alternatives": {
+   "hexacopter": {
+    "vehicles": 1,
+    "rotors each": 6,
+    "cargo delivered [kg]": 10.0,
+    "largest single item [kg]": 10.0,
+    "each vehicle, empty [kg]": 6.38,
+    "dropped mass [kg]": 16.38,
+    "cargo / dropped": 0.61,
+    "propeller [m]": 0.56,
+    "unfolded span [m]": 1.73,
+    "bay L x W x H [m]": "0.88 x 0.60 x 0.28",
+    "fuselage W x H [m]": "0.66 x 0.42",
+    "bay fittings [kg]": 2.4,
+    "one rotor out": "flies on"
+   },
+   "three quadcopters": {
+    "vehicles": 3,
+    "rotors each": 4,
+    "cargo delivered [kg]": 10.0,
+    "largest single item [kg]": 3.33,
+    "each vehicle, empty [kg]": 2.55,
+    "dropped mass [kg]": 17.66,
+    "cargo / dropped": 0.57,
+    "propeller [m]": 0.41,
+    "unfolded span [m]": 1.02,
+    "bay L x W x H [m]": "1.48 x 0.37 x 0.29",
+    "fuselage W x H [m]": "0.43 x 0.43",
+    "bay fittings [kg]": 3.7,
+    "one rotor out": "falls"
+   },
+   "two hexacopters": {
+    "vehicles": 2,
+    "rotors each": 6,
+    "cargo delivered [kg]": 10.0,
+    "largest single item [kg]": 5.0,
+    "each vehicle, empty [kg]": 3.58,
+    "dropped mass [kg]": 17.16,
+    "cargo / dropped": 0.58,
+    "propeller [m]": 0.4,
+    "unfolded span [m]": 1.25,
+    "bay L x W x H [m]": "1.30 x 0.49 x 0.26",
+    "fuselage W x H [m]": "0.55 x 0.40",
+    "bay fittings [kg]": 3.4,
+    "one rotor out": "flies on"
+   },
+   "three camera quadcopters": {
+    "vehicles": 3,
+    "rotors each": 4,
+    "cargo delivered [kg]": 0.45,
+    "largest single item [kg]": 0.15,
+    "each vehicle, empty [kg]": 0.9,
+    "dropped mass [kg]": 3.15,
+    "cargo / dropped": 0.14,
+    "propeller [m]": 0.24,
+    "unfolded span [m]": 0.62,
+    "bay L x W x H [m]": "0.85 x 0.18 x 0.18",
+    "fuselage W x H [m]": "0.24 x 0.32",
+    "bay fittings [kg]": 2.3,
+    "one rotor out": "falls"
+   }
+  }
+ },
+ "layouts": {
+  "catapult": {
+   "summary": {
+    "take-off mass [kg]": 108.6,
+    "engines": "2 x 160 N",
+    "nearest catalogue class": "140 N class x 1.12",
+    "installed thrust / weight": 0.3,
+    "engines running in cruise": 2,
+    "wing area [m\u00b2]": 0.9,
+    "wing loading [kg/m\u00b2]": 120,
+    "stall speed at take-off [m/s]": 33.6,
+    "span [m]": 3.01,
+    "fuselage length [m]": 3.24,
+    "cd0": 0.0333,
+    "lift rotor \u00d8 [m]": "-",
+    "lift battery [kg]": "-",
+    "hover power [kW]": "-",
+    "fuel [kg]": 45.4,
+    "fuel [L]": 56.8,
+    "fuel fraction": 0.418,
+    "of it thrust-borne [kg]": 0.0,
+    "reserve left [kg]": 6.8,
+    "cruise out [m/s]": 84.0,
+    "cruise home [m/s]": 67.0,
+    "time to the vessel [min]": 63.0,
+    "sortie [min]": 140.9,
+    "spool-up [s]": 3.711827959537425,
+    "feasible": true
+   },
+   "budget_kg": {
+    "structure": 25.01396629201812,
+    "actuators": 1.628573102380182,
+    "systems": 5.5,
+    "flotation": 1.0,
+    "engines (2 x 160 N)": 3.4056612084655318,
+    "fuel system": 4.173968105879034,
+    "vectoring nozzles": 0.42176531024093156,
+    "launch hooks, skids and arresting hook": 3.257146204760364,
+    "bay doors and release": 2.441942713241523,
+    "bay load (one cargo hexacopter)": 16.381489252015207,
+    "fuel": 45.342401512557615
+   },
+   "notes": []
+  },
+  "vectored": {
+   "summary": {
+    "take-off mass [kg]": 201.9,
+    "engines": "2 x 346 N + 2 x 891 N lift",
+    "nearest catalogue class": "400 N class x 0.87",
+    "installed thrust / weight": 1.25,
+    "engines running in cruise": 1,
+    "wing area [m\u00b2]": 0.81,
+    "wing loading [kg/m\u00b2]": 250,
+    "stall speed at take-off [m/s]": 55.5,
+    "span [m]": 2.84,
+    "fuselage length [m]": 3.82,
+    "cd0": 0.0384,
+    "lift rotor \u00d8 [m]": "-",
+    "lift battery [kg]": "-",
+    "hover power [kW]": "-",
+    "fuel [kg]": 87.9,
+    "fuel [L]": 109.9,
+    "fuel fraction": 0.436,
+    "of it thrust-borne [kg]": 20.3,
+    "reserve left [kg]": 13.2,
+    "cruise out [m/s]": 110.0,
+    "cruise home [m/s]": 97.0,
+    "time to the vessel [min]": 49.5,
+    "sortie [min]": 104.9,
+    "spool-up [s]": 4.653242580841073,
+    "feasible": true
+   },
+   "budget_kg": {
+    "structure": 46.50923618299885,
+    "actuators": 3.028056013813716,
+    "systems": 5.5,
+    "flotation": 1.0,
+    "engines (2 x 346 N)": 6.980486769586488,
+    "fuel system": 7.1498516522738145,
+    "lift jets (2 x 891 N)": 18.192506212976994,
+    "swivel nozzles (2)": 1.7460710278625367,
+    "lift-jet bay and doors": 4.037408018418288,
+    "bay doors and release": 2.441942713241523,
+    "bay load (one cargo hexacopter)": 16.381489252015207,
+    "fuel": 87.85502360391163
+   },
+   "notes": []
+  },
+  "tailsitter": {
+   "summary": {
+    "take-off mass [kg]": 485.3,
+    "engines": "4 x 1487 N",
+    "nearest catalogue class": "800 N class x 1.86",
+    "installed thrust / weight": 1.25,
+    "engines running in cruise": 1,
+    "wing area [m\u00b2]": 1.94,
+    "wing loading [kg/m\u00b2]": 250,
+    "stall speed at take-off [m/s]": 55.5,
+    "span [m]": 4.41,
+    "fuselage length [m]": 4.46,
+    "cd0": 0.0314,
+    "lift rotor \u00d8 [m]": "-",
+    "lift battery [kg]": "-",
+    "hover power [kW]": "-",
+    "fuel [kg]": 238.0,
+    "fuel [L]": 297.5,
+    "fuel fraction": 0.49,
+    "of it thrust-borne [kg]": 48.2,
+    "reserve left [kg]": 35.7,
+    "cruise out [m/s]": 123.0,
+    "cruise home [m/s]": 111.0,
+    "time to the vessel [min]": 46.1,
+    "sortie [min]": 94.9,
+    "spool-up [s]": 8.180783556805086,
+    "feasible": true
+   },
+   "budget_kg": {
+    "structure": 111.8080712016916,
+    "actuators": 7.2794380252357955,
+    "systems": 5.5,
+    "flotation": 1.0,
+    "engines (4 x 1487 N)": 59.78694330994677,
+    "fuel system": 17.656512940409538,
+    "vectoring nozzles": 8.47719448308371,
+    "tail-sitter legs and tail": 16.98535539221686,
+    "bay doors and release": 2.441942713241523,
+    "bay load (one cargo hexacopter)": 16.381489252015207,
+    "fuel": 237.95018486299338
+   },
+   "notes": []
+  }
+ },
+ "set_aside": {
+  "lift_cruise": {
+   "take-off mass [kg]": 298.5,
+   "engines": "2 x 439 N",
+   "nearest catalogue class": "400 N class x 1.10",
+   "installed thrust / weight": 0.3,
+   "engines running in cruise": 2,
+   "wing area [m\u00b2]": 1.19,
+   "wing loading [kg/m\u00b2]": 250,
+   "stall speed at take-off [m/s]": 55.5,
+   "span [m]": 3.46,
+   "fuselage length [m]": 3.64,
+   "cd0": 0.056,
+   "lift rotor \u00d8 [m]": 1.44,
+   "lift battery [kg]": 24.7,
+   "hover power [kW]": 64.4,
+   "fuel [kg]": 126.4,
+   "fuel [L]": 157.9,
+   "fuel fraction": 0.423,
+   "of it thrust-borne [kg]": 4.2,
+   "reserve left [kg]": 19.0,
+   "cruise out [m/s]": 104.0,
+   "cruise home [m/s]": 93.0,
+   "time to the vessel [min]": 54.4,
+   "sortie [min]": 110.1,
+   "spool-up [s]": 5.238398304263568,
+   "feasible": true
+  }
+ },
+ "scorecard": {
+  "catapult or runway launch, lands ashore": {
+   "wing loading [kg/m\u00b2]": 120,
+   "cruise gust 10 m/s: load factor step [g]": 0.96,
+   "the same with the flaperons working [g]": 0.33,
+   "release over the vessel": "a pass at 39 m/s",
+   "stall speed at take-off [m/s]": 33.6,
+   "catapult end speed [m/s]": 40.3,
+   "catapult stroke at 8 g [m]": 10.4,
+   "the same with 10 m/s of wind over the deck [m]": 5.9,
+   "catapult energy [kJ]": 88,
+   "runway take-off roll [m]": 421,
+   "approach speed [m/s]": 30.7,
+   "landing stop at 0.35 g [m]": 137,
+   "afloat (ditched, calm sea): draft [m]": 0.06,
+   "metacentric height [m]": 0.46,
+   "hover, side gust 8 m/s: drift [m]": "-",
+   "hover wind limit [m/s]": "-",
+   "deck heave \u00b11 m / 8 s: height error rms [m]": "-",
+   "tips on the deck at roll [deg]": "-",
+   "wind that tips it at 8 deg roll [m/s]": "-"
+  },
+  "pure jet, vectored thrust": {
+   "wing loading [kg/m\u00b2]": 250,
+   "cruise gust 10 m/s: load factor step [g]": 0.61,
+   "the same with the flaperons working [g]": 0.28,
+   "release over the vessel": "from a hover",
+   "stall speed at take-off [m/s]": "-",
+   "catapult end speed [m/s]": "-",
+   "catapult stroke at 8 g [m]": "-",
+   "the same with 10 m/s of wind over the deck [m]": "-",
+   "catapult energy [kJ]": "-",
+   "runway take-off roll [m]": "-",
+   "approach speed [m/s]": "-",
+   "landing stop at 0.35 g [m]": "-",
+   "afloat (ditched, calm sea): draft [m]": 0.08,
+   "metacentric height [m]": 0.34,
+   "hover, side gust 8 m/s: drift [m]": 0.31,
+   "hover wind limit [m/s]": 57,
+   "deck heave \u00b11 m / 8 s: height error rms [m]": 0.01,
+   "tips on the deck at roll [deg]": 42,
+   "wind that tips it at 8 deg roll [m/s]": 33
+  },
+  "jet tail-sitter": {
+   "wing loading [kg/m\u00b2]": 250,
+   "cruise gust 10 m/s: load factor step [g]": 0.67,
+   "the same with the flaperons working [g]": 0.27,
+   "release over the vessel": "from a hover",
+   "stall speed at take-off [m/s]": "-",
+   "catapult end speed [m/s]": "-",
+   "catapult stroke at 8 g [m]": "-",
+   "the same with 10 m/s of wind over the deck [m]": "-",
+   "catapult energy [kJ]": "-",
+   "runway take-off roll [m]": "-",
+   "approach speed [m/s]": "-",
+   "landing stop at 0.35 g [m]": "-",
+   "afloat (ditched, calm sea): draft [m]": 0.14,
+   "metacentric height [m]": 0.19,
+   "hover, side gust 8 m/s: drift [m]": 2.66,
+   "hover wind limit [m/s]": 12,
+   "deck heave \u00b11 m / 8 s: height error rms [m]": 0.04,
+   "tips on the deck at roll [deg]": 13,
+   "wind that tips it at 8 deg roll [m/s]": 8
+  }
+ },
+ "choice": {
+  "choice": "catapult",
+  "by_fuel": [
+   "catapult",
+   "vectored",
+   "tailsitter"
+  ],
+  "failed": {
+   "catapult": [],
+   "vectored": [],
+   "tailsitter": [
+    "drifts 2.7 m in the gust",
+    "hover wind limit 12 m/s",
+    "tips on the deck in 8 m/s of wind"
+   ]
+  },
+  "notes": {
+   "catapult": [
+    "lands ashore at 31 m/s; releases the multirotor at 39 m/s, not from a hover"
+   ],
+   "vectored": [
+    "hot jets straight down: no settling on water, a cleared deck"
+   ],
+   "tailsitter": [
+    "hot jets straight down: no settling on water, a cleared deck"
+   ]
+  },
+  "fuel_kg": {
+   "catapult": 45.421921683572265,
+   "vectored": 87.94373618244131,
+   "tailsitter": 237.96795692848468
+  }
+ },
+ "gates": {
+  "gust_excursion_m": 1.0,
+  "hover_wind_limit": 20.0,
+  "deck_height_error_m": 0.25,
+  "tip_wind": 20.0,
+  "catapult_stroke_m": 12.0
+ },
+ "albatros": {
+  "layout": "catapult",
+  "params": {
+   "part": "aircraft",
+   "layout": "catapult",
+   "span": 3007.9275833298525,
+   "root_chord": 414.88656321791075,
+   "taper": 0.45,
+   "sweep_deg": 20.0,
+   "dihedral_deg": -2.0,
+   "camber": 0.02,
+   "camber_pos": 0.4,
+   "thickness": 0.12,
+   "fuselage_length": 3240.2358889983675,
+   "fuselage_width": 659.2571250924016,
+   "fuselage_height": 419.1459282727092,
+   "nose_length": 1183.0926925368742,
+   "nose_shape": 607.7615959954284,
+   "tail_cone": 1318.5142501848031,
+   "tail_end": 0.22,
+   "bay_length": 878.2029025675542,
+   "bay_width": 599.2571250924016,
+   "bay_height": 279.1459282727092,
+   "bay_x": 342.81504351765506,
+   "engines": 2,
+   "nacelle_diameter": 132.7784947051976,
+   "nacelle_length": 378.15668224606503,
+   "intake_diameter": 89.0838710288982,
+   "nozzle_diameter": 46.195460940821235,
+   "boattail": 100.96172049941796,
+   "nacelle_x": 953.8036766137861,
+   "lift_rotors": 0,
+   "rotor_diameter": 900.0,
+   "boom_y": 902.3782749989557,
+   "boom_diameter": 76.5,
+   "rotor_x_front": -401.8839099304048,
+   "rotor_x_rear": 1087.513996965715,
+   "vtail_span": 368.39438812005335,
+   "vtail_chord": 294.71551049604267,
+   "vtail_dihedral_deg": 42.0,
+   "tail_thickness": 0.09,
+   "multirotor_rotors": 6,
+   "multirotor_arm": 584.5335176309017,
+   "multirotor_prop": 556.6985882199062,
+   "cargo_height": 119.14592827270923,
+   "angle_of_attack_deg": 0.0
+  },
+  "engine": {
+   "impeller_diameter": 0.07211551464244141,
+   "rpm_max": 117866.45414851664,
+   "rpm_idle": 33002.60716158466,
+   "design_mass_flow": 0.32650621499749327,
+   "design_tit": 1129.8012749939169,
+   "slip": 0.88,
+   "power_input": 1.04,
+   "eta_c": 0.72,
+   "eta_c_droop": 0.25,
+   "eta_t": 0.8,
+   "eta_mech": 0.98,
+   "eta_burner": 0.7759125424563177,
+   "burner_loss": 0.06,
+   "intake_recovery": 0.98,
+   "nozzle_cv": 0.97,
+   "lhv": 43000000.0,
+   "fuel_density": 800.0,
+   "max_egt": 1023.0,
+   "spool_time": 3.711827959537425,
+   "mass_kg": 1.4058843674697719,
+   "system_mass_kg": 0.29694623676299403,
+   "outer_diameter": 0.11877849470519761,
+   "length": 0.318156682246065,
+   "name": "140 N class x 1.12",
+   "a4": 0.0008673052771550376,
+   "a8": 0.0016760558689518416
+  },
+  "engines": 2,
+  "take_off_mass_kg": 108.5715401586788,
+  "fuel_kg": 45.421921683572265,
+  "fuel_l": 56.77740210446533,
+  "reserve_kg": 6.822329094249463,
+  "phases": {
+   "start": {
+    "time": 49.0,
+    "fuel": 0.13246415734943834,
+    "dist": 0.0,
+    "wh": 0.0
+   },
+   "launch": {
+    "time": 5.0,
+    "fuel": 0.08484879107154422,
+    "dist": 226.92232595495477,
+    "wh": 0.0
+   },
+   "climb out": {
+    "time": 660.0,
+    "fuel": 8.83266578468746,
+    "dist": 58551.58377793932,
+    "wh": 0.0
+   },
+   "cruise out": {
+    "time": 2031.8892633574412,
+    "fuel": 11.253231518092282,
+    "dist": 171272.58024808852,
+    "wh": 0.0
+   },
+   "descent to the vessel": {
+    "time": 976.5208023657268,
+    "fuel": 1.285517305223463,
+    "dist": 69948.91364801735,
+    "wh": 0.0
+   },
+   "slow pass and release": {
+    "time": 60.0,
+    "fuel": 0.3609720545189072,
+    "dist": 0.0,
+    "wh": 0.0
+   },
+   "climb home": {
+    "time": 405.0,
+    "fuel": 5.504853616856224,
+    "dist": 32399.557992289756,
+    "wh": 0.0
+   },
+   "cruise home": {
+    "time": 3070.705964863564,
+    "fuel": 10.130781651737042,
+    "dist": 204586.50127950142,
+    "wh": 0.0
+   },
+   "descent home": {
+    "time": 1135.3634833184828,
+    "fuel": 0.7932158557046292,
+    "dist": 63013.94072820842,
+    "wh": 0.0
+   },
+   "approach and landing": {
+    "time": 60.0,
+    "fuel": 0.22104185408167076,
+    "dist": 0.0,
+    "wh": 0.0
+   }
+  },
+  "cruise_speed_out": 84.29228075406152,
+  "cruise_speed_back": 66.62523329178187,
+  "time_to_vessel_s": 3782.4100657231684,
+  "sortie_s": 8453.479513905215,
+  "top_speed": 130.66335854236252,
+  "cd0": 0.033324169049768634,
+  "wing_area_m2": 0.9047628346556567,
+  "drag_parts_m2": {
+   "wing": 0.006673109539270753,
+   "fuselage": 0.0164660969347534,
+   "nacelles": 0.0015998343887952278,
+   "vtail": 0.0021810213264779163
+  },
+  "launch": {
+   "stall_speed": 33.618122363697,
+   "launch_speed": 40.34174683643639,
+   "catapult_energy_kj": 88.34773142594963,
+   "catapult_stroke_m": 10.372148859543817,
+   "catapult_g": 8.0,
+   "stroke_with_10ms_wind_m": 5.867329829034366,
+   "runway_roll_m": 421.4170914110431,
+   "landing_mass_kg": 53.59045831734071,
+   "approach_speed": 30.70453624125529,
+   "release_speed": 39.383378566012226,
+   "landing_roll_m": 137.33662446117972
+  },
+  "gust": {
+   "wing_loading": 120.0,
+   "dn_passive": 0.9379284994226004,
+   "dn_active": 0.3302717839251025,
+   "flap_peak_deg": 7.859799459449327,
+   "vectoring_crossover_speed": 26.990717641503693
+  },
+  "afloat": {
+   "at the landing mass": {
+    "floats": true,
+    "draft_m": 0.05709217767952415,
+    "freeboard_m": 0.3620537505931851,
+    "reserve_buoyancy": 8.516716965689806,
+    "waterline_width_m": 0.5730327851783066,
+    "GM_m": 0.46072150065289325,
+    "intake_above_water_m": 0.3407480516521456,
+    "rotor_above_water_m": null,
+    "wave_limit_m": 0.1703740258260728,
+    "displacement_m3": 0.05228337396813728,
+    "hull_volume_m3": 0.4975660720660768
+   },
+   "at the take-off mass": {
+    "floats": true,
+    "draft_m": 0.10093260342920103,
+    "freeboard_m": 0.3182133248435082,
+    "reserve_buoyancy": 3.697411707730673,
+    "waterline_width_m": 0.6329551133378448,
+    "GM_m": 0.2828248204461182,
+    "intake_above_water_m": 0.2969076259024687,
+    "rotor_above_water_m": null,
+    "wave_limit_m": 0.14845381295123436,
+    "displacement_m3": 0.10592345381334517,
+    "hull_volume_m3": 0.4975660720660768
+   }
+  }
+ },
+ "sensitivities": [
+  {
+   "case": "2 kg cargo, 150.0 km",
+   "take-off [kg]": 39,
+   "fuel [kg]": 12.8,
+   "fuel [L]": 16,
+   "engines": "2 x 57 N",
+   "cruise out [m/s]": 74,
+   "to the vessel [min]": 38,
+   "closes": true
+  },
+  {
+   "case": "2 kg cargo, 300.0 km",
+   "take-off [kg]": 63,
+   "fuel [kg]": 27.7,
+   "fuel [L]": 35,
+   "engines": "2 x 108 N",
+   "cruise out [m/s]": 80,
+   "to the vessel [min]": 66,
+   "closes": true
+  },
+  {
+   "case": "5 kg cargo, 150.0 km",
+   "take-off [kg]": 51,
+   "fuel [kg]": 15.5,
+   "fuel [L]": 19,
+   "engines": "2 x 75 N",
+   "cruise out [m/s]": 74,
+   "to the vessel [min]": 37,
+   "closes": true
+  },
+  {
+   "case": "5 kg cargo, 300.0 km",
+   "take-off [kg]": 81,
+   "fuel [kg]": 34.2,
+   "fuel [L]": 43,
+   "engines": "2 x 119 N",
+   "cruise out [m/s]": 80,
+   "to the vessel [min]": 66,
+   "closes": true
+  },
+  {
+   "case": "10 kg cargo, 150.0 km",
+   "take-off [kg]": 68,
+   "fuel [kg]": 18.9,
+   "fuel [L]": 24,
+   "engines": "2 x 101 N",
+   "cruise out [m/s]": 79,
+   "to the vessel [min]": 35,
+   "closes": true
+  },
+  {
+   "case": "10 kg cargo, 300.0 km",
+   "take-off [kg]": 109,
+   "fuel [kg]": 45.4,
+   "fuel [L]": 57,
+   "engines": "2 x 160 N",
+   "cruise out [m/s]": 84,
+   "to the vessel [min]": 63,
+   "closes": true
+  },
+  {
+   "case": "three cargo quadcopters in the bay",
+   "take-off [kg]": 105,
+   "fuel [kg]": 40.4,
+   "fuel [L]": 50,
+   "engines": "2 x 154 N",
+   "cruise out [m/s]": 80,
+   "to the vessel [min]": 66,
+   "closes": true
+  },
+  {
+   "case": "cruise at 3000 m",
+   "take-off [kg]": 126,
+   "fuel [kg]": 56.4,
+   "fuel [L]": 71,
+   "engines": "2 x 185 N",
+   "cruise out [m/s]": 74,
+   "to the vessel [min]": 70,
+   "closes": true
+  },
+  {
+   "case": "cruise at 8000 m",
+   "take-off [kg]": 99,
+   "fuel [kg]": 39.1,
+   "fuel [L]": 49,
+   "engines": "2 x 145 N",
+   "cruise out [m/s]": 89,
+   "to the vessel [min]": 61,
+   "closes": true
+  },
+  {
+   "case": "15 m/s headwind out",
+   "take-off [kg]": 110,
+   "fuel [kg]": 46.6,
+   "fuel [L]": 58,
+   "engines": "2 x 162 N",
+   "cruise out [m/s]": 84,
+   "to the vessel [min]": 70,
+   "closes": true
+  },
+  {
+   "case": "cruise at 120 m/s or more",
+   "take-off [kg]": 134,
+   "fuel [kg]": 62.1,
+   "fuel [L]": 78,
+   "engines": "2 x 198 N",
+   "cruise out [m/s]": 120,
+   "to the vessel [min]": 47,
+   "closes": true
+  },
+  {
+   "case": "300 km in all (150 km out and back, or one way to a far shore)",
+   "take-off [kg]": 68,
+   "fuel [kg]": 18.9,
+   "fuel [L]": 24,
+   "engines": "2 x 101 N",
+   "cruise out [m/s]": 79,
+   "to the vessel [min]": 35,
+   "closes": true
+  }
+ ],
+ "assumptions": {
+  "mass": {
+   "structure": 0.215,
+   "lift booms": 0.022,
+   "lift-jet bay": 0.02,
+   "tail-sitter gear": 0.035,
+   "launch and landing": 0.03,
+   "actuators": 0.015,
+   "systems": 5.5,
+   "flotation": 1.0,
+   "fuel system": [
+    1.0,
+    0.07
+   ],
+   "vectoring nozzle": 0.15,
+   "swivel nozzle": 0.28,
+   "rotor drive": 0.0055,
+   "pack_wh_kg": 150.0,
+   "pack_usable": 0.8,
+   "pack_w_kg": 3000.0
+  },
+  "rotor_drag": 0.0025
+ }
+}

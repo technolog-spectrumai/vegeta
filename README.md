@@ -273,6 +273,18 @@ turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the je
 - **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
   80 m/s) and its vibration modes.
 
+**ALBATROS** (`50_albatros`; `labs/aero/designs/albatros.py`, `albatros_bay.py`, `albatros_flight.py`,
+`albatros_gust.py`) is a maritime turbojet transport drone on the same cycle: it carries a cargo multirotor in a belly
+bay 300 km out to a vessel, releases it in a slow pass and flies home. The engine catalogue gains the 300–800 N classes.
+- **Bay:** one cargo hexacopter for 10 kg (16.4 kg with its cargo) against three cargo quadcopters (heavier together,
+  3.3 kg items at most, no rotor-out) and three camera-class quadcopters as bought (0.45 kg of cargo between them).
+- **Layouts, each closed on its own take-off mass:** a catapult or runway launch with a landing ashore (the baseline:
+  about 109 kg, 45 kg / 57 L of kerosene), a vertical take-off on vectored and lift jets (about 202 kg, 88 kg), a jet
+  tail-sitter (several times the baseline; it fails the hover-gust and deck gates). Electric lift rotors were sized and set aside.
+- **Fuel:** by phase, and against cargo, distance, cruise altitude, speed and wind.
+- **Gusts:** wing loading against the catapult stroke, sweep, flaperon gust alleviation (0.94 g to 0.33 g in a 10 m/s
+  gust), thrust vectoring against the tail; the launch and landing numbers; the sealed hull afloat.
+
 **Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
 wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
 - **Machine:** a hull between two track modules (rear drive sprocket, front idler on a tensioner slide, four road wheels

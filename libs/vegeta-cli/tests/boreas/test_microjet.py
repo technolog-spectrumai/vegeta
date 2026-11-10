@@ -77,3 +77,13 @@ def test_bad_design_is_rejected():
     with pytest.raises(ValueError):
         mj.Microjet(impeller_diameter=0.06, rpm_max=150000, rpm_idle=200000, design_mass_flow=0.2)
     assert math.isfinite(mj.isa(2000.0).density) and mj.isa(2000.0).density < mj.isa(0.0).density
+
+
+@pytest.mark.parametrize("name", sorted(mj.CATALOGUE))
+def test_every_catalogue_class_calibrates(name):
+    c = mj.CATALOGUE[name]
+    e = mj.from_catalogue(name)
+    pt = mj.solve(e, e.rpm_max)
+    assert pt.converged and pt.thrust == pytest.approx(c["thrust_N"], rel=1e-3)
+    assert pt.fuel_flow_g_min == pytest.approx(c["fuel_g_min"], rel=1e-3)
+    assert 420 < e.tip_speed(e.rpm_max) < 500 and 3.0 < pt.pressure_ratio < 5.0
