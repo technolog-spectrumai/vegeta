@@ -285,4 +285,7 @@ on the Circus Maximus's plan at 0.4 scale (a 134 m spina with a turning post at 
 races the seven strategies N times with the grid turned each race and prints wins, mean place, times, best laps and faults per
 strategy (`--wind 0`, `--wind 9` for other air; `--laps`). Writes `air_circus_<seed>.png/.mp4/.json` and
 `air_circus_tournament[_wind<x>].json`.
+The circus race's second round: a slipstream behind every aircraft (`--no-slipstream` to switch it off), a field of four fixed and
+three adaptive strategies (`--field fixed` for the seven fixed ones), and `--gusts` for a wind whose speed and direction change
+during the race with gust fronts passing through.
 

@@ -378,6 +378,30 @@ five** and `hot` falls to fourth with 1.2 faults a race. The wide line never pay
 faster turns give), `careful` is last everywhere, and flying over the trouble beats steering through it as soon as there is
 trouble. Limits: every strategy tops out near 32 m/s (the controller's tilt limit, whatever the airspeed cap), there is no
 slipstream, and four to seven races a condition is a small sample.
+**The second round** adds a **slipstream** (behind an aircraft the air moves with it in a fading cone: more ground speed for the
+same airspeed; its numbers are assumed), three **adaptive strategies** — `drafter` (tucks in behind whoever is ahead and pulls out
+to pass on a straight), `adaptive` (the hot line while the way is clear, up and over when balloons lie ahead on it), `tempered`
+(starts hot, more careful with every fault, a little bolder with every clean lap) — a racing tilt limit of 72° (at the match's 58°
+every strategy topped out near 32 m/s; now the airspeed cap, the wind and the wake decide the straights, and the laps are about
+1.5 s quicker, so these times do not compare with the first round's), and a **changing wind** (`--gusts`: speed and direction
+wander, gust fronts of 4–8 m/s pass for a few seconds, the balloons cross the track and come back in at whichever edge is upwind).
+The field is `hot`, `high`, `inside`, `windwise` and the three adaptive ones (`--field fixed` for the first seven). **What it
+says** (7 races steady wind, 5 crowded, 6 in the changing wind, 5 crowded in the changing wind):
+
+| condition | wins | best mean place |
+|---|---|---|
+| steady 5 m/s, 14 balloons | tempered 4, hot 2, adaptive 1 | tempered 2.1 |
+| steady, 45 balloons | hot 3, adaptive 1, high 1 | hot 2.2, adaptive 2.6 |
+| changing wind, 14 balloons | hot 3, adaptive 2, tempered 1 | hot 1.5, adaptive 2.2 |
+| changing wind, 45 balloons | tempered 2, adaptive 2, high 1 | tempered 1.8, adaptive 2.0 |
+
+The three hot-line strategies take 21 of the 23 wins, and **`adaptive` is the steadiest**: on the podium in 20 of 23 races and never
+worse than a 3.4 mean place, where plain `hot` swings between first and fourth with the conditions. **`high` no longer wins the
+crowded track** as it did in the first round (one win in ten crowded races): with the higher speeds its line costs more than
+the balloons do, and `adaptive` takes the height only when it needs it. **Drafting does not pay**: the `drafter` is last or next
+to last everywhere — it gives up its own line and pace to sit behind others, and the aircraft that gain most from wakes are the
+hot-line ones that happen to follow each other (7–12 s a race in a wake, without trying). The changing wind shuffles the order
+less than the balloons do. As before: four to seven races a condition, rules not learners, an assumed wake.
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
