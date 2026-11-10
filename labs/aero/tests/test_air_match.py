@@ -122,3 +122,48 @@ def test_the_group_chase_counts_the_seconds_with_the_token(n):
         dt = p["hist"]["t"][1] - p["hist"]["t"][0]
         assert p["hold_s"] <= float(p["hist"]["token"].sum()) * dt + 1.5        # the seconds counted are in the record (a restart's wait is not counted)
     assert r["winner"] == max(r["score"], key=r["score"].get)
+
+
+# ------------------------------------------------------------------------------------------------------- the circus race
+def test_the_stadium_and_its_racing_line():
+    from air_match import circus
+    a = circus.Stadium()
+    assert a.hoops == {} and a.length == pytest.approx(circus.REAL["length"] * circus.SCALE) and a.half == pytest.approx(circus.REAL["spina"] * circus.SCALE / 2)
+    r = circus.Race(circus.STRATEGIES[:2], seed=1, laps=1)
+    names = {mujoco.mj_id2name(r.model, mujoco.mjtObj.mjOBJ_GEOM, g) for g in range(r.model.ngeom)}
+    assert {"spina", "meta0", "meta1"} <= names and not any((n or "").startswith("hoop") for n in names)
+    st = circus.BY_NAME["wide"]
+    pt, tan, to_turn, R = r.line(st, np.array([10.0, -20.0, 4.0]))               # the south straight: with the wind, toward the east turn
+    assert np.allclose(pt[:2], [10.0, -st.radius]) and np.allclose(tan, [1, 0, 0]) and to_turn == pytest.approx(a.half - 10.0) and R == math.inf
+    pt, tan, to_turn, R = r.line(st, np.array([a.half + 9.0, 0.0, 4.0]))         # the east turn: anticlockwise, so north
+    assert np.allclose(pt[:2], [a.half + st.radius, 0.0]) and np.allclose(tan, [0, 1, 0]) and to_turn == 0.0 and R == st.radius
+    pt, tan, _, _ = r.line(st, np.array([-10.0, 20.0, 4.0]))
+    assert np.allclose(tan, [-1, 0, 0]) and pt[1] == st.radius
+    low, high = r.wind_at(np.array([0, 0, 2.0])), r.wind_at(np.array([0, 0, 12.0]))
+    assert 0 < low[0] < high[0] and low[1] == 0.0                                 # stronger aloft, down the south straight
+    assert len({s.name for s in circus.STRATEGIES}) == 7
+
+
+def test_a_racer_alone_laps_the_circus_and_the_wind_moves_the_balloons():
+    from air_match import circus
+    r = circus.solo(circus.BY_NAME["middle"], laps=1, balloons=6)
+    s = r["race"]["standings"][0]
+    assert s["finished"] and s["laps"] == 1 and 12.0 < s["time_s"] < 32.0 and s["faults"] == 0
+    h = r["players"]["middle"]["hist"]
+    assert h["y"].min() < -6.0 and h["y"].max() > 6.0 and np.abs(h["x"]).max() > circus.Stadium().half      # it went round both posts
+    bal = r["balloons"]
+    assert float(np.median(bal[-1, :, 0] - bal[0, :, 0])) > 5.0                   # they went downwind (or came back in upwind)
+    calm = circus.Race([circus.BY_NAME["middle"]], 1, 1, 60.0, wind=dict(circus.WIND, speed=0.0, gust=0.0), n_balloons=6)
+    assert np.allclose(calm.wind_at(np.array([0, 0, 5.0])), 0)
+
+
+def test_a_race_ranks_its_racers():
+    from air_match import circus
+    r = circus.Race([circus.BY_NAME[n] for n in ("hot", "middle", "careful")], seed=2, laps=1, duration=60.0).run()
+    st = r["race"]["standings"]
+    assert [s["place"] for s in st] == [1, 2, 3] and {s["strategy"] for s in st} == {"hot", "middle", "careful"}
+    done = [s for s in st if s["finished"]]
+    assert done and [s["time_s"] for s in done] == sorted(s["time_s"] for s in done) and r["race"]["winner"] == st[0]["strategy"]
+    assert all(s["faults"] == sum(1 for e in r["race"]["faults"] if e["who"] == s["strategy"]) for s in st)
+    laps = [e for e in r["events"] if e["what"] == "lap"]
+    assert len(laps) == len(done) and all(e["time"] > 10.0 for e in laps)

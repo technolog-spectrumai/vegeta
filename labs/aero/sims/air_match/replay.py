@@ -17,6 +17,16 @@ def _score(result) -> str:
 
 def _field(ax, a, side=False):
     L, W = a.length / 2, a.width / 2
+    if hasattr(a, "half"):                                          # the circus: the spina and its turning posts
+        if side:
+            ax.fill([-a.half, a.half, a.half, -a.half], [0, 0, a.spina_h, a.spina_h], color="#bfb399")
+            for x in (-a.half, a.half):
+                ax.plot([x, x], [0, a.meta_h], color="#d9a633", lw=3)
+        else:
+            ax.fill([-a.half, a.half, a.half, -a.half], [-a.spina_w / 2, -a.spina_w / 2, a.spina_w / 2, a.spina_w / 2], color="#bfb399", zorder=2)
+            for x in (-a.half, a.half):
+                ax.plot([x], [0], "o", color="#d9a633", ms=7, zorder=3)
+            ax.plot([0, 0], [-W, -a.spina_w / 2], color="k", lw=1.5, ls="--")
     if side:
         ax.axhline(0, color="#3c6e3c", lw=2)
         for team, c in a.hoops.items():
@@ -146,7 +156,11 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         tk, holder = result["token_hist"][k]
         tok.set_data([tk[0]], [tk[1]]) if holder is None else tok.set_data([], [])
         tok_s.set_data([tk[0]], [tk[2]]) if holder is None else tok_s.set_data([], [])
-        if "formation" in result:
+        if "race" in result:
+            lapn = {n: int(sum(1 for e in result["events"] if e["what"] == "lap" and e["who"] == n and e["t"] <= tf)) for n in players}
+            lead = sorted(players, key=lambda n: (-lapn[n], n))
+            title.set_text(f"circus race   t = {tf:5.1f} s   laps: " + "  ".join(f"{n} {lapn[n]}" for n in lead))
+        elif "formation" in result:
             f = result["formation"]
             kk = min(int(np.searchsorted(f["t"], tf)), len(f["t"]) - 1)
             shape = ("changing" if f["morphing"][kk] > 0.5 else "") + (" wedge" if f["wedge"][kk] > 0.5 else " column")
@@ -232,6 +246,57 @@ def formation_summary(result: dict, path=None):
     lines += [f" {ch['t']:5.1f} s → {ch['to']:6s} {ch['seconds']:.1f} s  crossings {ch['crossings']} (numbers kept: {ch['kept_numbers_crossings']})" for ch in f["changes"]]
     lines += ["", "faults:"] + [f" {e['t']:5.1f}  {e['what']} {e['who']} ({e.get('on', e.get('hoop', ''))})" for e in result["events"] if e["what"] in ("foul", "crash", "missed")]
     txt.text(0, 1, "\n".join(lines[:64]), va="top", family="monospace", fontsize=7.2)
+    fig.tight_layout()
+    if path:
+        fig.savefig(path, dpi=110)
+    return fig
+
+
+def race_summary(result: dict, path=None):
+    """The circus race on one sheet: the lines flown, each racer's progress against time, the standings and the faults."""
+    import matplotlib.pyplot as plt
+    a, race = result["arena"], result["race"]
+    fig = plt.figure(figsize=(16, 9))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.25, 1], width_ratios=[2.2, 1])
+    top, prog, txt = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[:, 1])
+    _field(top, a)
+    bal = result["balloons"]
+    for i in range(bal.shape[1] if bal.ndim == 3 else 0):
+        top.plot(bal[:, i, 0], bal[:, i, 1], color="#f0a500", lw=0.5, alpha=0.5)
+        top.add_patch(plt.Circle(bal[-1, i, :2], a.balloon_radius, color="#f0a500", alpha=0.7))
+    place = {s["strategy"]: s for s in race["standings"]}
+    for name, p in result["players"].items():
+        h = p["hist"]
+        fly = h["role"] == 0
+        top.plot(np.where(fly, h["x"], np.nan), np.where(fly, h["y"], np.nan), color=p["color"], lw=0.8, alpha=0.8, label=f"{place[name]['place']}. {name}")
+        laps_t = [0.0] + [e["t"] for e in result["events"] if e["what"] == "lap" and e["who"] == name]
+        prog.step(laps_t, range(len(laps_t)), where="post", color=p["color"], lw=1.6)
+    for e in race["faults"]:
+        p = result["players"][e["who"]]
+        k = min(max(int(np.searchsorted(p["hist"]["t"], e["t"])) - 2, 0), len(p["hist"]["t"]) - 1)
+        top.scatter([p["hist"]["x"][k]], [p["hist"]["y"][k]], marker="X", s=70, color=p["color"], edgecolors="k", zorder=5)
+        prog.axvline(e["t"], color=p["color"], lw=0.6, ls=":")
+    hand, lab = top.get_legend_handles_labels()
+    order = np.argsort([int(x.split(".")[0]) for x in lab])
+    top.legend([hand[i] for i in order], [lab[i] for i in order], fontsize=8, ncol=7, loc="upper center")
+    w = race["wind"]
+    top.annotate("", xy=(0.12, 0.08), xytext=(0.03, 0.08), xycoords="axes fraction", arrowprops=dict(arrowstyle="->", color="#1f77b4", lw=2))
+    top.text(0.03, 0.11, f"wind {w['speed']:g} m/s", transform=top.transAxes, color="#1f77b4", fontsize=9)
+    top.set_title(f"circus race, {race['laps']} laps, anticlockwise — winner: {race['winner'] or 'nobody finished'}   (✕ a fault: back to the last gate)")
+    prog.set(xlabel="s", ylabel="laps completed", ylim=(0, race["laps"] + 0.3), title="laps against time (dotted: a fault)")
+    prog.grid(alpha=0.3)
+    txt.axis("off")
+    lines = ["place  strategy   time     laps  best lap  faults  Wh"]
+    for s in race["standings"]:
+        lines.append(f"{s['place']:>3}    {s['strategy']:<9s} {(str(s['time_s']) + ' s') if s['finished'] else 'DNF':>8}  {s['laps']:>3}   {s['best_lap_s'] or 0:>6.2f}   {s['faults']:>3}   {s['energy_wh']:>5.1f}")
+    lines += ["", "the strategies:"] + [f" {s['strategy']}: {s['what']}" for s in race["standings"]] + ["", "faults:"]
+    lines += [f" {e['t']:5.1f}  {e['who']}: {e['what']} ({e['on']})" for e in race["faults"]] or [" none"]
+    lines += ["", f"balloons blown out and back in: {race['balloon_respawns']}"]
+    import textwrap
+    wrapped = []
+    for ln in lines:
+        wrapped += textwrap.wrap(ln, 62, subsequent_indent="     ") or [""]
+    txt.text(0, 1, "\n".join(wrapped[:60]), va="top", family="monospace", fontsize=7.6)
     fig.tight_layout()
     if path:
         fig.savefig(path, dpi=110)

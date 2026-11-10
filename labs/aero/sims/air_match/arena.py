@@ -47,6 +47,10 @@ class Arena:
         zc = self.hoop_stick + self.hoop_radius
         self.hoops = {"A": np.array([-self.hoop_x, 0.0, zc]), "B": np.array([self.hoop_x, 0.0, zc])}
 
+    def extra_xml(self) -> str:
+        """More of the scene (a subclass's walls and posts)."""
+        return ""
+
     def start(self, team: str, slot: int = 0) -> np.ndarray:
         s = -1.0 if team == "A" else 1.0
         return np.array([s * self.start_x, (slot - 0.0) * 3.0, self.start_z])
@@ -137,8 +141,8 @@ def to_mjcf(a: Arena, drones: list) -> str:
     <geom name="line_mid" type="box" pos="0 0 0.002" size="0.05 {W:.1f} 0.002" rgba="1 1 1 0.8" contype="0" conaffinity="0"/>
     <camera name="overview" pos="0 0 {1.25 * a.length:.1f}" xyaxes="1 0 0 0 1 0"/>
     <camera name="grandstand" pos="0 {-1.5 * a.width:.1f} 14" xyaxes="1 0 0 0 0.3 1"/>
-{hoop_xml("A", a)}
-{hoop_xml("B", a)}
+{chr(10).join(hoop_xml(k, a) for k in a.hoops)}
+{a.extra_xml()}
 {chr(10).join(bal)}
 {chr(10).join(drone_xml(*d) for d in drones)}
   </worldbody>

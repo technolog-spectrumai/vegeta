@@ -7,6 +7,9 @@
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode formation          # step 2: seven in formation chase a hare through both hoops
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode chase3             # step 3: three, every one for itself, chase the token
     .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode chase7             # step 4: seven of them
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode circus             # seven strategies race three laps round the circus, wind and balloons
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode circus --tournament 7   # seven races, the grid turned each time: which strategy wins
+    .venv/bin/python labs/aero/sims/emerillon_air_match.py --mode circus --tournament 4 --wind 0   # the same in still air (or --wind 9)
     MUJOCO_GL=egl .venv/bin/python labs/aero/sims/emerillon_air_match.py --camera grandstand   # also a MuJoCo camera video (needs OpenGL)
 
 Rules: a point for flying through the other side's hoop; with the token (the default) only its carrier scores and the
@@ -31,6 +34,9 @@ OUT = HERE / "output"
 
 
 def play(mode, duration, seed, kw):
+    if mode == "circus":
+        from air_match import circus
+        return circus.race(seed, kw.get("laps", 3), wind=kw.get("wind"), duration=max(duration, 150.0))
     if mode == "formation":
         from air_match import formation
         return formation.fly(7, duration, seed)
@@ -41,6 +47,8 @@ def play(mode, duration, seed, kw):
 
 def line(seed, r):
     c = r["counts"]
+    if "race" in r:
+        return f"seed {seed}: " + "  ".join(f"{s['place']}. {s['strategy']} {(str(s['time_s']) + ' s') if s['finished'] else 'DNF'} ({s['faults']} faults)" for s in r["race"]["standings"])
     if "formation" in r:
         s = r["formation"]["summary"]
         return (f"seed {seed}: formation of {s['members']}  laps {s['laps']}  slot error wedge {s['slot_error_wedge_m']:.2f} m, column {s['slot_error_column_m']:.2f} m  "
@@ -53,7 +61,10 @@ def line(seed, r):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7"])
+    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7", "circus"])
+    ap.add_argument("--tournament", type=int, default=0, help="circus: this many races of the seven strategies, the grid turned each time")
+    ap.add_argument("--wind", type=float, default=None, help="circus: the wind at 10 m [m/s] (default 5)")
+    ap.add_argument("--laps", type=int, default=3)
     ap.add_argument("--duration", type=float, default=60.0)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--variants", nargs=2, default=["ER2", "ER2"], choices=["ER1", "ER2"])
@@ -66,7 +77,27 @@ def main(argv=None) -> int:
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args(argv)
     kw = dict(variants=tuple(args.variants), score="over" if args.over else "through", n_balloons=args.balloons, possession=not args.plain)
+    if args.mode == "circus":
+        from air_match import circus
+        kw["laps"] = args.laps
+        kw["wind"] = None if args.wind is None else dict(circus.WIND, speed=args.wind, gust=0.0 if args.wind == 0 else circus.WIND["gust"])
+        if args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
+            import pandas as pd
+            t = circus.tournament(args.tournament, args.seed, args.laps, wind=kw["wind"],
+                                  progress=lambda i, rc: print(f"race {i + 1} (seed {rc['seed']}): " + " > ".join(rc["order"]) + f"   {rc['time']} s, {rc['faults']} faults", flush=True))
+            pd.set_option("display.width", 250); pd.set_option("display.max_colwidth", 70)
+            print(pd.DataFrame(t["table"]).to_string(index=False))
+            OUT.mkdir(parents=True, exist_ok=True)
+            tag = "" if args.wind is None else f"_wind{args.wind:g}"
+            (OUT / f"air_circus_tournament{tag}.json").write_text(json.dumps(t, indent=1, default=float))
+            print("written:", OUT / f"air_circus_tournament{tag}.json")
+            return 0
     if args.quick or os.environ.get("VEGETA_DEBUG") == "1":
+        if args.mode == "circus":
+            from air_match import circus
+            r = circus.Race(circus.STRATEGIES[:3], args.seed, 1, 14.0).run()
+            print("quick:", [(s["strategy"], s["laps"], s["progress"]) for s in r["race"]["standings"]])
+            return 0
         print(line(args.seed, play(args.mode, 6.0, args.seed, kw)))
         return 0
     if args.series:
@@ -87,14 +118,15 @@ def main(argv=None) -> int:
     from air_match import replay
     OUT.mkdir(parents=True, exist_ok=True)
     stem = OUT / (f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}_{args.seed}")
-    (replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
+    (replay.race_summary if "race" in r else replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
     files = [stem.with_suffix(".png")]
     if not args.no_video:
         files.append(replay.video(r, stem.with_suffix(".mp4")))
     if args.camera:
         files.append(replay.mujoco_video(r, OUT / f"air_match_{args.seed}_{args.camera}.mp4", camera=args.camera))
     stem.with_suffix(".json").write_text(json.dumps({"score": r["score"], "faults": r["faults"], "winner": r["winner"], "counts": r["counts"], "duration": r["duration"],
-                                                     "events": r["events"], "formation": (r["formation"]["summary"] | {"changes": r["formation"]["changes"]}) if "formation" in r else None, "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
+                                                     "events": r["events"], "formation": (r["formation"]["summary"] | {"changes": r["formation"]["changes"]}) if "formation" in r else None,
+                                                     "race": {"standings": r["race"]["standings"], "wind": r["race"]["wind"], "laps": r["race"]["laps"]} if "race" in r else None, "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
     print("written:", ", ".join(str(f) for f in files if f), f"and {stem.with_suffix('.json')}  ({time.time() - t0:.0f} s)")
     return 0
 

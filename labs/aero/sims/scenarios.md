@@ -279,3 +279,10 @@ Nomios's (`air_match/swarm.py`). `--mode chase3` and `--mode chase7` (steps 3 an
 — a point per second carrying the token, five for a hoop flown through with it, a tag takes it. They write
 `air_formation_<seed>` / `air_chase3_<seed>` / `air_chase7_<seed>` `.png`, `.mp4`, `.json`.
 
+`--mode circus`: seven Émerillons, each its own agent with its own racing strategy, race three laps anticlockwise round a stadium
+on the Circus Maximus's plan at 0.4 scale (a 134 m spina with a turning post at each end), through balloons that drift with a
+5 m/s wind and come back in upwind. A contact or leaving the field costs a restart from the last gate and 2 s. `--tournament N`
+races the seven strategies N times with the grid turned each race and prints wins, mean place, times, best laps and faults per
+strategy (`--wind 0`, `--wind 9` for other air; `--laps`). Writes `air_circus_<seed>.png/.mp4/.json` and
+`air_circus_tournament[_wind<x>].json`.
+

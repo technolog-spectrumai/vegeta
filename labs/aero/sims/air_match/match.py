@@ -200,6 +200,13 @@ class Match:
         """Where a faulted aircraft goes (the formation puts it back in its slot instead)."""
         p.place(self.data, t, hold)
 
+    def extra_obstacles(self, me: Player) -> list:
+        """More to steer round (a subclass's walls): (where, its velocity, the room to keep, how much it counts)."""
+        return []
+
+    def wind_at(self, p) -> np.ndarray:
+        return np.zeros(3)
+
     def others(self, me: Player) -> list:
         return [q for q in self.players if q is not me]
 
@@ -230,6 +237,7 @@ class Match:
             if hoop_run is None or hc is not hoop_run:
                 obstacles.append((hc, np.zeros(3), a.hoop_radius + reach + 0.9, 2.5))
                 obstacles.append((np.array([hc[0], hc[1], 0.5 * a.hoop_stick]), np.zeros(3), reach + 0.9, 2.5))
+        obstacles += self.extra_obstacles(me)
         push = np.zeros(3)
         for q_p, q_v, room, weight in obstacles:
             tc, miss = _closest(p - q_p, v - q_v, pl.look_s)
@@ -386,10 +394,11 @@ class Match:
         me.thrust += (1.0 - math.exp(-dt / SPIN_UP)) * (cmd - me.thrust)
         T = me.thrust
         # the air on the airframe: axial drag and a normal force, as emerillon_mission
-        V = float(np.linalg.norm(v))
+        va = v - self.wind_at(p)                                    # the air it flies through
+        V = float(np.linalg.norm(va))
         aero = np.zeros(3)
         if V > 0.5:
-            vhat = v / V
+            vhat = va / V
             ca = float(b @ vhat)
             sa = math.sqrt(max(1.0 - ca * ca, 0.0))
             q = 0.5 * ef.RHO * V * V
@@ -426,7 +435,8 @@ class Match:
             o1, o2 = self.owner[int(c.geom1)], self.owner[int(c.geom2)]
             for mine, other in ((o1, o2), (o2, o1)):
                 if mine[0] == "drone" and t >= mine[1].frozen_until:
-                    kind = "aircraft" if other[0] == "drone" else ("balloon" if other[0] == "balloon" else "ground" if other[1] == "ground" else "hoop")
+                    kind = "aircraft" if other[0] == "drone" else ("balloon" if other[0] == "balloon" else "ground" if other[1] == "ground" else
+                                                                    "wall" if str(other[1]).startswith(("spina", "meta", "wall")) else "hoop")
                     if kind != "aircraft" or hit.get(mine[1], ("", None))[0] != "balloon":
                         hit[mine[1]] = (kind, other[1])
         pair = [p for p, (k, _) in hit.items() if k == "aircraft"]
