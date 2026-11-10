@@ -66,6 +66,19 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage V8 — ÉMERILLON, the speed quadcopter (2026-11-10)
+- [x] V8.1 The market: `labs/aero/designs/emerillon_market.py` — motors, propellers, ESCs, 6S packs, electronics and filament with price, shop, spread and `kind` (web search of 2026-11-10); `bom`, `price` (low / used / high)
+- [x] V8.2 The flight model: `emerillon_flight.py` — airframe from the parts, mass budget (`og.mass`), drag build-up with a margin, Boreas with a Mach-aware section and propeller maps, the drive under its current limits and the pack's sag, trim on body lift, top speed, the run, `evaluate`
+- [x] V8.3 The trade: 336 builds, the front of speed against price, budget / knee / fastest, also inside the propeller makers' rpm limits; `labs/aero/sims/emerillon_trade.py` → `designs/data/emerillon_trade.json`
+- [x] V8.4 CAD: `emerillon.py` (`Emerillon`: body, arms, pods, fins; `aircraft`, `arm`, `nose`), sized by `cad_parameters(config)`; defaults = the knee build
+- [x] V8.5 `37_emerillon` (unexecuted; runs on the mocks), `labs/aero/tests/test_emerillon.py`, README
+- [ ] V8.6 A bench run of the knee build's motor and propeller (static thrust, current, rpm) to calibrate the propeller map — nothing here is measured
+- [ ] V8.7 CFD: the solid aircraft at the design's top speed (the notebook's cell, NOT RUN so far) for the drag margin; the fast build at Mach 0.5 on the compressible template; the propellers as rotor disks
+- [ ] V8.8 The lab's own high-pitch 7-inch blade (`prop_lab`), its FEA spinning (`talos.Centrifugal`) and a proof spin; real blade tables in place of the generic planforms
+- [ ] V8.9 The pitch-over, the stability of the bullet with its fins (neutral point against the CG) and the braking, as a flight simulation; the propellers' own normal force in the trim
+- [ ] V8.10 Quotes for the rows marked `assumed` (the 3120 at 900 KV, the own propellers, the 7x7E), a pack larger than 2 Ah with a real C rating, PETG and PA6-CF slicer profiles
+- [ ] V8.11 MERLIN and ÉMERILLON are the same bird in two languages: decide whether MERLIN is renamed (26, 26b, 27, `merlin*.py`, the sims and tests; PEREGRINE and FALCO import it)
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)

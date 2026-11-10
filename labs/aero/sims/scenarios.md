@@ -231,3 +231,11 @@ python3 scenarios/kestrel_transitions.py --part2         # + Kestrel-4Q-2 (elevo
 ```
 Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
 transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.
+
+## ÉMERILLON's trade: speed against price
+
+`python labs/aero/sims/emerillon_trade.py [--quick]`. Evaluates every build `emerillon_flight.candidates()` allows (motor ×
+propeller × 6S pack × series/parallel, with the cheapest ESC that fits), prints the front of top speed against price with the
+budget, knee and fastest picks — for any rpm and inside the propeller makers' limits — and writes
+`labs/aero/designs/data/emerillon_trade.json`, which notebook 37 reads. About a minute and a half; no solver, no MuJoCo.
+`--quick` (and the mocks) evaluate a dozen builds and write nothing.
