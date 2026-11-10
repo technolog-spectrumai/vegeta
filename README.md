@@ -294,6 +294,9 @@ bay 300 km out to a vessel, releases it in a slow pass and flies home. The engin
   beside the people, or lands on a flat roof, then lands on the school to be collected: six roofs and 21 people within
   17 s of the release, 66 min after a launch 300 km away. A single box slides off most pitched roofs. The vaccine box's
   cold chain (it needs its phase-change pack for the cold bay at altitude); a movie and stills from MuJoCo's renderer.
+- **In Ketos** (`albatros_ketos.py` → `exports/ketos/`): the aircraft, the cargo hexacopter and the Émerillon as Ketos
+  machines (meshes and `ketos.card`s of kinds `aircraft` and `multirotor` with the sizing's speeds and fuel flows and the
+  release's numbers). Ketos's branch `dev_albatros` flies them: fishermen south of Åland, vaccines Tallinn to Helsinki.
 
 **Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
 wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
