@@ -39,10 +39,10 @@ def main(out="walrus_3d.png"):
     p = Walrus.p()
     fig = plt.figure(figsize=(18, 6.5))
     draw(fig.add_subplot(1, 3, 1, projection="3d"), p, 22, -50, "on the bed: the digging arms, camera and lights ahead of the gantry")
-    draw(fig.add_subplot(1, 3, 2, projection="3d"), p, 20, 130, "from behind: the basket, the vertical pair, the horizontal pair it swims with")
+    draw(fig.add_subplot(1, 3, 2, projection="3d"), p, 20, 130, "from behind: the basket, four vectored + four vertical ducted thrusters")
     draw(fig.add_subplot(1, 3, 3, projection="3d"), p, -30, -60, "from below: the gantry's grippers and jet in the swath", bed=False)
     s = Walrus.sizing()
-    fig.suptitle(f"Walrus v0 — the clam picker with digging arms: {s['mass_wet_vehicle_kg']:.0f} kg crawler ({s['mass_in_air_kg']:.0f} with the tether), sits {s['sink_kg']:.0f} kg on the bed; "
+    fig.suptitle(f"Walrus (round 2: 8 big slow ducted thrusters) — {s['mass_wet_vehicle_kg']:.0f} kg crawler ({s['mass_in_air_kg']:.0f} with the tether), sits {s['sink_kg']:.0f} kg on the bed; "
                  f"{s['rate_per_h']:.0f} clams/h with two pickers, {s['rate_kg_h']:.0f} kg/h, {s['day_kg']:.0f} kg a day in two shifts ({s['vs_diver']:.1f}× a diver); €{s['price_eur']/1e3:.0f}k, payback {s['payback_days']:.0f} days", fontsize=11)
     fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=0.9, wspace=0.0)
     fig.savefig(out, dpi=95)

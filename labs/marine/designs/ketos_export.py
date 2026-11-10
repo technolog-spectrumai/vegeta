@@ -512,7 +512,7 @@ def cable_joint():
 def walrus():
     """Walrus, the clam-picking seabed crawler (Ketos Clams): tracks, a belly gantry with soft grippers and a pulsed
     jet, two digging arms, baskets on float lines, tethered to the harvest boat. z = 0 the track bottom (on the bed)."""
-    from walrus import Walrus, PARTS, CLAM, REQUIREMENTS
+    from walrus import Walrus, PARTS, CLAM, REQUIREMENTS, LAYOUT, prop, thruster_layout
     d = Walrus()
     p = Walrus.p()
     s = Walrus.sizing()
@@ -533,6 +533,10 @@ def walrus():
                    "sizing_chute": True, "clam": CLAM,
                    "swim_speed_m_s": round(s["v_swim_m_s"], 3), "transit_m": p["transit_m"], "nav_error_m": round(s["nav_error_m"], 2),
                    "hold_current_m_s": 0.5 * math.sqrt(1 + s["hold_current_margin"]),
+                   "thruster_layout": LAYOUT, "net_buoyancy_kg": round(-s["sink_kg"], 2),
+                   "thrusters": [{"at": [round(c, 3) for c in t["at"]], "axis": [round(c, 4) for c in t["axis"]], "max_N": round(t["max_N"], 1),
+                                  "diameter_m": t["diameter_m"], "ducted": True, "rpm": round(prop(t)["rpm"]), "power_W": round(prop(t)["power_W"], 1)}
+                                 for t in thruster_layout(p)],
                    "battery_Wh": None, "power": "tether", "power_W": round(s["power_W"], 1), "boat_power_W": p["boat_power_W"],
                    "hotel_W": round(sum(w for _, _, w, _ in PARTS.values()), 1),
                    "tether": {"length_m": 150.0, "diameter_m": 0.012, "cd": 1.2, "from": "clam_boat"},

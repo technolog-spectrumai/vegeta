@@ -119,9 +119,10 @@ def test_oil_stage3_export(tmp_path):
 def test_walrus_clams_export(tmp_path):
     ketos_export.export(str(tmp_path), {"walrus", "clam_basket", "clam_boat"})
     w = json.load(open(tmp_path / "walrus.card.json"))
+    assert len(w["thrusters"]) == 8 and w["thruster_layout"] == "C"
     assert w["kind"] == "crawler" and w["power"] == "tether" and w["battery_Wh"] is None and w["pickers"] == 2
     assert w["basket"]["kg"] == 20.0 and w["tether"]["length_m"] == 150.0 and 30 < w["mass_kg"] < 40
-    assert w["rate_per_h"] == 1200 and w["price_eur"] < 30000
+    assert w["rate_per_h"] == 1200 and w["price_eur"] < 30600
     ms = _meshes(tmp_path, w)
     assert len(ms) == 8 and max(max(m["size"]) for m in ms) < 1.2 and min(z for m in ms for z in m["vertices"][2::3]) >= -0.05   # the paddles reach 2 cm into the sand
     b = json.load(open(tmp_path / "clam_basket.card.json"))
