@@ -365,6 +365,19 @@ no hoop missed, two contacts (both in the launch). **Steps 3 and 4, the group to
 takes it. Three play cleanly (seven to eleven tags and one to seven faults a minute over three seeds); **seven is rough**: 25 to
 35 tags and 8 to 25 faults a minute, most of them aircraft cornered by six chasers into the ground or out of the field — the
 rule-based pilots need a better escape, the next thing to do.
+**The circus race** (`--mode circus`, `air_match/circus.py`): seven Émerillons, each its own agent with its own **racing
+strategy**, race three laps anticlockwise round a stadium on the Circus Maximus's plan at 0.4 scale (a 134 m spina with a turning
+post at each end), through balloons that drift with a 5 m/s wind and come back in upwind; a contact costs a restart from the last
+gate and 2 s. A strategy is a line (how close to the spina, how high), an airspeed cap, how hard the turns and the brakes, and
+the room left: `inside`, `wide`, `middle`, `hot` (the inside line at the limit), `careful`, `high` (over the balloons) and
+`windwise` (high downwind, low upwind). `--tournament N` races them N times with the grid turned each race. **What the
+tournaments say** (7 races in the 5 m/s wind, 4 in still air, 4 at 9 m/s, 5 with 45 balloons instead of 14): with few balloons
+**`hot` wins** — 7 of 7 in the default wind and 4 of 4 at 9 m/s, without a fault: there is too little in the way to punish it —
+and `high` and `inside` share the podium; in still air `high` and `hot` split the wins; **with the track crowded `high` wins all
+five** and `hot` falls to fourth with 1.2 faults a race. The wide line never pays (a lap 2 s slower: the metres cost more than the
+faster turns give), `careful` is last everywhere, and flying over the trouble beats steering through it as soon as there is
+trouble. Limits: every strategy tops out near 32 m/s (the controller's tilt limit, whatever the airspeed cap), there is no
+slipstream, and four to seven races a condition is a small sample.
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
