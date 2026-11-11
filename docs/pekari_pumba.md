@@ -312,6 +312,20 @@ they would be measured against this baseline.
   gain is scaled with each machine's mass.
 * **CAD** (Dedalus): `Pekari2M`, `Pumba` and `Calydon` with `arm_pose` (folded / deployed / reach) and `stabilizers` (none /
   stowed / deployed). The figure at the top shows them to scale from the CAD.
+* **Pumba in the forest** (`designs/pumba_forest.py`, movie: `sims/pumba_forest_movie.py`, MuJoCo through Chiron):
+  - **The scene:** a forest trail between 46 trees and 70 shrubs, a rough floor (RMS 30 mm) with hummocks, two
+    branches bedded across the trail, and a 10 cm, 1.6 m, ~9.5 kg green spruce log lying across it.
+  - **The mission:** Pumba follows the trail by pure pursuit on its tracks, crosses the branches and stops 1.3 m
+    short of the log. It unfolds the main arm and lowers the open grab over the log, aligns on the measured joint
+    angles, closes, lifts the log 0.5 m, swings it 1.6 m off the trail and sets it down, then folds and drives on
+    to the end (21 m).
+  - **The grasp model:** the approach, the closing and the jaw contacts are MuJoCo's. Once both jaws press on the
+    log (> 20 N each), it is *welded* to the grab in the pose it is in, and released when the grab opens. MuJoCo's
+    soft contacts let a round log squeeze out from between two jaws.
+  - **Branches:** they are ridges in the terrain heightfield, as Pekari's course log. A loose round stick wedges
+    between the simulated track's rollers, which a real belt would bridge.
+  - **Roller gain:** 8 N m s/rad here, so the skid steer follows the winding trail.
+  - The slow test `test_mission_clears_the_log_and_drives_on` runs the whole mission.
 * **Mixed-fleet civilian response scenario** (`fleet_scenario.py`, `sims/fleet_response.py`). The fleet is two
   Pekari-2M, one Pumba and a survey drone at a collapsed industrial hall. The run takes 392 s and covers 100 % of
   the building:

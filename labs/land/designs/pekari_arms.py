@@ -350,7 +350,7 @@ def links(arm: ArmSpec, prefix: str, shoulder: tuple, *, jaw_mu: float = 0.7, rg
     palm_kg = arm.gripper_kg - 2 * jaw_kg
     jaw_w, jaw_d = max(0.6 * fw, 0.02), max(0.25 * fd, 0.012)
     jaws = []
-    for side, sgn, axis in (("a", 1, (0, -1, 0)), ("b", -1, (0, 1, 0))):
+    for side, sgn, axis in (("a", 1, (0, 1, 0)), ("b", -1, (0, -1, 0))):     # + turns each tip inwards: closes
         jn = f"{prefix}grip_{side}"
         jaws.append(Link(jn + "_link", pos=(palm_len, 0.0, sgn * 0.5 * fd * 0.6),
                          joints=[Joint(jn, axis=axis, range=rng("grip"), tag="jaw", servo=servo("grip"))],
@@ -451,10 +451,10 @@ PUMBA_MAIN_ARM = ArmSpec(
             "wrist_roll": "harmonic 60 Nm, brake", "grip": "jaw screw 6 kN"},
     gripper="two-jaw grab (debris, drums, boxes), quick coupler", gripper_kg=5.0, jaw_length=0.16,
     parts_kg={"brackets, cabling, covers, quick coupler": 3.5},
-    ranges=dict(_COMMON_RANGES),
+    ranges={**_COMMON_RANGES, "grip": (-55.0, 45.0)},          # the grab opens 55 deg a jaw: ~0.3 m at the tips
     gains={"yaw": (10000.0, 400.0, 0.5), "shoulder": (40000.0, 1500.0, 1.5), "elbow": (20000.0, 800.0, 0.8),
            "wrist_pitch": (6000.0, 150.0, 0.2), "wrist_yaw": (1500.0, 40.0, 0.1), "wrist_roll": (1500.0, 40.0, 0.1),
-           "grip": (1000.0, 30.0, 0.1)},
+           "grip": (200.0, 8.0, 0.1)},          # a firm, not crushing, squeeze: ~35 N m, ~300 N at the jaws
     poses={"folded": {"shoulder": -173.0, "elbow": 176.0, "wrist_pitch": 15.0},
            "deployed": {"shoulder": -35.0, "elbow": 75.0, "wrist_pitch": 50.0},
            "reach": {"shoulder": 0.0, "elbow": 0.0, "wrist_pitch": 0.0}},
