@@ -72,6 +72,15 @@ class ArmSpec:
     rated_payload_kg: float               # the design value stated for the arm at ``rated_reach`` (checked by rated_load)
     rated_reach: float                    # [m] horizontal, shoulder axis to TCP
     assumptions: dict = field(default_factory=dict)
+    wrist_len: float = 0.0                # wrist pitch to the tool flange [m] (0: 35 % of ``tool``, the default tools)
+    saw: str = ""                         # ``ogma.cutting`` saw key when the tool on the flange is a chainsaw
+    tool_kind: str = "gripper"            # gripper | grab | chainsaw (``Tool.kind``)
+    coupler: str = "iso"                  # the flange: ``iso`` (ISO 9409, light arms) or ``qc`` (quick coupler, heavy)
+
+
+def flange(arm: ArmSpec) -> float:
+    """Wrist pitch axis to the tool flange [m]: the wrist modules (wrist yaw, roll), the same whatever the tool."""
+    return arm.wrist_len if arm.wrist_len > 0 else 0.35 * arm.tool
 
 
 def joint_names(arm: ArmSpec, prefix: str = "") -> list:
@@ -116,7 +125,10 @@ def _drive_kg(arm, j):
 # ----------------------------------------------------------------------------------------------- kinematics
 def pose(arm: ArmSpec, name: str) -> dict:
     """A named pose as joint angles [rad] (missing joints 0)."""
-    return {j: math.radians(arm.poses[name].get(j, 0.0)) for j in JOINTS if j in arm.drives}
+    deg = arm.poses.get(name, arm.poses["deployed"] if name == "cut" else None)   # 'cut': a saw's; others deploy
+    if deg is None:
+        raise KeyError(f"{arm.name} has no pose {name!r}; known: {sorted(arm.poses)}")
+    return {j: math.radians(deg.get(j, 0.0)) for j in JOINTS if j in arm.drives}
 
 
 def _q(arm, q):
@@ -343,26 +355,40 @@ def links(arm: ArmSpec, prefix: str, shoulder: tuple, *, jaw_mu: float = 0.7, rg
     listed = sum(arm.parts_kg.values())
     uw, ud = arm.upper_section
     fw, fd = arm.fore_section
-    # the tool: wrist roll (and yaw) modules near the wrist, the gripper's palm, two jaws
-    t_mod = 0.35 * arm.tool
-    palm_len = max(arm.tool - arm.jaw_length - t_mod, 0.02)
-    jaw_kg = 0.15 * arm.gripper_kg
-    palm_kg = arm.gripper_kg - 2 * jaw_kg
-    jaw_w, jaw_d = max(0.6 * fw, 0.02), max(0.25 * fd, 0.012)
-    jaws = []
-    for side, sgn, axis in (("a", 1, (0, 1, 0)), ("b", -1, (0, -1, 0))):     # + turns each tip inwards: closes
-        jn = f"{prefix}grip_{side}"
-        jaws.append(Link(jn + "_link", pos=(palm_len, 0.0, sgn * 0.5 * fd * 0.6),
-                         joints=[Joint(jn, axis=axis, range=rng("grip"), tag="jaw", servo=servo("grip"))],
-                         geoms=[Geom(jn, "box", (arm.jaw_length / 2, jaw_w / 2, jaw_d / 2),
-                                     pos=(arm.jaw_length / 2, 0.0, -sgn * jaw_d / 2), mass=jaw_kg, role="link",
-                                     friction=jaw_fr, rgba=steel)]))
-    hand = Link(f"{prefix}hand", pos=(t_mod, 0.0, 0.0),
-                joints=[Joint(f"{prefix}wrist_roll", axis=(1, 0, 0), range=rng("wrist_roll"), tag="wrist_roll",
-                              servo=servo("wrist_roll"))],
-                geoms=[Geom(f"{prefix}palm", "box", (palm_len / 2, fw * 0.6, fd * 0.6), pos=(palm_len / 2, 0.0, 0.0),
-                            mass=max(palm_kg, 0.05), role="link", friction=fr, rgba=dark)],
-                children=jaws)
+    # the tool: wrist roll (and yaw) modules near the wrist, then what is on the flange — a gripper's palm and two
+    # jaws, or a chainsaw (its body and the bar, ``{prefix}saw_bar``, the geom a cutter reads)
+    t_mod = flange(arm)
+    roll_joint = [Joint(f"{prefix}wrist_roll", axis=(1, 0, 0), range=rng("wrist_roll"), tag="wrist_roll",
+                        servo=servo("wrist_roll"))]
+    if arm.saw:
+        from ogma import cutting
+
+        saw = cutting.get_saw(arm.saw)
+        reach_t = arm.tool - t_mod                                   # flange to the TCP (mid-bar)
+        body = max(reach_t - saw.bar_length / 2, 0.05)
+        sw, sh = max(1.2 * fw, 0.06), max(1.6 * fd, 0.08)
+        hand = Link(f"{prefix}hand", pos=(t_mod, 0.0, 0.0), joints=roll_joint, geoms=[
+            Geom(f"{prefix}saw_body", "box", (body / 2, sw / 2, sh / 2), pos=(body / 2, 0.0, 0.0), mass=arm.gripper_kg,
+                 role="link", friction=fr, rgba=(0.85, 0.35, 0.08, 1.0)),
+            Geom(f"{prefix}saw_bar", "box", (saw.bar_length / 2, 0.0025, 0.035), pos=(body + saw.bar_length / 2, 0.0, 0.0),
+                 mass=None, role="link", friction=(0.4, 0.005, 0.0001), rgba=steel)])
+    else:
+        palm_len = max(arm.tool - arm.jaw_length - t_mod, 0.02)
+        jaw_kg = 0.15 * arm.gripper_kg
+        palm_kg = arm.gripper_kg - 2 * jaw_kg
+        jaw_w, jaw_d = max(0.6 * fw, 0.02), max(0.25 * fd, 0.012)
+        jaws = []
+        for side, sgn, axis in (("a", 1, (0, 1, 0)), ("b", -1, (0, -1, 0))):     # + turns each tip inwards: closes
+            jn = f"{prefix}grip_{side}"
+            jaws.append(Link(jn + "_link", pos=(palm_len, 0.0, sgn * 0.5 * fd * 0.6),
+                             joints=[Joint(jn, axis=axis, range=rng("grip"), tag="jaw", servo=servo("grip"))],
+                             geoms=[Geom(jn, "box", (arm.jaw_length / 2, jaw_w / 2, jaw_d / 2),
+                                         pos=(arm.jaw_length / 2, 0.0, -sgn * jaw_d / 2), mass=jaw_kg, role="link",
+                                         friction=jaw_fr, rgba=steel)]))
+        hand = Link(f"{prefix}hand", pos=(t_mod, 0.0, 0.0), joints=roll_joint,
+                    geoms=[Geom(f"{prefix}palm", "box", (palm_len / 2, fw * 0.6, fd * 0.6), pos=(palm_len / 2, 0.0, 0.0),
+                                mass=max(palm_kg, 0.05), role="link", friction=fr, rgba=dark)],
+                    children=jaws)
     wrist_mod_kg = _drive_kg(arm, "wrist_roll") + _drive_kg(arm, "wrist_yaw") + _drive_kg(arm, "grip")
     wrist_children = [hand]
     if "wrist_yaw" in arm.drives:
@@ -409,9 +435,111 @@ def links(arm: ArmSpec, prefix: str, shoulder: tuple, *, jaw_mu: float = 0.7, rg
 def qpos(arm: ArmSpec, prefix: str, q: dict, grip: float = 0.0) -> dict:
     """Chiron joint positions for pose ``q`` (rad) with the jaws at ``grip`` [rad]."""
     out = {f"{prefix}{j}": float(q.get(j, 0.0)) for j in JOINTS if j in arm.drives and j != "grip"}
-    out[f"{prefix}grip_a"] = grip
-    out[f"{prefix}grip_b"] = grip
+    if "grip" in arm.drives:                                         # a chainsaw has no jaws
+        out[f"{prefix}grip_a"] = grip
+        out[f"{prefix}grip_b"] = grip
     return out
+
+
+# ----------------------------------------------------------------------------------------------- interchangeable tools
+@dataclass(frozen=True)
+class Tool:
+    """What goes on an arm's flange: ``kind`` (gripper, grab, chainsaw), its mass [kg] with its coupler half, its
+    reach from the flange to its TCP [m] (a gripper: between the jaw tips; a chainsaw: the middle of the bar), the
+    jaw drive (``ogma.actuators`` key; None: no jaw joint), jaw length, the saw (``ogma.cutting`` key), the coupler
+    it fits (``iso`` ISO 9409 flange of the light arms, ``qc`` the heavy arms' quick coupler) and its source."""
+
+    key: str
+    kind: str
+    mass_kg: float
+    reach: float
+    coupler: str
+    drive: str | None = None
+    jaw_length: float = 0.0
+    saw: str = ""
+    grip_range: tuple = (-15.0, 45.0)
+    grip_gains: tuple = (40.0, 1.0, 0.002)
+    source: str = ""
+
+
+def _saw_tool(key, saw_key, coupler, mount_kg, source):
+    from ogma import cutting
+
+    s = cutting.get_saw(saw_key)
+    body = {"chainsaw 2 kW, 36 V": 0.32, "mini chainsaw 0.6 kW, 20 V": 0.20}[saw_key]   # powerhead length (Perseus)
+    return Tool(key, "chainsaw", s.mass_kg + mount_kg, body + s.bar_length / 2, coupler, saw=saw_key, source=source)
+
+
+#: The tools of the family. Masses: the grab and grippers as on the arms; the saws from ``ogma.cutting`` (the
+#: catalogue entry includes bar, chain and a mount) plus the coupler half.
+TOOLS = {
+    "two-jaw grab": Tool("two-jaw grab", "grab", 5.0, 0.169, "qc", drive="jaw screw 6 kN", jaw_length=0.16,
+                         grip_range=(-55.0, 45.0), grip_gains=(200.0, 8.0, 0.1),
+                         source="Pumba's grab (debris, drums, logs): two jaws on a 6 kN screw"),
+    "chainsaw 2 kW": _saw_tool("chainsaw 2 kW", "chainsaw 2 kW, 36 V", "qc", 1.5,
+                               "Perseus's saw (ogma.cutting 'chainsaw 2 kW, 36 V', 40 cm bar) on a quick-coupler half "
+                               "(1.5 kg, assumed); fed from the 48 V bus through a converter"),
+    "pruning saw 0.6 kW": _saw_tool("pruning saw 0.6 kW", "mini chainsaw 0.6 kW, 20 V", "iso", 0.4,
+                                    "Perseus Mini's saw (15 cm bar) on an ISO 9409 flange plate (0.4 kg, assumed)"),
+    "parallel gripper": Tool("parallel gripper", "gripper", 0.55, 0.11, "iso", drive="smart servo 12 Nm",
+                             jaw_length=0.09, grip_gains=(15.0, 0.4, 0.001),
+                             source="Pekari-2M's gripper: bought parallel gripper, 80 mm stroke"),
+}
+
+
+def with_tool(arm: ArmSpec, tool: Tool | str) -> ArmSpec:
+    """The arm with ``tool`` on its flange (the tool must fit the arm's ``coupler``): see ``_with_tool``."""
+    tool = TOOLS[tool] if isinstance(tool, str) else tool
+    if tool.coupler != arm.coupler:
+        raise ValueError(f"{tool.key} fits a {tool.coupler!r} coupler; {arm.name} has {arm.coupler!r}")
+    return _with_tool(arm, tool)
+
+
+def _with_tool(arm: ArmSpec, tool: Tool | str) -> ArmSpec:
+    """The arm with ``tool`` on its flange: the joints up to the wrist roll are the arm's own; the jaw joint, the
+    tool's mass and reach (so the TCP, the reach and every load rating) are the tool's. A saw carries no load:
+    ``rated_payload_kg`` 0 (``cut_check`` rates it)."""
+    tool = TOOLS[tool] if isinstance(tool, str) else tool
+    fl = flange(arm)
+    drives = {k: v for k, v in arm.drives.items() if k != "grip"}
+    gains = {k: v for k, v in arm.gains.items() if k != "grip"}
+    ranges = dict(arm.ranges)
+    if tool.drive:
+        drives["grip"] = tool.drive
+        gains["grip"] = tool.grip_gains
+        ranges["grip"] = tool.grip_range
+    keep_rating = tool.kind != "chainsaw"
+    poses = dict(arm.poses)
+    if tool.kind == "chainsaw":                       # the bar level at work height, ahead of the machine
+        poses["cut"] = {"shoulder": -40.0, "elbow": 65.0, "wrist_pitch": -25.0}
+    return replace(arm, name=f"{arm.name.split(' + ')[0]} + {tool.key}", tool=fl + tool.reach, wrist_len=fl,
+                   drives=drives, gains=gains, ranges=ranges, gripper=tool.key, gripper_kg=tool.mass_kg,
+                   jaw_length=tool.jaw_length, saw=tool.saw, tool_kind=tool.kind,
+                   rated_payload_kg=arm.rated_payload_kg if keep_rating else 0.0, poses=poses)
+
+
+def cut_check(arm: ArmSpec, r: float | None = None, wood=None, *, cut_from: str = "top", dynamic: float = 1.5) -> dict:
+    """A chainsaw arm cutting with the bar level at horizontal reach ``r`` [m] (default 80 % of the reach): the
+    pitch joints' torques with the saw's weight and the cutting loads (``ogma.cutting.head_loads``: feed and chain
+    pull, × ``dynamic``) against their modules' stall / ``SF_PEAK`` (``use`` ≤ 1 is ``ok``) and ``sf_stall`` (stall over
+    torque, the measure ``perseus_robot.arm_torques`` reports); the largest branch the bar cuts in one pass."""
+    from ogma import cutting
+
+    if not arm.saw:
+        raise ValueError(f"{arm.name} carries no saw")
+    saw = cutting.get_saw(arm.saw)
+    r = 0.8 * reach(arm) if r is None else r
+    q = _outstretched(arm, r)
+    if q is None:
+        raise ValueError(f"reach {r} m is out of reach")
+    ld = cutting.head_loads(saw, wood, cut_from=cut_from, dynamic=dynamic)
+    fh, fv = ld["chain_pull"][0], ld["feed"][2]                     # along the arm (outwards +), vertical (up +)
+    tau = gravity_torques(arm, q, 0.0, (fh, fv))
+    lim = _limits(arm, "peak")
+    sf = {j: act.get(arm.drives[j]).stall_Nm / tau[j] if tau[j] else math.inf for j in tau}
+    return {"r_m": r, "torques_Nm": tau, "limits_Nm": lim, "use": {j: tau[j] / lim[j] for j in tau}, "sf_stall": sf,
+            "ok": all(tau[j] <= lim[j] for j in tau), "loads": ld, "max_branch_m": cutting.max_branch_for_bar(saw, 1),
+            "saw": saw.key}
 
 
 # ----------------------------------------------------------------------------------------------- the arms
@@ -449,7 +577,7 @@ PUMBA_MAIN_ARM = ArmSpec(
     drives={"yaw": "cycloidal 400 Nm, brake", "shoulder": "cycloidal 800 Nm, brake", "elbow": "cycloidal 400 Nm, brake",
             "wrist_pitch": "harmonic 150 Nm, brake", "wrist_yaw": "harmonic 60 Nm, brake",
             "wrist_roll": "harmonic 60 Nm, brake", "grip": "jaw screw 6 kN"},
-    gripper="two-jaw grab (debris, drums, boxes), quick coupler", gripper_kg=5.0, jaw_length=0.16,
+    gripper="two-jaw grab", gripper_kg=5.0, jaw_length=0.16, tool_kind="grab", coupler="qc",
     parts_kg={"brackets, cabling, covers, quick coupler": 3.5},
     ranges={**_COMMON_RANGES, "grip": (-55.0, 45.0)},          # the grab opens 55 deg a jaw: ~0.3 m at the tips
     gains={"yaw": (10000.0, 400.0, 0.5), "shoulder": (40000.0, 1500.0, 1.5), "elbow": (20000.0, 800.0, 0.8),
@@ -473,6 +601,7 @@ CALYDON_MAIN_ARM = ArmSpec(
             "wrist_pitch": "cycloidal 400 Nm, brake", "wrist_yaw": "harmonic 150 Nm, brake",
             "wrist_roll": "harmonic 60 Nm, brake", "grip": "jaw screw 6 kN"},
     gripper="two-jaw heavy grab (debris, beams, drums), quick coupler", gripper_kg=9.0, jaw_length=0.20,
+    tool_kind="grab", coupler="qc",
     parts_kg={"brackets, cabling, covers, quick coupler": 6.0},
     ranges=dict(_COMMON_RANGES),
     gains={"yaw": (20000.0, 800.0, 1.0), "shoulder": (80000.0, 3000.0, 3.0), "elbow": (40000.0, 1500.0, 1.5),

@@ -435,6 +435,8 @@ def capabilities(pl: Platform) -> dict:
         tags.add("confined")
     if any("thermal" in s for s in pl.sensors):
         tags.add("thermal")
+    if any(m.arm.saw for m in pl.mounts):
+        tags.add("cut")
     return {"name": pl.name, "mass_kg": total_mass(pl), "length_m": ov["length"], "width_m": ov["width"],
             "height_folded_m": h_folded, "payload_kg": pl.payload_range_kg[1], "arm_lift_kg": best.arm.rated_payload_kg,
             "arms": arms, "v_max_m_s": min(pl.v_design, dc["v_top_flat_m_s"]), "endurance_h": endurance(pl),
@@ -549,6 +551,22 @@ def lab(pl: Platform, terrain=None, robot_=None, **kwargs):
     opts = {"timestep": 0.001, "control_dt": 0.002, "log_dt": 0.02}
     opts.update(kwargs)
     return ChironLab(robot_ or robot(pl), terrain, **opts)
+
+
+def with_tool(pl: Platform, mount: str, tool, *, bom_rows: dict | None = None) -> Platform:
+    """A copy of ``pl`` with ``tool`` (a ``pekari_arms.TOOLS`` key or ``Tool``) on arm ``mount``'s flange
+    (``pekari_arms.with_tool``); ``bom_rows`` replace / add BOM rows (item -> (qty, EUR low, EUR high), None
+    drops one). The coupler must match: a heavy arm's quick coupler (``qc``) or a light arm's ISO flange."""
+    t = pa.TOOLS[tool] if isinstance(tool, str) else tool
+    pl.mount(mount)                                              # KeyError-like StopIteration for a wrong mount
+    ms = tuple(replace(m, arm=pa.with_tool(m.arm, t)) if m.name == mount else m for m in pl.mounts)
+    bom = dict(pl.bom_extra)
+    for k, v in (bom_rows or {}).items():
+        if v is None:
+            bom.pop(k, None)
+        else:
+            bom[k] = v
+    return replace(pl, mounts=ms, bom_extra=bom)
 
 
 def with_arm_pose(pl: Platform, mount: str, pose_name: str, deg: dict) -> Platform:

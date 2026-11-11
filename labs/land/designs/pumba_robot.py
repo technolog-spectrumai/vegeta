@@ -29,7 +29,8 @@ import pekari_arms as pa
 import pekari_family as pf
 import pekari_rover_robot as prr
 
-__all__ = ["CHASSIS", "CAD", "PUMBA", "WILK_REFERENCE", "BAND_TRACK_KG_M", "pumba", "pumba_lab", "chassis_mass"]
+__all__ = ["CHASSIS", "CAD", "PUMBA", "PUMBA_SAW", "TOOL_KIT", "WILK_REFERENCE", "BAND_TRACK_KG_M", "pumba", "pumba_lab",
+           "chassis_mass"]
 
 #: Manufacturer-reported values of the reference (not verified here; see docs/pekari_pumba.md §2).
 WILK_REFERENCE = {"empty_kg": 180.0, "payload_kg": 200.0, "v_max_m_s": 8 / 3.6, "length_m": 1.70, "width_m": 1.17,
@@ -116,15 +117,27 @@ PUMBA = pf.Platform(
 )
 
 
+#: Interchangeable tools: the main arm's quick coupler takes the grab (default) or Perseus's 2 kW chainsaw; the
+#: auxiliary arm's ISO flange takes Pekari-2M's grippers. (Perseus Mini's 0.6 kW pruning saw fits the ISO flange
+#: but the light arm cannot hold its cutting loads: ``pekari_arms.cut_check``.)
+TOOL_KIT = {"main": ("two-jaw grab", "chainsaw 2 kW"), "aux": ("parallel gripper",)}
+
+#: Pumba with the chainsaw on the main arm (the grab off): a branch-cutting configuration in Perseus's role.
+PUMBA_SAW = pf.with_tool(PUMBA, "main", "chainsaw 2 kW", bom_rows={
+    "two-jaw grab with quick coupler": None,
+    "chainsaw head 2 kW with quick-coupler half and guard (36 V saw on a 48/36 V converter)": (1, 1200.0, 2600.0)})
+
+
+def pumba(tool: str | None = None, **kw):
+    """Pumba as a Chiron ``Robot`` with ``tool`` on the main arm (None: the grab; ``"chainsaw 2 kW"``: the saw)
+    (``pekari_family.robot`` keywords: ``payload_kg``, ``pose_name``, ``stabilizers_deployed``)."""
+    pl = PUMBA if tool in (None, "two-jaw grab") else pf.with_tool(PUMBA, "main", tool)
+    return pf.robot(pl, **kw)
+
+
 def chassis_mass(pl: pf.Platform = PUMBA) -> float:
     """The mass [kg] without the arms and the stabilizers — the number to hold against WILK's ~180 kg empty."""
     return sum(v for k, v in pf.mass_budget(pl).items() if not k.startswith(("arm '", "stabilizer '")))
-
-
-def pumba(**kw):
-    """Pumba as a Chiron ``Robot`` (``pekari_family.robot`` keywords: ``payload_kg``, ``pose_name``,
-    ``stabilizers_deployed``)."""
-    return pf.robot(PUMBA, **kw)
 
 
 def pumba_lab(terrain=None, robot=None, **kwargs):

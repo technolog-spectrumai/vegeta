@@ -43,8 +43,11 @@ def chassis_parameters(chassis: dict, platform_name: str) -> list:
 
 
 def family_parameters() -> list:
-    return [Parameter("arm_pose", "folded", choices=("folded", "deployed", "reach"), description="the arms' named pose"),
-            Parameter("stabilizers", "stowed", choices=("none", "stowed", "deployed"), description="the stabilizer legs")]
+    return [Parameter("arm_pose", "folded", choices=("folded", "deployed", "reach", "cut"),
+                      description="the arms' named pose ('cut': a saw's bar level; other tools: deployed)"),
+            Parameter("stabilizers", "stowed", choices=("none", "stowed", "deployed"), description="the stabilizer legs"),
+            Parameter("tool", "default", choices=("default",) + tuple(pa.TOOLS),
+                      description="the tool on the first arm's flange (pekari_arms.TOOLS; it must fit the coupler)")]
 
 
 class _FamilyCAD(PekariRover):
@@ -83,14 +86,26 @@ class _FamilyCAD(PekariRover):
         ex, ez = Lu * math.cos(e1), Lu * math.sin(e1)
         fore = self._tube(Lf, (fw, fd), 0.55 * fd).rotate((0, 0, 0), (0, 1, 0), -math.degrees(e2)).translate((ex, 0, ez))
         wx, wz = ex + Lf * math.cos(e2), ez + Lf * math.sin(e2)
-        t_mod = 0.35 * Lt
-        palm_len = max(Lt - arm.jaw_length * k - t_mod, 20.0)
+        t_mod = pa.flange(arm) * k
         tool = cq.Workplane("XZ").circle(0.55 * fd).extrude(0.55 * fw, both=True)                 # wrist pitch housing
         tool = tool.union(cq.Workplane("YZ").circle(0.5 * fw).extrude(t_mod))                      # roll module
-        tool = tool.union(cq.Workplane("XY").box(palm_len, 1.2 * fw, 1.2 * fd).translate((t_mod + palm_len / 2, 0, 0)))
-        jl, jw, jd = arm.jaw_length * k, max(0.6 * fw, 20.0), max(0.25 * fd, 12.0)
-        for s in (1, -1):
-            tool = tool.union(cq.Workplane("XY").box(jl, jw, jd).translate((t_mod + palm_len + jl / 2, 0, s * (0.3 * fd + jd / 2))))
+        if arm.saw:                                       # a chainsaw: the powerhead, then the bar (its nose rounded)
+            from ogma import cutting
+
+            bar = cutting.get_saw(arm.saw).bar_length * k
+            body = max(Lt - t_mod - bar / 2, 50.0)
+            sw, sh = max(1.2 * fw, 60.0), max(1.6 * fd, 80.0)
+            tool = tool.union(cq.Workplane("XY").box(body, sw, sh).translate((t_mod + body / 2, 0, 0)))
+            plate = (cq.Workplane("XZ").center(t_mod + body + bar / 2 - 17.5, 0).rect(bar - 35.0, 70.0)
+                     .extrude(2.5, both=True))
+            nose = cq.Workplane("XZ").center(t_mod + body + bar - 35.0, 0).circle(35.0).extrude(2.5, both=True)
+            tool = tool.union(plate).union(nose)
+        else:
+            palm_len = max(Lt - arm.jaw_length * k - t_mod, 20.0)
+            tool = tool.union(cq.Workplane("XY").box(palm_len, 1.2 * fw, 1.2 * fd).translate((t_mod + palm_len / 2, 0, 0)))
+            jl, jw, jd = arm.jaw_length * k, max(0.6 * fw, 20.0), max(0.25 * fd, 12.0)
+            for s in (1, -1):
+                tool = tool.union(cq.Workplane("XY").box(jl, jw, jd).translate((t_mod + palm_len + jl / 2, 0, s * (0.3 * fd + jd / 2))))
         tool = tool.rotate((0, 0, 0), (0, 1, 0), -math.degrees(e3)).translate((wx, 0, wz))
         out = pedestal.union(upper).union(fore).union(tool)
         return out.rotate((0, 0, 0), (0, 0, 1), math.degrees(q["yaw"]))
@@ -117,6 +132,10 @@ class _FamilyCAD(PekariRover):
     def build(self, p):
         part = p["part"]
         pl = self.platform()
+        if p.get("tool", "default") != "default":
+            import pekari_family as pf
+
+            pl = pf.with_tool(pl, pl.mounts[0].name, p["tool"])
         if part in ("arm", "upper_arm", "forearm"):
             arm = pl.mounts[0].arm
             if part == "upper_arm":

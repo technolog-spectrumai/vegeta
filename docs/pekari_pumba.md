@@ -241,6 +241,19 @@ Each assumption is listed in `Platform.assumptions` and `ArmSpec.assumptions`.
 
 ![Workspaces](figures/pekari_family_workspace.png)
 
+### Interchangeable tools
+
+Each arm's joints end at the wrist-roll flange, and the tool on it sets the rest: its mass, its reach to the TCP,
+a jaw joint or none (`pekari_arms.TOOLS`, `with_tool`; `pekari_family.with_tool`; the CAD's `tool` parameter).
+- The heavy arms' quick coupler takes the two-jaw grab or Perseus's 2 kW chainsaw (40 cm bar).
+- The light arms' ISO flange takes grippers.
+- `pumba_robot.PUMBA_SAW` is Pumba with the saw: 237 kg, 1.93 m to mid-bar.
+- `cut_check` rates a saw arm by Perseus's measure. Cutting outstretched with the loads × 1.5, Pumba's wrist keeps
+  a stall safety factor of 1.28 (Perseus 1.56).
+- Perseus Mini's pruning saw is not in the kit: the light arm cannot hold its cutting loads.
+
+The side-by-side with Perseus, the Pekari Rover and Calydon is in [`land_comparison.md`](land_comparison.md).
+
 ## 5. Heterogeneous fleet (`designs/fleet.py`)
 
 There was nothing to reuse, so `fleet.py` is new. It is small and **deterministic**: the same inputs give the same
