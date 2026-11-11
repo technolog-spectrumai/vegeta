@@ -138,10 +138,10 @@ CHANGING = dict(WIND, changing=True, speed_sigma=2.0, speed_tau=8.0, veer_sigma=
 
 class Race(mt.Match):
     def __init__(self, strategies=None, seed: int = 1, laps: int = 3, duration: float = 150.0, variant: str = "ER2", grid=None, wind: dict | None = None,
-                 penalty_s: float = 2.0, n_balloons: int = 14, slipstream: bool = True):
+                 penalty_s: float = 2.0, n_balloons: int = 14, slipstream: bool = True, stadium=None):
         self.strats = list(strategies or STRATEGIES)
         self.laps, self.windp = laps, dict(WIND if wind is None else wind)
-        a = Stadium(seed=seed, n_balloons=n_balloons)
+        a = (stadium or Stadium)(seed=seed, n_balloons=n_balloons)
         n = len(self.strats)
         order = list(grid) if grid is not None else list(range(n))                   # order[k]: the strategy on grid place k
         lane = np.linspace(-0.40, -0.10, n) * a.width                                 # across the south straight

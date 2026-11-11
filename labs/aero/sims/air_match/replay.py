@@ -162,7 +162,10 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         tok_s.set_data([tk[0]], [tk[2]]) if holder is None else tok_s.set_data([], [])
         if "teamchase" in result:
             out_ = [e["from"] for e in result["events"] if e["what"] == "tag" and e["t"] <= tf]
-            title.set_text(f"team chase   t = {tf:5.1f} s   reds out: {len(out_)}/3 " + " ".join(out_))
+            nr = sum(1 for n_ in players if n_.startswith("red"))
+            laps_ = {n_: sum(1 for e in result["events"] if e["what"] == "lap" and e["who"] == n_ and e["t"] <= tf) for n_ in players}
+            lt = ("   red laps " + " ".join(str(laps_[n_]) for n_ in sorted(players) if n_.startswith("red"))) if "race" in result else ""
+            title.set_text(f"team chase   t = {tf:5.1f} s   reds out: {len(out_)}/{nr}{lt}")
         elif "race" in result:
             lapn = {n: int(sum(1 for e in result["events"] if e["what"] == "lap" and e["who"] == n and e["t"] <= tf)) for n in players}
             lead = sorted(players, key=lambda n: (-lapn[n], n))

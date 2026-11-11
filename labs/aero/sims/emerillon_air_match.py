@@ -34,6 +34,9 @@ OUT = HERE / "output"
 
 
 def play(mode, duration, seed, kw):
+    if mode == "teamcircus":
+        from air_match import teamcircus
+        return teamcircus.play(kw["size"], seed, max(duration, 90.0), kw["head_start"], blue_tactic=kw["blue_tactic"])
     if mode == "teamchase":
         from air_match import teamchase
         return teamchase.play(kw["red"], kw["blue"], seed, duration, kw["head_start"])
@@ -51,6 +54,10 @@ def play(mode, duration, seed, kw):
 
 def line(seed, r):
     c = r["counts"]
+    if "teamchase" in r and "reds" in r["teamchase"]:
+        x = r["teamchase"]
+        return (f"seed {seed}: {x['n']}v{x['n']} round the circus: {x['winner']} wins — reds out {len(x['caught'])}/{x['n']}; red laps "
+                + ", ".join(f"{q['red']} ({q['strategy']}) {q['laps']}" for q in x["reds"]) + f"; blue laps {x['blue_laps']}")
     if "teamchase" in r:
         x = r["teamchase"]
         return (f"seed {seed}: {x['red']} reds vs {x['blue']} blues, head start {x['head_start_s']:g} s: {x['winner']} wins — caught "
@@ -69,7 +76,9 @@ def line(seed, r):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7", "circus", "teamchase"])
+    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7", "circus", "teamchase", "teamcircus"])
+    ap.add_argument("--size", type=int, default=3, help="teamcircus: reds and blues per team (3, 5, 7)")
+    ap.add_argument("--blue-tactic", default="cut", choices=["cut", "track"], help="teamcircus: blues fly straight at their red (over the spina), or round the track")
     ap.add_argument("--red", default="scatter", choices=["scatter", "flock", "jink"], help="teamchase: the reds' tactic")
     ap.add_argument("--blue", default="assigned", choices=["assigned", "nearest", "pincer"], help="teamchase: the blues' tactic")
     ap.add_argument("--head-start", type=float, default=3.0, help="teamchase: seconds the reds fly before the blues may go")
@@ -91,7 +100,17 @@ def main(argv=None) -> int:
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args(argv)
     kw = dict(variants=tuple(args.variants), score="over" if args.over else "through", n_balloons=args.balloons, possession=not args.plain)
-    kw.update(red=args.red, blue=args.blue, head_start=args.head_start)
+    kw.update(red=args.red, blue=args.blue, head_start=args.head_start, size=args.size, blue_tactic=args.blue_tactic)
+    if args.mode == "teamcircus" and args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
+        import pandas as pd
+        from air_match import teamcircus
+        t = teamcircus.tournament((args.size,), args.tournament, args.seed, max(args.duration, 90.0), args.head_start,
+                                  progress=lambda n, bt, s, x: print(f"{n}v{n} {bt:5s} seed {s}: {x['winner']} ({len(x['caught'])} out, red laps {x['red_laps']})", flush=True))
+        pd.set_option("display.width", 260); pd.set_option("display.max_colwidth", 120)
+        print(pd.DataFrame(t["table"]).to_string(index=False))
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f"air_teamcircus_tournament_{args.size}v{args.size}.json").write_text(json.dumps(t, indent=1, default=float))
+        return 0
     if args.mode == "teamchase" and args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
         import pandas as pd
         from air_match import teamchase
@@ -147,8 +166,9 @@ def main(argv=None) -> int:
     matplotlib.use("Agg")
     from air_match import replay
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = OUT / (f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}{'_gusts' if getattr(args, 'gusts', False) else ''}_{args.seed}")
-    (replay.race_summary if "race" in r else replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
+    stem = OUT / (f"air_teamcircus_{args.size}v{args.size}_{args.seed}" if args.mode == "teamcircus" else f"air_match_{args.seed}" if args.mode == "match" else f"air_{args.mode}{'_gusts' if getattr(args, 'gusts', False) else ''}_{args.seed}")
+    from air_match import teamcircus as _tcirc
+    (_tcirc.summary if "teamchase" in r and "reds" in r["teamchase"] else replay.race_summary if "race" in r else replay.formation_summary if "formation" in r else replay.summary)(r, stem.with_suffix(".png"))
     files = [stem.with_suffix(".png")]
     if not args.no_video:
         files.append(replay.video(r, stem.with_suffix(".mp4")))

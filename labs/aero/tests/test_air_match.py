@@ -245,3 +245,30 @@ def test_assignment_spreads_the_blues():
     assert len({r.name for r in a.values()}) == 3                                          # one blue per red
     n = tc.TeamChase("scatter", "nearest", seed=1).targets(5.0)
     assert set(n) == {"blue1", "blue2", "blue3"}
+
+
+# ----------------------------------------------------------------------------------------- the team chase round the circus
+def test_the_team_circus_has_boxes_teams_and_laps():
+    from air_match import teamcircus as tc
+    g = tc.TeamCircus(3, seed=1, duration=40.0)
+    names = {mujoco.mj_id2name(g.model, mujoco.mjtObj.mjOBJ_GEOM, i) or "" for i in range(g.model.ngeom)}
+    assert sum(n.startswith("wallbox") for n in names) == len(g.a.boxes) and "spina" in names
+    assert [p.team for p in g.players].count("red") == 3 and [p.team for p in g.players].count("blue") == 3
+    assert g.windp.get("changing") and all(g.gate[b.name] == 3 for b in g.blues)
+    st = g.strategy["red2"]
+    pt = g.line(st, np.array([50.0, -7.0, 4.0]))[0]                                       # the line steps round the box at (55, -6.5)
+    assert abs(pt[1] + 6.5) > 3.0
+    r = g.run()
+    x = r["teamchase"]
+    assert x["red_laps"] == sum(q["laps"] for q in x["reds"]) and x["red_laps"] >= 2          # the reds are lapping
+    blues = [r["players"][f"blue{i}"]["hist"] for i in (1, 2, 3)]
+    assert all(np.abs(h["x"][h["t"] < 2.8] - h["x"][0]).max() < 0.3 for h in blues)        # the head start
+    assert len([e for e in r["events"] if e["what"] == "tag"]) == len(x["caught"]) == sum(q["tags"] for q in x["blues"])
+
+
+def test_more_aircraft_per_team():
+    from air_match import teamcircus as tc
+    g = tc.TeamCircus(7, seed=2, duration=1.0)
+    assert len(g.reds) == len(g.blues) == 7 and len({p.name for p in g.players}) == 14
+    assert {g.red_kind[p.name] for p in g.reds} == set(tc.RED_STRATEGIES)
+    assert len(set(g.targets(5.0)[b.name].name for b in g.blues)) == 7                    # one blue per red
