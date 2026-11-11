@@ -413,6 +413,27 @@ has corners. **`flock` is the reds' best tactic** (it survives longest in 5 of t
 **`jink` their worst** (caught soonest: the breaks cost the speed that a straight run keeps). **`pincer` is not the blues' best**:
 it leaves fewer blues on the chase and loses most games of the three; `nearest` catches fastest. A longer head start helps the
 reds less than their tactic does. Three seeds a pairing is a small sample.
+**The team chase round the circus** (`--mode teamcircus --size 3|5|7`, `air_match/teamcircus.py`): N reds flee round the Circus
+Maximus, N blues hunt them; no token. Nine fixed boxes stand on the track, balloons drift in a changing wind, the reds have a 3 s
+head start (the blues start half a lap behind), every aircraft's laps are counted. A tag is 3 m held for 0.2 s (at racing speed
+2 m for 0.35 s never happened); a contact sends the aircraft back to its last gate. Each red flies one of the race strategies and
+breaks away from a close blue; blues are assigned one red each (Hungarian) and either `cut` (straight at it, over the 2.5 m spina)
+or `track` (the racing line until close) — with the same aircraft on the same line a blue never closes half a lap. Over 3 seeds
+a size and tactic (90 s games):
+
+| size | blue | blue wins | reds out per game | red laps per red | blue laps per blue |
+|---|---|---|---|---|---|
+| 3v3 | cut | 0/3 | 1.7 | 1.7 | 2.4 |
+| 3v3 | track | 1/3 | 2.3 | 2.6 | 3.8 |
+| 5v5 | cut | 1/3 | 3.7 | 1.1 | 1.5 |
+| 5v5 | track | 1/3 | 2.3 | 2.8 | 3.5 |
+| 7v7 | cut | 3/3 | 7.0 | 0.8 | 1.6 |
+| 7v7 | track | 0/3 | 5.3 | 2.1 | 3.9 |
+
+**The bigger the teams, the worse for the reds**: with seven blues cutting across, every red is out in every game and few finish a
+lap; at 3v3 the reds usually survive. **Cutting wins big games, tracking wins small ones**: in a crowd the shortcut always finds a
+red; with three reds the cutters lose them round the far straight. The reds that lap most are `high` and `windwise` (over the
+balloons and the boxes); `inside` laps least (the boxes stand on its line). Three seeds a cell is a small sample.
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and
