@@ -92,7 +92,8 @@ class Frames:
         self.opt.geomgroup[:] = 0
         self.opt.geomgroup[0] = self.opt.geomgroup[1] = 1     # the drawn geoms; group 3 (the collision shapes) hidden
         self.opt.flags[mujoco.mjtVisFlag.mjVIS_TENDON] = 1
-        self.title_font, self.font, self.small = _font(26), _font(17), _font(14)
+        k = max(0.62, size[0] / W)
+        self.title_font, self.font, self.small = _font(round(26 * k)), _font(round(17 * k)), _font(round(14 * k))
 
     def camera_pos(self):
         c = self.cam
@@ -100,7 +101,43 @@ class Frames:
         fwd = np.array([math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)])
         return np.array(c.lookat) - c.distance * fwd
 
-    def render(self, lookat, distance, azimuth, elevation, title="", lines=(), footer="", clock=""):
+    def _wrap(self, d, text, font, width):
+        """Split ``text`` at spaces so each piece fits ``width`` pixels."""
+        out, cur = [], ""
+        for w in text.split("  "):                               # the HUD's fields are separated by double spaces
+            cand = (cur + "  " + w) if cur else w
+            if d.textlength(cand, font=font) <= width or not cur:
+                cur = cand
+            else:
+                out.append(cur)
+                cur = w.strip()
+        return out + ([cur] if cur else [])
+
+    def _chart(self, d, chart, box):
+        """A strip chart of the series in ``chart`` (``t`` and named series, m) in ``box`` (x0, y0, x1, y1)."""
+        x0, y0, x1, y1 = box
+        d.rectangle(box, fill=(0, 0, 0, 130))
+        t = chart["t"]
+        if len(t) < 2:
+            return
+        names = [k for k in chart if k != "t"]
+        span = max(1.0, max(float(np.max(np.abs(chart[k]))) for k in names))
+        ym = (y0 + y1) / 2
+        sc = (y1 - y0 - 24) / 2 / span
+        d.line([x0 + 4, ym, x1 - 4, ym], fill=(120, 120, 120, 255))
+        cols = [(170, 180, 190, 255), (255, 215, 60, 255), (120, 220, 255, 255)]
+        tt = t[-1] - 10.0
+        for k, col in zip(names, cols):
+            pts = [(x0 + 4 + (x1 - x0 - 8) * (ti - tt) / 10.0, ym - sc * float(v)) for ti, v in zip(t, chart[k])]
+            d.line(pts, fill=col, width=2)
+        y = y0 + 3
+        for k, col in zip(names, cols):
+            d.text((x0 + 6, y), k, font=self.small, fill=col)
+            y += 15
+        d.text((x1 - 70, y0 + 3), f"+/-{span:.1f} m", font=self.small, fill=(200, 200, 200, 255))
+        d.text((x1 - 50, y1 - 17), "10 s", font=self.small, fill=(200, 200, 200, 255))
+
+    def render(self, lookat, distance, azimuth, elevation, title="", lines=(), footer="", clock="", chart=None):
         from PIL import Image, ImageDraw
         sim = self.sim
         c = self.cam
@@ -119,19 +156,29 @@ class Frames:
             im = Image.blend(im, tint, 0.25)
         d = ImageDraw.Draw(im, "RGBA")
         y = 10
-        hh = 40 + 24 * len(lines)
+        cw = d.textlength(clock, font=self.title_font) if clock else 0
+        tl = self._wrap(d, title.replace(": ", ":  "), self.title_font, im.width - cw - 40)
+        ll = [p for s in lines for p in self._wrap(d, s, self.font, im.width - 28)]
+        lh = self.font.size + 7
+        hh = 14 + (self.title_font.size + 8) * len(tl) + lh * len(ll)
         d.rectangle([0, 0, im.width, hh], fill=(0, 0, 0, 120))
-        d.text((14, y), title, font=self.title_font, fill=(255, 255, 255, 255))
         if clock:
-            w = d.textlength(clock, font=self.title_font)
-            d.text((im.width - w - 14, y), clock, font=self.title_font, fill=(255, 230, 120, 255))
-        y += 36
-        for s in lines:
+            d.text((im.width - cw - 14, y), clock, font=self.title_font, fill=(255, 230, 120, 255))
+        for s in tl:
+            d.text((14, y), s, font=self.title_font, fill=(255, 255, 255, 255))
+            y += self.title_font.size + 8
+        for s in ll:
             d.text((14, y), s, font=self.font, fill=(235, 240, 245, 255))
-            y += 24
+            y += lh
+        if chart is not None:
+            cw2, ch2 = min(380, im.width - 28), 140
+            self._chart(d, chart, (im.width - cw2 - 14, im.height - ch2 - 40, im.width - 14, im.height - 40))
         if footer:
-            d.rectangle([0, im.height - 26, im.width, im.height], fill=(0, 0, 0, 110))
-            d.text((14, im.height - 22), footer, font=self.small, fill=(220, 225, 230, 255))
+            fl = self._wrap(d, footer.replace(" - ", "  "), self.small, im.width - 28)
+            fh = (self.small.size + 6) * len(fl) + 6
+            d.rectangle([0, im.height - fh, im.width, im.height], fill=(0, 0, 0, 110))
+            for k2, s in enumerate(fl):
+                d.text((14, im.height - fh + 4 + k2 * (self.small.size + 6)), s, font=self.small, fill=(220, 225, 230, 255))
         if under:
             d.text((im.width - 150, im.height - 52), "under water", font=self.font, fill=(170, 220, 240, 255))
         return np.asarray(im)

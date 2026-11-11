@@ -577,7 +577,7 @@ def clam_boat():
 def pinna():
     """Pinna, the autonomous drone-carrier catamaran (Ketos Clams stages 6-8): Walrus davits and reels, the basket
     robot and the packer, four VTOL pads, the catapult and the recovery net, the autonomy mast. z = 0 the waterline."""
-    from pinna import AUTONOMY, LOADS, ROBOTS, Pinna
+    from pinna import AUTONOMY, LOADS, ROBOTS, Pinna, davit_card
     d, p, s = Pinna(), Pinna.p(), Pinna.sizing()
     parts = [("pinna_hulls", "hulls", "#34495e"), ("pinna_deck", "deck", "#95a5a6"), ("pinna_house", "house", "#ecf0f1"),
              ("pinna_flight_deck", "flight_deck", "#7f8c8d"), ("pinna_pads", "pads", "#f1c40f"), ("pinna_catapult", "catapult", "#c0392b"),
@@ -592,6 +592,7 @@ def pinna():
                    "power_W": round(1000 * s["bed_load_kW"]), "battery_kWh": p["battery_kwh"], "endurance_days": s["endurance_days"],
                    "fuel_l_h_on_bed": s["fuel_l_h_on_bed"], "loads_kW": {k: round(v, 2) for k, v in LOADS.items()}, "autonomy": AUTONOMY, "robots": ROBOTS, "unmanned": True,
                    "carries": ["walrus", "gannet", "fulmar"], "davits": p["davits"], "tether_reels": p["davits"], "usbl": True,
+                   "davit": davit_card(), "davit_hs_limit_m": s["davit_hs_limit_m"],
                    "haul_min_per_basket": p["basket_haul_s"] / 60.0, "basket_robot": True,
                    "packing": {"crate_kg": p["crate_kg"], "pack_s": p["pack_s"], "store_kg": p["crate_store_kg"], "ice": True},
                    "hold_kg": p["crate_store_kg"],

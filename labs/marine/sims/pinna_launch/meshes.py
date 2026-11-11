@@ -32,15 +32,21 @@ FULMAR_PARTS = {"aircraft": (0.95, 0.61, 0.07, 1)}
 WALRUS_PARTS = {"tracks": (0.15, 0.15, 0.15, 1), "frame": (0.85, 0.85, 0.80, 1), "housing": (0.70, 0.72, 0.75, 1),
                 "gantry": (0.30, 0.30, 0.35, 1), "basket": (0.20, 0.55, 0.30, 1), "thrusters": (0.95, 0.75, 0.10, 1),
                 "lights": (0.95, 0.95, 0.70, 1), "arms": (0.55, 0.35, 0.20, 1)}
-TOL = {"pinna": 30.0, "gannet": 6.0, "fulmar": 6.0, "walrus": 4.0}
+SQUILLA_PARTS = {"body": (0.95, 0.80, 0.15, 1), "arms": (0.25, 0.25, 0.28, 1), "skids": (0.2, 0.2, 0.22, 1), "sensors": (0.1, 0.1, 0.12, 1)}
+JACKET_PARTS = {"structure": (0.80, 0.62, 0.20, 1), "anodes": (0.75, 0.75, 0.78, 1), "conductors": (0.5, 0.5, 0.52, 1),
+                "risers": (0.25, 0.25, 0.28, 1), "topside": (0.86, 0.86, 0.84, 1)}
+TOL = {"pinna": 30.0, "gannet": 6.0, "fulmar": 6.0, "walrus": 4.0, "squilla": 5.0, "jacket": 120.0}
 
 
 def _designs():
     from fulmar import Fulmar
     from gannet import Gannet
+    from oil_platform import Jacket
     from pinna import Pinna
+    from squilla import Squilla
     from walrus import Walrus
-    return {"pinna": (Pinna, PINNA_PARTS), "gannet": (Gannet, GANNET_PARTS), "fulmar": (Fulmar, FULMAR_PARTS), "walrus": (Walrus, WALRUS_PARTS)}
+    return {"pinna": (Pinna, PINNA_PARTS), "gannet": (Gannet, GANNET_PARTS), "fulmar": (Fulmar, FULMAR_PARTS), "walrus": (Walrus, WALRUS_PARTS),
+            "squilla": (Squilla, SQUILLA_PARTS), "jacket": (Jacket, JACKET_PARTS)}
 
 
 def write_stl(path: Path, verts: np.ndarray, tris: np.ndarray) -> Path:
@@ -84,7 +90,7 @@ def export(design: str, cache: Path = CACHE) -> dict:
 
 def export_all(cache: Path = CACHE) -> dict:
     out = {}
-    for name in _designs():
+    for name in ("pinna", "gannet", "fulmar", "walrus"):
         out.update(export(name, cache))
     return out
 

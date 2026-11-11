@@ -2,7 +2,7 @@
 deck's rates beat the packer, no crew aboard, the CAD builds."""
 import pytest
 
-from pinna import AUTONOMY, ROBOTS, Pinna
+from pinna import AUTONOMY, DAVIT_AHC, ROBOTS, Pinna, davit_card, davit_compensation, davit_hs_limit
 
 
 def test_floats_and_powers():
@@ -30,3 +30,16 @@ def test_every_task_has_a_robot():
 def test_cad_builds():
     pytest.importorskip("cadquery")
     assert Pinna().build(Pinna.p()).val().isValid()
+
+
+def test_davit_compensation():
+    """The compensated davit works past the plain davit's 2 m, every axis inside its limits there, the residual a
+    small fraction of the sheave's motion; over its limit an axis runs out."""
+    lim = davit_hs_limit()
+    assert 2.5 <= lim <= 3.5 and lim > DAVIT_AHC["uncompensated_hs_m"]
+    c = davit_compensation(2.0)
+    assert c["ok"] and c["residual_vertical_m"] < 0.1 * c["sheave_vertical_m"] + 0.06 and c["residual_horizontal_m"] < 0.15
+    assert not davit_compensation(lim + 0.5)["ok"]
+    card = davit_card()
+    assert card["hs_limit_m"] == lim == Pinna.sizing()["davit_hs_limit_m"] and card["max_roll_deg"] > 8
+    assert ROBOTS["davit"]["price_eur"] >= 38000 + card["compensation_eur"] - 1

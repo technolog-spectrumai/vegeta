@@ -69,3 +69,31 @@ def test_all_with_cad_meshes():
     assert sim.model.nmesh >= 20
     sim.run(0.2)
     _finite(sim)
+
+
+def _hook_residual(compensated):
+    w = WalrusAgent(compensated=compensated)
+    sim = world.Sim([w], sea=world.Sea.heavy(), use_meshes=False)
+    sim.run(14.0)
+    _finite(sim)
+    return w.residual(t0=9.0, t1=13.5)
+
+
+def test_compensated_davit_holds_the_hook():
+    """In a heavy sea (heave +/-1 m, roll +/-5 deg) the compensated davit's hook stays within centimetres in the
+    earth frame while the deck at the davit moves tens of centimetres; without compensation the hook follows it."""
+    on, off = _hook_residual(True), _hook_residual(False)
+    assert on["deck_at_davit"]["vertical_rms_m"] > 0.3
+    assert on["hook"]["vertical_rms_m"] < 0.08 and on["sheave"]["horizontal_rms_m"] < 0.08
+    assert off["hook"]["vertical_rms_m"] > 4 * on["hook"]["vertical_rms_m"]
+    assert off["hook"]["horizontal_rms_m"] > 2 * on["hook"]["horizontal_rms_m"]
+
+
+def test_oil_platform_scene_builds():
+    from pinna_launch import clips
+    sim, ag = clips.build("oil_platform_deploy", use_meshes=False)
+    _, g, sq = ag
+    sim.run(2.0)
+    _finite(sim)
+    assert g.locked and not g.crate and sq.name == "squilla" and sim.data.qpos[0] > 0.5          # Pinna under way, Gannet locked
+    assert abs(g.c["mass"] - g.c["s"]["empty_kg"]) < 1e-9 and sq.c["mass"] > 100

@@ -13,7 +13,10 @@ What is on it, aft to forward (x forward, y left, z up from the waterline; mm in
   gensets in the hulls, two 280 kW pods (DP and transit), a bow tunnel thruster per hull, a 350 kWh buffer battery
   (silent DP at night, the drones' charging peaks);
 * the **Walrus deck** aft: four automatic davits (two a side) with their tether reels and the USBL pole between the
-  hulls; the **basket robot** (a gantry with a float-line grab and a winch: 90 s a basket against the crew's 3 min);
+  hulls; each davit is **motion-compensated** (``DAVIT_AHC``, ``davit_compensation``): an MRU on its base, an
+  active-heave-compensated winch, a compensating luff and slew, so the hook and the Walrus stand still in the earth
+  frame while the deck heaves, rolls and pitches - launch and recovery up to Hs ``davit_hs_limit()`` (2.8 m) against
+  the plain davit's 2.0 m; the **basket robot** (a gantry with a float-line grab and a winch: 90 s a basket against the crew's 3 min);
 * the **processing house** amidships: a wash/grade conveyor, a vision grader, the crate packer (a 5 kg crate with
   ice every 60 s, labelled with the harvest time and cell for traceability), the chilled crate store (2 t);
 * the **hangar** under the flight deck: 8 Gannets, 3 Fulmars, a battery room with 24 + 9 packs on 1C chargers,
@@ -58,7 +61,7 @@ KN = 0.5144
 
 #: The lightship mass budget (t): class values (assumed).
 LIGHTSHIP = {"hulls + cross deck (aluminium)": 38.0, "gensets 2x250 kW + pods 2x280 kW + tunnels": 14.0,
-             "buffer battery 350 kWh": 3.5, "house + hangar + flight deck": 9.0, "davits 4x + reels + basket robot": 4.0,
+             "buffer battery 350 kWh": 3.5, "house + hangar + flight deck": 9.0, "davits 4x (compensated) + reels + basket robot": 4.4,
              "processing: conveyor, grader, packer, chiller": 3.0, "catapult + net + swap robot + pads": 2.5,
              "autonomy mast + sensors + comms": 1.2, "outfit, piping, cabling": 6.0}
 #: Deadweight on the bed (t): fuel for 10 days, ice, crates, the drones, the Walruses.
@@ -71,8 +74,10 @@ LOADS = {"DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": 45.0, "4 Walruses 
 #: The robots aboard (class values, assumed): what each does, its reach (m), payload (kg), cycle time (s), power
 #: (kW average while working), failures a day (each needs a remote reset or a takeover) and price (EUR).
 ROBOTS = {
-    "davit": {"count": 4, "what": "an automatic davit with a latch cradle: a Walrus over the side and back, the tether reel paced to it",
-              "reach_m": 2.5, "payload_kg": 60.0, "cycle_s": 300.0, "power_kW": 1.5, "faults_per_day": 0.05, "fix_min": 10.0, "price_eur": 38000.0},
+    "davit": {"count": 4, "what": "a motion-compensated davit with a latch cradle (``DAVIT_AHC``): an MRU on its base, an active-heave-"
+                                  "compensated winch, a compensating luff and slew - the hook stands still in the earth frame while the deck moves; "
+                                  "a Walrus over the side and back, the tether reel paced to it",
+              "reach_m": 2.4, "payload_kg": 60.0, "cycle_s": 300.0, "power_kW": 2.5, "faults_per_day": 0.08, "fix_min": 10.0, "price_eur": 38000.0 + 28500.0},
     "basket_gantry": {"count": 1, "what": "a gantry over the Walrus deck: grabs the float line, winches the basket, tips it onto the wash conveyor, sends it back down",
                       "reach_m": 9.0, "payload_kg": 40.0, "cycle_s": 90.0, "power_kW": 1.5, "faults_per_day": 0.3, "fix_min": 8.0, "price_eur": 85000.0},
     "packing_cell": {"count": 1, "what": "wash, vision grader, a 6-axis arm: clams and flake ice into a 5 kg crate, lid, label (harvest time, cell)",
@@ -86,6 +91,105 @@ ROBOTS = {
     "cleaner": {"count": 1, "what": "a magnetic crawler: washes the pads' grids, the deck, the radar and camera windows; inspects welds and the net",
                 "reach_m": 0.0, "payload_kg": 5.0, "cycle_s": 1800.0, "power_kW": 0.4, "faults_per_day": 0.05, "fix_min": 15.0, "price_eur": 30000.0},
 }
+#: The davit's motion compensation, as on offshore cranes and gangways (AHC winches, Ampelmann / Barge Master bases,
+#: knuckle-boom cranes with AHC), at davit scale and all electric (class values, assumed): the **MRU** on the davit's
+#: base measures the deck's six motions there; the controller turns them into the sheave's earth-frame motion and
+#: drives three axes against it - the **AHC winch** pays the rope out and in (vertical), the **luff** (a ball-screw
+#: cylinder on the boom) moves the sheave athwartships (the roll's sway), the **slew** (a worm drive under the post)
+#: moves it fore and aft (the pitch's surge). The power is regenerated: the winch lowers as much as it lifts, a
+#: supercapacitor bank on the davit's DC bus carries the peaks.
+DAVIT_AHC = {
+    "boom_m": 2.4, "post_m": 2.6, "working_luff_deg": 45.0, "inboard_luff_deg": -40.0,
+    "mru": {"what": "6-DOF motion reference unit (MEMS gyros + accelerometers, heave filter), on the davit's base",
+            "heave_accuracy_m": 0.05, "heave_accuracy_frac": 0.05, "roll_pitch_accuracy_deg": 0.02, "rate_hz": 100.0,
+            "latency_s": 0.01, "power_W": 15.0, "price_eur": 7000.0},
+    "winch": {"what": "AHC winch: a servo motor on the drum, 4-quadrant drive, regenerating", "line_pull_N": 1200.0,
+              "rope_speed_m_s": 2.5, "rope_accel_m_s2": 3.0, "rope_m": 40.0, "peak_kW": 4.0, "price_eur": 9000.0},
+    "luff": {"what": "luffing ball-screw cylinder (boom angle from the vertical)", "range_deg": [5.0, 85.0], "rate_deg_s": 40.0,
+             "stroke_m": 0.55, "speed_m_s": 0.3, "peak_kW": 1.5, "price_eur": 4500.0},
+    "slew": {"what": "worm slewing drive under the post", "range_deg": [-35.0, 35.0], "rate_deg_s": 30.0, "peak_kW": 1.0, "price_eur": 3500.0},
+    "supercaps": {"what": "supercapacitor bank on the davit's DC bus (the peaks, the regenerated energy)", "kJ": 60.0, "price_eur": 1500.0},
+    "controller_eur": 3000.0,
+    "servo_lag_s": 0.03,                          # the axes' effective lag behind the MRU (the residual's main source)
+    "uncompensated_hs_m": 2.0,                    # the plain davit's limit (the Walrus swings into the hull above it)
+}
+#: The uprated winch one davit can carry for a heavier vehicle than the Walrus (e.g. a 140 kg inspection AUV at an
+#: oil platform): the same compensation, a bigger servo and drum (class values, assumed).
+DAVIT_UPRATED = {"what": "uprated AHC winch: 3 kN line pull, the same rope speed", "payload_kg": 150.0, "line_pull_N": 3000.0,
+                 "peak_kW": 9.0, "extra_eur": 6000.0}
+#: The deck's motion per metre of significant wave height (single amplitudes, beam-quartering seas, the catamaran
+#: on DP; class values for a 24 m workcat, assumed) and the design factor from significant to the largest in a launch.
+SEA_RESPONSE = {"heave_m": 0.5, "roll_deg": 2.5, "pitch_deg": 1.2, "period_s": 7.0, "design_factor": 1.5}
+
+
+def davit_head(over=None):
+    """The aft port davit's sheave at its working luff (m, ship frame; the motion's centre at the waterline amidships)."""
+    p = Pinna.p(over)
+    a = DAVIT_AHC
+    z0 = (p["hull_depth"] - p["draught"] + 400) / 1000 + a["post_m"]
+    y0 = p["beam"] / 2000 - 0.45
+    phi = math.radians(a["working_luff_deg"])
+    return (-11.5, y0 + a["boom_m"] * math.sin(phi), z0 + a["boom_m"] * math.cos(phi))
+
+
+def davit_compensation(hs: float, over=None, payload_kg: float = 60.0, line_pull_N: float | None = None) -> dict:
+    """What the compensated davit must do at significant wave height ``hs`` and what it can: the sheave's design
+    motion (vertical, athwartships, fore-and-aft), each axis's need against its limit (stroke, speed, acceleration;
+    ``use`` > 1: over its limit), and the residual motion of the hook in the earth frame (the MRU's error and the
+    axes' lag), against the uncompensated motion."""
+    a, r = DAVIT_AHC, SEA_RESPONSE
+    x, y, z = davit_head(over)
+    f = r["design_factor"] * hs
+    h, rl, pt = r["heave_m"] * f, math.radians(r["roll_deg"] * f), math.radians(r["pitch_deg"] * f)
+    w = 2 * math.pi / r["period_s"]
+    vert = math.sqrt(h * h + (y * math.sin(rl)) ** 2 + (x * math.sin(pt)) ** 2)
+    sway, surge = z * math.sin(rl), z * math.sin(pt)
+    phi = math.radians(a["working_luff_deg"])
+    luff = math.degrees(sway / (a["boom_m"] * math.cos(phi)))        # the sheave's sway (the deck's rotation is in it) undone by luffing
+    slew = math.degrees(surge / (a["boom_m"] * math.sin(phi)))
+    lo, hi = a["luff"]["range_deg"]
+    use = {"winch_speed": vert * w / a["winch"]["rope_speed_m_s"], "winch_accel": vert * w * w / a["winch"]["rope_accel_m_s2"],
+           "winch_pull": (1 + vert * w * w / G) * payload_kg * G / (line_pull_N or a["winch"]["line_pull_N"]),
+           "luff_stroke": luff / min(a["working_luff_deg"] - lo, hi - a["working_luff_deg"]), "luff_rate": luff * w / a["luff"]["rate_deg_s"],
+           "slew_stroke": slew / a["slew"]["range_deg"][1], "slew_rate": slew * w / a["slew"]["rate_deg_s"]}
+    m = a["mru"]
+    lag = m["latency_s"] + a["servo_lag_s"]
+    res_v = math.sqrt((m["heave_accuracy_frac"] * vert) ** 2 + m["heave_accuracy_m"] ** 2 + (lag * w * vert) ** 2)
+    res_h = math.hypot(sway, surge) * math.hypot(m["heave_accuracy_frac"], lag * w) + z * math.radians(m["roll_pitch_accuracy_deg"])
+    return {"hs_m": hs, "sheave_vertical_m": vert, "sheave_sway_m": sway, "sheave_surge_m": surge, "luff_deg": luff, "slew_deg": slew,
+            "use": use, "worst": max(use, key=use.get), "ok": max(use.values()) <= 1.0,
+            "residual_vertical_m": res_v, "residual_horizontal_m": res_h,
+            "winch_peak_kW": round(a["winch"]["line_pull_N"] * min(vert * w, a["winch"]["rope_speed_m_s"]) / 1000 / 0.85, 2)}
+
+
+def davit_hs_limit(over=None, payload_kg: float = 60.0, line_pull_N: float | None = None) -> float:
+    """The highest Hs (0.05 m steps) at which every compensating axis stays inside its stroke, speed and pull."""
+    hs = 0.0
+    while davit_compensation(hs + 0.05, over, payload_kg, line_pull_N)["ok"] and hs < 8:
+        hs += 0.05
+    return round(hs, 2)
+
+
+def davit_card(over=None) -> dict:
+    """The compensated davit for the cards: the mechanism, its limits, the residual at its limit and at 2 m."""
+    a = DAVIT_AHC
+    lim = davit_hs_limit(over)
+    c_lim, c2 = davit_compensation(lim, over), davit_compensation(2.0, over)
+    parts = a["mru"]["price_eur"] + a["winch"]["price_eur"] + a["luff"]["price_eur"] + a["slew"]["price_eur"] + a["supercaps"]["price_eur"] + a["controller_eur"]
+    return {"compensated": True, "mechanism": "MRU + AHC winch + compensating luff and slew", "boom_m": a["boom_m"],
+            "mru": a["mru"], "winch": a["winch"], "luff": a["luff"], "slew": a["slew"], "supercaps": a["supercaps"],
+            "hs_limit_m": lim, "hs_limit_uncompensated_m": a["uncompensated_hs_m"], "limited_by": c_lim["worst"],
+            "max_heave_m": round(SEA_RESPONSE["heave_m"] * SEA_RESPONSE["design_factor"] * lim, 2),
+            "max_roll_deg": round(SEA_RESPONSE["roll_deg"] * SEA_RESPONSE["design_factor"] * lim, 1),
+            "max_pitch_deg": round(SEA_RESPONSE["pitch_deg"] * SEA_RESPONSE["design_factor"] * lim, 1),
+            "sheave_motion_at_limit_m": round(c_lim["sheave_vertical_m"], 2),
+            "residual_at_limit_m": {"vertical": round(c_lim["residual_vertical_m"], 3), "horizontal": round(c_lim["residual_horizontal_m"], 3)},
+            "residual_at_2m_m": {"vertical": round(c2["residual_vertical_m"], 3), "horizontal": round(c2["residual_horizontal_m"], 3)},
+            "payload_kg": ROBOTS["davit"]["payload_kg"],
+            "uprated_winch": DAVIT_UPRATED | {"hs_limit_m": davit_hs_limit(over, DAVIT_UPRATED["payload_kg"], DAVIT_UPRATED["line_pull_N"])},
+            "compensation_eur": parts, "power_kW_avg": ROBOTS["davit"]["power_kW"], "peak_kW": a["winch"]["peak_kW"] + a["luff"]["peak_kW"] + a["slew"]["peak_kW"]}
+
+
 #: The autonomy suite: (what, why).
 AUTONOMY = {"radar": "X- and S-band ARPA: targets out to 12 nm, the collision avoidance's tracks",
             "ais": "class A transponder: the others see it, it sees them",
@@ -165,6 +269,7 @@ class Pinna(Design):
                 "baskets_per_h": round(3600 / p["basket_haul_s"]), "air_kg_h_vtol_deck_limit": round(pad_rate * p["crate_kg"]),
                 "charging_kW": LOADS["drone chargers (12 at 1C)"], "crew": 0, "operators_ashore": 1 / 3,
                 "robots": sum(r["count"] for r in ROBOTS.values()), "robot_faults_per_day": round(sum(r["count"] * r["faults_per_day"] for r in ROBOTS.values()), 2),
+                "davit_hs_limit_m": davit_hs_limit(over), "davit_hs_limit_uncompensated_m": DAVIT_AHC["uncompensated_hs_m"],
                 "price": price, "price_eur": round(sum(price.values())), "day_rate_eur": 1400.0}
 
     # --- CAD ---------------------------------------------------------------------------------------------------
@@ -227,14 +332,32 @@ class Pinna(Design):
         return base.union(pole).union(radar).union(cq.Workplane("XY").newObject([cq.Compound.makeCompound(domes + [lidar])]))
 
     def _davits(self, p):
+        """The four compensated davits (``DAVIT_AHC``): a slewing ring and its worm drive on the deck, the post, the
+        boom at its working luff over the side with the luffing cylinder, the sheave head, the AHC winch's drum and
+        servo on the post, the MRU box at the post's foot; the tether reel inboard."""
+        a = DAVIT_AHC
         z = self._z_deck(p)
-        y = p["beam"] / 2 - 400
+        y = p["beam"] / 2 - 450
+        H, Lb, phi = a["post_m"] * 1000, a["boom_m"] * 1000, math.radians(a["working_luff_deg"])
         solids = []
         for x in (-9500, -11500):
             for s in (1, -1):
-                solids.append(cq.Solid.makeBox(300, 300, 2600, cq.Vector(x - 150, s * y - 150, z)))
-                solids.append(cq.Solid.makeBox(250, 1500, 250, cq.Vector(x - 125, s * y - (0 if s > 0 else 1500) + (0 if s > 0 else 0), z + 2400)))
-                solids.append(cq.Solid.makeCylinder(500, 900, cq.Vector(x, s * (y - 1800), z + 500), cq.Vector(0, 1, 0)))
+                yc = s * y
+                solids.append(cq.Solid.makeCylinder(320, 120, cq.Vector(x, yc, z)))                                  # slewing ring
+                solids.append(cq.Solid.makeBox(260, 260, 220, cq.Vector(x + 200, yc - 130, z)))                       # slew drive
+                solids.append(cq.Solid.makeBox(300, 300, H - 120, cq.Vector(x - 150, yc - 150, z + 120)))            # post
+                d = cq.Vector(0, s * math.sin(phi), math.cos(phi))
+                solids.append(cq.Solid.makeBox(220, 220, Lb, cq.Vector(-110, -110, 0))
+                              .rotate(cq.Vector(0, 0, 0), cq.Vector(1, 0, 0), -s * a["working_luff_deg"]).translate(cq.Vector(x, yc, z + H)))   # boom
+                tip = cq.Vector(x, yc + s * Lb * math.sin(phi), z + H + Lb * math.cos(phi))
+                solids.append(cq.Solid.makeCylinder(140, 120, tip - cq.Vector(60, 0, 0), cq.Vector(1, 0, 0)))          # sheave head
+                c0 = cq.Vector(x, yc, z + H * 0.45)                                                                    # luffing cylinder
+                c1 = cq.Vector(x, yc, z + H) + d * (Lb * 0.4)
+                solids.append(cq.Solid.makeCylinder(60, (c1 - c0).Length, c0, (c1 - c0).normalized()))
+                solids.append(cq.Solid.makeCylinder(220, 420, cq.Vector(x - 210, yc - s * 330, z + H * 0.6), cq.Vector(1, 0, 0)))   # AHC drum
+                solids.append(cq.Solid.makeBox(220, 220, 220, cq.Vector(x + 210, yc - s * 330 - 110, z + H * 0.6 - 110)))           # servo
+                solids.append(cq.Solid.makeBox(160, 160, 120, cq.Vector(x - 80, yc - s * 420 - 80, z)))                # MRU
+                solids.append(cq.Solid.makeCylinder(450, 800, cq.Vector(x, s * (y - 2600) - 400, z + 500), cq.Vector(0, 1, 0)))   # tether reel
         return cq.Workplane("XY").newObject([cq.Compound.makeCompound(solids)])
 
     def _robots(self, p):

@@ -31,10 +31,13 @@ from .world import G, RHO_SW, min_jerk
 THRUSTER_TAU = 0.15       # s
 CURRENT = np.array([-0.2, 0.0, 0.0])
 DAVIT = (-11.5, 1)        # the aft port davit
-BOOM = 1.85               # m, pivot to sheave
 COM = np.array([0.02, 0.0, 0.17])
 COB = np.array([0.0, 0.0, 0.22])
 EYE = np.array([0.02, 0.0, 0.45])
+
+
+def _ramp(t, t0, t1):
+    return 0.0 if t <= t0 else 1.0 if t >= t1 else (t - t0) / (t1 - t0)
 
 
 def card() -> dict:
@@ -51,36 +54,125 @@ def card() -> dict:
             "cda": np.array([1.0 * W * H, 1.1 * L * H, 1.2 * L * W])}
 
 
+class CompensatedDavit:
+    """The aft port davit robot (``pinna.DAVIT_AHC``): slew, luff and the AHC winch, each a servo with the card's rate
+    limit and lag behind its command. The nominal job: hoist, luff outboard, pay out. With ``compensated`` the MRU's
+    measurement of the deck (the true motion ``latency_s`` late, plus a slowly wandering error of the card's accuracy)
+    gives the deck's pose, the controller solves the slew and luff that put the sheave back on its earth-fixed point
+    and pays the rope out or in by the sheave's remaining vertical error, so the hook holds its earth-frame path."""
+
+    def __init__(self, agent, compensated: bool, seed: int = 3):
+        from pinna import DAVIT_AHC
+        self.a, self.ag, self.on = DAVIT_AHC, agent, compensated
+        self.Lb = DAVIT_AHC["boom_m"]
+        g = world.geometry()
+        x, side = DAVIT
+        self.pivot = np.array([x, side * (g["beam"] / 2 - 0.45), g["z_deck"] + DAVIT_AHC["post_m"]])
+        self.phi_in, self.phi_out = math.radians(DAVIT_AHC["inboard_luff_deg"]), math.radians(DAVIT_AHC["working_luff_deg"])
+        self.P = self.pivot + self.Lb * np.array([0.0, math.sin(self.phi_out), math.cos(self.phi_out)])   # the earth-fixed sheave point
+        self.P_local = self.P.copy()                                                 # the same point in the ship's frame
+        self.q = {"slew": 0.0, "luff": self.phi_in, "rope": 0.0}
+        self.qd = {k: 0.0 for k in self.q}
+        self.rng = np.random.default_rng(seed)
+        self.err = np.zeros(3)
+        self._hist = []
+        m = DAVIT_AHC["mru"]
+        self.sig = np.array([m["heave_accuracy_m"] / 2, math.radians(m["roll_pitch_accuracy_deg"]), math.radians(m["roll_pitch_accuracy_deg"])])
+        self.k = 0.0
+        self._cmd = {}
+
+    def tip0(self, phi):
+        return self.pivot + self.Lb * np.array([0.0, math.sin(phi), math.cos(phi)])
+
+    def mru(self, sim, t, dt):
+        """The deck's (heave, roll, pitch) as the MRU reports them: ``latency_s`` late, with a slow error."""
+        a = math.exp(-dt / 2.0)
+        self.err = a * self.err + math.sqrt(1 - a * a) * self.sig * self.rng.standard_normal(3)
+        return sim.sea.state(max(0.0, t - self.a["mru"]["latency_s"]))[0] + self.err
+
+    def update(self, sim, t, dt, L_nominal, phi_nominal, k):
+        """New commands for the three axes, then each servo moves toward its command (rate limit, first-order lag)."""
+        self.k = k
+        cmd = {"slew": 0.0, "luff": phi_nominal, "rope": L_nominal}
+        if k > 0:
+            pos, R = sim.sea.pose(t, self.mru(sim, t, dt))
+            if sim.track:                                                   # the DP position (from the GNSS, as the MRU's)
+                pos[:2] += sim.track(t)[:2]
+            qs = R.T @ (self.P - pos)                                       # where the sheave must be, in the ship's frame
+            d = qs - self.pivot
+            psi = math.atan2(-d[0], d[1])
+            rho = math.hypot(d[0], d[1])
+            lo, hi = (math.radians(v) for v in self.a["luff"]["range_deg"])
+            phi = min(max(math.asin(min(rho / self.Lb, 1.0)), lo), hi)
+            smax = math.radians(self.a["slew"]["range_deg"][1])
+            psi = min(max(psi, -smax), smax)
+            u = np.array([-math.sin(psi) * math.sin(phi), math.cos(psi) * math.sin(phi), math.cos(phi)])
+            ez = (pos + R @ (self.pivot + self.Lb * u))[2] - self.P[2]       # what the winch takes up
+            cmd = {"slew": k * psi, "luff": k * phi + (1 - k) * phi_nominal, "rope": L_nominal + k * ez}
+        lag = self.a["servo_lag_s"]
+        rate = {"slew": math.radians(self.a["slew"]["rate_deg_s"]), "luff": math.radians(self.a["luff"]["rate_deg_s"]),
+                "rope": self.a["winch"]["rope_speed_m_s"]}
+        if self.q["rope"] == 0.0:
+            self.q["rope"] = cmd["rope"]
+        acc = {"slew": 4 * rate["slew"], "luff": 4 * rate["luff"], "rope": self.a["winch"]["rope_accel_m_s2"]}
+        for key in self.q:                                                  # a servo: the command's rate fed forward,
+            ff = (cmd[key] - self._cmd.get(key, cmd[key])) / dt             # the error closed with the lag; rate and
+            v = ff + (cmd[key] - self.q[key]) / lag                         # acceleration limits
+            v = max(-rate[key], min(rate[key], v))
+            v = max(self.qd[key] - acc[key] * dt, min(self.qd[key] + acc[key] * dt, v))
+            self.qd[key] = v
+            self.q[key] += v * dt
+        self._cmd = cmd
+
+    def joint(self, key):
+        return lambda t: (self.q[key], self.qd[key])
+
+
 class WalrusAgent:
     name = "walrus"
+    bname = "walrus"
+    COM, COB, EYE = COM, COB, EYE
+    QUAT = (math.cos(math.pi / 4), 0, 0, math.sin(math.pi / 4))         # facing outboard (+y)
+    card = staticmethod(card)
 
-    def __init__(self, t_hoist=(0.5, 2.5), t_swing=(2.5, 7.0), t_lower=7.5, pay_out=0.7, release_depth=0.35, dive_to=-6.0):
-        self.c = card()
+    def __init__(self, t_hoist=(0.5, 3.2), t_swing=(3.2, 7.2), t_lower=8.5, pay_out=0.8, release_depth=0.35, dive_to=-6.0,
+                 compensated: bool = True):
+        self.c = self.card()
         g = world.geometry()
         self.zd = g["z_deck"]
         x, side = DAVIT
-        self.pivot = np.array([x, side * (g["beam"] / 2 - 0.45), self.zd + 2.6])
-        self.phi_in, self.phi_out = math.radians(-50), math.radians(50)
-        tip_in = self.pivot + BOOM * np.array([0, math.sin(self.phi_in), math.cos(self.phi_in)])
+        self.davit = CompensatedDavit(self, compensated)
+        self.compensated = compensated
+        tip_in = self.davit.tip0(self.davit.phi_in)
         self.start = np.array([x, tip_in[1], self.zd + 0.103])            # on its chocks (0.1 m)
-        self.L0 = float(tip_in[2] - (self.start[2] + EYE[2])) + 0.02
-        self.L_hoist = self.L0 - 0.46
+        self.L0 = float(tip_in[2] - (self.start[2] + self.EYE[2])) + 0.02
+        self.L_hoist = 0.62                                                 # up under the boom head's latch cradle
+        self.latched = False
         self.t_hoist, self.t_swing, self.t_lower, self.pay_out = t_hoist, t_swing, t_lower, pay_out
         self.release_depth, self.dive_to = release_depth, dive_to
         self.released = None
+        self.wet_at = None
         self.T = np.zeros(len(self.c["thrusters"]))
         self.L = self.L0
         self.tension = 0.0
         self.sub = 0.0
         self.log = []
+        self.comp_log = []           # t, k, sheave (earth), hook (earth), deck point (earth), hook reference z, in water
 
-    # the davit robot's trajectories
+    # the davit robot's nominal trajectories (the compensation adds to them)
     def luff(self, t):
         if self.released is not None:                       # after the release the boom comes back inboard
-            q, v, _ = min_jerk(t, self.released + 1.0, self.released + 6.0, [self.phi_out], [self.phi_in])
-            return float(q[0]), float(v[0])
-        q, v, _ = min_jerk(t, self.t_swing[0], self.t_swing[1], [self.phi_in], [self.phi_out])
-        return float(q[0]), float(v[0])
+            return float(min_jerk(t, self.released + 1.5, self.released + 6.5, [self.davit.phi_out], [self.davit.phi_in])[0][0])
+        return float(min_jerk(t, self.t_swing[0], self.t_swing[1], [self.davit.phi_in], [self.davit.phi_out])[0][0])
+
+    def k_comp(self, t):
+        """How much compensation: none on deck and in the swing, on over the side, off after the release."""
+        if not self.compensated:
+            return 0.0
+        k = _ramp(t, self.t_swing[1], self.t_swing[1] + 1.0)
+        if self.released is not None:
+            k *= 1.0 - _ramp(t, self.released + 0.5, self.released + 1.5)
+        return k
 
     def winch(self, t):
         if t < self.t_hoist[1]:
@@ -103,26 +195,30 @@ class WalrusAgent:
         q = (math.cos(math.pi / 4), 0, 0, math.sin(math.pi / 4))       # facing outboard (+y)
         body = f"""<body name="walrus" pos="{world._f(self.start)}" quat="{world._f(q)}">
 <freejoint name="walrus_free"/>
-<inertial pos="{world._f(COM)}" mass="{c['mass']:.3f}" diaginertia="{world._f(J)}"/>
+<inertial pos="{world._f(self.COM)}" mass="{c['mass']:.3f}" diaginertia="{world._f(J)}"/>
 {vis}
 <geom name="w_hull" class="drone" type="box" size="{c['L'] / 2:.3f} {c['W'] / 2:.3f} {c['H'] / 2:.3f}" pos="0 0 {c['H'] / 2:.3f}"/>
-<site name="walrus_eye" pos="{world._f(EYE)}" size="0.03"/>
-<geom class="visual" type="cylinder" size="0.012 0.04" pos="{world._f(EYE - [0, 0, 0.03])}" rgba="0.8 0.8 0.1 1"/>
+<site name="walrus_eye" pos="{world._f(self.EYE)}" size="0.03"/>
+<geom class="visual" type="cylinder" size="0.012 0.04" pos="{world._f(self.EYE - [0, 0, 0.03])}" rgba="0.8 0.8 0.1 1"/>
 </body>"""
         chocks = "".join(f'<geom class="hullvis" type="box" size="0.4 0.06 0.05" pos="{self.start[0]} {self.start[1] + dy:.3f} {self.zd + 0.05:.3f}" rgba="0.3 0.3 0.3 1"/>'
                          for dy in (-0.3, 0.3))
         tendon = (f'<spatial name="walrus_cable" limited="true" range="0 {self.L0:.4f}" width="0.012" rgba="0.95 0.95 0.9 1" solreflimit="0.01 1" margin="0.02">'
                   f'<site site="boom_tip"/><site site="walrus_eye"/></spatial>')
-        return {"world": body, "carrier": chocks, "tendon": tendon}
+        return {"world": body, "carrier": chocks, "tendon": tendon,
+                "equality": '<weld name="walrus_latch" body1="davit_boom" body2="walrus" active="false" solref="0.02 1"/>'}
 
     def bind(self, sim):
         self.sim = sim
         m = sim.model
-        self.b = sim.body("walrus")
-        j = sim.joint("walrus_free")
+        self.b = sim.body(self.bname)
+        j = sim.joint(self.bname + "_free")
         self.qa, self.va = int(m.jnt_qposadr[j]), int(m.jnt_dofadr[j])
-        self.ten = sim.tendon("walrus_cable")
-        sim.prescribe("davit_luff", self.luff)
+        self.ten = sim.tendon(self.bname + "_cable")
+        sim.prescribe("davit_luff", self.davit.joint("luff"))
+        sim.prescribe("davit_slew", self.davit.joint("slew"))
+        self.eye = sim.site(self.bname + "_eye")
+        self.tip = sim.site("boom_tip")
         self.alpha = 1.0 - math.exp(-sim.dt_control / THRUSTER_TAU)
         self.at = np.array([t["at"] for t in self.c["thrusters"]])
         self.ax = np.array([t["axis"] for t in self.c["thrusters"]])
@@ -133,8 +229,27 @@ class WalrusAgent:
         com = d.xipos[self.b].copy()
         v = d.qvel[self.va:self.va + 3].copy()            # the free joint's linear velocity is of the body origin
         w = d.qvel[self.va + 3:self.va + 6].copy()        # body frame
-        v_com = v + R @ np.cross(w, COM)
+        v_com = v + R @ np.cross(w, self.COM)
         return com, v_com, R, w
+
+    def _cradle(self, sim):
+        """The latch cradle is gimballed and runs on a guide along the rope: it holds the Walrus plumb and level under
+        the sheave, the rope's length down (the AHC winch's, compensation included) - the weld's target pose, in the
+        boom's frame, follows the boom and the winch; the swing-out cannot set it swinging."""
+        import mujoco
+        d, m = sim.data, sim.model
+        bb = sim.body("davit_boom")
+        qw = np.array([math.cos(math.pi / 4), 0, 0, math.sin(math.pi / 4)])          # level, facing outboard
+        Rw = world.quat_to_R(qw)
+        pw = d.site_xpos[self.tip] - np.array([0.0, 0.0, self.L]) - Rw @ self.EYE
+        Rb = d.xmat[bb].reshape(3, 3)
+        qi, rq = np.zeros(4), np.zeros(4)
+        mujoco.mju_negQuat(qi, d.xquat[bb])
+        mujoco.mju_mulQuat(rq, qi, qw)
+        e = sim.eq(self.bname + "_latch")
+        m.eq_data[e, 0:3] = 0.0
+        m.eq_data[e, 3:6] = Rb.T @ (pw - d.xpos[bb])
+        m.eq_data[e, 6:10] = rq
 
     def _cable_tension(self, sim):
         d, m = sim.data, sim.model
@@ -150,11 +265,21 @@ class WalrusAgent:
         com, v, R, w = self.state()
         eta = sim.sea.eta(t)
         # the winch and the hook
+        if not self.latched and self.t_hoist[1] + 0.2 <= t < self.t_lower:          # the latch cradle closes on the hoisted Walrus
+            self.L_hoist = float(np.linalg.norm(d.site_xpos[self.tip] - d.site_xpos[self.eye]))   # the rope as it is when latched
+            self.latched = True
+            d.eq_active[sim.eq(self.bname + "_latch")] = 1
+        if self.latched:
+            self._cradle(sim)
+        if self.latched and t >= self.t_lower:                                     # and opens when the winch starts paying out
+            d.eq_active[sim.eq(self.bname + "_latch")] = 0
+            self.latched = False
+        self.davit.update(sim, t, dt, self.winch(t), self.luff(t), self.k_comp(t))
         if self.released is None:
-            self.L = self.winch(t)
-            m.tendon_range[self.ten, 1] = self.L
+            self.L = self.davit.q["rope"]
+            m.tendon_range[self.ten, 1] = self.L + (0.05 if self.latched else 0.0)      # latched: the cradle carries it, the rope just slack
             self.tension += (self._cable_tension(sim) - self.tension) * (1 - math.exp(-dt / 0.3))     # the pull, low-passed
-            top = com[2] - COM[2] + c["H"]
+            top = com[2] - self.COM[2] + c["H"]
             if t > self.t_lower and eta - top > self.release_depth:
                 self.released = t
                 m.tendon_limited[self.ten] = 0
@@ -163,12 +288,12 @@ class WalrusAgent:
                 self.p0 = com.copy()
                 self.tension = 0.0
         # the water: buoyancy, drag, current
-        z_bot = com[2] - COM[2]
+        z_bot = com[2] - self.COM[2]
         self.sub = sub = float(np.clip((eta - z_bot) / c["H"], 0.0, 1.0))
         F, tau = np.zeros(3), np.zeros(3)
         if sub > 0:
             B = RHO_SW * G * c["volume"] * sub
-            r_b = R @ (COB - COM)
+            r_b = R @ (self.COB - self.COM)
             F += np.array([0, 0, B])
             tau += np.cross(r_b, np.array([0, 0, B]))
             vb = R.T @ (v - CURRENT)
@@ -182,17 +307,27 @@ class WalrusAgent:
         if self.released is not None:
             cmd = self._allocate(t, com, v, R, w, eta)
         self.T += (cmd - self.T) * self.alpha
-        for k in range(len(self.T)):
-            pk = R @ (self.at[k] - COM)
-            wet = (com[2] + pk[2]) < eta - 0.03
-            if not wet:
-                continue
-            fk = R @ self.ax[k] * self.T[k]
-            F += fk
-            tau += np.cross(pk, fk)
+        F, tau = self._thrust(com, R, eta, F, tau)
         d.xfrc_applied[self.b, :3] += F
         d.xfrc_applied[self.b, 3:] += tau
         self.log.append((t, *com, *v, self.tension, sub, self._cable_tension(sim) if self.released is None else 0.0))
+        if self.released is None:
+            if self.wet_at is None and sub > 0:
+                self.wet_at = t
+            deck, _ = sim.carrier_point(self.davit.P_local)            # the point of the deck's frame where the sheave stands at rest
+            self.comp_log.append((t, self.k_comp(t), *d.site_xpos[self.tip], *d.site_xpos[self.eye], *deck,
+                                  self.davit.P[2] - self.winch(t), sub))
+
+    def _thrust(self, com, R, eta, F, tau):
+        """The thrusters' wrench (each one only when it is wet) added to F, tau."""
+        for k in range(len(self.T)):
+            pk = R @ (self.at[k] - self.COM)
+            if (com[2] + pk[2]) >= eta - 0.03:
+                continue
+            fk = R @ self.ax[k] * self.T[k]
+            F = F + fk
+            tau = tau + np.cross(pk, fk)
+        return F, tau
 
     def _allocate(self, t, com, v, R, w, eta):
         c = self.c
@@ -210,7 +345,7 @@ class WalrusAgent:
         eR = 0.5 * np.array([(Rd.T @ R - R.T @ Rd)[2, 1], (Rd.T @ R - R.T @ Rd)[0, 2], (Rd.T @ R - R.T @ Rd)[1, 0]])
         J = c["J"]
         Mb = -J * 9.0 * eR * 3 - J * 2 * 0.9 * 3.0 * w * 2
-        wrench = np.concatenate([Fb, Mb + np.cross(COM - np.array([0, 0, c["H"] / 2]), Fb)])
+        wrench = np.concatenate([Fb, Mb + np.cross(self.COM - np.array([0, 0, c["H"] / 2]), Fb)])
         u = c["Bpinv"] @ wrench
         k = np.max(np.abs(u) / c["t_max"])
         if k > 1:
@@ -228,21 +363,76 @@ class WalrusAgent:
         if t < self.t_hoist[1]:
             return "davit robot: hoist"
         if t < self.t_swing[1]:
-            return "davit robot: boom luffs outboard over the side"
+            return "davit robot: latched in the cradle, the boom luffs outboard"
+        if t < self.t_lower:
+            return "over the side, latched: compensation takes the deck's motion out" if self.compensated else "over the side, latched"
         if self.released is None:
             return "winch pays out: through the splash zone" if self.sub > 0 else "winch pays out: lowering"
         if t < self.released + 1.0:
             return "hook released: thrusters take over"
         return "diving under its 8 thrusters, away from the hull"
 
+    def residual(self, t0=None, t1=None) -> dict:
+        """The hook's (the lifting eye's) and the sheave's motion in the earth frame over the lowering in air (from 1.5 s
+        after the boom is out to 0.3 s before the Walrus touches the water), against the deck's motion at the davit:
+        the deviation from the earth-fixed path (the sheave's point, the rope's nominal length), rms and peak (m)."""
+        L = np.array(self.comp_log)
+        if not len(L):
+            return {}
+        t0 = self.t_swing[1] + 1.5 if t0 is None else t0
+        t1 = (self.wet_at - 0.3 if self.wet_at else L[-1, 0]) if t1 is None else t1
+        L = L[(L[:, 0] >= t0) & (L[:, 0] <= t1)]
+        if len(L) < 10:
+            return {}
+        P = self.davit.P
+        sheave, hook, deck, zref = L[:, 2:5], L[:, 5:8], L[:, 8:11], L[:, 11]
+
+        def stats(dv, dh):
+            return {"vertical_rms_m": float(np.sqrt(np.mean(dv ** 2))), "vertical_peak_m": float(np.max(np.abs(dv))),
+                    "horizontal_rms_m": float(np.sqrt(np.mean(dh ** 2))), "horizontal_peak_m": float(np.max(np.abs(dh)))}
+        hz = hook[:, 2] - (zref - self.EYE[2] * 0 - 0.0)
+        hz = hz - np.mean(hz)                                     # the eye hangs a fixed offset under the reference
+        return {"window_s": [round(float(t0), 2), round(float(t1), 2)], "compensated": self.compensated,
+                "deck_at_davit": stats(deck[:, 2] - P[2], np.hypot(deck[:, 0] - P[0], deck[:, 1] - P[1])),
+                "sheave": stats(sheave[:, 2] - P[2], np.hypot(sheave[:, 0] - P[0], sheave[:, 1] - P[1])),
+                "hook": stats(hz, np.hypot(hook[:, 0] - P[0], hook[:, 1] - P[1]))}
+
     def hud(self, sim):
         com, v, R, w = self.state()
         t = sim.t
         dep = self.depth()
-        thr = f"thrusters {np.abs(self.T).sum():4.0f} N total (max {self.c['t_max'].sum():.0f})" if self.released is not None else "thrusters off"
-        return [f"Walrus  {self.c['mass']:.1f} kg, {self.c['s']['sink_kg']:+.1f} kg in sea water   depth {dep:+5.2f} m   speed {np.linalg.norm(v):4.2f} m/s   "
-                f"submerged {100 * self.sub:3.0f} %",
-                f"cable {self.L:4.2f} m, pull {self.tension:4.0f} N   {thr}   phase: {self.phase(t)}"]
+        thr = f"thrusters {np.abs(self.T).sum():4.0f} N (max {self.c['t_max'].sum():.0f})" if self.released is not None else "thrusters off"
+        out = [f"Walrus {self.c['mass']:.1f} kg   depth {dep:+5.2f} m   speed {np.linalg.norm(v):4.2f} m/s   cable {self.L:4.2f} m, pull {self.tension:4.0f} N   {thr}",
+               f"phase: {self.phase(t)}"]
+        mode = "ON: MRU + AHC winch + luff + slew" if self.compensated else "OFF: plain davit"
+        if self.comp_log and self.released is None and t >= self.t_swing[1]:
+            row = self.comp_log[-1]
+            P = self.davit.P
+            deck = np.array(row[8:11]) - P
+            hook = np.array(row[5:8])
+            hr = self.residual(t0=self.t_swing[1] + 1.5, t1=t) or {}
+            rms = f"   rms so far {100 * hr['hook']['vertical_rms_m']:.0f} cm vert, {100 * hr['hook']['horizontal_rms_m']:.0f} cm horiz" if hr else ""
+            hz = hook[2] - row[11]
+            out.append(f"compensation {mode}   deck at davit dz {deck[2]:+5.2f} m, dxy {np.hypot(deck[0], deck[1]):4.2f} m   "
+                       f"hook (earth) dz {100 * (hz - self._hz0):+4.0f} cm, dxy {100 * np.hypot(hook[0] - P[0], hook[1] - P[1]):3.0f} cm{rms}")
+        else:
+            out.append(f"compensation {mode}")
+        return out
+
+    @property
+    def _hz0(self):
+        """The eye's mean height under the reference (it hangs below the sheave by the rope and the bridle)."""
+        L = np.array(self.comp_log)
+        m = L[:, 0] >= self.t_swing[1] + 1.5
+        return float(np.mean(L[m, 7] - L[m, 11])) if m.any() else float(L[-1, 7] - L[-1, 11])
+
+    def trace(self, sim, span=10.0):
+        """For the overlay's strip chart: the last ``span`` s of the deck's and the hook's vertical motion (m)."""
+        L = np.array(self.comp_log)
+        if not len(L) or self.released is not None or sim.t < self.t_swing[1]:
+            return None
+        L = L[L[:, 0] >= max(sim.t - span, self.t_swing[1])]
+        return {"t": L[:, 0], "deck at davit": L[:, 10] - self.davit.P[2], "hook (earth)": L[:, 7] - L[:, 11] - self._hz0}
 
     def focus(self, sim):
         return self.sim.data.xipos[self.b].copy()

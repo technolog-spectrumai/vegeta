@@ -11,7 +11,7 @@ and the simulator that steps it with the drones (the agents: ``gannet_sim``, ``f
 * **the carrier** (``carrier_xml``): Pinna's CAD parts as visual meshes (``meshes``), the surfaces drones touch as
   simple collision boxes and cylinders (flight deck, pads, main deck, hangar, house, hulls, the mast pole), the
   catapult rail, the recovery net (a panel on a sprung slide joint between two masts) and the four davits (one, the
-  aft port davit, has a luffing boom the Walrus clip drives). The directional light casts no shadows (MuJoCo's shadow
+  aft port davit, has a slewing and luffing boom the Walrus clip drives: motion-compensated, ``walrus_sim``). The directional light casts no shadows (MuJoCo's shadow
   map draws its frustum's edge on a large sea).
 * **the simulator** (``Sim``): builds the MJCF from the carrier and the agents, then each physics step prescribes the
   carrier and the agents' robot joints, lets each agent apply its forces (``xfrc_applied``: rotors, wings, thrusters,
@@ -125,6 +125,20 @@ class Sea:
         (z, zd), (r, rd), (p, pd) = self._s(self.heave, t, False), self._s(self.roll, t, True), self._s(self.pitch, t, True)
         return np.array([z, r, p]), np.array([zd, rd, pd])
 
+    @classmethod
+    def heavy(cls):
+        """A heavier sea for the compensation clips: heave +/-1 m, roll +/-5 deg, pitch +/-2.5 deg (about Hs 2 m:
+        the plain davit's limit)."""
+        return cls(heave=((0.8, 7.6), (0.2, 4.7)), roll=((4.0, 6.4), (1.0, 3.9)), pitch=((2.0, 5.3), (0.5, 3.4)))
+
+    def pose(self, t, measured=None) -> tuple:
+        """The carrier's (position, rotation) in the earth frame from (heave, roll, pitch) - the joints' order."""
+        z, r, p = self.state(t)[0] if measured is None else measured
+        cr, sr, cp, sp = math.cos(r), math.sin(r), math.cos(p), math.sin(p)
+        Rx = np.array([[1, 0, 0], [0, cr, -sr], [0, sr, cr]])
+        Ry = np.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
+        return np.array([0.0, 0.0, z]), Rx @ Ry
+
     def eta(self, t) -> float:
         """The water surface's elevation (the swell the carrier rides)."""
         return self._s(self.heave, t, False)[0]
@@ -165,11 +179,16 @@ def _f(v) -> str:
     return " ".join(f"{x:.6g}" for x in np.atleast_1d(v))
 
 
-def mesh_assets(use_meshes: bool) -> tuple:
+BASE_DESIGNS = ("pinna", "gannet", "fulmar", "walrus")
+
+
+def mesh_assets(use_meshes: bool, designs=BASE_DESIGNS) -> tuple:
     """The <asset> mesh lines and the paths (empty when the meshes are off)."""
     if not use_meshes:
         return "", {}
-    paths = meshes.export_all()
+    paths = {}
+    for d in designs:
+        paths.update(meshes.export(d))
     lines = "".join(f'<mesh name="{k}" file="{p}" scale="0.001 0.001 0.001" inertia="shell"/>\n' for k, p in paths.items())
     return lines, paths
 
@@ -178,12 +197,14 @@ def _vis_mesh(name, rgba, pos=(0, 0, 0), quat=(1, 0, 0, 0)) -> str:
     return f'<geom name="v_{name}" type="mesh" mesh="{name}" class="visual" rgba="{_f(rgba)}" pos="{_f(pos)}" quat="{_f(quat)}"/>\n'
 
 
-def carrier_xml(use_meshes: bool, extra: str = "") -> str:
+def carrier_xml(use_meshes: bool, extra: str = "", reels: bool = True) -> str:
     """The carrier body (joints, inertia, meshes, collision shapes, net, davits, catapult) with ``extra`` children."""
     g = geometry()
     col = meshes.colours()
     zd, zf = g["z_deck"], g["z_fd"]
     s = ['<body name="carrier" pos="0 0 0">',
+         '<joint name="c_x" type="slide" axis="1 0 0"/>',
+         '<joint name="c_y" type="slide" axis="0 1 0"/>',
          '<joint name="c_heave" type="slide" axis="0 0 1" damping="0"/>',
          '<joint name="c_roll" type="hinge" axis="1 0 0"/>',
          '<joint name="c_pitch" type="hinge" axis="0 1 0"/>',
@@ -240,28 +261,43 @@ def carrier_xml(use_meshes: bool, extra: str = "") -> str:
     for k in range(-4, 5):
         s.append(f'<geom type="box" size="0.012 {w / 2} 0.012" pos="0 0 {k * h / 8:.3f}" rgba="0.15 0.17 0.2 0.9" class="visual"/>')
     s.append('</body>')
-    # the davits: a post, a boom (the aft port one luffs: ``davit_boom``), a reel drum
+    # the compensated davits (``pinna.DAVIT_AHC``): slewing ring, post, MRU, AHC drum, a boom at its working luff; the
+    # aft port one is a robot: ``davit_slew`` (about the post) and ``davit_luff`` (the boom), both prescribed
+    from pinna import DAVIT_AHC
+    Lb, ph = DAVIT_AHC["boom_m"], math.radians(DAVIT_AHC["working_luff_deg"])
+    H = DAVIT_AHC["post_m"]
+    org, grey = "0.9 0.49 0.13 1", "0.25 0.25 0.27 1"
     for k, (x, y) in enumerate(g["davits"]):
         side = 1 if y > 0 else -1
-        s.append(f'<geom type="box" size="0.15 0.15 1.3" pos="{x} {y} {zd + 1.3:.4f}" rgba="0.9 0.49 0.13 1" class="hullvis"/>')
-        # the tether reel: 0.8 m further inboard than the CAD's (1.8 m) so the Walrus's deck cradle fits under the boom
-        s.append(f'<geom type="cylinder" size="0.45 0.4" pos="{x} {y - side * 2.6:.3f} {zd + 0.5:.4f}" quat="0.7071 0.7071 0 0" rgba="0.3 0.3 0.32 1" class="visual"/>')
+        s.append(f'<geom type="cylinder" size="0.32 0.06" pos="{x} {y} {zd + 0.06:.4f}" rgba="{grey}" class="visual"/>')
+        s.append(f'<geom type="box" size="0.15 0.15 {H / 2}" pos="{x} {y} {zd + H / 2:.4f}" rgba="{org}" class="hullvis"/>')
+        s.append(f'<geom type="cylinder" size="0.22 0.21" pos="{x - 0.21:.3f} {y - side * 0.33:.3f} {zd + 0.6 * H:.4f}" quat="0.7071 0 0.7071 0" rgba="{grey}" class="visual"/>')
+        s.append(f'<geom type="box" size="0.08 0.08 0.06" pos="{x} {y - side * 0.42:.3f} {zd + 0.06:.4f}" rgba="0.1 0.5 0.9 1" class="visual"/>')   # MRU
+        # the tether reel, inboard (as the CAD: 2.6 m in from the post, clear of the Walrus's deck cradle)
+        if reels:
+            s.append(f'<geom type="cylinder" size="0.45 0.4" pos="{x} {y - side * 2.6:.3f} {zd + 0.5:.4f}" quat="0.7071 0.7071 0 0" rgba="0.3 0.3 0.32 1" class="visual"/>')
         if (x, side) == (-11.5, 1):
-            s.append(f'<body name="davit_boom" pos="{x} {y} {zd + 2.6:.4f}"><joint name="davit_luff" type="hinge" axis="-1 0 0"/>'
-                     f'<inertial pos="0 0 0.9" mass="80" diaginertia="20 20 1"/>'
-                     f'<geom type="box" size="0.12 0.12 0.95" pos="0 0 0.95" rgba="0.9 0.49 0.13 1" class="visual"/>'
-                     f'<geom type="box" size="0.18 0.18 0.1" pos="0 0 1.9" rgba="0.25 0.25 0.27 1" class="visual"/>'
-                     f'<site name="boom_tip" pos="0 0 1.85" size="0.03"/></body>')
+            s.append(f'<body name="davit_head" pos="{x} {y} {zd + H:.4f}"><joint name="davit_slew" type="hinge" axis="0 0 1"/>'
+                     f'<inertial pos="0 0 0" mass="20" diaginertia="1 1 1"/>'
+                     f'<geom type="cylinder" size="0.16 0.08" rgba="{grey}" class="visual"/>'
+                     f'<body name="davit_boom"><joint name="davit_luff" type="hinge" axis="-1 0 0"/>'
+                     f'<inertial pos="0 0 {Lb / 2}" mass="80" diaginertia="20 20 1"/>'
+                     f'<geom type="box" size="0.11 0.11 {Lb / 2}" pos="0 0 {Lb / 2}" rgba="{org}" class="visual"/>'
+                     f'<geom type="cylinder" size="0.14 0.06" pos="0 0 {Lb}" quat="0.7071 0 0.7071 0" rgba="{grey}" class="visual"/>'
+                     f'<site name="boom_tip" pos="0 0 {Lb}" size="0.03"/></body></body>')
         else:
-            s.append(f'<geom type="box" size="0.12 0.95 0.12" pos="{x} {y + side * 0.55:.3f} {zd + 2.55:.4f}" rgba="0.9 0.49 0.13 1" class="visual"/>')
+            tip = (x, y + side * Lb * math.sin(ph), zd + H + Lb * math.cos(ph))
+            s.append(f'<geom type="capsule" size="0.1" fromto="{x} {y} {zd + H:.4f} {tip[0]} {tip[1]:.4f} {tip[2]:.4f}" rgba="{org}" class="visual"/>')
     s.append(extra)
     s.append('</body>')
     return "\n".join(s)
 
 
-def scene_xml(agents, use_meshes: bool = True, timestep: float = 0.001) -> str:
-    """The whole MJCF: options, visual settings, assets, the sea and the sky, the carrier and the agents."""
-    assets, _ = mesh_assets(use_meshes)
+def scene_xml(agents, use_meshes: bool = True, timestep: float = 0.001, seabed: float = -10.0, reels: bool = True) -> str:
+    """The whole MJCF: options, visual settings, assets, the sea and the sky, the carrier and the agents (an agent's
+    ``designs`` adds its CAD's meshes to the assets)."""
+    designs = list(BASE_DESIGNS) + [d for a in agents for d in getattr(a, "designs", ())]
+    assets, _ = mesh_assets(use_meshes, dict.fromkeys(designs))
     frag = {k: "" for k in ("asset", "world", "carrier", "equality", "tendon", "contact")}
     for a in agents:
         for k, v in a.xml(use_meshes).items():
@@ -292,8 +328,8 @@ def scene_xml(agents, use_meshes: bool = True, timestep: float = 0.001) -> str:
 <worldbody>
 <light name="sun" directional="true" pos="0 0 50" dir="-0.35 0.25 -1" diffuse="0.75 0.75 0.72" specular="0.2 0.2 0.2" castshadow="false"/>
 <body name="water" mocap="true" pos="0 0 0"><geom name="sea" type="box" size="1500 1500 0.01" pos="0 0 -0.01" material="sea" class="visual"/></body>
-<geom name="seabed" type="plane" size="1500 1500 1" pos="0 0 -10" material="sand" contype="1" conaffinity="1"/>
-{carrier_xml(use_meshes, frag['carrier'])}
+<geom name="seabed" type="plane" size="1500 1500 1" pos="0 0 {seabed}" material="sand" contype="1" conaffinity="1"/>
+{carrier_xml(use_meshes, frag['carrier'], reels)}
 {frag['world']}
 </worldbody>
 <equality>{frag['equality']}</equality>
@@ -307,12 +343,13 @@ class Sim:
     """The carrier, the sea, the wind and the agents in one MuJoCo model, stepped together."""
 
     def __init__(self, agents, sea: Sea | None = None, wind: Wind | None = None, use_meshes: bool = True,
-                 timestep: float = 0.001, control_every: int = 2):
+                 timestep: float = 0.001, control_every: int = 2, seabed: float = -10.0, reels: bool = True, track=None):
         import mujoco
         self.mj = mujoco
         self.agents = list(agents)
         self.sea, self.wind = sea or Sea(), wind or Wind()
-        self.xml = scene_xml(self.agents, use_meshes, timestep)
+        self.xml = scene_xml(self.agents, use_meshes, timestep, seabed, reels)
+        self.track = track                       # t -> (x, y, vx, vy): the carrier's way over the ground (None: on station at 0)
         self.model = mujoco.MjModel.from_xml_string(self.xml)
         self.data = mujoco.MjData(self.model)
         self.control_every = control_every
@@ -321,6 +358,7 @@ class Sim:
         self.carrier = self.body("carrier")
         self.water = int(m.body_mocapid[self.body("water")])
         self._cj = [(int(m.jnt_qposadr[j]), int(m.jnt_dofadr[j])) for j in (self.joint("c_heave"), self.joint("c_roll"), self.joint("c_pitch"))]
+        self._cxy = [(int(m.jnt_qposadr[j]), int(m.jnt_dofadr[j])) for j in (self.joint("c_x"), self.joint("c_y"))]
         self._prescribed = {}                    # joint name -> function t -> (q, qd)
         self._k = 0
         for a in self.agents:
@@ -357,6 +395,9 @@ class Sim:
         d = self.data
         for (qa, va), x, v in zip(self._cj, q, qd):
             d.qpos[qa], d.qvel[va] = x, v
+        x, y, vx, vy = self.track(t) if self.track else (0.0, 0.0, 0.0, 0.0)
+        for (qa, va), p_, v in zip(self._cxy, (x, y), (vx, vy)):
+            d.qpos[qa], d.qvel[va] = p_, v
         for qa, va, fn in self._prescribed.values():
             d.qpos[qa], d.qvel[va] = fn(t)
         d.mocap_pos[self.water] = (0.0, 0.0, self.sea.eta(t))

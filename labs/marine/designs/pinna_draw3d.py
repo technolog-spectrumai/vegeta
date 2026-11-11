@@ -67,7 +67,7 @@ def draw_drone(ax, shape, col, lim, title):
 
 def main(out="pinna_3d.png"):
     fig = plt.figure(figsize=(20, 12))
-    draw_vessel(fig.add_axes([0.0, 0.38, 0.5, 0.55], projection="3d"), 28, -135, "from aft quarter: the Walrus davits, the basket gantry, the net, the four pads under the swap gantry (robots green)")
+    draw_vessel(fig.add_axes([0.0, 0.38, 0.5, 0.55], projection="3d"), 28, -135, "from aft quarter: the motion-compensated Walrus davits (MRU, AHC winch, luff + slew), the basket gantry, the net, the pads (robots green)")
     draw_vessel(fig.add_axes([0.5, 0.38, 0.5, 0.55], projection="3d"), 32, 35, "from the bow: the autonomy mast, the catapult, the crate loader's rail; no wheelhouse, no crew")
     gs, fs = Gannet.sizing(), Fulmar.sizing()
     draw_drone(fig.add_axes([0.05, 0.0, 0.4, 0.38], projection="3d"), Gannet().build(Gannet.p()), "#1f618d", 1200,
@@ -77,7 +77,7 @@ def main(out="pinna_3d.png"):
     s = Pinna.sizing()
     fig.suptitle(f"Pinna — unmanned, robot-run drone-carrier catamaran ({s['robots']} robots, no crew): {s['length_m']:.0f} x {s['beam_m']:.0f} m, {s['displacement_t']:.0f} t, "
                  f"{s['service_kn']:.0f} kn ({s['service_kW']} kW), {s['bed_load_kW']:.0f} kW on the bed; 4 pads ({s['vtol_recoveries_per_h']:.0f} recoveries/h), "
-                 f"catapult {s['fixed_wing_launches_per_h']:.0f}/h, net {s['fixed_wing_recoveries_per_h']:.0f}/h; packs {s['pack_kg_h']} kg/h; €{s['price_eur']/1e6:.2f}M", fontsize=12)
+                 f"catapult {s['fixed_wing_launches_per_h']:.0f}/h, net {s['fixed_wing_recoveries_per_h']:.0f}/h; packs {s['pack_kg_h']} kg/h; davits Hs {s['davit_hs_limit_m']} m (compensated); €{s['price_eur']/1e6:.2f}M", fontsize=12)
     fig.savefig(out, dpi=90)
     return out
 

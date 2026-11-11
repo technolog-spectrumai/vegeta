@@ -194,12 +194,15 @@ class Mission:
 class GannetAgent:
     name = "gannet"
 
-    def __init__(self, pad: int = PAD, mission_kw: dict | None = None):
+    def __init__(self, pad: int = PAD, mission_kw: dict | None = None, crate: bool = True, mission=None):
         self.c = card()
+        self.crate = crate
+        if not crate:                                            # flies empty (an inspection): the card's empty mass
+            self.c["mass"] = self.c["s"]["empty_kg"]
         self.pad = pad
         g = world.geometry()
         self.pad_xy = g["pads"][pad]
-        self.mission = Mission(self.pad_xy, g["z_pad"], **(mission_kw or {}))
+        self.mission = mission or Mission(self.pad_xy, g["z_pad"], **(mission_kw or {}))
         self.landed = False
         self.locked = True
         self.T = np.zeros(4)
@@ -211,7 +214,7 @@ class GannetAgent:
         col = __import__("pinna_launch.meshes", fromlist=["colours"]).colours()
         vis = ""
         if use_meshes:
-            for part in ("body", "arms", "rotors", "skids", "crate"):
+            for part in ("body", "arms", "rotors", "skids") + (("crate",) if self.crate else ()):
                 vis += world._vis_mesh(f"gannet_{part}", col[f"gannet_{part}"])
         else:
             vis = ('<geom class="visual" type="box" size="0.21 0.17 0.08" pos="0 0 0.42" rgba="0.12 0.38 0.55 1"/>'
@@ -223,7 +226,7 @@ class GannetAgent:
 {vis}
 <geom name="g_skid_l" class="drone" type="capsule" size="0.014" fromto="-0.35 0.45 0.014 0.35 0.45 0.014" friction="1.0 0.02 0.002"/>
 <geom name="g_skid_r" class="drone" type="capsule" size="0.014" fromto="-0.35 -0.45 0.014 0.35 -0.45 0.014" friction="1.0 0.02 0.002"/>
-<geom name="g_crate" class="drone" type="box" size="0.2 0.15 0.1" pos="0 0 0.13"/>
+{'<geom name="g_crate" class="drone" type="box" size="0.2 0.15 0.1" pos="0 0 0.13"/>' if self.crate else ''}
 <geom name="g_body" class="drone" type="box" size="0.21 0.17 0.1" pos="0 0 0.42"/>
 <site name="gannet_cam" pos="0 0 0.3"/>
 </body>"""
@@ -299,7 +302,7 @@ class GannetAgent:
         p, v, R, w = self.state()
         pad_p, _ = sim.carrier_point(self.pad_local)
         air = np.linalg.norm(v - sim.wind.at(p[2]))
-        return [f"Gannet  {self.c['mass']:.1f} kg (5 kg crate)   alt {p[2]:5.1f} m ASL  ({p[2] - pad_p[2]:5.1f} m over the pad)   "
+        return [f"Gannet  {self.c['mass']:.1f} kg{' (5 kg crate)' if self.crate else ''}   alt {p[2]:5.1f} m ASL  ({p[2] - pad_p[2]:5.1f} m over the pad)   "
                 f"ground {np.linalg.norm(v[:2]):4.1f} m/s  climb {v[2]:+4.1f} m/s  air {air:4.1f} m/s",
                 f"thrust {self.T.sum():4.0f} N of {4 * self.c['t_max']:.0f}   power {self.power_W() / 1000:4.2f} kW   "
                 f"phase: {self.mission.phase(sim.t, self.landed)}"]

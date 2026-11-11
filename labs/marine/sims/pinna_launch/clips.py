@@ -45,6 +45,9 @@ class Clip:
     stills: tuple = ()              # times of the PNG stills
     summary: callable = None        # (sim, agents) -> dict
     tau: float = 0.35               # the camera's look-at lag (s)
+    sea: callable = None            # () -> world.Sea (default: world.Sea())
+    sim_kw: dict = None             # more for world.Sim (seabed, reels, track)
+    hud: callable = None            # (sim, agents) -> lines (default: the agents' own)
 
 
 # ------------------------------------------------------------------------------------------------ cameras
@@ -129,7 +132,12 @@ def _fulmar_net():
 
 def _walrus():
     from .walrus_sim import WalrusAgent
-    return [WalrusAgent()]
+    return [WalrusAgent(compensated=True)]
+
+
+def _walrus_off():
+    from .walrus_sim import WalrusAgent
+    return [WalrusAgent(compensated=False)]
 
 
 def _all():
@@ -162,8 +170,69 @@ def _sum_net(sim, ag):
 def _sum_walrus(sim, ag):
     w = ag[0]
     L = np.array(w.log)
-    return {"released_s": w.released, "max_cable_pull_N": float(L[:, 7].max()), "max_cable_pull_unfiltered_N": float(L[:, 9].max()), "depth_end_m": float(w.depth()),
+    return {"compensated": w.compensated, "residual": w.residual(), "released_s": w.released, "max_cable_pull_N": float(L[:, 7].max()), "max_cable_pull_unfiltered_N": float(L[:, 9].max()), "depth_end_m": float(w.depth()),
             "standoff_y_m": float(L[-1, 2])}
+
+
+def _oil():
+    from .oil_platform_sim import JacketScenery, SquillaAgent, inspection_gannet
+    return [JacketScenery(), inspection_gannet(), SquillaAgent()]
+
+
+def _oil_kw():
+    from .oil_platform_sim import track
+    return {"seabed": -110.0, "reels": False, "track": track}
+
+
+def _oil_hud(sim, ag):
+    _, g, sq = ag
+    t = sim.t
+    from .oil_platform_sim import ARRIVE
+    pin = "arriving from the west at 4 m/s" if t < ARRIVE[2] else "on DP station off the jacket's south-west corner"
+    p, v, R, w = g.state()
+    return [f"Pinna: {pin}   carrying one Squilla AUV and one Gannet quad   {sim.sea.describe()}",
+            f"Gannet {g.c['mass']:.1f} kg (empty, inspection)   alt {p[2]:5.1f} m   speed {np.linalg.norm(v):4.1f} m/s   phase: {g.mission.phase(t, g.landed)}",
+            sq.hud(sim)[0] + ("   davit: MRU + AHC (uprated 3 kN winch)" if sq.released is None else "")]
+
+
+def cam_oil(sim, ag, t, sm):
+    """Cuts: the arrival (wide), Gannet's lift-off (deck), Gannet at leg A1, the davit lowering Squilla through the
+    splash zone, Gannet up the topsides, Squilla diving to the leg (under water)."""
+    from .oil_platform_sim import JACKET_AT, leg_point
+    _, g, sq = ag
+    cuts = (8.5, 13.0, 17.5, 25.0, 31.0)
+    k = sum(t >= c for c in cuts)
+    if getattr(sm, "cut", None) != k:
+        sm.cut, sm.x = k, None
+    pg, ps = g.focus(sim), sq.focus(sim)
+    if k == 0:
+        look = sm(t, np.array([JACKET_AT[0] - 6.0 - 0.6 * (30.0 - sim.track(t)[0]), 18.0, 10.0]))
+        return look, 78.0, _lerp(62.0, 70.0, t / 8.5), -14.0
+    if k == 1:
+        pad = sim.carrier_point(g.pad_local)[0]
+        look = sm(t, pad + 0.6 * (pg - pad) + np.array([0, 0, 0.8]))
+        return look, 11.0 + 0.7 * float(np.linalg.norm(pg - pad)), _lerp(140.0, 120.0, (t - 8.5) / 4.5), -14.0
+    if k in (2, 4):                                  # from outside the jacket, south-west of the quad, looking at it and the leg
+        leg = leg_point("A1", float(np.clip(pg[2], 0, 30)))
+        look = sm(t, 0.7 * pg + 0.3 * leg)
+        if k == 2:
+            return look, 18.0, _lerp(30.0, 45.0, (t - 13.0) / 4.5), -8.0
+        return look, _lerp(16.0, 24.0, (t - 25.0) / 6.0), _lerp(40.0, 20.0, (t - 25.0) / 6.0), _lerp(-4.0, -10.0, (t - 25.0) / 6.0)
+    if k == 3:                                       # astern and outboard of the davit, down with Squilla
+        look = sm(t, ps + np.array([0, 0, 0.3]))
+        u = _ease(t, 21.5, 24.0)
+        return look, _lerp(9.0, 7.0, u), _lerp(-25.0, -40.0, (t - 17.5) / 7.5), _lerp(-12.0, 2.0, u)
+    leg = leg_point("A1", -12.0)
+    look = sm(t, 0.65 * ps + 0.35 * leg)
+    return look, 13.0, _lerp(-170.0, -150.0, (t - 31.0) / 9.0), 6.0
+
+
+def _sum_oil(sim, ag):
+    _, g, sq = ag
+    com = sq.state()[0]
+    return {"gannet_max_alt_m": float(np.array(g.log)[:, 3].max()), "squilla_released_s": sq.released,
+            "squilla_to_goal_m": float(np.linalg.norm(sq.goal - com)), "squilla_depth_m": float(sq.depth()),
+            "davit_residual": sq.residual()}
 
 
 def _sum_all(sim, ag):
@@ -179,8 +248,13 @@ CLIPS = {
                           stills=(2.5, 3.2, 6.0), summary=_sum_fulmar, tau=0.12),
     "fulmar_net": Clip("fulmar_net", "Fulmar: net recovery over the stern, into the wind", 0.0, 16.5, _fulmar_net, cam_fulmar_net,
                        stills=(8.0, 12.6, 13.6), summary=_sum_net),
-    "walrus_launch": Clip("walrus_launch", "Walrus: over the side on the davit robot, released, diving on its thrusters", 0.0, 25.0, _walrus, cam_walrus,
-                          stills=(4.5, 12.0, 21.0), summary=_sum_walrus),
+    "walrus_launch": Clip("walrus_launch", "Walrus over the side: motion-compensated davit ON (heavy sea)", 0.0, 25.0, _walrus, cam_walrus,
+                          stills=(4.5, 11.0, 13.5, 21.0), summary=_sum_walrus, tau=1.0, sea=world.Sea.heavy),
+    "walrus_launch_uncompensated": Clip("walrus_launch_uncompensated", "Walrus over the side: compensation OFF (heavy sea)", 0.0, 25.0, _walrus_off,
+                                        cam_walrus, stills=(11.0, 13.5), summary=_sum_walrus, tau=1.0, sea=world.Sea.heavy),
+    "oil_platform_deploy": Clip("oil_platform_deploy", "Pinna at an oil platform: a Gannet inspection pass and a Squilla AUV over the compensated davit",
+                                0.0, 40.0, _oil, cam_oil, stills=(5.0, 11.0, 16.0, 21.0, 24.0, 28.0, 36.0), summary=_sum_oil, tau=0.5,
+                                hud=_oil_hud),
     "overview": Clip("overview", "Pinna: Gannet, Fulmar and Walrus launched together", 0.0, 20.0, _all, cam_overview,
                      stills=(9.0, 12.0), summary=_sum_all),
 }
@@ -189,7 +263,8 @@ CLIPS = {
 def build(name: str, use_meshes: bool = True):
     c = CLIPS[name]
     ag = c.agents()
-    return world.Sim(ag, use_meshes=use_meshes), ag
+    kw = _oil_kw() if name == "oil_platform_deploy" else (c.sim_kw or {})
+    return world.Sim(ag, sea=c.sea() if c.sea else None, use_meshes=use_meshes, **kw), ag
 
 
 def make(name: str, out_dir: Path, *, use_meshes: bool = True, stills: bool = True, size=(video.W, video.H)) -> dict:
@@ -212,12 +287,14 @@ def make(name: str, out_dir: Path, *, use_meshes: bool = True, stills: bool = Tr
     def frame(s):
         t = s.t
         look, dist, az, el = c.camera(s, ag, t, sm)
-        lines = []
-        for a in ag:
-            lines += a.hud(s)
-        if len(ag) > 1:                                       # the overview: one line each
+        if c.hud:
+            lines = c.hud(s, ag)
+        elif len(ag) > 1:                                     # the overview: one line each
             lines = [a.hud(s)[0] for a in ag]
-        img = fr.render(look, dist, az, el, title=c.title, lines=lines, footer=foot, clock=f"t = {t:5.1f} s")
+        else:
+            lines = ag[0].hud(s)
+        chart = ag[0].trace(s) if len(ag) == 1 and hasattr(ag[0], "trace") else None
+        img = fr.render(look, dist, az, el, title=c.title, lines=lines, footer=foot, clock=f"t = {t:5.1f} s", chart=chart)
         enc.write(img)
         while todo and t >= todo[0] - 1e-6:
             from PIL import Image
@@ -237,6 +314,29 @@ def make(name: str, out_dir: Path, *, use_meshes: bool = True, stills: bool = Tr
     return summary
 
 
+def compare(out_dir: Path, use_meshes: bool = True) -> dict:
+    """``walrus_compare.mp4``: the compensated and the plain davit side by side (each 640x720, the same sea, the same
+    camera), made from two half-width runs in their own processes and stacked by ffmpeg."""
+    import shutil
+    import subprocess
+    import sys
+    out_dir = Path(out_dir)
+    tmp = out_dir / "_compare"
+    tmp.mkdir(parents=True, exist_ok=True)
+    for n in ("walrus_launch", "walrus_launch_uncompensated"):
+        subprocess.run([sys.executable, "-m", "pinna_launch", n, "--out", str(tmp), "--size", "640x720", "--no-stills"]
+                       + ([] if use_meshes else ["--no-meshes"]), check=True, stdout=subprocess.DEVNULL)
+    out = out_dir / "walrus_compare.mp4"
+    subprocess.run([shutil.which("ffmpeg"), "-y", "-loglevel", "error", "-i", str(tmp / "walrus_launch.mp4"), "-i", str(tmp / "walrus_launch_uncompensated.mp4"),
+                    "-filter_complex", "[0:v][1:v]hstack=inputs=2,format=yuv420p", "-c:v", "libx264", "-crf", "21", "-r", str(video.FPS),
+                    "-movflags", "+faststart", str(out)], check=True)
+    res = {n: json.loads((tmp / f"{n}.json").read_text())["result"]["residual"] for n in ("walrus_launch", "walrus_launch_uncompensated")}
+    shutil.rmtree(tmp, ignore_errors=True)
+    s = {"clip": "walrus_compare", "mp4": str(out), "duration_s": 25.0, "residual": res}
+    (out_dir / "walrus_compare.json").write_text(json.dumps(s, indent=1, default=float))
+    return s
+
+
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(prog="python -m pinna_launch", description=__doc__.split("\n")[0])
@@ -244,8 +344,13 @@ def main(argv=None):
     ap.add_argument("--out", default=str(world.meshes.ROOT / "labs" / "marine" / "sims" / "output" / "pinna_launch" / "videos"))
     ap.add_argument("--no-meshes", action="store_true", help="boxes instead of the CAD meshes")
     ap.add_argument("--no-stills", action="store_true")
+    ap.add_argument("--size", default=f"{video.W}x{video.H}", help="WxH of the frames")
     a = ap.parse_args(argv)
-    names = list(CLIPS) if a.clips in (["all"], []) else a.clips
+    size = tuple(int(v) for v in a.size.split("x"))
+    names = list(CLIPS) + ["walrus_compare"] if a.clips in (["all"], []) else a.clips
+    if names == ["walrus_compare"]:
+        print(json.dumps(compare(Path(a.out), use_meshes=not a.no_meshes), default=float))
+        return
     if len(names) > 1:                  # one process per clip: a second offscreen GL context in one process is not reliable
         import subprocess
         import sys
@@ -253,7 +358,7 @@ def main(argv=None):
             subprocess.run([sys.executable, "-m", "pinna_launch", n, "--out", a.out] + (["--no-meshes"] if a.no_meshes else [])
                            + (["--no-stills"] if a.no_stills else []), check=True)
         return
-    s = make(names[0], Path(a.out), use_meshes=not a.no_meshes, stills=not a.no_stills)
+    s = make(names[0], Path(a.out), use_meshes=not a.no_meshes, stills=not a.no_stills, size=size)
     print(json.dumps(s, default=float))
 
 
