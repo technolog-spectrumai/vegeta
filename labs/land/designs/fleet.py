@@ -43,6 +43,10 @@ CLEARANCE = 0.05          # m: a robot passes where the free width is at least i
 T_RETURN = 60.0           # s without a link before an agent heads back to its last connected point
 T_RELEASE = 90.0          # s without a heartbeat before the coordinator releases the agent's task
 MIN_FRONTIER_M = 0.6      # m: a shorter frontier cluster is noise (cells a ray missed on a wall)
+#: The swappable battery module of each robot kind (what a servicing arm lifts) [kg].
+MODULE_KG = {"Pekari-2M": 9.0, "Pumba": 26.0, "Calydon": 22.0, "Perseus": 16.0, "Timon": 26.0}
+SWAP_S = 180.0            # a battery module swap on site: dock, open, out, in, close [s]
+HOOKUP_S = 90.0           # hooking a failed robot up for towing [s]
 LOW_BATTERY = 0.20        # below this state of charge an agent takes no new task and goes home
 
 FREE, OCC, UNKNOWN = 0, 1, -1
@@ -301,6 +305,7 @@ class Task:
     after: tuple = ()
     reach_m: float = 0.0
     debris_id: int = 0
+    subject: str | None = None    # the agent a service task is for (swap_battery, recover)
     status: str = "open"          # open, awaiting_approval, assigned, active, done, cancelled
     agent: str | None = None
     approved: bool = False
@@ -358,7 +363,7 @@ class Comms:
 
     def connected(self, truth: GridMap, agents) -> set:
         """Ids of the agents with a mesh route to the base (BFS over links, relays through agents)."""
-        live = [a for a in agents if a.state != "failed"]
+        live = [a for a in agents if a.state not in ("failed", "recovered")]
         reached, frontier = set(), [("base", self.base)]
         while frontier:
             _, p = frontier.pop()
@@ -526,13 +531,17 @@ class Coordinator:
             taken_t.add(tid)
             self.assign(t, a, tk, path)
         # a frontier no live agent can reach is given up (and kept out of the frontier), not retried for ever
-        live = [a for a in agents if a.state != "failed" and a.id in connected]
+        live = [a for a in agents if a.state not in ("failed", "recovered") and a.id in connected]
         for tk in open_tasks:
-            if tk.kind != "explore" or tk.status != "open":
+            if tk.kind not in ("explore", "swap_battery", "recover") or tk.status != "open":
                 continue
             able = [a for a in live if tk.tags <= a.profile.tags]
             if able and all((a.id, tk.id) in self._failed_pairs for a in able):
                 tk.status = "cancelled"
+                if tk.kind != "explore":
+                    self.log(t, "unreachable", task=tk.id, pos=tuple(round(float(v), 2) for v in tk.pos),
+                             why="no servicing agent has a path to it")
+                    continue
                 c = self.map.cell(tk.pos)
                 r = int(round(1.0 / self.map.res))
                 self.unreachable[max(c[0] - r, 0):c[0] + r + 1, max(c[1] - r, 0):c[1] + r + 1] = True
@@ -625,6 +634,38 @@ class Coordinator:
                       reach_m=1.0, debris_id=d)
             self.add(tk, t)
             self._known_debris.add(d)
+
+    def service_tasks(self, t, agents):
+        """With a ``service`` agent in the fleet: a ``swap_battery`` task for an agent below ``LOW_BATTERY`` (it waits
+        where it is), and with a ``tow`` agent a ``recover`` task for a failed one (towed to its home); once each."""
+        can_service = any("service" in a.profile.tags and a.state != "failed" for a in agents)
+        can_tow = any("tow" in a.profile.tags and a.state != "failed" for a in agents)
+        def live(kind, aid):
+            return [tk for tk in self.tasks.values() if tk.kind == kind and tk.subject == aid
+                    and tk.status not in ("done", "cancelled")]
+
+        def last(kind, aid):
+            mine = [tk for tk in self.tasks.values() if tk.kind == kind and tk.subject == aid]
+            return mine[-1] if mine else None
+
+        for a in agents:
+            if a.profile.flies or "service" in a.profile.tags:
+                continue
+            open_swap = live("swap_battery", a.id)
+            for tk in open_swap:                                  # the swap goes where the robot is
+                if tk.status == "open":
+                    tk.pos = a.pos
+            prev = last("swap_battery", a.id)
+            moved = prev is None or (prev.status == "cancelled" and math.dist(prev.pos, a.pos) > 2.0) or \
+                (prev.status == "done" and a.soc < LOW_BATTERY)
+            if can_service and a.state not in ("failed", "recovered") and a.soc < LOW_BATTERY and not open_swap and moved:
+                n = sum(1 for tk in self.tasks.values() if tk.kind == "swap_battery" and tk.subject == a.id)
+                self.add(Task(f"swap_battery_{a.id}" + (f"_{n + 1}" if n else ""), "swap_battery", a.pos,
+                              tags=frozenset({"service"}), lift_kg=MODULE_KG.get(a.profile.kind, 26.0),
+                              duration_s=SWAP_S, priority=4, reach_m=1.3, subject=a.id), t)
+            if can_tow and a.state == "failed" and last("recover", a.id) is None:
+                self.add(Task(f"recover_{a.id}", "recover", a.pos, tags=frozenset({"tow"}), duration_s=2 * HOOKUP_S,
+                              dest=a.home, priority=3, reach_m=1.5, subject=a.id), t)
 
     def unblock(self, frontiers: bool = False):
         """After the map changed every failed pair may be possible again; ``frontiers``: a route opened (debris
@@ -726,7 +767,7 @@ class Fleet:
         c = self.coord
         self.connected = self.comms.connected(self.truth, self.agents)
         for a in self.agents:
-            if a.state == "failed":
+            if a.state in ("failed", "recovered"):
                 if a.task and self.t - a.last_link_t >= T_RELEASE and c.tasks[a.task].status not in ("done", "cancelled"):
                     c.release(self.t, c.tasks[a.task], "agent silent (failed)")
                     a.task = None
@@ -805,8 +846,14 @@ class Fleet:
         else:
             sense(self.truth, a.known, a.pos, r, self._rays[r], self.t)
 
+    def _towing(self, a: Agent):
+        tk = self.coord.tasks.get(a.task) if a.task else None
+        if tk is not None and tk.kind == "recover" and a.phase == "deliver" and tk.subject:
+            return self.agent(tk.subject)
+        return None
+
     def _move(self, a: Agent):
-        step = a.profile.v_m_s * self.dt
+        step = a.profile.v_m_s * self.dt * (0.5 if self._towing(a) else 1.0)     # half speed with a robot in tow
         moved = 0.0
         ok = None if a.profile.flies else a.known.passable(a.profile.width_m, height=a.profile.height_m)
         here = self.truth.cell(a.pos)
@@ -832,17 +879,20 @@ class Fleet:
                 moved += step
                 step = 0.0
         a.odometer_m += moved
+        towed = self._towing(a)
+        if towed is not None:
+            towed.pos = a.pos                                      # on the hitch behind
         return "arrived" if not a.path else "moving"
 
     def _drain(self, a: Agent, working: bool):
-        if a.state in ("failed",):
+        if a.state in ("failed", "recovered"):
             return
         rate = 1.0 / (a.profile.endurance_h * 3600.0)             # the profile's average mission power
         a.soc = max(0.0, a.soc - rate * self.dt * (1.0 if working or a.state == "moving" else 0.3))
 
     def _step_agent(self, a: Agent):
         c = self.coord
-        if a.state == "failed":
+        if a.state in ("failed", "recovered"):
             return
         if a.estop:
             self._drain(a, False)
@@ -896,6 +946,11 @@ class Fleet:
                     return
                 self._finish(a, tk)
             return
+        swap = any(tk.kind == "swap_battery" and tk.subject == a.id and tk.status not in ("done", "cancelled")
+                   for tk in c.tasks.values())
+        if a.state == "idle" and swap:
+            self._drain(a, False)                                  # wait where it is for the servicing rover
+            return
         if a.state == "idle" and a.soc < LOW_BATTERY and math.dist(a.pos, a.home) > 0.5:
             self._go(a, a.home, "returning")
             c.log(self.t, "going_home", agent=a.id, soc=round(a.soc, 2))
@@ -903,6 +958,15 @@ class Fleet:
 
     def _finish(self, a: Agent, tk: Task):
         c = self.coord
+        if tk.kind == "swap_battery" and tk.subject:
+            sub = self.agent(tk.subject)
+            sub.soc = 1.0
+            c.log(self.t, "battery_swapped", agent=sub.id, by=a.id)
+        if tk.kind == "recover" and tk.subject:
+            sub = self.agent(tk.subject)
+            sub.pos = a.pos
+            sub.state = "recovered"
+            c.log(self.t, "recovered", agent=sub.id, by=a.id, at=tuple(round(v, 1) for v in a.pos))
         if tk.kind == "clear_debris" and tk.debris_id:
             hit = self.truth.debris == tk.debris_id
             self.truth.occ[hit] = FREE
@@ -931,6 +995,7 @@ class Fleet:
         if int(self.t) % 30 == 0:
             c.unblock()                                         # the map has grown: retry what had no path
         c.debris_tasks(self.t)
+        c.service_tasks(self.t, self.agents)
         c.explore_tasks(self.t, self.agents)
         c.allocate(self.t, self.agents, self.connected)
         for a in sorted(self.agents, key=lambda x: x.id):

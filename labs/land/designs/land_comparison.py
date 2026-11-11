@@ -1,5 +1,5 @@
 """The tracked machines of the land lab side by side — the Pekari Rover, Pekari-2M, Pumba (with its grab and with
-the chainsaw), Perseus and Calydon (``docs/pekari_pumba.md`` §9). Every number comes from each machine's own model
+the chainsaw), Perseus, Timon and Calydon (``docs/pekari_pumba.md`` §9). Every number comes from each machine's own model
 (``pekari_rover_robot``, ``pekari_family`` + ``pekari_2m_robot`` / ``pumba_robot`` / ``calydon_robot``,
 ``perseus_robot``); the comparisons that need one rule for all are computed here the same way for every machine:
 
@@ -35,7 +35,7 @@ V_ENDURANCE = 0.8
 DRIVE_EFF = 0.80
 USABLE = 0.85
 PEKARI_ELECTRONICS_W = 25.0      # assumed: Pekari Rover's computer, controllers, stereo camera and 2D lidar
-MACHINES = ("Pekari Rover", "Pekari-2M", "Pumba", "Pumba + chainsaw", "Perseus", "Calydon")
+MACHINES = ("Pekari Rover", "Pekari-2M", "Pumba", "Pumba + chainsaw", "Perseus", "Timon", "Calydon")
 
 
 def drive_numbers(W: float, g: dict, drive: str, f0: float = 0.035) -> dict:
@@ -191,6 +191,8 @@ def rows(cad: bool = True) -> dict:
     import pekari_2m_robot as p2
     import pumba
     import pumba_robot as pu
+    import timon
+    import timon_robot as tr
 
     def c(cls):
         return cls if cad else None
@@ -201,6 +203,8 @@ def rows(cad: bool = True) -> dict:
         "Pumba + chainsaw": _family_row(pu.PUMBA_SAW, "Pumba with Perseus's saw on the main arm", c(pumba.Pumba),
                                         {"tool": "chainsaw 2 kW"}),
         "Perseus": _perseus_row(),
+        "Timon": _family_row(tr.TIMON, "the fleet's servicing rover: module swaps, tool changes, recovery",
+                             c(timon.Timon)),
         "Calydon": _family_row(cr.CALYDON, "heavy-lift dual-arm platform (the first Pumba)", c(calydon.Calydon)),
     }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The land lab's tracked machines compared — Pekari Rover, Pekari-2M, Pumba (grab / chainsaw), Perseus, Calydon
+"""The land lab's tracked machines compared — Pekari Rover, Pekari-2M, Pumba (grab / chainsaw), Perseus, Timon, Calydon
 (``designs/land_comparison.py``): the table as Markdown and CSV, and the machines to scale from their CAD (side
 views, arms folded / boom stowed, a 1.8 m person for scale).
 
@@ -35,6 +35,7 @@ def figure(path):
     import perseus_robot as pbr
     import perseus_rover
     import pumba
+    import timon
 
     st = pbr.PERSEUS.stow
     shapes = [("Pekari Rover", pekari_rover.PekariRover, {}, (0.55, 0.55, 0.52)),
@@ -43,8 +44,9 @@ def figure(path):
               ("Pumba + chainsaw (cutting)", pumba.Pumba, {"tool": "chainsaw 2 kW", "arm_pose": "cut"}, (0.98, 0.78, 0.05)),
               ("Perseus (boom stowed)", perseus_rover.PerseusRover,
                {"boom_deg": st["boom"], "stick_deg": st["stick"], "head_deg": st["head"]}, (0.85, 0.65, 0.12)),
+              ("Timon", timon.Timon, {}, (0.10, 0.45, 0.85)),
               ("Calydon", calydon.Calydon, {}, (0.85, 0.60, 0.10))]
-    fig, ax = plt.subplots(figsize=(22, 3.9))
+    fig, ax = plt.subplots(figsize=(25, 3.9))
     x0 = 0.0
     for name, cls, kw, color in shapes:
         g = cls().generate(**kw)

@@ -117,6 +117,15 @@ class _FamilyCAD(PekariRover):
         side = 1.0 if s.y > 0 else -1.0
         z_hinge = p["ground_clearance"] + 40.0
         r = s.pad_radius * k
+        if abs(s.y) * k < half_w:                       # a leg at the hull's end (a rear earth anchor): beam along x
+            end = math.copysign(p["hull_length"] / 2, s.x)
+            x_pad = s.x * k if deployed else end + math.copysign(60.0, s.x)
+            z_pad = r / 4 if deployed else z_hinge - 40.0
+            blen = abs(x_pad - end)
+            beam = cq.Workplane("XY").box(blen, 80.0, 60.0).translate(((end + x_pad) / 2, s.y * k, z_hinge + 60.0))
+            leg = cq.Workplane("XY").box(60.0, 60.0, z_hinge + 60.0 - z_pad).translate((x_pad, s.y * k, (z_hinge + 60.0 + z_pad) / 2))
+            pad = cq.Workplane("XY").rect(2 * r, 1.4 * r).extrude(r / 2).translate((x_pad, s.y * k, z_pad - r / 4))
+            return beam.union(leg).union(pad)
         if deployed:
             y_pad = s.y * k
             z_pad = r / 4

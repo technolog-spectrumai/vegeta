@@ -97,6 +97,7 @@ class Platform:
     assumptions: dict = field(default_factory=dict)
     bom_extra: dict = field(default_factory=dict)  # item -> (qty, EUR low, EUR high): what is not a catalogue drive
     band_track_kg_m: float = 0.0          # > 0: a rubber band track of this mass per metre instead of PA6 links + pins
+    roles: tuple = ()                     # extra capability tags for the fleet (Timon: "service", "tow")
 
     @property
     def n_bogies(self) -> int:
@@ -205,6 +206,8 @@ def _stab_point(pl: Platform, s: Stabilizer, deployed: bool) -> tuple:
     g = geometry(pl)
     if deployed:
         return (s.x, s.y, s.pad_radius + 0.05)
+    if abs(s.y) < pl.chassis["hull_width"] / 2 * 1e-3:            # a leg at the hull's end, folded up against it
+        return (math.copysign(pl.chassis["hull_length"] / 2 * 1e-3 + 0.06, s.x), s.y, z_hull(pl))
     side = 1.0 if s.y > 0 else -1.0
     return (s.x, side * (g["half_width"] + 0.05), z_hull(pl))
 
@@ -437,6 +440,7 @@ def capabilities(pl: Platform) -> dict:
         tags.add("thermal")
     if any(m.arm.saw for m in pl.mounts):
         tags.add("cut")
+    tags.update(pl.roles)
     return {"name": pl.name, "mass_kg": total_mass(pl), "length_m": ov["length"], "width_m": ov["width"],
             "height_folded_m": h_folded, "payload_kg": pl.payload_range_kg[1], "arm_lift_kg": best.arm.rated_payload_kg,
             "arms": arms, "v_max_m_s": min(pl.v_design, dc["v_top_flat_m_s"]), "endurance_h": endurance(pl),
@@ -472,6 +476,13 @@ def _stabilizer_link(pl: Platform, s: Stabilizer, rgba):
                   stall_current=a.stall_A, voltage=a.voltage_V, kp=1.0e5, kd=4.0e3, armature=5.0,
                   four_quadrant=a.self_locking, source=f"{s.drive} ({a.source})")
     beam_len = abs(s.y) - half_w
+    if beam_len > 0:                                            # a side leg: the beam to the hull side
+        beam = Geom(f"stab_{s.name}_beam", "box", (0.04, beam_len / 2, 0.03), pos=(0.0, -side * beam_len / 2, 0.24),
+                    mass=s.mass_kg * 0.4, role="visual", rgba=rgba)
+    else:                                                       # a leg at the hull's end: the beam along x
+        blen = max(abs(s.x) - pl.chassis["hull_length"] / 2 * 1e-3, 0.02)
+        beam = Geom(f"stab_{s.name}_beam", "box", (blen / 2, 0.04, 0.03), pos=(-math.copysign(blen / 2, s.x), 0.0, 0.24),
+                    mass=s.mass_kg * 0.4, role="visual", rgba=rgba)
     return Link(f"stab_{s.name}", pos=(s.x, s.y, z_pad_stowed - zh),
                 joints=[Joint(f"stab_{s.name}", kind="slide", axis=(0, 0, -1), range=(0.0, s.stroke), tag="stabilizer",
                               servo=servo)],
@@ -479,8 +490,7 @@ def _stabilizer_link(pl: Platform, s: Stabilizer, rgba):
                             role="link", friction=(0.8, 0.01, 0.0001), rgba=(0.15, 0.15, 0.15, 1.0)),
                        Geom(f"stab_{s.name}_leg", "box", (0.03, 0.03, 0.12), pos=(0.0, 0.0, 0.12), mass=s.mass_kg * 0.3,
                             role="visual", rgba=rgba),
-                       Geom(f"stab_{s.name}_beam", "box", (0.04, beam_len / 2, 0.03),
-                            pos=(0.0, -side * beam_len / 2, 0.24), mass=s.mass_kg * 0.4, role="visual", rgba=rgba)])
+                       beam])
 
 
 def stabilizer_ground_q(pl: Platform, s: Stabilizer, preload_m: float = 0.003) -> float:

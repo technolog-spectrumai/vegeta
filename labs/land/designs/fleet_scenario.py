@@ -33,6 +33,9 @@ VALVE_PLANT = (35.5, 23.0)
 PUMP_DEST = (33.0, 19.0)
 ROOF_SURVEY = (25.0, 28.5)
 FAULT_T = 40.0                 # P2's drive fault
+FAULT_T_TIMON = 15.0           # with Timon: P2's drive fault early, in the hall, where Timon can reach it
+BATTERY_T = 60.0               # with Timon: P1's battery runs low (a cell fault: down to 15 %)
+TIMON_HOME = (5.0, 10.0)
 ESTOP = (240.0, 270.0)         # the operator's emergency stop and reset
 
 
@@ -72,7 +75,8 @@ def region(m: fl.GridMap) -> np.ndarray:
     return m.indoor.copy()
 
 
-def agents(truth: fl.GridMap, *, with_drone: bool = True, third_party: dict | None = None) -> list:
+def agents(truth: fl.GridMap, *, with_drone: bool = True, third_party: dict | None = None,
+           with_timon: bool = False) -> list:
     import pekari_2m_robot as p2
     import pumba_robot as pu
 
@@ -83,6 +87,10 @@ def agents(truth: fl.GridMap, *, with_drone: bool = True, third_party: dict | No
            fl.Agent("PUMBA", pum, (6.0, 15.0), (6.0, 15.0), truth.copy_unknown())]
     if with_drone:
         out.append(fl.Agent("UAV", fl.drone_profile(), BASE, BASE, truth.copy_unknown()))
+    if with_timon:
+        import timon_robot as tr
+
+        out.append(fl.Agent("TIMON", fl.profile_from_platform(tr.TIMON), TIMON_HOME, TIMON_HOME, truth.copy_unknown()))
     if third_party is not None:
         prof = fl.third_party_profile(third_party["name"], third_party)
         out.append(fl.Agent("TP", prof, (4.0, 22.0), (4.0, 22.0), truth.copy_unknown()))
@@ -105,6 +113,7 @@ def operator_tasks(with_drone: bool = True) -> list:
 
 
 def build(*, with_drone: bool = True, fault: bool = True, estop: bool = True, approve_at: float = 60.0,
+          with_timon: bool = False,
           third_party: dict | None = None) -> fl.Fleet:
     truth = site()
     sup = fl.Supervisor()
@@ -114,8 +123,11 @@ def build(*, with_drone: bool = True, fault: bool = True, estop: bool = True, ap
     if estop:                                             # if it is not reported yet: applied when it is)
         sup.estop(ESTOP[0])
         sup.reset(ESTOP[1])
-    faults = [(FAULT_T, "P2", "fail")] if fault else []
-    return fl.Fleet(truth, agents(truth, with_drone=with_drone, third_party=third_party), fl.Comms(BASE, range_m=40.0), sup,
+    faults = [(FAULT_T_TIMON if with_timon else FAULT_T, "P2", "fail")] if fault else []
+    if with_timon:
+        faults.append((BATTERY_T, "P1", "battery"))
+    return fl.Fleet(truth, agents(truth, with_drone=with_drone, third_party=third_party, with_timon=with_timon),
+                    fl.Comms(BASE, range_m=40.0), sup,
                     faults=faults, explore_region=region(truth))
 
 
@@ -145,7 +157,8 @@ def plot(fleet: fl.Fleet, path=None):
     low = np.isfinite(fleet.truth.ceiling)
     ax.contour(np.arange(m.shape[0]) * RES + RES / 2, np.arange(m.shape[1]) * RES + RES / 2, low.T, levels=[0.5],
                colors="tab:purple", linewidths=1)
-    colors = {"P1": "tab:orange", "P2": "tab:red", "PUMBA": "goldenrod", "UAV": "tab:blue", "TP": "tab:green"}
+    colors = {"P1": "tab:orange", "P2": "tab:red", "PUMBA": "goldenrod", "UAV": "tab:blue", "TP": "tab:green",
+              "TIMON": "tab:cyan"}
     for a in fleet.agents:
         ax.plot(*a.pos, "o", ms=9, color=colors.get(a.id, "k"), mec="k", label=f"{a.id} ({a.profile.kind}, {a.state})")
     for name, p in (("base", BASE), ("kit", STAGING_KIT), ("pump", STAGING_PUMP), ("casualty", CASUALTY),

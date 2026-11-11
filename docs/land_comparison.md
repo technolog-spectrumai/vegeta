@@ -1,4 +1,4 @@
-# Land lab comparison — Pekari Rover, Pekari-2M, Pumba, Perseus, Calydon
+# Land lab comparison — Pekari Rover, Pekari-2M, Pumba, Perseus, Timon, Calydon
 
 The land lab's tracked machines side by side. All five share the Pekari Rover's track architecture
 (`pekari_rover_robot`), so their chassis numbers come from one model.
@@ -21,33 +21,33 @@ listed in each module.
 ![The machines to scale](figures/land_comparison.png)
 
 <!-- table:begin -->
-| | Pekari Rover | Pekari-2M | Pumba | Pumba + chainsaw | Perseus | Calydon |
-|---|---|---|---|---|---|---|
-| role | small tracked carrier (notebook 30), no arm | light dual-arm response platform | WILK-class dual-arm platform, the grab | Pumba with Perseus's saw on the main arm | branch-cutting rover (notebook 37), a saw boom | heavy-lift dual-arm platform (the first Pumba) |
-| mass empty [kg] | 19 | 55 | 236 | 237 | 181 | 444 |
-|   without arms / tools / stabilizers [kg] | 19 | 41 | 167 | 167 | 129 | 294 |
-| deck payload | 5 kg | 20–40 kg | 100–200 kg | 100–200 kg | — (no deck) | 100–200 kg |
-| mass with nominal payload [kg] | 24 | 85 | 386 | 387 | 181 | 594 |
-| length [m] (arms folded / boom stowed) | 0.72 | 0.90 | 1.64 | 1.81 | 2.00 | 1.73 |
-| width [m] | 0.49 | 0.58 | 1.08 | 1.08 | 0.87 | 1.15 |
-| height [m] | 0.35 | 0.42 | 0.71 | 0.71 | 1.73 | 0.83 |
-| tracks | 80 mm, 4 wheels/side, PA6 links | 100 mm, 6 wheels/side, PA6 links | 180 mm, 6 wheels/side, rubber band | 180 mm, 6 wheels/side, rubber band | 150 mm, 6 wheels/side, PA6 links | 200 mm, 8 wheels/side, PA6 links |
-| track drives (x2) | pekari drive 16:1 planetary | perseus mini drive 20:1 planetary | pumba track drive 2.5 kW, 48 V | pumba track drive 2.5 kW, 48 V | perseus track drive 1.5 kW, 48 V | calydon track drive 4 kW, 48 V |
-| top speed [km/h] | 5.6 | 5.2 | 7.9 | 7.9 | 6.8 | 8.2 |
-| 20° grade loaded (peak, traction) | yes | yes | yes | yes | yes | yes |
-| steepest grade held continuously (drive rating, traction) [°] | 27 | 16 | 19 | 19 | 28 | 18 |
-| ground pressure loaded [kPa] | 3.4 | 5.9 | 8.3 | 8.3 | 6.6 | 11.1 |
-| battery [Wh] | 240 | 960 | 2880 | 2880 | 1900 | 4800 |
-| driving endurance, 0.8 m/s flat gravel [h] | 5.0 | 7.4 | 6.9 | 6.9 | 9.1 | 8.0 |
-| arms | 0 | 2 | 2 | 2 | 1 | 2 |
-| main arm DOF | 0 | 5 | 6 | 6 | 4 | 6 |
-| main arm reach to TCP [m] | 0.00 | 0.97 | 1.58 | 1.93 | 2.15 | 1.92 |
-| main arm lift rating (peak / 1.5) | — | 5 kg at 0.5 m | 30 kg at 1 m | — (a saw) | — (a saw) | 60 kg at 1.2 m |
-| tools fitted | basket | parallel gripper + parallel gripper | two-jaw grab + parallel gripper | chainsaw 2 kW + parallel gripper | chainsaw 2 kW, 36 V (fixed) | two-jaw heavy grab + parallel gripper |
-| saw (stall SF cutting outstretched, loads x1.5) | — | — | — | 2 kW, 40 cm bar (≤ 40 cm a pass); wrist SF 1.28, elbow 1.34 | 2 kW, 40 cm bar (≤ 40 cm a pass); wrist SF 1.56, elbow 1.35 | — |
-| stabilizer legs | 0 | 0 | 2 | 2 | 0 | 4 |
-| static tip angle, loaded, folded [°] | 50 | 49 | 52 | 52 | 42 | 53 |
-| parts cost (class estimate) | not estimated | 20–47 k | 46–101 k | 45–98 k | not estimated | 68–143 k |
+| | Pekari Rover | Pekari-2M | Pumba | Pumba + chainsaw | Perseus | Timon | Calydon |
+|---|---|---|---|---|---|---|---|
+| role | small tracked carrier (notebook 30), no arm | light dual-arm response platform | WILK-class dual-arm platform, the grab | Pumba with Perseus's saw on the main arm | branch-cutting rover (notebook 37), a saw boom | the fleet's servicing rover: module swaps, tool changes, recovery | heavy-lift dual-arm platform (the first Pumba) |
+| mass empty [kg] | 19 | 55 | 236 | 237 | 181 | 236 | 444 |
+|   without arms / tools / stabilizers [kg] | 19 | 41 | 167 | 167 | 129 | 171 | 294 |
+| deck payload | 5 kg | 20–40 kg | 100–200 kg | 100–200 kg | — (no deck) | 0–100 kg | 100–200 kg |
+| mass with nominal payload [kg] | 24 | 85 | 386 | 387 | 181 | 301 | 594 |
+| length [m] (arms folded / boom stowed) | 0.72 | 0.90 | 1.64 | 1.81 | 2.00 | 1.52 | 1.73 |
+| width [m] | 0.49 | 0.58 | 1.08 | 1.08 | 0.87 | 1.02 | 1.15 |
+| height [m] | 0.35 | 0.42 | 0.71 | 0.71 | 1.73 | 0.68 | 0.83 |
+| tracks | 80 mm, 4 wheels/side, PA6 links | 100 mm, 6 wheels/side, PA6 links | 180 mm, 6 wheels/side, rubber band | 180 mm, 6 wheels/side, rubber band | 150 mm, 6 wheels/side, PA6 links | 160 mm, 6 wheels/side, rubber band | 200 mm, 8 wheels/side, PA6 links |
+| track drives (x2) | pekari drive 16:1 planetary | perseus mini drive 20:1 planetary | pumba track drive 2.5 kW, 48 V | pumba track drive 2.5 kW, 48 V | perseus track drive 1.5 kW, 48 V | pumba track drive 2.5 kW, 48 V | calydon track drive 4 kW, 48 V |
+| top speed [km/h] | 5.6 | 5.2 | 7.9 | 7.9 | 6.8 | 7.9 | 8.2 |
+| 20° grade loaded (peak, traction) | yes | yes | yes | yes | yes | yes | yes |
+| steepest grade held continuously (drive rating, traction) [°] | 27 | 16 | 19 | 19 | 28 | 26 | 18 |
+| ground pressure loaded [kPa] | 3.4 | 5.9 | 8.3 | 8.3 | 6.6 | 7.8 | 11.1 |
+| battery [Wh] | 240 | 960 | 2880 | 2880 | 1900 | 2880 | 4800 |
+| driving endurance, 0.8 m/s flat gravel [h] | 5.0 | 7.4 | 6.9 | 6.9 | 9.1 | 8.5 | 8.0 |
+| arms | 0 | 2 | 2 | 2 | 1 | 2 | 2 |
+| main arm DOF | 0 | 5 | 6 | 6 | 4 | 6 | 6 |
+| main arm reach to TCP [m] | 0.00 | 0.97 | 1.58 | 1.93 | 2.15 | 1.58 | 1.92 |
+| main arm lift rating (peak / 1.5) | — | 5 kg at 0.5 m | 30 kg at 1 m | — (a saw) | — (a saw) | 30 kg at 1 m | 60 kg at 1.2 m |
+| tools fitted | basket | parallel gripper + parallel gripper | two-jaw grab + parallel gripper | chainsaw 2 kW + parallel gripper | chainsaw 2 kW, 36 V (fixed) | two-jaw grab + parallel gripper | two-jaw heavy grab + parallel gripper |
+| saw (stall SF cutting outstretched, loads x1.5) | — | — | — | 2 kW, 40 cm bar (≤ 40 cm a pass); wrist SF 1.28, elbow 1.34 | 2 kW, 40 cm bar (≤ 40 cm a pass); wrist SF 1.56, elbow 1.35 | — | — |
+| stabilizer legs | 0 | 0 | 2 | 2 | 0 | 1 | 4 |
+| static tip angle, loaded, folded [°] | 50 | 49 | 52 | 52 | 42 | 54 | 53 |
+| parts cost (class estimate) | not estimated | 20–47 k | 46–101 k | 45–98 k | not estimated | 43–95 k | 68–143 k |
 <!-- table:end -->
 
 ## Reading it
@@ -69,6 +69,7 @@ listed in each module.
   - **Driving:** Perseus is lighter loaded (181 against 386 kg). It holds a steeper grade continuously (28° against
     19°), presses the ground less (6.6 against 8.3 kPa) and drives longer per charge on the same profile. Pumba is
     faster (7.9 against 6.8 km/h) and carries the deck load.
+* **Timon:** the servicing rover, between Perseus and Pumba in size. It is sized by its deck (two spare modules and the tool kit) and carries Pumba's arm plus Pekari-2M's as a second hand ([`timon.md`](timon.md)).
 * **Calydon:** the heavy-lift option. Twice Pumba's arm rating (60 kg at 1.2 m), four stabilizers, 444 kg.
 * **Tools:**
   - Pumba's main arm takes the grab or the 2 kW chainsaw on its quick coupler (`pumba_robot.TOOL_KIT`,

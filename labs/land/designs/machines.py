@@ -33,3 +33,4 @@ machines.register("perseus_mini", "perseus_mini_robot:mini", visual="perseus_rov
 machines.register("pekari_2m", "pekari_2m_robot:pekari_2m", visual="pekari_2m:Pekari2M")
 machines.register("pumba", "pumba_robot:pumba", visual="pumba:Pumba")
 machines.register("calydon", "calydon_robot:calydon", visual="calydon:Calydon")
+machines.register("timon", "timon_robot:timon", visual="timon:Timon")
