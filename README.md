@@ -408,8 +408,8 @@ it for 0.35 s without touching; the red is out. The blues win if all three reds 
 spread apart), `flock` (flee together), `jink` (scatter, and break sideways when a blue is close); blue tactics: `assigned` (one
 blue per red, re-assigned every second by the Hungarian algorithm), `nearest` (each goes for its nearest red), `pincer` (assigned,
 and a free blue comes at a red from its other side). `--tournament N` plays every pairing N times. Over 3 seeds per pairing,
-**the blues win most games** (22 of 27 with a 3 s head start, 21 of 27 with 8 s) — the reds have no faster aircraft and the field
-has corners. **`flock` is the reds' best tactic** (it survives longest in every column; together the reds keep the blues bunched),
+**the blues win most games** (24 of 27 with a 3 s head start, 21 of 27 with 8 s) — the reds have no faster aircraft and the field
+has corners. **`flock` is the reds' best tactic** (it survives longest in 5 of the 6 pairings by blue tactic and head start; together the reds keep the blues bunched),
 **`jink` their worst** (caught soonest: the breaks cost the speed that a straight run keeps). **`pincer` is not the blues' best**:
 it leaves fewer blues on the chase and loses most games of the three; `nearest` catches fastest. A longer head start helps the
 reds less than their tactic does. Three seeds a pairing is a small sample.
