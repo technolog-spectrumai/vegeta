@@ -402,6 +402,17 @@ the balloons do, and `adaptive` takes the height only when it needs it. **Drafti
 to last everywhere — it gives up its own line and pace to sit behind others, and the aircraft that gain most from wakes are the
 hot-line ones that happen to follow each other (7–12 s a race in a wake, without trying). The changing wind shuffles the order
 less than the balloons do. As before: four to seven races a condition, rules not learners, an assumed wake.
+**The team chase** (`--mode teamchase`, `air_match/teamchase.py`): three reds flee, three blues hunt them, and the reds get a **head
+start** (`--head-start`, 3 s by default: the blues hover at one end while the reds go). A blue tags a red by staying within 2 m of
+it for 0.35 s without touching; the red is out. The blues win if all three reds are out in 60 s. Red tactics: `scatter` (flee and
+spread apart), `flock` (flee together), `jink` (scatter, and break sideways when a blue is close); blue tactics: `assigned` (one
+blue per red, re-assigned every second by the Hungarian algorithm), `nearest` (each goes for its nearest red), `pincer` (assigned,
+and a free blue comes at a red from its other side). `--tournament N` plays every pairing N times. Over 3 seeds per pairing,
+**the blues win most games** (22 of 27 with a 3 s head start, 21 of 27 with 8 s) — the reds have no faster aircraft and the field
+has corners. **`flock` is the reds' best tactic** (it survives longest in every column; together the reds keep the blues bunched),
+**`jink` their worst** (caught soonest: the breaks cost the speed that a straight run keeps). **`pincer` is not the blues' best**:
+it leaves fewer blues on the chase and loses most games of the three; `nearest` catches fastest. A longer head start helps the
+reds less than their tactic does. Three seeds a pairing is a small sample.
 
 **NISUS** (branch `dev_nisus`): `31_nisus` is a 1.4 m twin-boom single-pusher survey drone in two variants from one airframe —
 **Nisus-OBS** (remotely piloted observation: camera and live 5.8 GHz video, a flight controller with stabilisation and

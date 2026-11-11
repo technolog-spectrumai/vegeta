@@ -34,6 +34,9 @@ OUT = HERE / "output"
 
 
 def play(mode, duration, seed, kw):
+    if mode == "teamchase":
+        from air_match import teamchase
+        return teamchase.play(kw["red"], kw["blue"], seed, duration, kw["head_start"])
     if mode == "circus":
         from air_match import circus
         return circus.race(seed, kw.get("laps", 3), kw.get("field"), wind=kw.get("wind"), duration=max(duration, 150.0), n_balloons=kw.get("circus_balloons", 14),
@@ -48,6 +51,10 @@ def play(mode, duration, seed, kw):
 
 def line(seed, r):
     c = r["counts"]
+    if "teamchase" in r:
+        x = r["teamchase"]
+        return (f"seed {seed}: {x['red']} reds vs {x['blue']} blues, head start {x['head_start_s']:g} s: {x['winner']} wins — caught "
+                + ", ".join(f"{n} at {tt:.1f} s" for n, tt in sorted(x["caught"].items(), key=lambda q: q[1])) + f"; red seconds {x['red_seconds']}")
     if "race" in r:
         return f"seed {seed}: " + "  ".join(f"{s['place']}. {s['strategy']} {(str(s['time_s']) + ' s') if s['finished'] else 'DNF'} ({s['faults']} faults)" for s in r["race"]["standings"])
     if "formation" in r:
@@ -62,7 +69,10 @@ def line(seed, r):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7", "circus"])
+    ap.add_argument("--mode", default="match", choices=["match", "formation", "chase3", "chase7", "circus", "teamchase"])
+    ap.add_argument("--red", default="scatter", choices=["scatter", "flock", "jink"], help="teamchase: the reds' tactic")
+    ap.add_argument("--blue", default="assigned", choices=["assigned", "nearest", "pincer"], help="teamchase: the blues' tactic")
+    ap.add_argument("--head-start", type=float, default=3.0, help="teamchase: seconds the reds fly before the blues may go")
     ap.add_argument("--tournament", type=int, default=0, help="circus: this many races of the seven strategies, the grid turned each time")
     ap.add_argument("--wind", type=float, default=None, help="circus: the wind at 10 m [m/s] (default 5)")
     ap.add_argument("--laps", type=int, default=3)
@@ -81,6 +91,17 @@ def main(argv=None) -> int:
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args(argv)
     kw = dict(variants=tuple(args.variants), score="over" if args.over else "through", n_balloons=args.balloons, possession=not args.plain)
+    kw.update(red=args.red, blue=args.blue, head_start=args.head_start)
+    if args.mode == "teamchase" and args.tournament and not (args.quick or os.environ.get("VEGETA_DEBUG") == "1"):
+        import pandas as pd
+        from air_match import teamchase
+        t = teamchase.tournament(args.tournament, args.seed, args.duration, args.head_start,
+                                 progress=lambda rt, bt, s, x: print(f"{rt:8s} vs {bt:9s} seed {s}: {x['winner']} ({len(x['caught'])} caught, all at {x['all_caught_at']})", flush=True))
+        pd.set_option("display.width", 250)
+        print(pd.DataFrame(t["table"]).to_string(index=False))
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f"air_teamchase_tournament_hs{args.head_start:g}.json").write_text(json.dumps(t, indent=1, default=float))
+        return 0
     if args.mode == "circus":
         from air_match import circus
         kw["laps"] = args.laps
@@ -135,7 +156,7 @@ def main(argv=None) -> int:
         files.append(replay.mujoco_video(r, OUT / f"air_match_{args.seed}_{args.camera}.mp4", camera=args.camera))
     stem.with_suffix(".json").write_text(json.dumps({"score": r["score"], "faults": r["faults"], "winner": r["winner"], "counts": r["counts"], "duration": r["duration"],
                                                      "events": r["events"], "formation": (r["formation"]["summary"] | {"changes": r["formation"]["changes"]}) if "formation" in r else None,
-                                                     "race": {"standings": r["race"]["standings"], "wind": r["race"]["wind"], "laps": r["race"]["laps"]} if "race" in r else None, "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
+                                                     "teamchase": r.get("teamchase"), "race": {"standings": r["race"]["standings"], "wind": r["race"]["wind"], "laps": r["race"]["laps"]} if "race" in r else None, "players": {n: {k: v for k, v in p.items() if k != "hist"} for n, p in r["players"].items()}}, indent=1, default=float))
     print("written:", ", ".join(str(f) for f in files if f), f"and {stem.with_suffix('.json')}  ({time.time() - t0:.0f} s)")
     return 0
 

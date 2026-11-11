@@ -132,6 +132,9 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
                      side.plot([], [], color=c, lw=3, solid_capstyle="round")[0], top.plot([], [], "o", ms=16, mfc="none", mec="k", mew=1.5)[0])
     wind_arrow = top.quiver([-a.length / 2 + 14], [a.width / 2 - 8], [0.0], [0.0], color="#1f77b4", scale=1.0, scale_units="xy", angles="xy", width=0.004) if "race" in result else None
     tok = top.plot([], [], "o", ms=9, color="#2ca02c", mec="k")[0]
+    if "teamchase" in result:
+        result = dict(result, players={n: dict(p, hist=dict(p["hist"], token=np.zeros_like(p["hist"]["token"]))) for n, p in result["players"].items()})
+        players = result["players"]
     tok_s = side.plot([], [], "o", ms=9, color="#2ca02c", mec="k")[0]
     title = top.set_title("")
     fig.tight_layout()
@@ -157,7 +160,10 @@ def video(result: dict, path, fps: int = 20, speed: float = 1.0, seconds: float 
         tk, holder = result["token_hist"][k]
         tok.set_data([tk[0]], [tk[1]]) if holder is None else tok.set_data([], [])
         tok_s.set_data([tk[0]], [tk[2]]) if holder is None else tok_s.set_data([], [])
-        if "race" in result:
+        if "teamchase" in result:
+            out_ = [e["from"] for e in result["events"] if e["what"] == "tag" and e["t"] <= tf]
+            title.set_text(f"team chase   t = {tf:5.1f} s   reds out: {len(out_)}/3 " + " ".join(out_))
+        elif "race" in result:
             lapn = {n: int(sum(1 for e in result["events"] if e["what"] == "lap" and e["who"] == n and e["t"] <= tf)) for n in players}
             lead = sorted(players, key=lambda n: (-lapn[n], n))
             wh = result["race"].get("wind_hist")

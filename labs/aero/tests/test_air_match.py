@@ -220,3 +220,28 @@ def test_a_changing_wind_changes():
     steady = circus.Race([circus.BY_NAME["middle"]], seed=3, laps=1, duration=6.0, n_balloons=6).run()
     sh = steady["race"]["wind_hist"]
     assert np.allclose(sh[:, 1], circus.WIND["speed"]) and np.allclose(sh[:, 2], 0.0) and not steady["race"]["gust_fronts"]
+
+
+# ------------------------------------------------------------------------------------------------------ the team chase
+def test_the_team_chase_gives_the_reds_their_head_start_and_counts_the_tags():
+    from air_match import teamchase as tc
+    r = tc.play("scatter", "assigned", seed=1, duration=30.0, head_start_s=3.0)
+    x = r["teamchase"]
+    blues = [r["players"][f"blue{i}"]["hist"] for i in (1, 2, 3)]
+    early = blues[0]["t"] < 2.8
+    assert all(np.abs(h["x"][early] - h["x"][0]).max() < 0.3 for h in blues)              # the blues wait
+    reds = [r["players"][f"red{i}"]["hist"] for i in (1, 2, 3)]
+    assert max(float(np.hypot(h["x"][early][-1] - h["x"][0], h["y"][early][-1] - h["y"][0])) for h in reds) > 5.0   # the reds are off
+    tags = [e for e in r["events"] if e["what"] == "tag"]
+    assert len(tags) == len(x["caught"]) == sum(x["tags"].values()) and all(e["t"] > 3.0 for e in tags)
+    assert x["winner"] == ("blue" if len(x["caught"]) == 3 else "red") and r["score"]["blue"] == len(x["caught"])
+    assert x["red_seconds"] <= 3 * x["duration"] + 0.1
+
+
+def test_assignment_spreads_the_blues():
+    from air_match import teamchase as tc
+    g = tc.TeamChase("scatter", "assigned", seed=1)
+    a = g.targets(5.0)
+    assert len({r.name for r in a.values()}) == 3                                          # one blue per red
+    n = tc.TeamChase("scatter", "nearest", seed=1).targets(5.0)
+    assert set(n) == {"blue1", "blue2", "blue3"}
