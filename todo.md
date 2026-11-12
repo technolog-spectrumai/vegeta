@@ -62,6 +62,31 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] V7.7 Each lab's `common/` holds what its studies repeated (measured: functions defined identically in 2+ notebooks): `aero_kit` (plain, lower_skins), `land_kit` (terrain rocks/drops, pin stresses), `legged_kit` (pin_stress) — 25 copies in 19 notebooks replaced by imports; helpers that read notebook globals stay. The tools' copied helpers (`result.py` ×9, `_process.py` ×3, `cache.py`, `_progress.py`, `_watermark.py`) stay copies — each tool is standalone by rule (`test_independence`) — and are kept identical: `tools/sync_copies.py`, `tests/smoke/test_tool_copies.py`
 - [x] V7.8 Marine has tests (the boat, the submarine and their assemblies build), studio has tests (every notebook bootstraps and its imports run)
 
+## Stage K4 — K4TQ tilt-wing medical transport (plan: `labs/aero/notebooks/k4_plan.md`, `k4_work.md`)
+- [ ] K4.1 **Check the drag of the wing-turning mechanism.** Each wing root is a rotating joint (±90° tilt) next to a fixed fuselage, so it cannot be faired like a fixed wing root. Sources to quantify:
+  - the gap between the rotating root rib and the fuselage side (leakage from the pressure to the suction side: lost root lift, more induced drag);
+  - the 42 mm tilt cartridge and the fold-hinge lugs standing out of the fuselage line;
+  - any servo or gear bulge;
+  - the fairing step at intermediate tilt (transition) and at the cruise trim angles (±5°).
+
+  Stage 1 assumes 4 × 4 cm² of drag area for all of it (`k4tq_sizing.ROOT_GAP_CDA`, ESTIMATE). Check it:
+  - with a root-junction CFD case in Stage 3 (cruise at 0° and ±5° tilt, gap 1 / 2 / 4 mm);
+  - against fixes: a seal (brush or elastomer lip), a root disc fairing that turns with the wing, the cartridge sunk inside the fuselage line.
+
+  Feed the result back into the drag build-up and the range.
+
+  Stage 2 (2026-10-21) moved the tilt drive (stub, bearings, servo, gears) inside the fuselage: only the 12 mm fold knuckle, the hinge and locking pins and
+  the stub's passage through the skin remain in the flow. The CFD question narrows to that knuckle, its gap and the root plate at 0 / ±5° tilt.
+- [x] K4.2 Stage 1: the transition corridor solved as one least-power balance per speed (tilt, rear differential tilt, thrust, split; SLSQP with continuation): trimmed everywhere; wing-borne from 21 m/s, the free span stalled 1–20 m/s (the CFD question, R10); `phase1.md` regenerated
+- [x] K4.3 Fuselage length: config B at 1.2 m with 15x10 (disc gap 159 mm, front motor at 63 % in the hover, the best R3 margin) — approved 2026-10-21
+- [x] K4.5 Stage 2: the CAD masses (+12 %) broke the Stage 1 design (the mission −18 Wh, the sagged T/W 1.43): revised to MN501-S KV300, 16x10, 6S3P (`designs/data/k4tq/stage2_motor_sweep.csv`), Stage 1 rerun on the CAD masses (revision B)
+- [ ] K4.6 Motor data to verify with T-Motor's datasheets before the BOM (Stage 4): the MN501-S KV300's no-load current (estimated 1.0 A) and its 40 A / 180 s rating at the hover's 6S current; the MN5006 / MN505-S rows likewise
+- [x] K4.7 Wing sections by flight phase (NeuralFoil, `designs/k4tq_sections.py`, `exp/K4TQ_airfoils.ipynb`): front NACA 4415, rear NACA 2415 → K4TQ-F1 "Freddy" / F2; the four designs compared in `exp/K4TQ_compare.ipynb`
+- [ ] K4.8 K4TQ-A1 / A2 (NACA 2412 front) leave 14.4 mm of section depth at the 120 mm front tip chord for a Ø16 spar that needs 18 mm: adopt K4TQ-F1's (Freddy's) sections, or taper the spar to Ø12 at the tip (Stage 4 structure decides)
+- [ ] K4.9 Run the section CFD check (`exp/K4TQ_airfoils.ipynb`, DEBUG = False, ~30–45 min) — confirm NeuralFoil's ranking before freezing Freddy
+- [-] K4.10 K4TQ-D1 "Dorothy" (the powered in-flight fold for smoke zones): studied on branch `dev_kestrel4`, rejected 2026-10-21 — +0.66 kg (D2 ~+0.95 kg) for a 20–30° tuck; see `rejected.md`
+- [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
+
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)
