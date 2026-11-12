@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yanus"
+version = "0.1.0"
+description = "Requirement checks: is a tool, a package, an environment variable there on this machine?"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["yanus"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

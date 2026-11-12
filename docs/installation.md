@@ -8,10 +8,17 @@ On Ubuntu, one script installs everything (system tools, OpenFOAM, a `.venv` wit
 source .venv/bin/activate
 ```
 
+The build never contacts GitHub: Ozaru (Porunga, Mimezia, Yanus) is installed from the vendored copy
+(`pip install --no-deps --no-build-isolation --no-index -e vendor/ozaru/{porunga,mimezia,yanus}`, done by
+`install_local.sh`), and `source activate.sh` puts the source trees, `side_labs/`, `designs/` and `designs/exp/` on
+`PYTHONPATH`; the Porunga cache is `$PORUNGA_DIR` if set, else `cache/porunga/` (ignored by git). Updating Ozaru is a maintainer step:
+`scripts/update_ozaru.sh <branch|tag|commit>` (git subtree, signed commits, Ozaru's tests run before the commit).
+
 ## Checking the installation
 ```bash
 ./test.sh               # components + a ~10 s working run through every tool; exit code 0 = OK
 ./test.sh --quick       # components only
+./test_openfoam.sh      # the CFD tool against every OpenFOAM installation found (both flavours); see "OpenFOAM notes"
 ```
 Each line prints `ok`, `MISSING` (a component is not installed) or `FAILED` (installed but the working
 run failed), followed by `RESULT: OK` or `RESULT: PROBLEMS FOUND`. `install_local.sh` runs the quick
@@ -35,10 +42,13 @@ Manual installation — Python ≥ 3.10; one package provides all four tools:
 ```bash
 pip install -e "vegeta-cli[pandas,test]"   # CadQuery and gmsh come from pip
 ```
+After pulling a change that adds a subpackage (e.g. `vegeta.cache`), run the same `pip install -e` again so the
+editable install knows it (or re-run `./install_local.sh`).
 The external programs are only needed by the tool that uses them: Talos needs CalculiX `ccx`,
 Aeromant needs OpenFOAM, Mellonia needs PrusaSlicer. Missing programs give a failed result with an
 explanation, never an import error.
-Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
+Add `[pandas]` for `to_dataframe()` helpers, `[viz]` for the interactive 3D plots (pyvista + trame, see
+`docs/visualisation.md`) and `[test]` for the test suite; `install_local.sh` installs all three.
 
 ## External tools (Ubuntu 24.04)
 `install_local.sh` first creates the virtual environment, then installs:
@@ -52,6 +62,22 @@ Add `[pandas]` for `to_dataframe()` helpers and `[test]` for the test suite.
 | PrusaSlicer | `apt install prusa-slicer` | `prusa-slicer --help` |
 
 ### OpenFOAM notes
+`./test_openfoam.sh` checks that Aeromant works with the OpenFOAM installation(s) on your machine: it lists
+what it finds (version, flavour, executables), then runs the sphere case of every template through every
+pipeline step per flavour and compares the laminar drag with the Schiller–Naumann correlation. Point it at an
+installation explicitly when it is not in a standard place:
+```bash
+./test_openfoam.sh                                          # everything found under /usr/lib/openfoam*, /opt/openfoam*, /opt/OpenFOAM-*, conda envs
+./test_openfoam.sh --bashrc /opt/openfoam14/etc/bashrc      # a specific openfoam.org installation
+./test_openfoam.sh --prefix "micromamba run -p /opt/foam"   # a conda environment through its launcher
+./test_openfoam.sh --quick                                  # meshing only (a minute); --pytest also runs the test suite
+```
+Case files and logs are kept in the work directory when something fails — send them with the output.
+
+Notebooks with OpenFOAM cells (the product notebooks, 08 onwards) check `VEGETA_SKIP_OPENFOAM`: set it to `1`
+to execute them without OpenFOAM (`VEGETA_SKIP_OPENFOAM=1 scripts/run_notebooks.sh`); the CFD cells then print a
+note instead of running.
+
 Tell Aeromant explicitly how to launch OpenFOAM:
 - sourced installation: `OpenFOAMEnvironment(bashrc="/usr/lib/openfoam/openfoam2406/etc/bashrc")`
 - conda environment: `micromamba create -p /opt/foam -c conda-forge openfoam=2412`, then
@@ -67,6 +93,13 @@ The CLI slices headless. If your build insists on a display, run it under `xvfb-
 (`slice_stl(..., executable=["xvfb-run", "-a", "prusa-slicer"])`).
 
 ## Tests
-`scripts/test_all.sh` runs the tests of each tool (`vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
+`./user_tests.sh` is the everyday run: mock-only (`VEGETA_NO_SOLVERS=1` refuses to start CalculiX, OpenFOAM,
+PrusaSlicer or XFOIL; the AI demos never call the API), in four parts — vegeta (environment, Ozaru, the CLI mocks),
+design (`designs/tests`, `components`), workflow (side labs, the cache exchange), notebook (every notebook but the slow
+ones, with the mocks on, at most four side by side on one installed kernel). `--no-vegeta`, `--no-design`,
+`--no-workflow`, `--no-notebook` leave a part out; `-v` gives pytest's full output; `--include-experiments` adds
+`notebooks/exp/` and the Kestrel tests. Each run writes `user_tests_<date>.log`.
+
+`scripts/test_all.sh` runs the tests of each tool (`libs/vegeta-cli/tests/<tool>`) separately. Integration tests skip cleanly when a
 tool is missing; markers: `requires_cadquery`, `requires_gmsh`, `requires_ccx`, `requires_openfoam`,
 `requires_prusaslicer`, `slow`. Run only fast tests with `pytest -m "not slow"`.

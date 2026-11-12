@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      omega;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 -1 0 0 0 0];
+
+internalField   uniform {{OMEGA_INLET}};
+
+boundaryField
+{
+    "inlet.*"
+    {
+        type            turbulentMixingLengthFrequencyInlet;
+        mixingLength    {{MIXING_LENGTH}};
+        value           uniform {{OMEGA_INLET}};
+    }
+    "outlet.*"
+    {
+        type            inletOutlet;
+        inletValue      uniform {{OMEGA_INLET}};
+        value           uniform {{OMEGA_INLET}};
+    }
+    "(body|shroud).*"
+    {
+        type            omegaWallFunction;
+        value           uniform {{OMEGA_INLET}};
+    }
+    farfield
+    {
+        type            omegaWallFunction;
+        value           uniform {{OMEGA_INLET}};
+    }
+}
+
+// ************************************************************************* //

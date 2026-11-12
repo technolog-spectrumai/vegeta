@@ -1,0 +1,22 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      MRFProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+rotor
+{
+    cellZone            rotorZone;
+    active              yes;
+    nonRotatingPatches  ();
+    origin              ({{ROTOR_CENTER}});
+    axis                (1 0 0);
+    omega               {{OMEGA}};      // rad/s about +x (right-hand rule); sign = rotation parameter
+}
+
+// ************************************************************************* //

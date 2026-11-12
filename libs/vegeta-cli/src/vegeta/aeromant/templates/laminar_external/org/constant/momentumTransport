@@ -1,0 +1,14 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+simulationType  laminar;
+
+// ************************************************************************* //

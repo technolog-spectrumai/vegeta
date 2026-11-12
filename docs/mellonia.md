@@ -53,7 +53,7 @@ mellonia slice part.stl -s vegeta.mellonia.examples:GENERIC_PLA_0_2MM -o runs/pa
 mellonia parse runs/part/part.gcode [--json]
 ```
 
-## Validation (vegeta-cli/tests/mellonia/test_integration.py)
+## Validation (libs/vegeta-cli/tests/mellonia/test_integration.py)
 - 20 mm cube: layer count = 1 + ⌈(20 − h₁)/h⌉ and top Z = h₁ + (n − 1)·h (PrusaSlicer quantises layers).
 - Solid (100 % rectilinear) 20 mm cube: filament volume within 3 % of 8 cm³ (observed +0.9 %).
 - Per-layer extrusion parsed from the moves sums to PrusaSlicer's reported filament length (±0.5 %).

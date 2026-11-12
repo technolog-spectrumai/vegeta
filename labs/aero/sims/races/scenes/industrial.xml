@@ -1,0 +1,92 @@
+<mujoco model="race industrial">
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81" density="0" viscosity="0"/>
+  <visual><headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6"/><map znear="0.05" zfar="800"/><quality shadowsize="4096"/></visual>
+  <asset><texture name="grid" type="2d" builtin="checker" rgb1="0.75 0.78 0.7" rgb2="0.65 0.68 0.6" width="512" height="512"/>
+    <material name="ground" texture="grid" texrepeat="40 40" reflectance="0.05"/></asset>
+  <default><geom condim="3" friction="0.8 0.005 0.0001" solref="0.01 1"/></default>
+  <worldbody>
+    <geom name="ground" type="plane" size="230.0 230.0 0.1" material="ground"/>
+    <light pos="70.0 0.0 230.0" dir="0 0 -1" directional="true"/>
+    <camera name="overview" pos="70.0 0.0 253.00000000000003" xyaxes="1 0 0 0 1 0" fovy="60"/>
+    <camera name="grandstand" pos="-45.0 0.0 57.5" xyaxes="0 -1 0 0.35 0 0.94" fovy="70"/>
+    <geom name="building0" type="box" size="15.0000 8.0000 7.0000" pos="0.0000 -25.0000 7.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building1" type="box" size="12.0000 10.0000 6.0000" pos="45.0000 -28.0000 6.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building2" type="box" size="16.0000 7.0000 8.0000" pos="90.0000 -22.0000 8.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building3" type="box" size="17.0000 9.0000 5.5000" pos="10.0000 20.0000 5.5000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building4" type="box" size="14.0000 8.0000 7.5000" pos="55.0000 18.0000 7.5000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building5" type="box" size="12.0000 10.0000 6.5000" pos="100.0000 20.0000 6.5000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="building6" type="box" size="10.0000 20.0000 8.0000" pos="140.0000 0.0000 8.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="passage0_deck" type="box" size="1.5000 14.0000 0.4000" pos="30.0000 -3.0000 4.6000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.700 0.680 0.600 1.000"/>
+    <geom name="passage0_pier0" type="box" size="0.3000 0.3000 2.1000" pos="30.0000 -7.6667 2.1000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="passage0_pier1" type="box" size="0.3000 0.3000 2.1000" pos="30.0000 1.6667 2.1000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="passage1_deck" type="box" size="1.5000 12.5000 0.4000" pos="75.0000 -2.5000 4.6000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.700 0.680 0.600 1.000"/>
+    <geom name="passage1_pier0" type="box" size="0.3000 0.3000 2.1000" pos="75.0000 -6.6667 2.1000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="passage1_pier1" type="box" size="0.3000 0.3000 2.1000" pos="75.0000 1.6667 2.1000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.550 0.500 0.480 1.000"/>
+    <geom name="stack0" type="box" size="1.0000 1.0000 2.5000" pos="38.0000 -9.0000 2.5000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.400 0.400 0.420 1.000"/>
+    <geom name="stack1" type="box" size="1.2000 1.2000 3.0000" pos="66.0000 6.0000 3.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.400 0.400 0.420 1.000"/>
+    <geom name="stack2" type="box" size="0.8000 0.8000 6.0000" pos="120.0000 -6.0000 6.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.800 0.200 0.150 1.000"/>
+    <geom name="water_tower" type="cylinder" size="3.0000 2.0000" pos="130.0000 36.0000 10.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.300 0.500 0.800 1.000"/>
+    <geom name="water_tower_leg" type="cylinder" size="0.5000 4.0000" pos="130.0000 36.0000 4.0000" quat="1.00000 0.00000 0.00000 0.00000" rgba="0.400 0.400 0.420 1.000"/>
+    <geom name="zone_00_start" type="box" size="2.500 2.500 0.750" pos="-30.000 0.000 1.500" rgba="0.2 0.8 0.2 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_00" pos="-30.000 0.000 1.500" size="0.1" rgba="0.2 0.8 0.2 1"/>
+    <geom name="zone_01_gate" type="box" size="1.500 1.500 1.500" pos="-5.000 -3.000 6.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_01" pos="-5.000 -3.000 6.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_02_gate" type="box" size="1.000 2.500 0.900" pos="30.000 -3.000 2.600" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_02" pos="30.000 -3.000 2.600" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_03_checkpoint" type="box" size="1.500 1.500 1.500" pos="45.000 -10.000 6.000" rgba="0.95 0.6 0.1 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_03" pos="45.000 -10.000 6.000" size="0.1" rgba="0.95 0.6 0.1 1"/>
+    <geom name="zone_04_gate" type="box" size="1.500 1.500 1.500" pos="60.000 -6.000 6.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_04" pos="60.000 -6.000 6.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_05_gate" type="box" size="1.000 2.500 0.900" pos="75.000 -2.500 2.600" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_05" pos="75.000 -2.500 2.600" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_06_checkpoint" type="box" size="1.500 1.500 1.500" pos="95.000 0.000 6.000" rgba="0.95 0.6 0.1 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_06" pos="95.000 0.000 6.000" size="0.1" rgba="0.95 0.6 0.1 1"/>
+    <geom name="zone_07_gate" type="box" size="1.500 1.500 1.500" pos="117.000 2.000 6.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_07" pos="117.000 2.000 6.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_08_gate" type="box" size="1.500 1.500 1.500" pos="121.000 22.000 6.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_08" pos="121.000 22.000 6.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_09_gate" type="box" size="1.500 1.500 1.500" pos="144.000 32.000 8.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_09" pos="144.000 32.000 8.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_10_checkpoint" type="box" size="1.500 1.500 1.500" pos="170.000 8.000 8.000" rgba="0.95 0.6 0.1 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_10" pos="170.000 8.000 8.000" size="0.1" rgba="0.95 0.6 0.1 1"/>
+    <geom name="zone_11_gate" type="box" size="1.500 1.500 1.500" pos="160.000 -30.000 8.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_11" pos="160.000 -30.000 8.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_12_gate" type="box" size="1.500 1.500 1.500" pos="125.000 -30.000 8.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_12" pos="125.000 -30.000 8.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_13_gate" type="box" size="1.500 1.500 1.500" pos="120.000 -6.000 15.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_13" pos="120.000 -6.000 15.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_14_checkpoint" type="box" size="1.500 1.500 1.500" pos="70.000 -2.000 8.000" rgba="0.95 0.6 0.1 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_14" pos="70.000 -2.000 8.000" size="0.1" rgba="0.95 0.6 0.1 1"/>
+    <geom name="zone_15_gate" type="box" size="1.500 1.500 1.500" pos="30.000 8.000 8.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_15" pos="30.000 8.000 8.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_16_gate" type="box" size="1.500 1.500 1.500" pos="-10.000 2.000 4.000" rgba="0.2 0.5 0.95 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_16" pos="-10.000 2.000 4.000" size="0.1" rgba="0.2 0.5 0.95 1"/>
+    <geom name="zone_17_finish" type="box" size="1.500 1.500 1.500" pos="-30.000 0.000 4.500" rgba="0.9 0.2 0.2 0.25" contype="0" conaffinity="0"/>
+    <site name="zone_17" pos="-30.000 0.000 4.500" size="0.1" rgba="0.9 0.2 0.2 1"/>
+    <geom name="pad0" type="box" size="0.4 0.4 0.01" pos="-34.000 2.500 0.01" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0"/>
+    <geom name="pad1" type="box" size="0.4 0.4 0.01" pos="-34.000 0.800 0.01" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0"/>
+    <geom name="pad2" type="box" size="0.4 0.4 0.01" pos="-34.000 -0.900 0.01" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0"/>
+    <geom name="pad3" type="box" size="0.4 0.4 0.01" pos="-34.000 -2.600 0.01" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0"/>
+    <body name="quad" pos="-34.0 2.5 0.06">
+      <freejoint name="quad_free"/>
+      <geom name="plate" type="box" size="0.075 0.03 0.002" pos="0 0 0.01" rgba="0.15 0.15 0.17 1" mass="0.0848"/>
+      <geom name="battery" type="box" size="0.041 0.0205 0.0245" pos="0 0 0.036500000000000005" rgba="0.95 0.75 0.1 1" mass="0.2300"/>
+      <geom name="camera_housing" type="box" size="0.012 0.012 0.012" pos="0.087 0 0.03" rgba="0.1 0.1 0.1 1" mass="0.0260"/>
+      <geom name="arm0" type="box" size="0.0550 0.008 0.003" pos="0.0389 0.0389 0.012" quat="0.92388 0 0 0.38268" rgba="0.15 0.15 0.17 1" mass="0.0171"/>
+      <geom name="motor0" type="cylinder" size="0.014 0.016" pos="0.0778 0.0778 0.0310" rgba="0.08 0.08 0.09 1" mass="0.0360"/>
+      <geom name="prop0" type="cylinder" size="0.0635 0.001" pos="0.0778 0.0778 0.0350" rgba="0.55 0.75 0.95 0.35" mass="0.0045" contype="1" conaffinity="1"/>
+      <geom name="arm1" type="box" size="0.0550 0.008 0.003" pos="-0.0389 0.0389 0.012" quat="0.38268 0 0 0.92388" rgba="0.15 0.15 0.17 1" mass="0.0171"/>
+      <geom name="motor1" type="cylinder" size="0.014 0.016" pos="-0.0778 0.0778 0.0310" rgba="0.08 0.08 0.09 1" mass="0.0360"/>
+      <geom name="prop1" type="cylinder" size="0.0635 0.001" pos="-0.0778 0.0778 0.0350" rgba="0.55 0.75 0.95 0.35" mass="0.0045" contype="1" conaffinity="1"/>
+      <geom name="arm2" type="box" size="0.0550 0.008 0.003" pos="-0.0389 -0.0389 0.012" quat="-0.38268 0 0 0.92388" rgba="0.15 0.15 0.17 1" mass="0.0171"/>
+      <geom name="motor2" type="cylinder" size="0.014 0.016" pos="-0.0778 -0.0778 0.0310" rgba="0.08 0.08 0.09 1" mass="0.0360"/>
+      <geom name="prop2" type="cylinder" size="0.0635 0.001" pos="-0.0778 -0.0778 0.0350" rgba="0.55 0.75 0.95 0.35" mass="0.0045" contype="1" conaffinity="1"/>
+      <geom name="arm3" type="box" size="0.0550 0.008 0.003" pos="0.0389 -0.0389 0.012" quat="-0.92388 0 0 0.38268" rgba="0.15 0.15 0.17 1" mass="0.0171"/>
+      <geom name="motor3" type="cylinder" size="0.014 0.016" pos="0.0778 -0.0778 0.0310" rgba="0.08 0.08 0.09 1" mass="0.0360"/>
+      <geom name="prop3" type="cylinder" size="0.0635 0.001" pos="0.0778 -0.0778 0.0350" rgba="0.55 0.75 0.95 0.35" mass="0.0045" contype="1" conaffinity="1"/>
+      <camera name="onboard" pos="0.095 0 0.04" xyaxes="0 -1 0 0.5 0 0.866" fovy="110"/>
+      <camera name="chase" mode="track" pos="-3.0 0 1.2" xyaxes="0 -1 0 0.37 0 0.93" fovy="70"/>
+      <site name="com" pos="0 0 0.02" size="0.005"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,173 @@
+"""aircraft_rotor_disks: the case is written for both OpenFOAM forks (prepare only; no OpenFOAM run)."""
+import numpy as np
+import pytest
+
+from vegeta import aeromant
+from vegeta.aeromant import CFDCase, get_template
+
+BLADE = [[0.02, 30.0, 0.018], [0.06, 18.0, 0.022], [0.114, 10.0, 0.008]]
+POLAR = [[a, 0.02 + 0.04 * min(1.0, abs(a) / 15) ** 2, float(np.clip(0.1 * (a + 2), -1.1, 1.1))]
+         for a in range(-180, 181, 10)]
+
+
+def values(**over):
+    v = dict(velocity=14.0, kinematic_viscosity=1.5e-5, density=1.2, reference_area=0.17, reference_length=0.25,
+             center_of_rotation=(0.05, 0, 0), disk1_center=(-0.06, -0.3, 0.0), disk2_center=(-0.06, 0.3, 0.0),
+             disk_axis=(-1, 0, 0), diameter=0.2286, rpm=7000.0, blades=2, blade=BLADE, polar=POLAR)
+    v.update(over)
+    return v
+
+
+def test_template_is_registered_and_describes_itself():
+    t = get_template("aircraft_rotor_disks")
+    assert "rotor disks" in t.describe() and t.flavor_names == ["openfoam.com", "openfoam.org"]
+
+
+@pytest.mark.parametrize("version,files", [
+    (None, ("system/fvOptions", "constant/triSurface/body.stl")),
+    ("14", ("constant/fvModels", "constant/geometry/body.stl")),
+])
+def test_prepare_writes_both_disks(tmp_path, sphere_stl, version, files):
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, values(), tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    for f in files:
+        assert (c / f).is_file(), f
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+    src = (c / files[0]).read_text()
+    assert src.count("type            rotorDisk;") == 2
+    assert "cellZone        diskLeft;" in src and "cellZone        diskRight;" in src
+    assert "(section (0.02 30 0.018))" in src and "(-180 " in src
+    assert ("rpm             7000;" in src and "rpm             -7000;" in src) or ("7000 [rpm]" in src and "-7000 [rpm]" in src)
+    assert "axis            (-1 0 0);" in src and "refDirection    (0 0 1);" in src
+    if version is None:                           # openfoam.com v2012+: trim model "fixedTrim" with "fixedTrimCoeffs"
+        assert src.count("trimModel       fixedTrim;") == 2 and src.count("fixedTrimCoeffs") == 2
+    else:                                         # openfoam.org: "fixedTrim" with a "fixedTrim" sub-dictionary
+        assert src.count("trimModel       fixedTrim;") == 2
+    snappy = (c / "system/snappyHexMeshDict").read_text()
+    assert snappy.count("cellZone diskLeft;") == 1 and "point1 (-0.050856 -0.3 0)" in snappy
+
+
+def test_bad_disk_inputs_are_refused(tmp_path, sphere_stl):
+    for over, msg in ((dict(blade=[[0.02, 30, 0.02], [0.2, 10, 0.01]]), "diameter / 2"),
+                      (dict(polar=[[-10, 0.02, -0.8], [10, 0.02, 1.0]]), "-90..90"),
+                      (dict(disk1_center=(50.0, 0, 0)), "inside the domain"),
+                      (dict(rotation1=0.5), "rotation1")):
+        case = CFDCase("aircraft_rotor_disks", sphere_stl, values(**over), tmp_path / msg[:4], geometry_units="m")
+        res = case.prepare()
+        assert not res.ok and any(msg in m for m in res.messages), (over, res.messages)
+    with pytest.raises(ValueError, match="rows of 3"):
+        CFDCase("aircraft_rotor_disks", sphere_stl, values(blade=[[1, 2]]), tmp_path / "x", geometry_units="m")
+
+
+def _bashrc(tmp_path, version):
+    rc = tmp_path / "bashrc"
+    rc.write_text(f"export WM_PROJECT_VERSION={version}\n")
+    return str(rc)
+
+
+def test_parallel_pipeline_and_subdomains(tmp_path, sphere_stl):
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, values(), tmp_path / "c", geometry_units="m")
+    assert case.prepare().ok
+    serial = [s.name for s in case.pipeline(1)]
+    assert "decompose" not in serial and serial[-1] == "solver"
+    par = case.pipeline(8)
+    names = [s.name for s in par]
+    assert names[-3:] == ["decompose", "solver", "reconstruct"]
+    solver = par[names.index("solver")]
+    assert solver.argv[:3] == ("mpirun", "-np", "8") and solver.argv[-1] == "-parallel"
+    assert par[-1].argv == ("reconstructPar", "-latestTime")
+    case._set_subdomains(8)
+    assert "numberOfSubdomains 8;" in (tmp_path / "c/system/decomposeParDict").read_text()
+    res = case.run(["decompose"], processors=0)
+    assert not res.ok and "processors" in res.messages[0]
+
+
+@pytest.mark.parametrize("version", [None, "14"])
+def test_hull_rotor_disk_has_one_disk(tmp_path, sphere_stl, version):
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    v = values()
+    v.pop("disk2_center")
+    case = CFDCase("hull_rotor_disk", sphere_stl, v, tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    src = (c / ("system/fvOptions" if version is None else "constant/fvModels")).read_text()
+    assert src.count("type            rotorDisk;") == 1 and "diskRight" not in src
+    snappy = (c / "system/snappyHexMeshDict").read_text()
+    assert "diskRight" not in snappy and snappy.count("cellZone diskLeft;") == 1
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+    with pytest.raises(ValueError, match="disk2_center"):
+        CFDCase("hull_rotor_disk", sphere_stl, values(), tmp_path / "x", geometry_units="m")
+
+
+def quad_values(**over):
+    v = values()
+    for k in ("disk1_center", "disk2_center", "rpm"):
+        v.pop(k)
+    v.update(disk1_center=(-0.06, -0.39, 0.14), disk2_center=(-0.06, 0.39, 0.14), disk3_center=(-0.06, -0.39, -0.14),
+             disk4_center=(-0.06, 0.39, -0.14), rpm1=6000.0, rpm2=6000.0, rpm3=7200.0, rpm4=7200.0)
+    v.update(over)
+    return v
+
+
+@pytest.mark.parametrize("version,name", [(None, "system/fvOptions"), ("14", "constant/fvModels")])
+def test_quad_rotor_disks_four_disks_each_its_rpm(tmp_path, sphere_stl, version, name):
+    """aircraft_quad_rotor_disks: four disk zones and sources, each disk at its own rpm and sense (diagonals paired)."""
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    assert "four propellers" in get_template("aircraft_quad_rotor_disks").describe()
+    case = CFDCase("aircraft_quad_rotor_disks", sphere_stl, quad_values(), tmp_path / "c", geometry_units="m", environment=env)
+    res = case.prepare()
+    assert res.ok, res.messages
+    c = tmp_path / "c"
+    for f in c.rglob("*"):
+        if f.is_file() and f.suffix != ".stl" and f.name != "aeromant_case.json":
+            assert "{{" not in f.read_text().replace("{{...}}", ""), f
+    src = (c / name).read_text()
+    assert src.count("type            rotorDisk;") == 4 and "diskLeft" not in src
+    for i in range(1, 5):
+        assert f"cellZone        disk{i};" in src
+    rpms = ("6000", "-6000", "-7200", "7200")                       # rotation defaults (1, -1, -1, 1): the diagonals alike
+    for r in rpms:
+        assert (f"rpm             {r};" in src) or (f"omega           {r} [rpm];" in src), r
+    snappy = (c / "system/snappyHexMeshDict").read_text()
+    assert all(snappy.count(f"cellZone disk{i};") == 1 for i in range(1, 5)) and "diskRight" not in snappy
+
+
+def test_quad_rotor_disks_refuses_overlapping_zones(tmp_path, sphere_stl):
+    case = CFDCase("aircraft_quad_rotor_disks", sphere_stl, quad_values(disk3_center=(-0.06, -0.39, 0.10)), tmp_path / "c",
+                   geometry_units="m")
+    res = case.prepare()
+    assert not res.ok and any("overlap" in m for m in res.messages), res.messages
+    with pytest.raises(ValueError, match="rpm4"):
+        v = quad_values()
+        v.pop("rpm4")
+        CFDCase("aircraft_quad_rotor_disks", sphere_stl, v, tmp_path / "x", geometry_units="m")
+
+
+@pytest.mark.parametrize("version,name", [(None, "system/fvOptions"), ("14", "constant/fvConstraints")])
+def test_rotor_disk_cases_carry_a_velocity_cap_and_plain_simple(tmp_path, sphere_stl, version, name):
+    """Blown cases at a low free stream diverged under SIMPLEC: the disk templates run plain SIMPLE with the rotorDisk
+    tutorial's under-relaxation and cap |U| (limitVelocity) at 1.5 x the tip speed plus the free stream by default."""
+    env = (aeromant.OpenFOAMEnvironment(env={"PATH": str(tmp_path)}) if version is None else
+           aeromant.OpenFOAMEnvironment(bashrc=_bashrc(tmp_path, version)))
+    case = CFDCase("aircraft_rotor_disks", sphere_stl, values(), tmp_path / "c", geometry_units="m", environment=env)
+    assert case.prepare().ok
+    src = (tmp_path / "c" / name).read_text()
+    assert "type            limitVelocity;" in src
+    tip = 7000.0 * 2 * np.pi / 60 * 0.2286 / 2
+    assert f"max             {1.5 * tip + 14.0:.6g}" in src
+    sol = (tmp_path / "c" / "system/fvSolution").read_text()
+    assert "consistent      no;" in sol and "p               0.3;" in sol and "U               0.7;" in sol
+    # an explicit cap
+    case2 = CFDCase("aircraft_rotor_disks", sphere_stl, values(velocity_limit=42.0), tmp_path / "c2", geometry_units="m", environment=env)
+    assert case2.prepare().ok and "max             42;" in (tmp_path / "c2" / name).read_text()
