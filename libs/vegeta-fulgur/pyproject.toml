@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-fulgur"
+version = "0.1.0"
+description = "Vegeta fulgur: cold-plasma toolkit - corona discharge in air and its thrust (EHD), breakdown prediction, HV supply; later DBD actuators and plasma chemistry"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "fipy"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.fulgur"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

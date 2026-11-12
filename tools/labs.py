@@ -22,7 +22,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LABS = ("aero", "land", "legged", "marine", "space", "studio")
+LABS = ("aero", "land", "legged", "marine", "space", "studio", "plasma")
 STAGES = ("notebooks", "designs", "sims", "campaigns", "exp", "common", "data", "tests")
 
 # the old top-level layout, mapped to the labs until it is gone (phase 3 of the split)
