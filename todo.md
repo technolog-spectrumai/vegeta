@@ -92,6 +92,18 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [ ] K4.11 K4TQ-G "Ginna" (K4TQ-B "Bertha" parked 2026-10-21: too heavy) (`dev_kestrel5`): the CAD of the scaled roots and packing (the render's checks flag the frame/gear and the cartridge envelopes sized for Freddy), the transition corridor at the new scale, datasheets for the 12S motors (U8 II, U12 II) and the Mejzlik propellers, Bertha's thin R3 margin (≈6 Wh), the operation category (Bertha: specific category)
 - [-] K4.10 K4TQ-D1 "Dorothy" (the powered in-flight fold for smoke zones): studied on branch `dev_kestrel4`, rejected 2026-10-21 — +0.66 kg (D2 ~+0.95 kg) for a 20–30° tuck; see `rejected.md`
 - [ ] K4.4 Smoke: the three race tests (`test_autopilot_telemetry_and_side_panel`, `test_neutral_scenario_is_the_nominal_lap`, `test_mujoco_second_with_tuned_autopilot`) fail in the combined `./test.sh --smoke` run with MuJoCo 3.16 installed but pass alone — an order/state dependence in the race suite, not K4TQ
+## Stage B — vegeta-bionic: glove teleoperation, the puppet arm, assistive exoskeletons (2026-11-03)
+The plan is `docs/bionic.md`.
+- [x] B0 the plan and the design decisions (`docs/bionic.md`)
+- [x] B1 `libs/vegeta-bionic` skeleton: hand, sensors, SimGlove, estimate, link (in-process); the risk file (`libs/vegeta-bionic/RISK.md`); 12 tests
+- [x] B2 retarget + vibration feedback + teleop: a scripted hand drives Onager Manus's two pincers in MuJoCo; demonstrations recorded and replayed; latency sweep: ≤ 50 ms round trip for the catch, 500 ms still fine for still grasps
+- [ ] B3 the glove's CAD (printed mounts, three hand sizes); choose the electronics; link over serial/UDP
+- [ ] B4 force feedback in simulation: a brake, then a motor, on the glove's linkages; haptic-loop stability with delay
+- [ ] B5 the puppet arm: a scaled printed copy of the Manus arm with magnetic encoders; teach, record, replay
+- [ ] B6 the whole arm from the glove (wrist IMU + tracker → arm IK)
+- [ ] TODO exoskeleton: grip assist (fingers) — risk file first
+- [ ] TODO exoskeleton: wrist and forearm support (wrist extension)
+- [ ] TODO exoskeleton: elbow and shoulder support (against gravity)
 
 ## Stage V5 — Later: graduations to Piccolo
 - [-] V5.1 Drongo
