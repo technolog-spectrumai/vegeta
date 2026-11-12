@@ -31,3 +31,8 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 | cable_vessel | `subsea_cable.py` `CableVessel` | the 130 m cable-lay and repair vessel: 7000 t carousel, stern chute, jointing container, the trencher's LARS |
 | cable | `subsea_cable.py` `CableSegment` | a 10 m segment of a 3-core 220 kV export cable (0.24 m, 90 kg/m, MBR 4 m) |
 | cable_joint | `subsea_cable.py` `CableJoint` | a rigid universal repair joint with its bend restrictors (96 h to make one) |
+| albatros | `labs/aero/designs/albatros.py` (sized by `albatros_flight`) | Ketos Albatros's aircraft: the 109 kg turbojet transport drone; kind `aircraft`, the speeds, rates and fuel flow of each phase on the card |
+| cargo_hexa | `albatros.py` `part="multirotor"` (`albatros_bay`, `albatros_drop`) | the cargo hexacopter Albatros releases in a pass: 10 kg, the release (height, time, pass height) on the card |
+| emerillon | `emerillon.py` ER2 with `albatros_flood.carrier` | the Émerillon with a 0.5 kg medicine pod, six to a bay; a tail-sitter |
+
+The three aero machines are written by `python labs/aero/designs/albatros_ketos.py exports/ketos [../ketos/models/vegeta]`.

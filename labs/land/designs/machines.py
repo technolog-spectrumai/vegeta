@@ -29,3 +29,8 @@ machines.register("pekari", "pekari_rover_robot:pekari", parts=_pekari_parts, vi
 machines.register("perseus", "perseus_robot:perseus", visual="perseus_rover:PerseusRover")
 machines.register("rover", "rover_robot:rover", visual="rover:Rover")
 machines.register("perseus_mini", "perseus_mini_robot:mini", visual="perseus_rover:PerseusMini")
+# the Pekari family (docs/pekari_pumba.md): Pekari-2M, Pumba and Calydon, arms folded, the deck loaded with the nominal payload
+machines.register("pekari_2m", "pekari_2m_robot:pekari_2m", visual="pekari_2m:Pekari2M")
+machines.register("pumba", "pumba_robot:pumba", visual="pumba:Pumba")
+machines.register("calydon", "calydon_robot:calydon", visual="calydon:Calydon")
+machines.register("timon", "timon_robot:timon", visual="timon:Timon")
