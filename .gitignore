@@ -46,3 +46,12 @@ scenarios/output/
 side_labs/runs/
 side_labs/cache/
 benchmark/*/results/
+
+# K4TQ: drive maps made under the mocks are caches (rebuilt in seconds)
+labs/aero/designs/data/k4tq/drive_*_mock.json
+# K4TQ: the Stage 2 exports (STEP / STL per configuration, the CFD outer mould line) are rebuilt by k4tq_cad.stage2() in minutes
+labs/aero/designs/data/k4tq/cad/k4tq_cruise.*
+labs/aero/designs/data/k4tq/cad/k4tq_hover.*
+labs/aero/designs/data/k4tq/cad/k4tq_folded.*
+labs/aero/designs/data/k4tq/cad/oml/
+labs/aero/designs/data/k4tq/cfd_sections/
