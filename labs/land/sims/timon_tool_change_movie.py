@@ -25,7 +25,12 @@ import timon_tool_change as ttc  # noqa: E402
 OUT = ROOT / "labs" / "land" / "sims" / "output"
 
 
-def render(frames, size=(1280, 720), stills=None):
+CAMERAS = {"front": [(3.6, -1.6, 2.4), (0.35, 1.35, 0.55), (0, 0, 1)],
+           "behind": [(-2.4, 4.6, 2.1), (0.35, 1.45, 0.6), (0, 0, 1)],
+           "top": [(0.4, 1.4, 6.0), (0.4, 1.4, 0.4), (0, 1, 0)]}
+
+
+def render(frames, size=(1280, 720), stills=None, camera="front"):
     import pyvista as pv
     from vegeta.chiron import viz
 
@@ -38,7 +43,7 @@ def render(frames, size=(1280, 720), stills=None):
         mesh = viz._geom_mesh(pv, kind, s)
         col = rgba[:3] if not np.allclose(rgba, [0.5, 0.5, 0.5, 1.0]) else (0.6, 0.6, 0.6)
         actors.append(pl.add_mesh(mesh, color=col, smooth_shading=True, opacity=float(rgba[3]) or 1.0))
-    pl.camera_position = [(3.6, -1.6, 2.4), (0.35, 1.35, 0.55), (0, 0, 1)]
+    pl.camera_position = CAMERAS[camera]
     images, still_imgs = [], {}
     for t, label, geoms in frames:
         for a, (_, _, _, pos, mat) in zip(actors, geoms):
@@ -62,6 +67,7 @@ def render(frames, size=(1280, 720), stills=None):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--fps", type=int, default=25)
+    ap.add_argument("--camera", default="front", choices=tuple(CAMERAS))
     ap.add_argument("--stills", default="", help="comma-separated times [s]: write those frames as PNGs only")
     a = ap.parse_args(argv)
     scene = ttc.Scene()
@@ -70,16 +76,16 @@ def main(argv=None) -> int:
     if a.stills:
         ts = [float(x) for x in a.stills.split(",")]
         fr = [f for f in scene.frames(fps=a.fps) if any(abs(f[0] - x) < 0.5 / a.fps for x in ts)]
-        _, st = render(fr, stills=ts)
+        _, st = render(fr, stills=ts, camera=a.camera)
         for t, img in st.items():
             cv2.imwrite(str(OUT / f"timon_tool_change_{t:04.1f}.png"), img[..., ::-1])
         print("stills:", sorted(st))
         return 0
-    images, _ = render(scene.frames(fps=a.fps))
+    images, _ = render(scene.frames(fps=a.fps), camera=a.camera)
     raw = OUT / "timon_tool_change_raw.mp4"
     from vegeta.chiron import viz
     viz.to_video(images, raw, fps=a.fps)
-    out = OUT / "timon_tool_change.mp4"
+    out = OUT / ("timon_tool_change.mp4" if a.camera == "front" else f"timon_tool_change_{a.camera}.mp4")
     if shutil.which("ffmpeg"):
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "22",
                         "-movflags", "+faststart", str(out)], check=True)
