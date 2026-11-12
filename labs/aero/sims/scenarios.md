@@ -231,3 +231,61 @@ python3 scenarios/kestrel_transitions.py --part2         # + Kestrel-4Q-2 (elevo
 ```
 Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
 transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.
+
+## ÉMERILLON's trade: speed against price
+
+`python labs/aero/sims/emerillon_trade.py [--quick]`. Evaluates every build `emerillon_flight.candidates()` allows (motor ×
+propeller × 6S pack × series/parallel, with the cheapest ESC that fits), prints the front of top speed against price with the
+budget, knee and fastest picks — for any rpm and inside the propeller makers' limits — and writes
+`labs/aero/designs/data/emerillon_trade.json`, which notebook 37 reads. About a minute and a half; no solver, no MuJoCo.
+`--quick` (and the mocks) evaluate a dozen builds and write nothing.
+
+## ÉMERILLON ER1 and ER2: six flights, the altitude and the range questions
+
+`python labs/aero/sims/emerillon_mission.py [--variant ER1 ER2] [--scenario wildfire mountain sea climb palace] [--ceiling] [--quick]`.
+A point-mass simulation with a body axis (`labs/aero/designs/emerillon_mission.py`): the four propellers push along the axis (the
+drive tabulated over altitude, axial airspeed and throttle), the air gives the build-up's axial drag and a normal force on the
+body, the axis slews to where the wanted force points. Times, speeds, energy and margins — not handling. Writes
+`labs/aero/sims/output/emerillon_<variant>_<scenario>.png` and `emerillon_missions.json`.
+
+- `range` — out against a 5 m/s wind to 90 % of the predicted radius of action and back, at the best-range airspeed, 120 m up; flown as
+  built and with the long-range packs (`ef.LONG`, the rows `ER1 high` / `ER2 high`). `--range` prints the analysis alone: power and
+  Wh/km against speed, the range and radius on each pack of the catalogue.
+- `wildfire` — to a fire 2 km out, round the smoke, back and land, at the fastest pace (share of the top speed) that still lands
+  with a 20 % reserve.
+- `mountain` — a target circles a 900 m peak at 520 m and 137 km/h; catch it (12 m), come home. The base is 600 m above the sea.
+- `sea` — a boat at 90 km/h zigzags; catch it from 1.2 km, hold 12 m over it for 5 s, come home; 14 m/s crosswind with gusts.
+- `climb` — to the ceiling target (ER1 4 km, ER2 7 km) at the economy speed, a flat fall with the motors stopped, a catch and a
+  landing; flown as built and with the high-altitude pack (`ef.HIGH`, the rows `ER1 high` / `ER2 high`).
+- `palace` — a full-throttle climb to 1,200 m over Warsaw, a swoop, a slow approach and a landing at 0.8 m/s on the roof of the
+  Palace of Culture and Science beside the spire (an obstacle), in a gusty city wind.
+
+`--ceiling` prints the altitude analysis alone: the economy climb's energy against each pack of the catalogue.
+
+## The air match: two Émerillons, two hoops, balloons (MuJoCo; branch `dev_air_match`)
+
+`python labs/aero/sims/emerillon_air_match.py [--seed 1] [--duration 60] [--variants ER2 ER2] [--balloons 8] [--plain] [--over]
+[--series N] [--no-video] [--camera grandstand] [--quick]`. A 1 v 1 match in MuJoCo (`labs/aero/sims/air_match/`): a point for
+flying through the other side's hoop (a ring of 0.9 m radius on a 2 m stick); with the token (the default) only its carrier scores
+and the other takes it by flying within 2 m of the carrier for 0.35 s without touching; a contact with the other aircraft or a
+balloon is a foul, with the ground or a hoop a crash, and both cost 3 s at the start. `--plain` drops the token (a race to the
+hoops), `--over` scores by flying over the hoop instead of through it. Writes `labs/aero/sims/output/air_match_<seed>.png` (the
+tracks, the events, who held the token), `.mp4` (a replay from above and from the side) and `.json`; `--camera` adds a MuJoCo
+camera video where OpenGL exists (`MUJOCO_GL=egl`). `--series N` prints N matches' results.
+
+`--mode formation` (step 2): seven Émerillons chase a hare round a racetrack through both hoops in formation — a wedge on the
+straights, a column that follows the leader's path through the turns and single file through the rings; the swarm algorithms are
+Nomios's (`air_match/swarm.py`). `--mode chase3` and `--mode chase7` (steps 3 and 4): a group token chase, every aircraft for itself
+— a point per second carrying the token, five for a hoop flown through with it, a tag takes it. They write
+`air_formation_<seed>` / `air_chase3_<seed>` / `air_chase7_<seed>` `.png`, `.mp4`, `.json`.
+
+`--mode circus`: seven Émerillons, each its own agent with its own racing strategy, race three laps anticlockwise round a stadium
+on the Circus Maximus's plan at 0.4 scale (a 134 m spina with a turning post at each end), through balloons that drift with a
+5 m/s wind and come back in upwind. A contact or leaving the field costs a restart from the last gate and 2 s. `--tournament N`
+races the seven strategies N times with the grid turned each race and prints wins, mean place, times, best laps and faults per
+strategy (`--wind 0`, `--wind 9` for other air; `--laps`). Writes `air_circus_<seed>.png/.mp4/.json` and
+`air_circus_tournament[_wind<x>].json`.
+The circus race's second round: a slipstream behind every aircraft (`--no-slipstream` to switch it off), a field of four fixed and
+three adaptive strategies (`--field fixed` for the seven fixed ones), and `--gusts` for a wind whose speed and direction change
+during the race with gust fronts passing through.
+
