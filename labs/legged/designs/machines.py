@@ -49,3 +49,9 @@ machines.register("monster_wraith", "monster_robots:wraith", parts=_motions("mon
                   visual="monsters:Wraith")
 machines.register("monster_ghoul", "monster_robots:ghoul", parts=_motions("monster_motions:parts_ghoul"),
                   visual="monsters:Ghoul")
+
+# fantasy objects (design stage: CAD, materials, a rigid body each; the chest's lid hinges)
+for _obj, _cls in (("chest", "Chest"), ("crate", "Crate"), ("sword", "Sword"), ("shield", "Shield"), ("coin", "Coin"),
+                   ("amulet", "Amulet"), ("elixir_flask", "ElixirFlask")):
+    machines.register(f"fantasy_{_obj}", f"fantasy_robots:{_obj}", parts=_motions(f"fantasy_robots:parts_{_obj}"),
+                      visual=f"fantasy_objects:{_cls}")
