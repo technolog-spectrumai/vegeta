@@ -30,7 +30,7 @@ CAMERAS = {"front": [(3.6, -1.6, 2.4), (0.35, 1.35, 0.55), (0, 0, 1)],
            "top": [(0.4, 1.4, 6.0), (0.4, 1.4, 0.4), (0, 1, 0)]}
 
 
-def render(frames, size=(1280, 720), stills=None, camera="front"):
+def render(frames, size=(1280, 720), stills=None, camera="front", note="kinematic animation: Timon services Pumba"):
     import pyvista as pv
     from vegeta.chiron import viz
 
@@ -51,7 +51,7 @@ def render(frames, size=(1280, 720), stills=None, camera="front"):
             M[:3, :3], M[:3, 3] = mat, pos
             a.user_matrix = M
         pl.add_text(f"{label}", position="upper_left", font_size=12, color="black", name="label")
-        pl.add_text(f"t = {t:4.1f} s   (kinematic animation: Timon services Pumba)", position="lower_left",
+        pl.add_text(f"t = {t:5.1f} s   ({note})", position="lower_left",
                     font_size=8, color="#333333", name="time")
         pl.render()
         img = np.asarray(pl.screenshot(return_img=True))[..., :3].copy()
@@ -68,9 +68,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--fps", type=int, default=25)
     ap.add_argument("--camera", default="front", choices=tuple(CAMERAS))
+    ap.add_argument("--physics", action="store_true",
+                    help="the MuJoCo dynamics run (designs/timon_service_sim.py), played at --speed x")
+    ap.add_argument("--speed", type=float, default=4.0)
     ap.add_argument("--stills", default="", help="comma-separated times [s]: write those frames as PNGs only")
     a = ap.parse_args(argv)
-    scene = ttc.Scene()
+    scene = None if a.physics else ttc.Scene()
     OUT.mkdir(parents=True, exist_ok=True)
     import cv2
     if a.stills:
@@ -81,11 +84,22 @@ def main(argv=None) -> int:
             cv2.imwrite(str(OUT / f"timon_tool_change_{t:04.1f}.png"), img[..., ::-1])
         print("stills:", sorted(st))
         return 0
-    images, _ = render(scene.frames(fps=a.fps), camera=a.camera)
+    if a.physics:
+        import timon_service_sim as tss
+        sim = tss.ServiceSim(fps=a.fps / a.speed)
+        res = sim.run()
+        for e in res["events"]:
+            print("  ", e)
+        print("  errors:", res["errors"])
+        images, _ = render(res["frames"], camera=a.camera,
+                           note=f"MuJoCo dynamics, both robots, {a.speed:g}x speed")
+    else:
+        images, _ = render(scene.frames(fps=a.fps), camera=a.camera)
     raw = OUT / "timon_tool_change_raw.mp4"
     from vegeta.chiron import viz
     viz.to_video(images, raw, fps=a.fps)
-    out = OUT / ("timon_tool_change.mp4" if a.camera == "front" else f"timon_tool_change_{a.camera}.mp4")
+    stem = "timon_tool_change" + ("_physics" if a.physics else "") + ("" if a.camera == "front" else f"_{a.camera}")
+    out = OUT / f"{stem}.mp4"
     if shutil.which("ffmpeg"):
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "22",
                         "-movflags", "+faststart", str(out)], check=True)

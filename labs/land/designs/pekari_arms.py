@@ -372,6 +372,11 @@ def links(arm: ArmSpec, prefix: str, shoulder: tuple, *, jaw_mu: float = 0.7, rg
                  role="link", friction=fr, rgba=(0.85, 0.35, 0.08, 1.0)),
             Geom(f"{prefix}saw_bar", "box", (saw.bar_length / 2, 0.0025, 0.035), pos=(body + saw.bar_length / 2, 0.0, 0.0),
                  mass=None, role="link", friction=(0.4, 0.005, 0.0001), rgba=steel)])
+    elif "grip" not in arm.drives:                         # a bare coupler plate: the tool is a body of its own
+        plate = max(arm.tool - t_mod, 0.01)
+        hand = Link(f"{prefix}hand", pos=(t_mod, 0.0, 0.0), joints=roll_joint, geoms=[
+            Geom(f"{prefix}coupler", "box", (plate / 2, fw * 0.7, fd * 0.7), pos=(plate / 2, 0.0, 0.0),
+                 mass=arm.gripper_kg, role="link", friction=fr, rgba=dark)])
     else:
         palm_len = max(arm.tool - arm.jaw_length - t_mod, 0.02)
         jaw_kg = 0.15 * arm.gripper_kg
@@ -481,6 +486,8 @@ TOOLS = {
                                "(1.5 kg, assumed); fed from the 48 V bus through a converter"),
     "pruning saw 0.6 kW": _saw_tool("pruning saw 0.6 kW", "mini chainsaw 0.6 kW, 20 V", "iso", 0.4,
                                     "Perseus Mini's saw (15 cm bar) on an ISO 9409 flange plate (0.4 kg, assumed)"),
+    "quick coupler": Tool("quick coupler", "coupler", 1.2, 0.03, "qc",
+                          source="the bare coupler plate (no tool): the tools are separate bodies (timon_service_sim)"),
     "parallel gripper": Tool("parallel gripper", "gripper", 0.55, 0.11, "iso", drive="smart servo 12 Nm",
                              jaw_length=0.09, grip_gains=(15.0, 0.4, 0.001),
                              source="Pekari-2M's gripper: bought parallel gripper, 80 mm stroke"),
