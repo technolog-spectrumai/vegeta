@@ -96,6 +96,12 @@ are not simulated.
 
 ![Timon changes Pumba's tool](figures/timon_tool_change.png)
 
+**In physics** (`--physics`, `designs/timon_service_sim.py`): both robots in one MuJoCo world under gravity, servos
+limited by their torque curves, the tools as free bodies (grab 7.2 kg, chainsaw 8 kg). The coupler latch and Timon's
+grip are welds that switch on only within tolerance. The tools ride in a **basket** on Timon's rear (two slots),
+held only by contact: the chainsaw stands in it at the start, and Timon drops the removed grab into its slot.
+The saw latches 2.9 mm, 0.05° off (allowed 5 mm, 3°).
+
 ## Open
 
 - **Not measured:** the spade's hold in soil, the band track's mass, the docking accuracy, and the modules'
