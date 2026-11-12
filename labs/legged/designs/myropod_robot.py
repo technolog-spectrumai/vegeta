@@ -855,3 +855,10 @@ if __name__ == "__main__":  # pragma: no cover
         r = cleopatra(t)
         print(f"{t:13s} {r.total_mass():.4f} kg, {len(r.actuated_joints())} servos, body joints "
               f"{[(j.name, j.stiffness, j.damping) for j in r.joints() if j.servo is None]}")
+
+
+def cleopatra_cad(**overrides):
+    """Cleopatra's CAD (its looks in the export): the Myropod design at notebook 18's ``CLEO_MM`` (the design's own
+    defaults are Persephone's)."""
+    import myropod
+    return myropod.Myropod().generate(**{**CLEO_MM, **overrides})
