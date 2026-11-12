@@ -8,7 +8,7 @@ libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ─
 
 | lab | what | machines |
 |---|---|---|
-| [aero](aero/README.md) | what flies: fixed-wing, VTOL (Kestrel), multirotors, propulsion, the races | Nisus, Nisus+, Falco, Merlin, Peregrine, Aguya, Velutina, Drongo, Kestrel |
+| [aero](aero/README.md) | what flies: fixed-wing, VTOL (Kestrel), multirotors, propulsion, the races | Nisus, Nisus+, Falco, Merlin, Peregrine, Aguya, Velutina, Drongo, Kestrel, Emerillion |
 | [land](land/README.md) | what rolls and tracks | Onager (Sentinel, Atlas, Manus, Sweeper), Pekari, Perseus, Rover |
 | [legged](legged/README.md) | what walks | Robot dog, Myropods (Cleopatra, Persephone, Apheloria), the benchmarks |
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine |
@@ -16,6 +16,7 @@ libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ─
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine, Scampi, Echensis, Cyclopterus, Nephro, Squilla, Shrimp |
 | [plasma](plasma/README.md) | what pushes air without blades: ion-ring thrusters on `vegeta-fulgur` | Halka |
 | [plasma](plasma/README.md) | what pushes gas without blades: ion-ring thrusters in air, Hall thrusters in vacuum, on `vegeta-fulgur` | Halka, Gyrus |
+| [marine](marine/README.md) | what floats and dives | Survey boat, Submarine, Scampi, Echensis, Cyclopterus, Nephro, Squilla, Shrimp, Mysis, Walrus, Dolphin |
 | [studio](studio/README.md) | the tools themselves: tutorials, the workbench, AI design | — |
 
 The rules (`python tools/labs.py check`, in smoke): a lab imports `libs/` and itself, never another lab; nothing
