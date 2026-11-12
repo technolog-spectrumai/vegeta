@@ -46,6 +46,111 @@
    "sha256": "664e4f2245f7dcda7d6cd2b7745a0f223ddd7a7283e630661bc207fd7c569649",
    "visual_triangles": 4316
   },
+  "fantasy_amulet": {
+   "bytes": 200247,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_amulet.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 0.0926,
+   "sha256": "9e22b1475d020d8a224e99381990cdcc8c0b59480d2333c5f3ab5f38d54a75fa",
+   "visual_triangles": 4256
+  },
+  "fantasy_chest": {
+   "bytes": 114558,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "fantasy_chest.yx2",
+   "joints": 1,
+   "lab": "legged",
+   "links": 2,
+   "mass_kg": 32.7836,
+   "sha256": "52bf5e56b542bad628438f47852314b82b5c744036c05433a020776622620c3e",
+   "visual_triangles": 1736
+  },
+  "fantasy_coin": {
+   "bytes": 284024,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_coin.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 0.0198,
+   "sha256": "11984f9f23afdcc2ce36e6803f4127c993bc7b68868e8fb7798e9ca3551c3b9a",
+   "visual_triangles": 4548
+  },
+  "fantasy_crate": {
+   "bytes": 101061,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_crate.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 11.0086,
+   "sha256": "9e0307acc263541da7eba1f84c0f17791895cc8394461b9de42ba7db7b8a8737",
+   "visual_triangles": 1808
+  },
+  "fantasy_elixir_flask": {
+   "bytes": 274574,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_elixir_flask.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 0.7984,
+   "sha256": "14187720980159dc2238518452b4eb9a01f047b2aecb3d820c7ed0483d01accc",
+   "visual_triangles": 5938
+  },
+  "fantasy_shield": {
+   "bytes": 160233,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_shield.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 6.4787,
+   "sha256": "c11ae20b27087117ff2a50f2ae409bf3ae258cff1533686938065aa5cac63499",
+   "visual_triangles": 2706
+  },
+  "fantasy_sword": {
+   "bytes": 173513,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fantasy_sword.yx2",
+   "joints": 0,
+   "lab": "legged",
+   "links": 1,
+   "mass_kg": 1.8571,
+   "sha256": "84fcb8f75ae60353d0d5bdab411bcac5d717df1a0f645d49ef054662e77baa9a",
+   "visual_triangles": 4134
+  },
   "humanoid": {
    "bytes": 324045,
    "consumers": {
@@ -392,10 +497,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-10-29T10:57:46Z",
+ "published": "2026-10-29T19:44:54Z",
  "vegeta": {
-  "branch": "dev_monsters",
-  "commit": "700bff18cc648e747180b6681c58a23cd6eea57d",
+  "branch": "dev_fantasy_objects",
+  "commit": "95dfa1a96d7ba2e0eb2c6a0ed42a10b63eb3aa1d",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
