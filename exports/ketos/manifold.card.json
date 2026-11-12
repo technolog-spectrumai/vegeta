@@ -1,0 +1,123 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "manifold",
+ "kind": "structure",
+ "parts": [
+  {
+   "model": "manifold_frame",
+   "color": [
+    0.957,
+    0.816,
+    0.247
+   ]
+  },
+  {
+   "model": "manifold_panel",
+   "color": [
+    0.18,
+    0.525,
+    0.757
+   ]
+  }
+ ],
+ "size": [
+  12.0,
+  8.0,
+  4.0
+ ],
+ "valves": [
+  {
+   "id": "V1",
+   "p": [
+    -3.0,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 18,
+   "open": true
+  },
+  {
+   "id": "V2",
+   "p": [
+    -1.8,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 20,
+   "open": false
+  },
+  {
+   "id": "V3",
+   "p": [
+    -0.6,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 22,
+   "open": true
+  },
+  {
+   "id": "V4",
+   "p": [
+    0.6,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 18,
+   "open": false
+  },
+  {
+   "id": "V5",
+   "p": [
+    1.8,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 20,
+   "open": true
+  },
+  {
+   "id": "V6",
+   "p": [
+    3.0,
+    -4.25,
+    1.6
+   ],
+   "kind": "class4",
+   "torque_Nm": 2700,
+   "turns": 22,
+   "open": false
+  }
+ ],
+ "hot_stabs": [
+  {
+   "id": "HS1",
+   "p": [
+    -3.0,
+    -4.25,
+    2.6
+   ],
+   "kind": "hot_stab"
+  },
+  {
+   "id": "HS2",
+   "p": [
+    -1.5,
+    -4.25,
+    2.6
+   ],
+   "kind": "hot_stab"
+  }
+ ]
+}

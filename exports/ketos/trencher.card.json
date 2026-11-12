@@ -1,0 +1,243 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "trencher",
+ "kind": "trencher",
+ "parts": [
+  {
+   "model": "trencher_frame",
+   "color": [
+    0.204,
+    0.286,
+    0.369
+   ]
+  },
+  {
+   "model": "trencher_foam",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  },
+  {
+   "model": "trencher_thrusters",
+   "color": [
+    0.133,
+    0.133,
+    0.133
+   ]
+  },
+  {
+   "model": "trencher_swords",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  },
+  {
+   "model": "trencher_tracks",
+   "color": [
+    0.106,
+    0.149,
+    0.192
+   ]
+  }
+ ],
+ "size": [
+  8.0,
+  5.0,
+  3.6
+ ],
+ "mass_kg": 16000.0,
+ "displacement_L": 12800.0,
+ "net_buoyancy_kg": -2880.0,
+ "cd": [
+  1.0,
+  1.1,
+  1.2
+ ],
+ "thrusters": [
+  {
+   "at": [
+    3.2,
+    1.9,
+    1.7
+   ],
+   "axis": [
+    0.7071,
+    -0.7071,
+    0.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    3.2,
+    -1.9,
+    1.7
+   ],
+   "axis": [
+    0.7071,
+    0.7071,
+    0.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    -3.2,
+    1.9,
+    1.7
+   ],
+   "axis": [
+    0.7071,
+    0.7071,
+    0.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    -3.2,
+    -1.9,
+    1.7
+   ],
+   "axis": [
+    0.7071,
+    -0.7071,
+    0.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    2.0,
+    1.25,
+    2.8
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    2.0,
+    -1.25,
+    2.8
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    -2.0,
+    1.25,
+    2.8
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 6000.0
+  },
+  {
+   "at": [
+    -2.0,
+    -1.25,
+    2.8
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 6000.0
+  }
+ ],
+ "thruster_W": 37500,
+ "battery_Wh": null,
+ "power": "umbilical",
+ "power_W": 915000.0,
+ "jet_W": 600000.0,
+ "hotel_W": 15000.0,
+ "max_depth_m": 1000.0,
+ "transit_speed_m_s": 0.6,
+ "on_tracks_N": 28253,
+ "trench_width_m": 0.5,
+ "sword_depth_m": 3.0,
+ "max_trench_speed_m_h": 600.0,
+ "jet_eff": 0.45,
+ "soils": {
+  "sand": {
+   "specific_kJ_m3": 2500.0,
+   "max_depth_m": 3.0
+  },
+  "silt": {
+   "specific_kJ_m3": 1800.0,
+   "max_depth_m": 3.0
+  },
+  "soft_clay": {
+   "specific_kJ_m3": 6000.0,
+   "max_depth_m": 2.0
+  },
+  "stiff_clay": {
+   "specific_kJ_m3": 15000.0,
+   "max_depth_m": 0.8
+  },
+  "rock": {
+   "specific_kJ_m3": null,
+   "max_depth_m": 0.0
+  }
+ },
+ "trench_m_h": {
+  "sand": {
+   "1.0": 600.0,
+   "1.5": 518.4,
+   "2.0": 388.8,
+   "3.0": 259.2
+  },
+  "silt": {
+   "1.0": 600.0,
+   "1.5": 600.0,
+   "2.0": 540.0,
+   "3.0": 360.0
+  },
+  "soft_clay": {
+   "1.0": 324.0,
+   "1.5": 216.0,
+   "2.0": 162.0,
+   "3.0": 0.0
+  },
+  "stiff_clay": {
+   "1.0": 0.0,
+   "1.5": 0.0,
+   "2.0": 0.0,
+   "3.0": 0.0
+  },
+  "rock": {
+   "1.0": 0.0,
+   "1.5": 0.0,
+   "2.0": 0.0,
+   "3.0": 0.0
+  }
+ },
+ "tether": {
+  "length_m": 1200.0,
+  "diameter_m": 0.06,
+  "cd": 1.2,
+  "from": "vessel"
+ },
+ "resident": false,
+ "price_eur": 9000000.0,
+ "day_rate_eur": 30000.0
+}

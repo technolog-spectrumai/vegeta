@@ -1,0 +1,56 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "echensis",
+ "kind": "crawler",
+ "parts": [
+  {
+   "model": "echensis_body",
+   "color": [
+    0.086,
+    0.627,
+    0.522
+   ]
+  },
+  {
+   "model": "echensis_tracks",
+   "color": [
+    0.133,
+    0.133,
+    0.133
+   ]
+  },
+  {
+   "model": "echensis_head",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  1.56,
+  1.01,
+  0.42
+ ],
+ "mass_kg": 98.7,
+ "displacement_L": 94.34,
+ "crawl_speed_m_s": 0.25,
+ "clean_width_m": 0.95,
+ "capture_efficiency": 0.9,
+ "adhesion_N": 6700.0,
+ "clean_power_W": 3226.8,
+ "hotel_W": 240.0,
+ "tether": {
+  "length_m": 60.0,
+  "diameter_m": 0.12,
+  "cd": 1.2
+ },
+ "probes": [
+  "ut",
+  "cp"
+ ],
+ "swim_speed_m_s": 0.5,
+ "price_eur": 240000
+}
