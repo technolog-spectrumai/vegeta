@@ -4,13 +4,13 @@
 # OpenFOAM, PrusaSlicer and XFOIL refused if anything tries to start them); the Anthropic key is hidden.
 #
 # Usage: ./user_tests.sh [SECTION|LAB ...] [--no-sims] [--notebooks] [-v] [--python EXE]
-#   (none)       env layout smoke libs aero land legged marine studio export      (~15-30 min)
+#   (none)       env layout smoke libs aero land legged marine space studio export      (~15-30 min)
 #   env          versions, git commit, the imports
 #   layout       tools/labs.py: the lab rules (libs never import labs, labs never each other, nothing imports exp/)
 #                and every machine's lifecycle stage
 #   smoke        ./test.sh --smoke (imports, CLIs, boundaries, goldens, Yax export)                         (~1 min)
 #   libs         the libraries' own tests: vegeta-cli tools, core, ai, fidia, ogma, labkit, Ozaru, Yax
-#   aero land legged marine studio
+#   aero land legged marine space studio
 #                one lab: its tests (not the slow ones), then its sims/ scripts (mocked: movies of a few frames)
 #   export       every registered machine through Yax to USD (tools/export.py), Drongo with its rotors
 #   notebooks    every lab's notebooks/ headless (also with --notebooks)                      (long)
@@ -25,7 +25,7 @@ while [ $# -gt 0 ]; do
     --notebooks) NOTEBOOKS=1; shift ;; -h|--help) sed -n '2,21p' "$0"; exit 0 ;; *) SECTIONS+=("$1"); shift ;;
   esac
 done
-[ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(env layout smoke libs aero land legged marine studio export)
+[ ${#SECTIONS[@]} -eq 0 ] && SECTIONS=(env layout smoke libs aero land legged marine space studio export)
 [ "$NOTEBOOKS" -eq 1 ] && SECTIONS+=(notebooks)
 if [ -z "$PY" ]; then
   if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
@@ -109,7 +109,7 @@ sec_export() {
 }
 
 sec_notebooks() {
-  for lab in aero land legged marine studio; do
+  for lab in aero land legged marine space studio; do
     hdr "lab $lab: notebooks/ (mocked)"
     timed "$PY" tools/lab.py run "$lab" notebooks; mark $? "$lab notebooks"
   done
@@ -119,7 +119,7 @@ for s in "${SECTIONS[@]}"; do
   case "$s" in
     env) sec_env ;; layout) sec_layout ;; smoke) sec_smoke ;; libs) sec_libs ;; export) sec_export ;;
     notebooks) sec_notebooks ;;
-    aero|land|legged|marine|studio) sec_lab "$s" ;;
+    aero|land|legged|marine|space|studio) sec_lab "$s" ;;
     *) echo "unknown section: $s (see ./user_tests.sh --help)"; status=1 ;;
   esac
 done

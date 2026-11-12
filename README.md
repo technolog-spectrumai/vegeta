@@ -529,7 +529,7 @@ libs/              the common layer — never imports labs/
   labkit/            what every lab uses (`vegeta.labkit`): the notebook bootstrap, the machine registry, shared
                      controllers and kinematics, generic CAD parts
 labs/              one per domain; a lab imports libs/ and itself, never another lab (tools/labs.py check)
-  aero/  land/  legged/  marine/  studio/
+  aero/  land/  legged/  marine/  space/  studio/
     notebooks/ designs/ sims/ campaigns/ exp/ common/ tests/   README.md (its machines' stages), lab.toml
 tools/             lab.py (test, run, new-exp, promote, demote, export, readme), labs.py (the rules, the stages),
                    export.py (to Piccolo through Yax), run_scenario.py, the anatomy (dump_ast, ast_report, graph_metrics)
