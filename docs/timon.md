@@ -87,6 +87,15 @@ Timon sits between Perseus (181 kg, 0.87 m wide) and Pumba (236 kg, 1.08 m wide)
   scenario P2 fails in the control room, and that recovery would be cancelled as unreachable. Recovery from
   confined spaces needs a Pekari-2M-size machine with a tow line.
 
+## The tool change, animated
+
+`sims/timon_tool_change_movie.py` (`designs/timon_tool_change.py`): Timon docks beside Pumba, steadies its wrist with
+the second hand, takes the grab off Pumba's coupler into its rack and fits the chainsaw. It is a kinematic animation
+of both Chiron models (IK, then MuJoCo forward kinematics). The latch, the contacts and the masses during the handover
+are not simulated.
+
+![Timon changes Pumba's tool](figures/timon_tool_change.png)
+
 ## Open
 
 - **Not measured:** the spade's hold in soil, the band track's mass, the docking accuracy, and the modules'
