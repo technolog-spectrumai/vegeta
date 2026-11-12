@@ -8,7 +8,7 @@ numpy only, SI units, organised by physics, never by machine (README.md). Submod
 import importlib
 
 __version__ = "0.1.0"
-_MODULES = ("units", "frames", "mass", "gears", "soil", "tracks", "cutting", "actuators", "motors", "batteries", "atmosphere", "wind",
+_MODULES = ("units", "frames", "mass", "gears", "soil", "tracks", "cutting", "actuators", "motors", "batteries", "atmosphere", "stratosphere", "lifting_gas", "solar", "envelope", "wind",
             "propulsion", "rotors", "aero", "mujoco", "cad", "gazebo")
 
 

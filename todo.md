@@ -96,3 +96,101 @@ Legend: `[ ]` open · `[x]` done · `[-]` deferred
 - [-] V5.2 Nisus / Nisus+ / Falco (+ `vegeta.mission` → Piccolo's `onboard`)
 - [-] V5.3 The Onager series, Pekari, Perseus
 - [-] V5.4 The robot dog and the Myropods (Chiron and MuJoCo leave Vegeta with them)
+
+## Stage V8 — Strato: a solar-electric stratospheric airship (HAPS), branch `dev_strato` (2026-10-26)
+Approved 2026-10-26: physics in Ogma, SciPy optimiser, the 15 m demonstrator reported as it is, built-in wind
+climatology; GaAs array baseline, CIGS alternative. Assumptions and the verified/estimate table: `labs/aero/designs/STRATO.md`.
+Question: can a solar-electric, helium-filled airship hold station at 18–22 km over Europe for weeks or months with a
+communications or observation payload, which engineering factor limits it, and which configurations are feasible?
+Vegeta does the engineering only (geometry, physics, energy, sizing, optimisation); station-keeping *control* and
+autonomy belong to Piccolo — here station-keeping is a power/airspeed budget against a wind profile, not a controller.
+
+Inspection (what is reused, what is missing):
+- Reused: `og.mass.Budget` (mass, CG, inertia), `og.batteries` (cells/packs), `og.propulsion` / `vegeta.boreas` (BEMT
+  props at low Re), `og.aero.cf_turbulent` (skin friction), `og.wind.Wind` (turbulence and gusts on top of a profile),
+  `og.units`, Dedalus `Design`/`Parameter` (CadQuery → STEP/STL), `dedalus.viz.plot3d` (pyvista), `dedalus.export_yax`
+  (Yax `.yx2` for Piccolo later), Vegeta Core revisions for recorded studies; Talos (CalculiX) for the solid fin /
+  gondola-frame FEA and Aeromant (OpenFOAM) for one hull-drag CFD check — both only where the solvers are installed
+  (neither is in this container: those steps are written and tested on mocks, results NOT RUN until run on a workstation).
+- Missing: `og.atmosphere` is the troposphere only (linear lapse; wrong above 11 km); no gravity vs altitude, no
+  lifting-gas, solar, envelope or stratospheric-wind model; no generic optimiser (the races' PSO/GPS/CMA strategies in
+  `labs/aero/sims/races/` are bound to autopilot settings and lap scores, so the study gets a small generic wrapper).
+- Fidia (AI modelling) is not needed; Mellonia/Atropos do not apply at airship scale.
+
+Layout (stratosphere physics in its own files; verified physics separated from estimates):
+- Ogma, verified physics with tests pinned to published reference values:
+  `ogma/stratosphere.py` (US Standard Atmosphere 1976, 0–86 km, geopotential altitude, T/p/ρ/μ/a, ΔT offsets for hot
+  and cold days, g(h) = g0·(Rₑ/(Rₑ+h))²), `ogma/lifting_gas.py` (He/H₂ ideal gas, purity, gross/net lift, superheat,
+  sealed superpressure vs vented zero-pressure, pressure height, ballonet fraction), `ogma/solar.py` (solar position,
+  day length, extraterrestrial irradiance with orbit eccentricity, clear-sky beam/diffuse transmittance above the
+  tropopause, incidence on a curved hull patch), `ogma/envelope.py` (thin-shell membrane stresses of a pressurised body
+  of revolution — hoop/meridional, bending from lift/weight distribution — laminate catalogue with sources).
+  `og.atmosphere` stays as it is (its goldens unchanged); `og.stratosphere` agrees with it below 11 km (test).
+- Aero lab, design models (estimates marked as such in each docstring and in `STRATO.md`):
+  `designs/strato.py` (Dedalus CAD: hull, fins, gondola/payload bay, solar array, propellers, battery bay — `part=`
+  selects), `strato_geometry.py` (hull profiles: ellipsoid, NPL/Gertler-58-like 4-parameter profile, Zeppelin-like
+  ogive; volume, area, CB, solar patch area — analytic, checked against the CAD), `strato_mass.py` (`og.mass.Budget`
+  from areal densities and specific powers), `strato_aero.py` (hull drag vs fineness and Re — Hoerner/Young volumetric
+  Cd; fins, gondola, interference; Munk moment and fin stability, added mass), `strato_thermal.py` (gas superheat: solar
+  absorption, IR exchange with Earth and sky, convection; day/night gas temperature), `strato_energy.py` (PV with
+  temperature derating, MPPT, battery charge/discharge, hotel + payload loads, propulsive power from Boreas props),
+  `strato_wind.py` (stratospheric wind climatology by month and latitude for 40–60°N — the summer ~20 km wind minimum;
+  values from published ERA5-based studies, cited, marked estimate), `strato_flight.py` (ascent ODE, float
+  equilibrium, station-keeping), `strato_feasibility.py` (constraints → structured verdict with every rejection reason),
+  `strato_study.py` (sweeps, optimisation, Pareto); `sims/strato_mission.py` (multi-day endurance runner);
+  `campaigns/strato/` (scripted study runs writing JSON/CSV/HTML/PNG); `notebooks/37_strato.ipynb`; `designs/STRATO.md`
+  (assumptions, sources, verified vs estimate table).
+
+Tasks:
+- [x] V8.0 `dev_strato` branch; this plan; the answers folded in
+- [x] V8.1 `og.stratosphere`: USSA-1976 layers to 86 km, geopotential ↔ geometric altitude, gravity vs altitude;
+  tests vs the USSA-1976 tables (e.g. 20 km: 216.65 K, 5474.9 Pa, 0.08803 kg/m³) and vs `og.atmosphere` below 11 km
+- [x] V8.2 `og.lifting_gas`: buoyancy, sealed vs vented, superheat, ballonet / pressure height; tests by hand
+  calculation and conservation (mass of gas constant when sealed; vented loses gas above pressure height)
+- [x] V8.3 `og.solar`: solar position (NOAA algorithm), irradiance on tilted/curved surfaces; tests vs NOAA calculator
+  values for given dates and latitudes, day length at solstices/equinoxes
+- [x] V8.4 `og.envelope`: membrane stresses, required thickness for a safety factor, laminate catalogue; tests vs
+  closed-form cylinder/sphere results
+- [x] V8.5 (`designs/strato.py`, `strato_geometry.py`, `campaigns/strato/cad.py`, `viewer.py` — three.js page, `tests/test_strato_cad.py`) Parametric geometry + CAD: 15 m × 3.5 m demonstrator (fineness 4.3), scaling to 30–80 m (scale by length
+  with fineness free); STEP/STL/glTF; interactive 3D (pyvista in the notebook, a self-contained HTML viewer for the
+  report); analytic volume/area within 0.5 % of the CAD measurement (test)
+- [x] V8.6 (`strato_design.py`) Mass budget and CG/CB, trim ballast; stability (CB above CG, metacentric height, fin volume vs Munk moment)
+- [x] V8.7 (`strato_aero.py`; the Aeromant case NOT RUN: no OpenFOAM here) Aerodynamics: hull + appendage drag vs Re at altitude; validation vs published wind-tunnel drag of airship
+  hulls (Hoerner, Akron/ZRS-4 model) within the stated band; one Aeromant RANS case template (NOT RUN here)
+- [x] V8.8 (`strato_thermal.py`) Thermal: gas superheat day/night and its effect on lift and superpressure
+- [x] V8.9 (`strato_sim.day_cycle`, `availability`) Energy: PV + battery + loads over 24 h by date and latitude; energy-closure verdict; seasonal maps 40–60°N
+- [x] V8.10 (`strato_wind.py`, `strato_sim`) Wind and station-keeping: monthly profile 15–25 km, required airspeed and propulsive power, % time on
+  station, best altitude per month
+- [x] V8.11 (`strato_sim`: `day_cycle`, `endurance`, `ascent`; campaign stages detail/sweeps/constraints) Simulations: ascent 0 → 20 km (sealed and vented), float equilibrium, day/night cycles, wind disturbance
+  (profile + `og.wind` turbulence/gusts), payload and altitude sensitivity, structural and thermal limits, multi-day
+  endurance (power, SOC, altitude, superpressure, position drift)
+- [x] V8.12 (`strato_feasibility.py`) Feasibility gate: reject designs that do not float (lift < mass), overstress the envelope, cannot close the
+  24 h energy balance, cannot exceed the wind, are statically unstable, or need negative masses/areas — every reason
+  reported, nothing silently clipped
+- [x] V8.13 (`strato_study.py`: SciPy differential evolution + payload polish, Sobol sampling, non-dominated filter) Optimisation: design vector (length, fineness, solar coverage, battery energy, propulsion power, float
+  altitude, payload) → objectives (endurance/station-keeping %, payload ↑; mass, drag, energy ↓) under the feasibility
+  constraints; single-objective by the chosen optimiser, Pareto fronts by non-dominated sorting of a sampled/evolved
+  population; seeds fixed, runs reproducible
+- [x] V8.14 (`campaigns/strato/run.py`, `report.py` → `results/report.md`; notebook `37_strato.ipynb`) Outputs: 15/30/50/80 m comparison table, mass and energy budgets, sweeps, Pareto fronts, feasibility report
+  (Markdown + HTML), the notebook; every number written by a run, none typed in by hand
+- [x] V8.15 (`libs/ogma/tests/test_{stratosphere,lifting_gas,solar,envelope}.py`; `labs/aero/tests/test_strato_{cad,models,golden,campaign}.py`) Tests: Ogma unit tests in `libs/ogma/tests`, lab tests in `labs/aero/tests/test_strato*.py` (mocks, fast,
+  added to smoke), regression goldens for the four reference designs; `./test.sh --smoke` green; existing goldens
+  unchanged
+- [x] V8.16 `STRATO.md`: assumptions, sources, the verified/estimate split, the conclusion and the limiting factors
+- [ ] V8.18 **Strato-Sigma** (2026-10-26): the smallest Strato for imaging only — a daylight EO camera + a downlink to a
+  ground station (no relay to aircraft; ~4.5 kg, 50 W by day, 0 W at night), summer (Jun–Aug, 50°N), on station ≥ 90 %
+  of days, ≥ 60 days of gas: `Design.payload_power_night`, `strato_study.smallest_length`, campaign stage `sigma`
+  (`results/sigma.json`, `sigma.png`, `cad/strato_sigma_<L>m.step` and parts, report section)
+- [x] V8.19 **Zeppelin-Micro** (2026-10-26): the cheapest maritime imaging airship at a few hundred metres — daylight
+  camera + video link, hours per deployment; tethered aerostat vs free-flying micro blimp, sized against a design sea
+  wind, cost vs operability; with and without a thermal camera (`designs/zeppelin_micro.py`, `campaigns/strato/zeppelin_micro_study.py`, `tests/test_zeppelin_micro.py`;
+  Dedalus `with_*` switches and a `tether` part for the aerostat CAD)
+- [x] V8.20 Campaign complete; conclusions in `labs/aero/designs/STRATO.md` (feasible in the stratosphere from ~35–50 m in
+  summer and ~80 m year-round at 50°N; the 15 m demonstrator cannot reach it; limits: envelope mass, the payload's night
+  power, battery, helium leakage, winter winds). Fixed on the way: the endurance sim's ballast drop now keeps a 1 %
+  margin (it declared a sealed ship lost on a knife-edge equilibrium); sensitivity is deterministic (the re-optimised
+  one is dominated by optimiser noise, ±50 kg)
+- [ ] V8.21 Next: ERA5 winds for a real site; Aeromant CFD of the hull and Talos FEM of the fins on a workstation; a
+  laminate datasheet; a longer optimiser budget (or a gradient polish) for the payload numbers
+- [-] V8.17 Later: graduation to Piccolo (export through Yax; control and autonomy there), FEM of the envelope as a
+  membrane (Talos is solid-element only), unsteady CFD

@@ -1,0 +1,285 @@
+{
+ "payload": {
+  "payload_mass": 4.5,
+  "payload_power": 50.0,
+  "payload_power_night": 0.0
+ },
+ "payload_note": "daylight EO camera on a small gimbal (~3 kg, 25 W) + S/X-band downlink to a ground station (~1.5 kg, 25 W), both off at night; no relay to aircraft (estimates)",
+ "scenario": {
+  "name": "summer",
+  "months": [
+   7,
+   6,
+   8
+  ],
+  "lat": 50.0,
+  "min_availability": 0.9,
+  "min_gas_life": 60.0,
+  "min_payload": 0.0,
+  "pv": "gaas",
+  "laminate": "zylon",
+  "battery": "li-ion",
+  "gas_system": "sealed"
+ },
+ "length": 34.38,
+ "steps": {
+  "50.0": {
+   "meets": true,
+   "surplus_lift": 283.80770496873697,
+   "problems": []
+  },
+  "30.0": {
+   "meets": false,
+   "surplus_lift": -25.995021017095326,
+   "problems": [
+    "does not float at 18.0 km: lift 197.9 kg < mass 223.9 kg"
+   ]
+  },
+  "40.0": {
+   "meets": true,
+   "surplus_lift": 53.572340916911514,
+   "problems": []
+  },
+  "35.0": {
+   "meets": true,
+   "surplus_lift": 6.218300724059873,
+   "problems": []
+  },
+  "32.5": {
+   "meets": false,
+   "surplus_lift": -9.282545167951241,
+   "problems": [
+    "does not float at 18.1 km: lift 253.1 kg < mass 262.4 kg"
+   ]
+  },
+  "33.75": {
+   "meets": false,
+   "surplus_lift": -12.470050517240622,
+   "problems": [
+    "does not float at 18.1 km: lift 275.1 kg < mass 287.6 kg"
+   ]
+  },
+  "34.38": {
+   "meets": true,
+   "surplus_lift": 5.226941224897075,
+   "problems": []
+  }
+ },
+ "design": {
+  "length": 34.38,
+  "fineness": 2.57250690998415,
+  "altitude": 18106.967246956738,
+  "payload_mass": 4.5,
+  "payload_power": 50.0,
+  "payload_power_night": 0.0,
+  "battery_energy": 5875.625903835364,
+  "battery": "li-ion",
+  "pv": "gaas",
+  "solar_half_angle_deg": 25.5645814113864,
+  "solar_x0": 0.18,
+  "solar_x1": 0.72,
+  "propulsion_power": 646.6895900802649,
+  "laminate": "zylon",
+  "gas_system": "sealed",
+  "fin_scale": 0.6174195624482752,
+  "valve_dp": 30.0,
+  "night_superpressure": 228.73610005441117
+ },
+ "verdict": {
+  "feasible": true,
+  "problems": [],
+  "warnings": [
+   "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+  ],
+  "design": {
+   "length": 34.38,
+   "fineness": 2.57250690998415,
+   "altitude": 18106.967246956738,
+   "payload_mass": 4.5,
+   "payload_power": 50.0,
+   "payload_power_night": 0.0,
+   "battery_energy": 5875.625903835364,
+   "battery": "li-ion",
+   "pv": "gaas",
+   "solar_half_angle_deg": 25.5645814113864,
+   "solar_x0": 0.18,
+   "solar_x1": 0.72,
+   "propulsion_power": 646.6895900802649,
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "fin_scale": 0.6174195624482752,
+   "valve_dp": 30.0,
+   "night_superpressure": 228.73610005441117
+  },
+  "mission": {
+   "lat": 50.0,
+   "lon": 10.0,
+   "month": 7,
+   "year": 2026,
+   "wind_percentile": 90.0,
+   "station_radius": 20000.0,
+   "battery_reserve": 0.1,
+   "heading": null
+  },
+  "length": 34.38,
+  "diameter": 13.364395588819557,
+  "volume": 2829.3432147100416,
+  "envelope_area": 1092.1639830396903,
+  "solar_area": 103.74623785814651,
+  "payload": 4.5,
+  "payload_power": 50.0,
+  "payload_power_night": 0.0,
+  "system_mass": 278.65455687121585,
+  "masses": {
+   "envelope": 156.17944957467571,
+   "structure": 31.373312482149284,
+   "energy": 52.643949936515554,
+   "propulsion": 1.034703344128424,
+   "margin": 24.9231415337469,
+   "payload": 4.5,
+   "systems": 8.0
+  },
+  "gas_mass": 54.57519502952,
+  "gross_lift": 338.4566931256329,
+  "net_lift": 283.8814980961129,
+  "surplus_lift": 5.226941224897075,
+  "max_float_altitude": 18224.66977199455,
+  "plies": 1,
+  "dp_min": 278.73610005441117,
+  "dp_max": 1742.8370965564163,
+  "hoop_line_load": 10423.553014461411,
+  "bending_moment": 7400.715888085378,
+  "superheat_day": 41.0976375343177,
+  "superheat_night": 0.0,
+  "cg": [
+   14.924045454554728,
+   -9.90381356056941e-17,
+   -0.9650795113695095
+  ],
+  "x_cb": 14.924045454554728,
+  "stability_margin": -0.7752814575083089,
+  "v_max": 8.939253781224544,
+  "v_energy": 8.492291092163317,
+  "availability": 0.9316666666666666,
+  "wind_p50": 3.9103169909294246,
+  "wind_p90": 6.7815850094715815,
+  "wind_p95": 7.916570879264542,
+  "energy_solar_wh": 256326.20088238164,
+  "energy_loads_wh": 2360.499999999999,
+  "energy_at_p90_wh": 9482.557052566695,
+  "drag_p90": 29.64699230386469,
+  "cdv": 0.053877444320488056,
+  "gas_life_days": 62.2341063579093,
+  "endurance_days": 62.2341063579093,
+  "battery_hours": 74.47976497819475,
+  "months": {
+   "7": {
+    "availability": 0.965,
+    "feasible": true,
+    "problems": [],
+    "energy_solar_wh": 256326.20088238164,
+    "v_energy": 8.492291092163317,
+    "superheat_day": 41.0976375343177,
+    "wind_p90": 6.7815850094715815
+   },
+   "6": {
+    "availability": 0.9533333333333334,
+    "feasible": true,
+    "problems": [],
+    "energy_solar_wh": 267130.59772188397,
+    "v_energy": 8.790266218204135,
+    "superheat_day": 41.0976375343177,
+    "wind_p90": 7.250047999768707
+   },
+   "8": {
+    "availability": 0.9316666666666666,
+    "feasible": true,
+    "problems": [],
+    "energy_solar_wh": 220743.15634933492,
+    "v_energy": 7.89634084008168,
+    "superheat_day": 41.0976375343177,
+    "wind_p90": 7.250047999768707
+   }
+  },
+  "scenario": "summer"
+ },
+ "months": {
+  "May": {
+   "feasible": true,
+   "availability": 0.838,
+   "surplus_lift": 5.226941224897075,
+   "superheat_day": 38.3032810100552,
+   "v_energy": 8.268809747632702,
+   "energy_solar_wh": 249622.91449598424,
+   "problems": []
+  },
+  "Jun": {
+   "feasible": true,
+   "availability": 0.955,
+   "surplus_lift": 5.226941224897075,
+   "superheat_day": 40.869916444793716,
+   "v_energy": 8.790266218204135,
+   "energy_solar_wh": 267130.59772188397,
+   "problems": []
+  },
+  "Jul": {
+   "feasible": true,
+   "availability": 0.968,
+   "surplus_lift": 5.226941224897075,
+   "superheat_day": 41.097888536977734,
+   "v_energy": 8.492291092163317,
+   "energy_solar_wh": 256326.20088238164,
+   "problems": []
+  },
+  "Aug": {
+   "feasible": true,
+   "availability": 0.916,
+   "surplus_lift": 5.226941224897075,
+   "superheat_day": 38.97442108777403,
+   "v_energy": 7.89634084008168,
+   "energy_solar_wh": 220743.15634933492,
+   "problems": []
+  },
+  "Sep": {
+   "feasible": true,
+   "availability": 0.746,
+   "surplus_lift": 5.226941224897075,
+   "superheat_day": 34.48810328116977,
+   "v_energy": 7.225896806489839,
+   "energy_solar_wh": 170411.02481850793,
+   "problems": []
+  }
+ },
+ "endurance": {
+  "on_station": 1.0,
+  "lost_at_s": null,
+  "gas_lost_kg": 1.6137357284537401,
+  "max_dist_km": 8.642074499474594,
+  "min_altitude": 18106.87928318839,
+  "ballast_left": 5.226941224897075
+ },
+ "ascent": {
+  "float_altitude": 18385.978826848655,
+  "max_rate": 2.1128663456434316,
+  "time_to_99pct_s": 10212.0,
+  "drift_km": 75.5805754604355,
+  "dp_top": 434.6730271283486
+ },
+ "masses": {
+  "envelope": 156.17944957467571,
+  "structure": 31.373312482149284,
+  "energy": 52.643949936515554,
+  "propulsion": 1.034703344128424,
+  "margin": 24.9231415337469,
+  "payload": 4.5,
+  "systems": 8.0
+ },
+ "plots": [
+  "sigma.png",
+  "cad/views_sigma_34.38m.png"
+ ],
+ "seconds": 2418.228735923767,
+ "quick": false,
+ "name": "Strato-Sigma",
+ "renamed_from": "the stage ran as \"imaging\" before the ship was named; outputs moved, results unchanged"
+}
