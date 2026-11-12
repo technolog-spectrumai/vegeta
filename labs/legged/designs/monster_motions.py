@@ -10,8 +10,9 @@
 * **Wraith** — drift (every tentacle in a slow travelling wave, neighbours a quarter cycle apart) and grab
   (tentacle 0 reaches a point ahead of the gondola, its last three segments curling round it, then back).
 * **Ghoul** — shamble (Talia's walk, slower and lower: 0.35 m/s, 80 mm crouch, ±60 mm sway, the arms held forward
-  at 0.9 rad) and lunge (from a guard with the elbows bent 0.5 rad, both clawed hands thrust forward to 0.5 m
-  ahead of the pelvis at chest height and back).
+  at 0.9 rad), lunge (from a guard with the elbows bent 0.5 rad, both pincers thrust forward to 0.5 m ahead of the
+  pelvis at chest height, opening on the way and snapping shut at full reach, then back) and pinch (the jaws
+  opening wide and snapping shut, 1.2 s).
 * **Wyvern** — hover (rotor spin rates: thrust = weight, ``T = C_T ρ n² D⁴`` with an assumed C_T 0.10, neighbouring
   rotors counter-rotating) and grab (the talons reach 0.15 m forward and 0.06 m down, the claws close, the
   talons lift 0.16 m with the load).
@@ -22,6 +23,7 @@ import math
 
 import numpy as np
 
+import fantasy_humanoid_specs as fh
 import humanoid_motions as hum
 import monster_robots as mr
 import monster_specs as ms
@@ -169,15 +171,40 @@ def ghoul_lunge(kin):
     upper = [j for j in kin.names if j.startswith(("waist", "L_shoulder", "R_shoulder", "L_elbow", "R_elbow"))]
     keys = [(0.0, [(b, l, r) for (b, l), r in zip(hands, rest)]), (0.35, [(b, l, g) for (b, l), g in zip(hands, goal)]),
             (0.5, [(b, l, g) for (b, l), g in zip(hands, goal)]), (1.0, [(b, l, r) for (b, l), r in zip(hands, rest)])]
-    return mk.ik_transition(kin, "lunge", keys, duration=2.0, joints=upper, source="monster_motions.ghoul_lunge",
-                            params={"hand_goals_m": [g.tolist() for g in goal]})
+    def snap(t, q):                                                       # open on the way out, shut at full reach
+        u = t / 2.0
+        w = mk.smooth(u / 0.3) * (1 - mk.smooth((u - 0.35) / 0.1))
+        for j, v in _jaws(kin, w).items():
+            q[kin.index[j]] = v
+        return q
+    return mk.ik_transition(kin, "lunge", keys, duration=2.0, joints=upper, extra=snap,
+                            source="monster_motions.ghoul_lunge",
+                            params={"hand_goals_m": [g.tolist() for g in goal], "pincers": "open on the way, shut at 35 %"})
+
+
+JAWS = ("L_jaw_a", "L_jaw_b", "R_jaw_a", "R_jaw_b")
+
+
+def _jaws(kin, opening):
+    """The four jaws at ``opening`` (0 shut … 1 wide: the top of each jaw's range away from the other)."""
+    out = {}
+    for j in JAWS:
+        k = kin.index[j]
+        out[j] = opening * (kin.hi[k] if kin.hi[k] > 0 else kin.lo[k]) * 0.95
+    return out
+
+
+def ghoul_pinch(kin, period=1.2):
+    return mk.joint_cycle(kin, "pinch", lambda t: _jaws(kin, 0.5 - 0.5 * math.cos(2 * math.pi * t / period)),
+                          period=period, source="monster_motions.ghoul_pinch: the jaws open wide and snap shut",
+                          params={"open_deg_each": round(fh.PINCER["jaw_range_deg"][1] * 0.95, 1)})
 
 
 def motions_ghoul(robot=None):
     kin = mk.Kin(robot or mr.ghoul())
     shamble = hum.walk(kin, speed=0.35, stance=0.25, duty=0.65, step=0.04, crouch=0.08, sway=0.06, arm=0.2,
                        arm_offset=-0.9, elbow=-0.5, name="shamble", source="monster_motions: humanoid_motions.walk")
-    return kin, [shamble, ghoul_lunge(kin)]
+    return kin, [shamble, ghoul_lunge(kin), ghoul_pinch(kin)]
 
 
 # ------------------------------------------------------------------------------------------------- wyvern

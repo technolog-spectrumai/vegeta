@@ -39,9 +39,14 @@ def leech():
 
 
 def ghoul():
+    """The ghoul: Talia at the ghoul's numbers with a pincer on each hand (``fantasy_humanoid_robots.add_pincers``)."""
+    import fantasy_humanoid_robots as fhr
+
     keys = set(hr.P) & set(ms.GHOUL)
-    return hr.talia("Ghoul", {k: ms.GHOUL[k] for k in keys},
-                    notes="Ghoul: thin, long-armed humanoid variant of Talia, 21 actuated joints (design stage).")
+    r = hr.talia("Ghoul", {k: ms.GHOUL[k] for k in keys},
+                 notes="Ghoul: thin, long-armed humanoid variant of Talia with pincers, 21 actuated joints "
+                       "(design stage).")
+    return fhr.add_pincers(r, ms.GHOUL["forearm_length"])
 
 
 def _centaur_torso(p, bc):
