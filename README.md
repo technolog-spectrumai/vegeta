@@ -273,6 +273,31 @@ turbojet sampler for MERLIN's job: a dorsal engine pod, a V-tail clear of the je
 - **Structure:** it runs the wing's gust load at the dash (above 10 g at 160 m/s: the gust penetration speed is about
   80 m/s) and its vibration modes.
 
+**ALBATROS** (`50_albatros`; `labs/aero/designs/albatros.py`, `albatros_bay.py`, `albatros_flight.py`,
+`albatros_gust.py`, `albatros_drop.py`) is a maritime turbojet transport drone on the same cycle: it carries a cargo multirotor in a belly
+bay 300 km out to a vessel, releases it in a slow pass and flies home. The engine catalogue gains the 300–800 N classes.
+- **Bay:** one cargo hexacopter for 10 kg (16.4 kg with its cargo) against three cargo quadcopters (heavier together,
+  3.3 kg items at most, no rotor-out) and three camera-class quadcopters as bought (0.45 kg of cargo between them).
+- **Layouts, each closed on its own take-off mass:** a catapult or runway launch with a landing ashore (the baseline:
+  about 109 kg, 45 kg / 57 L of kerosene), a vertical take-off on vectored and lift jets (about 202 kg, 88 kg), a jet
+  tail-sitter (several times the baseline; it fails the hover-gust and deck gates). Electric lift rotors were sized and set aside.
+- **Fuel:** by phase, and against cargo, distance, cruise altitude, speed and wind.
+- **Gusts:** wing loading against the catapult stroke, sweep, flaperon gust alleviation (0.94 g to 0.33 g in a 10 m/s
+  gust), thrust vectoring against the tail; the launch and landing numbers; the sealed hull afloat.
+- **Release** (`albatros_drop.py`): the folded hexacopter out of the bay in the 39 m/s pass — ejector and clearance
+  from the sill and the tail, a 0.6 m² drogue on a static line (3.5 g at the opening), the arms swinging out on sprung
+  hinges at 15 m/s, rotor start, drogue cut, hover 6 s and 46 m below the pass; 400 scattered releases put the pass
+  at 120 m or more. Without the drogue the arms do not open into the airstream.
+- **Medicine to a flooded town** (`albatros_flood.py`, `labs/aero/sims/albatros_flood.py`; MuJoCo): the bay loaded with six
+  ÉMERILLONs (ER2 with a 0.5 kg medicine pod; the same 110 kg Albatros, a 1.8 m bay), released in one pass over a river
+  town of eastern Poland or Lithuania in 2.4 m of water. Each flies to its roof and drops a saddle bag across the ridge
+  beside the people, or lands on a flat roof, then lands on the school to be collected: six roofs and 21 people within
+  17 s of the release, 66 min after a launch 300 km away. A single box slides off most pitched roofs. The vaccine box's
+  cold chain (it needs its phase-change pack for the cold bay at altitude); a movie and stills from MuJoCo's renderer.
+- **In Ketos** (`albatros_ketos.py` → `exports/ketos/`): the aircraft, the cargo hexacopter and the Émerillon as Ketos
+  machines (meshes and `ketos.card`s of kinds `aircraft` and `multirotor` with the sizing's speeds and fuel flows and the
+  release's numbers). Ketos's branch `dev_albatros` flies them: fishermen south of Åland, vaccines Tallinn to Helsinki.
+
 **Pekari Rover** (branch `dev_track`): `30_pekari_rover` designs a small tracked (caterpillar) rover, the class of the
 wheeled rover of notebook 11 — 19 kg empty, a 5 kg payload in the basket on its roof (the default configuration).
 - **Machine:** a hull between two track modules (rear drive sprocket, front idler on a tensioner slide, four road wheels

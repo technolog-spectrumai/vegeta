@@ -381,7 +381,7 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
            extra_hull_geoms=(), extra_mass_kg: float = 0.0, extra_moment_kgm: float = 0.0,
            payload_pos: tuple | None = None, roller_kd: float | None = None, roller_armature: float | None = None,
            bogie_damping: float = 2.0, bogie_range_deg: float | None = None, notes: str | None = None,
-           sources: dict | None = None) -> Robot:
+           sources: dict | None = None, budget: dict | None = None) -> Robot:
     """The Pekari Rover as a Chiron ``Robot`` (see the module docstring): hull (logged), per side 11 rollers (feet
     ``L_sprocket``, ``L_idler``, ``L_g1`` … ``L_g7``, ``L_ramp_rear``, ``L_ramp_front``, and ``R_…``), bogies on
     passive hinges (``bogies=False``: welded). ``track_mu``: the belt's friction on the ground (0.6: PA6 grousers on
@@ -393,14 +393,16 @@ def pekari(overrides: dict | None = None, *, payload_kg: float = PAYLOAD_KG, tra
     ``materials``, ``wheel_fill`` (the mass budget), ``n_bogies``, ``name``; ``extra_children`` Links under the hull
     (an arm), ``extra_hull_masses`` / ``extra_hull_geoms`` on the hull, ``extra_mass_kg`` / ``extra_moment_kgm``
     (their mass and Σ m x, in the battery placement and the drive's load), ``payload_pos``; ``roller_kd``,
-    ``roller_armature``, ``bogie_damping``, ``bogie_range_deg`` (the roller servos and bogie hinges)."""
+    ``roller_armature``, ``bogie_damping``, ``bogie_range_deg`` (the roller servos and bogie hinges); ``budget`` a
+    complete mass budget instead of ``mass_budget``'s (a variant that replaces rows: the Pekari family's band track)."""
     p = design_params(overrides) if params is None else dict(params)
     robot_name = name
     g = geometry(p)
     cad = cad_numbers(p) if cad is None else cad
     drive_key = DRIVE if drive is None else drive
-    budget = mass_budget(p, cad, parts_kg, drive=drive_key, shell_t_mm=shell_t_mm, materials=materials,
-                         wheel_fill=wheel_fill)
+    if budget is None:
+        budget = mass_budget(p, cad, parts_kg, drive=drive_key, shell_t_mm=shell_t_mm, materials=materials,
+                             wheel_fill=wheel_fill)
     ms = masses(p, payload_kg, cad=cad, budget=budget, extra_mass_kg=extra_mass_kg, extra_moment_kgm=extra_moment_kgm,
                 payload_pos=payload_pos)
     m_total = sum(m for _, m, _, _ in ms) + float(extra_mass_kg)

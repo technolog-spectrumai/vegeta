@@ -334,7 +334,7 @@ def calibrate(e: Microjet, thrust: float, fuel_flow: float, egt: float, iteratio
     return eng
 
 
-# Approximate published figures for two common engine classes (hobby turbojets, 2020s datasheets). They are class
+# Approximate published figures for common engine classes (hobby turbojets, 2020s datasheets). They are class
 # values to start from, not one manufacturer's numbers: replace them with the datasheet of the engine you fly.
 CATALOGUE = {
     "100 N class": dict(thrust_N=100.0, fuel_g_min=320.0, egt_K=973.0, rpm_max=154000.0, rpm_idle=33000.0, impeller_diameter=0.056,
@@ -343,6 +343,16 @@ CATALOGUE = {
                         mass_kg=1.25, system_mass_kg=0.28, outer_diameter=0.112, length=0.300, max_egt=1023.0, spool_time=3.5),
     "200 N class": dict(thrust_N=200.0, fuel_g_min=620.0, egt_K=973.0, rpm_max=112000.0, rpm_idle=33000.0, impeller_diameter=0.080,
                         mass_kg=1.75, system_mass_kg=0.30, outer_diameter=0.130, length=0.330, max_egt=1023.0, spool_time=4.0),
+    # the larger classes (UAV and target-drone turbojets; Albatros, notebook 50): the same single-spool layout scaled
+    # up at about the same tip speed (~470 m/s), a little less fuel per newton, slower to spool
+    "300 N class": dict(thrust_N=300.0, fuel_g_min=900.0, egt_K=973.0, rpm_max=104000.0, rpm_idle=30000.0, impeller_diameter=0.086,
+                        mass_kg=2.65, system_mass_kg=0.35, outer_diameter=0.132, length=0.370, max_egt=1023.0, spool_time=4.5),
+    "400 N class": dict(thrust_N=400.0, fuel_g_min=1180.0, egt_K=973.0, rpm_max=98000.0, rpm_idle=28000.0, impeller_diameter=0.092,
+                        mass_kg=3.60, system_mass_kg=0.40, outer_diameter=0.148, length=0.385, max_egt=1023.0, spool_time=5.0),
+    "550 N class": dict(thrust_N=550.0, fuel_g_min=1600.0, egt_K=973.0, rpm_max=83000.0, rpm_idle=25000.0, impeller_diameter=0.108,
+                        mass_kg=4.90, system_mass_kg=0.45, outer_diameter=0.175, length=0.400, max_egt=1023.0, spool_time=5.5),
+    "800 N class": dict(thrust_N=800.0, fuel_g_min=2300.0, egt_K=973.0, rpm_max=72000.0, rpm_idle=22000.0, impeller_diameter=0.125,
+                        mass_kg=7.60, system_mass_kg=0.60, outer_diameter=0.202, length=0.470, max_egt=1023.0, spool_time=6.0),
 }
 
 
