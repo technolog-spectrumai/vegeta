@@ -242,3 +242,28 @@ the same loop and writes the same files. Nothing in `runkit` is Kestrel-specific
 
 The laser books `fenix` (F) and `svarog` (S) and their FEniCSx interpreter moved to
 [Alabastron](https://github.com/technolog-spectrumai/alabastron) on 2026-10-18.
+
+## Book `emerillon` (code E) — the speed quadcopter ER1 / ER2
+
+The solver runs notebook 37 leaves NOT RUN (`labs/aero/designs/emerillon_campaigns.py` behind the shared `kestrel/airframe_cfd.py` and
+`kestrel/structure_fea.py`; entry points in `side_labs/emerillon/`):
+
+| code | chapter | what | cases |
+|---|---|---|---|
+| E1 | `airframe-drag` | the solid aircraft (no propellers) in axial flow at 50, 75, 100 % of the top speed: the drag area, the margin on the hand build-up | 3 |
+| E2 | `airframe-alpha` | 0, 3, 6, 10, 15, 30, 60, 90° of incidence at 60 % of the top speed: the normal force of the trim and of the broadside braking | 8 |
+| E3 | `arm` | one printed PA6-CF arm: full-throttle thrust, a 5 g manoeuvre across it, a landing knock (ultimate ×1.5), the first modes with the motor as a point mass | 4 |
+
+```bash
+source activate.sh
+wf info E1 --variant ER2                           # the cases
+wf E1 --variant ER2 --prepare-only                 # write the OpenFOAM cases under side_labs/runs/emerillon/airframe-drag/, run nothing
+wf E1 --variant ER2 --quality screening --detach   # 3 cases, 10-20 min each on 4 cores
+wf E2 --variant ER2 --detach                       # 8 cases
+wf E3 --variant ER2                                # CalculiX, minutes; --prepare-only meshes without solving
+```
+The same with `--variant ER1`. Incompressible RANS (`rans_ksst_external`): ER1 flies at Mach 0.21, ER2 at Mach 0.31. Coefficients are
+on the body's frontal area; `summary.json` carries the drag area in cm², the margin it supports (`finding`), and for E2 the
+normal-force area beside the flight model's. E3's summary sets the beam rule and the rotor's once-per-revolution frequency beside
+the FEA.
+
