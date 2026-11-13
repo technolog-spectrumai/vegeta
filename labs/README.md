@@ -14,6 +14,7 @@ libs/ tools ──► notebooks/ ──► designs/ ──► sims/ (MuJoCo) ─
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine |
 | [space](space/README.md) | what orbits: LEO servicing, rendezvous, capture | Auseklis (debris-removal servicer, exp/) |
 | [marine](marine/README.md) | what floats and dives | Survey boat, Submarine, Scampi, Echensis, Cyclopterus, Nephro, Squilla, Shrimp |
+| [plasma](plasma/README.md) | what pushes air without blades: ion-ring thrusters on `vegeta-fulgur` | Halka |
 | [studio](studio/README.md) | the tools themselves: tutorials, the workbench, AI design | — |
 
 The rules (`python tools/labs.py check`, in smoke): a lab imports `libs/` and itself, never another lab; nothing
