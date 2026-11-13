@@ -70,7 +70,7 @@ def main(argv=None) -> int:
     ap.add_argument("--camera", default="front", choices=tuple(CAMERAS))
     ap.add_argument("--physics", action="store_true",
                     help="the MuJoCo dynamics run (designs/timon_service_sim.py), played at --speed x")
-    ap.add_argument("--speed", type=float, default=4.0)
+    ap.add_argument("--speed", type=float, default=6.0)
     ap.add_argument("--stills", default="", help="comma-separated times [s]: write those frames as PNGs only")
     a = ap.parse_args(argv)
     scene = None if a.physics else ttc.Scene()

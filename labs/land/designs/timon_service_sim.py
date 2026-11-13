@@ -12,10 +12,12 @@ What holds what is a weld that switches on only when the parts are where they sh
   Pumba's flange;
 * ``grip_*`` — the tool in Timon's grab: on when Timon's jaws are closed on the lug (the grasp point within 8 mm of
   the lug's centre);
-* ``rack_*`` — the tool in the holster on Timon's deck: on when it is seated (within 8 mm).
+Nothing holds a tool in Timon's **basket** (two open-topped slots on its rear, fixed to the hull): the tools stand
+in it on their tips, on contact with its floor and walls. The chainsaw starts there; Timon lowers the grab over its
+slot, opens its jaws and the grab drops the last 8 cm onto the slot's floor.
 
 The plan is geometric: Timon docks so that its main arm approaches along the line Pumba's coupler faces; one grasp
-of the lug (``G_rel``: the tool in Timon's hand) serves both tools at Pumba and in the holster, so every hand-over is
+of the lug (``G_rel``: the tool in Timon's hand) serves both tools at Pumba and in the basket, so every hand-over is
 the same pose. The arms move between IK targets taken in each hull's frame at the moment the move starts (the hulls
 settle and pitch under the loads) and finish with a closed-loop alignment on the measured positions (Timon's TCP
 against the lug or the coupler, as a camera at the wrist would). Each step waits until its condition holds or
@@ -133,6 +135,7 @@ class ServiceSim:
         sp = mujoco.MjSpec.from_string(self.rp.to_mjcf(ch.Flat()))
         st = mujoco.MjSpec.from_string(self.rt.to_mjcf(ch.Flat()))
         fr = sp.worldbody.add_frame()
+        self._add_basket(st)
         fr.attach_body(st.body("hull"), "t_", "")
         self._add_tools(sp)
         self.m = sp.compile()
@@ -192,7 +195,54 @@ class ServiceSim:
         kt.set(self.dockT, yawT, {**self.rt.nominal_qpos, **strip(self.qT_holster)}, pf.z_hull(tr.TIMON))
         T_tool_hol = kt.body_T("main_hand") @ self.G_rel
         Tbase = _T(Rt, np.array([*self.dockT, pf.z_hull(tr.TIMON)]))
-        self.H_holster = np.linalg.inv(Tbase) @ T_tool_hol          # in Timon's hull frame (planned)
+        self.H_holster = np.linalg.inv(Tbase) @ T_tool_hol          # in Timon's hull frame (planned): the saw's slot
+        self.H_grab = self.H_holster.copy()
+        self.H_grab[1, 3] -= self.GRAB_DY                          # the grab's slot, across the basket
+
+    # ------------------------------------------------------------------------------------------- the basket
+    BASKET_HALF = {"saw": 0.085, "grab": 0.10}   # the slots' inner half-widths: snug on the saw, roomy to drop into [m]
+    WALL = 0.012                   # wall half-thickness [m]
+    GRAB_DY = 0.23                 # the grab's slot this far across from the saw's [m]
+
+    def _add_basket(self, st):
+        """The tool basket on Timon's rear: two open-topped slots, walls and floor fixed to the hull. The tools stand
+        in it on their tips, held up only by contact with its floor and walls (no weld)."""
+        import mujoco
+        hull = st.body("hull")
+        z_top = self.H_holster[2, 3] - 0.20                       # the walls stop below the lug, clear of the jaws
+        floors = {"saw": self.H_holster[2, 3] - 0.725 - 0.003,      # the saw's tip just clear of its floor
+                  "grab": self.H_grab[2, 3] - 0.325 - 0.08}         # the grab drops 8 cm onto a raised floor
+        self.basket = {"z_top": z_top, "floors": floors}
+        rgba = [0.3, 0.42, 0.3, 1]
+        w = self.WALL
+        for tool, H in (("saw", self.H_holster), ("grab", self.H_grab)):
+            b = self.BASKET_HALF[tool]
+            cx, cy = H[0, 3], H[1, 3]
+            zf = floors[tool]
+            zc, hz = (z_top + zf) / 2, (z_top - zf) / 2
+
+            def geom(name, half, pos):
+                g = hull.add_geom(name=f"basket_{tool}_{name}", type=mujoco.mjtGeom.mjGEOM_BOX, size=list(half),
+                                  pos=list(pos), mass=0.4, rgba=rgba)
+                g.contype, g.conaffinity = 0, 4                    # touches only the tools (contype bit 4)
+            geom("floor", (b + w, b + w, w), (cx, cy, zf - w))
+            for sx in (-1, 1):
+                geom(f"wx{sx}", (w, b + 2 * w, hz), (cx + sx * (b + w), cy, zc))
+                geom(f"wy{sx}", (b, w, hz), (cx, cy + sx * (b + w), zc))
+
+    def in_basket(self, tool):
+        """Where the tool rests in Timon's hull frame: (inside its slot?, its lowest point above the slot floor [m])."""
+        Tb = self._timon_base()
+        H = np.linalg.inv(Tb) @ self._tool_T(tool)
+        slot = self.H_holster if tool == "saw" else self.H_grab
+        dxy = float(np.hypot(H[0, 3] - slot[0, 3], H[1, 3] - slot[1, 3]))
+        Ti, lowest = np.linalg.inv(Tb), np.inf
+        corners = np.array([[i, j, k] for i in (-1, 1) for j in (-1, 1) for k in (-1, 1)], float)
+        for g in range(self.m.ngeom):
+            if self.m.geom_bodyid[g] == self.bid(f"tool_{tool}"):
+                pts = self.d.geom_xpos[g] + (corners * self.m.geom_size[g]) @ self.d.geom_xmat[g].reshape(3, 3).T
+                lowest = min(lowest, float((Ti[:3, :3] @ pts.T).T[:, 2].min() + Ti[2, 3]))
+        return dxy < self.BASKET_HALF[tool], lowest - self.basket["floors"][tool]
 
     def _timon_ik(self, p_world, base, elev, km=None, mount="main"):
         """Timon's joints that put its TCP at ``p_world`` with the tool at ``elev`` (planned base pose)."""
@@ -220,7 +270,7 @@ class ServiceSim:
         def box(b, name, half, pos, mass, rgba):
             g = b.add_geom(name=name, type=mujoco.mjtGeom.mjGEOM_BOX, size=list(half), pos=list(pos), mass=mass,
                            rgba=rgba)
-            g.contype, g.conaffinity = 2, 1
+            g.contype, g.conaffinity = 2 | 4, 1                    # the ground and the basket
             return g
         gb = body("tool_grab", [0, 0, -5])
         box(gb, "grab_plate", (0.01, 0.07, 0.07), (0.01, 0, 0), 1.2, dark)
@@ -234,7 +284,7 @@ class ServiceSim:
         box(gs, "saw_lug", (0.01, 0.025, 0.03), (lug[0], 0, lug[2]), 0.3, steel)
         box(gs, "saw_bar", (0.20, 0.0025, 0.035), (0.52, 0, 0), 1.2, grey)
         for tool in ("grab", "saw"):
-            for kind, other in (("latch", "main_hand"), ("grip", "t_main_hand"), ("rack", "t_hull")):
+            for kind, other in (("latch", "main_hand"), ("grip", "t_main_hand")):
                 e = sp.add_equality(name=f"{kind}_{tool}", type=mujoco.mjtEq.mjEQ_WELD, objtype=mujoco.mjtObj.mjOBJ_BODY,
                                     name1=f"tool_{tool}", name2=other)
                 e.active = False
@@ -462,8 +512,7 @@ class ServiceSim:
         self._place_tool("saw", self._timon_base() @ self.H_holster)
         mj.mj_forward(m, d)
         self._weld("latch_grab", True)
-        self._weld("rack_saw", True)
-        self.hold(1.0)
+        self.hold(1.5, "the chainsaw stands in Timon's basket")
         self.move(stab, 2.0, "Pumba parks and lowers its stabilizers")
         self.move(self.qP_present, 4.0, "Pumba presents its quick coupler")
         self.hold(1.0)
@@ -487,32 +536,29 @@ class ServiceSim:
         down = _T(np.eye(3), np.array([0, 0, -0.06]))
         self.move_hand(down @ self.body_T("t_main_hand"), 1.5, "slides the grab off the coupler", align=1)
         self.move_hand(_T(np.eye(3), 0.25 * self.u) @ self.body_T("t_main_hand"), 2.0, "backs off with the grab", align=0)
-        # 2. into Timon's holster: where the saw is not (the grab goes to the saw's slot mirrored across the deck)
-        Tb = self._timon_base()
-        H_grab = self.H_holster.copy()
-        H_grab[1, 3] -= 0.16                                       # the second slot, 16 cm across (away from the yaw stop)
-        T_hol = Tb @ H_grab
-        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.12])) @ self._hand_for_tool(T_hol, "grab"), 4.0, "swings it to the holster", align=1)
-        err_h, ang_h = self.place_tool("grab", lambda: self._timon_base() @ H_grab, "lowers it into the holster")
+        # 2. over its slot in Timon's basket, lowered in, and dropped
+        H_grab = self.H_grab
+        T_hol = self._timon_base() @ H_grab
+        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.22])) @ self._hand_for_tool(T_hol, "grab"), 4.0, "swings it over the basket", align=1)
+        err_h, ang_h = self.place_tool("grab", lambda: self._timon_base() @ H_grab, "lowers it into the basket", tol=0.02)
         self.errors["rack_grab"] = (err_h, ang_h)
-        if ang_h > 5.0:
-            err_h = 1.0
-        if err_h > GRIP_TOL:
-            self.events.append((round(d.time, 2), f"FAILED: the grab not seated in the holster {self.errors['rack_grab']}"))
-            return self.result()
-        self._weld("rack_grab", True)
         self._weld("grip_grab", False)
-        self.move({"t_main_grip_a": math.radians(-40), "t_main_grip_b": math.radians(-40)}, 0.8, "lets go")
-        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.12])) @ self.body_T("t_main_hand"), 1.0, "lets go", align=0)
+        self.move({"t_main_grip_a": math.radians(-40), "t_main_grip_b": math.radians(-40)}, 0.8, "drops it into the basket")
+        self.hold(1.5, "the grab falls into its slot")
+        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.12])) @ self.body_T("t_main_hand"), 1.0, "drops it into the basket", align=0)
+        inside, gap = self.in_basket("grab")
+        self.errors["basket_grab"] = (inside, gap)
+        if not inside or gap > 0.01:
+            self.events.append((round(d.time, 2), f"FAILED: the grab is not resting in the basket {inside, gap}"))
+            return self.result()
         # 3. the saw out of the holster
         T_saw = self._tool_T("saw")
-        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.12])) @ self._hand_for_tool(T_saw), 2.0, "to the chainsaw", align=1)
+        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.12])) @ self._hand_for_tool(T_saw), 2.0, "to the chainsaw in the basket", align=1)
         e = self.move_hand(self._hand_for_tool(self._tool_T("saw")), 1.5, "onto the saw's lug")
         self.move({"t_main_grip_a": math.radians(20), "t_main_grip_b": math.radians(20)}, 1.0, "grips the saw")
         self.errors["grip_saw"] = e
         self._weld("grip_saw", True)
-        self._weld("rack_saw", False)
-        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.15])) @ self.body_T("t_main_hand"), 1.5, "lifts the saw out", align=0)
+        self.move_hand(_T(np.eye(3), np.array([0, 0, 0.62])) @ self.body_T("t_main_hand"), 3.0, "lifts the saw out of the basket", align=0)
         # 4. onto Pumba's coupler: below it on the axis, aligned, then pushed up the axis
         T_f = self._flange_T()
         below = _T(np.eye(3), np.array([0, 0, -0.06])) @ T_f
