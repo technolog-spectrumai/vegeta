@@ -300,3 +300,91 @@ def verdict(df: pd.DataFrame) -> str:
                  "model's 30 m/s sweep end — optimistic: the edgewise propeller losses and the body's lift at 30° disc tilt are not modelled. "
                  "At the speeds that matter for range the quads burn 2–3× K4TQ's power.")
     return "\n".join(lines)
+
+
+# ================================================================================================= a 15-inch FPV quad
+FPV15 = {   # a long-range / heavy 15" FPV build in K4TQ's parts (estimates): carbon X frame 600–700 mm, 6S Li-ion
+    "frame (15\" carbon X, arms + plates + standoffs)": 0.55, "4-in-1 ESC 60 A": 0.06, "FC + VTX + camera + RX + GNSS": 0.15,
+    "wiring, XT90, straps, antenna mounts": 0.08,
+}
+FPV15_CDA = 0.045           # m²: the frame, the pack slung under it, the motors and the props' hubs (ESTIMATE; a payload adds ~0.01)
+
+
+def fpv15(payload_kg: float = 0.0, *, prop: str = "15x8", motor: str = "MN5006-450", battery: str = "6S2P-P45B", tilt_max_deg: float = 65.0) -> dict:
+    """A 15-inch FPV quadcopter built from the same catalogue and drive model: the mass with the pack, the hover, the
+    top speed (full throttle, the discs tilted until the thrust's horizontal part meets the drag; the thrust at the
+    axial inflow V·sin(tilt), current-limited) — ESTIMATE / CALC."""
+    cat = k4tq.CATALOGUE
+    m = sum(FPV15.values()) + 4 * (cat["motor"][motor]["mass_kg"] + cat["propeller"][prop]["mass_kg"]) + cat["battery"][battery]["mass_kg"] + payload_kg
+    W = m * G
+    drv = sz.drive({"prop": prop, "motor": motor, "battery": battery}, V=tuple(range(0, 50, 2)))
+    CdA = FPV15_CDA + (0.010 if payload_kg > 0 else 0.0)
+    v_max = 0.0
+    for V in np.arange(1.0, 48.01, 0.5):
+        D = 0.5 * RHO * V * V * CdA
+        a = math.atan2(D, W)
+        if math.degrees(a) > tilt_max_deg:
+            break
+        if math.hypot(W, D) / 4 <= sz.max_thrust(drv, V * math.sin(a)):
+            v_max = float(V)
+        else:
+            break
+    hp = sz.drive_point(drv, 0.0, W / 4)
+    bat = k4tq.battery({"battery": battery})
+    aw = 12.0                                                            # FC, video, link, GNSS
+    # forward flight as k4tq_sizing.quad_reference: Glauert's induced power, the hover's profile power grown with μ²
+    from ogma import rotors as og_rotors
+    R_ = cat["propeller"][prop]["d_in"] * 0.0254 / 2
+    A = math.pi * R_ ** 2
+    eta = hp["shaft_W"] / hp["electrical_W"]
+    P0 = hp["shaft_W"] - 1.15 * (W / 4) * og_rotors.hover_induced_velocity(W / 4, A)
+    omega_R = hp["rpm"] * 2 * math.pi / 60 * R_
+    T_max0 = sz.max_thrust(drv, 0.0)
+    rows = []
+    for V in np.arange(0.0, v_max + 0.01, 1.0):
+        D = 0.5 * RHO * V * V * CdA
+        T = math.hypot(W, D) / 4
+        a = math.atan2(D, W)
+        vi = og_rotors.induced_velocity(T, V, math.pi / 2 - a, A)
+        mu = V * math.cos(a) / omega_R
+        P_el = 4 * (1.15 * T * (vi + V * math.sin(a)) + P0 * (1 + 4.65 * mu ** 2)) / eta + aw
+        rows.append({"V [m/s]": V, "electrical [W]": P_el, "endurance [min]": bat["usable_wh"] / P_el * 60, "range [km]": bat["usable_wh"] / P_el * V * 3.6,
+                     "T each / max": T / T_max0})
+    tab = pd.DataFrame(rows).set_index("V [m/s]")
+    P_h = 4 * hp["electrical_W"] + aw
+    q = {"table": tab, "hover [W]": P_h, "mass [kg]": m}
+    ok = tab[tab["T each / max"] < 0.8]
+    return {"mass with the pack [kg]": m, "payload [kg]": payload_kg, "pack": battery, "T/W": 4 * T_max0 / W,
+            "hover [W]": P_h, "max speed [m/s]": v_max, "hover minutes": bat["usable_wh"] / P_h * 60,
+            "best range V [m/s]": float(ok["range [km]"].idxmax()), "still-air range [km]": float(ok["range [km]"].max()),
+            "R3 radius [km]": sz.quad_mission_radius(q, {"battery": bat}), "table": tab, "label": sz.label("CALC")}
+
+
+def speed_mass_table(designs=("A1", "F1", "G"), fpv_payloads=(0.0, 1.0, 2.0)) -> pd.DataFrame:
+    """Mass with the pack (empty of payload, and at take-off), the top level speed and the range: the K4TQ designs (four
+    motors for the top speed, two for the cruise; the sweep to 44 m/s) against the 15-inch FPV quad. Range: still air
+    at the best-range speed on the usable pack, and the R3 radius (2 min hover, 20 % reserve, 8 m/s wind)."""
+    import k4tq_scaled as ks
+    rows = {}
+    for d in designs:
+        v = sz.vehicle(d)
+        c4 = sz.cruise(v, n_running=4, speeds=np.arange(14.0, 45.0, 1.0))
+        b4 = sz.best_speeds(c4)
+        b2 = sz.best_speeds(sz.cruise(v, n_running=2, speeds=np.arange(14.0, 45.0, 1.0)))
+        p = v["p"]
+        nick = k4tq.NICKNAME.get(d, "")
+        rows[f"K4TQ-{d}" + (f" ({nick})" if nick else "")] = {
+            "mass with the pack, no payload [kg]": v["mass"]["mass_kg"] - p["payload_kg"], "payload [kg]": p["payload_kg"],
+            "take-off mass [kg]": v["mass"]["mass_kg"], "pack": p["battery"], "max level speed [m/s]": b4["max level V [m/s]"],
+            "max level speed [km/h]": 3.6 * b4["max level V [m/s]"], "cruise (best range) [km/h]": 3.6 * b2["best range V [m/s]"],
+            "still-air range [km]": b2["range [km]"], "R3 radius [km]": ks.radius(v), "hover minutes": sz.hover(v)["hover minutes on the usable pack"]}
+    for pl in fpv_payloads:
+        f = fpv15(pl)
+        rows[f"15\" FPV quad, {pl:g} kg payload"] = {
+            "mass with the pack, no payload [kg]": f["mass with the pack [kg]"] - pl, "payload [kg]": pl, "take-off mass [kg]": f["mass with the pack [kg]"],
+            "pack": f["pack"], "max level speed [m/s]": f["max speed [m/s]"], "max level speed [km/h]": 3.6 * f["max speed [m/s]"],
+            "cruise (best range) [km/h]": 3.6 * f["best range V [m/s]"], "still-air range [km]": f["still-air range [km]"],
+            "R3 radius [km]": f["R3 radius [km]"], "hover minutes": f["hover minutes"]}
+    df = pd.DataFrame(rows).T
+    df.attrs["label"] = sz.label("CALC")
+    return df
