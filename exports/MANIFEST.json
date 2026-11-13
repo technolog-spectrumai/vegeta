@@ -121,6 +121,21 @@
    "sha256": "14187720980159dc2238518452b4eb9a01f047b2aecb3d820c7ed0483d01accc",
    "visual_triangles": 5938
   },
+  "fantasy_ork": {
+   "bytes": 341581,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "fantasy_ork.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 75.4236,
+   "sha256": "6bba165f828490123a34dac0d0ed182cc2e8377904901f7af140f181bf0b786f",
+   "visual_triangles": 5528
+  },
   "fantasy_shield": {
    "bytes": 160233,
    "consumers": {
@@ -182,19 +197,19 @@
    "visual_triangles": 4944
   },
   "monster_ghoul": {
-   "bytes": 333947,
+   "bytes": 375281,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "monster_ghoul.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 39.5183,
-   "sha256": "2e4a4ff621afbc28ef5c6771752263f87733457387535863ab25891628f447bb",
-   "visual_triangles": 5502
+   "links": 26,
+   "mass_kg": 39.7483,
+   "sha256": "bf6bfe84a1ebcf355c0e9e402405ae876e6d57d2750ebcc797a02d4c3275bdd7",
+   "visual_triangles": 5888
   },
   "monster_leech": {
    "bytes": 300063,
@@ -497,10 +512,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-10-29T19:44:54Z",
+ "published": "2026-10-29T20:03:29Z",
  "vegeta": {
-  "branch": "dev_fantasy_objects",
-  "commit": "95dfa1a96d7ba2e0eb2c6a0ed42a10b63eb3aa1d",
+  "branch": "dev_fantasy_humanoid",
+  "commit": "1af768e0e6242d9c83259d4e580c0728a55a3297",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },

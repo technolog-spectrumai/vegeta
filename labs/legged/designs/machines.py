@@ -55,3 +55,7 @@ for _obj, _cls in (("chest", "Chest"), ("crate", "Crate"), ("sword", "Sword"), (
                    ("amulet", "Amulet"), ("elixir_flask", "ElixirFlask")):
     machines.register(f"fantasy_{_obj}", f"fantasy_robots:{_obj}", parts=_motions(f"fantasy_robots:parts_{_obj}"),
                       visual=f"fantasy_objects:{_cls}")
+
+# fantasy humanoids: the ork with its broom and trash-bin lid (the ghoul, with its pincers, is with the monsters)
+machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("fantasy_humanoid_robots:parts_ork"),
+                  visual="fantasy_humanoids:Ork")

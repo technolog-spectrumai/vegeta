@@ -4,6 +4,7 @@ import pytest
 
 import body_kit  # noqa: F401
 import humanoid_robot as hr
+import fantasy_humanoid_robots as fhr
 import monster_robots as mr
 import zoo_robots as zr
 
@@ -16,13 +17,16 @@ ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
           "monster_wolf": (mr.wolf, 16, (35.0, 80.0)), "monster_wyvern": (mr.wyvern, 8, (15.0, 50.0)),
           "monster_centaur": (mr.centaur, 24, (100.0, 220.0)), "monster_leech": (mr.leech, 20, (40.0, 100.0)),
           "monster_leshy": (mr.leshy, 16, (50.0, 120.0)), "monster_wraith": (mr.wraith, 96, (15.0, 60.0)),
-          "monster_ghoul": (mr.ghoul, 21, (25.0, 60.0))}
+          "monster_ghoul": (mr.ghoul, 25, (25.0, 60.0)),
+          "fantasy_ork": (fhr.ork, 21, (60.0, 95.0))}
 
 #: CAD designs that must build as one valid solid: (module, class, overrides)
 CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + \
       [("zoo_others", "Snake", {}), ("zoo_others", "Bat", {}), ("zoo_others", "Bat", {"fold": 1.0}),
        ("zoo_others", "Octopus", {})] + \
-      [("monsters", c, {}) for c in ("Wolf", "Wyvern", "Centaur", "Leech", "Leshy", "Wraith", "Ghoul")]
+      [("monsters", c, {}) for c in ("Wolf", "Wyvern", "Centaur", "Leech", "Leshy", "Wraith", "Ghoul")] + \
+      [("fantasy_humanoids", "Ork", {}), ("fantasy_humanoids", "Ork", {"part": "broom"}),
+       ("fantasy_humanoids", "Ork", {"part": "lid"})]
 
 
 @pytest.mark.parametrize("name", sorted(ROBOTS))
@@ -61,3 +65,46 @@ def test_registered():
 
     machines.discover(Path(__file__).resolve().parents[1] / "designs")
     assert set(ROBOTS) <= set(machines.names())
+
+
+def test_ork_carries_its_cad_masses_and_sweeps_on_the_ground():
+    import fantasy_humanoid_motions as fm
+
+    kin, ms = fm.motions_ork()
+    kin.set(kin.q0)
+    g = kin.model.geom("broom_bristles").id
+    sole = kin.model.geom("L").id
+    bottom = kin.data.geom_xpos[g][2] - kin.model.geom_size[g][2]
+    ground = kin.data.geom_xpos[sole][2] - kin.model.geom_size[sole][2]
+    assert bottom == pytest.approx(ground, abs=0.01)                    # the broom stands on the ground
+    m = fhr.carried_masses()
+    assert sum(m.values()) == pytest.approx(5.92, abs=0.01)
+    sweep = {x.name: x for x in ms}["sweep"]
+    assert sweep.check["ik_error_max_m"] < 0.002 and sweep.params["half_width_m"] == 0.2
+    assert kin.q0[kin.index["R_elbow"]] == pytest.approx(-0.6109, abs=1e-4)   # the elbows stand bent 35°
+
+
+def test_ork_carried_volumes_rebuild():
+    pytest.importorskip("cadquery")
+    import fantasy_humanoids as fhu
+
+    p = fhu.Ork().resolve()
+    wood, straw = fhu.broom(p)
+    fresh = {"broom wood": wood.val().Volume(), "broom straw": straw.val().Volume(),
+             "lid": fhu.bin_lid(p)[0].val().Volume()}
+    for k, v in fhr.CAD_MM3.items():
+        assert fresh[k] == pytest.approx(v, rel=1e-4), k
+
+
+def test_ghoul_pincers_open_away_from_each_other():
+    import motion_kit as mk
+
+    kin = mk.Kin(mr.ghoul())
+    for side in ("L", "R"):
+        a, b = kin.index[f"{side}_jaw_a"], kin.index[f"{side}_jaw_b"]
+        q = kin.q0.copy()
+        q[a], q[b] = kin.hi[a], kin.lo[b]                                # both wide
+        kin.set(q)
+        ya = kin.world(*kin.capsule_end(f"{side}_jaw_a"))[1]
+        yb = kin.world(*kin.capsule_end(f"{side}_jaw_b"))[1]
+        assert ya - yb > 0.15                                            # the tips spread
