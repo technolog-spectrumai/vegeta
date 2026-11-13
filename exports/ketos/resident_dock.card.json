@@ -1,0 +1,26 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "resident_dock",
+ "kind": "dock",
+ "parts": [
+  {
+   "model": "resident_dock_frame",
+   "color": [
+    0.086,
+    0.627,
+    0.522
+   ]
+  }
+ ],
+ "size": [
+  3.0,
+  1.6,
+  1.4
+ ],
+ "depth_m": 80.0,
+ "charge_W": 2000.0,
+ "mass_kg": 1800.0,
+ "comms": "fibre",
+ "price_eur": 900000.0
+}

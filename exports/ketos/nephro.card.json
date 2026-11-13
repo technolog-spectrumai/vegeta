@@ -1,0 +1,180 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "nephro",
+ "kind": "rov",
+ "parts": [
+  {
+   "model": "nephro_body",
+   "color": [
+    0.953,
+    0.612,
+    0.071
+   ]
+  },
+  {
+   "model": "nephro_antennae",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "nephro_arm",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  },
+  {
+   "model": "nephro_skids",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  }
+ ],
+ "size": [
+  3.5,
+  0.9,
+  0.6000000000000001
+ ],
+ "mass_kg": 164.6,
+ "displacement_L": 161.5,
+ "net_buoyancy_kg": 1.0,
+ "cd": [
+  0.25,
+  1.0,
+  1.1
+ ],
+ "thrusters": [
+  {
+   "at": [
+    -1.5,
+    0.14,
+    0.044
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "max_N": 120.0
+  },
+  {
+   "at": [
+    -1.5,
+    -0.14,
+    0.044
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "max_N": 120.0
+  },
+  {
+   "at": [
+    0.54,
+    0.0,
+    0.044
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.66,
+    0.0,
+    0.044
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.7,
+    0.0,
+    0.044
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.5,
+    0.0,
+    0.044
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  }
+ ],
+ "battery_Wh": 8000.0,
+ "hotel_W": 220.0,
+ "survey_W": 340.8,
+ "hover_W": 670.0,
+ "max_depth_m": 300.0,
+ "transit_speed_m_s": 1.5,
+ "survey_speed_m_s": 1.5,
+ "survey_altitude_m": 2.0,
+ "range_km": 97.1,
+ "inspect_speed_m_s": 0.5,
+ "camera_swath_m": 3.0,
+ "tracker": {
+  "kind": "3-axis coil array (active tone / passive field)",
+  "span_m": 0.9,
+  "dob_max_m": 3.0,
+  "dob_sigma_m": 0.08,
+  "lateral_sigma_m": 0.15
+ },
+ "sensors": [
+  "INS (FOG class) + depth",
+  "DVL 600 kHz",
+  "cable tracker: 3-axis coil array + electronics (active tone / passive field)",
+  "side-scan sonar",
+  "multibeam (bathymetry, free spans)",
+  "sub-bottom profiler (burial check, soft sediment)",
+  "cameras (2) + lights, survey duty"
+ ],
+ "tools": {
+  "camera": {
+   "what": "2 cameras + lights"
+  },
+  "tracker": {
+   "what": "coil array: cable position and depth of burial"
+  },
+  "mbes": {
+   "what": "multibeam: bathymetry, exposures, free spans"
+  },
+  "sbp": {
+   "what": "sub-bottom profiler: burial in soft sediment"
+  },
+  "gripper": {
+   "what": "5-DOF arm: lift and tag the cable, place markers"
+  }
+ },
+ "tether": null,
+ "resident": false,
+ "price_eur": 420000
+}

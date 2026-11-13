@@ -1,0 +1,64 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "barge",
+ "kind": "barge",
+ "parts": [
+  {
+   "model": "barge_hull",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  },
+  {
+   "model": "barge_silos",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "barge_house",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  },
+  {
+   "model": "barge_dock",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  }
+ ],
+ "size": [
+  36.0,
+  14.0,
+  4.0
+ ],
+ "draft_m": 2.4,
+ "docks": [
+  [
+   -9.0,
+   7.6,
+   -3.0
+  ],
+  [
+   0.0,
+   7.6,
+   -3.0
+  ],
+  [
+   9.0,
+   7.6,
+   -3.0
+  ]
+ ],
+ "feed_t": 343.1
+}

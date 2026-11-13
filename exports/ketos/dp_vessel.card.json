@@ -1,0 +1,59 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "dp_vessel",
+ "kind": "boat",
+ "parts": [
+  {
+   "model": "dp_vessel_hull",
+   "color": [
+    0.122,
+    0.38,
+    0.553
+   ]
+  },
+  {
+   "model": "dp_vessel_house",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "dp_vessel_lars",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  90.0,
+  20.0,
+  9.0
+ ],
+ "draft_m": 6.5,
+ "mass_kg": 6500000.0,
+ "max_speed_m_s": 6.5,
+ "dp": {
+  "class": 2,
+  "max_wind_m_s": 20.0,
+  "max_current_m_s": 1.5
+ },
+ "lars": {
+  "overboard": [
+   -8.0,
+   -13.5,
+   0.0
+  ],
+  "max_hs_m": 3.0,
+  "winch_m_min": 30.0
+ },
+ "carries": [
+  "homarus",
+  "tms"
+ ],
+ "day_rate_eur": 65000.0
+}

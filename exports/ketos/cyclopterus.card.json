@@ -1,0 +1,154 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "cyclopterus",
+ "kind": "rov",
+ "parts": [
+  {
+   "model": "cyclopterus_hull",
+   "color": [
+    0.365,
+    0.541,
+    0.227
+   ]
+  },
+  {
+   "model": "cyclopterus_thrusters",
+   "color": [
+    0.133,
+    0.133,
+    0.133
+   ]
+  },
+  {
+   "model": "cyclopterus_fingers",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  0.8,
+  0.6,
+  0.42
+ ],
+ "mass_kg": 31.0,
+ "displacement_L": 33.7,
+ "net_buoyancy_kg": 0.3,
+ "cd": [
+  0.8,
+  0.9,
+  1.0
+ ],
+ "thrusters": [
+  {
+   "at": [
+    0.24,
+    0.335,
+    -0.012
+   ],
+   "axis": [
+    0.8660254037844387,
+    0.49999999999999994,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.24,
+    -0.335,
+    -0.012
+   ],
+   "axis": [
+    0.8660254037844387,
+    -0.49999999999999994,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.24,
+    0.335,
+    -0.012
+   ],
+   "axis": [
+    -0.8660254037844387,
+    0.49999999999999994,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.24,
+    -0.335,
+    -0.012
+   ],
+   "axis": [
+    -0.8660254037844387,
+    -0.49999999999999994,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.0,
+    0.18,
+    0.209
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.0,
+    -0.18,
+    0.209
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  }
+ ],
+ "battery_Wh": 1200.0,
+ "hotel_W": 100.0,
+ "max_depth_m": 50.0,
+ "inspect_speed_m_s": 0.4,
+ "camera_swath_m": 1.5,
+ "tools": {
+  "clip": {
+   "mass_kg": 2.0,
+   "power_W": 40.0,
+   "price_eur": 3000.0,
+   "what": "closes holes up to ~0.3 m with polymer clips from a 60-clip magazine"
+  },
+  "morts": {
+   "mass_kg": 3.0,
+   "power_W": 40.0,
+   "price_eur": 2200.0,
+   "what": "grabber + 60 L basket at the net's bottom: up to ~8 fish (5 kg) a trip"
+  },
+  "brush": {
+   "mass_kg": 2.5,
+   "power_W": 150.0,
+   "price_eur": 1600.0,
+   "what": "rotary brush, 0.5 m: spot-cleans the net between the farm's big cleaners"
+  }
+ },
+ "grip_hold_N": 240.0,
+ "tether": null,
+ "resident": true,
+ "price_eur": 28660
+}

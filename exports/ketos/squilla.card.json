@@ -1,0 +1,203 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "squilla",
+ "kind": "rov",
+ "parts": [
+  {
+   "model": "squilla_body",
+   "color": [
+    0.906,
+    0.298,
+    0.235
+   ]
+  },
+  {
+   "model": "squilla_arms",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "squilla_skids",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  }
+ ],
+ "size": [
+  2.2,
+  0.6000000000000001,
+  0.65
+ ],
+ "mass_kg": 138.7,
+ "displacement_L": 136.3,
+ "net_buoyancy_kg": 1.0,
+ "cd": [
+  0.3,
+  1.0,
+  1.1
+ ],
+ "thrusters": [
+  {
+   "at": [
+    -1.1,
+    0.12,
+    0.0
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    -1.1,
+    -0.12,
+    0.0
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "max_N": 157.0
+  },
+  {
+   "at": [
+    0.66,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.33,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.33,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.66,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.66,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    0.33,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.33,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  },
+  {
+   "at": [
+    -0.66,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "max_N": 50.0
+  }
+ ],
+ "battery_Wh": 4500.0,
+ "hotel_W": 259.9,
+ "work_W": 649.7,
+ "transit_W": 235.6,
+ "max_depth_m": 300.0,
+ "transit_speed_m_s": 1.0,
+ "inspect_speed_m_s": 0.3,
+ "camera_swath_m": 1.5,
+ "tools": {
+  "camera": {
+   "what": "stereo + polarisation + imaging sonar"
+  },
+  "cp": {
+   "what": "CP stab on the hold arm"
+  },
+  "ut": {
+   "what": "UT thickness probe"
+  },
+  "cutter": {
+   "what": "raptorial cutter-gripper, 3 kN"
+  }
+ },
+ "lift_kg": 8.0,
+ "tether": null,
+ "resident": true,
+ "price_eur": 450000
+}
