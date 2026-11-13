@@ -1,0 +1,112 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     rhoSimpleFoam;
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         {{ITERATIONS}};
+deltaT          1;
+writeControl    timeStep;
+writeInterval   {{ITERATIONS}};
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable false;
+
+functions
+{
+    // the airframe and nacelle outside the engine: pressure relative to the ambient (the body is open at the
+    // intake and the nozzle, so the absolute pressure would not cancel)
+    forceCoeffs
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        log             yes;
+        patches         ("body.*");
+        rho             rho;
+        rhoInf          {{DENSITY}};
+        pRef            {{PRESSURE}};
+        liftDir         (0 0 1);
+        dragDir         (1 0 0);
+        CofR            ({{CENTER_OF_ROTATION}});
+        pitchAxis       (0 1 0);
+        magUInf         {{VELOCITY}};
+        lRef            {{REFERENCE_LENGTH}};
+        Aref            {{REFERENCE_AREA}};
+    }
+    // the hot jet's share of the air (1 at the nozzle, 0 in the free stream): dilution behind the aircraft
+    exhaustTracer
+    {
+        type            scalarTransport;
+        libs            ("libsolverFunctionObjects.so");
+        field           exhaust;
+        schemesField    exhaust;
+        resetOnStartUp  false;
+        alphaD          1;
+        alphaDt         1;
+        writeControl    writeTime;
+    }
+    plumeLine
+    {
+        type            sets;
+        libs            ("libsampling.so");
+        writeControl    writeTime;
+        interpolationScheme cellPoint;
+        setFormat       csv;
+        fields          (T exhaust p);
+        sets
+        {
+            plume
+            {
+                type        uniform;
+                axis        x;
+                start       ({{PLUME_START}});
+                end         ({{PLUME_END}});
+                nPoints     {{PLUME_POINTS}};
+            }
+        }
+    }
+    intakeFlow
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   10;
+        log             no;
+        writeFields     false;
+        regionType      patch;
+        names           ("intake.*");
+        operation       sum;
+        fields          (phi);
+    }
+    exhaustFlow
+    {
+        $intakeFlow;
+        names           ("exhaust.*");
+    }
+    intakeState
+    {
+        $intakeFlow;
+        operation       weightedAverage;
+        weightField     phi;
+        fields          (p T);
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,596 @@
+{
+ "source": "36_falco_balsa_wing",
+ "build": {
+  "rib_t": 2.0,
+  "joint_rib": "ply",
+  "dbox_t": 2.0,
+  "sheet_t": 1.5,
+  "dbox_end": 0.03,
+  "te_sheet_from": 0.85,
+  "cap": [
+   6.0,
+   2.0
+  ],
+  "cap_fracs": [
+   0.42,
+   0.63
+  ],
+  "le_stock": 10.0,
+  "le_cut": 6.0,
+  "te_stock": [
+   20.0,
+   6.0
+  ],
+  "te_cut": 12.0,
+  "tube_clearance": 0.3,
+  "min_wall": 1.0,
+  "split_gap": 1.5,
+  "bevel_deg": 12.0,
+  "lightening": {
+   "fracs": [
+    0.45,
+    0.6,
+    0.8
+   ],
+   "d_max": 40.0,
+   "wall": 5.0
+  },
+  "rib_pitch": 60.0,
+  "tail_rib_pitch": 40.0,
+  "tail_thickness": 0.1,
+  "glue_share": 0.1,
+  "tip_rod_od": 6.0
+ },
+ "laser_settings": {
+  "balsa": {
+   "sheet": {
+    "name": "balsa 400 x 100 x 2 (example)",
+    "width_mm": 400.0,
+    "height_mm": 100.0,
+    "thickness_mm": 2.0,
+    "density_g_cm3": 0.16,
+    "grain": "x",
+    "margin_mm": 4.0
+   },
+   "machine": {
+    "name": "xTool D1 Pro 10 W (example)",
+    "bed_width_mm": 432.0,
+    "bed_height_mm": 406.0,
+    "travel_feed_mm_min": 6000.0,
+    "s_max": 1000
+   },
+   "operations": {
+    "engrave": {
+     "name": "engrave",
+     "power_pct": 12.0,
+     "feed_mm_min": 3000.0,
+     "passes": 1,
+     "kerf_mm": 0.0,
+     "order": 0,
+     "colour": null
+    },
+    "score": {
+     "name": "score",
+     "power_pct": 25.0,
+     "feed_mm_min": 1500.0,
+     "passes": 1,
+     "kerf_mm": 0.0,
+     "order": 1,
+     "colour": null
+    },
+    "cut": {
+     "name": "cut",
+     "power_pct": 100.0,
+     "feed_mm_min": 600.0,
+     "passes": 2,
+     "kerf_mm": 0.15,
+     "order": 2,
+     "colour": null
+    }
+   },
+   "spacing_mm": 3.0,
+   "rotate": true,
+   "labels": false,
+   "name": "D1 Pro, balsa 2 mm (example)",
+   "source": "illustrative values for a 10 W diode on medium balsa, not measured on a machine"
+  },
+  "ply": {
+   "sheet": {
+    "name": "birch plywood 400 x 100 x 2 (example)",
+    "width_mm": 400.0,
+    "height_mm": 100.0,
+    "thickness_mm": 2.0,
+    "density_g_cm3": 0.68,
+    "grain": "x",
+    "margin_mm": 4.0
+   },
+   "machine": {
+    "name": "xTool D1 Pro 10 W (example)",
+    "bed_width_mm": 432.0,
+    "bed_height_mm": 406.0,
+    "travel_feed_mm_min": 6000.0,
+    "s_max": 1000
+   },
+   "operations": {
+    "engrave": {
+     "name": "engrave",
+     "power_pct": 12.0,
+     "feed_mm_min": 3000.0,
+     "passes": 1,
+     "kerf_mm": 0.0,
+     "order": 0,
+     "colour": null
+    },
+    "score": {
+     "name": "score",
+     "power_pct": 25.0,
+     "feed_mm_min": 1500.0,
+     "passes": 1,
+     "kerf_mm": 0.0,
+     "order": 1,
+     "colour": null
+    },
+    "cut": {
+     "name": "cut",
+     "power_pct": 100.0,
+     "feed_mm_min": 240.0,
+     "passes": 3,
+     "kerf_mm": 0.15,
+     "order": 2,
+     "colour": null
+    }
+   },
+   "spacing_mm": 3.0,
+   "rotate": true,
+   "labels": false,
+   "name": "D1 Pro, birch ply 2 mm (example)",
+   "source": "illustrative values for a 10 W diode on medium balsa, not measured on a machine"
+  }
+ },
+ "stations": {
+  "W01": {
+   "y [mm]": 70.0,
+   "chord [mm]": 300.0,
+   "piece": "centre section",
+   "kind": "root rib",
+   "material": "ply",
+   "hinge": "",
+   "tubes": "spar 20, rear tube 12",
+   "spar wall [mm]": 5.858469288720132,
+   "pieces": 1,
+   "area [mm\u00b2]": 5913.847593450664,
+   "cut [mm]": 820.9388760679911,
+   "holes": 5
+  },
+  "W02": {
+   "y [mm]": 130.0,
+   "chord [mm]": 294.69026548672565,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": "",
+   "tubes": "spar 20, rear tube 12",
+   "spar wall [mm]": 5.539735319008271,
+   "pieces": 1,
+   "area [mm\u00b2]": 5692.910804068451,
+   "cut [mm]": 805.7299626967379,
+   "holes": 5
+  },
+  "W03": {
+   "y [mm]": 160.0,
+   "chord [mm]": 292.0353982300885,
+   "piece": "centre section",
+   "kind": "flap end",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20, rear tube 12",
+   "spar wall [mm]": 5.380368334152342,
+   "pieces": 2,
+   "area [mm\u00b2]": 5422.82861108054,
+   "cut [mm]": 812.5534712837781,
+   "holes": 4
+  },
+  "W04": {
+   "y [mm]": 190.0,
+   "chord [mm]": 289.3805309734513,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20, rear tube 12",
+   "spar wall [mm]": 5.22100134929641,
+   "pieces": 2,
+   "area [mm\u00b2]": 5315.385027167731,
+   "cut [mm]": 805.0401917635907,
+   "holes": 4
+  },
+  "W05": {
+   "y [mm]": 250.0,
+   "chord [mm]": 284.070796460177,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 4.902267379584549,
+   "pieces": 2,
+   "area [mm\u00b2]": 5139.543190446093,
+   "cut [mm]": 769.6532749761343,
+   "holes": 3
+  },
+  "W06": {
+   "y [mm]": 310.0,
+   "chord [mm]": 278.76106194690266,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 4.583533409872691,
+   "pieces": 2,
+   "area [mm\u00b2]": 4950.210453446023,
+   "cut [mm]": 753.208495350318,
+   "holes": 3
+  },
+  "W07": {
+   "y [mm]": 370.0,
+   "chord [mm]": 273.4513274336283,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 4.264799440160827,
+   "pieces": 2,
+   "area [mm\u00b2]": 4736.870385101884,
+   "cut [mm]": 733.9544476749113,
+   "holes": 3
+  },
+  "W08": {
+   "y [mm]": 430.0,
+   "chord [mm]": 268.14159292035396,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.946065470448966,
+   "pieces": 2,
+   "area [mm\u00b2]": 4547.201809953494,
+   "cut [mm]": 717.409985785627,
+   "holes": 3
+  },
+  "W09": {
+   "y [mm]": 490.0,
+   "chord [mm]": 262.83185840707966,
+   "piece": "centre section",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.6273315007371068,
+   "pieces": 2,
+   "area [mm\u00b2]": 4352.844206182755,
+   "cut [mm]": 702.4317994164853,
+   "holes": 3
+  },
+  "W10": {
+   "y [mm]": 535.0,
+   "chord [mm]": 258.8495575221239,
+   "piece": "centre section",
+   "kind": "flap end",
+   "material": "balsa",
+   "hinge": 0.7,
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.388281023453212,
+   "pieces": 2,
+   "area [mm\u00b2]": 4209.512548756127,
+   "cut [mm]": 691.1955197135434,
+   "holes": 3
+  },
+  "W11": {
+   "y [mm]": 549.5,
+   "chord [mm]": 257.56637168141594,
+   "piece": "centre section",
+   "kind": "joint rib (centre section)",
+   "material": "ply",
+   "hinge": "",
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.3112536474395124,
+   "pieces": 1,
+   "area [mm\u00b2]": 4319.269115312418,
+   "cut [mm]": 662.4444486412303,
+   "holes": 3
+  },
+  "W12": {
+   "y [mm]": 550.5,
+   "chord [mm]": 257.4778761061947,
+   "piece": "outer panel",
+   "kind": "joint rib (outer panel)",
+   "material": "ply",
+   "hinge": "",
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.305941414610979,
+   "pieces": 1,
+   "area [mm\u00b2]": 4316.0621448382335,
+   "cut [mm]": 662.20638815998,
+   "holes": 3
+  },
+  "W13": {
+   "y [mm]": 567.1999999999999,
+   "chord [mm]": 256.0,
+   "piece": "outer panel",
+   "kind": "aileron end",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 3.217227126374512,
+   "pieces": 2,
+   "area [mm\u00b2]": 4154.6145870486,
+   "cut [mm]": 678.5208327397013,
+   "holes": 3
+  },
+  "W14": {
+   "y [mm]": 610.0,
+   "chord [mm]": 252.21238938053096,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 2.989863561313383,
+   "pieces": 2,
+   "area [mm\u00b2]": 4020.8947322081767,
+   "cut [mm]": 667.9022689575343,
+   "holes": 3
+  },
+  "W15": {
+   "y [mm]": 670.0,
+   "chord [mm]": 246.90265486725662,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 2.671129591601522,
+   "pieces": 2,
+   "area [mm\u00b2]": 3848.61788629066,
+   "cut [mm]": 651.4461325291145,
+   "holes": 3
+  },
+  "W16": {
+   "y [mm]": 730.0,
+   "chord [mm]": 241.5929203539823,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 2.352395621889661,
+   "pieces": 2,
+   "area [mm\u00b2]": 3667.5971279832484,
+   "cut [mm]": 636.5596999734171,
+   "holes": 3
+  },
+  "W17": {
+   "y [mm]": 790.0,
+   "chord [mm]": 236.28318584070797,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 2.0336616521778037,
+   "pieces": 2,
+   "area [mm\u00b2]": 3490.2943321551866,
+   "cut [mm]": 621.6680910947867,
+   "holes": 3
+  },
+  "W18": {
+   "y [mm]": 850.0,
+   "chord [mm]": 230.97345132743362,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 1.7149276824659427,
+   "pieces": 2,
+   "area [mm\u00b2]": 3316.710076069511,
+   "cut [mm]": 606.7764822161568,
+   "holes": 3
+  },
+  "W19": {
+   "y [mm]": 910.0,
+   "chord [mm]": 225.66371681415927,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 1.39619371275408,
+   "pieces": 2,
+   "area [mm\u00b2]": 3151.4323610672163,
+   "cut [mm]": 590.314707759049,
+   "holes": 3
+  },
+  "W20": {
+   "y [mm]": 970.0,
+   "chord [mm]": 220.35398230088495,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "spar 20",
+   "spar wall [mm]": 1.077459743042219,
+   "pieces": 2,
+   "area [mm\u00b2]": 2984.90508978863,
+   "cut [mm]": 575.4230961625551,
+   "holes": 3
+  },
+  "W21": {
+   "y [mm]": 1030.0,
+   "chord [mm]": 215.04424778761063,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "tip rod 6",
+   "spar wall [mm]": 7.75872577333036,
+   "pieces": 2,
+   "area [mm\u00b2]": 3122.926198278781,
+   "cut [mm]": 514.9961366249246,
+   "holes": 3
+  },
+  "W22": {
+   "y [mm]": 1090.0,
+   "chord [mm]": 209.73451327433628,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "tip rod 6",
+   "spar wall [mm]": 7.439991803618499,
+   "pieces": 2,
+   "area [mm\u00b2]": 2963.3706567820027,
+   "cut [mm]": 500.1041622771437,
+   "holes": 3
+  },
+  "W23": {
+   "y [mm]": 1150.0,
+   "chord [mm]": 204.42477876106193,
+   "piece": "outer panel",
+   "kind": "rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "tip rod 6",
+   "spar wall [mm]": 7.121257833906636,
+   "pieces": 2,
+   "area [mm\u00b2]": 2818.049157077474,
+   "cut [mm]": 473.71210111589824,
+   "holes": 2
+  },
+  "W24": {
+   "y [mm]": 1198.0,
+   "chord [mm]": 200.17699115044246,
+   "piece": "outer panel",
+   "kind": "tip rib",
+   "material": "balsa",
+   "hinge": 0.75,
+   "tubes": "tip rod 6",
+   "spar wall [mm]": 6.866270658137148,
+   "pieces": 2,
+   "area [mm\u00b2]": 2693.9438714892913,
+   "cut [mm]": 463.01695284266975,
+   "holes": 2
+  }
+ },
+ "parts": {
+  "wing": 88,
+  "tail": 52,
+  "ply": 6
+ },
+ "cut": {
+  "balsa": {
+   "status": "success",
+   "parts": 134,
+   "sheets": 15,
+   "cut length [m]": 82.99261205543567,
+   "travel [m]": 20.499663885632646,
+   "time [min]": 141.73763073999822,
+   "utilisation": 0.40221352866109134,
+   "parts mass [g]": 76.23012258540794,
+   "sheets mass [g]": 192.0
+  },
+  "ply": {
+   "status": "success",
+   "parts": 6,
+   "sheets": 3,
+   "cut length [m]": 12.851755607328974,
+   "travel [m]": 2.692862472913467,
+   "time [min]": 53.997792109356304,
+   "utilisation": 0.24516209054068142,
+   "parts mass [g]": 39.57376648179558,
+   "sheets mass [g]": 163.20000000000002
+  }
+ },
+ "mass": {
+  "wing ribs (balsa 2 mm)": {
+   "count": 82.0,
+   "mass [g]": 54.1444243919628
+  },
+  "wing ribs (ply 2 mm)": {
+   "count": 6.0,
+   "mass [g]": 39.57376648179558
+  },
+  "tail ribs (balsa 2 mm)": {
+   "count": 52.0,
+   "mass [g]": 22.085698193445147
+  },
+  "wing sheeting (D-box 2 mm, trailing edge 1.5 mm)": {
+   "count": 17.0,
+   "mass [g]": 180.35910529261892
+  },
+  "wing LE stock 10 x 10 triangle": {
+   "count": 5.0,
+   "mass [g]": 19.224812015642414
+  },
+  "wing TE stock 20 x 6 tapered": {
+   "count": 5.0,
+   "mass [g]": 23.06977441877089
+  },
+  "wing cap strips 6 x 2": {
+   "count": 16.0,
+   "mass [g]": 17.380619535016713
+  },
+  "wing shear web behind the spar": {
+   "count": 4.0,
+   "mass [g]": 17.38061953501672
+  },
+  "tail sheeting 1.5 mm and stock": {
+   "count": 1.0,
+   "mass [g]": 76.22783999999999
+  },
+  "glue, sanding (10 % of the wood)": {
+   "count": 1.0,
+   "mass [g]": 44.94466598642693
+  },
+  "total": {
+   "count": 189.0,
+   "mass [g]": 494.39132585069615
+  }
+ },
+ "mass_comparison": {
+  "foam_g": 490.5657925,
+  "balsa_g": 494.39132585069615,
+  "delta_g": 3.825533350696162
+ },
+ "torsion": {
+  "T": 11.11963125,
+  "GJ_box": 31.120135199999986,
+  "GJ_tube": 37.5415413365459,
+  "twist_deg": 3.7115781175408538,
+  "twist_foam_deg": 3.1230204421736785,
+  "tau_balsa": 0.5050352948295405
+ },
+ "cad_check": {
+  "130.0": {
+   "chord [mm]": 294.69026548672565,
+   "CAD section points": 95.0,
+   "max distance to the rib's section [mm]": 0.17238512814185591,
+   "mean [mm]": 0.023327721941021638
+  },
+  "567.1999999999999": {
+   "chord [mm]": 256.0,
+   "CAD section points": 95.0,
+   "max distance to the rib's section [mm]": 0.9599625270651485,
+   "mean [mm]": 0.047788431737852057
+  },
+  "1198.0": {
+   "chord [mm]": 200.17699115044246,
+   "CAD section points": 95.0,
+   "max distance to the rib's section [mm]": 0.03051923604309675,
+   "mean [mm]": 0.012852620278542108
+  }
+ }
+}

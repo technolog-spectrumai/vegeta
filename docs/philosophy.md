@@ -16,6 +16,18 @@ Vegeta is a collection of small Unix/Python engineering tools, not one large app
 - Derived quantities are reported only when they are reliable. For example a safety factor is
   computed only when a yield strength was given; otherwise it is `None` with a message.
 
+## Long-running analyses are workflows, not notebook cells
+- An analysis expected to take more than about 15–30 minutes — the whole sweep or campaign, not one case — is
+  an explicit **workflow** (`side_labs/`): a thin script an engineer launches from a shell, which writes a run
+  directory (`manifest.json`, `status.json`, a continuously flushed `run.log`, `summary.json` only when complete).
+- A notebook may *require* a workflow's output and must then name the run it reads, check its state and its
+  design fingerprint, and say exactly which command produces it when it is missing. It never launches a solver
+  silently — not behind an import, a plot or a loader — and never regenerates a missing analysis on its own. The
+  opt-in exception is a notebook flagged `yanus_auto` (`docs/yanus.md` § 16): its gate produces the missing runs in
+  screening quality, loudly, before the notebook starts.
+- Missing, stale, incompatible or failed results are **NOT RUN** in the notebook, with the analytical estimate
+  visible and labelled; they are never replaced by an invented number. See `labs/aero/campaigns/side_labs/README.md`.
+
 ## Configuration in Python
 All configuration is done through the Python API (dataclasses, keyword arguments). There are no
 input config files for our own settings. Files that an external tool itself requires (a PrusaSlicer

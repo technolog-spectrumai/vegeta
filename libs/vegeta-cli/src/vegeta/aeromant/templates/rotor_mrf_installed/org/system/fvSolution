@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-7;
+        relTol          0.05;
+    }
+
+    "(U|k|omega)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-8;
+        relTol          0.1;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 1;
+    consistent      yes;
+    residualControl
+    {
+        p               {{RESIDUAL_TARGET}};
+        "(U|k|omega)"     {{RESIDUAL_TARGET}};
+    }
+}
+
+relaxationFactors
+{
+    equations
+    {
+        U               0.9;
+        ".*"            0.8;
+    }
+}
+
+// ************************************************************************* //

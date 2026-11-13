@@ -1,0 +1,233 @@
+# Scenarios — whole-machine flow simulations and particle movies
+
+A scenario is a **script, not a notebook**: it builds a whole machine, runs one CFD case with its propeller(s)
+as rotor disks, and writes a short movie of tracer particles in the converged flow, with the numbers next to it.
+It runs unattended from a shell for tens of minutes; the notebooks stay interactive.
+
+For now every scenario uses **preconfigured values** (hardcoded presets in `run_scenario.py`, taken from the
+notebooks' current designs). Reading a design exported by a notebook (JSON) comes later.
+
+```
+scenarios/
+  scenarios.md          this plan
+  run_scenario.py       the one runner; PRESETS = {"air": ..., "sub": ..., "boat": ...}
+  air_video.sh          fixed-wing aircraft with both propellers, in air          (every branch)
+  sub_video.sh          submarine with its propeller, submerged                    (dev_sea, dev_demo)
+  boat_video.sh         boat hull with its propeller, no free surface              (dev_sea, dev_demo)
+  output/<scenario>/    everything a run writes (gitignored)
+```
+
+## Usage
+```bash
+scenarios/air_video.sh                 # 1 core (default)
+scenarios/air_video.sh -j 8            # 8 cores: the solver runs with MPI on 8 subdomains
+scenarios/air_video.sh --dry-run       # build the geometry, prepare the case, print the commands; no OpenFOAM
+scenarios/air_video.sh --movie-only    # re-render the movie from the solved case
+```
+Options (all scripts): `-j N` cores (default 1), `--out DIR` (default `scenarios/output/<scenario>`),
+`--iterations N`, `--seconds S` and `--fps F` for the movie, `--movie-only`, `--force` (start again from an empty
+case), `--dry-run`. Progress: tqdm bars for the stages, the OpenFOAM steps (solver iterations read live from its
+log) and the movie frames.
+
+## What each run does
+1. **Geometry** — build the Dedalus design with the preset parameters, write the STL (mm).
+2. **Case** — `aeromant.CFDCase(template, stl, parameters)`, `prepare()`.
+3. **Mesh** — blockMesh, feature edges, snappyHexMesh, checkMesh (serial).
+4. **Solve** — `-j 1`: the solver runs serial. `-j N`: Aeromant writes `numberOfSubdomains N`, runs
+   `decomposePar`, `mpirun -np N <solver> -parallel`, `reconstructPar -latestTime`.
+5. **Movie** — tracer particles seeded upstream and carried by the converged velocity field, coloured by speed,
+   the Vegeta logo in the corner: `output/<scenario>/<scenario>.mp4`.
+6. **Summary** — `summary.json`: preset, template, cells, iterations, convergence, forces and coefficients,
+   time per stage, files written.
+
+A finished stage is not repeated when the script is started again; `--force` starts over.
+
+## The three machines
+| | air | submarine | boat (no free surface) |
+|---|---|---|---|
+| body | whole aircraft at the cruise angle of attack | hull with fins | hull below the waterline, mirrored about it ("double body") |
+| propellers | 2 rotor disks, counter-rotating | 1 rotor disk behind the tail | 1 rotor disk + its mirror image (opposite sense) |
+| fluid | air | sea water | sea water |
+| template | `aircraft_rotor_disks` | `hull_rotor_disk` (one disk) | `aircraft_rotor_disks` (the mirror disk is disk 2) |
+| results | airframe lift and drag in the slipstream | hull drag in the propeller's inflow | half the double-body drag: viscous + form drag, no wave drag |
+
+The boat without a free surface has no waves: the waterline is a symmetry plane, so wave-making resistance, sinkage
+and trim are missing. A free-surface scenario (interFoam, VOF) is a later step.
+
+## Run times (estimates; replaced by measured times after the first real runs)
+| | cells | 1 core | 8 cores |
+|---|---|---|---|
+| air | ~0.4–0.6 M | 25–50 min | 10–15 min |
+| submarine | ~0.3–0.6 M | 20–45 min | 10–20 min |
+| boat, double body | ~0.3–0.6 M | 20–45 min | 10–15 min |
+
+## Work plan
+- [x] Aeromant: `CFDCase.run(processors=N)` — decomposePar / mpirun / reconstructPar in both dialects; tests on
+      the generated steps and commands (no OpenFOAM in the tests)
+- [x] Aeromant: `animate_particles(progress=True)` — tqdm over the frames
+- [x] `run_scenario.py` + `air_video.sh` with the air preset (09a's aircraft, propeller and cruise point)
+- [x] Aeromant template `hull_rotor_disk` (one disk)
+- [x] `sub_video.sh` with the submarine preset (`13_submarine`)
+- [x] `boat_video.sh`, double body, with the boat preset (`12_boat_at_sea`)
+- [ ] First real runs on a machine with OpenFOAM: disk thrust sign, mesh quality, measured run times → this file
+
+Later: read the design from a JSON exported by the notebooks instead of the presets; a free-surface boat
+(interFoam); resolved rotating propellers instead of disks (`old_todo.md` 4.12).
+
+## Apheloria packs and unpacks (MuJoCo)
+
+`xvfb-run -a python3 scenarios/apheloria_pack.py` (or `./user_tests.sh apheloria-movies`) simulates Apheloria
+(`designs/apheloria_robot.py`: head + 8 segments, 33.1 kg, 96 leg servos, 8 active body pitch joints of
+60 N·m stall) in MuJoCo through Chiron and writes `scenarios/output/apheloria_pack.mp4` (stand → tuck the legs →
+curl into the ball, neck first) and `apheloria_unpack.mp4` (from the ball → open tail first → stand), plus
+`apheloria_pack_unpack.json` with the body joints' final angles, peak torques and saturation. A scripted controller
+sets only servo targets; whether the ball closes is decided by gravity, contacts and the actuators' limits.
+
+## Onager Sentinel on patrol (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_patrol.py [--response drag|limp]` (or `./user_tests.sh onager`) drives the
+Onager Sentinel SX-1 (`designs/onager_robot.py`: a 408 kg wheel-leg hybrid, eight 800 N·m joint
+modules as position servos, four 3 kW hub motors as velocity servos on their torque–speed lines) over a gravel
+road with a 120 mm speed bump at 3 m/s; at 6 s the front-left hub motor loses power (it freewheels), at 9 s the
+rear-right wheel seizes. Both responses slow to 1.5 m/s, one movie each: `onager_patrol_drag.mp4` (keep driving on
+three motors, the braked tyre skids) and `onager_patrol_limp.mp4` (the three-wheel limp: the hull shifts 0.4 m
+forward on the three good legs, the seized wheel lifts 100 mm); `onager_patrol.json` has the per-phase tables
+(speed, heading, tilt, corner loads, wheel torques and power, the seized wheel's drag). The scenario is
+`designs/onager_scenario.py`, the same one notebook 20 §7 runs.
+
+## Onager Atlas moves a pallet (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_atlas_pallet.py` (or `./user_tests.sh onager-atlas`): the forklift Onager
+(`designs/onager_atlas_robot.py`, 726 kg, four-quadrant drives) picks a Euro pallet with a 175 kg crate
+off a gravel yard (forks at travel height, stand-off, lower to the openings, creep in, lift, tilt back), carries it
+8 m at 1 m/s, sets it down and backs out. The pallet is a Chiron prop; whether it rides on the forks is contact
+physics. Writes `onager_atlas_pallet.mp4` and `onager_atlas_pallet.json` (the phase table: pallet height and tilt,
+lift force, tilt torque, front knees against their stall, the lightest rear wheel).
+
+## Onager Manus clears a blocked track (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_manus_tasks.py` (or `./user_tests.sh onager-manus`): the two-arm Onager
+(`designs/onager_manus_robot.py`, 458 kg) stops at a fence wire across the track (Ø 3.15 mm, 1200 MPa:
+7.5 kN to cut), puts its right pincer's cutter notch on it and closes — a scene hook releases the wire's weld only
+when both jaws squeeze it with the cutting force — drives through, crouches at a 14 kg log, takes it with the left
+pincer's hooked jaws, lifts it, swings it over the side, puts it down and drives on. Writes
+`onager_manus_tasks.mp4` (the wire drawn 4× thicker) and `onager_manus_tasks.json`.
+
+## Onager Sweeper cleans a street (MuJoCo)
+
+`xvfb-run -a python3 scenarios/onager_sweeper_street.py` (or `./user_tests.sh onager-sweeper`): the street-cleaning
+Onager (`designs/onager_sweeper_robot.py`, 590 kg: the chassis low in a fixed stance, a disc broom, a
+suction hood, two Manus arms, a basket on the roof) spins its broom, runs the fan — the suction is the CFD's air
+drag on the litter under the hood (`onager_sweeper_cfd.SUCTION`), what reaches the duct is collected — sweeps at
+1 m/s over cans and packets, stops at a 2.3 kg brick, takes it with its left pincer's hooked jaws and swings it
+back into the basket, does the same with a 0.6 kg box with the right pincer, and sweeps on. Writes
+`onager_sweeper_street.mp4` and `onager_sweeper_street.json` (what was vacuumed, what landed in the basket, the
+phase table).
+
+## MERLIN races to a wildfire and samples its smoke
+
+`python scenarios/merlin_mission.py [--propulsion fastest|edf|tractor|pusher] [--distance-km 20] [--heat-mw 40] [--wind 5]
+[--wind-from 225] [--race-only] [--quick]` (or `./user_tests.sh merlin`). Builds the three MERLINs of notebook 26 (ducted fan,
+tractor, pusher on one battery and one power limit), prints the reach, return and landing times to a fire 5, 8, 10, 20 and 30 km out for each, on flat ground and
+up a mountain (`--fire-elevation 600`), flies the fastest
+(or the chosen one) through a Gaussian smoke plume — climb, dash, crosswind passes at four heights, home, belly landing — and
+estimates the fire's heat release from the passes. Writes `merlin_<propulsion>_<km>km.mp4` and `.json` (race table, mission
+summary, phases, source estimate).
+
+## The propulsor libraries and MERLIN's race
+
+`python scenarios/propulsor_maps.py [--kind propellers|exotic|edf] [-j N]` solves the design spaces of notebooks 25 (two and
+three blades), 25c (six and twelve) and 25b (ducted fans, one to three stages) over airspeed × rpm and writes
+`designs/data/<kind>_maps.json` (about a minute for each propeller set, ten for the fans on four cores; the same as
+each notebook's last section). `python scenarios/merlin_race.py` races every map on MERLIN (notebook 26's design export when it
+exists) — 5 km and back, 10 km reach, 10 km and back, at 1900, 2700 and 3500 W on the same battery — and writes
+`merlin_race.csv` (every race) and `merlin_race.json` (the fastest of each kind).
+
+## NISUS survey missions (`nisus_mission.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_mission.py                               # six missions with movies (~25 min)
+xvfb-run -a python3 scenarios/nisus_mission.py --variant Zero --condition "Jetson failure"
+python3 scenarios/nisus_mission.py --no-movie                                # the numbers only
+```
+Notebook 31's missions in MuJoCo through Chiron (`designs/nisus_scenario.py`): Nisus-OBS and Nisus-Zero, hand
+launch, climb, survey until the flight controller's energy manager calls the return, approach and landing. Writes
+`scenarios/output/nisus_<variant>_<condition>.mp4` and `.csv` and `nisus_mission.json`.
+
+## NISUS bird photography (`nisus_birds.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_birds.py                                 # six bird missions with videos (~30 min)
+xvfb-run -a python3 scenarios/nisus_birds.py --scenario "pigeon flock"
+python3 scenarios/nisus_birds.py --no-movie                                  # the numbers only
+```
+Notebook 32: Nisus-Zero in MuJoCo with the mission software `vegeta.mission` (tracking, one-by-one target selection,
+stern photo passes) against simulated birds; YOLOX is not run (simulated detections at the assumed Jetson budget).
+The reference (Orin Nano Super, YOLOX-Tiny, 6 mm lens), the stock lens, the Nano B01, a pigeon flock, a 5 m/s wind and
+a Jetson failure. Writes `scenarios/output/birds_<scenario>.mp4`, `_photos.csv` and `nisus_birds.json`.
+
+## NISUS+ mountain missions (`nisus_plus_mission.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_plus_mission.py                               # six mountain missions with movies (~20 min)
+xvfb-run -a python3 scenarios/nisus_plus_mission.py --condition "storm: weather escape"
+python3 scenarios/nisus_plus_mission.py --no-movie                                # the numbers only (~10 min)
+```
+Notebook 33's missions in MuJoCo through Chiron (`designs/nisus_plus_scenario.py`) over an analytic mountain valley
+(a MuJoCo height field, 10 x 9.5 km in 25 m cells): Nisus+ Zero launched by a light bungee from the valley meadow at 1200 m,
+a spiral climb to 3650 m (the air's density from the ISA at the aircraft's altitude), the terrain-following survey legs on
+the north face, the return, the crow + propeller-brake descent (with regeneration), the steep crow approach and the belly
+landing. Calm, the ridge lift of a south wind, the lee downdraft of a north wind, a hot day (ISA +20 °C), a storm warning
+(the return and the fastest descent) and the Jetson's failure. Writes `scenarios/output/nisus_plus_<condition>.mp4` and `.csv`
+and `nisus_plus_mission.json`.
+
+## NISUS+ bird hunts in the mountains (`nisus_plus_birds.py`)
+
+```bash
+xvfb-run -a python3 scenarios/nisus_plus_birds.py                                 # four bird hunts with videos (~25 min)
+xvfb-run -a python3 scenarios/nisus_plus_birds.py --scenario "griffon vultures"
+python3 scenarios/nisus_plus_birds.py --no-movie                                  # the numbers only
+```
+Notebook 33, Part 11b: NISUS-Zero's mission software (`vegeta.mission`: tracking, target selection, stern photo passes)
+on Nisus+ Zero over the south-facing slope — golden eagles beating along it in the ridge lift, griffon vultures circling
+wide in a thermal, a flock of alpine
+choughs, the Jetson failing mid-hunt. YOLOX is not run (simulated detections at the assumed Jetson budget). Writes
+`scenarios/output/nisus_plus_birds_<scenario>.mp4`, `_photos.csv` and `nisus_plus_birds.json`.
+
+## FALCO mountain missions (`falco_mission.py`)
+
+```bash
+xvfb-run -a python3 scenarios/falco_mission.py                                    # six mountain missions with movies (~20 min)
+xvfb-run -a python3 scenarios/falco_mission.py --condition "lee downdraft (north wind 10 m/s)"
+python3 scenarios/falco_mission.py --no-movie                                     # the numbers only (~10 min)
+```
+Notebook 35's missions: NISUS+'s six conditions on Falco-Zero, the tractor (`designs/falco_scenario.py`) — the
+20x15 in the nose on the 8S3P pack, the single tail; the landing **parks the propeller**: on the 9° crow final below
+20 m the throttle goes to idle, the ESC's brake stops the blades and the parking routine marks them horizontal, the
+flare is flown on the pitch alone, a go-around un-parks it. The judge counts a touchdown with the blades not parked as a
+blade strike. Writes `scenarios/output/falco_<condition>.mp4` and `.csv` and `falco_mission.json`.
+
+## FALCO bird hunts (`falco_birds.py`)
+
+```bash
+xvfb-run -a python3 scenarios/falco_birds.py                                      # four bird hunts with videos (~25 min)
+xvfb-run -a python3 scenarios/falco_birds.py --scenario "alpine chough"
+python3 scenarios/falco_birds.py --no-movie
+```
+NISUS+'s four hunts on Falco-Zero (`designs/falco_birds.py`): the camera in the chin looks past the
+propeller's hub (the blades cross the top of the frame: computer vision masks them, accepted). Writes
+`scenarios/output/falco_birds_<scenario>.mp4`, `_photos.csv` and `falco_birds.json`.
+
+## Kestrel-4Q transitions (`kestrel_transitions.py`)
+The zero-stagger biplane quadrotor tailsitter's transitions through the stall, hover → cruise and back (notebook 40):
+the matrix of three vehicles (elevons, rotors only, 2.0 kg with the CG aft), both directions, 1.5 / 3 / 5 s pitch
+schedules, still air and a 6 m/s headwind, on the model's polar; with `--cfd` the airframe is solved in OpenFOAM at
+the points the nominal transitions fly (Aeromant `aircraft_quad_rotor_disks`: four rotor disks at each pair's rpm), the
+CFD's coefficients correct the model and the matrix is flown again.
+```bash
+python3 scenarios/kestrel_transitions.py                 # the model polar (~2 min)
+python3 scenarios/kestrel_transitions.py --cfd -n 8      # + the CFD at the transition points (OpenFOAM), then again
+python3 scenarios/kestrel_transitions.py --part2         # + Kestrel-4Q-2 (elevons, faired posts, no X) and the two X-wings
+```
+Output: `scenarios/output/kestrel/` (`transition_matrix.csv`, `transition_matrix_cfd.csv`, `cfd_cases.csv`, the nominal
+transitions' figures, `kestrel_transitions.json`). `./user_tests.sh kestrel` runs the tests and the model matrix.

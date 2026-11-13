@@ -1,0 +1,22 @@
+{
+ "debug": true,
+ "design_fingerprint": null,
+ "file": "microjet.json",
+ "git": "3428cd7c3402",
+ "inputs": [],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.aeromant": "found",
+  "vegeta.boreas": "found",
+  "vegeta.core": "found",
+  "vegeta.dedalus": "found",
+  "vegeta.talos": "found"
+ },
+ "producer": "28_microjet",
+ "schema": null,
+ "sha256": "e5d6ac0ab748a1ecde9e96c1e676d646b00b64ace7c19dbca2c2fb218b769c52",
+ "size": 58857,
+ "written_at": "2026-10-19T19:17:44Z",
+ "written_ts": 1792437464.5885186,
+ "yanus": 1
+}

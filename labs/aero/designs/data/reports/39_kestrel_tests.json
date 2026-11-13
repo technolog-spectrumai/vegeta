@@ -1,0 +1,2129 @@
+{
+ "notebook": "39_kestrel_tests",
+ "title": "Kestrel — notebook 39, the CFD and FEA campaign",
+ "exported": "2026-10-16T12:30",
+ "meta": {
+  "date": "2026-10-16",
+  "quality": "screening"
+ },
+ "sections": {
+  "settings": {
+   "CFD": "NOT RUN",
+   "quality": "screening",
+   "jobs": 1,
+   "processors": 4,
+   "campaigns": "4Q-1, 4Q-2, sections",
+   "sweep only": false,
+   "FEA": "NOT RUN"
+  },
+  "aircraft": {
+   "index": [
+    "4Q-1",
+    "4Q-2"
+   ],
+   "columns": [
+    "mass [kg]",
+    "CG [mm]",
+    "Cd0",
+    "transition points"
+   ],
+   "rows": [
+    {
+     "_index": "4Q-1",
+     "mass [kg]": 1.686,
+     "CG [mm]": 214.8,
+     "Cd0": 0.06655,
+     "transition points": 16.0
+    },
+    {
+     "_index": "4Q-2",
+     "mass [kg]": 1.651,
+     "CG [mm]": 215.4,
+     "Cd0": 0.02343,
+     "transition points": 16.0
+    }
+   ]
+  },
+  "prop_lab calibration": {
+   "cl_scale": 1.0,
+   "cd_scale": 1.0,
+   "cn_factor": 1.0,
+   "on_file": false,
+   "meta": {
+    "source": "38_prop_lab",
+    "quality": "screening",
+    "date": "2026-10-16",
+    "propeller": "9x6, Dedalus CAD of Boreas's planform"
+   }
+  },
+  "case lists": {
+   "4Q-1": {
+    "index": [
+     "forward 3 s: α 53°, 1.5 m/s, T 4.38/4.85 N",
+     "forward 3 s: α 45°, 2.1 m/s, T 4.47/5.02 N",
+     "forward 3 s: α 30°, 3.8 m/s, T 4.64/5.33 N",
+     "forward 3 s: α 20°, 5.8 m/s, T 4.58/5.36 N",
+     "forward 3 s: α 15°, 7.3 m/s, T 4.28/5.08 N",
+     "forward 3 s: α 10°, 9.3 m/s, T 3.10/3.94 N",
+     "back 3 s: α 80°, 6.0 m/s, T 0.27/1.66 N",
+     "back 3 s: α 60°, 7.7 m/s, T 0.25/2.08 N",
+     "back 3 s: α 45°, 9.9 m/s, T 0.25/2.45 N",
+     "back 3 s: α 30°, 13.0 m/s, T 0.25/2.07 N",
+     "back 3 s: α 20°, 14.7 m/s, T 0.25/1.21 N",
+     "back 3 s: α 15°, 15.2 m/s, T 0.25/1.19 N",
+     "back 3 s: α 10°, 15.5 m/s, T 0.25/1.41 N",
+     "hover: α 90°, 1.0 m/s, T 4.13/4.13 N",
+     "cruise: α 5°, 16.0 m/s, T 0.83/0.83 N",
+     "stall: α 10°, 11.5 m/s, T 0.58/0.58 N",
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "status",
+     "α [deg]",
+     "V [m/s]",
+     "template",
+     "source"
+    ],
+    "rows": [
+     {
+      "_index": "forward 3 s: α 53°, 1.5 m/s, T 4.38/4.85 N",
+      "status": "NOT RUN",
+      "α [deg]": 52.89,
+      "V [m/s]": 1.503,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 45°, 2.1 m/s, T 4.47/5.02 N",
+      "status": "NOT RUN",
+      "α [deg]": 44.9,
+      "V [m/s]": 2.1,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 30°, 3.8 m/s, T 4.64/5.33 N",
+      "status": "NOT RUN",
+      "α [deg]": 29.97,
+      "V [m/s]": 3.823,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 20°, 5.8 m/s, T 4.58/5.36 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 5.808,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 15°, 7.3 m/s, T 4.28/5.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.0,
+      "V [m/s]": 7.323,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 10°, 9.3 m/s, T 3.10/3.94 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.989,
+      "V [m/s]": 9.286,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "back 3 s: α 80°, 6.0 m/s, T 0.27/1.66 N",
+      "status": "NOT RUN",
+      "α [deg]": 80.13,
+      "V [m/s]": 6.033,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 60°, 7.7 m/s, T 0.25/2.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 60.04,
+      "V [m/s]": 7.692,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 45°, 9.9 m/s, T 0.25/2.45 N",
+      "status": "NOT RUN",
+      "α [deg]": 45.07,
+      "V [m/s]": 9.943,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 30°, 13.0 m/s, T 0.25/2.07 N",
+      "status": "NOT RUN",
+      "α [deg]": 30.02,
+      "V [m/s]": 13.02,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 20°, 14.7 m/s, T 0.25/1.21 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.04,
+      "V [m/s]": 14.67,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 15°, 15.2 m/s, T 0.25/1.19 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.0,
+      "V [m/s]": 15.19,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 10°, 15.5 m/s, T 0.25/1.41 N",
+      "status": "NOT RUN",
+      "α [deg]": 10.01,
+      "V [m/s]": 15.54,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "hover: α 90°, 1.0 m/s, T 4.13/4.13 N",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 1.0,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "hover"
+     },
+     {
+      "_index": "cruise: α 5°, 16.0 m/s, T 0.83/0.83 N",
+      "status": "NOT RUN",
+      "α [deg]": 5.291,
+      "V [m/s]": 16.0,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "cruise"
+     },
+     {
+      "_index": "stall: α 10°, 11.5 m/s, T 0.58/0.58 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.672,
+      "V [m/s]": 11.46,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "stall"
+     },
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 0.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 5.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 8.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 12.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 14.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 16.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 30.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 45.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 60.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 75.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     }
+    ]
+   },
+   "4Q-2": {
+    "index": [
+     "forward 3 s: α 53°, 1.5 m/s, T 4.20/4.65 N",
+     "forward 3 s: α 45°, 2.1 m/s, T 4.29/4.81 N",
+     "forward 3 s: α 30°, 3.9 m/s, T 4.42/5.08 N",
+     "forward 3 s: α 20°, 5.9 m/s, T 4.31/5.05 N",
+     "forward 3 s: α 15°, 7.4 m/s, T 3.95/4.70 N",
+     "forward 3 s: α 10°, 9.4 m/s, T 2.75/3.54 N",
+     "back 3 s: α 80°, 6.1 m/s, T 0.34/1.69 N",
+     "back 3 s: α 60°, 7.8 m/s, T 0.25/2.01 N",
+     "back 3 s: α 45°, 10.0 m/s, T 0.25/2.34 N",
+     "back 3 s: α 30°, 12.9 m/s, T 0.25/1.93 N",
+     "back 3 s: α 20°, 14.2 m/s, T 0.25/1.12 N",
+     "back 3 s: α 15°, 14.5 m/s, T 0.25/1.08 N",
+     "back 3 s: α 10°, 14.6 m/s, T 0.25/1.30 N",
+     "hover: α 90°, 1.0 m/s, T 4.05/4.05 N",
+     "cruise: α 5°, 16.0 m/s, T 0.36/0.36 N",
+     "stall: α 10°, 11.3 m/s, T 0.33/0.33 N",
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "status",
+     "α [deg]",
+     "V [m/s]",
+     "template",
+     "source"
+    ],
+    "rows": [
+     {
+      "_index": "forward 3 s: α 53°, 1.5 m/s, T 4.20/4.65 N",
+      "status": "NOT RUN",
+      "α [deg]": 53.15,
+      "V [m/s]": 1.502,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 45°, 2.1 m/s, T 4.29/4.81 N",
+      "status": "NOT RUN",
+      "α [deg]": 44.97,
+      "V [m/s]": 2.118,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 30°, 3.9 m/s, T 4.42/5.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 29.96,
+      "V [m/s]": 3.88,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 20°, 5.9 m/s, T 4.31/5.05 N",
+      "status": "NOT RUN",
+      "α [deg]": 19.99,
+      "V [m/s]": 5.897,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 15°, 7.4 m/s, T 3.95/4.70 N",
+      "status": "NOT RUN",
+      "α [deg]": 14.96,
+      "V [m/s]": 7.43,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "forward 3 s: α 10°, 9.4 m/s, T 2.75/3.54 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.985,
+      "V [m/s]": 9.398,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "forward 3 s"
+     },
+     {
+      "_index": "back 3 s: α 80°, 6.1 m/s, T 0.34/1.69 N",
+      "status": "NOT RUN",
+      "α [deg]": 80.18,
+      "V [m/s]": 6.144,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 60°, 7.8 m/s, T 0.25/2.01 N",
+      "status": "NOT RUN",
+      "α [deg]": 60.12,
+      "V [m/s]": 7.793,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 45°, 10.0 m/s, T 0.25/2.34 N",
+      "status": "NOT RUN",
+      "α [deg]": 45.06,
+      "V [m/s]": 10.03,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 30°, 12.9 m/s, T 0.25/1.93 N",
+      "status": "NOT RUN",
+      "α [deg]": 30.04,
+      "V [m/s]": 12.9,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 20°, 14.2 m/s, T 0.25/1.12 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.01,
+      "V [m/s]": 14.16,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 15°, 14.5 m/s, T 0.25/1.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.02,
+      "V [m/s]": 14.49,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "back 3 s: α 10°, 14.6 m/s, T 0.25/1.30 N",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 14.6,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "back 3 s"
+     },
+     {
+      "_index": "hover: α 90°, 1.0 m/s, T 4.05/4.05 N",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 1.0,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "hover"
+     },
+     {
+      "_index": "cruise: α 5°, 16.0 m/s, T 0.36/0.36 N",
+      "status": "NOT RUN",
+      "α [deg]": 5.181,
+      "V [m/s]": 16.0,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "cruise"
+     },
+     {
+      "_index": "stall: α 10°, 11.3 m/s, T 0.33/0.33 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.672,
+      "V [m/s]": 11.34,
+      "template": "aircraft_quad_rotor_disks",
+      "source": "stall"
+     },
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 0.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 5.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 8.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 12.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 14.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 16.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 30.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 45.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 60.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 75.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 10.0,
+      "template": "rans_ksst_external",
+      "source": "sweep"
+     }
+    ]
+   }
+  },
+  "section slabs": {
+   "index": [
+    "NACA 0012, α 0°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 4°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 8°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 12°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab"
+   ],
+   "columns": [
+    "status",
+    "α [deg]",
+    "V [m/s]",
+    "Re (chord)",
+    "AR",
+    "template",
+    "reads against"
+   ],
+   "rows": [
+    {
+     "_index": "NACA 0012, α 0°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 4°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 8°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 12°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    }
+   ]
+  },
+  "campaign tables": {
+   "4Q-1": {
+    "index": [
+     "forward 3 s: α 53°, 1.5 m/s, T 4.38/4.85 N",
+     "forward 3 s: α 45°, 2.1 m/s, T 4.47/5.02 N",
+     "forward 3 s: α 30°, 3.8 m/s, T 4.64/5.33 N",
+     "forward 3 s: α 20°, 5.8 m/s, T 4.58/5.36 N",
+     "forward 3 s: α 15°, 7.3 m/s, T 4.28/5.08 N",
+     "forward 3 s: α 10°, 9.3 m/s, T 3.10/3.94 N",
+     "back 3 s: α 80°, 6.0 m/s, T 0.27/1.66 N",
+     "back 3 s: α 60°, 7.7 m/s, T 0.25/2.08 N",
+     "back 3 s: α 45°, 9.9 m/s, T 0.25/2.45 N",
+     "back 3 s: α 30°, 13.0 m/s, T 0.25/2.07 N",
+     "back 3 s: α 20°, 14.7 m/s, T 0.25/1.21 N",
+     "back 3 s: α 15°, 15.2 m/s, T 0.25/1.19 N",
+     "back 3 s: α 10°, 15.5 m/s, T 0.25/1.41 N",
+     "hover: α 90°, 1.0 m/s, T 4.13/4.13 N",
+     "cruise: α 5°, 16.0 m/s, T 0.83/0.83 N",
+     "stall: α 10°, 11.5 m/s, T 0.58/0.58 N",
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "status",
+     "α [deg]",
+     "V [m/s]",
+     "source",
+     "rotor disks",
+     "template",
+     "rpm upper",
+     "rpm lower",
+     "Re (chord)"
+    ],
+    "rows": [
+     {
+      "_index": "forward 3 s: α 53°, 1.5 m/s, T 4.38/4.85 N",
+      "status": "NOT RUN",
+      "α [deg]": 52.89,
+      "V [m/s]": 1.503,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6959.0,
+      "rpm lower": 7323.0,
+      "Re (chord)": 14410.0
+     },
+     {
+      "_index": "forward 3 s: α 45°, 2.1 m/s, T 4.47/5.02 N",
+      "status": "NOT RUN",
+      "α [deg]": 44.9,
+      "V [m/s]": 2.1,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7070.0,
+      "rpm lower": 7489.0,
+      "Re (chord)": 20140.0
+     },
+     {
+      "_index": "forward 3 s: α 30°, 3.8 m/s, T 4.64/5.33 N",
+      "status": "NOT RUN",
+      "α [deg]": 29.97,
+      "V [m/s]": 3.823,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7350.0,
+      "rpm lower": 7861.0,
+      "Re (chord)": 36660.0
+     },
+     {
+      "_index": "forward 3 s: α 20°, 5.8 m/s, T 4.58/5.36 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 5.808,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7546.0,
+      "rpm lower": 8110.0,
+      "Re (chord)": 55700.0
+     },
+     {
+      "_index": "forward 3 s: α 15°, 7.3 m/s, T 4.28/5.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.0,
+      "V [m/s]": 7.323,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7548.0,
+      "rpm lower": 8130.0,
+      "Re (chord)": 70220.0
+     },
+     {
+      "_index": "forward 3 s: α 10°, 9.3 m/s, T 3.10/3.94 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.989,
+      "V [m/s]": 9.286,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6966.0,
+      "rpm lower": 7631.0,
+      "Re (chord)": 89040.0
+     },
+     {
+      "_index": "back 3 s: α 80°, 6.0 m/s, T 0.27/1.66 N",
+      "status": "NOT RUN",
+      "α [deg]": 80.13,
+      "V [m/s]": 6.033,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 1889.0,
+      "rpm lower": 4315.0,
+      "Re (chord)": 57850.0
+     },
+     {
+      "_index": "back 3 s: α 60°, 7.7 m/s, T 0.25/2.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 60.04,
+      "V [m/s]": 7.692,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 2378.0,
+      "rpm lower": 5107.0,
+      "Re (chord)": 73760.0
+     },
+     {
+      "_index": "back 3 s: α 45°, 9.9 m/s, T 0.25/2.45 N",
+      "status": "NOT RUN",
+      "α [deg]": 45.07,
+      "V [m/s]": 9.943,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 3199.0,
+      "rpm lower": 5983.0,
+      "Re (chord)": 95350.0
+     },
+     {
+      "_index": "back 3 s: α 30°, 13.0 m/s, T 0.25/2.07 N",
+      "status": "NOT RUN",
+      "α [deg]": 30.02,
+      "V [m/s]": 13.02,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 4479.0,
+      "rpm lower": 6526.0,
+      "Re (chord)": 124900.0
+     },
+     {
+      "_index": "back 3 s: α 20°, 14.7 m/s, T 0.25/1.21 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.04,
+      "V [m/s]": 14.67,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5280.0,
+      "rpm lower": 6338.0,
+      "Re (chord)": 140600.0
+     },
+     {
+      "_index": "back 3 s: α 15°, 15.2 m/s, T 0.25/1.19 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.0,
+      "V [m/s]": 15.19,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5571.0,
+      "rpm lower": 6565.0,
+      "Re (chord)": 145600.0
+     },
+     {
+      "_index": "back 3 s: α 10°, 15.5 m/s, T 0.25/1.41 N",
+      "status": "NOT RUN",
+      "α [deg]": 10.01,
+      "V [m/s]": 15.54,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5779.0,
+      "rpm lower": 6962.0,
+      "Re (chord)": 149000.0
+     },
+     {
+      "_index": "hover: α 90°, 1.0 m/s, T 4.13/4.13 N",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 1.0,
+      "source": "hover",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6710.0,
+      "rpm lower": 6710.0,
+      "Re (chord)": 9589.0
+     },
+     {
+      "_index": "cruise: α 5°, 16.0 m/s, T 0.83/0.83 N",
+      "status": "NOT RUN",
+      "α [deg]": 5.291,
+      "V [m/s]": 16.0,
+      "source": "cruise",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6577.0,
+      "rpm lower": 6577.0,
+      "Re (chord)": 153400.0
+     },
+     {
+      "_index": "stall: α 10°, 11.5 m/s, T 0.58/0.58 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.672,
+      "V [m/s]": 11.46,
+      "source": "stall",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 4884.0,
+      "rpm lower": 4884.0,
+      "Re (chord)": 109900.0
+     },
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 0.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 5.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 8.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 12.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 14.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 16.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 30.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 45.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 60.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 75.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     }
+    ]
+   },
+   "4Q-2": {
+    "index": [
+     "forward 3 s: α 53°, 1.5 m/s, T 4.20/4.65 N",
+     "forward 3 s: α 45°, 2.1 m/s, T 4.29/4.81 N",
+     "forward 3 s: α 30°, 3.9 m/s, T 4.42/5.08 N",
+     "forward 3 s: α 20°, 5.9 m/s, T 4.31/5.05 N",
+     "forward 3 s: α 15°, 7.4 m/s, T 3.95/4.70 N",
+     "forward 3 s: α 10°, 9.4 m/s, T 2.75/3.54 N",
+     "back 3 s: α 80°, 6.1 m/s, T 0.34/1.69 N",
+     "back 3 s: α 60°, 7.8 m/s, T 0.25/2.01 N",
+     "back 3 s: α 45°, 10.0 m/s, T 0.25/2.34 N",
+     "back 3 s: α 30°, 12.9 m/s, T 0.25/1.93 N",
+     "back 3 s: α 20°, 14.2 m/s, T 0.25/1.12 N",
+     "back 3 s: α 15°, 14.5 m/s, T 0.25/1.08 N",
+     "back 3 s: α 10°, 14.6 m/s, T 0.25/1.30 N",
+     "hover: α 90°, 1.0 m/s, T 4.05/4.05 N",
+     "cruise: α 5°, 16.0 m/s, T 0.36/0.36 N",
+     "stall: α 10°, 11.3 m/s, T 0.33/0.33 N",
+     "bare airframe, α 0°, 10 m/s",
+     "bare airframe, α 5°, 10 m/s",
+     "bare airframe, α 8°, 10 m/s",
+     "bare airframe, α 10°, 10 m/s",
+     "bare airframe, α 12°, 10 m/s",
+     "bare airframe, α 14°, 10 m/s",
+     "bare airframe, α 16°, 10 m/s",
+     "bare airframe, α 20°, 10 m/s",
+     "bare airframe, α 30°, 10 m/s",
+     "bare airframe, α 45°, 10 m/s",
+     "bare airframe, α 60°, 10 m/s",
+     "bare airframe, α 75°, 10 m/s",
+     "bare airframe, α 90°, 10 m/s"
+    ],
+    "columns": [
+     "status",
+     "α [deg]",
+     "V [m/s]",
+     "source",
+     "rotor disks",
+     "template",
+     "rpm upper",
+     "rpm lower",
+     "Re (chord)"
+    ],
+    "rows": [
+     {
+      "_index": "forward 3 s: α 53°, 1.5 m/s, T 4.20/4.65 N",
+      "status": "NOT RUN",
+      "α [deg]": 53.15,
+      "V [m/s]": 1.502,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6816.0,
+      "rpm lower": 7169.0,
+      "Re (chord)": 14400.0
+     },
+     {
+      "_index": "forward 3 s: α 45°, 2.1 m/s, T 4.29/4.81 N",
+      "status": "NOT RUN",
+      "α [deg]": 44.97,
+      "V [m/s]": 2.118,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6925.0,
+      "rpm lower": 7331.0,
+      "Re (chord)": 20310.0
+     },
+     {
+      "_index": "forward 3 s: α 30°, 3.9 m/s, T 4.42/5.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 29.96,
+      "V [m/s]": 3.88,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7193.0,
+      "rpm lower": 7685.0,
+      "Re (chord)": 37200.0
+     },
+     {
+      "_index": "forward 3 s: α 20°, 5.9 m/s, T 4.31/5.05 N",
+      "status": "NOT RUN",
+      "α [deg]": 19.99,
+      "V [m/s]": 5.897,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7356.0,
+      "rpm lower": 7901.0,
+      "Re (chord)": 56550.0
+     },
+     {
+      "_index": "forward 3 s: α 15°, 7.4 m/s, T 3.95/4.70 N",
+      "status": "NOT RUN",
+      "α [deg]": 14.96,
+      "V [m/s]": 7.43,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 7306.0,
+      "rpm lower": 7875.0,
+      "Re (chord)": 71240.0
+     },
+     {
+      "_index": "forward 3 s: α 10°, 9.4 m/s, T 2.75/3.54 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.985,
+      "V [m/s]": 9.398,
+      "source": "forward 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6684.0,
+      "rpm lower": 7343.0,
+      "Re (chord)": 90110.0
+     },
+     {
+      "_index": "back 3 s: α 80°, 6.1 m/s, T 0.34/1.69 N",
+      "status": "NOT RUN",
+      "α [deg]": 80.18,
+      "V [m/s]": 6.144,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 2001.0,
+      "rpm lower": 4353.0,
+      "Re (chord)": 58920.0
+     },
+     {
+      "_index": "back 3 s: α 60°, 7.8 m/s, T 0.25/2.01 N",
+      "status": "NOT RUN",
+      "α [deg]": 60.12,
+      "V [m/s]": 7.793,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 2387.0,
+      "rpm lower": 5034.0,
+      "Re (chord)": 74730.0
+     },
+     {
+      "_index": "back 3 s: α 45°, 10.0 m/s, T 0.25/2.34 N",
+      "status": "NOT RUN",
+      "α [deg]": 45.06,
+      "V [m/s]": 10.03,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 3217.0,
+      "rpm lower": 5887.0,
+      "Re (chord)": 96190.0
+     },
+     {
+      "_index": "back 3 s: α 30°, 12.9 m/s, T 0.25/1.93 N",
+      "status": "NOT RUN",
+      "α [deg]": 30.04,
+      "V [m/s]": 12.9,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 4443.0,
+      "rpm lower": 6368.0,
+      "Re (chord)": 123700.0
+     },
+     {
+      "_index": "back 3 s: α 20°, 14.2 m/s, T 0.25/1.12 N",
+      "status": "NOT RUN",
+      "α [deg]": 20.01,
+      "V [m/s]": 14.16,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5125.0,
+      "rpm lower": 6109.0,
+      "Re (chord)": 135800.0
+     },
+     {
+      "_index": "back 3 s: α 15°, 14.5 m/s, T 0.25/1.08 N",
+      "status": "NOT RUN",
+      "α [deg]": 15.02,
+      "V [m/s]": 14.49,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5350.0,
+      "rpm lower": 6260.0,
+      "Re (chord)": 138900.0
+     },
+     {
+      "_index": "back 3 s: α 10°, 14.6 m/s, T 0.25/1.30 N",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 14.6,
+      "source": "back 3 s",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 5475.0,
+      "rpm lower": 6589.0,
+      "Re (chord)": 140000.0
+     },
+     {
+      "_index": "hover: α 90°, 1.0 m/s, T 4.05/4.05 N",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 1.0,
+      "source": "hover",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6640.0,
+      "rpm lower": 6640.0,
+      "Re (chord)": 9589.0
+     },
+     {
+      "_index": "cruise: α 5°, 16.0 m/s, T 0.36/0.36 N",
+      "status": "NOT RUN",
+      "α [deg]": 5.181,
+      "V [m/s]": 16.0,
+      "source": "cruise",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 6054.0,
+      "rpm lower": 6054.0,
+      "Re (chord)": 153400.0
+     },
+     {
+      "_index": "stall: α 10°, 11.3 m/s, T 0.33/0.33 N",
+      "status": "NOT RUN",
+      "α [deg]": 9.672,
+      "V [m/s]": 11.34,
+      "source": "stall",
+      "rotor disks": true,
+      "template": "aircraft_quad_rotor_disks",
+      "rpm upper": 4488.0,
+      "rpm lower": 4488.0,
+      "Re (chord)": 108700.0
+     },
+     {
+      "_index": "bare airframe, α 0°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 0.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 5°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 5.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 8°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 8.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 10°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 10.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 12°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 12.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 14°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 14.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 16°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 16.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 20°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 20.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 30°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 30.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 45°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 45.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 60°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 60.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 75°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 75.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     },
+     {
+      "_index": "bare airframe, α 90°, 10 m/s",
+      "status": "NOT RUN",
+      "α [deg]": 90.0,
+      "V [m/s]": 10.0,
+      "source": "sweep",
+      "rotor disks": false,
+      "template": "rans_ksst_external",
+      "rpm upper": "",
+      "rpm lower": "",
+      "Re (chord)": 95890.0
+     }
+    ]
+   }
+  },
+  "slab results": {
+   "index": [
+    "NACA 0012, α 0°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 4°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 8°, 16 m/s, AR 8 slab",
+    "NACA 0012, α 12°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab",
+    "NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab"
+   ],
+   "columns": [
+    "status",
+    "α [deg]",
+    "V [m/s]",
+    "Re (chord)",
+    "AR",
+    "template",
+    "reads against"
+   ],
+   "rows": [
+    {
+     "_index": "NACA 0012, α 0°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 4°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 8°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 0012, α 12°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 0°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 0.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 4°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 4.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 8°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 8.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    },
+    {
+     "_index": "NACA 23112 (k2/k1 0.03), α 12°, 16 m/s, AR 8 slab",
+     "status": "NOT RUN",
+     "α [deg]": 12.0,
+     "V [m/s]": 16.0,
+     "Re (chord)": 153400.0,
+     "AR": 8.0,
+     "template": "rans_ksst_external",
+     "reads against": "the slab's lift slope ≈ AR/(AR+2) = 0.80 of the section's"
+    }
+   ]
+  },
+  "FEA (Talos)": {
+   "index": [
+    "frame_x_A",
+    "frame_x_B",
+    "frame_x_C",
+    "frame_x_modes",
+    "frame_posts_A",
+    "frame_posts_B",
+    "frame_posts_C",
+    "frame_posts_modes",
+    "joint_post"
+   ],
+   "columns": [
+    "part",
+    "bracing",
+    "kind",
+    "status",
+    "description",
+    "note"
+   ],
+   "rows": [
+    {
+     "_index": "frame_x_A",
+     "part": "frame",
+     "bracing": "x",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate ×1.5)",
+     "note": "NOT RUN: frame_x_A in _runs/kestrel_tests/fea/frame_x_A (run=False)"
+    },
+    {
+     "_index": "frame_x_B",
+     "part": "frame",
+     "bracing": "x",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5)",
+     "note": "NOT RUN: frame_x_B in _runs/kestrel_tests/fea/frame_x_B (run=False)"
+    },
+    {
+     "_index": "frame_x_C",
+     "part": "frame",
+     "bracing": "x",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+     "note": "NOT RUN: frame_x_C in _runs/kestrel_tests/fea/frame_x_C (run=False)"
+    },
+    {
+     "_index": "frame_x_modes",
+     "part": "frame",
+     "bracing": "x",
+     "kind": "modes",
+     "status": "NOT RUN",
+     "description": "the first modes with the motor units as point masses at the stations",
+     "note": ""
+    },
+    {
+     "_index": "frame_posts_A",
+     "part": "frame",
+     "bracing": "posts",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate ×1.5)",
+     "note": "NOT RUN: frame_posts_A in _runs/kestrel_tests/fea/frame_posts_A (run=False)"
+    },
+    {
+     "_index": "frame_posts_B",
+     "part": "frame",
+     "bracing": "posts",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate ×1.5)",
+     "note": "NOT RUN: frame_posts_B in _runs/kestrel_tests/fea/frame_posts_B (run=False)"
+    },
+    {
+     "_index": "frame_posts_C",
+     "part": "frame",
+     "bracing": "posts",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+     "note": "NOT RUN: frame_posts_C in _runs/kestrel_tests/fea/frame_posts_C (run=False)"
+    },
+    {
+     "_index": "frame_posts_modes",
+     "part": "frame",
+     "bracing": "posts",
+     "kind": "modes",
+     "status": "NOT RUN",
+     "description": "the first modes with the motor units as point masses at the stations",
+     "note": ""
+    },
+    {
+     "_index": "joint_post",
+     "part": "joint",
+     "bracing": "",
+     "kind": "static",
+     "status": "NOT RUN",
+     "description": "the post's 5.5 N (ultimate) into the printed socket, the spar bore held; build axis z",
+     "note": "NOT RUN: joint_post in _runs/kestrel_tests/fea/joint_post (run=False)"
+    }
+   ]
+  },
+  "plane-frame reference": {
+   "index": [
+    "frame_x_A",
+    "frame_x_B",
+    "frame_x_modes",
+    "frame_posts_A",
+    "frame_posts_B",
+    "frame_posts_modes",
+    "frame_none_A",
+    "frame_none_B",
+    "frame_none_modes"
+   ],
+   "columns": [
+    "bracing",
+    "case",
+    "spar stress, limit [MPa]",
+    "spar stress, ultimate [MPa]",
+    "tip deflection, upper, limit [mm]",
+    "tip deflection, ultimate [mm]",
+    "spar reserve (limit)",
+    "first mode, symmetric [Hz]",
+    "first mode, antisymmetric [Hz]"
+   ],
+   "rows": [
+    {
+     "_index": "frame_x_A",
+     "bracing": "x",
+     "case": "A",
+     "spar stress, limit [MPa]": 11.5,
+     "spar stress, ultimate [MPa]": 17.26,
+     "tip deflection, upper, limit [mm]": -0.09087,
+     "tip deflection, ultimate [mm]": -0.1363,
+     "spar reserve (limit)": 34.77,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_x_B",
+     "bracing": "x",
+     "case": "B",
+     "spar stress, limit [MPa]": 12.66,
+     "spar stress, ultimate [MPa]": 18.99,
+     "tip deflection, upper, limit [mm]": -0.1457,
+     "tip deflection, ultimate [mm]": -0.2185,
+     "spar reserve (limit)": 31.6,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_x_modes",
+     "bracing": "x",
+     "case": "modes",
+     "spar stress, limit [MPa]": null,
+     "spar stress, ultimate [MPa]": null,
+     "tip deflection, upper, limit [mm]": null,
+     "tip deflection, ultimate [mm]": null,
+     "spar reserve (limit)": null,
+     "first mode, symmetric [Hz]": 260.5,
+     "first mode, antisymmetric [Hz]": 1640.0
+    },
+    {
+     "_index": "frame_posts_A",
+     "bracing": "posts",
+     "case": "A",
+     "spar stress, limit [MPa]": 21.62,
+     "spar stress, ultimate [MPa]": 32.44,
+     "tip deflection, upper, limit [mm]": 1.979,
+     "tip deflection, ultimate [mm]": 2.969,
+     "spar reserve (limit)": 18.5,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_posts_B",
+     "bracing": "posts",
+     "case": "B",
+     "spar stress, limit [MPa]": 27.27,
+     "spar stress, ultimate [MPa]": 40.9,
+     "tip deflection, upper, limit [mm]": 1.907,
+     "tip deflection, ultimate [mm]": 2.86,
+     "spar reserve (limit)": 14.67,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_posts_modes",
+     "bracing": "posts",
+     "case": "modes",
+     "spar stress, limit [MPa]": null,
+     "spar stress, ultimate [MPa]": null,
+     "tip deflection, upper, limit [mm]": null,
+     "tip deflection, ultimate [mm]": null,
+     "spar reserve (limit)": null,
+     "first mode, symmetric [Hz]": 15.61,
+     "first mode, antisymmetric [Hz]": 1616.0
+    },
+    {
+     "_index": "frame_none_A",
+     "bracing": "none",
+     "case": "A",
+     "spar stress, limit [MPa]": 21.62,
+     "spar stress, ultimate [MPa]": 32.44,
+     "tip deflection, upper, limit [mm]": 1.979,
+     "tip deflection, ultimate [mm]": 2.969,
+     "spar reserve (limit)": 18.5,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_none_B",
+     "bracing": "none",
+     "case": "B",
+     "spar stress, limit [MPa]": 52.05,
+     "spar stress, ultimate [MPa]": 78.08,
+     "tip deflection, upper, limit [mm]": 6.377,
+     "tip deflection, ultimate [mm]": 9.565,
+     "spar reserve (limit)": 7.685,
+     "first mode, symmetric [Hz]": null,
+     "first mode, antisymmetric [Hz]": null
+    },
+    {
+     "_index": "frame_none_modes",
+     "bracing": "none",
+     "case": "modes",
+     "spar stress, limit [MPa]": null,
+     "spar stress, ultimate [MPa]": null,
+     "tip deflection, upper, limit [mm]": null,
+     "tip deflection, ultimate [mm]": null,
+     "spar reserve (limit)": null,
+     "first mode, symmetric [Hz]": 15.61,
+     "first mode, antisymmetric [Hz]": 15.61
+    }
+   ]
+  },
+  "verdicts, model against CFD": {
+   "4Q-1": {
+    "CFD (sweep)": {
+     "passes": 8,
+     "of": 8,
+     "failures": []
+    },
+    "model": {
+     "passes": 8,
+     "of": 8,
+     "failures": []
+    }
+   }
+  },
+  "campaigns on file": {
+   "index": [
+    "4Q-1",
+    "4Q-2",
+    "sections"
+   ],
+   "columns": [
+    "solved",
+    "diverged",
+    "FAILED",
+    "NOT RUN",
+    "n",
+    "solved with rotor disks",
+    "solved bare",
+    "with rotor disks",
+    "source",
+    "quality",
+    "date"
+   ],
+   "rows": [
+    {
+     "_index": "4Q-1",
+     "solved": 10,
+     "diverged": 2,
+     "FAILED": 12,
+     "NOT RUN": 0,
+     "n": 24,
+     "solved with rotor disks": 0,
+     "solved bare": 10,
+     "with rotor disks": 14,
+     "source": "40_kestrel run on an OpenFOAM machine (uploaded notebook), Part I points, screening quality, 400 iterations",
+     "quality": "screening",
+     "date": "2026-10-16"
+    },
+    {
+     "_index": "4Q-2",
+     "solved": 0,
+     "diverged": 0,
+     "FAILED": 0,
+     "NOT RUN": 29,
+     "n": 29,
+     "solved with rotor disks": 0,
+     "solved bare": 0,
+     "with rotor disks": 16,
+     "source": "39_kestrel_tests",
+     "quality": "screening",
+     "date": "2026-10-16"
+    },
+    {
+     "_index": "sections",
+     "solved": 0,
+     "diverged": 0,
+     "FAILED": 0,
+     "NOT RUN": 8,
+     "n": null,
+     "solved with rotor disks": null,
+     "solved bare": null,
+     "with rotor disks": null,
+     "source": "39_kestrel_tests",
+     "quality": "screening",
+     "date": "2026-10-16"
+    }
+   ]
+  },
+  "cases that did not solve": {
+   "index": [
+    "4Q-1: forward 3 s: α 53°, 1.5 m/s, T 4.63/4.64 N",
+    "4Q-1: forward 3 s: α 45°, 2.1 m/s, T 4.73/4.80 N",
+    "4Q-1: forward 3 s: α 30°, 3.8 m/s, T 4.91/5.11 N",
+    "4Q-1: forward 3 s: α 20°, 5.8 m/s, T 4.85/5.14 N",
+    "4Q-1: forward 3 s: α 15°, 7.3 m/s, T 4.54/4.88 N",
+    "4Q-1: forward 3 s: α 10°, 9.3 m/s, T 3.29/3.79 N",
+    "4Q-1: back 3 s: α 80°, 6.1 m/s, T 0.29/1.58 N",
+    "4Q-1: back 3 s: α 60°, 7.8 m/s, T 0.25/1.98 N",
+    "4Q-1: back 3 s: α 45°, 10.0 m/s, T 0.25/2.35 N",
+    "4Q-1: back 3 s: α 30°, 13.0 m/s, T 0.25/2.02 N",
+    "4Q-1: back 3 s: α 20°, 14.6 m/s, T 0.25/1.24 N",
+    "4Q-1: back 3 s: α 15°, 15.2 m/s, T 0.25/1.16 N",
+    "4Q-1: back 3 s: α 10°, 15.5 m/s, T 0.25/1.39 N",
+    "4Q-1: hover: α 90°, 1.0 m/s, T 4.15/4.15 N"
+   ],
+   "columns": [
+    "status",
+    "note",
+    "rotor disks",
+    "α [deg]",
+    "V [m/s]"
+   ],
+   "rows": [
+    {
+     "_index": "4Q-1: forward 3 s: α 53°, 1.5 m/s, T 4.63/4.64 N",
+     "status": "diverged",
+     "note": "diverged: |coefficients| beyond 1e90",
+     "rotor disks": true,
+     "α [deg]": 52.89,
+     "V [m/s]": 1.506
+    },
+    {
+     "_index": "4Q-1: forward 3 s: α 45°, 2.1 m/s, T 4.73/4.80 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 45.0,
+     "V [m/s]": 2.096
+    },
+    {
+     "_index": "4Q-1: forward 3 s: α 30°, 3.8 m/s, T 4.91/5.11 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 29.93,
+     "V [m/s]": 3.832
+    },
+    {
+     "_index": "4Q-1: forward 3 s: α 20°, 5.8 m/s, T 4.85/5.14 N",
+     "status": "diverged",
+     "note": "diverged: |coefficients| beyond 1e90",
+     "rotor disks": true,
+     "α [deg]": 19.95,
+     "V [m/s]": 5.825
+    },
+    {
+     "_index": "4Q-1: forward 3 s: α 15°, 7.3 m/s, T 4.54/4.88 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 14.96,
+     "V [m/s]": 7.345
+    },
+    {
+     "_index": "4Q-1: forward 3 s: α 10°, 9.3 m/s, T 3.29/3.79 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 9.985,
+     "V [m/s]": 9.313
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 80°, 6.1 m/s, T 0.29/1.58 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 80.07,
+     "V [m/s]": 6.135
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 60°, 7.8 m/s, T 0.25/1.98 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 60.06,
+     "V [m/s]": 7.777
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 45°, 10.0 m/s, T 0.25/2.35 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 45.01,
+     "V [m/s]": 10.01
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 30°, 13.0 m/s, T 0.25/2.02 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 30.02,
+     "V [m/s]": 13.04
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 20°, 14.6 m/s, T 0.25/1.24 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 20.01,
+     "V [m/s]": 14.65
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 15°, 15.2 m/s, T 0.25/1.16 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 15.09,
+     "V [m/s]": 15.17
+    },
+    {
+     "_index": "4Q-1: back 3 s: α 10°, 15.5 m/s, T 0.25/1.39 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 10.01,
+     "V [m/s]": 15.54
+    },
+    {
+     "_index": "4Q-1: hover: α 90°, 1.0 m/s, T 4.15/4.15 N",
+     "status": "FAILED",
+     "note": "step solver failed (log not in the notebook)",
+     "rotor disks": true,
+     "α [deg]": 90.0,
+     "V [m/s]": 1.0
+    }
+   ]
+  },
+  "checks": {
+   "index": [
+    "campaigns on file",
+    "FEA cases solved (Talos)",
+    "4Q-1: blown cases solved",
+    "4Q-1: bare sweep solved",
+    "4Q-2: blown cases solved",
+    "4Q-2: bare sweep solved",
+    "sections: slabs solved"
+   ],
+   "columns": [
+    "value",
+    "target",
+    "holds",
+    "note"
+   ],
+   "rows": [
+    {
+     "_index": "campaigns on file",
+     "value": "3",
+     "target": "≥ 3",
+     "holds": "✔",
+     "note": ""
+    },
+    {
+     "_index": "FEA cases solved (Talos)",
+     "value": "0",
+     "target": "≥ 9",
+     "holds": "✘",
+     "note": ""
+    },
+    {
+     "_index": "4Q-1: blown cases solved",
+     "value": "0",
+     "target": "≥ 1",
+     "holds": "✘",
+     "note": ""
+    },
+    {
+     "_index": "4Q-1: bare sweep solved",
+     "value": "10",
+     "target": "≥ 10",
+     "holds": "✔",
+     "note": ""
+    },
+    {
+     "_index": "4Q-2: blown cases solved",
+     "value": "0",
+     "target": "≥ 1",
+     "holds": "✘",
+     "note": ""
+    },
+    {
+     "_index": "4Q-2: bare sweep solved",
+     "value": "0",
+     "target": "≥ 10",
+     "holds": "✘",
+     "note": ""
+    },
+    {
+     "_index": "sections: slabs solved",
+     "value": "0",
+     "target": "≥ 8",
+     "holds": "✘",
+     "note": ""
+    }
+   ]
+  }
+ }
+}

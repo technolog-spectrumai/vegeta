@@ -1,0 +1,23 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case — values in {{...}} are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      MRFProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+rotor
+{
+    cellZone            rotorZone;
+    active              yes;
+    nonRotatingPatches  ();
+    origin              ({{ROTOR_CENTER}});
+    axis                (1 0 0);
+    omega               {{OMEGA}};      // rad/s about +x (right-hand rule); sign = rotation parameter
+}
+
+// ************************************************************************* //

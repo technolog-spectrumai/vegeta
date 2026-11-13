@@ -1,0 +1,20 @@
+"""vegeta.boreas must not import the other tools, other vegeta subpackages or its parent namespace."""
+import re
+from pathlib import Path
+
+SRC = Path(__file__).resolve().parents[2] / "src" / "vegeta" / "boreas"
+FORBIDDEN = re.compile(
+    r"^\s*(from|import)\s+(vegeta\b|dedalus|talos|aeromant\b|mellonia|\.\.)", re.M
+)
+
+
+def test_no_forbidden_imports():
+    offenders = [str(p.relative_to(SRC)) for p in SRC.rglob("*.py") if FORBIDDEN.search(p.read_text())]
+    assert offenders == []
+
+
+def test_result_shape():
+    from vegeta.boreas import Result
+
+    d = Result(kind="boreas.test").to_dict()
+    assert set(d) == {"kind", "status", "metrics", "artifacts", "messages", "duration_s", "execution", "metadata"}
