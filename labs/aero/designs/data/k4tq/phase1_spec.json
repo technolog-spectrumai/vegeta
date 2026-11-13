@@ -1,0 +1,283 @@
+{
+ "label": "MOCK",
+ "variant": "B",
+ "params": {
+  "variant": "B",
+  "title": "unequal tandem (larger rear wing, canard-like)",
+  "fuselage_length": 1.2,
+  "fuselage_width": 0.14,
+  "fuselage_height": 0.15,
+  "x_pivot_front": 0.3,
+  "x_pivot_rear": 0.75,
+  "z_front": -0.055,
+  "z_rear": 0.055,
+  "span": 1.4,
+  "root_chord_front": 0.16,
+  "tip_chord_front": 0.12,
+  "root_chord_rear": 0.24,
+  "tip_chord_rear": 0.18,
+  "pivot_chord": 0.3,
+  "root_gap": 0.012,
+  "root_length": 0.045,
+  "section": "NACA 2412",
+  "decalage_deg": 1.5,
+  "motor": "MN4014-400",
+  "prop": "15x10",
+  "motor_y": 0.62,
+  "prop_ahead_of_le": 0.065,
+  "battery": "6S2P-P45B",
+  "payload_kg": 1.0,
+  "cargo_station": 0.46,
+  "battery_bay": [
+   0.1,
+   0.7
+  ],
+  "parachute_station": 0.56,
+  "leg_bottom_z": -0.225,
+  "fin": true,
+  "fin_area": 0.052326812817639796,
+  "parachute": true
+ },
+ "requirements": {
+  "R1 geometry": {
+   "fuselage_length_m": 1.0,
+   "span_m": 1.4,
+   "front_wing_station": 0.3,
+   "rear_wing_station": 0.75
+  },
+  "R2 payload": {
+   "standard_kg": 1.0,
+   "extended_min_kg": 0.5,
+   "extended_max_kg": 0.75
+  },
+  "R3 mission": {
+   "radius_km": 10.0,
+   "hover_total_s": 120.0,
+   "reserve_fraction": 0.2,
+   "wind_m_s": 8.0,
+   "cruise_altitude_m": 120.0
+  },
+  "R4 modes": "cruise: chords horizontal, propellers forward; hover: chords vertical, discs horizontal; fuselage level",
+  "R5 transport": "wings fold to pack into a tube; partial fold accepted",
+  "R6 launch": [
+   "hand release (hover stance)",
+   "from the transport tube (the case as the pad)",
+   "hospital roof"
+  ],
+  "R7 temperature logging": "mandatory: two independent sensors in the cartridge, a continuous timestamped log on board that survives a power loss, telemetry stream, alarm thresholds per load type",
+  "R8 marking": "BE CAREFUL \u2013 FRAGILE \u2013 TEMPERATURE SENSITIVE LOAD (text only: no symbol, no red cross)",
+  "R9 directional stability": "a vertical fin is allowed where the analysis needs one",
+  "R10 transition": "checked with CFD (cases prepared, run manually)",
+  "R11 propulsion": "exactly four motors and four propellers; parts from Poland / the EU preferred",
+  "R12 phases": "everything mocked in the early phases (DEBUG = True)"
+ },
+ "mass": {
+  "mass_kg": 5.583146070727707,
+  "x_cg": 0.5903689090613577,
+  "y_cg": 1.2428286518039841e-18,
+  "z_cg": -0.003702129540971503,
+  "Ixx": 0.5087463712648478,
+  "Iyy": 0.2284117370070123,
+  "Izz": 0.7167973163401363,
+  "by_group": {
+   "propulsion": 0.9040000000000001,
+   "structure": 0.9075140847922499,
+   "roots": 0.788,
+   "systems": 0.2588,
+   "cargo": 0.24200000000000002,
+   "payload": 1.0,
+   "avionics": 0.183,
+   "safety": 0.16,
+   "margin": 0.24103198593545752,
+   "battery": 0.8988000000000002
+  }
+ },
+ "x_cg_target": 0.5903689090613575,
+ "aero": {
+  "CLa": 5.019892163082819,
+  "CLa_one_pair": 6.102749755462558,
+  "k": 0.05388491938914609,
+  "e": 1.2088696671334276,
+  "k_one_pair": 0.025617946342565385,
+  "x_np": 0.6115117662042147,
+  "Cma": -7.366687801638116,
+  "CL0": 0.04163229843249848,
+  "Cm0": 0.0642330695175573,
+  "front_share_alpha4": 0.6191017195202786,
+  "slope_front": 1.0526675451886027,
+  "slope_rear": 0.665422627201846,
+  "label": "CALC",
+  "method": "og.aero.vlm, 4 quads, the decalage on the front pair"
+ },
+ "stall": {
+  "front share at trim": 0.5574518826301693,
+  "cl front / CL": 1.3936297065754235,
+  "cl rear / CL": 0.7375801956163844,
+  "stalls first": "front",
+  "wing cl_max (built-up)": 1.107,
+  "CL max (aircraft)": 0.7943286475431406,
+  "rear cl at the front's stall": 0.5858810792385677,
+  "nose-down stall": true,
+  "static margin [m]": 0.021142857142856908,
+  "static margin [MAC]": 0.11999999999999868,
+  "label": "ESTIMATE"
+ },
+ "drag": {
+  "Cd0": 0.020509571308183618,
+  "CdA_m2": 0.00822638905171245
+ },
+ "hover": {
+  "weight [N]": 54.75195941450187,
+  "front share of the thrust": 0.5733909091456337,
+  "thrust front each [N]": 16.168052029885825,
+  "thrust rear each [N]": 12.02920706858264,
+  "disc loading [N/m\u00b2]": 123.6622279307576,
+  "induced velocity [m/s]": 7.104532268013708,
+  "ideal power [W]": 403.89810160259276,
+  "shaft power [W]": 696.2205584332628,
+  "figure of merit": 0.5801295246315381,
+  "electrical [W]": 871.3890657293935,
+  "rpm front": 4549.637270931302,
+  "current per front motor [A]": 19.60715259289579,
+  "pack current [A]": 40.589955510923495,
+  "T/W (loaded pack)": 1.840925026976742,
+  "T/W (sagged pack, 3.3 V/cell)": 1.636544779083814,
+  "most loaded motor / its maximum": 0.6416259519160356,
+  "hover minutes on the usable pack": 10.808811322547552,
+  "motor out": "four rotors: a motor out in the hover leaves no yaw/roll balance \u2014 the parachute is the mitigation (SORA)",
+  "label": "MOCK"
+ },
+ "best_cruise_2motors": {
+  "best endurance V [m/s]": 21.0,
+  "endurance [min]": 41.89654715953327,
+  "best range V [m/s]": 21.0,
+  "range [km]": 52.78964942101192,
+  "max level V [m/s]": 32.0,
+  "L/D max": 11.663525713119762
+ },
+ "best_cruise_4motors": {
+  "best endurance V [m/s]": 21.0,
+  "endurance [min]": 33.471161612460214,
+  "best range V [m/s]": 21.0,
+  "range [km]": 42.17366363169987,
+  "max level V [m/s]": 32.0,
+  "L/D max": 13.354001564938432
+ },
+ "corridor_summary": {
+  "continuous from hover to cruise": true,
+  "peak power [W]": 846.699063627962,
+  "speed at the peak [m/s]": 6.0,
+  "least power [W]": 291.6186225958677,
+  "most loaded motor (max over V)": 0.6585396194436808,
+  "wing-borne (tilt < 8\u00b0) from [m/s]": 21.0,
+  "free span stalled between [m/s]": [
+   1.0,
+   20.0
+  ],
+  "front share range": [
+   0.5206282079453479,
+   1.0
+  ],
+  "rear differential tilt range [deg]": [
+   -1.2381299603934561,
+   12.000000000000002
+  ],
+  "stall speed (wings alone) [m/s]": 16.75021333159941
+ },
+ "mission": {
+  "legs": {
+   "out (headwind)": {
+    "cruise V [m/s]": 21.0,
+    "ground speed [m/s]": 13.0,
+    "cruise [Wh]": 48.035902669380775,
+    "hover [Wh]": 14.52315109548989,
+    "transitions [Wh]": 6.309478429026733,
+    "climb [Wh]": 4.055700697370509,
+    "time [min]": 14.320512820512821
+   },
+   "back (tailwind)": {
+    "cruise V [m/s]": 21.0,
+    "ground speed [m/s]": 29.0,
+    "cruise [Wh]": 21.53333567937759,
+    "hover [Wh]": 14.52315109548989,
+    "transitions [Wh]": 6.309478429026733,
+    "climb [Wh]": 4.055700697370509,
+    "time [min]": 7.24712643678161
+   }
+  },
+  "energy used [Wh]": 119.34589879253264,
+  "energy with reserve [Wh]": 149.18237349066578,
+  "usable pack [Wh]": 156.978,
+  "margin [Wh]": 7.795626509334227,
+  "closes": true,
+  "label": "MOCK"
+ },
+ "root": {
+  "case governing the bending": "hover, motor at maximum",
+  "root moment, cruise limit [N\u00b7m]": 11.121076175857326,
+  "root moment, hover motor-max limit [N\u00b7m]": 12.085437484640856,
+  "root moment ultimate [N\u00b7m]": 18.128156226961284,
+  "root shear ultimate [N]": 69.98493973454836,
+  "actuator torque budget (limit) [N\u00b7m]": {
+   "aerodynamic, cruise at 30 m/s": 0.4986475199999999,
+   "aerodynamic, transition (separated)": 0.2443372848,
+   "mass offset at n_limit": 0.11334380931579997,
+   "thrust-line offset": 0.0755956892716285,
+   "gyroscopic (1 rad/s yaw)": 0.47930861282806625,
+   "tilt acceleration": 0.008505689019098324
+  },
+  "actuator design torque [N\u00b7m]": 1.7631019806518897,
+  "ground handling torque [N\u00b7m]": 1.2,
+  "actuator available at the spar [N\u00b7m]": 5.8,
+  "actuator reserve": 3.2896565619281457,
+  "actuator": "high-torque metal-gear digital servo, 30 kg\u00b7cm class (~2.9 N\u00b7m), 2:1",
+  "bearing radial (ultimate) [N]": 397.55559440649984,
+  "bearing static rating C0 [N]": 2470.0,
+  "bearing static reserve": 6.212967531465372,
+  "fold hinge lug force (ultimate) [N]": 302.1359371160214,
+  "fold latch force (ultimate) [N]": 677.8413471356023,
+  "fold latch": "the latch carries the thrust's moment about the vertical hinge: a structural locking pin, not a detent",
+  "spar chosen": "\u00d816\u00d714",
+  "drive stiffness required [N\u00b7m/rad]": 120.0,
+  "wing pitch mode on the drive [Hz]": 33.50664473318425,
+  "hover 1P [Hz]": 70.80187127137023,
+  "divergence speed of the all-moving wing [m/s]": 267.04658669216985,
+  "label": "ESTIMATE"
+ },
+ "directional": {
+  "Cn\u03b2 fuselage": -0.03191020959844852,
+  "Cn\u03b2 propellers": -0.010997134273918002,
+  "Cn\u03b2 wings": 0.0,
+  "Cn\u03b2 without a fin": -0.04290734387236653,
+  "fin arm [m]": 0.5256310909386424,
+  "fin lift slope [1/rad]": 2.204022398196409,
+  "fin area needed [m\u00b2]": 0.050036990740428104,
+  "Cn\u03b2 with the fin": 0.05425168028664354,
+  "fin area used [m\u00b2]": 0.052326812817639796,
+  "target Cn\u03b2 [1/rad]": 0.05,
+  "verdict": "unstable without a fin: the fin is needed (R9)",
+  "fin": "split dorsal/ventral, 523 cm\u00b2 total; the ventral half doubles as the tail skid",
+  "label": "ESTIMATE"
+ },
+ "fold": {
+  "fold_deg": 90.0,
+  "tilt_deg": 90.0,
+  "length [m]": 1.5179999999999998,
+  "width [m]": 0.21400000000000008,
+  "height [m]": 0.3935130890052356,
+  "tube inner diameter needed [m]": 0.4479381109243134,
+  "nacelle diameter [m]": 0.05,
+  "note": "first estimate (corner points); Stage 2 checks the folded solids against each other and the tube"
+ },
+ "price": {
+  "motors": 380.0,
+  "propellers (+2 spares)": 156.0,
+  "ESCs": 140.0,
+  "battery": 160.0,
+  "avionics": 660.0,
+  "cargo + temperature logging": 192.0,
+  "wing roots (4)": 788.0,
+  "parachute": 250.0,
+  "total bought": 2726.0
+ }
+}
