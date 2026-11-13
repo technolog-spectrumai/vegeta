@@ -1,0 +1,18 @@
+{
+ "ships": [
+  "15m",
+  "50m",
+  "80m",
+  "100m",
+  "120m"
+ ],
+ "plots": [
+  "cad/views_opt_15m.png",
+  "cad/views_opt_50m.png",
+  "cad/views_opt_80m.png",
+  "cad/views_opt_100m.png",
+  "cad/views_opt_120m.png"
+ ],
+ "seconds": 131.8979892730713,
+ "quick": false
+}

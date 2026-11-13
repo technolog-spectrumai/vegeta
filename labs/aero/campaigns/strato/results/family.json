@@ -1,0 +1,3022 @@
+{
+ "summer": {
+  "15.0": {
+   "length": 15.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    2.5562696768887427,
+    18070.638411563763,
+    0.022296177094497615,
+    5.652632463988463,
+    13.611024339138007,
+    28.511993160305163,
+    0.68887465404394,
+    117.18746834221304
+   ],
+   "design": {
+    "length": 15.0,
+    "fineness": 2.5562696768887427,
+    "altitude": 18070.638411563763,
+    "payload_mass": 0.5391296793175372,
+    "payload_power": null,
+    "battery_energy": 1345.2168690621004,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 28.511993160305163,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 522.6992153355432,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.68887465404394,
+    "valve_dp": 30.0,
+    "night_superpressure": 117.18746834221304
+   },
+   "best": {
+    "feasible": false,
+    "problems": [
+     "does not float at 18.1 km: lift 24.1 kg < mass 64.9 kg"
+    ],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.73): needs active control"
+    ],
+    "design": {
+     "length": 15.0,
+     "fineness": 2.5562696768887427,
+     "altitude": 18070.638411563763,
+     "payload_mass": 0.5391296793175372,
+     "payload_power": null,
+     "battery_energy": 1345.2168690621004,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 28.511993160305163,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 522.6992153355432,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.68887465404394,
+     "valve_dp": 30.0,
+     "night_superpressure": 117.18746834221304
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 15.0,
+    "diameter": 5.867925491435875,
+    "volume": 237.98060065503063,
+    "envelope_area": 209.35663793404268,
+    "solar_area": 22.170152536656243,
+    "payload": 0.5391296793175372,
+    "payload_power": 5.391296793175372,
+    "system_mass": 64.92823377937194,
+    "masses": {
+     "envelope": 29.937999224568106,
+     "structure": 8.104070946498142,
+     "energy": 11.657160266264517,
+     "propulsion": 0.836318744536869,
+     "margin": 5.853554918186764,
+     "payload": 0.5391296793175372,
+     "systems": 8.0
+    },
+    "gas_mass": 4.549338495657934,
+    "gross_lift": 28.630758021267756,
+    "net_lift": 24.08141952560982,
+    "surplus_lift": -40.84681425376212,
+    "max_float_altitude": 11767.700015083206,
+    "plies": 1,
+    "dp_min": 167.18746834221304,
+    "dp_max": 1578.2780715289819,
+    "hoop_line_load": 4138.3625701871515,
+    "bending_moment": 1019.7107117316788,
+    "superheat_day": 39.967196795549285,
+    "superheat_night": 0.0,
+    "cg": [
+     6.51136363636768,
+     -3.418597401835645e-17,
+     -0.8014457431350605
+    ],
+    "x_cb": 6.51136363636768,
+    "stability_margin": -0.7257946159419744,
+    "v_max": 13.985251901904213,
+    "v_energy": 6.992625950952107,
+    "availability": 0.8016666666666666,
+    "wind_p50": 3.9120963758832836,
+    "wind_p90": 6.756514207992162,
+    "wind_p95": 7.927563147672231,
+    "energy_solar_wh": 54928.41594429677,
+    "energy_loads_wh": 1616.2548857379845,
+    "energy_at_p90_wh": 3242.91311650677,
+    "drag_p90": 6.682289068667503,
+    "cdv": 0.0633661816647176,
+    "gas_life_days": 0.0,
+    "endurance_days": 0.0,
+    "battery_hours": 18.514622610791314,
+    "months": {
+     "7": {
+      "availability": 0.91,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 24.1 kg < mass 64.9 kg"
+      ],
+      "energy_solar_wh": 54928.41594429677,
+      "v_energy": 6.992625950952107,
+      "superheat_day": 39.967196795549285,
+      "wind_p90": 6.756514207992162
+     },
+     "6": {
+      "availability": 0.9083333333333333,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 24.1 kg < mass 64.9 kg"
+      ],
+      "energy_solar_wh": 57268.765273204925,
+      "v_energy": 7.3422572484997115,
+      "superheat_day": 39.967196795549285,
+      "wind_p90": 7.279156187056983
+     },
+     "8": {
+      "availability": 0.8016666666666666,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 24.1 kg < mass 64.9 kg"
+      ],
+      "energy_solar_wh": 47284.960443532196,
+      "v_energy": 6.060275824158492,
+      "superheat_day": 39.967196795549285,
+      "wind_p90": 7.279156187056982
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": false,
+   "cost": 19.45362948215719,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 240.22432947158813
+  },
+  "30.0": {
+   "length": 30.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    2.6487291888655684,
+    18009.343711987698,
+    0.007708917465554632,
+    2.2042125219293145,
+    3.5710492583835887,
+    31.56792524268599,
+    0.6396770394803473,
+    66.20877212439012
+   ],
+   "design": {
+    "length": 30.0,
+    "fineness": 2.6487291888655684,
+    "altitude": 18009.343711987698,
+    "payload_mass": 1.402356311759163,
+    "payload_power": null,
+    "battery_energy": 3908.6180235711417,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 31.56792524268599,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 523.1694199272855,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6396770394803473,
+    "valve_dp": 30.0,
+    "night_superpressure": 66.20877212439012
+   },
+   "best": {
+    "feasible": false,
+    "problems": [
+     "does not float at 18.0 km: lift 181.4 kg < mass 209.3 kg"
+    ],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.76): needs active control"
+    ],
+    "design": {
+     "length": 30.0,
+     "fineness": 2.6487291888655684,
+     "altitude": 18009.343711987698,
+     "payload_mass": 1.402356311759163,
+     "payload_power": null,
+     "battery_energy": 3908.6180235711417,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 31.56792524268599,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 523.1694199272855,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.6396770394803473,
+     "valve_dp": 30.0,
+     "night_superpressure": 66.20877212439012
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 30.0,
+    "diameter": 11.32618620510947,
+    "volume": 1773.2491693450622,
+    "envelope_area": 805.360856545339,
+    "solar_area": 94.65479166139964,
+    "payload": 1.402356311759163,
+    "payload_power": 14.023563117591632,
+    "system_mass": 209.3228314523091,
+    "masses": {
+     "envelope": 115.16660248598349,
+     "structure": 23.584796729232224,
+     "energy": 41.43014347703692,
+     "propulsion": 0.8370710718836568,
+     "margin": 18.90186137641363,
+     "payload": 1.402356311759163,
+     "systems": 8.0
+    },
+    "gas_mass": 33.99247122032072,
+    "gross_lift": 215.3946880006072,
+    "net_lift": 181.4022167802865,
+    "surplus_lift": -27.920614672022595,
+    "max_float_altitude": 17098.858634045726,
+    "plies": 1,
+    "dp_min": 116.20877212439012,
+    "dp_max": 1633.9872086023388,
+    "hoop_line_load": 8337.198097219198,
+    "bending_moment": 4985.44055255735,
+    "superheat_day": 42.86974395817447,
+    "superheat_night": 0.0,
+    "cg": [
+     13.02272727273536,
+     5.313682032518438e-17,
+     -0.6324796303169816
+    ],
+    "x_cb": 13.022727272735361,
+    "stability_margin": -0.7613617828531568,
+    "v_max": 9.184682968909307,
+    "v_energy": 7.883519548313822,
+    "availability": 0.895,
+    "wind_p50": 3.906029263471506,
+    "wind_p90": 6.86488518004526,
+    "wind_p95": 7.991032247600879,
+    "energy_solar_wh": 232054.91068977863,
+    "energy_loads_wh": 1829.6157350564727,
+    "energy_at_p90_wh": 7355.942349207875,
+    "drag_p90": 22.682139682807925,
+    "cdv": 0.054092334767597,
+    "gas_life_days": 0.0,
+    "endurance_days": 0.0,
+    "battery_hours": 47.52211421687206,
+    "months": {
+     "7": {
+      "availability": 0.945,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 181.4 kg < mass 209.3 kg"
+      ],
+      "energy_solar_wh": 232054.91068977863,
+      "v_energy": 7.883519548313822,
+      "superheat_day": 42.86974395817447,
+      "wind_p90": 6.86488518004526
+     },
+     "6": {
+      "availability": 0.9416666666666667,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 181.4 kg < mass 209.3 kg"
+      ],
+      "energy_solar_wh": 242013.67673164207,
+      "v_energy": 8.189675647277465,
+      "superheat_day": 42.86974395817447,
+      "wind_p90": 7.355095306822805
+     },
+     "8": {
+      "availability": 0.895,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 181.4 kg < mass 209.3 kg"
+      ],
+      "energy_solar_wh": 199528.40428988216,
+      "v_energy": 7.271207350386534,
+      "superheat_day": 42.86974395817447,
+      "wind_p90": 7.355095306822803
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": false,
+   "cost": 3.5641550978585843,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 213.69782376289368
+  },
+  "50.0": {
+   "length": 50.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    2.5640356738357033,
+    18101.712835692564,
+    0.15746388337852285,
+    3.055167986648657,
+    8.223624806641347,
+    31.560038335895253,
+    0.7402231444916052,
+    151.11705120471285
+   ],
+   "design": {
+    "length": 50.0,
+    "fineness": 2.5640356738357033,
+    "altitude": 18101.712835692564,
+    "payload_mass": 139.4855505439985,
+    "payload_power": null,
+    "battery_energy": 26765.668631677614,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 31.560038335895253,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 3494.8238387110987,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.7402231444916052,
+    "valve_dp": 30.0,
+    "night_superpressure": 151.11705120471285
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.69): needs active control"
+    ],
+    "design": {
+     "length": 50.0,
+     "fineness": 2.5640356738357033,
+     "altitude": 18101.712835692564,
+     "payload_mass": 139.4855505439985,
+     "payload_power": null,
+     "battery_energy": 26765.668631677614,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 31.560038335895253,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 3494.8238387110987,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.7402231444916052,
+     "valve_dp": 30.0,
+     "night_superpressure": 151.11705120471285
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 50.0,
+    "diameter": 19.500508713750396,
+    "volume": 8760.784594708328,
+    "envelope_area": 2318.425722262442,
+    "solar_area": 271.81725177310955,
+    "payload": 139.4855505439985,
+    "payload_power": 1394.8555054399849,
+    "system_mass": 856.3098522272044,
+    "masses": {
+     "envelope": 331.5348782835292,
+     "structure": 116.91541656290818,
+     "energy": 189.61644308726653,
+     "propulsion": 5.591718141937759,
+     "margin": 65.16584560756418,
+     "payload": 139.4855505439985,
+     "systems": 8.0
+    },
+    "gas_mass": 167.4215547047881,
+    "gross_lift": 1048.8618137643966,
+    "net_lift": 881.4402590596085,
+    "surplus_lift": 25.130406832404105,
+    "max_float_altitude": 18285.264940811343,
+    "plies": 1,
+    "dp_min": 201.11705120471285,
+    "dp_max": 1760.85943627709,
+    "hoop_line_load": 15354.767111539213,
+    "bending_moment": 39820.47109050851,
+    "superheat_day": 44.19162692112576,
+    "superheat_night": 0.0,
+    "cg": [
+     21.704545454558936,
+     6.614933669245133e-17,
+     -3.9684879571845424
+    ],
+    "x_cb": 21.704545454558936,
+    "stability_margin": -0.6883719376369072,
+    "v_max": 12.568414506998856,
+    "v_energy": 8.902626942457523,
+    "availability": 0.9133333333333333,
+    "wind_p50": 3.9141427504882946,
+    "wind_p90": 6.773122860837943,
+    "wind_p95": 7.913862528075464,
+    "energy_solar_wh": 664699.2334173332,
+    "energy_loads_wh": 35959.17857612495,
+    "energy_at_p90_wh": 50563.39279386884,
+    "drag_p90": 61.01099500398124,
+    "cdv": 0.05227847650330409,
+    "gas_life_days": 60.51098362391561,
+    "endurance_days": 60.51098362391561,
+    "battery_hours": 16.557728020711377,
+    "months": {
+     "7": {
+      "availability": 0.9716666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 664699.2334173332,
+      "v_energy": 8.902626942457523,
+      "superheat_day": 44.19162692112576,
+      "wind_p90": 6.773122860837943
+     },
+     "6": {
+      "availability": 0.9683333333333334,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 692986.5879857158,
+      "v_energy": 9.426310880249142,
+      "superheat_day": 44.19162692112576,
+      "wind_p90": 7.264164550149029
+     },
+     "8": {
+      "availability": 0.9133333333333333,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 571654.2213113137,
+      "v_energy": 7.541048704199314,
+      "superheat_day": 44.19162692112576,
+      "wind_p90": 7.264164550149028
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": true,
+   "cost": -0.15041163621822487,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 229.65147829055786
+  },
+  "80.0": {
+   "length": 80.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    3.134507511754153,
+    18240.34513375276,
+    0.22636239615814668,
+    3.376035180266343,
+    29.252510252964445,
+    35.94685033501685,
+    0.7104215154164171,
+    13.523240205350447
+   ],
+   "design": {
+    "length": 80.0,
+    "fineness": 3.134507511754153,
+    "altitude": 18240.34513375276,
+    "payload_mass": 537.7520215566977,
+    "payload_power": null,
+    "battery_energy": 81062.39119770603,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 35.94685033501685,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 24346.587905234926,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.7104215154164171,
+    "valve_dp": 30.0,
+    "night_superpressure": 13.523240205350447
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.72): needs active control"
+    ],
+    "design": {
+     "length": 80.0,
+     "fineness": 3.134507511754153,
+     "altitude": 18240.34513375276,
+     "payload_mass": 537.7520215566977,
+     "payload_power": null,
+     "battery_energy": 81062.39119770603,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 35.94685033501685,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 24346.587905234926,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.7104215154164171,
+     "valve_dp": 30.0,
+     "night_superpressure": 13.523240205350447
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 80.0,
+    "diameter": 25.522350704219527,
+    "volume": 24011.12158769354,
+    "envelope_area": 4771.5029971850045,
+    "solar_area": 644.9259915913738,
+    "payload": 537.7520215566977,
+    "payload_power": 5377.520215566978,
+    "system_mass": 2260.4337585103262,
+    "masses": {
+     "envelope": 682.3249285974557,
+     "structure": 307.0979246427777,
+     "energy": 529.6969124328709,
+     "propulsion": 38.95454064837588,
+     "margin": 156.60743063214804,
+     "payload": 537.7520215566977,
+     "systems": 8.0
+    },
+    "gas_mass": 441.8012046477927,
+    "gross_lift": 2812.8578175672856,
+    "net_lift": 2371.056612919493,
+    "surplus_lift": 110.62285440916685,
+    "max_float_altitude": 18544.490551604846,
+    "plies": 1,
+    "dp_min": 76.92292616210355,
+    "dp_max": 1692.2739651368747,
+    "hoop_line_load": 20068.218908944782,
+    "bending_moment": 204958.57961840965,
+    "superheat_day": 47.53439287201627,
+    "superheat_night": 0.0,
+    "cg": [
+     34.727272727294284,
+     5.673275163713927e-17,
+     -6.953685223652292
+    ],
+    "x_cb": 34.72727272729429,
+    "stability_margin": -0.7157728372644612,
+    "v_max": 21.108441798631034,
+    "v_energy": 9.850606172694484,
+    "availability": 0.92,
+    "wind_p50": 3.868420922121471,
+    "wind_p90": 6.833912971998868,
+    "wind_p95": 8.070323500551877,
+    "energy_solar_wh": 1557655.3768473188,
+    "energy_loads_wh": 134397.37466143045,
+    "energy_at_p90_wh": 158178.5759139874,
+    "drag_p90": 98.98781955863818,
+    "cdv": 0.04347730019512024,
+    "gas_life_days": 60.17654232539395,
+    "endurance_days": 60.17654232539395,
+    "battery_hours": 13.41717348821446,
+    "months": {
+     "7": {
+      "availability": 0.985,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1557655.3768473188,
+      "v_energy": 9.850606172694484,
+      "superheat_day": 47.53439287201627,
+      "wind_p90": 6.833912971998868
+     },
+     "6": {
+      "availability": 0.9866666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1625528.6391169983,
+      "v_energy": 10.730124580970777,
+      "superheat_day": 47.53439287201627,
+      "wind_p90": 7.281823588208619
+     },
+     "8": {
+      "availability": 0.92,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1334705.4750785714,
+      "v_energy": 7.387954629520863,
+      "superheat_day": 47.53439287201627,
+      "wind_p90": 7.281823588208617
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": true,
+   "cost": -0.22598445888221028,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 219.9773290157318
+  },
+  "100.0": {
+   "length": 100.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    3.7617562192394356,
+    18316.31655487178,
+    0.2205049375918903,
+    3.098909136214962,
+    41.73790612657473,
+    35.01099693274769,
+    0.6734888145615449,
+    46.740054414898594
+   ],
+   "design": {
+    "length": 100.0,
+    "fineness": 3.7617562192394356,
+    "altitude": 18316.31655487178,
+    "payload_mass": 701.9569633575604,
+    "payload_power": null,
+    "battery_energy": 100904.06510406233,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 35.01099693274769,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 42559.567408451774,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6734888145615449,
+    "valve_dp": 30.0,
+    "night_superpressure": 46.740054414898594
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.74): needs active control"
+    ],
+    "design": {
+     "length": 100.0,
+     "fineness": 3.7617562192394356,
+     "altitude": 18316.31655487178,
+     "payload_mass": 701.9569633575604,
+     "payload_power": null,
+     "battery_energy": 100904.06510406233,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 35.01099693274769,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 42559.567408451774,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.6734888145615449,
+     "valve_dp": 30.0,
+     "night_superpressure": 46.740054414898594
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 100.0,
+    "diameter": 26.583328150971553,
+    "volume": 32561.156416256705,
+    "envelope_area": 6141.715327739607,
+    "solar_area": 815.1205407442085,
+    "payload": 701.9569633575604,
+    "payload_power": 7019.569633575604,
+    "system_mass": 2902.7287542747927,
+    "masses": {
+     "envelope": 878.265291866764,
+     "structure": 383.9060518181341,
+     "energy": 662.4349765681536,
+     "propulsion": 68.09530785352284,
+     "margin": 200.07016281065748,
+     "payload": 701.9569633575604,
+     "systems": 8.0
+    },
+    "gas_mass": 597.2846146372949,
+    "gross_lift": 3769.3127970880264,
+    "net_lift": 3172.0281824507315,
+    "surplus_lift": 269.29942817593883,
+    "max_float_altitude": 18880.114825732795,
+    "plies": 1,
+    "dp_min": 140.62465774060092,
+    "dp_max": 1773.9814077097917,
+    "hoop_line_load": 22421.02388260417,
+    "bending_moment": 342956.7955313649,
+    "superheat_day": 48.21198679471797,
+    "superheat_night": 0.0,
+    "cg": [
+     43.40909090911788,
+     6.070172085404349e-17,
+     -7.216323629847221
+    ],
+    "x_cb": 43.40909090911787,
+    "stability_margin": -0.7422550111071466,
+    "v_max": 24.83347540824964,
+    "v_energy": 9.933390163299856,
+    "availability": 0.9,
+    "wind_p50": 3.8736968904466895,
+    "wind_p90": 6.8926988143131025,
+    "wind_p95": 8.056668640063432,
+    "energy_solar_wh": 1972375.9363719013,
+    "energy_loads_wh": 174983.36277654365,
+    "energy_at_p90_wh": 201783.17878076428,
+    "drag_p90": 110.25051302979006,
+    "cdv": 0.03931905809932078,
+    "gas_life_days": 111.59002108116664,
+    "endurance_days": 111.59002108116664,
+    "battery_hours": 12.827567676283989,
+    "months": {
+     "7": {
+      "availability": 0.985,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1972375.9363719013,
+      "v_energy": 9.933390163299856,
+      "superheat_day": 48.21198679471797,
+      "wind_p90": 6.8926988143131025
+     },
+     "6": {
+      "availability": 0.9866666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 2058443.4473282173,
+      "v_energy": 10.761172676908178,
+      "superheat_day": 48.21198679471797,
+      "wind_p90": 7.190567161568466
+     },
+     "8": {
+      "availability": 0.9,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1688900.3148051696,
+      "v_energy": 7.036151365670731,
+      "superheat_day": 48.21198679471797,
+      "wind_p90": 7.190567161568465
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": true,
+   "cost": -0.21591066413958315,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 231.5074164867401
+  },
+  "120.0": {
+   "length": 120.0,
+   "scenario": "summer",
+   "objective": "payload",
+   "x": [
+    5.028742620141593,
+    18241.7481673388,
+    0.2288789287483415,
+    3.658870438140428,
+    46.03952812261604,
+    30.13248572567445,
+    0.6086030681374978,
+    121.25204033645906
+   ],
+   "design": {
+    "length": 120.0,
+    "fineness": 5.028742620141593,
+    "altitude": 18241.7481673388,
+    "payload_mass": 712.8228891982062,
+    "payload_power": null,
+    "battery_energy": 115200.15641833482,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 30.13248572567445,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 45905.86995752094,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6086030681374978,
+    "valve_dp": 30.0,
+    "night_superpressure": 121.25204033645906
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+    ],
+    "design": {
+     "length": 120.0,
+     "fineness": 5.028742620141593,
+     "altitude": 18241.7481673388,
+     "payload_mass": 712.8228891982062,
+     "payload_power": null,
+     "battery_energy": 115200.15641833482,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 30.13248572567445,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 45905.86995752094,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.6086030681374978,
+     "valve_dp": 30.0,
+     "night_superpressure": 121.25204033645906
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 7,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 120.0,
+    "diameter": 23.862823982950474,
+    "volume": 31485.169635272403,
+    "envelope_area": 6535.895750552431,
+    "solar_area": 753.1842974054201,
+    "payload": 712.8228891982062,
+    "payload_power": 7128.228891982062,
+    "system_mass": 3043.4358094450386,
+    "masses": {
+     "envelope": 934.6330923289978,
+     "structure": 390.7233851650303,
+     "energy": 711.9331489801497,
+     "propulsion": 73.4493919320335,
+     "margin": 211.87390184062116,
+     "payload": 712.8228891982062,
+     "systems": 8.0
+    },
+    "gas_mass": 594.7465726318034,
+    "gross_lift": 3687.617231845383,
+    "net_lift": 3092.8706592135795,
+    "surplus_lift": 49.43484976854097,
+    "max_float_altitude": 18343.798502786936,
+    "plies": 1,
+    "dp_min": 274.54198468544564,
+    "dp_max": 1920.7598756097086,
+    "hoop_line_load": 22286.95396375214,
+    "bending_moment": 405038.363716166,
+    "superheat_day": 47.18640506414988,
+    "superheat_night": 0.0,
+    "cg": [
+     52.090909090941416,
+     6.830546503605253e-17,
+     -6.660675228890668
+    ],
+    "x_cb": 52.09090909094142,
+    "stability_margin": -0.7835387062589125,
+    "v_max": 26.282754627962746,
+    "v_energy": 11.38919367211719,
+    "availability": 0.9616666666666667,
+    "wind_p50": 3.869632455393309,
+    "wind_p90": 6.8338829098464595,
+    "wind_p95": 8.072644099039902,
+    "energy_solar_wh": 1844706.2748040834,
+    "energy_loads_wh": 177669.05744682325,
+    "energy_at_p90_wh": 201799.70045318708,
+    "drag_p90": 98.69375322050045,
+    "cdv": 0.03619157116604702,
+    "gas_life_days": 60.021634344763555,
+    "endurance_days": 60.021634344763555,
+    "battery_hours": 14.423600351979452,
+    "months": {
+     "7": {
+      "availability": 0.9966666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1844706.2748040834,
+      "v_energy": 11.38919367211719,
+      "superheat_day": 47.18640506414988,
+      "wind_p90": 6.8338829098464595
+     },
+     "6": {
+      "availability": 0.9966666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1924005.0260273803,
+      "v_energy": 12.046262537816258,
+      "superheat_day": 47.18640506414988,
+      "wind_p90": 7.278765296772769
+     },
+     "8": {
+      "availability": 0.9616666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1581445.196669548,
+      "v_energy": 8.760918209320915,
+      "superheat_day": 47.18640506414988,
+      "wind_p90": 7.278765296772768
+     }
+    },
+    "scenario": "summer"
+   },
+   "meets": true,
+   "cost": -0.22395284819489114,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 225.5177707672119
+  }
+ },
+ "year": {
+  "15.0": {
+   "length": 15.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.548020697382718,
+    18031.891771482722,
+    0.01096329349709596,
+    6.510164502338556,
+    35.13478970622144,
+    26.261897973636437,
+    0.60217854323613,
+    186.91114464890669
+   ],
+   "design": {
+    "length": 15.0,
+    "fineness": 2.548020697382718,
+    "altitude": 18031.891771482722,
+    "payload_mass": 0.2684415871134711,
+    "payload_power": null,
+    "battery_energy": 1559.3404789019464,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 26.261897973636437,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 1355.0958604685436,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.60217854323613,
+    "valve_dp": 30.0,
+    "night_superpressure": 186.91114464890669
+   },
+   "best": {
+    "feasible": false,
+    "problems": [
+     "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg"
+    ],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+    ],
+    "design": {
+     "length": 15.0,
+     "fineness": 2.548020697382718,
+     "altitude": 18031.891771482722,
+     "payload_mass": 0.2684415871134711,
+     "payload_power": null,
+     "battery_energy": 1559.3404789019464,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 26.261897973636437,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 1355.0958604685436,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.60217854323613,
+     "valve_dp": 30.0,
+     "night_superpressure": 186.91114464890669
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 15.0,
+    "diameter": 5.886922353263353,
+    "volume": 239.52397490751673,
+    "envelope_area": 210.1036364025232,
+    "solar_area": 20.488757972487456,
+    "payload": 0.2684415871134711,
+    "payload_power": 2.684415871134711,
+    "system_mass": 66.14293524691033,
+    "masses": {
+     "envelope": 30.04482000556082,
+     "structure": 7.4628291839195855,
+     "energy": 12.210100760857983,
+     "propulsion": 2.16815337674967,
+     "margin": 5.988590332708807,
+     "payload": 0.2684415871134711,
+     "systems": 8.0
+    },
+    "gas_mass": 4.647872595965353,
+    "gross_lift": 28.992039536193715,
+    "net_lift": 24.344166940228362,
+    "surplus_lift": -41.798768306681964,
+    "max_float_altitude": 11686.974204995106,
+    "plies": 1,
+    "dp_min": 236.91114464890669,
+    "dp_max": 1625.4326346543412,
+    "hoop_line_load": 4272.506495309672,
+    "bending_moment": 1344.236794487077,
+    "superheat_day": 38.743858115284525,
+    "superheat_night": 0.0,
+    "cg": [
+     6.511363636367682,
+     -3.397955539335158e-17,
+     -0.8514073667920317
+    ],
+    "x_cb": 6.511363636367682,
+    "stability_margin": -0.7849625619064867,
+    "v_max": 19.67272885839499,
+    "v_energy": 3.606666957372415,
+    "availability": 0.075,
+    "wind_p50": 11.358183631845142,
+    "wind_p90": 18.642219086676583,
+    "wind_p95": 21.000997848994693,
+    "energy_solar_wh": 11716.827952755842,
+    "energy_loads_wh": 1598.4526047139361,
+    "energy_at_p90_wh": 29541.79774699096,
+    "drag_p90": 42.47506263880632,
+    "cdv": 0.052360811694527366,
+    "gas_life_days": 0.0,
+    "endurance_days": 0.0,
+    "battery_hours": 22.388442350597078,
+    "months": {
+     "12": {
+      "availability": 0.075,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg"
+      ],
+      "energy_solar_wh": 11716.827952755842,
+      "v_energy": 3.606666957372415,
+      "superheat_day": 38.743858115284525,
+      "wind_p90": 18.642219086676583
+     },
+     "3": {
+      "availability": 0.20833333333333334,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg"
+      ],
+      "energy_solar_wh": 30670.178710325854,
+      "v_energy": 5.410000436058622,
+      "superheat_day": 38.743858115284525,
+      "wind_p90": 15.917703457064167
+     },
+     "6": {
+      "availability": 0.9416666666666667,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg"
+      ],
+      "energy_solar_wh": 53003.75615391707,
+      "v_energy": 8.033030950511288,
+      "superheat_day": 38.743858115284525,
+      "wind_p90": 7.294251922136963
+     },
+     "9": {
+      "availability": 0.6216666666666667,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg"
+      ],
+      "energy_solar_wh": 33807.77468517919,
+      "v_energy": 5.901818657518497,
+      "superheat_day": 38.743858115284525,
+      "wind_p90": 9.235423517079546
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": false,
+   "cost": 21.29493167575192,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 290.5599317550659
+  },
+  "30.0": {
+   "length": 30.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.627936921291267,
+    18137.172522783665,
+    0.007658653501065995,
+    2.7401697993187897,
+    6.599030087686458,
+    27.296297092776847,
+    0.6016718206167617,
+    234.5127644656428
+   ],
+   "design": {
+    "length": 30.0,
+    "fineness": 2.627936921291267,
+    "altitude": 18137.172522783665,
+    "payload_mass": 1.387260691991322,
+    "payload_power": null,
+    "battery_energy": 4936.196983608037,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 27.296297092776847,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 976.9899877304235,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6016718206167617,
+    "valve_dp": 30.0,
+    "night_superpressure": 234.5127644656428
+   },
+   "best": {
+    "feasible": false,
+    "problems": [
+     "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg"
+    ],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.79): needs active control"
+    ],
+    "design": {
+     "length": 30.0,
+     "fineness": 2.627936921291267,
+     "altitude": 18137.172522783665,
+     "payload_mass": 1.387260691991322,
+     "payload_power": null,
+     "battery_energy": 4936.196983608037,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 27.296297092776847,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 976.9899877304235,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.6016718206167617,
+     "valve_dp": 30.0,
+     "night_superpressure": 234.5127644656428
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 30.0,
+    "diameter": 11.415799122476333,
+    "volume": 1801.4201108395484,
+    "envelope_area": 812.351486206402,
+    "solar_area": 82.51353965527954,
+    "payload": 1.387260691991322,
+    "payload_power": 13.87260691991322,
+    "system_mass": 212.7562694115554,
+    "masses": {
+     "envelope": 116.16626252751549,
+     "structure": 23.358553852408598,
+     "energy": 43.065643930220055,
+     "propulsion": 1.5631839803686778,
+     "margin": 19.215364429051284,
+     "payload": 1.387260691991322,
+     "systems": 8.0
+    },
+    "gas_mass": 34.61534970873695,
+    "gross_lift": 214.47450322406445,
+    "net_lift": 179.8591535153275,
+    "surplus_lift": -32.89711589622789,
+    "max_float_altitude": 17073.01818580278,
+    "plies": 1,
+    "dp_min": 284.5127644656428,
+    "dp_max": 1751.144973565908,
+    "hoop_line_load": 8989.959228274913,
+    "bending_moment": 5979.585108415964,
+    "superheat_day": 41.325963376103914,
+    "superheat_night": 0.0,
+    "cg": [
+     13.022727272735365,
+     -8.084264484530291e-17,
+     -0.8775695856434154
+    ],
+    "x_cb": 13.022727272735361,
+    "stability_margin": -0.786296658808462,
+    "v_max": 11.499485503431494,
+    "v_energy": 6.228887981025393,
+    "availability": 0.17833333333333334,
+    "wind_p50": 11.337863159589705,
+    "wind_p90": 18.65633693370257,
+    "wind_p95": 21.04178458182715,
+    "energy_solar_wh": 47377.49170637883,
+    "energy_loads_wh": 1883.7514764577936,
+    "energy_at_p90_wh": 25331.51118198798,
+    "drag_p90": 141.45713365482442,
+    "cdv": 0.046113854834229265,
+    "gas_life_days": 0.0,
+    "endurance_days": 0.0,
+    "battery_hours": 60.13835805285064,
+    "months": {
+     "12": {
+      "availability": 0.17833333333333334,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg"
+      ],
+      "energy_solar_wh": 47377.49170637883,
+      "v_energy": 6.228887981025393,
+      "superheat_day": 41.325963376103914,
+      "wind_p90": 18.65633693370257
+     },
+     "3": {
+      "availability": 0.32666666666666666,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg"
+      ],
+      "energy_solar_wh": 122762.34713289887,
+      "v_energy": 7.091349393782754,
+      "superheat_day": 41.325963376103914,
+      "wind_p90": 15.889454402638206
+     },
+     "6": {
+      "availability": 0.9666666666666667,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg"
+      ],
+      "energy_solar_wh": 212454.4243557448,
+      "v_energy": 9.007930311021337,
+      "superheat_day": 41.325963376103914,
+      "wind_p90": 7.262511984215629
+     },
+     "9": {
+      "availability": 0.795,
+      "feasible": false,
+      "problems": [
+       "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg"
+      ],
+      "energy_solar_wh": 135364.8982902518,
+      "v_energy": 7.378836531368542,
+      "superheat_day": 41.325963376103914,
+      "wind_p90": 9.151905157542508
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": false,
+   "cost": 5.437382078045924,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 275.28725028038025
+  },
+  "50.0": {
+   "length": 50.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.542838250448292,
+    18308.69626192812,
+    0.006141245374975984,
+    5.16314345424637,
+    7.08424309299916,
+    42.010714856446725,
+    0.7492321732331088,
+    257.51471513968704
+   ],
+   "design": {
+    "length": 50.0,
+    "fineness": 2.542838250448292,
+    "altitude": 18308.69626192812,
+    "payload_mass": 5.3545295941471664,
+    "payload_power": null,
+    "battery_energy": 45990.47015612822,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 42.010714856446725,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 3044.1255515976004,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.7492321732331088,
+    "valve_dp": 30.0,
+    "night_superpressure": 257.51471513968704
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.68): needs active control"
+    ],
+    "design": {
+     "length": 50.0,
+     "fineness": 2.542838250448292,
+     "altitude": 18308.69626192812,
+     "payload_mass": 5.3545295941471664,
+     "payload_power": null,
+     "battery_energy": 45990.47015612822,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 42.010714856446725,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 3044.1255515976004,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.7492321732331088,
+     "valve_dp": 30.0,
+     "night_superpressure": 257.51471513968704
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 50.0,
+    "diameter": 19.663067437020505,
+    "volume": 8907.455422007279,
+    "envelope_area": 2339.730338800419,
+    "solar_area": 364.9384312677539,
+    "payload": 5.3545295941471664,
+    "payload_power": 53.545295941471664,
+    "system_mass": 837.9555501141625,
+    "masses": {
+     "envelope": 334.5814384484599,
+     "structure": 109.17577988784035,
+     "energy": 300.2821994357031,
+     "propulsion": 4.870600882556161,
+     "margin": 75.69100186545596,
+     "payload": 5.3545295941471664,
+     "systems": 8.0
+    },
+    "gas_mass": 167.30042242293757,
+    "gross_lift": 1032.3688317118351,
+    "net_lift": 865.0684092888976,
+    "surplus_lift": 27.112859174735036,
+    "max_float_altitude": 18510.187049802422,
+    "plies": 1,
+    "dp_min": 307.51471513968704,
+    "dp_max": 1966.9160644162012,
+    "hoop_line_load": 17260.377609426403,
+    "bending_moment": 37080.138657425094,
+    "superheat_day": 47.83695679048736,
+    "superheat_night": 0.0,
+    "cg": [
+     21.70454545455894,
+     3.419819109572365e-17,
+     -3.0820259389740716
+    ],
+    "x_cb": 21.704545454558936,
+    "stability_margin": -0.6811786440028063,
+    "v_max": 12.005460732215603,
+    "v_energy": 10.804914658994042,
+    "availability": 0.47333333333333333,
+    "wind_p50": 11.340165528348056,
+    "wind_p90": 18.75084821169816,
+    "wind_p95": 21.14171987409398,
+    "energy_solar_wh": 241054.71938527594,
+    "energy_loads_wh": 2895.4050465075197,
+    "energy_at_p90_wh": 75954.41828484982,
+    "drag_p90": 396.2822045320086,
+    "cdv": 0.04526290229270588,
+    "gas_life_days": 81.44396293295435,
+    "endurance_days": 81.44396293295435,
+    "battery_hours": 364.53666175524455,
+    "months": {
+     "12": {
+      "availability": 0.47333333333333333,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 241054.71938527594,
+      "v_energy": 10.804914658994042,
+      "superheat_day": 47.83695679048736,
+      "wind_p90": 18.75084821169816
+     },
+     "3": {
+      "availability": 0.715,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 527861.5394682325,
+      "v_energy": 12.005460732215603,
+      "superheat_day": 47.83695679048736,
+      "wind_p90": 15.86332223454263
+     },
+     "6": {
+      "availability": 0.9966666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 911618.8090295295,
+      "v_energy": 12.005460732215603,
+      "superheat_day": 47.83695679048736,
+      "wind_p90": 7.18642469972741
+     },
+     "9": {
+      "availability": 0.9766666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 578590.7693725175,
+      "v_energy": 12.005460732215603,
+      "superheat_day": 47.83695679048736,
+      "wind_p90": 9.051279704871064
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": false,
+   "cost": 1.1333333333333333,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 269.26430106163025
+  },
+  "80.0": {
+   "length": 80.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.5320029852605055,
+    18561.595373558295,
+    0.11260723378563756,
+    5.51545174564467,
+    26.69706597859001,
+    30.870911425206145,
+    0.84022394458748,
+    49.243250255343895
+   ],
+   "design": {
+    "length": 80.0,
+    "fineness": 2.5320029852605055,
+    "altitude": 18561.595373558295,
+    "payload_mass": 389.8350043970354,
+    "payload_power": null,
+    "battery_energy": 202956.8619694832,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 30.870911425206145,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 29535.56625201247,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.84022394458748,
+    "valve_dp": 30.0,
+    "night_superpressure": 49.243250255343895
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.61): needs active control"
+    ],
+    "design": {
+     "length": 80.0,
+     "fineness": 2.5320029852605055,
+     "altitude": 18561.595373558295,
+     "payload_mass": 389.8350043970354,
+     "payload_power": null,
+     "battery_energy": 202956.8619694832,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 30.870911425206145,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 29535.56625201247,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.84022394458748,
+     "valve_dp": 30.0,
+     "night_superpressure": 49.243250255343895
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 80.0,
+    "diameter": 31.59553936772677,
+    "volume": 36797.86739676402,
+    "envelope_area": 6017.98539795075,
+    "solar_area": 689.5459039151802,
+    "payload": 389.8350043970354,
+    "payload_power": 3898.350043970354,
+    "system_mass": 3107.635049930327,
+    "masses": {
+     "envelope": 860.5719119069573,
+     "structure": 459.98082946182365,
+     "energy": 1094.9176667491733,
+     "propulsion": 47.25690600321995,
+     "margin": 247.07273141211746,
+     "payload": 389.8350043970354,
+     "systems": 8.0
+    },
+    "gas_mass": 646.2189661405986,
+    "gross_lift": 4099.062630909966,
+    "net_lift": 3452.8436647693675,
+    "surplus_lift": 345.20861483904037,
+    "max_float_altitude": 19231.70661869034,
+    "plies": 1,
+    "dp_min": 99.2432502553439,
+    "dp_max": 1580.169479675672,
+    "hoop_line_load": 22258.418880568533,
+    "bending_moment": 262177.04334176757,
+    "superheat_day": 45.6595744838761,
+    "superheat_night": 0.0,
+    "cg": [
+     34.7272727272943,
+     8.109022817200683e-17,
+     -9.266864868986618
+    ],
+    "x_cb": 34.7272727272943,
+    "stability_margin": -0.6097902340010444,
+    "v_max": 19.71606905844645,
+    "v_energy": 11.336739708606709,
+    "availability": 0.5,
+    "wind_p50": 11.399638539404982,
+    "wind_p90": 18.929741786661324,
+    "wind_p95": 21.36146414768685,
+    "energy_solar_wh": 407816.96389983635,
+    "energy_loads_wh": 100937.926121244,
+    "energy_at_p90_wh": 732553.7172463373,
+    "drag_p90": 960.9727605251155,
+    "cdv": 0.04352191760863433,
+    "gas_life_days": 122.11865676948165,
+    "endurance_days": 122.11865676948165,
+    "battery_hours": 46.14578643714889,
+    "months": {
+     "12": {
+      "availability": 0.5,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 407816.96389983635,
+      "v_energy": 11.336739708606709,
+      "superheat_day": 45.6595744838761,
+      "wind_p90": 18.929741786661324
+     },
+     "3": {
+      "availability": 0.7783333333333333,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1018924.8994258662,
+      "v_energy": 12.979745463477247,
+      "superheat_day": 45.6595744838761,
+      "wind_p90": 15.898594651802917
+     },
+     "6": {
+      "availability": 1.0,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1761291.7837421952,
+      "v_energy": 16.265756973218323,
+      "superheat_day": 45.6595744838761,
+      "wind_p90": 7.379123778252369
+     },
+     "9": {
+      "availability": 0.9916666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1122208.0646134713,
+      "v_energy": 13.472647189938408,
+      "superheat_day": 45.6595744838761,
+      "wind_p90": 8.936069312778775
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": true,
+   "cost": -0.10890885746162575,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 298.4394290447235
+  },
+  "100.0": {
+   "length": 100.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.516409997537984,
+    18094.024019656725,
+    0.09910647504375573,
+    5.35571529233224,
+    41.399784403402485,
+    62.58088849312268,
+    0.6880204538761415,
+    332.44641971845004
+   ],
+   "design": {
+    "length": 100.0,
+    "fineness": 2.516409997537984,
+    "altitude": 18094.024019656725,
+    "payload_mass": 730.044228322861,
+    "payload_power": null,
+    "battery_energy": 389704.8349734213,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 62.58088849312268,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 72156.74835930078,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6880204538761415,
+    "valve_dp": 30.0,
+    "night_superpressure": 332.44641971845004
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.73): needs active control"
+    ],
+    "design": {
+     "length": 100.0,
+     "fineness": 2.516409997537984,
+     "altitude": 18094.024019656725,
+     "payload_mass": 730.044228322861,
+     "payload_power": null,
+     "battery_energy": 389704.8349734213,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 62.58088849312268,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 72156.74835930078,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.6880204538761415,
+     "valve_dp": 30.0,
+     "night_superpressure": 332.44641971845004
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 100.0,
+    "diameter": 39.73915224380702,
+    "volume": 72764.29266719245,
+    "envelope_area": 9467.435326710012,
+    "solar_area": 2198.090368401796,
+    "payload": 730.044228322861,
+    "payload_power": 7300.442283228611,
+    "system_mass": 7295.375414529323,
+    "masses": {
+     "envelope": 2707.686503439064,
+     "structure": 816.4373901213837,
+     "energy": 2320.9082056160005,
+     "propulsion": 115.45079737488123,
+     "margin": 596.848289655133,
+     "payload": 730.044228322861,
+     "systems": 8.0
+    },
+    "gas_mass": 1425.7223922500439,
+    "gross_lift": 8722.02150677725,
+    "net_lift": 7296.299114527206,
+    "surplus_lift": 0.9236999978829772,
+    "max_float_altitude": 18094.823801127786,
+    "plies": 2,
+    "dp_min": 385.54783426625744,
+    "dp_max": 2351.689477529807,
+    "hoop_line_load": 41601.33126889081,
+    "bending_moment": 648005.7571528812,
+    "superheat_day": 54.331741758355406,
+    "superheat_night": 0.0,
+    "cg": [
+     43.40909090911786,
+     1.638460298506025e-16,
+     -9.205339237864344
+    ],
+    "x_cb": 43.40909090911786,
+    "stability_margin": -0.7256826407236207,
+    "v_max": 23.032387733391815,
+    "v_energy": 12.283940124475635,
+    "availability": 0.59,
+    "wind_p50": 11.343019169333086,
+    "wind_p90": 18.648237692879498,
+    "wind_p95": 21.0231454854809,
+    "energy_solar_wh": 1687110.341407106,
+    "energy_loads_wh": 187691.27822232977,
+    "energy_at_p90_wh": 1136626.399538163,
+    "drag_p90": 1473.9160746626799,
+    "cdv": 0.04057415116126172,
+    "gas_life_days": 60.06656673324076,
+    "endurance_days": 60.06656673324076,
+    "battery_hours": 47.651260342772744,
+    "months": {
+     "12": {
+      "availability": 0.59,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1687110.341407106,
+      "v_energy": 12.283940124475635,
+      "superheat_day": 54.331741758355406,
+      "wind_p90": 18.648237692879498
+     },
+     "3": {
+      "availability": 0.8283333333333334,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 3098284.814282059,
+      "v_energy": 14.203305768924952,
+      "superheat_day": 54.331741758355406,
+      "wind_p90": 15.91070513827069
+     },
+     "6": {
+      "availability": 1.0,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 5135643.390600767,
+      "v_energy": 18.233973622268522,
+      "superheat_day": 54.331741758355406,
+      "wind_p90": 7.283080844624454
+     },
+     "9": {
+      "availability": 0.995,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 3336374.0993156754,
+      "v_energy": 14.587178897814816,
+      "superheat_day": 54.331741758355406,
+      "wind_p90": 9.116661128105903
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": true,
+   "cost": -0.09257103695542199,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 289.8398971557617
+  },
+  "120.0": {
+   "length": 120.0,
+   "scenario": "year-round",
+   "objective": "payload",
+   "x": [
+    2.554109781519235,
+    18140.27390247382,
+    0.15677393888830396,
+    5.425179515964829,
+    17.67025584034119,
+    39.652316253460086,
+    0.8037079920612054,
+    82.84801294976924
+   ],
+   "design": {
+    "length": 120.0,
+    "fineness": 2.554109781519235,
+    "altitude": 18140.27390247382,
+    "payload_mass": 1923.087612901822,
+    "payload_power": null,
+    "battery_energy": 662155.2803803831,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 39.652316253460086,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 43478.37724726188,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.8037079920612054,
+    "valve_dp": 30.0,
+    "night_superpressure": 82.84801294976924
+   },
+   "best": {
+    "feasible": true,
+    "problems": [],
+    "warnings": [
+     "statically unstable in pitch/yaw (fin/Munk margin -0.64): needs active control"
+    ],
+    "design": {
+     "length": 120.0,
+     "fineness": 2.554109781519235,
+     "altitude": 18140.27390247382,
+     "payload_mass": 1923.087612901822,
+     "payload_power": null,
+     "battery_energy": 662155.2803803831,
+     "battery": "li-ion",
+     "pv": "gaas",
+     "solar_half_angle_deg": 39.652316253460086,
+     "solar_x0": 0.18,
+     "solar_x1": 0.72,
+     "propulsion_power": 43478.37724726188,
+     "laminate": "zylon",
+     "gas_system": "sealed",
+     "fin_scale": 0.8037079920612054,
+     "valve_dp": 30.0,
+     "night_superpressure": 82.84801294976924
+    },
+    "mission": {
+     "lat": 50.0,
+     "lon": 10.0,
+     "month": 12,
+     "year": 2026,
+     "wind_percentile": 90.0,
+     "station_radius": 20000.0,
+     "battery_reserve": 0.1,
+     "heading": null
+    },
+    "length": 120.0,
+    "diameter": 46.98310184953038,
+    "volume": 122052.23411167134,
+    "envelope_area": 13411.309179377935,
+    "solar_area": 1975.0059602966464,
+    "payload": 1923.087612901822,
+    "payload_power": 19230.87612901822,
+    "system_mass": 11745.542922140768,
+    "masses": {
+     "envelope": 3835.6344253020898,
+     "structure": 1512.7567786072477,
+     "energy": 3503.548219075903,
+     "propulsion": 69.565403595619,
+     "margin": 892.950482658086,
+     "payload": 1923.087612901822,
+     "systems": 8.0
+    },
+    "gas_mass": 2298.7200904569163,
+    "gross_lift": 14524.300030556065,
+    "net_lift": 12225.57994009915,
+    "surplus_lift": 480.0370179583806,
+    "max_float_altitude": 18394.8824059612,
+    "plies": 2,
+    "dp_min": 135.38784433677236,
+    "dp_max": 1835.5792584585715,
+    "hoop_line_load": 38529.01273613866,
+    "bending_moment": 1059572.5822164332,
+    "superheat_day": 48.87794578117956,
+    "superheat_night": 0.0,
+    "cg": [
+     52.09090909094145,
+     4.830209011304996e-17,
+     -13.985937487912114
+    ],
+    "x_cb": 52.09090909094145,
+    "stability_margin": -0.6394354796934254,
+    "v_max": 17.17934267181299,
+    "v_energy": 11.309733925610217,
+    "availability": 0.5,
+    "wind_p50": 11.337571579362677,
+    "wind_p90": 18.657022057503767,
+    "wind_p95": 21.04322633212567,
+    "energy_solar_wh": 1273538.2835075224,
+    "energy_loads_wh": 491917.3412899646,
+    "energy_at_p90_wh": 1535398.395224249,
+    "drag_p90": 2050.651528532715,
+    "cdv": 0.04023993259946269,
+    "gas_life_days": 61.5065044101226,
+    "endurance_days": 61.5065044101226,
+    "battery_hours": 30.892311388900836,
+    "months": {
+     "12": {
+      "availability": 0.5,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 1273538.2835075224,
+      "v_energy": 11.309733925610217,
+      "superheat_day": 48.87794578117956,
+      "wind_p90": 18.657022057503767
+     },
+     "3": {
+      "availability": 0.8116666666666666,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 2843949.855485244,
+      "v_energy": 13.600312948518615,
+      "superheat_day": 48.87794578117956,
+      "wind_p90": 15.888025750985737
+     },
+     "6": {
+      "availability": 1.0,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 4924659.990693608,
+      "v_energy": 17.17934267181299,
+      "superheat_day": 48.87794578117956,
+      "wind_p90": 7.266148032357661
+     },
+     "9": {
+      "availability": 0.9916666666666667,
+      "feasible": true,
+      "problems": [],
+      "energy_solar_wh": 3127708.9554932364,
+      "v_energy": 14.172957704245714,
+      "superheat_day": 48.87794578117956,
+      "wind_p90": 9.156262239440617
+     }
+    },
+    "scenario": "year-round"
+   },
+   "meets": true,
+   "cost": -0.13944090038283116,
+   "evaluations": 1024,
+   "seed": 0,
+   "bounds": [
+    [
+     2.5,
+     6.0
+    ],
+    [
+     18000.0,
+     22000.0
+    ],
+    [
+     0.0,
+     0.25
+    ],
+    [
+     0.1,
+     8.0
+    ],
+    [
+     2.0,
+     80.0
+    ],
+    [
+     25.0,
+     85.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.0,
+     400.0
+    ]
+   ],
+   "seconds": 342.13588070869446
+  }
+ },
+ "demonstrator": {
+  "length": 15.0,
+  "scenario": "demonstrator",
+  "objective": "altitude",
+  "x": [
+   2.6437462750463974,
+   6379.769098005704,
+   0.012692087659017776,
+   7.853582689674102,
+   40.164807831831425,
+   67.46816568178922,
+   0.6148805381605321,
+   56.50632154965365
+  ],
+  "design": {
+   "length": 15.0,
+   "fineness": 2.6437462750463974,
+   "altitude": 6379.769098005704,
+   "payload_mass": 1.5091432797643356,
+   "payload_power": null,
+   "battery_energy": 1747.3631318013663,
+   "battery": "li-ion",
+   "pv": "gaas",
+   "solar_half_angle_deg": 67.46816568178922,
+   "solar_x0": 0.18,
+   "solar_x1": 0.72,
+   "propulsion_power": 1474.764217522941,
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "fin_scale": 0.6148805381605321,
+   "valve_dp": 30.0,
+   "night_superpressure": 56.50632154965365
+  },
+  "best": {
+   "feasible": true,
+   "problems": [],
+   "warnings": [
+    "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+   ],
+   "design": {
+    "length": 15.0,
+    "fineness": 2.6437462750463974,
+    "altitude": 6379.769098005704,
+    "payload_mass": 1.5091432797643356,
+    "payload_power": null,
+    "battery_energy": 1747.3631318013663,
+    "battery": "li-ion",
+    "pv": "gaas",
+    "solar_half_angle_deg": 67.46816568178922,
+    "solar_x0": 0.18,
+    "solar_x1": 0.72,
+    "propulsion_power": 1474.764217522941,
+    "laminate": "zylon",
+    "gas_system": "sealed",
+    "fin_scale": 0.6148805381605321,
+    "valve_dp": 30.0,
+    "night_superpressure": 56.50632154965365
+   },
+   "mission": {
+    "lat": 50.0,
+    "lon": 10.0,
+    "month": 7,
+    "year": 2026,
+    "wind_percentile": 90.0,
+    "station_radius": 20000.0,
+    "battery_reserve": 0.1,
+    "heading": null
+   },
+   "length": 15.0,
+   "diameter": 5.673766859392266,
+   "volume": 222.4924853848933,
+   "envelope_area": 201.75624138851742,
+   "solar_area": 50.67311037635353,
+   "payload": 1.5091432797643356,
+   "payload_power": 15.091432797643357,
+   "system_mass": 75.91810900324782,
+   "masses": {
+    "envelope": 28.851142518557992,
+    "structure": 7.822911743386609,
+    "energy": 20.610837284094593,
+    "propulsion": 2.359622748036706,
+    "margin": 6.76445142940759,
+    "payload": 1.5091432797643356,
+    "systems": 8.0
+   },
+   "gas_mass": 22.41521165070474,
+   "gross_lift": 140.7885779515219,
+   "net_lift": 118.37336630081714,
+   "surplus_lift": 42.45525729756932,
+   "max_float_altitude": 10144.03469745749,
+   "plies": 1,
+   "dp_min": 158.99999255272098,
+   "dp_max": 2533.6055187431484,
+   "hoop_line_load": 6473.188204324189,
+   "bending_moment": 3640.2271725344244,
+   "superheat_day": 7.746455806470408,
+   "superheat_night": -5.015565411581292,
+   "cg": [
+    6.511363636367681,
+    4.3695878824872763e-17,
+    -0.6577395513618446
+   ],
+   "x_cb": 6.511363636367681,
+   "stability_margin": -0.7778476715076823,
+   "v_max": 12.695545066066423,
+   "v_energy": 4.7608293997749085,
+   "availability": 0.195,
+   "wind_p50": 8.111725600768015,
+   "wind_p90": 13.226834064934788,
+   "wind_p95": 14.91237939686946,
+   "energy_solar_wh": 93414.4732011463,
+   "energy_loads_wh": 1859.7644856216339,
+   "energy_at_p90_wh": 37254.10570617221,
+   "drag_p90": 86.57737534668766,
+   "cdv": 0.04259843340109637,
+   "gas_life_days": 448.1547590862991,
+   "endurance_days": 448.1547590862991,
+   "battery_hours": 20.94282609920561,
+   "months": {
+    "7": {
+     "availability": 0.195,
+     "feasible": true,
+     "problems": [],
+     "energy_solar_wh": 93414.4732011463,
+     "v_energy": 4.7608293997749085,
+     "superheat_day": 7.746455806470408,
+     "wind_p90": 13.226834064934788
+    }
+   },
+   "scenario": "demonstrator"
+  },
+  "meets": false,
+  "cost": 2.525,
+  "evaluations": 1024,
+  "seed": 0,
+  "bounds": [
+   [
+    2.5,
+    6.0
+   ],
+   [
+    6000.0,
+    22000.0
+   ],
+   [
+    0.0,
+    0.25
+   ],
+   [
+    0.1,
+    8.0
+   ],
+   [
+    2.0,
+    80.0
+   ],
+   [
+    25.0,
+    85.0
+   ],
+   [
+    0.6,
+    1.0
+   ],
+   [
+    0.0,
+    400.0
+   ]
+  ],
+  "seconds": 144.39983487129211
+ },
+ "table": [
+  {
+   "scenario": "summer",
+   "meets": false,
+   "length": 15.0,
+   "diameter": 5.867925491435875,
+   "volume": 237.98060065503063,
+   "envelope_area": 209.35663793404268,
+   "solar_area": 22.170152536656243,
+   "payload": 0.5391296793175372,
+   "payload_power": 5.391296793175372,
+   "system_mass": 64.92823377937194,
+   "net_lift": 24.08141952560982,
+   "surplus_lift": -40.84681425376212,
+   "max_float_altitude": 11767.700015083206,
+   "plies": 1,
+   "dp_min": 167.18746834221304,
+   "dp_max": 1578.2780715289819,
+   "superheat_day": 39.967196795549285,
+   "v_max": 13.985251901904213,
+   "v_energy": 6.992625950952107,
+   "availability": 0.8016666666666666,
+   "wind_p90": 6.756514207992162,
+   "energy_solar_wh": 54928.41594429677,
+   "energy_at_p90_wh": 3242.91311650677,
+   "drag_p90": 6.682289068667503,
+   "cdv": 0.0633661816647176,
+   "gas_life_days": 0.0,
+   "endurance_days": 0.0,
+   "stability_margin": -0.7257946159419744,
+   "feasible": false,
+   "fineness": 2.5562696768887427,
+   "altitude": 18070.638411563763,
+   "battery_wh": 1345.2168690621004,
+   "propulsion_w": 522.6992153355432,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "does not float at 18.1 km: lift 24.1 kg < mass 64.9 kg",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.73): needs active control"
+  },
+  {
+   "scenario": "summer",
+   "meets": false,
+   "length": 30.0,
+   "diameter": 11.32618620510947,
+   "volume": 1773.2491693450622,
+   "envelope_area": 805.360856545339,
+   "solar_area": 94.65479166139964,
+   "payload": 1.402356311759163,
+   "payload_power": 14.023563117591632,
+   "system_mass": 209.3228314523091,
+   "net_lift": 181.4022167802865,
+   "surplus_lift": -27.920614672022595,
+   "max_float_altitude": 17098.858634045726,
+   "plies": 1,
+   "dp_min": 116.20877212439012,
+   "dp_max": 1633.9872086023388,
+   "superheat_day": 42.86974395817447,
+   "v_max": 9.184682968909307,
+   "v_energy": 7.883519548313822,
+   "availability": 0.895,
+   "wind_p90": 6.86488518004526,
+   "energy_solar_wh": 232054.91068977863,
+   "energy_at_p90_wh": 7355.942349207875,
+   "drag_p90": 22.682139682807925,
+   "cdv": 0.054092334767597,
+   "gas_life_days": 0.0,
+   "endurance_days": 0.0,
+   "stability_margin": -0.7613617828531568,
+   "feasible": false,
+   "fineness": 2.6487291888655684,
+   "altitude": 18009.343711987698,
+   "battery_wh": 3908.6180235711417,
+   "propulsion_w": 523.1694199272855,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "does not float at 18.0 km: lift 181.4 kg < mass 209.3 kg",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.76): needs active control"
+  },
+  {
+   "scenario": "summer",
+   "meets": true,
+   "length": 50.0,
+   "diameter": 19.500508713750396,
+   "volume": 8760.784594708328,
+   "envelope_area": 2318.425722262442,
+   "solar_area": 271.81725177310955,
+   "payload": 139.4855505439985,
+   "payload_power": 1394.8555054399849,
+   "system_mass": 856.3098522272044,
+   "net_lift": 881.4402590596085,
+   "surplus_lift": 25.130406832404105,
+   "max_float_altitude": 18285.264940811343,
+   "plies": 1,
+   "dp_min": 201.11705120471285,
+   "dp_max": 1760.85943627709,
+   "superheat_day": 44.19162692112576,
+   "v_max": 12.568414506998856,
+   "v_energy": 8.902626942457523,
+   "availability": 0.9133333333333333,
+   "wind_p90": 6.773122860837943,
+   "energy_solar_wh": 664699.2334173332,
+   "energy_at_p90_wh": 50563.39279386884,
+   "drag_p90": 61.01099500398124,
+   "cdv": 0.05227847650330409,
+   "gas_life_days": 60.51098362391561,
+   "endurance_days": 60.51098362391561,
+   "stability_margin": -0.6883719376369072,
+   "feasible": true,
+   "fineness": 2.5640356738357033,
+   "altitude": 18101.712835692564,
+   "battery_wh": 26765.668631677614,
+   "propulsion_w": 3494.8238387110987,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.69): needs active control"
+  },
+  {
+   "scenario": "summer",
+   "meets": true,
+   "length": 80.0,
+   "diameter": 25.522350704219527,
+   "volume": 24011.12158769354,
+   "envelope_area": 4771.5029971850045,
+   "solar_area": 644.9259915913738,
+   "payload": 537.7520215566977,
+   "payload_power": 5377.520215566978,
+   "system_mass": 2260.4337585103262,
+   "net_lift": 2371.056612919493,
+   "surplus_lift": 110.62285440916685,
+   "max_float_altitude": 18544.490551604846,
+   "plies": 1,
+   "dp_min": 76.92292616210355,
+   "dp_max": 1692.2739651368747,
+   "superheat_day": 47.53439287201627,
+   "v_max": 21.108441798631034,
+   "v_energy": 9.850606172694484,
+   "availability": 0.92,
+   "wind_p90": 6.833912971998868,
+   "energy_solar_wh": 1557655.3768473188,
+   "energy_at_p90_wh": 158178.5759139874,
+   "drag_p90": 98.98781955863818,
+   "cdv": 0.04347730019512024,
+   "gas_life_days": 60.17654232539395,
+   "endurance_days": 60.17654232539395,
+   "stability_margin": -0.7157728372644612,
+   "feasible": true,
+   "fineness": 3.134507511754153,
+   "altitude": 18240.34513375276,
+   "battery_wh": 81062.39119770603,
+   "propulsion_w": 24346.587905234926,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.72): needs active control"
+  },
+  {
+   "scenario": "summer",
+   "meets": true,
+   "length": 100.0,
+   "diameter": 26.583328150971553,
+   "volume": 32561.156416256705,
+   "envelope_area": 6141.715327739607,
+   "solar_area": 815.1205407442085,
+   "payload": 701.9569633575604,
+   "payload_power": 7019.569633575604,
+   "system_mass": 2902.7287542747927,
+   "net_lift": 3172.0281824507315,
+   "surplus_lift": 269.29942817593883,
+   "max_float_altitude": 18880.114825732795,
+   "plies": 1,
+   "dp_min": 140.62465774060092,
+   "dp_max": 1773.9814077097917,
+   "superheat_day": 48.21198679471797,
+   "v_max": 24.83347540824964,
+   "v_energy": 9.933390163299856,
+   "availability": 0.9,
+   "wind_p90": 6.8926988143131025,
+   "energy_solar_wh": 1972375.9363719013,
+   "energy_at_p90_wh": 201783.17878076428,
+   "drag_p90": 110.25051302979006,
+   "cdv": 0.03931905809932078,
+   "gas_life_days": 111.59002108116664,
+   "endurance_days": 111.59002108116664,
+   "stability_margin": -0.7422550111071466,
+   "feasible": true,
+   "fineness": 3.7617562192394356,
+   "altitude": 18316.31655487178,
+   "battery_wh": 100904.06510406233,
+   "propulsion_w": 42559.567408451774,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.74): needs active control"
+  },
+  {
+   "scenario": "summer",
+   "meets": true,
+   "length": 120.0,
+   "diameter": 23.862823982950474,
+   "volume": 31485.169635272403,
+   "envelope_area": 6535.895750552431,
+   "solar_area": 753.1842974054201,
+   "payload": 712.8228891982062,
+   "payload_power": 7128.228891982062,
+   "system_mass": 3043.4358094450386,
+   "net_lift": 3092.8706592135795,
+   "surplus_lift": 49.43484976854097,
+   "max_float_altitude": 18343.798502786936,
+   "plies": 1,
+   "dp_min": 274.54198468544564,
+   "dp_max": 1920.7598756097086,
+   "superheat_day": 47.18640506414988,
+   "v_max": 26.282754627962746,
+   "v_energy": 11.38919367211719,
+   "availability": 0.9616666666666667,
+   "wind_p90": 6.8338829098464595,
+   "energy_solar_wh": 1844706.2748040834,
+   "energy_at_p90_wh": 201799.70045318708,
+   "drag_p90": 98.69375322050045,
+   "cdv": 0.03619157116604702,
+   "gas_life_days": 60.021634344763555,
+   "endurance_days": 60.021634344763555,
+   "stability_margin": -0.7835387062589125,
+   "feasible": true,
+   "fineness": 5.028742620141593,
+   "altitude": 18241.7481673388,
+   "battery_wh": 115200.15641833482,
+   "propulsion_w": 45905.86995752094,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": false,
+   "length": 15.0,
+   "diameter": 5.886922353263353,
+   "volume": 239.52397490751673,
+   "envelope_area": 210.1036364025232,
+   "solar_area": 20.488757972487456,
+   "payload": 0.2684415871134711,
+   "payload_power": 2.684415871134711,
+   "system_mass": 66.14293524691033,
+   "net_lift": 24.344166940228362,
+   "surplus_lift": -41.798768306681964,
+   "max_float_altitude": 11686.974204995106,
+   "plies": 1,
+   "dp_min": 236.91114464890669,
+   "dp_max": 1625.4326346543412,
+   "superheat_day": 38.743858115284525,
+   "v_max": 19.67272885839499,
+   "v_energy": 3.606666957372415,
+   "availability": 0.075,
+   "wind_p90": 18.642219086676583,
+   "energy_solar_wh": 11716.827952755842,
+   "energy_at_p90_wh": 29541.79774699096,
+   "drag_p90": 42.47506263880632,
+   "cdv": 0.052360811694527366,
+   "gas_life_days": 0.0,
+   "endurance_days": 0.0,
+   "stability_margin": -0.7849625619064867,
+   "feasible": false,
+   "fineness": 2.548020697382718,
+   "altitude": 18031.891771482722,
+   "battery_wh": 1559.3404789019464,
+   "propulsion_w": 1355.0958604685436,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "does not float at 18.0 km: lift 24.3 kg < mass 66.1 kg",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.78): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": false,
+   "length": 30.0,
+   "diameter": 11.415799122476333,
+   "volume": 1801.4201108395484,
+   "envelope_area": 812.351486206402,
+   "solar_area": 82.51353965527954,
+   "payload": 1.387260691991322,
+   "payload_power": 13.87260691991322,
+   "system_mass": 212.7562694115554,
+   "net_lift": 179.8591535153275,
+   "surplus_lift": -32.89711589622789,
+   "max_float_altitude": 17073.01818580278,
+   "plies": 1,
+   "dp_min": 284.5127644656428,
+   "dp_max": 1751.144973565908,
+   "superheat_day": 41.325963376103914,
+   "v_max": 11.499485503431494,
+   "v_energy": 6.228887981025393,
+   "availability": 0.17833333333333334,
+   "wind_p90": 18.65633693370257,
+   "energy_solar_wh": 47377.49170637883,
+   "energy_at_p90_wh": 25331.51118198798,
+   "drag_p90": 141.45713365482442,
+   "cdv": 0.046113854834229265,
+   "gas_life_days": 0.0,
+   "endurance_days": 0.0,
+   "stability_margin": -0.786296658808462,
+   "feasible": false,
+   "fineness": 2.627936921291267,
+   "altitude": 18137.172522783665,
+   "battery_wh": 4936.196983608037,
+   "propulsion_w": 976.9899877304235,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "does not float at 18.1 km: lift 179.9 kg < mass 212.8 kg",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.79): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": false,
+   "length": 50.0,
+   "diameter": 19.663067437020505,
+   "volume": 8907.455422007279,
+   "envelope_area": 2339.730338800419,
+   "solar_area": 364.9384312677539,
+   "payload": 5.3545295941471664,
+   "payload_power": 53.545295941471664,
+   "system_mass": 837.9555501141625,
+   "net_lift": 865.0684092888976,
+   "surplus_lift": 27.112859174735036,
+   "max_float_altitude": 18510.187049802422,
+   "plies": 1,
+   "dp_min": 307.51471513968704,
+   "dp_max": 1966.9160644162012,
+   "superheat_day": 47.83695679048736,
+   "v_max": 12.005460732215603,
+   "v_energy": 10.804914658994042,
+   "availability": 0.47333333333333333,
+   "wind_p90": 18.75084821169816,
+   "energy_solar_wh": 241054.71938527594,
+   "energy_at_p90_wh": 75954.41828484982,
+   "drag_p90": 396.2822045320086,
+   "cdv": 0.04526290229270588,
+   "gas_life_days": 81.44396293295435,
+   "endurance_days": 81.44396293295435,
+   "stability_margin": -0.6811786440028063,
+   "feasible": true,
+   "fineness": 2.542838250448292,
+   "altitude": 18308.69626192812,
+   "battery_wh": 45990.47015612822,
+   "propulsion_w": 3044.1255515976004,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.68): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": true,
+   "length": 80.0,
+   "diameter": 31.59553936772677,
+   "volume": 36797.86739676402,
+   "envelope_area": 6017.98539795075,
+   "solar_area": 689.5459039151802,
+   "payload": 389.8350043970354,
+   "payload_power": 3898.350043970354,
+   "system_mass": 3107.635049930327,
+   "net_lift": 3452.8436647693675,
+   "surplus_lift": 345.20861483904037,
+   "max_float_altitude": 19231.70661869034,
+   "plies": 1,
+   "dp_min": 99.2432502553439,
+   "dp_max": 1580.169479675672,
+   "superheat_day": 45.6595744838761,
+   "v_max": 19.71606905844645,
+   "v_energy": 11.336739708606709,
+   "availability": 0.5,
+   "wind_p90": 18.929741786661324,
+   "energy_solar_wh": 407816.96389983635,
+   "energy_at_p90_wh": 732553.7172463373,
+   "drag_p90": 960.9727605251155,
+   "cdv": 0.04352191760863433,
+   "gas_life_days": 122.11865676948165,
+   "endurance_days": 122.11865676948165,
+   "stability_margin": -0.6097902340010444,
+   "feasible": true,
+   "fineness": 2.5320029852605055,
+   "altitude": 18561.595373558295,
+   "battery_wh": 202956.8619694832,
+   "propulsion_w": 29535.56625201247,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.61): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": true,
+   "length": 100.0,
+   "diameter": 39.73915224380702,
+   "volume": 72764.29266719245,
+   "envelope_area": 9467.435326710012,
+   "solar_area": 2198.090368401796,
+   "payload": 730.044228322861,
+   "payload_power": 7300.442283228611,
+   "system_mass": 7295.375414529323,
+   "net_lift": 7296.299114527206,
+   "surplus_lift": 0.9236999978829772,
+   "max_float_altitude": 18094.823801127786,
+   "plies": 2,
+   "dp_min": 385.54783426625744,
+   "dp_max": 2351.689477529807,
+   "superheat_day": 54.331741758355406,
+   "v_max": 23.032387733391815,
+   "v_energy": 12.283940124475635,
+   "availability": 0.59,
+   "wind_p90": 18.648237692879498,
+   "energy_solar_wh": 1687110.341407106,
+   "energy_at_p90_wh": 1136626.399538163,
+   "drag_p90": 1473.9160746626799,
+   "cdv": 0.04057415116126172,
+   "gas_life_days": 60.06656673324076,
+   "endurance_days": 60.06656673324076,
+   "stability_margin": -0.7256826407236207,
+   "feasible": true,
+   "fineness": 2.516409997537984,
+   "altitude": 18094.024019656725,
+   "battery_wh": 389704.8349734213,
+   "propulsion_w": 72156.74835930078,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.73): needs active control"
+  },
+  {
+   "scenario": "year",
+   "meets": true,
+   "length": 120.0,
+   "diameter": 46.98310184953038,
+   "volume": 122052.23411167134,
+   "envelope_area": 13411.309179377935,
+   "solar_area": 1975.0059602966464,
+   "payload": 1923.087612901822,
+   "payload_power": 19230.87612901822,
+   "system_mass": 11745.542922140768,
+   "net_lift": 12225.57994009915,
+   "surplus_lift": 480.0370179583806,
+   "max_float_altitude": 18394.8824059612,
+   "plies": 2,
+   "dp_min": 135.38784433677236,
+   "dp_max": 1835.5792584585715,
+   "superheat_day": 48.87794578117956,
+   "v_max": 17.17934267181299,
+   "v_energy": 11.309733925610217,
+   "availability": 0.5,
+   "wind_p90": 18.657022057503767,
+   "energy_solar_wh": 1273538.2835075224,
+   "energy_at_p90_wh": 1535398.395224249,
+   "drag_p90": 2050.651528532715,
+   "cdv": 0.04023993259946269,
+   "gas_life_days": 61.5065044101226,
+   "endurance_days": 61.5065044101226,
+   "stability_margin": -0.6394354796934254,
+   "feasible": true,
+   "fineness": 2.554109781519235,
+   "altitude": 18140.27390247382,
+   "battery_wh": 662155.2803803831,
+   "propulsion_w": 43478.37724726188,
+   "pv": "gaas",
+   "laminate": "zylon",
+   "gas_system": "sealed",
+   "problems": "",
+   "warnings": "statically unstable in pitch/yaw (fin/Munk margin -0.64): needs active control"
+  }
+ ],
+ "plots": [
+  "family.png"
+ ],
+ "seconds": 3270.8439116477966,
+ "quick": false
+}

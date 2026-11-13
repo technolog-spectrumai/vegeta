@@ -1,0 +1,95 @@
+{
+ "base_payload": 537.6474067021022,
+ "base_battery_factor": 1.0,
+ "rows": [
+  {
+   "estimate": "laminate areal mass",
+   "low_factor": 0.7,
+   "high_factor": 1.3,
+   "payload_low": 635.0851244215769,
+   "payload_high": 419.91016445773676,
+   "battery_low": 1.25,
+   "battery_high": 0.8
+  },
+  {
+   "estimate": "PV efficiency",
+   "low_factor": 0.85,
+   "high_factor": 1.15,
+   "payload_low": 537.6474067021022,
+   "payload_high": 537.6474067021022,
+   "battery_low": 1.0,
+   "battery_high": 1.0
+  },
+  {
+   "estimate": "battery specific energy",
+   "low_factor": 0.8,
+   "high_factor": 1.2,
+   "payload_low": 437.88974332263984,
+   "payload_high": 549.2471350020396,
+   "battery_low": 1.0,
+   "battery_high": 1.0
+  },
+  {
+   "estimate": "helium leak rate",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 549.2471350020396,
+   "payload_high": 429.18994709768674,
+   "battery_low": 1.0,
+   "battery_high": 1.0
+  },
+  {
+   "estimate": "envelope-gas heat transfer",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 537.6474067021022,
+   "payload_high": 537.6474067021022,
+   "battery_low": 1.0,
+   "battery_high": 1.0
+  },
+  {
+   "estimate": "wind variability",
+   "low_factor": 0.7,
+   "high_factor": 1.3,
+   "payload_low": 537.6474067021022,
+   "payload_high": 467.46905048748044,
+   "battery_low": 1.0,
+   "battery_high": 1.0
+  },
+  {
+   "estimate": "payload power",
+   "low_factor": 0.5,
+   "high_factor": 2.0,
+   "payload_low": 617.6855319716708,
+   "payload_high": 353.7917131480931,
+   "battery_low": 0.8,
+   "battery_high": 1.25
+  }
+ ],
+ "design": {
+  "length": 80.0,
+  "fineness": 3.134507511754153,
+  "altitude": 18240.34513375276,
+  "payload_mass": 537.7520215566977,
+  "payload_power": null,
+  "payload_power_night": null,
+  "battery_energy": 81062.39119770603,
+  "battery": "li-ion",
+  "pv": "gaas",
+  "solar_half_angle_deg": 35.94685033501685,
+  "solar_x0": 0.18,
+  "solar_x1": 0.72,
+  "propulsion_power": 24346.587905234926,
+  "laminate": "zylon",
+  "gas_system": "sealed",
+  "fin_scale": 0.7104215154164171,
+  "valve_dp": 30.0,
+  "night_superpressure": 13.523240205350447
+ },
+ "plots": [
+  "local_sensitivity.png"
+ ],
+ "method": "hull, altitude and layout of the reference optimum fixed; battery on a grid, payload by bisection",
+ "seconds": 857.1288452148438,
+ "quick": false
+}
