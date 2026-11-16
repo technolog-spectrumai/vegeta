@@ -42,7 +42,7 @@ CAD_MM3 = {
                    "saw_body": 5425953.0, "saw_bar": 1217654.7},
     "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                   "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-                  "banner_pole": 2923595.7, "banner_cloth": 2236338.3, "emblem": 1503971.8, "crest": 3086414.2},
+                  "banner_pole": 2923594.9, "banner_cloth": 2236338.3, "emblem": 1503971.9, "crest": 3086414.2},
     "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                  "greaves": 7406507.2, "boots": 9714685.2, "shield": 16209969.6, "strap": 3995824.3, "shaft": 1150818.8,
                  "head": 3029269.4},
@@ -220,6 +220,10 @@ def centurion():
     bottom = tuple(hand[i] + down[i] * L * 0.3 for i in range(3))
     top = tuple(hand[i] + up[i] * L * 0.7 for i in range(3))
     level = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0)                # a world-level box in the bent forearm
+    fwd = (math.cos(e), 0.0, -math.sin(e))                                # the world's +x in the bent forearm
+    # the gear's axis along the world's x: the cylinder's z turned onto x (pitch +90 deg), then the forearm's tilt
+    qa, qb = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0), (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
+    level_x = (qa[0] * qb[0] - qa[2] * qb[2], 0.0, qa[0] * qb[2] + qa[2] * qb[0], 0.0)
     G = P["gear_diameter"] * mm
     zc = -G * 0.75                                                         # the crossbar below the finial (world, from the top)
     W, D = P["banner_width"] * mm, P["banner_drop"] * mm
@@ -227,12 +231,13 @@ def centurion():
     fore_l = _link(r.root, "L_forearm")
     fore_l.geoms += [
         Geom("banner_pole", "capsule", (pd / 2,), fromto=bottom + top, mass=m["banner_pole"] * 0.8, role="link", rgba=bk.DARK),
-        Geom("banner_crossbar", "box", (P["crossbar_length"] * mm / 2, pd * 0.4, pd * 0.4), pos=tuple(top[i] + up[i] * zc for i in range(3)),
+        Geom("banner_crossbar", "box", (pd * 0.4, P["crossbar_length"] * mm / 2, pd * 0.4), pos=tuple(top[i] + up[i] * zc for i in range(3)),
              quat=level, mass=m["banner_pole"] * 0.2, role="link", rgba=bk.DARK),
-        Geom("banner_cloth", "box", (W / 2, P["banner_thickness"] * mm / 2, D / 2), pos=(cloth_c[0], cloth_c[1] + pd * 0.4 + 0.004, cloth_c[2]),
-             quat=level, mass=m["banner_cloth"], role="link", rgba=(0.55, 0.08, 0.1, 1.0)),
+        Geom("banner_cloth", "box", (P["banner_thickness"] * mm / 2, W / 2, D / 2),
+             pos=tuple(cloth_c[i] + fwd[i] * (pd * 0.4 + 0.004) for i in range(3)), quat=level, mass=m["banner_cloth"], role="link",
+             rgba=(0.55, 0.08, 0.1, 1.0)),
         Geom("emblem", "cylinder", (G / 2, P["gear_thickness"] * mm / 2), pos=tuple(top[i] - up[i] * G * 0.45 for i in range(3)),
-             quat=(math.cos(math.pi / 4), math.sin(math.pi / 4), 0.0, 0.0), mass=m["emblem"], role="link", rgba=(0.75, 0.65, 0.3, 1.0))]
+             quat=level_x, mass=m["emblem"], role="link", rgba=(0.75, 0.65, 0.3, 1.0))]
     torso = _link(r.root, "torso")
     Ht, Hh = P["torso_height"] * mm, P["head_height"] * mm
     zh = Ht + P["neck_length"] * mm + Hh

@@ -5,7 +5,12 @@ the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids)
 hands busy, each a CAD design, a Chiron robot model with its masses from the CAD, keyframed motions, and a Yax export
 (`exports/space_*.yx2`). Five units.
 
-![The three units](../labs/legged/designs/space_units_3d.png)
+![The five units](../labs/legged/designs/space_units_3d.png)
+
+![A squad: the Centurion leading](../labs/legged/designs/space_squad_3d.png)
+
+`space_squad_draw3d.py` sets a squad down in a wedge: the Centurion at the point with the banner, two Marines with
+shields on its flanks, two with chainsaws behind them, the Breacher and the Heavy at the rear.
 
 | unit | what it is | carries | mass | motions |
 |---|---|---|---|---|

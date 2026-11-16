@@ -123,18 +123,19 @@ def banner(p):
         sk.rod((c[0], c[1], c[2] - pd * 1.5), (c[0], c[1], c[2] + pd * 1.5), pd * 0.7))
     zc = top[2] - p["gear_diameter"] * 0.75                              # the crossbar under the finial
     cb = p["crossbar_length"]
-    crossbar = sk.rod((top[0] - cb / 2, top[1], zc), (top[0] + cb / 2, top[1], zc), pd * 0.4)
-    crossbar = crossbar.union(sk.ball((top[0] - cb / 2, top[1], zc), pd * 0.6)).union(sk.ball((top[0] + cb / 2, top[1], zc), pd * 0.6))
+    crossbar = sk.rod((top[0], top[1] - cb / 2, zc), (top[0], top[1] + cb / 2, zc), pd * 0.4)       # across the march
+    crossbar = crossbar.union(sk.ball((top[0], top[1] - cb / 2, zc), pd * 0.6)).union(sk.ball((top[0], top[1] + cb / 2, zc), pd * 0.6))
     W, D, t = p["banner_width"], p["banner_drop"], p["banner_thickness"]
-    cloth = cq.Workplane("XZ").polyline([(-W / 2, 0), (W / 2, 0), (W / 2, -D), (W * 0.15, -D * 0.82), (0, -D), (-W * 0.15, -D * 0.82),
-                                          (-W / 2, -D)]).close().extrude(t / 2, both=True).translate((top[0], top[1] + pd * 0.4 + t / 2, zc - pd * 0.2))
-    cloth = cloth.union(sk.rod((top[0] - W / 2, top[1] + pd * 0.4 + t / 2, zc - pd * 0.2), (top[0] + W / 2, top[1] + pd * 0.4 + t / 2, zc - pd * 0.2), pd * 0.45))
+    xc = top[0] + pd * 0.4 + t / 2                                        # the cloth hangs just ahead of the pole, facing forward
+    cloth = cq.Workplane("YZ").polyline([(-W / 2, 0), (W / 2, 0), (W / 2, -D), (W * 0.15, -D * 0.82), (0, -D), (-W * 0.15, -D * 0.82),
+                                          (-W / 2, -D)]).close().extrude(t / 2, both=True).translate((xc, top[1], zc - pd * 0.2))
+    cloth = cloth.union(sk.rod((xc, top[1] - W / 2, zc - pd * 0.2), (xc, top[1] + W / 2, zc - pd * 0.2), pd * 0.45))
     G, gt, n = p["gear_diameter"], p["gear_thickness"], int(p["gear_teeth"])
     gz = top[2] - G * 0.45
-    gear = sk.disc((top[0], top[1], gz), G * 0.42, gt, axis="y").cut(sk.disc((top[0], top[1], gz), G * 0.33, gt + 2, axis="y"))
-    for k in range(n):
+    gear = sk.disc((top[0], top[1], gz), G * 0.42, gt, axis="x").cut(sk.disc((top[0], top[1], gz), G * 0.33, gt + 2, axis="x"))
+    for k in range(n):                                                    # the gear faces forward, like the cloth
         a = 2 * math.pi * k / n
-        tooth = cq.Workplane("XY").box(G * 0.1, gt, G * 0.09).translate((G * 0.45, 0, 0)).rotate((0, 0, 0), (0, 1, 0), math.degrees(a)) \
+        tooth = cq.Workplane("XY").box(gt, G * 0.1, G * 0.09).translate((0, G * 0.45, 0)).rotate((0, 0, 0), (1, 0, 0), math.degrees(a)) \
             .translate((top[0], top[1], gz))
         gear = gear.union(tooth)
     sd = p["skull_diameter"]
