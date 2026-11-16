@@ -407,7 +407,7 @@
    "visual_triangles": 4212
   },
   "space_breacher": {
-   "bytes": 356982,
+   "bytes": 341445,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -417,12 +417,12 @@
    "joints": 21,
    "lab": "legged",
    "links": 22,
-   "mass_kg": 341.2116,
-   "sha256": "50a4140ae240d238f2d1a8a1c6a66a28f258af4fa8480536f7a6854dc1ea16d7",
-   "visual_triangles": 5431
+   "mass_kg": 359.2537,
+   "sha256": "fdb3428075c5e1935de7f1f63c851b79e137dbf6259581f52efc5ff019375f98",
+   "visual_triangles": 5082
   },
   "space_centurion": {
-   "bytes": 375418,
+   "bytes": 330807,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -432,9 +432,9 @@
    "joints": 21,
    "lab": "legged",
    "links": 22,
-   "mass_kg": 301.1245,
-   "sha256": "ec12cd93d37e3bf2d5e7fe8fac81e20aba04ed8081a10f80f121bc9542a60107",
-   "visual_triangles": 5888
+   "mass_kg": 302.375,
+   "sha256": "cfb76548fec43f03ff1b9a26af6726fb843fce9d4384a984b26eb9087d93a023",
+   "visual_triangles": 4815
   },
   "space_heavy": {
    "bytes": 334940,
@@ -452,7 +452,7 @@
    "visual_triangles": 5037
   },
   "space_marine": {
-   "bytes": 348302,
+   "bytes": 376531,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -462,9 +462,9 @@
    "joints": 21,
    "lab": "legged",
    "links": 22,
-   "mass_kg": 303.6875,
-   "sha256": "c0798cfa4c8462f6f4b2f7b3b25901ef97946a4b3d3b900954d20a8617c8aacb",
-   "visual_triangles": 5242
+   "mass_kg": 324.9019,
+   "sha256": "41403b357a5c0bc85ec8be7edae00a4f440a37d890020d4ef9d6213fbe2ef805",
+   "visual_triangles": 5936
   },
   "space_marine_saw": {
    "bytes": 351313,
@@ -587,11 +587,11 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-16T23:20:03Z",
+ "published": "2026-11-16T23:31:38Z",
  "vegeta": {
   "branch": "dev_space_game_units",
-  "commit": "46560a089383e16febb847061d97f0fbf18310ac",
-  "dirty": false,
+  "commit": "26de83ced0071e13dcabe604920ac8938eeeef58",
+  "dirty": true,
   "repo": "technolog-spectrumai/vegeta"
  },
  "yax": "65b8dc138942e02ba9aa7de6cbd504b56a5d0b23"
