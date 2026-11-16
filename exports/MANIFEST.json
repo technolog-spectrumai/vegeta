@@ -418,7 +418,7 @@
    "lab": "legged",
    "links": 22,
    "mass_kg": 341.2116,
-   "sha256": "e9e5afb2b591ab66949000d314cda0c22290e02ecbf05f93d5b06a7f96b68cba",
+   "sha256": "50a4140ae240d238f2d1a8a1c6a66a28f258af4fa8480536f7a6854dc1ea16d7",
    "visual_triangles": 5431
   },
   "space_heavy": {
@@ -433,11 +433,11 @@
    "lab": "legged",
    "links": 22,
    "mass_kg": 353.8725,
-   "sha256": "c41ca55a89cc873f35a68376b4bbfef279a0541732d1b0457d656fba8993fb93",
+   "sha256": "ab2d803dd50d2127847a5aae0c1f00e13995341a603e1a144cf83ecea38f7624",
    "visual_triangles": 5037
   },
   "space_marine": {
-   "bytes": 349937,
+   "bytes": 348302,
    "consumers": {
     "montezuma": true,
     "perkun": false,
@@ -447,9 +447,24 @@
    "joints": 21,
    "lab": "legged",
    "links": 22,
-   "mass_kg": 287.9804,
-   "sha256": "41448bc35d63e164d9cee690306331a0faa7b9cb2506471c7bfa45d3f3c57655",
-   "visual_triangles": 5399
+   "mass_kg": 303.6875,
+   "sha256": "c0798cfa4c8462f6f4b2f7b3b25901ef97946a4b3d3b900954d20a8617c8aacb",
+   "visual_triangles": 5242
+  },
+  "space_marine_saw": {
+   "bytes": 351313,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "space_marine_saw.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 302.4884,
+   "sha256": "9c76e1a622455b9cb53367b151c6e5df17f38d43e77580b1c75374c276cf7cdb",
+   "visual_triangles": 5280
   },
   "zoo_bat": {
    "bytes": 194373,
@@ -557,11 +572,11 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-16T22:42:47Z",
+ "published": "2026-11-16T22:53:22Z",
  "vegeta": {
   "branch": "dev_space_game_units",
-  "commit": "973273ac88a22ba1af8ce544fc0c8e5a296188f4",
-  "dirty": true,
+  "commit": "bdc422c120071608eedfa5d346855546a2c67093",
+  "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
  "yax": "65b8dc138942e02ba9aa7de6cbd504b56a5d0b23"

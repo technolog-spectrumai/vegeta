@@ -48,10 +48,11 @@ def main(out="space_units_3d.png"):
         armour = sum(v for q, v in carried.items() if q in sr.ARMOUR)
         weapon = sum(v for q, v in carried.items() if q not in sr.ARMOUR)
         title = (f"{cls.NAME}: {sun.Humanoid.total_height(p) / 1000:.2f} m, {r.total_mass():.0f} kg\n"
-                 f"armour {armour:.0f} kg, carried {weapon:.0f} kg ({sun.su.ROSTER[unit][2]})")
+                 f"armour {armour:.0f} kg, carried {weapon:.0f} kg")
         draw(fig.add_subplot(1, 4, k + 1, projection="3d"), cls, 16, 35, title)
-    fig.suptitle("Space game units on Talia's frame (design stage), both hands busy: the Marine (carbine, combat shield), the Marine with a chainsaw, the Breacher and the Heavy - power armour "
-                 "in Ti-6Al-4V, industrial joint modules (cycloidal 400 Nm legs, harmonic 150 Nm arms), 21 actuated joints each",
+    fig.suptitle("Space game units on Talia's frame (design stage), both hands busy: the Marine (carbine, combat shield), the Marine with a chainsaw "
+                 "(carbine, chainsaw), the Breacher (tower shield, power maul), the Heavy (rotary cannon)\n"
+                 "power armour in Ti-6Al-4V, industrial joint modules (cycloidal 400 Nm legs, harmonic 150 Nm arms), 21 actuated joints each",
                  fontsize=10)
     fig.tight_layout()
     fig.savefig(out, dpi=95)
