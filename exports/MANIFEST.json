@@ -406,6 +406,51 @@
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
   },
+  "space_breacher": {
+   "bytes": 356982,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "space_breacher.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 341.2116,
+   "sha256": "e9e5afb2b591ab66949000d314cda0c22290e02ecbf05f93d5b06a7f96b68cba",
+   "visual_triangles": 5431
+  },
+  "space_heavy": {
+   "bytes": 334940,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "space_heavy.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 353.8725,
+   "sha256": "c41ca55a89cc873f35a68376b4bbfef279a0541732d1b0457d656fba8993fb93",
+   "visual_triangles": 5037
+  },
+  "space_marine": {
+   "bytes": 349937,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "space_marine.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 287.9804,
+   "sha256": "41448bc35d63e164d9cee690306331a0faa7b9cb2506471c7bfa45d3f3c57655",
+   "visual_triangles": 5399
+  },
   "zoo_bat": {
    "bytes": 194373,
    "consumers": {
@@ -512,11 +557,11 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-10-29T20:03:29Z",
+ "published": "2026-11-16T22:42:47Z",
  "vegeta": {
-  "branch": "dev_fantasy_humanoid",
-  "commit": "1af768e0e6242d9c83259d4e580c0728a55a3297",
-  "dirty": false,
+  "branch": "dev_space_game_units",
+  "commit": "973273ac88a22ba1af8ce544fc0c8e5a296188f4",
+  "dirty": true,
   "repo": "technolog-spectrumai/vegeta"
  },
  "yax": "65b8dc138942e02ba9aa7de6cbd504b56a5d0b23"
