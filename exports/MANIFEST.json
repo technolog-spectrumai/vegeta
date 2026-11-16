@@ -421,6 +421,21 @@
    "sha256": "50a4140ae240d238f2d1a8a1c6a66a28f258af4fa8480536f7a6854dc1ea16d7",
    "visual_triangles": 5431
   },
+  "space_centurion": {
+   "bytes": 370499,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "space_centurion.yx2",
+   "joints": 21,
+   "lab": "legged",
+   "links": 22,
+   "mass_kg": 301.1245,
+   "sha256": "1b18265bf1a934dc4caeb60e4d00ec8840961083350cdf7038d54e31d53d8bc1",
+   "visual_triangles": 5829
+  },
   "space_heavy": {
    "bytes": 334940,
    "consumers": {
@@ -572,10 +587,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-16T22:53:22Z",
+ "published": "2026-11-16T23:10:59Z",
  "vegeta": {
   "branch": "dev_space_game_units",
-  "commit": "bdc422c120071608eedfa5d346855546a2c67093",
+  "commit": "391eff58fc5291a45663f7bcbfe849f171cf22eb",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
