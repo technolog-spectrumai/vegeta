@@ -34,8 +34,8 @@ def draw(ax, cls, elev, azim, title):
     for name, shape in d.weapon_parts(p).items():
         col = STEEL if name in ("barrel", "head", "cannon", "shield", "saw_bar") else RED if name == "banner_cloth" else GOLD if name == "emblem" else WEAPON
         ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=col, edgecolors=col, linewidths=0.0, shade=True))
-    ax.set_xlim(-1200, 1200); ax.set_ylim(-1200, 1200); ax.set_zlim(0, 2400)
-    ax.set_box_aspect((1, 1, 1)); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
+    ax.set_xlim(-1150, 1150); ax.set_ylim(-1150, 1150); ax.set_zlim(0, 2300)
+    ax.set_box_aspect((1, 1, 1), zoom=1.6); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
 
 
 def main(out="space_units_3d.png"):
@@ -56,7 +56,7 @@ def main(out="space_units_3d.png"):
                  "power armour in Ti-6Al-4V, industrial joint modules (cycloidal 400 Nm legs, harmonic 150 Nm arms), 21 actuated joints each",
                  fontsize=10)
     fig.tight_layout()
-    fig.savefig(out, dpi=95)
+    fig.savefig(out, dpi=120)
     return out
 
 

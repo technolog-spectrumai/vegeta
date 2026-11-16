@@ -37,7 +37,7 @@ def pieces(cls):
 
 def main(out="space_squad_3d.png"):
     cache = {}
-    fig = plt.figure(figsize=(16, 9))
+    fig = plt.figure(figsize=(18, 10))
     ax = fig.add_subplot(1, 1, 1, projection="3d")
     X, Y = np.meshgrid(np.linspace(-3600, 3200, 2), np.linspace(-3600, 3600, 2))
     ax.plot_surface(X, Y, np.zeros_like(X) - 2.0, color="#6f6a60", alpha=0.35)
@@ -49,12 +49,12 @@ def main(out="space_squad_3d.png"):
         off = np.array([x, y, 0.0])
         for tris, col in cache[cls]:
             ax.add_collection3d(Poly3DCollection([t + off for t in tris], facecolors=col, edgecolors=col, linewidths=0.0, shade=True))
-    ax.set_xlim(-3200, 2800); ax.set_ylim(-3200, 3200); ax.set_zlim(0, 3000)
-    ax.set_box_aspect((6.0, 6.4, 3.0), zoom=1.5); ax.view_init(elev=ELEV, azim=AZIM); ax.set_axis_off()
+    ax.set_xlim(-3000, 2600); ax.set_ylim(-3100, 3100); ax.set_zlim(0, 2800)
+    ax.set_box_aspect((5.6, 6.2, 2.8), zoom=1.4); ax.view_init(elev=ELEV, azim=AZIM); ax.set_axis_off()
     fig.suptitle("A squad of the space game units: the Centurion leading with the banner, two Marines with shields on its flanks, "
                  "two with chainsaws behind, the Breacher and the Heavy at the rear", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(out, dpi=100)
+    fig.subplots_adjust(left=0.0, right=1.0, top=0.95, bottom=0.0)
+    fig.savefig(out, dpi=130)
     return out
 
 
