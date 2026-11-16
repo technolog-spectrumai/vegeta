@@ -8,8 +8,8 @@ the CAD volumes (``space_units.armour_parts`` / ``weapon_parts``) × the densiti
   left forearm.
 * **Marine with a chainsaw** — the carbine, and the chainsaw along the left forearm (the body on the fist, the bar
   ahead).
-* **Centurion** — the carbine, the imperial banner in the left fist (the pole vertical in the world like the maul,
-  the crossbar, the cloth and the skull-in-a-gear emblem on it), the feathered crest on the helmet.
+* **Centurion** — the carbine, the imperial banner in the left fist (the pole vertical in the world like the maul, the
+  skull-in-a-gear emblem on top and the flat antenna panel under it, tipped back), the feathered crest on the helmet.
 * **Breacher** — the tower shield along the left forearm, its face on the forearm's outer side (upright with the
   elbow at 20°), the power maul in the right fist.
 * **Heavy** — the rotary cannon along the right forearm (the elbow at 75° so it points ahead), its mount and the feed
@@ -36,15 +36,15 @@ mm = 1e-3
 CAD_MM3 = {
     "marine": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-               "shield": 5626181.3, "strap": 3995824.3},
+               "shield": 24197865.1, "strap": 4237199.4},
     "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                    "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
                    "saw_body": 5425953.0, "saw_bar": 1217654.7},
     "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                   "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-                  "banner_pole": 2923594.9, "banner_cloth": 2236338.3, "emblem": 1503971.9, "crest": 3086414.2},
+                  "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9, "crest": 3086414.2},
     "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-                 "greaves": 7406507.2, "boots": 9714685.2, "shield": 16209969.6, "strap": 3995824.3, "shaft": 1150818.8,
+                 "greaves": 7406507.2, "boots": 9714685.2, "shield": 37308855.0, "strap": 4683735.6, "shaft": 1150818.8,
                  "head": 3029269.4},
     "heavy": {"pauldrons": 12801070.1, "chest_plate": 4777344.3, "backpack": 56211187.1, "belt": 9487263.8,
               "greaves": 7406507.2, "boots": 9714685.2, "cannon": 4701116.9, "mount": 9047537.8, "feed": 2091164.1},
@@ -55,11 +55,11 @@ MATERIAL = {"pauldrons": "Ti-6Al-4V", "chest_plate": "Ti-6Al-4V", "backpack": "7
             "greaves": "Ti-6Al-4V", "boots": "Ti-6Al-4V", "receiver": "7075 aluminium", "barrel": "4140 steel",
             "magazine": "7075 aluminium", "shield": "Ti-6Al-4V", "strap": "7075 aluminium", "shaft": "7075 aluminium",
             "head": "4140 steel", "cannon": "4140 steel", "mount": "7075 aluminium", "feed": "7075 aluminium",
-            "saw_body": "7075 aluminium", "saw_bar": "4140 steel", "banner_pole": "7075 aluminium", "banner_cloth": "banner cloth",
+            "saw_body": "7075 aluminium", "saw_bar": "4140 steel", "banner_pole": "7075 aluminium", "antenna": "7075 aluminium",
             "emblem": "4140 steel", "crest": "feathers"}
 FILL = {"pauldrons": 0.22, "chest_plate": 0.5, "backpack": 0.35, "belt": 0.3, "greaves": 0.5, "boots": 0.25,
-        "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.45, "strap": 0.4, "shaft": 0.6, "head": 1.0,
-        "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8, "banner_pole": 0.35, "banner_cloth": 1.0,
+        "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.3, "strap": 0.4, "shaft": 0.6, "head": 1.0,
+        "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8, "banner_pole": 0.35, "antenna": 0.22,
         "emblem": 0.6, "crest": 1.0}
 ARMOUR = ("pauldrons", "chest_plate", "backpack", "belt", "greaves", "boots", "crest")
 
@@ -153,16 +153,28 @@ def marine():
 
 
 def _shield(r, P, m):
-    """The shield (``shield_*`` of the specs) and its strap on the left forearm."""
+    """The shield (``shield_*`` of the specs) standing vertical in the world ahead of the left forearm's middle, its
+    foot ``space_units.SHIELD_FOOT`` above the ground, and its strap on the forearm."""
+    import humanoid as hu
+
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
     t, W, H = P["shield_thickness"] * mm, P["shield_width"] * mm, P["shield_height"] * mm
+    e = math.radians(P["elbow_bend_deg"])
+    up, fwd = (math.sin(e), 0.0, math.cos(e)), (math.cos(e), 0.0, -math.sin(e))     # the world's up and +x in the bent forearm
+    level = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0)
     hz = -Lf - 0.04
-    zm = hz + Lf * 0.5                                                    # the forearm's middle
-    x = d / 2 + t / 2 + 0.025
+    zm = hz + Lf * 0.5                                                    # the forearm's middle (forearm frame)
+    # the forearm's middle above the ground, from the CAD's build pose
+    pcad = {k: v for k, v in P.items()}
+    hh = hu.Humanoid.hip_height(pcad) * mm
+    zs = hh + P["pelvis_height"] * mm / 2 + P["torso_height"] * mm - d * 0.6
+    mid_world = zs - P["upper_arm_length"] * mm - Lf * 0.5 * math.cos(e)
+    dz = 0.25 + H / 2 - mid_world
+    xo = max(d / 2 + t / 2 + 0.025, P["torso_depth"] * mm / 2 + P["chest_plate_thickness"] * mm + 0.05 + t / 2 - Lf * 0.5 * math.sin(e))
     fore_l = _link(r.root, "L_forearm")
     fore_l.geoms += [
-        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=(x, 0.0, zm + H * 0.08), mass=m["shield"], role="link",
-             rgba=(0.42, 0.45, 0.50, 1.0)),
+        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=(fwd[0] * xo + up[0] * dz, 0.0, zm + fwd[2] * xo + up[2] * dz),
+             quat=level, mass=m["shield"], role="link", rgba=(0.42, 0.45, 0.50, 1.0)),
         Geom("shield_strap", "box", (d * 0.65 + 0.02, d * 0.65, d * 0.55), pos=(d * 0.35, 0.0, zm), mass=m["strap"], role="link",
              rgba=bk.DARK)]
 
@@ -225,17 +237,19 @@ def centurion():
     qa, qb = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0), (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
     level_x = (qa[0] * qb[0] - qa[2] * qb[2], 0.0, qa[0] * qb[2] + qa[2] * qb[0], 0.0)
     G = P["gear_diameter"] * mm
-    zc = -G * 0.75                                                         # the crossbar below the finial (world, from the top)
-    W, D = P["banner_width"] * mm, P["banner_drop"] * mm
-    cloth_c = tuple(top[i] + up[i] * (zc - D / 2 - pd * 0.2) for i in range(3))
+    W, H, t = P["antenna_width"] * mm, P["antenna_height"] * mm, P["antenna_thickness"] * mm
+    za = -G * 0.95 - H * 0.55                                              # the panel's centre under the gear (world, from the top)
+    xa = pd * 0.5 + t / 2 + 0.03
+    tilt = math.radians(P["antenna_tilt_deg"])
+    qt = (math.cos(-tilt / 2), 0.0, math.sin(-tilt / 2), 0.0)             # the panel tipped back, then the forearm's tilt
+    tipped = (level[0] * qt[0] - level[2] * qt[2], 0.0, level[0] * qt[2] + level[2] * qt[0], 0.0)
     fore_l = _link(r.root, "L_forearm")
     fore_l.geoms += [
         Geom("banner_pole", "capsule", (pd / 2,), fromto=bottom + top, mass=m["banner_pole"] * 0.8, role="link", rgba=bk.DARK),
-        Geom("banner_crossbar", "box", (pd * 0.4, P["crossbar_length"] * mm / 2, pd * 0.4), pos=tuple(top[i] + up[i] * zc for i in range(3)),
+        Geom("banner_bracket", "box", (xa / 2, pd * 0.8, pd * 0.7), pos=tuple(top[i] + up[i] * za + fwd[i] * xa / 2 for i in range(3)),
              quat=level, mass=m["banner_pole"] * 0.2, role="link", rgba=bk.DARK),
-        Geom("banner_cloth", "box", (P["banner_thickness"] * mm / 2, W / 2, D / 2),
-             pos=tuple(cloth_c[i] + fwd[i] * (pd * 0.4 + 0.004) for i in range(3)), quat=level, mass=m["banner_cloth"], role="link",
-             rgba=(0.55, 0.08, 0.1, 1.0)),
+        Geom("antenna", "box", (t / 2 + 0.004, W / 2, H / 2), pos=tuple(top[i] + up[i] * za + fwd[i] * xa for i in range(3)),
+             quat=tipped, mass=m["antenna"], role="link", rgba=(0.9, 0.9, 0.92, 1.0)),
         Geom("emblem", "cylinder", (G / 2, P["gear_thickness"] * mm / 2), pos=tuple(top[i] - up[i] * G * 0.45 for i in range(3)),
              quat=level_x, mass=m["emblem"], role="link", rgba=(0.75, 0.65, 0.3, 1.0))]
     torso = _link(r.root, "torso")

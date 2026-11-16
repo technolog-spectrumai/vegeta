@@ -66,19 +66,27 @@ def carbine(p):
 
 
 def tower_shield(p):
-    """A shield strapped to the left forearm, its plate along the forearm and its face on the forearm's outer side (the
-    Breacher's tower shield with the forearm hanging nearly straight stands upright facing ahead; the Marine's combat
-    shield on its bent forearm faces ahead and down): a titanium plate with a rim and a boss, the strap block round the
-    forearm. Pieces: ``shield`` (titanium), ``strap`` (aluminium). The size is ``shield_*`` of the unit's specs."""
+    """A shield strapped to the left forearm: the plate stands vertical in the world ahead of the forearm's middle,
+    whatever the elbow's bend, covering the body from the shins (its foot ``SHIELD_FOOT`` above the ground) to above the
+    helmet - a titanium plate with a rim, a boss and a vision slit; the strap block round the forearm. Pieces:
+    ``shield`` (titanium), ``strap`` (aluminium). The size is ``shield_*`` of the unit's specs."""
+    c, u, _ = hand_frame(p, 1)
     place = forearm_frame(p, 1)
     d, t, W, H = p["arm_diameter"], p["shield_thickness"], p["shield_width"], p["shield_height"]
-    zm = p["forearm_length"] * 0.5                                        # the forearm's middle, up from the fist
-    x = d / 2 + t / 2 + 25
-    plate = sk.rounded_box(t, W, H, (x, 0, zm + H * 0.08), fillet=min(40.0, t / 2 - 1))
-    rim = cq.Workplane("YZ").rect(W + 16, H + 16).rect(W - 30, H - 30).extrude(t * 0.4).translate((x + t / 2, 0, zm + H * 0.08))
-    boss = sk.disc((x + t / 2 + 10, 0, zm + H * 0.08), p["shield_boss_diameter"] / 2, 40, axis="x")
-    strap = sk.rounded_box(d * 1.3 + 40, d * 1.3, d * 1.1, (d * 0.35, 0, zm), fillet=10)
-    return {"shield": place(sk.union_all([plate, rim, boss])), "strap": place(strap)}
+    mid = _add(c, (-p["forearm_length"] * 0.5, u))                       # the forearm's middle, in the world
+    x = max(mid[0] + d / 2 + t / 2 + 25, p["torso_depth"] / 2 + p["chest_plate_thickness"] + 50 + t / 2)    # clear of the chest
+    zc = SHIELD_FOOT + H / 2
+    plate = sk.rounded_box(t, W, H, (x, mid[1], zc), fillet=min(40.0, t / 2 - 1))
+    rim = cq.Workplane("YZ").rect(W + 16, H + 16).rect(W - 30, H - 30).extrude(t * 0.4).translate((x + t / 2, mid[1], zc))
+    boss = sk.disc((x + t / 2 + 10, mid[1], zc), p["shield_boss_diameter"] / 2, 40, axis="x")
+    slit = cq.Workplane("XY").box(t * 3, W * 0.45, 28).translate((x, mid[1], zc + H * 0.36))
+    plate = plate.cut(slit)
+    strap = place(sk.rounded_box(d * 1.3 + 40, d * 1.3, d * 1.1, (d * 0.35, 0, p["forearm_length"] * 0.5), fillet=10))
+    brace = sk.rounded_box(x - mid[0] + d * 0.3, d * 0.86, d * 0.86, ((x + mid[0] - d * 0.3) / 2, mid[1], mid[2] + 3), fillet=7)
+    return {"shield": sk.union_all([plate, rim, boss]), "strap": strap.union(brace)}
+
+
+SHIELD_FOOT = 250.0                                                       # mm: the shields' foot above the ground
 
 
 combat_shield = tower_shield
@@ -112,28 +120,28 @@ def chainsaw(p):
 
 
 def banner(p):
-    """The imperial banner in the left fist: a pole standing vertical through the fist (its butt by the knee), a
-    crossbar at the top with the cloth hanging from it as a stiff sheet with a swallow-tailed hem, and the finial - a
-    gear with a skull in it. Pieces: ``banner_pole`` (the pole and the crossbar, aluminium), ``banner_cloth``
-    (cloth), ``emblem`` (the gear and the skull, steel)."""
+    """The imperial banner in the left fist: a pole standing vertical through the fist (its butt by the knee), the
+    finial - a gear with a skull in it - and under it, on a bracket, the squad's uplink: a large flat phased-array
+    antenna panel (a Starlink-class dish) facing forward, tipped back ``antenna_tilt_deg``. Pieces: ``banner_pole``
+    (the pole and the bracket, aluminium), ``antenna`` (the panel, aluminium casing), ``emblem`` (the gear and the
+    skull, steel)."""
     c, _, _ = hand_frame(p, 1)
     L, pd = p["pole_length"], p["pole_diameter"]
     bottom, top = (c[0], c[1], c[2] - L * 0.3), (c[0], c[1], c[2] + L * 0.7)
     pole = sk.rod(bottom, top, pd / 2).union(sk.ball(bottom, pd * 0.8)).union(
         sk.rod((c[0], c[1], c[2] - pd * 1.5), (c[0], c[1], c[2] + pd * 1.5), pd * 0.7))
-    zc = top[2] - p["gear_diameter"] * 0.75                              # the crossbar under the finial
-    cb = p["crossbar_length"]
-    crossbar = sk.rod((top[0], top[1] - cb / 2, zc), (top[0], top[1] + cb / 2, zc), pd * 0.4)       # across the march
-    crossbar = crossbar.union(sk.ball((top[0], top[1] - cb / 2, zc), pd * 0.6)).union(sk.ball((top[0], top[1] + cb / 2, zc), pd * 0.6))
-    W, D, t = p["banner_width"], p["banner_drop"], p["banner_thickness"]
-    xc = top[0] + pd * 0.4 + t / 2                                        # the cloth hangs just ahead of the pole, facing forward
-    cloth = cq.Workplane("YZ").polyline([(-W / 2, 0), (W / 2, 0), (W / 2, -D), (W * 0.15, -D * 0.82), (0, -D), (-W * 0.15, -D * 0.82),
-                                          (-W / 2, -D)]).close().extrude(t / 2, both=True).translate((xc, top[1], zc - pd * 0.2))
-    cloth = cloth.union(sk.rod((xc, top[1] - W / 2, zc - pd * 0.2), (xc, top[1] + W / 2, zc - pd * 0.2), pd * 0.45))
     G, gt, n = p["gear_diameter"], p["gear_thickness"], int(p["gear_teeth"])
     gz = top[2] - G * 0.45
+    W, H, t, tilt = p["antenna_width"], p["antenna_height"], p["antenna_thickness"], p["antenna_tilt_deg"]
+    za = gz - G * 0.5 - H * 0.55                                          # the panel's centre under the gear
+    xa = top[0] + pd * 0.5 + t / 2 + 30
+    panel = sk.rounded_box(t, W, H, (0, 0, 0), fillet=min(t / 2 - 1, 12.0)).rotate((0, 0, 0), (0, 1, 0), -tilt).translate((xa, top[1], za))
+    face = sk.rounded_box(6, W * 0.92, H * 0.88, (0, 0, 0), fillet=5).rotate((0, 0, 0), (0, 1, 0), -tilt).translate(
+        (xa + (t / 2 + 2) * math.cos(math.radians(tilt)), top[1], za + (t / 2 + 2) * math.sin(math.radians(tilt))))
+    bracket = sk.rounded_box(xa - top[0] + pd, pd * 1.6, pd * 1.4, ((top[0] + xa) / 2, top[1], za + H * 0.25), fillet=6).union(
+        sk.rounded_box(xa - top[0] + pd, pd * 1.6, pd * 1.4, ((top[0] + xa) / 2, top[1], za - H * 0.25), fillet=6))
     gear = sk.disc((top[0], top[1], gz), G * 0.42, gt, axis="x").cut(sk.disc((top[0], top[1], gz), G * 0.33, gt + 2, axis="x"))
-    for k in range(n):                                                    # the gear faces forward, like the cloth
+    for k in range(n):                                                    # the gear faces forward, like the panel
         a = 2 * math.pi * k / n
         tooth = cq.Workplane("XY").box(gt, G * 0.1, G * 0.09).translate((0, G * 0.45, 0)).rotate((0, 0, 0), (1, 0, 0), math.degrees(a)) \
             .translate((top[0], top[1], gz))
@@ -145,7 +153,7 @@ def banner(p):
     skull = skull.cut(cq.Workplane("XY").box(sd * 0.3, sd * 0.12, sd * 0.2).translate((top[0] + sd * 0.45, top[1], gz - sd * 0.1)))
     spokes = sk.rod((top[0], top[1], gz - G * 0.42), (top[0], top[1], gz + G * 0.42), pd * 0.3)
     emblem = sk.union_all([gear, skull, spokes])
-    return {"banner_pole": sk.union_all([pole, crossbar]), "banner_cloth": cloth, "emblem": emblem}
+    return {"banner_pole": pole.union(bracket), "antenna": panel.union(face), "emblem": emblem}
 
 
 def crest(p):
@@ -304,8 +312,8 @@ class SpaceMarineSaw(SpaceMarine):
 
 
 class Centurion(SpaceMarine):
-    """The Centurion: the Marine with the imperial banner in the left fist (a skull in a gear on the pole) and a
-    feathered crest along the helmet; the carbine in the right."""
+    """The Centurion: the Marine with the imperial banner in the left fist (a skull in a gear on the pole, the squad's
+    flat antenna under it) and a feathered crest along the helmet; the carbine in the right."""
 
     SPECS, EXTRA, NAME = su.CENTURION, su.CENTURION_EXTRA, "Centurion"
 

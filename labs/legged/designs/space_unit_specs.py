@@ -24,7 +24,7 @@ MARINE = {"pelvis_width": 380.0, "pelvis_depth": 250.0, "pelvis_height": 170.0, 
           # the carbine (the right fist) and the combat shield (the left forearm)
           "carbine_length": 640.0, "receiver_height": 150.0, "receiver_width": 70.0, "barrel_diameter": 26.0,
           "magazine_height": 170.0,
-          "shield_width": 400.0, "shield_height": 560.0, "shield_thickness": 22.0, "shield_boss_diameter": 130.0}
+          "shield_width": 600.0, "shield_height": 1600.0, "shield_thickness": 24.0, "shield_boss_diameter": 160.0}
 MARINE_EXTRA = {"pauldron_diameter": "the shoulder domes", "pauldron_thickness": "their shell",
                 "chest_plate_thickness": "the breastplate proud of the torso", "backpack_width": "the power pack",
                 "backpack_depth": "", "backpack_height": "", "exhaust_diameter": "the two exhaust stacks",
@@ -32,7 +32,8 @@ MARINE_EXTRA = {"pauldron_diameter": "the shoulder domes", "pauldron_thickness":
                 "greave_thickness": "the shin plates", "belt_height": "the waist belt",
                 "carbine_length": "muzzle to butt", "receiver_height": "", "receiver_width": "",
                 "barrel_diameter": "", "magazine_height": "below the receiver",
-                "shield_width": "the combat shield", "shield_height": "", "shield_thickness": "", "shield_boss_diameter": "the shield's boss"}
+                "shield_width": "the body shield, covering the Marine from the shins to the helmet", "shield_height": "",
+                "shield_thickness": "", "shield_boss_diameter": "the shield's boss"}
 
 #: the Marine with a chainsaw in the left fist instead of the shield (the carbine stays)
 MARINE_SAW = {k: v for k, v in MARINE.items() if not k.startswith("shield_")} | \
@@ -42,22 +43,23 @@ MARINE_SAW_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("s
     {"saw_bar_length": "the chainsaw's bar, body to tip", "saw_bar_width": "", "saw_bar_thickness": "",
      "saw_body_length": "the motor body at the fist", "saw_body_height": "", "saw_teeth": "teeth along the bar's edge"}
 
-#: the Centurion: the Marine's frame and carbine, an imperial banner in the left fist (a pole with a crossbar, the cloth
-#: hanging from it, a skull in a gear as the finial) and a feathered crest along the helmet
+#: the Centurion: the Marine's frame and carbine, the imperial banner in the left fist (a pole with a skull in a gear as
+#: the finial and a large flat phased-array antenna under it: the squad's uplink) and a feathered crest along the helmet
 CENTURION = {k: v for k, v in MARINE.items() if not k.startswith("shield_")} | \
-    {"pole_length": 2300.0, "pole_diameter": 36.0, "crossbar_length": 560.0, "banner_width": 480.0, "banner_drop": 720.0,
-     "banner_thickness": 6.0, "gear_diameter": 240.0, "gear_teeth": 12, "gear_thickness": 30.0, "skull_diameter": 120.0,
+    {"pole_length": 2300.0, "pole_diameter": 36.0, "antenna_width": 520.0, "antenna_height": 340.0, "antenna_thickness": 34.0,
+     "antenna_tilt_deg": 25.0, "gear_diameter": 240.0, "gear_teeth": 12, "gear_thickness": 30.0, "skull_diameter": 120.0,
      "crest_length": 340.0, "crest_height": 170.0, "crest_width": 60.0, "crest_feathers": 9}
 CENTURION_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("shield_")} | \
-    {"pole_length": "the banner pole, butt to finial", "pole_diameter": "", "crossbar_length": "the crossbar the cloth hangs from",
-     "banner_width": "the cloth", "banner_drop": "the cloth's drop below the crossbar", "banner_thickness": "the cloth as a stiff sheet",
+    {"pole_length": "the banner pole, butt to finial", "pole_diameter": "",
+     "antenna_width": "the phased-array panel on the pole (a Starlink-class flat antenna)", "antenna_height": "", "antenna_thickness": "",
+     "antenna_tilt_deg": "the panel's face tipped back from vertical",
      "gear_diameter": "the finial: a gear with a skull in it", "gear_teeth": "", "gear_thickness": "", "skull_diameter": "",
      "crest_length": "the feathered crest along the helmet, front to back", "crest_height": "above the helmet", "crest_width": "",
      "crest_feathers": "feathers in the row"}
 
 #: the Breacher: the Marine's frame with a tower shield on the left forearm and a power maul in the right fist
 BREACHER = dict(MARINE, elbow_bend_deg=20.0,
-                shield_width=560.0, shield_height=950.0, shield_thickness=28.0, shield_boss_diameter=180.0,     # the tower shield
+                shield_width=680.0, shield_height=1750.0, shield_thickness=30.0, shield_boss_diameter=200.0,    # the tower shield: the whole body
                 maul_length=720.0, maul_head_length=200.0, maul_head_diameter=130.0, maul_shaft_diameter=40.0)
 BREACHER_EXTRA = dict(MARINE_EXTRA, shield_width="the tower shield", shield_height="", shield_thickness="",
                       shield_boss_diameter="the shield's boss", maul_length="the power maul, butt to head",
@@ -94,8 +96,6 @@ MATERIALS = {
                        "source": "7075-T6: receivers, the backpack's casing, the maul's shaft"},
     "feathers": {"density_kg_m3": 90.0, "E_pa": None, "nu": None, "yield_pa": None, "ultimate_pa": None,
                  "source": "assumed: a packed crest of dyed feathers on a comb (bulk density)"},
-    "banner cloth": {"density_kg_m3": 1300.0, "E_pa": None, "nu": None, "yield_pa": None, "ultimate_pa": None,
-                     "source": "assumed: heavy embroidered wool, lined, as a sheet of the cloth's thickness"},
     "polycarbonate": {"density_kg_m3": 1200.0, "E_pa": 2.4e9, "nu": 0.37, "yield_pa": 62e6, "ultimate_pa": 70e6,
                       "source": "PC sheet: the visor"},
 }

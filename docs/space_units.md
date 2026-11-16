@@ -14,10 +14,10 @@ shields on its flanks, two with chainsaws behind them, the Breacher and the Heav
 
 | unit | what it is | carries | mass | motions |
 |---|---|---|---|---|
-| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up); a combat shield on the left forearm | 304 kg (armour 90, carbine 9, shield 16) | `march`, `aim`, `fire` |
+| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up); a body shield on the left forearm covering it from the shins to the helmet | ~320 kg (armour 90, carbine 9, shield 30) | `march`, `aim`, `fire` |
 | **Marine with a chainsaw** (`space_marine_saw`) | the Marine | the carbine; a chainsaw in the left fist, along the forearm | 303 kg (chainsaw 14) | `march`, `aim`, `slash` |
-| **Centurion** (`space_centurion`) | the Marine with a feathered crest along the helmet | the carbine; the imperial banner in the left fist: a pole with a crossbar, the cloth, and a skull in a gear as the finial | ~300 kg (banner 7) | `march`, `aim`, `rally` |
-| **Breacher** (`space_breacher`) | the Marine with the elbows nearly straight | a tower shield along the left forearm (upright, facing ahead), a power maul in the right fist | 341 kg (shield 37, maul 26) | `march`, `shield_up`, `swing` |
+| **Centurion** (`space_centurion`) | the Marine with a feathered crest along the helmet | the carbine; the imperial banner in the left fist: a pole with a skull in a gear as the finial and the squad's flat phased-array antenna under it | ~300 kg (banner 8) | `march`, `aim`, `rally` |
+| **Breacher** (`space_breacher`) | the Marine with the elbows nearly straight | a tower shield along the left forearm (upright, facing ahead, the whole body behind it), a power maul in the right fist | ~355 kg (shield 50, maul 26) | `march`, `shield_up`, `swing` |
 | **Heavy** (`space_heavy`) | the Marine on a wider frame, the bigger backpack | a rotary cannon along the right forearm, fed from the backpack | 354 kg (cannon 38) | `march`, `suppress` |
 
 ## The design (`space_units.py`, numbers in `space_unit_specs.py`)
@@ -30,10 +30,12 @@ its outer side +x, turned by the elbow's bend and set on the hand) so they move 
 
 - the **carbine**: a receiver on the forearm's outer side above the fist, the barrel forward along the forearm, a
   stock back along it, a sight, a magazine hanging from the receiver;
-- the **combat shield** (the Marine, 400 × 560 mm) and the **tower shield** (the Breacher, 560 × 950 mm): a plate with a rim and a boss on the forearm's outer side, a strap block round
+- the **body shield** (the Marine, 600 × 1600 mm) and the **tower shield** (the Breacher, 680 × 1750 mm), each covering
+  the body from the shins to the helmet, with a vision slit: a plate with a rim and a boss on the forearm's outer side, a strap block round
   the forearm; the **chainsaw**: the motor body on the fist with a rear handle and a front hoop, the bar forward with a
-  chain of teeth round its edge; the **imperial banner**: a pole standing vertical through the fist, a crossbar with the
-  cloth hanging from it as a stiff swallow-tailed sheet, and a gear with a skull in it as the finial; the Centurion's
+  chain of teeth round its edge; the **imperial banner**: a pole standing vertical through the fist, a gear with a skull in
+  it as the finial, and under it on a bracket the squad's uplink, a large flat phased-array antenna panel (a Starlink-class
+  dish) facing forward and tipped back - no cloth; the Centurion's
   **crest**: a comb on the helmet with a row of feather fins leaning back; the **power maul**: a shaft through the fist, a steel head crosswise at the top, a pommel;
 - the **rotary cannon**: a mount block on the forearm, a cluster of six barrels round a core, breech and muzzle rings,
   the feed tube from the backpack.
