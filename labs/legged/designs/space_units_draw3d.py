@@ -31,15 +31,16 @@ def draw(ax, cls, elev, azim, title):
     for shape in d.armour_parts(p).values():
         ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=ARMOUR, edgecolors=ARMOUR, linewidths=0.0, shade=True))
     for name, shape in d.weapon_parts(p).items():
-        col = STEEL if name in ("barrel", "head", "cannon", "shield") else WEAPON
+        col = STEEL if name in ("barrel", "head", "cannon", "shield", "saw_bar") else WEAPON
         ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=col, edgecolors=col, linewidths=0.0, shade=True))
     ax.set_xlim(-950, 950); ax.set_ylim(-950, 950); ax.set_zlim(0, 1900)
     ax.set_box_aspect((1, 1, 1)); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=10)
 
 
 def main(out="space_units_3d.png"):
-    fig = plt.figure(figsize=(15, 8))
-    units = (("marine", sun.SpaceMarine, sr.marine), ("breacher", sun.Breacher, sr.breacher), ("heavy", sun.Heavy, sr.heavy))
+    fig = plt.figure(figsize=(18, 8))
+    units = (("marine", sun.SpaceMarine, sr.marine), ("marine_saw", sun.SpaceMarineSaw, sr.marine_saw),
+             ("breacher", sun.Breacher, sr.breacher), ("heavy", sun.Heavy, sr.heavy))
     for k, (unit, cls, build) in enumerate(units):
         r = build()
         p = cls().resolve()
@@ -48,8 +49,8 @@ def main(out="space_units_3d.png"):
         weapon = sum(v for q, v in carried.items() if q not in sr.ARMOUR)
         title = (f"{cls.NAME}: {sun.Humanoid.total_height(p) / 1000:.2f} m, {r.total_mass():.0f} kg\n"
                  f"armour {armour:.0f} kg, carried {weapon:.0f} kg ({sun.su.ROSTER[unit][2]})")
-        draw(fig.add_subplot(1, 3, k + 1, projection="3d"), cls, 16, 35, title)
-    fig.suptitle("Space game units on Talia's frame (design stage): the Marine, the Breacher and the Heavy - power armour "
+        draw(fig.add_subplot(1, 4, k + 1, projection="3d"), cls, 16, 35, title)
+    fig.suptitle("Space game units on Talia's frame (design stage), both hands busy: the Marine (carbine, combat shield), the Marine with a chainsaw, the Breacher and the Heavy - power armour "
                  "in Ti-6Al-4V, industrial joint modules (cycloidal 400 Nm legs, harmonic 150 Nm arms), 21 actuated joints each",
                  fontsize=10)
     fig.tight_layout()

@@ -4,7 +4,10 @@ numbers, re-actuated for the weight (industrial modules: ``cycloidal 400 Nm, bra
 the CAD volumes (``space_units.armour_parts`` / ``weapon_parts``) × the densities of ``space_unit_specs.MATERIALS``.
 
 * **Marine** — the carbine along the right forearm (the receiver and the stock, the barrel, the magazine): at the
-  low ready with the elbow bent 60° (``nominal_qpos``), level when the forearm comes up.
+  low ready with the elbow bent 60° (``nominal_qpos``), level when the forearm comes up; the combat shield on the
+  left forearm.
+* **Marine with a chainsaw** — the carbine, and the chainsaw along the left forearm (the body on the fist, the bar
+  ahead).
 * **Breacher** — the tower shield along the left forearm, its face on the forearm's outer side (upright with the
   elbow at 20°), the power maul in the right fist.
 * **Heavy** — the rotary cannon along the right forearm (the elbow at 75° so it points ahead), its mount and the feed
@@ -22,15 +25,19 @@ import body_kit as bk
 import humanoid_robot as hr
 import space_unit_specs as su
 
-__all__ = ["CAD_MM3", "MATERIAL", "carried_masses", "marine", "breacher", "heavy", "parts_marine", "parts_breacher",
-           "parts_heavy"]
+__all__ = ["CAD_MM3", "MATERIAL", "carried_masses", "marine", "marine_saw", "breacher", "heavy", "parts_marine",
+           "parts_marine_saw", "parts_breacher", "parts_heavy"]
 
 mm = 1e-3
 
 #: CAD volumes [mm³] of every armour and weapon piece at the defaults (the test rebuilds them)
 CAD_MM3 = {
     "marine": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-               "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8},
+               "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+               "shield": 5626181.3, "strap": 3995824.3},
+    "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
+                   "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+                   "saw_body": 5425953.0, "saw_bar": 1217654.7},
     "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                  "greaves": 7406507.2, "boots": 9714685.2, "shield": 16209969.6, "strap": 3995824.3, "shaft": 1150818.8,
                  "head": 3029269.4},
@@ -42,10 +49,11 @@ CAD_MM3 = {
 MATERIAL = {"pauldrons": "Ti-6Al-4V", "chest_plate": "Ti-6Al-4V", "backpack": "7075 aluminium", "belt": "Ti-6Al-4V",
             "greaves": "Ti-6Al-4V", "boots": "Ti-6Al-4V", "receiver": "7075 aluminium", "barrel": "4140 steel",
             "magazine": "7075 aluminium", "shield": "Ti-6Al-4V", "strap": "7075 aluminium", "shaft": "7075 aluminium",
-            "head": "4140 steel", "cannon": "4140 steel", "mount": "7075 aluminium", "feed": "7075 aluminium"}
+            "head": "4140 steel", "cannon": "4140 steel", "mount": "7075 aluminium", "feed": "7075 aluminium",
+            "saw_body": "7075 aluminium", "saw_bar": "4140 steel"}
 FILL = {"pauldrons": 0.22, "chest_plate": 0.5, "backpack": 0.35, "belt": 0.3, "greaves": 0.5, "boots": 0.25,
         "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.45, "strap": 0.4, "shaft": 0.6, "head": 1.0,
-        "cannon": 0.7, "mount": 0.4, "feed": 0.3}
+        "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8}
 ARMOUR = ("pauldrons", "chest_plate", "backpack", "belt", "greaves", "boots")
 
 
@@ -129,9 +137,31 @@ ALONG = (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
 
 def marine():
     P = su.MARINE
-    r = _unit("marine", "Marine", P, "Marine: a 1.86 m armoured humanoid (the line unit) with a carbine, 21 actuated joints "
-                                     "(design stage).")
+    r = _unit("marine", "Marine", P, "Marine: a 1.86 m armoured humanoid (the line unit) with a carbine and a combat shield, "
+                                     "21 actuated joints (design stage).")
     m = carried_masses("marine")
+    _carbine(r, P, m)
+    _shield(r, P, m)
+    return r
+
+
+def _shield(r, P, m):
+    """The shield (``shield_*`` of the specs) and its strap on the left forearm."""
+    Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
+    t, W, H = P["shield_thickness"] * mm, P["shield_width"] * mm, P["shield_height"] * mm
+    hz = -Lf - 0.04
+    zm = hz + Lf * 0.5                                                    # the forearm's middle
+    x = d / 2 + t / 2 + 0.025
+    fore_l = _link(r.root, "L_forearm")
+    fore_l.geoms += [
+        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=(x, 0.0, zm + H * 0.08), mass=m["shield"], role="link",
+             rgba=(0.42, 0.45, 0.50, 1.0)),
+        Geom("shield_strap", "box", (d * 0.65 + 0.02, d * 0.65, d * 0.55), pos=(d * 0.35, 0.0, zm), mass=m["strap"], role="link",
+             rgba=bk.DARK)]
+
+
+def _carbine(r, P, m):
+    """The carbine along the right forearm."""
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
     L, rh, w = P["carbine_length"] * mm, P["receiver_height"] * mm, P["receiver_width"] * mm
     hz = -Lf - 0.04                                                       # the fist on the forearm's axis
@@ -148,6 +178,24 @@ def marine():
         Geom("carbine_magazine", "box", (w * 0.65, w * 0.45, P["magazine_height"] * mm / 2),
              pos=(x - rh / 2 - P["magazine_height"] * mm / 2 + 0.008, 0.0, zc - rec_len * 0.2), quat=ALONG, mass=m["magazine"],
              role="link", rgba=bk.DARK)]
+
+
+def marine_saw():
+    P = su.MARINE_SAW
+    r = _unit("marine_saw", "Marine (chainsaw)", P, "Marine with a chainsaw: a 1.86 m armoured humanoid with a carbine in the "
+                                                     "right fist and a chainsaw in the left, 21 actuated joints (design stage).")
+    m = carried_masses("marine_saw")
+    _carbine(r, P, m)
+    Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
+    L, W, t = P["saw_bar_length"] * mm, P["saw_bar_width"] * mm, P["saw_bar_thickness"] * mm
+    bl, bh = P["saw_body_length"] * mm, P["saw_body_height"] * mm
+    hz = -Lf - 0.04
+    x = d * 0.5 + bh * 0.3
+    zb0 = hz - bl * 0.35 - bl / 2 + 0.01
+    fore_l = _link(r.root, "L_forearm")
+    fore_l.geoms += [
+        Geom("saw_body", "box", (bh / 2, bh * 0.4, bl / 2), pos=(x, 0.0, hz - bl * 0.35), mass=m["saw_body"], role="link", rgba=bk.DARK),
+        Geom("saw_bar", "box", (W / 2 + 0.01, t * 0.8, L / 2), pos=(x, 0.0, zb0 - L / 2), mass=m["saw_bar"], role="link", rgba=bk.BLACK)]
     return r
 
 
@@ -156,17 +204,9 @@ def breacher():
     r = _unit("breacher", "Breacher", P, "Breacher: a 1.86 m armoured humanoid with a tower shield and a power maul, "
                                          "21 actuated joints (design stage).")
     m = carried_masses("breacher")
+    _shield(r, P, m)
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
-    t, W, H = P["shield_thickness"] * mm, P["shield_width"] * mm, P["shield_height"] * mm
     hz = -Lf - 0.04
-    zm = hz + Lf * 0.5                                                    # the forearm's middle
-    x = d / 2 + t / 2 + 0.025
-    fore_l = _link(r.root, "L_forearm")
-    fore_l.geoms += [
-        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=(x, 0.0, zm + H * 0.08), mass=m["shield"], role="link",
-             rgba=(0.42, 0.45, 0.50, 1.0)),
-        Geom("shield_strap", "box", (d * 0.65 + 0.02, d * 0.65, d * 0.55), pos=(d * 0.35, 0.0, zm), mass=m["strap"], role="link",
-             rgba=bk.DARK)]
     L, hd, hl, sd = P["maul_length"] * mm, P["maul_head_diameter"] * mm, P["maul_head_length"] * mm, P["maul_shaft_diameter"] * mm
     e = math.radians(P["elbow_bend_deg"])
     down, up = (-math.sin(e), 0.0, -math.cos(e)), (math.sin(e), 0.0, math.cos(e))     # the world's vertical in the bent forearm
@@ -226,6 +266,11 @@ def _base_height(kin):
 def parts_marine(machine) -> dict:
     import space_unit_motions as sm
     return _parts("marine", sm.motions_marine)
+
+
+def parts_marine_saw(machine) -> dict:
+    import space_unit_motions as sm
+    return _parts("marine_saw", sm.motions_marine_saw)
 
 
 def parts_breacher(machine) -> dict:

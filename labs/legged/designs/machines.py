@@ -63,6 +63,8 @@ machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("
 # space game units: bulky armoured humanoids on Talia's frame (design stage: CAD + robot model + motions)
 machines.register("space_marine", "space_unit_robots:marine", parts=_motions("space_unit_motions:parts_marine"),
                   visual="space_units:SpaceMarine")
+machines.register("space_marine_saw", "space_unit_robots:marine_saw", parts=_motions("space_unit_motions:parts_marine_saw"),
+                  visual="space_units:SpaceMarineSaw")
 machines.register("space_breacher", "space_unit_robots:breacher", parts=_motions("space_unit_motions:parts_breacher"),
                   visual="space_units:Breacher")
 machines.register("space_heavy", "space_unit_robots:heavy", parts=_motions("space_unit_motions:parts_heavy"),

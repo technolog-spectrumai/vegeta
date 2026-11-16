@@ -39,6 +39,7 @@ A notebook starts with::
 | space_breacher |  |  |  |  | ● |  |
 | space_heavy |  |  |  |  | ● |  |
 | space_marine |  |  |  |  | ● |  |
+| space_marine_saw |  |  |  |  | ● |  |
 | zoo_bat |  |  |  |  | ● |  |
 | zoo_bear |  |  |  |  | ● |  |
 | zoo_deer |  |  |  |  | ● |  |

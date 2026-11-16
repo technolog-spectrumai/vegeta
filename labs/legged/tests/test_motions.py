@@ -22,7 +22,8 @@ MOTIONS = {"humanoid_motions": {"walk", "wave"},
            "monster_motions:ghoul": {"shamble", "lunge", "pinch"}, "monster_motions:wyvern": {"hover", "grab"},
            "fantasy_motions:chest": {"open", "close"},
            "fantasy_humanoid_motions:ork": {"stomp", "sweep", "block"},
-           "space_unit_motions:marine": {"march", "aim", "fire"}, "space_unit_motions:breacher": {"march", "shield_up", "swing"},
+           "space_unit_motions:marine": {"march", "aim", "fire"}, "space_unit_motions:marine_saw": {"march", "aim", "slash"},
+           "space_unit_motions:breacher": {"march", "shield_up", "swing"},
            "space_unit_motions:heavy": {"march", "suppress"}}
 
 

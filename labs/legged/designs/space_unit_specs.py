@@ -1,10 +1,11 @@
 """The space game units' numbers, without CadQuery: bulky armoured humanoid robots on Talia's frame
-(``humanoid.Humanoid`` variants [mm, deg]) — the **Marine** (the line unit, a carbine), the **Breacher** (a tower
-shield and a power maul) and the **Heavy** (a rotary cannon fed from its backpack) — and the materials of their
+(``humanoid.Humanoid`` variants [mm, deg]) — the **Marine** (the line unit: a carbine and a combat shield), the
+**Marine with a chainsaw** (the carbine and a chainsaw), the **Breacher** (a tower shield and a power maul) and the
+**Heavy** (a rotary cannon fed from its backpack); every unit has both hands busy — and the materials of their
 armour and weapons (Yax's materials shape)."""
 from __future__ import annotations
 
-__all__ = ["MARINE", "MARINE_EXTRA", "BREACHER", "BREACHER_EXTRA", "HEAVY", "HEAVY_EXTRA", "MATERIALS", "ROSTER"]
+__all__ = ["MARINE", "MARINE_EXTRA", "MARINE_SAW", "MARINE_SAW_EXTRA", "BREACHER", "BREACHER_EXTRA", "HEAVY", "HEAVY_EXTRA", "MATERIALS", "ROSTER"]
 
 #: the Marine: Humanoid parameters (the ork's bulk on longer legs, a square helmet, the forearms held forward
 #: 60 deg at the carbine) and the armour's extras in ``MARINE_EXTRA``
@@ -19,20 +20,30 @@ MARINE = {"pelvis_width": 380.0, "pelvis_depth": 250.0, "pelvis_height": 170.0, 
           "pauldron_diameter": 300.0, "pauldron_thickness": 45.0, "chest_plate_thickness": 35.0,
           "backpack_width": 400.0, "backpack_depth": 170.0, "backpack_height": 430.0, "exhaust_diameter": 70.0,
           "exhaust_height": 160.0, "visor_height": 45.0, "greave_thickness": 30.0, "belt_height": 70.0,
-          # the carbine
+          # the carbine (the right fist) and the combat shield (the left forearm)
           "carbine_length": 640.0, "receiver_height": 150.0, "receiver_width": 70.0, "barrel_diameter": 26.0,
-          "magazine_height": 170.0}
+          "magazine_height": 170.0,
+          "shield_width": 400.0, "shield_height": 560.0, "shield_thickness": 22.0, "shield_boss_diameter": 130.0}
 MARINE_EXTRA = {"pauldron_diameter": "the shoulder domes", "pauldron_thickness": "their shell",
                 "chest_plate_thickness": "the breastplate proud of the torso", "backpack_width": "the power pack",
                 "backpack_depth": "", "backpack_height": "", "exhaust_diameter": "the two exhaust stacks",
                 "exhaust_height": "above the pack", "visor_height": "the helmet's visor slit",
                 "greave_thickness": "the shin plates", "belt_height": "the waist belt",
                 "carbine_length": "muzzle to butt", "receiver_height": "", "receiver_width": "",
-                "barrel_diameter": "", "magazine_height": "below the receiver"}
+                "barrel_diameter": "", "magazine_height": "below the receiver",
+                "shield_width": "the combat shield", "shield_height": "", "shield_thickness": "", "shield_boss_diameter": "the shield's boss"}
+
+#: the Marine with a chainsaw in the left fist instead of the shield (the carbine stays)
+MARINE_SAW = {k: v for k, v in MARINE.items() if not k.startswith("shield_")} | \
+    {"saw_bar_length": 620.0, "saw_bar_width": 110.0, "saw_bar_thickness": 16.0, "saw_body_length": 240.0,
+     "saw_body_height": 160.0, "saw_teeth": 16}
+MARINE_SAW_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("shield_")} | \
+    {"saw_bar_length": "the chainsaw's bar, body to tip", "saw_bar_width": "", "saw_bar_thickness": "",
+     "saw_body_length": "the motor body at the fist", "saw_body_height": "", "saw_teeth": "teeth along the bar's edge"}
 
 #: the Breacher: the Marine's frame with a tower shield on the left forearm and a power maul in the right fist
 BREACHER = dict(MARINE, elbow_bend_deg=20.0,
-                shield_width=560.0, shield_height=950.0, shield_thickness=28.0, shield_boss_diameter=180.0,
+                shield_width=560.0, shield_height=950.0, shield_thickness=28.0, shield_boss_diameter=180.0,     # the tower shield
                 maul_length=720.0, maul_head_length=200.0, maul_head_diameter=130.0, maul_shaft_diameter=40.0)
 BREACHER_EXTRA = dict(MARINE_EXTRA, shield_width="the tower shield", shield_height="", shield_thickness="",
                       shield_boss_diameter="the shield's boss", maul_length="the power maul, butt to head",
@@ -42,18 +53,20 @@ for _k in ("carbine_length", "receiver_height", "receiver_width", "barrel_diamet
     BREACHER_EXTRA.pop(_k)
 
 #: the Heavy: the Marine's frame, wider, a rotary cannon on the right forearm fed from a bigger backpack
-HEAVY = dict(MARINE, torso_width=600.0, torso_depth=340.0, hip_spacing=300.0, pelvis_width=420.0,
+HEAVY = {k: v for k, v in MARINE.items() if not k.startswith("shield_")}
+HEAVY = dict(HEAVY, torso_width=600.0, torso_depth=340.0, hip_spacing=300.0, pelvis_width=420.0,
              backpack_width=480.0, backpack_depth=240.0, backpack_height=480.0, elbow_bend_deg=75.0,
              cannon_length=820.0, cannon_diameter=130.0, cannon_barrels=6, cannon_barrel_diameter=22.0,
              feed_diameter=60.0)
-HEAVY_EXTRA = dict(MARINE_EXTRA, cannon_length="the rotary cannon, breech to muzzle", cannon_diameter="the barrel cluster",
+HEAVY_EXTRA = dict({k: v for k, v in MARINE_EXTRA.items() if not k.startswith("shield_")}, cannon_length="the rotary cannon, breech to muzzle", cannon_diameter="the barrel cluster",
                    cannon_barrels="", cannon_barrel_diameter="", feed_diameter="the ammunition feed from the pack")
 for _k in ("carbine_length", "receiver_height", "receiver_width", "barrel_diameter", "magazine_height"):
     HEAVY.pop(_k)
     HEAVY_EXTRA.pop(_k)
 
 #: name -> (specs, extras, what it carries)
-ROSTER = {"marine": (MARINE, MARINE_EXTRA, "a carbine in the right fist"),
+ROSTER = {"marine": (MARINE, MARINE_EXTRA, "a carbine in the right fist, a combat shield on the left forearm"),
+          "marine_saw": (MARINE_SAW, MARINE_SAW_EXTRA, "a carbine in the right fist, a chainsaw in the left"),
           "breacher": (BREACHER, BREACHER_EXTRA, "a tower shield on the left forearm, a power maul in the right fist"),
           "heavy": (HEAVY, HEAVY_EXTRA, "a rotary cannon on the right forearm, fed from the backpack")}
 

@@ -20,7 +20,8 @@ ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
           "monster_leshy": (mr.leshy, 16, (50.0, 120.0)), "monster_wraith": (mr.wraith, 96, (15.0, 60.0)),
           "monster_ghoul": (mr.ghoul, 25, (25.0, 60.0)),
           "fantasy_ork": (fhr.ork, 21, (60.0, 95.0)),
-          "space_marine": (sr.marine, 21, (200.0, 350.0)), "space_breacher": (sr.breacher, 21, (240.0, 400.0)),
+          "space_marine": (sr.marine, 21, (200.0, 350.0)), "space_marine_saw": (sr.marine_saw, 21, (200.0, 350.0)),
+          "space_breacher": (sr.breacher, 21, (240.0, 400.0)),
           "space_heavy": (sr.heavy, 21, (250.0, 420.0))}
 
 #: CAD designs that must build as one valid solid: (module, class, overrides)
@@ -30,8 +31,8 @@ CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + 
       [("monsters", c, {}) for c in ("Wolf", "Wyvern", "Centaur", "Leech", "Leshy", "Wraith", "Ghoul")] + \
       [("fantasy_humanoids", "Ork", {}), ("fantasy_humanoids", "Ork", {"part": "broom"}),
        ("fantasy_humanoids", "Ork", {"part": "lid"})] + \
-      [("space_units", c, {}) for c in ("SpaceMarine", "Breacher", "Heavy")] + \
-      [("space_units", "SpaceMarine", {"part": "weapon"}), ("space_units", "Heavy", {"part": "weapon"})]
+      [("space_units", c, {}) for c in ("SpaceMarine", "SpaceMarineSaw", "Breacher", "Heavy")] + \
+      [("space_units", "Heavy", {"part": "weapon"})]
 
 
 @pytest.mark.parametrize("name", sorted(ROBOTS))
@@ -120,9 +121,10 @@ def test_space_units_carry_their_cad_masses_and_aim_level():
 
     import space_unit_motions as sm
 
-    for unit in ("marine", "breacher", "heavy"):
+    for unit in ("marine", "marine_saw", "breacher", "heavy"):
         m = sr.carried_masses(unit)
         assert all(v > 0 for v in m.values()) and sum(m.values()) < 200.0
+        assert len(sm.__dict__[f"motions_{unit}"]()[1]) >= 2
     kin, ms = sm.motions_marine()
     aim = {x.name: x for x in ms}["aim"]
     assert aim.check["ik_error_max_m"] < 0.005
@@ -151,9 +153,10 @@ def test_space_unit_volumes_rebuild():
     pytest.importorskip("cadquery")
     import space_units as sun
 
-    m = sun.Breacher().generate(part="weapon").measure()
-    assert m["valid"] and m["n_solids"] == 2                               # the shield and the maul, one in each hand
-    for unit, cls in (("marine", sun.SpaceMarine), ("breacher", sun.Breacher), ("heavy", sun.Heavy)):
+    for cls in (sun.SpaceMarine, sun.SpaceMarineSaw, sun.Breacher):
+        m = cls().generate(part="weapon").measure()
+        assert m["valid"] and m["n_solids"] == 2, cls                       # both hands busy: one solid in each
+    for unit, cls in (("marine", sun.SpaceMarine), ("marine_saw", sun.SpaceMarineSaw), ("breacher", sun.Breacher), ("heavy", sun.Heavy)):
         d = cls()
         p = d.resolve()
         fresh = {k: v.val().Volume() for k, v in d.armour_parts(p).items()}

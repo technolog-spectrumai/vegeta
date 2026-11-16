@@ -1,14 +1,16 @@
 # Space game units — bulky armoured humanoids (design stage)
 
 The legged lab's roster of game units: power-armoured humanoid robots on Talia's frame (`labs/legged/designs/humanoid.py`),
-the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids). Three units, each a CAD design, a
-Chiron robot model with its masses from the CAD, keyframed motions, and a Yax export (`exports/space_*.yx2`).
+the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids). Four units, every one with both
+hands busy, each a CAD design, a Chiron robot model with its masses from the CAD, keyframed motions, and a Yax export
+(`exports/space_*.yx2`).
 
 ![The three units](../labs/legged/designs/space_units_3d.png)
 
 | unit | what it is | carries | mass | motions |
 |---|---|---|---|---|
-| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up) | 288 kg (armour 90, carbine 9) | `march`, `aim`, `fire` |
+| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up); a combat shield on the left forearm | 304 kg (armour 90, carbine 9, shield 16) | `march`, `aim`, `fire` |
+| **Marine with a chainsaw** (`space_marine_saw`) | the Marine | the carbine; a chainsaw in the left fist, along the forearm | 303 kg (chainsaw 14) | `march`, `aim`, `slash` |
 | **Breacher** (`space_breacher`) | the Marine with the elbows nearly straight | a tower shield along the left forearm (upright, facing ahead), a power maul in the right fist | 341 kg (shield 37, maul 26) | `march`, `shield_up`, `swing` |
 | **Heavy** (`space_heavy`) | the Marine on a wider frame, the bigger backpack | a rotary cannon along the right forearm, fed from the backpack | 354 kg (cannon 38) | `march`, `suppress` |
 
@@ -22,8 +24,9 @@ its outer side +x, turned by the elbow's bend and set on the hand) so they move 
 
 - the **carbine**: a receiver on the forearm's outer side above the fist, the barrel forward along the forearm, a
   stock back along it, a sight, a magazine hanging from the receiver;
-- the **tower shield**: a Ø560 × 950 mm plate with a rim and a boss on the forearm's outer side, a strap block round
-  the forearm; the **power maul**: a shaft through the fist, a steel head crosswise at the top, a pommel;
+- the **combat shield** (the Marine, 400 × 560 mm) and the **tower shield** (the Breacher, 560 × 950 mm): a plate with a rim and a boss on the forearm's outer side, a strap block round
+  the forearm; the **chainsaw**: the motor body on the fist with a rear handle and a front hoop, the bar forward with a
+  chain of teeth round its edge; the **power maul**: a shaft through the fist, a steel head crosswise at the top, a pommel;
 - the **rotary cannon**: a mount block on the forearm, a cluster of six barrels round a core, breech and muzzle rings,
   the feed tube from the backpack.
 
@@ -44,7 +47,8 @@ and casings, a polycarbonate visor). 21 actuated joints each; the elbows stand a
 Talia's walk machinery (`humanoid_motions.walk` → `motion_kit.legged_gait`) at the units' weight: `march` at 0.55 m/s
 (the Heavy 0.4), a 0.34 m stance, duty 0.64, ±60 mm sway, the weapon arm held at its stance and the other swinging.
 Then each unit's own: the Marine's `aim` (the forearm brought level, which points the carbine ahead - exact in joint
-space since the carbine lies along the forearm) and `fire` (the recoil kick on the aim pose, 8 Hz); the Breacher's
+space since the carbine lies along the forearm) and `fire` (the recoil kick on the aim pose, 8 Hz), the chainsaw Marine's
+`slash` (the saw raised out and swung across, the knees giving at the cut); the Breacher's
 `shield_up` (the guard in joint space, the maul cocked) and `swing` (the maul overhead and down, the knees giving at the
 blow); the Heavy's `suppress` (the cannon swept ±0.4 rad by the waist, the stance braced wide). Every motion passes the
 lab's checks (joint limits, stance feet on the ground, IK within 5 mm where IK is used).
@@ -53,7 +57,7 @@ lab's checks (joint limits, stance feet on the ground, IK within 5 mm where IK i
 
 `labs/legged/tests/test_designs_stage.py` (the robots' joints and masses, the CAD builds, the carried masses, the barrel
 level in the aim, the shield upright in the guard, the CAD volumes rebuilt) and `test_motions.py` (the motions' checks
-and the exported block). `python tools/publish.py space_marine space_breacher space_heavy` writes the exports.
+and the exported block). `python tools/publish.py space_marine space_marine_saw space_breacher space_heavy` writes the exports.
 
 ## Not done
 

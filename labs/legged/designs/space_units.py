@@ -1,6 +1,6 @@
-"""The space game units (CAD): bulky armoured humanoid robots on ``humanoid.Humanoid``'s frame — the **Marine**
-(a carbine), the **Breacher** (a tower shield and a power maul) and the **Heavy** (a rotary cannon fed from its
-backpack). The armour: shoulder domes (pauldrons), a breastplate, a power pack with two exhaust stacks, a waist belt,
+"""The space game units (CAD): bulky armoured humanoid robots on ``humanoid.Humanoid``'s frame, both hands busy —
+the **Marine** (a carbine and a combat shield), the **Marine with a chainsaw** (the carbine and a chainsaw), the
+**Breacher** (a tower shield and a power maul) and the **Heavy** (a rotary cannon fed from its backpack). The armour: shoulder domes (pauldrons), a breastplate, a power pack with two exhaust stacks, a waist belt,
 greaves over the shins, knee domes, boots and a visor slit cut into the square helmet. Numbers in
 ``space_unit_specs``; mm, x forward, y left, z up, the ground at z = 0.
 
@@ -20,7 +20,8 @@ import space_unit_specs as su
 from fantasy_humanoids import _add, hand_frame
 from humanoid import Humanoid
 
-__all__ = ["SpaceMarine", "Breacher", "Heavy", "carbine", "tower_shield", "maul", "rotary_cannon", "forearm_frame"]
+__all__ = ["SpaceMarine", "SpaceMarineSaw", "Breacher", "Heavy", "carbine", "tower_shield", "combat_shield", "chainsaw", "maul",
+           "rotary_cannon", "forearm_frame"]
 
 
 def _torso_frame(p):
@@ -65,9 +66,10 @@ def carbine(p):
 
 
 def tower_shield(p):
-    """The tower shield strapped to the left forearm, its plate along the forearm and its face on the forearm's outer
-    side (at rest the forearm hangs nearly straight, so the shield stands upright facing ahead): a titanium plate with
-    a rim and a boss, the strap block round the forearm. Pieces: ``shield`` (titanium), ``strap`` (aluminium)."""
+    """A shield strapped to the left forearm, its plate along the forearm and its face on the forearm's outer side (the
+    Breacher's tower shield with the forearm hanging nearly straight stands upright facing ahead; the Marine's combat
+    shield on its bent forearm faces ahead and down): a titanium plate with a rim and a boss, the strap block round the
+    forearm. Pieces: ``shield`` (titanium), ``strap`` (aluminium). The size is ``shield_*`` of the unit's specs."""
     place = forearm_frame(p, 1)
     d, t, W, H = p["arm_diameter"], p["shield_thickness"], p["shield_width"], p["shield_height"]
     zm = p["forearm_length"] * 0.5                                        # the forearm's middle, up from the fist
@@ -77,6 +79,36 @@ def tower_shield(p):
     boss = sk.disc((x + t / 2 + 10, 0, zm + H * 0.08), p["shield_boss_diameter"] / 2, 40, axis="x")
     strap = sk.rounded_box(d * 1.3 + 40, d * 1.3, d * 1.1, (d * 0.35, 0, zm), fillet=10)
     return {"shield": place(sk.union_all([plate, rim, boss])), "strap": place(strap)}
+
+
+combat_shield = tower_shield
+
+
+def chainsaw(p):
+    """The chainsaw in the left fist, along the forearm like the carbine (the bar points at the ground ahead at rest):
+    the motor body on the fist with its rear handle, the bar forward with a chain of teeth round its edge, a front hoop
+    handle. Pieces: ``saw_body`` (aluminium), ``saw_bar`` (steel)."""
+    place = forearm_frame(p, 1)
+    d, L, W, t = p["arm_diameter"], p["saw_bar_length"], p["saw_bar_width"], p["saw_bar_thickness"]
+    bl, bh = p["saw_body_length"], p["saw_body_height"]
+    x = d * 0.5 + bh * 0.3                                                # the body's centre line off the forearm
+    body = sk.rounded_box(bh, bh * 0.8, bl, (x, 0, -bl * 0.35), fillet=14)
+    grip = sk.rounded_box(d * 0.9, bh * 0.5, d * 0.5, (d * 0.2, 0, 0), fillet=8)
+    rear = sk.rounded_box(bh * 0.35, bh * 0.3, bl * 0.5, (x - bh * 0.1, 0, bl * 0.25), fillet=8)
+    hoop = sk.rod((x - bh * 0.45, -bh * 0.45, -bl * 0.75), (x + bh * 0.6, -bh * 0.45, -bl * 0.75), 12).union(
+        sk.rod((x - bh * 0.45, -bh * 0.45, -bl * 0.75), (x - bh * 0.45, 0, -bl * 0.75), 12)).union(
+        sk.rod((x + bh * 0.6, -bh * 0.45, -bl * 0.75), (x + bh * 0.6, 0, -bl * 0.75), 12))
+    zb0 = -bl * 0.35 - bl / 2 + 10                                        # the bar leaves the body's front
+    bar = sk.rounded_box(W, t, L, (x, 0, zb0 - L / 2), fillet=min(W / 2 - 1, 40.0))
+    teeth = []
+    n = int(p["saw_teeth"])
+    for k in range(n):                                                    # along the outer (+x) edge and round the tip
+        zt = zb0 - L * (k + 0.5) / n
+        teeth.append(cq.Workplane("XY").box(14, t * 1.6, L / n * 0.45).translate((x + W / 2 + 4, 0, zt)))
+    for k in range(3):
+        teeth.append(cq.Workplane("XY").box(12, t * 1.6, 12).translate((x + W / 2 - 20 - 30 * k, 0, zb0 - L - 5)))
+    chain = cq.Workplane("XY").box(10, t * 1.3, L).translate((x + W / 2 + 1, 0, zb0 - L / 2))
+    return {"saw_body": place(sk.union_all([body, grip, rear, hoop])), "saw_bar": place(sk.union_all([bar, chain] + teeth))}
 
 
 def maul(p):
@@ -123,11 +155,15 @@ def rotary_cannon(p):
 
 
 class SpaceMarine(Humanoid):
-    """The Marine: Talia's frame at the Marine's numbers (1.9 m, the ork's bulk on longer legs) in power armour,
-    a carbine in the right fist. ``part``: as ``Humanoid``, plus 'armour' and 'weapon'."""
+    """The Marine: Talia's frame at the Marine's numbers (1.86 m, the ork's bulk on longer legs) in power armour,
+    a carbine in the right fist and a combat shield on the left forearm. ``part``: as ``Humanoid``, plus 'armour' and
+    'weapon'."""
 
     SPECS, EXTRA, NAME = su.MARINE, su.MARINE_EXTRA, "Marine"
-    weapon_fn = staticmethod(carbine)
+
+    @staticmethod
+    def weapon_fn(p):
+        return {**carbine(p), **combat_shield(p)}
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -202,6 +238,16 @@ class SpaceMarine(Humanoid):
             return body
         whole = sk.union_all([body] + list(self.armour_parts(p).values()) + list(self.weapon_parts(p).values()))
         return whole.cut(self._visor(p))
+
+
+class SpaceMarineSaw(SpaceMarine):
+    """The Marine with a chainsaw in the left fist instead of the shield (the carbine stays in the right)."""
+
+    SPECS, EXTRA, NAME = su.MARINE_SAW, su.MARINE_SAW_EXTRA, "Marine (chainsaw)"
+
+    @staticmethod
+    def weapon_fn(p):
+        return {**carbine(p), **chainsaw(p)}
 
 
 class Breacher(SpaceMarine):

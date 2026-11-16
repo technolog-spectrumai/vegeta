@@ -1,9 +1,11 @@
 """The space game units' motions (``motion_kit``), exported as ``data:motions`` (tag ``motion``).
 
-* **march** (all three) — Talia's walk at the unit's weight: 0.55 m/s (the Heavy 0.4), 0.34 m stance, duty 0.64,
-  a 50 mm crouch, ±60 mm sway; the weapon arm held at its stance (the carbine level, the maul up, the cannon ahead),
-  the other arm swinging a little (the Breacher's shield arm held forward instead).
-* **aim** (Marine) — the forearm brought up level so the carbine (along it) points ahead: the shoulder pitched up by
+* **march** (every unit) — Talia's walk at the unit's weight: 0.55 m/s (the Heavy 0.4), 0.34 m stance, duty 0.64,
+  a 50 mm crouch, ±60 mm sway; both arms held at their stance (the carbine at the low ready, the shield or the
+  chainsaw forward, the maul up, the cannon ahead), the Heavy's free arm swinging a little.
+* **slash** (Marine with a chainsaw) — the saw raised out to the side and swung across the body and down, the waist
+  turning with it, the knees giving at the cut.
+* **aim** (both Marines) — the forearm brought up level so the carbine (along it) points ahead: the shoulder pitched up by
   90° less the elbow's 60°, the waist turned in; exact in joint space, eased in, held, eased out.
 * **fire** (Marine) — in the aim pose, the recoil: the right shoulder kicked back 0.04 rad at 8 Hz with the waist
   and the left shoulder taking a little of it.
@@ -24,8 +26,8 @@ import humanoid_motions as hum
 import motion_kit as mk
 import space_unit_specs as su
 
-__all__ = ["motions_marine", "motions_breacher", "motions_heavy", "parts_marine", "parts_breacher", "parts_heavy",
-           "base_height"]
+__all__ = ["motions_marine", "motions_marine_saw", "motions_breacher", "motions_heavy", "parts_marine", "parts_marine_saw",
+           "parts_breacher", "parts_heavy", "base_height"]
 
 base_height = hum.base_height
 SOLE_POINTS = hum.SOLE_POINTS
@@ -155,11 +157,35 @@ def suppress(kin, period=5.0, sweep=0.4):
                           params={"sweep_rad": sweep, "frequency_hz": 1 / period})
 
 
+def slash(kin, period=1.6):
+    """The chainsaw swung across: the left arm raised out and brought across the body and down, the waist turning
+    with it, the right arm (the carbine) kept clear."""
+    e = math.radians(su.MARINE_SAW["elbow_bend_deg"])
+
+    def fn(t):
+        u = t / period
+        s = mk.smooth(u / 0.4) if u < 0.4 else (1 - mk.smooth((u - 0.4) / 0.35)) if u < 0.75 else 0.0
+        cut = math.sin(math.pi * min(max((u - 0.35) / 0.3, 0.0), 1.0)) if 0.35 <= u <= 0.65 else 0.0
+        return {"L_shoulder_pitch": -0.4 - 1.4 * s, "L_shoulder_roll": 1.1 * s - 0.9 * cut, "L_shoulder_yaw": 0.4 * s,
+                "L_elbow": -e - 0.5 * s, "waist_yaw": 0.3 * s - 0.5 * cut, "R_shoulder_pitch": -0.3 + 0.3 * s,
+                "R_elbow": -e, "L_knee": 0.15 * cut, "R_knee": 0.15 * cut, "L_hip_pitch": -0.07 * cut, "R_hip_pitch": -0.07 * cut,
+                "L_ankle_pitch": -0.08 * cut, "R_ankle_pitch": -0.08 * cut}
+    return mk.joint_cycle(kin, "slash", fn, period=period, frames=36,
+                          source="space_unit_motions.slash: the chainsaw raised out and swung across", params={"period_s": period})
+
+
 def motions_marine(robot=None):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine())
-    hold = {"R_shoulder_pitch": -0.35}
+    hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.45}
     return kin, [march(kin, "marine", hold=hold), aim(kin), fire(kin)]
+
+
+def motions_marine_saw(robot=None):
+    import space_unit_robots as sr
+    kin = mk.Kin(robot or sr.marine_saw())
+    hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
+    return kin, [march(kin, "marine_saw", hold=hold), aim(kin), slash(kin)]
 
 
 def motions_breacher(robot=None):
@@ -179,6 +205,11 @@ def motions_heavy(robot=None):
 def parts_marine(machine) -> dict:
     import space_unit_robots as sr
     return sr.parts_marine(machine)
+
+
+def parts_marine_saw(machine) -> dict:
+    import space_unit_robots as sr
+    return sr.parts_marine_saw(machine)
 
 
 def parts_breacher(machine) -> dict:
