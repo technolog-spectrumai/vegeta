@@ -59,3 +59,11 @@ for _obj, _cls in (("chest", "Chest"), ("crate", "Crate"), ("sword", "Sword"), (
 # fantasy humanoids: the ork with its broom and trash-bin lid (the ghoul, with its pincers, is with the monsters)
 machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("fantasy_humanoid_robots:parts_ork"),
                   visual="fantasy_humanoids:Ork")
+
+# space game units: bulky armoured humanoids on Talia's frame (design stage: CAD + robot model + motions)
+machines.register("space_marine", "space_unit_robots:marine", parts=_motions("space_unit_motions:parts_marine"),
+                  visual="space_units:SpaceMarine")
+machines.register("space_breacher", "space_unit_robots:breacher", parts=_motions("space_unit_motions:parts_breacher"),
+                  visual="space_units:Breacher")
+machines.register("space_heavy", "space_unit_robots:heavy", parts=_motions("space_unit_motions:parts_heavy"),
+                  visual="space_units:Heavy")

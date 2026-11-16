@@ -6,6 +6,7 @@ import body_kit  # noqa: F401
 import humanoid_robot as hr
 import fantasy_humanoid_robots as fhr
 import monster_robots as mr
+import space_unit_robots as sr
 import zoo_robots as zr
 
 #: name -> (builder, actuated joints, mass range [kg])
@@ -18,7 +19,9 @@ ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
           "monster_centaur": (mr.centaur, 24, (100.0, 220.0)), "monster_leech": (mr.leech, 20, (40.0, 100.0)),
           "monster_leshy": (mr.leshy, 16, (50.0, 120.0)), "monster_wraith": (mr.wraith, 96, (15.0, 60.0)),
           "monster_ghoul": (mr.ghoul, 25, (25.0, 60.0)),
-          "fantasy_ork": (fhr.ork, 21, (60.0, 95.0))}
+          "fantasy_ork": (fhr.ork, 21, (60.0, 95.0)),
+          "space_marine": (sr.marine, 21, (200.0, 350.0)), "space_breacher": (sr.breacher, 21, (240.0, 400.0)),
+          "space_heavy": (sr.heavy, 21, (250.0, 420.0))}
 
 #: CAD designs that must build as one valid solid: (module, class, overrides)
 CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + \
@@ -26,7 +29,9 @@ CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + 
        ("zoo_others", "Octopus", {})] + \
       [("monsters", c, {}) for c in ("Wolf", "Wyvern", "Centaur", "Leech", "Leshy", "Wraith", "Ghoul")] + \
       [("fantasy_humanoids", "Ork", {}), ("fantasy_humanoids", "Ork", {"part": "broom"}),
-       ("fantasy_humanoids", "Ork", {"part": "lid"})]
+       ("fantasy_humanoids", "Ork", {"part": "lid"})] + \
+      [("space_units", c, {}) for c in ("SpaceMarine", "Breacher", "Heavy")] + \
+      [("space_units", "SpaceMarine", {"part": "weapon"}), ("space_units", "Heavy", {"part": "weapon"})]
 
 
 @pytest.mark.parametrize("name", sorted(ROBOTS))
@@ -108,3 +113,50 @@ def test_ghoul_pincers_open_away_from_each_other():
         ya = kin.world(*kin.capsule_end(f"{side}_jaw_a"))[1]
         yb = kin.world(*kin.capsule_end(f"{side}_jaw_b"))[1]
         assert ya - yb > 0.15                                            # the tips spread
+
+
+def test_space_units_carry_their_cad_masses_and_aim_level():
+    import numpy as np
+
+    import space_unit_motions as sm
+
+    for unit in ("marine", "breacher", "heavy"):
+        m = sr.carried_masses(unit)
+        assert all(v > 0 for v in m.values()) and sum(m.values()) < 200.0
+    kin, ms = sm.motions_marine()
+    aim = {x.name: x for x in ms}["aim"]
+    assert aim.check["ik_error_max_m"] < 0.005
+    q, _, _ = sm.aim_pose(kin)
+    kin.set(q)
+    b, front = kin.capsule_end("carbine_barrel")
+    barrel, c = kin.geom_point("carbine_barrel")
+    muzzle, mid = kin.world(b, front), kin.world(barrel, c)
+    d = muzzle - mid
+    assert d[0] > 0 and abs(d[2]) < 0.05 * d[0]                            # the barrel points ahead and level
+    assert kin.q0[kin.index["R_elbow"]] == pytest.approx(-1.0472, abs=1e-4)   # the elbows stand bent 60°
+    kin_b, ms_b = sm.motions_breacher()
+    up = {x.name: x for x in ms_b}["shield_up"]
+    kin_b.set(kin_b.q0)
+    sb, c = kin_b.geom_point("shield")
+    st, cs = kin_b.geom_point("shield_strap")
+    assert (kin_b.world(sb, c) - kin_b.world(st, cs))[0] > 0.02          # at rest the shield stands ahead of its strap
+    q = kin_b.q0.copy()
+    for j in up.joints:
+        q[kin_b.index[j]] = up.Q[len(up.t) // 2][up.joints.index(j)]      # the guard, mid-motion
+    top = kin_b.world(sb, c + np.array([0.0, 0.0, 0.3]), q) - kin_b.world(sb, c)
+    assert np.all(np.isfinite(q)) and top[2] > 0.15                        # the plate still stands up in the guard
+
+
+def test_space_unit_volumes_rebuild():
+    pytest.importorskip("cadquery")
+    import space_units as sun
+
+    m = sun.Breacher().generate(part="weapon").measure()
+    assert m["valid"] and m["n_solids"] == 2                               # the shield and the maul, one in each hand
+    for unit, cls in (("marine", sun.SpaceMarine), ("breacher", sun.Breacher), ("heavy", sun.Heavy)):
+        d = cls()
+        p = d.resolve()
+        fresh = {k: v.val().Volume() for k, v in d.armour_parts(p).items()}
+        fresh.update({k: v.val().Volume() for k, v in d.weapon_parts(p).items()})
+        for k, v in sr.CAD_MM3[unit].items():
+            assert fresh[k] == pytest.approx(v, rel=1e-4), (unit, k)

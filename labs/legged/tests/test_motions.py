@@ -21,7 +21,9 @@ MOTIONS = {"humanoid_motions": {"walk", "wave"},
            "monster_motions:leech": {"inchworm", "swim"}, "monster_motions:wraith": {"drift", "grab"},
            "monster_motions:ghoul": {"shamble", "lunge", "pinch"}, "monster_motions:wyvern": {"hover", "grab"},
            "fantasy_motions:chest": {"open", "close"},
-           "fantasy_humanoid_motions:ork": {"stomp", "sweep", "block"}}
+           "fantasy_humanoid_motions:ork": {"stomp", "sweep", "block"},
+           "space_unit_motions:marine": {"march", "aim", "fire"}, "space_unit_motions:breacher": {"march", "shield_up", "swing"},
+           "space_unit_motions:heavy": {"march", "suppress"}}
 
 
 class _Mod:
