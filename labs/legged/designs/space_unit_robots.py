@@ -8,6 +8,8 @@ the CAD volumes (``space_units.armour_parts`` / ``weapon_parts``) × the densiti
   left forearm.
 * **Marine with a chainsaw** — the carbine, and the chainsaw along the left forearm (the body on the fist, the bar
   ahead).
+* **Centurion** — the carbine, the imperial banner in the left fist (the pole vertical in the world like the maul,
+  the crossbar, the cloth and the skull-in-a-gear emblem on it), the feathered crest on the helmet.
 * **Breacher** — the tower shield along the left forearm, its face on the forearm's outer side (upright with the
   elbow at 20°), the power maul in the right fist.
 * **Heavy** — the rotary cannon along the right forearm (the elbow at 75° so it points ahead), its mount and the feed
@@ -25,8 +27,8 @@ import body_kit as bk
 import humanoid_robot as hr
 import space_unit_specs as su
 
-__all__ = ["CAD_MM3", "MATERIAL", "carried_masses", "marine", "marine_saw", "breacher", "heavy", "parts_marine",
-           "parts_marine_saw", "parts_breacher", "parts_heavy"]
+__all__ = ["CAD_MM3", "MATERIAL", "carried_masses", "marine", "marine_saw", "centurion", "breacher", "heavy", "parts_marine",
+           "parts_marine_saw", "parts_centurion", "parts_breacher", "parts_heavy"]
 
 mm = 1e-3
 
@@ -38,6 +40,9 @@ CAD_MM3 = {
     "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                    "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
                    "saw_body": 5425953.0, "saw_bar": 1217654.7},
+    "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
+                  "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+                  "banner_pole": 2923595.7, "banner_cloth": 2236338.3, "emblem": 1503971.8, "crest": 3086414.2},
     "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
                  "greaves": 7406507.2, "boots": 9714685.2, "shield": 16209969.6, "strap": 3995824.3, "shaft": 1150818.8,
                  "head": 3029269.4},
@@ -50,11 +55,13 @@ MATERIAL = {"pauldrons": "Ti-6Al-4V", "chest_plate": "Ti-6Al-4V", "backpack": "7
             "greaves": "Ti-6Al-4V", "boots": "Ti-6Al-4V", "receiver": "7075 aluminium", "barrel": "4140 steel",
             "magazine": "7075 aluminium", "shield": "Ti-6Al-4V", "strap": "7075 aluminium", "shaft": "7075 aluminium",
             "head": "4140 steel", "cannon": "4140 steel", "mount": "7075 aluminium", "feed": "7075 aluminium",
-            "saw_body": "7075 aluminium", "saw_bar": "4140 steel"}
+            "saw_body": "7075 aluminium", "saw_bar": "4140 steel", "banner_pole": "7075 aluminium", "banner_cloth": "banner cloth",
+            "emblem": "4140 steel", "crest": "feathers"}
 FILL = {"pauldrons": 0.22, "chest_plate": 0.5, "backpack": 0.35, "belt": 0.3, "greaves": 0.5, "boots": 0.25,
         "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.45, "strap": 0.4, "shaft": 0.6, "head": 1.0,
-        "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8}
-ARMOUR = ("pauldrons", "chest_plate", "backpack", "belt", "greaves", "boots")
+        "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8, "banner_pole": 0.35, "banner_cloth": 1.0,
+        "emblem": 0.6, "crest": 1.0}
+ARMOUR = ("pauldrons", "chest_plate", "backpack", "belt", "greaves", "boots", "crest")
 
 
 def carried_masses(unit: str) -> dict:
@@ -199,6 +206,42 @@ def marine_saw():
     return r
 
 
+def centurion():
+    P = su.CENTURION
+    r = _unit("centurion", "Centurion", P, "Centurion: a 1.86 m armoured humanoid with a carbine, the imperial banner (a skull "
+                                           "in a gear on the pole) and a feathered crest, 21 actuated joints (design stage).")
+    m = carried_masses("centurion")
+    _carbine(r, P, m)
+    Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
+    L, pd = P["pole_length"] * mm, P["pole_diameter"] * mm
+    e = math.radians(P["elbow_bend_deg"])
+    down, up = (-math.sin(e), 0.0, -math.cos(e)), (math.sin(e), 0.0, math.cos(e))     # the world's vertical in the bent forearm
+    hand = (0.0, 0.0, -Lf - 0.04)
+    bottom = tuple(hand[i] + down[i] * L * 0.3 for i in range(3))
+    top = tuple(hand[i] + up[i] * L * 0.7 for i in range(3))
+    level = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0)                # a world-level box in the bent forearm
+    G = P["gear_diameter"] * mm
+    zc = -G * 0.75                                                         # the crossbar below the finial (world, from the top)
+    W, D = P["banner_width"] * mm, P["banner_drop"] * mm
+    cloth_c = tuple(top[i] + up[i] * (zc - D / 2 - pd * 0.2) for i in range(3))
+    fore_l = _link(r.root, "L_forearm")
+    fore_l.geoms += [
+        Geom("banner_pole", "capsule", (pd / 2,), fromto=bottom + top, mass=m["banner_pole"] * 0.8, role="link", rgba=bk.DARK),
+        Geom("banner_crossbar", "box", (P["crossbar_length"] * mm / 2, pd * 0.4, pd * 0.4), pos=tuple(top[i] + up[i] * zc for i in range(3)),
+             quat=level, mass=m["banner_pole"] * 0.2, role="link", rgba=bk.DARK),
+        Geom("banner_cloth", "box", (W / 2, P["banner_thickness"] * mm / 2, D / 2), pos=(cloth_c[0], cloth_c[1] + pd * 0.4 + 0.004, cloth_c[2]),
+             quat=level, mass=m["banner_cloth"], role="link", rgba=(0.55, 0.08, 0.1, 1.0)),
+        Geom("emblem", "cylinder", (G / 2, P["gear_thickness"] * mm / 2), pos=tuple(top[i] - up[i] * G * 0.45 for i in range(3)),
+             quat=(math.cos(math.pi / 4), math.sin(math.pi / 4), 0.0, 0.0), mass=m["emblem"], role="link", rgba=(0.75, 0.65, 0.3, 1.0))]
+    torso = _link(r.root, "torso")
+    Ht, Hh = P["torso_height"] * mm, P["head_height"] * mm
+    zh = Ht + P["neck_length"] * mm + Hh
+    torso.geoms.append(Geom("crest", "box", (P["crest_length"] * mm / 2, P["crest_width"] * mm / 2, P["crest_height"] * mm / 2),
+                            pos=(-P["crest_length"] * mm * 0.1, 0.0, zh + 0.012 + P["crest_height"] * mm / 2), mass=m["crest"], role="body",
+                            rgba=(0.75, 0.1, 0.12, 1.0)))
+    return r
+
+
 def breacher():
     P = su.BREACHER
     r = _unit("breacher", "Breacher", P, "Breacher: a 1.86 m armoured humanoid with a tower shield and a power maul, "
@@ -271,6 +314,11 @@ def parts_marine(machine) -> dict:
 def parts_marine_saw(machine) -> dict:
     import space_unit_motions as sm
     return _parts("marine_saw", sm.motions_marine_saw)
+
+
+def parts_centurion(machine) -> dict:
+    import space_unit_motions as sm
+    return _parts("centurion", sm.motions_centurion)
 
 
 def parts_breacher(machine) -> dict:

@@ -1,11 +1,12 @@
 """The space game units' numbers, without CadQuery: bulky armoured humanoid robots on Talia's frame
 (``humanoid.Humanoid`` variants [mm, deg]) — the **Marine** (the line unit: a carbine and a combat shield), the
 **Marine with a chainsaw** (the carbine and a chainsaw), the **Breacher** (a tower shield and a power maul) and the
-**Heavy** (a rotary cannon fed from its backpack); every unit has both hands busy — and the materials of their
+**Centurion** (the carbine, the imperial banner, a feathered crest) and the **Heavy** (a rotary cannon fed from its
+backpack); every unit has both hands busy — and the materials of their
 armour and weapons (Yax's materials shape)."""
 from __future__ import annotations
 
-__all__ = ["MARINE", "MARINE_EXTRA", "MARINE_SAW", "MARINE_SAW_EXTRA", "BREACHER", "BREACHER_EXTRA", "HEAVY", "HEAVY_EXTRA", "MATERIALS", "ROSTER"]
+__all__ = ["MARINE", "MARINE_EXTRA", "MARINE_SAW", "MARINE_SAW_EXTRA", "CENTURION", "CENTURION_EXTRA", "BREACHER", "BREACHER_EXTRA", "HEAVY", "HEAVY_EXTRA", "MATERIALS", "ROSTER"]
 
 #: the Marine: Humanoid parameters (the ork's bulk on longer legs, a square helmet, the forearms held forward
 #: 60 deg at the carbine) and the armour's extras in ``MARINE_EXTRA``
@@ -41,6 +42,19 @@ MARINE_SAW_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("s
     {"saw_bar_length": "the chainsaw's bar, body to tip", "saw_bar_width": "", "saw_bar_thickness": "",
      "saw_body_length": "the motor body at the fist", "saw_body_height": "", "saw_teeth": "teeth along the bar's edge"}
 
+#: the Centurion: the Marine's frame and carbine, an imperial banner in the left fist (a pole with a crossbar, the cloth
+#: hanging from it, a skull in a gear as the finial) and a feathered crest along the helmet
+CENTURION = {k: v for k, v in MARINE.items() if not k.startswith("shield_")} | \
+    {"pole_length": 2300.0, "pole_diameter": 36.0, "crossbar_length": 560.0, "banner_width": 480.0, "banner_drop": 720.0,
+     "banner_thickness": 6.0, "gear_diameter": 240.0, "gear_teeth": 12, "gear_thickness": 30.0, "skull_diameter": 120.0,
+     "crest_length": 340.0, "crest_height": 170.0, "crest_width": 60.0, "crest_feathers": 9}
+CENTURION_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("shield_")} | \
+    {"pole_length": "the banner pole, butt to finial", "pole_diameter": "", "crossbar_length": "the crossbar the cloth hangs from",
+     "banner_width": "the cloth", "banner_drop": "the cloth's drop below the crossbar", "banner_thickness": "the cloth as a stiff sheet",
+     "gear_diameter": "the finial: a gear with a skull in it", "gear_teeth": "", "gear_thickness": "", "skull_diameter": "",
+     "crest_length": "the feathered crest along the helmet, front to back", "crest_height": "above the helmet", "crest_width": "",
+     "crest_feathers": "feathers in the row"}
+
 #: the Breacher: the Marine's frame with a tower shield on the left forearm and a power maul in the right fist
 BREACHER = dict(MARINE, elbow_bend_deg=20.0,
                 shield_width=560.0, shield_height=950.0, shield_thickness=28.0, shield_boss_diameter=180.0,     # the tower shield
@@ -67,6 +81,7 @@ for _k in ("carbine_length", "receiver_height", "receiver_width", "barrel_diamet
 #: name -> (specs, extras, what it carries)
 ROSTER = {"marine": (MARINE, MARINE_EXTRA, "a carbine in the right fist, a combat shield on the left forearm"),
           "marine_saw": (MARINE_SAW, MARINE_SAW_EXTRA, "a carbine in the right fist, a chainsaw in the left"),
+          "centurion": (CENTURION, CENTURION_EXTRA, "a carbine in the right fist, the imperial banner in the left, a feathered crest"),
           "breacher": (BREACHER, BREACHER_EXTRA, "a tower shield on the left forearm, a power maul in the right fist"),
           "heavy": (HEAVY, HEAVY_EXTRA, "a rotary cannon on the right forearm, fed from the backpack")}
 
@@ -77,6 +92,10 @@ MATERIALS = {
                    "source": "AISI 4140, quenched and tempered: barrels, the maul's head, the cannon"},
     "7075 aluminium": {"density_kg_m3": 2810.0, "E_pa": 71.7e9, "nu": 0.33, "yield_pa": 503e6, "ultimate_pa": 572e6,
                        "source": "7075-T6: receivers, the backpack's casing, the maul's shaft"},
+    "feathers": {"density_kg_m3": 90.0, "E_pa": None, "nu": None, "yield_pa": None, "ultimate_pa": None,
+                 "source": "assumed: a packed crest of dyed feathers on a comb (bulk density)"},
+    "banner cloth": {"density_kg_m3": 1300.0, "E_pa": None, "nu": None, "yield_pa": None, "ultimate_pa": None,
+                     "source": "assumed: heavy embroidered wool, lined, as a sheet of the cloth's thickness"},
     "polycarbonate": {"density_kg_m3": 1200.0, "E_pa": 2.4e9, "nu": 0.37, "yield_pa": 62e6, "ultimate_pa": 70e6,
                       "source": "PC sheet: the visor"},
 }

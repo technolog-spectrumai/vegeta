@@ -37,6 +37,7 @@ A notebook starts with::
 | persephone | ● |  |  | ● |  |  |
 | robot_dog | ● | ● |  |  | ● |  |
 | space_breacher |  |  |  |  | ● |  |
+| space_centurion |  |  |  |  | ● |  |
 | space_heavy |  |  |  |  | ● |  |
 | space_marine |  |  |  |  | ● |  |
 | space_marine_saw |  |  |  |  | ● |  |

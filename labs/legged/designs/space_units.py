@@ -1,6 +1,6 @@
 """The space game units (CAD): bulky armoured humanoid robots on ``humanoid.Humanoid``'s frame, both hands busy —
 the **Marine** (a carbine and a combat shield), the **Marine with a chainsaw** (the carbine and a chainsaw), the
-**Breacher** (a tower shield and a power maul) and the **Heavy** (a rotary cannon fed from its backpack). The armour: shoulder domes (pauldrons), a breastplate, a power pack with two exhaust stacks, a waist belt,
+**Centurion** (the carbine, the imperial banner, a feathered crest), the **Breacher** (a tower shield and a power maul) and the **Heavy** (a rotary cannon fed from its backpack). The armour: shoulder domes (pauldrons), a breastplate, a power pack with two exhaust stacks, a waist belt,
 greaves over the shins, knee domes, boots and a visor slit cut into the square helmet. Numbers in
 ``space_unit_specs``; mm, x forward, y left, z up, the ground at z = 0.
 
@@ -20,8 +20,8 @@ import space_unit_specs as su
 from fantasy_humanoids import _add, hand_frame
 from humanoid import Humanoid
 
-__all__ = ["SpaceMarine", "SpaceMarineSaw", "Breacher", "Heavy", "carbine", "tower_shield", "combat_shield", "chainsaw", "maul",
-           "rotary_cannon", "forearm_frame"]
+__all__ = ["SpaceMarine", "SpaceMarineSaw", "Centurion", "Breacher", "Heavy", "carbine", "tower_shield", "combat_shield", "chainsaw",
+           "banner", "crest", "maul", "rotary_cannon", "forearm_frame"]
 
 
 def _torso_frame(p):
@@ -109,6 +109,58 @@ def chainsaw(p):
         teeth.append(cq.Workplane("XY").box(12, t * 1.6, 12).translate((x + W / 2 - 20 - 30 * k, 0, zb0 - L - 5)))
     chain = cq.Workplane("XY").box(10, t * 1.3, L).translate((x + W / 2 + 1, 0, zb0 - L / 2))
     return {"saw_body": place(sk.union_all([body, grip, rear, hoop])), "saw_bar": place(sk.union_all([bar, chain] + teeth))}
+
+
+def banner(p):
+    """The imperial banner in the left fist: a pole standing vertical through the fist (its butt by the knee), a
+    crossbar at the top with the cloth hanging from it as a stiff sheet with a swallow-tailed hem, and the finial - a
+    gear with a skull in it. Pieces: ``banner_pole`` (the pole and the crossbar, aluminium), ``banner_cloth``
+    (cloth), ``emblem`` (the gear and the skull, steel)."""
+    c, _, _ = hand_frame(p, 1)
+    L, pd = p["pole_length"], p["pole_diameter"]
+    bottom, top = (c[0], c[1], c[2] - L * 0.3), (c[0], c[1], c[2] + L * 0.7)
+    pole = sk.rod(bottom, top, pd / 2).union(sk.ball(bottom, pd * 0.8)).union(
+        sk.rod((c[0], c[1], c[2] - pd * 1.5), (c[0], c[1], c[2] + pd * 1.5), pd * 0.7))
+    zc = top[2] - p["gear_diameter"] * 0.75                              # the crossbar under the finial
+    cb = p["crossbar_length"]
+    crossbar = sk.rod((top[0] - cb / 2, top[1], zc), (top[0] + cb / 2, top[1], zc), pd * 0.4)
+    crossbar = crossbar.union(sk.ball((top[0] - cb / 2, top[1], zc), pd * 0.6)).union(sk.ball((top[0] + cb / 2, top[1], zc), pd * 0.6))
+    W, D, t = p["banner_width"], p["banner_drop"], p["banner_thickness"]
+    cloth = cq.Workplane("XZ").polyline([(-W / 2, 0), (W / 2, 0), (W / 2, -D), (W * 0.15, -D * 0.82), (0, -D), (-W * 0.15, -D * 0.82),
+                                          (-W / 2, -D)]).close().extrude(t / 2, both=True).translate((top[0], top[1] + pd * 0.4 + t / 2, zc - pd * 0.2))
+    cloth = cloth.union(sk.rod((top[0] - W / 2, top[1] + pd * 0.4 + t / 2, zc - pd * 0.2), (top[0] + W / 2, top[1] + pd * 0.4 + t / 2, zc - pd * 0.2), pd * 0.45))
+    G, gt, n = p["gear_diameter"], p["gear_thickness"], int(p["gear_teeth"])
+    gz = top[2] - G * 0.45
+    gear = sk.disc((top[0], top[1], gz), G * 0.42, gt, axis="y").cut(sk.disc((top[0], top[1], gz), G * 0.33, gt + 2, axis="y"))
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        tooth = cq.Workplane("XY").box(G * 0.1, gt, G * 0.09).translate((G * 0.45, 0, 0)).rotate((0, 0, 0), (0, 1, 0), math.degrees(a)) \
+            .translate((top[0], top[1], gz))
+        gear = gear.union(tooth)
+    sd = p["skull_diameter"]
+    skull = sk.ball((top[0], top[1], gz + sd * 0.08), sd / 2).union(sk.rounded_box(sd * 0.55, sd * 0.7, sd * 0.42, (top[0], top[1], gz - sd * 0.33), fillet=10))
+    for sy in (-1, 1):
+        skull = skull.cut(sk.ball((top[0] + sd * 0.4, top[1] + sy * sd * 0.2, gz + sd * 0.12), sd * 0.16))
+    skull = skull.cut(cq.Workplane("XY").box(sd * 0.3, sd * 0.12, sd * 0.2).translate((top[0] + sd * 0.45, top[1], gz - sd * 0.1)))
+    spokes = sk.rod((top[0], top[1], gz - G * 0.42), (top[0], top[1], gz + G * 0.42), pd * 0.3)
+    emblem = sk.union_all([gear, skull, spokes])
+    return {"banner_pole": sk.union_all([pole, crossbar]), "banner_cloth": cloth, "emblem": emblem}
+
+
+def crest(p):
+    """The feathered crest along the helmet's centre line: a comb on the helmet, a row of feathers standing from it,
+    each a thin rounded fin leaning back. Returns one solid (the comb and the feathers)."""
+    z0, Wt, Dt, Ht, _ = _torso_frame(p)
+    zh = z0 + Ht + p["neck_length"] + p["head_height"]
+    Lc, Hc, Wc, n = p["crest_length"], p["crest_height"], p["crest_width"], int(p["crest_feathers"])
+    comb = sk.rounded_box(Lc, Wc * 0.5, 24, (-Lc * 0.1, 0, zh + 6), fillet=6)
+    feathers = [comb]
+    for k in range(n):
+        x = -Lc * 0.1 - Lc / 2 + Lc * (k + 0.5) / n
+        h = Hc * (0.75 + 0.25 * math.sin(math.pi * (k + 0.5) / n))
+        fin = sk.rounded_box(Lc / n * 1.15, Wc, h, (x, 0, zh + 12 + h / 2), fillet=min(Wc / 2 - 1, 14.0))
+        feathers.append(fin.rotate((x, 0, zh + 12), (x, 1, zh + 12), -18.0))
+    return sk.union_all(feathers)
 
 
 def maul(p):
@@ -248,6 +300,20 @@ class SpaceMarineSaw(SpaceMarine):
     @staticmethod
     def weapon_fn(p):
         return {**carbine(p), **chainsaw(p)}
+
+
+class Centurion(SpaceMarine):
+    """The Centurion: the Marine with the imperial banner in the left fist (a skull in a gear on the pole) and a
+    feathered crest along the helmet; the carbine in the right."""
+
+    SPECS, EXTRA, NAME = su.CENTURION, su.CENTURION_EXTRA, "Centurion"
+
+    @staticmethod
+    def weapon_fn(p):
+        return {**carbine(p), **banner(p)}
+
+    def armour_parts(self, p):
+        return {**super().armour_parts(p), "crest": crest(p)}
 
 
 class Breacher(SpaceMarine):

@@ -21,7 +21,7 @@ ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
           "monster_ghoul": (mr.ghoul, 25, (25.0, 60.0)),
           "fantasy_ork": (fhr.ork, 21, (60.0, 95.0)),
           "space_marine": (sr.marine, 21, (200.0, 350.0)), "space_marine_saw": (sr.marine_saw, 21, (200.0, 350.0)),
-          "space_breacher": (sr.breacher, 21, (240.0, 400.0)),
+          "space_centurion": (sr.centurion, 21, (200.0, 350.0)), "space_breacher": (sr.breacher, 21, (240.0, 400.0)),
           "space_heavy": (sr.heavy, 21, (250.0, 420.0))}
 
 #: CAD designs that must build as one valid solid: (module, class, overrides)
@@ -31,7 +31,7 @@ CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + 
       [("monsters", c, {}) for c in ("Wolf", "Wyvern", "Centaur", "Leech", "Leshy", "Wraith", "Ghoul")] + \
       [("fantasy_humanoids", "Ork", {}), ("fantasy_humanoids", "Ork", {"part": "broom"}),
        ("fantasy_humanoids", "Ork", {"part": "lid"})] + \
-      [("space_units", c, {}) for c in ("SpaceMarine", "SpaceMarineSaw", "Breacher", "Heavy")] + \
+      [("space_units", c, {}) for c in ("SpaceMarine", "SpaceMarineSaw", "Centurion", "Breacher", "Heavy")] + \
       [("space_units", "Heavy", {"part": "weapon"})]
 
 
@@ -121,7 +121,7 @@ def test_space_units_carry_their_cad_masses_and_aim_level():
 
     import space_unit_motions as sm
 
-    for unit in ("marine", "marine_saw", "breacher", "heavy"):
+    for unit in ("marine", "marine_saw", "centurion", "breacher", "heavy"):
         m = sr.carried_masses(unit)
         assert all(v > 0 for v in m.values()) and sum(m.values()) < 200.0
         assert len(sm.__dict__[f"motions_{unit}"]()[1]) >= 2
@@ -153,13 +153,30 @@ def test_space_unit_volumes_rebuild():
     pytest.importorskip("cadquery")
     import space_units as sun
 
-    for cls in (sun.SpaceMarine, sun.SpaceMarineSaw, sun.Breacher):
+    for cls in (sun.SpaceMarine, sun.SpaceMarineSaw, sun.Centurion, sun.Breacher):
         m = cls().generate(part="weapon").measure()
         assert m["valid"] and m["n_solids"] == 2, cls                       # both hands busy: one solid in each
-    for unit, cls in (("marine", sun.SpaceMarine), ("marine_saw", sun.SpaceMarineSaw), ("breacher", sun.Breacher), ("heavy", sun.Heavy)):
+    for unit, cls in (("marine", sun.SpaceMarine), ("marine_saw", sun.SpaceMarineSaw), ("centurion", sun.Centurion),
+                      ("breacher", sun.Breacher), ("heavy", sun.Heavy)):
         d = cls()
         p = d.resolve()
         fresh = {k: v.val().Volume() for k, v in d.armour_parts(p).items()}
         fresh.update({k: v.val().Volume() for k, v in d.weapon_parts(p).items()})
         for k, v in sr.CAD_MM3[unit].items():
             assert fresh[k] == pytest.approx(v, rel=1e-4), (unit, k)
+
+
+def test_centurion_banner_stands_and_the_emblem_tops_it():
+    import motion_kit as mk
+
+    kin = mk.Kin(sr.centurion())
+    kin.set(kin.q0)
+    b, top = kin.capsule_end("banner_pole")
+    g, c = kin.geom_point("emblem")
+    pole_top, emblem = kin.world(b, top), kin.world(g, c)
+    foot = kin.world(*kin.geom_point("L"))
+    assert pole_top[2] - foot[2] > 2.2                                     # the pole stands well above the helmet
+    assert abs(emblem[0] - pole_top[0]) < 0.05 and emblem[2] < pole_top[2]     # the gear hangs just under the top
+    crest = kin.world(*kin.geom_point("crest"))
+    head = kin.world(*kin.geom_point("head"))
+    assert crest[2] > head[2] + 0.1                                        # the crest rides on the helmet

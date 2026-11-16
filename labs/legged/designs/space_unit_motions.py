@@ -5,10 +5,12 @@
   chainsaw forward, the maul up, the cannon ahead), the Heavy's free arm swinging a little.
 * **slash** (Marine with a chainsaw) — the saw raised out to the side and swung across the body and down, the waist
   turning with it, the knees giving at the cut.
-* **aim** (both Marines) — the forearm brought up level so the carbine (along it) points ahead: the shoulder pitched up by
+* **aim** (the Marines and the Centurion) — the forearm brought up level so the carbine (along it) points ahead: the shoulder pitched up by
   90° less the elbow's 60°, the waist turned in; exact in joint space, eased in, held, eased out.
 * **fire** (Marine) — in the aim pose, the recoil: the right shoulder kicked back 0.04 rad at 8 Hz with the waist
   and the left shoulder taking a little of it.
+* **rally** (Centurion) — the banner raised straight up and swept side to side, the waist turning with it, then
+  lowered.
 * **shield_up** (Breacher) — the guard in joint space: the shield arm forward with the elbow opened so the plate stays
   near upright, the waist turned behind it, the maul arm cocked back; eased in, held, eased out.
 * **swing** (Breacher) — the maul swung overhead and down: the right shoulder from 0.5 rad back to −2.1 rad up and
@@ -26,8 +28,8 @@ import humanoid_motions as hum
 import motion_kit as mk
 import space_unit_specs as su
 
-__all__ = ["motions_marine", "motions_marine_saw", "motions_breacher", "motions_heavy", "parts_marine", "parts_marine_saw",
-           "parts_breacher", "parts_heavy", "base_height"]
+__all__ = ["motions_marine", "motions_marine_saw", "motions_centurion", "motions_breacher", "motions_heavy", "parts_marine",
+           "parts_marine_saw", "parts_centurion", "parts_breacher", "parts_heavy", "base_height"]
 
 base_height = hum.base_height
 SOLE_POINTS = hum.SOLE_POINTS
@@ -174,6 +176,21 @@ def slash(kin, period=1.6):
                           source="space_unit_motions.slash: the chainsaw raised out and swung across", params={"period_s": period})
 
 
+def rally(kin, period=3.0):
+    """The banner raised high and swept side to side: the left arm straight up (the shoulder to -2.6 rad), the pole
+    waved ±0.35 rad about the shoulder's roll with the waist turning with it, then lowered."""
+    e = math.radians(su.CENTURION["elbow_bend_deg"])
+
+    def fn(t):
+        u = t / period
+        up = mk.smooth(u / 0.25) if u < 0.25 else 1.0 if u < 0.8 else 1 - mk.smooth((u - 0.8) / 0.2)
+        wave = math.sin(2 * math.pi * 2 * (u - 0.25) / 0.55) if 0.25 <= u <= 0.8 else 0.0
+        return {"L_shoulder_pitch": -0.3 - 2.3 * up, "L_shoulder_roll": (0.3 + 0.3 * wave) * up, "L_elbow": -e + 0.6 * up,
+                "waist_yaw": 0.2 * wave * up, "R_shoulder_pitch": -0.3, "R_elbow": -e}
+    return mk.joint_cycle(kin, "rally", fn, period=period, frames=45, loop=False, kind="transition",
+                          source="space_unit_motions.rally: the banner raised and waved", params={"period_s": period})
+
+
 def motions_marine(robot=None):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine())
@@ -186,6 +203,13 @@ def motions_marine_saw(robot=None):
     kin = mk.Kin(robot or sr.marine_saw())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
     return kin, [march(kin, "marine_saw", hold=hold), aim(kin), slash(kin)]
+
+
+def motions_centurion(robot=None):
+    import space_unit_robots as sr
+    kin = mk.Kin(robot or sr.centurion())
+    hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
+    return kin, [march(kin, "centurion", hold=hold), aim(kin), rally(kin)]
 
 
 def motions_breacher(robot=None):
@@ -210,6 +234,11 @@ def parts_marine(machine) -> dict:
 def parts_marine_saw(machine) -> dict:
     import space_unit_robots as sr
     return sr.parts_marine_saw(machine)
+
+
+def parts_centurion(machine) -> dict:
+    import space_unit_robots as sr
+    return sr.parts_centurion(machine)
 
 
 def parts_breacher(machine) -> dict:
