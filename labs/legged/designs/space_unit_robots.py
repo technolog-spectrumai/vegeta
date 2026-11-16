@@ -1,6 +1,7 @@
 """The space game units as Chiron robots, for export: Talia's model (``humanoid_robot.talia``) at each unit's
-numbers, re-actuated for the weight (industrial modules: ``cycloidal 400 Nm, brake`` in the legs and the waist,
-``harmonic 150 Nm, brake`` in the arms) with the armour and the weapons as rigid geoms on the links, their masses
+numbers, re-actuated for the weight (industrial modules: ``cycloidal 1600 Nm, brake`` at the hips and knees,
+``cycloidal 800 Nm, brake`` at the ankles and the waist, ``harmonic 150 Nm, brake`` in the arms - the leg modules
+sized by the march in MuJoCo) with the armour and the weapons as rigid geoms on the links, their masses
 the CAD volumes (``space_units.armour_parts`` / ``weapon_parts``) × the densities of ``space_unit_specs.MATERIALS``.
 
 * **Marine** — the carbine along the right forearm (the receiver and the stock, the barrel, the magazine): at the
@@ -77,19 +78,34 @@ def _link(root, name):
 
 
 def _reactuate(r):
-    """Industrial joint modules for the weight: legs and waist ``cycloidal 400 Nm, brake``, arms ``harmonic 150 Nm,
-    brake``; the actuator point masses scaled to the modules."""
+    """Industrial joint modules for the weight, sized by the march in MuJoCo (``sims/space_squad_march.py``: a
+    400 N m module sags and saturates under a 300 kg unit in single support): hips and knees ``cycloidal 1600 Nm,
+    brake``, ankles and the waist ``cycloidal 800 Nm, brake``, arms ``harmonic 150 Nm, brake``; the actuator point
+    masses scaled to the modules."""
     from ogma import actuators as act
-    leg, arm = bk.servo("cycloidal 400 Nm, brake", kp=1500.0, kd=20.0), bk.servo("harmonic 150 Nm, brake", kp=400.0, kd=6.0)
-    m_leg, m_arm = act.get("cycloidal 400 Nm, brake").mass_g / 1000.0, act.get("harmonic 150 Nm, brake").mass_g / 1000.0
+    big, mid, arm = (bk.servo("cycloidal 1600 Nm, brake", kp=6000.0, kd=60.0), bk.servo("cycloidal 800 Nm, brake", kp=3000.0, kd=30.0),
+                     bk.servo("harmonic 150 Nm, brake", kp=400.0, kd=6.0))
+    m_big, m_mid, m_arm = (act.get(k).mass_g / 1000.0 for k in ("cycloidal 1600 Nm, brake", "cycloidal 800 Nm, brake", "harmonic 150 Nm, brake"))
     for lk, _ in r.root.walk():
         for j in lk.joints:
-            j.servo = arm if j.tag in ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow") else leg
+            j.servo = arm if j.tag in ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow") else \
+                big if j.tag in ("hip_yaw", "hip_roll", "hip_pitch", "knee") else mid
         for pm in lk.masses:
             if "actuator" in pm.name:
-                n = 3 if pm.name.endswith("hip_actuators") or pm.name.endswith("shoulder_actuators") else 2 if "ankle" in pm.name else 1
-                pm.mass = n * (m_arm if "shoulder" in pm.name or "elbow" in pm.name else m_leg)
-    r.sources["actuators"] = "ogma.actuators: cycloidal 400 Nm, brake (legs, waist), harmonic 150 Nm, brake (arms)"
+                if "shoulder" in pm.name:
+                    pm.mass = 3 * m_arm
+                elif "elbow" in pm.name:
+                    pm.mass = m_arm
+                elif "hip" in pm.name:
+                    pm.mass = 3 * m_big
+                elif "knee" in pm.name:
+                    pm.mass = m_big
+                elif "ankle" in pm.name:
+                    pm.mass = 2 * m_mid
+                else:
+                    pm.mass = m_mid                                        # the waist
+    r.sources["actuators"] = ("ogma.actuators: cycloidal 1600 Nm, brake (hips, knees), cycloidal 800 Nm, brake (ankles, waist), "
+                              "harmonic 150 Nm, brake (arms); sized by sims/space_squad_march.py")
     return r
 
 

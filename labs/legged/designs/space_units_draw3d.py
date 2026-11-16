@@ -53,7 +53,7 @@ def main(out="space_units_3d.png"):
         draw(fig.add_subplot(1, 5, k + 1, projection="3d"), cls, 16, 35, title)
     fig.suptitle("Space game units on Talia's frame (design stage), both hands busy: the Marine (carbine, combat shield), the Marine with a chainsaw "
                  "(carbine, chainsaw), the Centurion (carbine, the imperial banner, a feathered crest), the Breacher (tower shield, power maul), the Heavy (rotary cannon)\n"
-                 "power armour in Ti-6Al-4V, industrial joint modules (cycloidal 400 Nm legs, harmonic 150 Nm arms), 21 actuated joints each",
+                 "power armour in Ti-6Al-4V, industrial joint modules (cycloidal 1600 Nm hips and knees, 800 Nm ankles and waist, harmonic 150 Nm arms), 21 actuated joints each",
                  fontsize=10)
     fig.tight_layout()
     fig.savefig(out, dpi=120)

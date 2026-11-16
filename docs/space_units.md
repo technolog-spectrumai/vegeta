@@ -2,8 +2,8 @@
 
 The legged lab's roster of game units: power-armoured humanoid robots on Talia's frame (`labs/legged/designs/humanoid.py`),
 the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids). Four units, every one with both
-hands busy, each a CAD design, a Chiron robot model with its masses from the CAD, keyframed motions, and a Yax export
-(`exports/space_*.yx2`). Five units.
+hands busy, each a CAD design, a Chiron robot model with its masses from the CAD, keyframed motions, a Yax export
+(`exports/space_*.yx2`), and a march in MuJoCo (`labs/legged/sims/space_squad_march.py`). Five units.
 
 ![The five units](../labs/legged/designs/space_units_3d.png)
 
@@ -14,11 +14,11 @@ shields on its flanks, two with chainsaws behind them, the Breacher and the Heav
 
 | unit | what it is | carries | mass | motions |
 |---|---|---|---|---|
-| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up); a body shield on the left forearm covering it from the shins to the helmet | ~320 kg (armour 90, carbine 9, shield 30) | `march`, `aim`, `fire` |
-| **Marine with a chainsaw** (`space_marine_saw`) | the Marine | the carbine; a chainsaw in the left fist, along the forearm | 303 kg (chainsaw 14) | `march`, `aim`, `slash` |
-| **Centurion** (`space_centurion`) | the Marine with a feathered crest along the helmet | the carbine; the imperial banner in the left fist: a pole with a skull in a gear as the finial and the squad's flat phased-array antenna under it | ~300 kg (banner 8) | `march`, `aim`, `rally` |
-| **Breacher** (`space_breacher`) | the Marine with the elbows nearly straight | a tower shield along the left forearm (upright, facing ahead, the whole body behind it), a power maul in the right fist | ~355 kg (shield 50, maul 26) | `march`, `shield_up`, `swing` |
-| **Heavy** (`space_heavy`) | the Marine on a wider frame, the bigger backpack | a rotary cannon along the right forearm, fed from the backpack | 354 kg (cannon 38) | `march`, `suppress` |
+| **Marine** (`space_marine`) | the line unit: Talia's frame at the ork's bulk on longer legs, 1.86 m | a carbine in the right fist, along the forearm (the low ready at rest, level when the forearm comes up); a body shield on the left forearm covering it from the shins to the helmet | 447 kg (armour 90, carbine 9, shield 30; the leg and waist modules 207) | `march`, `aim`, `fire` |
+| **Marine with a chainsaw** (`space_marine_saw`) | the Marine | the carbine; a chainsaw in the left fist, along the forearm | 425 kg (chainsaw 14) | `march`, `aim`, `slash` |
+| **Centurion** (`space_centurion`) | the Marine with a feathered crest along the helmet | the carbine; the imperial banner in the left fist: a pole with a skull in a gear as the finial and the squad's flat phased-array antenna under it | 425 kg (banner 8) | `march`, `aim`, `rally` |
+| **Breacher** (`space_breacher`) | the Marine with the elbows nearly straight | a tower shield along the left forearm (upright, facing ahead, the whole body behind it), a power maul in the right fist | 482 kg (shield 50, maul 26) | `march`, `shield_up`, `swing` |
+| **Heavy** (`space_heavy`) | the Marine on a wider frame, the bigger backpack | a rotary cannon along the right forearm, fed from the backpack | 476 kg (cannon 38) | `march`, `suppress` |
 
 ## The design (`space_units.py`, numbers in `space_unit_specs.py`)
 
@@ -46,8 +46,9 @@ alone; `armour_parts` / `weapon_parts` give the pieces by name. Every unit build
 ## The robot models (`space_unit_robots.py`)
 
 Talia's model (`humanoid_robot.talia`) at each unit's numbers, re-actuated for the weight with industrial joint modules
-from the catalogue (`cycloidal 400 Nm, brake` in the legs and the waist, `harmonic 150 Nm, brake` in the arms, the
-actuator point masses scaled with them), the armour and the weapons as geoms on the links. Their masses are the CAD
+from the catalogue (`cycloidal 1600 Nm, brake` at the hips and the knees, `cycloidal 800 Nm, brake` at the ankles and
+the waist, `harmonic 150 Nm, brake` in the arms, the actuator point masses scaled with them: the leg and waist
+modules are 207 kg of each unit, sized by the march below), the armour and the weapons as geoms on the links. Their masses are the CAD
 volumes (`CAD_MM3`, the test rebuilds them) × a fill factor (the plates are shells on padding, the pack a casing)
 × the materials' densities (`MATERIALS`: Ti-6Al-4V plates, 4140 steel barrels and heads, 7075 aluminium receivers
 and casings, a polycarbonate visor). 21 actuated joints each; the elbows stand at their stance (`nominal_qpos`).
@@ -55,7 +56,8 @@ and casings, a polycarbonate visor). 21 actuated joints each; the elbows stand a
 ## The motions (`space_unit_motions.py`)
 
 Talia's walk machinery (`humanoid_motions.walk` → `motion_kit.legged_gait`) at the units' weight: `march` at 0.55 m/s
-(the Heavy 0.4), a 0.34 m stance, duty 0.64, ±60 mm sway, the weapon arm held at its stance and the other swinging.
+(the Heavy 0.4), a 0.34 m stance, duty 0.64, a 20 mm crouch, ±60 mm sway, the weapon arm held at its stance and the
+other swinging.
 Then each unit's own: the Marine's `aim` (the forearm brought level, which points the carbine ahead - exact in joint
 space since the carbine lies along the forearm) and `fire` (the recoil kick on the aim pose, 8 Hz), the chainsaw Marine's
 `slash` (the saw raised out and swung across, the knees giving at the cut), the Centurion's `rally` (the banner raised
@@ -63,6 +65,26 @@ straight up and swept side to side); the Breacher's
 `shield_up` (the guard in joint space, the maul cocked) and `swing` (the maul overhead and down, the knees giving at the
 blow); the Heavy's `suppress` (the cannon swept ±0.4 rad by the waist, the stance braced wide). Every motion passes the
 lab's checks (joint limits, stance feet on the ground, IK within 5 mm where IK is used).
+
+## The march in MuJoCo (`labs/legged/sims/space_squad_march.py`)
+
+![The squad marching in MuJoCo](../labs/legged/sims/space_squad_march.png)
+
+The squad walks its `march` across flat ground in MuJoCo's dynamics (`sims/output/space_squad_march.mp4`, 8 s): the
+robots from `space_unit_robots` with the contacts, gravity and the modules' torque limits, a PD loop on every servo
+tracking the gait's keyframes (`kp` of the module, the stall torque as the clip). The keyframes were solved with no
+balance controller, so the pelvis gets an **upright assist**: an external torque towards level (a virtual gyro) and a
+spring holding its lane and heading - the training wheels a game engine would also give these units. With it every
+unit walks the 8 s without falling (the Marines 8.3 m, the Breacher 8.1 m, the Heavy 4.3 m at its 0.4 m/s), the
+pelvis 1.03-1.06 m up, tilting at most 6-8°; without it (`--no-assist`) a Marine falls at 2 s. The sim sized the
+leg modules: on the first design's 400 N m modules (6.5 kg each; `--modules light` puts their torque and gain back)
+a 320 kg Marine sagged on its stance knee (the pelvis down to 0.13 m) and fell in 3.6 s even with the assist, hence the 1600 N m hips and knees, the 800 N m ankles
+and waist, and the gait's 20 mm crouch (near-straight knees) in place of 50 mm. The servos still touch their stall
+torque at the peaks (`servo_saturation_max` 1.0 in the report, `sims/output/space_squad_march.json`).
+
+`--mode kinematic` plays the keyframes through `mj_kinematics` instead (what the motion looks like, no physics);
+`--units marine,heavy` marches a row of named units. No OpenGL is needed: the frames are drawn from the geoms with
+matplotlib and ffmpeg makes the mp4. `tools/lab.py run legged sims` runs it short (one Marine, 1 s, no movie).
 
 ## Tests, exports
 
@@ -72,6 +94,6 @@ and the exported block). `python tools/publish.py space_marine space_marine_saw 
 
 ## Not done
 
-No simulation: like the other design-stage machines these have no balance controller, and a 300 kg biped on these
-modules has not been checked for standing torques (the hip modules' 400 N m against a 350 kg machine in a 0.34 m
-stance is the first number to run). The weapons do nothing (no projectile model); the cannon's barrels do not spin.
+No balance controller: the units walk in MuJoCo on the upright assist (above), not on their own feet - a ZMP or
+capture-point stepping controller on these keyframes is the next thing. The weapons do nothing (no projectile model);
+the cannon's barrels do not spin.

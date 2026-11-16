@@ -1,7 +1,8 @@
 """The space game units' motions (``motion_kit``), exported as ``data:motions`` (tag ``motion``).
 
 * **march** (every unit) — Talia's walk at the unit's weight: 0.55 m/s (the Heavy 0.4), 0.34 m stance, duty 0.64,
-  a 50 mm crouch, ±60 mm sway; both arms held at their stance (the carbine at the low ready, the shield or the
+  a 20 mm crouch (near-straight knees: the modules' torque in single support, ``sims/space_squad_march.py``),
+  ±60 mm sway; both arms held at their stance (the carbine at the low ready, the shield or the
   chainsaw forward, the maul up, the cannon ahead), the Heavy's free arm swinging a little.
 * **slash** (Marine with a chainsaw) — the saw raised out to the side and swung across the body and down, the waist
   turning with it, the knees giving at the cut.
@@ -35,7 +36,7 @@ base_height = hum.base_height
 SOLE_POINTS = hum.SOLE_POINTS
 
 
-def march(kin, unit, *, speed=0.55, stance=0.34, duty=0.64, step=0.05, crouch=0.05, sway=0.06, swing=0.15,
+def march(kin, unit, *, speed=0.55, stance=0.34, duty=0.64, step=0.05, crouch=0.02, sway=0.06, swing=0.15,
           hold=None, name="march"):
     """The walk with the weapon arm held (``hold``: {joint: rad}) and the other swinging ±``swing``."""
     e = math.radians(su.ROSTER[unit][0]["elbow_bend_deg"])
@@ -191,39 +192,39 @@ def rally(kin, period=3.0):
                           source="space_unit_motions.rally: the banner raised and waved", params={"period_s": period})
 
 
-def motions_marine(robot=None):
+def motions_marine(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.45}
-    return kin, [march(kin, "marine", hold=hold), aim(kin), fire(kin)]
+    return kin, [march(kin, "marine", hold=hold, crouch=crouch), aim(kin), fire(kin)]
 
 
-def motions_marine_saw(robot=None):
+def motions_marine_saw(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine_saw())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
-    return kin, [march(kin, "marine_saw", hold=hold), aim(kin), slash(kin)]
+    return kin, [march(kin, "marine_saw", hold=hold, crouch=crouch), aim(kin), slash(kin)]
 
 
-def motions_centurion(robot=None):
+def motions_centurion(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.centurion())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
-    return kin, [march(kin, "centurion", hold=hold), aim(kin), rally(kin)]
+    return kin, [march(kin, "centurion", hold=hold, crouch=crouch), aim(kin), rally(kin)]
 
 
-def motions_breacher(robot=None):
+def motions_breacher(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.breacher())
     hold = {"L_shoulder_pitch": -0.7, "R_shoulder_pitch": 0.3}
-    return kin, [march(kin, "breacher", hold=hold), shield_up(kin), swing(kin)]
+    return kin, [march(kin, "breacher", hold=hold, crouch=crouch), shield_up(kin), swing(kin)]
 
 
-def motions_heavy(robot=None):
+def motions_heavy(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.heavy())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.5}
-    return kin, [march(kin, "heavy", speed=0.4, stance=0.30, sway=0.07, hold=hold), suppress(kin)]
+    return kin, [march(kin, "heavy", speed=0.4, stance=0.30, sway=0.07, hold=hold, crouch=crouch), suppress(kin)]
 
 
 def parts_marine(machine) -> dict:
