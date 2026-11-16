@@ -168,6 +168,7 @@ def test_space_unit_volumes_rebuild():
 
 def test_centurion_banner_stands_and_the_emblem_tops_it():
     import motion_kit as mk
+    import numpy as np
 
     kin = mk.Kin(sr.centurion())
     kin.set(kin.q0)
@@ -177,6 +178,17 @@ def test_centurion_banner_stands_and_the_emblem_tops_it():
     foot = kin.world(*kin.geom_point("L"))
     assert pole_top[2] - foot[2] > 2.2                                     # the pole stands well above the helmet
     assert abs(emblem[0] - pole_top[0]) < 0.05 and emblem[2] < pole_top[2]     # the gear hangs just under the top
+    ant = kin.world(*kin.geom_point("antenna"))
+    assert emblem[2] - 0.6 < ant[2] < emblem[2] and ant[0] > pole_top[0]        # the antenna under the gear, ahead of the pole
+    # the body shields cover the body: from below the knees to above the helmet, on the Marine and the Breacher
+    for build in (sr.marine, sr.breacher):
+        k2 = mk.Kin(build())
+        k2.set(k2.q0)
+        g = k2.model.geom("shield")
+        zc, hh = k2.world(*k2.geom_point("shield"))[2], float(k2.model.geom_size[g.id][2])
+        knee = k2.world(k2.body("L_shin"), np.zeros(3))[2]
+        head = k2.world(*k2.geom_point("head"))[2]
+        assert zc - hh < knee - 0.1 and zc + hh > head + 0.05, build.__name__
     crest = kin.world(*kin.geom_point("crest"))
     head = kin.world(*kin.geom_point("head"))
     assert crest[2] > head[2] + 0.1                                        # the crest rides on the helmet
