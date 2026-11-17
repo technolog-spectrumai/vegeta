@@ -8,7 +8,7 @@ the climbing wall, the tree, the ship's hull, the rope, the window, the obstacle
     python space_gorilla_scenes.py --scene tree --stills 8,14,20
 
 Kinematic mode drives the pelvis along the motions' tracks (x, y, height, pitch per frame) and the joints along the
-keyframes; the scene's passive joints (a door, a rope) stay put. Writes ``sims/output/space_gorilla_<scene>.mp4``,
+keyframes; the door's lever and hinge follow the hand, the rope stays put. Writes ``sims/output/space_gorilla_<scene>.mp4``,
 ``.json`` and ``space_gorilla_<scene>_<t>s.png`` stills, drawn by ``belisario_render`` (the CAD on the bodies: the
 skeleton, the modules, the struts, the bays, the plates) unless ``--render boxes``.
 """
@@ -122,7 +122,27 @@ class ScenePlayer:
         d.qpos[0:3] = [self.x_kin, y, h]
         d.qpos[3:7] = gm.base_quat(p)
         d.qpos[self.qadr] = q
+        self._scene_joints(t)
         mujoco.mj_kinematics(self.model, d)
+
+    def _scene_joints(self, t):
+        """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
+        if self.scene != "door":
+            return
+        import gorilla_tasks as gt
+        m = self.model
+        lever, hinge = m.jnt_qposadr[m.joint("handle_hinge").id], m.jnt_qposadr[m.joint("door_hinge").id]
+        seg, tl = self.segment(t)
+        name = seg[1].name if seg[0] == "motion" else ""
+        u = min(max(tl / seg[1].period, 0.0), 1.0) if seg[0] == "motion" else 0.0
+        done = [s[1].name for s in self.segments[:self.segments.index(seg)] if s[0] == "motion"]
+        turned = gt.DOOR["turn_rad"] * (mk.smooth(u) if name == "turn" else 1.0 if "turn" in done else 0.0)
+        if name == "release":
+            turned *= 1.0 - mk.smooth(min(1.0, u / 0.25))
+        elif "release" in done:
+            turned = 0.0
+        opened = gt.DOOR["open_rad"] * (mk.smooth(u) if name == "push" else 1.0 if "push" in done else 0.0)
+        self.data.qpos[lever], self.data.qpos[hinge] = turned, opened
 
     def step_physics(self, t, dt, assist):
         m, d = self.model, self.data

@@ -173,9 +173,11 @@ ORDER = ["L", "R", "L_hand", "R_hand"]    #: a climb cycle's order: the feet ste
 IK_REG, IK_ITERS = 3e-3, 900              #: the climbs' IK: well damped (a grip is four points per hand; a lighter damping jumps between solutions)
 
 
-def bar(centre, axis=(0.0, 1.0, 0.0), n=(-1.0, 0.0, 0.0), r=BAR_R):
-    """A hold on a bar at ``centre`` along ``axis``, of radius ``r``, on a surface whose outward normal is ``n``."""
-    return {"kind": "bar", "c": np.asarray(centre, dtype=float), "axis": _unit(axis), "n": _unit(n), "r": float(r), "sign": 1.0, "phi": 0.0}
+def bar(centre, axis=(0.0, 1.0, 0.0), n=(-1.0, 0.0, 0.0), r=BAR_R, wrist_dir=None):
+    """A hold on a bar at ``centre`` along ``axis``, of radius ``r``, on a surface whose outward normal is ``n``.
+    ``wrist_dir``: where the wrist sits from the grip (unit; default a rung's: below and behind)."""
+    return {"kind": "bar", "c": np.asarray(centre, dtype=float), "axis": _unit(axis), "n": _unit(n), "r": float(r), "sign": 1.0, "phi": 0.0,
+            "wrist_dir": None if wrist_dir is None else _unit(wrist_dir)}
 
 
 def point(centre, n=(-1.0, 0.0, 0.0), pitch=None):
@@ -207,7 +209,8 @@ def hand_frame_on(hold, side="L"):
     axis, n, t = hold["axis"], hold["n"], _up_along(hold["n"])
     if abs(axis @ np.array([0.0, 0.0, 1.0])) < 0.5:
         y = axis
-        e1 = _unit(t * math.cos(WRIST_ANGLE) - n * math.sin(WRIST_ANGLE))        # the wrist to the grip: up and into the surface
+        wd = hold.get("wrist_dir")
+        e1 = _unit(t * math.cos(WRIST_ANGLE) - n * math.sin(WRIST_ANGLE)) if wd is None else -wd   # the wrist to the grip: up and into the surface
         e1 = _unit(e1 - (e1 @ y) * y)
         gamma = math.atan2(GRIP[2], GRIP[0])                                     # the grip's bearing in the hand's xz plane
         best = None

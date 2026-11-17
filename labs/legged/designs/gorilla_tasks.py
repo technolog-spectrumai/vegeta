@@ -5,8 +5,8 @@ approach to the entry, for the sim (``sims/space_gorilla_door.py``):
 1. **approach** — the knuckle walk up to the door (``gorilla_motions.knuckle_walk``), stopping with the handle in reach;
 2. **reach** — up onto the feet: they stay planted while the trunk lifts (the pelvis to 0.76 m, nearly level) and
    the right hand goes to the handle, the left hand coming off the ground (IK on the planted feet and the knuckle);
-3. **grasp** — the right fingers close on the lever (the curl module);
-4. **turn** — the right wrist rolls the lever down;
+3. **grasp** — the right fist closes on the lever;
+4. **turn** — the lever turned down, the hand following its arc about the spindle;
 5. **push** — the hand follows the handle's arc as the door swings open, the pelvis advancing 0.3 m over the planted
    feet (the legs extending, the arm reaching);
 6. **release** — the fingers open, the wrist levels, the pelvis settles back over the feet and both hands come back
@@ -28,13 +28,13 @@ import gorilla_motions as gm
 import humanoid_motions as hum
 import motion_kit as mk
 
-__all__ = ["DOOR", "door_prop", "handle_grip", "handle_world", "contact_motion", "reach", "grasp", "turn", "push", "release",
+__all__ = ["DOOR", "door_prop", "handle_grip", "handle_world", "lever_hold", "contact_motion", "reach", "grasp", "turn", "push", "release",
            "door_sequence", "STOP_X"]
 
 #: the doorway: at x [m], its clear width and height, the door's thickness, the hinge on the left (+y), the lever
 #: handle's place on the door (y from the hinge's side, z) and length, how far the door swings open
 DOOR = {"x": 3.0, "width": 1.3, "height": 2.1, "thickness": 0.05, "handle_dy": -1.15, "handle_z": 1.0, "handle_len": 0.14,
-        "open_rad": 0.6, "turn_rad": -0.9, "mass_kg": 18.0, "damping": 6.0}
+        "open_rad": 0.6, "turn_rad": -0.5, "mass_kg": 18.0, "damping": 6.0}
 REACH_BASE = (0.76, 0.1)                                                  #: the pelvis (height, pitch) up on the feet at the door
 PUSH_ADVANCE = 0.35                                                       #: how far the pelvis moves ahead over the feet in the push
 STOP_X = 1.95                                                             #: where the approach stops (the pelvis), the handle in reach
@@ -127,13 +127,37 @@ def _planted(kin, q_quad, base_x, which=("L", "R", "L_knuckle")):
     return [(body, local, w[g][k]) for g in which for k, (body, local) in enumerate(pts[g])]
 
 
+LEVER_WRIST = (-0.94, 0.0, 0.342)                                        #: the wrist from the lever's grip: behind, 20° above (the forearm along the spindle: the turn is a roll)
+LEVER_CURL = 1.9                                                          #: the fist on the 28 mm lever
+
+
+def lever_hold(phi=0.0, turn=0.0):
+    """The lever as a bar hold (``gorilla_scenarios.bar``) with the door swung ``phi`` and the lever turned ``turn``:
+    its middle, its axis and the wrist's direction turned with it."""
+    import gorilla_scenarios as gs
+    c, sn = math.cos(phi), math.sin(phi)
+    Rz = np.array([[c, -sn, 0.0], [sn, c, 0.0], [0.0, 0.0, 1.0]])
+    ct, st = math.cos(turn), math.sin(turn)
+    Rx = np.array([[1.0, 0.0, 0.0], [0.0, ct, -st], [0.0, st, ct]])
+    R = Rz @ Rx
+    return gs.bar(handle_world(phi, turn), axis=R @ np.array([0.0, 1.0, 0.0]), n=Rz @ np.array([-1.0, 0.0, 0.0]), r=0.014,
+                  wrist_dir=R @ np.asarray(LEVER_WRIST))
+
+
 def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
-    """Up onto the feet: they stay planted while the trunk lifts (the pelvis to ``REACH_BASE``), the right knuckle
-    goes to the handle on an arc and the left hand comes off the ground to hang."""
+    """Up onto the feet: they stay planted while the trunk lifts (the pelvis to ``REACH_BASE``), the right hand goes
+    to the lever on an arc (its grip point first, then the whole hand settling onto the lever from above, the
+    fingers open) and the left hand comes off the ground to hang."""
+    import gorilla_scenarios as gs
+    import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
     start = _contacts_world(kin, q_quad, base_x, gm.PELVIS_H, gm.PELVIS_PITCH)
-    goal = handle_grip()
+    hold = lever_hold()
+    end = gs.hand_targets(kin, "R", hold)
+    kin.set(q_quad)
+    Rb, b0 = gm.base_rot(gm.PELVIS_PITCH), np.array([base_x, 0.0, gm.PELVIS_H])
+    grip0 = Rb @ kin.world(end[0][0], end[0][1]) + b0
     kin.set(kin.q0)
     hang = kin.world(*pts["L_knuckle"][0])                                 # the left hand hanging (the design pose, base-relative)
 
@@ -143,14 +167,24 @@ def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
         R, b = gm.base_rot(p), np.array([x, 0.0, h])
         arc = np.array([0.0, 0.0, 0.25 * math.sin(math.pi * f)])
         left = (1 - f) * start["L_knuckle"][0] + f * (R @ hang + b) + arc * 0.5
-        return planted + [(pts["R_knuckle"][0][0], pts["R_knuckle"][0][1], (1 - f) * start["R_knuckle"][0] + f * goal + arc),
-                          (pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], left)]
+        out = planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], left)]
+        if u < 0.7:
+            fr = mk.smooth(u / 0.7)
+            out.append((end[0][0], end[0][1], (1 - fr) * grip0 + fr * hold["c"] + arc))
+        else:
+            out += end
+        return out
 
     def base(u):
         f = mk.smooth(u)
         return base_x, gm.PELVIS_H + f * (REACH_BASE[0] - gm.PELVIS_H), gm.PELVIS_PITCH + f * (REACH_BASE[1] - gm.PELVIS_PITCH)
 
-    return contact_motion(kin, "reach", duration, targets, base, q_init=q_quad, source="gorilla_tasks.reach: up on the feet, the right hand to the handle")
+    def extra(u, q):
+        f = mk.smooth(min(1.0, u / 0.4))                                   # the right fingers open on the way
+        return sr.set_curl(q, kin, "R", (1 - f) * q_quad[kin.index["R_finger_1_mcp"]] / 0.8 + f * gs.CURL_OPEN)
+
+    return contact_motion(kin, "reach", duration, targets, base, q_init=q_quad, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                          source="gorilla_tasks.reach: up on the feet, the right hand onto the lever")
 
 
 def _joint_motion(kin, name, duration, q_from, changes, frames=20, base=None, source=""):
@@ -173,67 +207,83 @@ def _joint_motion(kin, name, duration, q_from, changes, frames=20, base=None, so
 
 
 def grasp(kin, q_from, base, duration=0.8):
-    """The right fingers close on the lever."""
+    """The right fist closes on the lever."""
     import space_unit_robots as sr
-    return _joint_motion(kin, "grasp", duration, q_from, sr.curl_values("R", 1.7), base=base, source="gorilla_tasks.grasp: the fingers close on the lever")
+    return _joint_motion(kin, "grasp", duration, q_from, sr.curl_values("R", LEVER_CURL), base=base, source="gorilla_tasks.grasp: the fist closes on the lever")
 
 
-def turn(kin, q_from, base, duration=1.0):
-    """The right wrist rolls the lever down."""
-    return _joint_motion(kin, "turn", duration, q_from, {"R_wrist_roll": DOOR["turn_rad"]}, base=base, source="gorilla_tasks.turn: the wrist turns the lever")
+def _lever_motion(kin, name, duration, q_quad, q_from, base_x, phi_fn, turn_fn, base_fn, source):
+    """The hand holding the lever as it moves: the hold turned by ``turn_fn(u)`` about the lever's spindle and swung
+    by ``phi_fn(u)`` with the door, the feet planted, the left hand hanging where it is, the fist held closed."""
+    import gorilla_scenarios as gs
+    import space_unit_robots as sr
+    planted = _planted(kin, q_quad, base_x, which=("L", "R"))
+    pts = gm._contact_points(kin)
+    kin.set(q_from)
+    x0, h0, p0 = base_fn(0.0)
+    hang = gm.base_rot(p0) @ kin.world(*pts["L_knuckle"][0]) + np.array([x0, 0.0, h0])
+
+    def targets(u):
+        return planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], hang)] + gs.hand_targets(kin, "R", lever_hold(phi_fn(u), turn_fn(u)))
+
+    def extra(u, q):
+        return sr.set_curl(q, kin, "R", LEVER_CURL)
+
+    return contact_motion(kin, name, duration, targets, base_fn, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS, source=source)
+
+
+def turn(kin, q_quad, q_from, base_x=STOP_X, duration=1.0):
+    """The lever turned down: the hand follows its arc about the spindle."""
+    base = lambda u: (base_x, REACH_BASE[0], REACH_BASE[1])
+    return _lever_motion(kin, "turn", duration, q_quad, q_from, base_x, lambda u: 0.0, lambda u: DOOR["turn_rad"] * mk.smooth(u), base,
+                         "gorilla_tasks.turn: the lever turned down")
 
 
 def push(kin, q_quad, q_from, base_x=STOP_X, duration=3.0):
-    """The door swings open under the hand: the right knuckle follows the lever's arc (the door to ``open_rad``),
-    the fingers and the wrist's roll held, the feet planted, the pelvis advancing ``PUSH_ADVANCE`` over them."""
-    planted = _planted(kin, q_quad, base_x, which=("L", "R"))
-    body, local = gm._contact_points(kin)["R_knuckle"][0]
-    import space_unit_robots as sr
-    held = {j: q_from[kin.index[j]] for j in sr.finger_joints("R") + ["R_wrist_roll"]}
-
-    def targets(u):
-        phi = DOOR["open_rad"] * mk.smooth(u)
-        return planted + [(body, local, handle_grip(phi, DOOR["turn_rad"]))]
-
-    def base(u):
-        return base_x + PUSH_ADVANCE * mk.smooth(u), REACH_BASE[0], REACH_BASE[1]
-
-    def extra(u, q):
-        for j, v in held.items():
-            q[kin.index[j]] = v
-        return q
-
-    return contact_motion(kin, "push", duration, targets, base, q_init=q_from, extra=extra, source="gorilla_tasks.push: the door swung open, the hand on the lever")
+    """The door swings open under the hand: the hold follows the lever's arc (the door to ``open_rad``), the feet
+    planted, the pelvis advancing ``PUSH_ADVANCE`` over them."""
+    base = lambda u: (base_x + PUSH_ADVANCE * mk.smooth(u), REACH_BASE[0], REACH_BASE[1])
+    return _lever_motion(kin, "push", duration, q_quad, q_from, base_x, lambda u: DOOR["open_rad"] * mk.smooth(u), lambda u: DOOR["turn_rad"], base,
+                         "gorilla_tasks.push: the door swung open, the hand on the lever")
 
 
 def release(kin, q_quad, q_from, base_x=STOP_X, duration=2.0):
-    """The fingers open and the wrist levels, the pelvis settles back over the feet and down, both hands come back
+    """The fist opens and lets the lever go, the pelvis settles back over the feet and down, both hands come back
     down to their places on four (the right from the lever, the left from hanging)."""
+    import gorilla_scenarios as gs
+    import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
     goal = _contacts_world(kin, q_quad, base_x, gm.PELVIS_H, gm.PELVIS_PITCH)
-    start_r = handle_grip(DOOR["open_rad"], DOOR["turn_rad"]) + np.array([-0.08, 0.0, 0.0])
     kin.set(q_from)
     R0, b0 = gm.base_rot(REACH_BASE[1]), np.array([base_x + PUSH_ADVANCE, 0.0, REACH_BASE[0]])
     start_l = R0 @ kin.world(*pts["L_knuckle"][0]) + b0
+    start_r = R0 @ kin.world(*pts["R_knuckle"][0]) + b0
+    hold = lever_hold(DOOR["open_rad"], DOOR["turn_rad"])
+    end_r = gs.hand_targets(kin, "R", hold)
 
     def targets(u):
-        f = mk.smooth(u)
+        f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
         arc = np.array([0.0, 0.0, 0.2 * math.sin(math.pi * f)])
-        return planted + [(pts["R_knuckle"][0][0], pts["R_knuckle"][0][1], (1 - f) * start_r + f * goal["R_knuckle"][0] + arc),
-                          (pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], (1 - f) * start_l + f * goal["L_knuckle"][0] + arc)]
+        out = planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], (1 - f) * start_l + f * goal["L_knuckle"][0] + arc)]
+        if u < 0.25:
+            out += end_r                                                   # the hand stays on the lever while the fist opens
+        else:
+            out.append((pts["R_knuckle"][0][0], pts["R_knuckle"][0][1], (1 - f) * (start_r + np.array([-0.1, 0.0, 0.05])) + f * goal["R_knuckle"][0] + arc))
+        return out
 
     def base(u):
-        f = mk.smooth(u)
+        f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
         return base_x + PUSH_ADVANCE * (1 - f), REACH_BASE[0] + f * (gm.PELVIS_H - REACH_BASE[0]), REACH_BASE[1] + f * (gm.PELVIS_PITCH - REACH_BASE[1])
 
     def extra(u, q):
-        f = mk.smooth(min(1.0, u / 0.4))                                   # the fingers open and the wrist levels first
-        q[kin.index["R_finger_curl"]] = (1 - f) * q_from[kin.index["R_finger_curl"]] + f * q_quad[kin.index["R_finger_curl"]]
-        q[kin.index["R_wrist_roll"]] = (1 - f) * q_from[kin.index["R_wrist_roll"]] + f * q_quad[kin.index["R_wrist_roll"]]
-        return q
+        f = mk.smooth(min(1.0, u / 0.25))                                  # the fist opens first, then the hand comes down to the walking curl
+        g = mk.smooth(max(0.0, (u - 0.25) / 0.75))
+        c = (1 - f) * LEVER_CURL + f * gs.CURL_OPEN if u < 0.25 else (1 - g) * gs.CURL_OPEN + g * q_quad[kin.index["R_finger_1_mcp"]] / 0.8
+        return sr.set_curl(q, kin, "R", c)
 
-    return contact_motion(kin, "release", duration, targets, base, q_init=q_from, extra=extra, source="gorilla_tasks.release: the hand back down on four")
+    return contact_motion(kin, "release", duration, targets, base, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                          source="gorilla_tasks.release: the hand back down on four")
 
 
 def _last(kin, m, q_prev):
@@ -248,7 +298,7 @@ def door_sequence(kin, q_quad):
     q1 = _last(kin, r, q_quad)
     base = (STOP_X, REACH_BASE[0], REACH_BASE[1])
     g = grasp(kin, q1, base); q2 = _last(kin, g, q1)
-    t = turn(kin, q2, base); q3 = _last(kin, t, q2)
+    t = turn(kin, q_quad, q2); q3 = _last(kin, t, q2)
     p = push(kin, q_quad, q3); q4 = _last(kin, p, q3)
     rl = release(kin, q_quad, q4)
     return [r, g, t, p, rl]
