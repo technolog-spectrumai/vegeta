@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from vegeta.chiron import Geom, Joint, Link, PointMass
 
 import body_kit as bk
@@ -79,8 +81,8 @@ def _reactuate(r):
     m_big, m_mid, m_arm = (act.get(k).mass_g / 1000.0 for k in ("cycloidal 1600 Nm, brake", "cycloidal 800 Nm, brake", "harmonic 150 Nm, brake"))
     for lk, _ in r.root.walk():
         for j in lk.joints:
-            if j.tag in ("spine_pitch", "spine_roll"):
-                continue                                                   # the spine's modules: set in _spine
+            if j.tag in ("spine_pitch", "spine_roll", "wrist_pitch", "wrist_roll", "finger_curl"):
+                continue                                                   # the spine's and the hands' modules: their own
             j.servo = arm if j.tag in ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow") else \
                 big if j.tag in ("hip_yaw", "hip_roll", "hip_pitch", "knee") else mid
         for pm in lk.masses:
@@ -310,9 +312,45 @@ def _casing(r, P):
     return r
 
 
+def _hands(r, P):
+    """Articulated hands on the bare frame: a wrist with two modules (pitch, and roll about the forearm: pronation,
+    ``qdd 60 Nm``) carrying the palm and the thumb pad, and the four fingers on one curl module (``qdd 24 Nm``) at
+    the knuckle line - open to take a handle or a branch, closed to grip; the knuckle contact (the fingers' middle
+    joints) rides the fingers. The forearm's own palm and finger geoms move onto these links."""
+    Lf, d, fl, fd = P["forearm_length"] * mm, P["arm_diameter"] * mm, P["finger_length"] * mm, P["finger_diameter"] * mm
+    wrist_servo, finger_servo = bk.servo("qdd 60 Nm", kp=300.0, kd=3.0), bk.servo("qdd 24 Nm", kp=60.0, kd=0.8)
+    for side in ("L", "R"):
+        fore = _link(r.root, f"{side}_forearm")
+        fore.geoms = [g for g in fore.geoms if g.name != f"{side}_palm" and "_finger_" not in g.name]
+        knuckle = np.array([d * 0.47, 0.0, -d * 0.86])                     # the knuckle line, in the hand's frame (the wrist at its origin)
+        fingers = Link(f"{side}_fingers", pos=tuple(knuckle),
+                       joints=[Joint(f"{side}_finger_curl", axis=(0, 1, 0), range=(-0.4, 1.3), tag="finger_curl", servo=finger_servo)],
+                       geoms=[], masses=[PointMass(f"{side}_finger_actuator", 0.6)])
+        seg = fl / 3
+        for k in range(4):
+            y = (k - 1.5) * (d * 0.5 / 3.4)
+            pos, ang = np.array([0.0, y, 0.0]), -20.0
+            for j in range(3):
+                ang += 55.0
+                nxt = pos + np.array([-seg * math.cos(math.radians(ang)), 0.0, -seg * math.sin(math.radians(ang))])
+                fingers.geoms.append(bk.capsule(f"{side}_finger_{k}_{j}", fd * (0.5 - 0.05 * j), tuple(pos), tuple(nxt), role="link", rgba=bk.DARK))
+                pos = nxt
+        fingers.geoms.append(Geom(f"{side}_knuckle", "sphere", (0.035,), pos=(-0.045, 0.0, -0.085), mass=0.2, role="foot",
+                                  friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK))
+        hand = Link(f"{side}_hand", pos=(0.0, 0.0, -Lf),
+                    joints=[Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=(-1.2, 1.2), tag="wrist_pitch", servo=wrist_servo),
+                            Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-1.6, 1.6), tag="wrist_roll", servo=wrist_servo)],
+                    geoms=[bk.box(f"{side}_palm", (d * 0.47, d * 0.25, d * 0.45), (0.0, 0.0, -d * 0.45), role="link", rgba=bk.DARK),
+                           bk.box(f"{side}_thumb", (d * 0.15, d * 0.25, d * 0.17), (-d * 0.55, 0.0, -d * 0.55), role="link", rgba=bk.DARK)],
+                    masses=[PointMass(f"{side}_wrist_actuators", 2 * 1.4)], children=[fingers])
+        fore.children.append(hand)
+    return r
+
+
 def bare(name: str = "Belisario", casing: str = "none"):
-    """Belisario bare: the frame with no weapons, a knuckle contact on each hand (a sphere at the curled fingers' middle
-    joints, a foot-role geom) for walking on all fours (``gorilla_motions``). ``casing``: ``"none"`` (the skeleton
+    """Belisario bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
+    a curl module, the knuckle contact on the fingers' middle joints) for walking on all fours, gripping and
+    climbing (``gorilla_motions``). ``casing``: ``"none"`` (the skeleton
     alone: the frame's geoms, the modules' and the struts' masses), ``"plastic"`` (a lightweight polycarbonate
     casing, ``_casing``) or ``"lorica"`` (the armour)."""
     P = su.MARINE
@@ -334,10 +372,7 @@ def bare(name: str = "Belisario", casing: str = "none"):
             j.range = (-1.4, 0.7)
         elif j.tag == "knee":
             j.range = (0.0, 2.5)
-    for side in ("L", "R"):
-        fore = _link(r.root, f"{side}_forearm")
-        fore.geoms.append(Geom(f"{side}_knuckle", "sphere", (0.035,), pos=(0.02, 0.0, -Lf - d * 0.55 - 0.095), mass=0.2, role="foot",
-                               friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK))
+    _hands(r, P)
     r.sources["geometry"] = f"designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:
