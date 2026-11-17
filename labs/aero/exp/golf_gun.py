@@ -298,3 +298,43 @@ def export_cad(root=Path("output/golf_gun/cad")):
         cq.exporters.export(whole, str(root / f"{name}.stl"))
         out[c.name] = dict(wall_mm=parts["wall_mm"], tank_length_mm=parts["tank_length_mm"])
     return out
+
+
+# --- the long CFD, run by the engineer (golf_cfd.sh) and exported as one JSON to paste back ------------------
+
+MESHES = {   # bore cell size mm: the near-sonic case's run here was 1.5 mm (7.8k cells, ~12 s per 25 us chunk)
+    "smoke": sf.Mesh(pipe=4.0, container_far=25.0, ambient_far=25.0),
+    "medium": sf.Mesh(pipe=1.5, container_far=12.0, ambient_far=12.0),
+    "fine": sf.Mesh(pipe=0.75, container_far=8.0, ambient_far=8.0),
+}
+
+
+def run_cfd(names=None, mesh="medium", root=Path("output/golf_gun"), smoke=False):
+    """Run the transient CFD of the chosen cases and return a compact, pasteable summary: the CFD muzzle speed
+    against the 0-D gun with the same (ideal) valve, the real valve's 0-D speed corrected by the CFD/0-D ratio,
+    the ranges, and the ball's track decimated to ~60 points. ``smoke``: 0.3 ms only (does the case run?)."""
+    import time
+    out = {"mesh": mesh, "cases": {}}
+    for c in CASES:
+        if names and c.name.replace(" ", "_") not in names and c.name not in names:
+            continue
+        c = size(c)
+        t0 = time.time()
+        r = cfd(c, root=Path(root) / mesh, mesh=MESHES[mesh], max_time=3e-4 if smoke else 0.1)
+        tr = r["track"]
+        k = max(1, len(tr["t"]) // 60)
+        real = gun(c.p_gauge, c.tank, c.valve)["muzzle"]
+        ratio = r["muzzle"]["speed"] / r["gun_ideal"] if r["gun_ideal"] and not smoke else None
+        v_corr = real * ratio if ratio else None
+        out["cases"][c.name] = {
+            "p_real_valve_bar_g": c.p_gauge, "p_cfd_ideal_valve_bar_g": r["p_ideal"],
+            "cfd_muzzle": None if smoke else r["muzzle"]["speed"],      # a smoke run's 0.3 ms says nothing of it
+            "cfd_speed_at_stop": r["muzzle"]["speed_at_stop"], "cfd_front_at_stop_mm": r["muzzle"]["front_at_stop_mm"],
+            "cfd_time_ms": r["muzzle"]["time"] * 1e3, "gun0d_ideal_muzzle": r["gun_ideal"],
+            "cfd_over_0d": ratio, "real_valve_0d": real, "real_valve_corrected": v_corr,
+            "range_best_m": best(v_corr)[1]["range"] if v_corr else None,
+            "range_10deg_m": fly(v_corr, 10)["range"] if v_corr else None,
+            "wall_s": round(time.time() - t0, 1),
+            "track": {key: [round(float(x), 6) for x in tr[key][::k]] for key in ("t", "x", "u")},
+        }
+    return out
