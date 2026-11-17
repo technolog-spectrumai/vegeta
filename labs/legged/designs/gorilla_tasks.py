@@ -34,7 +34,7 @@ __all__ = ["DOOR", "door_prop", "handle_grip", "handle_world", "lever_hold", "co
 #: the doorway: at x [m], its clear width and height, the door's thickness, the hinge on the left (+y), the lever
 #: handle's place on the door (y from the hinge's side, z) and length, how far the door swings open
 DOOR = {"x": 3.0, "width": 1.3, "height": 2.1, "thickness": 0.05, "handle_dy": -1.15, "handle_z": 1.0, "handle_len": 0.14,
-        "open_rad": 0.6, "turn_rad": -0.5, "mass_kg": 18.0, "damping": 6.0}
+        "open_rad": 0.6, "turn_rad": -0.5, "mass_kg": 18.0, "damping": 6.0, "swung_rad": 1.6}   # swung_rad: where the shoved door coasts to
 REACH_BASE = (0.76, 0.1)                                                  #: the pelvis (height, pitch) up on the feet at the door
 PUSH_ADVANCE = 0.35                                                       #: how far the pelvis moves ahead over the feet in the push
 STOP_X = 1.95                                                             #: where the approach stops (the pelvis), the handle in reach

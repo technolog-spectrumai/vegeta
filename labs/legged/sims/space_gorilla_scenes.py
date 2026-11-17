@@ -142,6 +142,10 @@ class ScenePlayer:
         elif "release" in done:
             turned = 0.0
         opened = gt.DOOR["open_rad"] * (mk.smooth(u) if name == "push" else 1.0 if "push" in done else 0.0)
+        if name == "release":                                              # the shoved door swings on as the hand lets go
+            opened = gt.DOOR["open_rad"] + (gt.DOOR["swung_rad"] - gt.DOOR["open_rad"]) * mk.smooth(u)
+        elif "release" in done:
+            opened = gt.DOOR["swung_rad"]
         self.data.qpos[lever], self.data.qpos[hinge] = turned, opened
 
     def step_physics(self, t, dt, assist):
