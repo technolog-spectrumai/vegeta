@@ -28,7 +28,7 @@ import body_kit as bk
 import humanoid_robot as hr
 import space_unit_specs as su
 
-__all__ = ["CAD_MM3", "MATERIAL", "carried_masses", "marine", "marine_saw", "centurion", "breacher", "heavy", "parts_marine",
+__all__ = ["bare", "CAD_MM3", "MATERIAL", "carried_masses", "marine", "marine_saw", "centurion", "breacher", "heavy", "parts_marine",
            "parts_marine_saw", "parts_centurion", "parts_breacher", "parts_heavy"]
 
 mm = 1e-3
@@ -114,7 +114,7 @@ def _spine(r, P):
     xs = -P["spine_set_back"] * Dt
     split = 0.42 * Ht                                                     # the thoracic module's height above the sacrum
     spine_servo = bk.servo("cycloidal 800 Nm, brake", kp=3000.0, kd=300.0)
-    pitch_range, roll_range = (-0.35, 0.35), (-0.25, 0.25)
+    pitch_range, roll_range = (-0.4, 0.6), (-0.25, 0.25)                # pitch forward to 0.6 rad a module: the knuckle walk
     thorax = Link("thorax", pos=(0.0, 0.0, split),
                   joints=[Joint("spine_thoracic_pitch", axis=(0, 1, 0), range=pitch_range, tag="spine_pitch", servo=spine_servo),
                           Joint("spine_thoracic_roll", axis=(1, 0, 0), range=roll_range, tag="spine_roll", servo=spine_servo)],
@@ -264,6 +264,26 @@ def _unit(unit, name, P, notes):
 #: a box built along x (its length) and z (its height) turned into the forearm's frame: x -> down the forearm (-z),
 #: z -> the forearm's outer side (+x)
 ALONG = (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
+
+
+def bare(name: str = "Belisario"):
+    """Belisario bare: the Marine's frame and armour, no weapons, with a knuckle contact on each hand (a sphere at the
+    curled fingers' middle joints, a foot-role geom) for walking on all fours (``gorilla_motions``)."""
+    P = su.MARINE
+    r = _unit("marine", name, P, "Belisario: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
+                                 "(design stage).")
+    Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
+    for j in r.joints():                                                  # a gorilla's ankles and knees fold further
+        if j.tag == "ankle_pitch":
+            j.range = (-1.4, 0.7)
+        elif j.tag == "knee":
+            j.range = (0.0, 2.5)
+    for side in ("L", "R"):
+        fore = _link(r.root, f"{side}_forearm")
+        fore.geoms.append(Geom(f"{side}_knuckle", "sphere", (0.035,), pos=(0.02, 0.0, -Lf - d * 0.55 - 0.095), mass=0.2, role="foot",
+                               friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK))
+    r.sources["geometry"] = "designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons)"
+    return r
 
 
 def marine():

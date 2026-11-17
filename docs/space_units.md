@@ -160,6 +160,25 @@ the keyframed gait's direction depends on its start, which is the clearest sign 
 keyframes, should drive these feet. With it every unit does the whole drill without falling (the Marines' tilt
 peaks at 18° in the run); the run is a heavy shuffle at 0.8-1.3 m/s rather than a clean sprint.
 
+## The gorilla gait (`labs/legged/designs/gorilla_motions.py`, `sims/space_gorilla_walk.py`)
+
+![Belisario on all fours](../labs/legged/sims/space_gorilla_walk.png)
+
+Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the frame and the armour, no weapons, a knuckle
+contact on each hand, the ankles and knees folding further) walks like a gorilla: on all fours on its knuckles, and
+only sometimes stands. `quad_pose` is the stance on four (IK on the soles' points and the knuckles: the pelvis 0.58 m
+up, the legs crouched with the knees far forward, the spine's two modules pitched forward so the back slopes ~55°,
+the arms down to the ground ahead of the shoulders with the elbows nearly straight); `knuckle_walk` is the
+lateral-sequence walk every quadruped uses at a walk (left hind, left fore, right hind, right fore, a quarter cycle
+apart; duty 0.72, a 0.3 m stride at 0.35 m/s, the swing 60 mm up), `legged_gait` on the four contacts with the quad
+pose as its reference; `rise` and `drop` go up to the design pose on two and back in 3 s, `stand` holds it.
+
+In MuJoCo (`space_gorilla_walk.py`, `sims/output/space_gorilla_walk.mp4`: walk 8 s, rise, stand 3 s, drop, walk on)
+the knuckle walk is the first gait that suits this body: with the upright assist it walks 3.4 m in 8 s at 3° of tilt,
+rears up, stands, drops and walks on without falling, and even with the Marines' assist (1) it walks on four (1.7 m
+in 8 s, 8° of tilt) where the biped march on these proportions only shuffled. Three contacts are down most of the
+cycle and the trunk's mass is low and between them, which is what the long arms and short legs were for.
+
 ## Tests, exports
 
 `labs/legged/tests/test_designs_stage.py` (the robots' joints and masses, the CAD builds, the carried masses, the barrel
