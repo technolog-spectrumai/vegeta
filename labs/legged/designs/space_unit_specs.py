@@ -23,7 +23,7 @@ MARINE = {"pelvis_width": 560.0, "pelvis_depth": 270.0, "pelvis_height": 170.0, 
           # scapulae, iliac wings on a sacrum, femurs, tibia and fibula, every joint a mechanical rotary module
           "spine_segments": 12, "spine_curve": 28.0, "spine_bow": 0.5, "spine_set_back": 0.3, "vertebra_diameter": 120.0,
           "rib_count": 10, "rib_section": 24.0, "sternum_width": 70.0, "clavicle_diameter": 30.0, "scapula_width": 200.0,
-          "iliac_wing_height": 260.0, "femur_diameter": 66.0, "tibia_diameter": 58.0, "fibula_diameter": 26.0,
+          "iliac_wing_height": 170.0, "femur_diameter": 66.0, "tibia_diameter": 58.0, "fibula_diameter": 26.0,
           "joint_module_length": 150.0, "joint_module_diameter": 150.0, "finger_length": 190.0, "finger_diameter": 28.0,
           # the armour
           "pauldron_diameter": 300.0, "pauldron_thickness": 45.0, "chest_plate_thickness": 35.0, "lorica_bands": 6, "helmet_thickness": 12.0,

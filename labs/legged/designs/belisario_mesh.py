@@ -40,7 +40,7 @@ DARK = (0.22, 0.22, 0.24, 1.0)
 BAY = (0.33, 0.35, 0.39, 1.0)
 PLATE = (0.70, 0.60, 0.40, 1.0)
 STRUT = (0.28, 0.29, 0.31, 1.0)
-VERSION = 7
+VERSION = 10
 CACHE = Path(__file__).resolve().parents[1] / "sims" / "output" / "mesh_cache"
 mm = 1e-3
 
@@ -114,13 +114,14 @@ def _pelvis(p, hip_z):
     hh = Humanoid.hip_height(p)
     Wp, Dp, Hp = p["pelvis_width"], p["pelvis_depth"], p["pelvis_height"]
     xs0, hy, wing_h = sun.spine_x(p, 0.0), p["hip_spacing"] / 2, p["iliac_wing_height"]
-    bones = sk.rounded_box(Dp * 0.55, Wp * 0.36, Hp * 1.1, (xs0 + 10, 0, hh + Hp * 0.1), fillet=14)
+    bones = sk.rounded_box(Dp * 0.4, Wp * 0.22, Hp * 0.85, (xs0 + 10, 0, hh + Hp * 0.07), fillet=14)       # the sacrum: narrow, between the wings
     modules = None
     for sy in (-1, 1):
-        wing = (sk.rounded_box(Dp * 0.5, 16.0, wing_h, (0, 0, 0), fillet=7).rotate((0, 0, 0), (1, 0, 0), -sy * 22)
-                .rotate((0, 0, 0), (0, 0, 1), sy * 18).translate((xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + wing_h * 0.42)))
+        wz = hip_z + wing_h * 0.6                                           # the wing rises from the hip to a crest below the lowest ribs
+        wing = (sk.blade((0, 0, 0), Dp * 0.62, wing_h, 16.0, axis="y").rotate((0, 0, 0), (1, 0, 0), -sy * 22)
+                .rotate((0, 0, 0), (0, 0, 1), sy * 18).translate((xs0 + Dp * 0.1, sy * (Wp / 2 - 30), wz)))
         bones = bones.union(wing)
-        bones = bones.union(sk.rod((xs0 + 10, 0, hh + Hp * 0.5), (xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + wing_h * 0.42), 20))
+        bones = bones.union(sk.rod((xs0 + 10, 0, hh + Hp * 0.5), (xs0 + Dp * 0.1, sy * (Wp / 2 - 30), wz), 20))
         bones = bones.union(sk.rod((xs0 + 10, sy * Wp * 0.15, hh + Hp * 0.3), (0, sy * hy, hip_z), 22))      # the ilium down to the hip
         bones = bones.union(sk.rod((0, sy * hy, hip_z), (Dp * 0.32, sy * 30, hip_z + Hp * 0.1), 18))         # to the pubis
         m = _module((0, sy * hy, hip_z), p, "y")

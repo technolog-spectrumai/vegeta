@@ -269,15 +269,16 @@ def skeleton_trunk(p):
     N, dv = int(p["spine_segments"]), p["vertebra_diameter"]
     xs0 = spine_x(p, 0.0)
     # the pelvis
-    sacrum = sk.rounded_box(Dp * 0.55, Wp * 0.36, Hp * 1.1, (xs0 + 10, 0, hh + Hp * 0.1), fillet=14)
+    sacrum = sk.rounded_box(Dp * 0.4, Wp * 0.22, Hp * 0.85, (xs0 + 10, 0, hh + Hp * 0.07), fillet=14)      # narrow, between the wings, up to the first lumbar vertebra
     pelvis = sacrum
     hy = p["hip_spacing"] / 2
     for sy in (-1, 1):
-        wing = (sk.rounded_box(Dp * 0.5, 16.0, p["iliac_wing_height"], (0, 0, 0), fillet=7)
+        wz = hh + p["iliac_wing_height"] * 0.6                            # the wing rises from the hip to a crest below the lowest ribs
+        wing = (sk.blade((0, 0, 0), Dp * 0.62, p["iliac_wing_height"], 16.0, axis="y")              # a fan-shaped blade
                 .rotate((0, 0, 0), (1, 0, 0), -sy * 22).rotate((0, 0, 0), (0, 0, 1), sy * 18)
-                .translate((xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + p["iliac_wing_height"] * 0.42)))
+                .translate((xs0 + Dp * 0.1, sy * (Wp / 2 - 30), wz)))
         pelvis = pelvis.union(wing)
-        pelvis = pelvis.union(sk.rod((xs0 + 10, 0, hh + Hp * 0.5), (xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + p["iliac_wing_height"] * 0.42), 20))
+        pelvis = pelvis.union(sk.rod((xs0 + 10, 0, hh + Hp * 0.5), (xs0 + Dp * 0.1, sy * (Wp / 2 - 30), wz), 20))
         pelvis = pelvis.union(joint_module((0, sy * hy, hh), p, "y"))                       # the hip module
         pelvis = pelvis.union(sk.rod((xs0 + 10, sy * Wp * 0.15, hh + Hp * 0.3), (0, sy * hy, hh), 22))   # the ilium down to the hip
         pelvis = pelvis.union(sk.rod((0, sy * hy, hh), (Dp * 0.32, sy * 30, hh - Hp * 0.25), 18))          # to the pubis
@@ -325,7 +326,7 @@ def skeleton_trunk(p):
         clav = sk.rod((x_front - 4, sy * p["sternum_width"] * 0.3, fronts[-1] + rr * 2 + 24), (0, cy - sy * d * 0.3, zs + d * 0.15),
                       p["clavicle_diameter"] / 2)
         top_x = spine_x(p, (N - 1.5) / N)
-        scap = (sk.rounded_box(12, p["scapula_width"], Ht * 0.3, (0, 0, 0), fillet=8).rotate((0, 0, 0), (0, 0, 1), sy * 25)
+        scap = (sk.blade((0, 0, 0), p["scapula_width"], Ht * 0.32, 12.0, axis="x").rotate((0, 0, 0), (0, 0, 1), sy * 25)
                 .translate((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7)))
         acromion = sk.rod((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7), (0, cy - sy * d * 0.2, zs), 13)
         part = module.union(clav).union(scap).union(acromion)

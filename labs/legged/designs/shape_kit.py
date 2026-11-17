@@ -83,6 +83,18 @@ def membrane(points, thickness):
     return cq.Workplane(plane).polyline(loc).close().extrude(thickness / 2, both=True)
 
 
+def blade(center, length, width, thickness, axis="y"):
+    """A bone's blade (an iliac wing, a scapula): an elliptical plate ``length`` × ``width`` of ``thickness``, its
+    normal along ``axis``, the edges rounded."""
+    wp = {"z": "XY", "x": "YZ", "y": "XZ"}[axis]
+    out = cq.Workplane(wp).ellipse(length / 2, width / 2).extrude(thickness / 2, both=True)
+    try:
+        out = out.edges().fillet(min(4.0, thickness / 2 - 0.5))
+    except Exception:
+        pass
+    return out.translate(tuple(center))
+
+
 def disc(center, r, t, axis="z"):
     wp = {"z": "XY", "x": "YZ", "y": "XZ"}[axis]
     return cq.Workplane(wp).circle(r).extrude(t / 2, both=True).translate(tuple(center))
