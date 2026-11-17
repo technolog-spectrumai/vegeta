@@ -16,6 +16,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 .wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;max-width:1500px;margin:0 auto;min-height:calc(100% - 0px)}
 @media (max-width:900px){.wrap{grid-template-columns:1fr}}
 .stage{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:6px;min-height:520px;overflow:hidden}
+@media (min-width:901px){.stage{position:sticky;top:16px;height:calc(100vh - 32px);align-self:start}}
 @media (max-width:900px){.stage{min-height:420px;height:60vh}}
 canvas{display:block;width:100%;height:100%;position:absolute;inset:0;touch-action:none}
 .tabs{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;z-index:2}
@@ -88,7 +89,7 @@ controls.enableDamping = true;
 scene.add(new THREE.HemisphereLight(0xffffff,0x445566,0.9));
 const key = new THREE.DirectionalLight(0xffffff,0.9); key.position.set(600,900,700); scene.add(key);
 const rim = new THREE.DirectionalLight(0xffffff,0.35); rim.position.set(-800,300,-600); scene.add(rim);
-const root = new THREE.Group(); root.rotation.x = -Math.PI/2; scene.add(root);   // CAD z-up -> three y-up
+const root = new THREE.Group(); scene.add(root);   // the GLB is already y-up (CadQuery converts CAD z-up)
 const loader = new THREE.GLTFLoader();
 let groups = {}, base = {}, current = null, exploded = false, size = 800, centre = new THREE.Vector3();
 const EXPLODE = {hopper:[0,0,140],feed:[0,0,80],actuator:[0,0,90],ball:[0,0,0],cup:[0,0,0],tank:[0,0,-90],relief:[0,0,-50],
@@ -113,7 +114,7 @@ function load(name){
       groups[p].add(m); m.matrix.copy(w); m.matrix.decompose(m.position,m.quaternion,m.scale);
     }
     for(const k in groups) base[k] = groups[k].position.clone();
-    const box = new THREE.Box3().setFromObject(root); box.getCenter(centre); size = box.getSize(new THREE.Vector3()).length();
+    root.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(root); box.getCenter(centre); size = box.getSize(new THREE.Vector3()).length();
     current = name; setExplode(exploded); view('iso'); legend(); spec();
     document.getElementById('loading').hidden = true;
   }, e=>{ document.getElementById('loading').textContent = 'The model failed to load: ' + e });
