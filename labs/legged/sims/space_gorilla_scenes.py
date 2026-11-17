@@ -214,7 +214,11 @@ def main(argv=None):
     def draw(path, t, what):
         c = np.array(g.data.qpos[0:3])
         if a.render == "mesh":
-            cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, azim, 4.6)
+            az = azim
+            if a.scene == "window":                                        # once through the wall the camera comes round to the inside
+                f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
+                az = azim + 60.0 * f
+            cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"Belisario: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
         import matplotlib

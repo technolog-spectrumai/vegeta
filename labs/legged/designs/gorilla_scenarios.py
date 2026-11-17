@@ -120,8 +120,22 @@ def window_prop(p):
                         _box("wall_above", (t / 2, wall_w, (wall_h - sill - h) / 2), (0.0, 0.0, sill + h + (wall_h - sill - h) / 2), mass=200.0),
                         _box("wall_left", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, w / 2 + (wall_w - w / 2) / 2, sill + h / 2), mass=200.0),
                         _box("wall_right", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, -w / 2 - (wall_w - w / 2) / 2, sill + h / 2), mass=200.0),
-                        _box("sill_plate", (t / 2 + 0.04, w / 2, 0.03), (0.0, 0.0, sill + 0.03), rgba=WOOD, mass=20.0)])
+                        _box("sill_plate", (t / 2 + 0.04, w / 2, 0.03), (0.0, 0.0, sill + 0.03), rgba=WOOD, mass=20.0)]
+                 + _table_with_banana(p.get("table_x", 3.4), p.get("table_y", 0.0)))
     return Prop(frame, free=False)
+
+
+def _table_with_banana(tx, ty, top=0.75, depth=0.8, width=1.2):
+    """A table in the room (``tx`` beyond the wall, ``ty`` across) with a banana on it."""
+    geoms = [_box("table_top", (depth / 2, width / 2, 0.02), (tx, ty, top - 0.02), rgba=WOOD, mass=15.0)]
+    for i, (sx, sy) in enumerate(((-1, -1), (-1, 1), (1, -1), (1, 1))):
+        geoms.append(_box(f"table_leg_{i}", (0.03, 0.03, (top - 0.04) / 2), (tx + sx * (depth / 2 - 0.05), ty + sy * (width / 2 - 0.05), (top - 0.04) / 2), rgba=WOOD, mass=3.0))
+    yellow = (0.95, 0.82, 0.2, 1.0)
+    bx, by, bz = tx - 0.15, ty + 0.1, top + 0.03                           # the banana: three capsules on a gentle curve, lying on the top
+    pts = [(bx - 0.1, by - 0.03, bz), (bx - 0.03, by + 0.0, bz + 0.005), (bx + 0.04, by + 0.0, bz + 0.005), (bx + 0.11, by - 0.03, bz)]
+    for i in range(3):
+        geoms.append(_cap(f"banana_{i}", 0.022 if i == 1 else 0.018, pts[i], pts[i + 1], rgba=yellow, mass=0.2))
+    return geoms
 
 
 def obstacles_prop(p):
@@ -626,7 +640,9 @@ def scenario_window(kin, q_quad, p):
 
     keys = [(0.0, q1), (0.15, release), (0.45, tuck), (0.75, tuck), (1.0, q_quad)]
     leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="gorilla_scenarios.window: the leap off the sill onto four")
-    return [("gait", stop_x / v, 0.0), ("motion", up), ("motion", leap), ("gait", 6.0, 0.0)]
+    table_x = x + p.get("table_x", 3.4)
+    walk = max((table_x - 0.4 - 0.55 - x_land) / v, 1.0)                  # up to the table: the knuckles a hand's length short of its edge
+    return [("gait", stop_x / v, 0.0), ("motion", up), ("motion", leap), ("gait", walk, 0.0)]
 
 
 def _joint_track(kin, name, duration, keys, base_fn, frames=24, source=""):
