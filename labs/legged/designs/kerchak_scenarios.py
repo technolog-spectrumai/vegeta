@@ -9,13 +9,13 @@ reference a learned policy is measured against and may be seeded with:
 * **rope** — the rope hanging from a beam: the hands alternating up the rope, the feet clamping it below.
 * **window** — the wall with an opening: up onto the feet, the hands to the sill, the pelvis up and over it, down on four beyond.
 * **obstacles** — bars across the path: a crouch, a leap (the pelvis on a parabola, the limbs tucked), the landing on four.
-* **door** — ``gorilla_tasks.door_sequence``.
+* **door** — ``kerchak_tasks.door_sequence``.
 
 Every climb is the same machinery: ``climb_cycle`` moves the contacts between holds given by a scene's ``holds(k)``
 (the hold positions for cycle ``k``) with the pelvis riding a frame pitched nose-up to face the wall
-(``CLIMB_PITCH``), solved by IK in the world frame by frame (``gorilla_tasks.contact_motion``). A sequence is a
+(``CLIMB_PITCH``), solved by IK in the world frame by frame (``kerchak_tasks.contact_motion``). A sequence is a
 list of segments: ``("gait", seconds, lane)`` for the knuckle walk, or ``("motion", Motion)``; ``sequence(name,
-params)`` builds a scenario's. ``sims/space_gorilla_scenes.py`` plays them.
+params)`` builds a scenario's. ``sims/space_kerchak_scenes.py`` plays them.
 """
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ import math
 import numpy as np
 from vegeta.chiron import Geom, Joint, Link, Prop
 
-import gorilla_motions as gm
-import gorilla_tasks as gt
+import kerchak_motions as gm
+import kerchak_tasks as gt
 import humanoid_motions as hum
 import motion_kit as mk
 import space_unit_robots as sr
@@ -153,7 +153,7 @@ def obstacles_prop(p):
 
 
 def props(name, params=None):
-    """The scene's props for a scenario (the door's from ``gorilla_tasks``)."""
+    """The scene's props for a scenario (the door's from ``kerchak_tasks``)."""
     p = {**DEFAULTS[name], **(params or {})}
     if name == "door":
         return (gt.door_prop(),)
@@ -368,7 +368,7 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
 
     extra = _extras(_spine_extra(kin, CLIMB_SPINE), _fingers_extra(kin, windows, holds[1], q_from))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_from, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                             source="gorilla_scenarios.climb_cycle")
+                             source="kerchak_scenarios.climb_cycle")
 
 
 def _spine_extra(kin, value, q_from=None, blend=False):
@@ -453,7 +453,7 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
     windows = {"L_hand": (0.0, hands_end), "R_hand": (0.0, hands_end)}
     extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                             source="gorilla_scenarios.mount")
+                             source="kerchak_scenarios.mount")
 
 
 VERTICAL_TRIALS = tuple((s, phi) for s in (1.0, -1.0) for phi in (0.0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.5, -1.5))
@@ -630,7 +630,7 @@ def scenario_window(kin, q_quad, p):
     windows = {"L_hand": (0.0, 0.3), "R_hand": (0.0, 0.3)}
     extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True))
     up = gt.contact_motion(kin, "onto_the_sill", 6.0, t_up, b_up, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                           source="gorilla_scenarios.window: the hands on the edge, a press-up, the feet over the edge onto the sill")
+                           source="kerchak_scenarios.window: the hands on the edge, a press-up, the feet over the edge onto the sill")
     q1 = gt._last(kin, up, q_quad)
     tuck = q_quad.copy()
     for side in ("L", "R"):
@@ -649,7 +649,7 @@ def scenario_window(kin, q_quad, p):
         return crouch[0] + f * (x_land - crouch[0]), 0.0, (1 - f) * crouch[2] + f * gm.PELVIS_H + 0.25 * flight, CLIMB_PITCH + f * (gm.PELVIS_PITCH - CLIMB_PITCH)
 
     keys = [(0.0, q1), (0.15, release), (0.45, tuck), (0.75, tuck), (1.0, q_quad)]
-    leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="gorilla_scenarios.window: the leap off the sill onto four")
+    leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="kerchak_scenarios.window: the leap off the sill onto four")
     table_x = x + p.get("table_x", 3.4)
     walk = max((table_x - 0.4 - 0.55 - x_land) / v, 1.0)                  # up to the table: the knuckles a hand's length short of its edge
     return [("gait", stop_x / v, 0.0), ("motion", up), ("motion", leap), ("gait", walk, 0.0)]
@@ -705,7 +705,7 @@ def scenario_obstacles(kin, q_quad, p):
             return take_off + f * 1.8, 0.0, gm.PELVIS_H - crouch_dip + apex * flight, gm.PELVIS_PITCH - 0.25 * flight
 
         keys = [(0.0, q_quad), (0.25, crouch), (0.45, tuck), (0.8, tuck), (1.0, q_quad)]
-        segs.append(("motion", _joint_track(kin, f"jump_{k + 1}", 1.8, keys, base, source="gorilla_scenarios.obstacles: the leap")))
+        segs.append(("motion", _joint_track(kin, f"jump_{k + 1}", 1.8, keys, base, source="kerchak_scenarios.obstacles: the leap")))
         x_prev = xb + 0.9
     segs.append(("gait", 4.0, 0.0))
     return segs

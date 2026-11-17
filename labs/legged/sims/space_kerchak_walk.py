@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Belisario walks like a gorilla: on all fours on its knuckles (``gorilla_motions.knuckle_walk``, the lateral
+"""Belisario walks like a gorilla: on all fours on its knuckles (``kerchak_motions.knuckle_walk``, the lateral
 sequence LH LF RH RF), rears up on two to stand a moment, drops back on four and walks on - the bare frame in its
 polycarbonate casing, no armour, no weapons (``space_unit_robots.bare``), in MuJoCo; the casing drawn translucent
 so the frame shows.
 
-    python space_gorilla_walk.py                      # dynamics, the whole sequence (22 s), the movie
-    python space_gorilla_walk.py --mode kinematic     # the keyframes played
-    python space_gorilla_walk.py --seconds 8 --no-movie --no-assist
+    python space_kerchak_walk.py                      # dynamics, the whole sequence (22 s), the movie
+    python space_kerchak_walk.py --mode kinematic     # the keyframes played
+    python space_kerchak_walk.py --seconds 8 --no-movie --no-assist
 
 The timeline: walk ``--walk`` s, rise (3 s), stand (``--stand`` s), drop (3 s), walk again. As the squad sims
 (``space_squad_march.py``): a PD loop on every servo tracks the keyframes within the modules' stall torque, and an
 upright assist on the pelvis (a virtual gyro, a lane spring, a hold on the gait's pace) stands in for the balance
-controller the design has not got. Writes ``sims/output/space_gorilla_walk.mp4`` and ``.json``.
+controller the design has not got. Writes ``sims/output/space_kerchak_walk.mp4`` and ``.json``.
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-import gorilla_motions as gm  # noqa: E402
+import kerchak_motions as gm  # noqa: E402
 import humanoid_motions as hum  # noqa: E402
 import motion_kit as mk  # noqa: E402
 import space_squad_march as march_sim  # noqa: E402
@@ -195,7 +195,7 @@ def main(argv=None):
         frames.append((t, *march_sim.snapshot([g]), g.phase(t)[4]))
         t += dt
     report = {"mode": a.mode, "assist": assist, "seconds": a.seconds, **g.report()}
-    (OUT / "space_gorilla_walk.json").write_text(json.dumps(report, indent=1))
+    (OUT / "space_kerchak_walk.json").write_text(json.dumps(report, indent=1))
     if not a.no_movie:
         import matplotlib
         matplotlib.use("Agg")
@@ -210,7 +210,7 @@ def main(argv=None):
             fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
             fig.savefig(os.path.join(tmp, f"f{k:04d}.png"), dpi=72)
             plt.close(fig)
-        out = a.out or str(OUT / "space_gorilla_walk.mp4")
+        out = a.out or str(OUT / "space_kerchak_walk.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(a.fps), "-i", os.path.join(tmp, "f%04d.png"),
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", out], check=True)
         report["movie"] = out

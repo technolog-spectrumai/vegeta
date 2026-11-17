@@ -1,4 +1,4 @@
-"""Belisario on all fours: the knuckle walk and the rise to standing, for the bare frame (``space_unit_robots.bare``).
+"""Kerchak - Belisario on all fours: the knuckle walk and the rise to standing, for the bare frame (``space_unit_robots.bare``).
 
 * **quad_pose** — the gorilla's stance on four: the pelvis ``PELVIS_H`` above the ground and pitched nose-down
   ``PELVIS_PITCH`` (the back then slopes ~35°, the spine's modules only a little forward), the legs crouched under
@@ -14,7 +14,7 @@
   height and pitch per frame for the sim.
 * **stand** — the standing hold (2 s, a slight sway).
 
-    import gorilla_motions as gm, space_unit_robots as sr, motion_kit as mk
+    import kerchak_motions as gm, space_unit_robots as sr, motion_kit as mk
     kin = mk.Kin(sr.bare()); qq = gm.quad_pose(kin); walk = gm.knuckle_walk(kin, qq)
 """
 from __future__ import annotations
@@ -108,7 +108,7 @@ def knuckle_walk(kin, q_quad, *, speed=0.25, stride=0.26, duty=0.74, step=0.06, 
         limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
         gait = mk.legged_gait(kin, name, CONTACTS, period=period, duty=duty, stride=stride, step_height=step,
                               foot_points=foot_points, joints=limbs, base_rot=base_rot(), reg=reg, iters=iters,
-                              source="gorilla_motions.knuckle_walk: the lateral-sequence walk on the knuckles",
+                              source="kerchak_motions.knuckle_walk: the lateral-sequence walk on the knuckles",
                               params={"froude": round(speed ** 2 / (mk.G * PELVIS_H), 3), "sequence": "LH LF RH RF"})
     finally:
         kin.q0 = q0
@@ -172,7 +172,7 @@ def rise(kin, q_quad, duration=3.0, frames=36, push=0.2, lift=0.7, pelvis_h=PELV
     cols = [kin.index[j] for j in moving]
     return mk.Motion("rise", "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
                      base={"height_m": heights, "pitch_rad": pitches, "note": "the pelvis's height and pitch per frame"},
-                     source="gorilla_motions.rise: the push-off from the hands, up on two",
+                     source="kerchak_motions.rise: the push-off from the hands, up on two",
                      params={"push_until": push, "hands_off_by": lift},
                      check={"ik_error_max_m": round(worst, 6), "limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
 
@@ -184,7 +184,7 @@ def drop(kin, q_quad, duration=3.0, **kw):
     Q = r.Q[::-1]
     return mk.Motion("drop", "transition", r.joints, r.t, Q, loop=False, period=duration,
                      base={"height_m": r.base["height_m"][::-1], "pitch_rad": r.base["pitch_rad"][::-1], "note": r.base["note"]},
-                     source="gorilla_motions.drop: the rise backwards, down on four", params=r.params, check=r.check)
+                     source="kerchak_motions.drop: the rise backwards, down on four", params=r.params, check=r.check)
 
 
 def stand(kin, period=2.0):
@@ -192,7 +192,7 @@ def stand(kin, period=2.0):
     def fn(t):
         w = 0.05 * math.sin(2 * math.pi * t / period)
         return {"spine_thoracic_roll": w, "spine_lumbar_roll": -w * 0.5}
-    return mk.joint_cycle(kin, "stand", fn, period=period, frames=24, loop=True, source="gorilla_motions.stand: on two, a sway")
+    return mk.joint_cycle(kin, "stand", fn, period=period, frames=24, loop=True, source="kerchak_motions.stand: on two, a sway")
 
 
 def motions(robot=None):

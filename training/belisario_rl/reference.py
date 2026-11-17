@@ -1,4 +1,4 @@
-"""The programmed gaits as reference trajectories: the knuckle walk of ``gorilla_motions`` (and the rise and the
+"""The programmed gaits as reference trajectories: the knuckle walk of ``kerchak_motions`` (and the rise and the
 drop) sampled at any time, in the environment's actuator order. Used by the optional imitation reward, by the
 programmed controller (``controllers.ProgrammedGaitController``) and by ``compare_gaits``. The policy is never
 forced onto these keyframes: the imitation weight is 0 by default."""
@@ -17,7 +17,7 @@ class ReferenceGait:
     def __init__(self, robot: RobotModel, speed: float | None = None):
         if str(DESIGNS) not in sys.path:
             sys.path.insert(0, str(DESIGNS))
-        import gorilla_motions as gm
+        import kerchak_motions as gm
         import motion_kit as mk
         kin = mk.Kin(robot.robot)
         self.kin = kin

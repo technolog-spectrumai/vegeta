@@ -1,8 +1,8 @@
 """Belisario's tasks on the way: the door. The scene (``door_prop``: a doorway in a wall at ``DOOR["x"]``, the door
 hinged on the left and swinging away, a lever handle on the robot's side) and the sequence of motions from the
-approach to the entry, for the sim (``sims/space_gorilla_door.py``):
+approach to the entry, for the sim (``sims/space_kerchak_door.py``):
 
-1. **approach** — the knuckle walk up to the door (``gorilla_motions.knuckle_walk``), stopping with the handle in reach;
+1. **approach** — the knuckle walk up to the door (``kerchak_motions.knuckle_walk``), stopping with the handle in reach;
 2. **reach** — up onto the feet: they stay planted while the trunk lifts (the pelvis to 0.76 m, nearly level) and
    the right hand goes to the handle, the left hand coming off the ground (IK on the planted feet and the knuckle);
 3. **grasp** — the right fist closes on the lever;
@@ -24,7 +24,7 @@ import math
 import numpy as np
 from vegeta.chiron import Geom, Joint, Link, Prop
 
-import gorilla_motions as gm
+import kerchak_motions as gm
 import humanoid_motions as hum
 import motion_kit as mk
 
@@ -116,7 +116,7 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
     cols = [kin.index[j] for j in moving]
     return mk.Motion(name, "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
                      base={"x_m": xs, "y_m": ys, "height_m": hs, "pitch_rad": ps, "note": "the pelvis's x, y, height and pitch per frame"},
-                     source=source or f"gorilla_tasks.{name}",
+                     source=source or f"kerchak_tasks.{name}",
                      check={"ik_error_max_m": round(worst, 6), "limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
 
 
@@ -132,9 +132,9 @@ LEVER_CURL = 1.9                                                          #: the
 
 
 def lever_hold(phi=0.0, turn=0.0):
-    """The lever as a bar hold (``gorilla_scenarios.bar``) with the door swung ``phi`` and the lever turned ``turn``:
+    """The lever as a bar hold (``kerchak_scenarios.bar``) with the door swung ``phi`` and the lever turned ``turn``:
     its middle, its axis and the wrist's direction turned with it."""
-    import gorilla_scenarios as gs
+    import kerchak_scenarios as gs
     c, sn = math.cos(phi), math.sin(phi)
     Rz = np.array([[c, -sn, 0.0], [sn, c, 0.0], [0.0, 0.0, 1.0]])
     ct, st = math.cos(turn), math.sin(turn)
@@ -148,7 +148,7 @@ def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
     """Up onto the feet: they stay planted while the trunk lifts (the pelvis to ``REACH_BASE``), the right hand goes
     to the lever on an arc (its grip point first, then the whole hand settling onto the lever from above, the
     fingers open) and the left hand comes off the ground to hang."""
-    import gorilla_scenarios as gs
+    import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
@@ -184,7 +184,7 @@ def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
         return sr.set_curl(q, kin, "R", (1 - f) * q_quad[kin.index["R_finger_1_mcp"]] / 0.8 + f * gs.CURL_OPEN)
 
     return contact_motion(kin, "reach", duration, targets, base, q_init=q_quad, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
-                          source="gorilla_tasks.reach: up on the feet, the right hand onto the lever")
+                          source="kerchak_tasks.reach: up on the feet, the right hand onto the lever")
 
 
 def _joint_motion(kin, name, duration, q_from, changes, frames=20, base=None, source=""):
@@ -209,13 +209,13 @@ def _joint_motion(kin, name, duration, q_from, changes, frames=20, base=None, so
 def grasp(kin, q_from, base, duration=0.8):
     """The right fist closes on the lever."""
     import space_unit_robots as sr
-    return _joint_motion(kin, "grasp", duration, q_from, sr.curl_values("R", LEVER_CURL), base=base, source="gorilla_tasks.grasp: the fist closes on the lever")
+    return _joint_motion(kin, "grasp", duration, q_from, sr.curl_values("R", LEVER_CURL), base=base, source="kerchak_tasks.grasp: the fist closes on the lever")
 
 
 def _lever_motion(kin, name, duration, q_quad, q_from, base_x, phi_fn, turn_fn, base_fn, source):
     """The hand holding the lever as it moves: the hold turned by ``turn_fn(u)`` about the lever's spindle and swung
     by ``phi_fn(u)`` with the door, the feet planted, the left hand hanging where it is, the fist held closed."""
-    import gorilla_scenarios as gs
+    import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
@@ -236,7 +236,7 @@ def turn(kin, q_quad, q_from, base_x=STOP_X, duration=1.0):
     """The lever turned down: the hand follows its arc about the spindle."""
     base = lambda u: (base_x, REACH_BASE[0], REACH_BASE[1])
     return _lever_motion(kin, "turn", duration, q_quad, q_from, base_x, lambda u: 0.0, lambda u: DOOR["turn_rad"] * mk.smooth(u), base,
-                         "gorilla_tasks.turn: the lever turned down")
+                         "kerchak_tasks.turn: the lever turned down")
 
 
 def push(kin, q_quad, q_from, base_x=STOP_X, duration=3.0):
@@ -244,13 +244,13 @@ def push(kin, q_quad, q_from, base_x=STOP_X, duration=3.0):
     planted, the pelvis advancing ``PUSH_ADVANCE`` over them."""
     base = lambda u: (base_x + PUSH_ADVANCE * mk.smooth(u), REACH_BASE[0], REACH_BASE[1])
     return _lever_motion(kin, "push", duration, q_quad, q_from, base_x, lambda u: DOOR["open_rad"] * mk.smooth(u), lambda u: DOOR["turn_rad"], base,
-                         "gorilla_tasks.push: the door swung open, the hand on the lever")
+                         "kerchak_tasks.push: the door swung open, the hand on the lever")
 
 
 def release(kin, q_quad, q_from, base_x=STOP_X, duration=2.0):
     """The fist opens and lets the lever go, the pelvis settles back over the feet and down, both hands come back
     down to their places on four (the right from the lever, the left from hanging)."""
-    import gorilla_scenarios as gs
+    import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
@@ -283,7 +283,7 @@ def release(kin, q_quad, q_from, base_x=STOP_X, duration=2.0):
         return sr.set_curl(q, kin, "R", c)
 
     return contact_motion(kin, "release", duration, targets, base, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
-                          source="gorilla_tasks.release: the hand back down on four")
+                          source="kerchak_tasks.release: the hand back down on four")
 
 
 def _last(kin, m, q_prev):

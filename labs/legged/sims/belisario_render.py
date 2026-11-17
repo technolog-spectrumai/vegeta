@@ -1,4 +1,4 @@
-"""A software renderer for the gorilla sims: Belisario's CAD (``designs/belisario_mesh``: the bones, the modules,
+"""A software renderer for the Kerchak sims: Belisario's CAD (``designs/belisario_mesh``: the bones, the modules,
 the bays, the plates, the struts between their anchors) on the MuJoCo bodies, the scene's props from their
 geoms, the ground - a perspective camera, flat shading, the painter's order, drawn with PIL. MuJoCo's own renderer
 needs a GL this machine does not have; this one needs nothing but numpy and PIL and draws a frame in well under a

@@ -94,9 +94,9 @@ scenes:
 ```
 
 The environments are shared out among the scenes by weight (`belisario_rl.session.assign_scenes`). Scenes
-(`belisario_rl.scenes`): `flat`, `rough`, `steps` (locomotion), `door` (the lever door of `gorilla_tasks`), `window`,
+(`belisario_rl.scenes`): `flat`, `rough`, `steps` (locomotion), `door` (the lever door of `kerchak_tasks`), `window`,
 `obstacles` (reach past them), `wall`, `tree`, `hull`, `rope` (climb to a goal height; their props are exactly those
-of `gorilla_scenarios`, the scenery the pre-programmed climbs were solved on). `training/configs/session_locomotion.yaml`
+of `kerchak_scenarios`, the scenery the pre-programmed climbs were solved on). `training/configs/session_locomotion.yaml`
 is the first experiment; `session.yaml` adds the tasks.
 
 ## The curriculum
@@ -115,7 +115,7 @@ is the first experiment; `session.yaml` adds the tasks.
 Each stage is a YAML of overrides; `--stages all` runs them in turn, every stage starting from the previous one's
 last checkpoint; `--stage <name> --resume <checkpoint>` starts any stage from any checkpoint. The programmed gaits
 can seed the learning as a reference: set `reward.imitation` > 0 and the environment's `reference`
-(`belisario_rl.reference.ReferenceGait`, the knuckle walk of `gorilla_motions`) adds a term for staying near the
+(`belisario_rl.reference.ReferenceGait`, the knuckle walk of `kerchak_motions`) adds a term for staying near the
 keyframes' joint angles; keep it small or zero once the policy walks.
 
 ## Commands
@@ -203,11 +203,11 @@ command layout is a new policy).
 
 ## Integration with the programmed gaits
 
-`gorilla_motions.knuckle_walk` (and the scenarios' sequences) are joint keyframes on a base track. In training they
+`kerchak_motions.knuckle_walk` (and the scenarios' sequences) are joint keyframes on a base track. In training they
 serve as (1) the default pose the actions are offsets from (`quad_pose`), (2) an optional imitation reference, (3)
 the baseline `compare_gaits` measures against, through the same `Command` interface. The scenario sequences
-(`labs/legged/designs/gorilla_scenarios.py`: the wall, the tree, the hull, the rope, the window, the obstacles, the
-door) are the starting references for the task scenes: `labs/legged/sims/space_gorilla_scenes.py` plays them.
+(`labs/legged/designs/kerchak_scenarios.py`: the wall, the tree, the hull, the rope, the window, the obstacles, the
+door) are the starting references for the task scenes: `labs/legged/sims/space_kerchak_scenes.py` plays them.
 
 ## Issuing commands at inference
 

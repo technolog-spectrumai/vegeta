@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Belisario opens a door: the whole sequence from the approach to the entry, in MuJoCo - the knuckle walk up to
-the doorway (``gorilla_tasks.door_prop``), up onto the feet with the right hand to the lever, the fingers closing,
+the doorway (``kerchak_tasks.door_prop``), up onto the feet with the right hand to the lever, the fingers closing,
 the wrist turning the lever down, the door pushed open as the pelvis advances, the hands back down on four, and the
-knuckle walk on through (``gorilla_tasks``: reach, grasp, turn, push, release round ``gorilla_motions.knuckle_walk``).
+knuckle walk on through (``kerchak_tasks``: reach, grasp, turn, push, release round ``kerchak_motions.knuckle_walk``).
 
-    python space_gorilla_door.py                      # dynamics, the sequence (~30 s), the movie
-    python space_gorilla_door.py --mode kinematic     # the keyframes played, the door's hinges driven to match
+    python space_kerchak_door.py                      # dynamics, the sequence (~30 s), the movie
+    python space_kerchak_door.py --mode kinematic     # the keyframes played, the door's hinges driven to match
 
-As the other gorilla sim: a PD loop on every servo tracks the keyframes, an upright assist on the pelvis holds the
+As the other Kerchak sim: a PD loop on every servo tracks the keyframes, an upright assist on the pelvis holds the
 phase's pitch, lane and pace and parks the base where a motion wants it. In dynamics the door is a passive prop:
 the lever turns and the door swings under the hand's contacts (or not: the report says how far the door opened).
-Writes ``sims/output/space_gorilla_door.mp4`` and ``.json``.
+Writes ``sims/output/space_kerchak_door.mp4`` and ``.json``.
 """
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-import gorilla_motions as gm  # noqa: E402
-import gorilla_tasks as gt  # noqa: E402
+import kerchak_motions as gm  # noqa: E402
+import kerchak_tasks as gt  # noqa: E402
 import motion_kit as mk  # noqa: E402
 import space_squad_march as march_sim  # noqa: E402
 import space_unit_robots as sr  # noqa: E402
@@ -232,7 +232,7 @@ def main(argv=None):
         frames.append((t, geoms, centre, g.phase(t)[8]))
         t += dt
     report = {"mode": a.mode, "assist": assist, "seconds": seconds, **g.report()}
-    (OUT / "space_gorilla_door.json").write_text(json.dumps(report, indent=1))
+    (OUT / "space_kerchak_door.json").write_text(json.dumps(report, indent=1))
     if not a.no_movie:
         import matplotlib
         matplotlib.use("Agg")
@@ -248,7 +248,7 @@ def main(argv=None):
             fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
             fig.savefig(os.path.join(tmp, f"f{k:04d}.png"), dpi=72)
             plt.close(fig)
-        out = a.out or str(OUT / "space_gorilla_door.mp4")
+        out = a.out or str(OUT / "space_kerchak_door.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(a.fps), "-i", os.path.join(tmp, "f%04d.png"),
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", out], check=True)
         report["movie"] = out

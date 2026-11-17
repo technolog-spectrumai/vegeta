@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Belisario in its scenarios (``gorilla_scenarios``): the pre-programmed sequence of a scene played in MuJoCo -
+"""Belisario in its scenarios (``kerchak_scenarios``): the pre-programmed sequence of a scene played in MuJoCo -
 the climbing wall, the tree, the ship's hull, the rope, the window, the obstacles, the door.
 
-    python space_gorilla_scenes.py --scene wall                       # the keyframes played (default), the movie and stills
-    python space_gorilla_scenes.py --scene wall --mode physics        # dynamics with the assist (a climb needs grips the
+    python space_kerchak_scenes.py --scene wall                       # the keyframes played (default), the movie and stills
+    python space_kerchak_scenes.py --scene wall --mode physics        # dynamics with the assist (a climb needs grips the
                                                                       #   assist does not give: expect the report to say so)
-    python space_gorilla_scenes.py --scene tree --stills 8,14,20
+    python space_kerchak_scenes.py --scene tree --stills 8,14,20
 
 Kinematic mode drives the pelvis along the motions' tracks (x, y, height, pitch per frame) and the joints along the
-keyframes; the door's lever and hinge follow the hand, the rope stays put. Writes ``sims/output/space_gorilla_<scene>.mp4``,
-``.json`` and ``space_gorilla_<scene>_<t>s.png`` stills, drawn by ``belisario_render`` (the CAD on the bodies: the
+keyframes; the door's lever and hinge follow the hand, the rope stays put. Writes ``sims/output/space_kerchak_<scene>.mp4``,
+``.json`` and ``space_kerchak_<scene>_<t>s.png`` stills, drawn by ``belisario_render`` (the CAD on the bodies: the
 skeleton, the modules, the struts, the bays, the plates) unless ``--render boxes``.
 """
 from __future__ import annotations
@@ -30,8 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-import gorilla_motions as gm  # noqa: E402
-import gorilla_scenarios as gs  # noqa: E402
+import kerchak_motions as gm  # noqa: E402
+import kerchak_scenarios as gs  # noqa: E402
 import motion_kit as mk  # noqa: E402
 import space_squad_march as march_sim  # noqa: E402
 import space_unit_robots as sr  # noqa: E402
@@ -129,7 +129,7 @@ class ScenePlayer:
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
         if self.scene != "door":
             return
-        import gorilla_tasks as gt
+        import kerchak_tasks as gt
         m = self.model
         lever, hinge = m.jnt_qposadr[m.joint("handle_hinge").id], m.jnt_qposadr[m.joint("door_hinge").id]
         seg, tl = self.segment(t)
@@ -246,16 +246,16 @@ def main(argv=None):
             draw(os.path.join(tmp, f"f{k:04d}.png"), t, what)
         for ts in stills:
             if abs(t - ts) < dt / 2:
-                draw(str(OUT / f"space_gorilla_{a.scene}_{ts:g}s.png"), t, what)
+                draw(str(OUT / f"space_kerchak_{a.scene}_{ts:g}s.png"), t, what)
         t += dt
         k += 1
     report = {"scene": a.scene, "mode": a.mode, "seconds": seconds, "total_s": round(g.total, 2), "x_m": round(float(g.data.qpos[0]), 3),
               "z_m": round(float(g.data.qpos[2]), 3), "fell_at_s": g.fell, "tilt_off_phase_max_deg": round(g.tilt_max, 1),
               "segments": [(s[0], round(s[1] if s[0] == "gait" else s[1].period, 2), s[2] if s[0] == "gait" else s[1].name) for s in g.segments],
               "ik_error_max_m": {s[1].name: s[1].check.get("ik_error_max_m") for s in g.segments if s[0] == "motion"}}
-    (OUT / f"space_gorilla_{a.scene}.json").write_text(json.dumps(report, indent=1))
+    (OUT / f"space_kerchak_{a.scene}.json").write_text(json.dumps(report, indent=1))
     if not a.no_movie:
-        out = str(OUT / f"space_gorilla_{a.scene}.mp4")
+        out = str(OUT / f"space_kerchak_{a.scene}.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(a.fps), "-i", os.path.join(tmp, "f%04d.png"),
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", out], check=True)
         report["movie"] = out

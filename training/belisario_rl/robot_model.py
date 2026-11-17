@@ -1,6 +1,6 @@
 """The robot as the environment sees it: the MuJoCo model built from the design (``space_unit_robots.bare`` through
 Chiron's ``Robot.to_mjcf``, on a terrain), the tables of actuated joints with their limits and servo data, the
-contact geoms, the default poses (the quad pose from ``gorilla_motions``, the standing design pose), and a check
+contact geoms, the default poses (the quad pose from ``kerchak_motions``, the standing design pose), and a check
 of what the model lacks for training (``missing_requirements``).
 
 The model's actuators are Chiron's ``<general>`` servos: ``ctrl`` is a joint torque (gain 1) and the servo's
@@ -124,9 +124,9 @@ class RobotModel:
         return out
 
     def _default_poses(self):
-        """The quad pose (``gorilla_motions.quad_pose``) and the standing design pose, in actuator order, with the
+        """The quad pose (``kerchak_motions.quad_pose``) and the standing design pose, in actuator order, with the
         pelvis's height and pitch for each."""
-        import gorilla_motions as gm
+        import kerchak_motions as gm
         import motion_kit as mk
         kin = mk.Kin(self.robot)
         qq = gm.quad_pose(kin)

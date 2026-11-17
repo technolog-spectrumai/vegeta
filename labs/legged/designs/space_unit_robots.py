@@ -415,7 +415,7 @@ def hand_grip(curl: float, P=None) -> np.ndarray:
 def bare(name: str = "Belisario", casing: str = "none"):
     """Belisario bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
     a curl module, the knuckle contact on the fingers' middle joints) for walking on all fours, gripping and
-    climbing (``gorilla_motions``). ``casing``: ``"none"`` (the skeleton
+    climbing (``kerchak_motions``). ``casing``: ``"none"`` (the skeleton
     alone: the frame's geoms, the modules' and the struts' masses), ``"plastic"`` (a lightweight polycarbonate
     casing, ``_casing``) or ``"lorica"`` (the armour)."""
     P = su.MARINE

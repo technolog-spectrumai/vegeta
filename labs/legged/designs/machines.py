@@ -63,8 +63,8 @@ machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("
 # space game units: bulky armoured humanoids on Talia's frame (design stage: CAD + robot model + motions)
 machines.register("space_marine", "space_unit_robots:marine", parts=_motions("space_unit_motions:parts_marine"),
                   visual="space_units:SpaceMarine")
-# Belisario bare: the hybrid frame without weapons, walking on all fours (gorilla_motions)
-machines.register("belisario", "space_unit_robots:bare", parts=_motions("gorilla_motions:parts"), visual="space_units:SpaceMarine")
+# Belisario bare: the hybrid frame without weapons, walking on all fours (kerchak_motions)
+machines.register("belisario", "space_unit_robots:bare", parts=_motions("kerchak_motions:parts"), visual="space_units:SpaceMarine")
 machines.register("space_marine_saw", "space_unit_robots:marine_saw", parts=_motions("space_unit_motions:parts_marine_saw"),
                   visual="space_units:SpaceMarineSaw")
 machines.register("space_centurion", "space_unit_robots:centurion", parts=_motions("space_unit_motions:parts_centurion"),

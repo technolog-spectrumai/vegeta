@@ -160,9 +160,9 @@ the keyframed gait's direction depends on its start, which is the clearest sign 
 keyframes, should drive these feet. With it every unit does the whole drill without falling (the Marines' tilt
 peaks at 18° in the run); the run is a heavy shuffle at 0.8-1.3 m/s rather than a clean sprint.
 
-## The gorilla gait (`labs/legged/designs/gorilla_motions.py`, `sims/space_gorilla_walk.py`)
+## Kerchak: the gait on four (`labs/legged/designs/kerchak_motions.py`, `sims/space_kerchak_walk.py`)
 
-![Belisario on all fours](../labs/legged/sims/space_gorilla_walk.png)
+![Belisario on all fours](../labs/legged/sims/space_kerchak_walk.png)
 
 Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the skeleton alone by default - the frame's geoms,
 the modules' and the struts' masses, no armour, no weapons; `casing="plastic"` adds a 3 mm polycarbonate casing,
@@ -181,7 +181,7 @@ on the four contacts with the quad pose as its reference, its strides and lifts 
 rides pitched (`base_rot`), its IK damped for the long arms near full stretch. `rise` and `drop` go up to the design
 pose on two and back in 3 s (the pelvis levelling as it rises), `stand` holds it.
 
-In MuJoCo (`space_gorilla_walk.py`, `sims/output/space_gorilla_walk.mp4`: walk 8 s, rise, stand 3 s, drop, walk on)
+In MuJoCo (`space_kerchak_walk.py`, `sims/output/space_kerchak_walk.mp4`: walk 8 s, rise, stand 3 s, drop, walk on)
 the upright assist holds the pelvis at the phase's pitch; the skeleton walks on its knuckles, rears up, stands,
 drops and walks on without falling. The knuckle walk is the first gait that suits this body: three contacts are
 down most of the cycle and the trunk's mass is low and between them, which is what the long arms and short legs
@@ -200,7 +200,7 @@ drives every joint (`curl_values`: 0 open, `KNUCKLE_CURL` 1.4 the walking fist, 
 a hand with one number; a policy may drive the joints singly. The knuckle-walking contact is the back of the middle
 finger's middle phalanx (`{side}_knuckle`), the other fingers' backs beside it.
 
-## Grips, climbs and the scenarios (`gorilla_scenarios.py`, `gorilla_tasks.py`, `sims/space_gorilla_scenes.py`)
+## Grips, climbs and the scenarios (`kerchak_scenarios.py`, `kerchak_tasks.py`, `sims/space_kerchak_scenes.py`)
 
 A hold is a **bar** (a rung, a rib, a branch, a rope, a sill's edge: its axis, the surface's outward normal, its
 radius) or a plain **point** (a knuckle on a sill's top, a sole on a wall). The hand on a bar is four points of IK:
@@ -228,15 +228,15 @@ well damped (`IK_REG` 3e-3): a lighter damping jumps between the two solutions a
 | rope | the rope as a vertical bar, one hand above the other, the feet pinching it with level soles | 8 cm / 4 cm |
 | window | the hands on the sill's edge, the feet up the wall and onto the sill (a pull-up), a leap off it onto four | 25 cm transient / 0 |
 | obstacles | a crouch, a leap on a parabola with the limbs tucked, a landing on four | joint track |
-| door | `gorilla_tasks.door_sequence`: reach, grasp (the fingers close on the lever), turn, push, release | ≤ 5 mm |
+| door | `kerchak_tasks.door_sequence`: reach, grasp (the fingers close on the lever), turn, push, release | ≤ 5 mm |
 
 The mounts' numbers are single-frame transients where a planted foot or a settling hand lags; the cycles' are
 their steady worst. The window's leap is honest: the legs (0.7 m) are shorter than the sill (0.96 m) is high, so
-no pose reaches the ground beyond from the sill. `python sims/space_gorilla_scenes.py --scene wall` plays a
+no pose reaches the ground beyond from the sill. `python sims/space_kerchak_scenes.py --scene wall` plays a
 sequence in MuJoCo - the keyframes by default, `--mode physics` with the assist - and writes
-`sims/output/space_gorilla_<scene>.mp4` and stills.
+`sims/output/space_kerchak_<scene>.mp4` and stills.
 
-![The wall](../labs/legged/sims/output/space_gorilla_wall_14s.png)
+![The wall](../labs/legged/sims/output/space_kerchak_wall_14s.png)
 
 ## Drawing the frame in the sims (`belisario_mesh.py`, `sims/belisario_render.py`)
 

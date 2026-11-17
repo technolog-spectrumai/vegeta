@@ -7,7 +7,7 @@ Scenes (``SCENES``), with their parameters and defaults:
 
 * **flat** / **rough** / **steps** - locomotion on the terrains of ``terrain.py`` (``rms``, ``correlation_length``,
   ``step_height``, ``step_spacing``).
-* **door** - the doorway of ``gorilla_tasks.door_prop`` (a hinged door with a sprung lever, ``width``, ``mass_kg``,
+* **door** - the doorway of ``kerchak_tasks.door_prop`` (a hinged door with a sprung lever, ``width``, ``mass_kg``,
   ``damping``); the goal is 2.5 m beyond it.
 * **window** - a wall with a window opening (``sill``, ``width``, ``height``, ``wall_thickness``); the goal beyond.
 * **tree** - a trunk (``radius``, ``height``) with branches every ``branch_spacing`` from ``first_branch`` up,
@@ -18,9 +18,9 @@ Scenes (``SCENES``), with their parameters and defaults:
   the goal past the last.
 * **rope** - a rope hanging from a beam (``length``, ``links``, ``radius``, ``top_height``), its links on
   two-axis hinges; the goal is the pelvis at ``goal_height``.
-* **wall** - the climbing wall of ``gorilla_scenarios`` (rungs; ``x``, ``rung_spacing``, ``first_rung``, ``cycles``).
+* **wall** - the climbing wall of ``kerchak_scenarios`` (rungs; ``x``, ``rung_spacing``, ``first_rung``, ``cycles``).
 
-``wall``, ``tree``, ``hull`` and ``rope`` take their props from ``gorilla_scenarios`` (the scenery the pre-programmed
+``wall``, ``tree``, ``hull`` and ``rope`` take their props from ``kerchak_scenarios`` (the scenery the pre-programmed
 climbs were solved on), so a session can train on exactly the scenes the references cover.
 
 A scene's props are built once per environment; the terrain and the props go into the MJCF through Chiron's
@@ -86,7 +86,7 @@ def scene_steps(cfg, p):
 def scene_door(cfg, p):
     if str(DESIGNS) not in sys.path:
         sys.path.insert(0, str(DESIGNS))
-    import gorilla_tasks as gt
+    import kerchak_tasks as gt
     for k in ("width", "mass_kg", "damping", "open_rad"):
         if k in p:
             gt.DOOR[k] = p[k]
@@ -172,11 +172,11 @@ def scene_rope_links(cfg, p):
 
 
 def _scenario_scene(name, task, goal_fn, extent_fn, note):
-    """A scene built from ``gorilla_scenarios``' props (the same scenery the pre-programmed sequences climb)."""
+    """A scene built from ``kerchak_scenarios``' props (the same scenery the pre-programmed sequences climb)."""
     def build(cfg, p):
         if str(DESIGNS) not in sys.path:
             sys.path.insert(0, str(DESIGNS))
-        import gorilla_scenarios as gs
+        import kerchak_scenarios as gs
         params = {**gs.DEFAULTS[name], **{k: v for k, v in p.items() if k in gs.DEFAULTS[name]}}
         props = gs.props(name, params)
         return SceneSpec(name, Flat(), tuple(props), goal=goal_fn(params), goal_radius=0.5, task=task, extent=extent_fn(params), params=params,
@@ -195,7 +195,7 @@ scene_rope = _scenario_scene("rope", "climb", lambda p: (p["x"] - 0.45, 0.0, 0.3
 
 SCENES = {"flat": scene_flat, "rough": scene_rough, "steps": scene_steps, "door": scene_door, "window": scene_window, "wall": scene_wall,
           "tree": scene_tree, "hull": scene_hull, "obstacles": scene_obstacles, "rope": scene_rope}
-# the scenes the pre-programmed sequences climb (wall, tree, hull, rope) are gorilla_scenarios' props, so a policy
+# the scenes the pre-programmed sequences climb (wall, tree, hull, rope) are kerchak_scenarios' props, so a policy
 # trains on exactly the scenery the references were made for; the local builders above stay for custom variants
 
 
