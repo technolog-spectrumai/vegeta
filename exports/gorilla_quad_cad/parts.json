@@ -172,42 +172,46 @@
   "ssf_target": 1.0,
   "track_for_target_m": 1.473,
   "rollover_lat_g": 1.22,
+  "anti_roll_bar_N_m": {
+   "front": 10356,
+   "rear": 11624
+  },
   "corners": {
    "FL": {
     "sprung_kg": 144.5,
-    "k_N_m": 9643,
-    "c_Ns_m": 944,
-    "sag_m": 0.147
+    "k_N_m": 6904,
+    "c_Ns_m": 599,
+    "sag_m": 0.205
    },
    "FR": {
     "sprung_kg": 144.5,
-    "k_N_m": 9643,
-    "c_Ns_m": 944,
-    "sag_m": 0.147
+    "k_N_m": 6904,
+    "c_Ns_m": 599,
+    "sag_m": 0.205
    },
    "RL": {
     "sprung_kg": 162.2,
-    "k_N_m": 10823,
-    "c_Ns_m": 1060,
-    "sag_m": 0.147
+    "k_N_m": 7749,
+    "c_Ns_m": 673,
+    "sag_m": 0.205
    },
    "RR": {
     "sprung_kg": 162.2,
-    "k_N_m": 10823,
-    "c_Ns_m": 1060,
-    "sag_m": 0.147
+    "k_N_m": 7749,
+    "c_Ns_m": 673,
+    "sag_m": 0.205
    }
   },
   "seat": {
-   "k_N_m": 49181,
-   "c_Ns_m": 4349,
-   "sag_m": 0.077,
-   "hz": 1.8,
-   "zeta": 0.5,
+   "k_N_m": 25653,
+   "c_Ns_m": 2513,
+   "sag_m": 0.147,
+   "hz": 1.3,
+   "zeta": 0.4,
    "travel_m": 0.06
   },
-  "ride_hz": 1.3,
-  "zeta": 0.4,
+  "ride_hz": 1.1,
+  "zeta": 0.3,
   "travel_m": [
    0.1,
    0.14

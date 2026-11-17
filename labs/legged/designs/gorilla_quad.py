@@ -37,13 +37,14 @@ __all__ = ["RIDER", "GEOM", "MASS", "sizing", "seated_pose", "GorillaQuad", "qua
 
 G = 9.81
 SSF_TARGET = 1.0          #: static stability factor with the rider (passenger cars 1.2-1.5, ATVs 0.8-1.0)
-RIDE_HZ = 1.3             #: sprung-mass natural frequency [Hz]
-SEAT_HZ = 1.8             #: the suspended seat with the rider on it [Hz] (truck and tractor seats: 1.5-2 Hz)
-SEAT_ZETA = 0.5
+RIDE_HZ = 1.1             #: sprung-mass natural frequency [Hz] (picked by the bump sweep: 1.3 -> 1.1 Hz cut the gorilla's chest acceleration ~20 %)
+ARB_RATIO = 1.5           #: each axle's anti-roll bar: its rate at the wheel [N/m] for opposite travel, x the corner spring rate
+SEAT_HZ = 1.3             #: the suspended seat with the rider on it [Hz] (truck seats 1.2-2 Hz)
+SEAT_ZETA = 0.4
 SEAT_TRAVEL = 0.06        #: the seat's travel each way [m]
 SEAT_MOVING_KG = 4.0      #: the seat's moving part (pan, cushion) [kg]
 TYRE_SOLREF = (0.03, 0.5)  #: the tyres' contact (MuJoCo time constant, damping ratio): ~150 kN/m low-pressure ATV tyres
-ZETA = 0.4                #: damping ratio of the corner
+ZETA = 0.3                #: damping ratio of the corner
 GRADE = 0.35              #: the steepest slope to climb [-]
 ACC_SPARE = 1.0           #: acceleration still available on it [m/s²]
 V_MAX = 45 / 3.6          #: top speed [m/s]
@@ -138,6 +139,7 @@ def sizing(rider_cg=(-0.05, 0.0, 0.99)) -> dict:
         "axle_load_kg": {"front": round(front, 1), "rear": round(rear, 1)},
         "ssf": round(ssf, 3), "ssf_target": SSF_TARGET, "track_for_target_m": round(2 * h * SSF_TARGET, 3),
         "rollover_lat_g": round(ssf, 2),
+        "anti_roll_bar_N_m": {"front": round(ARB_RATIO * corner["FL"]["k_N_m"]), "rear": round(ARB_RATIO * corner["RL"]["k_N_m"])},
         "corners": corner, "seat": seat, "ride_hz": RIDE_HZ, "zeta": ZETA, "travel_m": (g["droop"], g["bump"]),
         "wheel_force_N": round(F_wheel), "wheel_torque_Nm": round(T_wheel), "wheel_speed_max_rad_s": round(w_max, 1),
         "motor": {"ratio": ratio, "peak_torque_Nm": round(T_wheel / ratio / 0.95, 1), "max_speed_rpm": round(w_max * ratio * 60 / (2 * math.pi)),
@@ -464,7 +466,7 @@ def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None) -> Prop:
     st = s["seat"]
     seat = Link("quad_seat", pos=(g["pelvis"][0], 0.0, g["seat_top"] - 0.05),
                 joints=[] if rigid else [Joint("seat_slide", kind="slide", axis=(0, 0, 1), range=(-SEAT_TRAVEL, SEAT_TRAVEL), stiffness=st["k_N_m"],
-                                                damping=st["c_Ns_m"], springref=-st["sag_m"])],
+                                                damping=st["c_Ns_m"], springref=st["sag_m"])],    # preloaded upward: it carries the rider
                 geoms=[Geom("q_seat", "box", (0.28, 0.31, 0.05), mass=SEAT_MOVING_KG, role="visual", rgba=COLORS["seat"])])
     root = Link("quad_chassis", pos=(x0, y0, 0.0), geoms=chassis_geoms, masses=masses, children=[bar, seat, *corners])
     return Prop(root, free=True, priority=3, condim=4, solref=TYRE_SOLREF)

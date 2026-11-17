@@ -38,7 +38,7 @@ import gorilla_quad as gq  # noqa: E402
 import gorilla_scenarios as gs  # noqa: E402
 import motion_kit as mk  # noqa: E402
 import space_unit_robots as sr  # noqa: E402
-from vegeta.chiron import Custom, Geom, Link, Prop, SimOptions, Weld  # noqa: E402
+from vegeta.chiron import Geom, Link, Prop, SimOptions, Weld  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "output"
 
@@ -60,7 +60,7 @@ def speed_target(x):
     if x < 7.0:
         return 2.0 + 2.5 * min(1.0, x / 6.0)
     if x < 21.0:
-        return 4.0
+        return 3.0                                                         # over the bumps at 11 km/h
     if x < 54.0:
         return 4.5
     return max(0.0, 4.5 * math.sqrt(max(0.0, (STOP_X - x) / (STOP_X - 54.0))))
@@ -74,23 +74,13 @@ def path_y(x):
     return 0.0
 
 
-def bump_height(x, y):
-    """The course's ground [m]: each bump a circular segment of radius ``BUMP_R`` (the drawn cylinder's top) across its
-    span; a heightfield, so the tyres roll over a surface, not a convex shape's single contact point."""
-    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
-    z = np.zeros(np.broadcast(x, y).shape)
-    for xc, y0, y1, h in BUMPS:
-        seg = np.sqrt(np.clip(BUMP_R ** 2 - (x - xc) ** 2, 0.0, None)) - (BUMP_R - h)
-        z = np.maximum(z, np.where((y >= y0) & (y <= y1), np.clip(seg, 0.0, None), 0.0))
-    return z
-
-
 def course_prop():
     geoms = []
-    quat_y = (math.cos(math.pi / 4), -math.sin(math.pi / 4), 0.0, 0.0)
     for k, (x, y0, y1, h) in enumerate(BUMPS):
-        geoms.append(Geom(f"bump_{k}", "cylinder", (BUMP_R, (y1 - y0) / 2), pos=(x, (y0 + y1) / 2, h - BUMP_R), quat=quat_y, mass=100.0,
-                          role="visual", rgba=(0.95, 0.80, 0.15, 1.0)))         # drawn; the bump itself is in the terrain (``bump_height``)
+        geoms.append(Geom(f"bump_{k}", "capsule", (BUMP_R,), fromto=(x, y0, h - BUMP_R, x, y1, h - BUMP_R), mass=100.0,
+                          rgba=(0.95, 0.80, 0.15, 0.0), friction=(1.0, 0.005, 0.0001)))   # a capsule: its contact with a sphere tyre is exact (not drawn)
+        geoms.append(Geom(f"bump_{k}_look", "cylinder", (BUMP_R, (y1 - y0) / 2), pos=(x, (y0 + y1) / 2, h - BUMP_R),
+                          quat=(math.cos(math.pi / 4), -math.sin(math.pi / 4), 0.0, 0.0), mass=1.0, role="visual", rgba=(0.95, 0.80, 0.15, 1.0)))
     for k, x in enumerate(CONES):
         geoms += [Geom(f"cone_{k}", "cylinder", (0.12, 0.25), pos=(x, 0.0, 0.25), mass=2.0, role="visual", rgba=(0.98, 0.45, 0.05, 1.0)),
                   Geom(f"cone_{k}_band", "cylinder", (0.125, 0.04), pos=(x, 0.0, 0.32), mass=0.1, role="visual", rgba=(0.95, 0.95, 0.95, 1.0))]
@@ -117,12 +107,8 @@ class Ride:
         self.Q = np.array([poses[i] for i in range(13)])
         self.robot.root.pos = tuple(gq.GEOM["pelvis"])
         opts = SimOptions()
-        opts.course_extent = (4.0, 24.0, -2.5, 2.5)                       # the heightfield under the bumps; flat beyond
-        opts.heightfield_cell = 0.02
-        xml = self.robot.to_mjcf(terrain=Custom(bump_height, name="kerchak_bumps"), options=opts, props=[gq.quad_prop(rigid=rigid, sz=self.sz), course_prop()],
+        xml = self.robot.to_mjcf(options=opts, props=[gq.quad_prop(rigid=rigid, sz=self.sz), course_prop()],
                                  welds=[Weld("seat", "pelvis", "quad_seat")])
-        i = xml.index('<geom name="chiron_terrain"')                     # the ground beyond the heightfield: a plane half a millimetre under it
-        xml = xml[:i] + '<geom name="ground_plane" type="plane" size="0 0 1" contype="1" conaffinity="2" priority="0" pos="0 0 -0.0005"/>\n    ' + xml[i:]
         a = gq.GEOM["ackermann"]
         extra = ["  <equality>",
                  f'    <joint name="tie_FL" joint1="steer_FL" joint2="steer_column" polycoef="0 1 {a} 0 0"/>',
@@ -138,7 +124,7 @@ class Ride:
         for g in range(m.ngeom):
             name = m.geom(g).name
             body_root = m.body_rootid[m.geom_bodyid[g]]
-            if name.startswith("tyre_") or name in ("chiron_terrain", "ground_plane") or m.body(body_root).name == "course":
+            if name.startswith("tyre_") or name == "chiron_terrain" or m.body(body_root).name == "course":
                 continue
             m.geom_contype[g] = m.geom_conaffinity[g] = 0
         self.qadr = self.kin.qadr                                           # the robot's hinges come first in the model, as in Kin's
@@ -149,6 +135,8 @@ class Ride:
         self.kd = np.array([max(servos[n].kd, 0.05 * servos[n].kp ** 0.5) for n in self.kin.names])
         self.lim = np.array([servos[n].stall_torque for n in self.kin.names])
         self.motor = [m.actuator(f"motor_{c}").id for c in gq.CORNERS]
+        self.arb = [] if rigid else [(m.jnt_dofadr[m.joint(f"susp_{a}L").id], m.jnt_dofadr[m.joint(f"susp_{a}R").id], self.sz["anti_roll_bar_N_m"][axle])
+                                     for a, axle in (("F", "front"), ("R", "rear"))]
         self.spin = [m.jnt_dofadr[m.joint(f"spin_{c}").id] for c in gq.CORNERS]
         self.col = m.actuator("column").id
         self.col_q = m.jnt_qposadr[m.joint("steer_column").id]
@@ -200,6 +188,12 @@ class Ride:
         q, qd = d.qpos[self.qadr], d.qvel[self.dadr]
         tau = self.kp * (q_t - q) - self.kd * qd + d.qfrc_bias[self.dadr]
         d.ctrl[self.act] = np.clip(tau, -self.lim, self.lim)
+        # the anti-roll bars: a torsion bar per axle resists the left and right wheels travelling apart
+        d.qfrc_applied[:] = 0.0
+        for dl, dr, k in self.arb:
+            f = k * (d.qpos[self._qadr_of_dof(dl)] - d.qpos[self._qadr_of_dof(dr)])
+            d.qfrc_applied[dl] -= f
+            d.qfrc_applied[dr] += f
         # the four motors: a speed loop each, the torque capped by the motor's peak torque and power
         vt = speed_target(x) if driving else 0.0
         dv = vt - self.vt_cmd                                                # the throttle eased in and out: 1.5 m/s² up, 2.5 down
@@ -213,6 +207,9 @@ class Ride:
             cap = min(T, P / max(abs(w), 1e-3))
             d.ctrl[a] = float(np.clip(120.0 * (vt / R - w), -cap, cap))
         return vt
+
+    def _qadr_of_dof(self, dof):
+        return int(self.model.jnt_qposadr[self.model.dof_jntid[dof]])
 
     def step(self, t, dt):
         m, d = self.model, self.data
@@ -254,14 +251,30 @@ class Ride:
         bump = (x > x_from) & (x < x_to)
         loads = L[:, 10:14]
         settled = t > SETTLE_S
+        if not bump.any() or not settled.any():                           # a run too short to reach the bumps
+            bump = settled = np.ones(len(t), dtype=bool)
         return {"rms_vertical_acc_bumps_m_s2": round(float(np.sqrt(np.mean(a_s[bump] ** 2))), 2),
                 "peak_vertical_acc_bumps_m_s2": round(float(np.max(np.abs(a_s[bump]))), 2),
                 "roll_max_deg": round(float(np.max(np.abs(L[settled, 6]))), 1), "pitch_max_deg": round(float(np.max(np.abs(L[settled, 7]))), 1),
-                "wheel_lift_s": round(float(np.sum(np.min(loads[settled], axis=1) < 1.0) * dt), 3),
-                "min_wheel_load_N": round(float(np.min(loads[settled])), 0),
+                "wheel_lift_s": wheel_lift(loads[settled], x[settled], dt),
+                "min_wheel_load_N_filtered": round(float(np.min(_movmin(loads[settled], int(0.01 / dt)))), 0),
                 "speed_max_m_s": round(float(np.max(L[:, 3])), 2), "x_end_m": round(float(x[-1]), 2), "y_end_m": round(float(L[-1, 2]), 2),
                 "steer_max_rad": round(float(np.max(np.abs(L[:, 8]))), 3), "seated_ik_error_max_m": round(float(self.ik_err), 4),
                 "max_lateral_offset_from_line_m": round(float(np.max(np.abs(L[:, 2] - np.array([path_y(v) for v in x])))), 2)}
+
+
+def _movmin(loads, n):
+    """Each wheel's load, its lowest over the next ``n`` steps taken as the largest: a single-step dropout of the
+    contact solver (a rolling sphere) is not a lift; a lift lasts."""
+    from scipy.ndimage import maximum_filter1d
+    return maximum_filter1d(loads, size=n, axis=0, mode="nearest")
+
+
+def wheel_lift(loads, x, dt, hold=0.01):
+    """{section: seconds} a wheel was off the ground for ``hold`` s or longer."""
+    off = np.min(_movmin(loads, int(hold / dt)), axis=1) < 1.0
+    return {name: round(float(np.sum(off & (x >= a) & (x < b)) * dt), 3)
+            for name, a, b in (("run-up", -1e9, 7.0), ("bumps", 7.0, 21.0), ("slalom", 21.0, 54.0), ("stop", 54.0, 1e9))}
 
 
 def wk_filter(a, fs):
@@ -326,7 +339,7 @@ def main(argv=None):
         az = math.degrees(yaw) + 235.0 - 70.0 * mk.smooth(min(1.0, max(0.0, (x - 20.0) / 8.0))) + 60.0 * mk.smooth(min(1.0, max(0.0, (x - 52.0) / 8.0)))
         cam = br.orbit((c[0], c[1], 0.9), 16.0, az, 6.4)
         L = ride.log[-1] if ride.log else (0,) * 14
-        sect = "settling" if t < SETTLE_S else "bumps" if x < 21 else "slalom" if x < 53 else "stopping at the banana"
+        sect = "settling" if t < SETTLE_S else "run-up" if x < 7 else "bumps (11 km/h)" if x < 21 else "slalom round the cones" if x < 53 else "stopping at the banana"
         title = f"Kerchak's quad   t = {t:4.1f} s   {3.6 * v:4.1f} km/h   steer {math.degrees(L[8]):+5.1f} deg   roll {L[6]:+5.1f} deg   -   {sect}"
         renderer.render(d, cam, title=title).save(path)
 
