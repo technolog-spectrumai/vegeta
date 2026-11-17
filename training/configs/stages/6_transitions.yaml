@@ -1,0 +1,9 @@
+# Curriculum stage 6: starting, stopping and changing direction - commands resampled often, sensor noise on.
+description: starting, stopping and changing direction
+commands: {vx: [-0.3, 0.4], vy: [-0.15, 0.15], yaw_rate: [-0.5, 0.5], height: [0.5, 0.7], stop_probability: 0.3, resample_seconds: 2.0}
+reward: {stop_still: 0.8, action_rate: -0.02}
+terrain: {kind: flat}
+randomization: {enabled: true, sensor_noise: true}
+disturbance: {enabled: false}
+sim: {episode_seconds: 14.0}
+ppo: {iterations: 1500}

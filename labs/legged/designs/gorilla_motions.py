@@ -91,7 +91,7 @@ def quad_pose(kin, pelvis_h=PELVIS_H, pitch=PELVIS_PITCH, hands_ahead=0.3, feet_
             if wrist is not None:                                         # the wrist behind and above the knuckle: the forearm leaning on it
                 fore = kin.body(f"{side}_forearm")
                 targets.append((fore, np.zeros(3), to_base([sh[0] + hands_ahead + wrist[0], w[1], -pelvis_h + wrist[1]])))
-    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j]
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     q, err = kin.ik(targets, q_init=q, q_ref=q, joints=limbs, iters=400)
     assert err < 0.03, f"the quad pose's IK: {err:.3f} m"
     return q
@@ -105,7 +105,7 @@ def knuckle_walk(kin, q_quad, *, speed=0.25, stride=0.26, duty=0.74, step=0.06, 
     q0 = kin.q0
     kin.q0 = np.asarray(q_quad, dtype=float)                               # the gait's reference pose
     try:
-        limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j]
+        limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
         gait = mk.legged_gait(kin, name, CONTACTS, period=period, duty=duty, stride=stride, step_height=step,
                               foot_points=foot_points, joints=limbs, base_rot=base_rot(), reg=reg, iters=iters,
                               source="gorilla_motions.knuckle_walk: the lateral-sequence walk on the knuckles",
@@ -139,7 +139,7 @@ def rise(kin, q_quad, duration=3.0, frames=36, push=0.2, lift=0.7, pelvis_h=PELV
     kin.set(kin.q0)                                                        # the hands and the feet when standing (the world, pelvis level)
     hands1 = {side: kin.world(*kin.geom_point(f"{side}_knuckle")) + np.array([0.0, 0.0, h_stand]) for side in ("L", "R")}
     feet1 = {g: [kin.world(body, local) + np.array([0.0, 0.0, h_stand]) for body, local in pts[g]] for g in ("L", "R")}
-    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j]
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     ts = [duration * i / frames for i in range(frames + 1)]
     Q, heights, pitches, q, worst = [], [], [], np.asarray(q_quad, dtype=float).copy(), 0.0
     for t in ts:

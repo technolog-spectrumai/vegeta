@@ -313,38 +313,104 @@ def _casing(r, P):
 
 
 def _hands(r, P):
-    """Articulated hands on the bare frame: a wrist with two modules (pitch, and roll about the forearm: pronation,
-    ``qdd 60 Nm``) carrying the palm and the thumb pad, and the four fingers on one curl module (``qdd 24 Nm``) at
-    the knuckle line - open to take a handle or a branch, closed to grip; the knuckle contact (the fingers' middle
-    joints) rides the fingers. The forearm's own palm and finger geoms move onto these links."""
-    Lf, d, fl, fd = P["forearm_length"] * mm, P["arm_diameter"] * mm, P["finger_length"] * mm, P["finger_diameter"] * mm
-    wrist_servo, finger_servo = bk.servo("qdd 60 Nm", kp=300.0, kd=3.0), bk.servo("qdd 24 Nm", kp=60.0, kd=0.8)
-    for side in ("L", "R"):
+    """Real hands on the bare frame (``space_unit_specs.hand_layout``): a wrist with two modules (pitch, and roll
+    about the forearm: pronation, ``qdd 60 Nm``) carrying the palm; four fingers of three phalanges each, every
+    phalanx on its own hinge (the knuckle's ``harmonic 12 Nm, brake``: self-locking, so a hang holds unpowered;
+    the two finger joints ``smart servo 6 Nm``), curling in towards the palm's face; a thumb on an opposition
+    joint (``harmonic 12 Nm, brake``) and a flexion joint (``smart servo 12 Nm``) that closes over the fingers. The
+    knuckle contacts (the backs of the middle phalanges) carry the frame knuckle-walking: the middle finger's is
+    ``{side}_knuckle``, the gaits' contact. One curl command per hand drives every joint (``curl_values``)."""
+    Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
+    wrist_servo = bk.servo("qdd 60 Nm", kp=300.0, kd=3.0)
+    mcp_servo = bk.servo("harmonic 12 Nm, brake", kp=40.0, kd=0.5)
+    ip_servo = bk.servo("smart servo 6 Nm", kp=15.0, kd=0.2)
+    thumb_servo = bk.servo("smart servo 12 Nm", kp=25.0, kd=0.3)
+    for side, sy in (("L", 1.0), ("R", -1.0)):
         fore = _link(r.root, f"{side}_forearm")
-        fore.geoms = [g for g in fore.geoms if g.name != f"{side}_palm" and "_finger_" not in g.name]
-        knuckle = np.array([d * 0.47, 0.0, -d * 0.86])                     # the knuckle line, in the hand's frame (the wrist at its origin)
-        fingers = Link(f"{side}_fingers", pos=tuple(knuckle),
-                       joints=[Joint(f"{side}_finger_curl", axis=(0, 1, 0), range=(-0.4, 1.3), tag="finger_curl", servo=finger_servo)],
-                       geoms=[], masses=[PointMass(f"{side}_finger_actuator", 0.6)])
-        seg = fl / 3
-        for k in range(4):
-            y = (k - 1.5) * (d * 0.5 / 3.4)
-            pos, ang = np.array([0.0, y, 0.0]), -20.0
-            for j in range(3):
-                ang += 55.0
-                nxt = pos + np.array([-seg * math.cos(math.radians(ang)), 0.0, -seg * math.sin(math.radians(ang))])
-                fingers.geoms.append(bk.capsule(f"{side}_finger_{k}_{j}", fd * (0.5 - 0.05 * j), tuple(pos), tuple(nxt), role="link", rgba=bk.DARK))
-                pos = nxt
-        fingers.geoms.append(Geom(f"{side}_knuckle", "sphere", (0.035,), pos=(-0.045, 0.0, -0.085), mass=0.2, role="foot",
-                                  friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK))
+        fore.geoms = [g for g in fore.geoms if g.name not in (f"{side}_palm", f"{side}_hand", f"{side}_thumb") and "_finger_" not in g.name]
+        lay = su.hand_layout(P, sy)
+        pt, pw, pl = (v * mm for v in lay["palm"])
         hand = Link(f"{side}_hand", pos=(0.0, 0.0, -Lf),
                     joints=[Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=(-1.2, 1.2), tag="wrist_pitch", servo=wrist_servo),
                             Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-1.6, 1.6), tag="wrist_roll", servo=wrist_servo)],
-                    geoms=[bk.box(f"{side}_palm", (d * 0.47, d * 0.25, d * 0.45), (0.0, 0.0, -d * 0.45), role="link", rgba=bk.DARK),
-                           bk.box(f"{side}_thumb", (d * 0.15, d * 0.25, d * 0.17), (-d * 0.55, 0.0, -d * 0.55), role="link", rgba=bk.DARK)],
-                    masses=[PointMass(f"{side}_wrist_actuators", 2 * 1.4)], children=[fingers])
+                    geoms=[bk.box(f"{side}_palm", (pt / 2, pw / 2, pl / 2), (0.0, 0.0, -pl / 2 - 0.004), role="link", rgba=bk.DARK),
+                           bk.capsule(f"{side}_wrist", d * 0.28, (0.0, 0.0, 0.0), (0.0, 0.0, -0.02), role="link", rgba=bk.DARK)],
+                    masses=[PointMass(f"{side}_wrist_actuators", 2 * 1.4)])
+        for k, f in enumerate(lay["fingers"]):
+            Lp, Lm, Ld = (v * mm for v in f["lengths"])
+            rf = f["radius"] * mm
+            distal = Link(f"{side}_finger_{k}_2", pos=(0.0, 0.0, -Lm),
+                          joints=[Joint(f"{side}_finger_{k}_dip", axis=(0, -1, 0), range=(-0.1, 1.4), tag="finger_dip", servo=ip_servo)],
+                          geoms=[bk.capsule(f"{side}_finger_{k}_2", rf * 0.9, (0.0, 0.0, 0.0), (0.0, 0.0, -Ld), role="link", rgba=bk.DARK)],
+                          masses=[PointMass(f"{side}_finger_{k}_dip_actuator", 0.07)])
+            knuckle = Geom(f"{side}_knuckle" if k == 1 else f"{side}_knuckle_{k}", "sphere", (rf * 1.15,), pos=(-rf * 0.5, 0.0, -Lm / 2), mass=0.05,
+                           role="foot" if k == 1 else "link", friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK)
+            middle = Link(f"{side}_finger_{k}_1", pos=(0.0, 0.0, -Lp),
+                          joints=[Joint(f"{side}_finger_{k}_pip", axis=(0, -1, 0), range=(-0.1, 1.9), tag="finger_pip", servo=ip_servo)],
+                          geoms=[bk.capsule(f"{side}_finger_{k}_1", rf * 0.95, (0.0, 0.0, 0.0), (0.0, 0.0, -Lm), role="link", rgba=bk.DARK), knuckle],
+                          masses=[PointMass(f"{side}_finger_{k}_pip_actuator", 0.07)], children=[distal])
+            proximal = Link(f"{side}_finger_{k}_0", pos=tuple(v * mm for v in f["root"]),
+                            joints=[Joint(f"{side}_finger_{k}_mcp", axis=(0, -1, 0), range=(-0.3, 1.7), tag="finger_mcp", servo=mcp_servo)],
+                            geoms=[bk.capsule(f"{side}_finger_{k}_0", rf, (0.0, 0.0, 0.0), (0.0, 0.0, -Lp), role="link", rgba=bk.DARK)],
+                            masses=[PointMass(f"{side}_finger_{k}_mcp_actuator", 0.52)], children=[middle])
+            hand.children.append(proximal)
+        th = lay["thumb"]
+        Lm, Lp, Ld = (v * mm for v in th["lengths"])
+        rt, m = th["radius"] * mm, np.asarray(th["dir"])
+        ax = np.asarray(th["curl_axis"])
+        d2 = _rot3(ax, th["tip_bend"]) @ m
+        ip = m * Lp
+        tip = ip + d2 * Ld
+        phalanges = Link(f"{side}_thumb_1", pos=tuple(m * Lm),
+                         joints=[Joint(f"{side}_thumb_curl", axis=tuple(ax), range=(-0.2, 1.6), tag="thumb_curl", servo=thumb_servo)],
+                         geoms=[bk.capsule(f"{side}_thumb_1", rt * 0.95, (0.0, 0.0, 0.0), tuple(ip), role="link", rgba=bk.DARK),
+                                bk.capsule(f"{side}_thumb_2", rt * 0.85, tuple(ip), tuple(tip), role="link", rgba=bk.DARK)],
+                         masses=[PointMass(f"{side}_thumb_curl_actuator", 0.12)])
+        metacarpal = Link(f"{side}_thumb_0", pos=tuple(v * mm for v in th["base"]),
+                          joints=[Joint(f"{side}_thumb_oppose", axis=tuple(th["oppose_axis"]), range=(0.0, 1.3), tag="thumb_oppose", servo=mcp_servo)],
+                          geoms=[bk.capsule(f"{side}_thumb_0", rt, (0.0, 0.0, 0.0), tuple(m * Lm), role="link", rgba=bk.DARK)],
+                          masses=[PointMass(f"{side}_thumb_oppose_actuator", 0.52)], children=[phalanges])
+        hand.children.append(metacarpal)
         fore.children.append(hand)
     return r
+
+
+def _rot3(axis, a):
+    x, y, z = axis
+    K = np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    return np.eye(3) + math.sin(a) * K + (1.0 - math.cos(a)) * K @ K
+
+
+def finger_joints(side: str) -> list:
+    """The hand's finger and thumb joints, in the order ``curl_values`` gives them."""
+    return [f"{side}_finger_{k}_{j}" for k in range(4) for j in ("mcp", "pip", "dip")] + [f"{side}_thumb_oppose", f"{side}_thumb_curl"]
+
+
+def curl_values(side: str, curl: float) -> dict:
+    """{joint: angle} of the hand's joints for one curl command (0 open, ``KNUCKLE_CURL`` the walking fist, 2 a fist)."""
+    out = {f"{side}_finger_{k}_{j}": su.FINGER_CURL[j] * curl for k in range(4) for j in ("mcp", "pip", "dip")}
+    out[f"{side}_thumb_oppose"] = su.THUMB_CURL["oppose"] * curl
+    out[f"{side}_thumb_curl"] = su.THUMB_CURL["curl"] * curl
+    return out
+
+
+def set_curl(q, kin, side: str, curl: float):
+    """``q`` with the hand's joints at ``curl`` (clipped to their ranges)."""
+    for j, v in curl_values(side, curl).items():
+        i = kin.index[j]
+        q[i] = min(max(v, kin.lo[i]), kin.hi[i])
+    return q
+
+
+def hand_grip(curl: float, P=None) -> np.ndarray:
+    """Where a bar's axis sits in the hand's frame when the fingers are curled ``curl`` round it [m]: the centre of
+    the circle fitted to the middle finger's joints and tip (``finger_chain``)."""
+    P = su.MARINE if P is None else P
+    pts = np.array(su.finger_chain(su.hand_layout(P, 1.0)["fingers"][1], curl))[:, [0, 2]] * mm
+    A = np.c_[2 * pts, np.ones(len(pts))]
+    b = (pts ** 2).sum(axis=1)
+    cx, cz, _ = np.linalg.lstsq(A, b, rcond=None)[0]
+    return np.array([cx, 0.0, cz])
 
 
 def bare(name: str = "Belisario", casing: str = "none"):
@@ -366,12 +432,16 @@ def bare(name: str = "Belisario", casing: str = "none"):
     _struts(r, P)
     e = math.radians(P["elbow_bend_deg"])
     r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25}   # at rest: on four
+    for side in ("L", "R"):                                               # the fingers flexed: the knuckles take the weight on four
+        r.nominal_qpos.update(curl_values(side, su.KNUCKLE_CURL))
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
-    for j in r.joints():                                                  # a gorilla's ankles and knees fold further
+    for j in r.joints():                                                  # a gorilla's ankles and knees fold further, its arms cross the chest
         if j.tag == "ankle_pitch":
             j.range = (-1.4, 0.7)
         elif j.tag == "knee":
             j.range = (0.0, 2.5)
+        elif j.tag == "shoulder_roll":
+            j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
     r.sources["geometry"] = f"designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone

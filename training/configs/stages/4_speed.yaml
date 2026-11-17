@@ -1,0 +1,8 @@
+# Curriculum stage 4: forward and backward at variable speed; light randomization begins.
+description: variable forward and backward speed
+commands: {vx: [-0.3, 0.4], vy: [0.0, 0.0], yaw_rate: [0.0, 0.0], height: [0.55, 0.68], stop_probability: 0.15}
+terrain: {kind: flat}
+randomization: {enabled: true, mass_scale: [0.95, 1.05], motor_strength: [0.95, 1.05], joint_friction: [0.0, 0.2], latency_steps: [0, 1], sensor_noise: false}
+disturbance: {enabled: false}
+sim: {episode_seconds: 12.0}
+ppo: {iterations: 1500}

@@ -1,0 +1,9 @@
+# Curriculum stage 2: weight shifting - small height and lateral commands, the limbs loading and unloading.
+description: weight shifting
+commands: {vx: [0.0, 0.0], vy: [-0.05, 0.05], yaw_rate: [0.0, 0.0], height: [0.55, 0.68], stop_probability: 0.5}
+reward: {stop_still: 0.8, height: 1.0, contact_stability: 0.5, track_lin_vel: 0.5, track_ang_vel: 0.0}
+terrain: {kind: flat}
+randomization: {enabled: false}
+disturbance: {enabled: false}
+sim: {episode_seconds: 8.0}
+ppo: {iterations: 400}

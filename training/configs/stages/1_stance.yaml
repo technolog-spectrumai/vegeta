@@ -1,0 +1,9 @@
+# Curriculum stage 1: a stable crouched stance on four - stop commands only, the nominal model.
+description: a stable crouched stance on four
+commands: {vx: [0.0, 0.0], vy: [0.0, 0.0], yaw_rate: [0.0, 0.0], height: [0.6, 0.64], stop_probability: 1.0}
+reward: {stop_still: 1.0, height: 1.0, contact_stability: 0.5, track_lin_vel: 0.0, track_ang_vel: 0.0}
+terrain: {kind: flat}
+randomization: {enabled: false}
+disturbance: {enabled: false}
+sim: {episode_seconds: 6.0}
+ppo: {iterations: 300}

@@ -313,8 +313,8 @@ def skeleton_trunk(p):
                    (x + D * 0.82, sy * wk * 0.72, z - drop * 0.88), (x_front, sy * p["sternum_width"] * 0.3, z - drop)]
             ribs.append(_rib(p, pts, rr))
         fronts.append(z - drop)
-    sternum = sk.rounded_box(rr * 2.2, p["sternum_width"], fronts[-1] - fronts[0] + rr * 4 + 30,
-                             (x_front, 0, (fronts[-1] + fronts[0]) / 2 + 15), fillet=9)
+    bottom, top = fronts[0] - rr * 1.2, fronts[-1] + rr * 2 + 36                 # the body of the sternum ends with the lowest rib, the manubrium rises above the first
+    sternum = sk.rounded_box(rr * 2.2, p["sternum_width"], top - bottom, (x_front, 0, (top + bottom) / 2), fillet=9)
     ribcage = sk.union_all(ribs).union(sternum)
     # the shoulder girdle: clavicles to the shoulder modules, scapulae behind the upper ribs, the neck and the head
     d = p["arm_diameter"]
@@ -408,26 +408,26 @@ def actuators(p):
     return {k: sk.union_all(v) for k, v in groups.items()}
 
 
-def gripper(p):
-    """A gripping hand at the wrist (the forearm's end at the origin, the forearm up +z, its outer side +x): a palm
-    block, four fingers of three phalanges on knuckle modules along the palm's lower edge, curled in (round a grip:
-    the carbine's, the pole, the maul's shaft), a thumb pad opposite. ``finger_length`` is the whole finger."""
-    d, Lf, df = p["arm_diameter"], p["finger_length"], p["finger_diameter"]
-    palm = sk.rounded_box(d * 0.95, d * 0.5, d * 0.9, (0, 0, -d * 0.45), fillet=8)
-    wrist = sk.disc((0, 0, 0), d * 0.4, d * 0.3, axis="z")
-    out = palm.union(wrist)
-    seg = Lf / 3
-    for k in range(4):
-        y = (k - 1.5) * (d * 0.5 / 3.4)
-        pts, ang, pos = [(d * 0.47, y, -d * 0.86)], -20.0, (d * 0.47, y, -d * 0.86)
-        for j in range(3):                                                # each phalanx curls 55° further
-            ang += 55.0
-            pos = (pos[0] + seg * math.cos(math.radians(ang)) * -1, y, pos[2] - seg * math.sin(math.radians(ang)))
-            pts.append(pos)
-        finger = sk.polyline_limb(pts, [df / 2, df * 0.45, df * 0.4])
-        out = out.union(finger).union(sk.disc((d * 0.47, y, -d * 0.86), df * 0.55, df * 0.9, axis="y"))   # the knuckle module
-    thumb = sk.rounded_box(d * 0.3, d * 0.5, d * 0.35, (-d * 0.55, 0, -d * 0.55), fillet=6)
-    return out.union(thumb)
+def gripper(p, curl=1.6):
+    """A hand at the wrist (the forearm's end at the origin, the forearm up +z, the palm's face +x), closed to
+    ``curl`` round a grip (the carbine's, the pole, the maul's shaft): the palm, four fingers of three phalanges on
+    their knuckle and finger joints, the thumb on its opposition and flexion joints across them
+    (``space_unit_specs.hand_layout``, the same hand the robot has)."""
+    d = p["arm_diameter"]
+    lay = su.hand_layout(p, 1.0)
+    pt, pw, pl = lay["palm"]
+    out = sk.rounded_box(pt, pw, pl, (0, 0, -pl / 2 - 4), fillet=12).union(sk.disc((0, 0, 0), d * 0.3, 24, axis="z"))
+    out = out.union(sk.rounded_box(pt * 0.8, 26, pl * 0.55, (pt * 0.35, lay["thumb"]["base"][1] * 0.75, -pl * 0.45), fillet=8))   # the thenar's bulk
+    for f in lay["fingers"]:
+        pts = su.finger_chain(f, curl)
+        r = f["radius"]
+        for j in range(3):
+            out = out.union(sk.capsule(pts[j], pts[j + 1], r * (1.0, 0.95, 0.9)[j]))
+    th = lay["thumb"]
+    pts = su.thumb_chain(th, curl)
+    for j in range(3):
+        out = out.union(sk.capsule(pts[j], pts[j + 1], th["radius"] * (1.0, 0.95, 0.85)[j]))
+    return out
 
 
 def femur(p):

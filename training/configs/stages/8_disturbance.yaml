@@ -1,0 +1,8 @@
+# Curriculum stage 8: pushes at the pelvis, full randomization.
+description: disturbance recovery
+commands: {vx: [-0.3, 0.4], vy: [-0.15, 0.15], yaw_rate: [-0.5, 0.5], height: [0.5, 0.7], stop_probability: 0.2}
+terrain: {kind: rough, rms: 0.03, correlation_length: 0.35}
+randomization: {enabled: true, sensor_noise: true, pushes: true}
+disturbance: {enabled: true, force_xy: 200.0, interval_seconds: [2.0, 5.0]}
+sim: {episode_seconds: 14.0}
+ppo: {iterations: 2000}

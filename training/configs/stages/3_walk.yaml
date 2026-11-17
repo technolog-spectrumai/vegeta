@@ -1,0 +1,9 @@
+# Curriculum stage 3: slow forward knuckle-walking.
+description: slow forward knuckle-walking
+commands: {vx: [0.1, 0.3], vy: [0.0, 0.0], yaw_rate: [0.0, 0.0], height: [0.58, 0.66], stop_probability: 0.1}
+reward: {track_lin_vel: 1.5, coordination: 0.3, contact_stability: 0.3}
+terrain: {kind: flat}
+randomization: {enabled: false}
+disturbance: {enabled: false}
+sim: {episode_seconds: 10.0}
+ppo: {iterations: 1500}

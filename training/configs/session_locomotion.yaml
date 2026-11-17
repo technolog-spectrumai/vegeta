@@ -1,0 +1,15 @@
+# The first session to run: knuckle-walking alone, flat ground then a little roughness - the recommended first
+# experiment (TRAINING.md). Door, window and the climbs come in session.yaml once this walks.
+name: belisario_knuckle_walk
+base: base.yaml
+config:
+  ppo:
+    num_envs: 8
+    steps_per_env: 32
+stages: [1_stance, 2_shift, 3_walk, 4_speed, 5_turn, 6_transitions]
+scenes:
+  - name: flat
+    weight: 0.8
+  - name: rough
+    weight: 0.2
+    params: {rms: 0.02, correlation_length: 0.4, seed: 1}

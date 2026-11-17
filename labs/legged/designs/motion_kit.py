@@ -125,6 +125,8 @@ class Kin:
             b = np.concatenate([e, r])
             dq = np.linalg.lstsq(A, b, rcond=None)[0]
             q[cols] = np.clip(q[cols] + dq, self.lo[cols], self.hi[cols])
+        self.set(q)                                                        # the error of the pose returned, not of the step before it
+        err = max(float(np.linalg.norm(np.asarray(goal) - (d.xpos[body] + d.xmat[body].reshape(3, 3) @ local))) for body, local, goal in targets)
         return q, err
 
     def margin(self, Q, joints=None):

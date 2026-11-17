@@ -97,24 +97,25 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
     """A motion solved frame by frame: ``targets_fn(u)`` → [(body, local, world xyz)] (the planted contacts and the
     hand), ``base_fn(u)`` → (base x, height, pitch) in the world; ``extra(u, q)`` sets joints the IK does not (the
     fingers, the wrist's roll). The motion's ``base`` carries the base track per frame."""
-    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j]
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     ts = [duration * i / frames for i in range(frames + 1)]
-    Q, xs, hs, ps, q, worst = [], [], [], [], np.asarray(q_init, dtype=float).copy(), 0.0
+    Q, xs, ys, hs, ps, q, worst = [], [], [], [], [], np.asarray(q_init, dtype=float).copy(), 0.0
     for t in ts:
         u = t / duration
-        x, h, p = base_fn(u)
-        R, base = gm.base_rot(p), np.array([x, 0.0, h])
+        b = base_fn(u)
+        x, y, h, p = (b[0], 0.0, b[1], b[2]) if len(b) == 3 else b          # (x, h, pitch) or (x, y, h, pitch)
+        R, base = gm.base_rot(p), np.array([x, y, h])
         targets = [(body, local, R.T @ (np.asarray(w) - base)) for body, local, w in targets_fn(u)]
         q, err = kin.ik(targets, q_init=q, q_ref=q_init, joints=limbs, reg=reg, iters=iters)
         if extra:
             q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
         worst = max(worst, err)
         Q.append(q.copy())
-        xs.append(round(float(x), 4)); hs.append(round(float(h), 4)); ps.append(round(float(p), 4))
+        xs.append(round(float(x), 4)); ys.append(round(float(y), 4)); hs.append(round(float(h), 4)); ps.append(round(float(p), 4))
     moving = mk._moving(kin, Q)
     cols = [kin.index[j] for j in moving]
     return mk.Motion(name, "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
-                     base={"x_m": xs, "height_m": hs, "pitch_rad": ps, "note": "the pelvis's x, height and pitch per frame"},
+                     base={"x_m": xs, "y_m": ys, "height_m": hs, "pitch_rad": ps, "note": "the pelvis's x, y, height and pitch per frame"},
                      source=source or f"gorilla_tasks.{name}",
                      check={"ik_error_max_m": round(worst, 6), "limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
 
@@ -167,13 +168,14 @@ def _joint_motion(kin, name, duration, q_from, changes, frames=20, base=None, so
     x, h, p = base
     n = len(ts)
     return mk.Motion(name, "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
-                     base={"x_m": [x] * n, "height_m": [h] * n, "pitch_rad": [p] * n}, source=source,
+                     base={"x_m": [x] * n, "y_m": [0.0] * n, "height_m": [h] * n, "pitch_rad": [p] * n}, source=source,
                      check={"limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
 
 
 def grasp(kin, q_from, base, duration=0.8):
     """The right fingers close on the lever."""
-    return _joint_motion(kin, "grasp", duration, q_from, {"R_finger_curl": 0.9}, base=base, source="gorilla_tasks.grasp: the fingers close on the lever")
+    import space_unit_robots as sr
+    return _joint_motion(kin, "grasp", duration, q_from, sr.curl_values("R", 1.7), base=base, source="gorilla_tasks.grasp: the fingers close on the lever")
 
 
 def turn(kin, q_from, base, duration=1.0):
@@ -186,7 +188,8 @@ def push(kin, q_quad, q_from, base_x=STOP_X, duration=3.0):
     the fingers and the wrist's roll held, the feet planted, the pelvis advancing ``PUSH_ADVANCE`` over them."""
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     body, local = gm._contact_points(kin)["R_knuckle"][0]
-    held = {j: q_from[kin.index[j]] for j in ("R_finger_curl", "R_wrist_roll")}
+    import space_unit_robots as sr
+    held = {j: q_from[kin.index[j]] for j in sr.finger_joints("R") + ["R_wrist_roll"]}
 
     def targets(u):
         phi = DOOR["open_rad"] * mk.smooth(u)

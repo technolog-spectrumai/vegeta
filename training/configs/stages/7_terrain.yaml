@@ -1,0 +1,8 @@
+# Curriculum stage 7: uneven terrain - rough fields (and steps through a session's scenes).
+description: uneven terrain
+commands: {vx: [-0.2, 0.35], vy: [-0.1, 0.1], yaw_rate: [-0.4, 0.4], height: [0.55, 0.68], stop_probability: 0.2}
+terrain: {kind: rough, rms: 0.03, correlation_length: 0.35}
+randomization: {enabled: true, sensor_noise: true, ground_friction: [0.4, 1.2]}
+disturbance: {enabled: false}
+sim: {episode_seconds: 14.0}
+ppo: {iterations: 2000}

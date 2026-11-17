@@ -1,0 +1,37 @@
+# A training session: the scenes it trains on, with weights and parameters, the base configuration and the
+# curriculum stages to run through in turn (belisario_rl.session). The environments are shared out among the
+# scenes by weight; one policy learns them all. Scenes: flat, rough, steps (locomotion), door, window, tree, hull,
+# obstacles, rope (each with a goal to reach through or up the scene; their parameters in belisario_rl.scenes).
+name: belisario_locomotion_and_tasks
+base: base.yaml
+config:
+  ppo:
+    num_envs: 8
+stages: [1_stance, 2_shift, 3_walk, 4_speed, 5_turn, 6_transitions, 7_terrain, 8_disturbance]
+scenes:
+  - name: flat
+    weight: 0.45
+  - name: rough
+    weight: 0.15
+    params: {rms: 0.03, correlation_length: 0.35, seed: 3}
+  - name: steps
+    weight: 0.05
+    params: {step_height: 0.06, step_spacing: 1.2}
+  - name: door
+    weight: 0.1
+    params: {width: 1.3, mass_kg: 18.0, damping: 6.0}
+  - name: window
+    weight: 0.05
+    params: {sill: 0.9, width: 1.2, height: 1.3}
+  - name: obstacles
+    weight: 0.05
+    params: {count: 2, height: 0.35, spacing: 2.2}
+  - name: tree
+    weight: 0.05
+    params: {radius: 0.3, first_branch: 1.2, branch_spacing: 0.8, goal_height: 3.0}
+  - name: hull
+    weight: 0.05
+    params: {slope_deg: 62.0, height: 2.4}
+  - name: rope
+    weight: 0.05
+    params: {length: 4.0, links: 12, goal_height: 2.5}

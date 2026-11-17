@@ -118,3 +118,75 @@ MATERIALS = {
     "polycarbonate": {"density_kg_m3": 1200.0, "E_pa": 2.4e9, "nu": 0.37, "yield_pa": 62e6, "ultimate_pa": 70e6,
                       "source": "PC sheet: the visor"},
 }
+
+import math as _math
+
+#: The hand (mm): a palm, four fingers of three phalanges each (index, middle, ring, little at their own lengths,
+#: ``finger_length`` the middle one's), an opposable thumb (a metacarpal on an opposition joint, two phalanges on a
+#: flexion joint). The hand's frame: the wrist at the origin, the palm hanging -z, its face +x, the thumb's side ±y.
+HAND = {"palm_width": 95.0, "palm_thickness": 36.0, "palm_length": 105.0, "finger_spacing": 23.0,
+        "finger_fractions": (0.88, 1.0, 0.92, 0.74), "phalanx_fractions": (0.44, 0.31, 0.25),
+        "thumb_metacarpal": 75.0, "thumb_proximal": 45.0, "thumb_distal": 35.0, "thumb_diameter": 32.0,
+        "thumb_base": (12.0, 44.0, -70.0), "thumb_rest_deg": 70.0, "thumb_tip_bend_deg": 25.0}
+#: A hand's single curl command [0 open … 2 a fist] drives every joint: the angle [rad] per unit of curl.
+FINGER_CURL = {"mcp": 0.8, "pip": 0.95, "dip": 0.6}
+THUMB_CURL = {"oppose": 0.6, "curl": 0.75}
+KNUCKLE_CURL = 1.4                                                         #: the fingers flexed for knuckle-walking (the hand's rest)
+
+
+def hand_layout(P, sy):
+    """The hand's skeleton for the ``sy`` side (+1 left) in the hand's frame [mm]: the palm's box (thickness, width,
+    length), each finger's root, phalanx lengths and radius, the thumb's base, metacarpal direction, lengths, radius
+    and joint axes (opposition about the palm's long axis, flexion about an axis across the metacarpal: positive
+    bends the thumb down over the fingers)."""
+    H, fl, fd = HAND, P["finger_length"], P["finger_diameter"]
+    fingers = []
+    for k, frac in enumerate(H["finger_fractions"]):
+        L = fl * frac
+        fingers.append({"root": (4.0, sy * (1.5 - k) * H["finger_spacing"], -H["palm_length"]),
+                        "lengths": tuple(L * f for f in H["phalanx_fractions"]), "radius": fd / 2 * (0.85 if k == 3 else 1.0)})
+    a = _math.radians(H["thumb_rest_deg"])
+    bx, by, bz = H["thumb_base"]
+    return {"palm": (H["palm_thickness"], H["palm_width"], H["palm_length"]), "fingers": fingers,
+            "thumb": {"base": (bx, sy * by, bz), "dir": (_math.cos(a), sy * _math.sin(a), 0.0),
+                      "lengths": (H["thumb_metacarpal"], H["thumb_proximal"], H["thumb_distal"]), "radius": H["thumb_diameter"] / 2,
+                      "oppose_axis": (0.0, 0.0, -sy), "curl_axis": (-sy * _math.sin(a), _math.cos(a), 0.0),
+                      "tip_bend": _math.radians(H["thumb_tip_bend_deg"])}}
+
+
+def _rot(axis, a):
+    x, y, z = axis
+    c, s_, t = _math.cos(a), _math.sin(a), 1 - _math.cos(a)
+    return ((t * x * x + c, t * x * y - s_ * z, t * x * z + s_ * y), (t * x * y + s_ * z, t * y * y + c, t * y * z - s_ * x),
+            (t * x * z - s_ * y, t * y * z + s_ * x, t * z * z + c))
+
+
+def _mv(R, v):
+    return tuple(sum(R[i][j] * v[j] for j in range(3)) for i in range(3))
+
+
+def finger_chain(finger, curl):
+    """The finger's joints and tip in the hand's frame [mm] at the hand's ``curl``: [root, pip, dip, tip]."""
+    x0, y, z0 = finger["root"]
+    th, pts, pos = 0.0, [(x0, y, z0)], (x0, y, z0)
+    for L, key in zip(finger["lengths"], ("mcp", "pip", "dip")):
+        th += FINGER_CURL[key] * curl
+        pos = (pos[0] + L * _math.sin(th), y, pos[2] - L * _math.cos(th))
+        pts.append(pos)
+    return pts
+
+
+def thumb_chain(thumb, curl):
+    """The thumb's joints and tip in the hand's frame [mm] at the hand's ``curl``: [base, mcp, ip, tip]."""
+    oppose, flex = THUMB_CURL["oppose"] * curl, THUMB_CURL["curl"] * curl
+    Ro = _rot(thumb["oppose_axis"], oppose)
+    m = _mv(Ro, thumb["dir"])
+    ax = _mv(Ro, thumb["curl_axis"])
+    Lm, Lp, Ld = thumb["lengths"]
+    base = thumb["base"]
+    mcp = tuple(base[i] + Lm * m[i] for i in range(3))
+    d1 = _mv(_rot(ax, flex), m)
+    ip = tuple(mcp[i] + Lp * d1[i] for i in range(3))
+    d2 = _mv(_rot(ax, flex + thumb["tip_bend"]), m)
+    tip = tuple(ip[i] + Ld * d2[i] for i in range(3))
+    return [base, mcp, ip, tip]

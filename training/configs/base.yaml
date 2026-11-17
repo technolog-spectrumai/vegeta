@@ -1,0 +1,134 @@
+# Belisario PPO: the base configuration (every key of belisario_rl.config.Config; stages and sessions override it).
+# Sized for a laptop: 8 environments in subprocesses, short rollouts, a small network - a 4 GB GPU is plenty
+# (the networks are ~0.3 M parameters; the memory is in the environments, which live on the CPU).
+sim:
+  sim_hz: 1000
+  control_hz: 50
+  episode_seconds: 12.0
+  headless: true
+  casing: none              # the skeleton alone; plastic | lorica add their masses
+
+commands:
+  vx: [-0.3, 0.4]
+  vy: [-0.15, 0.15]
+  yaw_rate: [-0.5, 0.5]
+  height: [0.5, 0.7]
+  stop_probability: 0.15
+  resample_seconds: 4.0
+  hold_still_speed: 0.03
+
+obs:
+  joint_pos_scale: 1.0
+  joint_vel_scale: 0.05
+  ang_vel_scale: 0.25
+  lin_vel_scale: 2.0
+  noise_joint_pos: 0.01
+  noise_joint_vel: 0.5
+  noise_ang_vel: 0.1
+  noise_gravity: 0.03
+  lin_vel_estimate: finite_difference
+  clip: 10.0
+
+action:
+  scale: 0.5
+  clip: 1.0
+  default_pose: quad
+  kp_fraction: 1.0
+  kd_fraction: 1.0
+  torque_fraction: 1.0
+  velocity_limit_fraction: 1.0
+  latency_steps: 0
+
+reward:
+  track_lin_vel: 1.5
+  track_ang_vel: 0.75
+  tracking_sigma: 0.25
+  height: 0.5
+  height_sigma: 0.08
+  orientation: -1.0
+  contact_stability: 0.3
+  slip: -0.2
+  energy: -2.0e-5
+  action_rate: -0.01
+  joint_accel: -2.5e-7
+  joint_vel: -1.0e-3
+  coordination: 0.2
+  joint_limits: -1.0
+  body_collision: -1.0
+  fall: -50.0
+  stop_still: 0.5
+  imitation: 0.0
+  torque_saturation: -0.02
+  alive: 0.05
+
+termination:
+  min_height: 0.3
+  max_tilt_deg: 55.0
+  body_collision_terminates: true
+  body_collision_geoms: [head, ribcage, lumbar, pelvis_shell, yoke]
+
+terrain:
+  kind: flat
+  rms: 0.02
+  correlation_length: 0.3
+  step_height: 0.05
+  step_spacing: 1.0
+  extent: [-2.0, 8.0, -2.0, 2.0]
+  cell: 0.02
+  seed: 0
+  friction: 0.9
+
+randomization:
+  enabled: false
+  mass_scale: [0.9, 1.1]
+  joint_friction: [0.0, 0.5]
+  joint_damping_scale: [0.8, 1.2]
+  motor_strength: [0.85, 1.15]
+  latency_steps: [0, 2]
+  ground_friction: [0.5, 1.2]
+  sensor_noise: false
+  pushes: false
+  init_pose_noise: 0.05
+  init_yaw: 3.14159
+  init_vel_noise: 0.1
+
+disturbance:
+  enabled: false
+  interval_seconds: [2.0, 5.0]
+  force_xy: 150.0
+  duration_seconds: 0.2
+
+ppo:
+  num_envs: 8
+  steps_per_env: 32
+  epochs: 5
+  minibatches: 4
+  learning_rate: 3.0e-4
+  adaptive_lr: true
+  desired_kl: 0.01
+  gamma: 0.99
+  lam: 0.95
+  clip: 0.2
+  value_clip: 0.2
+  entropy_coef: 0.005
+  value_coef: 1.0
+  max_grad_norm: 1.0
+  init_noise_std: 0.8
+  actor_hidden: [256, 256, 128]
+  critic_hidden: [256, 256, 128]
+  activation: elu
+  normalize_obs: true
+  normalize_rewards: false
+  iterations: 1500
+  save_every: 50
+  log_every: 1
+
+run:
+  name: belisario
+  log_dir: training/runs
+  seed: 1
+  device: auto
+  deterministic_eval: true
+  stage: 1_stance
+  resume: ""
+  tensorboard: true

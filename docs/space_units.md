@@ -166,26 +166,98 @@ peaks at 18° in the run); the run is a heavy shuffle at 0.8-1.3 m/s rather than
 
 Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the skeleton alone by default - the frame's geoms,
 the modules' and the struts' masses, no armour, no weapons; `casing="plastic"` adds a 3 mm polycarbonate casing,
-`"lorica"` the armour - with a knuckle contact on each hand, the ankles and knees folding further) walks like a
-gorilla: on all fours on its knuckles, and only sometimes stands. The proportions follow the animal: the arms are
-540 + 500 mm (the hands at the knees when standing), the legs 360 + 340.
+`"lorica"` the armour - with real hands, the ankles and knees folding further, the shoulders adducting 0.8 rad
+across the chest) walks like a gorilla: on all fours on its knuckles, and only sometimes stands. The proportions
+follow the animal: the arms are 540 + 500 mm (the hands at the knees when standing), the legs 360 + 340.
 
 `quad_pose` is the stance on four (IK on the soles' points, the knuckles and the wrists): the pelvis 0.62 m up and
 pitched nose-down 0.45 rad, so the back slopes ~35° with the spine's modules only a little forward; the legs crouched
 with the knees far forward; the long arms down to the knuckles 0.3 m ahead of the shoulders with the elbows bent
-~50°, the wrist held behind and above each knuckle so the forearm leans on the curled fingers' middle joints
-([knuckle-walking](https://en.wikipedia.org/wiki/Knuckle-walking): the weight on the knuckles, the wrist extended).
-`knuckle_walk` is the lateral-sequence walk every quadruped uses at a walk (left hind, left fore, right hind, right
-fore, a quarter cycle apart; duty 0.72, a 0.26 m stride at 0.35 m/s, the swing 60 mm up): `legged_gait` on the four
-contacts with the quad pose as its reference, its strides and lifts along the ground although the base rides pitched
-(`base_rot`), its IK damped for the long arms near full stretch. `rise` and `drop` go up to the design pose on two
-and back in 3 s (the pelvis levelling as it rises), `stand` holds it.
+~50°, the wrist held behind and above each knuckle so the forearm leans on the backs of the curled fingers' middle
+phalanges ([knuckle-walking](https://en.wikipedia.org/wiki/Knuckle-walking): the weight on the knuckles, the wrist
+extended). `knuckle_walk` is the lateral-sequence walk every quadruped uses at a walk (left hind, left fore, right
+hind, right fore, a quarter cycle apart; duty 0.72, a 0.26 m stride at 0.35 m/s, the swing 60 mm up): `legged_gait`
+on the four contacts with the quad pose as its reference, its strides and lifts along the ground although the base
+rides pitched (`base_rot`), its IK damped for the long arms near full stretch. `rise` and `drop` go up to the design
+pose on two and back in 3 s (the pelvis levelling as it rises), `stand` holds it.
 
 In MuJoCo (`space_gorilla_walk.py`, `sims/output/space_gorilla_walk.mp4`: walk 8 s, rise, stand 3 s, drop, walk on)
 the upright assist holds the pelvis at the phase's pitch; the skeleton walks on its knuckles, rears up, stands,
 drops and walks on without falling. The knuckle walk is the first gait that suits this body: three contacts are
 down most of the cycle and the trunk's mass is low and between them, which is what the long arms and short legs
 are for - where the biped march on these proportions only shuffled.
+
+## The hands (`space_unit_specs.hand_layout`, `space_unit_robots._hands`)
+
+A real hand each side, the same in the robot, the CAD (`space_units.gripper`) and the drawings: a palm 95 × 36 ×
+105 mm hanging from a two-module wrist (pitch and pronation, `qdd 60 Nm`); four fingers at human proportions
+(index, middle, ring, little at 0.88, 1, 0.92, 0.74 of `finger_length` = 190 mm, three phalanges each at 0.44 /
+0.31 / 0.25 of the finger), every phalanx on its own hinge curling in towards the palm's face - the knuckle joint
+on a self-locking `harmonic 12 Nm, brake` (a hang holds unpowered), the two finger joints on `smart servo 6 Nm`;
+a thumb on an opposition joint (`harmonic 12 Nm, brake`, about the palm's long axis) and a flexion joint (`smart
+servo 12 Nm`) that lays it across the fingers. 57 actuated joints in all, 365 kg. One curl command per hand
+drives every joint (`curl_values`: 0 open, `KNUCKLE_CURL` 1.4 the walking fist, 2 a closed fist), so the gaits set
+a hand with one number; a policy may drive the joints singly. The knuckle-walking contact is the back of the middle
+finger's middle phalanx (`{side}_knuckle`), the other fingers' backs beside it.
+
+## Grips, climbs and the scenarios (`gorilla_scenarios.py`, `gorilla_tasks.py`, `sims/space_gorilla_scenes.py`)
+
+A hold is a **bar** (a rung, a rib, a branch, a rope, a sill's edge: its axis, the surface's outward normal, its
+radius) or a plain **point** (a knuckle on a sill's top, a sole on a wall). The hand on a bar is four points of IK:
+the grip centre - where a bar's axis sits in the hand once the fingers close on it, the centre of the circle the
+closed middle finger's joints lie on (`hand_grip`, ~45 mm ahead of the palm's face) - the wrist, and a point along
+the hand's y (the bar's axis), with the fingers closing in the motion's `extra` and opening through each swing. On
+a rung the wrist hangs below and behind the grip and the palm's face turns up under the bar, the fingers hooked
+over its far side (what the arm reaches naturally); on a vertical bar the palm faces it and the wrist goes out to
+the hand's own side, the frame's roll about the bar chosen per hand by a static search (`_pick_frames`). The foot
+on a bar stands with the sole's point between ball and heel on the bar's outer top, toes up 0.5 rad into the surface.
+
+The climbing frame has the trunk parallel to the surface (`CLIMB_PITCH` −0.15 rad, the shoulders leaning out a
+little), the pelvis 0.45 m off it and 0.55 m above the feet's holds. `mount` goes from the quad pose onto the
+surface: the hands' grip points rise on arcs to their holds and the whole hand frame settles on the bar, the
+pelvis rising on the planted feet as far as the legs stand, then the feet step up one after the other as the
+pelvis moves in (on a slope it moves in low first and rises after the feet). `climb_cycle` moves the four limbs
+one at a time to the next holds (feet first - the legs push - then the hands) while the pelvis rides up; the IK is
+well damped (`IK_REG` 3e-3): a lighter damping jumps between the two solutions a four-point grip allows.
+
+| scenario | holds | IK error (mount / cycles) |
+|---|---|---|
+| wall | rungs 0.35 m apart; the hands four rungs above the feet | 3 cm / 9 mm |
+| tree | the trunk's flanks (vertical holds 35° round from the near face) and branches each side every 0.45 m | 14 cm transient / 4 cm |
+| hull | the ribs across a 62° plate, the hands two ribs above the feet, the trunk along the plate | 16 cm transient / 2 cm |
+| rope | the rope as a vertical bar, one hand above the other, the feet pinching it with level soles | 8 cm / 4 cm |
+| window | the hands on the sill's edge, the feet up the wall and onto the sill (a pull-up), a leap off it onto four | 25 cm transient / 0 |
+| obstacles | a crouch, a leap on a parabola with the limbs tucked, a landing on four | joint track |
+| door | `gorilla_tasks.door_sequence`: reach, grasp (the fingers close on the lever), turn, push, release | ≤ 5 mm |
+
+The mounts' numbers are single-frame transients where a planted foot or a settling hand lags; the cycles' are
+their steady worst. The window's leap is honest: the legs (0.7 m) are shorter than the sill (0.96 m) is high, so
+no pose reaches the ground beyond from the sill. `python sims/space_gorilla_scenes.py --scene wall` plays a
+sequence in MuJoCo - the keyframes by default, `--mode physics` with the assist - and writes
+`sims/output/space_gorilla_<scene>.mp4` and stills.
+
+![The wall](../labs/legged/sims/output/space_gorilla_wall_14s.png)
+
+## Drawing the frame in the sims (`belisario_mesh.py`, `sims/belisario_render.py`)
+
+The sims draw the CAD, not the collision shapes: `belisario_mesh` tessellates every piece of the skeleton (the
+pelvis rebuilt with the hip modules at the frame's hips, each vertebra on the lumbar or the thorax, the ribcage with
+the sternum ending at the lowest rib, the girdle, the neck, the head; the femurs, tibiae, foot bones; the arms, the
+palms, every phalanx), a joint module at every joint (cut out of the bones, drawn dark), the electronics' bays in
+the chest and the belly (what the ribcage protects), the limbs' casing plates (half shells), and the linear
+actuators as anchor pairs drawn between their two links every frame - each piece in the frame of the chiron link
+that carries it, cached under `sims/output/mesh_cache`. `belisario_render` is a small software renderer (numpy,
+PIL: a perspective camera, flat shading, the painter's order; MuJoCo's own needs a GL this machine lacks) that
+draws the pieces on the MuJoCo bodies, the scene's props and the ground in well under a second a frame.
+
+## Learning the gaits (`training/`, `TRAINING.md`)
+
+A PPO pipeline (PyTorch, in-house: no RL library is installed and RSL-RL's API could not be verified offline) with a
+Gymnasium-style environment round the frame, command-conditioned (vx, vy, yaw rate, height, stop), an eight-stage
+curriculum, sessions of weighted scenes (flat, rough, steps, door, window, wall, tree, hull, obstacles, rope - the
+climbs on the scenarios' own props), domain randomization, checkpoints, TensorBoard, ONNX export, a comparison
+against the programmed gaits and a keyboard/joystick drive. Written and inspected only: nothing in `training/` has
+been run. `TRAINING.md` has the setup, the commands per stage and the first experiment.
 
 ## Tests, exports
 
@@ -197,5 +269,8 @@ and the exported block). `python tools/publish.py space_marine space_marine_saw 
 
 No balance controller: the units walk in MuJoCo on the upright assist (above), not on their own feet - a ZMP or
 capture-point stepping controller on these keyframes is the next thing (the drill's pace hold and parking spring go
-with it). The keyframed gait cannot side-step or turn, so a formation change is a straight march. The weapons do nothing (no projectile model);
-the cannon's barrels do not spin.
+with it), or the learned policy of `training/`. The keyframed gait cannot side-step or turn, so a formation change
+is a straight march. The climbs are kinematic references: in physics the grips need the fingers' self-locking
+drives and a whole-body controller the assist does not give. The design sheets' fists hold the weapons at the
+old grip offsets, not re-placed for the new hand. The weapons do nothing (no projectile model); the cannon's
+barrels do not spin.

@@ -1,0 +1,9 @@
+# Curriculum stage 5: turning and lateral motion.
+description: turning and lateral motion
+commands: {vx: [-0.3, 0.4], vy: [-0.15, 0.15], yaw_rate: [-0.5, 0.5], height: [0.55, 0.68], stop_probability: 0.15}
+reward: {track_ang_vel: 1.0}
+terrain: {kind: flat}
+randomization: {enabled: true}
+disturbance: {enabled: false}
+sim: {episode_seconds: 12.0}
+ppo: {iterations: 1500}
