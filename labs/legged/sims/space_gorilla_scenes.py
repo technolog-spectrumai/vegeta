@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Belisario in its scenarios (``gorilla_scenarios``): the pre-programmed sequence of a scene played in MuJoCo -
+"""Kerchak in its scenarios (``gorilla_scenarios``): the pre-programmed sequence of a scene played in MuJoCo -
 the climbing wall, the tree, the ship's hull, the rope, the window, the obstacles, the door.
 
     python space_gorilla_scenes.py --scene wall                       # the keyframes played (default), the movie and stills
@@ -9,7 +9,7 @@ the climbing wall, the tree, the ship's hull, the rope, the window, the obstacle
 
 Kinematic mode drives the pelvis along the motions' tracks (x, y, height, pitch per frame) and the joints along the
 keyframes; the door's lever and hinge follow the hand, the rope stays put. Writes ``sims/output/space_gorilla_<scene>.mp4``,
-``.json`` and ``space_gorilla_<scene>_<t>s.png`` stills, drawn by ``belisario_render`` (the CAD on the bodies: the
+``.json`` and ``space_gorilla_<scene>_<t>s.png`` stills, drawn by ``kerchak_render`` (the CAD on the bodies: the
 skeleton, the modules, the struts, the bays, the plates) unless ``--render boxes``.
 """
 from __future__ import annotations
@@ -179,7 +179,7 @@ class ScenePlayer:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Belisario in a scenario")
+    ap = argparse.ArgumentParser(description="Kerchak in a scenario")
     ap.add_argument("--scene", choices=sorted(gs.SCENARIOS), default="wall")
     ap.add_argument("--mode", choices=("kinematic", "physics"), default="kinematic")
     ap.add_argument("--seconds", type=float, default=None)
@@ -188,7 +188,7 @@ def main(argv=None):
     ap.add_argument("--stills", default="", help="times [s], comma-separated, for still images")
     ap.add_argument("--no-movie", action="store_true")
     ap.add_argument("--param", action="append", default=[], help="scene parameter key=value")
-    ap.add_argument("--render", choices=("mesh", "boxes"), default="mesh", help="the CAD on the bodies (belisario_render), or the collision shapes")
+    ap.add_argument("--render", choices=("mesh", "boxes"), default="mesh", help="the CAD on the bodies (kerchak_render), or the collision shapes")
     ap.add_argument("--casing", choices=("none", "plastic"), default="plastic")
     ap.add_argument("--size", default="1280x720")
     a = ap.parse_args(argv)
@@ -206,8 +206,8 @@ def main(argv=None):
     stills = [float(x) for x in a.stills.split(",") if x.strip()]
     tmp = tempfile.mkdtemp()
     if a.render == "mesh":
-        import belisario_mesh as bm
-        import belisario_render as br
+        import kerchak_mesh as bm
+        import kerchak_render as br
         w, h = (int(v) for v in a.size.split("x"))
         renderer = br.Renderer(g.model, bm.load(a.casing), w, h)
 
@@ -219,7 +219,7 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
-            renderer.render(g.data, cam, title=f"Belisario: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
+            renderer.render(g.data, cam, title=f"Kerchak: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
         import matplotlib
         matplotlib.use("Agg")
@@ -230,7 +230,7 @@ def main(argv=None):
         cc = np.array([centre[0], centre[1], max(centre[2], 1.0)])
         march_sim.draw_frame(ax, geoms, cc, t, what, span, elev=elev, azim=azim)
         ax.set_zlim(max(0.0, cc[2] - 0.6 * span), cc[2] + 0.6 * span)
-        ax.set_title(f"Belisario: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})", fontsize=11, loc="left", y=0.96)
+        ax.set_title(f"Kerchak: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})", fontsize=11, loc="left", y=0.96)
         fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
         fig.savefig(path, dpi=72)
         plt.close(fig)

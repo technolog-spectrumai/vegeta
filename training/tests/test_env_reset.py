@@ -1,7 +1,7 @@
 """Reset, joint-limit enforcement, determinism, termination and the scenes."""
 import numpy as np
 
-from belisario_rl.commands import Command
+from kerchak_rl.commands import Command
 
 
 def test_reset_puts_the_frame_on_four(env):
@@ -46,7 +46,7 @@ def test_episode_ends_by_time_limit(env):
 
 
 def test_scene_registry_builds(cfg):
-    from belisario_rl.scenes import build_scene, scene_names
+    from kerchak_rl.scenes import build_scene, scene_names
     assert {"flat", "rough", "door", "window", "tree", "hull", "obstacles", "rope"} <= set(scene_names())
     s = build_scene("obstacles", cfg, {"count": 1})
     assert s.goal is not None and s.props

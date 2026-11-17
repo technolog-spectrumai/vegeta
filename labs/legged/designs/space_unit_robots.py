@@ -412,15 +412,15 @@ def hand_grip(curl: float, P=None) -> np.ndarray:
     return np.array([cx, 0.0, cz])
 
 
-def bare(name: str = "Belisario", casing: str = "none"):
-    """Belisario bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
+def bare(name: str = "Kerchak", casing: str = "none"):
+    """Kerchak bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
     a curl module, the knuckle contact on the fingers' middle joints) for walking on all fours, gripping and
     climbing (``gorilla_motions``). ``casing``: ``"none"`` (the skeleton
     alone: the frame's geoms, the modules' and the struts' masses), ``"plastic"`` (a lightweight polycarbonate
     casing, ``_casing``) or ``"lorica"`` (the armour)."""
     P = su.MARINE
     p = {k: v for k, v in P.items() if k in hr.P}
-    r = hr.talia(name, p, notes="Belisario: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
+    r = hr.talia(name, p, notes="Kerchak: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
                                 "(design stage).")
     _spine(r, P)
     _reactuate(r)
@@ -441,7 +441,7 @@ def bare(name: str = "Belisario", casing: str = "none"):
         elif j.tag == "shoulder_roll":
             j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
-    r.sources["geometry"] = f"designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons, casing {casing})"
+    r.sources["geometry"] = f"designs/space_units.py (Kerchak bare: space_unit_specs.MARINE, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:
             if g.name in ("lumbar", "ribcage", "yoke", "neck", "head", "pelvis_shell") or g.name.endswith(("_thigh", "_shin", "_upper_arm", "_forearm", "_palm")) \

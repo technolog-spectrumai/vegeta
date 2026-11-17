@@ -1,4 +1,4 @@
-# Belisario PPO: the base configuration (every key of belisario_rl.config.Config; stages and sessions override it).
+# Kerchak PPO: the base configuration (every key of kerchak_rl.config.Config; stages and sessions override it).
 # Sized for a laptop: 8 environments in subprocesses, short rollouts, a small network - a 4 GB GPU is plenty
 # (the networks are ~0.3 M parameters; the memory is in the environments, which live on the CPU).
 sim:
@@ -124,7 +124,7 @@ ppo:
   log_every: 1
 
 run:
-  name: belisario
+  name: kerchak
   log_dir: training/runs
   seed: 1
   device: auto

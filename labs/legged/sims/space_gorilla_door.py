@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Belisario opens a door: the whole sequence from the approach to the entry, in MuJoCo - the knuckle walk up to
+"""Kerchak opens a door: the whole sequence from the approach to the entry, in MuJoCo - the knuckle walk up to
 the doorway (``gorilla_tasks.door_prop``), up onto the feet with the right hand to the lever, the fingers closing,
 the wrist turning the lever down, the door pushed open as the pelvis advances, the hands back down on four, and the
 knuckle walk on through (``gorilla_tasks``: reach, grasp, turn, push, release round ``gorilla_motions.knuckle_walk``).
@@ -206,7 +206,7 @@ class DoorRun:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Belisario opens a door")
+    ap = argparse.ArgumentParser(description="Kerchak opens a door")
     ap.add_argument("--mode", choices=("physics", "kinematic"), default="physics")
     ap.add_argument("--seconds", type=float, default=None, help="default: the whole sequence")
     ap.add_argument("--enter", type=float, default=11.0, help="the walk through the doorway [s]")
@@ -244,7 +244,7 @@ def main(argv=None):
             ax = fig.add_subplot(1, 1, 1, projection="3d")
             c = np.array([max(centre[0], 1.2), 0.0, centre[2]])
             march_sim.draw_frame(ax, geoms, c, t, f"{what}  ({base})", 3.0, elev=14.0, azim=215.0)
-            ax.set_title(f"Belisario opens a door   -   t = {t:4.1f} s   -   {what}  ({base})", fontsize=11, loc="left", y=0.96)
+            ax.set_title(f"Kerchak opens a door   -   t = {t:4.1f} s   -   {what}  ({base})", fontsize=11, loc="left", y=0.96)
             fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
             fig.savefig(os.path.join(tmp, f"f{k:04d}.png"), dpi=72)
             plt.close(fig)

@@ -31,7 +31,7 @@ def main(out="space_xray_3d.png"):
         dd.add_pieces(ax, pcs)
         ax.set_xlim(-900, 900); ax.set_ylim(-900, 900); ax.set_zlim(0, 2000)
         ax.set_box_aspect((0.9, 0.9, 1), zoom=1.5); ax.view_init(elev=el, azim=az); ax.set_axis_off(); ax.set_title(title, fontsize=11)
-    fig.suptitle("Belisario (the gorilla-human hybrid Marine) with the armour as glass: the skeleton, its joint modules and linear actuators (bronze),\n"
+    fig.suptitle("Kerchak (the gorilla-human hybrid Marine) with the armour as glass: the skeleton, its joint modules and linear actuators (bronze),\n"
                  "the lorica segmentata's hoops, shoulder guards and arm lames, the galea, the chest and belly bays (electronics), the shield held in the fingers", fontsize=11)
     fig.subplots_adjust(left=0, right=1, top=0.94, bottom=0)
     fig.savefig(out, dpi=110)

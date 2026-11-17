@@ -1,4 +1,4 @@
-"""The environment: Belisario's bare frame in MuJoCo, Gymnasium-compatible (``gymnasium.Env`` when gymnasium is
+"""The environment: Kerchak's bare frame in MuJoCo, Gymnasium-compatible (``gymnasium.Env`` when gymnasium is
 installed, the same interface otherwise), one robot per instance, vectorised by ``vec_env``.
 
 Observations (the actor's, all available on the physical robot): the joint positions as offsets from the default
@@ -37,7 +37,7 @@ except ImportError:                                                        # the
     class _Base:
         metadata = {}
 
-__all__ = ["BelisarioEnv", "ObsLayout", "PRIVILEGED_DIM"]
+__all__ = ["KerchakEnv", "ObsLayout", "PRIVILEGED_DIM"]
 
 PRIVILEGED_DIM = 3 + 1 + 4 + 3 + 1 + 1 + 3
 
@@ -56,7 +56,7 @@ class ObsLayout:
         self.dim = k
 
 
-class BelisarioEnv(_Base):
+class KerchakEnv(_Base):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, cfg: Config, scene: SceneSpec | None = None, seed: int = 0, eval_mode: bool = False, render_mode: str | None = None,

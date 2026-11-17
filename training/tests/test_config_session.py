@@ -1,9 +1,9 @@
 """Configuration loading, overrides, stages and sessions."""
 from pathlib import Path
 
-from belisario_rl.config import apply_overrides, load_config, to_dict
-from belisario_rl.curriculum import STAGE_ORDER, apply_stage, next_stage, stage_overrides
-from belisario_rl.session import assign_scenes, load_session
+from kerchak_rl.config import apply_overrides, load_config, to_dict
+from kerchak_rl.curriculum import STAGE_ORDER, apply_stage, next_stage, stage_overrides
+from kerchak_rl.session import assign_scenes, load_session
 
 ROOT = Path(__file__).resolve().parents[1]
 

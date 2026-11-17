@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Belisario walks like a gorilla: on all fours on its knuckles (``gorilla_motions.knuckle_walk``, the lateral
+"""Kerchak walks like a gorilla: on all fours on its knuckles (``gorilla_motions.knuckle_walk``, the lateral
 sequence LH LF RH RF), rears up on two to stand a moment, drops back on four and walks on - the bare frame in its
 polycarbonate casing, no armour, no weapons (``space_unit_robots.bare``), in MuJoCo; the casing drawn translucent
 so the frame shows.
@@ -170,7 +170,7 @@ class Gorilla:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Belisario walks like a gorilla")
+    ap = argparse.ArgumentParser(description="Kerchak walks like a gorilla")
     ap.add_argument("--mode", choices=("physics", "kinematic"), default="physics")
     ap.add_argument("--seconds", type=float, default=22.0)
     ap.add_argument("--walk", type=float, default=8.0, help="the first walk's length [s]")
@@ -206,7 +206,7 @@ def main(argv=None):
             fig = plt.figure(figsize=(12.8, 7.2))
             ax = fig.add_subplot(1, 1, 1, projection="3d")
             march_sim.draw_frame(ax, geoms, centre, t, f"{what}  ({base})", 2.6, elev=12.0, azim=62.0)
-            ax.set_title(f"Belisario walks like a gorilla   -   t = {t:4.1f} s   -   {what}  ({base})", fontsize=11, loc="left", y=0.96)
+            ax.set_title(f"Kerchak walks like a gorilla   -   t = {t:4.1f} s   -   {what}  ({base})", fontsize=11, loc="left", y=0.96)
             fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
             fig.savefig(os.path.join(tmp, f"f{k:04d}.png"), dpi=72)
             plt.close(fig)

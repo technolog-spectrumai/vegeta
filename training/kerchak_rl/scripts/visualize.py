@@ -2,8 +2,8 @@
 """Watch a policy in MuJoCo's viewer (``mujoco.viewer.launch_passive``), or record a movie headless with the
 geoms drawn by matplotlib the way the lab's sims do.
 
-    python -m belisario_rl.scripts.visualize --checkpoint training/runs/<run>/model_latest.pt --vx 0.3
-    python -m belisario_rl.scripts.visualize --checkpoint ... --movie training/runs/<run>/walk.mp4 --seconds 10
+    python -m kerchak_rl.scripts.visualize --checkpoint training/runs/<run>/model_latest.pt --vx 0.3
+    python -m kerchak_rl.scripts.visualize --checkpoint ... --movie training/runs/<run>/walk.mp4 --seconds 10
 """
 from __future__ import annotations
 
@@ -21,13 +21,13 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from belisario_rl.commands import Command  # noqa: E402
-from belisario_rl.config import Config, _from_dict  # noqa: E402
-from belisario_rl.controllers import PolicyController  # noqa: E402
-from belisario_rl.env import BelisarioEnv  # noqa: E402
-from belisario_rl.export import build_actor_from_checkpoint  # noqa: E402
-from belisario_rl.ppo.runner import load_checkpoint  # noqa: E402
-from belisario_rl.scenes import build_scene  # noqa: E402
+from kerchak_rl.commands import Command  # noqa: E402
+from kerchak_rl.config import Config, _from_dict  # noqa: E402
+from kerchak_rl.controllers import PolicyController  # noqa: E402
+from kerchak_rl.env import KerchakEnv  # noqa: E402
+from kerchak_rl.export import build_actor_from_checkpoint  # noqa: E402
+from kerchak_rl.ppo.runner import load_checkpoint  # noqa: E402
+from kerchak_rl.scenes import build_scene  # noqa: E402
 
 
 def record_movie(env, ctrl, cmd, seconds, path, fps=20):
@@ -62,7 +62,7 @@ def record_movie(env, ctrl, cmd, seconds, path, fps=20):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="visualize a Belisario policy")
+    ap = argparse.ArgumentParser(description="visualize a Kerchak policy")
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--scene", default="flat")
     ap.add_argument("--seconds", type=float, default=15.0)
@@ -75,7 +75,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     ck = load_checkpoint(a.checkpoint, a.device)
     cfg = _from_dict(Config, ck["config"])
-    env = BelisarioEnv(cfg, scene=build_scene(a.scene, cfg), seed=7, eval_mode=True, render_mode=None if a.movie else "human")
+    env = KerchakEnv(cfg, scene=build_scene(a.scene, cfg), seed=7, eval_mode=True, render_mode=None if a.movie else "human")
     ac, norm = build_actor_from_checkpoint(ck, a.device)
     ctrl = PolicyController(ac, norm, deterministic=True, device=a.device)
     cmd = Command(a.vx, a.vy, a.yaw, a.height, False)

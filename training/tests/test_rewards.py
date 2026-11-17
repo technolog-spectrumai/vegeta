@@ -2,8 +2,8 @@
 import numpy as np
 import pytest
 
-from belisario_rl.config import RewardConfig
-from belisario_rl.rewards import RewardComputer, StepState, TERMS
+from kerchak_rl.config import RewardConfig
+from kerchak_rl.rewards import RewardComputer, StepState, TERMS
 
 
 def _state(**kw):

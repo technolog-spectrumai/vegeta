@@ -1,4 +1,4 @@
-"""PPO for Belisario, in PyTorch: a command-conditioned actor-critic with an asymmetric critic
+"""PPO for Kerchak, in PyTorch: a command-conditioned actor-critic with an asymmetric critic
 (``networks.ActorCritic``), a running observation normaliser (``normalizer``), the clipped-surrogate update with
 GAE and a KL-adaptive learning rate (``ppo.PPO``), and the training loop with checkpoints, TensorBoard and seeds
 (``runner.Runner``).

@@ -2,8 +2,8 @@
 """Deterministic inference: run a checkpoint in the environment on a command for a number of seconds, headless,
 printing the base's state and the joint targets along the way (what a deployment loop does, without the robot).
 
-    python -m belisario_rl.scripts.infer --checkpoint training/runs/<run>/model_latest.pt --vx 0.3 --seconds 10
-    python -m belisario_rl.scripts.infer --checkpoint ... --onnx training/exports/belisario_actor.onnx   # through onnxruntime
+    python -m kerchak_rl.scripts.infer --checkpoint training/runs/<run>/model_latest.pt --vx 0.3 --seconds 10
+    python -m kerchak_rl.scripts.infer --checkpoint ... --onnx training/exports/kerchak_actor.onnx   # through onnxruntime
 """
 from __future__ import annotations
 
@@ -17,13 +17,13 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from belisario_rl.commands import Command  # noqa: E402
-from belisario_rl.config import Config, _from_dict  # noqa: E402
-from belisario_rl.controllers import Controller, PolicyController  # noqa: E402
-from belisario_rl.env import BelisarioEnv  # noqa: E402
-from belisario_rl.export import build_actor_from_checkpoint  # noqa: E402
-from belisario_rl.ppo.runner import load_checkpoint  # noqa: E402
-from belisario_rl.scenes import build_scene  # noqa: E402
+from kerchak_rl.commands import Command  # noqa: E402
+from kerchak_rl.config import Config, _from_dict  # noqa: E402
+from kerchak_rl.controllers import Controller, PolicyController  # noqa: E402
+from kerchak_rl.env import KerchakEnv  # noqa: E402
+from kerchak_rl.export import build_actor_from_checkpoint  # noqa: E402
+from kerchak_rl.ppo.runner import load_checkpoint  # noqa: E402
+from kerchak_rl.scenes import build_scene  # noqa: E402
 
 
 class OnnxController(Controller):
@@ -55,7 +55,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     ck = load_checkpoint(a.checkpoint, a.device)
     cfg = _from_dict(Config, ck["config"])
-    env = BelisarioEnv(cfg, scene=build_scene(a.scene, cfg), seed=123, eval_mode=True)
+    env = KerchakEnv(cfg, scene=build_scene(a.scene, cfg), seed=123, eval_mode=True)
     if a.onnx:
         ctrl = OnnxController(a.onnx)
     else:

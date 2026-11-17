@@ -2,8 +2,8 @@
 """Evaluate a checkpoint: deterministic episodes on fixed commands, with the fall rate, the tracking errors and
 the distance walked, as JSON.
 
-    python -m belisario_rl.scripts.evaluate --checkpoint training/runs/<run>/model_latest.pt --episodes 10
-    python -m belisario_rl.scripts.evaluate --checkpoint ... --vx 0.3 --yaw 0.2 --scene rough
+    python -m kerchak_rl.scripts.evaluate --checkpoint training/runs/<run>/model_latest.pt --episodes 10
+    python -m kerchak_rl.scripts.evaluate --checkpoint ... --vx 0.3 --yaw 0.2 --scene rough
 """
 from __future__ import annotations
 
@@ -18,13 +18,13 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from belisario_rl.commands import Command  # noqa: E402
-from belisario_rl.config import _from_dict, Config, apply_overrides  # noqa: E402
-from belisario_rl.controllers import PolicyController  # noqa: E402
-from belisario_rl.env import BelisarioEnv  # noqa: E402
-from belisario_rl.export import build_actor_from_checkpoint  # noqa: E402
-from belisario_rl.ppo.runner import load_checkpoint  # noqa: E402
-from belisario_rl.scenes import build_scene  # noqa: E402
+from kerchak_rl.commands import Command  # noqa: E402
+from kerchak_rl.config import _from_dict, Config, apply_overrides  # noqa: E402
+from kerchak_rl.controllers import PolicyController  # noqa: E402
+from kerchak_rl.env import KerchakEnv  # noqa: E402
+from kerchak_rl.export import build_actor_from_checkpoint  # noqa: E402
+from kerchak_rl.ppo.runner import load_checkpoint  # noqa: E402
+from kerchak_rl.scenes import build_scene  # noqa: E402
 
 
 def run_episodes(env, controller, episodes: int, command: Command, seed: int = 0) -> dict:
@@ -54,7 +54,7 @@ def run_episodes(env, controller, episodes: int, command: Command, seed: int = 0
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="evaluate a Belisario policy")
+    ap = argparse.ArgumentParser(description="evaluate a Kerchak policy")
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--episodes", type=int, default=5)
     ap.add_argument("--scene", default="flat")
@@ -70,7 +70,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     ck = load_checkpoint(a.checkpoint, a.device)
     cfg = apply_overrides(_from_dict(Config, ck["config"]), a.set)
-    env = BelisarioEnv(cfg, scene=build_scene(a.scene, cfg), seed=cfg.run.seed + 1000, eval_mode=True)
+    env = KerchakEnv(cfg, scene=build_scene(a.scene, cfg), seed=cfg.run.seed + 1000, eval_mode=True)
     ac, norm = build_actor_from_checkpoint(ck, a.device)
     ctrl = PolicyController(ac, norm, deterministic=not a.stochastic, device=a.device)
     cmd = Command(a.vx, a.vy, a.yaw, a.height, a.stop)

@@ -1,7 +1,7 @@
-# Space game units — Belisario, the gorilla-human hybrid in lorica segmentata (design stage)
+# Space game units — Kerchak, the gorilla-human hybrid in lorica segmentata (design stage)
 
 The legged lab's roster of game units: power-armoured humanoid robots on Talia's frame (`labs/legged/designs/humanoid.py`),
-the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids) - rebuilt on **Belisario**, a
+the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids) - rebuilt on **Kerchak**, a
 gorilla-human hybrid skeleton: a gorilla's long, wide barrel ribcage down to the pelvis, long thick arms with the
 hands at the knees, short powerful legs and broad flaring iliac wings, on a human's S-curved spine (thoracic
 kyphosis, lumbar lordosis) for standing upright - massive, stable, not fast. Against a human: height 1.15×
@@ -162,9 +162,9 @@ peaks at 18° in the run); the run is a heavy shuffle at 0.8-1.3 m/s rather than
 
 ## The gorilla gait (`labs/legged/designs/gorilla_motions.py`, `sims/space_gorilla_walk.py`)
 
-![Belisario on all fours](../labs/legged/sims/space_gorilla_walk.png)
+![Kerchak on all fours](../labs/legged/sims/space_gorilla_walk.png)
 
-Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the skeleton alone by default - the frame's geoms,
+Kerchak bare (`space_unit_robots.bare`, the machine `kerchak`: the skeleton alone by default - the frame's geoms,
 the modules' and the struts' masses, no armour, no weapons; `casing="plastic"` adds a 3 mm polycarbonate casing,
 `"lorica"` the armour - with real hands, the ankles and knees folding further, the shoulders adducting 0.8 rad
 across the chest) walks like a gorilla: on all fours on its knuckles, and only sometimes stands. The proportions
@@ -238,15 +238,15 @@ sequence in MuJoCo - the keyframes by default, `--mode physics` with the assist 
 
 ![The wall](../labs/legged/sims/output/space_gorilla_wall_14s.png)
 
-## Drawing the frame in the sims (`belisario_mesh.py`, `sims/belisario_render.py`)
+## Drawing the frame in the sims (`kerchak_mesh.py`, `sims/kerchak_render.py`)
 
-The sims draw the CAD, not the collision shapes: `belisario_mesh` tessellates every piece of the skeleton (the
+The sims draw the CAD, not the collision shapes: `kerchak_mesh` tessellates every piece of the skeleton (the
 pelvis rebuilt with the hip modules at the frame's hips, each vertebra on the lumbar or the thorax, the ribcage with
 the sternum ending at the lowest rib, the girdle, the neck, the head; the femurs, tibiae, foot bones; the arms, the
 palms, every phalanx), a joint module at every joint (cut out of the bones, drawn dark), the electronics' bays in
 the chest and the belly (what the ribcage protects), the limbs' casing plates (half shells), and the linear
 actuators as anchor pairs drawn between their two links every frame - each piece in the frame of the chiron link
-that carries it, cached under `sims/output/mesh_cache`. `belisario_render` is a small software renderer (numpy,
+that carries it, cached under `sims/output/mesh_cache`. `kerchak_render` is a small software renderer (numpy,
 PIL: a perspective camera, flat shading, the painter's order; MuJoCo's own needs a GL this machine lacks) that
 draws the pieces on the MuJoCo bodies, the scene's props and the ground in well under a second a frame.
 

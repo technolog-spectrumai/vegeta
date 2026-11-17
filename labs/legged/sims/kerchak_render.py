@@ -1,10 +1,10 @@
-"""A software renderer for the gorilla sims: Belisario's CAD (``designs/belisario_mesh``: the bones, the modules,
+"""A software renderer for the gorilla sims: Kerchak's CAD (``designs/kerchak_mesh``: the bones, the modules,
 the bays, the plates, the struts between their anchors) on the MuJoCo bodies, the scene's props from their
 geoms, the ground - a perspective camera, flat shading, the painter's order, drawn with PIL. MuJoCo's own renderer
 needs a GL this machine does not have; this one needs nothing but numpy and PIL and draws a frame in well under a
 second.
 
-    r = Renderer(model, mesh)                      # mesh = belisario_mesh.load("plastic")
+    r = Renderer(model, mesh)                      # mesh = kerchak_mesh.load("plastic")
     img = r.render(data, Camera(eye, target), title="...")   # a PIL image
 """
 from __future__ import annotations
@@ -155,7 +155,7 @@ class Renderer:
             b = self.body[body]
             tris.append(local @ xmat[b].reshape(3, 3).T + xpos[b])
             cols.append(np.repeat([rgba[:3]], len(local), axis=0))
-        from belisario_mesh import STRUT
+        from kerchak_mesh import STRUT
         for ba, la, bb, lb, rb, rr in self.mesh.struts:
             a = xpos[self.body[ba]] + xmat[self.body[ba]].reshape(3, 3) @ la
             b = xpos[self.body[bb]] + xmat[self.body[bb]].reshape(3, 3) @ lb

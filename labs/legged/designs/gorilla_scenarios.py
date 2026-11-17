@@ -1,4 +1,4 @@
-"""Belisario's scenarios, each a scene (Chiron props) and a pre-programmed sequence of motions to start from - the
+"""Kerchak's scenarios, each a scene (Chiron props) and a pre-programmed sequence of motions to start from - the
 reference a learned policy is measured against and may be seeded with:
 
 * **wall** — a climbing wall with rungs: the approach on four, the mount (rearing up to the wall, the hands to the

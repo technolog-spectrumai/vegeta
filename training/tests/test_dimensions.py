@@ -1,9 +1,9 @@
 """Observation and action dimensions, the layout, and the robot model's tables."""
 import numpy as np
 
-from belisario_rl.commands import COMMAND_DIM
-from belisario_rl.env import PRIVILEGED_DIM, ObsLayout
-from belisario_rl.robot_model import CONTACT_GEOMS
+from kerchak_rl.commands import COMMAND_DIM
+from kerchak_rl.env import PRIVILEGED_DIM, ObsLayout
+from kerchak_rl.robot_model import CONTACT_GEOMS
 
 
 def test_layout_matches_env(env):

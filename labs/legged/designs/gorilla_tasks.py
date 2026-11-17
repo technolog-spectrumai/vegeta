@@ -1,4 +1,4 @@
-"""Belisario's tasks on the way: the door. The scene (``door_prop``: a doorway in a wall at ``DOOR["x"]``, the door
+"""Kerchak's tasks on the way: the door. The scene (``door_prop``: a doorway in a wall at ``DOOR["x"]``, the door
 hinged on the left and swinging away, a lever handle on the robot's side) and the sequence of motions from the
 approach to the entry, for the sim (``sims/space_gorilla_door.py``):
 

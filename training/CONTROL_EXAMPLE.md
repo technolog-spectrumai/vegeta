@@ -1,11 +1,11 @@
 # Driving the policy by hand: keyboard and joystick
 
-`training/belisario_rl/scripts/teleop.py` runs a trained policy in MuJoCo's viewer and lets you edit its command
+`training/kerchak_rl/scripts/teleop.py` runs a trained policy in MuJoCo's viewer and lets you edit its command
 live. The command is the same `Command` the environment, the evaluation scripts and the programmed gaits take
 (`vx`, `vy`, `yaw_rate`, `height`, `stop`), clipped to the configuration's ranges.
 
 ```bash
-python -m training.belisario_rl.scripts.teleop --checkpoint training/runs/<run>/model_latest.pt --scene flat
+python -m training.kerchak_rl.scripts.teleop --checkpoint training/runs/<run>/model_latest.pt --scene flat
 ```
 
 Keys (with the viewer window focused):
@@ -24,7 +24,7 @@ The current command prints in the terminal each time it changes.
 Joystick (`pygame` installed):
 
 ```bash
-python -m training.belisario_rl.scripts.teleop --checkpoint training/runs/<run>/model_latest.pt --joystick
+python -m training.kerchak_rl.scripts.teleop --checkpoint training/runs/<run>/model_latest.pt --joystick
 ```
 
 The left stick's vertical axis is `vx`, its horizontal axis `vy`, the right stick's horizontal axis the yaw rate,
@@ -34,16 +34,16 @@ each scaled to the command ranges; a button (0) toggles stop. Axis and button nu
 ## The same command from your own code
 
 ```python
-from training.belisario_rl.commands import Command
-from training.belisario_rl.controllers import PolicyController
-from training.belisario_rl.env import BelisarioEnv
-from training.belisario_rl.export import build_actor_from_checkpoint
+from training.kerchak_rl.commands import Command
+from training.kerchak_rl.controllers import PolicyController
+from training.kerchak_rl.env import KerchakEnv
+from training.kerchak_rl.export import build_actor_from_checkpoint
 import torch
 
 ck = torch.load("training/runs/<run>/model_latest.pt", map_location="cpu", weights_only=False)
 ac, norm = build_actor_from_checkpoint(ck)
-from training.belisario_rl.config import _from_dict, Config
-env = BelisarioEnv(_from_dict(Config, ck["config"]), eval_mode=True)
+from training.kerchak_rl.config import _from_dict, Config
+env = KerchakEnv(_from_dict(Config, ck["config"]), eval_mode=True)
 policy = PolicyController(ac, norm)
 obs, info = env.reset(seed=0, options={"command": Command(vx=0.2)})
 for step in range(500):

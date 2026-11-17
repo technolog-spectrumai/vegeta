@@ -1,4 +1,4 @@
-"""Belisario's CAD on its MuJoCo bodies, for the sims' renderer (``sims/belisario_render.py``): the skeleton of
+"""Kerchak's CAD on its MuJoCo bodies, for the sims' renderer (``sims/kerchak_render.py``): the skeleton of
 ``space_units`` - the trunk's bones (the pelvis, the vertebrae, the ribcage round the chest bay, the shoulder girdle,
 the neck, the head), the femurs, tibiae and foot bones, the arms, the palms, the fingers - a joint module at every
 joint, the electronics' bays in the chest and the belly (what the ribcage is for), the limbs' casing plates; each
@@ -12,7 +12,7 @@ The CAD is built standing (``Humanoid.build``'s pose: the knees bent ``knee_bend
 build-pose transform. The one difference: Talia's hips sit half a pelvis height below the pelvis's centre, the
 CAD's at it, so the pelvis's bones are rebuilt here with the hip modules at the frame's hips.
 
-    import belisario_mesh as bm
+    import kerchak_mesh as bm
     mesh = bm.load("plastic")          # .pieces [(body, triangles (n, 3, 3) m, rgba)], .struts [(body, local, body, local, r_barrel, r_rod)]
 """
 from __future__ import annotations
@@ -293,7 +293,7 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
 def _key(casing, tol, P):
     P = su.MARINE if P is None else P
     h = hashlib.sha1(json.dumps({"P": {k: P[k] for k in sorted(P)}, "casing": casing, "tol": tol, "v": VERSION}, sort_keys=True, default=str).encode()).hexdigest()[:12]
-    return f"belisario_{casing}_{h}"
+    return f"kerchak_{casing}_{h}"
 
 
 def save(mesh: Mesh, path: Path):

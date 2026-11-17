@@ -161,7 +161,7 @@ class PPOConfig:
 
 @dataclass
 class RunConfig:
-    name: str = "belisario"
+    name: str = "kerchak"
     log_dir: str = "training/runs"
     seed: int = 1
     device: str = "auto"                 #: auto | cpu | cuda

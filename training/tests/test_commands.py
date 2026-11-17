@@ -1,7 +1,7 @@
 """Command parsing, normalisation, sampling and the sources."""
 import numpy as np
 
-from belisario_rl.commands import COMMAND_DIM, Command, CommandRanges, CommandSampler, ConstantCommand, SampledCommand
+from kerchak_rl.commands import COMMAND_DIM, Command, CommandRanges, CommandSampler, ConstantCommand, SampledCommand
 
 
 def test_vector_roundtrip():

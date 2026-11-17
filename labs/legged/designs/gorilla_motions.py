@@ -1,4 +1,4 @@
-"""Belisario on all fours: the knuckle walk and the rise to standing, for the bare frame (``space_unit_robots.bare``).
+"""Kerchak on all fours: the knuckle walk and the rise to standing, for the bare frame (``space_unit_robots.bare``).
 
 * **quad_pose** — the gorilla's stance on four: the pelvis ``PELVIS_H`` above the ground and pitched nose-down
   ``PELVIS_PITCH`` (the back then slopes ~35°, the spine's modules only a little forward), the legs crouched under
@@ -196,7 +196,7 @@ def stand(kin, period=2.0):
 
 
 def motions(robot=None):
-    """(kin, [knuckle_walk, rise, stand, drop]) for the bare Belisario."""
+    """(kin, [knuckle_walk, rise, stand, drop]) for the bare Kerchak."""
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.bare())
     qq = quad_pose(kin)

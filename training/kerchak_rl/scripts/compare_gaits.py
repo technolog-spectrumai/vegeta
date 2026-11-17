@@ -2,8 +2,8 @@
 """Compare the programmed knuckle walk with a learned policy on the same commands and scene: the distance walked,
 the fall rate, the speed tracking error, the torque saturation and the energy per metre, side by side.
 
-    python -m belisario_rl.scripts.compare_gaits --checkpoint training/runs/<run>/model_latest.pt --episodes 3
-    python -m belisario_rl.scripts.compare_gaits --programmed-only                                   # the reference alone
+    python -m kerchak_rl.scripts.compare_gaits --checkpoint training/runs/<run>/model_latest.pt --episodes 3
+    python -m kerchak_rl.scripts.compare_gaits --programmed-only                                   # the reference alone
 """
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from belisario_rl.commands import Command  # noqa: E402
-from belisario_rl.config import Config, _from_dict, load_config  # noqa: E402
-from belisario_rl.controllers import PolicyController, ProgrammedGaitController  # noqa: E402
-from belisario_rl.env import BelisarioEnv  # noqa: E402
-from belisario_rl.export import build_actor_from_checkpoint  # noqa: E402
-from belisario_rl.ppo.runner import load_checkpoint  # noqa: E402
-from belisario_rl.reference import ReferenceGait  # noqa: E402
-from belisario_rl.scenes import build_scene  # noqa: E402
+from kerchak_rl.commands import Command  # noqa: E402
+from kerchak_rl.config import Config, _from_dict, load_config  # noqa: E402
+from kerchak_rl.controllers import PolicyController, ProgrammedGaitController  # noqa: E402
+from kerchak_rl.env import KerchakEnv  # noqa: E402
+from kerchak_rl.export import build_actor_from_checkpoint  # noqa: E402
+from kerchak_rl.ppo.runner import load_checkpoint  # noqa: E402
+from kerchak_rl.reference import ReferenceGait  # noqa: E402
+from kerchak_rl.scenes import build_scene  # noqa: E402
 
 
 def run(env, ctrl, cmd, episodes, seed):
@@ -67,7 +67,7 @@ def main(argv=None):
         cfg = _from_dict(Config, ck["config"])
     else:
         cfg = load_config(a.config)
-    env = BelisarioEnv(cfg, scene=build_scene(a.scene, cfg), seed=99, eval_mode=True)
+    env = KerchakEnv(cfg, scene=build_scene(a.scene, cfg), seed=99, eval_mode=True)
     ref = ReferenceGait(env.robot)
     cmd = Command(a.vx if a.vx is not None else ref.speed, 0.0, 0.0, ref.height, False)
     result = {"command": cmd.__dict__, "programmed": run(env, ProgrammedGaitController(ref, env.default["q"], cfg.action.scale), cmd, a.episodes, 99)}

@@ -1,6 +1,6 @@
 # The first session to run: knuckle-walking alone, flat ground then a little roughness - the recommended first
 # experiment (TRAINING.md). Door, window and the climbs come in session.yaml once this walks.
-name: belisario_knuckle_walk
+name: kerchak_knuckle_walk
 base: base.yaml
 config:
   ppo:

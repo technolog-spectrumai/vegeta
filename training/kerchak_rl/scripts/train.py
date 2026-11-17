@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Train Belisario's knuckle-walking policy with PPO.
+"""Train Kerchak's knuckle-walking policy with PPO.
 
-    python -m belisario_rl.scripts.train --session training/configs/session.yaml --stage 1_stance
-    python -m belisario_rl.scripts.train --session training/configs/session.yaml --stage 3_walk --resume training/runs/<run>/model_latest.pt
-    python -m belisario_rl.scripts.train --config training/configs/base.yaml --stages all      # every stage in turn
-    python -m belisario_rl.scripts.train ... --set ppo.num_envs=4 --set run.device=cpu
+    python -m kerchak_rl.scripts.train --session training/configs/session.yaml --stage 1_stance
+    python -m kerchak_rl.scripts.train --session training/configs/session.yaml --stage 3_walk --resume training/runs/<run>/model_latest.pt
+    python -m kerchak_rl.scripts.train --config training/configs/base.yaml --stages all      # every stage in turn
+    python -m kerchak_rl.scripts.train ... --set ppo.num_envs=4 --set run.device=cpu
 
 A session (``--session``) names the scenes and their weights; ``--config`` alone trains on the flat scene. Each
 stage gets its own run directory under ``run.log_dir``: ``<name>/<stage>_<timestamp>/`` with the configuration
@@ -22,13 +22,13 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from belisario_rl.config import apply_overrides, load_config  # noqa: E402
-from belisario_rl.curriculum import STAGE_ORDER, apply_stage  # noqa: E402
-from belisario_rl.env import BelisarioEnv  # noqa: E402
-from belisario_rl.ppo.runner import Runner, pick_device  # noqa: E402
-from belisario_rl.scenes import build_scene  # noqa: E402
-from belisario_rl.session import assign_scenes, load_session, session_summary  # noqa: E402
-from belisario_rl.vec_env import make_vec_env  # noqa: E402
+from kerchak_rl.config import apply_overrides, load_config  # noqa: E402
+from kerchak_rl.curriculum import STAGE_ORDER, apply_stage  # noqa: E402
+from kerchak_rl.env import KerchakEnv  # noqa: E402
+from kerchak_rl.ppo.runner import Runner, pick_device  # noqa: E402
+from kerchak_rl.scenes import build_scene  # noqa: E402
+from kerchak_rl.session import assign_scenes, load_session, session_summary  # noqa: E402
+from kerchak_rl.vec_env import make_vec_env  # noqa: E402
 
 
 def make_env_fns(cfg, session, num_envs, seed):
@@ -38,13 +38,13 @@ def make_env_fns(cfg, session, num_envs, seed):
     def fn(i, entry):
         def make():
             scene = build_scene(entry.name, cfg, entry.params) if entry else build_scene(cfg.terrain.kind if cfg.terrain.kind in ("flat", "rough", "steps") else "flat", cfg)
-            return BelisarioEnv(cfg, scene=scene, seed=seed + i)
+            return KerchakEnv(cfg, scene=scene, seed=seed + i)
         return make
     return [fn(i, e) for i, e in enumerate(entries)]
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="PPO training for Belisario")
+    ap = argparse.ArgumentParser(description="PPO training for Kerchak")
     ap.add_argument("--session", default=None, help="session.yaml: the scenes and their weights")
     ap.add_argument("--config", default=None, help="a Config YAML (when there is no session)")
     ap.add_argument("--stage", default=None, help="a curriculum stage (default: the session's stages, or 1_stance)")

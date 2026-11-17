@@ -6,7 +6,7 @@ torch = pytest.importorskip("torch")
 
 
 def _ac(obs=20, critic=5, act=6):
-    from belisario_rl.ppo.networks import ActorCritic
+    from kerchak_rl.ppo.networks import ActorCritic
     return ActorCritic(obs, obs + critic, act, (256, 256, 128), (256, 256, 128), "elu", 0.8)
 
 
@@ -20,8 +20,8 @@ def test_actor_critic_shapes():
 
 
 def test_ppo_update_runs():
-    from belisario_rl.config import PPOConfig
-    from belisario_rl.ppo.ppo import PPO
+    from kerchak_rl.config import PPOConfig
+    from kerchak_rl.ppo.ppo import PPO
     cfg = PPOConfig(num_envs=2, steps_per_env=8, epochs=1, minibatches=2)
     ac = _ac()
     algo = PPO(ac, cfg, torch.device("cpu"))
@@ -36,7 +36,7 @@ def test_ppo_update_runs():
 
 
 def test_checkpoint_roundtrip(tmp_path):
-    from belisario_rl.ppo.normalizer import RunningMeanStd
+    from kerchak_rl.ppo.normalizer import RunningMeanStd
     ac = _ac()
     norm = RunningMeanStd(20)
     norm.update(torch.randn(50, 20) * 3 + 1)
@@ -45,7 +45,7 @@ def test_checkpoint_roundtrip(tmp_path):
                                                                         "activation": "elu", "init_noise_std": 0.8}}, "stage": "test"}
     path = tmp_path / "model.pt"
     torch.save(ck, path)
-    from belisario_rl.export import build_actor_from_checkpoint
+    from kerchak_rl.export import build_actor_from_checkpoint
     ac2, norm2 = build_actor_from_checkpoint(torch.load(path, map_location="cpu", weights_only=False))
     x = torch.randn(4, 20)
     assert torch.allclose(ac.actor(norm(x)), ac2.actor(norm2(x)))
@@ -54,8 +54,8 @@ def test_checkpoint_roundtrip(tmp_path):
 
 def test_onnx_export(tmp_path):
     pytest.importorskip("onnx")
-    from belisario_rl.export import export_onnx
-    from belisario_rl.ppo.normalizer import RunningMeanStd
+    from kerchak_rl.export import export_onnx
+    from kerchak_rl.ppo.normalizer import RunningMeanStd
     ac = _ac()
     norm = RunningMeanStd(20)
     ck = {"iteration": 1, "actor_critic": ac.state_dict(), "normalizer": norm.state_dict(), "critic_normalizer": None, "algo": None,

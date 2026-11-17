@@ -1,8 +1,8 @@
 # A training session: the scenes it trains on, with weights and parameters, the base configuration and the
-# curriculum stages to run through in turn (belisario_rl.session). The environments are shared out among the
+# curriculum stages to run through in turn (kerchak_rl.session). The environments are shared out among the
 # scenes by weight; one policy learns them all. Scenes: flat, rough, steps (locomotion), door, window, tree, hull,
-# obstacles, rope (each with a goal to reach through or up the scene; their parameters in belisario_rl.scenes).
-name: belisario_locomotion_and_tasks
+# obstacles, rope (each with a goal to reach through or up the scene; their parameters in kerchak_rl.scenes).
+name: kerchak_locomotion_and_tasks
 base: base.yaml
 config:
   ppo:

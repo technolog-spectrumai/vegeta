@@ -1,4 +1,4 @@
-# Training Belisario's locomotion policy (MuJoCo, PyTorch, PPO)
+# Training Kerchak's locomotion policy (MuJoCo, PyTorch, PPO)
 
 The pipeline lives in `training/`: a Gymnasium-style environment round the gorilla-like frame of
 `labs/legged/designs/space_unit_robots.bare` (Chiron's MJCF, its servos as PD torque limits), a PPO implementation
@@ -23,7 +23,7 @@ pip install pygame                                                      # only f
 `cadquery` is not needed for training (the sims' CAD renderer is separate). Check the model builds:
 
 ```bash
-python -c "from training.belisario_rl.robot_model import RobotModel; m = RobotModel(); print(m.summary()); print(m.missing_requirements())"
+python -c "from training.kerchak_rl.robot_model import RobotModel; m = RobotModel(); print(m.summary()); print(m.missing_requirements())"
 ```
 
 Run the unit tests (they build one environment, ~10 s):
@@ -34,7 +34,7 @@ pytest training/tests -q
 
 ## The robot model and what it lacks
 
-`belisario_rl.robot_model.RobotModel` builds the frame through Chiron (`bare(casing)` → `to_mjcf`): 57 actuated hinges
+`kerchak_rl.robot_model.RobotModel` builds the frame through Chiron (`bare(casing)` → `to_mjcf`): 57 actuated hinges
 (21 of Talia's limbs, the spine's 4, the hands' 32: a 2-module wrist, four fingers of three joints and a two-joint
 thumb a side) on position servos whose torque is clipped to the module's torque–speed line, a free joint at the
 pelvis, contact geoms `L`, `R` (the soles) and `L_knuckle`, `R_knuckle` (the backs of the middle fingers' middle
@@ -53,24 +53,24 @@ hold the knuckle-walking curl (`action.hands: held`); `action.hands: policy` giv
 
 ## Observations, actions, commands
 
-Policy observation (`belisario_rl.env.ObsLayout`, every block deployable): joint positions as offsets from the default
+Policy observation (`kerchak_rl.env.ObsLayout`, every block deployable): joint positions as offsets from the default
 pose (57), joint velocities (57), base angular velocity (3), projected gravity (3), estimated base linear velocity
 (3), contact flags (4), the previous action (31, or 57 with `action.hands: policy`), the normalized command (5).
 Critic extras (privileged, training only): true base velocity, height above the terrain, contact normal forces,
 the current push, ground friction, mass scale, the goal offset.
 
 Action: normalized joint-position offsets, `target = default + scale · a` (`scale` 0.5 rad), clipped to the joint
-ranges; the PD runs at the physics rate with the torque limit of each servo (`belisario_rl.pd`).
+ranges; the PD runs at the physics rate with the torque limit of each servo (`kerchak_rl.pd`).
 
-Command (`belisario_rl.commands.Command`): `vx` [m/s], `vy` [m/s], `yaw_rate` [rad/s], `height` [m], `stop`. The
+Command (`kerchak_rl.commands.Command`): `vx` [m/s], `vy` [m/s], `yaw_rate` [rad/s], `height` [m], `stop`. The
 ranges are in the configuration (`commands:`); the policy sees them normalized to ±1 and a stop flag. A stop
 zeroes the speeds in what the policy sees and the rewards give no forward credit. The same `Command` goes to the
-programmed gaits (`belisario_rl.controllers.ProgrammedGaitController`) and to the learned policy
+programmed gaits (`kerchak_rl.controllers.ProgrammedGaitController`) and to the learned policy
 (`PolicyController`), so the two are swapped behind one interface.
 
 ## Configuration
 
-`training/configs/base.yaml` holds every key (`belisario_rl.config.Config`): sim rates and episode length, command
+`training/configs/base.yaml` holds every key (`kerchak_rl.config.Config`): sim rates and episode length, command
 ranges, observation scales and noise, the action and PD settings, reward weights, termination, terrain, domain
 randomization, disturbances, PPO, the run. A stage (`training/configs/stages/<stage>.yaml`) overrides it; a session
 (`session.yaml`) names the scenes, their weights and parameters and the stages to run. From the command line,
@@ -81,7 +81,7 @@ randomization, disturbances, PPO, the run. A stage (`training/configs/stages/<st
 A session file:
 
 ```yaml
-name: belisario_knuckle_walk
+name: kerchak_knuckle_walk
 base: base.yaml
 config: {ppo: {num_envs: 8}}
 stages: [1_stance, 2_shift, 3_walk]
@@ -93,8 +93,8 @@ scenes:
     params: {rms: 0.02, correlation_length: 0.4}
 ```
 
-The environments are shared out among the scenes by weight (`belisario_rl.session.assign_scenes`). Scenes
-(`belisario_rl.scenes`): `flat`, `rough`, `steps` (locomotion), `door` (the lever door of `gorilla_tasks`), `window`,
+The environments are shared out among the scenes by weight (`kerchak_rl.session.assign_scenes`). Scenes
+(`kerchak_rl.scenes`): `flat`, `rough`, `steps` (locomotion), `door` (the lever door of `gorilla_tasks`), `window`,
 `obstacles` (reach past them), `wall`, `tree`, `hull`, `rope` (climb to a goal height; their props are exactly those
 of `gorilla_scenarios`, the scenery the pre-programmed climbs were solved on). `training/configs/session_locomotion.yaml`
 is the first experiment; `session.yaml` adds the tasks.
@@ -115,7 +115,7 @@ is the first experiment; `session.yaml` adds the tasks.
 Each stage is a YAML of overrides; `--stages all` runs them in turn, every stage starting from the previous one's
 last checkpoint; `--stage <name> --resume <checkpoint>` starts any stage from any checkpoint. The programmed gaits
 can seed the learning as a reference: set `reward.imitation` > 0 and the environment's `reference`
-(`belisario_rl.reference.ReferenceGait`, the knuckle walk of `gorilla_motions`) adds a term for staying near the
+(`kerchak_rl.reference.ReferenceGait`, the knuckle walk of `gorilla_motions`) adds a term for staying near the
 keyframes' joint angles; keep it small or zero once the policy walks.
 
 ## Commands
@@ -123,21 +123,21 @@ keyframes' joint angles; keep it small or zero once the policy walks.
 All from the repository root. Training:
 
 ```bash
-python -m training.belisario_rl.scripts.train --session training/configs/session_locomotion.yaml --stage 1_stance
+python -m training.kerchak_rl.scripts.train --session training/configs/session_locomotion.yaml --stage 1_stance
 ```
 
 ```bash
-python -m training.belisario_rl.scripts.train --session training/configs/session_locomotion.yaml --stage 2_shift --resume training/runs/belisario_knuckle_walk/1_stance_<timestamp>/model_latest.pt
+python -m training.kerchak_rl.scripts.train --session training/configs/session_locomotion.yaml --stage 2_shift --resume training/runs/kerchak_knuckle_walk/1_stance_<timestamp>/model_latest.pt
 ```
 
 ```bash
-python -m training.belisario_rl.scripts.train --session training/configs/session_locomotion.yaml --stages all
+python -m training.kerchak_rl.scripts.train --session training/configs/session_locomotion.yaml --stages all
 ```
 
 The whole curriculum with the task scenes:
 
 ```bash
-python -m training.belisario_rl.scripts.train --session training/configs/session.yaml --stages all --device cuda
+python -m training.kerchak_rl.scripts.train --session training/configs/session.yaml --stages all --device cuda
 ```
 
 Each stage makes a run directory `training/runs/<session name>/<stage>_<timestamp>/` with `config.yaml` (the resolved
@@ -153,32 +153,32 @@ tensorboard --logdir training/runs
 Evaluation (deterministic: the action mean, no noise, no randomization, fixed seeds):
 
 ```bash
-python -m training.belisario_rl.scripts.evaluate --checkpoint training/runs/<run>/model_latest.pt --scene flat --vx 0.25 --episodes 5
+python -m training.kerchak_rl.scripts.evaluate --checkpoint training/runs/<run>/model_latest.pt --scene flat --vx 0.25 --episodes 5
 ```
 
 Deterministic inference printing the state (or running an exported ONNX actor):
 
 ```bash
-python -m training.belisario_rl.scripts.infer --checkpoint training/runs/<run>/model_latest.pt --vx 0.2 --yaw 0.1
+python -m training.kerchak_rl.scripts.infer --checkpoint training/runs/<run>/model_latest.pt --vx 0.2 --yaw 0.1
 ```
 
 Visualisation (MuJoCo's viewer, or a movie):
 
 ```bash
-python -m training.belisario_rl.scripts.visualize --checkpoint training/runs/<run>/model_latest.pt --scene rough --movie training/runs/walk.mp4
+python -m training.kerchak_rl.scripts.visualize --checkpoint training/runs/<run>/model_latest.pt --scene rough --movie training/runs/walk.mp4
 ```
 
 ONNX export (the observation normalizer folded in; a `.json` beside it with the observation blocks and the action's
 meaning):
 
 ```bash
-python -m training.belisario_rl.scripts.export_onnx --checkpoint training/runs/<run>/model_latest.pt --out training/exports/belisario_actor.onnx
+python -m training.kerchak_rl.scripts.export_onnx --checkpoint training/runs/<run>/model_latest.pt --out training/exports/kerchak_actor.onnx
 ```
 
 Programmed gait against the learned policy (the same commands, the same scenes, tracking error, falls, energy):
 
 ```bash
-python -m training.belisario_rl.scripts.compare_gaits --checkpoint training/runs/<run>/model_latest.pt --scene flat --vx 0.25
+python -m training.kerchak_rl.scripts.compare_gaits --checkpoint training/runs/<run>/model_latest.pt --scene flat --vx 0.25
 ```
 
 Keyboard or joystick control: see `training/CONTROL_EXAMPLE.md`.

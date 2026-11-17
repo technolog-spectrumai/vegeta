@@ -23,7 +23,7 @@ A notebook starts with::
 | machine | notebooks | designs | sims | campaigns | export | exp |
 |---|---|---|---|---|---|---|
 | apheloria | ● | ● | ● |  | ● |  |
-| belisario |  |  |  |  | ● |  |
+| kerchak |  |  |  |  | ● |  |
 | cleopatra | ● |  |  | ● |  |  |
 | fantasy_ork |  |  |  |  | ● |  |
 | humanoid |  |  |  |  | ● |  |

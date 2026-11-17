@@ -1,6 +1,6 @@
 """One controller interface for the programmed gaits and the learned policies: ``act(obs, command, t)`` → a
 normalised action for the environment (joint-position offsets about the default pose, what ``pd.PDController``
-turns into targets), so either can drive ``BelisarioEnv`` and both can be compared on the same commands.
+turns into targets), so either can drive ``KerchakEnv`` and both can be compared on the same commands.
 
 * ``ProgrammedGaitController`` plays ``reference.ReferenceGait``: the knuckle walk when the command moves, the quad
   pose when it says stop (it cannot turn or go sideways; the comparison reports that honestly).

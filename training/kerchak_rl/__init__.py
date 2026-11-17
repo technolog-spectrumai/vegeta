@@ -1,10 +1,10 @@
-"""Belisario's reinforcement-learning pipeline: PPO (PyTorch) on the MuJoCo model of the bare gorilla-human hybrid
+"""Kerchak's reinforcement-learning pipeline: PPO (PyTorch) on the MuJoCo model of the bare gorilla-human hybrid
 frame (``labs/legged/designs/space_unit_robots.bare``), command-conditioned knuckle-walking.
 
 Kept apart from the robot's design and control code (``labs/legged``): this package only reads the robot model
 (``robot_model``), the programmed gaits (``reference``) and Chiron's terrains and servo law (``vegeta.chiron``).
 
-    training/belisario_rl/
+    training/kerchak_rl/
         config.py         the configuration (dataclasses, YAML, deep-merge, snapshots)
         robot_model.py    the MuJoCo model from the design, the joint and actuator tables, the limits, the contact geoms
         commands.py       the command interface shared by learned and programmed controllers

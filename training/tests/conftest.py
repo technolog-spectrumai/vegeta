@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 @pytest.fixture(scope="session")
 def cfg():
-    from belisario_rl.config import load_config
+    from kerchak_rl.config import load_config
     c = load_config(ROOT / "configs" / "base.yaml")
     c.ppo.num_envs = 2
     c.ppo.steps_per_env = 4
@@ -24,13 +24,13 @@ def cfg():
 
 @pytest.fixture(scope="session")
 def robot(cfg):
-    from belisario_rl.robot_model import RobotModel
+    from kerchak_rl.robot_model import RobotModel
     return RobotModel(sim_hz=cfg.sim.sim_hz)
 
 
 @pytest.fixture(scope="session")
 def env(cfg):
-    from belisario_rl.env import BelisarioEnv
-    e = BelisarioEnv(cfg, seed=0, eval_mode=True)
+    from kerchak_rl.env import KerchakEnv
+    e = KerchakEnv(cfg, seed=0, eval_mode=True)
     yield e
     e.close()
