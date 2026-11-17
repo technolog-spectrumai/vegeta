@@ -169,7 +169,7 @@ def _moving(kin, Q, tol=1e-6):
 
 
 def legged_gait(kin, name, feet, *, period, duty, stride, step_height, frames=32, foot_points=None, extra=None,
-                lateral=None, crouch=0.0, q_start=None, joints=None, source="", params=None):
+                lateral=None, crouch=0.0, q_start=None, joints=None, source="", params=None, base_rot=None, reg=1e-4, iters=150):
     """A periodic gait in the base frame: each foot in ``feet`` ({geom: phase 0..1}) slides back ``stride`` [m]
     on the ground during its stance (``duty`` of the cycle) and swings forward on a raised half-sine of
     ``step_height``; the base travels forward at stride / (duty · period). ``foot_points`` ({geom: [local
@@ -177,7 +177,11 @@ def legged_gait(kin, name, feet, *, period, duty, stride, step_height, frames=32
     base's sway, seen from the base); ``crouch`` [m] lowers the base (the feet rise in its frame: straight-legged
     designs need it to bend their knees; ``q_start`` {joint: rad} seeds the IK off a straight-leg singularity);
     ``joints``: the joints the IK may move (default the actuated ones: passive springs stay at their pose);
-    ``stride`` may be {foot: m} (unequal sides turn the robot); ``extra(t, q)`` sets joints no foot drives (arm swing). Returns a Motion."""
+    ``stride`` may be {foot: m} (unequal sides turn the robot); ``extra(t, q)`` sets joints no foot drives (arm swing);
+    ``base_rot`` (3×3, the base's orientation in the world) when the base rides tilted (a pelvis pitched forward on
+    all fours): the strides and the lifts are then along the world's ground, not the base's x and z; ``reg`` damps the
+    IK's steps (raise it for limbs near full stretch). Returns a Motion."""
+    Rb = np.eye(3) if base_rot is None else np.asarray(base_rot, dtype=float)
     pts = {}
     for g in feet:
         body, c = kin.geom_point(g)
@@ -199,15 +203,15 @@ def legged_gait(kin, name, feet, *, period, duty, stride, step_height, frames=32
                 u = (s - duty) / (1.0 - duty)
                 dx, dz = st * (-0.5 + smooth(u)), step_height * math.sin(math.pi * u)
             for body, local, p0 in pts[g]:
-                targets.append((body, local, p0 + np.array([dx, dy, dz + crouch])))
-        q, err = kin.ik(targets, q_init=q, q_ref=kin.q0, joints=joints or kin.actuated)
+                targets.append((body, local, p0 + Rb.T @ np.array([dx, dy, dz + crouch])))
+        q, err = kin.ik(targets, q_init=q, q_ref=kin.q0, joints=joints or kin.actuated, reg=reg, iters=iters)
         if extra:
             q = extra(t, q.copy())
         kin.set(q)
         for g, ph in feet.items():
             if (t / period + ph) % 1.0 < duty:
                 for body, local, p0 in pts[g]:
-                    stance_z.append(kin.world(body, local)[2] - p0[2] - crouch)
+                    stance_z.append(float((Rb @ (kin.world(body, local) - p0))[2]) - crouch)
         worst = max(worst, err)
         Q.append(q.copy())
     moving = _moving(kin, Q)

@@ -35,11 +35,11 @@ mm = 1e-3
 
 #: CAD volumes [mm³] of every armour and weapon piece at the defaults (the test rebuilds them)
 CAD_MM3 = {
-    "marine": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "shield": 24197865.1, "handle": 461906.1},
-    "marine_saw": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "saw_body": 5557142.5, "saw_bar": 1217654.7},
-    "centurion": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "crest": 3086414.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9},
-    "breacher": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271689.9, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "shield": 37308855.0, "handle": 624022.0, "shaft": 1150818.8, "head": 3029269.4},
-    "heavy": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 17271722.0, "arm_lames": 7271690.0, "chest_bay": 13267510.8, "belly_bay": 4076459.9, "backpack": 56211187.1, "belt": 14221020.7, "greaves": 8973334.3, "boots": 9714685.2, "cannon": 4701116.9, "mount": 14398915.1, "feed": 2288040.3},
+    "marine": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 8475897.1, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "shield": 24197865.1, "handle": 461906.1},
+    "marine_saw": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 8475897.1, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "saw_body": 5557142.5, "saw_bar": 1217654.7},
+    "centurion": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 8475897.1, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "crest": 3086414.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9},
+    "breacher": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 8475897.1, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "shield": 37308855.0, "handle": 506322.5, "shaft": 1150818.8, "head": 3029269.4},
+    "heavy": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 17271722.0, "arm_lames": 8475897.1, "chest_bay": 13267510.8, "belly_bay": 4076459.9, "backpack": 56211187.1, "belt": 14221020.7, "greaves": 8973334.3, "boots": 9714685.2, "cannon": 4701116.9, "mount": 14398915.1, "feed": 2315912.9},
 }
 #: piece -> material; the plates are hollow shells and the backpack a casing, so a fill factor says how much of the
 #: CAD volume is metal (the rest: padding, the pack's cells and electronics counted in the casing's density)
@@ -223,8 +223,7 @@ def _armour(r, unit, P):
 
 #: the linear actuators' volumes [mm³] per group (both sides), rebuilt by the test from ``space_units.actuators``;
 #: each weighs volume × 0.5 (the barrel and the rod round the piston) × 7075 aluminium
-ACTUATOR_MM3 = {"hip_struts": 793039.6, "knee_struts": 806947.4, "ankle_struts": 469454.7, "shoulder_struts": 445491.6,
-                "elbow_struts": 469919.6, "spine_struts": 582587.8}
+ACTUATOR_MM3 = {"hip_struts": 793039.6, "knee_struts": 806947.4, "ankle_struts": 469454.7, "shoulder_struts": 454055.7, "elbow_struts": 552689.6, "spine_struts": 582587.8}
 ACTUATOR_LINK = {"hip_struts": "{s}_thigh", "knee_struts": "{s}_thigh", "ankle_struts": "{s}_shin", "shoulder_struts": "{s}_upper_arm",
                  "elbow_struts": "{s}_upper_arm", "spine_struts": "torso"}
 
@@ -266,12 +265,68 @@ def _unit(unit, name, P, notes):
 ALONG = (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
 
 
-def bare(name: str = "Belisario"):
-    """Belisario bare: the Marine's frame and armour, no weapons, with a knuckle contact on each hand (a sphere at the
-    curled fingers' middle joints, a foot-role geom) for walking on all fours (``gorilla_motions``)."""
+PC_RGBA = (0.86, 0.9, 0.94, 0.45)                                        #: the casing: polycarbonate, translucent in the drawings
+PC_T = 0.003                                                              #: the casing's wall [m]
+
+
+def _casing(r, P):
+    """A lightweight casing in place of the armour: 3 mm polycarbonate covers over the ribcage, the pelvis, the
+    upper arms and forearms, the thighs and shins, and the head - thin boxes and cylinders round the frame, each at
+    its shell's mass (surface × wall × the density); the electronics' bays stay, the pack goes."""
+    rho = su.MATERIALS["polycarbonate"]["density_kg_m3"]
+    m = carried_masses("marine")
+    Wt, Dt, Ht = P["torso_width"] * mm, P["torso_depth"] * mm, P["torso_height"] * mm
+    Dp, Wp, Hp = P["pelvis_depth"] * mm, P["pelvis_width"] * mm, P["pelvis_height"] * mm
+    d = P["arm_diameter"] * mm
+    thorax, zt = _link(r.root, "thorax"), 0.42 * Ht
+
+    def box(link, name, half, pos, quat=(1.0, 0.0, 0.0, 0.0)):
+        hx, hy, hz = half
+        area = 8 * (hx * hy + hy * hz + hx * hz)
+        link.geoms.append(Geom(name, "box", half, pos=pos, quat=quat, mass=area * PC_T * rho, role="visual", rgba=PC_RGBA))
+
+    def cyl(link, name, rad, hl, pos):
+        area = 2 * math.pi * rad * 2 * hl + 2 * math.pi * rad ** 2
+        link.geoms.append(Geom(name, "cylinder", (rad, hl), pos=pos, mass=area * PC_T * rho, role="visual", rgba=PC_RGBA))
+
+    box(thorax, "chest_cover", (Dt / 2 * 0.98, Wt / 2 * 0.96, (Ht - zt) / 2 * 0.9), (0.0, 0.0, (Ht - zt) / 2 * 0.95))
+    box(thorax, "chest_bay", (Dt * 0.17, Wt * 0.2, Ht * 0.13), (-Dt * 0.05, 0.0, Ht * 0.6 - zt))
+    thorax.geoms[-1].mass, thorax.geoms[-1].rgba = m["chest_bay"], (0.30, 0.32, 0.36, 1.0)
+    Wh, Dh, Hh = P["head_width"] * mm, P["head_depth"] * mm, P["head_height"] * mm
+    box(thorax, "head_cover", (Dh / 2 + 0.004, Wh / 2 + 0.004, Hh / 2 + 0.004), (0.0, 0.0, Ht - zt + P["neck_length"] * mm + Hh / 2))
+    torso = _link(r.root, "torso")
+    box(torso, "belly_bay", (Dp * 0.21, Wp * 0.25, Ht * 0.1), (0.02, 0.0, Ht * 0.17))
+    torso.geoms[-1].mass, torso.geoms[-1].rgba = m["belly_bay"], (0.30, 0.32, 0.36, 1.0)
+    box(r.root, "pelvis_cover", (Dp / 2 + 0.006, Wp / 2 + 0.006, Hp / 2 + 0.006), (0.0, 0.0, 0.0))
+    for side in ("L", "R"):
+        La, Lf = P["upper_arm_length"] * mm, P["forearm_length"] * mm
+        cyl(_link(r.root, f"{side}_upper_arm"), f"{side}_upper_arm_cover", d / 2 + 0.006, La * 0.4, (0.0, 0.0, -La * 0.5))
+        cyl(_link(r.root, f"{side}_forearm"), f"{side}_forearm_cover", d * 0.42 + 0.006, Lf * 0.4, (0.0, 0.0, -Lf * 0.5))
+        L1, L2 = P["thigh_length"] * mm, P["shin_length"] * mm
+        cyl(_link(r.root, f"{side}_thigh"), f"{side}_thigh_cover", P["femur_diameter"] * mm * 0.9, L1 * 0.36, (0.01, 0.0, -L1 * 0.5))
+        cyl(_link(r.root, f"{side}_shin"), f"{side}_shin_cover", P["tibia_diameter"] * mm * 0.85, L2 * 0.36, (0.0, 0.0, -L2 * 0.5))
+    r.sources["carried"] = "a polycarbonate casing (3 mm shells over the frame) and the electronics' bays; no armour, no weapons"
+    return r
+
+
+def bare(name: str = "Belisario", casing: str = "none"):
+    """Belisario bare: the frame with no weapons, a knuckle contact on each hand (a sphere at the curled fingers' middle
+    joints, a foot-role geom) for walking on all fours (``gorilla_motions``). ``casing``: ``"none"`` (the skeleton
+    alone: the frame's geoms, the modules' and the struts' masses), ``"plastic"`` (a lightweight polycarbonate
+    casing, ``_casing``) or ``"lorica"`` (the armour)."""
     P = su.MARINE
-    r = _unit("marine", name, P, "Belisario: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
-                                 "(design stage).")
+    p = {k: v for k, v in P.items() if k in hr.P}
+    r = hr.talia(name, p, notes="Belisario: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
+                                "(design stage).")
+    _spine(r, P)
+    _reactuate(r)
+    if casing == "plastic":
+        _casing(r, P)
+    elif casing == "lorica":
+        _armour(r, "marine", P)
+    _struts(r, P)
+    e = math.radians(P["elbow_bend_deg"])
+    r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e}
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
     for j in r.joints():                                                  # a gorilla's ankles and knees fold further
         if j.tag == "ankle_pitch":
@@ -282,7 +337,12 @@ def bare(name: str = "Belisario"):
         fore = _link(r.root, f"{side}_forearm")
         fore.geoms.append(Geom(f"{side}_knuckle", "sphere", (0.035,), pos=(0.02, 0.0, -Lf - d * 0.55 - 0.095), mass=0.2, role="foot",
                                friction=(0.9, 0.005, 0.0001), rgba=bk.BLACK))
-    r.sources["geometry"] = "designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons)"
+    r.sources["geometry"] = f"designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons, casing {casing})"
+    for lk in r.links():                                                  # the frame drawn as bone
+        for g in lk.geoms:
+            if g.name in ("lumbar", "ribcage", "yoke", "neck", "head", "pelvis_shell") or g.name.endswith(("_thigh", "_shin", "_upper_arm", "_forearm", "_palm")) \
+                    or "_finger_" in g.name:
+                g.rgba = (0.86, 0.82, 0.68, 1.0)
     return r
 
 

@@ -16,7 +16,7 @@ MARINE = {"pelvis_width": 560.0, "pelvis_depth": 270.0, "pelvis_height": 170.0, 
           "torso_depth": 400.0, "torso_height": 600.0, "waist_taper": 0.82, "shell_fillet": 26.0, "hip_spacing": 360.0,
           "thigh_length": 360.0, "shin_length": 340.0, "leg_width": 135.0, "leg_thickness": 115.0,
           "joint_boss_diameter": 150.0, "ankle_height": 95.0, "foot_length": 340.0, "foot_width": 180.0,
-          "foot_thickness": 48.0, "knee_bend_deg": 15.0, "upper_arm_length": 470.0, "forearm_length": 420.0,
+          "foot_thickness": 48.0, "knee_bend_deg": 15.0, "upper_arm_length": 540.0, "forearm_length": 500.0,
           "arm_diameter": 140.0, "elbow_bend_deg": 60.0, "neck_length": 40.0, "head_width": 230.0, "head_depth": 240.0,
           "head_height": 230.0, "eye_diameter": 18.0, "battery_bay_depth": 0.0,
           # the skeleton: an S-curved spine of vertebrae set back in the chest, ribs to a sternum, clavicles and

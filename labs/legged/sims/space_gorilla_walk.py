@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Belisario walks like a gorilla: on all fours on its knuckles (``gorilla_motions.knuckle_walk``, the lateral
-sequence LH LF RH RF), rears up on two to stand a moment, drops back on four and walks on - the bare frame, no
-weapons (``space_unit_robots.bare``), in MuJoCo.
+sequence LH LF RH RF), rears up on two to stand a moment, drops back on four and walks on - the bare frame in its
+polycarbonate casing, no armour, no weapons (``space_unit_robots.bare``), in MuJoCo; the casing drawn translucent
+so the frame shows.
 
     python space_gorilla_walk.py                      # dynamics, the whole sequence (22 s), the movie
     python space_gorilla_walk.py --mode kinematic     # the keyframes played
@@ -53,6 +54,7 @@ class Gorilla:
         self.q_stand = kin.q0.copy()
         self.h_quad = gm.PELVIS_H
         self.h_stand = hum.base_height(kin)
+        self.R_quad, self.q4_quad = gm.base_rot(), gm.base_quat()         # the pelvis pitched nose-down on all fours
         self.v = float(self.walk.base["velocity_m_s"][0])
         self.t_rise = walk_s
         self.t_stand = self.t_rise + T_RISE
@@ -81,24 +83,25 @@ class Gorilla:
         return q
 
     def phase(self, t):
-        """(q target, base speed, base height, what) at t."""
+        """(q target, base speed, base height, pelvis pitch, what) at t."""
+        P = gm.PELVIS_PITCH
         if t < self.t_rise:
-            return self._gait_q(t), self.v, self.h_quad, "walking on four"
+            return self._gait_q(t), self.v, self.h_quad, P, "walking on four"
         if t < self.t_stand:
             w = mk.smooth((t - self.t_rise) / T_RISE)
-            return (1 - w) * self.q_quad + w * self.q_stand, 0.0, self.h_quad + w * (self.h_stand - self.h_quad), "rising"
+            return (1 - w) * self.q_quad + w * self.q_stand, 0.0, self.h_quad + w * (self.h_stand - self.h_quad), (1 - w) * P, "rising"
         if t < self.t_drop:
-            return self.q_stand, 0.0, self.h_stand, "standing on two"
+            return self.q_stand, 0.0, self.h_stand, 0.0, "standing on two"
         if t < self.t_walk2:
             w = mk.smooth((t - self.t_drop) / T_DROP)
-            return (1 - w) * self.q_stand + w * self.q_quad, 0.0, self.h_stand + w * (self.h_quad - self.h_stand), "dropping on four"
-        return self._gait_q(t - self.t_walk2), self.v, self.h_quad, "walking on four"
+            return (1 - w) * self.q_stand + w * self.q_quad, 0.0, self.h_stand + w * (self.h_quad - self.h_stand), w * P, "dropping on four"
+        return self._gait_q(t - self.t_walk2), self.v, self.h_quad, P, "walking on four"
 
     def reset(self):
         d = self.data
         d.qpos[:] = self.model.qpos0
         d.qpos[0:3] = [0.0, 0.0, self.h_quad + (0.01 if self.mode == "physics" else 0.0)]
-        d.qpos[3:7] = [1.0, 0.0, 0.0, 0.0]
+        d.qpos[3:7] = self.q4_quad
         d.qpos[self.qadr] = self.phase(0.0)[0]
         d.qvel[:] = 0.0
         mujoco.mj_forward(self.model, d)
@@ -109,11 +112,11 @@ class Gorilla:
         return math.degrees(math.acos(max(-1.0, min(1.0, R.reshape(3, 3)[2, 2]))))
 
     def step_kinematic(self, t, dt):
-        q, v, z, _ = self.phase(t)
+        q, v, z, pitch, _ = self.phase(t)
         self.x_kin += v * dt
         d = self.data
         d.qpos[0:3] = [self.x_kin, 0.0, z]
-        d.qpos[3:7] = [1.0, 0.0, 0.0, 0.0]
+        d.qpos[3:7] = gm.base_quat(pitch)
         d.qpos[self.qadr] = q
         mujoco.mj_kinematics(self.model, d)
 
@@ -122,7 +125,7 @@ class Gorilla:
         n = max(1, int(round(dt / m.opt.timestep)))
         for k in range(n):
             tk = t + k * m.opt.timestep
-            q_t, v, _, _ = self.phase(tk)
+            q_t, v, _, pitch, _ = self.phase(tk)
             q = d.qpos[self.qadr]
             tau = np.clip(self.kp * (q_t[self.act_col] - q[self.act_col]), -self.lim, self.lim)
             self.sat = max(self.sat, float(np.max(np.abs(tau) / self.lim)))
@@ -132,7 +135,8 @@ class Gorilla:
                 R = np.zeros(9)
                 mujoco.mju_quat2Mat(R, d.qpos[3:7])
                 R = R.reshape(3, 3)
-                err = np.cross(R[:, 2], np.array([0.0, 0.0, 1.0]))
+                up = gm.base_rot(pitch)[:, 2]                              # the pelvis's up, pitched as the phase wants
+                err = np.cross(R[:, 2], up)
                 w = d.qvel[3:6]
                 yaw = math.atan2(R[1, 0], R[0, 0])
                 torque = assist * (6000.0 * err - 400.0 * w) + np.array([0.0, 0.0, -assist * (3000.0 * yaw + 300.0 * w[2])])
@@ -174,7 +178,7 @@ def main(argv=None):
             g.step_kinematic(t, dt)
         else:
             g.step_physics(t, dt, assist)
-        frames.append((t, *march_sim.snapshot([g]), g.phase(t)[3]))
+        frames.append((t, *march_sim.snapshot([g]), g.phase(t)[4]))
         t += dt
     report = {"mode": a.mode, "assist": assist, "seconds": a.seconds, **g.report()}
     (OUT / "space_gorilla_walk.json").write_text(json.dumps(report, indent=1))
@@ -187,7 +191,7 @@ def main(argv=None):
         for k, (t, geoms, centre, what) in enumerate(frames):
             fig = plt.figure(figsize=(12.8, 7.2))
             ax = fig.add_subplot(1, 1, 1, projection="3d")
-            march_sim.draw_frame(ax, geoms, centre, t, f"{what}  ({base})", 2.6, elev=12.0, azim=40.0)
+            march_sim.draw_frame(ax, geoms, centre, t, f"{what}  ({base})", 2.6, elev=12.0, azim=62.0)
             ax.set_title(f"Belisario walks like a gorilla   -   t = {t:4.1f} s   -   {what}  ({base})", fontsize=11, loc="left", y=0.96)
             fig.subplots_adjust(left=0, right=1, top=1.0, bottom=0)
             fig.savefig(os.path.join(tmp, f"f{k:04d}.png"), dpi=72)

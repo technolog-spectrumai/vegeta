@@ -164,20 +164,28 @@ peaks at 18° in the run); the run is a heavy shuffle at 0.8-1.3 m/s rather than
 
 ![Belisario on all fours](../labs/legged/sims/space_gorilla_walk.png)
 
-Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the frame and the armour, no weapons, a knuckle
-contact on each hand, the ankles and knees folding further) walks like a gorilla: on all fours on its knuckles, and
-only sometimes stands. `quad_pose` is the stance on four (IK on the soles' points and the knuckles: the pelvis 0.58 m
-up, the legs crouched with the knees far forward, the spine's two modules pitched forward so the back slopes ~55°,
-the arms down to the ground ahead of the shoulders with the elbows nearly straight); `knuckle_walk` is the
-lateral-sequence walk every quadruped uses at a walk (left hind, left fore, right hind, right fore, a quarter cycle
-apart; duty 0.72, a 0.3 m stride at 0.35 m/s, the swing 60 mm up), `legged_gait` on the four contacts with the quad
-pose as its reference; `rise` and `drop` go up to the design pose on two and back in 3 s, `stand` holds it.
+Belisario bare (`space_unit_robots.bare`, the machine `belisario`: the skeleton alone by default - the frame's geoms,
+the modules' and the struts' masses, no armour, no weapons; `casing="plastic"` adds a 3 mm polycarbonate casing,
+`"lorica"` the armour - with a knuckle contact on each hand, the ankles and knees folding further) walks like a
+gorilla: on all fours on its knuckles, and only sometimes stands. The proportions follow the animal: the arms are
+540 + 500 mm (the hands at the knees when standing), the legs 360 + 340.
+
+`quad_pose` is the stance on four (IK on the soles' points, the knuckles and the wrists): the pelvis 0.62 m up and
+pitched nose-down 0.45 rad, so the back slopes ~35° with the spine's modules only a little forward; the legs crouched
+with the knees far forward; the long arms down to the knuckles 0.3 m ahead of the shoulders with the elbows bent
+~50°, the wrist held behind and above each knuckle so the forearm leans on the curled fingers' middle joints
+([knuckle-walking](https://en.wikipedia.org/wiki/Knuckle-walking): the weight on the knuckles, the wrist extended).
+`knuckle_walk` is the lateral-sequence walk every quadruped uses at a walk (left hind, left fore, right hind, right
+fore, a quarter cycle apart; duty 0.72, a 0.26 m stride at 0.35 m/s, the swing 60 mm up): `legged_gait` on the four
+contacts with the quad pose as its reference, its strides and lifts along the ground although the base rides pitched
+(`base_rot`), its IK damped for the long arms near full stretch. `rise` and `drop` go up to the design pose on two
+and back in 3 s (the pelvis levelling as it rises), `stand` holds it.
 
 In MuJoCo (`space_gorilla_walk.py`, `sims/output/space_gorilla_walk.mp4`: walk 8 s, rise, stand 3 s, drop, walk on)
-the knuckle walk is the first gait that suits this body: with the upright assist it walks 3.4 m in 8 s at 3° of tilt,
-rears up, stands, drops and walks on without falling, and even with the Marines' assist (1) it walks on four (1.7 m
-in 8 s, 8° of tilt) where the biped march on these proportions only shuffled. Three contacts are down most of the
-cycle and the trunk's mass is low and between them, which is what the long arms and short legs were for.
+the upright assist holds the pelvis at the phase's pitch; the skeleton walks on its knuckles, rears up, stands,
+drops and walks on without falling. The knuckle walk is the first gait that suits this body: three contacts are
+down most of the cycle and the trunk's mass is low and between them, which is what the long arms and short legs
+are for - where the biped march on these proportions only shuffled.
 
 ## Tests, exports
 
