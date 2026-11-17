@@ -1,21 +1,26 @@
-# Space game units — bulky armoured humanoids (design stage)
+# Space game units — Belisario, the gorilla-human hybrid in lorica segmentata (design stage)
 
 The legged lab's roster of game units: power-armoured humanoid robots on Talia's frame (`labs/legged/designs/humanoid.py`),
-the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids) - but on a **skeleton**: an S-curved
-spine of vertebrae set back in the chest, ribs round to a sternum, clavicles and scapulae, a pelvis of iliac wings on a
-sacrum, femurs, tibiae and fibulae, every joint a mechanical rotary module, the armour on top of the bones.
+the way the ork and the ghoul are (`docs/exploration.md`, the fantasy humanoids) - rebuilt on **Belisario**, a
+gorilla-human hybrid skeleton: a gorilla's long, wide barrel ribcage down to the pelvis, long thick arms with the
+hands at the knees, short powerful legs and broad flaring iliac wings, on a human's S-curved spine (thoracic
+kyphosis, lumbar lordosis) for standing upright - massive, stable, not fast. Against a human: height 1.15×
+(1.73 m), shoulders 1.45×, chest depth 1.6×, arms 1.4×, legs 0.8×. Every joint is a mechanical rotary module with
+linear actuators (pistons) working across it, the electronics sit in a chest bay inside the ribcage and a belly bay
+in front of the lumbar spine, and the armour is a **lorica segmentata** on top: articulated hoops round the ribs,
+layered shoulder guards, arm lames, banded greaves, a galea helmet. The shields are held in the fingers.
 
-![The Marine's skeleton](../labs/legged/designs/space_skeleton_3d.png) Four units, every one with both
-hands busy, each a CAD design, a Chiron robot model with its masses from the CAD, keyframed motions, a Yax export
-(`exports/space_*.yx2`), a march in MuJoCo (`labs/legged/sims/space_squad_march.py`) and the testudo drill
-(`space_squad_testudo.py`: the squad closes ranks, forms the testudo and runs). Five units.
+![The Marine's skeleton](../labs/legged/designs/space_skeleton_3d.png)
+
+![The armour as glass: skeleton, actuators, lorica](../labs/legged/designs/space_xray_3d.png)
 
 ![The five units](../labs/legged/designs/space_units_3d.png)
 
 ![A squad: the Centurion leading](../labs/legged/designs/space_squad_3d.png)
 
 `space_squad_draw3d.py` sets a squad down in a wedge: the Centurion at the point with the banner, two Marines with
-shields on its flanks, two with chainsaws behind them, the Breacher and the Heavy at the rear.
+shields on its flanks, two with chainsaws behind them, the Breacher and the Heavy at the rear. `space_skeleton_draw3d.py`
+draws the bare frame, `space_xray_draw3d.py` the Marine with the armour transparent (the actuators bronze).
 
 | unit | what it is | carries | mass | motions |
 |---|---|---|---|---|
@@ -28,29 +33,40 @@ shields on its flanks, two with chainsaws behind them, the Breacher and the Heav
 ## The design (`space_units.py`, numbers in `space_unit_specs.py`)
 
 **The skeleton** replaces Talia's shells (`part="skeleton"` builds it bare; `skeleton_trunk`, `femur`, `tibia`,
-`foot_bones`, `joint_module`). The spine: `spine_segments` (12) vertebral bodies with discs, spinous and transverse
-processes on the S curve `spine_x` (set back `spine_set_back` of the torso depth in the chest, lumbar forward, thoracic
-back, the top coming forward under the neck, three cervical discs up the neck). The ribcage: `rib_count` (7) rib
-pairs from the upper vertebrae round to the sternum, sloping down to the front. The shoulder girdle: clavicles from
-the sternum's top to the shoulder modules, scapulae behind the upper ribs. The pelvis: a sacrum block between two
-iliac wings, the hip modules under them, a pubic bar in front. The legs: a femur (a neck from the hip module's boss,
-the trochanter, the shaft bowing forward, the condyles holding the knee module), a tibia with the fibula beside it
-down to the ankle module, a foot with the roll stage, a heel block, the sole plate and a toe bar. Every joint is a
-**mechanical rotary module** (`joint_module`: the actuator housing as a cylinder with a flange and pin bosses) in
-place of a human joint; the arms are Talia's. Each unit still builds as one valid solid.
+`foot_bones`, `joint_module`). The spine: `spine_segments` (12) robust vertebral bodies with discs, spinous and
+transverse processes on the S curve `spine_x` (set back `spine_set_back` of the torso depth in the chest, lumbar
+forward, thoracic back, the top coming forward under the neck, three cervical discs up the neck). The barrel
+ribcage: `rib_count` (10) rib pairs from the vertebrae round to the sternum, sloping down to the front, reaching the
+pelvis. The shoulder girdle: clavicles from the sternum's top to the shoulder modules, long scapulae behind the upper
+ribs. The pelvis: a sacrum block between two broad iliac wings, the hip modules under them, a pubic bar in front. The
+legs: a femur (a neck from the hip module's boss, the trochanter, the shaft bowing forward, the condyles holding the
+knee module), a tibia with the fibula beside it down to the ankle module, a foot with the roll stage, a heel block,
+the sole plate and a toe bar. The arms are Talia's, long, ending in a **gripping hand** (`gripper`: a palm block,
+four fingers of three phalanges on knuckle modules, curled round what the fist holds, a thumb pad). Every joint is a
+**mechanical rotary module** (`joint_module`: the actuator housing as a cylinder with a flange and pin bosses).
 
-The armour is built on the skeleton in its build pose (the breastplate and the pack on the ribs, the belt round the
-wings, the greaves on the tibiae): shoulder domes (pauldrons, Ø300, a 45 mm shell on a post
-over the shoulder boss), a breastplate proud of the torso, a power pack behind it with two exhaust stacks, a waist belt
-with a buckle plate, greaves over the shins with knee domes, boots over the feet, and a visor slit cut into the square
-helmet. The weapons are built in the bent forearm's frame (`forearm_frame`: the hand at the origin, the forearm up +z,
-its outer side +x, turned by the elbow's bend and set on the hand) so they move with the arm in the robot model:
+**The linear actuators** (`actuators`, `part="actuators"`): the pistons that work the joints beside their rotary
+modules (the modules give a joint its bearing and brake, the pistons the heavy lifting), laid across the skeleton
+where muscles would go - hip struts from the iliac wings to the femurs, knee struts down the thighs to the tibiae's
+plateaus, ankle struts to the heels, shoulder struts from the scapulae, elbow struts to the forearms, spine struts
+from the pelvis to the ribcage's front. Their masses ride the links (`ACTUATOR_MM3`, the test rebuilds them).
+
+**The armour, a lorica segmentata** (`armour_parts`), built on the skeleton in its build pose so the trunk and the
+limbs can bend: the **lorica** (`lorica_bands` girth hoops round the ribs, each a thin band overlapping the one below,
+with its front clasp; the breast band on top), the **shoulder guards** (three layered plates stepping down over each
+shoulder on a post), the **arm lames** (three hinged bands round each upper arm and forearm), the **galea** (a brow band, cheek guards hinged beside the face, a
+nape guard, a comb for the plume; the Centurion's feathered crest rides on it), the **belt** round the wings, the
+**greaves** (four bands down each shin on a hinge spine, with the knee domes), the **boots**, the **backpack** with
+its exhausts, the **chest bay** (the electronics' casing inside the ribcage, bolted to the thoracic spine) and the
+**belly bay** (the power electronics in front of the lumbar spine, under the lowest hoop). Nothing hangs below the
+belt: a robot has nothing there to protect, and the hips stay free to swing.
+The weapons are built in the bent forearm's frame (`forearm_frame`) so they move with the arm in the robot model:
 
 - the **carbine**: a receiver on the forearm's outer side above the fist, the barrel forward along the forearm, a
   stock back along it, a sight, a magazine hanging from the receiver;
-- the **body shield** (the Marine, 600 × 1600 mm) and the **tower shield** (the Breacher, 680 × 1750 mm), each covering
-  the body from the shins to the helmet, with a vision slit: a plate with a rim and a boss on the forearm's outer side, a strap block round
-  the forearm; the **chainsaw**: the motor body on the fist with a rear handle and a front hoop, the bar forward with a
+- the **body shield** (the Marine, 600 × 1600 mm) and the **tower shield** (the Breacher, 680 × 1750 mm), each held in
+  the left hand - a handle bar across the fist that the gripper's fingers close round, a bracket to the plate's back -
+  standing vertical ahead of the fist and covering the body from the shins to the helmet, with a rim, a boss and a vision slit; the **chainsaw**: the motor body on the fist with a rear handle and a front hoop, the bar forward with a
   chain of teeth round its edge; the **imperial banner**: a pole standing vertical through the fist, a gear with a skull in
   it as the finial, and under it on a bracket the squad's uplink, a large flat phased-array antenna panel (a Starlink-class
   dish) facing forward and tipped back - no cloth; the Centurion's
@@ -58,8 +74,9 @@ its outer side +x, turned by the elbow's bend and set on the hand) so they move 
 - the **rotary cannon**: a mount block on the forearm, a cluster of six barrels round a core, breech and muzzle rings,
   the feed tube from the backpack.
 
-`part` builds the whole unit, the trunk, a thigh, a shin, a foot (as `Humanoid`), the `armour` alone or the `weapon`
-alone; `armour_parts` / `weapon_parts` give the pieces by name. Every unit builds as one valid solid.
+`part` builds the whole unit, the skeleton, the actuators, the trunk, a thigh, a shin, a foot (as `Humanoid`), the
+`armour` alone or the `weapon` alone; `armour_parts` / `weapon_parts` / `actuator_parts` give the pieces by name. Every
+unit builds as one valid solid.
 
 ## The robot models (`space_unit_robots.py`)
 

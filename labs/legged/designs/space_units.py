@@ -25,7 +25,7 @@ from humanoid import Humanoid
 
 __all__ = ["SpaceMarine", "SpaceMarineSaw", "Centurion", "Breacher", "Heavy", "carbine", "tower_shield", "combat_shield", "chainsaw",
            "banner", "crest", "maul", "rotary_cannon", "forearm_frame", "skeleton_trunk", "femur", "tibia", "foot_bones",
-           "joint_module", "spine_x"]
+           "joint_module", "spine_x", "gripper", "galea", "actuators", "piston"]
 
 
 def _torso_frame(p):
@@ -70,27 +70,29 @@ def carbine(p):
 
 
 def tower_shield(p):
-    """A shield strapped to the left forearm: the plate stands vertical in the world ahead of the forearm's middle,
-    whatever the elbow's bend, covering the body from the shins (its foot ``SHIELD_FOOT`` above the ground) to above the
-    helmet - a titanium plate with a rim, a boss and a vision slit; the strap block round the forearm. Pieces:
-    ``shield`` (titanium), ``strap`` (aluminium). The size is ``shield_*`` of the unit's specs."""
+    """A shield held in the left hand: a handle bar across the fist (the gripper's fingers close round it), a bracket
+    from the handle to the plate's back, the plate standing vertical in the world ahead of the fist, covering the
+    body from the shins (its foot ``SHIELD_FOOT`` above the ground) to above the helmet - a titanium plate with a
+    rim, a boss and a vision slit. Pieces: ``shield`` (titanium), ``handle`` (the bar and the bracket, aluminium).
+    The size is ``shield_*`` of the unit's specs."""
     c, u, _ = hand_frame(p, 1)
-    place = forearm_frame(p, 1)
     d, t, W, H = p["arm_diameter"], p["shield_thickness"], p["shield_width"], p["shield_height"]
-    mid = _add(c, (-p["forearm_length"] * 0.5, u))                       # the forearm's middle, in the world
-    x = max(mid[0] + d / 2 + t / 2 + 25, p["torso_depth"] / 2 + p["chest_plate_thickness"] + 50 + t / 2)    # clear of the chest
+    grip = _add(c, (-d * 0.55, u), (d * 0.45, (1.0, 0.0, 0.0)))          # where the curled fingers close, ahead of the palm
+    x = max(grip[0] + d * 0.5 + t / 2, p["torso_depth"] / 2 + p["chest_plate_thickness"] + 50 + t / 2)    # clear of the chest
     zc = SHIELD_FOOT + H / 2
-    plate = sk.rounded_box(t, W, H, (x, mid[1], zc), fillet=min(40.0, t / 2 - 1))
-    rim = cq.Workplane("YZ").rect(W + 16, H + 16).rect(W - 30, H - 30).extrude(t * 0.4).translate((x + t / 2, mid[1], zc))
-    boss = sk.disc((x + t / 2 + 10, mid[1], zc), p["shield_boss_diameter"] / 2, 40, axis="x")
-    slit = cq.Workplane("XY").box(t * 3, W * 0.45, 28).translate((x, mid[1], zc + H * 0.36))
+    plate = sk.rounded_box(t, W, H, (x, grip[1], zc), fillet=min(40.0, t / 2 - 1))
+    rim = cq.Workplane("YZ").rect(W + 16, H + 16).rect(W - 30, H - 30).extrude(t * 0.4).translate((x + t / 2, grip[1], zc))
+    boss = sk.disc((x + t / 2 + 10, grip[1], zc), p["shield_boss_diameter"] / 2, 40, axis="x")
+    slit = cq.Workplane("XY").box(t * 3, W * 0.45, 28).translate((x, grip[1], zc + H * 0.36))
     plate = plate.cut(slit)
-    strap = place(sk.rounded_box(d * 1.3 + 40, d * 1.3, d * 1.1, (d * 0.35, 0, p["forearm_length"] * 0.5), fillet=10))
-    brace = sk.rounded_box(x - mid[0] + d * 0.3, d * 0.86, d * 0.86, ((x + mid[0] - d * 0.3) / 2, mid[1], mid[2] + 3), fillet=7)
-    return {"shield": sk.union_all([plate, rim, boss]), "strap": strap.union(brace)}
+    handle = sk.rod((grip[0], grip[1] - d * 0.6, grip[2]), (grip[0], grip[1] + d * 0.6, grip[2]), 16)
+    bracket = sk.rounded_box(x - grip[0], 40, 60, ((x + grip[0]) / 2, grip[1], grip[2]), fillet=6)
+    for sy in (-1, 1):                                                    # the handle's cheeks, on to the plate
+        bracket = bracket.union(sk.rounded_box(x - grip[0], 14, 70, ((x + grip[0]) / 2, grip[1] + sy * d * 0.6, grip[2]), fillet=4))
+    return {"shield": sk.union_all([plate, rim, boss]), "handle": handle.union(bracket)}
 
 
-SHIELD_FOOT = 250.0                                                       # mm: the shields' foot above the ground
+SHIELD_FOOT = 220.0                                                       # mm: the shields' foot above the ground
 
 
 combat_shield = tower_shield
@@ -338,6 +340,92 @@ def skeleton_trunk(p):
     return {"pelvis": pelvis, "spine": spine, "ribcage": ribcage, "girdle": girdle, "neck": neck, "head": head.cut(eyes)}
 
 
+def galea(p):
+    """The Roman helmet over the square head: a brow band, two cheek guards hinged beside the face, a nape guard
+    sloping off the back, and a comb along the top for the plume (the Centurion's feathered crest rides on it)."""
+    z0, Wt, Dt, Ht, _ = _torso_frame(p)
+    Wh, Dh, Hh = p["head_width"], p["head_depth"], p["head_height"]
+    zh = z0 + Ht + p["neck_length"] + Hh / 2
+    t = p["helmet_thickness"]
+    brow = sk.rounded_box(Dh + 2 * t, Wh + 2 * t, Hh * 0.22, (0, 0, zh + Hh * 0.28), fillet=12).cut(
+        sk.rounded_box(Dh - 4, Wh - 4, Hh * 0.3, (0, 0, zh + Hh * 0.28), fillet=10))
+    cap = sk.rounded_box(Dh * 0.8, Wh * 0.8, t, (0, 0, zh + Hh / 2 + t / 2 - 1), fillet=10)
+    comb = sk.rounded_box(Dh * 0.7, 18, Hh * 0.22, (-Dh * 0.05, 0, zh + Hh / 2 + t + Hh * 0.1), fillet=6)
+    parts = brow.union(cap).union(comb)
+    for sy in (-1, 1):                                                    # the cheek guards, hinged at the brow band
+        cheek = (sk.rounded_box(Dh * 0.5, t, Hh * 0.6, (0, 0, 0), fillet=8).rotate((0, 0, 0), (0, 0, 1), sy * 8)
+                 .translate((Dh * 0.12, sy * (Wh / 2 + t / 2 + 2), zh - Hh * 0.12)))
+        hinge = sk.rod((Dh * 0.12, sy * (Wh / 2 + 1), zh + Hh * 0.2), (Dh * 0.12, sy * (Wh / 2 + t + 6), zh + Hh * 0.2), 8)
+        parts = parts.union(cheek).union(hinge)
+    nape = (sk.rounded_box(Dh * 0.4, Wh * 0.9, t, (0, 0, 0), fillet=8).rotate((0, 0, 0), (0, 1, 0), 35)
+            .translate((-Dh / 2 - Dh * 0.12, 0, zh - Hh * 0.05)))
+    nape = nape.union(sk.rounded_box(t, Wh * 0.7, Hh * 0.3, (-Dh / 2 - t / 2 - 1, 0, zh + Hh * 0.08), fillet=6))
+    return parts.union(nape)
+
+
+def piston(a, b, barrel=44.0, rod=22.0):
+    """A linear actuator from ``a`` (the barrel's eye) to ``b`` (the rod's eye): the barrel over 55 % of the length,
+    the rod through, an eye ball at each end."""
+    av, bv = cq.Vector(*a), cq.Vector(*b)
+    m = av + (bv - av) * 0.55
+    return (sk.rod(a, tuple(m.toTuple()), barrel / 2).union(sk.rod(a, b, rod / 2))
+            .union(sk.ball(a, barrel * 0.6)).union(sk.ball(b, rod * 1.1)))
+
+
+def actuators(p):
+    """{piece: solid} of the linear actuators: the pistons that work the joints beside their rotary modules (the
+    modules give the joint its bearing and brake, the pistons the heavy lifting), laid across the skeleton the way
+    muscles would go - the hip struts from the iliac wings to the femurs, the knee struts down the thighs to the
+    tibiae's plateaus, the ankle struts from the tibiae to the heels, the shoulder struts from the scapulae to the
+    upper arms, the elbow struts to the forearms, the spine struts from the pelvis to the ribcage's front."""
+    hh = Humanoid.hip_height(p)
+    z0, Wt, Dt, Ht, zs = _torso_frame(p)
+    d, L1, L2 = p["arm_diameter"], p["upper_arm_length"], p["forearm_length"]
+    a = p["knee_bend_deg"]
+    sa, ca = math.sin(math.radians(a)), math.cos(math.radians(a))
+    Lt, Ls = p["thigh_length"], p["shin_length"]
+    Dp, Hp = p["pelvis_depth"], p["pelvis_height"]
+    groups = {k: [] for k in ("hip_struts", "knee_struts", "ankle_struts", "shoulder_struts", "elbow_struts", "spine_struts")}
+    xs0 = spine_x(p, 0.0)
+    x_front = Dt / 2 - p["rib_section"] / 2 - 6
+    for sy in (-1, 1):
+        y = sy * p["hip_spacing"] / 2
+        kx, kz = Lt * sa, hh - Lt * ca
+        groups["hip_struts"].append(piston((xs0 + Dp * 0.35, y + sy * 20, hh + Hp * 0.55), (Lt * 0.5 * sa + p["femur_diameter"] * 0.9, y, hh - Lt * 0.5 * ca)))
+        groups["knee_struts"].append(piston((Lt * 0.35 * sa + p["femur_diameter"] * 0.9, y, hh - Lt * 0.35 * ca), (kx + p["tibia_diameter"] * 0.9, y, kz - Ls * 0.22)))
+        groups["ankle_struts"].append(piston((kx - p["tibia_diameter"] * 0.9, y, kz - Ls * 0.35), (-p["foot_length"] * 0.2, y, p["ankle_height"] * 0.6), barrel=36, rod=18))
+        cy = sy * (Wt / 2 + 10 + d * 0.5)
+        top_x = spine_x(p, (int(p["spine_segments"]) - 1.5) / int(p["spine_segments"]))
+        groups["shoulder_struts"].append(piston((top_x - p["vertebra_diameter"] * 0.55 - 20, sy * Wt * 0.26, z0 + Ht * 0.62), (-d * 0.55, cy, zs - L1 * 0.4), barrel=36, rod=18))
+        c, u, _ = hand_frame(p, sy)
+        fore_mid = _add(c, (-L2 * 0.5, u))
+        groups["elbow_struts"].append(piston((d * 0.6, cy, zs - L1 * 0.55), (fore_mid[0] + d * 0.1, fore_mid[1], fore_mid[2] + d * 0.5), barrel=36, rod=18))
+        groups["spine_struts"].append(piston((Dp * 0.3, sy * 60, hh + Hp * 0.5), (x_front - 30, sy * 90, z0 + Ht * 0.42), barrel=40, rod=20))
+    return {k: sk.union_all(v) for k, v in groups.items()}
+
+
+def gripper(p):
+    """A gripping hand at the wrist (the forearm's end at the origin, the forearm up +z, its outer side +x): a palm
+    block, four fingers of three phalanges on knuckle modules along the palm's lower edge, curled in (round a grip:
+    the carbine's, the pole, the maul's shaft), a thumb pad opposite. ``finger_length`` is the whole finger."""
+    d, Lf, df = p["arm_diameter"], p["finger_length"], p["finger_diameter"]
+    palm = sk.rounded_box(d * 0.95, d * 0.5, d * 0.9, (0, 0, -d * 0.45), fillet=8)
+    wrist = sk.disc((0, 0, 0), d * 0.4, d * 0.3, axis="z")
+    out = palm.union(wrist)
+    seg = Lf / 3
+    for k in range(4):
+        y = (k - 1.5) * (d * 0.5 / 3.4)
+        pts, ang, pos = [(d * 0.47, y, -d * 0.86)], -20.0, (d * 0.47, y, -d * 0.86)
+        for j in range(3):                                                # each phalanx curls 55° further
+            ang += 55.0
+            pos = (pos[0] + seg * math.cos(math.radians(ang)) * -1, y, pos[2] - seg * math.sin(math.radians(ang)))
+            pts.append(pos)
+        finger = sk.polyline_limb(pts, [df / 2, df * 0.45, df * 0.4])
+        out = out.union(finger).union(sk.disc((d * 0.47, y, -d * 0.86), df * 0.55, df * 0.9, axis="y"))   # the knuckle module
+    thumb = sk.rounded_box(d * 0.3, d * 0.5, d * 0.35, (-d * 0.55, 0, -d * 0.55), fillet=6)
+    return out.union(thumb)
+
+
 def femur(p):
     """The thigh bone, the hip module at the origin, the knee at (0, 0, -thigh_length): a neck from the hip module's
     side boss down into the shaft, the greater trochanter, the shaft bowing forward a little, the condyles (two
@@ -397,26 +485,59 @@ class SpaceMarine(Humanoid):
         extra = [Parameter(k, float(cls.SPECS[k]), "deg" if k.endswith("_deg") else ("" if k == "cannon_barrels" else "mm"),
                            min=0.0, description=d) for k, d in cls.EXTRA.items()]
         base = sk.with_defaults(Humanoid.parameters, **{k: v for k, v in cls.SPECS.items() if k not in cls.EXTRA})
-        return [Parameter("part", "humanoid", choices=("humanoid", "skeleton", "trunk", "thigh", "shin", "foot", "armour", "weapon"),
+        return [Parameter("part", "humanoid", choices=("humanoid", "skeleton", "actuators", "trunk", "thigh", "shin", "foot", "armour", "weapon"),
                           description="what to build")] + [q for q in base if q.name != "part"] + extra
 
     def armour_parts(self, p):
-        """{piece: solid} of the armour, in the build pose: pauldrons, breastplate, backpack (with the exhausts), belt,
-        greaves (with the knee domes), boots. All titanium but the backpack's casing (aluminium)."""
+        """{piece: solid} of the armour, in the build pose: the shoulder guards (three layered plates a side), the
+        lorica (girth hoops round the ribs with their clasps, the breast band on top: lorica segmentata, so the
+        trunk can bend), the chest bay (the electronics' casing
+        inside the ribcage, bolted to the thoracic spine, aluminium), the belly bay (the power electronics' casing in
+        front of the lumbar spine, under the lowest hoop, aluminium), the arm lames (three bands round each upper arm and
+        forearm, hinged like the lorica's hoops), the backpack (with the exhausts), the belt, the greaves (four bands down each shin on a hinge spine, with the knee domes),
+        the boots. All
+        titanium but the casings (aluminium)."""
         z0, Wt, Dt, Ht, zs = _torso_frame(p)
         hh = Humanoid.hip_height(p)
         d, Hp, Wp, Dp = p["arm_diameter"], p["pelvis_height"], p["pelvis_width"], p["pelvis_depth"]
         R = p["pauldron_diameter"] / 2
-        pauldrons = []
+        # the shoulder guards: three layered plates stepping down over each shoulder (lorica segmentata), on a post
+        guards = []
         for sy in (-1, 1):
             cy = sy * (Wt / 2 + 10 + d * 0.5)
-            dome = sk.ball((0, cy, zs + d * 0.35), R).cut(sk.ball((0, cy, zs + d * 0.35), R - p["pauldron_thickness"]))
-            dome = dome.intersect(cq.Workplane("XY").box(2 * R + 2, 2 * R + 2, R + 2).translate((0, cy, zs + d * 0.35 + R / 2 + 1)))
-            post = sk.rod((0, cy, zs - d * 0.2), (0, cy, zs + d * 0.35 + R - p["pauldron_thickness"] / 2), d * 0.3)
-            pauldrons.append(dome.union(post).union(sk.disc((0, cy, zs + d * 0.1), d * 0.55, d * 0.9, axis="y")))
+            post = sk.rod((0, cy, zs - d * 0.2), (0, cy, zs + d * 0.35 + R * 0.55), d * 0.3)
+            part = post.union(sk.disc((0, cy, zs + d * 0.1), d * 0.55, d * 0.9, axis="y"))
+            for k in range(3):
+                plate = (sk.rounded_box(R * 1.5, R * 0.5, p["pauldron_thickness"] * 0.5, (0, 0, 0), fillet=6)
+                         .rotate((0, 0, 0), (1, 0, 0), -sy * (12 + 24 * k))
+                         .translate((0, cy + sy * (R * 0.2 + k * R * 0.26), zs + d * 0.35 + R * 0.62 - k * R * 0.28)))
+                part = part.union(plate)
+            guards.append(part)
         t = p["chest_plate_thickness"]
-        chest = sk.rounded_box(t, Wt * 0.78, Ht * 0.52, (Dt / 2 + t / 2 - 8, 0, z0 + Ht * 0.6), fillet=min(16.0, t / 2 - 1))
-        chest = chest.union(sk.rounded_box(t * 0.6, Wt * 0.3, Ht * 0.18, (Dt / 2 + t + 2, 0, z0 + Ht * 0.66), fillet=8))
+        # the lorica: girth hoops round the ribs, each a thin band overlapping the one below, split front and back
+        # by the clasps' seam (a box frame cut hollow), the uppermost the breast band
+        n = int(p["lorica_bands"])
+        hb = Ht * 0.52 / n
+        lorica = None
+        for k in range(n):
+            zb = z0 + Ht * 0.34 + (k + 0.5) * hb
+            wb, db = Wt * 0.9 + 2 * t + k * 4, Dt + 2 * t + k * 3
+            band = sk.rounded_box(db, wb, hb * 1.25, (0, 0, zb), fillet=min(10.0, t / 2 - 1)).cut(
+                sk.rounded_box(db - 2 * t * 0.6, wb - 2 * t * 0.6, hb * 1.5, (0, 0, zb), fillet=8))
+            band = band.union(sk.rounded_box(t * 0.8, 46, hb * 0.5, (db / 2 + t * 0.2, 0, zb), fillet=4))     # the clasp
+            lorica = band if lorica is None else lorica.union(band)
+        # the breastplate: a short plate on the top band, standing on it (the chest's crest)
+        chest = sk.rounded_box(t, Wt * 0.5, Ht * 0.16, (Dt / 2 + t * 1.5 - 8, 0, z0 + Ht * 0.86), fillet=min(16.0, t / 2 - 1))
+        lorica = lorica.union(chest)
+        # the belly bay: the power electronics' casing in front of the lumbar spine, under the lorica's lowest hoop
+        xl = spine_x(p, 0.15)
+        belly = sk.rounded_box(Dp * 0.42, Wp * 0.5, Ht * 0.2, (xl + Dp * 0.38, 0, z0 + Ht * 0.17), fillet=12)
+        belly = belly.union(sk.rod((xl, 0, z0 + Ht * 0.17), (xl + Dp * 0.38, 0, z0 + Ht * 0.17), 20))
+        # the chest bay: the electronics' casing inside the ribcage, between the thoracic spine and the sternum
+        xs = spine_x(p, 0.62)
+        xb = (xs + Dt / 2) / 2
+        bay = sk.rounded_box(Dt / 2 - xs - 60, Wt * 0.4, Ht * 0.26, (xb, 0, z0 + Ht * 0.6), fillet=12)
+        bay = bay.union(sk.rod((xs, 0, z0 + Ht * 0.6), (xb, 0, z0 + Ht * 0.6), 20))                   # bolted to the spine
         Wb, Db, Hb = p["backpack_width"], p["backpack_depth"], p["backpack_height"]
         pack = sk.rounded_box(Db, Wb, Hb, (-Dt / 2 - Db / 2 + 8, 0, z0 + Ht * 0.5), fillet=18)
         for sy in (-1, 1):
@@ -433,17 +554,62 @@ class SpaceMarine(Humanoid):
         for sy in (-1, 1):
             y = sy * p["hip_spacing"] / 2
             kx, kz = L1 * math.sin(math.radians(a)), hh - L1 * math.cos(math.radians(a))
-            plate = (sk.rounded_box(gt, p["leg_thickness"] * 1.25, L2 * 0.72, (p["tibia_diameter"] / 2 + gt / 2 - 4, 0, -L2 * 0.52), fillet=10)
-                     .rotate((0, 0, 0), (0, 1, 0), a).translate((kx, y, kz)))
+            rt = p["tibia_diameter"] / 2
+            plate = None
+            for k in range(4):                                            # the greave: four overlapping bands down the shin
+                zb = -L2 * (0.3 + 0.14 * k)
+                band = (sk.disc((0, 0, zb), rt + gt + 2 + k * 2, L2 * 0.17, axis="z")
+                        .cut(sk.disc((0, 0, zb), rt + 2 + k * 2 - 4, L2 * 0.2, axis="z"))
+                        .union(sk.rounded_box(gt * 0.8, 36, L2 * 0.08, (rt + gt + 2 + k * 2, 0, zb), fillet=3)))   # the buckle
+                plate = band if plate is None else plate.union(band)
+            plate = plate.union(sk.rod((rt - 4, 0, -L2 * 0.3), (rt - 4, 0, -L2 * 0.72), 10))               # the spine the bands hinge on
+            plate = plate.rotate((0, 0, 0), (0, 1, 0), a).translate((kx, y, kz))
             knee = sk.ball((kx, y, kz), p["leg_thickness"] * 0.72)
             greaves.append(plate.union(knee))
             Lf, Wf, ha = p["foot_length"], p["foot_width"], p["ankle_height"]
             boots.append(sk.rounded_box(Lf * 0.62, Wf * 1.06, ha * 1.3, (Lf * 0.25, y, ha * 0.62), fillet=16))
-        return {"pauldrons": sk.union_all(pauldrons), "chest_plate": chest, "backpack": pack, "belt": belt,
-                "greaves": sk.union_all(greaves), "boots": sk.union_all(boots)}
+        # the arm lames: three bands round the upper arm, three round the forearm, each overlapping the one above
+        lames = []
+        for sy in (-1, 1):
+            cy = sy * (Wt / 2 + 10 + d * 0.5)
+            L1a, L2a, ra = p["upper_arm_length"], p["forearm_length"], d / 2
+            part = None
+            for k in range(3):
+                zb = zs - L1a * (0.3 + 0.17 * k)
+                band = (sk.disc((0, cy, zb), ra + 14 + k * 3, L1a * 0.2, axis="z").cut(sk.disc((0, cy, zb), ra - 3 + k * 3, L1a * 0.24, axis="z"))
+                        .union(sk.rounded_box(14, 10, L1a * 0.1, (ra + 14 + k * 3, cy, zb), fillet=3)))
+                part = band if part is None else part.union(band)
+            place = forearm_frame(p, sy)
+            rf = d * 0.42
+            for k in range(3):
+                zb = L2a * (0.32 + 0.17 * k)
+                band = (sk.disc((0, 0, zb), rf + 12 + k * 3, L2a * 0.2, axis="z").cut(sk.disc((0, 0, zb), rf - 3 + k * 3, L2a * 0.24, axis="z"))
+                        .union(sk.rounded_box(14, 10, L2a * 0.1, (rf + 12 + k * 3, 0, zb), fillet=3)))
+                part = part.union(place(band))
+            lames.append(part)
+        return {"helmet": galea(p), "shoulder_guards": sk.union_all(guards), "lorica": lorica, "arm_lames": sk.union_all(lames),
+                "chest_bay": bay, "belly_bay": belly, "backpack": pack, "belt": belt, "greaves": sk.union_all(greaves), "boots": sk.union_all(boots)}
+
+    def actuator_parts(self, p):
+        """{piece: solid} of the linear actuators (``actuators``), in the build pose."""
+        return actuators(p)
 
     def weapon_parts(self, p):
         return type(self).weapon_fn(p)
+
+    def _arm(self, p, side):
+        """Talia's arm (the shoulder boss, the upper arm, the elbow, the bent forearm) ending in a gripping hand: a
+        palm block and four fingers of three phalanges each, curled round what the fist holds (``gripper``)."""
+        d, L1, L2 = p["arm_diameter"], p["upper_arm_length"], p["forearm_length"]
+        e = math.radians(p["elbow_bend_deg"])
+        shoulder = cq.Workplane("XZ").circle(d * 0.65).extrude(d * 0.45, both=True)
+        upper = cq.Workplane("XY").circle(d / 2).extrude(-L1)
+        elbow = cq.Workplane("XY").sphere(d * 0.48).translate((0, 0, -L1))
+        fore = (cq.Workplane("XY").circle(d * 0.42).extrude(-L2)
+                .rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((0, 0, -L1)))
+        hx, hz = L2 * math.sin(e), -L1 - L2 * math.cos(e)
+        hand = gripper(p).rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((hx, 0, hz))
+        return shoulder.union(upper).union(elbow).union(fore).union(hand)
 
     # the skeleton in place of Talia's shells: Humanoid.build places these parts (the hip, knee and ankle frames)
     def _trunk(self, p):
@@ -473,6 +639,8 @@ class SpaceMarine(Humanoid):
             return sk.union_all(list(self.armour_parts(p).values()))
         if p["part"] == "weapon":
             return sk.union_all(list(self.weapon_parts(p).values()))
+        if p["part"] == "actuators":
+            return sk.union_all(list(self.actuator_parts(p).values()))
         body = super().build(dict(p, part="humanoid" if p["part"] == "skeleton" else p["part"]))
         if p["part"] != "humanoid":
             return body                                                   # a part, or the bare skeleton

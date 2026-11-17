@@ -265,11 +265,12 @@ def main(argv=None):
     ap.add_argument("--seconds", type=float, default=8.0)
     ap.add_argument("--units", default="squad", help="'squad' (the wedge), or unit names comma-separated, one each in a row")
     ap.add_argument("--no-assist", action="store_true", help="physics without the upright assist")
-    ap.add_argument("--assist", type=float, default=2.0, help="the assist's strength (2 = the gyro and lane spring the 360 mm hips need; 1 stumbles)")
+    ap.add_argument("--assist", type=float, default=3.0, help="the assist's strength (3: what the hybrid's wide hips and long arms need; 1 stumbles)")
+    ap.add_argument("--no-pace-hold", action="store_true", help="without the assist's hold on the gait's forward speed (the hybrid then shuffles in place)")
     ap.add_argument("--fps", type=int, default=10)
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-movie", action="store_true")
-    ap.add_argument("--crouch", type=float, default=0.02, help="the gait's crouch [m] (the design's 0.02; 0.05 folds the knees further)")
+    ap.add_argument("--crouch", type=float, default=0.04, help="the gait's crouch [m] (the design's 0.04)")
     ap.add_argument("--leg-kp", type=float, default=None, help="try stronger leg servos: their PD gain")
     ap.add_argument("--leg-torque", type=float, default=None, help="try stronger leg servos: their stall torque [N m]")
     ap.add_argument("--modules", choices=("design", "light"), default="design",
@@ -282,6 +283,9 @@ def main(argv=None):
     places = SQUAD if a.units == "squad" else [(n, 0.0, 1.6 * (k - (len(a.units.split(",")) - 1) / 2)) for k, n in enumerate(a.units.split(","))]
     modules = ((1500.0, 400.0), (1500.0, 400.0)) if a.modules == "light" else None
     units = [Unit(n, x, y, a.mode, a.crouch, a.leg_kp, a.leg_torque, modules) for n, x, y in places]
+    if a.mode == "physics" and not a.no_pace_hold:
+        for u in units:
+            u.v_hold = u.v                                                 # the formation's pace, held by the assist
     frames = run(units, a.seconds, a.mode, assist, a.fps)
     report = {"mode": a.mode, "assist": assist, "seconds": a.seconds, "crouch_m": a.crouch, "modules": a.modules, "leg_kp": a.leg_kp, "leg_torque": a.leg_torque,
               "units": [u.report() for u in units]}

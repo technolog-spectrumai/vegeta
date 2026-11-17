@@ -217,7 +217,7 @@ def main(argv=None):
     ap.add_argument("--seconds", type=float, default=16.0)
     ap.add_argument("--units", default="squad", help="'squad' (the block), or unit names comma-separated (their places in the block)")
     ap.add_argument("--no-assist", action="store_true")
-    ap.add_argument("--assist", type=float, default=2.0, help="the upright assist's strength (as the march sim: 2 for the wide hips)")
+    ap.add_argument("--assist", type=float, default=3.0, help="the upright assist's strength (as the march sim: 3 for the hybrid)")
     ap.add_argument("--run-at", type=float, default=10.0, help="when the block breaks into the run [s]")
     ap.add_argument("--fps", type=int, default=10)
     ap.add_argument("--out", default=None)

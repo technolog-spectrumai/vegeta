@@ -35,34 +35,25 @@ mm = 1e-3
 
 #: CAD volumes [mm³] of every armour and weapon piece at the defaults (the test rebuilds them)
 CAD_MM3 = {
-    "marine": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
-               "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-               "shield": 24197865.1, "strap": 4237199.4},
-    "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
-                   "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-                   "saw_body": 5425953.0, "saw_bar": 1217654.7},
-    "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
-                  "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
-                  "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9, "crest": 3086414.2},
-    "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
-                 "greaves": 7400442.4, "boots": 9714685.2, "shield": 37308855.0, "strap": 4683735.6, "shaft": 1150818.8,
-                 "head": 3029269.4},
-    "heavy": {"pauldrons": 12801070.1, "chest_plate": 4777344.3, "backpack": 56211187.1, "belt": 12011644.8,
-              "greaves": 7400442.4, "boots": 9714685.2, "cannon": 4701116.9, "mount": 9047537.8, "feed": 2091164.1},
+    "marine": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "shield": 24197865.1, "handle": 461906.1},
+    "marine_saw": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "saw_body": 5557142.5, "saw_bar": 1217654.7},
+    "centurion": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271690.0, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "crest": 3086414.2, "receiver": 4239405.9, "barrel": 235682.6, "magazine": 957495.8, "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9},
+    "breacher": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 16051563.8, "arm_lames": 7271689.9, "chest_bay": 11194344.7, "belly_bay": 3806772.1, "backpack": 30210811.9, "belt": 13319528.4, "greaves": 8973334.3, "boots": 9714685.2, "shield": 37308855.0, "handle": 624022.0, "shaft": 1150818.8, "head": 3029269.4},
+    "heavy": {"helmet": 1914219.9, "shoulder_guards": 7235516.9, "lorica": 17271722.0, "arm_lames": 7271690.0, "chest_bay": 13267510.8, "belly_bay": 4076459.9, "backpack": 56211187.1, "belt": 14221020.7, "greaves": 8973334.3, "boots": 9714685.2, "cannon": 4701116.9, "mount": 14398915.1, "feed": 2288040.3},
 }
 #: piece -> material; the plates are hollow shells and the backpack a casing, so a fill factor says how much of the
 #: CAD volume is metal (the rest: padding, the pack's cells and electronics counted in the casing's density)
-MATERIAL = {"pauldrons": "Ti-6Al-4V", "chest_plate": "Ti-6Al-4V", "backpack": "7075 aluminium", "belt": "Ti-6Al-4V",
+MATERIAL = {"belly_bay": "7075 aluminium", "helmet": "Ti-6Al-4V", "shoulder_guards": "Ti-6Al-4V", "lorica": "Ti-6Al-4V", "arm_lames": "Ti-6Al-4V", "chest_bay": "7075 aluminium", "backpack": "7075 aluminium", "belt": "Ti-6Al-4V",
             "greaves": "Ti-6Al-4V", "boots": "Ti-6Al-4V", "receiver": "7075 aluminium", "barrel": "4140 steel",
-            "magazine": "7075 aluminium", "shield": "Ti-6Al-4V", "strap": "7075 aluminium", "shaft": "7075 aluminium",
+            "magazine": "7075 aluminium", "shield": "Ti-6Al-4V", "handle": "7075 aluminium", "shaft": "7075 aluminium",
             "head": "4140 steel", "cannon": "4140 steel", "mount": "7075 aluminium", "feed": "7075 aluminium",
             "saw_body": "7075 aluminium", "saw_bar": "4140 steel", "banner_pole": "7075 aluminium", "antenna": "7075 aluminium",
             "emblem": "4140 steel", "crest": "feathers"}
-FILL = {"pauldrons": 0.22, "chest_plate": 0.5, "backpack": 0.35, "belt": 0.3, "greaves": 0.5, "boots": 0.25,
-        "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.3, "strap": 0.4, "shaft": 0.6, "head": 1.0,
+FILL = {"belly_bay": 0.3, "helmet": 0.6, "shoulder_guards": 0.5, "lorica": 0.5, "arm_lames": 0.5, "chest_bay": 0.3, "backpack": 0.35, "belt": 0.3, "greaves": 0.5, "boots": 0.25,
+        "receiver": 0.5, "barrel": 1.0, "magazine": 0.6, "shield": 0.3, "handle": 0.5, "shaft": 0.6, "head": 1.0,
         "cannon": 0.7, "mount": 0.4, "feed": 0.3, "saw_body": 0.45, "saw_bar": 0.8, "banner_pole": 0.35, "antenna": 0.22,
         "emblem": 0.6, "crest": 1.0}
-ARMOUR = ("pauldrons", "chest_plate", "backpack", "belt", "greaves", "boots", "crest")
+ARMOUR = ("belly_bay", "helmet", "shoulder_guards", "lorica", "arm_lames", "chest_bay", "backpack", "belt", "greaves", "boots", "crest")
 
 
 def carried_masses(unit: str) -> dict:
@@ -163,26 +154,96 @@ def _armour(r, unit, P):
     ti, al = (0.42, 0.45, 0.50, 1.0), (0.30, 0.32, 0.36, 1.0)
     thorax, zt = _link(r.root, "thorax"), 0.42 * Ht                        # on the ribs: the thorax link
     t = P["chest_plate_thickness"] * mm
+    n = int(P["lorica_bands"])
+    hb = Ht * 0.52 / n
+    for k in range(n):                                                    # the lorica's girth hoops, a band each
+        thorax.geoms.append(Geom(f"lorica_{k}", "box", ((Dt + 2 * t + k * 0.003) / 2, (Wt * 0.9 + 2 * t + k * 0.004) / 2, hb * 0.62),
+                                 pos=(0.0, 0.0, Ht * 0.34 + (k + 0.5) * hb - zt), mass=m["lorica"] / (n + 1), role="body", rgba=ti))
     thorax.geoms += [
-        Geom("chest_plate", "box", (t / 2, Wt * 0.39, Ht * 0.26), pos=(Dt / 2 + t / 2 - 0.008, 0.0, Ht * 0.6 - zt),
-             mass=m["chest_plate"], role="body", rgba=ti),
+        Geom("breast_band", "box", (t / 2, Wt * 0.25, Ht * 0.08), pos=(Dt / 2 + t * 1.5 - 0.008, 0.0, Ht * 0.86 - zt),
+             mass=m["lorica"] / (n + 1), role="body", rgba=ti),
+        Geom("chest_bay", "box", (Dt * 0.17, Wt * 0.2, Ht * 0.13), pos=(-Dt * 0.05, 0.0, Ht * 0.6 - zt), mass=m["chest_bay"],
+             role="body", rgba=al)]                                       # the electronics' casing inside the ribcage
+    _link(r.root, "torso").geoms.append(Geom("belly_bay", "box", (Dp * 0.21, Wp * 0.25, Ht * 0.1), pos=(0.02, 0.0, Ht * 0.17), mass=m["belly_bay"],
+                                             role="body", rgba=al))       # the power electronics in front of the lumbar spine
+    thorax.geoms += [
         Geom("backpack", "box", (P["backpack_depth"] * mm / 2, P["backpack_width"] * mm / 2, P["backpack_height"] * mm / 2),
              pos=(-Dt / 2 - P["backpack_depth"] * mm / 2 + 0.008, 0.0, Ht * 0.5 - zt), mass=m["backpack"], role="body", rgba=al)]
+    Wh, Dh, Hh, th = P["head_width"] * mm, P["head_depth"] * mm, P["head_height"] * mm, P["helmet_thickness"] * mm
+    zh = Ht - zt + P["neck_length"] * mm + Hh / 2
+    thorax.geoms += [                                                     # the galea: the brow band, the cheek guards, the nape
+        Geom("helmet_brow", "box", (Dh / 2 + th, Wh / 2 + th, Hh * 0.11), pos=(0.0, 0.0, zh + Hh * 0.28), mass=m["helmet"] * 0.4, role="body", rgba=ti),
+        Geom("helmet_nape", "box", (Dh * 0.2, Wh * 0.45, th / 2), pos=(-Dh * 0.62, 0.0, zh - Hh * 0.05),
+             quat=(math.cos(math.radians(17.5)), 0.0, math.sin(math.radians(17.5)), 0.0), mass=m["helmet"] * 0.2, role="body", rgba=ti)]
+    for side, sy in (("L", 1), ("R", -1)):
+        thorax.geoms.append(Geom(f"{side}_cheek_guard", "box", (Dh * 0.25, th / 2, Hh * 0.3), pos=(Dh * 0.12, sy * (Wh / 2 + th / 2 + 0.002), zh - Hh * 0.12),
+                                 mass=m["helmet"] * 0.2, role="body", rgba=ti))
     pelvis = r.root
     pelvis.geoms.append(Geom("belt", "box", (Dp / 2 + 0.018, Wp / 2 + 0.018, P["belt_height"] * mm / 2),
                              pos=(0.0, 0.0, Hp / 2 - P["belt_height"] * mm / 2 + 0.01), mass=m["belt"], role="body", rgba=ti))
+    Lf = P["forearm_length"] * mm
     for side, sy in (("L", 1), ("R", -1)):
         up = _link(r.root, f"{side}_upper_arm")
-        up.geoms.append(Geom(f"{side}_pauldron", "sphere", (R,), pos=(0.0, 0.0, d * 0.35), mass=m["pauldrons"] / 2,
-                             role="body", rgba=ti))
+        for k in range(3):                                                # the shoulder guards: three layered plates
+            a = -sy * math.radians(12 + 24 * k)
+            up.geoms.append(Geom(f"{side}_shoulder_guard_{k}", "box", (R * 0.75, R * 0.25, P["pauldron_thickness"] * mm * 0.25),
+                                 pos=(0.0, sy * (R * 0.2 + k * R * 0.26), d * 0.35 + R * 0.62 - k * R * 0.28),
+                                 quat=(math.cos(a / 2), math.sin(a / 2), 0.0, 0.0), mass=m["shoulder_guards"] / 6, role="body", rgba=ti))
+        fore = _link(r.root, f"{side}_forearm")
+        fl, fd = P["finger_length"] * mm, P["finger_diameter"] * mm
+        fore.geoms = [g for g in fore.geoms if g.name != f"{side}_hand"]
+        wrist = -Lf
+        fore.geoms.append(bk.box(f"{side}_palm", (d * 0.47, d * 0.25, d * 0.45), (0.0, 0.0, wrist - d * 0.45), role="link", rgba=bk.DARK))
+        for k in range(4):                                                # the gripping hand: four curled fingers
+            y = (k - 1.5) * (d * 0.5 / 3.4)
+            pos, ang, seg = (d * 0.47, y, wrist - d * 0.86), -20.0, fl / 3
+            for j in range(3):
+                ang += 55.0
+                nxt = (pos[0] - seg * math.cos(math.radians(ang)), y, pos[2] - seg * math.sin(math.radians(ang)))
+                fore.geoms.append(bk.capsule(f"{side}_finger_{k}_{j}", fd * (0.5 - 0.05 * j), pos, nxt, role="link", rgba=bk.DARK))
+                pos = nxt
         shin = _link(r.root, f"{side}_shin")
-        L2 = P["shin_length"] * mm
-        shin.geoms.append(Geom(f"{side}_greave", "box", (P["greave_thickness"] * mm / 2, P["leg_thickness"] * mm * 0.62, L2 * 0.36),
-                               pos=(0.03 + P["greave_thickness"] * mm / 2, 0.0, -L2 * 0.52), mass=m["greaves"] / 2, role="body", rgba=ti))
+        L2, rt, gt = P["shin_length"] * mm, P["tibia_diameter"] * mm / 2, P["greave_thickness"] * mm
+        for k in range(4):                                                # the greave's bands
+            shin.geoms.append(Geom(f"{side}_greave_{k}", "cylinder", (rt + gt + 0.002 + k * 0.002, L2 * 0.085), pos=(0.0, 0.0, -L2 * (0.3 + 0.14 * k)),
+                                   mass=m["greaves"] / 8, role="body", rgba=ti))
+        La = P["upper_arm_length"] * mm
+        for k in range(3):                                                # the arm lames: the upper arm's and the forearm's
+            up.geoms.append(Geom(f"{side}_upper_lame_{k}", "cylinder", (d / 2 + 0.014 + k * 0.003, La * 0.1), pos=(0.0, 0.0, -La * (0.3 + 0.17 * k)),
+                                 mass=m["arm_lames"] / 12, role="body", rgba=ti))
+            fore_l = _link(r.root, f"{side}_forearm")
+            fore_l.geoms.append(Geom(f"{side}_fore_lame_{k}", "cylinder", (d * 0.42 + 0.012 + k * 0.003, Lf * 0.1), pos=(0.0, 0.0, -Lf * (0.32 + 0.17 * k)),
+                                     mass=m["arm_lames"] / 12, role="body", rgba=ti))
         foot = _link(r.root, f"{side}_foot_link")
         Lf, Wf, ha = P["foot_length"] * mm, P["foot_width"] * mm, P["ankle_height"] * mm
         foot.geoms.append(Geom(f"{side}_boot", "box", (Lf * 0.31, Wf * 0.53, ha * 0.65), pos=(Lf * 0.25, 0.0, -ha + ha * 0.62),
                                mass=m["boots"] / 2, role="body", rgba=ti))
+    return r
+
+
+#: the linear actuators' volumes [mm³] per group (both sides), rebuilt by the test from ``space_units.actuators``;
+#: each weighs volume × 0.5 (the barrel and the rod round the piston) × 7075 aluminium
+ACTUATOR_MM3 = {"hip_struts": 793039.6, "knee_struts": 806947.4, "ankle_struts": 469454.7, "shoulder_struts": 445491.6,
+                "elbow_struts": 469919.6, "spine_struts": 582587.8}
+ACTUATOR_LINK = {"hip_struts": "{s}_thigh", "knee_struts": "{s}_thigh", "ankle_struts": "{s}_shin", "shoulder_struts": "{s}_upper_arm",
+                 "elbow_struts": "{s}_upper_arm", "spine_struts": "torso"}
+
+
+def actuator_masses() -> dict:
+    """{group: kg} of the linear actuators."""
+    return {k: v * 1e-9 * 0.5 * su.MATERIALS["7075 aluminium"]["density_kg_m3"] for k, v in ACTUATOR_MM3.items()}
+
+
+def _struts(r, P):
+    """The linear actuators as point masses on the links they ride (per side)."""
+    for name, kg in actuator_masses().items():
+        if kg <= 0:
+            continue
+        for side in ("L", "R"):
+            lk = ACTUATOR_LINK[name].format(s=side)
+            z = {"hip_struts": -P["thigh_length"] * mm * 0.3, "knee_struts": -P["thigh_length"] * mm * 0.6, "ankle_struts": -P["shin_length"] * mm * 0.5,
+                 "shoulder_struts": -P["upper_arm_length"] * mm * 0.2, "elbow_struts": -P["upper_arm_length"] * mm * 0.7, "spine_struts": P["torso_height"] * mm * 0.2}[name]
+            _link(r.root, lk).masses.append(PointMass(f"{name}_{side}", kg / 2, (0.03, 0.0, z)))
     return r
 
 
@@ -192,6 +253,7 @@ def _unit(unit, name, P, notes):
     _spine(r, P)
     _reactuate(r)
     _armour(r, unit, P)
+    _struts(r, P)
     e = math.radians(P["elbow_bend_deg"])
     r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e}
     r.sources["geometry"] = f"designs/space_units.py ({name}: space_unit_specs.{unit.upper()})"
@@ -214,31 +276,38 @@ def marine():
     return r
 
 
+def su_shield_foot():
+    import space_units
+    return space_units.SHIELD_FOOT * mm
+
+
 def _shield(r, P, m):
-    """The shield (``shield_*`` of the specs) standing vertical in the world ahead of the left forearm's middle, its
-    foot ``space_units.SHIELD_FOOT`` above the ground, and its strap on the forearm."""
+    """The shield (``shield_*`` of the specs) held in the left hand: the handle bar across the fist where the fingers
+    close, the plate standing vertical in the world ahead of it, its foot ``space_units.SHIELD_FOOT`` above the ground."""
     import humanoid as hu
 
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
     t, W, H = P["shield_thickness"] * mm, P["shield_width"] * mm, P["shield_height"] * mm
     e = math.radians(P["elbow_bend_deg"])
     up, fwd = (math.sin(e), 0.0, math.cos(e)), (math.cos(e), 0.0, -math.sin(e))     # the world's up and +x in the bent forearm
-    level = (math.cos(-e / 2), 0.0, math.sin(-e / 2), 0.0)
-    hz = -Lf - 0.04
-    zm = hz + Lf * 0.5                                                    # the forearm's middle (forearm frame)
-    # the forearm's middle above the ground, from the CAD's build pose
+    level = (math.cos(e / 2), 0.0, math.sin(e / 2), 0.0)
+    grip = (d * 0.45, 0.0, -Lf - d * 0.55)                                # where the curled fingers close (forearm frame)
+    # the grip's height above the ground, from the CAD's build pose
     pcad = {k: v for k, v in P.items()}
     hh = hu.Humanoid.hip_height(pcad) * mm
     zs = hh + P["pelvis_height"] * mm / 2 + P["torso_height"] * mm - d * 0.6
-    mid_world = zs - P["upper_arm_length"] * mm - Lf * 0.5 * math.cos(e)
-    dz = 0.25 + H / 2 - mid_world
-    xo = max(d / 2 + t / 2 + 0.025, P["torso_depth"] * mm / 2 + P["chest_plate_thickness"] * mm + 0.05 + t / 2 - Lf * 0.5 * math.sin(e))
+    grip_world = zs - P["upper_arm_length"] * mm - (Lf + d * 0.55) * math.cos(e) + d * 0.45 * math.sin(e)
+    grip_x_world = (Lf + d * 0.55) * math.sin(e) + d * 0.45 * math.cos(e)
+    dz = su_shield_foot() + H / 2 - grip_world
+    xo = max(d * 0.5 + t / 2, P["torso_depth"] * mm / 2 + P["chest_plate_thickness"] * mm + 0.05 + t / 2 - grip_x_world)
     fore_l = _link(r.root, "L_forearm")
     fore_l.geoms += [
-        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=(fwd[0] * xo + up[0] * dz, 0.0, zm + fwd[2] * xo + up[2] * dz),
+        Geom("shield", "box", (t / 2 + 0.006, W / 2, H / 2), pos=tuple(grip[i] + fwd[i] * xo + up[i] * dz for i in range(3)),
              quat=level, mass=m["shield"], role="link", rgba=(0.42, 0.45, 0.50, 1.0)),
-        Geom("shield_strap", "box", (d * 0.65 + 0.02, d * 0.65, d * 0.55), pos=(d * 0.35, 0.0, zm), mass=m["strap"], role="link",
-             rgba=bk.DARK)]
+        Geom("shield_handle", "capsule", (0.016,), fromto=(grip[0], -d * 0.6, grip[2], grip[0], d * 0.6, grip[2]), mass=m["handle"] * 0.3, role="link",
+             rgba=bk.DARK),
+        Geom("shield_bracket", "box", (xo / 2, 0.02, 0.03), pos=tuple(grip[i] + fwd[i] * xo / 2 for i in range(3)), quat=level,
+             mass=m["handle"] * 0.7, role="link", rgba=bk.DARK)]
 
 
 def _carbine(r, P, m):

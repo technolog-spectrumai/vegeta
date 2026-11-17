@@ -12,6 +12,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import space_unit_robots as sr
 import space_units as sun
 
+CASING = "#5a6068"
 BODY, ARMOUR, WEAPON, STEEL, RED, GOLD = "#d9cfae", "#2e4a6b", "#2b2b2b", "#555a60", "#9b1c22", "#c9a227"
 
 
@@ -24,24 +25,32 @@ def _tris(shape, tol=3.0):
     return out
 
 
+EDGE = (0.12, 0.12, 0.14, 1.0)
+
+
 def pieces(d, p):
-    """[(triangles, colour)] of a unit: the skeleton, then the armour and the weapons, coloured."""
-    out = [(_tris(d.build(dict(p, part="skeleton")), 4.0), BODY)]
+    """[(triangles, colour, edge colour or None)] of a unit: the skeleton, the actuators, then the armour (its plates'
+    edges drawn) and the weapons, coloured."""
+    out = [(_tris(d.build(dict(p, part="skeleton")), 4.0), BODY, None)]
+    for name, shape in d.actuator_parts(p).items():
+        out.append((_tris(shape, 4.0), "#3b3f45", None))
     for name, shape in d.armour_parts(p).items():
-        out.append((_tris(shape), RED if name == "crest" else ARMOUR))
+        out.append((_tris(shape), RED if name == "crest" else CASING if name in ("chest_bay", "belly_bay", "backpack") else ARMOUR, EDGE))
     for name, shape in d.weapon_parts(p).items():
         out.append((_tris(shape), STEEL if name in ("barrel", "head", "cannon", "shield", "saw_bar") else RED if name == "banner_cloth"
-                    else GOLD if name == "emblem" else WEAPON))
+                    else GOLD if name == "emblem" else WEAPON, EDGE if name == "shield" else None))
     return out
 
 
 def add_pieces(ax, pcs, offset=(0.0, 0.0, 0.0)):
     """One collection for all the pieces (matplotlib sorts collections, not faces, against each other: separate
-    collections hide the plates behind the frame), the faces depth-sorted together."""
+    collections hide the plates behind the frame), the faces depth-sorted together; a piece's edges in its edge colour."""
     off = np.asarray(offset)
-    tris = [t + off for ts, _ in pcs for t in ts]
-    cols = [c for ts, c in pcs for _ in ts]
-    ax.add_collection3d(Poly3DCollection(tris, facecolors=cols, edgecolors=cols, linewidths=0.0, shade=True, zsort="average"))
+    tris = [t + off for pc in pcs for t in pc[0]]
+    cols = [pc[1] for pc in pcs for _ in pc[0]]
+    edges = [(pc[2] if len(pc) > 2 and pc[2] is not None else pc[1]) for pc in pcs for _ in pc[0]]
+    widths = [(0.35 if len(pc) > 2 and pc[2] is not None else 0.0) for pc in pcs for _ in pc[0]]
+    ax.add_collection3d(Poly3DCollection(tris, facecolors=cols, edgecolors=edges, linewidths=widths, shade=True, zsort="average"))
 
 
 def draw(ax, cls, elev, azim, title):

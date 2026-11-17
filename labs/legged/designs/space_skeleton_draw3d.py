@@ -36,7 +36,7 @@ def main(out="space_skeleton_3d.png"):
     fig = plt.figure(figsize=(18, 10))
     for k, (el, az, title) in enumerate(((10, 32, "front quarter"), (4, 90, "left side"), (10, 180, "back"))):
         ax = fig.add_subplot(1, 3, k + 1, projection="3d")
-        dd.add_pieces(ax, [(body, BONE), (mods, MODULE)])
+        dd.add_pieces(ax, [(body, BONE, None), (mods, MODULE, None)])
         ax.set_xlim(-800, 800); ax.set_ylim(-800, 800); ax.set_zlim(0, 1950)
         ax.set_box_aspect((0.82, 0.82, 1), zoom=1.55); ax.view_init(elev=el, azim=az); ax.set_axis_off(); ax.set_title(title, fontsize=11)
     n = int(p["spine_segments"])
