@@ -84,6 +84,23 @@ def _capsule(r, hl):
     return np.concatenate([cyl, top, bot])
 
 
+def _subdivide(tris, max_edge=0.08):
+    """Triangles no longer than ``max_edge`` on any edge: long ones (a rung, a strut, a wall's face) are split at
+    their edges' midpoints, so the painter's order by centroid holds against the frame's small triangles."""
+    tris = np.asarray(tris, dtype=float)
+    out = []
+    while len(tris):
+        e = np.max(np.linalg.norm(tris - np.roll(tris, -1, axis=1), axis=2), axis=1)
+        keep, big = tris[e <= max_edge], tris[e > max_edge]
+        out.append(keep)
+        if not len(big):
+            break
+        a, b, c = big[:, 0], big[:, 1], big[:, 2]
+        ab, bc, ca = (a + b) / 2, (b + c) / 2, (c + a) / 2
+        tris = np.concatenate([np.stack([a, ab, ca], 1), np.stack([ab, b, bc], 1), np.stack([ca, bc, c], 1), np.stack([ab, bc, ca], 1)])
+    return np.concatenate(out) if out else tris
+
+
 def _between(a, b, r, n=10):
     """A cylinder of radius ``r`` from ``a`` to ``b`` (world triangles)."""
     a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
@@ -96,7 +113,7 @@ def _between(a, b, r, n=10):
     x /= np.linalg.norm(x)
     y = np.cross(z, x)
     R = np.stack([x, y, z], axis=1)
-    return _cylinder(r, L / 2, n) @ R.T + (a + b) / 2
+    return _subdivide(_cylinder(r, L / 2, n) @ R.T + (a + b) / 2)
 
 
 class Renderer:
@@ -124,7 +141,7 @@ class Renderer:
             else:
                 continue
             rgba = tuple(model.geom_rgba[g])
-            self.props.append((g, tris, rgba if rgba[3] > 0 else (0.5, 0.5, 0.5, 1.0)))
+            self.props.append((g, _subdivide(tris), rgba if rgba[3] > 0 else (0.5, 0.5, 0.5, 1.0)))
         try:
             self.font = ImageFont.load_default(size=17)
         except TypeError:
