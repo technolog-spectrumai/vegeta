@@ -331,7 +331,7 @@ def _hands(r, P):
         pt, pw, pl = (v * mm for v in lay["palm"])
         hand = Link(f"{side}_hand", pos=(0.0, 0.0, -Lf),
                     joints=[Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=(-1.2, 1.2), tag="wrist_pitch", servo=wrist_servo),
-                            Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-1.6, 1.6), tag="wrist_roll", servo=wrist_servo)],
+                            Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-3.14, 3.14), tag="wrist_roll", servo=wrist_servo)],   # a full turn: the grip taken whichever way round
                     geoms=[bk.box(f"{side}_palm", (pt / 2, pw / 2, pl / 2), (0.0, 0.0, -pl / 2 - 0.004), role="link", rgba=bk.DARK),
                            bk.capsule(f"{side}_wrist", d * 0.28, (0.0, 0.0, 0.0), (0.0, 0.0, -0.02), role="link", rgba=bk.DARK)],
                     masses=[PointMass(f"{side}_wrist_actuators", 2 * 1.4)])

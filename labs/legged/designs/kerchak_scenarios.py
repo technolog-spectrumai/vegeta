@@ -36,6 +36,7 @@ __all__ = ["SCENARIOS", "sequence", "props", "climb_cycle", "mount", "bar", "poi
 GREY, WOOD, BARK, STEEL, ROPE_C = (0.45, 0.45, 0.47, 1.0), (0.55, 0.42, 0.28, 1.0), (0.4, 0.3, 0.2, 1.0), (0.5, 0.52, 0.56, 1.0), (0.75, 0.65, 0.45, 1.0)
 CLIMB_PITCH = -0.15                                                       #: the pelvis on a wall [rad]: the trunk along it, the shoulders leaning out a little
 CLIMB_BACK, CLIMB_UP = 0.45, 0.55                                         #: the pelvis off the surface, and above the feet's holds [m]
+LEDGE_WRIST = (-0.55, 0.0, 0.835)                                         #: a ledge taken from above: the wrist above and behind the edge, the fist closing down over it
 CLIMB_SPINE = -0.1                                                        #: the spine's pitch modules on a wall: a little extended, the trunk along it
 WALL = {"x": 2.6, "width": 1.6, "height": 4.5, "rung_spacing": 0.35, "first_rung": 0.2, "rung_out": 0.08, "rung_radius": 0.025, "cycles": 6}
 TREE = {"x": 2.8, "radius": 0.3, "height": 6.0, "first_branch": 0.35, "branch_spacing": 0.45, "branch_length": 1.2, "branch_radius": 0.07, "cycles": 6}
@@ -575,9 +576,10 @@ def scenario_window(kin, q_quad, p):
     x, sill, t = p["x"], p["sill"], p["wall_thickness"]
     v, stop_x = 0.25, x - 0.95
     top = sill + 0.06
-    edge = lambda sy: bar((x - t / 2 - 0.02, sy * 0.36, top), r=0.035)
+    edge = lambda sy: bar((x - t / 2 - 0.05, sy * 0.36, top - 0.03), r=0.03, wrist_dir=LEDGE_WRIST)   # the ledge's outer edge, taken from above
     holds = {"L_hand": edge(1.0), "R_hand": edge(-1.0), "L": point((x, 0.2, top), pitch=0.0, over=True), "R": point((x, -0.2, top), pitch=0.0, over=True)}
-    crouch = np.array([x - 0.4, 0.0, top + 0.42])                          # the crouch on the sill: low enough for the arms to keep the edge
+    crouch = np.array([x - 0.2, 0.0, top + 0.25])                          # a deep squat on the sill: the legs folded, the head under the lintel (the opening is 1.3 m tall)
+    duck = CLIMB_PITCH                                                     # the trunk as on the climb: tilting it forward would tilt the hips out of their range
     press = np.array([x - 0.55, 0.0, top + 0.35])                          # pressed up on the arms, the body above the sill, the feet hanging
     b0 = np.array([stop_x, 0.0, gm.PELVIS_H])
     start = _contacts(kin, q_quad, b0, gm.PELVIS_PITCH)
@@ -625,7 +627,7 @@ def scenario_window(kin, q_quad, p):
         z_stand = hum.base_height(kin) - 0.03
         p1 = np.array([stop_x, 0.0, z_stand])
         bz = b0 + fa * (p1 - b0) + fb * (press - p1) + fd * (crouch - press)
-        return bz[0], bz[1], bz[2], gm.PELVIS_PITCH + fa * (CLIMB_PITCH - gm.PELVIS_PITCH)
+        return bz[0], bz[1], bz[2], gm.PELVIS_PITCH + fa * (CLIMB_PITCH - gm.PELVIS_PITCH) + fd * (duck - CLIMB_PITCH)
 
     windows = {"L_hand": (0.0, 0.3), "R_hand": (0.0, 0.3)}
     extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True))
@@ -643,10 +645,10 @@ def scenario_window(kin, q_quad, p):
         sr.set_curl(release, kin, side, CURL_OPEN)
     x_land = x + 1.3
 
-    def base(u):
+    def base(u):                                                           # a dive off the sill: no rise under the lintel
         f = mk.smooth(u)
         flight = math.sin(math.pi * u)
-        return crouch[0] + f * (x_land - crouch[0]), 0.0, (1 - f) * crouch[2] + f * gm.PELVIS_H + 0.25 * flight, CLIMB_PITCH + f * (gm.PELVIS_PITCH - CLIMB_PITCH)
+        return crouch[0] + f * (x_land - crouch[0]), 0.0, (1 - f) * crouch[2] + f * gm.PELVIS_H + 0.05 * flight, duck + f * (gm.PELVIS_PITCH - duck)
 
     keys = [(0.0, q1), (0.15, release), (0.45, tuck), (0.75, tuck), (1.0, q_quad)]
     leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="kerchak_scenarios.window: the leap off the sill onto four")
