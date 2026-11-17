@@ -165,7 +165,8 @@ CURL_CLOSED, CURL_OPEN = 2.0, -0.3        #: the finger module closed on a bar (
 GRIP = sr.hand_grip(CURL_CLOSED)          #: a bar's axis in the hand's frame once the fingers have closed on it [m]: in front of the palm's face, inside the fist
 GRIP_Y = 0.06                             #: a second point along the hand's y (the bar's axis) that fixes the hand's roll
 BAR_R = 0.025                             #: the bar the grip is sized for; a thicker hold moves the palm out to its surface
-SOLE_ON_BAR = 0.04                        #: the sole's point that rests on a bar: between the ball and the heel [m]
+SOLE_ON_BAR = 0.02                        #: the sole's point that rests on a bar: just ahead of the foot's middle [m]
+SOLE_HALF = 0.015                         #: the sole's half thickness: the contact points are the sole box's centre plane, its bottom face rests on the hold [m]
 FOOT_TIP = 0.5                            #: the foot on a bar: toes up, into the surface [rad]
 ORDER = ["L", "R", "L_hand", "R_hand"]    #: a climb cycle's order: the feet step up first (the legs push), then the hands reach
 IK_REG, IK_ITERS = 3e-3, 900              #: the climbs' IK: well damped (a grip is four points per hand; a lighter damping jumps between solutions)
@@ -242,11 +243,14 @@ def foot_targets(kin, side, hold, centre=None, tip=FOOT_TIP):
     c = hold["c"] if centre is None else np.asarray(centre, dtype=float)
     pts = gm._contact_points(kin)[side]
     if hold["kind"] == "point":
-        return [(body, local, c + _sole_offset(k, hold["pitch"])) for k, (body, local) in enumerate(pts)]
+        up = gm.base_rot(hold["pitch"]) @ np.array([0.0, 0.0, 1.0])
+        return [(body, local, c + _sole_offset(k, hold["pitch"]) + SOLE_HALF * up) for k, (body, local) in enumerate(pts)]
     n, t = hold["n"], _up_along(hold["n"])
     h = -n - (-n @ np.array([0.0, 0.0, 1.0])) * np.array([0.0, 0.0, 1.0])   # into the surface, horizontally
     f = math.cos(tip) * _unit(h) + math.sin(tip) * np.array([0.0, 0.0, 1.0])
-    top = c + hold["r"] * _unit(n + t)
+    up = np.cross(f, hold["axis"])
+    up = up if up @ np.array([0.0, 0.0, 1.0]) >= 0 else -up
+    top = c + hold["r"] * _unit(n + t) + SOLE_HALF * up                        # the sole's bottom face on the bar's top
     return [(body, local, top + (o[0] - SOLE_ON_BAR) * f + o[1] * hold["axis"]) for (body, local), o in zip(pts, hum.SOLE_POINTS)]
 
 

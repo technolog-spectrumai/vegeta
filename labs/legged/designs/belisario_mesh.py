@@ -40,7 +40,7 @@ DARK = (0.22, 0.22, 0.24, 1.0)
 BAY = (0.33, 0.35, 0.39, 1.0)
 PLATE = (0.70, 0.60, 0.40, 1.0)
 STRUT = (0.28, 0.29, 0.31, 1.0)
-VERSION = 10
+VERSION = 11
 CACHE = Path(__file__).resolve().parents[1] / "sims" / "output" / "mesh_cache"
 mm = 1e-3
 
@@ -270,6 +270,8 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
         add_local(f"{side}_shin", tibia, BONE)
         add_local(f"{side}_shin", ankle, MODULE)
         add_local(f"{side}_foot_link", foot, BONE)
+        add_local(f"{side}_foot_link", sk.rounded_box(p["foot_length"], p["foot_width"], p["foot_thickness"] + 30.0,
+                                                      (p["foot_length"] * 0.2, 0, -p["ankle_height"] + (p["foot_thickness"] + 30.0) / 2), fillet=14), PLATE)   # a solid foot over the bones
         add_local(f"{side}_foot_link", roll, MODULE)
         add_local(f"{side}_upper_arm", upper, BONE)
         add_local(f"{side}_upper_arm", shoulder, MODULE)
