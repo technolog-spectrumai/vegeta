@@ -88,6 +88,14 @@ for _k in ("carbine_length", "receiver_height", "receiver_width", "barrel_diamet
     BREACHER_EXTRA.pop(_k)
 
 #: the Heavy: the Marine's frame, wider, a rotary cannon on the right forearm fed from a bigger backpack
+#: The upright humanoid: the same skeleton, spine and hands at a human's proportions (1.95 m), long legs and short
+#: arms; lighter than Belisario and meant to walk, not to knuckle-walk - the same tasks from standing.
+HUMANOID = dict(MARINE, pelvis_width=420.0, pelvis_depth=230.0, pelvis_height=150.0, torso_width=520.0, torso_depth=300.0, torso_height=560.0,
+                hip_spacing=260.0, thigh_length=470.0, shin_length=440.0, leg_width=110.0, leg_thickness=95.0, upper_arm_length=330.0,
+                forearm_length=300.0, arm_diameter=105.0, elbow_bend_deg=20.0, finger_length=150.0, finger_diameter=24.0,
+                femur_diameter=56.0, tibia_diameter=50.0, fibula_diameter=22.0, foot_length=300.0, foot_width=120.0, rib_count=10,
+                iliac_wing_height=150.0, scapula_width=170.0, vertebra_diameter=100.0)
+
 HEAVY = {k: v for k, v in MARINE.items() if not k.startswith("shield_")}
 HEAVY = dict(HEAVY, torso_width=720.0, torso_depth=430.0, hip_spacing=400.0, pelvis_width=600.0,
              backpack_width=480.0, backpack_depth=240.0, backpack_height=480.0, elbow_bend_deg=75.0,

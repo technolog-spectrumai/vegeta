@@ -13,16 +13,27 @@ import math
 
 import motion_kit as mk
 
-__all__ = ["motions", "parts", "base_height"]
+__all__ = ["motions", "parts", "base_height", "stand_pose"]
 
 SOLE_POINTS = [(0.10, 0.0, 0.0), (-0.06, 0.04, 0.0), (-0.06, -0.04, 0.0)]
 
 
-def base_height(kin):
-    """Pelvis height with the soles on the ground at q = 0 [m]."""
-    kin.set(kin.q0)
+def base_height(kin, q=None):
+    """Pelvis height with the soles on the ground at ``q`` (default q = 0) [m]."""
+    kin.set(kin.q0 if q is None else q)
     g = kin.model.geom("L")
     return float(-(kin.data.geom_xpos[g.id][2] - kin.model.geom_size[g.id][2]))
+
+
+def stand_pose(kin, knee=0.24):
+    """Standing with the knees slightly bent (the hips and ankles flexed to keep the soles flat): a straight knee is a
+    singular start for the IK (the leg cannot shorten to first order), so the tasks set out from here."""
+    q = kin.q0.copy()
+    for side in ("L", "R"):
+        q[kin.index[f"{side}_hip_pitch"]] = -knee / 2
+        q[kin.index[f"{side}_knee"]] = knee
+        q[kin.index[f"{side}_ankle_pitch"]] = -knee / 2
+    return q
 
 
 def walk(kin, *, speed=0.5, stance=0.30, duty=0.6, step=0.05, crouch=0.04, sway=0.035, arm=0.35, arm_offset=0.0,

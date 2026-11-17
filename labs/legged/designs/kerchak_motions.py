@@ -26,7 +26,7 @@ import numpy as np
 import humanoid_motions as hum
 import motion_kit as mk
 
-__all__ = ["PELVIS_H", "PELVIS_PITCH", "CONTACTS", "base_rot", "base_quat", "quad_pose", "knuckle_walk", "rise", "drop", "stand", "motions", "parts"]
+__all__ = ["PELVIS_H", "PELVIS_PITCH", "STANCE", "set_stance", "CONTACTS", "base_rot", "base_quat", "quad_pose", "knuckle_walk", "rise", "drop", "stand", "motions", "parts"]
 
 PELVIS_H = 0.62                                                           #: the pelvis above the ground on all fours [m]
 PELVIS_PITCH = 0.45                                                       #: the pelvis pitched nose-down on all fours [rad] (~26°)
@@ -37,6 +37,16 @@ CONTACTS = {"L": 0.0, "L_knuckle": 0.25, "R": 0.5, "R_knuckle": 0.75}
 SEED = {"spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25, "waist_yaw": 0.0,
         "L_hip_pitch": -1.2, "R_hip_pitch": -1.2, "L_knee": 1.7, "R_knee": 1.7, "L_ankle_pitch": -0.5, "R_ankle_pitch": -0.5,
         "L_shoulder_pitch": -0.9, "R_shoulder_pitch": -0.9, "L_elbow": -0.15, "R_elbow": -0.15}
+
+
+#: The stance the scenarios start from and return to: the pelvis's height and pitch (Kerchak's quad pose by default;
+#: ``set_stance`` makes it the humanoid's standing), and whether it stands upright (the hands hang; a pick-up squats).
+STANCE = {"h": PELVIS_H, "pitch": PELVIS_PITCH, "upright": False}
+
+
+def set_stance(h, pitch, upright=False):
+    STANCE.update(h=float(h), pitch=float(pitch), upright=bool(upright))
+
 
 
 def base_rot(pitch=PELVIS_PITCH):

@@ -412,16 +412,22 @@ def hand_grip(curl: float, P=None) -> np.ndarray:
     return np.array([cx, 0.0, cz])
 
 
-def bare(name: str = "Belisario", casing: str = "none"):
+def humanoid(casing: str = "none"):
+    """The upright humanoid (``space_unit_specs.HUMANOID``): Belisario's skeleton, spine and hands at a human's
+    proportions, standing at rest, the hands in a loose fist; the same joint modules, so lighter and quicker on its
+    long legs though no stronger per joint."""
+    return bare("Humanoid", casing, P=su.HUMANOID, upright=True)
+
+
+def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = False):
     """Belisario bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
     a curl module, the knuckle contact on the fingers' middle joints) for walking on all fours, gripping and
     climbing (``kerchak_motions``). ``casing``: ``"none"`` (the skeleton
     alone: the frame's geoms, the modules' and the struts' masses), ``"plastic"`` (a lightweight polycarbonate
     casing, ``_casing``) or ``"lorica"`` (the armour)."""
-    P = su.MARINE
+    P = su.MARINE if P is None else P
     p = {k: v for k, v in P.items() if k in hr.P}
-    r = hr.talia(name, p, notes="Belisario: the gorilla-human hybrid frame bare, no weapons, knuckles for walking on all fours "
-                                "(design stage).")
+    r = hr.talia(name, p, notes=f"{name}: the hybrid frame bare, no weapons, articulated hands (design stage).")
     _spine(r, P)
     _reactuate(r)
     if casing == "plastic":
@@ -429,7 +435,10 @@ def bare(name: str = "Belisario", casing: str = "none"):
     elif casing == "lorica":
         _armour(r, "marine", P)
     e = math.radians(P["elbow_bend_deg"])
-    r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25}   # at rest: on four
+    if upright:                                                           # at rest: standing, the arms hanging, a loose fist
+        r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.0, "spine_thoracic_pitch": 0.0}
+    else:                                                                 # at rest: on four
+        r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25}
     for side in ("L", "R"):                                               # the fingers flexed: the knuckles take the weight on four
         r.nominal_qpos.update(curl_values(side, su.KNUCKLE_CURL))
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
@@ -438,10 +447,12 @@ def bare(name: str = "Belisario", casing: str = "none"):
             j.range = (-1.4, 0.7)
         elif j.tag == "knee":
             j.range = (0.0, 2.5)
+        elif j.tag == "hip_pitch" and upright:
+            j.range = (-2.4, 0.8)                                          # a human hip's flexion: the deep crouch (under a lintel, to the ground)
         elif j.tag == "shoulder_roll":
             j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
-    r.sources["geometry"] = f"designs/space_units.py (Belisario bare: space_unit_specs.MARINE, no weapons, casing {casing})"
+    r.sources["geometry"] = f"designs/space_units.py ({name} bare: space_unit_specs.{'HUMANOID' if upright else 'MARINE'}, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:
             if g.name in ("lumbar", "ribcage", "yoke", "neck", "head", "pelvis_shell") or g.name.endswith(("_thigh", "_shin", "_upper_arm", "_forearm", "_palm")) \

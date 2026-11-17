@@ -29,15 +29,32 @@ import humanoid_motions as hum
 import motion_kit as mk
 
 __all__ = ["DOOR", "door_prop", "handle_grip", "handle_world", "lever_hold", "contact_motion", "reach", "grasp", "turn", "push", "release",
-           "door_sequence", "STOP_X"]
+           "door_sequence", "STOP_X", "stop_x"]
 
 #: the doorway: at x [m], its clear width and height, the door's thickness, the hinge on the left (+y), the lever
 #: handle's place on the door (y from the hinge's side, z) and length, how far the door swings open
 DOOR = {"x": 3.0, "width": 1.3, "height": 2.1, "thickness": 0.05, "handle_dy": -1.15, "handle_z": 1.0, "handle_len": 0.14,
         "open_rad": 0.6, "turn_rad": -0.5, "mass_kg": 18.0, "damping": 6.0, "swung_rad": 1.6}   # swung_rad: where the shoved door coasts to
-REACH_BASE = (0.76, 0.1)                                                  #: the pelvis (height, pitch) up on the feet at the door
+REACH_BASE = (0.76, 0.1)                                                  #: the pelvis (height, pitch) up on the feet at the door (on four); standing: a little lower, leaning
+
+
+def reach_base():
+    return (gm.STANCE["h"] - 0.2, 0.3) if gm.STANCE["upright"] else REACH_BASE
+
+
 PUSH_ADVANCE = 0.35                                                       #: how far the pelvis moves ahead over the feet in the push
-STOP_X = 1.95                                                             #: where the approach stops (the pelvis), the handle in reach
+STOP_X = 1.95                                                             #: where the approach stops (the pelvis), the handle in reach (on four)
+
+
+def push_base():
+    """The pelvis (x ahead of the feet, height, pitch) at the end of the push: standing, further and lower, leaning
+    into the door (the legs cannot stretch to the swung lever otherwise)."""
+    return (0.4, gm.STANCE["h"] - 0.27, 0.5) if gm.STANCE["upright"] else (PUSH_ADVANCE, *REACH_BASE)
+
+
+def stop_x():
+    """Where the approach stops: standing, closer, the arm being shorter for the height of the shoulder."""
+    return 2.4 if gm.STANCE["upright"] else STOP_X
 
 
 def door_prop():
@@ -122,7 +139,7 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
 
 def _planted(kin, q_quad, base_x, which=("L", "R", "L_knuckle")):
     """The planted contacts' targets, from the quad pose at ``base_x``."""
-    w = _contacts_world(kin, q_quad, base_x, gm.PELVIS_H, gm.PELVIS_PITCH)
+    w = _contacts_world(kin, q_quad, base_x, gm.STANCE["h"], gm.STANCE["pitch"])
     pts = gm._contact_points(kin)
     return [(body, local, w[g][k]) for g in which for k, (body, local) in enumerate(pts[g])]
 
@@ -144,19 +161,20 @@ def lever_hold(phi=0.0, turn=0.0):
                   wrist_dir=R @ np.asarray(LEVER_WRIST))
 
 
-def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
+def reach(kin, q_quad, base_x=None, duration=2.5):
     """Up onto the feet: they stay planted while the trunk lifts (the pelvis to ``REACH_BASE``), the right hand goes
     to the lever on an arc (its grip point first, then the whole hand settling onto the lever from above, the
     fingers open) and the left hand comes off the ground to hang."""
+    base_x = stop_x() if base_x is None else base_x
     import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
-    start = _contacts_world(kin, q_quad, base_x, gm.PELVIS_H, gm.PELVIS_PITCH)
+    start = _contacts_world(kin, q_quad, base_x, gm.STANCE["h"], gm.STANCE["pitch"])
     hold = lever_hold()
     end = gs.hand_targets(kin, "R", hold)
     kin.set(q_quad)
-    Rb, b0 = gm.base_rot(gm.PELVIS_PITCH), np.array([base_x, 0.0, gm.PELVIS_H])
+    Rb, b0 = gm.base_rot(gm.STANCE["pitch"]), np.array([base_x, 0.0, gm.STANCE["h"]])
     grip0 = Rb @ kin.world(end[0][0], end[0][1]) + b0
     kin.set(kin.q0)
     hang = kin.world(*pts["L_knuckle"][0])                                 # the left hand hanging (the design pose, base-relative)
@@ -177,7 +195,7 @@ def reach(kin, q_quad, base_x=STOP_X, duration=2.5):
 
     def base(u):
         f = mk.smooth(u)
-        return base_x, gm.PELVIS_H + f * (REACH_BASE[0] - gm.PELVIS_H), gm.PELVIS_PITCH + f * (REACH_BASE[1] - gm.PELVIS_PITCH)
+        return base_x, gm.STANCE["h"] + f * (reach_base()[0] - gm.STANCE["h"]), gm.STANCE["pitch"] + f * (reach_base()[1] - gm.STANCE["pitch"])
 
     def extra(u, q):
         f = mk.smooth(min(1.0, u / 0.4))                                   # the right fingers open on the way
@@ -232,31 +250,36 @@ def _lever_motion(kin, name, duration, q_quad, q_from, base_x, phi_fn, turn_fn, 
     return contact_motion(kin, name, duration, targets, base_fn, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS, source=source)
 
 
-def turn(kin, q_quad, q_from, base_x=STOP_X, duration=1.0):
+def turn(kin, q_quad, q_from, base_x=None, duration=1.0):
     """The lever turned down: the hand follows its arc about the spindle."""
-    base = lambda u: (base_x, REACH_BASE[0], REACH_BASE[1])
+    base_x = stop_x() if base_x is None else base_x
+    base = lambda u: (base_x, reach_base()[0], reach_base()[1])
     return _lever_motion(kin, "turn", duration, q_quad, q_from, base_x, lambda u: 0.0, lambda u: DOOR["turn_rad"] * mk.smooth(u), base,
                          "kerchak_tasks.turn: the lever turned down")
 
 
-def push(kin, q_quad, q_from, base_x=STOP_X, duration=3.0):
+def push(kin, q_quad, q_from, base_x=None, duration=3.0):
     """The door swings open under the hand: the hold follows the lever's arc (the door to ``open_rad``), the feet
     planted, the pelvis advancing ``PUSH_ADVANCE`` over them."""
-    base = lambda u: (base_x + PUSH_ADVANCE * mk.smooth(u), REACH_BASE[0], REACH_BASE[1])
+    base_x = stop_x() if base_x is None else base_x
+    adv, h1, p1 = push_base()
+    base = lambda u: (base_x + adv * mk.smooth(u), reach_base()[0] + mk.smooth(u) * (h1 - reach_base()[0]), reach_base()[1] + mk.smooth(u) * (p1 - reach_base()[1]))
     return _lever_motion(kin, "push", duration, q_quad, q_from, base_x, lambda u: DOOR["open_rad"] * mk.smooth(u), lambda u: DOOR["turn_rad"], base,
                          "kerchak_tasks.push: the door swung open, the hand on the lever")
 
 
-def release(kin, q_quad, q_from, base_x=STOP_X, duration=2.0):
+def release(kin, q_quad, q_from, base_x=None, duration=2.0):
     """The fist opens and lets the lever go, the pelvis settles back over the feet and down, both hands come back
     down to their places on four (the right from the lever, the left from hanging)."""
+    base_x = stop_x() if base_x is None else base_x
     import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))
     pts = gm._contact_points(kin)
-    goal = _contacts_world(kin, q_quad, base_x, gm.PELVIS_H, gm.PELVIS_PITCH)
+    goal = _contacts_world(kin, q_quad, base_x, gm.STANCE["h"], gm.STANCE["pitch"])
     kin.set(q_from)
-    R0, b0 = gm.base_rot(REACH_BASE[1]), np.array([base_x + PUSH_ADVANCE, 0.0, REACH_BASE[0]])
+    adv, h1, p1 = push_base()
+    R0, b0 = gm.base_rot(p1), np.array([base_x + adv, 0.0, h1])
     start_l = R0 @ kin.world(*pts["L_knuckle"][0]) + b0
     start_r = R0 @ kin.world(*pts["R_knuckle"][0]) + b0
     hold = lever_hold(DOOR["open_rad"], DOOR["turn_rad"])
@@ -274,7 +297,7 @@ def release(kin, q_quad, q_from, base_x=STOP_X, duration=2.0):
 
     def base(u):
         f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
-        return base_x + PUSH_ADVANCE * (1 - f), REACH_BASE[0] + f * (gm.PELVIS_H - REACH_BASE[0]), REACH_BASE[1] + f * (gm.PELVIS_PITCH - REACH_BASE[1])
+        return base_x + adv * (1 - f), h1 + f * (gm.STANCE["h"] - h1), p1 + f * (gm.STANCE["pitch"] - p1)
 
     def extra(u, q):
         f = mk.smooth(min(1.0, u / 0.25))                                  # the fist opens first, then the hand comes down to the walking curl
@@ -296,7 +319,7 @@ def door_sequence(kin, q_quad):
     """[reach, grasp, turn, push, release] in order, each starting where the last ended."""
     r = reach(kin, q_quad)
     q1 = _last(kin, r, q_quad)
-    base = (STOP_X, REACH_BASE[0], REACH_BASE[1])
+    base = (stop_x(), reach_base()[0], reach_base()[1])
     g = grasp(kin, q1, base); q2 = _last(kin, g, q1)
     t = turn(kin, q_quad, q2); q3 = _last(kin, t, q2)
     p = push(kin, q_quad, q3); q4 = _last(kin, p, q3)
