@@ -39,7 +39,7 @@ from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
 VIEWS = {"wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
-         "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
+         "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
 class ScenePlayer:
@@ -71,6 +71,19 @@ class ScenePlayer:
         self.kp = np.array([servos[n].kp for n in names])
         self.lim = np.array([servos[n].stall_torque for n in names])
         self.x_kin, self.fell, self.tilt_max = 0.0, None, 0.0
+        self.strike_t = None                                               # when the pane goes (window_hammer)
+        self._hammer = None
+        if scene == "window_hammer":
+            m = self.model
+            free = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "hammer"]
+            by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
+            pick, smash, drop = by_name["pick_up_the_hammer"], by_name["smash_the_glass"], by_name["drop_the_hammer"]
+            R_h2m, p_h2m = (np.array(v) for v in pick[1].params["hammer_T"])
+            rest_p, rest_R = (np.array(v) for v in pick[1].params["hammer_rest"])
+            self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "rest": (rest_p, rest_R),
+                            "t_grasp": pick[0] + pick[1].period, "t_release": drop[0] + drop[1].params["release_u"] * drop[1].period,
+                            "released": None, "hand": m.body("R_hand").id}
+            self.strike_t = smash[0] + smash[1].params["strike_u"] * smash[1].period
         self.reset()
 
     def segment(self, t):
@@ -124,6 +137,43 @@ class ScenePlayer:
         d.qpos[self.qadr] = q
         self._scene_joints(t)
         mujoco.mj_kinematics(self.model, d)
+        if self._hammer is not None:
+            self._hammer_pose(t)
+            mujoco.mj_kinematics(self.model, d)
+
+    def _hammer_pose(self, t):
+        """The hammer through the sequence: lying where the hand finds it, in the hand from the grasp to the release,
+        then falling (no tumble) and lying where it lands."""
+        H, d, m = self._hammer, self.data, self.model
+        adr = H["adr"]
+
+        def put(p, R):
+            q = np.zeros(4)
+            mujoco.mju_mat2Quat(q, np.asarray(R, dtype=float).reshape(9))
+            d.qpos[adr:adr + 3], d.qpos[adr + 3:adr + 7] = p, q
+
+        if t < H["t_grasp"]:
+            put(*H["rest"])
+        elif t < H["t_release"]:
+            Rh, ph = d.xmat[H["hand"]].reshape(3, 3), d.xpos[H["hand"]]
+            put(ph + Rh @ H["p_h2m"], Rh @ H["R_h2m"])
+            H["released"] = (ph + Rh @ H["p_h2m"], Rh @ H["R_h2m"])
+        else:
+            if H["released"] is None:
+                H["released"] = H["rest"]
+            p0, R0 = H["released"]
+            import kerchak_scenarios as gs
+            Lh, rz = gs.HAMMER["handle"], gs.HAMMER["rest_z"]
+            low = min(p0[2] - 0.018, p0[2] + Lh * R0[2, 2] - 0.03)          # the hammer's lowest point at the release
+            tau = t - H["t_release"]
+            fall = 0.5 * 9.81 * tau * tau
+            if fall < low:
+                put(p0 - np.array([0.0, 0.0, fall]), R0)
+            else:                                                          # landed: flat, the handle along the way it pointed
+                ax = R0[:, 2].copy(); ax[2] = 0.0
+                ax = ax / max(np.linalg.norm(ax), 1e-6)
+                z = np.array([0.0, 0.0, 1.0])
+                put(np.array([p0[0], p0[1], rz]), np.stack([np.cross(z, ax), z, ax], axis=1))
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
@@ -215,9 +265,10 @@ def main(argv=None):
         c = np.array(g.data.qpos[0:3])
         if a.render == "mesh":
             az = azim
-            if a.scene == "window":                                        # once through the wall the camera comes round to the inside
+            if a.scene in ("window", "window_hammer"):                     # once through the wall the camera comes round to the inside
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
+            renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"Belisario: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return

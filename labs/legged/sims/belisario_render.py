@@ -125,6 +125,7 @@ class Renderer:
         for name in mesh.bodies():
             self.body[name] = model.body(name).id
         root = model.body_rootid[model.body("pelvis").id]
+        self.hidden = set()                                               # geom names not drawn (a pane once broken)
         self.props = []                                                   # (geom id, unit triangles, rgba): everything that is not the robot or the terrain
         for g in range(model.ngeom):
             if model.body_rootid[model.geom_bodyid[g]] == root or model.geom(g).name == "chiron_terrain":
@@ -164,6 +165,8 @@ class Renderer:
             tris += [barrel, rod]
             cols += [np.repeat([STRUT[:3]], len(barrel), axis=0), np.repeat([(0.6, 0.6, 0.62)], len(rod), axis=0)]
         for g, unit, rgba in self.props:
+            if self.hidden and self.m.geom(g).name in self.hidden:
+                continue
             tris.append(unit @ data.geom_xmat[g].reshape(3, 3).T + data.geom_xpos[g])
             cols.append(np.repeat([rgba[:3]], len(unit), axis=0))
         return np.concatenate(tris), np.concatenate(cols)

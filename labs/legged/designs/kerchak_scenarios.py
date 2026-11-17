@@ -33,6 +33,7 @@ import space_unit_specs as su
 
 __all__ = ["SCENARIOS", "sequence", "props", "climb_cycle", "mount", "bar", "point", "hand_targets", "foot_targets", "CLIMB_PITCH", "WALL", "TREE", "HULL", "ROPE", "WINDOW", "OBSTACLES"]
 
+GLASS = (0.62, 0.82, 0.9, 1.0)
 GREY, WOOD, BARK, STEEL, ROPE_C = (0.45, 0.45, 0.47, 1.0), (0.55, 0.42, 0.28, 1.0), (0.4, 0.3, 0.2, 1.0), (0.5, 0.52, 0.56, 1.0), (0.75, 0.65, 0.45, 1.0)
 CLIMB_PITCH = -0.15                                                       #: the pelvis on a wall [rad]: the trunk along it, the shoulders leaning out a little
 CLIMB_BACK, CLIMB_UP = 0.45, 0.55                                         #: the pelvis off the surface, and above the feet's holds [m]
@@ -125,8 +126,25 @@ def window_prop(p):
                         _box("wall_left", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, w / 2 + (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
                         _box("wall_right", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, -w / 2 - (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
                         _box("sill_plate", (t / 2 + 0.04, w / 2, 0.03), (0.0, 0.0, sill + 0.03), rgba=WOOD, mass=20.0)]
+                 + ([_box("glass", (0.004, w / 2 - 0.01, h / 2 - 0.01), (0.0, 0.0, sill + h / 2), rgba=GLASS, mass=5.0)] if p.get("glass") else [])
                  + _table_with_banana(p.get("table_x", 3.4), p.get("table_y", 0.0)))
     return Prop(frame, free=False)
+
+
+HAMMER = {"handle": 0.32, "handle_r": 0.018, "head": (0.055, 0.025, 0.03), "rest_z": 0.028}
+HAMMER_LYING = (0.70710678, -0.70710678, 0.0, 0.0)                        #: the handle along the world's y, flat on the ground
+
+
+def hammer_prop(p):
+    """A hammer, loose on the ground: its frame at the handle's root, the handle up its z, the head across its x
+    at the top; lying with the handle along y, its middle at (``hammer_x``, ``hammer_y``)."""
+    H = HAMMER
+    hx, hy = p["hammer_x"], p["hammer_y"]
+    steel, wood = (0.35, 0.36, 0.4, 1.0), (0.6, 0.45, 0.28, 1.0)
+    link = Link("hammer", pos=(hx, hy - H["handle"] / 2, H["rest_z"]), quat=HAMMER_LYING,
+                geoms=[_cap("hammer_handle", H["handle_r"], (0.0, 0.0, 0.0), (0.0, 0.0, H["handle"]), rgba=wood, mass=0.6),
+                       _box("hammer_head", H["head"], (0.0, 0.0, H["handle"] - 0.01), rgba=steel, mass=2.5)])
+    return Prop(link, free=True)
 
 
 def _table_with_banana(tx, ty, top=0.75, depth=0.8, width=1.2):
@@ -158,6 +176,8 @@ def props(name, params=None):
     p = {**DEFAULTS[name], **(params or {})}
     if name == "door":
         return (gt.door_prop(),)
+    if name == "window_hammer":
+        return (window_prop(p), hammer_prop(p))
     return (BUILDERS[name](p),)
 
 
@@ -573,8 +593,14 @@ def scenario_window(kin, q_quad, p):
     sill, a crouch on it, then a leap off - the hands open, the pelvis on a parabola to the ground beyond, the
     limbs tucked and then reaching for the knuckle stance (the legs are shorter than the sill is high: there is no
     reaching the ground from it, so the frame drops as a gorilla would) - and the walk up to the table."""
+    x, stop_x = p["x"], p["x"] - 0.95
+    return [("gait", stop_x / 0.25, 0.0)] + _window_entry(kin, q_quad, p, stop_x)
+
+
+def _window_entry(kin, q_quad, p, stop_x):
+    """From the quad pose at ``stop_x``: the mount onto the sill, the leap in, the walk to the table."""
     x, sill, t = p["x"], p["sill"], p["wall_thickness"]
-    v, stop_x = 0.25, x - 0.95
+    v = 0.25
     top = sill + 0.06
     edge = lambda sy: bar((x - t / 2 - 0.05, sy * 0.36, top - 0.03), r=0.03, wrist_dir=LEDGE_WRIST)   # the ledge's outer edge, taken from above
     holds = {"L_hand": edge(1.0), "R_hand": edge(-1.0), "L": point((x, 0.2, top), pitch=0.0, over=True), "R": point((x, -0.2, top), pitch=0.0, over=True)}
@@ -654,7 +680,175 @@ def scenario_window(kin, q_quad, p):
     leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="kerchak_scenarios.window: the leap off the sill onto four")
     table_x = x + p.get("table_x", 3.4)
     walk = max((table_x - 0.4 - 0.55 - x_land) / v, 1.0)                  # up to the table: the knuckles a hand's length short of its edge
-    return [("gait", stop_x / v, 0.0), ("motion", up), ("motion", leap), ("gait", walk, 0.0)]
+    return [("motion", up), ("motion", leap), ("gait", walk, 0.0)]
+
+
+def _slerp(R0, R1, f):
+    """The rotation ``f`` of the way from ``R0`` to ``R1``."""
+    D = R0.T @ R1
+    c = max(-1.0, min(1.0, (np.trace(D) - 1.0) / 2.0))
+    ang = math.acos(c)
+    if ang < 1e-9:
+        return R0.copy()
+    w = np.array([D[2, 1] - D[1, 2], D[0, 2] - D[2, 0], D[1, 0] - D[0, 1]]) / (2.0 * math.sin(ang))
+    return R0 @ _rot(w, f * ang)
+
+
+def _hand_at(kin, side, c, R):
+    """The hand's three grip points for a grip centre ``c`` and a hand frame ``R``."""
+    hand = kin.body(f"{side}_hand")
+    return [(hand, l, c + R @ (l - GRIP)) for l in (GRIP, np.zeros(3), GRIP + np.array([0.0, GRIP_Y, 0.0]))]
+
+
+def _lerp_hold(h0, h1, f):
+    """A bar hold between two: the centre, the axis and the wrist's direction eased from ``h0`` to ``h1``."""
+    f = mk.smooth(f)
+    wd0 = h0["wrist_dir"] if h0["wrist_dir"] is not None else h1["wrist_dir"]
+    return bar((1 - f) * h0["c"] + f * h1["c"], axis=(1 - f) * h0["axis"] + f * h1["axis"], n=h1["n"], r=h1["r"],
+               wrist_dir=(1 - f) * wd0 + f * h1["wrist_dir"])
+
+
+def _hand_pose(kin, q, base, pitch, side):
+    """(R, p) of the hand in the world for a pose at a base place."""
+    kin.set(q)
+    Rb, b = gm.base_rot(pitch), np.asarray(base, dtype=float)
+    hand = kin.body(f"{side}_hand")
+    return Rb @ kin.data.xmat[hand].reshape(3, 3), Rb @ kin.data.xpos[hand] + b
+
+
+STAND = (0.85, 0.1)                                                       #: the pelvis (height, pitch) standing on the feet with a tool in hand
+
+
+def scenario_window_hammer(kin, q_quad, p):
+    """The glass broken first: the walk up to the hammer lying by the wall, the right fist closes on its handle from
+    above (on three: the left knuckle and the feet), up onto the feet with the hammer, a wind-up over the shoulder
+    and a strike through the pane (the glass goes at the blow), the fist opens and the hammer falls, back down on
+    four, then the window's entry (``_window_entry``) through the empty frame to the table."""
+    import kerchak_tasks as kt
+    x, sill, h, t = p["x"], p["sill"], p["height"], p["wall_thickness"]
+    v, stop_x = 0.25, x - 0.95
+    H = HAMMER
+    b_quad = (stop_x, gm.PELVIS_H, gm.PELVIS_PITCH)
+    b_stand = (stop_x, STAND[0], STAND[1])
+    planted = gt._planted(kin, q_quad, stop_x, which=("L", "R"))
+    pts = gm._contact_points(kin)
+    start = _contacts(kin, q_quad, (stop_x, 0.0, gm.PELVIS_H), gm.PELVIS_PITCH)
+    on_ground = bar((p["hammer_x"], p["hammer_y"], H["rest_z"]), axis=(0.0, 1.0, 0.0), n=(0.0, 0.0, 1.0), r=H["handle_r"], wrist_dir=(-0.45, 0.0, 0.89))
+    # the hammer in hand as a hand frame at a grip centre: carried before the chest, the handle up in a forward fist;
+    # raised high beside the shoulder; the blow: the handle at the pane, the wrist above and behind
+    carry = (np.array([stop_x + 0.8, -0.45, STAND[0] + 0.4]), hand_frame_on(bar((0, 0, 0), axis=(0.0, 0.0, 1.0), n=(0.0, 1.0, 0.0)), "R"))
+    wind_up = (np.array([stop_x + 0.2, -0.5, 2.05]), hand_frame_on(bar((0, 0, 0), axis=(-0.2, 0.0, 0.98), n=(0.0, 1.0, 0.0)), "R"))   # raised high beside the shoulder: the blow comes down
+    glass_point = np.array([x - t / 2 - 0.01, -0.15, sill + h * 0.45])
+    strike_axis = np.array([0.95, 0.0, -0.31])
+    strike = (glass_point - 0.31 * strike_axis, hand_frame_on(bar((0, 0, 0), axis=strike_axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=(-0.5, 0.0, 0.87)), "R"))
+    ground_frame = (on_ground["c"], hand_frame_on(on_ground, "R"))
+    kin.set(kin.q0)
+    hang = kin.world(*pts["L_knuckle"][0])                                 # the left hand hanging (the design pose, base-relative)
+    grip0 = _world_pts(kin, q_quad, (stop_x, 0.0, gm.PELVIS_H), gm.PELVIS_PITCH, [(hand_targets(kin, "R", on_ground)[0][0], hand_targets(kin, "R", on_ground)[0][1])])[0]
+
+    # 1. the pick: on three, the right hand down onto the handle
+    def t_pick(u):
+        end = hand_targets(kin, "R", on_ground)
+        out = planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], start["L_knuckle"][0])]
+        if u < 0.6:
+            f = mk.smooth(u / 0.6)
+            out.append((end[0][0], end[0][1], (1 - f) * grip0 + f * on_ground["c"] + np.array([0.0, 0.0, 0.15 * math.sin(math.pi * f)])))
+        else:
+            out += end
+        return out
+
+    def x_pick(u, q):
+        c = su.KNUCKLE_CURL + (CURL_OPEN - su.KNUCKLE_CURL) * mk.smooth(min(1.0, u / 0.4)) if u < 0.75 else CURL_OPEN + (kt.LEVER_CURL - CURL_OPEN) * mk.smooth((u - 0.75) / 0.25)
+        return sr.set_curl(q, kin, "R", c)
+
+    pick = gt.contact_motion(kin, "pick_up_the_hammer", 1.6, t_pick, lambda u: b_quad, q_init=q_quad, extra=x_pick, reg=IK_REG, iters=IK_ITERS,
+                             source="kerchak_scenarios.window_hammer: the fist closes on the hammer's handle")
+    q1 = gt._last(kin, pick, q_quad)
+    Rh, ph = _hand_pose(kin, q1, (stop_x, 0.0, gm.PELVIS_H), gm.PELVIS_PITCH, "R")
+    # the hammer in the hand: its handle along the hand's y through the grip, its root a half handle back
+    R_h2m = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]])
+    p_h2m = GRIP + np.array([0.0, -H["handle"] / 2, 0.0])
+    R_m, p_m = Rh @ R_h2m, ph + Rh @ p_h2m                               # where the hammer lies: where the hand found it
+    pick.params = {**pick.params, "hammer_T": (R_h2m.tolist(), p_h2m.tolist()), "hammer_rest": (p_m.tolist(), R_m.tolist())}
+
+    # 2. up onto the feet, the hammer carried, the left hand hanging
+    def t_stand(u):
+        f = mk.smooth(u)
+        xb, hb, pb = b_stand_fn(u)
+        R, b = gm.base_rot(pb), np.array([xb, 0.0, hb])
+        left = (1 - f) * start["L_knuckle"][0] + f * (R @ hang + b) + np.array([0.0, 0.0, 0.12 * math.sin(math.pi * f)])
+        fs = mk.smooth(u)
+        c = (1 - fs) * ground_frame[0] + fs * carry[0] + np.array([0.0, 0.0, 0.1 * math.sin(math.pi * fs)])
+        return planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], left)] + _hand_at(kin, "R", c, _slerp(ground_frame[1], carry[1], fs))
+
+    def b_stand_fn(u):
+        f = mk.smooth(u)
+        return stop_x, gm.PELVIS_H + f * (STAND[0] - gm.PELVIS_H), gm.PELVIS_PITCH + f * (STAND[1] - gm.PELVIS_PITCH)
+
+    hold_fist = lambda u, q: sr.set_curl(q, kin, "R", kt.LEVER_CURL)
+    stand = gt.contact_motion(kin, "up_with_the_hammer", 2.0, t_stand, b_stand_fn, q_init=q1, extra=hold_fist, reg=IK_REG, iters=IK_ITERS,
+                              source="kerchak_scenarios.window_hammer: up on the feet with the hammer")
+    q2 = gt._last(kin, stand, q1)
+
+    # 3. the strike: a wind-up over the shoulder, the blow through the pane, back to the carry
+    def hold_at(u):
+        if u < 0.4:
+            f = mk.smooth(u / 0.4)
+            return (1 - f) * carry[0] + f * wind_up[0] + np.array([-0.1, 0.0, 0.0]) * math.sin(math.pi * f), _slerp(carry[1], wind_up[1], f)
+        if u < 0.65:
+            f = mk.smooth((u - 0.4) / 0.25)
+            return (1 - f) * wind_up[0] + f * strike[0] + np.array([0.0, 0.0, 0.12]) * math.sin(math.pi * f), _slerp(wind_up[1], strike[1], f)
+        if u < 0.75:
+            return strike
+        f = mk.smooth((u - 0.75) / 0.25)
+        return (1 - f) * strike[0] + f * carry[0], _slerp(strike[1], carry[1], f)
+
+    def t_smash(u):
+        xb, hb, pb = b_smash(u)
+        R, b = gm.base_rot(pb), np.array([xb, 0.0, hb])
+        c, Rh = hold_at(u)
+        return planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], R @ hang + b)] + _hand_at(kin, "R", c, Rh)
+
+    def b_smash(u):
+        lunge = 0.08 * math.sin(math.pi * min(1.0, max(0.0, (u - 0.3) / 0.5)))
+        return stop_x + lunge, STAND[0], STAND[1]
+
+    smash = gt.contact_motion(kin, "smash_the_glass", 1.8, t_smash, b_smash, q_init=q2, extra=hold_fist, reg=IK_REG, iters=IK_ITERS,
+                              source="kerchak_scenarios.window_hammer: the hammer through the pane")
+    smash.params = {**smash.params, "strike_u": 0.65}
+    q3 = gt._last(kin, smash, q2)
+
+    # 4. the hammer dropped, back down on four
+    R_end, p_end = _hand_pose(kin, q3, (stop_x, 0.0, STAND[0]), STAND[1], "R")
+    kn_r = pts["R_knuckle"][0]
+    kin.set(q3)
+    Rb3 = gm.base_rot(STAND[1])
+    r_start = Rb3 @ kin.world(*kn_r) + np.array([stop_x, 0.0, STAND[0]])
+    l_start = Rb3 @ kin.world(*pts["L_knuckle"][0]) + np.array([stop_x, 0.0, STAND[0]])
+
+    def t_drop(u):
+        if u < 0.2:
+            xb, hb, pb = b_drop(u)
+            R, b = gm.base_rot(pb), np.array([xb, 0.0, hb])
+            return planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], R @ hang + b)] + _hand_at(kin, "R", *carry)
+        f = mk.smooth((u - 0.2) / 0.8)
+        arc = np.array([0.0, 0.0, 0.15 * math.sin(math.pi * f)])
+        return planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], (1 - f) * l_start + f * start["L_knuckle"][0] + arc),
+                          (kn_r[0], kn_r[1], (1 - f) * r_start + f * start["R_knuckle"][0] + arc)]
+
+    def b_drop(u):
+        f = mk.smooth(max(0.0, (u - 0.2) / 0.8))
+        return stop_x, STAND[0] + f * (gm.PELVIS_H - STAND[0]), STAND[1] + f * (gm.PELVIS_PITCH - STAND[1])
+
+    def x_drop(u, q):
+        c = kt.LEVER_CURL + (CURL_OPEN - kt.LEVER_CURL) * mk.smooth(min(1.0, u / 0.2)) if u < 0.2 else CURL_OPEN + (su.KNUCKLE_CURL - CURL_OPEN) * mk.smooth((u - 0.2) / 0.8)
+        return sr.set_curl(q, kin, "R", c)
+
+    drop = gt.contact_motion(kin, "drop_the_hammer", 2.0, t_drop, b_drop, q_init=q3, extra=x_drop, reg=IK_REG, iters=IK_ITERS,
+                             source="kerchak_scenarios.window_hammer: the fist opens, back down on four")
+    drop.params = {**drop.params, "release_u": 0.2}
+    segs = [("gait", stop_x / v, 0.0), ("motion", pick), ("motion", stand), ("motion", smash), ("motion", drop)]
+    return segs + _window_entry(kin, q_quad, p, stop_x)
 
 
 def _joint_track(kin, name, duration, keys, base_fn, frames=24, source=""):
@@ -721,10 +915,12 @@ def scenario_door(kin, q_quad, p):
     return segs
 
 
-DEFAULTS = {"wall": WALL, "tree": TREE, "hull": HULL, "rope": ROPE, "window": WINDOW, "obstacles": OBSTACLES, "door": gt.DOOR}
-BUILDERS = {"wall": wall_prop, "tree": tree_prop, "hull": hull_prop, "rope": rope_prop, "window": window_prop, "obstacles": obstacles_prop}
+WINDOW_HAMMER = {**WINDOW, "glass": 1, "hammer_x": WINDOW["x"] - 0.4, "hammer_y": -0.45}
+DEFAULTS = {"wall": WALL, "tree": TREE, "hull": HULL, "rope": ROPE, "window": WINDOW, "window_hammer": WINDOW_HAMMER, "obstacles": OBSTACLES, "door": gt.DOOR}
+BUILDERS = {"wall": wall_prop, "tree": tree_prop, "hull": hull_prop, "rope": rope_prop, "window": window_prop, "window_hammer": window_prop,
+            "obstacles": obstacles_prop}
 SCENARIOS = {"wall": scenario_wall, "tree": scenario_tree, "hull": scenario_hull, "rope": scenario_rope, "window": scenario_window,
-             "obstacles": scenario_obstacles, "door": scenario_door}
+             "window_hammer": scenario_window_hammer, "obstacles": scenario_obstacles, "door": scenario_door}
 
 
 def sequence(name, kin, q_quad, params=None):
