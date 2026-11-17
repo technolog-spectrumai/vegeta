@@ -125,9 +125,12 @@ class Renderer:
         for name in mesh.bodies():
             self.body[name] = model.body(name).id
         root = model.body_rootid[model.body("pelvis").id]
+        meshed = set(self.body.values())                                  # bodies drawn from their CAD (a vehicle under the robot): not their geoms
         self.props = []                                                   # (geom id, unit triangles, rgba): everything that is not the robot or the terrain
         for g in range(model.ngeom):
             if model.body_rootid[model.geom_bodyid[g]] == root or model.geom(g).name == "chiron_terrain":
+                continue
+            if int(model.geom_bodyid[g]) in meshed or model.geom_rgba[g][3] == 0.0:     # a CAD-drawn body, a point mass
                 continue
             t, s = int(model.geom_type[g]), model.geom_size[g]
             if t == mujoco.mjtGeom.mjGEOM_BOX:
