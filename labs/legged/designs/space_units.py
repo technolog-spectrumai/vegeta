@@ -596,8 +596,8 @@ class SpaceMarine(Humanoid):
                 "chest_bay": bay, "belly_bay": belly, "backpack": pack, "belt": belt, "greaves": sk.union_all(greaves), "boots": sk.union_all(boots)}
 
     def actuator_parts(self, p):
-        """{piece: solid} of the linear actuators (``actuators``), in the build pose."""
-        return actuators(p)
+        """No linear actuators: the joint modules do the work (``actuators`` stays for the record)."""
+        return {}
 
     def weapon_parts(self, p):
         return type(self).weapon_fn(p)

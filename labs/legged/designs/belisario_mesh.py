@@ -2,9 +2,9 @@
 ``space_units`` - the trunk's bones (the pelvis, the vertebrae, the ribcage round the chest bay, the shoulder girdle,
 the neck, the head), the femurs, tibiae and foot bones, the arms, the palms, the fingers - a joint module at every
 joint, the electronics' bays in the chest and the belly (what the ribcage is for), the limbs' casing plates; each
-piece tessellated once and expressed in the frame of the chiron link that carries it. The linear actuators are
-anchor pairs on two links, drawn between them every frame. ``load(casing)`` builds the lot (~40 s of CAD) or reads
-the cache under ``sims/output/mesh_cache``.
+piece tessellated once and expressed in the frame of the chiron link that carries it. No linear actuators: the
+joint modules do the work. ``load(casing)`` builds the lot (~40 s of CAD) or reads the cache under
+``sims/output/mesh_cache``.
 
 The CAD is built standing (``Humanoid.build``'s pose: the knees bent ``knee_bend_deg``, the elbows
 ``elbow_bend_deg``, the ground at z = 0, mm); the chiron frame's links are placed from the same numbers
@@ -40,7 +40,7 @@ DARK = (0.22, 0.22, 0.24, 1.0)
 BAY = (0.33, 0.35, 0.39, 1.0)
 PLATE = (0.70, 0.60, 0.40, 1.0)
 STRUT = (0.28, 0.29, 0.31, 1.0)
-VERSION = 11
+VERSION = 12
 CACHE = Path(__file__).resolve().parents[1] / "sims" / "output" / "mesh_cache"
 mm = 1e-3
 
@@ -286,33 +286,6 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
             for link, plate in _casing_pieces(p, side):
                 add_local(link, plate, PLATE)
     add("thorax", girdle, BONE)
-    # the linear actuators: anchor pairs, from space_units.actuators
-    Dp = p["pelvis_depth"]
-    d, L1, L2 = p["arm_diameter"], p["upper_arm_length"], p["forearm_length"]
-    a = p["knee_bend_deg"]
-    sa, ca = math.sin(math.radians(a)), math.cos(math.radians(a))
-    Lt, Ls = p["thigh_length"], p["shin_length"]
-    xs0, N = sun.spine_x(p, 0.0), int(p["spine_segments"])
-    x_front = Dt / 2 - p["rib_section"] / 2 - 6
-    top_x = sun.spine_x(p, (N - 1.5) / N)
-
-    def strut(body_a, wa, body_b, wb, barrel, rod):
-        la = F[body_a][1].T @ (np.asarray(wa, dtype=float) - F[body_a][0]) * mm
-        lb = F[body_b][1].T @ (np.asarray(wb, dtype=float) - F[body_b][0]) * mm
-        mesh.struts.append((body_a, la, body_b, lb, barrel / 2 * mm, rod / 2 * mm))
-
-    for side, sy in (("L", 1.0), ("R", -1.0)):
-        y = sy * p["hip_spacing"] / 2
-        kx, kz = Lt * sa, hh - Lt * ca
-        strut("pelvis", (xs0 + Dp * 0.35, y + sy * 20, hh + Hp * 0.55), f"{side}_thigh", (Lt * 0.5 * sa + p["femur_diameter"] * 0.9, y, hh - Lt * 0.5 * ca), 44, 22)
-        strut(f"{side}_thigh", (Lt * 0.35 * sa + p["femur_diameter"] * 0.9, y, hh - Lt * 0.35 * ca), f"{side}_shin", (kx + p["tibia_diameter"] * 0.9, y, kz - Ls * 0.22), 44, 22)
-        strut(f"{side}_shin", (kx - p["tibia_diameter"] * 0.9, y, kz - Ls * 0.35), f"{side}_foot_link", (-p["foot_length"] * 0.2, y, p["ankle_height"] * 0.6), 36, 18)
-        cy = sy * (Wt / 2 + 10 + d * 0.5)
-        strut("thorax", (top_x - p["vertebra_diameter"] * 0.55 - 20, sy * Wt * 0.26, z0 + Ht * 0.62), f"{side}_upper_arm", (-d * 0.55, cy, zs - L1 * 0.4), 36, 18)
-        c, u, _ = hand_frame(p, sy)
-        fore_mid = np.asarray(c) - L2 * 0.5 * np.asarray(u)
-        strut(f"{side}_upper_arm", (d * 0.6, cy, zs - L1 * 0.55), f"{side}_forearm", (fore_mid[0] + d * 0.1, fore_mid[1], fore_mid[2] + d * 0.5), 36, 18)
-        strut("pelvis", (Dp * 0.3, sy * 60, hh + Hp * 0.5), "thorax", (x_front - 30, sy * 90, z0 + Ht * 0.42), 40, 20)
     return mesh
 
 

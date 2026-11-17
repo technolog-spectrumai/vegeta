@@ -255,7 +255,6 @@ def _unit(unit, name, P, notes):
     _spine(r, P)
     _reactuate(r)
     _armour(r, unit, P)
-    _struts(r, P)
     e = math.radians(P["elbow_bend_deg"])
     r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e}
     r.sources["geometry"] = f"designs/space_units.py ({name}: space_unit_specs.{unit.upper()})"
@@ -429,7 +428,6 @@ def bare(name: str = "Belisario", casing: str = "none"):
         _casing(r, P)
     elif casing == "lorica":
         _armour(r, "marine", P)
-    _struts(r, P)
     e = math.radians(P["elbow_bend_deg"])
     r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25}   # at rest: on four
     for side in ("L", "R"):                                               # the fingers flexed: the knuckles take the weight on four

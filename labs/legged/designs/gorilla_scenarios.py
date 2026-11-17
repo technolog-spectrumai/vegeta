@@ -165,9 +165,10 @@ CURL_CLOSED, CURL_OPEN = 2.0, -0.3        #: the finger module closed on a bar (
 GRIP = sr.hand_grip(CURL_CLOSED)          #: a bar's axis in the hand's frame once the fingers have closed on it [m]: in front of the palm's face, inside the fist
 GRIP_Y = 0.06                             #: a second point along the hand's y (the bar's axis) that fixes the hand's roll
 BAR_R = 0.025                             #: the bar the grip is sized for; a thicker hold moves the palm out to its surface
-SOLE_ON_BAR = 0.02                        #: the sole's point that rests on a bar: just ahead of the foot's middle [m]
+SOLE_ON_BAR = 0.08                        #: the sole's point that rests on a bar: the ball of the foot, 2 cm of toe past the bar [m]
 SOLE_HALF = 0.015                         #: the sole's half thickness: the contact points are the sole box's centre plane, its bottom face rests on the hold [m]
 FOOT_TIP = 0.5                            #: the foot on a bar: toes up, into the surface [rad]
+SWING_FREE = 0.8                          #: through this much of a step onto a bar only the ball of the foot is placed, the foot's tilt free
 ORDER = ["L", "R", "L_hand", "R_hand"]    #: a climb cycle's order: the feet step up first (the legs push), then the hands reach
 IK_REG, IK_ITERS = 3e-3, 900              #: the climbs' IK: well damped (a grip is four points per hand; a lighter damping jumps between solutions)
 
@@ -293,6 +294,25 @@ def _extras(*fns):
     return fn
 
 
+def foot_swing(h0, h1, f, lift=0.07, clear=0.06):
+    """A foot's path from hold ``h0`` to ``h1`` at ``f`` ∈ [0, 1]: a solid foot cannot come up through a bar, so it
+    lifts out and up to above and outside the next bar, comes in over it, and sets down on it (a point hold: a plain arc)."""
+    c0, c1 = h0["c"], h1["c"]
+    if h1["kind"] != "bar":
+        return (1 - f) * c0 + f * c1 + math.sin(math.pi * f) * (0.1 * h0["n"] + np.array([0.0, 0.0, 0.1]))
+    n, t = h1["n"], _up_along(h1["n"])
+    Q = c1 + clear * t + lift * n                                          # above and outside the next bar
+    R = c1 + clear * t                                                     # above it
+    if f < 0.6:
+        s_ = mk.smooth(f / 0.6)
+        return (1 - s_) * c0 + s_ * Q + 0.05 * math.sin(math.pi * s_) * n
+    if f < 0.85:
+        s_ = mk.smooth((f - 0.6) / 0.25)
+        return (1 - s_) * Q + s_ * R
+    s_ = mk.smooth((f - 0.85) / 0.15)
+    return (1 - s_) * R + s_ * c1
+
+
 def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, duration=3.2, lift=0.12, name="climb"):
     """One cycle up: the contacts move one at a time (``ORDER``: left foot, right foot, left hand, right hand) from
     ``holds[0]`` to ``holds[1]`` ({contact: hold}) on an arc out from the surface - the fingers opening through the
@@ -308,9 +328,15 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
                 c, h = h0["c"], h0
             elif u >= b:
                 c, h = h1["c"], h1
-            else:
+            elif g.endswith("hand"):
                 f = mk.smooth((u - a) / (b - a))
                 c, h = (1 - f) * h0["c"] + f * h1["c"] + math.sin(math.pi * f) * lift * h0["n"], h1
+            else:
+                f = (u - a) / (b - a)
+                c, h = foot_swing(h0, h1, f), h1
+                if f < SWING_FREE and h1["kind"] == "bar":                  # lifted: the ball of the foot alone, the tilt free (the ankle's range)
+                    out.append(foot_targets(kin, g[0], h, c)[0])
+                    continue
             out += hand_targets(kin, g[0], h, c) if g.endswith("hand") else foot_targets(kin, g[0], h, c)
         return out
 
@@ -349,6 +375,7 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
     on the bars; the feet planted), then the feet step up to theirs one after the other as the pelvis moves in."""
     b0 = np.array([base_x, 0.0, gm.PELVIS_H])
     start = _contacts(kin, q_quad, b0, gm.PELVIS_PITCH)
+    pts = gm._contact_points(kin)
     hands = {}
     for side in ("L", "R"):
         end = hand_targets(kin, side, holds[f"{side}_hand"])
@@ -372,10 +399,20 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
             else:
                 out += end
             a, b_ = foot_windows[side]                                       # then the feet, one after the other
-            ff = 0.0 if u <= a else 1.0 if u >= b_ else mk.smooth((u - a) / (b_ - a))
+            ff = 0.0 if u <= a else 1.0 if u >= b_ else (u - a) / (b_ - a)
             h = holds[side]
-            arc = math.sin(math.pi * ff) * (0.1 * h["n"] + np.array([0.0, 0.0, 0.1]))
-            out += [(b, l, (1 - ff) * sk + ff * w + arc) for (b, l, w), sk in zip(foot_targets(kin, side, h), start[side])]
+            if ff <= 0.0:
+                out += [(b, l, sk) for (b, l), sk in zip(pts[side], start[side])]
+            elif ff >= 1.0:
+                out += foot_targets(kin, side, h)
+            else:
+                ground = point(np.mean(start[side], axis=0), pitch=0.0)         # the foot's hold on the ground
+                c = foot_swing(ground, h, ff)
+                goal = foot_targets(kin, side, h, c)
+                if ff < SWING_FREE and h["kind"] == "bar":
+                    out.append(goal[0])                                          # lifted: the ball of the foot alone
+                else:
+                    out += goal
         return out
 
     def base(u):
