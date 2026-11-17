@@ -46,10 +46,11 @@ OUT = Path(__file__).resolve().parent / "output"
 BUMPS = [(9.0, -1.4, 1.4, 0.10), (11.0, 0.0, 1.4, 0.09), (12.6, -1.4, 0.0, 0.09), (14.2, 0.0, 1.4, 0.09), (15.8, -1.4, 0.0, 0.09),
          (18.0, -1.4, 1.4, 0.12)]
 BUMP_R = 0.30
-SLALOM = {"x0": 24.0, "wavelength": 14.0, "amplitude": 1.2, "periods": 2}
+SLALOM = {"x0": 24.0, "wavelength": 18.0, "amplitude": 1.8, "periods": 2}   #: 0.45 g at 4.5 m/s; the fenders pass 0.55 m clear of a cone's base
 CONES = [SLALOM["x0"] + SLALOM["wavelength"] * (0.25 + 0.5 * k) for k in range(4)]     #: on the line, where the path swings widest round them
-STOP_X = 62.0
-TABLE = (64.5, -1.9)
+STOP_X = 70.0
+TABLE = (72.5, -1.9)
+CONE = {"base": 0.18, "radius": 0.10, "height": 0.5, "mass": 2.0}         #: a traffic cone: square base half-width, body [m], [kg]
 SETTLE_S = 1.0
 
 
@@ -61,9 +62,9 @@ def speed_target(x):
         return 2.0 + 2.5 * min(1.0, x / 6.0)
     if x < 21.0:
         return 3.0                                                         # over the bumps at 11 km/h
-    if x < 54.0:
+    if x < 61.0:
         return 4.5
-    return max(0.0, 4.5 * math.sqrt(max(0.0, (STOP_X - x) / (STOP_X - 54.0))))
+    return max(0.0, 4.5 * math.sqrt(max(0.0, (STOP_X - x) / (STOP_X - 61.0))))
 
 
 def path_y(x):
@@ -75,19 +76,27 @@ def path_y(x):
 
 
 def course_prop():
+    """The fixed course: the bumps (capsules: the part above the ground is the bump, drawn as it collides) and the
+    table with the banana, solid."""
     geoms = []
     for k, (x, y0, y1, h) in enumerate(BUMPS):
         geoms.append(Geom(f"bump_{k}", "capsule", (BUMP_R,), fromto=(x, y0, h - BUMP_R, x, y1, h - BUMP_R), mass=100.0,
-                          rgba=(0.95, 0.80, 0.15, 0.0), friction=(1.0, 0.005, 0.0001)))   # a capsule: its contact with a sphere tyre is exact (not drawn)
-        geoms.append(Geom(f"bump_{k}_look", "cylinder", (BUMP_R, (y1 - y0) / 2), pos=(x, (y0 + y1) / 2, h - BUMP_R),
-                          quat=(math.cos(math.pi / 4), -math.sin(math.pi / 4), 0.0, 0.0), mass=1.0, role="visual", rgba=(0.95, 0.80, 0.15, 1.0)))
-    for k, x in enumerate(CONES):
-        geoms += [Geom(f"cone_{k}", "cylinder", (0.12, 0.25), pos=(x, 0.0, 0.25), mass=2.0, role="visual", rgba=(0.98, 0.45, 0.05, 1.0)),
-                  Geom(f"cone_{k}_band", "cylinder", (0.125, 0.04), pos=(x, 0.0, 0.32), mass=0.1, role="visual", rgba=(0.95, 0.95, 0.95, 1.0))]
+                          rgba=(0.95, 0.80, 0.15, 1.0), friction=(1.0, 0.005, 0.0001)))
     geoms += [g for g in gs._table_with_banana(*TABLE)]
-    for g in geoms[-8:]:
-        g.role = "visual"
     return Prop(Link("course", geoms=geoms), free=False)
+
+
+def cone_props():
+    """The slalom's cones, each a loose solid body on the ground: a hit knocks it over."""
+    c = CONE
+    orange, white = (0.98, 0.45, 0.05, 1.0), (0.95, 0.95, 0.95, 1.0)
+    out = []
+    for k, x in enumerate(CONES):
+        geoms = [Geom(f"cone_{k}_base", "box", (c["base"], c["base"], 0.015), pos=(0.0, 0.0, 0.015), mass=0.8 * c["mass"], rgba=orange),
+                 Geom(f"cone_{k}_body", "cylinder", (c["radius"], c["height"] / 2), pos=(0.0, 0.0, c["height"] / 2 + 0.03), mass=0.2 * c["mass"], rgba=orange),
+                 Geom(f"cone_{k}_band", "cylinder", (c["radius"] + 0.005, 0.04), pos=(0.0, 0.0, 0.36), mass=0.0, role="visual", rgba=white)]
+        out.append(Prop(Link(f"cone_{k}", pos=(x, 0.0, 0.0), geoms=geoms), free=True))
+    return out
 
 
 class Ride:
@@ -107,7 +116,7 @@ class Ride:
         self.Q = np.array([poses[i] for i in range(13)])
         self.robot.root.pos = tuple(gq.GEOM["pelvis"])
         opts = SimOptions()
-        xml = self.robot.to_mjcf(options=opts, props=[gq.quad_prop(rigid=rigid, sz=self.sz), course_prop()],
+        xml = self.robot.to_mjcf(options=opts, props=[gq.quad_prop(rigid=rigid, sz=self.sz), course_prop(), *cone_props()],
                                  welds=[Weld("seat", "pelvis", "quad_seat")])
         a = gq.GEOM["ackermann"]
         extra = ["  <equality>",
@@ -120,13 +129,29 @@ class Ride:
         xml = xml.replace("</mujoco>", "\n".join(extra) + "\n</mujoco>")
         self.model = m = mujoco.MjModel.from_xml_string(xml)
         self.data = mujoco.MjData(m)
-        # contacts: only the tyres with the ground and the course (the rider and the frame ride above it)
+        # contacts, everything solid: the tyres on the ground, the bumps, the cones and the table; the quad's frame,
+        # fenders, footboards and Kerchak against the course and the cones (a bump that bottoms the frame, a cone in the
+        # way); the quad's parts and Kerchak not against each other (he sits in it, welded at the seat)
+        TERRAIN, TYRE, COURSE, BODY = 1, 2, 4, 8                            # the terrain keeps chiron's (contype 1, conaffinity 2)
         for g in range(m.ngeom):
-            name = m.geom(g).name
-            body_root = m.body_rootid[m.geom_bodyid[g]]
-            if name.startswith("tyre_") or name == "chiron_terrain" or m.body(body_root).name == "course":
+            name, root = m.geom(g).name, m.body(m.body_rootid[m.geom_bodyid[g]]).name
+            if name == "chiron_terrain":
                 continue
-            m.geom_contype[g] = m.geom_conaffinity[g] = 0
+            if name.startswith("tyre_"):
+                m.geom_contype[g], m.geom_conaffinity[g] = TYRE, TERRAIN | COURSE
+            elif root == "course" or root.startswith("cone_"):
+                solid = m.geom_contype[g] != 0 or m.geom_conaffinity[g] != 0
+                m.geom_contype[g], m.geom_conaffinity[g] = (COURSE | TYRE, TYRE | BODY | COURSE) if solid else (0, 0)
+            elif name.startswith("q_") and name not in ("q_bar", "q_seat"):
+                m.geom_contype[g], m.geom_conaffinity[g] = BODY, COURSE
+            elif root == "pelvis" and (m.geom_contype[g] or m.geom_conaffinity[g]):
+                m.geom_contype[g], m.geom_conaffinity[g] = BODY, COURSE
+            else:
+                m.geom_contype[g] = m.geom_conaffinity[g] = 0
+        for b in range(m.nbody):                                            # the broad phase filters on the bodies' bits, set at compile time
+            gs_ = [g for g in range(m.ngeom) if m.geom_bodyid[g] == b]
+            m.body_contype[b] = int(np.bitwise_or.reduce([int(m.geom_contype[g]) for g in gs_])) if gs_ else 0
+            m.body_conaffinity[b] = int(np.bitwise_or.reduce([int(m.geom_conaffinity[g]) for g in gs_])) if gs_ else 0
         self.qadr = self.kin.qadr                                           # the robot's hinges come first in the model, as in Kin's
         self.dadr = self.kin.dadr
         servos = {j.name: j.servo for j in self.robot.joints() if j.servo is not None}
@@ -242,6 +267,17 @@ class Ride:
                 f += r[0]
         return f
 
+    def cones(self):
+        """Each cone's slide from where it stood [m] and its tilt [deg]: a hit shows."""
+        m, d = self.model, self.data
+        out = []
+        for k, x in enumerate(CONES):
+            a = m.jnt_qposadr[m.joint(f"cone_{k}:free").id]
+            q = d.qpos[a:a + 7]
+            tilt = math.degrees(2 * math.acos(min(1.0, math.sqrt(q[3] ** 2 + q[6] ** 2))))
+            out.append({"moved_m": round(float(math.hypot(q[0] - x, q[1])), 3), "tilt_deg": round(tilt, 1)})
+        return out
+
     def report(self, x_from=8.0, x_to=21.0):
         L = np.array(self.log)
         t, x, acc = L[:, 0], L[:, 1], L[:, 5]
@@ -318,7 +354,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     ride = Ride(rigid=a.rigid)
-    seconds = a.seconds if a.seconds is not None else 20.0
+    seconds = a.seconds if a.seconds is not None else 26.0
     tag = "gorilla_quad_ride" + ("_rigid" if a.rigid else "")
     renderer = None
     if not a.no_movie:
@@ -336,10 +372,10 @@ def main(argv=None):
         d = ride.data
         c = np.array(d.xpos[ride.chassis])
         x, y, yaw, v = ride.pose()
-        az = math.degrees(yaw) + 235.0 - 70.0 * mk.smooth(min(1.0, max(0.0, (x - 20.0) / 8.0))) + 60.0 * mk.smooth(min(1.0, max(0.0, (x - 52.0) / 8.0)))
+        az = math.degrees(yaw) + 235.0 - 70.0 * mk.smooth(min(1.0, max(0.0, (x - 20.0) / 8.0))) + 60.0 * mk.smooth(min(1.0, max(0.0, (x - 60.0) / 8.0)))
         cam = br.orbit((c[0], c[1], 0.9), 16.0, az, 6.4)
         L = ride.log[-1] if ride.log else (0,) * 14
-        sect = "settling" if t < SETTLE_S else "run-up" if x < 7 else "bumps (11 km/h)" if x < 21 else "slalom round the cones" if x < 53 else "stopping at the banana"
+        sect = "settling" if t < SETTLE_S else "run-up" if x < 7 else "bumps (11 km/h)" if x < 21 else "slalom round the cones" if x < 61 else "stopping at the banana"
         title = f"Kerchak's quad   t = {t:4.1f} s   {3.6 * v:4.1f} km/h   steer {math.degrees(L[8]):+5.1f} deg   roll {L[6]:+5.1f} deg   -   {sect}"
         renderer.render(d, cam, title=title).save(path)
 
@@ -356,7 +392,7 @@ def main(argv=None):
         k += 1
         if ride.pose()[0] > STOP_X + 0.5 and abs(ride.pose()[3]) < 0.05:
             break
-    rep = {"rigid": a.rigid, "seconds": round(t, 2), "sizing": ride.sz, **ride.report()}
+    rep = {"rigid": a.rigid, "seconds": round(t, 2), "sizing": ride.sz, **ride.report(), "cones": ride.cones()}
     rep["comfort"] = iso_comfort(rep["rms_vertical_acc_bumps_m_s2"])
     if a.compare and not a.rigid:
         other = Ride(rigid=True)

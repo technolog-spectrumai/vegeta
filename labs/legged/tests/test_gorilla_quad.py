@@ -89,3 +89,35 @@ def test_quad_model_stands_on_its_springs():
         mujoco.mj_step(m, d)
     z = d.qpos[m.jnt_qposadr[m.joint("quad_chassis:free").id] + 2]
     assert -0.01 < z <= gq.GEOM["droop"] + 0.01                            # without the rider the springs lift it, at most to full droop
+
+
+def test_render_clips_below_the_ground():
+    import kerchak_render as br
+
+    tris = np.array([[[0, 0, -1], [1, 0, 1], [0, 1, 1]], [[0, 0, 1], [1, 0, -1], [0, 1, -1]], [[0, 0, -1], [1, 0, -1], [0, 1, -1]]], float)
+    out, _ = br.clip_below_ground(tris, np.ones((3, 3)))
+    assert len(out) == 3 and out[:, :, 2].min() >= 0.0                   # the crossing ones cut, the buried one gone
+
+
+@pytest.mark.slow
+def test_obstacles_are_solid():
+    """Driven straight at the cones the quad knocks them over; on the slalom's line it leaves them standing."""
+    import gorilla_quad_ride as gr
+
+    ride = gr.Ride()
+    t = 0.0
+    while ride.pose()[0] < 60.0 and t < 25.0:
+        ride.step(t, 0.05)
+        t += 0.05
+    assert all(c["moved_m"] < 0.01 and c["tilt_deg"] < 1.0 for c in ride.cones())
+    path = gr.path_y
+    gr.path_y = lambda x: 0.0
+    try:
+        ride = gr.Ride()
+        t = 0.0
+        while ride.pose()[0] < 31.0 and t < 15.0:
+            ride.step(t, 0.05)
+            t += 0.05
+        assert ride.cones()[0]["tilt_deg"] > 45.0
+    finally:
+        gr.path_y = path

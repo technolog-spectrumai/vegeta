@@ -116,6 +116,33 @@ def _between(a, b, r, n=10):
     return _subdivide(_cylinder(r, L / 2, n) @ R.T + (a + b) / 2)
 
 
+def clip_below_ground(tris, cols, z0=0.0, eps=1e-4):
+    """The triangles cut at the ground plane ``z0``: what is under the ground is not drawn (a bump that is a capsule
+    sunk in the ground shows only its crown, as the tyres meet it; the painter's order has no depth buffer to hide it)."""
+    z = tris[:, :, 2] - z0
+    below = z < -eps
+    nb = below.sum(axis=1)
+    out_t, out_c = [tris[nb == 0]], [cols[nb == 0]]
+    for n in (1, 2):
+        sel = np.where(nb == n)[0]
+        if not len(sel):
+            continue
+        odd = np.argmax(below[sel], axis=1) if n == 1 else np.argmin(below[sel], axis=1)   # the vertex alone on its side
+        order = (odd[:, None] + np.arange(3)[None, :]) % 3
+        T = tris[sel][np.arange(len(sel))[:, None], order]
+        Z = z[sel][np.arange(len(sel))[:, None], order]
+        A, B, C = T[:, 0], T[:, 1], T[:, 2]
+        P = A + (B - A) * (Z[:, 0] / (Z[:, 0] - Z[:, 1]))[:, None]
+        Q = A + (C - A) * (Z[:, 0] / (Z[:, 0] - Z[:, 2]))[:, None]
+        if n == 1:                                                        # A under: the quad B, C, Q, P stays
+            out_t += [np.stack([B, C, Q], 1), np.stack([B, Q, P], 1)]
+            out_c += [cols[sel], cols[sel]]
+        else:                                                             # only A above: the tip A, P, Q stays
+            out_t.append(np.stack([A, P, Q], 1))
+            out_c.append(cols[sel])
+    return np.concatenate(out_t), np.concatenate(out_c)
+
+
 class Renderer:
     def __init__(self, model, mesh, width=960, height=540, light=(-0.35, 0.5, 0.8), ground=GROUND, sky=SKY):
         self.m, self.mesh, self.w, self.h = model, mesh, width, height
@@ -169,7 +196,7 @@ class Renderer:
         for g, unit, rgba in self.props:
             tris.append(unit @ data.geom_xmat[g].reshape(3, 3).T + data.geom_xpos[g])
             cols.append(np.repeat([rgba[:3]], len(unit), axis=0))
-        return np.concatenate(tris), np.concatenate(cols)
+        return clip_below_ground(np.concatenate(tris), np.concatenate(cols))
 
     # ---- projection
     def _basis(self, cam):

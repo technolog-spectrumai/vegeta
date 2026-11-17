@@ -457,6 +457,13 @@ def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None) -> Prop:
         Geom("q_trunk", "box", (g["trunk"]["len"] / 2, g["trunk"]["w"] / 2, 0.05), pos=(g["trunk"]["x"], 0.0, g["trunk"]["floor_z"] + 0.05),
              mass=MASS["trunk tray (Al 4 mm) and tools"], role="visual", rgba=COLORS["trunk"]),
     ]
+    for c in CORNERS:                                                    # the fenders' and the footboards' shapes: solid against obstacles
+        x, y = _corner_xy(c)
+        chassis_geoms.append(Geom(f"q_fender_{c}", "box", (0.50, g["wheel_w"] / 2 + 0.03, 0.03), pos=(x, y, R + g["bump"] + 0.04 + R),
+                                  mass=0.0, role="visual", rgba=COLORS["frame"]))
+    for side, sy in (("L", 1.0), ("R", -1.0)):
+        chassis_geoms.append(Geom(f"q_footboard_{side}", "box", (g["footboard_len"] / 2, g["footboard_w"] / 2, 0.01),
+                                  pos=(g["footboard_x"], sy * g["footboard_y"], g["footboard_z"] - 0.01), mass=0.0, role="visual", rgba=COLORS["frame"]))
     masses = [PointMass(f"motor_{c}", 12.0, (_corner_xy(c)[0], np.sign(_corner_xy(c)[1]) * (g["frame_y"] - 0.07), R)) for c in CORNERS]
     assert abs(sum(gm.mass for gm in chassis_geoms) + sum(pm.mass for pm in masses) - m_s + MASS["handlebar, column, steering rack"]) < 1e-6
     base = g["column_base"]
