@@ -24,17 +24,35 @@ def _drongo_parts(m) -> dict:
 
 
 machines.register("drongo", "drongo_robot:drongo", parts=_drongo_parts, visual="drongo:Drongo")
-machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcopter")
+
+
+def _quad_parts(m) -> dict:
+    """Notebook 08's quadcopter: Drongo's rotors and drive on the bare frame (propulsion_parts.quad), the frame's
+    material and the same tags as Drongo's."""
+    import drongo_robot as dr
+    m.link("frame").data["material"] = "PETG-CF"                                # the QuadFrame, PETG-CF (notebook 08)
+    return {**pp.quad(m), "materials": dr.materials_block(),
+            "tags": {"data:propulsion/propellers*": "boreas", "data:materials*": "nb08", "data:propulsion/motors*": "nb08",
+                     "data:propulsion/battery*": "nb08", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
+
+
+machines.register("quad", "quad_robot:quad", parts=_quad_parts, visual="quadcopter_assembly:Quadcopter")
 machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
 machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
 machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)
+
+
 def _drako_parts(m) -> dict:
-    """Drako's rotors and drive (propulsion_parts.drako), the frame's material and the tags: ``boreas`` on the BEMT map,
+    """Drako's rotors and drive (propulsion_parts.drako), the frame's material (catalogued) and the tags: ``boreas`` on the BEMT map,
     ``assumed`` on the motor, the battery and the reduced constants (catalogue-class values, drako_robot)."""
+    import drako_fea as dfea
     m.link("drako").data["material"] = "carbon"
-    return {**pp.drako(m), "tags": {"data:propulsion/propellers*": "boreas", "data:propulsion/motors*": "assumed",
-                                    "data:propulsion/battery*": "assumed", "data:ogma*": "assumed",
-                                    "data:propulsion/reduced*": "assumed"}}
+    c = dfea.CARBON_PLATE                                                       # plates and tubes: the same density
+    mats = {"carbon": {"name": "carbon", "class": "composite", "density_kg_m3": c["rho"] * 1e12,
+                       "source": f"drako_fea.CARBON_PLATE / CARBON_TUBE ({c['name']}, {c['source']}; t/mm³)"}}
+    return {**pp.drako(m), "materials": mats,
+            "tags": {"data:propulsion/propellers*": "boreas", "data:materials*": "assumed", "data:propulsion/motors*": "assumed",
+                     "data:propulsion/battery*": "assumed", "data:ogma*": "assumed", "data:propulsion/reduced*": "assumed"}}
 
 
 machines.register("drako", "drako_robot:drako", parts=_drako_parts, visual="drako:Drako")
