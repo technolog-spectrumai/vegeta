@@ -407,79 +407,79 @@
    "visual_triangles": 4212
   },
   "space_breacher": {
-   "bytes": 343002,
+   "bytes": 396801,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "space_breacher.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 481.7537,
-   "sha256": "03b8b9b67e3f05fca53b0bad1d77b23c8873bd078f04fce1e18a4cee6bd9f694",
-   "visual_triangles": 5082
+   "links": 26,
+   "mass_kg": 502.254,
+   "sha256": "09c1a4dabd31edf154f806aff7e2cac2ddf8f422ea0fc02b9c6674f5d47fac33",
+   "visual_triangles": 5907
   },
   "space_centurion": {
-   "bytes": 332359,
+   "bytes": 337915,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "space_centurion.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 424.875,
-   "sha256": "9d70903d009c818e9477c30e318f6a2033789700336c87f11d0d1c9b402a9c81",
-   "visual_triangles": 4815
+   "links": 26,
+   "mass_kg": 445.3752,
+   "sha256": "1a83dc7991c0bf9db0da8eab4af38ab65c410cf65050105698492b4a45bad9f9",
+   "visual_triangles": 4433
   },
   "space_heavy": {
-   "bytes": 336494,
+   "bytes": 359371,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "space_heavy.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 476.3725,
-   "sha256": "64a84a3e517f6660393b7c69ecaffdf20744582e5c5571b76e966712f8487d65",
-   "visual_triangles": 5037
+   "links": 26,
+   "mass_kg": 490.1083,
+   "sha256": "df3724046b12700ba8bd02d446d599f4cf48ab8f89315518c0cc212df7cb4195",
+   "visual_triangles": 5132
   },
   "space_marine": {
-   "bytes": 378088,
+   "bytes": 355274,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "space_marine.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 447.4019,
-   "sha256": "16d3261a66d3e8cecb7144329553255d56333234cf51034b2030a77cbc04feab",
-   "visual_triangles": 5936
+   "links": 26,
+   "mass_kg": 467.9022,
+   "sha256": "4d4486c069a89a37b50bb9a1f5d2f4d5c2b36afadf2ba8d2d8b05119807b1141",
+   "visual_triangles": 4929
   },
   "space_marine_saw": {
-   "bytes": 352870,
+   "bytes": 356206,
    "consumers": {
     "montezuma": true,
     "perkun": false,
     "piccolo": true
    },
    "file": "space_marine_saw.yx2",
-   "joints": 21,
+   "joints": 25,
    "lab": "legged",
-   "links": 22,
-   "mass_kg": 424.9884,
-   "sha256": "72f4870e9743678e7d412681b8a882bb88828700487463751f97517db26845f9",
-   "visual_triangles": 5280
+   "links": 26,
+   "mass_kg": 445.4886,
+   "sha256": "764f464230f9a952d46e6dd29677064f30d70aaa56aa5588db487d77a1f93027",
+   "visual_triangles": 4969
   },
   "zoo_bat": {
    "bytes": 194373,
@@ -587,10 +587,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-16T23:54:23Z",
+ "published": "2026-11-17T01:34:36Z",
  "vegeta": {
   "branch": "dev_space_game_units",
-  "commit": "5bf05a09d63197d90f4653afaceedd43d44e4db1",
+  "commit": "0ec05f8bded4cea64187ec0716318f30674f5a02",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
