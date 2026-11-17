@@ -91,6 +91,21 @@
    "sha256": "e2a3e57e02ffaca858aca25cf1d994bc010e340d862146cb8335db0cce14feed",
    "visual_triangles": 5748
   },
+  "pumba": {
+   "bytes": 470223,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "pumba.yx2",
+   "joints": 53,
+   "lab": "land",
+   "links": 54,
+   "mass_kg": 386.1472,
+   "sha256": "e90c30fb23f963524b03c2cbd7f7edb1a9e3a5a425ce03937b2fc5cb6b58028a",
+   "visual_triangles": 4918
+  },
   "quad": {
    "bytes": 224357,
    "consumers": {
@@ -120,12 +135,27 @@
    "mass_kg": 2.0854,
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
+  },
+  "timon": {
+   "bytes": 478967,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "timon.yx2",
+   "joints": 52,
+   "lab": "land",
+   "links": 53,
+   "mass_kg": 301.3448,
+   "sha256": "30049a399fcddc1a16f4e40095a354a1564f384030b913dc93649ab86b23b4ef",
+   "visual_triangles": 5177
   }
  },
- "published": "2026-10-22T16:51:50Z",
+ "published": "2026-11-17T10:25:21Z",
  "vegeta": {
-  "branch": "dev_yax",
-  "commit": "7f0f003cb60d9a256f37f4bd48f85dd624d21655",
+  "branch": "dev_pumba_export",
+  "commit": "5957061197ac8246475bfa1c11ab4944460023c2",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
