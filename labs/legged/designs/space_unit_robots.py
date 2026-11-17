@@ -105,7 +105,8 @@ def _reactuate(r):
 def _spine(r, P):
     """Talia's one torso link becomes a spine: the lumbar link (waist yaw plus a lumbar pitch/roll module at the
     sacrum) and the thorax (a thoracic pitch/roll module at the lumbar's top) carrying the ribcage, the shoulder
-    girdle, the head and the arms. The segments give the trunk its compliance: the modules are held by their PD
+    girdle, the head and the arms. The pitch modules' range runs forward (a gorilla's trunk, pitched on four most
+    of the time; upright is its end stop, for the occasional straight posture). The segments give the trunk its compliance: the modules are held by their PD
     (``cycloidal 800 Nm, brake``, stiff, well damped), so the upper body can lean into a step without the pelvis
     tilting with it. The geoms: the lumbar column, the ribcage, the yoke; the masses as Talia's."""
     import dataclasses
@@ -114,7 +115,7 @@ def _spine(r, P):
     xs = -P["spine_set_back"] * Dt
     split = 0.42 * Ht                                                     # the thoracic module's height above the sacrum
     spine_servo = bk.servo("cycloidal 800 Nm, brake", kp=3000.0, kd=300.0)
-    pitch_range, roll_range = (-0.4, 0.6), (-0.25, 0.25)                # pitch forward to 0.6 rad a module: the knuckle walk
+    pitch_range, roll_range = (-0.1, 0.7), (-0.25, 0.25)                # a gorilla's spine: pitched forward on four is its home, upright its end stop
     thorax = Link("thorax", pos=(0.0, 0.0, split),
                   joints=[Joint("spine_thoracic_pitch", axis=(0, 1, 0), range=pitch_range, tag="spine_pitch", servo=spine_servo),
                           Joint("spine_thoracic_roll", axis=(1, 0, 0), range=roll_range, tag="spine_roll", servo=spine_servo)],
@@ -326,7 +327,7 @@ def bare(name: str = "Belisario", casing: str = "none"):
         _armour(r, "marine", P)
     _struts(r, P)
     e = math.radians(P["elbow_bend_deg"])
-    r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e}
+    r.nominal_qpos = {"L_elbow": -e, "R_elbow": -e, "spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25}   # at rest: on four
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
     for j in r.joints():                                                  # a gorilla's ankles and knees fold further
         if j.tag == "ankle_pitch":

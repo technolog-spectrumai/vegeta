@@ -237,11 +237,15 @@ def joint_module(c, p, axis="y", scale=1.0):
 
 
 def spine_x(p, u):
-    """The spine's x (build pose, mm) at fraction ``u`` of the torso height: set back in the chest, the S curve
-    (lumbar forward, thoracic back), the top coming forward under the neck."""
+    """The spine's x (build pose, mm) at fraction ``u`` of the torso height: set back in the chest, the top coming
+    forward under the neck, and its curve - a human's S (lumbar forward, thoracic back) or, ``spine_bow``, a
+    gorilla's single backward bow from the sacrum to the shoulders (no lumbar lordosis: the spine of an animal that
+    carries its trunk pitched on four and only sometimes stands)."""
     back = -p["spine_set_back"] * p["torso_depth"]
     forward = 0.8 * sk_smooth((u - 0.55) / 0.45) if u > 0.55 else 0.0
-    return back * (1 - forward) + p["spine_curve"] * math.sin(2 * math.pi * u)
+    bow = p.get("spine_bow", 0.0)
+    curve = (1 - bow) * p["spine_curve"] * math.sin(2 * math.pi * u) - bow * p["spine_curve"] * 1.2 * math.sin(math.pi * u)
+    return back * (1 - forward) + curve
 
 
 def sk_smooth(x):

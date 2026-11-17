@@ -21,7 +21,7 @@ MARINE = {"pelvis_width": 560.0, "pelvis_depth": 270.0, "pelvis_height": 170.0, 
           "head_height": 230.0, "eye_diameter": 18.0, "battery_bay_depth": 0.0,
           # the skeleton: an S-curved spine of vertebrae set back in the chest, ribs to a sternum, clavicles and
           # scapulae, iliac wings on a sacrum, femurs, tibia and fibula, every joint a mechanical rotary module
-          "spine_segments": 12, "spine_curve": 28.0, "spine_set_back": 0.3, "vertebra_diameter": 120.0,
+          "spine_segments": 12, "spine_curve": 28.0, "spine_bow": 0.5, "spine_set_back": 0.3, "vertebra_diameter": 120.0,
           "rib_count": 10, "rib_section": 24.0, "sternum_width": 70.0, "clavicle_diameter": 30.0, "scapula_width": 200.0,
           "iliac_wing_height": 260.0, "femur_diameter": 66.0, "tibia_diameter": 58.0, "fibula_diameter": 26.0,
           "joint_module_length": 150.0, "joint_module_diameter": 150.0, "finger_length": 190.0, "finger_diameter": 28.0,
@@ -33,7 +33,8 @@ MARINE = {"pelvis_width": 560.0, "pelvis_depth": 270.0, "pelvis_height": 170.0, 
           "carbine_length": 640.0, "receiver_height": 150.0, "receiver_width": 70.0, "barrel_diameter": 26.0,
           "magazine_height": 170.0,
           "shield_width": 600.0, "shield_height": 1600.0, "shield_thickness": 24.0, "shield_boss_diameter": 160.0}
-MARINE_EXTRA = {"spine_segments": "vertebrae, sacrum to the neck", "spine_curve": "the S: lumbar forward, thoracic back",
+MARINE_EXTRA = {"spine_segments": "vertebrae, sacrum to the neck", "spine_curve": "the spine's curve: the S's amplitude (a human's) or the bow's depth (a gorilla's)",
+                "spine_bow": "the spine between a human's S (0) and a gorilla's single backward bow (1); 0.5: the hybrid, a shallow lordosis under a long kyphosis",
                 "spine_set_back": "the spine's place in the chest, a fraction of the torso depth behind its middle",
                 "vertebra_diameter": "the lumbar vertebral bodies (the thoracic thinner)",
                 "rib_count": "rib pairs on the upper vertebrae", "rib_section": "a rib's diameter", "sternum_width": "",

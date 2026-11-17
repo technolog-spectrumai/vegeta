@@ -8,8 +8,10 @@
 * **knuckle_walk** — the lateral-sequence walk every quadruped uses at a walk (a gorilla's: left hind, left fore,
   right hind, right fore, a quarter cycle apart), duty 0.72 (three contacts down most of the time), a 0.3 m stride at
   0.35 m/s, the swing 60 mm off the ground: ``motion_kit.legged_gait`` on the four contacts, from the quad pose.
-* **rise** / **drop** — the transition to standing on two (the frame's design pose, as ``humanoid_motions``) and back,
-  in joint space over 3 s: the gorilla rears up to look, beat its chest or carry something, then goes back down.
+* **rise** / **drop** — the push-off from the hands up to standing on two (the frame's design pose) and back, 3 s:
+  the knuckles stay planted while the pelvis rises and levels and the arms straighten and push, then the hands lift
+  off in an arc and the legs finish under the pelvis; the drop is the rise backwards. The motion carries the pelvis's
+  height and pitch per frame for the sim.
 * **stand** — the standing hold (2 s, a slight sway).
 
     import gorilla_motions as gm, space_unit_robots as sr, motion_kit as mk
@@ -95,7 +97,7 @@ def quad_pose(kin, pelvis_h=PELVIS_H, pitch=PELVIS_PITCH, hands_ahead=0.3, feet_
     return q
 
 
-def knuckle_walk(kin, q_quad, *, speed=0.35, stride=0.26, duty=0.72, step=0.06, reg=1e-3, iters=800, name="knuckle_walk"):
+def knuckle_walk(kin, q_quad, *, speed=0.25, stride=0.26, duty=0.74, step=0.06, reg=1e-3, iters=800, name="knuckle_walk"):
     """The lateral-sequence walk on four from the quad pose (``legged_gait`` sees the quad pose as the design pose)."""
     period = stride / (duty * speed)
     pts = _contact_points(kin)
@@ -113,21 +115,76 @@ def knuckle_walk(kin, q_quad, *, speed=0.35, stride=0.26, duty=0.72, step=0.06, 
     return gait
 
 
-def _blend(kin, name, qa, qb, duration, kind, source):
-    def fn(t):
-        w = mk.smooth(min(1.0, t / duration))
-        return {j: (1 - w) * qa[k] + w * qb[k] for k, j in enumerate(kin.names)}
-    return mk.joint_cycle(kin, name, fn, period=duration, frames=36, loop=False, kind=kind, source=source)
+def _base_track(u, h_quad, h_stand, pitch_quad):
+    """The pelvis's height and pitch at fraction ``u`` of the rise: it levels over the first 70 % and rises on a
+    smooth step - the push-off's shape."""
+    return h_quad + mk.smooth(u) * (h_stand - h_quad), pitch_quad * (1.0 - mk.smooth(min(1.0, u / 0.7)))
 
 
-def rise(kin, q_quad, duration=3.0):
-    """From the quad pose up to the design (standing) pose, joint space, smooth."""
-    return _blend(kin, "rise", q_quad, kin.q0, duration, "transition", "gorilla_motions.rise: up on two")
+def rise(kin, q_quad, duration=3.0, frames=36, push=0.2, lift=0.7, pelvis_h=PELVIS_H, pitch=PELVIS_PITCH, reg=2e-4):
+    """The push-off from the hands: from the quad pose up to the design pose on two. Until ``push`` of the way the
+    knuckles stay planted on the ground while the pelvis rises and levels (``_base_track``) and the arms straighten
+    and push; then the hands lift off in an arc to where they hang when standing (by ``lift``); the feet stay planted
+    throughout and the legs straighten under the pelvis; the last stretch blends into the design pose. Solved by IK
+    frame by frame on the soles' points and the knuckles in the world (the pelvis's height and pitch prescribed, the
+    forearms pivoting on the planted knuckles, the free arms settling to the design pose), the motion's ``base``
+    carrying ``height_m`` and ``pitch_rad`` per frame for the sim."""
+    h_stand = hum.base_height(kin)
+    R0 = base_rot(pitch)
+    pts = _contact_points(kin)
+    kin.set(q_quad)
+    world0 = {}                                                            # the contacts in the world, on all fours
+    for g, plist in pts.items():
+        world0[g] = [R0 @ kin.world(body, local) + np.array([0.0, 0.0, pelvis_h]) for body, local in plist]
+    kin.set(kin.q0)                                                        # the hands and the feet when standing (the world, pelvis level)
+    hands1 = {side: kin.world(*kin.geom_point(f"{side}_knuckle")) + np.array([0.0, 0.0, h_stand]) for side in ("L", "R")}
+    feet1 = {g: [kin.world(body, local) + np.array([0.0, 0.0, h_stand]) for body, local in pts[g]] for g in ("L", "R")}
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw"]
+    ts = [duration * i / frames for i in range(frames + 1)]
+    Q, heights, pitches, q, worst = [], [], [], np.asarray(q_quad, dtype=float).copy(), 0.0
+    for t in ts:
+        u = t / duration
+        h, p = _base_track(u, pelvis_h, h_stand, pitch)
+        R = base_rot(p)
+        base = np.array([0.0, 0.0, h])
+        spine = (1.0 - mk.smooth(u)) * np.array([q_quad[kin.index["spine_lumbar_pitch"]], q_quad[kin.index["spine_thoracic_pitch"]]])
+        q[kin.index["spine_lumbar_pitch"]], q[kin.index["spine_thoracic_pitch"]] = spine
+        targets = []
+        fs = mk.smooth((u - lift) / (1.0 - lift)) if u >= lift else 0.0   # the last stretch: the feet to where they stand
+        for g in ("L", "R"):                                               # the feet planted
+            for (body, local), w, w1 in zip(pts[g], world0[g], feet1[g]):
+                targets.append((body, local, R.T @ ((1 - fs) * w + fs * w1 - base)))
+        for side in ("L", "R"):
+            body, local = pts[f"{side}_knuckle"][0]
+            k0 = world0[f"{side}_knuckle"][0]
+            if u <= push:                                                  # planted: the push (the forearm pivots on the knuckle)
+                targets.append((body, local, R.T @ (k0 - base)))
+            elif u < lift:                                                 # the lift-off: an arc up to the hanging hand
+                f = mk.smooth((u - push) / (lift - push))
+                arc = np.array([0.0, 0.0, 0.25 * math.sin(math.pi * f)])
+                targets.append((body, local, R.T @ ((1 - f) * k0 + f * hands1[side] + arc - base)))
+        q, err = kin.ik(targets, q_init=q, q_ref=kin.q0, joints=limbs, reg=reg, iters=600)   # the free arms settle to the design pose
+        worst = max(worst, err)
+        Q.append(np.clip(q.copy(), kin.lo, kin.hi))
+        heights.append(round(float(h), 4))
+        pitches.append(round(float(p), 4))
+    moving = mk._moving(kin, Q)
+    cols = [kin.index[j] for j in moving]
+    return mk.Motion("rise", "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
+                     base={"height_m": heights, "pitch_rad": pitches, "note": "the pelvis's height and pitch per frame"},
+                     source="gorilla_motions.rise: the push-off from the hands, up on two",
+                     params={"push_until": push, "hands_off_by": lift},
+                     check={"ik_error_max_m": round(worst, 6), "limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
 
 
-def drop(kin, q_quad, duration=3.0):
-    """From standing back down on four."""
-    return _blend(kin, "drop", kin.q0, q_quad, duration, "transition", "gorilla_motions.drop: back on four")
+def drop(kin, q_quad, duration=3.0, **kw):
+    """Back down on four: the rise played backwards (the hands reach down, land, take the weight as the pelvis
+    pitches and sinks)."""
+    r = rise(kin, q_quad, duration=duration, **kw)
+    Q = r.Q[::-1]
+    return mk.Motion("drop", "transition", r.joints, r.t, Q, loop=False, period=duration,
+                     base={"height_m": r.base["height_m"][::-1], "pitch_rad": r.base["pitch_rad"][::-1], "note": r.base["note"]},
+                     source="gorilla_motions.drop: the rise backwards, down on four", params=r.params, check=r.check)
 
 
 def stand(kin, period=2.0):

@@ -51,6 +51,8 @@ class Gorilla:
         kin = self.kin
         self.q_quad = gm.quad_pose(kin)
         self.walk = gm.knuckle_walk(kin, self.q_quad)
+        self.rise_m = gm.rise(kin, self.q_quad, duration=T_RISE)
+        self.drop_m = gm.drop(kin, self.q_quad, duration=T_DROP)
         self.q_stand = kin.q0.copy()
         self.h_quad = gm.PELVIS_H
         self.h_stand = hum.base_height(kin)
@@ -82,19 +84,28 @@ class Gorilla:
         q[[self.kin.index[j] for j in g.joints]] = (1 - f) * Q[i] + f * Q[(i + 1) % keys]
         return q
 
+    def _transition(self, m, t):
+        """(q, speed 0, height, pitch) of a transition motion at its time t (frames interpolated)."""
+        Q, n = np.asarray(m.Q), len(m.t) - 1
+        s = min(max(t / m.period, 0.0), 1.0) * n
+        i, f = min(int(s), n - 1), min(s - int(s), 1.0)
+        q = self.q_stand.copy()
+        q[[self.kin.index[j] for j in m.joints]] = (1 - f) * Q[i] + f * Q[i + 1]
+        h = (1 - f) * m.base["height_m"][i] + f * m.base["height_m"][i + 1]
+        p = (1 - f) * m.base["pitch_rad"][i] + f * m.base["pitch_rad"][i + 1]
+        return q, 0.0, h, p
+
     def phase(self, t):
         """(q target, base speed, base height, pelvis pitch, what) at t."""
         P = gm.PELVIS_PITCH
         if t < self.t_rise:
             return self._gait_q(t), self.v, self.h_quad, P, "walking on four"
         if t < self.t_stand:
-            w = mk.smooth((t - self.t_rise) / T_RISE)
-            return (1 - w) * self.q_quad + w * self.q_stand, 0.0, self.h_quad + w * (self.h_stand - self.h_quad), (1 - w) * P, "rising"
+            return (*self._transition(self.rise_m, t - self.t_rise), "rising")
         if t < self.t_drop:
             return self.q_stand, 0.0, self.h_stand, 0.0, "standing on two"
         if t < self.t_walk2:
-            w = mk.smooth((t - self.t_drop) / T_DROP)
-            return (1 - w) * self.q_stand + w * self.q_quad, 0.0, self.h_stand + w * (self.h_quad - self.h_stand), w * P, "dropping on four"
+            return (*self._transition(self.drop_m, t - self.t_drop), "dropping on four")
         return self._gait_q(t - self.t_walk2), self.v, self.h_quad, P, "walking on four"
 
     def reset(self):
@@ -106,10 +117,12 @@ class Gorilla:
         d.qvel[:] = 0.0
         mujoco.mj_forward(self.model, d)
 
-    def tilt(self):
+    def tilt(self, pitch=0.0):
+        """The pelvis's angle off the up the phase asks for [deg] (on all fours the pelvis rides pitched by design)."""
         R = np.zeros(9)
         mujoco.mju_quat2Mat(R, self.data.qpos[3:7])
-        return math.degrees(math.acos(max(-1.0, min(1.0, R.reshape(3, 3)[2, 2]))))
+        up = gm.base_rot(pitch)[:, 2]
+        return math.degrees(math.acos(max(-1.0, min(1.0, float(R.reshape(3, 3)[:, 2] @ up)))))
 
     def step_kinematic(self, t, dt):
         q, v, z, pitch, _ = self.phase(t)
@@ -144,14 +157,15 @@ class Gorilla:
                 d.xfrc_applied[1][0:3] = force
                 d.xfrc_applied[1][3:6] = torque
             mujoco.mj_step(m, d)
-        self.tilt_max = max(self.tilt_max, self.tilt())
-        if self.fell is None and (self.tilt() > 45.0 or d.qpos[2] < 0.25):
+        pitch = self.phase(t)[3]
+        self.tilt_max = max(self.tilt_max, self.tilt(pitch))
+        if self.fell is None and (self.tilt(pitch) > 45.0 or d.qpos[2] < 0.25):
             self.fell = round(t, 2)
 
     def report(self):
         d = self.data
         return {"mass_kg": round(self.robot.total_mass(), 1), "walk_speed_m_s": self.v, "walked_m": round(float(d.qpos[0]), 3),
-                "base_z_m": round(float(d.qpos[2]), 3), "tilt_max_deg": round(self.tilt_max, 1), "servo_saturation_max": round(self.sat, 3),
+                "base_z_m": round(float(d.qpos[2]), 3), "tilt_off_phase_max_deg": round(self.tilt_max, 1), "servo_saturation_max": round(self.sat, 3),
                 "fell_at_s": self.fell, "timeline_s": {"rise": self.t_rise, "stand": self.t_stand, "drop": self.t_drop, "walk_again": self.t_walk2}}
 
 
