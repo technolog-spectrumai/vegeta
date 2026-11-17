@@ -20,9 +20,9 @@ ROBOTS = {"humanoid": (hr.talia, 21, (30.0, 60.0)),
           "monster_leshy": (mr.leshy, 16, (50.0, 120.0)), "monster_wraith": (mr.wraith, 96, (15.0, 60.0)),
           "monster_ghoul": (mr.ghoul, 25, (25.0, 60.0)),
           "fantasy_ork": (fhr.ork, 21, (60.0, 95.0)),
-          "space_marine": (sr.marine, 21, (350.0, 520.0)), "space_marine_saw": (sr.marine_saw, 21, (350.0, 520.0)),
-          "space_centurion": (sr.centurion, 21, (350.0, 520.0)), "space_breacher": (sr.breacher, 21, (380.0, 560.0)),
-          "space_heavy": (sr.heavy, 21, (380.0, 560.0))}
+          "space_marine": (sr.marine, 25, (350.0, 520.0)), "space_marine_saw": (sr.marine_saw, 25, (350.0, 520.0)),
+          "space_centurion": (sr.centurion, 25, (350.0, 520.0)), "space_breacher": (sr.breacher, 25, (380.0, 560.0)),
+          "space_heavy": (sr.heavy, 25, (380.0, 560.0))}
 
 #: CAD designs that must build as one valid solid: (module, class, overrides)
 CAD = [("zoo_quadruped", c, {}) for c in ("Dog", "Bear", "Deer", "Elephant")] + \

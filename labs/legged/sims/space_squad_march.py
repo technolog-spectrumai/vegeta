@@ -12,8 +12,9 @@ motion looks like, no physics. ``physics`` (default) runs ``mj_step``: gravity, 
 modules' torque limits decide what happens while a PD loop on each servo tracks the keyframes (``kp`` of the
 modules, the stall torque as the clip). The keyframes were solved with no balance controller, so the base is
 helped by an **upright assist** by default: an external torque on the pelvis towards level (a virtual gyro) and a
-sideways spring holding its lane - the "training wheels" a game engine would also give these units. ``--no-assist``
-takes them off and the log says how far the unit gets before it falls.
+sideways spring holding its lane - the "training wheels" a game engine would also give these units (the Breacher
+and the Heavy, the two heaviest, get twice the Marines': ``ASSIST``). ``--no-assist`` takes them off and the log
+says how far the unit gets before it falls.
 
 Writes ``sims/output/space_squad_march.mp4`` and ``space_squad_march.json`` (per unit: distance walked, the base's
 height, the largest tilt, the servo torques' saturation, slip). No OpenGL is needed: the frames are drawn from the
@@ -45,6 +46,9 @@ OUT = ROOT / "labs" / "legged" / "sims" / "output"
 UNITS = {"marine": (sr.marine, sm.motions_marine), "marine_saw": (sr.marine_saw, sm.motions_marine_saw),
          "centurion": (sr.centurion, sm.motions_centurion), "breacher": (sr.breacher, sm.motions_breacher),
          "heavy": (sr.heavy, sm.motions_heavy)}
+#: the upright assist's strength per unit: the two heaviest (the tower shield, the cannon) get twice the Marines'
+ASSIST = {"breacher": 2.0, "heavy": 2.0}                                 # multipliers on --assist
+V_HOLD_C = 1500.0                                                           # the speed hold's damping [N s/m]
 #: the squad's wedge (unit, x, y) [m], the Centurion at the point
 SQUAD = [("centurion", 1.6, 0.0), ("marine", 0.4, 1.3), ("marine", 0.4, -1.3), ("marine_saw", -0.9, 2.4), ("marine_saw", -0.9, -2.4),
          ("breacher", -2.1, 1.1), ("heavy", -2.1, -1.1)]
@@ -53,7 +57,7 @@ SQUAD = [("centurion", 1.6, 0.0), ("marine", 0.4, 1.3), ("marine", 0.4, -1.3), (
 class Unit:
     """One unit: its robot, its MuJoCo model, its march gait and the maps between them."""
 
-    def __init__(self, name, x, y, mode, crouch=0.05, leg_kp=None, leg_torque=None, modules=None):
+    def __init__(self, name, x, y, mode, crouch=0.02, leg_kp=None, leg_torque=None, modules=None):
         build, motions = UNITS[name]
         self.name, self.mode = name, mode
         self.robot = build()
@@ -87,6 +91,8 @@ class Unit:
         self.kp = np.array([servos[n].kp for n in names])
         self.lim = np.array([servos[n].stall_torque for n in names])
         self.sat, self.tilt_max, self.z_min, self.fell = 0.0, 0.0, self.z0, None
+        self.park = None                                                   # an x to hold with the assist (a halt), or None
+        self.v_hold = None                                                 # a forward speed to hold with the assist, or None
         self.reset()
 
     def q_target(self, t):
@@ -122,6 +128,7 @@ class Unit:
 
     def step_physics(self, t, dt, assist):
         m, d = self.model, self.data
+        assist = assist * ASSIST.get(self.name, 1.0)
         n = max(1, int(round(dt / m.opt.timestep)))
         for k in range(n):
             tk = t + k * m.opt.timestep
@@ -143,6 +150,10 @@ class Unit:
                 yaw = math.atan2(R[1, 0], R[0, 0])
                 torque = assist * (6000.0 * err - 400.0 * w) + np.array([0.0, 0.0, -assist * (3000.0 * yaw + 300.0 * w[2])])
                 force = np.array([0.0, -assist * (2000.0 * (d.qpos[1] - self.p0[1]) + 400.0 * d.qvel[1]), 0.0])
+                if self.park is not None:                                  # halted: the assist also parks the base
+                    force[0] = -assist * (4000.0 * (d.qpos[0] - self.park) + 2000.0 * d.qvel[0])
+                elif self.v_hold is not None:                              # a speed to hold: the formation's pace
+                    force[0] = -assist * V_HOLD_C * (d.qvel[0] - self.v_hold)
                 d.xfrc_applied[1][0:3] = force
                 d.xfrc_applied[1][3:6] = torque
             mujoco.mj_step(m, d)
@@ -198,7 +209,7 @@ def snapshot(units):
     return out, centre
 
 
-def draw_frame(ax, geoms, centre, t, title, span):
+def draw_frame(ax, geoms, centre, t, title, span, elev=16.0, azim=28.0):
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
     polys, cols = [], []
     for gtype, c, R, sz, rgba in geoms:
@@ -216,7 +227,7 @@ def draw_frame(ax, geoms, centre, t, title, span):
         polys += p
         cols += [rgba] * len(p)
     # painter's order: farthest from the camera first (the camera sits ahead and to the left, above)
-    cam = np.array([math.cos(math.radians(28)), math.sin(math.radians(28)), math.tan(math.radians(16))])
+    cam = np.array([math.cos(math.radians(azim)), math.sin(math.radians(azim)), math.tan(math.radians(elev))])
     depth = np.array([np.mean(q, axis=0) @ cam for q in polys])
     order = np.argsort(depth)
     polys = [polys[k] for k in order]
@@ -230,7 +241,8 @@ def draw_frame(ax, geoms, centre, t, title, span):
     ax.autoscale(False)
     ax.add_collection3d(Poly3DCollection(polys, facecolors=cols, edgecolors=[c * [0.6, 0.6, 0.6, 1] for c in cols], linewidths=0.15, shade=True),
                         autolim=False)
-    ax.set_box_aspect((1, 1, 0.6), zoom=1.3); ax.view_init(elev=16, azim=28); ax.set_axis_off()
+    ax.set_box_aspect((1, 1, 0.6), zoom=1.3); ax.view_init(elev=elev, azim=azim); ax.set_axis_off()
+    ax.set_proj_type("persp", focal_length=3.0)                            # a long lens: matplotlib's default distorts the near units
     ax.set_title(f"The space game units march in MuJoCo   -   t = {t:4.1f} s   -   {title}", fontsize=11, loc="left", y=0.96)
 
 
@@ -253,7 +265,7 @@ def main(argv=None):
     ap.add_argument("--seconds", type=float, default=8.0)
     ap.add_argument("--units", default="squad", help="'squad' (the wedge), or unit names comma-separated, one each in a row")
     ap.add_argument("--no-assist", action="store_true", help="physics without the upright assist")
-    ap.add_argument("--assist", type=float, default=1.0, help="the assist's strength (1 = the default gyro and lane spring)")
+    ap.add_argument("--assist", type=float, default=2.0, help="the assist's strength (2 = the gyro and lane spring the 360 mm hips need; 1 stumbles)")
     ap.add_argument("--fps", type=int, default=10)
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-movie", action="store_true")

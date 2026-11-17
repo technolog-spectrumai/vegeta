@@ -1,5 +1,7 @@
 """The space game units' motions (``motion_kit``), exported as ``data:motions`` (tag ``motion``).
 
+* **run** (every unit) — the double-time march: 0.85 m/s, 0.45 m stance, duty 0.58, a 30 mm crouch, ±50 mm sway
+  (a fast walk, no flight phase: the speed the block holds in ``sims/space_squad_testudo.py``);
 * **march** (every unit) — Talia's walk at the unit's weight: 0.55 m/s (the Heavy 0.4), 0.34 m stance, duty 0.64,
   a 20 mm crouch (near-straight knees: the modules' torque in single support, ``sims/space_squad_march.py``),
   ±60 mm sway; both arms held at their stance (the carbine at the low ready, the shield or the
@@ -36,9 +38,27 @@ base_height = hum.base_height
 SOLE_POINTS = hum.SOLE_POINTS
 
 
+def weight_shift(s, duty, sway):
+    """The pelvis's sideways offset [m] at gait phase ``s`` (the left foot's stance starts at 0, the right's at 0.5):
+    over the stance foot through single support (+``sway`` over the left, -``sway`` over the right), carried across
+    during the double supports on a smooth step. Returned as the feet's offset seen from the base (``lateral``)."""
+    ds = duty - 0.5                                                        # each double support's length (phase)
+    if s < ds:                                                             # both down: from the right foot to the left
+        shape = 1.0 - 2.0 * mk.smooth(s / ds)
+    elif s < 0.5:                                                          # on the left
+        shape = -1.0
+    elif s < 0.5 + ds:                                                     # both down: from the left to the right
+        shape = -1.0 + 2.0 * mk.smooth((s - 0.5) / ds)
+    else:                                                                  # on the right
+        shape = 1.0
+    return sway * shape
+
+
 def march(kin, unit, *, speed=0.55, stance=0.34, duty=0.64, step=0.05, crouch=0.02, sway=0.06, swing=0.15,
-          hold=None, name="march"):
-    """The walk with the weapon arm held (``hold``: {joint: rad}) and the other swinging ±``swing``."""
+          hold=None, shift="step", name="march"):
+    """The walk with the weapon arm held (``hold``: {joint: rad}) and the other swinging ±``swing``. ``shift``:
+    how the pelvis sways - ``"step"`` (``weight_shift``: over the stance foot, carried across in the double supports;
+    what a wide stance needs) or ``"sine"`` (Talia's)."""
     e = math.radians(su.ROSTER[unit][0]["elbow_bend_deg"])
     hold = dict(hold or {})
     period = stance / (duty * speed)
@@ -48,6 +68,10 @@ def march(kin, unit, *, speed=0.55, stance=0.34, duty=0.64, step=0.05, crouch=0.
     def foot_dx(t, ph):
         s = (t / period + ph) % 1.0
         return 0.5 - s / duty if s < duty else -0.5 + mk.smooth((s - duty) / (1 - duty))
+
+    def lateral(t):
+        s = (t / period) % 1.0
+        return weight_shift(s, duty, sway) if shift == "step" else -sway * math.sin(2 * math.pi * (s + 0.15))
 
     def extra(t, q):
         for side in swinging:
@@ -61,10 +85,16 @@ def march(kin, unit, *, speed=0.55, stance=0.34, duty=0.64, step=0.05, crouch=0.
     return mk.legged_gait(kin, name, feet, period=period, duty=duty, stride=stance, step_height=step,
                           foot_points={g: SOLE_POINTS for g in feet}, crouch=crouch, extra=extra,
                           q_start={f"{s}_{j}": v for s in feet for j, v in (("hip_pitch", -0.3), ("knee", 0.6), ("ankle_pitch", -0.3))},
-                          lateral=lambda t: -sway * math.sin(2 * math.pi * (t / period + 0.15)),
+                          lateral=lateral,
                           source=f"space_unit_motions.march: humanoid_motions.walk at the {unit}'s weight",
-                          params={"froude": round(speed ** 2 / (mk.G * 0.96), 3), "sway_m": sway, "arm_swing_rad": swing,
+                          params={"froude": round(speed ** 2 / (mk.G * 0.96), 3), "sway_m": sway, "shift": shift, "arm_swing_rad": swing,
                                   "held": sorted(hold)})
+
+
+def run(kin, unit, *, speed=0.85, stance=0.45, duty=0.58, step=0.06, crouch=0.03, sway=0.05, hold=None):
+    """The double-time march: 0.85 m/s on a 0.45 m stance, duty 0.58 (no flight: a fast walk, as these weights run),
+    the base 30 mm lower, the arms as in the march. The speed every unit holds in the block (``sims/space_squad_testudo.py``)."""
+    return march(kin, unit, speed=speed, stance=stance, duty=duty, step=step, crouch=crouch, sway=sway, hold=hold, name="run")
 
 
 def _hold(kin, q, joints):
@@ -196,35 +226,35 @@ def motions_marine(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.45}
-    return kin, [march(kin, "marine", hold=hold, crouch=crouch), aim(kin), fire(kin)]
+    return kin, [march(kin, "marine", hold=hold, crouch=crouch), run(kin, "marine", hold=hold), aim(kin), fire(kin)]
 
 
 def motions_marine_saw(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.marine_saw())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
-    return kin, [march(kin, "marine_saw", hold=hold, crouch=crouch), aim(kin), slash(kin)]
+    return kin, [march(kin, "marine_saw", hold=hold, crouch=crouch), run(kin, "marine_saw", hold=hold), aim(kin), slash(kin)]
 
 
 def motions_centurion(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.centurion())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.3}
-    return kin, [march(kin, "centurion", hold=hold, crouch=crouch), aim(kin), rally(kin)]
+    return kin, [march(kin, "centurion", hold=hold, crouch=crouch), run(kin, "centurion", hold=hold), aim(kin), rally(kin)]
 
 
 def motions_breacher(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.breacher())
     hold = {"L_shoulder_pitch": -0.7, "R_shoulder_pitch": 0.3}
-    return kin, [march(kin, "breacher", hold=hold, crouch=crouch), shield_up(kin), swing(kin)]
+    return kin, [march(kin, "breacher", hold=hold, crouch=crouch), run(kin, "breacher", hold=hold), shield_up(kin), swing(kin)]
 
 
 def motions_heavy(robot=None, crouch=0.02):
     import space_unit_robots as sr
     kin = mk.Kin(robot or sr.heavy())
     hold = {"R_shoulder_pitch": -0.35, "L_shoulder_pitch": -0.5}
-    return kin, [march(kin, "heavy", speed=0.4, stance=0.30, sway=0.07, hold=hold, crouch=crouch), suppress(kin)]
+    return kin, [march(kin, "heavy", speed=0.4, stance=0.30, sway=0.07, hold=hold, crouch=crouch), run(kin, "heavy", hold=hold), suppress(kin)]
 
 
 def parts_marine(machine) -> dict:

@@ -24,15 +24,7 @@ ELEV, AZIM = 24.0, 12.0
 def pieces(cls):
     """[(triangles, colour)] of one unit at the origin, coloured as the roster drawing."""
     d = cls()
-    p = d.resolve()
-    out = [(dd._tris(d.build(dict(p, part="humanoid")), 4.0), dd.BODY)]
-    for name, shape in d.armour_parts(p).items():
-        out.append((dd._tris(shape), dd.RED if name == "crest" else dd.ARMOUR))
-    for name, shape in d.weapon_parts(p).items():
-        col = dd.STEEL if name in ("barrel", "head", "cannon", "shield", "saw_bar") else dd.RED if name == "banner_cloth" \
-            else dd.GOLD if name == "emblem" else dd.WEAPON
-        out.append((dd._tris(shape), col))
-    return out
+    return dd.pieces(d, d.resolve())
 
 
 def main(out="space_squad_3d.png"):
@@ -46,9 +38,7 @@ def main(out="space_squad_3d.png"):
     for cls, x, y in sorted(SQUAD, key=lambda u: u[1] * cam[0] + u[2] * cam[1]):
         if cls not in cache:
             cache[cls] = pieces(cls)
-        off = np.array([x, y, 0.0])
-        for tris, col in cache[cls]:
-            ax.add_collection3d(Poly3DCollection([t + off for t in tris], facecolors=col, edgecolors=col, linewidths=0.0, shade=True))
+        dd.add_pieces(ax, cache[cls], (x, y, 0.0))
     ax.set_xlim(-3000, 2600); ax.set_ylim(-3100, 3100); ax.set_zlim(0, 2800)
     ax.set_box_aspect((5.6, 6.2, 2.8), zoom=1.4); ax.view_init(elev=ELEV, azim=AZIM); ax.set_axis_off()
     fig.suptitle("A squad of the space game units: the Centurion leading with the banner, two Marines with shields on its flanks, "

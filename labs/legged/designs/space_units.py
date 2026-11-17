@@ -4,8 +4,11 @@ the **Marine** (a carbine and a combat shield), the **Marine with a chainsaw** (
 greaves over the shins, knee domes, boots and a visor slit cut into the square helmet. Numbers in
 ``space_unit_specs``; mm, x forward, y left, z up, the ground at z = 0.
 
-``part``: as ``Humanoid`` (the whole machine, the trunk, a thigh, a shin, a foot), plus ``armour`` (the plates alone)
-and ``weapon`` (what the unit carries). ``armour_parts`` and ``weapon_parts`` give the pieces by name, for the
+``part``: as ``Humanoid`` (the whole machine, the trunk, a thigh, a shin, a foot), plus ``skeleton`` (the bare
+frame), ``armour`` (the plates alone) and ``weapon`` (what the unit carries). The frame is a skeleton: an S-curved
+spine of vertebrae set back in the chest, ribs round to a sternum, clavicles and scapulae, a pelvis of iliac wings
+on a sacrum, femurs, tibia and fibula - and every joint a mechanical rotary module (``joint_module``); the armour
+goes on top of the bones. ``armour_parts`` and ``weapon_parts`` give the pieces by name, for the
 masses (``space_unit_robots.CAD_MM3``: the test rebuilds them).
 """
 from __future__ import annotations
@@ -21,7 +24,8 @@ from fantasy_humanoids import _add, hand_frame
 from humanoid import Humanoid
 
 __all__ = ["SpaceMarine", "SpaceMarineSaw", "Centurion", "Breacher", "Heavy", "carbine", "tower_shield", "combat_shield", "chainsaw",
-           "banner", "crest", "maul", "rotary_cannon", "forearm_frame"]
+           "banner", "crest", "maul", "rotary_cannon", "forearm_frame", "skeleton_trunk", "femur", "tibia", "foot_bones",
+           "joint_module", "spine_x"]
 
 
 def _torso_frame(p):
@@ -215,6 +219,164 @@ def rotary_cannon(p):
     return {"cannon": cannon, "mount": mount, "feed": feed}
 
 
+# ---- the skeleton: bones and mechanical joint modules, the armour goes on top -----------------------------------
+def joint_module(c, p, axis="y", scale=1.0):
+    """A rotary joint module: a cylinder along ``axis`` at ``c`` (the actuator's housing) with a flange ring and a
+    pin boss on each face - what stands where a human joint is."""
+    r, L = p["joint_module_diameter"] / 2 * scale, p["joint_module_length"] * scale
+    body = sk.disc(c, r, L, axis=axis)
+    flange = sk.disc(c, r * 1.08, L * 0.22, axis=axis)
+    u = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}[axis]
+    out = body.union(flange)
+    for sgn in (-1, 1):
+        face = _add(c, (sgn * L / 2, u))
+        out = out.union(sk.disc(face, r * 0.45, L * 0.16, axis=axis)).union(sk.disc(face, r * 0.2, L * 0.4, axis=axis))
+    return out
+
+
+def spine_x(p, u):
+    """The spine's x (build pose, mm) at fraction ``u`` of the torso height: set back in the chest, the S curve
+    (lumbar forward, thoracic back), the top coming forward under the neck."""
+    back = -p["spine_set_back"] * p["torso_depth"]
+    forward = 0.8 * sk_smooth((u - 0.55) / 0.45) if u > 0.55 else 0.0
+    return back * (1 - forward) + p["spine_curve"] * math.sin(2 * math.pi * u)
+
+
+def sk_smooth(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * (3 - 2 * x)
+
+
+def _rib(p, i_pts, r):
+    return sk.polyline_limb(i_pts, [r])
+
+
+def skeleton_trunk(p):
+    """{piece: solid} of the trunk's skeleton in the build pose: the pelvis (a sacrum block between two iliac wings,
+    the hip joint modules under them, a pubic bar in front), the spine (``spine_segments`` vertebral bodies with
+    discs, spinous and transverse processes, on the S curve ``spine_x``), the ribcage (``rib_count`` rib pairs from
+    the upper vertebrae round to the sternum, sloping down to the front), the shoulder girdle (clavicles from the
+    sternum's top to the shoulder joint modules, scapulae behind the upper ribs), the neck and the helmet-head."""
+    hh = Humanoid.hip_height(p)
+    Wp, Dp, Hp = p["pelvis_width"], p["pelvis_depth"], p["pelvis_height"]
+    z0, Wt, Dt, Ht, zs = _torso_frame(p)
+    N, dv = int(p["spine_segments"]), p["vertebra_diameter"]
+    xs0 = spine_x(p, 0.0)
+    # the pelvis
+    sacrum = sk.rounded_box(Dp * 0.55, Wp * 0.36, Hp * 1.1, (xs0 + 10, 0, hh + Hp * 0.1), fillet=14)
+    pelvis = sacrum
+    hy = p["hip_spacing"] / 2
+    for sy in (-1, 1):
+        wing = (sk.rounded_box(Dp * 0.5, 16.0, p["iliac_wing_height"], (0, 0, 0), fillet=7)
+                .rotate((0, 0, 0), (1, 0, 0), -sy * 22).rotate((0, 0, 0), (0, 0, 1), sy * 18)
+                .translate((xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + p["iliac_wing_height"] * 0.42)))
+        pelvis = pelvis.union(wing)
+        pelvis = pelvis.union(sk.rod((xs0 + 10, 0, hh + Hp * 0.5), (xs0 + Dp * 0.1, sy * (Wp / 2 - 30), hh + Hp / 2 + p["iliac_wing_height"] * 0.42), 20))
+        pelvis = pelvis.union(joint_module((0, sy * hy, hh), p, "y"))                       # the hip module
+        pelvis = pelvis.union(sk.rod((xs0 + 10, sy * Wp * 0.15, hh + Hp * 0.3), (0, sy * hy, hh), 22))   # the ilium down to the hip
+        pelvis = pelvis.union(sk.rod((0, sy * hy, hh), (Dp * 0.32, sy * 30, hh - Hp * 0.25), 18))          # to the pubis
+    pelvis = pelvis.union(sk.rounded_box(28, 90, 36, (Dp * 0.32, 0, hh - Hp * 0.25), fillet=8))              # the pubic bar
+    # the spine
+    seg = Ht / N
+    spine = None
+    for i in range(N):
+        u = (i + 0.5) / N
+        x, z = spine_x(p, u), z0 - 12 + (i + 0.5) * seg
+        d_i = dv * (1.12 - 0.3 * u)
+        body = sk.disc((x, 0, z), d_i / 2, seg * 0.66, axis="z")
+        disc = sk.disc((x, 0, z + seg * 0.5), d_i * 0.42, seg * 0.4, axis="z")
+        spinous = sk.rounded_box(dv * 0.5, 18, seg * 0.5, (x - d_i / 2 - dv * 0.2, 0, z - seg * 0.1), fillet=5)
+        transverse = sk.rod((x - d_i * 0.25, -d_i * 0.75, z), (x - d_i * 0.25, d_i * 0.75, z), 9)
+        v = body.union(disc).union(spinous).union(transverse)
+        spine = v if spine is None else spine.union(v)
+    # the ribs and the sternum
+    nr, rr = int(p["rib_count"]), p["rib_section"] / 2
+    x_front = Dt / 2 - rr - 6
+    ribs, fronts = [], []
+    for k in range(nr):
+        i = N - nr + k                                                     # rib k on vertebra i (k = 0 the lowest)
+        u = (i + 0.5) / N
+        x, z = spine_x(p, u), z0 - 12 + (i + 0.5) * seg
+        d_i = dv * (1.12 - 0.3 * u)
+        wk = Wt * (0.78 + 0.2 * math.sin(math.pi * (k + 0.5) / nr)) / 2 - rr      # the rib's half width
+        drop = Wt * 0.11 + seg * 0.25
+        D = x_front - x
+        for sy in (-1, 1):
+            pts = [(x - d_i * 0.1, sy * d_i * 0.45, z), (x - d_i * 0.3, sy * wk * 0.6, z - drop * 0.12),
+                   (x + D * 0.18, sy * wk * 0.96, z - drop * 0.35), (x + D * 0.5, sy * wk, z - drop * 0.62),
+                   (x + D * 0.82, sy * wk * 0.72, z - drop * 0.88), (x_front, sy * p["sternum_width"] * 0.3, z - drop)]
+            ribs.append(_rib(p, pts, rr))
+        fronts.append(z - drop)
+    sternum = sk.rounded_box(rr * 2.2, p["sternum_width"], fronts[-1] - fronts[0] + rr * 4 + 30,
+                             (x_front, 0, (fronts[-1] + fronts[0]) / 2 + 15), fillet=9)
+    ribcage = sk.union_all(ribs).union(sternum)
+    # the shoulder girdle: clavicles to the shoulder modules, scapulae behind the upper ribs, the neck and the head
+    d = p["arm_diameter"]
+    girdle = None
+    for sy in (-1, 1):
+        cy = sy * (Wt / 2 + 10)
+        module = joint_module((0, cy, zs), p, "y", scale=d * 1.3 / p["joint_module_diameter"])
+        clav = sk.rod((x_front - 4, sy * p["sternum_width"] * 0.3, fronts[-1] + rr * 2 + 24), (0, cy - sy * d * 0.3, zs + d * 0.15),
+                      p["clavicle_diameter"] / 2)
+        top_x = spine_x(p, (N - 1.5) / N)
+        scap = (sk.rounded_box(12, p["scapula_width"], Ht * 0.3, (0, 0, 0), fillet=8).rotate((0, 0, 0), (0, 0, 1), sy * 25)
+                .translate((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7)))
+        acromion = sk.rod((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7), (0, cy - sy * d * 0.2, zs), 13)
+        part = module.union(clav).union(scap).union(acromion)
+        girdle = part if girdle is None else girdle.union(part)
+    zn = z0 + Ht
+    x_top = spine_x(p, 1.0)
+    neck = sk.rod((x_top, 0, zn - seg * 0.4), (0, 0, zn + p["neck_length"] + 5), p["head_width"] * 0.2)
+    for j in range(3):                                                     # the cervical vertebrae up the neck
+        f = (j + 0.5) / 3
+        neck = neck.union(sk.disc((x_top * (1 - f), 0, zn - seg * 0.2 + f * (p["neck_length"] + seg * 0.2)), p["head_width"] * 0.24, 10, axis="z"))
+    Wh, Dh, Hh = p["head_width"], p["head_depth"], p["head_height"]
+    zh = zn + p["neck_length"] + Hh / 2
+    head = cq.Workplane("XY").box(Dh, Wh, Hh).edges().fillet(min(35.0, Wh / 2 - 1, Hh / 2 - 1)).translate((0, 0, zh))
+    eyes = (cq.Workplane("YZ").pushPoints([(-Wh * 0.2, zh + Hh * 0.08), (Wh * 0.2, zh + Hh * 0.08)])
+            .circle(p["eye_diameter"] / 2).extrude(30).translate((Dh / 2 - 15, 0, 0)))
+    return {"pelvis": pelvis, "spine": spine, "ribcage": ribcage, "girdle": girdle, "neck": neck, "head": head.cut(eyes)}
+
+
+def femur(p):
+    """The thigh bone, the hip module at the origin, the knee at (0, 0, -thigh_length): a neck from the hip module's
+    side boss down into the shaft, the greater trochanter, the shaft bowing forward a little, the condyles (two
+    knuckles) holding the knee module."""
+    L, df, dm = p["thigh_length"], p["femur_diameter"], p["joint_module_diameter"]
+    neck = sk.rod((0, 0, 0), (df * 0.2, 0, -dm * 0.75), df * 0.42)
+    troch = sk.ball((df * 0.15, 0, -dm * 0.6), df * 0.55)
+    shaft = sk.polyline_limb([(df * 0.15, 0, -dm * 0.6), (df * 0.5, 0, -L * 0.45), (0, 0, -L + dm * 0.55)], [df / 2, df / 2])
+    condyles = sk.ball((0, df * 0.4, -L + dm * 0.5), df * 0.5).union(sk.ball((0, -df * 0.4, -L + dm * 0.5), df * 0.5))
+    knee = joint_module((0, 0, -L), p, "y", scale=0.9)
+    return neck.union(troch).union(shaft).union(condyles).union(knee)
+
+
+def tibia(p):
+    """The shin: the knee at the origin (the knee module belongs to the femur; the tibia's plateau clamps it), the
+    tibia straight down to the ankle module, the fibula beside it, the ankle module at (0, 0, -shin_length)."""
+    L, dt, dfb, dm = p["shin_length"], p["tibia_diameter"], p["fibula_diameter"], p["joint_module_diameter"]
+    plateau = sk.rounded_box(dt * 1.3, dt * 1.6, dt * 0.6, (0, 0, -dm * 0.55), fillet=8)
+    clamp = sk.rod((0, -dt * 0.8, 0), (0, dt * 0.8, 0), dm * 0.32)                     # round the knee module's pin
+    clamp = clamp.union(sk.rod((0, 0, 0), (0, 0, -dm * 0.6), dt * 0.5))                 # the yoke down to the plateau
+    shaft = sk.polyline_limb([(0, 0, -dm * 0.5), (0, 0, -L + dm * 0.5)], [dt / 2])
+    fib = sk.polyline_limb([(-dt * 0.3, dt * 0.95, -dm * 0.7), (-dt * 0.35, dt * 0.9, -L + dm * 0.55)], [dfb / 2])
+    fib = fib.union(sk.rod((0, 0, -dm * 0.7), (-dt * 0.3, dt * 0.95, -dm * 0.7), dfb * 0.45))
+    ankle = joint_module((0, 0, -L), p, "y", scale=0.8)
+    return plateau.union(clamp).union(shaft).union(fib).union(ankle)
+
+
+def foot_bones(p):
+    """The foot: the ankle module's roll stage (a smaller module across), a heel block behind, the sole plate (what
+    the boot goes over) and a toe bar."""
+    Lf, Wf, ha, t = p["foot_length"], p["foot_width"], p["ankle_height"], p["foot_thickness"]
+    roll = joint_module((0, 0, -ha * 0.45), p, "x", scale=0.5)
+    heel = sk.rounded_box(Lf * 0.3, Wf * 0.6, ha * 0.7, (-Lf * 0.22, 0, -ha + t / 2 + ha * 0.3), fillet=10)
+    sole = sk.rounded_box(Lf, Wf, t, (Lf * 0.2, 0, -ha + t / 2), fillet=min(10.0, t / 2 - 1))
+    arch = sk.rod((0, 0, -ha * 0.45), (Lf * 0.3, 0, -ha + t), Wf * 0.18)
+    toes = sk.rod((Lf * 0.62, -Wf * 0.45, -ha + t), (Lf * 0.62, Wf * 0.45, -ha + t), t * 0.9)
+    return roll.union(heel).union(sole).union(arch).union(toes)
+
+
 class SpaceMarine(Humanoid):
     """The Marine: Talia's frame at the Marine's numbers (1.86 m, the ork's bulk on longer legs) in power armour,
     a carbine in the right fist and a combat shield on the left forearm. ``part``: as ``Humanoid``, plus 'armour' and
@@ -235,7 +397,7 @@ class SpaceMarine(Humanoid):
         extra = [Parameter(k, float(cls.SPECS[k]), "deg" if k.endswith("_deg") else ("" if k == "cannon_barrels" else "mm"),
                            min=0.0, description=d) for k, d in cls.EXTRA.items()]
         base = sk.with_defaults(Humanoid.parameters, **{k: v for k, v in cls.SPECS.items() if k not in cls.EXTRA})
-        return [Parameter("part", "humanoid", choices=("humanoid", "trunk", "thigh", "shin", "foot", "armour", "weapon"),
+        return [Parameter("part", "humanoid", choices=("humanoid", "skeleton", "trunk", "thigh", "shin", "foot", "armour", "weapon"),
                           description="what to build")] + [q for q in base if q.name != "part"] + extra
 
     def armour_parts(self, p):
@@ -271,7 +433,7 @@ class SpaceMarine(Humanoid):
         for sy in (-1, 1):
             y = sy * p["hip_spacing"] / 2
             kx, kz = L1 * math.sin(math.radians(a)), hh - L1 * math.cos(math.radians(a))
-            plate = (sk.rounded_box(gt, p["leg_thickness"] * 1.25, L2 * 0.72, (w / 2 + gt / 2 - 6, 0, -L2 * 0.52), fillet=10)
+            plate = (sk.rounded_box(gt, p["leg_thickness"] * 1.25, L2 * 0.72, (p["tibia_diameter"] / 2 + gt / 2 - 4, 0, -L2 * 0.52), fillet=10)
                      .rotate((0, 0, 0), (0, 1, 0), a).translate((kx, y, kz)))
             knee = sk.ball((kx, y, kz), p["leg_thickness"] * 0.72)
             greaves.append(plate.union(knee))
@@ -282,6 +444,23 @@ class SpaceMarine(Humanoid):
 
     def weapon_parts(self, p):
         return type(self).weapon_fn(p)
+
+    # the skeleton in place of Talia's shells: Humanoid.build places these parts (the hip, knee and ankle frames)
+    def _trunk(self, p):
+        return sk.union_all(list(skeleton_trunk(p).values()))
+
+    def _thigh(self, p):
+        return femur(p)
+
+    def _shin(self, p):
+        return tibia(p)
+
+    def _foot(self, p):
+        return foot_bones(p)
+
+    def skeleton_parts(self, p):
+        """{piece: solid} of the trunk's skeleton, in the build pose (``skeleton_trunk``)."""
+        return skeleton_trunk(p)
 
     def _visor(self, p):
         z0, Wt, Dt, Ht, _ = _torso_frame(p)
@@ -294,9 +473,9 @@ class SpaceMarine(Humanoid):
             return sk.union_all(list(self.armour_parts(p).values()))
         if p["part"] == "weapon":
             return sk.union_all(list(self.weapon_parts(p).values()))
-        body = super().build(dict(p, part=p["part"]))
+        body = super().build(dict(p, part="humanoid" if p["part"] == "skeleton" else p["part"]))
         if p["part"] != "humanoid":
-            return body
+            return body                                                   # a part, or the bare skeleton
         whole = sk.union_all([body] + list(self.armour_parts(p).values()) + list(self.weapon_parts(p).values()))
         return whole.cut(self._visor(p))
 

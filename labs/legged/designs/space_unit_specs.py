@@ -9,14 +9,20 @@ from __future__ import annotations
 __all__ = ["MARINE", "MARINE_EXTRA", "MARINE_SAW", "MARINE_SAW_EXTRA", "CENTURION", "CENTURION_EXTRA", "BREACHER", "BREACHER_EXTRA", "HEAVY", "HEAVY_EXTRA", "MATERIALS", "ROSTER"]
 
 #: the Marine: Humanoid parameters (the ork's bulk on longer legs, a square helmet, the forearms held forward
-#: 60 deg at the carbine) and the armour's extras in ``MARINE_EXTRA``
-MARINE = {"pelvis_width": 380.0, "pelvis_depth": 250.0, "pelvis_height": 170.0, "torso_width": 540.0,
-          "torso_depth": 310.0, "torso_height": 540.0, "waist_taper": 0.82, "shell_fillet": 26.0, "hip_spacing": 260.0,
+#: 60 deg at the carbine), the skeleton's and the armour's extras in ``MARINE_EXTRA``
+MARINE = {"pelvis_width": 500.0, "pelvis_depth": 250.0, "pelvis_height": 170.0, "torso_width": 540.0,
+          "torso_depth": 310.0, "torso_height": 540.0, "waist_taper": 0.82, "shell_fillet": 26.0, "hip_spacing": 360.0,
           "thigh_length": 460.0, "shin_length": 440.0, "leg_width": 135.0, "leg_thickness": 115.0,
           "joint_boss_diameter": 150.0, "ankle_height": 95.0, "foot_length": 340.0, "foot_width": 180.0,
           "foot_thickness": 48.0, "knee_bend_deg": 15.0, "upper_arm_length": 370.0, "forearm_length": 350.0,
           "arm_diameter": 120.0, "elbow_bend_deg": 60.0, "neck_length": 40.0, "head_width": 230.0, "head_depth": 240.0,
           "head_height": 230.0, "eye_diameter": 18.0, "battery_bay_depth": 0.0,
+          # the skeleton: an S-curved spine of vertebrae set back in the chest, ribs to a sternum, clavicles and
+          # scapulae, iliac wings on a sacrum, femurs, tibia and fibula, every joint a mechanical rotary module
+          "spine_segments": 12, "spine_curve": 28.0, "spine_set_back": 0.3, "vertebra_diameter": 110.0,
+          "rib_count": 7, "rib_section": 22.0, "sternum_width": 64.0, "clavicle_diameter": 26.0, "scapula_width": 150.0,
+          "iliac_wing_height": 170.0, "femur_diameter": 62.0, "tibia_diameter": 54.0, "fibula_diameter": 24.0,
+          "joint_module_length": 150.0, "joint_module_diameter": 150.0,
           # the armour
           "pauldron_diameter": 300.0, "pauldron_thickness": 45.0, "chest_plate_thickness": 35.0,
           "backpack_width": 400.0, "backpack_depth": 170.0, "backpack_height": 430.0, "exhaust_diameter": 70.0,
@@ -25,7 +31,15 @@ MARINE = {"pelvis_width": 380.0, "pelvis_depth": 250.0, "pelvis_height": 170.0, 
           "carbine_length": 640.0, "receiver_height": 150.0, "receiver_width": 70.0, "barrel_diameter": 26.0,
           "magazine_height": 170.0,
           "shield_width": 600.0, "shield_height": 1600.0, "shield_thickness": 24.0, "shield_boss_diameter": 160.0}
-MARINE_EXTRA = {"pauldron_diameter": "the shoulder domes", "pauldron_thickness": "their shell",
+MARINE_EXTRA = {"spine_segments": "vertebrae, sacrum to the neck", "spine_curve": "the S: lumbar forward, thoracic back",
+                "spine_set_back": "the spine's place in the chest, a fraction of the torso depth behind its middle",
+                "vertebra_diameter": "the lumbar vertebral bodies (the thoracic thinner)",
+                "rib_count": "rib pairs on the upper vertebrae", "rib_section": "a rib's diameter", "sternum_width": "",
+                "clavicle_diameter": "", "scapula_width": "the shoulder blades behind the ribs",
+                "iliac_wing_height": "the pelvis's wings above the hip modules", "femur_diameter": "the thigh bone's shaft",
+                "tibia_diameter": "the shin bone", "fibula_diameter": "the thin bone beside it",
+                "joint_module_length": "a rotary joint module along its axis (hips, knees, ankles)", "joint_module_diameter": "",
+                "pauldron_diameter": "the shoulder domes", "pauldron_thickness": "their shell",
                 "chest_plate_thickness": "the breastplate proud of the torso", "backpack_width": "the power pack",
                 "backpack_depth": "", "backpack_height": "", "exhaust_diameter": "the two exhaust stacks",
                 "exhaust_height": "above the pack", "visor_height": "the helmet's visor slit",
@@ -70,7 +84,7 @@ for _k in ("carbine_length", "receiver_height", "receiver_width", "barrel_diamet
 
 #: the Heavy: the Marine's frame, wider, a rotary cannon on the right forearm fed from a bigger backpack
 HEAVY = {k: v for k, v in MARINE.items() if not k.startswith("shield_")}
-HEAVY = dict(HEAVY, torso_width=600.0, torso_depth=340.0, hip_spacing=300.0, pelvis_width=420.0,
+HEAVY = dict(HEAVY, torso_width=600.0, torso_depth=340.0, hip_spacing=400.0, pelvis_width=540.0,
              backpack_width=480.0, backpack_depth=240.0, backpack_height=480.0, elbow_bend_deg=75.0,
              cannon_length=820.0, cannon_diameter=130.0, cannon_barrels=6, cannon_barrel_diameter=22.0,
              feed_diameter=60.0)

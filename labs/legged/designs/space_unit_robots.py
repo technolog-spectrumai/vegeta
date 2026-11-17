@@ -16,13 +16,13 @@ the CAD volumes (``space_units.armour_parts`` / ``weapon_parts``) × the densiti
 * **Heavy** — the rotary cannon along the right forearm (the elbow at 75° so it points ahead), its mount and the feed
   tube; the bigger backpack.
 
-21 actuated joints each (Talia's).
+25 actuated joints each (Talia's 21 and the spine's four: a lumbar and a thoracic pitch/roll module).
 """
 from __future__ import annotations
 
 import math
 
-from vegeta.chiron import Geom
+from vegeta.chiron import Geom, Joint, Link, PointMass
 
 import body_kit as bk
 import humanoid_robot as hr
@@ -35,20 +35,20 @@ mm = 1e-3
 
 #: CAD volumes [mm³] of every armour and weapon piece at the defaults (the test rebuilds them)
 CAD_MM3 = {
-    "marine": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-               "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+    "marine": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
+               "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
                "shield": 24197865.1, "strap": 4237199.4},
-    "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-                   "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+    "marine_saw": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
+                   "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
                    "saw_body": 5425953.0, "saw_bar": 1217654.7},
-    "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-                  "greaves": 7406507.2, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
+    "centurion": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
+                  "greaves": 7400442.4, "boots": 9714685.2, "receiver": 4149663.7, "barrel": 235682.6, "magazine": 957495.8,
                   "banner_pole": 2992328.7, "antenna": 6616219.8, "emblem": 1503971.9, "crest": 3086414.2},
-    "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 8645803.5,
-                 "greaves": 7406507.2, "boots": 9714685.2, "shield": 37308855.0, "strap": 4683735.6, "shaft": 1150818.8,
+    "breacher": {"pauldrons": 12801070.1, "chest_plate": 4292690.0, "backpack": 30210811.9, "belt": 11170184.5,
+                 "greaves": 7400442.4, "boots": 9714685.2, "shield": 37308855.0, "strap": 4683735.6, "shaft": 1150818.8,
                  "head": 3029269.4},
-    "heavy": {"pauldrons": 12801070.1, "chest_plate": 4777344.3, "backpack": 56211187.1, "belt": 9487263.8,
-              "greaves": 7406507.2, "boots": 9714685.2, "cannon": 4701116.9, "mount": 9047537.8, "feed": 2091164.1},
+    "heavy": {"pauldrons": 12801070.1, "chest_plate": 4777344.3, "backpack": 56211187.1, "belt": 12011644.8,
+              "greaves": 7400442.4, "boots": 9714685.2, "cannon": 4701116.9, "mount": 9047537.8, "feed": 2091164.1},
 }
 #: piece -> material; the plates are hollow shells and the backpack a casing, so a fill factor says how much of the
 #: CAD volume is metal (the rest: padding, the pack's cells and electronics counted in the casing's density)
@@ -88,6 +88,8 @@ def _reactuate(r):
     m_big, m_mid, m_arm = (act.get(k).mass_g / 1000.0 for k in ("cycloidal 1600 Nm, brake", "cycloidal 800 Nm, brake", "harmonic 150 Nm, brake"))
     for lk, _ in r.root.walk():
         for j in lk.joints:
+            if j.tag in ("spine_pitch", "spine_roll"):
+                continue                                                   # the spine's modules: set in _spine
             j.servo = arm if j.tag in ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow") else \
                 big if j.tag in ("hip_yaw", "hip_roll", "hip_pitch", "knee") else mid
         for pm in lk.masses:
@@ -100,12 +102,55 @@ def _reactuate(r):
                     pm.mass = 3 * m_big
                 elif "knee" in pm.name:
                     pm.mass = m_big
-                elif "ankle" in pm.name:
+                elif "ankle" in pm.name or "spine" in pm.name:
                     pm.mass = 2 * m_mid
                 else:
                     pm.mass = m_mid                                        # the waist
     r.sources["actuators"] = ("ogma.actuators: cycloidal 1600 Nm, brake (hips, knees), cycloidal 800 Nm, brake (ankles, waist), "
                               "harmonic 150 Nm, brake (arms); sized by sims/space_squad_march.py")
+    return r
+
+
+def _spine(r, P):
+    """Talia's one torso link becomes a spine: the lumbar link (waist yaw plus a lumbar pitch/roll module at the
+    sacrum) and the thorax (a thoracic pitch/roll module at the lumbar's top) carrying the ribcage, the shoulder
+    girdle, the head and the arms. The segments give the trunk its compliance: the modules are held by their PD
+    (``cycloidal 800 Nm, brake``, stiff, well damped), so the upper body can lean into a step without the pelvis
+    tilting with it. The geoms: the lumbar column, the ribcage, the yoke; the masses as Talia's."""
+    import dataclasses
+    torso = _link(r.root, "torso")
+    Wt, Dt, Ht = P["torso_width"] * mm, P["torso_depth"] * mm, P["torso_height"] * mm
+    xs = -P["spine_set_back"] * Dt
+    split = 0.42 * Ht                                                     # the thoracic module's height above the sacrum
+    spine_servo = bk.servo("cycloidal 800 Nm, brake", kp=3000.0, kd=300.0)
+    pitch_range, roll_range = (-0.35, 0.35), (-0.25, 0.25)
+    thorax = Link("thorax", pos=(0.0, 0.0, split),
+                  joints=[Joint("spine_thoracic_pitch", axis=(0, 1, 0), range=pitch_range, tag="spine_pitch", servo=spine_servo),
+                          Joint("spine_thoracic_roll", axis=(1, 0, 0), range=roll_range, tag="spine_roll", servo=spine_servo)],
+                  geoms=[], masses=[PointMass("spine_thoracic_actuators", 2 * 11.0)], children=list(torso.children))
+    for arm in thorax.children:                                           # the arms hang from the thorax now
+        arm.pos = (arm.pos[0], arm.pos[1], arm.pos[2] - split)
+    for g in list(torso.geoms):                                           # the head and the neck move to the thorax
+        if g.name in ("neck", "head"):
+            if g.fromto is not None:
+                f = g.fromto
+                g.fromto = (f[0], f[1], f[2] - split, f[3], f[4], f[5] - split)
+            else:
+                g.pos = (g.pos[0], g.pos[1], g.pos[2] - split)
+            thorax.geoms.append(g)
+    torso.geoms = [g for g in torso.geoms if g.name not in ("torso_shell", "neck", "head")]
+    for pm in list(torso.masses):
+        if pm.name in ("battery", "electronics"):
+            pm.pos = (pm.pos[0], pm.pos[1], pm.pos[2] - split)
+            thorax.masses.append(pm)
+            torso.masses.remove(pm)
+    torso.masses.append(PointMass("spine_lumbar_actuators", 2 * 11.0))
+    torso.joints += [Joint("spine_lumbar_pitch", axis=(0, 1, 0), range=pitch_range, tag="spine_pitch", servo=spine_servo),
+                     Joint("spine_lumbar_roll", axis=(1, 0, 0), range=roll_range, tag="spine_roll", servo=spine_servo)]
+    torso.geoms.append(bk.capsule("lumbar", P["vertebra_diameter"] * mm * 0.5, (xs, 0, 0.0), (xs + 0.02, 0, split)))
+    torso.children = [thorax]
+    thorax.geoms += [bk.box("ribcage", (Dt / 2 * 0.92, Wt / 2 * 0.9, (Ht - split) / 2 * 0.86), (0.0, 0.0, (Ht - split) / 2 * 0.95), rho=bk.DENSITY["shell"] * 0.45),
+                     bk.box("yoke", (Dt * 0.2, Wt / 2 + 0.02, 0.035), (0.0, 0.0, Ht - split - P["arm_diameter"] * mm * 0.6))]
     return r
 
 
@@ -116,13 +161,13 @@ def _armour(r, unit, P):
     Dp, Wp, Hp = P["pelvis_depth"] * mm, P["pelvis_width"] * mm, P["pelvis_height"] * mm
     d, R = P["arm_diameter"] * mm, P["pauldron_diameter"] * mm / 2
     ti, al = (0.42, 0.45, 0.50, 1.0), (0.30, 0.32, 0.36, 1.0)
-    torso = _link(r.root, "torso")
+    thorax, zt = _link(r.root, "thorax"), 0.42 * Ht                        # on the ribs: the thorax link
     t = P["chest_plate_thickness"] * mm
-    torso.geoms += [
-        Geom("chest_plate", "box", (t / 2, Wt * 0.39, Ht * 0.26), pos=(Dt / 2 + t / 2 - 0.008, 0.0, Ht * 0.6),
+    thorax.geoms += [
+        Geom("chest_plate", "box", (t / 2, Wt * 0.39, Ht * 0.26), pos=(Dt / 2 + t / 2 - 0.008, 0.0, Ht * 0.6 - zt),
              mass=m["chest_plate"], role="body", rgba=ti),
         Geom("backpack", "box", (P["backpack_depth"] * mm / 2, P["backpack_width"] * mm / 2, P["backpack_height"] * mm / 2),
-             pos=(-Dt / 2 - P["backpack_depth"] * mm / 2 + 0.008, 0.0, Ht * 0.5), mass=m["backpack"], role="body", rgba=al)]
+             pos=(-Dt / 2 - P["backpack_depth"] * mm / 2 + 0.008, 0.0, Ht * 0.5 - zt), mass=m["backpack"], role="body", rgba=al)]
     pelvis = r.root
     pelvis.geoms.append(Geom("belt", "box", (Dp / 2 + 0.018, Wp / 2 + 0.018, P["belt_height"] * mm / 2),
                              pos=(0.0, 0.0, Hp / 2 - P["belt_height"] * mm / 2 + 0.01), mass=m["belt"], role="body", rgba=ti))
@@ -144,6 +189,7 @@ def _armour(r, unit, P):
 def _unit(unit, name, P, notes):
     p = {k: v for k, v in P.items() if k in hr.P}
     r = hr.talia(name, p, notes=notes)
+    _spine(r, P)
     _reactuate(r)
     _armour(r, unit, P)
     e = math.radians(P["elbow_bend_deg"])
@@ -161,7 +207,7 @@ ALONG = (math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0)
 def marine():
     P = su.MARINE
     r = _unit("marine", "Marine", P, "Marine: a 1.86 m armoured humanoid (the line unit) with a carbine and a combat shield, "
-                                     "21 actuated joints (design stage).")
+                                     "25 actuated joints (design stage).")
     m = carried_masses("marine")
     _carbine(r, P, m)
     _shield(r, P, m)
@@ -268,9 +314,9 @@ def centurion():
              quat=tipped, mass=m["antenna"], role="link", rgba=(0.9, 0.9, 0.92, 1.0)),
         Geom("emblem", "cylinder", (G / 2, P["gear_thickness"] * mm / 2), pos=tuple(top[i] - up[i] * G * 0.45 for i in range(3)),
              quat=level_x, mass=m["emblem"], role="link", rgba=(0.75, 0.65, 0.3, 1.0))]
-    torso = _link(r.root, "torso")
+    torso = _link(r.root, "thorax")
     Ht, Hh = P["torso_height"] * mm, P["head_height"] * mm
-    zh = Ht + P["neck_length"] * mm + Hh
+    zh = Ht - 0.42 * Ht + P["neck_length"] * mm + Hh                      # on the thorax link
     torso.geoms.append(Geom("crest", "box", (P["crest_length"] * mm / 2, P["crest_width"] * mm / 2, P["crest_height"] * mm / 2),
                             pos=(-P["crest_length"] * mm * 0.1, 0.0, zh + 0.012 + P["crest_height"] * mm / 2), mass=m["crest"], role="body",
                             rgba=(0.75, 0.1, 0.12, 1.0)))
@@ -280,7 +326,7 @@ def centurion():
 def breacher():
     P = su.BREACHER
     r = _unit("breacher", "Breacher", P, "Breacher: a 1.86 m armoured humanoid with a tower shield and a power maul, "
-                                         "21 actuated joints (design stage).")
+                                         "25 actuated joints (design stage).")
     m = carried_masses("breacher")
     _shield(r, P, m)
     Lf, d = P["forearm_length"] * mm, P["arm_diameter"] * mm
@@ -314,11 +360,12 @@ def heavy():
         Geom("cannon", "capsule", (D / 2,), fromto=breech + muzzle, mass=m["cannon"], role="link", rgba=bk.BLACK),
         Geom("cannon_mount", "box", (d * 0.8, d * 1.1, d * 0.75), pos=(mid[0], mid[1] - d * 0.45, mid[2] - d * 0.1),
              mass=m["mount"], role="link", rgba=bk.DARK)]
-    torso = _link(r.root, "torso")
+    torso = _link(r.root, "thorax")
     Dt, Ht = P["torso_depth"] * mm, P["torso_height"] * mm
+    zt = 0.42 * Ht                                                        # on the thorax link
     torso.geoms.append(Geom("cannon_feed", "capsule", (P["feed_diameter"] * mm / 2,),
-                            fromto=(-Dt / 2 - P["backpack_depth"] * mm / 2, -P["backpack_width"] * mm * 0.3, Ht * 0.5 - P["backpack_height"] * mm / 2 + 0.02,
-                                    -Dt / 2 - 0.06, -P["torso_width"] * mm / 2 - 0.16, Ht * 0.25),
+                            fromto=(-Dt / 2 - P["backpack_depth"] * mm / 2, -P["backpack_width"] * mm * 0.3, Ht * 0.5 - P["backpack_height"] * mm / 2 + 0.02 - zt,
+                                    -Dt / 2 - 0.06, -P["torso_width"] * mm / 2 - 0.16, Ht * 0.25 - zt),
                             mass=m["feed"], role="body", rgba=bk.DARK))
     return r
 
