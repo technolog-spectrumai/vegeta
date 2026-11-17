@@ -141,6 +141,59 @@ class ScenePlayer:
             self._hammer_pose(t)
             mujoco.mj_kinematics(self.model, d)
 
+    def shards(self, t):
+        """The pane's shards after the blow: a jittered grid of glass triangles thrown from the impact point into the
+        room, spinning and falling, lying on the floor where they land. (triangles, colours) for the renderer."""
+        if self.strike_t is None or t < self.strike_t:
+            return None
+        if not hasattr(self, "_shards"):
+            import kerchak_scenarios as gs
+            m = self.model
+            g = m.geom("glass").id
+            c, hx, hy, hz = self.data.geom_xpos[g].copy(), *m.geom_size[g]
+            rng = np.random.default_rng(7)
+            ny, nz = 7, 6
+            ys = np.linspace(-hy, hy, ny + 1)
+            zs = np.linspace(-hz, hz, nz + 1)
+            Y, Z = np.meshgrid(ys, zs, indexing="ij")
+            Y[1:-1, 1:-1] += rng.uniform(-0.3, 0.3, (ny - 1, nz - 1)) * (2 * hy / ny)
+            Z[1:-1, 1:-1] += rng.uniform(-0.3, 0.3, (ny - 1, nz - 1)) * (2 * hz / nz)
+            impact = np.array([c[0], -0.15, gs.WINDOW["sill"] + gs.WINDOW["height"] * 0.45])
+            tris, vel, spin = [], [], []
+            for i in range(ny):
+                for j in range(nz):
+                    q = [np.array([c[0], c[1] + Y[a, b], c[2] + Z[a, b]]) for a, b in ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))]
+                    for tri in ((q[0], q[1], q[2]), (q[0], q[2], q[3])):
+                        tri = np.array(tri)
+                        cen = tri.mean(axis=0)
+                        out = cen - impact
+                        d = np.linalg.norm(out[1:])
+                        v = np.array([2.2 + rng.uniform(0.0, 1.5), 0.0, 0.0]) + np.array([0.0, out[1], out[2]]) / max(d, 0.05) * (1.8 - min(d, 0.6) * 1.5)
+                        tris.append(tri); vel.append(v); spin.append(rng.normal(0.0, 1.0, 3) * 6.0)
+            self._shards = {"tris": np.array(tris), "vel": np.array(vel), "spin": np.array(spin), "landed": [None] * len(tris)}
+        S = self._shards
+        tau = t - self.strike_t
+        out = []
+        for k, tri in enumerate(S["tris"]):
+            if S["landed"][k] is not None:
+                out.append(S["landed"][k]); continue
+            cen = tri.mean(axis=0)
+            p = cen + S["vel"][k] * tau + np.array([0.0, 0.0, -0.5 * 9.81 * tau * tau])
+            w = S["spin"][k]
+            ang = np.linalg.norm(w) * tau
+            axis = w / max(np.linalg.norm(w), 1e-9)
+            K = np.array([[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]], [-axis[1], axis[0], 0.0]])
+            R = np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
+            shard = (tri - cen) @ R.T + p
+            if p[2] < 0.02:                                                # on the floor: flat where it fell, for good
+                flat = shard.copy(); flat[:, 2] = 0.008
+                S["landed"][k] = flat
+                shard = flat
+            out.append(shard)
+        tris = np.array(out)
+        cols = np.repeat([[0.72, 0.86, 0.92]], len(tris), axis=0)
+        return tris, cols
+
     def _hammer_pose(self, t):
         """The hammer through the sequence: lying where the hand finds it, in the hand from the grasp to the release,
         then falling (no tumble) and lying where it lands."""
@@ -166,14 +219,18 @@ class ScenePlayer:
             Lh, rz = gs.HAMMER["handle"], gs.HAMMER["rest_z"]
             low = min(p0[2] - 0.018, p0[2] + Lh * R0[2, 2] - 0.03)          # the hammer's lowest point at the release
             tau = t - H["t_release"]
-            fall = 0.5 * 9.81 * tau * tau
-            if fall < low:
-                put(p0 - np.array([0.0, 0.0, fall]), R0)
-            else:                                                          # landed: flat, the handle along the way it pointed
-                ax = R0[:, 2].copy(); ax[2] = 0.0
-                ax = ax / max(np.linalg.norm(ax), 1e-6)
-                z = np.array([0.0, 0.0, 1.0])
-                put(np.array([p0[0], p0[1], rz]), np.stack([np.cross(z, ax), z, ax], axis=1))
+            t_land = math.sqrt(2.0 * max(low, 0.0) / 9.81)                 # when its lowest point meets the ground
+            ax = R0[:, 2].copy(); ax[2] = 0.0
+            ax = ax / max(np.linalg.norm(ax), 1e-6)
+            z = np.array([0.0, 0.0, 1.0])
+            R_flat = np.stack([np.cross(z, ax), z, ax], axis=1)
+            p_flat = np.array([p0[0], p0[1], rz])
+            if tau < t_land:
+                put(p0 - np.array([0.0, 0.0, 0.5 * 9.81 * tau * tau]), R0)
+            else:                                                          # landed: it tips flat over a quarter second where it fell, then stays
+                f = mk.smooth(min(1.0, (tau - t_land) / 0.25))
+                p_land = p0 - np.array([0.0, 0.0, low])
+                put((1 - f) * p_land + f * p_flat, gs._slerp(R0, R_flat, f))
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
@@ -269,6 +326,7 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
+            renderer.extra = g.shards(t)
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"Belisario: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return

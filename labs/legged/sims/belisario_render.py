@@ -126,6 +126,7 @@ class Renderer:
             self.body[name] = model.body(name).id
         root = model.body_rootid[model.body("pelvis").id]
         self.hidden = set()                                               # geom names not drawn (a pane once broken)
+        self.extra = None                                                 # (triangles (n, 3, 3), colours (n, 3)) the scene adds this frame: shards
         self.props = []                                                   # (geom id, unit triangles, rgba): everything that is not the robot or the terrain
         for g in range(model.ngeom):
             if model.body_rootid[model.geom_bodyid[g]] == root or model.geom(g).name == "chiron_terrain":
@@ -169,6 +170,9 @@ class Renderer:
                 continue
             tris.append(unit @ data.geom_xmat[g].reshape(3, 3).T + data.geom_xpos[g])
             cols.append(np.repeat([rgba[:3]], len(unit), axis=0))
+        if self.extra is not None and len(self.extra[0]):
+            tris.append(np.asarray(self.extra[0], dtype=float))
+            cols.append(np.asarray(self.extra[1], dtype=float))
         return np.concatenate(tris), np.concatenate(cols)
 
     # ---- projection
