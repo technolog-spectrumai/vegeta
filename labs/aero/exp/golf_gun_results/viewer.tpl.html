@@ -1,0 +1,165 @@
+<title>Pekari Golf Air Cannon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* layout: a workshop sheet — the model fills the left, a title block and spec table on the right (stacks on phones) */
+:root{
+  --bg:#eef0f2; --panel:#ffffff; --ink:#1c2128; --muted:#5d6672; --line:#d3d8de;
+  --brass:#a8741a; --stage:#dfe3e8;
+  --f-head:"Archivo",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181d;--panel:#1b2027;--ink:#e6e9ed;--muted:#97a1ad;--line:#2d343d;--brass:#d9a441;--stage:#0f1216;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181d;--panel:#1b2027;--ink:#e6e9ed;--muted:#97a1ad;--line:#2d343d;--brass:#d9a441;--stage:#0f1216;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;box-sizing:border-box}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;max-width:1500px;margin:0 auto;min-height:calc(100% - 0px)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}}
+.stage{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:6px;min-height:520px;overflow:hidden}
+@media (min-width:901px){.stage{position:sticky;top:16px;height:calc(100vh - 32px);align-self:start}}
+@media (max-width:900px){.stage{min-height:420px;height:60vh}}
+canvas{display:block;width:100%;height:100%;position:absolute;inset:0;touch-action:none}
+.tabs{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;z-index:2}
+.views{position:absolute;bottom:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;z-index:2}
+button{font:500 13px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button[aria-pressed="true"]{border-color:var(--brass);color:var(--brass)}
+button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.hint{position:absolute;bottom:14px;right:12px;font:12px var(--f-mono);color:var(--muted);z-index:2}
+[hidden]{display:none!important}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font:13px var(--f-mono)}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h1{font:700 20px/1.2 var(--f-head);margin:0;text-wrap:balance;letter-spacing:.01em}
+.sub{color:var(--muted);margin:2px 0 0}
+.eyebrow{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td{padding:4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:last-child{text-align:right;font-family:var(--f-mono);font-size:13px;padding-left:8px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+.legend label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;min-width:0}
+.sw{width:12px;height:12px;border-radius:2px;border:1px solid var(--line);flex:none}
+.cmp{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:96px minmax(0,1fr) 52px;align-items:center;gap:8px;font-size:12px}
+.bar i{display:block;height:8px;background:var(--brass);border-radius:2px}
+.bar span:last-child{font-family:var(--f-mono);text-align:right}
+.note{color:var(--muted);font-size:12px;margin:0}
+</style>
+
+<div class="wrap">
+  <div class="stage" id="stage">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="views">
+      <button id="v-iso">Iso</button><button id="v-side">Side</button><button id="v-top">Top</button><button id="v-front">Front</button>
+      <button id="v-explode" aria-pressed="false">Explode</button>
+    </div>
+    <div class="hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+    <div class="loading" id="loading">loading the model…</div>
+  </div>
+  <aside>
+    <div>
+      <p class="eyebrow">Pekari rover · golf-ball air cannon</p>
+      <h1 id="title">—</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div><p class="eyebrow">Shot</p><table id="spec"></table></div>
+    <div><p class="eyebrow">Best range, three cases</p><div class="cmp" id="cmp"></div></div>
+    <div><p class="eyebrow">Parts (click to hide)</p><div class="legend" id="legend"></div></div>
+    <p class="note">Ranges are 0-D gun model + dimpled-ball flight with Mach-dependent drag, from a 0.4 m muzzle height, no spin. The transient CFD (golf_cfd.sh) will correct them. Barrel 600 mm, bore 42.7 mm, plastic cup behind the ball.</p>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const MODELS = __MODELS__;
+const CASES = __CASES__;
+const LABELS = {barrel:"Barrel",breech:"Breech + feed port",ball:"Golf ball",cup:"Sealing cup",valve:"Main valve",actuator:"Valve actuator",
+  tank:"Air tank",pipe:"Riser + tee",gauge:"Pressure gauge",relief:"Relief valve",drain:"Drain",coupler:"Fill coupler",
+  bottle:"300 bar HPA bottle",regulator:"Regulator",hose:"HP hose",hopper:"Hopper",feed:"Feed tube",clamp:"Clamps + cradle",
+  mount:"Pan-tilt mount",deck:"Basket lid"};
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+stage.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35,1,1,20000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x445566,0.9));
+const key = new THREE.DirectionalLight(0xffffff,0.9); key.position.set(600,900,700); scene.add(key);
+const rim = new THREE.DirectionalLight(0xffffff,0.35); rim.position.set(-800,300,-600); scene.add(rim);
+const root = new THREE.Group(); scene.add(root);   // the GLB is already y-up (CadQuery converts CAD z-up)
+const loader = new THREE.GLTFLoader();
+let groups = {}, base = {}, current = null, exploded = false, size = 800, centre = new THREE.Vector3();
+const EXPLODE = {hopper:[0,0,140],feed:[0,0,80],actuator:[0,0,90],ball:[0,0,0],cup:[0,0,0],tank:[0,0,-90],relief:[0,0,-50],
+  drain:[0,0,-140],pipe:[0,0,-40],gauge:[0,70,-40],bottle:[0,0,-200],regulator:[60,0,-200],hose:[40,0,-150],coupler:[60,0,-90],
+  clamp:[0,0,0],mount:[0,0,-260],deck:[0,0,-320],barrel:[140,0,0],breech:[0,0,0],valve:[-40,0,0]};
+function b64(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}
+function partOf(name){return (name||'').split('_')[0]}
+function load(name){
+  document.getElementById('loading').hidden = false;
+  loader.parse(b64(MODELS[name]),'',gltf=>{
+    root.clear(); groups = {}; base = {};
+    const model = gltf.scene;
+    model.traverse(o=>{ if(o.isMesh){ o.material = o.material.clone(); o.material.side = THREE.DoubleSide;
+      o.material.metalness = Math.min(o.material.metalness ?? 0, .35); o.material.roughness = .55; }});
+    // collect meshes by part (node names are "<part>_<hash>")
+    const meshes = []; model.traverse(o=>{ if(o.isMesh) meshes.push(o) });
+    for(const m of meshes){
+      let n = m, p = ''; while(n && !p){ const q = partOf(n.name); if(LABELS[q]) p = q; n = n.parent }
+      p = p || 'other';
+      if(!groups[p]){ groups[p] = new THREE.Group(); groups[p].name = p; root.add(groups[p]) }
+      m.updateWorldMatrix(true,false); const w = m.matrixWorld.clone();
+      groups[p].add(m); m.matrix.copy(w); m.matrix.decompose(m.position,m.quaternion,m.scale);
+    }
+    for(const k in groups) base[k] = groups[k].position.clone();
+    root.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(root); box.getCenter(centre); size = box.getSize(new THREE.Vector3()).length();
+    current = name; setExplode(exploded); view('iso'); legend(); spec();
+    document.getElementById('loading').hidden = true;
+  }, e=>{ document.getElementById('loading').textContent = 'The model failed to load: ' + e });
+}
+function view(v){
+  const d = size*1.7, c = centre;
+  const dirs = {iso:[1,.8,1.1],side:[0,0,1],top:[0,1,0.001],front:[1,0,0]};
+  const [x,y,z] = dirs[v]; const n = new THREE.Vector3(x,y,z).normalize().multiplyScalar(d);
+  camera.position.copy(c).add(n); controls.target.copy(c); camera.near = d/100; camera.far = d*20; camera.updateProjectionMatrix();
+}
+function setExplode(on){ exploded = on; document.getElementById('v-explode').setAttribute('aria-pressed', on);
+  for(const k in groups){ const e = EXPLODE[k]||[0,0,0]; groups[k].position.set(base[k].x+(on?e[0]:0), base[k].y+(on?e[1]:0), base[k].z+(on?e[2]:0)) } }
+function legend(){
+  const el = document.getElementById('legend'); el.innerHTML = '';
+  Object.keys(groups).sort((a,b)=>Object.keys(LABELS).indexOf(a)-Object.keys(LABELS).indexOf(b)).forEach(k=>{
+    let col = '#888'; groups[k].traverse(o=>{ if(o.isMesh) col = '#'+o.material.color.clone().convertLinearToSRGB().getHexString() });
+    const id = 'p-'+k, lab = document.createElement('label');
+    lab.innerHTML = `<input type="checkbox" id="${id}" checked><span class="sw" style="background:${col}"></span><span>${LABELS[k]||k}</span>`;
+    lab.querySelector('input').onchange = e => { groups[k].visible = e.target.checked };
+    el.appendChild(lab);
+  });
+}
+const f = (x,d=0)=>Number(x).toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d});
+function spec(){
+  const c = CASES[current];
+  document.getElementById('title').textContent = c.title;
+  document.getElementById('sub').textContent = c.tank + ' · ' + c.valve;
+  const rows = [["Tank pressure",f(c.p_bar_g,1)+" bar g"],["Tank rated",f(c.rated,0)+" bar g"],["Tank wall",f(c.wall,1)+" mm"],
+    ["Valve orifice",f(c.orifice,0)+" mm"],["Muzzle speed",f(c.muzzle,0)+" m/s (Mach "+f(c.mach,2)+")"],
+    ["Same, ideal valve",f(c.ideal_valve_muzzle,0)+" m/s"],["Time in barrel",f(c.barrel_ms,1)+" ms"],
+    ["Ball energy",f(c.energy_J,0)+" J"],["Air per shot",f(c.air_g,1)+" g"],["Range at 10°",f(c.r10,0)+" m"],
+    ["Best range",f(c.best_range,0)+" m at "+f(c.best_elev,0)+"°"],["Flight time (best)",f(c.flight_s,1)+" s"]];
+  document.getElementById('spec').innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  const mx = Math.max(...Object.values(CASES).map(x=>x.best_range));
+  document.getElementById('cmp').innerHTML = Object.entries(CASES).map(([k,x])=>
+    `<div class="bar"><span>${x.title}</span><i style="width:${100*x.best_range/mx}%;opacity:${k===current?1:.4}"></i><span>${f(x.best_range,0)} m</span></div>`).join('');
+}
+const tabs = document.getElementById('tabs');
+Object.entries(CASES).forEach(([k,c],i)=>{ const b = document.createElement('button'); b.textContent = c.title + ' · ' + f(c.muzzle,0) + ' m/s';
+  b.setAttribute('role','tab'); b.onclick = ()=>{ [...tabs.children].forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); load(k) };
+  b.setAttribute('aria-pressed', i===2?'true':'false'); tabs.appendChild(b) });
+['iso','side','top','front'].forEach(v=>document.getElementById('v-'+v).onclick=()=>view(v));
+document.getElementById('v-explode').onclick=()=>setExplode(!exploded);
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix() }
+new ResizeObserver(resize).observe(stage); resize();
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera) })();
+load(Object.keys(CASES)[2]);
+</script>

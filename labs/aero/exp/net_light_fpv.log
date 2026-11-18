@@ -1,0 +1,32 @@
+calibration: net open to 1.96 m, at 5 m: span 1.58 m, at 10 m 1.24 m; centre speed falls from 45.0 m/s to 13.1 m/s at 10 m  [15 s]
+  range    3 m, shot 1/5: miss  (flight 0.10 s, elevation 46.4 deg)  [24 s]
+  range    3 m, shot 2/5: miss  (flight 0.10 s, elevation 47.0 deg)  [33 s]
+  range    3 m, shot 3/5: miss  (flight 0.10 s, elevation 46.5 deg)  [42 s]
+  range    3 m, shot 4/5: miss  (flight 0.10 s, elevation 47.6 deg)  [51 s]
+  range    3 m, shot 5/5: miss  (flight 0.10 s, elevation 46.3 deg)  [60 s]
+  range    4 m, shot 1/5: miss  (flight 0.15 s, elevation 37.2 deg)  [69 s]
+  range    4 m, shot 2/5: miss  (flight 0.15 s, elevation 37.8 deg)  [79 s]
+  range    4 m, shot 3/5: miss  (flight 0.15 s, elevation 38.4 deg)  [88 s]
+  range    4 m, shot 4/5: miss  (flight 0.15 s, elevation 38.3 deg)  [97 s]
+  range    4 m, shot 5/5: miss  (flight 0.15 s, elevation 38.0 deg)  [106 s]
+  range    5 m, shot 1/5: miss  (flight 0.23 s, elevation 30.5 deg)  [116 s]
+  range    5 m, shot 2/5: miss  (flight 0.23 s, elevation 31.0 deg)  [126 s]
+  range    5 m, shot 3/5: miss  (flight 0.23 s, elevation 30.6 deg)  [136 s]
+  range    5 m, shot 4/5: miss  (flight 0.23 s, elevation 30.6 deg)  [146 s]
+  range    5 m, shot 5/5: miss  (flight 0.23 s, elevation 30.2 deg)  [157 s]
+  range    6 m, shot 1/5: miss  (flight 0.34 s, elevation 26.2 deg)  [168 s]
+  range    6 m, shot 2/5: miss  (flight 0.34 s, elevation 26.1 deg)  [179 s]
+  range    6 m, shot 3/5: miss  (flight 0.34 s, elevation 25.6 deg)  [190 s]
+  range    6 m, shot 4/5: miss  (flight 0.34 s, elevation 26.1 deg)  [202 s]
+  range    6 m, shot 5/5: miss  (flight 0.34 s, elevation 26.5 deg)  [213 s]
+  range    8 m, shot 1/5: miss  (flight 0.60 s, elevation 21.7 deg)  [228 s]
+  range    8 m, shot 2/5: miss  (flight 0.60 s, elevation 21.2 deg)  [242 s]
+  range    8 m, shot 3/5: miss  (flight 0.60 s, elevation 21.4 deg)  [256 s]
+  range    8 m, shot 4/5: miss  (flight 0.60 s, elevation 21.1 deg)  [270 s]
+  range    8 m, shot 5/5: miss  (flight 0.60 s, elevation 21.3 deg)  [284 s]
+range    3 m: captured 0/5, fouled 0
+range    4 m: captured 0/5, fouled 0
+range    5 m: captured 0/5, fouled 0
+range    6 m: captured 0/5, fouled 0
+range    8 m: captured 0/5, fouled 0
+wrote net_light_results/net_drone_light_fpv_h4_v15.png

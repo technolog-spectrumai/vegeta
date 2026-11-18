@@ -1,0 +1,14 @@
+# Recoilless 8 mm emitter: kinetic energy of the ball at 0, 50 and 100 m, Gaussian fit
+# 8 mm steel ball, 2.08 g; muzzle 280 m/s, scatter 0.5 % speed / 0.06 deg; calm air, aimed at 100 m.
+# Source: 2000 model shots (bearing_speed_dist.monte_carlo), written to bearing_wind_results/energy_0_50_100m.csv, read back and fitted
+# with a normal distribution (scipy.stats.norm.fit: maximum likelihood -> mean and standard deviation).
+energy_J:
+  0m:    # at the muzzle
+    mean: 81.541
+    std: 0.8092
+  50m:   # halfway
+    mean: 39.637
+    std: 0.3341
+  100m:  # at the target
+    mean: 20.515
+    std: 0.1676
