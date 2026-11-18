@@ -65,7 +65,11 @@ def mdot_orifice(a, p0, T0, pb):
     return a * p0 / math.sqrt(R * T0) * math.sqrt(2 * GAM / (GAM - 1) * (r ** (2 / GAM) - r ** ((GAM + 1) / GAM)))
 
 
-def shot(case: gg.Case, throat_mm=0.0, eps=2.0, valve_scale=1.0, p_gauge=None, friction=4.0, dt=1e-6, t_after=0.05):
+GOLF = dict(bore_m=gg.BORE, mass=gg.M_BALL, barrel_m=gg.BARREL, d_ball=gg.D_BALL)
+
+
+def shot(case: gg.Case, throat_mm=0.0, eps=2.0, valve_scale=1.0, p_gauge=None, friction=4.0, dt=1e-6, t_after=0.05,
+         proj=None):
     """One shot of the venturi launcher (``throat_mm`` 0 = the plain golf cannon). The valve opens over its time,
     stays open until the ball leaves, then closes over the same time; the chamber then blows down through the muzzle
     and the nozzle. Returns the ball's speed, the launcher's impulse (+ forward), the air used, the peak chamber
@@ -77,7 +81,10 @@ def shot(case: gg.Case, throat_mm=0.0, eps=2.0, valve_scale=1.0, p_gauge=None, f
     a_valve = v.cd * v.area * valve_scale ** 2
     a_t = math.pi / 4 * (throat_mm * 1e-3) ** 2
     x0 = 0.02
-    travel = gg.BARREL - x0 - gg.D_BALL
+    pr = proj or GOLF                                 # the projectile and the tube: the golf ball unless given
+    A_B = math.pi / 4 * pr["bore_m"] ** 2
+    M_BALL = pr["mass"]
+    travel = pr["barrel_m"] - x0 - pr["d_ball"]
     Vc = A_B * x0
     m_c = PA * Vc / (R * TA)
     E_c = PA * Vc / (GAM - 1)
@@ -138,34 +145,34 @@ def shot(case: gg.Case, throat_mm=0.0, eps=2.0, valve_scale=1.0, p_gauge=None, f
             "barrel_ms": (out_t or t) * 1e3}
 
 
-def null_throat(case, eps=2.0, valve_scale=1.0, p_gauge=None):
+def null_throat(case, eps=2.0, valve_scale=1.0, p_gauge=None, proj=None, dt=4e-6, friction=4.0):
     """The throat diameter (mm) that leaves the launcher no net impulse (bisection on the impulse's sign)."""
-    lo, hi = 0.0, gg.BORE * 1e3
+    lo, hi = 0.0, (proj or GOLF)["bore_m"] * 1e3
     for _ in range(30):
         mid = (lo + hi) / 2
-        j = shot(case, mid, eps, valve_scale, p_gauge, dt=4e-6)["impulse_Ns"]
+        j = shot(case, mid, eps, valve_scale, p_gauge, dt=dt, proj=proj, friction=friction)["impulse_Ns"]
         lo, hi = (mid, hi) if j < 0 else (lo, mid)
     return (lo + hi) / 2
 
 
-def restore_pressure(case, throat_mm, eps, valve_scale, target):
+def restore_pressure(case, throat_mm, eps, valve_scale, target, proj=None, dt=4e-6, friction=4.0):
     """The tank pressure (bar g) that gives the plain gun's ball speed back with this nozzle; the throat is kept."""
     lo, hi = 0.1, 400.0
     for _ in range(30):
         mid = math.sqrt(lo * hi)
-        v = shot(case, throat_mm, eps, valve_scale, mid, dt=4e-6)["v"]
+        v = shot(case, throat_mm, eps, valve_scale, mid, dt=dt, proj=proj, friction=friction)["v"]
         lo, hi = (mid, hi) if v < target else (lo, mid)
     return hi
 
 
-def recoilless_design(case, target, eps=2.0, valve_scale=1.0, iters=4):
+def recoilless_design(case, target, eps=2.0, valve_scale=1.0, iters=4, proj=None, dt=4e-6, friction=4.0):
     """Throat AND tank pressure together: the plain gun's ball speed with no net recoil (alternate: null the impulse
     at this pressure, restore the speed with this throat)."""
     p = case.p_gauge
     th = 0.0
     for _ in range(iters):
-        th = null_throat(case, eps, valve_scale, p)
-        p = restore_pressure(case, th, eps, valve_scale, target)
+        th = null_throat(case, eps, valve_scale, p, proj=proj, dt=dt, friction=friction)
+        p = restore_pressure(case, th, eps, valve_scale, target, proj=proj, dt=dt, friction=friction)
     return th, p
 
 
