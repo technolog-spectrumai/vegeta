@@ -1,0 +1,16 @@
+20 shots at 79 m/s, 30 m, elevation 3.077 deg: 14 hits, 61 points, rings [2, 3, 5, 6, 6, 8, 7, 0, 0, 8, 2, 1, 0, 0, 2, 6, 2, 3, 0, 0], the lollipop swung to -0.0 deg
+  shot  1: hit at (+4.3, +11.3) cm, 65 m/s, ring 2
+  shot  2: hit at (+5.8, +9.7) cm, 64 m/s, ring 3
+  shot  3: hit at (+4.8, +6.8) cm, 64 m/s, ring 5
+  shot  4: hit at (+7.2, +0.9) cm, 65 m/s, ring 6
+  shot  5: hit at (-6.3, -3.3) cm, 64 m/s, ring 6
+  shot  6: hit at (-3.8, +1.5) cm, 65 m/s, ring 8
+  shot  7: hit at (+0.1, -4.6) cm, 64 m/s, ring 7
+  shot 10: hit at (+2.8, +2.1) cm, 64 m/s, ring 8
+  shot 11: hit at (-4.9, -11.2) cm, 66 m/s, ring 2
+  shot 12: hit at (+8.7, +11.7) cm, 66 m/s, ring 1
+  shot 15: hit at (-1.3, -12.4) cm, 65 m/s, ring 2
+  shot 16: hit at (-6.6, +0.6) cm, 65 m/s, ring 6
+  shot 17: hit at (+4.2, +12.6) cm, 65 m/s, ring 2
+  shot 18: hit at (-6.6, +8.3) cm, 64 m/s, ring 3
+wrote bearing_target_results/target_79mps_30m.png
