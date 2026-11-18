@@ -936,7 +936,7 @@ def scenario_window_hammer(kin, q_quad, p):
     S = gm.scale()
     v, stop_x = (walk_speed(), p["hammer_x"] - 0.3 * S) if up_ else (walk_speed(), x - 0.95)   # standing: a short step from the hammer
     b_quad = (stop_x, gm.STANCE["h"], gm.STANCE["pitch"])
-    b_pick = (stop_x, 0.42 * S, 0.8) if up_ else b_quad                        # standing: a deep squat, bending to the ground (the spine bent too)
+    b_pick = (stop_x, 0.46 * S, 0.8) if up_ else b_quad                        # standing: a deep squat, bending to the ground (the spine bent too)
     PICK_SPINE = 0.6 if up_ else None                                     # the spine's pitch modules bent forward over the squat
     b_stand = (stop_x, stand_base()[0], stand_base()[1])
     planted = gt._planted(kin, q_quad, stop_x, which=("L", "R"))

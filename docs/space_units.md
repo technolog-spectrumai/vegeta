@@ -239,41 +239,63 @@ sequence in MuJoCo - the keyframes by default, `--mode physics` with the assist 
 
 ![The wall](../labs/legged/sims/output/space_kerchak_wall_14s.png)
 
+## Solid limbs on solid obstacles (`solidity.py`)
+
+The scenarios are kinematic, so nothing stopped a shin from passing through a rung or a foot through a sill until
+`solidity.Solid` did: it wraps the scene's own MuJoCo model (the frame with its props, every drawn piece of the frame
+made to collide, the fingers left out because they close round the bars) and reports each limb's penetration into a
+prop, or into another limb, as a push-out target (the point and where it must go to be 2 cm clear).
+`kerchak_tasks.contact_motion` re-solves every frame with those targets (one per limb, at a lower weight than the
+holds, dropped if they would cost a hold more than 3 cm), ten frames a second so the player's interpolation stays
+close, and each motion's check carries `penetration_raw_m` (before) and `penetration_max_m` (after, with the limb and
+the prop). The soles' contact points are on the sole's bottom face (`humanoid_motions.sole_points`, from the foot
+box), so a foot stands on a hold rather than in it; the walk's pelvis height is where its lowest sole point touches
+the ground (`gait_height`). The door's hinge and the broken pane are known to the check. What is left, at the video's
+frame rate: the wall, the door and the window with the hammer are within 2.5 cm on both frames (a shin against the
+rung above as a foot lands, a foot's edge in the ground in a deep squat; Kerchak's feet 3.6 cm into the sill at the
+crouch and his head 4.7 cm into the wall above as he dives), the tree within 3 cm standing and 9 cm on four, the
+rope within 2.6 cm, the hull within 2.5 cm standing and 11 cm on four: the hull plate now stands on the ground at its
+slope (it was tilted and floating), and Kerchak's leg geometry on it is not solved yet.
+
 ## The upright humanoid (`space_unit_robots.humanoid`, `space_unit_specs.HUMANOID`, `--machine humanoid`)
 
-The same skeleton, spine, modules and hands at a human's proportions (a 2.07 m frame: a 0.47 m thigh and a 0.44 m
-shin, a 0.33 m upper arm and a 0.30 m forearm, a narrower pelvis, the hips 0.26 m apart; `HUMANOID` overrides
-`MARINE`'s numbers), standing at rest with the arms hanging and the knees a little bent (`humanoid_motions.stand_pose`:
+The same skeleton, spine, modules and hands at a tall human's size: `HUMANOID` is a human's proportions (a narrower
+pelvis, the hips closer, longer legs for the trunk; `_HUMANOID_207`) scaled by `HUMANOID_SCALE` 0.87 to 1.80 m (the
+thigh 0.41 m, the shin 0.38 m, the upper arm 0.29 m, the forearm 0.26 m); `kerchak_motions.scale()` scales the
+upright scenarios' stops, crouches and climbing frames with it. It stands at rest with the arms hanging and the knees a little bent (`humanoid_motions.stand_pose`:
 a straight knee is a singular start for the IK, the leg cannot shorten to first order). It walks upright on Talia's
 gait machinery at 1 m/s (`humanoid_motions.walk`, four times Kerchak's knuckle walk) and does Kerchak's tasks from
 standing: `kerchak_motions.STANCE` (the pelvis height and pitch of the rest pose, and whether the frame is upright)
 is what the scenarios read instead of Kerchak's quad numbers, and `set_stance` switches it, so the same scenario code
 serves both. Where a human's reach differs from a gorilla's, the scenarios branch on `STANCE["upright"]`:
 
-- the climbs stop closer to the surface (0.6 m, the arms being shorter for the height of the shoulder), the pelvis
-  comes in over the planted feet while the hands reach, and rides 0.62 m above the feet's holds; on the tree it
-  stays 0.25 m from the bark, on the rope 0.35 m, on the hull 0.3 m off the plate with the hands three ribs above
-  the feet, the pelvis 0.8 m up the plate from them and the feet flatter on the ribs (the next rib would otherwise be
-  under the hip); the hull's mount squats forward to the holds, then rises as the feet step;
+- the climbs stop closer to the surface (the arms being shorter for the height of the shoulder), the pelvis comes in
+  over the planted feet while the hands reach, then the hands move up first each cycle and the legs push with the
+  pelvis rising (the trailing leg must still reach its rung); the pelvis rides well out from the wall and the feet
+  swing wide, keeping the knees behind the rungs (a straight knee is the wrong branch of the leg's IK, so the climbs
+  are regularised to a bent-knee crouch, `climb_ref`); the hands take a rung three above the feet; on the tree the
+  chest is near the bark and the feet out on the branches clear of the trunk, on the hull the pelvis is well off the
+  plate with the hands three ribs above the feet and the feet along the plate;
 - the door is taken from 2.4 m, leaning (the pelvis 0.2 m down, pitched 0.3 rad), the push leaning further and lower
   (the legs cannot stretch to the swung lever otherwise);
 - the hammer lies 0.75 m from the wall so that the blow lands at arm's length; the pick is a deep squat with the
   spine's modules bent forward 0.6 rad (`PICK_SPINE`), the left arm simply hanging from the shoulder;
 - the window: the hip's range does not allow a foot stepped up onto a sill at the hip's height, so the humanoid takes
-  the jambs (the fingers round the frame's outer corners, the roll about them chosen by the static search), springs
-  off its feet and pulls up to a crouch in the opening (`SILL_CROUCH`: the pelvis 0.4 m above the sill, pitched 0.7
-  rad, the head under the 2.2 m lintel), the feet coming over the edge one after the other from hanging, then hops
-  down inside (`_window_entry_upright`). The upright frame's hip pitch range is widened to (−2.4, 0.8) rad for this
-  crouch and the squat to the ground (`bare(upright=True)`); Kerchak keeps the module's (−2.0, 0.8).
+  the jambs high (the fingers round the frame's outer corners, the roll about them chosen by the static search),
+  springs off its feet and pulls up outside the wall's face (no lintel there), the feet come straight up and in over
+  the sill one after the other, then it moves in to a crouch in the opening (`SILL_CROUCH`, the head under the 2.2 m
+  lintel) and hops down inside with the legs folded until it is past the wall (`_window_entry_upright`). The upright
+  frame's hip pitch range is widened to (−2.4, 0.8) rad for the crouches (`bare(upright=True)`); Kerchak keeps the
+  module's (−2.0, 0.8).
 
-| scenario (humanoid) | IK error (mount / cycles, or per motion) |
+| scenario (humanoid, 1.80 m) | IK error (mount / cycles, or per motion), with the solid check on |
 |---|---|
-| wall | 4 cm / 2 cm |
-| tree | 4 cm / 7–17 cm transient |
-| hull | 4 cm / 8 cm |
-| rope | 4 cm / 11 cm |
-| door | reach 2 cm, turn 1 cm, push 2 cm, release 2 cm |
-| window_hammer | pick 2 cm, up 3 cm, swing 10 cm transient, drop 2 cm, onto the sill 8 cm, hop (joint track) |
+| wall | 2 cm / 7 cm transient |
+| tree | 5 cm / 5 cm |
+| hull | 8 cm / 12 cm transient |
+| rope | 5 cm / 5 cm |
+| door | reach 3 cm, turn 2 cm, push 5 cm, release 8 cm transient |
+| window_hammer | pick 3 cm, up 4 cm, swing 12 cm transient, drop 13 cm transient (the arm settling), onto the sill 6 cm, hop (joint track) |
 
 `python sims/space_kerchak_scenes.py --scene door --machine humanoid` renders `sims/output/space_humanoid_<scene>.mp4`.
 It is lighter and quicker than Kerchak and walks four times as fast; it has not Kerchak's strength (the same modules
