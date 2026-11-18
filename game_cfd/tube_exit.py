@@ -28,7 +28,13 @@ import numpy as np
 import common as C
 
 CASES = ("slow", "subsonic_fast", "near_sonic")
-REAR_MM = 20.5          # the ball's rear at the start (valve seat at 20 mm)
+VALVE_MM = 20.0         # the valve seat (the high-pressure gas starts behind it)
+
+
+def rear_mm(cell):
+    """The ball's rear at the start: two cells past the valve seat. sonic_ball cuts a block between the seat and the
+    ball; a sliver (0.5 mm in 2 cells with 10 mm cells elsewhere) breaks the time step and the run dies at once."""
+    return VALVE_MM + 2 * cell
 
 
 def setup(kind):
@@ -80,8 +86,9 @@ def main(argv):
     a = ap.parse_args(argv[1:])
     gg, bore_mm, mass, real, ideal_at = setup(kind)
     tube_mm = gg.BARREL * 1e3
-    travel_mm = tube_mm - REAR_MM - bore_mm - 4 if a.full else min(a.travel, tube_mm - REAR_MM - bore_mm - 4)
     cell = bore_mm / 4
+    REAR_MM = rear_mm(cell)
+    travel_mm = tube_mm - REAR_MM - bore_mm - 4 if a.full else min(a.travel, tube_mm - REAR_MM - bore_mm - 4)
     C.banner(f"exit velocity, {kind} tube: bore {bore_mm:g} mm, {tube_mm:.0f} mm, ball {mass * 1e3:.2f} g")
     C.log(f"CFD: {cell:.2f} mm cells, CFL 0.3, first {travel_mm:.0f} mm of travel" + ("   (--dry: nothing runs)" if a.dry else ""))
     rows = []
