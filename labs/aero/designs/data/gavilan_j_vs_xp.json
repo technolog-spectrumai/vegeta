@@ -1,0 +1,124 @@
+{
+ "source": "gavilan_flight.kpi_table, intercept, catch_sequence; gavilan.Gavilan.talon_layout",
+ "note": "reduced point-mass models; catchers, guards and legs are hand estimates; aiming tolerance: J the bandit's centre inside the open net, XP the body inside the open foot; no contact simulated",
+ "kpis": [
+  {
+   "key": "mass_kg",
+   "label": "mass [kg]",
+   "better": "low"
+  },
+  {
+   "key": "span",
+   "label": "width in flight [m]",
+   "better": "low"
+  },
+  {
+   "key": "parts",
+   "label": "printed pieces",
+   "better": "low"
+  },
+  {
+   "key": "tw",
+   "label": "static thrust / weight",
+   "better": "high"
+  },
+  {
+   "key": "tw_bandit",
+   "label": "thrust / weight carrying the bandit",
+   "better": "high"
+  },
+  {
+   "key": "to50",
+   "label": "perch to a bandit 50 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "to100",
+   "label": "perch to a bandit 100 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "to200",
+   "label": "perch to a bandit 200 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "rate15",
+   "label": "turn rate at 15 m/s [deg/s]",
+   "better": "high"
+  },
+  {
+   "key": "stop",
+   "label": "stop from 25 m/s [m]",
+   "better": "low"
+  },
+  {
+   "key": "aperture",
+   "label": "catcher opening [m]",
+   "better": "high"
+  },
+  {
+   "key": "side_tol",
+   "label": "aiming tolerance, sideways [± m]",
+   "better": "high"
+  },
+  {
+   "key": "contact",
+   "label": "closing speed at the grab [m/s]",
+   "better": "high"
+  },
+  {
+   "key": "cruise",
+   "label": "cruise endurance [min]",
+   "better": "high"
+  },
+  {
+   "key": "hover",
+   "label": "hover endurance [min]",
+   "better": "high"
+  },
+  {
+   "key": "top",
+   "label": "top speed [m/s]",
+   "better": "high"
+  }
+ ],
+ "rows": {
+  "gavilan_j": {
+   "mass_kg": 1.6,
+   "rate15": 230.859,
+   "stop": 13.431,
+   "top": 47.5,
+   "cruise": 14.379,
+   "hover": 6.677,
+   "span": 0.7,
+   "to50": 2.679,
+   "to100": 3.775,
+   "to200": 5.84,
+   "tw_bandit": 3.541,
+   "tw": 6.196,
+   "parts": 14.0,
+   "aperture": 0.445,
+   "side_tol": 0.223,
+   "contact": 3.0
+  },
+  "gavilan_xp": {
+   "mass_kg": 1.513,
+   "rate15": 244.282,
+   "stop": 12.982,
+   "top": 47.5,
+   "cruise": 13.71,
+   "hover": 7.176,
+   "span": 0.481,
+   "to50": 2.632,
+   "to100": 3.725,
+   "to200": 5.635,
+   "tw_bandit": 3.653,
+   "tw": 6.551,
+   "parts": 10.0,
+   "aperture": 0.168,
+   "side_tol": 0.059,
+   "contact": 1.5
+  }
+ }
+}
