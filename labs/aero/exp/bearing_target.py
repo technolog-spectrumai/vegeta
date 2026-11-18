@@ -58,33 +58,48 @@ def xml(distance, n):
 </mujoco>"""
 
 
-def flight_aim(speed, distance, target_z):
-    """The elevation that puts a ball from the muzzle through (distance, target_z) with this drag (bisection on a
-    point-mass flight, the same model MuJoCo integrates)."""
-    def z_at(elev, with_time=False):
-        a = math.radians(elev)
-        p = MUZZLE.copy()
-        v = np.array([speed * math.cos(a), 0.0, speed * math.sin(a)])
-        dt, t = 1e-4 if distance < 60 else 5e-4, 0.0
-        while p[0] < distance:
-            s = np.linalg.norm(v)
-            v = v + (-0.5 * RHO * cd(s) * AREA * s / MASS * v + np.array([0, 0, -9.81])) * dt
-            p = p + v * dt
-            t += dt
-            if p[2] < -1 or v[0] <= 0:
-                return (-1e9, t) if with_time else -1e9
-        return (p[2], t) if with_time else p[2]
-    lo, hi = -2.0, 40.0                               # the low (direct) solution
-    if z_at(hi) < target_z:
-        raise ValueError(f"{speed:g} m/s cannot reach {distance:g} m at {target_z:g} m high")
-    for _ in range(40):
-        mid = (lo + hi) / 2
-        lo, hi = (mid, hi) if z_at(mid) < target_z else (lo, mid)
-    e = (lo + hi) / 2
-    return e, z_at(e, True)[1]
+def path_to(speed, elev, az, distance, wind=(0.0, 0.0), with_time=False):
+    """Point-mass flight (the model MuJoCo integrates) until x = distance: (y, z[, t]) there; drag on the speed
+    relative to the air (``wind``: the air's velocity, x along the range, y to the left)."""
+    a, b = math.radians(elev), math.radians(az)
+    p = MUZZLE.copy()
+    v = np.array([speed * math.cos(a) * math.cos(b), speed * math.cos(a) * math.sin(b), speed * math.sin(a)])
+    w = np.array([wind[0], wind[1], 0.0])
+    dt, t = 1e-4 if distance < 60 else 5e-4, 0.0
+    while p[0] < distance:
+        u = v - w
+        s = np.linalg.norm(u)
+        v = v + (-0.5 * RHO * cd(s) * AREA * s / MASS * u + np.array([0, 0, -9.81])) * dt
+        p = p + v * dt
+        t += dt
+        if p[2] < -1 or v[0] <= 0:
+            return (0.0, -1e9, t) if with_time else (0.0, -1e9)
+    return (p[1], p[2], t) if with_time else (p[1], p[2])
 
 
-def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.01, scatter_deg=0.25):
+def flight_aim(speed, distance, target_z, wind=(0.0, 0.0)):
+    """Elevation and azimuth (deg) that put a ball through (distance, 0, target_z) in this mean wind (bisection on
+    the elevation, the azimuth corrected for the drift; calm: azimuth 0). Returns (elevation, azimuth, flight time)."""
+    az = 0.0
+    for _ in range(4 if wind[1] else 1):
+        lo, hi = -2.0, 40.0                           # the low (direct) solution
+        if path_to(speed, hi, az, distance, wind)[1] < target_z:
+            raise ValueError(f"{speed:g} m/s cannot reach {distance:g} m at {target_z:g} m high")
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if path_to(speed, mid, az, distance, wind)[1] < target_z else (lo, mid)
+        e = (lo + hi) / 2
+        y = path_to(speed, e, az, distance, wind)[0]
+        az -= math.degrees(math.atan2(y, distance))
+    y, z, t = path_to(speed, e, az, distance, wind, True)
+    return e, az, t
+
+
+def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.01, scatter_deg=0.25,
+        wind=(0.0, 0.0), gust=0.0, aim_wind=False):
+    """``wind``: the mean air velocity (x along the range, + = tail wind; y across, + = blowing to the left) m/s;
+    ``gust``: each shot's own wind deviation (standard deviation, both components); ``aim_wind``: the aim corrects
+    for the mean wind (else it is aimed as in calm air)."""
     rng = np.random.default_rng(seed)
     m = mujoco.MjModel.from_xml_string(xml(distance, shots))
     d = mujoco.MjData(m)
@@ -92,7 +107,11 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
     gid = [m.geom(f"g{i}").id for i in range(shots)]
     bid = [m.body(f"b{i}").id for i in range(shots)]
     centre_z = POLE_H
-    elev, t_fly = flight_aim(speed, distance, centre_z)
+    elev, az0, t_fly = flight_aim(speed, distance, centre_z, wind if aim_wind else (0.0, 0.0))
+    if wind != (0.0, 0.0) or gust:
+        t_fly = max(t_fly, flight_aim(speed, distance, centre_z, wind)[2])
+    winds = [np.array([wind[0] + gust * rng.standard_normal(), wind[1] + gust * rng.standard_normal(), 0.0])
+             for _ in range(shots)]
     t_track = 1.4 * t_fly + 0.2                      # follow each ball this long
     fired = [False] * shots
     tracks = [[] for _ in range(shots)]
@@ -107,7 +126,7 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
             fired[i] = True
             s = speed * (1 + scatter_speed * rng.standard_normal())
             el = math.radians(elev + scatter_deg * rng.standard_normal())
-            az = math.radians(scatter_deg * rng.standard_normal())
+            az = math.radians(az0 + scatter_deg * rng.standard_normal())
             q = m.jnt_qposadr[m.body_jntadr[bid[i]]]
             dv = m.jnt_dofadr[m.body_jntadr[bid[i]]]
             d.qpos[q:q + 3] = MUZZLE
@@ -118,9 +137,9 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
         for k in range(shots):
             if fired[k] and not done[k]:
                 dv = m.jnt_dofadr[m.body_jntadr[bid[k]]]
-                v = d.qvel[dv:dv + 3]
-                sp = np.linalg.norm(v)
-                d.xfrc_applied[bid[k], :3] = -0.5 * RHO * cd(sp) * AREA * sp * v if sp > 0.1 else 0
+                u = d.qvel[dv:dv + 3] - winds[k]            # the speed relative to the air
+                sp = np.linalg.norm(u)
+                d.xfrc_applied[bid[k], :3] = -0.5 * RHO * cd(sp) * AREA * sp * u if sp > 0.1 else 0
         mujoco.mj_step(m, d)
         step += 1
         # contacts: the first one with the disc is a hit
@@ -148,7 +167,7 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
         else:
             r = math.hypot(h[0], h[1])
             rings.append(max(0, 10 - int(r / 0.015)) if r <= DISC_R else 0)
-    return dict(elev=elev, t_fly=t_fly, tracks=[np.array(t) for t in tracks], hit=hit, rings=rings, distance=distance, speed=speed,
+    return dict(elev=elev, az=az0, wind=wind, gust=gust, aim_wind=aim_wind, t_fly=t_fly, tracks=[np.array(t) for t in tracks], hit=hit, rings=rings, distance=distance, speed=speed,
                 swing_deg=math.degrees(d.qpos[m.jnt_qposadr[m.joint("hinge").id]]))
 
 
@@ -179,7 +198,11 @@ def plot(res, out):
     side.axhline(0, color="olive", lw=1)
     side.plot(0, MUZZLE[2], "ks", ms=6)
     side.set_ylabel("height z [m]")
-    side.set_title(f"Side view: {n} shots, {res['speed']:.0f} m/s, elevation {res['elev']:.2f}°  (red: hit)")
+    wtxt = ""
+    if res.get("wind", (0, 0)) != (0.0, 0.0) or res.get("gust"):
+        wtxt = (f", wind ({res['wind'][0]:+g}, {res['wind'][1]:+g}) m/s ± {res['gust']:g}, "
+                + ("aim corrected" if res["aim_wind"] else "aim uncorrected"))
+    side.set_title(f"Side view: {n} shots, {res['speed']:.0f} m/s, elevation {res['elev']:.2f}°{wtxt}  (red: hit)")
     side.set_ylim(-0.1, max(1.8, max(tr[:, 3].max() for tr in res["tracks"] if len(tr)) + 0.2))
     top.plot([L, L], [-DISC_R, DISC_R], color="goldenrod", lw=6)
     ymax = max(1.0, 1.2 * max(abs(tr[:, 2]).max() for tr in res["tracks"] if len(tr)))
@@ -267,8 +290,15 @@ if __name__ == "__main__":
     ap.add_argument("--distance", type=float, default=30.0)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out", default="bearing_target.png")
+    ap.add_argument("--scatter-deg", type=float, default=0.25, help="direction scatter, 1 sigma (deg)")
+    ap.add_argument("--scatter-speed", type=float, default=0.01, help="speed scatter, 1 sigma (fraction)")
+    ap.add_argument("--wind", default="0,0", help="mean wind x,y m/s (x + = tail wind, y + = to the left)")
+    ap.add_argument("--gust", type=float, default=0.0, help="each shot's wind deviation, 1 sigma m/s")
+    ap.add_argument("--aim-wind", action="store_true", help="aim corrects for the mean wind")
+    ap.add_argument("--gap", type=float, default=0.25, help="s between shots")
     a = ap.parse_args()
-    r = run(a.shots, a.speed, a.distance, a.seed)
+    r = run(a.shots, a.speed, a.distance, a.seed, gap=a.gap, scatter_speed=a.scatter_speed, scatter_deg=a.scatter_deg,
+            wind=tuple(float(x) for x in a.wind.split(",")), gust=a.gust, aim_wind=a.aim_wind)
     hits = sum(h is not None for h in r["hit"])
     print(f"{a.shots} shots at {a.speed:.0f} m/s, {a.distance:.0f} m, elevation {r['elev']:.3f} deg: {hits} hits, "
           f"{sum(r['rings'])} points, rings {r['rings']}, the lollipop swung to {r['swing_deg']:.1f} deg")
