@@ -95,14 +95,27 @@ def main(argv):
     b = BALLS[name]
     a = C.args(argv[1:], C.OUT / f"aero_{name}.yaml")
     work = C.OUT / f"aero_{name}"
+    C.banner(f"{name} ball in flight: {b['note']}")
+    C.log(f"ball d = {b['d'] * 1e3:.2f} mm, m = {b['m'] * 1e3:.2f} g; template {b['template']}; speeds {b['speeds']} m/s")
+    C.log(f"cases in {work}" + ("   (--dry: nothing runs, hand values only)" if a.dry else f", {a.processors} processor(s)"))
     table, rows = {}, []
-    for v in b["speeds"]:
+    for i, v in enumerate(b["speeds"], 1):
         res = None
+        label = f"[{i}/{len(b['speeds'])}] {v:g} m/s"
+        C.log(f"{label}: Re {v * b['d'] / C.NU:.3g}, Mach {v / C.A_SOUND:.2f}, hand Cd {b['cd_hand']}")
         if not a.dry:
-            res = case(name, b, v, work).ensure(run=True, processors=a.processors)
+            c = case(name, b, v, work)
+            C.log(f"{label}: case {c.workdir}")
+            res = c.ensure(run=True, processors=a.processors, progress=C.Progress(label))
+            if not res.ok:
+                C.log(f"{label}: FAILED: {'; '.join(res.messages)[-300:]}")
         m = res.metrics if res is not None and res.ok else {}
         if m.get("Cd") is not None:
             table[v] = float(m["Cd"])
+            C.log(f"{label}: Cd = {m['Cd']:.3f}, drag {m.get('drag_force_N', float('nan')):.3g} N, "
+                  f"converged {m.get('converged')}, {m.get('mesh_cells')} cells, {m.get('iterations')} iterations")
+        else:
+            C.log(f"{label}: NOT RUN" if a.dry else f"{label}: no Cd")
         rows.append((v, m))
     A = math.pi / 4 * b["d"] ** 2
     y = C.Yaml(f"{name} ball in flight: drag, speed and spin (game CFD, approximate)",
@@ -136,6 +149,14 @@ def main(argv):
                 y.kv(f"v{v0:.0f}_e{elev}_s{spin:.0f}", [f["range"], f["apex"], f["time"], f["v_land"], f["spin_land_rpm"]],
                      "[range m, apex m, time s, landing speed m/s, landing spin rpm]", nd=4)
     y.end()
+    C.banner(f"{name}: results")
+    C.table(["v m/s", "Re", "Cd CFD", "Cd used", "drag N", "decel m/s2"],
+            [[v, v * b["d"] / C.NU, m.get("Cd"), cd_at(v, table, b), 0.5 * C.RHO * v * v * A * cd_at(v, table, b),
+              0.5 * C.RHO * v * v * A * cd_at(v, table, b) / b["m"]] for v, m in rows])
+    print(flush=True)
+    C.table(["v0", "elev", "spin rpm", "range m", "apex m", "time s", "land m/s"],
+            [[v0, e, s, *[flight(v0, e, b, table, s)[k] for k in ("range", "apex", "time", "v_land")]]
+             for v0 in b["speeds"] for e in (10, 30) for s in (0.0, b["spin_rpm"])])
     y.write(a.out)
 
 

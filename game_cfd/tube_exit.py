@@ -67,6 +67,8 @@ def main(argv):
     gg, sb, sf, bore_mm, mass, real, ideal = setup(kind)
     pipe = bore_mm / 8                                    # cells across the radius: 4
     mesh = sf.Mesh(pipe=pipe, container_far=max(10.0, 6 * pipe), ambient_far=max(10.0, 6 * pipe))
+    C.banner(f"exit velocity, {kind} tube: bore {bore_mm:g} mm, 600 mm, ball {mass * 1e3:.2f} g")
+    C.log(f"mesh: {pipe:g} mm cells in the bore" + ("   (--dry: nothing runs, 0-D only)" if a.dry else ""))
     rows = []
     for c in gg.CASES:
         key = c.name.replace(" ", "_")
@@ -76,6 +78,8 @@ def main(argv):
         v_real = real(c)
         p_id = ideal_pressure(c, v_real, ideal)
         cfd_v = None
+        C.log(f"{key}: {c.tank.name}, {c.valve.name}, {c.p_gauge:.2f} bar g")
+        C.log(f"{key}: 0-D real valve {v_real:.1f} m/s; CFD fires an ideal valve at {p_id:.2f} bar g")
         if not a.dry:
             rig = sf.Rig(pipe_bore=bore_mm, pipe_length=gg.BARREL * 1e3, pipe_wall=3.0, valve_x=20.0,
                          container_volume_l=c.tank.volume_l, container_bore=c.tank.bore_mm * 2.5, container_wall=4.0,
@@ -84,10 +88,21 @@ def main(argv):
             ball = sb.Ball(diameter=bore_mm, density=mass / vol, rear_x=20.5, stop_front_mm=gg.BARREL * 1e3 - 4)
             cond = replace(sb.BALL_CONDITIONS, p0=sf.Conditions().p_amb + p_id * 1e5)
             path = C.OUT / f"tube_{kind}" / key
+            C.log(f"{key}: case {path} (blockMesh, setFields, then rhoCentralFoam in chunks)")
+            last = [0.0]
+
+            def on_chunk(t, front, u, key=key, last=last):
+                import time
+                if time.time() - last[0] >= 5.0:          # a line every 5 s of wall time
+                    last[0] = time.time()
+                    C.log(f"{key}: t = {t * 1e3:7.3f} ms   ball front {front:6.1f} / {gg.BARREL * 1e3:.0f} mm   "
+                          f"speed {u:6.1f} m/s")
             sb.solve(path, sf.AIR, rig, cond, mesh, ball, run=True, max_time=0.1,
-                     chunk=max(25e-6, 2.5e-3 / max(v_real, 1.0)))
+                     chunk=max(25e-6, 2.5e-3 / max(v_real, 1.0)), on_chunk=on_chunk)
             cfd_v = sb.muzzle(sb.ball_track(path), ball, rig)["speed"]
         v_id = ideal(c, p_id)
+        C.log(f"{key}: CFD {cfd_v:.1f} m/s vs 0-D ideal {v_id:.1f} m/s -> game {v_real * cfd_v / v_id:.1f} m/s"
+              if cfd_v else f"{key}: NOT RUN -> game {v_real:.1f} m/s (0-D)")
         ratio = cfd_v / v_id if cfd_v else None
         rows.append(dict(case=key, tank=c.tank.name, valve=c.valve.name, p=c.p_gauge, p_id=p_id, v_real=v_real,
                          v_id=v_id, cfd=cfd_v, ratio=ratio, game=v_real * ratio if ratio else v_real))
@@ -108,6 +123,10 @@ def main(argv):
         y.kv("game_exit_mach", r["game"] / C.A_SOUND)
         y.kv("exit_spin_rpm", 0.0, "smooth bore, the ball slides: no spin")
         y.end().blank()
+    C.banner(f"{kind} tube: results")
+    C.table(["case", "bar g", "0-D real", "CFD bar g", "0-D ideal", "CFD", "CFD/0-D", "game m/s", "Mach"],
+            [[r["case"], r["p"], r["v_real"], r["p_id"], r["v_id"], r["cfd"], r["ratio"], r["game"], r["game"] / C.A_SOUND]
+             for r in rows])
     y.write(a.out)
 
 

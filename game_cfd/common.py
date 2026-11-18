@@ -77,3 +77,47 @@ def args(argv, default_out):
     ap.add_argument("--processors", type=int, default=2)
     ap.add_argument("--dry", action="store_true", help="prepare nothing, run nothing: the YAML with the hand values and NOT RUN")
     return ap.parse_args(argv)
+
+
+# --- console output: what is happening, while it happens ------------------------------------------------------
+import time as _time
+
+_T0 = _time.time()
+
+
+def log(msg=""):
+    t = _time.time() - _T0
+    print(f"[{int(t // 60):3d}:{t % 60:04.1f}] {msg}", flush=True)
+
+
+def banner(title):
+    print("\n" + "=" * 78 + f"\n  {title}\n" + "=" * 78, flush=True)
+
+
+class Progress:
+    """Aeromant's progress callback (stage, fraction, message): a line when the step changes, then one every
+    ``every`` seconds with the step's fraction and the solver's last message (e.g. the iteration and residuals)."""
+
+    def __init__(self, label, every=10.0):
+        self.label, self.every, self.stage, self.last = label, every, None, 0.0
+
+    def __call__(self, stage, fraction=None, message=""):
+        now = _time.time()
+        if stage != self.stage:
+            self.stage = stage
+            log(f"{self.label}: {stage} ...")
+            self.last = now
+        elif now - self.last >= self.every:
+            pct = f"{100 * fraction:5.1f} %" if fraction is not None else "       "
+            log(f"{self.label}: {stage} {pct} {message.strip()[:80]}")
+            self.last = now
+
+
+def table(headers, rows):
+    """A plain fixed-width table on the console."""
+    cells = [[str(h) for h in headers]] + [[c if isinstance(c, str) else num(c, 4) for c in r] for r in rows]
+    w = [max(len(r[i]) for r in cells) for i in range(len(headers))]
+    for k, r in enumerate(cells):
+        print("  " + "  ".join(c.rjust(w[i]) for i, c in enumerate(r)), flush=True)
+        if k == 0:
+            print("  " + "  ".join("-" * x for x in w), flush=True)
