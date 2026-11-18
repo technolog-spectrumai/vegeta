@@ -77,11 +77,10 @@ def summary(results, L, path):
                 j = np.searchsorted(tr[:, 1], L)
                 ax.plot(tr[j, 2] * 100, (tr[j, 3] - bt.POLE_H) * 100, "x", color="tab:gray", ms=5)
                 lim = max(lim, 1.1 * 100 * max(abs(tr[j, 2]), abs(tr[j, 3] - bt.POLE_H)))
-        if wind[1]:
-            ax.annotate("", xy=(-lim * 0.55, lim * 0.8), xytext=(-lim * 0.85, lim * 0.8),
-                        arrowprops=dict(arrowstyle="->", color="tab:blue")) if wind[1] < 0 else \
-                ax.annotate("", xy=(lim * 0.55, lim * 0.8), xytext=(lim * 0.85, lim * 0.8),
-                            arrowprops=dict(arrowstyle="->", color="tab:blue"))
+        if wind[1]:                                   # the arrow points where the wind blows (the balls drift that way)
+            sgn = 1 if wind[1] > 0 else -1
+            ax.annotate("", xy=(sgn * lim * 0.85, lim * 0.8), xytext=(sgn * lim * 0.55, lim * 0.8),
+                        arrowprops=dict(arrowstyle="->", color="tab:blue"))
         ax.set_title(f"{name}\n{hits}/{len(r['hit'])} hits, {sum(r['rings'])} pts", fontsize=10)
         ax.set_aspect("equal")
         ax.grid(alpha=0.3)

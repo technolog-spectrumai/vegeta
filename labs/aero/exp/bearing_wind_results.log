@@ -1,3 +1,9 @@
 calm                           hits 16/20, points  73, drift of an uncorrected shot   +0.0 cm across,   -0.0 cm up; aim az +0.000 deg
 cross 2 m/s                    hits  0/20, points   0, drift of an uncorrected shot  +32.5 cm across,   -0.0 cm up; aim az +0.000 deg
 cross 5 m/s                    hits  0/20, points   0, drift of an uncorrected shot  +81.4 cm across,   -0.0 cm up; aim az +0.000 deg
+cross 10 m/s                   hits  0/20, points   0, drift of an uncorrected shot +162.8 cm across,   -0.0 cm up; aim az +0.000 deg
+cross 5, aim corrected         hits 16/20, points  73, drift of an uncorrected shot  +81.4 cm across,   -0.0 cm up; aim az -0.466 deg
+cross 5 ±2 gusts, corrected    hits  6/20, points  26, drift of an uncorrected shot  +81.4 cm across,   -0.0 cm up; aim az -0.466 deg
+head 10 m/s                    hits 15/20, points  70, drift of an uncorrected shot   +0.0 cm across,   -5.2 cm up; aim az +0.000 deg
+tail 10 m/s                    hits 16/20, points  62, drift of an uncorrected shot   +0.0 cm across,   +4.1 cm up; aim az +0.000 deg
+wrote bearing_wind_results/summary.png
