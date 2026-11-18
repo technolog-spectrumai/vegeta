@@ -1,0 +1,164 @@
+{
+ "source": "gavilan_flight: gavilan_j, gavilan_x, gavilan_xp, intercept, catch_sequence, brake, endurance, turn",
+ "note": "reduced point-mass models; catchers, guards and legs are hand estimates x 1.25; each sprint ends at its catcher's grab speed (net 3 m/s, gripper 1.5 m/s); aiming tolerance: net, the bandit's centre inside the open net; gripper, the body inside the open foot; no contact simulated",
+ "kpis": [
+  {
+   "key": "mass",
+   "label": "mass [kg]",
+   "better": "low"
+  },
+  {
+   "key": "width",
+   "label": "width in flight [m]",
+   "better": "low"
+  },
+  {
+   "key": "pieces",
+   "label": "printed pieces",
+   "better": "low"
+  },
+  {
+   "key": "catcher_kg",
+   "label": "catcher mass [kg]",
+   "better": "low"
+  },
+  {
+   "key": "tw",
+   "label": "static thrust / weight",
+   "better": "high"
+  },
+  {
+   "key": "tw_bandit",
+   "label": "thrust / weight carrying the bandit",
+   "better": "high"
+  },
+  {
+   "key": "to50",
+   "label": "perch to a bandit 50 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "to100",
+   "label": "perch to a bandit 100 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "to200",
+   "label": "perch to a bandit 200 m away [s]",
+   "better": "low"
+  },
+  {
+   "key": "rate15",
+   "label": "turn rate at 15 m/s [deg/s]",
+   "better": "high"
+  },
+  {
+   "key": "stop",
+   "label": "stop from 25 m/s [m]",
+   "better": "low"
+  },
+  {
+   "key": "open",
+   "label": "catcher opening [m]",
+   "better": "high"
+  },
+  {
+   "key": "tol",
+   "label": "aiming tolerance, sideways [± m]",
+   "better": "high"
+  },
+  {
+   "key": "contact",
+   "label": "closing speed allowed at the grab [m/s]",
+   "better": "high"
+  },
+  {
+   "key": "cruise",
+   "label": "cruise endurance [min]",
+   "better": "high"
+  },
+  {
+   "key": "hover",
+   "label": "hover endurance [min]",
+   "better": "high"
+  }
+ ],
+ "rows": {
+  "j_net": {
+   "name": "Gavilan-J + net",
+   "mass": 1.6,
+   "width": 0.7,
+   "pieces": 14.0,
+   "catcher_kg": 0.139,
+   "tw": 6.196,
+   "tw_bandit": 3.541,
+   "to50": 2.679,
+   "to100": 3.775,
+   "to200": 5.84,
+   "rate15": 230.859,
+   "stop": 13.431,
+   "open": 0.445,
+   "tol": 0.223,
+   "contact": 3.0,
+   "cruise": 14.379,
+   "hover": 6.677
+  },
+  "j_grip": {
+   "name": "Gavilan-J + gripper",
+   "mass": 1.626,
+   "width": 0.7,
+   "pieces": 14.0,
+   "catcher_kg": 0.165,
+   "tw": 6.096,
+   "tw_bandit": 3.508,
+   "to50": 2.769,
+   "to100": 3.875,
+   "to200": 5.935,
+   "rate15": 227.033,
+   "stop": 13.53,
+   "open": 0.168,
+   "tol": 0.059,
+   "contact": 1.5,
+   "cruise": 14.168,
+   "hover": 6.54
+  },
+  "x_net": {
+   "name": "Gavilan-X + net",
+   "mass": 1.487,
+   "width": 0.481,
+   "pieces": 10.0,
+   "catcher_kg": 0.139,
+   "tw": 6.666,
+   "tw_bandit": 3.689,
+   "to50": 2.618,
+   "to100": 3.71,
+   "to200": 5.55,
+   "rate15": 248.695,
+   "stop": 12.894,
+   "open": 0.445,
+   "tol": 0.223,
+   "contact": 3.0,
+   "cruise": 13.96,
+   "hover": 7.342
+  },
+  "x_grip": {
+   "name": "Gavilan-X + gripper (XP)",
+   "mass": 1.513,
+   "width": 0.481,
+   "pieces": 10.0,
+   "catcher_kg": 0.165,
+   "tw": 6.551,
+   "tw_bandit": 3.653,
+   "to50": 2.713,
+   "to100": 3.8,
+   "to200": 5.715,
+   "rate15": 244.282,
+   "stop": 12.982,
+   "open": 0.168,
+   "tol": 0.059,
+   "contact": 1.5,
+   "cruise": 13.71,
+   "hover": 7.176
+  }
+ }
+}
