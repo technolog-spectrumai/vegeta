@@ -158,3 +158,18 @@ def test_cfd_references_and_rows(tmp_path):
     r = gc.row("A", 30.0, 20.0, fake)
     assert r["status"] == "solved" and r["pitch_moment_Nm"] < 0 and 0 < r["moment_over_authority"] < 1
     assert gc.export_stl(tmp_path, "A", 30.0).stat().st_size > 10000
+
+
+# ---------------------------------------------------------------------------------------------------------------- KPIs
+def test_kpis_unarmed_cannot_is_none_and_scores_are_scaled_to_the_best():
+    rows = gf.kpi_table({k: m for k, m in gf.fleet_unarmed().items() if k in ("peregrine", "emerillon", "gavilan_a", "gavilan_f")})
+    by = {r["key"]: r for r in rows}
+    assert all(gf.fleet_unarmed()[k].payload_kg == 0.0 for k in by)
+    assert by["gavilan_f"]["stop"] is None and by["gavilan_f"]["hover"] is None and by["gavilan_a"]["stop"] < 20.0
+    assert by["gavilan_a"]["band"] == 100.0 and by["peregrine"]["band"] < 60.0 and by["gavilan_a"]["repass"] == 0.0
+    assert {k["group"] for k in gf.KPIS} == {"bandit", "general"} and all(k["key"] in rows[0] for k in gf.KPIS)
+    sc = gf.kpi_scores(rows)
+    assert sc["gavilan_f"]["stop"] == 0.0 and max(s["rate15"] for s in sc.values()) == 1.0
+    assert all(0.0 <= v <= 1.0 for s in sc.values() for v in s.values())
+    assert sc["gavilan_a"]["bandit"] > sc["emerillon"]["bandit"] > sc["gavilan_f"]["bandit"]
+    assert sc["gavilan_a"]["rate25"] == 1.0                                         # unarmed, it out-turns the light wings at 25 m/s too

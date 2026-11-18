@@ -198,6 +198,74 @@ def bar_chart(out, rows):
     return out
 
 
+COLOR_OF = {"merlin": SERIES[0], "peregrine": SERIES[1], "xwing": SERIES[2], "emerillon": SERIES[3], "gavilan_b": SERIES[4],
+            "gavilan_a": SERIES[5], "gavilan_f": SERIES[6], "gavilan_f_broad": SERIES[7]}       # the colour follows the aircraft
+NAME_OF = {"merlin": "Merlin", "peregrine": "Peregrine B", "xwing": "X-wing X-A", "emerillon": "Émerillon ER2", "gavilan_a": "Gavilan-A",
+           "gavilan_b": "Gavilan-B", "gavilan_f": "Gavilan-F", "gavilan_f_broad": "Gavilan-F broad"}
+
+
+def kpi_bars(out, rows, group, title):
+    """One panel per KPI of ``group``: a bar per aircraft, the value at its end, the best one marked."""
+    import gavilan_flight as gf
+    kpis = [k for k in gf.KPIS if k["group"] == group]
+    cols = 3
+    fig, ax = plt.subplots(-(-len(kpis) // cols), cols, figsize=(16.5, 3.5 * -(-len(kpis) // cols) + 0.7), facecolor=SURFACE, squeeze=False)
+    y = np.arange(len(rows))[::-1]
+    for a, k in zip(ax.flat, kpis):
+        _style(a, k["label"])
+        vals = [r[k["key"]] for r in rows]
+        have = [v for v in vals if v is not None]
+        top = max(have) if have and max(have) > 0 else 1.0
+        best = max(have) if k["better"] == "high" else min(have)
+        for yi, r, v in zip(y, rows, vals):
+            a.barh(yi, v if v is not None else 0.0, height=0.62, color=COLOR_OF[r["key"]])
+            txt = "cannot" if v is None else (f"{v:.0f}" if abs(v) >= 20 else f"{v:.1f}" if abs(v) >= 2 else f"{v:.2f}")
+            mark = "  ◀ best" if v is not None and abs(v - best) < 1e-9 else ""
+            a.text((v or 0.0) + 0.015 * top, yi, txt + mark, va="center", fontsize=8.5, color=INK)
+        a.set_yticks(y); a.set_yticklabels([NAME_OF[r["key"]] for r in rows], fontsize=8.5, color=INK)
+        a.set_xlim(0, 1.25 * top); a.grid(axis="y", visible=False)
+        a.text(0.0, -0.13, ("higher is better" if k["better"] == "high" else "lower is better") + " — " + k["why"], transform=a.transAxes,
+               fontsize=8, color=MUTED, va="top")
+    for a in ax.flat[len(kpis):]:
+        a.set_visible(False)
+    fig.suptitle(title, fontsize=11.5, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.965), h_pad=2.2)
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def kpi_score_bars(out, rows):
+    """The two group scores side by side: each KPI scaled to the fleet's best, plain mean, equal weights."""
+    import gavilan_flight as gf
+    sc = gf.kpi_scores(rows)
+    fig, ax = plt.subplots(1, 2, figsize=(13, 4.6), facecolor=SURFACE)
+    for a, g, title in zip(ax, ("bandit", "general"), ("against bandits: mean of the 9 KPIs", "general: mean of the 6 KPIs")):
+        _style(a, title)
+        order = sorted(rows, key=lambda r: sc[r["key"]][g])
+        for yi, r in enumerate(order):
+            v = sc[r["key"]][g]
+            a.barh(yi, v, height=0.62, color=COLOR_OF[r["key"]])
+            a.text(v + 0.012, yi, f"{v:.2f}", va="center", fontsize=9, color=INK)
+        a.set_yticks(range(len(order))); a.set_yticklabels([NAME_OF[r["key"]] for r in order], fontsize=9, color=INK)
+        a.set_xlim(0, 1.1); a.grid(axis="y", visible=False)
+    fig.suptitle("Scores, unarmed — each KPI scaled so the fleet's best is 1 and 'cannot' is 0, then averaged with equal weights",
+                 fontsize=11, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def kpi_charts(folder=".", machines=None):
+    import gavilan_flight as gf
+    folder = Path(folder)
+    rows = gf.kpi_table(machines)
+    return [kpi_bars(folder / "gavilan_kpi_bandit.png", rows, "bandit", "KPIs against bandits — every aircraft unarmed"),
+            kpi_bars(folder / "gavilan_kpi_general.png", rows, "general", "General KPIs — every aircraft unarmed"),
+            kpi_score_bars(folder / "gavilan_kpi_scores.png", rows)], rows
+
+
 def comparison_charts(folder=".", machines=None):
     import gavilan_flight as gf
     folder = Path(folder)

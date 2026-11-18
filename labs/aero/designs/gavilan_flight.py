@@ -743,3 +743,96 @@ def scorecard(machines: dict | None = None, speeds=(10.0, 15.0, 25.0)) -> list:
                     "source": m.source})
         rows.append(row)
     return rows
+
+
+# =================================================================================================================== KPIs
+def fleet_unarmed() -> dict:
+    """Every aircraft without an emitter: the airframes against each other."""
+    return {"merlin": merlin(), "peregrine": peregrine("B"), "xwing": xwing(), "emerillon": emerillon("ER2"),
+            "gavilan_a": gavilan("A", emitters=0), "gavilan_b": gavilan("B", emitters=0), "gavilan_f": gavilan("F", emitters=0),
+            "gavilan_f_broad": gavilan("F", emitters=0, p=F_BROAD)}
+
+
+BANDIT_BAND = (0.0, 20.0)          # the speeds a bandit flies at [m/s]: it hovers, and the job says up to 20
+
+
+def level_acceleration(m: Machine, V: float = 15.0, rho: float = RHO) -> float:
+    """The largest acceleration along a level flight path at ``V`` [g], the weight still carried; nan below the stall."""
+    q, W = 0.5 * rho * V * V, m.weight
+    best = math.nan
+    for th in m.thetas(math.pi / 2):
+        la, da = m.areas(float(th))
+        T = m.thrust(V, float(th))
+        if q * la + T * math.sin(th) >= W:
+            a = (T * math.cos(th) - q * da) / W
+            best = a if not math.isfinite(best) else max(best, a)
+    return best
+
+
+def speed_band_share(m: Machine, band=BANDIT_BAND) -> float:
+    """The share of the bandit's speed band in which the aircraft can fly level beside it."""
+    lo, hi = band
+    return max(0.0, min(top_speed(m), hi) - max(min_speed(m), lo)) / (hi - lo)
+
+
+# Each KPI: the column, what it measures and why it is there, which way is better, and what "cannot" counts as.
+# ``bandit``: what decides a chase of a quadcopter that stops, hovers, reverses and climbs (the job's requirements 1-6).
+# ``general``: what any aircraft of the lab is judged on, chase or not.
+KPIS = [
+    dict(key="rate10", group="bandit", label="turn rate at 10 m/s [deg/s]", better="high", why="staying inside a slow bandit's turn"),
+    dict(key="rate15", group="bandit", label="turn rate at 15 m/s [deg/s]", better="high", why="the bandit's middle speed"),
+    dict(key="rate25", group="bandit", label="turn rate at 25 m/s [deg/s]", better="high", why="turning while catching up"),
+    dict(key="reverse", group="bandit", label="reverse direction at 15 m/s [s]", better="low", why="the bandit reverses"),
+    dict(key="stop", group="bandit", label="stop from 25 m/s [m]", better="low", why="the bandit stops; 'cannot' = it overshoots"),
+    dict(key="accel", group="bandit", label="level acceleration at 15 m/s [g]", better="high", why="closing a gap that opened"),
+    dict(key="climb", group="bandit", label="ground to 150 m [s]", better="low", why="the bandit climbs away"),
+    dict(key="band", group="bandit", label="bandit speeds it can match, 0-20 m/s [%]", better="high", why="flying beside it, hovering included"),
+    dict(key="repass", group="bandit", label="back on a hovering bandit after a pass [s]", better="low", why="0 = it never has to leave"),
+    dict(key="top", group="general", label="top speed [m/s]", better="high", why="reaching the place"),
+    dict(key="cruise", group="general", label="cruise endurance [min]", better="high", why="time on station on the wing"),
+    dict(key="range", group="general", label="still-air range [km]", better="high", why="cruise endurance x its speed"),
+    dict(key="hover", group="general", label="hover endurance [min]", better="high", why="'cannot' = it does not hover"),
+    dict(key="whkm", group="general", label="energy per kilometre [Wh/km]", better="low", why="what a trip costs"),
+    dict(key="span", group="general", label="width in flight [m]", better="low", why="gaps, transport, the 4 m alley"),
+]
+
+
+def kpi_table(machines: dict | None = None) -> list:
+    """One row per aircraft with every KPI's value (None where the aircraft cannot do it), unarmed by default."""
+    rows = []
+    for key, m in (machines or fleet_unarmed()).items():
+        en, br, rv, cl = endurance(m), brake(m), reversal(m), climb(m)
+        v_pass = 1.2 * stall_speed(m)
+        acc = level_acceleration(m)
+        row = {"key": key, "aircraft": m.name, "mass_kg": m.mass, "hovers": m.hovers, "source": m.source,
+               "rate10": turn(m, 10.0)["rate_inst_deg_s"] or None, "rate15": turn(m, 15.0)["rate_inst_deg_s"] or None,
+               "rate25": turn(m, 25.0)["rate_inst_deg_s"] or None, "reverse": rv["time_s"] if math.isfinite(rv["time_s"]) else None,
+               "stop": br["distance_m"] if br["stops"] else None, "accel": acc if math.isfinite(acc) else None, "climb": cl["time_s"],
+               "band": 100.0 * speed_band_share(m), "repass": 0.0 if m.hovers else reversal(m, v_pass)["time_s"] + 2 * 40.0 / v_pass,
+               "top": top_speed(m), "cruise": en["cruise_min"], "range": en["cruise_min"] * 60.0 * en["cruise_v"] / 1e3,
+               "hover": en["hover_min"] if m.hovers else None, "whkm": en["cruise_w"] / en["cruise_v"] / 3.6, "span": m.span}
+        rows.append(row)
+    return rows
+
+
+def kpi_scores(rows: list) -> dict:
+    """Each KPI scaled to the best aircraft (1 = the best of the fleet, 0 = cannot do it), and their plain mean per
+    group — equal weights, stated: a summary to read beside the bars, not a verdict."""
+    out = {r["key"]: {} for r in rows}
+    for k in KPIS:
+        vals = [r[k["key"]] for r in rows if r[k["key"]] is not None]
+        for r in rows:
+            v = r[k["key"]]
+            if v is None:
+                s = 0.0
+            elif k["better"] == "high":
+                s = v / max(vals) if max(vals) > 0 else 0.0
+            else:
+                best = min(vals)
+                s = 1.0 if v <= best + 1e-12 else (best / v if best > 0 else 1.0 / (1.0 + v / max(max(vals), 1e-9) * 4.0))
+            out[r["key"]][k["key"]] = s
+    for key, s in out.items():
+        for g in ("bandit", "general"):
+            ks = [k["key"] for k in KPIS if k["group"] == g]
+            s[g] = sum(s[k] for k in ks) / len(ks)
+    return out
