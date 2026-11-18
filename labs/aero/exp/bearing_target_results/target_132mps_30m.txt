@@ -13,4 +13,6 @@
   shot 16: hit at (-6.6, +0.5) cm, 108 m/s, ring 6
   shot 17: hit at (+4.2, +12.0) cm, 109 m/s, ring 2
   shot 18: hit at (-6.6, +9.1) cm, 107 m/s, ring 3
+aim 2.08 deg, flight 0.25 s
 wrote bearing_target_results/target_132mps_30m.png
+wrote bearing_target_results/target_132mps_30m_energy.png

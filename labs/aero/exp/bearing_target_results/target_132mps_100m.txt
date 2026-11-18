@@ -1,0 +1,6 @@
+20 shots at 132 m/s, 100 m, elevation 3.091 deg: 2 hits, 4 points, rings [0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], the lollipop swung to -0.0 deg
+  shot  6: hit at (-12.8, +7.8) cm, 69 m/s, ring 1
+  shot 10: hit at (+9.5, +6.0) cm, 68 m/s, ring 3
+aim 3.09 deg, flight 1.07 s
+wrote bearing_target_results/target_132mps_100m.png
+wrote bearing_target_results/target_132mps_100m_energy.png

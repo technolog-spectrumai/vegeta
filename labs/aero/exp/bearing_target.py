@@ -61,23 +61,27 @@ def xml(distance, n):
 def flight_aim(speed, distance, target_z):
     """The elevation that puts a ball from the muzzle through (distance, target_z) with this drag (bisection on a
     point-mass flight, the same model MuJoCo integrates)."""
-    def z_at(elev):
+    def z_at(elev, with_time=False):
         a = math.radians(elev)
         p = MUZZLE.copy()
         v = np.array([speed * math.cos(a), 0.0, speed * math.sin(a)])
-        dt = 1e-4
+        dt, t = 1e-4 if distance < 60 else 5e-4, 0.0
         while p[0] < distance:
             s = np.linalg.norm(v)
             v = v + (-0.5 * RHO * cd(s) * AREA * s / MASS * v + np.array([0, 0, -9.81])) * dt
             p = p + v * dt
-            if p[2] < -1:
-                return -1e9
-        return p[2]
-    lo, hi = -2.0, 30.0
+            t += dt
+            if p[2] < -1 or v[0] <= 0:
+                return (-1e9, t) if with_time else -1e9
+        return (p[2], t) if with_time else p[2]
+    lo, hi = -2.0, 40.0                               # the low (direct) solution
+    if z_at(hi) < target_z:
+        raise ValueError(f"{speed:g} m/s cannot reach {distance:g} m at {target_z:g} m high")
     for _ in range(40):
         mid = (lo + hi) / 2
         lo, hi = (mid, hi) if z_at(mid) < target_z else (lo, mid)
-    return (lo + hi) / 2
+    e = (lo + hi) / 2
+    return e, z_at(e, True)[1]
 
 
 def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.01, scatter_deg=0.25):
@@ -88,12 +92,13 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
     gid = [m.geom(f"g{i}").id for i in range(shots)]
     bid = [m.body(f"b{i}").id for i in range(shots)]
     centre_z = POLE_H
-    elev = flight_aim(speed, distance, centre_z)
+    elev, t_fly = flight_aim(speed, distance, centre_z)
+    t_track = 1.4 * t_fly + 0.2                      # follow each ball this long
     fired = [False] * shots
     tracks = [[] for _ in range(shots)]
     hit = [None] * shots
     done = [False] * shots
-    t_end = gap * shots + 0.6
+    t_end = gap * (shots - 1) + t_track
     step = 0
     rec_every = 10                                   # record every 0.2 ms
     while d.time < t_end:
@@ -131,8 +136,9 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
             for k in range(shots):
                 if fired[k] and not done[k]:
                     p = d.xpos[bid[k]].copy()
-                    tracks[k].append((d.time, *p))
-                    if p[0] > distance + 3 or (p[2] < 0.01 and d.time - gap * k > 0.05) or d.time - gap * k > 0.6:
+                    dv = m.jnt_dofadr[m.body_jntadr[bid[k]]]
+                    tracks[k].append((d.time - gap * k, *p, np.linalg.norm(d.qvel[dv:dv + 3])))
+                    if p[0] > distance + 3 or (p[2] < 0.01 and d.time - gap * k > 0.05) or d.time - gap * k > t_track:
                         done[k] = True
                         d.xfrc_applied[bid[k], :3] = 0
     rings = []
@@ -142,7 +148,7 @@ def run(shots=20, speed=132.0, distance=30.0, seed=1, gap=0.25, scatter_speed=0.
         else:
             r = math.hypot(h[0], h[1])
             rings.append(max(0, 10 - int(r / 0.015)) if r <= DISC_R else 0)
-    return dict(elev=elev, tracks=[np.array(t) for t in tracks], hit=hit, rings=rings, distance=distance, speed=speed,
+    return dict(elev=elev, t_fly=t_fly, tracks=[np.array(t) for t in tracks], hit=hit, rings=rings, distance=distance, speed=speed,
                 swing_deg=math.degrees(d.qpos[m.jnt_qposadr[m.joint("hinge").id]]))
 
 
@@ -176,7 +182,8 @@ def plot(res, out):
     side.set_title(f"Side view: {n} shots, {res['speed']:.0f} m/s, elevation {res['elev']:.2f}°  (red: hit)")
     side.set_ylim(-0.1, max(1.8, max(tr[:, 3].max() for tr in res["tracks"] if len(tr)) + 0.2))
     top.plot([L, L], [-DISC_R, DISC_R], color="goldenrod", lw=6)
-    top.set_ylim(-1.0, 1.0)
+    ymax = max(1.0, 1.2 * max(abs(tr[:, 2]).max() for tr in res["tracks"] if len(tr)))
+    top.set_ylim(-ymax, ymax)
     top.set_xlabel("distance x [m]")
     top.set_ylabel("sideways y [m]")
     top.set_title("Top view")
@@ -194,12 +201,60 @@ def plot(res, out):
         if res["hit"][k] is None and len(tr) and tr[:, 1].max() >= L:
             j = np.searchsorted(tr[:, 1], L)
             face.plot(tr[j, 2] * 100, (tr[j, 3] - POLE_H) * 100, "x", color="tab:gray", ms=6)
-    face.set_xlim(-40, 40)
-    face.set_ylim(-40, 40)
+    lim = 40.0
+    for k, tr in enumerate(res["tracks"]):
+        if res["hit"][k] is None and len(tr) and tr[:, 1].max() >= L:
+            j = np.searchsorted(tr[:, 1], L)
+            lim = max(lim, 1.15 * 100 * max(abs(tr[j, 2]), abs(tr[j, 3] - POLE_H)))
+    face.set_xlim(-lim, lim)
+    face.set_ylim(-lim, lim)
     face.set_aspect("equal")
     face.set_xlabel("cm")
     face.set_title(f"Target face at {L:.0f} m: {hits}/{n} hits, {sum(res['rings'])} points\n(o hit, x miss through the plane)")
     face.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out, dpi=130)
+    return out
+
+
+def plot_energy(res, out):
+    """Kinetic energy and speed along the flight for every shot, and the energy each hit delivered."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    L = res["distance"]
+    m = MASS
+    fig, (ax_e, ax_v, ax_h) = plt.subplots(1, 3, figsize=(16, 5.2), gridspec_kw={"width_ratios": [1.3, 1.3, 1]})
+    for k, tr in enumerate(res["tracks"]):
+        if not len(tr):
+            continue
+        j = tr[:, 1] <= L + 0.5
+        col = "tab:red" if res["hit"][k] is not None else "tab:gray"
+        ax_e.plot(tr[j, 1], 0.5 * m * tr[j, 4] ** 2, color=col, lw=0.8, alpha=0.8)
+        ax_v.plot(tr[j, 1], tr[j, 4], color=col, lw=0.8, alpha=0.8)
+    v0 = res["speed"]
+    for ax in (ax_e, ax_v):
+        ax.axvline(L, color="k", lw=0.6, ls=":")
+        ax.set_xlabel("distance x [m]")
+        ax.grid(alpha=0.3)
+        ax.set_xlim(0, L + 1)
+    ax_e.set_ylabel("kinetic energy [J]")
+    ax_e.set_title(f"Energy along the flight (muzzle {0.5 * m * v0 ** 2:.1f} J)")
+    for lvl, name in ((1.0, "1 J"),):
+        ax_e.axhline(lvl, color="tab:blue", lw=0.6, ls="--")
+        ax_e.annotate(name, (1, lvl), xytext=(2, 2), textcoords="offset points", fontsize=8, color="tab:blue")
+    ax_v.set_ylabel("speed [m/s]")
+    ax_v.set_title(f"Speed (terminal ~{math.sqrt(2 * m * 9.81 / (RHO * CD0 * AREA)):.0f} m/s)")
+    hits = [(k + 1, 0.5 * m * h[2] ** 2) for k, h in enumerate(res["hit"]) if h is not None]
+    if hits:
+        ax_h.bar([str(k) for k, _ in hits], [e for _, e in hits], color="tab:red")
+        ax_h.set_title(f"Energy delivered by each hit at {L:.0f} m (mean {np.mean([e for _, e in hits]):.2f} J)")
+    else:
+        ax_h.text(0.5, 0.5, "no hits", ha="center", va="center", transform=ax_h.transAxes, fontsize=14)
+        ax_h.set_title(f"Energy delivered at {L:.0f} m")
+    ax_h.set_xlabel("shot")
+    ax_h.set_ylabel("J")
+    ax_h.grid(alpha=0.3, axis="y")
     fig.tight_layout()
     fig.savefig(out, dpi=130)
     return out
@@ -220,4 +275,6 @@ if __name__ == "__main__":
     for k, h in enumerate(r["hit"]):
         if h is not None:
             print(f"  shot {k + 1:2d}: hit at ({h[0] * 100:+.1f}, {h[1] * 100:+.1f}) cm, {h[2]:.0f} m/s, ring {r['rings'][k]}")
+    print(f"aim {r['elev']:.2f} deg, flight {r['t_fly']:.2f} s")
     print("wrote", plot(r, a.out))
+    print("wrote", plot_energy(r, a.out.replace(".png", "_energy.png")))
