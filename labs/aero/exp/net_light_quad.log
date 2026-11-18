@@ -1,0 +1,32 @@
+calibration: net open to 1.96 m, at 5 m: span 1.58 m, at 10 m 1.24 m; centre speed falls from 45.0 m/s to 13.1 m/s at 10 m  [14 s]
+  range    3 m, shot 1/5: CAPTURED  (flight 0.09 s, elevation 49.0 deg)  [25 s]
+  range    3 m, shot 2/5: CAPTURED  (flight 0.09 s, elevation 49.6 deg)  [34 s]
+  range    3 m, shot 3/5: CAPTURED  (flight 0.09 s, elevation 49.1 deg)  [44 s]
+  range    3 m, shot 4/5: CAPTURED  (flight 0.09 s, elevation 50.2 deg)  [53 s]
+  range    3 m, shot 5/5: CAPTURED  (flight 0.09 s, elevation 48.9 deg)  [64 s]
+  range    4 m, shot 1/5: CAPTURED  (flight 0.12 s, elevation 40.5 deg)  [74 s]
+  range    4 m, shot 2/5: CAPTURED  (flight 0.12 s, elevation 41.0 deg)  [84 s]
+  range    4 m, shot 3/5: CAPTURED  (flight 0.12 s, elevation 41.6 deg)  [95 s]
+  range    4 m, shot 4/5: CAPTURED  (flight 0.12 s, elevation 41.5 deg)  [105 s]
+  range    4 m, shot 5/5: CAPTURED  (flight 0.12 s, elevation 41.2 deg)  [116 s]
+  range    5 m, shot 1/5: CAPTURED  (flight 0.18 s, elevation 34.8 deg)  [127 s]
+  range    5 m, shot 2/5: CAPTURED  (flight 0.18 s, elevation 35.3 deg)  [139 s]
+  range    5 m, shot 3/5: CAPTURED  (flight 0.18 s, elevation 34.9 deg)  [150 s]
+  range    5 m, shot 4/5: CAPTURED  (flight 0.18 s, elevation 34.9 deg)  [161 s]
+  range    5 m, shot 5/5: CAPTURED  (flight 0.18 s, elevation 34.4 deg)  [172 s]
+  range    6 m, shot 1/5: CAPTURED  (flight 0.24 s, elevation 31.2 deg)  [184 s]
+  range    6 m, shot 2/5: CAPTURED  (flight 0.24 s, elevation 31.0 deg)  [195 s]
+  range    6 m, shot 3/5: CAPTURED  (flight 0.24 s, elevation 30.6 deg)  [206 s]
+  range    6 m, shot 4/5: CAPTURED  (flight 0.24 s, elevation 31.0 deg)  [218 s]
+  range    6 m, shot 5/5: CAPTURED  (flight 0.24 s, elevation 31.4 deg)  [230 s]
+  range    8 m, shot 1/5: CAPTURED  (flight 0.39 s, elevation 26.3 deg)  [243 s]
+  range    8 m, shot 2/5: CAPTURED  (flight 0.39 s, elevation 25.8 deg)  [255 s]
+  range    8 m, shot 3/5: CAPTURED  (flight 0.39 s, elevation 26.0 deg)  [267 s]
+  range    8 m, shot 4/5: CAPTURED  (flight 0.39 s, elevation 25.7 deg)  [279 s]
+  range    8 m, shot 5/5: CAPTURED  (flight 0.39 s, elevation 25.9 deg)  [293 s]
+range    3 m: captured 5/5, fouled 5
+range    4 m: captured 5/5, fouled 5
+range    5 m: captured 5/5, fouled 5
+range    6 m: captured 5/5, fouled 5
+range    8 m: captured 5/5, fouled 5
+wrote net_light_results/net_drone_light_quad_h4_v5.png
