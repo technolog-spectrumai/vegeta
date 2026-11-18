@@ -38,7 +38,7 @@ import numpy as np
 from vegeta.dedalus import Design, Parameter
 
 from emerillon import Emerillon, ogive, strut
-from fixed_wing import naca4
+from fixed_wing import FixedWing, naca4
 
 FIN_ANGLES = (45.0, 135.0, 225.0, 315.0)
 # the four motors seen from behind (y right, z up): M1 upper left, M2 upper right, M3 lower left, M4 lower right
@@ -259,6 +259,65 @@ class Gavilan(Design):
         """The aircraft's solids by name, for a coloured picture (the same solids ``build`` unites)."""
         return {"body": self._body(p), "camera": self._camera(p), "wing": self._wing(p), "tail": self._tail(p),
                 "pylons": self._pylon(p, 1).union(self._pylon(p, -1)), "props": self._props(p)}
+
+
+# ------------------------------------------------------------------------------------------------- GAVILAN-F: the fixed wing
+def _fw(name, default):
+    """One of ``FixedWing``'s parameters with another default."""
+    import dataclasses
+    return dataclasses.replace(next(q for q in FixedWing.parameters if q.name == name), default=default)
+
+
+class GavilanF(FixedWing):
+    """GAVILAN-F: notebook 09's twin-motor fixed wing (``fixed_wing.FixedWing``: its wing, fuselage, nacelles and tail,
+    nothing redrawn) on a small wing, with the 8 mm recoilless emitter on the body axis — the two tractors on the wing
+    leave the nose free for the muzzle and the tail free for the rear jet. It does not hover: it is thrown or
+    catapulted and lands on its belly. Frame: ``FixedWing``'s (the wing root's leading edge at the origin, x aft,
+    y span, z up; the body axis at z = −diameter/2). ``part``: ``FixedWing``'s, plus ``emitter`` (the tube alone)."""
+
+    parameters = [
+        Parameter("part", "aircraft", choices=("aircraft", "wing", "nacelle", "fuselage", "emitter"), description="what to build"),
+        _fw("span", 800.0), _fw("root_chord", 230.0), _fw("taper", 0.65), _fw("dihedral_deg", 2.0),
+        _fw("camber", 0.02), _fw("camber_pos", 0.4), _fw("thickness", 0.10),
+        _fw("fuselage_length", 720.0), _fw("fuselage_diameter", 64.0), _fw("nose_length", 210.0),
+        _fw("nacelle_y", 190.0), _fw("nacelle_diameter", 37.5), _fw("nacelle_length", 110.0), _fw("nacelle_forward", 60.0),
+        _fw("tail_span", 300.0), _fw("tail_chord", 100.0), _fw("fin_height", 120.0), _fw("tail_thickness", 4.0),
+        _fw("fuselage_wall", 2.0), _fw("angle_of_attack_deg", 0.0),
+        Parameter("emitter_tube", 300.0, "mm", min=100.0, description="the emitter's tube, muzzle to the chamber"),
+        Parameter("emitter_diameter", 12.0, "mm", min=9.0, description="tube outer diameter (8 mm bore)"),
+        Parameter("muzzle_out", 25.0, "mm", min=0.0, description="how far the muzzle stands out of the nose"),
+        Parameter("jet_diameter", 14.0, "mm", min=6.0, description="the rear jet's pipe through the tail (the venturi's exit and a liner)"),
+    ]
+
+    def _emitter(self, p):
+        """The tube from the muzzle, the chamber behind it, and the jet pipe to the tail's end, on the body axis."""
+        r, z = p["emitter_diameter"] / 2, -p["fuselage_diameter"] / 2
+        x0 = -p["nose_length"] - p["muzzle_out"]
+        x_end = -p["nose_length"] + p["fuselage_length"] + 6.0
+        tube = cq.Workplane("YZ").circle(r).extrude(p["emitter_tube"]).translate((x0, 0, z))
+        chamber = cq.Workplane("YZ").circle(17.0).extrude(64.0).translate((x0 + p["emitter_tube"], 0, z))
+        x_j = x0 + p["emitter_tube"] + 64.0
+        jet = cq.Workplane("YZ").circle(p["jet_diameter"] / 2).extrude(x_end - x_j).translate((x_j, 0, z))
+        return tube.union(chamber).union(jet)
+
+    def parts(self, p) -> dict:
+        hstab, fin = self._tail(p, separate=True)
+        wing = self._wing(p).union(self._nacelle(p, -p["nacelle_y"])).union(self._nacelle(p, p["nacelle_y"]))
+        return {"fuselage": self._fuselage(p), "wing": wing, "tail": hstab.union(fin), "emitter": self._emitter(p)}
+
+    def build(self, p):
+        if p["part"] == "emitter":
+            return self._emitter(p)
+        if p["part"] != "aircraft":
+            return FixedWing.build(self, p)
+        aircraft = FixedWing.build(self, {**p, "angle_of_attack_deg": 0.0}).union(self._emitter(p))
+        if p["angle_of_attack_deg"]:
+            aircraft = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"])
+        return aircraft
+
+
+def f_resolve(q=None) -> dict:
+    return GavilanF().resolve(**dict(q or {}))
 
 
 # ------------------------------------------------------------------------------------------------------------ variants

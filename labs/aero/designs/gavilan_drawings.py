@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import gavilan as gv
 
-COLOURS = {"body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
+COLOURS = {"fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
            "camera": ("#111111", 1.0), "props": ("#7fb2e5", 0.30)}
 FILL = {"boom": "#6b4f2a", "body": "#8d99a6", "wing": "#c9a66b", "fins": "#6b4f2a", "pylons": "#3b3f45", "pods": "#3b3f45", "camera": "#111111"}
 
@@ -25,6 +25,27 @@ def _tris(shape, tol=0.8):
         verts, tris = s.tessellate(tol, 0.3)
         v = np.array([(q.x, q.y, q.z) for q in verts])
         out += [v[list(t)] for t in tris]
+    return out
+
+
+def render_f(out="gavilan_f_3d.png", q=None, name="Gavilan-F — fixed wing, twin tractor, the emitter in the nose"):
+    """The fixed wing from three sides."""
+    q = gv.f_resolve(q)
+    parts = gv.GavilanF().parts(q)
+    fig = plt.figure(figsize=(16, 6.2))
+    for k, (elev, azim, title) in enumerate([(24, -128, "flying, from the front quarter"), (90, -90, "from above"), (0, -90, "from the side")]):
+        ax = fig.add_subplot(1, 3, k + 1, projection="3d")
+        for part, shape in parts.items():
+            col, alpha = COLOURS[part]
+            ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=alpha == 1.0))
+        h, cx = 0.5 * q["span"], -q["nose_length"] + q["fuselage_length"] / 2
+        ax.set_xlim(cx - h, cx + h); ax.set_ylim(-h, h); ax.set_zlim(-h - 30, h - 30)
+        ax.set_box_aspect((1, 1, 1), zoom=1.5); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
+    fig.suptitle(f"{name}\nspan {q['span']:.0f} mm, length {q['fuselage_length']:.0f} mm, two 7-inch tractors at y ±{q['nacelle_y']:.0f} mm; "
+                 f"the emitter's tube on the body axis: muzzle at the nose, rear jet out of the tail", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
     return out
 
 
@@ -93,6 +114,98 @@ def three_view(out="gavilan_three_view.png", p=None, name="GAVILAN"):
     return out
 
 
+# ------------------------------------------------------------------------------------------------- the comparison
+INK, MUTED, SURFACE, GRID = "#0b0b0b", "#52514e", "#fcfcfb", "#e4e3df"
+SERIES = ("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948")   # fixed order, one per aircraft
+CHARTED = ("merlin", "peregrine", "xwing", "emerillon", "emerillon_armed", "gavilan_a", "gavilan_f", "gavilan_f_broad")
+SHORT = {"merlin": "Merlin", "peregrine": "Peregrine B", "xwing": "X-wing X-A", "emerillon": "Émerillon ER2",
+         "emerillon_armed": "Émerillon ER2 + emitter", "gavilan_a": "Gavilan-A + emitter", "gavilan_f": "Gavilan-F + emitter",
+         "gavilan_f_broad": "Gavilan-F broad + emitter", "gavilan_a_unarmed": "Gavilan-A, no emitter", "gavilan_b": "Gavilan-B + emitter"}
+
+
+def _style(ax, title, xlabel=None, ylabel=None):
+    ax.set_facecolor(SURFACE)
+    ax.set_title(title, fontsize=10.5, color=INK, loc="left")
+    ax.grid(color=GRID, lw=0.8); ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(GRID)
+    ax.tick_params(colors=MUTED, labelsize=8.5, length=0)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=9, color=MUTED)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=9, color=MUTED)
+
+
+def turn_chart(out, machines, speeds=None):
+    """Turn rate and turn radius against speed, instantaneous and sustained, one line per aircraft."""
+    import gavilan_flight as gf
+    speeds = np.arange(6.0, 40.5, 1.0) if speeds is None else speeds
+    keys = [k for k in CHARTED if k in machines]
+    data = {k: [gf.turn(machines[k], float(V)) for V in speeds] for k in keys}
+    fig, ax = plt.subplots(2, 2, figsize=(14, 9.5), sharex=True, facecolor=SURFACE)
+    panels = (("rate_inst_deg_s", "instantaneous turn rate", "deg/s"), ("rate_sus_deg_s", "sustained turn rate (the speed holds)", "deg/s"),
+              ("radius_inst_m", "instantaneous turn radius", "m"), ("radius_sus_m", "sustained turn radius", "m"))
+    for a, (col, title, unit) in zip(ax.flat, panels):
+        _style(a, title, ylabel=unit)
+        for k, c in zip(keys, SERIES):
+            y = np.array([r[col] for r in data[k]], float)
+            y[(~np.isfinite(y)) | (y <= 0)] = np.nan
+            a.plot(speeds, y, color=c, lw=2, label=SHORT[k])
+        for V in (10, 15, 25):
+            a.axvline(V, color=MUTED, lw=0.7, ls=(0, (2, 3)))
+        if "radius" in col:
+            a.set_ylim(0, 40)
+    for a in ax[1]:
+        a.set_xlabel("airspeed [m/s]", fontsize=9, color=MUTED)
+    ax[0, 0].legend(fontsize=8.5, frameon=False, ncol=2, labelcolor=INK)
+    fig.suptitle("Turning against speed — a line stops where the aircraft cannot hold a level turn (below its stall); dotted: 10, 15, 25 m/s",
+                 fontsize=11, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def bar_chart(out, rows):
+    """Six comparisons as horizontal bars: one bar per aircraft, the value written at its end."""
+    by = {r["key"]: r for r in rows}
+    keys = [k for k in CHARTED if k in by]
+    panels = (("static thrust / weight", "static thrust / weight", "{:.1f}", None),
+              ("min speed [m/s]", "slowest level flight [m/s] (0: it hovers)", "{:.0f}", None),
+              ("top speed [m/s]", "top speed [m/s]", "{:.0f}", None),
+              ("150 m climb [s]", "ground to 150 m [s]", "{:.1f}", None),
+              ("reverse at 15 m/s [s]", "reverse direction at 15 m/s [s]", "{:.1f}", None),
+              ("re-attack [s]", "next firing pass, hovering bandit [s] (0: it holds it)", "{:.1f}", None))
+    fig, ax = plt.subplots(2, 3, figsize=(16, 8.2), facecolor=SURFACE)
+    y = np.arange(len(keys))[::-1]
+    for a, (col, title, fmt, _) in zip(ax.flat, panels):
+        _style(a, title)
+        vals = [by[k][col] for k in keys]
+        finite = [v for v in vals if v is not None and np.isfinite(v)]
+        top = max(finite) if finite else 1.0
+        for yi, k, v, c in zip(y, keys, vals, SERIES):
+            ok = v is not None and np.isfinite(v)
+            a.barh(yi, v if ok else 0.0, height=0.62, color=c)
+            a.text((v if ok else 0.0) + 0.015 * top, yi, fmt.format(v) if ok else "none", va="center", fontsize=8.5, color=INK)
+        a.set_yticks(y); a.set_yticklabels([SHORT[k] for k in keys], fontsize=8.5, color=INK)
+        a.set_xlim(0, 1.14 * top); a.grid(axis="y", visible=False)
+    fig.suptitle("The fleet on the chase's numbers — as designed; '+ emitter' carries one 0.6 kg recoilless emitter", fontsize=11, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def comparison_charts(folder=".", machines=None):
+    import gavilan_flight as gf
+    folder = Path(folder)
+    machines = machines or gf.fleet()
+    rows = gf.scorecard(machines)
+    return [turn_chart(folder / "gavilan_fleet_turns.png", machines), bar_chart(folder / "gavilan_fleet_bars.png", rows)], rows
+
+
 def main(folder="."):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
@@ -101,6 +214,7 @@ def main(folder="."):
         tag = "" if key == "A" else f"_{key.lower()}"
         out += [render(folder / f"gavilan{tag}_3d.png", gv.variant(key), name=gv.VARIANT_NAME[key]),
                 three_view(folder / f"gavilan{tag}_three_view.png", gv.variant(key), name=gv.VARIANT_NAME[key])]
+    out.append(render_f(folder / "gavilan_f_3d.png"))
     return out
 
 
