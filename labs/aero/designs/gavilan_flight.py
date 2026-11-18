@@ -1289,3 +1289,242 @@ def j_trade(propellers=("hq7x4x3", "apc7x7e", "apc7x10"), packs=(1, 2), distance
             rows.append(row)
             del _SPRINTERS[key]
     return rows
+
+
+# =============================================================================================================== GAVILAN-X
+# GAVILAN-J's hunt on an X-wing: the same motors, propellers, pack, talons and guards; the wing, pylons, boom and fins
+# replaced by four identical panels that are also the feet (gavilan.GavilanX).
+def x_geometry(q=None) -> dict:
+    p = gv.x_resolve(q)
+    L = gv.GavilanX.layout(p)
+    d = p["body_diameter"] / 1e3
+    nose, bay, cone = p["nose_length"] / 1e3, p["bay_length"] / 1e3, (p["cone_length"] + 30.0) / 1e3
+    return {"d": d, "nose": nose, "bay": bay, "cone": cone, "length": p["length"] / 1e3, "width": L["width"] / 1e3, "S": L["S_mm2"] / 1e6,
+            "mac": L["mac"] / 1e3, "t_c": p["thickness"], "pod_d": p["pod_diameter"] / 1e3, "pod_l": p["pod_length"] / 1e3,
+            "s_body": math.pi * d * (0.70 * nose + bay + 0.60 * cone), "plan_body": d * (0.67 * nose + bay + 0.55 * cone),
+            "motor_y": p["motor_y"] / 1e3, "motor_z": p["motor_z"] / 1e3, "x_ac": L["x_ac"] / 1e3, "x_prop": L["x_prop"] / 1e3, "x_bay": L["x_bay"] / 1e3,
+            "foot_half_width": L["foot_half_width"] / 1e3, "projected_span": L["projected_span"] / 1e3, "panel_radius": p["panel_radius"] / 1e3}
+
+
+def x_mass_budget(c: ef.Config = CONFIG_J) -> og_mass.Budget:
+    g = x_geometry()
+    motor, prop, esc, bat = (mk.part(k) for k in (c.motor, c.propeller, c.esc, c.battery))
+    petg, pa6 = mk.part("petg-hf"), mk.part("pa6-cf")
+    b, I = og_mass.Budget(), og_mass.Item
+    for i, (sy, sz) in enumerate(gv.MOTORS):
+        y, z = sy * g["motor_y"], sz * g["motor_z"]
+        b.add(I(f"motor {i + 1}", motor.mass_g / 1e3, (g["x_prop"] + 0.02, y, z), group="propulsion", source=c.motor),
+              I(f"propeller {i + 1}", prop.mass_g / 1e3, (g["x_prop"], y, z), group="propulsion", source=c.propeller))
+    b.add(I("ESC board with the flight controller", esc.mass_g / 1e3, (g["x_bay"] + 0.02, 0, 0), group="propulsion", source=c.esc))
+    Lp = bat.size_mm[0] / 1e3 + 0.006
+    for k in range(c.packs):
+        b.add(I(f"pack {k + 1}", bat.mass_g / 1e3, (g["x_bay"] + ef.STACK_BAY + (k + 0.5) * Lp, 0, 0), group="battery", source=c.battery))
+    for part in mk.FIXED:
+        if part.group == "fc" and esc.with_fc:
+            continue
+        b.add(I(part.name, part.mass_g / 1e3, (0.6 * g["nose"] if part.group in ("video", "gps") else g["x_bay"] + 0.02, 0, 0), group="avionics", source=part.key))
+    b.add(I("camera tilt servo", TILT_SERVO_G / 1e3, (0.03, 0, 0), group="avionics", source="hand estimate: a 9 g sub-micro servo"),
+          I("power wiring", 0.012 * c.packs + 0.036, (g["x_bay"] + 0.03, 0, 0), group="propulsion", source="emerillon_flight's allowance, leads along the panels"),
+          I("body skin (PETG)", g["s_body"] * ef.WALL * ef.PRINT_FACTOR * petg.density, (0.5 * (g["nose"] + g["bay"] + g["cone"]), 0, 0), group="airframe",
+            source="emerillon_flight.printed_masses' rule"),
+          I("four panels (printed foam)", 2.04 * g["S"] * AREAL_DENSITY, (g["x_ac"] + 0.15 * g["mac"], 0, 0), group="airframe", source="AREAL_DENSITY"),
+          I("panel spars (bought carbon tube, four)", 4 * 0.022 * g["panel_radius"], (g["x_ac"], 0, 0), group="airframe",
+            source="hand estimate: 22 g/m, a tip motor on each (kestrel_xwing sizes 19 g a panel for a longer one)"),
+          I("motor pods (PA6-CF)", 4 * math.pi * g["pod_d"] * 0.75 * g["pod_l"] * 0.0016 * pa6.density * ef.PRINT_FACTOR / 1.3, (g["x_prop"] + 0.03, 0, 0),
+            group="airframe", source="emerillon_flight.printed_masses' rule"),
+          I("foot bumpers (TPU)", 0.008, (g["length"], 0, 0), group="airframe", source="emerillon_flight"),
+          I("talons with their line", talons_kg(), (g["x_ac"], 0, -g["d"] / 2 - 0.03), group="payload", source="TALONS (hand estimate x 1.25)"),
+          I("propeller guards", guards_kg(), (g["x_prop"], 0, 0), group="airframe", source="GUARDS (hand estimate x 1.25)"))
+    return b
+
+
+def x_drag_buildup(V: float = 25.0, margin: float | None = None) -> dict:
+    g = x_geometry()
+    margin = ef.DRAG_MARGIN if margin is None else margin
+
+    def cf(length):
+        return cf_turbulent(max(V * length / NU, 1e4))
+
+    f = (g["nose"] + g["bay"] + g["cone"]) / g["d"]
+    body = cf(g["nose"] + g["bay"] + g["cone"]) * (1 + 60 / f ** 3 + f / 400) * g["s_body"]
+    panels = cf(g["mac"]) * (1 + 2 * g["t_c"] + 100 * g["t_c"] ** 4) * 2.04 * g["S"]
+    fp = g["pod_l"] / g["pod_d"]
+    pods = 4 * cf(g["pod_l"]) * (1 + 60 / fp ** 3 + fp / 400) * math.pi * g["pod_d"] * 0.75 * g["pod_l"]
+    camera = 0.25 * math.pi * 0.016 ** 2
+    clean = body + (panels + pods) * ef.INTERFERENCE + camera
+    return {"body": body, "panels": panels * ef.INTERFERENCE, "pods": pods * ef.INTERFERENCE, "camera": camera, "clean": clean,
+            "CdA": clean * margin + TALONS["cda_m2"] + GUARDS["cda_m2"], "margin": margin}
+
+
+@functools.lru_cache(maxsize=None)
+def x_wing_aero() -> dict:
+    """The four panels at 45 degrees on the vortex lattice: the vertical lift slope and the induced factor on their
+    total area (an X gives about half the slope of the same area laid flat: kestrel_xwing's finding)."""
+    g = x_geometry()
+    r = vlm(gv.x_planform(), alpha_deg=4.0, S_ref=g["S"], c_ref=g["mac"], n_span=8, n_chord=4)
+    a = math.radians(4.0)
+    return {"S": g["S"], "CLa": r["CL"] / a, "k": r["CDi"] / r["CL"] ** 2}
+
+
+def gavilan_x() -> Machine:
+    g, a = x_geometry(), x_wing_aero()
+    c45 = math.cos(math.radians(45.0))
+    pol = Polar(cl_alpha=a["CLa"], cd0=0.0, k=a["k"] / OSWALD_VISCOUS, cl_max=CL_MAX_3D * c45, cd90=viterna_cd90(2.0) * c45,
+                source="ogma.aero.vlm on the four panels; maximum lift and broadside drag x cos 45 (kestrel_xwing's treatment)")
+    t_max, power = _drive_fns(drive_map(CONFIG_J, 4), AVIONICS_W)
+    return Machine("Gavilan-X (the hunt on an X-wing: four identical panels)", "tailsitter", x_mass_budget().mass, g["width"], g["length"], g["S"], pol,
+                   x_drag_buildup()["CdA"], t_max, power, N_DESIGN, mk.part(CONFIG_J.battery).cells * 3.7 * mk.part(CONFIG_J.battery).ah,
+                   plan_body=g["plan_body"], roll_rate=math.radians(600.0), fixed_w=AVIONICS_W, payload_kg=talons_kg(), gun="talons",
+                   source="gavilan_flight (gavilan.GavilanX, ÉMERILLON's drive and catalogue)", notes={"config": CONFIG_J.label(), "motors": 4})
+
+
+_SPRINTERS["gavilan_x"] = lambda: gavilan_x()
+
+PRINTED = {   # printed part types and pieces, counted from the CAD's ``parts`` (bought: motors, electronics, pack, carbon tubes)
+    "gavilan_j": {"types": ["nose", "bay with its cone", "wing half", "pylon", "motor pod", "fin"], "pieces": 1 + 1 + 2 + 2 + 4 + 4, "bought tubes": 1},
+    "gavilan_x": {"types": ["nose", "bay with its cone", "panel", "motor pod"], "pieces": 1 + 1 + 4 + 4, "bought tubes": 4},
+}
+
+
+def j_x_table() -> list:
+    """GAVILAN-J and GAVILAN-X side by side: the build, the hunt, the flying."""
+    rows = []
+    for key, m, geo in (("gavilan_j", gavilan_j(), geometry(gv.variant("J"))), ("gavilan_x", gavilan_x(), x_geometry())):
+        en, br = endurance(m), brake(m)
+        row = {"key": key, "aircraft": m.name, "mass_kg": m.mass, "width [m]": m.span, "length [m]": m.length, "feet half-width [m]": geo["foot_half_width"],
+               "printed part types": len(PRINTED[key]["types"]), "printed pieces": PRINTED[key]["pieces"], "lifting area [m2]": m.S,
+               "static thrust / weight": m.t_max(0.0) / m.weight, "thrust / weight carrying the bandit": m.t_max(0.0) / ((m.mass + BANDIT_KG) * G)}
+        for d in (50.0, 100.0, 200.0):
+            row[f"to a bandit at {d:.0f} m [s]"] = intercept(key, d)["time_s"]
+        for V in (10.0, 15.0, 25.0):
+            row[f"turn rate @{V:.0f} [deg/s]"] = turn(m, V)["rate_inst_deg_s"]
+        row.update({"stop from 25 m/s [m]": br["distance_m"], "wing stall [m/s]": stall_speed(m), "top speed [m/s]": top_speed(m),
+                    "hover [min]": en["hover_min"], "cruise [min]": en["cruise_min"], "cruise at [m/s]": en["cruise_v"], "cruise [W]": en["cruise_w"]})
+        rows.append(row)
+    return rows
+
+
+# ============================================================================================================== GAVILAN-XP
+# GAVILAN-X with a hawk's feet: two thin legs that swing out of the belly, each with a four-toed foot that snaps shut
+# (gavilan.GavilanXP). What follows is the catch as a **sequence in time** — kinematics and timing, each number from the
+# sprint model or from a stated hand estimate. It is not a contact simulation: nothing here knows whether the toes
+# actually close on the bandit.
+FEET = {
+    "source": "hand estimate: nothing chosen or tested",
+    "parts_g": {"two leg tubes, 6 mm carbon, 0.24 m": 14.0, "two feet: four printed toes each with steel talon tips, springs and a latch": 44.0,
+                "two hip servos (metal gear, 20 g class)": 40.0, "hip brackets and bearings": 14.0, "line with an elastic section, and its latch": 20.0},
+    "margin": 1.25, "cda_m2": 0.0016,
+}
+HIP_RATE_DEG_S = 300.0             # the legs' swing under load: a 0.10 s / 60 deg servo at half its free speed (hand estimate)
+LEG_FOLDED_DEG, LEG_OUT_DEG = 180.0, 100.0
+TOE_OPEN_DEG, TOE_SHUT_DEG = 80.0, 20.0
+TOE_SPRING_NM = 0.15               # each toe's closing spring, mean torque over the stroke (hand estimate)
+TOE_G = 6.0                        # one toe [g] (hand estimate)
+TRIGGER_S = 0.010                  # from the sensor seeing the bandit to the latch letting go (hand estimate)
+XP_CONTACT_SPEED = 1.5             # the closing speed at the grab [m/s]: slow enough for the toes to shut round the bandit (see catch_sequence)
+LEGS_READY_S = 0.20                # the legs are out and still this long before the contact
+BANDIT_GRIP_MM = 50.0              # what the foot closes on: the bandit's body across its thickness (net_drone's hull: 2 x 25 mm)
+BIND_S = 0.05                      # the time the sprung legs take the shock over (hand estimate)
+BANDIT_THRUST_TW = 2.0             # a bandit still fighting pulls with this many times its weight (hand estimate)
+
+
+def feet_kg() -> float:
+    return sum(FEET["parts_g"].values()) * FEET["margin"] / 1e3
+
+
+def gavilan_xp() -> Machine:
+    x = gavilan_x()
+    return dataclasses.replace(x, name="Gavilan-XP (the X-wing with a hawk's feet)", mass=x.mass - talons_kg() + feet_kg(),
+                               cda0=x.cda0 - TALONS["cda_m2"] + FEET["cda_m2"], payload_kg=feet_kg(), gun="feet")
+
+
+_SPRINTERS["gavilan_xp"] = lambda: gavilan_xp()
+
+
+def toe_snap_s(p=None) -> float:
+    """The time a toe takes from spread to shut on its spring, a rod about its root: sqrt(2 theta I / torque), after
+    the trigger's delay."""
+    p = gv.xp_resolve(p)
+    L = (p["toe_first"] + p["toe_second"]) / 1e3
+    inertia = TOE_G / 1e3 * L * L / 3.0
+    return TRIGGER_S + math.sqrt(2 * math.radians(TOE_OPEN_DEG - TOE_SHUT_DEG) * inertia / TOE_SPRING_NM)
+
+
+def _flare_trace(m: Machine, V0: float, v_end: float, dt: float = 0.01, rho: float = RHO) -> dict:
+    """``brake`` with its history: the hardest level deceleration from ``V0`` to ``v_end`` that still carries the weight."""
+    lv = level(m, V0)
+    theta, V, x, t = (math.radians(lv["theta_deg"]) if lv else 0.0), V0, 0.0, 0.0
+    T_, X_, V_, TH = [0.0], [0.0], [V0], [theta]
+    while V > v_end and t < 30.0:
+        q, W = 0.5 * rho * V * V, m.weight
+        best = None
+        for th in m.thetas()[::2]:
+            la, da = m.areas(float(th))
+            s, c = math.sin(th), math.cos(th)
+            T = (W - q * la) / s if s > 1e-3 else (0.0 if q * la >= W else math.inf)
+            if T < -1e-6 or T > m.thrust(V, float(th)):
+                continue
+            dec = (q * da - T * c) / m.mass
+            if best is None or dec > best[0]:
+                best = (dec, float(th))
+        if best is None:
+            break
+        theta = _slew(theta, best[1], m.slew, dt)
+        la, da = m.areas(theta)
+        s, c = math.sin(theta), math.cos(theta)
+        T = min(max((W - q * la) / s if s > 1e-3 else 0.0, 0.0), m.thrust(V, theta))
+        V -= (q * da - T * c) / m.mass * dt
+        x += V * dt
+        t += dt
+        T_.append(t), X_.append(x), V_.append(V), TH.append(theta)
+    return {"t": np.array(T_), "x": np.array(X_), "V": np.array(V_), "theta_deg": np.degrees(np.array(TH))}
+
+
+def catch_sequence(distance: float = 100.0, height: float = 30.0, p=None) -> dict:
+    """GAVILAN-XP's catch of a bandit hovering ``distance`` away, as a timeline from the perch: spin-up, sprint, flare
+    to ``XP_CONTACT_SPEED``, the legs swung out (finished ``LEGS_READY_S`` before the contact), the toes spread, the
+    snap, the bind, the descent from ``height`` with the bandit aboard. With it: the windows the catch has to hit
+    (how long the bandit is inside the open foot, how far off-line it may be) and the loads. Kinematics and hand
+    estimates; no contact is simulated."""
+    q = gv.xp_resolve(p)
+    F = gv.GavilanXP.foot_layout({**q, "leg_deg": LEG_OUT_DEG, "toe_open_deg": TOE_OPEN_DEG})
+    m = gavilan_xp()
+    tr = _sprint_trace(m, v_stop=60.0, dt=0.01)
+    fl = _flare_trace(m, float(tr["V"][-1]), XP_CONTACT_SPEED)
+    to_go = fl["x"][-1] - np.interp(tr["V"], fl["V"][::-1], fl["x"][::-1])        # the flare's length from each sprint speed
+    i = min(int(np.searchsorted(tr["x"] + to_go, distance)), len(tr["x"]) - 1)
+    v_peak, t_switch = float(tr["V"][i]), float(tr["t"][i])
+    j = int(np.searchsorted(-fl["V"], -v_peak))                                   # where the flare's history is at that speed
+    t_fl, x_fl, v_fl, th_fl = fl["t"][j:] - fl["t"][j], fl["x"][j:] - fl["x"][j], fl["V"][j:], fl["theta_deg"][j:]
+    t_contact = SPINUP_S + t_switch + float(t_fl[-1])
+    swing = (LEG_FOLDED_DEG - LEG_OUT_DEG) / HIP_RATE_DEG_S
+    snap = toe_snap_s(q)
+    depth, aperture = F["tip_depth"] / 1e3, F["aperture"] / 1e3
+    window = depth / XP_CONTACT_SPEED                                              # the bandit's body between the toe tips and the ankle
+    v_after = m.mass * XP_CONTACT_SPEED / (m.mass + BANDIT_KG)                    # the two together, just after the grab
+    force = BANDIT_KG * v_after / BIND_S
+    spare = m.t_max(0.0) - (m.mass + BANDIT_KG) * G
+    events = [{"t": 0.0, "event": "trigger on the perch: motors start"},
+              {"t": SPINUP_S, "event": "lift-off and tip-over: the sprint begins"},
+              {"t": SPINUP_S + t_switch, "event": f"peak speed {v_peak:.0f} m/s: the flare begins, nose up, belly first"},
+              {"t": t_contact - LEGS_READY_S - swing, "event": f"the legs swing out of the belly ({swing:.2f} s), the toes spread to {aperture * 1e3:.0f} mm"},
+              {"t": t_contact - LEGS_READY_S, "event": "legs out and still, the camera on the bandit"},
+              {"t": t_contact - snap, "event": f"the trigger: the toes are let go {snap * 1e3:.0f} ms before the contact"},
+              {"t": t_contact, "event": f"contact at {XP_CONTACT_SPEED:g} m/s: the toes shut round the bandit's body"},
+              {"t": t_contact + BIND_S, "event": f"the bind: the two move together at {v_after:.1f} m/s, the legs took {force:.0f} N"},
+              {"t": t_contact + BIND_S + 1.0, "event": "steadied in a hang, the bandit held under the belly"},
+              {"t": t_contact + BIND_S + 1.0 + height / 2.0, "event": f"set down after a descent from {height:.0f} m at 2 m/s"}]
+    t_all = np.concatenate([[0.0], SPINUP_S + tr["t"][:i + 1], SPINUP_S + t_switch + t_fl[1:]])
+    x_all = np.concatenate([[0.0], tr["x"][:i + 1], tr["x"][i] + x_fl[1:]])
+    v_all = np.concatenate([[0.0], tr["V"][:i + 1], v_fl[1:]])
+    rng = np.maximum(x_all[-1] - x_all, 0.0)
+    leg = np.clip(LEG_FOLDED_DEG - (t_all - (t_contact - LEGS_READY_S - swing)) * HIP_RATE_DEG_S, LEG_OUT_DEG, LEG_FOLDED_DEG)
+    toe = np.where(t_all >= t_contact - LEGS_READY_S - swing, TOE_OPEN_DEG, TOE_SHUT_DEG).astype(float)
+    return {"aircraft": m.name, "mass_kg": m.mass, "distance_m": distance, "events": events, "time_to_contact_s": t_contact, "peak_m_s": v_peak,
+            "flare_s": float(t_fl[-1]), "flare_m": float(x_fl[-1]), "nose_up_at_contact_deg": float(th_fl[-1]),
+            "leg_swing_s": swing, "toe_snap_s": snap, "in_foot_window_s": window, "snap_fits_window": snap <= window + TRIGGER_S,
+            "trigger_tolerance_s": 0.5 * window, "aperture_m": aperture, "sideways_tolerance_m": 0.5 * (aperture - BANDIT_GRIP_MM / 1e3),
+            "between_feet_m": F["between_feet"] / 1e3, "speed_after_bind_m_s": v_after, "bind_force_N": force,
+            "thrust_over_weight_with_bandit": m.t_max(0.0) / ((m.mass + BANDIT_KG) * G), "spare_thrust_N": spare,
+            "spare_thrust_if_bandit_fights_N": spare - BANDIT_THRUST_TW * BANDIT_KG * G, "set_down_s": events[-1]["t"],
+            "trace": {"t": t_all, "range_m": rng, "speed_m_s": v_all, "leg_deg": leg, "toe_deg": toe}}

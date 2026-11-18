@@ -208,10 +208,10 @@ class Gavilan(Design):
             out = d if out is None else out.union(d)
         return out
 
-    @staticmethod
-    def talon_layout(p) -> dict:
+    @classmethod
+    def talon_layout(cls, p) -> dict:
         """The talons' hub on the belly and each leg's tip [mm], and how far the open claw reaches and spans."""
-        L = Gavilan.layout(p)
+        L = cls.layout(p)
         hub = np.array([L["x_ac"], 0.0, -L["R"] + 4.0])
         a = math.radians(p["talon_deg"])
         s = math.radians(3.0 + (p["talon_splay_deg"] - 3.0) * min(max(math.sin(a), 0.0), 1.0))     # the legs close as they fold back
@@ -312,6 +312,230 @@ class Gavilan(Design):
         if p["guards"]:
             out["guards"] = self._guards(p)
         return out
+
+
+# ------------------------------------------------------------------------------------------------- GAVILAN-X: the X-wing
+def _gp(name, default):
+    """One of ``Gavilan``'s parameters with another default."""
+    import dataclasses
+    return dataclasses.replace(next(q for q in Gavilan.parameters if q.name == name), default=default)
+
+
+def _x_kept():
+    skip = ("part", "bay_length", "length", "motor_y", "motor_z", "talons", "guards", "prop_gap")
+    return [q for q in Gavilan.parameters if q.name not in skip]
+
+
+class GavilanX(Gavilan):
+    """GAVILAN-X: GAVILAN-J's hunt on an airframe that is easier to build. J's body (camera, one pack), motors,
+    propellers, guards and talons — but the wing, the two pylons, the boom and the four fins become **four identical
+    panels** at 45, 135, 225 and 315 degrees: each carries one motor pod, and each sweeps back to a tip that is one of
+    the four feet. Seen from the front it is an X; the talons leave through the gap between the two lower panels.
+    Printed part types: nose, bay with its cone, panel, pod (J: nose, bay with its cone, wing, pylon, pod, fin).
+    ``part``: ``aircraft``, ``panel`` (one panel with its pod: the part printed four times), ``nose``."""
+
+    parameters = _x_kept() + [
+        Parameter("part", "aircraft", choices=("aircraft", "panel", "nose"), description="what to build"),
+        _gp("bay_length", 134.5), _gp("length", 580.0), _gp("talons", True), _gp("guards", True), _gp("prop_gap", 24.0),
+        _gp("motor_y", 141.4), _gp("motor_z", 141.4),                    # the motor axes: 200 mm from the body axis, on the 45 degree lines
+        Parameter("panel_radius", 340.0, "mm", min=120.0, description="each panel's tip from the body axis (the foot)"),
+        Parameter("panel_root_chord", 220.0, "mm", min=60.0, description="panel chord at the body axis"),
+        Parameter("panel_tip_chord", 110.0, "mm", min=30.0, description="panel chord at the tip"),
+        Parameter("panel_x", 215.0, "mm", min=0.0, description="panel root leading edge from the nose tip"),
+    ]
+
+    @staticmethod
+    def layout(p) -> dict:
+        """``Gavilan``'s body stations, and the panels: chords, the leading edge along the panel, the motor's station,
+        the areas, the feet, the clearances [mm]."""
+        L = dict(Gavilan.layout(p))
+        r1, c0, c1 = p["panel_radius"], p["panel_root_chord"], p["panel_tip_chord"]
+        r_m = math.hypot(p["motor_y"], p["motor_z"])
+        x_le_tip = p["length"] - c1                                       # the tip's trailing edge is the foot line
+
+        def x_le(r):
+            return p["panel_x"] + (x_le_tip - p["panel_x"]) * r / r1
+
+        def chord(r):
+            return c0 + (c1 - c0) * r / r1
+
+        r_prop, R = p["prop_diameter"] / 2, L["R"]
+        S_panel = 0.5 * (chord(R) + c1) * (r1 - R)                        # outside the body
+        mac = 2 / 3 * (c0 ** 2 + c0 * c1 + c1 ** 2) / (c0 + c1)
+        r_mac = r1 / 3 * (c0 + 2 * c1) / (c0 + c1)
+        x_prop = x_le(r_m) - p["prop_gap"]
+        L.update({"r_motor": r_m, "x_le_tip": x_le_tip, "c_root": c0, "c_tip": c1, "S_panel_mm2": S_panel, "S_mm2": 4 * S_panel, "mac": mac,
+                  "x_ac": x_le(r_mac) + 0.25 * mac, "le_sweep_deg": math.degrees(math.atan2(x_le_tip - p["panel_x"], r1)),
+                  "x_prop": x_prop, "x_pod": x_prop - L["spinner"], "x_mount": x_prop + p["motor_height"], "x_le_motor": x_le(r_m),
+                  "projected_span": 2 * r1 * math.cos(math.radians(45.0)), "AR": (2 * r1) ** 2 / (2 * S_panel + 2 * R * c0),
+                  "foot_radius": r1, "foot_half_width": r1 * math.sin(math.radians(45.0)),
+                  "tip_to_body": r_m - r_prop - R, "tip_to_tip": r_m * math.sqrt(2.0) - p["prop_diameter"],
+                  "tip_to_wing": p["prop_gap"], "tip_inside_span": r1 - r_m - r_prop,
+                  "width": 2 * max(r1 * math.cos(math.radians(45.0)), p["motor_y"] + r_prop), "height": 2 * max(r1 * math.sin(math.radians(45.0)), p["motor_z"] + r_prop),
+                  "x_boom": L["x_boom"], "body_end": L["x_boom"] + 30.0})
+        return L
+
+    @staticmethod
+    def body_profile(p, n=24) -> np.ndarray:
+        """``Gavilan``'s nose, bay and cone, closed a little behind the cone (no boom: the panels are the tail)."""
+        prof = Gavilan.body_profile(p, n)
+        return np.vstack([prof, [[prof[-1, 0] + 30.0, 0.6 * prof[-1, 1]]]])
+
+    def _body(self, p):
+        return self._revolve(self.body_profile(p))
+
+    def _panel(self, p):
+        """One panel along -y from the body axis to its tip (the root inside the body), swept back to the foot."""
+        L = self.layout(p)
+        root = self._section(cq.Workplane("XZ"), L["c_root"], p["panel_x"], p["thickness"]).workplane(offset=p["panel_radius"])
+        return self._section(root, L["c_tip"], L["x_le_tip"], p["thickness"] * L["c_root"] / L["c_tip"] * 0.75).loft(combine=True, ruled=True)
+
+    def _panels(self, p):
+        out = None
+        for a in (45.0, 135.0, 225.0, 315.0):
+            q = self._panel(p).rotate((0, 0, 0), (1, 0, 0), a)
+            out = q if out is None else out.union(q)
+        return out
+
+    def _pods(self, p):
+        out = None
+        for sy, sz in MOTORS:
+            q = self._pod(p, sy * p["motor_y"], sz * p["motor_z"])
+            out = q if out is None else out.union(q)
+        return out
+
+    def parts(self, p) -> dict:
+        out = {"body": self._body(p), "camera": self._camera(p), "wing": self._panels(p), "pylons": self._pods(p), "props": self._props(p)}
+        if p["talons"]:
+            out["talons"] = self._talons(p)
+        if p["guards"]:
+            out["guards"] = self._guards(p)
+        return out
+
+    def build(self, p):
+        L = self.layout(p)
+        if L["tip_to_body"] < 2.0 or L["tip_to_tip"] < 2.0:
+            raise ValueError("the propeller tips reach the body or each other: move the motors out")
+        if p["part"] == "nose":
+            return self._nose(p)
+        if p["part"] == "panel":
+            a = math.radians(45.0)
+            pod = self._pod(p, -L["r_motor"], 0.0)                         # on the panel's own line (-y), before the 45 degree turn
+            return self._panel(p).union(pod)
+        aircraft = self._body(p).union(self._camera(p)).union(self._panels(p)).union(self._pods(p))
+        if p["talons"]:
+            aircraft = aircraft.union(self._talons(p))
+        if p["guards"]:
+            aircraft = aircraft.union(self._guards(p))
+        if p["show_props"]:
+            aircraft = aircraft.union(self._props(p))
+        if p["angle_of_attack_deg"]:
+            aircraft = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"])
+        return aircraft
+
+
+class GavilanXP(GavilanX):
+    """GAVILAN-XP: GAVILAN-X with a hawk's feet in place of the four-legged net. Two thin legs hinge at the belly and
+    swing forward out of it; each ends in a foot of four toes — ``front_toes`` forward (a hawk has three) and one back
+    — that snap shut like a pincer. Each toe is two segments: the second curls in, as a talon does.
+    ``leg_deg``: 0 folded back along the belly, 90 straight out of it, more reaches toward the nose.
+    ``toe_open_deg``: about 80 spread to take the bandit, about 20 shut round it."""
+
+    parameters = [q for q in GavilanX.parameters if q.name not in ("talons", "talon_deg", "talon_length", "talon_splay_deg")] + [
+        Parameter("talons", False, description="X's four-legged net (off: XP carries feet instead)"),
+        Parameter("talon_deg", 0.0, "deg", description="unused on XP"), Parameter("talon_length", 420.0, "mm", description="unused on XP"),
+        Parameter("talon_splay_deg", 32.0, "deg", description="unused on XP"),
+        Parameter("leg_deg", 100.0, "deg", min=0.0, max=180.0, description="legs: 90 straight out of the belly, 180 folded forward along it (the perch and the sprint), less than 90 trailing"),
+        Parameter("leg_length", 240.0, "mm", min=80.0, description="each leg, hip to ankle"),
+        Parameter("leg_y", 45.0, "mm", min=15.0, description="each leg from the centre plane"),
+        Parameter("leg_diameter", 6.0, "mm", min=3.0, description="leg tube"),
+        Parameter("front_toes", 3, "", min=2, max=3, description="toes pointing forward on each foot (one more points back)"),
+        Parameter("toe_open_deg", 80.0, "deg", min=5.0, max=100.0, description="toes: 80 spread, 20 shut"),
+        Parameter("toe_first", 60.0, "mm", min=20.0, description="each toe's first segment"),
+        Parameter("toe_second", 50.0, "mm", min=15.0, description="each toe's second segment: the talon"),
+        Parameter("toe_curl_deg", 50.0, "deg", min=0.0, max=90.0, description="how far the talon curls in from the first segment"),
+        Parameter("toe_fan_deg", 35.0, "deg", min=10.0, max=60.0, description="angle between neighbouring front toes"),
+    ]
+
+    @classmethod
+    def foot_layout(cls, p) -> dict:
+        """Hips, ankles and every toe's joints and tip [mm]; the foot's open span front to back and the gap left when shut."""
+        L = cls.layout(p)
+        lam, phi, curl = math.radians(p["leg_deg"]), math.radians(p["toe_open_deg"]), math.radians(p["toe_curl_deg"])
+        d = np.array([math.cos(lam), 0.0, -math.sin(lam)])                 # along the leg, hip to ankle
+        f = np.array([-math.sin(lam), 0.0, -math.cos(lam)])                # the foot's front: toward the nose when the leg is straight out
+        e = np.array([0.0, 1.0, 0.0])
+        n = int(p["front_toes"])
+        angles = [(k - (n - 1) / 2) * math.radians(p["toe_fan_deg"]) for k in range(n)] + [math.pi]
+        feet = []
+        for side in (1, -1):
+            hip = np.array([L["x_ac"] - 20.0, side * p["leg_y"], -L["R"] + 4.0])
+            ankle = hip + p["leg_length"] * d
+            toes = []
+            for a in angles:
+                u = math.cos(a) * f + math.sin(a) * e
+                j = ankle + p["toe_first"] * (math.cos(phi) * d + math.sin(phi) * u)
+                tip = j + p["toe_second"] * (math.cos(phi - curl) * d + math.sin(phi - curl) * u)
+                toes.append((j, tip))
+            feet.append({"hip": hip, "ankle": ankle, "toes": toes})
+        r_tip = p["toe_first"] * math.sin(phi) + p["toe_second"] * math.sin(phi - curl)      # a tip's distance from the leg's axis
+        depth = p["toe_first"] * math.cos(phi) + p["toe_second"] * math.cos(phi - curl)      # and how far past the ankle
+        return {"feet": feet, "leg_dir": d, "front": f, "aperture": 2 * r_tip, "tip_depth": depth, "between_feet": 2 * p["leg_y"],
+                "reach_below_belly": p["leg_length"] * math.sin(lam) + depth * math.sin(lam),
+                "past_lower_propellers": (p["leg_length"] + depth) * math.sin(lam) - (p["motor_z"] + p["prop_diameter"] / 2 - L["R"])}
+
+    def _feet(self, p):
+        F = self.foot_layout(p)
+        r = p["leg_diameter"] / 2
+        out = None
+        for foot in F["feet"]:
+            hip, ankle = foot["hip"], foot["ankle"]
+            s = cq.Workplane("XY").sphere(9.0).translate(tuple(hip)).union(
+                cq.Workplane("XY").add(cq.Solid.makeCylinder(r, p["leg_length"], cq.Vector(*hip), cq.Vector(*F["leg_dir"]))))
+            s = s.union(cq.Workplane("XY").sphere(8.0).translate(tuple(ankle)))
+            for j, tip in foot["toes"]:
+                for a, b, rr in ((ankle, j, 2.6), (j, tip, 2.0)):
+                    v = b - a
+                    s = s.union(cq.Workplane("XY").add(cq.Solid.makeCylinder(rr, float(np.linalg.norm(v)), cq.Vector(*a), cq.Vector(*v))))
+                s = s.union(cq.Workplane("XY").sphere(3.2).translate(tuple(j)))
+            out = s if out is None else out.union(s)
+        return out
+
+    def parts(self, p) -> dict:
+        out = GavilanX.parts(self, {**p, "talons": False})
+        out["talons"] = self._feet(p)
+        return out
+
+    def build(self, p):
+        if p["part"] != "aircraft":
+            return GavilanX.build(self, p)
+        aircraft = GavilanX.build(self, {**p, "talons": False, "angle_of_attack_deg": 0.0}).union(self._feet(p))
+        if p["angle_of_attack_deg"]:
+            aircraft = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"])
+        return aircraft
+
+
+def xp_resolve(q=None) -> dict:
+    return GavilanXP().resolve(**dict(q or {}))
+
+
+def x_resolve(q=None) -> dict:
+    return GavilanX().resolve(**dict(q or {}))
+
+
+def x_planform(q=None) -> list:
+    """GAVILAN-X's four panels as flat quadrilaterals [m] for the vortex lattice."""
+    p = x_resolve(q)
+    L = GavilanX.layout(p)
+    quads = []
+    for a in np.radians((45.0, 135.0, 225.0, 315.0)):
+        c, s = math.cos(a), math.sin(a)
+        r0, r1 = L["R"], p["panel_radius"]
+        x0 = p["panel_x"] + (L["x_le_tip"] - p["panel_x"]) * r0 / r1
+        c_r0 = L["c_root"] + (L["c_tip"] - L["c_root"]) * r0 / r1
+        quads.append(np.array([[x0, r0 * c, r0 * s], [L["x_le_tip"], r1 * c, r1 * s], [L["x_le_tip"] + L["c_tip"], r1 * c, r1 * s],
+                               [x0 + c_r0, r0 * c, r0 * s]]) / 1000.0)
+    return quads
 
 
 # ------------------------------------------------------------------------------------------------- GAVILAN-F: the fixed wing

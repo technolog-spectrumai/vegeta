@@ -1,0 +1,82 @@
+{
+ "source": "gavilan_flight.j_x_table()",
+ "note": "reduced point-mass model; talons, guards and spars are hand estimates; no CFD, FEA or catch simulation",
+ "printed": {
+  "gavilan_j": {
+   "types": [
+    "nose",
+    "bay with its cone",
+    "wing half",
+    "pylon",
+    "motor pod",
+    "fin"
+   ],
+   "pieces": 14,
+   "bought tubes": 1
+  },
+  "gavilan_x": {
+   "types": [
+    "nose",
+    "bay with its cone",
+    "panel",
+    "motor pod"
+   ],
+   "pieces": 10,
+   "bought tubes": 4
+  }
+ },
+ "rows": [
+  {
+   "key": "gavilan_j",
+   "aircraft": "Gavilan-J (the hawk's hunt: perch, sprint, talons)",
+   "mass_kg": 1.6,
+   "width [m]": 0.7,
+   "length [m]": 0.78,
+   "feet half-width [m]": 0.117,
+   "printed part types": 6,
+   "printed pieces": 14,
+   "lifting area [m2]": 0.133,
+   "static thrust / weight": 6.196,
+   "thrust / weight carrying the bandit": 3.541,
+   "to a bandit at 50 m [s]": 2.679,
+   "to a bandit at 100 m [s]": 3.775,
+   "to a bandit at 200 m [s]": 5.84,
+   "turn rate @10 [deg/s]": 343.702,
+   "turn rate @15 [deg/s]": 230.859,
+   "turn rate @25 [deg/s]": 151.021,
+   "stop from 25 m/s [m]": 13.431,
+   "wing stall [m/s]": 17.181,
+   "top speed [m/s]": 47.5,
+   "hover [min]": 6.677,
+   "cruise [min]": 14.379,
+   "cruise at [m/s]": 17.0,
+   "cruise [W]": 125.984
+  },
+  {
+   "key": "gavilan_x",
+   "aircraft": "Gavilan-X (the hunt on an X-wing: four identical panels)",
+   "mass_kg": 1.487,
+   "width [m]": 0.481,
+   "length [m]": 0.58,
+   "feet half-width [m]": 0.24,
+   "printed part types": 4,
+   "printed pieces": 10,
+   "lifting area [m2]": 0.198,
+   "static thrust / weight": 6.666,
+   "thrust / weight carrying the bandit": 3.689,
+   "to a bandit at 50 m [s]": 2.618,
+   "to a bandit at 100 m [s]": 3.71,
+   "to a bandit at 200 m [s]": 5.55,
+   "turn rate @10 [deg/s]": 370.417,
+   "turn rate @15 [deg/s]": 248.695,
+   "turn rate @25 [deg/s]": 162.284,
+   "stop from 25 m/s [m]": 12.894,
+   "wing stall [m/s]": 15.562,
+   "top speed [m/s]": 47.5,
+   "hover [min]": 7.342,
+   "cruise [min]": 13.96,
+   "cruise at [m/s]": 15.0,
+   "cruise [W]": 129.767
+  }
+ ]
+}

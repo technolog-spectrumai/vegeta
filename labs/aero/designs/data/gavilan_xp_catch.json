@@ -1,0 +1,91 @@
+{
+ "aircraft": "Gavilan-XP (the X-wing with a hawk's feet)",
+ "mass_kg": 1.513,
+ "distance_m": 100.0,
+ "time_to_contact_s": 3.79,
+ "peak_m_s": 47.869,
+ "flare_s": 1.17,
+ "flare_m": 20.355,
+ "nose_up_at_contact_deg": 150.0,
+ "leg_swing_s": 0.267,
+ "toe_snap_s": 0.028,
+ "in_foot_window_s": 0.036,
+ "snap_fits_window": true,
+ "trigger_tolerance_s": 0.018,
+ "aperture_m": 0.168,
+ "sideways_tolerance_m": 0.059,
+ "between_feet_m": 0.09,
+ "speed_after_bind_m_s": 0.837,
+ "bind_force_N": 20.078,
+ "thrust_over_weight_with_bandit": 3.653,
+ "spare_thrust_N": 70.6,
+ "spare_thrust_if_bandit_fights_N": 47.064,
+ "set_down_s": 19.84,
+ "source": "gavilan_flight.catch_sequence()",
+ "note": "kinematics and hand estimates; NOT a contact simulation",
+ "events": [
+  {
+   "t": 0.0,
+   "event": "trigger on the perch: motors start"
+  },
+  {
+   "t": 0.3,
+   "event": "lift-off and tip-over: the sprint begins"
+  },
+  {
+   "t": 2.62,
+   "event": "peak speed 48 m/s: the flare begins, nose up, belly first"
+  },
+  {
+   "t": 3.323,
+   "event": "the legs swing out of the belly (0.27 s), the toes spread to 168 mm"
+  },
+  {
+   "t": 3.59,
+   "event": "legs out and still, the camera on the bandit"
+  },
+  {
+   "t": 3.762,
+   "event": "the trigger: the toes are let go 28 ms before the contact"
+  },
+  {
+   "t": 3.79,
+   "event": "contact at 1.5 m/s: the toes shut round the bandit's body"
+  },
+  {
+   "t": 3.84,
+   "event": "the bind: the two move together at 0.8 m/s, the legs took 20 N"
+  },
+  {
+   "t": 4.84,
+   "event": "steadied in a hang, the bandit held under the belly"
+  },
+  {
+   "t": 19.84,
+   "event": "set down after a descent from 30 m at 2 m/s"
+  }
+ ],
+ "feet": {
+  "source": "hand estimate: nothing chosen or tested",
+  "parts_g": {
+   "two leg tubes, 6 mm carbon, 0.24 m": 14.0,
+   "two feet: four printed toes each with steel talon tips, springs and a latch": 44.0,
+   "two hip servos (metal gear, 20 g class)": 40.0,
+   "hip brackets and bearings": 14.0,
+   "line with an elastic section, and its latch": 20.0
+  },
+  "margin": 1.25,
+  "cda_m2": 0.0016
+ },
+ "feet_kg": 0.165,
+ "assumed": {
+  "hip_rate_deg_s": 300.0,
+  "toe_spring_Nm": 0.15,
+  "toe_g": 6.0,
+  "trigger_s": 0.01,
+  "contact_speed_m_s": 1.5,
+  "bind_s": 0.05,
+  "bandit_kg": 1.2,
+  "bandit_thrust_over_weight": 2.0
+ }
+}

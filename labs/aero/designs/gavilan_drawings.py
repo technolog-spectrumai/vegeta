@@ -78,15 +78,15 @@ def render_f(out="gavilan_f_3d.png", q=None, name="Gavilan-F — fixed wing, twi
     return out
 
 
-def draw(ax, p, elev, azim, title, standing=False):
+def draw(ax, p, elev, azim, title, standing=False, cls=None):
     """One 3D view; ``standing``: nose up on the fins (+x turned to −z, the feet on z = 0)."""
     L = p["length"]
-    for name, shape in gv.Gavilan().parts(p).items():
+    for name, shape in (cls or gv.Gavilan)().parts(p).items():
         col, alpha = COLOURS[name]
         if standing:
             shape = shape.rotate((0, 0, 0), (0, 1, 0), 90).translate((0, 0, L))      # +x (aft) to −z: the nose up
         ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=alpha == 1.0))
-    h = L * 0.52
+    h = max(L * 0.52, 1.25 * p.get("panel_radius", 0.0))
     cx = (0, 0, L / 2) if standing else (L / 2, 0, 0)
     ax.set_xlim(cx[0] - h, cx[0] + h); ax.set_ylim(cx[1] - h, cx[1] + h); ax.set_zlim(cx[2] - h, cx[2] + h)
     ax.set_box_aspect((1, 1, 1), zoom=1.55); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
@@ -127,6 +127,73 @@ def render_j(out="gavilan_j_3d.png"):
                  f"reaching {T['beyond_lower_propellers']:.0f} mm past the lower propellers; a guard ring on each propeller", fontsize=11)
     fig.tight_layout()
     fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
+def render_x(out="gavilan_x_3d.png", cls=None, title=None, poses=None):
+    """GAVILAN-X (or XP): on its perch, sprinting, flaring with the talons out, and from three sides."""
+    import gavilan_flight as gf
+    cls = cls or gv.GavilanX
+    xp = cls is gv.GavilanXP
+    p = cls().resolve()
+    L = cls.layout(p)
+    fold = {"leg_deg": 180.0, "toe_open_deg": 20.0} if xp else {"talon_deg": 0.0}
+    out_ = {"leg_deg": 100.0, "toe_open_deg": 80.0} if xp else {"talon_deg": 90.0}
+    shut = {"leg_deg": 100.0, "toe_open_deg": 20.0} if xp else {"talon_deg": 90.0}
+    views = poses or [(14, -60, "on its perch: standing on its four panel tips, legs folded", True, {**fold, "camera_tilt_deg": 90.0}),
+                      (24, -128, "the sprint: nose first, legs folded", False, fold),
+                      (10, -75, "the flare: nose up, " + ("legs out, toes spread" if xp else "talons thrown out between the lower panels"), True, {**out_, "camera_tilt_deg": 90.0}),
+                      (0, -90, "from the side, " + ("toes spread" if xp else "talons out"), False, out_),
+                      (0, 180, "from the front: the X", False, out_),
+                      (0, -90, "from the side, " + ("toes shut: the grip" if xp else "talons out"), False, shut)]
+    fig = plt.figure(figsize=(16, 10.5))
+    for k, (elev, azim, name, standing, over) in enumerate(views):
+        draw(fig.add_subplot(2, 3, k + 1, projection="3d"), {**p, **over}, elev, azim, name, standing, cls=cls)
+    m = gf.gavilan_xp() if xp else gf.gavilan_x()
+    extra = ""
+    if xp:
+        F = cls.foot_layout({**p, "leg_deg": 100.0, "toe_open_deg": 80.0})
+        extra = f"; two legs {p['leg_length']:.0f} mm, each foot {int(p['front_toes'])} toes forward and 1 back, opening to {F['aperture']:.0f} mm"
+    fig.suptitle(title or (f"{'Gavilan-XP — the X-wing with a hawk’s feet' if xp else 'Gavilan-X — the hunt on an X-wing: four identical panels, each a wing, a motor mount and a foot'}\n"
+                           f"{L['width']:.0f} mm wide, {p['length']:.0f} mm long, {m.mass:.2f} kg on one pack, static thrust {m.t_max(0.0) / m.weight:.1f} x its weight; "
+                           f"feet of the perch {2 * L['foot_half_width']:.0f} mm apart{extra}"), fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
+def sequence_chart(out, seq, last_s=2.2):
+    """GAVILAN-XP's catch against time, the last seconds before the contact: the range, the speed, the legs and the toes."""
+    tr, tc = seq["trace"], seq["time_to_contact_s"]
+    t = tr["t"] - tc
+    keep = t >= -last_s
+    fig, ax = plt.subplots(3, 1, figsize=(11, 8.6), sharex=True, facecolor=SURFACE)
+    _style(ax[0], "range to the bandit", ylabel="m")
+    ax[0].plot(t[keep], tr["range_m"][keep], color=SERIES[0], lw=2)
+    _style(ax[1], "closing speed", ylabel="m/s")
+    ax[1].plot(t[keep], tr["speed_m_s"][keep], color=SERIES[1], lw=2)
+    _style(ax[2], "legs and toes", ylabel="deg")
+    ax[2].plot(t[keep], tr["leg_deg"][keep], color=SERIES[5], lw=2, label="leg angle (180 folded, 100 out)")
+    tt = np.r_[t[keep], [0.0, 0.0, 0.5]]
+    toe = np.r_[tr["toe_deg"][keep], [80.0, 20.0, 20.0]]
+    ax[2].plot(tt, toe, color=SERIES[6], lw=2, label="toe opening (80 spread, 20 shut)")
+    ax[2].legend(fontsize=8.5, frameon=False, labelcolor=INK, loc="center left")
+    ax[2].set_xlabel("time before the contact [s]", fontsize=9, color=MUTED)
+    marks = [e for e in seq["events"] if -last_s <= e["t"] - tc <= 0.5]
+    for a in ax:
+        for e in marks:
+            a.axvline(e["t"] - tc, color=MUTED, lw=0.7, ls=(0, (2, 3)))
+        a.set_xlim(-last_s, 0.55)
+    top = ax[0].get_ylim()[1]
+    for k, e in enumerate(marks):
+        ax[0].text(e["t"] - tc + 0.01, top * (0.95 - 0.13 * (k % 5)), e["event"].split(":")[0].split("(")[0][:38], fontsize=7.5, color=INK, va="top")
+    fig.suptitle(f"Gavilan-XP catching a bandit hovering {seq['distance_m']:.0f} m from the perch: contact after {tc:.2f} s\n"
+                 f"the toes snap in {seq['toe_snap_s'] * 1e3:.0f} ms; the bandit is inside the open foot for {seq['in_foot_window_s'] * 1e3:.0f} ms",
+                 fontsize=10.5, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
     plt.close(fig)
     return out
 

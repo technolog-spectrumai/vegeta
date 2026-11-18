@@ -265,3 +265,41 @@ def test_gavilan_j_is_lighter_carries_the_bandit_and_the_sprint_orders_as_report
     wing = gf.intercept("gavilan_f_broad", 50.0)
     assert not wing["catches"] and wing["arrival_m_s"] > 30.0                      # it gets there sooner and flies straight past
     assert gf.intercept("gavilan_h", 50.0)["time_s"] > near["time_s"] + 1.0        # the hawk-shaped one stops too slowly
+
+
+# -------------------------------------------------------------------------------------------------------------- X, XP
+def test_gavilan_x_four_identical_panels_that_are_its_feet_and_what_it_gains_on_j():
+    p = gv.x_resolve()
+    g = gv.GavilanX().generate()
+    assert g.shape.isValid() and len(g.shape.Solids()) == 1
+    L = gv.GavilanX.layout(p)
+    assert L["tip_to_body"] > 50.0 and L["tip_to_tip"] > 50.0 and L["x_le_tip"] + L["c_tip"] == pytest.approx(p["length"])    # the tips are the feet
+    assert L["foot_half_width"] > 1.8 * gv.Gavilan.layout(gv.resolve(gv.variant("J")))["foot_half_width"]                       # a steadier perch
+    assert gv.GavilanX().generate(part="panel").shape.isValid() and len(gv.x_planform()) == 4
+    x, j = gf.gavilan_x(), gf.gavilan_j()
+    assert x.mass == pytest.approx(gf.x_mass_budget().mass) and x.mass < j.mass and x.span < j.span and x.length < j.length
+    assert len(gf.PRINTED["gavilan_x"]["types"]) < len(gf.PRINTED["gavilan_j"]["types"])
+    assert gf.x_wing_aero()["CLa"] < 0.6 * gf.wing_aero(gv.variant("J"))["CLa"]    # an X lifts about half as well per area
+    assert gf.x_mass_budget().properties().com[0] < gf.x_geometry()["x_ac"]        # the centre of gravity ahead of the panels' aerodynamic centre
+    assert x.t_max(0.0) / ((x.mass + gf.BANDIT_KG) * 9.80665) > 3.0
+
+
+def test_gavilan_xp_feet_open_shut_fold_and_the_catch_sequence_adds_up():
+    q = gv.xp_resolve()
+    assert gv.GavilanXP().generate().shape.isValid()
+    wide = gv.GavilanXP.foot_layout({**q, "toe_open_deg": 80.0})
+    shut = gv.GavilanXP.foot_layout({**q, "toe_open_deg": 20.0})
+    assert wide["aperture"] > 150.0 and shut["aperture"] < 10.0                    # spread it takes the bandit's body; shut the talons cross
+    assert len(wide["feet"]) == 2 and len(wide["feet"][0]["toes"]) == 4 and wide["past_lower_propellers"] > 50.0
+    assert len(gv.GavilanXP.foot_layout({**q, "front_toes": 2})["feet"][0]["toes"]) == 3
+    folded = gv.GavilanXP.foot_layout({**q, "leg_deg": 180.0, "toe_open_deg": 20.0})
+    assert max(t[1][0] for f in folded["feet"] for t in f["toes"]) < q["length"] and min(t[1][0] for f in folded["feet"] for t in f["toes"]) > -10.0   # inside its own length
+    seq = gf.catch_sequence(100.0)
+    ts = [e["t"] for e in seq["events"]]
+    assert ts == sorted(ts) and 3.0 < seq["time_to_contact_s"] < 5.0
+    assert seq["snap_fits_window"] and seq["toe_snap_s"] < 0.05 and seq["trigger_tolerance_s"] < 0.03
+    assert 0.03 < seq["sideways_tolerance_m"] < 0.08                               # the pincer forgives centimetres, not decimetres
+    assert seq["thrust_over_weight_with_bandit"] > 3.0 and seq["spare_thrust_if_bandit_fights_N"] > 0.0
+    tr = seq["trace"]
+    assert tr["range_m"][0] == pytest.approx(100.0, abs=3.0) and tr["range_m"][-1] == pytest.approx(0.0, abs=0.05)
+    assert tr["speed_m_s"][-1] == pytest.approx(gf.XP_CONTACT_SPEED, abs=0.2) and tr["leg_deg"][0] == 180.0 and tr["leg_deg"][-1] == 100.0
