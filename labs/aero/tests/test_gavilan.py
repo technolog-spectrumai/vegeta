@@ -237,3 +237,31 @@ def test_hawk_with_the_one_shot_net_cad_balance_and_what_the_load_costs():
     assert hn["mass_kg"] - h["mass_kg"] < gf.light_net_kg() + 1e-9                 # the jet pipe replaces the boom
     assert hn["static thrust / weight"] > 2.0 and hn["hangs on its propellers"] and hn["wing stall [m/s]"] > h["wing stall [m/s]"]
     assert hn["turn rate @15 [deg/s]"] < h["turn rate @15 [deg/s]"] and hn["tail margin at 15 m/s"] > 1.5
+
+
+# ------------------------------------------------------------------------------------------------------------------- J
+def test_gavilan_j_cad_talons_reach_past_the_propellers_and_fold_away():
+    p = gv.resolve(gv.variant("J"))
+    out = gv.Gavilan().generate(**gv.variant("J"))
+    folded = gv.Gavilan().generate(**gv.variant("J", talon_deg=0.0))
+    assert out.shape.isValid() and len(out.shape.Solids()) == 1 and folded.shape.isValid()
+    assert folded.dimensions[2] < out.dimensions[2] - 150.0                       # thrown out they stand well below the belly
+    T = gv.Gavilan.talon_layout(p)
+    assert T["beyond_lower_propellers"] > 100.0 and 400.0 < T["open_width"] < 500.0     # wider than a 0.35 m bandit
+    assert gv.Gavilan.talon_layout(gv.resolve(gv.variant("J", talon_deg=0.0)))["open_width"] < 60.0
+    assert p["bay_length"] < gv.resolve()["bay_length"] and p["length"] < gv.resolve()["length"]     # one pack shorter
+    L = gv.Gavilan.layout(p)
+    assert p["motor_z"] - (p["prop_diameter"] / 2 + p["guard_clearance"]) > 0.5 * p["thickness"] * p["root_chord"] + 5.0   # the rings clear the wing
+
+
+def test_gavilan_j_is_lighter_carries_the_bandit_and_the_sprint_orders_as_reported():
+    j, a = gf.gavilan_j(), gf.gavilan("A", emitters=0)
+    b = gf.j_mass_budget()
+    assert j.mass == pytest.approx(b.mass) and j.mass < a.mass and b.by_group()["battery"] == pytest.approx(0.246)
+    assert j.t_max(0.0) / j.weight > 6.0 and j.t_max(0.0) / ((j.mass + gf.BANDIT_KG) * 9.80665) > 3.0
+    assert gf.talons_kg() + gf.guards_kg() < 0.25
+    near, far = gf.intercept("gavilan_j", 50.0), gf.intercept("gavilan_j", 200.0)
+    assert near["catches"] and near["arrival_m_s"] == gf.CONTACT_SPEED and 2.0 < near["time_s"] < 3.5 < far["time_s"] < 7.0
+    wing = gf.intercept("gavilan_f_broad", 50.0)
+    assert not wing["catches"] and wing["arrival_m_s"] > 30.0                      # it gets there sooner and flies straight past
+    assert gf.intercept("gavilan_h", 50.0)["time_s"] > near["time_s"] + 1.0        # the hawk-shaped one stops too slowly

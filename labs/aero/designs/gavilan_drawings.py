@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import gavilan as gv
 
-COLOURS = {"fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
+COLOURS = {"talons": ("#c0392b", 1.0), "guards": ("#2c3e50", 1.0), "fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
            "camera": ("#111111", 1.0), "props": ("#7fb2e5", 0.30)}
 FILL = {"boom": "#6b4f2a", "body": "#8d99a6", "wing": "#c9a66b", "fins": "#6b4f2a", "pylons": "#3b3f45", "pods": "#3b3f45", "camera": "#111111"}
 
@@ -105,6 +105,59 @@ def render(out="gavilan_3d.png", p=None, caption=None, name="GAVILAN"):
                              f"7-inch propellers; the only servo tilts the camera"), fontsize=11)
     fig.tight_layout()
     fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
+def render_j(out="gavilan_j_3d.png"):
+    """GAVILAN-J: on its perch with the talons folded, sprinting, and in the flare with the talons thrown out."""
+    import gavilan_flight as gf
+    p = gv.resolve(gv.variant("J"))
+    T = gv.Gavilan.talon_layout(p)
+    fig = plt.figure(figsize=(16, 10.5))
+    views = [(14, -60, "on its perch: talons folded, motors off", True, {"talon_deg": 0.0, "camera_tilt_deg": 90.0}),
+             (24, -128, "the sprint: nose first, talons folded", False, {"talon_deg": 0.0}),
+             (10, -75, "the flare: nose up, belly first, talons thrown out at the bandit", True, {"talon_deg": 90.0, "camera_tilt_deg": 90.0}),
+             (90, -90, "from above, talons out", False, {}), (0, -90, "from the side, talons out", False, {}), (0, 180, "from the front, talons out", False, {})]
+    for k, (elev, azim, title, standing, over) in enumerate(views):
+        draw(fig.add_subplot(2, 3, k + 1, projection="3d"), {**p, **over}, elev, azim, title, standing)
+    m = gf.gavilan_j()
+    fig.suptitle(f"Gavilan-J — the hawk's hunt: perch, sprint, flare, talons\nspan {p['span']:.0f} mm, length {p['length']:.0f} mm, {m.mass:.2f} kg on one pack, "
+                 f"static thrust {m.t_max(0.0) / m.weight:.1f} x its weight; talons {p['talon_length']:.0f} mm long opening to {T['open_width']:.0f} mm, "
+                 f"reaching {T['beyond_lower_propellers']:.0f} mm past the lower propellers; a guard ring on each propeller", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
+def hawk_bars(out, rows):
+    """The perch-to-bandit times and what is left to carry the bandit: a bar per aircraft; hatched where it cannot stop."""
+    order = [r for r in rows]
+    names = {"gavilan_j": "Gavilan-J", "gavilan_a": "Gavilan-A", "gavilan_h": "Gavilan-H", "emerillon": "Émerillon ER2", "xwing": "X-wing X-A",
+             "gavilan_f_broad": "Gavilan-F broad", "peregrine": "Peregrine B"}
+    col = {"gavilan_j": SERIES[7], "gavilan_a": SERIES[5], "gavilan_h": SERIES[4], "emerillon": SERIES[3], "xwing": SERIES[2],
+           "gavilan_f_broad": SERIES[6], "peregrine": SERIES[1]}
+    panels = (("to a bandit at 50 m [s]", "perch to a bandit 50 m away [s]"), ("to a bandit at 100 m [s]", "perch to a bandit 100 m away [s]"),
+              ("to a bandit at 200 m [s]", "perch to a bandit 200 m away [s]"), ("thrust / weight carrying the bandit", "thrust / weight with the 1.2 kg bandit aboard"))
+    fig, ax = plt.subplots(1, 4, figsize=(18, 4.6), facecolor=SURFACE)
+    y = np.arange(len(order))[::-1]
+    for a, (key, title) in zip(ax, panels):
+        _style(a, title)
+        top = max(r[key] for r in order)
+        for yi, r in zip(y, order):
+            passes = key.startswith("to a bandit") and not r["stops at the bandit"]
+            a.barh(yi, r[key], height=0.62, color=col[r["key"]], alpha=0.45 if passes else 1.0, hatch="///" if passes else None, edgecolor=SURFACE)
+            note = f"{r[key]:.1f}" + (f"  passes at {r[key.replace('to a bandit at', 'arrival speed at').replace('[s]', '[m/s]')]:.0f} m/s" if passes else "")
+            if key.startswith("thrust") and r[key] < 1.15:
+                note += "  cannot lift it"
+            a.text(r[key] + 0.015 * top, yi, note, va="center", fontsize=8.5, color=INK)
+        a.set_yticks(y); a.set_yticklabels([names[r["key"]] for r in order], fontsize=8.5, color=INK)
+        a.set_xlim(0, 1.5 * top); a.grid(axis="y", visible=False)
+    fig.suptitle("The hawk's hunt in numbers — from sitting still to a hovering bandit, arriving at 3 m/s to take it (hatched: it cannot stop, it flies past)",
+                 fontsize=11, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
     plt.close(fig)
     return out
 

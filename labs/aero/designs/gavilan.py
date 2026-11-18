@@ -87,6 +87,13 @@ class Gavilan(Design):
         Parameter("fin_root_chord", 170.0, "mm", min=20.0, description="fin chord on the boom"),
         Parameter("fin_tip_chord", 70.0, "mm", min=10.0, description="fin chord at the tip (the foot)"),
         Parameter("fin_thickness", 4.0, "mm", min=1.0, description="fin plate thickness"),
+        # ---- talons and guards (Gavilan-J)
+        Parameter("talons", False, description="the talons on the belly: four sprung legs with a net between them"),
+        Parameter("talon_deg", 90.0, "deg", min=0.0, max=110.0, description="talons: 0 folded back along the belly, 90 thrown out from it"),
+        Parameter("talon_length", 420.0, "mm", min=100.0, description="talons: each leg, hub to hook"),
+        Parameter("talon_splay_deg", 32.0, "deg", min=5.0, max=45.0, description="talons: the legs' half-angle about their common axis"),
+        Parameter("guards", False, description="a guard ring round each propeller (it touches things)"),
+        Parameter("guard_clearance", 7.0, "mm", min=2.0, description="guards: ring inside radius over the propeller's"),
         Parameter("angle_of_attack_deg", 0.0, "deg", min=-20.0, max=90.0, description="pitch the aircraft nose-up about y (CFD, pictures)"),
     ]
 
@@ -201,6 +208,43 @@ class Gavilan(Design):
             out = d if out is None else out.union(d)
         return out
 
+    @staticmethod
+    def talon_layout(p) -> dict:
+        """The talons' hub on the belly and each leg's tip [mm], and how far the open claw reaches and spans."""
+        L = Gavilan.layout(p)
+        hub = np.array([L["x_ac"], 0.0, -L["R"] + 4.0])
+        a = math.radians(p["talon_deg"])
+        s = math.radians(3.0 + (p["talon_splay_deg"] - 3.0) * min(max(math.sin(a), 0.0), 1.0))     # the legs close as they fold back
+        d0 = np.array([math.cos(a), 0.0, -math.sin(a)])                    # folded: aft along the belly; thrown: straight out of it
+        e1 = np.array([0.0, 1.0, 0.0])
+        e2 = np.cross(d0, e1)
+        dirs = [math.cos(s) * d0 + math.sin(s) * (math.cos(k) * e1 + math.sin(k) * e2) for k in np.radians((45.0, 135.0, 225.0, 315.0))]
+        tips = [hub + p["talon_length"] * d for d in dirs]
+        return {"hub": hub, "dirs": dirs, "tips": tips, "reach": p["talon_length"] * math.cos(s),
+                "open_width": 2 * p["talon_length"] * math.sin(s) * math.sin(math.radians(45.0)) * math.sqrt(2.0),
+                "beyond_lower_propellers": p["talon_length"] * math.cos(s) * math.sin(a) - 4.0 - (p["motor_z"] + p["prop_diameter"] / 2 - L["R"])}
+
+    def _talons(self, p):
+        T = self.talon_layout(p)
+        hub = cq.Workplane("XY").sphere(13.0).translate(tuple(T["hub"]))
+        for d, tip in zip(T["dirs"], T["tips"]):
+            leg = cq.Workplane("XY").add(cq.Solid.makeCylinder(2.2, p["talon_length"], cq.Vector(*T["hub"]), cq.Vector(*d)))
+            hub = hub.union(leg).union(cq.Workplane("XY").sphere(5.0).translate(tuple(tip)))
+        return hub
+
+    def _guards(self, p):
+        """A ring round each propeller disc on two struts from its pod."""
+        L = self.layout(p)
+        R = p["prop_diameter"] / 2 + p["guard_clearance"]
+        out = None
+        for sy, sz in MOTORS:
+            c = cq.Vector(L["x_prop"], sy * p["motor_y"], sz * p["motor_z"])
+            ring = cq.Workplane("XY").add(cq.Solid.makeTorus(R, 1.6, c, cq.Vector(1, 0, 0)))
+            for dy in (1, -1):
+                ring = ring.union(cq.Workplane("XY").add(cq.Solid.makeCylinder(1.6, R, cq.Vector(L["x_prop"] + 14.0, c.y, c.z), cq.Vector(-14.0 / R, dy * 1.0, 0.0))))
+            out = ring if out is None else out.union(ring)
+        return out
+
     def _fin(self, p):
         """One fin in the xy plane, out along +y from the boom: swept, its trailing edge the foot line at ``length``."""
         L = self.layout(p)
@@ -249,6 +293,10 @@ class Gavilan(Design):
         aircraft = self._body(p).union(self._camera(p)).union(self._wing(p)).union(self._tail(p))
         for side in (1, -1):
             aircraft = aircraft.union(self._pylon(p, side))
+        if p["talons"]:
+            aircraft = aircraft.union(self._talons(p))
+        if p["guards"]:
+            aircraft = aircraft.union(self._guards(p))
         if p["show_props"]:
             aircraft = aircraft.union(self._props(p))
         if p["angle_of_attack_deg"]:
@@ -257,8 +305,13 @@ class Gavilan(Design):
 
     def parts(self, p) -> dict:
         """The aircraft's solids by name, for a coloured picture (the same solids ``build`` unites)."""
-        return {"body": self._body(p), "camera": self._camera(p), "wing": self._wing(p), "tail": self._tail(p),
-                "pylons": self._pylon(p, 1).union(self._pylon(p, -1)), "props": self._props(p)}
+        out = {"body": self._body(p), "camera": self._camera(p), "wing": self._wing(p), "tail": self._tail(p),
+               "pylons": self._pylon(p, 1).union(self._pylon(p, -1)), "props": self._props(p)}
+        if p["talons"]:
+            out["talons"] = self._talons(p)
+        if p["guards"]:
+            out["guards"] = self._guards(p)
+        return out
 
 
 # ------------------------------------------------------------------------------------------------- GAVILAN-F: the fixed wing
@@ -454,7 +507,9 @@ VARIANTS = {
     "B": {"pylon_shape": "panel", "span": 420.0, "root_chord": 150.0, "taper": 1.0, "le_sweep_deg": 0.0, "wing_x": 255.0,
           "motor_y": 204.0, "motor_z": 150.0, "pylon_chord": 230.0, "pylon_thickness": 8.0, "prop_gap": 30.0},
 }
-VARIANT_NAME = {"A": "Gavilan-A — broad wing, motors on posts", "B": "Gavilan-B — side panels (T-fighter)"}
+VARIANTS["J"] = {"bay_length": 134.5, "length": 780.0, "talons": True, "guards": True}     # one pack: the bay 84.5 mm shorter
+VARIANT_NAME = {"A": "Gavilan-A — broad wing, motors on posts", "B": "Gavilan-B — side panels (T-fighter)",
+                "J": "Gavilan-J — the hawk's hunt: perch, sprint, talons"}
 
 
 def variant(key: str = "A", **overrides) -> dict:

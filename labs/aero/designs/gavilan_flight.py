@@ -585,7 +585,7 @@ def _slew(theta, target, rate, dt):
     return theta + max(-rate * dt, min(rate * dt, target - theta))
 
 
-def brake(m: Machine, V0: float = 25.0, dt: float = 0.005, rho: float = RHO) -> dict:
+def brake(m: Machine, V0: float = 25.0, dt: float = 0.005, rho: float = RHO, v_end: float | None = None) -> dict:
     """From level flight at ``V0`` to a standstill at constant height (what hovers), or to the minimum speed at idle
     (what does not). The axis tips back at ``slew``; at every instant the angle and the thrust give the largest
     deceleration that still carries the weight."""
@@ -605,7 +605,7 @@ def brake(m: Machine, V0: float = 25.0, dt: float = 0.005, rho: float = RHO) -> 
     V, x, t = V0, 0.0, 0.0
     lv = level(m, V0)
     theta = math.radians(lv["theta_deg"]) if lv else 0.0
-    v_end = 0.3 if m.hovers else 1.2 * stall_speed(m)
+    v_end = (0.3 if v_end is None else v_end) if m.hovers else 1.2 * stall_speed(m)
     peak = 0.0
     while V > v_end and t < 60.0:
         q, W = 0.5 * rho * V * V, m.weight
@@ -634,7 +634,7 @@ def brake(m: Machine, V0: float = 25.0, dt: float = 0.005, rho: float = RHO) -> 
         V -= dec * dt
         x += V * dt
         t += dt
-    return {"V0": V0, "to": 0.0 if m.hovers else v_end, "time_s": t, "distance_m": x, "peak_g": peak / G, "stops": m.hovers}
+    return {"V0": V0, "to": v_end if m.hovers else v_end, "time_s": t, "distance_m": x, "peak_g": peak / G, "stops": m.hovers}
 
 
 def accelerate(m: Machine, V1: float = 25.0, V0: float | None = None, dt: float = 0.005, rho: float = RHO) -> dict:
@@ -1137,3 +1137,155 @@ def h_static_margin(net: bool = False) -> dict:
     x_np = 0.25 + 0.9 * v_h * (a_t / a) * (1 - downwash)
     cg = h_balance(net)["cg_mac"]
     return {"tail_volume": v_h, "neutral_point_mac": x_np, "cg_mac": cg, "static_margin": x_np - cg}
+
+
+# =============================================================================================================== GAVILAN-J
+# The hawk's way of hunting, as an aircraft: it sits on a perch, sprints once, flares at the prey, takes it in its
+# talons and carries it down. GAVILAN-J is GAVILAN-A cut down for that: one pack (the flight is short), the body one
+# pack shorter, guards round the propellers (it touches things), and the talons — four sprung legs on the belly with a
+# loose net between them and a line to the aircraft. In the flare the belly leads, so the talons (and the camera,
+# tilted 90 degrees) face the bandit, as a hawk's feet do.
+CONFIG_J = ef.Config("eco2807-1300", "hq7x4x3", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1)     # four motors, one pack
+BANDIT_KG = 1.2                    # the quadcopter the net launcher's tests catch (net_drone.DRONE_M)
+CONTACT_SPEED = 3.0                # the closing speed the talons take [m/s] (proposed: a 1.2 kg bandit at 3 m/s is 5.4 J on sprung legs)
+SPINUP_S = 0.3                     # from the trigger to full thrust: motors from stopped (hand estimate)
+TALONS = {
+    "source": "hand estimate: nothing chosen or tested", "reach_m": 0.356, "open_width_m": 0.445,
+    "parts_g": {"four sprung carbon legs, 4 mm x 0.42 m, with hooks": 38.0, "loose Dyneema net between the legs": 15.0,
+                "hub, hinge and deploy servo": 28.0, "line 3 m of 1.5 mm Dyneema with an elastic section, and its latch": 30.0},
+    "margin": 1.25, "cda_m2": 0.0018,
+}
+GUARDS = {"source": "hand estimate", "parts_g": {"four guard rings, 190 mm, 3 mm carbon rod, with two struts each": 44.0}, "margin": 1.25, "cda_m2": 0.0020}
+
+
+def talons_kg() -> float:
+    return sum(TALONS["parts_g"].values()) * TALONS["margin"] / 1e3
+
+
+def guards_kg() -> float:
+    return sum(GUARDS["parts_g"].values()) * GUARDS["margin"] / 1e3
+
+
+def j_mass_budget() -> og_mass.Budget:
+    b = mass_budget(gv.variant("J"), CONFIG_J, emitters=0)
+    g = geometry(gv.variant("J"))
+    b.add(og_mass.Item("talons with their line", talons_kg(), (g["x_ac"], 0, -g["d"] / 2 - 0.03), group="payload", source="TALONS (hand estimate x 1.25)"),
+          og_mass.Item("propeller guards", guards_kg(), (g["x_prop"], 0, 0), group="airframe", source="GUARDS (hand estimate x 1.25)"))
+    return b
+
+
+def gavilan_j() -> Machine:
+    m = gavilan("J", emitters=0, config=CONFIG_J)
+    return dataclasses.replace(m, name="Gavilan-J (the hawk's hunt: perch, sprint, talons)", mass=j_mass_budget().mass,
+                               cda0=m.cda0 + TALONS["cda_m2"] + GUARDS["cda_m2"], payload_kg=talons_kg(), gun="talons")
+
+
+def _sprint_trace(m: Machine, v_stop: float = 80.0, dt: float = 0.005, rho: float = RHO) -> dict:
+    """Full-thrust level acceleration from a standstill (what hovers) or from the launch speed (a wing, off its
+    catapult at 1.2 x its stall): time, distance, speed and electrical energy along the way."""
+    V = 0.0 if m.hovers else 1.2 * stall_speed(m)
+    theta, x, t, wh = (math.pi / 2 if m.hovers else 0.1), 0.0, 0.0, 0.0
+    T_, X_, V_, E_ = [0.0], [0.0], [V], [0.0]
+    while V < v_stop and t < 30.0:
+        q, W = 0.5 * rho * V * V, m.weight
+        best = None
+        for th in m.thetas(math.pi / 2)[::2]:
+            la, da = m.areas(float(th))
+            T = m.thrust(V, float(th))
+            if q * la + T * math.sin(th) < W:
+                continue
+            acc = (T * math.cos(th) - q * da) / m.mass
+            if best is None or acc > best[0]:
+                best = (acc, float(th))
+        if best is None or best[0] < 0.05:
+            break
+        theta = _slew(theta, best[1], m.slew, dt)
+        la, da = m.areas(theta)
+        T = m.thrust(V, theta)
+        V += (T * math.cos(theta) - q * da) / m.mass * dt
+        x += V * dt
+        t += dt
+        wh += m.power(T, V * math.cos(theta)) * dt / 3600.0
+        T_.append(t), X_.append(x), V_.append(V), E_.append(wh)
+    return {"t": np.array(T_), "x": np.array(X_), "V": np.array(V_), "wh": np.array(E_)}
+
+
+@functools.lru_cache(maxsize=None)
+def _sprint_tables(key: str) -> tuple:
+    m = _SPRINTERS[key]()
+    tr = _sprint_trace(m)
+    vs = [v for v in (6.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0) if v < tr["V"][-1]]
+    br = [brake(m, v, dt=0.01, v_end=CONTACT_SPEED) for v in vs] if m.hovers else []
+    return m, tr, np.array([CONTACT_SPEED] + vs), np.array([0.0] + [b["distance_m"] for b in br]), np.array([0.0] + [b["time_s"] for b in br])
+
+
+def intercept(key: str, distance: float) -> dict:
+    """From sitting on the perch to the bandit ``distance`` away, hovering: spin up, sprint at full thrust, then flare
+    so as to arrive at ``CONTACT_SPEED``. What cannot stop (a wing) arrives at whatever speed it has: it passes."""
+    m, tr, vb, db, tb = _sprint_tables(key)
+    if not m.hovers:
+        i = int(np.searchsorted(tr["x"], distance))
+        i = min(i, len(tr["x"]) - 1)
+        return {"time_s": SPINUP_S + float(tr["t"][i]), "arrival_m_s": float(tr["V"][i]), "peak_m_s": float(tr["V"][i]), "catches": False,
+                "wh": float(tr["wh"][i]), "launch": "catapult at 1.2 x stall"}
+    need = tr["x"] + np.interp(tr["V"], vb, db)                     # distance covered if the flare starts now
+    i = min(int(np.searchsorted(need, distance)), len(need) - 1)
+    v_peak = float(tr["V"][i])
+    t_brake = float(np.interp(v_peak, vb, tb))
+    return {"time_s": SPINUP_S + float(tr["t"][i]) + t_brake, "arrival_m_s": CONTACT_SPEED, "peak_m_s": v_peak, "catches": True,
+            "wh": float(tr["wh"][i]) + m.power(m.weight, 0.0) * t_brake / 3600.0, "launch": "from its perch"}
+
+
+_SPRINTERS = {"gavilan_j": lambda: gavilan_j(), "gavilan_a": lambda: gavilan("A", emitters=0), "gavilan_h": lambda: gavilan_h(),
+              "emerillon": lambda: emerillon("ER2"), "xwing": lambda: xwing(), "gavilan_f_broad": lambda: gavilan("F", emitters=0, p=F_BROAD),
+              "peregrine": lambda: peregrine("B")}
+
+
+def hawk_table(distances=(50.0, 100.0, 200.0)) -> list:
+    """The hawk's hunt in numbers, one row per aircraft: the time from the perch to a hovering bandit at each distance
+    (arriving slowly enough to take it), the thrust left with the bandit hanging below, how many such sprints a charge
+    gives."""
+    rows = []
+    for key in _SPRINTERS:
+        m = _sprint_tables(key)[0]
+        row = {"key": key, "aircraft": m.name, "mass_kg": m.mass, "perches": m.kind == "tailsitter", "stops at the bandit": m.hovers,
+               "static thrust / weight": m.t_max(0.0) / m.weight,
+               "thrust / weight carrying the bandit": m.t_max(0.0) / ((m.mass + BANDIT_KG) * G)}
+        for d in distances:
+            r = intercept(key, d)
+            row[f"to a bandit at {d:.0f} m [s]"] = r["time_s"]
+            row[f"arrival speed at {d:.0f} m [m/s]"] = r["arrival_m_s"]
+        r = intercept(key, 100.0)
+        back = m.power(m.weight + BANDIT_KG * G, 0.0) * 20.0 / 3600.0 if m.hovers else 0.0          # 20 s of carrying it down (hand)
+        row["peak speed in a 100 m sprint [m/s]"] = r["peak_m_s"]
+        row["energy per 100 m hunt [Wh]"] = r["wh"] + back
+        row["hunts per charge"] = int(USABLE * m.battery_wh / (r["wh"] + back)) if (r["wh"] + back) > 0 else 0
+        row["standby"] = "sits on its perch, motors off" if m.kind == "tailsitter" else "on a catapult, or already flying"
+        rows.append(row)
+    return rows
+
+
+def j_trade(propellers=("hq7x4x3", "apc7x7e", "apc7x10"), packs=(1, 2), distances=(50.0, 100.0, 200.0)) -> list:
+    """GAVILAN-J's sprint against its propeller and its number of packs: the mass, the static thrust over the weight
+    alone and with the bandit, and the time from the perch to a bandit at each distance."""
+    rows = []
+    for prop in propellers:
+        for n in packs:
+            c = dataclasses.replace(CONFIG_J, propeller=prop, n_parallel=n)
+            key = f"_j_{prop}_{n}"
+
+            def make(c=c):
+                m = gavilan("J", emitters=0, config=c)
+                b = mass_budget(gv.variant("J"), c, emitters=0).mass + talons_kg() + guards_kg()
+                return dataclasses.replace(m, name=f"Gavilan-J, {prop}, {n} pack", mass=b, cda0=m.cda0 + TALONS["cda_m2"] + GUARDS["cda_m2"])
+
+            _SPRINTERS[key] = make
+            m = _sprint_tables(key)[0]
+            row = {"propeller": prop, "packs": n, "mass_kg": m.mass, "static thrust / weight": m.t_max(0.0) / m.weight,
+                   "thrust / weight carrying the bandit": m.t_max(0.0) / ((m.mass + BANDIT_KG) * G)}
+            for d in distances:
+                row[f"to {d:.0f} m [s]"] = intercept(key, d)["time_s"]
+            row["hover [min]"] = endurance(m)["hover_min"]
+            rows.append(row)
+            del _SPRINTERS[key]
+    return rows
