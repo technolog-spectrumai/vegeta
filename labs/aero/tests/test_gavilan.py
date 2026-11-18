@@ -188,3 +188,29 @@ def test_net_launcher_bookkeeping_and_who_holds_a_bandit_in_range():
     p = gf.net_pass(fl["gavilan_n"], 0.0)
     assert p["trigger_s"] == pytest.approx(0.5 * gf.NET["open_span_m"] / p["v_pass"]) and gf.NET["range_m"][0] < p["height_m"] < gf.NET["range_m"][1]
     assert gf.net_pass(fl["gavilan_n"], 20.0)["holds"]                             # it can fly beside a bandit at 20 m/s
+
+
+# ---------------------------------------------------------------------------------------------------------------- hawk
+def test_hawk_cad_tail_halves_sit_in_the_wash_and_the_model_reads_the_same_numbers():
+    q = gv.h_resolve()
+    assert all(q[k] == v for k, v in gf.H_PARAMS.items())
+    g = gv.GavilanH().generate()
+    assert g.shape.isValid() and len(g.shape.Solids()) == 1 and g.dimensions[1] == pytest.approx(1000.0, abs=1.0)
+    L = gv.GavilanH.layout(q)
+    assert L["blown_span_per_half"] == pytest.approx(L["wash_width"]) and 0.3 < L["blown_share"] < 0.7     # the whole wash lands on the tail
+    assert gv.GavilanH().generate(taileron_deg=30.0).dimensions[2] > g.dimensions[2]
+    assert gv.GavilanH().generate(weapon="emitter").dimensions[0] > g.dimensions[0]
+
+
+def test_hawk_flies_past_its_stall_and_sits_between_the_fixed_wing_and_the_tailsitter():
+    h, f, a = gf.gavilan_h(), gf.gavilan("F", emitters=0, p=gf.F_BROAD), gf.gavilan("A", emitters=0)
+    assert h.kind == "wing" and math.degrees(h.theta_max) == pytest.approx(90.0) and h.hovers
+    assert 45.0 < h.weight / h.S < 75.0                                             # a hawk's wing loading [N/m2]
+    for V in (10.0, 15.0):
+        assert gf.turn(f, V)["rate_inst_deg_s"] < gf.turn(h, V)["rate_inst_deg_s"] < gf.turn(a, V)["rate_inst_deg_s"]
+    b = gf.brake(h)
+    assert b["stops"] and b["distance_m"] > gf.brake(a)["distance_m"]              # it cannot point its thrust backwards
+    rows = gf.h_authority()
+    assert all(r["margin"] > 1.5 for r in rows) and rows[0]["tail_moment_Nm"] > 2.0     # the tail holds the stalled wing (hand estimate)
+    import gavilan_cfd as gc
+    assert gc.reference("H")["S"] == pytest.approx(h.S) and gc.pitch_authority("H") > 5.0

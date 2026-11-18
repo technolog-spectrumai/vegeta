@@ -32,12 +32,18 @@ from nisus_cfd import NU, QUALITY, RHO
 
 ALPHAS = {"A": (0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 75.0, 90.0),
           "B": (0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 75.0, 90.0),
-          "F": (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0)}
+          "F": (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0),
+          "H": (0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 75.0, 90.0)}      # the hawk flares: the whole range
 SPEED = 20.0
 
 
 def reference(design: str) -> dict:
     """Reference area and length [m2, m], the centre of gravity in the CAD frame [mm] and the mass, per design."""
+    if design == "H":
+        g = gf.f_geometry(gf.H_PARAMS)
+        pr = gf.f_mass_budget(gf.H_PARAMS, gf.CONFIG_H, 0).properties()
+        q = gv.h_resolve()
+        return {"S": g["S"], "c": g["mac"], "mass": pr.mass, "cg_mm": (pr.com[0] * 1e3 - q["nose_length"], -q["fuselage_diameter"] / 2)}
     if design == "F":
         g = gf.f_geometry()
         pr = gf.f_mass_budget().properties()
@@ -62,11 +68,12 @@ def export_stl(folder, design: str, alpha_deg: float) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"gavilan_{design.lower()}_a{alpha_deg:+.0f}.stl"
     if not path.exists():
-        if design == "F":
-            g = gv.GavilanF().generate(angle_of_attack_deg=min(alpha_deg, 20.0)) if alpha_deg <= 20.0 else None
+        if design in ("F", "H"):
+            cls = gv.GavilanF if design == "F" else gv.GavilanH
+            g = cls().generate(angle_of_attack_deg=alpha_deg) if alpha_deg <= 20.0 else None
             if g is None:                                              # FixedWing's own parameter stops at 20 degrees
                 from vegeta import dedalus
-                g = dedalus.Geometry.from_cadquery(gv.GavilanF().generate().shape.rotate((0, 0, 0), (0, 1, 0), alpha_deg), name="gavilan_f")
+                g = dedalus.Geometry.from_cadquery(cls().generate().shape.rotate((0, 0, 0), (0, 1, 0), alpha_deg), name=f"gavilan_{design.lower()}")
         else:
             g = gv.Gavilan().generate(**gv.variant(design), angle_of_attack_deg=alpha_deg)
         g.export_stl(str(path), tolerance=0.2)
@@ -91,6 +98,8 @@ def pitch_authority(design: str, V: float = SPEED) -> float:
     elevator is not modelled)."""
     if design == "F":
         return math.nan
+    if design == "H":                                                  # the blown tail at full travel and full thrust (hand estimate)
+        return gf.h_tail(V, gf.gavilan_h().t_max(V))["pitch_Nm"]
     m = gf.gavilan(design)
     return 0.5 * m.t_max(0.0) * gf.geometry(gv.variant(design))["motor_z"]
 

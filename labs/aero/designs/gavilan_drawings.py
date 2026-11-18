@@ -28,6 +28,34 @@ def _tris(shape, tol=0.8):
     return out
 
 
+def render_h(out="gavilan_h_3d.png", q=None):
+    """GAVILAN-H from five sides, the last with its tail halves at full deflection as in a flare."""
+    q = gv.h_resolve(q)
+    L = gv.GavilanH.layout(q)
+    fig = plt.figure(figsize=(16, 10.5))
+    views = [(24, -128, "from the front quarter", {}), (22, -52, "from the rear quarter", {}), (90, -90, "from above", {}),
+             (0, -90, "from the side", {}), (0, 180, "from the front", {}),
+             (16, -70, "flaring: nose up 50°, the tail halves at full travel in the wash", {"taileron_deg": 30.0, "pitch": 50.0})]
+    for k, (elev, azim, title, over) in enumerate(views):
+        ax = fig.add_subplot(2, 3, k + 1, projection="3d")
+        pitch = over.pop("pitch", 0.0)
+        for part, shape in gv.GavilanH().parts({**q, **over}).items():
+            col, alpha = COLOURS[part]
+            if pitch:
+                shape = shape.rotate((150, 0, 0), (150, 1, 0), pitch)
+            ax.add_collection3d(Poly3DCollection(_tris(shape), facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=alpha == 1.0))
+        h, cx = 0.5 * q["span"], -q["nose_length"] + q["fuselage_length"] / 2
+        ax.set_xlim(cx - h, cx + h); ax.set_ylim(-h, h); ax.set_zlim(-h - 30, h - 30)
+        ax.set_box_aspect((1, 1, 1), zoom=1.55); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
+    fig.suptitle(f"Gavilan-H — the hawk: a fixed wing that flies past its stall\nspan {q['span']:.0f} mm, length {q['fuselage_length']:.0f} mm, "
+                 f"two 7-inch tractors at y ±{q['nacelle_y']:.0f} mm; two all-moving tail halves, {L['blown_share']:.0%} of each inside a propeller's wash",
+                 fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
 def render_f(out="gavilan_f_3d.png", q=None, name="Gavilan-F — fixed wing, twin tractor, the emitter in the nose"):
     """The fixed wing from three sides."""
     q = gv.f_resolve(q)
@@ -200,9 +228,9 @@ def bar_chart(out, rows):
 
 COLOR_OF = {"merlin": SERIES[0], "peregrine": SERIES[1], "xwing": SERIES[2], "emerillon": SERIES[3], "gavilan_b": SERIES[4],
             "gavilan_a": SERIES[5], "gavilan_f": SERIES[6], "gavilan_f_broad": SERIES[7],
-            "gavilan_n": SERIES[1]}                    # the colour follows the aircraft (N takes Peregrine's: they never share a chart)
+            "gavilan_n": SERIES[1], "gavilan_h": SERIES[4]}                    # the colour follows the aircraft (N takes Peregrine's: they never share a chart)
 NAME_OF = {"merlin": "Merlin", "peregrine": "Peregrine B", "xwing": "X-wing X-A", "emerillon": "Émerillon ER2", "gavilan_a": "Gavilan-A",
-           "gavilan_b": "Gavilan-B", "gavilan_f": "Gavilan-F", "gavilan_f_broad": "Gavilan-F broad", "gavilan_n": "Gavilan-N (new)"}
+           "gavilan_b": "Gavilan-B", "gavilan_f": "Gavilan-F", "gavilan_f_broad": "Gavilan-F broad", "gavilan_n": "Gavilan-N (new)", "gavilan_h": "Gavilan-H (hawk)"}
 
 
 def kpi_bars(out, rows, group, title):
@@ -288,7 +316,7 @@ def kpi_score_bars(out, rows):
 def kpi_charts(folder=".", machines=None):
     import gavilan_flight as gf
     folder = Path(folder)
-    rows = gf.kpi_table(machines)
+    rows = [r for r in gf.kpi_table(machines) if r["key"] != "gavilan_b"]       # B is rejected: eight aircraft, eight colours
     return [kpi_bars(folder / "gavilan_kpi_bandit.png", rows, "bandit", "KPIs against bandits — every aircraft unarmed"),
             kpi_bars(folder / "gavilan_kpi_general.png", rows, "general", "General KPIs — every aircraft unarmed"),
             kpi_score_bars(folder / "gavilan_kpi_scores.png", rows)], rows
@@ -311,6 +339,7 @@ def main(folder="."):
         out += [render(folder / f"gavilan{tag}_3d.png", gv.variant(key), name=gv.VARIANT_NAME[key]),
                 three_view(folder / f"gavilan{tag}_three_view.png", gv.variant(key), name=gv.VARIANT_NAME[key])]
     out.append(render_f(folder / "gavilan_f_3d.png"))
+    out.append(render_h(folder / "gavilan_h_3d.png"))
     return out
 
 

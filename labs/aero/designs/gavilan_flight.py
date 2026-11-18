@@ -754,7 +754,7 @@ def fleet_unarmed() -> dict:
     """Every aircraft without an emitter: the airframes against each other."""
     return {"merlin": merlin(), "peregrine": peregrine("B"), "xwing": xwing(), "emerillon": emerillon("ER2"),
             "gavilan_a": gavilan("A", emitters=0), "gavilan_b": gavilan("B", emitters=0), "gavilan_f": gavilan("F", emitters=0),
-            "gavilan_f_broad": gavilan("F", emitters=0, p=F_BROAD)}
+            "gavilan_f_broad": gavilan("F", emitters=0, p=F_BROAD), "gavilan_h": gavilan_h()}
 
 
 BANDIT_BAND = (0.0, 20.0)          # the speeds a bandit flies at [m/s]: it hovers, and the job says up to 20
@@ -960,7 +960,10 @@ def net_table(machines: dict | None = None) -> list:
 # large all-moving tail in the propellers' wash with differential thrust for yaw, so the attitude is held beyond the
 # stall. It is thrown and belly-lands like F; it has no feet. In the model that is F broad allowed to tip its axis to
 # 90 degrees (PROPOSED: the blown tail's authority is not designed or checked; the CFD sweep is what would say).
-H_PARAMS = {"span": 1000.0, "root_chord": 280.0, "tail_span": 420.0, "tail_chord": 130.0}
+H_PARAMS = {"span": 1000.0, "root_chord": 280.0, "nacelle_y": 200.0, "fuselage_length": 860.0, "tail_span": 580.0, "tail_chord": 150.0, "fin_height": 130.0}   # gavilan.GavilanH's defaults
+TAILERON_MAX_DEG = 30.0            # the tail halves' travel each way (proposed)
+TAIL_CL_PER_RAD = 2.2              # a low-aspect-ratio plate's lift slope in a jet (hand estimate: about half the free value of its aspect ratio)
+WING_CP_STALLED = 0.42             # the stalled wing's centre of pressure along its chord (flat plate: 0.25 + 0.25 sin(alpha), near 45-60 deg)
 CONFIG_H = ef.Config("eco2807-1300", "hq7x4x3", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1)
 
 
@@ -969,3 +972,44 @@ def gavilan_h(emitters: int = 0) -> Machine:
     return dataclasses.replace(m, name="Gavilan-H (hawk: broad wing, blown tail, flies past its stall)", theta_limit=math.radians(90.0), stops=True,
                                roll_rate=math.radians(300.0),
                                notes={**m.notes, "post-stall": "PROPOSED: attitude held beyond the stall by a blown all-moving tail and differential thrust"})
+
+
+def h_tail(V: float = 0.0, thrust: float | None = None, rho: float = RHO) -> dict:
+    """GAVILAN-H's blown tail, a HAND ESTIMATE the CFD sweep is meant to replace. Each propeller's wash at the tail
+    (momentum theory, fully developed: v = sqrt(V^2 + 2 T / (rho A)) per propeller) over the part of each tail half
+    inside it, at full deflection: the pitching moment both halves give together, the rolling moment they give
+    against each other, and the yawing moment of the two thrusts' full difference. ``thrust``: the two motors'
+    total (default: the weight, as in a hang)."""
+    p = gv.h_resolve()
+    L = gv.GavilanH.layout(p)
+    m = gavilan_h()
+    T = m.weight if thrust is None else thrust
+    A = math.pi * (p["prop_diameter"] / 2e3) ** 2
+    v_wash = math.sqrt(V * V + 2 * (T / 2) / (rho * A))
+    q = 0.5 * rho * v_wash ** 2
+    cl = TAIL_CL_PER_RAD * math.radians(TAILERON_MAX_DEG)
+    force = q * (L["S_blown_mm2"] / 1e6) * cl                           # both halves together
+    return {"v_wash": v_wash, "q_wash": q, "force_N": force, "pitch_Nm": force * L["tail_arm"] / 1e3, "roll_Nm": force * p["nacelle_y"] / 1e3,
+            "yaw_Nm": m.t_max(V) * 0.5 * p["nacelle_y"] / 1e3, "blown_share": L["blown_share"]}
+
+
+def h_stall_moment(V: float, alpha_deg: float = 50.0, rho: float = RHO) -> float:
+    """The nose-down moment of GAVILAN-H's stalled wing about its quarter chord [N m]: the plate's normal force at its
+    centre of pressure (``WING_CP_STALLED``). A hand estimate; the tail has to hold it."""
+    g = f_geometry(H_PARAMS)
+    a = math.radians(alpha_deg)
+    cn = viterna_cd90(g["AR"]) * math.sin(a)
+    return 0.5 * rho * V * V * g["S"] * cn * (WING_CP_STALLED - 0.25) * g["mac"]
+
+
+def h_authority(speeds=(0.0, 10.0, 15.0, 25.0)) -> list:
+    """Can the tail hold the stalled wing? Per speed: the wing's nose-down moment at 50 degrees, the tail's moment in
+    the wash at the thrust level flight needs there (``level``; the weight in a hang), and their ratio (> 1 holds)."""
+    m, rows = gavilan_h(), []
+    for V in speeds:
+        lv = level(m, V) if V > 0 else None
+        T = lv["thrust"] if lv else m.weight
+        need, have = (h_stall_moment(V) if V > 0 else 0.0), h_tail(V, T)["pitch_Nm"]
+        rows.append({"V": V, "thrust_N": T, "wing_moment_Nm": need, "tail_moment_Nm": have, "tail_at_full_thrust_Nm": h_tail(V, m.t_max(V))["pitch_Nm"],
+                     "margin": have / need if need > 0 else math.inf})
+    return rows

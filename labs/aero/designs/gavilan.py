@@ -320,6 +320,85 @@ def f_resolve(q=None) -> dict:
     return GavilanF().resolve(**dict(q or {}))
 
 
+# ------------------------------------------------------------------------------------------------- GAVILAN-H: the hawk
+class GavilanH(GavilanF):
+    """GAVILAN-H: the fixed wing flown like a hawk. ``GavilanF``'s layout on a broad wing (a hawk's wing loading), with
+    the one thing a hawk has that an aeroplane lacks: control far beyond the stall. The tailplane is two **all-moving
+    halves** as wide as the two propellers stand apart, so each half sits in one propeller's wash: together they
+    pitch the aircraft, against each other they roll it, at any airspeed down to none; the two motors' thrusts yaw it.
+    It flares past its stall to brake and to turn, and can hang on its propellers; it has no feet: it is thrown and
+    lands on its belly. ``weapon``: ``none`` (the hunter that watches) or ``emitter`` (F's tube on the body axis).
+    ``taileron_deg`` deflects both halves (pictures); ``show_props`` adds the propeller discs."""
+
+    parameters = [q for q in GavilanF.parameters if q.name not in ("part", "span", "root_chord", "tail_span", "tail_chord", "fin_height", "nacelle_y", "fuselage_length")] + [
+        Parameter("part", "aircraft", choices=("aircraft", "wing", "nacelle", "fuselage", "emitter", "tail"), description="what to build"),
+        _fw("span", 1000.0), _fw("root_chord", 280.0), _fw("nacelle_y", 200.0), _fw("fuselage_length", 860.0),
+        _fw("tail_span", 580.0), _fw("tail_chord", 150.0), _fw("fin_height", 130.0),
+        Parameter("weapon", "none", choices=("none", "emitter"), description="what it carries on the body axis"),
+        Parameter("taileron_deg", 0.0, "deg", min=-60.0, max=60.0, description="both tail halves, trailing edge up positive (pictures)"),
+        Parameter("taileron_gap", 14.0, "mm", min=4.0, description="each half's root from the centre plane (the fuselage's end between them)"),
+        Parameter("hinge_frac", 0.30, "", min=0.1, max=0.6, description="the halves' pivot along their chord"),
+        Parameter("prop_diameter", 177.8, "mm", min=50.0, description="propeller diameter (the wash the tail sits in; a disc when show_props)"),
+        Parameter("show_props", False, description="part='aircraft': the propellers as thin discs (pictures only)"),
+    ]
+
+    @staticmethod
+    def layout(p) -> dict:
+        """Where the tail sits against the propellers' wash [mm]: the wash's width at the tail (the disc contracted to
+        0.71 of its diameter, momentum theory) and the share of each tail half inside it."""
+        xt = -p["nose_length"] + p["fuselage_length"] - p["tail_chord"]
+        wash = 0.707 * p["prop_diameter"]
+        lo, hi = p["nacelle_y"] - wash / 2, p["nacelle_y"] + wash / 2
+        half = (p["taileron_gap"], p["tail_span"] / 2)
+        blown = max(0.0, min(hi, half[1]) - max(lo, half[0]))
+        return {"x_tail": xt, "x_hinge": xt + p["hinge_frac"] * p["tail_chord"], "x_prop": -p["nacelle_forward"] - 12.0, "wash_width": wash,
+                "blown_span_per_half": blown, "blown_share": blown / (half[1] - half[0]),
+                "S_tail_mm2": 2 * (half[1] - half[0]) * p["tail_chord"], "S_blown_mm2": 2 * blown * p["tail_chord"],
+                "tail_arm": xt + 0.25 * p["tail_chord"] - 0.25 * p["root_chord"]}
+
+    def _tail(self, p, separate=False):
+        L = self.layout(p)
+        r, tt = p["fuselage_diameter"] / 2, p["tail_thickness"]
+        w = p["tail_span"] / 2 - p["taileron_gap"]
+        half = cq.Workplane("XY").box(p["tail_chord"], w, tt, centered=(False, False, True)).translate((L["x_tail"], p["taileron_gap"], -r))
+        half = half.rotate((L["x_hinge"], 0, -r), (L["x_hinge"], 1, -r), p["taileron_deg"])
+        shaft = cq.Workplane("XZ").circle(4.0).extrude(2 * (p["taileron_gap"] + 12.0)).translate((L["x_hinge"], p["taileron_gap"] + 12.0, -r))
+        hstab = half.union(half.mirror("XZ")).union(shaft)
+        fin = cq.Workplane("XY").box(p["tail_chord"], tt, p["fin_height"], centered=(False, True, False)).translate((L["x_tail"] - 0.5 * p["tail_chord"], 0, -r))
+        return (hstab, fin) if separate else hstab.union(fin)
+
+    def _props(self, p):
+        L = self.layout(p)
+        d = cq.Workplane("YZ").circle(p["prop_diameter"] / 2).extrude(1.2)
+        return d.translate((L["x_prop"], p["nacelle_y"], 0)).union(d.translate((L["x_prop"], -p["nacelle_y"], 0)))
+
+    def parts(self, p) -> dict:
+        hstab, fin = self._tail(p, separate=True)
+        wing = self._wing(p).union(self._nacelle(p, -p["nacelle_y"])).union(self._nacelle(p, p["nacelle_y"]))
+        out = {"fuselage": self._fuselage(p), "wing": wing, "tail": hstab.union(fin), "props": self._props(p)}
+        if p["weapon"] == "emitter":
+            out["emitter"] = self._emitter(p)
+        return out
+
+    def build(self, p):
+        if p["part"] == "tail":
+            return self._tail(p)
+        if p["part"] != "aircraft":
+            return GavilanF.build(self, p)
+        aircraft = FixedWing.build(self, {**p, "angle_of_attack_deg": 0.0})
+        if p["weapon"] == "emitter":
+            aircraft = aircraft.union(self._emitter(p))
+        if p["show_props"]:
+            aircraft = aircraft.union(self._props(p))
+        if p["angle_of_attack_deg"]:
+            aircraft = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"])
+        return aircraft
+
+
+def h_resolve(q=None) -> dict:
+    return GavilanH().resolve(**dict(q or {}))
+
+
 # ------------------------------------------------------------------------------------------------------------ variants
 # A — the goshawk: a short broad wing, the four motors on slim posts through it (the wing does the lifting).
 # B — the "T-fighter" arrangement: the body in the middle, a stub wing to a broad six-sided panel on each side, a

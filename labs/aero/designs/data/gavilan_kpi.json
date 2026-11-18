@@ -284,6 +284,28 @@
    "hover": null,
    "whkm": 1.143,
    "span": 1.0
+  },
+  {
+   "key": "gavilan_h",
+   "aircraft": "Gavilan-H (hawk: broad wing, blown tail, flies past its stall)",
+   "mass_kg": 1.502,
+   "hovers": true,
+   "source": "gavilan_flight (fixed_wing.FixedWing's layout, ÉMERILLON's drive and catalogue)",
+   "rate10": 185.475,
+   "rate15": 143.758,
+   "rate25": 136.381,
+   "reverse": 1.252,
+   "stop": 35.86,
+   "accel": 2.61,
+   "climb": 5.5,
+   "band": 100.0,
+   "repass": 0.0,
+   "top": 45.0,
+   "cruise": 28.539,
+   "range": 20.548,
+   "hover": 5.758,
+   "whkm": 1.469,
+   "span": 1.0
   }
  ],
  "scores": {
@@ -438,6 +460,25 @@
    "span": 0.362,
    "bandit": 0.42,
    "general": 0.266
+  },
+  "gavilan_h": {
+   "rate10": 0.549,
+   "rate15": 0.638,
+   "rate25": 0.964,
+   "reverse": 0.638,
+   "stop": 0.385,
+   "accel": 0.515,
+   "climb": 0.446,
+   "band": 1.0,
+   "repass": 1.0,
+   "top": 0.45,
+   "cruise": 0.119,
+   "range": 0.11,
+   "hover": 0.441,
+   "whkm": 0.284,
+   "span": 0.362,
+   "bandit": 0.682,
+   "general": 0.294
   }
  }
 }

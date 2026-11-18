@@ -4,6 +4,7 @@
     python labs/aero/sims/gavilan_cfd.py --list                       # the cases, nothing run
     python labs/aero/sims/gavilan_cfd.py --design A --processors 8    # Gavilan-A, 0-90 degrees at 20 m/s (13 cases)
     python labs/aero/sims/gavilan_cfd.py --design F --processors 8    # the fixed wing, -4 to 24 degrees (11 cases)
+    python labs/aero/sims/gavilan_cfd.py --design H --processors 8    # the hawk, 0-90 degrees (13 cases): can its tail hold the stalled wing
     python labs/aero/sims/gavilan_cfd.py --design A --alphas 0 12 30 90 --quality fine
 
 Each case is a steady RANS run (``designs/gavilan_cfd.py``): at the ``screening`` quality minutes per case on four
@@ -31,7 +32,7 @@ RUNS = ROOT / "labs" / "aero" / "_runs" / "gavilan_cfd"
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--design", choices=("A", "B", "F"), default="A", help="A: the tailsitter, B: the side panels, F: the fixed wing")
+    ap.add_argument("--design", choices=("A", "B", "F", "H"), default="A", help="A: the tailsitter, B: the side panels, F: the fixed wing, H: the hawk")
     ap.add_argument("--alphas", type=float, nargs="*", default=None, help="angles of attack [deg] (default: the design's sweep)")
     ap.add_argument("--speed", type=float, default=gc.SPEED, help="airspeed [m/s]")
     ap.add_argument("--quality", choices=tuple(gc.QUALITY), default="screening")
