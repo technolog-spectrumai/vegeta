@@ -102,6 +102,8 @@ class Machine:
     fixed_w: float = 0.0            # avionics, drawn whatever the thrust
     payload_kg: float = 0.0         # emitters aboard, in ``mass``
     gun: str = "none"               # 'fixed' along the body axis, 'cradle' (tilts 0-90 deg with the camera), 'none'
+    theta_limit: float | None = None   # a wing that is controlled beyond its stall (a blown tail): how far its axis may go [rad]
+    stops: bool | None = None       # None: what hovers stops; True: a wing that can flare to a standstill on its thrust
     source: str = ""
     notes: dict = field(default_factory=dict)
 
@@ -113,6 +115,8 @@ class Machine:
     def theta_max(self) -> float:
         """How far the axis may leave the flight path: a tailsitter anywhere (its motors hold the attitude), a
         conventional wing up to its stall (nothing aboard controls it beyond)."""
+        if self.theta_limit is not None:
+            return self.theta_limit
         return THETA_MAX if self.kind == "tailsitter" else self.polar.alpha_stall
 
     def thetas(self, upto: float | None = None) -> np.ndarray:
@@ -120,7 +124,7 @@ class Machine:
 
     @property
     def hovers(self) -> bool:
-        return self.kind == "tailsitter" and self.t_max(0.0) > 1.15 * self.weight
+        return (self.kind == "tailsitter" or bool(self.stops)) and self.t_max(0.0) > 1.15 * self.weight
 
     def areas(self, theta: float) -> tuple:
         """(lift area, drag area) [m2] at the axis angle ``theta`` [rad]: the force over the dynamic pressure, the
@@ -947,3 +951,21 @@ def net_table(machines: dict | None = None) -> list:
                      "rate15": r15 or None, "repass": p0["next_pass_s"], "top": top_speed(m), "cruise": en["cruise_min"],
                      "hover_min": en["hover_min"] if m.hovers else None})
     return rows
+
+
+# ============================================================================================================== the hawk
+# GAVILAN-H: the fixed wing flown like a hawk. A hawk does not hover for a living, but it does not obey its stall
+# either: it flares its wings and tail far past it to brake and to turn, on muscle. The aircraft's version: F's layout
+# on the broad wing (a hawk's wing loading), the low-pitch propellers for static thrust, and — the one new thing — a
+# large all-moving tail in the propellers' wash with differential thrust for yaw, so the attitude is held beyond the
+# stall. It is thrown and belly-lands like F; it has no feet. In the model that is F broad allowed to tip its axis to
+# 90 degrees (PROPOSED: the blown tail's authority is not designed or checked; the CFD sweep is what would say).
+H_PARAMS = {"span": 1000.0, "root_chord": 280.0, "tail_span": 420.0, "tail_chord": 130.0}
+CONFIG_H = ef.Config("eco2807-1300", "hq7x4x3", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1)
+
+
+def gavilan_h(emitters: int = 0) -> Machine:
+    m = gavilan("F", emitters=emitters, p=H_PARAMS, config=CONFIG_H)
+    return dataclasses.replace(m, name="Gavilan-H (hawk: broad wing, blown tail, flies past its stall)", theta_limit=math.radians(90.0), stops=True,
+                               roll_rate=math.radians(300.0),
+                               notes={**m.notes, "post-stall": "PROPOSED: attitude held beyond the stall by a blown all-moving tail and differential thrust"})
