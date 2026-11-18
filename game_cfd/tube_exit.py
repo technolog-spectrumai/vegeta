@@ -58,7 +58,10 @@ def setup(kind):
             return bg.shot(c)["muzzle"]
 
         def ideal_at(c, travel_m):
-            g = replace(bg.device(c), valve_orifice_mm=1e3, valve_open_s=1e-9, valve_cd=1.0, barrel_m=0.03 + travel_m)
+            # the CFD's ideal valve: the tank opens straight into the bore, so the throat is the bore (as golf_gun's
+            # valve=None). A 1000 mm "valve" made the explicit 0-D step unstable (141 m/s after 200 mm at 2.8 bar,
+            # where even the full tank pressure all the way gives 52): the old thin-tube ratios (~0.35) were wrong.
+            g = replace(bg.device(c), valve_orifice_mm=bg.BORE_MM, valve_open_s=1e-9, valve_cd=1.0, barrel_m=0.03 + travel_m)
             return hp.gun(c.p_gauge * bg.LEAK, g, mass, dt=2e-7)["muzzle"]
     return gg, bore_mm, mass, real, ideal_at
 

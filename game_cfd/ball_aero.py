@@ -118,6 +118,15 @@ def main(argv):
             C.log(f"{label}: NOT RUN" if a.dry else f"{label}: no Cd")
         rows.append((v, m))
     A = math.pi / 4 * b["d"] ** 2
+    # sanity check: a coarse steady CFD can be far off (steady SST on a smooth ball without prism layers keeps the
+    # flow attached: Cd ~0.08 for a golf ball, measured ~0.25). Off by more than 35 % from the measured value: the
+    # game uses the measured value, the CFD is reported but not used.
+    cfd_mean = float(np.mean(list(table.values()))) if table else None
+    accepted = cfd_mean is not None and abs(cfd_mean / b["cd_hand"] - 1) <= 0.35
+    if cfd_mean is not None and not accepted:
+        C.log(f"CFD Cd {cfd_mean:.3f} is {100 * (cfd_mean / b['cd_hand'] - 1):+.0f} % from the measured {b['cd_hand']}: "
+              f"REJECTED, the game uses {b['cd_hand']}")
+        table = {}
     y = C.Yaml(f"{name} ball in flight: drag, speed and spin (game CFD, approximate)",
                [b["note"] + ".", "Cd: OpenFOAM (coarse, steady) at each speed; null = NOT RUN (the hand value is used).",
                 "Magnus lift and spin decay: published fits, not CFD. Mach: a drag-rise table added on top."])
@@ -133,8 +142,11 @@ def main(argv):
         y.end()
     y.end().blank()
     y.section("game_model", "what the game should use")
-    y.kv("cd_subsonic", np.mean(list(table.values())) if table else b["cd_hand"],
-         "mean CFD Cd" if table else "hand value (CFD NOT RUN)")
+    y.kv("cd_cfd_mean", cfd_mean, "mean of the CFD points")
+    y.kv("cd_measured", b["cd_hand"], "published measurements (Bearman & Harvey 1976 golf; Achenbach 1972 smooth sphere)")
+    y.kv("cfd_accepted", accepted, "CFD within 35 % of the measurement; if not, the measured value is used")
+    y.kv("cd_subsonic", cfd_mean if accepted else b["cd_hand"],
+         "mean CFD Cd" if accepted else ("measured value (CFD rejected)" if cfd_mean is not None else "measured value (CFD NOT RUN)"))
     y.kv("cd_mach_table_M", list(MACH)).kv("cd_mach_rise", list(RISE), "added to cd_subsonic at that Mach")
     y.kv("magnus_cl", f"{b['cl_k']} * S^0.4, S = omega r / V (S <= 0.4)", "fit, not CFD")
     y.kv("cd_spin_extra", f"{b['cd_spin']} * S", "drag added by spin, fit")
