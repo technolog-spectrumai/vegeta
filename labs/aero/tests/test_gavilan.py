@@ -173,3 +173,18 @@ def test_kpis_unarmed_cannot_is_none_and_scores_are_scaled_to_the_best():
     assert all(0.0 <= v <= 1.0 for s in sc.values() for v in s.values())
     assert sc["gavilan_a"]["bandit"] > sc["emerillon"]["bandit"] > sc["gavilan_f"]["bandit"]
     assert sc["gavilan_a"]["rate25"] == 1.0                                         # unarmed, it out-turns the light wings at 25 m/s too
+
+
+# ----------------------------------------------------------------------------------------------------------------- net
+def test_net_launcher_bookkeeping_and_who_holds_a_bandit_in_range():
+    assert gf.net_kg(1) == pytest.approx(sum(gf.NET["parts_g"].values()) * gf.NET["margin"] / 1e3)
+    assert gf.net_kg(2) > 1.8 * gf.net_kg(1)                                      # one tube, valve and tank per shot
+    fl = gf.fleet_net()
+    rows = {r["key"]: r for r in gf.net_table({k: fl[k] for k in ("gavilan_a", "gavilan_f", "gavilan_n")})}
+    assert fl["gavilan_a"].hovers and rows["gavilan_a"]["holds0"] and rows["gavilan_a"]["repass"] == 0.0
+    for k in ("gavilan_f", "gavilan_n"):
+        assert not rows[k]["holds0"] and 0.03 < rows[k]["trigger0"] < 0.2 and rows[k]["repass"] > 5.0
+    assert rows["gavilan_n"]["vmin"] < rows["gavilan_f"]["vmin"] and rows["gavilan_n"]["trigger10"] > rows["gavilan_f"]["trigger10"]
+    p = gf.net_pass(fl["gavilan_n"], 0.0)
+    assert p["trigger_s"] == pytest.approx(0.5 * gf.NET["open_span_m"] / p["v_pass"]) and gf.NET["range_m"][0] < p["height_m"] < gf.NET["range_m"][1]
+    assert gf.net_pass(fl["gavilan_n"], 20.0)["holds"]                             # it can fly beside a bandit at 20 m/s

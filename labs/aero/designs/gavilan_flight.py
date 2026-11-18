@@ -836,3 +836,114 @@ def kpi_scores(rows: list) -> dict:
             ks = [k["key"] for k in KPIS if k["group"] == g]
             s[g] = sum(s[k] for k in ks) / len(ks)
     return out
+
+
+# ============================================================================================================ the net
+# The net launcher (labs/aero/exp/net_drone.py, net_launcher_cad.py on dev_net_launcher @ bb041dd) is the recoilless golf
+# cannon firing a 150 g cartridge: a 2.4 m net of 1 mm Dyneema, four 20 g corner weights splayed 12 degrees, 40 m/s.
+# Its MuJoCo test against a hovering 1.2 kg quadcopter, from a fixed launcher: captured 5/6 at 4 m, 6/6 at 6 m, 5/6 at
+# 8 m, 6/6 at 10 m, 0/6 at 12 m, 1/6 at 15 m — so the net works between 4 and 10 m and not beyond.
+# The ground piece is a 600 mm tube on a 3 L tank at 8.5 bar. For an aircraft, the same gas model
+# (golf_recoilless.shot with the cartridge, sized for zero recoil) gives, for a 0.30 m tube on a 1.0 L tank and a 25 mm
+# valve: 29.8 bar gauge, a 36.9 mm throat, 40.0 m/s, 19.1 g of air per shot, net impulse -0.015 N s. One tank is one shot.
+# The masses below are HAND ESTIMATES (no part chosen); MARGIN is on their sum.
+NET = {
+    "source": "net_drone.py results and golf_recoilless.shot (dev_net_launcher @ bb041dd); masses are hand estimates",
+    "range_m": (4.0, 10.0), "captures": {4: "5/6", 6: "6/6", 8: "5/6", 10: "6/6", 12: "0/6", 15: "1/6"},
+    "muzzle_m_s": 40.0, "net_side_m": 2.4, "open_span_m": 2.95, "flight_s_10m": 0.51, "cartridge_g": 150.0,
+    "tube_m": 0.30, "bore_mm": 42.7, "pressure_bar_g": 29.8, "tank_l": 1.0, "air_g_per_shot": 19.1,
+    "parts_g": {"tube 0.30 m, 42.7 mm bore, 1 mm aluminium": 112.0, "chamber and 37 mm rear venturi": 90.0, "25 mm fast valve with its pilot": 150.0,
+                "tank 1.0 L, 30 bar": 250.0, "net cartridge": 150.0, "mounts": 40.0},
+    "second_shot_g": {"second tube, chamber and venturi": 202.0, "second valve": 150.0, "second tank": 250.0, "second cartridge": 150.0},
+    "margin": 1.25,
+}
+NET_CDA = 0.35 * math.pi * 0.024 ** 2 + 0.0008      # a 48 mm tube's face and a tank under the belly, faired (hand estimate) [m2]
+
+
+def net_kg(shots: int = 1) -> float:
+    """A net launcher with ``shots`` cartridges ready [kg] (one tube, valve and tank per shot): hand estimate x margin."""
+    g = sum(NET["parts_g"].values()) + max(shots - 1, 0) * sum(NET["second_shot_g"].values())
+    return g * NET["margin"] / 1e3
+
+
+def with_payload(m: Machine, kg: float, cda: float = 0.0, label: str = "", gun: str = "fixed") -> Machine:
+    """The same aircraft carrying ``kg`` more with ``cda`` more drag area. The airframe is not strengthened or
+    re-balanced for it: an optimistic loading of an aircraft that was not designed for the load."""
+    return dataclasses.replace(m, name=f"{m.name} + {label}" if label else m.name, mass=m.mass + kg, cda0=m.cda0 + cda,
+                               payload_kg=m.payload_kg + kg, gun=gun)
+
+
+# GAVILAN-N: a fixed wing sized for the net. The wing is sized so that it still flies at 11 m/s with the launcher
+# aboard (the pass over the bandit is flown slowly); two tractors on the wing leave the belly free for the tube,
+# which points forward and down so the aircraft passes over the bandit, not through its own net.
+N_PARAMS = {"span": 1300.0, "root_chord": 290.0, "taper": 0.60, "fuselage_length": 880.0, "fuselage_diameter": 70.0, "nose_length": 230.0,
+            "nacelle_y": 230.0, "tail_span": 420.0, "tail_chord": 120.0, "fin_height": 150.0}
+CONFIG_N = ef.Config("eco2807-1300", "hq7x4x3", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1)   # two motors, the low-pitch propeller
+NET_DEPRESSION_DEG = 40.0          # the tube below the flight path on a fixed wing (proposed)
+
+
+def gavilan_n(shots: int = 1) -> Machine:
+    m = gavilan("F", emitters=0, p=N_PARAMS, config=CONFIG_N)
+    m = dataclasses.replace(m, name="Gavilan-N (fixed wing for the net)", gun="none")
+    return with_payload(m, net_kg(shots), NET_CDA, "", gun="fixed") if shots else m
+
+
+def fleet_net(shots: int = 1) -> dict:
+    """The aircraft that could lift the launcher, each carrying it (``shots`` cartridges). MERLIN flies it in place
+    of its 0.12 kg gas sensor; PEREGRINE (0.66 kg all-up) cannot lift 1 kg and is left out."""
+    kg = net_kg(shots)
+    a = gavilan("A", emitters=0)
+    return {"merlin": with_payload(merlin(), kg - 0.12, NET_CDA, "net"), "xwing": with_payload(xwing(), kg, NET_CDA, "net"),
+            "emerillon": with_payload(emerillon("ER2"), kg, NET_CDA, "net"),
+            "gavilan_a": with_payload(a, kg + CRADLE_G / 1e3, NET_CDA, "net", gun="cradle"),
+            "gavilan_f": with_payload(gavilan("F", emitters=0), kg, NET_CDA, "net"),
+            "gavilan_f_broad": with_payload(gavilan("F", emitters=0, p=F_BROAD), kg, NET_CDA, "net"),
+            "gavilan_n": gavilan_n(shots)}
+
+
+def net_pass(m: Machine, v_bandit: float = 0.0) -> dict:
+    """One net attack on a bandit flying straight at ``v_bandit``. What hovers flies beside the bandit inside the
+    net's range and fires when it likes (closing speed 0). A wing overflies it at the slowest speed that leaves a
+    margin (1.2 x its stall) with the tube pointing down and ahead: the shot has to be released within the time the
+    net's half span takes to pass at the closing speed (``trigger_s``), and the aircraft is inside the net's range
+    for ``in_range_s``. ``lineup_radius_m`` is the turn it lines up with at that speed."""
+    lo, hi = NET["range_m"]
+    if m.hovers:
+        return {"v_pass": v_bandit, "closing_m_s": 0.0, "trigger_s": math.inf, "in_range_s": math.inf, "holds": True,
+                "lineup_radius_m": turn(m, max(v_bandit, 5.0))["radius_inst_m"], "next_pass_s": 0.0}
+    v = max(1.2 * stall_speed(m), v_bandit)
+    closing = v - v_bandit
+    h = 0.5 * (lo + hi) * math.sin(math.radians(NET_DEPRESSION_DEG))                # the height of the pass over the bandit
+    reach = math.sqrt(max(hi * hi - h * h, 0.0))                                   # ground distance at which the range opens
+    if closing < 0.05:
+        return {"v_pass": v, "closing_m_s": 0.0, "trigger_s": math.inf, "in_range_s": math.inf, "holds": True,
+                "lineup_radius_m": turn(m, v)["radius_inst_m"], "next_pass_s": 0.0}
+    return {"v_pass": v, "closing_m_s": closing, "trigger_s": 0.5 * NET["open_span_m"] / closing, "in_range_s": reach / closing, "holds": False,
+            "lineup_radius_m": turn(m, v)["radius_inst_m"], "next_pass_s": reversal(m, v)["time_s"] + 2 * 40.0 / v, "height_m": h}
+
+
+NET_KPIS = [
+    dict(key="tw", label="static thrust / weight with the net", better="high", why="below 1.15 it no longer hovers"),
+    dict(key="vmin", label="slowest level flight [m/s]", better="low", why="0 = it hovers beside the bandit"),
+    dict(key="trigger0", label="trigger tolerance, hovering bandit [s]", better="high", why="'holds' = no deadline: it sits in range"),
+    dict(key="trigger10", label="trigger tolerance, bandit at 10 m/s [s]", better="high", why="time the net's half span takes to pass"),
+    dict(key="lineup", label="line-up turn radius at the pass speed [m]", better="low", why="correcting onto a bandit that sidesteps"),
+    dict(key="rate15", label="turn rate at 15 m/s [deg/s]", better="high", why="'cannot' = below its stall with the net"),
+    dict(key="repass", label="next pass on a hovering bandit [s]", better="low", why="0 = it never leaves; one tank is one shot"),
+    dict(key="top", label="top speed [m/s]", better="high", why="it must outrun a 20 m/s bandit with margin"),
+    dict(key="cruise", label="cruise endurance with the net [min]", better="high", why="waiting for the bandit"),
+]
+
+
+def net_table(machines: dict | None = None) -> list:
+    rows = []
+    for key, m in (machines or fleet_net()).items():
+        p0, p10, en = net_pass(m, 0.0), net_pass(m, 10.0), endurance(m)
+        r15 = turn(m, 15.0)["rate_inst_deg_s"]
+        rows.append({"key": key, "aircraft": m.name, "mass_kg": m.mass, "payload_kg": m.payload_kg, "hovers": m.hovers, "source": m.source,
+                     "tw": m.t_max(0.0) / m.weight, "vmin": min_speed(m), "v_pass": p0["v_pass"],
+                     "trigger0": None if p0["holds"] else p0["trigger_s"], "trigger10": None if p10["holds"] else p10["trigger_s"],
+                     "holds0": p0["holds"], "holds10": p10["holds"], "lineup": p0["lineup_radius_m"] if math.isfinite(p0["lineup_radius_m"]) else None,
+                     "rate15": r15 or None, "repass": p0["next_pass_s"], "top": top_speed(m), "cruise": en["cruise_min"],
+                     "hover_min": en["hover_min"] if m.hovers else None})
+    return rows

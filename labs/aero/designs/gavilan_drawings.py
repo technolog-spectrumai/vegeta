@@ -199,9 +199,10 @@ def bar_chart(out, rows):
 
 
 COLOR_OF = {"merlin": SERIES[0], "peregrine": SERIES[1], "xwing": SERIES[2], "emerillon": SERIES[3], "gavilan_b": SERIES[4],
-            "gavilan_a": SERIES[5], "gavilan_f": SERIES[6], "gavilan_f_broad": SERIES[7]}       # the colour follows the aircraft
+            "gavilan_a": SERIES[5], "gavilan_f": SERIES[6], "gavilan_f_broad": SERIES[7],
+            "gavilan_n": SERIES[1]}                    # the colour follows the aircraft (N takes Peregrine's: they never share a chart)
 NAME_OF = {"merlin": "Merlin", "peregrine": "Peregrine B", "xwing": "X-wing X-A", "emerillon": "Émerillon ER2", "gavilan_a": "Gavilan-A",
-           "gavilan_b": "Gavilan-B", "gavilan_f": "Gavilan-F", "gavilan_f_broad": "Gavilan-F broad"}
+           "gavilan_b": "Gavilan-B", "gavilan_f": "Gavilan-F", "gavilan_f_broad": "Gavilan-F broad", "gavilan_n": "Gavilan-N (new)"}
 
 
 def kpi_bars(out, rows, group, title):
@@ -229,6 +230,33 @@ def kpi_bars(out, rows, group, title):
     for a in ax.flat[len(kpis):]:
         a.set_visible(False)
     fig.suptitle(title, fontsize=11.5, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.965), h_pad=2.2)
+    fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def net_bars(out, rows):
+    """The net-armed fleet: one panel per KPI, a bar per aircraft; 'holds' where it has no deadline, 'cannot' where it cannot."""
+    import gavilan_flight as gf
+    fig, ax = plt.subplots(3, 3, figsize=(16.5, 11.0), facecolor=SURFACE)
+    y = np.arange(len(rows))[::-1]
+    for a, k in zip(ax.flat, gf.NET_KPIS):
+        _style(a, k["label"])
+        vals = [r[k["key"]] for r in rows]
+        have = [v for v in vals if v is not None]
+        top = max(have) if have and max(have) > 0 else 1.0
+        for yi, r, v in zip(y, rows, vals):
+            a.barh(yi, v if v is not None else 0.0, height=0.62, color=COLOR_OF[r["key"]])
+            holds = k["key"] in ("trigger0", "trigger10") and r["holds" + k["key"][7:]]
+            txt = "holds" if holds else "cannot" if v is None else (f"{v:.0f}" if abs(v) >= 20 else f"{v:.1f}" if abs(v) >= 2 else f"{v:.2f}")
+            a.text((v or 0.0) + 0.015 * top, yi, txt, va="center", fontsize=8.5, color=INK)
+        a.set_yticks(y); a.set_yticklabels([NAME_OF[r["key"]] for r in rows], fontsize=8.5, color=INK)
+        a.set_xlim(0, 1.2 * top); a.grid(axis="y", visible=False)
+        a.text(0.0, -0.13, ("higher is better" if k["better"] == "high" else "lower is better") + " — " + k["why"], transform=a.transAxes,
+               fontsize=8, color=MUTED, va="top")
+    fig.suptitle(f"Carrying the net launcher ({gf.net_kg(1):.2f} kg for one shot, hand estimate; Merlin swaps its sensor for it) — "
+                 f"the net works from {gf.NET['range_m'][0]:.0f} to {gf.NET['range_m'][1]:.0f} m", fontsize=11.5, color=INK, x=0.01, ha="left")
     fig.tight_layout(rect=(0, 0, 1, 0.965), h_pad=2.2)
     fig.savefig(out, dpi=120, facecolor=SURFACE)
     plt.close(fig)

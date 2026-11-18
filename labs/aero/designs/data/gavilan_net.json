@@ -1,0 +1,250 @@
+{
+ "source": "gavilan_flight.net_table(gavilan_flight.fleet_net())",
+ "net": {
+  "source": "net_drone.py results and golf_recoilless.shot (dev_net_launcher @ bb041dd); masses are hand estimates",
+  "range_m": [
+   4.0,
+   10.0
+  ],
+  "captures": {
+   "4": "5/6",
+   "6": "6/6",
+   "8": "5/6",
+   "10": "6/6",
+   "12": "0/6",
+   "15": "1/6"
+  },
+  "muzzle_m_s": 40.0,
+  "net_side_m": 2.4,
+  "open_span_m": 2.95,
+  "flight_s_10m": 0.51,
+  "cartridge_g": 150.0,
+  "tube_m": 0.3,
+  "bore_mm": 42.7,
+  "pressure_bar_g": 29.8,
+  "tank_l": 1.0,
+  "air_g_per_shot": 19.1,
+  "parts_g": {
+   "tube 0.30 m, 42.7 mm bore, 1 mm aluminium": 112.0,
+   "chamber and 37 mm rear venturi": 90.0,
+   "25 mm fast valve with its pilot": 150.0,
+   "tank 1.0 L, 30 bar": 250.0,
+   "net cartridge": 150.0,
+   "mounts": 40.0
+  },
+  "second_shot_g": {
+   "second tube, chamber and venturi": 202.0,
+   "second valve": 150.0,
+   "second tank": 250.0,
+   "second cartridge": 150.0
+  },
+  "margin": 1.25
+ },
+ "net_kg_one_shot": 0.99,
+ "net_kg_two_shots": 1.93,
+ "kpis": [
+  {
+   "key": "tw",
+   "label": "static thrust / weight with the net",
+   "better": "high",
+   "why": "below 1.15 it no longer hovers"
+  },
+  {
+   "key": "vmin",
+   "label": "slowest level flight [m/s]",
+   "better": "low",
+   "why": "0 = it hovers beside the bandit"
+  },
+  {
+   "key": "trigger0",
+   "label": "trigger tolerance, hovering bandit [s]",
+   "better": "high",
+   "why": "'holds' = no deadline: it sits in range"
+  },
+  {
+   "key": "trigger10",
+   "label": "trigger tolerance, bandit at 10 m/s [s]",
+   "better": "high",
+   "why": "time the net's half span takes to pass"
+  },
+  {
+   "key": "lineup",
+   "label": "line-up turn radius at the pass speed [m]",
+   "better": "low",
+   "why": "correcting onto a bandit that sidesteps"
+  },
+  {
+   "key": "rate15",
+   "label": "turn rate at 15 m/s [deg/s]",
+   "better": "high",
+   "why": "'cannot' = below its stall with the net"
+  },
+  {
+   "key": "repass",
+   "label": "next pass on a hovering bandit [s]",
+   "better": "low",
+   "why": "0 = it never leaves; one tank is one shot"
+  },
+  {
+   "key": "top",
+   "label": "top speed [m/s]",
+   "better": "high",
+   "why": "it must outrun a 20 m/s bandit with margin"
+  },
+  {
+   "key": "cruise",
+   "label": "cruise endurance with the net [min]",
+   "better": "high",
+   "why": "waiting for the bandit"
+  }
+ ],
+ "rows": [
+  {
+   "key": "merlin",
+   "aircraft": "Merlin (tractor) + net",
+   "mass_kg": 3.064,
+   "payload_kg": 0.87,
+   "hovers": false,
+   "source": "merlin_flight.build_merlins, merlin_design.json",
+   "tw": 1.278,
+   "vmin": 13.825,
+   "v_pass": 16.59,
+   "trigger0": 0.089,
+   "trigger10": 0.224,
+   "holds0": false,
+   "holds10": false,
+   "lineup": 20.76,
+   "rate15": 37.835,
+   "repass": 8.753,
+   "top": 60.0,
+   "cruise": 133.324,
+   "hover_min": null
+  },
+  {
+   "key": "xwing",
+   "aircraft": "X-wing X-A (kestrel_xwing) + net",
+   "mass_kg": 2.577,
+   "payload_kg": 0.99,
+   "hovers": true,
+   "source": "kestrel_xwing.make_vehicle, kestrel_systems.drive_table, xwing_design.json",
+   "tw": 1.893,
+   "vmin": 0.0,
+   "v_pass": 0.0,
+   "trigger0": null,
+   "trigger10": null,
+   "holds0": true,
+   "holds10": true,
+   "lineup": 1.585,
+   "rate15": 70.284,
+   "repass": 0.0,
+   "top": 30.0,
+   "cruise": 15.487,
+   "hover_min": 5.503
+  },
+  {
+   "key": "emerillon",
+   "aircraft": "Émerillon ER2 + net",
+   "mass_kg": 2.152,
+   "payload_kg": 0.99,
+   "hovers": true,
+   "source": "emerillon_flight (drive, drag_buildup, normal_force_area), emerillon_mission (SLEW, ACC_MAX)",
+   "tw": 2.839,
+   "vmin": 0.0,
+   "v_pass": 0.0,
+   "trigger0": null,
+   "trigger10": null,
+   "holds0": true,
+   "holds10": true,
+   "lineup": 0.959,
+   "rate15": 99.534,
+   "repass": 0.0,
+   "top": 92.5,
+   "cruise": 2.344,
+   "hover_min": 2.823
+  },
+  {
+   "key": "gavilan_a",
+   "aircraft": "Gavilan-A (tailsitter) + net",
+   "mass_kg": 2.751,
+   "payload_kg": 1.035,
+   "hovers": true,
+   "source": "gavilan_flight",
+   "tw": 3.603,
+   "vmin": 0.0,
+   "v_pass": 0.0,
+   "trigger0": null,
+   "trigger10": null,
+   "holds0": true,
+   "holds10": true,
+   "lineup": 0.737,
+   "rate15": 130.87,
+   "repass": 0.0,
+   "top": 50.0,
+   "cruise": 16.923,
+   "hover_min": 6.72
+  },
+  {
+   "key": "gavilan_f",
+   "aircraft": "Gavilan-F (fixed wing, twin tractor) + net",
+   "mass_kg": 2.219,
+   "payload_kg": 0.99,
+   "hovers": false,
+   "source": "gavilan_flight (fixed_wing.FixedWing's layout, ÉMERILLON's drive and catalogue)",
+   "tw": 1.745,
+   "vmin": 17.313,
+   "v_pass": 20.776,
+   "trigger0": 0.071,
+   "trigger10": 0.137,
+   "holds0": false,
+   "holds10": false,
+   "lineup": 30.793,
+   "rate15": 15.255,
+   "repass": 8.507,
+   "top": 60.0,
+   "cruise": 16.444,
+   "hover_min": null
+  },
+  {
+   "key": "gavilan_f_broad",
+   "aircraft": "Gavilan-F (fixed wing, twin tractor) broad wing + net",
+   "mass_kg": 2.327,
+   "payload_kg": 0.99,
+   "hovers": false,
+   "source": "gavilan_flight (fixed_wing.FixedWing's layout, ÉMERILLON's drive and catalogue)",
+   "tw": 1.663,
+   "vmin": 14.42,
+   "v_pass": 17.304,
+   "trigger0": 0.085,
+   "trigger10": 0.202,
+   "holds0": false,
+   "holds10": false,
+   "lineup": 21.484,
+   "rate15": 36.136,
+   "repass": 8.524,
+   "top": 55.0,
+   "cruise": 20.219,
+   "hover_min": null
+  },
+  {
+   "key": "gavilan_n",
+   "aircraft": "Gavilan-N (fixed wing for the net)",
+   "mass_kg": 2.587,
+   "payload_kg": 0.99,
+   "hovers": false,
+   "source": "gavilan_flight (fixed_wing.FixedWing's layout, ÉMERILLON's drive and catalogue)",
+   "tw": 1.916,
+   "vmin": 13.404,
+   "v_pass": 16.084,
+   "trigger0": 0.092,
+   "trigger10": 0.242,
+   "holds0": false,
+   "holds10": false,
+   "lineup": 18.394,
+   "rate15": 45.232,
+   "repass": 8.567,
+   "top": 42.5,
+   "cruise": 18.766,
+   "hover_min": null
+  }
+ ]
+}
