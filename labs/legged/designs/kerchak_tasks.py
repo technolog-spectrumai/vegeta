@@ -29,7 +29,7 @@ import humanoid_motions as hum
 import motion_kit as mk
 
 __all__ = ["DOOR", "door_prop", "handle_grip", "handle_world", "lever_hold", "contact_motion", "reach", "grasp", "turn", "push", "release",
-           "door_sequence", "STOP_X", "stop_x"]
+           "door_sequence", "STOP_X", "stop_x", "door_open"]
 
 #: the doorway: at x [m], its clear width and height, the door's thickness, the hinge on the left (+y), the lever
 #: handle's place on the door (y from the hinge's side, z) and length, how far the door swings open
@@ -39,22 +39,28 @@ REACH_BASE = (0.76, 0.1)                                                  #: the
 
 
 def reach_base():
-    return (gm.STANCE["h"] - 0.2, 0.3) if gm.STANCE["upright"] else REACH_BASE
+    return (gm.STANCE["h"] - 0.2 * gm.scale(), 0.3) if gm.STANCE["upright"] else REACH_BASE
 
 
 PUSH_ADVANCE = 0.35                                                       #: how far the pelvis moves ahead over the feet in the push
 STOP_X = 1.95                                                             #: where the approach stops (the pelvis), the handle in reach (on four)
 
 
+def door_open():
+    """How far the door is pushed open before the hand lets go: standing, less (a shorter arm from a planted stance;
+    the shoved door coasts on to ``swung_rad`` either way)."""
+    return 0.45 if gm.STANCE["upright"] else DOOR["open_rad"]
+
+
 def push_base():
     """The pelvis (x ahead of the feet, height, pitch) at the end of the push: standing, further and lower, leaning
     into the door (the legs cannot stretch to the swung lever otherwise)."""
-    return (0.4, gm.STANCE["h"] - 0.27, 0.5) if gm.STANCE["upright"] else (PUSH_ADVANCE, *REACH_BASE)
+    return (0.15 * gm.scale(), gm.STANCE["h"] - 0.22 * gm.scale(), 0.4) if gm.STANCE["upright"] else (PUSH_ADVANCE, *REACH_BASE)
 
 
 def stop_x():
     """Where the approach stops: standing, closer, the arm being shorter for the height of the shoulder."""
-    return 2.4 if gm.STANCE["upright"] else STOP_X
+    return DOOR["x"] - 0.1 - 0.5 * gm.scale() if gm.STANCE["upright"] else STOP_X
 
 
 def door_prop():
@@ -110,23 +116,75 @@ def _contacts_world(kin, q, base_x, h, pitch):
     return out
 
 
-def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=30, extra=None, reg=2e-4, iters=600, source=""):
+SOLID = None                                                              #: a ``solidity.Solid`` while a scene's motions are solved: the frames re-solved clear of the props
+SOLID_PASSES = 8                                                          #: push-out rounds per frame
+SOLID_GIVE = 0.03                                                         #: how much hold error a push-out may add before it is dropped [m]
+SOLID_WEIGHT = 0.6                                                        #: a push-out target's weight against the holds' (the hold wins a conflict, the limb finds another way round)
+
+
+def _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u):
+    """Re-solve ``q`` with push-out targets for every limb point inside a prop (or another limb) until the frame is
+    clear (``SOLID``); returns (q, the worst depth left, the bodies still in)."""
+    if SOLID is None:
+        return q, 0.0, [], 0.0
+    raw = SOLID.worst(q, base, _pitch_of(R), u)[0]
+    q_before, err_before = q.copy(), _hard_error(kin, q, targets)
+    for _ in range(SOLID_PASSES):
+        pens = SOLID.penetrations(q, base, _pitch_of(R), u)
+        if not pens:
+            break
+        deepest = {}                                                       # one push per limb: its deepest point
+        for b, l, g, d, _g in pens:
+            if b not in deepest or d > deepest[b][3]:
+                deepest[b] = (b, l, g, d)
+        push = [(kin.body(b), l, R.T @ (g - base)) for b, l, g, _d in deepest.values()]
+        q, _ = kin.ik(targets + push, q_init=q, q_ref=q_ref, joints=limbs, reg=reg, iters=iters // 2,
+                      weights=[1.0] * len(targets) + [SOLID_WEIGHT] * len(push))
+    if _hard_error(kin, q, targets) > err_before + SOLID_GIVE:              # the holds come first: a push that costs them is not taken
+        q = q_before
+    depth, bodies = SOLID.worst(q, base, _pitch_of(R), u)
+    return q, depth, bodies, raw
+
+
+def _hard_error(kin, q, targets):
+    kin.set(q)
+    d = kin.data
+    return max((float(np.linalg.norm(np.asarray(g) - (d.xpos[b] + d.xmat[b].reshape(3, 3) @ np.asarray(l)))) for b, l, g in targets), default=0.0)
+
+
+def _pitch_of(R):
+    return float(math.atan2(-R[2, 0], R[0, 0]))
+
+
+def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=30, extra=None, reg=2e-4, iters=600, source="", q_ref=None):
     """A motion solved frame by frame: ``targets_fn(u)`` → [(body, local, world xyz)] (the planted contacts and the
     hand), ``base_fn(u)`` → (base x, height, pitch) in the world; ``extra(u, q)`` sets joints the IK does not (the
     fingers, the wrist's roll). The motion's ``base`` carries the base track per frame."""
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
+    frames = max(frames, int(round(duration * 10)))                        # ten a second at least: the player interpolates between them
     ts = [duration * i / frames for i in range(frames + 1)]
     Q, xs, ys, hs, ps, q, worst = [], [], [], [], [], np.asarray(q_init, dtype=float).copy(), 0.0
+    pen, pen_at, pen_raw, worst_at = 0.0, None, 0.0, None
+    q_ref = np.asarray(q_init if q_ref is None else q_ref, dtype=float)     # the pose the IK is regularised to (a bent-knee crouch on a climb: a straight knee is the wrong branch)
     for t in ts:
         u = t / duration
         b = base_fn(u)
         x, y, h, p = (b[0], 0.0, b[1], b[2]) if len(b) == 3 else b          # (x, h, pitch) or (x, y, h, pitch)
         R, base = gm.base_rot(p), np.array([x, y, h])
         targets = [(body, local, R.T @ (np.asarray(w) - base)) for body, local, w in targets_fn(u)]
-        q, err = kin.ik(targets, q_init=q, q_ref=q_init, joints=limbs, reg=reg, iters=iters)
+        q, err = kin.ik(targets, q_init=q, q_ref=q_ref, joints=limbs, reg=reg, iters=iters)
         if extra:
             q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
-        worst = max(worst, err)
+        if SOLID is not None:
+            q, depth, inside, raw = _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u)
+            if extra:
+                q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
+            err = _hard_error(kin, q, targets)
+            pen_raw = max(pen_raw, raw)
+            if depth > pen:
+                pen, pen_at = depth, (round(u, 2), inside)
+        if err > worst:
+            worst, worst_at = err, round(u, 2)
         Q.append(q.copy())
         xs.append(round(float(x), 4)); ys.append(round(float(y), 4)); hs.append(round(float(h), 4)); ps.append(round(float(p), 4))
     moving = mk._moving(kin, Q)
@@ -134,7 +192,8 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
     return mk.Motion(name, "transition", moving, ts, np.asarray(Q)[:, cols], loop=False, period=duration,
                      base={"x_m": xs, "y_m": ys, "height_m": hs, "pitch_rad": ps, "note": "the pelvis's x, y, height and pitch per frame"},
                      source=source or f"kerchak_tasks.{name}",
-                     check={"ik_error_max_m": round(worst, 6), "limit_margin_min_rad": round(kin.margin(Q, moving), 4)})
+                     check={"ik_error_max_m": round(worst, 6), "ik_error_at": worst_at, "limit_margin_min_rad": round(kin.margin(Q, moving), 4),
+                            **({"penetration_max_m": round(pen, 4), "penetration_at": pen_at, "penetration_raw_m": round(pen_raw, 4)} if SOLID is not None else {})})
 
 
 def _planted(kin, q_quad, base_x, which=("L", "R", "L_knuckle")):
@@ -247,7 +306,13 @@ def _lever_motion(kin, name, duration, q_quad, q_from, base_x, phi_fn, turn_fn, 
     def extra(u, q):
         return sr.set_curl(q, kin, "R", LEVER_CURL)
 
-    return contact_motion(kin, name, duration, targets, base_fn, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS, source=source)
+    if SOLID is not None:
+        SOLID.scene = lambda u: {"door_hinge": phi_fn(u), "handle_hinge": turn_fn(u)}
+    try:
+        return contact_motion(kin, name, duration, targets, base_fn, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS, source=source)
+    finally:
+        if SOLID is not None:
+            SOLID.scene = None
 
 
 def turn(kin, q_quad, q_from, base_x=None, duration=1.0):
@@ -264,7 +329,7 @@ def push(kin, q_quad, q_from, base_x=None, duration=3.0):
     base_x = stop_x() if base_x is None else base_x
     adv, h1, p1 = push_base()
     base = lambda u: (base_x + adv * mk.smooth(u), reach_base()[0] + mk.smooth(u) * (h1 - reach_base()[0]), reach_base()[1] + mk.smooth(u) * (p1 - reach_base()[1]))
-    return _lever_motion(kin, "push", duration, q_quad, q_from, base_x, lambda u: DOOR["open_rad"] * mk.smooth(u), lambda u: DOOR["turn_rad"], base,
+    return _lever_motion(kin, "push", duration, q_quad, q_from, base_x, lambda u: door_open() * mk.smooth(u), lambda u: DOOR["turn_rad"], base,
                          "kerchak_tasks.push: the door swung open, the hand on the lever")
 
 
@@ -282,7 +347,7 @@ def release(kin, q_quad, q_from, base_x=None, duration=2.0):
     R0, b0 = gm.base_rot(p1), np.array([base_x + adv, 0.0, h1])
     start_l = R0 @ kin.world(*pts["L_knuckle"][0]) + b0
     start_r = R0 @ kin.world(*pts["R_knuckle"][0]) + b0
-    hold = lever_hold(DOOR["open_rad"], DOOR["turn_rad"])
+    hold = lever_hold(door_open(), DOOR["turn_rad"])
     end_r = gs.hand_targets(kin, "R", hold)
 
     def targets(u):
@@ -305,6 +370,9 @@ def release(kin, q_quad, q_from, base_x=None, duration=2.0):
         c = (1 - f) * LEVER_CURL + f * gs.CURL_OPEN if u < 0.25 else (1 - g) * gs.CURL_OPEN + g * q_quad[kin.index["R_finger_1_mcp"]] / 0.8
         return sr.set_curl(q, kin, "R", c)
 
+    if SOLID is not None:                                                  # the door swings on as the hand lets go, the lever springs back
+        SOLID.scene = lambda u: {"door_hinge": door_open() + (DOOR["swung_rad"] - door_open()) * mk.smooth(u),
+                                 "handle_hinge": DOOR["turn_rad"] * (1.0 - mk.smooth(min(1.0, u / 0.25)))}
     return contact_motion(kin, "release", duration, targets, base, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
                           source="kerchak_tasks.release: the hand back down on four")
 

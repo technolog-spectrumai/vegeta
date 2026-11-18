@@ -26,7 +26,7 @@ import numpy as np
 import humanoid_motions as hum
 import motion_kit as mk
 
-__all__ = ["PELVIS_H", "PELVIS_PITCH", "STANCE", "set_stance", "CONTACTS", "base_rot", "base_quat", "quad_pose", "knuckle_walk", "rise", "drop", "stand", "motions", "parts"]
+__all__ = ["PELVIS_H", "PELVIS_PITCH", "STANCE", "set_stance", "scale", "CONTACTS", "base_rot", "base_quat", "quad_pose", "knuckle_walk", "rise", "drop", "stand", "motions", "parts"]
 
 PELVIS_H = 0.62                                                           #: the pelvis above the ground on all fours [m]
 PELVIS_PITCH = 0.45                                                       #: the pelvis pitched nose-down on all fours [rad] (~26°)
@@ -48,6 +48,14 @@ def set_stance(h, pitch, upright=False):
     STANCE.update(h=float(h), pitch=float(pitch), upright=bool(upright))
 
 
+UPRIGHT_REF_H = 1.0735                                                     #: the standing pelvis height the upright scenarios' reaches were tuned at (the 2.07 m proportions) [m]
+
+
+def scale():
+    """The upright frame's size against the reference: the scenarios' stops, crouches and climbing frames scale with it."""
+    return STANCE["h"] / UPRIGHT_REF_H if STANCE["upright"] else 1.0
+
+
 
 def base_rot(pitch=PELVIS_PITCH):
     """The pelvis's orientation on all fours: pitched nose-down by ``pitch`` about y."""
@@ -65,7 +73,7 @@ def _contact_points(kin):
     pts = {}
     for g in CONTACTS:
         body, c = kin.geom_point(g)
-        offs = hum.SOLE_POINTS if g in ("L", "R") else [np.zeros(3)]
+        offs = hum.sole_points(kin) if g in ("L", "R") else [np.zeros(3)]
         pts[g] = [(body, c + np.asarray(o)) for o in offs]
     return pts
 
@@ -111,7 +119,7 @@ def knuckle_walk(kin, q_quad, *, speed=0.25, stride=0.26, duty=0.74, step=0.06, 
     """The lateral-sequence walk on four from the quad pose (``legged_gait`` sees the quad pose as the design pose)."""
     period = stride / (duty * speed)
     pts = _contact_points(kin)
-    foot_points = {g: ([np.zeros(3)] if "knuckle" in g else hum.SOLE_POINTS) for g in CONTACTS}
+    foot_points = {g: ([np.zeros(3)] if "knuckle" in g else hum.sole_points(kin)) for g in CONTACTS}
     q0 = kin.q0
     kin.q0 = np.asarray(q_quad, dtype=float)                               # the gait's reference pose
     try:

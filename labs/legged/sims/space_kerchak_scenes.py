@@ -51,27 +51,37 @@ class ScenePlayer:
             self.kin = mk.Kin(self.robot)
             self.q_quad = hum.stand_pose(self.kin)
             gm.set_stance(hum.base_height(self.kin, self.q_quad), 0.0, upright=True)
-            self.walk = hum.walk(self.kin, speed=1.0, stance=0.6, duty=0.6, step=0.08, crouch=0.05, arm=0.4)
+            S = gm.scale()
+            self.walk = hum.walk(self.kin, speed=1.0, stance=0.6 * S, duty=0.6, step=0.08 * S, crouch=0.06, arm=0.4)
+            self.walk_h = hum.gait_height(self.kin, self.walk, self.q_quad)   # the walk's pelvis height: the soles on the ground, not in it
         else:
             self.robot = sr.bare(casing=casing)
             self.kin = mk.Kin(self.robot)
             self.q_quad = gm.quad_pose(self.kin)
             gm.set_stance(gm.PELVIS_H, gm.PELVIS_PITCH, upright=False)
             self.walk = gm.knuckle_walk(self.kin, self.q_quad)
+            self.walk_h = gm.STANCE["h"]
         self.v = float(self.walk.base["velocity_m_s"][0])
-        self.segments = gs.sequence(scene, self.kin, self.q_quad, params)
-        t = 0.0
-        self.starts = []
-        for seg in self.segments:
-            self.starts.append(t)
-            t += seg[1] if seg[0] == "gait" else seg[1].period
-        self.total = t
         opts = SimOptions()
         opts.course_extent = (-2.0, 10.0, -3.0, 3.0)
         xml = self.robot.to_mjcf(options=opts, props=list(gs.props(scene, params)))
         self.model = mujoco.MjModel.from_xml_string(xml)
         self.data = mujoco.MjData(self.model)
         self.qadr = self.kin.qadr
+        import kerchak_tasks as gt
+        import solidity
+        self.solid = solidity.Solid(self.model, self.kin, self.qadr)       # the limbs solid on the props: the IK re-solves penetrating frames
+        gt.SOLID = self.solid
+        try:
+            self.segments = gs.sequence(scene, self.kin, self.q_quad, params)
+        finally:
+            gt.SOLID = None
+        t = 0.0
+        self.starts = []
+        for seg in self.segments:
+            self.starts.append(t)
+            t += seg[1] if seg[0] == "gait" else seg[1].period
+        self.total = t
         m = self.model
         self.act_joint = [int(m.actuator_trnid[i][0]) for i in range(m.nu)]
         self.act_col = [self.kin.hinges.index(j) for j in self.act_joint]
@@ -114,7 +124,7 @@ class ScenePlayer:
         """(q, base x or None, y, speed, height, pitch, what)."""
         seg, tl = self.segment(t)
         if seg[0] == "gait":
-            return self._gait_q(tl), None, seg[2], self.v, gm.STANCE["h"], gm.STANCE["pitch"], "walking" if self.machine == "humanoid" else "walking on four"
+            return self._gait_q(tl), None, seg[2], self.v, self.walk_h, gm.STANCE["pitch"], "walking" if self.machine == "humanoid" else "walking on four"
         m = seg[1]
         Q, n = np.asarray(m.Q), len(m.t) - 1
         s = min(max(tl / m.period, 0.0), 1.0) * n
@@ -257,9 +267,9 @@ class ScenePlayer:
             turned *= 1.0 - mk.smooth(min(1.0, u / 0.25))
         elif "release" in done:
             turned = 0.0
-        opened = gt.DOOR["open_rad"] * (mk.smooth(u) if name == "push" else 1.0 if "push" in done else 0.0)
+        opened = gt.door_open() * (mk.smooth(u) if name == "push" else 1.0 if "push" in done else 0.0)
         if name == "release":                                              # the shoved door swings on as the hand lets go
-            opened = gt.DOOR["open_rad"] + (gt.DOOR["swung_rad"] - gt.DOOR["open_rad"]) * mk.smooth(u)
+            opened = gt.door_open() + (gt.DOOR["swung_rad"] - gt.door_open()) * mk.smooth(u)
         elif "release" in done:
             opened = gt.DOOR["swung_rad"]
         self.data.qpos[lever], self.data.qpos[hinge] = turned, opened

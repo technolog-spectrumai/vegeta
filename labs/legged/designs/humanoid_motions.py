@@ -11,11 +11,21 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 import motion_kit as mk
 
-__all__ = ["motions", "parts", "base_height", "stand_pose"]
+__all__ = ["motions", "parts", "base_height", "stand_pose", "SOLE_POINTS", "sole_points", "gait_height"]
 
-SOLE_POINTS = [(0.10, 0.0, 0.0), (-0.06, 0.04, 0.0), (-0.06, -0.04, 0.0)]
+SOLE_POINTS = [(0.10, 0.0, -0.024), (-0.06, 0.04, -0.024), (-0.06, -0.04, -0.024)]   #: from the foot box's centre: the ball and the heel's corners, on the sole's bottom face (Talia's 48 mm sole)
+
+
+def sole_points(kin):
+    """``SOLE_POINTS`` on this frame's own sole: the foot box's bottom face (from the model), so a foot stands on the
+    ground or a hold, not in it."""
+    m = kin.model
+    hz = float(m.geom_size[m.geom("L").id][2])
+    return [(o[0], o[1], -hz) for o in SOLE_POINTS]
 
 
 def base_height(kin, q=None):
@@ -23,6 +33,23 @@ def base_height(kin, q=None):
     kin.set(kin.q0 if q is None else q)
     g = kin.model.geom("L")
     return float(-(kin.data.geom_xpos[g.id][2] - kin.model.geom_size[g.id][2]))
+
+
+def gait_height(kin, gait, q_ref):
+    """The pelvis height at which the gait's lowest sole point, over its cycle, just touches the ground [m]: the
+    walk's foot points are placed from the design pose, the knees' bend (``q_ref``) lowers the frame a little."""
+    m = kin.model
+    Q, lo = np.asarray(gait.Q), []
+    cols = [kin.index[j] for j in gait.joints]
+    for row in Q:
+        q = np.asarray(q_ref, dtype=float).copy()
+        q[cols] = row
+        kin.set(q)
+        for side in ("L", "R"):
+            g = m.geom(side).id
+            R, c, sz = kin.data.geom_xmat[g].reshape(3, 3), kin.data.geom_xpos[g], m.geom_size[g]
+            lo.append(min((c + R @ np.array([sx, sy, -sz[2]]))[2] for sx in (-sz[0], sz[0]) for sy in (-sz[1], sz[1])))
+    return float(-min(lo)) + 0.003
 
 
 def stand_pose(kin, knee=0.24):
@@ -53,7 +80,7 @@ def walk(kin, *, speed=0.5, stance=0.30, duty=0.6, step=0.05, crouch=0.04, sway=
         return q
 
     return mk.legged_gait(kin, name, feet, period=period, duty=duty, stride=stance, step_height=step,
-                          foot_points={g: SOLE_POINTS for g in feet}, crouch=crouch, extra=extra,
+                          foot_points={g: sole_points(kin) for g in feet}, crouch=crouch, extra=extra,
                           q_start={f"{s}_{j}": v for s in feet for j, v in (("hip_pitch", -0.3), ("knee", 0.6),
                                                                               ("ankle_pitch", -0.3))},
                           lateral=lambda t: -sway * math.sin(2 * math.pi * (t / period + 0.15)), source=source,

@@ -98,11 +98,14 @@ class Kin:
         d = self.data
         return d.xpos[body] + d.xmat[body].reshape(3, 3) @ local
 
-    def ik(self, targets, q_init=None, q_ref=None, joints=None, iters=150, reg=1e-4, tol=1e-5):
+    def ik(self, targets, q_init=None, q_ref=None, joints=None, iters=150, reg=1e-4, tol=1e-5, weights=None):
         """Joint angles putting each target point at its goal: ``targets`` = [(body id, local point, goal xyz)],
         moving ``joints`` (names; default all hinges) within their ranges, regularised towards ``q_ref``
-        (default q = 0, the design pose). Returns (q, worst error [m])."""
+        (default q = 0, the design pose). ``weights``: one per target (default 1; a soft target counts less in the
+        step and is left out of the error). Returns (q, worst error [m] over the full-weight targets)."""
         mj, m, d = self.mj, self.model, self.data
+        w = np.ones(len(targets)) if weights is None else np.asarray(weights, dtype=float)
+        hard = [k for k in range(len(targets)) if w[k] >= 1.0] or list(range(len(targets)))
         q = np.array(self.q0 if q_init is None else q_init, dtype=float)
         q_ref = self.q0 if q_ref is None else np.asarray(q_ref)
         cols = np.arange(len(self.names)) if joints is None else np.array([self.index[j] for j in joints])
@@ -111,13 +114,13 @@ class Kin:
         for _ in range(iters):
             self.set(q)
             rows, J = [], []
-            for body, local, goal in targets:
+            for k, (body, local, goal) in enumerate(targets):
                 p = d.xpos[body] + d.xmat[body].reshape(3, 3) @ local
-                rows.append(np.asarray(goal) - p)
+                rows.append(w[k] * (np.asarray(goal) - p))
                 mj.mj_jac(m, d, jp, None, p, body)
-                J.append(jp[:, self.dadr[cols]].copy())
+                J.append(w[k] * jp[:, self.dadr[cols]])
             e, J = np.concatenate(rows), np.vstack(J)
-            err = float(np.max(np.linalg.norm(e.reshape(-1, 3), axis=1)))
+            err = float(np.max(np.linalg.norm(e.reshape(-1, 3), axis=1)[hard] / w[hard]))
             if err < tol:
                 break
             r = np.sqrt(reg) * (q_ref[cols] - q[cols])
@@ -126,7 +129,7 @@ class Kin:
             dq = np.linalg.lstsq(A, b, rcond=None)[0]
             q[cols] = np.clip(q[cols] + dq, self.lo[cols], self.hi[cols])
         self.set(q)                                                        # the error of the pose returned, not of the step before it
-        err = max(float(np.linalg.norm(np.asarray(goal) - (d.xpos[body] + d.xmat[body].reshape(3, 3) @ local))) for body, local, goal in targets)
+        err = max(float(np.linalg.norm(np.asarray(targets[k][2]) - (d.xpos[targets[k][0]] + d.xmat[targets[k][0]].reshape(3, 3) @ targets[k][1]))) for k in hard)
         return q, err
 
     def margin(self, Q, joints=None):

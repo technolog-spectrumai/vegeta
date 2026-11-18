@@ -41,11 +41,27 @@ CLIMB_BACK, CLIMB_UP = 0.45, 0.55                                         #: the
 
 def climb_up():
     """The pelvis above the feet's holds on a climb: higher for the upright frame's longer legs."""
-    return 0.62 if gm.STANCE["upright"] else CLIMB_UP
+    return 0.66 * gm.scale() if gm.STANCE["upright"] else CLIMB_UP      # standing: the trailing leg must still reach its rung as the pelvis rises
 
 
 def climb_back():
-    return CLIMB_BACK
+    return 0.5 * gm.scale() if gm.STANCE["upright"] else CLIMB_BACK      # standing, well out: the legs nearly straight, the knees behind the rungs
+
+
+def climb_ref(kin, q_quad):
+    """The pose a climb's IK is regularised to: Kerchak's quad pose; standing, a crouch with the knees well bent (a
+    straight knee is the wrong branch of the leg's IK, and the regularisation would pull towards it)."""
+    if not gm.STANCE["upright"]:
+        return q_quad
+    q = np.asarray(q_quad, dtype=float).copy()
+    for side in ("L", "R"):
+        q[kin.index[f"{side}_hip_pitch"]], q[kin.index[f"{side}_knee"]], q[kin.index[f"{side}_ankle_pitch"]] = -0.9, 1.5, -0.6
+    return q
+
+
+def foot_tip():
+    """A foot on a rung: toes up this far from the horizontal (the standing frame's ankle flexes less with its shin)."""
+    return 0.4 if gm.STANCE["upright"] else FOOT_TIP
 
 
 def walk_speed():
@@ -55,7 +71,7 @@ def walk_speed():
 
 def stop_off():
     """The walk stops this far short of the surface's holds: the upright frame closer, its arms shorter for its height."""
-    return 0.6 if gm.STANCE["upright"] else 0.75
+    return 0.6 * gm.scale() if gm.STANCE["upright"] else 0.75
 LEDGE_WRIST = (-0.55, 0.0, 0.835)                                         #: a ledge taken from above: the wrist above and behind the edge, the fist closing down over it
 CLIMB_SPINE = -0.1                                                        #: the spine's pitch modules on a wall: a little extended, the trunk along it
 WALL = {"x": 2.6, "width": 1.6, "height": 4.5, "rung_spacing": 0.35, "first_rung": 0.2, "rung_out": 0.08, "rung_radius": 0.025, "cycles": 6}
@@ -105,7 +121,7 @@ def tree_prop(p):
 def hull_prop(p):
     x, slope, height = p["x"], math.radians(p["slope_deg"]), p["height"]
     length = height / math.sin(slope)
-    a = -(math.pi / 2 - slope)
+    a = -slope                                                             # the plate's long axis up the slope (it stands on the ground)
     quat = (math.cos(a / 2), 0.0, math.sin(a / 2), 0.0)
     cx, cz = x + 0.5 * length * math.cos(slope), 0.5 * height
     geoms = [_box("hull_plate", (length / 2, 2.5, 0.06), (cx, 0.0, cz), rgba=STEEL, mass=3000.0, quat=quat)]
@@ -195,7 +211,7 @@ def params_for(name, params=None):
     its hammer lies further from the wall), the caller's overrides."""
     p = dict(DEFAULTS[name])
     if gm.STANCE["upright"] and name == "window_hammer":
-        p["hammer_x"] = p["x"] - 0.75
+        p["hammer_x"] = p["x"] - 0.75 * gm.scale()
     p.update(params or {})
     return p
 
@@ -232,20 +248,31 @@ CURL_CLOSED, CURL_OPEN = 2.0, -0.3        #: the finger module closed on a bar (
 GRIP = sr.hand_grip(CURL_CLOSED)          #: a bar's axis in the hand's frame once the fingers have closed on it [m]: in front of the palm's face, inside the fist
 GRIP_Y = 0.06                             #: a second point along the hand's y (the bar's axis) that fixes the hand's roll
 BAR_R = 0.025                             #: the bar the grip is sized for; a thicker hold moves the palm out to its surface
-SOLE_ON_BAR = 0.08                        #: the sole's point that rests on a bar: the ball of the foot, 2 cm of toe past the bar [m]
-SOLE_HALF = 0.015                         #: the sole's half thickness: the contact points are the sole box's centre plane, its bottom face rests on the hold [m]
+SOLE_ON_BAR = 0.08                        #: the sole's point that rests on a bar: the ball of the foot, 2 cm of toe past the bar [m] (on four)
+
+
+def sole_on_bar():
+    """Where along the sole a bar sits: standing, further back under the foot, the ankle and the shin clear of the rung above."""
+    return 0.11 if gm.STANCE["upright"] else SOLE_ON_BAR
+SOLE_HALF = 0.015                         #: (Kerchak's early value) the contact points above the sole's bottom face; ``sole_drop`` reads the frame's own [m]
+
+
+def sole_drop(kin):
+    """The foot's contact points (``humanoid_motions.sole_points``) are on the sole's bottom face: a hair above a hold
+    puts the foot on it, not in it [m]."""
+    return 0.004
 FOOT_TIP = 0.5                            #: the foot on a bar: toes up, into the surface [rad]
 SWING_FREE = 0.8                          #: through this much of a step onto a bar only the ball of the foot is placed, the foot's tilt free
 ORDER = ["L", "R", "L_hand", "R_hand"]    #: a climb cycle's order: the feet step up first (the legs push), then the hands reach
 IK_REG, IK_ITERS = 3e-3, 900              #: the climbs' IK: well damped (a grip is four points per hand; a lighter damping jumps between solutions)
 
 
-def bar(centre, axis=(0.0, 1.0, 0.0), n=(-1.0, 0.0, 0.0), r=BAR_R, wrist_dir=None, tip=FOOT_TIP):
+def bar(centre, axis=(0.0, 1.0, 0.0), n=(-1.0, 0.0, 0.0), r=BAR_R, wrist_dir=None, tip=None):
     """A hold on a bar at ``centre`` along ``axis``, of radius ``r``, on a surface whose outward normal is ``n``.
     ``wrist_dir``: where the wrist sits from the grip (unit; default a rung's: below and behind). ``tip``: a foot on
     it points its toes up this far from the horizontal."""
     return {"kind": "bar", "c": np.asarray(centre, dtype=float), "axis": _unit(axis), "n": _unit(n), "r": float(r), "sign": 1.0, "phi": 0.0,
-            "wrist_dir": None if wrist_dir is None else _unit(wrist_dir), "tip": float(tip)}
+            "wrist_dir": None if wrist_dir is None else _unit(wrist_dir), "tip": float(foot_tip() if tip is None else tip)}
 
 
 def point(centre, n=(-1.0, 0.0, 0.0), pitch=None, over=False):
@@ -317,16 +344,17 @@ def foot_targets(kin, side, hold, centre=None, tip=None):
     c = hold["c"] if centre is None else np.asarray(centre, dtype=float)
     tip = hold.get("tip", FOOT_TIP) if tip is None else tip
     pts = gm._contact_points(kin)[side]
+    drop = sole_drop(kin)
     if hold["kind"] == "point":
         up = gm.base_rot(hold["pitch"]) @ np.array([0.0, 0.0, 1.0])
-        return [(body, local, c + _sole_offset(k, hold["pitch"]) + SOLE_HALF * up) for k, (body, local) in enumerate(pts)]
+        return [(body, local, c + _sole_offset(k, hold["pitch"]) + drop * up) for k, (body, local) in enumerate(pts)]
     n, t = hold["n"], _up_along(hold["n"])
     h = -n - (-n @ np.array([0.0, 0.0, 1.0])) * np.array([0.0, 0.0, 1.0])   # into the surface, horizontally
     f = math.cos(tip) * _unit(h) + math.sin(tip) * np.array([0.0, 0.0, 1.0])
     up = np.cross(f, hold["axis"])
     up = up if up @ np.array([0.0, 0.0, 1.0]) >= 0 else -up
-    top = c + hold["r"] * _unit(n + t) + SOLE_HALF * up                        # the sole's bottom face on the bar's top
-    return [(body, local, top + (o[0] - SOLE_ON_BAR) * f + o[1] * hold["axis"]) for (body, local), o in zip(pts, hum.SOLE_POINTS)]
+    top = c + hold["r"] * _unit(n + t) + drop * up                             # the sole's bottom face on the bar's top
+    return [(body, local, top + (o[0] - sole_on_bar()) * f + o[1] * hold["axis"]) for (body, local), o in zip(pts, hum.SOLE_POINTS)]
 
 
 def _curl(u, a, b, start=CURL_CLOSED):
@@ -387,15 +415,19 @@ def foot_swing(h0, h1, f, lift=0.07, clear=0.06):
     return (1 - s_) * R + s_ * c1
 
 
-def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, duration=3.2, lift=0.12, name="climb"):
+def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, duration=3.2, lift=None, name="climb"):
     """One cycle up: the contacts move one at a time (``ORDER``: left foot, right foot, left hand, right hand) from
     ``holds[0]`` to ``holds[1]`` ({contact: hold}) on an arc out from the surface - the fingers opening through the
     swing and closing on the bar - while the pelvis rides from ``base_from`` to ``base_to`` (xyz) in the climbing frame."""
-    windows = {g: (0.05 + 0.2 * k, 0.05 + 0.2 * (k + 1)) for k, g in enumerate(ORDER)}
+    if lift is None:
+        sloped = abs(float(holds[1]["L"]["n"] @ np.array([0.0, 0.0, 1.0]))) > 0.3
+        lift = 0.25 * gm.scale() if gm.STANCE["upright"] else (0.1 if sloped else 0.12)   # the foot swings well out: the knee clear of the rung above, the shin off a sloped plate
+    order = ["L_hand", "R_hand", "L", "R"] if gm.STANCE["upright"] else ORDER   # standing: the hands reach up first, then the legs push
+    windows = {g: (0.05 + 0.2 * k, 0.05 + 0.2 * (k + 1)) for k, g in enumerate(order)}
 
     def targets(u):
         out = []
-        for g in ORDER:
+        for g in order:
             a, b = windows[g]
             h0, h1 = holds[0][g], holds[1][g]
             if u <= a:
@@ -415,13 +447,13 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
         return out
 
     def base(u):
-        f = mk.smooth(u)                                                   # the pelvis rides up through the whole cycle
+        f = mk.smooth(u) if not gm.STANCE["upright"] else mk.smooth(max(0.0, min(1.0, (u - 0.45) / 0.45)))   # the pelvis rides up through the cycle; standing, as the legs step
         b = (1 - f) * np.asarray(base_from) + f * np.asarray(base_to)
         return b[0], b[1], b[2], pitch
 
     extra = _extras(_spine_extra(kin, CLIMB_SPINE), _fingers_extra(kin, windows, holds[1], q_from))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_from, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                             source="kerchak_scenarios.climb_cycle")
+                             source="kerchak_scenarios.climb_cycle", q_ref=climb_ref(kin, q_from))
 
 
 def _spine_extra(kin, value, q_from=None, blend=False):
@@ -494,7 +526,7 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
         f_b = mk.smooth(max(0.0, (u - foot_windows["L"][0]) / (1.0 - foot_windows["L"][0])))   # the feet's phase
         f_c = mk.smooth(max(0.0, (u - foot_windows["R"][0]) / (1.0 - foot_windows["R"][0])))   # after the feet
         if sloped and gm.STANCE["upright"]:                                # standing: a squat forward to reach the holds, then up as the feet step
-            mid = b0 + np.array([0.15, 0.0, -0.2])
+            mid = b0 + gm.scale() * np.array([0.15, 0.0, -0.2])
             bz = b0 + f_a * (mid - b0) + f_c * (bc - mid)
             return bz[0], bz[1], bz[2], gm.STANCE["pitch"] + f_a * (pitch - gm.STANCE["pitch"])
         if sloped:
@@ -510,7 +542,7 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
     windows = {"L_hand": (0.0, hands_end), "R_hand": (0.0, hands_end)}
     extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                             source="kerchak_scenarios.mount")
+                             source="kerchak_scenarios.mount", q_ref=climb_ref(kin, q_quad))
 
 
 VERTICAL_TRIALS = tuple((s, phi) for s in (1.0, -1.0) for phi in (0.0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.5, -1.5))
@@ -524,7 +556,7 @@ def _pick_frames(kin, q_quad, holds, base, pitch, trials):
     q = _spine_extra(kin, CLIMB_SPINE)(1.0, np.asarray(q_quad, dtype=float).copy())
     feet = foot_targets(kin, "L", holds["L"]) + foot_targets(kin, "R", holds["R"])
     to_base = lambda ts: [(bd, l, R.T @ (np.asarray(w) - b)) for bd, l, w in ts]
-    q_feet, _ = kin.ik(to_base(feet), q_init=q, q_ref=q_quad, joints=limbs, reg=3e-4, iters=400)
+    q_feet, _ = kin.ik(to_base(feet), q_init=climb_ref(kin, q), q_ref=climb_ref(kin, q_quad), joints=limbs, reg=3e-4, iters=400)
     out = {}
     for side in ("L", "R"):
         g, best = f"{side}_hand", None
@@ -566,7 +598,7 @@ def _climb_sequence(kin, q_quad, hold, base, cycles, *, stop_x, pitch=CLIMB_PITC
 def scenario_wall(kin, q_quad, p):
     """The rungs: the hands close on a rung four above the feet's, every limb up one rung a cycle."""
     xb, r, sp = p["x"] - p["rung_out"], p["rung_radius"], p["rung_spacing"]
-    zf, zh = p["first_rung"], p["first_rung"] + 4 * sp
+    zf, zh = p["first_rung"], p["first_rung"] + (3 if gm.STANCE["upright"] else 4) * sp   # the hands this many rungs above the feet: the shorter arms, fewer
     hold = lambda k: {"L_hand": bar((xb, 0.36, zh + k * sp), r=r), "R_hand": bar((xb, -0.36, zh + k * sp), r=r),
                       "L": bar((xb, 0.2, zf + k * sp), r=r), "R": bar((xb, -0.2, zf + k * sp), r=r)}
     base = lambda k: np.array([xb - climb_back(), 0.0, zf + k * sp + climb_up()])
@@ -580,18 +612,23 @@ def scenario_tree(kin, q_quad, p):
     z0 = p["first_branch"]
     ang = math.radians(35.0)                                               # the hands' hold on the flanks: this far round from the near face
 
+    foot_w = float(kin.model.geom_size[kin.model.geom("L").id][1])        # the foot's half width: the feet on the branches clear of the trunk
+    y_foot = r + foot_w + 0.02
+
     def hold(k):
-        zf, zh = z0 + k * sp, z0 + k * sp + 0.95
+        zf, zh = z0 + k * sp, z0 + k * sp + 0.95 * gm.scale()
         out = {}
         for side, sy in (("L", 1.0), ("R", -1.0)):
             n = np.array([-math.cos(ang), sy * math.sin(ang), 0.0])
             out[f"{side}_hand"] = bar((x, 0.0, zh) + r * n, axis=(0.0, 0.0, 1.0), n=n, r=BAR_R)
-            out[side] = bar((x, sy * (r * 0.8 + 0.04), zf + 0.01), r=br)
+            out[side] = bar((x, sy * y_foot, zf + 0.01), r=br, tip=0.0)   # flat on the thick branch: toes up would sink the heel into it
         return out
 
-    back = 0.25 if gm.STANCE["upright"] else climb_back()                  # standing frame: the chest nearer the bark, its legs reach the branches
-    base = lambda k: np.array([x - r - back, 0.0, z0 + k * sp + climb_up()])
-    return _climb_sequence(kin, q_quad, hold, base, int(p["cycles"]), stop_x=x - r - stop_off(), trials=VERTICAL_TRIALS)
+    back = 0.38 * gm.scale() if gm.STANCE["upright"] else climb_back()    # standing: the chest near the bark (the feet are beside the trunk, not ahead of it)
+    up = 0.5 * gm.scale() if gm.STANCE["upright"] else climb_up()          # and the pelvis low enough that the legs reach the branches
+    base = lambda k: np.array([x - r - back, 0.0, z0 + k * sp + up])
+    stop_x = x - r - stop_off() - (0.0 if gm.STANCE["upright"] else 0.1)   # on four, the head is well ahead of the pelvis
+    return _climb_sequence(kin, q_quad, hold, base, int(p["cycles"]), stop_x=stop_x, trials=VERTICAL_TRIALS)
 
 
 def scenario_hull(kin, q_quad, p):
@@ -599,8 +636,8 @@ def scenario_hull(kin, q_quad, p):
     slope = math.radians(p["slope_deg"])
     pitch = math.pi / 2 - slope + CLIMB_PITCH                              # the trunk along the plate
     up_ = gm.STANCE["upright"]
-    back, tip = (0.3, 0.1) if up_ else (climb_back(), FOOT_TIP)             # the standing frame: nearer the plate, its long feet flatter on the ribs
-    up, hand_ribs = (0.8, 3) if up_ else (climb_up(), 2)                  # and higher above its feet (the next rib would be under its hip), the hands a rib higher
+    back, tip = (0.6 * gm.scale(), slope - 0.4) if up_ else (0.4, slope - 0.2)   # the pelvis well off the plate, the feet along it (a static search against the solid plate)
+    up, hand_ribs = (0.7 * gm.scale(), 3) if up_ else (0.6, 2)                  # the pelvis this far up the plate from the feet, the hands this many ribs above them
     n = np.array([-math.sin(slope), 0.0, math.cos(slope)])                 # the plate's normal, outward
     s0, rung = 0.3, p["rib_spacing"]
     rib = lambda s: np.array([p["x"] + s * math.cos(slope), 0.0, s * math.sin(slope)]) + p["rib_out"] * n
@@ -611,7 +648,7 @@ def scenario_hull(kin, q_quad, p):
                 "L": bar(rib(sf) + [0.0, 0.2, 0.0], n=n, r=0.03, tip=tip), "R": bar(rib(sf) + [0.0, -0.2, 0.0], n=n, r=0.03, tip=tip)}
 
     base = lambda k: rib(s0 + k * rung) + up * _unit(np.array([math.cos(slope), 0.0, math.sin(slope)])) + back * n
-    stop_x = p["x"] - (0.15 if up_ else stop_off())                         # standing: close under the plate, the first ribs a step up
+    stop_x = p["x"] - (0.4 * gm.scale() if up_ else stop_off())                         # standing: close under the plate, the first ribs a step up
     return _climb_sequence(kin, q_quad, hold, base, int(p["cycles"]), stop_x=stop_x, pitch=pitch)
 
 
@@ -621,13 +658,16 @@ def scenario_rope(kin, q_quad, p):
 
     def hold(k):
         zf = 0.35 + k * rung
-        zh = zf + climb_up() + 0.45                                          # about the shoulders' height
-        return {"L_hand": bar((x, 0.0, zh + 0.15), axis=(0.0, 0.0, 1.0), r=rr), "R_hand": bar((x, 0.0, zh - 0.15), axis=(0.0, 0.0, 1.0), r=rr),
+        zh = zf + up + (0.3 if gm.STANCE["upright"] else 0.45) * gm.scale()  # about the shoulders' height (standing, the hands further apart: the lower one does not reach across the chest)
+        dz = 0.18 if gm.STANCE["upright"] else 0.15
+        return {"L_hand": bar((x, 0.0, zh + dz), axis=(0.0, 0.0, 1.0), r=rr), "R_hand": bar((x, 0.0, zh - dz), axis=(0.0, 0.0, 1.0), r=rr),
                 "L": point((x - 0.05, 0.1, zf), pitch=0.0), "R": point((x - 0.05, -0.1, zf), pitch=0.0)}   # the feet pinch the rope, soles level
 
-    back = 0.35 if gm.STANCE["upright"] else climb_back()                  # standing frame: it hangs nearer the rope
-    base = lambda k: np.array([x - back, 0.0, 0.35 + k * rung + climb_up()])
-    return _climb_sequence(kin, q_quad, hold, base, int(p["cycles"]), stop_x=x - stop_off(), trials=VERTICAL_TRIALS)
+    back = 0.35 * gm.scale() if gm.STANCE["upright"] else climb_back()     # standing frame: it hangs nearer the rope
+    stop = x - stop_off() - (0.0 if gm.STANCE["upright"] else 0.1)         # on four, the head is well ahead of the pelvis
+    up = 0.68 * gm.scale() if gm.STANCE["upright"] else climb_up()         # and lower above its feet (they pinch the rope straight below)
+    base = lambda k: np.array([x - back, 0.0, 0.35 + k * rung + up])
+    return _climb_sequence(kin, q_quad, hold, base, int(p["cycles"]), stop_x=stop, trials=VERTICAL_TRIALS)
 
 
 def scenario_window(kin, q_quad, p):
@@ -637,20 +677,28 @@ def scenario_window(kin, q_quad, p):
     limbs tucked and then reaching for the knuckle stance (the legs are shorter than the sill is high: there is no
     reaching the ground from it, so the frame drops as a gorilla would) - and the walk up to the table."""
     x = p["x"]
-    stop_x = x - (0.7 if gm.STANCE["upright"] else 0.95)
+    stop_x = x - (0.7 * gm.scale() if gm.STANCE["upright"] else 0.95)
     return [("gait", stop_x / walk_speed(), 0.0)] + _window_entry(kin, q_quad, p, stop_x)
 
 
 def _window_entry(kin, q_quad, p, stop_x):
     """From the quad pose at ``stop_x``: the mount onto the sill, the leap in, the walk to the table."""
-    if gm.STANCE["upright"]:
-        return _window_entry_upright(kin, q_quad, p, stop_x)
+    if gt.SOLID is not None:
+        gt.SOLID.ignore = {"glass"}                                        # the pane is gone (broken, or never there)
+    try:
+        return _window_entry_upright(kin, q_quad, p, stop_x) if gm.STANCE["upright"] else _window_entry_quad(kin, q_quad, p, stop_x)
+    finally:
+        if gt.SOLID is not None:
+            gt.SOLID.ignore = set()
+
+
+def _window_entry_quad(kin, q_quad, p, stop_x):
     x, sill, t = p["x"], p["sill"], p["wall_thickness"]
     v = walk_speed()
     top = sill + 0.06
     edge = lambda sy: bar((x - t / 2 - 0.05, sy * 0.36, top - 0.03), r=0.03, wrist_dir=LEDGE_WRIST)   # the ledge's outer edge, taken from above
     holds = {"L_hand": edge(1.0), "R_hand": edge(-1.0), "L": point((x, 0.2, top), pitch=0.0, over=True), "R": point((x, -0.2, top), pitch=0.0, over=True)}
-    crouch = np.array([x - 0.2, 0.0, top + (0.15 if gm.STANCE["upright"] else 0.25)])   # a deep squat on the sill: the legs folded, the head under the lintel (the opening is 1.3 m tall)
+    crouch = np.array([x - 0.3, 0.0, top + 0.3])                          # a deep squat on the sill, the pelvis back from the feet (the knees' fold): the legs folded, the head under the lintel (the opening is 1.3 m tall)
     duck = CLIMB_PITCH                                                     # the trunk as on the climb: tilting it forward would tilt the hips out of their range
     press = np.array([x - 0.55, 0.0, top + 0.35])                          # pressed up on the arms, the body above the sill, the feet hanging
     b0 = np.array([stop_x, 0.0, gm.STANCE["h"]])
@@ -687,9 +735,9 @@ def _window_entry(kin, q_quad, p, stop_x):
                 out += foot_targets(kin, side, holds[side])
             else:
                 ff = (u - a) / (b_ - a)
-                c = foot_swing(hang, holds[side], ff, lift=0.12, clear=0.1)
-                goal = foot_targets(kin, side, holds[side], c)
-                out += [goal[0]] if ff < SWING_FREE else goal
+                c = foot_swing(hang, holds[side], ff, lift=0.12, clear=0.12)
+                tilt = point(holds[side]["c"], pitch=0.3 * (1.0 - mk.smooth(ff)), over=True)   # the toes a little down while lifted, level as it sets down
+                out += foot_targets(kin, side, tilt, c)
         return out
 
     def b_up(u):
@@ -708,19 +756,23 @@ def _window_entry(kin, q_quad, p, stop_x):
     q1 = gt._last(kin, up, q_quad)
     tuck = q_quad.copy()
     for side in ("L", "R"):
-        tuck[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.5, kin.hi[kin.index[f"{side}_knee"]])
-        tuck[kin.index[f"{side}_hip_pitch"]] = q_quad[kin.index[f"{side}_hip_pitch"]] - 0.4
-        tuck[kin.index[f"{side}_shoulder_pitch"]] = q_quad[kin.index[f"{side}_shoulder_pitch"]] - 0.6
-        tuck[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.6
+        tuck[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.8, kin.hi[kin.index[f"{side}_knee"]])
+        tuck[kin.index[f"{side}_hip_pitch"]] = max(q_quad[kin.index[f"{side}_hip_pitch"]] - 0.6, kin.lo[kin.index[f"{side}_hip_pitch"]])
+        tuck[kin.index[f"{side}_shoulder_pitch"]] = q_quad[kin.index[f"{side}_shoulder_pitch"]] - 1.1   # the arms up and forward, clear of the sill
+        tuck[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.9
     release = q1.copy()
     for side in ("L", "R"):
         sr.set_curl(release, kin, side, CURL_OPEN)
     x_land = x + 1.3
 
-    def base(u):                                                           # a dive off the sill: no rise under the lintel
-        f = mk.smooth(u)
-        flight = math.sin(math.pi * u)
-        return crouch[0] + f * (x_land - crouch[0]), 0.0, (1 - f) * crouch[2] + f * gm.STANCE["h"] + 0.05 * flight, duck + f * (gm.STANCE["pitch"] - duck)
+    x_clear = x + t / 2 + 0.2                                              # the pelvis past the inner face before it drops: the feet stay up over the sill
+
+    def base(u):                                                           # a dive off the sill: no rise under the lintel; the arms come off the edge first
+        f = mk.smooth(max(0.0, (u - 0.2) / 0.8))
+        xb = crouch[0] + f * (x_land - crouch[0])
+        fz = mk.smooth(max(0.0, min(1.0, (xb - x_clear) / (x_land - x_clear))))
+        flight = math.sin(math.pi * fz)
+        return xb, 0.0, (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.05 * flight, duck + fz * (gm.STANCE["pitch"] - duck)
 
     keys = [(0.0, q1), (0.15, release), (0.45, tuck), (0.75, tuck), (1.0, q_quad)]
     leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="kerchak_scenarios.window: the leap off the sill onto four")
@@ -729,7 +781,7 @@ def _window_entry(kin, q_quad, p, stop_x):
     return [("motion", up), ("motion", leap), ("gait", walk, 0.0)]
 
 
-SILL_CROUCH = (-0.1, 0.4, 0.7)                                          #: the upright frame crouched on the sill: the pelvis behind the wall's middle, above the sill's top, pitched forward [m, m, rad]
+SILL_CROUCH = (-0.15, 0.45, 0.45)                                          #: the upright frame crouched on the sill: the pelvis behind the wall's middle, above the sill's top, pitched forward [m, m, rad]
 
 
 def _window_entry_upright(kin, q_quad, p, stop_x):
@@ -740,12 +792,14 @@ def _window_entry_upright(kin, q_quad, p, stop_x):
     x, sill, t = p["x"], p["sill"], p["wall_thickness"]
     v = walk_speed()
     top = sill + 0.06
-    jamb = lambda sy: bar((x - t / 2 + 0.04, sy * (p["width"] / 2 - 0.02), top + 0.5), axis=(0.0, 0.0, 1.0), n=(0.0, -sy, 0.0), r=0.03)   # the jamb's outer corner, the fingers round it
+    S = gm.scale()
+    jamb = lambda sy: bar((x - t / 2 + 0.04, sy * (p["width"] / 2 - 0.02), top + 0.7 * S), axis=(0.0, 0.0, 1.0), n=(0.0, -sy, 0.0), r=0.03)   # the jamb's outer corner, the fingers round it
     feet = {"L": point((x, 0.2, top), pitch=0.0, over=True), "R": point((x, -0.2, top), pitch=0.0, over=True)}
     jambs = {"L_hand": jamb(1.0), "R_hand": jamb(-1.0)}
-    crouch = np.array([x + SILL_CROUCH[0], 0.0, top + SILL_CROUCH[1]])
+    crouch = np.array([x + SILL_CROUCH[0] * S, 0.0, top + SILL_CROUCH[1] * S])
+    hoist = np.array([x - t / 2 - 0.3 * S, 0.0, top + 0.6 * S])             # pulled up high outside the wall's face (no lintel there), the legs hanging clear of the sill's lip
     duck = SILL_CROUCH[2]
-    ready = np.array([stop_x + 0.15, 0.0, gm.STANCE["h"] - 0.12])          # set for the spring, the hands on the jambs
+    ready = np.array([stop_x + 0.15 * S, 0.0, gm.STANCE["h"] - 0.12 * S])          # set for the spring, the hands on the jambs
     ready_pitch = 0.2
     b0 = np.array([stop_x, 0.0, gm.STANCE["h"]])
     start = _contacts(kin, q_quad, b0, gm.STANCE["pitch"])
@@ -757,10 +811,10 @@ def _window_entry_upright(kin, q_quad, p, stop_x):
     for side in ("L", "R"):
         end = hand_targets(kin, side, jambs[f"{side}_hand"])
         hands[side] = (_world_pts(kin, q_quad, b0, gm.STANCE["pitch"], [(bd, l) for bd, l, _ in end]), end)
-    A, B, C = (0.0, 0.25), (0.25, 0.55), {"L": (0.55, 0.72), "R": (0.72, 0.9)}   # the hands to the jambs; the hoist; the feet over the edge
+    A, B, C, D = (0.0, 0.22), (0.22, 0.48), {"L": (0.48, 0.64), "R": (0.64, 0.8)}, (0.8, 1.0)   # the hands to the jambs; the hoist; the feet over the edge; in to the crouch
 
-    def hanging(side, bz):                                                 # a foot dangling behind the wall's face, sole level
-        return point(np.array([bz[0] - 0.15, 0.2 if side == "L" else -0.2, bz[2] - 0.6]), pitch=0.0)
+    def hanging(side, bz):                                                 # a foot dangling behind the wall's face, the toes down
+        return point(np.array([bz[0] - 0.3 * S, 0.2 if side == "L" else -0.2, bz[2] - 0.55 * S]), pitch=0.5)
 
     def t_up(u):
         out = []
@@ -776,7 +830,7 @@ def _window_entry_upright(kin, q_quad, p, stop_x):
             a, b_ = C[side]
             if u <= B[0]:
                 out += [(bd, l, sk) for (bd, l), sk in zip(pts[side], start[side])]
-            elif u < a:                                                    # lifting off the ground as the body springs up
+            elif u < a:                                                    # lifting off the ground as the body springs up: the ball of the foot alone, the ankle free
                 fp = mk.smooth(min(1.0, (u - B[0]) / 0.15))
                 goal = foot_targets(kin, side, hang)
                 out += [(bd, l, (1 - fp) * sk + fp * g) for (bd, l, g), sk in zip(goal, start[side])]
@@ -784,41 +838,47 @@ def _window_entry_upright(kin, q_quad, p, stop_x):
                 out += foot_targets(kin, side, feet[side])
             else:
                 ff = (u - a) / (b_ - a)
-                c = foot_swing(hang, feet[side], ff, lift=0.05, clear=0.06)
-                goal = foot_targets(kin, side, feet[side], c)
-                out += [goal[0]] if ff < SWING_FREE else goal
+                c = foot_swing(hang, feet[side], ff, lift=0.25 * S, clear=0.15)   # straight up outside the wall, then in high over the sill
+                tilt = point(feet[side]["c"], pitch=0.3 * (1.0 - mk.smooth(ff)), over=True)   # the toes a little down while lifted, level as it sets down
+                out += foot_targets(kin, side, tilt, c)
         return out
 
     def b_up(u):
         fa = mk.smooth(min(1.0, u / A[1]))
         fb = mk.smooth(max(0.0, min(1.0, (u - B[0]) / (B[1] - B[0]))))
-        bz = b0 + fa * (ready - b0) + fb * (crouch - ready)
+        fd = mk.smooth(max(0.0, min(1.0, (u - D[0]) / (D[1] - D[0]))))
+        bz = b0 + fa * (ready - b0) + fb * (hoist - ready) + fd * (crouch - hoist)
         return bz[0], bz[1], bz[2], gm.STANCE["pitch"] + fa * (ready_pitch - gm.STANCE["pitch"]) + fb * (duck - ready_pitch)
 
     windows = {"L_hand": A, "R_hand": A}
     extra = _extras(_spine_extra(kin, 0.15, q_quad, blend=True), _fingers_extra(kin, windows, jambs, q_quad, from_start=True))
-    up = gt.contact_motion(kin, "onto_the_sill", 6.0, t_up, b_up, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
-                           source="kerchak_scenarios.window (upright): the hands on the jambs, a spring and a pull up to a crouch in the opening, the feet over the edge")
+    up = gt.contact_motion(kin, "onto_the_sill", 7.0, t_up, b_up, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
+                           source="kerchak_scenarios.window (upright): the hands on the jambs, a spring and a pull up outside the wall, the feet over the edge, in to a crouch in the opening",
+                           q_ref=climb_ref(kin, q_quad))
     up.params = {**(up.params or {}), "frames": {g: list(f) for g, f in frames.items()}}
     q1 = gt._last(kin, up, q_quad)
-    tuck = q_quad.copy()
+    tuck = q1.copy()                                                       # the crouch's folded legs lifted off the sill, the arms forward
     for side in ("L", "R"):
-        tuck[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.6, kin.hi[kin.index[f"{side}_knee"]])
-        tuck[kin.index[f"{side}_hip_pitch"]] = q_quad[kin.index[f"{side}_hip_pitch"]] - 0.5
-        tuck[kin.index[f"{side}_shoulder_pitch"]] = q_quad[kin.index[f"{side}_shoulder_pitch"]] - 0.5
-        tuck[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.4
+        tuck[kin.index[f"{side}_knee"]] = min(q1[kin.index[f"{side}_knee"]] + 0.25, kin.hi[kin.index[f"{side}_knee"]])
+        tuck[kin.index[f"{side}_hip_pitch"]] = max(q1[kin.index[f"{side}_hip_pitch"]] - 0.2, kin.lo[kin.index[f"{side}_hip_pitch"]])
+        tuck[kin.index[f"{side}_shoulder_pitch"]] = q_quad[kin.index[f"{side}_shoulder_pitch"]] - 0.6
+        tuck[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.3
+        sr.set_curl(tuck, kin, side, CURL_OPEN)
     release = q1.copy()
     for side in ("L", "R"):
         sr.set_curl(release, kin, side, CURL_OPEN)
-    x_land = x + 0.95
+    x_land = x + t / 2 + 0.75 * S
+    x_clear = x + t / 2 + 0.25 * S                                         # the pelvis past the inner face before it drops: the feet stay up over the sill
 
     def base(u):                                                           # a hop down off the sill, landing standing
         f = mk.smooth(u)
-        flight = math.sin(math.pi * u)
-        return crouch[0] + f * (x_land - crouch[0]), 0.0, (1 - f) * crouch[2] + f * gm.STANCE["h"] + 0.04 * flight, duck + f * (gm.STANCE["pitch"] - duck)
+        xb = crouch[0] + f * (x_land - crouch[0])
+        fz = mk.smooth(max(0.0, min(1.0, (xb - x_clear) / (x_land - x_clear))))
+        flight = math.sin(math.pi * fz)
+        return xb, 0.0, (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * flight, duck + fz * (gm.STANCE["pitch"] - duck)
 
-    keys = [(0.0, q1), (0.15, release), (0.45, tuck), (0.7, tuck), (1.0, q_quad)]
-    leap = _joint_track(kin, "leap_off_the_sill", 1.4, keys, base, source="kerchak_scenarios.window (upright): the hop down off the sill")
+    keys = [(0.0, q1), (0.12, release), (0.3, tuck), (0.62, tuck), (1.0, q_quad)]
+    leap = _joint_track(kin, "leap_off_the_sill", 1.6, keys, base, source="kerchak_scenarios.window (upright): the hop down off the sill, the legs folded until past the wall")
     table_x = x + p.get("table_x", 3.4)
     walk = max((table_x - 0.4 - 0.45 - x_land) / v, 1.0)
     return [("motion", up), ("motion", leap), ("gait", walk, 0.0)]
@@ -873,9 +933,10 @@ def scenario_window_hammer(kin, q_quad, p):
     x, sill, h, t = p["x"], p["sill"], p["height"], p["wall_thickness"]
     H = HAMMER
     up_ = gm.STANCE["upright"]
-    v, stop_x = (walk_speed(), p["hammer_x"] - 0.3) if up_ else (walk_speed(), x - 0.95)   # standing: a short step from the hammer
+    S = gm.scale()
+    v, stop_x = (walk_speed(), p["hammer_x"] - 0.3 * S) if up_ else (walk_speed(), x - 0.95)   # standing: a short step from the hammer
     b_quad = (stop_x, gm.STANCE["h"], gm.STANCE["pitch"])
-    b_pick = (stop_x, 0.42, 0.8) if up_ else b_quad                        # standing: a deep squat, bending to the ground (the spine bent too)
+    b_pick = (stop_x, 0.42 * S, 0.8) if up_ else b_quad                        # standing: a deep squat, bending to the ground (the spine bent too)
     PICK_SPINE = 0.6 if up_ else None                                     # the spine's pitch modules bent forward over the squat
     b_stand = (stop_x, stand_base()[0], stand_base()[1])
     planted = gt._planted(kin, q_quad, stop_x, which=("L", "R"))
@@ -884,8 +945,8 @@ def scenario_window_hammer(kin, q_quad, p):
     on_ground = bar((p["hammer_x"], p["hammer_y"], H["rest_z"]), axis=(0.0, 1.0, 0.0), n=(0.0, 0.0, 1.0), r=H["handle_r"], wrist_dir=(-0.45, 0.0, 0.89))
     # the hammer in hand as a hand frame at a grip centre: carried before the chest, the handle up in a forward fist;
     # raised high beside the shoulder; the blow: the handle at the pane, the wrist above and behind
-    carry = (np.array([stop_x + (0.45 if up_ else 0.8), -0.45, stand_base()[0] + (0.25 if up_ else 0.4)]), hand_frame_on(bar((0, 0, 0), axis=(0.0, 0.0, 1.0), n=(0.0, 1.0, 0.0)), "R"))
-    wind_up = (np.array([stop_x + 0.2, -0.5, 2.05]), hand_frame_on(bar((0, 0, 0), axis=(-0.2, 0.0, 0.98), n=(0.0, 1.0, 0.0)), "R"))   # raised high beside the shoulder: the blow comes down
+    carry = (np.array([stop_x + (0.45 * S if up_ else 0.8), -0.45 * (S if up_ else 1.0), stand_base()[0] + (0.25 * S if up_ else 0.4)]), hand_frame_on(bar((0, 0, 0), axis=(0.0, 0.0, 1.0), n=(0.0, 1.0, 0.0)), "R"))
+    wind_up = (np.array([stop_x + 0.2 * S, -0.55 * S if up_ else -0.65, stand_base()[0] + (1.0 * S if up_ else 1.2)]), hand_frame_on(bar((0, 0, 0), axis=(-0.2, 0.0, 0.98), n=(0.0, 1.0, 0.0)), "R"))   # raised high beside the shoulder: the blow comes down
     glass_point = np.array([x - t / 2 - 0.01, -0.35 if up_ else -0.15, sill + h * 0.45])   # standing: the blow out to the right, the arm not across the chest
     strike_axis = np.array([0.95, 0.0, -0.31])
     strike = (glass_point - 0.31 * strike_axis, hand_frame_on(bar((0, 0, 0), axis=strike_axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=(-0.5, 0.0, 0.87)), "R"))
@@ -955,7 +1016,7 @@ def scenario_window_hammer(kin, q_quad, p):
     def hold_at(u):
         if u < 0.4:
             f = mk.smooth(u / 0.4)
-            return (1 - f) * carry[0] + f * wind_up[0] + np.array([-0.1, 0.0, 0.0]) * math.sin(math.pi * f), _slerp(carry[1], wind_up[1], f)
+            return (1 - f) * carry[0] + f * wind_up[0] + np.array([-0.1, -0.25, 0.0]) * math.sin(math.pi * f), _slerp(carry[1], wind_up[1], f)   # out to the side on the way up: past the head, not through it
         if u < 0.65:
             f = mk.smooth((u - 0.4) / 0.25)
             return (1 - f) * wind_up[0] + f * strike[0] + np.array([0.0, 0.0, 0.12]) * math.sin(math.pi * f), _slerp(wind_up[1], strike[1], f)
@@ -1017,7 +1078,7 @@ def scenario_window_hammer(kin, q_quad, p):
     drop.params = {**drop.params, "release_u": 0.2}
     segs = [("gait", stop_x / v, 0.0), ("motion", pick), ("motion", stand), ("motion", smash), ("motion", drop)]
     if up_:                                                                # standing: the steps up to the window
-        sill_x = x - 0.7
+        sill_x = x - 0.7 * S
         segs.append(("gait", (sill_x - stop_x) / v, 0.0))
         return segs + _window_entry(kin, q_quad, p, sill_x)
     return segs + _window_entry(kin, q_quad, p, stop_x)
@@ -1056,8 +1117,8 @@ def scenario_obstacles(kin, q_quad, p):
     for side in ("L", "R"):
         crouch[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.35, kin.hi[kin.index[f"{side}_knee"]])
         crouch[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.3
-        tuck[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.5, kin.hi[kin.index[f"{side}_knee"]])
-        tuck[kin.index[f"{side}_hip_pitch"]] = q_quad[kin.index[f"{side}_hip_pitch"]] - 0.4
+        tuck[kin.index[f"{side}_knee"]] = min(q_quad[kin.index[f"{side}_knee"]] + 0.8, kin.hi[kin.index[f"{side}_knee"]])
+        tuck[kin.index[f"{side}_hip_pitch"]] = max(q_quad[kin.index[f"{side}_hip_pitch"]] - 0.6, kin.lo[kin.index[f"{side}_hip_pitch"]])
         tuck[kin.index[f"{side}_shoulder_pitch"]] = q_quad[kin.index[f"{side}_shoulder_pitch"]] - 0.6
         tuck[kin.index[f"{side}_elbow"]] = q_quad[kin.index[f"{side}_elbow"]] - 0.6
     for k in range(int(p["count"])):
