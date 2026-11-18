@@ -251,8 +251,8 @@ def run(ranges, shots, height, drone_speed, out, seed=5):
     t0 = time.time()
     cal = calibrate(sim)
     print(f"calibration: net open to {cal[:, 3].max():.2f} m, at 5 m: span {np.interp(5, cal[:, 1], cal[:, 3]):.2f} m, "
-          f"at 10 m {np.interp(10, cal[:, 1], cal[:, 3]):.2f} m; centre speed falls from {V0} m/s, reaches "
-          f"{cal[-1, 1]:.1f} m before it is 0.45 m lower  [{time.time() - t0:.0f} s]", flush=True)
+          f"at 10 m {np.interp(10, cal[:, 1], cal[:, 3]):.2f} m; centre speed falls from {V0} m/s to "
+          f"{np.interp(10, cal[:, 1], np.gradient(cal[:, 1], cal[:, 0])):.1f} m/s at 10 m  [{time.time() - t0:.0f} s]", flush=True)
     rng = np.random.default_rng(seed)
     results = {}
     for R in ranges:
