@@ -43,6 +43,29 @@ MUZZLE = np.array([0.0, 0.0, 0.5])
 TENDON_DAMPING = 0.02         # N s/m along each link: the cord's own hysteresis, takes the snap out of the net
 DRONE_M = 1.2
 ARM = 0.125                  # rotor centre from the drone's centre, along x and y
+ROTOR_R = 0.09
+TITLE = "Recoilless net launcher (golf cannon, 40 m/s, 2.4 m net) vs a 1.2 kg quadcopter"
+TAG = ""
+
+# the light interceptor (``--light``): 32 mm bore, 0.35 m tube, 0.25 L plenum at 32.7 bar, 1" hammer valve, rear venturi
+# throat 27.2 mm: 45 m/s, zero recoil, 8.8 g of air per shot (golf_recoilless with proj=, see net_light_design)
+LIGHT = dict(N=11, NET=1.5, NET_MASS=0.030, CORNER=0.008, V0=45.0)
+DRONES = {   # mass kg, arm (rotor centre, along x and y) m, rotor radius m
+    "quad": (1.2, 0.125, 0.09),     # a 0.35 m (diagonal) camera quadcopter, 9" props
+    "fpv": (0.6, 0.09, 0.064),      # a 5" FPV racer, 0.25 m diagonal
+}
+
+
+def configure(light=False, drone="quad"):
+    """Set the net (the golf cannon's 2.4 m net, or the light 1.5 m one) and the drone."""
+    global N, NET, MESH, NET_MASS, CORNER, V0, DRONE_M, ARM, ROTOR_R, TITLE, TAG
+    if light:
+        N, NET, NET_MASS, CORNER, V0 = (LIGHT[k] for k in ("N", "NET", "NET_MASS", "CORNER", "V0"))
+    MESH = NET / (N - 1)
+    DRONE_M, ARM, ROTOR_R = DRONES[drone]
+    TITLE = (f"{'Light recoilless net launcher (45 m/s, 1.5 m net, 70 g cartridge)' if light else 'Recoilless net launcher (golf cannon, 40 m/s, 2.4 m net)'}"
+             f" vs a {DRONE_M:g} kg {'FPV racer' if drone == 'fpv' else 'quadcopter'}")
+    TAG = f"{'light_' if light else ''}{drone}_"
 
 
 def xml():
@@ -53,7 +76,7 @@ def xml():
             corner = i in (0, N - 1) and j in (0, N - 1)
             m = knot_m + (CORNER if corner else 0.0)
             r = 0.012 if corner else 0.008
-            bodies.append(f'<body name="k{i}_{j}" pos="0 {(i - 6) * 0.004} {0.5 + (j - 6) * 0.004}"><freejoint/>'
+            bodies.append(f'<body name="k{i}_{j}" pos="0 {(i - (N - 1) / 2) * 0.004} {0.5 + (j - (N - 1) / 2) * 0.004}"><freejoint/>'
                           f'<geom name="kg{i}_{j}" type="sphere" size="{r}" mass="{m}" contype="2" conaffinity="1" '
                           f'condim="3" friction="1.2"/><site name="s{i}_{j}"/></body>')
     for i in range(N):
@@ -65,7 +88,7 @@ def xml():
                                    f'<site site="s{i}_{j}"/><site site="s{a}_{b}"/></spatial>')
     rotors = "".join(
         f'<geom name="arm{k}" type="capsule" fromto="0 0 0 {sx * ARM} {sy * ARM} 0" size="0.01" mass="0.05" contype="1" conaffinity="2"/>'
-        f'<geom name="rot{k}" type="cylinder" pos="{sx * ARM} {sy * ARM} 0.03" size="0.09 0.006" mass="0.03" contype="1" conaffinity="2" rgba="0.2 0.2 0.2 0.5"/>'
+        f'<geom name="rot{k}" type="cylinder" pos="{sx * ARM} {sy * ARM} 0.03" size="{ROTOR_R} 0.006" mass="0.03" contype="1" conaffinity="2" rgba="0.2 0.2 0.2 0.5"/>'
         for k, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))))
     return f"""
 <mujoco model="net_vs_drone">
@@ -278,8 +301,9 @@ def plot(cal, results, height, drone_speed, out):
     fig, ax = plt.subplots(2, 2, figsize=(14, 9))
     a = ax[0, 0]
     a.plot(cal[:, 1], cal[:, 3], color="tab:blue")
-    a.axhline(0.35, color="tab:red", ls="--", lw=0.8)
-    a.annotate("drone 0.35 m", (0.5, 0.38), fontsize=8, color="tab:red")
+    dd = 2 * math.sqrt(2) * ARM + 2 * ROTOR_R
+    a.axhline(dd, color="tab:red", ls="--", lw=0.8)
+    a.annotate(f"drone {dd:.2f} m", (0.5, dd + 0.03), fontsize=8, color="tab:red")
     a.set_xlabel("distance [m]")
     a.set_ylabel("net span (corner to corner) [m]")
     a.set_title("Net opening (calibration, level, no drone)")
@@ -335,9 +359,9 @@ def plot(cal, results, height, drone_speed, out):
     a.grid(alpha=0.3)
     for b in (ax[0, 0], ax[0, 1]):
         b.grid(alpha=0.3)
-    fig.suptitle("Recoilless net launcher (golf cannon, 40 m/s, 2.4 m net) vs a 1.2 kg quadcopter", fontsize=12)
+    fig.suptitle(TITLE, fontsize=12)
     fig.tight_layout()
-    path = out / f"net_drone_h{height:g}_v{drone_speed:g}.png"
+    path = out / f"net_drone_{TAG}h{height:g}_v{drone_speed:g}.png"
     fig.savefig(path, dpi=120)
     return path
 
@@ -349,7 +373,10 @@ if __name__ == "__main__":
     ap.add_argument("--height", type=float, default=4.0)
     ap.add_argument("--drone-speed", type=float, default=0.0, help="the drone crosses at this speed (m/s), 0 = hovers")
     ap.add_argument("--out", default="net_drone_results")
+    ap.add_argument("--light", action="store_true", help="the light interceptor: 1.5 m net, 70 g cartridge, 45 m/s")
+    ap.add_argument("--drone", choices=sorted(DRONES), default="quad")
     a = ap.parse_args()
+    configure(a.light, a.drone)
     cal, res = run([float(x) for x in a.ranges.split(",")], a.shots, a.height, a.drone_speed, a.out)
     for R, rs in res.items():
         print(f"range {R:4.0f} m: captured {sum(r['captured'] for r in rs)}/{len(rs)}, fouled {sum(r['fouled'] for r in rs)}")
