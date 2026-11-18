@@ -47,7 +47,8 @@ def render_h(out="gavilan_h_3d.png", q=None):
         h, cx = 0.5 * q["span"], -q["nose_length"] + q["fuselage_length"] / 2
         ax.set_xlim(cx - h, cx + h); ax.set_ylim(-h, h); ax.set_zlim(-h - 30, h - 30)
         ax.set_box_aspect((1, 1, 1), zoom=1.55); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
-    fig.suptitle(f"Gavilan-H — the hawk: a fixed wing that flies past its stall\nspan {q['span']:.0f} mm, length {q['fuselage_length']:.0f} mm, "
+    what = " with the one-shot net interceptor (tube out of the nose, jet pipe to the tail, vessel in the belly blister)" if q["weapon"] == "net" else ""
+    fig.suptitle(f"Gavilan-H — the hawk: a fixed wing that flies past its stall{what}\nspan {q['span']:.0f} mm, length {q['fuselage_length']:.0f} mm, "
                  f"two 7-inch tractors at y ±{q['nacelle_y']:.0f} mm; two all-moving tail halves, {L['blown_share']:.0%} of each inside a propeller's wash",
                  fontsize=11)
     fig.tight_layout()

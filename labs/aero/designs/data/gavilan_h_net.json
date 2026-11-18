@@ -1,0 +1,184 @@
+{
+ "source": "gavilan_flight.h_net_table(), h_balance(), h_static_margin(), h_authority()",
+ "note": "reduced point-mass model; interceptor masses are hand estimates x 1.25; static margin and tail authority are hand estimates; no CFD or FEA",
+ "interceptor": {
+  "source": "net_light_design.py, net_light_*.log, gavilan_net_cad.py (dev_gavilan_net @ d9f6cb8); vessel sized with golf_recoilless.shot; masses by hand",
+  "range_m": [
+   3.0,
+   8.0
+  ],
+  "captures_quad_5ms": {
+   "3": "5/5",
+   "4": "5/5",
+   "5": "5/5",
+   "6": "5/5",
+   "8": "5/5"
+  },
+  "captures_fpv_15ms": "0/5 at 3, 4, 5, 6 and 8 m",
+  "muzzle_m_s": 45.0,
+  "net_side_m": 1.5,
+  "open_span_m": 1.96,
+  "span_at_5m": 1.58,
+  "cartridge_g": 70.0,
+  "tube_m": 0.25,
+  "bore_mm": 32.0,
+  "vessel_ml": 80.0,
+  "pressure_bar_g": 84.2,
+  "throat_mm": 26.9,
+  "air_g": 7.7,
+  "backblast_m": 6.4,
+  "shots": 1,
+  "parts_g": {
+   "carbon tube 0.25 m, 32 mm bore, 1.5 mm wall": 63.0,
+   "chamber and rear venturi (6061; net_light_design)": 140.0,
+   "burst-diaphragm holder and puncture solenoid": 90.0,
+   "charge vessel 80 mL, carbon": 80.0,
+   "jet pipe to the tail, 0.57 m carbon, 41 mm, 1 mm wall": 115.0,
+   "pipe fairing and belly blister (printed foam)": 73.0,
+   "second tail servo and stub shafts": 15.0,
+   "trigger electronics and wiring": 30.0,
+   "net cartridge": 70.0
+  },
+  "margin": 1.25
+ },
+ "interceptor_kg": 0.845,
+ "rows": [
+  {
+   "key": "gavilan_h",
+   "aircraft": "Gavilan-H (hawk: broad wing, blown tail, flies past its stall)",
+   "mass_kg": 1.365,
+   "payload_kg": 0.0,
+   "static thrust / weight": 3.632,
+   "wing loading [N/m2]": 57.934,
+   "wing stall [m/s]": 11.031,
+   "hangs on its propellers": true,
+   "hover [min]": 6.642,
+   "hover [W]": 272.741,
+   "cruise [min]": 31.888,
+   "cruise at [m/s]": 11.0,
+   "top speed [m/s]": 45.0,
+   "stop from 25 m/s [m]": 32.841,
+   "reverse at 15 m/s [s]": 1.131,
+   "150 m climb [s]": 5.27,
+   "turn rate @10 [deg/s]": 205.706,
+   "turn rate @15 [deg/s]": 159.112,
+   "turn rate @25 [deg/s]": 150.417,
+   "tail margin at 15 m/s": 3.095,
+   "tail margin at 25 m/s": 2.94
+  },
+  {
+   "key": "gavilan_h_net",
+   "aircraft": "Gavilan-H (hawk: broad wing, blown tail, flies past its stall) + net interceptor",
+   "mass_kg": 2.156,
+   "payload_kg": 0.845,
+   "static thrust / weight": 2.299,
+   "wing loading [N/m2]": 91.533,
+   "wing stall [m/s]": 13.865,
+   "hangs on its propellers": true,
+   "hover [min]": 3.52,
+   "hover [W]": 514.662,
+   "cruise [min]": 18.45,
+   "cruise at [m/s]": 14.0,
+   "top speed [m/s]": 42.5,
+   "stop from 25 m/s [m]": 50.265,
+   "reverse at 15 m/s [s]": 1.866,
+   "150 m climb [s]": 6.86,
+   "turn rate @10 [deg/s]": 122.715,
+   "turn rate @15 [deg/s]": 96.441,
+   "turn rate @25 [deg/s]": 93.6,
+   "tail margin at 15 m/s": 3.424,
+   "tail margin at 25 m/s": 3.028
+  },
+  {
+   "key": "gavilan_a_net",
+   "aircraft": "Gavilan-A (tailsitter) + net interceptor",
+   "mass_kg": 2.561,
+   "payload_kg": 0.845,
+   "static thrust / weight": 3.87,
+   "wing loading [N/m2]": 189.111,
+   "wing stall [m/s]": 21.708,
+   "hangs on its propellers": true,
+   "hover [min]": 7.507,
+   "hover [W]": 482.604,
+   "cruise [min]": 18.483,
+   "cruise at [m/s]": 22.0,
+   "top speed [m/s]": 50.0,
+   "stop from 25 m/s [m]": 18.203,
+   "reverse at 15 m/s [s]": 1.273,
+   "150 m climb [s]": 4.61,
+   "turn rate @10 [deg/s]": 210.148,
+   "turn rate @15 [deg/s]": 141.343,
+   "turn rate @25 [deg/s]": 93.339
+  }
+ ],
+ "balance": {
+  "False": {
+   "mass": 1.365,
+   "x_cg": 0.283,
+   "cg_mac": 0.31,
+   "target_mac": 0.3,
+   "pack_x": 0.075,
+   "pack_from_wing_leading_edge": -0.135,
+   "balanced": false,
+   "Iyy": 0.069
+  },
+  "True": {
+   "mass": 2.156,
+   "x_cg": 0.294,
+   "cg_mac": 0.36,
+   "target_mac": 0.3,
+   "pack_x": 0.075,
+   "pack_from_wing_leading_edge": -0.135,
+   "balanced": false,
+   "Iyy": 0.086
+  }
+ },
+ "static_margin": {
+  "False": {
+   "tail_volume": 0.715,
+   "neutral_point_mac": 0.478,
+   "cg_mac": 0.31,
+   "static_margin": 0.168
+  },
+  "True": {
+   "tail_volume": 0.715,
+   "neutral_point_mac": 0.478,
+   "cg_mac": 0.36,
+   "static_margin": 0.118
+  }
+ },
+ "tail_authority_with_net": [
+  {
+   "V": 0.0,
+   "thrust_N": 21.144,
+   "wing_moment_Nm": 0.0,
+   "tail_moment_Nm": 8.647,
+   "tail_at_full_thrust_Nm": 19.878,
+   "margin": null
+  },
+  {
+   "V": 10.0,
+   "thrust_N": 15.756,
+   "wing_moment_Nm": 0.513,
+   "tail_moment_Nm": 7.688,
+   "tail_at_full_thrust_Nm": 19.163,
+   "margin": 14.98
+  },
+  {
+   "V": 15.0,
+   "thrust_N": 2.823,
+   "wing_moment_Nm": 1.155,
+   "tail_moment_Nm": 3.953,
+   "tail_at_full_thrust_Nm": 19.295,
+   "margin": 3.424
+  },
+  {
+   "V": 25.0,
+   "thrust_N": 4.74,
+   "wing_moment_Nm": 3.207,
+   "tail_moment_Nm": 9.713,
+   "tail_at_full_thrust_Nm": 20.813,
+   "margin": 3.028
+  }
+ ]
+}

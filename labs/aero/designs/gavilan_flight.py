@@ -319,7 +319,11 @@ def f_geometry(q=None) -> dict:
             "plan_body": 0.8 * d * Lf}
 
 
-def f_mass_budget(q=None, c: ef.Config = CONFIG_F, emitters: int = 1) -> og_mass.Budget:
+def f_mass_budget(q=None, c: ef.Config = CONFIG_F, emitters: int = 1, *, pod_and_boom: bool = False, boom: bool = True,
+                  packs: bool = True) -> og_mass.Budget:
+    """The fixed wings' mass. ``pod_and_boom`` (GAVILAN-H): the printed skin stops at the wing's trailing edge and a
+    carbon tube under a thin fairing carries the tail (``boom`` False when something else is that tube: the net's jet
+    pipe); ``packs`` False leaves the battery out, to be placed for the balance."""
     g = f_geometry(q)
     motor, prop, esc, bat = (mk.part(k) for k in (c.motor, c.propeller, c.esc, c.battery))
     petg = mk.part("petg-hf")
@@ -329,16 +333,23 @@ def f_mass_budget(q=None, c: ef.Config = CONFIG_F, emitters: int = 1) -> og_mass
         b.add(I("motor", motor.mass_g / 1e3, (x_w - 0.05, s * 0.19, 0), group="propulsion", source=c.motor),
               I("propeller", prop.mass_g / 1e3, (x_w - 0.07, s * 0.19, 0), group="propulsion", source=c.propeller))
     b.add(I("ESC board with the flight controller", esc.mass_g / 1e3, (x_w, 0, 0), group="propulsion", source=c.esc))
-    for k in range(c.packs):
+    for k in range(c.packs if packs else 0):
         b.add(I(f"pack {k + 1}", bat.mass_g / 1e3, (x_w + 0.03, 0, 0), group="battery", source=c.battery))
     for part in mk.FIXED:
         if part.group == "fc" and esc.with_fc:
             continue
         b.add(I(part.name, part.mass_g / 1e3, (0.08, 0, 0), group="avionics", source=part.key))
+    q_ = {**F_PARAMS, **(q or {})}
+    x_pod = x_w + q_["root_chord"] / 1e3                                # the pod ends at the wing's trailing edge
+    skin_len = (x_pod if pod_and_boom else g["length"])
+    skin = math.pi * g["d"] * 0.80 * skin_len * ef.WALL * ef.PRINT_FACTOR * petg.density
+    if pod_and_boom and boom:
+        Lb = g["length"] - x_pod
+        b.add(I("tail boom (bought carbon tube)", 0.035 * Lb + 0.004, (x_pod + 0.5 * Lb, 0, 0), group="airframe", source="hand estimate: 35 g/m"),
+              I("boom fairing (printed foam)", math.pi * 0.045 * Lb * AREAL_DENSITY, (x_pod + 0.5 * Lb, 0, 0), group="airframe", source="AREAL_DENSITY"))
     b.add(I("servos", F_N_SERVOS * TILT_SERVO_G / 1e3, (x_w + 0.2, 0, 0), group="avionics", source="hand estimate: four 9 g servos"),
           I("power wiring", 0.012 * c.packs + 0.025, (x_w, 0, 0), group="propulsion", source="emerillon_flight's allowance"),
-          I("fuselage skin (PETG)", g["s_body"] * ef.WALL * ef.PRINT_FACTOR * petg.density, (0.45 * g["length"], 0, 0), group="airframe",
-            source="emerillon_flight.printed_masses' rule"),
+          I("fuselage skin (PETG)", skin, (0.45 * skin_len, 0, 0), group="airframe", source="emerillon_flight.printed_masses' rule"),
           I("wing (printed foam)", 2.04 * g["S_exposed"] * AREAL_DENSITY, (x_w + 0.08, 0, 0), group="airframe", source="AREAL_DENSITY"),
           I("tail (printed foam)", 2.04 * g["S_tail"] * AREAL_DENSITY, (g["length"] - 0.05, 0, 0), group="airframe", source="AREAL_DENSITY"),
           I("nacelles (PA6-CF)", 2 * math.pi * g["nac_d"] * g["nac_l"] * 0.0016 * mk.part("pa6-cf").density * ef.PRINT_FACTOR / 1.3,
@@ -967,14 +978,89 @@ WING_CP_STALLED = 0.42             # the stalled wing's centre of pressure along
 CONFIG_H = ef.Config("eco2807-1300", "hq7x4x3", "speedybee-f405v4-55", "tattu-r6-1700-160c", 1, 1)
 
 
-def gavilan_h(emitters: int = 0) -> Machine:
-    m = gavilan("F", emitters=emitters, p=H_PARAMS, config=CONFIG_H)
-    return dataclasses.replace(m, name="Gavilan-H (hawk: broad wing, blown tail, flies past its stall)", theta_limit=math.radians(90.0), stops=True,
-                               roll_rate=math.radians(300.0),
-                               notes={**m.notes, "post-stall": "PROPOSED: attitude held beyond the stall by a blown all-moving tail and differential thrust"})
+# The one-shot light net interceptor (labs/aero/exp/net_light_design.py, net_oneshot_cad.py, gavilan_net_cad.py on
+# dev_gavilan_net @ d9f6cb8): a 70 g cartridge (a 1.5 m net of 1 mm Dyneema, four 8 g weights) from a 32 mm bore at
+# 45 m/s, a rear venturi of 27 mm, one charge vessel opened by a burst diaphragm - no bottle, regulator, plenum or valve.
+# Its MuJoCo tests from a fixed launcher: a 1.2 kg quadcopter crossing at 5 m/s captured 5/5 at each of 3, 4, 5, 6 and
+# 8 m; a racing drone crossing at 15 m/s 0/5 at every range. So it works to 8 m on a target it is not moving against.
+# The vessel was provisional there (80 mL); the same gas model (golf_recoilless.shot, the 0.25 m tube GAVILAN carries, a
+# 25 mm diaphragm open in 0.5 ms) gives for 80 mL: 84.2 bar gauge, a 26.9 mm throat, 45.0 m/s, net impulse +0.001 N s,
+# 7.7 g of air. The masses are HAND ESTIMATES (the chamber's is net_light_design's); MARGIN is on their sum.
+LIGHT_NET = {
+    "source": "net_light_design.py, net_light_*.log, gavilan_net_cad.py (dev_gavilan_net @ d9f6cb8); vessel sized with golf_recoilless.shot; masses by hand",
+    "range_m": (3.0, 8.0), "captures_quad_5ms": {3: "5/5", 4: "5/5", 5: "5/5", 6: "5/5", 8: "5/5"}, "captures_fpv_15ms": "0/5 at 3, 4, 5, 6 and 8 m",
+    "muzzle_m_s": 45.0, "net_side_m": 1.5, "open_span_m": 1.96, "span_at_5m": 1.58, "cartridge_g": 70.0, "tube_m": 0.25, "bore_mm": 32.0,
+    "vessel_ml": 80.0, "pressure_bar_g": 84.2, "throat_mm": 26.9, "air_g": 7.7, "backblast_m": 6.4, "shots": 1,
+    "parts_g": {"carbon tube 0.25 m, 32 mm bore, 1.5 mm wall": 63.0, "chamber and rear venturi (6061; net_light_design)": 140.0,
+                "burst-diaphragm holder and puncture solenoid": 90.0, "charge vessel 80 mL, carbon": 80.0,
+                "jet pipe to the tail, 0.57 m carbon, 41 mm, 1 mm wall": 115.0, "pipe fairing and belly blister (printed foam)": 73.0,
+                "second tail servo and stub shafts": 15.0, "trigger electronics and wiring": 30.0, "net cartridge": 70.0},
+    "margin": 1.25,
+}
+LIGHT_NET_CDA = 0.0011             # the blister's face (faired) and the fairing's skin (hand estimate) [m2]
 
 
-def h_tail(V: float = 0.0, thrust: float | None = None, rho: float = RHO) -> dict:
+def light_net_kg() -> float:
+    """The one-shot interceptor as GAVILAN-H carries it [kg]: hand-estimated parts x margin."""
+    return sum(LIGHT_NET["parts_g"].values()) * LIGHT_NET["margin"] / 1e3
+
+
+CG_TARGET_MAC = 0.30               # where GAVILAN-H's centre of gravity is put, along the mean chord (a stable tailed aeroplane's usual place)
+
+
+def h_mass_budget(net: bool = False) -> og_mass.Budget:
+    """GAVILAN-H's mass, balanced: a printed pod to the wing's trailing edge and a carbon boom to the tail (with the
+    net aboard the boom **is** the interceptor's jet pipe), the interceptor's parts at their stations in the CAD
+    (``GavilanH.net_layout``), and the pack put where the centre of gravity comes to ``CG_TARGET_MAC`` — or as far
+    forward as the nose allows (``notes`` on the item says which)."""
+    q = gv.h_resolve(gv.H_NET if net else {})
+    g = f_geometry(H_PARAMS)
+    b = f_mass_budget(H_PARAMS, CONFIG_H, 0, pod_and_boom=True, boom=not net, packs=False)
+    nose = q["nose_length"]
+    if net:
+        N = gv.GavilanH.net_layout(q)
+        x = {"carbon tube": 0.5 * (N["x_muzzle"] + N["x_bore"]), "chamber": N["x_bore"] + 25.0, "burst": N["x_bore"] + 20.0, "charge vessel": N["x_vessel"] + 20.0,
+             "jet pipe": 0.5 * (N["x_chamber_end"] + N["x_end"]), "pipe fairing": 0.5 * (N["x_bore"] + N["x_end"]), "second tail servo": N["x_end"] - 150.0,
+             "trigger": N["x_bore"], "net cartridge": N["x_bore"] - 45.0}
+        for name, grams in LIGHT_NET["parts_g"].items():
+            key = next(k for k in x if name.startswith(k) or k in name)
+            b.add(og_mass.Item(name, grams * LIGHT_NET["margin"] / 1e3, ((x[key] + nose) / 1e3, 0, 0), group="payload", source="LIGHT_NET (hand estimate x 1.25)"))
+    bat = mk.part(CONFIG_H.battery)
+    target = (nose + CG_TARGET_MAC * g["mac"] * 1e3) / 1e3
+    x_bat, clipped = og_mass.place_for_cg(b, bat.mass_g / 1e3, target, (0.075, nose / 1e3 + 0.20))
+    b.add(og_mass.Item("pack 1", bat.mass_g / 1e3, (x_bat, 0, 0), group="battery",
+                       source=CONFIG_H.battery + (" — as far forward as the nose allows: the balance is NOT reached" if clipped else " — placed for the balance")))
+    return b
+
+
+def gavilan_h(emitters: int = 0, net: bool = False) -> Machine:
+    m = gavilan("F", emitters=0, p=H_PARAMS, config=CONFIG_H)
+    m = dataclasses.replace(m, name="Gavilan-H (hawk: broad wing, blown tail, flies past its stall)", theta_limit=math.radians(90.0), stops=True,
+                            roll_rate=math.radians(300.0), mass=h_mass_budget(False).mass, payload_kg=0.0, gun="none",
+                            notes={**m.notes, "post-stall": "PROPOSED: attitude held beyond the stall by a blown all-moving tail and differential thrust"})
+    if emitters:
+        m = with_payload(m, emitter_kg(emitters), 0.0006, "emitter")
+    if net:
+        m = dataclasses.replace(m, name=m.name + " + net interceptor", mass=h_mass_budget(True).mass, cda0=m.cda0 + LIGHT_NET_CDA,
+                                payload_kg=light_net_kg(), gun="fixed")
+    return m
+
+
+def h_balance(net: bool = True) -> dict:
+    """Where GAVILAN-H's centre of gravity sits along the mean chord, where the pack had to go for it, and the pitch
+    inertia. The yardstick is the chord position, not a computed neutral point."""
+    q = gv.h_resolve()
+    g = f_geometry(H_PARAMS)
+    b = h_mass_budget(net)
+    pr = b.properties()
+    pack = next(i for i in b.items if i.name == "pack 1")
+    nose = q["nose_length"] / 1e3
+    return {"mass": pr.mass, "x_cg": float(pr.com[0]), "cg_mac": float((pr.com[0] - nose) / g["mac"]), "target_mac": CG_TARGET_MAC,
+            "pack_x": float(pack.pos[0]), "pack_from_wing_leading_edge": float(pack.pos[0] - nose), "balanced": "NOT reached" not in pack.source,
+            "Iyy": float(pr.inertia[1, 1])}
+
+
+def h_tail(V: float = 0.0, thrust: float | None = None, rho: float = RHO, machine: Machine | None = None) -> dict:
     """GAVILAN-H's blown tail, a HAND ESTIMATE the CFD sweep is meant to replace. Each propeller's wash at the tail
     (momentum theory, fully developed: v = sqrt(V^2 + 2 T / (rho A)) per propeller) over the part of each tail half
     inside it, at full deflection: the pitching moment both halves give together, the rolling moment they give
@@ -982,7 +1068,7 @@ def h_tail(V: float = 0.0, thrust: float | None = None, rho: float = RHO) -> dic
     total (default: the weight, as in a hang)."""
     p = gv.h_resolve()
     L = gv.GavilanH.layout(p)
-    m = gavilan_h()
+    m = machine or gavilan_h()
     T = m.weight if thrust is None else thrust
     A = math.pi * (p["prop_diameter"] / 2e3) ** 2
     v_wash = math.sqrt(V * V + 2 * (T / 2) / (rho * A))
@@ -1002,14 +1088,52 @@ def h_stall_moment(V: float, alpha_deg: float = 50.0, rho: float = RHO) -> float
     return 0.5 * rho * V * V * g["S"] * cn * (WING_CP_STALLED - 0.25) * g["mac"]
 
 
-def h_authority(speeds=(0.0, 10.0, 15.0, 25.0)) -> list:
+def h_authority(speeds=(0.0, 10.0, 15.0, 25.0), machine: Machine | None = None) -> list:
     """Can the tail hold the stalled wing? Per speed: the wing's nose-down moment at 50 degrees, the tail's moment in
     the wash at the thrust level flight needs there (``level``; the weight in a hang), and their ratio (> 1 holds)."""
-    m, rows = gavilan_h(), []
+    m, rows = machine or gavilan_h(), []
     for V in speeds:
         lv = level(m, V) if V > 0 else None
         T = lv["thrust"] if lv else m.weight
-        need, have = (h_stall_moment(V) if V > 0 else 0.0), h_tail(V, T)["pitch_Nm"]
-        rows.append({"V": V, "thrust_N": T, "wing_moment_Nm": need, "tail_moment_Nm": have, "tail_at_full_thrust_Nm": h_tail(V, m.t_max(V))["pitch_Nm"],
+        need, have = (h_stall_moment(V) if V > 0 else 0.0), h_tail(V, T, machine=m)["pitch_Nm"]
+        rows.append({"V": V, "thrust_N": T, "wing_moment_Nm": need, "tail_moment_Nm": have,
+                     "tail_at_full_thrust_Nm": h_tail(V, m.t_max(V), machine=m)["pitch_Nm"],
                      "margin": have / need if need > 0 else math.inf})
     return rows
+
+
+def h_net_table() -> list:
+    """GAVILAN-H clean and with the one-shot interceptor, and GAVILAN-A carrying the same interceptor: what the load
+    costs, row by row."""
+    a = with_payload(gavilan("A", emitters=0), light_net_kg(), LIGHT_NET_CDA, "net interceptor")
+    rows = []
+    for key, m in (("gavilan_h", gavilan_h()), ("gavilan_h_net", gavilan_h(net=True)), ("gavilan_a_net", a)):
+        en, br = endurance(m), brake(m)
+        row = {"key": key, "aircraft": m.name, "mass_kg": m.mass, "payload_kg": m.payload_kg, "static thrust / weight": m.t_max(0.0) / m.weight,
+               "wing loading [N/m2]": m.weight / m.S, "wing stall [m/s]": stall_speed(m), "hangs on its propellers": m.hovers,
+               "hover [min]": en["hover_min"], "hover [W]": en["hover_w"], "cruise [min]": en["cruise_min"], "cruise at [m/s]": en["cruise_v"],
+               "top speed [m/s]": top_speed(m), "stop from 25 m/s [m]": br["distance_m"], "reverse at 15 m/s [s]": reversal(m)["time_s"],
+               "150 m climb [s]": climb(m)["time_s"]}
+        for V in (10.0, 15.0, 25.0):
+            row[f"turn rate @{V:.0f} [deg/s]"] = turn(m, V)["rate_inst_deg_s"]
+        if key.startswith("gavilan_h"):
+            au = h_authority(machine=m)
+            row["tail margin at 15 m/s"] = au[2]["margin"]
+            row["tail margin at 25 m/s"] = au[3]["margin"]
+        rows.append(row)
+    return rows
+
+
+def h_static_margin(net: bool = False) -> dict:
+    """GAVILAN-H's stick-fixed static margin, a HAND ESTIMATE (the textbook tail-volume formula, no fuselage term, no
+    propeller wash): neutral point = 0.25 + eta V_h (a_t / a)(1 - d eps / d alpha) of the mean chord."""
+    q = gv.h_resolve()
+    L, g = gv.GavilanH.layout(q), f_geometry(H_PARAMS)
+    S_t = L["S_tail_mm2"] / 1e6
+    ar_t = (q["tail_span"] / 1e3) ** 2 / (q["tail_span"] * q["tail_chord"] / 1e6)
+    a, a_t = 2 * math.pi * g["AR"] / (g["AR"] + 2), 2 * math.pi * ar_t / (ar_t + 2)
+    v_h = S_t * (L["tail_arm"] / 1e3) / (g["S"] * g["mac"])
+    downwash = 2 * a / (math.pi * g["AR"])
+    x_np = 0.25 + 0.9 * v_h * (a_t / a) * (1 - downwash)
+    cg = h_balance(net)["cg_mac"]
+    return {"tail_volume": v_h, "neutral_point_mac": x_np, "cg_mac": cg, "static_margin": x_np - cg}

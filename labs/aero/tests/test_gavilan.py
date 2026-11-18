@@ -214,3 +214,26 @@ def test_hawk_flies_past_its_stall_and_sits_between_the_fixed_wing_and_the_tails
     assert all(r["margin"] > 1.5 for r in rows) and rows[0]["tail_moment_Nm"] > 2.0     # the tail holds the stalled wing (hand estimate)
     import gavilan_cfd as gc
     assert gc.reference("H")["S"] == pytest.approx(h.S) and gc.pitch_authority("H") > 5.0
+
+
+def test_hawk_with_the_one_shot_net_cad_balance_and_what_the_load_costs():
+    p = gv.h_resolve(gv.H_NET)
+    g = gv.GavilanH().generate(**gv.H_NET)
+    assert g.shape.isValid() and len(g.shape.Solids()) == 1
+    N = gv.GavilanH.net_layout(p)
+    assert N["prop_plane_behind_muzzle"] > 100.0                                   # the net leaves ahead of the propellers
+    assert p["taileron_gap"] > p["net_pipe_od"] / 2                                # the jet pipe passes between the tail halves
+    with pytest.raises(Exception):
+        gv.GavilanH().generate(weapon="net")                                       # the default 14 mm gap would foul the pipe
+    assert gf.light_net_kg() == pytest.approx(sum(gf.LIGHT_NET["parts_g"].values()) * gf.LIGHT_NET["margin"] / 1e3)
+    clean, armed = gf.h_mass_budget(False), gf.h_mass_budget(True)
+    assert armed.mass == pytest.approx(gf.gavilan_h(net=True).mass) and clean.mass == pytest.approx(gf.gavilan_h().mass)
+    assert not any(i.name.startswith("tail boom") for i in armed.items) and any(i.name.startswith("tail boom") for i in clean.items)
+    for net in (False, True):
+        sm = gf.h_static_margin(net)
+        assert 0.25 < sm["cg_mac"] < 0.40 and sm["static_margin"] > 0.05           # ahead of the (hand-estimated) neutral point
+    rows = {r["key"]: r for r in gf.h_net_table()}
+    h, hn = rows["gavilan_h"], rows["gavilan_h_net"]
+    assert hn["mass_kg"] - h["mass_kg"] < gf.light_net_kg() + 1e-9                 # the jet pipe replaces the boom
+    assert hn["static thrust / weight"] > 2.0 and hn["hangs on its propellers"] and hn["wing stall [m/s]"] > h["wing stall [m/s]"]
+    assert hn["turn rate @15 [deg/s]"] < h["turn rate @15 [deg/s]"] and hn["tail margin at 15 m/s"] > 1.5

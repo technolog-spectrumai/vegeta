@@ -334,7 +334,12 @@ class GavilanH(GavilanF):
         Parameter("part", "aircraft", choices=("aircraft", "wing", "nacelle", "fuselage", "emitter", "tail"), description="what to build"),
         _fw("span", 1000.0), _fw("root_chord", 280.0), _fw("nacelle_y", 200.0), _fw("fuselage_length", 860.0),
         _fw("tail_span", 580.0), _fw("tail_chord", 150.0), _fw("fin_height", 130.0),
-        Parameter("weapon", "none", choices=("none", "emitter"), description="what it carries on the body axis"),
+        Parameter("weapon", "none", choices=("none", "emitter", "net"), description="what it carries on the body axis (net: the one-shot interceptor)"),
+        Parameter("net_tube", 250.0, "mm", min=100.0, description="net: the launch tube, muzzle to the chamber (32 mm bore)"),
+        Parameter("net_tube_od", 35.0, "mm", min=33.0, description="net: tube outer diameter"),
+        Parameter("net_muzzle_out", 10.0, "mm", min=0.0, description="net: the muzzle ahead of the nose"),
+        Parameter("net_pipe_od", 41.0, "mm", min=30.0, description="net: the rear jet's pipe on the axis to the tail's end"),
+        Parameter("net_vessel_ml", 80.0, "mL", min=40.0, description="net: the one-shot charge vessel in the belly blister"),
         Parameter("taileron_deg", 0.0, "deg", min=-60.0, max=60.0, description="both tail halves, trailing edge up positive (pictures)"),
         Parameter("taileron_gap", 14.0, "mm", min=4.0, description="each half's root from the centre plane (the fuselage's end between them)"),
         Parameter("hinge_frac", 0.30, "", min=0.1, max=0.6, description="the halves' pivot along their chord"),
@@ -357,15 +362,47 @@ class GavilanH(GavilanF):
                 "tail_arm": xt + 0.25 * p["tail_chord"] - 0.25 * p["root_chord"]}
 
     def _tail(self, p, separate=False):
+        """The two tail halves and the fin. With the net aboard the jet pipe runs between the halves: each then turns
+        on its own stub shaft (and servo) instead of one shaft across, and the fin stands on the pipe's fairing."""
         L = self.layout(p)
         r, tt = p["fuselage_diameter"] / 2, p["tail_thickness"]
+        net = p["weapon"] == "net"
         w = p["tail_span"] / 2 - p["taileron_gap"]
         half = cq.Workplane("XY").box(p["tail_chord"], w, tt, centered=(False, False, True)).translate((L["x_tail"], p["taileron_gap"], -r))
         half = half.rotate((L["x_hinge"], 0, -r), (L["x_hinge"], 1, -r), p["taileron_deg"])
-        shaft = cq.Workplane("XZ").circle(4.0).extrude(2 * (p["taileron_gap"] + 12.0)).translate((L["x_hinge"], p["taileron_gap"] + 12.0, -r))
-        hstab = half.union(half.mirror("XZ")).union(shaft)
-        fin = cq.Workplane("XY").box(p["tail_chord"], tt, p["fin_height"], centered=(False, True, False)).translate((L["x_tail"] - 0.5 * p["tail_chord"], 0, -r))
+        if net:
+            stub = cq.Workplane("XZ").circle(3.0).extrude(-(p["taileron_gap"] - p["net_pipe_od"] / 2 + 6.0)).translate((L["x_hinge"], p["net_pipe_od"] / 2 - 2.0, -r))
+            hstab = half.union(stub)
+            hstab = hstab.union(hstab.mirror("XZ"))
+        else:
+            shaft = cq.Workplane("XZ").circle(4.0).extrude(2 * (p["taileron_gap"] + 12.0)).translate((L["x_hinge"], p["taileron_gap"] + 12.0, -r))
+            hstab = half.union(half.mirror("XZ")).union(shaft)
+        z_fin = -r + (p["net_pipe_od"] / 2 + 1.0 if net else 0.0)
+        fin = cq.Workplane("XY").box(p["tail_chord"], tt, p["fin_height"], centered=(False, True, False)).translate((L["x_tail"] - 0.5 * p["tail_chord"], 0, z_fin))
         return (hstab, fin) if separate else hstab.union(fin)
+
+    @staticmethod
+    def net_layout(p) -> dict:
+        """The one-shot net interceptor's stations on the body axis [mm]: muzzle, chamber, the jet pipe's end, the vessel."""
+        x_muzzle = -p["nose_length"] - p["net_muzzle_out"]
+        x_bore = x_muzzle + p["net_tube"]                                # the chamber's front face
+        x_end = -p["nose_length"] + p["fuselage_length"] + 6.0
+        vr = 22.0
+        vl = p["net_vessel_ml"] * 1e3 / (math.pi * (vr - 2.0) ** 2) - 4 / 3 * (vr - 2.0)
+        return {"x_muzzle": x_muzzle, "x_bore": x_bore, "x_chamber_end": x_bore + 55.0, "x_end": x_end, "pipe_length": x_end - (x_bore + 55.0),
+                "vessel_r": vr, "vessel_l": vl, "x_vessel": x_bore + 10.0, "z_vessel": -p["fuselage_diameter"] / 2 - 35.0 - 20.0 - vr,
+                "prop_plane_behind_muzzle": (-p["nacelle_forward"] - 12.0) - x_muzzle}
+
+    def _net(self, p):
+        """What the interceptor adds to the outside: the tube out of the nose, the pipe's fairing to the tail's end and
+        the belly blister over the charge vessel (the chamber, the venturi and the burst diaphragm are inside)."""
+        N, z = self.net_layout(p), -p["fuselage_diameter"] / 2
+        tube = cq.Workplane("YZ").circle(p["net_tube_od"] / 2).extrude(p["net_tube"]).translate((N["x_muzzle"], 0, z))
+        fairing = cq.Workplane("YZ").circle(p["net_pipe_od"] / 2 + 3.0).extrude(N["x_end"] - N["x_bore"]).translate((N["x_bore"], 0, z))
+        blister = (cq.Workplane("YZ").ellipse(N["vessel_r"] + 9.0, (z - N["z_vessel"]) + N["vessel_r"] + 10.0).extrude(N["vessel_l"] + 2 * N["vessel_r"] + 70.0)
+                   .translate((N["x_vessel"] - N["vessel_r"] - 35.0, 0, z)))
+        blister = blister.intersect(cq.Workplane("XY").box(2000, 400, 400).translate((0, 0, z - 200)))
+        return tube.union(fairing).union(blister)
 
     def _props(self, p):
         L = self.layout(p)
@@ -378,6 +415,8 @@ class GavilanH(GavilanF):
         out = {"fuselage": self._fuselage(p), "wing": wing, "tail": hstab.union(fin), "props": self._props(p)}
         if p["weapon"] == "emitter":
             out["emitter"] = self._emitter(p)
+        if p["weapon"] == "net":
+            out["emitter"] = self._net(p)
         return out
 
     def build(self, p):
@@ -388,11 +427,18 @@ class GavilanH(GavilanF):
         aircraft = FixedWing.build(self, {**p, "angle_of_attack_deg": 0.0})
         if p["weapon"] == "emitter":
             aircraft = aircraft.union(self._emitter(p))
+        if p["weapon"] == "net":
+            if p["taileron_gap"] < p["net_pipe_od"] / 2 + 4.0:
+                raise ValueError("the tail halves foul the jet pipe: raise taileron_gap (H_NET uses 26 mm)")
+            aircraft = aircraft.union(self._net(p))
         if p["show_props"]:
             aircraft = aircraft.union(self._props(p))
         if p["angle_of_attack_deg"]:
             aircraft = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"])
         return aircraft
+
+
+H_NET = {"weapon": "net", "taileron_gap": 26.0}          # GAVILAN-H carrying the one-shot net interceptor
 
 
 def h_resolve(q=None) -> dict:
