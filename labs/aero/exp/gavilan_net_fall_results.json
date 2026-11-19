@@ -1,0 +1,43 @@
+{
+ "mesh 0.150 m": {
+  "knots": 11,
+  "net_g": 30.0,
+  "height_m": 20.0,
+  "range_m": 5.0,
+  "bandit_cda_m2": 0.04,
+  "line": null,
+  "shots": [
+   {
+    "result": "down",
+    "impact_m_s": 16.58602964096869,
+    "fall_s": 2.247500000000694,
+    "fouled": true,
+    "t_foul": 0.17649999999999688,
+    "max_descent_m_s": 16.586029567190252,
+    "peak_line_N": 0.0,
+    "lowest_m": 0.11739785194242565,
+    "seconds": 27.4
+   },
+   {
+    "result": "miss",
+    "fouled": false,
+    "t_foul": null,
+    "max_descent_m_s": 3.215037785459176e-05,
+    "peak_line_N": 0.0,
+    "lowest_m": 20.0,
+    "seconds": 10.8
+   },
+   {
+    "result": "down",
+    "impact_m_s": 16.585795113038174,
+    "fall_s": 2.2475000000006853,
+    "fouled": true,
+    "t_foul": 0.17249999999999732,
+    "max_descent_m_s": 16.585794949513016,
+    "peak_line_N": 0.0,
+    "lowest_m": 0.11811549210097404,
+    "seconds": 27.1
+   }
+  ]
+ }
+}
