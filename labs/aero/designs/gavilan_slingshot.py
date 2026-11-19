@@ -156,3 +156,49 @@ class Slingshot(Design):
 
 def resolve(p=None) -> dict:
     return Slingshot().resolve(**dict(p or {}))
+
+
+# ================================================================================================= sizing (the springs)
+# How heavy a spring launcher is for a throw speed: the energy, the spring's own mass (a spring between two masses
+# spends 1/6 of its mass x v^2 moving itself: past that limit no amount of it throws faster), the hardware. Material
+# energies and hardware masses are HAND ESTIMATES (labs/aero/exp/gavilan_spring_net.py states the derivations):
+# steel coil 160 J/kg, latex bands 1600 J/kg, glass-fibre limbs 700 J/kg.
+CARTRIDGE_KG = 0.070                 # the light net's cartridge (net_light_design)
+U_RETURNED = {"steel coil": 160.0, "latex bands": 1600.0, "glass-fibre limbs": 700.0}       # J/kg, hand estimates (above)
+MARGIN = 1.25
+# the rest of a spring launcher (hand estimates, g): a carbon tube open at both ends, two carriages, a latch released
+# by a servo, the pod fairing; a counter-mass of the cartridge's mass when the ejector is opposed
+HARDWARE_G = {"carbon tube 0.30 m, 32 mm bore, open at both ends": 75.0, "two carriages and the latch": 35.0,
+              "release servo": 12.0, "pod fairing and strut (printed foam)": 40.0, "trigger electronics and wiring": 20.0}
+GAS_ONE_SHOT_KG = 0.685              # gavilan_flight.net_pod_kg(): the one-shot air launcher in GAVILAN-X's pod, with its margin
+HUNTER_KG = 2.03 - GAS_ONE_SHOT_KG   # GAVILAN-X with no catcher (gavilan_flight.gavilan_x_net() less its pod)
+
+
+def spring_mass(v: float, moving_kg: float, u: float) -> float:
+    """The spring that throws ``moving_kg`` (all the masses together) to ``v``: its own kinetic energy at the end is
+    1/6 of its mass x v^2 (a spring between two masses, its middle still) or 1/3 (fixed at one end) — the 1/6 case
+    here, so  m_s u = moving v^2 / 2 + m_s v^2 / 6. ``inf`` past the material's limit."""
+    room = u - v * v / 6.0
+    return float("inf") if room <= 0 else 0.5 * moving_kg * v * v / room
+
+
+def launcher(v: float, material: str, opposed: bool, countermass: str = "dead mass") -> dict:
+    moving = CARTRIDGE_KG * (2 if opposed else 1)
+    ms = spring_mass(v, moving, U_RETURNED[material])
+    hw = sum(HARDWARE_G.values()) / 1e3
+    kg = (ms + hw + moving) * MARGIN
+    recoil = 0.0 if opposed else CARTRIDGE_KG * v
+    return {"speed_m_s": v, "spring": material, "opposed": opposed, "aft": countermass if opposed else "nothing",
+            "energy_J": 0.5 * moving * v * v, "spring_kg": ms, "launcher_kg": kg, "lighter_than_gas_by_kg": GAS_ONE_SHOT_KG - kg,
+            "recoil_N_s": recoil, "hunter_kick_m_s": recoil / (HUNTER_KG + kg - CARTRIDGE_KG)}
+
+
+def table(speeds=(15.0, 20.0, 30.0, 45.0)) -> list:
+    rows = []
+    for v in speeds:
+        for mat in U_RETURNED:
+            for opposed in (True, False):
+                rows.append(launcher(v, mat, opposed, "a second net" if opposed else "nothing"))
+    return rows
+
+

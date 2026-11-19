@@ -1,0 +1,113 @@
+{
+ "unit": "Gavilan",
+ "kind": "sparrowhawk interceptor: X-wing tailsitter, waits on a charging perch as a camera, short pursuit, throws a net",
+ "units": "SI: kg, m, s, m/s, deg/s, W, Wh, min",
+ "source": "vegeta labs/aero/designs/gavilan_flight.py (reduced point-mass models; hand estimates where stated); notebook 38",
+ "mass_kg": 1.858,
+ "span_m": 0.481,
+ "length_m": 0.58,
+ "hover": true,
+ "min_speed_m_s": 0.0,
+ "max_speed_m_s": 47.5,
+ "wing_borne_above_m_s": 20.9,
+ "max_acceleration_g": 3.75,
+ "hover_to_25_m_s": {
+  "time_s": 0.68,
+  "distance_m": 8.1
+ },
+ "max_braking_g": 2.88,
+ "25_m_s_to_hover": {
+  "time_s": 1.16,
+  "distance_m": 14.2
+ },
+ "climb_rate_m_s": 42.2,
+ "ground_to_150_m_s": 4.35,
+ "turns": [
+  {
+   "speed_m_s": 5.0,
+   "turn_rate_deg_s": 590.1,
+   "load_factor": 5.35,
+   "turn_radius_m": 0.49,
+   "sustained_turn_rate_deg_s": 487.9
+  },
+  {
+   "speed_m_s": 10.0,
+   "turn_rate_deg_s": 295.1,
+   "load_factor": 5.35,
+   "turn_radius_m": 1.94,
+   "sustained_turn_rate_deg_s": 279.2
+  },
+  {
+   "speed_m_s": 15.0,
+   "turn_rate_deg_s": 198.1,
+   "load_factor": 5.38,
+   "turn_radius_m": 4.34,
+   "sustained_turn_rate_deg_s": 192.1
+  },
+  {
+   "speed_m_s": 20.0,
+   "turn_rate_deg_s": 152.8,
+   "load_factor": 5.53,
+   "turn_radius_m": 7.5,
+   "sustained_turn_rate_deg_s": 147.1
+  },
+  {
+   "speed_m_s": 25.0,
+   "turn_rate_deg_s": 129.3,
+   "load_factor": 5.84,
+   "turn_radius_m": 11.08,
+   "sustained_turn_rate_deg_s": 120.0
+  },
+  {
+   "speed_m_s": 30.0,
+   "turn_rate_deg_s": 116.8,
+   "load_factor": 6.31,
+   "turn_radius_m": 14.72,
+   "sustained_turn_rate_deg_s": 96.9
+  },
+  {
+   "speed_m_s": 40.0,
+   "turn_rate_deg_s": 107.3,
+   "load_factor": 7.7,
+   "turn_radius_m": 21.36,
+   "sustained_turn_rate_deg_s": 82.6
+  }
+ ],
+ "structural_load_factor": 8.0,
+ "roll_rate_deg_s": 600.0,
+ "pitch_rate_deg_s": 344.0,
+ "transition_hover_to_wing_s": 0.56,
+ "transition_wing_to_hover_s": 1.07,
+ "endurance_min": {
+  "hover": 5.6,
+  "cruise": 11.2,
+  "cruise_speed_m_s": 17.0,
+  "manoeuvring_at_2_g": 2.2,
+  "full_power": 0.5,
+  "watch_on_its_pack_h": 1.68,
+  "watch_on_the_perch": "unlimited (charged through its feet)"
+ },
+ "perch": {
+  "recharge_after_a_hunt_min": 15.0,
+  "full_charge_min": 46.0,
+  "landing_tolerance_m": 0.046
+ },
+ "net": {
+  "launcher": "opposed latex slingshot: one net forward, one aft (no recoil)",
+  "nets": 2,
+  "throw_speed_m_s": 30.0,
+  "range_m": [
+   3.0,
+   5.0
+  ],
+  "opening_m": 1.8,
+  "reload": "by hand, on the ground",
+  "capture_tests": "4/4 at 3, 4, 5 m hovering; 4/4, 4/4, 3/4 crossing at 5 m/s (fixed launcher, MuJoCo)",
+  "after_the_catch": "the bandit falls (about 17 m/s from 20 m): a parachute is left for later"
+ },
+ "perch_to_fouled_s": {
+  "50_m": 2.65,
+  "100_m": 3.8,
+  "200_m": 5.88
+ }
+}

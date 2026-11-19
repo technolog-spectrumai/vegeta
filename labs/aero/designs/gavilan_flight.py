@@ -1630,3 +1630,120 @@ def x_variants_table() -> list:
                         "shots": "repeatable", "the bandit afterwards": "held, carried down"})
         rows.append(row)
     return rows
+
+
+# ============================================================================================ GAVILAN: the chosen design
+# The sparrowhawk: GAVILAN-X (the four-panel X-wing tailsitter on one pack) waiting on its charging perch as a camera,
+# launching at a bandit that comes near, a short pursuit, and a net thrown at 30 m/s by the opposed latex slingshot
+# (gavilan_slingshot) from 3 to 5 m. The capture figures are labs/aero/exp/gavilan_slow_net_results.json (the light
+# net at 30 m/s from a fixed launcher: 4/4 at 3, 4 and 5 m against a hovering quadcopter, 4/4, 4/4 and 3/4 crossing at
+# 5 m/s); the flight times are the same net's free flight at 30 m/s (net_drone.calibrate).
+SLING_SPEED = 30.0
+SLING_NET_FLIGHT_S = {2.0: 0.08, 3.0: 0.13, 4.0: 0.18, 6.0: 0.35}
+SLING_RANGE = (3.0, 5.0)
+SLING_CDA = 0.0018                  # the tube, its rings and bands under the belly, broadside-free along the flow (hand estimate) [m2]
+
+
+def sling_kg() -> float:
+    import gavilan_slingshot as gs
+    return gs.launcher(SLING_SPEED, "latex bands", True)["launcher_kg"]
+
+
+def gavilan_mass_budget() -> og_mass.Budget:
+    """GAVILAN as chosen: GAVILAN-X's parts without the talons, with the slingshot under the belly and the charging
+    parts aboard (gavilan_perch.ONBOARD_G), each at its station."""
+    import gavilan_perch as gpe
+    g = x_geometry()
+    b = og_mass.Budget([i for i in x_mass_budget().items if not i.name.startswith("talons")])
+    b.add(og_mass.Item("net slingshot (opposed, latex, 30 m/s; two nets)", sling_kg(), (0.24, 0, -0.064), group="payload",
+                       source="gavilan_slingshot.launcher (hand estimate x 1.25)"),
+          og_mass.Item("charging: foot soles, wiring, diode bridge, balancer", gpe.onboard_kg(), (g["x_ac"], 0, 0), group="avionics",
+                       source="gavilan_perch.ONBOARD_G (hand estimate x 1.25)"))
+    return b
+
+
+def gavilan() -> Machine:
+    """The chosen GAVILAN as a ``Machine``."""
+    x = gavilan_x()
+    return dataclasses.replace(x, name="Gavilan (X-wing, net slingshot, charging perch)", mass=gavilan_mass_budget().mass,
+                               cda0=x.cda0 - TALONS["cda_m2"] + SLING_CDA, payload_kg=sling_kg(), gun="slingshot")
+
+
+_SPRINTERS["gavilan"] = lambda: gavilan()
+
+
+def sling_attack(distance: float, rng: float = 4.0) -> dict:
+    """From the perch to the bandit fouled, ``distance`` away and hovering: sprint, flare to the fastest closing speed
+    that still stops ``STOP_MARGIN`` short of the bandit after the shot from ``rng``, throw, the net's flight. The
+    net leaves at the slingshot's speed plus the closing speed."""
+    m = gavilan()
+    v = fastest_safe_shot(rng, m)
+    key = f"_sling_{rng:g}"
+    _SPRINTERS[key] = gavilan
+    global CONTACT_SPEED
+    keep = CONTACT_SPEED
+    CONTACT_SPEED = max(v, 0.5)
+    try:
+        r = intercept(key, max(distance - rng, 1.0))
+    finally:
+        CONTACT_SPEED = keep
+    t_net = float(np.interp(rng, list(SLING_NET_FLIGHT_S), list(SLING_NET_FLIGHT_S.values()))) * SLING_SPEED / (SLING_SPEED + v)
+    return {"distance_m": distance, "fire_range_m": rng, "closing_m_s": v, "net_relative_m_s": SLING_SPEED + v,
+            "time_to_shot_s": r["time_s"], "time_to_foul_s": r["time_s"] + t_net, "peak_m_s": r["peak_m_s"]}
+
+
+def flight_card() -> dict:
+    """The plain numbers a game reads (Armageddon): GAVILAN as chosen, from the models of this module — each with
+    where it comes from. No Vegeta needed to read it."""
+    import gavilan_perch as gpe
+    m = gavilan()
+    p = gv.x_resolve(gv.X_SLING)
+    en, br, cl = endurance(m), brake(m), climb(m)
+    acc = accelerate(m, 25.0)
+    V_wing = 1.2 * stall_speed(m)
+    to_wing = accelerate(m, V_wing)
+    to_hover = brake(m, V_wing)
+    usable = USABLE * m.battery_wh
+    p_hard = m.power(m.t_max(0.0), 0.0)
+    pb = gpe.budget()
+    turns = []
+    for V in (5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0):
+        t = turn(m, V)
+        turns.append({"speed_m_s": V, "turn_rate_deg_s": round(t["rate_inst_deg_s"], 1), "load_factor": round(t["n_inst"], 2),
+                      "turn_radius_m": round(t["radius_inst_m"], 2), "sustained_turn_rate_deg_s": round(t["rate_sus_deg_s"], 1)})
+    r = lambda x, k=2: round(float(x), k)
+    return {
+        "unit": "Gavilan", "kind": "sparrowhawk interceptor: X-wing tailsitter, waits on a charging perch as a camera, short pursuit, throws a net",
+        "units": "SI: kg, m, s, m/s, deg/s, W, Wh, min",
+        "source": "vegeta labs/aero/designs/gavilan_flight.py (reduced point-mass models; hand estimates where stated); notebook 38",
+        "mass_kg": r(m.mass, 3), "span_m": r(m.span, 3), "length_m": r(p["length"] / 1e3, 3), "hover": True,
+        "min_speed_m_s": 0.0, "max_speed_m_s": r(top_speed(m), 1), "wing_borne_above_m_s": r(V_wing, 1),
+        "max_acceleration_g": r(acc["mean_g"], 2), "hover_to_25_m_s": {"time_s": r(acc["time_s"]), "distance_m": r(acc["distance_m"], 1)},
+        "max_braking_g": r(br["peak_g"], 2), "25_m_s_to_hover": {"time_s": r(br["time_s"]), "distance_m": r(br["distance_m"], 1)},
+        "climb_rate_m_s": r(cl["rate_m_s"], 1), "ground_to_150_m_s": r(cl["time_s"]),
+        "turns": turns, "structural_load_factor": N_DESIGN,
+        "roll_rate_deg_s": r(math.degrees(m.roll_rate), 0), "pitch_rate_deg_s": r(math.degrees(m.slew), 0),
+        "transition_hover_to_wing_s": r(to_wing["time_s"]), "transition_wing_to_hover_s": r(to_hover["time_s"]),
+        "endurance_min": {"hover": r(en["hover_min"], 1), "cruise": r(en["cruise_min"], 1), "cruise_speed_m_s": r(en["cruise_v"], 1),
+                          "manoeuvring_at_2_g": r(usable / m.power(2.0 * m.weight, 0.0) * 60.0, 1),
+                          "full_power": r(usable / p_hard * 60.0, 1), "watch_on_its_pack_h": r(pb["watch_off_the_perch_h"], 2),
+                          "watch_on_the_perch": "unlimited (charged through its feet)"},
+        "perch": {"recharge_after_a_hunt_min": r(pb["recharge_after_a_100_m_hunt_min"], 0), "full_charge_min": r(pb["full_charge_min"], 0),
+                  "landing_tolerance_m": r(gpe.Perch.layout(gpe.resolve())["landing_tolerance"] / 1e3, 3)},
+        "net": {"launcher": "opposed latex slingshot: one net forward, one aft (no recoil)", "nets": 2, "throw_speed_m_s": SLING_SPEED,
+                "range_m": list(SLING_RANGE), "opening_m": 1.8, "reload": "by hand, on the ground",
+                "capture_tests": "4/4 at 3, 4, 5 m hovering; 4/4, 4/4, 3/4 crossing at 5 m/s (fixed launcher, MuJoCo)",
+                "after_the_catch": "the bandit falls (about 17 m/s from 20 m): a parachute is left for later"},
+        "perch_to_fouled_s": {f"{d:.0f}_m": r(sling_attack(d)["time_to_foul_s"]) for d in (50.0, 100.0, 200.0)},
+    }
+
+
+def design_record() -> dict:
+    """``data/gavilan_design.json``: the CAD's parameters, the mass table, the flight card."""
+    pr = gavilan_mass_budget()
+    props = pr.properties()
+    return {"source": "gavilan.GavilanX (X_SLING), gavilan_flight.gavilan_mass_budget(), flight_card(); notebook 38",
+            "parameters": {k: v for k, v in gv.x_resolve(gv.X_SLING).items()},
+            "mass_table": [{"item": i.name, "kg": round(i.kg, 4), "group": i.group, "x_m": round(i.pos[0], 3), "source": i.source} for i in pr.items],
+            "mass_kg": round(pr.mass, 4), "by_group_kg": {k: round(v, 4) for k, v in pr.by_group().items()},
+            "centre_of_gravity_m": [round(float(c), 4) for c in props.com], "flight_card": flight_card()}
