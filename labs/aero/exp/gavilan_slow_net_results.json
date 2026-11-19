@@ -1,0 +1,20 @@
+{
+ "15 m/s, bandit 0 m/s, 3 m": "4/4",
+ "15 m/s, bandit 0 m/s, 4 m": "0/4",
+ "15 m/s, bandit 0 m/s, 5 m": "0/4",
+ "15 m/s, bandit 5 m/s, 3 m": "0/4",
+ "15 m/s, bandit 5 m/s, 4 m": "0/4",
+ "15 m/s, bandit 5 m/s, 5 m": "0/4",
+ "20 m/s, bandit 0 m/s, 3 m": "4/4",
+ "20 m/s, bandit 0 m/s, 4 m": "4/4",
+ "20 m/s, bandit 0 m/s, 5 m": "0/4",
+ "20 m/s, bandit 5 m/s, 3 m": "0/4",
+ "20 m/s, bandit 5 m/s, 4 m": "0/4",
+ "20 m/s, bandit 5 m/s, 5 m": "0/4",
+ "30 m/s, bandit 0 m/s, 3 m": "4/4",
+ "30 m/s, bandit 0 m/s, 4 m": "4/4",
+ "30 m/s, bandit 0 m/s, 5 m": "4/4",
+ "30 m/s, bandit 5 m/s, 3 m": "4/4",
+ "30 m/s, bandit 5 m/s, 4 m": "4/4",
+ "30 m/s, bandit 5 m/s, 5 m": "3/4"
+}
