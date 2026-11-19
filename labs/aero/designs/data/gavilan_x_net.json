@@ -1,0 +1,98 @@
+{
+ "source": "gavilan_flight.x_variants_table(), net_shot(), x_net_attack()",
+ "note": "reduced point-mass model; the net pod, talons and feet are hand estimates x 1.25; the net's flight times and captures are the launcher test's (fixed launcher, quadcopter at 5 m/s)",
+ "net_pod": {
+  "source": "LIGHT_NET's parts without GAVILAN-H's long jet pipe; the pod fairing by hand",
+  "parts_g": {
+   "carbon tube 0.25 m, 32 mm bore": 63.0,
+   "chamber and rear venturi (6061)": 140.0,
+   "burst-diaphragm holder and puncture solenoid": 90.0,
+   "charge vessel 80 mL, carbon": 80.0,
+   "jet pipe 0.15 m, carbon": 30.0,
+   "pod fairing and its strut (printed foam)": 45.0,
+   "trigger electronics and wiring": 30.0,
+   "net cartridge": 70.0
+  },
+  "margin": 1.25,
+  "cda_m2": 0.0016
+ },
+ "net_pod_kg": 0.685,
+ "stop_margin_m": 1.5,
+ "safe_shots": [
+  {
+   "range_m": 4.0,
+   "fastest_safe_speed_m_s": 6.95
+  },
+  {
+   "range_m": 5.0,
+   "fastest_safe_speed_m_s": 8.58
+  },
+  {
+   "range_m": 6.0,
+   "fastest_safe_speed_m_s": 10.06
+  },
+  {
+   "range_m": 8.0,
+   "fastest_safe_speed_m_s": 12.81
+  }
+ ],
+ "rows": [
+  {
+   "key": "x_net_shot",
+   "aircraft": "Gavilan-X with the one-shot net",
+   "mass_kg": 2.033,
+   "catcher_kg": 0.685,
+   "static thrust / weight": 4.875,
+   "turn rate @15 [deg/s]": 180.077,
+   "stop from 25 m/s [m]": 14.995,
+   "top speed [m/s]": 47.5,
+   "hover [min]": 4.953,
+   "cruise [min]": 10.361,
+   "perch to the bandit fouled, 50 m [s]": 2.664,
+   "perch to the bandit fouled, 100 m [s]": 3.835,
+   "perch to the bandit fouled, 200 m [s]": 5.925,
+   "reach to the bandit [m]": "3 to 8 (shot)",
+   "aiming": "the net opens to 1.6-2.0 m; 5/5 at every range from 3 to 8 m in the launcher test",
+   "shots": 1,
+   "the bandit afterwards": "falls (about 17 m/s from 20 m): not caught alive yet"
+  },
+  {
+   "key": "x_talons",
+   "aircraft": "Gavilan-X (the hunt on an X-wing: four identical panels)",
+   "mass_kg": 1.487,
+   "catcher_kg": 0.139,
+   "static thrust / weight": 6.666,
+   "turn rate @15 [deg/s]": 248.695,
+   "stop from 25 m/s [m]": 12.894,
+   "top speed [m/s]": 47.5,
+   "hover [min]": 7.342,
+   "cruise [min]": 13.96,
+   "perch to the bandit fouled, 50 m [s]": 2.618,
+   "perch to the bandit fouled, 100 m [s]": 3.71,
+   "perch to the bandit fouled, 200 m [s]": 5.55,
+   "reach to the bandit [m]": "0 (contact)",
+   "aiming": "±0.22 m (net on legs)",
+   "shots": "repeatable",
+   "the bandit afterwards": "held, carried down"
+  },
+  {
+   "key": "x_feet",
+   "aircraft": "Gavilan-XP (the X-wing with a hawk's feet)",
+   "mass_kg": 1.513,
+   "catcher_kg": 0.165,
+   "static thrust / weight": 6.551,
+   "turn rate @15 [deg/s]": 244.282,
+   "stop from 25 m/s [m]": 12.982,
+   "top speed [m/s]": 47.5,
+   "hover [min]": 7.176,
+   "cruise [min]": 13.71,
+   "perch to the bandit fouled, 50 m [s]": 2.632,
+   "perch to the bandit fouled, 100 m [s]": 3.725,
+   "perch to the bandit fouled, 200 m [s]": 5.635,
+   "reach to the bandit [m]": "0 (contact)",
+   "aiming": "±0.06 m (feet)",
+   "shots": "repeatable",
+   "the bandit afterwards": "held, carried down"
+  }
+ ]
+}

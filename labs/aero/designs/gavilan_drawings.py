@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import gavilan as gv
 
-COLOURS = {"talons": ("#c0392b", 1.0), "guards": ("#2c3e50", 1.0), "fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
+COLOURS = {"netpod": ("#c0392b", 1.0), "talons": ("#c0392b", 1.0), "guards": ("#2c3e50", 1.0), "fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
            "camera": ("#111111", 1.0), "props": ("#7fb2e5", 0.30)}
 FILL = {"boom": "#6b4f2a", "body": "#8d99a6", "wing": "#c9a66b", "fins": "#6b4f2a", "pylons": "#3b3f45", "pods": "#3b3f45", "camera": "#111111"}
 
@@ -194,6 +194,29 @@ def sequence_chart(out, seq, last_s=2.2):
                  fontsize=10.5, color=INK, x=0.01, ha="left")
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(out, dpi=120, facecolor=SURFACE)
+    plt.close(fig)
+    return out
+
+
+def render_x_net(out="gavilan_x_net_3d.png"):
+    """GAVILAN-X with the one-shot net pod under its belly."""
+    import gavilan_flight as gf
+    p = gv.x_resolve(gv.X_NET)
+    N = gv.GavilanX.net_layout(p)
+    views = [(14, -60, "on its perch, standing on its four panel tips", True, {"camera_tilt_deg": 90.0}),
+             (24, -128, "the sprint: nose first, the muzzle under the camera", False, {}),
+             (-25, -120, "from below: the pod between the two lower panels", False, {}),
+             (90, -90, "from above", False, {}), (0, -90, "from the side: the tube forward, the jet out at the body's end", False, {}),
+             (0, 180, "from the front: the X and the muzzle", False, {})]
+    fig = plt.figure(figsize=(16, 10.5))
+    for k, (elev, azim, name, standing, over) in enumerate(views):
+        draw(fig.add_subplot(2, 3, k + 1, projection="3d"), {**p, **over}, elev, azim, name, standing, cls=gv.GavilanX)
+    m = gf.gavilan_x_net()
+    fig.suptitle(f"Gavilan-X with the one-shot net — the lightest net launcher (70 g cartridge, 1.5 m net, 45 m/s) in a pod under the belly\n"
+                 f"{m.mass:.2f} kg, static thrust {m.t_max(0.0) / m.weight:.1f} x its weight; pod {N['length']:.0f} mm long, {p['net_pod_diameter']:.0f} mm across, "
+                 f"{N['clear_of_lower_discs']:.0f} mm clear of the lower propellers", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
     plt.close(fig)
     return out
 

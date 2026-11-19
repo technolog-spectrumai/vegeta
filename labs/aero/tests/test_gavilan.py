@@ -303,3 +303,19 @@ def test_gavilan_xp_feet_open_shut_fold_and_the_catch_sequence_adds_up():
     tr = seq["trace"]
     assert tr["range_m"][0] == pytest.approx(100.0, abs=3.0) and tr["range_m"][-1] == pytest.approx(0.0, abs=0.05)
     assert tr["speed_m_s"][-1] == pytest.approx(gf.XP_CONTACT_SPEED, abs=0.2) and tr["leg_deg"][0] == 180.0 and tr["leg_deg"][-1] == 100.0
+
+
+def test_gavilan_x_with_the_one_shot_net_pod_clears_the_propellers_and_stops_short_of_its_net():
+    p = gv.x_resolve(gv.X_NET)
+    g = gv.GavilanX().generate(**gv.X_NET)
+    assert g.shape.isValid() and len(g.shape.Solids()) == 1
+    N = gv.GavilanX.net_layout(p)
+    assert N["clear_of_lower_discs"] > 20.0 and N["clear_of_camera"] > 10.0 and N["x_muzzle"] < 0.0     # the muzzle ahead of the nose
+    m = gf.gavilan_x_net()
+    assert m.mass == pytest.approx(gf.gavilan_x().mass - gf.talons_kg() + gf.net_pod_kg()) and m.t_max(0.0) / m.weight > 4.0
+    for rng in (4.0, 6.0, 8.0):
+        v = gf.fastest_safe_shot(rng, m)
+        assert gf.net_shot(v, rng, m)["safe"] and not gf.net_shot(v + 1.0, rng, m)["safe"]
+    assert gf.fastest_safe_shot(8.0, m) > gf.fastest_safe_shot(4.0, m)          # further out, it may come in faster
+    a = gf.x_net_attack(100.0)
+    assert 3.0 < a["time_to_foul_s"] < 5.0 and a["time_to_foul_s"] > a["time_to_shot_s"]

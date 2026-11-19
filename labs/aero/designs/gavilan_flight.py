@@ -1528,3 +1528,105 @@ def catch_sequence(distance: float = 100.0, height: float = 30.0, p=None) -> dic
             "thrust_over_weight_with_bandit": m.t_max(0.0) / ((m.mass + BANDIT_KG) * G), "spare_thrust_N": spare,
             "spare_thrust_if_bandit_fights_N": spare - BANDIT_THRUST_TW * BANDIT_KG * G, "set_down_s": events[-1]["t"],
             "trace": {"t": t_all, "range_m": rng, "speed_m_s": v_all, "leg_deg": leg, "toe_deg": toe}}
+
+
+# ======================================================================================================= GAVILAN-X + net
+# The lightest net there is: the one-shot interceptor's 70 g cartridge (a 1.5 m net, 0.15 m mesh of 1 mm Dyneema, four
+# 8 g weights) at 45 m/s, here in a pod under GAVILAN-X's belly (gavilan.X_NET): the tube forward along the body axis,
+# the chamber, the burst diaphragm, the 80 mL charge vessel and a short jet pipe inside a fairing, the jet out at the
+# body's end. A fouled bandit falls (gavilan_net_fall: from 20 m it hits the ground at ~16.6 m/s); what slows it is
+# left for later. Masses are HAND ESTIMATES (the chamber's is net_light_design's); MARGIN on their sum.
+NET_POD = {
+    "source": "LIGHT_NET's parts without GAVILAN-H's long jet pipe; the pod fairing by hand",
+    "parts_g": {"carbon tube 0.25 m, 32 mm bore": 63.0, "chamber and rear venturi (6061)": 140.0, "burst-diaphragm holder and puncture solenoid": 90.0,
+                "charge vessel 80 mL, carbon": 80.0, "jet pipe 0.15 m, carbon": 30.0, "pod fairing and its strut (printed foam)": 45.0,
+                "trigger electronics and wiring": 30.0, "net cartridge": 70.0},
+    "margin": 1.25, "cda_m2": 0.0016,
+}
+NET_FLIGHT_S = {3.0: 0.09, 4.0: 0.12, 5.0: 0.18, 6.0: 0.24, 8.0: 0.39}   # the cartridge to the bandit (net_light_quad.log, fixed launcher)
+NET_RANGE = (3.0, 8.0)                                                    # every shot captured in that test (5/5 at each range)
+STOP_MARGIN = 1.5                                                         # the hunter stops this short of the bandit: half the opened net and a margin
+
+
+def net_pod_kg() -> float:
+    return sum(NET_POD["parts_g"].values()) * NET_POD["margin"] / 1e3
+
+
+def gavilan_x_net() -> Machine:
+    x = gavilan_x()
+    return dataclasses.replace(x, name="Gavilan-X with the one-shot net", mass=x.mass - talons_kg() + net_pod_kg(),
+                               cda0=x.cda0 - TALONS["cda_m2"] + NET_POD["cda_m2"], payload_kg=net_pod_kg(), gun="fixed")
+
+
+_SPRINTERS["gavilan_x_net"] = lambda: gavilan_x_net()
+
+
+def net_shot(v: float, rng: float, m: Machine | None = None) -> dict:
+    """GAVILAN-X with the net fires from ``rng`` while closing at ``v``, its nose on the bandit, then flares: does it
+    stop short of the bandit (and its net)? The net's flight time from the launcher test (the aircraft's own speed
+    added to the net's shortens it a little: not counted, the safe side)."""
+    m = m or gavilan_x_net()
+    t_net = float(np.interp(rng, list(NET_FLIGHT_S), list(NET_FLIGHT_S.values())))
+    react = 0.05                                                            # from the shot to the flare starting (hand estimate)
+    b = brake(m, max(v, 0.31), dt=0.01) if v > 0.3 else {"distance_m": 0.0, "time_s": 0.0}
+    travel = v * react + b["distance_m"]
+    return {"v": v, "range": rng, "net_flight_s": t_net, "stop_m": travel, "room_m": rng - STOP_MARGIN - travel, "safe": travel <= rng - STOP_MARGIN}
+
+
+def fastest_safe_shot(rng: float, m: Machine | None = None) -> float:
+    """The highest closing speed at which the shot from ``rng`` still leaves the hunter stopped short of the bandit."""
+    m = m or gavilan_x_net()
+    lo, hi = 0.0, 25.0
+    for _ in range(16):
+        v = 0.5 * (lo + hi)
+        lo, hi = (v, hi) if net_shot(v, rng, m)["safe"] else (lo, v)
+    return lo
+
+
+def x_net_attack(distance: float, rng: float = 6.0) -> dict:
+    """From the perch to the shot at a bandit ``distance`` away: sprint, flare to the fastest safe shooting speed at
+    ``rng``, fire; the net's flight; when the bandit is fouled."""
+    m = gavilan_x_net()
+    v = fastest_safe_shot(rng, m)
+    key = f"_xnet_{rng:g}"
+    _SPRINTERS[key] = gavilan_x_net
+    global CONTACT_SPEED
+    keep = CONTACT_SPEED
+    CONTACT_SPEED = max(v, 0.5)
+    try:
+        r = intercept(key, max(distance - rng, 1.0))
+    finally:
+        CONTACT_SPEED = keep
+    t_net = float(np.interp(rng, list(NET_FLIGHT_S), list(NET_FLIGHT_S.values())))
+    return {"distance_m": distance, "fire_range_m": rng, "fire_speed_m_s": v, "time_to_shot_s": r["time_s"], "time_to_foul_s": r["time_s"] + t_net,
+            "peak_m_s": r["peak_m_s"]}
+
+
+def x_variants_table() -> list:
+    """GAVILAN-X with its three catchers: the four-legged net (talons), the hawk's feet (XP), the one-shot net."""
+    rows = []
+    for key, m, catcher in (("x_net_shot", gavilan_x_net(), "net"), ("x_talons", gavilan_x(), "talons"), ("x_feet", gavilan_xp(), "feet")):
+        en, br = endurance(m), brake(m)
+        row = {"key": key, "aircraft": m.name, "mass_kg": m.mass, "catcher_kg": m.payload_kg, "static thrust / weight": m.t_max(0.0) / m.weight,
+               "turn rate @15 [deg/s]": turn(m, 15.0)["rate_inst_deg_s"], "stop from 25 m/s [m]": br["distance_m"],
+               "top speed [m/s]": top_speed(m), "hover [min]": en["hover_min"], "cruise [min]": en["cruise_min"]}
+        if catcher == "net":
+            for d in (50.0, 100.0, 200.0):
+                row[f"perch to the bandit fouled, {d:.0f} m [s]"] = x_net_attack(d)["time_to_foul_s"]
+            row.update({"reach to the bandit [m]": "3 to 8 (shot)", "aiming": "the net opens to 1.6-2.0 m; 5/5 at every range from 3 to 8 m in the launcher test",
+                        "shots": 1, "the bandit afterwards": "falls (about 17 m/s from 20 m): not caught alive yet"})
+        else:
+            key2 = "gavilan_x" if catcher == "talons" else "_xp_grab"
+            _SPRINTERS["_xp_grab"] = gavilan_xp
+            global CONTACT_SPEED
+            keep = CONTACT_SPEED
+            CONTACT_SPEED = CONTACT_SPEED if catcher == "talons" else XP_CONTACT_SPEED          # the feet grab at 1.5 m/s
+            try:
+                for d in (50.0, 100.0, 200.0):
+                    row[f"perch to the bandit fouled, {d:.0f} m [s]"] = intercept(key2, d)["time_s"]
+            finally:
+                CONTACT_SPEED = keep
+            row.update({"reach to the bandit [m]": "0 (contact)", "aiming": "±0.22 m (net on legs)" if catcher == "talons" else "±0.06 m (feet)",
+                        "shots": "repeatable", "the bandit afterwards": "held, carried down"})
+        rows.append(row)
+    return rows

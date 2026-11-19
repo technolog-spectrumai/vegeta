@@ -339,6 +339,11 @@ class GavilanX(Gavilan):
         _gp("bay_length", 134.5), _gp("length", 580.0), _gp("talons", True), _gp("guards", True), _gp("prop_gap", 24.0),
         _gp("motor_y", 141.4), _gp("motor_z", 141.4),                    # the motor axes: 200 mm from the body axis, on the 45 degree lines
         Parameter("panel_radius", 340.0, "mm", min=120.0, description="each panel's tip from the body axis (the foot)"),
+        Parameter("net_pod", False, description="the one-shot net launcher in a pod under the belly (talons off): muzzle forward, jet aft"),
+        Parameter("net_tube", 250.0, "mm", min=100.0, description="net pod: the launch tube (32 mm bore)"),
+        Parameter("net_tube_od", 35.0, "mm", min=33.0, description="net pod: the tube's outer diameter"),
+        Parameter("net_pod_diameter", 52.0, "mm", min=40.0, description="net pod: the fairing round the chamber, the charge vessel and the jet pipe"),
+        Parameter("net_muzzle_x", -15.0, "mm", description="net pod: the muzzle's station (the nose tip is 0)"),
         Parameter("panel_root_chord", 220.0, "mm", min=60.0, description="panel chord at the body axis"),
         Parameter("panel_tip_chord", 110.0, "mm", min=30.0, description="panel chord at the tip"),
         Parameter("panel_x", 215.0, "mm", min=0.0, description="panel root leading edge from the nose tip"),
@@ -404,9 +409,37 @@ class GavilanX(Gavilan):
             out = q if out is None else out.union(q)
         return out
 
+    @classmethod
+    def net_layout(cls, p) -> dict:
+        """The net pod's stations [mm]: its axis under the belly, the muzzle, where the tube enters the fairing, the
+        jet's exit; the clearances to the lower propellers' discs and to the camera."""
+        L = cls.layout(p)
+        z = -(L["R"] + p["net_pod_diameter"] / 2 + 2.0)
+        x_m = p["net_muzzle_x"]
+        x_f = x_m + p["net_tube"] - 110.0                                  # the fairing starts round the tube's last 110 mm (the breech)
+        x_exit = L["body_end"]
+        d_disc = math.hypot(p["motor_y"], p["motor_z"] + z) - p["prop_diameter"] / 2 - p["net_pod_diameter"] / 2
+        return {"z": z, "x_muzzle": x_m, "x_fairing": x_f, "x_exit": x_exit, "length": x_exit - x_m, "clear_of_lower_discs": d_disc,
+                "clear_of_camera": -(z + p["net_tube_od"] / 2) - p["camera_diameter"] / 2}
+
+    def _net_pod(self, p):
+        N = self.net_layout(p)
+        z, rf = N["z"], p["net_pod_diameter"] / 2
+        tube = cq.Workplane("YZ").circle(p["net_tube_od"] / 2).extrude(p["net_tube"]).translate((N["x_muzzle"], 0, z))
+        prof = ogive(70.0, rf - p["net_tube_od"] / 2 + 1.0, 14)
+        front = np.column_stack([prof[:, 0], prof[:, 1] + p["net_tube_od"] / 2 - 1.0])
+        x1 = N["x_exit"] - N["x_fairing"] - 40.0
+        meridian = np.vstack([[[0.0, 0.0]], front, [[x1, rf], [x1 + 40.0, 9.0]]])
+        fairing = self._revolve(meridian, N["x_fairing"]).translate((0, 0, z))
+        strut = cq.Workplane("XY").box(N["x_exit"] - N["x_fairing"] - 60.0, 6.0, -z - L_R(self, p) + 4.0, centered=(False, True, False)) \
+            .translate((N["x_fairing"] + 30.0, 0, z))
+        return tube.union(fairing).union(strut)
+
     def parts(self, p) -> dict:
         out = {"body": self._body(p), "camera": self._camera(p), "wing": self._panels(p), "pylons": self._pods(p), "props": self._props(p)}
-        if p["talons"]:
+        if p["net_pod"]:
+            out["netpod"] = self._net_pod(p)
+        elif p["talons"]:
             out["talons"] = self._talons(p)
         if p["guards"]:
             out["guards"] = self._guards(p)
@@ -423,7 +456,12 @@ class GavilanX(Gavilan):
             pod = self._pod(p, -L["r_motor"], 0.0)                         # on the panel's own line (-y), before the 45 degree turn
             return self._panel(p).union(pod)
         aircraft = self._body(p).union(self._camera(p)).union(self._panels(p)).union(self._pods(p))
-        if p["talons"]:
+        if p["net_pod"]:
+            N = self.net_layout(p)
+            if N["clear_of_lower_discs"] < 10.0:
+                raise ValueError("the net pod reaches the lower propellers' discs: a slimmer pod or the motors further out")
+            aircraft = aircraft.union(self._net_pod(p))
+        elif p["talons"]:
             aircraft = aircraft.union(self._talons(p))
         if p["guards"]:
             aircraft = aircraft.union(self._guards(p))
@@ -517,6 +555,14 @@ class GavilanXP(GavilanX):
 
 def xp_resolve(q=None) -> dict:
     return GavilanXP().resolve(**dict(q or {}))
+
+
+def L_R(design, p) -> float:
+    """The body's radius [mm] (a helper for parts hung under it)."""
+    return p["body_diameter"] / 2
+
+
+X_NET = {"net_pod": True, "talons": False}                 # GAVILAN-X with the one-shot net launcher
 
 
 def x_resolve(q=None) -> dict:
