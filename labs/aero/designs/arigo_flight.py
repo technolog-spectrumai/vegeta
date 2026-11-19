@@ -64,9 +64,10 @@ HIGH_VOLTAGE = ("v3120-700", "apd-120f3")    # the catalogue's 3120 on 12S: two 
 
 
 def _config(prop: str, packs: int, hv: bool = False) -> ef.Config:
-    """The drive: ECO 2807s on 6S (``packs`` in parallel), or (``hv``) T-Motor 3120s on 12S — the two packs in series."""
+    """The drive: ECO 2807s on 6S (``packs`` in parallel), or (``hv``) T-Motor 3120s on 12S — packs in series pairs
+    (``packs`` 2: 12S1P, 4: 12S2P)."""
     if hv:
-        return ef.Config(HIGH_VOLTAGE[0], prop, HIGH_VOLTAGE[1], gf.CONFIG_J.battery, 2, 1)
+        return ef.Config(HIGH_VOLTAGE[0], prop, HIGH_VOLTAGE[1], gf.CONFIG_J.battery, 2, max(packs // 2, 1))
     return dataclasses.replace(gf.CONFIG_J, propeller=prop, n_parallel=packs)
 
 
@@ -78,14 +79,14 @@ def _esc_extra_kg(c: ef.Config) -> float:
 
 
 def x_member(scale: float, packs: int, prop: str = "hq7x4x3", hv: bool = False) -> gf.Machine:
-    q = x_params(scale, 2 if hv else packs)
+    q = x_params(scale, packs)
     c = _config(prop, packs, hv)
     m = gf.gavilan_x(q, c)
     mass = gf.x_mass_budget(c, q, talons=False).mass + catcher_kg() + _esc_extra_kg(c)
-    tag = "12S 3120s" if hv else f"{packs} pack{'s' if packs > 1 else ''}"
+    tag = f"12S{max(packs // 2, 1)}P 3120s" if hv else f"{packs} pack{'s' if packs > 1 else ''}"
     return dataclasses.replace(m, name=f"Arigo-X {scale:.2f}x, {tag}, {prop}", mass=mass,
                                cda0=m.cda0 - gf.TALONS["cda_m2"] + gf.SLING_CDA, payload_kg=catcher_kg(), gun="slingshot",
-                               notes={**m.notes, "path": "X12" if hv else "X", "scale": scale, "packs": 2 if hv else packs, "propeller": prop, "params": q})
+                               notes={**m.notes, "path": "X12" if hv else "X", "scale": scale, "packs": packs, "propeller": prop, "params": q})
 
 
 def a_member(scale: float, packs: int, prop: str = "hq7x4x3", hv: bool = False) -> gf.Machine:
@@ -108,6 +109,11 @@ def h_member(packs: int) -> gf.Machine:
                             name=f"Arigo-H (blown tail), {packs} pack{'s' if packs > 1 else ''}",
                             notes={**m.notes, "path": "H", "scale": 1.0, "packs": packs, "propeller": c.propeller})
     return m
+
+
+def candidates_round2() -> dict:
+    """The second round: the 12S X-wing with four packs (12S2P) for the reach, at two sizes."""
+    return {f"X12 {s:.2f} 12S2P hq7x4x3": (lambda s=s: x_member(s, 4, "hq7x4x3", hv=True)) for s in (1.15, 1.3)}
 
 
 def candidates() -> dict:
