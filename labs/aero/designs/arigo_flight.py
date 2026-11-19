@@ -35,6 +35,26 @@ import gavilan as gv
 import gavilan_flight as gf
 import gavilan_perch as gpe
 
+# Larger propellers than the catalogue lists, for the larger airframe: ASSUMED rows (HQProp makes these sizes; mass,
+# speed limit and planform are taken from the catalogue's 7x4x3 scaled, nothing sourced). Added to the catalogue in this
+# process only (emerillon_market's file is not changed).
+EXTRA_PROPELLERS = {
+    "hq8x4.5x3": dict(name="HQProp 8x4.5x3 (assumed row)", mass_g=14.0, price=4.0, d_in=8.0, p_in=4.5),
+    "hq9x5x3": dict(name="HQProp 9x5x3 (assumed row)", mass_g=19.0, price=5.0, d_in=9.0, p_in=5.0),
+}
+
+
+def _register_propellers():
+    import emerillon_market as mk
+    for key, r in EXTRA_PROPELLERS.items():
+        if key not in mk.CATALOGUE:
+            mk.CATALOGUE[key] = mk.Part(key, r["name"], "propeller", r["price"], r["mass_g"], (), "", "", "assumed",
+                                        "scaled from the 7x4x3 row: mass, the 190,000/D speed limit and the planform are assumptions",
+                                        data=dict(d_in=r["d_in"], p_in=r["p_in"], blades=3, rpm_limit_k=190000.0, chord=(0.085, 0.115, 0.055), tc_tip=0.07))
+
+
+_register_propellers()
+
 PACK_BAY = 84.5            # mm of body bay per extra 6S 1700 mAh pack in line (gavilan.VARIANTS['J'] against 'A')
 PURSUIT_S = 120.0          # the hard part of a hunt at the far end: two minutes at 2 g (the job asks for 5 at Gavilan's level; here a share of it)
 RESERVE = 0.10             # of the usable pack, kept for the landing on the perch
@@ -106,7 +126,8 @@ def _esc_extra_kg(c: ef.Config) -> float:
 
 
 def x_member(scale: float, packs: int, prop: str = "hq7x4x3", hv: bool = False) -> gf.Machine:
-    q = x_params(scale, packs)
+    import emerillon_market as mk
+    q = {**x_params(scale, packs), "prop_diameter": round(mk.part(prop).d_in * 25.4, 1)}
     c = _config(prop, packs, hv)
     m = gf.gavilan_x(q, c)
     mass = gf.x_mass_budget(c, q, talons=False).mass + catcher_kg() + _esc_extra_kg(c)
@@ -153,6 +174,17 @@ def candidates_round2() -> dict:
     return out
 
 
+def candidates_round3() -> dict:
+    """The third round: the larger X (1.3x) on larger propellers (ASSUMED rows) — 8 and 9 inches on the 12S 3120s,
+    one and two pairs of packs, and 8 inches on the 6S ECOs on two packs."""
+    out = {}
+    for prop in ("hq8x4.5x3", "hq9x5x3"):
+        for packs in (2, 4):
+            out[f"X12 1.30 12S{packs // 2}P {prop}"] = lambda prop=prop, packs=packs: x_member(1.3, packs, prop, hv=True)
+    out["X 1.30 2p hq8x4.5x3"] = lambda: x_member(1.3, 2, "hq8x4.5x3")
+    return out
+
+
 def candidates() -> dict:
     out = {}
     for s in (1.0, 1.15, 1.3):
@@ -166,9 +198,7 @@ def candidates() -> dict:
         for n in (1, 2):
             out[f"A {s:.2f} {n}p hq7x4x3"] = lambda s=s, n=n: a_member(s, n)
     out["A12 1.15 12S hq7x4x3"] = lambda: a_member(1.15, 2, "hq7x4x3", hv=True)
-    for n in (1, 2):
-        out[f"H 1.00 {n}p hq7x4x3"] = lambda n=n: h_member(n)
-    return out
+    return out              # H (the blown-tail fixed wing) was weighed in notebook 38: it stops in 36 m, not 14; left out here
 
 
 def chase_radius_km(m: gf.Machine) -> float:
