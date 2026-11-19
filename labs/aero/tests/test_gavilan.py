@@ -319,3 +319,30 @@ def test_gavilan_x_with_the_one_shot_net_pod_clears_the_propellers_and_stops_sho
     assert gf.fastest_safe_shot(8.0, m) > gf.fastest_safe_shot(4.0, m)          # further out, it may come in faster
     a = gf.x_net_attack(100.0)
     assert 3.0 < a["time_to_foul_s"] < 5.0 and a["time_to_foul_s"] > a["time_to_shot_s"]
+
+
+# ------------------------------------------------------------------------------------------------ the chosen Gavilan
+def test_the_chosen_gavilan_perch_slingshot_and_flight_card():
+    import gavilan_perch as gpe
+    import gavilan_slingshot as gs
+    g = gv.GavilanX().generate(**gv.X_SLING)
+    assert g.shape.isValid() and gv.GavilanX.sling_layout(gv.x_resolve(gv.X_SLING))["clear_of_lower_discs"] > 20.0
+    for state in ("cocked", "fired"):
+        assert gs.Slingshot().generate(state=state).shape.isValid()
+    assert gs.launcher(45.0, "steel coil", True)["launcher_kg"] == float("inf")    # a steel coil cannot throw that fast
+    assert gs.launcher(30.0, "latex bands", True)["launcher_kg"] < gf.net_pod_kg()  # lighter than the gas one-shot
+    assert gs.launcher(30.0, "latex bands", True)["recoil_N_s"] == 0.0
+    P = gpe.resolve()
+    L = gpe.Perch.layout(P)
+    x = gv.x_resolve()
+    assert P["foot_radius"] == pytest.approx(gv.GavilanX.layout(x)["foot_radius"] - x["pad_width"] / 2 + 2.0, abs=0.1)   # the cups under the pads
+    assert L["landing_tolerance"] > 30.0 and gpe.Perch().generate().shape.isValid()
+    b = gpe.budget()
+    assert 1.0 < b["watch_off_the_perch_h"] < 3.0 and b["recharge_after_a_100_m_hunt_min"] < 30.0
+    mb = gf.gavilan_mass_budget()
+    assert not any(i.name.startswith("talons") for i in mb.items) and any("slingshot" in i.name for i in mb.items)
+    assert all(i.source for i in mb.items) and 1.6 < mb.mass < 2.1
+    m = gf.gavilan()
+    assert m.mass == pytest.approx(mb.mass) and m.hovers and m.t_max(0.0) / m.weight > 4.5
+    a = gf.sling_attack(100.0)
+    assert 3.0 < a["time_to_foul_s"] < 5.0 and a["net_relative_m_s"] > gf.SLING_SPEED
