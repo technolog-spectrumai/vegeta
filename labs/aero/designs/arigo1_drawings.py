@@ -18,9 +18,10 @@ COL = {"fuselage": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a
        "motors": ("#3b3f45", 1.0), "props": ("#7fb2e5", 0.3), "hook": ("#c0392b", 1.0)}
 
 
-def draw(ax, q, elev, azim, title):
-    p = a1.resolve(q)
-    for part, shape in a1.Arigo1().parts(p).items():
+def draw(ax, q, elev, azim, title, cls=None):
+    cls = cls or a1.Arigo1
+    p = cls().resolve(**q)
+    for part, shape in cls().parts(p).items():
         c, al = COL[part]
         ax.add_collection3d(Poly3DCollection(_tris(shape, 1.0), facecolors=c, edgecolors=c, linewidths=0.0, alpha=al, shade=al == 1.0))
     h, cx = 0.52 * p["span"], p["fuselage_length"] / 2
@@ -60,6 +61,21 @@ def export_all(folder):
         for pr in a1.PROPULSION:
             g = a1.Arigo1().generate(**a1.variant(v, pr))
             g.export_step(str(folder / f"arigo1_{v}_{pr}.step")); g.export_stl(str(folder / f"arigo1_{v}_{pr}.stl"), tolerance=0.3)
+
+
+def render_arigo2(out, wing="hybrid"):
+    import arigo2 as a2
+    q = a2.variant(wing)
+    p = a2.resolve(q)
+    L = a2.Arigo2.layout(p)
+    fig = plt.figure(figsize=(15, 9.5))
+    for k, (e, az, t, f) in enumerate([(22, -130, "front quarter", False), (22, -50, "rear quarter", False), (90, -90, "from above", False),
+                                       (0, -90, "from the side", False), (0, 180, "from the front", False), (22, -130, "landing: motors stopped, blades folded", True)]):
+        draw(fig.add_subplot(2, 3, k + 1, projection="3d"), {**q, "folded": f}, e, az, t, cls=a2.Arigo2)
+    fig.suptitle(f"ARIGO-2 ({wing} wing) — two {p['twin_prop_diameter'] / 25.4:.0f}-inch folding tractors at y ±{p['nacelle_y']:.0f} mm, counter-rotating; "
+                 f"span {p['span']:.0f} mm, wing {L['S_mm2'] / 1e6:.3f} m², nose camera unobstructed", fontsize=11)
+    fig.tight_layout(); fig.savefig(out, dpi=105); plt.close(fig)
+    return out
 
 
 if __name__ == "__main__":
