@@ -1232,8 +1232,13 @@ def intercept(key: str, distance: float) -> dict:
     i = min(int(np.searchsorted(need, distance)), len(need) - 1)
     v_peak = float(tr["V"][i])
     t_brake = float(np.interp(v_peak, vb, tb))
-    return {"time_s": SPINUP_S + float(tr["t"][i]) + t_brake, "arrival_m_s": CONTACT_SPEED, "peak_m_s": v_peak, "catches": True,
-            "wh": float(tr["wh"][i]) + m.power(m.weight, 0.0) * t_brake / 3600.0, "launch": "from its perch"}
+    cruise_s = cruise_wh = 0.0
+    if distance > need[-1]:                                          # beyond the sprint: hold the top speed, then flare
+        cruise_s = (distance - need[-1]) / max(v_peak, 1.0)
+        lv = level(m, v_peak)
+        cruise_wh = (lv["power_w"] if lv else m.power(m.t_max(v_peak), v_peak)) * cruise_s / 3600.0
+    return {"time_s": SPINUP_S + float(tr["t"][i]) + cruise_s + t_brake, "arrival_m_s": CONTACT_SPEED, "peak_m_s": v_peak, "catches": True,
+            "wh": float(tr["wh"][i]) + cruise_wh + m.power(m.weight, 0.0) * t_brake / 3600.0, "launch": "from its perch"}
 
 
 _SPRINTERS = {"gavilan_j": lambda: gavilan_j(), "gavilan_a": lambda: gavilan("A", emitters=0), "gavilan_h": lambda: gavilan_h(),
@@ -1306,8 +1311,9 @@ def x_geometry(q=None) -> dict:
             "foot_half_width": L["foot_half_width"] / 1e3, "projected_span": L["projected_span"] / 1e3, "panel_radius": p["panel_radius"] / 1e3}
 
 
-def x_mass_budget(c: ef.Config = CONFIG_J) -> og_mass.Budget:
-    g = x_geometry()
+def x_mass_budget(c: ef.Config = CONFIG_J, q=None, talons: bool = True) -> og_mass.Budget:
+    """GAVILAN-X's mass (``q``: other X parameters, for a scaled airframe; ``talons`` False leaves the catcher off)."""
+    g = x_geometry(q)
     motor, prop, esc, bat = (mk.part(k) for k in (c.motor, c.propeller, c.esc, c.battery))
     petg, pa6 = mk.part("petg-hf"), mk.part("pa6-cf")
     b, I = og_mass.Budget(), og_mass.Item
@@ -1333,13 +1339,14 @@ def x_mass_budget(c: ef.Config = CONFIG_J) -> og_mass.Budget:
           I("motor pods (PA6-CF)", 4 * math.pi * g["pod_d"] * 0.75 * g["pod_l"] * 0.0016 * pa6.density * ef.PRINT_FACTOR / 1.3, (g["x_prop"] + 0.03, 0, 0),
             group="airframe", source="emerillon_flight.printed_masses' rule"),
           I("foot bumpers (TPU)", 0.008, (g["length"], 0, 0), group="airframe", source="emerillon_flight"),
-          I("talons with their line", talons_kg(), (g["x_ac"], 0, -g["d"] / 2 - 0.03), group="payload", source="TALONS (hand estimate x 1.25)"),
           I("propeller guards", guards_kg(), (g["x_prop"], 0, 0), group="airframe", source="GUARDS (hand estimate x 1.25)"))
+    if talons:
+        b.add(I("talons with their line", talons_kg(), (g["x_ac"], 0, -g["d"] / 2 - 0.03), group="payload", source="TALONS (hand estimate x 1.25)"))
     return b
 
 
-def x_drag_buildup(V: float = 25.0, margin: float | None = None) -> dict:
-    g = x_geometry()
+def x_drag_buildup(V: float = 25.0, margin: float | None = None, q=None) -> dict:
+    g = x_geometry(q)
     margin = ef.DRAG_MARGIN if margin is None else margin
 
     def cf(length):
@@ -1357,25 +1364,31 @@ def x_drag_buildup(V: float = 25.0, margin: float | None = None) -> dict:
 
 
 @functools.lru_cache(maxsize=None)
-def x_wing_aero() -> dict:
-    """The four panels at 45 degrees on the vortex lattice: the vertical lift slope and the induced factor on their
-    total area (an X gives about half the slope of the same area laid flat: kestrel_xwing's finding)."""
-    g = x_geometry()
-    r = vlm(gv.x_planform(), alpha_deg=4.0, S_ref=g["S"], c_ref=g["mac"], n_span=8, n_chord=4)
+def _x_wing_aero(key: tuple) -> dict:
+    q = dict(key)
+    g = x_geometry(q)
+    r = vlm(gv.x_planform(q), alpha_deg=4.0, S_ref=g["S"], c_ref=g["mac"], n_span=8, n_chord=4)
     a = math.radians(4.0)
     return {"S": g["S"], "CLa": r["CL"] / a, "k": r["CDi"] / r["CL"] ** 2}
 
 
-def gavilan_x() -> Machine:
-    g, a = x_geometry(), x_wing_aero()
+def x_wing_aero(q=None) -> dict:
+    """The four panels at 45 degrees on the vortex lattice: the vertical lift slope and the induced factor on their
+    total area (an X gives about half the slope of the same area laid flat: kestrel_xwing's finding)."""
+    return dict(_x_wing_aero(tuple(sorted(dict(q or {}).items()))))
+
+
+def gavilan_x(q=None, c: ef.Config = CONFIG_J) -> Machine:
+    """GAVILAN-X with its talons; ``q`` and ``c`` give another X (ARIGO's family scales it)."""
+    g, a = x_geometry(q), x_wing_aero(q)
     c45 = math.cos(math.radians(45.0))
     pol = Polar(cl_alpha=a["CLa"], cd0=0.0, k=a["k"] / OSWALD_VISCOUS, cl_max=CL_MAX_3D * c45, cd90=viterna_cd90(2.0) * c45,
                 source="ogma.aero.vlm on the four panels; maximum lift and broadside drag x cos 45 (kestrel_xwing's treatment)")
-    t_max, power = _drive_fns(drive_map(CONFIG_J, 4), AVIONICS_W)
-    return Machine("Gavilan-X (the hunt on an X-wing: four identical panels)", "tailsitter", x_mass_budget().mass, g["width"], g["length"], g["S"], pol,
-                   x_drag_buildup()["CdA"], t_max, power, N_DESIGN, mk.part(CONFIG_J.battery).cells * 3.7 * mk.part(CONFIG_J.battery).ah,
+    t_max, power = _drive_fns(drive_map(c, 4), AVIONICS_W)
+    return Machine("Gavilan-X (the hunt on an X-wing: four identical panels)", "tailsitter", x_mass_budget(c, q).mass, g["width"], g["length"], g["S"], pol,
+                   x_drag_buildup(q=q)["CdA"], t_max, power, N_DESIGN, mk.part(c.battery).cells * 3.7 * mk.part(c.battery).ah * c.packs,
                    plan_body=g["plan_body"], roll_rate=math.radians(600.0), fixed_w=AVIONICS_W, payload_kg=talons_kg(), gun="talons",
-                   source="gavilan_flight (gavilan.GavilanX, ÉMERILLON's drive and catalogue)", notes={"config": CONFIG_J.label(), "motors": 4})
+                   source="gavilan_flight (gavilan.GavilanX, ÉMERILLON's drive and catalogue)", notes={"config": c.label(), "motors": 4})
 
 
 _SPRINTERS["gavilan_x"] = lambda: gavilan_x()
