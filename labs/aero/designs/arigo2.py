@@ -110,7 +110,7 @@ class Arigo2(a1.Arigo1):
 
     def parts(self, p) -> dict:
         out = super().parts({**p, "propulsion": "twin"})
-        out["props"] = self._props(p)
+        out["blades" if p["folded"] else "props"] = self._props(p)       # folded blades are solid in pictures, not a disc
         return out
 
 

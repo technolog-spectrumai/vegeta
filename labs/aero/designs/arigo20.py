@@ -92,7 +92,7 @@ class Arigo20(a1.Arigo1):
         out = h
         for s in (1, -1):
             fin = self._surface(L["x_fin"], p["fin_root_chord"], p["fin_taper"], p["fin_height"], p["fin_sweep_deg"],
-                                p["tail_thickness"], "z", z0=-0.35 * p["fin_height"])            # the fins straddle the stabiliser's tip
+                                p["tail_thickness"], "z", z0=-0.12 * p["fin_height"])            # a short stub below the stabiliser, kept above the belly
             out = out.union(fin.translate((0, s * L["fin_y"], 2.0)))
         return out
 
