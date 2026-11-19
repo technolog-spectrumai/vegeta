@@ -41,7 +41,8 @@ def mjcf(C: dict, mesh: str | None = None, bandit: bool = False) -> str:
             'contype="0" conaffinity="0"/></body>') if bandit else ""
     return f"""<mujoco model="arigo1">
   <option timestep="{DT}" gravity="0 0 -9.80665" density="0" viscosity="0" integrator="RK4"/>
-  <visual><global offwidth="1280" offheight="720"/><quality shadowsize="2048"/><map znear="0.05" zfar="2000"/></visual>
+  <statistic extent="10" center="0 0 30"/>
+  <visual><global offwidth="1280" offheight="720"/><quality shadowsize="2048"/><map znear="0.005" zfar="300"/></visual>
   <asset>{asset}
     <texture name="grid" type="2d" builtin="checker" rgb1="0.32 0.42 0.30" rgb2="0.28 0.37 0.26" width="512" height="512"/>
     <material name="grid" texture="grid" texrepeat="200 200"/>

@@ -2,7 +2,7 @@
 type leave of it (``designs/arigo1_camera.py``). Seconds, one core. Runs the tractor (chin strut), tractor_lowcam
 (through the disc) and the pusher (reference) on the hybrid wing.
 
-Writes ``labs/aero/sims/output/arigo1_camera.yaml`` (PASTE BACK) and ``arigo1_camera.png``.
+Writes ``labs/aero/sims/output/arigo0_camera.yaml`` (PASTE BACK) and ``arigo0_camera.png``.
 """
 import argparse
 import json
@@ -32,10 +32,10 @@ def main(argv=None) -> int:
         print(f"  {lay}: behind disc {res[-1]['behind_disc']}  synced {res[-1].get('synced_global_best_phase')}  fusion {res[-1].get('two_frame_fusion_residual')}")
     for d in a.lowcam_drops:
         res.append(cam.analyse(a1.variant(a.wing, "tractor_lowcam", lowcam_drop=d), f"{a.wing}_tractor_lowcam_{d:.0f}mm"))
-    cam.picture(res, OUT / "arigo1_camera.png")
-    doc = {"aircraft": "ARIGO-1", "note": cam.__doc__.split("\n\n")[1].replace("\n", " "), "results": [{k: v for k, v in r.items() if not k.startswith("_")} for r in res]}
-    (OUT / "arigo1_camera.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
-    print(f"-> {OUT / 'arigo1_camera.yaml'}, {OUT / 'arigo1_camera.png'}")
+    cam.picture(res, OUT / "arigo0_camera.png")
+    doc = {"aircraft": "ARIGO-0", "note": cam.__doc__.split("\n\n")[1].replace("\n", " "), "results": [{k: v for k, v in r.items() if not k.startswith("_")} for r in res]}
+    (OUT / "arigo0_camera.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
+    print(f"-> {OUT / 'arigo0_camera.yaml'}, {OUT / 'arigo0_camera.png'}")
     return 0
 
 

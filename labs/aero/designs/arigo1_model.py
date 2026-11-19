@@ -34,7 +34,7 @@ DE_MAX, DA_MAX, DR_MAX = 25.0, 20.0, 25.0  # deg, servo travel
 
 def _vlm(pf, alpha, inc):
     from ogma.aero import vlm
-    return vlm(pf["quads"], alpha_deg=alpha, incidence_deg=inc, S_ref=pf["S_ref"], c_ref=pf["c_ref"], x_ref=0.0)
+    return vlm(pf["quads"], alpha_deg=alpha, incidence_deg=inc, S_ref=pf["S_ref"], c_ref=pf["c_ref"], x_ref=0.0, n_span=a1.N_SPAN_PER_STRIP)
 
 
 CFD_FILE = Path(__file__).resolve().parent / "data" / "arigo1_cfd_screening.yaml"
@@ -118,7 +118,14 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     static margin. Each entry's source is in ``sources``."""
     q = a1.variant(variant, propulsion)
     p = a1.resolve(q)
-    L = a1.Arigo1.layout(p)
+    return build(q, p, a1.Arigo1.layout(p), variant, propulsion)
+
+
+def build(q, p, L, variant, propulsion, mass=None, CD0=None, thrust=None) -> dict:
+    """The coefficients for any airframe of the family: ``q`` its ARIGO-1 wing/tail parameters (for the lattice),
+    ``p`` its resolved parameters, ``L`` its layout (tail areas and arms: ARIGO-20 passes its own H tail's).
+    ``mass``, ``CD0``, ``thrust`` override the ARIGO-1 hand values."""
+    MASS_ = MASS if mass is None else mass
     pf = a1.planform(q)
     S, c, b = pf["S_ref"], pf["c_ref"], pf["b"]
     a0 = 2.0                                                       # HAND: 2 % camber at 40 %: zero-lift -2.1 deg (thin aerofoil)
@@ -129,7 +136,7 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     CLa = (r4["CL"] - r0["CL"]) / math.radians(4.0)
     dCm = (r4["Cm"] - r0["Cm"]) / math.radians(4.0)                # about the nose tip
     x_np = -dCm / CLa * c                                          # [m from the nose tip]
-    x_cg = x_np - p["static_margin"] * c
+    x_cg = p["cg_x"] / 1000.0 if p.get("cg_x", 0.0) > 0 else x_np - p["static_margin"] * c   # the design CG (frozen where the CFD ran)
     Cma = CLa * (x_cg - x_np) / c                                  # = -SM * CLa
     Cm0 = r0["Cm"] + r0["CL"] * x_cg / c                           # moved to the CG
     CLde = (re["CL"] - r0["CL"]) * TAU_E                           # per deg
@@ -168,19 +175,20 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     CYdr = eta * a_v * TAU_R * S_v / S * math.pi / 180 * 0.85
     Cldr = CYdr * z_v / b
     CL_MAX = 0.9 * CL_MAX_2D * math.cos(sweep_qc)                  # HAND: Raymer 12.15 (+-0.1)
-    CD0 = 0.032 if propulsion != "twin" else 0.036                  # HAND: component build-up class value (+-0.008); twin: two nacelles
-    if propulsion == "tractor":
-        CD0 += 0.003                                               # the chin turret's strut
+    if CD0 is None:
+        CD0 = 0.032 if propulsion != "twin" else 0.036              # HAND: component build-up class value (+-0.008); twin: two nacelles
+        if propulsion == "tractor":
+            CD0 += 0.003                                           # the chin turret's strut
     Lx, Ly = p["span"] / 1e3, p["fuselage_length"] / 1e3
-    I = (MASS * (0.24 * Lx) ** 2, MASS * (0.30 * Ly) ** 2, MASS * ((0.24 * Lx) ** 2 + (0.30 * Ly) ** 2) * 0.95)  # HAND: radii of gyration (+-30 %)
-    return {"variant": variant, "propulsion": propulsion, "S": S, "c": c, "b": b, "AR": AR, "mass": MASS, "inertia": I,
-            "x_cg_m": x_cg, "z_cg_m": p["wing_z"] / 1e3 * 0.3, "x_np_m": x_np, "static_margin": p["static_margin"],
+    I = (MASS_ * (0.24 * Lx) ** 2, MASS_ * (0.30 * Ly) ** 2, MASS_ * ((0.24 * Lx) ** 2 + (0.30 * Ly) ** 2) * 0.95)  # HAND: radii of gyration (+-30 %)
+    return {"variant": variant, "propulsion": propulsion, "S": S, "c": c, "b": b, "AR": AR, "mass": MASS_, "inertia": I,
+            "x_cg_m": x_cg, "z_cg_m": p["wing_z"] / 1e3 * 0.3, "x_np_m": x_np, "static_margin": (x_np - x_cg) / c,
             "CL0": r0["CL"], "CLa": CLa, "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"]) / CLa, "CD0": CD0, "k": 1 / (math.pi * e * AR),
             "Cm0": Cm0, "Cma": Cma, "Cmq": Cmq, "Cma_dot": Cma_dot, "CLde": CLde, "Cmde": Cmde, "CLq": -Cmq * c / l_h,
             "CYb": CYb, "Clb": Clb_dihedral + Clb_v, "Clb_sweep_per_CL": -math.tan(sweep_qc) / (AR * 1.0) * 0.6, "Cnb": Cnb,
             "Clp": Clp, "Clr_per_CL": Clr0, "Cnp_per_CL": Cnp0, "Cnr": Cnr, "Clda": Clda, "Cnda": Cnda, "Cndr": Cndr, "CYdr": CYdr, "Cldr": Cldr,
             "V_h": L["V_h"], "V_v": L["V_v"],
-            "thrust": {"T0_N": 28.0, "V0_m_s": 38.0},               # HAND: a 10-11 in prop on a 4S 1000 W class motor, T = T0 (1 - V/V0) (+-25 %)
+            "thrust": thrust or {"T0_N": 28.0, "V0_m_s": 38.0},     # HAND: a 10-11 in prop on a 4S 1000 W class motor, T = T0 (1 - V/V0) (+-25 %)
             "sources": {"vlm": ["CL0", "CLa", "Cma", "Cm0", "CLde", "Cmde", "x_np_m"],
                         "hand": ["CL_MAX", "CD0", "k", "Cmq", "Cma_dot", "CYb", "Clb", "Cnb", "Clp", "Cnr", "Clda", "Cndr", "inertia", "mass", "thrust"]}}
 
@@ -240,7 +248,8 @@ def aero(C: dict, vel_b, omega_b, de=0.0, da=0.0, dr=0.0, throttle=0.5):
     Fy = qd * S * (-CD * sb + CY)
     Fz = qd * S * (-CD * sa * cb - CL * ca)
     T = max(C["thrust"]["T0_N"] * max(min(throttle, 1.0), 0.0) * (1 - u / C["thrust"]["V0_m_s"]), 0.0)
-    return np.array([Fx + T, Fy, Fz]), np.array([qd * S * b * Cl, qd * S * c * Cm, qd * S * b * Cn]), {"alpha": al, "beta": be, "V": V, "CL": CL, "stall": s}
+    M_thrust = -C.get("thrust_z_m", 0.0) * T                       # a thrust line above the CG pitches the nose down
+    return np.array([Fx + T, Fy, Fz]), np.array([qd * S * b * Cl, qd * S * c * Cm + M_thrust, qd * S * b * Cn]), {"alpha": al, "beta": be, "V": V, "CL": CL, "stall": s}
 
 
 # ----------------------------------------------------------------------------------------- rigid body (numpy twin)

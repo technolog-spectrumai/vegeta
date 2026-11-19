@@ -78,7 +78,8 @@ class Arigo1(Design):
         Parameter("tail_thickness", 0.09, "", min=0.04, max=0.14, description="tail sections' thickness / chord (NACA 00xx)"),
         Parameter("elevator_chord", 0.35, "", min=0.15, max=0.6), Parameter("rudder_chord", 0.40, "", min=0.15, max=0.6),
         Parameter("htail_z", 2.0, "mm", min=-20.0, max=120.0, description="the stabiliser's plane above the fuselage axis (raised: out of the wing's wake, a cruciform tail)"),
-        Parameter("static_margin", 0.12, "", min=0.02, max=0.4, description="the design CG ahead of the lattice's neutral point, in mean chords"),
+        Parameter("static_margin", 0.12, "", min=0.02, max=0.4, description="the design CG ahead of the lattice's neutral point, in mean chords (when cg_x is 0)"),
+        Parameter("cg_x", 0.0, "mm", min=0.0, description="the design CG from the nose tip; 0: placed by static_margin"),
         Parameter("tail_le_x", 520.0, "mm", min=200.0, description="the stabiliser's root leading edge from the nose tip"),
         # ---- propulsion
         Parameter("prop_diameter", 254.0, "mm", min=100.0, description="pusher / tractor propeller (twin: each)"),
@@ -308,11 +309,11 @@ VARIANTS = {
     # (a cruciform tail); the CG design point stays ~330 mm from the nose. Expected margin ~13 % MAC (HAND: tail-volume
     # estimate on the CFD's neutral point, +-4 %) — to be confirmed by the CFD rerun.
     "goshawk": {"span": 860.0, "root_chord": 320.0, "taper": 0.47, "le_sweep_deg": 20.0, "dihedral_deg": 3.0, "washout_deg": 3.0,
-                "wing_x": 205.0, "fuselage_length": 760.0, "htail_z": 30.0, "static_margin": 0.11},
+                "wing_x": 205.0, "fuselage_length": 760.0, "htail_z": 30.0, "cg_x": 330.955},
     "zero": {"span": 1000.0, "root_chord": 280.0, "taper": 0.55, "le_sweep_deg": 5.0, "dihedral_deg": 5.0, "washout_deg": 2.0,
-             "wing_x": 225.0, "fuselage_length": 720.0},
+             "wing_x": 225.0, "fuselage_length": 720.0, "cg_x": 294.166},
     "hybrid": {"span": 950.0, "root_chord": 300.0, "taper": 0.50, "le_sweep_deg": 14.0, "dihedral_deg": 4.0, "washout_deg": 2.5,
-               "wing_x": 210.0, "fuselage_length": 720.0},
+               "wing_x": 210.0, "fuselage_length": 720.0, "cg_x": 309.012},
 }
 
 
@@ -330,31 +331,32 @@ def resolve(p=None) -> dict:
     return Arigo1().resolve(**dict(p or {}))
 
 
-def planform(p=None, n_strip: int = 6) -> dict:
-    """The lifting surfaces as flat quadrilaterals [m] for ``ogma.aero.vlm`` and their incidences [deg]: the wing in
-    strips between its stations (each with its own twist, so washout is in the lattice), the stabiliser's two halves.
-    The fin is not in the (symmetric) lattice."""
+N_SPAN_PER_STRIP = 3          # ogma.aero.vlm's n_span for these strips (arigo1_model passes it)
+
+
+def planform(p=None, n_strip: int = 16) -> dict:
+    """The lifting surfaces as flat quadrilaterals [m] for ``ogma.aero.vlm`` and their incidences [deg]: each half-wing
+    in ``n_strip`` strips of EQUAL width interpolated through its stations (each strip at its own twist, so washout is
+    in the lattice), the stabiliser's two halves. The fin is not in the (symmetric) lattice.
+
+    Equal widths matter: strips of unequal width (the first version, one per station) put trailing legs next to
+    neighbours' control points and made the lattice ill-conditioned — lift slopes from 2.1 to 8.5 per rad for small
+    geometry changes. With equal strips (16 per half, 3 spanwise panels each) it converges (+-1 %), and the hybrid's
+    neutral point comes out at 341 mm against the CFD's 341.5 mm."""
     p = resolve(p)
     L = Arigo1.layout(p)
-    st = L["stations"]
+    st = np.array([s_[:5] for s_ in L["stations"]])
+    b2 = p["span"] / 2
+    ys = np.linspace(0.0, b2, n_strip + 1)
+    xl, ch, zz, tw = (np.interp(ys, st[:, 0], st[:, k]) for k in (1, 2, 3, 4))
     quads, inc, is_wing = [], [], []
     for s in (1, -1):
-        for (y0, x0, c0, z0, t0), (y1, x1, c1, z1, t1) in zip(st, st[1:]):
-            # split the long straight panel into ``n_strip`` strips so the twist varies along it
-            n = n_strip if y1 - y0 > 0.3 * p["span"] / 2 else 1
-            for k in range(n):
-                u0, u1 = k / n, (k + 1) / n
-                ya, yb = y0 + (y1 - y0) * u0, y0 + (y1 - y0) * u1
-                xa, xb = x0 + (x1 - x0) * u0, x0 + (x1 - x0) * u1
-                ca, cb = c0 + (c1 - c0) * u0, c0 + (c1 - c0) * u1
-                za, zb = z0 + (z1 - z0) * u0, z0 + (z1 - z0) * u1
-                q = np.array([[xa, s * ya, za], [xb, s * yb, zb], [xb + cb, s * yb, zb], [xa + ca, s * ya, za]]) / 1000.0
-                quads.append(q if s > 0 else q[[1, 0, 3, 2]])
-                inc.append(p["incidence_deg"] + 0.5 * (t0 + t1 + (t1 - t0) * (u0 + u1 - 1) if n > 1 else t0 + t1) / (1 if n > 1 else 1) * (1 if n == 1 else 1))
-                is_wing.append(True)
-    # fix the strip twist: linear in y
-    b2 = p["span"] / 2
-    inc = [p["incidence_deg"] - p["washout_deg"] * float(np.mean(np.abs(q[:, 1]))) * 1000 / b2 for q in quads]
+        for k in range(n_strip):
+            q = np.array([[xl[k], s * ys[k], zz[k]], [xl[k + 1], s * ys[k + 1], zz[k + 1]], [xl[k + 1] + ch[k + 1], s * ys[k + 1], zz[k + 1]],
+                          [xl[k] + ch[k], s * ys[k], zz[k]]]) / 1000.0
+            quads.append(q if s > 0 else q[[1, 0, 3, 2]])
+            inc.append(p["incidence_deg"] + 0.5 * (tw[k] + tw[k + 1]))
+            is_wing.append(True)
     hb2, hcr = p["htail_span"] / 2, p["htail_root_chord"]
     hct = hcr * p["htail_taper"]
     dx = hb2 * math.tan(math.radians(p["htail_sweep_deg"]))

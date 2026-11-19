@@ -79,12 +79,13 @@ def main(argv=None) -> int:
     ap.add_argument("--manoeuvres", nargs="*", default=list(amj.MANOEUVRES), choices=amj.MANOEUVRES)
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--size", type=int, nargs=2, default=(1280, 720))
+    ap.add_argument("--name", default="arigo1", help="the result files' stem (arigo0, arigo1)")
     ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
-    vdir = OUT / "arigo1_video"
+    vdir = OUT / f"{a.name}_video"
     vdir.mkdir(parents=True, exist_ok=True)
-    path = OUT / "arigo1_video.yaml"
-    doc = rs.load(path, a.fresh) or {"aircraft": "ARIGO-1", "note": "aerodynamics from arigo1_model (lattice + hand estimates); autopilot gains by hand", "runs": {}}
+    path = OUT / f"{a.name}_video.yaml"
+    doc = rs.load(path, a.fresh) or {"aircraft": {"arigo0": "ARIGO-0", "arigo1": "ARIGO-1"}.get(a.name, a.name), "note": "aerodynamics from arigo1_model (lattice + hand estimates); autopilot gains by hand", "runs": {}}
 
     def ok(key):                                   # finished: no error, and its video on disk unless --no-render
         r = doc["runs"].get(key)
@@ -97,7 +98,7 @@ def main(argv=None) -> int:
         for p in a.propulsion:
             if all(ok(f"{v}_{p}_{m}") for m in a.manoeuvres):
                 continue
-            mesh = None if a.no_render else amj.export_mesh(OUT / "arigo1_video" / "mesh", v, p)
+            mesh = None if a.no_render else amj.export_mesh(OUT / f"{a.name}_video" / "mesh", v, p)
             for name in a.manoeuvres:
                 if ok(f"{v}_{p}_{name}"):
                     continue
@@ -118,7 +119,7 @@ def main(argv=None) -> int:
                 n += 1
                 print(f"  {eta(n, total, t0)} {key}: {time.time() - t1:.1f} s  {summ}")
                 rs.save(path, doc)
-    print(f"-> {OUT / 'arigo1_video.yaml'}  videos in {vdir}")
+    print(f"-> {OUT / f'{a.name}_video.yaml'}  videos in {vdir}")
     return 0
 
 

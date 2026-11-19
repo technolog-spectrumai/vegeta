@@ -39,15 +39,16 @@ def main(argv=None) -> int:
     ap.add_argument("--propulsion", nargs="*", default=["pusher", "tractor", "twin", "tractor_lowcam"], choices=("pusher", "tractor", "twin", "tractor_lowcam"))
     ap.add_argument("--speed", type=float, default=18.0)
     ap.add_argument("--bounds", type=float, nargs="*", default=[1.0, 0.35], help="post-stall Cm factors")
+    ap.add_argument("--name", default="arigo1", help="the result files' stem (arigo0, arigo1)")
     ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     import mujoco
-    path = OUT / "arigo1_mujoco.yaml"
+    path = OUT / f"{a.name}_mujoco.yaml"
     old = rs.load(path, a.fresh)
     if old and old.get("speed_m_s") != a.speed:
         print("  saved results are for another speed: starting over"); old = None
-    doc = old or {"aircraft": "ARIGO-1", "mujoco": mujoco.__version__, "speed_m_s": a.speed,
+    doc = old or {"aircraft": {"arigo0": "ARIGO-0", "arigo1": "ARIGO-1"}.get(a.name, a.name), "mujoco": mujoco.__version__, "speed_m_s": a.speed,
                   "note": "aerodynamics from arigo1_model (lattice + hand estimates); MuJoCo integrates the rigid body", "runs": {}}
     keys = [f"{v}_{p}_cm{k:g}" for v in a.variants for p in a.propulsion for k in a.bounds]
     ok = lambda k: k in doc["runs"] and "error" not in doc["runs"][k]

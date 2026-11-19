@@ -42,6 +42,7 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=float, default=3 * 3600.0)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--workdir", type=Path, default=RUNS)
+    ap.add_argument("--name", default="arigo1", help="the result files' stem (arigo0, arigo1)")
     ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
     configs = [(v, p) for v in a.variants for p in a.propulsion]
@@ -52,11 +53,11 @@ def main(argv=None) -> int:
             print(f"  {v:8s} {p:8s} S {r['S']:.4f} m2  c {r['c']:.3f} m  CG x {r['cg_mm'][0]:.0f} mm  alphas {a.alphas}")
         return 0
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / "arigo1_cfd.yaml"
+    path = OUT / f"{a.name}_cfd.yaml"
     old = rs.load(path, a.fresh)
     if old and (old.get("speed_m_s"), old.get("quality")) != (a.speed, a.quality):
         print("  saved results are for another speed/quality: starting over"); old = None
-    doc = old or {"aircraft": "ARIGO-1", "speed_m_s": a.speed, "quality": a.quality, "configurations": {}}
+    doc = old or {"aircraft": {"arigo0": "ARIGO-0", "arigo1": "ARIGO-1"}.get(a.name, a.name), "speed_m_s": a.speed, "quality": a.quality, "configurations": {}}
     doc["processors"] = a.processors
     done = {(k, float(r["alpha_deg"])) for k, c in doc["configurations"].items() for r in c.get("rows", []) if r.get("status") == "solved"}
     todo = sum((f"{v}_{p}", float(al)) not in done for v, p in configs for al in a.alphas)
