@@ -175,6 +175,7 @@ def one(nd, cal, rng, tether, t_max=8.0):
 
 
 def main(argv=None):
+    global LINE, LINE_PEAK_N, LINE_STRETCH
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--net-py", required=True, type=Path)
     ap.add_argument("--meshes", default="0.15,0.075,0.05")
@@ -185,7 +186,6 @@ def main(argv=None):
     ap.add_argument("--line-stretch", type=float, default=LINE_STRETCH, help="the elastic section's stretch at --line-peak [m]")
     ap.add_argument("--out", type=Path, default=Path(__file__).with_name("gavilan_net_fall_results.json"))
     a = ap.parse_args(argv)
-    global LINE, LINE_PEAK_N, LINE_STRETCH
     LINE, LINE_PEAK_N, LINE_STRETCH = a.line, a.line_peak, a.line_stretch
     nd = load(a.net_py)
     results = json.loads(a.out.read_text()) if a.out.exists() else {}
