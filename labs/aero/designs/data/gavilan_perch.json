@@ -1,0 +1,28 @@
+{
+ "source": "gavilan_perch.budget(), Perch.layout()",
+ "note": "hand estimates: standby power, charger efficiency, onboard parts x 1.25",
+ "budget": {
+  "pack_wh": 37.74,
+  "usable_wh": 30.192,
+  "standby_w": 12.0,
+  "watch_off_the_perch_h": 1.683,
+  "watch_on_the_perch_h": "unlimited",
+  "charge_current_a": 1.7,
+  "perch_supply_w": 60.682,
+  "recharge_after_a_100_m_hunt_min": 15.279,
+  "full_charge_min": 46.13,
+  "onboard_kg": 0.052
+ },
+ "layout": {
+  "z_floor": 22.0,
+  "z_rim": 72.0,
+  "landing_tolerance": 46.0,
+  "yaw_tolerance_deg": 7.9,
+  "span": 658.7
+ },
+ "onboard_g": {
+  "brass soles in the four pads and their wiring along the panels": 22.0,
+  "ideal-diode bridge (4 MOSFETs) and its fuse": 6.0,
+  "6S active balancer board": 14.0
+ }
+}

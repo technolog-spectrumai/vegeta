@@ -339,6 +339,10 @@ class GavilanX(Gavilan):
         _gp("bay_length", 134.5), _gp("length", 580.0), _gp("talons", True), _gp("guards", True), _gp("prop_gap", 24.0),
         _gp("motor_y", 141.4), _gp("motor_z", 141.4),                    # the motor axes: 200 mm from the body axis, on the 45 degree lines
         Parameter("panel_radius", 340.0, "mm", min=120.0, description="each panel's tip from the body axis (the foot)"),
+        Parameter("foot_pads", True, description="a pad on each panel tip: the foot it stands on, with a charging contact in its sole"),
+        Parameter("pad_length", 30.0, "mm", min=10.0, description="foot pad: along the body axis (it stands 6 mm past the tip's trailing edge)"),
+        Parameter("pad_width", 18.0, "mm", min=8.0, description="foot pad: along the panel's span"),
+        Parameter("pad_thickness", 16.0, "mm", min=6.0, description="foot pad: across the panel"),
         Parameter("slingshot", False, description="the opposed latex net slingshot under the belly (talons off; gavilan_slingshot)"),
         Parameter("sling_state", "cocked", choices=("cocked", "fired"), description="slingshot: cocked or just fired"),
         Parameter("sling_opposed", True, description="slingshot: two loads thrown apart (no recoil); False: one, forward"),
@@ -398,10 +402,19 @@ class GavilanX(Gavilan):
         root = self._section(cq.Workplane("XZ"), L["c_root"], p["panel_x"], p["thickness"]).workplane(offset=p["panel_radius"])
         return self._section(root, L["c_tip"], L["x_le_tip"], p["thickness"] * L["c_root"] / L["c_tip"] * 0.75).loft(combine=True, ruled=True)
 
+    def _pad(self, p):
+        """The foot pad on one panel's tip (panel frame: the tip at y = -panel_radius), its sole 6 mm past the trailing edge."""
+        x1 = p["length"] + 6.0
+        return cq.Workplane("XY").box(p["pad_length"], p["pad_width"], p["pad_thickness"]) \
+            .edges("|Y").fillet(3.0).translate((x1 - p["pad_length"] / 2, -p["panel_radius"] + p["pad_width"] / 2 - 2.0, 0.0))
+
     def _panels(self, p):
         out = None
         for a in (45.0, 135.0, 225.0, 315.0):
-            q = self._panel(p).rotate((0, 0, 0), (1, 0, 0), a)
+            q = self._panel(p)
+            if p["foot_pads"]:
+                q = q.union(self._pad(p))
+            q = q.rotate((0, 0, 0), (1, 0, 0), a)
             out = q if out is None else out.union(q)
         return out
 

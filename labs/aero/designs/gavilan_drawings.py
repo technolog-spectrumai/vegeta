@@ -261,6 +261,44 @@ def render_slingshot(out="gavilan_slingshot.png"):
     return out
 
 
+def render_perch(out="gavilan_perch.png"):
+    """The charging perch alone, and GAVILAN-X standing on it with its pads in the cups."""
+    import gavilan_perch as gpe
+    q = gpe.resolve()
+    L = gpe.Perch.layout(q)
+    p = gv.x_resolve({"slingshot": True, "talons": False, "camera_tilt_deg": 90.0})
+    z_sole = L["z_floor"] + q["contact_rise"] + 2.0
+    lift = p["length"] + 6.0 + z_sole
+    col = {"frame": ("#5d6d7e", 1.0), "charger": ("#2c3e50", 1.0), "cups": ("#95a5a6", 1.0), "contacts": ("#d4ac0d", 1.0)}
+    fig = plt.figure(figsize=(16, 7.6))
+    for k, (elev, azim, title, with_x) in enumerate([(30, -60, "the perch: four cups, a sprung brass contact in each", False),
+                                                       (12, -60, "Gavilan-X on its perch: waiting, camera on the horizon, charging", True),
+                                                       (0, -90, "from the side", True)]):
+        ax = fig.add_subplot(1, 3, k + 1, projection="3d")
+        for name, shape in gpe.Perch().parts(q).items():
+            c, a = col[name]
+            ax.add_collection3d(Poly3DCollection(_tris(shape, 0.6), facecolors=c, edgecolors=c, linewidths=0.0, alpha=a, shade=True))
+        if with_x:
+            for name, shape in gv.GavilanX().parts(p).items():
+                c, a = COLOURS[name]
+                s = shape.rotate((0, 0, 0), (0, 1, 0), 90).translate((0, 0, lift))
+                ax.add_collection3d(Poly3DCollection(_tris(s), facecolors=c, edgecolors=c, linewidths=0.0, alpha=a, shade=a == 1.0))
+            h, cz = 0.55 * (lift + 20), 0.45 * lift
+        else:
+            h, cz = 0.58 * L["span"], 40.0
+        ax.set_xlim(-h, h); ax.set_ylim(-h, h); ax.set_zlim(cz - h, cz + h)
+        ax.set_box_aspect((1, 1, 1), zoom=1.35); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
+    b = gpe.budget()
+    fig.suptitle(f"Gavilan's charging perch — a cup under each foot funnels the pad in (±{L['landing_tolerance']:.0f} mm, ±{L['yaw_tolerance_deg']:.0f}° of yaw) "
+                 f"onto a sprung brass contact; any foot in any cup (a diode bridge aboard)\n"
+                 f"{L['span']:.0f} mm across; it charges at {b['charge_current_a']:.1f} A ({b['perch_supply_w']:.0f} W supply), "
+                 f"puts a hunt back in {b['recharge_after_a_100_m_hunt_min']:.0f} min; off the perch it watches {b['watch_off_the_perch_h']:.1f} h on its pack", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
 def hawk_bars(out, rows):
     """The perch-to-bandit times and what is left to carry the bandit: a bar per aircraft; hatched where it cannot stop."""
     order = [r for r in rows]
