@@ -25,6 +25,7 @@ runs them all; ``pareto`` keeps the ones nothing beats on both manoeuvre and rea
 from __future__ import annotations
 
 import dataclasses
+import functools
 import math
 
 import numpy as np
@@ -71,6 +72,32 @@ def _config(prop: str, packs: int, hv: bool = False) -> ef.Config:
     return dataclasses.replace(gf.CONFIG_J, propeller=prop, n_parallel=packs)
 
 
+@functools.lru_cache(maxsize=None)
+def capped_drive_map(c: ef.Config, n_motors: int = 4, v_max: float = 80.0, n_v: int = 17) -> dict:
+    """``gavilan_flight.drive_map`` with the throttle held where the propeller reaches its maker's speed limit
+    (``rpm_limit_k / diameter``): on 12S the 3120s would spin the 7x4x3 past it (29,000 rpm against 27,100)."""
+    import emerillon_market as mk
+    p = mk.part(c.propeller)
+    limit = p.rpm_limit_k / p.d_in
+    V = np.linspace(0.0, v_max, n_v)
+    T, P = np.zeros((n_v, len(gf.U_GRID))), np.zeros((n_v, len(gf.U_GRID)))
+    for i, v in enumerate(V):
+        vv = max(float(v), 0.5)
+        lo, hi = 0.05, 1.0
+        if ef.drive(c, vv)["rpm"] > limit:
+            for _ in range(14):
+                u = 0.5 * (lo + hi)
+                lo, hi = (u, hi) if ef.drive(c, vv, throttle=u)["rpm"] <= limit else (lo, u)
+            cap = lo
+        else:
+            cap = 1.0
+        for j, u in enumerate(gf.U_GRID):
+            d = ef.drive(c, vv, throttle=u * cap)
+            T[i, j], P[i, j] = max(d["thrust"], 0.0) * n_motors / 4, d["electric_w"] * n_motors / 4
+    T = np.maximum.accumulate(T, axis=1) + np.arange(len(gf.U_GRID)) * 1e-9
+    return {"V": V, "T": T, "P": P, "n": n_motors, "rpm_limit": limit}
+
+
 def _esc_extra_kg(c: ef.Config) -> float:
     """The mass tables carry one ESC item; a drive with an ESC per motor carries three more."""
     import emerillon_market as mk
@@ -83,6 +110,9 @@ def x_member(scale: float, packs: int, prop: str = "hq7x4x3", hv: bool = False) 
     c = _config(prop, packs, hv)
     m = gf.gavilan_x(q, c)
     mass = gf.x_mass_budget(c, q, talons=False).mass + catcher_kg() + _esc_extra_kg(c)
+    if hv:                                                            # the propeller kept under its speed limit
+        t_max, power = gf._drive_fns(capped_drive_map(c), gf.AVIONICS_W)
+        m = dataclasses.replace(m, t_max=t_max, power=power)
     tag = f"12S{max(packs // 2, 1)}P 3120s" if hv else f"{packs} pack{'s' if packs > 1 else ''}"
     return dataclasses.replace(m, name=f"Arigo-X {scale:.2f}x, {tag}, {prop}", mass=mass,
                                cda0=m.cda0 - gf.TALONS["cda_m2"] + gf.SLING_CDA, payload_kg=catcher_kg(), gun="slingshot",
@@ -93,6 +123,9 @@ def a_member(scale: float, packs: int, prop: str = "hq7x4x3", hv: bool = False) 
     p = a_params(scale, 2 if hv else packs)
     c = _config(prop, packs, hv)
     m = gf.gavilan("A", emitters=0, config=c, p=p)
+    if hv:
+        t_max, power = gf._drive_fns(capped_drive_map(c), gf.AVIONICS_W)
+        m = dataclasses.replace(m, t_max=t_max, power=power)
     extra = catcher_kg() + gf.guards_kg() + _esc_extra_kg(c)
     m = gf.with_payload(m, extra, gf.SLING_CDA + gf.GUARDS["cda_m2"], "", gun="slingshot")
     tag = "12S 3120s" if hv else f"{packs} pack{'s' if packs > 1 else ''}"
@@ -112,8 +145,12 @@ def h_member(packs: int) -> gf.Machine:
 
 
 def candidates_round2() -> dict:
-    """The second round: the 12S X-wing with four packs (12S2P) for the reach, at two sizes."""
-    return {f"X12 {s:.2f} 12S2P hq7x4x3": (lambda s=s: x_member(s, 4, "hq7x4x3", hv=True)) for s in (1.15, 1.3)}
+    """The second round: the 12S X-wing with four packs (12S2P) for the reach, at two sizes; and the 12S members of
+    the first round again, now with the propeller held under its speed limit."""
+    out = {f"X12 {s:.2f} 12S2P hq7x4x3": (lambda s=s: x_member(s, 4, "hq7x4x3", hv=True)) for s in (1.15, 1.3)}
+    out["X12 1.15 12S hq7x4x3"] = lambda: x_member(1.15, 2, "hq7x4x3", hv=True)
+    out["A12 1.15 12S hq7x4x3"] = lambda: a_member(1.15, 2, "hq7x4x3", hv=True)
+    return out
 
 
 def candidates() -> dict:
