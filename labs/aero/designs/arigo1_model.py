@@ -58,6 +58,10 @@ def cfd_table(variant: str, propulsion: str):
             rows = rows[:-1]
     if len(rows) < 6:
         return None
+    ref = cfg.get("reference", {})
+    C0 = _coefficients(variant, propulsion)
+    if abs(ref.get("S", 0) - C0["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C0["x_cg_m"] * 1e3) > 1.0:
+        return None                                               # computed for an earlier geometry: not this aircraft
     return {"alpha_deg": np.array([r["alpha_deg"] for r in rows], float), "CL": np.array([r["Cl"] for r in rows], float),
             "CD": np.array([r["Cd"] for r in rows], float), "Cm": np.array([r["Cm_cg"] for r in rows], float),
             "converged_share": float(np.mean([bool(r.get("converged")) for r in rows]))}
@@ -125,7 +129,7 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     CLa = (r4["CL"] - r0["CL"]) / math.radians(4.0)
     dCm = (r4["Cm"] - r0["Cm"]) / math.radians(4.0)                # about the nose tip
     x_np = -dCm / CLa * c                                          # [m from the nose tip]
-    x_cg = x_np - STATIC_MARGIN * c
+    x_cg = x_np - p["static_margin"] * c
     Cma = CLa * (x_cg - x_np) / c                                  # = -SM * CLa
     Cm0 = r0["Cm"] + r0["CL"] * x_cg / c                           # moved to the CG
     CLde = (re["CL"] - r0["CL"]) * TAU_E                           # per deg
@@ -170,7 +174,7 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     Lx, Ly = p["span"] / 1e3, p["fuselage_length"] / 1e3
     I = (MASS * (0.24 * Lx) ** 2, MASS * (0.30 * Ly) ** 2, MASS * ((0.24 * Lx) ** 2 + (0.30 * Ly) ** 2) * 0.95)  # HAND: radii of gyration (+-30 %)
     return {"variant": variant, "propulsion": propulsion, "S": S, "c": c, "b": b, "AR": AR, "mass": MASS, "inertia": I,
-            "x_cg_m": x_cg, "z_cg_m": p["wing_z"] / 1e3 * 0.3, "x_np_m": x_np, "static_margin": STATIC_MARGIN,
+            "x_cg_m": x_cg, "z_cg_m": p["wing_z"] / 1e3 * 0.3, "x_np_m": x_np, "static_margin": p["static_margin"],
             "CL0": r0["CL"], "CLa": CLa, "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"]) / CLa, "CD0": CD0, "k": 1 / (math.pi * e * AR),
             "Cm0": Cm0, "Cma": Cma, "Cmq": Cmq, "Cma_dot": Cma_dot, "CLde": CLde, "Cmde": Cmde, "CLq": -Cmq * c / l_h,
             "CYb": CYb, "Clb": Clb_dihedral + Clb_v, "Clb_sweep_per_CL": -math.tan(sweep_qc) / (AR * 1.0) * 0.6, "Cnb": Cnb,

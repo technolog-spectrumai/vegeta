@@ -77,6 +77,8 @@ class Arigo1(Design):
         Parameter("fin_sweep_deg", 30.0, "deg", min=0.0, max=55.0),
         Parameter("tail_thickness", 0.09, "", min=0.04, max=0.14, description="tail sections' thickness / chord (NACA 00xx)"),
         Parameter("elevator_chord", 0.35, "", min=0.15, max=0.6), Parameter("rudder_chord", 0.40, "", min=0.15, max=0.6),
+        Parameter("htail_z", 2.0, "mm", min=-20.0, max=120.0, description="the stabiliser's plane above the fuselage axis (raised: out of the wing's wake, a cruciform tail)"),
+        Parameter("static_margin", 0.12, "", min=0.02, max=0.4, description="the design CG ahead of the lattice's neutral point, in mean chords"),
         Parameter("tail_le_x", 520.0, "mm", min=200.0, description="the stabiliser's root leading edge from the nose tip"),
         # ---- propulsion
         Parameter("prop_diameter", 254.0, "mm", min=100.0, description="pusher / tractor propeller (twin: each)"),
@@ -226,7 +228,7 @@ class Arigo1(Design):
     def _tail(self, p):
         L = self.layout(p)
         h = self._surface(p["tail_le_x"], p["htail_root_chord"], p["htail_taper"], p["htail_span"], p["htail_sweep_deg"], p["tail_thickness"],
-                          "y", z0=2.0)
+                          "y", z0=p["htail_z"])
         f = self._surface(L["x_fin"], p["fin_root_chord"], p["fin_taper"], p["fin_height"], p["fin_sweep_deg"], p["tail_thickness"], "z",
                           z0=0.6 * L["R"] * 0)
         return h.union(f)
@@ -293,8 +295,13 @@ class Arigo1(Design):
 
 # ------------------------------------------------------------------------------------------------------------ variants
 VARIANTS = {
+    # goshawk, revised after the first CFD (notebook 39): the measured static margin was 4-7 % MAC, not the 12 % aimed at
+    # (the lattice, with the stabiliser in the wing's plane, put the neutral point ~13 mm too far aft). Fixed by a longer
+    # tail arm (fuselage 700 -> 760 mm: V_h 0.39 -> 0.51) and the stabiliser raised 30 mm out of the wing's wake
+    # (a cruciform tail); the CG design point stays ~330 mm from the nose. Expected margin ~13 % MAC (HAND: tail-volume
+    # estimate on the CFD's neutral point, +-4 %) — to be confirmed by the CFD rerun.
     "goshawk": {"span": 860.0, "root_chord": 320.0, "taper": 0.47, "le_sweep_deg": 20.0, "dihedral_deg": 3.0, "washout_deg": 3.0,
-                "wing_x": 205.0, "fuselage_length": 700.0},
+                "wing_x": 205.0, "fuselage_length": 760.0, "htail_z": 30.0, "static_margin": 0.11},
     "zero": {"span": 1000.0, "root_chord": 280.0, "taper": 0.55, "le_sweep_deg": 5.0, "dihedral_deg": 5.0, "washout_deg": 2.0,
              "wing_x": 225.0, "fuselage_length": 720.0},
     "hybrid": {"span": 950.0, "root_chord": 300.0, "taper": 0.50, "le_sweep_deg": 14.0, "dihedral_deg": 4.0, "washout_deg": 2.5,
@@ -345,8 +352,9 @@ def planform(p=None, n_strip: int = 6) -> dict:
     hct = hcr * p["htail_taper"]
     dx = hb2 * math.tan(math.radians(p["htail_sweep_deg"]))
     for s in (1, -1):
-        q = np.array([[p["tail_le_x"], 0.0, 2.0], [p["tail_le_x"] + dx, s * hb2, 2.0], [p["tail_le_x"] + dx + hct, s * hb2, 2.0],
-                      [p["tail_le_x"] + hcr, 0.0, 2.0]]) / 1000.0
+        zt = p["htail_z"]
+        q = np.array([[p["tail_le_x"], 0.0, zt], [p["tail_le_x"] + dx, s * hb2, zt], [p["tail_le_x"] + dx + hct, s * hb2, zt],
+                      [p["tail_le_x"] + hcr, 0.0, zt]]) / 1000.0
         quads.append(q if s > 0 else q[[1, 0, 3, 2]])
         inc.append(0.0)
         is_wing.append(False)
