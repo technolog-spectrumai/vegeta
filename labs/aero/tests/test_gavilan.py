@@ -342,7 +342,7 @@ def test_the_chosen_gavilan_perch_slingshot_and_flight_card():
     mb = gf.gavilan_mass_budget()
     assert not any(i.name.startswith("talons") for i in mb.items) and any("slingshot" in i.name for i in mb.items)
     assert all(i.source for i in mb.items) and 1.6 < mb.mass < 2.1
-    m = gf.gavilan()
+    m = gf.gavilan_chosen()
     assert m.mass == pytest.approx(mb.mass) and m.hovers and m.t_max(0.0) / m.weight > 4.5
     a = gf.sling_attack(100.0)
     assert 3.0 < a["time_to_foul_s"] < 5.0 and a["net_relative_m_s"] > gf.SLING_SPEED

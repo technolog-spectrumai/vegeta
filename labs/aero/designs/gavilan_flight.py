@@ -1662,24 +1662,24 @@ def gavilan_mass_budget() -> og_mass.Budget:
     return b
 
 
-def gavilan() -> Machine:
+def gavilan_chosen() -> Machine:
     """The chosen GAVILAN as a ``Machine``."""
     x = gavilan_x()
     return dataclasses.replace(x, name="Gavilan (X-wing, net slingshot, charging perch)", mass=gavilan_mass_budget().mass,
                                cda0=x.cda0 - TALONS["cda_m2"] + SLING_CDA, payload_kg=sling_kg(), gun="slingshot")
 
 
-_SPRINTERS["gavilan"] = lambda: gavilan()
+_SPRINTERS["gavilan"] = lambda: gavilan_chosen()
 
 
 def sling_attack(distance: float, rng: float = 4.0) -> dict:
     """From the perch to the bandit fouled, ``distance`` away and hovering: sprint, flare to the fastest closing speed
     that still stops ``STOP_MARGIN`` short of the bandit after the shot from ``rng``, throw, the net's flight. The
     net leaves at the slingshot's speed plus the closing speed."""
-    m = gavilan()
+    m = gavilan_chosen()
     v = fastest_safe_shot(rng, m)
     key = f"_sling_{rng:g}"
-    _SPRINTERS[key] = gavilan
+    _SPRINTERS[key] = gavilan_chosen
     global CONTACT_SPEED
     keep = CONTACT_SPEED
     CONTACT_SPEED = max(v, 0.5)
@@ -1696,7 +1696,7 @@ def flight_card() -> dict:
     """The plain numbers a game reads (Armageddon): GAVILAN as chosen, from the models of this module — each with
     where it comes from. No Vegeta needed to read it."""
     import gavilan_perch as gpe
-    m = gavilan()
+    m = gavilan_chosen()
     p = gv.x_resolve(gv.X_SLING)
     en, br, cl = endurance(m), brake(m), climb(m)
     acc = accelerate(m, 25.0)
