@@ -458,7 +458,10 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
         return out
 
     def base(u):
-        f = mk.smooth(u) if not gm.STANCE["upright"] else mk.smooth(max(0.0, min(1.0, (u - 0.45) / 0.45)))   # the pelvis rides up through the cycle; standing, as the legs step
+        if gm.is_gibbon():                                                 # the gibbon's short legs: up only once the trailing foot is off its rung
+            f = mk.smooth(max(0.0, min(1.0, (u - 0.62) / 0.33)))
+        else:
+            f = mk.smooth(u) if not gm.STANCE["upright"] else mk.smooth(max(0.0, min(1.0, (u - 0.45) / 0.45)))   # the pelvis rides up through the cycle; standing, as the legs step
         b = (1 - f) * np.asarray(base_from) + f * np.asarray(base_to)
         return b[0], b[1], b[2], pitch
 

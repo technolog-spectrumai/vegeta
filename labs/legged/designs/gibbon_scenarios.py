@@ -406,6 +406,50 @@ def scenario_course(kin, q_stand, p):
     return segs
 
 
+BRICK, MORTAR = (0.55, 0.27, 0.2, 1.0), (0.6, 0.58, 0.55, 1.0)
+CHIMNEY = {**gs.WALL, "x": 2.2, "width": 1.0, "depth": 0.8, "height": 6.5, "rung_spacing": 0.3, "first_rung": 0.25,
+           "rung_out": 0.12, "rung_radius": 0.016, "cycles": 17, "step": 1}
+
+
+def chimney_prop(p):
+    """A brick chimney standing on the ground, steel staple rungs up its face (the climbing side, -x), a stone cap
+    and a flue pot on top."""
+    x, w, dp, h, sp, z0, out, rr = p["x"], p["width"], p["depth"], p["height"], p["rung_spacing"], p["first_rung"], p["rung_out"], p["rung_radius"]
+    geoms = [gs._box("chimney", (dp / 2, w / 2, h / 2), (x + dp / 2, 0.0, h / 2), rgba=BRICK, mass=8000.0)]
+    for j in range(int(h / 0.45)):                                         # mortar courses round the brickwork
+        geoms.append(gs._box(f"course_{j}", (dp / 2 + 0.004, w / 2 + 0.004, 0.006), (x + dp / 2, 0.0, 0.3 + j * 0.45), rgba=MORTAR, mass=1.0))
+    z, k = z0, 0
+    while z < h - 0.15:
+        ya, yb = -w / 2 + 0.08, w / 2 - 0.08
+        geoms.append(gs._cap(f"rung_{k}", rr, (x - out, ya, z), (x - out, yb, z), rgba=gs.STEEL, mass=1.0))
+        for yk, tag in ((ya, "a"), (yb, "b")):                             # the staple's legs into the brick
+            geoms.append(gs._cap(f"rung_{k}_{tag}", rr, (x - out, yk, z), (x + 0.02, yk, z), rgba=gs.STEEL, mass=0.3))
+        z += sp
+        k += 1
+    geoms.append(gs._box("chimney_cap", (dp / 2 + 0.08, w / 2 + 0.08, 0.06), (x + dp / 2, 0.0, h + 0.06), rgba=MORTAR, mass=200.0))
+    geoms.append(gs._cap("flue_pot", 0.12, (x + dp / 2, 0.0, h + 0.12), (x + dp / 2, 0.0, h + 0.45), rgba=BRICK, mass=30.0))
+    return Prop(Link("chimney_stack", pos=(0.0, 0.0, 0.0), geoms=geoms), free=False)
+
+
+gs.DEFAULTS["chimney"] = CHIMNEY
+gs.BUILDERS["chimney"] = chimney_prop
+def scenario_chimney(kin, q_stand, p):
+    """Up the chimney's staples: the feet on one, the hands two above (the gibbon's long arms), the pelvis well off the
+    brick and low over the feet (a static search against the solid rungs and chimney), each limb up ``step`` rungs a
+    cycle (two would outreach the short legs before the pelvis rises)."""
+    xb, sp, z0 = p["x"] - p["rung_out"], p["rung_spacing"], p["first_rung"]
+    step = int(p.get("step", 2))
+    hold = lambda k: {"L_hand": gs.bar((xb, 0.2, z0 + (k * step + 2) * sp), r=p["rung_radius"]),
+                      "R_hand": gs.bar((xb, -0.2, z0 + (k * step + 2) * sp), r=p["rung_radius"]),
+                      "L": gs.bar((xb, 0.12, z0 + k * step * sp), r=p["rung_radius"], tip=0.3),
+                      "R": gs.bar((xb, -0.12, z0 + k * step * sp), r=p["rung_radius"], tip=0.3)}
+    base = lambda k: np.array([xb - 0.3, 0.0, z0 + k * step * sp + 0.35])
+    n = min(int(p["cycles"]), int((p["height"] - 0.9 - z0) / (step * sp)))
+    return gs._climb_sequence(kin, q_stand, hold, base, n, stop_x=xb - 0.25)
+
+
+gs.SCENARIOS["chimney"] = scenario_chimney
+
 COURSE = {**LADDER, "rungs": 5, "rise_deg": math.degrees(math.atan((2.1 - LADDER["height"]) / (4 * LADDER["spacing"]))),
           "rope_step": 0.4, "window_x": 7.05, "rope_end": 7.05 - gs.WINDOW["wall_thickness"] / 2 - 0.12, "table_x": 4.6, "door_x": 9.05}
 gs.DEFAULTS["course"] = COURSE

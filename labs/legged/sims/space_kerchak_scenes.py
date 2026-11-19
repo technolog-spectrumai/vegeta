@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -357,6 +357,12 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
+            if a.scene == "course":                                        # inside the house: the walls behind it drawn away, the camera keeps its side
+                P = gs.params_for("course", params)
+                if c[0] > P["window_x"] - 0.1:
+                    renderer.hidden |= {"wall_above", "wall_below", "wall_left", "wall_right", "sill_plate"}
+                if c[0] > P["door_x"] - 0.05:
+                    renderer.hidden |= {"door_wall_left", "door_wall_right", "post_left", "post_right", "lintel", "door_panel", "handle_shaft", "handle_lever"}
             renderer.extra = g.shards(t)
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
