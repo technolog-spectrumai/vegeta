@@ -75,7 +75,7 @@ def eta(done, total, t0):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variants", nargs="*", default=["hybrid"], choices=("goshawk", "zero", "hybrid"))
-    ap.add_argument("--propulsion", nargs="*", default=["pusher"], choices=("pusher", "tractor", "twin"))
+    ap.add_argument("--propulsion", nargs="*", default=["pusher"], choices=("pusher", "tractor", "twin", "tractor_lowcam"))
     ap.add_argument("--manoeuvres", nargs="*", default=list(amj.MANOEUVRES), choices=amj.MANOEUVRES)
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--size", type=int, nargs=2, default=(1280, 720))

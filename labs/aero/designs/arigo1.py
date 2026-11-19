@@ -35,7 +35,7 @@ from vegeta.dedalus import Design, Parameter
 from emerillon import ogive
 from fixed_wing import naca4
 
-PROPULSION = ("pusher", "tractor", "twin")
+PROPULSION = ("pusher", "tractor", "twin", "tractor_lowcam")     # tractor_lowcam: the camera under the nose, looking through the disc
 
 
 class Arigo1(Design):
@@ -89,6 +89,7 @@ class Arigo1(Design):
         # ---- camera and perching
         Parameter("camera_diameter", 40.0, "mm", min=15.0, description="the observation camera's ball (nose, or chin turret on the tractor)"),
         Parameter("chin_drop", 150.0, "mm", min=20.0, description="tractor: the chin turret's centre below the fuselage axis"),
+        Parameter("lowcam_drop", 55.0, "mm", min=20.0, description="tractor_lowcam: the camera's centre below the fuselage axis (in a fairing under the nose; no strut)"),
         Parameter("perch_hook", False, description="a retractable dorsal hook for mechanical perching on a bar (optional)"),
         Parameter("skid", True, description="a belly skid for the belly landing"),
     ]
@@ -130,9 +131,10 @@ class Arigo1(Design):
             out.update({"x_prop": p["fuselage_length"] + 18.0, "props": [(0.0, 0.0)], "prop_d": p["prop_diameter"],
                         "camera": (p["camera_diameter"] / 2, 0.0, 0.0),
                         "prop_below_belly": p["prop_diameter"] / 2 - p["tail_end_diameter"] / 2})
-        elif p["propulsion"] == "tractor":
+        elif p["propulsion"] in ("tractor", "tractor_lowcam"):
+            drop = p["chin_drop"] if p["propulsion"] == "tractor" else p["lowcam_drop"]
             out.update({"x_prop": -18.0, "props": [(0.0, 0.0)], "prop_d": p["prop_diameter"],
-                        "camera": (70.0, 0.0, -p["chin_drop"]), "prop_below_belly": p["prop_diameter"] / 2 - R})
+                        "camera": (70.0, 0.0, -drop), "prop_below_belly": p["prop_diameter"] / 2 - R})
         else:
             y_n = p["nacelle_y"]
             x_le_n = float(np.interp(y_n, y, xl))
@@ -240,6 +242,11 @@ class Arigo1(Design):
         if p["propulsion"] == "tractor":                                  # the chin turret's strut
             strut = cq.Workplane("XY").box(30.0, 14.0, p["chin_drop"]).translate((x, 0, z / 2))
             ball = ball.union(strut)
+        elif p["propulsion"] == "tractor_lowcam":                         # a short blister under the nose, the ball at its front
+            r = p["camera_diameter"] / 2 + 3.0
+            blister = (cq.Workplane("YZ").circle(r).extrude(110.0).translate((x, 0, z)).faces(">X").edges().fillet(r * 0.9))
+            web = cq.Workplane("XY").box(110.0, 2 * r * 0.8, abs(z)).translate((x + 55.0, 0, z / 2))
+            ball = ball.union(blister).union(web)
         return ball
 
     def _motors(self, p):
@@ -252,7 +259,7 @@ class Arigo1(Design):
                 out = n if out is None else out.union(n)
             return out
         x0 = L["x_prop"] - 6.0 if p["propulsion"] == "pusher" else L["x_prop"] + 6.0
-        can = cq.Workplane("YZ").circle(p["motor_diameter"] / 2).extrude(p["motor_length"] if p["propulsion"] == "tractor" else -p["motor_length"])
+        can = cq.Workplane("YZ").circle(p["motor_diameter"] / 2).extrude(p["motor_length"] if p["propulsion"] != "pusher" else -p["motor_length"])
         hub = cq.Workplane("YZ").circle(11.0).extrude(12.0 if p["propulsion"] == "pusher" else -12.0)
         return can.translate((x0, 0, 0)).union(hub.translate((L["x_prop"] - 6.0 if p["propulsion"] == "pusher" else L["x_prop"] + 6.0, 0, 0)))
 

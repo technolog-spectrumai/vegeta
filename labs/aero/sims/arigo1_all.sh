@@ -7,7 +7,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 NP="${1:-8}"
-ALL=(--variants goshawk zero hybrid --propulsion pusher tractor twin)
+ALL=(--variants goshawk zero hybrid --propulsion pusher tractor twin tractor_lowcam)
 status=0
 echo "== stage 1/3: MuJoCo stability (~1 min)";  "$HERE/arigo1_mujoco.sh" "${ALL[@]}" || status=1
 if [ -z "${SKIP_VIDEO:-}" ]; then echo "== stage 2/3: manoeuvre videos (54; minutes, depends on the GPU)"; "$HERE/arigo1_video.sh" "${ALL[@]}" || status=1; fi

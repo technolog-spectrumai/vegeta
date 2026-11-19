@@ -36,7 +36,7 @@ def eta(done, total, t0):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variants", nargs="*", default=["goshawk", "zero", "hybrid"], choices=("goshawk", "zero", "hybrid"))
-    ap.add_argument("--propulsion", nargs="*", default=["pusher", "tractor", "twin"], choices=("pusher", "tractor", "twin"))
+    ap.add_argument("--propulsion", nargs="*", default=["pusher", "tractor", "twin", "tractor_lowcam"], choices=("pusher", "tractor", "twin", "tractor_lowcam"))
     ap.add_argument("--speed", type=float, default=18.0)
     ap.add_argument("--bounds", type=float, nargs="*", default=[1.0, 0.35], help="post-stall Cm factors")
     ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
