@@ -14,7 +14,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import gavilan as gv
 
-COLOURS = {"netpod": ("#c0392b", 1.0), "talons": ("#c0392b", 1.0), "guards": ("#2c3e50", 1.0), "fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
+COLOURS = {"sling_tube": ("#2b2b2b", 1.0), "sling_latch": ("#5d6d7e", 1.0), "sling_carriages": ("#7f8c8d", 1.0),
+           "sling_bands": ("#e67e22", 1.0), "sling_cartridges": ("#c0392b", 1.0), "netpod": ("#c0392b", 1.0), "talons": ("#c0392b", 1.0), "guards": ("#2c3e50", 1.0), "fuselage": ("#8d99a6", 1.0), "emitter": ("#111111", 1.0), "body": ("#8d99a6", 1.0), "wing": ("#c9a66b", 1.0), "tail": ("#6b4f2a", 1.0), "pylons": ("#3b3f45", 1.0),
            "camera": ("#111111", 1.0), "props": ("#7fb2e5", 0.30)}
 FILL = {"boom": "#6b4f2a", "body": "#8d99a6", "wing": "#c9a66b", "fins": "#6b4f2a", "pylons": "#3b3f45", "pods": "#3b3f45", "camera": "#111111"}
 
@@ -215,6 +216,45 @@ def render_x_net(out="gavilan_x_net_3d.png"):
     fig.suptitle(f"Gavilan-X with the one-shot net — the lightest net launcher (70 g cartridge, 1.5 m net, 45 m/s) in a pod under the belly\n"
                  f"{m.mass:.2f} kg, static thrust {m.t_max(0.0) / m.weight:.1f} x its weight; pod {N['length']:.0f} mm long, {p['net_pod_diameter']:.0f} mm across, "
                  f"{N['clear_of_lower_discs']:.0f} mm clear of the lower propellers", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+    return out
+
+
+def _sling_view(ax, q, elev, azim, title):
+    import gavilan_slingshot as gs
+    S = gs.Slingshot.layout(q)
+    pts = []
+    for name, shape in gs.Slingshot().parts(q).items():
+        col, alpha = COLOURS["sling_" + name]
+        tris = _tris(shape, 0.3)
+        pts += [t for t in tris]
+        ax.add_collection3d(Poly3DCollection(tris, facecolors=col, edgecolors=col, linewidths=0.0, alpha=alpha, shade=True))
+    P = np.concatenate(pts)
+    c, h = (P.max(0) + P.min(0)) / 2, 0.55 * np.ptp(P, 0).max()
+    ax.set_xlim(c[0] - h, c[0] + h); ax.set_ylim(c[1] - h, c[1] + h); ax.set_zlim(c[2] - h, c[2] + h)
+    ax.set_box_aspect((1, 1, 1), zoom=1.45); ax.view_init(elev=elev, azim=azim); ax.set_axis_off(); ax.set_title(title, fontsize=11)
+
+
+def render_slingshot(out="gavilan_slingshot.png"):
+    """The opposed latex net slingshot: on GAVILAN-X, then alone — cocked, just fired, and the single (recoiling) one."""
+    import gavilan_slingshot as gs
+    p = gv.x_resolve(gv.X_SLING)
+    q = gs.resolve()
+    S = gs.Slingshot.layout(q)
+    fig = plt.figure(figsize=(16, 10.5))
+    for k, (elev, azim, name) in enumerate([(24, -128, "on Gavilan-X, from the front quarter"), (-28, -120, "on Gavilan-X, from below"),
+                                            (0, -90, "on Gavilan-X, from the side")]):
+        draw(fig.add_subplot(2, 3, k + 1, projection="3d"), p, elev, azim, name, False, cls=gv.GavilanX)
+    _sling_view(fig.add_subplot(2, 3, 4, projection="3d"), q, 22, -60, "cocked: both carriages in the middle, the bands stretched")
+    _sling_view(fig.add_subplot(2, 3, 5, projection="3d"), gs.resolve({"state": "fired"}), 22, -60,
+                "just fired: the net forward, the second net aft")
+    _sling_view(fig.add_subplot(2, 3, 6, projection="3d"), gs.resolve({"opposed": False}), 22, -60, "the single one: one carriage, rear end closed")
+    L = gv.GavilanX.sling_layout(p)
+    fig.suptitle(f"The latex net slingshot — two carriages thrown apart by latex bands, the net forward and a second net aft: no recoil, no jet\n"
+                 f"tube {S['length']:.0f} mm, {q['bore']:.0f} mm bore, stroke {q['stroke']:.0f} mm each way, {int(q['bands'])} bands each side; "
+                 f"under Gavilan-X's belly, {L['clear_of_lower_discs']:.0f} mm clear of the lower propellers", fontsize=11)
     fig.tight_layout()
     fig.savefig(out, dpi=110)
     plt.close(fig)

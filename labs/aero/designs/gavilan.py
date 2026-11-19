@@ -339,6 +339,9 @@ class GavilanX(Gavilan):
         _gp("bay_length", 134.5), _gp("length", 580.0), _gp("talons", True), _gp("guards", True), _gp("prop_gap", 24.0),
         _gp("motor_y", 141.4), _gp("motor_z", 141.4),                    # the motor axes: 200 mm from the body axis, on the 45 degree lines
         Parameter("panel_radius", 340.0, "mm", min=120.0, description="each panel's tip from the body axis (the foot)"),
+        Parameter("slingshot", False, description="the opposed latex net slingshot under the belly (talons off; gavilan_slingshot)"),
+        Parameter("sling_state", "cocked", choices=("cocked", "fired"), description="slingshot: cocked or just fired"),
+        Parameter("sling_opposed", True, description="slingshot: two loads thrown apart (no recoil); False: one, forward"),
         Parameter("net_pod", False, description="the one-shot net launcher in a pod under the belly (talons off): muzzle forward, jet aft"),
         Parameter("net_tube", 250.0, "mm", min=100.0, description="net pod: the launch tube (32 mm bore)"),
         Parameter("net_tube_od", 35.0, "mm", min=33.0, description="net pod: the tube's outer diameter"),
@@ -435,9 +438,37 @@ class GavilanX(Gavilan):
             .translate((N["x_fairing"] + 30.0, 0, z))
         return tube.union(fairing).union(strut)
 
+    def sling_parts(self, p) -> dict:
+        """The slingshot's parts in GAVILAN-X's frame: the muzzle at ``net_muzzle_x``, the tube's axis under the belly,
+        and a strut from the tube to the body."""
+        import gavilan_slingshot as gs
+        q = gs.resolve({"state": p["sling_state"], "opposed": p["sling_opposed"]})
+        S = gs.Slingshot.layout(q)
+        z = -(self.layout(p)["R"] + S["r_band"] + 6.0)
+        out = {}
+        for name, s in gs.Slingshot().parts(q).items():
+            out[name] = s.translate((p["net_muzzle_x"], 0, z))
+        x0, x1 = p["net_muzzle_x"] + 0.30 * S["length"], p["net_muzzle_x"] + 0.70 * S["length"]
+        strut = cq.Workplane("XY").box(x1 - x0, 5.0, -z - S["r_o"] - p["body_diameter"] / 2 + 6.0, centered=(False, True, False)) \
+            .translate((x0, 13.0, z + S["r_o"] - 1.0))
+        out["tube"] = out["tube"].union(strut).union(strut.mirror("XZ"))
+        return out
+
+    @classmethod
+    def sling_layout(cls, p) -> dict:
+        import gavilan_slingshot as gs
+        S = gs.Slingshot.layout(gs.resolve({"state": p["sling_state"], "opposed": p["sling_opposed"]}))
+        L = cls.layout(p)
+        z = -(L["R"] + S["r_band"] + 6.0)
+        return {"z": z, "length": S["length"], "x_rear": p["net_muzzle_x"] + S["length"],
+                "clear_of_lower_discs": math.hypot(p["motor_y"], p["motor_z"] + z) - p["prop_diameter"] / 2 - (S["r_band"] + 4.0),
+                "clear_of_camera": -(z + S["r_band"] + 4.0) - p["camera_diameter"] / 2}
+
     def parts(self, p) -> dict:
         out = {"body": self._body(p), "camera": self._camera(p), "wing": self._panels(p), "pylons": self._pods(p), "props": self._props(p)}
-        if p["net_pod"]:
+        if p["slingshot"]:
+            out.update({"sling_" + k: v for k, v in self.sling_parts(p).items()})
+        elif p["net_pod"]:
             out["netpod"] = self._net_pod(p)
         elif p["talons"]:
             out["talons"] = self._talons(p)
@@ -456,6 +487,14 @@ class GavilanX(Gavilan):
             pod = self._pod(p, -L["r_motor"], 0.0)                         # on the panel's own line (-y), before the 45 degree turn
             return self._panel(p).union(pod)
         aircraft = self._body(p).union(self._camera(p)).union(self._panels(p)).union(self._pods(p))
+        if p["slingshot"]:
+            if self.sling_layout(p)["clear_of_lower_discs"] < 10.0:
+                raise ValueError("the slingshot reaches the lower propellers' discs")
+            extra = [v for s in self.sling_parts(p).values() for v in s.solids().vals()]
+            if p["guards"]:
+                aircraft = aircraft.union(self._guards(p))
+            whole = aircraft.rotate((0, 0, 0), (0, 1, 0), p["angle_of_attack_deg"]) if p["angle_of_attack_deg"] else aircraft
+            return cq.Workplane("XY").add(cq.Compound.makeCompound(whole.solids().vals() + extra))
         if p["net_pod"]:
             N = self.net_layout(p)
             if N["clear_of_lower_discs"] < 10.0:
@@ -563,6 +602,7 @@ def L_R(design, p) -> float:
 
 
 X_NET = {"net_pod": True, "talons": False}                 # GAVILAN-X with the one-shot net launcher
+X_SLING = {"slingshot": True, "talons": False}             # GAVILAN-X with the opposed latex net slingshot
 
 
 def x_resolve(q=None) -> dict:
