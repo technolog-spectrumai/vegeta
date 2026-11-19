@@ -419,6 +419,95 @@ def humanoid(casing: str = "none"):
     return bare("Humanoid", casing, P=su.HUMANOID, upright=True)
 
 
+#: The gibbon's joint modules (``ogma.actuators``): small and light, sized for a 15 kg body hanging from one arm.
+#: The shoulder's pitch and roll carry the swing (``harmonic 30 Nm, brake``: it holds a hang unpowered); the
+#: elbow and the shoulder's twist ``qdd 24 Nm``; the wrist ``smart servo 25 Nm``; the legs, the spine and the waist
+#: smart servos (the legs only tuck and stand); every finger joint a self-locking worm servo (``micro-metal 22 g
+#: worm``): a closed hook stays closed unpowered, the hang's load in the curled fingers' bones, not their motors.
+GIBBON_SERVOS = {"shoulder_pitch": ("harmonic 30 Nm, brake", 120.0, 1.5), "shoulder_roll": ("harmonic 30 Nm, brake", 120.0, 1.5),
+                 "shoulder_yaw": ("qdd 24 Nm", 60.0, 0.8), "elbow": ("qdd 24 Nm", 60.0, 0.8),
+                 "wrist_pitch": ("smart servo 25 Nm", 40.0, 0.4), "wrist_roll": ("smart servo 25 Nm", 40.0, 0.4),
+                 "hip_pitch": ("smart servo 25 Nm", 40.0, 0.4), "knee": ("smart servo 25 Nm", 40.0, 0.4),
+                 "hip_yaw": ("smart servo 12 Nm", 20.0, 0.2), "hip_roll": ("smart servo 12 Nm", 20.0, 0.2),
+                 "ankle_pitch": ("smart servo 12 Nm", 20.0, 0.2), "ankle_roll": ("smart servo 12 Nm", 20.0, 0.2),
+                 "waist_yaw": ("smart servo 25 Nm", 40.0, 0.4), "spine_pitch": ("smart servo 25 Nm", 40.0, 0.4), "spine_roll": ("smart servo 25 Nm", 40.0, 0.4),
+                 "finger_mcp": ("micro-metal 22 g worm", 1.5, 0.02), "finger_pip": ("micro-metal 22 g worm", 1.5, 0.02),
+                 "finger_dip": ("micro-metal 22 g worm", 1.5, 0.02), "thumb_oppose": ("micro-metal 20 g", 1.0, 0.01), "thumb_curl": ("micro-metal 20 g", 1.0, 0.01)}
+#: The gibbon's carried parts [kg]: a 6S 5 Ah pack (110 Wh), the computer and sensors, the frame's wiring and fasteners.
+GIBBON_PARTS_KG = {"battery": 0.75, "electronics": 0.3, "frame_and_wiring": 0.6, "chest_bay": 0.2, "belly_bay": 0.12}
+#: The gibbon's frame [kg]: carbon-fibre tubes and printed nodes (the bones), the ribcage a carbon lattice; the collision
+#: capsules' radii [m] those of the bones and their casing.
+GIBBON_FRAME_KG = {"thigh": (0.18, 0.024), "shin": (0.14, 0.02), "upper_arm": (0.16, 0.022), "forearm": (0.14, 0.019),
+                   "foot": 0.11, "head": 0.25, "ribcage": 0.35, "yoke": 0.12, "pelvis_shell": 0.2, "lumbar": 0.08, "palm": 0.05}
+GIBBON_CASING = 0.35                                                       #: the casing's walls against the frame's 3 mm: 1 mm polycarbonate
+
+
+def gibbon(casing: str = "plastic"):
+    """The gibbon (``space_unit_specs.GIBBON``): Kerchak's fork for the trees, fully arboreal - the same kind of
+    skeleton, spine and hands at a siamang's size with a gibbon's arms and hook hands, on small joint modules
+    (``GIBBON_SERVOS``); hanging at rest with a hand's reach overhead, about 15 kg. Weak on the ground by design: it
+    stands and walks upright, its arms up, but carries little."""
+    from ogma import actuators as act
+    r = bare("Gibbon", casing, P=su.GIBBON, upright=True)
+    tag_of = {j.name: j.tag for j in r.joints()}
+    kg = lambda key: act.get(key).mass_g / 1000.0
+    for j in r.joints():
+        if j.tag in GIBBON_SERVOS:
+            key, kp, kd = GIBBON_SERVOS[j.tag]
+            j.servo = bk.servo(key, kp=kp, kd=kd)
+        if j.tag == "shoulder_roll":                                       # a gibbon's shoulder: the arm swings up and over to the side
+            j.range = (-0.8, 3.0) if j.name.startswith("L") else (-3.0, 0.8)
+        elif j.tag == "shoulder_pitch":
+            j.range = (-4.0, 1.2)                                          # and overhead, well past straight up and back (a gibbon's ball-and-socket shoulder)
+    S = GIBBON_SERVOS
+    for lk in r.links():
+        for pm in lk.masses:
+            n = pm.name
+            if "shoulder_actuators" in n:
+                pm.mass = 2 * kg(S["shoulder_pitch"][0]) + kg(S["shoulder_yaw"][0])
+            elif "elbow_actuator" in n:
+                pm.mass = kg(S["elbow"][0])
+            elif "wrist_actuators" in n:
+                pm.mass = 2 * kg(S["wrist_pitch"][0])
+            elif "hip_actuators" in n:
+                pm.mass = kg(S["hip_pitch"][0]) + 2 * kg(S["hip_yaw"][0])
+            elif "knee_actuator" in n:
+                pm.mass = kg(S["knee"][0])
+            elif "ankle_actuators" in n:
+                pm.mass = 2 * kg(S["ankle_pitch"][0])
+            elif "spine_" in n and "actuators" in n:
+                pm.mass = 2 * kg(S["spine_pitch"][0])
+            elif "waist_actuator" in n:
+                pm.mass = kg(S["waist_yaw"][0])
+            elif "finger" in n and "actuator" in n:
+                pm.mass = kg(S["finger_mcp"][0])
+            elif "thumb" in n and "actuator" in n:
+                pm.mass = kg(S["thumb_curl"][0])
+            elif n in GIBBON_PARTS_KG:
+                pm.mass = GIBBON_PARTS_KG[n]
+        for g in lk.geoms:
+            base = g.name[2:] if g.name[:2] in ("L_", "R_") else g.name
+            base = "foot" if g.name in ("L", "R") else base
+            if g.name in GIBBON_PARTS_KG:
+                g.mass = GIBBON_PARTS_KG[g.name]
+            elif base in GIBBON_FRAME_KG:
+                v = GIBBON_FRAME_KG[base]
+                if isinstance(v, tuple):
+                    g.mass, g.size = v[0], (v[1],)
+                else:
+                    g.mass = v
+            elif g.role == "visual" and g.mass:
+                g.mass *= GIBBON_CASING
+    r.sources["actuators"] = "space_unit_robots.GIBBON_SERVOS: small joint modules for a 15 kg climber; self-locking worm servos in the fingers"
+    r.sources["carried"] = "space_unit_robots.GIBBON_PARTS_KG: a 110 Wh pack, the computer, the wiring; a thin polycarbonate casing"
+    r.notes = "The gibbon: a fully arboreal fork of Kerchak (design stage)."
+    e = math.radians(su.GIBBON["elbow_bend_deg"])
+    r.nominal_qpos.update({"L_elbow": -e, "R_elbow": -e})
+    for side in ("L", "R"):                                               # the hook half closed at rest
+        r.nominal_qpos.update(curl_values(side, 1.0))
+    return r
+
+
 def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = False):
     """Belisario bare: the frame with no weapons, articulated hands (``_hands``: a two-module wrist, the four fingers on
     a curl module, the knuckle contact on the fingers' middle joints) for walking on all fours, gripping and
@@ -452,7 +541,8 @@ def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = 
         elif j.tag == "shoulder_roll":
             j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
-    r.sources["geometry"] = f"designs/space_units.py ({name} bare: space_unit_specs.{'HUMANOID' if upright else 'MARINE'}, no weapons, casing {casing})"
+    spec = "GIBBON" if P is su.GIBBON else "HUMANOID" if upright else "MARINE"
+    r.sources["geometry"] = f"designs/space_units.py ({name} bare: space_unit_specs.{spec}, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:
             if g.name in ("lumbar", "ribcage", "yoke", "neck", "head", "pelvis_shell") or g.name.endswith(("_thigh", "_shin", "_upper_arm", "_forearm", "_palm")) \

@@ -326,9 +326,12 @@ def skeleton_trunk(p):
         clav = sk.rod((x_front - 4, sy * p["sternum_width"] * 0.3, fronts[-1] + rr * 2 + 24), (0, cy - sy * d * 0.3, zs + d * 0.15),
                       p["clavicle_diameter"] / 2)
         top_x = spine_x(p, (N - 1.5) / N)
-        scap = (sk.blade((0, 0, 0), p["scapula_width"], Ht * 0.32, 12.0, axis="x").rotate((0, 0, 0), (0, 0, 1), sy * 25)
-                .translate((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7)))
-        acromion = sk.rod((top_x - dv * 0.55 - 20, sy * (Wt * 0.26), z0 + Ht * 0.7), (0, cy - sy * d * 0.2, zs), 13)
+        turn, sy_frac, sh = p.get("scapula_turn_deg", 25.0), p.get("scapula_y", 0.26), p.get("scapula_height", 0.32)
+        sk_t, sk_off = min(12.0, dv * 0.3), min(20.0, dv * 0.5)            # the blade's thickness and its set-back: a small frame's in proportion
+        sx = top_x - dv * 0.55 - sk_off
+        scap = (sk.blade((0, 0, 0), p["scapula_width"], Ht * sh, sk_t, axis="x").rotate((0, 0, 0), (0, 0, 1), sy * turn)
+                .translate((sx, sy * (Wt * sy_frac), z0 + Ht * 0.7)))
+        acromion = sk.rod((sx, sy * (Wt * sy_frac), z0 + Ht * 0.7), (0, cy - sy * d * 0.2, zs), min(13.0, p["clavicle_diameter"]))
         part = module.union(clav).union(scap).union(acromion)
         girdle = part if girdle is None else girdle.union(part)
     zn = z0 + Ht

@@ -246,6 +246,12 @@ def _contacts(kin, q, base, pitch):
 # ---- holds: a bar the hand closes on and the foot stands on, or a plain contact point
 CURL_CLOSED, CURL_OPEN = 2.0, -0.3        #: the finger module closed on a bar (a fist), and open to take one [rad]
 GRIP = sr.hand_grip(CURL_CLOSED)          #: a bar's axis in the hand's frame once the fingers have closed on it [m]: in front of the palm's face, inside the fist
+
+
+def set_hand(P):
+    """The grip from a frame's own hand (``space_unit_specs`` proportions): Kerchak's, the humanoid's or the gibbon's."""
+    global GRIP
+    GRIP = sr.hand_grip(CURL_CLOSED, P=P)
 GRIP_Y = 0.06                             #: a second point along the hand's y (the bar's axis) that fixes the hand's roll
 BAR_R = 0.025                             #: the bar the grip is sized for; a thicker hold moves the palm out to its surface
 SOLE_ON_BAR = 0.08                        #: the sole's point that rests on a bar: the ball of the foot, 2 cm of toe past the bar [m] (on four)

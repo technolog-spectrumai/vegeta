@@ -130,6 +130,21 @@ MATERIALS = {
                       "source": "PC sheet: the visor"},
 }
 
+#: The gibbon: Kerchak's fork for the trees, fully arboreal (a siamang's size). A gibbon's and a small monkey's tricks
+#: for climbing: arms far longer than the legs (the forearm longer than the upper arm, as in the gibbons), long
+#: hook hands with a short, set-back thumb, a short trunk with a broad, shallow chest (the shoulders wide on long
+#: clavicles, the scapulae flat on the back: the arm hangs and swings overhead freely), a light pelvis and short legs.
+#: The joint modules are small (``space_unit_robots.gibbon``) and the casing thin: about 15 kg in all.
+GIBBON = dict(MARINE, pelvis_width=150.0, pelvis_depth=85.0, pelvis_height=60.0, torso_width=250.0, torso_depth=115.0, torso_height=270.0,
+              waist_taper=0.78, shell_fillet=8.0, hip_spacing=110.0, thigh_length=210.0, shin_length=195.0, leg_width=50.0, leg_thickness=44.0,
+              joint_boss_diameter=55.0, ankle_height=35.0, foot_length=150.0, foot_width=60.0, foot_thickness=20.0, knee_bend_deg=15.0,
+              upper_arm_length=280.0, forearm_length=305.0, arm_diameter=46.0, elbow_bend_deg=15.0, neck_length=25.0,
+              head_width=115.0, head_depth=125.0, head_height=110.0, eye_diameter=12.0,
+              spine_segments=10, spine_curve=10.0, vertebra_diameter=34.0, rib_count=8, rib_section=9.0, sternum_width=26.0,
+              clavicle_diameter=12.0, scapula_width=80.0, iliac_wing_height=60.0, femur_diameter=22.0, tibia_diameter=20.0,
+              fibula_diameter=8.0, joint_module_length=55.0, joint_module_diameter=55.0, finger_length=125.0, finger_diameter=13.0,
+              hand_scale=0.62, thumb_scale=0.45, scapula_turn_deg=6.0, scapula_y=0.3, scapula_height=0.42)
+
 import math as _math
 
 #: The hand (mm): a palm, four fingers of three phalanges each (index, middle, ring, little at their own lengths,
@@ -150,11 +165,16 @@ def hand_layout(P, sy):
     length), each finger's root, phalanx lengths and radius, the thumb's base, metacarpal direction, lengths, radius
     and joint axes (opposition about the palm's long axis, flexion about an axis across the metacarpal: positive
     bends the thumb down over the fingers)."""
-    H, fl, fd = HAND, P["finger_length"], P["finger_diameter"]
+    hs, ts = P.get("hand_scale", 1.0), P.get("thumb_scale", 1.0)       # a smaller palm; a shorter, set-back thumb (a gibbon's)
+    H = dict(HAND, palm_width=HAND["palm_width"] * hs, palm_thickness=HAND["palm_thickness"] * hs, palm_length=HAND["palm_length"] * hs,
+             finger_spacing=HAND["finger_spacing"] * hs, thumb_metacarpal=HAND["thumb_metacarpal"] * ts, thumb_proximal=HAND["thumb_proximal"] * ts,
+             thumb_distal=HAND["thumb_distal"] * ts, thumb_diameter=HAND["thumb_diameter"] * max(ts, 0.6),
+             thumb_base=tuple(v * hs for v in HAND["thumb_base"]))
+    fl, fd = P["finger_length"], P["finger_diameter"]
     fingers = []
     for k, frac in enumerate(H["finger_fractions"]):
         L = fl * frac
-        fingers.append({"root": (4.0, sy * (1.5 - k) * H["finger_spacing"], -H["palm_length"]),
+        fingers.append({"root": (4.0 * hs, sy * (1.5 - k) * H["finger_spacing"], -H["palm_length"]),
                         "lengths": tuple(L * f for f in H["phalanx_fractions"]), "radius": fd / 2 * (0.85 if k == 3 else 1.0)})
     a = _math.radians(H["thumb_rest_deg"])
     bx, by, bz = H["thumb_base"]
