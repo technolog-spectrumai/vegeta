@@ -21,6 +21,15 @@ OUT = ROOT / "labs" / "aero" / "sims" / "output"
 RUNS = ROOT / "labs" / "aero" / "_runs" / "arigo1_cfd"
 
 
+def eta(done, total, t0):
+    """'k/N, elapsed, about X left' from the mean time per finished item."""
+    import time as _t
+    el = _t.time() - t0
+    left = el / done * (total - done) if done else float("nan")
+    f = lambda s: "?" if s != s else (f"{s / 3600:.1f} h" if s >= 3600 else f"{s / 60:.0f} min" if s >= 90 else f"{s:.0f} s")
+    return f"[{done}/{total}, {f(el)} elapsed, ~{f(left)} left]"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variants", nargs="*", default=["goshawk", "zero", "hybrid"], choices=("goshawk", "zero", "hybrid"))
@@ -62,7 +71,7 @@ def main(argv=None) -> int:
             rows.append(r)
             n += 1
             n_ok += r["status"] == "solved"
-            print(f"  [{n}] {key} alpha {al:+5.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else ""))
+            print(f"  {eta(n, len(configs) * len(a.alphas), t0)} {key} alpha {al:+5.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else ""))
             doc["configurations"][key]["summary"] = ac.summary(rows)
             doc["elapsed_s"] = round(time.time() - t0)
             (OUT / "arigo1_cfd.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))

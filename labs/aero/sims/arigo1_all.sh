@@ -9,9 +9,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 NP="${1:-8}"
 ALL=(--variants goshawk zero hybrid --propulsion pusher tractor twin)
 status=0
-echo "== MuJoCo stability";  "$HERE/arigo1_mujoco.sh" "${ALL[@]}" || status=1
-if [ -z "${SKIP_VIDEO:-}" ]; then echo "== manoeuvre videos"; "$HERE/arigo1_video.sh" "${ALL[@]}" || status=1; fi
-if [ -z "${SKIP_CFD:-}" ]; then echo "== CFD ($NP processors)"; "$HERE/arigo1.sh" "${ALL[@]}" --processors "$NP" || status=1; fi
+echo "== stage 1/3: MuJoCo stability (~1 min)";  "$HERE/arigo1_mujoco.sh" "${ALL[@]}" || status=1
+if [ -z "${SKIP_VIDEO:-}" ]; then echo "== stage 2/3: manoeuvre videos (54; minutes, depends on the GPU)"; "$HERE/arigo1_video.sh" "${ALL[@]}" || status=1; fi
+if [ -z "${SKIP_CFD:-}" ]; then echo "== stage 3/3: CFD, 99 cases on $NP processors (hours; each line shows the time left)"; "$HERE/arigo1.sh" "${ALL[@]}" --processors "$NP" || status=1; fi
 echo "== done (status $status). Paste back:"
 ls -1 "$HERE/output"/arigo1_*.yaml 2>/dev/null
 exit $status

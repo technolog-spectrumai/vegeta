@@ -23,6 +23,15 @@ import arigo1_mujoco as amj  # noqa: E402
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
 
 
+def eta(done, total, t0):
+    """'k/N, elapsed, about X left' from the mean time per finished item."""
+    import time as _t
+    el = _t.time() - t0
+    left = el / done * (total - done) if done else float("nan")
+    f = lambda s: "?" if s != s else (f"{s / 3600:.1f} h" if s >= 3600 else f"{s / 60:.0f} min" if s >= 90 else f"{s:.0f} s")
+    return f"[{done}/{total}, {f(el)} elapsed, ~{f(left)} left]"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variants", nargs="*", default=["goshawk", "zero", "hybrid"], choices=("goshawk", "zero", "hybrid"))
@@ -34,7 +43,7 @@ def main(argv=None) -> int:
     import mujoco
     doc = {"aircraft": "ARIGO-1", "mujoco": mujoco.__version__, "speed_m_s": a.speed,
            "note": "aerodynamics from arigo1_model (lattice + hand estimates); MuJoCo integrates the rigid body", "runs": {}}
-    t0 = time.time()
+    t0, n, total = time.time(), 0, len(a.variants) * len(a.propulsion) * len(a.bounds)
     for v in a.variants:
         for p in a.propulsion:
             for k in a.bounds:
@@ -44,7 +53,8 @@ def main(argv=None) -> int:
                     doc["runs"][key] = amj.stability_tests(v, p, a.speed, post_stall_cm_factor=k)
                 except Exception as exc:
                     doc["runs"][key] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
-                print(f"  {key}: {time.time() - t1:.1f} s  {doc['runs'][key].get('verdict', doc['runs'][key].get('error'))}")
+                n += 1
+                print(f"  {eta(n, total, t0)} {key}: {time.time() - t1:.1f} s  {doc['runs'][key].get('verdict', doc['runs'][key].get('error'))}")
                 doc["elapsed_s"] = round(time.time() - t0, 1)
                 (OUT / "arigo1_mujoco.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
     print(f"-> {OUT / 'arigo1_mujoco.yaml'}")

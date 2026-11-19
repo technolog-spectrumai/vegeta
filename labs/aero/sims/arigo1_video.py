@@ -62,6 +62,15 @@ class Recorder:
         self.ff.wait()
 
 
+def eta(done, total, t0):
+    """'k/N, elapsed, about X left' from the mean time per finished item."""
+    import time as _t
+    el = _t.time() - t0
+    left = el / done * (total - done) if done else float("nan")
+    f = lambda s: "?" if s != s else (f"{s / 3600:.1f} h" if s >= 3600 else f"{s / 60:.0f} min" if s >= 90 else f"{s:.0f} s")
+    return f"[{done}/{total}, {f(el)} elapsed, ~{f(left)} left]"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--variants", nargs="*", default=["hybrid"], choices=("goshawk", "zero", "hybrid"))
@@ -73,6 +82,7 @@ def main(argv=None) -> int:
     vdir = OUT / "arigo1_video"
     vdir.mkdir(parents=True, exist_ok=True)
     doc = {"aircraft": "ARIGO-1", "note": "aerodynamics from arigo1_model (lattice + hand estimates); autopilot gains by hand", "runs": {}}
+    t0, n, total = time.time(), 0, len(a.variants) * len(a.propulsion) * len(a.manoeuvres)
     for v in a.variants:
         for p in a.propulsion:
             mesh = None if a.no_render else amj.export_mesh(OUT / "arigo1_video" / "mesh", v, p)
@@ -89,7 +99,8 @@ def main(argv=None) -> int:
                     rec.close()
                     summ["video"] = str((vdir / f"{key}.mp4").relative_to(ROOT))
                 doc["runs"][key] = summ
-                print(f"  {key}: {time.time() - t1:.1f} s  {summ}")
+                n += 1
+                print(f"  {eta(n, total, t0)} {key}: {time.time() - t1:.1f} s  {summ}")
                 (OUT / "arigo1_video.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
     print(f"-> {OUT / 'arigo1_video.yaml'}  videos in {vdir}")
     return 0
