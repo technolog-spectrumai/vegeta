@@ -15,9 +15,12 @@ import yaml
 DESIGNS = Path(__file__).resolve().parents[1] / "designs"
 
 
+GLOBS = ["arigo1*.py"]          # ARIGO-2's runners add "arigo2*.py" (it is built on ARIGO-1's files)
+
+
 def fingerprint() -> str:
     h = hashlib.sha256()
-    for f in sorted(DESIGNS.glob("arigo1*.py")):
+    for f in sorted({f for g in GLOBS for f in DESIGNS.glob(g)}):
         if f.name != "arigo1_drawings.py":
             h.update(f.name.encode()); h.update(f.read_bytes())
     return h.hexdigest()[:16]
@@ -47,3 +50,11 @@ def save(path: Path, doc: dict):
     tmp = path.with_suffix(".yaml.tmp")
     tmp.write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
     tmp.replace(path)
+
+
+def eta(done, total, t0):
+    """'[k/N, elapsed, about X left]' from the mean time per finished item."""
+    el = time.time() - t0
+    left = el / done * (total - done) if done else float("nan")
+    f = lambda s: "?" if s != s else (f"{s / 3600:.1f} h" if s >= 3600 else f"{s / 60:.0f} min" if s >= 90 else f"{s:.0f} s")
+    return f"[{done}/{total}, {f(el)} elapsed, ~{f(left)} left]"
