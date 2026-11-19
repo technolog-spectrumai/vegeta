@@ -16,6 +16,7 @@ Frame: body x forward, y right, z down (the flight-mechanics convention); alpha,
 from __future__ import annotations
 
 import math
+from pathlib import Path
 from functools import lru_cache
 
 import numpy as np
@@ -36,8 +37,79 @@ def _vlm(pf, alpha, inc):
     return vlm(pf["quads"], alpha_deg=alpha, incidence_deg=inc, S_ref=pf["S_ref"], c_ref=pf["c_ref"], x_ref=0.0)
 
 
+CFD_FILE = Path(__file__).resolve().parent / "data" / "arigo1_cfd_screening.yaml"
+
+
 @lru_cache(maxsize=None)
-def coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
+def cfd_table(variant: str, propulsion: str):
+    """The solved CFD rows for one configuration (alpha [deg], CL, CD, Cm about the CG), or None. Screening quality,
+    steady RANS, mostly not converged in 300 iterations: used as the best data there is, flagged as such."""
+    if not CFD_FILE.exists():
+        return None
+    import yaml
+    cfg = (yaml.safe_load(CFD_FILE.read_text()) or {}).get("configurations", {}).get(f"{variant}_{propulsion}")
+    rows = sorted((r for r in (cfg or {}).get("rows", []) if r.get("status") == "solved"), key=lambda r: r["alpha_deg"])
+    # an outlier at the end of the sweep (unconverged post-stall flow): drop a last point whose CL leaves the line of
+    # the two before it by more than 0.2 (hybrid tractor at 24 deg: 1.29 after 0.84-0.88)
+    if len(rows) >= 3:                                            # one point at most, and only a gross one (> 0.3)
+        a0, a1_, a2 = rows[-3:]
+        ext = a1_["Cl"] + (a1_["Cl"] - a0["Cl"]) / (a1_["alpha_deg"] - a0["alpha_deg"]) * (a2["alpha_deg"] - a1_["alpha_deg"])
+        if abs(a2["Cl"] - ext) > 0.3:
+            rows = rows[:-1]
+    if len(rows) < 6:
+        return None
+    return {"alpha_deg": np.array([r["alpha_deg"] for r in rows], float), "CL": np.array([r["Cl"] for r in rows], float),
+            "CD": np.array([r["Cd"] for r in rows], float), "Cm": np.array([r["Cm_cg"] for r in rows], float),
+            "converged_share": float(np.mean([bool(r.get("converged")) for r in rows]))}
+
+
+def coefficients(variant: str = "hybrid", propulsion: str = "pusher", source: str = "auto") -> dict:
+    """See ``_calibrated``; a fresh copy each call (cached underneath: the rig needs a few trims)."""
+    return dict(_calibrated(variant, propulsion, source))
+
+
+@lru_cache(maxsize=None)
+def _calibrated(variant: str = "hybrid", propulsion: str = "pusher", source: str = "auto") -> dict:
+    """``source``: "auto" (the CFD table where there is one, else the model), "cfd" or "model". With the CFD, the
+    longitudinal static coefficients CL, CD, Cm(alpha) come from its table; the damping, controls and lateral
+    derivatives stay the model's."""
+    C = dict(_coefficients(variant, propulsion))
+    t = cfd_table(variant, propulsion) if source in ("auto", "cfd") else None
+    if source == "cfd" and t is None:
+        raise ValueError(f"no CFD table for {variant}_{propulsion}")
+    C["aero_source"] = "cfd (screening RANS)" if t is not None else "model (lattice + hand)"
+    if t is not None:
+        a = np.radians(t["alpha_deg"])
+        lin = (t["alpha_deg"] >= -4) & (t["alpha_deg"] <= 8)
+        CLa, CL0 = np.polyfit(a[lin], t["CL"][lin], 1)
+        slopes = np.diff(t["CL"]) / np.diff(a)
+        # the stall: the first local maximum of CL past 4 deg (the CFD shows no sharp break: a soft knee at 8-10 deg
+        # and a first peak at 12-20 deg, lift then holding or creeping up — read as a gentle stall)
+        brk = next((k for k in range(1, len(slopes)) if t["alpha_deg"][k] >= 4 and slopes[k] < 0 <= slopes[k - 1]), len(slopes))
+        C.update({"cfd": t, "CLa": float(CLa), "CL0": float(CL0), "CL_MAX": float(t["CL"].max()), "CD0": float(t["CD"].min()),
+                  "alpha_stall": float(a[brk]), "Cma": float(np.polyfit(a[lin], t["Cm"][lin], 1)[0]),
+                  "Cm0": float(np.interp(0.0, t["alpha_deg"], t["Cm"])),
+                  "static_margin_cfd": float(-np.polyfit(t["CL"][lin], t["Cm"][lin], 1)[0])})
+        # the CFD's airframe has the stabiliser at the model's incidence; the measured Cm0 needs a lot of up elevator to
+        # trim. Rig the stabiliser (an incidence change, not the elevator) so cruise at 18 m/s trims with it neutral.
+        # first guess: the alpha whose CFD lift carries the weight at 18 m/s, and the moment to cancel there
+        CL_need = C["mass"] * G / (0.5 * RHO * 18.0 ** 2 * C["S"])
+        k_max = int(np.argmax(t["CL"]))
+        a_need = float(np.interp(CL_need, np.maximum.accumulate(t["CL"][:k_max + 1]), t["alpha_deg"][:k_max + 1]))
+        C["Cm_rig"] = -float(np.interp(a_need, t["alpha_deg"], t["Cm"]))
+        de_total = C["Cm_rig"] / C["Cmde"]
+        for _ in range(30):                                       # the rig moves the trim alpha: iterate (damped) to neutral elevator
+            de0 = trim(C, 18.0)["elevator_deg"]
+            de_total += 0.5 * de0
+            C["Cm_rig"] = C["Cmde"] * de_total                    # the moment that elevator gave, now built into the stabiliser
+            if abs(de0) < 0.05:
+                break
+        C["stabiliser_rig_deg"] = float(de_total * TAU_E)         # + : trailing edge down, the stabiliser's incidence
+    return C
+
+
+@lru_cache(maxsize=None)
+def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     """The aircraft's derivatives (per rad unless named per deg) and the reference geometry; the CG placed by the
     static margin. Each entry's source is in ``sources``."""
     q = a1.variant(variant, propulsion)
@@ -110,6 +182,25 @@ def coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
 
 
 # ----------------------------------------------------------------------------------------------------------- forces
+def _cfd_static(t, al):
+    """CL, CD, Cm at alpha [rad] from the CFD table; outside it (beyond -4..24 deg) a blend onto the flat plate over
+    6 degrees, Cm carried on with the table's last slope (bounded) — HAND outside the table."""
+    a = math.degrees(al)
+    A, CLt, CDt, Cmt = t["alpha_deg"], t["CL"], t["CD"], t["Cm"]
+    if A[0] <= a <= A[-1]:
+        return float(np.interp(a, A, CLt)), float(np.interp(a, A, CDt)), float(np.interp(a, A, Cmt))
+    lo = a < A[0]
+    i, j = (0, 1) if lo else (-1, -2)
+    d = a - A[i]
+    sl = lambda y: (y[i] - y[j]) / (A[i] - A[j])
+    w = min(1.0, abs(d) / 6.0)
+    fp_cl, fp_cd = 2 * math.sin(al) * math.cos(al) * 0.9, 2 * math.sin(al) ** 2 * 0.9 + float(CDt.min())
+    cl = (1 - w) * (CLt[i] + sl(CLt) * d) + w * fp_cl
+    cd = (1 - w) * (CDt[i] + sl(CDt) * d) + w * fp_cd
+    cm = float(np.clip(Cmt[i] + sl(Cmt) * d, -1.2, 1.2))
+    return float(cl), float(cd), cm
+
+
 def aero(C: dict, vel_b, omega_b, de=0.0, da=0.0, dr=0.0, throttle=0.5):
     """Force and moment in the body frame (x fwd, y right, z down) about the CG [N, N m]; controls in deg."""
     u, v, w = vel_b
@@ -119,18 +210,21 @@ def aero(C: dict, vel_b, omega_b, de=0.0, da=0.0, dr=0.0, throttle=0.5):
     be = math.asin(max(-1.0, min(1.0, v / V)))
     qd = 0.5 * RHO * V * V
     S, c, b = C["S"], C["c"], C["b"]
-    # lift: linear to the stall, then a smooth fall onto the flat plate (2 sin a cos a) — HAND
-    CL_lin = C["CL0"] + C["CLa"] * al
-    CL_fp = 2 * math.sin(al) * math.cos(al)
     s = 1 / (1 + math.exp(-(abs(al) - C["alpha_stall"]) / math.radians(2.0)))
-    CL = (1 - s) * CL_lin + s * CL_fp * 0.9
+    if "cfd" in C:
+        CL, CD, Cm_static = _cfd_static(C["cfd"], al)
+        Cm_static += C.get("Cm_rig", 0.0)
+    else:
+        # lift: linear to the stall, then a smooth fall onto the flat plate (2 sin a cos a) — HAND
+        CL_lin = C["CL0"] + C["CLa"] * al
+        CL_fp = 2 * math.sin(al) * math.cos(al)
+        CL = (1 - s) * CL_lin + s * CL_fp * 0.9
+        CD = C["CD0"] + C["k"] * CL_lin ** 2 * (1 - s) + s * (2 * math.sin(al) ** 2 * 0.9 + C["CD0"])
+        k_ps = C.get("post_stall_cm_factor", 1.0)       # HAND: 1 = the stability slope kept past the stall; 0.35 = mostly lost
+        Cm_static = C["Cm0"] + C["Cma"] * ((1 - s) * al + s * (C["alpha_stall"] + k_ps * (abs(al) - C["alpha_stall"])) * math.copysign(1, al))
     CL += C["CLde"] * de + C["CLq"] * q * c / (2 * V)
-    CD = C["CD0"] + C["k"] * CL_lin ** 2 * (1 - s) + s * (2 * math.sin(al) ** 2 * 0.9 + C["CD0"])
     CY = C["CYb"] * be + C["CYdr"] * dr
-    k_ps = C.get("post_stall_cm_factor", 1.0)           # HAND: 1 = the stability slope kept past the stall (tail unstalled,
-                                                        # optimistic); 0.35 = mostly lost (pessimistic); CFD decides
-    Cm = C["Cm0"] + C["Cma"] * ((1 - s) * al + s * (C["alpha_stall"] + k_ps * (abs(al) - C["alpha_stall"])) * math.copysign(1, al)) \
-        + C["Cmq"] * q * c / (2 * V) + C["Cmde"] * de
+    Cm = Cm_static + C["Cmq"] * q * c / (2 * V) + C["Cmde"] * de
     CLu = max(CL, 0.0)
     Cl = (C["Clb"] + C["Clb_sweep_per_CL"] * CLu) * be + C["Clp"] * p * b / (2 * V) + C["Clr_per_CL"] * CLu * r * b / (2 * V) \
         + C["Clda"] * da + C["Cldr"] * dr
@@ -168,20 +262,41 @@ def deriv(C, x, u):
 
 
 def trim(C, V: float = 18.0) -> dict:
-    """Level flight at V: alpha, elevator, throttle (Newton on the three equations)."""
-    x = np.array([math.radians(3.0), 0.0, 0.5])
-    for _ in range(40):
-        def res(z):
-            al, de, th = z
-            d = deriv(C, np.array([V * math.cos(al), 0, V * math.sin(al), 0, 0, 0, 0, al, 0, 0, 0, 0]), (de, 0, 0, th))
-            return np.array([d[0], d[2], d[4]])
-        f = res(x)
-        J = np.column_stack([(res(x + dz) - f) / 1e-5 for dz in np.eye(3) * 1e-5])
-        x = x - np.linalg.solve(J, f)
-        if np.abs(f).max() < 1e-8:
+    """Level flight at V: alpha, elevator, throttle. Bracketing, robust on the CFD's piecewise-linear tables: at each
+    alpha the elevator that zeroes the pitch acceleration and the throttle that zeroes the axial one, then the alpha
+    where the vertical acceleration crosses zero (scan, then Brent). Raises if there is none."""
+    from scipy.optimize import brentq
+
+    def d(al, de, th):
+        return deriv(C, np.array([V * math.cos(al), 0, V * math.sin(al), 0, 0, 0, 0, al, 0, 0, 0, 0]), (de, 0, 0, th))
+
+    def inner(al):
+        de, th = 0.0, 0.4
+        for _ in range(3):
+            fq = lambda x: d(al, x, th)[4]
+            try:
+                de = brentq(fq, -60.0, 60.0, xtol=1e-9)
+            except ValueError:
+                return None
+            u0, u1 = d(al, de, 0.0)[0], d(al, de, 1.0)[0]
+            th = -u0 / (u1 - u0) if u1 != u0 else 0.0
+        return de, th
+
+    def fz(al):
+        r = inner(al)
+        return math.nan if r is None else d(al, *r)[2]
+    grid = np.radians(np.arange(-4.0, 30.01, 0.5))
+    vals = [fz(a) for a in grid]
+    root = None
+    for k in range(len(grid) - 1):
+        if vals[k] == vals[k] and vals[k + 1] == vals[k + 1] and vals[k] * vals[k + 1] <= 0:
+            root = brentq(fz, grid[k], grid[k + 1], xtol=1e-10)
             break
-    al, de, th = x
-    return {"V": V, "alpha_deg": math.degrees(al), "elevator_deg": de, "throttle": th, "ok": bool(np.abs(f).max() < 1e-5 and 0 <= th <= 1 and abs(de) < DE_MAX)}
+    if root is None:
+        raise np.linalg.LinAlgError(f"no trim at {V} m/s")
+    de, th = inner(root)
+    return {"V": V, "alpha_deg": math.degrees(root), "elevator_deg": float(de), "throttle": float(th),
+            "ok": bool(0 <= th <= 1 and abs(de) < DE_MAX)}
 
 
 def modes(C, V: float = 18.0) -> dict:

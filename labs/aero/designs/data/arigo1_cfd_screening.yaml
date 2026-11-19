@@ -1,0 +1,1820 @@
+aircraft: ARIGO-1
+speed_m_s: 18.0
+quality: screening
+configurations:
+  goshawk_pusher:
+    reference:
+      S: 0.19906689189565782
+      c: 0.25865716845540443
+      b: 0.86
+      mass: 2.5
+      cg_mm:
+      - 327.5147350611983
+      - -3.6
+      model:
+        CL0: 0.15435575892340161
+        CLa: 3.8365006275837255
+        CL_MAX: 1.086943548520121
+        alpha_stall: 0.24308292376953802
+        CD0: 0.032
+        k: 0.09071262826353858
+        Cm0: 0.12872761897749418
+        Cma: -0.4603800753100469
+        x_np_m: 0.3585535952758468
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1136
+        Cd: 0.0334
+        Cm: 0.1609
+      status: solved
+      Cl: -0.232627888
+      Cd: 0.0367896625
+      Cm_cg: -0.0261145736
+      lift_N: -9.189923935002003
+      drag_N: 1.4533691677130114
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 176256
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1542
+        Cd: 0.0342
+        Cm: 0.1287
+      status: solved
+      Cl: 4.92731792e-05
+      Cd: 0.0256115968
+      Cm_cg: -0.00938804276
+      lift_N: 0.0019465283065447543
+      drag_N: 1.011781641786391
+      converged: null
+      iterations: null
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 168097
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4201
+        Cd: 0.0483
+        Cm: 0.0966
+      status: solved
+      Cl: 0.319835017
+      Cd: 0.0359716773
+      Cm_cg: -0.0568711384
+      lift_N: 12.63502627844892
+      drag_N: 1.4210548057825216
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 160215
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6683
+        Cd: 0.0764
+        Cm: 0.0644
+      status: solved
+      Cl: 0.594796597
+      Cd: 0.067874469
+      Cm_cg: -0.0736816342
+      lift_N: 23.49733529467473
+      drag_N: 2.681368999226144
+      converged: true
+      iterations: 115
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 163599
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7604
+        Cd: 0.0966
+        Cm: 0.0484
+      status: solved
+      Cl: 0.647191586
+      Cd: 0.108254312
+      Cm_cg: -0.0859747632
+      lift_N: 25.567190150104903
+      drag_N: 4.276567618221142
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 171774
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7945
+        Cd: 0.1226
+        Cm: 0.0323
+      status: solved
+      Cl: 0.79634254
+      Cd: 0.158571173
+      Cm_cg: -0.125034805
+      lift_N: 31.45937244121947
+      drag_N: 6.264326391314026
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 171376
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7511
+        Cd: 0.155
+        Cm: 0.0162
+      status: solved
+      Cl: 0.769537781
+      Cd: 0.196784766
+      Cm_cg: -0.152952062
+      lift_N: 30.40045513588736
+      drag_N: 7.773947683809812
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 171744
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.673
+        Cd: 0.1923
+        Cm: 0.0002
+      status: solved
+      Cl: 0.796753975
+      Cd: 0.242219303
+      Cm_cg: -0.192892449
+      lift_N: 31.47562610876856
+      drag_N: 9.568831103170236
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 172406
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.6249
+        Cd: 0.2317
+        Cm: -0.0159
+      status: solved
+      Cl: 0.822051349
+      Cd: 0.286479712
+      Cm_cg: -0.20949163
+      lift_N: 32.47499443392525
+      drag_N: 11.317330801719184
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 172479
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6204
+        Cd: 0.2727
+        Cm: -0.032
+      status: solved
+      Cl: 0.854257753
+      Cd: 0.330616952
+      Cm_cg: -0.213859803
+      lift_N: 33.747302778056124
+      drag_N: 13.060964730515062
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 172338
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6759
+        Cd: 0.3615
+        Cm: -0.0641
+      status: solved
+      Cl: 0.94175603
+      Cd: 0.439922949
+      Cm_cg: -0.256508162
+      lift_N: 37.20390687220384
+      drag_N: 17.379078980297347
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 179663
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    summary:
+      CL_max: 0.94175603
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0256115968
+      CL_alpha_per_rad: 4.013654150956016
+      dCm_dCL: -0.07013511432960598
+      static_margin_mac: 0.07013511432960598
+  goshawk_tractor:
+    reference:
+      S: 0.19906689189565782
+      c: 0.25865716845540443
+      b: 0.86
+      mass: 2.5
+      cg_mm:
+      - 327.5147350611983
+      - -3.6
+      model:
+        CL0: 0.15435575892340161
+        CLa: 3.8365006275837255
+        CL_MAX: 1.086943548520121
+        alpha_stall: 0.24308292376953802
+        CD0: 0.035
+        k: 0.09071262826353858
+        Cm0: 0.12872761897749418
+        Cma: -0.4603800753100469
+        x_np_m: 0.3585535952758468
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1136
+        Cd: 0.0365
+        Cm: 0.1609
+      status: solved
+      Cl: -0.240706491
+      Cd: 0.0468793485
+      Cm_cg: -0.023022007
+      lift_N: -9.509067730311182
+      drag_N: 1.851960444387692
+      converged: true
+      iterations: 119
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 208397
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1542
+        Cd: 0.0372
+        Cm: 0.1287
+      status: solved
+      Cl: 0.0469570952
+      Cd: 0.0345671005
+      Cm_cg: -0.0491832594
+      lift_N: 1.8550318141419384
+      drag_N: 1.3655672455254795
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 200000
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4201
+        Cd: 0.0514
+        Cm: 0.0966
+      status: solved
+      Cl: 0.331633167
+      Cd: 0.0457154274
+      Cm_cg: -0.0708003128
+      lift_N: 13.101110125944212
+      drag_N: 1.8059799453714094
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 189601
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6683
+        Cd: 0.0795
+        Cm: 0.0644
+      status: solved
+      Cl: 0.540825985
+      Cd: 0.07422154
+      Cm_cg: -0.049751428
+      lift_N: 21.36523572884148
+      drag_N: 2.9321089264186098
+      converged: true
+      iterations: 132
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 182275
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7604
+        Cd: 0.1
+        Cm: 0.0484
+      status: solved
+      Cl: 0.643296785
+      Cd: 0.11704172
+      Cm_cg: -0.101176392
+      lift_N: 25.4133267193714
+      drag_N: 4.623712630799462
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 181967
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7945
+        Cd: 0.1264
+        Cm: 0.0323
+      status: solved
+      Cl: 0.724869119
+      Cd: 0.155699027
+      Cm_cg: -0.124149764
+      lift_N: 28.635827474141514
+      drag_N: 6.150862767080716
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 179145
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7511
+        Cd: 0.1595
+        Cm: 0.0162
+      status: solved
+      Cl: 0.81480319
+      Cd: 0.204306151
+      Cm_cg: -0.154831163
+      lift_N: 32.18865718325648
+      drag_N: 8.07107867971115
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 176863
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 0.0
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.673
+        Cd: 0.1975
+        Cm: 0.0002
+      status: solved
+      Cl: 0.819201326
+      Cd: 0.252003519
+      Cm_cg: -0.184488695
+      lift_N: 32.3624047749287
+      drag_N: 9.95535484104482
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 177247
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 83.9
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.6249
+        Cd: 0.2374
+        Cm: -0.0159
+      status: solved
+      Cl: 0.87475784
+      Cd: 0.298268258
+      Cm_cg: -0.201477221
+      lift_N: 34.557155121258084
+      drag_N: 11.78303524487809
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 177315
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 84.8
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6204
+        Cd: 0.2786
+        Cm: -0.032
+      status: solved
+      Cl: 0.871768382
+      Cd: 0.346098488
+      Cm_cg: -0.222640557
+      lift_N: 34.43905710702995
+      drag_N: 13.672560096230608
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 177249
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 88.5
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6759
+        Cd: 0.3675
+        Cm: -0.0641
+      status: solved
+      Cl: 0.936754118
+      Cd: 0.442358943
+      Cm_cg: -0.268941882
+      lift_N: 37.006307215495546
+      drag_N: 17.47531249622954
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 185057
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 92.5
+    summary:
+      CL_max: 0.936754118
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0345671005
+      CL_alpha_per_rad: 3.766156868103278
+      dCm_dCL: -0.04158233488052864
+      static_margin_mac: 0.04158233488052864
+  goshawk_twin:
+    reference:
+      S: 0.19906689189565782
+      c: 0.25865716845540443
+      b: 0.86
+      mass: 2.5
+      cg_mm:
+      - 327.5147350611983
+      - -3.6
+      model:
+        CL0: 0.15435575892340161
+        CLa: 3.8365006275837255
+        CL_MAX: 1.086943548520121
+        alpha_stall: 0.24308292376953802
+        CD0: 0.036
+        k: 0.09071262826353858
+        Cm0: 0.12872761897749418
+        Cma: -0.4603800753100469
+        x_np_m: 0.3585535952758468
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1136
+        Cd: 0.0375
+        Cm: 0.1609
+      status: solved
+      Cl: -0.231168136
+      Cd: 0.0440273355
+      Cm_cg: -0.0322456508
+      lift_N: -9.132256688141355
+      drag_N: 1.7392921707900015
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 177166
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 88.3
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1542
+        Cd: 0.0382
+        Cm: 0.1287
+      status: solved
+      Cl: 0.00684828773
+      Cd: 0.0298179469
+      Cm_cg: -0.0198846946
+      lift_N: 0.2705404062461657
+      drag_N: 1.1779527650998092
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 168811
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 85.6
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4201
+        Cd: 0.0524
+        Cm: 0.0966
+      status: solved
+      Cl: 0.316652932
+      Cd: 0.0398104772
+      Cm_cg: -0.0594009713
+      lift_N: 12.509318568353944
+      drag_N: 1.5727059228777054
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 161237
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 79.8
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6683
+        Cd: 0.0806
+        Cm: 0.0644
+      status: solved
+      Cl: 0.560864107
+      Cd: 0.0820918946
+      Cm_cg: -0.0675018836
+      lift_N: 22.156838225702433
+      drag_N: 3.2430259051924235
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 165575
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 81.2
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7604
+        Cd: 0.1011
+        Cm: 0.0484
+      status: solved
+      Cl: 0.665963174
+      Cd: 0.111089785
+      Cm_cg: -0.0821710702
+      lift_N: 26.308758443323455
+      drag_N: 4.388582482018348
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 164773
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 77.0
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7945
+        Cd: 0.1277
+        Cm: 0.0323
+      status: solved
+      Cl: 0.726037882
+      Cd: 0.157437313
+      Cm_cg: -0.117610671
+      lift_N: 28.68199925156849
+      drag_N: 6.219533450783432
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 164014
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 80.7
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7511
+        Cd: 0.161
+        Cm: 0.0162
+      status: solved
+      Cl: 0.853418857
+      Cd: 0.207295329
+      Cm_cg: -0.147876487
+      lift_N: 33.714162338637365
+      drag_N: 8.189165632588363
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 172422
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 80.1
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.673
+        Cd: 0.1992
+        Cm: 0.0002
+      status: solved
+      Cl: 0.843776166
+      Cd: 0.254628449
+      Cm_cg: -0.207531172
+      lift_N: 33.33322952107798
+      drag_N: 10.059052240535909
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 173440
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 82.2
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.6249
+        Cd: 0.2392
+        Cm: -0.0159
+      status: solved
+      Cl: 0.83298901
+      Cd: 0.285037825
+      Cm_cg: -0.17910229
+      lift_N: 32.907084814322104
+      drag_N: 11.260369308551743
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 173527
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 81.3
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6204
+        Cd: 0.2805
+        Cm: -0.032
+      status: solved
+      Cl: 0.913528527
+      Cd: 0.341470084
+      Cm_cg: -0.210454629
+      lift_N: 36.08878431456345
+      drag_N: 13.489715807585137
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 173714
+      mesh_ok: false
+      reynolds: 318892.39946556714
+      seconds: 82.0
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6759
+        Cd: 0.3694
+        Cm: -0.0641
+      status: solved
+      Cl: 0.973827453
+      Cd: 0.445198999
+      Cm_cg: -0.251996674
+      lift_N: 38.47088281559233
+      drag_N: 17.587508410638335
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 180568
+      mesh_ok: true
+      reynolds: 318892.39946556714
+      seconds: 84.7
+    summary:
+      CL_max: 0.973827453
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0298179469
+      CL_alpha_per_rad: 3.847270321919073
+      dCm_dCL: -0.055618753327389615
+      static_margin_mac: 0.055618753327389615
+  zero_pusher:
+    reference:
+      S: 0.21291658268296532
+      c: 0.23060490662654842
+      b: 1.0
+      mass: 2.5
+      cg_mm:
+      - 294.16558976150435
+      - -3.6
+      model:
+        CL0: 0.1424077147528834
+        CLa: 4.732039450170411
+        CL_MAX: 1.1246294039605542
+        alpha_stall: 0.2075683644548439
+        CD0: 0.032
+        k: 0.07442106201095054
+        Cm0: 0.0508114250610672
+        Cma: -0.5678447340204492
+        x_np_m: 0.32183817855669017
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1868
+        Cd: 0.0354
+        Cm: 0.0905
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.2
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.142
+        Cd: 0.0336
+        Cm: 0.0508
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4662
+        Cd: 0.0491
+        Cm: 0.0112
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.7338
+        Cd: 0.0824
+        Cm: -0.0285
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.0
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7836
+        Cd: 0.1064
+        Cm: -0.0483
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7395
+        Cd: 0.1349
+        Cm: -0.0681
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.649
+        Cd: 0.1663
+        Cm: -0.0879
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.1
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.5891
+        Cd: 0.1997
+        Cm: -0.1078
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.1
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5786
+        Cd: 0.2356
+        Cm: -0.1276
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.0
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.5993
+        Cd: 0.2745
+        Cm: -0.1474
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 4.4
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6722
+        Cd: 0.3618
+        Cm: -0.187
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.9
+    summary:
+      note: too few solved cases
+  zero_tractor:
+    reference:
+      S: 0.21291658268296532
+      c: 0.23060490662654842
+      b: 1.0
+      mass: 2.5
+      cg_mm:
+      - 294.16558976150435
+      - -3.6
+      model:
+        CL0: 0.1424077147528834
+        CLa: 4.732039450170411
+        CL_MAX: 1.1246294039605542
+        alpha_stall: 0.2075683644548439
+        CD0: 0.035
+        k: 0.07442106201095054
+        Cm0: 0.0508114250610672
+        Cma: -0.5678447340204492
+        x_np_m: 0.32183817855669017
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1868
+        Cd: 0.0384
+        Cm: 0.0905
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.142
+        Cd: 0.0366
+        Cm: 0.0508
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4662
+        Cd: 0.0521
+        Cm: 0.0112
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.7338
+        Cd: 0.0857
+        Cm: -0.0285
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7836
+        Cd: 0.1102
+        Cm: -0.0483
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.9
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7395
+        Cd: 0.1394
+        Cm: -0.0681
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.649
+        Cd: 0.1715
+        Cm: -0.0879
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.5891
+        Cd: 0.2054
+        Cm: -0.1078
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5786
+        Cd: 0.2415
+        Cm: -0.1276
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.5993
+        Cd: 0.2805
+        Cm: -0.1474
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6722
+        Cd: 0.3678
+        Cm: -0.187
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    summary:
+      note: too few solved cases
+  zero_twin:
+    reference:
+      S: 0.21291658268296532
+      c: 0.23060490662654842
+      b: 1.0
+      mass: 2.5
+      cg_mm:
+      - 294.16558976150435
+      - -3.6
+      model:
+        CL0: 0.1424077147528834
+        CLa: 4.732039450170411
+        CL_MAX: 1.1246294039605542
+        alpha_stall: 0.2075683644548439
+        CD0: 0.036
+        k: 0.07442106201095054
+        Cm0: 0.0508114250610672
+        Cma: -0.5678447340204492
+        x_np_m: 0.32183817855669017
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1868
+        Cd: 0.0394
+        Cm: 0.0905
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.142
+        Cd: 0.0376
+        Cm: 0.0508
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4662
+        Cd: 0.0532
+        Cm: 0.0112
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.9
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.7338
+        Cd: 0.0869
+        Cm: -0.0285
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.7836
+        Cd: 0.1115
+        Cm: -0.0483
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7395
+        Cd: 0.141
+        Cm: -0.0681
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.649
+        Cd: 0.1733
+        Cm: -0.0879
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.5891
+        Cd: 0.2072
+        Cm: -0.1078
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.7
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5786
+        Cd: 0.2434
+        Cm: -0.1276
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.9
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.5993
+        Cd: 0.2824
+        Cm: -0.1474
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.8
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6722
+        Cd: 0.3698
+        Cm: -0.187
+      status: FAILED
+      messages:
+      - "body size 1 m is 4.3 x reference_length; template 'rans_ksst_external' is designed for bodies up to 4.0 x L_ref \u2014 check geometry_units\
+        \ and reference_length"
+      seconds: 3.6
+    summary:
+      note: too few solved cases
+  hybrid_pusher:
+    reference:
+      S: 0.21011684700954256
+      c: 0.24402894822232715
+      b: 0.95
+      mass: 2.5
+      cg_mm:
+      - 309.01222216472627
+      - -3.6
+      model:
+        CL0: 0.11160198068200546
+        CLa: 4.425822227845784
+        CL_MAX: 1.1087707144280534
+        alpha_stall: 0.22530700114256688
+        CD0: 0.032
+        k: 0.08018637474367085
+        Cm0: 0.04324540367587541
+        Cma: -0.5310986673414945
+        x_np_m: 0.3382956959514056
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1965
+        Cd: 0.0356
+        Cm: 0.0803
+      status: solved
+      Cl: -0.201542132
+      Cd: 0.0366950245
+      Cm_cg: 0.0229950044
+      lift_N: -8.403840997245306
+      drag_N: 1.5300976933598225
+      converged: true
+      iterations: 116
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 207517
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 59.1
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1114
+        Cd: 0.033
+        Cm: 0.0432
+      status: solved
+      Cl: 0.136448486
+      Cd: 0.0276626102
+      Cm_cg: -0.062363571
+      lift_N: 5.689586436739947
+      drag_N: 1.1534668973809215
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 200149
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 90.8
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4172
+        Cd: 0.0465
+        Cm: 0.0062
+      status: solved
+      Cl: 0.402247743
+      Cd: 0.040741739
+      Cm_cg: -0.0672031106
+      lift_N: 16.772801002585368
+      drag_N: 1.698836333175576
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 199153
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 89.6
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6915
+        Cd: 0.0766
+        Cm: -0.0309
+      status: solved
+      Cl: 0.634645811
+      Cd: 0.0793078971
+      Cm_cg: -0.0950571309
+      lift_N: 26.463263201025356
+      drag_N: 3.3069559721353543
+      converged: true
+      iterations: 113
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 201794
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 58.7
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.775
+        Cd: 0.0991
+        Cm: -0.0494
+      status: solved
+      Cl: 0.720612704
+      Cd: 0.123382864
+      Cm_cg: -0.117408436
+      lift_N: 30.047883908516933
+      drag_N: 5.144780203281474
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 203893
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 95.8
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7774
+        Cd: 0.1275
+        Cm: -0.068
+      status: solved
+      Cl: 0.852442696
+      Cd: 0.160389118
+      Cm_cg: -0.124591128
+      lift_N: 35.54488982208006
+      drag_N: 6.687855447318651
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 204817
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 95.5
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7052
+        Cd: 0.1608
+        Cm: -0.0865
+      status: solved
+      Cl: 0.810410227
+      Cd: 0.204497929
+      Cm_cg: -0.181319594
+      lift_N: 33.79223303169916
+      drag_N: 8.527090899196994
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 205635
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 94.6
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.6299
+        Cd: 0.1967
+        Cm: -0.1051
+      status: solved
+      Cl: 0.834451647
+      Cd: 0.257974254
+      Cm_cg: -0.230851059
+      lift_N: 34.794704668885146
+      drag_N: 10.75693002989059
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 205821
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 96.9
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5998
+        Cd: 0.2342
+        Cm: -0.1236
+      status: solved
+      Cl: 0.947112273
+      Cd: 0.331456529
+      Cm_cg: -0.257588661
+      lift_N: 39.49239233428168
+      drag_N: 13.820971027610382
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 205442
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 97.1
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6087
+        Cd: 0.2739
+        Cm: -0.1421
+      status: solved
+      Cl: 0.879386201
+      Cd: 0.362145481
+      Cm_cg: -0.271849502
+      lift_N: 36.66837169498435
+      drag_N: 15.100629382023808
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 205294
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 97.2
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6739
+        Cd: 0.3617
+        Cm: -0.1792
+      status: solved
+      Cl: 0.965793262
+      Cd: 0.473579041
+      Cm_cg: -0.318786579
+      lift_N: 40.27134639053474
+      drag_N: 19.747151231842256
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 221622
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 103.7
+    summary:
+      CL_max: 0.965793262
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0276626102
+      CL_alpha_per_rad: 3.973982391617265
+      dCm_dCL: -0.13287538263903836
+      static_margin_mac: 0.13287538263903836
+  hybrid_tractor:
+    reference:
+      S: 0.21011684700954256
+      c: 0.24402894822232715
+      b: 0.95
+      mass: 2.5
+      cg_mm:
+      - 309.01222216472627
+      - -3.6
+      model:
+        CL0: 0.11160198068200546
+        CLa: 4.425822227845784
+        CL_MAX: 1.1087707144280534
+        alpha_stall: 0.22530700114256688
+        CD0: 0.035
+        k: 0.08018637474367085
+        Cm0: 0.04324540367587541
+        Cma: -0.5310986673414945
+        x_np_m: 0.3382956959514056
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1965
+        Cd: 0.0386
+        Cm: 0.0803
+      status: solved
+      Cl: -0.164721472
+      Cd: 0.0450229619
+      Cm_cg: -0.0216703102
+      lift_N: -6.868504593968445
+      drag_N: 1.8773534311556919
+      converged: true
+      iterations: 149
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 254563
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 79.1
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1114
+        Cd: 0.0361
+        Cm: 0.0432
+      status: solved
+      Cl: 0.110714747
+      Cd: 0.0352260688
+      Cm_cg: -0.0350817461
+      lift_N: 4.616549009406339
+      drag_N: 1.4688456364708087
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 240509
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 108.1
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4172
+        Cd: 0.0495
+        Cm: 0.0062
+      status: solved
+      Cl: 0.397895812
+      Cd: 0.0485678544
+      Cm_cg: -0.0604901217
+      lift_N: 16.591335540291944
+      drag_N: 2.0251672536388607
+      converged: true
+      iterations: 134
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 231098
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 69.6
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6915
+        Cd: 0.0798
+        Cm: -0.0309
+      status: solved
+      Cl: 0.572803751
+      Cd: 0.090148931
+      Cm_cg: -0.103287011
+      lift_N: 23.88459225999302
+      drag_N: 3.7590020244285105
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 224235
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 103.5
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.775
+        Cd: 0.1027
+        Cm: -0.0494
+      status: solved
+      Cl: 0.644879779
+      Cd: 0.135390072
+      Cm_cg: -0.143875162
+      lift_N: 26.88999600864941
+      drag_N: 5.645453019687187
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 214866
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 100.4
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7774
+        Cd: 0.1317
+        Cm: -0.068
+      status: solved
+      Cl: 0.683918935
+      Cd: 0.183115244
+      Cm_cg: -0.195334024
+      lift_N: 28.517838566604755
+      drag_N: 7.635482365284185
+      converged: true
+      iterations: 289
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 219244
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 98.5
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7052
+        Cd: 0.1657
+        Cm: -0.0865
+      status: solved
+      Cl: 0.801584492
+      Cd: 0.220216249
+      Cm_cg: -0.208816045
+      lift_N: 33.42422028474746
+      drag_N: 9.182508506984437
+      converged: true
+      iterations: 281
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 211255
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 95.2
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.6299
+        Cd: 0.2022
+        Cm: -0.1051
+      status: solved
+      Cl: 0.829076134
+      Cd: 0.26655639
+      Cm_cg: -0.23707855
+      lift_N: 34.57055820341745
+      drag_N: 11.114785261672772
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 211488
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 99.1
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5998
+        Cd: 0.24
+        Cm: -0.1236
+      status: solved
+      Cl: 0.844130352
+      Cd: 0.305451739
+      Cm_cg: -0.23709315
+      lift_N: 35.198284293016755
+      drag_N: 12.73663140016834
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 211225
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 97.8
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6087
+        Cd: 0.2798
+        Cm: -0.1421
+      status: solved
+      Cl: 0.877441085
+      Cd: 0.361422847
+      Cm_cg: -0.278615873
+      lift_N: 36.587264854330314
+      drag_N: 15.07049721474474
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 211095
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 99.5
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6739
+        Cd: 0.3677
+        Cm: -0.1792
+      status: solved
+      Cl: 1.28741944
+      Cd: 0.630819566
+      Cm_cg: -0.338069496
+      lift_N: 53.68241450637523
+      drag_N: 26.303717629697847
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 228311
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 108.0
+    summary:
+      CL_max: 1.28741944
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0352260688
+      CL_alpha_per_rad: 3.580637766690169
+      dCm_dCL: -0.104540531532057
+      static_margin_mac: 0.104540531532057
+  hybrid_twin:
+    reference:
+      S: 0.21011684700954256
+      c: 0.24402894822232715
+      b: 0.95
+      mass: 2.5
+      cg_mm:
+      - 309.01222216472627
+      - -3.6
+      model:
+        CL0: 0.11160198068200546
+        CLa: 4.425822227845784
+        CL_MAX: 1.1087707144280534
+        alpha_stall: 0.22530700114256688
+        CD0: 0.036
+        k: 0.08018637474367085
+        Cm0: 0.04324540367587541
+        Cma: -0.5310986673414945
+        x_np_m: 0.3382956959514056
+    rows:
+    - alpha_deg: -4.0
+      model:
+        Cl: -0.1965
+        Cd: 0.0396
+        Cm: 0.0803
+      status: solved
+      Cl: -0.193827963
+      Cd: 0.0442314402
+      Cm_cg: 0.0158803507
+      lift_N: -8.0821779828743
+      drag_N: 1.8443488060350777
+      converged: true
+      iterations: 225
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 208095
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 82.5
+    - alpha_deg: 0.0
+      model:
+        Cl: 0.1114
+        Cd: 0.0371
+        Cm: 0.0432
+      status: solved
+      Cl: 0.134492717
+      Cd: 0.0328063323
+      Cm_cg: -0.0639731678
+      lift_N: 5.608035390612573
+      drag_N: 1.3679482181521867
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 200551
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 92.7
+    - alpha_deg: 4.0
+      model:
+        Cl: 0.4172
+        Cd: 0.0505
+        Cm: 0.0062
+      status: solved
+      Cl: 0.399415202
+      Cd: 0.043393743
+      Cm_cg: -0.070835134
+      lift_N: 16.654690590901435
+      drag_N: 1.809418769308873
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 200397
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 91.9
+    - alpha_deg: 8.0
+      model:
+        Cl: 0.6915
+        Cd: 0.0809
+        Cm: -0.0309
+      status: solved
+      Cl: 0.60362211
+      Cd: 0.0876077851
+      Cm_cg: -0.0810492418
+      lift_N: 25.169646587154862
+      drag_N: 3.653042114793329
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 204338
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 97.7
+    - alpha_deg: 10.0
+      model:
+        Cl: 0.775
+        Cd: 0.1039
+        Cm: -0.0494
+      status: solved
+      Cl: 0.6544349
+      Cd: 0.125194704
+      Cm_cg: -0.127254822
+      lift_N: 27.288422465671506
+      drag_N: 5.220329742831095
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 203464
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 96.4
+    - alpha_deg: 12.0
+      model:
+        Cl: 0.7774
+        Cd: 0.1331
+        Cm: -0.068
+      status: solved
+      Cl: 0.715511351
+      Cd: 0.169331132
+      Cm_cg: -0.169339343
+      lift_N: 29.835169281270552
+      drag_N: 7.060716759766917
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 204019
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 95.8
+    - alpha_deg: 14.0
+      model:
+        Cl: 0.7052
+        Cd: 0.1674
+        Cm: -0.0865
+      status: solved
+      Cl: 0.758343887
+      Cd: 0.213169211
+      Cm_cg: -0.194808862
+      lift_N: 31.621187016027793
+      drag_N: 8.888663313099391
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 206416
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 94.4
+    - alpha_deg: 16.0
+      model:
+        Cl: 0.6299
+        Cd: 0.204
+        Cm: -0.1051
+      status: solved
+      Cl: 0.81783552
+      Cd: 0.260810433
+      Cm_cg: -0.210578828
+      lift_N: 34.101850584667986
+      drag_N: 10.875192137764524
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 206881
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 97.7
+    - alpha_deg: 18.0
+      model:
+        Cl: 0.5998
+        Cd: 0.2419
+        Cm: -0.1236
+      status: solved
+      Cl: 0.841500787
+      Cd: 0.310021255
+      Cm_cg: -0.231326354
+      lift_N: 35.08863751131098
+      drag_N: 12.927169653968138
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 206930
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 96.6
+    - alpha_deg: 20.0
+      model:
+        Cl: 0.6087
+        Cd: 0.2818
+        Cm: -0.1421
+      status: solved
+      Cl: 0.914317634
+      Cd: 0.369137425
+      Cm_cg: -0.271217025
+      lift_N: 38.124931699707965
+      drag_N: 15.392177283470257
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 206081
+      mesh_ok: false
+      reynolds: 300857.60739738966
+      seconds: 97.9
+    - alpha_deg: 24.0
+      model:
+        Cl: 0.6739
+        Cd: 0.3697
+        Cm: -0.1792
+      status: solved
+      Cl: 0.978038721
+      Cd: 0.476128263
+      Cm_cg: -0.302734666
+      lift_N: 40.781953722873006
+      drag_N: 19.85344789617783
+      converged: false
+      iterations: 300
+      Cl_scatter: null
+      Cd_scatter: null
+      cells: 213724
+      mesh_ok: true
+      reynolds: 300857.60739738966
+      seconds: 100.4
+    summary:
+      CL_max: 0.978038721
+      alpha_CL_max_deg: 24.0
+      CD_min: 0.0328063323
+      CL_alpha_per_rad: 3.806262773862901
+      dCm_dCL: -0.11688781923448337
+      static_margin_mac: 0.11688781923448337
+processors: 8
+elapsed_s: 4468
+fingerprint: 412114271142cd36
+saved_at: '2026-11-19 05:53:02'

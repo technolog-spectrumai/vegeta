@@ -32,6 +32,15 @@ def reference(variant: str, propulsion: str) -> dict:
             "model": {k: C[k] for k in ("CL0", "CLa", "CL_MAX", "alpha_stall", "CD0", "k", "Cm0", "Cma", "x_np_m")}}
 
 
+def l_ref(variant, propulsion) -> float:
+    """The CFD's reference length [m]: the mean chord, unless the body is over 4 of them (the template's limit: the
+    Zero's 1 m span on a 0.23 m chord); then body/3.9, and ``row`` scales its Cm back to the mean chord."""
+    ref = reference(variant, propulsion)
+    p = a1.resolve(a1.variant(variant, propulsion))
+    body = max(p["span"], p["fuselage_length"] + 40.0) / 1000.0
+    return max(ref["c"], body / 3.9)
+
+
 def to_flow(x_mm, z_mm, alpha_deg):
     a = math.radians(alpha_deg)
     x, z = x_mm / 1000, z_mm / 1000
@@ -53,7 +62,7 @@ def case(workdir, variant="hybrid", propulsion="pusher", *, alpha_deg=0.0, V=SPE
     from vegeta import aeromant
     ref = reference(variant, propulsion)
     stl = export_stl(Path(workdir) / "stl", variant, propulsion, alpha_deg)
-    params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=ref["c"],
+    params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(variant, propulsion),
                   center_of_rotation=tuple(to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])
     env = env or aeromant.OpenFOAMEnvironment.detect()
     name = f"{variant}_{propulsion}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"
@@ -79,7 +88,8 @@ def row(variant, propulsion, alpha_deg, V, result) -> dict:
         return out
     k = result.metrics
     f = lambda v: None if v is None else float(v)
-    out.update({"status": "solved", "Cl": f(k.get("Cl")), "Cd": f(k.get("Cd")), "Cm_cg": f(k.get("Cm")),
+    cm_scale = l_ref(variant, propulsion) / reference(variant, propulsion)["c"]          # Cm back to the mean chord
+    out.update({"status": "solved", "Cl": f(k.get("Cl")), "Cd": f(k.get("Cd")), "Cm_cg": None if k.get("Cm") is None else float(k.get("Cm")) * cm_scale,
                 "lift_N": f(k.get("lift_force_N")), "drag_N": f(k.get("drag_force_N")),
                 "converged": k.get("converged"), "iterations": k.get("iterations"), "Cl_scatter": f(k.get("Cl_std_lastN")),
                 "Cd_scatter": f(k.get("Cd_std_lastN")), "cells": k.get("mesh_cells"), "mesh_ok": k.get("mesh_ok"), "reynolds": f(k.get("reynolds_number"))})
