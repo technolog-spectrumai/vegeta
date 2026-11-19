@@ -1,0 +1,74 @@
+"""ARIGO-1's stall sweeps in CFD — run by ``arigo1.sh`` on a machine with OpenFOAM (notebook 39).
+
+Writes ``labs/aero/sims/output/arigo1_cfd.yaml`` after every case (stop and restart freely; a solved case is read
+back, not run again): per configuration the reference, the model's prediction beside each solved case and a stall
+summary. THE FILE TO PASTE BACK.
+"""
+import argparse
+import sys
+import time
+from pathlib import Path
+
+import json
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
+import arigo1_cfd as ac  # noqa: E402
+
+OUT = ROOT / "labs" / "aero" / "sims" / "output"
+RUNS = ROOT / "labs" / "aero" / "_runs" / "arigo1_cfd"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--variants", nargs="*", default=["goshawk", "zero", "hybrid"], choices=("goshawk", "zero", "hybrid"))
+    ap.add_argument("--propulsion", nargs="*", default=["pusher"], choices=("pusher", "tractor", "twin"))
+    ap.add_argument("--alphas", type=float, nargs="*", default=list(ac.ALPHAS))
+    ap.add_argument("--speed", type=float, default=ac.SPEED)
+    ap.add_argument("--quality", choices=tuple(ac.QUALITY), default="screening")
+    ap.add_argument("--processors", type=int, default=4)
+    ap.add_argument("--timeout", type=float, default=3 * 3600.0)
+    ap.add_argument("--list", action="store_true")
+    ap.add_argument("--workdir", type=Path, default=RUNS)
+    a = ap.parse_args(argv)
+    configs = [(v, p) for v in a.variants for p in a.propulsion]
+    print(f"ARIGO-1 CFD: {len(configs)} configurations x {len(a.alphas)} angles at {a.speed:g} m/s, quality {a.quality}")
+    if a.list:
+        for v, p in configs:
+            r = ac.reference(v, p)
+            print(f"  {v:8s} {p:8s} S {r['S']:.4f} m2  c {r['c']:.3f} m  CG x {r['cg_mm'][0]:.0f} mm  alphas {a.alphas}")
+        return 0
+    OUT.mkdir(parents=True, exist_ok=True)
+    doc = {"aircraft": "ARIGO-1", "speed_m_s": a.speed, "quality": a.quality, "processors": a.processors, "configurations": {}}
+    t0, n_ok, n = time.time(), 0, 0
+    for v, p in configs:
+        ref = ac.reference(v, p)
+        rows = []
+        key = f"{v}_{p}"
+        doc["configurations"][key] = {"reference": {**ref, "cg_mm": list(ref["cg_mm"])}, "rows": rows}
+        for al in a.alphas:
+            t1, err = time.time(), ""
+            try:
+                res = ac.case(a.workdir / key, v, p, alpha_deg=al, V=a.speed, quality=a.quality).ensure(run=True, processors=a.processors, timeout=a.timeout)
+            except Exception as exc:
+                res, err = None, f"{type(exc).__name__}: {exc}"
+                print(f"  {key} alpha {al:+.0f}: {type(exc).__name__}: {exc}")
+            r = ac.row(v, p, al, a.speed, res)
+            if res is None:
+                r["messages"] = [err[:300]]
+            r["seconds"] = round(time.time() - t1, 1)
+            rows.append(r)
+            n += 1
+            n_ok += r["status"] == "solved"
+            print(f"  [{n}] {key} alpha {al:+5.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else ""))
+            doc["configurations"][key]["summary"] = ac.summary(rows)
+            doc["elapsed_s"] = round(time.time() - t0)
+            (OUT / "arigo1_cfd.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
+    print(f"{n_ok} of {n} solved -> {OUT / 'arigo1_cfd.yaml'}")
+    return 0 if n_ok == n else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

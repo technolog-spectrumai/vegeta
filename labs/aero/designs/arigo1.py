@@ -67,12 +67,12 @@ class Arigo1(Design):
         Parameter("aileron_span", 0.48, "", min=0.2, max=0.8, description="the ailerons' share of each half-span, outboard"),
         Parameter("aileron_chord", 0.25, "", min=0.1, max=0.4, description="aileron chord / local chord"),
         # ---- tail (conventional)
-        Parameter("htail_span", 380.0, "mm", min=100.0),
-        Parameter("htail_root_chord", 170.0, "mm", min=40.0),
+        Parameter("htail_span", 513.0, "mm", min=100.0),
+        Parameter("htail_root_chord", 230.0, "mm", min=40.0),
         Parameter("htail_taper", 0.65, "", min=0.3, max=1.0),
         Parameter("htail_sweep_deg", 12.0, "deg", min=0.0, max=35.0),
-        Parameter("fin_height", 175.0, "mm", min=40.0),
-        Parameter("fin_root_chord", 190.0, "mm", min=40.0),
+        Parameter("fin_height", 236.0, "mm", min=40.0),
+        Parameter("fin_root_chord", 256.0, "mm", min=40.0),
         Parameter("fin_taper", 0.55, "", min=0.3, max=1.0),
         Parameter("fin_sweep_deg", 30.0, "deg", min=0.0, max=55.0),
         Parameter("tail_thickness", 0.09, "", min=0.04, max=0.14, description="tail sections' thickness / chord (NACA 00xx)"),
@@ -294,16 +294,22 @@ class Arigo1(Design):
 # ------------------------------------------------------------------------------------------------------------ variants
 VARIANTS = {
     "goshawk": {"span": 860.0, "root_chord": 320.0, "taper": 0.47, "le_sweep_deg": 20.0, "dihedral_deg": 3.0, "washout_deg": 3.0,
-                "wing_x": 205.0, "fuselage_length": 700.0, "tail_le_x": 505.0},
+                "wing_x": 205.0, "fuselage_length": 700.0},
     "zero": {"span": 1000.0, "root_chord": 280.0, "taper": 0.55, "le_sweep_deg": 5.0, "dihedral_deg": 5.0, "washout_deg": 2.0,
-             "wing_x": 225.0, "fuselage_length": 720.0, "tail_le_x": 525.0},
+             "wing_x": 225.0, "fuselage_length": 720.0},
     "hybrid": {"span": 950.0, "root_chord": 300.0, "taper": 0.50, "le_sweep_deg": 14.0, "dihedral_deg": 4.0, "washout_deg": 2.5,
-               "wing_x": 210.0, "fuselage_length": 720.0, "tail_le_x": 520.0},
+               "wing_x": 210.0, "fuselage_length": 720.0},
 }
 
 
+TAIL_SCALE = 1.35          # the tail grown proportionally from its first sizing (V_h 0.24-0.30 -> about 0.5): agility wants authority
+
+
 def variant(name: str = "hybrid", propulsion: str = "pusher", **over) -> dict:
-    return {**VARIANTS[name], "propulsion": propulsion, **over}
+    """A variant; the stabiliser's trailing edge 10 mm ahead of the fuselage's end (clear of the pusher's disc)."""
+    q = {**VARIANTS[name], "propulsion": propulsion, **over}
+    q.setdefault("tail_le_x", q["fuselage_length"] - 10.0 - q.get("htail_root_chord", 230.0))
+    return q
 
 
 def resolve(p=None) -> dict:
