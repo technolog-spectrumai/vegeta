@@ -39,5 +39,48 @@
     "seconds": 27.1
    }
   ]
+ },
+ "mesh 0.075 m": {
+  "knots": 21,
+  "net_g": 57.272727272727266,
+  "height_m": 20.0,
+  "range_m": 5.0,
+  "bandit_cda_m2": 0.04,
+  "line": null,
+  "shots": [
+   {
+    "result": "down",
+    "impact_m_s": 16.584335344238994,
+    "fall_s": 2.2473000000007386,
+    "fouled": true,
+    "t_foul": 0.19669999999999466,
+    "max_descent_m_s": 16.584335193515077,
+    "peak_line_N": 0.0,
+    "lowest_m": 0.12239181998524354,
+    "seconds": 191.8
+   },
+   {
+    "result": "down",
+    "impact_m_s": 16.57923341373421,
+    "fall_s": 2.2462000000007563,
+    "fouled": true,
+    "t_foul": 0.20579999999999365,
+    "max_descent_m_s": 16.579232800539582,
+    "peak_line_N": 0.0,
+    "lowest_m": 0.13723651581549984,
+    "seconds": 189.7
+   },
+   {
+    "result": "down",
+    "impact_m_s": 16.579903028745854,
+    "fall_s": 2.24610000000073,
+    "fouled": true,
+    "t_foul": 0.19389999999999497,
+    "max_descent_m_s": 16.579902234868662,
+    "peak_line_N": 0.0,
+    "lowest_m": 0.13525088592220758,
+    "seconds": 187.5
+   }
+  ]
  }
 }

@@ -1,0 +1,67 @@
+{
+ "mesh 0.150 m tethered, line 8 m, elastic 60 N/m": {
+  "best_case_by_hand": {
+   "bandit alone": {
+    "drag_area_m2": 0.04,
+    "terminal_m_s": 22.67440710452047,
+    "impact_from_20_m_m_s": 16.56695713809138
+   },
+   "net spread above it": {
+    "drag_area_m2": 0.0796,
+    "terminal_m_s": 16.073461031102042,
+    "impact_from_20_m_m_s": 14.205092110549131
+   },
+   "needed_for_5_m_s": {
+    "drag_area_m2": 0.8226059800664454,
+    "parachute_diameter_m": 1.0234131441193353
+   }
+  },
+  "knots": 11,
+  "net_g": 30.0,
+  "height_m": 20.0,
+  "range_m": 5.0,
+  "bandit_cda_m2": 0.04,
+  "line": {
+   "length_m": 8.0,
+   "stiffness_N_per_m": 60.0,
+   "damping_ratio": 0.5
+  },
+  "shots": [
+   {
+    "result": "held",
+    "hang_height_m": 11.95888311942837,
+    "line_length_m": 8.012070337331956,
+    "tied": false,
+    "fouled": true,
+    "t_foul": 0.17649999999999688,
+    "max_descent_m_s": 10.049646710215065,
+    "peak_line_N": 133.14726287920206,
+    "lowest_m": 11.95888311942837,
+    "seconds": 128.9
+   },
+   {
+    "result": "miss",
+    "line_length_m": 5.000058133004246,
+    "tied": false,
+    "fouled": false,
+    "t_foul": null,
+    "max_descent_m_s": 3.215037785459176e-05,
+    "peak_line_N": 0.0,
+    "lowest_m": 20.0,
+    "seconds": 16.0
+   },
+   {
+    "result": "held",
+    "hang_height_m": 11.958822935583303,
+    "line_length_m": 8.012079213596724,
+    "tied": false,
+    "fouled": true,
+    "t_foul": 0.17249999999999732,
+    "max_descent_m_s": 10.049350313064469,
+    "peak_line_N": 133.21986108924042,
+    "lowest_m": 11.958822935583303,
+    "seconds": 140.3
+   }
+  ]
+ }
+}
