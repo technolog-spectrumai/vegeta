@@ -26,6 +26,7 @@ if "--no-render" in sys.argv:                  # no OpenGL context needed (and n
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
+import arigo1_resume as rs  # noqa: E402
 import arigo1_mujoco as amj  # noqa: E402
 
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
@@ -78,18 +79,31 @@ def main(argv=None) -> int:
     ap.add_argument("--manoeuvres", nargs="*", default=list(amj.MANOEUVRES), choices=amj.MANOEUVRES)
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--size", type=int, nargs=2, default=(1280, 720))
+    ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
     vdir = OUT / "arigo1_video"
     vdir.mkdir(parents=True, exist_ok=True)
-    doc = {"aircraft": "ARIGO-1", "note": "aerodynamics from arigo1_model (lattice + hand estimates); autopilot gains by hand", "runs": {}}
-    t0, n, total = time.time(), 0, len(a.variants) * len(a.propulsion) * len(a.manoeuvres)
+    path = OUT / "arigo1_video.yaml"
+    doc = rs.load(path, a.fresh) or {"aircraft": "ARIGO-1", "note": "aerodynamics from arigo1_model (lattice + hand estimates); autopilot gains by hand", "runs": {}}
+
+    def ok(key):                                   # finished: no error, and its video on disk unless --no-render
+        r = doc["runs"].get(key)
+        return bool(r) and "error" not in r and (a.no_render or ("video" in r and (ROOT / r["video"]).exists()))
+    keys = [f"{v}_{p}_{m}" for v in a.variants for p in a.propulsion for m in a.manoeuvres]
+    total = sum(not ok(k) for k in keys)
+    print(f"  {len(keys) - total} manoeuvres already done (kept), {total} to run")
+    t0, n = time.time(), 0
     for v in a.variants:
         for p in a.propulsion:
+            if all(ok(f"{v}_{p}_{m}") for m in a.manoeuvres):
+                continue
             mesh = None if a.no_render else amj.export_mesh(OUT / "arigo1_video" / "mesh", v, p)
             for name in a.manoeuvres:
+                if ok(f"{v}_{p}_{name}"):
+                    continue
                 sim = amj.Sim(v, p, mesh=mesh, bandit=(name == "chase"))
                 key = f"{v}_{p}_{name}"
-                rec = None if a.no_render else Recorder(sim, vdir / f"{key}.mp4", tuple(a.size))
+                rec = None if a.no_render else Recorder(sim, vdir / f"{key}.part.mp4", tuple(a.size))
                 t1 = time.time()
                 try:
                     _, summ = amj.manoeuvre(name, sim, rec)
@@ -97,11 +111,13 @@ def main(argv=None) -> int:
                     summ = {"error": f"{type(exc).__name__}: {exc}"[:300]}
                 if rec:
                     rec.close()
+                    if "error" not in summ:
+                        (vdir / f"{key}.part.mp4").replace(vdir / f"{key}.mp4")     # only a finished video gets its name
                     summ["video"] = str((vdir / f"{key}.mp4").relative_to(ROOT))
                 doc["runs"][key] = summ
                 n += 1
                 print(f"  {eta(n, total, t0)} {key}: {time.time() - t1:.1f} s  {summ}")
-                (OUT / "arigo1_video.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
+                rs.save(path, doc)
     print(f"-> {OUT / 'arigo1_video.yaml'}  videos in {vdir}")
     return 0
 

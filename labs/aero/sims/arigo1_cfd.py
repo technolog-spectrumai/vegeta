@@ -15,6 +15,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
+import arigo1_resume as rs  # noqa: E402
 import arigo1_cfd as ac  # noqa: E402
 
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
@@ -41,6 +42,7 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=float, default=3 * 3600.0)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--workdir", type=Path, default=RUNS)
+    ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
     configs = [(v, p) for v in a.variants for p in a.propulsion]
     print(f"ARIGO-1 CFD: {len(configs)} configurations x {len(a.alphas)} angles at {a.speed:g} m/s, quality {a.quality}")
@@ -50,14 +52,26 @@ def main(argv=None) -> int:
             print(f"  {v:8s} {p:8s} S {r['S']:.4f} m2  c {r['c']:.3f} m  CG x {r['cg_mm'][0]:.0f} mm  alphas {a.alphas}")
         return 0
     OUT.mkdir(parents=True, exist_ok=True)
-    doc = {"aircraft": "ARIGO-1", "speed_m_s": a.speed, "quality": a.quality, "processors": a.processors, "configurations": {}}
+    path = OUT / "arigo1_cfd.yaml"
+    old = rs.load(path, a.fresh)
+    if old and (old.get("speed_m_s"), old.get("quality")) != (a.speed, a.quality):
+        print("  saved results are for another speed/quality: starting over"); old = None
+    doc = old or {"aircraft": "ARIGO-1", "speed_m_s": a.speed, "quality": a.quality, "configurations": {}}
+    doc["processors"] = a.processors
+    done = {(k, float(r["alpha_deg"])) for k, c in doc["configurations"].items() for r in c.get("rows", []) if r.get("status") == "solved"}
+    todo = sum((f"{v}_{p}", float(al)) not in done for v, p in configs for al in a.alphas)
+    print(f"  {len(done)} cases already solved (kept), {todo} to run")
     t0, n_ok, n = time.time(), 0, 0
     for v, p in configs:
         ref = ac.reference(v, p)
-        rows = []
         key = f"{v}_{p}"
-        doc["configurations"][key] = {"reference": {**ref, "cg_mm": list(ref["cg_mm"])}, "rows": rows}
+        cfg = doc["configurations"].setdefault(key, {})
+        cfg["reference"] = {**ref, "cg_mm": list(ref["cg_mm"])}
+        rows = [r for r in cfg.get("rows", []) if r.get("status") == "solved"]      # failed / not-run cases are retried
+        cfg["rows"] = rows
         for al in a.alphas:
+            if (key, float(al)) in done:
+                continue
             t1, err = time.time(), ""
             try:
                 res = ac.case(a.workdir / key, v, p, alpha_deg=al, V=a.speed, quality=a.quality).ensure(run=True, processors=a.processors, timeout=a.timeout)
@@ -69,13 +83,15 @@ def main(argv=None) -> int:
                 r["messages"] = [err[:300]]
             r["seconds"] = round(time.time() - t1, 1)
             rows.append(r)
+            rows.sort(key=lambda x: x["alpha_deg"])
             n += 1
             n_ok += r["status"] == "solved"
-            print(f"  {eta(n, len(configs) * len(a.alphas), t0)} {key} alpha {al:+5.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else ""))
-            doc["configurations"][key]["summary"] = ac.summary(rows)
-            doc["elapsed_s"] = round(time.time() - t0)
-            (OUT / "arigo1_cfd.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
-    print(f"{n_ok} of {n} solved -> {OUT / 'arigo1_cfd.yaml'}")
+            print(f"  {eta(n, todo, t0)} {key} alpha {al:+5.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else ""))
+            cfg["summary"] = ac.summary(rows)
+            doc["elapsed_s"] = doc.get("elapsed_s", 0) + round(time.time() - t1)
+            rs.save(path, doc)
+    rs.save(path, doc)
+    print(f"{n_ok} of {n} run now solved, {len(done) + n_ok} solved in all -> {path}")
     return 0 if n_ok == n else 1
 
 

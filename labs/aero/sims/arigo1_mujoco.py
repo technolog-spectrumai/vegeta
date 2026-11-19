@@ -18,6 +18,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
+import arigo1_resume as rs  # noqa: E402
 import arigo1_mujoco as amj  # noqa: E402
 
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
@@ -38,16 +39,27 @@ def main(argv=None) -> int:
     ap.add_argument("--propulsion", nargs="*", default=["pusher", "tractor", "twin"], choices=("pusher", "tractor", "twin"))
     ap.add_argument("--speed", type=float, default=18.0)
     ap.add_argument("--bounds", type=float, nargs="*", default=[1.0, 0.35], help="post-stall Cm factors")
+    ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     import mujoco
-    doc = {"aircraft": "ARIGO-1", "mujoco": mujoco.__version__, "speed_m_s": a.speed,
-           "note": "aerodynamics from arigo1_model (lattice + hand estimates); MuJoCo integrates the rigid body", "runs": {}}
-    t0, n, total = time.time(), 0, len(a.variants) * len(a.propulsion) * len(a.bounds)
+    path = OUT / "arigo1_mujoco.yaml"
+    old = rs.load(path, a.fresh)
+    if old and old.get("speed_m_s") != a.speed:
+        print("  saved results are for another speed: starting over"); old = None
+    doc = old or {"aircraft": "ARIGO-1", "mujoco": mujoco.__version__, "speed_m_s": a.speed,
+                  "note": "aerodynamics from arigo1_model (lattice + hand estimates); MuJoCo integrates the rigid body", "runs": {}}
+    keys = [f"{v}_{p}_cm{k:g}" for v in a.variants for p in a.propulsion for k in a.bounds]
+    ok = lambda k: k in doc["runs"] and "error" not in doc["runs"][k]
+    total = sum(not ok(k) for k in keys)
+    print(f"  {len(keys) - total} runs already done (kept), {total} to run")
+    t0, n = time.time(), 0
     for v in a.variants:
         for p in a.propulsion:
             for k in a.bounds:
                 key = f"{v}_{p}_cm{k:g}"
+                if ok(key):
+                    continue
                 t1 = time.time()
                 try:
                     doc["runs"][key] = amj.stability_tests(v, p, a.speed, post_stall_cm_factor=k)
@@ -55,9 +67,9 @@ def main(argv=None) -> int:
                     doc["runs"][key] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
                 n += 1
                 print(f"  {eta(n, total, t0)} {key}: {time.time() - t1:.1f} s  {doc['runs'][key].get('verdict', doc['runs'][key].get('error'))}")
-                doc["elapsed_s"] = round(time.time() - t0, 1)
-                (OUT / "arigo1_mujoco.yaml").write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=float)), sort_keys=False, width=140))
-    print(f"-> {OUT / 'arigo1_mujoco.yaml'}")
+                rs.save(path, doc)
+    rs.save(path, doc)
+    print(f"-> {path}")
     return 0
 
 
