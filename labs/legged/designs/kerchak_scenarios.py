@@ -216,9 +216,14 @@ def params_for(name, params=None):
     return p
 
 
+COMPOSITE = {}                                                            #: {scenario: fn(params) -> props}: scenes made of several props (the gibbon's course)
+
+
 def props(name, params=None):
     """The scene's props for a scenario (the door's from ``kerchak_tasks``)."""
     p = params_for(name, params)
+    if name in COMPOSITE:
+        return COMPOSITE[name](p)
     if name == "door":
         return (gt.door_prop(),)
     if name == "window_hammer":

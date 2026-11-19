@@ -39,6 +39,8 @@ REACH_BASE = (0.76, 0.1)                                                  #: the
 
 
 def reach_base():
+    if gm.is_gibbon():
+        return (gm.STANCE["h"], 0.0)                                       # the gibbon: standing tall, the handle above its shoulder
     return (gm.STANCE["h"] - 0.2 * gm.scale(), 0.3) if gm.STANCE["upright"] else REACH_BASE
 
 
@@ -49,17 +51,23 @@ STOP_X = 1.95                                                             #: whe
 def door_open():
     """How far the door is pushed open before the hand lets go: standing, less (a shorter arm from a planted stance;
     the shoved door coasts on to ``swung_rad`` either way)."""
+    if gm.is_gibbon():
+        return 0.22                                                        # the gibbon's short push: the shoved door coasts on
     return 0.45 if gm.STANCE["upright"] else DOOR["open_rad"]
 
 
 def push_base():
     """The pelvis (x ahead of the feet, height, pitch) at the end of the push: standing, further and lower, leaning
     into the door (the legs cannot stretch to the swung lever otherwise)."""
+    if gm.is_gibbon():
+        return (0.12, gm.STANCE["h"] - 0.03, 0.15)
     return (0.15 * gm.scale(), gm.STANCE["h"] - 0.22 * gm.scale(), 0.4) if gm.STANCE["upright"] else (PUSH_ADVANCE, *REACH_BASE)
 
 
 def stop_x():
     """Where the approach stops: standing, closer, the arm being shorter for the height of the shoulder."""
+    if gm.is_gibbon():
+        return DOOR["x"] - 0.35
     return DOOR["x"] - 0.1 - 0.5 * gm.scale() if gm.STANCE["upright"] else STOP_X
 
 
@@ -203,6 +211,7 @@ def _planted(kin, q_quad, base_x, which=("L", "R", "L_knuckle")):
     return [(body, local, w[g][k]) for g in which for k, (body, local) in enumerate(pts[g])]
 
 
+LEVER_WRIST_GIBBON = (-0.2, 0.0, -0.98)                                  #: the gibbon's: below the lever (it is above the shoulder), pulling down to turn it
 LEVER_WRIST = (-0.94, 0.0, 0.342)                                        #: the wrist from the lever's grip: behind, 20° above (the forearm along the spindle: the turn is a roll)
 LEVER_CURL = 1.9                                                          #: the fist on the 28 mm lever
 
@@ -217,7 +226,7 @@ def lever_hold(phi=0.0, turn=0.0):
     Rx = np.array([[1.0, 0.0, 0.0], [0.0, ct, -st], [0.0, st, ct]])
     R = Rz @ Rx
     return gs.bar(handle_world(phi, turn), axis=R @ np.array([0.0, 1.0, 0.0]), n=Rz @ np.array([-1.0, 0.0, 0.0]), r=0.014,
-                  wrist_dir=R @ np.asarray(LEVER_WRIST))
+                  wrist_dir=R @ np.asarray(LEVER_WRIST_GIBBON if gm.is_gibbon() else LEVER_WRIST))
 
 
 def reach(kin, q_quad, base_x=None, duration=2.5):
@@ -235,14 +244,15 @@ def reach(kin, q_quad, base_x=None, duration=2.5):
     kin.set(q_quad)
     Rb, b0 = gm.base_rot(gm.STANCE["pitch"]), np.array([base_x, 0.0, gm.STANCE["h"]])
     grip0 = Rb @ kin.world(end[0][0], end[0][1]) + b0
-    kin.set(kin.q0)
-    hang = kin.world(*pts["L_knuckle"][0])                                 # the left hand hanging (the design pose, base-relative)
+    kin.set(q_quad if gm.is_gibbon() else kin.q0)
+    hang = kin.world(*pts["L_knuckle"][0])                                 # the left hand hanging (the design pose, base-relative; the gibbon's held up)
+    lift = 0.04 if gm.is_gibbon() else 0.25                                # the hand's arc up on the way (the gibbon's starts above the lever already)
 
     def targets(u):
         f = mk.smooth(u)
         x, h, p = base(u)
         R, b = gm.base_rot(p), np.array([x, 0.0, h])
-        arc = np.array([0.0, 0.0, 0.25 * math.sin(math.pi * f)])
+        arc = np.array([0.0, 0.0, lift * math.sin(math.pi * f)])
         left = (1 - f) * start["L_knuckle"][0] + f * (R @ hang + b) + arc * 0.5
         out = planted + [(pts["L_knuckle"][0][0], pts["L_knuckle"][0][1], left)]
         if u < 0.7:
@@ -333,10 +343,51 @@ def push(kin, q_quad, q_from, base_x=None, duration=3.0):
                          "kerchak_tasks.push: the door swung open, the hand on the lever")
 
 
+def _release_gibbon(kin, q_quad, q_from, base_x, duration):
+    """The gibbon lets the lever go: the fist opens, the arms go back to their raised rest (joint by joint, nothing
+    to reach for), the pelvis back over the feet."""
+    import kerchak_scenarios as gs
+    import space_unit_robots as sr
+    planted = _planted(kin, q_quad, base_x, which=("L", "R"))
+    adv, h1, p1 = push_base()
+    hold = lever_hold(door_open(), DOOR["turn_rad"])
+    end_r = gs.hand_targets(kin, "R", hold)
+    arms = [j for j in kin.actuated if j[:2] in ("L_", "R_") and any(k in j for k in ("shoulder", "elbow", "wrist"))]
+
+    def targets(u):
+        return planted + (end_r if u < 0.2 else [])
+
+    def base(u):
+        f = mk.smooth(max(0.0, (u - 0.2) / 0.8))
+        return base_x + adv * (1 - f), h1 + f * (gm.STANCE["h"] - h1), p1 + f * (gm.STANCE["pitch"] - p1)
+
+    def extra(u, q):
+        f = mk.smooth(min(1.0, u / 0.2))
+        sr.set_curl(q, kin, "R", (1 - f) * LEVER_CURL + f * gs.CURL_OPEN)
+        if u > 0.2:
+            g = mk.smooth((u - 0.2) / 0.8)
+            for j in arms:
+                q[kin.index[j]] = (1 - g) * q[kin.index[j]] + g * q_quad[kin.index[j]]
+            sr.set_curl(q, kin, "R", (1 - g) * gs.CURL_OPEN + g * q_quad[kin.index["R_finger_1_mcp"]] / 0.8)
+        return q
+
+    if SOLID is not None:
+        SOLID.scene = lambda u: {"door_hinge": door_open() + (DOOR["swung_rad"] - door_open()) * mk.smooth(u),
+                                 "handle_hinge": DOOR["turn_rad"] * (1.0 - mk.smooth(min(1.0, u / 0.25)))}
+    try:
+        return contact_motion(kin, "release", duration, targets, base, q_init=q_from, extra=extra, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                              source="kerchak_tasks.release (gibbon): the fist opens, the arms back up to rest")
+    finally:
+        if SOLID is not None:
+            SOLID.scene = None
+
+
 def release(kin, q_quad, q_from, base_x=None, duration=2.0):
     """The fist opens and lets the lever go, the pelvis settles back over the feet and down, both hands come back
     down to their places on four (the right from the lever, the left from hanging)."""
     base_x = stop_x() if base_x is None else base_x
+    if gm.is_gibbon():
+        return _release_gibbon(kin, q_quad, q_from, base_x, duration)
     import kerchak_scenarios as gs
     import space_unit_robots as sr
     planted = _planted(kin, q_quad, base_x, which=("L", "R"))

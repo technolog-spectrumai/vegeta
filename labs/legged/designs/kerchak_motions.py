@@ -41,11 +41,15 @@ SEED = {"spine_lumbar_pitch": 0.25, "spine_thoracic_pitch": 0.25, "waist_yaw": 0
 
 #: The stance the scenarios start from and return to: the pelvis's height and pitch (Kerchak's quad pose by default;
 #: ``set_stance`` makes it the humanoid's standing), and whether it stands upright (the hands hang; a pick-up squats).
-STANCE = {"h": PELVIS_H, "pitch": PELVIS_PITCH, "upright": False}
+STANCE = {"h": PELVIS_H, "pitch": PELVIS_PITCH, "upright": False, "frame": "kerchak"}
 
 
-def set_stance(h, pitch, upright=False):
-    STANCE.update(h=float(h), pitch=float(pitch), upright=bool(upright))
+def set_stance(h, pitch, upright=False, frame=None):
+    STANCE.update(h=float(h), pitch=float(pitch), upright=bool(upright), frame=frame or ("humanoid" if upright else "kerchak"))
+
+
+def is_gibbon():
+    return STANCE.get("frame") == "gibbon"
 
 
 UPRIGHT_REF_H = 1.0735                                                     #: the standing pelvis height the upright scenarios' reaches were tuned at (the 2.07 m proportions) [m]

@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"brachiate": (16.0, 228.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -55,7 +55,7 @@ class ScenePlayer:
             if machine == "gibbon":                                        # the long arms held up: they would drag on the ground hanging
                 for side in ("L", "R"):
                     self.q_quad[self.kin.index[f"{side}_shoulder_pitch"]], self.q_quad[self.kin.index[f"{side}_elbow"]] = -2.2, -0.9
-            gm.set_stance(hum.base_height(self.kin, self.q_quad), 0.0, upright=True)
+            gm.set_stance(hum.base_height(self.kin, self.q_quad), 0.0, upright=True, frame=machine)
             S = gm.scale()
             if machine == "humanoid":
                 self.walk = hum.walk(self.kin, speed=1.0, stance=0.6 * S, duty=0.6, step=0.08 * S, crouch=0.06, arm=0.4)
@@ -72,7 +72,7 @@ class ScenePlayer:
         self.v = float(self.walk.base["velocity_m_s"][0])
         gs.set_hand(su.GIBBON if machine == "gibbon" else su.HUMANOID if machine == "humanoid" else su.MARINE)   # the grip from this frame's own hand
         opts = SimOptions()
-        opts.course_extent = (-2.0, 10.0, -3.0, 3.0)
+        opts.course_extent = (-2.0, 14.0, -3.0, 3.0)
         xml = self.robot.to_mjcf(options=opts, props=list(gs.props(scene, params)))
         self.model = mujoco.MjModel.from_xml_string(xml)
         self.data = mujoco.MjData(self.model)
@@ -262,7 +262,7 @@ class ScenePlayer:
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
-        if self.scene != "door":
+        if self.scene not in ("door", "course"):
             return
         import kerchak_tasks as gt
         m = self.model
