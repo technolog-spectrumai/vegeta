@@ -1,0 +1,12 @@
+net 20 m/s, hovering 4 m up, 3 m above: fouled 4/4
+net 20 m/s, hovering 4 m up, 4 m above: fouled 4/4
+net 20 m/s, hovering 4 m up, 5 m above: fouled 4/4
+net 20 m/s, landed, 3 m above: fouled 4/4
+net 20 m/s, landed, 4 m above: fouled 4/4
+net 20 m/s, landed, 5 m above: fouled 4/4
+net 30 m/s, hovering 4 m up, 3 m above: fouled 4/4
+net 30 m/s, hovering 4 m up, 4 m above: fouled 4/4
+net 30 m/s, hovering 4 m up, 5 m above: fouled 4/4
+net 30 m/s, landed, 3 m above: fouled 4/4
+net 30 m/s, landed, 4 m above: fouled 4/4
+net 30 m/s, landed, 5 m above: fouled 4/4

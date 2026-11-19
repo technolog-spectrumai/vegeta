@@ -1,0 +1,14 @@
+{
+ "20 m/s, hovering 4 m up, 3 m above": "4/4",
+ "20 m/s, hovering 4 m up, 4 m above": "4/4",
+ "20 m/s, hovering 4 m up, 5 m above": "4/4",
+ "20 m/s, landed, 3 m above": "4/4",
+ "20 m/s, landed, 4 m above": "4/4",
+ "20 m/s, landed, 5 m above": "4/4",
+ "30 m/s, hovering 4 m up, 3 m above": "4/4",
+ "30 m/s, hovering 4 m up, 4 m above": "4/4",
+ "30 m/s, hovering 4 m up, 5 m above": "4/4",
+ "30 m/s, landed, 3 m above": "4/4",
+ "30 m/s, landed, 4 m above": "4/4",
+ "30 m/s, landed, 5 m above": "4/4"
+}
