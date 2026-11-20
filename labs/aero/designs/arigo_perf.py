@@ -278,7 +278,12 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "takeoff_time_s": launch["takeoff_time_s"], "hand_launch_ok": hand["ok"],
                       "mass_kg": round(C["mass"], 3), "pack": C["mass_budget"]["pack"]["name"],
                       "propulsor": (C["thrust"].get("propulsor") or {}).get("entry"),
-                      "best_endurance_pack": max(pm["pack_trade"], key=lambda r: r["endurance_min"])["pack"]}
+                      "best_endurance_pack": max(pm["pack_trade"], key=lambda r: r["endurance_min"])["pack"],
+                      "power_at_endurance_W": pm["energy"]["power_at_endurance_W"]}
+    import arigo_mission                                         # the client's missions: reach, keep-out, perch, landing
+    cls, q, kind = arigo_mission.setup_of(name)
+    out["mission"] = arigo_mission.mission(C, pm, sim_factory, launch, kind, (cls, q))
+    out["summary"].update(arigo_mission.summary(out["mission"]))
     return out
 
 

@@ -73,6 +73,89 @@ NOT_CAUGHT_S = {"zigzag_time_to_5m_s": 30.0, "urban_time_to_5m_s": 45.0, "open_f
 EXTRA = [("zigzag_share_within_10m", True), ("run_down_18_m_s_bandit_s", False)]
 
 
+# ------------------------------------------------------------------------------------------------ mission KPIs
+# Absolute, for redesign: each metric scores 0 at its THRESHOLD (the least the client accepts) and 100 at its
+# OBJECTIVE (where more stops paying), linear between, clipped. A score moves only when the aircraft changes, not when
+# the set of configurations does. All thresholds and objectives are HAND (the client's assumptions): tune them here.
+# (summary key, label, threshold, objective) — lower-is-better when objective < threshold; booleans 0/100.
+MISSIONS = {
+    "point_defence": ("Point defence from a perch (infrastructure)", [
+        ("keep_out_15_m_s_m", "keep-out vs 15 m/s quad (m)", 1500, 2500),
+        ("keep_out_30_m_s_m", "keep-out vs 30 m/s drone (m)", 1000, 2000),
+        ("time_to_1km_s", "time to 1 km (s)", 40, 15),
+        ("perch_height_needed_m", "perch drop height needed (m)", 30, 8),
+        ("urban_time_to_5m_s", "urban chase: time to 5 m (s)", 15, 3),
+        ("urban_share_within_10m", "urban chase: time within 10 m", 0.05, 0.40),
+        ("zigzag_time_to_5m_s", "zig-zag chase: time to 5 m (s)", 15, 4),
+        ("perch_lift_off_wind_m_s", "wind that lifts it off the perch (m/s)", 15, 30)]),
+    "area_defence": ("Area defence, up to 10 km out", [
+        ("radius_dash_km", "radius, dash out (km)", 5, 10),
+        ("time_to_5km_s", "time to 5 km (s)", 150, 70),
+        ("keep_out_30_m_s_m", "keep-out vs 30 m/s drone (m)", 1000, 2000),
+        ("open_field_time_to_5m_s", "open-field chase: time to 5 m (s)", 20, 8),
+        ("open_field_share_within_10m", "open-field chase: time within 10 m", 0.10, 0.50)]),
+    "fast_intercept": ("Fast-target intercept", [
+        ("keep_out_50_m_s_m", "keep-out vs 50 m/s fixed wing (m)", 1000, 2000),
+        ("tail_chase_50_m_s", "can tail-chase a 50 m/s target", 0, 1),
+        ("time_to_150m_alt_s", "time to 150 m height (s)", 20, 6),
+        ("max_speed_m_s", "max level speed (m/s)", 40, 70),
+        ("full_power_min", "full power on one pack (min)", 1, 6)]),
+    "overwatch": ("Overwatch / spotter (occasional, wider area)", [
+        ("endurance_min", "endurance (min)", 30, 75),
+        ("power_at_endurance_W", "loiter power (W)", 90, 45),
+        ("best_glide_ratio", "best glide ratio", 7, 14),
+        ("min_speed_m_s", "stall speed (m/s)", 15, 10),
+        ("radius_economy_km", "radius, economy (km)", 10, 20)]),
+    "recovery": ("Recovery: landing and reuse", [
+        ("touchdown_energy_J", "touchdown energy (J)", 300, 100),
+        ("landing_sink_m_s", "sink at touchdown (m/s)", 3.0, 0.5),
+        ("landing_miss_m", "miss from the aim point (m)", 30, 3),
+        ("landing_distance_m", "landing distance over 10 m (m)", 200, 60),
+        ("belly_safety", "propulsor in a belly landing (0-100)", 0, 100)]),
+    "field": ("Field handling: one person, no launcher", [
+        ("throwable", "hand-throwable (<= 2 kg, launch ok)", 0, 1),
+        ("throw_margin", "throw speed / stall speed", 0.85, 1.2),
+        ("mass_kg", "take-off mass (kg)", 2.5, 1.4),
+        ("takeoff_time_s", "time to safe flight (s)", 6, 1.5)]),
+}
+# the client's mix (HAND): mostly point defence of infrastructure from a perch; sometimes up to 10 km; rarely long patrol
+CLIENT_WEIGHTS = {"point_defence": 0.40, "recovery": 0.20, "field": 0.15, "area_defence": 0.15, "fast_intercept": 0.05,
+                  "overwatch": 0.05}
+
+
+def mission_score(v, thr, obj):
+    if v is None:
+        return 0.0                                              # not caught / not reached / no landing: no credit
+    v = float(v)
+    s = (v - thr) / (obj - thr) if obj != thr else 1.0
+    return round(100.0 * max(0.0, min(1.0, s)), 1)
+
+
+def mission_kpi(cards: dict) -> dict:
+    """Per configuration: each mission's score (mean of its metrics) and the client score (CLIENT_WEIGHTS)."""
+    out = {}
+    for k, c in cards.items():
+        s = c.get("summary") or {}
+        if "keep_out_30_m_s_m" not in s:                        # a card from before the mission metrics
+            continue
+        per, mis = {}, {}
+        for m, (_, items) in MISSIONS.items():
+            sc = []
+            for key, _, thr, obj in items:
+                v = s.get(key)
+                if key.startswith("urban") and s.get("urban_crashed"):
+                    v = None
+                if isinstance(v, bool):
+                    v = 1.0 if v else 0.0
+                per[key] = mission_score(v, thr, obj)
+                sc.append(per[key])
+            mis[m] = round(float(np.mean(sc)), 1)
+        client = round(sum(CLIENT_WEIGHTS[m] * mis[m] for m in CLIENT_WEIGHTS), 1)
+        out[k] = {"name": c["aircraft"], "client": client, **mis, "per_metric": per,
+                  "best_at": max(MISSIONS, key=lambda m: mis[m])}
+    return out
+
+
 def cards_of(doc: dict) -> dict:
     r = doc.get("results", {})
     perf = r.get("arigo_perf")
@@ -165,7 +248,13 @@ def charts(path: Path) -> list:
         print("no performance cards in", path)
         return []
     K = kpi(cards)
+    MK = mission_kpi(cards)
+    for k, v in MK.items():
+        K.setdefault(k, {})["missions"] = v
     doc["kpi"] = K
+    doc["kpi_missions_rule"] = {"weights": CLIENT_WEIGHTS, "metrics": {m: [{"key": a, "label": b, "threshold": t, "objective": o}
+                                                                         for a, b, t, o in it] for m, (_, it) in MISSIONS.items()},
+                                "note": "0 at the threshold, 100 at the objective, linear, clipped; HAND values"}
     path.write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=str)), sort_keys=False, width=140))
     keys = list(cards)
     names = [cards[k]["aircraft"] for k in keys]
@@ -205,6 +294,35 @@ def charts(path: Path) -> list:
     out.append(stem.parent / f"{stem.name}_kpi.png")
     fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
     plt.close(fig)
+
+    # 2b. mission fit: configurations x missions (absolute scores), and the client score
+    if MK:
+        mk = sorted(MK, key=lambda k: -MK[k]["client"])
+        cols_ = list(MISSIONS) + ["client"]
+        M = np.array([[MK[k][c] for c in cols_] for k in mk])
+        fig, ax = plt.subplots(figsize=(13, 1.6 + 0.42 * len(mk)), facecolor=SURFACE)
+        from matplotlib.colors import LinearSegmentedColormap
+        cmap = LinearSegmentedColormap.from_list("seq", ["#f4f3f1", "#9ec5f0", "#2a78d6", "#123f78"])
+        ax.imshow(M, cmap=cmap, vmin=0, vmax=100, aspect="auto")
+        for i in range(M.shape[0]):
+            for j in range(M.shape[1]):
+                ax.text(j, i, f"{M[i, j]:.0f}", ha="center", va="center", fontsize=8,
+                        color="white" if M[i, j] > 55 else INK, fontweight="bold" if j == len(cols_) - 1 else None)
+        ax.set_xticks(range(len(cols_)))
+        ax.set_xticklabels([MISSIONS[c][0].split(" (")[0].replace(", up to 10 km out", " (<=10 km)") if c in MISSIONS else
+                            "CLIENT (weighted)" for c in cols_], fontsize=8, rotation=20, ha="right")
+        ax.set_yticks(range(len(mk)))
+        ax.set_yticklabels([MK[k]["name"] for k in mk], fontsize=8)
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        ax.set_title("Mission fit: absolute scores (0 = the client's threshold, 100 = the objective); "
+                     "client = " + ", ".join(f"{int(w * 100)}% {m.replace('_', ' ')}" for m, w in CLIENT_WEIGHTS.items()),
+                     fontsize=9, loc="left", color=INK)
+        fig.suptitle(f"ARIGO family: which product for what — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
+        fig.tight_layout(rect=(0, 0, 1, 0.95))
+        out.append(stem.parent / f"{stem.name}_missions.png")
+        fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
+        plt.close(fig)
 
     # 3. curves over speed: sustained turn rate and climb rate, one panel per aircraft, one line per wing
     fams = [f for f in ("ARIGO-0", "ARIGO-1", "ARIGO-2", "ARIGO-20") if any(cards[k]["aircraft"].split()[0] == f for k in keys)]
