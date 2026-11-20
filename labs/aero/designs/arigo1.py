@@ -312,6 +312,12 @@ VARIANTS = {
                 "wing_x": 205.0, "fuselage_length": 760.0, "htail_z": 30.0, "cg_x": 330.955},
     "zero": {"span": 1000.0, "root_chord": 280.0, "taper": 0.55, "le_sweep_deg": 5.0, "dihedral_deg": 5.0, "washout_deg": 2.0,
              "wing_x": 225.0, "fuselage_length": 720.0, "cg_x": 294.166},
+    # backpack (the Backpack product): ARIGO-1 hybrid at 0.8 scale, the wing in two plug-in halves, an 8-inch propeller;
+    # no CFD yet (lattice + hand until arigo_cfd.sh runs it); CG by the static margin
+    "backpack": {"span": 760.0, "root_chord": 240.0, "taper": 0.50, "le_sweep_deg": 14.0, "dihedral_deg": 4.0, "washout_deg": 2.5,
+                 "wing_x": 168.0, "fuselage_length": 576.0, "fuselage_diameter": 66.0, "nose_length": 120.0, "tail_cone": 264.0,
+                 "tail_end_diameter": 26.0, "htail_span": 410.0, "htail_root_chord": 184.0, "fin_height": 189.0,
+                 "fin_root_chord": 205.0, "prop_diameter": 203.2, "camera_diameter": 34.0, "wing_z": -10.0},
     "hybrid": {"span": 950.0, "root_chord": 300.0, "taper": 0.50, "le_sweep_deg": 14.0, "dihedral_deg": 4.0, "washout_deg": 2.5,
                "wing_x": 210.0, "fuselage_length": 720.0, "cg_x": 309.012},
 }

@@ -32,6 +32,7 @@ OBSTACLE_M = 10.0                 # the landing distance is over a 10 m obstacle
 CHASE_S = 60.0                    # HAND: full power at the target (the terminal chase) for the radius of action
 RESERVE = 0.15                    # HAND: pack reserve at the return
 HAND_MASS_KG = 2.0                # HAND: what one person throws comfortably and repeatably
+CLOSE_DETECT_M = 1000.0           # HAND: a dismounted defender sees / hears a quadcopter at 1 km
 
 
 def _perf():
@@ -178,7 +179,7 @@ def landing_sim(sim) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------ perch
-def perch_drop(sim) -> dict:
+def perch_drop(sim, push=None) -> dict:
     """MuJoCo: sitting on a PERCH_HEIGHT_M perch, motor off; on the alert it is pushed off at PERCH_PUSH_M_S nose down
     PERCH_NOSE_DOWN_DEG at full throttle, dives to 1.2 x stall, pulls out and climbs at 12 deg. The height it needs,
     and the time to safe flight (back at the perch's height at 1.3 x stall). Below 0.3 m: it hit the ground."""
@@ -189,7 +190,8 @@ def perch_drop(sim) -> dict:
     th = math.radians(PERCH_NOSE_DOWN_DEG)
     import mujoco
     sim.d.qpos[3:7] = (math.cos(th / 2), 0.0, math.sin(th / 2), 0.0)
-    sim.d.qvel[:3] = (PERCH_PUSH_M_S * math.cos(th), 0.0, -PERCH_PUSH_M_S * math.sin(th))
+    push = PERCH_PUSH_M_S if push is None else push
+    sim.d.qvel[:3] = (push * math.cos(th), 0.0, -push * math.sin(th))
     sim.d.qvel[3:] = 0.0
     mujoco.mj_forward(sim.m, sim.d)
     ap = amj.Autopilot(sim)
@@ -206,7 +208,7 @@ def perch_drop(sim) -> dict:
     need = float(H - min(h["z"]))
     ok = need + 1.0 <= PERCH_HEIGHT_M and st["t_safe"] is not None          # 1 m to spare
     return {"ok": ok, "height_needed_m": round(need, 1), "time_to_safe_s": round(st["t_safe"], 2) if st["t_safe"] else None,
-            "rule": f"flown from {PERCH_TEST_M:.0f} m; ok on a {PERCH_HEIGHT_M:.0f} m perch (HAND) with 1 m to spare; pushed off at {PERCH_PUSH_M_S} m/s, {PERCH_NOSE_DOWN_DEG:.0f} deg nose down, full throttle"}
+            "rule": f"flown from {PERCH_TEST_M:.0f} m; ok on a {PERCH_HEIGHT_M:.0f} m perch (HAND) with 1 m to spare; pushed off at {push} m/s, {PERCH_NOSE_DOWN_DEG:.0f} deg nose down, full throttle"}
 
 
 def perch_wind(C) -> dict:
@@ -248,17 +250,25 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
     """Every mission metric for one configuration. ``launch``: the card's hand/catapult results; ``cad``: (class,
     parameters) for the belly check."""
     Vs = pm["min_speed_stall_m_s"]
-    perch = perch_drop(sim_factory())
-    # how it leaves the site: the perch if it can drop from it; else a launcher at the site (no set-up time)
-    if perch["ok"]:
-        site = {"how": "perch", "t0": perch["time_to_safe_s"], "V0": 1.3 * Vs, "h0": PERCH_HEIGHT_M}
-    elif launch["catapult"]["ok"]:
-        site = {"how": "site launcher", "t0": launch["catapult"]["time_to_safe_s"], "V0": 1.3 * Vs, "h0": amj.SAFE_HEIGHT_M}
+    eq = C.get("equipment") or {}
+    perch = perch_drop(sim_factory(), eq.get("perch_push_m_s"))
+    # how it leaves the site. A product's kit says (perch / rail / hand); a bare airframe: the perch if it can drop
+    # from one, else a launcher at the site (no set-up time)
+    how = eq.get("launch")
+    hand = launch["hand"]
+    alert = ALERT_S
+    if how == "hand":
+        site = {"how": "hand", "t0": hand["time_to_safe_s"] if hand["ok"] else 30.0, "h0": amj.SAFE_HEIGHT_M}
+        alert = HAND_ALERT_S
+    elif (how in (None, "perch")) and perch["ok"]:
+        site = {"how": "perch", "t0": perch["time_to_safe_s"], "h0": PERCH_HEIGHT_M}
+    elif how in (None, "rail") and launch["catapult"]["ok"]:
+        site = {"how": "site launcher", "t0": launch["catapult"]["time_to_safe_s"], "h0": amj.SAFE_HEIGHT_M}
     else:
-        site = {"how": "none", "t0": 30.0, "V0": 1.3 * Vs, "h0": amj.SAFE_HEIGHT_M}
+        site = {"how": f"{how or 'none'} (failed)", "t0": 30.0, "h0": amj.SAFE_HEIGHT_M}
+    site["V0"] = 1.3 * Vs
     r = reach(C, site["V0"], site["h0"], site["t0"])
     rh = reach(C, site["V0"], site["h0"], site["t0"], alt=HIGH_ALT_M)
-    hand = launch["hand"]
     r_hand = reach(C, 1.3 * Vs, amj.SAFE_HEIGHT_M, hand["time_to_safe_s"]) if hand["ok"] else None
     k = np.where(rh["h"] >= HIGH_ALT_M - 0.5)[0]
     out = {
@@ -266,12 +276,13 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
         "perch": {**perch, **perch_wind(C)},
         "reach": {f"time_to_{d // 1000}km_s": (round(time_to(r, d), 1) if time_to(r, d) else None) for d in (1000, 3000, 5000, 10000)},
         "time_to_150m_alt_s": round(float(rh["t"][k[0]]), 1) if len(k) else None,
-        "keep_out_m": {f"target_{v:.0f}_m_s": keep_out(r, v, ALERT_S) for v in TARGETS_M_S},
+        "keep_out_m": {f"target_{v:.0f}_m_s": keep_out(r, v, alert) for v in TARGETS_M_S},
+        "keep_out_close_m": keep_out(r_hand, 15.0, HAND_ALERT_S, CLOSE_DETECT_M) if r_hand else 0.0,
         "keep_out_hand_m": {f"target_{v:.0f}_m_s": keep_out(r_hand, v, HAND_ALERT_S) for v in TARGETS_M_S} if r_hand else None,
         "tail_chase_ok": {f"target_{v:.0f}_m_s": bool(pm["max_level_speed_m_s"] > 1.15 * v) for v in TARGETS_M_S},
         "radius": radius_of_action(C, pm),
         "landing": landing_point_mass(C, pm),
-        "landing_sim": landing_sim(sim_factory()),
+        "landing_sim": landing_sim(sim_factory()) if eq.get("recovery") != "parachute" else parachute(C),
         "hand": {"mass_kg": round(C["mass"], 3), "throwable": bool(hand["ok"] and C["mass"] <= HAND_MASS_KG),
                  "throw_margin": round(amj.HAND_RELEASE_M_S / Vs, 2)},
         "assumptions": {"detect_m": DETECT_M, "alert_s": ALERT_S, "hand_alert_s": HAND_ALERT_S, "target_alt_m": INTERCEPT_ALT_M,
@@ -281,9 +292,34 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
     if cad:
         try:
             out["belly"] = belly(*cad, kind)
+            out["packed"] = packed(cad, eq)
         except Exception as e:                                       # noqa: BLE001  CAD trouble must not stop the card
             out["belly"] = {"error": str(e)[:200]}
+    if eq.get("recovery") == "parachute":
+        out["belly"] = {**(out.get("belly") or {}), "risk": "under a parachute: propulsor stopped, a slow, level touchdown",
+                        "parachute": True}
+    out["equipment"] = eq
     return out
+
+
+def parachute(C) -> dict:
+    """Recovery under a parachute (HAND: the kit's sink rate and the drift left after aiming upwind)."""
+    import arigo_products as ap
+    v = ap.PARACHUTE_SINK_M_S
+    return {"touched_down": True, "touchdown_speed_m_s": v, "sink_at_touchdown_m_s": v, "miss_m": ap.PARACHUTE_MISS_M,
+            "slide_m": 0.0, "touchdown_energy_J": round(0.5 * C["mass"] * v * v, 0),
+            "rule": "parachute (HAND): sink and miss from arigo_products; no wind on the sink"}
+
+
+def packed(cad, eq) -> dict:
+    """The longest piece to carry: the fuselage (the pusher's blades fold along it), or the wing (whole, or a half
+    with a two-piece joiner)."""
+    cls, q = cad
+    p = cls().resolve(**q)
+    fus = p.get("fuselage_length", 0.0)
+    wing = p["span"] / 2.0 + 20.0 if eq.get("two_piece") else p["span"]
+    return {"longest_mm": round(max(fus, wing), 0), "fuselage_mm": round(fus, 0), "wing_piece_mm": round(wing, 0),
+            "two_piece": bool(eq.get("two_piece"))}
 
 
 def summary(ms) -> dict:
@@ -298,8 +334,13 @@ def summary(ms) -> dict:
             "keep_out_50_m_s_m": ms["keep_out_m"]["target_50_m_s"],
             "tail_chase_30_m_s": ms["tail_chase_ok"]["target_30_m_s"], "tail_chase_50_m_s": ms["tail_chase_ok"]["target_50_m_s"],
             "radius_economy_km": ms["radius"]["economy_km"], "radius_dash_km": ms["radius"]["dash_out_km"],
-            "approach_speed_m_s": lp["approach_speed_m_s"], "touchdown_energy_J": lp["touchdown_energy_J"],
-            "best_glide_ratio": lp["best_glide_ratio"], "landing_distance_m": lp["landing_distance_over_10m_m"],
+            "approach_speed_m_s": lp["approach_speed_m_s"],
+            "touchdown_energy_J": (ls.get("touchdown_energy_J") or (round(0.5 * ms["hand"]["mass_kg"] * ls["touchdown_speed_m_s"] ** 2, 0)
+                                                                    if ls.get("touched_down") else lp["touchdown_energy_J"])),
+            "packed_length_mm": (ms.get("packed") or {}).get("longest_mm"), "keep_out_close_m": ms["keep_out_close_m"],
+            "launch": ms["site_launch"],
+            "best_glide_ratio": lp["best_glide_ratio"], "landing_distance_m": (ms["landing_sim"]["miss_m"] if ms["equipment"].get("recovery") == "parachute"
+                                                         else lp["landing_distance_over_10m_m"]),
             "landing_sink_m_s": ls.get("sink_at_touchdown_m_s"), "landing_miss_m": abs(ls["miss_m"]) if ls.get("touched_down") else None,
             "landing_touchdown_m_s": ls.get("touchdown_speed_m_s"),
             "propulsor_clearance_mm": (ms.get("belly") or {}).get("propulsor_clearance_mm"),
@@ -309,6 +350,8 @@ def summary(ms) -> dict:
 
 
 def belly_score(b) -> float | None:
+    if b.get("parachute"):
+        return 100.0
     """0-100: clears the ground 100; ducted fans 75 (no blades, but debris in the intakes); below the belly with
     folding blades 50; below the belly, fixed blades 0. HAND scale."""
     c = b.get("propulsor_clearance_mm")

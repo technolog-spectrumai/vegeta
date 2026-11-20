@@ -32,6 +32,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "designs"))     # arigo_products (the product scores)
+
 # reference categorical palette (dataviz skill, light mode), in fixed order: one colour per aircraft
 COLOUR = {"ARIGO-0": "#2a78d6", "ARIGO-1": "#eb6834", "ARIGO-2": "#1baf7a", "ARIGO-20": "#eda100", "ARIGO-0 strut": "#e87ba4"}
 RANK_HATCH = ["xxxx", "///", "/"]           # winner (densest), runner-up, second runner-up
@@ -108,10 +110,17 @@ MISSIONS = {
         ("radius_economy_km", "radius, economy (km)", 10, 20)]),
     "recovery": ("Recovery: landing and reuse", [
         ("touchdown_energy_J", "touchdown energy (J)", 300, 100),
-        ("landing_sink_m_s", "sink at touchdown (m/s)", 3.0, 0.5),
         ("landing_miss_m", "miss from the aim point (m)", 30, 3),
         ("landing_distance_m", "landing distance over 10 m (m)", 200, 60),
         ("belly_safety", "propulsor in a belly landing (0-100)", 0, 100)]),
+    "backpack": ("Backpack: one defender, close quadcopter", [
+        ("mass_kg", "take-off mass (kg)", 1.8, 1.0),
+        ("packed_length_mm", "longest piece to carry (mm)", 900, 550),
+        ("throw_margin", "throw speed / stall speed", 0.9, 1.3),
+        ("takeoff_time_s", "time to safe flight (s)", 5, 1.5),
+        ("keep_out_close_m", "keep-out vs 15 m/s quad seen at 1 km (m)", 200, 700),
+        ("urban_time_to_5m_s", "urban chase: time to 5 m (s)", 15, 3),
+        ("endurance_min", "endurance (min)", 15, 40)]),
     "field": ("Field handling: one person, no launcher", [
         ("throwable", "hand-throwable (<= 2 kg, launch ok)", 0, 1),
         ("throw_margin", "throw speed / stall speed", 0.85, 1.2),
@@ -120,7 +129,7 @@ MISSIONS = {
 }
 # the client's mix (HAND): mostly point defence of infrastructure from a perch; sometimes up to 10 km; rarely long patrol
 CLIENT_WEIGHTS = {"point_defence": 0.40, "recovery": 0.20, "field": 0.15, "area_defence": 0.15, "fast_intercept": 0.05,
-                  "overwatch": 0.05}
+                  "overwatch": 0.05}                              # the family's mix; each product has its own (arigo_products)
 
 
 def mission_score(v, thr, obj):
@@ -252,6 +261,13 @@ def charts(path: Path) -> list:
     for k, v in MK.items():
         K.setdefault(k, {})["missions"] = v
     doc["kpi"] = K
+    try:
+        import arigo_products
+        PS = arigo_products.product_scores(cards, MK)
+        doc["products"] = PS
+    except Exception as exc:                                    # noqa: BLE001  older card files have no products
+        PS = {}
+        print("no product scores:", exc)
     doc["kpi_missions_rule"] = {"weights": CLIENT_WEIGHTS, "metrics": {m: [{"key": a, "label": b, "threshold": t, "objective": o}
                                                                          for a, b, t, o in it] for m, (_, it) in MISSIONS.items()},
                                 "note": "0 at the threshold, 100 at the objective, linear, clipped; HAND values"}
@@ -321,6 +337,24 @@ def charts(path: Path) -> list:
         fig.suptitle(f"ARIGO family: which product for what — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
         fig.tight_layout(rect=(0, 0, 1, 0.95))
         out.append(stem.parent / f"{stem.name}_missions.png")
+        fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
+        plt.close(fig)
+
+    # 2c. products: each product's candidates on the product's own score (its missions, its weights)
+    PS = {k: v for k, v in PS.items() if v["candidates"]}
+    if PS:
+        fig, axs = plt.subplots(1, len(PS), figsize=(4.6 * len(PS), 1.8 + 0.5 * max(len(v["candidates"]) for v in PS.values())),
+                                facecolor=SURFACE, squeeze=False)
+        for ax, (pk, pr) in zip(axs[0], PS.items()):
+            rows = pr["candidates"]
+            _bars(ax, [r["name"] for r in rows], [r["score"] for r in rows], "score")
+            _style(ax, f"{pr['title']}\n" + ", ".join(f"{int(w * 100)}% {m.replace('_', ' ')}" for m, w in pr["weights"].items()), "score")
+            ax.title.set_fontsize(8)
+            ax.set_xlim(0, 115)
+        fig.suptitle(f"ARIGO products: the candidates for each product (absolute mission scores) — {sub}", x=0.01, ha="left",
+                     fontsize=12, color=INK)
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        out.append(stem.parent / f"{stem.name}_products.png")
         fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
         plt.close(fig)
 

@@ -248,7 +248,7 @@ def chases(sim_factory, Vs) -> dict:
 
 
 def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
-    out = {"aircraft": name, "point_mass": point_mass(C)}
+    out = {"aircraft": name, "point_mass": point_mass(C), "equipment": C.get("equipment")}
     pm = out["point_mass"]
     ch = chases(sim_factory, pm["min_speed_stall_m_s"])
     hand = amj.takeoff(sim_factory(), "hand")
@@ -300,3 +300,5 @@ def configurations():
     for w in ("goshawk", "zero", "hybrid"):
         yield (f"arigo-2_{w}", f"ARIGO-2 {w}", lambda w=w: m2.coefficients(w), lambda bandit=False, w=w: m2j.Sim2(w, bandit=bandit), m2j.manoeuvre, 18.0)
     yield ("arigo-20", "ARIGO-20", m20.get, lambda bandit=False: m20j.Sim20(bandit=bandit), m20j.manoeuvre, m20.CRUISE)
+    import arigo_products                                        # the products' candidates: airframe + kit
+    yield from arigo_products.candidates()
