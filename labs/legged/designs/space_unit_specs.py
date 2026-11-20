@@ -154,7 +154,7 @@ SPIDER = dict(GIBBON, pelvis_width=130.0, pelvis_depth=80.0, torso_width=220.0, 
               hip_spacing=100.0, thigh_length=245.0, shin_length=240.0, leg_width=44.0, leg_thickness=40.0,
               upper_arm_length=275.0, forearm_length=295.0, arm_diameter=42.0, finger_length=130.0, finger_diameter=12.0,
               foot_length=165.0, foot_width=55.0, femur_diameter=20.0, tibia_diameter=18.0, thumb_scale=0.18,
-              tail_length=900.0, tail_segments=10, tail_base_diameter=34.0, tail_tip_diameter=16.0)
+              tail_length=1000.0, tail_segments=14, tail_base_diameter=32.0, tail_tip_diameter=14.0)   # 14 short links: it curls round a branch
 
 import math as _math
 

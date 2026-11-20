@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from vegeta.chiron import Link, Prop
+from vegeta.chiron import Geom, Link, Prop
 
 import kerchak_motions as gm
 import kerchak_scenarios as gs
@@ -500,6 +500,134 @@ def scenario_chimney(kin, q_stand, p):
 
 
 gs.SCENARIOS["chimney"] = scenario_chimney
+
+LEAF = (0.25, 0.45, 0.2, 1.0)
+SPIDER_TREE = {"x": 2.2, "trunk_radius": 0.09, "height": 5.2, "first_branch": 0.25, "spacing": 0.3, "branch_length": 0.75,
+               "branch_radius": 0.028, "branch_rise": 0.06, "cycles": 9}
+
+
+def spider_tree_prop(p):
+    """A tree for a spider monkey: a trunk with a pair of branches at every level, out either side and rising a little,
+    a crown of leaves on top. The branches are solid: the hands close on them, the feet stand on them, the tail
+    wraps round them."""
+    x, r, h, sp, bl, br, rise = p["x"], p["trunk_radius"], p["height"], p["spacing"], p["branch_length"], p["branch_radius"], p["branch_rise"]
+    geoms = [gs._cap("trunk", r, (x, 0.0, 0.0), (x, 0.0, h), rgba=gs.BARK, mass=400.0)]
+    z, k = p["first_branch"], 0
+    while z < h - 0.4:
+        for sy, tag in ((1.0, "l"), (-1.0, "r")):
+            geoms.append(gs._cap(f"branch_{k}{tag}", br, (x, sy * r * 0.5, z), (x, sy * (r + bl), z + rise), rgba=gs.BARK, mass=8.0))
+        z += sp
+        k += 1
+    for j, (dx, dy, dz, rr) in enumerate(((0.0, 0.0, 0.3, 0.6), (0.3, 0.35, 0.1, 0.45), (-0.25, -0.35, 0.15, 0.45), (0.1, -0.1, 0.55, 0.4))):
+        geoms.append(Geom(f"crown_{j}", "sphere", (rr,), pos=(x + dx, dy, h + dz), mass=5.0, role="visual", rgba=LEAF))
+    return Prop(Link("spider_tree", pos=(0.0, 0.0, 0.0), geoms=geoms), free=False)
+
+
+def _branch_z(p, level, y):
+    """The height of level ``level``'s branch axis at ``y`` (a branch rises as it goes out)."""
+    r, bl = p["trunk_radius"], p["branch_length"]
+    z0 = p["first_branch"] + level * p["spacing"]
+    return z0 + p["branch_rise"] * max(0.0, abs(y) - r * 0.5) / (r * 0.5 + bl)
+
+
+def _branch_bar(p, level, y, tip=None, side_n=(-1.0, 0.0, 0.0)):
+    sy = 1.0 if y > 0 else -1.0
+    a = gs._unit(np.array([0.0, sy * (p["trunk_radius"] * 0.5 + p["branch_length"]), p["branch_rise"]]))
+    return gs.bar((p["x"], y, _branch_z(p, level, y)), axis=a, n=side_n, r=p["branch_radius"], **({} if tip is None else {"tip": tip}))
+
+
+TAIL_WRAP = 4                    #: the tail's last links wrapped round the trunk: past half a turn
+TRUNK_BELOW = 0.12               #: the tail wraps the trunk this far below the feet's branches (clear of their roots) [m]
+
+
+def _tail_links(kin):
+    m = kin.model
+    n = sum(1 for i in range(m.nbody) if m.body(i).name.startswith("tail_"))
+    seg = float(-m.body_pos[m.body(f"tail_{n - 1}").id][0])
+    return n, seg
+
+
+def tail_wrap_trunk(kin, x, z, r_trunk, wind=1.0, off=0.0):
+    """The tail's last ``TAIL_WRAP`` links' ends round the trunk at height ``z``: the first on the trunk's near side
+    (the tail comes forward between the legs), the next round the left flank, the far side, on round - each a
+    little lower (a helix down the bark, the tail not lying on itself). ``wind`` 0..1: how far round it is wound
+    (0: all of them hanging on the near side, where no branch grows); ``off``: out from the bark [m].
+    [(body, local, world)]."""
+    n, seg = _tail_links(kin)
+    R = r_trunk + 0.017 + off
+    step = seg / (r_trunk + 0.017)                                          # each link's turn round the trunk, wound
+    out = []
+    for j in range(TAIL_WRAP + 1):
+        th = j * step * wind
+        drop = 0.02 * j * wind + 0.07 * j * (1.0 - wind)                    # unwound, the links hang one below the other
+        pt = np.array([x - R * math.cos(th) - (1.0 - wind) * 0.02 * j, R * math.sin(th), z - drop])
+        out.append((kin.body(f"tail_{n - 1 - TAIL_WRAP + j}"), np.array([-seg, 0.0, 0.0]), pt))
+    return out
+
+
+def tail_for_tree(kin, p, level_of):
+    """``tail(q_from, k)`` for ``_climb_sequence``: the tail passed forward between the legs and wrapped round the
+    trunk just below the feet's branches of level ``level_of(k)`` - a fifth hold. In a cycle, once the limbs have
+    moved, it unwinds round the bark to the trunk's near side (no branch grows there: it never crosses one),
+    slides up that side a level, and winds round again; on the mount it comes from where it is carried, onto the
+    near side, and winds."""
+    X, r = p["x"], p["trunk_radius"]
+    z_of = lambda level: _branch_z(p, level, 0.0) - TRUNK_BELOW
+
+    def make(q_from, k):
+        if k is None:                                                      # the mount: the tail carried (low down it would reach the ground)
+            return lambda u, base: []
+        if k == 0:                                                         # the first cycle: from the carried tail to the first wrap, a level up
+            z1 = z_of(level_of(1))
+            first = tail_wrap_trunk(kin, X, z1, r, wind=0.0, off=0.03)
+            kin.set(q_from)
+            rest = [kin.world(b_, l_) for b_, l_, _ in first]                 # every wrapping link's end, as the tail is carried
+
+            def fn(u, base):
+                x, y, z, pt = base
+                R, pc = gm.base_rot(pt), np.array([x, y, z])
+                if u < 0.7:
+                    return []
+                if u < 0.85:                                               # the whole end of the tail steered to the near side, clear of the bark
+                    f = mk.smooth((u - 0.7) / 0.15)
+                    return [(b_, l_, (1 - f) * (R @ rs + pc) + f * w) for (b_, l_, w), rs in zip(first, rest)]
+                g = mk.smooth((u - 0.85) / 0.15)
+                return tail_wrap_trunk(kin, X, z1, r, wind=g, off=0.03 * (1 - g))
+            return fn
+        za, zb = z_of(level_of(k)), z_of(level_of(k + 1))
+
+        def fn(u, base):
+            if u <= 0.7:
+                return tail_wrap_trunk(kin, X, za, r)
+            f = (u - 0.7) / 0.3
+            if f < 0.3:                                                    # unwinds round the bark
+                g = mk.smooth(f / 0.3)
+                return tail_wrap_trunk(kin, X, za, r, wind=1.0 - g, off=0.03 * g)
+            if f < 0.6:                                                    # up the trunk's near side
+                g = mk.smooth((f - 0.3) / 0.3)
+                return tail_wrap_trunk(kin, X, (1 - g) * za + g * zb, r, wind=0.0, off=0.03)
+            g = mk.smooth((f - 0.6) / 0.4)                                 # winds round again
+            return tail_wrap_trunk(kin, X, zb, r, wind=g, off=0.03 * (1 - g))
+        return fn
+    return make
+
+
+def scenario_spider_tree(kin, q_stand, p):
+    """Up the tree: the hands on the branches two levels above the feet, the feet on the branches by the trunk, the
+    tail wrapped round a branch beside the body (a fifth hold); each cycle the hands, then the feet, move up a
+    level, then the tail lets go and wraps round the next branch up. Without a tail (the gibbon) the same climb."""
+    xb = p["x"] - p["trunk_radius"] - 0.02
+    hold = lambda k: {"L_hand": _branch_bar(p, k + 2, 0.25), "R_hand": _branch_bar(p, k + 2, -0.25),
+                      "L": _branch_bar(p, k, 0.17, tip=0.2), "R": _branch_bar(p, k, -0.17, tip=0.2)}
+    base = lambda k: np.array([xb - 0.3, 0.0, _branch_z(p, k, 0.17) + 0.35])
+    n = min(int(p["cycles"]), int((p["height"] - 1.2 - p["first_branch"]) / p["spacing"]))
+    tail = tail_for_tree(kin, p, lambda k: k) if tail_tip(kin) is not None else None
+    return gs._climb_sequence(kin, q_stand, hold, base, n, stop_x=xb - 0.25, tail=tail, duration=3.8 if tail else None)
+
+
+gs.DEFAULTS["tree_spider"] = SPIDER_TREE
+gs.BUILDERS["tree_spider"] = spider_tree_prop
+gs.SCENARIOS["tree_spider"] = scenario_spider_tree
 
 COURSE = {**LADDER, "rungs": 5, "rise_deg": math.degrees(math.atan((2.1 - LADDER["height"]) / (4 * LADDER["spacing"]))),
           "rope_step": 0.4, "window_x": 7.05, "rope_end": 7.05 - gs.WINDOW["wall_thickness"] / 2 - 0.12, "table_x": 4.6, "door_x": 9.05}

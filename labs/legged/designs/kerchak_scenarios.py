@@ -426,7 +426,7 @@ def foot_swing(h0, h1, f, lift=0.07, clear=0.06):
     return (1 - s_) * R + s_ * c1
 
 
-def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, duration=3.2, lift=None, name="climb"):
+def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, duration=3.2, lift=None, name="climb", tail_fn=None):
     """One cycle up: the contacts move one at a time (``ORDER``: left foot, right foot, left hand, right hand) from
     ``holds[0]`` to ``holds[1]`` ({contact: hold}) on an arc out from the surface - the fingers opening through the
     swing and closing on the bar - while the pelvis rides from ``base_from`` to ``base_to`` (xyz) in the climbing frame."""
@@ -434,10 +434,13 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
         sloped = abs(float(holds[1]["L"]["n"] @ np.array([0.0, 0.0, 1.0]))) > 0.3
         lift = 0.25 * gm.scale() if gm.STANCE["upright"] else (0.1 if sloped else 0.12)   # the foot swings well out: the knee clear of the rung above, the shin off a sloped plate
     order = ["L_hand", "R_hand", "L", "R"] if gm.STANCE["upright"] else ORDER   # standing: the hands reach up first, then the legs push
-    windows = {g: (0.05 + 0.2 * k, 0.05 + 0.2 * (k + 1)) for k, g in enumerate(order)}
+    if tail_fn is None:
+        windows = {g: (0.05 + 0.2 * k, 0.05 + 0.2 * (k + 1)) for k, g in enumerate(order)}
+    else:                                                                  # a tail too (``tail_fn(u, base)``): the limbs in less of the cycle, the tail moves last
+        windows = {g: (0.03 + 0.17 * k, 0.03 + 0.17 * (k + 1)) for k, g in enumerate(order)}
 
     def targets(u):
-        out = []
+        out = [] if tail_fn is None else list(tail_fn(u, base(u)))
         for g in order:
             a, b = windows[g]
             h0, h1 = holds[0][g], holds[1][g]
@@ -489,7 +492,7 @@ def _sole_offset(k, pitch):
     return R @ np.array([o[0], o[1], 0.0])
 
 
-def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration=3.5, name="mount"):
+def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration=3.5, name="mount", tail_fn=None):
     """From the quad pose at the foot of the surface up onto it: the pelvis rises and pitches to the climbing frame
     where it stands while the hands go from the ground to their first holds (the fingers opening on the way, closing
     on the bars; the feet planted), then the feet step up to theirs one after the other as the pelvis moves in."""
@@ -509,12 +512,14 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
     reach = 0.7 * hands_end                                                # the hands' grip points on their arcs until here, then the whole frame settles on the bar
 
     def targets(u):
-        out = []
+        out = [] if tail_fn is None else list(tail_fn(u, base(u)))
         fh = mk.smooth(min(1.0, u / reach))                                  # the hands first
         for side in ("L", "R"):
             s, end = hands[side]
             if u < reach or end[0] is end[-1]:
-                arc = np.array([0.0, 0.0, 0.3 * math.sin(math.pi * fh)])
+                h_ = holds[f"{side}_hand"]                                   # up, and out from the surface: clear of the holds below the one it takes
+                up_, out_ = (0.08, 0.18) if gm.STANCE["upright"] else (0.3, 0.12)   # standing: out round the hold, not up over it and back down through it
+                arc = np.array([0.0, 0.0, up_ * math.sin(math.pi * fh)]) + (out_ * math.sin(math.pi * fh) * h_["n"] if h_["kind"] == "bar" else 0.0)
                 out.append((end[0][0], end[0][1], (1 - fh) * s[0] + fh * end[0][2] + arc))
             else:
                 out += end
@@ -584,7 +589,7 @@ def _pick_frames(kin, q_quad, holds, base, pitch, trials):
     return out
 
 
-def _climb_sequence(kin, q_quad, hold, base, cycles, *, stop_x, pitch=CLIMB_PITCH, v=None, trials=((1.0, 0.0),)):
+def _climb_sequence(kin, q_quad, hold, base, cycles, *, stop_x, pitch=CLIMB_PITCH, v=None, trials=((1.0, 0.0),), tail=None, duration=None):
     """The approach to ``stop_x``, the mount and ``cycles`` climb cycles: ``hold(k)`` → {contact: hold} and
     ``base(k)`` → the pelvis's xyz for cycle ``k``. ``trials``: (sign, phi) candidates for each hand's frame on a
     vertical bar (``_pick_frames``)."""
@@ -597,13 +602,14 @@ def _climb_sequence(kin, q_quad, hold, base, cycles, *, stop_x, pitch=CLIMB_PITC
             h[g]["sign"], h[g]["phi"] = frames[g]
         return h
 
-    m = mount(kin, q_quad, stop_x, framed(hold(0)), base(0), pitch=pitch)
+    m = mount(kin, q_quad, stop_x, framed(hold(0)), base(0), pitch=pitch, tail_fn=None if tail is None else tail(q_quad, None))
     m.params = {**(m.params or {}), "frames": {g: list(v) for g, v in frames.items()}}
     segs.append(("motion", m))
     q = gt._last(kin, m, q_quad)
     for k in range(cycles):
         hk, hk1 = framed(hold(k)), framed(hold(k + 1))
-        c = climb_cycle(kin, q, (hk, hk1), base(k), base(k + 1), pitch=pitch, name=f"climb_{k + 1}")
+        c = climb_cycle(kin, q, (hk, hk1), base(k), base(k + 1), pitch=pitch, name=f"climb_{k + 1}",
+                        tail_fn=None if tail is None else tail(q, k), **({} if duration is None else {"duration": duration}))
         segs.append(("motion", c))
         q = gt._last(kin, c, q)
     return segs

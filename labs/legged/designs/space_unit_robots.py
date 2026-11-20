@@ -444,7 +444,7 @@ GIBBON_CASING = 0.35                                                       #: th
 
 #: The tail's joint modules: worm-geared smart servos at the root (self-locking: the tail holds a hang unpowered),
 #: worm-geared standard servos along it; [(key, kp, kd)] from the root out.
-TAIL_SERVOS = [("smart servo 25 Nm", 40.0, 0.4)] * 3 + [("standard 60 g worm", 4.0, 0.04)] * 7
+TAIL_SERVOS = [("smart servo 25 Nm", 40.0, 0.4)] * 4 + [("standard 60 g worm", 4.0, 0.04)] * 10
 
 
 def _tail(r, P):
@@ -466,14 +466,14 @@ def _tail(r, P):
             geoms.append(Geom("tail_tip", "sphere", (rad * 1.3,), pos=(-seg, 0.0, 0.0), mass=0.01, role="link",
                               friction=(1.2, 0.01, 0.001), rgba=(0.1, 0.1, 0.1, 1.0)))
         lk = Link(f"tail_{k}", pos=(-Dp / 2 - 0.01, 0.0, 0.02) if k == 0 else (-seg, 0.0, 0.0),
-                  joints=[Joint(f"tail_{k}_pitch", axis=(0, 1, 0), range=(-1.3, 1.3), tag="tail_pitch", servo=bk.servo(key, kp=kp, kd=kd)),
+                  joints=[Joint(f"tail_{k}_pitch", axis=(0, 1, 0), range=(-1.4, 1.4), tag="tail_pitch", servo=bk.servo(key, kp=kp, kd=kd)),
                           Joint(f"tail_{k}_yaw", axis=(0, 0, 1), range=(-0.8, 0.8), tag="tail_yaw", servo=bk.servo(key, kp=kp, kd=kd))],
                   geoms=geoms, masses=[PointMass(f"tail_{k}_actuators", 2 * act.get(key).mass_g / 1000.0)])
         parent.children.append(lk)
         parent = lk
         links.append(lk)
-    rest = {"tail_0_pitch": 0.4, "tail_1_pitch": 0.15}
-    rest.update({f"tail_{k}_pitch": 0.17 for k in range(2, n)})             # carried raised and curling up behind (a spider monkey's): clear of the ground and of a wall it passed
+    rest = {"tail_0_pitch": 0.4, "tail_1_pitch": 0.1}
+    rest.update({f"tail_{k}_pitch": 0.13 for k in range(2, n)})             # carried raised and curling up behind (a spider monkey's): clear of the ground and of a wall it passed
     r.nominal_qpos.update(rest)
     return r
 

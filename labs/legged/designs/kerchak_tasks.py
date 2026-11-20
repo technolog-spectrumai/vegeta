@@ -169,7 +169,7 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
     hand), ``base_fn(u)`` → (base x, height, pitch) in the world; ``extra(u, q)`` sets joints the IK does not (the
     fingers, the wrist's roll). The motion's ``base`` carries the base track per frame."""
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
-    frames = max(frames, int(round(duration * 10)))                        # ten a second at least: the player interpolates between them
+    frames = max(frames, int(round(duration * 20)))                        # twenty a second at least: the player interpolates between them, a straight blend can cut a corner through a branch
     ts = [duration * i / frames for i in range(frames + 1)]
     Q, xs, ys, hs, ps, q, worst = [], [], [], [], [], np.asarray(q_init, dtype=float).copy(), 0.0
     pen, pen_at, pen_raw, worst_at = 0.0, None, 0.0, None

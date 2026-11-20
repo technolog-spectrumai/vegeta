@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
