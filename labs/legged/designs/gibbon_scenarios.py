@@ -533,6 +533,7 @@ def _branch_z(p, level, y):
 def _branch_bar(p, level, y, tip=None, side_n=(-1.0, 0.0, 0.0)):
     sy = 1.0 if y > 0 else -1.0
     a = gs._unit(np.array([0.0, sy * (p["trunk_radius"] * 0.5 + p["branch_length"]), p["branch_rise"]]))
+    a = a if a[1] > 0 else -a                                              # the axis along +y either side: a foot's sides map onto it unmirrored
     return gs.bar((p["x"], y, _branch_z(p, level, y)), axis=a, n=side_n, r=p["branch_radius"], **({} if tip is None else {"tip": tip}))
 
 
