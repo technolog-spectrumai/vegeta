@@ -586,20 +586,20 @@ def tail_for_tree(kin, p, level_of):
             def fn(u, base):
                 x, y, z, pt = base
                 R, pc = gm.base_rot(pt), np.array([x, y, z])
-                if u < 0.7:
+                if u < 0.76:
                     return []
-                if u < 0.85:                                               # the whole end of the tail steered to the near side, clear of the bark
-                    f = mk.smooth((u - 0.7) / 0.15)
+                if u < 0.88:                                               # the whole end of the tail steered to the near side, clear of the bark
+                    f = mk.smooth((u - 0.76) / 0.12)
                     return [(b_, l_, (1 - f) * (R @ rs + pc) + f * w) for (b_, l_, w), rs in zip(first, rest)]
-                g = mk.smooth((u - 0.85) / 0.15)
+                g = mk.smooth((u - 0.88) / 0.12)
                 return tail_wrap_trunk(kin, X, z1, r, wind=g, off=0.03 * (1 - g))
             return fn
         za, zb = z_of(level_of(k)), z_of(level_of(k + 1))
 
         def fn(u, base):
-            if u <= 0.7:
+            if u <= 0.76:                                                  # held until both feet are down on their branches
                 return tail_wrap_trunk(kin, X, za, r)
-            f = (u - 0.7) / 0.3
+            f = (u - 0.76) / 0.24
             if f < 0.3:                                                    # unwinds round the bark
                 g = mk.smooth(f / 0.3)
                 return tail_wrap_trunk(kin, X, za, r, wind=1.0 - g, off=0.03 * g)
