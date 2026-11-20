@@ -86,7 +86,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("standby_h", "B2 readiness: watch on station (h)", 2, 24),
         ("perch_margin_m", "B3 deployment: perch height to spare (m)", 0, 6),
         ("launch_success_pct", "B4 deployment: launch success, 0-12 m/s + gusts (%)", 95, 99.5),
-        ("gust_stall_m_s", "B5 weather: vertical gust that stalls it at loiter (m/s)", 3, 6),
+        # B5 (the quasi-steady gust stall) is reported, not scored: a very conservative bound; B6's turbulence model
+        # measures gust tolerance in flight (decision 2026-11-20)
         ("operating_wind_m_s", "B6 weather: operating wind, gusts 1.5x (m/s)", 12, 15),
         ("perch_lift_off_wind_m_s", "B7 weather: wind that lifts it off the perch (m/s)", 15, 30),
         ("keep_out_30_m_s_m", "B8 effect: keep-out vs a 30 m/s drone (m)", 1000, 2000),

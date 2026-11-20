@@ -64,7 +64,7 @@ reads ✅ when the objective is met, ✔ when the threshold is met, and ✖ when
 | B2 | Watch time on station (h), camera and computer on, motor off | readiness | 2 | 24 (continuous) | 7.7 on its pack; 24+ with a charging perch | EST / PROP | ✔ / ✅ |
 | B3 | Perch height to spare (m): perch height − height the drop needs | reliable deployment | 0 | 6 | 4.3 with an 8 m/s spring push; 1.1 without | SIM + PROP | ✔ |
 | B4 | Launch success: Monte Carlo over steady wind 0–12 m/s with 1.5× gusts, wind from any direction, push speed ±15 %, perch attitude ±5° (%) | reliable deployment | 95 | 99.5 | 75 on a fixed perch; 100 on a turning perch | SIM (16 draws, ±11 %) + PROP | ✖ / ✅ |
-| B5 | Vertical gust that stalls it at loiter speed (m/s), quasi-steady (conservative) | weather | 3 | 6 | 2.5 | SIM | ✖ |
+| B5 | Vertical gust that stalls it at loiter speed (m/s), quasi-steady (conservative). **Reported, not scored** (decision 2026-11-20): B6's turbulence model measures gust tolerance in flight. | weather | (3) | (6) | 2.5 | SIM | info |
 | B6 | Operating wind: the strongest steady wind (gusts 1.5×) at which launch and recovery both succeed ≥ 95 % (m/s) | weather | 12 / 18 | 15 / 22 | 4.8 / 7.2 on a fixed perch; 12.8 / 19.2 on a turning perch | SIM (16 launch and 4 landing draws per wind) + PROP | ✖ / ✔ |
 | B7 | Wind that lifts it off the perch untethered (m/s). A perch latch makes this a design requirement instead. | weather | 15 | 30 | 31.7 | EST | ✅ |
 | B8 | Keep-out vs a 30 m/s drone cued at 3 km (m) | effect | 1000 | 2000 | 1748 | SIM + EST | ✔ |
@@ -205,3 +205,24 @@ objective.
 - SPARFELL: shrink the fuselage separately from the wing. The ×1.0 fuselage alone sets the 720 mm packed length, and the wing has to stay large for the throw.
 - ASTOR: a CFD check of the b800 wing, a structural check at 65 m/s (dynamic pressure ≈ 2.6 kPa) and a propulsor-map check at 1200 W.
 - ARPELLA: 3S3P against 3S4P with the calm-air landing energy in the score.
+
+## Run 2 (`raptors_explore2.sh`, branch `dev_raptors_exp`)
+
+**KPI change:** B5 is reported, not scored. Run 1 re-scored with `--rescore` (no simulation): BUTEO's best rises from
+66.6 to 72.7; ARPELLA (74.3), ASTOR (81.4) and SPARFELL (60.4) are unchanged.
+
+**Specs.** 90 in run 2, with its own cache and run files, so nothing from run 1 is repeated. Per line it scores two
+references, the lattice baseline and run 1's best, re-scored under the run-2 models. Then the run-2 levers
+(`arigo_products.SPACE2`):
+
+| Line | Run-2 levers |
+|---|---|
+| BUTEO | span 1000 / 1050 / 1100 × chord 300 / 320 × the perch spring's push 6 / 8 / 10 m/s, with a turning station |
+| ARPELLA | span 1100 / 1250 × chord 260 / 280 × 3S3P / 3S4P, with and without a parachute (against the heavy calm-air landing) |
+| ASTOR | span 700 / 750 / 800 × chord 240 / 260 × motor 1000 / 1200 / 1400 W × 3S2P / 3S3P, with rail, turning station and parachute; plus run 1's best ARIGO-20 |
+| SPARFELL | wing scale 0.9 / 1.0 × **fuselage scale 0.75 / 0.80 / 0.85**, set separately from the wing (the tail grows by √(1/fuselage scale) to keep its volume; 0.65 does not fit the tail), 3S1P, quick joiner + lite avionics, with and without the rugged skin |
+
+**Not checked yet:**
+- whether the avionics and the 3S1P pack fit the shorter fuselages (×0.75: a 540 mm fuselage);
+- the structure and propulsor maps at 1400 W;
+- CFD for any of the new geometries.

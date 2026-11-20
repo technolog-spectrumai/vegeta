@@ -94,13 +94,16 @@ def _init_worker():
         pass
 
 
+GEN = "explore"          # which design space: arigo_products.explore (run 1) or explore2 (run 2); set by main
+
+
 def _work(job):
     """One spec's card and robustness, in a worker process (the rows are rebuilt here: the airframe registry is per
     process)."""
     product, key, robust, samples = job
     import arigo_perf as P
     import arigo_products as AP
-    for pk, k, name, Cf, sf, man, V in AP.explore_rows([product]):
+    for pk, k, name, Cf, sf, man, V in getattr(AP, f"{GEN}_rows")([product]):
         if k == key:
             t = time.time()
             try:
@@ -216,8 +219,32 @@ def charts(path: Path, doc: dict) -> list:
     return out
 
 
-def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="raptors_explore.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
+def rescore(path: Path, tag: str) -> int:
+    """Score a finished run file again under the current KPIs (MISSIONS, GATES): no simulation."""
+    src = yaml.safe_load(path.read_text())
+    cards = next((v["cards"] for v in (src.get("results") or {}).values() if isinstance(v, dict) and "cards" in v), None)
+    if not cards:
+        print("no cards in", path)
+        return 2
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = OUT / "runs" / f"{tag}_rescored_{stamp}_{socket.gethostname()}.yaml"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc = {"run": {**(src.get("run") or {}), "rescored_from": path.name, "rescored": stamp,
+                   "note": "the same cards, scored under the current KPIs (sims/arigo_charts.MISSIONS); nothing re-simulated"},
+           **summarise(cards), "results": {tag: {"cards": cards}}}
+    out.write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=str)), sort_keys=False, width=140))
+    for p in charts(out, doc):
+        print("->", p)
+    print("->", out)
+    for pk, s in doc["summary"].items():
+        print(f"  {s['title']:9s} baseline {s['baseline']['score']:5.1f} -> best {s['best']['score']:5.1f}: {s['best']['name']}")
+    return 0
+
+
+def main(argv=None, gen="explore", tag="raptors_explore", doc=None) -> int:
+    global GEN
+    GEN = gen
+    ap = argparse.ArgumentParser(prog=f"{tag}.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=doc or __doc__)
     ap.add_argument("products", nargs="*", help="bbuteo arpella astor sparfell (default: all)")
     ap.add_argument("-j", "--cpu", type=int, default=1,
                     help="worker processes (default 1). Capped to the machine: cores - 2 and (free RAM - 3 GB) / 1 GB each")
@@ -226,14 +253,18 @@ def main(argv=None) -> int:
     ap.add_argument("--list", action="store_true", help="list the specs and exit")
     ap.add_argument("--samples", type=int, default=24, help="Monte Carlo launches per envelope (landings: a quarter, min 4)")
     ap.add_argument("--no-robust", action="store_true", help="skip the launch-success and operating-wind models")
+    ap.add_argument("--rescore", type=Path, metavar="RUN_FILE",
+                    help="score a finished run file again under the current KPIs (no simulation), then exit")
     ap.add_argument("--base-only", "--baseline-only", dest="base_only", action="store_true", help="each line's starting spec only (plus ARIGO-20 for ASTOR)")
     a = ap.parse_args(argv)
     import arigo_products as AP
+    if a.rescore:
+        return rescore(a.rescore, tag)
     want = [p.lower() for p in a.products] or list(AP.PRODUCTS)
     bad = [p for p in want if p not in AP.PRODUCTS]
     if bad:
         ap.error(f"unknown product(s) {bad}; choose from {list(AP.PRODUCTS)}")
-    rows = list(AP.explore_rows(want))
+    rows = list(getattr(AP, f"{gen}_rows")(want))
     if a.base_only:
         base_keys = {AP.spec_key(pk, {**AP.PRODUCTS[pk]["base"], "lattice": True})[0] for pk in want}
         base_keys |= {AP.spec_key("astor", {"frame": "arigo-20", "kits": ("rail", "parachute"), "pack": "6S 6000 mAh LiPo"})[0]}
@@ -245,7 +276,7 @@ def main(argv=None) -> int:
         return 0
     (OUT / "explore").mkdir(parents=True, exist_ok=True)
     (OUT / "runs").mkdir(parents=True, exist_ok=True)
-    cache_p = OUT / "explore" / "raptors_explore_cache.yaml"
+    cache_p = OUT / "explore" / f"{tag}_cache.yaml"
     cache = rs.load(cache_p, a.fresh) or {"what": "RAPTORS exploration cache", "cards": {}}
     robust = not a.no_robust
 
@@ -259,8 +290,8 @@ def main(argv=None) -> int:
         print(f"-j {n_req} lowered to {a.cpu} ({why}; ~{WORKER_GB:.0f} GB per worker). --force-cpu to insist.")
     print(f"{len(rows)} specs for {', '.join(want)}: {len(rows) - len(jobs)} cached, {len(jobs)} to score on {a.cpu} process(es)")
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    run_p = OUT / "runs" / f"raptors_explore_{stamp}_{socket.gethostname()}.yaml"
-    meta = {"phase": "explore", "started": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "host": socket.gethostname(),
+    run_p = OUT / "runs" / f"{tag}_{stamp}_{socket.gethostname()}.yaml"
+    meta = {"phase": tag, "started": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "host": socket.gethostname(),
             "products": want, "cpu": a.cpu, "specs": len(rows), "robust": robust, "samples": a.samples, "commit": os.popen("git rev-parse --short HEAD 2>/dev/null").read().strip()}
     try:
         from tqdm import tqdm
@@ -290,7 +321,7 @@ def main(argv=None) -> int:
     cards = {k: cache["cards"][k] for _, k, *_ in rows if k in cache["cards"]}
     doc = {"run": {**meta, "finished": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                    "errors": sum(1 for c in cards.values() if "error" in c)},
-           **summarise(cards), "results": {"raptors_explore": {"cards": cards}}}
+           **summarise(cards), "results": {tag: {"cards": cards}}}
     run_p.write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=str)), sort_keys=False, width=140))
     for p in charts(run_p, doc):
         print("->", p)

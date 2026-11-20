@@ -84,13 +84,15 @@ SPACE = {
 
 
 # ------------------------------------------------------------------------------------------------ airframes
-def airframe(scale: float = 1.0, span: float | None = None, chord: float | None = None) -> str:
+def airframe(scale: float = 1.0, span: float | None = None, chord: float | None = None, fuse: float | None = None) -> str:
     """ARIGO-1H's geometry, scaled (lengths x ``scale``; the bay's diameter not below 62 mm: the avionics), with
     another span or root chord; the tail grown with the wing (tail volume kept: linear dims x sqrt(S c / S0 c0),
     HAND); the wing's quarter chord kept; the CG by the static margin (12 % MAC), as on the lattice baseline.
+    ``fuse`` shrinks the fuselage on its own (length, nose, tail cone, the wing's station; on top of ``scale``): the
+    tail arm shortens with it, so the tail grows by sqrt(1 / fuse) to keep its volume (HAND).
     Registered in ``arigo1.VARIANTS``; returns its name."""
     import arigo1 as a1
-    name = f"1H_s{scale:.2f}_b{span or 0:.0f}_c{chord or 0:.0f}"
+    name = f"1H_s{scale:.2f}_b{span or 0:.0f}_c{chord or 0:.0f}" + (f"_f{fuse:.2f}" if fuse else "")
     if name in a1.VARIANTS:
         return name
     d = a1.Arigo1().resolve(**a1.VARIANTS["hybrid"])
@@ -105,7 +107,11 @@ def airframe(scale: float = 1.0, span: float | None = None, chord: float | None 
     if chord:
         q["wing_x"] += (c0 - chord) / 4.0                          # the quarter chord stays put
         q["root_chord"] = chord
+    if fuse:
+        for t in ("fuselage_length", "nose_length", "tail_cone", "wing_x"):
+            q[t] *= fuse
     k = math.sqrt((q["span"] * q["root_chord"] ** 2) / (b0 * c0 ** 2))   # S c ~ b c^2 for a fixed taper
+    k *= math.sqrt(1.0 / fuse) if fuse else 1.0                    # the shorter arm: a bigger tail for the same volume
     for t in ("htail_span", "htail_root_chord", "fin_height", "fin_root_chord"):
         q[t] *= k
     for t in ("taper", "le_sweep_deg", "dihedral_deg", "washout_deg"):
@@ -137,6 +143,8 @@ def spec_key(product: str, s: dict) -> tuple[str, str]:
             nm.append(f"b{b:.0f}"); parts.append(f"b{b:.0f}")
         if c:
             nm.append(f"c{c:.0f}"); parts.append(f"c{c:.0f}")
+        if s.get("fuse"):
+            nm.append(f"fuselage x{s['fuse']:.2f}"); parts.append(f"f{s['fuse']:.2f}")
     if s.get("pack"):
         p = s["pack"].replace("Li-ion ", "").replace(" P42A", "").replace(" mAh LiPo", "")
         nm.append(p); parts.append(p.replace(" ", ""))
@@ -145,6 +153,8 @@ def spec_key(product: str, s: dict) -> tuple[str, str]:
     kits = s.get("kits", ())
     if kits:
         nm.append("+" + "+".join(kits)); parts.append("-".join(k[:5] for k in kits))
+    if s.get("push"):
+        nm.append(f"push {s['push']:.0f} m/s"); parts.append(f"p{s['push']:.0f}")
     key = f"{fam}_{product}" + ("_" + "_".join(parts) if parts else "") + ("_lat" if s.get("lattice") else "")
     return key, " ".join(nm)
 
@@ -157,14 +167,16 @@ def build(product: str, s: dict):
     if s.get("frame") == "arigo-20":
         base, simf = m20.get, (lambda bandit=False: m20j.Sim20(bandit=bandit))
     else:
-        geo = (s.get("scale", 1.0) != 1.0) or s.get("span") or s.get("chord") or s.get("lattice")
-        v = airframe(s.get("scale", 1.0), s.get("span"), s.get("chord")) if geo else "hybrid"
+        geo = (s.get("scale", 1.0) != 1.0) or s.get("span") or s.get("chord") or s.get("fuse") or s.get("lattice")
+        v = airframe(s.get("scale", 1.0), s.get("span"), s.get("chord"), s.get("fuse")) if geo else "hybrid"
         src = "model" if geo else "auto"
         base = (lambda v=v, src=src: am.coefficients(v, "pusher", src))
         simf = (lambda bandit=False, v=v: amj.Sim(v, "pusher", bandit=bandit))
     feats = {"product": product, "frame": s.get("frame", "1H"), "variant_spec": {k: v for k, v in s.items() if k != "kits"}}
     if s.get("launch"):
         feats["launch"] = s["launch"]
+    if s.get("push"):
+        feats["perch_push_m_s"] = s["push"]                        # the perch kit's spring, another stiffness
 
     def Cf():
         return equip(base(), s.get("kits", ()), s.get("pack"), s.get("motor_w"), **feats)
@@ -262,11 +274,55 @@ def explore(product: str):
             yield {"frame": "arigo-20", "kits": ("rail", "parachute"), "pack": pk}
 
 
-def explore_rows(products=None):
+# ------------------------------------------------------------------------------------------------ run 2
+# Run 1 (2026-11-20, raptors_explore.sh, 116 specs) found these best; run 2 refines around them and adds the
+# fuselage scaled apart from the wing (SPARFELL), the spring's stiffness (BUTEO), a parachute against the heavy
+# calm-air landing (ARPELLA) and shorter wings with stronger motors (ASTOR).
+RUN1_BEST = {
+    "buteo": {"span": 1050.0, "chord": 300.0, "kits": ("perch", "charging_perch", "turning_station")},
+    "arpella": {"span": 1250.0, "chord": 260.0, "pack": "Li-ion 3S4P P42A", "kits": ("relay_radio",), "launch": "hand"},
+    "astor": {"span": 800.0, "chord": 260.0, "pack": "Li-ion 3S3P P42A", "motor_w": 1200.0, "kits": ("rail", "parachute")},
+    "sparfell": {"kits": ("quick_joiner", "lite_avionics"), "pack": "Li-ion 3S1P P42A", "launch": "hand", "lattice": True},
+}
+SPACE2 = {
+    "buteo": {"span": (1000.0, 1050.0, 1100.0), "chord": (300.0, 320.0), "push": (6.0, 8.0, 10.0),
+              "kits": [("perch", "charging_perch", "turning_station")]},
+    "arpella": {"span": (1100.0, 1250.0), "chord": (260.0, 280.0), "pack": ("Li-ion 3S3P P42A", "Li-ion 3S4P P42A"),
+                "kits": [("relay_radio",), ("relay_radio", "parachute")]},
+    "astor": {"span": (700.0, 750.0, 800.0), "chord": (240.0, 260.0), "motor_w": (1000.0, 1200.0, 1400.0),
+              "pack": ("Li-ion 3S2P P42A", "Li-ion 3S3P P42A"), "kits": [("rail", "turning_station", "parachute")]},
+    "sparfell": {"scale": (0.9, 1.0), "fuse": (0.75, 0.80, 0.85),   # 0.65: the grown tail no longer fits the arm "pack": ("Li-ion 3S1P P42A",),
+                 "kits": [("quick_joiner", "lite_avionics"), ("quick_joiner", "lite_avionics", "rugged_skin")]},
+}
+
+
+def explore2(product: str):
+    """Run 2: the baseline and run 1's best (re-scored under the run-2 models) as references, then SPACE2; ASTOR also
+    its best ARIGO-20 from run 1."""
+    pr, sp = PRODUCTS[product], SPACE2[product]
+    base = dict(pr["base"])
+    yield {**base, "lattice": True}
+    yield {**base, **RUN1_BEST[product]}
+    if product == "astor":
+        yield {"frame": "arigo-20", "kits": ("rail", "parachute"), "pack": "6S 5000 mAh LiPo"}
+    axes = [k for k in ("scale", "fuse", "span", "chord", "pack", "motor_w", "push", "kits") if k in sp]
+    for combo in itertools.product(*(sp[a] for a in axes)):
+        s = {**base, **dict(zip(axes, combo))}
+        if s.get("scale", 1.0) == 1.0 and not s.get("span") and not s.get("chord") and not s.get("fuse"):
+            s["lattice"] = True
+        yield s
+
+
+def explore2_rows(products=None):
+    return explore_rows(products, explore2)
+
+
+def explore_rows(products=None, gen=None):
     """(product, key, display name, coefficients fn, sim factory, manoeuvre, cruise) for the sweep, de-duplicated."""
+    gen = gen or explore
     seen = set()
     for pk in products or PRODUCTS:
-        for s in explore(pk):
+        for s in gen(pk):
             r = _row(pk, s)
             if r[0] in seen:
                 continue
