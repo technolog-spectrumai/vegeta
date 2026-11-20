@@ -8,6 +8,8 @@
 #   labs/aero/sims/arigo_all.sh                      8 CFD processors, all four aircraft
 #   labs/aero/sims/arigo_all.sh 16                   16 CFD processors
 #   labs/aero/sims/arigo_all.sh 8 ARIGO-0 ARIGO-20   only these
+#   labs/aero/sims/arigo_all.sh --stability-only    only the MuJoCo stability tests and the camera check (minutes)
+#   labs/aero/sims/arigo_all.sh --stability-only 8 ARIGO-0
 #   SKIP_CFD=1 / SKIP_VIDEO=1 / FRESH=1 labs/aero/sims/arigo_all.sh
 #
 # Stop it any time (Ctrl-C) and run it again: each step reads its saved YAML and goes on where it stopped (a CFD
@@ -21,6 +23,14 @@ PY="${VEGETA_PYTHON:-}"
 if [ -z "$PY" ]; then
   if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
 fi
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --stability-only) SKIP_CFD=1; SKIP_VIDEO=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]}"
 NP="${1:-8}"; shift || true
 WANT=("$@"); [ ${#WANT[@]} -eq 0 ] && WANT=(ARIGO-0 ARIGO-1 ARIGO-2 ARIGO-20)
 has() { local x; for x in "${WANT[@]}"; do [ "${x^^}" = "$1" ] && return 0; done; return 1; }
