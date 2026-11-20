@@ -618,8 +618,8 @@ def scenario_spider_tree(kin, q_stand, p):
     level, then the tail lets go and wraps round the next branch up. Without a tail (the gibbon) the same climb."""
     xb = p["x"] - p["trunk_radius"] - 0.02
     hold = lambda k: {"L_hand": _branch_bar(p, k + 2, 0.25), "R_hand": _branch_bar(p, k + 2, -0.25),
-                      "L": _branch_bar(p, k, 0.23, tip=0.2), "R": _branch_bar(p, k, -0.23, tip=0.2)}   # out from the trunk: the toes and the big toe clear of the bark where the branch grows
-    base = lambda k: np.array([xb - 0.3, 0.0, _branch_z(p, k, 0.23) + 0.35])
+                      "L": _branch_bar(p, k, 0.2, tip=0.2), "R": _branch_bar(p, k, -0.2, tip=0.2)}   # out from the trunk: the toes and the big toe clear of the bark where the branch grows
+    base = lambda k: np.array([xb - 0.3, 0.0, _branch_z(p, k, 0.2) + 0.35])
     n = min(int(p["cycles"]), int((p["height"] - 1.2 - p["first_branch"]) / p["spacing"]))
     tail = tail_for_tree(kin, p, lambda k: k) if tail_tip(kin) is not None else None
     return gs._climb_sequence(kin, q_stand, hold, base, n, stop_x=xb - 0.25, tail=tail, duration=3.8 if tail else None)

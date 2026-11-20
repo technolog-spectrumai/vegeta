@@ -318,7 +318,7 @@ def toe_wrap(kin, q, side, hold):
         for j, v in ((f"{side}_toe_{k}_mtp", mtp), (f"{side}_toe_{k}_ip", ip)):
             if j in kin.index:
                 q[kin.index[j]] = float(np.clip(v, kin.lo[kin.index[j]], kin.hi[kin.index[j]]))
-    for j, v in ((f"{side}_hallux_mtp", 0.35), (f"{side}_hallux_ip", 0.5)):          # the big toe down towards the bar's back
+    for j, v in ((f"{side}_hallux_mtp", 0.15), (f"{side}_hallux_ip", 0.25)):         # the big toe a little down towards the bar's back (its tip clear of the bark)
         if j in kin.index:
             q[kin.index[j]] = v
     return q
