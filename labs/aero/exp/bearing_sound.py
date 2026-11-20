@@ -168,7 +168,7 @@ def shot_sound(h: dict, *, distance: float, height: float, ear: float, behind_de
     return sig, stats
 
 
-def burst(n_shots: int, interval: float, refill_s: float, design: dict) -> list[dict]:
+def burst(n_shots: int, interval: float, refill_s: float, design: dict, t_after: float = 0.03) -> list[dict]:
     """Plenum pressure before each shot: each shot takes its air out of the 0.5 L plenum, the regulator refills it
     towards the set pressure with a first-order lag ``refill_s``."""
     R, TA = g.R, g.TA
@@ -177,7 +177,7 @@ def burst(n_shots: int, interval: float, refill_s: float, design: dict) -> list[
     p = p_set
     shots = []
     for i in range(n_shots):
-        h = shot_history(p, design["throat_mm"])
+        h = shot_history(p, design["throat_mm"], t_after=t_after)
         shots.append(h)
         m = (g.PA + p * 1e5) * V0 / (R * TA) - h["air_kg"]          # air left after this shot
         p_after = m * R * TA / V0 / 1e5 - g.PA / 1e5

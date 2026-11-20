@@ -13,6 +13,13 @@ WHAT IT RUNS (targets; default all four)
   Cost on a laptop: a rotor case ~5-20 min (screening) on 8 cores; a cannon shot (1.1 M cells, ~144k steps) several
   hours on 8 cores -- --can-mesh coarse (~0.2 M cells) for a first look.  Needs OpenFOAM (source its bashrc first).
 
+FAST (--fast: rougher, roughly 10-30x quicker)
+  rotors: CFD only for the single rotor (all rotors are always added in code), smoke mesh, no rpm re-solve, CFD
+          only at the lowest and highest speed; the speeds between are blade-element points with the CFD's rpm
+          correction interpolated (--cfd-speeds 0,40,80 to choose them)
+  cannon: one CFD shot (the burst is always overlapped in code), coarse mesh, microphone ring at 0.5 m
+          (domain 0.6 m: ~0.09 M cells instead of 1.1 M), 10 ms simulated after the ball leaves (--can-tail)
+
 MULTICORE
   -j N / --cpu N        cores in all (default: every core of the machine)
   -p K / --parallel K   CFD cases run at the same time, each on N/K cores (default 1: one case on all N cores).
@@ -214,7 +221,26 @@ def run_rotors(target, args, env, wav_dir, pool_cores):
             r = ps.point(m, k, pa, env)
             PROGRESS and PROGRESS.finish(f"{target} {k:g}", f"{target} {k:g} km/h done")
             return r
-        pts = list(ex.map(pt, speeds))
+        cfd_at = speeds if args.no_cfd or not args.cfd_speeds else \
+            [v for v in speeds if v in {float(x) for x in args.cfd_speeds.split(",")}] or [speeds[0], speeds[-1]]
+        got = dict(zip(cfd_at, ex.map(pt, cfd_at)))
+    bem = Namespace(**{**vars(pa), "no_cfd": True})
+    ratio = {}                                                  # CFD rpm / blade-element rpm at the CFD speeds
+    for v, r in got.items():
+        if str(r["source"]).startswith("CFD"):
+            ratio[v] = r["rpm"] / ps.point(m, v, bem, None)["rpm"]
+    pts = []
+    for v in speeds:
+        if v in got:
+            pts.append(got[v]); continue
+        r = ps.point(m, v, bem, None)
+        if ratio:
+            xs = sorted(ratio)
+            k = float(np.interp(v, xs, [ratio[x] for x in xs]))
+            r = rescale_rpm(r, m, v, k, pa)
+            r["source"] = f"blade element, rpm x{k:.3f} from CFD at {', '.join(f'{x:g}' for x in xs)} km/h"
+        PROGRESS and PROGRESS.finish(f"{target} {v:g}", f"{target} {v:g} km/h (interpolated)")
+        pts.append(r)
     rows, sigs = [], {}
     for p in pts:
         k = int(round(p["speed_kmh"]))
@@ -245,6 +271,19 @@ def run_rotors(target, args, env, wav_dir, pool_cores):
             "points": rows}
 
 
+def rescale_rpm(p, m, kmh, k, pa):
+    """A blade-element point moved to rpm x k (the CFD correction at neighbouring speeds): same trim thrust, the
+    torque with rpm^2, the tones and broadband recomputed (as prop_sound.point)."""
+    from vegeta import boreas
+    rpm, T, Q = p["rpm"] * k, p["thrust_N"], p["torque_Nm"]
+    g = boreas.gutin_harmonics(m["prop"], max(T, 0.0), max(Q, 0.0), rpm, pa.distance, pa.angle, harmonics=10)
+    vn = boreas.vortex_noise(m["prop"], rpm, pa.distance, kmh / 3.6)
+    tones = [(float(f), float(L)) for f, L in zip(g["frequency_hz"], g["spl_db"])]
+    return {**p, "rpm": round(rpm), "blade_pass_hz": round(g["blade_pass_hz"], 1), "broadband_db": round(vn["spl_db"], 1),
+            "broadband_peak_hz": round(vn["peak_hz"]), "_tones": tones,
+            "_band": (max(0.3 * vn["peak_hz"], 150.0), min(3.0 * vn["peak_hz"], 0.45 * 44100))}
+
+
 # -- cannon -----------------------------------------------------------------------------------------------------------
 def run_cannon(target, args, wav_dir, pool_cores):
     import bearing_recoilless as br
@@ -253,13 +292,14 @@ def run_cannon(target, args, wav_dir, pool_cores):
     import sonic_flow as sf
     shots = 1 if target == "can1" else 5
     fine, far = CAN_MESH[args.can_mesh]
-    gun, grid = bc.Gun(), bc.Grid(fine, far)
+    gun = bc.Gun(domain=args.can_ring * 1200, mic_radius=args.can_ring * 1000)
+    grid = bc.Grid(fine, far)
     d = br.design(verbose=False)
     tag = f"{shots}shot{'s' if shots > 1 else ''}"
-    root = OUT / "sound_cfd" / f"pekari_shot_{args.can_mesh}"       # one CFD case for can1 and can5
+    root = OUT / "sound_cfd" / f"pekari_shot_{args.can_mesh}_r{args.can_ring:g}_t{args.can_tail * 1e3:g}ms"       # one CFD case for can1 and can5
     print(f"[{target}] Pekari: {d['p_bar_g']:.1f} bar g, throat {d['throat_mm']:.2f} mm, {d['v']:.0f} m/s; "
           f"mesh {args.can_mesh} {bc.cell_count(gun, grid):,} cells, dt {bc.time_step(grid):.3g} s", flush=True)
-    hist = bs.burst(shots, args.interval, args.refill, d)
+    hist = bs.burst(shots, args.interval, args.refill, d, t_after=args.can_tail)
     cases = [root / "shot1"]
     peak = lambda h: float(np.max(h["mdot_muzzle"] + h["mdot_back"]))
     scale = [peak(h) / peak(hist[0]) for h in hist]                # each ball's source strength vs the CFD shot
@@ -400,6 +440,12 @@ def main(argv=None):
     ap.add_argument("--can-angle", type=float, default=90.0, help="from the muzzle direction, deg")
     ap.add_argument("--height", type=float, default=1.0, help="cannon height above ground, m")
     ap.add_argument("--ear", type=float, default=1.6)
+    ap.add_argument("--can-tail", type=float, default=0.03, help="cannon: s simulated after the ball leaves")
+    ap.add_argument("--can-ring", type=float, default=1.0, help="cannon microphone ring radius, m (domain 1.2x)")
+    ap.add_argument("--cfd-speeds", default="", help="rotor CFD only at these km/h (others: blade element with the "
+                    "CFD rpm correction interpolated); default every speed")
+    ap.add_argument("--fast", action="store_true", help="quick, rougher: rotor smoke mesh, no rpm iteration, CFD at the "
+                    "lowest and highest speed only; cannon coarse mesh, 0.5 m ring, 10 ms after the ball")
     ap.add_argument("--no-cfd", action="store_true", help="dry run (rotors: blade element; cannon: cases only)")
     ap.add_argument("--fresh", action="store_true", help="ignore solved cases")
     ap.add_argument("--no-charts", action="store_true")
@@ -412,6 +458,11 @@ def main(argv=None):
     bad = [t for t in targets if t not in TARGETS]
     if bad:
         ap.error(f"unknown target(s) {bad}: choose from {TARGETS}")
+    if args.fast:
+        args.quality, args.iterate, args.can_mesh, args.can_ring = "smoke", 0, "coarse", 0.5
+        sp = [x for x in args.speeds.split(",") if x.strip()]
+        args.cfd_speeds = args.cfd_speeds or f"{sp[0]},{sp[-1]}"
+        args.can_tail = 0.010
     args.parallel = max(1, min(args.parallel, args.cpu))
     cores = max(1, args.cpu // args.parallel)
     env = None
