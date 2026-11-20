@@ -1,0 +1,178 @@
+# ARIGO product lines: KPI definitions (draft 1)
+
+ARIGO-1 hybrid has graduated to **ARIGO-1H**, the family's baseline airframe. Four product lines start from the
+ARIGO family. Their names are **mission identities, not airframe configurations**: which airframe, wing, pack and kit
+serves each one is what the exploration has to find.
+
+| Line | Bird | Mission | Priorities |
+|---|---|---|---|
+| **BUTEO** | buzzard: a watchful perch hunter | point defence from a fixed perch or launch station | readiness, weather tolerance, reliable deployment, straightforward recovery |
+| **ARPELLA** | harrier: sustained patrol over open terrain | area defence, mission radius up to 10 km | endurance, efficient coverage, dependable communications, return reserves |
+| **ASTOR** | goshawk: a powerful, agile pursuit hunter | fast response; arrival time before patrol time | quick deployment, reliable prepared launch, rapid turnaround, predictable recovery |
+| **SPARFELL** | sparrowhawk (Breton *sparfell*) | portable field platform: backpack-carried, hand-launched by one person | low mass, compact packing, quick assembly, minimal equipment, rugged handling |
+
+## How to read this
+
+**Requirements are proposed, not agreed.** Every threshold and objective below is a proposal, to be confirmed with
+the client.
+- **Gate:** pass or fail. A design that fails a gate is not a candidate for that line.
+- **Threshold:** the least the client accepts. It scores 0.
+- **Objective:** the point where more stops paying. It scores 100.
+
+Scores are linear between threshold and objective and clipped at both ends. A line's score is the mean of its scored
+KPIs. Because the scale is absolute, a score moves only when the design changes.
+
+**Evidence: what is shown, and how.** Nothing in this document is flight-demonstrated or test-demonstrated. The
+"ARIGO-1H today" column says where each number comes from:
+
+| Mark | Meaning |
+|---|---|
+| **SIM** | Computed with ARIGO-1H's flight model: MuJoCo 6-DOF or point mass, on screening CFD (RANS, propellers off). It is a model result, not a measurement. |
+| **EST** | Computed, but driven by hand-estimated inputs: structure masses ±20 %, efficiencies, the radio link budget, kit masses and times, the sensor's cue range. |
+| **PROP** | Depends on a kit or feature that is proposed but not yet designed in CAD. Examples: the spring perch push-off, the charging perch, the parachute, the quick-release wing. |
+| **—** | Not yet assessed: no model exists. These need a Monte Carlo study, a test or a trial (see the last section). |
+
+**The configuration behind "ARIGO-1H today."** Each line's starting spec is ARIGO-1H plus that line's kit:
+
+| Line | Starting spec |
+|---|---|
+| BUTEO | ARIGO-1H + perch kit (spring push-off) + charging perch |
+| ARPELLA | ARIGO-1H + long-range radio, hand launch |
+| ASTOR | ARIGO-1H + rail + parachute. ARIGO-20 on a rail with a parachute is shown beside it. |
+| SPARFELL | ARIGO-1H, two-piece wing, 3S1P pack |
+
+The values are from the current models, in a container test run, not from your own stability run. The status column
+reads ✅ when the objective is met, ✔ when the threshold is met, and ✖ when the threshold is not met.
+
+**Common scenario assumptions (EST, proposed).**
+- The site's sensor cues a target at 3 km. The alert from cue to launch takes 2 s from a perch or launcher, and 10 s when a person launches by hand.
+- A low target flies at 50 m.
+- The perch is 15 m high.
+- A hand throw is 12 m/s.
+- The defended target flies straight at the site. Keep-out is the distance from the site at which the two meet.
+
+---
+
+## BUTEO — point defence from a perch or launch station
+
+**Gate**
+- **B-G1.** It launches from its station with no person present, and the launch succeeds in the sim. ARIGO-1H with the perch kit: **pass**, SIM + PROP.
+
+| ID | KPI (measure) | Priority | Threshold | Objective | ARIGO-1H today | Evidence | Status |
+|---|---|---|---|---|---|---|---|
+| B1 | Cue to safe flight (s): alert + launch to 10 m at 1.3 × stall | readiness | 12 | 3 | 5.0 | SIM + PROP | ✔ |
+| B2 | Watch time on station (h), camera and computer on, motor off | readiness | 2 | 24 (continuous) | 7.7 on its pack; 24+ with a charging perch | EST / PROP | ✔ / ✅ |
+| B3 | Perch height to spare (m): perch height − height the drop needs | reliable deployment | 0 | 6 | 4.3 with an 8 m/s spring push; 1.1 without | SIM + PROP | ✔ |
+| B4 | Launch success rate over a dispersion of wind, gusts and perch attitude (%) | reliable deployment | 95 | 99.5 | — | — | — |
+| B5 | Vertical gust that stalls it at loiter speed (m/s), quasi-steady (conservative) | weather | 3 | 6 | 2.5 | SIM | ✖ |
+| B6 | Operating wind: steady / gust (m/s) for launch, intercept and recovery | weather | 12 / 18 | 15 / 22 | — | — | — |
+| B7 | Wind that lifts it off the perch untethered (m/s). A perch latch makes this a design requirement instead. | weather | 15 | 30 | 31.7 | EST | ✅ |
+| B8 | Keep-out vs a 30 m/s drone cued at 3 km (m) | effect | 1000 | 2000 | 1748 | SIM + EST | ✔ |
+| B9 | Urban PN chase: time to close to 5 m (s) | effect | 15 | 3 | 10.5 | SIM | ✔ |
+| B10 | Touchdown energy (J), belly landing on the approach path | recovery | 300 | 40 | 174 | SIM | ✔ |
+| B11 | Miss from the landing aim point (m), calm air | recovery | 30 | 3 | 4.5 | SIM | ✔ |
+| B12 | Landed to ready again (s): pack, check, back on the perch | recovery | 600 | 120 | 120 | EST | ✅ |
+
+**Reading.** ARIGO-1H meets most BUTEO thresholds today. The clear gap is **gust tolerance (B5)**: at 18 m/s loiter,
+a 2.5 m/s vertical gust reaches the stall angle in the quasi-steady bound. The levers are:
+- a faster loiter, which trades away endurance (a minor priority for BUTEO);
+- a higher stall angle or a lower wing loading;
+- an autopilot gust margin.
+
+B4 and B6 have no model yet.
+
+---
+
+## ARPELLA — area patrol, out to 10 km
+
+**Gate**
+- **A-G1.** It meets a target 10 km out, chases at full power for 60 s, and comes home with at least 15 % of its usable pack, in a 10 m/s steady wind. ARIGO-1H: **pass** (wind limit 21 m/s), EST.
+
+| ID | KPI (measure) | Priority | Threshold | Objective | ARIGO-1H today | Evidence | Status |
+|---|---|---|---|---|---|---|---|
+| A1 | Endurance at best speed (min) | endurance | 45 | 120 | 74 | EST | ✔ |
+| A2 | Pack left after a 10 km mission, calm (%) | return reserves | 15 | 50 | 57.7 | EST | ✅ |
+| A3 | Steady wind in which the 10 km mission still returns with 15 % (m/s) | return reserves / weather | 8 | 15 | 21.2 | EST | ✅ |
+| A4 | Area covered per sortie (km²): a 60° camera from 100 m, at best-endurance speed | efficient coverage | 4 | 15 | 7.9 | EST | ✔ |
+| A5 | Transit: time to 10 km (s) | efficient coverage | 600 | 250 | 197 | SIM | ✅ |
+| A6 | Telemetry link margin at 10 km (dB), free space | communications | 10 | 20 | 33.5 | EST (radio values, not the airframe) | ✅ |
+| A7 | Link availability along the mission with terrain and clutter (%) | communications | 95 | 99.9 | — | — | — |
+| A8 | Open-field PN chase: time to close to 5 m (s) | effect | 20 | 8 | 11.8 | SIM | ✔ |
+| A9 | Touchdown energy (J), belly landing | recovery | 300 | 60 | 170 | SIM | ✔ |
+
+**Reading.** On paper, ARIGO-1H already over-delivers ARPELLA's 10 km radius: about 14 km going out at dash speed,
+about 27 km at economy speed. Its real gaps are **coverage per sortie** and **communications**. Coverage is mostly a
+sensor matter (swath and altitude). Communications is an avionics and relay matter, and A7 needs a terrain model.
+This line can trade some reserve for a lighter pack or a slower, quieter loiter.
+
+---
+
+## ASTOR — fast response from a prepared launcher
+
+**Gate**
+- **S-G1.** It launches from a prepared rail with no hand involved, and the launch succeeds in the sim. ARIGO-1H on a rail: **pass**, SIM + PROP. ARIGO-20 on a rail: **pass**, SIM + PROP.
+
+| ID | KPI (measure) | Priority | Threshold | Objective | ARIGO-1H today | ARIGO-20 today | Evidence |
+|---|---|---|---|---|---|---|---|
+| S1 | Cue to safe flight from the launcher (s) | quick deployment | 12 | 3 | 4.2 ✔ | 5.0 ✔ | SIM + PROP |
+| S2 | Arrival: time to 3 km (s) | arrival | 90 | 35 | 62.7 ✔ | 52.3 ✔ | SIM |
+| S3 | Arrival: time to 5 km (s) | arrival | 150 | 60 | 100.7 ✔ | 82.4 ✔ | SIM |
+| S4 | Time to 150 m height (s) | arrival | 20 | 6 | 10.8 ✔ | 11.1 ✔ | SIM |
+| S5 | Keep-out vs a 50 m/s fixed wing cued at 3 km (m) | effect | 1000 | 2000 | 1342 ✔ | 1452 ✔ | SIM + EST |
+| S6 | Can it tail-chase a 50 m/s target (top speed > 1.15 × 50 m/s)? | effect | no | yes | no | yes | SIM |
+| S7 | Full power on one pack (min) | arrival / pursuit | 1 | 6 | 5.7 ✔ | 2.8 ✔ | EST |
+| S8 | Launch success rate from the rail over dispersion (%) | reliable prepared launch | 98 | 99.9 | — | — | — |
+| S9 | Landed to ready again (s): pack + canopy repack | rapid turnaround | 900 | 180 | 360 ✔ | 360 ✔ | EST + PROP |
+| S10 | Recovery miss (m), parachute in a 6 m/s wind | predictable recovery | 30 | 3 | 15 ✔ | 15 ✔ | EST + PROP |
+| S11 | Touchdown energy under the parachute (J) | predictable recovery | 300 | 40 | 23 ✅ | 32 ✅ | EST + PROP |
+
+**Reading.** On arrival time, ARIGO-20 beats ARIGO-1H by only about 10–20 %, because the sensor cue and the alert
+time dominate. Its unique capability is **S6**: it is the only ARIGO that can chase a 50 m/s target from behind. It
+pays for that with half the full-power time and a heavier launcher and recovery set. Whether ASTOR needs S6 is a
+**client question**: what is the fastest target it must catch from behind?
+
+---
+
+## SPARFELL — one person, a backpack, a throw
+
+**Gates**
+- **P-G1.** One person can hand-launch it: mass ≤ 2 kg and the 12 m/s throw succeeds in the sim. ARIGO-1H on 3S1P: **pass**, SIM + EST.
+- **P-G2.** No launcher and no recovery equipment are needed. ARIGO-1H: **pass**.
+
+| ID | KPI (measure) | Priority | Threshold | Objective | ARIGO-1H today | Evidence | Status |
+|---|---|---|---|---|---|---|---|
+| P1 | Take-off mass (kg) | low mass | 1.8 | 0.9 | 1.57 | EST | ✔ |
+| P2 | Longest piece to carry (mm) | compact packing | 900 | 500 | 720 (two-piece wing) | EST + PROP | ✔ |
+| P3 | Assembly: from the bag to ready to throw (s) | quick assembly | 180 | 30 | 60 | EST + PROP | ✔ |
+| P4 | Throw margin: throw speed ÷ stall speed | minimal equipment | 0.9 | 1.3 | 1.03 | SIM + EST | ✔ |
+| P5 | Throw to safe flight (s) | quick deployment | 5 | 1.5 | 1.9 | SIM | ✔ |
+| P6 | Keep-out vs a 15 m/s quadcopter seen at 1 km, 10 s to throw (m) | effect | 200 | 700 | 601 | SIM + EST | ✔ |
+| P7 | Urban PN chase: time to close to 5 m (s) | effect | 15 | 3 | 17.3 | SIM | ✖ |
+| P8 | Endurance (min) | effect | 15 | 40 | 43 | EST | ✅ |
+| P9 | Touchdown energy (J), belly landing | rugged handling | 200 | 40 | 128 | SIM | ✔ |
+| P10 | Propulsor in a belly landing (folds clear = 100, folding strike = 50, fixed strike = 0) | rugged handling | 0 | 100 | 50: the folding propeller reaches 82 mm below the belly | EST (CAD) | ✔ |
+| P11 | Survives a 1 m drop onto a corner, and five belly landings without repair | rugged handling | pass | pass | — | — | — |
+
+**Reading.** ARIGO-1H is a heavy SPARFELL. It is light enough to throw, but 1.57 kg and 720 mm are far from the
+objectives. On the small pack it is also slower in the urban chase (**P7 fails**). The levers are lighter avionics, a
+smaller airframe and a propeller that clears the belly. The earlier test showed that a smaller airframe alone raises
+the stall speed, because the avionics do not shrink with it. SPARFELL is the line where ARIGO-1H is furthest from the
+objective.
+
+---
+
+## Not yet assessed: what each needs
+
+| KPI | What it needs |
+|---|---|
+| B4, S8: launch success rate | Monte Carlo over wind, gusts, perch or rail attitude, and push or rail speed, using the existing MuJoCo launch. A script; no new physics. |
+| B6: operating wind | Launch, landing and perch-hold in steady wind with gusts (MuJoCo wind field). A script. |
+| A7: link availability | A terrain and clutter line-of-sight model plus the radio's link budget. Outside the airframe models. |
+| P11: drop and landing survival | Physical tests on a built airframe. Until then a structural FEA of the belly and joints. |
+| B2, S9, P3: times | Trials with users and prototypes. The values above are estimates. |
+
+## Next
+
+1. **Agree the KPIs**: the thresholds and objectives above, which client questions need answering first (e.g. S6, B6), and the evidence each requires.
+2. **Model the missing KPIs**: Monte Carlo launch success (B4, S8) and operating wind (B6).
+3. **Explore** (`labs/aero/sims/arigo_explore.sh -j N`, ready to run): for each line, sweep the levers named above from ARIGO-1H. Take the winners to CFD and back.

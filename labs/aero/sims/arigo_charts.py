@@ -80,56 +80,55 @@ EXTRA = [("zigzag_share_within_10m", True), ("run_down_18_m_s_bandit_s", False)]
 # OBJECTIVE (where more stops paying), linear between, clipped. A score moves only when the aircraft changes, not when
 # the set of configurations does. All thresholds and objectives are HAND (the client's assumptions): tune them here.
 # (summary key, label, threshold, objective) — lower-is-better when objective < threshold; booleans 0/100.
-MISSIONS = {
-    "point_defence": ("Point defence from a perch (infrastructure)", [
-        ("keep_out_15_m_s_m", "keep-out vs 15 m/s quad (m)", 1500, 2500),
-        ("keep_out_30_m_s_m", "keep-out vs 30 m/s drone (m)", 1000, 2000),
-        ("time_to_1km_s", "time to 1 km (s)", 40, 15),
-        ("perch_height_needed_m", "perch drop height needed (m)", 30, 8),
-        ("urban_time_to_5m_s", "urban chase: time to 5 m (s)", 15, 3),
-        ("urban_share_within_10m", "urban chase: time within 10 m", 0.05, 0.40),
-        ("zigzag_time_to_5m_s", "zig-zag chase: time to 5 m (s)", 15, 4),
-        ("perch_lift_off_wind_m_s", "wind that lifts it off the perch (m/s)", 15, 30)]),
-    "area_defence": ("Area defence, up to 10 km out", [
-        ("radius_dash_km", "radius, dash out (km)", 5, 10),
-        ("time_to_5km_s", "time to 5 km (s)", 150, 70),
-        ("keep_out_30_m_s_m", "keep-out vs 30 m/s drone (m)", 1000, 2000),
-        ("open_field_time_to_5m_s", "open-field chase: time to 5 m (s)", 20, 8),
-        ("open_field_share_within_10m", "open-field chase: time within 10 m", 0.10, 0.50)]),
-    "fast_intercept": ("Fast-target intercept", [
-        ("keep_out_50_m_s_m", "keep-out vs 50 m/s fixed wing (m)", 1000, 2000),
-        ("tail_chase_50_m_s", "can tail-chase a 50 m/s target", 0, 1),
-        ("time_to_150m_alt_s", "time to 150 m height (s)", 20, 6),
-        ("max_speed_m_s", "max level speed (m/s)", 40, 70),
-        ("full_power_min", "full power on one pack (min)", 1, 6)]),
-    "overwatch": ("Overwatch / spotter (occasional, wider area)", [
-        ("endurance_min", "endurance (min)", 30, 75),
-        ("power_at_endurance_W", "loiter power (W)", 90, 45),
-        ("best_glide_ratio", "best glide ratio", 7, 14),
-        ("min_speed_m_s", "stall speed (m/s)", 15, 10),
-        ("radius_economy_km", "radius, economy (km)", 10, 20)]),
-    "recovery": ("Recovery: landing and reuse", [
-        ("touchdown_energy_J", "touchdown energy (J)", 300, 100),
-        ("landing_miss_m", "miss from the aim point (m)", 30, 3),
-        ("landing_distance_m", "landing distance over 10 m (m)", 200, 60),
-        ("belly_safety", "propulsor in a belly landing (0-100)", 0, 100)]),
-    "backpack": ("Backpack: one defender, close quadcopter", [
-        ("mass_kg", "take-off mass (kg)", 1.8, 1.0),
-        ("packed_length_mm", "longest piece to carry (mm)", 900, 550),
-        ("throw_margin", "throw speed / stall speed", 0.9, 1.3),
-        ("takeoff_time_s", "time to safe flight (s)", 5, 1.5),
-        ("keep_out_close_m", "keep-out vs 15 m/s quad seen at 1 km (m)", 200, 700),
-        ("urban_time_to_5m_s", "urban chase: time to 5 m (s)", 15, 3),
-        ("endurance_min", "endurance (min)", 15, 40)]),
-    "field": ("Field handling: one person, no launcher", [
-        ("throwable", "hand-throwable (<= 2 kg, launch ok)", 0, 1),
-        ("throw_margin", "throw speed / stall speed", 0.85, 1.2),
-        ("mass_kg", "take-off mass (kg)", 2.5, 1.4),
-        ("takeoff_time_s", "time to safe flight (s)", 6, 1.5)]),
+MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidence and the gates are there)
+    "buteo": ("BUTEO: point defence from a perch or launch station", [
+        ("cue_to_safe_s", "B1 readiness: cue to safe flight (s)", 12, 3),
+        ("standby_h", "B2 readiness: watch on station (h)", 2, 24),
+        ("perch_margin_m", "B3 deployment: perch height to spare (m)", 0, 6),
+        ("gust_stall_m_s", "B5 weather: vertical gust that stalls it at loiter (m/s)", 3, 6),
+        ("perch_lift_off_wind_m_s", "B7 weather: wind that lifts it off the perch (m/s)", 15, 30),
+        ("keep_out_30_m_s_m", "B8 effect: keep-out vs a 30 m/s drone (m)", 1000, 2000),
+        ("urban_time_to_5m_s", "B9 effect: urban chase, time to 5 m (s)", 15, 3),
+        ("touchdown_energy_J", "B10 recovery: touchdown energy (J)", 300, 40),
+        ("landing_miss_m", "B11 recovery: miss from the aim point (m)", 30, 3),
+        ("turnaround_s", "B12 recovery: landed to ready (s)", 600, 120)]),
+    "arpella": ("ARPELLA: area patrol out to 10 km", [
+        ("endurance_min", "A1 endurance (min)", 45, 120),
+        ("reserve_10km_pct", "A2 pack left after a 10 km mission (%)", 15, 50),
+        ("wind_limit_10km_m_s", "A3 wind for the 10 km mission (m/s)", 8, 15),
+        ("coverage_km2", "A4 coverage per sortie (km2)", 4, 15),
+        ("time_to_10km_s", "A5 time to 10 km (s)", 600, 250),
+        ("link_margin_10km_db", "A6 link margin at 10 km (dB)", 10, 20),
+        ("open_field_time_to_5m_s", "A8 open-field chase, time to 5 m (s)", 20, 8),
+        ("touchdown_energy_J", "A9 recovery: touchdown energy (J)", 300, 60)]),
+    "astor": ("ASTOR: fast response from a prepared launcher", [
+        ("cue_to_safe_s", "S1 cue to safe flight (s)", 12, 3),
+        ("time_to_3km_s", "S2 time to 3 km (s)", 90, 35),
+        ("time_to_5km_s", "S3 time to 5 km (s)", 150, 60),
+        ("time_to_150m_alt_s", "S4 time to 150 m height (s)", 20, 6),
+        ("keep_out_50_m_s_m", "S5 keep-out vs a 50 m/s fixed wing (m)", 1000, 2000),
+        ("tail_chase_50_m_s", "S6 can tail-chase a 50 m/s target", 0, 1),
+        ("full_power_min", "S7 full power on one pack (min)", 1, 6),
+        ("turnaround_s", "S9 landed to ready (s)", 900, 180),
+        ("landing_miss_m", "S10 recovery miss (m)", 30, 3),
+        ("touchdown_energy_J", "S11 touchdown energy (J)", 300, 40)]),
+    "sparfell": ("SPARFELL: one person, a backpack, a throw", [
+        ("mass_kg", "P1 mass (kg)", 1.8, 0.9),
+        ("packed_length_mm", "P2 longest piece to carry (mm)", 900, 500),
+        ("assembly_s", "P3 assembly (s)", 180, 30),
+        ("throw_margin", "P4 throw speed / stall speed", 0.9, 1.3),
+        ("takeoff_time_s", "P5 throw to safe flight (s)", 5, 1.5),
+        ("keep_out_close_m", "P6 keep-out vs a 15 m/s quad seen at 1 km (m)", 200, 700),
+        ("urban_time_to_5m_s", "P7 urban chase, time to 5 m (s)", 15, 3),
+        ("endurance_min", "P8 endurance (min)", 15, 40),
+        ("touchdown_energy_J", "P9 rugged: touchdown energy (J)", 200, 40),
+        ("belly_safety", "P10 rugged: propulsor in a belly landing (0-100)", 0, 100)]),
 }
-# the client's mix (HAND): mostly point defence of infrastructure from a perch; sometimes up to 10 km; rarely long patrol
-CLIENT_WEIGHTS = {"point_defence": 0.40, "recovery": 0.20, "field": 0.15, "area_defence": 0.15, "fast_intercept": 0.05,
-                  "overwatch": 0.05}                              # the family's mix; each product has its own (arigo_products)
+# the gates (pass/fail; KPIS.md): a spec failing its line's gate scores 0 for that line
+GATES = {"buteo": [("launch", lambda v: v in ("perch", "site launcher"))],
+         "arpella": [("wind_limit_10km_m_s", lambda v: v is not None and v >= 10.0)],
+         "astor": [("launch", lambda v: v == "site launcher")],
+         "sparfell": [("throwable", lambda v: bool(v))]}
 
 
 def mission_score(v, thr, obj):
@@ -141,7 +140,7 @@ def mission_score(v, thr, obj):
 
 
 def mission_kpi(cards: dict) -> dict:
-    """Per configuration: each mission's score (mean of its metrics) and the client score (CLIENT_WEIGHTS)."""
+    """Per configuration: each product mission's score (the mean of its metrics) and the best fit."""
     out = {}
     for k, c in cards.items():
         s = c.get("summary") or {}
@@ -158,9 +157,9 @@ def mission_kpi(cards: dict) -> dict:
                     v = 1.0 if v else 0.0
                 per[key] = mission_score(v, thr, obj)
                 sc.append(per[key])
-            mis[m] = round(float(np.mean(sc)), 1)
-        client = round(sum(CLIENT_WEIGHTS[m] * mis[m] for m in CLIENT_WEIGHTS), 1)
-        out[k] = {"name": c["aircraft"], "client": client, **mis, "per_metric": per,
+            gated = all(f(s.get(k_)) for k_, f in GATES.get(m, []))
+            mis[m] = round(float(np.mean(sc)), 1) if gated else 0.0
+        out[k] = {"name": c["aircraft"], **mis, "per_metric": per,
                   "best_at": max(MISSIONS, key=lambda m: mis[m])}
     return out
 
@@ -268,7 +267,7 @@ def charts(path: Path) -> list:
     except Exception as exc:                                    # noqa: BLE001  older card files have no products
         PS = {}
         print("no product scores:", exc)
-    doc["kpi_missions_rule"] = {"weights": CLIENT_WEIGHTS, "metrics": {m: [{"key": a, "label": b, "threshold": t, "objective": o}
+    doc["kpi_missions_rule"] = {"metrics": {m: [{"key": a, "label": b, "threshold": t, "objective": o}
                                                                          for a, b, t, o in it] for m, (_, it) in MISSIONS.items()},
                                 "note": "0 at the threshold, 100 at the objective, linear, clipped; HAND values"}
     path.write_text(yaml.safe_dump(json.loads(json.dumps(doc, default=str)), sort_keys=False, width=140))
@@ -313,8 +312,8 @@ def charts(path: Path) -> list:
 
     # 2b. mission fit: configurations x missions (absolute scores), and the client score
     if MK:
-        mk = sorted(MK, key=lambda k: -MK[k]["client"])
-        cols_ = list(MISSIONS) + ["client"]
+        mk = sorted(MK, key=lambda k: -max(MK[k][m] for m in MISSIONS))
+        cols_ = list(MISSIONS)
         M = np.array([[MK[k][c] for c in cols_] for k in mk])
         fig, ax = plt.subplots(figsize=(13, 1.6 + 0.42 * len(mk)), facecolor=SURFACE)
         from matplotlib.colors import LinearSegmentedColormap
@@ -323,24 +322,22 @@ def charts(path: Path) -> list:
         for i in range(M.shape[0]):
             for j in range(M.shape[1]):
                 ax.text(j, i, f"{M[i, j]:.0f}", ha="center", va="center", fontsize=8,
-                        color="white" if M[i, j] > 55 else INK, fontweight="bold" if j == len(cols_) - 1 else None)
+                        color="white" if M[i, j] > 55 else INK, fontweight="bold" if M[i, j] == M[i].max() else None)
         ax.set_xticks(range(len(cols_)))
-        ax.set_xticklabels([MISSIONS[c][0].split(" (")[0].replace(", up to 10 km out", " (<=10 km)") if c in MISSIONS else
-                            "CLIENT (weighted)" for c in cols_], fontsize=8, rotation=20, ha="right")
+        ax.set_xticklabels([MISSIONS[c][0].split(":")[0] for c in cols_], fontsize=9)
         ax.set_yticks(range(len(mk)))
         ax.set_yticklabels([MK[k]["name"] for k in mk], fontsize=8)
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title("Mission fit: absolute scores (0 = the client's threshold, 100 = the objective); "
-                     "client = " + ", ".join(f"{int(w * 100)}% {m.replace('_', ' ')}" for m, w in CLIENT_WEIGHTS.items()),
-                     fontsize=9, loc="left", color=INK)
+        ax.set_title("Product fit: each configuration on each product's mission (absolute: 0 = the client's threshold, "
+                     "100 = the objective; bold = its best fit)", fontsize=9, loc="left", color=INK)
         fig.suptitle(f"ARIGO family: which product for what — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
         fig.tight_layout(rect=(0, 0, 1, 0.95))
         out.append(stem.parent / f"{stem.name}_missions.png")
         fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
         plt.close(fig)
 
-    # 2c. products: each product's candidates on the product's own score (its missions, its weights)
+    # 2c. products: each product's candidates on its own mission score
     PS = {k: v for k, v in PS.items() if v["candidates"]}
     if PS:
         fig, axs = plt.subplots(1, len(PS), figsize=(4.6 * len(PS), 1.8 + 0.5 * max(len(v["candidates"]) for v in PS.values())),
@@ -348,7 +345,7 @@ def charts(path: Path) -> list:
         for ax, (pk, pr) in zip(axs[0], PS.items()):
             rows = pr["candidates"]
             _bars(ax, [r["name"] for r in rows], [r["score"] for r in rows], "score")
-            _style(ax, f"{pr['title']}\n" + ", ".join(f"{int(w * 100)}% {m.replace('_', ' ')}" for m, w in pr["weights"].items()), "score")
+            _style(ax, f"{pr['title']} ({pr['role']})\n{pr['priorities']}", "score")
             ax.title.set_fontsize(8)
             ax.set_xlim(0, 115)
         fig.suptitle(f"ARIGO products: the candidates for each product (absolute mission scores) — {sub}", x=0.01, ha="left",

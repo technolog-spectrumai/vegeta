@@ -54,18 +54,21 @@ def _unit(entry_id, power_w, layout):
 
 
 @lru_cache(maxsize=None)
-def select(propulsion: str, mass_kg: float, cd0: float, S: float) -> dict:
-    """The propulsor for a configuration: entry id, layout, units, power per unit, and why."""
+def select(propulsion: str, mass_kg: float, cd0: float, S: float, power_w: float | None = None,
+           v_dash: float | None = None) -> dict:
+    """The propulsor for a configuration: entry id, layout, units, power per unit, and why. ``power_w`` (per unit)
+    and ``v_dash`` override the class values (a product's smaller or bigger motor)."""
     k = kind_of(propulsion)
     n = 1 if k == "single" else 2
     lay = layout_of(propulsion)
     W = mass_kg * 9.80665
-    Vc, Vd = V_CRUISE[k], V_DASH[k]
+    Vc, Vd = V_CRUISE[k], (v_dash or V_DASH[k])
+    PW = power_w or POWER_W[k]
     q = lambda V: 0.5 * 1.225 * V * V
     drag = lambda V: q(V) * S * (cd0 + 0.08 * (W / (q(V) * S)) ** 2)        # HAND polar for the choice only
     best = None
     for e in _candidates(k):
-        u = _unit(e["id"], POWER_W[k], lay)
+        u = _unit(e["id"], PW, lay)
         T0, Td = n * u.full(0.0)[0], n * u.full(Vd)[0]
         if T0 < STATIC_TW * W or Td < drag(Vd):
             continue
@@ -75,7 +78,7 @@ def select(propulsion: str, mass_kg: float, cd0: float, S: float) -> dict:
     if best is None:
         raise ValueError(f"no library propulsor meets the requirements for {propulsion}")
     Pc, eid, T0, Td = best
-    return {"entry": eid, "layout": lay if k != "edf" else "fan", "units": n, "power_w_per_unit": POWER_W[k],
+    return {"entry": eid, "layout": lay if k != "edf" else "fan", "units": n, "power_w_per_unit": PW,
             "static_thrust_N": round(T0, 1), "thrust_at_dash_N": round(Td, 1), "dash_speed_m_s": Vd,
             "cruise_power_W": round(Pc, 1), "cruise_speed_m_s": Vc,
             "why": f"least cruise power among the library's {'70 mm fans' if k == 'edf' else ('9' if k == 'twin' else '10') + '-inch 2-blade propellers'} "

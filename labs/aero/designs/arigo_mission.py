@@ -32,6 +32,10 @@ OBSTACLE_M = 10.0                 # the landing distance is over a 10 m obstacle
 CHASE_S = 60.0                    # HAND: full power at the target (the terminal chase) for the radius of action
 RESERVE = 0.15                    # HAND: pack reserve at the return
 HAND_MASS_KG = 2.0                # HAND: what one person throws comfortably and repeatably
+GUST_M_S = 5.0                    # HAND: a sharp vertical gust (turbulence near buildings, a storm front)
+SWATH_M = 2 * 100.0 * math.tan(math.radians(30.0))   # HAND: a 60-degree camera from 100 m: the patrol's swath
+P_STANDBY_W = 10.0                # HAND: on the perch, motor off: camera, vision computer, radio
+LINK = {"tx_dBm": 30.0, "ant_air_dBi": 2.0, "ant_ground_dBi": 8.0, "freq_MHz": 900.0, "sens_dBm": -105.0}  # HAND telemetry
 CLOSE_DETECT_M = 1000.0           # HAND: a dismounted defender sees / hears a quadcopter at 1 km
 
 
@@ -299,6 +303,7 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
         out["belly"] = {**(out.get("belly") or {}), "risk": "under a parachute: propulsor stopped, a slow, level touchdown",
                         "parachute": True}
     out["equipment"] = eq
+    out["product"] = product_metrics(C, pm, out)
     return out
 
 
@@ -346,7 +351,9 @@ def summary(ms) -> dict:
             "propulsor_clearance_mm": (ms.get("belly") or {}).get("propulsor_clearance_mm"),
             "belly_safety": belly_score(ms.get("belly") or {}), "full_power_min": ms["radius"]["full_power_min"],
             "throwable": ms["hand"]["throwable"], "throw_margin": ms["hand"]["throw_margin"],
-            "perch_lift_off_wind_m_s": ms["perch"]["lift_off_wind_m_s"]}
+            "perch_lift_off_wind_m_s": ms["perch"]["lift_off_wind_m_s"],
+            **{k: v for k, v in ms["product"].items() if k != "gust"}, "gust_margin_deg": ms["product"]["gust"]["margin_deg"],
+            "gust_stall_m_s": ms["product"]["gust"]["stall_gust_m_s"]}
 
 
 def belly_score(b) -> float | None:
@@ -376,3 +383,93 @@ def setup_of(name):
         return a2.Arigo2, a2.variant(w), "twin"
     prop = "pusher" if name.startswith("ARIGO-1") else ("tractor" if "strut" in name else "tractor_lowcam")
     return a1.Arigo1, a1.variant(w, prop), prop
+
+
+
+# ------------------------------------------------------------------------------------------------ weather, energy, coverage
+def _levels(C):
+    """Level-flight battery power over speed: (speeds, powers) on the polar; full-power draw at 80 % of the top speed."""
+    P = _perf()
+    cd_of, _ = P.polar(C)
+    W, S = C["mass"] * am.G, C["S"]
+    pm_V = np.linspace(8.0, 70.0, 125)
+    Ps = []
+    for V in pm_V:
+        q = 0.5 * am.RHO * V * V
+        D = q * S * cd_of(W / (q * S))
+        Ps.append(P.electrical_power(C, D, V) if P.thrust(C, V) > D else np.inf)
+    return pm_V, np.array(Ps)
+
+
+def mission_energy(C, pm, R_m, wind=0.0, chase_s=CHASE_S):
+    """Energy [J] for a target R_m out and home in a steady wind (head one way, tail the other: each leg at its best
+    speed), with chase_s at full power; inf if it cannot make headway."""
+    rr = radius_of_action(C, pm)
+    Vs, Ps = _levels(C)
+    ok = np.isfinite(Ps) & (Vs > 1.15 * pm["min_speed_stall_m_s"])
+    Vs, Ps = Vs[ok], Ps[ok]
+    head = [R_m / (v - wind) * p for v, p in zip(Vs, Ps) if v - wind > 1.0]
+    tail = [R_m / (v + wind) * p for v, p in zip(Vs, Ps)]
+    if not head:
+        return math.inf
+    return min(head) + min(tail) + rr["full_power_W"] * chase_s
+
+
+def reserve_at(C, pm, R_m, wind=0.0) -> float:
+    """The share of the usable pack left after a target R_m out (and home) [%]."""
+    E, _, _ = _perf().pack(C)
+    return round(100.0 * (1.0 - mission_energy(C, pm, R_m, wind) / (E * 3600.0)), 1)
+
+
+def wind_limit(C, pm, R_m) -> float:
+    """The steadiest wind [m/s] in which a target R_m out can still be met and the aircraft come home with RESERVE."""
+    E, _, _ = _perf().pack(C)
+    E_ok = E * 3600.0 * (1.0 - RESERVE)
+    lo, hi = 0.0, 40.0
+    if mission_energy(C, pm, R_m, 0.0) > E_ok:
+        return 0.0
+    for _ in range(30):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if mission_energy(C, pm, R_m, mid) <= E_ok else (lo, mid)
+    return round(lo, 1)
+
+
+def gust_margin(C, pm) -> dict:
+    """At the loiter speed: the angle of attack left to the stall after a GUST_M_S vertical gust [deg], and the
+    vertical gust that takes it to the stall [m/s] (quasi-steady: no gust alleviation, a conservative bound)."""
+    P = _perf()
+    V = pm["energy"]["endurance_speed_m_s"]
+    W, S = C["mass"] * am.G, C["S"]
+    CLr = W / (0.5 * am.RHO * V * V * S)
+    als = np.radians(np.linspace(-4.0, math.degrees(C["alpha_stall"]), 80))
+    cl = np.maximum.accumulate([P._lift_drag(C, V, a)[0] for a in als])
+    a_trim = float(np.degrees(np.interp(CLr, cl, als)))
+    d = math.degrees(math.atan(GUST_M_S / V))
+    left = math.radians(max(0.0, math.degrees(C["alpha_stall"]) - a_trim))
+    return {"loiter_speed_m_s": V, "alpha_trim_deg": round(a_trim, 1), "gust_deg": round(d, 1),
+            "margin_deg": round(math.degrees(C["alpha_stall"]) - a_trim - d, 1),
+            "stall_gust_m_s": round(V * math.tan(left), 1)}
+
+
+def link_margin(R_m=10000.0) -> float:
+    """Telemetry link margin [dB] at R_m, free space (HAND radio values in LINK; the airframe does not enter)."""
+    L = 20 * math.log10(R_m / 1000.0) + 20 * math.log10(LINK["freq_MHz"]) + 32.44
+    return round(LINK["tx_dBm"] + LINK["ant_air_dBi"] + LINK["ant_ground_dBi"] - L - LINK["sens_dBm"], 1)
+
+
+def product_metrics(C, pm, ms) -> dict:
+    """The products' extra metrics: readiness, weather, reserves, coverage, turnaround, assembly."""
+    import arigo_products as ap
+    eq = C.get("equipment") or {}
+    E, _, _ = _perf().pack(C)
+    en = pm["energy"]
+    alert = HAND_ALERT_S if ms["site_launch"] == "hand" else ALERT_S
+    rec = eq.get("recovery", "belly")
+    return {"cue_to_safe_s": round(alert + ms["site_launch_time_s"], 1),
+            "standby_h": 24.0 if eq.get("charging") else round(E / P_STANDBY_W, 1),
+            "wind_limit_3km_m_s": wind_limit(C, pm, 3000.0), "wind_limit_10km_m_s": wind_limit(C, pm, 10000.0),
+            "gust": gust_margin(C, pm), "reserve_10km_pct": reserve_at(C, pm, 10000.0),
+            "coverage_km2": round(SWATH_M * en["endurance_speed_m_s"] * en["endurance_min"] * 60.0 * (1 - RESERVE) / 1e6, 1),
+            "link_margin_10km_db": link_margin(10000.0),
+            "turnaround_s": ap.TURNAROUND_S.get(rec, 120.0), "assembly_s": eq.get("assembly_s", ap.ASSEMBLY_S),
+            "perch_margin_m": round(PERCH_HEIGHT_M - ms["perch"]["height_needed_m"], 1)}
