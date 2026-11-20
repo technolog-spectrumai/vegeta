@@ -5,7 +5,7 @@ as a subprocess; its output goes to ``labs/aero/sims/output/arigo_all.log``, and
 its "already done (kept), M to run" line drive the bar. The bar counts estimated seconds, not items — a CFD case
 weighs ~100 stability runs — so its time left is a real estimate; it learns each kind's actual pace as it goes.
 
-    python labs/aero/sims/arigo_all.py [processors] [ARIGO-0 ARIGO-1 ...] [--stability-only] [--full-cfd] [--skip-video] [--skip-cfd] [--fresh]
+    python labs/aero/sims/arigo_all.py [-j N | --cpu N] [ARIGO-0 ARIGO-1 ...] [--stability-only] [--full-cfd] [--skip-video] [--skip-cfd] [--fresh]
 
 ``--full-cfd``: the CFD at ``fine`` quality (finer mesh, 600 iterations, tighter residuals: converged numbers; several
 times longer, ~5-8 min a case) into separate files ``arigo*_fine_cfd.yaml`` — the screening results are kept.
@@ -58,7 +58,8 @@ def steps(want, a, np_):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("rest", nargs="*", help="[processors] [ARIGO-0 ARIGO-1 ARIGO-2 ARIGO-20]")
+    ap.add_argument("rest", nargs="*", help="[ARIGO-0 ARIGO-1 ARIGO-2 ARIGO-20] (default: all)")
+    ap.add_argument("-j", "--cpu", type=int, default=8, help="cores for the CFD (default 8)")
     ap.add_argument("--stability-only", action="store_true")
     ap.add_argument("--full-cfd", action="store_true", help="CFD at fine quality (long) into arigo*_fine_cfd.yaml")
     ap.add_argument("--skip-video", action="store_true", default=bool(os.environ.get("SKIP_VIDEO")))
@@ -67,10 +68,10 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.stability_only:
         a.skip_video = a.skip_cfd = True
-    np_ = 8
+    np_ = a.cpu
     want = []
     for r in a.rest:
-        if r.isdigit():
+        if r.isdigit():                                            # the old positional form, still accepted
             np_ = int(r)
         else:
             want.append(r.upper())
