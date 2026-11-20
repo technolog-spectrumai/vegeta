@@ -15,7 +15,7 @@ from functools import lru_cache
 import arigo1_model as am
 import arigo20 as a20
 
-MASS = 2.7
+MASS = 2.7                         # fallback only: the mass comes from arigo_mass
 THRUST = {"T0_N": 40.0, "V0_m_s": 70.0}
 CD0 = 0.034
 CRUISE = 30.0
@@ -26,7 +26,10 @@ def coefficients() -> dict:
     q = a20.variant()
     p = a20.resolve(q)
     L = a20.Arigo20.layout(p)
-    C = am.build(q, p, L, "arigo20", "edf", mass=MASS, CD0=CD0, thrust=dict(THRUST))
+    import arigo_mass
+    mb = arigo_mass.budget("edf", p, L)
+    C = am.build(q, p, L, "arigo20", "edf", mass=mb["total_g"] / 1000.0, CD0=CD0, thrust=dict(THRUST))
+    C["mass_budget"] = mb
     C.update({"aircraft": "ARIGO-20", "aero_source": "model (lattice + hand)", "thrust_z_m": (p["edf_z"] / 1e3 - C["z_cg_m"]),
               "y_motor_m": p["edf_y"] / 1e3})
     t = cfd_table(C)

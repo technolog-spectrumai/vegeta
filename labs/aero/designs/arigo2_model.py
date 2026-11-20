@@ -18,8 +18,12 @@ import arigo2 as a2
 
 @lru_cache(maxsize=None)
 def coefficients(wing: str = "hybrid") -> dict:
+    import arigo_mass
     C = dict(am.coefficients(wing, "twin"))
     p = a2.resolve(a2.variant(wing))
+    mb = arigo_mass.budget("twin", p, a2.Arigo2.layout(p))
+    k = mb["total_g"] / 1000.0 / C["mass"]                     # ARIGO-2's own budget (its nacelles and props) over the sketch's
+    C.update({"mass": mb["total_g"] / 1000.0, "inertia": tuple(i * k for i in C["inertia"]), "mass_budget": mb})
     C.update({"aircraft": "ARIGO-2", "y_motor_m": p["nacelle_y"] / 1e3, "per_motor_T0_N": 0.5 * C["thrust"]["T0_N"]})
     return C
 

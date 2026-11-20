@@ -24,7 +24,7 @@ import numpy as np
 import arigo1 as a1
 
 RHO, G = 1.225, 9.80665
-MASS = 2.5                          # HAND: the brief's 2-3 kg, middle; no mass budget yet (+-0.5 kg)
+MASS = 2.5                          # fallback only: the models take their mass from arigo_mass (empty + the default pack)
 STATIC_MARGIN = 0.12                # the CG put 12 % MAC ahead of the lattice's neutral point (the fuselage's
                                     # destabilising share, about 3-6 % MAC, is NOT in the lattice: the real margin is smaller)
 CL_MAX_2D = 1.25                    # HAND: NACA 2412-like at Re 3e5 (NeuralFoil/XFOIL class value, +-0.1)
@@ -148,7 +148,12 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     static margin. Each entry's source is in ``sources``."""
     q = a1.variant(variant, propulsion)
     p = a1.resolve(q)
-    return build(q, p, a1.Arigo1.layout(p), variant, propulsion)
+    import arigo_mass
+    L = a1.Arigo1.layout(p)
+    mb = arigo_mass.budget(propulsion, p, L)
+    C = build(q, p, L, variant, propulsion, mass=mb["total_g"] / 1000.0)
+    C["mass_budget"] = mb
+    return C
 
 
 def build(q, p, L, variant, propulsion, mass=None, CD0=None, thrust=None) -> dict:

@@ -44,6 +44,7 @@ PROPS = [  # (summary key, label, unit, higher is better)
     ("run_down_14_m_s_bandit_s", "Run down a 14 m/s bandit", "s", False),
     ("zigzag_closest_m", "Zig-zag chase: closest", "m", False),
     ("endurance_min", "Endurance (best speed)", "min", True),
+    ("mass_kg", "Take-off mass (budget, default pack)", "kg", False),
     ("range_km", "Range (still air)", "km", True),
 ]
 GENERAL = ["max_speed_m_s", "min_speed_m_s", "max_climb_m_s", "best_sustained_turn_deg_s", "tightest_sustained_radius_m",
@@ -144,7 +145,7 @@ def charts(path: Path) -> list:
     rows = (n + cols - 1) // cols
     fig, axs = plt.subplots(rows, cols, figsize=(15, 3.2 + 0.28 * len(keys) * rows), facecolor=SURFACE)
     for ax, (key, lab, unit, hi) in zip(axs.flat, PROPS):
-        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km") else "{:.0f}")
+        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km", "kg") else "{:.0f}")
         _style(ax, f"{lab} ({'higher' if hi else 'lower'} is better)", unit)
     for ax in list(axs.flat)[n:]:
         ax.set_visible(False)

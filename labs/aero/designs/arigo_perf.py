@@ -22,8 +22,7 @@ import arigo1_mujoco as amj
 
 N_MAX = 6.0                       # HAND: structural limit
 # energy (endurance and range): the pack, the efficiencies, the avionics
-PACK_PROP = "liion-3s2p-p42a"     # ARIGO-0/1/2: Li-ion 3S2P Molicel P42A, 8400 mAh, 450 g (ogma.batteries; 90 A pack)
-PACK_EDF_WH = 22.2 * 4.0          # HAND: ARIGO-20, a 6S 4000 mAh LiPo (~600 g, 30C+): the fans need ~2 x 60 A; not in the catalogue
+# the packs and the masses: arigo_mass (the default pack is in each model's mass)
 USABLE = 0.85                     # HAND: usable share of the nominal energy (Li-ion to 3.0 V/cell under load, ageing) +-0.05
 ETA_PROFILE = 0.80                # HAND: propeller profile + swirl losses on top of the ideal (actuator-disc) efficiency +-0.05
 ETA_FAN = 0.80                    # HAND: ducted fan rotor+stator efficiency on top of the ideal (jet) efficiency +-0.05
@@ -93,17 +92,19 @@ def point_mass(C) -> dict:
             "corner_speed_m_s": round(math.sqrt(N_MAX * W / (q(1.0) * S * cl_max)), 1),
             "best_sustained_turn": best_s, "best_instant_turn": best_i, "turns": turns,
             "run_down": run_down(C, cd_of, Vmax),
-            "energy": energy(C, cd_of, Vs, Vmax)}
+            "energy": energy(C, cd_of, Vs, Vmax),
+            "mass_budget": C.get("mass_budget"),
+            "pack_trade": pack_trade(C, cd_of)}
 
 
-def pack(C):
-    """(usable energy [Wh], description)."""
-    if C.get("propulsion") == "edf":
-        return PACK_EDF_WH * USABLE, f"6S 4000 mAh LiPo (hand), {PACK_EDF_WH:.0f} Wh nominal, {USABLE:.0%} usable"
-    from ogma.batteries import BATTERIES
-    b = next(x for x in BATTERIES if x.key == PACK_PROP)
-    wh = b.cells * b.cell_v_nominal * b.capacity_mah / 1000.0
-    return wh * USABLE, f"{b.name}, {wh:.0f} Wh nominal, {USABLE:.0%} usable"
+def pack(C, name=None):
+    """(usable energy [Wh], description, pack mass [kg]) of the configuration's pack (``arigo_mass``), or of ``name``."""
+    import arigo_mass
+    mb = C["mass_budget"]
+    k = arigo_mass.kind_of(C.get("propulsion", ""))
+    nm = name or mb["pack"]["name"]
+    g, wh, _, src = arigo_mass.packs(k)[nm]
+    return wh * USABLE, f"{nm}, {wh:.0f} Wh nominal, {USABLE:.0%} usable, {g:.0f} g ({src})", g / 1000.0
 
 
 def disc_area(C):
@@ -135,10 +136,26 @@ def electrical_power(C, T, V):
     return T * V / max(eta, 1e-3) / ETA_DRIVE + P_AVIONICS_W
 
 
-def energy(C, cd_of, Vs, Vmax) -> dict:
+def pack_trade(C, cd_of) -> list:
+    """Every pack option on this airframe: the total mass, the stall speed, endurance and range it gives."""
+    import arigo_mass
+    mb = C["mass_budget"]
+    out = []
+    for nm in arigo_mass.packs(arigo_mass.kind_of(C.get("propulsion", ""))):
+        m = (mb["empty_g"] + arigo_mass.packs(arigo_mass.kind_of(C.get("propulsion", "")))[nm][0]) / 1000.0
+        C2 = {**C, "mass": m}
+        cl_max = polar(C)[1]
+        Vs = math.sqrt(m * am.G / (0.5 * am.RHO * C["S"] * cl_max))
+        e = energy(C2, cd_of, Vs, C["thrust"]["V0_m_s"] * 0.9, pack_name=nm)
+        out.append({"pack": nm, "total_kg": round(m, 3), "stall_m_s": round(Vs, 1), "endurance_min": e["endurance_min"],
+                    "range_km": e["range_km"], "wing_loading_kg_m2": round(m / C["S"], 1), "default": nm == mb["pack"]["name"]})
+    return out
+
+
+def energy(C, cd_of, Vs, Vmax, pack_name=None) -> dict:
     """Endurance and still-air range on the pack: power required over speed (level, 1 g), the speed of least power
     (endurance) and of least energy per metre (range), and at cruise."""
-    E, what = pack(C)
+    E, what, _ = pack(C, pack_name)
     W, S = C["mass"] * am.G, C["S"]
     Vs_ = np.linspace(max(Vs * 1.15, 8.0), max(Vmax, Vs * 1.2), 120)            # 15 % above the stall: a usable margin
     P = np.array([electrical_power(C, 0.5 * am.RHO * V * V * S * cd_of(W / (0.5 * am.RHO * V * V * S)), V) for V in Vs_])
@@ -221,7 +238,9 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "yaw_rate_deg_s": out["mujoco"]["responses_at_cruise"]["yaw"]["peak_rate_deg_s"],
                       "run_down_14_m_s_bandit_s": pm["run_down"]["bandit_14_m_s"]["time_to_5m_s"],
                       "zigzag_closest_m": out["mujoco"]["zigzag_chase"]["closest_m"],
-                      "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"]}
+                      "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"],
+                      "mass_kg": round(C["mass"], 3), "pack": C["mass_budget"]["pack"]["name"],
+                      "best_endurance_pack": max(pm["pack_trade"], key=lambda r: r["endurance_min"])["pack"]}
     return out
 
 
