@@ -320,9 +320,17 @@ VARIANTS = {
 TAIL_SCALE = 1.35          # the tail grown proportionally from its first sizing (V_h 0.24-0.30 -> about 0.5): agility wants authority
 
 
+# CG moves for one layout on one wing (mm, + aft), after its CFD (the pack is placed to give it):
+# - ARIGO-0 hybrid (tractor, camera through the disc): the CFD margin in the cruise range was 6 % MAC (its Cm flat from
+#   4 to 8 deg); 15 mm forward (6.1 % MAC) brings it to ~12 % — the nose motor makes a forward CG easy to reach.
+CG_SHIFT_MM = {("hybrid", "tractor_lowcam"): -15.0}
+
+
 def variant(name: str = "hybrid", propulsion: str = "pusher", **over) -> dict:
     """A variant; the stabiliser's trailing edge 10 mm ahead of the fuselage's end (clear of the pusher's disc)."""
     q = {**VARIANTS[name], "propulsion": propulsion, **over}
+    if "cg_x" not in over and q.get("cg_x") and (name, propulsion) in CG_SHIFT_MM:
+        q["cg_x"] = q["cg_x"] + CG_SHIFT_MM[(name, propulsion)]
     q.setdefault("tail_le_x", q["fuselage_length"] - 10.0 - q.get("htail_root_chord", 230.0))
     return q
 

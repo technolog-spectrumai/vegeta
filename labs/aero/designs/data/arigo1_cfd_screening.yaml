@@ -1818,3 +1818,7 @@ processors: 8
 elapsed_s: 4468
 fingerprint: 412114271142cd36
 saved_at: '2026-11-19 05:53:02'
+stale:
+  goshawk_pusher: the goshawk's earlier geometry (700 mm fuselage, stabiliser in the wing's plane); superseded
+  goshawk_tractor: the goshawk's earlier geometry (700 mm fuselage, stabiliser in the wing's plane); superseded
+  goshawk_twin: the goshawk's earlier geometry (700 mm fuselage, stabiliser in the wing's plane); superseded

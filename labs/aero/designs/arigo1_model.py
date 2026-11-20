@@ -60,6 +60,14 @@ def clean_rows(rows):
     return rows
 
 
+def transfer(t: dict, dx_m: float, c: float) -> dict:
+    """The CFD's pitching moment moved to a CG ``dx_m`` aft of the one it was computed about: Cm += CN dx / c, CN the
+    normal-force coefficient (CL cos a + CD sin a). Same geometry, another balance — no new CFD needed."""
+    a = np.radians(t["alpha_deg"])
+    CN = t["CL"] * np.cos(a) + t["CD"] * np.sin(a)
+    return {**t, "Cm": t["Cm"] + CN * dx_m / c}
+
+
 def table(rows) -> dict:
     return {"alpha_deg": np.array([r["alpha_deg"] for r in rows], float), "CL": np.array([r["Cl"] for r in rows], float),
             "CD": np.array([r["Cd"] for r in rows], float), "Cm": np.array([r["Cm_cg"] for r in rows], float),
@@ -82,11 +90,15 @@ def cfd_table(variant: str, propulsion: str):
         if not cfg:
             continue
         ref = cfg.get("reference", {})
-        if abs(ref.get("S", 0) - C0["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C0["x_cg_m"] * 1e3) > 1.0:
-            continue                                              # computed for an earlier geometry: not this aircraft
+        if abs(ref.get("S", 0) - C0["S"]) > 1e-4:
+            continue                                              # computed for another wing: not this aircraft
         rows = clean_rows(cfg.get("rows", []))
         if len(rows) >= 6:
-            return {**table(rows), "file": f.name}
+            t = table(rows)
+            dx = C0["x_cg_m"] * 1e3 - ref.get("cg_mm", [0])[0]
+            if abs(dx) > 1.0:
+                t = transfer(t, dx / 1000.0, C0["c"])
+            return {**t, "file": f.name, "cg_transfer_mm": round(dx, 1)}
     return None
 
 

@@ -51,10 +51,14 @@ def cfd_table(C):
         return None
     d = yaml.safe_load(f.read_text()) or {}
     ref = d.get("reference", {})
-    if abs(ref.get("S", 0) - C["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C["x_cg_m"] * 1e3) > 1.0:
+    if abs(ref.get("S", 0) - C["S"]) > 1e-4:
         return None
     rows = am.clean_rows(d.get("rows", []))
-    return am.table(rows) if len(rows) >= 6 else None
+    if len(rows) < 6:
+        return None
+    t = am.table(rows)
+    dx = C["x_cg_m"] * 1e3 - ref.get("cg_mm", [0])[0]
+    return am.transfer(t, dx / 1000.0, C["c"]) if abs(dx) > 1.0 else t
 
 
 def get() -> dict:

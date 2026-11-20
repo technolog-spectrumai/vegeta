@@ -30,6 +30,9 @@ _OVERRIDE = {  # ARIGO-1 parameters with new defaults: the wing for 30-40 m/s, t
     "htail_span": 440.0, "htail_root_chord": 165.0, "htail_taper": 0.80, "htail_sweep_deg": 8.0,
     "fin_height": 130.0, "fin_root_chord": 150.0, "fin_taper": 0.70, "fin_sweep_deg": 20.0,
     "skid": True,
+    # the CG, after the first CFD: it measured a 19.5 % MAC margin at 349.2 mm (the lattice's 12 %): too stable for the
+    # agility wanted (and the elevator was over-powerful at that margin's trim); 14 mm aft (7 % MAC) -> ~12.5 %
+    "cg_x": 363.2,
 }
 _NEW = [
     Parameter("edf_diameter", 70.0, "mm", min=40.0, max=120.0, description="fan (rotor) diameter: the 70 mm class"),

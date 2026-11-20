@@ -25,8 +25,37 @@ def coefficients(wing: str = "hybrid") -> dict:
     k = mb["total_g"] / 1000.0 / C["mass"]                     # ARIGO-2's own budget (its nacelles and props) over the sketch's
     C.update({"mass": mb["total_g"] / 1000.0, "inertia": tuple(i * k for i in C["inertia"]), "mass_budget": mb})
     C.update({"aircraft": "ARIGO-2", "y_motor_m": p["nacelle_y"] / 1e3, "per_motor_T0_N": 0.5 * C["thrust"]["T0_N"]})
+    t = cfd_table(wing, C)
+    if t is not None:                                          # ARIGO-2's own CFD (nacelles, propellers off)
+        for k in ("cfd", "Cm_rig", "stabiliser_rig_deg", "static_margin_cfd"):
+            C.pop(k, None)
+        am.calibrate(C, t, 18.0)
+        C["aero_source"] = f"cfd (screening RANS, ARIGO-2's own, {t['file']})"
     C["thrust"] = am.propulsion_table("twin", C["mass"], C["CD0"], C["S"])     # ARIGO-2's mass
     return C
+
+
+def cfd_table(wing, C):
+    """ARIGO-2's propellers-off CFD (``data/arigo2_cfd_screening*.yaml``, ``<wing>_aero``), newest file first; the
+    moment moved to the current CG if it differs."""
+    import yaml
+    for f in sorted(am.DATA.glob("arigo2_cfd_screening*.yaml"), key=lambda f: f.name, reverse=True):
+        d = yaml.safe_load(f.read_text()) or {}
+        key = f"{wing}_aero"
+        if key in (d.get("stale") or {}):
+            continue
+        cfg = (d.get("configurations") or {}).get(key)
+        if not cfg or abs(cfg.get("reference", {}).get("S", 0) - C["S"]) > 1e-4:
+            continue
+        rows = am.clean_rows(cfg.get("rows", []))
+        if len(rows) < 6:
+            continue
+        t = am.table(rows)
+        dx = C["x_cg_m"] * 1e3 - cfg["reference"]["cg_mm"][0]
+        if abs(dx) > 1.0:
+            t = am.transfer(t, dx / 1000.0, C["c"])
+        return {**t, "file": f.name}
+    return None
 
 
 def thrusts(C: dict, u_air: float, t_left: float, t_right: float):

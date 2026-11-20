@@ -75,7 +75,11 @@ def case(workdir, wing="hybrid", *, alpha_deg=0.0, blown=False, V=SPEED, rpm=RPM
         af = ns.blade_section()
         th = math.radians(alpha_deg + p["down_thrust_deg"])
         (yl, z), (yr, _) = sorted(L["props"])                   # left (y < 0) first
-        cen = lambda y: (ac.to_flow(L["x_prop"], z, alpha_deg) + np.array([0.0, y / 1000.0, 0.0])).tolist()
+        # the disc ahead of the spinner: the first cases put its source zone (0.08 D thick) over the spinner and the
+        # nacelle's nose, where the solver's momentum source counted as a forward force on the airframe (drag 0.008-
+        # 0.014, below the propellers-off 0.032: impossible). Now centred clear of the spinner's tip, 3 mm margin.
+        x_disc = L["x_prop"] + 4.0 - 0.42 * p["nacelle_diameter"] - 0.04 * pr.diameter * 1000.0 - 3.0
+        cen = lambda y: (ac.to_flow(x_disc, z, alpha_deg) + np.array([0.0, y / 1000.0, 0.0])).tolist()
         alphas = np.unique(np.r_[np.arange(-180, -30, 10), np.arange(-30, 31, 1), np.arange(40, 181, 10)]).astype(float)
         cl, cd = af.coefficients(np.radians(alphas))
         params.update(disk1_center=cen(yl), disk2_center=cen(yr), disk_axis=[-math.cos(th), 0.0, -math.sin(th)], diameter=pr.diameter,
