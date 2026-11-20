@@ -226,7 +226,7 @@ def main(argv=None) -> int:
     ap.add_argument("--list", action="store_true", help="list the specs and exit")
     ap.add_argument("--samples", type=int, default=24, help="Monte Carlo launches per envelope (landings: a quarter, min 4)")
     ap.add_argument("--no-robust", action="store_true", help="skip the launch-success and operating-wind models")
-    ap.add_argument("--base-only", action="store_true", help="each line's starting spec only (plus ARIGO-20 for ASTOR)")
+    ap.add_argument("--base-only", "--baseline-only", dest="base_only", action="store_true", help="each line's starting spec only (plus ARIGO-20 for ASTOR)")
     a = ap.parse_args(argv)
     import arigo_products as AP
     want = [p.lower() for p in a.products] or list(AP.PRODUCTS)
