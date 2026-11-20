@@ -1,0 +1,377 @@
+% ============================================
+% biznesplan_selfcontained_watermark.sty
+% Self-contained Business Plan Style
+% Includes SpectrumAi-style common styling directly
+% No external spectrumai.sty dependency required
+% Includes i18n footer + configurable watermark
+% ============================================
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{biznesplan_i18n}[2026/08/16 Self-contained Business Plan Style with i18n and configurable watermark]
+
+% --------------------------------------------
+% Language handling
+% --------------------------------------------
+% Backward-compatible behaviour:
+%   - Existing documents that do not load babel themselves still default to Polish.
+%   - If the document already loaded babel (e.g. [english] or [polish]),
+%     this package respects the active document language and does NOT override it.
+%   - New optional package forms are supported:
+%       \usepackage[english]{biznesplan_i18n}
+%       \usepackage[polish]{biznesplan_i18n}
+%
+% Recommended for multilingual documents:
+%   \usepackage[english,polish]{babel}
+%   \selectlanguage{english}   % or polish
+%   \usepackage{biznesplan_i18n}
+
+\newif\ifBusinessPlanLanguageOptionGiven
+\newif\ifBusinessPlanEnglish
+\BusinessPlanLanguageOptionGivenfalse
+\BusinessPlanEnglishfalse
+\def\BusinessPlanRequestedLanguage{}
+
+\DeclareOption{english}{%
+  \BusinessPlanLanguageOptionGiventrue
+  \BusinessPlanEnglishtrue
+  \def\BusinessPlanRequestedLanguage{english}%
+}
+
+\DeclareOption{polish}{%
+  \BusinessPlanLanguageOptionGiventrue
+  \BusinessPlanEnglishfalse
+  \def\BusinessPlanRequestedLanguage{polish}%
+}
+
+% Ignore unknown options for backward compatibility with future extensions.
+\DeclareOption*{%
+  \PackageWarning{biznesplan_i18n}{Unknown option `\CurrentOption' ignored}%
+}
+
+\ProcessOptions\relax
+
+% --------------------------------------------
+% Core Packages
+% --------------------------------------------
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+
+% Do not force Polish when babel was already loaded by the document.
+% If babel is not loaded, preserve historical behaviour by defaulting to Polish,
+% unless [english] or [polish] was explicitly passed to this package.
+\makeatletter
+\@ifpackageloaded{babel}{%
+  % Babel already loaded: keep the document's current language.
+}{%
+  \ifBusinessPlanLanguageOptionGiven
+    \ifBusinessPlanEnglish
+      \RequirePackage[english]{babel}%
+    \else
+      \RequirePackage[polish]{babel}%
+    \fi
+  \else
+    % Legacy fallback for old documents that relied on this .sty to load Polish.
+    \RequirePackage[polish]{babel}%
+  \fi
+}
+\makeatother
+
+% If this package was explicitly given [english] or [polish] and babel had
+% already been loaded with that language available, select it.
+\AtBeginDocument{%
+  \ifBusinessPlanLanguageOptionGiven
+    \expandafter\ifx\csname captions\BusinessPlanRequestedLanguage\endcsname\relax
+      \PackageWarning{biznesplan_i18n}{Requested language `\BusinessPlanRequestedLanguage' is not loaded by babel; keeping the document's active language}%
+    \else
+      \selectlanguage{\BusinessPlanRequestedLanguage}%
+    \fi
+  \fi
+}
+
+\RequirePackage{amsmath, amssymb, amsthm}
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{enumitem}
+\RequirePackage{geometry}
+\RequirePackage{fancyhdr}
+\RequirePackage{eso-pic}
+\RequirePackage{titlesec}
+\RequirePackage{booktabs}
+\RequirePackage{longtable}
+\RequirePackage{array}
+\RequirePackage{multirow}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+\RequirePackage{xurl}
+\RequirePackage[hidelinks]{hyperref}
+
+% Better URL breaking, useful for bibliographies
+\Urlmuskip=0mu plus 2mu\relax
+
+% --------------------------------------------
+% Geometry
+% --------------------------------------------
+\geometry{margin=1.0in}
+
+% --------------------------------------------
+% Language-aware metadata defaults
+% --------------------------------------------
+
+% Default company / owner name.
+% Override in document with:
+%   \BusinessPlanCompany{YourCompany.com}
+\newcommand{\BusinessPlanCompanyName}{SpectrumAi.pl}
+\newcommand{\BusinessPlanCompany}[1]{\renewcommand{\BusinessPlanCompanyName}{#1}}
+
+% Footer/title-page metadata texts.
+\newcommand{\BusinessPlanAuthorsTextEN}{Authors: \BusinessPlanCompanyName{} --- All rights reserved}
+\newcommand{\BusinessPlanAuthorsTextPL}{Autorzy: \BusinessPlanCompanyName{} --- Wszelkie prawa zastrze\.{z}one}
+
+\newcommand{\BusinessPlanConfidentialTextEN}{Confidential --- For Investment Review Only}
+\newcommand{\BusinessPlanConfidentialTextPL}{Poufne --- wy\l{}\k{a}cznie do analizy inwestycyjnej}
+
+\newcommand{\BusinessPlanVersionTextEN}{Version}
+\newcommand{\BusinessPlanVersionTextPL}{Wersja}
+
+\newcommand{\BusinessPlanRightsFooterEN}{All rights reserved. \copyright\ \BusinessPlanCompanyName}
+\newcommand{\BusinessPlanRightsFooterPL}{Wszelkie prawa zastrze\.{z}one. \copyright\ \BusinessPlanCompanyName}
+
+% Manual overrides, if needed in a specific document.
+% Example:
+%   \BusinessPlanAuthorsText{Prepared by Basilisk Systems}
+%   \BusinessPlanConfidentialText{Internal strategic draft}
+%   \BusinessPlanFooterText{Internal use only. \copyright\ Basilisk Systems}
+\newcommand{\BusinessPlanAuthorsTextCustom}{}
+\newcommand{\BusinessPlanConfidentialTextCustom}{}
+\newcommand{\BusinessPlanFooterTextCustom}{}
+\newcommand{\BusinessPlanVersionTextCustom}{}
+
+\newcommand{\BusinessPlanAuthorsText}[1]{\renewcommand{\BusinessPlanAuthorsTextCustom}{#1}}
+\newcommand{\BusinessPlanConfidentialText}[1]{\renewcommand{\BusinessPlanConfidentialTextCustom}{#1}}
+\newcommand{\BusinessPlanFooterText}[1]{\renewcommand{\BusinessPlanFooterTextCustom}{#1}}
+\newcommand{\BusinessPlanVersionText}[1]{\renewcommand{\BusinessPlanVersionTextCustom}{#1}}
+
+% Internal resolvers: custom text wins; otherwise choose by active babel language.
+% English is the fallback for every non-Polish active language.
+\newcommand{\BusinessPlanResolvedAuthorsText}{%
+  \ifx\BusinessPlanAuthorsTextCustom\empty
+    \iflanguage{polish}{\BusinessPlanAuthorsTextPL}{\BusinessPlanAuthorsTextEN}%
+  \else
+    \BusinessPlanAuthorsTextCustom
+  \fi
+}
+
+\newcommand{\BusinessPlanResolvedConfidentialText}{%
+  \ifx\BusinessPlanConfidentialTextCustom\empty
+    \iflanguage{polish}{\BusinessPlanConfidentialTextPL}{\BusinessPlanConfidentialTextEN}%
+  \else
+    \BusinessPlanConfidentialTextCustom
+  \fi
+}
+
+\newcommand{\BusinessPlanResolvedVersionText}{%
+  \ifx\BusinessPlanVersionTextCustom\empty
+    \iflanguage{polish}{\BusinessPlanVersionTextPL}{\BusinessPlanVersionTextEN}%
+  \else
+    \BusinessPlanVersionTextCustom
+  \fi
+}
+
+\newcommand{\BusinessPlanResolvedFooterText}{%
+  \ifx\BusinessPlanFooterTextCustom\empty
+    \iflanguage{polish}{\BusinessPlanRightsFooterPL}{\BusinessPlanRightsFooterEN}%
+  \else
+    \BusinessPlanFooterTextCustom
+  \fi
+}
+
+% --------------------------------------------
+% Configurable Watermark
+% --------------------------------------------
+% Usage examples in the document preamble:
+%   \BusinessPlanWatermarkText{Basilisk Systems}
+%   \BusinessPlanWatermarkColor{black!6}
+%   \BusinessPlanWatermarkFontSize{38}{46}
+%   \BusinessPlanWatermarkAngle{35}
+%   \BusinessPlanWatermarkOff
+
+\newcommand{\SpectrumWatermarkText}{www.SpectrumAi.pl}
+\newcommand{\BusinessPlanWatermarkColorValue}{black!8}
+\newcommand{\BusinessPlanWatermarkSizeValue}{42}
+\newcommand{\BusinessPlanWatermarkBaselineValue}{50}
+\newcommand{\BusinessPlanWatermarkAngleValue}{45}
+\newif\ifBusinessPlanWatermarkEnabled
+\BusinessPlanWatermarkEnabledtrue
+
+\newcommand{\BusinessPlanWatermarkText}[1]{%
+    \renewcommand{\SpectrumWatermarkText}{#1}%
+}
+
+\newcommand{\BusinessPlanWatermarkColor}[1]{%
+    \renewcommand{\BusinessPlanWatermarkColorValue}{#1}%
+}
+
+\newcommand{\BusinessPlanWatermarkFontSize}[2]{%
+    \renewcommand{\BusinessPlanWatermarkSizeValue}{#1}%
+    \renewcommand{\BusinessPlanWatermarkBaselineValue}{#2}%
+}
+
+\newcommand{\BusinessPlanWatermarkAngle}[1]{%
+    \renewcommand{\BusinessPlanWatermarkAngleValue}{#1}%
+}
+
+\newcommand{\BusinessPlanWatermarkOff}{%
+    \BusinessPlanWatermarkEnabledfalse%
+    \ClearShipoutPictureBG%
+}
+
+\newcommand{\BusinessPlanWatermarkOn}{%
+    \BusinessPlanWatermarkEnabledtrue%
+}
+
+\newcommand{\SpectrumWatermark}{%
+    \ifBusinessPlanWatermarkEnabled
+        \AddToShipoutPictureBG{%
+            \AtPageCenter{%
+                \makebox[0pt]{%
+                    \rotatebox{\BusinessPlanWatermarkAngleValue}{%
+                        \textcolor{\BusinessPlanWatermarkColorValue}{%
+                            \fontsize{\BusinessPlanWatermarkSizeValue}{\BusinessPlanWatermarkBaselineValue}\selectfont\bfseries \SpectrumWatermarkText%
+                        }%
+                    }%
+                }%
+            }%
+        }%
+    \fi
+}
+
+\newcommand{\SpectrumWatermarkStrong}{%
+    \ClearShipoutPictureBG%
+    \BusinessPlanWatermarkOn%
+    \BusinessPlanWatermarkColor{black!18}%
+    \SpectrumWatermark%
+}
+
+\newcommand{\SpectrumWatermarkOff}{\BusinessPlanWatermarkOff}
+
+\newcommand{\SetSpectrumWatermarkText}[1]{%
+    \BusinessPlanWatermarkText{#1}%
+    \ClearShipoutPictureBG%
+    \SpectrumWatermark%
+}
+
+% Enable watermark automatically for every document using this package.
+\AtBeginDocument{\SpectrumWatermark}
+
+% --------------------------------------------
+% Header & Footer
+% --------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[C]{\small \BusinessPlanResolvedFooterText}
+\fancyfoot[R]{\thepage}
+
+% --------------------------------------------
+% Hyperref Setup
+% --------------------------------------------
+\hypersetup{
+    colorlinks=false,
+    pdfauthor={SpectrumAi.pl},
+    pdftitle={SpectrumAi Document}
+}
+
+% --------------------------------------------
+% Section Formatting
+% --------------------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+
+% --------------------------------------------
+% Table Styling
+% --------------------------------------------
+\captionsetup{
+    font=small,
+    labelfont=bf,
+    justification=raggedright,
+    singlelinecheck=false
+}
+
+% --------------------------------------------
+% Custom Commands
+% --------------------------------------------
+\newcommand{\SpectrumTitle}[2]{%
+    \title{#1}%
+    \author{#2 \\ \small \BusinessPlanCompanyName}%
+    \date{\today}%
+}
+
+\newcommand{\biztitle}[1]{\textbf{#1}}
+\newcommand{\bizterm}[1]{\textit{#1}}
+\newcommand{\bizhighlight}[1]{\textbf{#1}}
+
+% Link helpers
+\newcommand{\bizurl}[1]{\url{#1}}
+\newcommand{\bizlink}[2]{\href{#1}{#2}}
+\newcommand{\bizaccess}[1]{Dost\k{e}p: \url{#1}}
+
+% Tighter bibliography wrapper
+\newenvironment{BizBibliography}{%
+    \small
+    \setlength{\emergencystretch}{3em}%
+}{%
+}
+
+% --------------------------------------------
+% Business Plan Title Page Macro
+% --------------------------------------------
+% Arguments:
+% #1 company display name on title page
+% #2 slogan / tagline 1
+% #3 slogan / tagline 2
+% #4 main title
+% #5 subtitle / mission statement
+% #6 version number
+\newcommand{\BusinessPlanTitlePage}[6]{%
+    \begin{titlepage}
+        \centering
+        \vspace*{2cm}
+
+        % Company Name
+        {\Huge\bfseries #1}\\[0.5cm]
+
+        % Taglines
+        {\LARGE\itshape #2}\\[0.3cm]
+        {\LARGE\itshape #3}\\[2cm]
+
+        % Main Title Block
+        \rule{\textwidth}{1.5pt}\\[0.6cm]
+        {\Huge\bfseries #4}\\[0.4cm]
+        \rule{\textwidth}{1.5pt}\\[2cm]
+
+        % Subtitle / Mission Statement
+        {\Large\textit{#5}}\\[3cm]
+
+        \vfill
+
+        % Footer Metadata
+        {\large \BusinessPlanResolvedVersionText\ #6}\\[0.5cm]
+        {\large \today}\\[1cm]
+        {\large \BusinessPlanResolvedAuthorsText}\\[0.5cm]
+        \textbf{\BusinessPlanResolvedConfidentialText}
+    \end{titlepage}%
+}
+
+% --------------------------------------------
+% End of File
+% --------------------------------------------
