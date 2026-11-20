@@ -6,7 +6,9 @@ WHAT IT RUNS (targets; default all four)
          trimmed, one rpm correction -> Gutin tones + vortex noise; 1 rotor and all 4 rotors
   hexa   Drako hexacopter (6 x T-Motor 30x10.5), the same
   can1   Pekari recoilless cannon, 8 mm steel ball at 280 m/s: one shot, rhoCentralFoam wedge, 37 microphones at 1 m
-  can5   the same cannon, 5 balls --interval s apart (the plenum sags between balls): 5 CFD cases, added in time
+  can5   the same cannon, 5 balls --interval s apart: NO extra CFD -- the single shot's CFD recording is overlapped in
+         code, each copy delayed by its firing time and scaled by its source strength (the 0-D model's peak exit
+         mass flow at that shot's sagged plenum pressure). can1 and can5 share the one CFD case.
   Speeds (quad, hexa): --speeds, km/h, default 0,20,40,60,80.
   Cost on a laptop: a rotor case ~5-20 min (screening) on 8 cores; a cannon shot (1.1 M cells, ~144k steps) several
   hours on 8 cores -- --can-mesh coarse (~0.2 M cells) for a first look.  Needs OpenFOAM (source its bashrc first).
@@ -19,7 +21,7 @@ MULTICORE
 USAGE
   labs/aero/sims/sound_eval.sh                         everything, all cores
   labs/aero/sims/sound_eval.sh -j 12 quad hexa         the multirotors only, 12 cores
-  labs/aero/sims/sound_eval.sh -j 16 -p 4 can5         the 5-shot burst, four shots at a time on 4 cores each
+  labs/aero/sims/sound_eval.sh -j 16 -p 4 quad hexa    four rotor speeds at a time on 4 cores each
   labs/aero/sims/sound_eval.sh --no-cfd                dry run: blade-element rotors; cannon cases written, not run
   labs/aero/sims/sound_eval.sh --fresh                 ignore solved cases (otherwise reused)
 
@@ -254,11 +256,13 @@ def run_cannon(target, args, wav_dir, pool_cores):
     gun, grid = bc.Gun(), bc.Grid(fine, far)
     d = br.design(verbose=False)
     tag = f"{shots}shot{'s' if shots > 1 else ''}"
-    root = OUT / "sound_cfd" / f"pekari_{tag}_{args.can_mesh}"
+    root = OUT / "sound_cfd" / f"pekari_shot_{args.can_mesh}"       # one CFD case for can1 and can5
     print(f"[{target}] Pekari: {d['p_bar_g']:.1f} bar g, throat {d['throat_mm']:.2f} mm, {d['v']:.0f} m/s; "
           f"mesh {args.can_mesh} {bc.cell_count(gun, grid):,} cells, dt {bc.time_step(grid):.3g} s", flush=True)
     hist = bs.burst(shots, args.interval, args.refill, d)
-    cases = [root / f"shot{i + 1}" for i in range(shots)]
+    cases = [root / "shot1"]
+    peak = lambda h: float(np.max(h["mdot_muzzle"] + h["mdot_back"]))
+    scale = [peak(h) / peak(hist[0]) for h in hist]                # each ball's source strength vs the CFD shot
 
     def one(i):
         st = _one(i)
@@ -290,7 +294,7 @@ def run_cannon(target, args, wav_dir, pool_cores):
         return "CFD"
 
     with ThreadPoolExecutor(max(1, args.parallel)) as ex:
-        status = list(ex.map(one, range(shots)))
+        status = list(ex.map(one, range(len(cases))))
     res = {"kind": "cannon", "name": "Pekari recoilless 8 mm", "shots": shots, "interval_s": args.interval,
            "refill_s": args.refill, "design": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in d.items()},
            "mesh": {"level": args.can_mesh, "exit_cell_mm": fine, "far_cell_mm": far, "cells": bc.cell_count(gun, grid),
@@ -298,6 +302,7 @@ def run_cannon(target, args, wav_dir, pool_cores):
            "listener": {"distance_m": args.can_distance, "angle_from_muzzle_deg": args.can_angle, "gun_height_m": args.height,
                         "ear_m": args.ear},
            "cases": [str(c.relative_to(OUT)) for c in cases], "status": status,
+           "burst_method": "one CFD shot, copies delayed and scaled by the 0-D peak exit mass flow" if shots > 1 else "CFD",
            "per_shot": [{"shot": i + 1, "time_s": round(i * args.interval, 3), "plenum_bar_g": round(h["p_gauge"], 2),
                          "ball_m_s": round(h["v"], 1), "energy_J": round(0.5 * br.PROJ["mass"] * h["v"] ** 2, 1),
                          "air_g": round(h["air_kg"] * 1e3, 2), "barrel_ms": round(h["barrel_s"] * 1e3, 2)}
@@ -307,16 +312,19 @@ def run_cannon(target, args, wav_dir, pool_cores):
         return res
     seconds = args.interval * (shots - 1) + 0.6
     total = np.zeros(int(seconds * bc.RATE))
-    for i, c in enumerate(cases):
-        s = bc.listener_signal(c, gun, distance=args.can_distance, angle=args.can_angle, height=args.height,
-                               ear=args.ear, seconds=seconds - i * args.interval)
+    c = cases[0]
+    base = bc.listener_signal(c, gun, distance=args.can_distance, angle=args.can_angle, height=args.height,
+                              ear=args.ear, seconds=seconds)
+    t, p = bc.read_mics(c)
+    p = p - p[: max(5, len(t) // 200)].mean(axis=0)
+    for i in range(shots):
+        s = base[: len(base) - int(round(i * args.interval * bc.RATE))] * scale[i]
+        res["per_shot"][i]["source_scale"] = round(scale[i], 4)
         k = int(round(i * args.interval * bc.RATE))
         total[k:k + len(s)] += s[: len(total) - k]
         res["per_shot"][i].update(metrics(s, bc.RATE, impulsive=True))
-        t, p = bc.read_mics(c)
-        p = p - p[: max(5, len(t) // 200)].mean(axis=0)
         res["per_shot"][i]["directivity_1m"] = [
-            {"deg": a, "peak_dB": round(20 * math.log10(max(float(np.abs(p[:, j]).max()), 1e-9) / 20e-6), 1)}
+            {"deg": a, "peak_dB": round(20 * math.log10(max(scale[i] * float(np.abs(p[:, j]).max()), 1e-9) / 20e-6), 1)}
             for j, (a, _, _) in enumerate(gun.mics())]
         if i == 0:
             n = min(len(t), int(0.03 / max(t[1] - t[0], 1e-9)))
@@ -425,7 +433,7 @@ def main(argv=None):
            "settings": {k: v for k, v in vars(args).items() if k not in ("merge", "output", "targets")}, "results": {}}
     global PROGRESS
     n_speeds = len([x for x in args.speeds.split(",") if x.strip()])
-    PROGRESS = Progress(sum(n_speeds if t in ("quad", "hexa") else (1 if t == "can1" else 5) for t in targets))
+    PROGRESS = Progress(sum(n_speeds if t in ("quad", "hexa") else 1 for t in targets))
     t0 = time.time()
     for tgt in targets:
         try:
