@@ -5,6 +5,11 @@ ARIGO-1H with a kit, and run 1 showed why that is not enough: the kits moved sco
 that decide each job were outside what a kit can change. Those are an unattended station cycle, a three-hour patrol, a
 70 m/s dash and a 400 mm packed length.
 
+> **Status: the four concepts below were accepted on 2026-11-20.** BUTEO is a lift + cruise VTOL, ARPELLA a
+> high-aspect-ratio patroller, ASTOR a propeller dart and SPARFELL a compact flying wing. ASTOR's requirement is
+> fixed: it must catch a **50 m/s** target from behind. They are concepts: none has CAD, CFD or a simulation yet,
+> except ASTOR, which is being built first (branch `dev_astor1`).
+
 This document works from the application down to the configuration. All sizing numbers are **first-cut estimates**
 from `designs/raptors_sizing.py`: a parabolic polar, a mass build-up, momentum-theory hover. Two anchors come from
 better models: ARIGO-1H (screening CFD and run 1) and GAVILAN-X (its flight card). The estimates are there to choose
@@ -194,5 +199,5 @@ airframes, and the existing chain covers them once the CAD exists.
 **Decisions that are the client's**
 1. BUTEO: is an unattended cycle really the requirement? If a person can collect the aircraft, the cheaper fixed
    wing (B1) comes back.
-2. ASTOR: what is the fastest target it must catch from behind?
+2. ~~ASTOR: what is the fastest target it must catch from behind?~~ **Decided: 50 m/s.**
 3. ARPELLA: hand launch only, or is a bungee acceptable? That decides how far toward the motor-glider it can go.
