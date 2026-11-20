@@ -3,8 +3,10 @@ results have been put into the models (arigo_cfd.sh, pasted back, design revised
 
 WHAT IT RUNS (minutes)
   1. performance cards  speeds (stall, max level), turns (sustained / instantaneous over speed, corner speed), climb,
-                        roll / pitch / yaw response, chase (run-down of a fleeing bandit, zig-zag chase), endurance,
-                        range, mass budget and pack trade                    ~10 s per configuration
+                        roll / pitch / yaw response, chases under proportional navigation (zig-zag, urban: hard turns
+                        at 20 m height, open field: a long 18 m/s chase) + run-down of a fleeing bandit, endurance,
+                        range, mass budget and pack trade; thrust and power from the propulsor maps   ~8 s per config.
+  KPI scores (0-100, relative to the set): general, chase, urban chase, open-field long chase
   2. stability          MuJoCo 6-DOF: modes, stall and recovery, gust, engine / fan out   ~5-10 s per configuration
   3. camera             ARIGO-0's propeller in the camera's view          seconds
   4. videos             only with --videos (needs OpenGL: MUJOCO_GL=egl or osmesa, and ffmpeg)   ~15 s each

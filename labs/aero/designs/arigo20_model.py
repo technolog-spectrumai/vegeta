@@ -28,7 +28,7 @@ def coefficients() -> dict:
     L = a20.Arigo20.layout(p)
     import arigo_mass
     mb = arigo_mass.budget("edf", p, L)
-    C = am.build(q, p, L, "arigo20", "edf", mass=mb["total_g"] / 1000.0, CD0=CD0, thrust=dict(THRUST))
+    C = am.build(q, p, L, "arigo20", "edf", mass=mb["total_g"] / 1000.0, CD0=CD0)   # thrust: the 70 mm fan maps
     C["mass_budget"] = mb
     C.update({"aircraft": "ARIGO-20", "aero_source": "model (lattice + hand)", "thrust_z_m": (p["edf_z"] / 1e3 - C["z_cg_m"]),
               "y_motor_m": p["edf_y"] / 1e3})
@@ -68,8 +68,8 @@ def top_speed() -> float:
     def excess(V):
         qS = 0.5 * am.RHO * V * V * C["S"]
         CL = W / qS
-        return C["thrust"]["T0_N"] * (1 - V / C["thrust"]["V0_m_s"]) - qS * (C["CD0"] + C["k"] * CL * CL)
-    lo, hi = 15.0, C["thrust"]["V0_m_s"] - 0.1
+        return am.max_thrust(C, V) - qS * (C["CD0"] + C["k"] * CL * CL)
+    lo, hi = 15.0, 69.0
     for _ in range(60):
         mid = 0.5 * (lo + hi)
         lo, hi = (mid, hi) if excess(mid) > 0 else (lo, mid)

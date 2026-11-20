@@ -6,8 +6,9 @@ Two sources, marked in the output:
 - **point-mass** (the configuration's coefficients — CFD tables where there are, else lattice + hand — and its hand
   thrust curve T = T0 (1 - V/V0)): stall speed, top level speed, sustained and instantaneous turns over speed, corner
   speed, climb rate and angle, the time to run down a fleeing bandit;
-- **MuJoCo 6-DOF** (``arigo1_mujoco``): full-aileron roll, full-elevator pitch, full-rudder yaw at cruise, and the
-  zig-zag chase of ARIGO-1's manoeuvre set (lead pursuit, autopilot by hand).
+- **MuJoCo 6-DOF** (``arigo1_mujoco``): full-aileron roll, full-elevator pitch, full-rudder yaw at cruise, and three
+  chases under proportional navigation (``arigo1_mujoco.CHASES``): zig-zag (14 m/s weaving), urban (10 m/s, hard
+  90-degree turns every 2.5 s at 20 m height; below 3 m is a crash), open field (18 m/s, gentle weave, 150 m ahead).
 
 Hand limits: the structural load factor N_MAX = 6 (a 2.5 kg foam/composite airframe, +-1), mass as in the models.
 """
@@ -48,7 +49,7 @@ def polar(C):
 
 
 def thrust(C, V, throttle=1.0):
-    return max(C["thrust"]["T0_N"] * throttle * (1 - V / C["thrust"]["V0_m_s"]), 0.0)
+    return am.max_thrust(C, V) * throttle
 
 
 def point_mass(C) -> dict:
@@ -57,7 +58,7 @@ def point_mass(C) -> dict:
     q = lambda V: 0.5 * am.RHO * V * V
     Vs = math.sqrt(W / (q(1.0) * S * cl_max))
     excess = lambda V, n=1.0: thrust(C, V) - q(V) * S * cd_of(n * W / (q(V) * S))
-    Vgrid = np.linspace(Vs * 1.02, C["thrust"]["V0_m_s"] * 0.98, 400)
+    Vgrid = np.linspace(Vs * 1.02, 68.0, 400)
     ex = np.array([excess(V) for V in Vgrid])
     Vmax = float(Vgrid[np.where(ex > 0)[0].max()]) if (ex > 0).any() else float("nan")
     roc = ex * Vgrid / W
@@ -83,7 +84,9 @@ def point_mass(C) -> dict:
     sus = [t for t in turns if t["sustained_rate_deg_s"]]
     best_s = max(sus, key=lambda t: t["sustained_rate_deg_s"]) if sus else None
     best_i = max(turns, key=lambda t: t["instant_rate_deg_s"]) if turns else None
-    return {"source": f"point-mass on {C.get('aero_source', 'model')}; thrust T0 {C['thrust']['T0_N']} N, V0 {C['thrust']['V0_m_s']} m/s (hand)",
+    sel = C["thrust"].get("propulsor")
+    return {"source": f"point-mass on {C.get('aero_source', 'model')}; thrust: " + (f"propulsor map {sel['entry']} x {sel['units']}, {sel['power_w_per_unit']:.0f} W each" if sel else "hand line"),
+            "propulsion": sel,
             "mass_kg": C["mass"], "wing_loading_kg_m2": round(C["mass"] / S, 1), "CL_max": round(cl_max, 3),
             "min_speed_stall_m_s": round(Vs, 1), "max_level_speed_m_s": round(Vmax, 1),
             "climb": {"max_rate_m_s": round(float(roc[k]), 2), "at_speed_m_s": round(float(Vgrid[k]), 1),
@@ -120,7 +123,25 @@ def disc_area(C):
     return math.pi * (a1.resolve()["prop_diameter"] / 2000.0) ** 2
 
 
+def point_top_speed(C, cd_of):
+    W, S = C["mass"] * am.G, C["S"]
+    Vg = np.linspace(8.0, 68.0, 300)
+    ex = [thrust(C, V) - 0.5 * am.RHO * V * V * S * cd_of(W / (0.5 * am.RHO * V * V * S)) for V in Vg]
+    ok = [V for V, e in zip(Vg, ex) if e > 0]
+    return float(max(ok)) if ok else 20.0
+
+
 def electrical_power(C, T, V):
+    """Battery power [W] for thrust T at V: the propulsor map's (``arigo_propulsion``) when the model has one, plus
+    the avionics; else the momentum-theory estimate below."""
+    sel = C["thrust"].get("propulsor") if isinstance(C.get("thrust"), dict) else None
+    if sel:
+        import arigo_propulsion as ap
+        return ap.electrical_power(sel, T, V) + P_AVIONICS_W
+    return electrical_power_momentum(C, T, V)
+
+
+def electrical_power_momentum(C, T, V):
     """Battery power [W] for thrust T at speed V: ideal efficiency from momentum theory over the propulsors' area
     (actuator disc for propellers; for the fans the jet: T = rho A Vj (Vj - V), eta = 2 V / (V + Vj)), times the
     profile/fan and drive efficiencies (HAND), plus the avionics."""
@@ -146,7 +167,7 @@ def pack_trade(C, cd_of) -> list:
         C2 = {**C, "mass": m}
         cl_max = polar(C)[1]
         Vs = math.sqrt(m * am.G / (0.5 * am.RHO * C["S"] * cl_max))
-        e = energy(C2, cd_of, Vs, C["thrust"]["V0_m_s"] * 0.9, pack_name=nm)
+        e = energy(C2, cd_of, Vs, point_top_speed(C2, cd_of), pack_name=nm)
         out.append({"pack": nm, "total_kg": round(m, 3), "stall_m_s": round(Vs, 1), "endurance_min": e["endurance_min"],
                     "range_km": e["range_km"], "wing_loading_kg_m2": round(m / C["S"], 1), "default": nm == mb["pack"]["name"]})
     return out
@@ -214,20 +235,24 @@ def responses(sim, V) -> dict:
     return out
 
 
-def chase(sim_factory, manoeuvre) -> dict:
-    """The zig-zag chase (ARIGO-1's manoeuvre: a bandit at 14 m/s weaving +-25 m, lead pursuit, 20 s)."""
-    sim = sim_factory(bandit=True)
-    _, s = manoeuvre("chase", sim)
-    return {"bandit": "14 m/s, weaving +-25 m, start 40 m ahead", "closest_m": s.get("bandit_closest_m"),
-            "time_to_5m_s": s.get("time_to_within_5m_s"), "peak_load_factor": s.get("peak_load_factor"),
-            "max_speed_m_s": s.get("max_speed_m_s"), "altitude_change_m": s.get("altitude_change_m")}
+def chases(sim_factory, Vs) -> dict:
+    """The chase scenarios (``arigo1_mujoco.CHASES``) under proportional navigation, each entered at its speed or
+    1.25 x this aircraft's stall speed, whichever is higher; and the zig-zag under the old lead pursuit, for
+    comparison."""
+    out = {}
+    for name in amj.CHASES:
+        V = max(amj.CHASES[name]["V"], 1.25 * Vs)
+        _, out[name] = amj.chase(sim_factory(bandit=True), name, V=V)
+    _, out["zigzag_lead_pursuit"] = amj.chase(sim_factory(bandit=True), "zigzag", V=max(20.0, 1.25 * Vs), guidance="lead")
+    return out
 
 
 def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
     out = {"aircraft": name, "point_mass": point_mass(C)}
-    out["mujoco"] = {"responses_at_cruise": responses(sim_factory(), V_cruise), "zigzag_chase": chase(sim_factory, manoeuvre),
-                     "source": "MuJoCo 6-DOF on the same coefficients; autopilot gains by hand"}
     pm = out["point_mass"]
+    ch = chases(sim_factory, pm["min_speed_stall_m_s"])
+    out["mujoco"] = {"responses_at_cruise": responses(sim_factory(), V_cruise), "chases": ch,
+                     "source": "MuJoCo 6-DOF on the same coefficients; autopilot and guidance gains by hand"}
     out["summary"] = {"min_speed_m_s": pm["min_speed_stall_m_s"], "max_speed_m_s": pm["max_level_speed_m_s"],
                       "max_climb_m_s": pm["climb"]["max_rate_m_s"],
                       "best_sustained_turn_deg_s": pm["best_sustained_turn"] and pm["best_sustained_turn"]["sustained_rate_deg_s"],
@@ -237,9 +262,16 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "pitch_rate_deg_s": out["mujoco"]["responses_at_cruise"]["pitch"]["peak_rate_deg_s"],
                       "yaw_rate_deg_s": out["mujoco"]["responses_at_cruise"]["yaw"]["peak_rate_deg_s"],
                       "run_down_14_m_s_bandit_s": pm["run_down"]["bandit_14_m_s"]["time_to_5m_s"],
-                      "zigzag_closest_m": out["mujoco"]["zigzag_chase"]["closest_m"],
+                      "run_down_18_m_s_bandit_s": pm["run_down"]["bandit_18_m_s"]["time_to_5m_s"],
+                      "zigzag_closest_m": ch["zigzag"]["closest_m"], "zigzag_time_to_5m_s": ch["zigzag"]["time_to_5m_s"],
+                      "zigzag_share_within_10m": ch["zigzag"]["share_within_10m"],
+                      "urban_time_to_5m_s": ch["urban"]["time_to_5m_s"], "urban_share_within_10m": ch["urban"]["share_within_10m"],
+                      "urban_crashed": ch["urban"]["crashed"],
+                      "open_field_time_to_5m_s": ch["open_field"]["time_to_5m_s"],
+                      "open_field_share_within_10m": ch["open_field"]["share_within_10m"],
                       "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"],
                       "mass_kg": round(C["mass"], 3), "pack": C["mass_budget"]["pack"]["name"],
+                      "propulsor": (C["thrust"].get("propulsor") or {}).get("entry"),
                       "best_endurance_pack": max(pm["pack_trade"], key=lambda r: r["endurance_min"])["pack"]}
     return out
 

@@ -423,3 +423,109 @@ def export_mesh(folder, variant="hybrid", propulsion="pusher") -> str:
     if not path.exists():
         a1.Arigo1().generate(**a1.variant(variant, propulsion), show_props=True).export_stl(str(path), tolerance=0.5)
     return str(path)
+
+
+# ------------------------------------------------------------------------------------------- chase scenarios (PN)
+CHASES = {
+    # name: bandit speed, altitude, start gap, duration, pursuer entry speed, description
+    "zigzag": dict(Vb=14.0, h=60.0, gap=40.0, T=20.0, V=20.0, what="14 m/s, weaving +-25 m (period 12.6 s), 40 m ahead"),
+    "urban": dict(Vb=10.0, h=20.0, gap=30.0, T=30.0, V=16.0,
+                  what="10 m/s at 20 m height, hard 90 deg turns (10 m radius) every 2.5 s, 30 m ahead; below 3 m is a crash"),
+    "open_field": dict(Vb=18.0, h=60.0, gap=150.0, T=60.0, V=20.0, what="18 m/s, gentle +-20 deg weave (period 20 s), 150 m ahead"),
+}
+PN_GAIN = 4.0
+
+
+def bandit_path(name, dt=0.01):
+    """The bandit's track (t, x, y, z, vx, vy, vz) for a scenario, integrated from its heading programme."""
+    c = CHASES[name]
+    n = int(c["T"] / dt) + 2
+    t = np.arange(n) * dt
+    psi = np.zeros(n)
+    if name == "zigzag":
+        y = 25.0 * np.sin(0.5 * t)
+        x = c["gap"] + c["Vb"] * t
+        return t, x, y, np.full(n, c["h"]) + 8.0 * np.sin(0.3 * t), np.gradient(x, t), np.gradient(y, t), 2.4 * np.cos(0.3 * t)
+    if name == "urban":
+        rate = c["Vb"] / 10.0                                  # 10 m radius
+        signs = [1, -1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1]  # a fixed, irregular left/right sequence
+        for i in range(1, n):
+            k = int(t[i] // 2.5)
+            in_turn = (t[i] % 2.5) < (math.pi / 2) / rate
+            psi[i] = psi[i - 1] + (signs[k % len(signs)] * rate * dt if in_turn and t[i] > 1.0 else 0.0)
+    else:
+        psi = math.radians(20.0) * np.sin(2 * math.pi * t / 20.0)
+    vx, vy = c["Vb"] * np.cos(psi), c["Vb"] * np.sin(psi)
+    x = c["gap"] + np.cumsum(vx) * dt
+    y = np.cumsum(vy) * dt
+    return t, x, y, np.full(n, c["h"]), vx, vy, np.zeros(n)
+
+
+def pn_command(sim, b, vb):
+    """Proportional navigation in the horizontal plane (turn rate = N x the line of sight's turn rate, flown as a
+    bank), and the flight path pointed at the target's height (clipped to +-20 deg): (bank, pitch) commands."""
+    s = sim.state()
+    r = b - s["pos"]
+    vr = vb - s["v_world"]
+    rh2 = max(r[0] ** 2 + r[1] ** 2, 1e-6)
+    lam_dot = (r[0] * vr[1] - r[1] * vr[0]) / rh2               # +: the line of sight turns left (counter-clockwise)
+    V = max(s["V"], 3.0)
+    psi_dot = PN_GAIN * lam_dot
+    phi = math.atan(-V * psi_dot / am.G)                         # a right bank (+) turns clockwise (psi falls)
+    gam = math.atan2(r[2], math.sqrt(rh2))
+    return max(-1.3, min(1.3, phi)), max(-0.35, min(0.35, gam))
+
+
+def chase(sim, name, record=None, V=None, guidance="pn"):
+    """Fly a chase scenario under PN guidance (or the lead pursuit of ``manoeuvre("chase")`` with guidance="lead"),
+    full throttle. Returns the history and: time to within 5 m, closest approach, share of time within 10 m, mean
+    distance over the last third, peak load factor, crash (below 3 m)."""
+    c = CHASES[name]
+    t_b, bx, by, bz, bvx, bvy, bvz = bandit_path(name)
+    sim.start(V or c["V"], c["h"])
+    ap = Autopilot(sim)
+    bid = mujoco.mj_name2id(sim.m, mujoco.mjtObj.mjOBJ_BODY, "bandit")
+    mid = sim.m.body_mocapid[bid] if bid >= 0 else -1
+    dist = []
+
+    def fn(t, s):
+        b = np.array([np.interp(t, t_b, bx), np.interp(t, t_b, by), np.interp(t, t_b, bz)])
+        vb = np.array([np.interp(t, t_b, bvx), np.interp(t, t_b, bvy), np.interp(t, t_b, bvz)])
+        if mid >= 0:
+            s.d.mocap_pos[mid] = b
+        dist.append(float(np.linalg.norm(b - s.state()["pos"])))
+        if guidance == "pn":
+            sd = s.state()
+            r = b - sd["pos"]
+            rng = float(np.linalg.norm(r))
+            C_ = s.C
+            Vs_ = math.sqrt(C_["mass"] * am.G / (0.5 * am.RHO * C_["S"] * C_["CL_MAX"]))
+            V_c = max(float(np.linalg.norm(vb)) + float(np.clip(0.3 * rng, 3.0, 15.0)), 1.4 * Vs_)   # close, not overshoot, not slow
+            n_av = 0.5 * am.RHO * sd["V"] ** 2 * C_["S"] * C_["CL_MAX"] / (C_["mass"] * am.G)
+            phi_max = math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001)))          # the bank a level turn can hold now
+            off = math.degrees(math.acos(max(-1.0, min(1.0, float(r @ sd["v_world"]) / max(rng * sd["V"], 1e-6)))))
+            gam = max(-0.35, min(0.35, math.atan2(r[2], math.hypot(r[0], r[1]))))
+            if sd["pos"][2] + 2.0 * min(sd["v_world"][2], 0.0) < 10.0:   # low, or sinking toward 10 m in 2 s: level, climb
+                ap(phi_c=0.0, theta_c=math.radians(15.0), V_c=V_c)
+            elif off > 60.0:                                   # target abeam or behind (after a pass): turn back hard, level
+                left = float(np.cross(sd["v_world"], r)[2]) > 0
+                b_ = min(math.radians(65.0), phi_max)
+                ap(phi_c=-b_ if left else b_, theta_c=gam, V_c=V_c)
+            else:
+                phi, gam = pn_command(s, b, vb)
+                ap(phi_c=max(-phi_max, min(phi_max, phi)), theta_c=gam, V_c=V_c)
+        else:
+            sd = s.state()
+            rel = b - sd["pos"] + vb * np.linalg.norm(b - sd["pos"]) / max(sd["V"], 5.0)
+            e = (math.atan2(rel[1], rel[0]) - sd["psi"] + math.pi) % (2 * math.pi) - math.pi
+            ap(phi_c=max(-1.2, min(1.2, -2.5 * e)), theta_c=math.atan2(rel[2], math.hypot(rel[0], rel[1])), throttle=1.0)
+    h = run(sim, c["T"], fn, record)
+    d = np.array(dist) if dist else np.array([np.nan])
+    tt = np.linspace(0, h["t"][-1], len(d))
+    within5 = np.where(d < 5.0)[0]
+    return h, {"scenario": name, "bandit": c["what"], "guidance": "proportional navigation (horizontal, N = %g) + height to the target's, turn-back after a pass" % PN_GAIN if guidance == "pn" else "lead pursuit",
+               "entry_speed_m_s": V or c["V"], "time_to_5m_s": round(float(tt[within5[0]]), 2) if len(within5) else None,
+               "closest_m": round(float(np.nanmin(d)), 1), "share_within_10m": round(float(np.mean(d < 10.0)), 3),
+               "mean_distance_last_third_m": round(float(np.mean(d[len(d) * 2 // 3:])), 1),
+               "peak_load_factor": round(float(h["n"].max()), 2), "min_altitude_m": round(float(h["z"].min()), 1),
+               "crashed": bool(h["z"].min() < 3.0), "stalled": bool(h["stall"].max() > 0.5), "duration_s": round(float(h["t"][-1]), 1)}

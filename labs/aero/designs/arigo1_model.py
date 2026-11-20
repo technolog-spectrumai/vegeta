@@ -156,6 +156,16 @@ def _coefficients(variant: str = "hybrid", propulsion: str = "pusher") -> dict:
     return C
 
 
+def propulsion_table(propulsion, mass, cd0, S) -> dict:
+    """Full-throttle thrust over speed from the propulsor library (``arigo_propulsion``); the old hand line if the
+    library cannot be read."""
+    try:
+        import arigo_propulsion as ap
+        return ap.thrust_table(ap.select(propulsion, round(mass, 3), round(cd0, 4), round(S, 4)))
+    except Exception as exc:                                   # keep the model usable without the library
+        return {"T0_N": 28.0, "V0_m_s": 38.0, "note": f"hand thrust line: propulsor library unavailable ({exc})"}
+
+
 def build(q, p, L, variant, propulsion, mass=None, CD0=None, thrust=None) -> dict:
     """The coefficients for any airframe of the family: ``q`` its ARIGO-1 wing/tail parameters (for the lattice),
     ``p`` its resolved parameters, ``L`` its layout (tail areas and arms: ARIGO-20 passes its own H tail's).
@@ -223,12 +233,21 @@ def build(q, p, L, variant, propulsion, mass=None, CD0=None, thrust=None) -> dic
             "CYb": CYb, "Clb": Clb_dihedral + Clb_v, "Clb_sweep_per_CL": -math.tan(sweep_qc) / (AR * 1.0) * 0.6, "Cnb": Cnb,
             "Clp": Clp, "Clr_per_CL": Clr0, "Cnp_per_CL": Cnp0, "Cnr": Cnr, "Clda": Clda, "Cnda": Cnda, "Cndr": Cndr, "CYdr": CYdr, "Cldr": Cldr,
             "V_h": L["V_h"], "V_v": L["V_v"],
-            "thrust": thrust or {"T0_N": 28.0, "V0_m_s": 38.0},     # HAND: a 10-11 in prop on a 4S 1000 W class motor, T = T0 (1 - V/V0) (+-25 %)
+            "thrust": thrust or propulsion_table(propulsion, MASS_, CD0, S),   # the propulsor map (arigo_propulsion): a 10-11 in prop on a 4S 1000 W class motor, T = T0 (1 - V/V0) (+-25 %)
             "sources": {"vlm": ["CL0", "CLa", "Cma", "Cm0", "CLde", "Cmde", "x_np_m"],
                         "hand": ["CL_MAX", "CD0", "k", "Cmq", "Cma_dot", "CYb", "Clb", "Cnb", "Clp", "Cnr", "Clda", "Cndr", "inertia", "mass", "thrust"]}}
 
 
 # ----------------------------------------------------------------------------------------------------------- forces
+def max_thrust(C, V) -> float:
+    """Full-throttle net thrust [N] at airspeed V: the propulsor map's table (``arigo_propulsion``) when the
+    coefficients carry one, else the old hand line T0 (1 - V/V0)."""
+    th = C["thrust"]
+    if "table_V" in th:
+        return float(max(np.interp(V, th["table_V"], th["table_T"]), 0.0))
+    return max(th["T0_N"] * (1 - V / th["V0_m_s"]), 0.0)
+
+
 def _cfd_static(t, al):
     """CL, CD, Cm at alpha [rad] from the CFD table; outside it (beyond -4..24 deg) a blend onto the flat plate over
     6 degrees, Cm carried on with the table's last slope (bounded) — HAND outside the table."""
@@ -282,7 +301,7 @@ def aero(C: dict, vel_b, omega_b, de=0.0, da=0.0, dr=0.0, throttle=0.5):
     Fx = qd * S * (-CD * ca * cb + CL * sa)
     Fy = qd * S * (-CD * sb + CY)
     Fz = qd * S * (-CD * sa * cb - CL * ca)
-    T = max(C["thrust"]["T0_N"] * max(min(throttle, 1.0), 0.0) * (1 - u / C["thrust"]["V0_m_s"]), 0.0)
+    T = max_thrust(C, u) * max(min(throttle, 1.0), 0.0)
     M_thrust = -C.get("thrust_z_m", 0.0) * T                       # a thrust line above the CG pitches the nose down
     return np.array([Fx + T, Fy, Fz]), np.array([qd * S * b * Cl, qd * S * c * Cm + M_thrust, qd * S * b * Cn]), {"alpha": al, "beta": be, "V": V, "CL": CL, "stall": s}
 

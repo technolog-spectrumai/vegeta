@@ -11,8 +11,13 @@ then averaged into a general score and a chase score:
 
 - general: max speed, min speed (low), max climb, best sustained turn, tightest sustained radius (low), roll rate,
   pitch rate (first 0.3 s), yaw rate, endurance, range;
-- chase: run-down time on a 14 m/s bandit (low), zig-zag chase closest approach (low), best instantaneous turn,
-  max speed, roll rate.
+- chase: run-down of a 14 m/s bandit (low), zig-zag PN chase time to 5 m (low) and time within 10 m, best
+  instantaneous turn, max speed, roll rate;
+- urban chase: the urban PN chase's time to 5 m (low) and time within 10 m (a crash scores 0), tightest sustained
+  radius (low), best instantaneous turn, min speed (low), roll rate;
+- open-field long chase: the open-field PN chase's time to 5 m (low) and time within 10 m, max speed, run-down of an
+  18 m/s bandit (low), climb, range, endurance.
+A chase never closed to 5 m counts as 1.5 x its scenario's length.
 
 Scores are relative to the configurations present: add or drop one and the others move.
 """
@@ -42,14 +47,27 @@ PROPS = [  # (summary key, label, unit, higher is better)
     ("pitch_rate_deg_s", "Pitch rate (first 0.3 s)", "deg/s", True),
     ("yaw_rate_deg_s", "Yaw rate (full rudder)", "deg/s", True),
     ("run_down_14_m_s_bandit_s", "Run down a 14 m/s bandit", "s", False),
-    ("zigzag_closest_m", "Zig-zag chase: closest", "m", False),
+    ("zigzag_time_to_5m_s", "Zig-zag chase (PN): time to 5 m", "s", False),
+    ("urban_time_to_5m_s", "Urban chase (PN): time to 5 m", "s", False),
+    ("urban_share_within_10m", "Urban chase: time within 10 m", "share", True),
+    ("open_field_time_to_5m_s", "Open-field chase (PN): time to 5 m", "s", False),
+    ("open_field_share_within_10m", "Open-field chase: time within 10 m", "share", True),
     ("endurance_min", "Endurance (best speed)", "min", True),
     ("mass_kg", "Take-off mass (budget, default pack)", "kg", False),
     ("range_km", "Range (still air)", "km", True),
 ]
 GENERAL = ["max_speed_m_s", "min_speed_m_s", "max_climb_m_s", "best_sustained_turn_deg_s", "tightest_sustained_radius_m",
            "roll_rate_deg_s", "pitch_rate_deg_s", "yaw_rate_deg_s", "endurance_min", "range_km"]
-CHASE = ["run_down_14_m_s_bandit_s", "zigzag_closest_m", "best_instant_turn_deg_s", "max_speed_m_s", "roll_rate_deg_s"]
+CHASE = ["run_down_14_m_s_bandit_s", "zigzag_time_to_5m_s", "zigzag_share_within_10m", "best_instant_turn_deg_s", "max_speed_m_s",
+         "roll_rate_deg_s"]
+URBAN = ["urban_time_to_5m_s", "urban_share_within_10m", "tightest_sustained_radius_m", "best_instant_turn_deg_s",
+         "min_speed_m_s", "roll_rate_deg_s"]
+OPEN_FIELD = ["open_field_time_to_5m_s", "open_field_share_within_10m", "max_speed_m_s", "run_down_18_m_s_bandit_s",
+              "max_climb_m_s", "range_km", "endurance_min"]
+# a chase that never closed to 5 m scores as this many seconds (its scenario's length x 1.5); a crash scores 0
+NOT_CAUGHT_S = {"zigzag_time_to_5m_s": 30.0, "urban_time_to_5m_s": 45.0, "open_field_time_to_5m_s": 90.0,
+                "run_down_14_m_s_bandit_s": 180.0, "run_down_18_m_s_bandit_s": 180.0}
+EXTRA = [("zigzag_share_within_10m", True), ("run_down_18_m_s_bandit_s", False)]
 
 
 def cards_of(doc: dict) -> dict:
@@ -63,9 +81,16 @@ def cards_of(doc: dict) -> dict:
 def kpi(cards: dict) -> dict:
     ok = {k: c for k, c in cards.items() if isinstance(c, dict) and "summary" in c}
     scores = {k: {} for k in ok}
-    for key, _, _, hi in PROPS:
-        vals = {k: c["summary"].get(key) for k, c in ok.items()}
-        vals = {k: float(v) for k, v in vals.items() if v is not None}
+    for key, _, _, hi in PROPS + [(k_, None, None, h_) for k_, h_ in EXTRA]:
+        vals = {}
+        for k, c in ok.items():
+            v = c["summary"].get(key)
+            if v is None and key in NOT_CAUGHT_S:
+                v = NOT_CAUGHT_S[key]
+            if key.startswith("urban") and c["summary"].get("urban_crashed"):
+                v = NOT_CAUGHT_S["urban_time_to_5m_s"] if key == "urban_time_to_5m_s" else 0.0
+            if v is not None:
+                vals[k] = float(v)
         if len(vals) < 2:
             continue
         lo_, hi_ = min(vals.values()), max(vals.values())
@@ -74,10 +99,9 @@ def kpi(cards: dict) -> dict:
             scores[k][key] = round(s if hi else 100.0 - s, 1)
     out = {}
     for k, s in scores.items():
-        g = [s[x] for x in GENERAL if x in s]
-        c = [s[x] for x in CHASE if x in s]
-        out[k] = {"name": ok[k]["aircraft"], "general": round(float(np.mean(g)), 1) if g else None,
-                  "chase": round(float(np.mean(c)), 1) if c else None, "per_property": s}
+        mean = lambda keys: (round(float(np.mean([s[x] for x in keys if x in s])), 1) if any(x in s for x in keys) else None)
+        out[k] = {"name": ok[k]["aircraft"], "general": mean(GENERAL), "chase": mean(CHASE), "urban_chase": mean(URBAN),
+                  "open_field_chase": mean(OPEN_FIELD), "per_property": s}
     return out
 
 
@@ -145,7 +169,7 @@ def charts(path: Path) -> list:
     rows = (n + cols - 1) // cols
     fig, axs = plt.subplots(rows, cols, figsize=(15, 3.2 + 0.28 * len(keys) * rows), facecolor=SURFACE)
     for ax, (key, lab, unit, hi) in zip(axs.flat, PROPS):
-        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km", "kg") else "{:.0f}")
+        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km", "kg", "share") else "{:.0f}")
         _style(ax, f"{lab} ({'higher' if hi else 'lower'} is better)", unit)
     for ax in list(axs.flat)[n:]:
         ax.set_visible(False)
@@ -157,11 +181,12 @@ def charts(path: Path) -> list:
     plt.close(fig)
 
     # 2. KPI scores: general and chase, then the per-property scores as a table-like grid of bars
-    fig, axs = plt.subplots(1, 2, figsize=(13, 1.6 + 0.3 * len(keys)), facecolor=SURFACE)
-    for ax, which in zip(axs, ("general", "chase")):
+    fig, axs = plt.subplots(2, 2, figsize=(13, 3.2 + 0.6 * len(keys)), facecolor=SURFACE)
+    for ax, (which, title) in zip(axs.flat, (("general", "General"), ("chase", "Chase"), ("urban_chase", "Urban chase"),
+                                             ("open_field_chase", "Open-field long chase"))):
         order = sorted(keys, key=lambda k: -(K[k][which] or 0))
         _bars(ax, [K[k]["name"] for k in order], [K[k][which] for k in order], "score")
-        _style(ax, f"{which.capitalize()} KPI score (0-100, relative to this set)", "score")
+        _style(ax, f"{title} KPI (0-100, relative to this set)", "score")
         ax.set_xlim(0, 115)
     fig.suptitle(f"ARIGO family: KPI scores — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
     _legend(fig)

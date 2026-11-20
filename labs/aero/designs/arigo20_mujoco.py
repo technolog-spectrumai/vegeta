@@ -38,7 +38,7 @@ class Sim20(amj.Sim):
             thr = self.controls[3] * ok / 2                       # the thrust of the fans still running
             F, M, info = am.aero(self.C, s["v_air_frd"], s["omega_frd"], *self.controls[:3], thr)
             if ok == 1:                                           # one fan: its thrust off the centre line yaws the nose
-                T = max(self.C["thrust"]["T0_N"] * thr * (1 - s["v_air_frd"][0] / self.C["thrust"]["V0_m_s"]), 0.0)
+                T = am.max_thrust(self.C, s["v_air_frd"][0]) * thr
                 M[2] += (1 if self.motor_ok[0] else -1) * self.C["y_motor_m"] * T
             R = self.R()
             self.d.xfrc_applied[self.bid, :3] = R @ (F * amj.FLIP)

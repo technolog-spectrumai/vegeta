@@ -25,13 +25,14 @@ def coefficients(wing: str = "hybrid") -> dict:
     k = mb["total_g"] / 1000.0 / C["mass"]                     # ARIGO-2's own budget (its nacelles and props) over the sketch's
     C.update({"mass": mb["total_g"] / 1000.0, "inertia": tuple(i * k for i in C["inertia"]), "mass_budget": mb})
     C.update({"aircraft": "ARIGO-2", "y_motor_m": p["nacelle_y"] / 1e3, "per_motor_T0_N": 0.5 * C["thrust"]["T0_N"]})
+    C["thrust"] = am.propulsion_table("twin", C["mass"], C["CD0"], C["S"])     # ARIGO-2's mass
     return C
 
 
 def thrusts(C: dict, u_air: float, t_left: float, t_right: float):
     """Each motor's thrust [N] at the forward airspeed u_air."""
-    k = max(0.0, 1 - u_air / C["thrust"]["V0_m_s"])
-    return (C["per_motor_T0_N"] * max(0.0, min(1.0, t_left)) * k, C["per_motor_T0_N"] * max(0.0, min(1.0, t_right)) * k)
+    half = 0.5 * am.max_thrust(C, u_air)                       # each motor: half the pair's full thrust at this speed
+    return (half * max(0.0, min(1.0, t_left)), half * max(0.0, min(1.0, t_right)))
 
 
 def aero2(C: dict, vel_b, omega_b, de=0.0, da=0.0, dr=0.0, t_left=0.5, t_right=0.5):
