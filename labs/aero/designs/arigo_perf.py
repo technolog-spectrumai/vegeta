@@ -21,6 +21,14 @@ import arigo1_model as am
 import arigo1_mujoco as amj
 
 N_MAX = 6.0                       # HAND: structural limit
+# energy (endurance and range): the pack, the efficiencies, the avionics
+PACK_PROP = "liion-3s2p-p42a"     # ARIGO-0/1/2: Li-ion 3S2P Molicel P42A, 8400 mAh, 450 g (ogma.batteries; 90 A pack)
+PACK_EDF_WH = 22.2 * 4.0          # HAND: ARIGO-20, a 6S 4000 mAh LiPo (~600 g, 30C+): the fans need ~2 x 60 A; not in the catalogue
+USABLE = 0.85                     # HAND: usable share of the nominal energy (Li-ion to 3.0 V/cell under load, ageing) +-0.05
+ETA_PROFILE = 0.80                # HAND: propeller profile + swirl losses on top of the ideal (actuator-disc) efficiency +-0.05
+ETA_FAN = 0.80                    # HAND: ducted fan rotor+stator efficiency on top of the ideal (jet) efficiency +-0.05
+ETA_DRIVE = 0.85                  # HAND: motor x ESC at part load +-0.05
+P_AVIONICS_W = 15.0               # HAND: flight computer, Jetson-class vision, radio, servos (+-5 W)
 BANDIT_SPEEDS = (10.0, 14.0, 18.0)
 
 
@@ -84,7 +92,65 @@ def point_mass(C) -> dict:
             "climb_curve": [{"V_m_s": round(float(V), 1), "rate_m_s": round(float(r), 2)} for V, r in zip(Vgrid[::20], roc[::20]) if r >= 0],
             "corner_speed_m_s": round(math.sqrt(N_MAX * W / (q(1.0) * S * cl_max)), 1),
             "best_sustained_turn": best_s, "best_instant_turn": best_i, "turns": turns,
-            "run_down": run_down(C, cd_of, Vmax)}
+            "run_down": run_down(C, cd_of, Vmax),
+            "energy": energy(C, cd_of, Vs, Vmax)}
+
+
+def pack(C):
+    """(usable energy [Wh], description)."""
+    if C.get("propulsion") == "edf":
+        return PACK_EDF_WH * USABLE, f"6S 4000 mAh LiPo (hand), {PACK_EDF_WH:.0f} Wh nominal, {USABLE:.0%} usable"
+    from ogma.batteries import BATTERIES
+    b = next(x for x in BATTERIES if x.key == PACK_PROP)
+    wh = b.cells * b.cell_v_nominal * b.capacity_mah / 1000.0
+    return wh * USABLE, f"{b.name}, {wh:.0f} Wh nominal, {USABLE:.0%} usable"
+
+
+def disc_area(C):
+    """The propulsors' total actuator area [m2]: the propeller disc(s), or the fans' exit areas."""
+    if C.get("propulsion") == "edf":
+        import arigo20 as a20
+        p = a20.resolve()
+        return 2 * math.pi * (p["nozzle_ratio"] * p["edf_diameter"] / 2000.0) ** 2
+    if C.get("propulsion") == "twin":
+        import arigo2 as a2
+        return 2 * math.pi * (a2.resolve(a2.variant("hybrid"))["twin_prop_diameter"] / 2000.0) ** 2
+    import arigo1 as a1
+    return math.pi * (a1.resolve()["prop_diameter"] / 2000.0) ** 2
+
+
+def electrical_power(C, T, V):
+    """Battery power [W] for thrust T at speed V: ideal efficiency from momentum theory over the propulsors' area
+    (actuator disc for propellers; for the fans the jet: T = rho A Vj (Vj - V), eta = 2 V / (V + Vj)), times the
+    profile/fan and drive efficiencies (HAND), plus the avionics."""
+    A = disc_area(C)
+    if T <= 0:
+        return P_AVIONICS_W
+    if C.get("propulsion") == "edf":
+        Vj = 0.5 * (V + math.sqrt(V * V + 4 * T / (am.RHO * A)))
+        eta = 2 * V / (V + Vj) * ETA_FAN
+    else:
+        vi = 0.5 * (-V + math.sqrt(V * V + 2 * T / (am.RHO * A)))
+        eta = V / (V + vi) * ETA_PROFILE
+    return T * V / max(eta, 1e-3) / ETA_DRIVE + P_AVIONICS_W
+
+
+def energy(C, cd_of, Vs, Vmax) -> dict:
+    """Endurance and still-air range on the pack: power required over speed (level, 1 g), the speed of least power
+    (endurance) and of least energy per metre (range), and at cruise."""
+    E, what = pack(C)
+    W, S = C["mass"] * am.G, C["S"]
+    Vs_ = np.linspace(max(Vs * 1.15, 8.0), max(Vmax, Vs * 1.2), 120)            # 15 % above the stall: a usable margin
+    P = np.array([electrical_power(C, 0.5 * am.RHO * V * V * S * cd_of(W / (0.5 * am.RHO * V * V * S)), V) for V in Vs_])
+    ke, kr = int(np.argmin(P)), int(np.argmin(P / Vs_))
+    Vc = 30.0 if C.get("propulsion") == "edf" else 18.0
+    Pc = float(np.interp(Vc, Vs_, P))
+    return {"pack": what, "usable_Wh": round(E, 1), "avionics_W": P_AVIONICS_W,
+            "endurance_min": round(float(E / P[ke] * 60), 1), "endurance_speed_m_s": round(float(Vs_[ke]), 1), "power_at_endurance_W": round(float(P[ke]), 1),
+            "range_km": round(float(E / P[kr] * 3600 * Vs_[kr] / 1000), 1), "range_speed_m_s": round(float(Vs_[kr]), 1),
+            "cruise": {"speed_m_s": Vc, "power_W": round(Pc, 1), "endurance_min": round(E / Pc * 60, 1), "range_km": round(E / Pc * 3.6 * Vc, 1)},
+            "power_curve": [{"V_m_s": round(float(v), 1), "power_W": round(float(p), 1)} for v, p in zip(Vs_[::10], P[::10])],
+            "source": "point mass + momentum theory; efficiencies, pack usable share and avionics power are hand values (see arigo_perf.py)"}
 
 
 def run_down(C, cd_of, Vmax, start_m=60.0, catch_m=5.0, V0=None) -> dict:
@@ -154,7 +220,8 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "pitch_rate_deg_s": out["mujoco"]["responses_at_cruise"]["pitch"]["peak_rate_deg_s"],
                       "yaw_rate_deg_s": out["mujoco"]["responses_at_cruise"]["yaw"]["peak_rate_deg_s"],
                       "run_down_14_m_s_bandit_s": pm["run_down"]["bandit_14_m_s"]["time_to_5m_s"],
-                      "zigzag_closest_m": out["mujoco"]["zigzag_chase"]["closest_m"]}
+                      "zigzag_closest_m": out["mujoco"]["zigzag_chase"]["closest_m"],
+                      "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"]}
     return out
 
 

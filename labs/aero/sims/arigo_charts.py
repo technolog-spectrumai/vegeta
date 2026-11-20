@@ -10,7 +10,7 @@ KPIs: each property scored 0-100 across the configurations in the file (min-max;
 then averaged into a general score and a chase score:
 
 - general: max speed, min speed (low), max climb, best sustained turn, tightest sustained radius (low), roll rate,
-  pitch rate (first 0.3 s), yaw rate;
+  pitch rate (first 0.3 s), yaw rate, endurance, range;
 - chase: run-down time on a 14 m/s bandit (low), zig-zag chase closest approach (low), best instantaneous turn,
   max speed, roll rate.
 
@@ -43,9 +43,11 @@ PROPS = [  # (summary key, label, unit, higher is better)
     ("yaw_rate_deg_s", "Yaw rate (full rudder)", "deg/s", True),
     ("run_down_14_m_s_bandit_s", "Run down a 14 m/s bandit", "s", False),
     ("zigzag_closest_m", "Zig-zag chase: closest", "m", False),
+    ("endurance_min", "Endurance (best speed)", "min", True),
+    ("range_km", "Range (still air)", "km", True),
 ]
 GENERAL = ["max_speed_m_s", "min_speed_m_s", "max_climb_m_s", "best_sustained_turn_deg_s", "tightest_sustained_radius_m",
-           "roll_rate_deg_s", "pitch_rate_deg_s", "yaw_rate_deg_s"]
+           "roll_rate_deg_s", "pitch_rate_deg_s", "yaw_rate_deg_s", "endurance_min", "range_km"]
 CHASE = ["run_down_14_m_s_bandit_s", "zigzag_closest_m", "best_instant_turn_deg_s", "max_speed_m_s", "roll_rate_deg_s"]
 
 
@@ -142,7 +144,7 @@ def charts(path: Path) -> list:
     rows = (n + cols - 1) // cols
     fig, axs = plt.subplots(rows, cols, figsize=(15, 3.2 + 0.28 * len(keys) * rows), facecolor=SURFACE)
     for ax, (key, lab, unit, hi) in zip(axs.flat, PROPS):
-        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m") else "{:.0f}")
+        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km") else "{:.0f}")
         _style(ax, f"{lab} ({'higher' if hi else 'lower'} is better)", unit)
     for ax in list(axs.flat)[n:]:
         ax.set_visible(False)
@@ -169,7 +171,7 @@ def charts(path: Path) -> list:
 
     # 3. curves over speed: sustained turn rate and climb rate, one panel per aircraft, one line per wing
     fams = [f for f in COLOUR if any(_family(cards[k]["aircraft"]) == f for k in keys)]
-    fig, axs = plt.subplots(2, len(fams), figsize=(4.2 * len(fams), 7), facecolor=SURFACE, squeeze=False)
+    fig, axs = plt.subplots(3, len(fams), figsize=(4.2 * len(fams), 10.5), facecolor=SURFACE, squeeze=False)
     for j, fam in enumerate(fams):
         for k in keys:
             nm = cards[k]["aircraft"]
@@ -184,7 +186,10 @@ def charts(path: Path) -> list:
             c = [(x["V_m_s"], x["rate_m_s"]) for x in pm.get("climb_curve", [])]
             if c:
                 axs[1, j].plot(*zip(*c), color=WING_COLOUR[wing], lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
-        for i, (lab, unit) in enumerate((("Sustained turn rate", "deg/s"), ("Climb rate", "m/s"))):
+            e = [(x["V_m_s"], x["power_W"]) for x in (pm.get("energy") or {}).get("power_curve", [])]
+            if e:
+                axs[2, j].plot(*zip(*e), color=WING_COLOUR[wing], lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
+        for i, (lab, unit) in enumerate((("Sustained turn rate", "deg/s"), ("Climb rate", "m/s"), ("Battery power, level flight", "W"))):
             ax = axs[i, j]
             _style(ax, f"{fam}: {lab}")
             ax.grid(axis="y", color=GRID, lw=0.8)
@@ -192,7 +197,7 @@ def charts(path: Path) -> list:
             ax.set_xlabel("airspeed (m/s)", fontsize=8, color=INK2)
             if ax.lines:
                 ax.legend(fontsize=7, frameon=False)
-    fig.suptitle(f"ARIGO family: turn and climb over speed (point mass) — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
+    fig.suptitle(f"ARIGO family: turn, climb and power over speed (point mass) — {sub}", x=0.01, ha="left", fontsize=12, color=INK)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     out.append(stem.parent / f"{stem.name}_curves.png")
     fig.savefig(out[-1], dpi=110, facecolor=SURFACE)
