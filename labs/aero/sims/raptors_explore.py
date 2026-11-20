@@ -32,10 +32,16 @@ the baseline, the best spec and what it gained, plus charts next to it (``*_expl
 """
 from __future__ import annotations
 
+import os
+
+# one maths thread per worker: numpy's BLAS otherwise starts one per core in EVERY worker (12 workers x 16 threads
+# froze a 16-thread laptop). Set before numpy loads; the shell launcher sets them too.
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+
 import argparse
 import datetime as dt
 import json
-import os
 import socket
 import sys
 import time
@@ -51,6 +57,41 @@ import arigo1_resume as rs                                           # noqa: E40
 
 rs.GLOBS = ["arigo*.py"]
 OUT = HERE / "output"
+WORKER_GB = 1.0          # measured: ~0.81 GB per worker (CadQuery/OCC ~0.48 GB on import, MuJoCo + one card), + margin
+KEEP_GB = 3.0            # left for the desktop and the parent process
+KEEP_CORES = 2
+
+
+def mem_available_gb() -> float | None:
+    try:
+        for line in open("/proc/meminfo"):
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) / 1024 ** 2
+    except OSError:
+        return None
+    return None
+
+
+def safe_workers(requested: int, force: bool = False) -> tuple[int, str]:
+    """The number of worker processes this machine can carry: <= cores - KEEP_CORES and <= (free RAM - KEEP_GB) /
+    WORKER_GB. ``force`` keeps the request."""
+    cores = os.cpu_count() or 2
+    cap_cpu = max(1, cores - KEEP_CORES)
+    mem = mem_available_gb()
+    cap_mem = max(1, int((mem - KEEP_GB) // WORKER_GB)) if mem is not None else cap_cpu
+    cap = min(cap_cpu, cap_mem)
+    why = f"{cores} cores, {mem:.1f} GB free" if mem is not None else f"{cores} cores"
+    if force or requested <= cap:
+        return requested, why
+    return cap, why
+
+
+def _init_worker():
+    """Workers run at low priority: the desktop stays responsive however many there are."""
+    try:
+        os.nice(10)
+    except OSError:
+        pass
 
 
 def _work(job):
@@ -178,7 +219,9 @@ def charts(path: Path, doc: dict) -> list:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="raptors_explore.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
     ap.add_argument("products", nargs="*", help="bbuteo arpella astor sparfell (default: all)")
-    ap.add_argument("-j", "--cpu", type=int, default=1, help="worker processes (default 1)")
+    ap.add_argument("-j", "--cpu", type=int, default=1,
+                    help="worker processes (default 1). Capped to the machine: cores - 2 and (free RAM - 3 GB) / 1 GB each")
+    ap.add_argument("--force-cpu", action="store_true", help="use -j as given, even past the memory/core cap")
     ap.add_argument("--fresh", action="store_true", help="forget the cache: score every spec again")
     ap.add_argument("--list", action="store_true", help="list the specs and exit")
     ap.add_argument("--samples", type=int, default=24, help="Monte Carlo launches per envelope (landings: a quarter, min 4)")
@@ -210,6 +253,10 @@ def main(argv=None) -> int:
         ex = c.get("explore") or {}
         return "error" in c or (robust and (not ex.get("robust") or ex.get("samples") != a.samples or "error" in (c.get("robust") or {})))
     jobs = [(pk, k, robust, a.samples) for pk, k, *_ in rows if k not in cache["cards"] or stale(cache["cards"][k])]
+    n_req = a.cpu
+    a.cpu, why = safe_workers(a.cpu, a.force_cpu)
+    if a.cpu < n_req:
+        print(f"-j {n_req} lowered to {a.cpu} ({why}; ~{WORKER_GB:.0f} GB per worker). --force-cpu to insist.")
     print(f"{len(rows)} specs for {', '.join(want)}: {len(rows) - len(jobs)} cached, {len(jobs)} to score on {a.cpu} process(es)")
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_p = OUT / "runs" / f"raptors_explore_{stamp}_{socket.gethostname()}.yaml"
@@ -232,7 +279,7 @@ def main(argv=None) -> int:
             print(f"  {rs.eta(len(cache['cards']), len(rows), t0)} {card.get('aircraft', key)}")
     if a.cpu > 1 and jobs:
         import multiprocessing as mp
-        with mp.get_context("fork").Pool(a.cpu, maxtasksperchild=8) as pool:
+        with mp.get_context("fork").Pool(a.cpu, initializer=_init_worker, maxtasksperchild=8) as pool:
             for key, card in pool.imap_unordered(_work, jobs, chunksize=1):
                 done(key, card)
     else:
