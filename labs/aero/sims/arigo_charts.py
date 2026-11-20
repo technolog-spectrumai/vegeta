@@ -81,20 +81,19 @@ EXTRA = [("zigzag_share_within_10m", True), ("run_down_18_m_s_bandit_s", False)]
 # the set of configurations does. All thresholds and objectives are HAND (the client's assumptions): tune them here.
 # (summary key, label, threshold, objective) — lower-is-better when objective < threshold; booleans 0/100.
 MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidence and the gates are there)
-    "buteo": ("BUTEO: point defence from a perch or launch station", [
-        ("cue_to_safe_s", "B1 readiness: cue to safe flight (s)", 12, 3),
+    "buteo": ("BUTEO: guards one site, unattended, from a charging pad", [
+        ("cue_to_safe_s", "B1 readiness: cue to wing-borne flight (s)", 14, 6),
         ("standby_h", "B2 readiness: watch on station (h)", 2, 24),
-        ("perch_margin_m", "B3 deployment: perch height to spare (m)", 0, 6),
-        ("launch_success_pct", "B4 deployment: launch success, 0-12 m/s + gusts (%)", 95, 99.5),
-        # B5 (the quasi-steady gust stall) is reported, not scored: a very conservative bound; B6's turbulence model
-        # measures gust tolerance in flight (decision 2026-11-20)
+        ("pad_miss_p90_m", "B3 recovery: pad landing miss, 90th percentile at 8 m/s wind (m)", 0.22, 0.05),
+        ("launch_success_pct", "B4 deployment: take-off and transition success, 0-12 m/s + gusts (%)", 95, 99.5),
+        # B5 (the quasi-steady gust stall) is reported, not scored (decision 2026-11-20)
         ("operating_wind_m_s", "B6 weather: operating wind, gusts 1.5x (m/s)", 12, 15),
-        ("perch_lift_off_wind_m_s", "B7 weather: wind that lifts it off the perch (m/s)", 15, 30),
+        ("hover_rms_12_m", "B7 weather: hover position error in a 12 m/s wind, rms (m)", 0.5, 0.1),
         ("keep_out_30_m_s_m", "B8 effect: keep-out vs a 30 m/s drone (m)", 1000, 2000),
         ("urban_time_to_5m_s", "B9 effect: urban chase, time to 5 m (s)", 15, 3),
-        ("touchdown_energy_J", "B10 recovery: touchdown energy (J)", 300, 40),
-        ("landing_miss_m", "B11 recovery: miss from the aim point (m)", 30, 3),
-        ("turnaround_s", "B12 recovery: landed to ready (s)", 600, 120)]),
+        ("pad_sink_m_s", "B10 recovery: sink at touchdown on the pad (m/s)", 1.5, 0.3),
+        ("cycles_per_charge", "B11 readiness: intercept cycles on one charge", 1, 4),
+        ("turnaround_s", "B12 readiness: landed to recharged for the next cycle (s)", 1800, 600)]),
     "arpella": ("ARPELLA: area patrol out to 10 km", [
         ("endurance_min", "A1 endurance (min)", 45, 120),
         ("reserve_10km_pct", "A2 pack left after a 10 km mission (%)", 15, 50),
@@ -135,7 +134,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("calm_success_pct", "P13 calm air: throw and landing success (%)", 90, 99)]),
 }
 # the gates (pass/fail; KPIS.md): a spec failing its line's gate scores 0 for that line
-GATES = {"buteo": [("launch", lambda v: v in ("perch", "site launcher"))],
+GATES = {"buteo": [("launch", lambda v: v == "pad"),              # the unattended cycle: off its pad, and back onto it
+                   ("pad_landing_calm_ok", lambda v: bool(v))],
          "arpella": [("wind_limit_10km_m_s", lambda v: v is not None and v >= 10.0)],
          "astor": [("launch", lambda v: v == "site launcher"),
                    ("tail_chase_50_m_s", lambda v: bool(v))],     # decided 2026-11-20: it must catch 50 m/s from behind

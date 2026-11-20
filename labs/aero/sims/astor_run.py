@@ -46,7 +46,7 @@ import yaml                                                          # noqa: E40
 
 import arigo1_resume as rs                                           # noqa: E402
 
-rs.GLOBS = ["arigo*.py", "astor*.py", "raptors*.py"]
+rs.GLOBS = ["arigo*.py", "astor*.py", "buteo*.py", "raptors*.py"]
 OUT = HERE / "output"
 RUNS = HERE.parent / "_runs" / "astor_cfd"
 DATA = DESIGNS / "data" / "astor_cfd_screening.yaml"
@@ -64,10 +64,10 @@ def _bar(total, done, desc):
         return None
 
 
-def _write(phase, doc):
+def _write(phase, doc, name="astor"):
     (OUT / "runs").mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    p = OUT / "runs" / f"astor_{phase}_{stamp}_{socket.gethostname()}.yaml"
+    p = OUT / "runs" / f"{name}_{phase}_{stamp}_{socket.gethostname()}.yaml"
     p.write_text(yaml.safe_dump(_clean(doc), sort_keys=False, width=140))
     return p
 
@@ -81,12 +81,15 @@ def _meta(phase, a):
 
 
 # ------------------------------------------------------------------------------------------------ 1. CFD
-def phase_cfd(a) -> int:
-    import astor_cfd as cf
+def phase_cfd(a, cf=None, name="astor", data=None, meta=None) -> int:
+    if cf is None:
+        import astor_cfd as cf
+    data = data or DATA
+    meta = meta or _meta
     quality = "fine" if a.full_cfd else a.quality
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"astor_cfd{'_fine' if a.full_cfd else ''}.yaml"
-    doc = rs.load(path, a.fresh) or {"aircraft": "ASTOR", "speed_m_s": cf.SPEED, "dash_speed_m_s": cf.DASH_SPEED, "quality": quality,
+    path = OUT / f"{name}_cfd{'_fine' if a.full_cfd else ''}.yaml"
+    doc = rs.load(path, a.fresh) or {"aircraft": name.upper(), "speed_m_s": cf.SPEED, "dash_speed_m_s": cf.DASH_SPEED, "quality": quality,
                                      "rows": [], "dash_rows": []}
     ref = cf.reference()
     doc["reference"] = {**ref, "cg_mm": list(ref["cg_mm"])}
@@ -95,8 +98,8 @@ def phase_cfd(a) -> int:
     todo = [("rows", al, cf.SPEED) for al in a.alphas if float(al) not in {float(r["alpha_deg"]) for r in doc["rows"]}]
     todo += [("dash_rows", al, cf.DASH_SPEED) for al in cf.DASH_ALPHAS if float(al) not in {float(r["alpha_deg"]) for r in doc["dash_rows"]}]
     total = len(a.alphas) + len(cf.DASH_ALPHAS)
-    print(f"ASTOR CFD ({quality}): {total - len(todo)} cases already solved (kept), {len(todo)} to run on {a.cpu} MPI process(es)")
-    bar = _bar(total, total - len(todo), "astor cfd")
+    print(f"{name.upper()} CFD ({quality}): {total - len(todo)} cases already solved (kept), {len(todo)} to run on {a.cpu} MPI process(es)")
+    bar = _bar(total, total - len(todo), f"{name} cfd")
     ok = 0
     for key, al, V in todo:
         err = ""
@@ -121,11 +124,11 @@ def phase_cfd(a) -> int:
     solved = [r for r in doc["rows"] if r.get("status") == "solved"]
     installed = False
     if len(solved) >= 6 and not a.no_install and not a.full_cfd:
-        shutil.copy(path, DATA)
+        shutil.copy(path, data)
         installed = True
-        print(f"installed -> {DATA}  (phases 2 and 3 now use the CFD)")
-    run = _write("cfd", {"run": {**_meta("cfd", a), "quality": quality, "installed": installed, "solved": len(solved),
-                                 "dash_solved": len(doc["dash_rows"])}, "results": {"astor_cfd": doc}})
+        print(f"installed -> {data}  (phases 2 and 3 now use the CFD)")
+    run = _write("cfd", {"run": {**meta("cfd", a), "quality": quality, "installed": installed, "solved": len(solved),
+                                 "dash_solved": len(doc["dash_rows"])}, "results": {f"{name}_cfd": doc}}, name)
     for p in charts_cfd(run, doc):
         print("->", p)
     print("->", run)
@@ -144,7 +147,7 @@ def charts_cfd(run: Path, doc) -> list:
     for ax, k, km, lab in zip(axs, ("Cl", "Cd", "Cm_cg"), ("Cl", "Cd", "Cm"), ("CL", "CD", "Cm about the CG")):
         ax.plot(al, [r[k] for r in rows], color="#eda100", lw=2, marker="o", label="CFD")
         ax.plot(al, [r["model"][km] for r in rows], color="#52514e", lw=1.5, ls="--", label="lattice + hand")
-        ax.set_title(f"ASTOR: {lab} at {doc.get('speed_m_s', 30):.0f} m/s", fontsize=10, loc="left")
+        ax.set_title(f"{doc.get('aircraft', 'ASTOR')}: {lab} at {doc.get('speed_m_s', 30):.0f} m/s", fontsize=10, loc="left")
         ax.set_xlabel("angle of attack (deg)", fontsize=8); ax.grid(color="#e4e3df"); ax.legend(fontsize=8, frameon=False)
     fig.tight_layout()
     out = run.with_name(run.stem + "_polar.png")
@@ -191,7 +194,8 @@ def _job(job):
     return "|".join(str(x) for x in job), out
 
 
-def _run_jobs(jobs, a, cache_name, desc):
+def _run_jobs(jobs, a, cache_name, desc, job_fn=None):
+    job_fn = job_fn or _job
     import raptors_explore as RX
     OUT.mkdir(parents=True, exist_ok=True)
     cache_p = OUT / cache_name
@@ -215,11 +219,11 @@ def _run_jobs(jobs, a, cache_name, desc):
     if cpu > 1 and len(todo) > 1:
         import multiprocessing as mp
         with mp.get_context("fork").Pool(cpu, initializer=RX._init_worker, maxtasksperchild=4) as pool:
-            for k, out in pool.imap_unordered(_job, todo, chunksize=1):
+            for k, out in pool.imap_unordered(job_fn, todo, chunksize=1):
                 done(k, out)
     else:
         for j in todo:
-            done(*_job(j))
+            done(*job_fn(j))
     if bar:
         bar.close()
     return {key(j): cache["jobs"][key(j)] for j in jobs}

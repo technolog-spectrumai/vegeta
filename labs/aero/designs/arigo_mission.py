@@ -264,6 +264,8 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
     if how == "hand":
         site = {"how": "hand", "t0": hand["time_to_safe_s"] if hand["ok"] else 30.0, "h0": amj.SAFE_HEIGHT_M}
         alert = HAND_ALERT_S
+    elif how == "pad":                                               # a VTOL on its charging pad (BUTEO): its own take-off time
+        site = {"how": "pad", "t0": eq.get("pad_time_s", 6.0), "h0": 15.0}
     elif (how in (None, "perch")) and perch["ok"]:
         site = {"how": "perch", "t0": perch["time_to_safe_s"], "h0": PERCH_HEIGHT_M}
     elif how in (None, "rail") and launch["catapult"]["ok"]:
@@ -375,6 +377,9 @@ def setup_of(name):
     """(CAD class, parameters, propulsion kind) from a card's display name, e.g. "ARIGO-0 strut hybrid"."""
     import arigo1 as a1
     w = next((x for x in ("goshawk", "zero", "hybrid") if x in name), "hybrid")
+    if name.startswith("BUTEO"):
+        import buteo
+        return buteo.Buteo, buteo.variant(), "pusher"
     if name.startswith("ASTOR"):
         import astor
         return astor.Astor, astor.variant(), "pusher"

@@ -9,7 +9,7 @@ that decide each job were outside what a kit can change. Those are an unattended
 > high-aspect-ratio patroller, ASTOR a propeller dart and SPARFELL a compact flying wing. ASTOR's requirement is
 > fixed: it must catch a **50 m/s** target from behind. They are concepts: none has CAD, CFD or a simulation yet,
 > except ASTOR, which is built first (branch `dev_astor1`): `designs/astor.py` and `designs/data/astor/` hold the CAD,
-> and `KPIS.md` its first results.
+> and `KPIS.md` its first results. BUTEO followed (branch `dev_buteo1`): `designs/buteo.py`, `designs/data/buteo/`.
 
 This document works from the application down to the configuration. All sizing numbers are **first-cut estimates**
 from `designs/raptors_sizing.py`: a parabolic polar, a mass build-up, momentum-theory hover. Two anchors come from

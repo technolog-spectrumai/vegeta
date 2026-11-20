@@ -276,3 +276,55 @@ not your run.
 1. `labs/aero/sims/astor_cfd.sh -j 12`: the polar at 30 m/s and the drag at 65 m/s. It installs the result for phases 2 and 3.
 2. `labs/aero/sims/astor_stability.sh -j 12`
 3. `labs/aero/sims/astor_missions.sh -j 12`: every pack option, the chases, launch success, the KPIs.
+
+---
+
+## BUTEO as its own airframe (branch `dev_buteo1`, 2026-11-20)
+
+BUTEO is the lift + cruise VTOL of `PRODUCT_SPACE.md`, with its own design file (`designs/buteo.py`), flight model,
+hover-capable simulator (`designs/buteo_mujoco.py`) and CFD cases. The perch-drop KPIs above no longer apply to it.
+
+**The airframe**
+- A pod with the wing on top: 1.1 m span, aspect ratio 6.
+- Two carbon booms carrying four 9×5 lift rotors (300 W each) and an H tail.
+- An 800 W pusher between the booms.
+- Four feet with charging contacts; they form a 0.54 m square.
+- A 4S2P Li-ion pack. Mass 2.29 kg.
+- A 1.2 m charging pad, which leaves a landing tolerance of 0.22 m.
+
+**The gate.** The unattended cycle: it launches from its pad and lands back on it (in the sim, calm air).
+
+**KPIs** (they replace B1–B12 for this airframe)
+
+| ID | KPI | Threshold | Objective | First value | Evidence |
+|---|---|---|---|---|---|
+| B1 | Cue to wing-borne safe flight (s) | 14 | 6 | 8.1 (2 s alert + 6.1 s) | SIM |
+| B2 | Watch on station (h) | 2 | 24 | 24: on a charging pad | PROP |
+| B3 | Pad landing miss, 90th percentile at 8 m/s wind (m) | 0.22 | 0.05 | 0.08 | SIM (3 draws) |
+| B4 | Take-off and transition success, 0–12 m/s with gusts (%) | 95 | 99.5 | 100 | SIM (3 draws per wind) |
+| B6 | Operating wind, gusts 1.5× (m/s) | 12 | 15 | 12: at 16 m/s the landing fails | SIM |
+| B7 | Hover position error in a 12 m/s wind, rms (m) | 0.5 | 0.1 | 0.11 | SIM |
+| B8 | Keep-out vs a 30 m/s drone cued at 3 km (m) | 1000 | 2000 | 1612 | SIM + EST |
+| B9 | Urban PN chase: time to 5 m (s) | 15 | 3 | 19.5 | SIM |
+| B10 | Sink at touchdown on the pad (m/s) | 1.5 | 0.3 | 0.41 | SIM |
+| B11 | Intercept cycles on one charge | 1 | 4 | 4.8 (21.4 Wh per cycle of 103 Wh usable) | SIM + EST |
+| B12 | Landed to recharged for the next cycle, at 1C (s) | 1800 | 600 | 637 | EST |
+
+**Score: 72.9** on the lattice model, before BUTEO's own CFD. The gate is met.
+
+**Findings**
+- **The cycle works in the sim up to 12–14 m/s wind** (gusts 18–21 m/s). Take-offs succeed from every heading, and
+  landings stay on the pad. At 16 m/s it can no longer hold position over the pad.
+- **Tailwind take-offs needed a model fix.** The wing model is not valid with the air arriving from behind. The
+  simulator now blends to a bluff-body model for flow far off the nose. Those drag areas are hand estimates.
+- **The weak KPI is the urban chase** (19.5 s, below the threshold). The lift rotors add mass and drag, and before
+  the CFD the stall is pessimistic (15.6 m/s). BUTEO catches by being there first, not by out-turning.
+- **The pusher's disc reaches below the feet.** The propeller must be braked level (two blades horizontal) before
+  landing. That is noted in the mass budget and not modelled.
+- **Not modelled:** rotor thrust loss in a crossflow, rotor-wing interference, the pad's contact mechanics, and
+  precision navigation errors (the simulator knows its position exactly).
+
+**To run** (each phase writes one timestamped YAML to paste back):
+1. `labs/aero/sims/buteo_cfd.sh -j 12`
+2. `labs/aero/sims/buteo_stability.sh -j 12`: wing-borne tests, and the hover in 0–16 m/s wind.
+3. `labs/aero/sims/buteo_missions.sh -j 12`: the cycle by Monte Carlo over wind, per pack; the KPIs.
