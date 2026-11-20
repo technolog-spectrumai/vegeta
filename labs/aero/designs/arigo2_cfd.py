@@ -36,15 +36,20 @@ def reference(wing: str) -> dict:
             "model": {k: C[k] for k in ("CL0", "CLa", "CL_MAX", "alpha_stall", "CD0", "k", "Cm0", "Cma", "x_np_m")}}
 
 
-def export_stl(folder, wing, alpha_deg) -> Path:
-    folder = Path(folder)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"arigo2_{wing}_a{alpha_deg:+.0f}.stl"
-    if not path.exists():
+def export_stl(folder, wing, alpha_deg):
+    import arigo_stl
+
+    def build(path):
         from vegeta import dedalus
         shape = a2.Arigo2().generate(**a2.variant(wing)).shape.rotate((0, 0, 0), (0, 1, 0), alpha_deg)
         dedalus.Geometry.from_cadquery(shape, name="arigo2").export_stl(str(path), tolerance=0.2)
-    return path
+    return arigo_stl.stl(folder, f"arigo2_{wing}", alpha_deg, build)
+
+
+def l_ref(wing) -> float:
+    """As ``arigo1_cfd.l_ref``: over 4 chords of body (the Zero's 1 m span) the reference length grows, Cm is scaled back."""
+    p = a2.resolve(a2.variant(wing))
+    return max(reference(wing)["c"], max(p["span"], p["fuselage_length"] + 40.0) / 1000.0 / 3.9)
 
 
 def propeller_8x6():
@@ -59,8 +64,8 @@ def case(workdir, wing="hybrid", *, alpha_deg=0.0, blown=False, V=SPEED, rpm=RPM
     from vegeta import aeromant
     import nisus_systems as ns
     ref = reference(wing)
-    stl = export_stl(Path(workdir) / "stl", wing, alpha_deg)
-    params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=ref["c"],
+    stl, tag = export_stl(Path(workdir) / "stl", wing, alpha_deg)
+    params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(wing),
                   center_of_rotation=tuple(ac.to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])
     template = "rans_ksst_external"
     if blown:
@@ -79,12 +84,14 @@ def case(workdir, wing="hybrid", *, alpha_deg=0.0, blown=False, V=SPEED, rpm=RPM
                       rotation1=1.0 if p["inboard_up"] else -1.0, rotation2=-1.0 if p["inboard_up"] else 1.0)
         template = "aircraft_rotor_disks"
     env = env or aeromant.OpenFOAMEnvironment.detect()
-    name = f"{wing}_{'blown' if blown else 'aero'}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"
+    name = f"{wing}_{'blown' if blown else 'aero'}{tag}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"
     return aeromant.CFDCase(template, str(stl), params, workdir=str(Path(workdir) / name), geometry_units="mm", environment=env)
 
 
 def row(wing, alpha_deg, V, result, blown=False) -> dict:
     r = ac.row(wing, "twin", alpha_deg, V, result)          # the model beside it: ARIGO-1's twin coefficients
+    if r.get("Cm_cg") is not None:                          # ac.row scaled by ARIGO-1's twin reference; use ARIGO-2's
+        r["Cm_cg"] = r["Cm_cg"] / (ac.l_ref(wing, "twin") / ac.reference(wing, "twin")["c"]) * (l_ref(wing) / reference(wing)["c"])
     r["blown"] = blown
     return r
 

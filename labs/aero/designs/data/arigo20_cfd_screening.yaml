@@ -1,0 +1,176 @@
+aircraft: ARIGO-20
+speed_m_s: 30.0
+quality: screening
+rows:
+- alpha_deg: -4.0
+  model:
+    Cl: -0.2258
+    Cd: 0.0387
+    Cm: 0.1033
+  status: solved
+  Cl: -0.268285683
+  Cd: 0.0554377847
+  Cm_cg: 0.048056574389825454
+  converged: false
+  iterations: 300
+  cells: 217243
+  mesh_ok: false
+- alpha_deg: 0.0
+  model:
+    Cl: 0.0985
+    Cd: 0.0348
+    Cm: 0.0641
+  status: solved
+  Cl: 0.122837983
+  Cd: 0.0452371824
+  Cm_cg: -0.08525406316494812
+  converged: false
+  iterations: 300
+  cells: 197955
+  mesh_ok: false
+- alpha_deg: 4.0
+  model:
+    Cl: 0.4196
+    Cd: 0.0483
+    Cm: 0.0249
+  status: solved
+  Cl: 0.478217575
+  Cd: 0.0621699932
+  Cm_cg: -0.14816557934043212
+  converged: false
+  iterations: 300
+  cells: 197505
+  mesh_ok: false
+- alpha_deg: 8.0
+  model:
+    Cl: 0.6893
+    Cd: 0.0801
+    Cm: -0.0143
+  status: solved
+  Cl: 0.69306497
+  Cd: 0.0999575946
+  Cm_cg: -0.1316105137831182
+  converged: false
+  iterations: 300
+  cells: 197088
+  mesh_ok: false
+- alpha_deg: 10.0
+  model:
+    Cl: 0.7464
+    Cd: 0.1044
+    Cm: -0.0339
+  status: solved
+  Cl: 0.770741216
+  Cd: 0.14746186
+  Cm_cg: -0.1716703202756714
+  converged: false
+  iterations: 300
+  cells: 197221
+  mesh_ok: false
+- alpha_deg: 12.0
+  model:
+    Cl: 0.7143
+    Cd: 0.1342
+    Cm: -0.0535
+  status: solved
+  Cl: 0.772901009
+  Cd: 0.190791797
+  Cm_cg: -0.2223043467881052
+  converged: false
+  iterations: 300
+  cells: 209248
+  mesh_ok: false
+- alpha_deg: 14.0
+  model:
+    Cl: 0.6357
+    Cd: 0.1675
+    Cm: -0.0731
+  status: solved
+  Cl: 0.79994683
+  Cd: 0.22966686
+  Cm_cg: -0.3042457173307287
+  converged: false
+  iterations: 300
+  cells: 218920
+  mesh_ok: false
+- alpha_deg: 16.0
+  model:
+    Cl: 0.5833
+    Cd: 0.2023
+    Cm: -0.0926
+  status: solved
+  Cl: 0.994238689
+  Cd: 0.299003802
+  Cm_cg: -0.2684638814937287
+  converged: false
+  iterations: 300
+  cells: 229899
+  mesh_ok: false
+- alpha_deg: 18.0
+  model:
+    Cl: 0.5762
+    Cd: 0.239
+    Cm: -0.1122
+  status: solved
+  Cl: 0.82238685
+  Cd: 0.308924973
+  Cm_cg: -0.25034479990463115
+  converged: false
+  iterations: 300
+  cells: 239061
+  mesh_ok: false
+- alpha_deg: 20.0
+  model:
+    Cl: 0.5984
+    Cd: 0.2783
+    Cm: -0.1318
+  status: solved
+  Cl: 1.11493482
+  Cd: 0.439553107
+  Cm_cg: -0.3643323050090427
+  converged: false
+  iterations: 300
+  cells: 248674
+  mesh_ok: false
+- alpha_deg: 24.0
+  model:
+    Cl: 0.6721
+    Cd: 0.3658
+    Cm: -0.171
+  status: solved
+  Cl: 1.06395848
+  Cd: 0.525058996
+  Cm_cg: -0.35392704699843835
+  converged: false
+  iterations: 300
+  cells: 266337
+  mesh_ok: false
+reference:
+  S: 0.14638800367723354
+  c: 0.2013290694652213
+  b: 0.82
+  mass: 2.7
+  cg_mm:
+  - 349.2059592380128
+  - -3.6
+  model:
+    CL0: 0.09875247275537773
+    CLa: 4.67696528940351
+    CL_MAX: 1.0710264798920228
+    alpha_stall: 0.20788565810815476
+    CD0: 0.034
+    k: 0.07580959336847456
+    Cm0: 0.064081342589
+    Cma: -0.5612358347284209
+    x_np_m: 0.3733654475738393
+summary:
+  CL_max: 1.11493482
+  alpha_CL_max_deg: 20.0
+  CD_min: 0.0452371824
+  CL_alpha_per_rad: 4.640143897345458
+  dCm_dCL: -0.19538861912903843
+  static_margin_mac: 0.19538861912903843
+  nose_drops_after_stall: false
+  lift_kept_after_stall: 0.9542786366650563
+fingerprint: 03126e662fc90db6
+saved_at: '2026-11-20 00:56:33'

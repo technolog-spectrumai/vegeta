@@ -37,34 +37,89 @@ def _vlm(pf, alpha, inc):
     return vlm(pf["quads"], alpha_deg=alpha, incidence_deg=inc, S_ref=pf["S_ref"], c_ref=pf["c_ref"], x_ref=0.0, n_span=a1.N_SPAN_PER_STRIP)
 
 
-CFD_FILE = Path(__file__).resolve().parent / "data" / "arigo1_cfd_screening.yaml"
+DATA = Path(__file__).resolve().parent / "data"
+
+
+def cfd_files():
+    """The CFD result files, newest first (``arigo*_cfd_screening*.yaml``; a later run of the same configuration wins)."""
+    return sorted(DATA.glob("arigo*_cfd_screening*.yaml"), key=lambda f: f.stat().st_mtime if False else f.name, reverse=True)
+
+
+def clean_rows(rows):
+    """Solved rows by alpha, with the unconverged post-stall jumps cut: past 14 deg, a point whose CL rises over the
+    line of the two before it by more than 0.25 starts a spurious branch (goshawk tractor_lowcam at 20 deg: 1.06 after
+    0.71-0.75) — it and what follows are dropped."""
+    rows = sorted((r for r in rows if r.get("status") == "solved" and r.get("Cl") is not None), key=lambda r: r["alpha_deg"])
+    for k in range(2, len(rows)):
+        a0, a1_, a2 = rows[k - 2], rows[k - 1], rows[k]
+        if a2["alpha_deg"] < 14:
+            continue
+        ext = a1_["Cl"] + (a1_["Cl"] - a0["Cl"]) / (a1_["alpha_deg"] - a0["alpha_deg"]) * (a2["alpha_deg"] - a1_["alpha_deg"])
+        if a2["Cl"] - ext > 0.25:
+            return rows[:k]
+    return rows
+
+
+def table(rows) -> dict:
+    return {"alpha_deg": np.array([r["alpha_deg"] for r in rows], float), "CL": np.array([r["Cl"] for r in rows], float),
+            "CD": np.array([r["Cd"] for r in rows], float), "Cm": np.array([r["Cm_cg"] for r in rows], float),
+            "converged_share": float(np.mean([bool(r.get("converged")) for r in rows]))}
 
 
 @lru_cache(maxsize=None)
 def cfd_table(variant: str, propulsion: str):
-    """The solved CFD rows for one configuration (alpha [deg], CL, CD, Cm about the CG), or None. Screening quality,
-    steady RANS, mostly not converged in 300 iterations: used as the best data there is, flagged as such."""
-    if not CFD_FILE.exists():
-        return None
+    """The CFD table for one configuration (alpha [deg], CL, CD, Cm about the CG), or None: from the newest file that
+    has it for this geometry (its reference area and CG match, and it is not listed under ``stale``). Screening
+    quality, steady RANS, mostly not converged in 300 iterations: the best data there is, flagged as such."""
     import yaml
-    cfg = (yaml.safe_load(CFD_FILE.read_text()) or {}).get("configurations", {}).get(f"{variant}_{propulsion}")
-    rows = sorted((r for r in (cfg or {}).get("rows", []) if r.get("status") == "solved"), key=lambda r: r["alpha_deg"])
-    # an outlier at the end of the sweep (unconverged post-stall flow): drop a last point whose CL leaves the line of
-    # the two before it by more than 0.2 (hybrid tractor at 24 deg: 1.29 after 0.84-0.88)
-    if len(rows) >= 3:                                            # one point at most, and only a gross one (> 0.3)
-        a0, a1_, a2 = rows[-3:]
-        ext = a1_["Cl"] + (a1_["Cl"] - a0["Cl"]) / (a1_["alpha_deg"] - a0["alpha_deg"]) * (a2["alpha_deg"] - a1_["alpha_deg"])
-        if abs(a2["Cl"] - ext) > 0.3:
-            rows = rows[:-1]
-    if len(rows) < 6:
-        return None
-    ref = cfg.get("reference", {})
+    key = f"{variant}_{propulsion}"
     C0 = _coefficients(variant, propulsion)
-    if abs(ref.get("S", 0) - C0["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C0["x_cg_m"] * 1e3) > 1.0:
-        return None                                               # computed for an earlier geometry: not this aircraft
-    return {"alpha_deg": np.array([r["alpha_deg"] for r in rows], float), "CL": np.array([r["Cl"] for r in rows], float),
-            "CD": np.array([r["Cd"] for r in rows], float), "Cm": np.array([r["Cm_cg"] for r in rows], float),
-            "converged_share": float(np.mean([bool(r.get("converged")) for r in rows]))}
+    for f in cfd_files():
+        doc = yaml.safe_load(f.read_text()) or {}
+        if key in (doc.get("stale") or {}):
+            continue
+        cfg = doc.get("configurations", {}).get(key)
+        if not cfg:
+            continue
+        ref = cfg.get("reference", {})
+        if abs(ref.get("S", 0) - C0["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C0["x_cg_m"] * 1e3) > 1.0:
+            continue                                              # computed for an earlier geometry: not this aircraft
+        rows = clean_rows(cfg.get("rows", []))
+        if len(rows) >= 6:
+            return {**table(rows), "file": f.name}
+    return None
+
+
+def calibrate(C: dict, t: dict, V: float = 18.0) -> dict:
+    """Put a CFD table ``t`` into the coefficients ``C`` (in place): CL, CD, Cm(alpha) from it, the stabiliser rigged so
+    cruise at ``V`` trims with the elevator neutral."""
+    a = np.radians(t["alpha_deg"])
+    lin = (t["alpha_deg"] >= -4) & (t["alpha_deg"] <= 8)
+    CLa, CL0 = np.polyfit(a[lin], t["CL"][lin], 1)
+    slopes = np.diff(t["CL"]) / np.diff(a)
+    # the stall: the first local maximum of CL past 4 deg (the CFD shows no sharp break: a soft knee at 8-10 deg
+    # and a first peak at 12-20 deg, lift then holding or creeping up — read as a gentle stall)
+    brk = next((k for k in range(1, len(slopes)) if t["alpha_deg"][k] >= 4 and slopes[k] < 0 <= slopes[k - 1]), len(slopes))
+    C.update({"cfd": t, "CLa": float(CLa), "CL0": float(CL0), "CL_MAX": float(t["CL"].max()), "CD0": float(t["CD"].min()),
+              "alpha_stall": float(a[brk]), "Cma": float(np.polyfit(a[lin], t["Cm"][lin], 1)[0]),
+              "Cm0": float(np.interp(0.0, t["alpha_deg"], t["Cm"])),
+              "static_margin_cfd": float(-np.polyfit(t["CL"][lin], t["Cm"][lin], 1)[0])})
+    # the CFD's airframe has the stabiliser at the model's incidence; the measured Cm0 needs a lot of up elevator to
+    # trim. Rig the stabiliser (an incidence change, not the elevator) so cruise at V trims with it neutral.
+    # first guess: the alpha whose CFD lift carries the weight at V, and the moment to cancel there
+    CL_need = C["mass"] * G / (0.5 * RHO * V ** 2 * C["S"])
+    k_max = int(np.argmax(t["CL"]))
+    a_need = float(np.interp(CL_need, np.maximum.accumulate(t["CL"][:k_max + 1]), t["alpha_deg"][:k_max + 1]))
+    C["Cm_rig"] = -float(np.interp(a_need, t["alpha_deg"], t["Cm"]))
+    de_total = C["Cm_rig"] / C["Cmde"]
+    for _ in range(30):                                       # the rig moves the trim alpha: iterate (damped) to neutral elevator
+        de0 = trim(C, V)["elevator_deg"]
+        de_total += 0.5 * de0
+        C["Cm_rig"] = C["Cmde"] * de_total                    # the moment that elevator gave, now built into the stabiliser
+        if abs(de0) < 0.05:
+            break
+    C["stabiliser_rig_deg"] = float(de_total * TAU_E)         # + : trailing edge down, the stabiliser's incidence
+    return C
 
 
 def coefficients(variant: str = "hybrid", propulsion: str = "pusher", source: str = "auto") -> dict:
@@ -83,32 +138,7 @@ def _calibrated(variant: str = "hybrid", propulsion: str = "pusher", source: str
         raise ValueError(f"no CFD table for {variant}_{propulsion}")
     C["aero_source"] = "cfd (screening RANS)" if t is not None else "model (lattice + hand)"
     if t is not None:
-        a = np.radians(t["alpha_deg"])
-        lin = (t["alpha_deg"] >= -4) & (t["alpha_deg"] <= 8)
-        CLa, CL0 = np.polyfit(a[lin], t["CL"][lin], 1)
-        slopes = np.diff(t["CL"]) / np.diff(a)
-        # the stall: the first local maximum of CL past 4 deg (the CFD shows no sharp break: a soft knee at 8-10 deg
-        # and a first peak at 12-20 deg, lift then holding or creeping up — read as a gentle stall)
-        brk = next((k for k in range(1, len(slopes)) if t["alpha_deg"][k] >= 4 and slopes[k] < 0 <= slopes[k - 1]), len(slopes))
-        C.update({"cfd": t, "CLa": float(CLa), "CL0": float(CL0), "CL_MAX": float(t["CL"].max()), "CD0": float(t["CD"].min()),
-                  "alpha_stall": float(a[brk]), "Cma": float(np.polyfit(a[lin], t["Cm"][lin], 1)[0]),
-                  "Cm0": float(np.interp(0.0, t["alpha_deg"], t["Cm"])),
-                  "static_margin_cfd": float(-np.polyfit(t["CL"][lin], t["Cm"][lin], 1)[0])})
-        # the CFD's airframe has the stabiliser at the model's incidence; the measured Cm0 needs a lot of up elevator to
-        # trim. Rig the stabiliser (an incidence change, not the elevator) so cruise at 18 m/s trims with it neutral.
-        # first guess: the alpha whose CFD lift carries the weight at 18 m/s, and the moment to cancel there
-        CL_need = C["mass"] * G / (0.5 * RHO * 18.0 ** 2 * C["S"])
-        k_max = int(np.argmax(t["CL"]))
-        a_need = float(np.interp(CL_need, np.maximum.accumulate(t["CL"][:k_max + 1]), t["alpha_deg"][:k_max + 1]))
-        C["Cm_rig"] = -float(np.interp(a_need, t["alpha_deg"], t["Cm"]))
-        de_total = C["Cm_rig"] / C["Cmde"]
-        for _ in range(30):                                       # the rig moves the trim alpha: iterate (damped) to neutral elevator
-            de0 = trim(C, 18.0)["elevator_deg"]
-            de_total += 0.5 * de0
-            C["Cm_rig"] = C["Cmde"] * de_total                    # the moment that elevator gave, now built into the stabiliser
-            if abs(de0) < 0.05:
-                break
-        C["stabiliser_rig_deg"] = float(de_total * TAU_E)         # + : trailing edge down, the stabiliser's incidence
+        calibrate(C, t, 18.0)
     return C
 
 

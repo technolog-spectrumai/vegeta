@@ -28,9 +28,30 @@ def coefficients() -> dict:
     L = a20.Arigo20.layout(p)
     C = am.build(q, p, L, "arigo20", "edf", mass=MASS, CD0=CD0, thrust=dict(THRUST))
     C.update({"aircraft": "ARIGO-20", "aero_source": "model (lattice + hand)", "thrust_z_m": (p["edf_z"] / 1e3 - C["z_cg_m"]),
-              "y_motor_m": p["edf_y"] / 1e3, "cfd": None})
-    C.pop("cfd")
+              "y_motor_m": p["edf_y"] / 1e3})
+    t = cfd_table(C)
+    if t is not None:
+        # the CFD's drag includes the open ducts' internal walls, which the fans' net thrust already pays for: CD0 is
+        # left at the model's (HAND), the measured CD(alpha) shifted down by the difference at its minimum
+        t = dict(t)
+        t["CD"] = t["CD"] - (t["CD"].min() - CD0)
+        am.calibrate(C, t, CRUISE)
+        C["aero_source"] = "cfd (screening RANS, ducts' internal drag removed)"
     return C
+
+
+def cfd_table(C):
+    """ARIGO-20's CFD rows (data/arigo20_cfd_screening.yaml), if computed for this geometry (S and CG match)."""
+    import yaml
+    f = am.DATA / "arigo20_cfd_screening.yaml"
+    if not f.exists():
+        return None
+    d = yaml.safe_load(f.read_text()) or {}
+    ref = d.get("reference", {})
+    if abs(ref.get("S", 0) - C["S"]) > 1e-4 or abs(ref.get("cg_mm", [0])[0] - C["x_cg_m"] * 1e3) > 1.0:
+        return None
+    rows = am.clean_rows(d.get("rows", []))
+    return am.table(rows) if len(rows) >= 6 else None
 
 
 def get() -> dict:

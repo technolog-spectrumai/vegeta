@@ -47,25 +47,25 @@ def to_flow(x_mm, z_mm, alpha_deg):
     return np.array([x * math.cos(a) + z * math.sin(a), 0.0, -x * math.sin(a) + z * math.cos(a)])
 
 
-def export_stl(folder, variant, propulsion, alpha_deg) -> Path:
-    folder = Path(folder)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"arigo1_{variant}_{propulsion}_a{alpha_deg:+.0f}.stl"
-    if not path.exists():
+def export_stl(folder, variant, propulsion, alpha_deg):
+    """(STL path, geometry tag) — see ``arigo_stl``."""
+    import arigo_stl
+
+    def build(path):
         from vegeta import dedalus
         shape = a1.Arigo1().generate(**a1.variant(variant, propulsion)).shape.rotate((0, 0, 0), (0, 1, 0), alpha_deg)
         dedalus.Geometry.from_cadquery(shape, name="arigo1").export_stl(str(path), tolerance=0.2)
-    return path
+    return arigo_stl.stl(folder, f"arigo1_{variant}_{propulsion}", alpha_deg, build)
 
 
 def case(workdir, variant="hybrid", propulsion="pusher", *, alpha_deg=0.0, V=SPEED, quality="screening", env=None):
     from vegeta import aeromant
     ref = reference(variant, propulsion)
-    stl = export_stl(Path(workdir) / "stl", variant, propulsion, alpha_deg)
+    stl, tag = export_stl(Path(workdir) / "stl", variant, propulsion, alpha_deg)
     params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(variant, propulsion),
                   center_of_rotation=tuple(to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])
     env = env or aeromant.OpenFOAMEnvironment.detect()
-    name = f"{variant}_{propulsion}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"
+    name = f"{variant}_{propulsion}{tag}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"
     return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / name), geometry_units="mm", environment=env)
 
 

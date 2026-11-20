@@ -31,25 +31,24 @@ def l_ref() -> float:
     return max(reference()["c"], max(p["span"], p["fuselage_length"] + 40.0) / 1000.0 / 3.9)
 
 
-def export_stl(folder, alpha_deg) -> Path:
-    folder = Path(folder)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"arigo20_a{alpha_deg:+.0f}.stl"
-    if not path.exists():
+def export_stl(folder, alpha_deg):
+    import arigo_stl
+
+    def build(path):
         from vegeta import dedalus
         shape = a20.Arigo20().generate(**a20.variant()).shape.rotate((0, 0, 0), (0, 1, 0), alpha_deg)
         dedalus.Geometry.from_cadquery(shape, name="arigo20").export_stl(str(path), tolerance=0.2)
-    return path
+    return arigo_stl.stl(folder, "arigo20", alpha_deg, build)
 
 
 def case(workdir, *, alpha_deg=0.0, V=SPEED, quality="screening", env=None):
     from vegeta import aeromant
     ref = reference()
-    stl = export_stl(Path(workdir) / "stl", alpha_deg)
+    stl, tag = export_stl(Path(workdir) / "stl", alpha_deg)
     params = dict(velocity=V, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(),
                   center_of_rotation=tuple(ac.to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])
     env = env or aeromant.OpenFOAMEnvironment.detect()
-    return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / f"arigo20_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"),
+    return aeromant.CFDCase("rans_ksst_external", str(stl), params, workdir=str(Path(workdir) / f"arigo20{tag}_a{alpha_deg:+.0f}_V{V:.0f}_{quality}"),
                             geometry_units="mm", environment=env)
 
 
