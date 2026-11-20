@@ -1,0 +1,814 @@
+states:
+  tucked:
+    S_m2: 0.1
+    span_m: 0.56
+    AR: 3.1
+    CD0: 0.0384
+    drag_area_cm2: 38.5
+    stall_m_s: 19.7
+    top_speed_m_s: 74.5
+    static_margin: 0.104
+    wing_x_mm: 216.8
+    roll_damping_Clp: -0.4
+    turn_20_deg_s: 7.0
+    gust_g_per_m_s_20: 0.23
+    turn_30_deg_s: 39.0
+    gust_g_per_m_s_30: 0.35
+    turn_45_deg_s: 64.0
+    gust_g_per_m_s_45: 0.52
+    turn_60_deg_s: 74.0
+    gust_g_per_m_s_60: 0.69
+  mid:
+    S_m2: 0.158
+    span_m: 0.8
+    AR: 4.0
+    CD0: 0.028
+    drag_area_cm2: 44.3
+    stall_m_s: 15.2
+    top_speed_m_s: 71.2
+    static_margin: 0.1
+    wing_x_mm: 235.0
+    roll_damping_Clp: -0.475
+    turn_20_deg_s: 39.0
+    gust_g_per_m_s_20: 0.38
+    turn_30_deg_s: 70.0
+    gust_g_per_m_s_30: 0.58
+    turn_45_deg_s: 99.0
+    gust_g_per_m_s_45: 0.86
+    turn_60_deg_s: 74.0
+    gust_g_per_m_s_60: 1.15
+  spread:
+    S_m2: 0.218
+    span_m: 1.0
+    AR: 4.6
+    CD0: 0.023
+    drag_area_cm2: 50.3
+    stall_m_s: 12.5
+    top_speed_m_s: 68.2
+    static_margin: 0.098
+    wing_x_mm: 293.3
+    roll_damping_Clp: -0.564
+    turn_20_deg_s: 67.0
+    gust_g_per_m_s_20: 0.55
+    turn_30_deg_s: 107.0
+    gust_g_per_m_s_30: 0.82
+    turn_45_deg_s: 99.0
+    gust_g_per_m_s_45: 1.23
+    turn_60_deg_s: 74.0
+    gust_g_per_m_s_60: 1.64
+fixed_dart:
+  S_m2: 0.158
+  span_m: 0.8
+  AR: 4.0
+  CD0: 0.028
+  drag_area_cm2: 44.3
+  stall_m_s: 14.8
+  top_speed_m_s: 71.2
+  static_margin: 0.1
+  wing_x_mm: null
+  roll_damping_Clp: -0.475
+  turn_20_deg_s: 43.0
+  gust_g_per_m_s_20: 0.41
+  turn_30_deg_s: 75.0
+  gust_g_per_m_s_30: 0.61
+  turn_45_deg_s: 99.0
+  gust_g_per_m_s_45: 0.91
+  turn_60_deg_s: 74.0
+  gust_g_per_m_s_60: 1.22
+braking_65_to_20_m_s:
+  fixed dart:
+    time_s: 21.9
+    distance_m: 781.0
+  tucked, clean:
+    time_s: 22.3
+    distance_m: 832.0
+  spread, clean:
+    time_s: 21.5
+    distance_m: 758.0
+  spread + fanned tail:
+    time_s: 3.4
+    distance_m: 117.0
+chases:
+  fast_50:
+    fixed dart | pn:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 22.73
+      catch_rate: 1.0
+      closing_speed_m_s: 4.4
+      closest_m: 0.3
+      share_within_10m: 0.083
+      peak_g: 3.6
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 22.7
+        closing_speed_m_s: 4.4
+        closest_m: 0.3
+        share_within_10m: 0.092
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 22.73
+        closing_speed_m_s: 4.4
+        closest_m: 0.19
+        share_within_10m: 0.089
+        peak_g: 3.6
+        crashed: false
+      - time_to_5m_s: 22.75
+        closing_speed_m_s: 4.4
+        closest_m: 0.38
+        share_within_10m: 0.083
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 21.94
+        closing_speed_m_s: 4.8
+        closest_m: 0.29
+        share_within_10m: 0.063
+        peak_g: 2.8
+        crashed: false
+      - time_to_5m_s: 23.55
+        closing_speed_m_s: 4.0
+        closest_m: 0.66
+        share_within_10m: 0.087
+        peak_g: 3.5
+        crashed: false
+    fixed dart | hawk:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 22.5
+      catch_rate: 1.0
+      closing_speed_m_s: 4.3
+      closest_m: 1.04
+      share_within_10m: 0.083
+      peak_g: 4.5
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 22.5
+        closing_speed_m_s: 4.3
+        closest_m: 1.04
+        share_within_10m: 0.06
+        peak_g: 4.4
+        crashed: false
+      - time_to_5m_s: 22.48
+        closing_speed_m_s: 4.3
+        closest_m: 1.06
+        share_within_10m: 0.056
+        peak_g: 4.4
+        crashed: false
+      - time_to_5m_s: 22.58
+        closing_speed_m_s: 4.3
+        closest_m: 0.95
+        share_within_10m: 0.052
+        peak_g: 4.5
+        crashed: false
+      - time_to_5m_s: 21.72
+        closing_speed_m_s: 5.2
+        closest_m: 0.33
+        share_within_10m: 0.11
+        peak_g: 3.6
+        crashed: false
+      - time_to_5m_s: 23.35
+        closing_speed_m_s: 4.4
+        closest_m: 1.29
+        share_within_10m: 0.136
+        peak_g: 4.3
+        crashed: false
+    morphing wing | pn:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 21.77
+      catch_rate: 1.0
+      closing_speed_m_s: 4.9
+      closest_m: 0.67
+      share_within_10m: 0.087
+      peak_g: 5.3
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 21.74
+        closing_speed_m_s: 4.9
+        closest_m: 1.3
+        share_within_10m: 0.095
+        peak_g: 5.1
+        crashed: false
+      - time_to_5m_s: 21.77
+        closing_speed_m_s: 4.9
+        closest_m: 0.59
+        share_within_10m: 0.08
+        peak_g: 5.3
+        crashed: false
+      - time_to_5m_s: 21.78
+        closing_speed_m_s: 4.9
+        closest_m: 0.76
+        share_within_10m: 0.084
+        peak_g: 4.3
+        crashed: false
+      - time_to_5m_s: 21.02
+        closing_speed_m_s: 5.3
+        closest_m: 0.6
+        share_within_10m: 0.063
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 22.55
+        closing_speed_m_s: 5.0
+        closest_m: 0.67
+        share_within_10m: 0.111
+        peak_g: 4.2
+        crashed: false
+    morphing wing | hawk:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 21.56
+      catch_rate: 1.0
+      closing_speed_m_s: 5.7
+      closest_m: 0.47
+      share_within_10m: 0.096
+      peak_g: 5.0
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 21.56
+        closing_speed_m_s: 5.7
+        closest_m: 0.37
+        share_within_10m: 0.077
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 21.54
+        closing_speed_m_s: 5.7
+        closest_m: 0.35
+        share_within_10m: 0.079
+        peak_g: 3.5
+        crashed: false
+      - time_to_5m_s: 21.64
+        closing_speed_m_s: 5.7
+        closest_m: 0.47
+        share_within_10m: 0.14
+        peak_g: 4.4
+        crashed: false
+      - time_to_5m_s: 20.84
+        closing_speed_m_s: 5.4
+        closest_m: 1.52
+        share_within_10m: 0.109
+        peak_g: 4.0
+        crashed: false
+      - time_to_5m_s: 22.36
+        closing_speed_m_s: 4.5
+        closest_m: 2.55
+        share_within_10m: 0.073
+        peak_g: 5.0
+        crashed: false
+    morphing wing + tail brake | pn:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 21.77
+      catch_rate: 1.0
+      closing_speed_m_s: 4.9
+      closest_m: 1.32
+      share_within_10m: 0.081
+      peak_g: 5.1
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 21.74
+        closing_speed_m_s: 4.9
+        closest_m: 1.32
+        share_within_10m: 0.082
+        peak_g: 5.0
+        crashed: false
+      - time_to_5m_s: 21.77
+        closing_speed_m_s: 4.9
+        closest_m: 0.59
+        share_within_10m: 0.079
+        peak_g: 5.1
+        crashed: false
+      - time_to_5m_s: 21.78
+        closing_speed_m_s: 4.9
+        closest_m: 2.04
+        share_within_10m: 0.073
+        peak_g: 3.8
+        crashed: false
+      - time_to_5m_s: 21.02
+        closing_speed_m_s: 5.3
+        closest_m: 2.26
+        share_within_10m: 0.063
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 22.55
+        closing_speed_m_s: 5.0
+        closest_m: 1.02
+        share_within_10m: 0.11
+        peak_g: 4.6
+        crashed: false
+    morphing wing + tail brake | hawk:
+      what: a 50 m/s fixed wing, gentle weave, 300 m ahead
+      time_to_5m_s: 21.56
+      catch_rate: 1.0
+      closing_speed_m_s: 5.7
+      closest_m: 0.47
+      share_within_10m: 0.096
+      peak_g: 4.4
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 21.56
+        closing_speed_m_s: 5.7
+        closest_m: 0.37
+        share_within_10m: 0.077
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 21.54
+        closing_speed_m_s: 5.7
+        closest_m: 0.35
+        share_within_10m: 0.079
+        peak_g: 3.5
+        crashed: false
+      - time_to_5m_s: 21.64
+        closing_speed_m_s: 5.7
+        closest_m: 0.47
+        share_within_10m: 0.14
+        peak_g: 4.4
+        crashed: false
+      - time_to_5m_s: 20.84
+        closing_speed_m_s: 5.4
+        closest_m: 1.52
+        share_within_10m: 0.109
+        peak_g: 4.0
+        crashed: false
+      - time_to_5m_s: 22.36
+        closing_speed_m_s: 4.5
+        closest_m: 2.55
+        share_within_10m: 0.073
+        peak_g: 4.3
+        crashed: false
+  dash_to_zigzag:
+    fixed dart | pn:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 15.42
+      catch_rate: 1.0
+      closing_speed_m_s: 20.2
+      closest_m: 0.35
+      share_within_10m: 0.067
+      peak_g: 2.9
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 15.41
+        closing_speed_m_s: 20.3
+        closest_m: 0.35
+        share_within_10m: 0.069
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 15.46
+        closing_speed_m_s: 20.3
+        closest_m: 0.35
+        share_within_10m: 0.069
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 15.42
+        closing_speed_m_s: 20.2
+        closest_m: 0.33
+        share_within_10m: 0.069
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 14.85
+        closing_speed_m_s: 20.2
+        closest_m: 0.41
+        share_within_10m: 0.057
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 16.05
+        closing_speed_m_s: 19.3
+        closest_m: 0.15
+        share_within_10m: 0.07
+        peak_g: 2.8
+        crashed: false
+    fixed dart | hawk:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 15.15
+      catch_rate: 1.0
+      closing_speed_m_s: 20.3
+      closest_m: 2.19
+      share_within_10m: 0.066
+      peak_g: 3.4
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 15.13
+        closing_speed_m_s: 20.3
+        closest_m: 2.17
+        share_within_10m: 0.063
+        peak_g: 3.4
+        crashed: false
+      - time_to_5m_s: 15.15
+        closing_speed_m_s: 20.3
+        closest_m: 2.19
+        share_within_10m: 0.063
+        peak_g: 3.4
+        crashed: false
+      - time_to_5m_s: 15.15
+        closing_speed_m_s: 20.3
+        closest_m: 2.2
+        share_within_10m: 0.063
+        peak_g: 3.3
+        crashed: false
+      - time_to_5m_s: 14.65
+        closing_speed_m_s: 19.1
+        closest_m: 1.73
+        share_within_10m: 0.064
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: 15.68
+        closing_speed_m_s: 20.9
+        closest_m: 2.98
+        share_within_10m: 0.075
+        peak_g: 3.4
+        crashed: false
+    morphing wing | pn:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 14.79
+      catch_rate: 1.0
+      closing_speed_m_s: 19.6
+      closest_m: 0.4
+      share_within_10m: 0.06
+      peak_g: 2.9
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 14.77
+        closing_speed_m_s: 19.6
+        closest_m: 0.4
+        share_within_10m: 0.059
+        peak_g: 2.8
+        crashed: false
+      - time_to_5m_s: 14.81
+        closing_speed_m_s: 19.8
+        closest_m: 0.41
+        share_within_10m: 0.059
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 14.79
+        closing_speed_m_s: 19.4
+        closest_m: 0.4
+        share_within_10m: 0.059
+        peak_g: 2.8
+        crashed: false
+      - time_to_5m_s: 14.18
+        closing_speed_m_s: 18.2
+        closest_m: 0.3
+        share_within_10m: 0.064
+        peak_g: 2.7
+        crashed: false
+      - time_to_5m_s: 15.41
+        closing_speed_m_s: 19.9
+        closest_m: 0.18
+        share_within_10m: 0.059
+        peak_g: 2.9
+        crashed: false
+    morphing wing | hawk:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 14.57
+      catch_rate: 1.0
+      closing_speed_m_s: 18.4
+      closest_m: 1.73
+      share_within_10m: 0.08
+      peak_g: 3.7
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 14.55
+        closing_speed_m_s: 18.3
+        closest_m: 1.72
+        share_within_10m: 0.084
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 14.57
+        closing_speed_m_s: 18.4
+        closest_m: 1.73
+        share_within_10m: 0.084
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 14.58
+        closing_speed_m_s: 18.4
+        closest_m: 1.73
+        share_within_10m: 0.082
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 14.04
+        closing_speed_m_s: 16.6
+        closest_m: 1.69
+        share_within_10m: 0.083
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 15.1
+        closing_speed_m_s: 19.9
+        closest_m: 2.2
+        share_within_10m: 0.065
+        peak_g: 3.4
+        crashed: false
+    morphing wing + tail brake | pn:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 20.97
+      catch_rate: 1.0
+      closing_speed_m_s: 7.1
+      closest_m: 0.43
+      share_within_10m: 0.124
+      peak_g: 3.3
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 20.97
+        closing_speed_m_s: 7.1
+        closest_m: 0.25
+        share_within_10m: 0.146
+        peak_g: 3.0
+        crashed: false
+      - time_to_5m_s: 21.09
+        closing_speed_m_s: 7.1
+        closest_m: 0.06
+        share_within_10m: 0.134
+        peak_g: 2.8
+        crashed: false
+      - time_to_5m_s: 20.91
+        closing_speed_m_s: 7.2
+        closest_m: 0.43
+        share_within_10m: 0.151
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: 20.44
+        closing_speed_m_s: 7.7
+        closest_m: 0.6
+        share_within_10m: 0.103
+        peak_g: 3.3
+        crashed: false
+      - time_to_5m_s: 21.57
+        closing_speed_m_s: 6.3
+        closest_m: 0.96
+        share_within_10m: 0.086
+        peak_g: 3.0
+        crashed: false
+    morphing wing + tail brake | hawk:
+      what: arriving at 60 m/s on a 14 m/s weaving quad, 400 m ahead
+      time_to_5m_s: 20.59
+      catch_rate: 1.0
+      closing_speed_m_s: 6.8
+      closest_m: 1.22
+      share_within_10m: 0.119
+      peak_g: 3.7
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 20.58
+        closing_speed_m_s: 6.8
+        closest_m: 1.22
+        share_within_10m: 0.13
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 20.59
+        closing_speed_m_s: 6.8
+        closest_m: 1.22
+        share_within_10m: 0.131
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 20.6
+        closing_speed_m_s: 6.8
+        closest_m: 1.23
+        share_within_10m: 0.131
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 20.1
+        closing_speed_m_s: 7.1
+        closest_m: 0.86
+        share_within_10m: 0.101
+        peak_g: 3.7
+        crashed: false
+      - time_to_5m_s: 21.1
+        closing_speed_m_s: 6.8
+        closest_m: 1.65
+        share_within_10m: 0.102
+        peak_g: 3.1
+        crashed: false
+  dash_to_urban:
+    fixed dart | pn:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: 9.77
+      catch_rate: 1.0
+      closing_speed_m_s: 27.0
+      closest_m: 1.88
+      share_within_10m: 0.046
+      peak_g: 3.1
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 9.77
+        closing_speed_m_s: 27.2
+        closest_m: 2.04
+        share_within_10m: 0.039
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 9.88
+        closing_speed_m_s: 27.0
+        closest_m: 1.88
+        share_within_10m: 0.052
+        peak_g: 2.6
+        crashed: false
+      - time_to_5m_s: 9.72
+        closing_speed_m_s: 27.3
+        closest_m: 2.07
+        share_within_10m: 0.027
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: 9.42
+        closing_speed_m_s: 27.0
+        closest_m: 1.76
+        share_within_10m: 0.057
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 10.15
+        closing_speed_m_s: 24.6
+        closest_m: 1.52
+        share_within_10m: 0.056
+        peak_g: 2.6
+        crashed: false
+    fixed dart | hawk:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: 9.92
+      catch_rate: 1.0
+      closing_speed_m_s: 23.2
+      closest_m: 1.98
+      share_within_10m: 0.038
+      peak_g: 3.4
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 9.92
+        closing_speed_m_s: 23.2
+        closest_m: 1.98
+        share_within_10m: 0.045
+        peak_g: 3.0
+        crashed: false
+      - time_to_5m_s: 9.97
+        closing_speed_m_s: 23.1
+        closest_m: 1.79
+        share_within_10m: 0.032
+        peak_g: 3.0
+        crashed: false
+      - time_to_5m_s: 9.92
+        closing_speed_m_s: 23.2
+        closest_m: 2.09
+        share_within_10m: 0.045
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: 9.57
+        closing_speed_m_s: 24.3
+        closest_m: 2.69
+        share_within_10m: 0.041
+        peak_g: 3.4
+        crashed: false
+      - time_to_5m_s: 10.33
+        closing_speed_m_s: 21.9
+        closest_m: 1.49
+        share_within_10m: 0.027
+        peak_g: 2.6
+        crashed: false
+    morphing wing | pn:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: 9.23
+      catch_rate: 1.0
+      closing_speed_m_s: 27.2
+      closest_m: 1.88
+      share_within_10m: 0.085
+      peak_g: 3.5
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 9.23
+        closing_speed_m_s: 27.2
+        closest_m: 1.89
+        share_within_10m: 0.095
+        peak_g: 3.4
+        crashed: false
+      - time_to_5m_s: 9.33
+        closing_speed_m_s: 27.1
+        closest_m: 1.88
+        share_within_10m: 0.093
+        peak_g: 3.4
+        crashed: false
+      - time_to_5m_s: 9.19
+        closing_speed_m_s: 27.2
+        closest_m: 2.11
+        share_within_10m: 0.091
+        peak_g: 3.5
+        crashed: false
+      - time_to_5m_s: 8.85
+        closing_speed_m_s: 30.1
+        closest_m: 0.39
+        share_within_10m: 0.082
+        peak_g: 3.3
+        crashed: false
+      - time_to_5m_s: 9.63
+        closing_speed_m_s: 27.0
+        closest_m: 1.55
+        share_within_10m: 0.065
+        peak_g: 3.3
+        crashed: false
+    morphing wing | hawk:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: 9.45
+      catch_rate: 0.8
+      closing_speed_m_s: 25.0
+      closest_m: 3.35
+      share_within_10m: 0.055
+      peak_g: 3.9
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 9.41
+        closing_speed_m_s: 25.1
+        closest_m: 3.35
+        share_within_10m: 0.055
+        peak_g: 3.9
+        crashed: false
+      - time_to_5m_s: 9.45
+        closing_speed_m_s: 24.9
+        closest_m: 2.97
+        share_within_10m: 0.055
+        peak_g: 3.9
+        crashed: false
+      - time_to_5m_s: 9.42
+        closing_speed_m_s: 25.0
+        closest_m: 3.54
+        share_within_10m: 0.063
+        peak_g: 3.9
+        crashed: false
+      - time_to_5m_s: null
+        closing_speed_m_s: 26.2
+        closest_m: 5.37
+        share_within_10m: 0.048
+        peak_g: 3.8
+        crashed: false
+      - time_to_5m_s: 9.79
+        closing_speed_m_s: 23.7
+        closest_m: 2.14
+        share_within_10m: 0.053
+        peak_g: 3.6
+        crashed: false
+    morphing wing + tail brake | pn:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: 31.68
+      catch_rate: 1.0
+      closing_speed_m_s: 30.2
+      closest_m: 2.96
+      share_within_10m: 0.073
+      peak_g: 3.1
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: 31.68
+        closing_speed_m_s: 30.2
+        closest_m: 3.01
+        share_within_10m: 0.077
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: 31.52
+        closing_speed_m_s: 29.7
+        closest_m: 2.33
+        share_within_10m: 0.072
+        peak_g: 2.8
+        crashed: false
+      - time_to_5m_s: 31.84
+        closing_speed_m_s: 30.7
+        closest_m: 2.96
+        share_within_10m: 0.072
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: 31.68
+        closing_speed_m_s: 30.9
+        closest_m: 2.96
+        share_within_10m: 0.07
+        peak_g: 3.0
+        crashed: false
+      - time_to_5m_s: 31.78
+        closing_speed_m_s: 29.7
+        closest_m: 2.38
+        share_within_10m: 0.075
+        peak_g: 2.8
+        crashed: false
+    morphing wing + tail brake | hawk:
+      what: arriving at 60 m/s on a 10 m/s quad turning hard at 20 m, 400 m ahead
+      time_to_5m_s: null
+      catch_rate: 0.4
+      closing_speed_m_s: 13.0
+      closest_m: 5.06
+      share_within_10m: 0.063
+      peak_g: 3.3
+      crash_rate: 0.0
+      runs:
+      - time_to_5m_s: null
+        closing_speed_m_s: 12.6
+        closest_m: 6.2
+        share_within_10m: 0.057
+        peak_g: 3.3
+        crashed: false
+      - time_to_5m_s: 28.04
+        closing_speed_m_s: 13.0
+        closest_m: 2.65
+        share_within_10m: 0.065
+        peak_g: 2.9
+        crashed: false
+      - time_to_5m_s: null
+        closing_speed_m_s: 12.6
+        closest_m: 6.21
+        share_within_10m: 0.056
+        peak_g: 3.3
+        crashed: false
+      - time_to_5m_s: 28.55
+        closing_speed_m_s: 15.1
+        closest_m: 3.78
+        share_within_10m: 0.087
+        peak_g: 3.1
+        crashed: false
+      - time_to_5m_s: null
+        closing_speed_m_s: 14.3
+        closest_m: 5.06
+        share_within_10m: 0.05
+        peak_g: 3.3
+        crashed: false
