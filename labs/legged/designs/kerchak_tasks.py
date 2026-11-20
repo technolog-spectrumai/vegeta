@@ -185,8 +185,7 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
             q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
         if SOLID is not None:
             q, depth, inside, raw = _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u)
-            if extra:
-                q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
+            # the extra is not set again: the push-out may have bent a set joint the IK moves (a toe off a bar)
             err = _hard_error(kin, q, targets)
             pen_raw = max(pen_raw, raw)
             if depth > pen:
