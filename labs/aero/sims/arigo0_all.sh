@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# ARIGO-0 only: see arigo_all.sh. Usage: labs/aero/sims/arigo0_all.sh [-j N] [--stability-only] [--full-cfd] ...
-exec "$(cd "$(dirname "$0")" && pwd)/arigo_all.sh" ARIGO-0 "$@"

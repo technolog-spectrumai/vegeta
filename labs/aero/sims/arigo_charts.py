@@ -4,7 +4,7 @@ KPI scores, and the turn-rate and climb curves over speed.
     python labs/aero/sims/arigo_charts.py labs/aero/sims/output/runs/arigo_run_<time>_<host>.yaml
 
 Writes next to it ``<stem>_properties.png``, ``<stem>_kpi.png``, ``<stem>_curves.png`` and adds a ``kpi`` section to
-the file. ``arigo_all.py`` calls it at the end of every run.
+the file. ``arigo_stability.sh`` calls it at the end of every run.
 
 KPIs: each property scored 0-100 across the configurations in the file (min-max; "lower is better" ones inverted),
 then averaged into a general score and a chase score:
