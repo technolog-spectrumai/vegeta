@@ -103,7 +103,8 @@ B4 and B6 are now modelled (`designs/raptors_robust.py`). The numbers here come 
 | A7 | Link availability along the mission with terrain and clutter (%) | communications | 95 | 99.9 | — | — | — |
 | A8 | Open-field PN chase: time to close to 5 m (s) | effect | 20 | 8 | 11.8 | SIM | ✔ |
 | A9 | Touchdown energy (J), belly landing | recovery | 300 | 60 | 170 | SIM | ✔ |
-| A10 | Operating wind: hand launch into the wind and belly landing, both ≥ 95 % (m/s) | weather | 10 | 15 | ≈16 (as SPARFELL: the same launch and recovery) | SIM (small sample) | ✅ |
+| A10 | Operating wind: the top of the band where the hand launch into the wind and the belly landing both succeed ≥ 95 % (m/s) | weather | 10 | 15 | 13.3 | SIM (run 1, 12 launches and 6 landings per wind) | ✔ |
+| A11 | Calm air: launch and landing success (%) | weather / dependable | 90 | 99 | 58: a 12 m/s throw is below the 12.4 m/s stall | SIM (run 1) | ✖ |
 
 **Reading.** On paper, ARIGO-1H already over-delivers ARPELLA's 10 km radius: about 14 km going out at dash speed,
 about 27 km at economy speed. Its real gaps are **coverage per sortie** and **communications**. Coverage is mostly a
@@ -158,6 +159,7 @@ pays for that with half the full-power time and a heavier launcher and recovery 
 | P10 | Propulsor in a belly landing (folds clear = 100, folding strike = 50, fixed strike = 0) | rugged handling | 0 | 100 | 50: the folding propeller reaches 82 mm below the belly | EST (CAD) | ✔ |
 | P11 | Survives a 1 m drop onto a corner, and five belly landings without repair | rugged handling | pass | pass | — | — | — |
 | P12 | Throw success: Monte Carlo over steady wind 0–12 m/s with 1.5× gusts, thrown into the wind ±30°, 12 ± 2 m/s, pitch ±5° (%) | minimal equipment / rugged | 90 | 99 | 100; its operating wind is about 16 m/s | SIM (16 draws) | ✅ |
+| P13 | Calm air: throw and landing success (%) | minimal equipment | 90 | 99 | in run 2 | SIM | — |
 
 **Reading.** ARIGO-1H is a heavy SPARFELL. It is light enough to throw, but 1.57 kg and 720 mm are far from the
 objectives. On the small pack it is also slower in the urban chase (**P7 fails**). The levers are lighter avionics, a
@@ -180,3 +182,26 @@ objective.
 
 1. **Agree the KPIs**: the thresholds and objectives above, which client questions need answering first (e.g. S6, B6), and the evidence each requires.
 2. **Explore** (`labs/aero/sims/raptors_explore.sh -j N`, ready to run, branch `dev_raptors_exp`): for each line, sweep the levers named above from ARIGO-1H, scored with the launch-success and operating-wind models. Take the winners to CFD and back.
+
+---
+
+## Exploration run 1 (2026-11-20, `raptors_explore.sh`, 116 specs, all on the lattice model)
+
+| Line | Baseline (ARIGO-1H on the lattice) | Best spec | Best score | What moved it |
+|---|---|---|---|---|
+| BUTEO | 51.7 | ARIGO-1H b1050 c300 + perch + charging perch + **turning station** | 66.6 | launch success 87.5 → 100 % (B4); operating wind 2.4 → 12.6 m/s (B6); urban chase |
+| ARPELLA | 66.7 | ARIGO-1H b1250 c260, **3S4P** | 74.3 | coverage 7.1 → 13.4 km²; endurance 80 → 137 min. Calm-air landing energy rises to 257 J. |
+| ASTOR | 55.6 | ARIGO-1H **b800** c260, 3S3P, **1200 W** motor, rail + parachute | 81.4 | 65 m/s top speed: it can tail-chase a 50 m/s target (S6), as fast as ARIGO-20 (best 72.1) with 5.7 min at full power against 2.3 |
+| SPARFELL | 56.1 | ARIGO-1H (×1.0) 3S1P + quick joiner + **lite avionics** | 60.4 | mass 1.57 → 1.49 kg; assembly 60 → 30 s. Scaling the whole airframe down raises the stall (×0.7: 15.5 m/s) and costs the throw. |
+
+**Model findings that changed the tools for run 2:**
+- **The PN chase is chaotic.** The same airframe caught in about 10 s, about 18 s, or never. Each scenario is now flown from five perturbed starts and scored by the median time, with a catch rate (`arigo_perf.CHASE_STARTS`).
+- **Calm air is a limit of its own.** It fails for hand throws slower than the stall, and for heavy landings with no headwind to cut the ground speed. Operating wind is now the top of the working band, and calm-air success is a separate KPI (A11, P13).
+
+**Proposals for the KPIs (yours to decide):**
+- **B5**, the quasi-steady gust stall, is about 1.6 m/s for every ARIGO-1H variant on the lattice model. It is a very conservative bound: it ignores gust alleviation and the autopilot, and the turbulence model behind B6 already measures gust tolerance dynamically. Proposal: keep B5 as information and drop it from the score, or lower its threshold.
+
+**Next design levers (run 2):**
+- SPARFELL: shrink the fuselage separately from the wing. The ×1.0 fuselage alone sets the 720 mm packed length, and the wing has to stay large for the throw.
+- ASTOR: a CFD check of the b800 wing, a structural check at 65 m/s (dynamic pressure ≈ 2.6 kPa) and a propulsor-map check at 1200 W.
+- ARPELLA: 3S3P against 3S4P with the calm-air landing energy in the score.

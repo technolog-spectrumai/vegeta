@@ -22,8 +22,9 @@ plus half the wind, or a parachute
 descent (HAND sink and aiming error). A landing **succeeds** with a touchdown energy (ground speed) under 300 J, a
 miss under 30 m, a sink under 3 m/s and a bank under 20 deg at touchdown.
 
-**Operating wind**: the strongest steady wind (with its gusts) at which both launch and recovery succeed in at least
-95 % of trials, interpolated over the wind grid. **Launch success** (B4/S8): over the KPI's envelope, the steady wind
+**Operating wind**: the top of the operating band — from the lightest wind on the grid at which launch and recovery
+both succeed >= 95 % (calm air can fail: a throw slower than the stall, a heavy landing with no headwind) up through
+every stronger wind that also does; interpolated at the top. Calm-air success is reported on its own. **Launch success** (B4/S8): over the KPI's envelope, the steady wind
 drawn uniformly in 0-12 m/s with its gusts.
 
 Every dispersion value is HAND (marked); samples per point are a run option (statistical error ~ sqrt(p(1-p)/n)).
@@ -215,11 +216,16 @@ def robustness(sim_factory, C, launch_mode, recovery, n_launch=24, n_land=8, win
                     "both": round(_rate(L)["rate"] * _rate(R)["rate"], 3)})
         if per[-1]["launch"]["rate"] < 0.5 and per[-1]["recovery"]["rate"] < 0.5:
             break                                              # far past the limit: stronger winds only cost time
-    op = 0.0
-    for a, b in zip(per, per[1:] + [None]):
+    # the operating band: from the lightest wind that works (calm air can fail: a slow throw, a heavy landing) up
+    # through every wind that works; its top is the operating wind
+    good = [p["launch"]["rate"] >= 0.95 and p["recovery"]["rate"] >= 0.95 for p in per]
+    lo = next((i for i, g in enumerate(good) if g), None)
+    op, w_lo = 0.0, None
+    for a, b in zip(per[lo:] if lo is not None else [], (per[lo + 1:] if lo is not None else []) + [None]):
         ok_a = a["launch"]["rate"] >= 0.95 and a["recovery"]["rate"] >= 0.95
         if not ok_a:
             break
+        w_lo = a["wind_m_s"] if w_lo is None else w_lo
         op = a["wind_m_s"]
         if b is not None:
             ok_b = b["launch"]["rate"] >= 0.95 and b["recovery"]["rate"] >= 0.95
@@ -231,6 +237,8 @@ def robustness(sim_factory, C, launch_mode, recovery, n_launch=24, n_land=8, win
     return {"launch_mode": launch_mode, "recovery": recovery, "turning_station": turning_station,
             "launch_success_envelope": _rate(env), "per_wind": per,
             "operating_wind_m_s": round(op, 1), "operating_gust_m_s": round(GUST_RATIO * op, 1),
+            "lightest_working_wind_m_s": w_lo,
+            "calm": {"launch": per[0]["launch"]["rate"], "recovery": per[0]["recovery"]["rate"]},
             "samples": {"launch_envelope": n_launch, "launch_per_wind": n_launch // 2, "recovery_per_wind": n_land, "seed": seed},
             "rule": "success: safe flight in 12 s (launch); energy < 300 J, miss < 30 m, sink < 3 m/s, bank < 20 deg (recovery); "
                     "operating wind: both >= 95 %; gusts 1.5 x steady (3-sigma)"}
@@ -239,4 +247,6 @@ def robustness(sim_factory, C, launch_mode, recovery, n_launch=24, n_land=8, win
 def summary(rb) -> dict:
     return {"launch_success_pct": round(100 * rb["launch_success_envelope"]["rate"], 1),
             "operating_wind_m_s": rb["operating_wind_m_s"], "operating_gust_m_s": rb["operating_gust_m_s"],
-            "recovery_success_calm_pct": round(100 * rb["per_wind"][0]["recovery"]["rate"], 1)}
+            "recovery_success_calm_pct": round(100 * rb["per_wind"][0]["recovery"]["rate"], 1),
+            "calm_success_pct": round(100 * min(rb["per_wind"][0]["launch"]["rate"], rb["per_wind"][0]["recovery"]["rate"]), 1),
+            "lightest_working_wind_m_s": rb.get("lightest_working_wind_m_s")}

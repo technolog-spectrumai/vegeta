@@ -476,13 +476,16 @@ def pn_command(sim, b, vb):
     return max(-1.3, min(1.3, phi)), max(-0.35, min(0.35, gam))
 
 
-def chase(sim, name, record=None, V=None, guidance="pn"):
+def chase(sim, name, record=None, V=None, guidance="pn", heading_deg=0.0, y0=0.0):
     """Fly a chase scenario under PN guidance (or the lead pursuit of ``manoeuvre("chase")`` with guidance="lead"),
     full throttle. Returns the history and: time to within 5 m, closest approach, share of time within 10 m, mean
     distance over the last third, peak load factor, crash (below 3 m)."""
     c = CHASES[name]
     t_b, bx, by, bz, bvx, bvy, bvz = bandit_path(name)
-    sim.start(V or c["V"], c["h"])
+    sim.start(V or c["V"], c["h"], heading_deg)                   # heading_deg, y0: the start perturbed (repeat runs)
+    if y0:
+        sim.d.qpos[1] = y0
+        mujoco.mj_forward(sim.m, sim.d)
     ap = Autopilot(sim)
     bid = mujoco.mj_name2id(sim.m, mujoco.mjtObj.mjOBJ_BODY, "bandit")
     mid = sim.m.body_mocapid[bid] if bid >= 0 else -1

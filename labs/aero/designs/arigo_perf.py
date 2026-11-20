@@ -235,14 +235,35 @@ def responses(sim, V) -> dict:
     return out
 
 
+# a single chase is chaotic (the same airframe catches in 10 s, 18 s or never): each scenario is flown from five
+# perturbed starts and summarised by the median (HAND perturbations: heading +-10 deg, 5 m aside, entry speed +-1 m/s)
+CHASE_STARTS = ((0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (-10.0, 0.0, 0.0), (0.0, 5.0, 1.0), (0.0, -5.0, -1.0))
+
+
+def _chase_stats(runs, name):
+    T = amj.CHASES[name]["T"]
+    times = [r["time_to_5m_s"] if r.get("time_to_5m_s") is not None else math.inf for r in runs]
+    med = float(np.median(times))
+    return {"time_to_5m_s": round(med, 2) if math.isfinite(med) else None,
+            "catch_rate": round(sum(math.isfinite(t) for t in times) / len(runs), 2),
+            "share_within_10m": round(float(np.mean([r.get("share_within_10m") or 0.0 for r in runs])), 3),
+            "closest_m": round(float(np.median([r.get("closest_m", 1e3) for r in runs])), 2),
+            "crashed": sum(bool(r.get("crashed")) for r in runs) > len(runs) // 2,
+            "crash_rate": round(sum(bool(r.get("crashed")) for r in runs) / len(runs), 2),
+            "runs": [{k: r.get(k) for k in ("time_to_5m_s", "share_within_10m", "closest_m", "crashed")} for r in runs],
+            "rule": f"median of {len(runs)} starts (heading, aside, entry speed): {list(CHASE_STARTS)}; duration {T} s"}
+
+
 def chases(sim_factory, Vs) -> dict:
     """The chase scenarios (``arigo1_mujoco.CHASES``) under proportional navigation, each entered at its speed or
-    1.25 x this aircraft's stall speed, whichever is higher; and the zig-zag under the old lead pursuit, for
-    comparison."""
+    1.25 x this aircraft's stall speed, whichever is higher, from the CHASE_STARTS (median); and the zig-zag under the
+    old lead pursuit, for comparison."""
     out = {}
     for name in amj.CHASES:
         V = max(amj.CHASES[name]["V"], 1.25 * Vs)
-        _, out[name] = amj.chase(sim_factory(bandit=True), name, V=V)
+        runs = [amj.chase(sim_factory(bandit=True), name, V=max(V + dv, 1.15 * Vs), heading_deg=hd, y0=y)[1]
+                for hd, y, dv in CHASE_STARTS]
+        out[name] = _chase_stats(runs, name)
     _, out["zigzag_lead_pursuit"] = amj.chase(sim_factory(bandit=True), "zigzag", V=max(20.0, 1.25 * Vs), guidance="lead")
     return out
 
@@ -271,7 +292,8 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "zigzag_closest_m": ch["zigzag"]["closest_m"], "zigzag_time_to_5m_s": ch["zigzag"]["time_to_5m_s"],
                       "zigzag_share_within_10m": ch["zigzag"]["share_within_10m"],
                       "urban_time_to_5m_s": ch["urban"]["time_to_5m_s"], "urban_share_within_10m": ch["urban"]["share_within_10m"],
-                      "urban_crashed": ch["urban"]["crashed"],
+                      "urban_crashed": ch["urban"]["crashed"], "urban_catch_rate": ch["urban"]["catch_rate"],
+                      "zigzag_catch_rate": ch["zigzag"]["catch_rate"], "open_field_catch_rate": ch["open_field"]["catch_rate"],
                       "open_field_time_to_5m_s": ch["open_field"]["time_to_5m_s"],
                       "open_field_share_within_10m": ch["open_field"]["share_within_10m"],
                       "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"],

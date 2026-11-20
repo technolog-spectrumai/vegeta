@@ -103,7 +103,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("link_margin_10km_db", "A6 link margin at 10 km (dB)", 10, 20),
         ("open_field_time_to_5m_s", "A8 open-field chase, time to 5 m (s)", 20, 8),
         ("touchdown_energy_J", "A9 recovery: touchdown energy (J)", 300, 60),
-        ("operating_wind_m_s", "A10 weather: operating wind, gusts 1.5x (m/s)", 10, 15)]),
+        ("operating_wind_m_s", "A10 weather: operating wind, gusts 1.5x (m/s)", 10, 15),
+        ("calm_success_pct", "A11 calm air: launch and landing success (%)", 90, 99)]),
     "astor": ("ASTOR: fast response from a prepared launcher", [
         ("cue_to_safe_s", "S1 cue to safe flight (s)", 12, 3),
         ("time_to_3km_s", "S2 time to 3 km (s)", 90, 35),
@@ -127,7 +128,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("endurance_min", "P8 endurance (min)", 15, 40),
         ("touchdown_energy_J", "P9 rugged: touchdown energy (J)", 200, 40),
         ("belly_safety", "P10 rugged: propulsor in a belly landing (0-100)", 0, 100),
-        ("launch_success_pct", "P12 throw success, 0-12 m/s + gusts (%)", 90, 99)]),
+        ("launch_success_pct", "P12 throw success, 0-12 m/s + gusts (%)", 90, 99),
+        ("calm_success_pct", "P13 calm air: throw and landing success (%)", 90, 99)]),
 }
 # the gates (pass/fail; KPIS.md): a spec failing its line's gate scores 0 for that line
 GATES = {"buteo": [("launch", lambda v: v in ("perch", "site launcher"))],
