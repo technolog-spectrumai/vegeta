@@ -30,6 +30,7 @@ def main(argv=None) -> int:
     ap.add_argument("--processors", type=int, default=4)
     ap.add_argument("--timeout", type=float, default=3 * 3600.0)
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--name", default="arigo2", help="the result file's stem (e.g. arigo2_fine)")
     ap.add_argument("--fresh", action="store_true", help="ignore the saved results and start over")
     ap.add_argument("--workdir", type=Path, default=RUNS)
     a = ap.parse_args(argv)
@@ -40,7 +41,7 @@ def main(argv=None) -> int:
             print(f"  {w:8s} {'blown' if b else 'aero ':5s} alpha {al:+5.1f}")
         return 0
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / "arigo2_cfd.yaml"
+    path = OUT / f"{a.name}_cfd.yaml"
     old = rs.load(path, a.fresh)
     if old and (old.get("speed_m_s"), old.get("quality"), old.get("rpm")) != (a.speed, a.quality, a.rpm):
         print("  saved results are for another speed/quality/rpm: starting over"); old = None

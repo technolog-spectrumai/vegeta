@@ -22,11 +22,12 @@ def main(argv=None) -> int:
     ap.add_argument("--quality", choices=tuple(c20.QUALITY), default="screening")
     ap.add_argument("--processors", type=int, default=4)
     ap.add_argument("--timeout", type=float, default=3 * 3600.0)
+    ap.add_argument("--name", default="arigo20", help="the result file's stem (e.g. arigo20_fine)")
     ap.add_argument("--fresh", action="store_true")
     ap.add_argument("--workdir", type=Path, default=RUNS)
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / "arigo20_cfd.yaml"
+    path = OUT / f"{a.name}_cfd.yaml"
     doc = rs.load(path, a.fresh) or {"aircraft": "ARIGO-20", "speed_m_s": c20.SPEED, "quality": a.quality, "rows": []}
     ref = c20.reference()
     doc["reference"] = {**ref, "cg_mm": list(ref["cg_mm"])}
