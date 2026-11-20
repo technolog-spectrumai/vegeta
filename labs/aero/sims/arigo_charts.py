@@ -85,7 +85,9 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("cue_to_safe_s", "B1 readiness: cue to safe flight (s)", 12, 3),
         ("standby_h", "B2 readiness: watch on station (h)", 2, 24),
         ("perch_margin_m", "B3 deployment: perch height to spare (m)", 0, 6),
+        ("launch_success_pct", "B4 deployment: launch success, 0-12 m/s + gusts (%)", 95, 99.5),
         ("gust_stall_m_s", "B5 weather: vertical gust that stalls it at loiter (m/s)", 3, 6),
+        ("operating_wind_m_s", "B6 weather: operating wind, gusts 1.5x (m/s)", 12, 15),
         ("perch_lift_off_wind_m_s", "B7 weather: wind that lifts it off the perch (m/s)", 15, 30),
         ("keep_out_30_m_s_m", "B8 effect: keep-out vs a 30 m/s drone (m)", 1000, 2000),
         ("urban_time_to_5m_s", "B9 effect: urban chase, time to 5 m (s)", 15, 3),
@@ -100,7 +102,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("time_to_10km_s", "A5 time to 10 km (s)", 600, 250),
         ("link_margin_10km_db", "A6 link margin at 10 km (dB)", 10, 20),
         ("open_field_time_to_5m_s", "A8 open-field chase, time to 5 m (s)", 20, 8),
-        ("touchdown_energy_J", "A9 recovery: touchdown energy (J)", 300, 60)]),
+        ("touchdown_energy_J", "A9 recovery: touchdown energy (J)", 300, 60),
+        ("operating_wind_m_s", "A10 weather: operating wind, gusts 1.5x (m/s)", 10, 15)]),
     "astor": ("ASTOR: fast response from a prepared launcher", [
         ("cue_to_safe_s", "S1 cue to safe flight (s)", 12, 3),
         ("time_to_3km_s", "S2 time to 3 km (s)", 90, 35),
@@ -109,6 +112,7 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("keep_out_50_m_s_m", "S5 keep-out vs a 50 m/s fixed wing (m)", 1000, 2000),
         ("tail_chase_50_m_s", "S6 can tail-chase a 50 m/s target", 0, 1),
         ("full_power_min", "S7 full power on one pack (min)", 1, 6),
+        ("launch_success_pct", "S8 launch success from the rail, 0-12 m/s + gusts (%)", 98, 99.9),
         ("turnaround_s", "S9 landed to ready (s)", 900, 180),
         ("landing_miss_m", "S10 recovery miss (m)", 30, 3),
         ("touchdown_energy_J", "S11 touchdown energy (J)", 300, 40)]),
@@ -122,7 +126,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("urban_time_to_5m_s", "P7 urban chase, time to 5 m (s)", 15, 3),
         ("endurance_min", "P8 endurance (min)", 15, 40),
         ("touchdown_energy_J", "P9 rugged: touchdown energy (J)", 200, 40),
-        ("belly_safety", "P10 rugged: propulsor in a belly landing (0-100)", 0, 100)]),
+        ("belly_safety", "P10 rugged: propulsor in a belly landing (0-100)", 0, 100),
+        ("launch_success_pct", "P12 throw success, 0-12 m/s + gusts (%)", 90, 99)]),
 }
 # the gates (pass/fail; KPIS.md): a spec failing its line's gate scores 0 for that line
 GATES = {"buteo": [("launch", lambda v: v in ("perch", "site launcher"))],
@@ -150,6 +155,8 @@ def mission_kpi(cards: dict) -> dict:
         for m, (_, items) in MISSIONS.items():
             sc = []
             for key, _, thr, obj in items:
+                if key not in s:                                # not computed in this run (e.g. robustness): left out
+                    continue
                 v = s.get(key)
                 if key.startswith("urban") and s.get("urban_crashed"):
                     v = None

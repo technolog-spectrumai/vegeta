@@ -63,9 +63,9 @@ reads ✅ when the objective is met, ✔ when the threshold is met, and ✖ when
 | B1 | Cue to safe flight (s): alert + launch to 10 m at 1.3 × stall | readiness | 12 | 3 | 5.0 | SIM + PROP | ✔ |
 | B2 | Watch time on station (h), camera and computer on, motor off | readiness | 2 | 24 (continuous) | 7.7 on its pack; 24+ with a charging perch | EST / PROP | ✔ / ✅ |
 | B3 | Perch height to spare (m): perch height − height the drop needs | reliable deployment | 0 | 6 | 4.3 with an 8 m/s spring push; 1.1 without | SIM + PROP | ✔ |
-| B4 | Launch success rate over a dispersion of wind, gusts and perch attitude (%) | reliable deployment | 95 | 99.5 | — | — | — |
+| B4 | Launch success: Monte Carlo over steady wind 0–12 m/s with 1.5× gusts, wind from any direction, push speed ±15 %, perch attitude ±5° (%) | reliable deployment | 95 | 99.5 | 75 on a fixed perch; 100 on a turning perch | SIM (16 draws, ±11 %) + PROP | ✖ / ✅ |
 | B5 | Vertical gust that stalls it at loiter speed (m/s), quasi-steady (conservative) | weather | 3 | 6 | 2.5 | SIM | ✖ |
-| B6 | Operating wind: steady / gust (m/s) for launch, intercept and recovery | weather | 12 / 18 | 15 / 22 | — | — | — |
+| B6 | Operating wind: the strongest steady wind (gusts 1.5×) at which launch and recovery both succeed ≥ 95 % (m/s) | weather | 12 / 18 | 15 / 22 | 4.8 / 7.2 on a fixed perch; 12.8 / 19.2 on a turning perch | SIM (16 launch and 4 landing draws per wind) + PROP | ✖ / ✔ |
 | B7 | Wind that lifts it off the perch untethered (m/s). A perch latch makes this a design requirement instead. | weather | 15 | 30 | 31.7 | EST | ✅ |
 | B8 | Keep-out vs a 30 m/s drone cued at 3 km (m) | effect | 1000 | 2000 | 1748 | SIM + EST | ✔ |
 | B9 | Urban PN chase: time to close to 5 m (s) | effect | 15 | 3 | 10.5 | SIM | ✔ |
@@ -73,13 +73,17 @@ reads ✅ when the objective is met, ✔ when the threshold is met, and ✖ when
 | B11 | Miss from the landing aim point (m), calm air | recovery | 30 | 3 | 4.5 | SIM | ✔ |
 | B12 | Landed to ready again (s): pack, check, back on the perch | recovery | 600 | 120 | 120 | EST | ✅ |
 
-**Reading.** ARIGO-1H meets most BUTEO thresholds today. The clear gap is **gust tolerance (B5)**: at 18 m/s loiter,
+**Reading.** ARIGO-1H meets most BUTEO thresholds today. **The station matters as much as the aircraft.** On a
+fixed perch, with the wind free to come from any direction, the drop fails in tailwinds (it hits the ground) and in
+crosswind gusts (it rolls past 60°). Launch success is about 75 % and the operating wind only 4.8 m/s. A
+**perch that turns into the wind** (the `turning_station` kit, ground equipment) gives 100 % launch success and a
+12.8 m/s operating wind, and recovery becomes the limit at 16 m/s. The other clear gap is **gust tolerance (B5)**: at 18 m/s loiter,
 a 2.5 m/s vertical gust reaches the stall angle in the quasi-steady bound. The levers are:
 - a faster loiter, which trades away endurance (a minor priority for BUTEO);
 - a higher stall angle or a lower wing loading;
 - an autopilot gust margin.
 
-B4 and B6 have no model yet.
+B4 and B6 are now modelled (`designs/raptors_robust.py`). The numbers here come from small samples; the run scores them with more draws.
 
 ---
 
@@ -99,6 +103,7 @@ B4 and B6 have no model yet.
 | A7 | Link availability along the mission with terrain and clutter (%) | communications | 95 | 99.9 | — | — | — |
 | A8 | Open-field PN chase: time to close to 5 m (s) | effect | 20 | 8 | 11.8 | SIM | ✔ |
 | A9 | Touchdown energy (J), belly landing | recovery | 300 | 60 | 170 | SIM | ✔ |
+| A10 | Operating wind: hand launch into the wind and belly landing, both ≥ 95 % (m/s) | weather | 10 | 15 | ≈16 (as SPARFELL: the same launch and recovery) | SIM (small sample) | ✅ |
 
 **Reading.** On paper, ARIGO-1H already over-delivers ARPELLA's 10 km radius: about 14 km going out at dash speed,
 about 27 km at economy speed. Its real gaps are **coverage per sortie** and **communications**. Coverage is mostly a
@@ -121,7 +126,7 @@ This line can trade some reserve for a lighter pack or a slower, quieter loiter.
 | S5 | Keep-out vs a 50 m/s fixed wing cued at 3 km (m) | effect | 1000 | 2000 | 1342 ✔ | 1452 ✔ | SIM + EST |
 | S6 | Can it tail-chase a 50 m/s target (top speed > 1.15 × 50 m/s)? | effect | no | yes | no | yes | SIM |
 | S7 | Full power on one pack (min) | arrival / pursuit | 1 | 6 | 5.7 ✔ | 2.8 ✔ | EST |
-| S8 | Launch success rate from the rail over dispersion (%) | reliable prepared launch | 98 | 99.9 | — | — | — |
+| S8 | Launch success from the rail: Monte Carlo over steady wind 0–12 m/s with 1.5× gusts, exit speed ±5 %, pitch ±2°, fixed or turning rail (%) | reliable prepared launch | 98 | 99.9 | in the run | in the run | SIM + PROP |
 | S9 | Landed to ready again (s): pack + canopy repack | rapid turnaround | 900 | 180 | 360 ✔ | 360 ✔ | EST + PROP |
 | S10 | Recovery miss (m), parachute in a 6 m/s wind | predictable recovery | 30 | 3 | 15 ✔ | 15 ✔ | EST + PROP |
 | S11 | Touchdown energy under the parachute (J) | predictable recovery | 300 | 40 | 23 ✅ | 32 ✅ | EST + PROP |
@@ -152,6 +157,7 @@ pays for that with half the full-power time and a heavier launcher and recovery 
 | P9 | Touchdown energy (J), belly landing | rugged handling | 200 | 40 | 128 | SIM | ✔ |
 | P10 | Propulsor in a belly landing (folds clear = 100, folding strike = 50, fixed strike = 0) | rugged handling | 0 | 100 | 50: the folding propeller reaches 82 mm below the belly | EST (CAD) | ✔ |
 | P11 | Survives a 1 m drop onto a corner, and five belly landings without repair | rugged handling | pass | pass | — | — | — |
+| P12 | Throw success: Monte Carlo over steady wind 0–12 m/s with 1.5× gusts, thrown into the wind ±30°, 12 ± 2 m/s, pitch ±5° (%) | minimal equipment / rugged | 90 | 99 | 100; its operating wind is about 16 m/s | SIM (16 draws) | ✅ |
 
 **Reading.** ARIGO-1H is a heavy SPARFELL. It is light enough to throw, but 1.57 kg and 720 mm are far from the
 objectives. On the small pack it is also slower in the urban chase (**P7 fails**). The levers are lighter avionics, a
@@ -165,8 +171,7 @@ objective.
 
 | KPI | What it needs |
 |---|---|
-| B4, S8: launch success rate | Monte Carlo over wind, gusts, perch or rail attitude, and push or rail speed, using the existing MuJoCo launch. A script; no new physics. |
-| B6: operating wind | Launch, landing and perch-hold in steady wind with gusts (MuJoCo wind field). A script. |
+| ~~B4, S8, B6~~ | **Done:** `designs/raptors_robust.py` (MuJoCo with steady wind plus Gauss–Markov turbulence, launch and landing Monte Carlo). Scored by `sims/raptors_explore.sh`. |
 | A7: link availability | A terrain and clutter line-of-sight model plus the radio's link budget. Outside the airframe models. |
 | P11: drop and landing survival | Physical tests on a built airframe. Until then a structural FEA of the belly and joints. |
 | B2, S9, P3: times | Trials with users and prototypes. The values above are estimates. |
@@ -174,5 +179,4 @@ objective.
 ## Next
 
 1. **Agree the KPIs**: the thresholds and objectives above, which client questions need answering first (e.g. S6, B6), and the evidence each requires.
-2. **Model the missing KPIs**: Monte Carlo launch success (B4, S8) and operating wind (B6).
-3. **Explore** (`labs/aero/sims/arigo_explore.sh -j N`, ready to run): for each line, sweep the levers named above from ARIGO-1H. Take the winners to CFD and back.
+2. **Explore** (`labs/aero/sims/raptors_explore.sh -j N`, ready to run, branch `dev_raptors_exp`): for each line, sweep the levers named above from ARIGO-1H, scored with the launch-success and operating-wind models. Take the winners to CFD and back.

@@ -39,6 +39,7 @@ KITS = {
     "lite_avionics": ([("lite avionics: 60 g vision module (not 125), 20 g camera, lighter wiring", -90.0,
                         "HAND (+-25); less vision compute: a shorter detection range and slower tracking")],
                       {"lite_avionics": True}),
+    "turning_station": ([], {"turning_station": True}),      # ground equipment: the perch / rail weathervanes into the wind
     "rugged_skin": ([("EPP belly and leading-edge armour", 45.0, "HAND (+-15)")], {"rugged": True}),
     "relay_radio": ([("long-range radio + diversity antennas", 25.0, "HAND (+-8)")], {"relay_radio": True}),
 }
@@ -70,11 +71,13 @@ PRODUCTS = {
 # the design space around each product's base (sims/arigo_explore.sh sweeps it)
 SPACE = {
     "buteo": {"span": (950.0, 1050.0, 1150.0), "chord": (280.0, 300.0, 330.0),
-             "kits": [("perch", "charging_perch"), ("perch", "charging_perch", "parachute"), ("rail", "charging_perch", "parachute")]},
+             "kits": [("perch", "charging_perch"), ("perch", "charging_perch", "turning_station"),
+                      ("perch", "charging_perch", "turning_station", "parachute"), ("rail", "charging_perch", "turning_station", "parachute")]},
     "arpella": {"span": (950.0, 1100.0, 1250.0), "chord": (260.0, 300.0),
                 "pack": ("Li-ion 3S2P P42A", "Li-ion 3S3P P42A", "Li-ion 3S4P P42A")},
     "astor": {"span": (800.0, 950.0), "chord": (260.0, 300.0), "motor_w": (800.0, 1200.0),
-              "pack": ("Li-ion 3S2P P42A", "Li-ion 3S3P P42A")},
+              "pack": ("Li-ion 3S2P P42A", "Li-ion 3S3P P42A"),
+              "kits": [("rail", "parachute"), ("rail", "turning_station", "parachute")]},
     "sparfell": {"scale": (0.7, 0.8, 0.9, 1.0), "pack": ("Li-ion 3S1P P42A", "Li-ion 3S2P P42A"),
                  "kits": [("two_piece",), ("quick_joiner", "lite_avionics"), ("quick_joiner", "lite_avionics", "rugged_skin")]},
 }
