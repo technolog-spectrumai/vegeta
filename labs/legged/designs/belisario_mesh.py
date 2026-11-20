@@ -286,6 +286,16 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
             for link, plate in _casing_pieces(p, side):
                 add_local(link, plate, PLATE)
     add("thorax", girdle, BONE)
+    if P.get("foot_toes"):                                                # the grasping feet: every phalanx a bone with a dark knuckle module at its root
+        for side, sy in (("L", 1.0), ("R", -1.0)):
+            lay = su.foot_layout(P, sy)
+            chains = [(f"{side}_toe_{k}", (1.0, 0.0, 0.0), t["lengths"], t["radius"]) for k, t in enumerate(lay["toes"])]
+            chains.append((f"{side}_hallux", lay["hallux"]["dir"], lay["hallux"]["lengths"], lay["hallux"]["radius"]))
+            for name, d, (L0, L1), rad in chains:
+                d = np.asarray(d)
+                for j, (L, rr) in enumerate(((L0, rad), (L1, rad * 0.9))):
+                    add_local(f"{name}_{j}", sk.rod((0, 0, 0), tuple(d * (L - rr * 0.3)), rr * 0.8), BONE, t=2.0)
+                    add_local(f"{name}_{j}", sk.disc((0, 0, 0), rr * 1.05, rr * 1.4, "y"), MODULE, t=2.0)
     if P.get("tail_segments"):                                           # the prehensile tail: a caudal vertebra and a module per link, the grip pad at the tip
         n, seg = int(P["tail_segments"]), P["tail_length"] / int(P["tail_segments"])
         for k in range(n):

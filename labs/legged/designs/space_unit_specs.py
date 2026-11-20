@@ -143,7 +143,7 @@ GIBBON = dict(MARINE, pelvis_width=150.0, pelvis_depth=85.0, pelvis_height=60.0,
               spine_segments=10, spine_curve=10.0, vertebra_diameter=34.0, rib_count=8, rib_section=9.0, sternum_width=26.0,
               clavicle_diameter=12.0, scapula_width=80.0, iliac_wing_height=60.0, femur_diameter=22.0, tibia_diameter=20.0,
               fibula_diameter=8.0, joint_module_length=55.0, joint_module_diameter=55.0, finger_length=125.0, finger_diameter=13.0,
-              hand_scale=0.62, thumb_scale=0.45, scapula_turn_deg=6.0, scapula_y=0.3, scapula_height=0.42)
+              hand_scale=0.62, thumb_scale=0.45, scapula_turn_deg=6.0, scapula_y=0.3, scapula_height=0.42, foot_toes=True)
 
 #: The spider monkey (Ateles): the gibbon's fork with a spider monkey's tricks - a long prehensile tail (a fifth limb:
 #: it wraps a bar and holds the body, its tip a bare grip pad), hook hands with no thumb to speak of (a vestigial nub:
@@ -169,6 +169,35 @@ HAND = {"palm_width": 95.0, "palm_thickness": 36.0, "palm_length": 105.0, "finge
 FINGER_CURL = {"mcp": 0.8, "pip": 0.95, "dip": 0.6}
 THUMB_CURL = {"oppose": 0.6, "curl": 0.75}
 KNUCKLE_CURL = 1.4                                                         #: the fingers flexed for knuckle-walking (the hand's rest)
+
+
+#: The grasping foot (mm): four toes off the sole's front edge (each a proximal and a distal phalanx on a
+#: metatarsophalangeal and an interphalangeal joint, curling down round a bar) and an opposable big toe on the
+#: inner side, set back and angled in (it closes from the other side): a monkey's foot is a second hand.
+FOOT_TOES = {"toe_length": 75.0, "toe_fractions": (0.85, 1.0, 0.95, 0.8), "phalanx_fractions": (0.58, 0.42), "toe_diameter": 11.0,
+             "hallux_length": 65.0, "hallux_diameter": 13.0, "hallux_back": 0.3, "hallux_angle_deg": 45.0}
+TOE_CURL = {"mtp": 0.55, "ip": 0.9}                                         #: the joints' angles [rad] per unit of the foot's curl command
+TOE_GRIP = 1.2                                                              #: the toes closed round a bar
+
+
+def foot_layout(P, sy):
+    """The grasping foot for the ``sy`` side (+1 left) in the foot link's frame [mm]: each toe's root on the sole's
+    front edge, its phalanx lengths and radius, pointing forward (+x) and curling down about +y; the big toe's root
+    on the inner side, set back, its direction (forward and in) and its curl axis (across it, level)."""
+    T, Lf, Wf = FOOT_TOES, P["foot_length"], P["foot_width"]
+    x_front, z = 0.7 * Lf, -P["ankle_height"] + P["foot_thickness"] / 2
+    toes = []
+    for k, frac in enumerate(T["toe_fractions"]):
+        L = T["toe_length"] * frac
+        y = sy * (-0.3 + 0.2 * k) * Wf * -1.0                                # the outer toe first: across the front edge, inner side last
+        toes.append({"root": (x_front - 2.0, y, z), "lengths": tuple(L * f for f in T["phalanx_fractions"]), "radius": T["toe_diameter"] / 2 * (0.85 if k == 0 else 1.0)})
+    a = _math.radians(T["hallux_angle_deg"])
+    inner = -sy                                                             # the inner side: towards the body's middle
+    d = (_math.cos(a), inner * _math.sin(a), 0.0)
+    return {"toes": toes,
+            "hallux": {"root": (x_front - T["hallux_back"] * Lf, inner * Wf * 0.45, z), "dir": d,
+                       "lengths": (T["hallux_length"] * 0.55, T["hallux_length"] * 0.45), "radius": T["hallux_diameter"] / 2,
+                       "axis": (-d[1], d[0], 0.0)}}
 
 
 def hand_layout(P, sy):

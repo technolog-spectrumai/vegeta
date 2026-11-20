@@ -442,6 +442,48 @@ GIBBON_FRAME_KG = {"thigh": (0.18, 0.024), "shin": (0.14, 0.02), "upper_arm": (0
 GIBBON_CASING = 0.35                                                       #: the casing's walls against the frame's 3 mm: 1 mm polycarbonate
 
 
+def _toes(r, P):
+    """Grasping feet (``space_unit_specs.foot_layout``): on each foot four toes of two phalanges (the joints curl them
+    down: round a bar) and an opposable big toe set back on the inner side, every joint a self-locking worm servo
+    (a closed foot stays closed unpowered), as the hands' fingers. One curl command per foot (``set_toe_curl``)."""
+    from ogma import actuators as act
+    key = "micro-metal 22 g worm"
+    m_act = act.get(key).mass_g / 1000.0
+    for side, sy in (("L", 1.0), ("R", -1.0)):
+        foot = _link(r.root, f"{side}_foot_link")
+        lay = su.foot_layout(P, sy)
+        chains = [(f"{side}_toe_{k}", t["root"], (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), t["lengths"], t["radius"]) for k, t in enumerate(lay["toes"])]
+        h = lay["hallux"]
+        chains.append((f"{side}_hallux", h["root"], h["dir"], h["axis"], h["lengths"], h["radius"]))
+        for name, root, d, ax, (L0, L1), rad in chains:
+            d, L0, L1, rad = np.asarray(d), L0 * mm, L1 * mm, rad * mm
+            distal = Link(f"{name}_1", pos=tuple(d * L0),
+                          joints=[Joint(f"{name}_ip", axis=tuple(ax), range=(-0.2, 1.6), tag="toe_ip", servo=bk.servo(key, kp=1.5, kd=0.02))],
+                          geoms=[bk.capsule(f"{name}_1", rad * 0.9, (0.0, 0.0, 0.0), tuple(d * L1), role="link", rgba=bk.DARK)],
+                          masses=[PointMass(f"{name}_ip_actuator", m_act)])
+            proximal = Link(f"{name}_0", pos=tuple(v * mm for v in root),
+                            joints=[Joint(f"{name}_mtp", axis=tuple(ax), range=(-0.5, 1.4), tag="toe_mtp", servo=bk.servo(key, kp=1.5, kd=0.02))],
+                            geoms=[bk.capsule(f"{name}_0", rad, (0.0, 0.0, 0.0), tuple(d * L0), role="link", rgba=bk.DARK)],
+                            masses=[PointMass(f"{name}_mtp_actuator", m_act)], children=[distal])
+            foot.children.append(proximal)
+    r.sources["feet"] = "space_unit_robots._toes: grasping feet, four toes and an opposable big toe, worm servos"
+    return r
+
+
+def toe_joints(side: str) -> list:
+    names = [f"{side}_toe_{k}" for k in range(4)] + [f"{side}_hallux"]
+    return [f"{n}_{j}" for n in names for j in ("mtp", "ip")]
+
+
+def set_toe_curl(q, kin, side: str, curl: float):
+    """The foot's toes closed ``curl`` (0 flat, ``space_unit_specs.TOE_GRIP`` round a bar; negative: spread up); a frame
+    without toes is left as it is."""
+    for j in toe_joints(side):
+        if j in kin.index:
+            q[kin.index[j]] = curl * su.TOE_CURL["mtp" if j.endswith("mtp") else "ip"]
+    return q
+
+
 #: The tail's joint modules: worm-geared smart servos at the root (self-locking: the tail holds a hang unpowered),
 #: worm-geared standard servos along it; [(key, kp, kd)] from the root out.
 TAIL_SERVOS = [("smart servo 25 Nm", 40.0, 0.4)] * 4 + [("standard 60 g worm", 4.0, 0.04)] * 10
@@ -546,6 +588,8 @@ def gibbon(casing: str = "plastic", P=None, name: str = "Gibbon"):
             elif g.role == "visual" and g.mass:
                 g.mass *= GIBBON_CASING
     r.sources["actuators"] = "space_unit_robots.GIBBON_SERVOS: small joint modules for a 15 kg climber; self-locking worm servos in the fingers"
+    if P.get("foot_toes"):
+        _toes(r, P)
     r.sources["carried"] = "space_unit_robots.GIBBON_PARTS_KG: a 110 Wh pack, the computer, the wiring; a thin polycarbonate casing"
     r.notes = "The gibbon: a fully arboreal fork of Kerchak (design stage)."
     e = math.radians(P["elbow_bend_deg"])

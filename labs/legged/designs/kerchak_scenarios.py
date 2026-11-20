@@ -253,18 +253,110 @@ CURL_CLOSED, CURL_OPEN = 2.0, -0.3        #: the finger module closed on a bar (
 GRIP = sr.hand_grip(CURL_CLOSED)          #: a bar's axis in the hand's frame once the fingers have closed on it [m]: in front of the palm's face, inside the fist
 
 
+FRAME_P = None                            #: the frame's proportions (``set_hand``): its foot, whether it grasps with its toes
+
+
 def set_hand(P):
-    """The grip from a frame's own hand (``space_unit_specs`` proportions): Kerchak's, the humanoid's or the gibbon's."""
-    global GRIP
+    """The grip from a frame's own hand (``space_unit_specs`` proportions): Kerchak's, the humanoid's or the gibbon's;
+    and its foot (a grasping foot stands with the bar under its toes' roots)."""
+    global GRIP, FRAME_P
     GRIP = sr.hand_grip(CURL_CLOSED, P=P)
+    FRAME_P = P
 GRIP_Y = 0.06                             #: a second point along the hand's y (the bar's axis) that fixes the hand's roll
 BAR_R = 0.025                             #: the bar the grip is sized for; a thicker hold moves the palm out to its surface
 SOLE_ON_BAR = 0.08                        #: the sole's point that rests on a bar: the ball of the foot, 2 cm of toe past the bar [m] (on four)
 
 
 def sole_on_bar():
-    """Where along the sole a bar sits: standing, further back under the foot, the ankle and the shin clear of the rung above."""
+    """Where along the sole a bar sits: standing, further back under the foot, the ankle and the shin clear of the rung
+    above; a grasping foot (a monkey's), under the toes' roots - the sole's front edge - the toes wrapped round it."""
+    if FRAME_P is not None and FRAME_P.get("foot_toes"):
+        return 0.5 * FRAME_P["foot_length"] * 1e-3
     return 0.11 if gm.STANCE["upright"] else SOLE_ON_BAR
+
+
+def _circle_meet(o, ro, c, rc, pick):
+    """The points at ``ro`` from ``o`` and ``rc`` from ``c`` (2-D); ``pick`` chooses one; None if they do not meet."""
+    d = np.linalg.norm(c - o)
+    if d < 1e-9 or d > ro + rc or d < abs(ro - rc):
+        return None
+    a = (ro ** 2 - rc ** 2 + d ** 2) / (2 * d)
+    h = math.sqrt(max(ro ** 2 - a ** 2, 0.0))
+    m = o + a * (c - o) / d
+    perp = np.array([-(c - o)[1], (c - o)[0]]) / d
+    return pick(m + h * perp, m - h * perp)
+
+
+def toe_wrap(kin, q, side, hold):
+    """A grasping foot's toes wrapped round the bar it stands on (``foot_targets``: the sole on the bar's outer top,
+    the bar's front under the toes' roots): in the foot's own plane, each phalanx a chord landing on the circle round
+    the bar (its radius plus the toe's), the first over the bar's front, the next on round under it - the joints bend
+    by those chords' turns, so the toes hug the wood, they do not cut into it. The big toe, set back, reaches for the
+    bar's back. A frame without toes: unchanged."""
+    if FRAME_P is None or not FRAME_P.get("foot_toes"):
+        return q
+    T, P = su.FOOT_TOES, FRAME_P
+    r, tip = hold["r"], hold.get("tip", FOOT_TIP)
+    s45 = math.sqrt(0.5)
+    half_t = P["foot_thickness"] * 0.5e-3
+    # the bar's centre from the toes' root (on the sole's mid-plane, at its front edge), in the foot's frame (x forward, z up)
+    cw = np.array([0.002 + s45 * r, -(s45 * r + 0.004 + half_t)])                # in the world's (into the surface, up)
+    ct, st = math.cos(tip), math.sin(tip)
+    C = np.array([ct * cw[0] + st * cw[1], -st * cw[0] + ct * cw[1]])            # turned with the foot's tip
+    R = r + T["toe_diameter"] * 0.5e-3 + 0.002
+    lower = lambda p1, p2: p1 if p1[1] < p2[1] else p2
+    front = lambda p1, p2: p1 if p1[0] > p2[0] else p2
+    for k, frac in enumerate(T["toe_fractions"]):
+        L0, L1 = (T["toe_length"] * frac * f * 1e-3 for f in T["phalanx_fractions"])
+        P1 = _circle_meet(np.zeros(2), L0, C, R, front)
+        if P1 is None:                                                     # too short to reach round: down at the bar
+            mtp, ip = min(0.9, math.atan2(-C[1], C[0])), 0.4
+        else:
+            mtp = math.atan2(-P1[1], P1[0])
+            P2 = _circle_meet(P1, L1, C, R, lower)
+            ip = 0.5 if P2 is None else max(0.0, math.atan2(-(P2 - P1)[1], (P2 - P1)[0]) - mtp)
+        for j, v in ((f"{side}_toe_{k}_mtp", mtp), (f"{side}_toe_{k}_ip", ip)):
+            if j in kin.index:
+                q[kin.index[j]] = float(np.clip(v, kin.lo[kin.index[j]], kin.hi[kin.index[j]]))
+    for j, v in ((f"{side}_hallux_mtp", 0.35), (f"{side}_hallux_ip", 0.5)):          # the big toe down towards the bar's back
+        if j in kin.index:
+            q[kin.index[j]] = v
+    return q
+
+
+def _toes_extra(kin, windows, holds0, holds1, from_flat=False):
+    """``extra`` for a climb: a grasping foot's toes wrapped round its bar (``toe_wrap``), flat on a point hold or the
+    ground; through the foot's swing window they open (spread up a little) and wrap round the next bar as it lands."""
+    if FRAME_P is None or not FRAME_P.get("foot_toes"):
+        return lambda u, q: q
+
+    def set_for(q, side, h, f_closed):
+        if h is None or h["kind"] != "bar":
+            return sr.set_toe_curl(q, kin, side, 0.0)
+        qw = toe_wrap(kin, q.copy(), side, h)
+        flat = sr.set_toe_curl(q.copy(), kin, side, -0.25)
+        for j in sr.toe_joints(side):
+            if j in kin.index:
+                i = kin.index[j]
+                q[i] = (1 - f_closed) * flat[i] + f_closed * qw[i]
+        return q
+
+    def fn(u, q):
+        for side in ("L", "R"):
+            a, b = windows.get(side, (2.0, 2.0))
+            h0 = None if from_flat else holds0.get(side)
+            if u <= a:
+                q = set_for(q, side, h0, 1.0)
+            elif u >= b:
+                q = set_for(q, side, holds1.get(side), 1.0)
+            else:
+                f = (u - a) / (b - a)
+                if f < 0.3:
+                    q = set_for(q, side, h0, 1.0 - mk.smooth(f / 0.3))
+                else:
+                    q = set_for(q, side, holds1.get(side), mk.smooth(max(0.0, (f - 0.7) / 0.3)))
+        return q
+    return fn
 SOLE_HALF = 0.015                         #: (Kerchak's early value) the contact points above the sole's bottom face; ``sole_drop`` reads the frame's own [m]
 
 
@@ -468,7 +560,7 @@ def climb_cycle(kin, q_from, holds, base_from, base_to, *, pitch=CLIMB_PITCH, du
         b = (1 - f) * np.asarray(base_from) + f * np.asarray(base_to)
         return b[0], b[1], b[2], pitch
 
-    extra = _extras(_spine_extra(kin, CLIMB_SPINE), _fingers_extra(kin, windows, holds[1], q_from))
+    extra = _extras(_spine_extra(kin, CLIMB_SPINE), _fingers_extra(kin, windows, holds[1], q_from), _toes_extra(kin, windows, holds[0], holds[1]))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_from, extra=extra, reg=IK_REG, iters=IK_ITERS,
                              source="kerchak_scenarios.climb_cycle", q_ref=climb_ref(kin, q_from))
 
@@ -559,7 +651,8 @@ def mount(kin, q_quad, base_x, holds, base_climb, *, pitch=CLIMB_PITCH, duration
         return xy[0], xy[1], z, gm.STANCE["pitch"] + f_a * (pitch - gm.STANCE["pitch"])
 
     windows = {"L_hand": (0.0, hands_end), "R_hand": (0.0, hands_end)}
-    extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True))
+    extra = _extras(_spine_extra(kin, CLIMB_SPINE, q_quad, blend=True), _fingers_extra(kin, windows, holds, q_quad, from_start=True),
+                    _toes_extra(kin, foot_windows, {}, holds, from_flat=True))
     return gt.contact_motion(kin, name, duration, targets, base, q_init=q_quad, extra=extra, reg=IK_REG, iters=IK_ITERS,
                              source="kerchak_scenarios.mount", q_ref=climb_ref(kin, q_quad))
 
