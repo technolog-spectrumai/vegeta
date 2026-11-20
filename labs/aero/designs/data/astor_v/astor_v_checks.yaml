@@ -3,24 +3,24 @@ wing:
   span_mm: 1083.0
   exposed_area_m2: 0.1981
   lift_centre_x_mm: 339.0
-  stall_nominal_m_s: 14.9
+  stall_nominal_m_s: 15.1
 - sweep_deg: 35.0
   span_mm: 977.0
   exposed_area_m2: 0.1849
-  lift_centre_x_mm: 435.0
-  stall_nominal_m_s: 15.4
+  lift_centre_x_mm: 371.0
+  stall_nominal_m_s: 15.6
 - sweep_deg: 60.0
   span_mm: 696.0
   exposed_area_m2: 0.1731
-  lift_centre_x_mm: 522.0
-  stall_nominal_m_s: 15.9
+  lift_centre_x_mm: 406.0
+  stall_nominal_m_s: 16.1
 - sweep_deg: 98.0
   span_mm: 201.0
   exposed_area_m2: 0.1288
-  lift_centre_x_mm: 530.0
-  stall_nominal_m_s: 18.5
+  lift_centre_x_mm: 414.0
+  stall_nominal_m_s: 18.7
 stowed_envelope_mm:
-  length: 849
+  length: 835
   width: 309
   height: 160
   tube_diameter: 303
@@ -32,6 +32,89 @@ net_past_propeller:
   clear_with_prop_turning: false
   note: ejection speed 5 m/s and the folded blades' radius are HAND
 mass:
-  empty_g: 2010.6
-  total_g: 2610.6
-  without_nets_g: 2390.6
+  empty_g: 2076.6
+  total_g: 2676.6
+  without_nets_g: 2456.6
+balance:
+  cg_mm: 356.0
+  by_sweep:
+  - sweep_deg: 12
+    tail_fan: 1.0
+    CL_alpha_per_rad: 3.92
+    neutral_point_mm: 372.0
+    CL_per_deg_tail: 0.0129
+    Cm_nose_per_deg_tail: -0.0379
+    static_margin: 0.08
+    Cm_cg_per_deg_tail: -0.015
+  - sweep_deg: 25
+    tail_fan: 1.0
+    CL_alpha_per_rad: 4.02
+    neutral_point_mm: 378.0
+    CL_per_deg_tail: 0.0133
+    Cm_nose_per_deg_tail: -0.0387
+    static_margin: 0.11
+    Cm_cg_per_deg_tail: -0.0151
+  - sweep_deg: 35
+    tail_fan: 1.0
+    CL_alpha_per_rad: 3.85
+    neutral_point_mm: 378.0
+    CL_per_deg_tail: 0.0133
+    Cm_nose_per_deg_tail: -0.0388
+    static_margin: 0.111
+    Cm_cg_per_deg_tail: -0.0151
+  - sweep_deg: 45
+    tail_fan: 1.0
+    CL_alpha_per_rad: 3.43
+    neutral_point_mm: 385.0
+    CL_per_deg_tail: 0.0134
+    Cm_nose_per_deg_tail: -0.0392
+    static_margin: 0.143
+    Cm_cg_per_deg_tail: -0.0153
+  - sweep_deg: 60
+    tail_fan: 1.0
+    CL_alpha_per_rad: 2.54
+    neutral_point_mm: 388.0
+    CL_per_deg_tail: 0.0136
+    Cm_nose_per_deg_tail: -0.0398
+    static_margin: 0.159
+    Cm_cg_per_deg_tail: -0.0156
+  trim:
+  - sweep_deg: 12
+    V_m_s: 22
+    CL: 0.447
+    alpha_deg: 7.0
+    tail_incidence_deg: -2.4
+    tail_lift_share: -0.07
+    load_factor: 1
+  - sweep_deg: 12
+    V_m_s: 30
+    CL: 0.721
+    alpha_deg: 11.3
+    tail_incidence_deg: -3.8
+    tail_lift_share: -0.07
+    load_factor: 3
+  - sweep_deg: 35
+    V_m_s: 45
+    CL: 0.107
+    alpha_deg: 1.7
+    tail_incidence_deg: -0.8
+    tail_lift_share: -0.1
+    load_factor: 1
+  - sweep_deg: 60
+    V_m_s: 65
+    CL: 0.051
+    alpha_deg: 1.3
+    tail_incidence_deg: -0.6
+    tail_lift_share: -0.15
+    load_factor: 1
+  - sweep_deg: 60
+    V_m_s: 65
+    CL: 0.256
+    alpha_deg: 6.7
+    tail_incidence_deg: -2.9
+    tail_lift_share: -0.15
+    load_factor: 5
+  fixed_pivots_for_comparison:
+    neutral_point_travel_mm: 116
+    tail_lift_share_at_the_dash: -0.99
+    tail_incidence_3g_at_the_dash_deg: -14.2

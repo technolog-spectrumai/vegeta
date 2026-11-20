@@ -8,7 +8,8 @@ flies into it at its own speed. ASTOR-V never touches the bandit, carries two ne
 
 **The layout, and why.**
 
-- **Two wing panels on pivots** on a shoulder block on the fuselage's back, one panel a little above the other, so
+- **Two wing panels on pivots** on a carriage that slides along the fuselage's back (forward as the wing sweeps, so
+  the lift stays over the CG: ``SLIDE``), one panel a little above the other, so
   they cross like scissors. ``wing_sweep_deg``: 12 (spread: launch, turns, braking, landing), ~60 (the dash: the
   panels' inner parts lie over the fuselage, less wing in the air, half the gust load), 98 (stowed: the panels along
   the body, for a canister). Sweeping both pitches the aircraft (the lift moves aft); sweeping them differently
@@ -44,7 +45,8 @@ _OVERRIDE = {**A._OVERRIDE, "fuselage_length": 790.0, "fin_height": 85.0, "fin_r
 _NEW = list(A._NEW) + [
     Parameter("wing_sweep_deg", SPREAD_DEG, "deg", min=5.0, max=105.0, description="the wing panels' leading-edge sweep: 12 spread, 60 dash, 98 stowed (along the body)"),
     Parameter("wing_sweep_left_deg", -1.0, "deg", min=-1.0, max=105.0, description="the left panel's sweep if different (roll control); -1: as the right"),
-    Parameter("pivot_x", 320.0, "mm", min=150.0, description="the wing pivots from the nose tip"),
+    Parameter("pivot_x", 320.0, "mm", min=150.0, description="the wing pivots from the nose tip, wing spread"),
+    Parameter("pivot_slides", True, description="the pivots' carriage slides forward with the sweep (SLIDE); False: fixed pivots"),
     Parameter("pivot_y", 26.0, "mm", min=10.0, description="each pivot from the centre plane"),
     Parameter("panel_span", 520.0, "mm", min=150.0, description="each wing panel along its own span, from its pivot"),
     Parameter("panel_root_chord", 270.0, "mm", min=60.0),
@@ -64,12 +66,29 @@ _NEW = list(A._NEW) + [
 
 # ---------------------------------------------------------------------------------------------- mass (HAND, marked)
 EXTRA_ITEMS = [
-    ("2 wing pivots (bearings, pins, shoulder block)", 70.0, "HAND (+-25)"),
+    ("2 wing pivots (bearings, pins) on a sliding carriage, its rail and lead screw", 130.0, "HAND (+-40)"),
     ("wing sweep actuators (2 servos + linkages: asymmetric sweep)", 60.0, "HAND (+-20)"),
     ("tail fan pivots and actuator", 40.0, "HAND (+-15)"),
     ("net bay fairing, 2 ejector springs and latches", 45.0, "HAND (+-15)"),
 ]
 NET_G = 110.0                      # HAND: one net cartridge: a 2 m mesh, corner weights, its sleeve (+-30)
+
+
+# The pivots ride on a carriage that slides forward as the wing sweeps (the Bell X-5's answer): with fixed pivots the
+# neutral point runs 116 mm aft between 12 and 60 deg (astor_v_model: the tail would carry a download equal to the
+# weight at the dash); with this travel the static margin stays 8-16 % MAC. (sweep deg, carriage travel forward mm)
+SLIDE = ((12.0, 0.0), (35.0, 64.0), (60.0, 116.0), (98.0, 116.0))
+
+
+def pivot_x(p, sweep=None) -> float:
+    """The pivots' station at a sweep: ``pivot_x`` (spread) less the carriage's travel."""
+    sw = p["wing_sweep_deg"] if sweep is None else sweep
+    if not p.get("pivot_slides", True):
+        return p["pivot_x"]
+    xs, ys = zip(*SLIDE)
+    k = max(0, min(len(xs) - 2, next((i for i in range(len(xs) - 1) if sw <= xs[i + 1]), len(xs) - 2)))
+    f = max(0.0, min(1.0, (sw - xs[k]) / (xs[k + 1] - xs[k])))
+    return p["pivot_x"] - (ys[k] + f * (ys[k + 1] - ys[k]))
 
 
 def _panel(root_c, tip_c, span, sweep_deg, t):
@@ -93,7 +112,7 @@ class AstorV(a1.Arigo1):
         z = p["wing_plane_z"] + side * p["panel_stack"] / 2
         if side < 0:
             pan = pan.mirror("XZ")
-        return pan.translate((p["pivot_x"], side * p["pivot_y"], z))
+        return pan.translate((pivot_x(p, min(sweep, DASH_DEG) if sweep <= DASH_DEG else sweep), side * p["pivot_y"], z))
 
     def _wing(self, p):
         sl = p["wing_sweep_deg"] if p["wing_sweep_left_deg"] < 0 else p["wing_sweep_left_deg"]
@@ -103,11 +122,14 @@ class AstorV(a1.Arigo1):
         """The block on the fuselage's back that carries the pivots, and the pivot pins."""
         R = p["fuselage_diameter"] / 2
         h = p["wing_plane_z"] + p["panel_stack"] - R + 6.0
-        blk = (cq.Workplane("XY").box(150.0, 2 * p["pivot_y"] + 44.0, h).edges("|Z").fillet(18.0)
-               .translate((p["pivot_x"] + 15.0, 0, R + h / 2 - 6.0)))
+        px = pivot_x(p)
+        blk = (cq.Workplane("XY").box(110.0, 2 * p["pivot_y"] + 44.0, h).edges("|Z").fillet(18.0)
+               .translate((px + 10.0, 0, R + h / 2 - 6.0)))                      # the carriage
+        rail = cq.Workplane("XY").box(SLIDE[-1][1] + 130.0, 22.0, 8.0).translate((p["pivot_x"] - SLIDE[-1][1] / 2 + 10.0, 0, R + 1.0))
+        blk = blk.union(rail)
         for s in (1, -1):
             pin = cq.Workplane("XY").circle(7.0).extrude(p["panel_stack"] + 16.0).translate(
-                (p["pivot_x"], s * p["pivot_y"], p["wing_plane_z"] - p["panel_stack"] / 2 - 8.0))
+                (px, s * p["pivot_y"], p["wing_plane_z"] - p["panel_stack"] / 2 - 8.0))
             blk = blk.union(pin)
         return blk
 
@@ -199,6 +221,7 @@ def wing_numbers(p, sweep) -> dict:
     c = p["panel_root_chord"] + (p["panel_tip_chord"] - p["panel_root_chord"]) * eta
     yl = eta * p["panel_span"]
     xl = yl * math.tan(math.radians(SPREAD_DEG)) + 0.25 * c - p["panel_pivot_chord"] * p["panel_root_chord"]   # quarter chord, pivot frame
+    px = pivot_x(p, sweep)
     X = xl * math.cos(s) + yl * math.sin(s)
     Y = -xl * math.sin(s) + yl * math.cos(s)
     dA = c * p["panel_span"] / n
@@ -208,7 +231,7 @@ def wing_numbers(p, sweep) -> dict:
     Yc = p["pivot_y"] - xc * math.sin(s) + yl[:, None] * math.cos(s)
     out_of_body = np.mean(np.abs(Yc) > p["fuselage_diameter"] / 2, axis=1)
     A_exp = 2 * float(np.sum(dA * out_of_body))
-    x_ac = p["pivot_x"] + float(np.sum(X * dA * out_of_body) / max(np.sum(dA * out_of_body), 1e-9))
+    x_ac = px + float(np.sum(X * dA * out_of_body) / max(np.sum(dA * out_of_body), 1e-9))
     tip_y = float(np.max(Yc))
     return {"sweep_deg": sweep, "span_mm": round(2 * tip_y, 0), "exposed_area_m2": round(A_exp / 1e6, 4),
             "lift_centre_x_mm": round(x_ac, 0)}
