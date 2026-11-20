@@ -1,0 +1,37 @@
+wing:
+- sweep_deg: 12.0
+  span_mm: 1083.0
+  exposed_area_m2: 0.1981
+  lift_centre_x_mm: 339.0
+  stall_nominal_m_s: 14.9
+- sweep_deg: 35.0
+  span_mm: 977.0
+  exposed_area_m2: 0.1849
+  lift_centre_x_mm: 435.0
+  stall_nominal_m_s: 15.4
+- sweep_deg: 60.0
+  span_mm: 696.0
+  exposed_area_m2: 0.1731
+  lift_centre_x_mm: 522.0
+  stall_nominal_m_s: 15.9
+- sweep_deg: 98.0
+  span_mm: 201.0
+  exposed_area_m2: 0.1288
+  lift_centre_x_mm: 530.0
+  stall_nominal_m_s: 18.5
+stowed_envelope_mm:
+  length: 849
+  width: 309
+  height: 160
+  tube_diameter: 303
+net_past_propeller:
+  time_to_prop_plane_ms: 7.2
+  cartridge_below_axis_mm: 84
+  folded_blades_radius_mm: 38.0
+  clear_with_blades_folded: true
+  clear_with_prop_turning: false
+  note: ejection speed 5 m/s and the folded blades' radius are HAND
+mass:
+  empty_g: 2010.6
+  total_g: 2610.6
+  without_nets_g: 2390.6
