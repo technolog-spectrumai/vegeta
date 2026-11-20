@@ -286,6 +286,15 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
             for link, plate in _casing_pieces(p, side):
                 add_local(link, plate, PLATE)
     add("thorax", girdle, BONE)
+    if P.get("tail_segments"):                                           # the prehensile tail: a caudal vertebra and a module per link, the grip pad at the tip
+        n, seg = int(P["tail_segments"]), P["tail_length"] / int(P["tail_segments"])
+        for k in range(n):
+            f = k / max(n - 1, 1)
+            d = P["tail_base_diameter"] * (1 - f) + P["tail_tip_diameter"] * f
+            add_local(f"tail_{k}", sk.rod((-d * 0.45, 0, 0), (-seg + d * 0.45, 0, 0), d * 0.32), BONE)
+            add_local(f"tail_{k}", sk.disc((0, 0, 0), d * 0.55, d * 0.8, "y"), MODULE)
+            if k == n - 1:
+                add_local(f"tail_{k}", sk.rounded_box(d * 1.6, d * 1.4, d * 1.1, (-seg, 0, -d * 0.2), fillet=max(1.0, d * 0.3)), DARK)
     return mesh
 
 

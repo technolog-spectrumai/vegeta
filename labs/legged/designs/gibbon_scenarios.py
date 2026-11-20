@@ -128,10 +128,61 @@ def _sides(i):
     return ("R", "L") if i % 2 == 0 else ("L", "R")
 
 
+def tail_tip(kin):
+    """(body, local) of the prehensile tail's grip pad, or None: a frame without a tail (the gibbon)."""
+    m = kin.model
+    try:
+        g = m.geom("tail_tip")
+    except KeyError:
+        return None
+    return int(g.bodyid[0]), np.array(m.geom_pos[g.id])
+
+
+def _tail_on(p, k, rad=0.012):
+    """Where the tail's pad goes on hold ``k``: on the bar's top, wrapped over it."""
+    return holds(p)[k][0] + np.array([0.0, 0.0, p["rung_radius"] + rad])
+
+
+def tail_targets(kin, p, k, u, first=False, rest=None):
+    """The tail as a fifth limb through a swing about hold ``k``: wrapped over the hold behind (``k - 1``) while the
+    hands change over, then up and over to the hold the body is passing (``k``), wrapped on it by the swing's end
+    (a spider monkey's semibrachiation: the tail takes the body's weight as the hands change). ``first``: the tail
+    comes from free (the first swing: ``rest``, the tip's place in the pelvis's frame as it hangs), it only takes ``k``."""
+    tip = tail_tip(kin)
+    if tip is None:
+        return []
+    a, b = _tail_on(p, k - 1), _tail_on(p, k)
+    U0, U1 = 0.25, 0.85                                                     # let go of the hold behind; wrapped on the next
+
+    def body(u_):
+        pelvis, pitch, _ = _swing_base(p, k, u_)
+        return gm.base_rot(pitch), pelvis
+
+    if u <= U0 and not first:
+        return [(tip[0], tip[1], a)]
+    if u >= U1:
+        return [(tip[0], tip[1], b)]
+    # in between: carried with the body - the tip's place in the pelvis's frame eased from where it let go to where
+    # it will wrap, so it stays in the tail's reach as the body swings through the bottom
+    u0 = 0.0 if first else U0
+    R0, p0 = body(u0)
+    R1, p1 = body(U1)
+    l0, l1 = (np.asarray(rest) if first else R0.T @ (a - p0)), R1.T @ (b - p1)
+    f = mk.smooth((u - u0) / (U1 - u0))
+    R, pc = body(u)
+    lift = np.array([0.0, 0.0, 0.08 * math.sin(math.pi * f)])
+    return [(tip[0], tip[1], R @ ((1 - f) * l0 + f * l1) + pc + lift)]
+
+
 def brachiate_swing(kin, q_from, p, k, i, duration):
     """One swing about rung ``k`` (swing ``i``): the holding hand on ``k``, the free hand from rung ``k - 1`` under
     rung ``k`` to rung ``k + 1``."""
     hold_side, free_side = _sides(i)
+    tip = tail_tip(kin)
+    rest = None
+    if tip is not None:
+        kin.set(q_from)
+        rest = kin.world(*tip)                                             # the tail's tip in the pelvis's frame as the swing begins
 
     def targets(u):
         pelvis, pitch, sh = _swing_base(p, k, u)
@@ -149,7 +200,7 @@ def brachiate_swing(kin, q_from, p, k, i, duration):
             dip = np.array([0.0, sy * 0.1, 0.07]) if on_rope else np.array([0.0, 0.0, 0.22])
             c = (1 - f) * f0["c"] + f * f1["c"] + np.array([1.0, 1.0, -1.0]) * dip * math.sin(math.pi * f)
             out += gs._hand_at(kin, free_side, c, gs._slerp(gs.hand_frame_on(f0, free_side), gs.hand_frame_on(f1, free_side), f))
-        return out
+        return out + tail_targets(kin, p, k, u, first=(i == 0), rest=rest)
 
     def base(u):
         pelvis, pitch, _ = _swing_base(p, k, u)

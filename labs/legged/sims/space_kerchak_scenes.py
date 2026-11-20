@@ -47,12 +47,12 @@ VIEWS = {"chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 
 class ScenePlayer:
     def __init__(self, scene, mode, params=None, casing="none", machine="kerchak"):
         self.scene, self.mode, self.machine = scene, mode, machine
-        if machine in ("humanoid", "gibbon"):                             # the upright frames: they stand, and walk
+        if machine in ("humanoid", "gibbon", "spider"):                             # the upright frames: they stand, and walk
             import humanoid_motions as hum
-            self.robot = sr.humanoid(casing=casing) if machine == "humanoid" else sr.gibbon(casing=casing)
+            self.robot = {"humanoid": sr.humanoid, "gibbon": sr.gibbon, "spider": sr.spider}[machine](casing=casing)
             self.kin = mk.Kin(self.robot)
             self.q_quad = hum.stand_pose(self.kin)
-            if machine == "gibbon":                                        # the long arms held up: they would drag on the ground hanging
+            if machine in ("gibbon", "spider"):                            # the long arms held up: they would drag on the ground hanging
                 for side in ("L", "R"):
                     self.q_quad[self.kin.index[f"{side}_shoulder_pitch"]], self.q_quad[self.kin.index[f"{side}_elbow"]] = -2.2, -0.9
             gm.set_stance(hum.base_height(self.kin, self.q_quad), 0.0, upright=True, frame=machine)
@@ -70,7 +70,7 @@ class ScenePlayer:
             self.walk = gm.knuckle_walk(self.kin, self.q_quad)
             self.walk_h = gm.STANCE["h"]
         self.v = float(self.walk.base["velocity_m_s"][0])
-        gs.set_hand(su.GIBBON if machine == "gibbon" else su.HUMANOID if machine == "humanoid" else su.MARINE)   # the grip from this frame's own hand
+        gs.set_hand({"gibbon": su.GIBBON, "spider": su.SPIDER, "humanoid": su.HUMANOID}.get(machine, su.MARINE))   # the grip from this frame's own hand
         opts = SimOptions()
         opts.course_extent = (-2.0, 14.0, -3.0, 3.0)
         xml = self.robot.to_mjcf(options=opts, props=list(gs.props(scene, params)))
@@ -325,7 +325,7 @@ def main(argv=None):
     ap.add_argument("--param", action="append", default=[], help="scene parameter key=value")
     ap.add_argument("--render", choices=("mesh", "boxes"), default="mesh", help="the CAD on the bodies (belisario_render), or the collision shapes")
     ap.add_argument("--casing", choices=("none", "plastic"), default="plastic")
-    ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, or the gibbon")
+    ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon", "spider"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, the gibbon or the spider monkey")
     ap.add_argument("--size", default="1280x720")
     a = ap.parse_args(argv)
     if os.environ.get("VEGETA_DEBUG") == "1" and argv is None and len(sys.argv) == 1:
@@ -347,7 +347,7 @@ def main(argv=None):
         import belisario_render as br
         w, h = (int(v) for v in a.size.split("x"))
         import space_unit_specs as su
-        renderer = br.Renderer(g.model, bm.load(a.casing, P={"humanoid": su.HUMANOID, "gibbon": su.GIBBON}.get(a.machine)), w, h)
+        renderer = br.Renderer(g.model, bm.load(a.casing, P={"humanoid": su.HUMANOID, "gibbon": su.GIBBON, "spider": su.SPIDER}.get(a.machine)), w, h)
 
     def draw(path, t, what):
         c = np.array(g.data.qpos[0:3])
@@ -365,7 +365,7 @@ def main(argv=None):
                     renderer.hidden |= {"door_wall_left", "door_wall_right", "post_left", "post_right", "lintel", "door_panel", "handle_shaft", "handle_lever"}
             renderer.extra = g.shards(t)
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
-            renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
+            renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
         import matplotlib
         matplotlib.use("Agg")

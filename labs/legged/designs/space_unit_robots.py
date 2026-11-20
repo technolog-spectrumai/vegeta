@@ -442,13 +442,60 @@ GIBBON_FRAME_KG = {"thigh": (0.18, 0.024), "shin": (0.14, 0.02), "upper_arm": (0
 GIBBON_CASING = 0.35                                                       #: the casing's walls against the frame's 3 mm: 1 mm polycarbonate
 
 
-def gibbon(casing: str = "plastic"):
+#: The tail's joint modules: worm-geared smart servos at the root (self-locking: the tail holds a hang unpowered),
+#: worm-geared standard servos along it; [(key, kp, kd)] from the root out.
+TAIL_SERVOS = [("smart servo 25 Nm", 40.0, 0.4)] * 3 + [("standard 60 g worm", 4.0, 0.04)] * 7
+
+
+def _tail(r, P):
+    """A prehensile tail on the pelvis's back: ``tail_segments`` links (``tail_k``), each a carbon tube on a pitch and
+    a yaw module, tapering from ``tail_base_diameter`` to ``tail_tip_diameter``; the tip carries a grip pad
+    (``tail_tip``: the bare, ridged skin of a spider monkey's tail's underside, high friction). Each link runs back
+    along its own -x; at rest the tail droops from the root and curls up at the end (``nominal_qpos``)."""
+    from ogma import actuators as act
+    n, L = int(P["tail_segments"]), P["tail_length"] * mm
+    seg = L / n
+    Dp = P["pelvis_depth"] * mm
+    parent, links = r.root, []
+    for k in range(n):
+        f = k / max(n - 1, 1)
+        rad = (P["tail_base_diameter"] * (1 - f) + P["tail_tip_diameter"] * f) * mm / 2
+        key, kp, kd = TAIL_SERVOS[min(k, len(TAIL_SERVOS) - 1)]
+        geoms = [bk.capsule(f"tail_{k}", rad, (0.0, 0.0, 0.0), (-seg, 0.0, 0.0), rho=300.0, role="link", rgba=(0.86, 0.82, 0.68, 1.0))]
+        if k == n - 1:
+            geoms.append(Geom("tail_tip", "sphere", (rad * 1.3,), pos=(-seg, 0.0, 0.0), mass=0.01, role="link",
+                              friction=(1.2, 0.01, 0.001), rgba=(0.1, 0.1, 0.1, 1.0)))
+        lk = Link(f"tail_{k}", pos=(-Dp / 2 - 0.01, 0.0, 0.02) if k == 0 else (-seg, 0.0, 0.0),
+                  joints=[Joint(f"tail_{k}_pitch", axis=(0, 1, 0), range=(-1.3, 1.3), tag="tail_pitch", servo=bk.servo(key, kp=kp, kd=kd)),
+                          Joint(f"tail_{k}_yaw", axis=(0, 0, 1), range=(-0.8, 0.8), tag="tail_yaw", servo=bk.servo(key, kp=kp, kd=kd))],
+                  geoms=geoms, masses=[PointMass(f"tail_{k}_actuators", 2 * act.get(key).mass_g / 1000.0)])
+        parent.children.append(lk)
+        parent = lk
+        links.append(lk)
+    rest = {"tail_0_pitch": 0.4, "tail_1_pitch": 0.15}
+    rest.update({f"tail_{k}_pitch": 0.17 for k in range(2, n)})             # carried raised and curling up behind (a spider monkey's): clear of the ground and of a wall it passed
+    r.nominal_qpos.update(rest)
+    return r
+
+
+def spider(casing: str = "plastic"):
+    """The spider monkey (``space_unit_specs.SPIDER``): the gibbon's fork with a prehensile tail (``_tail``), thumbless
+    hook hands and long legs; the gibbon's small modules (``GIBBON_SERVOS``)."""
+    r = gibbon(casing, P=su.SPIDER, name="Spider")
+    _tail(r, su.SPIDER)
+    r.notes = "The spider monkey: the gibbon's fork with a prehensile tail, a fifth limb (design stage)."
+    r.sources["geometry"] = r.sources["geometry"].replace("GIBBON", "SPIDER") + "; a prehensile tail (_tail)"
+    return r
+
+
+def gibbon(casing: str = "plastic", P=None, name: str = "Gibbon"):
     """The gibbon (``space_unit_specs.GIBBON``): Kerchak's fork for the trees, fully arboreal - the same kind of
     skeleton, spine and hands at a siamang's size with a gibbon's arms and hook hands, on small joint modules
     (``GIBBON_SERVOS``); hanging at rest with a hand's reach overhead, about 15 kg. Weak on the ground by design: it
     stands and walks upright, its arms up, but carries little."""
     from ogma import actuators as act
-    r = bare("Gibbon", casing, P=su.GIBBON, upright=True)
+    P = su.GIBBON if P is None else P
+    r = bare(name, casing, P=P, upright=True)
     tag_of = {j.name: j.tag for j in r.joints()}
     kg = lambda key: act.get(key).mass_g / 1000.0
     for j in r.joints():
@@ -501,7 +548,7 @@ def gibbon(casing: str = "plastic"):
     r.sources["actuators"] = "space_unit_robots.GIBBON_SERVOS: small joint modules for a 15 kg climber; self-locking worm servos in the fingers"
     r.sources["carried"] = "space_unit_robots.GIBBON_PARTS_KG: a 110 Wh pack, the computer, the wiring; a thin polycarbonate casing"
     r.notes = "The gibbon: a fully arboreal fork of Kerchak (design stage)."
-    e = math.radians(su.GIBBON["elbow_bend_deg"])
+    e = math.radians(P["elbow_bend_deg"])
     r.nominal_qpos.update({"L_elbow": -e, "R_elbow": -e})
     for side in ("L", "R"):                                               # the hook half closed at rest
         r.nominal_qpos.update(curl_values(side, 1.0))
@@ -541,7 +588,7 @@ def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = 
         elif j.tag == "shoulder_roll":
             j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
-    spec = "GIBBON" if P is su.GIBBON else "HUMANOID" if upright else "MARINE"
+    spec = "GIBBON" if P is su.GIBBON else "SPIDER" if P is getattr(su, "SPIDER", None) else "HUMANOID" if upright else "MARINE"
     r.sources["geometry"] = f"designs/space_units.py ({name} bare: space_unit_specs.{spec}, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:

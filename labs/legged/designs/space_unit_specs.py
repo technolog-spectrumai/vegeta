@@ -145,6 +145,17 @@ GIBBON = dict(MARINE, pelvis_width=150.0, pelvis_depth=85.0, pelvis_height=60.0,
               fibula_diameter=8.0, joint_module_length=55.0, joint_module_diameter=55.0, finger_length=125.0, finger_diameter=13.0,
               hand_scale=0.62, thumb_scale=0.45, scapula_turn_deg=6.0, scapula_y=0.3, scapula_height=0.42)
 
+#: The spider monkey (Ateles): the gibbon's fork with a spider monkey's tricks - a long prehensile tail (a fifth limb:
+#: it wraps a bar and holds the body, its tip a bare grip pad), hook hands with no thumb to speak of (a vestigial nub:
+#: the four long fingers close over a bar alone), long slender legs nearly as long as the arms (it climbs with
+#: them too), a narrower pelvis; the same broad, shallow suspensory chest. About 9 kg in a real one, head and body
+#: 0.5 m, the tail longer than both.
+SPIDER = dict(GIBBON, pelvis_width=130.0, pelvis_depth=80.0, torso_width=220.0, torso_depth=110.0, torso_height=280.0,
+              hip_spacing=100.0, thigh_length=245.0, shin_length=240.0, leg_width=44.0, leg_thickness=40.0,
+              upper_arm_length=275.0, forearm_length=295.0, arm_diameter=42.0, finger_length=130.0, finger_diameter=12.0,
+              foot_length=165.0, foot_width=55.0, femur_diameter=20.0, tibia_diameter=18.0, thumb_scale=0.18,
+              tail_length=900.0, tail_segments=10, tail_base_diameter=34.0, tail_tip_diameter=16.0)
+
 import math as _math
 
 #: The hand (mm): a palm, four fingers of three phalanges each (index, middle, ring, little at their own lengths,

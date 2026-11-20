@@ -49,7 +49,8 @@ def set_stance(h, pitch, upright=False, frame=None):
 
 
 def is_gibbon():
-    return STANCE.get("frame") == "gibbon"
+    """The gibbon or its fork the spider monkey: the small arboreal frames."""
+    return STANCE.get("frame") in ("gibbon", "spider")
 
 
 UPRIGHT_REF_H = 1.0735                                                     #: the standing pelvis height the upright scenarios' reaches were tuned at (the 2.07 m proportions) [m]
