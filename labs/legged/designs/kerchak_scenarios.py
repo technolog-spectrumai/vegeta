@@ -347,14 +347,11 @@ def _toes_extra(kin, windows, holds0, holds1, from_flat=False):
             h0 = None if from_flat else holds0.get(side)
             if u <= a:
                 q = set_for(q, side, h0, 1.0)
-            elif u >= b:
-                q = set_for(q, side, holds1.get(side), 1.0)
+            elif u >= b:                                                   # landed: only now the toes wrap round the bar
+                q = set_for(q, side, holds1.get(side), mk.smooth(min(1.0, (u - b) / 0.06)))
             else:
                 f = (u - a) / (b - a)
-                if f < 0.3:
-                    q = set_for(q, side, h0, 1.0 - mk.smooth(f / 0.3))
-                else:
-                    q = set_for(q, side, holds1.get(side), mk.smooth(max(0.0, (f - 0.7) / 0.3)))
+                q = set_for(q, side, h0, 1.0 - mk.smooth(min(1.0, f / 0.3))) if f < 0.3 else set_for(q, side, holds1.get(side), 0.0)
         return q
     return fn
 SOLE_HALF = 0.015                         #: (Kerchak's early value) the contact points above the sole's bottom face; ``sole_drop`` reads the frame's own [m]
