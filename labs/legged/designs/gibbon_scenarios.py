@@ -555,8 +555,8 @@ def tail_wrap_trunk(kin, x, z, r_trunk, wind=1.0, off=0.0):
     (0: all of them hanging on the near side, where no branch grows); ``off``: out from the bark [m].
     [(body, local, world)]."""
     n, seg = _tail_links(kin)
-    R = r_trunk + 0.017 + off
-    step = seg / (r_trunk + 0.017)                                          # each link's turn round the trunk, wound
+    R = r_trunk + 0.03 + off                                                 # the links' ends out by the tail's thickness and the chords' sag between them
+    step = seg / (r_trunk + 0.03)                                           # each link's turn round the trunk, wound
     out = []
     for j in range(TAIL_WRAP + 1):
         th = j * step * wind
