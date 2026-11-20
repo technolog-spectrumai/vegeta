@@ -251,7 +251,12 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
     out = {"aircraft": name, "point_mass": point_mass(C)}
     pm = out["point_mass"]
     ch = chases(sim_factory, pm["min_speed_stall_m_s"])
-    out["mujoco"] = {"responses_at_cruise": responses(sim_factory(), V_cruise), "chases": ch,
+    hand = amj.takeoff(sim_factory(), "hand")
+    cat = amj.takeoff(sim_factory(), "catapult")
+    launch = {"hand": hand, "catapult": cat,
+              "takeoff_time_s": hand["time_to_safe_s"] if hand["ok"] else (cat["time_to_safe_s"] + 5.0 if cat["ok"] else None),
+              "rule": "takeoff_time_s: the hand launch's time to safe flight; if a hand launch fails, the catapult's + 5 s (setting up)"}
+    out["mujoco"] = {"responses_at_cruise": responses(sim_factory(), V_cruise), "chases": ch, "launch": launch,
                      "source": "MuJoCo 6-DOF on the same coefficients; autopilot and guidance gains by hand"}
     out["summary"] = {"min_speed_m_s": pm["min_speed_stall_m_s"], "max_speed_m_s": pm["max_level_speed_m_s"],
                       "max_climb_m_s": pm["climb"]["max_rate_m_s"],
@@ -270,6 +275,7 @@ def card(name, C, sim_factory, manoeuvre, V_cruise) -> dict:
                       "open_field_time_to_5m_s": ch["open_field"]["time_to_5m_s"],
                       "open_field_share_within_10m": ch["open_field"]["share_within_10m"],
                       "endurance_min": pm["energy"]["endurance_min"], "range_km": pm["energy"]["range_km"],
+                      "takeoff_time_s": launch["takeoff_time_s"], "hand_launch_ok": hand["ok"],
                       "mass_kg": round(C["mass"], 3), "pack": C["mass_budget"]["pack"]["name"],
                       "propulsor": (C["thrust"].get("propulsor") or {}).get("entry"),
                       "best_endurance_pack": max(pm["pack_trade"], key=lambda r: r["endurance_min"])["pack"]}

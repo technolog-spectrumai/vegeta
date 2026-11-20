@@ -529,3 +529,35 @@ def chase(sim, name, record=None, V=None, guidance="pn"):
                "mean_distance_last_third_m": round(float(np.mean(d[len(d) * 2 // 3:])), 1),
                "peak_load_factor": round(float(h["n"].max()), 2), "min_altitude_m": round(float(h["z"].min()), 1),
                "crashed": bool(h["z"].min() < 3.0), "stalled": bool(h["stall"].max() > 0.5), "duration_s": round(float(h["t"][-1]), 1)}
+
+
+# ---------------------------------------------------------------------------------------------------- launch
+HAND_RELEASE_M_S = 12.0          # HAND: a firm overarm throw of a ~2 kg aircraft (+-2 m/s)
+RELEASE_HEIGHT_M = 1.8
+SAFE_HEIGHT_M = 10.0
+
+
+def takeoff(sim, mode="hand") -> dict:
+    """Launch: released level at ``RELEASE_HEIGHT_M`` with the hand's ``HAND_RELEASE_M_S`` (or, ``mode="catapult"``,
+    at 1.3 x stall), full throttle; the autopilot holds the nose level until 1.25 x stall, then climbs at 12 deg. The
+    time to safe flight: 10 m height at 1.3 x stall or more. A touch of the ground (below 0.3 m) is a failed launch."""
+    C = sim.C
+    Vs = math.sqrt(C["mass"] * am.G / (0.5 * am.RHO * C["S"] * C["CL_MAX"]))
+    V0 = HAND_RELEASE_M_S if mode == "hand" else 1.3 * Vs
+    sim.start(max(V0, 1.15 * Vs), RELEASE_HEIGHT_M)             # attitude and controls of a trim near the release speed
+    sim.d.qvel[:3] = (V0, 0.0, 0.0)
+    mujoco.mj_forward(sim.m, sim.d)
+    ap = Autopilot(sim)
+    st = {"t_safe": None}
+
+    def fn(t, s):
+        sd = s.state()
+        ap(phi_c=0.0, theta_c=math.radians(12.0) if sd["V"] > 1.25 * Vs else 0.0, throttle=1.0)
+        if st["t_safe"] is None and sd["pos"][2] >= SAFE_HEIGHT_M and sd["V"] >= 1.3 * Vs:
+            st["t_safe"] = t
+    h = run(sim, 12.0, fn)
+    failed = bool(h["z"].min() < 0.3)
+    return {"mode": mode, "release_speed_m_s": round(V0, 1), "stall_m_s": round(Vs, 1), "ok": (not failed) and st["t_safe"] is not None,
+            "time_to_safe_s": round(st["t_safe"], 2) if st["t_safe"] is not None and not failed else None,
+            "min_height_m": round(float(h["z"].min()), 2), "sink_after_release_m": round(float(RELEASE_HEIGHT_M - h["z"].min()), 2),
+            "note": f"safe = {SAFE_HEIGHT_M:.0f} m height at 1.3 x stall; hand release {HAND_RELEASE_M_S} m/s (hand estimate)"}

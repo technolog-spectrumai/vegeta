@@ -10,7 +10,8 @@ KPIs: each property scored 0-100 across the configurations in the file (min-max;
 then averaged into a general score and a chase score:
 
 - general: max speed, min speed (low), max climb, best sustained turn, tightest sustained radius (low), roll rate,
-  pitch rate (first 0.3 s), yaw rate, endurance, range;
+  pitch rate (first 0.3 s), yaw rate, endurance, range, takeoff time (low: hand launch to 10 m at 1.3 x stall;
+  a failed hand launch counts as the catapult's time + 5 s, no launch at all as 30 s);
 - chase: run-down of a 14 m/s bandit (low), zig-zag PN chase time to 5 m (low) and time within 10 m, best
   instantaneous turn, max speed, roll rate;
 - urban chase: the urban PN chase's time to 5 m (low) and time within 10 m (a crash scores 0), tightest sustained
@@ -32,7 +33,8 @@ import numpy as np
 import yaml
 
 # reference categorical palette (dataviz skill, light mode), in fixed order: one colour per aircraft
-COLOUR = {"ARIGO-0": "#2a78d6", "ARIGO-1": "#eb6834", "ARIGO-2": "#1baf7a", "ARIGO-20": "#eda100"}
+COLOUR = {"ARIGO-0": "#2a78d6", "ARIGO-1": "#eb6834", "ARIGO-2": "#1baf7a", "ARIGO-20": "#eda100", "ARIGO-0 strut": "#e87ba4"}
+RANK_HATCH = ["xxxx", "///", "/"]           # winner (densest), runner-up, second runner-up
 WING_COLOUR = {"goshawk": "#2a78d6", "zero": "#eb6834", "hybrid": "#1baf7a", "": "#eda100"}
 INK, INK2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
 
@@ -53,11 +55,12 @@ PROPS = [  # (summary key, label, unit, higher is better)
     ("open_field_time_to_5m_s", "Open-field chase (PN): time to 5 m", "s", False),
     ("open_field_share_within_10m", "Open-field chase: time within 10 m", "share", True),
     ("endurance_min", "Endurance (best speed)", "min", True),
+    ("takeoff_time_s", "Takeoff: time to safe flight", "s", False),
     ("mass_kg", "Take-off mass (budget, default pack)", "kg", False),
     ("range_km", "Range (still air)", "km", True),
 ]
 GENERAL = ["max_speed_m_s", "min_speed_m_s", "max_climb_m_s", "best_sustained_turn_deg_s", "tightest_sustained_radius_m",
-           "roll_rate_deg_s", "pitch_rate_deg_s", "yaw_rate_deg_s", "endurance_min", "range_km"]
+           "roll_rate_deg_s", "pitch_rate_deg_s", "yaw_rate_deg_s", "endurance_min", "range_km", "takeoff_time_s"]
 CHASE = ["run_down_14_m_s_bandit_s", "zigzag_time_to_5m_s", "zigzag_share_within_10m", "best_instant_turn_deg_s", "max_speed_m_s",
          "roll_rate_deg_s"]
 URBAN = ["urban_time_to_5m_s", "urban_share_within_10m", "tightest_sustained_radius_m", "best_instant_turn_deg_s",
@@ -66,7 +69,7 @@ OPEN_FIELD = ["open_field_time_to_5m_s", "open_field_share_within_10m", "max_spe
               "max_climb_m_s", "range_km", "endurance_min"]
 # a chase that never closed to 5 m scores as this many seconds (its scenario's length x 1.5); a crash scores 0
 NOT_CAUGHT_S = {"zigzag_time_to_5m_s": 30.0, "urban_time_to_5m_s": 45.0, "open_field_time_to_5m_s": 90.0,
-                "run_down_14_m_s_bandit_s": 180.0, "run_down_18_m_s_bandit_s": 180.0}
+                "run_down_14_m_s_bandit_s": 180.0, "run_down_18_m_s_bandit_s": 180.0, "takeoff_time_s": 30.0}
 EXTRA = [("zigzag_share_within_10m", True), ("run_down_18_m_s_bandit_s", False)]
 
 
@@ -119,18 +122,25 @@ def _style(ax, title, unit=None):
 
 
 def _family(name):
-    return name.split()[0]
+    return "ARIGO-0 strut" if "strut" in name else name.split()[0]
 
 
-def _bars(ax, names, vals, unit, fmt="{:.0f}"):
+def _bars(ax, names, vals, unit, fmt="{:.0f}", higher=True):
+    """Horizontal bars, coloured by aircraft; the best three hatched (winner densest), by ``higher`` is better."""
     y = np.arange(len(names))
     cols = [COLOUR.get(_family(n), "#888888") for n in names]
-    hatch = ["////" if "strut" in n else None for n in names]
+    ok = [(i, v) for i, v in enumerate(vals) if v is not None and v == v]
+    ranked = [i for i, _ in sorted(ok, key=lambda x: -x[1] if higher else x[1])]
+    hatch = [None] * len(names)
+    for r, i in enumerate(ranked[:3]):
+        hatch[i] = RANK_HATCH[r]
     for yi, v, c, h in zip(y, vals, cols, hatch):
         if v is None or v != v:
             ax.text(0, yi, "  n/a", va="center", fontsize=7, color=INK2)
             continue
-        ax.barh(yi, v, height=0.7, color=c, edgecolor=SURFACE, linewidth=2, hatch=h)
+        ax.barh(yi, v, height=0.7, color=c, edgecolor=SURFACE, linewidth=2)
+        if h:
+            ax.barh(yi, v, height=0.7, color="none", edgecolor=INK, linewidth=0, hatch=h, alpha=0.55)
         ax.text(v, yi, " " + fmt.format(v), va="center", fontsize=7, color=INK2)
     ax.set_yticks(y)
     ax.set_yticklabels(names, fontsize=7, color=INK)
@@ -140,8 +150,9 @@ def _bars(ax, names, vals, unit, fmt="{:.0f}"):
 
 def _legend(fig):
     import matplotlib.patches as mp
-    h = [mp.Patch(color=c, label=n) for n, c in COLOUR.items()] + [mp.Patch(facecolor="white", edgecolor=INK2, hatch="////", label="ARIGO-0 chin strut")]
-    fig.legend(handles=h, loc="upper right", ncol=5, fontsize=8, frameon=False)
+    h = [mp.Patch(color=c, label=n.replace("strut", "chin strut")) for n, c in COLOUR.items()]
+    h += [mp.Patch(facecolor="white", edgecolor=INK2, hatch=hh, label=lab) for hh, lab in zip(RANK_HATCH, ("winner", "runner-up", "2nd runner-up"))]
+    fig.legend(handles=h, loc="upper right", ncol=8, fontsize=8, frameon=False)
 
 
 def charts(path: Path) -> list:
@@ -169,7 +180,7 @@ def charts(path: Path) -> list:
     rows = (n + cols - 1) // cols
     fig, axs = plt.subplots(rows, cols, figsize=(15, 3.2 + 0.28 * len(keys) * rows), facecolor=SURFACE)
     for ax, (key, lab, unit, hi) in zip(axs.flat, PROPS):
-        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.1f}" if unit in ("s", "m", "km", "kg", "share") else "{:.0f}")
+        _bars(ax, names, [cards[k]["summary"].get(key) for k in keys], unit, "{:.0%}" if unit == "share" else ("{:.1f}" if unit in ("s", "m", "km", "kg") else "{:.0f}"), higher=hi)
         _style(ax, f"{lab} ({'higher' if hi else 'lower'} is better)", unit)
     for ax in list(axs.flat)[n:]:
         ax.set_visible(False)
@@ -196,25 +207,26 @@ def charts(path: Path) -> list:
     plt.close(fig)
 
     # 3. curves over speed: sustained turn rate and climb rate, one panel per aircraft, one line per wing
-    fams = [f for f in COLOUR if any(_family(cards[k]["aircraft"]) == f for k in keys)]
+    fams = [f for f in ("ARIGO-0", "ARIGO-1", "ARIGO-2", "ARIGO-20") if any(cards[k]["aircraft"].split()[0] == f for k in keys)]
     fig, axs = plt.subplots(3, len(fams), figsize=(4.2 * len(fams), 10.5), facecolor=SURFACE, squeeze=False)
     for j, fam in enumerate(fams):
         for k in keys:
             nm = cards[k]["aircraft"]
-            if _family(nm) != fam:
+            if nm.split()[0] != fam:
                 continue
             wing = next((w for w in WING_COLOUR if w and w in nm), "")
-            ls = "--" if "strut" in nm else "-"
+            col = COLOUR["ARIGO-0 strut"] if "strut" in nm else WING_COLOUR[wing]
+            ls = "-"
             pm = cards[k]["point_mass"]
             t = [(x["V_m_s"], x["sustained_rate_deg_s"]) for x in pm["turns"] if x["sustained_rate_deg_s"]]
             if t:
-                axs[0, j].plot(*zip(*t), color=WING_COLOUR[wing], lw=2, ls=ls, marker="o", ms=4, label=nm.replace(fam, "").strip() or fam)
+                axs[0, j].plot(*zip(*t), color=col, lw=2, ls=ls, marker="o", ms=4, label=nm.replace(fam, "").strip() or fam)
             c = [(x["V_m_s"], x["rate_m_s"]) for x in pm.get("climb_curve", [])]
             if c:
-                axs[1, j].plot(*zip(*c), color=WING_COLOUR[wing], lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
+                axs[1, j].plot(*zip(*c), color=col, lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
             e = [(x["V_m_s"], x["power_W"]) for x in (pm.get("energy") or {}).get("power_curve", [])]
             if e:
-                axs[2, j].plot(*zip(*e), color=WING_COLOUR[wing], lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
+                axs[2, j].plot(*zip(*e), color=col, lw=2, ls=ls, label=nm.replace(fam, "").strip() or fam)
         for i, (lab, unit) in enumerate((("Sustained turn rate", "deg/s"), ("Climb rate", "m/s"), ("Battery power, level flight", "W"))):
             ax = axs[i, j]
             _style(ax, f"{fam}: {lab}")
