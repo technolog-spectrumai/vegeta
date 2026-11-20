@@ -117,7 +117,9 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
         ("launch_success_pct", "S8 launch success from the rail, 0-12 m/s + gusts (%)", 98, 99.9),
         ("turnaround_s", "S9 landed to ready (s)", 900, 180),
         ("landing_miss_m", "S10 recovery miss (m)", 30, 3),
-        ("touchdown_energy_J", "S11 touchdown energy (J)", 300, 40)]),
+        ("touchdown_energy_J", "S11 touchdown energy (J)", 300, 40),
+        ("fast_50_time_to_5m_s", "S12 tail chase of a 50 m/s target from 300 m: time to 5 m (s)", 45, 20),
+        ("fast_30_time_to_5m_s", "S13 tail chase of a 30 m/s target from 300 m: time to 5 m (s)", 25, 10)]),
     "sparfell": ("SPARFELL: one person, a backpack, a throw", [
         ("mass_kg", "P1 mass (kg)", 1.8, 0.9),
         ("packed_length_mm", "P2 longest piece to carry (mm)", 900, 500),
@@ -135,7 +137,8 @@ MISSIONS = {   # mirrors reports/arigo_catalog/KPIS.md (the source: IDs, evidenc
 # the gates (pass/fail; KPIS.md): a spec failing its line's gate scores 0 for that line
 GATES = {"buteo": [("launch", lambda v: v in ("perch", "site launcher"))],
          "arpella": [("wind_limit_10km_m_s", lambda v: v is not None and v >= 10.0)],
-         "astor": [("launch", lambda v: v == "site launcher")],
+         "astor": [("launch", lambda v: v == "site launcher"),
+                   ("tail_chase_50_m_s", lambda v: bool(v))],     # decided 2026-11-20: it must catch 50 m/s from behind
          "sparfell": [("throwable", lambda v: bool(v))]}
 
 

@@ -41,6 +41,9 @@ PROPULSION = {
 
 def packs(kind: str) -> dict:
     """The battery options: name -> (grams, Wh nominal, max continuous A, source)."""
+    if kind == "astor":                                         # ASTOR's own packs (6S: 1.4 kW from 3S is ~125 A)
+        import astor
+        return dict(astor.PACKS)
     if kind == "edf":   # 6S LiPo (the fans want ~2 x 60 A): class values, ~150 g per Ah at 6S (HAND)
         return {f"6S {mah} mAh LiPo": (round(0.150 * mah), 22.2 * mah / 1000, 30 * mah / 1000, "HAND (+-10 %)")
                 for mah in (3000, 4000, 5000, 6000)}
@@ -57,7 +60,7 @@ DEFAULT_PACK = {"single": "Li-ion 3S2P P42A", "twin": "Li-ion 3S2P P42A", "edf":
 
 
 def kind_of(propulsion: str) -> str:
-    return {"twin": "twin", "edf": "edf"}.get(propulsion, "single")
+    return {"twin": "twin", "edf": "edf", "astor": "astor"}.get(propulsion, "single")
 
 
 def budget(propulsion: str, p: dict, L: dict, pack: str | None = None) -> dict:

@@ -226,3 +226,53 @@ references, the lattice baseline and run 1's best, re-scored under the run-2 mod
 - whether the avionics and the 3S1P pack fit the shorter fuselages (×0.75: a 540 mm fuselage);
 - the structure and propulsor maps at 1400 W;
 - CFD for any of the new geometries.
+
+---
+
+## ASTOR as its own airframe (branch `dev_astor1`, 2026-11-20)
+
+ASTOR is no longer ARIGO-1H with a kit. It is the propeller dart of `PRODUCT_SPACE.md`, with its own design file
+(`designs/astor.py`), flight model, simulator class and CFD cases.
+
+**The airframe**
+- Wing: 0.8 m span, aspect ratio 4, 28° of sweep, a 9 % section, mid-mounted.
+- Fuselage: 70 mm diameter, 790 mm long.
+- Tail: cruciform, tail volume 0.46.
+- Propulsion: a 1.4 kW pusher on a folding 9×11 propeller.
+- Pack: 6S. Drawing 1.4 kW from 3S would take about 125 A; from 6S it takes about 67 A.
+- Launch and recovery: rail shoes and a parachute bay.
+- Mass: 2.06 kg with the 6S 4000 mAh pack.
+
+**KPI changes**
+- **S6 is now a gate**: it must tail-chase a 50 m/s target, i.e. top speed above 57.5 m/s.
+- **S12, new**: tail chase of a 50 m/s fixed-wing target from 300 m; time to 5 m. Threshold 45 s, objective 20 s.
+- **S13, new**: the same against a 30 m/s target. Threshold 25 s, objective 10 s.
+- ARIGO-20 leaves the line.
+
+**First values.** Evidence: SIM on the **lattice model**, before ASTOR's own CFD. Small samples; a container test,
+not your run.
+
+| KPI | Value | Against the requirement |
+|---|---|---|
+| Top speed | 71 m/s | gate (57.5 m/s) met; closes on a 50 m/s target at 21 m/s |
+| S12: 50 m/s target from 300 m | 22.8 s, caught in 5 of 5 starts | near the objective (20 s) |
+| S13: 30 m/s target from 300 m | 20.6 s | between threshold and objective |
+| S1: cue to safe flight | 3.9 s | near the objective (3 s) |
+| S2 / S3: time to 3 km / 5 km | 47.6 s / 75.7 s | between threshold and objective |
+| S4: time to 150 m | 7.8 s | near the objective (6 s) |
+| S7: full power on one pack | 3.2 min | above the threshold (1 min); the Li-ion 6S2P option trades mass for more |
+| S8: rail launch success, 0–12 m/s with gusts | 100 % (12 draws) | to confirm with more draws |
+| Operating wind | about 12 m/s | limited by the parachute: at 16 m/s the canopy's drift takes touchdown past 300 J |
+| Stability at 30 and 60 m/s | statically stable; short period ζ 0.46; recovers from the stall hands-off | Dutch roll ζ about 0.07, so it needs the yaw damper |
+
+**Findings to watch**
+- **Stall speed.** The simulation gives 17.6 m/s against the nominal 14.8 m/s. Before the CFD, the hand lift model
+  rounds the stall off early. This is conservative, and the CFD settles it.
+- **Stall recovery** costs about 73 m of height at 30 m/s, because the wing loading is high.
+- **Gust load.** A 3 m/s gust at 60 m/s gives 4.3 g, against a structural limit assumed at 6 g.
+- **Dynamic pressure** at top speed is 3.1 kPa. A structural check of the wing is still open.
+
+**To run** (each phase writes one timestamped YAML to paste back):
+1. `labs/aero/sims/astor_cfd.sh -j 12`: the polar at 30 m/s and the drag at 65 m/s. It installs the result for phases 2 and 3.
+2. `labs/aero/sims/astor_stability.sh -j 12`
+3. `labs/aero/sims/astor_missions.sh -j 12`: every pack option, the chases, launch success, the KPIs.

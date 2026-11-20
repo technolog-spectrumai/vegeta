@@ -58,7 +58,8 @@ def point_mass(C) -> dict:
     q = lambda V: 0.5 * am.RHO * V * V
     Vs = math.sqrt(W / (q(1.0) * S * cl_max))
     excess = lambda V, n=1.0: thrust(C, V) - q(V) * S * cd_of(n * W / (q(V) * S))
-    Vgrid = np.linspace(Vs * 1.02, 68.0, 400)
+    v_top = max(68.0, float(C["thrust"].get("table_V", [68.0])[-1]) - 2.0)     # ASTOR's table runs to 90 m/s
+    Vgrid = np.linspace(Vs * 1.02, v_top, 400)
     ex = np.array([excess(V) for V in Vgrid])
     Vmax = float(Vgrid[np.where(ex > 0)[0].max()]) if (ex > 0).any() else float("nan")
     roc = ex * Vgrid / W
@@ -104,7 +105,7 @@ def pack(C, name=None):
     """(usable energy [Wh], description, pack mass [kg]) of the configuration's pack (``arigo_mass``), or of ``name``."""
     import arigo_mass
     mb = C["mass_budget"]
-    k = arigo_mass.kind_of(C.get("propulsion", ""))
+    k = arigo_mass.kind_of(C.get("pack_kind") or C.get("propulsion", ""))
     nm = name or mb["pack"]["name"]
     g, wh, _, src = arigo_mass.packs(k)[nm]
     return wh * USABLE, f"{nm}, {wh:.0f} Wh nominal, {USABLE:.0%} usable, {g:.0f} g ({src})", g / 1000.0
@@ -125,7 +126,7 @@ def disc_area(C):
 
 def point_top_speed(C, cd_of):
     W, S = C["mass"] * am.G, C["S"]
-    Vg = np.linspace(8.0, 68.0, 300)
+    Vg = np.linspace(8.0, max(68.0, float(C["thrust"].get("table_V", [68.0])[-1]) - 2.0), 300)
     ex = [thrust(C, V) - 0.5 * am.RHO * V * V * S * cd_of(W / (0.5 * am.RHO * V * V * S)) for V in Vg]
     ok = [V for V, e in zip(Vg, ex) if e > 0]
     return float(max(ok)) if ok else 20.0
@@ -162,8 +163,8 @@ def pack_trade(C, cd_of) -> list:
     import arigo_mass
     mb = C["mass_budget"]
     out = []
-    for nm in arigo_mass.packs(arigo_mass.kind_of(C.get("propulsion", ""))):
-        m = (mb["empty_g"] + arigo_mass.packs(arigo_mass.kind_of(C.get("propulsion", "")))[nm][0]) / 1000.0
+    for nm in arigo_mass.packs(arigo_mass.kind_of(C.get("pack_kind") or C.get("propulsion", ""))):
+        m = (mb["empty_g"] + arigo_mass.packs(arigo_mass.kind_of(C.get("pack_kind") or C.get("propulsion", "")))[nm][0]) / 1000.0
         C2 = {**C, "mass": m}
         cl_max = polar(C)[1]
         Vs = math.sqrt(m * am.G / (0.5 * am.RHO * C["S"] * cl_max))

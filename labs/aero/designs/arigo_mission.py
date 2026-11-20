@@ -375,6 +375,9 @@ def setup_of(name):
     """(CAD class, parameters, propulsion kind) from a card's display name, e.g. "ARIGO-0 strut hybrid"."""
     import arigo1 as a1
     w = next((x for x in ("goshawk", "zero", "hybrid") if x in name), "hybrid")
+    if name.startswith("ASTOR"):
+        import astor
+        return astor.Astor, astor.variant(), "pusher"
     if name.startswith("ARIGO-20"):
         import arigo20 as a20
         return a20.Arigo20, a20.variant(), "edf"
