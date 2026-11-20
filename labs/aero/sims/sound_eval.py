@@ -55,8 +55,85 @@ from argparse import Namespace
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import re
+import threading
+
 import numpy as np
 import yaml
+
+try:
+    from tqdm import tqdm
+except ImportError:                                            # pip install tqdm for the bar; runs without it
+    tqdm = None
+
+
+class Progress:
+    """One total bar over every CFD case of the run (a rotor speed point or a cannon shot = 1). A running cannon shot
+    counts its fraction: the solver's time over the case's end time, read from its log every few seconds."""
+
+    def __init__(self, total):
+        self.done, self.live, self.lock = 0.0, {}, threading.Lock()
+        self.bar = tqdm(total=total, unit="case", dynamic_ncols=True, smoothing=0.05,
+                        bar_format="{l_bar}{bar}| {n:.2f}/{total} cases [{elapsed}<{remaining}] {postfix}") if tqdm else None
+        self.stop = threading.Event()
+        if self.bar:
+            threading.Thread(target=self._poll, daemon=True).start()
+
+    def track(self, key, log, end):
+        with self.lock:
+            self.live[key] = (Path(log), end, 0.0)
+
+    def finish(self, key, label=""):
+        with self.lock:
+            self.live.pop(key, None)
+            self.done += 1
+        self._draw(label)
+
+    def _poll(self):
+        while not self.stop.wait(5.0):
+            with self.lock:
+                for k, (log, end, _) in list(self.live.items()):
+                    self.live[k] = (log, end, _sim_time(log) / end if end else 0.0)
+            self._draw()
+
+    def _draw(self, label=""):
+        if not self.bar:
+            return
+        with self.lock:
+            n = self.done + sum(min(f, 0.999) for _, _, f in self.live.values())
+            running = ", ".join(f"{k} {f:.0%}" for k, (_, _, f) in self.live.items())
+        self.bar.n = round(min(n, self.bar.total), 3)
+        if label or running:
+            self.bar.set_postfix_str(running or label, refresh=False)
+        self.bar.refresh()
+
+    def close(self):
+        self.stop.set()
+        if self.bar:
+            self.bar.close()
+
+
+def _sim_time(log: Path) -> float:
+    """The last 'Time = ' in a solver log (read from its tail)."""
+    try:
+        with open(log, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 20000))
+            m = re.findall(rb"^Time = ([0-9.eE+-]+)", f.read(), re.M)
+        return float(m[-1]) if m else 0.0
+    except OSError:
+        return 0.0
+
+
+PROGRESS: Progress | None = None
+
+
+def print(*a, **k):                                            # noqa: A001 - keep the bar at the bottom
+    import builtins
+    if tqdm and PROGRESS and PROGRESS.bar:
+        tqdm.write(" ".join(map(str, a)))
+    else:
+        builtins.print(*a, **k)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -131,7 +208,11 @@ def run_rotors(target, args, env, wav_dir, pool_cores):
     if not args.no_cfd:
         ps.stl(m, workdir / "cfd")                              # the blade once, before cases run side by side
     with ThreadPoolExecutor(max(1, args.parallel)) as ex:
-        pts = list(ex.map(lambda k: ps.point(m, k, pa, env), speeds))
+        def pt(k):
+            r = ps.point(m, k, pa, env)
+            PROGRESS and PROGRESS.finish(f"{target} {k:g}", f"{target} {k:g} km/h done")
+            return r
+        pts = list(ex.map(pt, speeds))
     rows, sigs = [], {}
     for p in pts:
         k = int(round(p["speed_kmh"]))
@@ -180,6 +261,11 @@ def run_cannon(target, args, wav_dir, pool_cores):
     cases = [root / f"shot{i + 1}" for i in range(shots)]
 
     def one(i):
+        st = _one(i)
+        PROGRESS and PROGRESS.finish(f"{target} shot{i + 1}", f"{target} shot {i + 1} {st}")
+        return st
+
+    def _one(i):
         c, h = cases[i], hist[i]
         done = list((c / "postProcessing/mics").glob("*/p"))
         started = (c / "log.rhoCentralFoam").exists() or (c / "processor0").exists()
@@ -192,6 +278,9 @@ def run_cannon(target, args, wav_dir, pool_cores):
             print(f"  [{target}] shot {i + 1}: solved before, reused", flush=True)
             return "CFD (reused)"
         t0 = time.time()
+        if PROGRESS:
+            import json
+            PROGRESS.track(f"{target} shot{i + 1}", c / "log.rhoCentralFoam", json.loads((c / "shot.json").read_text())["end_time"])
         print(f"  [{target}] shot {i + 1}: rhoCentralFoam on {pool_cores} cores ...", flush=True)
         if started and pool_cores > 1 and (c / "processor0").exists():
             sf.resume_case(c, processors=pool_cores)
@@ -334,6 +423,9 @@ def main(argv=None):
     doc = {"run": {"started": stamp, "host": host, "cpu": args.cpu, "parallel": args.parallel, "cores_per_case": cores,
                    "targets": targets, "openfoam": None if env is None else str(env.flavor())},
            "settings": {k: v for k, v in vars(args).items() if k not in ("merge", "output", "targets")}, "results": {}}
+    global PROGRESS
+    n_speeds = len([x for x in args.speeds.split(",") if x.strip()])
+    PROGRESS = Progress(sum(n_speeds if t in ("quad", "hexa") else (1 if t == "can1" else 5) for t in targets))
     t0 = time.time()
     for tgt in targets:
         try:
@@ -347,6 +439,7 @@ def main(argv=None):
         doc["kpi"] = kpi(doc["results"])
         doc["run"]["elapsed_h"] = round((time.time() - t0) / 3600, 3)
         path.write_text(yaml.safe_dump(doc, sort_keys=False, width=140))     # after every target: a crash keeps the rest
+    PROGRESS.close()
     print("wrote", path)
     if not args.no_charts:
         import sound_charts
