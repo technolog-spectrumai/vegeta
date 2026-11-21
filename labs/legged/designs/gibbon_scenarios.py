@@ -633,6 +633,205 @@ gs.DEFAULTS["tree_spider"] = SPIDER_TREE
 gs.BUILDERS["tree_spider"] = spider_tree_prop
 gs.SCENARIOS["tree_spider"] = scenario_spider_tree
 
+# ---- the heist: up the tree beside the house, the pane broken with the hammer from the backpack, in at the window, the banana
+HEIST = {**SPIDER_TREE, "x": 2.2, "height": 3.2, "cycles": 2, "left_levels": 3, "wall_gap": 0.3, "window_y": 0.85, "table_x": 2.6,
+         "table_y": 0.0}
+BACKPACK = {"half": (0.04, 0.09, 0.11), "on_thorax": (-0.1, 0.0, 0.12)}     #: the pack's half sizes and its place on the thorax's back [m]
+HAMMER_IN_PACK = (np.array([-0.1, 0.05, 0.18]), 0.35)                      #: the hammer's handle root in the thorax's frame, its lean back from upright [rad]
+
+
+def heist_tree_prop(p):
+    """The spider monkey's tree beside the house: the left branches (on the window's side) cut back above the sill."""
+    pr = spider_tree_prop(p)
+    keep = []
+    for g in pr.root.geoms:
+        if g.name.startswith("branch_") and g.name.endswith("l") and int(g.name[7:-1]) >= p["left_levels"]:
+            continue
+        keep.append(g)
+    pr.root.geoms = keep
+    return pr
+
+
+def _heist_window(p):
+    return {**gs.WINDOW, "x": p["x"] + p["wall_gap"], "y": p["window_y"], "glass": 1, "table_x": p["table_x"], "table_y": p["table_y"]}
+
+
+def backpack_prop(p):
+    """The backpack: a free body the player keeps on the thorax's back (``ScenePlayer``), the hammer's handle in it."""
+    hx, hy, hz = BACKPACK["half"]
+    link = Link("backpack", pos=(0.0, 0.0, 3.0), geoms=[gs._box("backpack_body", (hx, hy, hz), (0.0, 0.0, 0.0), rgba=(0.3, 0.38, 0.22, 1.0), mass=0.4)])
+    return Prop(link, free=True)
+
+
+def heist_props(p):
+    w = _heist_window(p)
+    return (heist_tree_prop(p), gs.window_prop(w), gs.hammer_prop({"hammer_x": 0.0, "hammer_y": 0.0}), backpack_prop(p))
+
+
+def _trunk_hold(p, level, side="L", ang=math.radians(40.0)):
+    """The trunk's flank as a vertical hold for a hand, at a level's height."""
+    sy = 1.0 if side == "L" else -1.0
+    n = np.array([-math.cos(ang), sy * math.sin(ang), 0.0])
+    z = _branch_z(p, level, 0.0) + 0.05
+    return gs.bar(np.array([p["x"], 0.0, z]) + p["trunk_radius"] * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)
+
+
+def scenario_heist(kin, q_stand, p):
+    """The walk to the tree beside the house and the climb (the right hand on the branches, the left round the trunk
+    - the branches on the window's side are cut back - the feet's toes round the branches, the tail round the trunk);
+    at the window's height, held by the tail, both feet and the right hand, the left hand takes the hammer from the
+    backpack over the shoulder, winds up and smashes the pane, lets the hammer fall; a leap from the tree onto the
+    sill, a crouch in the opening, a hop down into the room, the walk to the banana."""
+    w = _heist_window(p)
+    xb = p["x"] - p["trunk_radius"] - 0.02
+    hold = lambda k: {"L_hand": _trunk_hold(p, k + 2), "R_hand": _branch_bar(p, k + 2, -0.25),
+                      "L": _branch_bar(p, k, 0.2, tip=0.2), "R": _branch_bar(p, k, -0.2, tip=0.2)}
+    base = lambda k: np.array([xb - 0.3, 0.0, _branch_z(p, k, 0.2) + 0.35])
+    n = int(p["cycles"])
+    tail = tail_for_tree(kin, p, lambda k: k) if tail_tip(kin) is not None else None
+    segs = gs._climb_sequence(kin, q_stand, hold, base, n, stop_x=xb - 0.25, tail=tail, duration=3.8, trials=gs.VERTICAL_TRIALS)
+    q = q_stand.copy()
+    for sg in segs:
+        if sg[0] == "motion":
+            q = gt._last(kin, sg[1], q)
+    b = base(n)
+    pitch = gs.CLIMB_PITCH
+    R_b = gm.base_rot(pitch)
+    h_end = hold(n)
+    # the hand's grip at the handle's middle, the hammer's frame in the hand and the world as it sits in the pack
+    kin.set(q)
+    th = kin.body("thorax")
+    R_th, p_th = R_b @ kin.data.xmat[th].reshape(3, 3), R_b @ kin.data.xpos[th] + b
+    lean = HAMMER_IN_PACK[1]
+    R_pack = np.array([[math.cos(lean), 0.0, -math.sin(lean)], [0.0, 1.0, 0.0], [math.sin(lean), 0.0, math.cos(lean)]])   # handle up, leant back
+    H = gs.HAMMER
+    root_w = R_th @ HAMMER_IN_PACK[0] + p_th
+    R_ham_w = R_th @ R_pack
+    handle_axis = R_ham_w[:, 2]
+    grip_c = root_w + handle_axis * H["handle"] * 0.4
+    pick_hold = gs.bar(grip_c, axis=handle_axis, n=gs._unit(np.cross(handle_axis, np.array([0.0, 1.0, 0.0]))), r=H["handle_r"], wrist_dir=-gs._unit(R_th[:, 0] * 0.0 + np.array([0.3, -0.2, 0.9])))
+    # the blow: the glass's middle-left, the head through it
+    glass_point = np.array([w["x"] - w["wall_thickness"] / 2 * 0.0, w["y"] - 0.35, w["sill"] + w["height"] * 0.4])
+    strike_axis = gs._unit(np.array([0.7, 0.55, -0.45]))
+    strike = (glass_point - 0.31 * strike_axis, gs.hand_frame_on(gs.bar((0, 0, 0), axis=strike_axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=(-0.5, -0.2, 0.84)), "L"))
+    wind = (p_th + R_th @ np.array([-0.05, 0.25, 0.3]), gs.hand_frame_on(gs.bar((0, 0, 0), axis=(-0.3, 0.0, 0.95), n=(0.0, -1.0, 0.0)), "L"))
+    planted = (gs.foot_targets(kin, "L", h_end["L"]) + gs.foot_targets(kin, "R", h_end["R"]) + gs.hand_targets(kin, "R", h_end["R_hand"])
+               + (tail_wrap_trunk(kin, p["x"], _branch_z(p, n, 0.0) - TRUNK_BELOW, p["trunk_radius"]) if tail else []))
+    kin.set(q)
+    l_start = [(bd, l, R_b @ kin.world(bd, l) + b) for bd, l, _ in gs.hand_targets(kin, "L", h_end["L_hand"])]
+    pick_end = gs.hand_targets(kin, "L", pick_hold)
+    holdbase = lambda u: (b[0], b[1], b[2], pitch)
+
+    def keep(u, q_):                                                       # the right fist, the toes round their branches, the spine as on the climb
+        sr.set_curl(q_, kin, "R", gs.CURL_CLOSED)
+        for sd in ("L", "R"):
+            gs.toe_wrap(kin, q_, sd, h_end[sd])
+        return gs._spine_extra(kin, gs.CLIMB_SPINE)(1.0, q_)
+
+    def t_pick(u):                                                         # off the trunk, over the shoulder, onto the handle
+        if u < 0.7:
+            f = mk.smooth(u / 0.7)
+            c = (1 - f) * l_start[0][2] + f * pick_end[0][2] + np.array([-0.15, 0.1, 0.2]) * math.sin(math.pi * f)
+            return planted + [(pick_end[0][0], pick_end[0][1], c)]
+        return planted + pick_end
+
+    def x_pick(u, q_):
+        q_ = keep(u, q_)
+        c = gs.CURL_CLOSED + (gs.CURL_OPEN - gs.CURL_CLOSED) * mk.smooth(min(1.0, u / 0.3)) if u < 0.75 else gs.CURL_OPEN + (kt_lever() - gs.CURL_OPEN) * mk.smooth((u - 0.75) / 0.25)
+        return sr.set_curl(q_, kin, "L", c)
+
+    pick = gt.contact_motion(kin, "pick_up_the_hammer", 2.2, t_pick, holdbase, q_init=q, extra=x_pick, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                             q_ref=gs.climb_ref(kin, q), source="gibbon_scenarios.heist: the hammer from the backpack over the shoulder")
+    q1 = gt._last(kin, pick, q)
+    Rh, ph = gs._hand_pose(kin, q1, b, pitch, "L")
+    R_h2m = Rh.T @ R_ham_w
+    p_h2m = Rh.T @ (root_w - ph)
+    kin.set(q)
+    pick.params = {**(pick.params or {}), "hammer_T": (R_h2m.tolist(), p_h2m.tolist()),
+                   "hammer_carry": ("thorax", R_pack.tolist(), HAMMER_IN_PACK[0].tolist()), "hand": "L_hand"}
+    grip_frame = (pick_end[0][2], gs.hand_frame_on(pick_hold, "L"))
+
+    def hold_at(u):
+        if u < 0.4:
+            f = mk.smooth(u / 0.4)
+            return (1 - f) * grip_frame[0] + f * wind[0], gs._slerp(grip_frame[1], wind[1], f)
+        if u < 0.65:
+            f = mk.smooth((u - 0.4) / 0.25)
+            return (1 - f) * wind[0] + f * strike[0], gs._slerp(wind[1], strike[1], f)
+        if u < 0.75:
+            return strike
+        f = mk.smooth((u - 0.75) / 0.25)
+        return (1 - f) * strike[0] + f * wind[0], gs._slerp(strike[1], wind[1], f)
+
+    x_fist = lambda u, q_: sr.set_curl(keep(u, q_), kin, "L", kt_lever())
+    smash = gt.contact_motion(kin, "smash_the_glass", 1.8, lambda u: planted + gs._hand_at(kin, "L", *hold_at(u)), holdbase, q_init=q1,
+                              extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q1),
+                              source="gibbon_scenarios.heist: a wind-up and the blow through the pane")
+    smash.params = {**(smash.params or {}), "strike_u": 0.65, "impact": glass_point.tolist()}
+    q2 = gt._last(kin, smash, q1)
+
+    def x_drop(u, q_):
+        q_ = keep(u, q_)
+        return sr.set_curl(q_, kin, "L", kt_lever() + (gs.CURL_OPEN - kt_lever()) * mk.smooth(min(1.0, u / 0.3)))
+
+    drop = gt.contact_motion(kin, "drop_the_hammer", 1.0, lambda u: planted + gs._hand_at(kin, "L", *wind), holdbase, q_init=q2, extra=x_drop,
+                             reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q2), source="gibbon_scenarios.heist: the fist opens, the hammer falls")
+    drop.params = {**(drop.params or {}), "release_u": 0.3}
+    q3 = gt._last(kin, drop, q2)
+    # the leap: from the tree onto the sill, a crouch in the opening (joint keyposes on a base track)
+    top = w["sill"] + 0.06
+    crouch = np.array([w["x"] - 0.1, w["y"], top + 0.3])
+    feet_sill = {sd: gs.point(np.array([w["x"] - 0.02, w["y"] + (0.1 if sd == "L" else -0.1), top]), pitch=0.0) for sd in ("L", "R")}
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
+    Rc = gm.base_rot(0.35)
+    T = [(bd, l, Rc.T @ (np.asarray(wp) - crouch)) for bd, l, wp in gs.foot_targets(kin, "L", feet_sill["L"]) + gs.foot_targets(kin, "R", feet_sill["R"])]
+    q_crouch, _ = kin.ik(T, q_init=hang_ref(kin, q_stand), q_ref=hang_ref(kin, q_stand), joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)
+    for sd in ("L", "R"):
+        sr.set_curl(q_crouch, kin, sd, gs.CURL_OPEN)
+        sr.set_toe_curl(q_crouch, kin, sd, 0.0)
+    tuck = q3.copy()
+    for sd in ("L", "R"):
+        tuck[kin.index[f"{sd}_knee"]] = min(tuck[kin.index[f"{sd}_knee"]] + 0.5, kin.hi[kin.index[f"{sd}_knee"]])
+        tuck[kin.index[f"{sd}_hip_pitch"]] = max(tuck[kin.index[f"{sd}_hip_pitch"]] - 0.5, kin.lo[kin.index[f"{sd}_hip_pitch"]])
+        sr.set_curl(tuck, kin, sd, gs.CURL_OPEN)
+        sr.set_toe_curl(tuck, kin, sd, 0.0)
+
+    def leap_base(u):
+        f = mk.smooth(u)
+        pc = (1 - f) * b + f * crouch + np.array([0.0, 0.0, 0.3 * math.sin(math.pi * u)])
+        return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
+
+    leap = gs._joint_track(kin, "leap_to_the_sill", 1.2, [(0.0, q3), (0.35, tuck), (1.0, q_crouch)], leap_base,
+                           source="gibbon_scenarios.heist: the leap from the tree onto the sill")
+    x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
+    x_clear = w["x"] + w["wall_thickness"] / 2 + 0.15
+    fold = q_crouch.copy()
+    for sd in ("L", "R"):
+        fold[kin.index[f"{sd}_knee"]] = min(q_crouch[kin.index[f"{sd}_knee"]] + 0.25, kin.hi[kin.index[f"{sd}_knee"]])
+        fold[kin.index[f"{sd}_hip_pitch"]] = max(q_crouch[kin.index[f"{sd}_hip_pitch"]] - 0.25, kin.lo[kin.index[f"{sd}_hip_pitch"]])
+
+    def hop_base(u):
+        xb_ = crouch[0] + mk.smooth(u) * (x_land - crouch[0])
+        fz = mk.smooth(max(0.0, min(1.0, (xb_ - x_clear) / (x_land - x_clear))))
+        return xb_, w["y"], (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * math.sin(math.pi * fz), (1 - fz) * 0.35 + fz * gm.STANCE["pitch"]
+
+    hop = gs._joint_track(kin, "hop_down_inside", 1.3, [(0.0, q_crouch), (0.3, fold), (0.65, fold), (1.0, q_stand)], hop_base,
+                          source="gibbon_scenarios.heist: the hop down into the room")
+    table_front = w["x"] + p["table_x"] - 0.4
+    segs += [("motion", pick), ("motion", smash), ("motion", drop), ("motion", leap), ("motion", hop),
+             ("gait", max(table_front - 0.3 - x_land, 0.2) / 0.6, w["y"])]
+    return segs
+
+
+def kt_lever():
+    import kerchak_tasks as kt
+    return kt.LEVER_CURL
+
+
+gs.DEFAULTS["heist"] = HEIST
+gs.SCENARIOS["heist"] = scenario_heist
+gs.COMPOSITE["heist"] = heist_props
+
 COURSE = {**LADDER, "rungs": 5, "rise_deg": math.degrees(math.atan((2.1 - LADDER["height"]) / (4 * LADDER["spacing"]))),
           "rope_step": 0.4, "window_x": 7.05, "rope_end": 7.05 - gs.WINDOW["wall_thickness"] / 2 - 0.12, "table_x": 4.6, "door_x": 9.05}
 gs.DEFAULTS["course"] = COURSE

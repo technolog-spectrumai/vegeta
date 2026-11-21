@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"heist": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -101,16 +101,26 @@ class ScenePlayer:
         self.x_kin, self.fell, self.tilt_max = 0.0, None, 0.0
         self.strike_t = None                                               # when the pane goes (window_hammer)
         self._hammer = None
-        if scene == "window_hammer":
+        self._pack = None
+        if "backpack" in [self.model.body(i).name for i in range(self.model.nbody)]:   # the heist: a backpack on the thorax's back
+            m = self.model
+            freep = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "backpack"]
+            self._pack = {"adr": m.jnt_qposadr[freep[0]], "thorax": m.body("thorax").id}
+        self.impact = None
+        if scene in ("window_hammer", "heist"):
             m = self.model
             free = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "hammer"]
             by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
             pick, smash, drop = by_name["pick_up_the_hammer"], by_name["smash_the_glass"], by_name["drop_the_hammer"]
             R_h2m, p_h2m = (np.array(v) for v in pick[1].params["hammer_T"])
-            rest_p, rest_R = (np.array(v) for v in pick[1].params["hammer_rest"])
+            rest_p, rest_R = (np.array(v) for v in pick[1].params.get("hammer_rest", ([0.0, 0.0, 0.0], np.eye(3).tolist())))
             self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "rest": (rest_p, rest_R),
                             "t_grasp": pick[0] + pick[1].period, "t_release": drop[0] + drop[1].params["release_u"] * drop[1].period,
-                            "released": None, "hand": m.body("R_hand").id}
+                            "released": None, "hand": m.body(pick[1].params.get("hand", "R_hand")).id}
+            if "hammer_carry" in pick[1].params:                           # carried in the pack on a body until the grasp
+                bn, Rc, pc = pick[1].params["hammer_carry"]
+                self._hammer["carry"] = (m.body(bn).id, np.array(Rc), np.array(pc))
+            self.impact = smash[1].params.get("impact")
             self.strike_t = smash[0] + smash[1].params["strike_u"] * smash[1].period
         self.reset()
 
@@ -165,6 +175,14 @@ class ScenePlayer:
         d.qpos[self.qadr] = q
         self._scene_joints(t)
         mujoco.mj_kinematics(self.model, d)
+        if self._pack is not None:                                         # the backpack on the thorax's back
+            import gibbon_scenarios as gb
+            Rt = d.xmat[self._pack["thorax"]].reshape(3, 3)
+            qq = np.zeros(4)
+            mujoco.mju_mat2Quat(qq, Rt.reshape(9))
+            a = self._pack["adr"]
+            d.qpos[a:a + 3], d.qpos[a + 3:a + 7] = d.xpos[self._pack["thorax"]] + Rt @ np.array(gb.BACKPACK["on_thorax"]), qq
+            mujoco.mj_kinematics(self.model, d)
         if self._hammer is not None:
             self._hammer_pose(t)
             mujoco.mj_kinematics(self.model, d)
@@ -186,7 +204,7 @@ class ScenePlayer:
             Y, Z = np.meshgrid(ys, zs, indexing="ij")
             Y[1:-1, 1:-1] += rng.uniform(-0.3, 0.3, (ny - 1, nz - 1)) * (2 * hy / ny)
             Z[1:-1, 1:-1] += rng.uniform(-0.3, 0.3, (ny - 1, nz - 1)) * (2 * hz / nz)
-            impact = np.array([c[0], -0.15, gs.WINDOW["sill"] + gs.WINDOW["height"] * 0.45])
+            impact = np.array(self.impact) if self.impact is not None else np.array([c[0], -0.15, gs.WINDOW["sill"] + gs.WINDOW["height"] * 0.45])
             tris, vel, spin = [], [], []
             for i in range(ny):
                 for j in range(nz):
@@ -233,7 +251,11 @@ class ScenePlayer:
             mujoco.mju_mat2Quat(q, np.asarray(R, dtype=float).reshape(9))
             d.qpos[adr:adr + 3], d.qpos[adr + 3:adr + 7] = p, q
 
-        if t < H["t_grasp"]:
+        if t < H["t_grasp"] and "carry" in H:                              # in the backpack, wherever the body is
+            bid, Rc, pc = H["carry"]
+            Rb = d.xmat[bid].reshape(3, 3)
+            put(d.xpos[bid] + Rb @ pc, Rb @ Rc)
+        elif t < H["t_grasp"]:
             put(*H["rest"])
         elif t < H["t_release"]:
             Rh, ph = d.xmat[H["hand"]].reshape(3, 3), d.xpos[H["hand"]]
@@ -357,6 +379,10 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
+            if a.scene == "heist":                                         # inside the house: the wall behind it drawn away
+                P = gs.params_for("heist", params)
+                if c[0] > P["x"] + P["wall_gap"] - 0.1:
+                    renderer.hidden |= {"wall_above", "wall_below", "wall_left", "wall_right", "sill_plate"}
             if a.scene == "course":                                        # inside the house: the walls behind it drawn away, the camera keeps its side
                 P = gs.params_for("course", params)
                 if c[0] > P["window_x"] - 0.1:

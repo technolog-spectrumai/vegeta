@@ -155,7 +155,7 @@ def rope_prop(p):
 def window_prop(p):
     x, sill, w, h, t = p["x"], p["sill"], p["width"], p["height"], p["wall_thickness"]
     wall_h, wall_w = 3.0, 3.0
-    frame = Link("window_wall", pos=(x, 0.0, 0.0),                       # a smooth, solid wall: nothing for a foot
+    frame = Link("window_wall", pos=(x, p.get("y", 0.0), 0.0),           # a smooth, solid wall: nothing for a foot
                  geoms=[_box("wall_below", (t / 2, wall_w, sill / 2), (0.0, 0.0, sill / 2), mass=200.0, friction=SLIPPERY),
                         _box("wall_above", (t / 2, wall_w, (wall_h - sill - h) / 2), (0.0, 0.0, sill + h + (wall_h - sill - h) / 2), mass=200.0, friction=SLIPPERY),
                         _box("wall_left", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, w / 2 + (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
