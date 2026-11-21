@@ -208,6 +208,10 @@ def contact_motion(kin, name, duration, targets_fn, base_fn, *, q_init, frames=3
         R, base = gm.base_rot(p), np.array([x, y, h])
         targets = [(body, local, R.T @ (np.asarray(w) - base)) for body, local, w in targets_fn(u)]
         q, err = kin.ik(targets, q_init=q, q_ref=q_ref, joints=limbs, reg=reg, iters=iters)
+        if err > 0.05:                                                     # stuck in a fold from the last frame: once more from the reference pose
+            q2, err2 = kin.ik(targets, q_init=q_ref, q_ref=q_ref, joints=limbs, reg=reg, iters=iters)
+            if err2 < err:
+                q, err = q2, err2
         if extra:
             q = np.clip(extra(u, q.copy()), kin.lo, kin.hi)
         if SOLID is not None:

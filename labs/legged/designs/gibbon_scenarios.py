@@ -879,7 +879,7 @@ def scenario_heist(kin, q_stand, p):
         sr.set_toe_curl(tuck, kin, sd, 0.0)
     for j in kin.actuated:                                                 # the arms come in off the branches first: none swept through the wall
         if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist")):
-            tuck[kin.index[j]] = q_crouch[kin.index[j]] = q_stand[kin.index[j]]   # down by the sides: under the lintel
+            tuck[kin.index[j]] = q_crouch[kin.index[j]] = min(max(0.0, kin.lo[kin.index[j]]), kin.hi[kin.index[j]])   # hanging by the sides: under the lintel
 
     def leap_base(u):
         f = mk.smooth(u)
