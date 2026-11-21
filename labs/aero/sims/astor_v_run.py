@@ -198,7 +198,7 @@ def phase_stability(a) -> int:
 # ------------------------------------------------------------------------------------------------ 3. net drop
 def phase_netdrop(a) -> int:
     per = 1                                                          # one sortie per job: the progress bar counts sorties
-    jobs = [("net", d, b, r, seed, per, a.latency, a.noise) for d in a.designs for b in ("armageddon", "fast") for r in (1.0, 1.5)
+    jobs = [("net", d, b, r, seed, per, a.latency, a.noise) for d in a.designs for b in a.bandits for r in (1.0, 1.5)
             for seed in range(a.sorties)]
     if a.dry_run:
         print("\n".join(" ".join(str(x) for x in j) for j in jobs[:6])); print("...", len(jobs), "sorties in", len(jobs) // max(a.sorties, 1), "cases")
@@ -237,7 +237,7 @@ def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
     return {"cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
-            "netdrop": len(a.designs) * 4 * a.sorties}
+            "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties}
 
 
 def main(argv=None) -> int:
@@ -259,10 +259,13 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=float, default=3 * 3600.0, help="cfd: seconds per case")
     ap.add_argument("--workdir", type=Path, default=HERE.parent / "_runs" / "astor_v_cfd", help="cfd: the cases' folder")
     ap.add_argument("--sorties", type=int, default=20, help="netdrop: sorties per case (default 20)")
+    ap.add_argument("--bandit", choices=("fast", "armageddon", "both"), default="fast",
+                    help="netdrop: the bandit; default fast (three runs gave no release in 240 sorties against the slow jinking Armageddon bandit)")
     ap.add_argument("--latency", type=float, default=0.10, help="netdrop: the camera's latency [s]")
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
     a = ap.parse_args(argv)
     a.designs = a.design or ["v", "boost"]
+    a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
     phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
     fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop}
