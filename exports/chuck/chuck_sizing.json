@@ -4,17 +4,17 @@
  "reaction_N": 108.6,
  "hydraulic_kW": 3.2,
  "pump_electric_kW": 5.61,
- "tank_minutes": 2.5,
- "battery_Wh_per_tank": 234,
- "tanks_per_battery_with_driving_reserve": 15.4,
+ "tank_minutes": 1.67,
+ "battery_Wh_per_tank": 156,
+ "tanks_per_battery_with_driving_reserve": 23.1,
  "throw_m_by_elevation_deg": {
-  "10": 20.7,
-  "20": 23.0,
-  "30": 23.4,
-  "40": 22.3
+  "10": 20.2,
+  "20": 22.8,
+  "30": 23.3,
+  "40": 22.2
  },
- "best_elevation_deg": 27,
- "max_throw_m": 23.5,
+ "best_elevation_deg": 28,
+ "max_throw_m": 23.3,
  "water_l_min_to_suppress_peak": {
   "bin": 13.8,
   "pallets": 69.2,
@@ -27,31 +27,44 @@
   "car": 465
  },
  "reel_loss_bar_at_half_flow": 0.35,
- "feed_loss_bar": 0.05,
- "hydrant_refill_s": 45,
- "load_kg": 389.0,
- "load_cg_z_m": 0.837,
+ "feed_loss_bar": 0.02,
+ "hydrant_refill_s": 30,
+ "load_kg": 311.2,
+ "load_cg_z_m": 0.865,
  "quad": {
-  "mass_total_kg": 733.6,
+  "mass_total_kg": 1042.8,
   "cg_total_m": [
-   -0.071,
-   0.659
+   -0.244,
+   0.777
   ],
-  "ssf": 1.479,
-  "rollover_lat_g": 1.48,
+  "ssf": 1.254,
+  "rollover_lat_g": 1.25,
   "axle_load_kg": {
-   "front": 340.0,
-   "rear": 393.6
+   "front": 391.1,
+   "rear": 651.7
   }
  },
+ "aboard_kg": 698.2,
+ "designed_for_kg": 384.5,
+ "wheel_torque_needed_Nm": 393,
+ "wheel_torque_designed_Nm": 275,
+ "drive": {
+  "ratio": 8.5,
+  "wheel_torque_Nm": 389,
+  "wheel_torque_needed_Nm": 393,
+  "grade": 0.343,
+  "top_speed_kmh": 31.8
+ },
+ "grade_with_designed_motors": 0.192,
  "masses_kg": {
-  "water": 300.0,
-  "tank": 24.0,
+  "water": 200.0,
+  "tank": 18.0,
   "pump + motor + inverter": 24.0,
   "monitor": 9.0,
   "reel + 20 m hose": 19.0,
   "suction hose + coupling": 6.0,
-  "piping, valves, foam inductor": 7.0
+  "piping, valves, foam inductor": 7.0,
+  "tools (axe, halligan, extinguisher) + rack": 28.2
  },
  "monitor_servo_torque_Nm": 57.0
 }

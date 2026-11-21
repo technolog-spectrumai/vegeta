@@ -30,22 +30,22 @@
    }
   }
  },
- "tank_l": 300.0,
+ "tank_l": 200.0,
  "flow_l_min": 120.0,
  "pressure_bar": 16.0,
  "jet": {
   "speed_m_s": 54.3,
   "nozzle_mm": 6.85,
   "slowing_length_m": 10.28,
-  "max_throw_m": 23.5,
-  "best_elevation_deg": 27,
+  "max_throw_m": 23.3,
+  "best_elevation_deg": 28,
   "reaction_N": 108.6
  },
  "monitor": {
   "pos": [
-   0.42,
+   1.02,
    0.0,
-   1.26
+   0.84
   ],
   "pan_deg": 170.0,
   "tilt_deg": [
@@ -57,6 +57,6 @@
   "pattern": "straight stream to 30\u00b0 fog (an adjustable nozzle)"
  },
  "reel_m": 20.0,
- "hydrant_refill_s": 45,
+ "hydrant_refill_s": 30,
  "pump_kW": 5.61
 }

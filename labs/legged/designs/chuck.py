@@ -52,16 +52,28 @@ FIRES = {
 }
 
 #: the tank in the seat's place: polyethylene, baffled, low between the axles
-TANK = {"volume_l": 300.0, "size_m": (1.00, 0.62, 0.52), "pos": (-0.10, 0.0, 0.62), "shell_kg": 24.0, "baffles": 2}
+TANK = {"volume_l": 200.0, "size_m": (0.62, 0.90, 0.40), "pos": (-0.92, 0.0, 0.74), "shell_kg": 18.0, "baffles": 2}
+#: Kerchak drives (the seat is his again): the tank sits over the rear axle in the trunk's place, 200 L - he and 300 L
+#: would put 270 kg more on the quad than it was built for
 #: the pump: an electric multistage centrifugal, its motor on the 72 V bus
 PUMP = {"flow_l_min": 120.0, "pressure_bar": 16.0, "efficiency": 0.62, "motor_eff": 0.92, "mass_kg": 21.0,
         "pos": (0.70, 0.0, 0.40), "priming": "a self-priming first stage (dry suction from a hydrant's well or an open tank)"}
 #: the monitor: a water cannon on a pan-tilt mount on the tank's front
-MONITOR = {"pos": (0.42, 0.0, 1.26), "pan_deg": 170.0, "tilt_deg": (-15.0, 75.0), "slew_deg_s": 60.0, "mass_kg": 9.0,
+MONITOR = {"pos": (1.02, 0.0, 0.84), "pan_deg": 170.0, "tilt_deg": (-15.0, 75.0), "slew_deg_s": 60.0, "mass_kg": 9.0,
            "pattern": "straight stream to 30° fog (an adjustable nozzle)"}
 #: the hoses: the cannon's feed (rigid pipe and a short flexible), the reel's hose, the hydrant suction hose
-HOSES = {"feed": {"length_m": 2.5, "bore_mm": 32.0}, "reel": {"length_m": 20.0, "bore_mm": 25.0, "kg_m": 0.55, "reel_d_m": 0.52},
+HOSES = {"feed": {"length_m": 1.2, "bore_mm": 32.0}, "reel": {"length_m": 20.0, "bore_mm": 25.0, "kg_m": 0.55, "reel_d_m": 0.52},
          "suction": {"length_m": 3.0, "bore_mm": 50.0, "coupling": "Storz 52-C to a hydrant", "hydrant_flow_l_min": 400.0}}
+#: Kerchak's firefighting tools, gorilla-sized, in the right-hand rack (where the bazooka rode) and on the left
+TOOLS = {"fire axe": {"length_m": 1.10, "mass_kg": 4.2, "what": "a pick-head axe, a 1.1 m fibreglass helve for his fists"},
+         "halligan bar": {"length_m": 1.05, "mass_kg": 6.0, "what": "a forcible-entry bar: adze, pick and fork, 1.05 m"},
+         "extinguisher": {"length_m": 0.62, "mass_kg": 15.0, "what": "a 9 kg ABC powder extinguisher for car and electrical fires"},
+         "helmet": {"length_m": 0.0, "mass_kg": 2.5, "what": "a firefighter's helmet sized for his head, a visor, a lamp"}}
+RACK = {"pos": (-0.08, -0.60, 0.80), "extinguisher_pos": (0.10, 0.62, 0.62)}
+KERCHAK = {"mass": gq.RIDER["mass"], "cg": (-0.05, 0.0, 0.99)}
+#: Chuck's drive: the same four motors through a longer reduction - with Kerchak and the water the quad weighs ~1040 kg,
+#: 43 % over the 729 kg it was sized for; 8.5:1 instead of 6:1 gives back the torque, and costs top speed
+DRIVE_RATIO = 8.5
 CV = 0.97                     #: a smooth-bore nozzle's velocity coefficient
 JET_SLOWING_D = 1500.0        #: the jet's slowing length in nozzle diameters (tuned to 20-25 m straight-stream throws)
 
@@ -123,7 +135,7 @@ def throw(elevation_deg, v0=None, d_mm=None, dt=2e-3):
 
 
 def sizing():
-    """The water system's numbers, and the quad's with Chuck's load instead of Kerchak."""
+    """The water system's numbers, and the quad's with Kerchak driving and the water system and tools aboard."""
     d_mm, v, reaction = nozzle()
     q = PUMP["flow_l_min"] / 60000.0
     hydraulic_kW = q * PUMP["pressure_bar"] * 1e5 / 1e3
@@ -140,12 +152,19 @@ def sizing():
     refill_s = TANK["volume_l"] / HOSES["suction"]["hydrant_flow_l_min"] * 60.0
     masses = {"water": TANK["volume_l"] * RHO / 1000.0, "tank": TANK["shell_kg"], "pump + motor + inverter": PUMP["mass_kg"] + 3.0,
               "monitor": MONITOR["mass_kg"], "reel + 20 m hose": 8.0 + HOSES["reel"]["length_m"] * HOSES["reel"]["kg_m"],
-              "suction hose + coupling": 6.0, "piping, valves, foam inductor": 7.0}
+              "suction hose + coupling": 6.0, "piping, valves, foam inductor": 7.0,
+              "tools (axe, halligan, extinguisher) + rack": sum(t["mass_kg"] for k, t in TOOLS.items() if k != "helmet") + 3.0}
     load = sum(masses.values())
     cg_z = (masses["water"] * (TANK["pos"][2] + TANK["size_m"][2] * 0.45) + masses["tank"] * (TANK["pos"][2] + TANK["size_m"][2] / 2)
             + masses["pump + motor + inverter"] * PUMP["pos"][2] + masses["monitor"] * MONITOR["pos"][2]
             + (load - masses["water"] - masses["tank"] - masses["pump + motor + inverter"] - masses["monitor"]) * 0.85) / load
-    quad = gq.sizing(rider_cg=(TANK["pos"][0], 0.0, cg_z), rider_mass=load)
+    m_k = KERCHAK["mass"] + TOOLS["helmet"]["mass_kg"]
+    x_load = (masses["water"] * TANK["pos"][0] + masses["tank"] * TANK["pos"][0] + masses["pump + motor + inverter"] * PUMP["pos"][0]
+              + masses["monitor"] * MONITOR["pos"][0] + masses["reel + 20 m hose"] * TANK["pos"][0]) / (load - 13.0 - masses["tools (axe, halligan, extinguisher) + rack"])
+    on = m_k + load
+    cg = ((m_k * KERCHAK["cg"][0] + load * x_load) / on, 0.0, (m_k * KERCHAK["cg"][2] + load * cg_z) / on)
+    quad = gq.sizing(rider_cg=cg, rider_mass=on)
+    designed = gq.sizing()
     battery_Wh_per_tank = electric_kW * tank_min / 60 * 1000
     return {"nozzle_mm": round(d_mm, 2), "jet_m_s": round(v, 1), "reaction_N": round(reaction, 1), "hydraulic_kW": round(hydraulic_kW, 2),
             "pump_electric_kW": round(electric_kW, 2), "tank_minutes": round(tank_min, 2), "battery_Wh_per_tank": round(battery_Wh_per_tank),
@@ -155,7 +174,22 @@ def sizing():
             "reel_loss_bar_at_half_flow": round(reel_loss, 2), "feed_loss_bar": round(hose_loss_bar(PUMP["flow_l_min"], HOSES["feed"]["length_m"], HOSES["feed"]["bore_mm"]), 2),
             "hydrant_refill_s": round(refill_s), "load_kg": round(load, 1), "load_cg_z_m": round(cg_z, 3),
             "quad": {k: quad[k] for k in ("mass_total_kg", "cg_total_m", "ssf", "rollover_lat_g", "axle_load_kg")},
+            "aboard_kg": round(on, 1), "designed_for_kg": round(designed["mass_rider_kg"], 1),
+            "wheel_torque_needed_Nm": quad["wheel_torque_Nm"], "wheel_torque_designed_Nm": designed["wheel_torque_Nm"],
+            "drive": _drive(quad, designed),
+            "grade_with_designed_motors": round(math.tan(math.asin(min(1.0, designed["wheel_force_N"] * 4 / (quad["mass_total_kg"] * G) - 0.035 - 1.0 / G))) , 3),
             "masses_kg": masses, "monitor_servo_torque_Nm": round(reaction * 0.35 * 1.5, 1)}
+
+
+def _drive(quad, designed):
+    """The motors through ``DRIVE_RATIO``: the wheel torque, the steepest grade (1 m/s² to spare kept), the top speed."""
+    r0 = designed["motor"]["ratio"]
+    T_motor = designed["motor"]["peak_torque_Nm"]
+    T_wheel = T_motor * DRIVE_RATIO * 0.95
+    m = quad["mass_total_kg"]
+    s = (4 * T_wheel / gq.GEOM["wheel_r"]) / (m * G) - gq.CRR - 1.0 / G
+    return {"ratio": DRIVE_RATIO, "wheel_torque_Nm": round(T_wheel), "wheel_torque_needed_Nm": quad["wheel_torque_Nm"],
+            "grade": round(math.tan(math.asin(max(-1.0, min(1.0, s)))), 3), "top_speed_kmh": round(gq.V_MAX * 3.6 * r0 / DRIVE_RATIO, 1)}
 
 
 def summary():
@@ -190,14 +224,14 @@ class ChuckDesign(Design):
     yoke, the nozzle), ``reel`` (the hose drum in the trunk), ``suction`` (the hydrant hose coiled on the left),
     ``piping``, or ``water_system`` (all)."""
 
-    parameters = [Parameter("part", "water_system", choices=("water_system", "tank", "pump", "monitor", "reel", "suction", "piping"),
+    parameters = [Parameter("part", "water_system", choices=("water_system", "tank", "pump", "monitor", "reel", "suction", "piping", "tools", "helmet"),
                             description="what to build")]
 
     def tank(self, p):
         L, W, H = (v * 1000 for v in TANK["size_m"])
         x, y, z = (v * 1000 for v in TANK["pos"])
         body = _box((x, y, z + H / 2), (L, W, H), fillet=60)
-        lid = cq.Workplane("XY").circle(90).extrude(30).translate((x - 250, 0, z + H)).edges(">Z").fillet(10)
+        lid = cq.Workplane("XY").circle(90).extrude(30).translate((x + 180, 300, z + H)).edges(">Z").fillet(10)
         sight = cq.Workplane("XY").box(20, 6, H * 0.7).translate((x + 100, W / 2 + 2, z + H / 2))
         return body.union(lid).union(sight)
 
@@ -220,17 +254,40 @@ class ChuckDesign(Design):
         return base.union(yoke).union(barrel).union(tip)
 
     def reel(self, p):
-        t = gq.GEOM["trunk"]
-        x, z = t["x"] * 1000, (t["floor_z"] + t["h"] * 0.55) * 1000
+        """The hose reel on top of the tank, its axis across, the nozzle clipped where his right hand finds it."""
+        x = TANK["pos"][0] * 1000
         R = HOSES["reel"]["reel_d_m"] / 2 * 1000
+        z = (TANK["pos"][2] + TANK["size_m"][2]) * 1000 + R + 20
         drum = cq.Workplane("XZ").circle(R * 0.55).extrude(300, both=True).translate((x, 0, z))
         flanges = [cq.Workplane("XZ").circle(R).extrude(8, both=True).translate((x, s * 310, z)) for s in (-1, 1)]
         hose = cq.Workplane("XZ").circle(R * 0.92).circle(R * 0.56).extrude(290, both=True).translate((x, 0, z))
-        nozzle = cq.Workplane("YZ").circle(22).extrude(260).translate((x + 120, 330, z + R + 30))
-        out = drum.union(hose)
-        for f in flanges:
+        stands = [cq.Workplane("XY").box(60, 20, R + 20).translate((x, s * 330, z - (R + 20) / 2)) for s in (-1, 1)]
+        nozzle = cq.Workplane("YZ").circle(24).extrude(300).translate((x + 120, -360, z - 60))
+        out = drum.union(hose).union(nozzle)
+        for f in flanges + stands:
             out = out.union(f)
-        return out.union(nozzle)
+        return out
+
+    def tools(self, p):
+        """His tools: the axe and the Halligan bar lying in the right-hand rack's cradles, the extinguisher in a
+        bracket on the left."""
+        x0, y0, z0 = (v * 1000 for v in RACK["pos"])
+        axe_l, hal_l = TOOLS["fire axe"]["length_m"] * 1000, TOOLS["halligan bar"]["length_m"] * 1000
+        helve = cq.Workplane("YZ").circle(18).extrude(axe_l).translate((x0 - axe_l / 2, y0 - 40, z0 + 60))
+        head = cq.Workplane("XY").box(60, 30, 300).translate((x0 + axe_l / 2 - 40, y0 - 40, z0 + 60)).edges("|Y").fillet(8)
+        bar = cq.Workplane("YZ").circle(16).extrude(hal_l).translate((x0 - hal_l / 2, y0 + 40, z0 + 40))
+        adze = cq.Workplane("XY").box(40, 70, 140).translate((x0 + hal_l / 2, y0 + 40, z0 + 70))
+        fork = cq.Workplane("XY").box(90, 60, 20).translate((x0 - hal_l / 2 - 30, y0 + 40, z0 + 40))
+        cradles = [cq.Workplane("YZ").circle(70).circle(60).extrude(40).translate((x0 + dx, y0, z0 + 50))
+                   .cut(cq.Workplane("XY").box(60, 200, 100).translate((x0 + dx + 20, y0, z0 + 110))) for dx in (-380, 330)]
+        ex, ey, ez = (v * 1000 for v in RACK["extinguisher_pos"])
+        bottle = cq.Workplane("XY").circle(80).extrude(520).translate((ex, ey, ez)).edges(">Z").fillet(40)
+        valve = cq.Workplane("XY").box(60, 40, 90).translate((ex, ey, ez + 560))
+        bracket = cq.Workplane("XY").circle(88).circle(82).extrude(60).translate((ex, ey, ez + 200))
+        out = helve.union(head).union(bar).union(adze).union(fork).union(bottle).union(valve).union(bracket)
+        for c in cradles:
+            out = out.union(c)
+        return out
 
     def suction(self, p):
         """The 3 m suction hose coiled flat on the left (where the flak rode), its Storz coupling on top."""
@@ -243,24 +300,35 @@ class ChuckDesign(Design):
         px, py, pz = (v * 1000 for v in PUMP["pos"])
         mx, my, mz = (v * 1000 for v in MONITOR["pos"])
         tx, ty, tz = (v * 1000 for v in TANK["pos"])
-        pts = [_tube((px - 40, py, pz + 240), (px - 40, py, mz - 180), 16), _tube((px - 40, py, mz - 180), (mx, my, mz - 180), 16),
-               _tube((mx, my, mz - 180), (mx, my, mz - 90), 16),                                          # the pump up to the monitor
-               _tube((tx + 450, ty, tz + 40), (px + 60, py, pz - 160), 26),                               # the tank's outlet to the inlet
-               _tube((px - 40, py - 40, pz + 120), (gq.GEOM["trunk"]["x"] * 1000, -330, 950), 14)]        # to the reel
+        rx, rz = tx, (TANK["pos"][2] + TANK["size_m"][2]) * 1000 + 40
+        pts = [_tube((px, py, pz + 100), (mx - 60, my, pz + 100), 16), _tube((mx - 60, my, pz + 100), (mx, my, mz - 90), 16),     # the pump to the cannon
+               _tube((tx + 310, -200, tz + 40), (0.2 * 1000, -200, 330), 26), _tube((0.2 * 1000, -200, 330), (px - 380, -200, pz - 60), 26),
+               _tube((px - 380, -200, pz - 60), (px + 60, py, pz - 160), 26),                                               # the tank to the pump, under the frame
+               _tube((px - 40, 120, pz + 120), (rx + 200, 120, rz), 14)]                                                    # the pump to the reel
         out = pts[0]
-        for s in pts[1:]:
-            out = out.union(s)
+        for s_ in pts[1:]:
+            out = out.union(s_)
         return out
+
+    def helmet(self, p):
+        """His helmet, in the head's frame (mm): a brimmed shell with a comb, a visor and a lamp."""
+        shell = cq.Workplane("XY").sphere(150).cut(cq.Workplane("XY").box(400, 400, 200).translate((0, 0, -100)))
+        brim = cq.Workplane("XY").ellipse(200, 170).extrude(12).translate((-20, 0, 0))
+        comb = cq.Workplane("XY").box(250, 24, 40).translate((0, 0, 150))
+        lamp = cq.Workplane("YZ").circle(22).extrude(40).translate((140, 0, 60))
+        return shell.union(brim).union(comb).union(lamp)
 
     def build(self, p):
         if p["part"] != "water_system":
             return getattr(self, p["part"])(p)
-        parts = [self.tank(p), self.pump(p), self.monitor(p), self.reel(p), self.suction(p), self.piping(p)]
+        parts = [self.tank(p), self.pump(p), self.monitor(p), self.reel(p), self.suction(p), self.piping(p), self.tools(p)]
         return cq.Compound.makeCompound([w.val() for w in parts])
 
 
 COLORS = {"tank": (0.80, 0.10, 0.10, 1.0), "pump": (0.25, 0.27, 0.30, 1.0), "monitor": (0.85, 0.75, 0.15, 1.0),
-          "reel": (0.85, 0.15, 0.12, 1.0), "suction": (0.20, 0.25, 0.70, 1.0), "piping": (0.70, 0.70, 0.72, 1.0)}
+          "reel": (0.85, 0.15, 0.12, 1.0), "suction": (0.20, 0.25, 0.70, 1.0), "piping": (0.70, 0.70, 0.72, 1.0),
+          "tools": (0.85, 0.12, 0.10, 1.0)}
+HELMET_RGBA = (0.95, 0.80, 0.10, 1.0)
 
 
 def chuck_mesh():
