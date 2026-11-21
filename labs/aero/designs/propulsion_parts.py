@@ -38,8 +38,21 @@ def drongo(m) -> dict:
     """Drongo's rotors: positions, spins and the motor-model constants for Gazebo (``ogma.rotors``, as before) and the
     full ``propulsion`` block — the 5x4.3 tri-blade's BEMT map on notebook 08's section, the 2306 on 4S, the reduced
     constants that ``ogma.rotors`` carries, checked against the map at hover."""
+    return nb08_quad(m, layout="drongo_robot.rotor_layout")
+
+
+def quad(m) -> dict:
+    """Notebook 08's quadcopter (``quad_robot``): Drongo's drive on the bare QuadFrame — the same rotors (the layout of
+    ``drongo_robot.rotor_layout``, which ``quad_robot.quad`` places its motors and discs at), map, motor and reduced
+    constants; only the hover check differs (the quad's own mass)."""
+    return nb08_quad(m, layout="quad_robot.quad (drongo_robot.rotor_layout)")
+
+
+def nb08_quad(m, *, layout: str) -> dict:
+    """Notebook 08's four rotors on the machine ``m`` (Drongo or the bare quad): ``ogma.rotors`` and the ``propulsion``
+    block from ``drongo_robot`` (its Boreas system, ``propulsion()``, ``rotor_layout()``), checked at ``m``'s hover;
+    ``layout`` names where the rotor positions come from in the source strings."""
     import drongo_robot as dr
-    from vegeta import boreas
     prop, airfoil, motor, battery = dr.boreas_system()
     p = dr.propulsion()
     pos, spin = dr.rotor_layout()
@@ -75,7 +88,7 @@ def drongo(m) -> dict:
     blk = lp.block(yr, [entry], [mot], reduced=red,
                    battery={"name": battery.name, "cells": battery.cells, "capacity_ah": battery.capacity_ah, "usable_fraction": battery.usable_fraction,
                             "voltage_v": battery.voltage},
-                   source="rotors: drongo_robot.rotor_layout; map: notebook 08's Boreas system (designs/drongo_robot.boreas_system); "
+                   source=f"rotors: {layout}; map: notebook 08's Boreas system (designs/drongo_robot.boreas_system); "
                           f"reduced: ogma.rotors ({p.source}); residual checked at hover ({hover:.2f} N per rotor)")
     return {"ogma": ogma, "propulsion": blk}
 

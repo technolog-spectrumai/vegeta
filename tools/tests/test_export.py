@@ -49,7 +49,7 @@ def test_every_machine_goes_through_yax(name, tmp_path):
 
 
 # ------------------------------------------------------------------------------------- propellers as part data
-WITH_PROPELLERS = ("drongo", "nisus", "nisus_plus", "falco")
+WITH_PROPELLERS = ("drongo", "quad", "drako", "nisus", "nisus_plus", "falco")
 
 
 def test_drongo_propulsion_block_matches_its_rotors(tmp_path):
