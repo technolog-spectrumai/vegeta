@@ -634,7 +634,7 @@ gs.BUILDERS["tree_spider"] = spider_tree_prop
 gs.SCENARIOS["tree_spider"] = scenario_spider_tree
 
 # ---- the heist: up the tree beside the house, the pane broken with the hammer from the backpack, in at the window, the banana
-HEIST = {**SPIDER_TREE, "x": 2.2, "height": 3.2, "cycles": 2, "left_levels": 3, "wall_gap": 0.3, "window_y": 0.85, "table_x": 2.6,
+HEIST = {**SPIDER_TREE, "x": 2.2, "height": 3.2, "cycles": 2, "left_levels": 3, "wall_gap": 0.22, "window_y": 0.7, "table_x": 2.6,
          "table_y": 0.0}
 BACKPACK = {"half": (0.04, 0.09, 0.11), "on_thorax": (-0.1, 0.0, 0.12)}     #: the pack's half sizes and its place on the thorax's back [m]
 HAMMER_IN_PACK = (np.array([-0.1, 0.05, 0.18]), 0.35)                      #: the hammer's handle root in the thorax's frame, its lean back from upright [rad]
