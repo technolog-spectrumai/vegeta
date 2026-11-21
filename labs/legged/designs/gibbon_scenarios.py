@@ -686,7 +686,7 @@ def _trunk_hold(p, level, side="L", ang=math.radians(40.0)):
     sy = 1.0 if side == "L" else -1.0
     n = np.array([-math.cos(ang), sy * math.sin(ang), 0.0])
     z = _branch_z(p, level, 0.0) + 0.05
-    return gs.bar(np.array([p["x"], 0.0, z]) + p["trunk_radius"] * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)
+    return gs.bar(np.array([p["x"], 0.0, z]) + (p["trunk_radius"] + gs.BAR_R) * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)   # the palm on the bark, not in it
 
 
 def scenario_heist(kin, q_stand, p):
@@ -879,7 +879,7 @@ def scenario_heist(kin, q_stand, p):
         sr.set_toe_curl(tuck, kin, sd, 0.0)
     for j in kin.actuated:                                                 # the arms come in off the branches first: none swept through the wall
         if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist")):
-            tuck[kin.index[j]] = q_crouch[kin.index[j]]
+            tuck[kin.index[j]] = q_crouch[kin.index[j]] = q_stand[kin.index[j]]   # down by the sides: under the lintel
 
     def leap_base(u):
         f = mk.smooth(u)
