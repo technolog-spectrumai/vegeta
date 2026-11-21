@@ -124,6 +124,7 @@ class Net:
         self.cda_open = 1.2 * math.pi * radius ** 2 * solidity          # flat, a 10 % solid mesh, Cd 1.2 on the solid area
         self.t = 0.0
         self.on_ground = False
+        self.pass_h, self.pass_dz = 1e9, None        # the bandit's closest pass in plan, and its height from the net then
 
     @property
     def open(self):
@@ -146,28 +147,38 @@ class Net:
             self.on_ground = True
 
     def catches(self, bandit, margin=0.85) -> bool:
-        if not self.open or self.on_ground:
+        if self.on_ground:
             return False
         d = np.asarray(bandit.p) - self.p
-        return bool(math.hypot(d[0], d[1]) <= margin * self.R and abs(d[2]) <= self.thick)
+        if math.hypot(d[0], d[1]) < self.pass_h:
+            self.pass_h, self.pass_dz = math.hypot(d[0], d[1]), float(d[2])
+        return bool(self.open and math.hypot(d[0], d[1]) <= margin * self.R and abs(d[2]) <= self.thick)
+
+
+EJECT_M_S = 5.0                    # the ejector pushes the cartridge aft at this speed (HAND)
 
 
 class Camera:
-    """The bandit as ASTOR's cameras give it: late and noisy; the velocity from the positions over 0.1 s."""
+    """The bandit as ASTOR's cameras give it: late and noisy. The tracker fits a straight line through the positions
+    of the last ``window_s`` (least squares) and brings it forward by the latency. (Run 1 of 2026-11-22 took the
+    velocity from two positions 0.1 s apart: with 0.3 m of noise that is +-4 m/s, a 5 deg error in a 50 m/s bandit's
+    track and no direction at all for a 7 m/s one.)"""
 
-    def __init__(self, latency_s=0.10, noise_m=0.3, seed=0):
-        self.tau, self.sig, self.rng, self.buf = latency_s, noise_m, np.random.default_rng(seed), []
+    def __init__(self, latency_s=0.10, noise_m=0.3, seed=0, window_s=0.5):
+        self.tau, self.sig, self.rng, self.buf, self.win = latency_s, noise_m, np.random.default_rng(seed), [], window_s
 
     def see(self, t, pos, vel):
         self.buf.append((t, np.asarray(pos, float) + self.rng.normal(0.0, self.sig, 3)))
-        while len(self.buf) > 2 and self.buf[1][0] <= t - self.tau - 0.1:
+        while len(self.buf) > 2 and self.buf[1][0] <= t - self.tau - self.win:
             self.buf.pop(0)
         old = [x for x in self.buf if x[0] <= t - self.tau]
-        if len(old) < 2:
+        if len(old) < 5:
             return np.asarray(pos, float), np.asarray(vel, float)
-        (t0, b0), (t1, b1) = old[0], old[-1]
-        v = (b1 - b0) / max(t1 - t0, 1e-3)
-        return b1 + v * self.tau, v                                 # the position brought forward by the latency
+        ts = np.array([x[0] for x in old]) - old[-1][0]
+        P = np.array([x[1] for x in old])
+        A = np.stack([np.ones_like(ts), ts], axis=1)
+        (p1, v), *_ = np.linalg.lstsq(A, P, rcond=None)             # the position at the newest sample, and the velocity
+        return p1 + v * self.tau, v                                 # brought forward by the latency
 
 
 def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=None, latency_s=0.10, noise_m=0.3,
@@ -179,17 +190,18 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
     Vs = VF.stall(VF.get(name, VF.SWEEPS[0]))
     if fast:
         bandit = FastBandit(seed=seed)
-        V0, h0, over = 60.0, bandit.p[2], (3.0 if over_m is None else over_m)
+        V0, h0, over = 60.0, bandit.p[2], (1.2 if over_m is None else over_m)    # low over the track: the net's fall is the time the bandit has to turn away
         sim.start(V0, h0)
     else:
         bandit = ArmageddonBandit(centre=(250.0 + rng.uniform(-30, 30), rng.uniform(-40, 40)), seed=seed)
-        V0, h0, over = 1.4 * Vs, 30.0, (1.8 if over_m is None else over_m)
+        V0, h0, over = 1.4 * Vs, 30.0, (1.0 if over_m is None else over_m)
         sim.start(V0, h0, heading_deg=float(rng.uniform(-15, 15)))
     T = duration_s or (60.0 if fast else 90.0)
     ap = amj.Autopilot(sim)
     cam = Camera(latency_s, noise_m, seed)
     net0 = Net((0, 0, 100), (0, 0, 0), radius=net_radius)
-    t_fall = lambda dz: net0.t_open + max(dz, 0.2) / net0.sink_rate()
+    # opening, then the sink at the terminal rate, plus what the net loses getting up to that rate from rest (ln 2 v/g)
+    t_fall = lambda dz: net0.t_open + max(dz, 0.2) / net0.sink_rate() + 0.69 * net0.sink_rate() / am.G
     nets, drops, phase, t_phase = [], [], "attack", 0.0
     closest, min_alt, caught = 1e9, 1e9, None
     sim.wind[:] = wind
@@ -207,9 +219,12 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
         vbh = np.array([vb[0], vb[1], 0.0])
         sb = max(float(np.linalg.norm(vbh)), 0.5)
         ub = vbh / sb
-        dz_rel = over
-        lead = sb * t_fall(dz_rel) + 0.10 * s["V"]                       # the bandit's run while the net opens and sinks (+ the ejector's delay)
-        aim = b + ub * lead + np.array([0.0, 0.0, over])
+        # where a net released now would open: carried on at ASTOR's speed less the ejector's 5 m/s while packed
+        vh = np.array([s["v_world"][0], s["v_world"][1], 0.0])
+        uh = vh / max(float(np.linalg.norm(vh)), 1e-6)
+        carry = uh * (max(float(np.linalg.norm(vh)) - EJECT_M_S, 0.0) * net0.t_open - 0.5)
+        lead = sb * t_fall(over)                                         # the bandit's run while the net opens and sinks
+        aim = b + vbh * t_fall(over) - carry + np.array([0.0, 0.0, over])     # fly where a release puts the net in its path
         r = aim - s["pos"]
         rng_h = math.hypot(r[0], r[1])
         V_c = max(1.3 * Vs, sb + min(18.0, 6.0 + 0.25 * rng_h)) if not fast else min(72.0, sb + min(20.0, 6.0 + 0.1 * rng_h))
@@ -224,12 +239,18 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
             # release: ASTOR ahead of the bandit along its track by the lead, inside the net's radius across it, above it
             rel = s["pos"] - np.asarray(b)
             along, across = float(rel @ ub), float(rel[0] * -ub[1] + rel[1] * ub[0])
-            if sim.nets > 0 and abs(along - lead) < 0.6 * net_radius + 0.02 * s["V"] and abs(across) < 0.7 * net_radius and 0.5 < rel[2] < over + 2.5:
+            # (run 1 released on "ahead by the lead for the nominal height": the net's carry had the wrong sign and
+            # the real height above was 0.7-5 m, so the net was above or below the bandit when it passed)
+            dz = float(rel[2]) - 0.5 * am.G * net0.t_open ** 2            # the net's height over the bandit when it opens
+            meet = np.asarray(b) + vbh * t_fall(dz)                      # where the bandit is when the net has sunk to it
+            miss = (np.asarray(s["pos"]) + carry - meet)[:2]
+            if sim.nets > 0 and float(np.linalg.norm(miss)) < 0.5 * net_radius and 0.4 < dz < over + 1.5:
                 sim.drop_net()
-                v_rel = s["v_world"] - 5.0 * (s["v_world"] / max(float(np.linalg.norm(s["v_world"])), 1e-6))     # the ejector pushes it aft
+                v_rel = s["v_world"] - EJECT_M_S * (s["v_world"] / max(float(np.linalg.norm(s["v_world"])), 1e-6))     # the ejector pushes it aft
                 nets.append(Net(s["pos"] - 0.5 * s["v_world"] / max(s["V"], 1.0), v_rel, radius=net_radius))
                 drops.append({"t": round(t, 2), "along_m": round(along, 2), "across_m": round(across, 2), "above_m": round(float(rel[2]), 2),
-                              "astor_speed_m_s": round(s["V"], 1), "bandit_speed_m_s": round(sb, 1)})
+                              "astor_speed_m_s": round(s["V"], 1), "bandit_speed_m_s": round(sb, 1),
+                              "predicted_miss_m": round(float(np.linalg.norm(miss)), 2), "fall_s": round(t_fall(dz), 2)})
                 phase, t_phase = "away", t
         else:                                                           # climb away, then come again
             ap(phi_c=math.radians(35.0), theta_c=math.radians(8.0), V_c=max(1.4 * Vs, sb + 8.0))
@@ -254,6 +275,9 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
         if sim.nets == 0 and all(n.on_ground or n.t > 8.0 for n in nets) and caught is None:
             break
     sim.wind[:] = 0.0
+    for dr, nt in zip(drops, nets):                                    # how each net missed: in plan, and in height at that moment
+        dr["pass_plan_m"] = round(nt.pass_h, 2)
+        dr["pass_bandit_above_net_m"] = None if nt.pass_dz is None else round(nt.pass_dz, 2)
     return {"design": name, "bandit": bandit_kind, "seed": seed, "caught": caught is not None, "catch": caught, "drops": drops,
             "nets_used": len(drops), "closest_approach_m": round(closest, 2), "min_altitude_m": round(min_alt, 1),
             "crashed": bool(min_alt < 1.0), "duration_s": round(sim.d.time - t0, 1), "energy_Wh": round(sim.energy_J / 3600.0, 2),
