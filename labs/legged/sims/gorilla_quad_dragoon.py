@@ -60,6 +60,10 @@ AIM_TOL = math.radians(0.6)
 HOME = (2.0, 8.0)
 PAD_AT = np.array([-0.05, 0.15, -0.15])        #: the stock's pad from his right shoulder joint (pelvis frame) [m]
 TURN_R = 4.0
+#: the quadcopter the flak goes for: it hovers downrange and drifts across (a 1.6 kg drone holding its place on its
+#: rotors' thrust); Armageddon's damage: under ``FLAK['crack_J']`` a hit cracks nothing, ``FLAK['drone_hp_J']`` brings it down
+DRONE = {"home": (FIRE_X + RANGE + 4.0, 0.0, 5.5), "drift_m": 3.0, "drift_rad_s": 0.35, "kp": 6.0, "kd": 3.5}
+FLAK_MAX_SHOTS = 30
 
 
 def _path():
@@ -91,7 +95,16 @@ def scene():
     </body>''')
     bazooka = '''    <body name="bazooka" mocap="true" pos="0 0 -5">
       <geom name="bazooka_ref" type="sphere" size="0.01" mass="0" contype="0" conaffinity="0" rgba="0 0 0 0"/>
+    </body>
+    <body name="flak" mocap="true" pos="0 0 -6">
+      <geom name="flak_ref" type="sphere" size="0.01" mass="0" contype="0" conaffinity="0" rgba="0 0 0 0"/>
     </body>'''
+    dark, rotor = (0.15, 0.15, 0.17, 1.0), (0.75, 0.10, 0.10, 1.0)
+    drone = [Geom("drone_body", "box", (0.12, 0.12, 0.05), mass=1.0, rgba=dark)]
+    for k, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
+        drone.append(Geom(f"drone_arm_{k}", "capsule", (0.015,), fromto=(0.0, 0.0, 0.0, 0.2 * sx, 0.2 * sy, 0.0), mass=0.05, rgba=dark))
+        drone.append(Geom(f"drone_rotor_{k}", "cylinder", (0.10, 0.008), pos=(0.2 * sx, 0.2 * sy, 0.03), mass=0.05, rgba=rotor))
+    props.append(Prop(Link("target_drone", pos=tuple(DRONE["home"]), geoms=drone), free=True))
     sc = {"rider": "kerchak", "start_x": 0.0, "seconds": 60.0}
     return {"props": props, "worldbody_xml": "\n".join(balls + [bazooka]), "sc": sc}
 
@@ -112,6 +125,12 @@ class DragoonRide(qa.AutoRide):
         self.r_hand = m.body("R_hand").id
         self.pelvis = m.body("pelvis").id
         self.held = False
+        self.mocap_flak = m.body_mocapid[m.body("flak").id]
+        self.flak_holder = None                                             # which fist holds the flak, or None (in its scabbard)
+        self.drone = m.body("target_drone").id
+        self.drone_alive, self.drone_damage, self.drone_hits, self.drone_t0 = True, 0.0, [], None
+        self.pellets, self.flak_shots, self.flak_aim_err = [], [], []
+        self.blasts = []
         self.phase, self.phase_t0 = "ride out", 0.0
         self.keys = None                                                    # [(name, q, seconds)] of the stop's moves
         self.fired, self.next_shot, self.shots = 0, None, []
@@ -122,8 +141,8 @@ class DragoonRide(qa.AutoRide):
         self.wheelbase = gq.GEOM["wheelbase"]
         self.arbiter.mode = "AUTO"
         self.arbiter.events.append((0.0, "AUTO: the quad carries him out"))
-        for g in range(m.ngeom):                                           # the lidars do not see his bazooka
-            if m.geom_bodyid[g] == m.body("bazooka").id:
+        for g in range(m.ngeom):                                           # the lidars and the flak's rays do not see his weapons
+            if m.geom_bodyid[g] in (m.body("bazooka").id, m.body("flak").id):
                 m.geom_group[g] = 5
 
     # ---- the path follower (pure pursuit on a polyline)
@@ -170,7 +189,7 @@ class DragoonRide(qa.AutoRide):
             sr.set_curl(q, kin, side, c)
         return q, e
 
-    def _aim_pose(self, kin_q):
+    def _aim_pose(self, kin_q, muzzle=None, at=None, flat=False):
         """The weapon's pose in the pelvis frame for the aim: the pad at his shoulder, the tube on the boxes' middle at
         the elevation the flight needs (the quad's real pose now)."""
         kin = self.kin
@@ -179,14 +198,15 @@ class DragoonRide(qa.AutoRide):
         d = self.data
         Rp = d.xmat[self.pelvis].reshape(3, 3)
         pp = d.xpos[self.pelvis]
-        aim_at = np.array([FIRE_X + RANGE - BOX, 0.0, 2 * BOX])           # the pyramid's front face, the middle row
+        aim_at = np.array([FIRE_X + RANGE - BOX, 0.0, 2 * BOX]) if at is None else np.asarray(at)   # the pyramid's front face, the middle row
+        muzzle = gb.MUZZLE if muzzle is None else muzzle
         pad = sh + PAD_AT
         for _ in range(3):                                                 # the muzzle depends on the aim; two passes settle it
             W_rot = getattr(self, "_W_rot_guess", np.eye(3))
-            muzzle_w = pp + Rp @ (pad + W_rot @ (gb.MUZZLE - gb.PAD))
+            muzzle_w = pp + Rp @ (pad + W_rot @ (muzzle - gb.PAD))
             dv = aim_at - muzzle_w
             az = math.atan2(dv[1], dv[0])
-            el = gb.elevation_for(math.hypot(dv[0], dv[1]), dv[2])
+            el = math.atan2(dv[2], math.hypot(dv[0], dv[1])) if flat else gb.elevation_for(math.hypot(dv[0], dv[1]), dv[2])
             Rw = np.array([[math.cos(az), -math.sin(az), 0], [math.sin(az), math.cos(az), 0], [0, 0, 1]]) @ np.array(
                 [[math.cos(el), 0, -math.sin(el)], [0, 1, 0], [math.sin(el), 0, math.cos(el)]])
             W_rot = Rp.T @ Rw
@@ -216,6 +236,145 @@ class DragoonRide(qa.AutoRide):
                      ("let go", q_reach, 0.4), ("fists on the bar", q_bar, 1.2)]
         self.q_aim = q_aim
 
+    def plan_flak(self):
+        """The flak's keyframes: the left fist to its fore handle in the left scabbard, lift it, the right fist to the
+        rear handle, the stock to the shoulder and the tube on the drone."""
+        q_bar = self.Q[6].copy()
+        Wf_rot, Wf_pos = gb.flak_scabbard_pose()
+        Wf_pos = Wf_pos - np.asarray(qr_pelvis())
+        q_reach, e1 = self._solve(self._kin_targets(Wf_rot, Wf_pos, "L") + self._bar_targets("R", q_bar), q_bar, {"L": 0.5})
+        q_grasp = q_reach.copy()
+        sr.set_curl(q_grasp, self.kin, "L", gs.CURL_CLOSED)
+        self._W_rot_guess = np.eye(3)
+        W_aim_rot, W_aim_pos, self.aim_dir = self._aim_pose(q_bar, muzzle=gb.FLAK_MUZZLE, at=self._drone_aim_point(), flat=True)
+        W_mid_rot, W_mid_pos = W_aim_rot, 0.5 * (W_aim_pos + Wf_pos) + np.array([0.12, -0.08, 0.05])
+        q_lift1, e2 = self._solve(self._kin_targets(W_mid_rot, W_mid_pos, "L") + self._bar_targets("R", q_bar), q_grasp, {"L": gs.CURL_CLOSED})
+        q_lift2, e3 = self._solve(self._kin_targets(W_mid_rot, W_mid_pos, "RL"), q_lift1, {"R": gs.CURL_CLOSED, "L": gs.CURL_CLOSED})
+        q_aim, e4 = self._solve(self._kin_targets(W_aim_rot, W_aim_pos, "RL"), q_lift2, {"R": gs.CURL_CLOSED, "L": gs.CURL_CLOSED})
+        self.W_aim = (W_aim_rot, W_aim_pos)
+        self.ik_errors_flak = {"reach": round(e1, 4), "lift": round(e2, 4), "both hands": round(e3, 4), "aim": round(e4, 4)}
+        self.keys = [("reach for the flak", q_reach, 1.4), ("grasp the flak", q_grasp, 0.4), ("lift the flak", q_lift1, 1.2),
+                     ("right fist to the rear handle", q_lift2, 1.0), ("aim at the drone", q_aim, 1.0)]
+        self.stow = [("lower the flak", q_lift2, 1.0), ("right fist to the bar", q_lift1, 1.0), ("flak into its scabbard", q_grasp, 1.2),
+                     ("let go of the flak", q_reach, 0.4), ("fists on the bar", q_bar, 1.2)]
+        self.q_aim = q_aim
+
+    def _drone_aim_point(self, speed=None):
+        """Where the drone will be when a flak ball gets there (its velocity held; a few iterations), the ball's drop added."""
+        d = self.data
+        p = np.array(d.xpos[self.drone])
+        v = np.array(d.cvel[self.drone][3:6]) if False else self._drone_vel()
+        speed = gb.FLAK["muzzle_speed"] if speed is None else speed
+        mz = np.array(d.xpos[self.pelvis]) + np.array([0.6, -0.3, 0.6])
+        aim = p.copy()
+        for _ in range(3):
+            tof = np.linalg.norm(aim - mz) / (0.93 * speed)
+            aim = p + v * tof
+        aim[2] += 0.5 * 9.81 * tof ** 2
+        return aim
+
+    def _drone_vel(self):
+        v = np.zeros(6)
+        mujoco.mj_objectVelocity(self.model, self.data, mujoco.mjtObj.mjOBJ_BODY, self.drone, v, 0)
+        return v[3:6].copy()
+
+    def _drone_control(self, t):
+        """The drone holds its place on its rotors (a force and a torque on its body), drifting across; once down, nothing."""
+        d = self.data
+        b = self.drone
+        d.xfrc_applied[b, :] = 0.0
+        if not self.drone_alive:
+            return
+        m_d = float(self.model.body_subtreemass[b])
+        h = DRONE["home"]
+        p_des = np.array([h[0], h[1] + DRONE["drift_m"] * math.sin(DRONE["drift_rad_s"] * t), h[2]])
+        v = self._drone_vel()
+        acc = DRONE["kp"] * (p_des - d.xpos[b]) - DRONE["kd"] * v
+        d.xfrc_applied[b, :3] = m_d * (acc + np.array([0.0, 0.0, 9.81]))
+        R = d.xmat[b].reshape(3, 3)
+        w = np.zeros(6)
+        mujoco.mj_objectVelocity(self.model, d, mujoco.mjtObj.mjOBJ_BODY, b, w, 0)
+        d.xfrc_applied[b, 3:] = 0.4 * np.cross(R[:, 2], np.array([0, 0, 1.0])) - 0.05 * w[:3]
+
+    def _fire_flak(self, t):
+        self.move = f"flak: {len(self.flak_shots)} shots, the drone {'flying' if self.drone_alive else 'DOWN'}"
+        if not self.drone_alive or len(self.flak_shots) >= FLAK_MAX_SHOTS:
+            if t > self.next_shot + 1.5:
+                self.phase = "stow flak"
+                self._seq, self._seq_i, self._seq_t0, self._seq_from = self.stow, 0, t, self.q_fire
+                self.arbiter.events.append((t, "the drone is down: stowing the flak" if not self.drone_alive else "out of time: stowing the flak"))
+            return self.q_fire
+        if t >= self.next_shot:
+            W_rot, W_pos = self._weapon_world()
+            mz = W_pos + W_rot @ gb.FLAK_MUZZLE
+            self.aim_dir = self._drone_aim_point() - mz
+            self.aim_dir /= np.linalg.norm(self.aim_dir)
+            actual = W_rot[:, 0]
+            err = math.acos(max(-1.0, min(1.0, float(actual @ self.aim_dir))))
+            if err < math.radians(0.5) or t > self.next_shot + 1.0:
+                self._shoot_flak(W_rot, W_pos, t)
+                self.flak_aim_err.append(round(math.degrees(err), 2))
+                self.next_shot = t + gb.FLAK["fire_every_s"]
+            elif not getattr(self, "_corrected", False) or t > self._corrected + 0.25:
+                self._correct(actual, err)
+                self._corrected = t
+        return self.q_fire
+
+    def _correct(self, actual, err):
+        """The tube points off: turn the target pose by the error, solve the arms again."""
+        axis = np.cross(actual, self.aim_dir)
+        if np.linalg.norm(axis) < 1e-9:
+            return
+        Rc = qa_rot(axis / np.linalg.norm(axis), err)
+        Rp = self.data.xmat[self.pelvis].reshape(3, 3)
+        W_rot_t, W_pos_t = self.W_aim
+        pad = W_pos_t + W_rot_t @ gb.PAD
+        W_rot_t = Rp.T @ Rc @ Rp @ W_rot_t
+        self.W_aim = (W_rot_t, pad - W_rot_t @ gb.PAD)
+        self.q_fire, _ = self._solve(self._kin_targets(*self.W_aim, "RL"), self.q_fire, {"R": gs.CURL_CLOSED, "L": gs.CURL_CLOSED})
+
+    def _shoot_flak(self, W_rot, W_pos, t):
+        F = gb.FLAK
+        sp = F["muzzle_speed"] * (1.0 + F["scatter_speed"] * self.rng.standard_normal())
+        dirn = W_rot[:, 0] + F["scatter_rad"] * (self.rng.standard_normal() * W_rot[:, 1] + self.rng.standard_normal() * W_rot[:, 2])
+        dirn /= np.linalg.norm(dirn)
+        p = W_pos + W_rot @ gb.FLAK_MUZZLE
+        self.pellets.append({"p": p.copy(), "v": sp * dirn, "t0": t, "alive": True, "trail": [p.copy()]})
+        self.flak_shots.append((round(t, 2), round(sp, 1)))
+        self.blasts.append((t, W_pos + W_rot @ gb.FLAK_VENTURI, -W_rot[:, 0]))
+
+    def _fly_pellets(self, t, dt):
+        """The flak's balls: gravity and drag against Mach; a ray along each step's path finds what it hits."""
+        m, d = self.model, self.data
+        gid = np.zeros(1, dtype=np.int32)
+        for pl in self.pellets:
+            if not pl["alive"]:
+                continue
+            v = pl["v"]
+            step = v * dt
+            L = float(np.linalg.norm(step))
+            dist = mujoco.mj_ray(m, d, pl["p"], step / L, self.geomgroup, 1, -1, gid)
+            if 0.0 <= dist <= L and gid[0] >= 0:
+                root = m.body(m.body_rootid[m.geom_bodyid[gid[0]]]).name
+                pl["p"] = pl["p"] + step / L * dist
+                pl["alive"] = False
+                if root == "target_drone" and self.drone_alive:
+                    E = 0.5 * gb.FLAK["ball_mass"] * float(v @ v)
+                    if E > gb.FLAK["crack_J"]:
+                        self.drone_damage += E
+                        self.drone_hits.append((round(t, 2), round(E, 1)))
+                        d.xfrc_applied[self.drone, :3] += gb.FLAK["ball_mass"] * v / dt      # the ball's momentum, this step
+                        if self.drone_damage >= gb.FLAK["drone_hp_J"]:
+                            self.drone_alive = False
+                            self.arbiter.events.append((t, f"the drone is hit ({self.drone_damage:.0f} J): it falls"))
+            else:
+                pl["v"] = v + (gb.flak_drag_acc(v) + np.array([0.0, 0.0, -9.81])) * dt
+                pl["p"] = pl["p"] + step
+                if t - pl["t0"] > 2.5 or pl["p"][2] < 0.0:
+                    pl["alive"] = False
+            if np.linalg.norm(pl["p"] - pl["trail"][-1]) > 2.0 or not pl["alive"]:
+                pl["trail"].append(pl["p"].copy())
+
     # ---- one control step
     def control(self, t):
         m, d = self.model, self.data
@@ -240,10 +399,12 @@ class DragoonRide(qa.AutoRide):
             self.plan_stop()
             self._seq, self._seq_i, self._seq_t0, self._seq_from = self.keys, 0, t, self._current_q()
             self.phase = "draw"
-        if self.phase in ("draw", "stow"):
+        if self.phase in ("draw", "stow", "draw flak", "stow flak"):
             arms = self._play(t)
         elif self.phase == "fire":
             arms = self._fire(t)
+        elif self.phase == "fire flak":
+            arms = self._fire_flak(t)
         self.aeb = self.guardian.check(x, y, yaw, v, float(d.qpos[self.col_q]), self.obstacles, self.wheelbase)
         rate = ga.STEER_BY_WIRE["rate_rad_s"] * dt
         self.steer_cmd += float(np.clip(steer - self.steer_cmd, -rate, rate))
@@ -265,8 +426,10 @@ class DragoonRide(qa.AutoRide):
         q_t = self._arms(float(d.qpos[self.col_q])) if arms is None else arms
         tau = self.kp * (q_t - d.qpos[self.r_q]) - self.kd * d.qvel[self.r_d] + d.qfrc_bias[self.r_d]
         d.qfrc_applied[self.r_d] += np.clip(tau, -self.lim, self.lim)
+        self._drone_control(t)
         self._place_bazooka()
         self._fly_balls()
+        self._fly_pellets(t, dt)
         return self.arbiter.mode
 
     def _current_q(self):
@@ -282,6 +445,14 @@ class DragoonRide(qa.AutoRide):
                 self.held = True
             if name == "let go":
                 self.held = False
+            if name == "grasp the flak":
+                self.flak_holder = "L"
+            if name == "right fist to the rear handle":
+                self.flak_holder = "R"
+            if name == "right fist to the bar":
+                self.flak_holder = "L"
+            if name == "let go of the flak":
+                self.flak_holder = None
             self._seq_i += 1
             self._seq_t0, self._seq_from = t, q_to
             if self._seq_i >= len(self._seq):
@@ -289,16 +460,25 @@ class DragoonRide(qa.AutoRide):
                     self.phase, self.phase_t0 = "fire", t
                     self.next_shot, self.q_fire = t + 0.8, self.q_aim.copy()
                     self.arbiter.events.append((t, "aimed: firing"))
+                elif self.phase == "stow":
+                    self.plan_flak()
+                    self.phase = "draw flak"
+                    self._seq, self._seq_i, self._seq_t0, self._seq_from = self.keys, 0, t, q_to
+                    self.arbiter.events.append((t, "the drone: he draws the flak"))
+                elif self.phase == "draw flak":
+                    self.phase, self.phase_t0 = "fire flak", t
+                    self.next_shot, self.q_fire, self._corrected = t + 0.6, self.q_aim.copy(), False
+                    self.arbiter.events.append((t, "flak: aimed at the drone"))
                 else:
                     self.phase = "ride back"
                     self.path, self.path_i, self.leg = self.back_path, 0, "back"
                     self.arbiter.events.append((t, "stowed: the quad brings him back"))
         return q
 
-    def _weapon_world(self):
+    def _weapon_world(self, side="R"):
         d = self.data
-        H_rot = d.xmat[self.r_hand].reshape(3, 3)
-        return gb.hand_to_weapon("R", H_rot, np.array(d.xpos[self.r_hand]))
+        h = self.r_hand if side == "R" else self.model.body("L_hand").id
+        return gb.hand_to_weapon(side, d.xmat[h].reshape(3, 3), np.array(d.xpos[h]))
 
     def _fire(self, t):
         self.move = f"firing {self.fired}/{SHOTS}"
@@ -360,6 +540,15 @@ class DragoonRide(qa.AutoRide):
         mujoco.mju_mat2Quat(q, W_rot.ravel())
         d.mocap_pos[self.mocap] = W_pos
         d.mocap_quat[self.mocap] = q
+        if self.flak_holder is not None:
+            W_rot, W_pos = self._weapon_world(self.flak_holder)
+        else:
+            Rc = d.xmat[self.chassis].reshape(3, 3)
+            Wf_rot, Wf_pos = gb.flak_scabbard_pose()
+            W_rot, W_pos = Rc @ Wf_rot, d.xpos[self.chassis] + Rc @ Wf_pos
+        mujoco.mju_mat2Quat(q, W_rot.ravel())
+        d.mocap_pos[self.mocap_flak] = W_pos
+        d.mocap_quat[self.mocap_flak] = q
 
     def _fly_balls(self):
         d = self.data
@@ -390,6 +579,8 @@ class DragoonRide(qa.AutoRide):
         x, y, yaw, v = self.pose()
         return {"shots": self.shots, "aim_error_deg_at_shot": self.aim_err, "balls_that_hit_a_box": sorted(self.ball_hits),
                 "boxes_moved_m": moved, "boxes_knocked": sum(1 for v_ in moved if v_ > 0.1), "ik_errors_m": getattr(self, "ik_errors", None),
+                "flak_shots": len(self.flak_shots), "flak_aim_error_deg_at_shot": self.flak_aim_err, "drone_hits": self.drone_hits,
+                "drone_down": not self.drone_alive, "ik_errors_flak_m": getattr(self, "ik_errors_flak", None),
                 "end": (round(x, 2), round(y, 2)), "home": HOME, "phase": self.phase,
                 "events": [(round(t, 2), e) for t, e in self.arbiter.events]}
 
@@ -404,7 +595,7 @@ def qa_rot(axis, ang):
 
 class DragoonDrawer(qa.Drawer):
     def __init__(self, ride, size="1280x720"):
-        super().__init__(ride, size, extra_pieces=gb.scabbard_mesh() + gb.bazooka_mesh())
+        super().__init__(ride, size, extra_pieces=gb.scabbard_mesh() + gb.bazooka_mesh() + gb.flak_scabbard_mesh() + gb.flak_mesh())
         self.cam = None
 
     def frame(self, t):
@@ -418,6 +609,11 @@ class DragoonDrawer(qa.Drawer):
             want = (np.array([c[0] + 1.0, c[1], 1.0]), 20.0, math.degrees(yaw) + 220.0, 7.5)
         elif ph in ("stopped", "draw", "stow"):
             want = (np.array([c[0] + 0.2, c[1] - 0.2, 1.2]), 12.0, math.degrees(yaw) - 70.0, 4.6)
+        elif ph == "fire flak":
+            dp = np.array(ride.data.xpos[ride.drone])
+            want = (0.75 * c + 0.25 * dp + np.array([0.0, 0.0, 0.6]), 8.0, math.degrees(yaw) + 200.0, 8.5)   # over his shoulder, the drone ahead in the sky
+        elif ph in ("draw flak", "stow flak"):
+            want = (np.array([c[0] + 0.2, c[1] + 0.2, 1.2]), 12.0, math.degrees(yaw) + 70.0, 4.6)   # his left side
         elif ph == "fire":
             want = (np.array([c[0] + 5.0, c[1], 1.2]), 12.0, math.degrees(yaw) + 200.0, 9.0)       # over his right shoulder, downrange
         else:
@@ -434,7 +630,7 @@ class DragoonDrawer(qa.Drawer):
                 self.cam[i] += k * (want[i] - self.cam[i])
         cam = br.orbit(tuple(self.cam[0]), self.cam[1], self.cam[2], self.cam[3])
         lines, dots = [], []
-        for i in range(ride.fired):
+        for i in range(ride.fired if ph in ("fire", "stow", "stopped", "draw") else 0):   # the golf balls' trails, while the bazooka is out
             tr = ride.trails[i]
             lines += [(tr[j], tr[j + 1], (0.95, 0.85, 0.20)) for j in range(len(tr) - 1)]
             dots.append((ride.data.xpos[ride.balls[i]], 4, (1.0, 1.0, 1.0)))
@@ -442,13 +638,30 @@ class DragoonDrawer(qa.Drawer):
             W_rot, W_pos = ride._weapon_world()
             mz = W_pos + W_rot @ gb.MUZZLE
             lines.append((mz, mz + 4.0 * W_rot[:, 0], (0.95, 0.30, 0.20)))
-        what = {"ride out": "the quad carries him out (AUTO)", "stopped": "at the firing point", "draw": getattr(ride, "move", ""),
+        if ph in ("draw flak", "fire flak", "stow flak"):                    # a ring round the drone
+            dp = np.array(ride.data.xpos[ride.drone])
+            dots.append((dp, 10, (0.95, 0.1, 0.1) if ride.drone_alive else (0.4, 0.4, 0.4)))
+            dots.append((dp, 6, (1.0, 1.0, 1.0)))
+        for pl in ride.pellets:
+            tr = pl["trail"] + ([pl["p"]] if pl["alive"] else [])
+            lines += [(tr[j], tr[j + 1], (1.0, 0.45, 0.10)) for j in range(len(tr) - 1)]
+        for tb, o, back in ride.blasts:
+            if t - tb < 0.25:                                                   # the back-blast: the jet out of the venturi, 2.1 m
+                side = np.cross(back, [0.0, 0.0, 1.0])
+                side /= max(np.linalg.norm(side), 1e-9)
+                for a in np.linspace(-0.35, 0.35, 7):
+                    for b_ in (-0.2, 0.0, 0.2):
+                        dvec = back + a * side + b_ * np.array([0.0, 0.0, 1.0])
+                        lines.append((o, o + gb.FLAK["backblast_m"] * dvec / np.linalg.norm(dvec), (0.85, 0.85, 0.80)))
+        what = {"draw flak": getattr(ride, "move", ""), "fire flak": getattr(ride, "move", ""), "stow flak": getattr(ride, "move", ""),
+                "ride out": "the quad carries him out (AUTO)", "stopped": "at the firing point", "draw": getattr(ride, "move", ""),
                 "fire": getattr(ride, "move", ""), "stow": getattr(ride, "move", ""), "ride back": "the quad brings him back (AUTO)",
                 "home": "home"}[ph]
         knocked = sum(1 for a, p0 in zip(ride.target_q, ride.target0) if np.linalg.norm(ride.data.qpos[a:a + 3] - p0) > 0.1)
         hud = [(f"Kerchak the dragoon - {what}", (0.15, 0.15, 0.2)),
-               (f"{3.6 * v:4.1f} km/h   balls fired {ride.fired}/{SHOTS}   boxes knocked {knocked}/6", (0.2, 0.2, 0.25))]
-        title = f"Kerchak's quad - the golf-ball bazooka   t = {t:4.1f} s"
+               (f"{3.6 * v:4.1f} km/h   bazooka {ride.fired}/{SHOTS}, boxes knocked {knocked}/6   flak {len(ride.flak_shots)} shots, "
+                f"drone {ride.drone_damage:.0f}/{gb.FLAK['drone_hp_J']:.0f} J {'DOWN' if not ride.drone_alive else ''}", (0.2, 0.2, 0.25))]
+        title = f"Kerchak the dragoon - the golf-ball bazooka and the flak   t = {t:4.1f} s"
         return self.renderer.render(ride.data, cam, title=title, lines=lines, dots=dots, hud=hud)
 
 
