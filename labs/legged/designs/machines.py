@@ -15,11 +15,24 @@ def _motions(module):
     return parts
 
 
-# the Myriapods, with their motions and their CAD looks (Persephone is CAD-only: no robot model)
+def _persephone():
+    """Persephone, the 12-segment chimney Myropod (notebook 17): the benchmark campaign's Chiron model, built from
+    myropod_robot's blocks with notebook 17's mass budget (``campaigns/benchmark/persephone/persephone_robot.py``)."""
+    import importlib.util
+    from pathlib import Path
+    f = Path(__file__).resolve().parents[1] / "campaigns" / "benchmark" / "persephone" / "persephone_robot.py"
+    spec = importlib.util.spec_from_file_location("persephone_robot", f)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.persephone()
+
+
+# the Myriapods, with their CAD looks (Cleopatra and Apheloria with their motions; Persephone without: no gait yet)
 machines.register("apheloria", "apheloria_robot:apheloria", parts=_motions("myriapod_motions:parts_apheloria"),
                   visual="apheloria:Apheloria")
 machines.register("myropod", "myropod_robot:cleopatra", parts=_motions("myriapod_motions:parts_cleopatra"),
                   visual="myropod_robot:cleopatra_cad")
+machines.register("persephone", _persephone, visual="myropod:Myropod")    # the design's defaults are Persephone
 
 machines.register("humanoid", "humanoid_robot:talia", parts=_motions("humanoid_motions"), visual="humanoid:Humanoid")
 

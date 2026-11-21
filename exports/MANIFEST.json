@@ -226,6 +226,21 @@
    "sha256": "60f589f2fc5c29f5ee3ddf27fb573a48bd30b34be372a6f05e7676276ff2c1ae",
    "visual_triangles": 4726
   },
+  "persephone": {
+   "bytes": 1262218,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "persephone.yx2",
+   "joints": 178,
+   "lab": "legged",
+   "links": 179,
+   "mass_kg": 10.9617,
+   "sha256": "a28c1190421a4f584d182d7b7c267d9a2da9752f42a8cdb62f7d95f05807024f",
+   "visual_triangles": 4851
+  },
   "perseus": {
    "bytes": 398388,
    "consumers": {
@@ -392,10 +407,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-17T10:11:35Z",
+ "published": "2026-11-21T23:45:43Z",
  "vegeta": {
-  "branch": "dev_real_dynamics",
-  "commit": "26f783497aa8de495f9428314930de6dded8b8c5",
+  "branch": "dev_persephone_export",
+  "commit": "df5efa022a2bc994e813083d2a7aeab6c97228bc",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
