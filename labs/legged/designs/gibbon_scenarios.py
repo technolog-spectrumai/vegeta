@@ -660,12 +660,12 @@ SASH_SHOVE = 0.16                #: how far the hammer shoves the sash open [rad
 SASH_OPEN = 1.5
 
 
-def sash_point(w, phi, z_frac=0.5):
+def sash_point(w, phi, z_frac=0.5, y_in=0.0):
     """A point on the sash's free stile's outer face with the sash open ``phi`` (it swings about the left jamb, into the room)."""
     t, ws = w["wall_thickness"], w["width"] - 0.04
     hinge = np.array([w["x"] - t / 2 + 0.03, w["y"] + w["width"] / 2 - 0.02, w["sill"] + 0.02])
     c, s_ = math.cos(phi), math.sin(phi)
-    local = np.array([-0.016, -ws + 0.02, (w["height"] - 0.04) * z_frac])
+    local = np.array([-0.016, -ws + 0.02 + y_in, (w["height"] - 0.04) * z_frac])
     return hinge + np.array([c * local[0] - s_ * local[1], s_ * local[0] + c * local[1], local[2]])
 
 
@@ -776,13 +776,22 @@ def scenario_heist(kin, q_stand, p):
         f = mk.smooth((u - 0.75) / 0.25)
         return (1 - f) * strike[0] + f * wind[0], gs._slerp(strike[1], wind[1], f)
 
+    LEAN = np.array(p.get("lean", (0.14, 0.08, 0.06)))                      # the pelvis swung toward the pane, hung on the tail and feet
+
+    def leanbase(u0, u1):
+        def f(u):
+            s_ = mk.smooth(min(1.0, u / u0)) if u < u0 else (1.0 if u < u1 else 1.0 - mk.smooth((u - u1) / (1.0 - u1)))
+            c = b + s_ * LEAN
+            return (c[0], c[1], c[2], pitch)
+        return f
+
     x_fist = lambda u, q_: sr.set_curl(keep(u, q_), kin, "L", kt_lever())
     limbs_ = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
 
     def reach_err(head, axis, wd):
         """How near the left hand gets the hammer's head to ``head`` (the handle along ``axis``) with the body held."""
         fr = gs.hand_frame_on(gs.bar((0, 0, 0), axis=axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=wd), "L")
-        tg = [(bd, l, R_b.T @ (np.asarray(wp) - b)) for bd, l, wp in planted + gs._hand_at(kin, "L", head - 0.31 * axis, fr)]
+        tg = [(bd, l, R_b.T @ (np.asarray(wp) - b - LEAN)) for bd, l, wp in planted + gs._hand_at(kin, "L", head - 0.31 * axis, fr)]
         _, err = kin.ik(tg, q_init=q1, q_ref=gs.climb_ref(kin, q1), joints=limbs_, reg=3e-4, iters=300)
         return err, (head - 0.31 * axis, fr)
 
@@ -798,22 +807,25 @@ def scenario_heist(kin, q_stand, p):
         return best
 
     x_pane = w["x"] - w["wall_thickness"] / 2 + 0.03                          # the pane in the sash, near the wall's outer face
-    heads = [np.array([x_pane, y, z]) for y in (w["y"] - 0.45, w["y"] - 0.3, w["y"] - 0.15) for z in (w["sill"] + 0.35, w["sill"] + 0.55, w["sill"] + 0.75)]
+    heads = [np.array([x_pane, y, z]) for y in (w["y"] - 0.5, w["y"] - 0.4, w["y"] - 0.3) for z in (w["sill"] + 0.35, w["sill"] + 0.55, w["sill"] + 0.75)]
     _err, strike, glass_point, strike_axis = best_blow(heads)
+    print(f"heist: blow reach {_err:.3f} m at {glass_point.round(2)}")
     strike = (strike[0], strike[1])
-    smash = gt.contact_motion(kin, "smash_the_glass", 1.8, lambda u: planted + gs._hand_at(kin, "L", *hold_at(u)), holdbase, q_init=q1,
+    smash = gt.contact_motion(kin, "smash_the_glass", 1.8, lambda u: planted + gs._hand_at(kin, "L", *hold_at(u)), leanbase(0.6, 0.8), q_init=q1,
                               extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q1),
                               source="gibbon_scenarios.heist: a wind-up and the blow through the pane")
     smash.params = {**(smash.params or {}), "strike_u": 0.65, "impact": glass_point.tolist()}
     q2 = gt._last(kin, smash, q1)
 
     # the shove: the hammer's head against the sash's free stile, pushed into the room; the sash swings on from there
-    shove_best = best_blow([sash_point(w, 0.0, zf) for zf in (0.25, 0.4, 0.55)])
+    spots = [(zf, yi) for zf in (0.03, 0.25, 0.4) for yi in (0.0, 0.15, 0.3)]   # the free stile, or the rails near it
+    shove_best = best_blow([sash_point(w, 0.0, *sp) for sp in spots])
     shove_axis, shove_frame = shove_best[3], shove_best[1][1]
-    shove_zf = [zf for zf in (0.25, 0.4, 0.55) if np.allclose(sash_point(w, 0.0, zf), shove_best[2])][0]
+    shove_spot = [sp for sp in spots if np.allclose(sash_point(w, 0.0, *sp), shove_best[2])][0]
+    print(f"heist: shove reach {shove_best[0]:.3f} m at {shove_spot}")
 
     def head_at(phi):
-        tgt = sash_point(w, phi, shove_zf)
+        tgt = sash_point(w, phi, *shove_spot)
         return (tgt - 0.31 * shove_axis, shove_frame)
 
     def push_at(u):
@@ -831,7 +843,7 @@ def scenario_heist(kin, q_stand, p):
     if gt.SOLID is not None:
         gt.SOLID.scene = lambda u: {"sash_hinge": SASH_SHOVE * mk.smooth(min(1.0, max(0.0, (u - 0.35) / 0.4)))}
     try:
-        push = gt.contact_motion(kin, "push_the_window", 1.6, lambda u: planted + gs._hand_at(kin, "L", *push_at(u)), holdbase, q_init=q2,
+        push = gt.contact_motion(kin, "push_the_window", 1.6, lambda u: planted + gs._hand_at(kin, "L", *push_at(u)), leanbase(0.3, 0.78), q_init=q2,
                                  extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q2),
                                  source="gibbon_scenarios.heist: the hammer's head shoves the sash open into the room")
     finally:
