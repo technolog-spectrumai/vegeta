@@ -499,3 +499,69 @@ The spine count, the allowables and the CoM height are the numbers to measure fi
 isotropic in the dynamic sim, but they only grip along their direction (up the slope), so on bark it crab-steps and
 descends tail first, like ARACHNE.
 
+## 11. TARANTULA's gait and stability simulations (`./tarantula.sh`)
+
+```
+./tarantula.sh list
+./tarantula.sh run all -j 8 --quick       # a minute or two: checks the setup
+./tarantula.sh run all -j 8               # the full grids
+./tarantula.sh run walk slope -j 6        # some of them ("tarantula-" is optional)
+```
+
+Output: `runs/tarantula/<date-time>/` (or `--out`):
+* `tarantula-<name>.yaml`: meta, summary and every case;
+* `index.yaml`.
+
+`-j` is the number of CPU cores. The same studies also run from `./spider.sh run tarantula`.
+
+**The model** (`designs/tarantula_robot.py`):
+* **Body:** TARANTULA's CAD geometry; 1.5 kg (`MASS_G`, class estimates, with the 0.3 kg payload on the deck); centre
+  of mass 59 mm behind the carapace centre.
+* **Legs:** 24 tendon-driven joints, each a self-locking 1000:1 gearmotor on a 1.5:1 pulley (1.62 N·m, 2.2 rad/s).
+  The PD loop is clipped to the motor line when driving; full torque is available when braking or holding.
+* **Feet:** 10 mm contact spheres; rubber μ 0.8 unless a study changes it.
+
+**Gaits** (`designs/tarantula_gaits.py`): IK on the model's own kinematics.
+
+| gait | feet down | speed (80 mm stride) |
+|---|---:|---:|
+| `wave8` | 7 | 23 mm/s |
+| `wave4` | 6 | 44 mm/s |
+| `tetrapod` | 4 | 133 mm/s |
+| `turn` | 6 | 6.7°/s |
+| `crab` | 6 | 33 mm/s |
+
+They are checked kinematically: static margin 66–109 mm. The tip-over limit facing uphill is 42–56° standing and
+58–69° crouched; friction limits first (§10).
+
+| study | cases (full / quick) | what it varies | what to read |
+|---|---:|---|---|
+| `gaits` | 60 / 2 | gait × posture × stride × step height | IK, joint limits, static margin, tip-over angles |
+| `walk` | 40 / 2 | gait × posture × payload 0/0.3 kg × μ 0.5/0.8 | speed vs planned, drift, dynamic margin, power, cost of transport, runtime |
+| `slope` | 288 / 4 | gait × posture × incline 0–40° × heading (up, across, down) × μ | the steepest incline without tipping, sliding or stalling |
+| `rough` | 54 / 2 | gait × rough ground (10, 20, 35 mm RMS) and steps (30, 60, 90 mm) × step height 40/80 mm | falls, belly strikes, speed |
+| `push` | 48 / 1 | gait × posture × 10–80 N for 0.2 s × front/side/back | the largest push survived |
+| `faults` | 24 / 1 | gait × which leg × limp or locked | does it walk on seven: drift, margin |
+| `climb` | 40 / 1 | pad/glass, spines/brick, spines/bark, magnet/steel, pad/painted wall × 45–90° × gait | the steepest climb, slip |
+| `attach` | 400 / 15 | the statics of §10 | margins and the steepest slope per foot |
+
+**Measured per run:**
+* speed achieved vs planned, heading drift;
+* the **dynamic stability margin** — the CoM projected along gravity inside the polygon of the feet actually in
+  contact: its minimum, and the time it is negative;
+* roll and pitch, the lowest body height and belly contacts;
+* stance-foot slip;
+* peak joint torque over stall, and the time saturated;
+* power, cost of transport, runtime on the 36 Wh battery;
+* failure: tipped (roll or pitch past 50°), slid (0.15 m downhill of the planned path) or stopped (under 20 % of the
+  planned speed).
+
+**Assumptions to replace with measurements:**
+* the masses;
+* the drive's 0.25 efficiency and its reflected inertia (2 × 10⁻³ kg·m²);
+* foot friction;
+* the attachment capacities of §10 (spines are isotropic in MuJoCo, so sideways grip on bark is optimistic).
+
+The gaits are open-loop keyframes, with no balance or terrain feedback. The results show what the mechanics and the
+drives allow before a controller is added.
+

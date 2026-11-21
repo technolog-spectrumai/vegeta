@@ -170,3 +170,31 @@ def test_tarantula_attachment_verdict():
     assert 14 <= st_["glass"]["friction"] <= 20                                        # tan β ≤ μ/2
     assert ta.monte_carlo("brick", "spine")["p5"] >= 2.0
     assert ta.max_inclination("brick", "spine", "wave", "standing") < 90               # it must crouch
+
+
+def test_tarantula_robot_and_gaits():
+    pytest.importorskip("mujoco")
+    import motion_kit as mk
+    import tarantula_gaits as tg
+    import tarantula_robot as tr
+
+    r = tr.tarantula()
+    assert r.total_mass() == pytest.approx(1.5, abs=1e-6) and r.summary()["n_actuated"] == 24 and len(r.feet) == 8
+    assert tr.drive().stall_torque == pytest.approx(1.62)                  # 1000:1 gearmotor × 1.5 pulley (§5)
+    kin = mk.Kin(r)
+    for name, drop in (("wave4", 0.0), ("tetrapod", 34.0), ("turn", 0.0)):
+        m = tg.gait(name, kin=kin, body_drop_mm=drop)
+        assert m.check["ik_error_max_m"] < 1e-4 and m.check["limit_margin_min_rad"] > 0
+        assert m.check["static_margin_min_m"] > 0.03                          # statically stable throughout
+    up_stand = tg.gait("wave4", kin=kin).check["tip_deg_min"]["up"]
+    up_crouch = tg.gait("wave4", kin=kin, body_drop_mm=34.0).check["tip_deg_min"]["up"]
+    assert up_crouch > up_stand                                              # crouching resists tipping
+
+
+def test_tarantula_runner_family():
+    import spider_sims as ss_
+
+    fam = ss_.FAMILIES["tarantula"]
+    assert {"tarantula-walk", "tarantula-slope", "tarantula-climb", "tarantula-attach"} <= set(fam)
+    for n in fam:
+        assert len(ss_.SIMS[n][0](True)) >= 1 and len(ss_.SIMS[n][0](False)) >= len(ss_.SIMS[n][0](True))

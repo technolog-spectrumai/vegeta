@@ -18,7 +18,11 @@ Simulations:
   (``salty_jump``);
 * ``tarantula-attach``  — does TARANTULA need adhesives: surface × foot (friction, pad, spines, magnet, hybrid) ×
   gait × posture × payload — the steepest slope at margin ≥ 2 and a Monte Carlo of the vertical margin
-  (``tarantula_attachment``).
+  (``tarantula_attachment``);
+* ``tarantula-gaits``, ``-walk``, ``-slope``, ``-rough``, ``-push``, ``-faults``, ``-climb`` — TARANTULA's gaits and
+  stability, kinematic and in MuJoCo (``tarantula_sim``; ``./tarantula.sh`` runs just these).
+
+Families: ``all`` (every simulation), ``tarantula`` (the ``tarantula-*`` ones), ``spiders`` (the rest).
 """
 from __future__ import annotations
 
@@ -334,6 +338,17 @@ def _attach_summary(results):
     return out
 
 
+def _tsim():
+    import tarantula_sim
+    return tarantula_sim
+
+
+def _tarantula(name, about):
+    """A ``tarantula_sim`` study, imported when it runs (each worker imports it itself, so ``spawn`` works too)."""
+    return (lambda quick: _tsim().cases(name, quick), lambda case: _tsim().run_case(name, case),
+            lambda results: _tsim().summary(name, results), about)
+
+
 SIMS = {
     "arachne-climb": (_climb_cases, _climb_run, _climb_summary, "MuJoCo dynamics of ARACHNE climbing a wall"),
     "arachne-statics": (_statics_cases, _statics_run, _statics_summary, "load sharing and attachment margins, "
@@ -344,7 +359,16 @@ SIMS = {
     "salty-jump": (_salty_cases, _salty_run, _salty_summary, "SALTY's hydraulic catapult"),
     "tarantula-attach": (_attach_cases, _attach_run, _attach_summary,
                          "does TARANTULA need adhesives: surface × foot × gait × posture × payload"),
+    "tarantula-gaits": _tarantula("tarantula-gaits", "kinematic gait checks: IK, joint limits, static stability, tip-over"),
+    "tarantula-walk": _tarantula("tarantula-walk", "MuJoCo walking on flat ground: gait × posture × payload × friction"),
+    "tarantula-slope": _tarantula("tarantula-slope", "MuJoCo on inclines 0–40°: gait × posture × heading × friction"),
+    "tarantula-rough": _tarantula("tarantula-rough", "MuJoCo on rough ground and steps: gait × step height"),
+    "tarantula-push": _tarantula("tarantula-push", "MuJoCo push recovery: 10–80 N from the front, side and back"),
+    "tarantula-faults": _tarantula("tarantula-faults", "MuJoCo with a failed leg (limp or locked)"),
+    "tarantula-climb": _tarantula("tarantula-climb", "MuJoCo climbing 45–90° with pads, spines or magnets"),
 }
+FAMILIES = {"all": list(SIMS), "tarantula": [n for n in SIMS if n.startswith("tarantula-")],
+            "spiders": [n for n in SIMS if not n.startswith("tarantula-")]}
 
 
 def _worker(args):
@@ -401,22 +425,30 @@ def run(names, jobs, out, quick=False):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="spider.sh", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("list", help="list the simulations and their case counts")
+    ls = sub.add_parser("list", help="list the simulations and their case counts")
+    ls.add_argument("family", nargs="?", default="all", choices=list(FAMILIES), help="which simulations")
     r = sub.add_parser("run", help="run simulations")
-    r.add_argument("sims", nargs="+", help=f"simulation names or 'all': {', '.join(SIMS)}")
+    r.add_argument("sims", nargs="+", help=f"simulation names or a family ({', '.join(FAMILIES)}): {', '.join(SIMS)}")
     r.add_argument("-j", "--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1), help="CPU cores to use")
     r.add_argument("--quick", action="store_true", help="a small grid (a few minutes) to check the setup")
-    r.add_argument("--out", default=None, help="output folder (default runs/spider/<date-time>)")
+    r.add_argument("--out", default=None, help="output folder (default runs/<family>/<date-time>)")
     a = ap.parse_args(argv)
+    _paths()
     if a.cmd == "list":
-        for n, (cf, _, _, what) in SIMS.items():
+        for n in FAMILIES[a.family]:
+            cf, _, _, what = SIMS[n]
             print(f"{n:18s} {len(cf(False)):5d} cases ({len(cf(True))} with --quick)  {what}")
         return 0
-    names = list(SIMS) if "all" in a.sims else a.sims
+    names = []
+    for s in a.sims:
+        for n in FAMILIES.get(s, [s]):
+            if n not in names:
+                names.append(n)
     bad = [n for n in names if n not in SIMS]
     if bad:
-        ap.error(f"unknown simulation(s) {bad}; choose from {list(SIMS)} or 'all'")
-    out = Path(a.out) if a.out else ROOT / "runs" / "spider" / _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+        ap.error(f"unknown simulation(s) {bad}; choose from {list(SIMS)} or a family {list(FAMILIES)}")
+    family = "tarantula" if all(n.startswith("tarantula-") for n in names) else "spider"
+    out = Path(a.out) if a.out else ROOT / "runs" / family / _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run(names, max(1, a.jobs), out, a.quick)
     print(f"done: {out}/index.yaml")
     return 0
