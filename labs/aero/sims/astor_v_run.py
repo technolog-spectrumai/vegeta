@@ -274,6 +274,8 @@ def main(argv=None) -> int:
         print("total:", sum(n[ph] for ph in phases), "units in", len(phases), "phase(s)")
         return 0
     total = sum(n[ph] for ph in phases)
+    m = _meta("", a)
+    print(f"code: commit {m['commit']}, fingerprint {m['code']}, CFD data {m['cfd_data']}  (saved results are reused only for this code; --fresh to rerun all)")
     try:
         from tqdm import tqdm
         import builtins
