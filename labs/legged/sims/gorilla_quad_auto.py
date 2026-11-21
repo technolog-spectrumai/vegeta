@@ -78,8 +78,10 @@ def route_speed(x):
 
 
 class AutoRide:
-    def __init__(self, scenario):
-        sc = self.sc = SCENARIOS[scenario]
+    def __init__(self, scenario, scene=None):
+        """``scene`` (optional): {"props": [...] instead of the course, "worldbody_xml": extra bodies (mocap, balls),
+        "sc": the scenario's dict} for a scenario of another module (``gorilla_quad_dragoon``)."""
+        sc = self.sc = SCENARIOS[scenario] if scene is None else scene["sc"]
         self.scenario, self.who = scenario, sc["rider"]
         self.profile = qr.PROFILES[self.who]
         self.bar_offset = (0.0, 0.0)
@@ -107,7 +109,7 @@ class AutoRide:
         x0 = sc["start_x"]
         quad = gq.quad_prop(x0=x0, sz=self.sz, bar_offset=self.bar_offset, seat_free=self.rider is not None)
         robot = Robot(name="Kerchak's quad", root=quad.root)
-        props = [gr.course_prop(), *gr.cone_props(), crate_prop()]
+        props = [gr.course_prop(), *gr.cone_props(), crate_prop()] if scene is None else list(scene["props"])
         welds = []
         if self.rider is not None:
             root = qr.passive_copy(self.rider)
@@ -118,6 +120,8 @@ class AutoRide:
         opts = SimOptions()
         opts.course_extent = (-5.0, 90.0, -8.0, 8.0)
         xml = robot.to_mjcf(options=opts, props=props, welds=welds)
+        if scene is not None and scene.get("worldbody_xml"):
+            xml = xml.replace("</worldbody>", scene["worldbody_xml"] + "\n  </worldbody>")
         a = gq.GEOM["ackermann"]
         extra = ["  <equality>",
                  f'    <joint name="tie_FL" joint1="steer_FL" joint2="steer_column" polycoef="0 1 {a} 0 0"/>',
@@ -137,8 +141,13 @@ class AutoRide:
             self.r_d = np.array([m.jnt_dofadr[j] for j in jid])
             servos = {j.name: j.servo for j in self.rider.joints() if j.servo is not None}
             self.kp = np.array([servos[n].kp if n in servos else 50.0 for n in self.kin.names])
-            self.kd = np.array([max(servos[n].kd if n in servos else 0.0, 0.05 * math.sqrt(self.kp[i])) for i, n in enumerate(self.kin.names)])
+            self.kd = np.zeros(len(self.kin.names))                       # set at reset: 0.7 of critical on each joint's inertia
             self.lim = np.array([servos[n].stall_torque if n in servos else 50.0 for n in self.kin.names])
+            # the servos' rotors seen through their gears (reflected inertia, kg m²): a finger's phalanx alone is
+            # 2e-5 kg m², which a stiff servo rings at the step's rate; the gearbox's rotor is what a real one has
+            for n, dof in zip(self.kin.names, self.r_d):
+                arm = (0.002 if ("finger" in n or "thumb" in n) else 0.02 if "wrist" in n else 0.1 if ("shoulder" in n or "elbow" in n) else 0.3)
+                m.dof_armature[dof] = max(m.dof_armature[dof], arm)
         self.motor = [m.actuator(f"motor_{c}").id for c in gq.CORNERS]
         self.spin = [m.jnt_dofadr[m.joint(f"spin_{c}").id] for c in gq.CORNERS]
         self.col = m.actuator("column").id
@@ -183,7 +192,7 @@ class AutoRide:
             solid = m.geom_contype[g] != 0 or m.geom_conaffinity[g] != 0
             if name.startswith("tyre_"):
                 m.geom_contype[g], m.geom_conaffinity[g] = TYRE, TERRAIN | COURSE
-            elif root in ("course", "crate") or root.startswith("cone_"):
+            elif root in ("course", "crate") or root.startswith(("cone_", "target_", "ball_")):
                 m.geom_contype[g], m.geom_conaffinity[g] = (COURSE | TYRE, TYRE | BODY | COURSE) if solid else (0, 0)
             elif name.startswith("q_") and name not in ("q_bar", "q_seat"):
                 m.geom_contype[g], m.geom_conaffinity[g] = BODY, COURSE
@@ -202,6 +211,15 @@ class AutoRide:
         if self.rider is not None:
             d.qpos[self.r_q] = self.Q[6]
         mujoco.mj_forward(m, d)
+        if self.rider is not None:
+            # the rider's servos damped at 0.7 of critical on each joint's own inertia (the mass matrix's diagonal):
+            # a servo's own small damping leaves a 100 kg leg ringing on its stiffness
+            M = np.zeros((m.nv, m.nv))
+            mujoco.mj_fullM(m, d, M)
+            I = np.maximum(np.diag(M)[self.r_d], 1e-4)
+            dt = m.opt.timestep
+            self.kp = np.minimum(self.kp, 0.09 * I / dt ** 2)             # stable at the step: sqrt(kp/I) dt <= 0.3
+            self.kd = 2 * 0.7 * np.sqrt(self.kp * I)
 
     # ---- state
     def pose(self):
@@ -366,14 +384,14 @@ class Drawer:
     """The movie's frames for a ride: the quad's CAD and the autonomy kit (the beacon in the mode's colour), Kerchak's
     CAD or the human's shapes, the lidars' beams and hits, the planned path, the mode and status."""
 
-    def __init__(self, ride, size="1280x720"):
+    def __init__(self, ride, size="1280x720", extra_pieces=()):
         import kerchak_mesh as bm
         import kerchak_render as br
         self.br, self.ride = br, ride
         pieces, struts = gq.quad_mesh()
         kit = ga.kit_mesh()
         self.beacon_i = len(pieces) + list(ga.KIT_COLORS).index("beacon")
-        allp, st = list(pieces) + kit, list(struts)
+        allp, st = list(pieces) + kit + list(extra_pieces), list(struts)
         if ride.who == "kerchak":
             km = bm.load("plastic")
             allp, st = list(km.pieces) + allp, list(km.struts) + st
