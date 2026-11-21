@@ -39,10 +39,15 @@ def reference() -> dict:
     return {"S": VM.S_REF, "c": VM.C_REF, "cg_mm": [V.CG_MM, 0.0]}
 
 
-def l_ref(design="v") -> float:
+def l_ref(design="v", sweep=12.0) -> float:
+    """The CFD's reference length [m]: the reference chord, unless the body is over 4 of them (the template's limit:
+    spread, the wing is 1.08 m across on a 0.20 m chord); then the largest dimension / 3.7, and ``row`` scales Cm back
+    to the reference chord."""
     cls, var = _cls(design)
     p = cls().resolve(**var())
-    return max(VM.C_REF, (p["fuselage_length"] + 60.0) / 1000.0 / 3.9)
+    length = (p.get("edf_x", 0.0) + p.get("edf_length", 0.0)) or p["fuselage_length"]
+    body = max(V.wing_numbers(p, sweep)["span_mm"], max(length, p["fuselage_length"]) + 80.0) / 1000.0
+    return max(VM.C_REF, body / 3.7)
 
 
 def export_stl(folder, design, sweep, alpha_deg):
@@ -62,7 +67,7 @@ def case(workdir, design, sweep, *, alpha_deg=0.0, quality="screening", env=None
     Vv = CASES[sweep][0]
     ref = reference()
     stl, tag = export_stl(Path(workdir) / "stl", design, sweep, alpha_deg)
-    params = dict(velocity=Vv, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(design),
+    params = dict(velocity=Vv, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(design, sweep),
                   center_of_rotation=tuple(ac.to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])
     env = env or aeromant.OpenFOAMEnvironment.detect()
     return aeromant.CFDCase("rans_ksst_external", str(stl), params,
@@ -85,7 +90,7 @@ def row(design, sweep, alpha_deg, result) -> dict:
     k = result.metrics
     f = lambda v: None if v is None else float(v)
     out.update({"status": "solved", "Cl": f(k.get("Cl")), "Cd": f(k.get("Cd")),
-                "Cm_cg": None if k.get("Cm") is None else float(k.get("Cm")) * l_ref(design) / VM.C_REF,
+                "Cm_cg": None if k.get("Cm") is None else float(k.get("Cm")) * l_ref(design, sweep) / VM.C_REF,
                 "converged": k.get("converged"), "iterations": k.get("iterations"), "cells": k.get("mesh_cells"), "mesh_ok": k.get("mesh_ok")})
     return out
 

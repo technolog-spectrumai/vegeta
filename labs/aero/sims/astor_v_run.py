@@ -92,7 +92,8 @@ def phase_cfd(a) -> int:
         c["rows"].sort(key=lambda x: x["alpha_deg"])
         c["summary"] = cf.summary(c["rows"])
         ok += r["status"] == "solved"
-        msg = f"{NAMES[d]} sweep {s:.0f} alpha {al:+.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved" else f" {err[:80]}")
+        msg = f"{NAMES[d]} sweep {s:.0f} alpha {al:+.1f}: {r['status']}" + (f"  Cl {r['Cl']:+.3f} Cd {r['Cd']:.4f} Cm {r['Cm_cg']:+.3f}" if r["status"] == "solved"
+                                                                             else "  " + (err or "; ".join(r.get("messages", [])))[:160])
         if bar:
             bar.set_postfix_str(msg[:60]); bar.update(1)
         print("  " + msg)
