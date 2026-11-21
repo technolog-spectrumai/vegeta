@@ -151,7 +151,8 @@ class Renderer:
         self.body = {}
         for name in mesh.bodies():
             self.body[name] = model.body(name).id
-        root = model.body_rootid[model.body("pelvis").id]
+        # the robot drawn from its mesh: its own geoms are skipped (a rider without a mesh is drawn from its geoms)
+        root = model.body_rootid[model.body("pelvis").id] if "pelvis" in self.body else -1
         meshed = set(self.body.values())                                  # bodies drawn from their CAD (a vehicle under the robot): not their geoms
         self.props = []                                                   # (geom id, unit triangles, rgba): everything that is not the robot or the terrain
         for g in range(model.ngeom):
@@ -230,7 +231,9 @@ class Renderer:
         for k in order:
             draw.polygon([tuple(q) for q in xy[k]], fill=tuple(rgb[k]))
 
-    def render(self, data, cam: Camera, title: str | None = None, ground_extent=14.0):
+    def render(self, data, cam: Camera, title: str | None = None, ground_extent=14.0, lines=(), dots=(), hud=()):
+        """The frame. ``lines`` [(a, b, rgb)] and ``dots`` [(p, radius px, rgb)] in the world are drawn over the scene
+        (a lidar's beams and hits); ``hud`` [(text, rgb)] lines under the title."""
         img = Image.new("RGB", (self.w, self.h), tuple(int(c * 255) for c in self.sky))
         draw = ImageDraw.Draw(img)
         eye, B, F = self._basis(cam)
@@ -249,6 +252,17 @@ class Renderer:
         self._draw(draw, tiles, cols, eye, B, F)
         tris, cols = self.triangles(data)
         self._draw(draw, tris, cols, eye, B, F)
+        if lines or dots:
+            for a, b, rgb in lines:
+                (pa, pb), z = self._project(np.array([a, b], dtype=float), eye, B, F)
+                if z.min() > NEAR:
+                    draw.line([tuple(pa), tuple(pb)], fill=tuple(int(c * 255) for c in rgb), width=1)
+            for p, r, rgb in dots:
+                (pp,), z = self._project(np.array([p], dtype=float), eye, B, F)
+                if z[0] > NEAR:
+                    draw.ellipse([pp[0] - r, pp[1] - r, pp[0] + r, pp[1] + r], fill=tuple(int(c * 255) for c in rgb))
         if title:
             draw.text((12, 10), title, fill=(35, 35, 40), font=self.font)
+        for k, (text, rgb) in enumerate(hud):
+            draw.text((12, 36 + 24 * k), text, fill=tuple(int(c * 255) for c in rgb), font=self.font)
         return img

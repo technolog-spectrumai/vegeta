@@ -91,11 +91,13 @@ def _corner_xy(c):
     return (g["wheelbase"] / 2 if c[0] == "F" else -g["wheelbase"] / 2, g["track"] / 2 if c[1] == "L" else -g["track"] / 2)
 
 
-def sizing(rider_cg=(-0.05, 0.0, 0.99)) -> dict:
+def sizing(rider_cg=(-0.05, 0.0, 0.99), rider_mass=None) -> dict:
     """The numbers: masses and the centre of gravity, the axle loads, the stability factor, springs and dampers, the
-    motors and the battery. ``rider_cg``: Kerchak's centre of mass seated (``seated_pose``'s, in the vehicle frame)."""
+    motors and the battery. ``rider_cg``: the rider's centre of mass seated (Kerchak's from ``seated_pose``, in the
+    vehicle frame); ``rider_mass`` (default Kerchak's; 0 = nobody aboard): the corners' and the seat's air springs are
+    pressurised for it, so the ride frequency and the ride height stay the same whoever rides."""
     g = GEOM
-    m_r = RIDER["mass"]
+    m_r = RIDER["mass"] if rider_mass is None else float(rider_mass)
     m_s = sum(MASS.values()) + SEAT_MOVING_KG
     m_u = sum(UNSPRUNG.values())
     m_v = m_s + 4 * m_u
@@ -129,8 +131,9 @@ def sizing(rider_cg=(-0.05, 0.0, 0.99)) -> dict:
     P_top = CRR * m * G * V_MAX + 0.5 * 1.2 * CDA * V_MAX ** 3
     P_30 = (CRR * m * G * (30 / 3.6) + 0.5 * 1.2 * CDA * (30 / 3.6) ** 3) / 0.85 + 100.0
     ratio = 6.0
-    k_seat = m_r * (2 * math.pi * SEAT_HZ) ** 2
-    seat = {"k_N_m": round(k_seat), "c_Ns_m": round(2 * SEAT_ZETA * math.sqrt(k_seat * m_r)), "sag_m": round(m_r * G / k_seat, 3),
+    m_seat = max(m_r, 1.0)
+    k_seat = m_seat * (2 * math.pi * SEAT_HZ) ** 2
+    seat = {"k_N_m": round(k_seat), "c_Ns_m": round(2 * SEAT_ZETA * math.sqrt(k_seat * m_seat)), "sag_m": round(m_seat * G / k_seat, 3),
             "hz": SEAT_HZ, "zeta": SEAT_ZETA, "travel_m": SEAT_TRAVEL}
     battery_Wh = 7200.0
     return {
@@ -418,7 +421,7 @@ COLORS = {"frame": (0.93, 0.45, 0.10, 1.0), "seat": (0.12, 0.12, 0.13, 1.0), "ty
           "tools": (0.85, 0.15, 0.12, 1.0)}
 
 
-def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None) -> Prop:
+def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None, bar_offset=(0.0, 0.0), seat_free=True) -> Prop:
     """The quad as a free Chiron prop: the sprung body (``quad_chassis``), the handlebar on its raked column
     (``quad_bar``, hinge ``steer_column``), and per corner a body sliding along z on the spring and damper
     (``corner_XX``, slide ``susp_XX``; ``rigid`` removes the slides), the front ones carrying a steering knuckle
@@ -467,12 +470,12 @@ def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None) -> Prop:
     masses = [PointMass(f"motor_{c}", 12.0, (_corner_xy(c)[0], np.sign(_corner_xy(c)[1]) * (g["frame_y"] - 0.07), R)) for c in CORNERS]
     assert abs(sum(gm.mass for gm in chassis_geoms) + sum(pm.mass for pm in masses) - m_s + MASS["handlebar, column, steering rack"]) < 1e-6
     base = g["column_base"]
-    bar = Link("quad_bar", pos=tuple(base), joints=[Joint("steer_column", axis=tuple(_column_axis()), range=(-g["steer_max"], g["steer_max"]), damping=3.0)],
+    bar = Link("quad_bar", pos=(base[0] - bar_offset[0], base[1], base[2] - bar_offset[1]), joints=[Joint("steer_column", axis=tuple(_column_axis()), range=(-g["steer_max"], g["steer_max"]), damping=3.0)],
                geoms=[Geom("q_bar", "capsule", (0.02,), fromto=tuple((handlebar_grip("R") - base)) + tuple((handlebar_grip("L") - base)),
                            mass=MASS["handlebar, column, steering rack"], role="visual", rgba=COLORS["bar"])])
     st = s["seat"]
     seat = Link("quad_seat", pos=(g["pelvis"][0], 0.0, g["seat_top"] - 0.05),
-                joints=[] if rigid else [Joint("seat_slide", kind="slide", axis=(0, 0, 1), range=(-SEAT_TRAVEL, SEAT_TRAVEL), stiffness=st["k_N_m"],
+                joints=[] if rigid or not seat_free else [Joint("seat_slide", kind="slide", axis=(0, 0, 1), range=(-SEAT_TRAVEL, SEAT_TRAVEL), stiffness=st["k_N_m"],
                                                 damping=st["c_Ns_m"], springref=st["sag_m"])],    # preloaded upward: it carries the rider
                 geoms=[Geom("q_seat", "box", (0.28, 0.31, 0.05), mass=SEAT_MOVING_KG, role="visual", rgba=COLORS["seat"])])
     root = Link("quad_chassis", pos=(x0, y0, 0.0), geoms=chassis_geoms, masses=masses, children=[bar, seat, *corners])
