@@ -46,7 +46,26 @@ import yaml                                                          # noqa: E40
 
 import arigo1_resume as rs                                           # noqa: E402
 
-rs.GLOBS = ["arigo*.py", "astor*.py", "buteo*.py", "raptors*.py"]
+GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "buteo*.py", "raptors*.py"]
+rs.GLOBS = list(GLOBS_ACTIVE)
+
+
+# Other runners set ``rs.GLOBS`` when they are imported (raptors_explore and arigo_perf to "arigo*.py" alone): until
+# 2026-11-22 the stability and net-drop progress was therefore fingerprinted WITHOUT the astor files, and a changed
+# ASTOR design was answered with its old flights. Every load, save and fingerprint here sets the list first.
+def fingerprint() -> str:
+    rs.GLOBS = list(GLOBS_ACTIVE)
+    return rs.fingerprint()
+
+
+def _load(path, fresh):
+    rs.GLOBS = list(GLOBS_ACTIVE)
+    return rs.load(path, fresh)
+
+
+def _save(path, doc):
+    rs.GLOBS = list(GLOBS_ACTIVE)
+    rs.save(path, doc)
 OUT = HERE / "output"
 RUNS = HERE.parent / "_runs" / "astor_cfd"
 DATA = DESIGNS / "data" / "astor_cfd_screening.yaml"
@@ -112,7 +131,7 @@ def phase_cfd(a, cf=None, name="astor", data=None, meta=None) -> int:
     quality = "fine" if a.full_cfd else a.quality
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f"{name}_cfd{'_fine' if a.full_cfd else ''}.yaml"
-    doc = rs.load(path, a.fresh) or {"aircraft": name.upper(), "speed_m_s": cf.SPEED, "dash_speed_m_s": cf.DASH_SPEED, "quality": quality,
+    doc = _load(path, a.fresh) or {"aircraft": name.upper(), "speed_m_s": cf.SPEED, "dash_speed_m_s": cf.DASH_SPEED, "quality": quality,
                                      "rows": [], "dash_rows": []}
     ref = cf.reference()
     doc["reference"] = {**ref, "cg_mm": list(ref["cg_mm"])}
@@ -141,7 +160,7 @@ def phase_cfd(a, cf=None, name="astor", data=None, meta=None) -> int:
         if bar:
             bar.set_postfix_str(msg[:60]); bar.update(1)
         print("  " + msg)
-        rs.save(path, doc)
+        _save(path, doc)
     if bar:
         bar.close()
     solved = [r for r in doc["rows"] if r.get("status") == "solved"]
@@ -223,7 +242,7 @@ def _run_jobs(jobs, a, cache_name, desc, job_fn=None, note=None, unit="job"):
     import raptors_explore as RX
     OUT.mkdir(parents=True, exist_ok=True)
     cache_p = OUT / cache_name
-    cache = rs.load(cache_p, a.fresh) or {"what": desc, "jobs": {}}
+    cache = _load(cache_p, a.fresh) or {"what": desc, "jobs": {}}
     key = lambda j: "|".join(str(x) for x in j)
     todo = [j for j in jobs if key(j) not in cache["jobs"] or "error" in cache["jobs"][key(j)]]
     n_req = a.cpu
@@ -238,7 +257,7 @@ def _run_jobs(jobs, a, cache_name, desc, job_fn=None, note=None, unit="job"):
 
     def done(k, out):
         cache["jobs"][k] = _clean(out)
-        rs.save(cache_p, cache)
+        _save(cache_p, cache)
         n_done[0] += 1
         txt = (note(k, out) if note else k)[:50] + ("  ERROR" if "error" in out else "")
         if bar:

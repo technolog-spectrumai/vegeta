@@ -164,8 +164,10 @@ class Camera:
     velocity from two positions 0.1 s apart: with 0.3 m of noise that is +-4 m/s, a 5 deg error in a 50 m/s bandit's
     track and no direction at all for a 7 m/s one.)"""
 
-    def __init__(self, latency_s=0.10, noise_m=0.3, seed=0, window_s=0.5):
+    def __init__(self, latency_s=0.10, noise_m=0.3, seed=0, window_s=0.5, turning=False):
         self.tau, self.sig, self.rng, self.buf, self.win = latency_s, noise_m, np.random.default_rng(seed), [], window_s
+        self.turning = turning                                       # also fit the track's curvature (a steady turn)
+        self.acc = np.zeros(3)
 
     def see(self, t, pos, vel):
         self.buf.append((t, np.asarray(pos, float) + self.rng.normal(0.0, self.sig, 3)))
@@ -175,10 +177,18 @@ class Camera:
         if len(old) < 5:
             return np.asarray(pos, float), np.asarray(vel, float)
         ts = np.array([x[0] for x in old]) - old[-1][0]
+        tau = t - old[-1][0]                                        # the newest usable sample's age
         P = np.array([x[1] for x in old])
+        if self.turning and len(old) >= 20:
+            A = np.stack([np.ones_like(ts), ts, 0.5 * ts * ts], axis=1)
+            (p1, v, a), *_ = np.linalg.lstsq(A, P, rcond=None)      # position, velocity and acceleration at the newest sample
+            a[2] = 0.0
+            n = float(np.linalg.norm(a))
+            self.acc = a * min(1.0, 8.0 / max(n, 1e-9))              # no more than a 50 m/s bandit can turn
+            return p1 + v * tau + 0.5 * self.acc * tau ** 2, v + self.acc * tau
         A = np.stack([np.ones_like(ts), ts], axis=1)
         (p1, v), *_ = np.linalg.lstsq(A, P, rcond=None)             # the position at the newest sample, and the velocity
-        return p1 + v * self.tau, v                                 # brought forward by the latency
+        return p1 + v * tau, v                                 # brought forward by the latency
 
 
 def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=None, latency_s=0.10, noise_m=0.3,
@@ -198,7 +208,9 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
         sim.start(V0, h0, heading_deg=float(rng.uniform(-15, 15)))
     T = duration_s or (60.0 if fast else 90.0)
     ap = amj.Autopilot(sim)
-    cam = Camera(latency_s, noise_m, seed)
+    # the fast bandit's weave moves it 1.5 m sideways in the net's 0.75 s fall (run 2: the nets were at the right height
+    # and 1.6-2.1 m to the side): its track is fitted as a turn, over 1.5 s (the 0.75 s prediction then misses by 0.8 m in the median, 2.4 m without)
+    cam = Camera(latency_s, noise_m, seed, window_s=1.5 if fast else 0.5, turning=fast)
     net0 = Net((0, 0, 100), (0, 0, 0), radius=net_radius)
     # opening, then the sink at the terminal rate, plus what the net loses getting up to that rate from rest (ln 2 v/g)
     t_fall = lambda dz: net0.t_open + max(dz, 0.2) / net0.sink_rate() + 0.69 * net0.sink_rate() / am.G
@@ -212,7 +224,6 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
     while sim.d.time - t0 < T:
         t = sim.d.time - t0
         s = sim.state()
-        bandit.step(0.01, t, hunter=tuple(s["pos"]))
         if mid >= 0:
             sim.d.mocap_pos[mid] = bandit.p
         b, vb = cam.see(t, bandit.p, bandit.v)
@@ -224,10 +235,17 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
         uh = vh / max(float(np.linalg.norm(vh)), 1e-6)
         carry = uh * (max(float(np.linalg.norm(vh)) - EJECT_M_S, 0.0) * net0.t_open - 0.5)
         lead = sb * t_fall(over)                                         # the bandit's run while the net opens and sinks
-        aim = b + vbh * t_fall(over) - carry + np.array([0.0, 0.0, over])     # fly where a release puts the net in its path
+        ab = cam.acc
+        aim = b + vbh * t_fall(over) + 0.5 * ab * t_fall(over) ** 2 - carry + np.array([0.0, 0.0, over])     # fly where a release puts the net in its path
         r = aim - s["pos"]
         rng_h = math.hypot(r[0], r[1])
-        V_c = max(1.3 * Vs, sb + min(18.0, 6.0 + 0.25 * rng_h)) if not fast else min(72.0, sb + min(20.0, 6.0 + 0.1 * rng_h))
+        if fast:
+            # hold station on the release point (run 2 flew through it at +6 m/s and came back to it in 5 of 20 sorties):
+            # the speed follows the distance still to go along the bandit's track
+            go = float((aim - s["pos"])[:2] @ ub[:2])
+            V_c = min(72.0, max(0.8 * sb, sb + max(-8.0, min(20.0, 0.8 * go))))
+        else:
+            V_c = max(1.3 * Vs, sb + min(18.0, 6.0 + 0.25 * rng_h))
         if boost and "boost" in sim.C:
             sim.boost = 1.0 if (fast or rng_h > 60.0) else 0.0
         if phase == "attack":
@@ -242,7 +260,7 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
             # (run 1 released on "ahead by the lead for the nominal height": the net's carry had the wrong sign and
             # the real height above was 0.7-5 m, so the net was above or below the bandit when it passed)
             dz = float(rel[2]) - 0.5 * am.G * net0.t_open ** 2            # the net's height over the bandit when it opens
-            meet = np.asarray(b) + vbh * t_fall(dz)                      # where the bandit is when the net has sunk to it
+            meet = np.asarray(b) + vbh * t_fall(dz) + 0.5 * ab * t_fall(dz) ** 2      # where the bandit is when the net has sunk to it
             miss = (np.asarray(s["pos"]) + carry - meet)[:2]
             if sim.nets > 0 and float(np.linalg.norm(miss)) < 0.5 * net_radius and 0.4 < dz < over + 1.5:
                 sim.drop_net()
@@ -259,6 +277,9 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
             if phase == "home":
                 ap(phi_c=0.0, theta_c=math.radians(6.0), V_c=1.5 * Vs)
         sim.step(5)
+        # the bandit moves here, with ASTOR and the nets (until 2026-11-22 it moved before the camera looked: its
+        # position was stamped 0.01 s early, 0.5 m of a 50 m/s bandit's track)
+        bandit.step(0.01, t, hunter=tuple(s["pos"]))
         for nt in nets:
             for _ in range(5):
                 nt.step(amj.DT, wind)

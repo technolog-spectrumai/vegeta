@@ -45,7 +45,7 @@ sys.path.append(str(HERE))
 
 import astor_run as R                                                # noqa: E402  (the shared runner machinery)
 
-R.rs.GLOBS = ["arigo*.py", "astor*.py", "raptors*.py"]
+R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
 NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST"}
@@ -61,7 +61,7 @@ def _inputs() -> str:
 def _meta(phase, a):
     return {"aircraft": "ASTOR-V / ASTOR-BOOST", "phase": phase, "designs": a.designs, "started": time.strftime("%Y-%m-%d %H:%M:%S"),
             "host": os.uname().nodename, "commit": os.popen("git rev-parse --short HEAD 2>/dev/null").read().strip(), "cpu": a.cpu,
-            "cfd_installed": DATA.exists(), "cfd_data": _inputs(), "code": R.rs.fingerprint()}
+            "cfd_installed": DATA.exists(), "cfd_data": _inputs(), "code": R.fingerprint()}
 
 
 # ------------------------------------------------------------------------------------------------ 1. CFD
@@ -76,7 +76,7 @@ def phase_cfd(a) -> int:
         return 0
     R.OUT.mkdir(parents=True, exist_ok=True)
     path = R.OUT / f"astor_v_cfd{'_fine' if a.full_cfd else ''}.yaml"
-    doc = R.rs.load(path, a.fresh) or {"aircraft": "ASTOR-V / ASTOR-BOOST", "quality": quality, "configurations": {}}
+    doc = R._load(path, a.fresh) or {"aircraft": "ASTOR-V / ASTOR-BOOST", "quality": quality, "configurations": {}}
     for d in a.designs:
         for s in cf.CASES:
             c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(d, s), "rows": []})
@@ -105,7 +105,7 @@ def phase_cfd(a) -> int:
         if bar:
             bar.set_postfix_str(msg[:60]); bar.update(1)
         print("  " + msg)
-        R.rs.save(path, doc)
+        R._save(path, doc)
     if bar:
         bar.close()
     usable = [k for k, c in doc["configurations"].items() if sum(r.get("status") == "solved" for r in c["rows"]) >= 4]
