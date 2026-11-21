@@ -193,13 +193,19 @@ def phase_stability(a) -> int:
 
 # ------------------------------------------------------------------------------------------------ 3. net drop
 def phase_netdrop(a) -> int:
-    per = max(1, a.sorties // 4)
-    jobs = [("net", d, b, r, s0, per, a.latency, a.noise) for d in a.designs for b in ("armageddon", "fast") for r in (1.0, 1.5)
-            for s0 in range(0, per * 4, per)]
+    per = 1                                                          # one sortie per job: the progress bar counts sorties
+    jobs = [("net", d, b, r, seed, per, a.latency, a.noise) for d in a.designs for b in ("armageddon", "fast") for r in (1.0, 1.5)
+            for seed in range(a.sorties)]
     if a.dry_run:
-        print("\n".join(" ".join(str(x) for x in j) for j in jobs)); print(len(jobs), "jobs,", per, "sorties each")
+        print("\n".join(" ".join(str(x) for x in j) for j in jobs[:6])); print("...", len(jobs), "sorties in", len(jobs) // max(a.sorties, 1), "cases")
         return 0
-    res = R._run_jobs(jobs, a, "astor_v_netdrop_cache.yaml", "astor-v net drop", _job)
+    tally = {"n": 0, "caught": 0}
+
+    def note(key, out):                                              # shown on the bar: sorties flown and bandits caught so far
+        tally["n"] += 1
+        tally["caught"] += sum(1 for r in out.get("runs", []) if r.get("caught"))
+        return f"caught {tally['caught']}/{tally['n']}"
+    res = R._run_jobs(jobs, a, "astor_v_netdrop_cache.yaml", "astor-v net drop", _job, note=note, unit="sortie")
     table = {}
     for k, v in res.items():
         if "error" in v:
@@ -213,7 +219,7 @@ def phase_netdrop(a) -> int:
     for t in table.values():
         t["capture_rate_per_sortie"] = round(t["caught"] / max(t["sorties"], 1), 3)
         t["captures_per_net"] = round(t["caught"] / max(t["nets"], 1), 3)
-    run = R._write("netdrop", {"run": {**_meta("netdrop", a), "sorties_per_case": per * 4, "latency_s": a.latency, "noise_m": a.noise},
+    run = R._write("netdrop", {"run": {**_meta("netdrop", a), "sorties_per_case": a.sorties, "latency_s": a.latency, "noise_m": a.noise},
                                "summary": {k: {x: v[x] for x in v if x != "runs"} for k, v in table.items()},
                                "results": {"astor_v_netdrop": table}}, "astor_v")
     print(f"{'case':46s} {'sorties':>8s} {'caught':>7s} {'per sortie':>11s} {'per net':>8s} {'no drop':>8s} {'crashes':>8s}")

@@ -56,10 +56,10 @@ def _clean(x):
     return json.loads(json.dumps(x, default=float))
 
 
-def _bar(total, done, desc):
+def _bar(total, done, desc, unit="job"):
     try:
         from tqdm import tqdm
-        return tqdm(total=total, initial=done, desc=desc, unit="job")
+        return tqdm(total=total, initial=done, desc=desc, unit=unit, dynamic_ncols=True, smoothing=0.1)
     except ImportError:
         return None
 
@@ -194,7 +194,8 @@ def _job(job):
     return "|".join(str(x) for x in job), out
 
 
-def _run_jobs(jobs, a, cache_name, desc, job_fn=None):
+def _run_jobs(jobs, a, cache_name, desc, job_fn=None, note=None, unit="job"):
+    """Run the jobs (cached, in a pool) under one tqdm bar; ``note(key, result)`` gives the bar's postfix."""
     job_fn = job_fn or _job
     import raptors_explore as RX
     OUT.mkdir(parents=True, exist_ok=True)
@@ -207,15 +208,20 @@ def _run_jobs(jobs, a, cache_name, desc, job_fn=None):
     if cpu < n_req:
         print(f"-j {n_req} lowered to {cpu} ({why}; ~1 GB per worker). --force-cpu to insist.")
     print(f"{desc}: {len(jobs) - len(todo)} jobs cached, {len(todo)} to run on {cpu} process(es)")
-    bar = _bar(len(jobs), len(jobs) - len(todo), desc)
+    bar = _bar(len(jobs), len(jobs) - len(todo), desc, unit)
+    if bar is None:
+        print("(tqdm is not installed in this Python: plain progress lines; pip install tqdm for the bar)")
+    n_done = [len(jobs) - len(todo)]
 
     def done(k, out):
         cache["jobs"][k] = _clean(out)
         rs.save(cache_p, cache)
+        n_done[0] += 1
+        txt = (note(k, out) if note else k)[:50] + ("  ERROR" if "error" in out else "")
         if bar:
-            bar.set_postfix_str(k[:50]); bar.update(1)
+            bar.set_postfix_str(txt); bar.update(1)
         else:
-            print("  done", k)
+            print(f"  [{n_done[0]}/{len(jobs)}] {txt}")
     if cpu > 1 and len(todo) > 1:
         import multiprocessing as mp
         with mp.get_context("fork").Pool(cpu, initializer=RX._init_worker, maxtasksperchild=4) as pool:
