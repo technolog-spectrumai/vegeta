@@ -140,10 +140,12 @@ def _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u):
     q_before, err_before = q.copy(), _hard_error(kin, q, targets)
     for _ in range(SOLID_PASSES):
         pens = SOLID.penetrations(q, base, _pitch_of(R), u)
-        if not pens:
+        if not [p_ for p_ in pens if not _DIGIT.match(p_[0])]:
             break
         deepest = {}                                                       # one push per limb: its deepest point
         for b, l, g, d, _g in pens:
+            if _DIGIT.match(b):                                            # the digits are opened instead (_open_fingers): the arm is not moved for them
+                continue
             if b not in deepest or d > deepest[b][3]:
                 deepest[b] = (b, l, g, d)
         push = [(kin.body(b), l, R.T @ (g - base)) for b, l, g, _d in deepest.values()]

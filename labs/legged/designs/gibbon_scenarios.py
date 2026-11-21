@@ -686,7 +686,7 @@ def _trunk_hold(p, level, side="L", ang=math.radians(40.0)):
     sy = 1.0 if side == "L" else -1.0
     n = np.array([-math.cos(ang), sy * math.sin(ang), 0.0])
     z = _branch_z(p, level, 0.0) + 0.05
-    return gs.bar(np.array([p["x"], 0.0, z]) + (p["trunk_radius"] + gs.BAR_R) * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)   # the palm on the bark, not in it
+    return gs.bar(np.array([p["x"], 0.0, z]) + (p["trunk_radius"] + 2 * gs.BAR_R + 0.01) * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)   # the palm on the bark, not in it
 
 
 def scenario_heist(kin, q_stand, p):
