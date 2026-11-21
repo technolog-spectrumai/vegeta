@@ -2,8 +2,7 @@
 (RAPTORS product line; the direction agreed 2026-11-20 after the bird study and ``astor_hawk``'s experiments).
 
 **How it hunts.** Launched from a rail (or thrown from a perch: spread, it stalls near 12.5 m/s), it tucks its wings
-and dashes; it overtakes the bandit, flies 20-40 m ahead of it and 2-3 m above its track, cuts the motor for half a
-second so the propeller's blades fold, and drops a net from its belly. The net stops in the air and sinks; the bandit
+and dashes; it overtakes the bandit, flies 20-40 m ahead of it and 2-3 m above its track, and pushes a net out of its tail. The net stops in the air and sinks; the bandit
 flies into it at its own speed. ASTOR-V never touches the bandit, carries two nets, and comes home.
 
 **The layout, and why.**
@@ -17,10 +16,14 @@ flies into it at its own speed. ASTOR-V never touches the bandit, carries two ne
 - **A fanning tail**: two panels on pivots at the tail's root. Folded (85 deg) they are a narrow dart's tail;
   spread (35 deg) a broad delta that gives pitch authority at low speed and, raised, a brake (``astor_hawk``:
   65 -> 20 m/s in ~120 m instead of ~780 m). A low fixed fin under the tail keeps the nose straight (above, the tucked panels cross).
-- **A belly net bay**: two net cartridges in tandem in a fairing under the fuselage, pushed out downward. With the
-  motor cut and the blades folded, a cartridge passes under the tail clear of the propeller.
-- The body, the camera, the 1.4 kW pusher on a folding 9 x 11 propeller, the 6S pack, the parachute hatch and the
-  rail shoes are ASTOR's (``astor``).
+- **A tractor propeller and a tail net tube**: the 1.4 kW motor and its folding 9 x 11 propeller are on the nose, so
+  nothing turns behind the tail; two net cartridges lie in tandem in a tube in the tail cone and are pushed straight
+  aft, at full power. (The first ASTOR-V was a pusher with a belly bay: the motor had to be cut and the blades
+  folded for each drop.)
+- **Two cameras**: the chase camera low in the nose looks through the propeller disc (ARIGO-0's arrangement: ~9 % of
+  a frame blocked, ~2 % after two frames); the drop camera under the belly looks down and back, where the bandit is
+  when the net leaves.
+- The body, the 6S pack and the parachute hatch are ASTOR's (``astor``); rail lugs on the fuselage's sides.
 
 **What is and is not designed here.** This file is the geometry (CAD), the mass budget and the geometric checks
 (spans, the stowed envelope, the net's path past the propeller). The flight model for a wing that changes sweep
@@ -41,7 +44,11 @@ from vegeta.dedalus import Parameter
 
 SPREAD_DEG, DASH_DEG, STOWED_DEG = 12.0, 60.0, 98.0
 
-_OVERRIDE = {**A._OVERRIDE, "fuselage_length": 790.0, "fin_height": 85.0, "fin_root_chord": 170.0, "fin_taper": 0.45, "fin_sweep_deg": 45.0}
+_OVERRIDE = {**A._OVERRIDE, "propulsion": "tractor_lowcam",        # the motor and the folding propeller on the nose
+             "fuselage_length": 790.0, "tail_cone": 300.0, "tail_end_diameter": 58.0,   # the tail ends in the net tube's mouth
+             "lowcam_drop": 50.0, "camera_diameter": 32.0,
+             # a bigger fin than the pusher's: a propeller ahead of the CG pulls the nose off line
+             "fin_height": 115.0, "fin_root_chord": 195.0, "fin_taper": 0.45, "fin_sweep_deg": 45.0}
 _NEW = list(A._NEW) + [
     Parameter("wing_sweep_deg", SPREAD_DEG, "deg", min=5.0, max=105.0, description="the wing panels' leading-edge sweep: 12 spread, 60 dash, 98 stowed (along the body)"),
     Parameter("wing_sweep_left_deg", -1.0, "deg", min=-1.0, max=105.0, description="the left panel's sweep if different (roll control); -1: as the right"),
@@ -56,10 +63,11 @@ _NEW = list(A._NEW) + [
     Parameter("panel_stack", 9.0, "mm", min=4.0, description="the right panel above, the left below the wing plane (they cross)"),
     Parameter("wing_plane_z", 44.0, "mm", description="the wing plane above the fuselage axis (on the shoulder block)"),
     Parameter("tail_fan", 1.0, "", min=0.0, max=1.0, description="the tail: 0 folded (85 deg), 1 spread (35 deg)"),
-    Parameter("tail_panel_span", 200.0, "mm", min=80.0), Parameter("tail_panel_root", 190.0, "mm", min=60.0),
+    Parameter("tail_panel_span", 200.0, "mm", min=80.0), Parameter("tail_panel_root", 180.0, "mm", min=60.0),
     Parameter("tail_panel_tip", 60.0, "mm", min=20.0),
-    Parameter("tail_pivot_x", 585.0, "mm", min=300.0), Parameter("tail_pivot_y", 14.0, "mm", min=5.0),
-    Parameter("net_count", 2, "", min=0, max=3, description="net cartridges in the belly bay, in tandem"),
+    Parameter("tail_pivot_x", 655.0, "mm", min=300.0), Parameter("tail_pivot_y", 14.0, "mm", min=5.0),
+    Parameter("net_count", 2, "", min=0, max=2, description="net cartridges in the tail tube, in tandem"),
+    Parameter("belly_camera_x", 520.0, "mm", min=200.0, description="the drop camera (looks down and back) under the belly"),
     Parameter("net_diameter", 44.0, "mm", min=25.0), Parameter("net_length", 150.0, "mm", min=60.0),
     Parameter("net_bay_x", 300.0, "mm", min=150.0, description="the belly bay's front from the nose tip"),
 ]
@@ -69,7 +77,9 @@ EXTRA_ITEMS = [
     ("2 wing pivots (bearings, pins) on a sliding carriage, its rail and lead screw", 130.0, "HAND (+-40)"),
     ("wing sweep actuators (2 servos + linkages: asymmetric sweep)", 60.0, "HAND (+-20)"),
     ("tail fan pivots and actuator", 40.0, "HAND (+-15)"),
-    ("net bay fairing, 2 ejector springs and latches", 45.0, "HAND (+-15)"),
+    ("net tube in the tail cone, ejector spring and latches", 40.0, "HAND (+-15)"),
+    ("belly drop camera", 20.0, "HAND (+-8)"),
+    ("nose camera blister", 15.0, "HAND (+-5)"),
 ]
 NET_G = 110.0                      # HAND: one net cartridge: a 2 m mesh, corner weights, its sleeve (+-30)
 
@@ -77,7 +87,7 @@ NET_G = 110.0                      # HAND: one net cartridge: a 2 m mesh, corner
 # The pivots ride on a carriage that slides forward as the wing sweeps (the Bell X-5's answer): with fixed pivots the
 # neutral point runs 116 mm aft between 12 and 60 deg (astor_v_model: the tail would carry a download equal to the
 # weight at the dash); with this travel the static margin stays 8-16 % MAC. (sweep deg, carriage travel forward mm)
-SLIDE = ((12.0, 0.0), (35.0, 64.0), (60.0, 116.0), (98.0, 116.0))
+SLIDE = ((12.0, 0.0), (35.0, 61.0), (60.0, 117.0), (98.0, 117.0))
 
 
 def pivot_x(p, sweep=None) -> float:
@@ -151,29 +161,29 @@ class AstorV(a1.Arigo1):
 
     # ------------------------------------------------------------------------------------------------ nets
     def _net_bay(self, p):
-        R = p["fuselage_diameter"] / 2
-        n = int(p["net_count"])
-        if n <= 0:
-            return None
-        L = n * (p["net_length"] + 12.0) + 30.0
-        w, h = p["net_diameter"] + 10.0, p["net_diameter"] * 0.75
-        return (cq.Workplane("XY").box(L, w, h).edges("|Y").fillet(h * 0.42)
-                .translate((p["net_bay_x"] + L / 2 - 15.0, 0, -R - h / 2 + 8.0)))
+        """The net tube's mouth: a ring at the fuselage's end (the tube itself runs inside the tail cone)."""
+        r = p["net_diameter"] / 2
+        return (cq.Workplane("YZ").circle(r + 5.0).circle(r + 0.5).extrude(14.0).translate((p["fuselage_length"] - 4.0, 0, 0)))
 
     def _nets(self, p):
-        R = p["fuselage_diameter"] / 2
+        """The cartridges in tandem in the tail tube; the last one's end shows at the mouth."""
         out = None
         for k in range(int(p["net_count"])):
-            c = (cq.Workplane("YZ").circle(p["net_diameter"] / 2).extrude(p["net_length"])
-                 .translate((p["net_bay_x"] + k * (p["net_length"] + 12.0), 0, -R - p["net_diameter"] * 0.30)))
+            x1 = p["fuselage_length"] + 6.0 - k * (p["net_length"] + 8.0)
+            c = cq.Workplane("YZ").circle(p["net_diameter"] / 2).extrude(p["net_length"]).translate((x1 - p["net_length"], 0, 0))
             out = c if out is None else out.union(c)
         return out
+
+    def _belly_camera(self, p):
+        R = p["fuselage_diameter"] / 2
+        return (cq.Workplane("XY").sphere(13.0).translate((p["belly_camera_x"], 0, -R - 3.0))
+                .union(cq.Workplane("XY").box(34.0, 22.0, 8.0).translate((p["belly_camera_x"], 0, -R + 2.0))))
 
     def _rail(self, p):
         """Rail lugs on the fuselage's sides (the belly is the net bay's, the tail's underside the fin's)."""
         R = p["fuselage_diameter"] / 2
         out = None
-        for x in (p["net_bay_x"] - 50.0, p["net_bay_x"] + 250.0):
+        for x in (230.0, 500.0):
             for s in (1, -1):
                 lug = cq.Workplane("XZ").circle(5.0).extrude(12.0).translate((x, s * R + (12.0 if s > 0 else 0.0), -8.0))
                 out = lug if out is None else out.union(lug)
@@ -188,6 +198,7 @@ class AstorV(a1.Arigo1):
         out = {"fuselage": self._fuselage(p), "wing": self._wing(p), "shoulder": self._shoulder(p), "tail": self._tail(p),
                "camera": self._camera(p), "motors": self._motors(p), "props": self._props(p), "parachute": self._parachute(p),
                "rail": self._rail(p)}
+        out["belly_camera"] = self._belly_camera(p)
         if int(p["net_count"]) > 0:
             out["net_bay"] = self._net_bay(p)
             out["nets"] = self._nets(p)
@@ -268,13 +279,50 @@ def checks() -> dict:
     bb = (sh.val() if hasattr(sh, "val") else sh).BoundingBox()
     out["stowed_envelope_mm"] = {"length": round(bb.xlen), "width": round(bb.ylen), "height": round(bb.zlen),
                                  "tube_diameter": round(math.hypot(bb.ylen, bb.zlen) * 0.87)}
-    R = p["fuselage_diameter"] / 2
-    x_net = p["net_bay_x"] + p["net_length"] / 2
-    dt = (p["fuselage_length"] + 18.0 - x_net) / 1000.0 / 60.0                    # s to reach the propeller's plane at 60 m/s
-    drop = 5.0 * dt * 1000.0 + R + p["net_diameter"] * 0.3                         # mm below the axis: 5 m/s ejection (HAND)
-    out["net_past_propeller"] = {"time_to_prop_plane_ms": round(dt * 1000, 1), "cartridge_below_axis_mm": round(drop),
-                                 "folded_blades_radius_mm": 38.0, "clear_with_blades_folded": bool(drop - p["net_diameter"] / 2 > 38.0),
-                                 "clear_with_prop_turning": bool(drop - p["net_diameter"] / 2 > p["prop_diameter"] / 2),
-                                 "note": "ejection speed 5 m/s and the folded blades' radius are HAND"}
+    out["net_release"] = {"from": "a tube in the tail, straight aft", "propeller_behind_the_nets": False,
+                          "motor_cut_needed": False, "note": "the propeller is on the nose: nothing turns behind the tube's mouth"}
+    out["balance_by_mass"] = balance(p)
     out["mass"] = {k: v for k, v in budget(p).items() if k in ("total_g", "without_nets_g", "empty_g")}
     return out
+
+
+# stations [mm from the nose tip] of what the budget weighs (HAND: a first layout; the pack's is solved for)
+STATIONS = {"motor": 35.0, "ESC": 110.0, "propeller": -15.0, "camera": 70.0, "blister": 70.0, "flight controller": 170.0,
+            "vision computer": 200.0, "radio": 250.0, "wiring": 330.0, "servos": 520.0, "parachute": 480.0, "rail": 365.0,
+            "fuselage": 395.0, "tail fan": 720.0, "pivots": 330.0, "sweep actuators": 330.0, "net tube": 700.0, "belly drop camera": 520.0}
+
+
+def balance(p=None, x_cg_target=None) -> dict:
+    """Where the pack must sit for the CG wanted (spread, nets aboard), and how far the CG moves when the nets go."""
+    p = p or resolve()
+    mb = budget(p)
+    if x_cg_target is None:
+        x_cg_target = CG_MM
+    mom, m = 0.0, 0.0
+    nets_g = NET_G * int(p["net_count"])
+    x_nets = p["fuselage_length"] - (p["net_length"] + 4.0) * int(p["net_count"]) / 2
+    for it in mb["items"]:
+        n, g = it["item"], it["g"]
+        if "net cartridges" in n:
+            x = x_nets
+        elif "wing panels" in n:
+            x = p["pivot_x"] + 60.0
+        elif "growth margin" in n:
+            continue
+        else:
+            x = next((v for k, v in STATIONS.items() if k in n), 395.0)
+        mom += g * x
+        m += g
+    margin = next(it["g"] for it in mb["items"] if "growth margin" in it["item"])
+    mom += margin * (mom / m)
+    m += margin
+    pk = mb["pack"]["g"]
+    x_pack = (x_cg_target * (m + pk) - mom) / pk
+    m_all = m + pk
+    cg_no_nets = (x_cg_target * m_all - nets_g * x_nets) / (m_all - nets_g)
+    return {"cg_target_mm": x_cg_target, "pack_station_mm": round(x_pack, 0), "pack_fits": bool(110.0 <= x_pack <= 430.0),
+            "cg_after_both_nets_mm": round(cg_no_nets, 0), "cg_shift_mm": round(cg_no_nets - x_cg_target, 0),
+            "note": "stations are a first layout (HAND); the carriage re-trims the shift when the nets have gone"}
+
+
+CG_MM = 365.0                      # set from the lattice (astor_v_model): 8 % MAC ahead of the spread neutral point (381 mm)
