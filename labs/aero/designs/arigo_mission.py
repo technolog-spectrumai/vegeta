@@ -380,6 +380,12 @@ def setup_of(name):
     if name.startswith("BUTEO"):
         import buteo
         return buteo.Buteo, buteo.variant(), "pusher"
+    if name.startswith("ASTOR-BOOST"):
+        import astor_boost
+        return astor_boost.AstorBoost, astor_boost.variant(), "tractor_lowcam"
+    if name.startswith("ASTOR-V"):
+        import astor_v
+        return astor_v.AstorV, astor_v.variant(), "tractor_lowcam"
     if name.startswith("ASTOR"):
         import astor
         return astor.Astor, astor.variant(), "pusher"
