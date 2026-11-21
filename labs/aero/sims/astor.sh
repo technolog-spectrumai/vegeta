@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# ASTOR (the propeller dart), phase: missions. Run  labs/aero/sims/astor_missions.sh --help  for how.
+# ASTOR-V / ASTOR-BOOST: every simulation (CFD, stability, net drop) under one progress bar.
+#   labs/aero/sims/astor.sh -j 12            # everything
+#   labs/aero/sims/astor.sh -j 12 --cfd-only | --stability-only | --netdrop-only | --skip-cfd
+#   labs/aero/sims/astor.sh --help           # all options;  --dry-run  lists what it would do
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
@@ -9,4 +12,4 @@ if [ -z "$PY" ]; then
 fi
 # one maths thread per process (numpy BLAS would start one per core in every worker)
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}" OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}" MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
-exec nice -n 5 "$PY" "$HERE/astor_run.py" missions "$@"
+exec nice -n 5 "$PY" "$HERE/astor_v_run.py" "$@"

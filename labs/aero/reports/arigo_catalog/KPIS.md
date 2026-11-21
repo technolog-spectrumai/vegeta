@@ -273,9 +273,9 @@ not your run.
 - **Dynamic pressure** at top speed is 3.1 kPa. A structural check of the wing is still open.
 
 **To run** (each phase writes one timestamped YAML to paste back):
-1. `labs/aero/sims/astor_cfd.sh -j 12`: the polar at 30 m/s and the drag at 65 m/s. It installs the result for phases 2 and 3.
-2. `labs/aero/sims/astor_stability.sh -j 12`
-3. `labs/aero/sims/astor_missions.sh -j 12`: every pack option, the chases, launch success, the KPIs.
+The fixed dart's launchers were removed when ASTOR became the variable-sweep design (ASTOR-V / ASTOR-BOOST, run with
+`labs/aero/sims/astor.sh`). The dart's phases still run directly:
+`python labs/aero/sims/astor_run.py cfd|stability|missions -j 12`.
 
 ---
 

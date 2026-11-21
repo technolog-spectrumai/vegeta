@@ -56,7 +56,30 @@ def _clean(x):
     return json.loads(json.dumps(x, default=float))
 
 
+GLOBAL_BAR = None                  # one bar over several phases (sims/astor.sh): the phases then report to it
+
+
+class _SubBar:
+    """A phase's share of the global bar: updates go to it, the phase's name leads the postfix, close does nothing."""
+
+    def __init__(self, g, label, done):
+        self.g, self.label = g, label
+        if done:
+            g.update(done)
+
+    def set_postfix_str(self, s):
+        self.g.set_postfix_str(f"{self.label}: {s}"[:70])
+
+    def update(self, n=1):
+        self.g.update(n)
+
+    def close(self):
+        pass
+
+
 def _bar(total, done, desc, unit="job"):
+    if GLOBAL_BAR is not None:
+        return _SubBar(GLOBAL_BAR, desc, done)
     try:
         from tqdm import tqdm
         return tqdm(total=total, initial=done, desc=desc, unit=unit, dynamic_ncols=True, smoothing=0.1)

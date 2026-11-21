@@ -1,28 +1,29 @@
-"""ASTOR-V and ASTOR-BOOST (the variable-sweep, net-dropping ASTOR): the simulation phases. Each is restartable and
-writes ONE timestamped file ``output/runs/astor_v_<phase>_<time>_<host>.yaml`` (paste it back).
+"""ASTOR-V and ASTOR-BOOST (the variable-sweep, net-dropping ASTOR): every simulation from one script, under one
+progress bar.
 
-    labs/aero/sims/astor_cfd.sh -j 12         # 1. CFD: both designs at 12, 35 and 60 deg of sweep (40 cases)
-    labs/aero/sims/astor_stability.sh -j 12   # 2. stability and performance per sweep; the important properties
-    labs/aero/sims/astor_netdrop.sh -j 12     # 3. the net drop on Armageddon's bandit and on a 50 m/s fixed wing
+    labs/aero/sims/astor.sh -j 12                     # everything: CFD, then stability, then the net drop
+    labs/aero/sims/astor.sh -j 12 --cfd-only          # one phase: --cfd-only | --stability-only | --netdrop-only
+    labs/aero/sims/astor.sh -j 12 --skip-cfd          # stability and the net drop (on the lattice model, or the CFD already installed)
+    labs/aero/sims/astor.sh -j 12 --design boost      # one design: v (ASTOR-V) or boost (ASTOR-BOOST); default both
+    labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
-    --design v | boost | dart   (default: v and boost; "dart" runs the first, fixed-wing ASTOR's scripts)
-    --dry-run                   list what would run, and stop
+``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
+the stability and net-drop phases, lowered if the machine cannot carry them (cores - 2; ~1 GB of free RAM each;
+``--force-cpu`` insists). One bar counts every CFD case, stability job and net-drop sortie together, with the time
+left; finished work is kept, so a restart continues (``--fresh`` starts over). Each phase writes ONE timestamped
+file ``output/runs/astor_v_<phase>_<time>_<host>.yaml`` (paste them back). A phase that fails does not stop the next.
 
-1. **cfd** — per design and sweep an angle-of-attack sweep (``designs/astor_v_cfd.CASES``). Answers: does the
-   sliding carriage hold the static margin with the body in the flow; the drag per sweep and the pod's cost; the
-   maximum lift spread. Installed as ``designs/data/astor_v_cfd_screening.yaml`` (``--no-install`` not to): phases 2
-   and 3 then use its corrections. ``-j`` is OpenFOAM's MPI processes.
+1. **cfd** — per design, at 12, 35 and 60 deg of sweep, an angle-of-attack sweep (``designs/astor_v_cfd.CASES``; 40
+   cases). Answers: does the sliding carriage hold the static margin with the body in the flow; the drag per sweep
+   and the pod's cost; the maximum lift spread. Installed as ``designs/data/astor_v_cfd_screening.yaml``
+   (``--no-install`` not to): the later phases then use its corrections.
 2. **stability** — per design, at 12 deg / 25 m/s, 35 deg / 40 m/s and 60 deg / 60 m/s: trim, the linear modes,
-   doublets, the roll on the tailerons, a gust, the stall and its recovery (the model's post-stall moment and a weak
-   one); the speeds per sweep (stall, top speed); and one performance card per design with the wing sweeping by
-   airspeed (launch, climb, turns, the chases). The properties to read: Dutch-roll damping and directional
-   stability (the fin is small and under the tail), the roll rate on tailerons, the stall spread, the top speed
-   tucked.
+   doublets, the roll on the tailerons, a gust, the stall and its recovery; the stall and top speed per sweep; one
+   performance card per design with the wing sweeping by airspeed. To read: Dutch-roll damping and directional
+   stability (the fin is small and under the tail), the roll rate on tailerons, the stall spread, the top speed tucked.
 3. **netdrop** — sorties against Armageddon's bandit quadcopter (it wanders at 6 m/s, runs and jinks at 7 m/s when
    it hears ASTOR) and against a 50 m/s fixed-wing drone: the capture rate per sortie and per net, for net radii of
    1.0 and 1.5 m; ASTOR-BOOST with its fan. ``--sorties N`` (default 20 per case), ``--latency``, ``--noise``.
-
-Phases 2 and 3 cap ``-j`` to the machine (cores - 2, free RAM); ``--force-cpu`` insists.
 """
 from __future__ import annotations
 
@@ -229,32 +230,81 @@ def phase_netdrop(a) -> int:
     return 0
 
 
+def counts(a) -> dict:
+    """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
+    import astor_v_cfd as cf
+    return {"cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
+            "netdrop": len(a.designs) * 4 * a.sorties}
+
+
 def main(argv=None) -> int:
     import argparse
-    ap = argparse.ArgumentParser(prog="astor_<phase>.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
-    ap.add_argument("phase", choices=("cfd", "stability", "netdrop"))
-    ap.add_argument("--design", choices=("v", "boost", "dart"), action="append", help="default: v and boost")
-    ap.add_argument("-j", "--cpu", type=int, default=4,
-                    help="CPU cores to use (default 4). cfd: OpenFOAM's MPI processes, used as given. stability and netdrop: "
-                         "worker processes, lowered if the machine cannot carry them (cores - 2; ~1 GB of free RAM each)")
+    ap = argparse.ArgumentParser(prog="astor.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
+    ap.add_argument("-j", "--cpu", type=int, default=4, help="CPU cores for every phase (default 4); see above")
     ap.add_argument("--force-cpu", action="store_true", help="stability and netdrop: use -j exactly as given, without the cap")
-    ap.add_argument("--fresh", action="store_true", help="forget the phase's saved progress")
-    ap.add_argument("--dry-run", action="store_true", help="list the cases or jobs and stop")
-    ap.add_argument("--quality", default="screening")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--cfd-only", action="store_true", help="only the CFD")
+    g.add_argument("--stability-only", action="store_true", help="only stability and performance")
+    g.add_argument("--netdrop-only", action="store_true", help="only the net drop")
+    g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
+    ap.add_argument("--design", choices=("v", "boost"), action="append", help="v (ASTOR-V) or boost (ASTOR-BOOST); default: both")
+    ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
+    ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
+    ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
     ap.add_argument("--full-cfd", action="store_true", help="cfd: the fine mesh; kept apart, not installed")
-    ap.add_argument("--no-install", action="store_true")
-    ap.add_argument("--timeout", type=float, default=3 * 3600.0)
-    ap.add_argument("--workdir", type=Path, default=HERE.parent / "_runs" / "astor_v_cfd")
-    ap.add_argument("--sorties", type=int, default=20, help="netdrop: sorties per case")
+    ap.add_argument("--no-install", action="store_true", help="cfd: do not install the result for the later phases")
+    ap.add_argument("--timeout", type=float, default=3 * 3600.0, help="cfd: seconds per case")
+    ap.add_argument("--workdir", type=Path, default=HERE.parent / "_runs" / "astor_v_cfd", help="cfd: the cases' folder")
+    ap.add_argument("--sorties", type=int, default=20, help="netdrop: sorties per case (default 20)")
     ap.add_argument("--latency", type=float, default=0.10, help="netdrop: the camera's latency [s]")
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
-    a, rest = ap.parse_known_args(argv)
-    if a.design and "dart" in a.design:                              # the first, fixed-wing ASTOR: its own runner
-        if a.phase == "netdrop":
-            ap.error("the dart carries no nets")
-        return R.main([a.phase, "-j", str(a.cpu), *rest])
+    a = ap.parse_args(argv)
     a.designs = a.design or ["v", "boost"]
-    return {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop}[a.phase](a)
+    phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only
+              else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
+    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop}
+    n = counts(a)
+    if a.dry_run:
+        for ph in phases:
+            print(f"---- {ph}: {n[ph]} units")
+            fns[ph](a)
+        print("total:", sum(n[ph] for ph in phases), "units in", len(phases), "phase(s)")
+        return 0
+    total = sum(n[ph] for ph in phases)
+    try:
+        from tqdm import tqdm
+        import builtins
+        bar = tqdm(total=total, desc="astor", unit="unit", dynamic_ncols=True, smoothing=0.05)
+        R.GLOBAL_BAR = bar
+        plain = builtins.print
+        builtins.print = lambda *x, **k: tqdm.write(" ".join(str(v) for v in x))       # lines above the bar, not through it
+    except ImportError:
+        bar, plain = None, None
+        print("(tqdm is not installed in this Python: plain progress lines; pip install tqdm for the bar)")
+    t0, ended = time.time(), []
+    try:
+        for i, ph in enumerate(phases, 1):
+            print(f"================ ASTOR {i}/{len(phases)}: {ph}  (-j {a.cpu}) ================")
+            t = time.time()
+            before = bar.n if bar is not None else 0
+            try:
+                rc = fns[ph](a)
+            except Exception as exc:                                  # noqa: BLE001  a phase that fails does not stop the next
+                rc = f"{type(exc).__name__}: {exc}"[:200]
+            if bar is not None and bar.n < before + n[ph]:
+                bar.update(before + n[ph] - bar.n)                    # what the phase could not do still leaves the bar true to the rest
+            ended.append((ph, rc, time.time() - t))
+    finally:
+        if bar is not None:
+            import builtins
+            bar.close()
+            builtins.print = plain
+            R.GLOBAL_BAR = None
+    print(f"================ ASTOR: done in {(time.time() - t0) / 60:.0f} min ================")
+    for ph, rc, dt_ in ended:
+        print(f"  {ph:10s} {'ok' if rc == 0 else 'ended with ' + str(rc)}  ({dt_ / 60:.0f} min)")
+    print(f"  results: {R.OUT / 'runs'}/astor_v_*.yaml  (paste the newest of each phase back)")
+    return 0 if all(rc == 0 for _, rc, _ in ended) else 1
 
 
 if __name__ == "__main__":
