@@ -159,3 +159,14 @@ def test_tarantula_jaws_cad_clear():
         assert jl.intersect(jr).Volume() < 0.5                                   # the jaws pass (bypass)
         assert jl.intersect(ch["housing"][0].val()).Volume() < 0.5
         assert jl.intersect(ch["pins"][0].val()).Volume() < 0.5                  # clear of the other jaw's pin
+
+
+def test_tarantula_attachment_verdict():
+    import tarantula_attachment as ta
+    st_ = ta.study("wave", "crouched")
+    assert st_["glass"]["best"] == "pad" and st_["glass"]["pad"] >= 90
+    assert st_["brick"]["spine"] >= 90 and st_["brick"]["pad"] is None                # no adhesive contact on brick
+    assert st_["bare steel"]["magnet"] == 180 and st_["painted wall"]["hybrid"] < 45
+    assert 14 <= st_["glass"]["friction"] <= 20                                        # tan β ≤ μ/2
+    assert ta.monte_carlo("brick", "spine")["p5"] >= 2.0
+    assert ta.max_inclination("brick", "spine", "wave", "standing") < 90               # it must crouch

@@ -15,7 +15,10 @@ Simulations:
   runtime per gait × surface × payload (``arachne_gaits``);
 * ``spider-actuation``  — electric vs fluid-pressure joints over robot mass 0.1–3 kg (``spider_actuation``);
 * ``salty-jump``        — SALTY's hydraulic catapult: charge pressure × bore × lever × line × gas volume
-  (``salty_jump``).
+  (``salty_jump``);
+* ``tarantula-attach``  — does TARANTULA need adhesives: surface × foot (friction, pad, spines, magnet, hybrid) ×
+  gait × posture × payload — the steepest slope at margin ≥ 2 and a Monte Carlo of the vertical margin
+  (``tarantula_attachment``).
 """
 from __future__ import annotations
 
@@ -297,6 +300,40 @@ def _salty_summary(results):
     return out
 
 
+def _attach_cases(quick):
+    import tarantula_attachment as ta
+    if quick:
+        grid = itertools.product(("glass", "brick", "bark", "painted wall", "bare steel"), ("pad", "spine", "magnet"),
+                                 ("wave",), ("crouched",), (1.5,))
+    else:
+        grid = itertools.product(tuple(ta.SURFACES), tuple(ta.MODULES), tuple(ta.GAITS), tuple(ta.POSTURES), (1.2, 1.5))
+    return [{"surface": s, "foot": m, "gait": g, "posture": p, "mass_kg": k} for s, m, g, p, k in grid]
+
+
+def _attach_run(case):
+    import tarantula_attachment as ta
+    s, m, g, p, k = case["surface"], case["foot"], case["gait"], case["posture"], case["mass_kg"]
+    mc = ta.monte_carlo(s, m, g, p, 90.0, n=200, mass_kg=k)
+    nominal = ta.margin(s, m, g, p, 90.0, mass_kg=k)
+    return dict(case, max_inclination_deg=ta.max_inclination(s, m, g, p, mass_kg=k),
+                vertical_margin=round(nominal, 3) if math.isfinite(nominal) else None,
+                vertical_margin_p5=round(mc["p5"], 3) if mc["p5"] < 1e8 else None,
+                vertical_ok_fraction=round(mc["frac_ok"], 3), feet_g=ta.modules_mass_g(m))
+
+
+def _attach_summary(results):
+    out = {}
+    for r in results:
+        if r.get("error") or r["gait"] != "wave" or r["posture"] != "crouched" or r["mass_kg"] != 1.5:
+            continue
+        row = out.setdefault(r["surface"], {})
+        row[r["foot"]] = {"max_inclination_deg": r["max_inclination_deg"], "vertical_p5": r["vertical_margin_p5"]}
+    for row in out.values():
+        ok = [m for m, v in row.items() if (v["vertical_p5"] or 0) >= 2.0]
+        row["climbs_vertical_with"] = ok or None
+    return out
+
+
 SIMS = {
     "arachne-climb": (_climb_cases, _climb_run, _climb_summary, "MuJoCo dynamics of ARACHNE climbing a wall"),
     "arachne-statics": (_statics_cases, _statics_run, _statics_summary, "load sharing and attachment margins, "
@@ -305,6 +342,8 @@ SIMS = {
     "spider-actuation": (_actuation_cases, _actuation_run, _actuation_summary, "electric vs fluid-pressure joints "
                                                                                "over robot mass"),
     "salty-jump": (_salty_cases, _salty_run, _salty_summary, "SALTY's hydraulic catapult"),
+    "tarantula-attach": (_attach_cases, _attach_run, _attach_summary,
+                         "does TARANTULA need adhesives: surface × foot × gait × posture × payload"),
 }
 
 

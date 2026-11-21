@@ -439,3 +439,63 @@ real blades. A current limit and a limit switch at the closed end protect the dr
 Files: `exports/tarantula_cad/jaws.step` / `.stl` (20° open); `Tarantula().generate(part="jaws", jaw=…)` builds any
 opening from 0 to 30°.
 
+## 10. Does TARANTULA need adhesives? (`designs/tarantula_attachment.py`, `./spider.sh run tarantula-attach`)
+
+The test is ARACHNE's statics applied to TARANTULA:
+* **Load sharing:** compliant feet in the CAD stance at 1.5 kg; the centre of mass 35 mm behind the body centre (the
+  battery and the payload are in the abdomen).
+* **Gait:** the worst stance of the gait — 6 feet attached in the wave, 4 in the tetrapod.
+* **Each foot's attachment:** ARACHNE's conservative allowables.
+* **Margin rule:** margin ≥ 2.
+
+Five foot options:
+* `friction` — claws and a rubber sole. It never pulls; the whole robot slides together.
+* `pad` — the 40 × 30 mm dry fibrillar pad.
+* `spine` — a 160-microspine comb (5 rows × 32) plus claws.
+* `magnet` — a switchable permanent magnet, steel only.
+* `hybrid` — pad + spine comb + claws.
+
+**The steepest slope climbed with margin ≥ 2**, crouched (body centre 29 mm off the surface), wave gait, head up:
+
+| surface | friction | pad | spine (160) | magnet | vertical, 5th percentile (stiffness ±30 %, CoM ±15 mm) |
+|---|---:|---:|---:|---:|---|
+| glass | 15° | **105°** | — | — | pad 2.13 ✓ |
+| acrylic | 15° | 90° | — | — | pad 1.75 ✗ |
+| varnished wood | 15° | 60° | 15° | — | ✗ |
+| painted wall | 15° | 20° | 25° | — | ✗ (0.4) |
+| sanded wood | 15° | 15° | 50° | — | ✗ |
+| bark | 15° | — | 90° | — | spine 1.72 ✗ (~75° holds at p5) |
+| brick, concrete | 20° | — | **100°** | — | spine 2.29 ✓ |
+| bare steel | 10° | 90° | — | **180°** | magnet 8.8 ✓ |
+| painted steel | 10° | 20° | 25° | **180°** | magnet 4.4 ✓ |
+
+Standing tall (body centre 63 mm) loses 20–35°: glass 75°, brick 75°, bark 60°. **TARANTULA must crouch to climb.**
+The fast tetrapod loses 10–20° more.
+
+**Verdict: no, not for its job.**
+* TARANTULA is a field robot (armour, cutting jaws, payload). Rubble, masonry, concrete, rock and bark are where it
+  works, and there an adhesive pad has no contact at all.
+* What it needs there is claws and **many microspines**. A spine's hold is a property of its tip, so a heavier robot
+  needs more spines, not bigger ones. At 0.2 N per engaged spine and 30 % engaged:
+  * vertical brick or concrete needs **~160 spines per foot** (120 nominal; 160 holds at the 5th percentile) — a
+    40 mm comb of 5 rows at 1 mm pitch on independent flexures, ~20 g per foot;
+  * vertical bark needs ~210 spines per foot — or the legs clasp the trunk.
+* Adhesives add only **clean, smooth, non-magnetic surfaces** (glass, acrylic, smooth panels). There the 40 × 30 mm
+  pad is just enough, on clean glass, crouched, in the wave gait. Dust fouls fibrillar pads outdoors.
+* **Painted walls** defeat every dry option (25–30° at best).
+* **Steel structures** (bridges, tanks, hulls) want **magnets**: margin 9 on bare steel and 4 through paint, ceilings
+  included.
+* Biology says the same. Adhesive pads grow disproportionately with body size (Labonte et al., PNAS 2016: geckos are
+  near the limit). The heaviest tarantulas live on the ground; the tree-dwelling ones are small.
+* Spined climbing robots go to several kilograms: RiSE (Spenko et al., J. Field Robotics 2008) climbs trees, brick
+  and stucco with microspines and claws. Dry-adhesive climbers stay light: Stickybot ~0.37 kg, Waalbot ~0.1 kg.
+
+**TARANTULA's foot**, one tarsus with swappable soles:
+* **Default:** claws + the 160-spine comb along the toe + a rubber sole.
+* **Smooth-surface kit:** the fibrillar pad sole, for indoor glass.
+* **Steel kit:** the magnet foot.
+
+The spine count, the allowables and the CoM height are the numbers to measure first. The spines are drawn as
+isotropic in the dynamic sim, but they only grip along their direction (up the slope), so on bark it crab-steps and
+descends tail first, like ARACHNE.
+
