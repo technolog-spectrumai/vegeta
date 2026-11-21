@@ -71,7 +71,7 @@ def phase_cfd(a) -> int:
     doc = R.rs.load(path, a.fresh) or {"aircraft": "ASTOR-V / ASTOR-BOOST", "quality": quality, "configurations": {}}
     for d in a.designs:
         for s in cf.CASES:
-            c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(), "rows": []})
+            c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(d, s), "rows": []})
             c["rows"] = [r for r in c["rows"] if r.get("status") == "solved"]
     done = {(c["design"], c["sweep_deg"], float(r["alpha_deg"])) for c in doc["configurations"].values() for r in c["rows"]}
     todo = [x for x in todo_all if (x[0], x[1], float(x[2])) not in done]

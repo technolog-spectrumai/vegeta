@@ -17,6 +17,8 @@ import astor_v as V
 
 S_REF, C_REF = 0.198, 0.200
 N_STRIP = 12
+ALPHA0_DEG_PER_CAMBER = 100.0      # a 2 % camber at 40 % lifts as 2.0 deg of incidence (thin aerofoil; arigo1_model's value)
+CM_AC_PER_CAMBER = -2.35           # and carries a nose-down couple: NACA 2412's -0.047 (HAND +-20 %)
 
 
 def _outline(root_c, tip_c, span, base_sweep, pivot_frac, rot_deg, px, py, side):
@@ -64,7 +66,8 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
                      sw - V.SPREAD_DEG, V.pivot_x(p, 0.5 * (sweep_r + sweep_l)), p["pivot_y"], side)
         q = _strips(P, side, p["wing_plane_z"])
         quads += q
-        inc += [0.0] * len(q)
+        cs = math.cos(math.radians(sw - V.SPREAD_DEG))                  # swept, the section the air sees is flatter
+        inc += [ALPHA0_DEG_PER_CAMBER * p.get("panel_camber", 0.0) * cs] * len(q)
     ts = 85.0 - 50.0 * tail_fan
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
@@ -72,6 +75,13 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
         quads += q
         inc += [tail_inc] * len(q)
     r = vlm(quads, alpha_deg=alpha, incidence_deg=inc, S_ref=S_REF, c_ref=C_REF, x_ref=0.0, n_span=2)
+    cam = p.get("panel_camber", 0.0)
+    if cam > 0:                                                        # the camber's couple (the lattice has only its lift)
+        r = dict(r)
+        Sw = (p["panel_root_chord"] + p["panel_tip_chord"]) * p["panel_span"] / 1e6
+        cw = 0.5 * (p["panel_root_chord"] + p["panel_tip_chord"]) / 1e3
+        cs = math.cos(math.radians(0.5 * (sweep_r + sweep_l) - V.SPREAD_DEG))
+        r["Cm"] = r["Cm"] + CM_AC_PER_CAMBER * cam * cs * cs * Sw * cw / (S_REF * C_REF)
     return r
 
 

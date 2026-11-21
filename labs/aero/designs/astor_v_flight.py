@@ -116,8 +116,33 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
                       "power_W": FAN_W, "z_below_axis_m": 0.080}
     cfg = cfd_config(name, sweep)
     if cfg:
-        apply_cfd(C, cfg)
+        ref = cfg.get("reference", {})
+        cam_cfd, trav_cfd = ref.get("camber", 0.0), ref.get("carriage_travel_mm", V.RUN1_TRAVEL.get(sweep, 0.0))
+        same = abs(cam_cfd - p["panel_camber"]) < 1e-4 and abs(trav_cfd - V.travel(sweep)) < 1.0
+        if same:
+            apply_cfd(C, cfg)
+        else:
+            # the CFD was flown with another camber or carriage travel: its drag, slopes and stall are kept, and the
+            # lattice's difference between that geometry and this one is added to the lift at zero angle and the moment
+            p_old = {**p, "panel_camber": cam_cfd, "pivot_slides": False, "pivot_x": p["pivot_x"] - trav_cfd}
+            now, was = _lon(p, sweep, tf, kL, kM, xc), _lon(p_old, sweep, tf, kL, kM, xc)
+            apply_cfd(C, cfg)
+            for key in ("CL0", "Cm0", "Cma"):
+                C[key] += now[key] - was[key]
+            if p["panel_camber"] > cam_cfd:
+                C["CL_MAX"] += 6.0 * (p["panel_camber"] - cam_cfd) * VM.S_REF / Se           # HAND: +0.06 per 1 % of camber (+-0.03)
+            C["alpha_stall"] = (C["CL_MAX"] - C["CL0"]) / C["CLa"]
+            C["static_margin"] = -C["Cma"] / C["CLa"]
+            C["aero_source"] = (f"cfd run 1 (camber {cam_cfd:g}, carriage {trav_cfd:.0f} mm) for drag, slopes and stall + the lattice's "
+                                f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep):.0f} mm): rerun the CFD")
     return C
+
+
+def _lon(p, sweep, tf, kL, kM, xc) -> dict:
+    """The lattice's lift at zero angle and moment (value and slope) about the CG for a geometry, in C's reference."""
+    r0, r4 = VM.lattice(sweep, tail_fan=tf, p=p), VM.lattice(sweep, tail_fan=tf, alpha=4.0, p=p)
+    cm = lambda r: r["Cm"] + r["CL"] * xc
+    return {"CL0": r0["CL"] * kL, "Cm0": cm(r0) * kM, "Cma": (cm(r4) - cm(r0)) / math.radians(4.0) * kM}
 
 
 def apply_cfd(C, cfg) -> None:

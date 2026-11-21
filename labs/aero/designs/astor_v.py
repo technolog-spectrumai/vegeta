@@ -12,7 +12,8 @@ flies into it at its own speed. ASTOR-V never touches the bandit, carries two ne
   they cross like scissors. ``wing_sweep_deg``: 12 (spread: launch, turns, braking, landing), ~60 (the dash: the
   panels' inner parts lie over the fuselage, less wing in the air, half the gust load), 98 (stowed: the panels along
   the body, for a canister). Sweeping both pitches the aircraft (the lift moves aft); sweeping them differently
-  rolls it — the bird's controls. The panels' section is symmetric and thin (8 %).
+  rolls it — the bird's controls. The panels' section is thin (8 %) and cambered 2 % (CFD run 1, on a symmetric section, gave a
+  best lift-to-drag ratio of only ~6-7; the camber's nose-down moment costs ~5 % of the weight in tail load at the dash).
 - **A fanning tail**: two panels on pivots at the tail's root. Folded (85 deg) they are a narrow dart's tail;
   spread (35 deg) a broad delta that gives pitch authority at low speed and, raised, a brake (``astor_hawk``:
   65 -> 20 m/s in ~120 m instead of ~780 m). A low fixed fin under the tail keeps the nose straight (above, the tucked panels cross).
@@ -59,6 +60,7 @@ _NEW = list(A._NEW) + [
     Parameter("panel_root_chord", 270.0, "mm", min=60.0),
     Parameter("panel_tip_chord", 120.0, "mm", min=30.0),
     Parameter("panel_thickness", 0.08, "", min=0.05, max=0.14),
+    Parameter("panel_camber", 0.02, "", min=0.0, max=0.04, description="the wing panels' section camber (at 40 % chord); 0: symmetric"),
     Parameter("panel_pivot_chord", 0.30, "", min=0.1, max=0.6, description="the pivot's place along the root chord"),
     Parameter("panel_stack", 9.0, "mm", min=4.0, description="the right panel above, the left below the wing plane (they cross)"),
     Parameter("wing_plane_z", 44.0, "mm", description="the wing plane above the fuselage axis (on the shoulder block)"),
@@ -89,7 +91,18 @@ NET_G = 110.0                      # HAND: one net cartridge: a 2 m mesh, corner
 # The pivots ride on a carriage that slides forward as the wing sweeps (the Bell X-5's answer): with fixed pivots the
 # neutral point runs 116 mm aft between 12 and 60 deg (astor_v_model: the tail would carry a download equal to the
 # weight at the dash); with this travel the static margin stays 8-16 % MAC. (sweep deg, carriage travel forward mm)
-SLIDE = ((12.0, 0.0), (35.0, 61.0), (60.0, 117.0), (98.0, 117.0))
+SLIDE = ((12.0, 0.0), (35.0, 67.0), (60.0, 135.0), (98.0, 135.0))
+# CFD run 1 (2026-11-21) was flown with the lattice's first travel; it measured a margin of 21 % at 60 deg (13 % was
+# meant): the carriage now goes 18 mm further (135 mm). The travel each sweep had in that run, for its corrections:
+RUN1_TRAVEL = {12.0: 0.0, 35.0: 61.0, 60.0: 117.0}
+
+
+def travel(sweep) -> float:
+    """The carriage's travel forward [mm] at a sweep (SLIDE)."""
+    xs, ys = zip(*SLIDE)
+    k = max(0, min(len(xs) - 2, next((i for i in range(len(xs) - 1) if sweep <= xs[i + 1]), len(xs) - 2)))
+    f = max(0.0, min(1.0, (sweep - xs[k]) / (xs[k + 1] - xs[k])))
+    return ys[k] + f * (ys[k + 1] - ys[k])
 
 
 def pivot_x(p, sweep=None) -> float:
@@ -97,14 +110,24 @@ def pivot_x(p, sweep=None) -> float:
     sw = p["wing_sweep_deg"] if sweep is None else sweep
     if not p.get("pivot_slides", True):
         return p["pivot_x"]
-    xs, ys = zip(*SLIDE)
-    k = max(0, min(len(xs) - 2, next((i for i in range(len(xs) - 1) if sw <= xs[i + 1]), len(xs) - 2)))
-    f = max(0.0, min(1.0, (sw - xs[k]) / (xs[k + 1] - xs[k])))
-    return p["pivot_x"] - (ys[k] + f * (ys[k + 1] - ys[k]))
+    return p["pivot_x"] - travel(sw)
 
 
-def _panel(root_c, tip_c, span, sweep_deg, t):
-    """One right-hand panel, its root's leading edge at the origin, the span along +y, a symmetric section."""
+def _cambered_panel(root_c, tip_c, span, sweep_deg, t, camber, camber_pos=0.4):
+    """One right-hand panel on a cambered NACA 4-digit section (the camber up), its root's leading edge at the
+    origin, the span along +y."""
+    from fixed_wing import naca4
+    up, lo = naca4(camber, camber_pos, t, n=22)
+    sec = lambda c, x0: [(x0 + x * c, z * c) for x, z in up + lo[::-1][1:]]
+    dx = span * math.tan(math.radians(sweep_deg))
+    return (cq.Workplane("XZ").polyline(sec(root_c, 0.0)).close().workplane(offset=-span).polyline(sec(tip_c, dx)).close()
+            .loft(combine=True, ruled=True))
+
+
+def _panel(root_c, tip_c, span, sweep_deg, t, camber=0.0):
+    """One right-hand panel, its root's leading edge at the origin, the span along +y; symmetric unless ``camber``."""
+    if camber > 1e-4:
+        return _cambered_panel(root_c, tip_c, span, sweep_deg, t, camber)
     tr = tip_c / root_c
     both = a1.Arigo1._surface(None, 0.0, root_c, tr, 2 * span, sweep_deg, t, "y", 0.0)
     return both.intersect(cq.Workplane("XY").box(4000.0, span + 5.0, 400.0).translate((0, (span + 5.0) / 2, 0)))
@@ -118,7 +141,7 @@ class AstorV(a1.Arigo1):
 
     # ------------------------------------------------------------------------------------------------ wing
     def _one_wing(self, p, side, sweep):
-        pan = _panel(p["panel_root_chord"], p["panel_tip_chord"], p["panel_span"], SPREAD_DEG, p["panel_thickness"])
+        pan = _panel(p["panel_root_chord"], p["panel_tip_chord"], p["panel_span"], SPREAD_DEG, p["panel_thickness"], p["panel_camber"])
         pan = pan.translate((-p["panel_pivot_chord"] * p["panel_root_chord"], 0, 0))            # the pivot at the origin
         pan = pan.rotate((0, 0, 0), (0, 0, 1), -(sweep - SPREAD_DEG))                              # aft sweep: +y toward +x
         z = p["wing_plane_z"] + side * p["panel_stack"] / 2

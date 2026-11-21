@@ -35,8 +35,11 @@ def _cls(design):
     return V.AstorV, V.variant
 
 
-def reference() -> dict:
-    return {"S": VM.S_REF, "c": VM.C_REF, "cg_mm": [V.CG_MM, 0.0]}
+def reference(design="v", sweep=12.0) -> dict:
+    """The coefficients' reference, and the geometry the case was flown with (the corrections check it)."""
+    cls, var = _cls(design)
+    p = cls().resolve(**var())
+    return {"S": VM.S_REF, "c": VM.C_REF, "cg_mm": [V.CG_MM, 0.0], "carriage_travel_mm": V.travel(sweep), "camber": p["panel_camber"]}
 
 
 def l_ref(design="v", sweep=12.0) -> float:
@@ -65,7 +68,7 @@ def export_stl(folder, design, sweep, alpha_deg):
 def case(workdir, design, sweep, *, alpha_deg=0.0, quality="screening", env=None):
     from vegeta import aeromant
     Vv = CASES[sweep][0]
-    ref = reference()
+    ref = reference(design, sweep)
     stl, tag = export_stl(Path(workdir) / "stl", design, sweep, alpha_deg)
     params = dict(velocity=Vv, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(design, sweep),
                   center_of_rotation=tuple(ac.to_flow(*ref["cg_mm"], alpha_deg).tolist()), **QUALITY[quality])

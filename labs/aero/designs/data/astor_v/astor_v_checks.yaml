@@ -7,23 +7,23 @@ wing:
 - sweep_deg: 35.0
   span_mm: 977.0
   exposed_area_m2: 0.1849
-  lift_centre_x_mm: 374.0
+  lift_centre_x_mm: 368.0
   stall_nominal_m_s: 15.7
 - sweep_deg: 60.0
   span_mm: 696.0
   exposed_area_m2: 0.1731
-  lift_centre_x_mm: 405.0
+  lift_centre_x_mm: 387.0
   stall_nominal_m_s: 16.3
 - sweep_deg: 98.0
   span_mm: 201.0
   exposed_area_m2: 0.1288
-  lift_centre_x_mm: 413.0
+  lift_centre_x_mm: 395.0
   stall_nominal_m_s: 18.8
 stowed_envelope_mm:
   length: 931
   width: 309
-  height: 199
-  tube_diameter: 320
+  height: 205
+  tube_diameter: 322
 net_release:
   from: a tube in the tail, straight aft
   propeller_behind_the_nets: false
@@ -40,82 +40,3 @@ mass:
   empty_g: 2114.0
   total_g: 2714.0
   without_nets_g: 2494.0
-balance:
-  cg_mm: 365.0
-  by_sweep:
-  - sweep_deg: 12
-    tail_fan: 1.0
-    CL_alpha_per_rad: 3.89
-    neutral_point_mm: 381.0
-    CL_per_deg_tail: 0.012
-    Cm_nose_per_deg_tail: -0.04
-    static_margin: 0.079
-    Cm_cg_per_deg_tail: -0.0181
-  - sweep_deg: 25
-    tail_fan: 1.0
-    CL_alpha_per_rad: 4.01
-    neutral_point_mm: 386.0
-    CL_per_deg_tail: 0.0123
-    Cm_nose_per_deg_tail: -0.0406
-    static_margin: 0.107
-    Cm_cg_per_deg_tail: -0.0182
-  - sweep_deg: 35
-    tail_fan: 1.0
-    CL_alpha_per_rad: 3.84
-    neutral_point_mm: 388.0
-    CL_per_deg_tail: 0.0123
-    Cm_nose_per_deg_tail: -0.0407
-    static_margin: 0.113
-    Cm_cg_per_deg_tail: -0.0182
-  - sweep_deg: 45
-    tail_fan: 1.0
-    CL_alpha_per_rad: 3.42
-    neutral_point_mm: 393.0
-    CL_per_deg_tail: 0.0123
-    Cm_nose_per_deg_tail: -0.0408
-    static_margin: 0.139
-    Cm_cg_per_deg_tail: -0.0183
-  - sweep_deg: 60
-    tail_fan: 0.6
-    CL_alpha_per_rad: 2.48
-    neutral_point_mm: 391.0
-    CL_per_deg_tail: 0.0094
-    Cm_nose_per_deg_tail: -0.0316
-    static_margin: 0.128
-    Cm_cg_per_deg_tail: -0.0145
-  trim:
-  - sweep_deg: 12
-    V_m_s: 22
-    CL: 0.453
-    alpha_deg: 7.0
-    tail_incidence_deg: -1.9
-    tail_lift_share: -0.05
-    load_factor: 1
-  - sweep_deg: 12
-    V_m_s: 30
-    CL: 0.732
-    alpha_deg: 11.3
-    tail_incidence_deg: -3.1
-    tail_lift_share: -0.05
-    load_factor: 3
-  - sweep_deg: 35
-    V_m_s: 45
-    CL: 0.108
-    alpha_deg: 1.7
-    tail_incidence_deg: -0.7
-    tail_lift_share: -0.08
-    load_factor: 1
-  - sweep_deg: 60
-    V_m_s: 65
-    CL: 0.052
-    alpha_deg: 1.3
-    tail_incidence_deg: -0.5
-    tail_lift_share: -0.08
-    load_factor: 1
-  - sweep_deg: 60
-    V_m_s: 65
-    CL: 0.26
-    alpha_deg: 6.5
-    tail_incidence_deg: -2.4
-    tail_lift_share: -0.08
-    load_factor: 5
