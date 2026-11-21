@@ -51,10 +51,17 @@ STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep de
 NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST"}
 
 
+def _inputs() -> str:
+    """A short hash of the installed CFD data: the flight phases' saved progress is kept per CFD result (the code's
+    own fingerprint does not see data files), so a new CFD run is never answered with the old one's flights."""
+    import hashlib
+    return hashlib.sha256(DATA.read_bytes()).hexdigest()[:8] if DATA.exists() else "nocfd"
+
+
 def _meta(phase, a):
     return {"aircraft": "ASTOR-V / ASTOR-BOOST", "phase": phase, "designs": a.designs, "started": time.strftime("%Y-%m-%d %H:%M:%S"),
             "host": os.uname().nodename, "commit": os.popen("git rev-parse --short HEAD 2>/dev/null").read().strip(), "cpu": a.cpu,
-            "cfd_installed": DATA.exists()}
+            "cfd_installed": DATA.exists(), "cfd_data": _inputs(), "code": R.rs.fingerprint()}
 
 
 # ------------------------------------------------------------------------------------------------ 1. CFD
@@ -142,7 +149,7 @@ def _job(job):
                 amj.Sim = old
             C = VF.get(name, sweep)
             out.update({"aircraft": NAMES[name], "sweep_deg": sweep, "stall_m_s": round(VF.stall(C), 1), "top_speed_m_s": round(AM.top_speed(C), 1),
-                        "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4),
+                        "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4), "mass_kg": round(C["mass"], 3),
                         "alpha_limiter": {"on": True, "limit_deg": round(math.degrees(C["alpha_stall"]) - VF.ALPHA_MARGIN_DEG, 1)},
                         "Clda_per_deg": {"ailerons": round(C["Clda_aileron"], 5), "tail": round(C["Clda_tail"], 5)}, "aero_source": C["aero_source"]})
         elif kind == "card":
@@ -171,7 +178,7 @@ def phase_stability(a) -> int:
     if a.dry_run:
         print("\n".join(" ".join(str(x) for x in j) for j in jobs)); print(len(jobs), "jobs")
         return 0
-    res = R._run_jobs(jobs, a, "astor_v_stability_cache.yaml", "astor-v stability", _job)
+    res = R._run_jobs(jobs, a, f"astor_v_stability_cache_{_inputs()}.yaml", "astor-v stability", _job)
     runs = {k.replace("|", "_"): v for k, v in res.items() if k.startswith("stab")}
     cards = {k.split("|")[1]: v for k, v in res.items() if k.startswith("card")}
     run = R._write("stability", {"run": _meta("stability", a), "results": {"astor_v_mujoco": {"runs": runs}, "astor_v_perf": {"cards": cards}}}, "astor_v")
@@ -202,7 +209,7 @@ def phase_netdrop(a) -> int:
         tally["n"] += 1
         tally["caught"] += sum(1 for r in out.get("runs", []) if r.get("caught"))
         return f"caught {tally['caught']}/{tally['n']}"
-    res = R._run_jobs(jobs, a, "astor_v_netdrop_cache.yaml", "astor-v net drop", _job, note=note, unit="sortie")
+    res = R._run_jobs(jobs, a, f"astor_v_netdrop_cache_{_inputs()}.yaml", "astor-v net drop", _job, note=note, unit="sortie")
     table = {}
     for k, v in res.items():
         if "error" in v:
