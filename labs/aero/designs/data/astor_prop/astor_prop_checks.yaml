@@ -1,0 +1,18 @@
+blade_mass_g: 4.0
+blade_cg_radius_mm: 64.0
+rpm_max: 15000.0
+tip_speed_m_s: 180.0
+centrifugal_load_per_blade_N: 628.0
+pin_shear_MPa: 44.0
+pin_ok: true
+eye_bearing_MPa: 30.0
+eye_ok: true
+folding_moment_at_dash_Nmm: 274.0
+opens_above_rpm_at_dash: 452.0
+time_to_fold_at_20_m_s_s: 0.03
+folded:
+  fold_deg: 82.0
+  reach_aft_of_hinge_mm: 95.0
+  tip_from_axis_mm: 31.0
+note: blade density, the pin's and the eye's allowables, and the drag coefficients
+  are HAND

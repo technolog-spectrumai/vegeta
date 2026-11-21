@@ -67,6 +67,8 @@ _NEW = list(A._NEW) + [
     Parameter("tail_panel_tip", 60.0, "mm", min=20.0),
     Parameter("tail_pivot_x", 655.0, "mm", min=300.0), Parameter("tail_pivot_y", 14.0, "mm", min=5.0),
     Parameter("net_count", 2, "", min=0, max=2, description="net cartridges in the tail tube, in tandem"),
+    Parameter("prop_fold_deg", -1.0, "deg", min=-1.0, max=88.0, description="draw the folding propeller (astor_prop): 0 open ... 82 folded; -1: not drawn"),
+    Parameter("nets_station_mm", 0.0, "mm", min=0.0, description="the nets' centre for the balance; 0: in the tail tube"),
     Parameter("belly_camera_x", 520.0, "mm", min=200.0, description="the drop camera (looks down and back) under the belly"),
     Parameter("net_diameter", 44.0, "mm", min=25.0), Parameter("net_length", 150.0, "mm", min=60.0),
     Parameter("net_bay_x", 300.0, "mm", min=150.0, description="the belly bay's front from the nose tip"),
@@ -174,6 +176,12 @@ class AstorV(a1.Arigo1):
             out = c if out is None else out.union(c)
         return out
 
+    def _propeller(self, p):
+        """The folding propeller (``astor_prop``) on the nose motor's shaft."""
+        import astor_prop
+        P = astor_prop.FoldingProp()
+        return P.build(P.resolve(diameter=p["prop_diameter"], fold_deg=p["prop_fold_deg"])).translate((self.layout(p)["x_prop"] - 6.0, 0, 0))
+
     def _belly_camera(self, p):
         R = p["fuselage_diameter"] / 2
         return (cq.Workplane("XY").sphere(13.0).translate((p["belly_camera_x"], 0, -R - 3.0))
@@ -199,6 +207,8 @@ class AstorV(a1.Arigo1):
                "camera": self._camera(p), "motors": self._motors(p), "props": self._props(p), "parachute": self._parachute(p),
                "rail": self._rail(p)}
         out["belly_camera"] = self._belly_camera(p)
+        if p["prop_fold_deg"] >= 0:
+            out["propeller"] = self._propeller(p)
         if int(p["net_count"]) > 0:
             out["net_bay"] = self._net_bay(p)
             out["nets"] = self._nets(p)
@@ -248,7 +258,7 @@ def wing_numbers(p, sweep) -> dict:
             "lift_centre_x_mm": round(x_ac, 0)}
 
 
-def budget(p=None, pack: str | None = None) -> dict:
+def budget(p=None, pack: str | None = None, extra=None, default_pack=None) -> dict:
     """ASTOR's budget with the fixed wing replaced by the two panels, plus the mechanisms and the nets."""
     p = p or resolve()
     S_w = (p["panel_root_chord"] + p["panel_tip_chord"]) * p["panel_span"] / 1e6
@@ -256,10 +266,10 @@ def budget(p=None, pack: str | None = None) -> dict:
     items = [("2 wing panels", 1000 * A.WING_KG_M2 * S_w, f"geometry: {S_w:.3f} m2 x {A.WING_KG_M2} kg/m2 (HAND +-20 %)"),
              ("tail fan and fin", 1000 * A.TAIL_KG_M2 * S_t, f"geometry: {S_t:.3f} m2 x {A.TAIL_KG_M2} kg/m2 (HAND +-20 %)"),
              ("fuselage", 1000 * A.FUSE_KG_M * p["fuselage_length"] / 1000, f"geometry: {p['fuselage_length']:.0f} mm x {A.FUSE_KG_M} kg/m (HAND +-20 %)")]
-    items += list(A.ITEMS) + list(EXTRA_ITEMS)
+    items += list(A.ITEMS) + list(EXTRA_ITEMS if extra is None else extra)
     items.append((f"{int(p['net_count'])} net cartridges", NET_G * int(p["net_count"]), "HAND (+-30 each)"))
     items.append(("growth margin (10 % of the items above)", 0.10 * sum(x[1] for x in items), "HAND"))
-    pk = pack or A.DEFAULT_PACK
+    pk = pack or default_pack or A.DEFAULT_PACK
     g, wh, amps, src = A.PACKS[pk]
     empty = sum(x[1] for x in items)
     return {"items": [{"item": n, "g": round(v, 1), "source": s} for n, v, s in items], "empty_g": round(empty, 1),
@@ -292,15 +302,16 @@ STATIONS = {"motor": 35.0, "ESC": 110.0, "propeller": -15.0, "camera": 70.0, "bl
             "fuselage": 395.0, "tail fan": 720.0, "pivots": 330.0, "sweep actuators": 330.0, "net tube": 700.0, "belly drop camera": 520.0}
 
 
-def balance(p=None, x_cg_target=None) -> dict:
+def balance(p=None, x_cg_target=None, mb=None, stations=None) -> dict:
     """Where the pack must sit for the CG wanted (spread, nets aboard), and how far the CG moves when the nets go."""
     p = p or resolve()
-    mb = budget(p)
+    mb = mb or budget(p)
+    st = {**STATIONS, **(stations or {})}
     if x_cg_target is None:
         x_cg_target = CG_MM
     mom, m = 0.0, 0.0
     nets_g = NET_G * int(p["net_count"])
-    x_nets = p["fuselage_length"] - (p["net_length"] + 4.0) * int(p["net_count"]) / 2
+    x_nets = p.get("nets_station_mm") or (p["fuselage_length"] - (p["net_length"] + 4.0) * int(p["net_count"]) / 2)
     for it in mb["items"]:
         n, g = it["item"], it["g"]
         if "net cartridges" in n:
@@ -310,7 +321,9 @@ def balance(p=None, x_cg_target=None) -> dict:
         elif "growth margin" in n:
             continue
         else:
-            x = next((v for k, v in STATIONS.items() if k in n), 395.0)
+            x = next((v for k, v in (stations or {}).items() if k in n), None)        # a variant's own stations first
+            if x is None:
+                x = next((v for k, v in STATIONS.items() if k in n), 395.0)
         mom += g * x
         m += g
     margin = next(it["g"] for it in mb["items"] if "growth margin" in it["item"])
