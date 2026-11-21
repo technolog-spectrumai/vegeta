@@ -792,7 +792,9 @@ def scenario_heist(kin, q_stand, p):
         """How near the left hand gets the hammer's head to ``head`` (the handle along ``axis``) with the body held."""
         fr = gs.hand_frame_on(gs.bar((0, 0, 0), axis=axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=wd), "L")
         tg = [(bd, l, R_b.T @ (np.asarray(wp) - b - LEAN)) for bd, l, wp in planted + gs._hand_at(kin, "L", head - 0.31 * axis, fr)]
-        _, err = kin.ik(tg, q_init=q1, q_ref=gs.climb_ref(kin, q1), joints=limbs_, reg=3e-4, iters=300)
+        qs, err = kin.ik(tg, q_init=q1, q_ref=gs.climb_ref(kin, q1), joints=limbs_, reg=3e-4, iters=300)
+        if gt.SOLID is not None:                                           # a blow whose arm would pass through the trunk is no blow
+            err += gt.SOLID.worst(qs, b + LEAN, pitch)[0]
         return err, (head - 0.31 * axis, fr)
 
     def best_blow(heads):
@@ -879,7 +881,7 @@ def scenario_heist(kin, q_stand, p):
         sr.set_toe_curl(tuck, kin, sd, 0.0)
     for j in kin.actuated:                                                 # the arms come in off the branches first: none swept through the wall
         if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist")):
-            tuck[kin.index[j]] = q_crouch[kin.index[j]] = min(max(0.0, kin.lo[kin.index[j]]), kin.hi[kin.index[j]])   # hanging by the sides: under the lintel
+            tuck[kin.index[j]] = q_crouch[kin.index[j]] = q_stand[kin.index[j]] if "elbow" in j else min(max(0.0, kin.lo[kin.index[j]]), kin.hi[kin.index[j]])   # upper arms down, forearms folded: under the lintel, over the sill
 
     def leap_base(u):
         f = mk.smooth(u)
