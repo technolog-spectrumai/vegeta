@@ -777,7 +777,30 @@ def scenario_heist(kin, q_stand, p):
         return (1 - f) * strike[0] + f * wind[0], gs._slerp(strike[1], wind[1], f)
 
     x_fist = lambda u, q_: sr.set_curl(keep(u, q_), kin, "L", kt_lever())
-    glass_point = np.array([w["x"] - w["wall_thickness"] / 2 + 0.03, glass_point[1], glass_point[2]])    # the pane in the sash
+    limbs_ = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
+
+    def reach_err(head, axis, wd):
+        """How near the left hand gets the hammer's head to ``head`` (the handle along ``axis``) with the body held."""
+        fr = gs.hand_frame_on(gs.bar((0, 0, 0), axis=axis, n=(-1.0, 0.0, 0.0), r=H["handle_r"], wrist_dir=wd), "L")
+        tg = [(bd, l, R_b.T @ (np.asarray(wp) - b)) for bd, l, wp in planted + gs._hand_at(kin, "L", head - 0.31 * axis, fr)]
+        _, err = kin.ik(tg, q_init=q1, q_ref=gs.climb_ref(kin, q1), joints=limbs_, reg=3e-4, iters=300)
+        return err, (head - 0.31 * axis, fr)
+
+    def best_blow(heads):
+        """The blow the arm reaches best: over candidate points, the handle's directions and the wrist's."""
+        best = None
+        for head in heads:
+            for ax in ((0.7, 0.55, -0.45), (0.85, 0.3, -0.43), (0.9, 0.0, -0.43), (0.75, 0.2, -0.63), (0.95, 0.3, 0.0), (0.6, 0.6, -0.5)):
+                for wd in ((-0.5, -0.2, 0.84), (-0.7, 0.0, 0.7), (-0.3, -0.4, 0.86), (-0.8, -0.3, 0.5)):
+                    err, frame = reach_err(np.asarray(head), gs._unit(np.array(ax)), gs._unit(np.array(wd)))
+                    if best is None or err < best[0]:
+                        best = (err, frame, np.asarray(head), gs._unit(np.array(ax)))
+        return best
+
+    x_pane = w["x"] - w["wall_thickness"] / 2 + 0.03                          # the pane in the sash, near the wall's outer face
+    heads = [np.array([x_pane, y, z]) for y in (w["y"] - 0.45, w["y"] - 0.3, w["y"] - 0.15) for z in (w["sill"] + 0.35, w["sill"] + 0.55, w["sill"] + 0.75)]
+    _err, strike, glass_point, strike_axis = best_blow(heads)
+    strike = (strike[0], strike[1])
     smash = gt.contact_motion(kin, "smash_the_glass", 1.8, lambda u: planted + gs._hand_at(kin, "L", *hold_at(u)), holdbase, q_init=q1,
                               extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q1),
                               source="gibbon_scenarios.heist: a wind-up and the blow through the pane")
@@ -785,9 +808,13 @@ def scenario_heist(kin, q_stand, p):
     q2 = gt._last(kin, smash, q1)
 
     # the shove: the hammer's head against the sash's free stile, pushed into the room; the sash swings on from there
+    shove_best = best_blow([sash_point(w, 0.0, zf) for zf in (0.25, 0.4, 0.55)])
+    shove_axis, shove_frame = shove_best[3], shove_best[1][1]
+    shove_zf = [zf for zf in (0.25, 0.4, 0.55) if np.allclose(sash_point(w, 0.0, zf), shove_best[2])][0]
+
     def head_at(phi):
-        tgt = sash_point(w, phi, 0.45)
-        return (tgt - 0.31 * strike_axis, strike[1])
+        tgt = sash_point(w, phi, shove_zf)
+        return (tgt - 0.31 * shove_axis, shove_frame)
 
     def push_at(u):
         if u < 0.35:
