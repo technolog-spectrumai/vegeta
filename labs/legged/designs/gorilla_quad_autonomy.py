@@ -45,9 +45,9 @@ __all__ = ["LIDARS", "STEER_BY_WIRE", "SAFETY", "Perception", "Planner", "Guardi
 
 #: the lidars: mount on the frame [m, vehicle frame], heading [rad], field of view [rad], layers' pitch [rad], range
 LIDARS = {
-    "front": {"pos": (1.02, 0.0, 0.80), "yaw": 0.0, "fov": math.radians(270.0), "layers": (0.0, -math.radians(4.0), -math.radians(9.0)),
+    "front": {"pos": (gq.GEOM["wheelbase"] / 2 + 0.17, 0.0, 0.80), "yaw": 0.0, "fov": math.radians(270.0), "layers": (0.0, -math.radians(4.0), -math.radians(9.0)),
               "beams": 91, "range": 20.0, "rate_hz": 10.0},
-    "rear": {"pos": (-1.12, 0.0, 1.30), "yaw": math.pi, "fov": math.radians(270.0), "layers": (0.0, -math.radians(4.0), -math.radians(9.0)),
+    "rear": {"pos": (-(gq.GEOM["wheelbase"] / 2 + 0.27), 0.0, 1.30), "yaw": math.pi, "fov": math.radians(270.0), "layers": (0.0, -math.radians(4.0), -math.radians(9.0)),
              "beams": 91, "range": 20.0, "rate_hz": 10.0},
 }
 OBSTACLE_MIN_H = 0.16          #: lower than this is a bump the suspension takes (the course's are 0.10-0.12 m) [m]

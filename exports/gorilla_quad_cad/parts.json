@@ -1,31 +1,31 @@
 {
  "parts": {
   "quad": {
-   "volume_L": 476.97,
+   "volume_L": 508.15,
    "bbox_mm": [
     [
-     -1361,
-     -1056,
+     -1486,
+     -1131,
      -9
     ],
     [
-     1361,
-     1056,
-     1145
+     1486,
+     1131,
+     1408
     ]
    ]
   },
   "frame": {
-   "volume_L": 131.01,
+   "volume_L": 131.73,
    "bbox_mm": [
     [
-     -1361,
-     -1056,
+     -1486,
+     -1131,
      244
     ],
     [
-     1361,
-     1056,
+     1486,
+     1131,
      911
     ]
    ]
@@ -91,16 +91,16 @@
    ]
   },
   "wishbone": {
-   "volume_L": 0.76,
+   "volume_L": 0.86,
    "bbox_mm": [
     [
      -194,
-     -6,
+     -5,
      -25
     ],
     [
      194,
-     445,
+     520,
      25
     ]
    ]
@@ -124,12 +124,12 @@
    "volume_L": 5.58,
    "bbox_mm": [
     [
-     -1075,
+     -1195,
      -442,
      740
     ],
     [
-     -485,
+     -605,
      442,
      1032
     ]
@@ -139,12 +139,12 @@
    "volume_L": 3.69,
    "bbox_mm": [
     [
-     -980,
+     -1100,
      -215,
      745
     ],
     [
-     -580,
+     -700,
      150,
      856
     ]
@@ -152,53 +152,53 @@
   }
  },
  "sizing": {
-  "mass_vehicle_kg": 327.0,
+  "mass_vehicle_kg": 344.6,
   "mass_rider_kg": 384.5,
-  "mass_total_kg": 711.5,
+  "mass_total_kg": 729.1,
   "unsprung_corner_kg": 24.5,
   "cg_vehicle_m": [
-   -0.033,
-   0.438
+   -0.039,
+   0.459
   ],
   "cg_total_m": [
-   -0.042,
-   0.736
+   -0.045,
+   0.739
   ],
   "axle_load_kg": {
-   "front": 338.1,
-   "rear": 373.4
+   "front": 347.8,
+   "rear": 381.3
   },
-  "ssf": 1.222,
+  "ssf": 1.319,
   "ssf_target": 1.0,
-  "track_for_target_m": 1.473,
-  "rollover_lat_g": 1.22,
+  "track_for_target_m": 1.478,
+  "rollover_lat_g": 1.32,
   "anti_roll_bar_N_m": {
-   "front": 10356,
-   "rear": 11624
+   "front": 10706,
+   "rear": 11904
   },
   "corners": {
    "FL": {
-    "sprung_kg": 144.5,
-    "k_N_m": 6904,
-    "c_Ns_m": 599,
+    "sprung_kg": 149.4,
+    "k_N_m": 7137,
+    "c_Ns_m": 620,
     "sag_m": 0.205
    },
    "FR": {
-    "sprung_kg": 144.5,
-    "k_N_m": 6904,
-    "c_Ns_m": 599,
+    "sprung_kg": 149.4,
+    "k_N_m": 7137,
+    "c_Ns_m": 620,
     "sag_m": 0.205
    },
    "RL": {
-    "sprung_kg": 162.2,
-    "k_N_m": 7749,
-    "c_Ns_m": 673,
+    "sprung_kg": 166.1,
+    "k_N_m": 7936,
+    "c_Ns_m": 689,
     "sag_m": 0.205
    },
    "RR": {
-    "sprung_kg": 162.2,
-    "k_N_m": 7749,
-    "c_Ns_m": 673,
+    "sprung_kg": 166.1,
+    "k_N_m": 7936,
+    "c_Ns_m": 689,
     "sag_m": 0.205
    }
   },
@@ -216,25 +216,25 @@
    0.1,
    0.14
   ],
-  "wheel_force_N": 812,
-  "wheel_torque_Nm": 268,
+  "wheel_force_N": 832,
+  "wheel_torque_Nm": 275,
   "wheel_speed_max_rad_s": 37.9,
   "motor": {
    "ratio": 6.0,
-   "peak_torque_Nm": 47.0,
+   "peak_torque_Nm": 48.2,
    "max_speed_rpm": 2170,
-   "peak_power_kW": 4.9,
-   "cont_power_kW": 1.27
+   "peak_power_kW": 5.0,
+   "cont_power_kW": 1.29
   },
-  "power_top_speed_kW": 4.58,
+  "power_top_speed_kW": 4.65,
   "battery_Wh": 7200.0,
-  "range_30kmh_km": 64.0
+  "range_30kmh_km": 63.0
  },
  "geometry_m": {
   "wheel_r": 0.33,
   "wheel_w": 0.25,
-  "wheelbase": 1.7,
-  "track": 1.8,
+  "wheelbase": 1.95,
+  "track": 1.95,
   "pelvis": [
    -0.15,
    0.0,
@@ -257,7 +257,7 @@
   ],
   "column_rake_deg": 25.0,
   "trunk": {
-   "x": -0.78,
+   "x": -0.9,
    "len": 0.56,
    "w": 0.86,
    "h": 0.28,

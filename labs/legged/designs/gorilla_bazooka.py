@@ -195,3 +195,87 @@ def scabbard_mesh():
 def scabbard_pose():
     """The weapon's pose in the quad's frame when it rides in the scabbard."""
     return _rot_z(SCABBARD["yaw"]), np.asarray(SCABBARD["pos"], dtype=float)
+
+
+# ================================================================ the flak (Armageddon's anti-air cannon, shoulder-fired)
+#: Armageddon's flak (``armageddon/flak.py``, from Vegeta's recoilless bearing gun, branch dev_bearing 20dbda3): an 8 mm
+#: steel ball at 280 m/s from a 1.0 m tube, no recoil (a rear venturi vents the jet: the back-blast, 2.1 m), a ball every
+#: 0.4 s, 93 from a 0.8 L bottle; a quadcopter is down after 30 J of hits, under 4 J a ball cracks nothing
+FLAK = {"ball_d": 0.008, "ball_mass": 7750.0 * math.pi / 6 * 0.008 ** 3, "muzzle_speed": 280.0, "tube_m": 1.0,
+        "scatter_rad": math.radians(0.06), "scatter_speed": 0.005, "fire_every_s": 0.4, "backblast_m": 2.1, "shots": 93,
+        "crack_J": 4.0, "drone_hp_J": 30.0,
+        "mach": (0.0, 0.5, 0.6, 0.8, 0.9, 1.0, 1.1, 1.2, 1.5, 2.0, 3.0),
+        "cd": (0.47, 0.47, 0.49, 0.55, 0.65, 0.80, 0.90, 0.95, 1.00, 0.95, 0.92),
+        "mass_kg": {"tube (steel-lined CF, 1.0 m)": 2.4, "breech, valve, venturi": 1.6, "air bottle 0.8 L, 300 bar": 1.3,
+                    "stock, pad, D-handles": 1.4, "magazine 93 balls": 0.4, "sight": 0.3}}
+FLAK_MUZZLE = np.array([0.72, 0.0, TUBE_Z])     #: the tube runs from the breech to here (the same D-handles and pad as the bazooka)
+FLAK_VENTURI = np.array([-0.62, 0.0, TUBE_Z + 0.10])   #: the rear venturi, above and behind his shoulder: the back-blast leaves here, backwards
+SCABBARD_FLAK = {"pos": (-0.02, 0.62, 0.80), "yaw": 0.0}    #: the flak rides on the left, the bazooka on the right
+
+
+def flak_drag_acc(v):
+    """The flak ball's deceleration [m/s², 3-vector] at velocity ``v`` (drag against Mach, the game's table)."""
+    v = np.asarray(v, dtype=float)
+    s = float(np.linalg.norm(v))
+    cd = float(np.interp(s / 340.3, FLAK["mach"], FLAK["cd"]))
+    return -0.5 * BALL["rho_air"] * cd * math.pi / 4 * FLAK["ball_d"] ** 2 * s * v / FLAK["ball_mass"]
+
+
+def flak_scabbard_pose():
+    return _rot_z(SCABBARD_FLAK["yaw"]), np.asarray(SCABBARD_FLAK["pos"], dtype=float)
+
+
+class Flak(Design):
+    """The shoulder flak (``part="flak"``, its frame as the bazooka's: the rear D-handle at the origin) or its
+    cradles on the quad (``part="scabbard"``, the quad's frame)."""
+
+    parameters = [Parameter("part", "flak", choices=("flak", "scabbard"), description="what to build")]
+
+    def flak(self, p):
+        mm = 1000.0
+        tz = TUBE_Z * mm
+        tube = _cyl_x(16, -250, FLAK_MUZZLE[0] * mm, z=tz).cut(_cyl_x(5, -260, FLAK_MUZZLE[0] * mm + 10, z=tz))
+        brake = _cyl_x(22, FLAK_MUZZLE[0] * mm - 60, FLAK_MUZZLE[0] * mm, z=tz)
+        breech = cq.Workplane("XY").box(200, 80, 90).translate((-150, 0, tz)).edges("|Y").fillet(18)
+        bottle = _cyl_x(42, -330, -40, z=tz - 85)
+        venturi = (cq.Workplane("YZ").circle(36).workplane(offset=-180).circle(14).loft().translate((-420, 0, FLAK_VENTURI[2] * mm)))
+        pipe = _cyl_x(14, FLAK_VENTURI[0] * mm + 40, -230, z=FLAK_VENTURI[2] * mm)
+        handles = []
+        for hx in (GRIP[0] * mm, FORE[0] * mm):
+            handles.append(cq.Workplane("XZ").circle(25).extrude(70, both=True).translate((hx, 0, 0)))
+            for sy in (-1, 1):
+                handles.append(cq.Workplane("XY").box(30, 14, tz - 20).translate((hx, sy * 77, (tz - 20) / 2 + 10)))
+        stock = cq.Workplane("XY").box(PAD[0] * -mm - 230, 50, 60).translate(((PAD[0] * mm - 250) / 2, 0, tz - 35))
+        pad = cq.Workplane("XY").box(40, 110, 170).translate((PAD[0] * mm, 0, PAD[2] * mm)).edges("|X").fillet(30)
+        sight = cq.Workplane("XY").box(120, 30, 50).translate((150, 0, tz + 45))
+        mag = cq.Workplane("XY").box(70, 40, 120).translate((-60, 60, tz - 20))
+        parts = [tube, brake, breech, bottle, venturi, pipe, *handles, stock, pad, sight, mag]
+        return cq.Compound.makeCompound([w.val() for w in parts])
+
+    def scabbard(self, p):
+        mm = 1000.0
+        x0, y0, z0 = (v * mm for v in SCABBARD_FLAK["pos"])
+        tz = z0 + TUBE_Z * mm
+        out = []
+        for dx, r in ((-200.0, 50.0), (600.0, 24.0)):
+            cradle = (cq.Workplane("YZ").circle(r + 8).circle(r).extrude(40).translate((x0 + dx - 20, y0, tz - (40 if dx < 0 else 0)))
+                      .cut(cq.Workplane("XY").box(60, 160, 80).translate((x0 + dx, y0, tz + 40))))
+            stay = gq._tube((x0 + dx, y0, tz - r - 40), (x0 + dx, math.copysign(gq.GEOM["frame_y"] * mm, y0), gq.GEOM["rail_z"] * mm), 10)
+            out += [cradle.val(), stay]
+        return cq.Compound.makeCompound(out)
+
+    def build(self, p):
+        return getattr(self, p["part"])(p)
+
+
+FLAK_RGBA = (0.30, 0.31, 0.34, 1.0)
+
+
+def flak_mesh(body="flak"):
+    d = Flak()
+    return [(body, gq._tess(d.flak(d.resolve())), FLAK_RGBA)]
+
+
+def flak_scabbard_mesh():
+    d = Flak()
+    return [("quad_chassis", gq._tess(d.scabbard(d.resolve(part="scabbard"))), SCABBARD_RGBA)]

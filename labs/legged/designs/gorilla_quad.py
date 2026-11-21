@@ -57,13 +57,13 @@ RIDER = {"mass": 384.5, "pelvis_width": 0.56, "pelvis_half_height": 0.085, "shou
 
 #: The vehicle's geometry [m] (frame origin on the ground, mid wheelbase).
 GEOM = {
-    "wheel_r": 0.33, "wheel_w": 0.25, "wheelbase": 1.70, "track": 1.80,
+    "wheel_r": 0.33, "wheel_w": 0.25, "wheelbase": 1.95, "track": 1.95,    # grown from 1.70 x 1.80 to carry the bazooka and the flak
     "pelvis": (-0.15, 0.0, 0.93),           # Kerchak's pelvis origin when seated
     "seat_top": 0.93 - 0.085 - 0.01,        # under the pelvis shell, the cushion compressed 10 mm
     "footboard_z": 0.31, "footboard_x": 0.27, "footboard_y": 0.24, "footboard_len": 0.46, "footboard_w": 0.26,
     "grip_x": 0.56, "grip_y": 0.50, "grip_z": 1.12, "grip_r": 0.025,
     "column_base": (0.76, 0.0, 0.62), "column_rake_deg": 25.0,
-    "trunk": {"x": -0.78, "len": 0.56, "w": 0.86, "h": 0.28, "floor_z": 0.74, "wall": 0.004},
+    "trunk": {"x": -0.90, "len": 0.56, "w": 0.86, "h": 0.28, "floor_z": 0.74, "wall": 0.004},
     "battery": {"x": -0.10, "len": 0.62, "w": 0.42, "h": 0.24, "z": 0.30},
     "frame_y": 0.30, "rail_z": 0.30, "top_rail_z": 0.70,
     "droop": 0.10, "bump": 0.14,            # wheel travel below and above static ride height
@@ -81,7 +81,10 @@ MASS = {
     "handlebar, column, steering rack": 9.0,
     "trunk tray (Al 4 mm) and tools": 14.0,
     "wishbones, coilovers (sprung half)": 4 * 3.5,
+    "bazooka (6.1) + 24 golf balls (1.1), flak (7.4), two scabbards (3.0)": 17.6,
 }
+#: where the weapons ride: (mass, (x, y, z)) - the bazooka on the right, the flak on the left (``gorilla_bazooka``)
+WEAPONS = [(7.2 + 1.5, (-0.08, -0.60, 0.85)), (7.4 + 1.5, (-0.02, 0.62, 0.85))]
 UNSPRUNG = {"wheel + tyre 26x10-12": 14.0, "upright, hub, brake disc + caliper": 6.0, "wishbones, coilover, half-shaft (unsprung half)": 4.5}
 CORNERS = ("FL", "FR", "RL", "RR")
 
@@ -107,7 +110,7 @@ def sizing(rider_cg=(-0.05, 0.0, 0.99), rider_mass=None) -> dict:
                 (MASS["motors 4x PMSM 3 kW cont / 6 kW peak + 6:1 reduction"], (0.0, g["wheel_r"])), (MASS["inverters 4x, VCU, DC-DC, wiring"], (0.0, 0.45)),
                 (MASS["footboards, bodywork, fenders, seat base and scissor"], (0.0, 0.62)), (SEAT_MOVING_KG, (GEOM["pelvis"][0], GEOM["seat_top"] - 0.05)), (MASS["handlebar, column, steering rack"], (0.70, 0.90)),
                 (MASS["trunk tray (Al 4 mm) and tools"], (g["trunk"]["x"], g["trunk"]["floor_z"] + 0.08)), (MASS["wishbones, coilovers (sprung half)"], (0.0, 0.45)),
-                (4 * m_u, (0.0, g["wheel_r"]))]
+                (4 * m_u, (0.0, g["wheel_r"]))] + [(mw, (p[0], p[2])) for mw, p in WEAPONS]
     xv = sum(mm * p[0] for mm, p in cg_parts) / m_v
     zv = sum(mm * p[1] for mm, p in cg_parts) / m_v
     x = (m_r * rider_cg[0] + m_v * xv) / m
@@ -332,7 +335,7 @@ class GorillaQuad(Design):
         g, r = GEOM, p["tube_r"]
         mm = 1000.0
         fy, zr, zt = g["frame_y"] * mm, g["rail_z"] * mm, g["top_rail_z"] * mm
-        xf, xr = 0.95 * mm, -1.05 * mm
+        xf, xr = (g["wheelbase"] / 2 + 0.10) * mm, -(g["wheelbase"] / 2 + 0.20) * mm
         tubes = []
         for s in (1, -1):
             y = s * fy
@@ -400,6 +403,12 @@ class GorillaQuad(Design):
         g = GEOM
         mm = 1000.0
         shapes = [self.frame(p), self.seat(p), self.trunk(p).val(), self.tools(p)]
+        import gorilla_bazooka as gb                                        # the weapons in their scabbards, the autonomy kit
+        import gorilla_quad_autonomy as ga
+        bz, fk = gb.Bazooka(), gb.Flak()
+        shapes += [bz.scabbard(bz.resolve(part="scabbard")), fk.scabbard(fk.resolve(part="scabbard")), ga.AutonomyKit().build({"part": "kit"})]
+        for weapon, pose in ((bz.bazooka(bz.resolve()), gb.SCABBARD["pos"]), (fk.flak(fk.resolve()), gb.SCABBARD_FLAK["pos"])):
+            shapes.append(weapon.translate(cq.Vector(*(np.asarray(pose) * mm))))
         hb = self.handlebar(p).translate(cq.Vector(*(np.asarray(g["column_base"]) * mm)))
         shapes.append(hb)
         wheel, up, arm, coil = self.wheel(p), self.upright(p), self.wishbone(p), self.coilover(p)
@@ -468,6 +477,7 @@ def quad_prop(x0=0.0, y0=0.0, *, rigid=False, sz=None, bar_offset=(0.0, 0.0), se
         chassis_geoms.append(Geom(f"q_footboard_{side}", "box", (g["footboard_len"] / 2, g["footboard_w"] / 2, 0.01),
                                   pos=(g["footboard_x"], sy * g["footboard_y"], g["footboard_z"] - 0.01), mass=0.0, role="visual", rgba=COLORS["frame"]))
     masses = [PointMass(f"motor_{c}", 12.0, (_corner_xy(c)[0], np.sign(_corner_xy(c)[1]) * (g["frame_y"] - 0.07), R)) for c in CORNERS]
+    masses += [PointMass(f"weapons_{k}", mw, p) for k, (mw, p) in enumerate(WEAPONS)]
     assert abs(sum(gm.mass for gm in chassis_geoms) + sum(pm.mass for pm in masses) - m_s + MASS["handlebar, column, steering rack"]) < 1e-6
     base = g["column_base"]
     bar = Link("quad_bar", pos=(base[0] - bar_offset[0], base[1], base[2] - bar_offset[1]), joints=[Joint("steer_column", axis=tuple(_column_axis()), range=(-g["steer_max"], g["steer_max"]), damping=3.0)],
