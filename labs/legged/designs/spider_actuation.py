@@ -25,7 +25,7 @@ from __future__ import annotations
 import math
 
 __all__ = ["ROBOTS", "PARTS", "ARCHITECTURES", "ROUTING", "CUT_LOADS", "joint_demand", "size", "compare",
-           "tendon_routing", "cutter", "jump", "salty_catapult",
+           "tendon_routing", "cutter", "tarantula_winch", "jump", "salty_catapult",
            "SOURCES", "G", "extension_support", "recommend", "EFFICIENCY", "SERVOS", "MOTORS",
            "pick_motor"]
 
@@ -351,6 +351,54 @@ def cutter(spec=None, motor="micro metal gearmotor 250:1 (class)", screw_eff=0.3
     return {"screw_n": f_run, "stroke_mm": stroke, "close_s": stroke / speed, "edges_cross_deg": th0,
             "max_gap_mm": ss.cutter_gap(spec, c["open_deg"], throat_mm), "table": rows, "cuts": cuts,
             "mass_g": sum(CUTTER_PARTS.values()), "motor": name}
+
+
+# --------------------------------------------------------------------------------------------- TARANTULA's dragline
+#: the dragline pod's parts [g] (class estimates)
+WINCH_PARTS = {"spool + 10 m of 0.8 mm UHMWPE line": 8.0, "gearmotor 1000:1 (Pololu #3070 class)": 10.5,
+               "clutch, band brake + its micro servo": 9.0, "launcher tube, spring, latch": 14.0, "harpoon": 12.0,
+               "bracket, fairlead": 8.0}
+
+
+def tarantula_winch(spec=None, mass_kg=1.5, line_break_n=400.0, harpoon_g=12.0, spring_n_m=None, launch_eff=0.6,
+                    pullout_n=(80.0, 150.0), descent_m_s=0.25, share=0.6):
+    """TARANTULA's dragline pod (``spider_specs.TARANTULA['winch']``): the line, the spool, the winch, the brake and
+    the harpoon. The winch is a 1000:1 micro gearmotor straight on the spool (``MOTORS``): its pull at the full and
+    the empty drum, its reel-in speed carrying ``share`` of the robot's weight and all of it; the brake's heat at the
+    descent speed; the harpoon's spring energy, speed, range and holding against the robot's weight (``pullout_n``:
+    a toggle-barbed dart in softwood, assumed). Returns a dict."""
+    import spider_specs as ss
+    spec = spec or ss.TARANTULA
+    w = spec["winch"]
+    W = mass_kg * G
+    name, _, stall, w0, _ = next(m for m in MOTORS if m[0].startswith("micro metal gearmotor 1000:1"))
+    r_empty, r_full = w["drum"] * 1e-3, (w["flange"] - 1.0) * 1e-3
+    vol = math.pi * ((w["flange"] - 1.0) ** 2 - w["drum"] ** 2) * w["width"] * 0.65          # mm³, 65 % packed
+    capacity_m = vol / (math.pi * (w["line_mm"] / 2) ** 2) / 1000
+
+    def speed(force, r):                                                  # the motor's linear torque–speed line
+        frac = force * r / stall
+        return max(0.0, 1 - frac) * w0 * r, frac
+
+    v_share, f_share = speed(share * W, r_full)
+    v_all, f_all = speed(W, r_full)
+    x = w["spring_mm"] * 1e-3
+    E = None
+    if spring_n_m is None:                                                # sized for 0.72 J at the muzzle
+        E = 0.72 / launch_eff
+        spring_n_m = 2 * E / x ** 2
+    E = 0.5 * spring_n_m * x ** 2
+    ek = E * launch_eff
+    v = math.sqrt(2 * ek / (harpoon_g * 1e-3))
+    return {"weight_n": W, "line_capacity_m": capacity_m, "line_safety": line_break_n / W,
+            "pull_stall_n": {"full drum": stall / r_full, "empty drum": stall / r_empty},
+            "reel_in_mm_s": {f"{share:.0%} of the weight": v_share * 1000, "all the weight": v_all * 1000},
+            "motor_load_fraction": {f"{share:.0%} of the weight": f_share, "all the weight": f_all},
+            "brake_heat_w": (1 - share) * 0 + W * descent_m_s, "descent_m_s": descent_m_s,
+            "spring_n_m": spring_n_m, "spring_j": E, "cocking_force_n": spring_n_m * x,
+            "can_recock": stall / r_full >= spring_n_m * x, "harpoon_m_s": v, "harpoon_j": ek,
+            "range_45deg_m": v * v / G, "anchor_safety": (pullout_n[0] / W, pullout_n[1] / W),
+            "mass_g": sum(WINCH_PARTS.values()), "motor": name}
 
 
 # --------------------------------------------------------------------------------------------- jumping (SALTY)

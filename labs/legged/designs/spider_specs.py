@@ -42,6 +42,13 @@ TARANTULA = {
     #: the rows ``dx`` apart from ``x0`` (from the foot's centre), tilted ``tilt_deg`` so the tips trail to the heel
     #: (they hook when the foot is drawn towards the body: the climbing stroke, and the drag that sets them)
     "spine_comb": {"rows": 5, "per_row": 32, "pitch": 0.9, "tilt_deg": 30.0, "x0": 6.0, "dx": 2.5, "reach": 0.3},
+    #: the dragline pod at the spinnerets (§12): a spool of UHMWPE line (``drum`` core radius, ``flange`` radius,
+    #: ``width`` [mm]) driven by a gearmotor through a clutch, a band brake for controlled descent, and a spring
+    #: launcher firing a barbed harpoon backwards and up (``elevation_deg``) along the line's exit; the pod's centre
+    #: ``at`` (dx, dz) from the abdomen's centre
+    "cords": "routed",                                                    # tendons over the knuckles (spiders.tendon_routes)
+    "winch": {"drum": 10.0, "flange": 17.0, "width": 18.0, "at": (-58.0, 28.0), "line_mm": 0.8, "line_m": 10.0,
+              "tube": (12.0, 8.0, 80.0), "elevation_deg": 25.0, "harpoon": (5.0, 70.0, 14.0), "spring_mm": 50.0},
     "battery": (110.0, 45.0, 32.0), "board": (110.0, 80.0), "bank": (6, 2, 2),
     "turret": (46.0, 34.0), "shell_plates": 5,
     #: the chelicerae: two bypass-shear jaws under the turret (the left jaw above the pivot plane, the right below; their

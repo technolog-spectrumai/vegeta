@@ -7,6 +7,7 @@
 #   ./tarantula.sh run all -j 8                         everything, on 8 cores (default: all cores but one)
 #   ./tarantula.sh run walk slope -j 6                  some of them (the "tarantula-" prefix is optional)
 #   ./tarantula.sh run all -j 8 --out runs/tarantula/mine   choose the output folder
+#   ./tarantula.sh video                                a MuJoCo video: harpoon, down and up the wall on the dragline
 #
 # Simulations: gaits (kinematic checks: IK, joint limits, static stability, tip-over angles), walk (flat ground:
 # gait × posture × payload × friction), slope (inclines 0–40° up, across and down), rough (rough ground 10–35 mm RMS
@@ -34,7 +35,7 @@ export PYTHONPATH="$PWD/libs/vegeta-cli/src:$PWD/libs/labkit/src:$PWD/libs/ogma/
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 
 if [ $# -eq 0 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  sed -n '2,19p' "$0"
+  sed -n '2,20p' "$0"
   exit 0
 fi
 missing=$("$py" - <<'PY'
@@ -50,6 +51,9 @@ runner=labs/legged/sims/spider_sims.py
 case "$1" in
   list)
     exec "$py" "$runner" list tarantula ;;
+  video)
+    shift
+    exec "$py" labs/legged/sims/tarantula_video.py "$@" ;;
   run)
     shift
     args=()
@@ -66,6 +70,6 @@ case "$1" in
     [ "$names" -eq 1 ] || args=("tarantula" "${args[@]}")
     exec "$py" "$runner" run "${args[@]}" ;;
   *)
-    echo "tarantula.sh: unknown command '$1' (list | run)" >&2
+    echo "tarantula.sh: unknown command '$1' (list | run | video)" >&2
     exit 2 ;;
 esac

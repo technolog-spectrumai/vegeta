@@ -168,7 +168,14 @@ def test_tarantula_attachment_verdict():
     assert st_["brick"]["spine"] >= 90 and st_["brick"]["pad"] is None                # no adhesive contact on brick
     assert st_["bare steel"]["magnet"] == 180 and st_["painted wall"]["hybrid"] < 45
     assert 14 <= st_["glass"]["friction"] <= 20                                        # tan β ≤ μ/2
-    assert ta.monte_carlo("brick", "spine")["p5"] >= 2.0
+    assert 1.8 < ta.monte_carlo("brick", "spine")["p5"] < 2.0                          # 160 spines: just short at p5
+    n0 = ta.MODULES["spine"]["spines"]
+    try:
+        ta.MODULES["spine"]["spines"] = 192                                             # a sixth row: back over 2
+        assert ta.monte_carlo("brick", "spine")["p5"] >= 2.0
+    finally:
+        ta.MODULES["spine"]["spines"] = n0
+    assert ta.POSTURES["crouched"] == pytest.approx(41.6, abs=0.1)                     # the abdomen's belly 5 mm off
     assert ta.max_inclination("brick", "spine", "wave", "standing") < 90               # it must crouch
 
 
@@ -182,12 +189,12 @@ def test_tarantula_robot_and_gaits():
     assert r.total_mass() == pytest.approx(1.5, abs=1e-6) and r.summary()["n_actuated"] == 24 and len(r.feet) == 8
     assert tr.drive().stall_torque == pytest.approx(1.62)                  # 1000:1 gearmotor × 1.5 pulley (§5)
     kin = mk.Kin(r)
-    for name, drop in (("wave4", 0.0), ("tetrapod", 34.0), ("turn", 0.0)):
+    for name, drop in (("wave4", 0.0), ("tetrapod", tg.POSTURES["crouched"]), ("turn", 0.0)):
         m = tg.gait(name, kin=kin, body_drop_mm=drop)
         assert m.check["ik_error_max_m"] < 1e-4 and m.check["limit_margin_min_rad"] > 0
         assert m.check["static_margin_min_m"] > 0.03                          # statically stable throughout
     up_stand = tg.gait("wave4", kin=kin).check["tip_deg_min"]["up"]
-    up_crouch = tg.gait("wave4", kin=kin, body_drop_mm=34.0).check["tip_deg_min"]["up"]
+    up_crouch = tg.gait("wave4", kin=kin, body_drop_mm=tg.POSTURES["crouched"]).check["tip_deg_min"]["up"]
     assert up_crouch > up_stand                                              # crouching resists tipping
 
 
@@ -218,3 +225,40 @@ def test_tarantula_spine_foot():
     d = spiders.Tarantula()
     assert d.generate(part="leg").measure()["n_solids"] > sc["rows"]
     assert d.generate(part="foot").measure()["valid"]
+
+
+def test_tarantula_dragline_sizing():
+    w = sa.tarantula_winch()
+    assert w["line_capacity_m"] >= 10.0 and w["line_safety"] > 20
+    assert w["motor_load_fraction"]["all the weight"] < 0.3 and w["reel_in_mm_s"]["all the weight"] > 40
+    assert w["can_recock"] and 8 < w["harpoon_m_s"] < 14 and w["anchor_safety"][0] > 5
+
+
+def test_tarantula_cords_ride_over_and_under_the_knee():
+    import spider_specs as ss_
+    import spiders
+
+    c = ss_.leg_chain(ss_.TARANTULA)
+    r = spiders.tendon_routes(ss_.TARANTULA)
+    knee_z = c["knee"][1]
+    wrap_a = next(p for tag, p in r["flexor"]["pts"] if tag == "wrap")
+    wrap_b = next(p for tag, p in r["coupling"]["pts"] if tag == "wrap")
+    assert wrap_a[2] > knee_z > wrap_b[2]                                         # flexor over, coupling under
+    assert [tag for tag, _ in r["flexor"]["pts"]] == ["hip", "hip", "femur", "femur", "wrap", "tibia"]
+    assert "cords" not in ss_.SALTY and "cords" not in ss_.ARACHNE2               # the others keep their legs
+
+
+def test_tarantula_dragline_pod_cad():
+    pytest.importorskip("cadquery")
+    import shape_kit as sk
+    import spiders
+
+    d = spiders.Tarantula()
+    s = d.spec
+    assert d.generate(part="winch").measure()["valid"]
+    pod = [v.val() for vs in d.dragline_pod(s).values() for v in vs]
+    legs = [v for w in d.legs(s) for v in w.vals()]
+    assert sum(a.intersect(b).Volume() for a in pod for b in legs) < 1.0           # clear of the legs
+    deck = sk.union_all(d.deck(s)).val()
+    assert sum(a.intersect(deck).Volume() for a in pod) < 1.0                      # and of the payload deck
+

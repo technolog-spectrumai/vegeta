@@ -85,14 +85,15 @@ def _hull_margin(points, c):
 
 def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, step_height=None, payload_g=300.0,
              payload_x_mm=None, mu=0.8, incline_deg=0.0, heading_deg=0.0, terrain=None, cycles=4, attach=None,
-             push=None, fault=None, derate=1.0, kp=25.0, kd=0.5, timestep=0.001, settle_s=0.6, seed=0):
+             push=None, fault=None, derate=1.0, kp=50.0, kd=0.5, timestep=0.001, settle_s=0.6, seed=0, trace_fps=None):
     """One run; returns a flat dict of results (the module docstring lists them).
 
     ``terrain``: None/{'kind': 'flat'}, {'kind': 'rough', 'rms_mm', 'corr_mm', 'seed'} or {'kind': 'steps',
     'height_mm', 'spacing_mm'}. ``attach``: None or 'module:surface' (``tarantula_attachment``). ``push``:
     {'t', 'force_n', 'dir_deg' (0 forward, 90 left), 'dur_s'} on the body. ``fault``: {'leg', 'mode': 'limp' (its
     drives go slack) or 'locked' (they stop where they are and hold), 't'}. Gait time t counts from the end of the
-    settle."""
+    settle. ``trace_fps``: also return ``trace`` — every link body's position [m] and quaternion at that frame
+    rate, with the feet attached (adhesion on) per frame — for a video (``tools/tarantula_video.py``)."""
     import motion_kit as mk
     import mujoco
     import tarantula_gaits as tg
@@ -115,6 +116,8 @@ def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, ste
         for gm in root.iter("geom"):
             if gm.get("name", "") in tr.LEGS:
                 gm.set("friction", f"{mu_att:.4f} 0.005 0.0001")
+                gm.set("margin", "0.003")                                    # adhesion acts within 3 mm of the wall
+                gm.set("gap", "0.0")
         act = root.find("actuator")
         for f in tr.LEGS:
             ET.SubElement(act, "adhesion", {"name": f"adh:{f}", "body": f"{f}_tibia", "ctrlrange": "0 1",
@@ -148,7 +151,7 @@ def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, ste
         return s * n if s < 1.0 / n else None
 
     free = model.joint("body:free")
-    data.qpos[free.qposadr[0] + 2] = tr.STAND_Z - drop * 1e-3 + 0.002
+    data.qpos[free.qposadr[0] + 2] = tr.STAND_Z - drop * 1e-3 + (0.0 if attach else 0.002)   # on a wall: feet touching
     data.qpos[qadr] = q_ref(0.0)
     mujoco.mj_forward(model, data)
     dt = model.opt.timestep
@@ -176,6 +179,13 @@ def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, ste
     fell, why = False, None
     roll_after_push = 0.0
     c6 = np.zeros(6)
+    trace = None
+    if trace_fps:
+        tbodies = [model.body(i).name for i in range(1, model.nbody)]
+        tids = np.arange(1, model.nbody)
+        trace = {"bodies": tbodies, "fps": trace_fps, "t": [], "pos": [], "quat": [], "attached": [], "slope_deg": incline_deg,
+                 "gravity": g.tolist()}
+        next_frame = -settle_s
     for step in range(n_settle + n_run):
         t_g = step * dt - settle_s
         tg_ = max(t_g, 0.0)
@@ -205,6 +215,12 @@ def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, ste
             R = data.xmat[body].reshape(3, 3)
             data.xfrc_applied[body, :3] = push["force_n"] * (R @ np.array([math.cos(a), math.sin(a), 0.0]))
         mujoco.mj_step(model, data)
+        if trace is not None and t_g >= next_frame - 1e-9:
+            trace["t"].append(round(t_g, 4))
+            trace["pos"].append(np.round(data.xpos[tids], 5).tolist())
+            trace["quat"].append(np.round(data.xquat[tids], 5).tolist())
+            trace["attached"].append([f for f in tr.LEGS if not attach or data.ctrl[act_adh[f]] > 0.5])
+            next_frame += 1.0 / trace_fps
         if t_g < 0:
             continue
         steps_run += 1
@@ -314,7 +330,8 @@ def simulate(gait="wave4", posture="standing", *, stride=None, swing_s=None, ste
             "saturated_fraction": round(tq_hist_sat / max(steps_run * len(names), 1), 4),
             "power_w": round(p_mean, 2), "cost_of_transport": round(p_mean / (mass * 9.81 * v), 2) if v > 1e-4 else None,
             "runtime_h": round(BATTERY_WH / p_mean, 2), "mass_kg": round(mass, 3),
-            "attach_pull_n": round(pull, 2) if attach else None, "attach_mu": round(mu_att, 3) if attach else None}
+            "attach_pull_n": round(pull, 2) if attach else None, "attach_mu": round(mu_att, 3) if attach else None,
+            **({"trace": trace} if trace is not None else {})}
 
 
 # --------------------------------------------------------------------------------------------- the studies

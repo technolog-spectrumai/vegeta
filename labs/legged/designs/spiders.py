@@ -24,6 +24,7 @@ curved claw at its toe (shallow tarsus: the pad loads; steep: the claw hooks).
 import math
 
 import cadquery as cq
+import numpy as np
 import shape_kit as sk
 import spider_specs as ss
 from vegeta.dedalus import Design, Parameter
@@ -180,6 +181,47 @@ def foot(spec):
     return _compound([fp["foot"]] + fp["spines"])
 
 
+def _unit(v):
+    v = np.asarray(v, float)
+    return v / np.linalg.norm(v)
+
+
+def tendon_routes(spec, scale=1.0, angles=None):
+    """The cords of a leg (leg frame), as the joints carry them: {name: {"pts": [(link, point)], "radius", "wrap"}},
+    link 'hip' (the coxa), 'femur', 'tibia' (the tibia, metatarsus and tarsus) or 'wrap' (the point where the cord
+    rides over a joint's knuckle in this pose). ``wrap`` = (centre, radius, side): the knee knuckle the cord wraps,
+    above (+1) or below (−1) it.
+
+    * ``flexor`` — the knee tendon: from the hip boss over the top of the yaw knuckle, over the lift knuckle, along
+      the top of the femur, over the top of the knee knuckle, to a lug on the tibia's top: pulled, it folds the knee;
+    * ``coupling`` — the tarsus tendon: from the femur's underside near the knee, under the knee knuckle, along the
+      tibia's underside, under the metatarsal knuckle, to the tarsus joint's underside: it turns the foot with the
+      knee;
+    * ``pushrod`` — the lift pushrod from under the coxa to under the femur's root."""
+    c = ss.leg_chain(spec, scale, angles)
+    rf, rt, rm, _ = (x * (1.0 if scale == 1.0 else 1.25) for x in spec["tube"])
+    kn = rf * 1.9
+    P = {k: np.array([c[k][0], 0.0, c[k][1]]) for k in ("lift", "knee", "meta", "tarsus")}
+    f, tt, m = _unit(P["knee"] - P["lift"]), _unit(P["meta"] - P["knee"]), _unit(P["tarsus"] - P["meta"])
+    up = lambda d: np.array([-d[2], 0.0, d[0]])
+    nf, nt, nm = up(f), up(tt), up(m)
+    nk, nmeta = _unit(nf + nt), _unit(nt + nm)
+    Lf, Lt = (np.linalg.norm(P["knee"] - P["lift"]), np.linalg.norm(P["meta"] - P["knee"]))
+    ya, yb = np.array([0, rf * 0.9, 0]), np.array([0, -rf * 0.9, 0])
+    RA = RB = kn * 1.05 + rf * 0.15
+    zl = c["z_lift"]
+    flexor = [("hip", np.array([kn * 0.6, 0, zl + kn * 1.2]) + ya), ("hip", np.array([c["lift"][0], 0, zl + kn + rf * 0.2]) + ya),
+              ("femur", P["lift"] + f * 0.18 * Lf + nf * rf * 1.5 + ya), ("femur", P["knee"] - f * 0.14 * Lf + nf * rf * 1.5 + ya),
+              ("wrap", P["knee"] + nk * RA + ya), ("tibia", P["knee"] + tt * 0.22 * Lt + nt * rt * 1.5 + ya)]
+    coupling = [("femur", P["knee"] - f * 0.16 * Lf - nf * rf * 1.4 + yb), ("wrap", P["knee"] - nk * RB + yb),
+                ("tibia", P["meta"] - tt * 0.12 * Lt - nt * rt * 1.4 + yb), ("tibia", P["meta"] - nmeta * rt * 1.8 + yb),
+                ("tibia", P["tarsus"] - nm * rm * 1.8 + yb)]
+    pushrod = [("hip", np.array([c["lift"][0] * 0.5, 0, zl - rf * 1.6])), ("femur", P["lift"] + f * 0.25 * Lf - nf * rf * 1.6)]
+    return {"flexor": {"pts": flexor, "radius": max(0.25, rf * 0.12), "wrap": (P["knee"] + ya, RA, 1)},
+            "coupling": {"pts": coupling, "radius": max(0.2, rf * 0.1), "wrap": (P["knee"] + yb, RB, -1)},
+            "pushrod": {"pts": pushrod, "radius": rf * 0.4, "wrap": None}}
+
+
 def leg_parts(spec, scale=1.0, angles=None, detail=True):
     """One leg in its own frame (r → +x, across the leg → +y, z up, ground z = 0): a dict of parts in place."""
     c = ss.leg_chain(spec, scale, angles)
@@ -193,25 +235,36 @@ def leg_parts(spec, scale=1.0, angles=None, detail=True):
                                   tube(yaw, lift, rf * 1.35),
                                   knuckle(lift, (0, 1, 0), kn, rf * 4.2)])
     parts["femur"] = tube(lift, knee, rf, rf * 0.35)
-    parts["knee"] = sk.union_all([knuckle(knee, (0, 1, 0), kn * 1.05, rf * 3.6),
-                                  knuckle((knee[0], rf * 2.6, knee[2]), (0, 1, 0), kn * 1.35, rf * 0.9)])  # pulley
+    routed = spec.get("cords") == "routed"                                # TARANTULA: the cords of tendon_routes
+    if routed:
+        parts["knee"] = knuckle(knee, (0, 1, 0), kn * 1.05, rf * 3.6)      # also the cords' pulley
+    else:
+        parts["knee"] = sk.union_all([knuckle(knee, (0, 1, 0), kn * 1.05, rf * 3.6),
+                                      knuckle((knee[0], rf * 2.6, knee[2]), (0, 1, 0), kn * 1.35, rf * 0.9)])  # pulley
     parts["knee_spring"] = coil((knee[0], -rf * 2.6, knee[2]), (0, 1, 0), kn * 0.9, rf * 0.18, 4, rf * 0.45)
     parts["tibia"] = tube(knee, meta, rt, rt * 0.35)
     parts["meta_joint"] = knuckle(meta, (0, 1, 0), rt * 1.7, rt * 3.2)
     parts["metatarsus"] = tube(meta, tars, rm, rm * 0.4)
     parts["tarsus_joint"] = sk.union_all([knuckle(tars, (0, 1, 0), rm * 1.7, rm * 3.0),
                                           coil((tars[0], -rm * 2.0, tars[2]), (0, 1, 0), rm * 1.3, rm * 0.15, 3, rm * 0.4)])
-    # the tendons: lift pushrod at the femur's root, the knee tendon along the femur's top in a sleeve, the tarsus
-    # coupling along the tibia and the metatarsus
-    up = lambda q, d: (q[0], 0.0, q[2] + d)
-    parts["tendons"] = sk.union_all([
-        line([(0.0, rf * 2.2, c["z_lift"] + rf * 1.5), (lift[0] * 0.5 + knee[0] * 0.5, rf * 2.2,
-                                                         (lift[2] + knee[2]) / 2 + rf * 1.5),
-              (knee[0], rf * 2.6, knee[2] + kn * 1.35)], max(0.25, rf * 0.12)),
-        line([(knee[0], -rf * 1.6, knee[2] + rf), up(meta, rt * 1.6), (tars[0], -rf * 1.6, tars[2] + rm * 1.6)],
-             max(0.2, rf * 0.09)),
-        tube(up(lift, -rf * 1.8), (lift[0] + (knee[0] - lift[0]) * 0.25, 0.0, lift[2] + (knee[2] - lift[2]) * 0.25 - rf * 1.8),
-             rf * 0.4)])                                                       # the lift pushrod
+    if routed:
+        # the cords (tendon_routes): the knee flexor over the knuckles' tops, the tarsus coupling under them, the pushrod
+        routes = tendon_routes(spec, scale, angles)
+        parts["tendons"] = sk.union_all([line([tuple(p) for _, p in r["pts"]], r["radius"]) if name != "pushrod" else
+                                         tube(tuple(r["pts"][0][1]), tuple(r["pts"][1][1]), r["radius"])
+                                         for name, r in routes.items()])
+    else:
+        # the tendons: lift pushrod at the femur's root, the knee tendon along the femur's top in a sleeve, the tarsus
+        # coupling along the tibia and the metatarsus
+        up = lambda q, d: (q[0], 0.0, q[2] + d)
+        parts["tendons"] = sk.union_all([
+            line([(0.0, rf * 2.2, c["z_lift"] + rf * 1.5), (lift[0] * 0.5 + knee[0] * 0.5, rf * 2.2,
+                                                             (lift[2] + knee[2]) / 2 + rf * 1.5),
+                  (knee[0], rf * 2.6, knee[2] + kn * 1.35)], max(0.25, rf * 0.12)),
+            line([(knee[0], -rf * 1.6, knee[2] + rf), up(meta, rt * 1.6), (tars[0], -rf * 1.6, tars[2] + rm * 1.6)],
+                 max(0.2, rf * 0.09)),
+            tube(up(lift, -rf * 1.8), (lift[0] + (knee[0] - lift[0]) * 0.25, 0.0,
+                                       lift[2] + (knee[2] - lift[2]) * 0.25 - rf * 1.8), rf * 0.4)])  # the lift pushrod
     # the foot: the tarsus tube, then the foot along it, its sole on the ground
     fp = foot_parts(spec, detail)
     mid = ((tars[0] + toe[0]) / 2, 0.0, 0.0)
@@ -223,12 +276,13 @@ def leg_parts(spec, scale=1.0, angles=None, detail=True):
 
 
 def leg_solid(spec, scale=1.0, angles=None, skip=(), detail=True):
-    """The leg as one solid, and the spine comb's rows beside it (a compound) when the foot has them."""
+    """The leg as one solid with its cords and the spine comb's rows beside it (a compound; the cords ride over the
+    knuckles, so they stay separate solids)."""
     parts = leg_parts(spec, scale, angles, detail)
-    solid = sk.union_all([v for k, v in parts.items() if k not in skip and k != "spines"])
-    if "spines" in parts and "spines" not in skip:
-        return _compound([solid, parts["spines"]])
-    return solid
+    apart = ("spines", "tendons") if spec.get("cords") == "routed" else ("spines",)
+    solid = sk.union_all([v for k, v in parts.items() if k not in skip and k not in apart])
+    extra = [parts[k] for k in apart if k in parts and k not in skip]
+    return _compound([solid, *extra]) if extra else solid
 
 
 # --------------------------------------------------------------------------------------------- the bodies
@@ -421,9 +475,11 @@ class Tarantula(_Spider):
         x, z = self.x_opi(s), self.z_opi(s)
         inner = ellipsoid(L / 2, W / 2, H / 2, (x, 0, z))
         out = []
+        S_, _, _ = self.pod_frame(s)
+        notch = cq.Workplane("XY").box(60.0, 36.0, 70.0).translate((S_[0] - 4.0, 0.0, S_[2]))   # the dragline pod's seat
         for k in range(n):
             lift = 0.8 * (n - 1 - k)
-            skin = ellipsoid(L / 2 + 3, W / 2 + 3, H / 2 + 3, (x, 0, z + lift)).cut(inner)
+            skin = ellipsoid(L / 2 + 3, W / 2 + 3, H / 2 + 3, (x, 0, z + lift)).cut(inner).cut(notch)
             x0 = x + L / 2 + 4 - (L + 8) * (k + 1) / n - 1.5
             x1 = x + L / 2 + 4 - (L + 8) * k / n + (1.5 if k else 0)
             band = cq.Workplane("XY").box(x1 - x0, W + 10, H * 0.75).translate(((x0 + x1) / 2, 0, z + H * 0.4))
@@ -517,13 +573,73 @@ class Tarantula(_Spider):
     def internals(self, s):
         return super().internals(s) + self.chelicerae(s, self._jaw)["motor"]
 
+    # the dragline pod: TARANTULA's spool and harpoon at the spinnerets (§12) ----------------------------------------
+    def pod_frame(self, s):
+        """(spool centre, launcher axis d, the tube's rear end T0) in the robot frame [mm]."""
+        w = s["winch"]
+        S_ = np.array([self.x_opi(s) + w["at"][0], 0.0, self.z_opi(s) + w["at"][1]])
+        e = math.radians(w["elevation_deg"])
+        d = np.array([-math.cos(e), 0.0, math.sin(e)])
+        T0 = S_ + np.array([-4.0, 0.0, w["flange"] + 3.0])
+        return S_, d, T0
+
+    def harpoon(self, s):
+        """The harpoon in its own frame: the line's eye at the origin, the shaft along +x, a hardened tip and two
+        toggle barbs folded along it (they open under load and lock behind the fibres)."""
+        r, L, tip = (v / 2 if i == 0 else v for i, v in enumerate(s["winch"]["harpoon"]))
+        shaft = sk.rod((0, 0, 0), (L, 0, 0), r)
+        cone = cq.Workplane("XY").add(cq.Solid.makeCone(r, 0.0, tip, _v((L, 0, 0)), _v((1, 0, 0))))
+        barbs = [sk.polyline_limb([(L - 2, 0, sz * r * 0.6), (L - 14, 0, sz * (r + 2.2))], [0.7, 0.45]) for sz in (-1, 1)]
+        eye = cq.Workplane("XY").add(cq.Solid.makeTorus(3.0, 0.9, _v((-2.2, 0, 0)), _v((0, 1, 0))))
+        collar = sk.rod((L * 0.45, 0, 0), (L * 0.55, 0, 0), r + 0.8)
+        return {"shaft": sk.union_all([shaft, cone, collar]), "barbs": barbs, "eye": eye}
+
+    def harpoon_pose(self, s):
+        """(position of its eye, direction) of the harpoon seated in the launcher, tip out of the muzzle."""
+        _, d, T0 = self.pod_frame(s)
+        return T0 + 10.0 * d, d
+
+    def place_harpoon(self, s, solid, at=None, d=None):
+        p, dd = self.harpoon_pose(s) if at is None else (np.asarray(at), np.asarray(d))
+        ang = math.degrees(math.atan2(-dd[2], dd[0]))                         # about y: x → d (in the x–z plane)
+        return solid.rotate((0, 0, 0), (0, 1, 0), ang).translate(tuple(p))
+
+    def dragline_pod(self, s):
+        """{name: [solids]}: the spool (drum, flanges, the line wound on it), the gearmotor under it, the band brake
+        and its servo, the bracket, the launcher tube, the fairlead and the line from the spool into the tube."""
+        w = s["winch"]
+        S_, d, T0 = self.pod_frame(s)
+        y0 = w["width"] / 2
+        Sx, Sz = S_[0], S_[2]
+        drum = knuckle(tuple(S_), (0, 1, 0), w["drum"], w["width"])
+        flanges = [knuckle((Sx, sy * (y0 + 0.75), Sz), (0, 1, 0), w["flange"], 1.5) for sy in (-1, 1)]
+        wound = knuckle(tuple(S_), (0, 1, 0), w["flange"] - 3.0, w["width"] - 0.5)
+        motor = motor_box((Sx + 11.0, 0.0, Sz - 17.0), 1, 12.0, 10.0, 24.0).rotate((Sx + 11.0, 0, Sz - 17.0),
+                                                                                  (Sx + 11.0, 0, Sz - 16.0), 90)
+        band = (knuckle((Sx, y0 + 0.75, Sz), (0, 1, 0), w["flange"] + 1.2, 3.0)
+                .cut(knuckle((Sx, y0 + 0.75, Sz), (0, 1, 0), w["flange"] + 0.2, 3.0)))
+        servo = sk.rounded_box(12.0, 6.0, 10.0, (Sx - 8.0, y0 + 7.0, Sz - 10.0), fillet=1.0)
+        bracket = [cq.Workplane("XY").box(44.0, 2.0, 34.0).translate((Sx + 2.0, sy * (y0 + 3.5), Sz - 8.0)) for sy in (-1, 1)]
+        ro, ri, L = w["tube"]
+        tube_ = tube(tuple(T0), tuple(T0 + L * d), ro / 2, (ro - ri) / 2)
+        clamp = sk.rod(tuple(T0 + 6 * d), tuple(T0 + 14 * d), ro / 2 + 1.5)
+        post = sk.rod(tuple(T0 + 10 * d), (T0[0] + 10 * d[0], 0.0, Sz + 4.0), 2.5)
+        fairlead = cq.Workplane("XY").add(cq.Solid.makeTorus(3.0, 0.8, _v(tuple(T0)), _v(tuple(d))))
+        line_in = line([(Sx, 0.0, Sz + w["flange"] - 3.0), tuple(T0)], 0.5)
+        return {"spool": [drum, *flanges], "line": [wound, line_in], "motor": [motor], "brake": [band, servo],
+                "bracket": bracket + [post, clamp], "launcher": [tube_, fairlead]}
+
     def extras(self, s, cut):
+        pod = [v for vs in self.dragline_pod(s).values() for v in vs]
+        hp = self.harpoon(s)
+        harpoon = [self.place_harpoon(s, v) for v in [hp["shaft"], *hp["barbs"], hp["eye"]]]
         ch = self.chelicerae(s, self._jaw)
         jaws = ch["housing"] + ch["pins"] + ch["jaws"] + ch["blades"] + ch["drive"]
-        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s) + jaws
+        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s) + jaws + pod + harpoon
 
     _jaw = 20.0
-    parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot", "jaws"),
+    parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot", "jaws",
+                                                     "winch"),
                             description="what to build"),
                   Parameter("jaw", 20.0, units="deg", min=0.0, max=30.0, description="the jaws' opening, each side"),
                   Parameter("comb", "full", choices=("full", "envelope"),
@@ -532,6 +648,10 @@ class Tarantula(_Spider):
     def build(self, p):
         self._jaw = float(p.get("jaw", 20.0))
         self._detail = p.get("comb", "full") == "full"
+        if p["part"] == "winch":
+            hp = self.harpoon(self.spec)
+            return _compound([v for vs in self.dragline_pod(self.spec).values() for v in vs] +
+                             [self.place_harpoon(self.spec, v) for v in [hp["shaft"], *hp["barbs"], hp["eye"]]])
         if p["part"] == "jaws":
             ch = self.chelicerae(self.spec, self._jaw)
             return _compound([v for k in ("housing", "pins", "jaws", "blades", "drive", "motor") for v in ch[k]])

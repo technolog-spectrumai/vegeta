@@ -29,10 +29,11 @@ __all__ = ["GAITS", "HYBRID_SPINES", "MASS_KG", "MODULES", "POSTURES", "SURFACES
 
 MASS_KG = 1.5                                                             # with the 0.3 kg payload (§5)
 #: the centre of mass [mm, body frame, x forward, z off the surface]: x — the battery and the payload in the abdomen
-#: pull it back (assumed); z — the body centre's height: standing (the CAD) or crouched for climbing (the belly 5 mm
-#: off the surface)
+#: pull it back (assumed); z — the body centre's height: standing (the CAD, 62.6 mm) or crouched for climbing as far
+#: as the 75 mm abdomen allows (its belly 5 mm off the surface: 41.6 mm)
 COM_X_MM = -35.0
-POSTURES = {"standing": ss.body_z(ss.TARANTULA), "crouched": ss.TARANTULA["prosoma"][2] / 2 + 5.0}
+POSTURES = {"standing": ss.body_z(ss.TARANTULA),
+            "crouched": ss.body_z(ss.TARANTULA) - ss.TARANTULA["belly"] + 5.0}   # the abdomen's belly 5 mm off
 #: the gaits: groups of feet lifted together (the worst group is checked)
 GAITS = {"wave": [("L1", "R3"), ("R2", "L4"), ("R1", "L3"), ("L2", "R4")],
          "tetrapod": [("L1", "R2", "L3", "R4"), ("R1", "L2", "R3", "L4")]}

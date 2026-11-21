@@ -455,31 +455,42 @@ Five foot options:
 * `magnet` — a switchable permanent magnet, steel only.
 * `hybrid` — pad + spine comb + claws.
 
-**The steepest slope climbed with margin ≥ 2**, crouched (body centre 29 mm off the surface), wave gait, head up:
+**The steepest slope climbed with margin ≥ 2**, crouched (body centre 41.6 mm off the surface: as low as the 75 mm
+abdomen allows, its belly 5 mm off), wave gait, head up:
 
 | surface | friction | pad | spine (160) | magnet | vertical, 5th percentile (stiffness ±30 %, CoM ±15 mm) |
 |---|---:|---:|---:|---:|---|
-| glass | 15° | **105°** | — | — | pad 2.13 ✓ |
-| acrylic | 15° | 90° | — | — | pad 1.75 ✗ |
-| varnished wood | 15° | 60° | 15° | — | ✗ |
+| glass | 15° | **95°** | — | — | pad 1.85 ✗ (nominal 2.22) |
+| acrylic | 15° | 80° | — | — | pad 1.53 ✗ |
+| varnished wood | 15° | 55° | 15° | — | ✗ |
 | painted wall | 15° | 20° | 25° | — | ✗ (0.4) |
 | sanded wood | 15° | 15° | 50° | — | ✗ |
-| bark | 15° | — | 90° | — | spine 1.72 ✗ (~75° holds at p5) |
-| brick, concrete | 20° | — | **100°** | — | spine 2.29 ✓ |
-| bare steel | 10° | 90° | — | **180°** | magnet 8.8 ✓ |
-| painted steel | 10° | 20° | 25° | **180°** | magnet 4.4 ✓ |
+| bark | 15° | — | 75° | — | spine 1.43 ✗ |
+| brick, concrete | 20° | — | **95°** | — | spine 1.91 (nominal 2.23); **192 spines: 2.29 ✓** |
+| bare steel | 10° | 80° | — | **180°** | magnet 8.8 ✓ |
+| painted steel | 10° | 20° | 20° | **180°** | magnet 4.3 ✓ |
 
-Standing tall (body centre 63 mm) loses 20–35°: glass 75°, brick 75°, bark 60°. **TARANTULA must crouch to climb.**
-The fast tetrapod loses 10–20° more.
+**Correction.** The first version of this table assumed a crouch to a body centre of 29 mm, which TARANTULA cannot
+reach: its 75 mm-tall abdomen hangs 37 mm below the body centre, so in that crouch it would sit 8 mm inside the wall.
+The dynamic simulation showed it: the abdomen hit the wall and the robot was thrown off. Every margin above is now at
+the real crouch, and they are about 15 % lower. Two ways to win the margin back:
+* **a sixth comb row** (192 spines a foot): brick and concrete at margin 2.29 at the 5th percentile, bark to 90°; or
+* **a flatter abdomen** (50 mm tall), which allows the 29 mm crouch: brick at 2.29 with 160 spines.
+
+The CAD keeps 160 spines for now. On the dragline (§12) the line carries ~60 % of the weight, and the feet's margins
+grow ~2.5×.
+
+Standing tall (body centre 63 mm) loses another 20°: glass, brick 75°, bark 60°. **TARANTULA must crouch to climb.**
+The fast tetrapod loses ~15° more.
 
 **Verdict: no, not for its job.**
 * TARANTULA is a field robot (armour, cutting jaws, payload). Rubble, masonry, concrete, rock and bark are where it
   works, and there an adhesive pad has no contact at all.
 * What it needs there is claws and **many microspines**. A spine's hold is a property of its tip, so a heavier robot
   needs more spines, not bigger ones. At 0.2 N per engaged spine and 30 % engaged:
-  * vertical brick or concrete needs **~160 spines per foot** (120 nominal; 160 holds at the 5th percentile) — a
-    40 mm comb of 5 rows at 1 mm pitch on independent flexures, ~20 g per foot;
-  * vertical bark needs ~210 spines per foot — or the legs clasp the trunk.
+  * vertical brick or concrete needs **160–190 spines per foot** (144 nominal at the real crouch; 192 holds at the
+    5th percentile): a 40 mm comb of 5–6 rows at 1 mm pitch, on independent flexures, ~20 g per foot;
+  * vertical bark needs over 200 spines per foot, the dragline (§12), or legs that clasp the trunk.
 * Adhesives add only **clean, smooth, non-magnetic surfaces** (glass, acrylic, smooth panels). There the 40 × 30 mm
   pad is just enough, on clean glass, crouched, in the wave gait. Dust fouls fibrillar pads outdoors.
 * **Painted walls** defeat every dry option (25–30° at best).
@@ -519,6 +530,7 @@ descends tail first, like ARACHNE.
 ./tarantula.sh run all -j 8 --quick       # a minute or two: checks the setup
 ./tarantula.sh run all -j 8               # the full grids
 ./tarantula.sh run walk slope -j 6        # some of them ("tarantula-" is optional)
+./tarantula.sh video                      # the MuJoCo video of §12 (runs/tarantula/tarantula_dragline.mp4)
 ```
 
 Output: `runs/tarantula/<date-time>/` (or `--out`):
@@ -528,10 +540,11 @@ Output: `runs/tarantula/<date-time>/` (or `--out`):
 `-j` is the number of CPU cores. The same studies also run from `./spider.sh run tarantula`.
 
 **The model** (`designs/tarantula_robot.py`):
-* **Body:** TARANTULA's CAD geometry; 1.5 kg (`MASS_G`, class estimates, with the 0.3 kg payload on the deck); centre
-  of mass 59 mm behind the carapace centre.
+* **Body:** TARANTULA's CAD geometry; 1.5 kg (`MASS_G`, class estimates: 238.5 g of payload on the deck, the 0.3 kg
+  less the dragline pod); centre of mass 59 mm behind the carapace centre.
 * **Legs:** 24 tendon-driven joints, each a self-locking 1000:1 gearmotor on a 1.5:1 pulley (1.62 N·m, 2.2 rad/s).
-  The PD loop is clipped to the motor line when driving; full torque is available when braking or holding.
+  The PD loop (kp 50 N·m/rad: a worm drive holds stiffly) is clipped to the motor line when driving; full torque is
+  available when braking or holding.
 * **Feet:** 10 mm contact spheres; rubber μ 0.8 unless a study changes it.
 
 **Gaits** (`designs/tarantula_gaits.py`): IK on the model's own kinematics.
@@ -544,8 +557,15 @@ Output: `runs/tarantula/<date-time>/` (or `--out`):
 | `turn` | 6 | 6.7°/s |
 | `crab` | 6 | 33 mm/s |
 
-They are checked kinematically: static margin 66–109 mm. The tip-over limit facing uphill is 42–56° standing and
-58–69° crouched; friction limits first (§10).
+They are checked kinematically: static margin 64–107 mm. The tip-over limit facing uphill is 42–56° standing and
+50–64° crouched (body centre 41.6 mm); friction limits first (§10).
+
+**Fixed after the first runs** (the MuJoCo cases had not been run before; the climbing video found these):
+* on a wall the robot started 2 mm off the surface, so nothing pressed its feet on and it slid off — on a wall it now
+  starts touching, and the attachment acts within 3 mm (a contact margin);
+* "crouched" put the abdomen 8 mm into the wall — the crouch is now 21 mm (body centre 41.6 mm, §10);
+* with kp 25 the climbing robot pitched back off brick (spines resist little pull-off) — kp 50 climbs at the planned
+  speed: 45 mm/s up vertical brick, slip 3 mm, pitch 0.2°.
 
 | study | cases (full / quick) | what it varies | what to read |
 |---|---:|---|---|
@@ -577,4 +597,59 @@ They are checked kinematically: static margin 66–109 mm. The tip-over limit fa
 
 The gaits are open-loop keyframes, with no balance or terrain feedback. The results show what the mechanics and the
 drives allow before a controller is added.
+
+## 12. TARANTULA's dragline: a harpoon and a winch (`Tarantula.dragline_pod`, `spider_actuation.tarantula_winch`)
+
+A spider lays a dragline as it goes and hangs from it. TARANTULA gets one too: a **pod at the spinnerets** that fires a
+barbed harpoon into something above it, then lets the robot **lower itself** and **pull itself back up** on a line.
+
+![TARANTULA's dragline pod, in the MuJoCo video](spiders/tarantula_dragline.png)
+
+**The pod** (on the abdomen's tip, `spider_specs.TARANTULA['winch']`):
+* a spool of 10 m of 0.8 mm UHMWPE line (capacity 11.4 m), on a 1000:1 gearmotor through a clutch;
+* a band brake, servo-applied, on one flange: with the clutch out, it pays the line out under control;
+* a spring launcher, its tube pointing back and up at 25°, along the line's exit; a fairlead where the line enters;
+* the harpoon: a 5 mm shaft, a hardened tip, two toggle barbs that fold along it in flight and open under load, and
+  an eye for the line. Reeling the harpoon home re-compresses the spring.
+
+| | |
+|---|---|
+| line breaking load / weight | 27× (400 N line, assumed) |
+| winch pull at stall, full / empty drum | 68 N / 108 N |
+| reel-in speed, carrying 60 % / all of the weight | 47 / 42 mm/s (22% of stall) |
+| brake heat at a 0.25 m/s descent | 3.7 W |
+| launcher spring | 960 N/m × 50 mm = 1.2 J; re-cocked by the winch at 48 N |
+| harpoon | 12 g at 11 m/s (0.72 J); 12 m at 45° without drag (the line limits it to 10 m) |
+| anchor in softwood, toggle barbs (assumed 80–150 N) | 5–10× the weight |
+| pod mass | 61.5 g (from the payload: 238.5 g left) |
+
+**Why it matters.**
+* The spines only grip along their direction, so head-down on a wall they can hardly hold. On the line, TARANTULA walks
+  down head first with the line carrying ~60 % of its weight, and the feet only steer.
+* It descends where the spines don't hold at all (paint, glass, bark past 75°) and climbs back up on the winch.
+* Hanging from the line, a fall is caught by the line, not the feet.
+
+**The cords, re-routed** (`spiders.tendon_routes`, TARANTULA only). The knee flexor now runs:
+1. from the hip boss over the top of the yaw knuckle;
+2. over the lift knuckle and along the top of the femur;
+3. over the top of the knee knuckle, which serves as its pulley;
+4. to a lug on the tibia.
+
+The tarsus coupling runs under the knee and metatarsal knuckles to the tarsus. Before, both cords were fixed lines.
+When a joint moved, one hung off its attachment and the other cut through the knee. In MuJoCo both are now spatial
+tendons between sites on the links, wrapping a pulley cylinder at the knee, so they follow every joint. In the CAD the
+cords are separate solids beside the leg.
+
+**The MuJoCo video** (`./tarantula.sh video`, `sims/tarantula_video.py`; MuJoCo's physics and its renderer, the CAD
+split onto the simulated links). The scenario:
+1. TARANTULA hangs head-down on a vertical brick wall, on its spine-comb feet.
+2. It fires the harpoon into a timber beam 0.74 m above. The flight lasts 0.05 s and is shown ×8 slower.
+3. The winch takes up the slack.
+4. It walks down the wall for three gait cycles, the brake paying out the line. The tension holds at ~64 % of the
+   weight (target 60 %).
+5. It stops, then walks back up tail first while the winch reels in, the line carrying ~45 %.
+
+The line is a rope: a tendon that pulls only when taut (6 kN/m, 100 N cap). The winch and brake are a tension
+controller limited by the winch's reel-in speed (46 mm/s) and the brake's pay-out speed (0.25 m/s). Needs cadquery
+for the meshes (cached), Pillow and ffmpeg; on headless Linux it uses `MUJOCO_GL=osmesa`.
 

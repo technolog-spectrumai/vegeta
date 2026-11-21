@@ -12,8 +12,8 @@ other feet push the body on, in stance. Feet move in groups:
 * ``crab`` — ``wave4`` sideways (to the left).
 
 **Posture**: ``body_drop_mm`` lowers the body between its feet (the feet's targets rise in the body frame):
-0 = the CAD's standing pose (body centre 63 mm up), 34 = crouched (29 mm: the climbing posture of
-``tarantula_attachment``).
+0 = the CAD's standing pose (body centre 63 mm up), 21 = crouched (41.6 mm: the abdomen's belly 5 mm off the
+surface — the climbing posture of ``tarantula_attachment``).
 
 **Static stability** (``stability``): at each keyframe, the support polygon of the stance feet and the centre of mass
 projected along gravity; the margin is the CoM's distance inside the polygon's nearest edge (negative: outside —
@@ -41,7 +41,8 @@ GAITS = {
 #: per gait: stride [mm] (turn: deg per cycle), swing window [s], step height [mm]
 DEFAULTS = {"wave8": (80.0, 0.5, 40.0), "wave4": (80.0, 0.6, 40.0), "tetrapod": (80.0, 0.6, 40.0),
             "turn": (12.0, 0.6, 40.0), "crab": (60.0, 0.6, 40.0)}
-POSTURES = {"standing": 0.0, "crouched": 34.0}
+#: body drop [mm]: crouched = as low as the abdomen allows — its belly 5 mm off the surface (body centre 41.6 mm)
+POSTURES = {"standing": 0.0, "crouched": tr.S["belly"] - 5.0}
 
 
 def _offsets(name, p0, t, period, stride, step_h):

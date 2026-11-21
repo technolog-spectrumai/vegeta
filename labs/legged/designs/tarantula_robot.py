@@ -33,7 +33,7 @@ __all__ = ["LEGS", "MASS_G", "PAYLOAD_G", "STAND_Z", "drive", "leg_frame", "mass
 mm = 1e-3
 S = ss.TARANTULA
 LEGS = [f"{s}{i}" for s in "LR" for i in (1, 2, 3, 4)]
-PAYLOAD_G = 300.0
+PAYLOAD_G = 238.5                                                        # 0.3 kg less the dragline pod
 #: the body centre's height standing (the CAD pose) [m]
 STAND_Z = ss.body_z(S) * mm
 #: the mass budget [g] (assumed class estimates; the motors from §5's pick)
@@ -45,6 +45,7 @@ MASS_G = {
     "frame, tendon pulleys and sleeves": 70.0,
     "sensor turret (camera + lidar)": 80.0,
     "cutting jaws": 54.0,
+    "dragline pod (spool, winch, brake, launcher, harpoon)": 61.5,
     "8 legs (tubes, knuckles, springs, tendons, feet)": 8 * 26.0,
     "spare (fasteners, cables)": 41.4,
 }
@@ -55,7 +56,7 @@ def mass_kg(payload_g=PAYLOAD_G):
     return (sum(MASS_G.values()) + payload_g) * 1e-3
 
 
-def drive(kp=25.0, kd=0.5, derate=1.0, armature=2e-3) -> Servo:
+def drive(kp=50.0, kd=0.5, derate=1.0, armature=2e-3) -> Servo:
     """The joint drive: the lightest body motor and pulley meeting TARANTULA's joint demand (§5), as a self-locking
     position servo. ``derate`` scales its torque (a weak battery, a hot motor); ``armature`` [kg·m²]: the reflected
     rotor inertia of a 1500:1 drive (assumed order of magnitude)."""
@@ -74,7 +75,7 @@ def leg_frame(leg):
     return (hx, hy), (math.sin(a), sy * math.cos(a)), sy
 
 
-def tarantula(payload_g=PAYLOAD_G, *, kp=25.0, kd=0.5, derate=1.0, foot_mu=0.8, foot_r_mm=10.0, name="Tarantula",
+def tarantula(payload_g=PAYLOAD_G, *, kp=50.0, kd=0.5, derate=1.0, foot_mu=0.8, foot_r_mm=10.0, name="Tarantula",
               payload_x_mm=None):
     """TARANTULA as a Chiron ``Robot`` (``payload_g`` on the deck over the abdomen, at ``payload_x_mm`` — default the
     deck's centre)."""
@@ -126,6 +127,8 @@ def tarantula(payload_g=PAYLOAD_G, *, kp=25.0, kd=0.5, derate=1.0, foot_mu=0.8, 
               PointMass("frame", MASS_G["frame, tendon pulleys and sleeves"] * 1e-3, (0.0, 0.0, 0.0)),
               PointMass("turret", MASS_G["sensor turret (camera + lidar)"] * 1e-3, (0.046, 0.0, H / 2 + 0.02)),
               PointMass("jaws", MASS_G["cutting jaws"] * 1e-3, (0.095, 0.0, -0.015)),
+              PointMass("dragline pod", MASS_G["dragline pod (spool, winch, brake, launcher, harpoon)"] * 1e-3,
+                        (xo - 0.058, 0.0, zo + 0.028)),
               PointMass("spare", MASS_G["spare (fasteners, cables)"] * 1e-3, (-0.05, 0.0, 0.0))]
     if payload_g:
         masses.append(PointMass("payload", payload_g * 1e-3, (px, 0.0, zo + H2 / 2 + 0.01)))
