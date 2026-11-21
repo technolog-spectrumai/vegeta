@@ -3,27 +3,27 @@ wing:
   span_mm: 1083.0
   exposed_area_m2: 0.1981
   lift_centre_x_mm: 339.0
-  stall_nominal_m_s: 15.2
+  stall_nominal_m_s: 15.3
 - sweep_deg: 35.0
   span_mm: 977.0
   exposed_area_m2: 0.1849
   lift_centre_x_mm: 368.0
-  stall_nominal_m_s: 15.7
+  stall_nominal_m_s: 15.9
 - sweep_deg: 60.0
   span_mm: 696.0
   exposed_area_m2: 0.1731
   lift_centre_x_mm: 387.0
-  stall_nominal_m_s: 16.3
+  stall_nominal_m_s: 16.4
 - sweep_deg: 98.0
   span_mm: 201.0
   exposed_area_m2: 0.1288
   lift_centre_x_mm: 395.0
-  stall_nominal_m_s: 18.8
+  stall_nominal_m_s: 19.0
 stowed_envelope_mm:
   length: 931
   width: 309
-  height: 205
-  tube_diameter: 322
+  height: 250
+  tube_diameter: 346
 net_release:
   from: a tube in the tail, straight aft
   propeller_behind_the_nets: false
@@ -31,12 +31,12 @@ net_release:
   note: 'the propeller is on the nose: nothing turns behind the tube''s mouth'
 balance_by_mass:
   cg_target_mm: 365.0
-  pack_station_mm: 339.0
+  pack_station_mm: 333.0
   pack_fits: true
-  cg_after_both_nets_mm: 341.0
-  cg_shift_mm: -24.0
+  cg_after_both_nets_mm: 342.0
+  cg_shift_mm: -23.0
   note: stations are a first layout (HAND); the carriage re-trims the shift when the nets have gone
 mass:
-  empty_g: 2114.0
-  total_g: 2714.0
-  without_nets_g: 2494.0
+  empty_g: 2163.4
+  total_g: 2763.4
+  without_nets_g: 2543.4

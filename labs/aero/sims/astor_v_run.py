@@ -34,6 +34,7 @@ for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXP
 
 import shutil
 import sys
+import math
 import time
 from pathlib import Path
 
@@ -130,17 +131,9 @@ def _job(job):
         if kind == "stab":
             name, sweep, Vt, k = job[1], job[2], job[3], job[4]
 
-            class Fixed(amj.Sim):                                    # the wing held at this sweep for the tests
+            class Fixed(VF.Fixed):                                   # the wing held at this sweep, the alpha limiter on
                 def __init__(self, variant=None, propulsion=None, mesh=None, bandit=False):
-                    import mujoco
-                    import numpy as np
-                    self.C = VF.get(name, sweep)
-                    self.m = mujoco.MjModel.from_xml_string(amj.mjcf(self.C, mesh, bandit))
-                    self.d = mujoco.MjData(self.m)
-                    self.bid = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "arigo")
-                    self.controls = np.array([0.0, 0.0, 0.0, 0.5])
-                    self.wind = np.zeros(3)
-                    self.info = {}
+                    super().__init__(name, sweep, mesh, bandit)
             old = amj.Sim
             amj.Sim = Fixed
             try:
@@ -149,7 +142,9 @@ def _job(job):
                 amj.Sim = old
             C = VF.get(name, sweep)
             out.update({"aircraft": NAMES[name], "sweep_deg": sweep, "stall_m_s": round(VF.stall(C), 1), "top_speed_m_s": round(AM.top_speed(C), 1),
-                        "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4), "aero_source": C["aero_source"]})
+                        "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4),
+                        "alpha_limiter": {"on": True, "limit_deg": round(math.degrees(C["alpha_stall"]) - VF.ALPHA_MARGIN_DEG, 1)},
+                        "Clda_per_deg": {"ailerons": round(C["Clda_aileron"], 5), "tail": round(C["Clda_tail"], 5)}, "aero_source": C["aero_source"]})
         elif kind == "card":
             import arigo_perf as P
             name = job[1]

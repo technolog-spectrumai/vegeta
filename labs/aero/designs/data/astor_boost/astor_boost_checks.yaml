@@ -1,9 +1,9 @@
 mass:
-  empty_g: 2412.3
-  total_g: 3162.3
-  without_nets_g: 2942.3
+  empty_g: 2460.5
+  total_g: 3210.5
+  without_nets_g: 2990.5
 pack: 6S 5000 mAh LiPo
-added_over_astor_v_g: 448.0
+added_over_astor_v_g: 447.0
 intake:
   kind: straight (pitot) at the pod's mouth
   fan_swept_area_cm2: 33.5
@@ -22,7 +22,7 @@ current:
   ok: true
 balance_by_mass:
   cg_target_mm: 365.0
-  pack_station_mm: 243.0
+  pack_station_mm: 239.0
   pack_fits: true
   cg_after_both_nets_mm: 345.0
   cg_shift_mm: -20.0
@@ -30,4 +30,4 @@ balance_by_mass:
 stowed_with_propeller_folded_mm:
   length: 970
   width: 309
-  height: 251
+  height: 296

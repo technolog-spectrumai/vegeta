@@ -56,7 +56,11 @@ def _strips(P, side, z, n=N_STRIP):
     return quads
 
 
-def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None) -> dict:
+TAU_AILERON = 0.50                # a 25 % chord flap's effectiveness (arigo1_model's TAU_A: Raymer fig. 16.7, +-0.1)
+
+
+def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None, aileron=0.0) -> dict:
+    """``aileron`` [deg]: the outer panels' flaps, right trailing edge up and left down (a roll to the right)."""
     from ogma.aero import vlm
     p = p or V.resolve()
     sweep_l = sweep_r if sweep_l is None else sweep_l
@@ -67,7 +71,14 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
         q = _strips(P, side, p["wing_plane_z"])
         quads += q
         cs = math.cos(math.radians(sw - V.SPREAD_DEG))                  # swept, the section the air sees is flatter
-        inc += [ALPHA0_DEG_PER_CAMBER * p.get("panel_camber", 0.0) * cs] * len(q)
+        # the aileron's strips: by their distance from the pivot along the panel's own span; a hinge line swept
+        # with the panel turns the flow less (cos^2 of the extra sweep, HAND)
+        a = math.radians(sw - V.SPREAD_DEG)
+        for qq in q:
+            mid = qq.mean(axis=0) * 1000.0
+            eta = ((abs(mid[1]) - p["pivot_y"]) * math.cos(a) + (mid[0] - P_pivot_x(p, sweep_r, sweep_l)) * math.sin(a)) / p["panel_span"]
+            on = p.get("panel_aileron_from", 0.0) <= eta <= p.get("panel_aileron_to", 0.0)
+            inc.append(ALPHA0_DEG_PER_CAMBER * p.get("panel_camber", 0.0) * cs - side * aileron * TAU_AILERON * cs * cs * on)
     ts = 85.0 - 50.0 * tail_fan
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
@@ -83,6 +94,17 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
         cs = math.cos(math.radians(0.5 * (sweep_r + sweep_l) - V.SPREAD_DEG))
         r["Cm"] = r["Cm"] + CM_AC_PER_CAMBER * cam * cs * cs * Sw * cw / (S_REF * C_REF)
     return r
+
+
+def P_pivot_x(p, sweep_r, sweep_l) -> float:
+    return V.pivot_x(p, 0.5 * (sweep_r + sweep_l))
+
+
+def roll_per_deg_aileron(sweep, p=None, alpha=2.0) -> float:
+    """The rolling moment [m3: per unit dynamic pressure] one degree of aileron gives (magnitude)."""
+    r0, r1 = lattice(sweep, alpha=alpha, p=p), lattice(sweep, alpha=alpha, p=p, aileron=1.0)
+    m = lambda r: float(np.sum(np.asarray(r["F"])[:, 2] * np.asarray(r["mid"])[:, 1]))
+    return abs(m(r1) - m(r0))
 
 
 def longitudinal(sweep, tail_fan=1.0, x_cg_mm=None) -> dict:

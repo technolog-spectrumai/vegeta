@@ -33,7 +33,7 @@ import astor_v as V
 from vegeta.dedalus import Parameter
 
 FAN_W = 1200.0
-_DEFAULTS = {"belly_camera_x": 455.0, "fin_height": 70.0, "fin_root_chord": 150.0, "fin_taper": 0.5}
+_DEFAULTS = {"belly_camera_x": 455.0, "fin_height": 115.0, "fin_root_chord": 200.0, "fin_taper": 0.5}   # 70 x 150 until the stability run (Cnb 0.007)
 _NEW = [
     Parameter("edf_diameter", 70.0, "mm", min=40.0, max=100.0, description="the boost fan's rotor"),
     Parameter("edf_length", 150.0, "mm", min=80.0, description="the pod: lip to nozzle"),

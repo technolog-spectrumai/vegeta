@@ -14,6 +14,9 @@ flies into it at its own speed. ASTOR-V never touches the bandit, carries two ne
   the body, for a canister). Sweeping both pitches the aircraft (the lift moves aft); sweeping them differently
   rolls it — the bird's controls. The panels' section is thin (8 %) and cambered 2 % (CFD run 1, on a symmetric section, gave a
   best lift-to-drag ratio of only ~6-7; the camber's nose-down moment costs ~5 % of the weight in tail load at the dash).
+- **Ailerons** on the outer half of each panel (25 % chord, a servo in each panel): the stability run of 2026-11-21
+  rolled at only 89 deg/s spread on the tail panels alone and never caught the zigzag bandit. Tucked, the hinge
+  lines lie along the flow and the tail panels do the rolling.
 - **A fanning tail**: two panels on pivots at the tail's root. Folded (85 deg) they are a narrow dart's tail;
   spread (35 deg) a broad delta that gives pitch authority at low speed and, raised, a brake (``astor_hawk``:
   65 -> 20 m/s in ~120 m instead of ~780 m). A low fixed fin under the tail keeps the nose straight (above, the tucked panels cross).
@@ -49,7 +52,8 @@ _OVERRIDE = {**A._OVERRIDE, "propulsion": "tractor_lowcam",        # the motor a
              "fuselage_length": 790.0, "tail_cone": 300.0, "tail_end_diameter": 58.0,   # the tail ends in the net tube's mouth
              "lowcam_drop": 50.0, "camera_diameter": 32.0,
              # a bigger fin than the pusher's: a propeller ahead of the CG pulls the nose off line
-             "fin_height": 115.0, "fin_root_chord": 195.0, "fin_taper": 0.45, "fin_sweep_deg": 45.0}
+             # and bigger again after the stability run of 2026-11-21 (Dutch-roll damping 0.06-0.08, the spiral doubling in 9 s)
+             "fin_height": 160.0, "fin_root_chord": 230.0, "fin_taper": 0.45, "fin_sweep_deg": 45.0}
 _NEW = list(A._NEW) + [
     Parameter("wing_sweep_deg", SPREAD_DEG, "deg", min=5.0, max=105.0, description="the wing panels' leading-edge sweep: 12 spread, 60 dash, 98 stowed (along the body)"),
     Parameter("wing_sweep_left_deg", -1.0, "deg", min=-1.0, max=105.0, description="the left panel's sweep if different (roll control); -1: as the right"),
@@ -61,6 +65,9 @@ _NEW = list(A._NEW) + [
     Parameter("panel_tip_chord", 120.0, "mm", min=30.0),
     Parameter("panel_thickness", 0.08, "", min=0.05, max=0.14),
     Parameter("panel_camber", 0.02, "", min=0.0, max=0.04, description="the wing panels' section camber (at 40 % chord); 0: symmetric"),
+    Parameter("panel_aileron_from", 0.50, "", min=0.2, max=0.9, description="the ailerons' inner end along the panel's span"),
+    Parameter("panel_aileron_to", 0.96, "", min=0.3, max=1.0, description="their outer end"),
+    Parameter("panel_aileron_chord", 0.25, "", min=0.15, max=0.35, description="their chord, of the panel's"),
     Parameter("panel_pivot_chord", 0.30, "", min=0.1, max=0.6, description="the pivot's place along the root chord"),
     Parameter("panel_stack", 9.0, "mm", min=4.0, description="the right panel above, the left below the wing plane (they cross)"),
     Parameter("wing_plane_z", 44.0, "mm", description="the wing plane above the fuselage axis (on the shoulder block)"),
@@ -81,6 +88,7 @@ EXTRA_ITEMS = [
     ("2 wing pivots (bearings, pins) on a sliding carriage, its rail and lead screw", 130.0, "HAND (+-40)"),
     ("wing sweep actuators (2 servos + linkages: asymmetric sweep)", 60.0, "HAND (+-20)"),
     ("tail fan pivots and actuator", 40.0, "HAND (+-15)"),
+    ("2 aileron servos in the panels, linkages, leads through the pivots", 34.0, "HAND (+-10): 2 x 12 g servos + 10 g"),
     ("net tube in the tail cone, ejector spring and latches", 40.0, "HAND (+-15)"),
     ("belly drop camera", 20.0, "HAND (+-8)"),
     ("nose camera blister", 15.0, "HAND (+-5)"),
@@ -140,8 +148,21 @@ class AstorV(a1.Arigo1):
                   for q in a1.Arigo1.parameters] + _NEW
 
     # ------------------------------------------------------------------------------------------------ wing
-    def _one_wing(self, p, side, sweep):
+    def _aileron_block(self, p):
+        """The prism that cuts a panel's aileron out, in the panel's own frame (root leading edge at the origin)."""
+        cr, ct, b, f = p["panel_root_chord"], p["panel_tip_chord"], p["panel_span"], 1.0 - p["panel_aileron_chord"]
+        tan = math.tan(math.radians(SPREAD_DEG))
+        hinge = lambda y: y * tan + f * (cr + (ct - cr) * y / b)
+        y0, y1 = p["panel_aileron_from"] * b, p["panel_aileron_to"] * b
+        pts = [(hinge(y0), y0), (hinge(y1), y1), (hinge(y1) + cr, y1), (hinge(y0) + cr, y0)]
+        return cq.Workplane("XY").polyline(pts).close().extrude(120.0).translate((0, 0, -60.0))
+
+    def _one_wing(self, p, side, sweep, part="panel"):
         pan = _panel(p["panel_root_chord"], p["panel_tip_chord"], p["panel_span"], SPREAD_DEG, p["panel_thickness"], p["panel_camber"])
+        if part == "aileron":
+            pan = pan.intersect(self._aileron_block(p))
+        elif part == "fixed":
+            pan = pan.cut(self._aileron_block(p))
         pan = pan.translate((-p["panel_pivot_chord"] * p["panel_root_chord"], 0, 0))            # the pivot at the origin
         pan = pan.rotate((0, 0, 0), (0, 0, 1), -(sweep - SPREAD_DEG))                              # aft sweep: +y toward +x
         z = p["wing_plane_z"] + side * p["panel_stack"] / 2
@@ -152,6 +173,10 @@ class AstorV(a1.Arigo1):
     def _wing(self, p):
         sl = p["wing_sweep_deg"] if p["wing_sweep_left_deg"] < 0 else p["wing_sweep_left_deg"]
         return self._one_wing(p, 1, p["wing_sweep_deg"]).union(self._one_wing(p, -1, sl))
+
+    def _wing_part(self, p, part):
+        sl = p["wing_sweep_deg"] if p["wing_sweep_left_deg"] < 0 else p["wing_sweep_left_deg"]
+        return self._one_wing(p, 1, p["wing_sweep_deg"], part).union(self._one_wing(p, -1, sl, part))
 
     def _shoulder(self, p):
         """The block on the fuselage's back that carries the pivots, and the pivot pins."""
@@ -231,7 +256,7 @@ class AstorV(a1.Arigo1):
             (p["parachute_x"] + 40.0 + p["parachute_length"] / 2, 0, R + 0.5))
 
     def parts(self, p) -> dict:
-        out = {"fuselage": self._fuselage(p), "wing": self._wing(p), "shoulder": self._shoulder(p), "tail": self._tail(p),
+        out = {"fuselage": self._fuselage(p), "wing": self._wing_part(p, "fixed"), "ailerons": self._wing_part(p, "aileron"), "shoulder": self._shoulder(p), "tail": self._tail(p),
                "camera": self._camera(p), "motors": self._motors(p), "props": self._props(p), "parachute": self._parachute(p),
                "rail": self._rail(p)}
         out["belly_camera"] = self._belly_camera(p)
@@ -326,7 +351,7 @@ def checks() -> dict:
 
 # stations [mm from the nose tip] of what the budget weighs (HAND: a first layout; the pack's is solved for)
 STATIONS = {"motor": 35.0, "ESC": 110.0, "propeller": -15.0, "camera": 70.0, "blister": 70.0, "flight controller": 170.0,
-            "vision computer": 200.0, "radio": 250.0, "wiring": 330.0, "servos": 520.0, "parachute": 480.0, "rail": 365.0,
+            "vision computer": 200.0, "radio": 250.0, "wiring": 330.0, "aileron servos": 345.0, "servos": 520.0, "parachute": 480.0, "rail": 365.0,
             "fuselage": 395.0, "tail fan": 720.0, "pivots": 330.0, "sweep actuators": 330.0, "net tube": 700.0, "belly drop camera": 520.0}
 
 

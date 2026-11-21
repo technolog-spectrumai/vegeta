@@ -9,7 +9,9 @@ the nose propeller can stop and fold, ASTOR-BOOST's fan can push).
   included;
 - *lateral, damping, inertias*: ``arigo1_model.build`` (the family's hand formulas) on an equivalent conventional
   wing of the same span, area and sweep (capped at 35 deg: the formula's range), with ASTOR-V's fin and tail;
-- *roll control*: the tail panels moved apart (tailerons): the lattice's tail lift per degree at the panels' arm;
+- *roll control*: ailerons on the outer panels (the lattice with the flapped strips at incidence, x 0.5 flap
+  effectiveness, x cos^2 of the sweep) together with the tail panels moved apart (tailerons: the lattice's tail lift
+  per degree at the panels' arm);
   ``astor_v_model`` found differential sweep too weak (8 deg ~ 1 deg of aileron);
 - *drag*: drag areas (HAND until the CFD): the body's, the wing's by its exposed area, the pod's for ASTOR-BOOST, the
   stopped propeller's folded blades; *maximum lift*: 0.95 spread, falling with the cosine of the sweep (HAND);
@@ -104,12 +106,14 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
-              "Clda": CLde * TAIL_Y_M / C["b"], "Cnda": 0.0,                 # tailerons: +-1 deg on the two tail panels
-              "Cnb": C["Cnb"] * 0.9,                                        # HAND: the tractor propeller's normal force ahead of the CG (-10 %)
+              "Clda_tail": CLde * TAIL_Y_M / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
+              "Cnda": 0.0, "Cnb": C["Cnb"] * 0.9,                                        # HAND: the tractor propeller's normal force ahead of the CG (-10 %)
               "mass_budget": mb, "pack_kind": "astor",
               "equipment": {"product": "astor", "launch": "rail", "recovery": "parachute", "turning_station": True, "kits": [],
                             "pack": mb["pack"]["name"], "nets": int(p["net_count"])},
               "aero_source": "model (lattice on the swept panels + hand)"})
+    C["Clda"] = C["Clda_tail"] + C["Clda_aileron"]                           # one roll command moves both
+    C["Cnda"] = -0.1 * C["Clda_aileron"]                                     # HAND: the ailerons' adverse yaw (arigo1_model's rule)
     if name == "boost":
         u = ap._unit("edf-70-p2.20-e0.65-catalogue-s1", FAN_W, None)
         C["boost"] = {"table_V": [float(v) for v in range(0, 92, 2)], "table_T": [float(max(u.full(float(v))[0], 0.0)) for v in range(0, 92, 2)],
@@ -183,6 +187,50 @@ def apply_cfd(C, cfg) -> None:
     C["aero_source"] = f"cfd corrections (screening RANS, {len(rows)} angles) on the lattice + hand model"
 
 
+ALPHA_MARGIN_DEG = 2.0                      # the limiter holds the wing this far below its stall
+LIMIT_K, LIMIT_KQ = 6.0, 0.10               # deg of elevator per deg over the limit, and per deg/s of pitch rate (HAND, tuned in the stall test)
+
+
+def limit_elevator(C, v_air_frd, q, de) -> float:
+    """The angle-of-attack limiter (in the flight controller, under every elevator command, the pilot's included):
+    the elevator may not go further nose-up than what holds the limit angle, less a term for the angle beyond it and
+    the pitch rate toward it. Positive elevator is nose down."""
+    al = math.atan2(v_air_frd[2], max(v_air_frd[0], 1.0))
+    a_lim = C["alpha_stall"] - math.radians(ALPHA_MARGIN_DEG)
+    de_hold = -(C["Cm0"] + C["Cma"] * a_lim) / C["Cmde"]
+    floor = de_hold + LIMIT_K * math.degrees(al - a_lim) + LIMIT_KQ * math.degrees(q)
+    return max(de, min(floor, am.DE_MAX))
+
+
+class Fixed(amj.Sim):
+    """The aircraft with the wing held at one sweep (the stability tests), the limiter under the elevator."""
+
+    def __init__(self, name, sweep, mesh=None, bandit=False, alpha_limit=True):
+        import mujoco
+        self.C = get(name, sweep)
+        self.m = mujoco.MjModel.from_xml_string(amj.mjcf(self.C, mesh, bandit))
+        self.d = mujoco.MjData(self.m)
+        self.bid = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "arigo")
+        self.controls = np.array([0.0, 0.0, 0.0, 0.5])
+        self.wind = np.zeros(3)
+        self.info = {}
+        self.alpha_limit = alpha_limit
+
+    def step(self, n=1):
+        import mujoco
+        for _ in range(n):
+            s = self.state()
+            ctl = list(self.controls)
+            if self.alpha_limit:
+                ctl[0] = limit_elevator(self.C, s["v_air_frd"], s["omega_frd"][1], ctl[0])
+            F, M, info = am.aero(self.C, s["v_air_frd"], s["omega_frd"], *ctl)
+            R = self.R()
+            self.d.xfrc_applied[self.bid, :3] = R @ (F * amj.FLIP)
+            self.d.xfrc_applied[self.bid, 3:] = R @ (M * amj.FLIP)
+            self.info = {**info, "load_factor": float(-F[2] / (self.C["mass"] * am.G)), "limited": bool(ctl[0] != self.controls[0])}
+            mujoco.mj_step(self.m, self.d)
+
+
 def get(name="v", sweep=12.0) -> dict:
     return dict(coefficients(name, float(sweep)))
 
@@ -231,6 +279,7 @@ class SimV(amj.Sim):
         self.wind = np.zeros(3)
         self.info = {}
         self.prop_on, self.boost, self.nets = True, 0.0, int(self.C["equipment"]["nets"])
+        self.alpha_limit = True
         self.energy_J = 0.0
 
     def drop_net(self) -> bool:
@@ -251,6 +300,8 @@ class SimV(amj.Sim):
             self.C = blended(self.name, self.sweep)
             self.C["mass"] = float(self.m.body_mass[self.bid])
             ctl = list(self.controls)
+            if self.alpha_limit:
+                ctl[0] = limit_elevator(self.C, s["v_air_frd"], s["omega_frd"][1], ctl[0])
             if not self.prop_on:
                 ctl[3] = 0.0
                 self.C["CD0"] += FOLDED_PROP_CDA / self.C["S"]
