@@ -96,3 +96,31 @@ def test_climb_sim_short():
     import arachne_climb as ac
     r = ac.run("climb", "glass", cycles=1)
     assert not r["fell"] and r["climbed_mm"] > 10 and r["detached_steps"] == 0
+
+
+def test_spider_legs_stand_and_salty_hips_line_up():
+    import spider_specs as ss
+    for s in ss.SPIDERS.values():
+        c = ss.leg_chain(s)
+        assert c["toe"][1] == pytest.approx(s["pad"][2] + 1.0)                  # the toe just over the pad
+        assert c["knee"][1] > c["lift"][1] > 0                                 # knees high
+        (hx, hy), _, sy = ss.hip_points(s, "L1")
+        assert hy > ss.rim_y(s, hx) and sy == 1                                 # the hip just outside the rim
+    s = ss.SALTY
+    assert ss.leg_chain(s, s["jump_leg"], s["jump_angles"])["z_lift"] == pytest.approx(ss.leg_chain(s)["z_lift"], abs=0.05)
+
+
+@pytest.mark.parametrize("cls", ["Arachne2", "Tarantula", "Salty"])
+def test_spider_cad_parts_and_insides_fit(cls):
+    pytest.importorskip("cadquery")
+    import shape_kit as sk
+    import spiders
+
+    d = getattr(spiders, cls)()
+    s = d.spec
+    for part in ("foot", "leg", "body", "internals"):
+        assert d.generate(part=part).measure()["valid"]
+    shell = sk.union_all(d.shells(s)).val()
+    for w in d.motor_bank(s) + [d.battery(s), d.board(s)]:
+        v = w.val()
+        assert v.cut(shell).Volume() < 0.01 * v.Volume()                        # inside the body

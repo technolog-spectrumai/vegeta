@@ -7,9 +7,9 @@ re-run — `designs/arachne_*.py`, `designs/spider_actuation.py`, `sims/` — or
 | robot | job | status |
 |---|---|---|
 | **ARACHNE** (v1) | palm-sized wall climber: glass, acrylic, varnished wood; bark kit | designed: budget, CAD (STEP/STL), robot model, statics, gaits, MuJoCo climbing sim |
-| **ARACHNE-2** | the same job, spider-like legs | **decided** (§3), not yet designed |
-| **TARANTULA** | a bigger walker and climber, 1.5 kg with 0.3 kg payload | actuation analysed (§5): fluid joints not needed |
-| **SALTY** | a jumping spider, hydraulic | catapult sized and simulated (§6) |
+| **ARACHNE-2** | the same job, spider-like legs | **decided** (§3); CAD (§9) |
+| **TARANTULA** | a bigger walker and climber, 1.5 kg with 0.3 kg payload | actuation analysed (§5): fluid joints not needed; CAD (§9) |
+| **SALTY** | a jumping spider, hydraulic | catapult sized and simulated (§6); CAD (§9) |
 
 Run the simulations on your machine: `./spider.sh run all -j 8` (§8).
 
@@ -327,3 +327,42 @@ Python 3.10+) with `numpy` and `mujoco`.
 | `arachne-gaits` | 30 / 9 | the kinematic gait checks × payload 0/20/40 g | < 1 s each |
 | `spider-actuation` | 22 / 10 | the five architectures over 0.1–3 kg, climbers and walkers | instant |
 | `salty-jump` | 1728 / 6 | charge × bore × lever × line × gas volume × isothermal/adiabatic | instant |
+
+## 9. CAD of ARACHNE-2, TARANTULA and SALTY (`designs/spiders.py`, numbers in `designs/spider_specs.py`)
+
+One leg design for all three, the spider's segments simplified: **coxa** on a yaw knuckle standing on a boss just
+outside the carapace's rim → **femur** rising to a high **knee** → **tibia** → **metatarsus** → **tarsus** with a
+**claw + pad** foot. The hip yaw, hip lift and knee are driven from the body: a pushrod lifts the femur, a tendon in a
+sleeve along the femur bends the knee against a **torsion spring** that extends it, and a second tendon couples the
+tarsus to the knee through a spring-loaded stop. The bodies are a **carapace** (prosoma: the motor bank and the board)
+and a round **abdomen** (opisthosoma: the battery) on a narrow waist. The CAD is checked for fit: every motor, battery,
+board and SALTY's hydraulics lie inside the shells, and no leg or hip boss touches them (`tests/test_spiders.py`).
+
+| | ARACHNE-2 | TARANTULA | SALTY |
+|---|---|---|---|
+| footprint (legs out) × height | 190 × 242 × 52 mm | 546 × 684 × 157 mm | 210 × 178 × 64 mm |
+| carapace | oval puck 70 × 56 × 20 | oval puck 165 × 140 × 48, five armour plates | square box 62 × 56 × 30, a flat face |
+| abdomen | 56 × 44 × 16, low (the centre of mass near the wall) | 150 × 125 × 75, four tergite plates, payload deck | 56 × 46 × 32 |
+| hip height / knee height / reach from hip | 18 / 44 / 87 mm | 63 / 130 / 253 mm | 23 / 38 / 53 mm (legs III: 23 / 54 / 56) |
+| motor bank | 24 × Ø6 × 20 mm gearmotors, 2 rows × 2 layers × 6 | 24 × 12 × 10 × 26 mm micro metal gearmotors, 2 × 2 × 6 | 20 × Ø6 × 20 mm, 2 × 2 × 5, behind the eyes |
+| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
+
+![ARACHNE-2](spiders/arachne2_views.png)
+![ARACHNE-2 inside](spiders/arachne2_cutaway.png)
+![TARANTULA](spiders/tarantula_views.png)
+![TARANTULA inside](spiders/tarantula_cutaway.png)
+![SALTY](spiders/salty_views.png)
+![SALTY inside](spiders/salty_cutaway.png)
+
+Files: `exports/<robot>_cad/` — `<robot>.step` (the whole robot, one solid per part), `internals.step`, and
+`body`, `leg`, `foot` as `.step` + `.stl` (SALTY also `jump_leg`). Each leg is drawn in its standing pose.
+
+**What the CAD changed or left open**
+
+* ARACHNE-2's leg reaches 87 mm from the hip, not the 75 mm the actuation study assumed (§5): the joint torques there
+  grow by ~16 %. Re-run `spider-actuation` with the CAD's reach before buying motors.
+* SALTY's walking legs had to drop their joints (femur 40°, tibia 55°, metatarsus 65°) so their hips sit at the
+  jumping legs' height; its walking reach is 53 mm, less than the 70 mm in §5.
+* The tendon routing inside the body is drawn as one sleeve per leg; the pulleys at the motor outputs, the encoders and
+  the wiring are not drawn. The pads are drawn flat; the foam and fibre layers are not modelled.
+
