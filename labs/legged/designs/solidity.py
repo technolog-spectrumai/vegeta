@@ -4,13 +4,13 @@
 reports every penetration of a limb into a prop or into another limb for a pose, as push-out targets
 (body, local point, world goal) that move the penetrating point out along the contact normal. ``kerchak_tasks
 .contact_motion`` re-solves each frame with them until the frame is clear, and the players' JSON carries the worst
-depth left. The hands are left out (the fingers close round the bars on purpose); a foot standing on its hold is
+depth left. The hands are solid too: a finger that closes into its bar is opened until it rests on it; a foot standing on its hold is
 allowed the sole's tolerance."""
 import numpy as np
 
 __all__ = ["Solid", "SKIP_BODIES", "TOL"]
 
-SKIP_BODIES = ("hand", "finger", "thumb")      #: body-name fragments whose geoms are not checked: the hands close round the bars (the forearms are checked)
+SKIP_BODIES = ()                               #: body-name fragments whose geoms are not checked: none, the hands are solid too (a finger in a bar is opened, kerchak_tasks)
 TOL = 0.012                                    #: a penetration deeper than this [m] counts (a sole on its bar sits at ~0)
 MARGIN = 0.02                                  #: the push-out puts the point this far clear of the surface [m]
 

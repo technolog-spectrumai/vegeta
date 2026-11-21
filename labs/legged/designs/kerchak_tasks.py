@@ -20,6 +20,7 @@ not solve (the fingers, the wrist's roll) are set by ``extra``.
 from __future__ import annotations
 
 import math
+import re
 
 import numpy as np
 from vegeta.chiron import Geom, Joint, Link, Prop
@@ -150,8 +151,32 @@ def _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u):
                       weights=[1.0] * len(targets) + [SOLID_WEIGHT] * len(push))
     if _hard_error(kin, q, targets) > err_before + SOLID_GIVE:              # the holds come first: a push that costs them is not taken
         q = q_before
+    q = _open_fingers(kin, q, base, R, u)
     depth, bodies = SOLID.worst(q, base, _pitch_of(R), u)
     return q, depth, bodies, raw
+
+
+_DIGIT = re.compile(r"^([LR])_(finger_\d+|thumb|knuckle_\d+)")
+
+
+def _open_fingers(kin, q, base, R, u, steps=10):
+    """A finger (or thumb) in a bar, a trunk or the wall is opened a step at a time until it rests on the surface:
+    the IK does not move the digits, so the push-out cannot."""
+    q = q.copy()
+    for _ in range(steps):
+        chains = set()
+        for b, _l, _g, _d, _o in SOLID.penetrations(q, base, _pitch_of(R), u):
+            m = _DIGIT.match(b)
+            if m:
+                side, part = m.groups()
+                chains.add(f"{side}_{part.replace('knuckle', 'finger')}_")
+        if not chains:
+            break
+        for j in kin.actuated:
+            if any(j.startswith(c) for c in chains):
+                i = kin.index[j]
+                q[i] = min(max(q[i] * 0.7, kin.lo[i]), kin.hi[i])
+    return q
 
 
 def _hard_error(kin, q, targets):
