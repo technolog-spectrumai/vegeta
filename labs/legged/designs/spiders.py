@@ -28,7 +28,7 @@ import shape_kit as sk
 import spider_specs as ss
 from vegeta.dedalus import Design, Parameter
 
-__all__ = ["LEGS", "Arachne2", "Salty", "Tarantula", "foot", "leg_parts"]
+__all__ = ["LEGS", "Arachne2", "Salty", "Tarantula", "comb_row", "foot", "foot_parts", "leg_parts"]
 
 LEGS = [f"{s}{i}" for s in "LR" for i in (1, 2, 3, 4)]
 
@@ -104,14 +104,8 @@ def carapace(spec, L, W, H, zc, lift=0.0):
 
 
 # --------------------------------------------------------------------------------------------- the leg
-def foot(spec):
-    """The claw + pad foot in the tarsus frame: the pad's sole on z = 0, centred at the origin, toe to +x; a curved
-    claw at the toe hooking down past the sole."""
+def _claws(spec):
     a, b, t = spec["pad"]
-    pad = cq.Workplane("XY").box(a, b, t * 0.45).edges("|Z").fillet(min(a, b) * 0.2).translate((0, 0, t * 0.225))
-    sole = cq.Workplane("XY").box(a * 0.96, b * 0.96, t * 0.25).edges("|Z").fillet(min(a, b) * 0.18).translate(
-        (0, 0, t * 0.45 + t * 0.125))                                         # the foam / setae layer
-    back = cq.Workplane("XY").box(a, b, t * 0.3).edges("|Z").fillet(min(a, b) * 0.2).translate((0, 0, t * 0.7 + t * 0.15))
     c = spec["claw"]
     claws = None
     for y in (-b * 0.18, b * 0.18):
@@ -119,10 +113,74 @@ def foot(spec):
                (a * 0.5 + c * 0.7, y, -t * 0.25)]
         k = sk.polyline_limb(pts, [c * 0.16, c * 0.12, c * 0.08])
         claws = k if claws is None else claws.union(k)
-    return sk.union_all([pad, sole, back, claws])
+    return claws
 
 
-def leg_parts(spec, scale=1.0, angles=None):
+def comb_row(spec, x, detail=True):
+    """One row of the spine comb (``spec['spine_comb']``), its top edge at x under the backing plate: a 0.6 mm plate
+    split into one finger flexure per spine, each ending in a spine tip ``reach`` below the sole, tilted towards the
+    heel. ``detail`` False: the row's envelope (a plain plate down to the tips — for the whole-robot assembly)."""
+    sc = spec["spine_comb"]
+    a, b, t = spec["pad"]
+    n, pitch = sc["per_row"], sc["pitch"]
+    top, root = t * 0.58, t * 0.42                                        # under the plate; where the fingers split
+    tip = -sc["reach"] / math.cos(math.radians(sc["tilt_deg"])) - (top * (1 / math.cos(math.radians(sc["tilt_deg"])) - 1))
+    w = n * pitch
+    half = pitch / 3
+    if not detail:
+        pts = [(-w / 2, top), (w / 2, top), (w / 2, tip), (-w / 2, tip)]
+        row = cq.Workplane("YZ").polyline(pts).close().extrude(0.6).translate((x - 0.3, 0, 0))
+        return row.rotate((x, 0, top), (x, 1, top), sc["tilt_deg"])
+    pts = [(-w / 2, top), (w / 2, top), (w / 2, root)]
+    for i in reversed(range(n)):
+        y = -w / 2 + pitch * (i + 0.5)
+        pts += [(y + half, root), (y + half, t * 0.1), (y, tip), (y - half, t * 0.1), (y - half, root)]
+    pts.append((-w / 2, root))
+    row = cq.Workplane("YZ").polyline(pts).close().extrude(0.6).translate((x - 0.3, 0, 0))
+    return row.rotate((x, 0, top), (x, 1, top), sc["tilt_deg"])
+
+
+def foot_parts(spec, detail=True):
+    """The foot in the tarsus frame (the sole on z = 0, centred at the origin, toe to +x): {"foot": the rigid foot,
+    "spines": [comb rows], "named": its pieces (comb feet)} — the spines stay separate solids (a union with the fine
+    comb is not reliably valid).
+
+    Without ``spine_comb``: the claw + pad foot (ARACHNE-2, SALTY): a pad, its foam layer and backing, and two curved
+    claws at the toe hooking down past the sole. With it (TARANTULA, §10): a backing plate, a rubber sole under the
+    heel two thirds (the swappable sole: rubber; the fibrillar pad or the magnet are kits), the comb rows at the toe
+    between two side guards, and the two claws."""
+    a, b, t = spec["pad"]
+    if "spine_comb" not in spec:
+        pad = cq.Workplane("XY").box(a, b, t * 0.45).edges("|Z").fillet(min(a, b) * 0.2).translate((0, 0, t * 0.225))
+        sole = cq.Workplane("XY").box(a * 0.96, b * 0.96, t * 0.25).edges("|Z").fillet(min(a, b) * 0.18).translate(
+            (0, 0, t * 0.45 + t * 0.125))                                     # the foam / setae layer
+        back = cq.Workplane("XY").box(a, b, t * 0.3).edges("|Z").fillet(min(a, b) * 0.2).translate(
+            (0, 0, t * 0.7 + t * 0.15))
+        return {"foot": sk.union_all([pad, sole, back, _claws(spec)]), "spines": []}
+    sc = spec["spine_comb"]
+    top = t * 0.58
+    plate = cq.Workplane("XY").box(a, b, t - top).edges("|Z").fillet(min(a, b) * 0.2).translate((0, 0, (t + top) / 2))
+    x_heel_end = sc["x0"] - 2.8
+    sole_l = x_heel_end + a / 2
+    sole = (cq.Workplane("XY").box(sole_l, b * 0.94, top).edges("|Z").fillet(min(a, b) * 0.15)
+            .translate((-a / 2 + sole_l / 2, 0, top / 2)))
+    x_last = sc["x0"] + sc["dx"] * (sc["rows"] - 1)
+    w = sc["per_row"] * sc["pitch"]
+    guards = [cq.Workplane("XY").box(x_last - x_heel_end + 1.0, 1.0, top * 0.8)
+              .translate(((x_heel_end + x_last + 1.0) / 2, sy * (w / 2 + 0.8), top * 0.6)) for sy in (-1, 1)]
+    rows = [comb_row(spec, sc["x0"] + sc["dx"] * k, detail) for k in range(sc["rows"])]
+    claws = _claws(spec)
+    return {"foot": sk.union_all([plate, sole, *guards, claws]), "spines": rows,
+            "named": {"plate": plate, "sole": sole, "guards": guards, "claws": claws}}
+
+
+def foot(spec):
+    """The whole foot (``foot_parts``) as one compound."""
+    fp = foot_parts(spec)
+    return _compound([fp["foot"]] + fp["spines"])
+
+
+def leg_parts(spec, scale=1.0, angles=None, detail=True):
     """One leg in its own frame (r → +x, across the leg → +y, z up, ground z = 0): a dict of parts in place."""
     c = ss.leg_chain(spec, scale, angles)
     rf, rt, rm, rs = (x * (1.0 if scale == 1.0 else 1.25) for x in spec["tube"])
@@ -154,16 +212,23 @@ def leg_parts(spec, scale=1.0, angles=None):
              max(0.2, rf * 0.09)),
         tube(up(lift, -rf * 1.8), (lift[0] + (knee[0] - lift[0]) * 0.25, 0.0, lift[2] + (knee[2] - lift[2]) * 0.25 - rf * 1.8),
              rf * 0.4)])                                                       # the lift pushrod
-    # the foot: the tarsus tube, then the pad along it, its sole on the ground
-    f = foot(spec)
+    # the foot: the tarsus tube, then the foot along it, its sole on the ground
+    fp = foot_parts(spec, detail)
     mid = ((tars[0] + toe[0]) / 2, 0.0, 0.0)
     parts["tarsus"] = tube(tars, (toe[0], 0.0, max(toe[2], spec["pad"][2])), rs)
-    parts["foot"] = f.translate(mid)
+    parts["foot"] = fp["foot"].translate(mid)
+    if fp["spines"]:
+        parts["spines"] = _compound([r.translate(mid) for r in fp["spines"]])
     return parts
 
 
-def leg_solid(spec, scale=1.0, angles=None, skip=()):
-    return sk.union_all([v for k, v in leg_parts(spec, scale, angles).items() if k not in skip])
+def leg_solid(spec, scale=1.0, angles=None, skip=(), detail=True):
+    """The leg as one solid, and the spine comb's rows beside it (a compound) when the foot has them."""
+    parts = leg_parts(spec, scale, angles, detail)
+    solid = sk.union_all([v for k, v in parts.items() if k not in skip and k != "spines"])
+    if "spines" in parts and "spines" not in skip:
+        return _compound([solid, parts["spines"]])
+    return solid
 
 
 # --------------------------------------------------------------------------------------------- the bodies
@@ -286,8 +351,10 @@ class _Spider(Design):
     def extras(self, s, cut):
         return []
 
+    _detail = True                                                        # the spine comb in full (or its envelope)
+
     def legs(self, s):
-        return [_place(leg_solid(s), leg, s) for leg in LEGS]
+        return [_place(leg_solid(s, detail=self._detail), leg, s) for leg in LEGS]
 
     def build(self, p):
         s = self.spec
@@ -458,10 +525,13 @@ class Tarantula(_Spider):
     _jaw = 20.0
     parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot", "jaws"),
                             description="what to build"),
-                  Parameter("jaw", 20.0, units="deg", min=0.0, max=30.0, description="the jaws' opening, each side")]
+                  Parameter("jaw", 20.0, units="deg", min=0.0, max=30.0, description="the jaws' opening, each side"),
+                  Parameter("comb", "full", choices=("full", "envelope"),
+                            description="the feet's spine combs: every spine, or each row's envelope (a light assembly)")]
 
     def build(self, p):
         self._jaw = float(p.get("jaw", 20.0))
+        self._detail = p.get("comb", "full") == "full"
         if p["part"] == "jaws":
             ch = self.chelicerae(self.spec, self._jaw)
             return _compound([v for k in ("housing", "pins", "jaws", "blades", "drive", "motor") for v in ch[k]])

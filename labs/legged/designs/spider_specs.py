@@ -37,6 +37,11 @@ TARANTULA = {
     "femur_rise_deg": 45.0, "tibia_drop_deg": 35.0, "metatarsus_drop_deg": 55.0, "tarsus_drop_deg": 10.0,
     "tube": (9.0, 8.0, 6.5, 5.0),
     "pad": (40.0, 30.0, 6.0), "claw": 14.0, "motor": (12.0, 10.0, 26.0), "motors": 24,
+    #: the foot of §10: a backing plate, a rubber sole under the heel (swappable: the fibrillar pad, the magnet), and
+    #: a microspine comb at the toe — ``rows`` × ``per_row`` spines at ``pitch`` [mm], each on its own finger flexure,
+    #: the rows ``dx`` apart from ``x0`` (from the foot's centre), tilted ``tilt_deg`` so the tips trail to the heel
+    #: (they hook when the foot is drawn towards the body: the climbing stroke, and the drag that sets them)
+    "spine_comb": {"rows": 5, "per_row": 32, "pitch": 0.9, "tilt_deg": 30.0, "x0": 6.0, "dx": 2.5, "reach": 0.3},
     "battery": (110.0, 45.0, 32.0), "board": (110.0, 80.0), "bank": (6, 2, 2),
     "turret": (46.0, 34.0), "shell_plates": 5,
     #: the chelicerae: two bypass-shear jaws under the turret (the left jaw above the pivot plane, the right below; their

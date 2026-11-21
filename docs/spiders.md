@@ -383,7 +383,7 @@ board and SALTY's hydraulics lie inside the shells, and no leg or hip boss touch
 | abdomen | 56 × 44 × 16, low (the centre of mass near the wall) | 150 × 125 × 75, four tergite plates, payload deck | 56 × 46 × 32 |
 | hip height / knee height / reach from hip | 18 / 44 / 87 mm | 63 / 130 / 253 mm | 23 / 38 / 53 mm (legs III: 23 / 54 / 56) |
 | motor bank | 24 × Ø6 × 20 mm gearmotors, 2 rows × 2 layers × 6 | 24 × 12 × 10 × 26 mm micro metal gearmotors, 2 × 2 × 6 | 20 × Ø6 × 20 mm, 2 × 2 × 5, behind the eyes |
-| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret, cutting jaws (§9.1) | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
+| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret, cutting jaws (§9.1), spine-comb feet (§10) | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
 
 ![ARACHNE-2](spiders/arachne2_views.png)
 ![ARACHNE-2 inside](spiders/arachne2_cutaway.png)
@@ -494,6 +494,19 @@ The fast tetrapod loses 10–20° more.
 * **Default:** claws + the 160-spine comb along the toe + a rubber sole.
 * **Smooth-surface kit:** the fibrillar pad sole, for indoor glass.
 * **Steel kit:** the magnet foot.
+
+![TARANTULA's foot](spiders/tarantula_foot.png)
+
+In the CAD (`spiders.foot_parts`, `spider_specs.TARANTULA['spine_comb']`), the 40 × 30 mm foot has:
+* an aluminium backing plate;
+* a rubber sole under the heel two-thirds — the part the kits replace;
+* the comb under the toe third: 5 rows × 32 spines at 0.9 mm pitch, between two side guards. Each spine sits on its
+  own finger flexure, split from a 0.6 mm row plate. The rows are tilted 30° so the tips trail to the heel and stand
+  0.3 mm below the sole, enough to catch when the sole compresses. They hook when the foot is drawn towards the body;
+* the two claws at the toe, past the comb.
+
+Files: `exports/tarantula_cad/foot.step` / `.stl` and `leg.step` carry every spine. `tarantula.step` shows each row's
+envelope (`Tarantula().generate(comb="envelope")`) to stay light; `comb="full"` builds every spine (~40 MB of STEP).
 
 The spine count, the allowables and the CoM height are the numbers to measure first. The spines are drawn as
 isotropic in the dynamic sim, but they only grip along their direction (up the slope), so on bark it crab-steps and

@@ -198,3 +198,23 @@ def test_tarantula_runner_family():
     assert {"tarantula-walk", "tarantula-slope", "tarantula-climb", "tarantula-attach"} <= set(fam)
     for n in fam:
         assert len(ss_.SIMS[n][0](True)) >= 1 and len(ss_.SIMS[n][0](False)) >= len(ss_.SIMS[n][0](True))
+
+
+def test_tarantula_spine_foot():
+    pytest.importorskip("cadquery")
+    import spider_specs as ss_
+    import spiders
+
+    s = ss_.TARANTULA
+    sc = s["spine_comb"]
+    fp = spiders.foot_parts(s)
+    assert len(fp["spines"]) == sc["rows"] and sc["rows"] * sc["per_row"] == 160          # §10's comb
+    assert fp["foot"].val().isValid() and all(r.val().isValid() for r in fp["spines"])
+    for r in fp["spines"]:
+        bb = r.val().BoundingBox()
+        assert -sc["reach"] - 0.2 < bb.zmin < 0.0                                    # tips just below the sole
+        assert r.val().intersect(fp["named"]["sole"].val()).Volume() < 1e-3          # clear of the rubber sole
+    assert spiders.foot_parts(spiders.ss.ARACHNE2)["spines"] == []                    # the others keep claw + pad
+    d = spiders.Tarantula()
+    assert d.generate(part="leg").measure()["n_solids"] > sc["rows"]
+    assert d.generate(part="foot").measure()["valid"]
