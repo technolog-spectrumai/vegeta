@@ -28,7 +28,7 @@
    "lab": "legged",
    "links": 25,
    "mass_kg": 0.1765,
-   "sha256": "7c314c25a3742408840e96d6732df3237f1fb4a194d8194ae595c1f533e6f7a9",
+   "sha256": "80eac3690bf4a7b294b7fca0c49741a7009b926c7b5823275f9bce3f6e809470",
    "visual_triangles": 5692
   },
   "drako": {
@@ -527,11 +527,11 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-21T19:13:31Z",
+ "published": "2026-11-21T19:13:56Z",
  "vegeta": {
   "branch": "dev_arachne",
-  "commit": "92fd132eb1b6b65eb209627f639a39c6404c7ee7",
-  "dirty": true,
+  "commit": "99d05589b94bcf4d752dfa034096289588e57078",
+  "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
  "yax": "65b8dc138942e02ba9aa7de6cbd504b56a5d0b23"
