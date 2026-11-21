@@ -208,6 +208,8 @@ def brachiate_swing(kin, q_from, p, k, i, duration):
 
     def fingers(u, q):
         sr.set_curl(q, kin, hold_side, gs.CURL_CLOSED)
+        for sd in ("L", "R"):                                              # a grasping foot hangs curled, a loose fist
+            sr.set_toe_curl(q, kin, sd, 0.9)
         return sr.set_curl(q, kin, free_side, gs._curl(u, 0.05, 0.95))
 
     return gt.contact_motion(kin, f"swing_{i + 1}", duration, targets, base, q_init=q_from, extra=fingers, reg=gs.IK_REG,
@@ -264,6 +266,7 @@ def jump_to_ladder(kin, q_stand, p, stop_x, duration=1.2):
     def fingers(u, q):
         for side in ("L", "R"):
             sr.set_curl(q, kin, side, gs._curl(u, 0.0, 1.0, start=1.0))
+            sr.set_toe_curl(q, kin, side, 0.9 * mk.smooth(max(0.0, (u - 0.4) / 0.6)))   # off the ground, the toes curl
         return q
 
     return gt.contact_motion(kin, "jump_to_the_ladder", duration, targets, base, q_init=q_stand, extra=fingers, reg=gs.IK_REG,
