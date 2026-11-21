@@ -234,8 +234,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="astor_<phase>.sh", formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
     ap.add_argument("phase", choices=("cfd", "stability", "netdrop"))
     ap.add_argument("--design", choices=("v", "boost", "dart"), action="append", help="default: v and boost")
-    ap.add_argument("-j", "--cpu", type=int, default=4)
-    ap.add_argument("--force-cpu", action="store_true")
+    ap.add_argument("-j", "--cpu", type=int, default=4,
+                    help="CPU cores to use (default 4). cfd: OpenFOAM's MPI processes, used as given. stability and netdrop: "
+                         "worker processes, lowered if the machine cannot carry them (cores - 2; ~1 GB of free RAM each)")
+    ap.add_argument("--force-cpu", action="store_true", help="stability and netdrop: use -j exactly as given, without the cap")
     ap.add_argument("--fresh", action="store_true", help="forget the phase's saved progress")
     ap.add_argument("--dry-run", action="store_true", help="list the cases or jobs and stop")
     ap.add_argument("--quality", default="screening")
