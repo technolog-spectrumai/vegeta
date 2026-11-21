@@ -121,7 +121,7 @@ def comb_row(spec, x, detail=True):
     split into one finger flexure per spine, each ending in a spine tip ``reach`` below the sole, tilted towards the
     heel. ``detail`` False: the row's envelope (a plain plate down to the tips — for the whole-robot assembly)."""
     sc = spec["spine_comb"]
-    a, b, t = spec["pad"]
+    t = spec["pad"][2]
     n, pitch = sc["per_row"], sc["pitch"]
     top, root = t * 0.58, t * 0.42                                        # under the plate; where the fingers split
     tip = -sc["reach"] / math.cos(math.radians(sc["tilt_deg"])) - (top * (1 / math.cos(math.radians(sc["tilt_deg"])) - 1))
