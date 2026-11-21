@@ -1,0 +1,62 @@
+{
+ "name": "chuck",
+ "source": "vegeta labs/legged/designs/chuck.py",
+ "fires": {
+  "model": "t-squared growth to a peak; out when the water's cooling (2.6 MJ/kg x efficiency) beats the heat release for knockdown_s",
+  "cooling_J_kg": 2600000.0,
+  "efficiency": 0.5,
+  "knockdown_s": 4.0,
+  "kinds": {
+   "bin": {
+    "what": "a street rubbish bin, 240 L",
+    "alpha_kW_s2": 0.047,
+    "peak_kW": 300.0,
+    "fuel_MJ": 120.0,
+    "radius_m": 0.4
+   },
+   "pallets": {
+    "what": "a stack of wooden pallets",
+    "alpha_kW_s2": 0.047,
+    "peak_kW": 1500.0,
+    "fuel_MJ": 1200.0,
+    "radius_m": 0.8
+   },
+   "car": {
+    "what": "a passenger car",
+    "alpha_kW_s2": 0.012,
+    "peak_kW": 4000.0,
+    "fuel_MJ": 6000.0,
+    "radius_m": 2.2
+   }
+  }
+ },
+ "tank_l": 300.0,
+ "flow_l_min": 120.0,
+ "pressure_bar": 16.0,
+ "jet": {
+  "speed_m_s": 54.3,
+  "nozzle_mm": 6.85,
+  "slowing_length_m": 10.28,
+  "max_throw_m": 23.5,
+  "best_elevation_deg": 27,
+  "reaction_N": 108.6
+ },
+ "monitor": {
+  "pos": [
+   0.42,
+   0.0,
+   1.26
+  ],
+  "pan_deg": 170.0,
+  "tilt_deg": [
+   -15.0,
+   75.0
+  ],
+  "slew_deg_s": 60.0,
+  "mass_kg": 9.0,
+  "pattern": "straight stream to 30\u00b0 fog (an adjustable nozzle)"
+ },
+ "reel_m": 20.0,
+ "hydrant_refill_s": 45,
+ "pump_kW": 5.61
+}

@@ -1,0 +1,57 @@
+{
+ "nozzle_mm": 6.85,
+ "jet_m_s": 54.3,
+ "reaction_N": 108.6,
+ "hydraulic_kW": 3.2,
+ "pump_electric_kW": 5.61,
+ "tank_minutes": 2.5,
+ "battery_Wh_per_tank": 234,
+ "tanks_per_battery_with_driving_reserve": 15.4,
+ "throw_m_by_elevation_deg": {
+  "10": 20.7,
+  "20": 23.0,
+  "30": 23.4,
+  "40": 22.3
+ },
+ "best_elevation_deg": 27,
+ "max_throw_m": 23.5,
+ "water_l_min_to_suppress_peak": {
+  "bin": 13.8,
+  "pallets": 69.2,
+  "car": 184.6
+ },
+ "largest_fire_put_out_kW": 2600,
+ "fire_outgrows_pump_at_s": {
+  "bin": null,
+  "pallets": null,
+  "car": 465
+ },
+ "reel_loss_bar_at_half_flow": 0.35,
+ "feed_loss_bar": 0.05,
+ "hydrant_refill_s": 45,
+ "load_kg": 389.0,
+ "load_cg_z_m": 0.837,
+ "quad": {
+  "mass_total_kg": 733.6,
+  "cg_total_m": [
+   -0.071,
+   0.659
+  ],
+  "ssf": 1.479,
+  "rollover_lat_g": 1.48,
+  "axle_load_kg": {
+   "front": 340.0,
+   "rear": 393.6
+  }
+ },
+ "masses_kg": {
+  "water": 300.0,
+  "tank": 24.0,
+  "pump + motor + inverter": 24.0,
+  "monitor": 9.0,
+  "reel + 20 m hose": 19.0,
+  "suction hose + coupling": 6.0,
+  "piping, valves, foam inductor": 7.0
+ },
+ "monitor_servo_torque_Nm": 57.0
+}
