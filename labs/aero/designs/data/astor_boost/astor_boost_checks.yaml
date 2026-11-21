@@ -1,32 +1,33 @@
 mass:
-  empty_g: 2415.9
-  total_g: 3165.9
-  without_nets_g: 2945.9
+  empty_g: 2412.3
+  total_g: 3162.3
+  without_nets_g: 2942.3
 pack: 6S 5000 mAh LiPo
-added_over_astor_v_g: 452.0
+added_over_astor_v_g: 448.0
 intake:
+  kind: straight (pitot) at the pod's mouth
   fan_swept_area_cm2: 33.5
-  scoop_mouths_cm2: 36.6
-  ratio: 1.09
+  scoops: none
+folded_tail_and_fan:
+  overlap_volume_mm3: 0.0
+  clear: true
+  tail_panels_lowest_z_mm: -3.3
+  pod_highest_z_mm: -26.0
+  gap_mm: 37.7
+thrust_line_below_axis_mm: 80
+net_tube_above_jet_axis_mm: 80
 current:
   propeller_and_fan_A: 124
   pack_limit_A: 150.0
   ok: true
 balance_by_mass:
   cg_target_mm: 365.0
-  pack_station_mm: 284.0
+  pack_station_mm: 243.0
   pack_fits: true
-  cg_after_both_nets_mm: 361.0
-  cg_shift_mm: -4.0
+  cg_after_both_nets_mm: 345.0
+  cg_shift_mm: -20.0
   note: stations are a first layout (HAND); the carriage re-trims the shift when the nets have gone
-length_mm: 840
-stowed_envelope_mm:
-  length: 931
-  width: 309
-  height: 183
 stowed_with_propeller_folded_mm:
-  length_mm: 970
-  width_mm: 309
-  height_mm: 188
-  x_from_mm: -63
-  x_to_mm: 907
+  length: 970
+  width: 309
+  height: 245

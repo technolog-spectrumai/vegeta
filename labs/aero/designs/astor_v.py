@@ -146,7 +146,7 @@ class AstorV(a1.Arigo1):
         return blk
 
     # ------------------------------------------------------------------------------------------------ tail
-    def _tail(self, p):
+    def _tail_panels(self, p):
         sweep = 85.0 - 50.0 * p["tail_fan"]                       # folded 85 deg (narrow), spread 35 deg (a broad delta)
         out = None
         for s in (1, -1):
@@ -156,10 +156,15 @@ class AstorV(a1.Arigo1):
                 pan = pan.mirror("XZ")
             pan = pan.translate((p["tail_pivot_x"], s * p["tail_pivot_y"], 6.0 + s * 3.0))
             out = pan if out is None else out.union(pan)
+        return out
+
+    def _fin(self, p):
         # the fin is ventral: tucked, the wing panels cross the fuselage's back where a dorsal fin would stand
-        fin = self._surface(p["fuselage_length"] - 20.0 - p["fin_root_chord"], p["fin_root_chord"], p["fin_taper"], p["fin_height"],
-                            p["fin_sweep_deg"], p["tail_thickness"], "z", z0=p["tail_end_diameter"] / 2 - 4.0).mirror("XY")
-        return out.union(fin)
+        return self._surface(p["fuselage_length"] - 20.0 - p["fin_root_chord"], p["fin_root_chord"], p["fin_taper"], p["fin_height"],
+                             p["fin_sweep_deg"], p["tail_thickness"], "z", z0=p["tail_end_diameter"] / 2 - 4.0).mirror("XY")
+
+    def _tail(self, p):
+        return self._tail_panels(p).union(self._fin(p))
 
     # ------------------------------------------------------------------------------------------------ nets
     def _net_bay(self, p):
