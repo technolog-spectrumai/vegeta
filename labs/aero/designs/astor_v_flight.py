@@ -136,8 +136,25 @@ def apply_cfd(C, cfg) -> None:
         m1, m0 = np.polyfit(al[lin], cmv[lin] * kM, 1)
         C.update({"CLa": float(a1), "CL0": float(a0), "Cma": float(m1), "Cm0": float(m0), "static_margin": float(-m1 / a1)})
     C["CD0"] = float(cd.min() * kL)
-    C["CL_MAX"] = float(cl.max() * kL)
-    C["alpha_stall"] = float(al[int(np.argmax(cl))])
+    pol = np.abs(np.degrees(al)) <= 9.0                               # the drag due to lift: CD = CD0 + k CL^2, fitted below the stall
+    if pol.sum() >= 3:
+        x, y = (cl[pol] * kL) ** 2, cd[pol] * kL - C["CD0"]
+        kfit = float((x * y).sum() / max((x * x).sum(), 1e-12))
+        if 0.02 < kfit < 0.6:
+            C["k_model"], C["k"] = C["k"], kfit
+    # the maximum lift: the CFD's only if its sweep reached it (the lift peaked, or its slope at the last angle has
+    # fallen below 40 % of the linear one); a sweep that stops short (the dash state's ends at 6 deg) leaves the
+    # model's value, never below what the CFD did reach
+    k = int(np.argmax(cl))
+    end_slope = (cl[-1] - cl[-2]) / max(al[-1] - al[-2], 1e-6) * kL if len(cl) >= 2 else 0.0
+    if k < len(cl) - 1 or end_slope < 0.4 * C["CLa"]:
+        C["CL_MAX"] = float(cl.max() * kL)
+        C["alpha_stall"] = float(al[k])
+        C["CL_MAX_source"] = "cfd"
+    else:
+        C["CL_MAX"] = max(C["CL_MAX"], float(cl.max() * kL))
+        C["alpha_stall"] = (C["CL_MAX"] - C["CL0"]) / C["CLa"]
+        C["CL_MAX_source"] = "model (the CFD sweep stopped before the stall)"
     C["aero_source"] = f"cfd corrections (screening RANS, {len(rows)} angles) on the lattice + hand model"
 
 
