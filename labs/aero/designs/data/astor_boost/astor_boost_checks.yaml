@@ -24,3 +24,9 @@ stowed_envelope_mm:
   length: 931
   width: 309
   height: 183
+stowed_with_propeller_folded_mm:
+  length_mm: 970
+  width_mm: 309
+  height_mm: 188
+  x_from_mm: -63
+  x_to_mm: 907
