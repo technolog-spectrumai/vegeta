@@ -105,12 +105,20 @@ class AutoRide:
             rider_cg = self.kin.data.subtree_com[1] + np.asarray(self.profile["pelvis"])
         else:
             rider_cg = (0.0, 0.0, 0.9)
-        self.sz = gq.sizing(rider_cg=tuple(rider_cg), rider_mass=self.profile["mass"])
+        extra = (scene or {}).get("load")                                  # a load the quad carries besides the rider: (kg, cg)
+        if extra:
+            mr = self.profile["mass"]
+            on = mr + extra[0]
+            rider_cg = (mr * np.asarray(rider_cg) + extra[0] * np.asarray(extra[1])) / on
+            self.sz = gq.sizing(rider_cg=tuple(rider_cg), rider_mass=on)
+            self.sz["seat"] = gq.sizing(rider_mass=mr)["seat"]                  # the seat's air spring carries the rider only
+        else:
+            self.sz = gq.sizing(rider_cg=tuple(rider_cg), rider_mass=self.profile["mass"])
         x0 = sc["start_x"]
         quad = gq.quad_prop(x0=x0, sz=self.sz, bar_offset=self.bar_offset, seat_free=self.rider is not None)
         robot = Robot(name="Kerchak's quad", root=quad.root)
         props = [gr.course_prop(), *gr.cone_props(), crate_prop()] if scene is None else list(scene["props"])
-        welds = []
+        welds = list((scene or {}).get("welds", []))
         if self.rider is not None:
             root = qr.passive_copy(self.rider)
             p = self.profile["pelvis"]
