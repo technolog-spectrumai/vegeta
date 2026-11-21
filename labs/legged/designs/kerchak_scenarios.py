@@ -161,8 +161,19 @@ def window_prop(p):
                         _box("wall_left", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, w / 2 + (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
                         _box("wall_right", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, -w / 2 - (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
                         _box("sill_plate", (t / 2 + 0.04, w / 2, 0.03), (0.0, 0.0, sill + 0.03), rgba=WOOD, mass=20.0)]
-                 + ([_box("glass", (0.004, w / 2 - 0.01, h / 2 - 0.01), (0.0, 0.0, sill + h / 2), rgba=GLASS, mass=5.0)] if p.get("glass") else [])
+                 + ([_box("glass", (0.004, w / 2 - 0.01, h / 2 - 0.01), (0.0, 0.0, sill + h / 2), rgba=GLASS, mass=5.0)] if p.get("glass") and not p.get("sash") else [])
                  + _table_with_banana(p.get("table_x", 3.4), p.get("table_y", 0.0)))
+    if p.get("sash"):                                                      # a casement: the glass in a wooden sash hinged on the left jamb, opening into the room
+        fw, ws, hs = 0.04, w - 0.04, h - 0.04
+        xs = -t / 2 + 0.03                                                 # the sash near the wall's outer face
+        geoms = [_box("sash_top", (0.015, ws / 2, fw / 2), (0.0, -ws / 2, hs - fw / 2), rgba=WOOD, mass=1.0),
+                 _box("sash_bottom", (0.015, ws / 2, fw / 2), (0.0, -ws / 2, fw / 2), rgba=WOOD, mass=1.0),
+                 _box("sash_hinge_stile", (0.015, fw / 2, hs / 2), (0.0, -fw / 2, hs / 2), rgba=WOOD, mass=1.0),
+                 _box("sash_free_stile", (0.015, fw / 2, hs / 2), (0.0, -ws + fw / 2, hs / 2), rgba=WOOD, mass=1.0)]
+        if p.get("glass"):
+            geoms.append(_box("glass", (0.004, ws / 2 - fw, hs / 2 - fw), (0.0, -ws / 2, hs / 2), rgba=GLASS, mass=4.0))
+        frame.children.append(Link("window_sash", pos=(xs, w / 2 - 0.02, sill + 0.02),
+                                   joints=[Joint("sash_hinge", axis=(0, 0, 1), range=(0.0, 1.7), damping=2.0)], geoms=geoms))
     return Prop(frame, free=False)
 
 

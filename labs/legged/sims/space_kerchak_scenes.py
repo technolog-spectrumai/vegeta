@@ -284,6 +284,23 @@ class ScenePlayer:
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
+        if self.scene == "heist":                                          # the sash: shoved open by the hammer, then it swings on
+            m = self.model
+            adr = m.jnt_qposadr[m.joint("sash_hinge").id]
+            seg = [(s0, sg[1]) for s0, sg in zip(self.starts, self.segments) if sg[0] == "motion" and sg[1].name == "push_the_window"]
+            if seg:
+                s0, mo = seg[0]
+                a, b = mo.params["shove_u"]
+                ta, tb = s0 + a * mo.period, s0 + b * mo.period
+                sh, op = mo.params["shove_rad"], mo.params["open_rad"]
+                if t < ta:
+                    phi = 0.0
+                elif t < tb:
+                    phi = sh * mk.smooth((t - ta) / (tb - ta))
+                else:
+                    phi = sh + (op - sh) * mk.smooth(min(1.0, (t - tb) / 2.0))
+                self.data.qpos[adr] = phi
+            return
         if self.scene not in ("door", "course"):
             return
         import kerchak_tasks as gt

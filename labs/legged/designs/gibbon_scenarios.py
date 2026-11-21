@@ -653,7 +653,20 @@ def heist_tree_prop(p):
 
 
 def _heist_window(p):
-    return {**gs.WINDOW, "x": p["x"] + p["wall_gap"], "y": p["window_y"], "glass": 1, "table_x": p["table_x"], "table_y": p["table_y"]}
+    return {**gs.WINDOW, "x": p["x"] + p["wall_gap"], "y": p["window_y"], "glass": 1, "sash": 1, "table_x": p["table_x"], "table_y": p["table_y"]}
+
+
+SASH_SHOVE = 0.16                #: how far the hammer shoves the sash open [rad]; it swings on to ``SASH_OPEN``
+SASH_OPEN = 1.5
+
+
+def sash_point(w, phi, z_frac=0.5):
+    """A point on the sash's free stile's outer face with the sash open ``phi`` (it swings about the left jamb, into the room)."""
+    t, ws = w["wall_thickness"], w["width"] - 0.04
+    hinge = np.array([w["x"] - t / 2 + 0.03, w["y"] + w["width"] / 2 - 0.02, w["sill"] + 0.02])
+    c, s_ = math.cos(phi), math.sin(phi)
+    local = np.array([-0.016, -ws + 0.02, (w["height"] - 0.04) * z_frac])
+    return hinge + np.array([c * local[0] - s_ * local[1], s_ * local[0] + c * local[1], local[2]])
 
 
 def backpack_prop(p):
@@ -764,11 +777,41 @@ def scenario_heist(kin, q_stand, p):
         return (1 - f) * strike[0] + f * wind[0], gs._slerp(strike[1], wind[1], f)
 
     x_fist = lambda u, q_: sr.set_curl(keep(u, q_), kin, "L", kt_lever())
+    glass_point = np.array([w["x"] - w["wall_thickness"] / 2 + 0.03, glass_point[1], glass_point[2]])    # the pane in the sash
     smash = gt.contact_motion(kin, "smash_the_glass", 1.8, lambda u: planted + gs._hand_at(kin, "L", *hold_at(u)), holdbase, q_init=q1,
                               extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q1),
                               source="gibbon_scenarios.heist: a wind-up and the blow through the pane")
     smash.params = {**(smash.params or {}), "strike_u": 0.65, "impact": glass_point.tolist()}
     q2 = gt._last(kin, smash, q1)
+
+    # the shove: the hammer's head against the sash's free stile, pushed into the room; the sash swings on from there
+    def head_at(phi):
+        tgt = sash_point(w, phi, 0.45)
+        return (tgt - 0.31 * strike_axis, strike[1])
+
+    def push_at(u):
+        if u < 0.35:
+            f = mk.smooth(u / 0.35)
+            c0, R0 = wind
+            c1, R1 = head_at(0.0)
+            return (1 - f) * c0 + f * c1, gs._slerp(R0, R1, f)
+        if u < 0.75:
+            return head_at(SASH_SHOVE * mk.smooth((u - 0.35) / 0.4))
+        f = mk.smooth((u - 0.75) / 0.25)
+        c0, R0 = head_at(SASH_SHOVE)
+        return (1 - f) * c0 + f * wind[0], gs._slerp(R0, wind[1], f)
+
+    if gt.SOLID is not None:
+        gt.SOLID.scene = lambda u: {"sash_hinge": SASH_SHOVE * mk.smooth(min(1.0, max(0.0, (u - 0.35) / 0.4)))}
+    try:
+        push = gt.contact_motion(kin, "push_the_window", 1.6, lambda u: planted + gs._hand_at(kin, "L", *push_at(u)), holdbase, q_init=q2,
+                                 extra=x_fist, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q2),
+                                 source="gibbon_scenarios.heist: the hammer's head shoves the sash open into the room")
+    finally:
+        if gt.SOLID is not None:
+            gt.SOLID.scene = None
+    push.params = {**(push.params or {}), "shove_u": (0.35, 0.75), "shove_rad": SASH_SHOVE, "open_rad": SASH_OPEN}
+    q2 = gt._last(kin, push, q2)
 
     def x_drop(u, q_):
         q_ = keep(u, q_)
@@ -818,7 +861,7 @@ def scenario_heist(kin, q_stand, p):
     hop = gs._joint_track(kin, "hop_down_inside", 1.3, [(0.0, q_crouch), (0.3, fold), (0.65, fold), (1.0, q_stand)], hop_base,
                           source="gibbon_scenarios.heist: the hop down into the room")
     table_front = w["x"] + p["table_x"] - 0.4
-    segs += [("motion", pick), ("motion", smash), ("motion", drop), ("motion", leap), ("motion", hop),
+    segs += [("motion", pick), ("motion", smash), ("motion", push), ("motion", drop), ("motion", leap), ("motion", hop),
              ("gait", max(table_front - 0.3 - x_land, 0.2) / 0.6, w["y"])]
     return segs
 
