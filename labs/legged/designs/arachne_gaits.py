@@ -33,7 +33,7 @@ import arachne_specs as sp
 import arachne_statics as st
 import motion_kit as mk
 
-__all__ = ["GAITS", "wall_gait", "park", "reattach", "motions", "parts", "STEP", "PRELOAD_M"]
+__all__ = ["GAITS", "wall_gait", "motions", "parts", "STEP", "PRELOAD_M", "IK_REG"]
 
 PRELOAD_M = sp.ADHESIVE["preload_n"] / st.K_N                               # 0.375 mm into the wall
 #: the IK's pull towards the standing pose, scaled to a robot whose feet move millimetres (motion_kit's default
@@ -165,3 +165,18 @@ def wall_gait(kin, name, *, frames=48, surface=None, module="pad", tail=False):
     m.attached = n_att
     m.margins = margins
     return m
+
+
+def motions(robot=None):
+    """(kin, [the gaits on their own surfaces]): climb, climb_fast, climb_careful, turn on glass / varnished wood,
+    and crab on bark with the spine feet."""
+    import arachne_robot as ar
+    kin = mk.Kin(robot or ar.arachne())
+    return kin, [wall_gait(kin, g) for g in GAITS]
+
+
+def parts(machine) -> dict:
+    """``data:motions`` for the export (the body's centre above the wall as the base height)."""
+    kin, ms = motions()
+    kin.set(kin.q0)
+    return mk.block(ms, float(kin.data.xpos[kin.body("body")][2]))

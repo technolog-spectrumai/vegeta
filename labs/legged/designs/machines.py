@@ -59,3 +59,6 @@ for _obj, _cls in (("chest", "Chest"), ("crate", "Crate"), ("sword", "Sword"), (
 # fantasy humanoids: the ork with its broom and trash-bin lid (the ghoul, with its pincers, is with the monsters)
 machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("fantasy_humanoid_robots:parts_ork"),
                   visual="fantasy_humanoids:Ork")
+
+# ARACHNE: the palm-sized eight-legged wall climber (docs/spiders.md), with its wall gaits
+machines.register("arachne", "arachne_robot:arachne", parts=_motions("arachne_gaits:parts"), visual="arachne:Arachne")
