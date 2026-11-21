@@ -1,0 +1,118 @@
+{
+ "name": "serval",
+ "source": "vegeta labs/legged/designs/serval.py",
+ "kind": "rover",
+ "vehicle": {
+  "mass_kg": 366.2,
+  "top_speed_m_s": 22.22,
+  "accel_m_s2": 6.67,
+  "braking_m_s2": 7.85,
+  "turn_rate_rad_s_at_speed": 0.353,
+  "wheelbase_m": 1.95,
+  "track_m": 1.95,
+  "rollover_lat_g": 1.86,
+  "size_m": [
+   2.6,
+   2.2,
+   1.85
+  ]
+ },
+ "golf": {
+  "pivot": [
+   -0.12,
+   0.0,
+   1.02
+  ],
+  "tube_m": 0.7,
+  "speeds": [
+   20.0,
+   70.0
+  ],
+  "grip": 0.97,
+  "feed_s": 0.4,
+  "hopper": 240,
+  "pan_deg": 360.0,
+  "tilt_deg": [
+   -10.0,
+   55.0
+  ],
+  "slew_deg_s": 120.0,
+  "stabilised": true,
+  "scatter_rad": 0.004363323129985824
+ },
+ "flak": {
+  "pivot": [
+   -0.12,
+   0.0,
+   1.7
+  ],
+  "tube_m": 1.0,
+  "muzzle_speed": 280.0,
+  "fire_every_s": 0.4,
+  "shots": 465,
+  "pan_deg": 360.0,
+  "tilt_deg": [
+   -10.0,
+   85.0
+  ],
+  "slew_deg_s": 150.0,
+  "blast_keep_out_max_tilt_by_pan_deg": {
+   "0": 40,
+   "15": 40,
+   "30": 42,
+   "45": 32,
+   "60": 61,
+   "75": 64,
+   "90": 65,
+   "105": 64,
+   "120": 61,
+   "135": 56,
+   "150": 63,
+   "165": 66,
+   "180": 67,
+   "195": 66,
+   "210": 63,
+   "225": 56,
+   "240": 61,
+   "255": 64,
+   "270": 65,
+   "285": 64,
+   "300": 61,
+   "315": 32,
+   "330": 42,
+   "345": 40
+  },
+  "backblast_m": 2.1
+ },
+ "sensors": {
+  "search_camera": {
+   "hfov_deg": 70,
+   "px": [
+    1280,
+    720
+   ]
+  },
+  "zoom_sight": {
+   "hfov_deg": 20,
+   "px": [
+    1280,
+    720
+   ]
+  },
+  "laser_rangefinder": {
+   "sigma_m": 0.1,
+   "beam_deg": 0.4
+  },
+  "mass_kg": 1.6
+ },
+ "hit_and_run": {
+  "speed_kmh": 70.0,
+  "turn_radius_m": 60.2,
+  "exposure_s": 25.2,
+  "flak_shots": 62,
+  "golf_shots": 60,
+  "runs_per_magazine": 7.5,
+  "runs_per_hopper": 4.0,
+  "time_in_from_stand_off_s": 2.6
+ }
+}
