@@ -124,3 +124,38 @@ def test_spider_cad_parts_and_insides_fit(cls):
     for w in d.motor_bank(s) + [d.battery(s), d.board(s)]:
         v = w.val()
         assert v.cut(shell).Volume() < 0.01 * v.Volume()                        # inside the body
+
+
+def test_hydrostatic_only_pays_where_tendons_rub():
+    o = sa.tendon_routing("TARANTULA")
+    h, r = o["hydrostatic"], o["routes"]
+    assert o["break_even_eta"] == pytest.approx(0.88)
+    pulleys, sleeve = r["pulleys on the joint axes"], r["sleeve, μ 0.2, 150°"]
+    assert pulleys["mass_g"] < h["mass_g"] and pulleys["walk_w"] < h["walk_w"]       # pulleys: tendons win
+    assert sleeve["mass_g"] > h["mass_g"] and sleeve["walk_w"] > h["walk_w"]         # rubbing sleeves: hydrostatic
+    for small in ("ARACHNE-2", "SALTY"):
+        assert sa.tendon_routing(small)["hydrostatic"]["share"] > 0.5              # too heavy on the small ones
+
+
+def test_tarantula_jaws():
+    c = sa.cutter()
+    assert c["max_gap_mm"] == pytest.approx(9.8, abs=0.3) and 0 < c["edges_cross_deg"] < 10
+    cuts = c["cuts"]
+    assert cuts["copper wire Ø1.5 mm"]["cuts"] and cuts["mild steel wire Ø1.0 mm"]["cuts"]
+    assert cuts["cable tie 4.8 × 1.3 mm (nylon 6/6)"]["cuts_at_stall"]
+    assert not cuts["galvanised fence wire Ø2.5 mm"]["cuts_at_stall"]
+
+
+def test_tarantula_jaws_cad_clear():
+    pytest.importorskip("cadquery")
+    import spiders
+
+    d = spiders.Tarantula()
+    s = d.spec
+    assert d.generate(part="jaws", jaw=30.0).measure()["valid"]
+    for deg in (0.0, 30.0):
+        ch = d.chelicerae(s, deg)
+        jl, jr = (w.val() for w in ch["jaws"])
+        assert jl.intersect(jr).Volume() < 0.5                                   # the jaws pass (bypass)
+        assert jl.intersect(ch["housing"][0].val()).Volume() < 0.5
+        assert jl.intersect(ch["pins"][0].val()).Volume() < 0.5                  # clear of the other jaw's pin

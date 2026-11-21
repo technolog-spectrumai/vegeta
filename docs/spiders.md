@@ -8,7 +8,7 @@ re-run — `designs/arachne_*.py`, `designs/spider_actuation.py`, `sims/` — or
 |---|---|---|
 | **ARACHNE** (v1) | palm-sized wall climber: glass, acrylic, varnished wood; bark kit | designed: budget, CAD (STEP/STL), robot model, statics, gaits, MuJoCo climbing sim |
 | **ARACHNE-2** | the same job, spider-like legs | **decided** (§3); CAD (§9) |
-| **TARANTULA** | a bigger walker and climber, 1.5 kg with 0.3 kg payload | actuation analysed (§5): fluid joints not needed; CAD (§9) |
+| **TARANTULA** | a bigger walker and climber, 1.5 kg with 0.3 kg payload | actuation analysed (§5): fluid joints not needed unless tendons must run in sleeves (§5.1); CAD (§9) with cutting jaws (§9.1) |
 | **SALTY** | a jumping spider, hydraulic | catapult sized and simulated (§6); CAD (§9) |
 
 Run the simulations on your machine: `./spider.sh run all -j 8` (§8).
@@ -274,6 +274,44 @@ joint's torque and speed; "works" = it does, with actuation under 60 % of the ro
 The sweep over mass (`./spider.sh run spider-actuation`) shows where the hybrid's power saving starts (~0.75 kg) and
 that below ~0.15 kg nothing with 24 actuated joints fits.
 
+### 5.1 Does hydrostatic give us anything? (`spider_actuation.tendon_routing`)
+
+The comparison above leaves out one loss that decides it: **how the tendon reaches its joint.** Over idler pulleys on
+the joint axes it loses ~9 % (0.97 per pulley, three pulleys) and its length does not change when the hip moves. In a
+sleeve (Bowden) it loses e^(−μθ) to friction over the sleeve's total bend θ, and the motor and the power grow to
+match. A hydrostatic line bends freely; its pair is assumed at 88 % of the motor's output, so it walks on less power
+whenever the tendon's routing keeps less than **88 %**.
+
+**TARANTULA** (hydrostatic: 547 g, 8.4 W, 48 rolling-diaphragm seals):
+
+| tendon routing | η | tendon actuation | walking power |
+|---|---:|---:|---:|
+| idler pulleys on the joint axes | 0.91 | **394 g** | **8.1 W** |
+| sleeve, μ 0.1, 150° | 0.77 | 394 g | 9.6 W |
+| sleeve, μ 0.1, 270° | 0.62 | 646 g (two motors a joint) | 11.8 W |
+| sleeve, μ 0.2, 150° | 0.59 | 646 g | 12.4 W |
+| sleeve, μ 0.2, 270° | 0.39 | 646 g | 18.9 W |
+
+* **ARACHNE-2 and SALTY: no.** Hydrostatic is 82 % and 53 % of their mass. What they need instead is low-friction
+  tendon routing: in the worst sleeve case ARACHNE-2's tendon drive grows to 256 g and stops working.
+* **TARANTULA: yes, where tendons would rub.**
+  * Pulleys on the joint axes: tendons stay 153 g lighter on about the same power.
+  * Gentle sleeves (η 0.77): tendons are still 153 g lighter, for 12 % more power.
+  * Sleeves that rub (η ≤ 0.62): hydrostatic is ~100 g lighter and needs 29–56 % less power.
+* **What hydrostatic adds that the table doesn't show:**
+  * **Joint torque sensing for free**: a ~0.5 g pressure sensor on each line measures its joint's load, which helps
+    contact detection, load sharing and slip.
+  * **Sealed legs**: no tendon sleeves to take in dust, water or mud, which matters for a field robot.
+  * **Shock relief**: a relief valve on a line protects the worm gears in a fall.
+  * **Independent joints**: no coupling between a joint and the hip's motion.
+* **What it costs:**
+  * Line compliance, which softens position control.
+  * A leak kills that joint.
+  * The worm-geared masters are not backdrivable either, so the "transparency" Disney's transmissions are known for
+    is lost here. It is kept only by giving up zero-power holding.
+* **Decision rule:** build one TARANTULA leg with tendons and measure the routing efficiency. Go hydrostatic if it is
+  below ~0.85, or if the robot must work in dirt or wet.
+
 ## 6. SALTY's hydraulic catapult
 
 A 1 m jump at 45° on level ground for 0.25 kg needs 3.1 m/s, 1.2 J, in ~30 ms: **~40 W** — only stored energy
@@ -345,7 +383,7 @@ board and SALTY's hydraulics lie inside the shells, and no leg or hip boss touch
 | abdomen | 56 × 44 × 16, low (the centre of mass near the wall) | 150 × 125 × 75, four tergite plates, payload deck | 56 × 46 × 32 |
 | hip height / knee height / reach from hip | 18 / 44 / 87 mm | 63 / 130 / 253 mm | 23 / 38 / 53 mm (legs III: 23 / 54 / 56) |
 | motor bank | 24 × Ø6 × 20 mm gearmotors, 2 rows × 2 layers × 6 | 24 × 12 × 10 × 26 mm micro metal gearmotors, 2 × 2 × 6 | 20 × Ø6 × 20 mm, 2 × 2 × 5, behind the eyes |
-| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
+| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret, cutting jaws (§9.1) | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
 
 ![ARACHNE-2](spiders/arachne2_views.png)
 ![ARACHNE-2 inside](spiders/arachne2_cutaway.png)
@@ -363,6 +401,41 @@ Files: `exports/<robot>_cad/` — `<robot>.step` (the whole robot, one solid per
   grow by ~16 %. Re-run `spider-actuation` with the CAD's reach before buying motors.
 * SALTY's walking legs had to drop their joints (femur 40°, tibia 55°, metatarsus 65°) so their hips sit at the
   jumping legs' height; its walking reach is 53 mm, less than the 70 mm in §5.
-* The tendon routing inside the body is drawn as one sleeve per leg; the pulleys at the motor outputs, the encoders and
+* The tendon routing inside the body is drawn as one sleeve per leg (§5.1: on TARANTULA, route over pulleys or go hydrostatic); the pulleys at the motor outputs, the encoders and
   the wiring are not drawn. The pads are drawn flat; the foam and fibre layers are not modelled.
+
+### 9.1 TARANTULA's jaws (`Tarantula.chelicerae`, sized by `spider_actuation.cutter`)
+
+![TARANTULA's jaws](spiders/tarantula_jaws.png)
+
+The chelicerae are two **bypass-shear jaws** with curved fang tips, under the turret. Each jaw is an aluminium plate
+with a hardened steel blade insert along its straight cutting edge. The left jaw works above the pivot plane and the
+right jaw below it; their edges cross the midline and slide past each other like pruning shears. They pivot on
+vertical pins in front of a hollow, open-fronted housing. Inside the housing:
+
+* a 250:1 micro metal gearmotor turns an M4 × 0.7 leadscrew, which is self-locking, so it holds a grip with no power;
+* the leadscrew pushes a crossbar yoke forward;
+* two links push the jaws' outward tails, and the jaws close.
+
+The jaws weigh ~54 g, which comes out of the 0.3 kg payload. Opened 30°, the gap at the throat is 9.8 mm and the
+fang tips grab larger things and pull them in.
+
+Screw force: 456 N at half stall. Stroke: 6.2 mm, about 9 s to close. Blade force by virtual work: F |dx/dθ| / 2a.
+At the throat (10 mm from the pivots) that is 200 N fully open, rising to 306 N as the edges cross. At the cut zone's
+far end (30 mm) it is a third of that, so **feed the work to the throat**: the curved tips draw it in as they close.
+
+| to cut (assumed shear strength × area) | needs | at half stall | at stall |
+|---|---:|:---:|:---:|
+| polypropylene cord Ø3 mm | 177 N | yes | yes |
+| mild steel wire Ø1.0 mm | 220 N | yes | yes |
+| copper wire Ø1.5 mm | 265 N | yes | yes |
+| cable tie 4.8 × 1.3 mm (nylon) | 374 N | no (291 N) | yes |
+| green twig Ø5 mm | 393 N | no (258 N) | yes |
+| galvanised fence wire Ø2.5 mm | 1374 N | no | no: needs a bolt-cutter drive |
+
+The shear strengths are class values (marked assumed in `CUT_LOADS`): measure them on the real materials with the
+real blades. A current limit and a limit switch at the closed end protect the drive.
+
+Files: `exports/tarantula_cad/jaws.step` / `.stl` (20° open); `Tarantula().generate(part="jaws", jaw=…)` builds any
+opening from 0 to 30°.
 

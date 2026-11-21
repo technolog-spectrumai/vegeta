@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import math
 
-__all__ = ["ROBOTS", "PARTS", "ARCHITECTURES", "joint_demand", "size", "compare", "jump", "salty_catapult",
+__all__ = ["ROBOTS", "PARTS", "ARCHITECTURES", "ROUTING", "CUT_LOADS", "joint_demand", "size", "compare",
+           "tendon_routing", "cutter", "jump", "salty_catapult",
            "SOURCES", "G", "extension_support", "recommend", "EFFICIENCY", "SERVOS", "MOTORS",
            "pick_motor"]
 
@@ -240,6 +241,116 @@ def compare(robot):
         s["ok"] = s["ok"] and s["share"] < 0.6                           # actuation above 60 % of the robot: no
         out[a] = s
     return out
+
+
+# --------------------------------------------------------------------------------------------- tendon routing
+#: how a tendon reaches its joint — the loss ``size`` leaves out: over idler pulleys on the joint axes (the tendon's
+#: length does not change with the joints it crosses; assumed 0.97 per pulley, three pulleys) or in a sleeve (Bowden:
+#: capstan friction e^(−μθ) over the sleeve's total bend θ as it crosses the hip yaw, the hip lift and the knee)
+ROUTING = {"pulleys on the joint axes": None,
+           "sleeve, μ 0.1, 150°": (0.1, 150.0), "sleeve, μ 0.1, 270°": (0.1, 270.0),
+           "sleeve, μ 0.2, 150°": (0.2, 150.0), "sleeve, μ 0.2, 270°": (0.2, 270.0)}
+
+
+def tendon_routing(robot):
+    """Tendon against hydrostatic once the tendon's routing loss η counts: per ``ROUTING``, the tendon leg resized (its
+    motor picked for the peak torque / η) and its walking power (/ η); the hydrostatic leg as ``size`` has it (no
+    routing loss: the fluid line bends freely). Hydrostatic walks on less power whenever η is below
+    ``EFFICIENCY['hydrostatic'] / EFFICIENCY['tendon']`` (``break_even_eta``)."""
+    r, d = ROBOTS[robot], joint_demand(robot)
+    n = r["joints"]
+    tendon_g = 0.6 + 0.004 * d["peak_nm"] * 1000
+    enc = _p("magnetic joint encoder")["g"]
+    work_w = 0.5 * n * d["hold_nm"] * 0.25
+    h = size(robot, "hydrostatic")
+    h["share"] = h["mass_g"] / (r["mass"] * 1000)
+    out = {"robot": robot, "break_even_eta": EFFICIENCY["hydrostatic"] / EFFICIENCY["tendon"], "hydrostatic": h,
+           "routes": {}}
+    for name, mu_wrap in ROUTING.items():
+        eta = 0.97 ** 3 if mu_wrap is None else math.exp(-mu_wrap[0] * math.radians(mu_wrap[1]))
+        m = pick_motor(d["peak_nm"] / eta, d["speed_rad_s"])
+        mass = n * (m["g"] + tendon_g + enc) if m else float("nan")
+        share = mass / (r["mass"] * 1000)
+        out["routes"][name] = {"eta": eta, "mass_g": mass, "share": share, "walk_w": work_w / (EFFICIENCY["tendon"] * eta),
+                               "motor": f"{m['name']} ×{m['ratio']:g}" if m else None, "ok": bool(m) and share < 0.6}
+    return out
+
+
+# --------------------------------------------------------------------------------------------- TARANTULA's jaws
+#: what the jaws should cut: (shear strength [MPa], cut area [mm²], size between the jaws [mm], source) — a sharp
+#: bypass shear needs ≈ strength × area (a blunt or loose blade needs more)
+CUT_LOADS = {
+    "cable tie 4.8 × 1.3 mm (nylon 6/6)": (60.0, 4.8 * 1.3, 1.3, "assumed: nylon 6/6 shear ~60 MPa"),
+    "polypropylene cord Ø3 mm": (25.0, math.pi * 1.5 ** 2, 3.0, "assumed: PP shear ~25 MPa"),
+    "copper wire Ø1.5 mm": (150.0, math.pi * 0.75 ** 2, 1.5, "assumed: annealed copper shear ~150 MPa"),
+    "mild steel wire Ø1.0 mm": (280.0, math.pi * 0.5 ** 2, 1.0, "assumed: low-carbon steel shear ~280 MPa"),
+    "green twig Ø5 mm": (20.0, math.pi * 2.5 ** 2, 5.0, "assumed: ~20 MPa effective across the grain — measure"),
+    "galvanised fence wire Ø2.5 mm": (280.0, math.pi * 1.25 ** 2, 2.5, "assumed: as mild steel"),
+}
+#: the jaws' parts [g] (assumed class estimates)
+CUTTER_PARTS = {"micro metal gearmotor 250:1": 9.5, "M4 × 0.7 leadscrew + bronze nut": 4.0, "crossbar yoke + 2 links": 4.0,
+                "2 jaws (aluminium, hardened steel blade inserts)": 18.0, "cheliceral housing": 14.0,
+                "pivot pins + tongues": 3.0, "limit switch + current sense": 1.0}
+
+
+def cutter(spec=None, motor="micro metal gearmotor 250:1 (class)", screw_eff=0.35, load=0.5, throat_mm=10.0):
+    """TARANTULA's jaws (``spider_specs.TARANTULA['cutter']``). A ``motor`` (``MOTORS``) turns the leadscrew: the nut
+    pushes with F = 2π T η / lead at ``load`` × stall (and at stall). By virtual work over the linkage
+    (``spider_specs.cutter_linkage``) the force on the work ``a`` mm in front of the pivots is F |dx/dθ| / (2 a) — one
+    screw, two jaws. A part of size s at the throat (``throat_mm``) is met when the gap there closes to s
+    (``cutter_gap``) and is cut by the time the edges cross; the force available is the least over that stretch.
+    Returns the screw force, stroke, closing time, mass, the force/gap table and per ``CUT_LOADS`` whether it cuts
+    at the running load and at stall."""
+    import spider_specs as ss
+    spec = spec or ss.TARANTULA
+    c = spec["cutter"]
+    name, _, stall, w0, _ = next(m for m in MOTORS if m[0] == motor)
+    lead = c["lead_mm"] * 1e-3
+    f_run = 2 * math.pi * stall * load * screw_eff / lead
+
+    def dxdt(deg, h=0.25):
+        lo, hi = max(deg - h, 0.0), deg + h
+        return abs(ss.cutter_linkage(spec, hi)["yoke_x"] - ss.cutter_linkage(spec, lo)["yoke_x"]) / math.radians(hi - lo)
+
+    def blade(deg, a):
+        return f_run * dxdt(deg) / (2 * a)
+
+    def crossed(a):                                                       # the opening where the edges meet at a
+        lo, hi = 0.0, c["open_deg"]
+        for _ in range(50):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if ss.cutter_gap(spec, mid, a) < 0 else (lo, mid)
+        return lo
+
+    def met(s, a):                                                        # the opening where the gap equals s
+        lo, hi = crossed(a), c["open_deg"]
+        if ss.cutter_gap(spec, hi, a) < s:
+            return None
+        for _ in range(50):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if ss.cutter_gap(spec, mid, a) < s else (lo, mid)
+        return hi
+
+    th0 = crossed(throat_mm)
+    rows = [{"open_deg": d, "gap_throat_mm": ss.cutter_gap(spec, d, throat_mm),
+             "blade_n_throat": blade(d, throat_mm), "blade_n_far": blade(d, c["cut_zone"][1])}
+            for d in (30.0, 25.0, 20.0, 15.0, 10.0, 5.0)]
+    cuts = {}
+    for k, (tau, area, s, _) in CUT_LOADS.items():
+        need = tau * area
+        th1 = met(s, throat_mm)
+        if th1 is None:
+            cuts[k] = {"need_n": need, "fits": False, "cuts": False, "cuts_at_stall": False}
+            continue
+        avail = min(blade(th0 + (th1 - th0) * i / 20, throat_mm) for i in range(21))
+        cuts[k] = {"need_n": need, "fits": True, "met_at_deg": th1, "avail_n": avail, "cuts": need <= avail,
+                   "cuts_at_stall": need <= avail / load}
+    o, z = ss.cutter_linkage(spec, c["open_deg"]), ss.cutter_linkage(spec, 0.0)
+    stroke = abs(z["yoke_x"] - o["yoke_x"])
+    speed = w0 * (1 - load) / (2 * math.pi) * c["lead_mm"]              # mm/s on the motor's linear torque-speed line
+    return {"screw_n": f_run, "stroke_mm": stroke, "close_s": stroke / speed, "edges_cross_deg": th0,
+            "max_gap_mm": ss.cutter_gap(spec, c["open_deg"], throat_mm), "table": rows, "cuts": cuts,
+            "mass_g": sum(CUTTER_PARTS.values()), "motor": name}
 
 
 # --------------------------------------------------------------------------------------------- jumping (SALTY)

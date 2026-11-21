@@ -383,8 +383,89 @@ class Tarantula(_Spider):
         posts = [sk.rod((x + ax, ay, z - 6.0), (x + ax, ay, z + 5.0), 3.0) for ax in (-25.0, 25.0) for ay in (-18.0, 18.0)]
         return [plate] + posts
 
+    # the chelicerae: TARANTULA's cutting jaws ----------------------------------------------------------------------
+    JAW_OUTER = ((-6.0, 2.0), (0.0, 6.5), (8.0, 7.0), (20.0, 6.5), (32.0, 3.5), (42.0, -3.0), (49.0, -11.0),
+                 (53.0, -20.0), (54.0, -27.0))
+    JAW_HOOK = ((50.0, -23.0), (44.0, -17.5), (37.0, -13.5))           # the inner edge from the fang tip to the blade
+
+    def jaw(self, s, side, open_deg):
+        """One jaw in place ({"jaw", "blade"}): a curved, fang-tipped plate with its pivot boss and an outward tail,
+        a hardened blade insert along the straight cutting edge (``edge_y`` inside the pivot, ``cut_zone``). ``side``
+        +1 = the left jaw (above the pivot plane), −1 = the right (below, mirrored); turned ``open_deg`` outward."""
+        c = s["cutter"]
+        e, (a0, a1) = c["edge_y"], c["cut_zone"]
+        tx, ty = c["tail"]
+        outline = list(self.JAW_OUTER) + list(self.JAW_HOOK) + [(a1, -e), (0.0, -e), (-6.0, -6.0)]
+        z0 = 0.0 if side > 0 else -c["jaw_t"]
+        plate = cq.Workplane("XY").polyline(outline).close().extrude(c["jaw_t"])
+        boss = cq.Workplane("XY").circle(6.0).extrude(c["jaw_t"])
+        L = math.hypot(tx, ty)
+        arm = (cq.Workplane("XY").center(tx / 2, ty / 2).rect(L, 6.0).extrude(c["jaw_t"])
+               .rotate((tx / 2, ty / 2, 0), (tx / 2, ty / 2, 1), math.degrees(math.atan2(ty, tx))))
+        tip = cq.Workplane("XY").center(tx, ty).circle(2.5).extrude(c["jaw_t"])
+        jaw = sk.union_all([plate, boss, arm, tip])
+        blade = (cq.Workplane("XY").polyline([(a0, -e), (a1, -e), (a1 + 2.0, -e + 3.0), (a0, -e + 3.0)]).close()
+                 .extrude(c["jaw_t"]))
+        px, py, pz = c["pivot"]
+        out = {}
+        for k, w in (("jaw", jaw), ("blade", blade)):
+            w = w.translate((0, 0, z0))
+            if side < 0:
+                w = w.mirror("XZ")
+            out[k] = w.rotate((0, 0, 0), (0, 0, 1), side * open_deg).translate((px, side * py, pz))
+        return out
+
+    def chelicerae(self, s, open_deg):
+        """{name: [solids]}: the housing (two lobes over one hollow, open-fronted box), the pivot pins and their
+        tongues, the two jaws and blades, and the drive (the crossbar yoke, two links, the leadscrew, its motor)."""
+        c = s["cutter"]
+        x0, x1, z0, z1 = c["housing_at"]
+        px, py, pz = c["pivot"]
+        zm = (z0 + z1) / 2
+        lobes = [sk.rounded_box(x1 - x0, 23.0, z1 - z0, ((x0 + x1) / 2, sy * 15.5, zm), fillet=8.0) for sy in (-1, 1)]
+        bridge = cq.Workplane("XY").box(x1 - x0, 12.0, z1 - z0 - 6.0).translate(((x0 + x1) / 2, 0, zm - 3.0))
+        cavity = cq.Workplane("XY").box(x1 - x0 + 4.0, 50.0, z1 - z0 - 4.0).translate(((x0 + x1) / 2 + 3.0, 0, zm))
+        hole = sk.rod((x0 - 1, 0, pz), (x0 + 4, 0, pz), 2.6)
+        housing = sk.union_all(lobes + [bridge]).cut(cavity).cut(hole)
+        t = c["jaw_t"]
+        pins, tongues = [], []
+        for sy in (-1, 1):
+            pins.append(sk.rod((px, sy * py, z0), (px, sy * py, pz + t + 3.0), 2.5))
+            yy = (sy * (py - 6.0), sy * 25.0)
+            for zz in (z0 + 1.0, pz + t + 2.0):                           # the lower plate (the floor's) and the tongue
+                xa = x0 + 20.0 if zz > pz else x1
+                tongues.append(cq.Workplane("XY").box(px + 6.0 - xa, abs(yy[1] - yy[0]), 2.0)
+                               .translate(((px + 6.0 + xa) / 2, (yy[0] + yy[1]) / 2, zz)))
+        jl, jr = self.jaw(s, 1, open_deg), self.jaw(s, -1, open_deg)
+        lk = ss.cutter_linkage(s, open_deg)
+        yx, (tx, ty) = lk["yoke_x"], lk["tail"]
+        yoke = cq.Workplane("XY").box(6.0, 2 * (c["yoke_y"] + 2.0), 2 * t + 1.0).translate((yx, 0, pz))
+        links = [sk.rod((yx, sy * c["yoke_y"], pz + sy * t / 2), (tx, sy * ty, pz + sy * t / 2), 2.0) for sy in (-1, 1)]
+        mx, mz = c["motor_at"]
+        motor = motor_box((mx, 0, mz), 1, *s["motor"])
+        screw = sk.rod((mx + s["motor"][2] / 2, 0, pz), (yx + 4.0, 0, pz), 2.0)
+        return {"housing": [housing], "pins": pins + tongues, "jaws": [jl["jaw"], jr["jaw"]],
+                "blades": [jl["blade"], jr["blade"]], "drive": [yoke] + links, "motor": [motor, screw]}
+
+    def internals(self, s):
+        return super().internals(s) + self.chelicerae(s, self._jaw)["motor"]
+
     def extras(self, s, cut):
-        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s)
+        ch = self.chelicerae(s, self._jaw)
+        jaws = ch["housing"] + ch["pins"] + ch["jaws"] + ch["blades"] + ch["drive"]
+        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s) + jaws
+
+    _jaw = 20.0
+    parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot", "jaws"),
+                            description="what to build"),
+                  Parameter("jaw", 20.0, units="deg", min=0.0, max=30.0, description="the jaws' opening, each side")]
+
+    def build(self, p):
+        self._jaw = float(p.get("jaw", 20.0))
+        if p["part"] == "jaws":
+            ch = self.chelicerae(self.spec, self._jaw)
+            return _compound([v for k in ("housing", "pins", "jaws", "blades", "drive", "motor") for v in ch[k]])
+        return super().build(p)
 
 
 class Salty(_Spider):

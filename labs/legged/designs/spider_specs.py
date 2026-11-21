@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import math
 
-__all__ = ["ARACHNE2", "SALTY", "SPIDERS", "TARANTULA", "body_z", "hip_points", "leg_chain", "rim_y"]
+__all__ = ["ARACHNE2", "SALTY", "SPIDERS", "TARANTULA", "body_z", "cutter_gap", "cutter_linkage", "hip_points",
+           "leg_chain", "rim_y"]
 
 #: ARACHNE-2 — the palm-sized wall climber, spider-like legs (docs/spiders.md §3)
 ARACHNE2 = {
@@ -38,6 +39,15 @@ TARANTULA = {
     "pad": (40.0, 30.0, 6.0), "claw": 14.0, "motor": (12.0, 10.0, 26.0), "motors": 24,
     "battery": (110.0, 45.0, 32.0), "board": (110.0, 80.0), "bank": (6, 2, 2),
     "turret": (46.0, 34.0), "shell_plates": 5,
+    #: the chelicerae: two bypass-shear jaws under the turret (the left jaw above the pivot plane, the right below; their
+    #: straight cutting edges, ``edge_y`` inside the pivot, cross the midline and slide past each other), each on a
+    #: vertical pin in front of a hollow, open-fronted cheliceral housing; a leadscrew pushes a crossbar yoke forward
+    #: and two links (from the yoke's ends at ±``yoke_y``) push the jaws' outward tails forward — the jaws close
+    #: (``spider_actuation.cutter`` sizes it). Jaw coordinates: the left jaw's, from its pivot, x forward, y to the left;
+    #: the right jaw mirrors it.
+    "cutter": {"pivot": (101.0, 9.0, 44.0), "jaw_t": 7.0, "edge_y": 10.5, "tail": (-4.0, 13.0), "link": 16.0,
+               "yoke_y": 19.0, "open_deg": 30.0, "cut_zone": (6.0, 30.0), "housing_at": (70.0, 96.0, 34.0, 66.0),
+               "motor_at": (55.0, 44.0), "lead_mm": 0.7},
 }
 
 #: SALTY — the jumping spider: legs III jump (hydraulic extensor cylinders, a gas accumulator, a latch), legs I, II, IV
@@ -84,6 +94,25 @@ def hip_points(spec, leg):
     i = int(leg[1]) - 1
     hx = spec["hip_x"][i]
     return (hx, sy * (rim_y(spec, hx) + 1.3 * spec["tube"][0])), spec["splay_deg"][i], sy
+
+
+def cutter_linkage(spec, open_deg):
+    """TARANTULA's jaw linkage at an opening ``open_deg`` (each jaw turned that far outward from closed): the left
+    jaw's tail point (x, y) and the yoke's x (the links' back ends; the right jaw mirrors)."""
+    c = spec["cutter"]
+    px, py, _ = c["pivot"]
+    tx, ty = c["tail"]
+    a = math.radians(open_deg)
+    T = (px + tx * math.cos(a) - ty * math.sin(a), py + tx * math.sin(a) + ty * math.cos(a))
+    return {"tail": T, "yoke_x": T[0] - math.sqrt(c["link"] ** 2 - (T[1] - c["yoke_y"]) ** 2)}
+
+
+def cutter_gap(spec, open_deg, a):
+    """The gap between the two cutting edges ``a`` mm in front of the pivots at an opening ``open_deg`` (negative: the
+    edges have crossed — the bypass blades overlap by that much)."""
+    c = spec["cutter"]
+    t = math.radians(open_deg)
+    return 2 * (c["pivot"][1] + a * math.sin(t) - c["edge_y"] * math.cos(t))
 
 
 def leg_chain(spec, scale=1.0, angles=None):
