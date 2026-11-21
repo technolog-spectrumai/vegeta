@@ -88,7 +88,11 @@ FLAK_MOUNT["shots_per_bottle"] = int(gb.FLAK["shots"] * FLAK_MOUNT["bottle_l"] /
 
 #: the gunner's sensors on the flak's cradle (Armageddon's tracker): they pan and tilt with the flak
 SENSORS = {"search_camera": {"hfov_deg": 70, "px": (1280, 720)}, "zoom_sight": {"hfov_deg": 20, "px": (1280, 720)},
-           "laser_rangefinder": {"sigma_m": 0.1, "beam_deg": 0.4}, "mass_kg": 1.6}
+           "laser_rangefinder": {"sigma_m": 0.1, "beam_deg": 0.4},
+           #: four fixed 90-degree search cameras round the mast under the flak's head: nothing comes unseen (the game
+           #: showed a kamikaze diving from behind while the flak's own camera looked elsewhere)
+           "ring_cameras": {"count": 4, "hfov_deg": 90, "px": (1920, 1080), "below_pivot_m": 0.2},
+           "mass_kg": 2.4}
 
 #: what the flak's back-blast must not wash (m, boxes (lo, hi)): the golf turret, its hopper and the mast under the
 #: flak, and the four tyres. The deck, the fenders and the trunk get a 2 mm steel blast plate (``BLAST_PLATE``) and may

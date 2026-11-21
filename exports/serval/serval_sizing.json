@@ -1,20 +1,20 @@
 {
  "sizing": {
-  "mass_kg": 366.2,
+  "mass_kg": 367.0,
   "mass_quad_bare_kg": 314.0,
   "mass_golf_turret_kg": 33.6,
-  "mass_flak_mount_kg": 18.6,
-  "vs_kerchaks_loaded_quad_kg": -362.9,
+  "mass_flak_mount_kg": 19.4,
+  "vs_kerchaks_loaded_quad_kg": -362.1,
   "cg_m": [
    -0.067,
-   0.524
+   0.526
   ],
   "axle_load_kg": {
-   "front": 170.5,
-   "rear": 195.7
+   "front": 170.9,
+   "rear": 196.1
   },
-  "ssf": 1.861,
-  "rollover_lat_g": 1.86,
+  "ssf": 1.854,
+  "rollover_lat_g": 1.85,
   "cornering_limit_g": 0.8,
   "drive": {
    "motors": 4,
@@ -63,7 +63,7 @@
    "breech, valve, venturi": 1.6,
    "air bottle 4 L, 300 bar (CF)": 3.1,
    "magazine 480 balls": 1.397267171955544,
-   "sensors (cameras, laser)": 1.6,
+   "sensors (cameras, laser)": 2.4,
    "blast plate": 6.0
   }
  },

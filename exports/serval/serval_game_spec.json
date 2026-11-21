@@ -3,14 +3,14 @@
  "source": "vegeta labs/legged/designs/serval.py",
  "kind": "rover",
  "vehicle": {
-  "mass_kg": 366.2,
+  "mass_kg": 367.0,
   "top_speed_m_s": 22.22,
   "accel_m_s2": 6.67,
   "braking_m_s2": 7.85,
   "turn_rate_rad_s_at_speed": 0.353,
   "wheelbase_m": 1.95,
   "track_m": 1.95,
-  "rollover_lat_g": 1.86,
+  "rollover_lat_g": 1.85,
   "size_m": [
    2.6,
    2.2,
@@ -103,7 +103,16 @@
    "sigma_m": 0.1,
    "beam_deg": 0.4
   },
-  "mass_kg": 1.6
+  "ring_cameras": {
+   "count": 4,
+   "hfov_deg": 90,
+   "px": [
+    1920,
+    1080
+   ],
+   "below_pivot_m": 0.2
+  },
+  "mass_kg": 2.4
  },
  "hit_and_run": {
   "speed_kmh": 70.0,
