@@ -14,6 +14,7 @@ the hide; the bandit, the gift, the confetti and the smoke are props (mocap bodi
 
     ./tarantula.sh mission                       # runs/tarantula/tarantula_mission.mp4 (1280 × 720, 30 fps)
     ./tarantula.sh mission --width 960 --height 540 --out my.mp4
+    ./tarantula.sh mission --no-text             # the clean cut: no captions, HUD or title cards
 
 Needs what ``tarantula_video`` needs (mujoco, cadquery, Pillow, ffmpeg).
 """
@@ -1135,7 +1136,7 @@ class Props:
 
 
 # --------------------------------------------------------------------------------------------- the video
-def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None):
+def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=True):
     import mujoco
     from PIL import Image, ImageDraw, ImageFont
 
@@ -1235,6 +1236,10 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None):
         # letterbox, the mission's captions
         dr.rectangle([0, 0, width, bar], fill=(0, 0, 0, 255))
         dr.rectangle([0, height - bar, width, height], fill=(0, 0, 0, 255))
+        if not text:                                                      # the clean cut: no captions, no HUD
+            img.convert("RGB").save(frames_dir / f"f_{count['n']:05d}.jpg", quality=92)
+            count["n"] += 1
+            return
         dr.text((24, bar / 2 - 12), "OPERATION SILENT DROP", font=f_cap, fill=(255, 196, 64))
         clock = 23 * 3600 + 47 * 60 + max(t, 0.0)
         stamp = f"OLD TOWN · ROOF 4B · {int(clock // 3600) % 24:02d}:{int(clock // 60) % 60:02d}:{int(clock) % 60:02d}"
@@ -1325,8 +1330,9 @@ def main(argv=None):
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
     ap.add_argument("--fps", type=int, default=30)
+    ap.add_argument("--no-text", action="store_true", help="the clean cut: no captions, HUD or title cards")
     a = ap.parse_args(argv)
-    run(a.out, a.width, a.height, a.fps)
+    run(a.out, a.width, a.height, a.fps, text=not a.no_text)
     return 0
 
 
