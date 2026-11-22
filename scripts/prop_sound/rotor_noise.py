@@ -88,8 +88,9 @@ def _bpm_shape(st_ratio):
                     np.where(a < 0.244, -32.665 * a + 3.981, -142.795 * a ** 3 + 103.656 * a ** 2 - 57.757 * a + 6.006))
 
 
-def broadband(prop, rpm: float, distance: float, V: float = 0.0, p: NoiseParams = NoiseParams()) -> np.ndarray:
-    """1/3-octave TBL-TE levels (dB) at ``THIRD`` for the whole rotor."""
+def broadband(prop, rpm: float, distance: float, V: float = 0.0, p: NoiseParams = NoiseParams(), dstar=None) -> np.ndarray:
+    """1/3-octave TBL-TE levels (dB) at ``THIRD`` for the whole rotor. ``dstar(r, U, chord, Re)`` -> (suction, pressure)
+    trailing-edge displacement thickness [m] (NeuralFoil); default the tripped flat plate, both sides alike."""
     r = np.asarray(prop.r); c = np.asarray(prop.chord)
     Om = rpm * 2 * math.pi / 60
     edges = np.linspace(r[0], prop.radius * 0.98, p.strips + 1)
@@ -100,19 +101,20 @@ def broadband(prop, rpm: float, distance: float, V: float = 0.0, p: NoiseParams 
         U = math.hypot(Om * rm, V)
         Mloc = U / C0
         Re = max(U * ch / NU, 1e4)
-        dstar = ch * 0.0464 * Re ** -0.2 if Re > 3e5 else ch * 10 ** (3.411 - 1.5397 * math.log10(Re) + 0.1059 * math.log10(Re) ** 2) * 0.6
+        dstar_fp = ch * 0.0464 * Re ** -0.2 if Re > 3e5 else ch * 10 ** (3.411 - 1.5397 * math.log10(Re) + 0.1059 * math.log10(Re) ** 2) * 0.6
         st_peak = 0.02 * Mloc ** -0.6
-        st = THIRD * dstar / U
+        sides = dstar(rm, U, ch, Re) if dstar else (dstar_fp, dstar_fp)
         k1 = 128.5 if Re > 8e5 else (-4.31 * math.log10(Re) + 156.3 if Re > 2.47e5 else 133.4) - 4.0
-        L = 10 * math.log10(dstar * Mloc ** 5 * (b - a) * 1.0 / distance ** 2) + _bpm_shape(st / st_peak) + k1 - 3
-        p2 += 2 * prop.blades * 10 ** (L / 10)          # suction + pressure side, every blade
+        for ds in sides:                                 # suction + pressure side, every blade
+            L = 10 * math.log10(ds * Mloc ** 5 * (b - a) / distance ** 2) + _bpm_shape(THIRD * ds / U / st_peak) + k1 - 3
+            p2 += prop.blades * 10 ** (L / 10)
     return 10 * np.log10(np.maximum(p2, 1e-30))
 
 
-def rotor(prop, T, Q, rpm, distance, angle_deg, V=0.0, tilt_deg=0.0, p: NoiseParams = NoiseParams()) -> dict:
+def rotor(prop, T, Q, rpm, distance, angle_deg, V=0.0, tilt_deg=0.0, p: NoiseParams = NoiseParams(), dstar=None) -> dict:
     vin = V * math.cos(math.radians(tilt_deg))          # the flight speed in the disc plane
     return {"tones": tones(prop, T, Q, rpm, distance, angle_deg, vin, p),
-            "broadband": [[float(f), float(L)] for f, L in zip(THIRD, broadband(prop, rpm, distance, V, p))]}
+            "broadband": [[float(f), float(L)] for f, L in zip(THIRD, broadband(prop, rpm, distance, V, p, dstar))]}
 
 
 def a_weight(f):

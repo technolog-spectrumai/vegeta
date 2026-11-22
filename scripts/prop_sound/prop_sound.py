@@ -40,7 +40,7 @@ def machine(name: str) -> dict:
         cad = dict(hub_diameter=12.0, hub_height=6.0, bore=5.0, thickness=0.10, camber=0.04, stations=10)
         return dict(name="drongo_quad", n=4, mass=mass, cda=dr.DRAG_AREA_M2, prop=prop, airfoil=airfoil, cad=cad,
                     pitch_m=0.0254 * 4.3, chords=(0.010, 0.016, 0.006),
-                    noise=dict(arm_width_m=0.010, arm_gap_m=0.008))        # 10 mm carbon arm, motor bell gap
+                    noise=dict(arm_width_m=0.010, arm_gap_m=0.008), section="naca4409")   # thin moulded blade        # 10 mm carbon arm, motor bell gap
     if name == "hexa":
         import drako_robot as dk
         from drako import Drako
@@ -51,7 +51,7 @@ def machine(name: str) -> dict:
         cad = dict(hub_diameter=40.0, hub_height=16.0, bore=10.0, thickness=0.09, camber=0.04, stations=10)
         return dict(name="drako_hexa", n=6, mass=s["tow_design_kg"], cda=0.25 + 0.15, prop=prop, airfoil=airfoil, cad=cad,
                     pitch_m=0.0254 * 10.5, chords=(0.045 * k, 0.065 * k, 0.025 * k),
-                    noise=dict(arm_width_m=0.030, arm_gap_m=0.040))        # 30 mm arm tube, 40 mm below the disc
+                    noise=dict(arm_width_m=0.030, arm_gap_m=0.040), section="clarky")     # carbon heavy-lift blade        # 30 mm arm tube, 40 mm below the disc
     raise SystemExit(f"unknown machine {name!r}: quad or hexa")
 
 
@@ -111,7 +111,12 @@ def point(m, kmh, args, env):
     tr = trim(m, V)
     T_need = tr["thrust_per_rotor_N"]
     op = boreas.rpm_for_thrust(m["prop"], m["airfoil"], T_need, tr["axial_inflow_m_s"], RHO)
-    rpm, T, Q, src = op.rpm, op.thrust, op.torque, "blade element (no CFD)"
+    af = section_airfoil(m, op.rpm, V, args)
+    if af is not None:                                   # NeuralFoil polar at this point's Reynolds number, solved again
+        op = boreas.rpm_for_thrust(m["prop"], af, T_need, tr["axial_inflow_m_s"], RHO)
+    rpm, T, Q = op.rpm, op.thrust, op.torque
+    src = f"blade element{' + NeuralFoil' if af is not None else ''} (no CFD)"
+    alpha = (np.asarray(op.r), np.asarray(op.alpha_deg))
     if not args.no_cfd:
         r = cfd_point(m, V, tr, rpm, args.out / "cfd", args.quality, args.procs, env)
         for _ in range(args.iterate):
@@ -123,15 +128,39 @@ def point(m, kmh, args, env):
             T, Q, src = r[0], r[1], f"CFD ({args.quality})"
         else:
             src = "blade element (the CFD case failed)"
-    return acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args)
+    out = acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args, alpha)
+    if af is not None:
+        out["airfoil"] = af.describe()
+    return out
 
 
-def acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args):
+def use_neuralfoil(args) -> bool:
+    import nf_airfoil
+    return getattr(args, "airfoil", "auto") != "simple" and nf_airfoil.available()
+
+
+def section_airfoil(m, rpm, V, args):
+    """NeuralFoil airfoil of the machine's section at the Reynolds number of 0.75 R, or None (simple polar)."""
+    if not use_neuralfoil(args):
+        if getattr(args, "airfoil", "auto") == "neuralfoil":
+            sys.exit("--airfoil neuralfoil: pip install neuralfoil")
+        return None
+    import nf_airfoil
+    return nf_airfoil.NeuralFoilAirfoil(m.get("section", "naca4409"), nf_airfoil.reynolds(m["prop"], rpm, V))
+
+
+def acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args, alpha=None):
     """The rotor's sound at the listener (rotor_noise: steady + unsteady loading tones, BPM broadband)."""
     import rotor_noise as rn
     V = kmh / 3.6
+    dstar = None
+    if use_neuralfoil(args):                             # the real trailing-edge boundary layer of every strip
+        import nf_airfoil
+        sec = m.get("section", "naca4409")
+        a_of = (lambda r: float(np.interp(r, *alpha))) if alpha is not None else (lambda r: 4.0)
+        dstar = lambda r, U, ch, Re: nf_airfoil.te_dstar(sec, a_of(r), Re, ch)
     res = rn.rotor(m["prop"], max(T, 0.0), max(Q, 0.0), rpm, args.distance, args.angle, V, tr["tilt_deg"],
-                   rn.NoiseParams(**m.get("noise", {})))
+                   rn.NoiseParams(**m.get("noise", {})), dstar)
     tones = res["tones"]
     bb = res["broadband"]
     bb_db = 10 * math.log10(sum(10 ** (L / 10) for _, L in bb))
@@ -194,6 +223,8 @@ def main():
     ap.add_argument("--seconds", type=float, default=5.0)
     ap.add_argument("--out", type=Path, default=Path("prop_sounds"))
     ap.add_argument("--no-cfd", action="store_true", help="blade-element theory only (dry run)")
+    ap.add_argument("--airfoil", default="auto", choices=("auto", "neuralfoil", "simple"),
+                    help="section polar: NeuralFoil when installed (auto), or the simple polar")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     m = machine(args.machine)

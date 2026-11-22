@@ -13,6 +13,10 @@ WHAT IT RUNS (targets; default all four)
   Cost on a laptop: a rotor case ~5-20 min (screening) on 8 cores; a cannon shot (1.1 M cells, ~144k steps) several
   hours on 8 cores -- --can-mesh coarse (~0.2 M cells) for a first look.  Needs OpenFOAM (source its bashrc first).
 
+NEURALFOIL (pip install neuralfoil; --airfoil auto|neuralfoil|simple)
+  the blade-element rpm/torque use NeuralFoil's polar of the blade section at each point's Reynolds number, and the
+  broadband noise uses its trailing-edge boundary layer per blade strip; CPU only (a small numpy network)
+
 FAST (--fast: rougher, roughly 10-30x quicker)
   rotors: CFD only for the single rotor (all rotors are always added in code), smoke mesh, no rpm re-solve, CFD
           only at the lowest and highest speed; the speeds between are blade-element points with the CFD's rpm
@@ -211,7 +215,7 @@ def run_rotors(target, args, env, wav_dir, pool_cores):
     if args.fresh and workdir.exists():
         import shutil
         shutil.rmtree(workdir)
-    pa = Namespace(out=workdir, quality=args.quality, procs=pool_cores, iterate=args.iterate,
+    pa = Namespace(out=workdir, airfoil=args.airfoil, quality=args.quality, procs=pool_cores, iterate=args.iterate,
                    distance=args.prop_distance, angle=args.prop_angle, no_cfd=args.no_cfd)
     (workdir / "cfd").mkdir(parents=True, exist_ok=True)       # point() puts its cases in <out>/cfd
     if not args.no_cfd:
@@ -441,6 +445,8 @@ def main(argv=None):
                     "CFD rpm correction interpolated); default every speed")
     ap.add_argument("--fast", action="store_true", help="quick, rougher: rotor smoke mesh, no rpm iteration, CFD at the "
                     "lowest and highest speed only; cannon coarse mesh, 0.5 m ring, 10 ms after the ball")
+    ap.add_argument("--airfoil", default="auto", choices=("auto", "neuralfoil", "simple"),
+                    help="rotor section polar and trailing-edge boundary layer: NeuralFoil when installed (auto)")
     ap.add_argument("--no-cfd", action="store_true", help="dry run (rotors: blade element; cannon: cases only)")
     ap.add_argument("--fresh", action="store_true", help="ignore solved cases")
     ap.add_argument("--no-charts", action="store_true")
