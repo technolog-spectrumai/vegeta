@@ -899,16 +899,60 @@ def scenario_heist(kin, q_stand, p):
         if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist", "finger", "thumb")):
             arms_in[kin.index[j]] = tuck[kin.index[j]]
 
-    def leap_base(u):
-        f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
-        fy = mk.smooth(min(1.0, max(0.0, (u - 0.25) / 0.4)))               # out to the window's side first, then in: round the trunk, not through it
-        fx = mk.smooth(min(1.0, max(0.0, (u - 0.5) / 0.5)))
-        back = 0.15 * mk.smooth(min(1.0, u / 0.25)) * (1 - fx)               # pushed back off the tree as the arms come in: the hands clear the trunk
-        pc = np.array([(1 - fx) * b[0] + fx * crouch[0] - back, (1 - fy) * b[1] + fy * crouch[1], (1 - f) * b[2] + f * crouch[2] + 0.3 * math.sin(math.pi * f)])
-        return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
+    # the leap as a jump: arms in and a crouch off the trunk's side, a push-off along the launch line, a ballistic
+    # flight (gravity only: the pelvis on a parabola, the horizontal speed constant), the landing taken in the legs
+    G = 9.81
+    T_IN, T_PUSH, T_LAND, DIP, CLEAR = 0.45, 0.22, 0.3, 0.07, 0.12
+    p0 = np.array([b[0] - 0.15, b[1] + 0.3, b[2] - 0.06])                  # back off the tree and out to the window's side, sunk into the push
+    p1 = crouch.copy()
+    launch = p0.copy()
+    for _ in range(6):                                                     # the launch point: where the push (uniform acceleration from rest) ends
+        apex = max(launch[2], p1[2]) + CLEAR
+        t_up = math.sqrt(2.0 * (apex - launch[2]) / G)
+        t_dn = math.sqrt(2.0 * (apex - p1[2]) / G)
+        T_FLY = t_up + t_dn
+        v = np.array([(p1[0] - launch[0]) / T_FLY, (p1[1] - launch[1]) / T_FLY, G * t_up])
+        launch = p0 + v * T_PUSH / 2.0
+    D = T_IN + T_PUSH + T_FLY + T_LAND
+    print(f"heist: leap {np.linalg.norm(p1[:2] - launch[:2]):.2f} m, take-off {np.linalg.norm(v):.2f} m/s, flight {T_FLY:.2f} s, apex {apex - launch[2]:.2f} m over take-off")
+    push_ext = arms_in.copy()                                              # the legs straightened at take-off
+    crouch_in = arms_in.copy()
+    for sd in ("L", "R"):
+        for jn, dq in (("knee", 0.5), ("hip_pitch", -0.4), ("ankle_pitch", 0.3)):
+            j = f"{sd}_{jn}"
+            if j in kin.index:
+                i = kin.index[j]
+                crouch_in[i] = min(max(arms_in[i] + dq, kin.lo[i]), kin.hi[i])
+                push_ext[i] = min(max(arms_in[i] - 0.6 * dq, kin.lo[i]), kin.hi[i])
+    absorb = q_crouch.copy()
+    for sd in ("L", "R"):
+        for jn, dq in (("knee", 0.35), ("hip_pitch", -0.3)):
+            j = f"{sd}_{jn}"
+            if j in kin.index:
+                i = kin.index[j]
+                absorb[i] = min(max(q_crouch[i] + dq, kin.lo[i]), kin.hi[i])
 
-    leap = gs._joint_track(kin, "leap_to_the_sill", 1.6, [(0.0, q3), (0.25, arms_in), (0.5, tuck), (1.0, q_crouch)], leap_base,
-                           source="gibbon_scenarios.heist: the leap from the tree onto the sill")
+    def leap_base(u):
+        t = u * D
+        if t < T_IN:                                                       # off the tree, round to the trunk's side, sinking
+            f = mk.smooth(t / T_IN)
+            pc, pt = (1 - f) * b + f * p0, pitch
+        elif t < T_IN + T_PUSH:                                            # the push: from rest to take-off speed
+            tt = t - T_IN
+            pc, pt = p0 + v * tt * tt / (2.0 * T_PUSH), pitch
+        elif t < T_IN + T_PUSH + T_FLY:                                    # the flight: a parabola
+            tt = t - T_IN - T_PUSH
+            pc = launch + np.array([v[0] * tt, v[1] * tt, v[2] * tt - 0.5 * G * tt * tt])
+            pt = pitch + (0.35 - pitch) * mk.smooth(tt / T_FLY)
+        else:                                                              # the landing: the legs give and come back
+            tt = (t - T_IN - T_PUSH - T_FLY) / T_LAND
+            pc, pt = p1 - np.array([0.0, 0.0, DIP * math.sin(math.pi * min(1.0, tt))]), 0.35
+        return pc[0], pc[1], pc[2], pt
+
+    k1, k2, k3 = T_IN / D, (T_IN + T_PUSH) / D, (T_IN + T_PUSH + T_FLY) / D
+    leap = gs._joint_track(kin, "leap_to_the_sill", D, [(0.0, q3), (k1, crouch_in), (k2, push_ext), ((k2 + k3) / 2, tuck), (k3, q_crouch),
+                                                        (k3 + 0.4 * (1 - k3), absorb), (1.0, q_crouch)], leap_base, frames=int(D * 40),
+                           source="gibbon_scenarios.heist: the jump from the tree onto the sill - push-off, ballistic flight, landing")
     x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
     x_clear = w["x"] + w["wall_thickness"] / 2 + 0.15
     fold = q_crouch.copy()
