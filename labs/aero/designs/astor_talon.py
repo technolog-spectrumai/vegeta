@@ -93,14 +93,14 @@ class CruisingQuad:
                 self.p[i] += self.v[i] * dt
 
 
-def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0.3, duration_s=None, record=None) -> dict:
+def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0.3, duration_s=None, record=None, sim=None) -> dict:
     """One sortie: every pass's miss (the rake's centre from the bandit, across and in height) and closing speed."""
     rng = np.random.default_rng(seed)
     fast = bandit_kind == "fast"
     p = T.resolve()
     drop = p["fuselage_diameter"] / 2000.0 + 0.008 + leg_drop(p)
     REACH_Y_M = reach_across(p)
-    sim = VF.SimV(name, bandit=True)
+    sim = sim or VF.SimV(name, bandit=True)                               # a sim with the CAD mesh for a video may be handed in
     Vs = VF.stall(VF.get(name, VF.SWEEPS[0]))
     if fast:
         bandit = ND.FastBandit(seed=seed)

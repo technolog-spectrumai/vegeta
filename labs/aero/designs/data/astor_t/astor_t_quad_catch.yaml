@@ -1,0 +1,50 @@
+sortie:
+  design: t
+  bandit: quad
+  seed: 0
+  caught: true
+  passes: 1
+  t_catch_s: 14.35
+  best_miss_m: 0.05
+  median_miss_m: 0.05
+  closing_m_s:
+  - 15.0
+  fuselage_hits: 0
+  min_altitude_m: 37.9
+  crashed: false
+passes:
+- t: 14.35
+  across_m: 0.01
+  height_m: -0.05
+  closing_m_s: 15.0
+  astor_m_s: 23.9
+  bank_deg: -25.0
+  caught: true
+  hit_the_fuselage: false
+descent_simple_model:
+  closing_m_s: 15.0
+  loads:
+    closing_m_s: 15.03038948512287
+    bandit_kg: 1.5
+    astor_kg: 3.38
+    energy_J: 117.0
+    arm_travel_mm: 174
+    mean_force_N: 676.0
+    force_per_leg_N: 338.0
+    astor_g: 20.4
+    bandit_g: 46.0
+    rake_below_axis_mm: 332
+    pitch_rate_after_deg_s: 1566
+    speed_lost_m_s: 4.6
+    sink_under_parachute_m_s:
+      astor_alone: 7.2
+      with_the_bandit: 8.7
+    flies_on: false
+    note: 'the pitch rate and the load under the belly end the flight: motor cut, parachute'
+  sink_at_the_end_m_s: 5.7
+  height_at_the_end_m: 10.8
+  seconds: 6.0
+video: sims/output/astor_talon_video/quad_catch_seed0.mp4
+frames: 615
+seconds_of_video: 24.6
+wall_s: 58
