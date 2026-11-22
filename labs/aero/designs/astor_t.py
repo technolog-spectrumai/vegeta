@@ -163,8 +163,34 @@ class AstorT(V.AstorV):
         return out
 
 
+# ------------------------------------------------------------------------------------------------ design choices
+# What the win-rate study (astor_hunt, sims/astor_win) varies. ``configure`` sets them for this process.
+POWER = {2.0: dict(motor_w=2000.0, prop_in=9.0, pack="6S 5000 mAh LiPo", pack_v=21.0, motor_g=155.0, esc_g=45.0),
+         4.0: dict(motor_w=4000.0, prop_in=11.0, pack="12S 2500 mAh LiPo", pack_v=42.0, motor_g=285.0, esc_g=85.0)}
+CONFIG: dict = {}
+
+
+def configure(power_kw=4.0, chord=1.0) -> None:
+    """The motor system (2 or 4 kW: motor, ESC, pack and propeller with it) and the wing panels' chord (x ``chord``:
+    the stall speed against the tube's bore and the mass). The carriage is not re-tuned for the chord (HAND: the
+    margin moves ~4 % of the chord for 20 %)."""
+    global MOTOR_W, PROP_IN, PACK_V, DEFAULT_PACK
+    s = POWER[float(power_kw)]
+    MOTOR_W, PROP_IN, PACK_V, DEFAULT_PACK = s["motor_w"], s["prop_in"], s["pack_v"], s["pack"]
+    for i, (n, g, src) in enumerate(EXTRA_ITEMS):
+        if n.startswith("motor:"):
+            EXTRA_ITEMS[i] = (n, s["motor_g"], src)
+        elif n.startswith("ESC:"):
+            EXTRA_ITEMS[i] = (n, s["esc_g"], src)
+    CONFIG.clear()
+    CONFIG.update({"panel_root_chord": _DEFAULTS["panel_root_chord"] * chord, "panel_tip_chord": _DEFAULTS["panel_tip_chord"] * chord,
+                   "prop_diameter": s["prop_in"] * 25.4})
+    import astor_v_flight as VF
+    VF.coefficients.cache_clear()
+
+
 def variant(**over) -> dict:
-    q = {**V._OVERRIDE, **_DEFAULTS}
+    q = {**V._OVERRIDE, **_DEFAULTS, **CONFIG}
     q["tail_le_x"] = q["fuselage_length"] - 10.0 - q["htail_root_chord"]
     return {**q, **over}
 

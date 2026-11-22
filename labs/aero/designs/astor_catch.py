@@ -92,6 +92,7 @@ def build(mesh=None):
         amj.mjcf = orig
     m = sim.m
     m.body_mass[sim.bid] -= LEG_KG + FOOT_KG                             # the legs are their own bodies now
+    mujoco.mj_setConst(m, sim.d)
     m.opt.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST            # the foot's stiff, heavily damped slide shook under RK4 (47 mm in free flight)
     nm = lambda t_, n: mujoco.mj_name2id(m, t_, n)
     sim.ids = {"quad": nm(mujoco.mjtObj.mjOBJ_BODY, "quad"), "foot": nm(mujoco.mjtObj.mjOBJ_BODY, "foot"), "leg": nm(mujoco.mjtObj.mjOBJ_BODY, "leg"),
@@ -227,7 +228,7 @@ def catch(seed=0, latency_s=0.10, noise_m=0.3, seconds_after=12.0, pull_up=True,
                 # leg becomes that line: free to point anywhere from the hips, free to lengthen, elastic beyond its rest length
                 jh, js = (mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, n) for n in ("hip", "stretch"))
                 m.jnt_stiffness[jh], m.dof_damping[m.jnt_dofadr[jh]], m.jnt_range[jh] = 0.0, 0.02, (-3.1, 3.1)
-                m.jnt_stiffness[js], m.dof_damping[m.jnt_dofadr[js]], m.jnt_range[js] = 0.0, 0.0, (-(g["length"] - 0.02), LINE_MAX_M - g["length"])
+                m.jnt_stiffness[js], m.dof_damping[m.jnt_dofadr[js]], m.jnt_range[js] = 0.0, 0.0, (-(g["length"] - 0.15), LINE_MAX_M - g["length"])
                 t_catch, held = t, sim.controls.copy()
                 z_catch, v_catch = float(s["pos"][2]), float(s["V"])
             was_ahead = ahead
