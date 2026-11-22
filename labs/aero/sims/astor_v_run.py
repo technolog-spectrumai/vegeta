@@ -1,5 +1,6 @@
-"""ASTOR-V and ASTOR-BOOST (the variable-sweep, net-dropping ASTOR): every simulation from one script, under one
-progress bar.
+"""ASTOR (the variable-sweep, net-dropping ASTOR): every simulation from one script, under one progress bar. The
+product is ASTOR-T (tube launched, ``designs/astor_t``; the default since 2026-11-22); ASTOR-V (rail launched) and
+ASTOR-BOOST are its predecessors, kept for comparison (``--design v``, ``--design boost``).
 
     labs/aero/sims/astor.sh -j 12                     # everything: CFD, then stability, then the net drop
     labs/aero/sims/astor.sh -j 12 --cfd-only          # one phase: --cfd-only | --stability-only | --netdrop-only
@@ -293,7 +294,7 @@ def main(argv=None) -> int:
     g.add_argument("--netdrop-only", action="store_true", help="only the net drop")
     g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost", "t"), action="append", help="v (ASTOR-V), boost (ASTOR-BOOST) or t (ASTOR-T, tube launched); default: v and boost")
+    ap.add_argument("--design", choices=("v", "boost", "t"), action="append", help="t (ASTOR-T, tube launched: the ASTOR product, the default), or the earlier v (ASTOR-V) and boost (ASTOR-BOOST)")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -307,7 +308,7 @@ def main(argv=None) -> int:
     ap.add_argument("--latency", type=float, default=0.10, help="netdrop: the camera's latency [s]")
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
     a = ap.parse_args(argv)
-    a.designs = a.design or ["v", "boost"]
+    a.designs = a.design or ["t"]
     a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
     phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only else ["launch"] if a.launch_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])

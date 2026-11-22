@@ -1,4 +1,7 @@
-"""ASTOR-V — the goshawk's ASTOR: variable-sweep wings, a fanning tail, and nets it drops in the bandit's path
+"""ASTOR-V (superseded 2026-11-22 by ASTOR-T, ``astor_t``, which leaves a tube on a spring: ASTOR-V stowed needs a
+350 mm bore. ASTOR-T is built on this file — the body, the carriage, the nets, the cameras — and on its CFD.)
+
+ASTOR-V — the goshawk's ASTOR: variable-sweep wings, a fanning tail, and nets it drops in the bandit's path
 (RAPTORS product line; the direction agreed 2026-11-20 after the bird study and ``astor_hawk``'s experiments).
 
 **How it hunts.** Launched from a rail (or thrown from a perch: spread, it stalls near 12.5 m/s), it tucks its wings

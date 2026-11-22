@@ -69,7 +69,7 @@ def cfd_config(name: str, sweep: float):
 
 
 @lru_cache(maxsize=None)
-def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
+def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
     import arigo_propulsion as ap
     p, mb = design(name)
     m = mb["total_g"] / 1000.0
@@ -268,7 +268,7 @@ class Fixed(amj.Sim):
             mujoco.mj_step(self.m, self.d)
 
 
-def get(name="v", sweep=12.0) -> dict:
+def get(name="t", sweep=12.0) -> dict:
     return dict(coefficients(name, float(sweep)))
 
 
@@ -303,7 +303,7 @@ class SimV(amj.Sim):
 
     SWEEP_RATE = 60.0                        # deg/s (HAND: the carriage and the pivots' actuators)
 
-    def __init__(self, name="v", mesh=None, bandit=False, sweep=None):
+    def __init__(self, name="t", mesh=None, bandit=False, sweep=None):
         import mujoco
         self.name = name
         self.sweep = SWEEPS[0] if sweep is None else sweep

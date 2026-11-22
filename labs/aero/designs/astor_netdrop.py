@@ -194,7 +194,7 @@ class Camera:
         return p1 + v * tau, v                                 # brought forward by the latency
 
 
-def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=None, latency_s=0.10, noise_m=0.3,
+def attack(name="t", bandit_kind="fast", seed=0, net_radius=1.0, over_m=None, latency_s=0.10, noise_m=0.3,
            wind=(0.0, 0.0, 0.0), boost=False, duration_s=None, record=None) -> dict:
     """One sortie: ASTOR against one bandit with its nets. Returns what happened (see the keys)."""
     rng = np.random.default_rng(seed)
@@ -330,7 +330,7 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
             "net": {"radius_m": net_radius, "sink_m_s": round(net0.sink_rate(), 2), "t_open_s": net0.t_open}}
 
 
-def campaign(name="v", bandit_kind="armageddon", n=20, seed0=0, **kw) -> dict:
+def campaign(name="t", bandit_kind="fast", n=20, seed0=0, **kw) -> dict:
     """``n`` sorties with different bandits and starts: the capture rate per sortie and per net, and why not."""
     runs = [attack(name, bandit_kind, seed=seed0 + k, **kw) for k in range(n)]
     caught = [r for r in runs if r["caught"]]

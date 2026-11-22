@@ -266,6 +266,12 @@ def mission(C, pm, sim_factory, launch, kind, cad=None) -> dict:
         alert = HAND_ALERT_S
     elif how == "pad":                                               # a VTOL on its charging pad (BUTEO): its own take-off time
         site = {"how": "pad", "t0": eq.get("pad_time_s", 6.0), "h0": 15.0}
+    elif how == "tube":                                              # ASTOR-T: out of its tube on the spring (astor_tube_launch)
+        import astor_t
+        import astor_tube_launch as TL
+        tl = TL.launch(C.get("design", "t"), astor_t.V_EXIT, astor_t.ELEVATION_DEG)
+        site = ({"how": "tube (spring)", "t0": tl["time_to_safe_s"], "h0": 10.0} if tl["ok"]
+                else {"how": "tube (failed)", "t0": 30.0, "h0": amj.SAFE_HEIGHT_M})
     elif (how in (None, "perch")) and perch["ok"]:
         site = {"how": "perch", "t0": perch["time_to_safe_s"], "h0": PERCH_HEIGHT_M}
     elif how in (None, "rail") and launch["catapult"]["ok"]:
@@ -383,6 +389,9 @@ def setup_of(name):
     if name.startswith("ASTOR-BOOST"):
         import astor_boost
         return astor_boost.AstorBoost, astor_boost.variant(), "tractor_lowcam"
+    if name.startswith("ASTOR-T"):
+        import astor_t
+        return astor_t.AstorT, astor_t.variant(), "tractor_lowcam"
     if name.startswith("ASTOR-V"):
         import astor_v
         return astor_v.AstorV, astor_v.variant(), "tractor_lowcam"
