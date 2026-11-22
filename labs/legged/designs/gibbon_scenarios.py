@@ -871,10 +871,12 @@ def scenario_heist(kin, q_stand, p):
     # the crossing: from the tree onto the sill one limb at a time, never fewer than three holds; the tail stays round
     # the trunk until both hands and both feet are on the sill, the body shifted slowly (quasi-static) between them
     top = w["sill"] + 0.06
-    y_c = w["y"] - w["width"] / 2 + 0.22                                   # the crouch at the sill's tree-side end
+    y_c = w["y"] - w["width"] / 2 + 0.17                                   # the crouch at the sill's tree-side end
     crouch = np.array([w["x"] - 0.1, y_c, top + 0.3])
     feet_sill = {sd: gs.point(np.array([w["x"] - 0.02, y_c + (0.1 if sd == "L" else -0.1), top]), pitch=0.0) for sd in ("L", "R")}
-    hands_sill = {sd: gs.point(np.array([w["x"] - w["wall_thickness"] / 2 + 0.06, y_c + (0.15 if sd == "L" else -0.05), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
+    xf, y_jamb = w["x"] - w["wall_thickness"] / 2, w["y"] - w["width"] / 2   # the wall's face, the window's tree-side jamb
+    hands_sill = {sd: gs.bar(np.array([xf - 0.02, y_jamb + 0.03, top + (0.45 if sd == "L" else 0.2)]), axis=(0.0, 0.0, 1.0), n=(-1.0, 0.0, 0.0), r=0.03)
+                  for sd in ("L", "R")}                                    # the hands round the jamb's edge, one above the other, beside the tree
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     Rc = gm.base_rot(0.35)
     T = [(bd, l, Rc.T @ (np.asarray(wp) - crouch)) for bd, l, wp in gs.foot_targets(kin, "L", feet_sill["L"]) + gs.foot_targets(kin, "R", feet_sill["R"])]
