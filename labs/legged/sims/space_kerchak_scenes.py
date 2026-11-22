@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"heist": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -107,7 +107,7 @@ class ScenePlayer:
             freep = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "backpack"]
             self._pack = {"adr": m.jnt_qposadr[freep[0]], "thorax": m.body("thorax").id}
         self.impact = None
-        if scene in ("window_hammer", "heist"):
+        if scene in ("window_hammer", "heist", "heist_jump"):
             m = self.model
             free = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "hammer"]
             by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
@@ -284,7 +284,7 @@ class ScenePlayer:
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
-        if self.scene == "heist":                                          # the sash: shoved open by the hammer, then it swings on
+        if self.scene in ("heist", "heist_jump"):                                        # the sash: shoved open by the hammer, then it swings on
             m = self.model
             adr = m.jnt_qposadr[m.joint("sash_hinge").id]
             seg = [(s0, sg[1]) for s0, sg in zip(self.starts, self.segments) if sg[0] == "motion" and sg[1].name == "push_the_window"]
@@ -396,8 +396,8 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
-            if a.scene == "heist":                                         # through the window: the walls stay, the camera comes round into the room
-                P = gs.params_for("heist", params)
+            if a.scene in ("heist", "heist_jump"):                                       # through the window: the walls stay, the camera comes round into the room
+                P = gs.params_for(a.scene, params)
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (P["x"] + P["wall_gap"] - 0.2)) / 0.6)))
                 az = azim + 110.0 * f
             if a.scene == "course":                                        # inside the house: the walls behind it drawn away, the camera keeps its side
