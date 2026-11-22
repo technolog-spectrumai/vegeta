@@ -13,6 +13,8 @@ net tube and the cameras are ASTOR-V's.
 - **Fins**: two ventral fins on hinges along the belly, 95 mm high. Folded they lie flat under the tail cone, one to
   each side; springs swing them down to 25 deg from the vertical (an inverted V under the tail) as the tail leaves
   the tube. Together they have the side area of ASTOR-V's fin and half its depth under the body.
+- **Talons** (``astor_talon``): a 250 mm arm on a sprung hinge under the belly with a rake of four hooks, folded aft
+  along the belly in the tube and thrown down for a strike.
 - **Launch keys**: the two pairs of lugs on the fuselage's sides ride in the shuttle's slots; the shuttle carries the
   aircraft by them (the tail, with the net tube's mouth and the folded blades, is not pushed on).
 
@@ -52,6 +54,10 @@ _NEW = [
     Parameter("fin_fold", 0.0, "", min=0.0, max=1.0, description="the two ventral fins: 0 down (flight), 1 flat under the tail (in the tube)"),
     Parameter("fin_splay_deg", FIN_SPLAY_DEG, "deg", min=0.0, max=45.0, description="each fin from the vertical when down"),
     Parameter("fin_hinge_y", 9.0, "mm", min=3.0, description="each fin's hinge line from the centre plane"),
+    Parameter("talon_deploy", 0.0, "", min=-1.0, max=1.0, description="the talon arm: 0 folded along the belly, 1 thrown down for the strike; -1: not fitted"),
+    Parameter("talon_hinge_x", 250.0, "mm", min=150.0, description="the arm's hinge under the belly, from the nose tip"),
+    Parameter("talon_arm_length", 250.0, "mm", min=120.0), Parameter("talon_rake_width", 170.0, "mm", min=60.0),
+    Parameter("talon_swing_deg", 115.0, "deg", min=60.0, max=140.0, description="from folded (aft along the belly) to the strike position (down, a little forward)"),
 ]
 
 MOTOR_W = 2000.0                   # the 2.0 kW motor (2026-11-22): ASTOR-V's was 1.4 kW (astor.MOTOR_W)
@@ -63,6 +69,7 @@ EXTRA_ITEMS = list(V.EXTRA_ITEMS) + [
     ("2 fin hinges, springs and down-locks", 18.0, "HAND (+-6)"),
     ("wing and tail opening springs, stowed latches", 24.0, "HAND (+-8)"),
     ("launch keys reinforced (4 lugs, doublers)", 16.0, "HAND (+-6)"),
+    ("talon arm: tube, sprung hinge and damper, rake of four hooks, latch and servo (astor_talon)", 135.0, "HAND (+-40)"),
 ]
 # stowed, each panel's mid-chord line lies along the body: its sweep is 90 deg, so the leading edge's is a little more
 STOWED_DEG = round(V.SPREAD_DEG + 90.0 - math.degrees(math.atan(math.tan(math.radians(V.SPREAD_DEG)) + 0.5 * (_DEFAULTS["panel_tip_chord"] - _DEFAULTS["panel_root_chord"]) / _DEFAULTS["panel_span"])), 1)
@@ -86,6 +93,29 @@ class AstorT(V.AstorV):
 
     def _fin(self, p):
         return self._one_fin(p, 1).union(self._one_fin(p, -1))
+
+    def _talons(self, p):
+        """The talon arm (``astor_talon``): a tube on a sprung hinge under the belly, a rake of four hooks at its end.
+        Built folded (aft along the belly), then swung down about the hinge."""
+        R, L, w = p["fuselage_diameter"] / 2, p["talon_arm_length"], p["talon_rake_width"]
+        z0 = -R - 9.0
+        arm = cq.Workplane("YZ").circle(6.0).extrude(L)                                   # along +x from the hinge
+        rake = cq.Workplane("XZ").circle(4.0).extrude(w).translate((L, w / 2, 0))        # the cross bar at the arm's end
+        out = arm.union(rake)
+        for k in range(4):                                                                # hooks: back toward the hinge and down
+            y = -w / 2 + w * k / 3.0
+            hook = cq.Workplane("XY").box(55.0, 3.0, 3.0).translate((L - 27.5, y, -1.0)).union(
+                cq.Workplane("XY").box(3.0, 3.0, 20.0).translate((L - 55.0, y, -10.0)))
+            out = out.union(hook)
+        out = out.rotate((0, 0, 0), (0, 1, 0), p["talon_swing_deg"] * max(p["talon_deploy"], 0.0))      # + about y: the tip goes down and forward
+        hinge = cq.Workplane("XZ").circle(8.0).extrude(26.0).translate((0, 13.0, 0))
+        return out.union(hinge).translate((p["talon_hinge_x"], 0, z0))
+
+    def parts(self, p) -> dict:
+        out = super().parts(p)
+        if p["talon_deploy"] >= 0:
+            out["talons"] = self._talons(p)
+        return out
 
 
 def variant(**over) -> dict:
