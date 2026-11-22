@@ -39,7 +39,11 @@ _NEW = [
     Parameter("glove_z", 20.0, "mm", description="its plane above the fuselage axis"),
     Parameter("motor_y", 190.0, "mm", min=80.0, description="each wing motor from the centre plane"),
     Parameter("nacelle_d", 54.0, "mm", min=30.0), Parameter("nacelle_len", 130.0, "mm", min=60.0),
+    Parameter("net_launchers", 0, "", min=0, max=2, description="GAVILAN's recoilless net launcher(s) under the forward belly (0: none; the legs are then left off)"),
+    Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=45.0, description="the launch tube below the body axis"),
+    Parameter("launcher_muzzle_x", 70.0, "mm", description="the muzzle from the nose tip"),
 ]
+LAUNCHER = dict(tube_mm=300.0, tube_od_mm=45.0, chamber_mm=90.0, chamber_od_mm=60.0, tank_l=1.0, tank_od_mm=86.0)      # gavilan_flight.NET's airborne piece
 
 
 class AstorTwin(T.AstorT):
@@ -84,6 +88,42 @@ class AstorTwin(T.AstorT):
             out = d if out is None else out.union(d)
         return out
 
+    def launcher_layout(self, p) -> list:
+        """Each launcher's muzzle and axis: side by side under the forward belly, pointing forward and down."""
+        n = int(p["net_launchers"])
+        R = p["fuselage_diameter"] / 2
+        a = math.radians(p["launcher_depression_deg"])
+        ys = (0.0,) if n == 1 else (-28.0, 28.0)
+        L = LAUNCHER["tube_mm"] + LAUNCHER["chamber_mm"]
+        # the breech end tucked under the belly; the muzzle lower by the depression
+        z_breech = -(R + LAUNCHER["chamber_od_mm"] / 2 + 3.0)
+        return [{"y": y, "muzzle": (p["launcher_muzzle_x"], y, z_breech - L * math.sin(a)), "axis": (math.cos(a), 0.0, math.sin(a)), "length": L, "z_breech": z_breech}
+                for y in ys[:n]]
+
+    def _launchers(self, p):
+        out = None
+        a = p["launcher_depression_deg"]
+        R = p["fuselage_diameter"] / 2
+        for k, Lr in enumerate(self.launcher_layout(p)):
+            tube = cq.Workplane("YZ").circle(LAUNCHER["tube_od_mm"] / 2).circle(LAUNCHER["tube_od_mm"] / 2 - 1.2).extrude(LAUNCHER["tube_mm"])
+            chamber = (cq.Workplane("YZ").circle(LAUNCHER["chamber_od_mm"] / 2).extrude(LAUNCHER["chamber_mm"]).translate((LAUNCHER["tube_mm"], 0, 0))
+                       .union(cq.Workplane("YZ").circle(19.0).extrude(40.0).translate((LAUNCHER["tube_mm"] + LAUNCHER["chamber_mm"], 0, 0))))     # the rear venturi
+            one = tube.union(chamber).rotate((0, 0, 0), (0, 1, 0), -a).translate(Lr["muzzle"])       # the breech up under the belly
+            rt = LAUNCHER["tank_od_mm"] / 2
+            lt = LAUNCHER["tank_l"] * 1e6 / (math.pi * (rt - 2.0) ** 2)
+            tank = (cq.Workplane("YZ").circle(rt).extrude(lt).edges().fillet(rt * 0.6)
+                    .translate((470.0, (0.0 if len(self.launcher_layout(p)) == 1 else (-1 if k == 0 else 1) * (rt + 2.0)), -(R + rt + 2.0))))
+            one = one.union(tank)
+            out = one if out is None else out.union(one)
+        return out
+
+    def parts(self, p) -> dict:
+        out = super().parts(p)
+        if int(p["net_launchers"]) > 0:
+            out.pop("talons", None)
+            out["launcher"] = self._launchers(p)
+        return out
+
     def _propeller(self, p):
         import astor_prop
         P = astor_prop.FoldingProp()
@@ -100,6 +140,43 @@ def variant(**over) -> dict:
 
 def resolve(q=None) -> dict:
     return AstorTwin().resolve(**dict(q or variant()))
+
+
+def launcher_checks(shots=1, v_pass=None, v_bandit=9.0) -> dict:
+    """Can ASTOR-TWIN carry GAVILAN's net launcher (``gavilan_flight.NET``: a 150 g cartridge, a 2.4 m net at 40 m/s,
+    captures 5-6 of 6 between 4 and 10 m from a fixed launcher at a hovering quadcopter)? Mass and stall with it, where it
+    goes and what it clears, and the firing pass. The launcher's masses are that file's hand estimates."""
+    import gavilan_flight as GF
+    p = resolve(variant(net_launchers=shots, talon_deploy=-1.0))
+    A_ = AstorTwin()
+    c = checks()
+    S = c["wing"]["total_m2"]
+    legs_g, nets_g = 220.0 * 1.1, (2 * V.NET_G + 40.0) * 1.1                 # what comes off: the legs and line, the dropped nets and their tube
+    m = c["mass"]["total_kg"] - (legs_g + nets_g) / 1000.0 + GF.net_kg(shots)
+    stall = math.sqrt(2 * m * 9.80665 / (1.225 * S * 0.87))
+    vp = v_pass or 1.3 * stall
+    lay = A_.launcher_layout(p)
+    x_prop = A_._nacelle_x(p) - 12.0
+    a = math.radians(p["launcher_depression_deg"])
+    lo, hi = GF.NET["range_m"]
+    closing = vp - v_bandit
+    I = GF.NET["cartridge_g"] / 1000.0 * GF.NET["muzzle_m_s"]              # the shot's momentum [N s]
+    arm = -lay[0]["muzzle"][2] / 1000.0
+    return {"launcher": {"shots": shots, "kg": round(GF.net_kg(shots), 2), "drag_area_cm2": round(GF.NET_CDA * 1e4 * shots, 1), "source": GF.NET["source"]},
+            "taken_off": {"legs_and_line_g": round(legs_g), "dropped_nets_and_tube_g": round(nets_g)},
+            "mass_kg": round(m, 2), "stall_spread_m_s": round(stall, 1), "wing_loading_kg_m2": round(m / S, 1),
+            "thrust_over_weight_at_32_m_s": round(113.0 / (m * 9.80665), 2),
+            "geometry": {"muzzle_x_mm": p["launcher_muzzle_x"], "muzzle_below_axis_mm": round(-lay[0]["muzzle"][2]), "muzzle_ahead_of_the_propellers_mm": round(x_prop - p["launcher_muzzle_x"]),
+                         "breech_x_mm": round(p["launcher_muzzle_x"] + lay[0]["length"] * math.cos(a)), "legs": "left off: the breech's jet and the tank are where they fold",
+                         "depression_deg": p["launcher_depression_deg"]},
+            "pass": {"speed_m_s": round(vp, 1), "bandit_m_s": v_bandit, "closing_m_s": round(closing, 1), "fire_between_m": [lo, hi],
+                     "time_in_range_s": round((hi - lo) / closing, 2), "net_flight_s": [round(lo / GF.NET["muzzle_m_s"], 2), round(hi / GF.NET["muzzle_m_s"], 2)],
+                     "astor_above_the_bandit_m": [round(lo * math.sin(a) + arm, 1), round(hi * math.sin(a) + arm, 1)],
+                     "net_half_span_m": round(GF.NET["open_span_m"] / 2, 2),
+                     "net_speed_through_the_air_m_s": round(vp + GF.NET["muzzle_m_s"]), "tested_at_m_s": GF.NET["muzzle_m_s"]},
+            "recoil_if_the_rear_jet_were_blocked": {"impulse_Ns": round(I, 1), "speed_change_m_s": round(I / m, 2), "note": "small on this mass: a plain closed breech would do"},
+            "untested": ["the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)", "the rear jet along the belly",
+                         "the balance with ~1 kg under the forward belly"]}
 
 
 def checks() -> dict:

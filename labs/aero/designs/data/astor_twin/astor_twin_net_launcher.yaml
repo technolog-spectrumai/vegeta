@@ -1,0 +1,90 @@
+1_shot:
+  launcher:
+    shots: 1
+    kg: 0.99
+    drag_area_cm2: 14.3
+    source: net_drone.py results and golf_recoilless.shot (dev_net_launcher @ bb041dd); masses are hand estimates
+  taken_off:
+    legs_and_line_g: 242
+    dropped_nets_and_tube_g: 286
+  mass_kg: 5.82
+  stall_spread_m_s: 20.1
+  wing_loading_kg_m2: 22.0
+  thrust_over_weight_at_32_m_s: 1.98
+  geometry:
+    muzzle_x_mm: 70.0
+    muzzle_below_axis_mm: 169
+    muzzle_ahead_of_the_propellers_mm: 205
+    breech_x_mm: 447
+    legs: 'left off: the breech''s jet and the tank are where they fold'
+    depression_deg: 15.0
+  pass:
+    speed_m_s: 26.1
+    bandit_m_s: 9.0
+    closing_m_s: 17.1
+    fire_between_m:
+    - 4.0
+    - 10.0
+    time_in_range_s: 0.35
+    net_flight_s:
+    - 0.1
+    - 0.25
+    astor_above_the_bandit_m:
+    - 1.2
+    - 2.8
+    net_half_span_m: 1.48
+    net_speed_through_the_air_m_s: 66
+    tested_at_m_s: 40.0
+  recoil_if_the_rear_jet_were_blocked:
+    impulse_Ns: 6.0
+    speed_change_m_s: 1.03
+    note: 'small on this mass: a plain closed breech would do'
+  untested:
+  - 'the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)'
+  - the rear jet along the belly
+  - the balance with ~1 kg under the forward belly
+2_shot:
+  launcher:
+    shots: 2
+    kg: 1.93
+    drag_area_cm2: 28.7
+    source: net_drone.py results and golf_recoilless.shot (dev_net_launcher @ bb041dd); masses are hand estimates
+  taken_off:
+    legs_and_line_g: 242
+    dropped_nets_and_tube_g: 286
+  mass_kg: 6.76
+  stall_spread_m_s: 21.7
+  wing_loading_kg_m2: 25.5
+  thrust_over_weight_at_32_m_s: 1.7
+  geometry:
+    muzzle_x_mm: 70.0
+    muzzle_below_axis_mm: 169
+    muzzle_ahead_of_the_propellers_mm: 205
+    breech_x_mm: 447
+    legs: 'left off: the breech''s jet and the tank are where they fold'
+    depression_deg: 15.0
+  pass:
+    speed_m_s: 28.2
+    bandit_m_s: 9.0
+    closing_m_s: 19.2
+    fire_between_m:
+    - 4.0
+    - 10.0
+    time_in_range_s: 0.31
+    net_flight_s:
+    - 0.1
+    - 0.25
+    astor_above_the_bandit_m:
+    - 1.2
+    - 2.8
+    net_half_span_m: 1.48
+    net_speed_through_the_air_m_s: 68
+    tested_at_m_s: 40.0
+  recoil_if_the_rear_jet_were_blocked:
+    impulse_Ns: 6.0
+    speed_change_m_s: 0.89
+    note: 'small on this mass: a plain closed breech would do'
+  untested:
+  - 'the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)'
+  - the rear jet along the belly
+  - the balance with ~1 kg under the forward belly
