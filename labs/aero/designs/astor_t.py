@@ -5,12 +5,12 @@
 350 mm tube. Everything that sets the tube's bore is changed here; the body, the motor, the folding propeller, the
 net tube and the cameras are ASTOR-V's.
 
-- **Wing**: two narrow panels (165 -> 105 mm chord, 600 mm long) on ONE pivot axis on the carriage, one above the
+- **Wing**: two narrow panels (190 -> 120 mm chord, 600 mm long) on ONE pivot axis on the carriage, one above the
   other (ASTOR-V's pivots were 52 mm apart, its root chord 270 mm). Stowed they lie along the body's back, one on
-  the other, 165 mm wide. The carriage, the sweep range (12 / 60 deg in flight) and the ailerons stay.
+  the other, 190 mm wide. The carriage, the sweep range (12 / 60 deg in flight) and the ailerons stay.
 - **Tail**: two slender blades (95 -> 60 mm, 250 mm) in place of the broad fan panels: folded they trail along the
   tail cone inside the bore. Spread they are the stabiliser and, moved apart, help the ailerons.
-- **Fins**: two ventral fins on hinges along the belly, 84 mm high. Folded they lie flat under the tail cone, one to
+- **Fins**: two ventral fins on hinges along the belly, 95 mm high. Folded they lie flat under the tail cone, one to
   each side; springs swing them down to 25 deg from the vertical (an inverted V under the tail) as the tail leaves
   the tube. Together they have the side area of ASTOR-V's fin and half its depth under the body.
 - **Launch keys**: the two pairs of lugs on the fuselage's sides ride in the shuttle's slots; the shuttle carries the
@@ -36,16 +36,17 @@ import astor_v as V
 from vegeta.dedalus import Parameter
 
 FIN_SPLAY_DEG = 25.0
-_DEFAULTS = {"pivot_y": 0.0, "panel_span": 600.0, "panel_root_chord": 165.0, "panel_tip_chord": 105.0, "panel_thickness": 0.09,
+_DEFAULTS = {"pivot_y": 0.0, "panel_span": 600.0, "panel_root_chord": 190.0, "panel_tip_chord": 120.0,   # 165 / 105 in the 206 mm tube; wider since the 2 kW motor and its pack (+0.37 kg) "panel_thickness": 0.09,
              "wing_plane_z": 46.0, "panel_stack": 16.0,
-             "panel_pivot_chord": 0.5, "pivot_x": 335.0,          # the pivot at mid chord: stowed, each panel lies centred on the body
+             "panel_pivot_chord": 0.5, "pivot_x": 346.0,          # the pivot at mid chord: stowed, each panel lies centred on the body
              # the lattice's balance (astor_v_model on these panels): 10 / 11 / 12 % of the reference chord at 12 / 35 / 60 deg
              # with this travel and the tail blades 30 % spread in the dash (ASTOR-V's CFD found 8 % more than its
              # lattice at 60 deg: the CFD of ASTOR-T decides)
-             "slide_35": 100.0, "slide_60": 165.0, "dash_tail_fan": 0.3,
+             "slide_35": 106.0, "slide_60": 168.0, "dash_tail_fan": 0.3,
              "tail_anhedral_deg": 30.0,                           # the two fins alone left it without directional stability (Cnb -0.003)
              "tail_panel_span": 250.0, "tail_panel_root": 95.0, "tail_panel_tip": 60.0, "tail_pivot_y": 18.0,
-             "fin_height": 84.0, "fin_root_chord": 230.0, "fin_taper": 0.45, "fin_sweep_deg": 40.0}
+             "motor_diameter": 50.0, "motor_length": 50.0,
+             "fin_height": 95.0, "fin_root_chord": 230.0, "fin_taper": 0.45, "fin_sweep_deg": 40.0}
 _MIN = {"pivot_y": 0.0}
 _NEW = [
     Parameter("fin_fold", 0.0, "", min=0.0, max=1.0, description="the two ventral fins: 0 down (flight), 1 flat under the tail (in the tube)"),
@@ -53,7 +54,11 @@ _NEW = [
     Parameter("fin_hinge_y", 9.0, "mm", min=3.0, description="each fin's hinge line from the centre plane"),
 ]
 
+MOTOR_W = 2000.0                   # the 2.0 kW motor (2026-11-22): ASTOR-V's was 1.4 kW (astor.MOTOR_W)
 EXTRA_ITEMS = list(V.EXTRA_ITEMS) + [
+    ("motor: 2.0 kW outrunner in place of the 1.4 kW one (330 g against 175 g)", 155.0,
+     "HAND (+-50): catalogue motors of 1.8-2.6 kW weigh 380-530 g (E-flite Power 60, Turnigy SK3 5065, Scorpion HKIII-4035); a high-power-density one assumed"),
+    ("ESC: 120 A in place of 80 A", 45.0, "HAND (+-15)"),
     ("second ventral fin", 0.0, "geometry (set in budget)"),
     ("2 fin hinges, springs and down-locks", 18.0, "HAND (+-6)"),
     ("wing and tail opening springs, stowed latches", 24.0, "HAND (+-8)"),
@@ -110,7 +115,7 @@ def budget(p=None, pack=None) -> dict:
     extra = [(n, (1000 * A.TAIL_KG_M2 * fin_area_m2(p) if n == "second ventral fin" else g),
               (f"geometry: {fin_area_m2(p):.4f} m2 x {A.TAIL_KG_M2} kg/m2 (HAND +-20 %)" if n == "second ventral fin" else src))
              for n, g, src in EXTRA_ITEMS]
-    return V.budget(p, pack, extra=extra)
+    return V.budget(p, pack, extra=extra, default_pack=DEFAULT_PACK)
 
 
 # ------------------------------------------------------------------------------------------------ the bore it needs
@@ -204,6 +209,18 @@ def launcher_parts(v_exit=V_EXIT, stroke_m=STROKE_M) -> dict:
     return {"tube": tube, "cradle": cradle, "spring": spring, "breech": breech, "numbers": L, "bore": b}
 
 
+DEFAULT_PACK = "6S 5000 mAh LiPo"   # 2.0 kW is 95 A at 21 V
+
+
+def propeller_at_power() -> dict:
+    """The folding propeller's hinge at the 2.0 kW motor's speed: the same 9 x 11 blades absorb power as rpm^3, so
+    the top speed of rotation is ASTOR-V's 15000 rpm x (2.0 / 1.4)^(1/3) (HAND: the library's map is not asked)."""
+    import astor_prop
+    rpm = 15000.0 * (MOTOR_W / A.MOTOR_W) ** (1.0 / 3.0)
+    c = astor_prop.checks(rpm_max=rpm)
+    return {k: c[k] for k in ("rpm_max", "tip_speed_m_s", "centrifugal_load_per_blade_N", "pin_shear_MPa", "pin_ok", "eye_bearing_MPa", "eye_ok")}
+
+
 def checks() -> dict:
     p = resolve()
     mb = budget(p)
@@ -214,6 +231,7 @@ def checks() -> dict:
            "fins": {"each_height_mm": p["fin_height"], "splay_deg": p["fin_splay_deg"], "side_area_of_both_m2": round(2 * fin_area_m2(p) * math.cos(math.radians(p["fin_splay_deg"])) ** 2, 4),
                     "astor_v_fin_m2": round(0.5 * 230.0 * 1.45 * 160.0 / 1e6, 4), "depth_under_axis_mm": round(p["tail_end_diameter"] / 2 + 2 + p["fin_height"] * math.cos(math.radians(p["fin_splay_deg"])))},
            "mass": {k: mb[k] for k in ("empty_g", "total_g", "without_nets_g")},
-           "balance_by_mass": V.balance(p, mb=mb),
-           "launcher": launcher(b=b)}
+           "balance_by_mass": V.balance(p, mb=mb, stations={"ESC": 300.0}),       # the ESC behind the carriage: the heavier motor is on the nose
+           "launcher": launcher(b=b), "motor_W": MOTOR_W, "current_A": {"at_full_power": round(MOTOR_W / 21.0), "pack_limit": mb["pack"]["max_A"]},
+           "propeller_hinge_at_2_kW": propeller_at_power()}
     return out

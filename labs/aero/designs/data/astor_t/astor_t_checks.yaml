@@ -1,78 +1,90 @@
 wing:
 - sweep_deg: 12.0
   span_mm: 1190.0
-  exposed_area_m2: 0.149
-  lift_centre_x_mm: 350.0
+  exposed_area_m2: 0.171
+  lift_centre_x_mm: 354.0
 - sweep_deg: 35.0
-  span_mm: 1059.0
-  exposed_area_m2: 0.1489
-  lift_centre_x_mm: 366.0
+  span_mm: 1069.0
+  exposed_area_m2: 0.1709
+  lift_centre_x_mm: 364.0
 - sweep_deg: 60.0
-  span_mm: 728.0
-  exposed_area_m2: 0.1424
-  lift_centre_x_mm: 410.0
+  span_mm: 746.0
+  exposed_area_m2: 0.1637
+  lift_centre_x_mm: 412.0
 stowed:
-  radius_mm: 98.9
+  radius_mm: 109.3
   centre_above_axis_mm: -1.5
-  bore_mm: 206.0
+  bore_mm: 227.0
   length_mm: 1044.0
   x_min_mm: -63.0
-  width_mm: 186.0
+  width_mm: 208.0
   height_mm: 134.0
   what_touches:
-    x: 157
-    y: 81
-    z: 56
-tube_bore_mm: 206.0
+    x: 650
+    y: -104
+    z: -35
+tube_bore_mm: 227.0
 clearance_mm: 4.0
 astor_v_stowed_for_comparison_mm:
   length: 931
   width: 309
   height: 250
 fins:
-  each_height_mm: 84.0
+  each_height_mm: 95.0
   splay_deg: 25.0
-  side_area_of_both_m2: 0.023
+  side_area_of_both_m2: 0.026
   astor_v_fin_m2: 0.0267
-  depth_under_axis_mm: 107
+  depth_under_axis_mm: 117
 mass:
-  empty_g: 2132.8
-  total_g: 2732.8
-  without_nets_g: 2512.8
+  empty_g: 2407.2
+  total_g: 3157.2
+  without_nets_g: 2937.2
 balance_by_mass:
   cg_target_mm: 365.0
-  pack_station_mm: 338.0
+  pack_station_mm: 396.0
   pack_fits: true
-  cg_after_both_nets_mm: 341.0
-  cg_shift_mm: -24.0
+  cg_after_both_nets_mm: 345.0
+  cg_shift_mm: -20.0
   note: stations are a first layout (HAND); the carriage re-trims the shift when the nets have gone
 launcher:
   exit_speed_m_s: 18.0
   stroke_m: 0.9
   elevation_deg: 40.0
-  aircraft_kg: 2.733
+  aircraft_kg: 3.157
   cradle_kg: 0.6
-  work_J: 559.0
-  force_first_N: 887.0
-  force_last_N: 355.0
-  rate_N_per_mm: 0.591
+  work_J: 630.0
+  force_first_N: 1000.0
+  force_last_N: 400.0
+  rate_N_per_mm: 0.667
   peak_acceleration_g: 26.5
   time_in_tube_s: 0.105
-  energy_stored_J: 665.0
-  steel_spring_kg: 7.4
-  spring_note: '90 J/kg (HAND +-30); cocking it needs 887 N: a winch or a lever, not a hand'
+  energy_stored_J: 750.0
+  steel_spring_kg: 8.3
+  spring_note: '90 J/kg (HAND +-30); cocking it needs 1000 N: a winch or a lever, not a hand'
   tube:
-    bore_mm: 206.0
+    bore_mm: 227.0
     length_m: 2.03
     wall_mm: 3.0
     muzzle_x_mm: -470
     breech_x_mm: 1546
     spring_cocked_mm: 525
     muzzle_ahead_of_the_nose_mm: 407
-    mass_kg: 6.4
+    mass_kg: 7.0
     note: glass/carbon tube 1600 kg/m3 (HAND)
-  system_kg: 15.9
+  system_kg: 17.5
   system_note: spring + cradle + tube + 1.5 kg of latch, breech and winch (HAND); without the stand
+motor_W: 2000.0
+current_A:
+  at_full_power: 95
+  pack_limit: 150.0
+propeller_hinge_at_2_kW:
+  rpm_max: 16893.71820665409
+  tip_speed_m_s: 202.0
+  centrifugal_load_per_blade_N: 797.0
+  pin_shear_MPa: 56.0
+  pin_ok: true
+  eye_bearing_MPa: 38.0
+  eye_ok: true
 launch_calm_air:
   rows:
   - design: t
@@ -84,13 +96,13 @@ launch_calm_air:
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
     exit_over_stall: 0.67
-    sink_below_muzzle_m: 3.66
+    sink_below_muzzle_m: 1.47
     min_speed_m_s: 11.1
-    max_alpha_deg: 7.8
-    max_load_factor: 2.14
+    max_alpha_deg: 8.0
+    max_load_factor: 2.09
     max_bank_deg: 0.0
-    time_to_safe_s: 4.53
-    height_after_3s_m: -3.59
+    time_to_safe_s: 4.08
+    height_after_3s_m: -0.56
     ok: false
   - design: t
     v_exit_m_s: 14.0
@@ -103,11 +115,11 @@ launch_calm_air:
     exit_over_stall: 0.78
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 13.0
-    max_alpha_deg: 7.5
-    max_load_factor: 1.84
+    max_alpha_deg: 7.7
+    max_load_factor: 1.74
     max_bank_deg: 0.0
-    time_to_safe_s: 3.77
-    height_after_3s_m: 3.96
+    time_to_safe_s: 3.32
+    height_after_3s_m: 7.21
     ok: true
   - design: t
     v_exit_m_s: 16.0
@@ -117,14 +129,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 0.9
+    exit_over_stall: 0.89
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 14.9
-    max_alpha_deg: 7.4
-    max_load_factor: 1.51
+    min_speed_m_s: 15.0
+    max_alpha_deg: 7.6
+    max_load_factor: 1.39
     max_bank_deg: 0.0
-    time_to_safe_s: 2.83
-    height_after_3s_m: 11.25
+    time_to_safe_s: 2.48
+    height_after_3s_m: 14.32
     ok: true
   - design: t
     v_exit_m_s: 18.0
@@ -134,14 +146,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 1.01
+    exit_over_stall: 1.0
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 16.8
-    max_alpha_deg: 6.8
-    max_load_factor: 1.21
+    min_speed_m_s: 16.9
+    max_alpha_deg: 7.0
+    max_load_factor: 1.1
     max_bank_deg: 0.0
-    time_to_safe_s: 1.96
-    height_after_3s_m: 17.89
+    time_to_safe_s: 1.82
+    height_after_3s_m: 19.91
     ok: true
   - design: t
     v_exit_m_s: 20.0
@@ -154,11 +166,11 @@ launch_calm_air:
     exit_over_stall: 1.12
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 18.8
-    max_alpha_deg: 6.1
-    max_load_factor: 0.96
+    max_alpha_deg: 6.2
+    max_load_factor: 1.03
     max_bank_deg: 0.0
-    time_to_safe_s: 1.5
-    height_after_3s_m: 22.24
+    time_to_safe_s: 1.45
+    height_after_3s_m: 23.2
     ok: true
   - design: t
     v_exit_m_s: 22.0
@@ -170,12 +182,12 @@ launch_calm_air:
     stall_spread_m_s: 17.9
     exit_over_stall: 1.23
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 20.7
-    max_alpha_deg: 5.6
-    max_load_factor: 1.05
+    min_speed_m_s: 20.8
+    max_alpha_deg: 5.7
+    max_load_factor: 1.03
     max_bank_deg: 0.0
-    time_to_safe_s: 1.25
-    height_after_3s_m: 24.91
+    time_to_safe_s: 1.24
+    height_after_3s_m: 25.62
     ok: true
   - design: t
     v_exit_m_s: 12.0
@@ -188,11 +200,11 @@ launch_calm_air:
     exit_over_stall: 0.67
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 10.6
-    max_alpha_deg: 7.8
-    max_load_factor: 1.97
+    max_alpha_deg: 8.0
+    max_load_factor: 1.85
     max_bank_deg: 0.0
-    time_to_safe_s: 4.3
-    height_after_3s_m: 1.52
+    time_to_safe_s: 3.72
+    height_after_3s_m: 4.79
     ok: true
   - design: t
     v_exit_m_s: 14.0
@@ -205,11 +217,11 @@ launch_calm_air:
     exit_over_stall: 0.78
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 12.5
-    max_alpha_deg: 6.5
-    max_load_factor: 1.59
+    max_alpha_deg: 6.7
+    max_load_factor: 1.41
     max_bank_deg: 0.0
-    time_to_safe_s: 3.1
-    height_after_3s_m: 9.53
+    time_to_safe_s: 2.52
+    height_after_3s_m: 12.96
     ok: true
   - design: t
     v_exit_m_s: 16.0
@@ -219,14 +231,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 0.9
+    exit_over_stall: 0.89
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 14.4
-    max_alpha_deg: 5.7
-    max_load_factor: 1.21
+    min_speed_m_s: 14.5
+    max_alpha_deg: 6.0
+    max_load_factor: 0.99
     max_bank_deg: 0.0
-    time_to_safe_s: 2.16
-    height_after_3s_m: 17.01
+    time_to_safe_s: 1.96
+    height_after_3s_m: 19.47
     ok: true
   - design: t
     v_exit_m_s: 18.0
@@ -236,14 +248,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 1.01
+    exit_over_stall: 1.0
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 16.4
-    max_alpha_deg: 5.4
-    max_load_factor: 1.05
+    max_alpha_deg: 5.0
+    max_load_factor: 0.99
     max_bank_deg: 0.0
-    time_to_safe_s: 2.1
-    height_after_3s_m: 22.43
+    time_to_safe_s: 1.78
+    height_after_3s_m: 23.32
     ok: true
   - design: t
     v_exit_m_s: 20.0
@@ -256,11 +268,11 @@ launch_calm_air:
     exit_over_stall: 1.12
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 18.3
-    max_alpha_deg: 3.9
-    max_load_factor: 0.97
+    max_alpha_deg: 3.6
+    max_load_factor: 0.98
     max_bank_deg: 0.0
-    time_to_safe_s: 1.77
-    height_after_3s_m: 25.41
+    time_to_safe_s: 1.47
+    height_after_3s_m: 25.91
     ok: true
   - design: t
     v_exit_m_s: 22.0
@@ -272,12 +284,12 @@ launch_calm_air:
     stall_spread_m_s: 17.9
     exit_over_stall: 1.23
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 20.2
-    max_alpha_deg: 2.8
+    min_speed_m_s: 20.3
+    max_alpha_deg: 2.7
     max_load_factor: 0.97
     max_bank_deg: 0.0
-    time_to_safe_s: 1.35
-    height_after_3s_m: 27.61
+    time_to_safe_s: 1.13
+    height_after_3s_m: 28.12
     ok: true
   - design: t
     v_exit_m_s: 12.0
@@ -290,11 +302,11 @@ launch_calm_air:
     exit_over_stall: 0.67
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 10.1
-    max_alpha_deg: 6.3
-    max_load_factor: 1.83
+    max_alpha_deg: 6.5
+    max_load_factor: 1.61
     max_bank_deg: 0.0
-    time_to_safe_s: 3.99
-    height_after_3s_m: 6.14
+    time_to_safe_s: 3.11
+    height_after_3s_m: 9.57
     ok: true
   - design: t
     v_exit_m_s: 14.0
@@ -307,11 +319,11 @@ launch_calm_air:
     exit_over_stall: 0.78
     sink_below_muzzle_m: 0.0
     min_speed_m_s: 12.0
-    max_alpha_deg: 5.9
-    max_load_factor: 1.41
+    max_alpha_deg: 6.2
+    max_load_factor: 1.14
     max_bank_deg: 0.0
-    time_to_safe_s: 2.51
-    height_after_3s_m: 13.92
+    time_to_safe_s: 2.33
+    height_after_3s_m: 17.16
     ok: true
   - design: t
     v_exit_m_s: 16.0
@@ -321,14 +333,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 0.9
+    exit_over_stall: 0.89
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 13.9
+    min_speed_m_s: 14.0
     max_alpha_deg: 5.5
-    max_load_factor: 0.97
+    max_load_factor: 1.03
     max_bank_deg: 0.0
-    time_to_safe_s: 2.56
-    height_after_3s_m: 20.45
+    time_to_safe_s: 2.24
+    height_after_3s_m: 22.28
     ok: true
   - design: t
     v_exit_m_s: 18.0
@@ -338,14 +350,14 @@ launch_calm_air:
     crosswind_m_s: 0.0
     gust_down_m_s: 0.0
     stall_spread_m_s: 17.9
-    exit_over_stall: 1.01
+    exit_over_stall: 1.0
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 15.8
-    max_alpha_deg: 4.4
-    max_load_factor: 0.99
+    min_speed_m_s: 15.9
+    max_alpha_deg: 3.9
+    max_load_factor: 1.0
     max_bank_deg: 0.0
-    time_to_safe_s: 2.37
-    height_after_3s_m: 24.77
+    time_to_safe_s: 1.99
+    height_after_3s_m: 25.48
     ok: true
   - design: t
     v_exit_m_s: 20.0
@@ -357,12 +369,12 @@ launch_calm_air:
     stall_spread_m_s: 17.9
     exit_over_stall: 1.12
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 17.7
-    max_alpha_deg: 3.1
-    max_load_factor: 0.99
+    min_speed_m_s: 17.8
+    max_alpha_deg: 2.7
+    max_load_factor: 1.0
     max_bank_deg: 0.0
-    time_to_safe_s: 2.05
-    height_after_3s_m: 27.76
+    time_to_safe_s: 1.7
+    height_after_3s_m: 28.25
     ok: true
   - design: t
     v_exit_m_s: 22.0
@@ -374,14 +386,32 @@ launch_calm_air:
     stall_spread_m_s: 17.9
     exit_over_stall: 1.23
     sink_below_muzzle_m: 0.0
-    min_speed_m_s: 19.7
-    max_alpha_deg: 1.8
+    min_speed_m_s: 19.8
+    max_alpha_deg: 1.4
     max_load_factor: 0.99
     max_bank_deg: 0.0
-    time_to_safe_s: 1.67
-    height_after_3s_m: 30.29
+    time_to_safe_s: 1.37
+    height_after_3s_m: 30.68
     ok: true
   lowest_exit_speed_ok_m_s_by_elevation:
     '25': 14.0
     '35': 12.0
     '45': 12.0
+flight_by_sweep:
+  '12':
+    static_margin: 0.122
+    stall_m_s: 17.9
+    top_speed_m_s: 72.5
+    Cnb: 0.071
+  '35':
+    static_margin: 0.115
+    stall_m_s: 18.4
+    top_speed_m_s: 72.2
+    Cnb: 0.078
+  '60':
+    static_margin: 0.085
+    stall_m_s: 22.0
+    top_speed_m_s: 72.2
+    Cnb: 0.053
+aero_source: 'lattice on ASTOR-T''s panels; drag and maximum lift carried over from ASTOR-V''s CFD by area and aspect ratio (HAND): no CFD of
+  its own yet'

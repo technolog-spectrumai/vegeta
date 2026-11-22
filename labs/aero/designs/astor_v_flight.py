@@ -93,7 +93,11 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
     q["tail_le_x"] = p["tail_pivot_x"] - 0.25 * p["tail_panel_root"]
     pe = A.resolve(q)
     L = A.Astor.layout(pe)
-    sel = AM.propulsor(m)
+    power = A.MOTOR_W
+    if name == "t":
+        import astor_t as T
+        power = T.MOTOR_W
+    sel = AM.propulsor(m, power)
     sel = {**sel, "layout": "tractor"}
     thrust = ap.thrust_table(sel, V=[float(v) for v in range(0, 92, 2)])
     cda = BODY_CDA + WING_CD * wn["exposed_area_m2"] + (POD_CDA if name == "boost" else 0.0)
