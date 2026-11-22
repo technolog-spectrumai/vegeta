@@ -1,0 +1,49 @@
+status: 'a drawing and a first mass: no lattice, balance, stability or catch sortie yet'
+wing:
+  glove_m2: 0.131
+  outer_panels_m2: 0.133
+  total_m2: 0.265
+  span_spread_m: 1.37
+  span_dash_m: 1.07
+propellers:
+  diameter_mm: 279.4
+  clear_of_the_fuselage_side_mm: 15
+  between_the_two_discs_mm: 101
+  thrust_N_at_0_32_60_m_s:
+  - 136
+  - 113
+  - 84
+  astor_t_thrust_N_at_0_32_60_m_s:
+  - 68
+  - 57
+  - 42
+  source: propulsion library, 2 x prop-11x11-b2 at 4 kW
+mass:
+  items:
+  - item: ASTOR-T complete (4 kW, 12S 2500 mAh, legs, nets)
+    g: 3596
+    source: astor_t.budget
+  - item: second motor, 4 kW class
+    g: 460
+    source: catalogue (as ASTOR-T's)
+  - item: second ESC 12S 120 A
+    g: 150
+    source: HAND (+-25)
+  - item: 'pack: 12S 5000 mAh in place of 2500 (190 A)'
+    g: 760
+    source: 'HAND: as astor.PACKS, doubled'
+  - item: second folding propeller, two nacelles and mounts
+    g: 110
+    source: HAND (+-40)
+  - item: glove in place of ASTOR-T's wing carriage and inner panels
+    g: 119
+    source: geometry 0.131 m2 x 1.9 kg/m2 less the carriage (HAND)
+  - item: growth margin 10 % of the additions
+    g: 160
+    source: HAND
+  total_kg: 5.36
+stall_spread_m_s:
+  value: 19.3
+  note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
+wing_loading_kg_m2: 20.2
+current_A_at_8_kW: 190
