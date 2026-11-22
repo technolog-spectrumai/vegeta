@@ -683,9 +683,16 @@ video above (`tarantula_video.dress_robot`). The story:
    behind the parapet (scripted).
 7. A bandit strolls to the table. The timer runs out: confetti, smoke, a soot-black bandit (props: mocap bodies).
 
-In the scripted parts the feet are still placed on the solid scenery: each frame, a ray down the body's own vertical
-finds the surface under each foot (the roof, the coping, the nailer or the facade). A foot near an edge reaches for the
-nearest face, and no foot ends up inside the stone; the legs are then re-solved by IK, keeping the gait's swing lift.
+The scripted climbs use a free gait. Each foot stays where it stands. The body moves along its keyframed path
+(60 mm/s, 0.4 rad/s) only while every planted foot is within 70 mm of the best foothold it could have. That foothold
+is found by a ray down the body's own vertical onto the roof, coping, nailer or facade; near an edge, the nearest
+face. The wave gait's pairs step one pair at a time, the most strained pair first: each foot lifts off along the
+surface normal (higher when it changes face) and sets down on the foothold ahead. A body that cannot move forces its
+most stretched pair to step. The legs are re-solved by IK every frame. The HUD shows the feet down and the static
+stability margin (the centre of mass inside the planted feet's support polygon).
+
+Going over, TARANTULA steps away from the parapet and turns round on the open roof, because the 0.30 m coping is
+narrower than its leg span. It then climbs the coping head first, crosses it and goes head first down the outer face.
 The coping, nailer and facade also collide in the simulated parts.
 
 The hanging pose puts the fairlead straight above the centre of mass, with the legs folded. In it the gift hangs

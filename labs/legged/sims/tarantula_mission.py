@@ -20,6 +20,7 @@ Needs what ``tarantula_video`` needs (mujoco, cadquery, Pillow, ffmpeg).
 from __future__ import annotations
 
 import argparse
+import itertools
 import math
 import os
 import shutil
@@ -620,7 +621,7 @@ def simulate(model, info, *, render=None, pre=False):
             st["t"] = min(st["t"] + step, t0 + duration)
             u = (st["t"] - t0) / duration
             pos, R, q = path(u)
-            set_kin(pos, R, feet_on_solids(np.asarray(pos, float), np.asarray(R, float), q, snap))
+            set_kin(pos, R, q if snap < 0 else feet_on_solids(np.asarray(pos, float), np.asarray(R, float), q, snap))
             if st["hook_fixed"] is not None:
                 data.mocap_pos[hook], data.mocap_quat[hook] = st["hook_fixed"]
             mujoco.mj_forward(model, data)
@@ -628,6 +629,160 @@ def simulate(model, info, *, render=None, pre=False):
                 data.mocap_pos[gift], data.mocap_quat[gift] = gift_on_robot()
             st["next_frame"] = st["t"]
             frame(phase, caption, speed)
+
+    # ---- the free gait of the scripted climbs: footholds fixed in the world, one pair of legs stepping at a time
+    groups = [list(g) for g in tg.GAITS["wave4"][0]]
+    fb_stand = {}
+    kin.set(q_stand)
+    for f in tr.LEGS:
+        fb_stand[f] = kin.data.geom_xpos[gid[f]] - base_k
+    foot_gid = {f: model.geom(f).id for f in tr.LEGS}
+
+    def foothold(f, pos, R, reach=0.12):
+        """Where leg f wants to stand with the body at (pos, R): under its nominal foot along the body's vertical,
+        else the nearest surface within ``reach``, else in the air. (foot centre, surface normal or None)."""
+        fb = fb_stand[f]
+        p0 = pos + R @ np.array([fb[0], fb[1], 0.0])
+        if not inside(p0):
+            hit = ray(p0, -R[:, 2], tr.STAND_Z + 0.12)
+            if hit is not None:
+                return hit[0] + hit[1] * foot_r, hit[1]
+        cand = pos + R @ fb
+        c, n, dist = closest(cand)
+        if dist < reach:
+            return c + n * foot_r, n
+        return cand, None
+
+    def margin(feet):
+        """The static stability margin [m]: the centre of mass's distance inside the planted feet's support polygon,
+        seen along gravity (negative: outside)."""
+        P = np.array([feet[f][:2] for f in feet])
+        if len(P) < 3:
+            return -1.0
+        P = P[np.lexsort((P[:, 1], P[:, 0]))]
+        cross = lambda o, a, b: (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+        lo, hi = [], []
+        for pt in P:
+            while len(lo) >= 2 and cross(lo[-2], lo[-1], pt) <= 0:
+                lo.pop()
+            lo.append(pt)
+        for pt in P[::-1]:
+            while len(hi) >= 2 and cross(hi[-2], hi[-1], pt) <= 0:
+                hi.pop()
+            hi.append(pt)
+        hull = lo[:-1] + hi[:-1]
+        c = data.subtree_com[body][:2]
+        m_ = np.inf
+        for a, b in itertools.pairwise([*hull, hull[0]]):
+            e = b - a
+            m_ = min(m_, float(cross(a, b, c)) / (np.linalg.norm(e) + 1e-12))
+        return m_
+
+    def freegait(phase, caption, path, v=0.06, w=0.4, t_swing=0.3, reach=0.07, settle=0.5, look=0.45):
+        """Walk the body along ``path(u) -> (pos, R)`` with a free gait: each foot stays where it stands; the body
+        advances (``v`` m/s, ``w`` rad/s) only while every planted foot is within ``reach`` of where it wants to
+        be; the wave gait's pairs step one pair at a time — the most strained pair first — lifting off along the
+        surface normal and setting down on the foothold ahead. Returns the last joint angles."""
+        us = np.linspace(0.0, 1.0, 241)
+        poses = [path(u) for u in us]
+        cost = [0.0]
+        for (p0, R0), (p1, R1) in itertools.pairwise(poses):
+            ang = math.acos(min(1.0, max(-1.0, (np.trace(R0.T @ R1) - 1) / 2)))
+            cost.append(cost[-1] + max(np.linalg.norm(p1 - p0) / v, ang / w))
+        cost = np.array(cost)
+        C = cost[-1]
+
+        def pose(sc):
+            u = float(np.interp(sc, cost, us))
+            return path(u)
+
+        tick = (1.0 / render.fps) if render is not None else 0.033
+        F = {f: data.geom_xpos[foot_gid[f]].copy() for f in tr.LEGS}
+        Nn = {f: closest(F[f])[1] for f in tr.LEGS}
+        swing, last, sc, quiet, blocked = {}, None, 0.0, 0.0, 0.0
+        q = data.qpos[qadr].copy()
+
+        def solve(pos, R, feet_now, q0):
+            targets = [(pts[f][0], pts[f][1], base_k + R.T @ (feet_now[f] - pos)) for f in tr.LEGS]
+            return kin.ik(targets, q_init=q0, q_ref=q_stand, reg=1e-5, iters=60)
+
+        def stretch(f, pos, R):
+            """How far foot f is from the best foothold it could have now, along the body's plane (heights are free:
+            the legs take up a step)."""
+            d = R.T @ (F[f] - foothold(f, pos, R)[0])
+            return math.hypot(d[0], d[1])
+
+        for _ in range(int(60 / tick)):
+            pos, R = pose(sc)
+            if not swing:                                                 # pick the next pair to step
+                ahead = pose(min(C, sc + look))
+                want_a = {f: foothold(f, *ahead) for f in tr.LEGS}
+                need = {k: sum(np.linalg.norm(F[f] - want_a[f][0]) for f in g) for k, g in enumerate(groups)}
+                k = max((k for k in need if k != last), key=lambda k: need[k])
+                if need[k] <= 0.02 and blocked > 0.0:                    # stuck: the most stretched pair steps
+                    k = max(range(len(groups)), key=lambda k: max(stretch(f, pos, R) for f in groups[k]))
+                    want_a = {f: foothold(f, pos, R) for f in tr.LEGS}
+                if need[k] > 0.02 or blocked > 0.0:
+                    last = k
+                    for f in groups[k]:
+                        nb = want_a[f][1] if want_a[f][1] is not None else Nn[f]
+                        swing[f] = (st["t"], F[f].copy(), want_a[f][0].copy(), Nn[f], nb)
+                    quiet = 0.0
+                elif sc >= C:
+                    quiet += tick
+                    if quiet >= settle:
+                        break
+            feet_now = {}
+            for f in tr.LEGS:
+                if f in swing:
+                    t0, a, b, na, nb = swing[f]
+                    u = min((st["t"] + tick - t0) / t_swing, 1.0)
+                    n_mid = na + nb
+                    n_mid = n_mid / (np.linalg.norm(n_mid) + 1e-9)
+                    hgt = 0.028 + 0.03 * (1.0 - float(na @ nb))
+                    pt = a + sm(u) * (b - a) + n_mid * hgt * math.sin(math.pi * min(u * 1.1, 1.0))
+                    if inside(pt):
+                        c, n, _ = closest(pt)
+                        pt = c + n * foot_r
+                    feet_now[f] = pt
+                    if u >= 1.0:
+                        F[f], Nn[f] = b, nb
+                        del swing[f]
+                else:
+                    feet_now[f] = F[f]
+            # the body advances if the planted legs still reach (the IK solves, no leg over-stretched)
+            q_new = None
+            if sc < C:
+                sc_try = min(C, sc + tick)
+                p_try, R_try = pose(sc_try)
+                q_try, _ = solve(p_try, R_try, feet_now, q)
+                planted = [f for f in tr.LEGS if f not in swing]
+                if max(stretch(f, p_try, R_try) for f in planted) < reach or blocked > 1.5:
+                    sc, pos, R, q_new, blocked = sc_try, p_try, R_try, q_try, 0.0
+                else:
+                    blocked += tick
+            if q_new is None:
+                q_new, _ = solve(pos, R, feet_now, q)
+            q = q_new
+            strain = {f: stretch(f, pos, R) for f in tr.LEGS}
+            st["t"] += tick
+            set_kin(pos, R, q)
+            if st["hook_fixed"] is not None:
+                data.mocap_pos[hook], data.mocap_quat[hook] = st["hook_fixed"]
+            mujoco.mj_forward(model, data)
+            if st["gift"] == "robot":
+                data.mocap_pos[gift], data.mocap_quat[gift] = gift_on_robot()
+            if os.environ.get("TM_DEBUG") and round(st["t"] / tick) % 10 == 0:
+                print(f"    fg t {st['t']:6.2f} s {sc:5.2f}/{C:5.2f} swing {sorted(swing)} strain "
+                      + " ".join(f"{f}:{strain[f] * 1000:.0f}" for f in tr.LEGS), flush=True)
+                if st["t"] > float(os.environ["TM_DEBUG"]):
+                    raise SystemExit
+            down = {f: F[f] for f in tr.LEGS if f not in swing}
+            st["feet"] = (len(down), margin(down) if R[2, 2] > 0.8 else None)
+            st["next_frame"] = st["t"]
+            frame(phase, caption)
+        st["feet"] = None
+        return q
 
     # ---- 1. settle, then creep tail first to the parapet (the reversed wave gait)
     cyc = 3
@@ -662,22 +817,36 @@ def simulate(model, info, *, render=None, pre=False):
     def bez(p0, p1, p2, u):
         return (1 - u) ** 2 * p0 + 2 * (1 - u) * u * p1 + u ** 2 * p2
 
-    q0A = data.qpos[qadr].copy()
-    d1, d2, d3, d4 = 2.4, 2.4, 1.6, 1.4
+    d4 = 1.4
     show_line("dl_over")
-    kinematic(d1, "over", "STEP 3 · OVER THE EDGE — up onto the coping",
-              lambda u: (bez(pA, np.array([xi - 0.03, y, zt + h + 0.05]), pB, sm(u)),
-                         slerp_R(RA, rot_z(math.pi) @ rot_y(-0.25 * math.sin(math.pi * u)), sm(u)),
-                         q_ref(-u * d1) if u > 0.04 else q0A))
-    kinematic(d2, "over", "STEP 3 · OVER THE EDGE — turn round on the coping",
-              lambda u: (pB + sm(u) * (pC - pB), rot_z(math.pi * (1 - sm(u))), q_ref(u * d2 * 1.3)))
-    kinematic(d3, "over", "STEP 3 · OVER THE EDGE — head first down the face",
-              lambda u: (bez(pC, np.array([xo + 0.02, y, zt + h * 0.9]), pD, sm(u)), slerp_R(RC, Rface, sm(u)),
-                         q_ref(u * d3 * 1.3)))
+    pA2 = pA + np.array([-0.17, 0.0, 0.0])                                # clear of the parapet, room to turn
+    p_off = lambda u: (pA + sm(u) * (pA2 - pA), slerp_R(RA, rot_z(math.pi), sm(u)))
+    p_turn = lambda u: (pA2, rot_z(math.pi * (1 - sm(u))))
+    p_up = lambda u: (bez(pA2, np.array([xi - 0.07, y, zt + h + 0.02]), pB, sm(u)), rot_y(-0.35 * math.sin(math.pi * u)))
+    p_across = lambda u: (pB + sm(u) * (pC - pB), RC)
+    p_over = lambda u: (bez(pC, np.array([xo + 0.03, y, zt + h * 0.85]), pD, sm(u)), slerp_R(RC, Rface, sm(u)))
+    freegait("over", "STEP 3 · OVER THE EDGE — step away from the parapet", p_off)
+    freegait("over", "STEP 3 · OVER THE EDGE — turn round on the roof, a pair of feet at a time", p_turn)
+    freegait("over", "STEP 3 · OVER THE EDGE — head first up onto the coping", p_up)
+    freegait("over", "STEP 3 · OVER THE EDGE — across the coping", p_across)
+    qD = freegait("over", "STEP 3 · OVER THE EDGE — head first down the face", p_over)
     show_line("dragline")
     kinematic(d4, "over", "STEP 3 · OVER THE EDGE — let go: hanging on the dragline",
               lambda u: (pD + sm(u) * (pE - pD) + np.array([0.03 * math.sin(math.pi * u), 0, 0]),
-                         slerp_R(Rface, R_hang, sm(u)), q_stand + sm(u) * (q_tuck - q_stand)), snap=0.0)
+                         slerp_R(Rface, R_hang, sm(u)), qD + sm(u) * (q_tuck - qD)), snap=0.0)
+
+    pH = np.array([info["face_x"] - 0.24, y, tr.STAND_Z - 0.021])
+    p_back1 = lambda u: (bez(pD, np.array([xo + 0.03, y, zt + h * 0.85]), pC, sm(u)), slerp_R(Rface, RC, sm(u)))
+    p_back2 = lambda u: (bez(pC, np.array([xi - 0.06, y, zt + h + 0.04]), pH, sm(u)), rot_y(0.3 * math.sin(math.pi * u)))
+
+    def est(path, v=0.065, w=0.6):
+        c, (p0, R0) = 0.0, path(0.0)
+        for u in np.linspace(0, 1, 121)[1:]:
+            p1, R1 = path(u)
+            ang = math.acos(min(1.0, max(-1.0, (np.trace(R0.T @ R1) - 1) / 2)))
+            c += max(np.linalg.norm(p1 - p0) / v, ang / w)
+            p0, R0 = p1, R1
+        return c
 
     # ---- 3. down the line on the brake (physics: the robot hangs from the rope)
     model.dof_damping[fd + 3:fd + 6] = 0.004                              # the air and the line's twist
@@ -713,7 +882,8 @@ def simulate(model, info, *, render=None, pre=False):
     physics(1.0, "deliver", "STEP 5 · DELIVER THE GIFT — the tarsal pincers open", hold)
     dist_up = m_hang[2] - data.site_xpos[muzzle_site][2]
     t_up_est = dist_up / v_in * 1.03 + 1.0
-    t_after = t_up_est + 5.6 + 1.0 + 5.0 + 2.6                              # climb, back over, hide, stroll, lean in
+    t_back = 1.4 + 1.6 * (est(p_back1) + est(p_back2)) + 1.5             # the climb back: the free gait's pace
+    t_after = t_up_est + t_back + 1.0 + 5.0 + 2.6                          # climb, back over, hide, stroll, lean in
     st["timer_set"], st["t_boom"] = st["t"] + 0.6, st["t"] + 0.6 + math.ceil(t_after)
     physics(1.6, "timer", "STEP 5 · SET THE TIMER — a fang presses the button", hold)
 
@@ -729,34 +899,29 @@ def simulate(model, info, *, render=None, pre=False):
     # ---- 6. back over and hide (scripted), tail first, behind the parapet facing the edge
     pE2, RE2 = body_pose()
     qE2 = data.qpos[qadr].copy()
-    pH = np.array([info["face_x"] - 0.24, y, tr.STAND_Z - 0.021])
-    q_crouch = motion_crouch(tg, kin)
     kinematic(d4, "back", "STEP 7 · HIDE — up the face, tail first",
               lambda u: (pE2 + sm(u) * (pD - pE2), slerp_R(RE2, Rface, sm(u)), qE2 + sm(u) * (q_stand - qE2)),
               snap=0.03)
     show_line("dl_over")
-    kinematic(d3, "back", "STEP 7 · HIDE — onto the coping",
-              lambda u: (bez(pD, np.array([xo + 0.02, y, zt + h * 0.9]), pC, sm(u)), slerp_R(Rface, RC, sm(u)),
-                         q_ref(-u * d3 * 1.3)))
+    freegait("back", "STEP 7 · HIDE — onto the coping, a pair of feet at a time", p_back1)
     show_line("dl_short")
-    kinematic(2.6, "back", "STEP 7 · HIDE — down behind the parapet",
-              lambda u: (bez(pC, np.array([xi - 0.05, y, zt + h + 0.04]), pH, sm(u)),
-                         rot_y(0.3 * math.sin(math.pi * u)), q_ref(-u * 2.6 * 1.3) if u < 0.9 else
-                         q_ref(-0.9 * 2.6 * 1.3) + sm((u - 0.9) / 0.1) * (q_crouch - q_ref(-0.9 * 2.6 * 1.3))))
+    q_hide = freegait("back", "STEP 7 · HIDE — down behind the parapet", p_back2)
     pHide, RHide = body_pose()
     t_walk = max(st["t"] + 0.6, st["t_boom"] - 7.6)
-    kinematic(t_walk - st["t"], "hide", "STEP 7 · HIDE — safe behind the parapet", lambda u: (pHide, RHide, q_crouch))
+    kinematic(t_walk - st["t"], "hide", "STEP 7 · HIDE — safe behind the parapet", lambda u: (pHide, RHide, q_hide),
+              snap=-1)
     # ---- 7. the bandit (props), the timer, the blast
     extra["bandit_t0"] = st["t"]
-    kinematic(st["t_boom"] - st["t"], "bandit", "TARGET APPROACHING", lambda u: (pHide, RHide, q_crouch))
+    kinematic(st["t_boom"] - st["t"], "bandit", "TARGET APPROACHING", lambda u: (pHide, RHide, q_hide), snap=-1)
     extra["boom_t0"] = st["t"]
     pPeek = np.array([info["face_x"] - 0.17, y, tr.STAND_Z + 0.085])
     extra["peek"] = pPeek
-    kinematic(3.6, "boom", "KABOOM", lambda u: (pHide, RHide, q_crouch))
-    kinematic(1.8, "end", "MISSION ACCOMPLISHED",
-              lambda u: (pHide + sm(u) * (pPeek - pHide), slerp_R(RHide, rot_y(-0.62), sm(u)),
-                         q_crouch + sm(u) * (q_stand - q_crouch)))
-    kinematic(3.4, "end", "MISSION ACCOMPLISHED", lambda u: (pPeek, rot_y(-0.62), q_stand))
+    kinematic(3.6, "boom", "KABOOM", lambda u: (pHide, RHide, q_hide), snap=-1)
+    t_peek = st["t"]
+    q_peek = freegait("end", "MISSION ACCOMPLISHED",
+                      lambda u: (pHide + sm(u) * (pPeek - pHide), slerp_R(RHide, rot_y(-0.62), sm(u))), v=0.05, w=0.5)
+    pP, RP = body_pose()
+    kinematic(max(5.2 - (st["t"] - t_peek), 2.0), "end", "MISSION ACCOMPLISHED", lambda u: (pP, RP, q_peek), snap=-1)
     return st
 
 
@@ -1025,6 +1190,9 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None):
         info_r = ""
         if phase in ("hang", "descend", "deliver", "timer", "ascend"):
             info_r = f"line {st['tension']:4.1f} N   height {b[2] - STREET:4.2f} m"
+        if st.get("feet"):
+            n_down, mg = st["feet"]
+            info_r = f"feet down {n_down}/8" + (f"   stability margin {mg * 1000:+.0f} mm" if mg is not None else "")
         if speed > 1:
             info_r += f"   ▶▶ ×{speed:g}"
         if info_r:
