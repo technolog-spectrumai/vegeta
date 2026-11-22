@@ -1,12 +1,13 @@
 """A MuJoCo video of TARANTULA on its dragline (``./tarantula.sh video``): MuJoCo's physics and MuJoCo's renderer, the
-robot dressed in its CAD (``spiders.Tarantula``, split onto the simulated links), the cords as MuJoCo spatial tendons
-wrapping the knee knuckle (so they follow the joints), the dragline as a rope (a spatial tendon that pulls only when
-taut).
+robot dressed in its CAD (``spiders.Tarantula``, split onto the simulated links: the chelicerae and pedipalps ride on
+the body), the cords as MuJoCo spatial tendons wrapping the knee knuckle (so they follow the joints), the dragline as a
+rope (a spatial tendon that pulls only when taut).
 
-The scene: a vertical brick wall, a timber beam above. TARANTULA hangs head-down on its spine-comb feet, fires its
-harpoon (spring launcher at the spinnerets, §12) into the beam's underside — the flight lasts 0.05 s, shown in slow
-motion — takes up the slack, then walks down the wall head first with the spool's brake paying out line so the line
-carries ``SHARE`` of its weight; it stops, and walks back up tail first while the winch reels in.
+The scene: a vertical brick wall, a timber beam above. TARANTULA hangs head-down on its spine-comb feet under the beam.
+It sways its body back on its planted feet and drives its anchor hook's pick into the beam's underside, opens the
+cradle's latch and sways forward, leaving the hook set (§12); it walks down the wall head first with the spool's brake
+paying out line so the line carries ``SHARE`` of its weight, stops, walks back up tail first while the winch reels in,
+sways back onto the hook (the latch closes), sways forward pulling the pick out, and walks away with the hook stowed.
 
     ./tarantula.sh video                              # runs/tarantula/tarantula_dragline.mp4 (1280 × 720, 30 fps)
     ./tarantula.sh video --cycles 2 --width 960 --height 540 --out my.mp4
@@ -104,11 +105,12 @@ def cad_meshes(cache: Path):
         add("body", "turret", v)
     for v in d.deck(s):
         add("body", "deck", v)
-    ch = d.chelicerae(s, 20.0)
-    for k, g in (("housing", "jaw housing"), ("pins", "deck"), ("jaws", "jaws"), ("blades", "blades"),
-                 ("drive", "jaw drive")):
-        for v in ch[k]:
-            add("body", g, v)
+    for k, vs in d.chelicerae(s).items():
+        for v in vs:
+            add("body", {"base": "shell", "margin": "blades", "fang": "jaws", "joint": "joints"}[k], v, 0.2)
+    for k, vs in d.pedipalps(s).items():
+        for v in vs:
+            add("body", {"boss": "joints", "joints": "joints", "tubes": "carbon", "tarsus": "feet"}[k], v, 0.2)
     pod = d.dragline_pod(s)
     for k, vs in pod.items():
         for v in vs:
@@ -136,9 +138,8 @@ def cad_meshes(cache: Path):
             path = out / f"{link}_{g.replace(' ', '_')}.stl"
             _stl(path, V, F)
             index_d[link].append([g, str(path)])
-    hp = d.harpoon(s)
     hparts = []
-    for k, v in (("harpoon", hp["shaft"]), ("harpoon", hp["eye"]), *(("harpoon", b) for b in hp["barbs"])):
+    for v in d._hook_parts(s):                                            # the anchor hook, in its own frame
         for sol in v.vals():
             vs, fs = sol.tessellate(0.1, 0.2)
             hparts.append((np.array([x.toTuple() for x in vs]) * 1e-3, np.array(fs)))
@@ -222,9 +223,18 @@ def build(width, height, cache: Path):
             gm.attrib.pop("rgba", None)
     ET.SubElement(world, "light", {"name": "sun", "directional": "true", "pos": "-1.5 -1.2 2.5", "dir": "0.45 0.35 -0.82",
                                    "diffuse": "0.72 0.68 0.62", "specular": "0.15 0.15 0.15", "castshadow": "true"})
-    anchor = np.array([-0.74, 0.0, 0.04])                                 # the beam's underside: the harpoon's mark
-    ET.SubElement(world, "geom", {"name": "beam", "type": "box", "size": "0.06 1.6 0.035", "pos": "-0.80 0 0.035",
-                                  "material": "wood", "contype": "0", "conaffinity": "0", "group": "1"})
+    # the beam: its underside 40 mm above the docked hook's tip, which the sway drives 15 mm into it
+    d0 = S.Tarantula()
+    C0, dv0 = d0.harpoon_pose(tr.S)
+    hk = tr.S["winch"]["hook"]
+    zc0 = tr.STAND_Z * 1000
+    drop0 = tg.POSTURES["crouched"]
+    tip_w = (C0 + dv0 * (hk["front"] + hk["pick"] * 0.6) - np.array([0, 0, zc0])) * 1e-3 + np.array([0, 0, tr.STAND_Z - drop0 * 1e-3])
+    under = tip_w[0] - 0.040
+    anchor = np.array([under, 0.0, tip_w[2]])
+    ET.SubElement(world, "geom", {"name": "beam", "type": "box", "size": "0.06 1.6 0.07",
+                                  "pos": f"{under - 0.06:.4f} 0 0.07", "material": "wood", "contype": "0",
+                                  "conaffinity": "0", "group": "1"})
     bodies = {b.get("name"): b for b in root.iter("body")}
     # the robot's own collision geoms out of sight (group 3); its CAD meshes in (group 1)
     for b in bodies.values():
@@ -281,11 +291,13 @@ def build(width, height, cache: Path):
                 ET.SubElement(bodies[link], "site", {"name": sname, "pos": " ".join(f"{v:.5f}" for v in pl), "group": "4",
                                                      "size": "0.001"})
                 ET.SubElement(el, "site", {"site": sname})
-    # the dragline: from the launcher's muzzle on the body to the harpoon's eye (a mocap body, flown by the script)
+    # the dragline: from the fairlead on the body to the anchor hook's shackle (a mocap body, moved by the script:
+    # docked in its cradle, set in the beam)
     d = S.Tarantula()
     eye_mm, dvec = d.harpoon_pose(tr.S)
-    _, _, T0 = d.pod_frame(tr.S)
-    muzzle_mm = T0 + tr.S["winch"]["tube"][2] * dvec
+    S_, _, _ = d.pod_frame(tr.S)
+    w_ = tr.S["winch"]
+    muzzle_mm = np.array([S_[0] - w_["flange"] - 2.0, 0.0, S_[2] + w_["flange"] - 6.0])
     to_body = lambda p_mm: (np.asarray(p_mm) - np.array([0, 0, zc])) * 1e-3
     ET.SubElement(bodies["body"], "site", {"name": "muzzle", "pos": " ".join(f"{v:.5f}" for v in to_body(muzzle_mm)),
                                            "group": "4", "size": "0.002"})
@@ -294,7 +306,8 @@ def build(width, height, cache: Path):
     ET.SubElement(asset, "mesh", {"name": "m:harpoon", "file": hp_mesh, "inertia": "shell"})
     ET.SubElement(hb, "geom", {"type": "mesh", "mesh": "m:harpoon", "contype": "0", "conaffinity": "0", "group": "1",
                                "material": "mat:harpoon"})
-    ET.SubElement(hb, "site", {"name": "eye", "pos": "-0.0022 0 0", "group": "4", "size": "0.002"})
+    ET.SubElement(hb, "site", {"name": "eye", "pos": " ".join(f"{v * 1e-3:.5f}" for v in d.hook_eye(tr.S)), "group": "4",
+                               "size": "0.002"})
     line = ET.SubElement(tendon_el, "spatial", {"name": "dragline", "width": "0.0008", "rgba": "0.96 0.96 0.9 1",
                                                 "group": "1"})
     ET.SubElement(line, "site", {"site": "muzzle"})
@@ -311,6 +324,7 @@ def build(width, height, cache: Path):
     model = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
     info = {"kin": kin, "robot": robot, "anchor": anchor, "eye_body": to_body(eye_mm), "dir_body": np.asarray(dvec),
             "muzzle_body": to_body(muzzle_mm), "pull": pull, "attach": ta, "tg": tg, "tr": tr}
+    info["tip_len"] = (hk["front"] + hk["pick"] * 0.6) * 1e-3
     return model, info
 
 
@@ -377,13 +391,27 @@ def run(out, cycles=3, width=1280, height=720, fps=30, cache=None, frames_dir=No
         s = ((tau - group_of[f] * win) % T) / T
         return s * len(groups) if s < 1.0 / len(groups) else None
 
+    # the sway: the body slides back 55 mm on its planted feet (the feet's targets move forward in the body frame)
+    sway = 0.055
+    kin.set(q_ref(0.0))
+    targets = [(kin.geom_point(f)[0], kin.geom_point(f)[1], kin.data.geom_xpos[kin.model.geom(f).id] + np.array([sway, 0, 0]))
+               for f in tr.LEGS]
+    q_sw, err = kin.ik(targets, q_init=q_ref(0.0), reg=1e-7)
+    print(f"tarantula_video: sway pose, IK error {err * 1000:.2f} mm", flush=True)
+    sm = lambda u: 0.5 - 0.5 * math.cos(math.pi * min(max(u, 0.0), 1.0))
+
     # the script [s of sim time from the end of the settle]
-    t_fire, t_fly = 0.8, 0.05
-    t_set = t_fire + t_fly
-    t_down = t_set + 0.9
+    t_p0 = 0.6                                                            # sway back: the pick goes into the beam
+    t_set = t_p0 + 1.2                                                    # the latch opens: the hook stays
+    t_p1 = t_set + 1.0                                                    # swayed forward again
+    t_down = t_p1 + 0.6
     t_stop = t_down + cycles * T
     t_up = t_stop + 1.0
-    t_end = t_up + cycles * T + 0.8
+    t_d0 = t_up + cycles * T + 0.5                                        # sway back onto the hook: the latch closes
+    t_dock = t_d0 + 1.2
+    t_d1 = t_dock + 1.0                                                   # swayed forward: the pick comes out
+    t_end = t_d1 + 0.5                                                    # hook stowed: the scene ends (head-down on
+    #                                                                       spines alone it cannot stay: §10, §12)
     settle = 0.6
     W = info["robot"].total_mass() * 9.81
     k_rope, c_rope, F_max = 6000.0, 40.0, 100.0
@@ -397,17 +425,12 @@ def run(out, cycles=3, width=1280, height=720, fps=30, cache=None, frames_dir=No
     anchor = info["anchor"]
     L = None                                                              # the line paid out [m] (None: free)
     tension = 0.0
-    fired_from = None
+    hook_fixed = None                                                     # the hook's pose while set in the beam
 
-    def harpoon_on_robot():
+    def hook_on_robot():
         R = data.xmat[body].reshape(3, 3)
         p = data.xpos[body] + R @ info["eye_body"]
-        q_body = data.xquat[body].copy()
-        return p, _qmul(q_body, _quat_from_x(info["dir_body"]))
-
-    # the flight: from the muzzle to the beam's underside, tip first, gravity +x
-    tip_len = (tr.S["winch"]["harpoon"][1] + tr.S["winch"]["harpoon"][2]) * 1e-3
-    embed = 0.02
+        return p, _qmul(data.xquat[body].copy(), _quat_from_x(info["dir_body"]))
 
     renderer = mujoco.Renderer(model, height, width)
     cam = mujoco.MjvCamera()
@@ -435,21 +458,36 @@ def run(out, cycles=3, width=1280, height=720, fps=30, cache=None, frames_dir=No
     t = -settle
     x_start = None
     while t < t_end:
-        # the phase and the gait's clock τ
-        if t < t_down:
-            tau, phase = 0.0, "holding on, spines set" if t < t_fire else ("harpoon away" if t < t_set else "taking up the slack")
+        # the phase, the gait's clock τ, the sway s
+        s_w, moving, sgn, tau = 0.0, False, 1.0, 0.0
+        if t < t_p0:
+            phase = "holding on, the hook in its cradle"
+        elif t < t_set:
+            s_w, phase = sm((t - t_p0) / 1.0), "planting the hook: sway back, the pick bites the beam"
+        elif t < t_p1:
+            s_w, phase = 1.0 - sm((t - t_set) / 1.0), "latch open: the hook stays, the body sways forward"
+        elif t < t_down:
+            phase = "the brake goes on"
         elif t < t_stop:
-            tau, phase = t - t_down, "lowering itself: brake paying out"
+            tau, moving, phase = t - t_down, True, "lowering itself: brake paying out"
         elif t < t_up:
             tau, phase = cycles * T, "stopped on the line"
         elif t < t_up + cycles * T:
-            tau, phase = cycles * T - (t - t_up), "pulling itself up: winch reeling in"
+            tau, moving, sgn, phase = cycles * T - (t - t_up), True, -1.0, "pulling itself up: winch reeling in"
+        elif t < t_d0:
+            phase = "back under the hook"
+        elif t < t_dock:
+            s_w, phase = sm((t - t_d0) / 1.0), "docking: sway back onto the hook, the latch closes"
+        elif t < t_d1:
+            s_w, phase = 1.0 - sm((t - t_dock) / 1.0), "unhooking: sway forward, the pick comes out"
         else:
-            tau, phase = 0.0, "back up, line taut"
-        moving = t_down <= t < t_stop or t_up <= t < t_up + cycles * T
-        sgn = 1.0 if t < t_up else -1.0
-        qr = q_ref(tau)
-        qdr = sgn * (q_ref(tau + dt) - qr) / dt if moving else np.zeros_like(qr)
+            phase = "hook stowed, ready to go"
+        if phase != getattr(run, "_last", None):
+            run._last = phase
+            print(f"  {t:5.2f} s  {phase:55s} body {np.round(data.xpos[body] * 1000).astype(int)} mm  tension {tension:5.1f} N",
+                  flush=True)
+        qr = q_ref(tau) + s_w * (q_sw - q_ref(0.0)) if not moving else q_ref(tau)
+        qdr = sgn * (q_ref(tau + dt) - q_ref(tau)) / dt if moving else np.zeros_like(qr)
         q, qd = data.qpos[qadr].copy(), data.qvel[dadr].copy()
         tq = kp * (qr - q) + kd * (qdr - qd)
         lim = np.where(tq * qd < 0, stall, sv.torque_limit(qd))
@@ -457,39 +495,38 @@ def run(out, cycles=3, width=1280, height=720, fps=30, cache=None, frames_dir=No
         for f in tr.LEGS:
             u = swing_u(f, tau) if moving else None
             data.ctrl[act_adh[f]] = 1.0 if u is None else (max(0.0, 1 - u / 0.1) if u < 0.1 else max(0.0, (u - 0.9) / 0.1))
-        # the harpoon and the line
-        if t < t_fire:
-            p, qh = harpoon_on_robot()
+        # the hook: docked (riding the cradle), set (fixed where the sway left it), re-docked
+        docked_now = t < t_set or t >= t_dock
+        if docked_now:
+            p, qh = hook_on_robot()
+            if hook_fixed is not None and t < t_dock + 0.3:                 # the latch closing: blend into the cradle
+                w = sm((t - t_dock) / 0.3)
+                p = (1 - w) * hook_fixed[0] + w * p
             data.mocap_pos[mocap], data.mocap_quat[mocap] = p, qh
-        elif t < t_set:
-            if fired_from is None:
-                p0, _ = harpoon_on_robot()
-                tip0 = p0 + (data.xmat[body].reshape(3, 3) @ info["dir_body"]) * tip_len
-                tip1 = anchor + np.array([-embed, 0.0, 0.0])
-                gvec = np.array([9.81, 0.0, 0.0])
-                v0 = (tip1 - tip0 - 0.5 * gvec * t_fly ** 2) / t_fly
-                fired_from = (tip0, v0, gvec)
-            tip0, v0, gvec = fired_from
-            s_ = t - t_fire
-            tip = tip0 + v0 * s_ + 0.5 * gvec * s_ ** 2
-            vel = v0 + gvec * s_
-            dvec = vel / np.linalg.norm(vel)
-            data.mocap_pos[mocap], data.mocap_quat[mocap] = tip - dvec * tip_len, _quat_from_x(dvec)
-        elif fired_from is not None and len(fired_from) == 3:
-            tip0, v0, gvec = fired_from
-            vel = v0 + gvec * t_fly
-            dvec = vel / np.linalg.norm(vel)
-            tip1 = anchor + np.array([-embed, 0.0, 0.0])
-            data.mocap_pos[mocap], data.mocap_quat[mocap] = tip1 - dvec * tip_len, _quat_from_x(dvec)
-            fired_from = (None,)
+        else:
+            if hook_fixed is None:
+                hook_fixed = (data.mocap_pos[mocap].copy(), data.mocap_quat[mocap].copy())
+            if t >= t_dock - 0.25:                                        # the cradle reaching the collar
+                p_r, _ = hook_on_robot()
+                w = sm((t - (t_dock - 0.25)) / 0.25)
+                data.mocap_pos[mocap] = (1 - w) * hook_fixed[0] + w * p_r
+            else:
+                data.mocap_pos[mocap], data.mocap_quat[mocap] = hook_fixed
         length = float(data.ten_length[line_id])
         vel_l = float(data.ten_velocity[line_id])
-        if t < t_set:
-            L = None                                                      # slack: the spool turns freely
+        if t < t_p1 or t >= t_dock + 0.7:                                 # the pick is out of the wood: no hold
+            L = None
         else:
             if L is None:
-                L = length + 0.005                                        # the harpoon is in: the brake goes on
-            target = 0.3 * W if t < t_down else SHARE * W
+                L = length + 0.002                                        # the hook is set: the brake goes on
+            if t < t_down:
+                target = 0.3 * W
+            elif t < t_up + cycles * T:
+                target = SHARE * W
+            elif t < t_dock:                                              # back under the hook: unload it gently
+                target = SHARE * W * (1.0 - 0.6 * sm((t - (t_up + cycles * T)) / (t_dock - (t_up + cycles * T))))
+            else:                                                         # docked, the pick still in the wood
+                target = 0.4 * SHARE * W
             dL = np.clip(0.08 * (tension - target), -v_in, v_out)        # brake pays out / winch reels in
             if t < t_down and tension < target:
                 dL = -v_in
@@ -501,26 +538,26 @@ def run(out, cycles=3, width=1280, height=720, fps=30, cache=None, frames_dir=No
         t += dt
         if x_start is None and t >= 0:
             x_start = float(data.xpos[body][0])
-        rate = 240.0 if t_fire - 0.02 <= t < t_set + 0.02 else fps     # slow motion for the shot
+        rate = fps
         if t >= next_frame:
             next_frame += 1.0 / rate
             bx = data.xpos[body].copy()
             # the robot in the lower middle of the frame, the line and the beam above it
-            target_look = np.array([0.72 * bx[0] + 0.28 * anchor[0], bx[1], 0.04])
+            target_look = np.array([0.55 * bx[0] + 0.45 * anchor[0] + 0.06, bx[1], 0.04])
             look = target_look if look is None else look + 0.08 * (target_look - look)
             sep = abs(bx[0] - anchor[0])
             prog = min(max(t / t_end, 0.0), 1.0)
             cam.lookat[:] = look
-            cam.distance = 0.78 + 0.55 * sep
+            cam.distance = 0.95 + 0.6 * sep
             cam.azimuth = 180.0 + 30.0 * math.cos(math.pi * prog)
             cam.elevation = -52.0
             renderer.update_scene(data, camera=cam, scene_option=opt)
             img = Image.fromarray(renderer.render())
             dr = ImageDraw.Draw(img)
             dr.text((26, 18), "TARANTULA", font=f_big, fill=(245, 243, 238))
-            dr.text((28, 56), "dragline pod: harpoon into a timber beam, then down and up a vertical brick wall",
+            dr.text((28, 56), "plants its anchor hook in a beam, lowers itself on the line, climbs back and unhooks",
                     font=f_small, fill=(232, 228, 220))
-            slow = " · slow motion ×8" if rate > fps else ""
+            slow = ""
             dr.rectangle([20, height - 118, 600, height - 20], fill=(15, 17, 20))
             dr.text((32, height - 110), phase + slow, font=f_small, fill=(255, 177, 92))
             below = max(0.0, (bx[0] - anchor[0]))

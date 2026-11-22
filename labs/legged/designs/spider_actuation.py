@@ -25,7 +25,7 @@ from __future__ import annotations
 import math
 
 __all__ = ["ROBOTS", "PARTS", "ARCHITECTURES", "ROUTING", "CUT_LOADS", "joint_demand", "size", "compare",
-           "tendon_routing", "cutter", "tarantula_winch", "jump", "salty_catapult",
+           "tendon_routing", "tarantula_chelicerae", "self_locking", "tarantula_winch", "jump", "salty_catapult",
            "SOURCES", "G", "extension_support", "recommend", "EFFICIENCY", "SERVOS", "MOTORS",
            "pick_motor"]
 
@@ -287,87 +287,74 @@ CUT_LOADS = {
     "green twig Ø5 mm": (20.0, math.pi * 2.5 ** 2, 5.0, "assumed: ~20 MPa effective across the grain — measure"),
     "galvanised fence wire Ø2.5 mm": (280.0, math.pi * 1.25 ** 2, 2.5, "assumed: as mild steel"),
 }
-#: the jaws' parts [g] (assumed class estimates)
-CUTTER_PARTS = {"micro metal gearmotor 250:1": 9.5, "M4 × 0.7 leadscrew + bronze nut": 4.0, "crossbar yoke + 2 links": 4.0,
-                "2 jaws (aluminium, hardened steel blade inserts)": 18.0, "cheliceral housing": 14.0,
-                "pivot pins + tongues": 3.0, "limit switch + current sense": 1.0}
+#: the chelicerae's parts [g] (assumed class estimates): two cheliceral claws
+CHELICERAE_PARTS = {"2 micro metal gearmotors 250:1": 19.0, "2 M4 × 0.7 leadscrews, nuts, links": 10.0,
+                    "2 basal segments with toothed grooves": 20.0, "2 fangs (hardened steel, serrated keel)": 10.0}
+#: the pedipalps' parts [g] (assumed class estimates)
+PEDIPALP_PARTS = {"6 micro metal gearmotors 250:1 + encoders": 6 * 9.9, "2 palps: tubes, knuckles, cords": 14.0,
+                  "2 tarsal pincers: 6 mm gearmotor + worm, toothed fingers": 2 * 4.0}
 
 
-def cutter(spec=None, motor="micro metal gearmotor 250:1 (class)", screw_eff=0.35, load=0.5, throat_mm=10.0):
-    """TARANTULA's jaws (``spider_specs.TARANTULA['cutter']``). A ``motor`` (``MOTORS``) turns the leadscrew: the nut
-    pushes with F = 2π T η / lead at ``load`` × stall (and at stall). By virtual work over the linkage
-    (``spider_specs.cutter_linkage``) the force on the work ``a`` mm in front of the pivots is F |dx/dθ| / (2 a) — one
-    screw, two jaws. A part of size s at the throat (``throat_mm``) is met when the gap there closes to s
-    (``cutter_gap``) and is cut by the time the edges cross; the force available is the least over that stretch.
-    Returns the screw force, stroke, closing time, mass, the force/gap table and per ``CUT_LOADS`` whether it cuts
-    at the running load and at stall."""
+def self_locking(lead_mm, pitch_d_mm, mu):
+    """(lead angle, friction angle [deg], self-locking?) of a screw or a worm: it holds against back-driving when its
+    lead angle is below the friction angle atan(μ)."""
+    lam = math.degrees(math.atan(lead_mm / (math.pi * pitch_d_mm)))
+    phi = math.degrees(math.atan(mu))
+    return lam, phi, lam < phi
+
+
+def tarantula_chelicerae(spec=None, load=0.5, mu_screw=0.12, mu_worm=0.08, screw_eff=0.35, worm_eff=0.4):
+    """TARANTULA's front tools (``spider_specs.TARANTULA``):
+
+    * each chelicera — a cheliceral claw: a 250:1 micro gearmotor turns an M4 × 0.7 leadscrew that pulls the fang's
+      tail (``tail`` mm from its hinge); the force on the work ``a`` mm out along the fang, against the groove's
+      toothed margin, is F_screw · tail / a — at the throat (6 mm), the middle and the tip; which of ``CUT_LOADS`` it
+      cuts at ``load`` × stall and at stall; self-locking (steel on bronze, μ ``mu_screw``);
+    * each pedipalp's pincer — a 6 mm planetary gearmotor and a worm (``worm`` : 1, module 0.2, pitch Ø 4 mm): the
+      grip at the fingertip, self-locking (μ ``mu_worm``)."""
     import spider_specs as ss
     spec = spec or ss.TARANTULA
-    c = spec["cutter"]
-    name, _, stall, w0, _ = next(m for m in MOTORS if m[0] == motor)
-    lead = c["lead_mm"] * 1e-3
-    f_run = 2 * math.pi * stall * load * screw_eff / lead
-
-    def dxdt(deg, h=0.25):
-        lo, hi = max(deg - h, 0.0), deg + h
-        return abs(ss.cutter_linkage(spec, hi)["yoke_x"] - ss.cutter_linkage(spec, lo)["yoke_x"]) / math.radians(hi - lo)
-
-    def blade(deg, a):
-        return f_run * dxdt(deg) / (2 * a)
-
-    def crossed(a):                                                       # the opening where the edges meet at a
-        lo, hi = 0.0, c["open_deg"]
-        for _ in range(50):
-            mid = (lo + hi) / 2
-            lo, hi = (mid, hi) if ss.cutter_gap(spec, mid, a) < 0 else (lo, mid)
-        return lo
-
-    def met(s, a):                                                        # the opening where the gap equals s
-        lo, hi = crossed(a), c["open_deg"]
-        if ss.cutter_gap(spec, hi, a) < s:
-            return None
-        for _ in range(50):
-            mid = (lo + hi) / 2
-            lo, hi = (mid, hi) if ss.cutter_gap(spec, mid, a) < s else (lo, mid)
-        return hi
-
-    th0 = crossed(throat_mm)
-    rows = [{"open_deg": d, "gap_throat_mm": ss.cutter_gap(spec, d, throat_mm),
-             "blade_n_throat": blade(d, throat_mm), "blade_n_far": blade(d, c["cut_zone"][1])}
-            for d in (30.0, 25.0, 20.0, 15.0, 10.0, 5.0)]
-    cuts = {}
-    for k, (tau, area, s, _) in CUT_LOADS.items():
-        need = tau * area
-        th1 = met(s, throat_mm)
-        if th1 is None:
-            cuts[k] = {"need_n": need, "fits": False, "cuts": False, "cuts_at_stall": False}
-            continue
-        avail = min(blade(th0 + (th1 - th0) * i / 20, throat_mm) for i in range(21))
-        cuts[k] = {"need_n": need, "fits": True, "met_at_deg": th1, "avail_n": avail, "cuts": need <= avail,
-                   "cuts_at_stall": need <= avail / load}
-    o, z = ss.cutter_linkage(spec, c["open_deg"]), ss.cutter_linkage(spec, 0.0)
-    stroke = abs(z["yoke_x"] - o["yoke_x"])
-    speed = w0 * (1 - load) / (2 * math.pi) * c["lead_mm"]              # mm/s on the motor's linear torque-speed line
-    return {"screw_n": f_run, "stroke_mm": stroke, "close_s": stroke / speed, "edges_cross_deg": th0,
-            "max_gap_mm": ss.cutter_gap(spec, c["open_deg"], throat_mm), "table": rows, "cuts": cuts,
-            "mass_g": sum(CUTTER_PARTS.values()), "motor": name}
+    fg = spec["chelicerae"]["fang"]
+    pp = spec["pedipalps"]["pincer"]
+    name, _, stall, w0, _ = next(m for m in MOTORS if m[0].startswith("micro metal gearmotor 250:1"))
+    f_screw = 2 * math.pi * stall * load * screw_eff / (fg["lead_mm"] * 1e-3)
+    r_t = fg["tail"] * 1e-3
+    at = {"throat": 0.006, "middle": fg["length"] * 0.5e-3, "tip": fg["length"] * 0.9e-3}
+    force = {k: f_screw * r_t / a for k, a in at.items()}
+    cuts = {k: {"need_n": tau * area, "cuts": tau * area <= force["throat"],
+                "cuts_at_stall": tau * area <= force["throat"] / load} for k, (tau, area, _, _) in CUT_LOADS.items()}
+    lam_s, phi_s, lock_s = self_locking(fg["lead_mm"], fg["screw_d"] * 0.88, mu_screw)
+    nut_mm_s = w0 * (1 - load) / (2 * math.pi) * fg["lead_mm"]
+    stroke_mm = fg["tail"] * math.radians(90.0)
+    _, _, st6, w6, _ = next(m for m in MOTORS if m[0].startswith("6 mm planetary"))
+    t_p = st6 * load * pp["worm"] * worm_eff
+    grip_p = t_p / (pp["finger"] * 1e-3)
+    lam_w, phi_w, lock_w = self_locking(math.pi * 0.2, 4.0, mu_worm)
+    return {"chelicera": {"screw_n": f_screw, "force_n": force, "cuts": cuts, "close_90_s": stroke_mm / nut_mm_s,
+                          "lead_angle_deg": lam_s, "friction_angle_deg": phi_s, "self_locking": lock_s, "motor": name},
+            "pedipalp_pincer": {"grip_n": grip_p, "close_s": math.radians(pp["open_deg"]) / (w6 * (1 - load) / pp["worm"]),
+                                "lead_angle_deg": lam_w, "friction_angle_deg": phi_w, "self_locking": lock_w},
+            "mass_g": sum(CHELICERAE_PARTS.values()), "pedipalps_g": sum(PEDIPALP_PARTS.values())}
 
 
 # --------------------------------------------------------------------------------------------- TARANTULA's dragline
 #: the dragline pod's parts [g] (class estimates)
 WINCH_PARTS = {"spool + 10 m of 0.8 mm UHMWPE line": 8.0, "gearmotor 1000:1 (Pololu #3070 class)": 10.5,
-               "clutch, band brake + its micro servo": 9.0, "launcher tube, spring, latch": 14.0, "harpoon": 12.0,
-               "bracket, fairlead": 8.0}
+               "clutch, band brake + its micro servo": 9.0, "open cradle + latch and its micro servo": 6.0,
+               "anchor hook + snap shackle": 10.0, "bracket, fairlead": 8.0}
 
 
-def tarantula_winch(spec=None, mass_kg=1.5, line_break_n=400.0, harpoon_g=12.0, spring_n_m=None, launch_eff=0.6,
-                    pullout_n=(80.0, 150.0), descent_m_s=0.25, share=0.6):
+def tarantula_winch(spec=None, mass_kg=1.5, line_break_n=400.0, set_n=(20.0, 40.0), hold_n=(80.0, 150.0),
+                    descent_m_s=0.25, share=0.6, feet_attached=6):
     """TARANTULA's dragline pod (``spider_specs.TARANTULA['winch']``): the line, the spool, the winch, the brake and
-    the harpoon. The winch is a 1000:1 micro gearmotor straight on the spool (``MOTORS``): its pull at the full and
+    the anchor hook. The winch is a 1000:1 micro gearmotor straight on the spool (``MOTORS``): its pull at the full and
     the empty drum, its reel-in speed carrying ``share`` of the robot's weight and all of it; the brake's heat at the
-    descent speed; the harpoon's spring energy, speed, range and holding against the robot's weight (``pullout_n``:
-    a toggle-barbed dart in softwood, assumed). Returns a dict."""
+    descent speed. The hook is planted by the body's sway against its planted feet: the push they can give (their
+    spines' shear capacity, ``feet_attached`` feet, brick) against the force that sets a pick in softwood (``set_n``,
+    assumed), and the hook's hold (``hold_n``: a pick in softwood or a mortar joint, assumed) against the weight."""
+    import arachne_specs as asp
     import spider_specs as ss
+    import tarantula_attachment as ta
     spec = spec or ss.TARANTULA
     w = spec["winch"]
     W = mass_kg * G
@@ -382,23 +369,15 @@ def tarantula_winch(spec=None, mass_kg=1.5, line_break_n=400.0, harpoon_g=12.0, 
 
     v_share, f_share = speed(share * W, r_full)
     v_all, f_all = speed(W, r_full)
-    x = w["spring_mm"] * 1e-3
-    E = None
-    if spring_n_m is None:                                                # sized for 0.72 J at the muzzle
-        E = 0.72 / launch_eff
-        spring_n_m = 2 * E / x ** 2
-    E = 0.5 * spring_n_m * x ** 2
-    ek = E * launch_eff
-    v = math.sqrt(2 * ek / (harpoon_g * 1e-3))
+    per_foot = asp.SPINES["per_spine_n"]["brick"] * ta.MODULES["spine"]["spines"] * asp.SPINES["engaged_fraction"]
+    push = feet_attached * per_foot
     return {"weight_n": W, "line_capacity_m": capacity_m, "line_safety": line_break_n / W,
             "pull_stall_n": {"full drum": stall / r_full, "empty drum": stall / r_empty},
             "reel_in_mm_s": {f"{share:.0%} of the weight": v_share * 1000, "all the weight": v_all * 1000},
             "motor_load_fraction": {f"{share:.0%} of the weight": f_share, "all the weight": f_all},
-            "brake_heat_w": (1 - share) * 0 + W * descent_m_s, "descent_m_s": descent_m_s,
-            "spring_n_m": spring_n_m, "spring_j": E, "cocking_force_n": spring_n_m * x,
-            "can_recock": stall / r_full >= spring_n_m * x, "harpoon_m_s": v, "harpoon_j": ek,
-            "range_45deg_m": v * v / G, "anchor_safety": (pullout_n[0] / W, pullout_n[1] / W),
-            "mass_g": sum(WINCH_PARTS.values()), "motor": name}
+            "brake_heat_w": W * descent_m_s, "descent_m_s": descent_m_s,
+            "sway_push_n": push, "set_n": set_n, "can_set": push >= set_n[1],
+            "anchor_safety": (hold_n[0] / W, hold_n[1] / W), "mass_g": sum(WINCH_PARTS.values()), "motor": name}
 
 
 # --------------------------------------------------------------------------------------------- jumping (SALTY)

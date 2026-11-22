@@ -458,6 +458,7 @@ class Tarantula(_Spider):
         zc = self.zc(s)
         n = s["shell_plates"]
         inner = carapace(s, L, W, H, zc)
+        notch = cq.Workplane("XY").box(60.0, 46.0, 40.0).translate((L / 2 + 16.0, 0.0, zc + 2.0))    # the chelicerae's seat
         out = []
         for k in range(n):
             lift = 1.0 + 0.8 * (n - 1 - k)
@@ -465,7 +466,7 @@ class Tarantula(_Spider):
             x0 = -L / 2 - 4 + (L + 8) * k / n - (1.5 if k else 0)
             x1 = -L / 2 - 4 + (L + 8) * (k + 1) / n + 1.5
             band = cq.Workplane("XY").box(x1 - x0, W + 10, H * 0.6).translate(((x0 + x1) / 2, 0, zc + H * 0.5))
-            out.append(skin.intersect(band))
+            out.append(skin.intersect(band).cut(notch))
         return out
 
     def tergites(self, s, n=4):
@@ -506,109 +507,159 @@ class Tarantula(_Spider):
         posts = [sk.rod((x + ax, ay, z - 6.0), (x + ax, ay, z + 5.0), 3.0) for ax in (-25.0, 25.0) for ay in (-18.0, 18.0)]
         return [plate] + posts
 
-    # the chelicerae: TARANTULA's cutting jaws ----------------------------------------------------------------------
-    JAW_OUTER = ((-6.0, 2.0), (0.0, 6.5), (8.0, 7.0), (20.0, 6.5), (32.0, 3.5), (42.0, -3.0), (49.0, -11.0),
-                 (53.0, -20.0), (54.0, -27.0))
-    JAW_HOOK = ((50.0, -23.0), (44.0, -17.5), (37.0, -13.5))           # the inner edge from the fang tip to the blade
+    # the chelicerae: each a cheliceral claw — pincer and fang in one -----------------------------------------------------
+    def chelicerae(self, s, fang_open=None):
+        """{name: [solids]} of the two chelicerae, side by side on the carapace's front, each a basal segment with a
+        flat underside cut by a groove (``base``), the groove's two rows of margin teeth (``margin``), the fang with its
+        serrated keel (``fang``) and the fang's joint (``joint``). At 0° the fang lies folded back in the groove, its
+        keel against the margin teeth; it opens downward to ``fang.range_deg[1]`` (default: the spec's 30°)."""
+        c = s["chelicerae"]
+        L, W, H = c["base"]
+        x0, y0, z0 = c["at"]
+        zf = -c["flat"] * H
+        gl, gw, gd, gn = c["groove"]
+        fg = c["fang"]
+        a = fg["open_deg"] if fang_open is None else fang_open
+        fl, fr = fg["length"], fg["root"]
+        out = {"base": [], "margin": [], "fang": [], "joint": []}
+        for sy in (-1, 1):
+            egg = sk.egg(L, W, H, (0, 0, 0), nose=0.62, tail=0.92)
+            egg = egg.cut(cq.Workplane("XY").box(L * 2, W * 2, H).translate((0, 0, zf - H / 2)))       # the flat
+            gx1 = L / 2 - 2.0
+            groove = cq.Workplane("XY").box(gl, gw, gd + 1.0).translate((gx1 - gl / 2, 0, zf + (gd - 1.0) / 2))
+            egg = egg.cut(groove)
+            margin = []
+            for side in (-1, 1):                                          # the margin teeth, pointing down
+                for k in range(gn):
+                    q0 = np.array([gx1 - 5.0 - (gl - 8.0) * k / max(gn - 1, 1), side * (gw / 2 + 0.7), zf + 0.4])
+                    margin.append(sk.polyline_limb([tuple(q0), tuple(q0 + np.array([0.7, 0.0, -1.9]))], [0.75, 0.15]))
+            hinge = np.array([gx1 - 1.0, 0.0, zf + 0.6])
+            pts = [(0, 0, 0), (-fl * 0.35, 0, 0.6), (-fl * 0.72, 0, 0.4), (-fl * 0.92, 0, -1.4), (-fl * 0.98, 0, -3.2)]
+            fang = sk.polyline_limb(pts, [fr / 2, fr * 0.42, fr * 0.3, fr * 0.16, fr * 0.05])
+            keel = []                                                     # the serrated keel along its inner (upper) edge
+            for k in range(fg["teeth"]):
+                xq = -fl * (0.14 + 0.09 * k)
+                zq = 0.6 * min(1.0, -xq / (fl * 0.35)) + fr * 0.42 * (1 - 0.6 * k / fg["teeth"]) - 0.3
+                keel.append(sk.polyline_limb([(xq, 0, zq - 0.4), (xq + 0.6, 0, zq + 1.1)], [0.55, 0.12]))
+            fang = sk.union_all([fang, *keel]).rotate((0, 0, 0), (0, 1, 0), -a).translate(tuple(hinge))
+            joint = knuckle(tuple(hinge), (0, 1, 0), fr * 0.7, gw + 2.0)
 
-    def jaw(self, s, side, open_deg):
-        """One jaw in place ({"jaw", "blade"}): a curved, fang-tipped plate with its pivot boss and an outward tail,
-        a hardened blade insert along the straight cutting edge (``edge_y`` inside the pivot, ``cut_zone``). ``side``
-        +1 = the left jaw (above the pivot plane), −1 = the right (below, mirrored); turned ``open_deg`` outward."""
-        c = s["cutter"]
-        e, (a0, a1) = c["edge_y"], c["cut_zone"]
-        tx, ty = c["tail"]
-        outline = list(self.JAW_OUTER) + list(self.JAW_HOOK) + [(a1, -e), (0.0, -e), (-6.0, -6.0)]
-        z0 = 0.0 if side > 0 else -c["jaw_t"]
-        plate = cq.Workplane("XY").polyline(outline).close().extrude(c["jaw_t"])
-        boss = cq.Workplane("XY").circle(6.0).extrude(c["jaw_t"])
-        L = math.hypot(tx, ty)
-        arm = (cq.Workplane("XY").center(tx / 2, ty / 2).rect(L, 6.0).extrude(c["jaw_t"])
-               .rotate((tx / 2, ty / 2, 0), (tx / 2, ty / 2, 1), math.degrees(math.atan2(ty, tx))))
-        tip = cq.Workplane("XY").center(tx, ty).circle(2.5).extrude(c["jaw_t"])
-        jaw = sk.union_all([plate, boss, arm, tip])
-        blade = (cq.Workplane("XY").polyline([(a0, -e), (a1, -e), (a1 + 2.0, -e + 3.0), (a0, -e + 3.0)]).close()
-                 .extrude(c["jaw_t"]))
-        px, py, pz = c["pivot"]
-        out = {}
-        for k, w in (("jaw", jaw), ("blade", blade)):
-            w = w.translate((0, 0, z0))
-            if side < 0:
-                w = w.mirror("XZ")
-            out[k] = w.rotate((0, 0, 0), (0, 0, 1), side * open_deg).translate((px, side * py, pz))
+            def place(w):
+                return w.rotate((0, 0, 0), (0, 1, 0), c["tilt_deg"]).translate((x0, sy * y0, z0))
+            out["base"].append(place(egg))
+            out["margin"] += [place(m) for m in margin]
+            out["fang"].append(place(fang))
+            out["joint"].append(place(joint))
         return out
 
-    def chelicerae(self, s, open_deg):
-        """{name: [solids]}: the housing (two lobes over one hollow, open-fronted box), the pivot pins and their
-        tongues, the two jaws and blades, and the drive (the crossbar yoke, two links, the leadscrew, its motor)."""
-        c = s["cutter"]
-        x0, x1, z0, z1 = c["housing_at"]
-        px, py, pz = c["pivot"]
-        zm = (z0 + z1) / 2
-        lobes = [sk.rounded_box(x1 - x0, 23.0, z1 - z0, ((x0 + x1) / 2, sy * 15.5, zm), fillet=8.0) for sy in (-1, 1)]
-        bridge = cq.Workplane("XY").box(x1 - x0, 12.0, z1 - z0 - 6.0).translate(((x0 + x1) / 2, 0, zm - 3.0))
-        cavity = cq.Workplane("XY").box(x1 - x0 + 4.0, 50.0, z1 - z0 - 4.0).translate(((x0 + x1) / 2 + 3.0, 0, zm))
-        hole = sk.rod((x0 - 1, 0, pz), (x0 + 4, 0, pz), 2.6)
-        housing = sk.union_all(lobes + [bridge]).cut(cavity).cut(hole)
-        t = c["jaw_t"]
-        pins, tongues = [], []
+    # the pedipalps: two short feelers either side of the chelicerae -----------------------------------------------------
+    def pedipalps(self, s, pose=None):
+        """{name: [solids]} of the two pedipalps: ``boss`` (on the carapace's front), ``joints`` (yaw, lift and knee
+        knuckles), ``tubes`` (coxa, femur, tibia, tarsus), ``tarsus`` (two small claws and a force-sensing pad), each
+        in the pose (femur rise, tibia drop, tarsus drop [deg]) — default the spec's: held forward, ready."""
+        p = s["pedipalps"]
+        a1, a2, a3 = (math.radians(v) for v in (pose or p["pose_deg"]))
+        rf, rt, rs = p["tube"]
+        out = {"boss": [], "joints": [], "tubes": [], "tarsus": []}
         for sy in (-1, 1):
-            pins.append(sk.rod((px, sy * py, z0), (px, sy * py, pz + t + 3.0), 2.5))
-            yy = (sy * (py - 6.0), sy * 25.0)
-            for zz in (z0 + 1.0, pz + t + 2.0):                           # the lower plate (the floor's) and the tongue
-                xa = x0 + 20.0 if zz > pz else x1
-                tongues.append(cq.Workplane("XY").box(px + 6.0 - xa, abs(yy[1] - yy[0]), 2.0)
-                               .translate(((px + 6.0 + xa) / 2, (yy[0] + yy[1]) / 2, zz)))
-        jl, jr = self.jaw(s, 1, open_deg), self.jaw(s, -1, open_deg)
-        lk = ss.cutter_linkage(s, open_deg)
-        yx, (tx, ty) = lk["yoke_x"], lk["tail"]
-        yoke = cq.Workplane("XY").box(6.0, 2 * (c["yoke_y"] + 2.0), 2 * t + 1.0).translate((yx, 0, pz))
-        links = [sk.rod((yx, sy * c["yoke_y"], pz + sy * t / 2), (tx, sy * ty, pz + sy * t / 2), 2.0) for sy in (-1, 1)]
-        mx, mz = c["motor_at"]
-        motor = motor_box((mx, 0, mz), 1, *s["motor"])
-        screw = sk.rod((mx + s["motor"][2] / 2, 0, pz), (yx + 4.0, 0, pz), 2.0)
-        return {"housing": [housing], "pins": pins + tongues, "jaws": [jl["jaw"], jr["jaw"]],
-                "blades": [jl["blade"], jr["blade"]], "drive": [yoke] + links, "motor": [motor, screw]}
+            hx, hy, hz = p["at"]
+            psi = math.radians(p["splay_deg"])
+            u = np.array([math.cos(psi), sy * math.sin(psi), 0.0])
+            P0 = np.array([hx, sy * hy, hz])
+            lift = P0 + u * p["coxa"]
+            knee = lift + u * p["femur"] * math.cos(a1) + np.array([0, 0, p["femur"] * math.sin(a1)])
+            ank = knee + u * p["tibia"] * math.cos(a2) - np.array([0, 0, p["tibia"] * math.sin(a2)])
+            tip = ank + u * p["tarsus"] * math.cos(a3) - np.array([0, 0, p["tarsus"] * math.sin(a3)])
+            ax = np.array([-u[1], u[0], 0.0])                              # the lift and knee axes (across the palp)
+            rim = self.x_pro_rim(s, sy * hy)
+            out["boss"].append(sk.rod((rim - 2.0, sy * hy, hz), tuple(P0), rf * 1.2))
+            out["joints"] += [knuckle(tuple(P0), (0, 0, 1), rf * 1.7, rf * 3.2), knuckle(tuple(lift), tuple(ax), rf * 1.6, rf * 3.0),
+                              knuckle(tuple(knee), tuple(ax), rf * 1.5, rf * 2.8), knuckle(tuple(ank), tuple(ax), rt * 1.4, rt * 2.6)]
+            out["tubes"] += [tube(tuple(P0), tuple(lift), rf * 1.2), tube(tuple(lift), tuple(knee), rf, rf * 0.35),
+                             tube(tuple(knee), tuple(ank), rt, rt * 0.35), tube(tuple(ank), tuple(tip), rs)]
+            # the tarsus' pincer: a fixed finger carrying on from the tarsus, a moving finger hinged above it, both
+            # toothed on their inner faces; a self-locking micro worm in the tarsus closes it
+            d3 = (tip - ank) / np.linalg.norm(tip - ank)
+            nup = np.cross(ax, d3)
+            nup = nup / np.linalg.norm(nup)
+            pf = p["pincer"]
+            fl_ = pf["finger"]
+            a_open = math.radians(pf["open_deg"] if pose is None or len(pose) < 4 else pose[3])
+            fixed = sk.polyline_limb([tuple(tip), tuple(tip + d3 * fl_ * 0.6), tuple(tip + d3 * fl_ + nup * 1.6)],
+                                     [rs * 0.85, rs * 0.6, rs * 0.3])
+            hinge = tip + nup * rs * 1.2
+            dm = d3 * math.cos(a_open) + nup * math.sin(a_open)
+            nm = -d3 * math.sin(a_open) + nup * math.cos(a_open)
+            moving = sk.polyline_limb([tuple(hinge), tuple(hinge + dm * fl_ * 0.6), tuple(hinge + dm * fl_ - nm * 1.8)],
+                                      [rs * 0.75, rs * 0.55, rs * 0.28])
+            teeth = []
+            for k in range(3):
+                q = tip + d3 * fl_ * (0.3 + 0.2 * k) + nup * rs * 0.5
+                teeth.append(sk.polyline_limb([tuple(q - nup * 0.4), tuple(q + nup * 1.0)], [0.6, 0.15]))
+                q = hinge + dm * fl_ * (0.3 + 0.2 * k) - nm * rs * 0.45
+                teeth.append(sk.polyline_limb([tuple(q + nm * 0.4), tuple(q - nm * 1.0)], [0.6, 0.15]))
+            hpin = knuckle(tuple(hinge), tuple(ax), 1.6, rs * 2.4)
+            out["tarsus"] += [fixed, moving, hpin, *teeth]
+        return out
 
-    def internals(self, s):
-        return super().internals(s) + self.chelicerae(s, self._jaw)["motor"]
+    def x_pro_rim(self, s, y):
+        """The carapace's front edge [mm] at a given y (its plan ellipse)."""
+        L, W, _ = s["prosoma"]
+        return L / 2 * math.sqrt(max(0.0, 1 - (y / (W / 2)) ** 2))
 
-    # the dragline pod: TARANTULA's spool and harpoon at the spinnerets (§12) ----------------------------------------
+    # the dragline pod: TARANTULA's spool and anchor hook at the spinnerets (§12) -------------------------------------
     def pod_frame(self, s):
-        """(spool centre, launcher axis d, the tube's rear end T0) in the robot frame [mm]."""
+        """(spool centre, the hook's axis d — out of the abdomen's tip, ``elevation_deg`` up — and the cradle's centre,
+        where the hook's collar sits) in the robot frame [mm]."""
         w = s["winch"]
         S_ = np.array([self.x_opi(s) + w["at"][0], 0.0, self.z_opi(s) + w["at"][1]])
         e = math.radians(w["elevation_deg"])
         d = np.array([-math.cos(e), 0.0, math.sin(e)])
-        T0 = S_ + np.array([-4.0, 0.0, w["flange"] + 3.0])
-        return S_, d, T0
+        C = S_ + np.array([-w["flange"] - 13.0, 0.0, 4.0])
+        return S_, d, C
 
     def harpoon(self, s):
-        """The harpoon in its own frame: the line's eye at the origin, the shaft along +x, a hardened tip and two
-        toggle barbs folded along it (they open under load and lock behind the fibres)."""
-        r, L, tip = (v / 2 if i == 0 else v for i, v in enumerate(s["winch"]["harpoon"]))
-        shaft = sk.rod((0, 0, 0), (L, 0, 0), r)
-        cone = cq.Workplane("XY").add(cq.Solid.makeCone(r, 0.0, tip, _v((L, 0, 0)), _v((1, 0, 0))))
-        barbs = [sk.polyline_limb([(L - 2, 0, sz * r * 0.6), (L - 14, 0, sz * (r + 2.2))], [0.7, 0.45]) for sz in (-1, 1)]
-        eye = cq.Workplane("XY").add(cq.Solid.makeTorus(3.0, 0.9, _v((-2.2, 0, 0)), _v((0, 1, 0))))
-        collar = sk.rod((L * 0.45, 0, 0), (L * 0.55, 0, 0), r + 0.8)
-        return {"shaft": sk.union_all([shaft, cone, collar]), "barbs": barbs, "eye": eye}
+        """The anchor hook in its own frame, the collar's centre at the origin, the shank along +x: forward, a curved,
+        toothed pick with a barb (it bites when the line pulls back); back, a swivel eye and the snap shackle the line
+        clips to — unclip it and lift the hook out of its cradle to swap it (a pick for wood, bark or mortar joints;
+        a grapnel for edges, branches and rungs)."""
+        h = s["winch"]["hook"]
+        r = h["shank"] / 2
+        shank = sk.rod((-h["back"], 0, 0), (h["front"], 0, 0), r)
+        collar = sk.rod((-h["collar"][1] / 2, 0, 0), (h["collar"][1] / 2, 0, 0), h["collar"][0] / 2)
+        f, pk = h["front"], h["pick"]
+        pick = sk.polyline_limb([(f, 0, 0), (f + pk * 0.45, 0, pk * 0.08), (f + pk * 0.8, 0, pk * 0.3),
+                                 (f + pk, 0, pk * 0.62)], [r, r * 0.8, r * 0.55, r * 0.25])
+        barbs = [sk.polyline_limb([(f + pk * 0.5, 0, pk * 0.12), (f + pk * 0.3, 0, -pk * 0.22)], [r * 0.5, r * 0.2]),
+                 sk.polyline_limb([(f + pk * 0.15, 0, 0), (f - pk * 0.05, 0, -pk * 0.25)], [r * 0.5, r * 0.2])]
+        eye = cq.Workplane("XY").add(cq.Solid.makeTorus(3.5, 1.0, _v((-h["back"] - 3.0, 0, 0)), _v((0, 1, 0))))
+        shackle = cq.Workplane("XY").add(cq.Solid.makeTorus(4.0, 0.9, _v((-h["back"] - 9.5, 0, 0)), _v((0, 0, 1))))
+        return {"shaft": sk.union_all([shank, collar, pick]), "barbs": barbs, "eye": eye, "shackle": shackle}
+
+    def hook_eye(self, s):
+        """The line's attachment (the shackle's far side) in the hook's frame [mm]."""
+        return np.array([-s["winch"]["hook"]["back"] - 13.5, 0.0, 0.0])
 
     def harpoon_pose(self, s):
-        """(position of its eye, direction) of the harpoon seated in the launcher, tip out of the muzzle."""
-        _, d, T0 = self.pod_frame(s)
-        return T0 + 10.0 * d, d
+        """(the collar's centre, the hook's direction) with the hook docked in its cradle."""
+        _, d, C = self.pod_frame(s)
+        return C, d
 
     def place_harpoon(self, s, solid, at=None, d=None):
         p, dd = self.harpoon_pose(s) if at is None else (np.asarray(at), np.asarray(d))
         ang = math.degrees(math.atan2(-dd[2], dd[0]))                         # about y: x → d (in the x–z plane)
         return solid.rotate((0, 0, 0), (0, 1, 0), ang).translate(tuple(p))
 
+    def _hook_parts(self, s):
+        hp = self.harpoon(s)
+        return [hp["shaft"], *hp["barbs"], hp["eye"], hp["shackle"]]
+
     def dragline_pod(self, s):
         """{name: [solids]}: the spool (drum, flanges, the line wound on it), the gearmotor under it, the band brake
-        and its servo, the bracket, the launcher tube, the fairlead and the line from the spool into the tube."""
+        and its servo, the bracket, the open cradle (two prongs notched for the hook's collar, the latch bar over it
+        and its servo — the hook's two ends stay outside), the fairlead and the line from the spool to the hook."""
         w = s["winch"]
-        S_, d, T0 = self.pod_frame(s)
+        S_, d, C = self.pod_frame(s)
         y0 = w["width"] / 2
         Sx, Sz = S_[0], S_[2]
         drum = knuckle(tuple(S_), (0, 1, 0), w["drum"], w["width"])
@@ -620,41 +671,53 @@ class Tarantula(_Spider):
                 .cut(knuckle((Sx, y0 + 0.75, Sz), (0, 1, 0), w["flange"] + 0.2, 3.0)))
         servo = sk.rounded_box(12.0, 6.0, 10.0, (Sx - 8.0, y0 + 7.0, Sz - 10.0), fillet=1.0)
         bracket = [cq.Workplane("XY").box(44.0, 2.0, 34.0).translate((Sx + 2.0, sy * (y0 + 3.5), Sz - 8.0)) for sy in (-1, 1)]
-        ro, ri, L = w["tube"]
-        tube_ = tube(tuple(T0), tuple(T0 + L * d), ro / 2, (ro - ri) / 2)
-        clamp = sk.rod(tuple(T0 + 6 * d), tuple(T0 + 14 * d), ro / 2 + 1.5)
-        post = sk.rod(tuple(T0 + 10 * d), (T0[0] + 10 * d[0], 0.0, Sz + 4.0), 2.5)
-        fairlead = cq.Workplane("XY").add(cq.Solid.makeTorus(3.0, 0.8, _v(tuple(T0)), _v(tuple(d))))
-        line_in = line([(Sx, 0.0, Sz + w["flange"] - 3.0), tuple(T0)], 0.5)
+        L_, W_, H_ = w["cradle"]
+        ang = math.degrees(math.atan2(-d[2], d[0]))
+        cr = []
+        for sy in (-1, 1):                                                    # the two prongs, notched for the collar
+            prong = cq.Workplane("XY").box(L_, 2.0, H_).translate((0, sy * (W_ / 2 + 1.0), -H_ / 2 + 2.0))
+            notch = cq.Workplane("XZ").circle(w["hook"]["collar"][0] / 2 + 0.4).extrude(12.0, both=True)
+            cr.append(prong.cut(notch))
+        base = cq.Workplane("XY").box(L_, W_ + 4.0, 2.0).translate((0, 0, -H_ + 2.0))
+        zl = w["hook"]["collar"][0] / 2 + 1.9                                 # the latch bar, just over the collar
+        latch = sk.rod((0, -W_ / 2 - 2.5, zl), (0, W_ / 2 + 2.5, zl), 1.2)
+        lservo = sk.rounded_box(10.0, 5.0, 8.0, (0, -W_ / 2 - 6.0, -H_ / 2 + 2.0), fillet=1.0)
+        arm = cq.Workplane("XY").box(4.0, W_ + 4.0, 4.0).translate((L_ / 2 + 2.0, 0, -H_ + 2.0))
+        cradle = [c.rotate((0, 0, 0), (0, 1, 0), ang).translate(tuple(C)) for c in (*cr, base, latch, lservo)]
+        link = sk.rod(tuple(C + (L_ / 2) * (-d) + np.array([0, 0, -H_ + 2.0])), (Sx - w["flange"] + 2.0, 0.0, Sz - 4.0), 2.0)
+        arm_ = arm.rotate((0, 0, 0), (0, 1, 0), ang).translate(tuple(C))
+        eye = C - d * (w["hook"]["back"] + 13.5)
+        fair = np.array([Sx - w["flange"] - 2.0, 0.0, Sz + w["flange"] - 6.0])
+        fairlead = cq.Workplane("XY").add(cq.Solid.makeTorus(2.5, 0.8, _v(tuple(fair)), _v((1, 0, 0))))
+        line_in = line([(Sx, 0.0, Sz + w["flange"] - 3.0), tuple(fair), tuple(eye)], 0.5)
         return {"spool": [drum, *flanges], "line": [wound, line_in], "motor": [motor], "brake": [band, servo],
-                "bracket": bracket + [post, clamp], "launcher": [tube_, fairlead]}
+                "bracket": bracket + [link, arm_], "cradle": cradle + [fairlead]}
 
     def extras(self, s, cut):
         pod = [v for vs in self.dragline_pod(s).values() for v in vs]
-        hp = self.harpoon(s)
-        harpoon = [self.place_harpoon(s, v) for v in [hp["shaft"], *hp["barbs"], hp["eye"]]]
-        ch = self.chelicerae(s, self._jaw)
-        jaws = ch["housing"] + ch["pins"] + ch["jaws"] + ch["blades"] + ch["drive"]
-        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s) + jaws + pod + harpoon
+        hook = [self.place_harpoon(s, v) for v in self._hook_parts(s)]
+        ch = [v for vs in self.chelicerae(s, self._fang).values() for v in vs]
+        palps = [v for vs in self.pedipalps(s).values() for v in vs]
+        return ([] if cut else self.plates(s) + self.tergites(s)) + self.turret(s) + self.deck(s) + ch + palps + pod + hook
 
-    _jaw = 20.0
-    parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot", "jaws",
-                                                     "winch"),
+    _fang = None
+    parameters = [Parameter("part", "robot", choices=("robot", "cutaway", "body", "internals", "leg", "foot",
+                                                     "chelicerae", "pedipalps", "winch"),
                             description="what to build"),
-                  Parameter("jaw", 20.0, units="deg", min=0.0, max=30.0, description="the jaws' opening, each side"),
-                  Parameter("comb", "full", choices=("full", "envelope"),
+                  Parameter("fang", 30.0, units="deg", min=0.0, max=100.0, description="the chelicerae's fang opening"),
+                  Parameter("comb", "envelope", choices=("full", "envelope"),
                             description="the feet's spine combs: every spine, or each row's envelope (a light assembly)")]
 
     def build(self, p):
-        self._jaw = float(p.get("jaw", 20.0))
-        self._detail = p.get("comb", "full") == "full"
+        self._fang = float(p.get("fang", 30.0))
+        self._detail = p.get("comb", "envelope") == "full"
         if p["part"] == "winch":
-            hp = self.harpoon(self.spec)
             return _compound([v for vs in self.dragline_pod(self.spec).values() for v in vs] +
-                             [self.place_harpoon(self.spec, v) for v in [hp["shaft"], *hp["barbs"], hp["eye"]]])
-        if p["part"] == "jaws":
-            ch = self.chelicerae(self.spec, self._jaw)
-            return _compound([v for k in ("housing", "pins", "jaws", "blades", "drive", "motor") for v in ch[k]])
+                             [self.place_harpoon(self.spec, v) for v in self._hook_parts(self.spec)])
+        if p["part"] == "pedipalps":
+            return _compound([v for vs in self.pedipalps(self.spec).values() for v in vs])
+        if p["part"] == "chelicerae":
+            return _compound([v for vs in self.chelicerae(self.spec, self._fang).values() for v in vs])
         return super().build(p)
 
 

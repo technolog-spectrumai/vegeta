@@ -8,7 +8,7 @@ re-run — `designs/arachne_*.py`, `designs/spider_actuation.py`, `sims/` — or
 |---|---|---|
 | **ARACHNE** (v1) | palm-sized wall climber: glass, acrylic, varnished wood; bark kit | designed: budget, CAD (STEP/STL), robot model, statics, gaits, MuJoCo climbing sim |
 | **ARACHNE-2** | the same job, spider-like legs | **decided** (§3); CAD (§9) |
-| **TARANTULA** | a bigger walker and climber, 1.5 kg with 0.3 kg payload | actuation analysed (§5): fluid joints not needed unless tendons must run in sleeves (§5.1); CAD (§9) with cutting jaws (§9.1) |
+| **TARANTULA** | a bigger walker and climber, 1.5 kg with a 0.16 kg payload | actuation analysed (§5): fluid joints not needed unless tendons must run in sleeves (§5.1); CAD (§9): chelicerae and pedipalps (§9.1), spine-comb feet (§10), dragline (§12); `exports/tarantula.yx2` |
 | **SALTY** | a jumping spider, hydraulic | catapult sized and simulated (§6); CAD (§9) |
 
 Run the simulations on your machine: `./spider.sh run all -j 8` (§8).
@@ -383,7 +383,7 @@ board and SALTY's hydraulics lie inside the shells, and no leg or hip boss touch
 | abdomen | 56 × 44 × 16, low (the centre of mass near the wall) | 150 × 125 × 75, four tergite plates, payload deck | 56 × 46 × 32 |
 | hip height / knee height / reach from hip | 18 / 44 / 87 mm | 63 / 130 / 253 mm | 23 / 38 / 53 mm (legs III: 23 / 54 / 56) |
 | motor bank | 24 × Ø6 × 20 mm gearmotors, 2 rows × 2 layers × 6 | 24 × 12 × 10 × 26 mm micro metal gearmotors, 2 × 2 × 6 | 20 × Ø6 × 20 mm, 2 × 2 × 5, behind the eyes |
-| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret, cutting jaws (§9.1), spine-comb feet (§10) | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
+| also | 1S 40 × 20 × 6 battery, two time-of-flight sensors, tether eye | 110 × 45 × 32 battery, camera + lidar turret, chelicerae + pedipalps (§9.1), spine-comb feet (§10), dragline pod (§12) | legs III 1.45× long, latched in a crouch, Ø10 extensor cylinders; accumulator Ø14 × 34, pump, battery; four camera eyes (two Ø15 principal, two Ø7 looking out at 40°) + two on top; dragline reel |
 
 ![ARACHNE-2](spiders/arachne2_views.png)
 ![ARACHNE-2 inside](spiders/arachne2_cutaway.png)
@@ -404,40 +404,40 @@ Files: `exports/<robot>_cad/` — `<robot>.step` (the whole robot, one solid per
 * The tendon routing inside the body is drawn as one sleeve per leg (§5.1: on TARANTULA, route over pulleys or go hydrostatic); the pulleys at the motor outputs, the encoders and
   the wiring are not drawn. The pads are drawn flat; the foam and fibre layers are not modelled.
 
-### 9.1 TARANTULA's jaws (`Tarantula.chelicerae`, sized by `spider_actuation.cutter`)
+### 9.1 TARANTULA's chelicerae and pedipalps (`Tarantula.chelicerae`, `Tarantula.pedipalps`, `spider_actuation.tarantula_chelicerae`)
 
-![TARANTULA's jaws](spiders/tarantula_jaws.png)
+![TARANTULA's front](spiders/tarantula_front.png)
 
-The chelicerae are two **bypass-shear jaws** with curved fang tips, under the turret. Each jaw is an aluminium plate
-with a hardened steel blade insert along its straight cutting edge. The left jaw works above the pivot plane and the
-right jaw below it; their edges cross the midline and slide past each other like pruning shears. They pivot on
-vertical pins in front of a hollow, open-fronted housing. Inside the housing:
+Like a real tarantula, TARANTULA has both:
 
-* a 250:1 micro metal gearmotor turns an M4 × 0.7 leadscrew, which is self-locking, so it holds a grip with no power;
-* the leadscrew pushes a crossbar yoke forward;
-* two links push the jaws' outward tails, and the jaws close.
+* **two chelicerae**, side by side on the front of the carapace, each a cheliceral claw — pincer and fang in one. A
+  38 mm curved fang folds back into a groove under its segment. The groove's two margins carry rows of teeth and the
+  fang's inner keel is serrated, so the closing fang shears past the teeth: it holds, and it cuts hard. A 250:1 micro
+  gearmotor turns an M4 × 0.7 leadscrew that pulls the fang's tail;
+* **two pedipalps**, short three-joint arms (coxa, femur, tibia) either side of the chelicerae, in front of legs I,
+  driven from the body like the legs. Each ends in a small toothed pincer on a 6 mm gearmotor and worm. They pick the
+  work up (a nut, a twig, a cable) and hold it while the chelicerae cut.
 
-The jaws weigh ~54 g, which comes out of the 0.3 kg payload. Opened 30°, the gap at the throat is 9.8 mm and the
-fang tips grab larger things and pull them in.
+| | chelicera (each) | pedipalp pincer (each) |
+|---|---|---|
+| force at half stall | 683 N at the throat, 216 N mid-fang, 120 N at the tip | 19 N at the fingertip |
+| closing | 90° in ~20 s (slow, strong) | 3.5 s |
+| self-locking | yes: lead angle 3.6° < friction angle 6.8° (steel on bronze) | yes: 2.9° < 4.6° (lubricated worm) |
+| mass | 59 g the pair | 81 g the pair (six joints) |
 
-Screw force: 456 N at half stall. Stroke: 6.2 mm, about 9 s to close. Blade force by virtual work: F |dx/dθ| / 2a.
-At the throat (10 mm from the pivots) that is 200 N fully open, rising to 306 N as the edges cross. At the cut zone's
-far end (30 mm) it is a third of that, so **feed the work to the throat**: the curved tips draw it in as they close.
+What a chelicera cuts at its throat (shear strength × area, class values to measure):
 
-| to cut (assumed shear strength × area) | needs | at half stall | at stall |
+| material | needs | at half stall | at stall |
 |---|---:|:---:|:---:|
+| cable tie 4.8 × 1.3 mm (nylon 6/6) | 374 N | yes | yes |
 | polypropylene cord Ø3 mm | 177 N | yes | yes |
-| mild steel wire Ø1.0 mm | 220 N | yes | yes |
 | copper wire Ø1.5 mm | 265 N | yes | yes |
-| cable tie 4.8 × 1.3 mm (nylon) | 374 N | no (291 N) | yes |
-| green twig Ø5 mm | 393 N | no (258 N) | yes |
-| galvanised fence wire Ø2.5 mm | 1374 N | no | no: needs a bolt-cutter drive |
+| mild steel wire Ø1.0 mm | 220 N | yes | yes |
+| green twig Ø5 mm | 393 N | yes | yes |
+| galvanised fence wire Ø2.5 mm | 1374 N | no | no |
 
-The shear strengths are class values (marked assumed in `CUT_LOADS`): measure them on the real materials with the
-real blades. A current limit and a limit switch at the closed end protect the drive.
-
-Files: `exports/tarantula_cad/jaws.step` / `.stl` (20° open); `Tarantula().generate(part="jaws", jaw=…)` builds any
-opening from 0 to 30°.
+Self-locking means every grip holds with the power off. The payload drops to 162 g to pay for the front tools and the
+dragline pod (the robot stays at 1.5 kg). Exports: `exports/tarantula_cad/chelicerae.step`, `pedipalps.step`.
 
 ## 10. Does TARANTULA need adhesives? (`designs/tarantula_attachment.py`, `./spider.sh run tarantula-attach`)
 
@@ -598,19 +598,31 @@ They are checked kinematically: static margin 64–107 mm. The tip-over limit fa
 The gaits are open-loop keyframes, with no balance or terrain feedback. The results show what the mechanics and the
 drives allow before a controller is added.
 
-## 12. TARANTULA's dragline: a harpoon and a winch (`Tarantula.dragline_pod`, `spider_actuation.tarantula_winch`)
+## 12. TARANTULA's dragline: an anchor hook and a winch (`Tarantula.dragline_pod`, `spider_actuation.tarantula_winch`)
 
-A spider lays a dragline as it goes and hangs from it. TARANTULA gets one too: a **pod at the spinnerets** that fires a
-barbed harpoon into something above it, then lets the robot **lower itself** and **pull itself back up** on a line.
+A spider fixes its dragline by pressing its spinnerets to the surface, then hangs from it. TARANTULA does the same
+with a **pod at the spinnerets**: it plants an anchor hook with a body movement, lowers itself on the line, pulls
+itself back up, and takes the hook out again.
 
-![TARANTULA's dragline pod, in the MuJoCo video](spiders/tarantula_dragline.png)
+![TARANTULA's dragline pod](spiders/tarantula_pod.png)
 
 **The pod** (on the abdomen's tip, `spider_specs.TARANTULA['winch']`):
 * a spool of 10 m of 0.8 mm UHMWPE line (capacity 11.4 m), on a 1000:1 gearmotor through a clutch;
 * a band brake, servo-applied, on one flange: with the clutch out, it pays the line out under control;
-* a spring launcher, its tube pointing back and up at 25°, along the line's exit; a fairlead where the line enters;
-* the harpoon: a 5 mm shaft, a hardened tip, two toggle barbs that fold along it in flight and open under load, and
-  an eye for the line. Reeling the harpoon home re-compresses the spring.
+* an **open cradle**: two prongs notched for the hook's collar and a latch bar over it. It holds only the collar, so
+  both of the hook's ends stay outside: there is no tube for dirt to clog;
+* the **anchor hook**: a 5 mm shank, a curved toothed pick with a barb, and at the back a swivel eye with the snap
+  shackle the line clips to. Unclip it and lift it out to swap it: a pick for wood, bark or mortar joints, a grapnel
+  for edges, branches and rungs.
+
+**Planting and unhooking, by moving the body, never by firing.**
+1. **Plant:** TARANTULA backs up to the anchor, then sways its body back on its planted feet (55 mm). The pick bites
+   in; the latch opens; it sways forward, leaving the hook set.
+2. **Unhook:** it sways back onto the hook so the cradle closes on the collar, then sways forward, pulling the pick
+   out.
+
+The sway pushes with up to 58 N (the spines' grip on six feet), against an assumed 20–40 N to
+set a pick in softwood.
 
 | | |
 |---|---|
@@ -618,10 +630,8 @@ barbed harpoon into something above it, then lets the robot **lower itself** and
 | winch pull at stall, full / empty drum | 68 N / 108 N |
 | reel-in speed, carrying 60 % / all of the weight | 47 / 42 mm/s (22% of stall) |
 | brake heat at a 0.25 m/s descent | 3.7 W |
-| launcher spring | 960 N/m × 50 mm = 1.2 J; re-cocked by the winch at 48 N |
-| harpoon | 12 g at 11 m/s (0.72 J); 12 m at 45° without drag (the line limits it to 10 m) |
-| anchor in softwood, toggle barbs (assumed 80–150 N) | 5–10× the weight |
-| pod mass | 61.5 g (from the payload: 238.5 g left) |
+| anchor in softwood (assumed 80–150 N) | 5–10× the weight |
+| pod mass | 51.5 g |
 
 **Why it matters.**
 * The spines only grip along their direction, so head-down on a wall they can hardly hold. On the line, TARANTULA walks
@@ -642,14 +652,16 @@ cords are separate solids beside the leg.
 
 **The MuJoCo video** (`./tarantula.sh video`, `sims/tarantula_video.py`; MuJoCo's physics and its renderer, the CAD
 split onto the simulated links). The scenario:
-1. TARANTULA hangs head-down on a vertical brick wall, on its spine-comb feet.
-2. It fires the harpoon into a timber beam 0.74 m above. The flight lasts 0.05 s and is shown ×8 slower.
-3. The winch takes up the slack.
-4. It walks down the wall for three gait cycles, the brake paying out the line. The tension holds at ~64 % of the
-   weight (target 60 %).
-5. It stops, then walks back up tail first while the winch reels in, the line carrying ~45 %.
+1. TARANTULA hangs head-down on a vertical brick wall under a timber beam, on its spine-comb feet.
+2. It plants the hook in the beam's underside with a sway, opens the latch and sways forward.
+3. It walks down the wall head first while the brake pays out the line; the line carries ~64 % of its weight.
+4. It stops, then walks back up tail first while the winch reels in.
+5. It sways back onto the hook (the latch closes) and sways forward, pulling the pick out.
+
+The scene ends there. Head-down on brick with the line released, the simulation shows the feet peeling off one by one
+within a second. That agrees with the statics: the spines grip only one way, and head-down only the line holds the
+robot.
 
 The line is a rope: a tendon that pulls only when taut (6 kN/m, 100 N cap). The winch and brake are a tension
 controller limited by the winch's reel-in speed (46 mm/s) and the brake's pay-out speed (0.25 m/s). Needs cadquery
 for the meshes (cached), Pillow and ffmpeg; on headless Linux it uses `MUJOCO_GL=osmesa`.
-

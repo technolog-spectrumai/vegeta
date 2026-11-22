@@ -33,7 +33,7 @@ __all__ = ["LEGS", "MASS_G", "PAYLOAD_G", "STAND_Z", "drive", "leg_frame", "mass
 mm = 1e-3
 S = ss.TARANTULA
 LEGS = [f"{s}{i}" for s in "LR" for i in (1, 2, 3, 4)]
-PAYLOAD_G = 238.5                                                        # 0.3 kg less the dragline pod
+PAYLOAD_G = 162.1                                                        # 0.3 kg less the dragline pod, chelicerae, pedipalps
 #: the body centre's height standing (the CAD pose) [m]
 STAND_Z = ss.body_z(S) * mm
 #: the mass budget [g] (assumed class estimates; the motors from §5's pick)
@@ -44,8 +44,9 @@ MASS_G = {
     "carapace, abdomen shells, armour plates": 210.0,
     "frame, tendon pulleys and sleeves": 70.0,
     "sensor turret (camera + lidar)": 80.0,
-    "cutting jaws": 54.0,
-    "dragline pod (spool, winch, brake, launcher, harpoon)": 61.5,
+    "chelicerae (2 cheliceral claws: leadscrews, fangs)": 59.0,
+    "pedipalps (6 joints, 2 tarsal pincers)": 81.4,
+    "dragline pod (spool, winch, brake, cradle, anchor hook)": 51.5,
     "8 legs (tubes, knuckles, springs, tendons, feet)": 8 * 26.0,
     "spare (fasteners, cables)": 41.4,
 }
@@ -126,8 +127,10 @@ def tarantula(payload_g=PAYLOAD_G, *, kp=50.0, kd=0.5, derate=1.0, foot_mu=0.8, 
               PointMass("board", MASS_G["board, IMU, motor drivers, wiring"] * 1e-3, (0.0, 0.0, 0.014)),
               PointMass("frame", MASS_G["frame, tendon pulleys and sleeves"] * 1e-3, (0.0, 0.0, 0.0)),
               PointMass("turret", MASS_G["sensor turret (camera + lidar)"] * 1e-3, (0.046, 0.0, H / 2 + 0.02)),
-              PointMass("jaws", MASS_G["cutting jaws"] * 1e-3, (0.095, 0.0, -0.015)),
-              PointMass("dragline pod", MASS_G["dragline pod (spool, winch, brake, launcher, harpoon)"] * 1e-3,
+              PointMass("chelicerae", MASS_G["chelicerae (2 cheliceral claws: leadscrews, fangs)"] * 1e-3,
+                        (0.097, 0.0, -0.006)),
+              PointMass("pedipalps", MASS_G["pedipalps (6 joints, 2 tarsal pincers)"] * 1e-3, (0.120, 0.0, -0.010)),
+              PointMass("dragline pod", MASS_G["dragline pod (spool, winch, brake, cradle, anchor hook)"] * 1e-3,
                         (xo - 0.058, 0.0, zo + 0.028)),
               PointMass("spare", MASS_G["spare (fasteners, cables)"] * 1e-3, (-0.05, 0.0, 0.0))]
     if payload_g:

@@ -62,3 +62,7 @@ machines.register("fantasy_ork", "fantasy_humanoid_robots:ork", parts=_motions("
 
 # ARACHNE: the palm-sized eight-legged wall climber (docs/spiders.md), with its wall gaits
 machines.register("arachne", "arachne_robot:arachne", parts=_motions("arachne_gaits:parts"), visual="arachne:Arachne")
+
+# TARANTULA: the 1.5 kg walker and climber (docs/spiders.md §5, §9–§12), with its gaits
+machines.register("tarantula", "tarantula_robot:tarantula", parts=_motions("tarantula_gaits:parts"),
+                  visual="spiders:Tarantula")

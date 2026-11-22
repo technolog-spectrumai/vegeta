@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 
-__all__ = ["ARACHNE2", "SALTY", "SPIDERS", "TARANTULA", "body_z", "cutter_gap", "cutter_linkage", "hip_points",
+__all__ = ["ARACHNE2", "SALTY", "SPIDERS", "TARANTULA", "body_z", "hip_points",
            "leg_chain", "rim_y"]
 
 #: ARACHNE-2 — the palm-sized wall climber, spider-like legs (docs/spiders.md §3)
@@ -42,24 +42,38 @@ TARANTULA = {
     #: the rows ``dx`` apart from ``x0`` (from the foot's centre), tilted ``tilt_deg`` so the tips trail to the heel
     #: (they hook when the foot is drawn towards the body: the climbing stroke, and the drag that sets them)
     "spine_comb": {"rows": 5, "per_row": 32, "pitch": 0.9, "tilt_deg": 30.0, "x0": 6.0, "dx": 2.5, "reach": 0.3},
-    #: the dragline pod at the spinnerets (§12): a spool of UHMWPE line (``drum`` core radius, ``flange`` radius,
-    #: ``width`` [mm]) driven by a gearmotor through a clutch, a band brake for controlled descent, and a spring
-    #: launcher firing a barbed harpoon backwards and up (``elevation_deg``) along the line's exit; the pod's centre
-    #: ``at`` (dx, dz) from the abdomen's centre
     "cords": "routed",                                                    # tendons over the knuckles (spiders.tendon_routes)
+    #: the chelicerae: a pair side by side on the carapace's front (docs §9.1), each pincer and fang in one, like a
+    #: tarantula's cheliceral claw: a long curved fang that folds back into a groove under its basal segment, the
+    #: groove's two margins toothed, the fang's inner keel serrated — closing, it shears past the margin teeth: it holds
+    #: and it cuts hard. A self-locking leadscrew in each segment pulls the fang's tail. ``base`` (length, width,
+    #: height) at ``at`` (x, ±y, z) [mm], leaning ``tilt_deg`` forward-down, its underside flat at ``flat``·height below
+    #: its axis; ``groove`` (length, width, depth, teeth per margin); ``fang`` (length, root Ø, keel teeth).
+    "chelicerae": {"base": (46.0, 18.0, 24.0), "at": (97.0, 11.0, 57.0), "tilt_deg": 20.0, "flat": 0.28,
+                   "groove": (34.0, 7.0, 4.5, 6),
+                   "fang": {"length": 38.0, "root": 6.0, "teeth": 8, "range_deg": (0.0, 100.0), "open_deg": 30.0,
+                            "lead_mm": 0.7, "screw_d": 4.0, "tail": 9.0}},
+    #: the pedipalps: two short leg-like arms either side of the chelicerae, in front of legs I — coxa (yaw), femur
+    #: (lift), tibia (knee) on three 250:1 micro gearmotors in the body (tendons, like the legs), and at the tarsus a
+    #: small toothed pincer on a self-locking micro worm: they pick things up (a nut, a twig, a cable) and hold them
+    #: for the chelicerae to cut. Hip at ``at`` (x, ±y, z) [mm], pointing ``splay_deg`` out from straight ahead;
+    #: segment lengths; pose angles (femur rise, tibia drop, tarsus drop); tube radii; ``pincer`` (finger length,
+    #: opening, worm ratio).
+    "pedipalps": {"at": (84.0, 30.0, 50.0), "splay_deg": 25.0, "coxa": 10.0, "femur": 50.0, "tibia": 48.0,
+                  "tarsus": 30.0, "pose_deg": (30.0, 25.0, 60.0), "tube": (5.0, 4.5, 4.0),
+                  "pincer": {"finger": 15.0, "open_deg": 30.0, "worm": 20.0}},
+    #: the dragline pod at the spinnerets (§12): a spool of UHMWPE line (``drum`` core radius, ``flange`` radius,
+    #: ``width`` [mm]) driven by a gearmotor through a clutch, a band brake for controlled descent, and an open cradle
+    #: holding the anchor hook by its collar only (both its ends outside: nothing to clog), a latch closing over the
+    #: collar. The hook is planted and pulled out by the robot's own body sway, never fired; it clips to the line with
+    #: a snap shackle, so it swaps in seconds. ``hook``: shank Ø, the shank from the collar back to the eye and forward
+    #: to the pick, the pick's length, the collar's Ø and length [mm]; ``at`` (dx, dz) from the abdomen's centre;
+    #: ``elevation_deg``: the hook's tilt above the body's −x axis
     "winch": {"drum": 10.0, "flange": 17.0, "width": 18.0, "at": (-58.0, 28.0), "line_mm": 0.8, "line_m": 10.0,
-              "tube": (12.0, 8.0, 80.0), "elevation_deg": 25.0, "harpoon": (5.0, 70.0, 14.0), "spring_mm": 50.0},
+              "cradle": (18.0, 6.0, 12.0), "elevation_deg": 8.0,
+              "hook": {"shank": 5.0, "back": 28.0, "front": 34.0, "pick": 22.0, "collar": (9.0, 6.0)}},
     "battery": (110.0, 45.0, 32.0), "board": (110.0, 80.0), "bank": (6, 2, 2),
     "turret": (46.0, 34.0), "shell_plates": 5,
-    #: the chelicerae: two bypass-shear jaws under the turret (the left jaw above the pivot plane, the right below; their
-    #: straight cutting edges, ``edge_y`` inside the pivot, cross the midline and slide past each other), each on a
-    #: vertical pin in front of a hollow, open-fronted cheliceral housing; a leadscrew pushes a crossbar yoke forward
-    #: and two links (from the yoke's ends at ±``yoke_y``) push the jaws' outward tails forward — the jaws close
-    #: (``spider_actuation.cutter`` sizes it). Jaw coordinates: the left jaw's, from its pivot, x forward, y to the left;
-    #: the right jaw mirrors it.
-    "cutter": {"pivot": (101.0, 9.0, 44.0), "jaw_t": 7.0, "edge_y": 10.5, "tail": (-4.0, 13.0), "link": 16.0,
-               "yoke_y": 19.0, "open_deg": 30.0, "cut_zone": (6.0, 30.0), "housing_at": (70.0, 96.0, 34.0, 66.0),
-               "motor_at": (55.0, 44.0), "lead_mm": 0.7},
 }
 
 #: SALTY — the jumping spider: legs III jump (hydraulic extensor cylinders, a gas accumulator, a latch), legs I, II, IV
@@ -106,25 +120,6 @@ def hip_points(spec, leg):
     i = int(leg[1]) - 1
     hx = spec["hip_x"][i]
     return (hx, sy * (rim_y(spec, hx) + 1.3 * spec["tube"][0])), spec["splay_deg"][i], sy
-
-
-def cutter_linkage(spec, open_deg):
-    """TARANTULA's jaw linkage at an opening ``open_deg`` (each jaw turned that far outward from closed): the left
-    jaw's tail point (x, y) and the yoke's x (the links' back ends; the right jaw mirrors)."""
-    c = spec["cutter"]
-    px, py, _ = c["pivot"]
-    tx, ty = c["tail"]
-    a = math.radians(open_deg)
-    T = (px + tx * math.cos(a) - ty * math.sin(a), py + tx * math.sin(a) + ty * math.cos(a))
-    return {"tail": T, "yoke_x": T[0] - math.sqrt(c["link"] ** 2 - (T[1] - c["yoke_y"]) ** 2)}
-
-
-def cutter_gap(spec, open_deg, a):
-    """The gap between the two cutting edges ``a`` mm in front of the pivots at an opening ``open_deg`` (negative: the
-    edges have crossed — the bypass blades overlap by that much)."""
-    c = spec["cutter"]
-    t = math.radians(open_deg)
-    return 2 * (c["pivot"][1] + a * math.sin(t) - c["edge_y"] * math.cos(t))
 
 
 def leg_chain(spec, scale=1.0, angles=None):

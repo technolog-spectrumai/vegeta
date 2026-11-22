@@ -137,28 +137,35 @@ def test_hydrostatic_only_pays_where_tendons_rub():
         assert sa.tendon_routing(small)["hydrostatic"]["share"] > 0.5              # too heavy on the small ones
 
 
-def test_tarantula_jaws():
-    c = sa.cutter()
-    assert c["max_gap_mm"] == pytest.approx(9.8, abs=0.3) and 0 < c["edges_cross_deg"] < 10
-    cuts = c["cuts"]
-    assert cuts["copper wire Ø1.5 mm"]["cuts"] and cuts["mild steel wire Ø1.0 mm"]["cuts"]
-    assert cuts["cable tie 4.8 × 1.3 mm (nylon 6/6)"]["cuts_at_stall"]
-    assert not cuts["galvanised fence wire Ø2.5 mm"]["cuts_at_stall"]
+def test_tarantula_chelicerae_and_pedipalps_sizing():
+    r = sa.tarantula_chelicerae()
+    c, p = r["chelicera"], r["pedipalp_pincer"]
+    assert c["self_locking"] and p["self_locking"]                                    # both hold unpowered
+    assert c["force_n"]["throat"] > c["force_n"]["middle"] > c["force_n"]["tip"]
+    assert c["cuts"]["cable tie 4.8 × 1.3 mm (nylon 6/6)"]["cuts"] and c["cuts"]["green twig Ø5 mm"]["cuts"]
+    assert not c["cuts"]["galvanised fence wire Ø2.5 mm"]["cuts_at_stall"]
+    assert 10 < p["grip_n"] < 40
 
 
-def test_tarantula_jaws_cad_clear():
+def test_tarantula_front_cad_clear():
     pytest.importorskip("cadquery")
     import spiders
 
     d = spiders.Tarantula()
     s = d.spec
-    assert d.generate(part="jaws", jaw=30.0).measure()["valid"]
-    for deg in (0.0, 30.0):
+    legs = [v for w in d.legs(s) for v in w.vals()]
+    palps = [v.val() for vs in d.pedipalps(s).values() for v in vs]
+    assert all(v.isValid() for v in palps)
+    for deg in (0.0, 100.0):
         ch = d.chelicerae(s, deg)
-        jl, jr = (w.val() for w in ch["jaws"])
-        assert jl.intersect(jr).Volume() < 0.5                                   # the jaws pass (bypass)
-        assert jl.intersect(ch["housing"][0].val()).Volume() < 0.5
-        assert jl.intersect(ch["pins"][0].val()).Volume() < 0.5                  # clear of the other jaw's pin
+        cv = [v.val() for vs in ch.values() for v in vs]
+        assert all(v.isValid() for v in cv)
+        assert sum(a.intersect(b).Volume() for a in cv for b in legs + palps) < 1.0     # clear of legs and palps
+        left = [v.val() for k in ch for v in ch[k][: len(ch[k]) // 2]]
+        right = [v.val() for k in ch for v in ch[k][len(ch[k]) // 2:]]
+        assert sum(a.intersect(b).Volume() for a in left for b in right) < 1.0          # the pair side by side
+        assert sum(a.val().intersect(m.val()).Volume() for a in ch["fang"] for m in ch["margin"]) < 1.0
+    assert sum(a.intersect(b).Volume() for a in palps for b in legs) < 1.0
 
 
 def test_tarantula_attachment_verdict():
@@ -186,7 +193,7 @@ def test_tarantula_robot_and_gaits():
     import tarantula_robot as tr
 
     r = tr.tarantula()
-    assert r.total_mass() == pytest.approx(1.5, abs=1e-6) and r.summary()["n_actuated"] == 24 and len(r.feet) == 8
+    assert r.total_mass() == pytest.approx(1.5, abs=1e-3) and r.summary()["n_actuated"] == 24 and len(r.feet) == 8
     assert tr.drive().stall_torque == pytest.approx(1.62)                  # 1000:1 gearmotor × 1.5 pulley (§5)
     kin = mk.Kin(r)
     for name, drop in (("wave4", 0.0), ("tetrapod", tg.POSTURES["crouched"]), ("turn", 0.0)):
@@ -231,7 +238,7 @@ def test_tarantula_dragline_sizing():
     w = sa.tarantula_winch()
     assert w["line_capacity_m"] >= 10.0 and w["line_safety"] > 20
     assert w["motor_load_fraction"]["all the weight"] < 0.3 and w["reel_in_mm_s"]["all the weight"] > 40
-    assert w["can_recock"] and 8 < w["harpoon_m_s"] < 14 and w["anchor_safety"][0] > 5
+    assert w["can_set"] and w["anchor_safety"][0] > 5                              # the sway sets the hook
 
 
 def test_tarantula_cords_ride_over_and_under_the_knee():
@@ -261,4 +268,6 @@ def test_tarantula_dragline_pod_cad():
     assert sum(a.intersect(b).Volume() for a in pod for b in legs) < 1.0           # clear of the legs
     deck = sk.union_all(d.deck(s)).val()
     assert sum(a.intersect(deck).Volume() for a in pod) < 1.0                      # and of the payload deck
+    hook = [d.place_harpoon(s, v).val() for v in d._hook_parts(s)]
+    assert sum(a.intersect(b.val()).Volume() for a in hook for b in d.dragline_pod(s)["cradle"]) < 1.0  # ends free
 

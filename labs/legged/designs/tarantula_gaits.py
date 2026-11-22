@@ -193,3 +193,18 @@ def gait(name="wave4", *, robot=None, kin=None, stride=None, swing_s=None, step_
     m.stability = stab
     m.kin = kin
     return m
+
+
+def parts(machine) -> dict:
+    """``data:motions`` for the export: every gait, standing and crouched (the body centre's standing height as the
+    base height)."""
+    kin = mk.Kin(tr.tarantula())
+    ms = []
+    for name in GAITS:
+        for posture, drop in POSTURES.items():
+            m = gait(name, kin=kin, body_drop_mm=drop)
+            m.name = f"{name}_{posture}"
+            m.check = {k: (v if not isinstance(v, float) else round(v, 6)) for k, v in m.check.items()}
+            ms.append(m)
+    kin.set(kin.q0)
+    return mk.block(ms, float(kin.data.xpos[kin.body("body")][2]))
