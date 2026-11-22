@@ -88,3 +88,40 @@
   - 'the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)'
   - the rear jet along the belly
   - the balance with ~1 kg under the forward belly
+one_launcher_with_several_nets:
+  1_nets:
+    nets: 1
+    launcher_kg: 0.99
+    against_separate_launchers_kg: 0.99
+    aircraft_kg: 5.82
+    stall_spread_m_s: 20.1
+    thrust_over_weight_at_32_m_s: 1.98
+    closing_on_the_bandit_m_s: 17.1
+    seconds_in_range: 0.35
+    time_for_all_passes_s: 15
+    win_rate_estimate: 0.55
+    win_rate_note: the hit chances per shot are HAND guesses; a bandit netted is counted a win
+  2_nets:
+    nets: 2
+    launcher_kg: 1.8
+    against_separate_launchers_kg: 1.93
+    aircraft_kg: 6.63
+    stall_spread_m_s: 21.5
+    thrust_over_weight_at_32_m_s: 1.74
+    closing_on_the_bandit_m_s: 18.9
+    seconds_in_range: 0.32
+    time_for_all_passes_s: 55
+    win_rate_estimate: 0.7
+    win_rate_note: the hit chances per shot are HAND guesses; a bandit netted is counted a win
+  3_nets:
+    nets: 3
+    launcher_kg: 2.04
+    against_separate_launchers_kg: 2.87
+    aircraft_kg: 6.87
+    stall_spread_m_s: 21.8
+    thrust_over_weight_at_32_m_s: 1.68
+    closing_on_the_bandit_m_s: 19.4
+    seconds_in_range: 0.31
+    time_for_all_passes_s: 95
+    win_rate_estimate: 0.77
+    win_rate_note: the hit chances per shot are HAND guesses; a bandit netted is counted a win

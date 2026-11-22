@@ -179,6 +179,31 @@ def launcher_checks(shots=1, v_pass=None, v_bandit=9.0) -> dict:
                          "the balance with ~1 kg under the forward belly"]}
 
 
+MAGAZINE = {"reload_g": (0.0, 180.0, 220.0),        # HAND: a breech feed for the second cartridge, a longer one for the third (+-60)
+            "gas_g": (0.0, 320.0, 320.0),           # HAND: a 0.2 L, 300 bar bottle (70 g of air; a shot takes 19 g), its regulator and line, to refill the 1 L vessel
+            "p_hit": {"straight": 0.9, "weave": 0.6, "jink": 0.15}}     # HAND, from twelve ASTOR-T passes against the net's 1.5 m half span: NOT a simulation
+
+
+def one_launcher(nets=1, v_bandit=9.0) -> dict:
+    """ONE launcher (one tube, valve and vessel) with 1, 2 or 3 net cartridges: the mass with the reload feed and the gas
+    for the later shots, the aircraft with it, and what the extra nets are worth (a hit chance per shot per kind of
+    quadcopter, HAND, over astor_hunt's population; one pass per net)."""
+    import gavilan_flight as GF
+    import astor_hunt as H
+    parts = sum(GF.NET["parts_g"].values()) + (nets - 1) * GF.NET["cartridge_g"] + MAGAZINE["reload_g"][nets - 1] + MAGAZINE["gas_g"][nets - 1]
+    kg = parts * GF.NET["margin"] / 1000.0
+    c = checks()
+    S = c["wing"]["total_m2"]
+    m = c["mass"]["total_kg"] - (220.0 + 2 * V.NET_G + 40.0) * 1.1 / 1000.0 + kg
+    stall = math.sqrt(2 * m * 9.80665 / (1.225 * S * 0.87))
+    win = sum(w * (1 - (1 - MAGAZINE["p_hit"][b]) ** nets) for b, w in H.POPULATION["behaviour"])
+    return {"nets": nets, "launcher_kg": round(kg, 2), "against_separate_launchers_kg": round(GF.net_kg(nets), 2), "aircraft_kg": round(m, 2),
+            "stall_spread_m_s": round(stall, 1), "thrust_over_weight_at_32_m_s": round(113.0 / (m * 9.80665), 2),
+            "closing_on_the_bandit_m_s": round(1.3 * stall - v_bandit, 1), "seconds_in_range": round(6.0 / (1.3 * stall - v_bandit), 2),
+            "time_for_all_passes_s": 15 + 40 * (nets - 1), "win_rate_estimate": round(win, 2),
+            "win_rate_note": "the hit chances per shot are HAND guesses; a bandit netted is counted a win"}
+
+
 def checks() -> dict:
     p = resolve()
     lam = p["glove_taper"]
