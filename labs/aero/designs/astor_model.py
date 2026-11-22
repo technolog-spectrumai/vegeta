@@ -26,14 +26,14 @@ DASH = 65.0                        # the design dash
 PROP_SIZES_IN = (9.0,)             # the airframe is drawn for a 9-inch folding propeller
 
 
-def propulsor(mass_kg: float, power_w: float = A.MOTOR_W) -> dict:
+def propulsor(mass_kg: float, power_w: float = A.MOTOR_W, sizes=PROP_SIZES_IN) -> dict:
     """The propeller from the library: among the 2-blade 9-inch entries, the most thrust at the dash, with a static
     thrust of at least the weight (the rail gives the speed, the propeller must hold the climb-out)."""
     import arigo_propulsion as ap
     import propulsor_maps as pm
     best = None
     for e in pm.load()["entries"]:
-        if e["kind"] != "propeller" or e.get("blades") != 2 or e["diameter_in"] not in PROP_SIZES_IN:
+        if e["kind"] != "propeller" or e.get("blades") != 2 or e["diameter_in"] not in sizes:
             continue
         u = ap._unit(e["id"], power_w, "pusher")
         T0, Td = u.full(0.0)[0], u.full(DASH)[0]

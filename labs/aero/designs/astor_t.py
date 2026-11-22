@@ -56,7 +56,7 @@ _DEFAULTS = {"pivot_y": 0.0, "panel_span": 600.0, "panel_root_chord": 190.0, "pa
              "slide_35": 106.0, "slide_60": 168.0, "dash_tail_fan": 0.3,
              "tail_anhedral_deg": 30.0,                           # the two fins alone left it without directional stability (Cnb -0.003)
              "tail_panel_span": 250.0, "tail_panel_root": 95.0, "tail_panel_tip": 60.0, "tail_pivot_y": 18.0,
-             "motor_diameter": 50.0, "motor_length": 50.0,
+             "motor_diameter": 50.0, "motor_length": 62.0, "prop_diameter": 279.4,
              "fin_height": 95.0, "fin_root_chord": 230.0, "fin_taper": 0.45, "fin_sweep_deg": 40.0}
 _MIN = {"pivot_y": 0.0}
 _NEW = [
@@ -71,11 +71,16 @@ _NEW = [
     Parameter("toe_length", 55.0, "mm", min=25.0), Parameter("claw_radius", 16.0, "mm", min=8.0),
 ]
 
-MOTOR_W = 2000.0                   # the 2.0 kW motor (2026-11-22): ASTOR-V's was 1.4 kW (astor.MOTOR_W)
+# 4 kW (2026-11-22): a caught quadcopter pulling back with twice its weight (30 N) cancelled the 2 kW motor's whole
+# thrust. ASTOR-V's was 1.4 kW (astor.MOTOR_W). The motor class is rated ~3.4 kW continuous and 4.4 kW for 5 s
+# (Scorpion HKIII/HKIV-4035 listings): 4 kW is a burst for the catch and the dash, not a cruise setting.
+MOTOR_W = 4000.0
+PROP_IN = 11.0                     # an 11-inch folding propeller (9 inch before): the disc that turns 4 kW into thrust at 25-35 m/s
+PACK_V = 42.0                      # 12 cells at 3.5 V under load: 95 A at 4 kW (6S would be 190 A)
 EXTRA_ITEMS = list(V.EXTRA_ITEMS) + [
-    ("motor: 2.0 kW outrunner in place of the 1.4 kW one (330 g against 175 g)", 155.0,
-     "HAND (+-50): catalogue motors of 1.8-2.6 kW weigh 380-530 g (E-flite Power 60, Turnigy SK3 5065, Scorpion HKIII-4035); a high-power-density one assumed"),
-    ("ESC: 120 A in place of 80 A", 45.0, "HAND (+-15)"),
+    ("motor: 4 kW-burst outrunner in place of the 1.4 kW one (460 g against 175 g)", 285.0,
+     "catalogue: Scorpion HKIII-4035 460 g (3.3-3.4 kW continuous, 4.4 kW for 5 s)"),
+    ("ESC: 12S 120 A in place of 6S 80 A", 85.0, "HAND (+-25)"),
     ("second ventral fin", 0.0, "geometry (set in budget)"),
     ("2 fin hinges, springs and down-locks", 18.0, "HAND (+-6)"),
     ("wing and tail opening springs, stowed latches", 24.0, "HAND (+-8)"),
@@ -279,15 +284,15 @@ def launcher_parts(v_exit=V_EXIT, stroke_m=STROKE_M) -> dict:
     return {"tube": tube, "cradle": cradle, "spring": spring, "breech": breech, "numbers": L, "bore": b}
 
 
-DEFAULT_PACK = "6S 5000 mAh LiPo"   # 2.0 kW is 95 A at 21 V
+DEFAULT_PACK = "12S 2500 mAh LiPo"  # 4 kW is 95 A at 42 V
 
 
 def propeller_at_power() -> dict:
-    """The folding propeller's hinge at the 2.0 kW motor's speed: the same 9 x 11 blades absorb power as rpm^3, so
-    the top speed of rotation is ASTOR-V's 15000 rpm x (2.0 / 1.4)^(1/3) (HAND: the library's map is not asked)."""
+    """The folding propeller's hinge at the motor's full power: power goes as rpm^3 D^5, so the
+    top speed of rotation is ASTOR-V's 15000 rpm scaled by power and diameter (HAND: the library's map is not asked)."""
     import astor_prop
-    rpm = 15000.0 * (MOTOR_W / A.MOTOR_W) ** (1.0 / 3.0)
-    c = astor_prop.checks(rpm_max=rpm)
+    rpm = 15000.0 * (MOTOR_W / A.MOTOR_W) ** (1.0 / 3.0) * (9.0 / PROP_IN) ** (5.0 / 3.0)       # power ~ rpm^3 D^5
+    c = astor_prop.checks(q={"diameter": PROP_IN * 25.4}, rpm_max=rpm)
     return {k: c[k] for k in ("rpm_max", "tip_speed_m_s", "centrifugal_load_per_blade_N", "pin_shear_MPa", "pin_ok", "eye_bearing_MPa", "eye_ok")}
 
 
@@ -301,7 +306,7 @@ def checks() -> dict:
            "fins": {"each_height_mm": p["fin_height"], "splay_deg": p["fin_splay_deg"], "side_area_of_both_m2": round(2 * fin_area_m2(p) * math.cos(math.radians(p["fin_splay_deg"])) ** 2, 4),
                     "astor_v_fin_m2": round(0.5 * 230.0 * 1.45 * 160.0 / 1e6, 4), "depth_under_axis_mm": round(p["tail_end_diameter"] / 2 + 2 + p["fin_height"] * math.cos(math.radians(p["fin_splay_deg"])))},
            "mass": {k: mb[k] for k in ("empty_g", "total_g", "without_nets_g")},
-           "balance_by_mass": V.balance(p, mb=mb, stations={"ESC": 300.0}),       # the ESC behind the carriage: the heavier motor is on the nose
-           "launcher": launcher(b=b), "motor_W": MOTOR_W, "current_A": {"at_full_power": round(MOTOR_W / 21.0), "pack_limit": mb["pack"]["max_A"]},
-           "propeller_hinge_at_2_kW": propeller_at_power()}
+           "balance_by_mass": V.balance(p, mb=mb, stations={"ESC": 560.0, "2 legs": 365.0, "tear-away": 365.0}),   # the ESC in the tail cone: the 460 g motor is on the nose
+           "launcher": launcher(b=b), "motor_W": MOTOR_W, "current_A": {"at_full_power": round(MOTOR_W / PACK_V), "pack_limit": mb["pack"]["max_A"]},
+           "propeller_hinge_at_full_power": propeller_at_power()}
     return out
