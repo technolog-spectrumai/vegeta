@@ -1024,16 +1024,40 @@ def scenario_heist(kin, q_stand, p):
         steps, qc, bc, pc_ = [], q3, np.array(b, dtype=float), pitch
         if gt.SOLID is not None:
             gt.SOLID.ignore = {"glass"}                                        # the pane is broken: only its frame and the sash are left
-        b0 = bc + np.array([0.06, 0.15, 0.03])
-        b1 = b0 + np.array([0.08, 0.12, 0.04])
-        b2 = b1 + np.array([0.08, 0.06, 0.04])
-        b3 = np.array([crouch[0] - 0.12, y_c - 0.05, crouch[2] + 0.02])
-        plan = [  # name, duration, moving limb (side, kind), base to, pitch to, the holds kept, feet on branches, tail on
-            ("left_hand_to_the_sill", 1.6, ("L", "hand"), b0, pitch, lambda: T_feet["L"] + T_feet["R"] + T_rh + T_tail, ("L", "R"), True),
-            ("left_foot_to_the_sill", 1.8, ("L", "foot"), b1, pitch, lambda: S_hand["L"] + T_feet["R"] + T_rh + T_tail, ("R",), True),
-            ("right_hand_to_the_sill", 1.6, ("R", "hand"), b2, pitch, lambda: S_hand["L"] + S_feet["L"] + T_feet["R"] + T_tail, ("R",), True),
-            ("right_foot_to_the_sill", 1.8, ("R", "foot"), b3, 0.5 * (pitch + 0.35), lambda: S_hand["L"] + S_hand["R"] + S_feet["L"] + T_tail, (), True),
+        # round the trunk first (the right hand to a left stub, the right foot to a lower left branch: all of the body on
+        # the window's side), then across to the window: left hand on the jamb, left foot, right hand, right foot on the sill
+        stub_r = _branch_bar(p, n + 1, p["trunk_radius"] + STUB * 0.6)
+        branch_rf = _branch_bar(p, n - 1, 0.2, tip=0.2)
+        state = {"L_hand": None, "R_hand": h_end["R_hand"], "L": h_end["L"], "R": h_end["R"]}   # the left hand is free (the hammer dropped)
+        plan = [  # name, duration, limb, its new hold, pitch at the end
+            ("left_hand_to_the_jamb", 1.6, "L_hand", hands_sill["L"], pitch),
+            ("right_hand_round_the_trunk", 1.8, "R_hand", stub_r, pitch),
+            ("right_foot_round_the_trunk", 1.8, "R", branch_rf, pitch),
+            ("left_foot_to_the_sill", 1.8, "L", feet_sill["L"], pitch),
+            ("right_hand_to_the_jamb", 1.6, "R_hand", hands_sill["R"], pitch),
+            ("right_foot_to_the_sill", 1.8, "R", feet_sill["R"], 0.5 * (pitch + 0.35)),
         ]
+
+        def targets_of(limb, hold_):
+            return gs.hand_targets(kin, limb[0], hold_) if limb.endswith("hand") else gs.foot_targets(kin, limb, hold_)
+
+        def x_state(st, tail_on, toes_open=()):
+            def f(u, q_):
+                sr.set_curl(q_, kin, "R", gs.CURL_CLOSED)
+                sr.set_curl(q_, kin, "L", gs.CURL_CLOSED)
+                for sd in ("L", "R"):
+                    if st[sd] is not None and st[sd]["kind"] == "bar" and sd not in toes_open:
+                        gs.toe_wrap(kin, q_, sd, st[sd])
+                    else:
+                        sr.set_toe_curl(q_, kin, sd, 0.0)
+                if not tail_on:
+                    for j in kin.actuated:
+                        if j.startswith("tail"):
+                            i = kin.index[j]
+                            q_[i] = q_[i] + (q_stand[i] - q_[i]) * mk.smooth(u)
+                return gs._spine_extra(kin, gs.CLIMB_SPINE)(1.0, q_)
+            return f
+
         def best_base(tg, q0, around, pt):
             """The pelvis where every hold of ``tg`` is reached and nothing is inside anything: a search round ``around``."""
             Rb = gm.base_rot(pt)
@@ -1051,19 +1075,24 @@ def scenario_heist(kin, q_stand, p):
             print(f"heist: base search {best[1].round(3)} reach {best[2]:.3f} pen {best[3]:.3f}")
             return best[1]
 
-        for name, dur, (sd, kind), b_to, p_to, kept, on_branch, tail_on in plan:
-            end = S_hand[sd] if kind == "hand" else S_feet[sd]
-            b_to = best_base(kept() + end, qc, b_to, p_to)
+        for name, dur, limb, new_hold, p_to in plan:
+            kept = [t_ for k_, h_ in state.items() if k_ != limb and h_ is not None for t_ in targets_of(k_, h_)] + T_tail
+            end = targets_of(limb, new_hold)
+            b_to = best_base(kept + end, qc, bc + np.array([0.03, 0.08, 0.0]), p_to)
             start = world_now(qc, bc, pc_, end)                                # the same points of the limb, where they are now
-            mv = mover(start, end, lift=0.06 if kind == "hand" else 0.1, out=np.array([-0.28 if sd == "R" else -0.05, 0.0, 0.0]))   # the right limbs round the trunk, not through it
-            hold_ = kept()
-            m_ = gt.contact_motion(kin, name, dur, (lambda u, hold_=hold_, mv=mv: hold_ + mv(u)), shift(bc, b_to, pc_, p_to), q_init=qc,
-                                   extra=x_hold(on_branch, tail_on, toes_open=() if kind == "hand" else (sd,)), reg=gs.IK_REG, iters=gs.IK_ITERS,
+            mv = mover(start, end, lift=0.06 if limb.endswith("hand") else 0.1, out=np.array([-0.22 if "round" in name else -0.05, 0.0, 0.0]))   # round the trunk, not through it
+            st_now = {**state, limb: None}
+            m_ = gt.contact_motion(kin, name, dur, (lambda u, kept=kept, mv=mv: kept + mv(u)), shift(bc, b_to, pc_, p_to), q_init=qc,
+                                   extra=x_state(st_now, True), reg=gs.IK_REG, iters=gs.IK_ITERS,
                                    q_ref=gs.climb_ref(kin, qc), source=f"gibbon_scenarios.heist: {name.replace('_', ' ')} - three holds kept, the tail round the trunk")
             steps.append(m_)
+            state[limb] = new_hold
             qc, bc, pc_ = gt._last(kin, m_, qc), np.array(b_to, dtype=float), p_to
-        m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: S_hand["L"] + S_hand["R"] + S_feet["L"] + S_feet["R"], shift(bc, crouch, pc_, 0.35),
-                               q_init=qc, extra=x_hold((), False, toes_open=("L", "R")), reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
+        knuckle_r = gs.point(np.array([w["x"] - 0.05, y_c - 0.15, top]), n=(0.0, 0.0, 1.0))   # the right hand off the jamb, onto the sill in the opening
+        T_settle = gs.hand_targets(kin, "L", hands_sill["L"]) + S_feet["L"] + S_feet["R"]
+        mv = mover(world_now(qc, bc, pc_, gs.hand_targets(kin, "R", knuckle_r)), gs.hand_targets(kin, "R", knuckle_r), lift=0.05)
+        m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: T_settle + mv(u), shift(bc, crouch, pc_, 0.35),
+                               q_init=qc, extra=x_state(state, False, toes_open=("L", "R")), reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
                                source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
         steps.append(m_)
         q_sill = gt._last(kin, m_, qc)
