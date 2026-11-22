@@ -640,13 +640,19 @@ BACKPACK = {"half": (0.04, 0.09, 0.11), "on_thorax": (-0.1, 0.0, 0.12)}     #: t
 HAMMER_IN_PACK = (np.array([-0.1, 0.05, 0.18]), 0.35)                      #: the hammer's handle root in the thorax's frame, its lean back from upright [rad]
 
 
+STUB = 0.16                      #: the cut-back left branches stand out this far past the bark [m]
+
+
 def heist_tree_prop(p):
     """The spider monkey's tree beside the house: the left branches (on the window's side) cut back above the sill."""
     pr = spider_tree_prop(p)
     keep = []
     for g in pr.root.geoms:
         if g.name.startswith("branch_") and g.name.endswith("l") and int(g.name[7:-1]) >= p["left_levels"]:
-            continue
+            k = int(g.name[7:-1])                                          # cut back to a stub: a handhold beside the trunk, clear of the window
+            r, bl, z0 = p["trunk_radius"], p["branch_length"], p["first_branch"] + k * p["spacing"]
+            y1 = r + STUB
+            g = gs._cap(g.name, p["branch_radius"], (p["x"], r * 0.5, z0), (p["x"], y1, _branch_z(p, k, y1)), rgba=gs.BARK, mass=3.0)
         keep.append(g)
     pr.root.geoms = keep
     return pr
@@ -686,7 +692,7 @@ def _trunk_hold(p, level, side="L", ang=math.radians(40.0)):
     sy = 1.0 if side == "L" else -1.0
     n = np.array([-math.cos(ang), sy * math.sin(ang), 0.0])
     z = _branch_z(p, level, 0.0) + 0.05
-    return gs.bar(np.array([p["x"], 0.0, z]) + (p["trunk_radius"] + 2 * gs.BAR_R + 0.01) * n, axis=(0.0, 0.0, 1.0), n=n, r=gs.BAR_R)   # the palm on the bark, not in it
+    return gs.bar(np.array([p["x"], 0.0, z]) + (p["trunk_radius"] + gs.BAR_R + 0.005) * n, axis=(-n[1], n[0], 0.0), n=n, r=gs.BAR_R)   # across the bark: the fingers lie up the trunk, not round into it   # the palm on the bark, not in it
 
 
 def scenario_heist(kin, q_stand, p):
@@ -697,7 +703,7 @@ def scenario_heist(kin, q_stand, p):
     sill, a crouch in the opening, a hop down into the room, the walk to the banana."""
     w = _heist_window(p)
     xb = p["x"] - p["trunk_radius"] - 0.02
-    hold = lambda k: {"L_hand": _trunk_hold(p, k + 2), "R_hand": _branch_bar(p, k + 2, -0.25),
+    hold = lambda k: {"L_hand": _branch_bar(p, k + 2, p["trunk_radius"] + STUB * 0.6), "R_hand": _branch_bar(p, k + 2, -0.25),
                       "L": _branch_bar(p, k, 0.2, tip=0.2), "R": _branch_bar(p, k, -0.2, tip=0.2)}
     base = lambda k: np.array([xb - 0.3, 0.0, _branch_z(p, k, 0.2) + 0.35])
     n = int(p["cycles"])
@@ -888,7 +894,19 @@ def scenario_heist(kin, q_stand, p):
         pc = (1 - f) * b + f * crouch + np.array([0.0, 0.0, 0.3 * math.sin(math.pi * u)])
         return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
 
-    leap = gs._joint_track(kin, "leap_to_the_sill", 1.2, [(0.0, q3), (0.35, tuck), (1.0, q_crouch)], leap_base,
+    arms_in = q3.copy()                                                    # first the arms off the branch and in, the body still on the tree
+    for j in kin.actuated:
+        if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist", "finger", "thumb")):
+            arms_in[kin.index[j]] = tuck[kin.index[j]]
+
+    def leap_base(u):
+        f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
+        fy = mk.smooth(min(1.0, max(0.0, (u - 0.25) / 0.4)))               # out to the window's side first, then in: round the trunk, not through it
+        fx = mk.smooth(min(1.0, max(0.0, (u - 0.5) / 0.5)))
+        pc = np.array([(1 - fx) * b[0] + fx * crouch[0], (1 - fy) * b[1] + fy * crouch[1], (1 - f) * b[2] + f * crouch[2] + 0.3 * math.sin(math.pi * f)])
+        return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
+
+    leap = gs._joint_track(kin, "leap_to_the_sill", 1.6, [(0.0, q3), (0.25, arms_in), (0.5, tuck), (1.0, q_crouch)], leap_base,
                            source="gibbon_scenarios.heist: the leap from the tree onto the sill")
     x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
     x_clear = w["x"] + w["wall_thickness"] / 2 + 0.15
