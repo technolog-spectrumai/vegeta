@@ -1088,9 +1088,10 @@ def scenario_heist(kin, q_stand, p):
             steps.append(m_)
             state[limb] = new_hold
             qc, bc, pc_ = gt._last(kin, m_, qc), np.array(b_to, dtype=float), p_to
-        knuckle_r = gs.point(np.array([w["x"] - 0.05, y_c - 0.15, top]), n=(0.0, 0.0, 1.0))   # the right hand off the jamb, onto the sill in the opening
-        T_settle = gs.hand_targets(kin, "L", hands_sill["L"]) + S_feet["L"] + S_feet["R"]
-        mv = mover(world_now(qc, bc, pc_, gs.hand_targets(kin, "R", knuckle_r)), gs.hand_targets(kin, "R", knuckle_r), lift=0.05)
+        knuckles = {sd: gs.point(np.array([w["x"] - 0.02, y_c + (0.12 if sd == "L" else -0.12), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
+        T_settle = S_feet["L"] + S_feet["R"]                                  # the feet on the sill; the hands off the jamb onto the sill in the opening
+        K_end = gs.hand_targets(kin, "L", knuckles["L"]) + gs.hand_targets(kin, "R", knuckles["R"])
+        mv = mover(world_now(qc, bc, pc_, K_end), K_end, lift=0.05)
         m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: T_settle + mv(u), shift(bc, crouch, pc_, 0.35),
                                q_init=qc, extra=x_state(state, False, toes_open=("L", "R")), reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
                                source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
