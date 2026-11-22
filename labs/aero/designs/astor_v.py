@@ -59,6 +59,9 @@ _NEW = list(A._NEW) + [
     Parameter("wing_sweep_left_deg", -1.0, "deg", min=-1.0, max=105.0, description="the left panel's sweep if different (roll control); -1: as the right"),
     Parameter("pivot_x", 320.0, "mm", min=150.0, description="the wing pivots from the nose tip, wing spread"),
     Parameter("pivot_slides", True, description="the pivots' carriage slides forward with the sweep (SLIDE); False: fixed pivots"),
+    Parameter("slide_35", 0.0, "mm", min=0.0, description="the carriage's travel at 35 deg of sweep; 0 with slide_60 0: ASTOR-V's schedule (SLIDE)"),
+    Parameter("slide_60", 0.0, "mm", min=0.0, description="and at 60 deg and beyond"),
+    Parameter("dash_tail_fan", 0.6, "", min=0.0, max=1.0, description="the tail's spread in the dash (the flight model's tail state at 60 deg)"),
     Parameter("pivot_y", 26.0, "mm", min=10.0, description="each pivot from the centre plane"),
     Parameter("panel_span", 520.0, "mm", min=150.0, description="each wing panel along its own span, from its pivot"),
     Parameter("panel_root_chord", 270.0, "mm", min=60.0),
@@ -74,6 +77,7 @@ _NEW = list(A._NEW) + [
     Parameter("tail_fan", 1.0, "", min=0.0, max=1.0, description="the tail: 0 folded (85 deg), 1 spread (35 deg)"),
     Parameter("tail_panel_span", 200.0, "mm", min=80.0), Parameter("tail_panel_root", 180.0, "mm", min=60.0),
     Parameter("tail_panel_tip", 60.0, "mm", min=20.0),
+    Parameter("tail_anhedral_deg", 0.0, "deg", min=0.0, max=45.0, description="the tail panels' droop (their pivots canted): an inverted V that also keeps the nose straight"),
     Parameter("tail_pivot_x", 655.0, "mm", min=300.0), Parameter("tail_pivot_y", 14.0, "mm", min=5.0),
     Parameter("net_count", 2, "", min=0, max=2, description="net cartridges in the tail tube, in tandem"),
     Parameter("prop_fold_deg", -1.0, "deg", min=-1.0, max=88.0, description="draw the folding propeller (astor_prop): 0 open ... 82 folded; -1: not drawn"),
@@ -105,9 +109,12 @@ SLIDE = ((12.0, 0.0), (35.0, 67.0), (60.0, 135.0), (98.0, 135.0))
 RUN1_TRAVEL = {12.0: 0.0, 35.0: 61.0, 60.0: 117.0}
 
 
-def travel(sweep) -> float:
-    """The carriage's travel forward [mm] at a sweep (SLIDE)."""
-    xs, ys = zip(*SLIDE)
+def travel(sweep, p=None) -> float:
+    """The carriage's travel forward [mm] at a sweep: SLIDE, or a design's own ``slide_35`` / ``slide_60``."""
+    sl = SLIDE
+    if p is not None and p.get("slide_60", 0.0) > 0.0:
+        sl = ((12.0, 0.0), (35.0, p["slide_35"]), (60.0, p["slide_60"]), (120.0, p["slide_60"]))
+    xs, ys = zip(*sl)
     k = max(0, min(len(xs) - 2, next((i for i in range(len(xs) - 1) if sweep <= xs[i + 1]), len(xs) - 2)))
     f = max(0.0, min(1.0, (sweep - xs[k]) / (xs[k + 1] - xs[k])))
     return ys[k] + f * (ys[k + 1] - ys[k])
@@ -118,7 +125,7 @@ def pivot_x(p, sweep=None) -> float:
     sw = p["wing_sweep_deg"] if sweep is None else sweep
     if not p.get("pivot_slides", True):
         return p["pivot_x"]
-    return p["pivot_x"] - travel(sw)
+    return p["pivot_x"] - travel(sw, p)
 
 
 def _cambered_panel(root_c, tip_c, span, sweep_deg, t, camber, camber_pos=0.4):
@@ -185,7 +192,7 @@ class AstorV(a1.Arigo1):
         px = pivot_x(p)
         blk = (cq.Workplane("XY").box(110.0, 2 * p["pivot_y"] + 44.0, h).edges("|Z").fillet(18.0)
                .translate((px + 10.0, 0, R + h / 2 - 6.0)))                      # the carriage
-        rail = cq.Workplane("XY").box(SLIDE[-1][1] + 130.0, 22.0, 8.0).translate((p["pivot_x"] - SLIDE[-1][1] / 2 + 10.0, 0, R + 1.0))
+        rail = cq.Workplane("XY").box(travel(DASH_DEG, p) + 130.0, 22.0, 8.0).translate((p["pivot_x"] - travel(DASH_DEG, p) / 2 + 10.0, 0, R + 1.0))
         blk = blk.union(rail)
         for s in (1, -1):
             pin = cq.Workplane("XY").circle(7.0).extrude(p["panel_stack"] + 16.0).translate(
@@ -200,6 +207,8 @@ class AstorV(a1.Arigo1):
         for s in (1, -1):
             pan = _panel(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.07)
             pan = pan.translate((-0.25 * p["tail_panel_root"], 0, 0)).rotate((0, 0, 0), (0, 0, 1), -(sweep - 35.0))
+            if p["tail_anhedral_deg"] > 0:
+                pan = pan.rotate((0, 0, 0), (1, 0, 0), -p["tail_anhedral_deg"])      # the tip down (the pivot's axis canted)
             if s < 0:
                 pan = pan.mirror("XZ")
             pan = pan.translate((p["tail_pivot_x"], s * p["tail_pivot_y"], 6.0 + s * 3.0))

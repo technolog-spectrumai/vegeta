@@ -21,7 +21,7 @@ from nisus_cfd import NU, QUALITY, RHO
 CASES = {12.0: (25.0, 1.0, (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0)),
          35.0: (40.0, 1.0, (-2.0, 0.0, 2.0, 4.0, 8.0, 12.0)),
          60.0: (60.0, 0.6, (-2.0, 0.0, 1.0, 2.0, 4.0, 6.0))}
-DESIGNS = ("v", "boost")
+DESIGNS = ("v", "boost", "t")
 
 
 def key(design, sweep) -> str:
@@ -32,6 +32,9 @@ def _cls(design):
     if design == "boost":
         import astor_boost as B
         return B.AstorBoost, B.variant
+    if design == "t":
+        import astor_t as T
+        return T.AstorT, T.variant
     return V.AstorV, V.variant
 
 
@@ -39,7 +42,7 @@ def reference(design="v", sweep=12.0) -> dict:
     """The coefficients' reference, and the geometry the case was flown with (the corrections check it)."""
     cls, var = _cls(design)
     p = cls().resolve(**var())
-    return {"S": VM.S_REF, "c": VM.C_REF, "cg_mm": [V.CG_MM, 0.0], "carriage_travel_mm": V.travel(sweep), "camber": p["panel_camber"]}
+    return {"S": VM.S_REF, "c": VM.C_REF, "cg_mm": [V.CG_MM, 0.0], "carriage_travel_mm": V.travel(sweep, p), "camber": p["panel_camber"]}
 
 
 def l_ref(design="v", sweep=12.0) -> float:
@@ -57,6 +60,8 @@ def export_stl(folder, design, sweep, alpha_deg):
     import arigo_stl
     cls, var = _cls(design)
     tf = CASES[sweep][1]
+    if sweep >= 50.0:
+        tf = cls().resolve(**var()).get("dash_tail_fan", tf)             # the design's own tail state in the dash (the flight model's)
 
     def build(path):
         from vegeta import dedalus

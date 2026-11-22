@@ -83,6 +83,10 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
         q = _strips(P, side, 6.0, n=5)
+        td = math.tan(math.radians(p.get("tail_anhedral_deg", 0.0)))
+        if td > 0:                                                    # the drooped tail: each strip lower by its distance from the pivot
+            for qq in q:
+                qq[:, 2] -= np.maximum(np.abs(qq[:, 1]) - p["tail_pivot_y"] / 1000.0, 0.0) * td
         quads += q
         inc += [tail_inc] * len(q)
     r = vlm(quads, alpha_deg=alpha, incidence_deg=inc, S_ref=S_REF, c_ref=C_REF, x_ref=0.0, n_span=2)

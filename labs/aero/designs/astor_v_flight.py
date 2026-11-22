@@ -51,6 +51,10 @@ def design(name: str):
         import astor_boost as B
         p = B.resolve()
         return p, B.budget(p)
+    if name == "t":
+        import astor_t as T
+        p = T.resolve()
+        return p, T.budget(p)
     p = V.resolve()
     return p, V.budget(p)
 
@@ -74,13 +78,17 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
     S = wn["exposed_area_m2"] + 0.07 * 0.21                                  # the exposed panels + the carry-over across the body
     # the equivalent conventional wing for the hand formulas (lateral, damping, inertias)
     lam = p["panel_tip_chord"] / p["panel_root_chord"]
+    fin = p                                                                  # ASTOR-T: its two splayed fins as one upright fin of the same side force
+    if name == "t":
+        import astor_t as T
+        fin = T.fin_equivalent(p)
     cr = 2 * S / (b * (1 + lam)) * 1000.0
     q = A.variant(span=b * 1000.0, root_chord=cr, taper=lam, le_sweep_deg=min(sweep, 35.0), dihedral_deg=0.0,
                   wing_x=V.pivot_x(p, sweep) - 0.3 * cr, cg_x=V.CG_MM, propulsion="tractor_lowcam",
                   fuselage_length=p["fuselage_length"], tail_cone=p["tail_cone"], tail_end_diameter=p["tail_end_diameter"],
                   htail_span=2 * (p["tail_pivot_y"] + p["tail_panel_span"] * math.cos(math.radians(35.0))), htail_root_chord=p["tail_panel_root"],
                   htail_taper=p["tail_panel_tip"] / p["tail_panel_root"], htail_sweep_deg=35.0, htail_z=6.0,
-                  fin_height=p["fin_height"], fin_root_chord=p["fin_root_chord"], fin_taper=p["fin_taper"], fin_sweep_deg=p["fin_sweep_deg"],
+                  fin_height=fin["fin_height"], fin_root_chord=fin["fin_root_chord"], fin_taper=p["fin_taper"], fin_sweep_deg=p["fin_sweep_deg"],
                   lowcam_drop=p["lowcam_drop"])
     q["tail_le_x"] = p["tail_pivot_x"] - 0.25 * p["tail_panel_root"]
     pe = A.resolve(q)
@@ -94,7 +102,7 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
     # the longitudinal set from the lattice on the real panels, brought to this reference (S, c) and to the CG
     kL, kM = VM.S_REF / Se, VM.S_REF * VM.C_REF / (Se * ce)
     xc = V.CG_MM / 1000.0 / VM.C_REF
-    tf = 1.0 if sweep < 50.0 else 0.6                                        # the dash flies with the tail fan part folded
+    tf = 1.0 if sweep < 50.0 else p.get("dash_tail_fan", 0.6)                                        # the dash flies with the tail fan part folded
     r0, r4, re = VM.lattice(sweep, tail_fan=tf, p=p), VM.lattice(sweep, tail_fan=tf, alpha=4.0, p=p), VM.lattice(sweep, tail_fan=tf, tail_inc=1.0, p=p)
     cm = lambda r: r["Cm"] + r["CL"] * xc
     CLa = (r4["CL"] - r0["CL"]) / math.radians(4.0) * kL
@@ -102,16 +110,23 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
     x_np = -(r4["Cm"] - r0["Cm"]) / (r4["CL"] - r0["CL"]) * VM.C_REF
     CLde = (re["CL"] - r0["CL"]) * kL
     CL_MAX = CL_MAX_SPREAD * max(math.cos(math.radians(sweep - 12.0)), 0.55) * VM.S_REF / Se * (wn["exposed_area_m2"] / 0.198)
-    C.update({"aircraft": "ASTOR-BOOST" if name == "boost" else "ASTOR-V", "design": name, "sweep_deg": sweep, "tail_fan": tf,
+    C.update({"aircraft": {"boost": "ASTOR-BOOST", "t": "ASTOR-T"}.get(name, "ASTOR-V"), "design": name, "sweep_deg": sweep, "tail_fan": tf,
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
               "Clda_tail": CLde * TAIL_Y_M / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
               "Cnda": 0.0, "Cnb": C["Cnb"] * 0.9,                                        # HAND: the tractor propeller's normal force ahead of the CG (-10 %)
               "mass_budget": mb, "pack_kind": "astor",
-              "equipment": {"product": "astor", "launch": "rail", "recovery": "parachute", "turning_station": True, "kits": [],
+              "equipment": {"product": "astor", "launch": "tube" if name == "t" else "rail", "recovery": "parachute", "turning_station": True, "kits": [],
                             "pack": mb["pack"]["name"], "nets": int(p["net_count"])},
               "aero_source": "model (lattice on the swept panels + hand)"})
+    if p.get("tail_anhedral_deg", 0.0) > 0:
+        # a drooped (inverted V) tail keeps the nose straight as well: its normal-force slope (the lattice's lift per
+        # degree of tail incidence, over cos^2 of the droop) x sin^2 of the droop, at the tail's arm (V-tail strip theory)
+        td2 = math.tan(math.radians(p["tail_anhedral_deg"])) ** 2
+        C["Cnb_tail"] = CLde * 57.3 * td2 * (p["tail_pivot_x"] / 1000.0 + 0.05 - C["x_cg_m"]) / C["b"]
+        C["Cnb"] += C["Cnb_tail"]
+        C["Cnr"] *= 1.0 + C["Cnb_tail"] / max(abs(C["Cnb"] - C["Cnb_tail"]) + 0.03, 0.03)     # HAND: its yaw damping in proportion
     C["Clda"] = C["Clda_tail"] + C["Clda_aileron"]                           # one roll command moves both
     C["Cnda"] = -0.1 * C["Clda_aileron"]                                     # HAND: the ailerons' adverse yaw (arigo1_model's rule)
     if name == "boost":
@@ -119,10 +134,12 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
         C["boost"] = {"table_V": [float(v) for v in range(0, 92, 2)], "table_T": [float(max(u.full(float(v))[0], 0.0)) for v in range(0, 92, 2)],
                       "power_W": FAN_W, "z_below_axis_m": 0.080}
     cfg = cfd_config(name, sweep)
+    if not cfg and name == "t":
+        from_astor_v(C, p, sweep)
     if cfg:
         ref = cfg.get("reference", {})
         cam_cfd, trav_cfd = ref.get("camber", 0.0), ref.get("carriage_travel_mm", V.RUN1_TRAVEL.get(sweep, 0.0))
-        same = abs(cam_cfd - p["panel_camber"]) < 1e-4 and abs(trav_cfd - V.travel(sweep)) < 1.0
+        same = abs(cam_cfd - p["panel_camber"]) < 1e-4 and abs(trav_cfd - V.travel(sweep, p)) < 1.0
         if same:
             apply_cfd(C, cfg)
         else:
@@ -138,8 +155,28 @@ def coefficients(name: str = "v", sweep: float = 12.0) -> dict:
             C["alpha_stall"] = (C["CL_MAX"] - C["CL0"]) / C["CLa"]
             C["static_margin"] = -C["Cma"] / C["CLa"]
             C["aero_source"] = (f"cfd run 1 (camber {cam_cfd:g}, carriage {trav_cfd:.0f} mm) for drag, slopes and stall + the lattice's "
-                                f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep):.0f} mm): rerun the CFD")
+                                f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep, p):.0f} mm): rerun the CFD")
     return C
+
+
+def from_astor_v(C, p, sweep) -> None:
+    """ASTOR-T before its own CFD: the drag and the maximum lift from ASTOR-V's CFD at this sweep (the same body, tail
+    cone, cameras and section), carried over by area — the body's drag area kept, the wing's part by the exposed wing
+    area, the drag due to lift by the aspect ratio, the maximum lift per exposed wing area. The lift slope, the balance
+    and the controls stay the lattice's on ASTOR-T's own panels. Marked; its own CFD replaces this."""
+    Cv = coefficients("v", sweep)
+    if not str(Cv.get("aero_source", "")).startswith("cfd"):
+        return
+    pv, _ = design("v")
+    wv, wt = V.wing_numbers(pv, sweep), V.wing_numbers(p, sweep)
+    cda_v = Cv["CD0"] * Cv["S"]
+    cda_t = cda_v - WING_CD * (wv["exposed_area_m2"] - wt["exposed_area_m2"]) * 1.3      # x1.3: the CFD's wing drag over the hand value
+    ar_v, ar_t = Cv["b"] ** 2 / Cv["S"], C["b"] ** 2 / C["S"]
+    C["CD0"] = cda_t / C["S"]
+    C["k_model"], C["k"] = C["k"], Cv["k"] * ar_v / ar_t
+    C["CL_MAX"] = Cv["CL_MAX"] * (Cv["S"] / wv["exposed_area_m2"]) * (wt["exposed_area_m2"] / C["S"])
+    C["alpha_stall"] = (C["CL_MAX"] - C["CL0"]) / C["CLa"]
+    C["aero_source"] = "lattice on ASTOR-T's panels; drag and maximum lift carried over from ASTOR-V's CFD by area and aspect ratio (HAND): no CFD of its own yet"
 
 
 def _lon(p, sweep, tf, kL, kM, xc) -> dict:

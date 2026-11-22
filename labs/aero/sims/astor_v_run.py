@@ -5,6 +5,8 @@ progress bar.
     labs/aero/sims/astor.sh -j 12 --cfd-only          # one phase: --cfd-only | --stability-only | --netdrop-only
     labs/aero/sims/astor.sh -j 12 --skip-cfd          # stability and the net drop (on the lattice model, or the CFD already installed)
     labs/aero/sims/astor.sh -j 12 --design boost      # one design: v (ASTOR-V) or boost (ASTOR-BOOST); default both
+    labs/aero/sims/astor.sh -j 12 --design t          # ASTOR-T (tube launched, designs/astor_t): its CFD, stability, net drop and launch
+    labs/aero/sims/astor.sh -j 12 --launch-only       # ASTOR-T out of its tube: 216 launches (exit speed x elevation x wind x late wings or motor)
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
 ``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
@@ -48,7 +50,7 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST"}
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T"}
 
 
 def _inputs() -> str:
@@ -159,6 +161,10 @@ def _job(job):
             out = P.card(NAMES[name], VF.get(name, VF.SWEEPS[0]), sf, lambda n, sim, record=None: amj.manoeuvre(n, sim, record), 30.0)
             out["speeds_by_sweep"] = {f"{s:.0f}": {"stall_m_s": round(VF.stall(VF.get(name, s)), 1), "top_speed_m_s": round(AM.top_speed(VF.get(name, s)), 1)}
                                       for s in VF.SWEEPS}
+        elif kind == "launch":
+            import astor_tube_launch as TL
+            out = TL.launch(job[1], v_exit=job[2], elevation_deg=job[3], headwind=job[4], crosswind=job[5], gust=job[6], open_s=job[7], motor_delay_s=job[8])
+            out.pop("history_t_x_z_V_theta_alpha_sweep_bank", None)
         elif kind == "net":
             import astor_netdrop as ND
             name, bandit, radius, seed0, n, lat, noise = job[1:8]
@@ -233,11 +239,47 @@ def phase_netdrop(a) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------------------ 4. tube launch
+LAUNCH_SPEEDS, LAUNCH_ELEVATIONS = (14.0, 16.0, 18.0, 20.0), (30.0, 40.0, 50.0)
+LAUNCH_WINDS = ((0.0, 0.0, 0.0), (-5.0, 0.0, 0.0), (-8.0, 0.0, 0.0), (10.0, 0.0, 3.0), (0.0, 8.0, 0.0), (0.0, 0.0, 4.0))     # head (+ against), cross, gust down
+LAUNCH_MECH = ((0.3, 0.2), (0.8, 0.2), (0.3, 1.0))                                                                          # wings open in, motor starts after [s]
+
+
+def _launch_jobs(a):
+    return [("launch", "t", v, e, w[0], w[1], w[2], m[0], m[1]) for v in LAUNCH_SPEEDS for e in LAUNCH_ELEVATIONS for w in LAUNCH_WINDS for m in LAUNCH_MECH]
+
+
+def phase_launch(a) -> int:
+    """ASTOR-T out of its tube: exit speed x elevation x wind x how late the wings and the motor are."""
+    jobs = _launch_jobs(a)
+    if a.dry_run:
+        print("\n".join(" ".join(str(x) for x in j) for j in jobs[:5])); print("...", len(jobs), "launches")
+        return 0
+    res = R._run_jobs(jobs, a, f"astor_t_launch_cache_{_inputs()}.yaml", "astor-t tube launch", _job, unit="launch")
+    rows = [v for v in res.values()]
+    table = {}
+    for v in LAUNCH_SPEEDS:
+        rs_ = [x for x in rows if "error" not in x and x["v_exit_m_s"] == v]
+        table[f"{v:.0f} m/s"] = {"launches": len(rs_), "ok": sum(1 for x in rs_ if x["ok"]),
+                                  "worst_sink_m": max((x["sink_below_muzzle_m"] for x in rs_), default=None),
+                                  "failed": [{k: x[k] for k in ("elevation_deg", "headwind_m_s", "crosswind_m_s", "gust_down_m_s", "open_s", "sink_below_muzzle_m")} | {"motor_delay_s": j[8]}
+                                             for j, x in ((j, res["|".join(str(q) for q in j)]) for j in jobs) if "error" not in x and x["v_exit_m_s"] == v and not x["ok"]]}
+    import astor_t as T
+    run = R._write("launch", {"run": _meta("launch", a), "summary": table, "launcher": T.launcher(), "results": {"astor_t_launch": rows}}, "astor_v")
+    for k, t in table.items():
+        print(f"exit {k}: {t['ok']}/{t['launches']} fly away, worst sink {t['worst_sink_m']} m")
+    for k, x in res.items():
+        if "error" in x:
+            print(k, "ERROR", x["error"])
+    print("->", run)
+    return 0
+
+
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
     return {"cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
-            "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties}
+            "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
 def main(argv=None) -> int:
@@ -249,8 +291,9 @@ def main(argv=None) -> int:
     g.add_argument("--cfd-only", action="store_true", help="only the CFD")
     g.add_argument("--stability-only", action="store_true", help="only stability and performance")
     g.add_argument("--netdrop-only", action="store_true", help="only the net drop")
+    g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost"), action="append", help="v (ASTOR-V) or boost (ASTOR-BOOST); default: both")
+    ap.add_argument("--design", choices=("v", "boost", "t"), action="append", help="v (ASTOR-V), boost (ASTOR-BOOST) or t (ASTOR-T, tube launched); default: v and boost")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -266,9 +309,11 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     a.designs = a.design or ["v", "boost"]
     a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
-    phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only
+    phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only else ["launch"] if a.launch_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
-    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop}
+    if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only):
+        phases.append("launch")
+    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch}
     n = counts(a)
     if a.dry_run:
         for ph in phases:
