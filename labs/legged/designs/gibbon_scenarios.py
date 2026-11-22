@@ -903,7 +903,8 @@ def scenario_heist(kin, q_stand, p):
         f = mk.smooth(max(0.0, (u - 0.25) / 0.75))
         fy = mk.smooth(min(1.0, max(0.0, (u - 0.25) / 0.4)))               # out to the window's side first, then in: round the trunk, not through it
         fx = mk.smooth(min(1.0, max(0.0, (u - 0.5) / 0.5)))
-        pc = np.array([(1 - fx) * b[0] + fx * crouch[0], (1 - fy) * b[1] + fy * crouch[1], (1 - f) * b[2] + f * crouch[2] + 0.3 * math.sin(math.pi * f)])
+        back = 0.15 * mk.smooth(min(1.0, u / 0.25)) * (1 - fx)               # pushed back off the tree as the arms come in: the hands clear the trunk
+        pc = np.array([(1 - fx) * b[0] + fx * crouch[0] - back, (1 - fy) * b[1] + fy * crouch[1], (1 - f) * b[2] + f * crouch[2] + 0.3 * math.sin(math.pi * f)])
         return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
 
     leap = gs._joint_track(kin, "leap_to_the_sill", 1.6, [(0.0, q3), (0.25, arms_in), (0.5, tuck), (1.0, q_crouch)], leap_base,
