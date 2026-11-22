@@ -949,6 +949,10 @@ def scenario_heist(kin, q_stand, p):
             pc, pt = p1 - np.array([0.0, 0.0, DIP * math.sin(math.pi * min(1.0, tt))]), 0.35
         return pc[0], pc[1], pc[2], pt
 
+    for qk in (q_crouch, absorb):                                          # landing: the arms forward and up for balance, the hands clear of the sill
+        for sd in ("L", "R"):
+            i = kin.index[f"{sd}_shoulder_pitch"]
+            qk[i] = min(max(-0.6, kin.lo[i]), kin.hi[i])
     for qk in (push_ext, tuck, q_crouch, absorb):                          # the tail off the trunk at the push, raised and curled over the back in the air
         for j in kin.actuated:
             if j.startswith("tail"):
