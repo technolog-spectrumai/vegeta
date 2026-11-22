@@ -472,8 +472,30 @@ def simulate(model, info, *, render=None, pre=False):
           "speed": 1.0}
     extra = {}
 
+    solid_ids = {model.geom(n).id for n in ("coping", "facade", "nailer", "building")}
+    robot_b = {i for i in range(model.nbody) if model.body_rootid[i] == body}
+    pen = {"worst": 0.0, "where": ""}
+
+    def penetration():
+        """The deepest overlap [m] of the robot's collision geoms with the stone, and which geom."""
+        worst, where = 0.0, ""
+        for c in data.contact[:data.ncon]:
+            g1, g2 = int(c.geom1), int(c.geom2)
+            if (g1 in solid_ids) == (g2 in solid_ids):
+                continue
+            g = g2 if g1 in solid_ids else g1
+            if model.geom_bodyid[g] in robot_b and c.dist < worst:
+                worst, where = float(c.dist), model.geom(g).name
+        return worst, where
+
     def frame(phase, caption, speed=1.0, force=False):
+        d_, w_ = penetration()
+        if d_ < pen["worst"]:
+            pen["worst"], pen["where"] = d_, w_
         if caption != st["caption"]:
+            if st["caption"]:
+                print(f"          worst overlap with the stone {-pen['worst'] * 1000:5.1f} mm ({pen['where']})", flush=True)
+            pen["worst"], pen["where"] = 0.0, ""
             print(f"  {st['t']:6.2f} s  {caption or phase:70s} body {np.round(data.xpos[body] * 1000).astype(int)} mm"
                   f"  line {st['tension']:5.1f} N", flush=True)
         st["phase"], st["caption"] = phase, caption
@@ -580,6 +602,31 @@ def simulate(model, info, *, render=None, pre=False):
         return best
 
     cache = {}
+    stone = {model.geom(n).id for n in ("coping", "facade", "nailer", "building")}
+    foot_geoms = {model.geom(f).id for f in tr.LEGS}
+
+    def depenetrate(pos, R, q, targets, rounds=5):
+        """Push the legs' segments out of the stone: each leg geom MuJoCo finds overlapping it gets an extra IK
+        target, its contact point moved out along the contact normal (the feet keep their ``targets``)."""
+        for _ in range(rounds):
+            set_kin(pos, R, q)
+            mujoco.mj_forward(model, data)
+            extra = []
+            for c in data.contact[:data.ncon]:
+                g1, g2 = int(c.geom1), int(c.geom2)
+                if (g1 in stone) == (g2 in stone) or c.dist > -0.001:
+                    continue
+                g, n_out = (g2, np.array(c.frame[:3])) if g1 in stone else (g1, -np.array(c.frame[:3]))
+                b = int(model.geom_bodyid[g])
+                if g in foot_geoms or b == body or model.body_rootid[b] != body:
+                    continue
+                local = data.xmat[b].reshape(3, 3).T @ (c.pos - data.xpos[b])
+                goal = c.pos + n_out * (-c.dist + 0.007)
+                extra.append((kin.body(model.body(b).name), local, base_k + R.T @ (goal - pos)))
+            if not extra:
+                break
+            q, _ = kin.ik(targets + extra, q_init=q, q_ref=q_stand, reg=1e-5, iters=60)
+        return q
 
     def feet_on_solids(pos, R, q_nom, snap):
         """The joint angles with every foot on the solid surface under it (a ray down the body's own vertical; near
@@ -609,6 +656,7 @@ def simulate(model, info, *, render=None, pre=False):
             targets.append((pts[f][0], pts[f][1], base_k + R.T @ (tgt - pos)))
         q, _ = kin.ik(targets, q_init=cache.get("last", q_nom), q_ref=q_nom, reg=1e-5, iters=80)
         cache["last"] = q
+        q = depenetrate(pos, R, q, targets)
         cache[key] = q
         return q
 
@@ -763,7 +811,7 @@ def simulate(model, info, *, render=None, pre=False):
                     blocked += tick
             if q_new is None:
                 q_new, _ = solve(pos, R, feet_now, q)
-            q = q_new
+            q = depenetrate(pos, R, q_new, [(pts[f][0], pts[f][1], base_k + R.T @ (feet_now[f] - pos)) for f in tr.LEGS])
             strain = {f: stretch(f, pos, R) for f in tr.LEGS}
             st["t"] += tick
             set_kin(pos, R, q)
@@ -817,6 +865,9 @@ def simulate(model, info, *, render=None, pre=False):
     def bez(p0, p1, p2, u):
         return (1 - u) ** 2 * p0 + 2 * (1 - u) * u * p1 + u ** 2 * p2
 
+    def bez3(p0, p1, p2, p3, u):
+        return (1 - u) ** 3 * p0 + 3 * (1 - u) ** 2 * u * p1 + 3 * (1 - u) * u ** 2 * p2 + u ** 3 * p3
+
     d4 = 1.4
     show_line("dl_over")
     pA2 = pA + np.array([-0.17, 0.0, 0.0])                                # clear of the parapet, room to turn
@@ -824,7 +875,7 @@ def simulate(model, info, *, render=None, pre=False):
     p_turn = lambda u: (pA2, rot_z(math.pi * (1 - sm(u))))
     p_up = lambda u: (bez(pA2, np.array([xi - 0.07, y, zt + h + 0.02]), pB, sm(u)), rot_y(-0.35 * math.sin(math.pi * u)))
     p_across = lambda u: (pB + sm(u) * (pC - pB), RC)
-    p_over = lambda u: (bez(pC, np.array([xo + 0.03, y, zt + h * 0.85]), pD, sm(u)), slerp_R(RC, Rface, sm(u)))
+    p_over = lambda u: (bez(pC, np.array([xo + 0.08, y, zt + h * 1.5]), pD, sm(u)), slerp_R(RC, Rface, sm(u)))
     freegait("over", "STEP 3 · OVER THE EDGE — step away from the parapet", p_off)
     freegait("over", "STEP 3 · OVER THE EDGE — turn round on the roof, a pair of feet at a time", p_turn)
     freegait("over", "STEP 3 · OVER THE EDGE — head first up onto the coping", p_up)
@@ -832,12 +883,14 @@ def simulate(model, info, *, render=None, pre=False):
     qD = freegait("over", "STEP 3 · OVER THE EDGE — head first down the face", p_over)
     show_line("dragline")
     kinematic(d4, "over", "STEP 3 · OVER THE EDGE — let go: hanging on the dragline",
-              lambda u: (pD + sm(u) * (pE - pD) + np.array([0.03 * math.sin(math.pi * u), 0, 0]),
+              lambda u: (pD + sm(u) * (pE - pD) + np.array([0.09 * math.sin(math.pi * u), 0, 0]),
                          slerp_R(Rface, R_hang, sm(u)), qD + sm(u) * (q_tuck - qD)), snap=0.0)
 
     pH = np.array([info["face_x"] - 0.24, y, tr.STAND_Z - 0.021])
-    p_back1 = lambda u: (bez(pD, np.array([xo + 0.03, y, zt + h * 0.85]), pC, sm(u)), slerp_R(Rface, RC, sm(u)))
-    p_back2 = lambda u: (bez(pC, np.array([xi - 0.06, y, zt + h + 0.04]), pH, sm(u)), rot_y(0.3 * math.sin(math.pi * u)))
+    p_back1 = lambda u: (bez(pD, np.array([xo + 0.08, y, zt + h * 1.5]), pC, sm(u)), slerp_R(Rface, RC, sm(u)))
+    # back off the parapet tail first: along the top to the inner edge, then tail down onto the roof
+    p_back2 = lambda u: (bez3(pC, np.array([xi + 0.02, y, zt + h + 0.01]), np.array([xi - 0.2, y, zt + h * 1.2]), pH,
+                              sm(u)), rot_y(-0.3 * math.sin(math.pi * min(u * 1.25, 1.0))))
 
     def est(path, v=0.065, w=0.6):
         c, (p0, R0) = 0.0, path(0.0)
@@ -900,7 +953,8 @@ def simulate(model, info, *, render=None, pre=False):
     pE2, RE2 = body_pose()
     qE2 = data.qpos[qadr].copy()
     kinematic(d4, "back", "STEP 7 · HIDE — up the face, tail first",
-              lambda u: (pE2 + sm(u) * (pD - pE2), slerp_R(RE2, Rface, sm(u)), qE2 + sm(u) * (q_stand - qE2)),
+              lambda u: (bez(pE2, np.array([xo + 0.17, y, 0.5 * (pE2[2] + pD[2])]), pD, sm(u)), slerp_R(RE2, Rface, sm(u)),
+                         qE2 + sm(u) * (qD - qE2)),
               snap=0.03)
     show_line("dl_over")
     freegait("back", "STEP 7 · HIDE — onto the coping, a pair of feet at a time", p_back1)

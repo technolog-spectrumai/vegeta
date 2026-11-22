@@ -693,7 +693,11 @@ stability margin (the centre of mass inside the planted feet's support polygon).
 
 Going over, TARANTULA steps away from the parapet and turns round on the open roof, because the 0.30 m coping is
 narrower than its leg span. It then climbs the coping head first, crosses it and goes head first down the outer face.
-The coping, nailer and facade also collide in the simulated parts.
+The body's paths arc round the coping's corners with clearance, and it backs off the parapet tail-down. After each
+frame's IK, any leg segment MuJoCo finds inside the stone gets an extra IK target that pushes it back out. The script
+logs the deepest overlap with the stone per step. Most are near zero; the worst is about 12 mm, a shin for a frame
+or two over the coping's inner edge (it was 100 mm before). The coping, nailer and facade also collide in the
+simulated parts.
 
 The hanging pose puts the fairlead straight above the centre of mass, with the legs folded. In it the gift hangs
 lowest, so the robot can set it down without touching the table.
