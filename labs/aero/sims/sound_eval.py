@@ -272,16 +272,11 @@ def run_rotors(target, args, env, wav_dir, pool_cores):
 
 
 def rescale_rpm(p, m, kmh, k, pa):
-    """A blade-element point moved to rpm x k (the CFD correction at neighbouring speeds): same trim thrust, the
-    torque with rpm^2, the tones and broadband recomputed (as prop_sound.point)."""
-    from vegeta import boreas
-    rpm, T, Q = p["rpm"] * k, p["thrust_N"], p["torque_Nm"]
-    g = boreas.gutin_harmonics(m["prop"], max(T, 0.0), max(Q, 0.0), rpm, pa.distance, pa.angle, harmonics=10)
-    vn = boreas.vortex_noise(m["prop"], rpm, pa.distance, kmh / 3.6)
-    tones = [(float(f), float(L)) for f, L in zip(g["frequency_hz"], g["spl_db"])]
-    return {**p, "rpm": round(rpm), "blade_pass_hz": round(g["blade_pass_hz"], 1), "broadband_db": round(vn["spl_db"], 1),
-            "broadband_peak_hz": round(vn["peak_hz"]), "_tones": tones,
-            "_band": (max(0.3 * vn["peak_hz"], 150.0), min(3.0 * vn["peak_hz"], 0.45 * 44100))}
+    """A blade-element point moved to rpm x k (the CFD correction at neighbouring speeds): same trim thrust and torque,
+    the sound recomputed with the rotor noise model (prop_sound.acoustics)."""
+    import prop_sound as ps
+    tr = ps.trim(m, kmh / 3.6)
+    return ps.acoustics(m, kmh, tr, p["rpm"] * k, p["thrust_N"], p["torque_Nm"], p["thrust_needed_N"], p["source"], pa)
 
 
 # -- cannon -----------------------------------------------------------------------------------------------------------

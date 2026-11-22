@@ -4,7 +4,8 @@ For each speed (km/h): trim the machine (the body tilts forward until the rotors
 body's drag), give each rotor its share of the thrust, solve one rotor in OpenFOAM with its blades resolved (Aeromant's
 ``rotor_mrf_static`` in the hover, ``rotor_mrf_oblique`` in forward flight: the air meets the tilted disc at 90° − tilt),
 correct the rpm once to the thrust the trim needs (thrust ~ rpm²) and solve again, then build the sound from the CFD's
-thrust and torque: Gutin's blade-passing tones and their harmonics plus Hubbard's broadband vortex noise (Boreas), at a
+thrust and torque with ``rotor_noise``: steady and unsteady loading tones (Lowson; the arm under the rotor, the edgewise
+asymmetry in forward flight, ingested turbulence) and BPM trailing-edge broadband in 1/3 octaves, at a
 listener ``--distance`` m away and ``--angle`` degrees from the rotor axis. The machine's sound adds its rotors with
 their small rpm differences (the beating every multirotor has) and random phases.
 
@@ -38,7 +39,8 @@ def machine(name: str) -> dict:
         mass = sum(dr.mass_budget(cad=dr.CAD).values()) / 1000.0
         cad = dict(hub_diameter=12.0, hub_height=6.0, bore=5.0, thickness=0.10, camber=0.04, stations=10)
         return dict(name="drongo_quad", n=4, mass=mass, cda=dr.DRAG_AREA_M2, prop=prop, airfoil=airfoil, cad=cad,
-                    pitch_m=0.0254 * 4.3, chords=(0.010, 0.016, 0.006))
+                    pitch_m=0.0254 * 4.3, chords=(0.010, 0.016, 0.006),
+                    noise=dict(arm_width_m=0.010, arm_gap_m=0.008))        # 10 mm carbon arm, motor bell gap
     if name == "hexa":
         import drako_robot as dk
         from drako import Drako
@@ -48,7 +50,8 @@ def machine(name: str) -> dict:
         k = dk.CHORD_FIT
         cad = dict(hub_diameter=40.0, hub_height=16.0, bore=10.0, thickness=0.09, camber=0.04, stations=10)
         return dict(name="drako_hexa", n=6, mass=s["tow_design_kg"], cda=0.25 + 0.15, prop=prop, airfoil=airfoil, cad=cad,
-                    pitch_m=0.0254 * 10.5, chords=(0.045 * k, 0.065 * k, 0.025 * k))
+                    pitch_m=0.0254 * 10.5, chords=(0.045 * k, 0.065 * k, 0.025 * k),
+                    noise=dict(arm_width_m=0.030, arm_gap_m=0.040))        # 30 mm arm tube, 40 mm below the disc
     raise SystemExit(f"unknown machine {name!r}: quad or hexa")
 
 
@@ -120,17 +123,28 @@ def point(m, kmh, args, env):
             T, Q, src = r[0], r[1], f"CFD ({args.quality})"
         else:
             src = "blade element (the CFD case failed)"
-    g = boreas.gutin_harmonics(m["prop"], max(T, 0.0), max(Q, 0.0), rpm, args.distance, args.angle, harmonics=10)
-    vn = boreas.vortex_noise(m["prop"], rpm, args.distance, V)
-    tones = [(float(f), float(L)) for f, L in zip(g["frequency_hz"], g["spl_db"])]
-    levels = [L for _, L in tones] + [vn["spl_db"]]
-    w = boreas.a_weighting(np.array([f for f, _ in tones] + [vn["peak_hz"]]))
+    return acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args)
+
+
+def acoustics(m, kmh, tr, rpm, T, Q, T_need, src, args):
+    """The rotor's sound at the listener (rotor_noise: steady + unsteady loading tones, BPM broadband)."""
+    import rotor_noise as rn
+    V = kmh / 3.6
+    res = rn.rotor(m["prop"], max(T, 0.0), max(Q, 0.0), rpm, args.distance, args.angle, V, tr["tilt_deg"],
+                   rn.NoiseParams(**m.get("noise", {})))
+    tones = res["tones"]
+    bb = res["broadband"]
+    bb_db = 10 * math.log10(sum(10 ** (L / 10) for _, L in bb))
+    peak_hz = max(bb, key=lambda x: x[1])[0]
+    one = rn.dba(res)
+    g = {"blade_pass_hz": m["prop"].blades * rpm / 60}
+    vn = {"spl_db": bb_db, "peak_hz": peak_hz}
     return {"machine": m["name"], "speed_kmh": kmh, "rotors": m["n"], "tilt_deg": round(tr["tilt_deg"], 2),
             "thrust_needed_N": round(T_need, 3), "rpm": round(rpm), "thrust_N": round(T, 3), "torque_Nm": round(Q, 4), "source": src,
             "blade_pass_hz": round(g["blade_pass_hz"], 1), "broadband_db": round(vn["spl_db"], 1), "broadband_peak_hz": round(vn["peak_hz"]),
-            "one_rotor_dBA": round(boreas.add_levels([L + float(a) for L, a in zip(levels, w)]), 1),
-            "all_rotors_dBA": round(boreas.add_levels([L + float(a) for L, a in zip(levels, w)]) + 10 * math.log10(m["n"]), 1),
-            "_tones": tones, "_band": (max(0.3 * vn["peak_hz"], 150.0), min(3.0 * vn["peak_hz"], 0.45 * RATE))}
+            "one_rotor_dBA": round(one, 1), "all_rotors_dBA": round(one + 10 * math.log10(m["n"]), 1),
+            "noise_model": "Lowson steady+unsteady loading (arm, edgewise, turbulence) + BPM TBL-TE",
+            "_tones": tones, "_bb": bb, "_band": (150.0, 0.45 * RATE)}
 
 
 def synth(p, rpm_scale=1.0, seconds=5.0, seed=0):
@@ -144,10 +158,19 @@ def synth(p, rpm_scale=1.0, seconds=5.0, seed=0):
             x += math.sqrt(2) * 20e-6 * 10 ** (L / 20) * np.sin(2 * math.pi * f * t + rng.uniform(0, 2 * math.pi))
     F = np.fft.rfft(rng.standard_normal(len(t)))
     fr = np.fft.rfftfreq(len(t), 1 / RATE)
-    lo, hi = p["_band"]
-    F[(fr < lo) | (fr > hi)] = 0
-    nb = np.fft.irfft(F, len(t))
-    x += nb * 20e-6 * 10 ** (p["broadband_db"] / 20) / max(float(np.std(nb)), 1e-30)
+    if "_bb" in p:                                   # shaped to the 1/3-octave spectrum, each band at its level
+        bb = np.array(p["_bb"])
+        for fc, L in bb:
+            sel = (fr >= fc * 2 ** (-1 / 6) * rpm_scale) & (fr < fc * 2 ** (1 / 6) * rpm_scale)
+            if sel.any() and fc * rpm_scale < RATE / 2:
+                band = np.zeros_like(F); band[sel] = F[sel]
+                nb = np.fft.irfft(band, len(t))
+                x += nb * 20e-6 * 10 ** (L / 20) / max(float(np.std(nb)), 1e-30)
+    else:
+        lo, hi = p["_band"]
+        F[(fr < lo) | (fr > hi)] = 0
+        nb = np.fft.irfft(F, len(t))
+        x += nb * 20e-6 * 10 ** (p["broadband_db"] / 20) / max(float(np.std(nb)), 1e-30)
     fade = np.minimum(1.0, np.minimum(t, t[-1] - t) / 0.05)
     return x * fade
 
