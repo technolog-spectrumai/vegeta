@@ -949,6 +949,10 @@ def scenario_heist(kin, q_stand, p):
             pc, pt = p1 - np.array([0.0, 0.0, DIP * math.sin(math.pi * min(1.0, tt))]), 0.35
         return pc[0], pc[1], pc[2], pt
 
+    for qk in (push_ext, tuck, q_crouch, absorb):                          # the tail off the trunk at the push, raised and curled over the back in the air
+        for j in kin.actuated:
+            if j.startswith("tail"):
+                qk[kin.index[j]] = q_stand[kin.index[j]]
     k1, k2, k3 = T_IN / D, (T_IN + T_PUSH) / D, (T_IN + T_PUSH + T_FLY) / D
     leap = gs._joint_track(kin, "leap_to_the_sill", D, [(0.0, q3), (k1, crouch_in), (k2, push_ext), ((k2 + k3) / 2, tuck), (k3, q_crouch),
                                                         (k3 + 0.4 * (1 - k3), absorb), (1.0, q_crouch)], leap_base, frames=int(D * 40),
