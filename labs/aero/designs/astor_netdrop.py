@@ -156,7 +156,7 @@ class Net:
 
 
 STATION_M = 120.0                  # within this of the release point ASTOR flies formation on it
-STATION_KP, STATION_KD, STATION_KZ = 1.0, 1.6, 0.03     # 1/s2, 1/s (1 rad/s, damping 0.8), rad of flight path per m (HAND, not yet flown)
+STATION_KP, STATION_KD, STATION_KZ = 1.0, 1.6, 0.05     # 1/s2, 1/s (1 rad/s, damping 0.8), rad of flight path per m (HAND, not yet flown)
 PASS_OVER_M = 3.0                  # extra height while overtaking the bandit
 EJECT_M_S = 5.0                    # the ejector pushes the cartridge aft at this speed (HAND)
 
@@ -219,6 +219,7 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
     t_fall = lambda dz: net0.t_open + max(dz, 0.2) / net0.sink_rate() + 0.69 * net0.sink_rate() / am.G
     nets, drops, phase, t_phase = [], [], "attack", 0.0
     closest, min_alt, caught = 1e9, 1e9, None
+    i_go = 0.0
     sim.wind[:] = wind
     import mujoco
     bid = mujoco.mj_name2id(sim.m, mujoco.mjtObj.mjOBJ_BODY, "bandit")
@@ -248,7 +249,9 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
             # hold station on the release point (run 2 flew through it at +6 m/s and came back to it in 5 of 20 sorties):
             # the speed follows the distance still to go along the bandit's track
             go = float((aim - s["pos"])[:2] @ ub[:2])
-            V_c = min(72.0, max(0.8 * sb, sb + max(-8.0, min(20.0, 0.4 * go))))
+            if rng_h < STATION_M:
+                i_go = max(-40.0, min(40.0, i_go + go * 0.01))           # the throttle loop is proportional: without this ASTOR sits 5 m long
+            V_c = min(72.0, max(0.8 * sb, sb + max(-8.0, min(20.0, 0.4 * go + 0.15 * i_go))))
         else:
             V_c = max(1.3 * Vs, sb + min(18.0, 6.0 + 0.25 * rng_h))
         if boost and "boost" in sim.C:
@@ -260,11 +263,18 @@ def attack(name="v", bandit_kind="armageddon", seed=0, net_radius=1.0, over_m=No
                 # when the closing speed is nearly zero (run 3: 3-4 releases in 20 sorties, all on the first pass).
                 # Near the release point ASTOR flies formation on it instead: the bank from the cross-track error, its
                 # rate and the bandit's own turn; the flight path from the height error.
-                nl = np.array([-ub[1], ub[0], 0.0])                              # to the left of the bandit's track
-                ey, ey_dot = float(r @ nl), float((vb - s["v_world"]) @ nl)
-                a_left = STATION_KP * ey + STATION_KD * ey_dot + float(ab @ nl)
+                # the release point is where the bandit will be a fall-time ahead: it moves at the bandit's velocity THEN
+                # (first tried with its velocity now: on a turn the point 40 m ahead runs 4 m/s sideways, the rate term
+                # cancelled the error and ASTOR sat 8 m off)
+                va = vbh + ab * t_fall(over)
+                ua = va / max(float(np.linalg.norm(va)), 1e-6)
+                nl = np.array([-ua[1], ua[0], 0.0])                              # to the left of the point's path
+                ey, ey_dot = float(r @ nl), float((va - s["v_world"]) @ nl)
+                a_left = max(-6.0, min(6.0, STATION_KP * ey)) + max(-6.0, min(6.0, STATION_KD * ey_dot)) + float(ab @ nl)
                 phi = -math.atan(a_left / am.G)                                  # a right bank (+) turns right
-                gam = max(-0.25, min(0.25, STATION_KZ * float(r[2])))
+                sim.dbg = {"ey": ey, "ey_dot": ey_dot, "ff": float(ab @ nl), "phi_c": math.degrees(phi), "ez": float(r[2]), "go": go}
+                # the autopilot takes a pitch angle: the flight path wanted plus the angle of attack being flown
+                gam = max(-0.25, min(0.25, STATION_KZ * float(r[2]) + float(sim.info.get("alpha", 0.0))))
             n_av = 0.5 * am.RHO * s["V"] ** 2 * sim.C["S"] * sim.C["CL_MAX"] / (sim.C["mass"] * am.G)
             phi_max = math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001)))
             low = s["pos"][2] + 2.0 * min(s["v_world"][2], 0.0) < FLOOR_M
