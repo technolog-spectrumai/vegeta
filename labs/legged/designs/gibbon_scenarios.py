@@ -934,8 +934,26 @@ def scenario_heist(kin, q_stand, p):
         ("right_hand_to_the_sill", 1.6, ("R", "hand"), b2, pitch, lambda: S_hand["L"] + S_feet["L"] + T_feet["R"] + T_tail, ("R",), True),
         ("right_foot_to_the_sill", 1.8, ("R", "foot"), b3, 0.5 * (pitch + 0.35), lambda: S_hand["L"] + S_hand["R"] + S_feet["L"] + T_tail, (), True),
     ]
+    def best_base(tg, q0, around, pt):
+        """The pelvis where every hold of ``tg`` is reached and nothing is inside anything: a search round ``around``."""
+        Rb = gm.base_rot(pt)
+        best = None
+        for dx in (-0.08, -0.04, 0.0, 0.04, 0.08, 0.12):
+            for dy in (-0.08, -0.04, 0.0, 0.04, 0.08, 0.12):
+                for dz in (-0.06, 0.0, 0.06):
+                    c = np.asarray(around) + np.array([dx, dy, dz])
+                    tl = [(bd, l, Rb.T @ (np.asarray(wp) - c)) for bd, l, wp in tg]
+                    qs, err = kin.ik(tl, q_init=q0, q_ref=gs.climb_ref(kin, q0), joints=limbs, reg=3e-4, iters=250)
+                    pen = gt.SOLID.worst(qs, c, pt)[0] if gt.SOLID is not None else 0.0
+                    score = err + 2.0 * max(0.0, pen - 0.01) + 0.05 * math.hypot(dx, dy)
+                    if best is None or score < best[0]:
+                        best = (score, c, err, pen)
+        print(f"heist: base search {best[1].round(3)} reach {best[2]:.3f} pen {best[3]:.3f}")
+        return best[1]
+
     for name, dur, (sd, kind), b_to, p_to, kept, on_branch, tail_on in plan:
         end = S_hand[sd] if kind == "hand" else S_feet[sd]
+        b_to = best_base(kept() + end, qc, b_to, p_to)
         start = world_now(qc, bc, pc_, end)                                # the same points of the limb, where they are now
         mv = mover(start, end, lift=0.06 if kind == "hand" else 0.1, out=np.array([-0.28 if sd == "R" else -0.05, 0.0, 0.0]))   # the right limbs round the trunk, not through it
         hold_ = kept()
