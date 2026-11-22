@@ -8,9 +8,10 @@ the lab's hand gains, scaled with speed; nothing here is a tuned controller.
 The mission: a hand launch (released level at ``RELEASE_M_S``, full throttle), a climb to the survey height, a
 straight leg, one orbit, a power-off glide with the propeller stopped, a flare and a belly landing on the rails.
 
-In the video the propeller is the lab's bladed propeller design as two blades on the spinner. It is a picture only:
-the thrust is the Boreas map in the coefficients. It is shown turning at a few turns per second, far below the real
-speed, so the blades can be seen; when the throttle closes it stops and the blades fold back.
+In the video the propeller is the lab's bladed propeller design as two blades on the spinner, turning at the real
+speed: the rpm the Boreas drive needs for the thrust and the airspeed of each moment (about 9500 rpm at full
+throttle, about 5500 in cruise). The thrust in the simulation is the same map; the blades themselves are a picture. Each frame is
+exposed with motion blur (``Recorder``, ``Sim.set_prop``). When the throttle closes the propeller stops and the blades fold back.
 """
 from __future__ import annotations
 
@@ -27,6 +28,8 @@ import sterna as st
 
 PROP_STATION_MM = 26.0       # the propeller's plane from the spinner tip
 HINGE_MM = 12.0              # each blade's fold hinge from the thrust line
+GHOSTS = 16                  # the instants of one frame's exposure the blades are drawn at
+BLADE_RGB = "0.80 0.80 0.78"  # light grey nylon blades
 FOLD_DEG = 74.0              # folded: the blades lie back along the nose, clear of the cowl
 RELEASE_M_S = 8.0            # HAND: an overarm throw of a 2 kg aircraft (+-2 m/s); the lab's ARIGO value is 12
 RELEASE_HEIGHT_M = 1.9
@@ -42,13 +45,15 @@ class Sim(amj.Sim):
         self.C = C
         xml = amj.mjcf(C, mesh).replace('rgba="0.75 0.72 0.62 1"', 'rgba="0.93 0.94 0.95 1"')
         self.hub = np.array([C["x_cg_m"] - PROP_STATION_MM / 1000.0, 0.0, -C["z_cg_m"]])      # body frame: x forward from the CG
-        if blade:                                                  # two blades, each its own massless body: posed by ``set_prop``
+        if blade:                                 # GHOSTS exposures of the two blades, each a massless body posed by ``set_prop``
             xml = xml.replace("<asset>", f'<asset><mesh name="blade" file="{blade}" scale="0.001 0.001 0.001"/>', 1)
             k = xml.index("</body>")
-            xml = xml[:k] + "".join(f'<body name="blade{i}" pos="{self.hub[0]:.4f} 0 0"><geom type="mesh" mesh="blade" density="0" contype="0" '
-                                    f'conaffinity="0" rgba="0.16 0.18 0.20 1"/></body>' for i in (0, 1)) + xml[k:]
+            xml = xml[:k] + "".join(f'<body name="blade{g}_{i}" pos="{self.hub[0]:.4f} 0 0"><geom name="blade{g}_{i}" type="mesh" mesh="blade" '
+                                    f'density="0" contype="0" conaffinity="0" rgba="{BLADE_RGB} 1"/></body>' for g in range(GHOSTS) for i in (0, 1)) + xml[k:]
         self.m = mujoco.MjModel.from_xml_string(xml)
-        self.blades = [mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, f"blade{i}") for i in (0, 1)] if blade else []
+        ids = lambda kind, n: mujoco.mj_name2id(self.m, kind, n)
+        self.blades = [[(ids(mujoco.mjtObj.mjOBJ_BODY, f"blade{g}_{i}"), ids(mujoco.mjtObj.mjOBJ_GEOM, f"blade{g}_{i}")) for i in (0, 1)]
+                       for g in range(GHOSTS)] if blade else []
         self.prop = {"angle": 0.0, "rate": 0.0, "fold": math.radians(FOLD_DEG)}
         self.d = mujoco.MjData(self.m)
         self.bid = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "arigo")
@@ -73,30 +78,56 @@ class Sim(amj.Sim):
 
 
     # ------------------------------------------------------------------------------------------ the propeller (looks)
-    def set_prop(self, angle: float, fold: float):
-        """Pose the two blades: ``angle`` about the thrust line, ``fold`` back about each blade's root hinge [rad].
+    def set_prop(self, angle: float, fold: float, sweep: float = 0.0):
+        """Pose the blades for one frame: ``angle`` about the thrust line at the shutter's opening, ``fold`` back about
+        each blade's root hinge, ``sweep`` the angle turned while the shutter is open [rad].
+
+        A frame's exposure is drawn in one render: the blade pair at GHOSTS instants of the exposure, each 1/GHOSTS
+        opaque, which composites to the blur a camera records. With two blades, any sweep of half a turn or more covers
+        the whole disc, so the instants are spread over half a turn. Under 6 degrees of sweep one solid pair is drawn.
         The blade's own frame is the lab propeller's: axis z, blade along x."""
         from scipy.spatial.transform import Rotation as Rot
         R0 = Rot.from_matrix([[0.0, 0.0, 1.0], [0.0, -1.0, 0.0], [1.0, 0.0, 0.0]])          # blade x -> body z, axis z -> body x
         h = np.array([0.0, 0.0, HINGE_MM / 1000.0])
-        for i, b in enumerate(self.blades):
-            Rs, Rf = Rot.from_euler("x", angle + i * math.pi), Rot.from_euler("y", -fold)
-            self.m.body_pos[b] = self.hub + Rs.apply(h - Rf.apply(h))
-            self.m.body_quat[b] = (Rs * Rf * R0).as_quat()[[3, 0, 1, 2]]
+        Rf = Rot.from_euler("y", -fold)
+        blurred = abs(sweep) > math.radians(6.0)
+        span = math.copysign(min(abs(sweep), math.pi), sweep)
+        for g, pair in enumerate(self.blades):
+            a = angle + (span * (g + 0.5) / GHOSTS if blurred else 0.0)
+            for i, (b, geom) in enumerate(pair):
+                Rs = Rot.from_euler("x", a + i * math.pi)
+                self.m.body_pos[b] = self.hub + Rs.apply(h - Rf.apply(h))
+                self.m.body_quat[b] = (Rs * Rf * R0).as_quat()[[3, 0, 1, 2]]
+                self.m.geom_rgba[geom, 3] = 1.0 / GHOSTS if blurred else (1.0 if g == 0 else 0.0)
 
-    def animate_prop(self, dt: float):
-        """Advance the blades' picture by ``dt``: the shown speed follows the throttle (spool-up 0.4 s) at a small
-        fraction of the real one, so the blades can be seen; stopped, the blades fold back along the nose."""
+    def prop_rpm_target(self) -> float:
+        """The propeller's speed [rpm] for the thrust the flight model is producing at this airspeed: the Boreas
+        drive's map carried in the coefficients (``thrust['rpm_grid']``) read backwards, thrust -> rpm. Without a map,
+        9500 rpm x throttle. Zero with the throttle closed (the propeller is stopped and folds)."""
         thr = float(self.controls[3])
-        target = (0.6 + 2.6 * thr) if thr > 0.02 else 0.0           # shown turns per second (the real propeller: ~100-160)
+        if thr <= 0.02:
+            return 0.0
+        g = self.C["thrust"].get("rpm_grid")
+        if not g:
+            return 9500.0 * thr
+        V = float(np.clip(self.state()["V"], g["V"][0], g["V"][-1]))
+        T = am.max_thrust(self.C, V) * min(thr, 1.0)
+        rpm = [float(np.interp(V, g["V"], row)) for row in g["rpm"]]                 # over the drive's throttle, at this airspeed
+        thrust = [float(np.interp(V, g["V"], row)) for row in g["thrust_N"]]
+        return float(np.interp(T, thrust, rpm))
+
+    def advance_prop(self, dt: float):
+        """The propeller's state over ``dt``: its speed follows the target (the drive's inertia: 0.3 s), the angle
+        turns at that speed; stopped, the blades fold back along the nose. Returns the speed [rad/s] during ``dt``."""
         q = self.prop
-        q["rate"] += (target - q["rate"]) * min(1.0, dt / 0.4)
-        q["angle"] = (q["angle"] + 2 * math.pi * q["rate"] * dt) % (2 * math.pi)
-        want = math.radians(FOLD_DEG) if q["rate"] < 0.15 else 0.0
+        q["rpm"] = q.get("rpm", 0.0) + (self.prop_rpm_target() - q.get("rpm", 0.0)) * min(1.0, dt / 0.3)
+        w = q["rpm"] * 2 * math.pi / 60.0
+        want = math.radians(FOLD_DEG) if q["rpm"] < 200.0 else 0.0
         step = math.radians(240.0) * dt
         q["fold"] += max(-step, min(step, want - q["fold"]))
-        self.set_prop(q["angle"], q["fold"])
-        mujoco.mj_kinematics(self.m, self.d)
+        q["angle0"] = q["angle"]
+        q["angle"] = (q["angle"] + w * dt) % (2 * math.pi)
+        return w
 
 
 class Autopilot(amj.Autopilot):
@@ -126,10 +157,15 @@ def export_mesh(folder) -> str:
 
 
 class Recorder:
-    """A chase camera into an mp4 (ffmpeg, H.264). Needs an OpenGL context (``MUJOCO_GL=egl`` or ``osmesa``)."""
+    """A chase camera into an mp4 (ffmpeg, H.264). Needs an OpenGL context (``MUJOCO_GL=egl`` or ``osmesa``).
 
-    def __init__(self, sim, path, size=(960, 540), fps=30, distance=2.6):
-        self.sim, self.fps = sim, fps
+    The propeller turns at its real speed. At 30 frames per second that is several turns per frame, so each frame is
+    exposed like a camera's: the blades are drawn over the angle they turn while the shutter is open (``shutter`` of
+    the frame time: 0.5 is a 180 degree shutter), see ``Sim.set_prop``. At speed they come out as the faint disc a
+    camera sees; slowing down, as a smear; stopped, as blades."""
+
+    def __init__(self, sim, path, size=(960, 540), fps=30, distance=2.6, shutter=0.5):
+        self.sim, self.fps, self.size, self.shutter, self.rpm = sim, fps, size, shutter, []
         self.r = mujoco.Renderer(sim.m, size[1], size[0])
         self.cam = mujoco.MjvCamera()
         self.cam.distance, self.cam.elevation = distance, -16.0
@@ -146,12 +182,18 @@ class Recorder:
         vh = s["v_world"][:2]
         psi = math.degrees(math.atan2(vh[1], vh[0])) if np.linalg.norm(vh) > 1 else (self.psi or 0.0)
         self.psi = psi if self.psi is None else self.psi + 0.15 * ((psi - self.psi + 180) % 360 - 180)
-        if sim.blades:
-            sim.animate_prop(self.every * 5 * amj.DT)
         self.cam.lookat[:] = s["pos"]
         self.cam.azimuth = self.psi + 32.0                     # behind and to one side, looking along the flight path
-        self.r.update_scene(sim.d, camera=self.cam)
-        self.last = self.r.render()
+        if sim.blades:
+            w = sim.advance_prop(1.0 / self.fps)
+            self.rpm.append(sim.prop["rpm"])
+            sim.set_prop(sim.prop["angle0"], sim.prop["fold"], sweep=w * self.shutter / self.fps)
+            mujoco.mj_kinematics(sim.m, sim.d)
+            self.r.update_scene(sim.d, camera=self.cam)
+            self.last = self.r.render()
+        else:
+            self.r.update_scene(sim.d, camera=self.cam)
+            self.last = self.r.render()
         self.ff.stdin.write(self.last.tobytes())
         self.frames += 1
 

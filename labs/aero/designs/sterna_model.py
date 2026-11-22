@@ -149,6 +149,7 @@ def power_required(C: dict, V: float) -> float:
 
 
 # ------------------------------------------------------------------------------------------------------- propulsion
+RPM_THROTTLES = tuple(round(0.1 * k, 1) for k in range(1, 11))     # the drive's throttle settings in the rpm map
 AVIONICS_W = 12.0            # HAND: autopilot, radios, video downlink, camera, servos at rest (+-5)
 
 
@@ -167,12 +168,24 @@ def propulsion(modules: int = 1, kv: float = 700.0):
     return boreas.Propulsion(prop, airfoil, motor, battery)
 
 
+def rpm_grid(system, speeds) -> dict:
+    """The drive's speed and thrust over its own throttle and the airspeed: what turns a thrust at an airspeed back
+    into the propeller's rpm (the flight model scales the full-throttle thrust linearly with its throttle; the real
+    drive's rpm for that thrust is not linear in it: in cruise the propeller must turn faster than its zero-thrust
+    speed, V / pitch)."""
+    pts = [[system.at_throttle(t, airspeed=float(V)) for V in speeds] for t in RPM_THROTTLES]
+    return {"throttle": list(RPM_THROTTLES), "V": [float(v) for v in speeds],
+            "rpm": [[float(q.rpm) for q in row] for row in pts], "thrust_N": [[float(q.aero.thrust) for q in row] for row in pts]}
+
+
 def thrust_table(system, speeds=(0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0, 28.0)) -> dict:
     """Full-throttle thrust, current and efficiency over speed, in the form ``arigo1_model.max_thrust`` reads."""
     pts = [system.at_throttle(1.0, airspeed=float(V)) for V in speeds]
     return {"table_V": [float(v) for v in speeds], "table_T": [max(float(q.aero.thrust), 0.0) for q in pts],
             "table_A": [float(q.current) for q in pts], "table_eta_prop": [float(q.aero.efficiency) for q in pts],
             "current_limited": any(q.current_limited for q in pts), "T0_N": float(pts[0].aero.thrust),
+            "table_rpm": [float(q.rpm) for q in pts],
+            "rpm_grid": rpm_grid(system, speeds),
             "note": "Boreas blade-element map at full throttle (generic section; no installation loss)"}
 
 
