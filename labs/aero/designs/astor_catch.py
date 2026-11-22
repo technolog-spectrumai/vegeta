@@ -110,7 +110,8 @@ def _grip(sim, on: bool):
         sim.m.eq_active[sim.ids["grip"]] = 1 if on else 0
 
 
-def catch(seed=0, latency_s=0.10, noise_m=0.3, seconds_after=12.0, pull_up=True, record=None, mesh=None, sim=None, height=120.0) -> dict:
+def catch(seed=0, latency_s=0.10, noise_m=0.3, seconds_after=12.0, pull_up=True, record=None, mesh=None, sim=None, height=120.0,
+          quad_thrust=0.0, quad_pull="up") -> dict:
     """One sortie against the quadcopter cruising straight: the approach of ``astor_talon.strike``, then the catch and
     what follows, as physics. ``pull_up`` False: the controls held as they were at the catch (what the airframe does
     alone)."""
@@ -173,6 +174,12 @@ def catch(seed=0, latency_s=0.10, noise_m=0.3, seconds_after=12.0, pull_up=True,
             ta = t - t_catch
             v_air = d.qvel[qv:qv + 3] - sim.wind
             d.xfrc_applied[sim.ids["quad"], :3] = -0.5 * am.RHO * QUAD_CDA * float(np.linalg.norm(v_air)) * v_air
+            if quad_thrust > 0.0 and ta > 0.3:                             # the quadcopter fights (after 0.3 s to right itself): full thrust one way
+                vh = np.array([s["v_world"][0], s["v_world"][1], 0.0])
+                fw = vh / max(float(np.linalg.norm(vh)), 1e-6)             # ASTOR's direction of flight
+                pull = {"up": np.array([0.0, 0.0, 1.0]), "down": np.array([0.0, 0.0, -1.0]), "back": -fw, "ahead": fw,
+                        "back_up": (-fw + np.array([0.0, 0.0, 1.0])) / math.sqrt(2.0)}[quad_pull]
+                d.xfrc_applied[sim.ids["quad"], :3] += quad_thrust * pull
             dv = int(m.jnt_dofadr[js0])
             ext = g["length"] + float(d.qpos[sim.stretch_q]) - LINE_REST_M              # the line beyond its rest length
             d.qfrc_applied[dv] = -(LINE_K * ext + LINE_C * max(float(d.qvel[dv]), 0.0)) if ext > 0.0 else 0.0
@@ -241,7 +248,8 @@ def catch(seed=0, latency_s=0.10, noise_m=0.3, seconds_after=12.0, pull_up=True,
                         round(math.degrees(float(d.qpos[sim.hip_q]))), round(float(d.qpos[sim.stretch_q]) * 1000), round(float(d.qvel[2]), 1)))
         if record is not None:
             record(sim, bandit if caught is None else None, t, caught is not None)
-    out = {"seed": seed, "pass": caught, "caught": bool(caught and caught["taken"]), "pull_up": pull_up}
+    out = {"seed": seed, "pass": caught, "caught": bool(caught and caught["taken"]), "pull_up": pull_up,
+           "quadcopter_fights": None if quad_thrust <= 0 else {"thrust_N": quad_thrust, "thrust_over_weight": round(quad_thrust / (QUAD_KG * am.G), 1), "pulls": quad_pull}}
     if out["caught"]:
         s = sim.state()
         last = [x for x in log if x[0] >= seconds_after - 2.0] or log[-1:]
