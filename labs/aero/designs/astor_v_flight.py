@@ -59,7 +59,10 @@ def design(name: str):
         import astor_twin as W
         p = W.resolve(W.variant(net_launchers=1, talon_deploy=-1.0, net_count=0))
         o = W.one_launcher(3)
-        return p, {"total_g": o["aircraft_kg"] * 1000.0, "pack": {"name": "12S 5000 mAh LiPo"}, "items": [], "note": "astor_twin.one_launcher(3): HAND"}
+        g, wh, amps, src = A.PACKS["12S 5000 mAh LiPo"]
+        tot = o["aircraft_kg"] * 1000.0
+        return p, {"total_g": tot, "empty_g": tot - g, "without_nets_g": tot - 3 * 150.0, "pack": {"name": "12S 5000 mAh LiPo", "g": g, "Wh_nominal": wh, "max_A": amps, "source": src},
+                   "items": [{"item": "ASTOR-TWIN with one launcher and three nets, less the pack", "g": round(tot - g), "source": "astor_twin.one_launcher(3): HAND"}]}
     p = V.resolve()
     return p, V.budget(p)
 

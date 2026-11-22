@@ -12,10 +12,14 @@
   wing_loading_kg_m2: 22.0
   thrust_over_weight_at_32_m_s: 1.98
   geometry:
-    muzzle_x_mm: 70.0
+    muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
-    muzzle_ahead_of_the_propellers_mm: 205
-    breech_x_mm: 447
+    muzzle_ahead_of_the_propellers_mm: 175
+    breech_x_mm: 447.0
+    tilt_travel_deg:
+    - 0.0
+    - 15.0
+    muzzle_below_axis_at_0_deg_mm: 68
     legs: 'left off: the breech''s jet and the tank are where they fold'
     depression_deg: 15.0
   pass:

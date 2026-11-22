@@ -1,8 +1,8 @@
 """ASTOR-TWIN fires GAVILAN's net launcher at a quadcopter: the sortie with one launcher and three nets (2026-11-22).
 
 **The pass.** ASTOR comes up behind the quadcopter, along its track and a little above it, at 1.3 x its stall speed,
-wings spread. The launch tube lies under the forward belly, 15 deg below the body axis, on a pan-tilt mount (+-35 deg
-across, +-12 deg in height, 150 deg/s): the mount, not the airframe, does the last pointing. (Pointing the nose with
+wings spread. The launch tube lies under the forward belly, 15 deg below the body axis, on a mount that pans +-35 deg and tilts the tube
+between level and 15 deg down (150 deg/s): the mount, not the airframe, does the last pointing. (Pointing the nose with
 bank was tried: this heavy, lightly yaw-damped airframe swung +-20 deg and never came on.) When the tracker's prediction puts the net on
 the quadcopter, between 4.5 and 9.5 m ahead, it fires; ASTOR flies on over the net. A miss is followed by a full
 turn back behind the quadcopter and the next net (three in all; the feed and the gas refill take seconds, the turn
@@ -39,10 +39,13 @@ NET_KG, MUZZLE_M_S, OPEN_SPAN_M, FULL_OPEN_M = 0.150, 40.0, 2.95, 6.0
 NET_K = 0.127                      # 1/m: dv/dt = -k v|v| brings 40 m/s to 10 m in 0.51 s (the launcher's test)
 RANGE_M, P_TAKE, INSIDE = (4.0, 10.0), 22.0 / 24.0, 0.8
 FIRE_M = (4.5, 9.5)                # fire only when the meeting is predicted inside this
-DEPRESSION_DEG, MUZZLE_BODY = 15.0, np.array([0.295, 0.0, -0.169])       # the tube's angle; the muzzle from the CG (x forward, z up) [m]
+DEPRESSION_DEG = 15.0              # the tube's rest tilt below the body axis; the mount moves it between this and 0
+BREECH_BODY, TUBE_M = np.array([-0.082, 0.0, -0.068]), 0.390             # the trunnion from the CG (x forward, z up) [m]; breech to muzzle
+MUZZLE_BODY = BREECH_BODY + TUBE_M * np.array([math.cos(math.radians(15.0)), 0.0, -math.sin(math.radians(15.0))])     # at rest
 MEAN_TRACK_S, CLOSE_BANK_DEG = 8.0, 20.0   # the mean track: a fit over one weave period (4 s still swung with it); the bank allowed inside 70 m
+AIM_TILT_DEG = 11.0                 # the approach is flown for a shot with the tube here: travel left both ways (0-15 deg)
 TRAIL_M = 40.0                     # the approach aims this far behind the quadcopter on its track, drawn in as the range closes
-PAN_DEG, TILT_DEG, SLEW_DEG_S = 35.0, 12.0, 150.0     # the launcher's mount: travel each way and slew rate (a servo pan-tilt, HAND)
+PAN_DEG, TILT_DEG, SLEW_DEG_S = 35.0, (0.0, 15.0), 150.0   # pan each way; the tube's tilt below the body axis, from level to its rest     # the launcher's mount: travel each way and slew rate (a servo pan-tilt, HAND)
 AIM_M, AIM_K = 90.0, 1.5           # within this range the nose is turned onto the meeting point (35 m left 2 s: too late), at 1.5 /s of the bearing error
 FIRE_INSIDE = 0.6                  # fire when the predicted miss is within this share of the net's half span
 RELOAD_S, HUNT_S = 5.0, 170.0
@@ -113,7 +116,8 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
         t = d.time - t0
         s = sim.state()
         R = d.xmat[sim.bid].reshape(3, 3)
-        muzzle = np.asarray(s["pos"]) + R @ MUZZLE_BODY
+        el0, az0 = dep + math.radians(mount[1]), math.radians(mount[0])
+        muzzle = np.asarray(s["pos"]) + R @ (BREECH_BODY + TUBE_M * np.array([math.cos(el0) * math.cos(az0), math.cos(el0) * math.sin(az0), -math.sin(el0)]))
         # the launcher on its mount: pan and tilt follow the direction that puts the net on the quadcopter (the net
         # leaves with ASTOR's velocity plus 40 m/s along the tube), within the mount's travel and slew rate
         los = np.asarray(bandit.p if False else (cam.buf[-1][1] if cam.buf else bandit.p)) - muzzle
@@ -123,7 +127,7 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
         sp = lw + math.sqrt(max(lw * lw - float(w @ w) + MUZZLE_M_S ** 2, 0.0))
         want = R.T @ ((sp * l_hat - w) / MUZZLE_M_S + np.array([0.0, 0.0, 0.5 * am.G * 0.2 ** 2 / max(float(np.linalg.norm(los)), 3.0)]))
         pan_c = max(-PAN_DEG, min(PAN_DEG, math.degrees(math.atan2(want[1], want[0]))))
-        tilt_c = max(-TILT_DEG, min(TILT_DEG, -math.degrees(math.atan2(want[2], math.hypot(want[0], want[1]))) - DEPRESSION_DEG))
+        tilt_c = max(TILT_DEG[0] - DEPRESSION_DEG, min(TILT_DEG[1] - DEPRESSION_DEG, -math.degrees(math.atan2(want[2], math.hypot(want[0], want[1]))) - DEPRESSION_DEG))
         mount[0] += max(-SLEW_DEG_S * 0.01, min(SLEW_DEG_S * 0.01, pan_c - mount[0]))
         mount[1] += max(-SLEW_DEG_S * 0.01, min(SLEW_DEG_S * 0.01, tilt_c - mount[1]))
         el, az = dep + math.radians(mount[1]), math.radians(mount[0])
@@ -142,7 +146,7 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
                 outcome = "netted"
         elif phase == "attack":
             # level above the quadcopter by what puts the tube's line on it at 7 m
-            h = min(2.6, max(0.6, 7.0 * math.sin(dep - s["theta"]) - MUZZLE_BODY[2]))
+            h = min(2.2, max(0.5, 7.0 * math.sin(math.radians(AIM_TILT_DEG) - s["theta"]) + 0.12))     # for a shot with the tube mid-travel
             # come in along the quadcopter's own track: the aim is a point behind it on that track, drawn in to it as the
             # range closes (a collision course from the side carries a lead angle the launcher's mount cannot follow)
             d_h = math.hypot(bm[0] - s["pos"][0], bm[1] - s["pos"][1])

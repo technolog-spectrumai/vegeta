@@ -8,6 +8,8 @@ ASTOR-BOOST are its predecessors, kept for comparison (``--design v``, ``--desig
     labs/aero/sims/astor.sh -j 12 --design boost      # one design: v (ASTOR-V) or boost (ASTOR-BOOST); default both
     labs/aero/sims/astor.sh -j 12 --design t          # ASTOR-T (tube launched, designs/astor_t): its CFD, stability, net drop and launch
     labs/aero/sims/astor.sh -j 12 --launch-only       # ASTOR-T out of its tube: 216 launches (exit speed x elevation x wind x late wings or motor)
+    labs/aero/sims/astor.sh -j 12 --design twin       # ASTOR-TWIN (two wing motors, the net launcher; designs/astor_twin): CFD, stability, net-shot sorties
+    labs/aero/sims/astor.sh -j 12 --design twin --cfd-only | --stability-only ;  --netshot-only (ASTOR-TWIN's sorties alone)
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
 ``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
@@ -51,7 +53,12 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T"}
+STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (35.0, 42.0), (60.0, 60.0))}   # ASTOR-TWIN stalls at 23 m/s spread with its three nets
+
+
+def states(design):
+    return STATES_BY_DESIGN.get(design, STATES)
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN"}
 
 
 def _inputs() -> str:
@@ -162,6 +169,9 @@ def _job(job):
             out = P.card(NAMES[name], VF.get(name, VF.SWEEPS[0]), sf, lambda n, sim, record=None: amj.manoeuvre(n, sim, record), 30.0)
             out["speeds_by_sweep"] = {f"{s:.0f}": {"stall_m_s": round(VF.stall(VF.get(name, s)), 1), "top_speed_m_s": round(AM.top_speed(VF.get(name, s)), 1)}
                                       for s in VF.SWEEPS}
+        elif kind == "shot":
+            import astor_netshot as NS
+            out = NS.netshot(seed=job[1])
         elif kind == "launch":
             import astor_tube_launch as TL
             out = TL.launch(job[1], v_exit=job[2], elevation_deg=job[3], headwind=job[4], crosswind=job[5], gust=job[6], open_s=job[7], motor_delay_s=job[8])
@@ -181,7 +191,7 @@ def _job(job):
 
 # ------------------------------------------------------------------------------------------------ 2. stability
 def phase_stability(a) -> int:
-    jobs = [("stab", d, s, Vt, k) for d in a.designs for s, Vt in STATES for k in (1.0, 0.35)] + [("card", d) for d in a.designs]
+    jobs = [("stab", d, s, Vt, k) for d in a.designs for s, Vt in states(d) for k in (1.0, 0.35)] + [("card", d) for d in a.designs]
     if a.dry_run:
         print("\n".join(" ".join(str(x) for x in j) for j in jobs)); print(len(jobs), "jobs")
         return 0
@@ -276,10 +286,34 @@ def phase_launch(a) -> int:
     return 0
 
 
+def phase_netshot(a) -> int:
+    """ASTOR-TWIN's net-launcher sortie against astor_hunt's population of quadcopters (astor_netshot)."""
+    jobs = [("shot", seed) for seed in range(a.sorties * 3)]
+    if a.dry_run:
+        print(f"... {len(jobs)} net-shot sorties")
+        return 0
+    res = R._run_jobs(jobs, a, f"astor_twin_netshot_cache_{_inputs()}.yaml", "astor-twin net shot", _job, unit="sortie")
+    rows = [v for v in res.values() if "error" not in v]
+    by, nets = {}, {}
+    for v in rows:
+        b = by.setdefault(v["quadcopter"]["behaviour"], [0, 0])
+        b[0] += v["win"]; b[1] += 1
+        if v["win"]:
+            nets[v["nets_fired"]] = nets.get(v["nets_fired"], 0) + 1
+    k, n = sum(v["win"] for v in rows), len(rows)
+    summ = {"sorties": n, "netted": k, "win_rate": round(k / max(n, 1), 3), "astor_lost": sum(v["astor_lost"] for v in rows),
+            "by_behaviour": {b: {"netted": v[0], "sorties": v[1], "rate": round(v[0] / v[1], 2)} for b, v in by.items()}, "netted_with_net_number": nets,
+            "errors": {kk: v["error"] for kk, v in res.items() if "error" in v}}
+    run = R._write("netshot", {"run": _meta("netshot", a), "summary": summ, "results": {"astor_twin_netshot": rows}}, "astor_v")
+    print(summ)
+    print("->", run)
+    return 0
+
+
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
+    return {"netshot": a.sorties * 3, "cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
@@ -293,8 +327,9 @@ def main(argv=None) -> int:
     g.add_argument("--stability-only", action="store_true", help="only stability and performance")
     g.add_argument("--netdrop-only", action="store_true", help="only the net drop")
     g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
+    g.add_argument("--netshot-only", action="store_true", help="only ASTOR-TWIN's net-launcher sorties (3 x --sorties)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost", "t"), action="append", help="t (ASTOR-T, tube launched: the ASTOR product, the default), or the earlier v (ASTOR-V) and boost (ASTOR-BOOST)")
+    ap.add_argument("--design", choices=("v", "boost", "t", "twin"), action="append", help="t (ASTOR-T, tube launched: the ASTOR product, the default), or the earlier v (ASTOR-V) and boost (ASTOR-BOOST)")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -312,9 +347,19 @@ def main(argv=None) -> int:
     a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
     phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only else ["launch"] if a.launch_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
-    if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only):
+    if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only or a.netshot_only):
         phases.append("launch")
-    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch}
+    if "twin" in a.designs:
+        if len(a.designs) > 1:
+            ap.error("--design twin is run on its own (its mission phase is the net launcher's, not the dropped nets')")
+        if a.netdrop_only or a.launch_only:
+            ap.error("ASTOR-TWIN has no dropped-net or tube-launch phase: --cfd-only, --stability-only or --netshot-only")
+        phases = [ph for ph in phases if ph not in ("netdrop", "launch")]
+        if not (a.cfd_only or a.stability_only):
+            phases.append("netshot")
+    if a.netshot_only:
+        a.designs, phases = ["twin"], ["netshot"]
+    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}
     n = counts(a)
     if a.dry_run:
         for ph in phases:
