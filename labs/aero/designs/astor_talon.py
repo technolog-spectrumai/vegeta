@@ -49,7 +49,7 @@ CHUTE_CDA = 0.8 * 1.3              # ASTOR's 0.8 m2 canopy (astor.py), Cd 1.3 (H
 
 def leg_drop(p) -> float:
     """The thrown feet below the hips [m] (the three bones at astor_t's thrown angles)."""
-    return sum(L * math.cos(math.radians(a)) for L, a in zip((p["leg_thigh"], p["leg_shin"], p["leg_shank"]), (35.0, -12.0, 28.0))) / 1000.0
+    return sum(L * math.cos(math.radians(a)) for L, a in zip((p["leg_thigh"], p["leg_shin"], p["leg_shank"]), T.LEG_THROWN)) / 1000.0
 
 
 def reach_across(p) -> float:

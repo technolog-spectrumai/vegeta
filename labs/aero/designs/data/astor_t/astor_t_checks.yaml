@@ -12,18 +12,18 @@ wing:
   exposed_area_m2: 0.1637
   lift_centre_x_mm: 412.0
 stowed:
-  radius_mm: 109.3
-  centre_above_axis_mm: -1.5
-  bore_mm: 227.0
+  radius_mm: 111.4
+  centre_above_axis_mm: -5.5
+  bore_mm: 231.0
   length_mm: 1044.0
   x_min_mm: -63.0
   width_mm: 208.0
-  height_mm: 134.0
+  height_mm: 159.0
   what_touches:
-    x: 650
-    y: -104
-    z: -35
-tube_bore_mm: 227.0
+    x: 164
+    y: 93
+    z: 56
+tube_bore_mm: 231.0
 clearance_mm: 4.0
 astor_v_stowed_for_comparison_mm:
   length: 931
@@ -36,42 +36,42 @@ fins:
   astor_v_fin_m2: 0.0267
   depth_under_axis_mm: 117
 mass:
-  empty_g: 2407.2
-  total_g: 3157.2
-  without_nets_g: 2937.2
+  empty_g: 2649.2
+  total_g: 3399.2
+  without_nets_g: 3179.2
 balance_by_mass:
   cg_target_mm: 365.0
-  pack_station_mm: 396.0
+  pack_station_mm: 386.0
   pack_fits: true
-  cg_after_both_nets_mm: 345.0
-  cg_shift_mm: -20.0
+  cg_after_both_nets_mm: 346.0
+  cg_shift_mm: -19.0
   note: stations are a first layout (HAND); the carriage re-trims the shift when the nets have gone
 launcher:
   exit_speed_m_s: 18.0
   stroke_m: 0.9
   elevation_deg: 40.0
-  aircraft_kg: 3.157
+  aircraft_kg: 3.399
   cradle_kg: 0.6
-  work_J: 630.0
-  force_first_N: 1000.0
-  force_last_N: 400.0
-  rate_N_per_mm: 0.667
+  work_J: 671.0
+  force_first_N: 1064.0
+  force_last_N: 426.0
+  rate_N_per_mm: 0.71
   peak_acceleration_g: 26.5
   time_in_tube_s: 0.105
-  energy_stored_J: 750.0
-  steel_spring_kg: 8.3
-  spring_note: '90 J/kg (HAND +-30); cocking it needs 1000 N: a winch or a lever, not a hand'
+  energy_stored_J: 798.0
+  steel_spring_kg: 8.9
+  spring_note: '90 J/kg (HAND +-30); cocking it needs 1064 N: a winch or a lever, not a hand'
   tube:
-    bore_mm: 227.0
+    bore_mm: 231.0
     length_m: 2.03
     wall_mm: 3.0
     muzzle_x_mm: -470
     breech_x_mm: 1546
     spring_cocked_mm: 525
     muzzle_ahead_of_the_nose_mm: 407
-    mass_kg: 7.0
+    mass_kg: 7.2
     note: glass/carbon tube 1600 kg/m3 (HAND)
-  system_kg: 17.5
+  system_kg: 18.1
   system_note: spring + cradle + tube + 1.5 kg of latch, breech and winch (HAND); without the stand
 motor_W: 2000.0
 current_A:

@@ -13,9 +13,12 @@ net tube and the cameras are ASTOR-V's.
 - **Fins**: two ventral fins on hinges along the belly, 95 mm high. Folded they lie flat under the tail cone, one to
   each side; springs swing them down to 25 deg from the vertical (an inverted V under the tail) as the tail leaves
   the tube. Together they have the side area of ASTOR-V's fin and half its depth under the body.
-- **Talons** (``astor_talon``): two legs under the belly built as a bird's — thigh, shin and shank on sprung joints,
-  a foot of three toes forward and one back with curved claws that snap shut on contact. Folded in a Z against the
-  belly in the tube; thrown down and forward for the strike.
+- **Talons** (``astor_talon``, ``astor_catch``): two legs under the belly built as a bird's — thigh, shin and shank,
+  a foot of three toes forward and one back with curved claws that snap shut on contact. The hips are at the centre
+  of gravity. When the feet have gripped they tear away from the legs and stay tied to the hips by a 1.2 m elastic
+  line: the bandit swings back and trails under and behind, and its pull reaches ASTOR at the hips, 43 mm under the
+  centre of gravity. (Rigid sprung legs pitched ASTOR over at ~1500 deg/s; legs that held the feet and swung, at
+  ~900.) ASTOR then flies on with the bandit on the line. Folded in a Z against the belly in the tube.
 - **Launch keys**: the two pairs of lugs on the fuselage's sides ride in the shuttle's slots; the shuttle carries the
   aircraft by them (the tail, with the net tube's mouth and the folded blades, is not pushed on).
 
@@ -39,6 +42,11 @@ import astor_v as V
 from vegeta.dedalus import Parameter
 
 FIN_SPLAY_DEG = 25.0
+# the thrown legs' bones from straight down, + toward the nose: the feet hang 330 mm under the axis, a little ahead of
+# the hips. (Reaching well forward, 80 / 40 / 65, to take the blow along the legs was tried in astor_catch: the feet
+# were then only 200 mm under the axis and the caught quadcopter swept back through the fins' depth. The blow is now
+# taken by the feet's elastic line, so the legs only have to place the feet, as low as they can.)
+LEG_THROWN = (35.0, -12.0, 28.0)
 _DEFAULTS = {"pivot_y": 0.0, "panel_span": 600.0, "panel_root_chord": 190.0, "panel_tip_chord": 120.0,   # 165 / 105 in the 206 mm tube; wider since the 2 kW motor and its pack (+0.37 kg) "panel_thickness": 0.09,
              "wing_plane_z": 46.0, "panel_stack": 16.0,
              "panel_pivot_chord": 0.5, "pivot_x": 346.0,          # the pivot at mid chord: stowed, each panel lies centred on the body
@@ -56,7 +64,7 @@ _NEW = [
     Parameter("fin_splay_deg", FIN_SPLAY_DEG, "deg", min=0.0, max=45.0, description="each fin from the vertical when down"),
     Parameter("fin_hinge_y", 9.0, "mm", min=3.0, description="each fin's hinge line from the centre plane"),
     Parameter("talon_deploy", 0.0, "", min=-1.0, max=1.0, description="the talon arm: 0 folded along the belly, 1 thrown down for the strike; -1: not fitted"),
-    Parameter("talon_hinge_x", 250.0, "mm", min=150.0, description="the arm's hinge under the belly, from the nose tip"),
+    Parameter("talon_hinge_x", 365.0, "mm", min=150.0, description="the hips under the belly, from the nose tip: AT the centre of gravity (250 until 2026-11-22), so a catch's pull passes through it"),
     Parameter("talon_grip", -1.0, "", min=-1.0, max=1.0, description="the toes: 0 open, 1 closed; -1: closed when folded, open when thrown"),
     Parameter("leg_y", 30.0, "mm", min=15.0, description="each leg's hip from the centre plane"),
     Parameter("leg_thigh", 90.0, "mm", min=40.0), Parameter("leg_shin", 130.0, "mm", min=60.0), Parameter("leg_shank", 100.0, "mm", min=40.0),
@@ -72,6 +80,7 @@ EXTRA_ITEMS = list(V.EXTRA_ITEMS) + [
     ("2 fin hinges, springs and down-locks", 18.0, "HAND (+-6)"),
     ("wing and tail opening springs, stowed latches", 24.0, "HAND (+-8)"),
     ("launch keys reinforced (4 lugs, doublers)", 16.0, "HAND (+-6)"),
+    ("feet's tear-away latch and 1.2 m elastic line to the hips (astor_catch)", 20.0, "HAND (+-8)"),
     ("2 legs: three bones each on sprung, damped joints; feet of four toes with steel claws and a snap-shut spring; hip latches (astor_talon)", 200.0,
      "HAND (+-60): per leg tubes 15 g, joints 30, foot and claws 25, closing spring and trigger 15, hip and latch 15"),
 ]
@@ -106,7 +115,7 @@ class AstorT(V.AstorV):
         d = max(p["talon_deploy"], 0.0)
         seg = (p["leg_thigh"], p["leg_shin"], p["leg_shank"])
         # each bone's angle from straight down, + toward the nose: folded (aft, forward, aft: the Z) -> thrown
-        fold, thrown = (-88.0, 88.0, -88.0), (35.0, -12.0, 28.0)
+        fold, thrown = (-88.0, 88.0, -88.0), LEG_THROWN
         ang = [f + d * (t - f) for f, t in zip(fold, thrown)]
         dz = (0.0, -10.0, -20.0)                                          # folded, the bones lie one under the other
         leg, x, z = None, 0.0, 0.0
