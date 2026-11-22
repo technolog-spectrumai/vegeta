@@ -683,6 +683,11 @@ video above (`tarantula_video.dress_robot`). The story:
    behind the parapet (scripted).
 7. A bandit strolls to the table. The timer runs out: confetti, smoke, a soot-black bandit (props: mocap bodies).
 
+In the scripted parts the feet are still placed on the solid scenery: each frame, a ray down the body's own vertical
+finds the surface under each foot (the roof, the coping, the nailer or the facade). A foot near an edge reaches for the
+nearest face, and no foot ends up inside the stone; the legs are then re-solved by IK, keeping the gait's swing lift.
+The coping, nailer and facade also collide in the simulated parts.
+
 The hanging pose puts the fairlead straight above the centre of mass, with the legs folded. In it the gift hangs
 lowest, so the robot can set it down without touching the table.
 

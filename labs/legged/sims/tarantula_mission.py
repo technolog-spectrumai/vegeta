@@ -147,19 +147,20 @@ def build(width, height, cache: Path, face_x=2.0, tip_z=0.09):
     zt = max(0.105, tip_z + 0.045)                                        # the coping's top
     zb = -0.045                                                           # its underside
     vis_g = {"contype": "0", "conaffinity": "0", "group": "1"}
+    solid_g = {"contype": "1", "conaffinity": "2", "group": "1"}       # the roof's solid parts: the feet touch them
     ET.SubElement(world, "geom", {"name": "building", "type": "box", "size": f"2 3 {-STREET / 2:.3f}",
                                   "pos": f"{xf - 2:.4f} 0 {STREET / 2:.3f}", "contype": "1", "conaffinity": "2",
                                   "group": "3", "rgba": "0 0 0 0"})
     ET.SubElement(world, "geom", {"name": "roof", "type": "box", "size": "2 3 0.02", "pos": f"{xi - 2:.4f} 0 -0.02",
                                   "material": "roof", **vis_g})
     ET.SubElement(world, "geom", {"name": "facade", "type": "box", "size": f"0.2 3 {(-STREET + zb) / 2:.4f}",
-                                  "pos": f"{xf - 0.2:.4f} 0 {(STREET + zb) / 2:.4f}", "material": "brick", **vis_g})
+                                  "pos": f"{xf - 0.2:.4f} 0 {(STREET + zb) / 2:.4f}", "material": "brick", **solid_g})
     ET.SubElement(world, "geom", {"name": "coping", "type": "box", "size": f"0.15 3 {(zt - zb) / 2:.4f}",
-                                  "pos": f"{xi + 0.15:.4f} 0 {(zt + zb) / 2:.4f}", "material": "stone", **vis_g})
+                                  "pos": f"{xi + 0.15:.4f} 0 {(zt + zb) / 2:.4f}", "material": "stone", **solid_g})
     ET.SubElement(world, "geom", {"name": "drip", "type": "box", "size": "0.012 3 0.008",
                                   "pos": f"{xo - 0.012:.4f} 0 {zb - 0.008:.4f}", "material": "stone", **vis_g})
     ET.SubElement(world, "geom", {"name": "nailer", "type": "box", "size": "0.0075 3 0.032",
-                                  "pos": f"{face_x + 0.0075:.4f} 0 {tip_z - 0.008:.4f}", "material": "wood", **vis_g})
+                                  "pos": f"{face_x + 0.0075:.4f} 0 {tip_z - 0.008:.4f}", "material": "wood", **solid_g})
     for k, y in enumerate((-1.4, 1.25)):                                  # two windows, one lit
         ET.SubElement(world, "geom", {"name": f"window{k}", "type": "box", "size": "0.004 0.26 0.36",
                                       "pos": f"{xf + 0.003:.4f} {y} -1.05", "material": "window" if k else "metal", **vis_g})
@@ -311,6 +312,8 @@ def build(width, height, cache: Path, face_x=2.0, tip_z=0.09):
     info = {"kin": kin, "robot": robot, "tr": tr, "eye_body": dr["to_body"](dr["eye_mm"]), "dir_body": np.asarray(dr["dir"]),
             "muzzle_body": dr["to_body"](dr["muzzle_mm"]), "W": W, "xi": xi, "xf": xf, "xo": xo, "zt": zt,
             "r_w": r_w, "table_z": zt_tab, "table_x": (tx0, tx1), "lantern": lant, "face_x": face_x,
+            "solids": [(-9.0, xi, STREET, 0.0), (xi, xo, zb, zt), (-9.0, xf, STREET, zb),
+                       (face_x, xi, tip_z - 0.04, tip_z + 0.024)],
             "bandit_geoms": [model.geom(f"bandit:{n}").id for n in bandit_geoms],
             "tip_len": (tr.S["winch"]["hook"]["front"] + tr.S["winch"]["hook"]["pick"] * 0.6) * 1e-3}
     return model, info
@@ -509,15 +512,115 @@ def simulate(model, info, *, render=None, pre=False):
             if until is not None and until():
                 break
 
-    def kinematic(duration, phase, caption, path, speed=1.0):
-        """``path(u) -> (pos, R, q)`` for u ∈ [0, 1]; steps at the frame rate (or 20 ms without rendering)."""
+    # ---- the feet on the solid scenery in the scripted parts: the boxes (x0, x1, z0, z1), infinite along y
+    boxes = info["solids"]
+    foot_r = 0.010
+    kin.set(q_stand)
+    base_k = kin.data.xpos[kin.body("body")].copy()
+    gid = {f: kin.model.geom(f).id for f in tr.LEGS}
+    fz_stand = {f: float(kin.data.geom_xpos[gid[f]][2] - base_k[2]) for f in tr.LEGS}
+    pts = {f: kin.geom_point(f) for f in tr.LEGS}
+
+    def inside(p, eps=1e-6):
+        return any(x0 + eps < p[0] < x1 - eps and z0 + eps < p[2] < z1 - eps for x0, x1, z0, z1 in boxes)
+
+    def ray(p, d, L):
+        """The first hit of p + t d (t ∈ [0, L]) on the solids: (point, normal) or None."""
+        best = None
+        for x0, x1, z0, z1 in boxes:
+            tn, tf, nn = -np.inf, np.inf, None
+            ok = True
+            for ax, lo, hi in ((0, x0, x1), (2, z0, z1)):
+                if abs(d[ax]) < 1e-9:
+                    if not lo <= p[ax] <= hi:
+                        ok = False
+                    continue
+                ta, tb = (lo - p[ax]) / d[ax], (hi - p[ax]) / d[ax]
+                n_in = np.zeros(3)
+                n_in[ax] = -1.0 if d[ax] > 0 else 1.0
+                if ta > tb:
+                    ta, tb = tb, ta
+                if ta > tn:
+                    tn, nn = ta, n_in
+                tf = min(tf, tb)
+            if not ok or nn is None or tn > tf or not 0.0 <= tn <= L:
+                continue
+            q_ = p + tn * d
+            if inside(q_ + 1e-4 * nn):
+                continue
+            if best is None or tn < best[0]:
+                best = (tn, q_, nn)
+        return None if best is None else best[1:]
+
+    def closest(p):
+        """The nearest point on the solids' outer surface: (point, outward normal, distance)."""
+        best = None
+        for x0, x1, z0, z1 in boxes:
+            if x0 <= p[0] <= x1 and z0 <= p[2] <= z1:                     # inside: out through the nearest face
+                cands = [(p[0] - x0, 0, x0, -1), (x1 - p[0], 0, x1, 1), (p[2] - z0, 2, z0, -1), (z1 - p[2], 2, z1, 1)]
+                for dist, ax, v, sg in sorted(cands):
+                    c = p.copy()
+                    c[ax] = v
+                    n = np.zeros(3)
+                    n[ax] = sg
+                    if not inside(c + 1e-4 * n):
+                        if best is None or -dist < best[2]:
+                            best = (c, n, -dist)
+                        break
+                continue
+            c = np.array([min(max(p[0], x0), x1), p[1], min(max(p[2], z0), z1)])
+            v = p - c
+            dist = float(np.linalg.norm(v))
+            n = v / dist if dist > 1e-9 else np.array([0, 0, 1.0])
+            if inside(c + 1e-4 * n):
+                continue
+            if best is None or dist < best[2]:
+                best = (c, n, dist)
+        return best
+
+    cache = {}
+
+    def feet_on_solids(pos, R, q_nom, snap):
+        """The joint angles with every foot on the solid surface under it (a ray down the body's own vertical; near
+        an edge, the nearest face; never inside), the gait's swing lift kept off the surface."""
+        key = (tuple(np.round(pos, 6)), tuple(np.round(R, 6).ravel()), tuple(np.round(q_nom, 6)), snap)
+        if key in cache:
+            return cache[key]
+        kin.set(q_nom)
+        targets = []
+        for f in tr.LEGS:
+            fb = kin.data.geom_xpos[gid[f]] - base_k
+            lift = max(float(fb[2]) - fz_stand[f], 0.0)
+            cand = pos + R @ fb
+            tgt = None
+            if snap > 0:
+                p0 = pos + R @ np.array([fb[0], fb[1], 0.0])
+                if not inside(p0):
+                    hit = ray(p0, -R[:, 2], tr.STAND_Z + 0.08)
+                    if hit is not None:
+                        tgt = hit[0] + hit[1] * (foot_r + lift)
+            if tgt is None:
+                c, n, dist = closest(cand)
+                if dist < max(snap, foot_r):
+                    tgt = c + n * (foot_r + (lift if snap > 0 else 0.0))
+                else:
+                    tgt = cand
+            targets.append((pts[f][0], pts[f][1], base_k + R.T @ (tgt - pos)))
+        q, _ = kin.ik(targets, q_init=cache.get("last", q_nom), q_ref=q_nom, reg=1e-5, iters=80)
+        cache["last"] = q
+        cache[key] = q
+        return q
+
+    def kinematic(duration, phase, caption, path, speed=1.0, snap=0.07):
+        """``path(u) -> (pos, R, q)`` for u ∈ [0, 1]; steps at the frame rate (or 20 ms without rendering). The feet
+        are put on the solid scenery (``snap``: how far a foot reaches for a surface; 0: only kept out of it)."""
         t0 = st["t"]
         step = (speed / render.fps) if render is not None else 0.02
         while st["t"] < t0 + duration - 1e-9:
             st["t"] = min(st["t"] + step, t0 + duration)
             u = (st["t"] - t0) / duration
             pos, R, q = path(u)
-            set_kin(pos, R, q)
+            set_kin(pos, R, feet_on_solids(np.asarray(pos, float), np.asarray(R, float), q, snap))
             if st["hook_fixed"] is not None:
                 data.mocap_pos[hook], data.mocap_quat[hook] = st["hook_fixed"]
             mujoco.mj_forward(model, data)
@@ -574,13 +677,14 @@ def simulate(model, info, *, render=None, pre=False):
     show_line("dragline")
     kinematic(d4, "over", "STEP 3 · OVER THE EDGE — let go: hanging on the dragline",
               lambda u: (pD + sm(u) * (pE - pD) + np.array([0.03 * math.sin(math.pi * u), 0, 0]),
-                         slerp_R(Rface, R_hang, sm(u)), q_stand + sm(u) * (q_tuck - q_stand)))
+                         slerp_R(Rface, R_hang, sm(u)), q_stand + sm(u) * (q_tuck - q_stand)), snap=0.0)
 
     # ---- 3. down the line on the brake (physics: the robot hangs from the rope)
     model.dof_damping[fd + 3:fd + 6] = 0.004                              # the air and the line's twist
     mujoco.mj_forward(model, data)
     st["L"] = float(data.ten_length[lines["dragline"]]) - W / k_rope        # taut: the rope takes the weight
     hold = lambda u, t: (q_tuck, np.zeros_like(q_tuck))
+    print(f"tarantula_mission: hanging, {data.ncon} contacts", flush=True)
     physics(1.0, "hang", "STEP 4 · DROP ON THE LINE", hold)
     ztab = info["table_z"]
 
@@ -628,7 +732,8 @@ def simulate(model, info, *, render=None, pre=False):
     pH = np.array([info["face_x"] - 0.24, y, tr.STAND_Z - 0.021])
     q_crouch = motion_crouch(tg, kin)
     kinematic(d4, "back", "STEP 7 · HIDE — up the face, tail first",
-              lambda u: (pE2 + sm(u) * (pD - pE2), slerp_R(RE2, Rface, sm(u)), qE2 + sm(u) * (q_stand - qE2)))
+              lambda u: (pE2 + sm(u) * (pD - pE2), slerp_R(RE2, Rface, sm(u)), qE2 + sm(u) * (q_stand - qE2)),
+              snap=0.03)
     show_line("dl_over")
     kinematic(d3, "back", "STEP 7 · HIDE — onto the coping",
               lambda u: (bez(pD, np.array([xo + 0.02, y, zt + h * 0.9]), pC, sm(u)), slerp_R(Rface, RC, sm(u)),
