@@ -871,10 +871,10 @@ def scenario_heist(kin, q_stand, p):
     # the crossing: from the tree onto the sill one limb at a time, never fewer than three holds; the tail stays round
     # the trunk until both hands and both feet are on the sill, the body shifted slowly (quasi-static) between them
     top = w["sill"] + 0.06
-    y_c = w["y"] - w["width"] / 2 + 0.3                                    # the crouch at the sill's tree-side end
+    y_c = w["y"] - w["width"] / 2 + 0.22                                   # the crouch at the sill's tree-side end
     crouch = np.array([w["x"] - 0.1, y_c, top + 0.3])
     feet_sill = {sd: gs.point(np.array([w["x"] - 0.02, y_c + (0.1 if sd == "L" else -0.1), top]), pitch=0.0) for sd in ("L", "R")}
-    hands_sill = {sd: gs.point(np.array([w["x"] - w["wall_thickness"] / 2 + 0.06, y_c + (0.2 if sd == "L" else -0.12), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
+    hands_sill = {sd: gs.point(np.array([w["x"] - w["wall_thickness"] / 2 + 0.06, y_c + (0.15 if sd == "L" else -0.05), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     Rc = gm.base_rot(0.35)
     T = [(bd, l, Rc.T @ (np.asarray(wp) - crouch)) for bd, l, wp in gs.foot_targets(kin, "L", feet_sill["L"]) + gs.foot_targets(kin, "R", feet_sill["R"])]
@@ -922,11 +922,14 @@ def scenario_heist(kin, q_stand, p):
         return f
 
     steps, qc, bc, pc_ = [], q3, np.array(b, dtype=float), pitch
-    b1 = bc + np.array([0.08, 0.1, 0.04])
-    b2 = b1 + np.array([0.08, 0.08, 0.04])
+    if gt.SOLID is not None:
+        gt.SOLID.ignore = {"glass"}                                        # the pane is broken: only its frame and the sash are left
+    b0 = bc + np.array([0.06, 0.15, 0.03])
+    b1 = b0 + np.array([0.08, 0.12, 0.04])
+    b2 = b1 + np.array([0.08, 0.06, 0.04])
     b3 = np.array([crouch[0] - 0.12, y_c - 0.05, crouch[2] + 0.02])
     plan = [  # name, duration, moving limb (side, kind), base to, pitch to, the holds kept, feet on branches, tail on
-        ("left_hand_to_the_sill", 1.6, ("L", "hand"), bc, pitch, lambda: T_feet["L"] + T_feet["R"] + T_rh + T_tail, ("L", "R"), True),
+        ("left_hand_to_the_sill", 1.6, ("L", "hand"), b0, pitch, lambda: T_feet["L"] + T_feet["R"] + T_rh + T_tail, ("L", "R"), True),
         ("left_foot_to_the_sill", 1.8, ("L", "foot"), b1, pitch, lambda: S_hand["L"] + T_feet["R"] + T_rh + T_tail, ("R",), True),
         ("right_hand_to_the_sill", 1.6, ("R", "hand"), b2, pitch, lambda: S_hand["L"] + S_feet["L"] + T_feet["R"] + T_tail, ("R",), True),
         ("right_foot_to_the_sill", 1.8, ("R", "foot"), b3, 0.5 * (pitch + 0.35), lambda: S_hand["L"] + S_hand["R"] + S_feet["L"] + T_tail, (), True),
@@ -934,7 +937,7 @@ def scenario_heist(kin, q_stand, p):
     for name, dur, (sd, kind), b_to, p_to, kept, on_branch, tail_on in plan:
         end = S_hand[sd] if kind == "hand" else S_feet[sd]
         start = world_now(qc, bc, pc_, end)                                # the same points of the limb, where they are now
-        mv = mover(start, end, lift=0.06 if kind == "hand" else 0.1, out=np.array([-0.05, 0.0, 0.0]))
+        mv = mover(start, end, lift=0.06 if kind == "hand" else 0.1, out=np.array([-0.28 if sd == "R" else -0.05, 0.0, 0.0]))   # the right limbs round the trunk, not through it
         hold_ = kept()
         m_ = gt.contact_motion(kin, name, dur, (lambda u, hold_=hold_, mv=mv: hold_ + mv(u)), shift(bc, b_to, pc_, p_to), q_init=qc,
                                extra=x_hold(on_branch, tail_on, toes_open=() if kind == "hand" else (sd,)), reg=gs.IK_REG, iters=gs.IK_ITERS,
@@ -946,6 +949,8 @@ def scenario_heist(kin, q_stand, p):
                            source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
     steps.append(m_)
     q_sill = gt._last(kin, m_, qc)
+    if gt.SOLID is not None:
+        gt.SOLID.ignore = set()
     x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
     x_clear = w["x"] + w["wall_thickness"] / 2 + 0.15
     fold = q_crouch.copy()
@@ -956,7 +961,7 @@ def scenario_heist(kin, q_stand, p):
     def hop_base(u):
         xb_ = crouch[0] + mk.smooth(u) * (x_land - crouch[0])
         fz = mk.smooth(max(0.0, min(1.0, (xb_ - x_clear) / (x_land - x_clear))))
-        return xb_, crouch[1] + mk.smooth(u) * (w["y"] - crouch[1]), (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * math.sin(math.pi * fz), (1 - fz) * 0.35 + fz * gm.STANCE["pitch"]
+        return xb_, crouch[1] + mk.smooth(min(1.0, u / 0.35)) * (w["y"] - crouch[1]), (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * math.sin(math.pi * fz), (1 - fz) * 0.35 + fz * gm.STANCE["pitch"]
 
     hop = gs._joint_track(kin, "hop_down_inside", 1.3, [(0.0, q_sill), (0.3, fold), (0.65, fold), (1.0, q_stand)], hop_base,
                           source="gibbon_scenarios.heist: the hop down into the room")
