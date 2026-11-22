@@ -1,4 +1,5 @@
-"""ASTOR-TWIN — a concept: ASTOR with two wing motors on a fixed inner wing and swinging outer panels (2026-11-22).
+"""ASTOR-TWIN — the ASTOR product (since 2026-11-22): two wing motors on a fixed inner wing, swinging outer panels,
+the net launcher with three nets. It replaces ASTOR-T (tube launched, talons) as the default; it began as a concept:
 
 Asked for after the catch studies: more pull than one nose propeller gives, the tube set aside for now. The layout
 is the swing-wing jets' (F-111, F-14): a fixed inner wing (the "glove") carries the two motors; only the outer panels
@@ -13,8 +14,8 @@ body, the tail blades and fins, the net tube and the legs with their line are AS
   ASTOR-T's whole wing does (to be checked with the lattice).
 - **Legs**: ASTOR-T's, under the centre; the propellers are 190 mm to each side and above them.
 
-THIS IS A DRAWING AND A FIRST MASS, NOT YET A FLYING MODEL: no lattice, balance, stability or catch sortie has been
-run on it. ``checks()`` gives the geometry and a mass estimate (HAND, marked). Frame: x aft from the nose tip, y
+It flies in ``astor_v_flight`` ("twin": the lattice with the fixed inner wing; drag and maximum lift carried over
+from ASTOR-V's CFD until its own) and fires in ``astor_netshot``; its CFD and stability are run by ``sims/astor.sh``. ``checks()`` gives the geometry and a mass estimate (HAND, marked). Frame: x aft from the nose tip, y
 right, z up; mm.
 """
 from __future__ import annotations

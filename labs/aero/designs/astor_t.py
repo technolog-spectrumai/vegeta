@@ -1,4 +1,5 @@
-"""ASTOR-T — the ASTOR product: ASTOR-V redesigned to leave a tube on a spring (2026-11-22; it replaces ASTOR-V).
+"""ASTOR-T — ASTOR-V redesigned to leave a tube on a spring (2026-11-22). It was the ASTOR product for a day; ASTOR-TWIN
+(``astor_twin``) is now. Kept: the tube launch, the talons and the catch studies are built on it.
 
 **Why a redesign and not a launcher.** ASTOR-V stowed is 931 x 309 x 250 mm: the folded tail fan is 309 mm wide (a
 180 mm root chord swings out when the panel folds) and the fixed fin hangs 160 mm under the tail. It would need a
