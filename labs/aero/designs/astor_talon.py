@@ -37,8 +37,13 @@ STROKE_FRACTION = 0.6              # the thrown leg shortens by this share of it
 STEER_DEG = 20.0                   # each hip can swing the foot this far sideways in the last instant (the bird's own correction)
 REACH_Z_M = 0.18                   # a catch in height: the open foot's depth and the legs' give (HAND)
 BANDIT_HALF_M = 0.15               # the bandit's own half width (HAND)
-V_CLOSE_MAX = 14.0                 # the arm's design closing speed [m/s]
-BANDITS_KG = {"armageddon": 1.5, "fast": 4.0}       # HAND: a small multirotor; a 50 m/s fixed-wing drone
+TERMINAL_M, TERMINAL_KZ, TERMINAL_VZ = 150.0, 1.5, 5.0     # the last stretch: within this range; climb at 1.5 /s of the height error, 5 m/s at most
+PASS_SPEED = 1.3                   # the pass over a slow bandit, x the spread stall. Slower does not fly: the flight model's lift
+                                   # falls away 2 deg before the nominal stall angle, where the angle-of-attack limiter also sits, so
+                                   # at 1.15 x stall ASTOR sat on the limiter and sank 5 m under the bandit (2026-11-22)
+V_CLOSE_MAX = 18.0                 # the legs' design closing speed [m/s]: 1.3 x stall (24 m/s) on a 7 m/s bandit is 17
+ANGLE_NOISE = 0.005                # the camera places the bandit to this angle [rad] (HAND): 0.1 m at 20 m; never worse than noise_m
+BANDITS_KG = {"armageddon": 1.5, "quad": 1.5, "fast": 4.0}       # HAND: a small multirotor; a 50 m/s fixed-wing drone
 CHUTE_CDA = 0.8 * 1.3              # ASTOR's 0.8 m2 canopy (astor.py), Cd 1.3 (HAND +-0.3)
 
 
@@ -73,6 +78,21 @@ def strike_loads(v_close, bandit_kg, p=None, mass_kg=None) -> dict:
             "flies_on": False, "note": "the pitch rate and the load under the belly end the flight: motor cut, parachute"}
 
 
+class CruisingQuad:
+    """A quadcopter flying straight and level, not evading: the easiest target (speed, height, start ahead)."""
+
+    def __init__(self, speed=9.0, height=40.0, ahead=220.0, offset=0.0, heading_deg=0.0):
+        h = math.radians(heading_deg)
+        self.p = [ahead, offset, height]
+        self.v = (speed * math.cos(h), speed * math.sin(h), 0.0)
+        self.caught = None
+
+    def step(self, dt, t, hunter=None):
+        if self.caught is None:
+            for i in range(3):
+                self.p[i] += self.v[i] * dt
+
+
 def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0.3, duration_s=None, record=None) -> dict:
     """One sortie: every pass's miss (the rake's centre from the bandit, across and in height) and closing speed."""
     rng = np.random.default_rng(seed)
@@ -85,6 +105,9 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
     if fast:
         bandit = ND.FastBandit(seed=seed)
         sim.start(60.0, bandit.p[2])
+    elif bandit_kind == "quad":
+        bandit = CruisingQuad(offset=float(rng.uniform(-25, 25)), heading_deg=float(rng.uniform(-20, 20)))
+        sim.start(1.4 * Vs, bandit.p[2] + 6.0)
     else:
         bandit = ND.ArmageddonBandit(centre=(250.0 + rng.uniform(-30, 30), rng.uniform(-40, 40)), seed=seed)
         sim.start(1.4 * Vs, 30.0, heading_deg=float(rng.uniform(-15, 15)))
@@ -95,12 +118,14 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
     bid = mujoco.mj_name2id(sim.m, mujoco.mjtObj.mjOBJ_BODY, "bandit")
     mid = sim.m.body_mocapid[bid] if bid >= 0 else -1
     passes, best, was_closing, caught, min_alt, phase, t_phase = [], None, False, None, 1e9, "attack", 0.0
+    alpha_f = 0.0
     t0 = sim.d.time
     while sim.d.time - t0 < T_end and caught is None:
         t = sim.d.time - t0
         s = sim.state()
         if mid >= 0:
             sim.d.mocap_pos[mid] = bandit.p
+        cam.sig = min(noise_m, ANGLE_NOISE * math.dist(bandit.p, s["pos"]))      # close in, the camera sees it better
         b, vb = cam.see(t, bandit.p, bandit.v)
         sb = float(np.linalg.norm(vb[:2]))
         aim = np.asarray(b) + np.array([0.0, 0.0, drop])                 # the fuselage passes the arm's depth above the bandit
@@ -112,7 +137,16 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
             phi_max = math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001)))
             low = s["pos"][2] + 2.0 * min(s["v_world"][2], 0.0) < ND.FLOOR_M
             # the pass is flown as slowly as the wing allows over a slow bandit; a fast one is overtaken at +8 m/s
-            V_c = min(72.0, sb + (8.0 if rng_h < 150.0 else 20.0)) if fast else max(1.2 * Vs, sb + min(14.0, 4.0 + 0.2 * rng_h))
+            V_c = min(72.0, sb + (8.0 if rng_h < 150.0 else 20.0)) if fast else max(PASS_SPEED * Vs, sb + min(14.0, 4.0 + 0.2 * rng_h))
+            if rng_h < TERMINAL_M:
+                # the last stretch: the height is flown as a climb rate in proportion to the height error (a flight path
+                # angle, plus the angle of attack being flown). Pointing the nose along the line of sight, as the chase
+                # does, passed 3 m low every time: at this speed the wing flies 6 deg nose-up.
+                alpha_f += (float(sim.info.get("alpha", 0.0)) - alpha_f) * 0.01 / 0.5
+                vz = max(-TERMINAL_VZ, min(TERMINAL_VZ, TERMINAL_KZ * float(r[2])))
+                gam = max(-0.3, min(0.3, vz / max(s["V"], 10.0) + alpha_f))
+            else:
+                alpha_f = float(sim.info.get("alpha", 0.0))
             # the throttle holds the speed AND the height: the autopilot's own loop holds the speed alone, and over a
             # slow bandit (the speed wanted below the speed flown) it shut the motor and glided into the ground
             thr = 1.0 if low else max(0.0, min(1.0, sim.trim["throttle"] + 0.15 * (V_c - s["V"]) + 0.06 * float(r[2])))
@@ -140,7 +174,7 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
                     "closing_m_s": round(vc, 1), "astor_m_s": round(s["V"], 1), "bank_deg": round(math.degrees(s["phi"]), 0)}
         if was_closing and not closing and best is not None:               # the pass is over: its closest point stands
             hit = abs(best["across_m"]) <= REACH_Y_M and abs(best["height_m"]) <= REACH_Z_M and best["closing_m_s"] <= V_CLOSE_MAX
-            body = abs(best["across_m"]) <= 0.25 and -REACH_Z_M > best["height_m"] > -(drop + 0.1)      # the bandit met the fuselage, not the rake
+            body = abs(best["across_m"]) <= 0.25 and REACH_Z_M < best["height_m"] < drop + 0.1          # the bandit above the feet: it met the legs or the fuselage
             best.pop("d")
             passes.append({**best, "caught": bool(hit), "hit_the_fuselage": bool(body)})
             if hit:
@@ -163,4 +197,4 @@ def checks() -> dict:
     return {"legs_g": ARM_G, "feet_below_axis_mm": round((p["fuselage_diameter"] / 2000.0 + 0.008 + leg_drop(p)) * 1000),
             "reach": {"across_m": round(reach_across(p), 3), "of_which_hip_steering_m": round(leg_drop(p) * math.sin(math.radians(STEER_DEG)), 3),
                       "height_m": REACH_Z_M, "closing_limit_m_s": V_CLOSE_MAX},
-            "strike": {f"{k} bandit, {v:.0f} m/s": strike_loads(v, BANDITS_KG[k]) for k, v in (("armageddon", 12.0), ("armageddon", 14.0), ("fast", 8.0))}}
+            "strike": {f"{k} bandit, {v:.0f} m/s": strike_loads(v, BANDITS_KG[k]) for k, v in (("armageddon", 14.0), ("armageddon", 17.0), ("quad", 15.0), ("fast", 8.0))}}

@@ -160,7 +160,80 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
             C["static_margin"] = -C["Cma"] / C["CLa"]
             C["aero_source"] = (f"cfd run 1 (camber {cam_cfd:g}, carriage {trav_cfd:.0f} mm) for drag, slopes and stall + the lattice's "
                                 f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep, p):.0f} mm): rerun the CFD")
+    lift_table(C, name, sweep, cfg)
     return C
+
+
+TABLE_ALPHA = np.arange(-8.0, 25.0, 1.0)     # the common grid [deg] of every state's table (they are blended between sweeps)
+
+
+def lift_table(C, name, sweep, cfg) -> None:
+    """The lift, drag and moment against the angle of attack as a table (``arigo1_model`` flies a table when the set has
+    one), in place of the hand stall: linear to a nominal stall angle, then a fall onto the flat plate within 2 deg.
+    That fall began 2 deg BEFORE the stall angle, where the angle-of-attack limiter also sits: ASTOR could not fly
+    below ~1.3 x its stall speed in the simulator, though its CFD lift keeps rising gently to 16 deg (2026-11-22).
+
+    - a design with its own CFD at this sweep: the CFD's points;
+    - ASTOR-T before its CFD: its own linear lift and moment, bent as ASTOR-V's CFD bends from ASTOR-V's linear fit;
+    - beyond the CFD's last angle, and for a sweep whose CFD stopped early (60 deg: 6 deg): the linear lift capped
+      smoothly at the maximum lift (HAND), then a blend onto the flat plate over 8 deg.
+    The stall angle for the limiter and the warnings: where the lift first reaches 95 % of its maximum."""
+    A = TABLE_ALPHA
+    ar = np.radians(A)
+    lin_cl = C["CL0"] + C["CLa"] * ar
+    lin_cm = C["Cm0"] + C["Cma"] * ar
+    cap = lambda cl: np.where(cl > 0, C["CL_MAX"] * np.tanh(cl / C["CL_MAX"]), -0.8 * C["CL_MAX"] * np.tanh(-cl / (0.8 * C["CL_MAX"])))
+    CL, CM, CDx, a_last, src = cap(lin_cl), lin_cm.copy(), np.zeros_like(A), None, "linear lift capped at the maximum lift (HAND)"
+    rows = [r for r in (cfg or {}).get("rows", []) if r.get("status") == "solved" and r.get("Cl") is not None]
+    if rows and str(C.get("aero_source", "")).startswith("cfd corrections") and max(r["alpha_deg"] for r in rows) >= 10.0:
+        ref = cfg["reference"]
+        kL, kM = ref["S"] / C["S"], ref["S"] * ref["c"] / (C["S"] * C["c"])
+        a = np.array([r["alpha_deg"] for r in rows])
+        a_last = float(a.max())
+        m = (A >= a.min()) & (A <= a_last)
+        CL[m] = np.interp(A[m], a, np.array([r["Cl"] for r in rows]) * kL)
+        CM[m] = np.interp(A[m], a, np.array([r["Cm_cg"] for r in rows]) * kM)
+        CDx[m] = np.maximum(np.interp(A[m], a, np.array([r["Cd"] for r in rows]) * kL) - (C["CD0"] + C["k"] * CL[m] ** 2), 0.0)
+        src = "the CFD's points"
+    elif name == "t":
+        Cv = coefficients("v", sweep)
+        tv = Cv.get("lift_table_bend")
+        if tv is not None:
+            a_last = tv["a_last"]
+            m = (A >= tv["a_first"]) & (A <= a_last)
+            CL[m] = lin_cl[m] * tv["cl_ratio"][m]
+            # the same section stalls at the same lift per wing area: the peak brought to the maximum lift carried over
+            # (ASTOR-T's higher aspect ratio steepens its lift slope, not its maximum), from 4 deg up
+            peak = float(CL[m].max())
+            if peak > C["CL_MAX"]:
+                a_pk = float(A[m][int(np.argmax(CL[m]))])
+                g = 1.0 + (C["CL_MAX"] / peak - 1.0) * np.clip((A[m] - 4.0) / max(a_pk - 4.0, 1.0), 0.0, 1.0)
+                CL[m] = CL[m] * g
+            CM[m] = lin_cm[m] + tv["cm_excess"][m] * (Cv["S"] * Cv["c"]) / (C["S"] * C["c"]) * C["S"] / Cv["S"]
+            CDx[m] = tv["cd_excess"][m]
+            src = "its own linear lift and moment, bent as ASTOR-V's CFD bends (HAND carry-over)"
+    if a_last is not None:                                             # past the last CFD angle: on toward the flat plate over 8 deg
+        k = int(np.argmin(np.abs(A - a_last)))
+        for i in range(k + 1, len(A)):
+            w = min(1.0, (A[i] - a_last) / 8.0)
+            CL[i] = (1 - w) * CL[k] + w * 0.9 * 2 * math.sin(ar[i]) * math.cos(ar[i])
+            CM[i] = CM[k] + (lin_cm[i] - lin_cm[k])
+            CDx[i] = CDx[k]
+    else:
+        past = lin_cl > 1.6 * C["CL_MAX"]                              # far past the cap: toward the flat plate
+        CL[past] = np.minimum(CL[past], np.maximum(0.9 * 2 * np.sin(ar[past]) * np.cos(ar[past]), 0.6 * C["CL_MAX"]))
+    fp_cd = 2 * np.sin(ar) ** 2 * 0.9
+    CD = np.maximum(C["CD0"] + C["k"] * np.minimum(CL, C["CL_MAX"]) ** 2 + CDx, np.where(np.abs(A) > 14.0, fp_cd * 0.8, 0.0))
+    if src == "the CFD's points":                                      # what ASTOR-T carries over: how the CFD bends from the linear fit
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio = np.where(np.abs(lin_cl) > 0.15, CL / lin_cl, 1.0)
+        C["lift_table_bend"] = {"a_first": float(a.min()), "a_last": a_last, "cl_ratio": np.clip(ratio, 0.3, 1.3), "cm_excess": CM - lin_cm, "cd_excess": CDx}
+    C["cfd"] = {"alpha_deg": A, "CL": CL, "CD": CD, "Cm": CM}
+    pos = A >= 0
+    cl_max = float(CL[pos].max())
+    i95 = int(np.argmax(CL[pos] >= 0.95 * cl_max))
+    C["CL_MAX"], C["alpha_stall"] = cl_max, float(math.radians(A[pos][i95]))
+    C["lift_curve_source"] = src
 
 
 def from_astor_v(C, p, sweep) -> None:
@@ -238,7 +311,8 @@ def limit_elevator(C, v_air_frd, q, de) -> float:
     the pitch rate toward it. Positive elevator is nose down."""
     al = math.atan2(v_air_frd[2], max(v_air_frd[0], 1.0))
     a_lim = C["alpha_stall"] - math.radians(ALPHA_MARGIN_DEG)
-    de_hold = -(C["Cm0"] + C["Cma"] * a_lim) / C["Cmde"]
+    cm_lim = am._cfd_static(C["cfd"], a_lim)[2] if "cfd" in C else C["Cm0"] + C["Cma"] * a_lim
+    de_hold = -cm_lim / C["Cmde"]
     floor = de_hold + LIMIT_K * math.degrees(al - a_lim) + LIMIT_KQ * math.degrees(q)
     return max(de, min(floor, am.DE_MAX))
 
@@ -287,6 +361,8 @@ def blended(name: str, sweep: float) -> dict:
         if isinstance(v, float) and isinstance(hi.get(key), float):
             C[key] = v + f * (hi[key] - v)
     C["inertia"] = tuple(a + f * (b - a) for a, b in zip(lo["inertia"], hi["inertia"]))
+    if "cfd" in lo and "cfd" in hi:
+        C["cfd"] = {k: (lo["cfd"][k] if k == "alpha_deg" else lo["cfd"][k] + f * (hi["cfd"][k] - lo["cfd"][k])) for k in lo["cfd"]}
     C["sweep_deg"] = s
     return C
 
