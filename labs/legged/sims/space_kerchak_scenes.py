@@ -396,10 +396,10 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
-            if a.scene == "heist":                                         # inside the house: the wall behind it drawn away
+            if a.scene == "heist":                                         # through the window: the walls stay, the camera comes round into the room
                 P = gs.params_for("heist", params)
-                if c[0] > P["x"] + P["wall_gap"] - 0.1:
-                    renderer.hidden |= {"wall_above", "wall_below", "wall_left", "wall_right", "sill_plate"}
+                f = mk.smooth(min(1.0, max(0.0, (c[0] - (P["x"] + P["wall_gap"] - 0.2)) / 0.6)))
+                az = azim + 110.0 * f
             if a.scene == "course":                                        # inside the house: the walls behind it drawn away, the camera keeps its side
                 P = gs.params_for("course", params)
                 if c[0] > P["window_x"] - 0.1:
