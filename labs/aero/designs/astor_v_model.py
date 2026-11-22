@@ -79,6 +79,12 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
             eta = ((abs(mid[1]) - p["pivot_y"]) * math.cos(a) + (mid[0] - P_pivot_x(p, sweep_r, sweep_l)) * math.sin(a)) / p["panel_span"]
             on = p.get("panel_aileron_from", 0.0) <= eta <= p.get("panel_aileron_to", 0.0)
             inc.append(ALPHA0_DEG_PER_CAMBER * p.get("panel_camber", 0.0) * cs - side * aileron * TAU_AILERON * cs * cs * on)
+    if p.get("glove_span", 0.0) > 0.0:                               # ASTOR-TWIN's fixed inner wing (it does not sweep)
+        for side in (1, -1):
+            P = _outline(p["glove_root_chord"], p["glove_root_chord"] * p["glove_taper"], p["glove_span"] / 2, p["glove_sweep_deg"], 0.0, 0.0, p["glove_le_x"], 0.0, side)
+            q = _strips(P, side, p["glove_z"], n=6)
+            quads += q
+            inc += [ALPHA0_DEG_PER_CAMBER * p.get("panel_camber", 0.0)] * len(q)
     ts = 85.0 - 50.0 * tail_fan
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)

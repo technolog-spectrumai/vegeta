@@ -1,0 +1,336 @@
+what: 'astor_netshot: ASTOR-TWIN, one launcher on a pan-tilt mount, three nets; 12 debug sorties against astor_hunt''s population'
+wins: 8
+sorties: 12
+astor_lost: 0
+by_behaviour:
+  weave: 4 of 4
+  straight: 4 of 4
+  jink: 0 of 4
+nets_fired:
+- 1
+- 1
+- 1
+- 1
+- 0
+- 0
+- 1
+- 1
+- 1
+- 0
+- 0
+- 1
+astor_twin:
+  '12.0':
+    stall_m_s: 23.1
+    static_margin: 0.102
+  '35.0':
+    stall_m_s: 23.7
+    static_margin: 0.278
+  '60.0':
+    stall_m_s: 26.3
+    static_margin: 0.232
+sorties_detail:
+- seed: 0
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: weave
+    mass_kg: 1.27
+    speed_m_s: 10.0
+  nets_fired: 1
+  shots:
+  - t: 10.19
+    range_m: 7.1
+    predicted_miss_m: 0.82
+    predicted_flight_m: 8.9
+    astor_above_m: 1.5
+    mount_pan_tilt_deg:
+    - -22.3
+    - -1.4
+    closing_m_s: 21.3
+    miss_m: 0.81
+    flown_m: 8.6
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 10.4
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.7
+    duration_s: 16.4
+- seed: 1
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: weave
+    mass_kg: 1.95
+    speed_m_s: 10.0
+  nets_fired: 1
+  shots:
+  - t: 10.19
+    range_m: 7.1
+    predicted_miss_m: 0.66
+    predicted_flight_m: 9.4
+    astor_above_m: 1.47
+    mount_pan_tilt_deg:
+    - -1.6
+    - 7.7
+    closing_m_s: 21.6
+    miss_m: 0.76
+    flown_m: 9.3
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 10.4
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.6
+    duration_s: 16.5
+- seed: 2
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: straight
+    mass_kg: 1.3
+    speed_m_s: 12.9
+  nets_fired: 1
+  shots:
+  - t: 12.06
+    range_m: 6.2
+    predicted_miss_m: 0.5
+    predicted_flight_m: 9.4
+    astor_above_m: 1.21
+    mount_pan_tilt_deg:
+    - 19.0
+    - -1.2
+    closing_m_s: 17.2
+    miss_m: 0.42
+    flown_m: 9.5
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 12.3
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.6
+    duration_s: 18.3
+- seed: 3
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: straight
+    mass_kg: 1.24
+    speed_m_s: 12.8
+  nets_fired: 1
+  shots:
+  - t: 12.22
+    range_m: 6.1
+    predicted_miss_m: 0.54
+    predicted_flight_m: 9.1
+    astor_above_m: 1.3
+    mount_pan_tilt_deg:
+    - -13.7
+    - 3.2
+    closing_m_s: 17.3
+    miss_m: 0.52
+    flown_m: 9.1
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 12.5
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.6
+    duration_s: 18.5
+- seed: 4
+  outcome: no_catch
+  win: false
+  astor_lost: false
+  quadcopter:
+    behaviour: jink
+    mass_kg: 1.51
+    speed_m_s: 8.0
+  nets_fired: 0
+  shots: []
+  t_netted_s: null
+  astor:
+    mass_kg: 6.87
+    stall_m_s: 23.1
+    lowest_m: 108.4
+    duration_s: 170.0
+- seed: 5
+  outcome: no_catch
+  win: false
+  astor_lost: false
+  quadcopter:
+    behaviour: jink
+    mass_kg: 1.81
+    speed_m_s: 8.0
+  nets_fired: 0
+  shots: []
+  t_netted_s: null
+  astor:
+    mass_kg: 6.87
+    stall_m_s: 23.1
+    lowest_m: 107.6
+    duration_s: 170.0
+- seed: 6
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: weave
+    mass_kg: 1.34
+    speed_m_s: 10.0
+  nets_fired: 1
+  shots:
+  - t: 99.94
+    range_m: 7.8
+    predicted_miss_m: 0.46
+    predicted_flight_m: 9.4
+    astor_above_m: 0.96
+    mount_pan_tilt_deg:
+    - -35.0
+    - -12.0
+    closing_m_s: 22.1
+    miss_m: 0.5
+    flown_m: 8.9
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 100.2
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 108.0
+    duration_s: 106.2
+- seed: 7
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: weave
+    mass_kg: 1.9
+    speed_m_s: 10.0
+  nets_fired: 1
+  shots:
+  - t: 10.28
+    range_m: 7.6
+    predicted_miss_m: 0.86
+    predicted_flight_m: 9.4
+    astor_above_m: 1.16
+    mount_pan_tilt_deg:
+    - -17.1
+    - -3.1
+    closing_m_s: 21.9
+    miss_m: 1.03
+    flown_m: 9.1
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 10.5
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.7
+    duration_s: 16.5
+- seed: 8
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: straight
+    mass_kg: 1.99
+    speed_m_s: 9.9
+  nets_fired: 1
+  shots:
+  - t: 10.42
+    range_m: 6.8
+    predicted_miss_m: 0.34
+    predicted_flight_m: 9.4
+    astor_above_m: 1.39
+    mount_pan_tilt_deg:
+    - -2.8
+    - 3.9
+    closing_m_s: 20.1
+    miss_m: 0.3
+    flown_m: 9.3
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 10.7
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.8
+    duration_s: 16.7
+- seed: 9
+  outcome: no_catch
+  win: false
+  astor_lost: false
+  quadcopter:
+    behaviour: jink
+    mass_kg: 1.29
+    speed_m_s: 8.0
+  nets_fired: 0
+  shots: []
+  t_netted_s: null
+  astor:
+    mass_kg: 6.87
+    stall_m_s: 23.1
+    lowest_m: 109.2
+    duration_s: 170.0
+- seed: 10
+  outcome: no_catch
+  win: false
+  astor_lost: false
+  quadcopter:
+    behaviour: jink
+    mass_kg: 1.21
+    speed_m_s: 8.0
+  nets_fired: 0
+  shots: []
+  t_netted_s: null
+  astor:
+    mass_kg: 6.87
+    stall_m_s: 23.1
+    lowest_m: 116.9
+    duration_s: 170.0
+- seed: 11
+  outcome: netted
+  win: true
+  astor_lost: false
+  quadcopter:
+    behaviour: straight
+    mass_kg: 1.5
+    speed_m_s: 11.6
+  nets_fired: 1
+  shots:
+  - t: 11.36
+    range_m: 6.5
+    predicted_miss_m: 0.41
+    predicted_flight_m: 9.5
+    astor_above_m: 1.38
+    mount_pan_tilt_deg:
+    - 8.9
+    - 3.2
+    closing_m_s: 18.4
+    miss_m: 0.38
+    flown_m: 9.5
+    half_span_m: 1.48
+    inside: true
+    took: true
+  t_netted_s: 11.6
+  astor:
+    mass_kg: 6.72
+    stall_m_s: 23.1
+    lowest_m: 120.8
+    duration_s: 17.6

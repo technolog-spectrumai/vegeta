@@ -87,6 +87,7 @@ PACKS = {
     "6S 3000 mAh LiPo": (450.0, 66.6, 90.0, "HAND: 150 g per Ah at 6S, 30C (+-10 %)"),
     "6S 4000 mAh LiPo": (600.0, 88.8, 120.0, "HAND: 150 g per Ah at 6S, 30C (+-10 %)"),
     "6S 5000 mAh LiPo": (750.0, 111.0, 150.0, "HAND: 150 g per Ah at 6S, 30C (+-10 %)"),
+    "12S 5000 mAh LiPo": (1520.0, 222.0, 200.0, "HAND: two 12S 2500 mAh in parallel (+-10 %)"),
     "12S 2500 mAh LiPo": (760.0, 111.0, 100.0, "HAND: the same cells as two 6S 2500 mAh in series, 40C (+-10 %)"),
     "Li-ion 6S2P P42A": (round(12 * 70.0 * 1.07), 12 * 3.6 * 4.2, 90.0, "cell x count + 7 % (HAND); 45 A per cell"),
 }

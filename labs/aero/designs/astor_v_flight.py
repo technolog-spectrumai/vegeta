@@ -55,6 +55,11 @@ def design(name: str):
         import astor_t as T
         p = T.resolve()
         return p, T.budget(p)
+    if name == "twin":                                                       # ASTOR-TWIN with one net launcher and three nets (astor_twin)
+        import astor_twin as W
+        p = W.resolve(W.variant(net_launchers=1, talon_deploy=-1.0, net_count=0))
+        o = W.one_launcher(3)
+        return p, {"total_g": o["aircraft_kg"] * 1000.0, "pack": {"name": "12S 5000 mAh LiPo"}, "items": [], "note": "astor_twin.one_launcher(3): HAND"}
     p = V.resolve()
     return p, V.budget(p)
 
@@ -76,11 +81,15 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
     wn = V.wing_numbers(p, sweep)
     b = max(wn["span_mm"], 520.0) / 1000.0
     S = wn["exposed_area_m2"] + 0.07 * 0.21                                  # the exposed panels + the carry-over across the body
+    glove = 0.0
+    if name == "twin":                                                       # + the fixed inner wing
+        glove = 0.5 * p["glove_root_chord"] * (1 + p["glove_taper"]) * p["glove_span"] / 1e6
+        S = wn["exposed_area_m2"] + glove
     # the equivalent conventional wing for the hand formulas (lateral, damping, inertias)
     lam = p["panel_tip_chord"] / p["panel_root_chord"]
     fin = p                                                                  # ASTOR-T: its two splayed fins as one upright fin of the same side force
-    if name == "t":
-        import astor_t as T
+    import astor_t as T
+    if name in ("t", "twin"):
         fin = T.fin_equivalent(p)
     cr = 2 * S / (b * (1 + lam)) * 1000.0
     q = A.variant(span=b * 1000.0, root_chord=cr, taper=lam, le_sweep_deg=min(sweep, 35.0), dihedral_deg=0.0,
@@ -95,9 +104,11 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
     L = A.Astor.layout(pe)
     power = A.MOTOR_W
     if name == "t":
-        import astor_t as T
         power = T.MOTOR_W
-    sel = AM.propulsor(m, power, (T.PROP_IN,)) if name == "t" else AM.propulsor(m, power)
+    if name == "twin":                                                       # two 4 kW motors, an 11-inch propeller each
+        sel = {**AM.propulsor(m / 2, 4000.0, (11.0,)), "units": 2}
+    else:
+        sel = AM.propulsor(m, power, (T.PROP_IN,)) if name == "t" else AM.propulsor(m, power)
     sel = {**sel, "layout": "tractor"}
     thrust = ap.thrust_table(sel, V=[float(v) for v in range(0, 92, 2)])
     cda = BODY_CDA + WING_CD * wn["exposed_area_m2"] + (POD_CDA if name == "boost" else 0.0)
@@ -114,7 +125,7 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
     x_np = -(r4["Cm"] - r0["Cm"]) / (r4["CL"] - r0["CL"]) * VM.C_REF
     CLde = (re["CL"] - r0["CL"]) * kL
     CL_MAX = CL_MAX_SPREAD * max(math.cos(math.radians(sweep - 12.0)), 0.55) * VM.S_REF / Se * (wn["exposed_area_m2"] / 0.198)
-    C.update({"aircraft": {"boost": "ASTOR-BOOST", "t": "ASTOR-T"}.get(name, "ASTOR-V"), "design": name, "sweep_deg": sweep, "tail_fan": tf,
+    C.update({"aircraft": {"boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN"}.get(name, "ASTOR-V"), "design": name, "sweep_deg": sweep, "tail_fan": tf,
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
@@ -138,8 +149,12 @@ def coefficients(name: str = "t", sweep: float = 12.0) -> dict:
         C["boost"] = {"table_V": [float(v) for v in range(0, 92, 2)], "table_T": [float(max(u.full(float(v))[0], 0.0)) for v in range(0, 92, 2)],
                       "power_W": FAN_W, "z_below_axis_m": 0.080}
     cfg = cfd_config(name, sweep)
-    if not cfg and name == "t":
-        from_astor_v(C, p, sweep)
+    if not cfg and name in ("t", "twin"):
+        from_astor_v(C, p, sweep, glove)
+        if name == "twin":
+            import gavilan_flight as GF
+            C["CD0"] += (2 * 0.0008 + GF.NET_CDA) / C["S"]                    # HAND: two nacelles; the net launcher (gavilan_flight)
+            C["Cnb"] *= 0.9                                                   # HAND: the two propellers' normal force ahead of the CG
     if cfg:
         ref = cfg.get("reference", {})
         cam_cfd, trav_cfd = ref.get("camber", 0.0), ref.get("carriage_travel_mm", V.RUN1_TRAVEL.get(sweep, 0.0))
@@ -195,7 +210,7 @@ def lift_table(C, name, sweep, cfg) -> None:
         CM[m] = np.interp(A[m], a, np.array([r["Cm_cg"] for r in rows]) * kM)
         CDx[m] = np.maximum(np.interp(A[m], a, np.array([r["Cd"] for r in rows]) * kL) - (C["CD0"] + C["k"] * CL[m] ** 2), 0.0)
         src = "the CFD's points"
-    elif name == "t":
+    elif name in ("t", "twin"):
         Cv = coefficients("v", sweep)
         tv = Cv.get("lift_table_bend")
         if tv is not None:
@@ -236,7 +251,7 @@ def lift_table(C, name, sweep, cfg) -> None:
     C["lift_curve_source"] = src
 
 
-def from_astor_v(C, p, sweep) -> None:
+def from_astor_v(C, p, sweep, extra_wing_m2=0.0) -> None:
     """ASTOR-T before its own CFD: the drag and the maximum lift from ASTOR-V's CFD at this sweep (the same body, tail
     cone, cameras and section), carried over by area — the body's drag area kept, the wing's part by the exposed wing
     area, the drag due to lift by the aspect ratio, the maximum lift per exposed wing area. The lift slope, the balance
@@ -245,7 +260,8 @@ def from_astor_v(C, p, sweep) -> None:
     if not str(Cv.get("aero_source", "")).startswith("cfd"):
         return
     pv, _ = design("v")
-    wv, wt = V.wing_numbers(pv, sweep), V.wing_numbers(p, sweep)
+    wv, wt = V.wing_numbers(pv, sweep), dict(V.wing_numbers(p, sweep))
+    wt["exposed_area_m2"] += extra_wing_m2                                    # ASTOR-TWIN's fixed inner wing
     cda_v = Cv["CD0"] * Cv["S"]
     cda_t = cda_v - WING_CD * (wv["exposed_area_m2"] - wt["exposed_area_m2"]) * 1.3      # x1.3: the CFD's wing drag over the hand value
     ar_v, ar_t = Cv["b"] ** 2 / Cv["S"], C["b"] ** 2 / C["S"]

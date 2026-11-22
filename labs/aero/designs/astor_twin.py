@@ -30,12 +30,12 @@ import astor_v as V
 from vegeta.dedalus import Parameter
 
 _DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher",                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
-             "pivot_y": 235.0, "pivot_x": 395.0, "pivot_slides": False, "panel_span": 460.0, "panel_root_chord": 180.0, "panel_tip_chord": 110.0,
+             "pivot_y": 235.0, "pivot_x": 365.0, "pivot_slides": False, "panel_span": 460.0, "panel_root_chord": 180.0, "panel_tip_chord": 110.0,
              "panel_stack": 4.0, "wing_plane_z": 8.0, "prop_diameter": 279.4, "talon_hinge_x": 380.0}
 _NEW = [
     Parameter("glove_span", 500.0, "mm", min=200.0, description="the fixed inner wing, tip to tip"),
     Parameter("glove_root_chord", 300.0, "mm", min=120.0), Parameter("glove_taper", 0.75, "", min=0.3, max=1.0),
-    Parameter("glove_sweep_deg", 25.0, "deg", min=0.0, max=50.0), Parameter("glove_le_x", 270.0, "mm", min=100.0, description="its leading edge at the centre plane"),
+    Parameter("glove_sweep_deg", 25.0, "deg", min=0.0, max=50.0), Parameter("glove_le_x", 240.0, "mm", min=100.0, description="its leading edge at the centre plane"),
     Parameter("glove_z", 20.0, "mm", description="its plane above the fuselage axis"),
     Parameter("motor_y", 190.0, "mm", min=80.0, description="each wing motor from the centre plane"),
     Parameter("nacelle_d", 54.0, "mm", min=30.0), Parameter("nacelle_len", 130.0, "mm", min=60.0),
