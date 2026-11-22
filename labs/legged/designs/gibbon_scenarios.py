@@ -699,7 +699,7 @@ def scenario_heist(kin, q_stand, p):
     """The walk to the tree beside the house and the climb (the right hand on the branches, the left round the trunk
     - the branches on the window's side are cut back - the feet's toes round the branches, the tail round the trunk);
     at the window's height, held by the tail, both feet and the right hand, the left hand takes the hammer from the
-    backpack over the shoulder, winds up and smashes the pane, lets the hammer fall; a leap from the tree onto the
+    backpack over the shoulder, winds up and smashes the pane, lets the hammer fall; the crossing from the tree onto the
     sill, a crouch in the opening, a hop down into the room, the walk to the banana."""
     w = _heist_window(p)
     xb = p["x"] - p["trunk_radius"] - 0.02
@@ -868,10 +868,13 @@ def scenario_heist(kin, q_stand, p):
                              reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=gs.climb_ref(kin, q2), source="gibbon_scenarios.heist: the fist opens, the hammer falls")
     drop.params = {**(drop.params or {}), "release_u": 0.3}
     q3 = gt._last(kin, drop, q2)
-    # the leap: from the tree onto the sill, a crouch in the opening (joint keyposes on a base track)
+    # the crossing: from the tree onto the sill one limb at a time, never fewer than three holds; the tail stays round
+    # the trunk until both hands and both feet are on the sill, the body shifted slowly (quasi-static) between them
     top = w["sill"] + 0.06
-    crouch = np.array([w["x"] - 0.1, w["y"], top + 0.3])
-    feet_sill = {sd: gs.point(np.array([w["x"] - 0.02, w["y"] + (0.1 if sd == "L" else -0.1), top]), pitch=0.0) for sd in ("L", "R")}
+    y_c = w["y"] - w["width"] / 2 + 0.3                                    # the crouch at the sill's tree-side end
+    crouch = np.array([w["x"] - 0.1, y_c, top + 0.3])
+    feet_sill = {sd: gs.point(np.array([w["x"] - 0.02, y_c + (0.1 if sd == "L" else -0.1), top]), pitch=0.0) for sd in ("L", "R")}
+    hands_sill = {sd: gs.point(np.array([w["x"] - w["wall_thickness"] / 2 + 0.06, y_c + (0.2 if sd == "L" else -0.12), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     Rc = gm.base_rot(0.35)
     T = [(bd, l, Rc.T @ (np.asarray(wp) - crouch)) for bd, l, wp in gs.foot_targets(kin, "L", feet_sill["L"]) + gs.foot_targets(kin, "R", feet_sill["R"])]
@@ -879,88 +882,70 @@ def scenario_heist(kin, q_stand, p):
     for sd in ("L", "R"):
         sr.set_curl(q_crouch, kin, sd, gs.CURL_OPEN)
         sr.set_toe_curl(q_crouch, kin, sd, 0.0)
-    tuck = q3.copy()
-    for sd in ("L", "R"):
-        tuck[kin.index[f"{sd}_knee"]] = min(tuck[kin.index[f"{sd}_knee"]] + 0.5, kin.hi[kin.index[f"{sd}_knee"]])
-        tuck[kin.index[f"{sd}_hip_pitch"]] = max(tuck[kin.index[f"{sd}_hip_pitch"]] - 0.5, kin.lo[kin.index[f"{sd}_hip_pitch"]])
-        sr.set_curl(tuck, kin, sd, gs.CURL_OPEN)
-        sr.set_toe_curl(tuck, kin, sd, 0.0)
-    for j in kin.actuated:                                                 # the arms come in off the branches first: none swept through the wall
-        if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist")):
-            tuck[kin.index[j]] = q_crouch[kin.index[j]] = q_stand[kin.index[j]] if "elbow" in j else min(max(0.0, kin.lo[kin.index[j]]), kin.hi[kin.index[j]])   # upper arms down, forearms folded: under the lintel, over the sill
 
-    def leap_base(u):
-        f = mk.smooth(u)
-        pc = (1 - f) * b + f * crouch + np.array([0.0, 0.0, 0.3 * math.sin(math.pi * u)])
-        return pc[0], pc[1], pc[2], (1 - f) * pitch + f * 0.35
+    T_feet = {sd: gs.foot_targets(kin, sd, h_end[sd]) for sd in ("L", "R")}
+    T_tail = tail_wrap_trunk(kin, p["x"], _branch_z(p, n, 0.0) - TRUNK_BELOW, p["trunk_radius"]) if tail else []
+    T_rh = gs.hand_targets(kin, "R", h_end["R_hand"])
+    S_feet = {sd: gs.foot_targets(kin, sd, feet_sill[sd]) for sd in ("L", "R")}
+    S_hand = {sd: gs.hand_targets(kin, sd, hands_sill[sd]) for sd in ("L", "R")}
 
-    arms_in = q3.copy()                                                    # first the arms off the branch and in, the body still on the tree
-    for j in kin.actuated:
-        if any(j.startswith(f"{sd}_{k}") for sd in ("L", "R") for k in ("shoulder", "elbow", "wrist", "finger", "thumb")):
-            arms_in[kin.index[j]] = tuck[kin.index[j]]
+    def world_now(q_, base_, pt_, tg):
+        kin.set(q_)
+        R_ = gm.base_rot(pt_)
+        return [(bd, l, R_ @ kin.world(bd, l) + base_) for bd, l, _ in tg]
 
-    # the leap as a jump: arms in and a crouch off the trunk's side, a push-off along the launch line, a ballistic
-    # flight (gravity only: the pelvis on a parabola, the horizontal speed constant), the landing taken in the legs
-    G = 9.81
-    T_IN, T_PUSH, T_LAND, DIP, CLEAR = 0.6, 0.22, 0.3, 0.07, 0.12
-    p0 = np.array([b[0] - 0.22, b[1] + 0.3, b[2] - 0.06])                  # back off the tree and out to the window's side, sunk into the push
-    p1 = crouch.copy()
-    launch = p0.copy()
-    for _ in range(6):                                                     # the launch point: where the push (uniform acceleration from rest) ends
-        apex = max(launch[2], p1[2]) + CLEAR
-        t_up = math.sqrt(2.0 * (apex - launch[2]) / G)
-        t_dn = math.sqrt(2.0 * (apex - p1[2]) / G)
-        T_FLY = t_up + t_dn
-        v = np.array([(p1[0] - launch[0]) / T_FLY, (p1[1] - launch[1]) / T_FLY, G * t_up])
-        launch = p0 + v * T_PUSH / 2.0
-    D = T_IN + T_PUSH + T_FLY + T_LAND
-    print(f"heist: leap {np.linalg.norm(p1[:2] - launch[:2]):.2f} m, take-off {np.linalg.norm(v):.2f} m/s, flight {T_FLY:.2f} s, apex {apex - launch[2]:.2f} m over take-off")
-    push_ext = arms_in.copy()                                              # the legs straightened at take-off
-    crouch_in = arms_in.copy()
-    for sd in ("L", "R"):
-        for jn, dq in (("knee", 0.5), ("hip_pitch", -0.4), ("ankle_pitch", 0.3)):
-            j = f"{sd}_{jn}"
-            if j in kin.index:
-                i = kin.index[j]
-                crouch_in[i] = min(max(arms_in[i] + dq, kin.lo[i]), kin.hi[i])
-                push_ext[i] = min(max(arms_in[i] - 0.6 * dq, kin.lo[i]), kin.hi[i])
-    absorb = q_crouch.copy()
-    for sd in ("L", "R"):
-        for jn, dq in (("knee", 0.35), ("hip_pitch", -0.3)):
-            j = f"{sd}_{jn}"
-            if j in kin.index:
-                i = kin.index[j]
-                absorb[i] = min(max(q_crouch[i] + dq, kin.lo[i]), kin.hi[i])
+    def mover(start, end, lift=0.08, out=np.zeros(3)):
+        """A limb lifted off its hold, carried on an arc (up, and ``out`` from the wall) and set on the next."""
+        def f(u):
+            g_ = mk.smooth(min(1.0, max(0.0, (u - 0.1) / 0.75)))
+            arc = math.sin(math.pi * g_) * (np.array([0.0, 0.0, lift]) + out)
+            return [(e[0], e[1], (1 - g_) * np.asarray(s_[2]) + g_ * np.asarray(e[2]) + arc) for s_, e in zip(start, end)]
+        return f
 
-    def leap_base(u):
-        t = u * D
-        if t < T_IN:                                                       # off the tree, round to the trunk's side, sinking
-            fx_, fy_ = mk.smooth(min(1.0, t / (0.5 * T_IN))), mk.smooth(max(0.0, (t - 0.5 * T_IN) / (0.5 * T_IN)))   # back off the trunk, then round it
-            pc, pt = np.array([b[0] + fx_ * (p0[0] - b[0]), b[1] + fy_ * (p0[1] - b[1]), b[2] + fx_ * (p0[2] - b[2])]), pitch
-        elif t < T_IN + T_PUSH:                                            # the push: from rest to take-off speed
-            tt = t - T_IN
-            pc, pt = p0 + v * tt * tt / (2.0 * T_PUSH), pitch
-        elif t < T_IN + T_PUSH + T_FLY:                                    # the flight: a parabola
-            tt = t - T_IN - T_PUSH
-            pc = launch + np.array([v[0] * tt, v[1] * tt, v[2] * tt - 0.5 * G * tt * tt])
-            pt = pitch + (0.35 - pitch) * mk.smooth(tt / T_FLY)
-        else:                                                              # the landing: the legs give and come back
-            tt = (t - T_IN - T_PUSH - T_FLY) / T_LAND
-            pc, pt = p1 - np.array([0.0, 0.0, DIP * math.sin(math.pi * min(1.0, tt))]), 0.35
-        return pc[0], pc[1], pc[2], pt
+    def shift(c0, c1, p0_, p1_):
+        return lambda u: tuple((1 - mk.smooth(u)) * c0 + mk.smooth(u) * c1) + ((1 - mk.smooth(u)) * p0_ + mk.smooth(u) * p1_,)
 
-    for qk in (q_crouch, absorb):                                          # landing: the arms forward and up for balance, the hands clear of the sill
-        for sd in ("L", "R"):
-            i = kin.index[f"{sd}_shoulder_pitch"]
-            qk[i] = min(max(-0.6, kin.lo[i]), kin.hi[i])
-    for qk in (push_ext, tuck, q_crouch, absorb):                          # the tail off the trunk at the push, raised and curled over the back in the air
-        for j in kin.actuated:
-            if j.startswith("tail"):
-                qk[kin.index[j]] = q_stand[kin.index[j]]
-    k1, k2, k3 = T_IN / D, (T_IN + T_PUSH) / D, (T_IN + T_PUSH + T_FLY) / D
-    leap = gs._joint_track(kin, "leap_to_the_sill", D, [(0.0, q3), (k1, crouch_in), (k2, push_ext), ((k2 + k3) / 2, tuck), (k3, q_crouch),
-                                                        (k3 + 0.4 * (1 - k3), absorb), (1.0, q_crouch)], leap_base, frames=int(D * 40),
-                           source="gibbon_scenarios.heist: the jump from the tree onto the sill - push-off, ballistic flight, landing")
+    def x_hold(feet_on_branch, tail_on, toes_open=()):
+        def f(u, q_):
+            sr.set_curl(q_, kin, "R", gs.CURL_CLOSED)
+            sr.set_curl(q_, kin, "L", gs.CURL_CLOSED)
+            for sd in feet_on_branch:
+                gs.toe_wrap(kin, q_, sd, h_end[sd])
+            for sd in toes_open:
+                sr.set_toe_curl(q_, kin, sd, 0.0)
+            if not tail_on:                                                # the tail unwound: raised and curled over the back, slowly
+                for j in kin.actuated:
+                    if j.startswith("tail"):
+                        i = kin.index[j]
+                        q_[i] = q_[i] + (q_stand[i] - q_[i]) * mk.smooth(u)
+            return gs._spine_extra(kin, gs.CLIMB_SPINE)(1.0, q_)
+        return f
+
+    steps, qc, bc, pc_ = [], q3, np.array(b, dtype=float), pitch
+    b1 = bc + np.array([0.08, 0.1, 0.04])
+    b2 = b1 + np.array([0.08, 0.08, 0.04])
+    b3 = np.array([crouch[0] - 0.12, y_c - 0.05, crouch[2] + 0.02])
+    plan = [  # name, duration, moving limb (side, kind), base to, pitch to, the holds kept, feet on branches, tail on
+        ("left_hand_to_the_sill", 1.6, ("L", "hand"), bc, pitch, lambda: T_feet["L"] + T_feet["R"] + T_rh + T_tail, ("L", "R"), True),
+        ("left_foot_to_the_sill", 1.8, ("L", "foot"), b1, pitch, lambda: S_hand["L"] + T_feet["R"] + T_rh + T_tail, ("R",), True),
+        ("right_hand_to_the_sill", 1.6, ("R", "hand"), b2, pitch, lambda: S_hand["L"] + S_feet["L"] + T_feet["R"] + T_tail, ("R",), True),
+        ("right_foot_to_the_sill", 1.8, ("R", "foot"), b3, 0.5 * (pitch + 0.35), lambda: S_hand["L"] + S_hand["R"] + S_feet["L"] + T_tail, (), True),
+    ]
+    for name, dur, (sd, kind), b_to, p_to, kept, on_branch, tail_on in plan:
+        end = S_hand[sd] if kind == "hand" else S_feet[sd]
+        start = world_now(qc, bc, pc_, end)                                # the same points of the limb, where they are now
+        mv = mover(start, end, lift=0.06 if kind == "hand" else 0.1, out=np.array([-0.05, 0.0, 0.0]))
+        hold_ = kept()
+        m_ = gt.contact_motion(kin, name, dur, (lambda u, hold_=hold_, mv=mv: hold_ + mv(u)), shift(bc, b_to, pc_, p_to), q_init=qc,
+                               extra=x_hold(on_branch, tail_on, toes_open=() if kind == "hand" else (sd,)), reg=gs.IK_REG, iters=gs.IK_ITERS,
+                               q_ref=gs.climb_ref(kin, qc), source=f"gibbon_scenarios.heist: {name.replace('_', ' ')} - three holds kept, the tail round the trunk")
+        steps.append(m_)
+        qc, bc, pc_ = gt._last(kin, m_, qc), np.array(b_to, dtype=float), p_to
+    m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: S_hand["L"] + S_hand["R"] + S_feet["L"] + S_feet["R"], shift(bc, crouch, pc_, 0.35),
+                           q_init=qc, extra=x_hold((), False, toes_open=("L", "R")), reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
+                           source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
+    steps.append(m_)
+    q_sill = gt._last(kin, m_, qc)
     x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
     x_clear = w["x"] + w["wall_thickness"] / 2 + 0.15
     fold = q_crouch.copy()
@@ -971,12 +956,12 @@ def scenario_heist(kin, q_stand, p):
     def hop_base(u):
         xb_ = crouch[0] + mk.smooth(u) * (x_land - crouch[0])
         fz = mk.smooth(max(0.0, min(1.0, (xb_ - x_clear) / (x_land - x_clear))))
-        return xb_, w["y"], (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * math.sin(math.pi * fz), (1 - fz) * 0.35 + fz * gm.STANCE["pitch"]
+        return xb_, crouch[1] + mk.smooth(u) * (w["y"] - crouch[1]), (1 - fz) * crouch[2] + fz * gm.STANCE["h"] + 0.04 * math.sin(math.pi * fz), (1 - fz) * 0.35 + fz * gm.STANCE["pitch"]
 
-    hop = gs._joint_track(kin, "hop_down_inside", 1.3, [(0.0, q_crouch), (0.3, fold), (0.65, fold), (1.0, q_stand)], hop_base,
+    hop = gs._joint_track(kin, "hop_down_inside", 1.3, [(0.0, q_sill), (0.3, fold), (0.65, fold), (1.0, q_stand)], hop_base,
                           source="gibbon_scenarios.heist: the hop down into the room")
     table_front = w["x"] + p["table_x"] - 0.4
-    segs += [("motion", pick), ("motion", smash), ("motion", push), ("motion", drop), ("motion", leap), ("motion", hop),
+    segs += [("motion", pick), ("motion", smash), ("motion", push), ("motion", drop)] + [("motion", m_) for m_ in steps] + [("motion", hop),
              ("gait", max(table_front - 0.3 - x_land, 0.2) / 0.6, w["y"])]
     return segs
 
