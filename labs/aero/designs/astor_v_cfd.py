@@ -24,6 +24,11 @@ CASES = {12.0: (25.0, 1.0, (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0)),
 DESIGNS = ("v", "boost", "t", "twin")
 
 
+def sweeps(design) -> tuple:
+    """The wing states run for this design: ASTOR-TWIN's wing is fixed at 12 deg (its one state, 8 angles)."""
+    return (12.0,) if design == "twin" else tuple(CASES)
+
+
 def key(design, sweep) -> str:
     return f"{design}_sweep{sweep:.0f}"
 

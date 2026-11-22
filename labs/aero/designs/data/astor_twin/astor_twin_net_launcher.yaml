@@ -7,10 +7,10 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 5.82
-  stall_spread_m_s: 20.1
-  wing_loading_kg_m2: 22.0
-  thrust_over_weight_at_32_m_s: 1.98
+  mass_kg: 5.78
+  stall_spread_m_s: 20.0
+  wing_loading_kg_m2: 21.8
+  thrust_over_weight_at_32_m_s: 1.99
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
@@ -23,9 +23,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 26.1
+    speed_m_s: 26.0
     bandit_m_s: 9.0
-    closing_m_s: 17.1
+    closing_m_s: 17.0
     fire_between_m:
     - 4.0
     - 10.0
@@ -41,7 +41,7 @@
     tested_at_m_s: 40.0
   recoil_if_the_rear_jet_were_blocked:
     impulse_Ns: 6.0
-    speed_change_m_s: 1.03
+    speed_change_m_s: 1.04
     note: 'small on this mass: a plain closed breech would do'
   air_vessel:
     where: inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech
@@ -90,10 +90,10 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 6.76
-  stall_spread_m_s: 21.7
-  wing_loading_kg_m2: 25.5
-  thrust_over_weight_at_32_m_s: 1.7
+  mass_kg: 6.72
+  stall_spread_m_s: 21.6
+  wing_loading_kg_m2: 25.4
+  thrust_over_weight_at_32_m_s: 1.71
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
@@ -106,9 +106,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 28.2
+    speed_m_s: 28.1
     bandit_m_s: 9.0
-    closing_m_s: 19.2
+    closing_m_s: 19.1
     fire_between_m:
     - 4.0
     - 10.0
@@ -165,38 +165,38 @@
   - the rear jet along the belly
   - the balance with ~1 kg under the forward belly
 one_launcher_with_several_nets:
-  1_nets:
+  1:
     nets: 1
     launcher_kg: 0.99
     against_separate_launchers_kg: 0.99
-    aircraft_kg: 5.82
-    stall_spread_m_s: 20.1
-    thrust_over_weight_at_32_m_s: 1.98
-    closing_on_the_bandit_m_s: 17.1
+    aircraft_kg: 5.78
+    stall_spread_m_s: 20.0
+    thrust_over_weight_at_32_m_s: 1.99
+    closing_on_the_bandit_m_s: 17.0
     seconds_in_range: 0.35
     time_for_all_passes_s: 15
     win_rate_estimate: 0.55
     win_rate_note: the hit chances per shot are HAND guesses; a bandit netted is counted a win
-  2_nets:
+  2:
     nets: 2
     launcher_kg: 1.8
     against_separate_launchers_kg: 1.93
-    aircraft_kg: 6.63
-    stall_spread_m_s: 21.5
-    thrust_over_weight_at_32_m_s: 1.74
-    closing_on_the_bandit_m_s: 18.9
+    aircraft_kg: 6.59
+    stall_spread_m_s: 21.4
+    thrust_over_weight_at_32_m_s: 1.75
+    closing_on_the_bandit_m_s: 18.8
     seconds_in_range: 0.32
     time_for_all_passes_s: 55
     win_rate_estimate: 0.7
     win_rate_note: the hit chances per shot are HAND guesses; a bandit netted is counted a win
-  3_nets:
+  3:
     nets: 3
     launcher_kg: 2.04
     against_separate_launchers_kg: 2.87
-    aircraft_kg: 6.87
+    aircraft_kg: 6.83
     stall_spread_m_s: 21.8
-    thrust_over_weight_at_32_m_s: 1.68
-    closing_on_the_bandit_m_s: 19.4
+    thrust_over_weight_at_32_m_s: 1.69
+    closing_on_the_bandit_m_s: 19.3
     seconds_in_range: 0.31
     time_for_all_passes_s: 95
     win_rate_estimate: 0.77

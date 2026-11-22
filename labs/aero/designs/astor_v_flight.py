@@ -35,6 +35,7 @@ import astor_model as AM
 import astor_v as V
 import astor_v_model as VM
 
+FIXED_WING = ("twin",)                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
 SWEEPS = (12.0, 35.0, 60.0)                 # the states the model is built at; between them it is interpolated
 BODY_CDA = 0.0030                           # HAND: fuselage, shoulder carriage, fin, tail fan, camera blister [m2] (+-0.0008)
 WING_CD = 0.010                             # HAND: the wing panels' zero-lift drag on their exposed area
@@ -390,6 +391,11 @@ def stall(C) -> float:
     return math.sqrt(C["mass"] * am.G / (0.5 * am.RHO * C["S"] * C["CL_MAX"]))
 
 
+def sweeps(name) -> tuple:
+    """The wing states this design flies: one for a fixed wing."""
+    return SWEEPS[:1] if name in FIXED_WING else SWEEPS
+
+
 def schedule(V_air: float) -> float:
     """The sweep the wing takes by airspeed when nothing else commands it: spread below 28 m/s, 60 deg above 50."""
     return SWEEPS[0] + (SWEEPS[-1] - SWEEPS[0]) * min(1.0, max(0.0, (V_air - 28.0) / 22.0))
@@ -405,7 +411,7 @@ class SimV(amj.Sim):
     def __init__(self, name="twin", mesh=None, bandit=False, sweep=None):
         import mujoco
         self.name = name
-        self.sweep = SWEEPS[0] if sweep is None else sweep
+        self.sweep = SWEEPS[0] if sweep is None or name in FIXED_WING else sweep
         self.sweep_cmd = sweep
         self.C = blended(name, self.sweep)
         self.m = mujoco.MjModel.from_xml_string(amj.mjcf(self.C, mesh, bandit))
@@ -429,7 +435,7 @@ class SimV(amj.Sim):
         import mujoco
         for _ in range(n):
             s = self.state()
-            want = schedule(s["V"]) if self.sweep_cmd is None else self.sweep_cmd
+            want = SWEEPS[0] if self.name in FIXED_WING else schedule(s["V"]) if self.sweep_cmd is None else self.sweep_cmd
             d = self.SWEEP_RATE * amj.DT
             self.sweep += max(-d, min(d, want - self.sweep))
             trim = getattr(self, "trim", None)

@@ -1,5 +1,5 @@
 """ASTOR: every simulation from one script, under one progress bar. The product is ASTOR-TWIN (two wing motors on a
-fixed inner wing, swinging outer panels, the net launcher with three nets; ``designs/astor_twin``; the default since
+fixed wing (12 deg; the outer panels plug in), the net launcher with three nets; ``designs/astor_twin``; the default since
 2026-11-22): its CFD, stability and net-shot sorties. ASTOR-T (tube launched, talons), ASTOR-V and ASTOR-BOOST are
 its predecessors, kept for comparison (``--design t | v | boost``).
 
@@ -54,7 +54,7 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (35.0, 42.0), (60.0, 60.0))}   # ASTOR-TWIN stalls at 23 m/s spread with its three nets
+STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
 def states(design):
@@ -79,7 +79,7 @@ def _meta(phase, a):
 def phase_cfd(a) -> int:
     import astor_v_cfd as cf
     quality = "fine" if a.full_cfd else a.quality
-    todo_all = [(d, s, al) for d in a.designs for s in cf.CASES for al in cf.CASES[s][2]]
+    todo_all = [(d, s, al) for d in a.designs for s in cf.sweeps(d) for al in cf.CASES[s][2]]
     if a.dry_run:
         for d, s, al in todo_all:
             print(f"cfd  {NAMES[d]:12s} sweep {s:4.0f} deg  V {cf.CASES[s][0]:4.0f} m/s  alpha {al:+5.1f}")
@@ -89,7 +89,7 @@ def phase_cfd(a) -> int:
     path = R.OUT / f"astor_v_cfd{'_fine' if a.full_cfd else ''}.yaml"
     doc = R._load(path, a.fresh) or {"aircraft": "ASTOR-V / ASTOR-BOOST", "quality": quality, "configurations": {}}
     for d in a.designs:
-        for s in cf.CASES:
+        for s in cf.sweeps(d):
             c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(d, s), "rows": []})
             c["rows"] = [r for r in c["rows"] if r.get("status") == "solved"]
     done = {(c["design"], c["sweep_deg"], float(r["alpha_deg"])) for c in doc["configurations"].values() for r in c["rows"]}
@@ -169,7 +169,7 @@ def _job(job):
             sf = lambda bandit=False: VF.SimV(name, bandit=bandit)
             out = P.card(NAMES[name], VF.get(name, VF.SWEEPS[0]), sf, lambda n, sim, record=None: amj.manoeuvre(n, sim, record), 30.0)
             out["speeds_by_sweep"] = {f"{s:.0f}": {"stall_m_s": round(VF.stall(VF.get(name, s)), 1), "top_speed_m_s": round(AM.top_speed(VF.get(name, s)), 1)}
-                                      for s in VF.SWEEPS}
+                                      for s in VF.sweeps(name)}
         elif kind == "shot":
             import astor_netshot as NS
             out = NS.netshot(seed=job[1])
@@ -314,7 +314,7 @@ def phase_netshot(a) -> int:
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"netshot": a.sorties * 3, "cfd": len(a.designs) * sum(len(c[2]) for c in cf.CASES.values()), "stability": len(a.designs) * (len(STATES) * 2 + 1),
+    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.CASES[s][2]) for d in a.designs for s in cf.sweeps(d)), "stability": len(a.designs) * (len(STATES) * 2 + 1),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 

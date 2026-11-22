@@ -1,4 +1,5 @@
-"""ASTOR-TWIN — the ASTOR product (since 2026-11-22): two wing motors on a fixed inner wing, swinging outer panels,
+"""ASTOR-TWIN — the ASTOR product (since 2026-11-22): two wing motors on a fixed wing (the outer panels no longer swing:
+held at 12 deg, see WING FIXED below),
 the net launcher with three nets. It replaces ASTOR-T (tube launched, talons) as the default; it began as a concept:
 
 Asked for after the catch studies: more pull than one nose propeller gives, the tube set aside for now. The layout
@@ -44,6 +45,9 @@ _NEW = [
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
     Parameter("launcher_breech_x", 447.0, "mm", description="the tube's trunnion (at its breech) from the nose tip"),
 ]
+# WING FIXED (2026-11-22): the flight model at 12 / 35 / 60 deg of sweep gave drag at 60 m/s of 20.9 / 21.1 / 21.3 N, stall
+# 23.1 / 23.7 / 26.3 m/s and aileron power 1.0 / 0.68 / 0.26: sweeping bought nothing below 100 m/s once the tube was
+# dropped. The panels stay at V.SPREAD_DEG; ``wing_sweep_deg`` is kept only so the drawing code is shared with ASTOR-T.
 LAUNCHER = dict(tube_mm=300.0, tube_od_mm=45.0, chamber_mm=90.0, chamber_od_mm=60.0, tank_l=1.0)      # gavilan_flight.NET's airborne piece
 # The air vessel is INSIDE the fuselage (2026-11-22): a 1 L vessel of the old 86 mm diameter does not go into a 70 mm
 # body, so it is shaped to the tail cone, where the dropped nets' tube was, its front end above the breech it feeds.
@@ -300,6 +304,8 @@ def checks() -> dict:
              ("pack: 12S 5000 mAh in place of 2500 (190 A)", 760.0, "HAND: as astor.PACKS, doubled"),
              ("second folding propeller, two nacelles and mounts", 110.0, "HAND (+-40)"),
              ("glove in place of ASTOR-T's wing carriage and inner panels", 1000 * A.WING_KG_M2 * S_glove - 130.0, f"geometry {S_glove:.3f} m2 x {A.WING_KG_M2} kg/m2 less the carriage (HAND)"),
+             ("wing fixed at 12 deg: the two sweep servos and linkages off", -60.0, "astor_v.budget's item"),
+             ("outer panels on plug-in joiners (off for transport)", 30.0, "HAND (+-15)"),
              ("growth margin 10 % of the additions", 0.0, "HAND")]
     add = sum(x[1] for x in items[1:-1])
     items[-1] = (items[-1][0], 0.10 * add, "HAND")
