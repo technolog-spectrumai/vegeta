@@ -8,6 +8,7 @@
 #   ./tarantula.sh run walk slope -j 6                  some of them (the "tarantula-" prefix is optional)
 #   ./tarantula.sh run all -j 8 --out runs/tarantula/mine   choose the output folder
 #   ./tarantula.sh video                                a MuJoCo video: harpoon, down and up the wall on the dragline
+#   ./tarantula.sh mission                              a MuJoCo short: off a roof on the dragline, a gift for a bandit
 #
 # Simulations: gaits (kinematic checks: IK, joint limits, static stability, tip-over angles), walk (flat ground:
 # gait × posture × payload × friction), slope (inclines 0–40° up, across and down), rough (rough ground 10–35 mm RMS
@@ -54,6 +55,9 @@ case "$1" in
   video)
     shift
     exec "$py" labs/legged/sims/tarantula_video.py "$@" ;;
+  mission)
+    shift
+    exec "$py" labs/legged/sims/tarantula_mission.py "$@" ;;
   run)
     shift
     args=()
@@ -70,6 +74,6 @@ case "$1" in
     [ "$names" -eq 1 ] || args=("tarantula" "${args[@]}")
     exec "$py" "$runner" run "${args[@]}" ;;
   *)
-    echo "tarantula.sh: unknown command '$1' (list | run | video)" >&2
+    echo "tarantula.sh: unknown command '$1' (list | run | video | mission)" >&2
     exit 2 ;;
 esac

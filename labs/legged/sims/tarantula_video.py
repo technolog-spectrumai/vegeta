@@ -177,37 +177,15 @@ def _brick_png(path, px_per_mm=2):
 
 
 # --------------------------------------------------------------------------------------------- the scene
-def build(width, height, cache: Path):
-    """(MjModel, info): TARANTULA head-down on a vertical brick wall (gravity +x), its CAD meshes, cords, dragline and
-    harpoon, the beam."""
-    import motion_kit as mk
-    import mujoco
+def dress_robot(root, kin, meshes):
+    """Dress the Chiron MJCF ``root`` in TARANTULA's CAD: the materials, the per-link meshes (the collision geoms put
+    out of sight, group 3), the cords as spatial tendons wrapping the knee knuckles, the fairlead site ``muzzle`` on
+    the body, and the anchor hook as a mocap body ``harpoon`` with its shackle site ``eye``. Returns {bodies, tendon,
+    eye_mm, dir, muzzle_mm, design, to_body}."""
     import spiders as S
-    import tarantula_attachment as ta
-    import tarantula_gaits as tg
     import tarantula_robot as tr
-    import tarantula_sim as ts
-    from vegeta.chiron.robot import SimOptions
-    robot = tr.tarantula()
-    kin = mk.Kin(robot)
-    g = (9.81, 0.0, 0.0)                                                  # down the wall = +x: TARANTULA faces down
-    opt = SimOptions(timestep=0.001, gravity=g, cone="elliptic", impratio=3.0, noslip_iterations=2)
-    root = ET.fromstring(robot.to_mjcf(options=opt))
-    meshes = cad_meshes(cache)
-    tile = _brick_png(cache / "brick.png")
-    vis = _child(root, "visual")
-    _child(vis, "global").attrib.update({"offwidth": str(width), "offheight": str(height), "fovy": "40"})
-    _child(vis, "quality").attrib.update({"shadowsize": "4096", "offsamples": "8"})
-    _child(vis, "headlight").attrib.update({"ambient": "0.32 0.31 0.3", "diffuse": "0.35 0.34 0.33",
-                                            "specular": "0.05 0.05 0.05"})
-    _child(vis, "map").attrib.update({"znear": "0.005", "zfar": "40"})
     asset = _child(root, "asset")
-    ET.SubElement(asset, "texture", {"name": "sky", "type": "skybox", "builtin": "gradient", "rgb1": "0.24 0.26 0.29",
-                                     "rgb2": "0.06 0.07 0.08", "width": "256", "height": "256"})
-    ET.SubElement(asset, "texture", {"name": "brick", "type": "2d", "file": str(cache / "brick.png")})
-    ET.SubElement(asset, "material", {"name": "brick", "texture": "brick", "texrepeat": f"{8 / tile:.3f} {8 / tile:.3f}",
-                                      "roughness": "0.9", "specular": "0.05"})
-    ET.SubElement(asset, "material", {"name": "wood", "rgba": "0.52 0.36 0.21 1", "specular": "0.1"})
+    world = root.find("worldbody")
     for g_, (r, gg, b) in COLOR.items():
         ET.SubElement(asset, "material", {"name": f"mat:{g_}", "rgba": f"{r} {gg} {b} 1",
                                           "specular": "0.6" if g_ in METAL else "0.15",
@@ -215,26 +193,6 @@ def build(width, height, cache: Path):
     for link, items in meshes.items():
         for g_, path in items:
             ET.SubElement(asset, "mesh", {"name": f"m:{link}:{g_}", "file": path, "inertia": "shell"})
-    world = root.find("worldbody")
-    for gm in world.findall("geom"):
-        if gm.get("type") == "plane":
-            gm.set("size", "4 4 0.1")
-            gm.set("material", "brick")
-            gm.attrib.pop("rgba", None)
-    ET.SubElement(world, "light", {"name": "sun", "directional": "true", "pos": "-1.5 -1.2 2.5", "dir": "0.45 0.35 -0.82",
-                                   "diffuse": "0.72 0.68 0.62", "specular": "0.15 0.15 0.15", "castshadow": "true"})
-    # the beam: its underside 40 mm above the docked hook's tip, which the sway drives 15 mm into it
-    d0 = S.Tarantula()
-    C0, dv0 = d0.harpoon_pose(tr.S)
-    hk = tr.S["winch"]["hook"]
-    zc0 = tr.STAND_Z * 1000
-    drop0 = tg.POSTURES["crouched"]
-    tip_w = (C0 + dv0 * (hk["front"] + hk["pick"] * 0.6) - np.array([0, 0, zc0])) * 1e-3 + np.array([0, 0, tr.STAND_Z - drop0 * 1e-3])
-    under = tip_w[0] - 0.040
-    anchor = np.array([under, 0.0, tip_w[2]])
-    ET.SubElement(world, "geom", {"name": "beam", "type": "box", "size": "0.06 1.6 0.07",
-                                  "pos": f"{under - 0.06:.4f} 0 0.07", "material": "wood", "contype": "0",
-                                  "conaffinity": "0", "group": "1"})
     bodies = {b.get("name"): b for b in root.iter("body")}
     # the robot's own collision geoms out of sight (group 3); its CAD meshes in (group 1)
     for b in bodies.values():
@@ -308,6 +266,63 @@ def build(width, height, cache: Path):
                                "material": "mat:harpoon"})
     ET.SubElement(hb, "site", {"name": "eye", "pos": " ".join(f"{v * 1e-3:.5f}" for v in d.hook_eye(tr.S)), "group": "4",
                                "size": "0.002"})
+    return {"bodies": bodies, "tendon": tendon_el, "eye_mm": eye_mm, "dir": dvec, "muzzle_mm": muzzle_mm, "design": d,
+            "to_body": to_body}
+
+
+def build(width, height, cache: Path):
+    """(MjModel, info): TARANTULA head-down on a vertical brick wall (gravity +x), its CAD meshes, cords, dragline and
+    harpoon, the beam."""
+    import motion_kit as mk
+    import mujoco
+    import spiders as S
+    import tarantula_attachment as ta
+    import tarantula_gaits as tg
+    import tarantula_robot as tr
+    import tarantula_sim as ts
+    from vegeta.chiron.robot import SimOptions
+    robot = tr.tarantula()
+    kin = mk.Kin(robot)
+    g = (9.81, 0.0, 0.0)                                                  # down the wall = +x: TARANTULA faces down
+    opt = SimOptions(timestep=0.001, gravity=g, cone="elliptic", impratio=3.0, noslip_iterations=2)
+    root = ET.fromstring(robot.to_mjcf(options=opt))
+    meshes = cad_meshes(cache)
+    tile = _brick_png(cache / "brick.png")
+    vis = _child(root, "visual")
+    _child(vis, "global").attrib.update({"offwidth": str(width), "offheight": str(height), "fovy": "40"})
+    _child(vis, "quality").attrib.update({"shadowsize": "4096", "offsamples": "8"})
+    _child(vis, "headlight").attrib.update({"ambient": "0.32 0.31 0.3", "diffuse": "0.35 0.34 0.33",
+                                            "specular": "0.05 0.05 0.05"})
+    _child(vis, "map").attrib.update({"znear": "0.005", "zfar": "40"})
+    asset = _child(root, "asset")
+    ET.SubElement(asset, "texture", {"name": "sky", "type": "skybox", "builtin": "gradient", "rgb1": "0.24 0.26 0.29",
+                                     "rgb2": "0.06 0.07 0.08", "width": "256", "height": "256"})
+    ET.SubElement(asset, "texture", {"name": "brick", "type": "2d", "file": str(cache / "brick.png")})
+    ET.SubElement(asset, "material", {"name": "brick", "texture": "brick", "texrepeat": f"{8 / tile:.3f} {8 / tile:.3f}",
+                                      "roughness": "0.9", "specular": "0.05"})
+    ET.SubElement(asset, "material", {"name": "wood", "rgba": "0.52 0.36 0.21 1", "specular": "0.1"})
+    world = root.find("worldbody")
+    for gm in world.findall("geom"):
+        if gm.get("type") == "plane":
+            gm.set("size", "4 4 0.1")
+            gm.set("material", "brick")
+            gm.attrib.pop("rgba", None)
+    ET.SubElement(world, "light", {"name": "sun", "directional": "true", "pos": "-1.5 -1.2 2.5", "dir": "0.45 0.35 -0.82",
+                                   "diffuse": "0.72 0.68 0.62", "specular": "0.15 0.15 0.15", "castshadow": "true"})
+    # the beam: its underside 40 mm above the docked hook's tip, which the sway drives 15 mm into it
+    d0 = S.Tarantula()
+    C0, dv0 = d0.harpoon_pose(tr.S)
+    hk = tr.S["winch"]["hook"]
+    zc0 = tr.STAND_Z * 1000
+    drop0 = tg.POSTURES["crouched"]
+    tip_w = (C0 + dv0 * (hk["front"] + hk["pick"] * 0.6) - np.array([0, 0, zc0])) * 1e-3 + np.array([0, 0, tr.STAND_Z - drop0 * 1e-3])
+    under = tip_w[0] - 0.040
+    anchor = np.array([under, 0.0, tip_w[2]])
+    ET.SubElement(world, "geom", {"name": "beam", "type": "box", "size": "0.06 1.6 0.07",
+                                  "pos": f"{under - 0.06:.4f} 0 0.07", "material": "wood", "contype": "0",
+                                  "conaffinity": "0", "group": "1"})
+    dr = dress_robot(root, kin, meshes)
+    tendon_el, eye_mm, dvec, muzzle_mm, to_body = dr["tendon"], dr["eye_mm"], dr["dir"], dr["muzzle_mm"], dr["to_body"]
     line = ET.SubElement(tendon_el, "spatial", {"name": "dragline", "width": "0.0008", "rgba": "0.96 0.96 0.9 1",
                                                 "group": "1"})
     ET.SubElement(line, "site", {"site": "muzzle"})

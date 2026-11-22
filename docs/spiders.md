@@ -531,6 +531,7 @@ descends tail first, like ARACHNE.
 ./tarantula.sh run all -j 8               # the full grids
 ./tarantula.sh run walk slope -j 6        # some of them ("tarantula-" is optional)
 ./tarantula.sh video                      # the MuJoCo video of §12 (runs/tarantula/tarantula_dragline.mp4)
+./tarantula.sh mission                    # the MuJoCo short of §12.1 (runs/tarantula/tarantula_mission.mp4)
 ```
 
 Output: `runs/tarantula/<date-time>/` (or `--out`):
@@ -665,3 +666,23 @@ robot.
 The line is a rope: a tendon that pulls only when taut (6 kN/m, 100 N cap). The winch and brake are a tension
 controller limited by the winch's reel-in speed (46 mm/s) and the brake's pay-out speed (0.25 m/s). Needs cadquery
 for the meshes (cached), Pillow and ffmpeg; on headless Linux it uses `MUJOCO_GL=osmesa`.
+
+### 12.1 A mission: off a roof on the dragline (`./tarantula.sh mission`, `sims/tarantula_mission.py`)
+
+A night-time MuJoCo short that puts the pod to work. The robot uses the same CAD dressing, cords and rope law as the
+video above (`tarantula_video.dress_robot`). The story:
+
+1. TARANTULA creeps tail first across a roof to the parapet (the reversed wave gait, simulated).
+2. It sways back to drive the hook's pick into the parapet's timber nailer, opens the latch and sways forward
+   (simulated). A dry run of steps 1–2 finds where the pick will be, and the nailer is placed there.
+3. It climbs onto the coping, turns round, goes head first over the outer edge and lets go (scripted keyframes).
+4. It hangs from the fairlead on the line, which wraps both corners of the coping. The brake pays it down to a terrace
+   table 1.65 m below (simulated: the robot is a free body on the rope, with no motor running).
+5. The tarsal pincers set the gift down; a fang presses its timer.
+6. The winch reels it back up at 47 mm/s (simulated; the video shows it time-lapsed). It climbs back over and hides
+   behind the parapet (scripted).
+7. A bandit strolls to the table. The timer runs out: confetti, smoke, a soot-black bandit (props: mocap bodies).
+
+The hanging pose puts the fairlead straight above the centre of mass, with the legs folded. In it the gift hangs
+lowest, so the robot can set it down without touching the table.
+
