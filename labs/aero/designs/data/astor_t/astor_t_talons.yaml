@@ -1,82 +1,84 @@
-arm_g: 135.0
+legs_g: 200.0
+feet_below_axis_mm: 332
 reach:
-  across_m: 0.235
-  height_m: 0.12
+  across_m: 0.308
+  of_which_hip_steering_m: 0.099
+  height_m: 0.18
   closing_limit_m_s: 14.0
 strike:
   armageddon bandit, 12 m/s:
     closing_m_s: 12.0
     bandit_kg: 1.5
-    astor_kg: 3.31
-    energy_J: 74.0
-    arm_travel_mm: 225
-    mean_force_N: 330.0
-    hinge_moment_Nm: 83.0
-    astor_g: 10.2
-    bandit_g: 22.4
-    rake_below_axis_mm: 271
-    pitch_rate_after_deg_s: 1034
+    astor_kg: 3.38
+    energy_J: 75.0
+    arm_travel_mm: 174
+    mean_force_N: 431.0
+    force_per_leg_N: 216.0
+    astor_g: 13.0
+    bandit_g: 29.3
+    rake_below_axis_mm: 332
+    pitch_rate_after_deg_s: 1251
     speed_lost_m_s: 3.7
     sink_under_parachute_m_s:
-      astor_alone: 7.1
-      with_the_bandit: 8.6
+      astor_alone: 7.2
+      with_the_bandit: 8.7
     flies_on: false
     note: 'the pitch rate and the load under the belly end the flight: motor cut, parachute'
   armageddon bandit, 14 m/s:
     closing_m_s: 14.0
     bandit_kg: 1.5
-    astor_kg: 3.31
-    energy_J: 101.0
-    arm_travel_mm: 225
-    mean_force_N: 449.0
-    hinge_moment_Nm: 112.0
-    astor_g: 13.9
-    bandit_g: 30.6
-    rake_below_axis_mm: 271
-    pitch_rate_after_deg_s: 1206
-    speed_lost_m_s: 4.4
+    astor_kg: 3.38
+    energy_J: 102.0
+    arm_travel_mm: 174
+    mean_force_N: 587.0
+    force_per_leg_N: 293.0
+    astor_g: 17.7
+    bandit_g: 39.9
+    rake_below_axis_mm: 332
+    pitch_rate_after_deg_s: 1459
+    speed_lost_m_s: 4.3
     sink_under_parachute_m_s:
-      astor_alone: 7.1
-      with_the_bandit: 8.6
+      astor_alone: 7.2
+      with_the_bandit: 8.7
     flies_on: false
     note: 'the pitch rate and the load under the belly end the flight: motor cut, parachute'
   fast bandit, 8 m/s:
     closing_m_s: 8.0
     bandit_kg: 4.0
-    astor_kg: 3.31
-    energy_J: 58.0
-    arm_travel_mm: 225
-    mean_force_N: 257.0
-    hinge_moment_Nm: 64.0
-    astor_g: 7.9
-    bandit_g: 6.6
-    rake_below_axis_mm: 271
-    pitch_rate_after_deg_s: 1209
-    speed_lost_m_s: 4.4
+    astor_kg: 3.38
+    energy_J: 59.0
+    arm_travel_mm: 174
+    mean_force_N: 338.0
+    force_per_leg_N: 169.0
+    astor_g: 10.2
+    bandit_g: 8.6
+    rake_below_axis_mm: 332
+    pitch_rate_after_deg_s: 1470
+    speed_lost_m_s: 4.3
     sink_under_parachute_m_s:
-      astor_alone: 7.1
-      with_the_bandit: 10.6
+      astor_alone: 7.2
+      with_the_bandit: 10.7
     flies_on: false
     note: 'the pitch rate and the load under the belly end the flight: motor cut, parachute'
-bore_with_arm_mm: 227.0
-mass_g: 3305.7
+bore_with_legs_mm: 233.0
+mass_g: 3377.2
 debug_sorties:
   armageddon:
     sorties: 6
     caught: 0
     passes: 23
-    best_miss_m_median: 4.2
-    best_miss_m_smallest: 3.11
-    closing_m_s_median: 22.5
+    best_miss_m_median: 3.61
+    best_miss_m_smallest: 1.48
+    closing_m_s_median: 22.0
     closing_within_limit: 0
     crashes: 0
   fast:
     sorties: 6
     caught: 0
     passes: 6
-    best_miss_m_median: 2.35
-    best_miss_m_smallest: 0.77
-    closing_m_s_median: 10.8
+    best_miss_m_median: 2.79
+    best_miss_m_smallest: 1.95
+    closing_m_s_median: 11.4
     closing_within_limit: 4
     crashes: 0
 sorties:
@@ -86,13 +88,13 @@ sorties:
   caught: false
   passes: 4
   t_catch_s: null
-  best_miss_m: 3.5
-  median_miss_m: 7.7
+  best_miss_m: 3.28
+  median_miss_m: 7.69
   closing_m_s:
-  - 29.7
-  - 20.5
-  - 18.8
-  - 19.9
+  - 30.4
+  - 20.7
+  - 19.1
+  - 18.0
   fuselage_hits: 0
   min_altitude_m: 6.2
   crashed: false
@@ -102,12 +104,12 @@ sorties:
   caught: false
   passes: 3
   t_catch_s: null
-  best_miss_m: 6.26
-  median_miss_m: 9.08
+  best_miss_m: 7.0
+  median_miss_m: 10.53
   closing_m_s:
-  - 20.7
-  - 30.0
-  - 33.5
+  - 22.0
+  - 33.1
+  - 32.2
   fuselage_hits: 0
   min_altitude_m: 6.2
   crashed: false
@@ -117,13 +119,13 @@ sorties:
   caught: false
   passes: 4
   t_catch_s: null
-  best_miss_m: 5.19
-  median_miss_m: 8.27
+  best_miss_m: 6.27
+  median_miss_m: 7.53
   closing_m_s:
-  - 21.6
-  - 25.8
-  - 19.6
-  - 22.7
+  - 22.2
+  - 26.3
+  - 20.7
+  - 19.3
   fuselage_hits: 0
   min_altitude_m: 6.2
   crashed: false
@@ -133,15 +135,15 @@ sorties:
   caught: false
   passes: 4
   t_catch_s: null
-  best_miss_m: 4.9
-  median_miss_m: 9.46
+  best_miss_m: 3.37
+  median_miss_m: 9.58
   closing_m_s:
   - 33.2
-  - 31.0
-  - 29.3
-  - 16.9
+  - 32.8
+  - 17.6
+  - 20.0
   fuselage_hits: 0
-  min_altitude_m: 6.2
+  min_altitude_m: 7.4
   crashed: false
 - design: t
   bandit: armageddon
@@ -149,15 +151,15 @@ sorties:
   caught: false
   passes: 4
   t_catch_s: null
-  best_miss_m: 3.26
-  median_miss_m: 8.96
+  best_miss_m: 1.48
+  median_miss_m: 12.81
   closing_m_s:
-  - 32.2
-  - 17.4
-  - 17.9
-  - 28.1
+  - 33.0
+  - 17.7
+  - 23.6
+  - 21.1
   fuselage_hits: 0
-  min_altitude_m: 6.3
+  min_altitude_m: 6.1
   crashed: false
 - design: t
   bandit: armageddon
@@ -165,13 +167,13 @@ sorties:
   caught: false
   passes: 4
   t_catch_s: null
-  best_miss_m: 3.11
-  median_miss_m: 5.5
+  best_miss_m: 3.85
+  median_miss_m: 5.49
   closing_m_s:
-  - 22.5
-  - 17.5
+  - 22.8
+  - 17.7
+  - 21.5
   - 23.6
-  - 21.0
   fuselage_hits: 0
   min_altitude_m: 6.4
   crashed: false
@@ -181,12 +183,12 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 5.29
-  median_miss_m: 5.29
+  best_miss_m: 5.24
+  median_miss_m: 5.24
   closing_m_s:
-  - 11.1
+  - 12.5
   fuselage_hits: 0
-  min_altitude_m: 87.8
+  min_altitude_m: 87.1
   crashed: false
 - design: t
   bandit: fast
@@ -194,12 +196,12 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 2.07
-  median_miss_m: 2.07
+  best_miss_m: 1.95
+  median_miss_m: 1.95
   closing_m_s:
-  - 14.2
+  - 14.4
   fuselage_hits: 0
-  min_altitude_m: 98.8
+  min_altitude_m: 101.2
   crashed: false
 - design: t
   bandit: fast
@@ -207,12 +209,12 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 2.63
-  median_miss_m: 2.63
+  best_miss_m: 2.81
+  median_miss_m: 2.81
   closing_m_s:
-  - 10.6
+  - 10.3
   fuselage_hits: 0
-  min_altitude_m: 101.6
+  min_altitude_m: 100.9
   crashed: false
 - design: t
   bandit: fast
@@ -220,12 +222,12 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 0.77
-  median_miss_m: 0.77
+  best_miss_m: 2.04
+  median_miss_m: 2.04
   closing_m_s:
-  - 8.3
+  - 8.4
   fuselage_hits: 0
-  min_altitude_m: 90.1
+  min_altitude_m: 87.0
   crashed: false
 - design: t
   bandit: fast
@@ -233,12 +235,12 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 2.06
-  median_miss_m: 2.06
+  best_miss_m: 3.0
+  median_miss_m: 3.0
   closing_m_s:
-  - 17.3
+  - 17.9
   fuselage_hits: 0
-  min_altitude_m: 101.8
+  min_altitude_m: 102.8
   crashed: false
 - design: t
   bandit: fast
@@ -246,10 +248,10 @@ sorties:
   caught: false
   passes: 1
   t_catch_s: null
-  best_miss_m: 2.76
-  median_miss_m: 2.76
+  best_miss_m: 2.77
+  median_miss_m: 2.77
   closing_m_s:
-  - 9.3
+  - 9.5
   fuselage_hits: 0
-  min_altitude_m: 93.5
+  min_altitude_m: 91.2
   crashed: false

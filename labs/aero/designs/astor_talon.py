@@ -1,10 +1,12 @@
-"""ASTOR-T's talons: a sprung arm under the belly that strikes the bandit and holds it (2026-11-22).
+"""ASTOR-T's talons: two legs under the belly, built as a bird's, that strike the bandit and hold it (2026-11-22).
 
-**How it is meant to work.** ASTOR comes at the bandit from behind and above; just before the pass the arm is thrown
-down from the belly (``talon_deploy``): a 250 mm tube on a sprung hinge with a 170 mm rake of four hooks. The hooks
-take the bandit; the arm swings back against its spring and damper, which is the leg's give. The strike is the end
-of the flight: ASTOR cuts its motor and opens its parachute, and the two come down together, the bandit hanging
-under it. (A 3.2 kg aircraft cannot fly on with a bandit on a 0.26 m arm under it: see ``strike_loads``.)
+**How it is meant to work.** ASTOR comes at the bandit from behind and above; just before the pass the two legs are
+thrown down and forward from the belly (``talon_deploy``). Each is three bones on sprung, damped joints (thigh,
+shin, shank) and a foot of three toes forward and one back with curved claws. The feet take the bandit and snap shut
+(a spring let go by the touch; a ratchet holds them, as a raptor's tendon lock does); the knees and ankles fold
+under the blow, which is the leg's give; each hip can swing its foot sideways in the last instant. The strike is the
+end of the flight: ASTOR cuts its motor and opens its parachute, and the two come down together, the bandit held
+under it. (The first version, 2026-11-22, was one arm with a rake of hooks: less travel, no grip, no last correction.)
 
 **What is computed here.**
 
@@ -30,12 +32,25 @@ import astor_netdrop as ND
 import astor_t as T
 import astor_v_flight as VF
 
-ARM_G = 135.0                      # HAND: tube 25 g, hinge and bracket 30, spring and damper 35, rake and hooks 25, latch and servo 20 (+-40)
-STROKE_RAD = 0.9                   # the arm's swing back under the strike
-REACH_Y_M, REACH_Z_M = 0.5 * 0.170 + 0.15, 0.12     # a catch: the bandit's centre within the rake's half width + its own half width (HAND 0.15), and this far in height
+ARM_G = 200.0                      # HAND: the two legs (astor_t's budget)
+STROKE_FRACTION = 0.6              # the thrown leg shortens by this share of its length as knee and ankle fold under the strike
+STEER_DEG = 20.0                   # each hip can swing the foot this far sideways in the last instant (the bird's own correction)
+REACH_Z_M = 0.18                   # a catch in height: the open foot's depth and the legs' give (HAND)
+BANDIT_HALF_M = 0.15               # the bandit's own half width (HAND)
 V_CLOSE_MAX = 14.0                 # the arm's design closing speed [m/s]
 BANDITS_KG = {"armageddon": 1.5, "fast": 4.0}       # HAND: a small multirotor; a 50 m/s fixed-wing drone
 CHUTE_CDA = 0.8 * 1.3              # ASTOR's 0.8 m2 canopy (astor.py), Cd 1.3 (HAND +-0.3)
+
+
+def leg_drop(p) -> float:
+    """The thrown feet below the hips [m] (the three bones at astor_t's thrown angles)."""
+    return sum(L * math.cos(math.radians(a)) for L, a in zip((p["leg_thigh"], p["leg_shin"], p["leg_shank"]), (35.0, -12.0, 28.0))) / 1000.0
+
+
+def reach_across(p) -> float:
+    """How far to the side of the centre plane the bandit's centre may pass and still be taken: a hip's offset, the open
+    foot's half span, the bandit's half width, and what the hip can swing the foot."""
+    return (p["leg_y"] + p["toe_length"] * math.sin(math.radians(32.0))) / 1000.0 + BANDIT_HALF_M + leg_drop(p) * math.sin(math.radians(STEER_DEG))
 
 
 def strike_loads(v_close, bandit_kg, p=None, mass_kg=None) -> dict:
@@ -43,16 +58,16 @@ def strike_loads(v_close, bandit_kg, p=None, mass_kg=None) -> dict:
     m = mass_kg if mass_kg is not None else T.budget(p)["total_g"] / 1000.0          # the arm is in ASTOR-T's budget
     mu = m * bandit_kg / (m + bandit_kg)
     E = 0.5 * mu * v_close ** 2
-    L = p["talon_arm_length"] / 1000.0
-    travel = L * STROKE_RAD
+    L = leg_drop(p)
+    travel = L * STROKE_FRACTION
     F = E / travel
-    r = p["fuselage_diameter"] / 2000.0 + 0.009 + L * math.sin(math.radians(p["talon_swing_deg"]))     # the rake below the axis
+    r = p["fuselage_diameter"] / 2000.0 + 0.008 + L                   # the feet below the axis
     Iyy = float(VF.get("t", 12.0)["inertia"][1])
     q = mu * v_close * r / Iyy                                           # the strike's impulse at the arm's depth
     both = m + bandit_kg
     sink = lambda mm: math.sqrt(2 * mm * am.G / (am.RHO * CHUTE_CDA))
     return {"closing_m_s": v_close, "bandit_kg": bandit_kg, "astor_kg": round(m, 2), "energy_J": round(E, 0), "arm_travel_mm": round(travel * 1000),
-            "mean_force_N": round(F, 0), "hinge_moment_Nm": round(F * L, 0), "astor_g": round(F / m / am.G, 1), "bandit_g": round(F / bandit_kg / am.G, 1),
+            "mean_force_N": round(F, 0), "force_per_leg_N": round(F / 2, 0), "astor_g": round(F / m / am.G, 1), "bandit_g": round(F / bandit_kg / am.G, 1),
             "rake_below_axis_mm": round(r * 1000), "pitch_rate_after_deg_s": round(math.degrees(q)), "speed_lost_m_s": round(mu * v_close / m, 1),
             "sink_under_parachute_m_s": {"astor_alone": round(sink(m), 1), "with_the_bandit": round(sink(both), 1)},
             "flies_on": False, "note": "the pitch rate and the load under the belly end the flight: motor cut, parachute"}
@@ -63,7 +78,8 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
     rng = np.random.default_rng(seed)
     fast = bandit_kind == "fast"
     p = T.resolve()
-    drop = p["fuselage_diameter"] / 2000.0 + 0.009 + p["talon_arm_length"] / 1000.0 * math.sin(math.radians(p["talon_swing_deg"]))
+    drop = p["fuselage_diameter"] / 2000.0 + 0.008 + leg_drop(p)
+    REACH_Y_M = reach_across(p)
     sim = VF.SimV(name, bandit=True)
     Vs = VF.stall(VF.get(name, VF.SWEEPS[0]))
     if fast:
@@ -143,5 +159,8 @@ def strike(name="t", bandit_kind="armageddon", seed=0, latency_s=0.10, noise_m=0
 
 
 def checks() -> dict:
-    return {"arm_g": ARM_G, "reach": {"across_m": REACH_Y_M, "height_m": REACH_Z_M, "closing_limit_m_s": V_CLOSE_MAX},
+    p = T.resolve()
+    return {"legs_g": ARM_G, "feet_below_axis_mm": round((p["fuselage_diameter"] / 2000.0 + 0.008 + leg_drop(p)) * 1000),
+            "reach": {"across_m": round(reach_across(p), 3), "of_which_hip_steering_m": round(leg_drop(p) * math.sin(math.radians(STEER_DEG)), 3),
+                      "height_m": REACH_Z_M, "closing_limit_m_s": V_CLOSE_MAX},
             "strike": {f"{k} bandit, {v:.0f} m/s": strike_loads(v, BANDITS_KG[k]) for k, v in (("armageddon", 12.0), ("armageddon", 14.0), ("fast", 8.0))}}

@@ -13,8 +13,9 @@ net tube and the cameras are ASTOR-V's.
 - **Fins**: two ventral fins on hinges along the belly, 95 mm high. Folded they lie flat under the tail cone, one to
   each side; springs swing them down to 25 deg from the vertical (an inverted V under the tail) as the tail leaves
   the tube. Together they have the side area of ASTOR-V's fin and half its depth under the body.
-- **Talons** (``astor_talon``): a 250 mm arm on a sprung hinge under the belly with a rake of four hooks, folded aft
-  along the belly in the tube and thrown down for a strike.
+- **Talons** (``astor_talon``): two legs under the belly built as a bird's — thigh, shin and shank on sprung joints,
+  a foot of three toes forward and one back with curved claws that snap shut on contact. Folded in a Z against the
+  belly in the tube; thrown down and forward for the strike.
 - **Launch keys**: the two pairs of lugs on the fuselage's sides ride in the shuttle's slots; the shuttle carries the
   aircraft by them (the tail, with the net tube's mouth and the folded blades, is not pushed on).
 
@@ -56,8 +57,10 @@ _NEW = [
     Parameter("fin_hinge_y", 9.0, "mm", min=3.0, description="each fin's hinge line from the centre plane"),
     Parameter("talon_deploy", 0.0, "", min=-1.0, max=1.0, description="the talon arm: 0 folded along the belly, 1 thrown down for the strike; -1: not fitted"),
     Parameter("talon_hinge_x", 250.0, "mm", min=150.0, description="the arm's hinge under the belly, from the nose tip"),
-    Parameter("talon_arm_length", 250.0, "mm", min=120.0), Parameter("talon_rake_width", 170.0, "mm", min=60.0),
-    Parameter("talon_swing_deg", 115.0, "deg", min=60.0, max=140.0, description="from folded (aft along the belly) to the strike position (down, a little forward)"),
+    Parameter("talon_grip", -1.0, "", min=-1.0, max=1.0, description="the toes: 0 open, 1 closed; -1: closed when folded, open when thrown"),
+    Parameter("leg_y", 30.0, "mm", min=15.0, description="each leg's hip from the centre plane"),
+    Parameter("leg_thigh", 90.0, "mm", min=40.0), Parameter("leg_shin", 130.0, "mm", min=60.0), Parameter("leg_shank", 100.0, "mm", min=40.0),
+    Parameter("toe_length", 55.0, "mm", min=25.0), Parameter("claw_radius", 16.0, "mm", min=8.0),
 ]
 
 MOTOR_W = 2000.0                   # the 2.0 kW motor (2026-11-22): ASTOR-V's was 1.4 kW (astor.MOTOR_W)
@@ -69,7 +72,8 @@ EXTRA_ITEMS = list(V.EXTRA_ITEMS) + [
     ("2 fin hinges, springs and down-locks", 18.0, "HAND (+-6)"),
     ("wing and tail opening springs, stowed latches", 24.0, "HAND (+-8)"),
     ("launch keys reinforced (4 lugs, doublers)", 16.0, "HAND (+-6)"),
-    ("talon arm: tube, sprung hinge and damper, rake of four hooks, latch and servo (astor_talon)", 135.0, "HAND (+-40)"),
+    ("2 legs: three bones each on sprung, damped joints; feet of four toes with steel claws and a snap-shut spring; hip latches (astor_talon)", 200.0,
+     "HAND (+-60): per leg tubes 15 g, joints 30, foot and claws 25, closing spring and trigger 15, hip and latch 15"),
 ]
 # stowed, each panel's mid-chord line lies along the body: its sweep is 90 deg, so the leading edge's is a little more
 STOWED_DEG = round(V.SPREAD_DEG + 90.0 - math.degrees(math.atan(math.tan(math.radians(V.SPREAD_DEG)) + 0.5 * (_DEFAULTS["panel_tip_chord"] - _DEFAULTS["panel_root_chord"]) / _DEFAULTS["panel_span"])), 1)
@@ -95,21 +99,48 @@ class AstorT(V.AstorV):
         return self._one_fin(p, 1).union(self._one_fin(p, -1))
 
     def _talons(self, p):
-        """The talon arm (``astor_talon``): a tube on a sprung hinge under the belly, a rake of four hooks at its end.
-        Built folded (aft along the belly), then swung down about the hinge."""
-        R, L, w = p["fuselage_diameter"] / 2, p["talon_arm_length"], p["talon_rake_width"]
-        z0 = -R - 9.0
-        arm = cq.Workplane("YZ").circle(6.0).extrude(L)                                   # along +x from the hinge
-        rake = cq.Workplane("XZ").circle(4.0).extrude(w).translate((L, w / 2, 0))        # the cross bar at the arm's end
-        out = arm.union(rake)
-        for k in range(4):                                                                # hooks: back toward the hinge and down
-            y = -w / 2 + w * k / 3.0
-            hook = cq.Workplane("XY").box(55.0, 3.0, 3.0).translate((L - 27.5, y, -1.0)).union(
-                cq.Workplane("XY").box(3.0, 3.0, 20.0).translate((L - 55.0, y, -10.0)))
-            out = out.union(hook)
-        out = out.rotate((0, 0, 0), (0, 1, 0), p["talon_swing_deg"] * max(p["talon_deploy"], 0.0))      # + about y: the tip goes down and forward
-        hinge = cq.Workplane("XZ").circle(8.0).extrude(26.0).translate((0, 13.0, 0))
-        return out.union(hinge).translate((p["talon_hinge_x"], 0, z0))
+        """Two legs under the belly (``astor_talon``), each a bird's: thigh, shin and shank on sprung joints, a foot of
+        three toes forward and one back, each with a curved claw. ``talon_deploy`` 0: folded in a Z against the belly,
+        toes closed; 1: thrown down and forward, toes open. Built in the side plane (x aft, z up), then set at +-y."""
+        R = p["fuselage_diameter"] / 2
+        d = max(p["talon_deploy"], 0.0)
+        seg = (p["leg_thigh"], p["leg_shin"], p["leg_shank"])
+        # each bone's angle from straight down, + toward the nose: folded (aft, forward, aft: the Z) -> thrown
+        fold, thrown = (-88.0, 88.0, -88.0), (35.0, -12.0, 28.0)
+        ang = [f + d * (t - f) for f, t in zip(fold, thrown)]
+        dz = (0.0, -10.0, -20.0)                                          # folded, the bones lie one under the other
+        leg, x, z = None, 0.0, 0.0
+        for k, (L, a) in enumerate(zip(seg, ang)):
+            a_r = math.radians(a)
+            bone = cq.Workplane("XY").circle(6.0 - k).extrude(-L).rotate((0, 0, 0), (0, 1, 0), a)     # down, then swung toward the nose
+            off = (1 - d) * dz[k]
+            bone = bone.translate((x, 0, z + off)).union(cq.Workplane("XZ").circle(6.5 - k).extrude(12.0).translate((x, 6.0, z + off)))
+            leg = bone if leg is None else leg.union(bone)
+            x, z = x - L * math.sin(a_r), z - L * math.cos(a_r)
+        z += (1 - d) * dz[2]
+        # the foot: toes open by 1 - grip; three forward (fanned), the hallux back
+        grip = 0.0 if p["talon_grip"] < 0 else p["talon_grip"]              # -1: flat when folded, open when thrown
+        foot = cq.Workplane("XY").sphere(7.0)
+        for fan, back in ((0.0, False), (32.0, False), (-32.0, False), (0.0, True)):
+            Lt = p["toe_length"] * (0.7 if back else 1.0)
+            droop = (12.0 + 62.0 * grip) * (d if p["talon_grip"] < 0 else 1.0)   # the toe's angle below the foot's plane
+            toe = cq.Workplane("YZ").circle(3.0).extrude(-Lt)             # toward the nose (-x)
+            claw, cx, cz = None, -Lt, 0.0                                # the claw: three short pieces curving down from the toe's tip
+            for kk, a in enumerate((25.0, 55.0, 85.0)):
+                lc = 0.55 * p["claw_radius"]
+                piece = (cq.Workplane("YZ").circle(2.6 - 0.6 * kk).extrude(-lc).rotate((0, 0, 0), (0, 1, 0), -a).translate((cx, 0, cz)))
+                claw = piece if claw is None else claw.union(piece)
+                cx, cz = cx - lc * math.cos(math.radians(a)), cz - lc * math.sin(math.radians(a))
+            toe = toe.union(claw).rotate((0, 0, 0), (0, 1, 0), -droop)     # the tip down
+            if back:
+                toe = toe.rotate((0, 0, 0), (0, 0, 1), 180.0)
+            foot = foot.union(toe.rotate((0, 0, 0), (0, 0, 1), fan))
+        leg = leg.union(foot.translate((x, 0, z)))
+        out = None
+        for s in (1, -1):
+            one = leg.translate((p["talon_hinge_x"], s * p["leg_y"], -R - 8.0))
+            out = one if out is None else out.union(one)
+        return out
 
     def parts(self, p) -> dict:
         out = super().parts(p)
