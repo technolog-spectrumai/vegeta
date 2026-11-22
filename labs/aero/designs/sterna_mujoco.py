@@ -1,0 +1,184 @@
+"""STERNA in MuJoCo (notebook 51): the lab's fixed-wing ``Sim`` and ``Autopilot`` (``arigo1_mujoco``) on STERNA's
+coefficients, one simple mission and its video.
+
+The aerodynamics are ``arigo1_model.aero`` on ``sterna_model.coefficients`` (lattice + hand estimates, or the CFD
+fit): MuJoCo integrates the rigid body and the ground contact, it does not compute any flow. The autopilot's gains are
+the lab's hand gains, scaled with speed; nothing here is a tuned controller.
+
+The mission: a hand launch (released level at ``RELEASE_M_S``, full throttle), a climb to the survey height, a
+straight leg, one orbit, a power-off glide with the propeller stopped, a flare and a belly landing on the rails.
+"""
+from __future__ import annotations
+
+import math
+import subprocess
+from pathlib import Path
+
+import mujoco
+import numpy as np
+
+import arigo1_model as am
+import arigo1_mujoco as amj
+import sterna as st
+
+RELEASE_M_S = 8.0            # HAND: an overarm throw of a 2 kg aircraft (+-2 m/s); the lab's ARIGO value is 12
+RELEASE_HEIGHT_M = 1.9
+SURVEY_HEIGHT_M = 40.0
+CRUISE_M_S = 14.0
+ORBIT_BANK_DEG = 30.0
+
+
+class Sim(amj.Sim):
+    """The lab's ``Sim`` on a given coefficient set (not on an ARIGO variant)."""
+
+    def __init__(self, C: dict, mesh: str | None = None):
+        self.C = C
+        self.m = mujoco.MjModel.from_xml_string(amj.mjcf(C, mesh).replace('rgba="0.75 0.72 0.62 1"', 'rgba="0.93 0.94 0.95 1"'))
+        self.d = mujoco.MjData(self.m)
+        self.bid = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "arigo")
+        self.controls = np.array([0.0, 0.0, 0.0, 0.5])
+        self.wind = np.zeros(3)
+        self.info = {}
+
+    def start(self, V=CRUISE_M_S, h=SURVEY_HEIGHT_M, heading_deg=0.0):
+        t = am.trim(self.C, V)
+        al = math.radians(t["alpha_deg"])
+        mujoco.mj_resetData(self.m, self.d)
+        ps = math.radians(heading_deg)
+        q = np.zeros(4)
+        mujoco.mju_mulQuat(q, np.array([math.cos(ps / 2), 0, 0, math.sin(ps / 2)]), np.array([math.cos(-al / 2), 0, math.sin(-al / 2), 0]))
+        self.d.qpos[:3] = (0, 0, h)
+        self.d.qpos[3:7] = q
+        self.d.qvel[:3] = (V * math.cos(ps), V * math.sin(ps), 0.0)
+        self.controls[:] = (t["elevator_deg"], 0, 0, t["throttle"])
+        self.trim = t
+        mujoco.mj_forward(self.m, self.d)
+        return t
+
+
+class Autopilot(amj.Autopilot):
+    """The lab's autopilot with its speed scaling referred to STERNA's cruise (its gains were set at 18 m/s)."""
+
+
+def export_mesh(folder) -> str:
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "sterna.stl"
+    if not path.exists():
+        st.Sterna().generate().export_stl(str(path), tolerance=0.5)
+    return str(path)
+
+
+class Recorder:
+    """A chase camera into an mp4 (ffmpeg, H.264). Needs an OpenGL context (``MUJOCO_GL=egl`` or ``osmesa``)."""
+
+    def __init__(self, sim, path, size=(960, 540), fps=30, distance=2.6):
+        self.sim, self.fps = sim, fps
+        self.r = mujoco.Renderer(sim.m, size[1], size[0])
+        self.cam = mujoco.MjvCamera()
+        self.cam.distance, self.cam.elevation = distance, -16.0
+        self.every = max(1, round(1 / (fps * amj.DT * 5)))
+        self.k, self.psi, self.frames, self.last = 0, None, 0, None
+        self.ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{size[0]}x{size[1]}",
+                                    "-r", str(fps), "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "23", str(path)], stdin=subprocess.PIPE)
+
+    def __call__(self, sim):
+        self.k += 1
+        if self.k % self.every:
+            return
+        s = sim.state()
+        vh = s["v_world"][:2]
+        psi = math.degrees(math.atan2(vh[1], vh[0])) if np.linalg.norm(vh) > 1 else (self.psi or 0.0)
+        self.psi = psi if self.psi is None else self.psi + 0.15 * ((psi - self.psi + 180) % 360 - 180)
+        self.cam.lookat[:] = s["pos"]
+        self.cam.azimuth = self.psi + 32.0                     # behind and to one side, looking along the flight path
+        self.r.update_scene(sim.d, camera=self.cam)
+        self.last = self.r.render()
+        self.ff.stdin.write(self.last.tobytes())
+        self.frames += 1
+
+    def close(self):
+        self.ff.stdin.close()
+        self.ff.wait()
+
+
+def mission(sim: Sim, record=None, release=RELEASE_M_S, wind=(0.0, 0.0, 0.0)) -> tuple:
+    """Fly the mission; returns (history, summary). The phases are switched on height, heading and time, by hand."""
+    C = sim.C
+    Vs = math.sqrt(C["mass"] * am.G / (0.5 * am.RHO * C["S"] * C["CL_MAX"]))
+    sim.start(max(release, 1.15 * Vs), RELEASE_HEIGHT_M)
+    sim.wind[:] = wind
+    sim.d.qvel[:3] = (release, 0.0, 0.0)
+    mujoco.mj_forward(sim.m, sim.d)
+    ap = Autopilot(sim)
+    st_ = {"phase": "launch", "t_phase": 0.0, "turned": 0.0, "psi": None, "t_safe": None, "touch": None, "log": []}
+
+    def go(name, t):
+        st_["log"].append((round(t, 1), name))
+        st_["phase"], st_["t_phase"] = name, t
+
+    def fn(t, s):
+        sd = s.state()
+        h, V, ph = sd["pos"][2], sd["V"], st_["phase"]
+        if ph == "launch":
+            ap(phi_c=0.0, theta_c=math.radians(10.0) if V > 1.2 * Vs else math.radians(2.0), throttle=1.0)
+            if h > 10.0 and V > 1.3 * Vs:
+                st_["t_safe"] = t
+                go("climb", t)
+        elif ph == "climb":
+            ap(phi_c=0.0, theta_c=math.radians(10.0), throttle=1.0)
+            if h > SURVEY_HEIGHT_M - 2.0:
+                go("leg", t)
+        elif ph == "leg":
+            ap(phi_c=0.0, theta_c=math.radians(0.5) + 0.03 * (SURVEY_HEIGHT_M - h), V_c=CRUISE_M_S)
+            if t - st_["t_phase"] > 6.0:
+                st_["psi"] = sd["psi"]
+                go("orbit", t)
+        elif ph == "orbit":
+            ap(phi_c=math.radians(ORBIT_BANK_DEG), theta_c=math.radians(1.5) + 0.03 * (SURVEY_HEIGHT_M - h), V_c=CRUISE_M_S)
+            d = (sd["psi"] - st_["psi"] + math.pi) % (2 * math.pi) - math.pi
+            st_["turned"] += abs(d)
+            st_["psi"] = sd["psi"]
+            if st_["turned"] > 2 * math.pi:
+                go("glide", t)
+        elif ph == "glide":                                        # propeller stopped: speed held on pitch
+            ap(phi_c=0.0, theta_c=math.radians(-4.0) + 0.02 * (1.35 * Vs - V), throttle=0.0)
+            if h < 2.5:
+                go("flare", t)
+        elif ph == "flare":
+            ap(phi_c=0.0, theta_c=math.radians(3.0), throttle=0.0, protect=False)
+            if h < 0.16 and st_["touch"] is None:
+                st_["touch"] = {"t": t, "V": V, "sink": -float(sd["v_world"][2])}
+                go("slide", t)
+        else:
+            s.controls[:] = (0.0, 0.0, 0.0, 0.0)
+
+    hist = {k: [] for k in ("t", "V", "z", "x", "y", "phi", "theta", "alpha", "n", "throttle", "phase")}
+    t0 = sim.d.time
+    while sim.d.time - t0 < 150.0:
+        t = sim.d.time - t0
+        fn(t, sim)
+        sim.step(5)
+        s, i = sim.state(), sim.info
+        for k, v in (("t", t), ("V", s["V"]), ("z", s["pos"][2]), ("x", s["pos"][0]), ("y", s["pos"][1]), ("phi", math.degrees(s["phi"])),
+                     ("theta", math.degrees(s["theta"])), ("alpha", math.degrees(i["alpha"])), ("n", i["load_factor"]), ("throttle", sim.controls[3])):
+            hist[k].append(float(v))
+        hist["phase"].append(st_["phase"])
+        if record is not None:
+            record(sim)
+        if st_["phase"] == "slide" and (t - st_["t_phase"] > 3.0 or float(np.linalg.norm(s["v_world"])) < 0.3):
+            break
+        if st_["phase"] in ("launch", "climb") and s["pos"][2] < 0.12:
+            st_["log"].append((round(t, 1), "ground contact after launch"))
+            break
+    H = {k: (np.array(v) if k != "phase" else v) for k, v in hist.items()}
+    launch = H["t"] < (st_["t_safe"] or 5.0)
+    orbit = np.array([p == "orbit" for p in H["phase"]])
+    summary = {"mass_kg": round(C["mass"], 3), "stall_m_s": round(Vs, 2), "release_m_s": release,
+               "launch_min_height_m": round(float(H["z"][launch].min()), 2), "time_to_safe_s": None if st_["t_safe"] is None else round(st_["t_safe"], 1),
+               "orbit_radius_m": round(float(np.mean(H["V"][orbit]) ** 2 / (am.G * math.tan(math.radians(ORBIT_BANK_DEG)))), 1) if orbit.any() else None,
+               "orbit_load_factor": round(float(np.mean(H["n"][orbit])), 2) if orbit.any() else None,
+               "touchdown": None if st_["touch"] is None else {k: round(v, 2) for k, v in st_["touch"].items()},
+               "duration_s": round(float(H["t"][-1]), 1), "phases": st_["log"],
+               "note": "aerodynamics from sterna_model (lattice, hand estimates, CFD fit when given); hand autopilot gains; still air unless wind is set"}
+    return H, summary
