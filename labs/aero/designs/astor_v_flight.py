@@ -156,7 +156,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
         from_astor_v(C, p, sweep, glove)
         if name == "twin":
             import gavilan_flight as GF
-            C["CD0"] += (2 * 0.0008 + GF.NET_CDA) / C["S"]                    # HAND: two nacelles; the net launcher (gavilan_flight)
+            C["CD0"] += (2 * 0.0008 + GF.NET_CDA - 0.0008) / C["S"]           # HAND: two nacelles; the net launcher (gavilan_flight) less its vessel, now inside the body
             C["Cnb"] *= 0.9                                                   # HAND: the two propellers' normal force ahead of the CG
     if cfg:
         ref = cfg.get("reference", {})

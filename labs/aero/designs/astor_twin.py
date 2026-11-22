@@ -32,7 +32,7 @@ from vegeta.dedalus import Parameter
 
 _DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher",                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
              "pivot_y": 235.0, "pivot_x": 365.0, "pivot_slides": False, "panel_span": 460.0, "panel_root_chord": 180.0, "panel_tip_chord": 110.0,
-             "panel_stack": 4.0, "wing_plane_z": 8.0, "prop_diameter": 279.4, "talon_hinge_x": 380.0}
+             "panel_stack": 4.0, "wing_plane_z": 8.0, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
 _NEW = [
     Parameter("glove_span", 500.0, "mm", min=200.0, description="the fixed inner wing, tip to tip"),
     Parameter("glove_root_chord", 300.0, "mm", min=120.0), Parameter("glove_taper", 0.75, "", min=0.3, max=1.0),
@@ -44,7 +44,10 @@ _NEW = [
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
     Parameter("launcher_breech_x", 447.0, "mm", description="the tube's trunnion (at its breech) from the nose tip"),
 ]
-LAUNCHER = dict(tube_mm=300.0, tube_od_mm=45.0, chamber_mm=90.0, chamber_od_mm=60.0, tank_l=1.0, tank_od_mm=86.0)      # gavilan_flight.NET's airborne piece
+LAUNCHER = dict(tube_mm=300.0, tube_od_mm=45.0, chamber_mm=90.0, chamber_od_mm=60.0, tank_l=1.0)      # gavilan_flight.NET's airborne piece
+# The air vessel is INSIDE the fuselage (2026-11-22): a 1 L vessel of the old 86 mm diameter does not go into a 70 mm
+# body, so it is shaped to the tail cone, where the dropped nets' tube was, its front end above the breech it feeds.
+VESSEL = dict(skin_mm=1.5, gap_mm=1.5, wall_mm=1.5, aft_of_the_tail_end_mm=25.0, cap=0.5)       # HAND: the skin, the gap for the tail's leads, the wall; cap depth / radius
 
 
 class AstorTwin(T.AstorT):
@@ -101,6 +104,55 @@ class AstorTwin(T.AstorT):
         return [{"y": y, "breech": (p["launcher_breech_x"], y, zb), "muzzle": (p["launcher_breech_x"] - L * math.cos(a), y, zb - L * math.sin(a)),
                  "axis": (math.cos(a), 0.0, math.sin(a)), "length": L, "z_breech": zb} for y in ys[:n]]
 
+    def fuselage_radius(self, p, x):
+        """The fuselage's outer radius at station x [mm] (the same ogives as ``_fuselage``)."""
+        import numpy as np
+        from emerillon import ogive
+        L, R, re = p["fuselage_length"], p["fuselage_diameter"] / 2, p["tail_end_diameter"] / 2
+        nose = ogive(p["nose_length"], R, 40)
+        cone = ogive(p["tail_cone"], R - re, 40)[::-1]
+        prof = np.vstack([nose, np.column_stack([L - cone[:, 0], cone[:, 1] + re])])
+        return float(np.interp(x, prof[:, 0], prof[:, 1]))
+
+    def vessel_layout(self, p) -> dict:
+        """The air vessel inside the fuselage: its outer profile [(x, r)] following the tail cone, from the station that
+        gives ``LAUNCHER['tank_l']`` inside its wall back to just ahead of the tail end."""
+        import numpy as np
+        v = VESSEL
+        x1 = p["fuselage_length"] - v["aft_of_the_tail_end_mm"]
+        ro = lambda x: self.fuselage_radius(p, x) - v["skin_mm"] - v["gap_mm"]
+
+        def profile(x0):
+            xs = np.linspace(x0, x1, 240)
+            r = np.array([ro(x) for x in xs])
+            for xe, sgn in ((x0, 1.0), (x1, -1.0)):                           # elliptical end caps, depth = cap x the radius there
+                d = v["cap"] * ro(xe)
+                u = np.clip(sgn * (xs - xe) / d, 0.0, 1.0)
+                r = r * np.sqrt(1.0 - (1.0 - u) ** 2)
+            return xs, r
+
+        def litres(x0):
+            xs, r = profile(x0)
+            ri = np.maximum(r - v["wall_mm"], 0.0)
+            return float(np.trapezoid(math.pi * ri ** 2, xs)) / 1e6
+
+        lo, hi = 150.0, x1 - 60.0
+        for _ in range(40):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if litres(mid) > LAUNCHER["tank_l"] else (lo, mid)
+        x0 = 0.5 * (lo + hi)
+        xs, r = profile(x0)
+        return {"x0": x0, "x1": x1, "xs": xs, "r": r, "litres": litres(x0), "centre_x": float(np.trapezoid(xs * r ** 2, xs) / np.trapezoid(r ** 2, xs)),
+                "max_od": 2 * float(r.max()), "aft_od": 2 * ro(x1 - v["cap"] * ro(x1))}
+
+    def _vessel(self, p):
+        lay = self.vessel_layout(p)
+        pts = [(float(lay["xs"][0]), 0.0)] + [(float(x), float(max(r, 0.05))) for x, r in zip(lay["xs"], lay["r"])] + [(float(lay["xs"][-1]), 0.0)]
+        body = cq.Workplane("XY").polyline(pts).close().revolve(360.0, (0, 0, 0), (1, 0, 0))
+        bx = p["launcher_breech_x"]                                           # the feed: down through the belly to the valve on the chamber
+        feed = cq.Workplane("XY").circle(9.0).extrude(p["fuselage_diameter"] / 2 + 6.0).translate((bx - 30.0, 0, -(p["fuselage_diameter"] / 2 + 6.0)))
+        return body.union(feed)
+
     def _launchers(self, p):
         out = None
         a = p["launcher_depression_deg"]
@@ -114,11 +166,6 @@ class AstorTwin(T.AstorT):
                        .union(cq.Workplane("YZ").circle(19.0).extrude(40.0)))                                  # the rear venturi behind the trunnion
             trunnion = cq.Workplane("XZ").circle(8.0).extrude(LAUNCHER["chamber_od_mm"] + 16.0).translate((0, (LAUNCHER["chamber_od_mm"] + 16.0) / 2, 0))
             one = tube.union(chamber).rotate((0, 0, 0), (0, 1, 0), -a).union(trunnion).translate(Lr["breech"])
-            rt = LAUNCHER["tank_od_mm"] / 2
-            lt = LAUNCHER["tank_l"] * 1e6 / (math.pi * (rt - 2.0) ** 2)
-            tank = (cq.Workplane("YZ").circle(rt).extrude(lt).edges().fillet(rt * 0.6)
-                    .translate((Lr["breech"][0] - lt - 60.0, (rt + 26.0) * (1 if k == 0 else -1), -(R - rt * 0.2))))     # beside the tube, clear of the fins
-            one = one.union(tank)
             out = one if out is None else out.union(one)
         return out
 
@@ -127,6 +174,8 @@ class AstorTwin(T.AstorT):
         if int(p["net_launchers"]) > 0:
             out.pop("talons", None)
             out["launcher"] = self._launchers(p)
+            out["vessel"] = self._vessel(p)                                    # inside the fuselage: seen only with the body drawn clear
+            out.pop("belly_camera", None)                                      # the dropped nets' camera went with them
         return out
 
     def _propeller(self, p):
@@ -172,7 +221,7 @@ def launcher_checks(shots=1, v_pass=None, v_bandit=9.0) -> dict:
             "mass_kg": round(m, 2), "stall_spread_m_s": round(stall, 1), "wing_loading_kg_m2": round(m / S, 1),
             "thrust_over_weight_at_32_m_s": round(113.0 / (m * 9.80665), 2),
             "geometry": {"muzzle_x_mm": round(lay[0]["muzzle"][0]), "muzzle_below_axis_mm": round(-lay[0]["muzzle"][2]), "muzzle_ahead_of_the_propellers_mm": round(x_prop - lay[0]["muzzle"][0]),
-                         "breech_x_mm": p["launcher_breech_x"], "tilt_travel_deg": [0.0, 15.0], "muzzle_below_axis_at_0_deg_mm": round(-lay[0]["z_breech"]), "legs": "left off: the breech's jet and the tank are where they fold",
+                         "breech_x_mm": p["launcher_breech_x"], "tilt_travel_deg": [0.0, 15.0], "muzzle_below_axis_at_0_deg_mm": round(-lay[0]["z_breech"]), "legs": "left off: the breech's jet is where they fold",
                          "depression_deg": p["launcher_depression_deg"]},
             "pass": {"speed_m_s": round(vp, 1), "bandit_m_s": v_bandit, "closing_m_s": round(closing, 1), "fire_between_m": [lo, hi],
                      "time_in_range_s": round((hi - lo) / closing, 2), "net_flight_s": [round(lo / GF.NET["muzzle_m_s"], 2), round(hi / GF.NET["muzzle_m_s"], 2)],
@@ -180,8 +229,38 @@ def launcher_checks(shots=1, v_pass=None, v_bandit=9.0) -> dict:
                      "net_half_span_m": round(GF.NET["open_span_m"] / 2, 2),
                      "net_speed_through_the_air_m_s": round(vp + GF.NET["muzzle_m_s"]), "tested_at_m_s": GF.NET["muzzle_m_s"]},
             "recoil_if_the_rear_jet_were_blocked": {"impulse_Ns": round(I, 1), "speed_change_m_s": round(I / m, 2), "note": "small on this mass: a plain closed breech would do"},
+            "air_vessel": vessel_checks(),
             "untested": ["the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)", "the rear jet along the belly",
                          "the balance with ~1 kg under the forward belly"]}
+
+
+def vessel_checks() -> dict:
+    """The air vessel inside the fuselage: where it is, that it holds its litre, what it moves and what it displaces."""
+    import gavilan_flight as GF
+    A_ = AstorTwin()
+    p = resolve(variant(net_launchers=1, talon_deploy=-1.0, net_count=0))
+    lay = A_.vessel_layout(p)
+    g = GF.NET["parts_g"]["tank 1.0 L, 30 bar"] * GF.NET["margin"]
+    old_x = p["launcher_breech_x"] - 60.0 - 189.0 / 2                          # the 86 mm vessel that hung beside the tube: its centre
+    m = one_launcher(3)["aircraft_kg"]
+    dcg = g / 1000.0 * (lay["centre_x"] - old_x) / m
+    pack = A.PACKS["12S 5000 mAh LiPo"][0]
+    pbar = GF.NET["pressure_bar_g"]
+    return {"where": "inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech",
+            "from_x_mm": round(lay["x0"]), "to_x_mm": round(lay["x1"]), "length_mm": round(lay["x1"] - lay["x0"]), "largest_diameter_mm": round(lay["max_od"], 1),
+            "aft_diameter_mm": round(lay["aft_od"], 1), "volume_l": round(lay["litres"], 3), "pressure_bar": pbar,
+            "wall": {"mm": VESSEL["wall_mm"], "hoop_stress_MPa": round(pbar * 0.1 * (lay["max_od"] / 2) / VESSEL["wall_mm"], 1), "note": "aluminium at this stress has a large reserve; the mass stays gavilan_flight's 250 g (HAND)"},
+            "clear_of_the_skin_mm": VESSEL["gap_mm"], "feed_to_the_valve_mm": round(p["fuselage_diameter"] / 2 + 6.0),
+            "balance": {"vessel_g_with_margin": round(g), "centre_moves_aft_mm": round(lay["centre_x"] - old_x), "aircraft_cg_moves_aft_mm": round(dcg, 1),
+                        "pack_moves_forward_to_hold_it_mm": round(dcg * m * 1000.0 / pack), "air_used_per_shot_g": GF.NET["air_g_per_shot"],
+                        "cg_shift_per_shot_mm": round(-GF.NET["air_g_per_shot"] / 1000.0 * (lay["centre_x"] - V.CG_MM) / m, 2)},
+            "drag": {"removed_cm2": 8.0, "source": "gavilan_flight.NET_CDA's 0.0008 m2 for the vessel under the belly (HAND)"},
+            "displaced": ["the parachute bay: forward under the glove (station %d)" % p["parachute_x"], "the dropped nets' belly camera: removed",
+                          "the tail's servo leads: in the %.1f mm gap along the vessel (HAND)" % VESSEL["gap_mm"],
+                          "the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)"],
+            "not_checked": ["a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at %d mm)" % V.CG_MM,
+                            "the tail blades' pivots at station %d pass outside the vessel on a ring frame (HAND)" % p["tail_pivot_x"],
+                            "the pack's own fit in the 70 mm body"]}
 
 
 MAGAZINE = {"reload_g": (0.0, 180.0, 220.0),        # HAND: a breech feed for the second cartridge, a longer one for the third (+-60)

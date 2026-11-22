@@ -1,0 +1,33 @@
+where: inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech
+from_x_mm: 385
+to_x_mm: 765
+length_mm: 380
+largest_diameter_mm: 64.0
+aft_diameter_mm: 54.9
+volume_l: 1.0
+pressure_bar: 29.8
+wall:
+  mm: 1.5
+  hoop_stress_MPa: 63.6
+  note: aluminium at this stress has a large reserve; the mass stays gavilan_flight's 250 g (HAND)
+clear_of_the_skin_mm: 1.5
+feed_to_the_valve_mm: 41
+balance:
+  vessel_g_with_margin: 312
+  centre_moves_aft_mm: 274
+  aircraft_cg_moves_aft_mm: 12.5
+  pack_moves_forward_to_hold_it_mm: 56
+  air_used_per_shot_g: 19.1
+  cg_shift_per_shot_mm: -0.56
+drag:
+  removed_cm2: 8.0
+  source: gavilan_flight.NET_CDA's 0.0008 m2 for the vessel under the belly (HAND)
+displaced:
+- 'the parachute bay: forward under the glove (station 265)'
+- 'the dropped nets'' belly camera: removed'
+- 'the tail''s servo leads: in the 1.5 mm gap along the vessel (HAND)'
+- 'the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)'
+not_checked:
+- 'a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at 365 mm)'
+- the tail blades' pivots at station 655 pass outside the vessel on a ring frame (HAND)
+- the pack's own fit in the 70 mm body
