@@ -1091,7 +1091,7 @@ def scenario_heist(kin, q_stand, p):
         knuckles = {sd: gs.point(np.array([w["x"] - 0.02, y_c + (0.12 if sd == "L" else -0.12), top]), n=(0.0, 0.0, 1.0)) for sd in ("L", "R")}
         T_settle = S_feet["L"] + S_feet["R"]                                  # the feet on the sill; the hands off the jamb onto the sill in the opening
         K_end = gs.hand_targets(kin, "L", knuckles["L"]) + gs.hand_targets(kin, "R", knuckles["R"])
-        mv = mover(world_now(qc, bc, pc_, K_end), K_end, lift=0.05)
+        mv = mover(world_now(qc, bc, pc_, K_end), K_end, lift=0.08, out=np.array([-0.08, 0.15, 0.0]))   # out round the jamb's edge, not through the wall
         m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: T_settle + mv(u), shift(bc, crouch, pc_, 0.35),
                                q_init=qc, extra=x_state(state, False, toes_open=("L", "R")), reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
                                source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
