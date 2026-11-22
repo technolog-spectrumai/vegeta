@@ -902,8 +902,8 @@ def scenario_heist(kin, q_stand, p):
     # the leap as a jump: arms in and a crouch off the trunk's side, a push-off along the launch line, a ballistic
     # flight (gravity only: the pelvis on a parabola, the horizontal speed constant), the landing taken in the legs
     G = 9.81
-    T_IN, T_PUSH, T_LAND, DIP, CLEAR = 0.45, 0.22, 0.3, 0.07, 0.12
-    p0 = np.array([b[0] - 0.15, b[1] + 0.3, b[2] - 0.06])                  # back off the tree and out to the window's side, sunk into the push
+    T_IN, T_PUSH, T_LAND, DIP, CLEAR = 0.6, 0.22, 0.3, 0.07, 0.12
+    p0 = np.array([b[0] - 0.22, b[1] + 0.3, b[2] - 0.06])                  # back off the tree and out to the window's side, sunk into the push
     p1 = crouch.copy()
     launch = p0.copy()
     for _ in range(6):                                                     # the launch point: where the push (uniform acceleration from rest) ends
@@ -935,8 +935,8 @@ def scenario_heist(kin, q_stand, p):
     def leap_base(u):
         t = u * D
         if t < T_IN:                                                       # off the tree, round to the trunk's side, sinking
-            f = mk.smooth(t / T_IN)
-            pc, pt = (1 - f) * b + f * p0, pitch
+            fx_, fy_ = mk.smooth(min(1.0, t / (0.5 * T_IN))), mk.smooth(max(0.0, (t - 0.5 * T_IN) / (0.5 * T_IN)))   # back off the trunk, then round it
+            pc, pt = np.array([b[0] + fx_ * (p0[0] - b[0]), b[1] + fy_ * (p0[1] - b[1]), b[2] + fx_ * (p0[2] - b[2])]), pitch
         elif t < T_IN + T_PUSH:                                            # the push: from rest to take-off speed
             tt = t - T_IN
             pc, pt = p0 + v * tt * tt / (2.0 * T_PUSH), pitch
