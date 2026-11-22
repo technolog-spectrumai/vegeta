@@ -1101,11 +1101,12 @@ def scenario_heist(kin, q_stand, p):
                 q_[kin.index[j]] = (1 - f) * q_arm0[j] + f * q_fold[j]
             return q_
         mv = lambda u: []
-        m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: T_settle + mv(u), shift(bc, crouch, pc_, 0.35),
+        m_ = gt.contact_motion(kin, "tail_off_the_trunk", 1.6, lambda u: T_settle + mv(u), shift(bc, crouch + np.array([0.0, 0.15, 0.0]), pc_, 0.35),
                                q_init=qc, extra=x_tail_off, reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_crouch,
                                source="gibbon_scenarios.heist: on the sill on four, the tail unwound last and the body settled in the opening")
         steps.append(m_)
         q_sill = gt._last(kin, m_, qc)
+        crouch = crouch + np.array([0.0, 0.15, 0.0])                       # the body settled over the sill, away from the jamb
         if gt.SOLID is not None:
             gt.SOLID.ignore = set()
     x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
