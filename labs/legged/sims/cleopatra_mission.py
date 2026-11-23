@@ -821,11 +821,11 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=F
         elif phase == "riser":
             cam.set(mid + [0.0, 0, 0.05], 1.25, 235, -6, 0.08)
         elif phase == "cut":
-            cam.set(np.array([X_END - 0.02, 0.0, Z_IN]), 0.85, -40, -18, 0.1)
+            cam.set(np.array([X_END - 0.03, 0.0, Z_IN - 0.02]), 0.62, 80, -12, 0.1)
         elif phase == "vent":
             cam.set(h + [-0.05, 0, 0.0], 0.95, 20, -16, 0.08)
         elif phase == "plug":
-            cam.set(port_point() + [0.1, 0, 0.05], 0.6, 60, -16, 0.08)
+            cam.set(0.5 * (port_point() + h) + [0, 0, 0.02], 0.62, 90, -12, 0.08)
         elif phase == "copy":
             cam.set(np.array([-1.3, 0.5, 0.75]), 1.5, 126, -18, 0.05)
         elif phase == "retreat":
