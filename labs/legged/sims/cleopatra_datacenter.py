@@ -1,11 +1,13 @@
 """Cleopatra, "Operation Pipe Entry" (``./cleopatra.sh mission``): a night-time MuJoCo short. Cleopatra — the
 three-segment, twelve-legged Myropod (``designs/myropod_robot.py``, notebook 18), 6.2 kg, here with two small pincer
 arms under its head (a gripper, which carries the pendrive, and a cutter, as TARANTULA has) and a camera-and-lidar
-turret on its head — crosses the street outside the house of Operation Silent Drop to the intake of the bandit's
-air-conditioning duct (a 260 mm pipe), crawls in, along the ground run, up the riser on the house wall and through
-the wall. At the vent over the desk the cutter snips the grille's slats one by one where a 120 mm hole is to be (each
-drops onto the desk once cut at both ends), and Cleopatra climbs out, walks to the laptop, crouches, and the gripper plugs the pendrive into the laptop's back port; after the
-copy it unplugs it and Cleopatra backs out the way it came (time-lapsed). The bandit sleeps in his armchair.
+turret on its head — crosses the street outside the house of Operation Silent Drop to the intake of the bandits' air duct (a 260 mm pipe,
+on the ground along the building, through its wall) carrying a pendrive in its gripper and a fuse-timed gift clamped
+under its tail. At the round return vent inside the bandits' datacenter the cutter snips the grille's slats free one
+by one; Cleopatra climbs out, walks down the cold aisle between the racks and over the cable bundles to the last rack,
+and the gripper plugs the pendrive into the server's front port. After the copy it unplugs, leaves the gift by the
+server (its fuse timer blinking) and backs out the way it came (time-lapsed). Back in the datacenter: KABOOM —
+confetti, smoke, and the dozing guard soot-black with his hair on end.
 
 How it moves (scripted kinematics, rendered by MuJoCo; no dynamics): the head follows a path — the yard, the duct's
 centre line, the desk — and the segments trail it, each turned to the path's tangent at its own place, the passive
@@ -61,7 +63,10 @@ RACK_W, RACK_D, RACK_H = 0.6, 1.0, 2.0                                    # a se
 RACK_X0 = -0.9                                                            # the first rack's near edge
 N_RACKS = 4                                                               # racks per row
 FRONT_L, FRONT_R = AISLE_Y - 0.45, AISLE_Y + 0.45                         # the two rows' front faces
-TARGET_X = RACK_X0 - 2.5 * RACK_W                                         # the target rack's centre (the third)
+TARGET_X = RACK_X0 - 3.5 * RACK_W                                         # the target rack's centre (the last)
+GIFT = (0.03, 0.025, 0.02)                                                # the gift's half sizes [m]
+GIFT_UNDER = 0.035 + 0.022                                                # carried under segment 3's belly
+N_CONFETTI, N_SMOKE = 180, 10
 PORT_Z = 0.09                                                             # its bottom server's front USB port
 CABLES = ((-0.78, 0.022, (0.1, 0.25, 0.75)), (-1.12, 0.018, (0.9, 0.75, 0.15)), (-1.42, 0.024, (0.08, 0.08, 0.09)),
           (-1.66, 0.016, (0.85, 0.2, 0.2)))                                # bundles across the aisle: x, radius, colour
@@ -204,7 +209,8 @@ def robot_path():
 ARM = {"base_x": 0.055, "base_y": 0.033, "base_z": -0.042, "upper": 0.115, "fore": 0.110, "finger": 0.022}
 #: (``myropod_robot.ARM_V2``: the robot's jointed arms; the video poses their joints)
 ARM_TUCK = {"g": np.array([0.11, 0.035, -0.045]), "c": np.array([0.105, -0.035, -0.045])}
-HOLE_R = R_DUCT - 0.004                                                   # the hole the cutter cuts: just inside the bore
+HOLE_R = R_DUCT + 0.004                                                   # the hole the cutter cuts: the full bore
+CARRY_AHEAD, CARRY_DROP = 0.20, 0.035                                    # the cutter carried at the path 0.2 m ahead
 USB_HALF = 0.0225                                                         # the pendrive body's half length
 USB_PLUG = USB_HALF + 0.012                                               # its centre to the plug's tip
 GRIP_IN = 0.010                                                           # the gripper's tip to its grip point
@@ -255,6 +261,7 @@ def build(width, height, cache: Path):
     A("material", name="glow", rgba="1 0.8 0.5 1", emission="1")
     A("material", name="headlamp", rgba="1 0.97 0.85 1", emission="1")
     A("material", name="usb_led", rgba="0.2 0.6 1 1", emission="0")
+    A("material", name="gift_led", rgba="1 0.12 0.08 1", emission="0")
     A("material", name="window", rgba="0.95 0.72 0.4 1", emission="0.45")
     A("material", name="lens", rgba="0.1 0.2 0.35 1", specular="1", shininess="1")
     A("material", name="lidar", rgba="0.9 0.2 0.15 1", emission="0.6")
@@ -358,20 +365,16 @@ def build(width, height, cache: Path):
     for k in range(-5, 6):
         G(world, type="box", size="0.0045 0.15 0.003", pos=f"{X_MOUTH + 0.25} {0.45 + 0.025 * k:.3f} 0.026",
           euler="0 1.45 0.4", material="dark")
-    gx = X_END - 0.006                                                    # the vent's grille: a frame and slats
-    for sy in (-1, 1):
-        G(world, type="box", size="0.005 0.012 0.16", pos=f"{gx} {AISLE_Y + sy * 0.148} {Z_IN + 0.02}",
-          rgba="0.75 0.76 0.78 1")
-        G(world, type="box", size="0.005 0.16 0.012", pos=f"{gx} {AISLE_Y} {Z_IN + 0.02 + sy * 0.148}",
-          rgba="0.75 0.76 0.78 1")
-    for k in range(-5, 7):                                                # (the bottom slat would be under the floor)
+    gx = X_END - 0.006                                                    # the vent's grille: round, a ring and slats
+    for k in range(32):                                                   # the ring (the duct's end flange)
+        a_ = 2 * math.pi * k / 32
+        G(world, type="box", size="0.005 0.0115 0.008",
+          pos=f"{gx} {AISLE_Y + (HOLE_R + 0.009) * math.cos(a_):.4f} {Z_IN + (HOLE_R + 0.009) * math.sin(a_):.4f}",
+          euler=f"{a_ + math.pi / 2:.4f} 0 0", rgba="0.75 0.76 0.78 1")
+    for k in range(-5, 6):                                                # the slats, across the circle
         z = 0.022 * k
-        w = math.sqrt(max(HOLE_R ** 2 - z * z, 0.0))                      # the slat's part inside the hole
-        for sy in (-1, 1):
-            a, b = (w, 0.136) if w > 0 else (0.0, 0.136)
-            G(world, name=f"slat_side{k + 6}{'lr'[sy > 0]}", type="box", size=f"0.004 {(b - a) / 2:.4f} 0.0045",
-              pos=f"{gx} {AISLE_Y + sy * (a + b) / 2:.4f} {Z_IN + z:.4f}", rgba="0.7 0.71 0.74 1")
-        if w > 0.004:                                                     # the slat's middle: cut free, it drops
+        w = math.sqrt(max(HOLE_R ** 2 - z * z, 0.0))
+        if w > 0.03:                                                      # cut free at both ends, they drop
             sl = ET.SubElement(world, "body", {"name": f"slat{k + 6}", "mocap": "true",
                                                "pos": f"{gx} {AISLE_Y} {Z_IN + z:.4f}"})
             G(sl, type="box", size=f"0.004 {w:.4f} 0.0045", rgba="0.7 0.71 0.74 1")
@@ -455,6 +458,35 @@ def build(width, height, cache: Path):
         for k in (1, 2):
             G(bodies[f"{arm} jaw {k}"], type="mesh", mesh=f"m:{tool}_{k}", mass="0",
               material="dark" if arm == "gripper" else "blade")
+    # ---- the gift (a fuse-timed box: carried under the tail, left by the server), the blast's props
+    gb = ET.SubElement(world, "body", {"name": "gift", "mocap": "true", "pos": "0 0 -5"})
+    gx_, gy_, gz_ = GIFT
+    G(gb, name="gift", type="box", size=f"{gx_} {gy_} {gz_}", rgba="0.78 0.06 0.08 1")
+    G(gb, type="box", size=f"{gx_ + 0.0006} 0.005 {gz_ + 0.0006}", rgba="0.98 0.78 0.2 1")
+    G(gb, type="box", size=f"0.005 {gy_ + 0.0006} {gz_ + 0.0006}", rgba="0.98 0.78 0.2 1")
+    for sy_ in (-1, 1):
+        G(gb, type="ellipsoid", size="0.007 0.011 0.006", pos=f"0 {sy_ * 0.009} {gz_ + 0.004}", rgba="0.98 0.78 0.2 1")
+    G(gb, type="sphere", size="0.0035", pos=f"{gx_ - 0.008} {gy_ - 0.006} {gz_ + 0.001}", material="gift_led")
+    fb = ET.SubElement(world, "body", {"name": "flashball", "mocap": "true", "pos": "0 0 -5"})
+    G(fb, name="flashball", type="sphere", size="0.01", rgba="1 0.92 0.55 0")
+    rng2 = np.random.default_rng(7)
+    for k in range(N_SMOKE):
+        b_ = ET.SubElement(world, "body", {"name": f"smoke{k}", "mocap": "true", "pos": "0 0 -5"})
+        G(b_, name=f"smoke{k}", type="sphere", size="0.05", rgba="0.3 0.3 0.3 0")
+    palette = [(1, 0.2, 0.3), (1, 0.8, 0.1), (0.2, 0.75, 1), (0.4, 1, 0.35), (1, 0.45, 0.9), (1, 1, 1), (1, 0.55, 0.1)]
+    for k in range(N_CONFETTI):
+        b_ = ET.SubElement(world, "body", {"name": f"conf{k}", "mocap": "true", "pos": "0 0 -5"})
+        c_ = palette[k % len(palette)]
+        w_ = 0.006 + 0.006 * rng2.random()
+        G(b_, type="box", size=f"{w_:.4f} {w_ * 0.6:.4f} 0.0004", rgba=f"{c_[0]} {c_[1]} {c_[2]} 1")
+    ET.SubElement(world, "light", {"name": "flash", "pos": f"{TARGET_X} {AISLE_Y} 0.6", "dir": "0 0 -1",
+                                   "diffuse": "0 0 0", "specular": "0 0 0", "cutoff": "90", "castshadow": "false",
+                                   "attenuation": "1 0 0.3"})
+    for k in range(7):                                                    # the guard's hair, after the blast
+        a_ = -1.2 + 0.4 * k
+        G(sleeper, name=f"hair{k}", type="capsule", size="0.006 0.04",
+          pos=f"{-0.17 + 0.02 * math.sin(a_):.3f} {0.06 * math.sin(a_):.3f} {1.1 + 0.02 * math.cos(a_):.3f}",
+          euler=f"{a_ * 0.8:.3f} {0.3 * math.cos(a_):.3f} 0", rgba="0.04 0.04 0.04 0")
     # ---- the pendrive (a mocap body: held, plugged in, held again)
     usb = ET.SubElement(world, "body", {"name": "usb", "mocap": "true", "pos": "0 0 -5"})
     G(usb, type="box", size="0.0225 0.008 0.0042", rgba="0.1 0.3 0.85 1")
@@ -492,7 +524,7 @@ def simulate(model, info, render=None):
         except KeyError:
             continue
         z = 0.022 * (k - 6)
-        slats[k] = (b_.mocapid[0], math.sqrt(HOLE_R ** 2 - z * z), Z_IN + z)
+        slats[k] = (b_.mocapid[0], math.sqrt(HOLE_R ** 2 - z * z), Z_IN + z)                     # cut at the ring
     arm_q = {a_: [model.joint(j).qposadr[0] for j in mr.arm_joints(name)] for a_, name in (("g", "gripper"),
                                                                                                ("c", "cutter"))}
     sleeper = model.body("sleeper").mocapid[0]
@@ -606,7 +638,7 @@ def simulate(model, info, render=None):
         z = 0.0
         if FRONT_L - 0.05 <= y <= FRONT_R + 0.05:
             for x_c, r_c, _ in CABLES:
-                if abs(x - x_c) <= r_c * 0.55 + 0.02:
+                if abs(x - x_c) <= r_c * 0.55 + 0.035:                    # on top, never against its side
                     z = max(z, 2 * r_c * 0.55)
         if RACK_X0 - N_RACKS * RACK_W <= x <= RACK_X0 and abs(y - FRONT_R + 0.06) < 0.02:
             z = max(z, 0.036)
@@ -627,6 +659,12 @@ def simulate(model, info, render=None):
             r /= np.linalg.norm(r)
             return c + r * (R_DUCT - r_pad), -r
         q = ps + Rs @ (hip[key] + np.array([0.0, mr.LEG_SIDES[key][1] * STANCE[0], 0.0]))
+        if st.get("gift") in ("dropping", "armed"):                       # never on or against the gift
+            gp = data.mocap_pos[gift_m]
+            dxy = q[:2] - gp[:2]
+            clear = max(GIFT[0], GIFT[1]) + r_pad + 0.03
+            if np.linalg.norm(dxy) < clear:
+                q[:2] = gp[:2] + (dxy / (np.linalg.norm(dxy) + 1e-9)) * clear
         z = surface_z(q[0], q[1])
         return np.array([q[0], q[1], z + r_pad]), np.array([0.0, 0.0, 1.0])
 
@@ -649,9 +687,21 @@ def simulate(model, info, render=None):
         got = np.array([rr * math.sin(yaw), sy * rr * math.cos(yaw), -hh])
         return (yaw, ph, kr), float(np.linalg.norm(got - v))
 
+    def knee_ok(lg, foot_w):
+        """In the duct, the knee stays inside the bore (the leg bars never cross the pipe's wall)."""
+        (yaw, ph, _), _ = leg_angles(lg, foot_w)
+        i, key = lg
+        ps, Rs = seg_pose(i)
+        sy = mr.LEG_SIDES[key][1]
+        kn = ps + Rs @ (hip[key] + f_len * np.array([math.cos(ph) * math.sin(yaw), sy * math.cos(ph) * math.cos(yaw),
+                                                     -math.sin(ph)]))
+        z = pipe_zone(kn)
+        return z is None or z[2] < R_DUCT - 0.010 or not in_duct_foot(lg, foot_w)
+
     def in_reach(lg, foot_w):
-        """The planted foot still reachable by its leg (within the joints' ranges; 2 mm tolerance)."""
-        return leg_angles(lg, foot_w)[1] < 0.002
+        """The planted foot still reachable by its leg (within the joints' ranges; 2 mm tolerance), the knee inside
+        the bore."""
+        return leg_angles(lg, foot_w)[1] < 0.002 and knee_ok(lg, foot_w)
 
     def in_duct_foot(lg, foot):
         """The foot's in the duct: its segment is, or the foot itself is inside the pipe's bore."""
@@ -661,7 +711,7 @@ def simulate(model, info, render=None):
     def reachable_wall(lg, target):
         """In the duct: the point on the pipe's wall nearest ``target`` that leg lg reaches within its joints' ranges
         (``target`` itself if it does) — a foot is never left where its leg can't follow, pushed through the wall."""
-        if leg_angles(lg, target)[1] < 0.002:
+        if in_reach(lg, target):
             return target
         z = pipe_zone(target) or duct_hit(seg_pose(lg[0])[0])
         if z is None:
@@ -675,7 +725,7 @@ def simulate(model, info, render=None):
         for off in np.linspace(-0.05, 0.05, 11):
             for a_ in np.radians(np.arange(0.0, 360.0, 6.0)):
                 q_ = c + t * off + (R_DUCT - r_pad) * (math.cos(a_) * u + math.sin(a_) * v)
-                if leg_angles(lg, q_)[1] < 0.002:
+                if in_reach(lg, q_):
                     dd = float(np.linalg.norm(q_ - target))
                     if best is None or dd < best[0]:
                         best = (dd, q_)
@@ -687,7 +737,7 @@ def simulate(model, info, render=None):
 
     st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "snips": {},
           "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None, "seat": 0.0,
-          "usb_port": None}
+          "usb_port": None, "gift": "carried", "gift_pos": None, "gift_t0": None, "t_boom": None, "blast": None}
     F, N = {}, {}
     place_body(st["sc"])
     for lg in legs:
@@ -722,9 +772,11 @@ def simulate(model, info, render=None):
             tip = el + L2 * dirn(ph_c)
             in_duct = duct_hit(hp) is not None                            # in the duct: elbow down (no ceiling
             err = float(np.linalg.norm(tip - np.asarray(tip_h))) + (0.005 if (sgn > 0) == in_duct else 0.0)  # room)
-            zz = pipe_zone(hp + hR @ el)                                  # an elbow out through the pipe's wall: no
-            if zz is not None and zz[2] > R_DUCT - 0.008 and duct_hit(hp) is not None:
-                err += 1.0
+            if in_duct:                                                   # no part of the arm out through the wall
+                for pt in [b + (el - b) * u_ for u_ in (0.5, 1.0)] + [el + (tip - el) * u_ for u_ in (0.5, 0.85)]:
+                    zz = pipe_zone(hp + hR @ pt)
+                    if zz is not None and zz[2] > R_DUCT - 0.008:
+                        err += 1.0
             if best is None or err < best[0]:
                 best = (err, q, el, tip, dirn(ph_c))
         _, q, el, tip, dv = best
@@ -743,8 +795,107 @@ def simulate(model, info, render=None):
         dv = dirn(-q[1] - q[2])
         return hp + hR @ (el + ARM["fore"] * dv), hR @ dv
 
+    gift_m = model.body("gift").mocapid[0]
+    gift_led = model.material("gift_led").id
+    seg3 = model.body("segment 3").id
+    conf = [model.body(f"conf{k}").mocapid[0] for k in range(N_CONFETTI)]
+    smoke = [model.body(f"smoke{k}").mocapid[0] for k in range(N_SMOKE)]
+    smoke_g = [model.geom(f"smoke{k}").id for k in range(N_SMOKE)]
+    flash_m, flash_g, flash_l = model.body("flashball").mocapid[0], model.geom("flashball").id, model.light("flash").id
+    sleeper_g = [g for g in range(model.ngeom) if model.geom_bodyid[g] == model.body("sleeper").id]
+    hair_g = [model.geom(f"hair{k}").id for k in range(7)]
+    rgba0 = {g: model.geom_rgba[g].copy() for g in sleeper_g}
+    rng_b = np.random.default_rng(11)
+
+    def gift_props(t):
+        if st["gift"] == "carried":                                       # clamped under the tail segment
+            R3 = data.xmat[seg3].reshape(3, 3)
+            data.mocap_pos[gift_m] = data.xpos[seg3] + R3 @ np.array([0.0, 0.0, -GIFT_UNDER])
+            data.mocap_quat[gift_m] = data.xquat[seg3]
+        elif st["gift"] == "dropping":                                    # the clamp opens: it drops to the floor
+            p0, z0, t0 = st["gift_pos"]
+            zc = max(z0 - 0.5 * 9.81 * (t - t0) ** 2, GIFT[2])
+            data.mocap_pos[gift_m] = [p0[0], p0[1], zc]
+            if zc <= GIFT[2]:
+                st["gift"] = "armed"
+        if st["gift_t0"] is not None and st["gift"] != "gone":
+            model.mat_emission[gift_led] = 1.0 if (t * 2.5) % 1.0 < 0.35 else 0.0
+        if st["t_boom"] is not None and t >= st["t_boom"]:
+            blast(t - st["t_boom"])
+
+    def blast(s_):
+        """KABOOM: the flash, confetti up and out, smoke; the guard soot-black, jolted, hair on end."""
+        g0 = data.mocap_pos[gift_m].copy() if st["blast"] is None else st["blast"]["g0"]
+        if st["blast"] is None:
+            n = N_CONFETTI
+            az = rng_b.uniform(0, 2 * math.pi, n)
+            el = rng_b.uniform(0.35, 1.45, n)
+            sp = rng_b.uniform(2.5, 6.5, n)
+            st["blast"] = {"g0": g0, "cv": np.column_stack([np.cos(el) * np.cos(az), np.cos(el) * np.sin(az), np.sin(el)])
+                           * sp[:, None], "cp": np.tile(g0, (n, 1)), "cw": rng_b.normal(0, 14, (n, 3)),
+                           "cq": np.tile([1.0, 0, 0, 0], (n, 1)), "last": 0.0,
+                           "sv": rng_b.normal(0, 0.12, (N_SMOKE, 3)) + np.array([0, 0, 0.3])}
+            st["gift"] = "gone"
+            data.mocap_pos[gift_m] = [0, 0, -5]
+            model.mat_emission[gift_led] = 0.0
+        B = st["blast"]
+        h = max(s_ - B["last"], 0.0)
+        B["last"] = s_
+        for _ in range(max(1, int(h / 0.004))):
+            hh = h / max(1, int(h / 0.004))
+            v = B["cv"]
+            spd = np.linalg.norm(v, axis=1, keepdims=True)
+            B["cv"] = v + hh * (np.array([0, 0, -9.81]) - 8.0 * spd * v + rng_b.normal(0, 4.0, v.shape))
+            B["cp"] = B["cp"] + hh * B["cv"]
+            B["cp"][:, 1] = np.clip(B["cp"][:, 1], FRONT_L + 0.005, FRONT_R - 0.005)   # the racks stop them
+            low = B["cp"][:, 2] < 0.001
+            B["cp"][low, 2] = 0.001
+            B["cv"][low] = 0.0
+            B["cw"][low] = 0.0
+        for k in range(N_CONFETTI):
+            w_ = B["cw"][k] * h
+            ang = np.linalg.norm(w_)
+            if ang > 1e-9:
+                B["cq"][k] = tv._qmul(np.array([math.cos(ang / 2), *(math.sin(ang / 2) * w_ / ang)]), B["cq"][k])
+            data.mocap_pos[conf[k]] = B["cp"][k]
+            data.mocap_quat[conf[k]] = B["cq"][k]
+        a_ = max(0.0, 1.0 - s_ / 0.45)
+        data.mocap_pos[flash_m] = g0
+        model.geom_size[flash_g][0] = 0.04 + 0.3 * sm(s_ / 0.1)
+        model.geom_rgba[flash_g] = [1, 0.95 - 0.35 * min(s_ / 0.45, 1), 0.6 - 0.4 * min(s_ / 0.3, 1), 0.8 * a_]
+        f_ = 6.0 * math.exp(-s_ / 0.18)
+        model.light_diffuse[flash_l] = [f_, 0.8 * f_, 0.45 * f_]
+        model.light_pos[flash_l] = g0 + np.array([0, 0, 0.4])
+        for k in range(N_SMOKE):
+            age = s_ - 0.03 * k
+            if age < 0:
+                continue
+            data.mocap_pos[smoke[k]] = g0 + B["sv"][k] * age + np.array([0, 0, 0.05 * age * age])
+            model.geom_size[smoke_g[k]][0] = 0.04 + 0.12 * (1 - math.exp(-age / 0.8))
+            gg = 0.3 + 0.25 * min(age / 1.5, 1)
+            model.geom_rgba[smoke_g[k]] = [gg, gg, gg * 1.02, 0.45 * math.exp(-age / 1.8)]
+        k_ = sm(s_ / 0.15)                                                # the guard: soot, a jolt, hair on end
+        for g in sleeper_g:
+            if g in hair_g:
+                model.geom_rgba[g] = [0.04, 0.04, 0.04, 1.0 * k_]
+            else:
+                model.geom_rgba[g] = (1 - k_) * rgba0[g] + k_ * np.array([0.05, 0.045, 0.045, rgba0[g][3]])
+        jolt = 0.12 * math.exp(-s_ / 0.25) * abs(math.sin(s_ * 25))
+        st["jolt"] = jolt
+
+    def carry_target():
+        """The carried cutter's target (head frame): the robot's path 0.2 m ahead of the head, 35 mm below it — in the
+        duct the bore's axis ahead, so the arm follows the bends."""
+        drop = CARRY_DROP if duct_hit(data.xpos[head]) is not None else -0.04    # in the room: well above the cables
+        p_ = frame_at(min(st["sc"] + CARRY_AHEAD, S[-1]))[0] - np.array([0.0, 0.0, drop])
+        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
+        return hR.T @ (p_ - hp)
+
     def props():
         t = st["t"]
+        if st.get("c_carry"):
+            st["arm"]["c"] = (carry_target(), st["arm"]["c"][1])
+        gift_props(t)
         hR = data.xmat[head].reshape(3, 3)
         # the arms and their pincers
         for arm in ("g", "c"):
@@ -785,7 +936,8 @@ def simulate(model, info, render=None):
             data.mocap_pos[mid] = [gx0 - 0.05 * u - 0.012 * (k % 4), AISLE_Y + 0.015 * ((k % 5) - 2) * u, zc]
             data.mocap_quat[mid] = mat2quat(rot_z(0.25 * ((k % 3) - 1) * u) @ rot_y(-1.5708 * u))
         # the sleeper breathes; the copy's progress bar; the pendrive's LED
-        data.mocap_pos[sleeper] = sleeper_p0 + np.array([0, 0, 0.006 * math.sin(t * 2 * math.pi / 4.2)])
+        breathe = 0.006 * math.sin(t * 2 * math.pi / 4.2) if st["t_boom"] is None or t < st["t_boom"] else 0.0
+        data.mocap_pos[sleeper] = sleeper_p0 + np.array([0, 0, breathe + st.get("jolt", 0.0)])
         model.geom_size[snore][0] = 0.006 + 0.01 * max(0.0, math.sin(t * 2 * math.pi / 4.2))
         fill = 0.1 * st["copy"]
         model.geom_size[bar][1] = max(fill, 0.0005)
@@ -861,7 +1013,7 @@ def simulate(model, info, render=None):
                     u = min((st["t"] + step - t0) / t_swing, 1.0)
                     n = na + nb
                     n /= np.linalg.norm(n) + 1e-9
-                    lift = 0.03 if nb[2] > 0.9 else 0.012                 # off the floor; just off the pipe's wall
+                    lift = 0.055 if nb[2] > 0.9 else 0.012                # over cables; just off the pipe's wall
                     feet[lg] = a + sm(u) * (b - a) + n * lift * math.sin(math.pi * u)
                     if u >= 1.0:
                         F[lg], N[lg] = b, nb
@@ -891,12 +1043,6 @@ def simulate(model, info, render=None):
 
     s_mouth = float(S[np.argmin(np.linalg.norm(P - C[0], axis=1))])
     s_end = float(S[-1])
-    hold("yard", "", 1.5)
-    freegait("yard", "ACROSS THE YARD TO THE DATACENTER'S AIR INTAKE", s_mouth - 0.05, v=0.16)
-    freegait("duct", "INTO THE DUCT — TWELVE HOOKED FEET ON THE PIPE WALL", s_mouth + 1.0, v=0.13, speed=3.0)
-    s_cut = float(S[np.argmin(np.abs(P[:, 0] - (X_END + 0.07)) + 10 * (P[:, 2] < Z_IN - 0.05))])
-    freegait("riser", "ALONG THE WALL AND THROUGH IT", s_cut, v=0.11, speed=4.0)
-
     def head_frame(w):
         hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
         return hR.T @ (np.asarray(w) - hp)
@@ -913,21 +1059,32 @@ def simulate(model, info, render=None):
         hold(phase, caption, dur * speed, fn, speed=speed)
         st["arm"][arm] = (np.asarray(target_h, float), o1)
 
+    hold("yard", "", 1.0)
+    move_arm("c", "yard", "THE CUTTER UNFOLDS — CARRIED AHEAD", 1.4, carry_target(), opening=0.1, lift=0.0)
+    st["c_carry"] = True
+    freegait("yard", "ACROSS THE YARD TO THE DATACENTER'S AIR INTAKE", s_mouth - 0.05, v=0.16)
+    freegait("duct", "INTO THE DUCT — TWELVE HOOKED FEET ON THE PIPE WALL", s_mouth + 1.0, v=0.13, speed=3.0)
+    s_cut = float(S[np.argmin(np.abs(P[:, 0] - (X_END + 0.07)) + 10 * (P[:, 2] < Z_IN - 0.05))])
+    freegait("riser", "ALONG THE WALL AND THROUGH IT", s_cut, v=0.11, speed=4.0)
+
     # ---- the cut: the cutter snips each slat where the hole's edge crosses it, left end then right end; a slat cut
     # at both ends drops onto the desk. Top to bottom, so a falling slat clears the ones below
     gxc = X_END - 0.001                                                   # at the grille, just past the pipe's end
     cap = "THE CUTTER SNIPS THE GRILLE'S SLATS, ONE BY ONE"
+    st["c_carry"] = False
+    move_arm("c", "cut", cap, 0.8, head_frame(np.array([gxc - 0.03, AISLE_Y, Z_IN])), opening=0.2, lift=0.0)  # the middle
     for n, k in enumerate(sorted(slats, reverse=True)):
         _, w, z0 = slats[k]
         speed = 1.0 if n < 3 else 3.0
         for side, sy in enumerate((1.0, -1.0)):
-            pt = head_frame(np.array([gxc, AISLE_Y + sy * (w + 0.002), z0]))
-            move_arm("c", "cut", cap, 0.45, pt + [0.012, 0, 0], opening=1.0, lift=0.01, speed=speed)   # open, reach
+            pt = head_frame(np.array([gxc, AISLE_Y + sy * (w - 0.003), z0]))
+            move_arm("c", "cut", cap, 0.45, pt + [0.012, 0, 0], opening=0.22, lift=0.0, speed=speed)   # open, reach
             move_arm("c", "cut", cap, 0.15, pt, lift=0.0, speed=speed)                                # in round it
             move_arm("c", "cut", cap, 0.12, pt, opening=0.0, lift=0.0, speed=speed)                   # snip
             st["snips"][k] = (side + 1, st["t"] if side == 1 else None)
     hold("cut", "THE SLATS DROP TO THE FLOOR", 0.8)
-    move_arm("c", "cut", "THE SLATS DROP TO THE FLOOR", 0.8, ARM_TUCK["c"], opening=0.3)
+    move_arm("c", "cut", "THE SLATS DROP TO THE FLOOR", 0.8, carry_target(), opening=0.1, lift=0.0)
+    st["c_carry"] = True
     freegait("vent", "THROUGH THE HOLE INTO THE BANDITS' DATACENTER", s_cut + 0.75, v=0.07, speed=5.0)
     freegait("aisle", "DOWN THE COLD AISLE, OVER THE CABLES, BETWEEN THE RACKS", s_end - 0.12, v=0.1, speed=2.0)
     freegait("plug", "TO THE TARGET SERVER", s_end, v=0.05, speed=3.0)
@@ -951,8 +1108,17 @@ def simulate(model, info, render=None):
     hold("plug", "COPY DONE — UNPLUG", 0.4, lambda u: st.update(seat=1.0 - u))
     st["seat"] = 0.0
     move_arm("g", "plug", "COPY DONE — UNPLUG", 1.2, ARM_TUCK["g"], lift=0.02)
+    # the gift: the clamp under the tail opens, it drops by the server, its fuse timer starts
+    g_now = data.mocap_pos[gift_m].copy()
+    st["gift"], st["gift_pos"], st["gift_t0"] = "dropping", (g_now, float(g_now[2]), st["t"]), st["t"]
+    hold("gift", "A GIFT FOR THE GUARD — THE FUSE TIMER STARTS", 2.2)
     freegait("retreat", "BACK OUT THE WAY IT CAME", s_mouth - 0.4, v=0.13, speed=SPEEDUP)
-    hold("out", "", 2.0)
+    st["c_carry"] = False
+    move_arm("c", "out", "", 1.2, ARM_TUCK["c"], opening=0.3, lift=0.0)   # out of the duct: folded again
+    hold("out", "", 0.8)
+    st["t_boom"] = st["t"] + 2.4                                          # back in the datacenter: 3, 2, 1 …
+    hold("boom", "", 2.4)
+    hold("boom", "KABOOM", 4.5)
     return st
 
 
@@ -1003,6 +1169,10 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=F
             cam.set(0.5 * (port_point() + h) + [0, 0, 0.03], 0.62, -15, -12, 0.08)
         elif phase == "copy":
             cam.set(np.array([TARGET_X - 0.5, AISLE_Y, 0.55]), 1.7, 180, -8, 0.05)
+        elif phase == "gift":
+            cam.set(np.array([TARGET_X + 0.1, AISLE_Y + 0.05, 0.08]), 0.75, -35, -14, 0.08)
+        elif phase == "boom":
+            cam.set(np.array([TARGET_X - 0.45, AISLE_Y, 0.45]), 1.7, 180, -6, 0.15)
         elif phase == "retreat":
             if mid[0] < WALL[0]:
                 cam.set(mid + [0, 0, 0.02], 1.0, 10, -14, 0.06)
