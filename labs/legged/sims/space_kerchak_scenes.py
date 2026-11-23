@@ -114,7 +114,7 @@ class ScenePlayer:
             pick, smash, drop = by_name["pick_up_the_hammer"], by_name["smash_the_glass"], by_name["drop_the_hammer"]
             R_h2m, p_h2m = (np.array(v) for v in pick[1].params["hammer_T"])
             rest_p, rest_R = (np.array(v) for v in pick[1].params.get("hammer_rest", ([0.0, 0.0, 0.0], np.eye(3).tolist())))
-            self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "R_aim": R_aim, "p_aim": p_aim, "t_aim": sp[0] + u0 * sp[1].period, "rest": (rest_p, rest_R),
+            self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "rest": (rest_p, rest_R),
                             "t_grasp": pick[0] + pick[1].period, "t_release": drop[0] + drop[1].params["release_u"] * drop[1].period,
                             "released": None, "hand": m.body(pick[1].params.get("hand", "R_hand")).id}
             if "hammer_carry" in pick[1].params:                           # carried in the pack on a body until the grasp
