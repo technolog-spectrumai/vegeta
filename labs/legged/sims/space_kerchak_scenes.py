@@ -547,6 +547,8 @@ def main(argv=None):
     ap.add_argument("--casing", choices=("none", "plastic"), default="plastic")
     ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon", "spider"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, the gibbon or the spider monkey")
     ap.add_argument("--size", default="1280x720")
+    ap.add_argument("--chunk", default="", help="i/n: draw only every n-th frame from i into --frames-dir (parallel renders); no movie is assembled")
+    ap.add_argument("--frames-dir", default="", help="where the frames go (default: a temporary directory)")
     a = ap.parse_args(argv)
     if os.environ.get("VEGETA_DEBUG") == "1" and argv is None and len(sys.argv) == 1:
         a.seconds, a.no_movie = 0.5, True
@@ -561,7 +563,9 @@ def main(argv=None):
     elev, azim = VIEWS.get(a.scene, (12.0, 265.0))
     span = 3.2
     stills = [float(x) for x in a.stills.split(",") if x.strip()]
-    tmp = tempfile.mkdtemp()
+    tmp = a.frames_dir or tempfile.mkdtemp()
+    os.makedirs(tmp, exist_ok=True)
+    ci, cn = (int(v) for v in a.chunk.split("/")) if a.chunk else (0, 1)
     if a.render == "mesh":
         import belisario_mesh as bm
         import belisario_render as br
@@ -613,9 +617,9 @@ def main(argv=None):
         else:
             g.step_physics(t, dt, a.assist)
         what = g.phase(t)[6]
-        if not a.no_movie:
+        if not a.no_movie and k % cn == ci:
             draw(os.path.join(tmp, f"f{k:04d}.png"), t, what)
-        for ts in stills:
+        for ts in (stills if ci == 0 else []):
             if abs(t - ts) < dt / 2:
                 draw(str(OUT / f"{tag}_{a.scene}_{ts:g}s.png"), t, what)
         t += dt
@@ -625,7 +629,7 @@ def main(argv=None):
               "segments": [(s[0], round(s[1] if s[0] == "gait" else s[1].period, 2), s[2] if s[0] == "gait" else s[1].name) for s in g.segments],
               "ik_error_max_m": {s[1].name: s[1].check.get("ik_error_max_m") for s in g.segments if s[0] == "motion"}}
     (OUT / f"{tag}_{a.scene}.json").write_text(json.dumps(report, indent=1))
-    if not a.no_movie:
+    if not a.no_movie and not a.chunk:
         out = str(OUT / f"{tag}_{a.scene}.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(a.fps), "-i", os.path.join(tmp, "f%04d.png"),
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", out], check=True)
