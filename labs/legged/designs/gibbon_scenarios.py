@@ -1495,13 +1495,13 @@ def scenario_fire(kin, q_stand, p):
     v = gs.walk_speed()
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     xq, yq = p["quad_x"], p["quad_y"]
-    seat = np.array([xq + CHUCK["seat"][0], yq, CHUCK["seat"][2]])
+    seat = np.array([xq + CHUCK["seat"][0] + 0.12, yq, 0.80 + gs.SILL_CROUCH[1] * S_])
     # the ride: sat on the seat, the feet on the pegs, the hands on the bars
-    pr = 0.15
+    pr = 0.35
     Rr = gm.base_rot(pr)
     tg = []
     for sd, sy in (("L", 1.0), ("R", -1.0)):
-        tg += gs.foot_targets(kin, sd, gs.point(np.array([xq + CHUCK["pegs"][0], yq + sy * CHUCK["pegs"][1], CHUCK["pegs"][2]]), pitch=0.0))
+        tg += gs.foot_targets(kin, sd, gs.point(np.array([xq + CHUCK["seat"][0] - 0.02, yq + sy * 0.09, 0.80]), pitch=0.0))   # crouched on the seat, monkey-fashion
         tg += gs.hand_targets(kin, sd, gs.bar(np.array([xq + CHUCK["bars"][0], yq + sy * CHUCK["bars"][1], CHUCK["bars"][2]]), axis=(0.0, 1.0, 0.0), n=(0.0, 0.0, 1.0), r=0.018, wrist_dir=(-0.6, 0.0, -0.8)))
     q_ride, err_ride = kin.ik([(bd, l, Rr.T @ (np.asarray(wp) - seat)) for bd, l, wp in tg], q_init=hang_ref(kin, q_stand), q_ref=hang_ref(kin, q_stand),
                               joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)
@@ -1514,7 +1514,7 @@ def scenario_fire(kin, q_stand, p):
     def quad_x(u):                                                         # accelerates, cruises, brakes to a stop
         return x0 + (xq - x0) * mk.smooth(u)
     ride = gs._joint_track(kin, "ride_in_on_chuck", D_RIDE, [(0.0, q_ride), (1.0, q_ride)],
-                           lambda u: (quad_x(u) + CHUCK["seat"][0], yq, CHUCK["seat"][2], pr), frames=80,
+                           lambda u: (quad_x(u) + seat[0] - xq, yq, seat[2], pr), frames=80,
                            source="gibbon_scenarios.fire: on Chuck's seat as it drives itself up to the house")
     ride.params = {"quad": {"x0": x0, "x1": xq, "y": yq}}
     # the hop off: a crouch, a push sideways off the seat, the flight to the ground beside Chuck, the landing
@@ -1638,7 +1638,7 @@ def scenario_fire(kin, q_stand, p):
                 out += gs.foot_targets(kin, sd, h_end[sd])
             elif u < b_:
                 ff = (u - a) / (b_ - a)
-                c = gs.foot_swing(h_end[sd], feet_sill[sd], ff, lift=0.2, clear=0.12)
+                c = gs.foot_swing(h_end[sd], feet_sill[sd], ff, lift=0.12, clear=0.1)
                 out += gs.foot_targets(kin, sd, gs.point(feet_sill[sd]["c"], pitch=0.3 * (1.0 - mk.smooth(ff)), over=True), c)
             else:
                 out += gs.foot_targets(kin, sd, feet_sill[sd])
