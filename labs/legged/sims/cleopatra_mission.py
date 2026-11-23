@@ -3,8 +3,8 @@ three-segment, twelve-legged Myropod (``designs/myropod_robot.py``, notebook 18)
 arms under its head (a gripper, which carries the pendrive, and a cutter, as TARANTULA has) and a camera-and-lidar
 turret on its head — crosses the street outside the house of Operation Silent Drop to the intake of the bandit's
 air-conditioning duct (a 260 mm pipe), crawls in, along the ground run, up the riser on the house wall and through
-the wall. At the vent over the desk it cuts a hole in the grille with the cutter (the disc drops onto the desk),
-climbs out, walks to the laptop, crouches, and the gripper plugs the pendrive into the laptop's back port; after the
+the wall. At the vent over the desk the cutter snips the grille's slats one by one where a 120 mm hole is to be (each
+drops onto the desk once cut at both ends), and Cleopatra climbs out, walks to the laptop, crouches, and the gripper plugs the pendrive into the laptop's back port; after the
 copy it unplugs it and Cleopatra backs out the way it came (time-lapsed). The bandit sleeps in his armchair.
 
 How it moves (scripted kinematics, rendered by MuJoCo; no dynamics): the head follows a path — the yard, the duct's
@@ -246,7 +246,6 @@ def build(width, height, cache: Path):
     A("material", name="paving", texture="paving", texrepeat="4 4", texuniform="true", specular="0.08")
     A("material", name="stone", rgba="0.62 0.6 0.56 1", specular="0.05")
     A("material", name="wood", rgba="0.3 0.19 0.11 1", specular="0.2")
-    A("material", name="spark", rgba="1 0.85 0.45 1", emission="1")
     A("material", name="blade", rgba="0.85 0.87 0.9 1", specular="0.8", shininess="0.8")
     for k, (r, g, b) in COLORS.items():
         A("material", name=f"cleo:{k}", rgba=f"{r} {g} {b} 1", specular="0.45", shininess="0.45")
@@ -341,7 +340,6 @@ def build(width, height, cache: Path):
     for sy in (-1, 1):
         G(world, type="box", size="0.005 0.012 0.16", pos=f"{gx} {sy * 0.148} {Z_IN}", rgba="0.75 0.76 0.78 1")
         G(world, type="box", size="0.005 0.16 0.012", pos=f"{gx} 0 {Z_IN + sy * 0.148}", rgba="0.75 0.76 0.78 1")
-    disc = ET.SubElement(world, "body", {"name": "disc", "mocap": "true", "pos": f"{gx} 0 {Z_IN}"})
     for k in range(-6, 7):
         z = 0.022 * k
         w = math.sqrt(max(HOLE_R ** 2 - z * z, 0.0))                      # the slat's part inside the hole
@@ -349,13 +347,9 @@ def build(width, height, cache: Path):
             a, b = (w, 0.136) if w > 0 else (0.0, 0.136)
             G(world, type="box", size=f"0.004 {(b - a) / 2:.4f} 0.0045", pos=f"{gx} {sy * (a + b) / 2:.4f} {Z_IN + z:.4f}",
               rgba="0.7 0.71 0.74 1")
-        if w > 0.004:
-            G(disc, type="box", size=f"0.004 {w:.4f} 0.0045", pos=f"0 0 {z:.4f}", rgba="0.7 0.71 0.74 1")
-    spark = ET.SubElement(world, "body", {"name": "spark", "mocap": "true", "pos": "0 0 -5"})
-    G(spark, name="spark", type="sphere", size="0.004", material="spark")
-    ET.SubElement(spark, "light", {"name": "spark", "pos": "0.02 0 0", "dir": "1 0 0", "diffuse": "0 0 0",
-                                   "specular": "0 0 0", "cutoff": "90", "attenuation": "1 0 6",
-                                   "castshadow": "false"})
+        if w > 0.004:                                                     # the slat's middle: cut free, it drops
+            sl = ET.SubElement(world, "body", {"name": f"slat{k + 6}", "mocap": "true", "pos": f"{gx} 0 {Z_IN + z:.4f}"})
+            G(sl, type="box", size=f"0.004 {w:.4f} 0.0045", rgba="0.7 0.71 0.74 1")
     # ---- the yard: the AC unit by the riser, bushes
     G(world, type="box", size="0.3 0.25 0.38", pos=f"{X_RISER + 0.1} -0.7 0.38", material="metal")
     G(world, type="cylinder", size="0.18 0.005", pos=f"{X_RISER + 0.41} -0.7 0.42", zaxis="1 0 0", material="dark")
@@ -467,15 +461,19 @@ def simulate(model, info, render=None):
     seg_id = {i: model.body(f"segment {i}").id for i in (1, 2, 3)}
     head = model.body("head").id
     usb = model.body("usb").mocapid[0]
-    disc = model.body("disc").mocapid[0]
-    spark = model.body("spark").mocapid[0]
-    spark_light = model.light("spark").id
+    slats = {}                                                            # k: (mocap id, half width, height)
+    for k in range(13):
+        try:
+            b_ = model.body(f"slat{k}")
+        except KeyError:
+            continue
+        z = 0.022 * (k - 6)
+        slats[k] = (b_.mocapid[0], math.sqrt(HOLE_R ** 2 - z * z), Z_IN + z)
     arm_ids = {(a_, k): model.body(f"arm_{a_}_{k}").mocapid[0] for a_ in ("g", "c") for k in ("up", "fore", "f1", "f2")}
     sleeper = model.body("sleeper").mocapid[0]
     bar = model.geom("bar").id
     snore = model.geom("snore").id
     led = model.material("usb_led").id
-    disc_p0 = data.mocap_pos[disc].copy()
     sleeper_p0 = data.mocap_pos[sleeper].copy()
     hip = {key: np.array(mr.hip_position(p, key)) for key in mr.LEG_KEYS}
     nominal = {key: hip[key] + np.array([0.0, mr.LEG_SIDES[key][1] * p.foot_out, -p.foot_drop]) for key in mr.LEG_KEYS}
@@ -565,7 +563,7 @@ def simulate(model, info, render=None):
         for a, (lo, hi) in zip(jadr[lg], (mr.LEG_RANGES["hip_yaw"], mr.LEG_RANGES["hip_pitch"], mr.LEG_RANGES["knee"])):
             data.qpos[a] = float(np.clip(data.qpos[a], lo, hi))
 
-    st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "disc": 0.0, "cutting": False, "cut_tip": None,
+    st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "snips": {},
           "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None}
     F, N = {}, {}
     place_body(st["sc"])
@@ -622,19 +620,21 @@ def simulate(model, info, render=None):
             g, _ = st["grip"]
             data.mocap_pos[usb] = g + hR[:, 0] * (USB_HALF - 0.006)
             data.mocap_quat[usb] = data.xquat[head]
-        # the cut: the sparks at the cutter's tip; the disc drops out onto the desk
-        if st["cutting"]:
-            data.mocap_pos[spark] = st["cut_tip"]
-            fl = 0.6 + 0.4 * math.sin(t * 97.0) * math.sin(t * 31.0)
-            model.light_diffuse[spark_light] = [1.6 * fl, 1.1 * fl, 0.5 * fl]
-        else:
-            data.mocap_pos[spark] = [0, 0, -5]
-            model.light_diffuse[spark_light] = [0, 0, 0]
-        if st["disc"] > 0.0:
-            u = min(st["disc"], 1.0)
-            fall = sm(u)
-            data.mocap_pos[disc] = disc_p0 + np.array([-0.05 * u, 0.0, -(Z_IN - DESK[4] - 0.006) * fall])
-            data.mocap_quat[disc] = mat2quat(rot_y(-1.5708 * fall))
+        # the cut: a slat cut at one end sags a little; cut at both, it drops onto the desk and settles there
+        for k, (mid, w, z0) in slats.items():
+            gx0 = X_END - 0.006
+            n_cut, t_free = st["snips"].get(k, (0, None))
+            if t_free is None:
+                tilt = 0.06 if n_cut == 1 else 0.0
+                data.mocap_pos[mid] = [gx0, 0.0, z0 - 0.003 * (n_cut == 1)]
+                data.mocap_quat[mid] = mat2quat(rot_y(-tilt * 0.3) @ np.eye(3))
+                continue
+            dt_ = t - t_free
+            rest = DESK[4] + 0.0045 + 0.009 * (k % 3)
+            zc = max(z0 - 0.5 * 9.81 * dt_ * dt_, rest)
+            u = min(1.0, (z0 - zc) / max(z0 - rest, 1e-6))
+            data.mocap_pos[mid] = [gx0 - 0.05 * u - 0.012 * (k % 4), 0.015 * ((k % 5) - 2) * u, zc]
+            data.mocap_quat[mid] = mat2quat(rot_z(0.25 * ((k % 3) - 1) * u) @ rot_y(-1.5708 * u))
         # the sleeper breathes; the copy's progress bar; the pendrive's LED
         data.mocap_pos[sleeper] = sleeper_p0 + np.array([0, 0, 0.006 * math.sin(t * 2 * math.pi / 4.2)])
         model.geom_size[snore][0] = 0.006 + 0.01 * max(0.0, math.sin(t * 2 * math.pi / 4.2))
@@ -733,7 +733,7 @@ def simulate(model, info, render=None):
         hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
         return hR.T @ (np.asarray(w) - hp)
 
-    def move_arm(arm, phase, caption, dur, target_h, opening=None, lift=0.03):
+    def move_arm(arm, phase, caption, dur, target_h, opening=None, lift=0.03, speed=1.0):
         a0, o0 = st["arm"][arm]
         a0 = a0.copy()
         o1 = o0 if opening is None else opening
@@ -742,24 +742,24 @@ def simulate(model, info, render=None):
             w = sm(u)
             st["arm"][arm] = (a0 + w * (np.asarray(target_h) - a0) + np.array([0, 0, lift * math.sin(math.pi * u)]),
                               o0 + w * (o1 - o0))
-        hold(phase, caption, dur, fn)
+        hold(phase, caption, dur * speed, fn, speed=speed)
         st["arm"][arm] = (np.asarray(target_h, float), o1)
 
-    # ---- the cut: the cutter traces a circle round the grille, the disc drops out
+    # ---- the cut: the cutter snips each slat where the hole's edge crosses it, left end then right end; a slat cut
+    # at both ends drops onto the desk. Top to bottom, so a falling slat clears the ones below
     gxc = X_END - 0.004
-    circle = lambda th: np.array([gxc, HOLE_R * math.cos(th), Z_IN + HOLE_R * math.sin(th)])
-    move_arm("c", "cut", "THE CUTTER: A HOLE IN THE VENT'S GRILLE", 1.0, head_frame(circle(0.0)), opening=0.6)
-    st["cutting"] = True
-
-    def cut(u):
-        th = 2 * math.pi * 1.02 * u
-        st["arm"]["c"] = (head_frame(circle(th)), 0.35 + 0.3 * abs(math.sin(u * 60)))
-        st["cut_tip"] = circle(th)
-    hold("cut", "THE CUTTER: A HOLE IN THE VENT'S GRILLE", 5.0, cut)
-    st["cutting"] = False
-    hold("cut", "THE DISC DROPS ONTO THE DESK", 0.9, lambda u: st.update(disc=u))
-    st["disc"] = 1.0
-    move_arm("c", "cut", "THE DISC DROPS ONTO THE DESK", 0.8, ARM_TUCK["c"], opening=0.3)
+    cap = "THE CUTTER SNIPS THE GRILLE'S SLATS, ONE BY ONE"
+    for n, k in enumerate(sorted(slats, reverse=True)):
+        _, w, z0 = slats[k]
+        speed = 1.0 if n < 3 else 3.0
+        for side, sy in enumerate((1.0, -1.0)):
+            pt = head_frame(np.array([gxc, sy * (w + 0.002), z0]))
+            move_arm("c", "cut", cap, 0.45, pt + [0.012, 0, 0], opening=1.0, lift=0.01, speed=speed)   # open, reach
+            move_arm("c", "cut", cap, 0.15, pt, lift=0.0, speed=speed)                                # in round it
+            move_arm("c", "cut", cap, 0.12, pt, opening=0.0, lift=0.0, speed=speed)                   # snip
+            st["snips"][k] = (side + 1, st["t"] if side == 1 else None)
+    hold("cut", "THE SLATS DROP ONTO THE DESK", 0.8)
+    move_arm("c", "cut", "THE SLATS DROP ONTO THE DESK", 0.8, ARM_TUCK["c"], opening=0.3)
     freegait("vent", "THROUGH THE HOLE, DOWN ONTO THE DESK", s_end - 0.12, v=0.09)
     freegait("plug", "TO THE LAPTOP", s_end, v=0.05)
     # ---- the plug: the gripper reaches down to the back port, lets go, comes back for it after the copy
