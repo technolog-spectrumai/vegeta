@@ -19,7 +19,7 @@ import numpy as np
 
 import motion_kit as mk
 
-__all__ = ["motions_cleopatra", "motions_apheloria", "parts_cleopatra", "parts_apheloria", "metachronal_feet",
+__all__ = ["motions_cleopatra", "motions_cleopatra2", "parts_cleopatra2", "motions_apheloria", "parts_cleopatra", "parts_apheloria", "metachronal_feet",
            "base_height"]
 
 DUTY = 0.75
@@ -62,6 +62,21 @@ def motions_cleopatra(robot=None):
     return kin, [_walk(kin, robot, "walk", speed=0.2, stride=0.10, lift=0.05, source=src),
                  _walk(kin, robot, "turn", speed=0.2, stride=0.10, lift=0.05, stride_scale={1: 1.3, -1: 0.7},
                        source=src + " with the heading clip (±30 % stride)")]
+
+
+def motions_cleopatra2(robot=None):
+    """Cleopatra v2 (``myropod_robot.cleopatra2``, the pipe version): the same gait sized to its shorter legs (60 + 75
+    mm against 80 + 100) — walk (0.15 m/s, 80 mm stride, 35 mm lift), turn (±30 % stride, as v1's) and crawl (the low,
+    careful gait for pipes and cable runs: 0.08 m/s, 60 mm stride, 25 mm lift)."""
+    import myropod_robot as mr
+
+    robot = robot or mr.cleopatra2()
+    kin = mk.Kin(robot)
+    src = "myriapod_motions: myropod_controller's fixed gait (protocol §3), sized to Cleopatra v2's legs"
+    return kin, [_walk(kin, robot, "walk", speed=0.15, stride=0.08, lift=0.035, source=src),
+                 _walk(kin, robot, "turn", speed=0.15, stride=0.08, lift=0.035, stride_scale={1: 1.3, -1: 0.7},
+                       source=src + " with the heading clip (±30 % stride)"),
+                 _walk(kin, robot, "crawl", speed=0.08, stride=0.06, lift=0.025, source=src + ": the low crawl")]
 
 
 def _curl(kin, ar, *, uncurl=False, duration=4.0, frames=40):
@@ -112,3 +127,4 @@ def _parts(fn):
 
 parts_cleopatra = _parts(motions_cleopatra)
 parts_apheloria = _parts(motions_apheloria)
+parts_cleopatra2 = _parts(motions_cleopatra2)

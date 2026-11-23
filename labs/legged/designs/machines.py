@@ -20,9 +20,9 @@ machines.register("apheloria", "apheloria_robot:apheloria", parts=_motions("myri
                   visual="apheloria:Apheloria")
 machines.register("myropod", "myropod_robot:cleopatra", parts=_motions("myriapod_motions:parts_cleopatra"),
                   visual="myropod_robot:cleopatra_cad")
-# Cleopatra v2, the pipe version (shorter hooked legs, turret, gripper and cutter arms); no motions yet (v1's are for
-# its longer legs)
-machines.register("cleopatra", "myropod_robot:cleopatra2", visual="myropod_robot:cleopatra2_cad")
+# Cleopatra v2, the pipe version (shorter hooked legs, turret, gripper and cutter arms)
+machines.register("cleopatra", "myropod_robot:cleopatra2", parts=_motions("myriapod_motions:parts_cleopatra2"),
+                  visual="myropod_robot:cleopatra2_cad")
 
 machines.register("humanoid", "humanoid_robot:talia", parts=_motions("humanoid_motions"), visual="humanoid:Humanoid")
 
