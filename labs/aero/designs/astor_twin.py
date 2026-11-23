@@ -60,6 +60,9 @@ _NEW = [
     Parameter("vtail_dihedral_deg", 0.0, "deg", min=0.0, max=55.0, description="0: flat all-moving tail halves and one fin; > 0: a V-tail of that dihedral (no fin)"),
     Parameter("single_fin", 1, "", min=0, max=1, description="one upright fin on the body's back (not ASTOR-T's two folding ones under it)"),
     Parameter("vtail_z", 22.0, "mm", description="the tail surfaces' roots above the fuselage axis"),
+    Parameter("flaperon_deg", 0.0, "deg", min=-25.0, max=40.0, description="the ailerons drooped together (flaperons), trailing edge down: 0 in fast flight, ~20 to turn slowly"),
+    Parameter("inboard_flap_chord", 0.0, "", min=0.0, max=0.4, description="plain flaps on the inner wing pieces, behind the propellers, as a share of the chord (0: none)"),
+    Parameter("inboard_flap_deg", 0.0, "deg", min=0.0, max=40.0, description="their droop"),
     Parameter("net_launchers", 0, "", min=0, max=2, description="GAVILAN's recoilless net launcher(s) under the forward belly (0: none; the legs are then left off)"),
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
     Parameter("launcher_breech_x", 447.0, "mm", description="the tube's trunnion (at its breech) from the nose tip"),
@@ -84,9 +87,46 @@ class AstorTwin(T.AstorT):
         half = V._panel(p["glove_root_chord"], p["glove_root_chord"] * p["glove_taper"], p["glove_span"] / 2, p["glove_sweep_deg"], p["panel_thickness"], p["panel_camber"])
         return half.union(half.mirror("XZ")).translate((p["glove_le_x"], 0, p["glove_z"]))
 
+    def _hinged(self, shape, block, h0, h1, deg):
+        """The part of ``shape`` inside ``block``, swung trailing edge down by ``deg`` about the hinge line h0 -> h1."""
+        flap = shape.intersect(block)
+        return flap if abs(deg) < 1e-6 else flap.rotate(h0, h1, deg)
+
+    def _outer(self, p, side, part):
+        """One outer wing piece (fixed part, or its aileron drooped ``flaperon_deg``), placed on the joint."""
+        cr, ct, b, f = p["panel_root_chord"], p["panel_tip_chord"], p["panel_span"], 1.0 - p["panel_aileron_chord"]
+        pan = V._panel(cr, ct, b, V.SPREAD_DEG, p["panel_thickness"], p["panel_camber"])
+        blk = self._aileron_block(p)
+        hinge = lambda y: y * _tan + f * (cr + (ct - cr) * y / b)
+        y0, y1 = p["panel_aileron_from"] * b, p["panel_aileron_to"] * b
+        out = self._hinged(pan, blk, (hinge(y0), y0, 0.0), (hinge(y1), y1, 0.0), p["flaperon_deg"]) if part == "aileron" else pan.cut(blk)
+        out = out.translate((-p["panel_pivot_chord"] * cr, 0, 0))
+        if side < 0:
+            out = out.mirror("XZ")
+        return out.translate((p["pivot_x"], side * p["pivot_y"], p["wing_plane_z"]))
+
+    def _inner_flap_block(self, p):
+        cr, lam, b2, f = p["glove_root_chord"], p["glove_taper"], p["glove_span"] / 2, 1.0 - p["inboard_flap_chord"]
+        hinge = lambda y: y * _tan + f * cr * (1 + (lam - 1) * y / b2)
+        y0, y1 = p["fuselage_diameter"] / 2 + 4.0, b2 - 4.0
+        pts = [(hinge(y0), y0), (hinge(y1), y1), (hinge(y1) + cr, y1), (hinge(y0) + cr, y0)]
+        return cq.Workplane("XY").polyline(pts).close().extrude(120.0).translate((0, 0, -60.0)), (hinge(y0), y0, 0.0), (hinge(y1), y1, 0.0)
+
+    def _inner(self, p, part):
+        """The inner wing pieces: the fixed part, or (``inboard_flap_chord`` > 0) their plain flaps drooped."""
+        half = V._panel(p["glove_root_chord"], p["glove_root_chord"] * p["glove_taper"], p["glove_span"] / 2, p["glove_sweep_deg"], p["panel_thickness"], p["panel_camber"])
+        if p["inboard_flap_chord"] > 0.0:
+            blk, h0, h1 = self._inner_flap_block(p)
+            half = self._hinged(half, blk, h0, h1, p["inboard_flap_deg"]) if part == "flap" else half.cut(blk)
+        elif part == "flap":
+            return None
+        return half.union(half.mirror("XZ")).translate((p["glove_le_x"], 0, p["glove_z"]))
+
     def _wing_part(self, p, part):
-        out = super()._wing_part(p, part)
-        return out.union(self._glove(p)) if part == "fixed" else out
+        if part == "flap":
+            return self._inner(p, "flap")
+        out = self._outer(p, 1, part).union(self._outer(p, -1, part))
+        return out.union(self._inner(p, "fixed")) if part == "fixed" else out
 
     def _wing(self, p):
         return super()._wing(p).union(self._glove(p))
@@ -218,6 +258,8 @@ class AstorTwin(T.AstorT):
 
     def parts(self, p) -> dict:
         out = super().parts(p)
+        if p["inboard_flap_chord"] > 0.0:
+            out["flaps"] = self._inner(p, "flap")
         if int(p["net_launchers"]) > 0:
             out.pop("talons", None)
             out["launcher"] = self._launchers(p)

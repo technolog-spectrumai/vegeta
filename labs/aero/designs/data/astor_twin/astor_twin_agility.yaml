@@ -1,0 +1,511 @@
+flap_wing_area_m2:
+  flaperons: 0.1359
+  inboard: 0.0678
+  wing: 0.2568
+hand:
+  flap_effectiveness: 0.661
+  flap_efficiency_at_20_deg: 0.65
+  flap_CLmax_share: 0.6
+  section_dCLmax: 0.22
+  slipstream_efficiency: 0.8
+options:
+  as it is:
+    changes: {}
+    envelope:
+    - stall_m_s: 21.9
+    - V_m_s: 25.0
+      n: 1.2
+      limit: lift
+      radius_m: 95.8
+      rate_deg_s: 15.0
+      n_lift: 1.2
+      n_thrust: 4.13
+    - V_m_s: 30.0
+      n: 1.73
+      limit: lift
+      radius_m: 65.0
+      rate_deg_s: 26.4
+      n_lift: 1.73
+      n_thrust: 4.73
+    - V_m_s: 40.0
+      n: 3.07
+      limit: lift
+      radius_m: 56.1
+      rate_deg_s: 40.8
+      n_lift: 3.07
+      n_thrust: 5.52
+    - V_m_s: 50.0
+      n: 4.8
+      limit: lift
+      radius_m: 54.2
+      rate_deg_s: 52.8
+      n_lift: 4.8
+      n_thrust: 5.37
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 6.92
+      n_thrust: 6.91
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 12.3
+      n_thrust: 6.6
+  outer panels swept to 35 deg:
+    changes:
+      dCLmax: -0.0422
+    envelope:
+    - stall_m_s: 22.5
+    - V_m_s: 25.0
+      n: 1.14
+      limit: lift
+      radius_m: 116.9
+      rate_deg_s: 12.3
+      n_lift: 1.14
+      n_thrust: 4.13
+    - V_m_s: 30.0
+      n: 1.64
+      limit: lift
+      radius_m: 70.6
+      rate_deg_s: 24.4
+      n_lift: 1.64
+      n_thrust: 4.73
+    - V_m_s: 40.0
+      n: 2.92
+      limit: lift
+      radius_m: 59.6
+      rate_deg_s: 38.5
+      n_lift: 2.92
+      n_thrust: 5.52
+    - V_m_s: 50.0
+      n: 4.56
+      limit: lift
+      radius_m: 57.4
+      rate_deg_s: 50.0
+      n_lift: 4.56
+      n_thrust: 5.37
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 6.56
+      n_thrust: 6.91
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 11.66
+      n_thrust: 6.6
+  flaperons 20 deg (the ailerons drooped together):
+    changes:
+      dCL: 0.4149
+      dCLmax: 0.2489
+      dCD: 0.0106
+    envelope:
+    - stall_m_s: 19.4
+    - V_m_s: 25.0
+      n: 1.57
+      limit: lift
+      radius_m: 52.8
+      rate_deg_s: 27.1
+      n_lift: 1.57
+      n_thrust: 4.72
+      flaps: down
+    - V_m_s: 30.0
+      n: 2.26
+      limit: lift
+      radius_m: 45.4
+      rate_deg_s: 37.9
+      n_lift: 2.26
+      n_thrust: 5.57
+      flaps: down
+    - V_m_s: 40.0
+      n: 4.01
+      limit: lift
+      radius_m: 42.0
+      rate_deg_s: 54.6
+      n_lift: 4.01
+      n_thrust: 6.98
+      flaps: down
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 6.27
+      n_thrust: 7.63
+      flaps: down
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 9.03
+      n_thrust: 10.15
+      flaps: down
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 16.05
+      n_thrust: 11.23
+      flaps: down
+  inboard flaps 20 deg behind the propellers:
+    changes:
+      dCL: 0.2069
+      dCLmax: 0.1242
+      dCD: 0.0053
+    envelope:
+    - stall_m_s: 20.5
+    - V_m_s: 25.0
+      n: 1.38
+      limit: lift
+      radius_m: 66.6
+      rate_deg_s: 21.5
+      n_lift: 1.38
+      n_thrust: 4.42
+      flaps: down
+    - V_m_s: 30.0
+      n: 1.99
+      limit: lift
+      radius_m: 53.2
+      rate_deg_s: 32.3
+      n_lift: 1.99
+      n_thrust: 5.15
+      flaps: down
+    - V_m_s: 40.0
+      n: 3.54
+      limit: lift
+      radius_m: 48.0
+      rate_deg_s: 47.7
+      n_lift: 3.54
+      n_thrust: 6.25
+      flaps: down
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 5.54
+      n_thrust: 6.45
+      flaps: down
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 7.97
+      n_thrust: 8.53
+      flaps: down
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 14.17
+      n_thrust: 8.97
+      flaps: down
+  section 12 % thick, 4 % camber:
+    changes:
+      dCLmax: 0.22
+      dCD: 0.0012
+    envelope:
+    - stall_m_s: 19.6
+    - V_m_s: 25.0
+      n: 1.52
+      limit: lift
+      radius_m: 55.4
+      rate_deg_s: 25.9
+      n_lift: 1.52
+      n_thrust: 4.13
+    - V_m_s: 30.0
+      n: 2.2
+      limit: lift
+      radius_m: 46.9
+      rate_deg_s: 36.6
+      n_lift: 2.2
+      n_thrust: 4.73
+    - V_m_s: 40.0
+      n: 3.9
+      limit: lift
+      radius_m: 43.2
+      rate_deg_s: 53.0
+      n_lift: 3.9
+      n_thrust: 5.51
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 6.1
+      n_thrust: 5.34
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 8.78
+      n_thrust: 6.88
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 15.62
+      n_thrust: 6.44
+  wing chord + 25 %:
+    changes:
+      area: 1.25
+      mass_kg: 0.122
+      dCD: 0.0
+    envelope:
+    - stall_m_s: 19.8
+    - V_m_s: 25.0
+      n: 1.47
+      limit: lift
+      radius_m: 58.8
+      rate_deg_s: 24.4
+      n_lift: 1.47
+      n_thrust: 4.46
+    - V_m_s: 30.0
+      n: 2.12
+      limit: lift
+      radius_m: 49.0
+      rate_deg_s: 35.1
+      n_lift: 2.12
+      n_thrust: 5.06
+    - V_m_s: 40.0
+      n: 3.78
+      limit: lift
+      radius_m: 44.8
+      rate_deg_s: 51.1
+      n_lift: 3.78
+      n_thrust: 5.68
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 5.9
+      n_thrust: 6.14
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 8.5
+      n_thrust: 7.55
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 15.1
+      n_thrust: 5.42
+  propellers' slipstream counted (full throttle):
+    changes:
+      blown: true
+    envelope:
+    - stall_m_s: 21.9
+    - V_m_s: 25.0
+      n: 2.16
+      limit: lift
+      radius_m: 33.3
+      rate_deg_s: 43.0
+      n_lift: 2.16
+      n_thrust: 7.43
+    - V_m_s: 30.0
+      n: 2.69
+      limit: lift
+      radius_m: 36.8
+      rate_deg_s: 46.7
+      n_lift: 2.69
+      n_thrust: 7.35
+    - V_m_s: 40.0
+      n: 4.01
+      limit: lift
+      radius_m: 42.0
+      rate_deg_s: 54.5
+      n_lift: 4.01
+      n_thrust: 7.2
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 5.68
+      n_thrust: 6.35
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 7.72
+      n_thrust: 7.7
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 12.95
+      n_thrust: 6.95
+  8 g structure:
+    changes:
+      g_max: 8.0
+      mass_kg: 0.1
+    envelope:
+    - stall_m_s: 22.1
+    - V_m_s: 25.0
+      n: 1.18
+      limit: lift
+      radius_m: 100.6
+      rate_deg_s: 14.2
+      n_lift: 1.18
+      n_thrust: 4.07
+    - V_m_s: 30.0
+      n: 1.7
+      limit: lift
+      radius_m: 66.5
+      rate_deg_s: 25.9
+      n_lift: 1.7
+      n_thrust: 4.66
+    - V_m_s: 40.0
+      n: 3.03
+      limit: lift
+      radius_m: 57.0
+      rate_deg_s: 40.2
+      n_lift: 3.03
+      n_thrust: 5.44
+    - V_m_s: 50.0
+      n: 4.73
+      limit: lift
+      radius_m: 55.1
+      rate_deg_s: 52.0
+      n_lift: 4.73
+      n_thrust: 5.29
+    - V_m_s: 60.0
+      n: 6.81
+      limit: thrust
+      radius_m: 54.5
+      rate_deg_s: 63.0
+      n_lift: 6.82
+      n_thrust: 6.81
+    - V_m_s: 80.0
+      n: 6.5
+      limit: thrust
+      radius_m: 101.6
+      rate_deg_s: 45.1
+      n_lift: 12.12
+      n_thrust: 6.5
+  12S 2500 mAh pack (-0.76 kg):
+    changes:
+      mass_kg: -0.76
+    envelope:
+    - stall_m_s: 20.7
+    - V_m_s: 25.0
+      n: 1.35
+      limit: lift
+      radius_m: 70.0
+      rate_deg_s: 20.4
+      n_lift: 1.35
+      n_thrust: 4.65
+    - V_m_s: 30.0
+      n: 1.95
+      limit: lift
+      radius_m: 54.9
+      rate_deg_s: 31.3
+      n_lift: 1.95
+      n_thrust: 5.33
+    - V_m_s: 40.0
+      n: 3.46
+      limit: lift
+      radius_m: 49.2
+      rate_deg_s: 46.5
+      n_lift: 3.46
+      n_thrust: 6.22
+    - V_m_s: 50.0
+      n: 5.0
+      limit: structure
+      radius_m: 52.0
+      rate_deg_s: 55.1
+      n_lift: 5.41
+      n_thrust: 6.04
+    - V_m_s: 60.0
+      n: 5.0
+      limit: structure
+      radius_m: 74.9
+      rate_deg_s: 45.9
+      n_lift: 7.79
+      n_thrust: 7.77
+    - V_m_s: 80.0
+      n: 5.0
+      limit: structure
+      radius_m: 133.2
+      rate_deg_s: 34.4
+      n_lift: 13.84
+      n_thrust: 7.43
+  'ALL: section + flaperons + inboard flaps + slipstream + 8 g':
+    changes:
+      dCLmax: 0.5931
+      dCL: 0.6218
+      blown: true
+      g_max: 8.0
+      dCD: 0.0171
+      mass_kg: 0.1
+    envelope:
+    - stall_m_s: 17.1
+    - V_m_s: 25.0
+      n: 3.68
+      limit: lift
+      radius_m: 18.0
+      rate_deg_s: 79.5
+      n_lift: 3.68
+      n_thrust: 8.88
+      flaps: down
+    - V_m_s: 30.0
+      n: 4.57
+      limit: lift
+      radius_m: 20.6
+      rate_deg_s: 83.5
+      n_lift: 4.57
+      n_thrust: 9.16
+      flaps: down
+    - V_m_s: 40.0
+      n: 6.82
+      limit: lift
+      radius_m: 24.2
+      rate_deg_s: 94.8
+      n_lift: 6.82
+      n_thrust: 9.87
+      flaps: down
+    - V_m_s: 50.0
+      n: 8.0
+      limit: structure
+      radius_m: 32.1
+      rate_deg_s: 89.2
+      n_lift: 9.67
+      n_thrust: 10.27
+      flaps: down
+    - V_m_s: 60.0
+      n: 8.0
+      limit: structure
+      radius_m: 46.2
+      rate_deg_s: 74.3
+      n_lift: 13.14
+      n_thrust: 12.91
+      flaps: down
+    - V_m_s: 80.0
+      n: 6.68
+      limit: thrust
+      radius_m: 98.8
+      rate_deg_s: 46.4
+      n_lift: 16.21
+      n_thrust: 6.68
+      flaps: up

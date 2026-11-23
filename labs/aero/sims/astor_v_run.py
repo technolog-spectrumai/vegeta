@@ -59,7 +59,7 @@ STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (12.0, 45.0), (12.0, 60.0))}   # ASTO
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0"}
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20"}
 
 
 def _inputs() -> str:
@@ -352,16 +352,19 @@ def main(argv=None) -> int:
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
     ap.add_argument("--tube-stowed", action="store_true", help="cfd only: ASTOR-TWIN with the launch tube level along the belly (0 deg) instead of 15 deg down; "
                     "8 cases, stored beside the 15 deg ones (twin_stowed_sweep12), the flight model untouched")
+    ap.add_argument("--agility-cfd", action="store_true", help="cfd only: ASTOR-TWIN with the agility study's 12 % thick, 4 % cambered section, clean and with the "
+                    "flaperons and inboard flaps down 20 deg (tube level); 16 cases, stored beside the others, the flight model untouched")
     a = ap.parse_args(argv)
     a.designs = a.design or ["twin"]
-    if a.tube_stowed:
-        a.designs, a.cfd_only, a.stability_only, a.netshot_only = ["twin_stowed"], True, False, False
+    if a.tube_stowed or a.agility_cfd:
+        a.designs = (["twin_stowed"] if a.tube_stowed else []) + (["twin_agile", "twin_agile_flap"] if a.agility_cfd else [])
+        a.cfd_only, a.stability_only, a.netshot_only = True, False, False
     a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
     phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only else ["launch"] if a.launch_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
     if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only or a.netshot_only):
         phases.append("launch")
-    if a.tube_stowed:
+    if a.tube_stowed or a.agility_cfd:
         phases = ["cfd"]
     if "twin" in a.designs:
         if len(a.designs) > 1:

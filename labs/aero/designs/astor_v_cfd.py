@@ -21,7 +21,9 @@ from nisus_cfd import NU, QUALITY, RHO
 CASES = {12.0: (25.0, 1.0, (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0)),
          35.0: (40.0, 1.0, (-2.0, 0.0, 2.0, 4.0, 8.0, 12.0)),
          60.0: (60.0, 0.6, (-2.0, 0.0, 1.0, 2.0, 4.0, 6.0))}
-DESIGNS = ("v", "boost", "t", "twin", "twin_stowed")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
+AGILE = {"panel_thickness": 0.12, "panel_camber": 0.04}                    # the agility study's section (astor_twin_agility)
+AGILE_FLAPS = {**AGILE, "flaperon_deg": 20.0, "inboard_flap_chord": 0.30, "inboard_flap_deg": 20.0}
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 
 def sweeps(design) -> tuple:
@@ -43,6 +45,10 @@ def _cls(design):
     if design == "twin":                                              # ASTOR-TWIN as it flies the net: one launcher at its rest tilt, no legs
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **over}))
+    if design in ("twin_agile", "twin_agile_flap"):                   # the thicker, more cambered section; and with every flap down 20 deg
+        import astor_twin as W
+        extra = AGILE_FLAPS if design.endswith("flap") else AGILE
+        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **extra, **over}))
     if design == "twin_stowed":
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **over}))
