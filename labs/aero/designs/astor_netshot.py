@@ -52,6 +52,46 @@ RELOAD_S, HUNT_S = 5.0, 170.0
 NETTED_CDA = 0.14                  # m2: the quadcopter tumbling in the net (gavilan_net_fall's bandit 0.04 + the net bunched round it, HAND)
 
 
+WEAVE_WINDOW_S, WEAVE_PERIODS_S = 12.0, np.arange(4.0, 16.5, 0.5)       # the tracker's memory for the weave fit; the periods it tries
+AWAY_BANK_DEG, AWAY_SPEED = 50.0, 1.55                                  # the turn back after a pass: bank, and speed as a multiple of the stall
+
+
+def weave_fit(buf, t_now, latency):
+    """The quadcopter's track as a straight mean line plus one sinusoid across it (a weave), fitted to the tracker's
+    samples of the last WEAVE_WINDOW_S: returns predict(t) -> (position, velocity) in the horizontal plane, the mean
+    velocity, and whether a weave was found (else the straight line alone). A straight line fitted over one weave
+    period is biased by the weave (up to ~5 m here): that put ASTOR 10 m to the side of weaving quadcopters."""
+    old = [x for x in buf if x[0] <= t_now - latency]
+    if len(old) < 40:
+        return None
+    ts = np.array([x[0] for x in old])
+    P = np.array([x[1][:2] for x in old])
+    t0 = ts[-1]
+    tt = ts - t0
+    A1 = np.stack([np.ones_like(tt), tt], axis=1)
+    c1, r1, *_ = np.linalg.lstsq(A1, P, rcond=None)
+    rss1 = float(((A1 @ c1 - P) ** 2).sum())
+    best = None
+    if ts[-1] - ts[0] >= 5.0:
+        for T in WEAVE_PERIODS_S:
+            if T > 1.6 * (ts[-1] - ts[0]):
+                break
+            w = 2 * math.pi / T
+            A = np.stack([np.ones_like(tt), tt, np.sin(w * tt), np.cos(w * tt)], axis=1)
+            c, *_ = np.linalg.lstsq(A, P, rcond=None)
+            rss = float(((A @ c - P) ** 2).sum())
+            if best is None or rss < best[0]:
+                best = (rss, w, c)
+    if best is not None and best[0] < 0.4 * rss1 and float(np.hypot(*np.linalg.norm(best[2][2:], axis=1))) > 1.0:
+        _, w, c = best
+
+        def predict(t):
+            x = t - t0
+            return (c[0] + c[1] * x + c[2] * math.sin(w * x) + c[3] * math.cos(w * x), c[1] + w * (c[2] * math.cos(w * x) - c[3] * math.sin(w * x)))
+        return predict, c[1], True
+    return (lambda t: (c1[0] + c1[1] * (t - t0), c1[1])), c1[1], False
+
+
 def half_span(flown) -> float:
     return 0.5 * OPEN_SPAN_M * min(1.0, max(flown, 0.0) / FULL_OPEN_M)
 
@@ -110,6 +150,8 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
     mount = [0.0, 0.0]                                                   # the launcher's pan and tilt from its rest [deg]
     cam.v_last = np.zeros(3)
     slow = ND.Camera(latency_s, noise_m, seed + 1000, window_s=MEAN_TRACK_S)
+    wide = ND.Camera(latency_s, noise_m, seed + 2000, window_s=WEAVE_WINDOW_S)      # the same sightings kept longer, for the weave fit
+    weave_used = 0
     z_min = 1e9
     t0 = d.time
     while outcome is None:
@@ -139,6 +181,11 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
         # jink (their 30 m radius would take 3 g), and banking to try cost it its height. It flies the mean line wings
         # level and the launcher's mount takes the quadcopter as it crosses.
         bm, vbm = slow.see(t, bandit.p, bandit.v) if netted is None else (b, vb)
+        wf = None
+        if netted is None:
+            wide.sig = cam.sig
+            wide.see(t, bandit.p, bandit.v)
+            wf = weave_fit(wide.buf, t, latency_s)
         sb = float(np.linalg.norm(np.asarray(vb)[:2]))
         if netted is not None:                                           # the job is done: climb away
             ap(phi_c=0.0, theta_c=math.radians(8.0), throttle=0.8)
@@ -156,7 +203,22 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
             aim[2] = float(b[2]) + h
             r = aim - s["pos"]
             rng_h = math.hypot(r[0], r[1])
-            phi, gam = amj.pn_command(sim, aim, vbm)
+            aim_v = vbm
+            if wf is not None and wf[2]:
+                # a weave was found: fly to where the quadcopter WILL be when ASTOR gets there (the mean line plus the
+                # weave at the arrival time), coming in along the mean track; that point barely moves as the range closes
+                d_q = math.hypot(b[0] - s["pos"][0], b[1] - s["pos"][1])
+                vm = np.array([wf[1][0], wf[1][1], 0.0])
+                um = vm / max(float(np.linalg.norm(vm)), 0.5)
+                t_go = d_q / max(s["V"] - float(np.linalg.norm(vm)), 5.0)
+                pp, _ = wf[0](t + t_go)
+                trail = max(0.0, min(TRAIL_M, 0.5 * (d_q - 25.0)))
+                aim = np.array([pp[0], pp[1], float(b[2]) + h]) - um * trail
+                aim_v = np.zeros(3) if trail <= 0.0 else um * 0.5 * max(s["V"] - float(np.linalg.norm(vm)), 5.0)
+                r = aim - s["pos"]
+                rng_h = math.hypot(r[0], r[1])
+                weave_used += 1
+            phi, gam = amj.pn_command(sim, aim, aim_v)
             n_av = 0.5 * am.RHO * s["V"] ** 2 * sim.C["S"] * sim.C["CL_MAX"] / (sim.C["mass"] * am.G)
             phi_max = math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001)))
             V_c = max(TA.PASS_SPEED * Vs, sb + min(14.0, 4.0 + 0.2 * rng_h))
@@ -192,7 +254,10 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
             vh = np.asarray(s["v_world"])
             ang = math.degrees(math.acos(max(-1.0, min(1.0, float(los[:2] @ vh[:2]) / max(float(np.linalg.norm(los[:2]) * np.linalg.norm(vh[:2])), 1e-6)))))
             same_way = float(vh[:2] @ np.asarray(vb)[:2]) > 0.0
-            ap(phi_c=math.radians(40.0), theta_c=math.radians(max(-6.0, min(8.0, 2.0 * (float(los[2]) + 6.0)))) + float(sim.info.get("alpha", 0.0)), throttle=0.7)
+            # the turn back: a held speed and a steep bank (at 0.7 throttle and 40 deg it ran to 80 m/s and took 55 s and 1.7 km to come round)
+            Va = AWAY_SPEED * Vs
+            ap(phi_c=math.radians(AWAY_BANK_DEG), theta_c=math.radians(max(-6.0, min(8.0, 2.0 * (float(los[2]) + 6.0)))) + float(sim.info.get("alpha", 0.0)),
+               V_c=Va, throttle=max(0.0, min(1.0, sim.trim["throttle"] * 2.0 + 0.15 * (Va - s["V"]))))
             if left <= 0 and t - t_phase > 2.0:
                 outcome = "no_catch"
             elif t - t_phase > 6.0 and ang < 20.0 and same_way and float(np.linalg.norm(los[:2])) > 60.0:
@@ -242,5 +307,5 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
         outcome = "lost"
     return {"seed": seed, "outcome": outcome, "win": outcome == "netted", "astor_lost": outcome == "lost",
             "quadcopter": {"behaviour": kind, "mass_kg": round(q_kg, 2), "speed_m_s": round(bandit.speed, 1)},
-            "nets_fired": len(shots), "shots": shots, "t_netted_s": None if netted is None else round(netted, 1),
+            "nets_fired": len(shots), "shots": shots, "weave_fit_used_s": round(weave_used * 0.01, 1), "t_netted_s": None if netted is None else round(netted, 1),
             "astor": {"mass_kg": round(float(sim.C["mass"]), 2), "stall_m_s": round(Vs, 1), "lowest_m": round(z_min, 1), "duration_s": round(d.time - t0, 1)}}
