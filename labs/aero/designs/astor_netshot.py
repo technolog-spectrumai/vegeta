@@ -53,6 +53,16 @@ NETTED_CDA = 0.14                  # m2: the quadcopter tumbling in the net (gav
 
 
 WEAVE_WINDOW_S, WEAVE_PERIODS_S = 12.0, np.arange(4.0, 16.5, 0.5)       # the tracker's memory for the weave fit; the periods it tries
+# A JINKING quadcopter (a new heading every 2 s once ASTOR is near) has no mean track to fly along: when the quick
+# tracker's heading leaves the 8 s mean by more than JINK_DEG inside JINK_RANGE_M, ASTOR stops flying the mean line
+# wings level and chases the quadcopter itself: proportional navigation on its present track, the flaps down, the
+# pass slower (1.3 x the flaps-down stall), the bank free up to JINK_BANK_DEG. The mount still does the last pointing.
+JINK_DEG, JINK_RANGE_M, JINK_BANK_DEG, JINK_HOLD_S = 25.0, 140.0, 62.0, 4.0
+# the chase is flown faster than a plain pass: the turn rate is lift-limited there and grows with speed (0.45 rad/s at
+# 25 m/s, 0.67 at 30); and inside JINK_LEVEL_M ASTOR rolls level: banked, the quadcopter sits on the inside of the
+# turn, ABOVE the wings' plane, where the tube under the belly (0-15 deg down) cannot point (first tries: 46-51 deg of bank at the pass, no shot)
+JINK_SPEED, JINK_LEVEL_M, JINK_LEVEL_BANK_DEG = 1.5, 28.0, 12.0
+JINK_KZ, JINK_VZ = 1.6, 8.0          # the height loop in the chase: stiffer (banked turns left ASTOR 3-6 m off the quadcopter's height)
 AWAY_BANK_DEG, AWAY_SPEED = 50.0, 1.55                                  # the turn back after a pass: bank, and speed as a multiple of the stall
 
 
@@ -151,7 +161,8 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
     cam.v_last = np.zeros(3)
     slow = ND.Camera(latency_s, noise_m, seed + 1000, window_s=MEAN_TRACK_S)
     wide = ND.Camera(latency_s, noise_m, seed + 2000, window_s=WEAVE_WINDOW_S)      # the same sightings kept longer, for the weave fit
-    weave_used = 0
+    weave_used, chase_until, chase_used, jinker = 0, -1.0, 0, False
+    Vs_flap = VF.stall(VF.with_flap(VF.get("twin", VF.SWEEPS[0]), 1.0))
     z_min = 1e9
     t0 = d.time
     while outcome is None:
@@ -218,18 +229,37 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
                 r = aim - s["pos"]
                 rng_h = math.hypot(r[0], r[1])
                 weave_used += 1
+            # a jinking quadcopter: its present heading has left the mean track
+            vq2, vm2 = np.asarray(vb)[:2], np.asarray(vbm)[:2]
+            cosd = float(vq2 @ vm2) / max(float(np.linalg.norm(vq2) * np.linalg.norm(vm2)), 1e-6)
+            d_now = math.hypot(b[0] - s["pos"][0], b[1] - s["pos"][1])
+            if not (wf is not None and wf[2]) and d_now < JINK_RANGE_M and cosd < math.cos(math.radians(JINK_DEG)):
+                chase_until = t + JINK_HOLD_S
+            jinker = jinker or t < chase_until                          # once seen to jink, it is chased on every pass
+            chasing = jinker and d_now < JINK_RANGE_M
+            sim.flap_cmd = 1.0 if jinker and d_now < 250.0 else 0.0      # the flaps go down early: their trim change is over before the chase
+            if chasing:
+                aim = np.array([b[0], b[1], float(b[2]) + h])
+                aim_v = np.asarray(vb)
+                r = aim - s["pos"]
+                rng_h = math.hypot(r[0], r[1])
+                chase_used += 1
             phi, gam = amj.pn_command(sim, aim, aim_v)
             n_av = 0.5 * am.RHO * s["V"] ** 2 * sim.C["S"] * sim.C["CL_MAX"] / (sim.C["mass"] * am.G)
             phi_max = math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001)))
-            V_c = max(TA.PASS_SPEED * Vs, sb + min(14.0, 4.0 + 0.2 * rng_h))
+            V_c = max((JINK_SPEED * Vs_flap) if chasing else (TA.PASS_SPEED * Vs), sb + min(14.0, 4.0 + 0.2 * rng_h))
+            if chasing:
+                n_av = 0.5 * am.RHO * s["V"] ** 2 * sim.C["S"] * sim.C["CL_MAX"] / (sim.C["mass"] * am.G)      # with the flaps as they now are
+                phi_max = min(math.acos(min(1.0, 1.0 / max(0.85 * n_av, 1.0001))), math.radians(JINK_BANK_DEG if rng_h > JINK_LEVEL_M else JINK_LEVEL_BANK_DEG))
             if rng_h < TA.TERMINAL_M:
                 alpha_f += (float(sim.info.get("alpha", 0.0)) - alpha_f) * 0.01 / 0.5
-                vz = max(-TA.TERMINAL_VZ, min(TA.TERMINAL_VZ, AC.TERMINAL_KZ * float(r[2])))
+                kz, vzm = (JINK_KZ, JINK_VZ) if chasing else (AC.TERMINAL_KZ, TA.TERMINAL_VZ)
+                vz = max(-vzm, min(vzm, kz * float(r[2])))
                 gam = max(-0.3, min(0.3, vz / max(s["V"], 10.0) + alpha_f))
             else:
                 alpha_f = float(sim.info.get("alpha", 0.0))
             thr = max(0.0, min(1.0, sim.trim["throttle"] + 0.15 * (V_c - s["V"]) + 0.06 * float(r[2])))
-            if rng_h < 70.0:
+            if rng_h < 70.0 and not chasing:
                 phi_max = min(phi_max, math.radians(CLOSE_BANK_DEG))          # close in: nearly wings level, the mount does the pointing
             ap(phi_c=max(-phi_max, min(phi_max, phi)), theta_c=gam, V_c=V_c, throttle=thr)
             rel = np.asarray(b) - muzzle
@@ -255,6 +285,7 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
             ang = math.degrees(math.acos(max(-1.0, min(1.0, float(los[:2] @ vh[:2]) / max(float(np.linalg.norm(los[:2]) * np.linalg.norm(vh[:2])), 1e-6)))))
             same_way = float(vh[:2] @ np.asarray(vb)[:2]) > 0.0
             # the turn back: a held speed and a steep bank (at 0.7 throttle and 40 deg it ran to 80 m/s and took 55 s and 1.7 km to come round)
+            sim.flap_cmd = 0.0
             Va = AWAY_SPEED * Vs
             ap(phi_c=math.radians(AWAY_BANK_DEG), theta_c=math.radians(max(-6.0, min(8.0, 2.0 * (float(los[2]) + 6.0)))) + float(sim.info.get("alpha", 0.0)),
                V_c=Va, throttle=max(0.0, min(1.0, sim.trim["throttle"] * 2.0 + 0.15 * (Va - s["V"]))))
@@ -307,5 +338,5 @@ def netshot(seed=0, kind=None, latency_s=0.10, noise_m=0.3, record=None, sim=Non
         outcome = "lost"
     return {"seed": seed, "outcome": outcome, "win": outcome == "netted", "astor_lost": outcome == "lost",
             "quadcopter": {"behaviour": kind, "mass_kg": round(q_kg, 2), "speed_m_s": round(bandit.speed, 1)},
-            "nets_fired": len(shots), "shots": shots, "weave_fit_used_s": round(weave_used * 0.01, 1), "t_netted_s": None if netted is None else round(netted, 1),
+            "nets_fired": len(shots), "shots": shots, "weave_fit_used_s": round(weave_used * 0.01, 1), "chase_used_s": round(chase_used * 0.01, 1), "t_netted_s": None if netted is None else round(netted, 1),
             "astor": {"mass_kg": round(float(sim.C["mass"]), 2), "stall_m_s": round(Vs, 1), "lowest_m": round(z_min, 1), "duration_s": round(d.time - t0, 1)}}
