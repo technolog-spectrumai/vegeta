@@ -12,6 +12,7 @@ __all__ = ["Solid", "SKIP_BODIES", "TOL"]
 
 SKIP_BODIES = ()                               #: body-name fragments whose geoms are not checked: none, the hands are solid too (a finger in a bar is opened, kerchak_tasks)
 TOL = 0.012                                    #: a penetration deeper than this [m] counts (a sole on its bar sits at ~0)
+EAR_PREFIX = "ear_"                             #: the head's ears (on the thorax): solid to the limbs
 MARGIN = 0.02                                  #: the push-out puts the point this far clear of the surface [m]
 
 
@@ -31,6 +32,9 @@ class Solid:
         for g in range(model.ngeom):                                       # the casing's covers and shells too (drawn, so solid), not the masses
             if int(model.geom_bodyid[g]) in self.robot_bodies and not model.geom(g).name.startswith("pm:"):
                 model.geom_contype[g], model.geom_conaffinity[g] = 2, 1
+                if model.geom(g).name.startswith(EAR_PREFIX):              # the ears: solid to the limbs (the arms go round them), the head's own
+                    model.geom_contype[g], model.geom_conaffinity[g] = 1, 0
+        model.opt.disableflags |= mujoco.mjtDisableBit.mjDSBL_FILTERPARENT  # an upper arm against an ear on the thorax, its parent, counts
         self.jadr = {model.joint(i).name: model.jnt_qposadr[i] for i in range(model.njnt)}
 
     def set(self, q, base, pitch, u=None):
@@ -58,11 +62,12 @@ class Solid:
                 continue
             b1, b2 = int(m.geom_bodyid[c.geom1]), int(m.geom_bodyid[c.geom2])
             n = np.array(c.frame[0:3])                                     # from geom1 towards geom2
-            for b, sgn in ((b1, -1.0), (b2, 1.0)):
-                if b not in self.robot_bodies or b in self.skip:
+            ears = (m.geom(c.geom1).name.startswith(EAR_PREFIX), m.geom(c.geom2).name.startswith(EAR_PREFIX))
+            for b, sgn, mine, theirs in ((b1, -1.0, ears[0], ears[1]), (b2, 1.0, ears[1], ears[0])):
+                if b not in self.robot_bodies or b in self.skip or mine:        # an ear is not pushed: the limb goes round it
                     continue
                 other = b2 if b == b1 else b1
-                share = 0.5 if other in self.robot_bodies and other not in self.skip else 1.0
+                share = 0.5 if other in self.robot_bodies and other not in self.skip and not theirs else 1.0
                 p = np.array(c.pos)
                 local = d.xmat[b].reshape(3, 3).T @ (p - d.xpos[b])
                 out.append((m.body(b).name, local, p + sgn * n * (share * depth + MARGIN), depth, m.geom(c.geom2 if b == b1 else c.geom1).name))

@@ -50,6 +50,9 @@ class ScenePlayer:
         if machine in ("humanoid", "gibbon", "spider"):                             # the upright frames: they stand, and walk
             import humanoid_motions as hum
             self.robot = {"humanoid": sr.humanoid, "gibbon": sr.gibbon, "spider": sr.spider}[machine](casing=casing)
+            if scene == "fire":                                            # the firefighter's ears: solid parts of the head
+                import gibbon_scenarios as gb
+                [lk for lk in self.robot.links() if lk.name == "thorax"][0].geoms.extend(gb.ear_geoms(solid=True))
             self.kin = mk.Kin(self.robot)
             self.q_quad = hum.stand_pose(self.kin)
             if machine in ("gibbon", "spider"):                            # the long arms held up: they would drag on the ground hanging

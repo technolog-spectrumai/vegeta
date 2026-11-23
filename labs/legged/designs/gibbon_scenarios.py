@@ -1479,10 +1479,33 @@ def radio_prop(p):
 FACE_ON_THORAX = np.array([0.0, 0.0, 0.0])                                 #: the face's frame on the thorax (its geoms placed from it)
 
 
+EAR = {"r": 0.032, "y": 0.09, "x": 0.015, "mic_r": 0.012}                 #: the ears on the thorax's frame: flat discs facing forward under the helmet's brim
+
+
+def ear_geoms(solid=True):
+    """The ears: a flat disc each side of the head facing forward, its top just under the helmet's brim (the brim
+    rests on them), a microphone at its middle (grille forward). ``solid``: the discs as colliding parts of the head
+    (on the thorax: the arms go round them), else drawn (the face)."""
+    skin, blk, grey = (0.86, 0.72, 0.56, 1.0), (0.07, 0.05, 0.05, 1.0), (0.55, 0.57, 0.6, 1.0)
+    fwd = (0.70710678, 0.0, 0.70710678, 0.0)
+    r, x = EAR["r"], EAR["x"]
+    z = HAT_ON_THORAX[2] - 0.01 - 0.004 - r - 0.002
+    g = []
+    for sy, t_ in ((1, "l"), (-1, "r")):
+        c = (x, sy * EAR["y"], z)
+        if solid:
+            g.append(Geom(f"ear_{t_}", "cylinder", (r, 0.006), pos=c, quat=fwd, mass=0.01, role="link", rgba=skin))
+            continue
+        g += [Geom(f"face_ear_{t_}", "cylinder", (r, 0.005), pos=c, quat=fwd, mass=0.01, role="visual", rgba=skin),
+              Geom(f"face_mic_{t_}", "cylinder", (EAR["mic_r"], 0.012), pos=(x + 0.015, c[1], z), quat=fwd, mass=0.01, role="visual", rgba=blk),
+              Geom(f"face_mic_grille_{t_}", "sphere", (0.011,), pos=(x + 0.028, c[1], z), mass=0.01, role="visual", rgba=grey)]
+    return g
+
+
 def face_prop(p):
     """A sweet, brave little robot-monkey face on the head: camera eyes (a lens in a housing, a glint), a smoke
-    detector for a nose, a pale muzzle with a smile, big disc ears facing forward with a microphone in each (a slot
-    through each where the helmet's brim passes). Drawn on the head (visual only)."""
+    detector for a nose, a pale muzzle with a smile, disc ears facing forward with a microphone in each, the helmet's
+    brim resting on them. Drawn on the head (visual only)."""
     skin, white, blk = (0.86, 0.72, 0.56, 1.0), (0.97, 0.97, 0.95, 1.0), (0.07, 0.05, 0.05, 1.0)
     steel, lens, grey, red = (0.62, 0.64, 0.67, 1.0), (0.08, 0.12, 0.22, 1.0), (0.55, 0.57, 0.6, 1.0), (0.9, 0.1, 0.08, 1.0)
     F = FACE
@@ -1516,17 +1539,8 @@ def face_prop(p):
               v(f"face_cam_ring_{t_}", "cylinder", (r_ * 0.78, 0.0025), (cx + 0.007, ey, cz + 0.012), steel, quat=fwd),
               v(f"face_lens_{t_}", "sphere", (r_ * 0.6,), (cx + 0.004, ey, cz + 0.012), lens),
               v(f"face_glint_{t_}", "sphere", (r_ * 0.17,), (cx + 0.013, ey + sy * 0.004, cz + 0.018), white),
-              v(f"face_mic_{t_}", "cylinder", (0.012, 0.012), (cx - 0.045, sy * 0.105, cz + 0.01), blk, quat=fwd),
-              v(f"face_mic_grille_{t_}", "sphere", (0.011,), (cx - 0.032, sy * 0.105, cz + 0.01), grey)]
-        # the ear: a big flat disc facing forward, built of strips across it, the one where the brim passes left out (a slot)
-        ec, R_, n_ = np.array([cx - 0.06, sy * 0.105, cz + 0.01]), 0.05, 28
-        for k in range(n_):
-            z0, z1 = -R_ + 2 * R_ * k / n_, -R_ + 2 * R_ * (k + 1) / n_
-            if z0 - 0.003 < brim_z - ec[2] < z1 + 0.003:
-                continue
-            zm = 0.5 * (z0 + z1)
-            half = math.sqrt(max(R_ * R_ - zm * zm, 0.0))
-            g.append(v(f"face_ear_{t_}_{k}", "box", (0.005, half, 0.5 * (z1 - z0)), ec + np.array([0.0, 0.0, zm]), skin))
+              ]
+    g += ear_geoms(solid=False)
     return Prop(Link("monkey_face", pos=(-6.0, 3.0, 4.0), geoms=g), free=True)
 
 
