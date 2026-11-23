@@ -31,6 +31,21 @@
    "sha256": "80eac3690bf4a7b294b7fca0c49741a7009b926c7b5823275f9bce3f6e809470",
    "visual_triangles": 5692
   },
+  "cleopatra": {
+   "bytes": 496031,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": true
+   },
+   "file": "cleopatra.yx2",
+   "joints": 43,
+   "lab": "legged",
+   "links": 44,
+   "mass_kg": 6.2122,
+   "sha256": "02b02845efd18aaf7e0979f775b0de82ae65b0ad09d2d993aaae7b7b9b139ea5",
+   "visual_triangles": 5960
+  },
   "drako": {
    "bytes": 202123,
    "consumers": {
@@ -542,10 +557,10 @@
    "visual_triangles": 3960
   }
  },
- "published": "2026-11-22T00:07:31Z",
+ "published": "2026-11-23T17:54:22Z",
  "vegeta": {
-  "branch": "dev_arachne",
-  "commit": "a6a87452e56c6e38b8ee1bb597ed22aad11b6161",
+  "branch": "dev_pipe_entry",
+  "commit": "c6591b390790802e2fb419a34cd2b7b9dc693fd7",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
