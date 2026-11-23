@@ -138,7 +138,18 @@ class ScenePlayer:
                           "hook": np.array(tk[1].params["hook"]), "T_take": T_("nozzle_T", tk), "t_take": at(tk, tk[1].params["take_u"]), "t_clip": at(tk, tk[1].params["clip_u"]),
                           "T_draw": T_("nozzle_T", dr), "T_aim": T_("nozzle_T_aim", dr), "t_grasp": at(dr, dr[1].params["grasp_u"]),
                           "t_aim": at(sp, v0), "t_valve": (at(sp, v0), at(sp, v1)), "t_on": at(sp, u1 * 0 + u0), "t_off": at(sp, u1),
-                          "t_out": at(sp, sp[1].params["out_u"]), "fire": np.array(sp[1].params["fire"]), "trail": [], "trail_t": -1.0}
+                          "t_out": at(sp, sp[1].params["out_u"]), "fire": np.array(sp[1].params["fire"]), "trail": [], "trail_t": -1.0,
+                          "lad_base": fj("ladder_base"), "lad_fly": fj("ladder_fly"), "radio": fj("radio"), "face": fj("monkey_face"), "L_hand": m.body("L_hand").id,
+                          "lad": [(s0, s0 + seg.period, seg.params["ladder"]) for s0, seg in by_name.values() if seg.params and "ladder" in seg.params],
+                          "rope": None, "caption": None}
+            ex = by_name.get("extend_the_ladder")
+            if ex is not None:
+                self._fire["rope"] = (ex[0], ex[0] + ex[1].period, ex[1].params["rope"])
+            rc = by_name.get("call_mission_accomplished")
+            if rc is not None:
+                self._fire["radio_T"] = T_("radio_T", rc)
+                self._fire["t_radio"] = at(rc, rc[1].params["grab_u"])
+                self._fire["caption"] = (at(rc, rc[1].params["talk_u"][0]), at(rc, rc[1].params["talk_u"][1]) + 5.0)
         self.reset()
 
     def segment(self, t):
@@ -277,6 +288,25 @@ class ScenePlayer:
         put(F["chuck"], np.array([Q["x0"] + (Q["x1"] - Q["x0"]) * mk.smooth(u), Q["y"], 0.0]), np.eye(3))
         Rt, pt_ = d.xmat[F["thorax"]].reshape(3, 3), d.xpos[F["thorax"]]
         put(F["hat"], pt_ + Rt @ np.array(gb.HAT_ON_THORAX), Rt)
+        put(F["face"], pt_ + Rt @ gb.FACE_ON_THORAX, Rt)
+        # the ladder: in Chuck's rack (driving with it) until the monkey takes it, then where its motions put it
+        lad = F["lad"]
+        if lad:
+            if t < lad[0][0]:
+                O, R, e = lad[0][2](0.0)
+                O = O + (d.qpos[F["chuck"]:F["chuck"] + 3] - np.array([Q["x1"], Q["y"], 0.0]))
+            else:
+                s0, s1, fn = [x for x in lad if x[0] <= t][-1]
+                O, R, e = fn(min(1.0, (t - s0) / (s1 - s0)))
+            put(F["lad_base"], O, R)
+            put(F["lad_fly"], O + e * R[:, 0], R)
+        # the walkie-talkie: on the chest strap until the left hand takes it
+        if "radio_T" in F and t >= F["t_radio"]:
+            RL, pL = d.xmat[F["L_hand"]].reshape(3, 3), d.xpos[F["L_hand"]]
+            Rr_, pr_ = F["radio_T"]
+            put(F["radio"], pL + RL @ pr_, RL @ Rr_)
+        else:
+            put(F["radio"], pt_ + Rt @ gb.RADIO_ON_THORAX[0], Rt)
         Rh, ph = d.xmat[F["hand"]].reshape(3, 3), d.xpos[F["hand"]]
         if t < F["t_take"]:
             cpos = d.qpos[F["chuck"]:F["chuck"] + 3]
@@ -325,7 +355,7 @@ class ScenePlayer:
         cid = m.body("chuck").id
         reel = d.xpos[cid] + np.array(gb.CHUCK["reel"]) + np.array([0.0, -0.17, -0.1])
         P = gb.FIRE
-        X, F_, xl = P["wall_x"], P["floor"], P["wall_x"] - P["wall_t"] / 2 - P["rung_out"]
+        X, F_ = P["wall_x"], P["floor"]
         pack = pt_ + Rt @ np.array([-0.12, -0.08, -0.12])
         if t >= F["t_clip"] and t > F["trail_t"] + 0.2:                    # where the pack has been: the hose lies there
             F["trail"].append(pack.copy()); F["trail_t"] = t
@@ -336,11 +366,12 @@ class ScenePlayer:
             way = []
             for q_ in (F["trail"] if t >= F["t_clip"] else []):
                 q_ = q_.copy()
-                if q_[0] < xl + 0.05:                                      # outside: on the ground, or against the ladder's face while climbing
+                lx = gb.ladder_rail_x(P, max(q_[2] - 0.15, 0.0)) - 0.08 if q_[2] >= 0.9 else X
+                if q_[0] < min(lx + 0.12, X - P["wall_t"] / 2 - 0.05):     # outside: on the ground, or down the ladder's front while climbing
                     if q_[2] < 0.9:
                         q_[2] = 0.03
                     else:
-                        q_[0] = xl - 0.04
+                        q_[0] = lx
                         q_[2] -= 0.15
                 elif q_[0] < X + P["wall_t"] / 2 + 0.05:                   # over the sill
                     q_[2] = gb._fire_sill(P) + 0.08
@@ -362,6 +393,17 @@ class ScenePlayer:
             sm.append(P_[-1])
             P_ = np.array(sm)
         tube(P_, 0.016, (0.72, 0.12, 0.1))
+        # the halyard: from the fly's bottom over the pulley at the base's top, down the front to the hands (tied off after)
+        if F["rope"] is not None and F["lad"]:
+            r0, r1, rfn = F["rope"]
+            if r0 <= t <= r1:
+                rp = rfn((t - r0) / (r1 - r0))
+            else:
+                ba, fl = m.body("ladder_base").id, m.body("ladder_fly").id
+                Rl, Ol = d.xmat[ba].reshape(3, 3), d.xpos[ba]
+                rp = [d.xpos[fl] + Rl[:, 2] * 0.07, Ol + Rl[:, 0] * (gb.LADDER["len"] - 0.05) + Rl[:, 2] * 0.12, Ol + Rl[:, 0] * 0.75 + Rl[:, 2] * 0.1,
+                      Ol + Rl[:, 0] * 0.75 + Rl[:, 2] * 0.04]
+            tube(np.array(rp), 0.006, (0.9, 0.85, 0.7), k=5)
         # the nozzle's valve: its bail lever forward (shut), pulled back upright (open) by the left hand
         va, vb = F["t_valve"]
         open_ = mk.smooth(min(1.0, max(0.0, (t - va) / max(vb - va, 0.05))))
@@ -596,6 +638,8 @@ def main(argv=None):
                 if c[0] > P["door_x"] - 0.05:
                     renderer.hidden |= {"door_wall_left", "door_wall_right", "post_left", "post_right", "lintel", "door_panel", "handle_shaft", "handle_lever"}
             renderer.extra = g.extras(t)
+            cap = g._fire.get("caption") if g._fire is not None else None
+            renderer.caption = "\"Chuck, this is Monkey: fire's out. Mission accomplished!\"" if cap is not None and cap[0] <= t <= cap[1] else None
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return

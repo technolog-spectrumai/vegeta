@@ -228,4 +228,17 @@ class Renderer:
         self._draw(draw, tris, cols, eye, B, F)
         if title:
             draw.text((12, 10), title, fill=(35, 35, 40), font=self.font)
+        cap = getattr(self, "caption", None)
+        if cap:                                                           # a speech bubble along the top
+            from PIL import ImageFont
+            try:
+                f = ImageFont.load_default(size=28)
+            except Exception:
+                f = self.font
+            x0, y0, x1, y1 = draw.textbbox((0, 0), cap, font=f)
+            w_, h_ = x1 - x0, y1 - y0
+            bx, by = (self.w - w_) // 2, 60
+            draw.rounded_rectangle((bx - 22, by - 14, bx + w_ + 22, by + h_ + 22), radius=18, fill=(255, 255, 255), outline=(40, 40, 45), width=3)
+            draw.polygon([(self.w // 2 - 10, by + h_ + 20), (self.w // 2 + 14, by + h_ + 20), (self.w // 2 - 4, by + h_ + 48)], fill=(255, 255, 255), outline=(40, 40, 45))
+            draw.text((bx, by), cap, fill=(30, 30, 35), font=f)
         return img

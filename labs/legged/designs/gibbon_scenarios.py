@@ -1308,10 +1308,17 @@ def scenario_fire(kin, q_stand, p):
 # opens its valve with the left hand and sprays the fire out
 
 FIRE = {"wall_x": 6.0, "wall_t": 0.25, "floor": 3.0, "sill_h": 0.85, "win_w": 0.9, "win_h": 1.3, "roof": 6.4, "house_w": 12.0,
-        "room_d": 5.0, "rung_out": 0.14, "rung_sp": 0.3, "rung0": 0.3, "rung_r": 0.016, "rail_y": 0.22, "rail_above": 0.95,
-        "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.0, "quad_y": 1.0, "spray_range": 1.1, "climb_s": 3.0}
+        "room_d": 5.0, "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.6, "quad_y": 1.25, "spray_range": 1.1, "climb_s": 3.0,
+        "lean_deg": 75.0, "carry_v": 0.25}
 RED = (0.72, 0.1, 0.08, 1.0)
-CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (-0.25, -0.78, 0.8), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.44, 0.46)}
+CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (0.35, -0.78, 1.0), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.44, 0.46),
+         "rack": (1.45, -0.86, 0.66)}                                     #: the ladder's butt on Chuck's rack: on its right side, the rungs upright, the butt forward
+LADDER = {"len": 2.9, "ext": 2.1, "ry": 0.16, "r": 0.02, "rung_r": 0.016, "sp": 0.3, "rung0": 0.3, "fly_off": 0.05, "grip": 1.45, "carry_h": 1.30}
+#: the two-section ladder: each section ``len`` long, the fly out ``ext`` (seven rungs) on its front ``fly_off`` ahead of the base's
+#: rails; its frame at the butt, x up the rails, y along the rungs, z out of its front (the climbing side)
+RADIO_ON_THORAX = (np.array([0.1, 0.1, -0.03]), 0.0)                     #: the walkie-talkie clipped on the chest strap, left of the sternum, upright
+LADDER_GEOMS = set()                                                      #: the ladder's geom names (not checked while it is moving: it is modelled where it ends, leaning)
+FACE = {"front": 0.075, "z": 0.195, "mask_r": 0.06, "eye_y": 0.026, "eye_r": 0.018}   #: the face on the thorax's frame: the head's front, the eyes' height [m]
 
 
 def _fire_sill(p):
@@ -1343,25 +1350,168 @@ def house_prop(p):
     return Prop(Link("house", pos=(0.0, 0.0, 0.0), geoms=geoms), free=False)
 
 
-def fire_ladder_prop(p):
-    """An aluminium ladder standing under the window: rungs up to the sill, the rails on past it for the hands."""
-    xl, S = p["wall_x"] - p["wall_t"] / 2 - p["rung_out"], _fire_sill(p)
-    ry, top = p["rail_y"], S + 0.06 + p["rail_above"]
-    alu = (0.75, 0.77, 0.8, 1.0)
-    geoms = [gs._cap(f"rail_{tag}", 0.022, (xl, sy * ry, 0.0), (xl, sy * ry, top), rgba=alu, mass=4.0) for sy, tag in ((1, "l"), (-1, "r"))]
-    for sy, tag in ((1, "l"), (-1, "r")):                                    # the standoffs to the wall at the top
-        geoms.append(gs._cap(f"standoff_{tag}", 0.015, (xl, sy * ry, S - 0.1), (p["wall_x"] - p["wall_t"] / 2, sy * ry, S - 0.1), rgba=alu, mass=0.5))
-    z, k = p["rung0"], 0
-    while z < S - 0.15:
-        geoms.append(gs._cap(f"rung_{k}", p["rung_r"], (xl, -ry, z), (xl, ry, z), rgba=alu, mass=0.5))
-        z += p["rung_sp"]; k += 1
-    return Prop(Link("fire_ladder", pos=(0.0, 0.0, 0.0), geoms=geoms), free=False)
+def _lad_R(a, w):
+    """The ladder's frame: x up the rails ``a``, y along the rungs ``w``, z out of its front."""
+    a, w = gs._unit(np.asarray(a, dtype=float)), gs._unit(np.asarray(w, dtype=float))
+    return np.stack([a, w, np.cross(a, w)], axis=1)
+
+
+def _quat(R):
+    """(w, x, y, z) of a rotation matrix."""
+    R = np.asarray(R, dtype=float)
+    tr = R[0, 0] + R[1, 1] + R[2, 2]
+    if tr > 0:
+        s = 2.0 * math.sqrt(tr + 1.0)
+        return (0.25 * s, (R[2, 1] - R[1, 2]) / s, (R[0, 2] - R[2, 0]) / s, (R[1, 0] - R[0, 1]) / s)
+    i = int(np.argmax([R[0, 0], R[1, 1], R[2, 2]]))
+    j, k = (i + 1) % 3, (i + 2) % 3
+    s = 2.0 * math.sqrt(max(1.0 + R[i, i] - R[j, j] - R[k, k], 1e-12))
+    q = [0.0, 0.0, 0.0, 0.0]
+    q[0] = (R[k, j] - R[j, k]) / s
+    q[1 + i] = 0.25 * s
+    q[1 + j] = (R[j, i] + R[i, j]) / s
+    q[1 + k] = (R[k, i] + R[i, k]) / s
+    return tuple(q)
+
+
+def _lean_profile(p):
+    """The points of the house the ladder can rest on, in the xz plane: the wall's face up to the sill, the sill
+    plate's outer edge (its bottom and top corners)."""
+    Xw, S = p["wall_x"] - p["wall_t"] / 2, _fire_sill(p)
+    zs = np.arange(0.0, S, 0.01)
+    return np.concatenate([np.stack([np.full_like(zs, Xw), zs], axis=1), [[Xw - 0.04, S], [Xw - 0.04, S + 0.06]]])
+
+
+def ladder_angle(p, bx, length):
+    """The ladder's angle from the ground [rad] butt at ``bx``, ``length`` out, leant on the house: tipped towards
+    the wall until a rail's back rests on the first point it meets (the fly's rails sit ``fly_off`` further out)."""
+    L = LADDER
+    pts = _lean_profile(p)
+    d = np.hypot(pts[:, 0] - bx, pts[:, 1] - L["r"])
+    ok = d <= length
+    if not ok.any():
+        return math.pi / 2
+    off = np.where(d > L["len"], L["r"] + L["fly_off"], L["r"])
+    th = np.arctan2(pts[:, 1] - L["r"], pts[:, 0] - bx) + np.arcsin(np.minimum(off / d, 1.0))
+    return float(th[ok].max())
+
+
+def ladder_foot(p):
+    """The butt's x for the ladder out full to lean at ``lean_deg`` on the sill's edge."""
+    L, want = LADDER, math.radians(p["lean_deg"])
+    Xw = p["wall_x"] - p["wall_t"] / 2
+    lo, hi = Xw - 2.5, Xw - 0.3
+    for _ in range(50):
+        mid = 0.5 * (lo + hi)
+        if ladder_angle(p, mid, L["len"] + L["ext"]) > want:          # too steep: the butt further out
+            hi = mid
+        else:
+            lo = mid
+    return 0.5 * (lo + hi)
+
+
+def ladder_pose_leant(p, bx, ext):
+    """(origin, R) of the ladder leant on the house, butt at ``bx``, the fly out ``ext``."""
+    th = ladder_angle(p, bx, LADDER["len"] + ext)
+    return np.array([bx, 0.0, LADDER["r"]]), _lad_R((math.cos(th), 0.0, math.sin(th)), (0.0, 1.0, 0.0))
+
+
+def ladder_final(p):
+    """(origin, R, ext) where the ladder ends: out full, leant on the sill's edge."""
+    bx = ladder_foot(p)
+    O, R = ladder_pose_leant(p, bx, LADDER["ext"])
+    return O, R, LADDER["ext"]
+
+
+def ladder_on_chuck(chuck_xyz):
+    """(origin, R) of the ladder in its rack on Chuck's right side: the rungs upright, the butt forward, its front
+    out from Chuck."""
+    return np.asarray(chuck_xyz, dtype=float) + np.array(CHUCK["rack"]), _lad_R((-1.0, 0.0, 0.0), (0.0, 0.0, -1.0))
+
+
+def ladder_rail_x(p, z, front=True):
+    """The x of the ladder's (fly's, ``front``) rail axis at height ``z`` where it ends."""
+    O, R, _ = ladder_final(p)
+    off = R[:, 2] * (LADDER["fly_off"] if front else 0.0)
+    s = (z - O[2] - off[2]) / R[2, 0]
+    return float(O[0] + off[0] + s * R[0, 0])
+
+
+def ladder_props(p):
+    """The two sections, each its own loose body (Chuck carries them, the monkey raises and extends them): the base
+    section with its feet and the halyard's pulley at its top, the fly ahead of it with its rubber tips. Both modelled
+    where they end, leant on the sill's edge: they are checked solid there (the climb), not while moving."""
+    L = LADDER
+    alu, rub, blk = (0.78, 0.8, 0.84, 1.0), (0.12, 0.12, 0.12, 1.0), (0.2, 0.2, 0.22, 1.0)
+    O, R, ext = ladder_final(p)
+    LADDER_GEOMS.clear()
+
+    def section(tag, off):
+        g = [gs._cap(f"lad_{tag}_rail_{t_}", L["r"], (0.0, sy * L["ry"], off), (L["len"], sy * L["ry"], off), rgba=alu, mass=3.0) for sy, t_ in ((1, "l"), (-1, "r"))]
+        s, k = L["rung0"], 0
+        while s < L["len"] - 0.1:
+            g.append(gs._cap(f"lad_{tag}_rung_{k}", L["rung_r"], (s, -L["ry"], off), (s, L["ry"], off), rgba=alu, mass=0.4))
+            s += L["sp"]; k += 1
+        return g
+    base = section("base", 0.0)
+    for sy, t_ in ((1, "l"), (-1, "r")):                                    # the feet, the fly's guides at the base's top
+        base.append(Geom(f"lad_foot_{t_}", "box", (0.04, 0.03, 0.025), pos=(0.02, sy * L["ry"], 0.0), mass=0.2, role="visual", rgba=rub))
+        base.append(Geom(f"lad_guide_{t_}", "box", (0.03, 0.03, 0.04), pos=(L["len"] - 0.05, sy * L["ry"], 0.03), mass=0.1, role="visual", rgba=blk))
+    base.append(Geom("lad_pulley", "cylinder", (0.035, 0.012), pos=(L["len"] - 0.05, 0.0, 0.09), quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=0.2, role="visual", rgba=blk))
+    fly = section("fly", L["fly_off"])
+    for sy, t_ in ((1, "l"), (-1, "r")):
+        fly.append(Geom(f"lad_tip_{t_}", "sphere", (0.026,), pos=(L["len"], sy * L["ry"], L["fly_off"]), mass=0.05, role="visual", rgba=rub))
+    LADDER_GEOMS.update(g_.name for g_ in base + fly)
+    q = _quat(R)
+    return (Prop(Link("ladder_base", pos=tuple(O), quat=q, geoms=base), free=True),
+            Prop(Link("ladder_fly", pos=tuple(O + ext * R[:, 0]), quat=q, geoms=fly), free=True))
+
+
+def radio_prop(p):
+    blk, yel, grn = (0.1, 0.1, 0.11, 1.0), (0.95, 0.75, 0.1, 1.0), (0.2, 0.9, 0.3, 1.0)
+    geoms = [Geom("radio_body", "box", (0.014, 0.024, 0.045), pos=(0.0, 0.0, 0.0), mass=0.2, role="visual", rgba=blk),
+             Geom("radio_face", "box", (0.002, 0.018, 0.016), pos=(0.015, 0.0, 0.012), mass=0.01, role="visual", rgba=yel),
+             Geom("radio_antenna", "capsule", (0.004, 0.025), pos=(0.0, 0.012, 0.07), mass=0.01, role="visual", rgba=blk),
+             Geom("radio_led", "sphere", (0.005,), pos=(0.006, -0.012, 0.047), mass=0.01, role="visual", rgba=grn)]
+    return Prop(Link("radio", pos=(-6.0, 2.0, 4.0), geoms=geoms), free=True)
+
+
+FACE_ON_THORAX = np.array([0.0, 0.0, 0.0])                                 #: the face's frame on the thorax (its geoms placed from it)
+
+
+def face_prop(p):
+    """A sweet, brave little monkey face on the head: big round eyes with a sparkle, a pale muzzle with a smile, round
+    ears, rosy cheeks and eyebrows set firm. Drawn on the head (visual only)."""
+    skin, white, blk, pink, brow, ear_in = (0.86, 0.72, 0.56, 1.0), (0.98, 0.98, 0.98, 1.0), (0.07, 0.05, 0.05, 1.0), (0.95, 0.55, 0.55, 1.0), (0.3, 0.18, 0.1, 1.0), (0.93, 0.66, 0.6, 1.0)
+    F = FACE
+    v = lambda name, typ, size, pos, rgba, quat=(1.0, 0.0, 0.0, 0.0): Geom(name, typ, size, pos=tuple(pos), quat=quat, mass=0.01, role="visual", rgba=rgba)
+    cx, cz = F["front"], F["z"]
+    g = [v("face_mask", "sphere", (F["mask_r"],), (cx - F["mask_r"] + 0.012, 0.0, cz + 0.005), skin),
+         v("face_muzzle", "sphere", (0.03,), (cx + 0.008, 0.0, cz - 0.03), skin),
+         v("face_nose_l", "sphere", (0.005,), (cx + 0.036, 0.008, cz - 0.02), blk),
+         v("face_nose_r", "sphere", (0.005,), (cx + 0.036, -0.008, cz - 0.02), blk)]
+    for i in range(11):                                                      # the smile: a curve across the muzzle, its corners up
+        a = math.radians(-60 + 12 * i)
+        g.append(v(f"face_smile_{i}", "sphere", (0.003,), (cx + 0.036 - 0.008 * abs(math.sin(a)), 0.019 * math.sin(a), cz - 0.044 + 0.014 * (1 - math.cos(a))), blk))
+    for sy, t_ in ((1, "l"), (-1, "r")):
+        ey = sy * F["eye_y"]
+        g += [v(f"face_eye_{t_}", "sphere", (F["eye_r"],), (cx, ey, cz + 0.012), white),
+              v(f"face_pupil_{t_}", "sphere", (F["eye_r"] * 0.62,), (cx + F["eye_r"] * 0.55, ey, cz + 0.01), blk),
+              v(f"face_spark_{t_}", "sphere", (F["eye_r"] * 0.22,), (cx + F["eye_r"] * 1.05, ey + sy * 0.004, cz + 0.018), white),
+              v(f"face_cheek_{t_}", "sphere", (0.011,), (cx - 0.004, sy * 0.042, cz - 0.022), pink),
+              v(f"face_ear_{t_}", "cylinder", (0.03, 0.006), (cx - 0.06, sy * 0.078, cz + 0.008), skin, quat=(0.70710678, 0.70710678, 0.0, 0.0)),
+              v(f"face_ear_in_{t_}", "cylinder", (0.019, 0.007), (cx - 0.058, sy * 0.079, cz + 0.008), ear_in, quat=(0.70710678, 0.70710678, 0.0, 0.0)),
+              # the brows: a firm slant, low at the middle - brave
+              v(f"face_brow_{t_}", "box", (0.004, 0.017, 0.0035), (cx + 0.004, ey, cz + 0.037), brow, quat=(math.cos(sy * 0.18), math.sin(sy * 0.18), 0.0, 0.0))]
+    return Prop(Link("monkey_face", pos=(-6.0, 3.0, 4.0), geoms=g), free=True)
 
 
 def chuck_prop(p):
     """Chuck, simplified: the quad's frame and wheels, the water tank, the pump, the hose reel, the water cannon on the
-    nose, the handlebars and seat; the nozzle's hook on its left side. Its frame at the ground under the middle."""
+    nose, the handlebars and seat; the nozzle's hook and the ladder's rack on its right side. Its frame at the ground
+    under the middle."""
     blk, grey, steel = (0.08, 0.08, 0.09, 1.0), (0.62, 0.64, 0.66, 1.0), (0.4, 0.42, 0.45, 1.0)
+    hk = CHUCK["hook"]
     geoms = [gs._box("chuck_frame", (1.0, 0.34, 0.08), (0.0, 0.0, 0.5), rgba=RED, mass=200.0),
              gs._box("chuck_tank", (0.32, 0.42, 0.24), (-0.6, 0.0, 0.82), rgba=grey, mass=200.0),
              Geom("chuck_reel", "cylinder", (0.24, 0.16), pos=CHUCK["reel"], quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=20.0, role="link", rgba=RED),
@@ -1372,7 +1522,12 @@ def chuck_prop(p):
              gs._cap("chuck_bars", 0.018, (0.5, -0.3, 1.04), (0.5, 0.3, 1.04), rgba=blk, mass=2.0),
              gs._cap("chuck_cannon_post", 0.04, (0.9, 0.0, 0.58), (0.9, 0.0, 0.8), rgba=steel, mass=4.0),
              gs._cap("chuck_cannon", 0.035, (0.9, 0.0, 0.84), (1.15, 0.0, 0.94), rgba=(0.78, 0.62, 0.25, 1.0), mass=5.0),
-             gs._cap("chuck_hook_arm", 0.012, (CHUCK["hook"][0], -0.34, 0.55), (CHUCK["hook"][0], CHUCK["hook"][1], CHUCK["hook"][2] - 0.05), rgba=steel, mass=0.3)]
+             gs._cap("chuck_hook_post", 0.012, (hk[0], -0.34, 0.55), (hk[0], -0.6, hk[2] - 0.02), rgba=steel, mass=0.3),
+             gs._cap("chuck_hook_arm", 0.012, (hk[0], -0.6, hk[2] - 0.02), (hk[0], hk[1], hk[2] - 0.02), rgba=steel, mass=0.3)]
+    ry, rk = LADDER["ry"], CHUCK["rack"]
+    for i, xr in enumerate((-0.9, 0.9)):                                     # the ladder's rack: two arms out under its lower rail, a lip outside it
+        geoms.append(gs._box(f"chuck_rack_arm_{i}", (0.025, 0.3, 0.015), (xr, -0.34 - 0.3, rk[2] - ry - LADDER["r"] - 0.015), rgba=steel, mass=1.0))
+        geoms.append(gs._box(f"chuck_rack_lip_{i}", (0.025, 0.01, 0.05), (xr, rk[1] - LADDER["r"] - 0.035, rk[2] - ry - LADDER["r"] + 0.02), rgba=steel, mass=0.3))
     for sy, tag in ((1, "l"), (-1, "r")):                                    # the foot pegs out beside the frame
         geoms.append(gs._cap(f"chuck_peg_{tag}", 0.015, (CHUCK["pegs"][0] - 0.08, sy * 0.34, CHUCK["pegs"][2] - 0.03), (CHUCK["pegs"][0] - 0.08, sy * 0.52, CHUCK["pegs"][2] - 0.03), rgba=steel, mass=0.5))
     for i, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
@@ -1382,7 +1537,7 @@ def chuck_prop(p):
 
 
 def fire_props(p):
-    return (house_prop(p), fire_ladder_prop(p), chuck_prop(p), backpack_prop(p), hat_prop(p), nozzle_prop(p))
+    return (house_prop(p), chuck_prop(p), backpack_prop(p), hat_prop(p), nozzle_prop(p), radio_prop(p), face_prop(p)) + ladder_props(p)
 
 
 def _fire_fight(kin, q_stand, base, fire_c, pt):
@@ -1481,27 +1636,88 @@ def _fire_fight(kin, q_stand, base, fire_c, pt):
     return [draw, spray, lower]
 
 
+def _grip_frame(c, axis, wrist_dir):
+    """The hand's frame closed on a bar along ``axis`` at ``c``, the wrist towards ``wrist_dir`` from the grip (as a
+    rung's grip, whatever the bar's slope: the ladder turns from flat to upright in the hands)."""
+    y = gs._unit(np.asarray(axis, dtype=float))
+    e1 = -gs._unit(np.asarray(wrist_dir, dtype=float))
+    e1 = gs._unit(e1 - (e1 @ y) * y)
+    gamma = math.atan2(gs.GRIP[2], gs.GRIP[0])
+    best = None
+    for g in (gamma, -gamma):
+        x = gs._rot(y, g) @ e1
+        R = np.stack([x, y, np.cross(x, y)], axis=1)
+        score = float((R @ gs.GRIP) @ e1)
+        if best is None or score > best[0]:
+            best = (score, R)
+    return best[1]
+
+
+def _feet_at(kin, q_stand, base):
+    """{side: [(body, local, world)]} of the feet standing at ``base`` (upright)."""
+    kin.set(q_stand)
+    return {sd: [(bd, l, kin.world(bd, l) + np.asarray(base, dtype=float)) for bd, l in gm._contact_points(kin)[sd]] for sd in ("L", "R")}
+
+
+def _stepping(feet, D, n, f, lift=0.04):
+    """The feet stepping ``D`` (xy) in ``n`` steps each, left first, ``f`` of the way: (targets, the base's share of D)."""
+    out, done_ = [], []
+    for si, sd in enumerate(("L", "R")):
+        slots, done, prog = f * 2 * n, 0, 0.0
+        for j in range(n):
+            s0 = 2 * j + si
+            if slots >= s0 + 1:
+                done += 1
+            elif slots > s0:
+                prog = mk.smooth(slots - s0)
+        share = (done + prog) / n
+        done_.append(share)
+        dz = lift * math.sin(math.pi * prog) if 0.0 < prog < 1.0 else 0.0
+        out += [(bd, l, w + np.array([D[0] * share, D[1] * share, dz])) for bd, l, w in feet[sd]]
+    return out, 0.5 * (done_[0] + done_[1])
+
+
+def _ladder_hands(kin, O, R, grips, base):
+    """Hand targets on the ladder at pose (O, R): ``grips`` {side: (rail +1/-1 or 0 for the halyard, s up the rails)}."""
+    L = LADDER
+    a, w, n = R[:, 0], R[:, 1], R[:, 2]
+    out = []
+    for sd, (rail, s) in grips.items():
+        sy = 1.0 if sd == "L" else -1.0
+        if rail == 0:                                                      # the halyard: down the ladder's front
+            c = O + s * a + 0.1 * n
+        else:
+            c = O + s * a + rail * L["ry"] * w + (L["fly_off"] if s > L["len"] else 0.0) * n
+        sh = np.asarray(base, dtype=float) + np.array([0.02, sy * 0.12, 0.25])
+        out += gs._hand_at(kin, sd, c, _grip_frame(c, a, sh - c))
+    return out
+
+
 def scenario_fire(kin, q_stand, p):
     """Chuck drives up to the house with the monkey on it; the monkey hops off, takes the nozzle from Chuck's hook and
-    clips it to its pack; walks to the ladder and climbs it (hands on the rails, feet on the rungs), the hose paying
-    out; over the sill between the rails into the first floor, a hop down, the walk to the burning table, the fire
-    put out."""
+    clips it to its pack; lifts the extension ladder out of Chuck's rack, overhead, carries it to the house, plants
+    its butt and walks it up hand over hand, leans it on the wall and hauls the halyard until the fly's tips rest on
+    the sill's edge; climbs it, the hose paying out; over the sill between the rails, down onto the first floor, to
+    the burning table; draws the nozzle, opens its valve and sprays the fire out; then radios that the mission is
+    accomplished, the nozzle held high."""
+    import os
+    upto = os.environ.get("VEGETA_FIRE_UPTO")
     S_ = gm.scale()
     X, t, F = p["wall_x"], p["wall_t"], p["floor"]
+    Lad = LADDER
     sill = _fire_sill(p)
     top = sill + 0.06
-    xl = X - t / 2 - p["rung_out"]
-    sp, z0, ry = p["rung_sp"], p["rung0"], p["rail_y"]
     v = gs.walk_speed()
+    h0, pt = gm.STANCE["h"], gm.STANCE["pitch"]
     limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j]
     xq, yq = p["quad_x"], p["quad_y"]
     seat = np.array([xq + CHUCK["seat"][0] + 0.12, yq, 0.80 + gs.SILL_CROUCH[1] * S_])
-    # the ride: sat on the seat, the feet on the pegs, the hands on the bars
+    # the ride: crouched on the seat, the hands on the bars
     pr = 0.35
     Rr = gm.base_rot(pr)
     tg = []
     for sd, sy in (("L", 1.0), ("R", -1.0)):
-        tg += gs.foot_targets(kin, sd, gs.point(np.array([xq + CHUCK["seat"][0] - 0.02, yq + sy * 0.09, 0.80]), pitch=0.0))   # crouched on the seat, monkey-fashion
+        tg += gs.foot_targets(kin, sd, gs.point(np.array([xq + CHUCK["seat"][0] - 0.02, yq + sy * 0.09, 0.80]), pitch=0.0))
         tg += gs.hand_targets(kin, sd, gs.bar(np.array([xq + CHUCK["bars"][0], yq + sy * CHUCK["bars"][1], CHUCK["bars"][2]]), axis=(0.0, 1.0, 0.0), n=(0.0, 0.0, 1.0), r=0.018, wrist_dir=(-0.6, 0.0, -0.8)))
     q_ride, err_ride = kin.ik([(bd, l, Rr.T @ (np.asarray(wp) - seat)) for bd, l, wp in tg], q_init=hang_ref(kin, q_stand), q_ref=hang_ref(kin, q_stand),
                               joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)
@@ -1510,18 +1726,15 @@ def scenario_fire(kin, q_stand, p):
     print(f"fire: riding pose reach {err_ride:.3f} m")
     D_RIDE = 8.0
     x0 = p["quad_x0"]
-
-    def quad_x(u):                                                         # accelerates, cruises, brakes to a stop
-        return x0 + (xq - x0) * mk.smooth(u)
     ride = gs._joint_track(kin, "ride_in_on_chuck", D_RIDE, [(0.0, q_ride), (1.0, q_ride)],
-                           lambda u: (quad_x(u) + seat[0] - xq, yq, seat[2], pr), frames=80,
+                           lambda u: (x0 + (xq - x0) * mk.smooth(u) + seat[0] - xq, yq, seat[2], pr), frames=80,
                            source="gibbon_scenarios.fire: on Chuck's seat as it drives itself up to the house")
     ride.params = {"quad": {"x0": x0, "x1": xq, "y": yq}}
-    # the hop off: a crouch, a push sideways off the seat, the flight to the ground beside Chuck, the landing
-    land = np.array([xq - 0.25, 0.0, gm.STANCE["h"]])
-    G_ = 9.81
-    apex = seat[2] + 0.12
-    t_up, t_dn = math.sqrt(2 * 0.12 / G_), math.sqrt(2 * (apex - land[2]) / G_)
+    # the hop off: a crouch, a spring up and sideways over the racked ladder, the legs kept tucked till it is cleared
+    land = np.array([xq + 0.05, 0.15, h0])                                 # beside Chuck, in reach of its hook and rack
+    G_, rise = 9.81, 0.3
+    apex = seat[2] + rise
+    t_up, t_dn = math.sqrt(2 * rise / G_), math.sqrt(2 * (apex - land[2]) / G_)
     T_F = t_up + t_dn
     vel = np.array([(land[0] - seat[0]) / T_F, (land[1] - seat[1]) / T_F, G_ * t_up])
     T_C, T_L = 0.35, 0.35
@@ -1537,37 +1750,39 @@ def scenario_fire(kin, q_stand, p):
         if tt < T_C + T_F:
             s_ = tt - T_C
             c = seat + vel * s_ + np.array([0.0, 0.0, -0.5 * G_ * s_ * s_])
-            return c[0], c[1], c[2], pr + (gm.STANCE["pitch"] - pr) * mk.smooth(s_ / T_F)
+            return c[0], c[1], c[2], pr + (pt - pr) * mk.smooth(s_ / T_F)
         s_ = (tt - T_C - T_F) / T_L
-        return land[0], land[1], land[2] - 0.08 * math.sin(math.pi * s_), gm.STANCE["pitch"]
-    hop_off = gs._joint_track(kin, "hop_off_chuck", Dh, [(0.0, q_ride), (T_C / Dh, tuck), ((T_C + 0.6 * T_F) / Dh, q_stand), (1.0, q_stand)], hop_base,
-                              frames=int(Dh * 40), source="gibbon_scenarios.fire: off the seat, a ballistic hop to the ground beside Chuck")
-    # the hose: the nozzle off Chuck's hook (the right hand), clipped into the holster on the pack
+        return land[0], land[1], land[2] - 0.08 * math.sin(math.pi * s_), pt
+    hop_off = gs._joint_track(kin, "hop_off_chuck", Dh, [(0.0, q_ride), (T_C / Dh, tuck), ((T_C + 0.72 * T_F) / Dh, tuck), ((T_C + T_F) / Dh, q_stand), (1.0, q_stand)], hop_base,
+                              frames=int(Dh * 40), source="gibbon_scenarios.fire: off the seat, a ballistic hop over the racked ladder to the ground beside Chuck")
+    # the hose: the nozzle off Chuck's hook (over the racked ladder's top rail), clipped into the holster on the pack
     base_g = land.copy()
-    pt = gm.STANCE["pitch"]
     Rb = gm.base_rot(pt)
     kin.set(q_stand)
     feet = [(bd, l, Rb @ kin.world(bd, l) + base_g) for sd in ("L", "R") for bd, l in gm._contact_points(kin)[sd]]
     th = kin.body("thorax")
     R_th, p_th = Rb @ kin.data.xmat[th].reshape(3, 3), Rb @ kin.data.xpos[th] + base_g
     hook = np.array([xq + CHUCK["hook"][0], yq + CHUCK["hook"][1], CHUCK["hook"][2]])
-    R_hookN = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])   # hung upright on the hook
+    R_hookN = np.eye(3)
     grip_k = hook + np.array([0.0, 0.0, NOZZLE["grip"] - 0.12])
     fr_k = gs.hand_frame_on(gs.bar(grip_k, axis=(0.0, 0.0, 1.0), n=(0.0, -1.0, 0.0), r=NOZZLE["r"], wrist_dir=gs._unit(np.array([-0.3, -0.8, -0.3]))), "R")
     root_hol = R_th @ HOLSTER_ON_THORAX[0] + p_th
     grip_hol = root_hol + R_th[:, 2] * NOZZLE["grip"]
     fr_hol = gs.hand_frame_on(gs.bar(grip_hol, axis=R_th[:, 2], n=-R_th[:, 1], r=NOZZLE["r"], wrist_dir=gs._unit(-R_th[:, 2] * 0.3 + R_th[:, 0] * 0.6 - R_th[:, 1] * 0.5)), "R")
     Rh0, ph0 = gs._hand_pose(kin, q_stand, base_g, pt, "R")
+    over_rail = np.array([0.0, 0.0, 0.14])
 
     def t_take(u):
         if u < 0.4:
             f = mk.smooth(u / 0.4)
-            return feet + gs._hand_at(kin, "R", (1 - f) * ph0 + f * grip_k + np.array([0.0, 0.0, 0.1 * math.sin(math.pi * f)]), gs._slerp(Rh0, fr_k, f))
+            return feet + gs._hand_at(kin, "R", (1 - f) * ph0 + f * grip_k + over_rail * math.sin(math.pi * f), gs._slerp(Rh0, fr_k, f))
         if u < 0.5:
             return feet + gs._hand_at(kin, "R", grip_k, fr_k)
         f = mk.smooth((u - 0.5) / 0.4) if u < 0.9 else 1.0
-        return feet + gs._hand_at(kin, "R", (1 - f) * grip_k + f * grip_hol + np.array([0.0, -0.1, 0.12]) * math.sin(math.pi * f), gs._slerp(fr_k, fr_hol, f))
+        return feet + gs._hand_at(kin, "R", (1 - f) * grip_k + f * grip_hol + (over_rail + np.array([0.0, -0.1, 0.0])) * math.sin(math.pi * f), gs._slerp(fr_k, fr_hol, f))
     fixed = lambda u: (base_g[0], base_g[1], base_g[2], pt)
+    if gt.SOLID is not None:
+        gt.SOLID.ignore = set(LADDER_GEOMS)
     take = gt.contact_motion(kin, "take_the_hose", 3.2, t_take, fixed, q_init=q_stand,
                              extra=lambda u, q_: sr.set_curl(q_, kin, "R", gs.CURL_CLOSED if 0.42 < u < 0.92 else gs.CURL_OPEN),
                              reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the nozzle off Chuck's hook, clipped to the pack")
@@ -1575,37 +1790,233 @@ def scenario_fire(kin, q_stand, p):
     Rhk, phk = gs._hand_pose(kin, q_k, base_g, pt, "R")
     take.params = {"hook": hook.tolist(), "take_u": 0.45, "clip_u": 0.9, "nozzle_T": ((Rhk.T @ R_hookN).tolist(), (Rhk.T @ (hook - np.array([0.0, 0.0, 0.12]) - phk)).tolist())}
     q_t = gt._last(kin, take, q_stand)
-    # the ladder: hands on the rails (vertical bars), feet on the rungs
-    n_rungs = int((sill - 0.15 - z0) / sp) + 1
-    rail = lambda sy, z: gs.bar((xl, sy * ry, z), axis=(0.0, 0.0, 1.0), n=(-1.0, 0.0, 0.0), r=0.022)
-    hold = lambda k: {"L_hand": rail(1.0, z0 + (k + 2) * sp + 0.05), "R_hand": rail(-1.0, z0 + (k + 2) * sp + 0.05),
-                      "L": gs.bar((xl, 0.11, z0 + k * sp), r=p["rung_r"], tip=0.3), "R": gs.bar((xl, -0.11, z0 + k * sp), r=p["rung_r"], tip=0.3)}
-    base_c = lambda k: np.array([xl - 0.3, 0.0, z0 + k * sp + 0.35])
+    out = [("motion", ride), ("motion", hop_off), ("motion", take)]
+    # ---- the ladder
+    O_f, R_f, ext_f = ladder_final(p)
+    bx = O_f[0]
+    th_r = ladder_angle(p, bx, Lad["len"])                                  # the base section alone leant on the wall
+    rung = lambda k: O_f + (Lad["rung0"] + Lad["sp"] * k) * R_f[:, 0] + (Lad["fly_off"] if Lad["rung0"] + Lad["sp"] * k >= ext_f + Lad["rung0"] - 1e-6 else 0.0) * R_f[:, 2]
+    stop_x = float(rung(0)[0]) - 0.25
+    sg, hc = Lad["grip"], Lad["carry_h"]
+    O_r, R_r = ladder_on_chuck(np.array([xq, yq, 0.0]))
+    c0 = O_r + sg * R_r[:, 0]
+    x_m0 = base_g[0]
+    c1 = np.array([x_m0 + 0.1, base_g[1], hc])
+
+    def lad_take(u):
+        if u < 0.25:
+            c, phi = c0.copy(), 0.0
+        elif u < 0.4:
+            c, phi = c0 + np.array([0.0, 0.0, 0.1 * mk.smooth((u - 0.25) / 0.15)]), 0.0
+        else:
+            f = min(1.0, (u - 0.4) / 0.4)
+            cl = lambda v_: max(0.0, min(1.0, v_))
+            phi = 0.5 * math.pi * mk.smooth(cl(f / 0.8))
+            c = np.array([c0[0] + (c1[0] - c0[0]) * mk.smooth(f), c0[1] + (c1[1] - c0[1]) * mk.smooth(cl((f - 0.35) / 0.65)),
+                          c0[2] + 0.1 + (c1[2] - c0[2] - 0.1) * mk.smooth(cl(f / 0.6))])
+        R = _lad_R((-1.0, 0.0, 0.0), (0.0, math.sin(phi), -math.cos(phi)))
+        return c - sg * R[:, 0], R, 0.0
+    hand_t = {sd: gs._hand_pose(kin, q_t, base_g, pt, sd) for sd in ("L", "R")}
+
+    def blend_to(sd, tgt, f):
+        """The hand from where it was at the start of the take to the target targets, ``f`` of the way."""
+        R0, p0 = hand_t[sd]
+        c_t = np.mean([np.asarray(x[2]) for x in tgt], axis=0)
+        return [(b_, l_, (1 - f) * (p0 + R0 @ np.asarray(l_)) + f * np.asarray(w_) + np.array([0.0, 0.0, 0.08]) * math.sin(math.pi * f)) for b_, l_, w_ in tgt]
+
+    def t_lad_take(u):
+        O, R, _ = lad_take(u)
+        gL = (-1, sg - 0.15) if u < 0.82 else (1, sg)
+        gR = (-1, sg + 0.15 - 0.15 * mk.smooth(max(0.0, min(1.0, (u - 0.9) / 0.1))))
+        tg_ = []
+        for sd, gg in (("L", gL), ("R", gR)):
+            hand = _ladder_hands(kin, O, R, {sd: gg}, base_g)
+            if u < 0.25:
+                hand = blend_to(sd, hand, mk.smooth(u / 0.25))
+            elif sd == "L" and 0.8 <= u < 0.9:                              # the left hand off the top rail, over to the other
+                hA = _ladder_hands(kin, O, R, {sd: (-1, sg - 0.15)}, base_g)
+                hB = _ladder_hands(kin, O, R, {sd: (1, sg)}, base_g)
+                f = mk.smooth((u - 0.8) / 0.1)
+                hand = [(b_, l_, (1 - f) * np.asarray(a_[2]) + f * np.asarray(b2[2]) + np.array([0.0, 0.0, -0.06]) * math.sin(math.pi * f)) for b_, l_, a_, b2 in ((x[0], x[1], x, y) for x, y in zip(hA, hB))]
+            tg_ += hand
+        return feet + tg_
+
+    def x_lad_take(u, q_):
+        sr.set_curl(q_, kin, "R", gs.CURL_CLOSED if u > 0.22 else gs.CURL_OPEN)
+        sr.set_curl(q_, kin, "L", gs.CURL_CLOSED if (0.22 < u < 0.8 or u > 0.88) else gs.CURL_OPEN)
+        return q_
+    take_l = gt.contact_motion(kin, "take_the_ladder", 4.5, t_lad_take, fixed, q_init=q_t, extra=x_lad_take, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                               q_ref=q_stand, source="gibbon_scenarios.fire: the ladder lifted off Chuck's rack and turned flat overhead")
+    take_l.params = {"ladder": lad_take}
+    q_l = gt._last(kin, take_l, q_t)
+    out.append(("motion", take_l))
+    # the carry: overhead, flat, butt first, to where its butt will be planted
+    th1 = math.pi - math.asin((hc - Lad["r"]) / sg)
+    x_g = bx + sg * math.cos(th1)                                           # the grips over the place: the butt swings down onto its spot
+    x_m1 = x_g - 0.1
+    D_c = np.array([x_m1 - x_m0, -base_g[1]])                              # back onto the ladder's line on the way
+    n_c = max(1, math.ceil(np.linalg.norm(D_c) / 0.18))
+    T_c = max(abs(D_c[0]) / p["carry_v"], 1.0)
+    feet_c = _feet_at(kin, q_stand, base_g)
+    flat = _lad_R((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
+    GR = {"L": (1, sg), "R": (-1, sg)}
+
+    def carry_state(u):
+        tg_, share = _stepping(feet_c, D_c, n_c, u)
+        bxy = base_g[:2] + D_c * share
+        c = np.array([bxy[0] + 0.1, bxy[1], hc + 0.01 * math.sin(2 * math.pi * n_c * u)])
+        return tg_, bxy, c - sg * flat[:, 0], flat
+    carry = gt.contact_motion(kin, "carry_the_ladder", T_c, lambda u: carry_state(u)[0] + _ladder_hands(kin, *carry_state(u)[2:], GR, np.r_[carry_state(u)[1], h0]),
+                              lambda u: (*carry_state(u)[1], h0, pt), q_init=q_l, extra=lambda u, q_: sr.set_curl(sr.set_curl(q_, kin, "L", gs.CURL_CLOSED), kin, "R", gs.CURL_CLOSED),
+                              reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the ladder carried overhead to the house")
+    carry.params = {"ladder": lambda u: (*carry_state(u)[2:], 0.0)}
+    q_c = gt._last(kin, carry, q_l)
+    out.append(("motion", carry))
+    # the raise: the butt swung down onto its spot, then walked up hand over hand past upright, leant on the wall
+    x_p2 = bx - 0.3
+    base_r = np.array([x_m1, 0.0, h0])
+    feet_r = _feet_at(kin, q_stand, base_r)
+    D2, D3 = np.array([x_p2 - x_m1, 0.0]), np.array([stop_x - x_p2, 0.0])
+    n2 = max(1, math.ceil(abs(D2[0]) / 0.16))
+    O_b = np.array([bx, 0.0, Lad["r"]])
+    U1, U2 = 0.25, 0.72
+
+    def raise_state(u):
+        """(feet targets, base xy, ladder origin, R, grip s)."""
+        if u < U1:
+            f = mk.smooth(u / U1)
+            th_ = math.pi + (th1 - math.pi) * f
+            a = np.array([math.cos(th_), 0.0, math.sin(th_)])
+            O = np.array([x_g, 0.0, hc]) - sg * a
+            tg_, bxy = [x for sd in ("L", "R") for x in feet_r[sd]], base_r[:2]
+            s = sg
+        elif u < U2:
+            f = (u - U1) / (U2 - U1)
+            th_ = th1 + (math.pi / 2 - th1) * mk.smooth(f)
+            O, s = O_b, sg + (1.33 - sg) * mk.smooth(f)
+            tg_, share = _stepping(feet_r, D2, n2, f)
+            bxy = base_r[:2] + D2 * share
+        else:
+            f = (u - U2) / (1.0 - U2)
+            th_ = math.pi / 2 + (th_r - math.pi / 2) * mk.smooth(f)
+            O, s = O_b, 1.33 + (1.0 - 1.33) * mk.smooth(f)
+            feet2 = {sd: [(b_, l_, w_ + np.r_[D2, 0.0]) for b_, l_, w_ in feet_r[sd]] for sd in ("L", "R")}
+            tg_, share = _stepping(feet2, D3, 1, min(1.0, f * 1.6))
+            bxy = base_r[:2] + D2 + D3 * share
+        R = _lad_R((math.cos(th_), 0.0, math.sin(th_)), (0.0, 1.0, 0.0))
+        return tg_, bxy, O, R, s
+    raise_ = gt.contact_motion(kin, "raise_the_ladder", 7.0, lambda u: raise_state(u)[0] + _ladder_hands(kin, raise_state(u)[2], raise_state(u)[3], {"L": (1, raise_state(u)[4]), "R": (-1, raise_state(u)[4])}, np.r_[raise_state(u)[1], h0]),
+                               lambda u: (*raise_state(u)[1], h0, pt), q_init=q_c, extra=lambda u, q_: sr.set_curl(sr.set_curl(q_, kin, "L", gs.CURL_CLOSED), kin, "R", gs.CURL_CLOSED),
+                               reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the butt planted, the ladder walked up hand over hand and leant on the wall")
+    raise_.params = {"ladder": lambda u: (*raise_state(u)[2:4], 0.0)}
+    q_r = gt._last(kin, raise_, q_c)
+    out.append(("motion", raise_))
+    # the extension: the halyard hauled hand over hand, a rung a pull, the fly sliding up till its tips are on the sill
+    base_e = np.array([stop_x, 0.0, h0])
+    feet_e = [x for sd in ("L", "R") for x in _feet_at(kin, q_stand, base_e)[sd]]
+    NP = int(round(ext_f / Lad["sp"]))
+    S_HI, S_LO, U0 = 1.15, 0.75, 0.12
+
+    def ext_state(u):
+        """(ladder origin, R, ext, {side: rope s or None (on a rail)}, the pulling hand)."""
+        if u < U0:
+            e, grips = 0.0, None
+        else:
+            k_f = (u - U0) / (1.0 - U0) * NP
+            k = min(int(k_f), NP - 1)
+            f = k_f - k
+            e = Lad["sp"] * (k + mk.smooth(min(1.0, f / 0.8)))
+            pull, free = ("R", "L") if k % 2 == 0 else ("L", "R")
+            fp = mk.smooth(min(1.0, f / 0.8))
+            ff = mk.smooth(max(0.0, min(1.0, (f - 0.1) / 0.8)))
+            grips = {pull: S_HI + (S_LO - S_HI) * fp, free: S_LO + (S_HI - S_LO) * ff}
+        e = min(e, ext_f)
+        O, R = ladder_pose_leant(p, bx, e)
+        return O, R, e, grips
+
+    hand_r = {sd: gs._hand_pose(kin, q_r, base_e, pt, sd) for sd in ("L", "R")}
+
+    def t_ext(u):
+        O, R, e, grips = ext_state(u)
+        if grips is None:                                                  # off the rails onto the halyard
+            f = mk.smooth(u / U0)
+            tg_ = []
+            for sd, s_ in (("R", S_HI), ("L", S_LO)):
+                hand = _ladder_hands(kin, O, R, {sd: (0, s_)}, base_e)
+                R0, p0 = hand_r[sd]
+                tg_ += [(b_, l_, (1 - f) * (p0 + R0 @ np.asarray(l_)) + f * np.asarray(w_)) for b_, l_, w_ in hand]
+            return feet_e + tg_
+        return feet_e + _ladder_hands(kin, O, R, {sd: (0, s_) for sd, s_ in grips.items()}, base_e)
+
+    def rope_pts(u):
+        O, R, e, grips = ext_state(u)
+        a, n = R[:, 0], R[:, 2]
+        fly_bottom, pulley = O + e * a + 0.07 * n, O + (Lad["len"] - 0.05) * a + 0.12 * n
+        if grips is None:
+            ss = sorted([S_HI, S_LO], reverse=True)
+        else:
+            ss = sorted(grips.values(), reverse=True)
+        hands = [O + s_ * a + 0.1 * n for s_ in ss]
+        return [fly_bottom, pulley] + hands + [np.array([hands[-1][0] - 0.05, 0.0, 0.02])]
+    def x_ext(u, q_):
+        _, _, _, grips = ext_state(u)
+        for sd in ("L", "R"):
+            closed = True
+            if grips is not None:
+                k_f = (u - U0) / (1.0 - U0) * NP
+                f = k_f - min(int(k_f), NP - 1)
+                k = min(int(k_f), NP - 1)
+                free = "L" if k % 2 == 0 else "R"
+                closed = not (sd == free and 0.05 < f < 0.85)
+            elif u > 0.02:
+                closed = u > 0.85 * U0
+            sr.set_curl(q_, kin, sd, gs.CURL_CLOSED if closed else gs.CURL_OPEN)
+        return q_
+    extend = gt.contact_motion(kin, "extend_the_ladder", 1.0 + 0.85 * NP, t_ext, lambda u: (base_e[0], 0.0, h0, pt), q_init=q_r, extra=x_ext,
+                               reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the halyard hauled hand over hand, the fly run up to the sill")
+    extend.params = {"ladder": lambda u: ext_state(u)[:3], "rope": rope_pts}
+    q_e = gt._last(kin, extend, q_r)
+    tied = q_e.copy()
+    for sd in ("L", "R"):
+        sr.set_curl(tied, kin, sd, gs.CURL_OPEN)
+    let_go = gs._joint_track(kin, "tie_off_the_halyard", 1.0, [(0.0, q_e), (0.3, tied), (1.0, q_stand)], lambda u: (base_e[0], 0.0, h0, pt),
+                             source="gibbon_scenarios.fire: the halyard tied off, the hands off it")
+    out += [("motion", extend), ("motion", let_go)]
+    if gt.SOLID is not None:
+        gt.SOLID.ignore = set()
+    if upto == "ladder":
+        return out
+    # the climb: the hands on the rails, the feet on the rungs (the fly's, ahead, once past the base's top)
+    a_f, w_f, n_f = R_f[:, 0], R_f[:, 1], R_f[:, 2]
+    th_f = math.atan2(a_f[2], a_f[0])
+
+    def rail(sy, s):
+        return gs.bar(O_f + s * a_f + sy * Lad["ry"] * w_f + (Lad["fly_off"] if s >= ext_f + 0.05 else 0.0) * n_f, axis=a_f, n=n_f, r=Lad["r"])
+    hold = lambda k: {"L_hand": rail(1.0, Lad["rung0"] + (k + 2) * Lad["sp"] + 0.05), "R_hand": rail(-1.0, Lad["rung0"] + (k + 2) * Lad["sp"] + 0.05),
+                      "L": gs.bar(rung(k) + 0.11 * w_f, r=Lad["rung_r"], tip=0.3), "R": gs.bar(rung(k) - 0.11 * w_f, r=Lad["rung_r"], tip=0.3)}
+    base_c = lambda k: rung(k) + np.array([-0.3 + 0.35 / math.tan(th_f), 0.0, 0.35])
+    n_rungs = sum(1 for k in range(40) if rung(k)[2] < sill - 0.15)
     n = n_rungs - 1
-    stop_x = xl - 0.25
     segs = gs._climb_sequence(kin, q_stand, hold, base_c, n, stop_x=stop_x, trials=gs.VERTICAL_TRIALS, duration=p["climb_s"])
-    segs[0] = ("gait", max(stop_x - base_g[0], 0.2) / v, 0.0)
+    segs = segs[1:]                                                        # no walk up: it is stood there from the haul
     q = q_stand.copy()
-    for sg in segs:
-        if sg[0] == "motion":
-            q = gt._last(kin, sg[1], q)
+    for sg_ in segs:
+        q = gt._last(kin, sg_[1], q)
     h_end = hold(n)
-    frames = segs[1][1].params.get("frames", {})
+    frames = segs[0][1].params.get("frames", {})
     for g_, f_ in frames.items():
         h_end[g_]["sign"], h_end[g_]["phi"] = f_
     # over the sill: the hands up the rails, the body hoisted between them, each foot over the lip onto the sill, in
     b_end = base_c(n)
     pitch = gs.CLIMB_PITCH
-    hands_hi = {sd: rail(1.0 if sd == "L" else -1.0, top + 0.6) for sd in ("L", "R")}
+    s_at = lambda z: (z - O_f[2] - Lad["fly_off"] * n_f[2]) / a_f[2]
+    hands_hi = {sd: rail(1.0 if sd == "L" else -1.0, s_at(top + 0.6)) for sd in ("L", "R")}
     for sd in ("L", "R"):
         hands_hi[sd]["sign"], hands_hi[sd]["phi"] = h_end[f"{sd}_hand"]["sign"], h_end[f"{sd}_hand"]["phi"]
     feet_sill = {sd: gs.point(np.array([X - 0.02, 0.1 if sd == "L" else -0.1, top]), pitch=0.0, over=True) for sd in ("L", "R")}
     crouch = np.array([X + gs.SILL_CROUCH[0] * S_, 0.0, top + gs.SILL_CROUCH[1] * S_])
-    hoist = np.array([xl - 0.2, 0.0, top + 0.3])
+    hoist = np.array([ladder_rail_x(p, top) - 0.2, 0.0, top + 0.3])
     duck = gs.SILL_CROUCH[2]
-    pts = gm._contact_points(kin)
-    kin.set(q)
-    world0 = lambda tg_: [(bd, l, gm.base_rot(pitch) @ kin.world(bd, l) + b_end) for bd, l, _ in tg_]
     A = {"L_hand": (0.0, 0.15), "R_hand": (0.15, 0.3)}
     Bh = (0.3, 0.5)
     C = {"L": (0.5, 0.66), "R": (0.66, 0.82)}
@@ -1618,7 +2029,7 @@ def scenario_fire(kin, q_stand, p):
         return c[0], c[1], c[2], pitch + fd * (duck - pitch)
 
     def t_over(u):
-        out = []
+        out_ = []
         for sd in ("L", "R"):
             g_ = f"{sd}_hand"
             a, b_ = A[g_]
@@ -1626,25 +2037,23 @@ def scenario_fire(kin, q_stand, p):
             if u >= Dc[0] + 0.04:                                          # the feet on the sill: the hands let go of the rails
                 pass
             elif u < a:
-                out += gs.hand_targets(kin, sd, h_end[g_])
+                out_ += gs.hand_targets(kin, sd, h_end[g_])
             elif u < b_:
                 f = mk.smooth((u - a) / (b_ - a))
                 st = gs.hand_targets(kin, sd, h_end[g_])
-                out += [(e[0], e[1], (1 - f) * np.asarray(s_[2]) + f * np.asarray(e[2]) + np.array([-0.05, 0.0, 0.0]) * math.sin(math.pi * f)) for s_, e in zip(st, end)]
+                out_ += [(e[0], e[1], (1 - f) * np.asarray(s_[2]) + f * np.asarray(e[2]) + np.array([-0.05, 0.0, 0.0]) * math.sin(math.pi * f)) for s_, e in zip(st, end)]
             else:
-                out += end
+                out_ += end
             a, b_ = C[sd]
             if u < a:
-                out += gs.foot_targets(kin, sd, h_end[sd])
+                out_ += gs.foot_targets(kin, sd, h_end[sd])
             elif u < b_:
                 ff = (u - a) / (b_ - a)
                 c = gs.foot_swing(h_end[sd], feet_sill[sd], ff, lift=0.12, clear=0.1)
-                out += gs.foot_targets(kin, sd, gs.point(feet_sill[sd]["c"], pitch=0.3 * (1.0 - mk.smooth(ff)), over=True), c)
+                out_ += gs.foot_targets(kin, sd, gs.point(feet_sill[sd]["c"], pitch=0.3 * (1.0 - mk.smooth(ff)), over=True), c)
             else:
-                out += gs.foot_targets(kin, sd, feet_sill[sd])
-        return out
-    if gt.SOLID is not None:
-        gt.SOLID.ignore = set()
+                out_ += gs.foot_targets(kin, sd, feet_sill[sd])
+        return out_
     over = gt.contact_motion(kin, "over_the_sill", 6.0, t_over, b_over, q_init=q, extra=gs._spine_extra(kin, gs.CLIMB_SPINE), reg=gs.IK_REG, iters=gs.IK_ITERS,
                              q_ref=gs.climb_ref(kin, q), source="gibbon_scenarios.fire: up the rails, hoisted between them, the feet over the lip onto the sill, in")
     q1 = gt._last(kin, over, q)
@@ -1662,16 +2071,67 @@ def scenario_fire(kin, q_stand, p):
         f = mk.smooth(u)
         xb = crouch[0] + f * (x_land - crouch[0])
         fz = mk.smooth(max(0.0, min(1.0, (xb - x_clear) / (x_land - x_clear))))
-        return xb, 0.0, (1 - fz) * crouch[2] + fz * (F + gm.STANCE["h"]) + 0.04 * math.sin(math.pi * fz), duck + fz * (gm.STANCE["pitch"] - duck)
+        return xb, 0.0, (1 - fz) * crouch[2] + fz * (F + h0) + 0.04 * math.sin(math.pi * fz), duck + fz * (pt - duck)
     hop_in = gs._joint_track(kin, "down_into_the_room", 1.6, [(0.0, q1), (0.12, release), (0.3, tuck2), (0.62, tuck2), (1.0, q_stand)], b_in,
                              source="gibbon_scenarios.fire: the hop down off the sill onto the first floor")
     fire_c = np.array([X + t / 2 + p["table_x"] - 0.1, p["table_y"] + 0.05, F + 0.75])
     x_stop = fire_c[0] - p["spray_range"]
     walk_in = max(x_stop - x_land, 0.2)
-    base_f = np.array([x_land + walk_in, 0.0, F + gm.STANCE["h"]])
-    fight = _fire_fight(kin, q_stand, base_f, fire_c, gm.STANCE["pitch"])
-    return ([("motion", ride), ("motion", hop_off), ("motion", take)] + segs + [("motion", over), ("motion", hop_in), ("gait", walk_in / v, 0.0, F)]
-            + [("motion", m_) for m_ in fight])
+    base_f = np.array([x_land + walk_in, 0.0, F + h0])
+    fight = _fire_fight(kin, q_stand, base_f, fire_c, pt)
+    q_low = gt._last(kin, fight[-1], q_stand)
+    radio = _radio_call(kin, q_stand, q_low, base_f, pt)
+    return (out + segs + [("motion", over), ("motion", hop_in), ("gait", walk_in / v, 0.0, F)]
+            + [("motion", m_) for m_ in fight] + [("motion", radio)])
+
+
+def _radio_call(kin, q_stand, q0, base, pt):
+    """The fire out: the left hand takes the walkie-talkie off the chest strap, holds it to the mouth - "mission
+    accomplished" - and the right hand raises the nozzle high, brave."""
+    Rb = gm.base_rot(pt)
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j and not j.startswith("tail")]
+    kin.set(q_stand)
+    feet = [(bd, l, Rb @ kin.world(bd, l) + base) for sd in ("L", "R") for bd, l in gm._contact_points(kin)[sd]]
+    th = kin.body("thorax")
+    R_th, p_th = Rb @ kin.data.xmat[th].reshape(3, 3), Rb @ kin.data.xpos[th] + base
+    root = R_th @ RADIO_ON_THORAX[0] + p_th
+    grip = root + R_th[:, 2] * 0.0
+    sh_L = p_th + R_th @ np.array([0.0, 0.12, 0.1])
+    fr_g = _grip_frame(grip, R_th[:, 2], sh_L - grip + R_th[:, 0] * 0.0 - R_th[:, 0] * 0.1)
+    mouth = p_th + R_th @ np.array([0.14, 0.05, 0.16])
+    fr_m = _grip_frame(mouth, gs._unit(R_th[:, 2] + 0.25 * R_th[:, 0]), sh_L - mouth + R_th @ np.array([0.0, 0.0, -0.2]))
+    hand0 = {sd: gs._hand_pose(kin, q0, base, pt, sd) for sd in ("L", "R")}
+    high = p_th + R_th @ np.array([0.1, -0.17, 0.55])
+    fr_hi = _grip_frame(high, R_th[:, 2] + 0.0 * R_th[:, 0], R_th @ np.array([-0.1, -0.1, -1.0]))
+    G0, G1, M0, M1, H0, H1 = 0.0, 0.18, 0.2, 0.34, 0.62, 0.78
+
+    def t_call(u):
+        RL0, pL0 = hand0["L"]
+        if u < G1:
+            f = mk.smooth(u / G1)
+            L_ = gs._hand_at(kin, "L", (1 - f) * pL0 + f * grip, gs._slerp(RL0, fr_g, f))
+        elif u < M0:
+            L_ = gs._hand_at(kin, "L", grip, fr_g)
+        elif u < M1:
+            f = mk.smooth((u - M0) / (M1 - M0))
+            L_ = gs._hand_at(kin, "L", (1 - f) * grip + f * mouth + R_th[:, 0] * 0.05 * math.sin(math.pi * f), gs._slerp(fr_g, fr_m, f))
+        else:
+            L_ = gs._hand_at(kin, "L", mouth, fr_m)
+        RR0, pR0 = hand0["R"]
+        if u < H0:
+            R_ = gs._hand_at(kin, "R", pR0, RR0)
+        else:
+            f = mk.smooth(min(1.0, (u - H0) / (H1 - H0)))
+            R_ = gs._hand_at(kin, "R", (1 - f) * pR0 + f * high, gs._slerp(RR0, fr_hi, f))
+        return feet + L_ + R_
+    fixed = lambda u: (base[0], base[1], base[2], pt)
+    call = gt.contact_motion(kin, "call_mission_accomplished", 6.5, t_call, fixed, q_init=q0,
+                             extra=lambda u, q_: sr.set_curl(sr.set_curl(q_, kin, "R", gs.CURL_CLOSED), kin, "L", gs.CURL_CLOSED if u > 0.15 else gs.CURL_OPEN),
+                             reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the walkie-talkie to the mouth, mission accomplished, the nozzle up")
+    q_g, _ = kin.ik([(bd, l, Rb.T @ (np.asarray(wp) - base)) for bd, l, wp in t_call(0.19)], q_init=q0, q_ref=q_stand, joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)
+    Rhg, phg = gs._hand_pose(kin, q_g, base, pt, "L")
+    call.params = {"radio_T": ((Rhg.T @ R_th).tolist(), (Rhg.T @ (root - phg)).tolist()), "grab_u": 0.18, "talk_u": (0.36, 1.0), "high_u": H1}
+    return call
 
 
 gs.DEFAULTS["fire"] = FIRE
