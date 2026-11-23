@@ -44,12 +44,31 @@ mass:
   - item: outer panels on plug-in joiners (off for transport)
     g: 30
     source: HAND (+-15)
+  - item: 'V-tail: the two fin hinges, springs and locks off'
+    g: -18
+    source: astor_t.budget's item
+  - item: 'V-tail: the tail blades'' pivots and fold actuator off'
+    g: -40
+    source: astor_v.budget's item
+  - item: 'V-tail: two ruddervator servos, hinges and root fittings'
+    g: 36
+    source: 'HAND (+-12): 2 x 12 g servos + 12 g; the surfaces'' area is the old four''s (0.069 against 0.070 m2)'
   - item: growth margin 10 % of the additions
-    g: 153
+    g: 151
     source: HAND
-  total_kg: 5.28
+  total_kg: 5.26
+tail:
+  kind: V
+  dihedral_deg: 38.0
+  each_surface_mm:
+    span: 300.0
+    root: 150.0
+    tip: 80.0
+  area_both_m2: 0.069
+  rise_above_the_root_mm: 185
+  controls: 'ruddervators: together pitch, opposed yaw; roll is the ailerons'' alone'
 stall_spread_m_s:
   value: 19.3
   note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
-wing_loading_kg_m2: 20.3
+wing_loading_kg_m2: 20.2
 current_A_at_8_kW: 190

@@ -95,13 +95,16 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
     import astor_t as T
     if name in ("t", "twin"):
         fin = T.fin_equivalent(p)
+    if p.get("vtail_dihedral_deg", 0.0) > 0:                                 # a V-tail: the upright fin of its side force (its area x sin^2 of the dihedral)
+        import astor_twin as W
+        fin = W.vtail_fin_equivalent(p)
     cr = 2 * S / (b * (1 + lam)) * 1000.0
     q = A.variant(span=b * 1000.0, root_chord=cr, taper=lam, le_sweep_deg=min(sweep, 35.0), dihedral_deg=0.0,
                   wing_x=V.pivot_x(p, sweep) - 0.3 * cr, cg_x=V.CG_MM, propulsion="tractor_lowcam",
                   fuselage_length=p["fuselage_length"], tail_cone=p["tail_cone"], tail_end_diameter=p["tail_end_diameter"],
                   htail_span=2 * (p["tail_pivot_y"] + p["tail_panel_span"] * math.cos(math.radians(35.0))), htail_root_chord=p["tail_panel_root"],
                   htail_taper=p["tail_panel_tip"] / p["tail_panel_root"], htail_sweep_deg=35.0, htail_z=6.0,
-                  fin_height=fin["fin_height"], fin_root_chord=fin["fin_root_chord"], fin_taper=p["fin_taper"], fin_sweep_deg=p["fin_sweep_deg"],
+                  fin_height=fin["fin_height"], fin_root_chord=fin["fin_root_chord"], fin_taper=fin.get("fin_taper", p["fin_taper"]), fin_sweep_deg=fin.get("fin_sweep_deg", p["fin_sweep_deg"]),
                   lowcam_drop=p["lowcam_drop"])
     q["tail_le_x"] = p["tail_pivot_x"] - 0.25 * p["tail_panel_root"]
     pe = A.resolve(q)
@@ -133,7 +136,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
-              "Clda_tail": CLde * TAIL_Y_M / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
+              "Clda_tail": 0.0 if p.get("vtail_dihedral_deg", 0.0) > 0 else CLde * TAIL_Y_M / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
               "Cnda": 0.0, "Cnb": C["Cnb"] * 0.9,                                        # HAND: the tractor propeller's normal force ahead of the CG (-10 %)
               "mass_budget": mb, "pack_kind": "astor",
               "equipment": {"product": "astor", "launch": "tube" if name == "t" else "rail", "recovery": "parachute", "turning_station": True, "kits": [],

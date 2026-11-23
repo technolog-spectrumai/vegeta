@@ -89,6 +89,12 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
         q = _strips(P, side, 6.0, n=5)
+        vd = math.radians(p.get("vtail_dihedral_deg", 0.0))
+        if vd > 0:                                                    # a V-tail (ASTOR-TWIN): each strip swung up about the root, true geometry
+            for qq in q:
+                dy = np.maximum(np.abs(qq[:, 1]) - p["tail_pivot_y"] / 1000.0, 0.0)
+                qq[:, 1] = np.sign(qq[:, 1]) * (p["tail_pivot_y"] / 1000.0 + dy * math.cos(vd))
+                qq[:, 2] += p.get("vtail_z", 0.0) / 1000.0 + dy * math.sin(vd)
         td = math.tan(math.radians(p.get("tail_anhedral_deg", 0.0)))
         if td > 0:                                                    # the drooped tail: each strip lower by its distance from the pivot
             for qq in q:

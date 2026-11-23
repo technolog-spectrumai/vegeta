@@ -15,7 +15,7 @@ feed_to_the_valve_mm: 41
 balance:
   vessel_g_with_margin: 312
   centre_moves_aft_mm: 274
-  aircraft_cg_moves_aft_mm: 12.6
+  aircraft_cg_moves_aft_mm: 12.7
   pack_moves_forward_to_hold_it_mm: 56
   air_used_per_shot_g: 19.1
   cg_shift_per_shot_mm: -0.57
@@ -29,5 +29,5 @@ displaced:
 - 'the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)'
 not_checked:
 - 'a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at 365 mm)'
-- the tail blades' pivots at station 655 pass outside the vessel on a ring frame (HAND)
+- the V-tail's root fittings at station 655 sit on the body's back over the vessel (HAND)
 - the pack's own fit in the 70 mm body
