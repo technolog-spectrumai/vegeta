@@ -1480,35 +1480,55 @@ FACE_ON_THORAX = np.array([0.0, 0.0, 0.0])                                 #: th
 
 
 def face_prop(p):
-    """A sweet, brave little monkey face on the head: big round eyes with a sparkle, a pale muzzle with a smile, big
-    disc ears facing forward with a microphone in each, and eyebrows set firm. Drawn on the head (visual only)."""
-    skin, white, blk, pink, brow, ear_in = (0.86, 0.72, 0.56, 1.0), (0.98, 0.98, 0.98, 1.0), (0.07, 0.05, 0.05, 1.0), (0.95, 0.55, 0.55, 1.0), (0.3, 0.18, 0.1, 1.0), (0.93, 0.66, 0.6, 1.0)
+    """A sweet, brave little robot-monkey face on the head: camera eyes (a lens in a housing, a glint), a smoke
+    detector for a nose, a pale muzzle with a smile, big disc ears facing forward with a microphone in each (a slot
+    through each where the helmet's brim passes), and eyebrows set firm. Drawn on the head (visual only)."""
+    skin, white, blk, brow = (0.86, 0.72, 0.56, 1.0), (0.97, 0.97, 0.95, 1.0), (0.07, 0.05, 0.05, 1.0), (0.3, 0.18, 0.1, 1.0)
+    steel, lens, grey, red = (0.62, 0.64, 0.67, 1.0), (0.08, 0.12, 0.22, 1.0), (0.55, 0.57, 0.6, 1.0), (0.9, 0.1, 0.08, 1.0)
     F = FACE
+    fwd = (0.70710678, 0.0, 0.70710678, 0.0)                                 # a cylinder's axis turned to face forward (x)
     v = lambda name, typ, size, pos, rgba, quat=(1.0, 0.0, 0.0, 0.0): Geom(name, typ, size, pos=tuple(pos), quat=quat, mass=0.01, role="visual", rgba=rgba)
+
+    def cap(name, r, a_, b_, rgba):
+        c = gs._cap(name, r, a_, b_, rgba=rgba, mass=0.01)
+        c.role = "visual"
+        return c
     cx, cz = F["front"], F["z"]
     g = [v("face_mask", "sphere", (F["mask_r"],), (cx - F["mask_r"] + 0.012, 0.0, cz + 0.005), skin),
          v("face_muzzle", "sphere", (0.03,), (cx + 0.008, 0.0, cz - 0.03), skin),
-         ]
-    g.append(gs._cap("face_nose", 0.0055, (cx + 0.037, 0.007, cz - 0.019), (cx + 0.037, -0.007, cz - 0.019), rgba=blk, mass=0.01))
-    g[-1].role = "visual"
+         # the nose: a little smoke detector - a white puck, its vent slots, a red pilot light
+         v("face_smoke_det", "cylinder", (0.013, 0.004), (cx + 0.035, 0.0, cz - 0.016), white, quat=fwd)]
+    for i, dz in enumerate((-0.005, 0.0, 0.005)):
+        g.append(cap(f"face_smoke_vent_{i}", 0.0012, (cx + 0.04, -0.008, cz - 0.016 + dz), (cx + 0.04, 0.008, cz - 0.016 + dz), grey))
+    g.append(v("face_smoke_led", "sphere", (0.0022,), (cx + 0.04, 0.0095, cz - 0.0075), red))
     sm = []
     for i in range(9):                                                       # the smile: one smooth curve across the muzzle, its corners up
-        a = math.radians(-60 + 15 * i)
-        sm.append((cx + 0.036 - 0.008 * abs(math.sin(a)), 0.019 * math.sin(a), cz - 0.044 + 0.014 * (1 - math.cos(a))))
+        a_ = math.radians(-60 + 15 * i)
+        sm.append((cx + 0.036 - 0.008 * abs(math.sin(a_)), 0.019 * math.sin(a_), cz - 0.044 + 0.014 * (1 - math.cos(a_))))
     for i in range(len(sm) - 1):
-        g.append(gs._cap(f"face_smile_{i}", 0.0026, sm[i], sm[i + 1], rgba=blk, mass=0.01))
-        g[-1].role = "visual"
+        g.append(cap(f"face_smile_{i}", 0.0026, sm[i], sm[i + 1], blk))
+    brim_z = HAT_ON_THORAX[2] - 0.01                                         # the helmet's brim, through the ears' slots
     for sy, t_ in ((1, "l"), (-1, "r")):
         ey = sy * F["eye_y"]
-        g += [v(f"face_eye_{t_}", "sphere", (F["eye_r"],), (cx, ey, cz + 0.012), white),
-              v(f"face_pupil_{t_}", "sphere", (F["eye_r"] * 0.62,), (cx + F["eye_r"] * 0.55, ey, cz + 0.01), blk),
-              v(f"face_spark_{t_}", "sphere", (F["eye_r"] * 0.22,), (cx + F["eye_r"] * 1.05, ey + sy * 0.004, cz + 0.018), white),
-              # the ears: big flat discs beside the head facing forward, a microphone at the middle of each (its grille forward)
-              v(f"face_ear_{t_}", "cylinder", (0.05, 0.005), (cx - 0.06, sy * 0.105, cz + 0.01), skin, quat=(0.70710678, 0.0, 0.70710678, 0.0)),
-              v(f"face_mic_{t_}", "cylinder", (0.012, 0.012), (cx - 0.045, sy * 0.105, cz + 0.01), blk, quat=(0.70710678, 0.0, 0.70710678, 0.0)),
-              v(f"face_mic_grille_{t_}", "sphere", (0.011,), (cx - 0.032, sy * 0.105, cz + 0.01), (0.55, 0.57, 0.6, 1.0)),
+        r_ = F["eye_r"]
+        g += [  # the eyes: cameras - a housing, a steel ring, the lens, a glint
+              v(f"face_cam_{t_}", "cylinder", (r_, 0.008), (cx - 0.002, ey, cz + 0.012), blk, quat=fwd),
+              v(f"face_cam_ring_{t_}", "cylinder", (r_ * 0.78, 0.0025), (cx + 0.007, ey, cz + 0.012), steel, quat=fwd),
+              v(f"face_lens_{t_}", "sphere", (r_ * 0.6,), (cx + 0.004, ey, cz + 0.012), lens),
+              v(f"face_glint_{t_}", "sphere", (r_ * 0.17,), (cx + 0.013, ey + sy * 0.004, cz + 0.018), white),
+              v(f"face_mic_{t_}", "cylinder", (0.012, 0.012), (cx - 0.045, sy * 0.105, cz + 0.01), blk, quat=fwd),
+              v(f"face_mic_grille_{t_}", "sphere", (0.011,), (cx - 0.032, sy * 0.105, cz + 0.01), grey),
               # the brows: a firm slant, low at the middle - brave
               v(f"face_brow_{t_}", "box", (0.004, 0.017, 0.0035), (cx + 0.004, ey, cz + 0.037), brow, quat=(math.cos(sy * 0.18), math.sin(sy * 0.18), 0.0, 0.0))]
+        # the ear: a big flat disc facing forward, built of strips across it, the one where the brim passes left out (a slot)
+        ec, R_, n_ = np.array([cx - 0.06, sy * 0.105, cz + 0.01]), 0.05, 28
+        for k in range(n_):
+            z0, z1 = -R_ + 2 * R_ * k / n_, -R_ + 2 * R_ * (k + 1) / n_
+            if z0 - 0.003 < brim_z - ec[2] < z1 + 0.003:
+                continue
+            zm = 0.5 * (z0 + z1)
+            half = math.sqrt(max(R_ * R_ - zm * zm, 0.0))
+            g.append(v(f"face_ear_{t_}_{k}", "box", (0.005, half, 0.5 * (z1 - z0)), ec + np.array([0.0, 0.0, zm]), skin))
     return Prop(Link("monkey_face", pos=(-6.0, 3.0, 4.0), geoms=g), free=True)
 
 
