@@ -51,7 +51,7 @@ import numpy as np
 from ogma import actuators as act
 from vegeta import chiron as ch
 
-__all__ = ["CLEO_MM", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",
+__all__ = ["CLEO_MM", "CLEO2_MM", "CLEO2_EXTRA", "cleopatra2", "cleopatra2_params", "cleopatra2_cad", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",
            "RETIRED_TREATMENTS", "AXIS_ORDER", "BODY_DEFAULTS", "DESIGN_KEYS", "LIMIT_PITCH", "LIMIT_YAW",
            "LIMIT_ROLL", "LEG_KEYS", "LEG_SIDES", "SEGMENTS", "LEG_RANGES", "KP", "KD", "cleopatra",
            "cleopatra_servo", "canonical_treatment", "make_connection", "connection_params", "design_connection",
@@ -862,3 +862,36 @@ def cleopatra_cad(**overrides):
     defaults are Persephone's)."""
     import myropod
     return myropod.Myropod().generate(**{**CLEO_MM, **overrides})
+
+
+# ----------------------------------------------------------------------------------------------- Cleopatra v2
+#: Cleopatra v2, the pipe version [mm, deg]: v1's body with shorter legs (60 + 75 mm instead of 80 + 100: a 0.125 m
+#: hip height, so the legs fold inside a 260 mm duct without reaching its wall with the knees), six hooks under each
+#: foot pad (both sides: twelve claws, TARANTULA's spines without cords), a camera + lidar turret on the head, and two
+#: small arms under the head's front — a flat padded gripper on the left, scissor-blade cutter on the right. v1
+#: (``CLEO_MM``, ``CleopatraParams``) stays the stability protocol's frozen robot (docs/myropod_stability.md §1).
+CLEO2_MM = dict(CLEO_MM, femur_length=60.0, tibia_length=75.0, foot_hooks=6, hook_length=5.0, turret=True, arms=True,
+                arm_upper=115.0, arm_fore=110.0, arm_diameter=9.0, jaw_length=22.0)
+#: v2's added masses [kg] (class estimates): the turret (camera 60 g, lidar 25 g, housing 15 g) and each arm (two
+#: micro servos 2 × 9 g, links and jaw 17 g, the jaw's micro gearmotor 10 g); the shorter legs scale v1's CAD leg mass.
+CLEO2_EXTRA = (("sensor turret (camera + lidar)", 0.100), ("gripper arm", 0.045), ("cutter arm", 0.045))
+
+
+def cleopatra2_params() -> CleopatraParams:
+    """Cleopatra v2's physical inputs: v1's, with the shorter legs (their CAD mass scaled by length) and the turret
+    and arms carried in the head's payload."""
+    v1 = CleopatraParams()
+    scale = (0.060 + 0.075) / (v1.femur + v1.tibia)
+    return CleopatraParams(femur=0.060, tibia=0.075, leg_cad_mass=v1.leg_cad_mass * scale,
+                           head_payload=v1.head_payload + CLEO2_EXTRA)
+
+
+def cleopatra2(body_connection: str = BODY_DEFAULTS["body_connection"], **kw) -> ch.Robot:
+    """Cleopatra v2 (``CLEO2_MM``) as a Chiron robot: ``cleopatra`` with ``cleopatra2_params()``."""
+    return cleopatra(body_connection, params=cleopatra2_params(), **kw)
+
+
+def cleopatra2_cad(**overrides):
+    """Cleopatra v2's CAD: the Myropod design at ``CLEO2_MM``."""
+    import myropod
+    return myropod.Myropod().generate(**{**CLEO2_MM, **overrides})

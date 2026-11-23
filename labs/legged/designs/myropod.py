@@ -36,7 +36,7 @@ class Myropod(Design):
     radians, unlike the CAD's ``*_deg`` parameters."""
 
     parameters = [
-        Parameter("part", "crawler", choices=("crawler", "segment", "leg", "head", "pincer", "case", "guide"), description="what to build"),
+        Parameter("part", "crawler", choices=("crawler", "segment", "leg", "head", "pincer", "case", "guide", "femur", "tibia", "turret", "arm_upper", "arm_fore", "gripper_jaw", "cutter_blade"), description="what to build"),
         Parameter("version", 1, "", choices=(1, 2, 3), description="1 crawler, 2 transport kit (coiled in the carry case), 3 with pincers"),
         Parameter("n_segments", 12, "", min=3, max=40, description="body segments behind the head"),
         Parameter("seg_length", 60.0, "mm", min=15, description="shell length of one segment"),
@@ -68,6 +68,15 @@ class Myropod(Design):
         Parameter("drum_diameter", 120.0, "mm", min=20, description="tether drum in the middle of the case"),
         Parameter("guide_diameter", 150.0, "mm", min=40, description="inner diameter of the insertion guide (half-pipe)"),
         Parameter("guide_radius", 220.0, "mm", min=50, description="bend radius of the insertion guide"),
+        # ---- Cleopatra v2's pipe kit: foot hooks, a sensor turret, two pincer arms under the head (gripper + cutter)
+        Parameter("foot_hooks", 0, "", min=0, max=16, description="small hooks round each foot pad's underside, for gripping a pipe's wall (0: none)"),
+        Parameter("hook_length", 5.0, "mm", min=1, description="each foot hook's length"),
+        Parameter("turret", False, "", description="a camera + lidar turret on the head (as TARANTULA's)"),
+        Parameter("arms", False, "", description="two small arms under the head's front: a flat gripper on the left, scissor-blade cutter on the right"),
+        Parameter("arm_upper", 115.0, "mm", min=10, description="arm: shoulder to elbow"),
+        Parameter("arm_fore", 110.0, "mm", min=10, description="arm: elbow to the pincer's pivot"),
+        Parameter("arm_diameter", 9.0, "mm", min=2),
+        Parameter("jaw_length", 22.0, "mm", min=5, description="the pincers' jaws, pivot to tip"),
         # ---- intersegment joint dynamics (stability protocol §12, Amendment D; read by myropod_robot.py, not the CAD)
         Parameter("body_connection", "spring_damper", choices=("spring", "spring_damper"), description="body-joint treatment: 'spring' tau = -k (q - q0), c = 0; 'spring_damper' tau = -k (q - q0) - c dq/dt (dynamics only)"),
         Parameter("body_roll_axis", True, "", description="passive roll hinge at each body joint, as well as pitch and yaw (identical in both treatments; dynamics only)"),
@@ -165,7 +174,68 @@ class Myropod(Design):
         kneeb = cq.Workplane("YZ").center(*knee).circle(d / 2 + 1).extrude(d / 2 + 1, both=True)
         pad = cq.Workplane("XY").sphere(p["foot_diameter"] / 2).translate((0, foot[0], foot[1]))
         leg = hip.union(femur).union(tibia).union(kneeb).union(pad)
+        if p["foot_hooks"]:
+            leg = leg.union(self._pad_hooks(p, (0.0, foot[0], foot[1])).rotate((0, foot[0], foot[1]), (1, foot[0], foot[1]), 0))
         return leg.cut(cq.Workplane("YZ").circle(p["joint_pin_diameter"] / 2).extrude(10, both=True))
+
+    def _pad_hooks(self, p, centre):
+        """``foot_hooks`` small claws round the pad's lower half, angled down and out (TARANTULA's spines, no cords)."""
+        n, L, r = p["foot_hooks"], p["hook_length"], p["foot_diameter"] / 2
+        out = None
+        for i in range(n):
+            a = math.radians(-90 + 180 * (i + 0.5) / n)                 # round the pad, x-z plane through its centre
+            base = (centre[0] + r * 0.8 * math.sin(a), centre[1], centre[2] - r * 0.8 * math.cos(a))
+            hook = (cq.Workplane("XY").circle(0.6).extrude(L).union(cq.Workplane("XY").sphere(0.7).translate((0, 0, L)))
+                    .rotate((0, 0, 0), (0, 1, 0), 180 - math.degrees(a) * 0.8).translate(base))
+            for side in (-1, 1):                                       # two rows, either side of the pad's centre line
+                h = hook.translate((0, side * r * 0.45, 0))
+                out = h if out is None else out.union(h)
+        return out
+
+    def _femur(self, p):
+        """The femur in its link frame (straight out along +y from the hip bore, as Chiron's link at q = 0)."""
+        d, f = p["leg_diameter"], p["femur_length"]
+        bar = cq.Workplane("YZ").center(f / 2, 0).slot2D(f + d, d, 0).extrude(d / 2, both=True)
+        return cq.Workplane("YZ").circle(d / 2 + 2).extrude(5, both=True).union(bar)
+
+    def _tibia(self, p):
+        """The tibia in its link frame: the knee boss at the origin, the bar along +y, the pad (and its hooks) at the end."""
+        d, tb = p["leg_diameter"], p["tibia_length"]
+        t = (cq.Workplane("YZ").center(tb / 2, 0).slot2D(tb + d * 0.8, d * 0.8, 0).extrude(d * 0.4, both=True)
+             .union(cq.Workplane("YZ").circle(d / 2 + 1).extrude(d / 2 + 1, both=True))
+             .union(cq.Workplane("XY").sphere(p["foot_diameter"] / 2).translate((0, tb, 0))))
+        if p["foot_hooks"]:                                            # hooks under the pad (the link frame's -z)
+            t = t.union(self._pad_hooks(p, (0.0, tb, 0.0)))
+        return t
+
+    def _turret(self, p):
+        """The sensor turret on the head's top: a camera body with its lens looking ahead, a lidar puck on top."""
+        body = cq.Workplane("XY").box(52, 42, 28).edges("|Z").fillet(4).translate((-5, 0, 14))
+        lens = cq.Workplane("YZ").circle(9.5).extrude(12).translate((21, 0, 15))
+        glass = cq.Workplane("YZ").circle(6.5).extrude(2).translate((33, 0, 15))
+        puck = cq.Workplane("XY").circle(13).extrude(12).translate((-8, 0, 28))
+        return body.union(lens).union(glass).union(puck)
+
+    def _arm_bar(self, p, length, d):
+        """An arm link along +x from its joint (a boss at the origin)."""
+        bar = cq.Workplane("XY").center(length / 2, 0).slot2D(length + d, d, 0).extrude(d / 2, both=True)
+        return bar.union(cq.Workplane("XY").circle(d / 2 + 2).extrude(d / 2 + 1, both=True))
+
+    def _gripper_jaw(self, p):
+        """One gripper jaw along +x from its pivot: a flat, wide, padded jaw for gentle holding (closing towards -y)."""
+        L = p["jaw_length"]
+        jaw = cq.Workplane("XY").box(L, 2.5, 9).translate((L / 2, 0, 0)).edges("|Y").fillet(1.0)
+        pad = cq.Workplane("XY").box(L * 0.7, 1.2, 8).translate((L * 0.6, -1.8, 0))          # the soft face
+        return jaw.union(pad).union(cq.Workplane("XY").circle(3.5).extrude(4.5, both=True))
+
+    def _cutter_blade(self, p):
+        """One cutter blade along +x from its pivot: a scissor blade, thick at the back, tapering to a sharp edge and
+        point on its cutting side (-y)."""
+        L = p["jaw_length"]
+        pts = [(0, -3.0), (L * 0.35, -3.2), (L, -0.2), (L, 0.4), (L * 0.35, 2.6), (0, 2.6)]
+        blade = cq.Workplane("XY").polyline(pts).close().extrude(0.9, both=True)
+        bevel = cq.Workplane("XY").polyline([(L * 0.2, -3.2), (L, -0.2), (L * 0.2, -1.6)]).close().extrude(0.35, both=True)
+        return blade.cut(bevel.translate((0, 0, 0.6))).union(cq.Workplane("XY").circle(3.0).extrude(1.5, both=True))
 
     def _head(self, p):
         Lh, W, H, t = p["head_length"], p["seg_width"], p["seg_height"], p["shell_thickness"]
@@ -231,6 +301,29 @@ class Myropod(Design):
         core = cq.Workplane("XZ").circle(R).extrude(D, both=True)             # everything closer to the bend axis than R goes
         return tube.cut(core)
 
+    def _arms_tucked(self, p):
+        """Both arms folded under the head's front (the pose they travel in): shoulder under the head, elbow up and
+        back, forearm forward and down, the gripper's jaws (left) and the cutter's blades (right) at the end."""
+        zc, Lh = p["seg_height"] / 2, p["head_length"]
+        out = None
+        for sy, tool in ((1, "g"), (-1, "c")):
+            base = (Lh / 2 - 10, sy * 35, zc - 28)
+            up = self._arm_bar(p, p["arm_upper"], p["arm_diameter"]).rotate((0, 0, 0), (0, 1, 0), -110)
+            ex = p["arm_upper"] * math.cos(math.radians(110)), p["arm_upper"] * math.sin(math.radians(110))
+            fore = self._arm_bar(p, p["arm_fore"], p["arm_diameter"] * 0.85).rotate((0, 0, 0), (0, 1, 0), 32)
+            fx, fz = ex[0] + p["arm_fore"] * math.cos(math.radians(-32)), ex[1] + p["arm_fore"] * math.sin(math.radians(-32))
+            jaws = None
+            for k in (1, -1):
+                j = self._gripper_jaw(p) if tool == "g" else self._cutter_blade(p)
+                if k < 0:
+                    j = j.mirror("XZ")
+                j = j.rotate((0, 0, 0), (0, 0, 1), k * 8).translate((0, k * 3.0, 0)).rotate((0, 0, 0), (0, 1, 0), 32)
+                jaws = j if jaws is None else jaws.union(j)
+            arm = up.union(fore.translate((ex[0], 0, ex[1]))).union(jaws.translate((fx, 0, fz)))
+            arm = arm.translate(base)
+            out = arm if out is None else out.union(arm)
+        return out
+
     def _place(self, shape, pos, yaw, pitch):
         return shape.rotate((0, 0, 0), (0, 1, 0), pitch).rotate((0, 0, 0), (0, 0, 1), yaw).translate(tuple(float(v) for v in pos))
 
@@ -250,6 +343,10 @@ class Myropod(Design):
         for i, (pos, yaw, pitch) in enumerate(frames):
             if i == 0:
                 link = head
+                if p["turret"]:
+                    link = link.union(self._turret(p).translate((0, 0, p["seg_height"])))
+                if p["arms"]:
+                    link = link.union(self._arms_tucked(p))
                 if p["version"] == 3:
                     hx = p["head_length"] / 2 - 6
                     for sy, sgn in ((1, 1), (-1, -1)):
@@ -278,6 +375,20 @@ class Myropod(Design):
             return self._head(p)
         if p["part"] == "pincer":
             return self._pincer(p)
+        if p["part"] == "femur":
+            return self._femur(p)
+        if p["part"] == "tibia":
+            return self._tibia(p)
+        if p["part"] == "turret":
+            return self._turret(p)
+        if p["part"] == "arm_upper":
+            return self._arm_bar(p, p["arm_upper"], p["arm_diameter"])
+        if p["part"] == "arm_fore":
+            return self._arm_bar(p, p["arm_fore"], p["arm_diameter"] * 0.85)
+        if p["part"] == "gripper_jaw":
+            return self._gripper_jaw(p)
+        if p["part"] == "cutter_blade":
+            return self._cutter_blade(p)
         if p["part"] == "case":
             return self._case(p)
         if p["part"] == "guide":
