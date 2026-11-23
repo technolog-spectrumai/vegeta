@@ -835,9 +835,9 @@ def simulate(model, info, render=None):
     s_end = float(S[-1])
     hold("yard", "", 1.5)
     freegait("yard", "ACROSS THE YARD TO THE DATACENTER'S AIR INTAKE", s_mouth - 0.05, v=0.16)
-    freegait("duct", "INTO THE DUCT — TWELVE HOOKED FEET ON THE PIPE WALL", s_mouth + 1.0, v=0.13)
+    freegait("duct", "INTO THE DUCT — TWELVE HOOKED FEET ON THE PIPE WALL", s_mouth + 1.0, v=0.13, speed=3.0)
     s_cut = float(S[np.argmin(np.abs(P[:, 0] - (X_END + 0.07)) + 10 * (P[:, 2] < Z_IN - 0.05))])
-    freegait("riser", "ALONG THE WALL AND THROUGH IT", s_cut, v=0.11)
+    freegait("riser", "ALONG THE WALL AND THROUGH IT", s_cut, v=0.11, speed=4.0)
 
     def head_frame(w):
         hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
@@ -870,9 +870,9 @@ def simulate(model, info, render=None):
             st["snips"][k] = (side + 1, st["t"] if side == 1 else None)
     hold("cut", "THE SLATS DROP TO THE FLOOR", 0.8)
     move_arm("c", "cut", "THE SLATS DROP TO THE FLOOR", 0.8, ARM_TUCK["c"], opening=0.3)
-    freegait("vent", "THROUGH THE HOLE INTO THE BANDITS' DATACENTER", s_cut + 0.75, v=0.07)
-    freegait("aisle", "DOWN THE COLD AISLE, OVER THE CABLES, BETWEEN THE RACKS", s_end - 0.12, v=0.1)
-    freegait("plug", "TO THE TARGET SERVER", s_end, v=0.05)
+    freegait("vent", "THROUGH THE HOLE INTO THE BANDITS' DATACENTER", s_cut + 0.75, v=0.07, speed=5.0)
+    freegait("aisle", "DOWN THE COLD AISLE, OVER THE CABLES, BETWEEN THE RACKS", s_end - 0.12, v=0.1, speed=2.0)
+    freegait("plug", "TO THE TARGET SERVER", s_end, v=0.05, speed=3.0)
     # ---- the plug: the gripper reaches down to the back port, lets go, comes back for it after the copy
     hR = data.xmat[head].reshape(3, 3)
     hx = hR[:, 0]

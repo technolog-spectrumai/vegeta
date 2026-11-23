@@ -6,7 +6,7 @@
 #   ./cleopatra.sh mission --text             the same with captions
 #   ./cleopatra.sh mission --width 960 --height 540 --fps 24 --out my.mp4      smaller and quicker
 #
-# Output: runs/cleopatra/cleopatra_datacenter.mp4 (1280 × 720, 30 fps; about 20–40 min on a laptop). Uses the project's
+# Output: runs/cleopatra/cleopatra_datacenter.mp4 (1280 × 720, 30 fps, about 2 min of video; 20–40 min to render on a laptop). Uses the project's
 # virtual environment (.venv, or $VEGETA_VENV): ./install_local.sh sets it up; needs numpy, mujoco, cadquery, Pillow
 # and ffmpeg (else the frames are left as JPEGs).
 set -euo pipefail
