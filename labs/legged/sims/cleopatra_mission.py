@@ -564,7 +564,8 @@ def simulate(model, info, render=None):
             data.qpos[a] = float(np.clip(data.qpos[a], lo, hi))
 
     st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "snips": {},
-          "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None}
+          "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None, "seat": 0.0,
+          "usb_port": None}
     F, N = {}, {}
     place_body(st["sc"])
     for lg in legs:
@@ -618,8 +619,13 @@ def simulate(model, info, render=None):
                 st["grip"] = (tip + d * GRIP_IN, d)
         if st["usb"] == "held":                                           # in the gripper, pointing ahead
             g, _ = st["grip"]
-            data.mocap_pos[usb] = g + hR[:, 0] * (USB_HALF - 0.006)
-            data.mocap_quat[usb] = data.xquat[head]
+            pos_h, quat_h = g + hR[:, 0] * (USB_HALF - 0.006), data.xquat[head].copy()
+            w = sm(st["seat"])                                            # sliding level and straight into the port
+            if w > 0.0:
+                yaw = math.atan2(hR[1, 0], hR[0, 0])
+                pos_h = (1 - w) * pos_h + w * st["usb_port"]
+                quat_h = slerp(quat_h, mat2quat(rot_z(yaw)), w)
+            data.mocap_pos[usb], data.mocap_quat[usb] = pos_h, quat_h
         # the cut: a slat cut at one end sags a little; cut at both, it drops onto the desk and settles there
         for k, (mid, w, z0) in slats.items():
             gx0 = X_END - 0.006
@@ -767,7 +773,11 @@ def simulate(model, info, render=None):
     hx = hR[:, 0]
     usb_c = port_point() - hx * (USB_PLUG - 0.010)                        # the plug 10 mm in
     tip_w = usb_c - hx * (USB_HALF - 0.006) - hx * GRIP_IN
+    st["usb_port"] = np.array([usb_c[0], usb_c[1], port_point()[2]])
     move_arm("g", "plug", "THE GRIPPER PLUGS THE PENDRIVE IN", 1.8, head_frame(tip_w), lift=0.04)
+    hold("plug", "THE GRIPPER PLUGS THE PENDRIVE IN", 0.4, lambda u: st.update(seat=u))
+    st["seat"] = 1.0
+    props()
     st["usb"] = "port"
     move_arm("g", "plug", "THE GRIPPER PLUGS THE PENDRIVE IN", 0.4, st["arm"]["g"][0], opening=1.0, lift=0.0)
     move_arm("g", "copy", "COPYING", 1.0, ARM_TUCK["g"], lift=0.0)
@@ -775,6 +785,8 @@ def simulate(model, info, render=None):
     move_arm("g", "plug", "COPY DONE — UNPLUG", 1.0, head_frame(tip_w), lift=0.0)
     move_arm("g", "plug", "COPY DONE — UNPLUG", 0.4, head_frame(tip_w), opening=0.0, lift=0.0)
     st["usb"] = "held"
+    hold("plug", "COPY DONE — UNPLUG", 0.4, lambda u: st.update(seat=1.0 - u))
+    st["seat"] = 0.0
     move_arm("g", "plug", "COPY DONE — UNPLUG", 1.2, ARM_TUCK["g"], lift=0.02)
     freegait("retreat", "BACK OUT THE WAY IT CAME", s_mouth - 0.4, v=0.13, speed=SPEEDUP)
     hold("out", "", 2.0)
