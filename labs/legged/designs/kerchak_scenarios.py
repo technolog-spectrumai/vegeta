@@ -162,7 +162,7 @@ def window_prop(p):
                         _box("wall_right", (t / 2, (wall_w - w / 2) / 2, h / 2), (0.0, -w / 2 - (wall_w - w / 2) / 2, sill + h / 2), mass=200.0, friction=SLIPPERY),
                         _box("sill_plate", (t / 2 + 0.04, w / 2, 0.03), (0.0, 0.0, sill + 0.03), rgba=WOOD, mass=20.0)]
                  + ([_box("glass", (0.004, w / 2 - 0.01, h / 2 - 0.01), (0.0, 0.0, sill + h / 2), rgba=GLASS, mass=5.0)] if p.get("glass") and not p.get("sash") else [])
-                 + _table_with_banana(p.get("table_x", 3.4), p.get("table_y", 0.0)))
+                 + _table_with_banana(p.get("table_x", 3.4), p.get("table_y", 0.0), banana=p.get("banana", 1)))
     if p.get("sash"):                                                      # a casement: the glass in a wooden sash hinged on the left jamb, opening into the room
         fw, ws, hs = 0.04, w - 0.04, h - 0.04
         xs = -t / 2 + 0.03                                                 # the sash near the wall's outer face
@@ -193,11 +193,13 @@ def hammer_prop(p):
     return Prop(link, free=True)
 
 
-def _table_with_banana(tx, ty, top=0.75, depth=0.8, width=1.2):
+def _table_with_banana(tx, ty, top=0.75, depth=0.8, width=1.2, banana=1):
     """A table in the room (``tx`` beyond the wall, ``ty`` across) with a banana on it."""
     geoms = [_box("table_top", (depth / 2, width / 2, 0.02), (tx, ty, top - 0.02), rgba=WOOD, mass=15.0)]
     for i, (sx, sy) in enumerate(((-1, -1), (-1, 1), (1, -1), (1, 1))):
         geoms.append(_box(f"table_leg_{i}", (0.03, 0.03, (top - 0.04) / 2), (tx + sx * (depth / 2 - 0.05), ty + sy * (width / 2 - 0.05), (top - 0.04) / 2), rgba=WOOD, mass=3.0))
+    if not banana:
+        return geoms
     yellow = (0.95, 0.82, 0.2, 1.0)
     bx, by, bz = tx - 0.15, ty + 0.1, top + 0.03                           # the banana: three capsules on a gentle curve, lying on the top
     pts = [(bx - 0.1, by - 0.03, bz), (bx - 0.03, by + 0.0, bz + 0.005), (bx + 0.04, by + 0.0, bz + 0.005), (bx + 0.11, by - 0.03, bz)]

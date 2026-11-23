@@ -661,7 +661,7 @@ def heist_tree_prop(p):
 
 
 def _heist_window(p):
-    return {**gs.WINDOW, "x": p["x"] + p["wall_gap"], "y": p["window_y"], "glass": 1, "sash": 1, "table_x": p["table_x"], "table_y": p["table_y"]}
+    return {**gs.WINDOW, "banana": 0 if p.get("fire") else 1, "x": p["x"] + p["wall_gap"], "y": p["window_y"], "glass": 1, "sash": 1, "table_x": p["table_x"], "table_y": p["table_y"]}
 
 
 SASH_SHOVE = 0.16                #: how far the hammer shoves the sash open [rad]; it swings on to ``SASH_OPEN``
@@ -1155,3 +1155,143 @@ gs.BUILDERS["brachiate_up"] = ladder_prop
 gs.SCENARIOS["brachiate_up"] = scenario_brachiate
 gs.BUILDERS["brachiate"] = ladder_prop
 gs.SCENARIOS["brachiate"] = scenario_brachiate
+
+
+# ---- the firefighter: the heist by the jump, the table on fire instead of the banana; a helmet on the head, a hose
+# from the backpack with its nozzle in a holster on the pack's right side; in the room the monkey stops short of the
+# table, draws the nozzle over its right shoulder, braces the hose with the left hand and sprays the fire out
+
+FIRE = {**HEIST_JUMP, "fire": 1, "spray_range": 1.1}                       #: how far short of the fire it stops [m]
+HAT_ON_THORAX = (0.0, 0.0, 0.24)                                         #: the helmet's frame on the thorax (the head's top at ~0.3)
+NOZZLE = {"length": 0.2, "r": 0.018, "grip": 0.06}                         #: the nozzle: along its z, the grip this far up from its root
+HOLSTER_ON_THORAX = (np.array([-0.1, -0.13, 0.02]), 0.0)                 #: the nozzle's root in the holster (the pack's right side), upright
+
+
+def hat_prop(p):
+    red, yel, blk = (0.75, 0.08, 0.06, 1.0), (0.95, 0.78, 0.15, 1.0), (0.1, 0.1, 0.1, 1.0)
+    geoms = [Geom("hat_dome", "sphere", (0.074,), pos=(0.0, 0.0, 0.025), mass=0.15, role="link", rgba=red),
+             gs._cap("hat_brim", 0.006, (0.0, 0.0, -0.012), (0.0, 0.0, -0.006), rgba=red, mass=0.05),
+             Geom("hat_brim_disc", "cylinder", (0.105, 0.004), pos=(-0.02, 0.0, -0.01), mass=0.05, role="link", rgba=red),
+             gs._box("hat_badge", (0.006, 0.03, 0.028), (0.075, 0.0, 0.03), rgba=yel, mass=0.02),
+             gs._box("hat_comb", (0.06, 0.008, 0.012), (0.0, 0.0, 0.1), rgba=blk, mass=0.02)]
+    return Prop(Link("fire_hat", pos=(-6.0, 0.0, 4.0), geoms=geoms), free=True)
+
+
+def nozzle_prop(p):
+    brass, blk = (0.78, 0.62, 0.25, 1.0), (0.12, 0.12, 0.12, 1.0)
+    L, r = NOZZLE["length"], NOZZLE["r"]
+    geoms = [gs._cap("nozzle_grip", r, (0.0, 0.0, 0.0), (0.0, 0.0, 0.11), rgba=blk, mass=0.3),
+             gs._cap("nozzle_barrel", r * 0.8, (0.0, 0.0, 0.11), (0.0, 0.0, L - 0.02), rgba=brass, mass=0.3),
+             gs._cap("nozzle_tip", r * 0.5, (0.0, 0.0, L - 0.02), (0.0, 0.0, L), rgba=brass, mass=0.05)]
+    return Prop(Link("nozzle", pos=(-6.0, 1.0, 4.0), geoms=geoms), free=True)
+
+
+def fire_props(p):
+    return heist_props(p) + (hat_prop(p), nozzle_prop(p))
+
+
+def scenario_fire(kin, q_stand, p):
+    """The heist by the jump with the table on fire: the walk in the room stops ``spray_range`` short of the fire; the
+    right hand draws the nozzle from the holster over the shoulder; both hands aim it (the left braces the hose behind
+    the nozzle) and sweep the jet across the flames until they are out; the nozzle lowered."""
+    segs = scenario_heist(kin, q_stand, p)
+    w = _heist_window(p)
+    x_land = w["x"] + w["wall_thickness"] / 2 + 0.45
+    fire_c = np.array([w["x"] + p["table_x"] - 0.15, p["table_y"] + 0.1, 0.75])
+    x_stop = fire_c[0] - p["spray_range"]
+    lane = w["y"]
+    segs[-1] = ("gait", max(x_stop - x_land, 0.2) / 0.6, lane)
+    x_stop = x_land + max(x_stop - x_land, 0.2)
+    base = np.array([x_stop, lane, gm.STANCE["h"]])
+    pt = gm.STANCE["pitch"]
+    Rb = gm.base_rot(pt)
+    limbs = [j for j in kin.actuated if "spine" not in j and j != "waist_yaw" and "finger" not in j and "thumb" not in j and not j.startswith("tail")]
+    kin.set(q_stand)
+    feet = [(bd, l, Rb @ kin.world(bd, l) + base) for sd in ("L", "R") for bd, l in gm._contact_points(kin)[sd]]
+    th = kin.body("thorax")
+    R_th, p_th = Rb @ kin.data.xmat[th].reshape(3, 3), Rb @ kin.data.xpos[th] + base
+    root_w = R_th @ HOLSTER_ON_THORAX[0] + p_th
+    R_noz = R_th.copy()                                                    # upright in the holster: the nozzle's z the thorax's z
+    axis_h = R_noz[:, 2]
+    grip_h = root_w + axis_h * NOZZLE["grip"]
+    fr_h = gs.hand_frame_on(gs.bar(grip_h, axis=axis_h, n=-R_th[:, 1], r=NOZZLE["r"], wrist_dir=gs._unit(-R_th[:, 2] * 0.3 + R_th[:, 0] * 0.6 - R_th[:, 1] * 0.5)), "R")
+    hold_h = (grip_h, fr_h)
+    # the aim: the nozzle on the line from the chest to the fire's foot, held at the chest
+    d = gs._unit(fire_c + np.array([0.0, 0.0, 0.05]) - (p_th + np.array([0.3, 0.0, 0.0])))
+    def aim(yaw):
+        c_, s_ = math.cos(yaw), math.sin(yaw)
+        dd = np.array([c_ * d[0] - s_ * d[1], s_ * d[0] + c_ * d[1], d[2]])
+        grip = p_th + np.array([0.28, -0.08, -0.12])
+        return dd, (grip, gs.hand_frame_on(gs.bar(grip, axis=dd, n=(0.0, 0.0, 1.0), r=NOZZLE["r"], wrist_dir=gs._unit(-dd + np.array([0.0, -0.3, -0.5]))), "R"))
+    def brace(yaw):
+        dd, (grip, _) = aim(yaw)
+        c = grip - 0.2 * dd + np.array([0.0, 0.1, 0.0])
+        return (c, gs.hand_frame_on(gs.bar(c, axis=dd, n=(0.0, 0.0, 1.0), r=0.015, wrist_dir=gs._unit(-dd + np.array([0.0, 0.3, -0.5]))), "L"))
+    kin.set(q_stand)
+    hand0 = {sd: gs._hand_pose(kin, q_stand, base, pt, sd) for sd in ("L", "R")}
+    up_over = p_th + R_th @ np.array([0.05, -0.15, 0.32])                  # over the right shoulder
+    T = lambda tg: [(bd, l, Rb.T @ (np.asarray(wp) - base)) for bd, l, wp in tg]
+    fixed = lambda u: (base[0], base[1], base[2], pt)
+
+    def r_draw(u):
+        Rh0, ph0 = hand0["R"]
+        if u < 0.5:                                                        # up over the shoulder and down onto the grip
+            f = mk.smooth(u / 0.5)
+            c = (1 - f) * ph0 + f * grip_h + (up_over - 0.5 * (ph0 + grip_h)) * math.sin(math.pi * f)
+            Rf = gs._slerp(Rh0, fr_h, f)
+            return feet + gs._hand_at(kin, "R", c, Rf)
+        f = mk.smooth((u - 0.5) / 0.5)                                     # out of the holster, over the shoulder, to the aim
+        dd, (ga, fa) = aim(0.0)
+        c = (1 - f) * grip_h + f * ga + (up_over - 0.5 * (grip_h + ga)) * math.sin(math.pi * f) * 0.7
+        return feet + gs._hand_at(kin, "R", c, gs._slerp(fr_h, fa, f))
+
+    def x_draw(u, q_):
+        c = gs.CURL_OPEN if u < 0.45 else gs.CURL_CLOSED
+        sr.set_curl(q_, kin, "R", c)
+        return q_
+    gt.SOLID and setattr(gt.SOLID, "ignore", {"glass"})
+    draw = gt.contact_motion(kin, "draw_the_hose", 2.4, r_draw, fixed, q_init=q_stand, extra=x_draw, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                             q_ref=q_stand, source="gibbon_scenarios.fire: the nozzle drawn from the holster over the right shoulder")
+    # the nozzle in the hand, from the grasp (u 0.5)
+    q_g, _ = kin.ik(T(r_draw(0.5)), q_init=q_stand, q_ref=q_stand, joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)   # the pose at the grasp
+    R_hand_g, p_hand_g = gs._hand_pose(kin, q_g, base, pt, "R")
+    R_h2m = R_hand_g.T @ R_noz
+    p_h2m = R_hand_g.T @ (root_w - p_hand_g)
+    draw.params = {**(draw.params or {}), "nozzle_T": (R_h2m.tolist(), p_h2m.tolist()), "grasp_u": 0.5,
+                   "nozzle_carry": ("thorax", np.eye(3).tolist(), HOLSTER_ON_THORAX[0].tolist()), "hand": "R_hand"}
+    q1 = gt._last(kin, draw, q_stand)
+    SWEEP = math.radians(9.0)
+
+    def t_spray(u):
+        yaw = SWEEP * math.sin(2.0 * math.pi * 1.5 * max(0.0, u - 0.15) / 0.85) if u > 0.15 else 0.0
+        dd, (ga, fa) = aim(yaw)
+        out = feet + gs._hand_at(kin, "R", ga, fa)
+        cL, fL = brace(yaw)
+        Rl0, pl0 = hand0["L"]
+        f = mk.smooth(min(1.0, u / 0.15))
+        return out + gs._hand_at(kin, "L", (1 - f) * pl0 + f * cL, gs._slerp(Rl0, fL, f))
+
+    def x_spray(u, q_):
+        sr.set_curl(q_, kin, "R", gs.CURL_CLOSED)
+        sr.set_curl(q_, kin, "L", gs.CURL_CLOSED if u > 0.12 else gs.CURL_OPEN)
+        return q_
+    spray = gt.contact_motion(kin, "spray_the_fire", 5.5, t_spray, fixed, q_init=q1, extra=x_spray, reg=gs.IK_REG, iters=gs.IK_ITERS,
+                              q_ref=q_stand, source="gibbon_scenarios.fire: both hands on the hose, the jet swept across the flames")
+    spray.params = {**(spray.params or {}), "spray_u": (0.15, 0.95), "out_u": 0.8, "fire": fire_c.tolist()}
+    q2 = gt._last(kin, spray, q1)
+
+    def t_lower(u):
+        f = mk.smooth(u)
+        dd, (ga, fa) = aim(0.0)
+        low = ga + np.array([-0.1, -0.05, -0.35])
+        fl = gs.hand_frame_on(gs.bar(low, axis=gs._unit(np.array([0.5, 0.0, -0.85])), n=(1.0, 0.0, 0.0), r=NOZZLE["r"], wrist_dir=(0.0, -0.2, 1.0)), "R")
+        return feet + gs._hand_at(kin, "R", (1 - f) * ga + f * low, gs._slerp(fa, fl, f))
+    lower = gt.contact_motion(kin, "lower_the_hose", 1.4, t_lower, fixed, q_init=q2, extra=lambda u, q_: sr.set_curl(sr.set_curl(q_, kin, "R", gs.CURL_CLOSED), kin, "L", gs.CURL_OPEN),
+                              reg=gs.IK_REG, iters=gs.IK_ITERS, q_ref=q_stand, source="gibbon_scenarios.fire: the fire out, the nozzle lowered")
+    gt.SOLID and setattr(gt.SOLID, "ignore", set())
+    return segs + [("motion", draw), ("motion", spray), ("motion", lower)]
+
+
+gs.DEFAULTS["fire"] = FIRE
+gs.SCENARIOS["fire"] = scenario_fire
+gs.COMPOSITE["fire"] = fire_props

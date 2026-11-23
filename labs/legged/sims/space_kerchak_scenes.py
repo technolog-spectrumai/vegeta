@@ -40,7 +40,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"fire": (14.0, 225.0), "heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -107,7 +107,7 @@ class ScenePlayer:
             freep = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "backpack"]
             self._pack = {"adr": m.jnt_qposadr[freep[0]], "thorax": m.body("thorax").id}
         self.impact = None
-        if scene in ("window_hammer", "heist", "heist_jump"):
+        if scene in ("window_hammer", "heist", "heist_jump", "fire"):
             m = self.model
             free = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "hammer"]
             by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
@@ -122,6 +122,20 @@ class ScenePlayer:
                 self._hammer["carry"] = (m.body(bn).id, np.array(Rc), np.array(pc))
             self.impact = smash[1].params.get("impact")
             self.strike_t = smash[0] + smash[1].params["strike_u"] * smash[1].period
+        self._fire = None
+        if scene == "fire":
+            m = self.model
+            fj = lambda name: m.jnt_qposadr[[j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == name][0]]
+            by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
+            dr, sp = by_name["draw_the_hose"], by_name["spray_the_fire"]
+            R_h2m, p_h2m = (np.array(v) for v in dr[1].params["nozzle_T"])
+            bn, Rc, pc = dr[1].params["nozzle_carry"]
+            u0, u1 = sp[1].params["spray_u"]
+            self._fire = {"hat": fj("fire_hat"), "nozzle": fj("nozzle"), "thorax": m.body("thorax").id, "hand": m.body(dr[1].params["hand"]).id,
+                          "R_h2m": R_h2m, "p_h2m": p_h2m, "carry": (m.body(bn).id, np.array(Rc), np.array(pc)),
+                          "t_grasp": dr[0] + dr[1].params["grasp_u"] * dr[1].period, "t_on": sp[0] + u0 * sp[1].period,
+                          "t_off": sp[0] + u1 * sp[1].period, "t_out": sp[0] + sp[1].params["out_u"] * sp[1].period,
+                          "fire": np.array(sp[1].params["fire"]), "rng": np.random.default_rng(3)}
         self.reset()
 
     def segment(self, t):
@@ -186,6 +200,9 @@ class ScenePlayer:
         if self._hammer is not None:
             self._hammer_pose(t)
             mujoco.mj_kinematics(self.model, d)
+        if self._fire is not None:
+            self._fire_props(t)
+            mujoco.mj_kinematics(self.model, d)
 
     def shards(self, t):
         """The pane's shards after the blow: a jittered grid of glass triangles thrown from the impact point into the
@@ -240,6 +257,109 @@ class ScenePlayer:
         cols = np.repeat([[0.72, 0.86, 0.92]], len(tris), axis=0)
         return tris, cols
 
+    def _fire_props(self, t):
+        """The helmet on the head; the nozzle in its holster on the pack until the grasp, then in the right hand."""
+        import gibbon_scenarios as gb
+        F, d = self._fire, self.data
+
+        def put(adr, p, R):
+            q = np.zeros(4)
+            mujoco.mju_mat2Quat(q, np.asarray(R, dtype=float).reshape(9))
+            d.qpos[adr:adr + 3], d.qpos[adr + 3:adr + 7] = p, q
+        Rt, pt_ = d.xmat[F["thorax"]].reshape(3, 3), d.xpos[F["thorax"]]
+        put(F["hat"], pt_ + Rt @ np.array(gb.HAT_ON_THORAX), Rt)
+        if t < F["t_grasp"]:
+            bid, Rc, pc = F["carry"]
+            Rb = d.xmat[bid].reshape(3, 3)
+            put(F["nozzle"], d.xpos[bid] + Rb @ pc, Rb @ Rc)
+        else:
+            Rh, ph = d.xmat[F["hand"]].reshape(3, 3), d.xpos[F["hand"]]
+            put(F["nozzle"], ph + Rh @ F["p_h2m"], Rh @ F["R_h2m"])
+
+    def extras(self, t):
+        """Everything the renderer adds this frame: the pane's shards, the hose, the water jet, the flames."""
+        parts = [x for x in (self.shards(t), self._fire_extras(t) if self._fire is not None else None) if x is not None and len(x[0])]
+        if not parts:
+            return None
+        return np.concatenate([p_[0] for p_ in parts]), np.concatenate([p_[1] for p_ in parts])
+
+    def _fire_extras(self, t):
+        import gibbon_scenarios as gb
+        F, d, m = self._fire, self.data, self.model
+        tris, cols = [], []
+
+        def tube(pts, r, col, k=8):
+            for a, b in zip(pts[:-1], pts[1:]):
+                ax = b - a
+                n = np.linalg.norm(ax)
+                if n < 1e-6:
+                    continue
+                ax = ax / n
+                u = np.cross(ax, [0.0, 0.0, 1.0] if abs(ax[2]) < 0.9 else [1.0, 0.0, 0.0]); u /= np.linalg.norm(u)
+                v = np.cross(ax, u)
+                for i in range(k):
+                    a0, a1 = 2 * math.pi * i / k, 2 * math.pi * (i + 1) / k
+                    o0, o1 = r * (math.cos(a0) * u + math.sin(a0) * v), r * (math.cos(a1) * u + math.sin(a1) * v)
+                    tris.extend([[a + o0, b + o0, b + o1], [a + o0, b + o1, a + o1]]); cols.extend([col, col])
+        # the hose: from the pack's bottom to the nozzle's root, sagging under its weight
+        Rt, pt_ = d.xmat[F["thorax"]].reshape(3, 3), d.xpos[F["thorax"]]
+        p0 = pt_ + Rt @ np.array([-0.12, -0.05, -0.1])
+        nid = m.body("nozzle").id
+        Rn, pn = d.xmat[nid].reshape(3, 3), d.xpos[nid]
+        p1 = pn - Rn[:, 2] * 0.02
+        L = np.linalg.norm(p1 - p0)
+        pts = []
+        for i in range(17):
+            s_ = i / 16
+            pts.append((1 - s_) * p0 + s_ * p1 - Rn[:, 2] * 0.15 * (s_ ** 2) * (1 - s_) * 3 + np.array([0.0, 0.0, -0.25 * min(L, 0.8) * math.sin(math.pi * s_)]))
+        tube(np.array(pts), 0.016, (0.72, 0.12, 0.1))
+        # the flames: tongues on the table, dying from the moment the water reaches them
+        fc = F["fire"]
+        life = 1.0 if t < F["t_on"] + 0.3 else max(0.0, 1.0 - mk.smooth((t - F["t_on"] - 0.3) / max(F["t_out"] - F["t_on"] - 0.3, 0.1)))
+        rng = np.random.default_rng(int(t * 30))
+        if life > 0.0:
+            for i in range(26):
+                ang = 2 * math.pi * i / 26
+                rr = 0.2 * ((i * 7) % 5) / 5
+                b = fc + np.array([rr * math.cos(ang), rr * math.sin(ang) * 1.3, 0.0])
+                h = life * (0.25 + 0.2 * rng.random()) * (1.0 - 0.6 * rr / 0.2)
+                w_ = 0.05 + 0.03 * rng.random()
+                sway = np.array([0.03 * rng.normal(), 0.03 * rng.normal(), 0.0])
+                for k_, (c_, f_) in enumerate((((1.0, 0.45, 0.05), 1.0), ((1.0, 0.85, 0.2), 0.55))):
+                    hh, ww = h * f_, w_ * f_
+                    for dirv in (np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])):
+                        tris.append([b - dirv * ww + np.array([0, 0, 0.002 * k_]), b + dirv * ww + np.array([0, 0, 0.002 * k_]), b + sway + np.array([0.0, 0.0, hh])]); cols.append(c_)
+        if t > F["t_on"] + 0.3:                                            # the char where it burnt
+            for i in range(10):
+                a0, a1 = 2 * math.pi * i / 10, 2 * math.pi * (i + 1) / 10
+                tris.append([fc + [0, 0, 0.003], fc + [0.24 * math.cos(a0), 0.3 * math.sin(a0), 0.003], fc + [0.24 * math.cos(a1), 0.3 * math.sin(a1), 0.003]])
+                cols.append((0.12, 0.1, 0.09))
+        # the jet: drops leaving the tip at 7 m/s along the nozzle, falling, stopped by the table top or the floor
+        if F["t_on"] <= t:
+            tip = pn + Rn[:, 2] * gb.NOZZLE["length"]
+            v0 = 7.0
+            for k in range(70):
+                age = k * 0.012
+                if t - age < F["t_on"] or t - age > F["t_off"]:
+                    continue
+                q = tip + Rn[:, 2] * v0 * age + np.array([0.0, 0.0, -0.5 * 9.81 * age * age])
+                q = q + np.random.default_rng(k + int(t * 50)).normal(0.0, 0.004 + 0.02 * age, 3)
+                if q[2] < 0.76 and abs(q[0] - fc[0]) < 0.4 and abs(q[1] - fc[1]) < 0.6:
+                    q[2] = 0.765
+                if q[2] < 0.0:
+                    continue
+                sz = 0.012 + 0.02 * age
+                tris.append([q + [-sz, 0, 0], q + [sz, 0, 0], q + [0, 0, sz * 1.5]]); cols.append((0.55, 0.75, 0.95))
+                tris.append([q + [0, -sz, 0], q + [0, sz, 0], q + [0, 0, -sz * 1.2]]); cols.append((0.75, 0.88, 1.0))
+            if t > F["t_out"] - 0.5 and t < F["t_off"] + 1.5:              # steam off the doused fire
+                for k in range(14):
+                    g_ = np.random.default_rng(k)
+                    rise = ((t * 0.5 + k / 14.0) % 1.0)
+                    c = fc + np.array([g_.normal(0, 0.12), g_.normal(0, 0.15), 0.1 + 0.6 * rise])
+                    sz = 0.04 + 0.08 * rise
+                    tris.append([c + [-sz, 0, -sz], c + [sz, 0, -sz], c + [0, 0, sz]]); cols.append((0.85, 0.85, 0.85))
+        return np.array(tris, dtype=float), np.array(cols, dtype=float)
+
     def _hammer_pose(self, t):
         """The hammer through the sequence: lying where the hand finds it, in the hand from the grasp to the release,
         then falling (no tumble) and lying where it lands."""
@@ -284,7 +404,7 @@ class ScenePlayer:
 
     def _scene_joints(self, t):
         """The scene's own joints along the sequence (kinematic playback: the door's lever and hinge follow the hand)."""
-        if self.scene in ("heist", "heist_jump"):                                        # the sash: shoved open by the hammer, then it swings on
+        if self.scene in ("heist", "heist_jump", "fire"):                                        # the sash: shoved open by the hammer, then it swings on
             m = self.model
             adr = m.jnt_qposadr[m.joint("sash_hinge").id]
             seg = [(s0, sg[1]) for s0, sg in zip(self.starts, self.segments) if sg[0] == "motion" and sg[1].name == "push_the_window"]
@@ -396,7 +516,7 @@ def main(argv=None):
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (gs.WINDOW["x"] - 0.1)) / 0.9)))
                 az = azim + 60.0 * f
             renderer.hidden = {"glass"} if (g.strike_t is not None and t >= g.strike_t) else set()
-            if a.scene in ("heist", "heist_jump"):                                       # through the window: the walls stay, the camera comes round into the room
+            if a.scene in ("heist", "heist_jump", "fire"):                                       # through the window: the walls stay, the camera comes round into the room
                 P = gs.params_for(a.scene, params)
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (P["x"] + P["wall_gap"] - 0.2)) / 0.6)))
                 az = azim + 110.0 * f
@@ -406,7 +526,7 @@ def main(argv=None):
                     renderer.hidden |= {"wall_above", "wall_below", "wall_left", "wall_right", "sill_plate"}
                 if c[0] > P["door_x"] - 0.05:
                     renderer.hidden |= {"door_wall_left", "door_wall_right", "post_left", "post_right", "lintel", "door_panel", "handle_shaft", "handle_lever"}
-            renderer.extra = g.shards(t)
+            renderer.extra = g.extras(t)
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
             renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
