@@ -20,6 +20,7 @@ not solve (the fingers, the wrist's roll) are set by ``extra``.
 from __future__ import annotations
 
 import math
+import os
 import re
 
 import numpy as np
@@ -126,7 +127,7 @@ def _contacts_world(kin, q, base_x, h, pitch):
 
 
 SOLID = None                                                              #: a ``solidity.Solid`` while a scene's motions are solved: the frames re-solved clear of the props
-SOLID_PASSES = 8                                                          #: push-out rounds per frame
+SOLID_PASSES = int(os.environ.get("VEGETA_SOLID_PASSES", "8"))  #: push-out rounds per frame
 SOLID_GIVE = 0.03                                                         #: how much hold error a push-out may add before it is dropped [m]
 SOLID_WEIGHT = 0.6                                                        #: a push-out target's weight against the holds' (the hold wins a conflict, the limb finds another way round)
 
