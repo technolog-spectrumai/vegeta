@@ -376,7 +376,7 @@ LIMIT_K, LIMIT_KQ = 6.0, 0.10               # deg of elevator per deg over the l
 # its CFD gave a Dutch roll damped 0.05-0.06, a short period damped 0.20 at 30 m/s and 7.0 g in a 60 m/s doublet.
 SAS = {"twin": {"yaw_k": 0.25, "yaw_washout_s": 1.0,     # rudder [deg] per deg/s of yaw rate, the steady turn's rate washed out
                 "pitch_k": 0.06, "pitch_v_ref": 30.0,    # elevator [deg] per deg/s of pitch rate at 30 m/s, less with speed (x 30 / V)
-                "g_max": 5.0}}                           # HAND: no structural rating exists; the card's best sustained turn is 5.0 g
+                "g_max": 8.0}}                           # the client's choice (2026-11-23); the airframe must be built to it (astor_twin's budget: +100 g, HAND)
 
 
 def alpha_for_g(C, V, n) -> float:

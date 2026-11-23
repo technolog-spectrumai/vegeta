@@ -22,6 +22,7 @@ import astor_v_flight as VF
 
 SPEEDS = (22.0, 25.0, 30.0, 40.0, 50.0, 60.0, 80.0)
 BLOWN_EFF = 0.8              # HAND (+-0.15): the share of the slipstream's extra dynamic pressure the wing behind a propeller turns into lift
+# the g limit is astor_v_flight.SAS's (8 g since 2026-11-23; the old wing's numbers below were at 5 g)
 OLD_THIN_WING = {"stall_m_s": 21.9, "radius_m": {25.0: 95.8, 30.0: 65.0, 40.0: 56.1, 50.0: 54.2, 60.0: 74.9, 80.0: 133.2},
                  "source": "this study on the 8 % thick, 2 % cambered wing's CFD (commit bbffdbe), 5 g limit"}
 
@@ -82,7 +83,7 @@ def options() -> dict:
     up, dn = envelope(0.0), envelope(1.0)
     out = {"flaps up (CFD)": up, "flaps down 20 deg (CFD)": dn, "flaps as needed (CFD)": [dn[0]] + best(up, dn)[1:],
            "+ the propellers' slipstream at full throttle (HAND)": [dn[0]] + best(envelope(0.0, True), envelope(1.0, True))[1:],
-           "+ slipstream and an 8 g structure (HAND: +100 g)": [dn[0]] + best(envelope(0.0, True, 8.0, 0.10), envelope(1.0, True, 8.0, 0.10))[1:]}
+           }
     return {"old_thin_wing": OLD_THIN_WING, "hand": {"slipstream_efficiency": BLOWN_EFF, "g_limit_now": VF.SAS["twin"]["g_max"]}, "options": {k: {"envelope": v} for k, v in out.items()}}
 
 

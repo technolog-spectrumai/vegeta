@@ -56,10 +56,13 @@ mass:
   - item: 'ailerons along the whole outer wing piece: 2 larger servos'
     g: 16
     source: 'HAND (+-8): 2 x 20 g in place of 2 x 12 g'
+  - item: '8 g rating: heavier spar, joiners and tail spigot'
+    g: 100
+    source: 'HAND (+-50): no structure is sized yet'
   - item: growth margin 10 % of the additions
-    g: 155
+    g: 165
     source: HAND
-  total_kg: 5.3
+  total_kg: 5.41
 tail:
   kind: two all-moving halves (pitch together, roll against each other) and one fin
   each_half_mm:
@@ -79,7 +82,7 @@ ailerons:
   - 0.96
   chord_fraction: 0.3
 stall_spread_m_s:
-  value: 19.4
+  value: 19.6
   note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
-wing_loading_kg_m2: 20.3
+wing_loading_kg_m2: 20.8
 current_A_at_8_kW: 190

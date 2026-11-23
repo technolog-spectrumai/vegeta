@@ -35,6 +35,14 @@ def sweeps(design) -> tuple:
     return (12.0,) if design.startswith("twin") else tuple(CASES)
 
 
+EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
+
+
+def alphas(design, sweep) -> tuple:
+    """The angles of attack run for this design at this sweep."""
+    return tuple(sorted(set(CASES[sweep][2]) | set(EXTRA_ALPHA.get(design, ()))))
+
+
 def key(design, sweep) -> str:
     return f"{design}_sweep{sweep:.0f}"
 

@@ -84,7 +84,7 @@ def phase_cfd(a) -> int:
     import astor_v_cfd as cf
     quality = "fine" if a.full_cfd else a.quality
     a.designs = [x for d in a.designs for x in CFD_STATES.get(d, [d])]       # a design's CFD is its states' (ASTOR-TWIN: flaps up, flaps down)
-    todo_all = [(d, s, al) for d in a.designs for s in cf.sweeps(d) for al in cf.CASES[s][2]]
+    todo_all = [(d, s, al) for d in a.designs for s in cf.sweeps(d) for al in cf.alphas(d, s)]
     if a.dry_run:
         for d, s, al in todo_all:
             print(f"cfd  {NAMES[d]:12s} sweep {s:4.0f} deg  V {cf.CASES[s][0]:4.0f} m/s  alpha {al:+5.1f}")
@@ -330,7 +330,7 @@ def phase_netshot(a) -> int:
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.CASES[s][2]) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
+    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 

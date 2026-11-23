@@ -416,6 +416,7 @@ def checks() -> dict:
              ("tail: the blades' fold actuator off; two all-moving halves on spigots, 2 servos", 10.0, "HAND (+-12): -40 g (astor_v.budget's item) + 2 x 17 g servos + 16 g spigots and bearings"),
              ("tail and fin area against ASTOR-T's", 1000 * A.TAIL_KG_M2 * (_tail_m2(p) - 0.0704), f"geometry {_tail_m2(p):.4f} m2 against 0.0704 m2 x {A.TAIL_KG_M2} kg/m2"),
              ("ailerons along the whole outer wing piece: 2 larger servos", 16.0, "HAND (+-8): 2 x 20 g in place of 2 x 12 g"),
+             ("8 g rating: heavier spar, joiners and tail spigot", 100.0, "HAND (+-50): no structure is sized yet"),
              ("growth margin 10 % of the additions", 0.0, "HAND")]
     add = sum(x[1] for x in items[1:-1])
     items[-1] = (items[-1][0], 0.10 * add, "HAND")
