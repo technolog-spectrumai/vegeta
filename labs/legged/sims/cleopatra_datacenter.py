@@ -201,7 +201,8 @@ def robot_path():
 # ---- Cleopatra v2's pincer arms (``myropod.Myropod`` ``arms``), head frame [m]: a shoulder (yaw + pitch) under the
 # head's front, an upper arm, an elbow, a forearm and a pincer — the flat gripper on the left (it carries the pendrive),
 # the scissor cutter on the right
-ARM = {"base_x": 0.055, "base_y": 0.035, "base_z": -0.028, "upper": 0.115, "fore": 0.110, "finger": 0.022}
+ARM = {"base_x": 0.055, "base_y": 0.033, "base_z": -0.042, "upper": 0.115, "fore": 0.110, "finger": 0.022}
+#: (``myropod_robot.ARM_V2``: the robot's jointed arms; the video poses their joints)
 ARM_TUCK = {"g": np.array([0.11, 0.035, -0.045]), "c": np.array([0.105, -0.035, -0.045])}
 HOLE_R = R_DUCT + 0.004                                                   # the hole the cutter cuts: the full bore
 USB_HALF = 0.0225                                                         # the pendrive body's half length
@@ -447,18 +448,13 @@ def build(width, height, cache: Path):
         G(sleeper, type="sphere", size="0.05", pos=f"0.16 {sy * 0.25} 0.5", rgba=skin)
     G(sleeper, type="ellipsoid", size="0.12 0.14 0.16", pos="0.08 -0.45 0.12", rgba="0.6 0.5 0.32 1")
     G(sleeper, name="snore", type="sphere", size="0.012", pos="-0.06 0.05 0.97", rgba=white)
-    # ---- the pincer arms (mocap bodies posed from the head by their IK): upper arm, forearm, two fingers each
-    for arm in ("g", "c"):
-        up = ET.SubElement(world, "body", {"name": f"arm_{arm}_up", "mocap": "true", "pos": "0 0 -5"})
-        G(up, type="mesh", mesh="m:arm_upper", material="cleo:leg")
-        fo = ET.SubElement(world, "body", {"name": f"arm_{arm}_fore", "mocap": "true", "pos": "0 0 -5"})
-        G(fo, type="mesh", mesh="m:arm_fore", material="cleo:leg")
+    # ---- the jointed arms (the robot's links): their CAD on them
+    for arm, tool in (("gripper", "jaw"), ("cutter", "blade")):
+        G(bodies[f"{arm} upper arm"], type="mesh", mesh="m:arm_upper", material="cleo:leg", mass="0")
+        G(bodies[f"{arm} forearm"], type="mesh", mesh="m:arm_fore", material="cleo:leg", mass="0")
         for k in (1, 2):
-            fi = ET.SubElement(world, "body", {"name": f"arm_{arm}_f{k}", "mocap": "true", "pos": "0 0 -5"})
-            if arm == "g":                                                # the gripper: flat padded jaws
-                G(fi, type="mesh", mesh=f"m:jaw_{k}", material="dark")
-            else:                                                         # the cutter: scissor blades
-                G(fi, type="mesh", mesh=f"m:blade_{k}", material="blade")
+            G(bodies[f"{arm} jaw {k}"], type="mesh", mesh=f"m:{tool}_{k}", mass="0",
+              material="dark" if arm == "gripper" else "blade")
     # ---- the pendrive (a mocap body: held, plugged in, held again)
     usb = ET.SubElement(world, "body", {"name": "usb", "mocap": "true", "pos": "0 0 -5"})
     G(usb, type="box", size="0.0225 0.008 0.0042", rgba="0.1 0.3 0.85 1")
@@ -497,7 +493,8 @@ def simulate(model, info, render=None):
             continue
         z = 0.022 * (k - 6)
         slats[k] = (b_.mocapid[0], math.sqrt(HOLE_R ** 2 - z * z), Z_IN + z)
-    arm_ids = {(a_, k): model.body(f"arm_{a_}_{k}").mocapid[0] for a_ in ("g", "c") for k in ("up", "fore", "f1", "f2")}
+    arm_q = {a_: [model.joint(j).qposadr[0] for j in mr.arm_joints(name)] for a_, name in (("g", "gripper"),
+                                                                                               ("c", "cutter"))}
     sleeper = model.body("sleeper").mocapid[0]
     bar = model.geom("bar").id
     snore = model.geom("snore").id
@@ -669,32 +666,38 @@ def simulate(model, info, render=None):
         F[lg], N[lg] = foothold(lg, seg_pose(lg[0]))
 
     def arm_pose(arm, tip_h):
-        """The arm's world points with the head where it is: (base, elbow, tip, forearm direction, lateral) from its
-        pincer tip target in the head frame (2-link IK in the vertical plane through the target, the elbow up)."""
+        """The arm's joint angles (shoulder yaw, shoulder pitch, elbow) for its pincer tip target in the head frame —
+        both elbow solutions tried, each clamped to the joints' ranges, the closer kept — and the world points they
+        give: (angles, base, elbow, tip, forearm direction)."""
         hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
         sy = 1.0 if arm == "g" else -1.0
         b = np.array([ARM["base_x"], sy * ARM["base_y"], ARM["base_z"]])
         v = np.asarray(tip_h) - b
+        L1, L2 = ARM["upper"], ARM["fore"]
         yaw = math.atan2(v[1], v[0])
         r, h = math.hypot(v[0], v[1]), v[2]
-        L1, L2 = ARM["upper"], ARM["fore"]
         d = min(max(math.hypot(r, h), abs(L1 - L2) + 1e-3), L1 + L2 - 1e-4)
         e = math.acos(max(-1.0, min(1.0, (d * d - L1 ** 2 - L2 ** 2) / (2 * L1 * L2))))
-        th = math.atan2(h, r) + math.atan2(L2 * math.sin(e), L1 + L2 * math.cos(e))
-        el = b + L1 * np.array([math.cos(th) * math.cos(yaw), math.cos(th) * math.sin(yaw), math.sin(th)])
-        dvec = b + d * np.array([math.cos(math.atan2(h, r)) * math.cos(yaw), math.cos(math.atan2(h, r)) * math.sin(yaw),
-                                 math.sin(math.atan2(h, r))]) - el
-        dvec /= np.linalg.norm(dvec)
-        tip = el + L2 * dvec
+        rng = mr.ARM_RANGES
+        best = None
+        for sgn in (1.0, -1.0):                                           # elbow up, elbow down
+            th = math.atan2(h, r) + sgn * math.atan2(L2 * math.sin(e), L1 + L2 * math.cos(e))
+            ph = th - sgn * e                                             # the forearm's elevation
+            q = [yaw, -th, th - ph]                                       # + pitch / elbow lower (about +y)
+            q[2] = (q[2] + math.pi) % (2 * math.pi) - math.pi
+            q = [float(np.clip(q[0], *rng["shoulder_yaw"])), float(np.clip(q[1], *rng["shoulder_pitch"])),
+                 float(np.clip(q[2], *rng["elbow"]))]
+            th_c, ph_c = -q[1], -q[1] - q[2]
+            def dirn(a, y_=q[0]):
+                return np.array([math.cos(a) * math.cos(y_), math.cos(a) * math.sin(y_), math.sin(a)])
+            el = b + L1 * dirn(th_c)
+            tip = el + L2 * dirn(ph_c)
+            err = float(np.linalg.norm(tip - np.asarray(tip_h)))
+            if best is None or err < best[0]:
+                best = (err, q, el, tip, dirn(ph_c))
+        _, q, el, tip, dv = best
         W = lambda x: hp + hR @ x
-        lat = hR @ np.array([-math.sin(yaw), math.cos(yaw), 0.0])
-        return W(b), W(el), W(tip), hR @ dvec, lat
-
-    def frame_x(d, lat):
-        d = d / np.linalg.norm(d)
-        lat = lat - (lat @ d) * d
-        lat /= np.linalg.norm(lat)
-        return np.column_stack([d, lat, np.cross(d, lat)])
+        return q, W(b), W(el), W(tip), hR @ dv
 
     def props():
         t = st["t"]
@@ -702,16 +705,10 @@ def simulate(model, info, render=None):
         # the arms and their pincers
         for arm in ("g", "c"):
             tip_h, opening = st["arm"][arm]
-            b, el, tip, d, lat = arm_pose(arm, tip_h)
-            data.mocap_pos[arm_ids[(arm, "up")]] = b
-            data.mocap_quat[arm_ids[(arm, "up")]] = mat2quat(frame_x(el - b, lat))
-            data.mocap_pos[arm_ids[(arm, "fore")]] = el
-            Rf = frame_x(d, lat)
-            data.mocap_quat[arm_ids[(arm, "fore")]] = mat2quat(Rf)
-            ang = 0.08 + 0.5 * opening
-            for k, sg in (("f1", 1.0), ("f2", -1.0)):
-                data.mocap_pos[arm_ids[(arm, k)]] = tip + Rf[:, 1] * sg * 0.004
-                data.mocap_quat[arm_ids[(arm, k)]] = mat2quat(Rf @ rot_z(sg * ang))
+            q, _, _, tip, d = arm_pose(arm, tip_h)
+            jaw = float(np.clip(0.04 + 0.55 * opening, *mr.ARM_RANGES["jaw"]))
+            for adr, val in zip(arm_q[arm], [*q, jaw, jaw]):                # the robot's arm joints
+                data.qpos[adr] = val
             if arm == "g":
                 st["grip"] = (tip + d * GRIP_IN, d)
         if st["usb"] == "held":                                           # in the gripper, pointing ahead
@@ -789,8 +786,9 @@ def simulate(model, info, render=None):
                 s_try = sc + sgn * min(v * step, abs(s_to - sc))
                 place_body(s_try)
                 planted = [lg for lg in legs if lg not in swing]
-                ok = all(np.linalg.norm(F[lg] - foothold(lg, seg_pose(lg[0]))[0]) < reach for lg in planted)
-                wall_ok = all(on_right_side(lg, F[lg]) and in_reach(lg, F[lg]) for lg in planted)   # hard rules
+                ok = all(np.linalg.norm(F[lg] - foothold(lg, seg_pose(lg[0]))[0]) < reach and in_reach(lg, F[lg])
+                         for lg in planted)
+                wall_ok = all(on_right_side(lg, F[lg]) for lg in planted)                  # the hard rule
                 if os.environ.get("CM_DEBUG") and int(st["t"] * 10) % 20 == 0:
                     bad = [lg for lg in planted if not on_right_side(lg, F[lg])]
                     print(f"    t {st['t']:.1f} sc {sc:.3f} ok {ok} swing {sorted(swing)} wrong side {bad} "
