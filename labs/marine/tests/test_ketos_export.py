@@ -47,9 +47,17 @@ def test_scampi_and_echensis_export(tmp_path):
     sc = json.load(open(tmp_path / "scampi.card.json"))
     cy_keys = {"schema", "version", "name", "kind", "parts", "size", "mass_kg", "displacement_L", "net_buoyancy_kg", "cd",
                "thrusters", "battery_Wh", "hotel_W", "max_depth_m", "inspect_speed_m_s", "camera_swath_m", "tools", "tether",
-               "resident", "price_eur"}
+               "resident", "price_eur", "effectors"}
     assert set(sc) == cy_keys and sc["kind"] == "rov" and sc["tether"] is None and sc["resident"] is True
-    assert len(sc["thrusters"]) == 8 and 60 <= sc["mass_kg"] <= 120 and sc["size"] == [1.5, 0.8, 0.56]
+    assert len(sc["thrusters"]) == 8 and 60 <= sc["mass_kg"] <= 121 and sc["size"] == [1.5, 0.8, 0.56]
+    ef = sc["effectors"]                                 # two grippers (one per arm) and the quick-change cutter
+    assert {ef["gripper_l"]["arm"], ef["gripper_r"]["arm"]} == {"hold", "work"} and ef["cutter"]["arm"] == "work"
+    assert sc["tools"]["gripper"]["count"] == 2 and sc["tools"]["cutter"]["count"] == 1
+    assert ef["cutter"]["max_cut_mm"]["soft_line"] >= 20 and ef["cutter"]["cut_force_kN"] == 20.0
+    for k in ("model", "jaw_model"):
+        assert (tmp_path / (ef["gripper_l"][k] + ".json")).exists()
+    for k in ("model", "blade_model"):
+        assert (tmp_path / (ef["cutter"][k] + ".json")).exists()
     zs = [z for m in _meshes(tmp_path, sc) for z in m["vertices"][2::3]]
     assert abs(max(zs) + min(zs)) < 0.01                 # the pose at its middle height
     ec = json.load(open(tmp_path / "echensis.card.json"))

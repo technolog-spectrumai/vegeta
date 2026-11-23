@@ -21,7 +21,8 @@ horizontal at 45 deg in the corners (surge, sway, yaw) and four vertical (heave,
 folded under the fairing in transit; four skids with compliant pads at the corners.
 
 ``part``: ``vehicle`` (everything, arms posed by ``arm_pose``), ``frame``, ``fairing``, ``foam``, ``housing``
-(``housing`` selects which), ``thruster`` (one), ``work_arm``, ``hold_arm``, ``skid`` (one), ``tool_skid``.
+(``housing`` selects which), ``thruster`` (one), ``work_arm``, ``hold_arm``, ``skid`` (one), ``tool_skid``; the end effectors ``gripper_l`` (hold arm), ``gripper_r`` (work arm),
+``cutter`` (in its holder, or on the work arm with ``cutter_on_arm``), ``tool_holder``. See ``EFFECTORS``.
 """
 from __future__ import annotations
 
@@ -65,6 +66,30 @@ PARTS = {
     "hold arm 4-DOF electric": (5.0, 2.0, 0.0, ""),
     "wet-mate connectors, cables": (2.5, 0.8, 0.0, ""),
 }
+#: The arms' limits (in-house electric oil-filled arms; class values for 6-DOF / 4-DOF small work-class arms, assumed).
+ARMS = {
+    "work": {"payload_full_reach_kg": 6.0, "wrist_torque_Nm": 20.0, "wrist": "pitch + continuous roll"},
+    "hold": {"payload_full_reach_kg": 10.0, "wrist_torque_Nm": 15.0, "wrist": "pitch only"},
+}
+
+#: The end effectors (the owner's "two pairs of holders and one scissors"): two parallel two-jaw grippers, one fixed
+#: on each arm's wrist, and one electro-hydraulic guillotine cutter the work arm picks from a quick-change holder on
+#: the tool skid (its gripper parks in the same holder). Class values, assumed.
+#: mass in air [kg], displaced volume [L], average power while working [W], price EUR.
+EFFECTORS = {
+    "gripper": {"count": 2, "mass_kg": 1.4, "volume_L": 0.5, "jaw_opening_mm": (0.0, 100.0), "grip_force_N": 300.0,
+                "close_s": 3.0, "power_W": 30.0, "hold_W": 3.0, "price_eur": 7000.0,
+                "what": "parallel two-jaw electric gripper (worm-driven, self-locking): bars, handles, lids, ropes up to 100 mm"},
+    "cutter": {"count": 1, "mass_kg": 2.6, "volume_L": 1.0, "cut_force_kN": 20.0, "cycle_s": 6.0, "power_W": 150.0,
+               "idle_W": 5.0, "throat_mm": 30.0, "price_eur": 12000.0,
+               "what": "electro-hydraulic guillotine (own 150 W pump), self-reacting C-frame: no load on the arm in the cut"},
+    "tool_holder": {"count": 1, "mass_kg": 1.0, "volume_L": 0.6, "price_eur": 2000.0,
+                    "what": "HDPE quick-change cradle on the tool skid's front: the cutter, and the work arm's gripper while it cuts"},
+}
+#: Cut-through force [kN] per mm^2 of solid section (ultimate shear x fill factor): what the cutter must beat.
+CUT_SHEAR_MPA = {"soft_line": 45.0 * 0.7,        # nylon / PP rope and monofilament fishing line, laid fill 0.7
+                 "wire_rope": 1060.0 * 0.6,      # 1770-grade steel wire rope, shear 0.6 UTS, fill 0.6
+                 "armour_wire": 270.0}           # one galvanised mild-steel cable armour wire (solid)
 THRUSTER = {"forward_N": 157.0, "reverse_N": 120.0, "max_W": 1100.0, "eta_bollard_N_per_W": 0.23,
             "source": "T500-class at 24 V: ~16 kgf forward; thrust per shaft power at part load (assumed)"}
 
@@ -72,7 +97,8 @@ THRUSTER = {"forward_N": 157.0, "reverse_N": 120.0, "max_W": 1100.0, "eta_bollar
 class Scampi(Design):
     parameters = [
         Parameter("part", "vehicle", choices=("vehicle", "frame", "fairing", "foam", "housing", "thruster", "work_arm",
-                                              "hold_arm", "skid", "tool_skid"), description="what to build"),
+                                              "hold_arm", "skid", "tool_skid", "gripper_l", "gripper_r", "cutter",
+                                              "tool_holder"), description="what to build (gripper_l: the hold arm's, gripper_r: the work arm's)"),
         Parameter("length", 1500.0, "mm", min=600, description="frame length (without the arms)"),
         Parameter("width", 800.0, "mm", min=300),
         Parameter("height", 560.0, "mm", min=250, description="skid soles to the fairing's top"),
@@ -98,6 +124,8 @@ class Scampi(Design):
         Parameter("tool_bay_width", 420.0, "mm", min=100),
         Parameter("tool_bay_height", 80.0, "mm", min=30, description="the skid fits between its 60 mm floor and the frame"),
         Parameter("show_tool_skid", True, "", description="draw the tool skid in the vehicle"),
+        Parameter("jaw_opening", 60.0, "mm", min=0, max=100, description="both grippers' jaw opening as drawn"),
+        Parameter("cutter_on_arm", False, "", description="the work arm carries the cutter (its gripper parked) instead"),
     ]
 
     # ------------------------------------------------------------------------------------------- sizing
@@ -145,10 +173,53 @@ class Scampi(Design):
             ("transit out 1.0 m/s", 0.5, hotel + cls.propulsion_power(p, 1.0)),
             ("inspection along a monopile 0.3 m/s in current", 3.0, hotel + cls.propulsion_power(p, 0.3 + cur)),
             ("cleaning skid on the weld (hold arm on)", 1.0, hotel + 0.4 * cls.propulsion_power(p, cur) + 250.0),
-            ("intervention, both arms", 1.0, hotel + 0.4 * cls.propulsion_power(p, cur) + 180.0),
+            ("intervention, both arms (+ grippers, cutter)", 1.0, hotel + 0.4 * cls.propulsion_power(p, cur) + 180.0 + 20.0),
             ("landed on the seabed: CP and sensor work", 1.0, hotel - 60.0 + 60.0),
             ("transit back 1.0 m/s", 0.5, hotel + cls.propulsion_power(p, 1.0)),
         ]
+
+    @staticmethod
+    def cut_force_kN(material, d_mm):
+        """Force [kN] to shear a round section of diameter ``d_mm`` of ``material`` (``CUT_SHEAR_MPA``)."""
+        return CUT_SHEAR_MPA[material] * math.pi / 4 * d_mm ** 2 / 1000
+
+    @classmethod
+    def max_cut_mm(cls, material):
+        """The largest diameter the cutter takes: its force or its throat, whichever is less."""
+        c = EFFECTORS["cutter"]
+        d_force = math.sqrt(c["cut_force_kN"] * 1000 / CUT_SHEAR_MPA[material] / (math.pi / 4))
+        return min(d_force, c["throat_mm"])
+
+    @classmethod
+    def effectors(cls, p=None):
+        """The grippers and the cutter against the arms (payload in water at full reach, wrist torque from the tool's
+        weight at its centre of gravity) and the vehicle (mass, volume, in-water weight, pitch trim when the work arm
+        carries the cutter out at full reach instead of the holder)."""
+        p = {q.name: q.default for q in cls.parameters} | (p or {})
+        g, c, h = EFFECTORS["gripper"], EFFECTORS["cutter"], EFFECTORS["tool_holder"]
+        w = {k: e["mass_kg"] - RHO_SW * e["volume_L"] / 1000 for k, e in EFFECTORS.items()}      # in water [kg]
+        cg = {"gripper": 0.08, "cutter": 0.12}                              # m from the wrist axis (assumed)
+        checks = {}
+        for arm, tool in (("hold", "gripper"), ("work", "gripper"), ("work", "cutter")):
+            lim = ARMS[arm]
+            load = w[tool]
+            wrist = load * G * cg[tool]
+            checks[f"{arm}_{tool}"] = {"load_in_water_kg": load, "payload_kg": lim["payload_full_reach_kg"],
+                                       "payload_margin": lim["payload_full_reach_kg"] / load - 1,
+                                       "wrist_static_Nm": wrist, "wrist_torque_Nm": lim["wrist_torque_Nm"],
+                                       "wrist_margin": lim["wrist_torque_Nm"] / wrist - 1}
+        # the pull a closed gripper holds on a rope (two jaws, friction 0.4) and the most the arm can then lift
+        pull_N = 2 * 0.4 * g["grip_force_N"]
+        # pitch trim: the cutter moves from the holder (x ~0.44 m) to the work arm's tip (x ~1.4 m), in water
+        dx = (p["length"] / 2 - 40 + 0.75 * p["arm_reach"]) / 1000 - 0.44
+        bg = 0.08                                                           # m, CB above CG (foam high, housings low; assumed)
+        mass = sum(e["mass_kg"] * e["count"] for e in EFFECTORS.values())
+        vol = sum(e["volume_L"] * e["count"] for e in EFFECTORS.values())
+        wet = sum(w[k] * e["count"] for k, e in EFFECTORS.items())
+        return {"mass_kg": mass, "volume_L": vol, "in_water_kg": wet, "checks": checks, "rope_pull_N": pull_N,
+                "max_cut_mm": {m: cls.max_cut_mm(m) for m in CUT_SHEAR_MPA},
+                "cutter_wet_kg": w["cutter"], "cutter_shift_m": dx, "bg_m": bg,
+                "price_eur": sum(e["price_eur"] * e["count"] for e in EFFECTORS.values())}
 
     @classmethod
     def sizing(cls, p=None):
@@ -175,7 +246,14 @@ class Scampi(Design):
         V_p = p["payload_foam_L"] / 1000
         V_f = V_n + V_p
         ballast_kg = V_p * (RHO_SW - FOAM_RHO) / (1 - RHO_SW / 11340.0)          # lead to trim it out, bare
-        m_total = m_dry + FOAM_RHO * V_f + ballast_kg
+        # the end effectors (grippers on the arms, the cutter + holder on the tool skid): their weight in water is
+        # taken out of the bare trim lead (they replace lead), so the foam and the displacement of the foam stay; the
+        # recovered-object lift shrinks by the same amount
+        eff = cls.effectors(p)
+        ballast_kg -= eff["in_water_kg"] / (1 - RHO_SW / 11340.0)
+        m_total = m_dry + FOAM_RHO * V_f + ballast_kg + eff["mass_kg"]
+        # cutter on the arm at full reach: the in-water moment against the righting moment (m g BG)
+        eff["cutter_out_pitch_deg"] = math.degrees(math.atan(eff["cutter_wet_kg"] * eff["cutter_shift_m"] / (m_total * eff["bg_m"])))
         foam_avail = (p["length"] - 2 * p["frame_bar"]) * (p["width"] - 2 * p["frame_bar"]) * p["foam_height"] / 1e9
         th = cls.thrust(p)
         v_max = {a: math.sqrt(2 * th[a] / (RHO_SW * cls.drag_area(p, a))) for a in th}
@@ -185,8 +263,9 @@ class Scampi(Design):
         return {
             "housings": {"electronics": he, "battery": hb},
             "mass_in_air_kg": m_total, "dry_mass_kg": m_dry, "foam_L": V_f * 1000, "foam_space_L": foam_avail * 1000,
-            "foam_fits": V_f <= foam_avail, "displacement_L": (v_dry + V_f) * 1000, "net_buoyancy_kg": net_up,
-            "payload_in_water_kg": V_p * (RHO_SW - FOAM_RHO), "ballast_bare_kg": ballast_kg,
+            "foam_fits": V_f <= foam_avail, "displacement_L": (v_dry + V_f + eff["volume_L"] / 1000) * 1000,
+            "net_buoyancy_kg": net_up, "effectors": eff, "trim_ok": ballast_kg >= 0,
+            "payload_in_water_kg": V_p * (RHO_SW - FOAM_RHO) - eff["in_water_kg"], "ballast_bare_kg": ballast_kg,
             "items": items, "thrust_N": th, "v_max_m_s": v_max,
             "station_keeping_current_m_s": v_max["y"],                       # the worst axis: the side
             "dive_energy_Wh": e_wh, "dive_hours": sum(h for _, h, _ in prof), "battery_usable_Wh": usable,
@@ -251,25 +330,87 @@ class Scampi(Design):
                 out.append(((sx * L * 0.33, sy * (W / 2 - d * 0.75), zt), (0.0, 0.0, 1.0)))
         return out
 
-    def _arm(self, p, reach, y, links, pose):
-        """A chain of ``links`` link fractions; folded: tucked down under the nose, work: reaching forward and down."""
-        r = p["arm_link"] / 2
+    WORK_LINKS = (0.38, 0.32, 0.18, 0.12)
+    HOLD_LINKS = (0.45, 0.40, 0.15)
+
+    def _arm_chain(self, p, reach, y, links, pose):
+        """The joint points and the last link's angle [deg] (folded: tucked under the nose, work: forward and down)."""
         x0, z0 = p["length"] / 2 - 40, p["skid_height"] + 0.30 * (p["height"] - p["skid_height"])
         angles = [-20, -35, -55, -70] if pose == "work" else [-175, 4, -176, 4]    # folded: flat zig-zag under the nose
         pts = [cq.Vector(x0, y, z0)]
-        out = cq.Workplane("XY").add(cq.Solid.makeSphere(r * 1.3, pts[0]))
         for frac, ang in zip(links, angles):
             a = math.radians(ang)
-            d = cq.Vector(math.cos(a), 0, math.sin(a)) * (reach * frac)
-            nxt = pts[-1] + d
-            out = out.add(cq.Solid.makeCylinder(r * (1 - 0.15 * len(pts)), d.Length, pts[-1], d))
-            out = out.add(cq.Solid.makeSphere(r * (1.1 - 0.15 * len(pts)), nxt))
-            pts.append(nxt)
-        tip = pts[-1]
-        for s in (1, -1):                                                      # jaws
-            jaw = cq.Vector(math.cos(math.radians(angles[-1])), s * 0.25, math.sin(math.radians(angles[-1]))) * (0.12 * reach)
-            out = out.add(cq.Solid.makeCylinder(r * 0.3, jaw.Length, tip, jaw))
+            pts.append(pts[-1] + cq.Vector(math.cos(a), 0, math.sin(a)) * (reach * frac))
+        return pts, angles[len(links) - 1]
+
+    def _arm(self, p, reach, y, links, pose):
+        """The links and joints; the end effector is a separate part (``_gripper``) on the last joint."""
+        r = p["arm_link"] / 2
+        pts, _ = self._arm_chain(p, reach, y, links, pose)
+        out = cq.Workplane("XY").add(cq.Solid.makeSphere(r * 1.3, pts[0]))
+        for i in range(1, len(pts)):
+            d = pts[i] - pts[i - 1]
+            out = out.add(cq.Solid.makeCylinder(r * (1 - 0.15 * i), d.Length, pts[i - 1], d))
+            out = out.add(cq.Solid.makeSphere(r * (1.1 - 0.15 * i), pts[i]))
         return cq.Workplane("XY").add(out.vals()).combine()
+
+    def _place(self, wp, at, ang):
+        """A tool built along +x from its wrist flange at the origin, turned to the last link's angle, put at ``at``."""
+        return wp.rotate((0, 0, 0), (0, 1, 0), -ang).translate((at.x, at.y, at.z))
+
+    def _gripper_local(self, opening, jaws=True):
+        """A parallel two-jaw gripper along +x: wrist flange, the drive housing, the guide rail, two jaws with pads
+        ``opening`` mm apart (jaw tips 170 mm from the flange)."""
+        o = max(0.0, min(opening, EFFECTORS["gripper"]["jaw_opening_mm"][1]))
+        body = cq.Workplane("YZ").circle(30).extrude(20)                                   # flange
+        body = body.union(cq.Workplane("XY").box(70, 64, 56).translate((55, 0, 0)))         # drive housing
+        body = body.union(cq.Workplane("XY").box(16, o + 60, 22).translate((98, 0, 0)))     # rail
+        for s in ((1, -1) if jaws else ()):
+            yj = s * (o / 2 + 7)
+            body = body.union(cq.Workplane("XY").box(72, 14, 36).translate((134, yj, 0)))   # jaw
+            body = body.union(cq.Workplane("XY").box(40, 4, 30).translate((150, yj - s * 9, 0)))  # pad
+        return body
+
+    def _cutter_local(self, blade=True):
+        """The guillotine along +x: flange, hydraulic cylinder + pump pack, a C-frame head with the 30 mm throat
+        (anvil at the tip), the blade at the top of the throat."""
+        c = cq.Workplane("YZ").circle(30).extrude(20)
+        c = c.union(cq.Workplane("YZ").circle(38).extrude(150).translate((20, 0, 0)))       # cylinder + pump
+        head = cq.Workplane("XY").box(70, 26, 120).translate((205, 0, 0))
+        head = head.cut(cq.Workplane("XY").box(80, 40, 34).translate((215, 0, -10)))       # the throat, open forward
+        c = c.union(head)
+        if blade:
+            c = c.union(self._cutter_blade_local())
+        return c
+
+    def _cutter_blade_local(self, closed=0.0):
+        """The blade, open at the top of the throat; ``closed`` 0..1 drives it 34 mm down onto the anvil."""
+        return cq.Workplane("XY").box(36, 8, 24).translate((215, 0, 19 - 34 * closed))
+
+    def gripper_pose(self, p, which):
+        """(wrist point, angle deg) of the gripper on ``which`` arm ("work" / "hold") in ``arm_pose``."""
+        reach, y, links = ((p["arm_reach"], -0.22 * p["width"], self.WORK_LINKS) if which == "work"
+                           else (p["hold_reach"], 0.22 * p["width"], self.HOLD_LINKS))
+        pts, ang = self._arm_chain(p, reach, y, links, p["arm_pose"])
+        return pts[-1], ang
+
+    def _gripper(self, p, which, opening=60.0):
+        at, ang = self.gripper_pose(p, which)
+        return self._place(self._gripper_local(opening), at, ang)
+
+    def holder_pose(self, p):
+        """The quick-change holder on the tool skid's front, under the work arm: the cutter parked along +x."""
+        return cq.Vector(p["tool_bay_length"] / 2 + 10, -0.22 * p["width"], 60.0 + p["tool_bay_height"] / 2), 0.0
+
+    def _tool_holder(self, p):
+        at, _ = self.holder_pose(p)
+        cradle = cq.Workplane("XY").box(60, 100, 60).translate((at.x + 20, at.y, at.z - 10))
+        cradle = cradle.cut(cq.Workplane("YZ").circle(39).extrude(80).translate((at.x - 20, at.y, at.z)))
+        return cradle.union(cq.Workplane("XY").box(30, 100, 60).translate((at.x - 5, at.y, at.z - 10)))
+
+    def _cutter(self, p, on_arm=False):
+        at, ang = self.gripper_pose(p, "work") if on_arm else self.holder_pose(p)
+        return self._place(self._cutter_local(), at, ang)
 
     def _skid(self, p, sx=1, sy=1):
         L, W, h = p["length"], p["width"], p["skid_height"]
@@ -302,9 +443,17 @@ class Scampi(Design):
         if part == "thruster":
             return self._thruster(p)
         if part == "work_arm":
-            return self._arm(p, p["arm_reach"], -0.22 * p["width"], (0.38, 0.32, 0.18, 0.12), p["arm_pose"])
+            return self._arm(p, p["arm_reach"], -0.22 * p["width"], self.WORK_LINKS, p["arm_pose"])
         if part == "hold_arm":
-            return self._arm(p, p["hold_reach"], 0.22 * p["width"], (0.45, 0.40, 0.15), p["arm_pose"])
+            return self._arm(p, p["hold_reach"], 0.22 * p["width"], self.HOLD_LINKS, p["arm_pose"])
+        if part == "gripper_l":
+            return self._gripper(p, "hold", p["jaw_opening"])
+        if part == "gripper_r":
+            return self._gripper(p, "work", p["jaw_opening"])
+        if part == "cutter":
+            return self._cutter(p, p["cutter_on_arm"])
+        if part == "tool_holder":
+            return self._tool_holder(p)
         if part == "skid":
             return self._skid(p)
         if part == "tool_skid":
@@ -316,8 +465,12 @@ class Scampi(Design):
         for sx in (1, -1):
             for sy in (1, -1):
                 body = body.union(self._skid(p, sx, sy))
-        body = body.union(self._arm(p, p["arm_reach"], -0.22 * p["width"], (0.38, 0.32, 0.18, 0.12), p["arm_pose"]))
-        body = body.union(self._arm(p, p["hold_reach"], 0.22 * p["width"], (0.45, 0.40, 0.15), p["arm_pose"]))
+        body = body.union(self._arm(p, p["arm_reach"], -0.22 * p["width"], self.WORK_LINKS, p["arm_pose"]))
+        body = body.union(self._arm(p, p["hold_reach"], 0.22 * p["width"], self.HOLD_LINKS, p["arm_pose"]))
+        body = body.union(self._gripper(p, "hold", p["jaw_opening"])).union(self._tool_holder(p))
+        body = body.union(self._cutter(p, p["cutter_on_arm"]))
+        if not p["cutter_on_arm"]:
+            body = body.union(self._gripper(p, "work", p["jaw_opening"]))
         if p["show_tool_skid"]:
             body = body.union(self._tool_skid(p))
         return body
@@ -332,6 +485,13 @@ if __name__ == "__main__":
     print(f"mass in air {s['mass_in_air_kg']:.1f} kg (dry {s['dry_mass_kg']:.1f}, ballast bare {s['ballast_bare_kg']:.1f}), "
           f"foam {s['foam_L']:.0f} L of {s['foam_space_L']:.0f} L space, displacement {s['displacement_L']:.0f} L, "
           f"payload {s['payload_in_water_kg']:.1f} kg in water")
+    e = s["effectors"]
+    for k, c in e["checks"].items():
+        print(f"  {k:14s} {c['load_in_water_kg']:.2f} kg in water of {c['payload_kg']:g} (margin {c['payload_margin']:+.1f}), "
+              f"wrist {c['wrist_static_Nm']:.2f} of {c['wrist_torque_Nm']:g} N m")
+    print(f"effectors {e['mass_kg']:.1f} kg in air, {e['in_water_kg']:.2f} kg in water, EUR {e['price_eur']:.0f}; cuts "
+          + ", ".join(f"{m} {d:.1f} mm" for m, d in e["max_cut_mm"].items())
+          + f"; cutter out: pitch {e['cutter_out_pitch_deg']:.1f} deg; trim lead left {s['ballast_bare_kg']:.1f} kg")
     print("thrust", {k: round(v) for k, v in s["thrust_N"].items()}, "v_max", {k: round(v, 2) for k, v in s["v_max_m_s"].items()})
     for name, h, w in s["profile"]:
         print(f"  {name:48s} {h:4.1f} h {w:6.0f} W")

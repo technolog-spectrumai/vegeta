@@ -27,6 +27,14 @@
     0.224,
     0.169
    ]
+  },
+  {
+   "model": "scampi_cutter_parked",
+   "color": [
+    0.557,
+    0.267,
+    0.678
+   ]
   }
  ],
  "size": [
@@ -34,8 +42,8 @@
   0.8,
   0.56
  ],
- "mass_kg": 117.95,
- "displacement_L": 115.09,
+ "mass_kg": 120.24,
+ "displacement_L": 117.69,
  "net_buoyancy_kg": 0.5,
  "cd": [
   0.9,
@@ -171,9 +179,96 @@
    "power_W": 60.0,
    "price_eur": 25000.0,
    "what": "seabed survey skid: profiler + sidescan for the moorings' footprints and the mort pile"
+  },
+  "gripper": {
+   "count": 2,
+   "mass_kg": 1.4,
+   "power_W": 30.0,
+   "price_eur": 7000.0,
+   "what": "parallel two-jaw electric gripper (worm-driven, self-locking): bars, handles, lids, ropes up to 100 mm"
+  },
+  "cutter": {
+   "count": 1,
+   "mass_kg": 2.6,
+   "power_W": 150.0,
+   "price_eur": 12000.0,
+   "what": "electro-hydraulic guillotine (own 150 W pump), self-reacting C-frame: no load on the arm in the cut"
+  }
+ },
+ "effectors": {
+  "gripper_l": {
+   "arm": "hold",
+   "model": "scampi_gripper_l",
+   "jaw_model": "scampi_gripper_jaw",
+   "jaw_at_x_m": 0.134,
+   "jaw_offset_m": 0.007,
+   "tip_m": 0.17,
+   "jaw_opening_m": [
+    0.0,
+    0.1
+   ],
+   "grip_force_N": 300.0,
+   "close_s": 3.0,
+   "wrist_torque_Nm": 15.0,
+   "payload_full_reach_kg": 10.0,
+   "mass_kg": 1.4,
+   "displacement_L": 0.5,
+   "power_W": 30.0,
+   "price_eur": 7000.0
+  },
+  "gripper_r": {
+   "arm": "work",
+   "model": "scampi_gripper_r",
+   "jaw_model": "scampi_gripper_jaw",
+   "jaw_at_x_m": 0.134,
+   "jaw_offset_m": 0.007,
+   "tip_m": 0.17,
+   "jaw_opening_m": [
+    0.0,
+    0.1
+   ],
+   "grip_force_N": 300.0,
+   "close_s": 3.0,
+   "wrist_torque_Nm": 20.0,
+   "payload_full_reach_kg": 6.0,
+   "mass_kg": 1.4,
+   "displacement_L": 0.5,
+   "power_W": 30.0,
+   "price_eur": 7000.0
+  },
+  "cutter": {
+   "arm": "work",
+   "quick_change": true,
+   "model": "scampi_cutter",
+   "blade_model": "scampi_cutter_blade",
+   "blade_at_m": [
+    0.215,
+    0.0,
+    0.019
+   ],
+   "blade_stroke_m": 0.034,
+   "tip_m": 0.24,
+   "throat_mm": 30.0,
+   "cut_force_kN": 20.0,
+   "cycle_s": 6.0,
+   "max_cut_mm": {
+    "soft_line": 28.4,
+    "wire_rope": 6.3,
+    "armour_wire": 9.7
+   },
+   "mass_kg": 2.6,
+   "displacement_L": 1.0,
+   "power_W": 150.0,
+   "price_eur": 12000.0,
+   "holder_at_m": [
+    0.31,
+    -0.176,
+    -0.185
+   ],
+   "swap_s": 60.0
   }
  },
  "tether": null,
  "resident": true,
- "price_eur": 190000
+ "price_eur": 234800
 }

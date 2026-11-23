@@ -30,7 +30,7 @@ arm and a work arm.
 
 ## v0 numbers (`python labs/marine/designs/scampi.py`)
 
-* 1.5 × 0.8 × 0.56 m without arms; **118 kg** in air; displaces 115 L; +0.5 kg buoyant; 43 L syntactic foam.
+* 1.5 × 0.8 × 0.56 m without arms; **118 kg** in air (120.2 kg with the end effectors, below); displaces 115 L (118 L); +0.5 kg buoyant; 43 L syntactic foam.
 * Al 6061-T6 housings Ø200 × 7 mm: buckling 6.6 MPa against 4.5 MPa (margin +0.47); hoop stress 65 MPa.
 * Eight T500-class thrusters (four vectored 45°, four vertical): 444 N surge/sway, 628 N heave; holds station in
   1.24 m/s sideways (1.69 m/s ahead) against the 1.0 m/s requirement.
@@ -38,6 +38,28 @@ arm and a work arm.
   (4.05 kWh usable): +19 % margin. Hotel load (Jetson, INS, DVL, sonar, cameras, lights) 237 W.
 
 All the bought-part numbers are class values (`PARTS`, `THRUSTER`), not quotes.
+
+## End effectors: two grippers and a cutter (`EFFECTORS`, `ARMS`, `Scampi.effectors`)
+
+Layout: **one parallel two-jaw gripper fixed on each arm** (the hold arm's grips the docking bar, a structure or the
+line being cut; the work arm's handles lids, handles and ropes), and **one guillotine cutter** in a quick-change holder
+on the tool skid's front, under the work arm. To cut, the work arm parks its gripper in the holder and takes the cutter
+(~60 s swap): the hold arm keeps the line taut while the cutter goes in, so a cut always has a gripper holding and the
+cutter cutting, without a third arm. Class values, assumed:
+
+| effector | numbers | on its arm (in water, full reach) |
+|---|---|---|
+| gripper ×2 (hold arm `gripper_l`, work arm `gripper_r`) | jaws 0–100 mm, 300 N grip (240 N rope pull at µ 0.4), 3 s to close, 1.4 kg / 0.5 L, 30 W closing, 3 W holding (self-locking), EUR 7 k | 0.89 kg of 10 kg (hold) / 6 kg (work); wrist 0.7 N m of 15 / 20 N m |
+| cutter ×1 (electro-hydraulic guillotine, self-reacting C-frame, 30 mm throat) | 20 kN, 6 s cycle, 2.6 kg / 1.0 L, 150 W cutting, EUR 12 k; cuts soft line / fishing line / rope ≤ 28 mm, steel wire rope ≤ 6.3 mm, one armour wire ≤ 9.7 mm (not a whole armoured cable) | 1.58 kg of 6 kg; wrist 1.9 N m of 20 N m |
+| tool holder (HDPE cradle) | 1.0 kg / 0.6 L, EUR 2 k | — |
+
+On the vehicle: +6.4 kg in air, 3.7 kg in water, trimmed by taking that much of the bare trim lead out (1.2 kg of
+lead left) instead of adding foam; the recovered-object lift drops from 4.8 to 1.1 kg. **Flags:** the mass in air is
+**120.2 kg, 0.2 kg over the brief's 120 kg**; with the cutter out at full reach the passive pitch is ~9° nose-down
+(BG 0.08 m assumed), trimmed by ~15 N of the 628 N vertical thrust. Arm payload and wrist torque: not exceeded (margins
+×3–×20). Price +EUR 28 k × 1.6 → EUR 235 k on the card. CAD parts `gripper_l`, `gripper_r`, `cutter`
+(`cutter_on_arm`), `tool_holder`; Ketos meshes `scampi_gripper_l/_r`, `scampi_gripper_jaw`, `scampi_cutter`,
+`scampi_cutter_blade` (tool frame), the card's `effectors`.
 
 ## Comparable vehicles
 

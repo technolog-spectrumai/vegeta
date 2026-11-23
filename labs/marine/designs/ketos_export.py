@@ -177,7 +177,8 @@ SCAMPI_TOOLS = {
 
 def scampi():
     """The work-class AUV for the farm's moorings (lines, chains, anchors) and the seabed under the pens."""
-    from scampi import Scampi, THRUSTER, PARTS
+    import cadquery as cq
+    from scampi import ARMS, EFFECTORS, Scampi, THRUSTER, PARTS
     d = Scampi()
     p = {q.name: q.default for q in Scampi.parameters} | {"arm_pose": "folded"}
     s = Scampi.sizing()
@@ -191,9 +192,39 @@ def scampi():
         for sy in (1, -1):
             body = body.union(d._skid(p, sx, sy))
     arms = d.build(p | {"part": "work_arm"}).union(d.build(p | {"part": "hold_arm"})).union(d._tool_skid(p))
-    parts = [("scampi_body", body, "#f1c40f"), ("scampi_thrusters", th, "#222222"), ("scampi_arms", arms, "#c0392b")]
+    arms = arms.union(d._tool_holder(p)).union(d._gripper(p, "hold", 0.0)).union(d._gripper(p, "work", 0.0))
+    parts = [("scampi_body", body, "#f1c40f"), ("scampi_thrusters", th, "#222222"), ("scampi_arms", arms, "#c0392b"),
+             ("scampi_cutter_parked", d._cutter(p), "#8e44ad")]
     models = [_mesh(sh, n, _hex(c), 5.0) for n, sh, c in parts]
     dz = _centre_z(models)
+    # the end effectors as tools in their own frame (metres; origin the wrist flange, +x out of the wrist, jaws
+    # opening along y, z up): the viewer puts them on its arms and moves the jaws and the blade
+    tools = [("scampi_gripper_l", d._gripper_local(0.0, jaws=False), "#1b4f72"),
+             ("scampi_gripper_r", d._gripper_local(0.0, jaws=False), "#7b241c"),
+             ("scampi_gripper_jaw", cq.Workplane("XY").box(72, 14, 36).union(cq.Workplane("XY").box(40, 22, 30).translate((16, 0, 0))), "#5d6d7e"),
+             ("scampi_cutter", d._cutter_local(blade=False), "#8e44ad"),
+             ("scampi_cutter_blade", d._cutter_blade_local().translate((-215, 0, -19)), "#d0d3d4")]
+    tool_models = [_mesh(sh, n, _hex(c), 1.0) for n, sh, c in tools]
+    ef = Scampi.effectors(p)
+    g, c = EFFECTORS["gripper"], EFFECTORS["cutter"]
+    hold_at, _ = d.holder_pose(p)
+    grip = lambda arm, model: {"arm": arm, "model": model, "jaw_model": "scampi_gripper_jaw", "jaw_at_x_m": 0.134,
+                               "jaw_offset_m": 0.007, "tip_m": 0.17, "jaw_opening_m": [0.0, g["jaw_opening_mm"][1] / 1000],
+                               "grip_force_N": g["grip_force_N"], "close_s": g["close_s"],
+                               "wrist_torque_Nm": ARMS[arm]["wrist_torque_Nm"],
+                               "payload_full_reach_kg": ARMS[arm]["payload_full_reach_kg"],
+                               "mass_kg": g["mass_kg"], "displacement_L": g["volume_L"], "power_W": g["power_W"],
+                               "price_eur": g["price_eur"]}
+    effectors = {
+        "gripper_l": grip("hold", "scampi_gripper_l"), "gripper_r": grip("work", "scampi_gripper_r"),
+        "cutter": {"arm": "work", "quick_change": True, "model": "scampi_cutter", "blade_model": "scampi_cutter_blade",
+                   "blade_at_m": [0.215, 0.0, 0.019], "blade_stroke_m": 0.034, "tip_m": 0.24, "throat_mm": c["throat_mm"],
+                   "cut_force_kN": c["cut_force_kN"], "cycle_s": c["cycle_s"],
+                   "max_cut_mm": {m: round(v, 1) for m, v in ef["max_cut_mm"].items()},
+                   "mass_kg": c["mass_kg"], "displacement_L": c["volume_L"], "power_W": c["power_W"], "price_eur": c["price_eur"],
+                   "holder_at_m": [round(hold_at.x / 1000, 3), round(hold_at.y / 1000, 3), round(hold_at.z / 1000 - dz, 3)],
+                   "swap_s": 60.0},
+    }
     thrusters = [{"at": [round(x / 1000, 3), round(y / 1000, 3), round(z / 1000 - dz, 3)], "axis": [round(c, 4) for c in a],
                   "max_N": THRUSTER["forward_N"]} for (x, y, z), a in d.thruster_layout(p)]
     # price: the bought parts and housings at class prices (assumed), x 1.6 build and margin -> ~EUR 190 k
@@ -204,9 +235,13 @@ def scampi():
                    "battery_Wh": p["battery_kwh"] * 1000, "hotel_W": round(s["hotel_W"], 1),
                    "max_depth_m": 300.0, "inspect_speed_m_s": 0.3,            # scampi.energy_profile's inspection pass
                    "camera_swath_m": 2.5,                                       # 4 cameras at ~1.5 m stand-off (assumed)
-                   "tools": {k: {"mass_kg": v[0], "power_W": v[1], "price_eur": v[2], "what": v[3]} for k, v in SCAMPI_TOOLS.items()},
-                   "tether": None, "resident": True, "price_eur": 190000}
-    return card, models
+                   "tools": {k: {"mass_kg": v[0], "power_W": v[1], "price_eur": v[2], "what": v[3]} for k, v in SCAMPI_TOOLS.items()}
+                   | {k: {"count": EFFECTORS[k]["count"], "mass_kg": EFFECTORS[k]["mass_kg"], "power_W": EFFECTORS[k]["power_W"],
+                          "price_eur": EFFECTORS[k]["price_eur"], "what": EFFECTORS[k]["what"]} for k in ("gripper", "cutter")},
+                   "effectors": effectors,
+                   # + the effectors (grippers, cutter, holder: EUR 28 k) x the same 1.6 build and margin
+                   "tether": None, "resident": True, "price_eur": 190000 + round(1.6 * ef["price_eur"])}
+    return card, models + tool_models
 
 
 def echensis():
