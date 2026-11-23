@@ -93,8 +93,12 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
     lam = p["panel_tip_chord"] / p["panel_root_chord"]
     fin = p                                                                  # ASTOR-T: its two splayed fins as one upright fin of the same side force
     import astor_t as T
-    if name in ("t", "twin"):
+    if name == "t" or (name == "twin" and p.get("fin_splay_deg", 0.0) > 0 and not p.get("single_fin")):
         fin = T.fin_equivalent(p)
+    tail_y = TAIL_Y_M
+    if p.get("single_fin"):                                                  # ASTOR-TWIN: one upright fin, two all-moving tail halves
+        lt = p["tail_panel_tip"] / p["tail_panel_root"]
+        tail_y = (p["tail_pivot_y"] + p["tail_panel_span"] * (1 + 2 * lt) / (3 * (1 + lt))) / 1000.0     # each half's area centre from the centre plane
     if p.get("vtail_dihedral_deg", 0.0) > 0:                                 # a V-tail: the upright fin of its side force (its area x sin^2 of the dihedral)
         import astor_twin as W
         fin = W.vtail_fin_equivalent(p)
@@ -136,7 +140,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
-              "Clda_tail": 0.0 if p.get("vtail_dihedral_deg", 0.0) > 0 else CLde * TAIL_Y_M / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
+              "Clda_tail": 0.0 if p.get("vtail_dihedral_deg", 0.0) > 0 else CLde * tail_y / C["b"], "Clda_aileron": VM.roll_per_deg_aileron(sweep, p) / (Se * C["b"]),                 # tailerons: +-1 deg on the two tail panels
               "Cnda": 0.0, "Cnb": C["Cnb"] * 0.9,                                        # HAND: the tractor propeller's normal force ahead of the CG (-10 %)
               "mass_budget": mb, "pack_kind": "astor",
               "equipment": {"product": "astor", "launch": "tube" if name == "t" else "rail", "recovery": "parachute", "turning_station": True, "kits": [],

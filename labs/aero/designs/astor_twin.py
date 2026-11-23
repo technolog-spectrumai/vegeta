@@ -41,12 +41,14 @@ _chord = lambda y: WING["root_chord"] + (WING["tip_chord"] - WING["root_chord"])
 _tan = math.tan(math.radians(V.SPREAD_DEG))
 _PLAN = {"pivot_y": WING["joint_y"], "panel_root_chord": _chord(WING["joint_y"]), "panel_tip_chord": WING["tip_chord"], "panel_span": WING["half_span"] - WING["joint_y"],
          "panel_pivot_chord": 0.5, "pivot_x": WING["le_x"] + WING["joint_y"] * _tan + 0.5 * _chord(WING["joint_y"]), "panel_stack": 0.0, "wing_plane_z": 20.0}
-# A V-TAIL (2026-11-23): ASTOR-T's tail was four surfaces made to fold into a tube (two drooped blades, two hinged fins
-# under the tail). With no tube, two fixed surfaces on the body's back do both jobs: VTAIL below, sized in the flight
-# model to the four surfaces' pitch and yaw stability. Their trailing edges are the ruddervators.
-VTAIL = dict(dihedral_deg=38.0, span=300.0, root=150.0, tip=80.0, root_y=16.0, z=22.0)       # span: each surface, root to tip along itself
-_DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher", "tail_anhedral_deg": 0.0, "tail_panel_span": VTAIL["span"], "tail_panel_root": VTAIL["root"],
-             "tail_panel_tip": VTAIL["tip"], "tail_pivot_y": VTAIL["root_y"], "dash_tail_fan": 1.0,                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
+# THE TAIL (2026-11-23, second form): ASTOR-T's four folding surfaces first became a V-tail; a V-tail cannot help roll
+# (its two surfaces moved against each other yaw the aircraft), so it is now the swing-wing jets' tail: two ALL-MOVING
+# flat halves (together pitch, against each other roll: "tailerons") and ONE upright fin on the body's back.
+# AILERONS: along nearly the whole outer wing piece (5-96 % of it, 30 % of the chord; they were 50-96 %, 25 %).
+TAIL = dict(span=270.0, root=135.0, tip=70.0, root_y=30.0, z=6.0, fin_height=175.0, fin_root=200.0, fin_taper=0.45, fin_sweep_deg=40.0)   # span: each half
+_DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher", "tail_anhedral_deg": 0.0, "tail_panel_span": TAIL["span"], "tail_panel_root": TAIL["root"],
+             "tail_panel_tip": TAIL["tip"], "tail_pivot_y": TAIL["root_y"], "dash_tail_fan": 1.0, "fin_height": TAIL["fin_height"], "fin_root_chord": TAIL["fin_root"],
+             "fin_taper": TAIL["fin_taper"], "fin_sweep_deg": TAIL["fin_sweep_deg"], "panel_aileron_from": 0.05, "panel_aileron_to": 0.96, "panel_aileron_chord": 0.30,                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
              "pivot_slides": False, **_PLAN, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
 _NEW = [
     Parameter("glove_span", 2 * WING["joint_y"], "mm", min=200.0, description="the fixed inner wing, tip to tip"),
@@ -55,8 +57,9 @@ _NEW = [
     Parameter("glove_z", 20.0, "mm", description="its plane above the fuselage axis"),
     Parameter("motor_y", 190.0, "mm", min=80.0, description="each wing motor from the centre plane"),
     Parameter("nacelle_d", 54.0, "mm", min=30.0), Parameter("nacelle_len", 130.0, "mm", min=60.0),
-    Parameter("vtail_dihedral_deg", VTAIL["dihedral_deg"], "deg", min=20.0, max=55.0, description="each tail surface above the horizontal"),
-    Parameter("vtail_z", VTAIL["z"], "mm", description="the tail surfaces' roots above the fuselage axis"),
+    Parameter("vtail_dihedral_deg", 0.0, "deg", min=0.0, max=55.0, description="0: flat all-moving tail halves and one fin; > 0: a V-tail of that dihedral (no fin)"),
+    Parameter("single_fin", 1, "", min=0, max=1, description="one upright fin on the body's back (not ASTOR-T's two folding ones under it)"),
+    Parameter("vtail_z", 22.0, "mm", description="the tail surfaces' roots above the fuselage axis"),
     Parameter("net_launchers", 0, "", min=0, max=2, description="GAVILAN's recoilless net launcher(s) under the forward belly (0: none; the legs are then left off)"),
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
     Parameter("launcher_breech_x", 447.0, "mm", description="the tube's trunnion (at its breech) from the nose tip"),
@@ -71,9 +74,9 @@ VESSEL = dict(skin_mm=1.5, gap_mm=1.5, wall_mm=1.5, aft_of_the_tail_end_mm=25.0,
 
 
 class AstorTwin(T.AstorT):
-    """ASTOR-TWIN: one plain tapered wing with two motors, a V-tail, ASTOR-T's body; the net launcher under the belly."""
+    """ASTOR-TWIN: one plain tapered wing with two motors, an all-moving tail and one fin, ASTOR-T's body; the net launcher under the belly."""
 
-    parameters = [dataclasses.replace(q, default=_DEFAULTS.get(q.name, q.default), min=0.0 if q.name == "panel_stack" else q.min)
+    parameters = [dataclasses.replace(q, default=_DEFAULTS.get(q.name, q.default), min=0.0 if q.name in ("panel_stack", "panel_aileron_from") else q.min)
                   for q in T.AstorT.parameters] + _NEW
 
     def _glove(self, p):
@@ -89,15 +92,24 @@ class AstorTwin(T.AstorT):
         return super()._wing(p).union(self._glove(p))
 
     def _tail(self, p):
-        """The V-tail: two fixed surfaces on the body's back (no fins under the tail, nothing folds)."""
+        """Two all-moving flat tail halves on the body's sides and one fin on its back (or, ``vtail_dihedral_deg`` > 0,
+        a V-tail). Nothing folds."""
+        v = p["vtail_dihedral_deg"]
         out = None
         for s in (1, -1):
             pan = V._panel(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.08)
-            pan = pan.translate((-0.25 * p["tail_panel_root"], 0, 0)).rotate((0, 0, 0), (1, 0, 0), p["vtail_dihedral_deg"])
+            pan = pan.translate((-0.25 * p["tail_panel_root"], 0, 0))
+            if v > 0:
+                pan = pan.rotate((0, 0, 0), (1, 0, 0), v)
             if s < 0:
                 pan = pan.mirror("XZ")
-            pan = pan.translate((p["tail_pivot_x"], s * p["tail_pivot_y"], p["vtail_z"]))
+            pan = pan.translate((p["tail_pivot_x"], s * (p["tail_pivot_y"] if v > 0 else 14.0), p["vtail_z"] if v > 0 else 6.0))
             out = pan if out is None else out.union(pan)
+        if v <= 0:
+            R = self.fuselage_radius(p, p["fuselage_length"] - 20.0 - 0.5 * p["fin_root_chord"])
+            fin = self._surface(p["fuselage_length"] - 20.0 - p["fin_root_chord"], p["fin_root_chord"], p["fin_taper"], p["fin_height"], p["fin_sweep_deg"],
+                                p["tail_thickness"], "z", z0=R - 6.0)
+            out = out.union(fin)
         return out
 
     def _shoulder(self, p):
@@ -231,6 +243,10 @@ def resolve(q=None) -> dict:
     return AstorTwin().resolve(**dict(q or variant()))
 
 
+def _tail_m2(p) -> float:
+    return ((p["tail_panel_root"] + p["tail_panel_tip"]) * p["tail_panel_span"] + 0.5 * p["fin_root_chord"] * (1 + p["fin_taper"]) * p["fin_height"]) / 1e6
+
+
 def vtail_fin_equivalent(p) -> dict:
     """The single upright fin of the V-tail's side force, for the hand lateral formulas: its height is the surfaces'
     rise, its area both surfaces' area x sin^2 of the dihedral (V-tail strip theory)."""
@@ -304,7 +320,7 @@ def vessel_checks() -> dict:
                           "the tail's servo leads: in the %.1f mm gap along the vessel (HAND)" % VESSEL["gap_mm"],
                           "the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)"],
             "not_checked": ["a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at %d mm)" % V.CG_MM,
-                            "the V-tail's root fittings at station %d sit on the body's back over the vessel (HAND)" % p["tail_pivot_x"],
+                            "the tail halves' spigot at station %d crosses the body where the vessel is: it must pass over or under it (HAND)" % p["tail_pivot_x"],
                             "the pack's own fit in the 70 mm body"]}
 
 
@@ -347,9 +363,10 @@ def checks() -> dict:
              ("glove in place of ASTOR-T's wing carriage and inner panels", 1000 * A.WING_KG_M2 * S_glove - 130.0, f"geometry {S_glove:.3f} m2 x {A.WING_KG_M2} kg/m2 less the carriage (HAND)"),
              ("wing fixed at 12 deg: the two sweep servos and linkages off", -60.0, "astor_v.budget's item"),
              ("outer panels on plug-in joiners (off for transport)", 30.0, "HAND (+-15)"),
-             ("V-tail: the two fin hinges, springs and locks off", -18.0, "astor_t.budget's item"),
-             ("V-tail: the tail blades' pivots and fold actuator off", -40.0, "astor_v.budget's item"),
-             ("V-tail: two ruddervator servos, hinges and root fittings", 36.0, "HAND (+-12): 2 x 12 g servos + 12 g; the surfaces' area is the old four's (0.069 against 0.070 m2)"),
+             ("tail: ASTOR-T's two fin hinges, springs and locks off", -18.0, "astor_t.budget's item"),
+             ("tail: the blades' fold actuator off; two all-moving halves on spigots, 2 servos", 10.0, "HAND (+-12): -40 g (astor_v.budget's item) + 2 x 17 g servos + 16 g spigots and bearings"),
+             ("tail and fin area against ASTOR-T's", 1000 * A.TAIL_KG_M2 * (_tail_m2(p) - 0.0704), f"geometry {_tail_m2(p):.4f} m2 against 0.0704 m2 x {A.TAIL_KG_M2} kg/m2"),
+             ("ailerons along the whole outer wing piece: 2 larger servos", 16.0, "HAND (+-8): 2 x 20 g in place of 2 x 12 g"),
              ("growth margin 10 % of the additions", 0.0, "HAND")]
     add = sum(x[1] for x in items[1:-1])
     items[-1] = (items[-1][0], 0.10 * add, "HAND")
@@ -362,8 +379,9 @@ def checks() -> dict:
                            "between_the_two_discs_mm": round(2 * p["motor_y"] - p["prop_diameter"]), "thrust_N_at_0_32_60_m_s": [136, 113, 84],
                            "astor_t_thrust_N_at_0_32_60_m_s": [68, 57, 42], "source": "propulsion library, 2 x prop-11x11-b2 at 4 kW"},
             "mass": {"items": [{"item": n, "g": round(g), "source": s} for n, g, s in items], "total_kg": round(m, 2)},
-            "tail": {"kind": "V", "dihedral_deg": p["vtail_dihedral_deg"], "each_surface_mm": {"span": p["tail_panel_span"], "root": p["tail_panel_root"], "tip": p["tail_panel_tip"]},
-                     "area_both_m2": round((p["tail_panel_root"] + p["tail_panel_tip"]) * p["tail_panel_span"] / 1e6, 4), "rise_above_the_root_mm": round(p["tail_panel_span"] * math.sin(math.radians(p["vtail_dihedral_deg"]))),
-                     "controls": "ruddervators: together pitch, opposed yaw; roll is the ailerons' alone"},
+            "tail": {"kind": "two all-moving halves (pitch together, roll against each other) and one fin", "each_half_mm": {"span": p["tail_panel_span"], "root": p["tail_panel_root"], "tip": p["tail_panel_tip"]},
+                     "halves_m2": round((p["tail_panel_root"] + p["tail_panel_tip"]) * p["tail_panel_span"] / 1e6, 4), "tail_span_mm": round(2 * (p["tail_pivot_y"] + p["tail_panel_span"])),
+                     "fin_mm": {"height": p["fin_height"], "root": p["fin_root_chord"], "tip": p["fin_root_chord"] * p["fin_taper"]}, "fin_m2": round(0.5 * p["fin_root_chord"] * (1 + p["fin_taper"]) * p["fin_height"] / 1e6, 4)},
+            "ailerons": {"along_the_outer_piece": [p["panel_aileron_from"], p["panel_aileron_to"]], "chord_fraction": p["panel_aileron_chord"]},
             "stall_spread_m_s": {"value": round(math.sqrt(2 * m * 9.80665 / (1.225 * S * cl)), 1), "note": f"CL max {cl} carried over from ASTOR-V's CFD (HAND for this wing)"},
             "wing_loading_kg_m2": round(m / S, 1), "current_A_at_8_kW": round(8000.0 / T.PACK_V)}

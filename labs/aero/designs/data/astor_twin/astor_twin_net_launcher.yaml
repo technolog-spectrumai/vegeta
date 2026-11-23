@@ -7,10 +7,10 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 5.72
-  stall_spread_m_s: 20.1
-  wing_loading_kg_m2: 21.9
-  thrust_over_weight_at_32_m_s: 2.01
+  mass_kg: 5.76
+  stall_spread_m_s: 20.2
+  wing_loading_kg_m2: 22.1
+  thrust_over_weight_at_32_m_s: 2.0
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
@@ -23,9 +23,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 26.1
+    speed_m_s: 26.2
     bandit_m_s: 9.0
-    closing_m_s: 17.1
+    closing_m_s: 17.2
     fire_between_m:
     - 4.0
     - 10.0
@@ -41,7 +41,7 @@
     tested_at_m_s: 40.0
   recoil_if_the_rear_jet_were_blocked:
     impulse_Ns: 6.0
-    speed_change_m_s: 1.05
+    speed_change_m_s: 1.04
     note: 'small on this mass: a plain closed breech would do'
   air_vessel:
     where: inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech
@@ -61,7 +61,7 @@
     balance:
       vessel_g_with_margin: 312
       centre_moves_aft_mm: 274
-      aircraft_cg_moves_aft_mm: 12.7
+      aircraft_cg_moves_aft_mm: 12.6
       pack_moves_forward_to_hold_it_mm: 56
       air_used_per_shot_g: 19.1
       cg_shift_per_shot_mm: -0.57
@@ -75,7 +75,7 @@
     - 'the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)'
     not_checked:
     - 'a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at 365 mm)'
-    - the V-tail's root fittings at station 655 sit on the body's back over the vessel (HAND)
+    - 'the tail halves'' spigot at station 655 crosses the body where the vessel is: it must pass over or under it (HAND)'
     - the pack's own fit in the 70 mm body
   untested:
   - 'the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)'
@@ -90,10 +90,10 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 6.66
+  mass_kg: 6.7
   stall_spread_m_s: 21.7
-  wing_loading_kg_m2: 25.5
-  thrust_over_weight_at_32_m_s: 1.73
+  wing_loading_kg_m2: 25.7
+  thrust_over_weight_at_32_m_s: 1.72
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
@@ -106,9 +106,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 28.2
+    speed_m_s: 28.3
     bandit_m_s: 9.0
-    closing_m_s: 19.2
+    closing_m_s: 19.3
     fire_between_m:
     - 4.0
     - 10.0
@@ -144,7 +144,7 @@
     balance:
       vessel_g_with_margin: 312
       centre_moves_aft_mm: 274
-      aircraft_cg_moves_aft_mm: 12.7
+      aircraft_cg_moves_aft_mm: 12.6
       pack_moves_forward_to_hold_it_mm: 56
       air_used_per_shot_g: 19.1
       cg_shift_per_shot_mm: -0.57
@@ -158,7 +158,7 @@
     - 'the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)'
     not_checked:
     - 'a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at 365 mm)'
-    - the V-tail's root fittings at station 655 sit on the body's back over the vessel (HAND)
+    - 'the tail halves'' spigot at station 655 crosses the body where the vessel is: it must pass over or under it (HAND)'
     - the pack's own fit in the 70 mm body
   untested:
   - 'the net opening when fired from an aircraft at 25 m/s (its tests: a fixed launcher, a hovering quadcopter)'
