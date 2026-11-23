@@ -63,7 +63,7 @@ FLAP_STATES = {"twin": ((12.0, 24.0),)}                              # stability
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20"}
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6"}
 
 
 def _inputs() -> str:
@@ -363,8 +363,12 @@ def main(argv=None) -> int:
                     "8 cases, stored beside the 15 deg ones (twin_stowed_sweep12), the flight model untouched")
     ap.add_argument("--agility-cfd", action="store_true", help="cfd only: ASTOR-TWIN with the agility study's 12 % thick, 4 % cambered section, clean and with the "
                     "flaperons and inboard flaps down 20 deg (tube level); 16 cases, stored beside the others, the flight model untouched")
+    ap.add_argument("--section-cfd", action="store_true", help="cfd only: the section question (astor_v_cfd.SECTION_STATES): the 12 % wing with 2 % camber, flaps up and "
+                    "down, and the 4 % wing with every flap reflexed 6 deg up at the fast-flight angles; 24 cases, the flight model untouched")
     a = ap.parse_args(argv)
     a.designs = a.design or ["twin"]
+    if a.section_cfd:
+        a.designs, a.cfd_only, a.stability_only, a.netshot_only, a.tube_stowed, a.agility_cfd = ["twin_c2", "twin_c2_flap", "twin_agile_reflex"], True, False, False, False, False
     if a.tube_stowed or a.agility_cfd:
         a.designs = (["twin_stowed"] if a.tube_stowed else []) + (["twin_agile", "twin_agile_flap"] if a.agility_cfd else [])
         a.cfd_only, a.stability_only, a.netshot_only = True, False, False
@@ -373,7 +377,7 @@ def main(argv=None) -> int:
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
     if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only or a.netshot_only):
         phases.append("launch")
-    if a.tube_stowed or a.agility_cfd:
+    if a.tube_stowed or a.agility_cfd or a.section_cfd:
         phases = ["cfd"]
     if "twin" in a.designs:
         if len(a.designs) > 1:

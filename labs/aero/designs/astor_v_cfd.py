@@ -27,7 +27,15 @@ CASES = {12.0: (25.0, 1.0, (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0)),
 AGILE = {"panel_thickness": 0.12, "panel_camber": 0.04, "inboard_flap_chord": 0.30}
 AGILE_FLAPS = {**AGILE, "flaperon_deg": 20.0, "inboard_flap_deg": 20.0}
 THIN = {"panel_thickness": 0.08, "panel_camber": 0.02, "inboard_flap_chord": 0.0}
-DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
+# THE SECTION QUESTION (2026-11-23): the 4 % cambered wing costs ~25 % more drag than the thin one from 45 m/s up (it
+# flies there at about -2 deg), for 0.06 of maximum lift; the flaps are what bring the lift. Two ways to keep the flaps
+# and lose the penalty: the same thickness with 2 % camber (twin_c2, twin_c2_flap), or the 4 % wing with every flap
+# reflexed 6 deg up in fast flight (twin_agile_reflex: the low angles only).
+C2 = {"panel_thickness": 0.12, "panel_camber": 0.02, "inboard_flap_chord": 0.30}
+SECTION_STATES = {"twin_c2": C2, "twin_c2_flap": {**C2, "flaperon_deg": 20.0, "inboard_flap_deg": 20.0},
+                  "twin_agile_reflex": {**AGILE, "flaperon_deg": -6.0, "inboard_flap_deg": -6.0}}
+ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0)}
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 
 def sweeps(design) -> tuple:
@@ -35,11 +43,13 @@ def sweeps(design) -> tuple:
     return (12.0,) if design.startswith("twin") else tuple(CASES)
 
 
-EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
+EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0), "twin_c2": (-2.0, 2.0), "twin_c2_flap": (-2.0, 2.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
 
 
 def alphas(design, sweep) -> tuple:
     """The angles of attack run for this design at this sweep."""
+    if design in ONLY_ALPHA:
+        return ONLY_ALPHA[design]
     return tuple(sorted(set(CASES[sweep][2]) | set(EXTRA_ALPHA.get(design, ()))))
 
 
@@ -57,6 +67,9 @@ def _cls(design):
     if design == "twin":                                              # the OLD thin wing, the launcher at its rest tilt (15 deg down)
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **THIN, **over}))
+    if design in SECTION_STATES:
+        import astor_twin as W
+        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **SECTION_STATES[design], **over}))
     if design in ("twin_agile", "twin_agile_flap"):                   # the thicker, more cambered section; and with every flap down 20 deg
         import astor_twin as W
         extra = AGILE_FLAPS if design.endswith("flap") else AGILE

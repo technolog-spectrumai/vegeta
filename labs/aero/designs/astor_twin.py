@@ -62,7 +62,7 @@ _NEW = [
     Parameter("vtail_z", 22.0, "mm", description="the tail surfaces' roots above the fuselage axis"),
     Parameter("flaperon_deg", 0.0, "deg", min=-25.0, max=40.0, description="the ailerons drooped together (flaperons), trailing edge down: 0 in fast flight, ~20 to turn slowly"),
     Parameter("inboard_flap_chord", 0.30, "", min=0.0, max=0.4, description="plain flaps on the inner wing pieces, behind the propellers, as a share of the chord (0: none)"),
-    Parameter("inboard_flap_deg", 0.0, "deg", min=0.0, max=40.0, description="their droop"),
+    Parameter("inboard_flap_deg", 0.0, "deg", min=-25.0, max=40.0, description="their droop (negative: reflexed up, for fast flight)"),
     Parameter("net_launchers", 0, "", min=0, max=2, description="GAVILAN's recoilless net launcher(s) under the forward belly (0: none; the legs are then left off)"),
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
     Parameter("launcher_breech_x", 447.0, "mm", description="the tube's trunnion (at its breech) from the nose tip"),
