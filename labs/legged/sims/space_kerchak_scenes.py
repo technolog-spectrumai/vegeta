@@ -366,7 +366,7 @@ class ScenePlayer:
         open_ = mk.smooth(min(1.0, max(0.0, (t - va) / max(vb - va, 0.05))))
         if t > F["t_grasp"] and t > F["t_off"] + 0.3:
             open_ = 0.0
-        piv = pn + Rn[:, 2] * 0.1 + Rn[:, 1] * 0.022
+        piv = pn - Rn[:, 2] * 0.1 + Rn[:, 1] * 0.022                   # the shut-off valve at the hose's coupling behind the nozzle
         ang = (1 - open_) * 0.2 + open_ * 1.4
         lever = piv + 0.07 * (math.cos(ang) * Rn[:, 2] + math.sin(ang) * Rn[:, 1])
         tube(np.array([piv, lever]), 0.006, (0.95, 0.75, 0.1), k=6)

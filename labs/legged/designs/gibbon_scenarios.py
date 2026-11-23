@@ -1164,7 +1164,7 @@ gs.SCENARIOS["brachiate"] = scenario_brachiate
 FIRE = {**HEIST_JUMP, "fire": 1, "spray_range": 1.1}                       #: how far short of the fire it stops [m]
 HAT_ON_THORAX = (0.0, 0.0, 0.24)                                         #: the helmet's frame on the thorax (the head's top at ~0.3)
 NOZZLE = {"length": 0.2, "r": 0.018, "grip": 0.06}                         #: the nozzle: along its z, the grip this far up from its root
-HOLSTER_ON_THORAX = (np.array([-0.06, -0.14, -0.14]), 0.0)               #: the nozzle's root in the holster (low on the pack's right side), upright
+HOLSTER_ON_THORAX = (np.array([0.11, -0.11, -0.06]), 0.0)               #: the nozzle's root in the holster (low on the pack's right side), upright
 
 
 def hat_prop(p):
@@ -1224,7 +1224,7 @@ def scenario_fire(kin, q_stand, p):
         return dd, (grip, gs.hand_frame_on(gs.bar(grip, axis=dd, n=(0.0, 0.0, 1.0), r=NOZZLE["r"], wrist_dir=gs._unit(-dd + np.array([0.0, -0.3, -0.5]))), "R"))
     def brace(yaw):
         dd, (grip, _) = aim(yaw)
-        c = grip - 0.2 * dd + np.array([0.0, 0.1, 0.0])
+        c = grip - 0.17 * dd + np.array([0.0, 0.06, 0.0])
         return (c, gs.hand_frame_on(gs.bar(c, axis=dd, n=(0.0, 0.0, 1.0), r=0.015, wrist_dir=gs._unit(-dd + np.array([0.0, 0.3, -0.5]))), "L"))
     kin.set(q_stand)
     hand0 = {sd: gs._hand_pose(kin, q_stand, base, pt, sd) for sd in ("L", "R")}
@@ -1311,7 +1311,7 @@ FIRE = {"wall_x": 6.0, "wall_t": 0.25, "floor": 3.0, "sill_h": 0.85, "win_w": 0.
         "room_d": 5.0, "rung_out": 0.14, "rung_sp": 0.3, "rung0": 0.3, "rung_r": 0.016, "rail_y": 0.22, "rail_above": 0.95,
         "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.0, "quad_y": 1.0, "spray_range": 1.1, "climb_s": 3.0}
 RED = (0.72, 0.1, 0.08, 1.0)
-CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (-0.25, -0.78, 0.8), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.53, 0.48)}
+CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (-0.25, -0.78, 0.8), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.44, 0.46)}
 
 
 def _fire_sill(p):
@@ -1362,7 +1362,7 @@ def chuck_prop(p):
     """Chuck, simplified: the quad's frame and wheels, the water tank, the pump, the hose reel, the water cannon on the
     nose, the handlebars and seat; the nozzle's hook on its left side. Its frame at the ground under the middle."""
     blk, grey, steel = (0.08, 0.08, 0.09, 1.0), (0.62, 0.64, 0.66, 1.0), (0.4, 0.42, 0.45, 1.0)
-    geoms = [gs._box("chuck_frame", (1.0, 0.45, 0.08), (0.0, 0.0, 0.5), rgba=RED, mass=200.0),
+    geoms = [gs._box("chuck_frame", (1.0, 0.34, 0.08), (0.0, 0.0, 0.5), rgba=RED, mass=200.0),
              gs._box("chuck_tank", (0.32, 0.42, 0.24), (-0.6, 0.0, 0.82), rgba=grey, mass=200.0),
              Geom("chuck_reel", "cylinder", (0.24, 0.16), pos=CHUCK["reel"], quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=20.0, role="link", rgba=RED),
              gs._box("chuck_pump", (0.14, 0.12, 0.1), (-0.15, 0.0, 0.68), rgba=steel, mass=30.0),
@@ -1372,9 +1372,9 @@ def chuck_prop(p):
              gs._cap("chuck_bars", 0.018, (0.5, -0.3, 1.04), (0.5, 0.3, 1.04), rgba=blk, mass=2.0),
              gs._cap("chuck_cannon_post", 0.04, (0.9, 0.0, 0.58), (0.9, 0.0, 0.8), rgba=steel, mass=4.0),
              gs._cap("chuck_cannon", 0.035, (0.9, 0.0, 0.84), (1.15, 0.0, 0.94), rgba=(0.78, 0.62, 0.25, 1.0), mass=5.0),
-             gs._cap("chuck_hook_arm", 0.012, (CHUCK["hook"][0], -0.45, 0.55), (CHUCK["hook"][0], CHUCK["hook"][1], CHUCK["hook"][2] - 0.05), rgba=steel, mass=0.3)]
+             gs._cap("chuck_hook_arm", 0.012, (CHUCK["hook"][0], -0.34, 0.55), (CHUCK["hook"][0], CHUCK["hook"][1], CHUCK["hook"][2] - 0.05), rgba=steel, mass=0.3)]
     for sy, tag in ((1, "l"), (-1, "r")):                                    # the foot pegs out beside the frame
-        geoms.append(gs._cap(f"chuck_peg_{tag}", 0.015, (CHUCK["pegs"][0] - 0.06, sy * 0.46, CHUCK["pegs"][2] - 0.03), (CHUCK["pegs"][0] - 0.06, sy * 0.62, CHUCK["pegs"][2] - 0.03), rgba=steel, mass=0.5))
+        geoms.append(gs._cap(f"chuck_peg_{tag}", 0.015, (CHUCK["pegs"][0] - 0.08, sy * 0.34, CHUCK["pegs"][2] - 0.03), (CHUCK["pegs"][0] - 0.08, sy * 0.52, CHUCK["pegs"][2] - 0.03), rgba=steel, mass=0.5))
     for i, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
         geoms.append(Geom(f"chuck_wheel_{i}", "cylinder", (0.33, 0.12), pos=(sx * 0.72, sy * 0.6, 0.33), quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=20.0, role="link", rgba=blk))
         geoms.append(Geom(f"chuck_hub_{i}", "cylinder", (0.12, 0.125), pos=(sx * 0.72, sy * 0.6, 0.33), quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=2.0, role="visual", rgba=steel))
@@ -1410,12 +1410,12 @@ def _fire_fight(kin, q_stand, base, fire_c, pt):
 
     def brace(yaw):
         dd, (grip, _) = aim(yaw)
-        c = grip - 0.2 * dd + np.array([0.0, 0.1, 0.0])
+        c = grip - 0.17 * dd + np.array([0.0, 0.06, 0.0])
         return (c, gs.hand_frame_on(gs.bar(c, axis=dd, n=(0.0, 0.0, 1.0), r=0.015, wrist_dir=gs._unit(-dd + np.array([0.0, 0.3, -0.5]))), "L"))
 
     def bail(yaw):                                                         # the valve's lever on top of the nozzle, ahead of the grip
         dd, (grip, _) = aim(yaw)
-        c = grip + 0.04 * dd + np.array([0.0, 0.05, 0.04])
+        c = grip - 0.17 * dd + np.array([0.0, 0.06, 0.0])                   # the shut-off at the hose's coupling, where the left hand braces
         return (c, gs.hand_frame_on(gs.bar(c, axis=gs._unit(np.cross(dd, [0.0, 0.0, 1.0])), n=(0.0, 0.0, 1.0), r=0.01, wrist_dir=gs._unit(np.array([-0.4, 0.3, 0.6]))), "L"))
     hand0 = {sd: gs._hand_pose(kin, q_stand, base, pt, sd) for sd in ("L", "R")}
     up_over = p_th + R_th @ np.array([0.12, -0.2, 0.05])
