@@ -302,26 +302,29 @@ class Myropod(Design):
         return tube.cut(core)
 
     def _arms_tucked(self, p):
-        """Both arms folded under the head's front (the pose they travel in): shoulder under the head, elbow up and
-        back, forearm forward and down, the gripper's jaws (left) and the cutter's blades (right) at the end."""
-        zc, Lh = p["seg_height"] / 2, p["head_length"]
+        """Both arms folded under the head (the pose they travel in), like a mantis's: the shoulder under the head's
+        front, the upper arm back along the belly, the forearm folded forward beneath it, the pincer under the chin —
+        the gripper's flat jaws on the left, the cutter's blades on the right; all within the head's outline."""
+        zc, Lh, d = p["seg_height"] / 2, p["head_length"], p["arm_diameter"]
+        a_up, a_fo = 175.0, 4.0                                        # about y: 175 = back and a little down
         out = None
         for sy, tool in ((1, "g"), (-1, "c")):
-            base = (Lh / 2 - 10, sy * 35, zc - 28)
-            up = self._arm_bar(p, p["arm_upper"], p["arm_diameter"]).rotate((0, 0, 0), (0, 1, 0), -110)
-            ex = p["arm_upper"] * math.cos(math.radians(110)), p["arm_upper"] * math.sin(math.radians(110))
-            fore = self._arm_bar(p, p["arm_fore"], p["arm_diameter"] * 0.85).rotate((0, 0, 0), (0, 1, 0), 32)
-            fx, fz = ex[0] + p["arm_fore"] * math.cos(math.radians(-32)), ex[1] + p["arm_fore"] * math.sin(math.radians(-32))
+            base = (Lh / 2 - 10, sy * 33, -d / 2 - 1)                  # just under the belly
+            up = self._arm_bar(p, p["arm_upper"], d).rotate((0, 0, 0), (0, 1, 0), a_up)
+            ex = p["arm_upper"] * math.cos(math.radians(a_up)), -p["arm_upper"] * math.sin(math.radians(a_up))
+            fore = self._arm_bar(p, p["arm_fore"], d * 0.85).rotate((0, 0, 0), (0, 1, 0), a_fo)
+            fore = fore.translate((ex[0], -sy * 1.5, ex[1] - d * 0.9))   # beside and beneath the upper arm
+            fx = ex[0] + p["arm_fore"] * math.cos(math.radians(a_fo))
+            fz = ex[1] - d * 0.9 - p["arm_fore"] * math.sin(math.radians(a_fo))
             jaws = None
             for k in (1, -1):
                 j = self._gripper_jaw(p) if tool == "g" else self._cutter_blade(p)
                 if k < 0:
                     j = j.mirror("XZ")
-                j = j.rotate((0, 0, 0), (0, 0, 1), k * 8).translate((0, k * 3.0, 0)).rotate((0, 0, 0), (0, 1, 0), 32)
+                j = j.rotate((0, 0, 0), (0, 0, 1), k * 6).translate((0, k * 2.5, 0)).rotate((0, 0, 0), (0, 1, 0), a_fo)
                 jaws = j if jaws is None else jaws.union(j)
-            arm = up.union(fore.translate((ex[0], 0, ex[1]))).union(jaws.translate((fx, 0, fz)))
-            arm = arm.translate(base)
-            out = arm if out is None else out.union(arm)
+            arm = up.union(fore).union(jaws.translate((fx, -sy * 1.5, fz)))
+            out = arm.translate(base) if out is None else out.union(arm.translate(base))
         return out
 
     def _place(self, shape, pos, yaw, pitch):
