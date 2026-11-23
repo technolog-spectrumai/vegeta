@@ -152,8 +152,8 @@ def _solid_pass(kin, q, targets, base, R, q_ref, limbs, reg, iters, u):
         push = [(kin.body(b), l, R.T @ (g - base)) for b, l, g, _d in deepest.values()]
         q, _ = kin.ik(targets + push, q_init=q, q_ref=q_ref, joints=limbs, reg=reg, iters=iters // 2,
                       weights=[1.0] * len(targets) + [SOLID_WEIGHT] * len(push))
-    if _hard_error(kin, q, targets) > err_before + SOLID_GIVE:              # the holds come first: a push that costs them is not taken
-        q = q_before
+    if _hard_error(kin, q, targets) > err_before + SOLID_GIVE and SOLID.worst(q, base, _pitch_of(R), u)[0] >= raw:
+        q = q_before                                                       # a push that costs the holds and clears nothing is not taken; one that clears a limb out of a bar always is (nothing passes through)
     q = _open_fingers(kin, q, base, R, u)
     depth, bodies = SOLID.worst(q, base, _pitch_of(R), u)
     return q, depth, bodies, raw

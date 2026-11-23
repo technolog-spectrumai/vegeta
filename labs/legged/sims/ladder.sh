@@ -4,7 +4,7 @@
 #
 #   ./ladder.sh            # 4 processes
 #   JOBS=8 ./ladder.sh     # more processes on a bigger machine
-#   PASSES=8 ./ladder.sh   # more solidity passes (slower, tighter contacts; default 2)
+#   PASSES=8 ./ladder.sh   # more solidity passes (slower, tighter contacts; default 4)
 #
 # Needs python with mujoco and the repo's requirements, and ffmpeg. Each process builds
 # the scene first (~25 min), then renders its share of the ~1070 frames (~13 s each).
@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 JOBS=${JOBS:-4}
-PASSES=${PASSES:-2}
+PASSES=${PASSES:-4}
 WORK=${WORK:-$(mktemp -d -t fire_XXXX)}
 FRAMES="$WORK/frames"
 OUT=output/space_spider_fire.mp4

@@ -1308,7 +1308,7 @@ def scenario_fire(kin, q_stand, p):
 # opens its valve with the left hand and sprays the fire out
 
 FIRE = {"wall_x": 6.0, "wall_t": 0.25, "floor": 3.0, "sill_h": 0.85, "win_w": 0.9, "win_h": 1.3, "roof": 6.4, "house_w": 12.0,
-        "room_d": 5.0, "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.6, "quad_y": 1.25, "spray_range": 1.1, "climb_s": 3.6,
+        "room_d": 5.0, "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.6, "quad_y": 1.25, "spray_range": 1.1, "climb_s": 1.8,
         "lean_deg": 75.0, "carry_v": 0.25}
 RED = (0.72, 0.1, 0.08, 1.0)
 CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (0.35, -0.78, 1.0), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.44, 0.46),
@@ -2160,7 +2160,7 @@ def tail_wrap_rung(kin, c, n_out, up, wind=1.0, off=0.0):
     little along the rung (a helix, the tail not lying on itself). ``wind`` 0..1: how far round it is wound (0: the
     links hanging down its front); ``off``: out from the rung [m]. [(body, local, world)]."""
     n, seg = _tail_links(kin)
-    r0 = LADDER["rung_r"] + 0.03
+    r0 = LADDER["rung_r"] + 0.04                                          # out by the tail's thickness and the chords' sag: no link cuts through the rung
     R = r0 + off
     step = seg / r0
     out = []
