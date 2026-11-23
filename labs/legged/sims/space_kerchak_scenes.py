@@ -153,6 +153,7 @@ class ScenePlayer:
                 self._fire["radio_T"] = T_("radio_T", rc)
                 self._fire["t_radio"] = at(rc, rc[1].params["grab_u"])
                 self._fire["caption"] = (at(rc, rc[1].params["talk_u"][0]), at(rc, rc[1].params["talk_u"][1]) + 5.0)
+                self._fire["close"] = (rc[0], rc[0] + rc[1].period)
         self.reset()
 
     def segment(self, t):
@@ -360,31 +361,28 @@ class ScenePlayer:
         P = gb.FIRE
         X, F_ = P["wall_x"], P["floor"]
         pack = pt_ + Rt @ np.array([-0.12, -0.08, -0.12])
-        if t >= F["t_clip"] and t > F["trail_t"] + 0.2:                    # where the pack has been: the hose lies there
-            F["trail"].append(pack.copy()); F["trail_t"] = t
-        pts = [reel, reel + np.array([0.0, -0.05, -0.3])]
+        # the hose's lay: down off the reel to the ground, along it to where the monkey is - or, once it climbs, to the
+        # ladder's foot, up the ladder's front (in front of the rungs), over the sill's lip, down onto the first floor
+        Ol, Rl, _ = gb.ladder_final(P)
+        al, nl = Rl[:, 0], Rl[:, 2]
+        Xo, Xi, top_ = X - P["wall_t"] / 2, X + P["wall_t"] / 2, gb._fire_sill(P) + 0.06
+        up_front = lambda s_: Ol + s_ * al + 0.13 * nl                     # the hose lying on the ladder's front
+        s_lip = (top_ - Ol[2]) / al[2]
+        foot = np.array([Ol[0] - 0.35, 0.0, 0.03])
+        pts = [reel, reel + np.array([0.0, -0.05, -0.3]), np.array([reel[0], reel[1] - 0.1, 0.03])]
         if t < F["t_take"]:
-            pts += [pn]
-        else:
-            way = []
-            for q_ in (F["trail"] if t >= F["t_clip"] else []):
-                q_ = q_.copy()
-                lx = gb.ladder_rail_x(P, max(q_[2] - 0.15, 0.0)) - 0.08 if q_[2] >= 0.9 else X
-                if q_[0] < min(lx + 0.12, X - P["wall_t"] / 2 - 0.05):     # outside: on the ground, or down the ladder's front while climbing
-                    if q_[2] < 0.9:
-                        q_[2] = 0.03
-                    else:
-                        q_[0] = lx
-                        q_[2] -= 0.15
-                elif q_[0] < X + P["wall_t"] / 2 + 0.05:                   # over the sill
-                    q_[2] = gb._fire_sill(P) + 0.08
-                else:                                                      # on the first floor
-                    q_[2] = F_ + 0.03
-                way.append(q_)
-            if way and way[0][2] < 0.1:
-                pts.append(np.array([pts[-1][0], pts[-1][1], 0.03]))
-            pts += way
+            pts = pts[:2] + [pn]
+        elif pack[0] > Xo - 0.05:                                          # at the sill or inside: up the ladder, over the lip
+            pts += [foot] + [up_front(s_) for s_ in np.arange(0.4, s_lip - 0.1, 0.5)]
+            pts += [up_front(s_lip - 0.05) + np.array([0.0, 0.0, 0.05]), np.array([Xo + 0.02, 0.0, top_ + 0.03])]
+            if pack[0] > Xi + 0.1 and pack[2] < F_ + 1.0:                 # down onto the floor, along it to below the pack
+                pts += [np.array([Xi + 0.05, 0.0, top_ + 0.02]), np.array([Xi + 0.25, 0.0, F_ + 0.03]), np.array([pack[0] - 0.15, pack[1], F_ + 0.03])]
             pts.append(pack)
+        elif pack[2] > 1.15 and Ol[0] - 0.6 < pack[0]:                     # climbing: up the ladder's front to below the pack
+            s_p = (pack[2] - 0.25 - Ol[2]) / al[2]
+            pts += [foot] + [up_front(s_) for s_ in np.arange(0.4, max(s_p, 0.41), 0.5)] + [pack]
+        else:                                                              # on the ground: along it to below the pack
+            pts += [np.array([pack[0] - 0.2, pack[1], 0.03]), pack]
         pts.append(root)
         P_ = np.array(pts)
         if len(P_) > 3:                                                    # a smooth line through them (Catmull-Rom)
@@ -644,6 +642,17 @@ def main(argv=None):
             cap = g._fire.get("caption") if g._fire is not None else None
             renderer.caption = "\"Chuck, this is Monkey: fire's out. Mission accomplished!\"" if cap is not None and cap[0] <= t <= cap[1] else None
             cam = br.orbit((c[0], c[1], max(c[2], 0.8)), elev, az, 4.6)
+            cl = g._fire.get("close") if g._fire is not None else None
+            if cl is not None and t >= cl[0]:                                # the radio call: in close on the face
+                f = mk.smooth(min(1.0, (t - cl[0]) / 1.5))
+                th = g.model.body("thorax").id
+                Rt, pth = g.data.xmat[th].reshape(3, 3), g.data.xpos[th]
+                tgt = pth + Rt @ np.array([0.05, 0.0, 0.1])
+                look = Rt[:, 0] * math.cos(math.radians(30)) - Rt[:, 1] * math.sin(math.radians(30))
+                look = look / np.linalg.norm(look) + np.array([0.0, 0.0, 0.12])
+                eye = tgt + 1.0 * look / np.linalg.norm(look)
+                cam = br.Camera(tuple((1 - f) * np.asarray(cam.eye) + f * eye), tuple((1 - f) * np.asarray(cam.target) + f * tgt))
+                renderer.hidden |= {"back_wall", "side_left", "side_right", "roof"} if f > 0.5 else set()
             renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
         import matplotlib

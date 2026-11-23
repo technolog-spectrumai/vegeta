@@ -2035,9 +2035,13 @@ def scenario_fire(kin, q_stand, p):
     base_c = lambda k: rung(k) + np.array([-0.3 + 0.35 / math.tan(th_f), 0.0, 0.35])
     n_rungs = sum(1 for k in range(40) if rung(k)[2] < sill - 0.15)
     n = n_rungs - 1
-    tail = tail_for_ladder(kin, rung, n_f, a_f) if tail_tip(kin) is not None else None   # the tail round the feet's rung, between them: a fifth hold
+    if upto == "climb":                                                     # a quick look: two cycles
+        n = 2
+    tail = tail_for_ladder(kin, rung, n_f, a_f) if tail_tip(kin) is not None else None   # the tail round the rung above the feet's: a fifth hold
     segs = gs._climb_sequence(kin, q_stand, hold, base_c, n, stop_x=stop_x, trials=gs.VERTICAL_TRIALS, duration=p["climb_s"], tail=tail)
     segs = segs[1:]                                                        # no walk up: it is stood there from the haul
+    if upto == "climb":
+        return out + segs
     q = q_stand.copy()
     for sg_ in segs:
         q = gt._last(kin, sg_[1], q)
@@ -2069,14 +2073,14 @@ def scenario_fire(kin, q_stand, p):
 
     tail_off = []
     if tail is not None:                                                   # the tail: unwound off the feet's rung, then carried with the body
-        last = tail_wrap_rung(kin, rung(n), n_f, a_f, wind=0.0, off=0.03)
+        last = tail_wrap_rung(kin, rung(n + 1), n_f, a_f, wind=0.0, off=0.03)
         kin.set(q_stand)
         rest = [kin.world(b_, l_) for b_, l_, _ in last]
 
         def tail_off_fn(u):
             if u < 0.1:
                 g = mk.smooth(u / 0.1)
-                return tail_wrap_rung(kin, rung(n), n_f, a_f, wind=1.0 - g, off=0.03 * g)
+                return tail_wrap_rung(kin, rung(n + 1), n_f, a_f, wind=1.0 - g, off=0.03 * g)
             x, y, z, pt_ = b_over(u)
             R, pc = gm.base_rot(pt_), np.array([x, y, z])
             carried = [R @ rs + pc for rs in rest]
@@ -2161,13 +2165,14 @@ def tail_wrap_rung(kin, c, n_out, up, wind=1.0, off=0.0):
 
 def tail_for_ladder(kin, rung_c, n_out, up):
     """``tail(q_from, k)`` for ``_climb_sequence`` on the ladder: the prehensile tail passed forward between the legs
-    and wrapped round the feet's rung between them - a fifth hold. In cycle ``k`` it holds rung ``k`` while the hands
-    and feet move up, then unwinds, slides up the ladder's front and wraps round rung ``k + 1``, between the feet
-    again; on the first cycle it comes from where it is carried onto rung 1."""
+    and wrapped round the rung above the feet's, between the knees - a fifth hold, in its reach as the body rises. In
+    cycle ``k`` it holds rung ``k + 1`` while the hands and feet move up (the feet come onto that rung either side of
+    it), then unwinds, slides up the ladder's front and wraps round rung ``k + 2``; on the first cycle it comes from
+    where it is carried."""
     def make(q_from, k):
         if k is None:                                                      # the mount: the tail carried
             return lambda u, base: []
-        zb = rung_c(k + 1)
+        zb = rung_c(k + 2)
         if k == 0:
             first = tail_wrap_rung(kin, zb, n_out, up, wind=0.0, off=0.03)
             kin.set(q_from)
@@ -2184,7 +2189,7 @@ def tail_for_ladder(kin, rung_c, n_out, up):
                 g = mk.smooth((u - 0.88) / 0.12)
                 return tail_wrap_rung(kin, zb, n_out, up, wind=g, off=0.03 * (1 - g))
             return fn
-        za = rung_c(k)
+        za = rung_c(k + 1)
 
         def fn(u, base):
             if u <= 0.76:                                                  # held until both feet are on their new rung
