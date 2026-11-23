@@ -1365,7 +1365,7 @@ def chuck_prop(p):
     geoms = [gs._box("chuck_frame", (1.0, 0.34, 0.08), (0.0, 0.0, 0.5), rgba=RED, mass=200.0),
              gs._box("chuck_tank", (0.32, 0.42, 0.24), (-0.6, 0.0, 0.82), rgba=grey, mass=200.0),
              Geom("chuck_reel", "cylinder", (0.24, 0.16), pos=CHUCK["reel"], quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=20.0, role="link", rgba=RED),
-             gs._box("chuck_pump", (0.14, 0.12, 0.1), (-0.15, 0.0, 0.68), rgba=steel, mass=30.0),
+             gs._box("chuck_pump", (0.12, 0.1, 0.05), (-0.32, 0.0, 0.63), rgba=steel, mass=30.0),
              gs._box("chuck_seat", (0.22, 0.17, 0.05), (CHUCK["seat"][0], 0.0, 0.75), rgba=blk, mass=5.0),
              gs._box("chuck_tankcover", (0.3, 0.3, 0.06), (0.35, 0.0, 0.66), rgba=RED, mass=10.0),
              gs._cap("chuck_column", 0.03, (0.45, 0.0, 0.65), (0.5, 0.0, 1.02), rgba=steel, mass=3.0),
