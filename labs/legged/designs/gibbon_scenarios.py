@@ -1482,8 +1482,8 @@ FACE_ON_THORAX = np.array([0.0, 0.0, 0.0])                                 #: th
 def face_prop(p):
     """A sweet, brave little robot-monkey face on the head: camera eyes (a lens in a housing, a glint), a smoke
     detector for a nose, a pale muzzle with a smile, big disc ears facing forward with a microphone in each (a slot
-    through each where the helmet's brim passes), and eyebrows set firm. Drawn on the head (visual only)."""
-    skin, white, blk, brow = (0.86, 0.72, 0.56, 1.0), (0.97, 0.97, 0.95, 1.0), (0.07, 0.05, 0.05, 1.0), (0.3, 0.18, 0.1, 1.0)
+    through each where the helmet's brim passes). Drawn on the head (visual only)."""
+    skin, white, blk = (0.86, 0.72, 0.56, 1.0), (0.97, 0.97, 0.95, 1.0), (0.07, 0.05, 0.05, 1.0)
     steel, lens, grey, red = (0.62, 0.64, 0.67, 1.0), (0.08, 0.12, 0.22, 1.0), (0.55, 0.57, 0.6, 1.0), (0.9, 0.1, 0.08, 1.0)
     F = FACE
     fwd = (0.70710678, 0.0, 0.70710678, 0.0)                                 # a cylinder's axis turned to face forward (x)
@@ -1517,9 +1517,7 @@ def face_prop(p):
               v(f"face_lens_{t_}", "sphere", (r_ * 0.6,), (cx + 0.004, ey, cz + 0.012), lens),
               v(f"face_glint_{t_}", "sphere", (r_ * 0.17,), (cx + 0.013, ey + sy * 0.004, cz + 0.018), white),
               v(f"face_mic_{t_}", "cylinder", (0.012, 0.012), (cx - 0.045, sy * 0.105, cz + 0.01), blk, quat=fwd),
-              v(f"face_mic_grille_{t_}", "sphere", (0.011,), (cx - 0.032, sy * 0.105, cz + 0.01), grey),
-              # the brows: a firm slant, low at the middle - brave
-              v(f"face_brow_{t_}", "box", (0.004, 0.017, 0.0035), (cx + 0.004, ey, cz + 0.037), brow, quat=(math.cos(sy * 0.18), math.sin(sy * 0.18), 0.0, 0.0))]
+              v(f"face_mic_grille_{t_}", "sphere", (0.011,), (cx - 0.032, sy * 0.105, cz + 0.01), grey)]
         # the ear: a big flat disc facing forward, built of strips across it, the one where the brim passes left out (a slot)
         ec, R_, n_ = np.array([cx - 0.06, sy * 0.105, cz + 0.01]), 0.05, 28
         for k in range(n_):
