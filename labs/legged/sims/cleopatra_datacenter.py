@@ -93,7 +93,7 @@ def cleo_meshes(cache: Path):
     if index.exists():
         return json.loads(index.read_text())
     out.mkdir(parents=True, exist_ok=True)
-    print("cleopatra_mission: tessellating the CAD (once; cached in", out, ")", flush=True)
+    print("cleopatra_datacenter: tessellating the CAD (once; cached in", out, ")", flush=True)
     d = myropod.Myropod()
     p = d.resolve(**mr.CLEO2_MM)
     zc = p["seg_height"] / 2
@@ -971,7 +971,7 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=F
 
     render.fps = fps
     st = simulate(model, info, render=render)
-    print(f"cleopatra_mission: {count['n']} frames, {st['t']:.1f} s of story", flush=True)
+    print(f"cleopatra_datacenter: {count['n']} frames, {st['t']:.1f} s of story", flush=True)
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     if shutil.which("ffmpeg"):
@@ -980,13 +980,13 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=F
                         "+faststart", str(out)], check=True)
         print("cleopatra_mission:", out)
     else:
-        print("cleopatra_mission: no ffmpeg — the frames are in", frames_dir)
+        print("cleopatra_datacenter: no ffmpeg — the frames are in", frames_dir)
     return out
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cleopatra.sh mission", description=__doc__.split("\n\n")[0])
-    ap.add_argument("--out", default=str(ROOT / "runs" / "cleopatra" / "cleopatra_mission.mp4"))
+    ap.add_argument("--out", default=str(ROOT / "runs" / "cleopatra" / "cleopatra_datacenter.mp4"))
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
     ap.add_argument("--fps", type=int, default=30)

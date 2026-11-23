@@ -6,7 +6,7 @@
 #   ./cleopatra.sh mission --text             the same with captions
 #   ./cleopatra.sh mission --width 960 --height 540 --fps 24 --out my.mp4      smaller and quicker
 #
-# Output: runs/cleopatra/cleopatra_mission.mp4 (1280 × 720, 30 fps; about 20–40 min on a laptop). Uses the project's
+# Output: runs/cleopatra/cleopatra_datacenter.mp4 (1280 × 720, 30 fps; about 20–40 min on a laptop). Uses the project's
 # virtual environment (.venv, or $VEGETA_VENV): ./install_local.sh sets it up; needs numpy, mujoco, cadquery, Pillow
 # and ffmpeg (else the frames are left as JPEGs).
 set -euo pipefail
@@ -32,7 +32,7 @@ fi
 case "$1" in
   mission)
     shift
-    exec "$py" labs/legged/sims/cleopatra_mission.py "$@" ;;
+    exec "$py" labs/legged/sims/cleopatra_datacenter.py "$@" ;;
   *)
     echo "cleopatra.sh: unknown command '$1' (mission)" >&2
     exit 2 ;;
