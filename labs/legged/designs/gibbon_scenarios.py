@@ -1481,24 +1481,28 @@ FACE_ON_THORAX = np.array([0.0, 0.0, 0.0])                                 #: th
 
 def face_prop(p):
     """A sweet, brave little monkey face on the head: big round eyes with a sparkle, a pale muzzle with a smile, round
-    ears, rosy cheeks and eyebrows set firm. Drawn on the head (visual only)."""
+    ears and eyebrows set firm. Drawn on the head (visual only)."""
     skin, white, blk, pink, brow, ear_in = (0.86, 0.72, 0.56, 1.0), (0.98, 0.98, 0.98, 1.0), (0.07, 0.05, 0.05, 1.0), (0.95, 0.55, 0.55, 1.0), (0.3, 0.18, 0.1, 1.0), (0.93, 0.66, 0.6, 1.0)
     F = FACE
     v = lambda name, typ, size, pos, rgba, quat=(1.0, 0.0, 0.0, 0.0): Geom(name, typ, size, pos=tuple(pos), quat=quat, mass=0.01, role="visual", rgba=rgba)
     cx, cz = F["front"], F["z"]
     g = [v("face_mask", "sphere", (F["mask_r"],), (cx - F["mask_r"] + 0.012, 0.0, cz + 0.005), skin),
          v("face_muzzle", "sphere", (0.03,), (cx + 0.008, 0.0, cz - 0.03), skin),
-         v("face_nose_l", "sphere", (0.005,), (cx + 0.036, 0.008, cz - 0.02), blk),
-         v("face_nose_r", "sphere", (0.005,), (cx + 0.036, -0.008, cz - 0.02), blk)]
-    for i in range(11):                                                      # the smile: a curve across the muzzle, its corners up
-        a = math.radians(-60 + 12 * i)
-        g.append(v(f"face_smile_{i}", "sphere", (0.003,), (cx + 0.036 - 0.008 * abs(math.sin(a)), 0.019 * math.sin(a), cz - 0.044 + 0.014 * (1 - math.cos(a))), blk))
+         ]
+    g.append(gs._cap("face_nose", 0.0055, (cx + 0.037, 0.007, cz - 0.019), (cx + 0.037, -0.007, cz - 0.019), rgba=blk, mass=0.01))
+    g[-1].role = "visual"
+    sm = []
+    for i in range(9):                                                       # the smile: one smooth curve across the muzzle, its corners up
+        a = math.radians(-60 + 15 * i)
+        sm.append((cx + 0.036 - 0.008 * abs(math.sin(a)), 0.019 * math.sin(a), cz - 0.044 + 0.014 * (1 - math.cos(a))))
+    for i in range(len(sm) - 1):
+        g.append(gs._cap(f"face_smile_{i}", 0.0026, sm[i], sm[i + 1], rgba=blk, mass=0.01))
+        g[-1].role = "visual"
     for sy, t_ in ((1, "l"), (-1, "r")):
         ey = sy * F["eye_y"]
         g += [v(f"face_eye_{t_}", "sphere", (F["eye_r"],), (cx, ey, cz + 0.012), white),
               v(f"face_pupil_{t_}", "sphere", (F["eye_r"] * 0.62,), (cx + F["eye_r"] * 0.55, ey, cz + 0.01), blk),
               v(f"face_spark_{t_}", "sphere", (F["eye_r"] * 0.22,), (cx + F["eye_r"] * 1.05, ey + sy * 0.004, cz + 0.018), white),
-              v(f"face_cheek_{t_}", "sphere", (0.011,), (cx - 0.004, sy * 0.042, cz - 0.022), pink),
               v(f"face_ear_{t_}", "cylinder", (0.03, 0.006), (cx - 0.06, sy * 0.078, cz + 0.008), skin, quat=(0.70710678, 0.70710678, 0.0, 0.0)),
               v(f"face_ear_in_{t_}", "cylinder", (0.019, 0.007), (cx - 0.058, sy * 0.079, cz + 0.008), ear_in, quat=(0.70710678, 0.70710678, 0.0, 0.0)),
               # the brows: a firm slant, low at the middle - brave
