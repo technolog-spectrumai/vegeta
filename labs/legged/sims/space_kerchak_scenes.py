@@ -279,7 +279,8 @@ class ScenePlayer:
         put(F["hat"], pt_ + Rt @ np.array(gb.HAT_ON_THORAX), Rt)
         Rh, ph = d.xmat[F["hand"]].reshape(3, 3), d.xpos[F["hand"]]
         if t < F["t_take"]:
-            put(F["nozzle"], F["hook"] - np.array([0.0, 0.0, 0.12]), np.eye(3))
+            cpos = d.qpos[F["chuck"]:F["chuck"] + 3]
+            put(F["nozzle"], cpos + np.array(gb.CHUCK["hook"]) - np.array([0.0, 0.0, 0.12]), np.eye(3))
         elif t < F["t_clip"]:
             Rr, pr = F["T_take"]
             put(F["nozzle"], ph + Rh @ pr, Rh @ Rr)
@@ -330,7 +331,7 @@ class ScenePlayer:
             F["trail"].append(pack.copy()); F["trail_t"] = t
         pts = [reel, reel + np.array([0.0, -0.05, -0.3])]
         if t < F["t_take"]:
-            pts += [F["hook"] - np.array([0.0, 0.0, 0.12])]
+            pts += [pn]
         else:
             way = []
             for q_ in (F["trail"] if t >= F["t_clip"] else []):
