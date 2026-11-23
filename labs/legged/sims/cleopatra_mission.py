@@ -172,8 +172,8 @@ def robot_path():
     port = port_point()
     head_x_end = port[0] + PLUG_REACH_X                                   # the gripper reaches the rest of the way
     crouch_z = DESK[4] + 0.13
-    d0 = np.array([X_END - 0.06, 0.0, desk_z])
-    d1 = np.array([head_x_end + 0.08, 0.0, desk_z])
+    d0 = np.array([X_END - 0.02, 0.0, desk_z])                            # straight on from the duct's mouth …
+    d1 = np.array([0.5 * (X_END - 0.02 + head_x_end), 0.0, desk_z])      # … never back: the path only goes forward
     d2 = np.array([head_x_end, 0.0, crouch_z])
     desk = [d0, d1] + [d1 + (d2 - d1) * sm(u) for u in np.linspace(0, 1, 20)[1:]]
     P, s = _resample(np.array(yard + lead + list(C[1:]) + desk), 0.004)
@@ -366,8 +366,8 @@ def build(width, height, cache: Path):
       rgba="0.55 0.56 0.6 1")
     port = port_point()
     G(world, type="box", size="0.002 0.0075 0.0035", pos=_s(port + [0.0005, 0, 0]), material="dark")
-    scr = ET.SubElement(world, "body", {"name": "screen", "pos": f"{lx + 0.115} {ly} {dz + STAND_H + 0.02}",
-                                        "euler": "0 0.3 0"})
+    scr = ET.SubElement(world, "body", {"name": "screen", "pos": f"{lx + 0.1} {ly} {dz + STAND_H + 0.02}",
+                                        "euler": "0 0.14 0"})                # hinged 15 mm in from the back
     G(scr, type="box", size="0.005 0.165 0.11", pos="-0.006 0 0.11", material="metal", rgba="0.5 0.51 0.55 1")
     G(scr, name="display", type="box", size="0.0008 0.152 0.097", pos="-0.0115 0 0.11", material="screen")
     G(scr, name="bar_bg", type="box", size="0.0008 0.1 0.008", pos="-0.0125 0 0.09", material="dark")
