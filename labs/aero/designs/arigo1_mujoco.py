@@ -256,7 +256,10 @@ def stability_tests(variant="hybrid", propulsion="pusher", V=18.0, post_stall_cm
     t90 = float(np.interp(math.pi / 2, phi_un, h["t"])) if phi_un.max() > math.pi / 2 else None
     t360 = float(np.interp(2 * math.pi, phi_un, h["t"])) if phi_un.max() > 2 * math.pi else None
     out["full_aileron_roll"] = {"steady_roll_rate_deg_s": round(float(np.median(h["p"][h["t"] > 0.8])), 1), "time_to_90deg_s": t90 and round(t90, 3),
-                                "time_to_360deg_s": t360 and round(t360, 3), "pb_2V": round(float(np.radians(np.median(h["p"][h["t"] > 0.8])) * C["b"] / (2 * V)), 3)}
+                                "time_to_360deg_s": t360 and round(t360, 3),
+                                # the rate through the first turn: the median after 0.8 s (above) is taken when a fast aircraft is already past two turns
+                                "roll_rate_first_turn_deg_s": round(float(np.median(h["p"][(h["t"] > 0.15) & (phi_un < 2 * math.pi)])), 1) if ((h["t"] > 0.15) & (phi_un < 2 * math.pi)).any() else None,
+                                "pb_2V": round(float(np.radians(np.median(h["p"][h["t"] > 0.8])) * C["b"] / (2 * V)), 3)}
 
     # 6. vertical gust: a 3 m/s up-gust for 1 s
     sim.start(V, 60.0)

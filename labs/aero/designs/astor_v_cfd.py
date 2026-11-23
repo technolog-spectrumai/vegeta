@@ -21,12 +21,12 @@ from nisus_cfd import NU, QUALITY, RHO
 CASES = {12.0: (25.0, 1.0, (-4.0, 0.0, 4.0, 8.0, 10.0, 12.0, 14.0, 16.0)),
          35.0: (40.0, 1.0, (-2.0, 0.0, 2.0, 4.0, 8.0, 12.0)),
          60.0: (60.0, 0.6, (-2.0, 0.0, 1.0, 2.0, 4.0, 6.0))}
-DESIGNS = ("v", "boost", "t", "twin")
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 
 def sweeps(design) -> tuple:
     """The wing states run for this design: ASTOR-TWIN's wing is fixed at 12 deg (its one state, 8 angles)."""
-    return (12.0,) if design == "twin" else tuple(CASES)
+    return (12.0,) if design.startswith("twin") else tuple(CASES)
 
 
 def key(design, sweep) -> str:
@@ -43,6 +43,9 @@ def _cls(design):
     if design == "twin":                                              # ASTOR-TWIN as it flies the net: one launcher at its rest tilt, no legs
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **over}))
+    if design == "twin_stowed":
+        import astor_twin as W
+        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **over}))
     return V.AstorV, V.variant
 
 

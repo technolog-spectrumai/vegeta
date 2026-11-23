@@ -59,7 +59,7 @@ STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (12.0, 45.0), (12.0, 60.0))}   # ASTO
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN"}
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0"}
 
 
 def _inputs() -> str:
@@ -159,6 +159,13 @@ def _job(job):
             finally:
                 amj.Sim = old
             C = VF.get(name, sweep)
+            k = VF.SAS.get(name)
+            if k:                                                    # the modes with the dampers, as equivalent damping derivatives (the washout left out)
+                Ca = {**C, "Cnr": C["Cnr"] - abs(C["Cndr"]) * k["yaw_k"] * 57.3 * 2 * Vt / C["b"], "Cmq": C["Cmq"] + C["Cmde"] * k["pitch_k"] * k["pitch_v_ref"] / Vt * 57.3 * 2 * Vt / C["c"]}
+                out["linear_modes_bare_airframe"] = out["linear_modes"]
+                out["linear_modes"] = {kk: {a_: (round(b_, 4) if isinstance(b_, float) else b_) for a_, b_ in r.items()} for kk, r in am.name_modes(am.modes(Ca, Vt)).items()}
+                out["verdict"].update({"dutch_roll_zeta": out["linear_modes"].get("dutch_roll", {}).get("zeta"), "spiral_time_to_double_s": out["linear_modes"].get("spiral", {}).get("t_half_or_double_s")})
+                out["augmentation"] = {**k, "note": "yaw damper, pitch damper and g limit in the flight controller; linear_modes are with them"}
             out.update({"aircraft": NAMES[name], "sweep_deg": sweep, "stall_m_s": round(VF.stall(C), 1), "top_speed_m_s": round(AM.top_speed(C), 1),
                         "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4), "mass_kg": round(C["mass"], 3),
                         "alpha_limiter": {"on": True, "limit_deg": round(math.degrees(C["alpha_stall"]) - VF.ALPHA_MARGIN_DEG, 1)},
@@ -343,13 +350,19 @@ def main(argv=None) -> int:
                     help="netdrop: the bandit; default fast (three runs gave no release in 240 sorties against the slow jinking Armageddon bandit)")
     ap.add_argument("--latency", type=float, default=0.10, help="netdrop: the camera's latency [s]")
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
+    ap.add_argument("--tube-stowed", action="store_true", help="cfd only: ASTOR-TWIN with the launch tube level along the belly (0 deg) instead of 15 deg down; "
+                    "8 cases, stored beside the 15 deg ones (twin_stowed_sweep12), the flight model untouched")
     a = ap.parse_args(argv)
     a.designs = a.design or ["twin"]
+    if a.tube_stowed:
+        a.designs, a.cfd_only, a.stability_only, a.netshot_only = ["twin_stowed"], True, False, False
     a.bandits = ["fast", "armageddon"] if a.bandit == "both" else [a.bandit]
     phases = (["cfd"] if a.cfd_only else ["stability"] if a.stability_only else ["netdrop"] if a.netdrop_only else ["launch"] if a.launch_only
               else ["stability", "netdrop"] if a.skip_cfd else ["cfd", "stability", "netdrop"])
     if "t" in a.designs and not (a.cfd_only or a.stability_only or a.netdrop_only or a.launch_only or a.netshot_only):
         phases.append("launch")
+    if a.tube_stowed:
+        phases = ["cfd"]
     if "twin" in a.designs:
         if len(a.designs) > 1:
             ap.error("--design twin is run on its own (its mission phase is the net launcher's, not the dropped nets')")

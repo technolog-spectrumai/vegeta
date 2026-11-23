@@ -332,12 +332,46 @@ ALPHA_MARGIN_DEG = 2.0                      # the limiter holds the wing this fa
 LIMIT_K, LIMIT_KQ = 6.0, 0.10               # deg of elevator per deg over the limit, and per deg/s of pitch rate (HAND, tuned in the stall test)
 
 
+# STABILITY AUGMENTATION (ASTOR-TWIN, 2026-11-23; in the flight controller, under every command). The stability run on
+# its CFD gave a Dutch roll damped 0.05-0.06, a short period damped 0.20 at 30 m/s and 7.0 g in a 60 m/s doublet.
+SAS = {"twin": {"yaw_k": 0.25, "yaw_washout_s": 1.0,     # rudder [deg] per deg/s of yaw rate, the steady turn's rate washed out
+                "pitch_k": 0.06, "pitch_v_ref": 30.0,    # elevator [deg] per deg/s of pitch rate at 30 m/s, less with speed (x 30 / V)
+                "g_max": 5.0}}                           # HAND: no structural rating exists; the card's best sustained turn is 5.0 g
+
+
+def alpha_for_g(C, V, n) -> float:
+    """The angle of attack [rad] that gives ``n`` g at this airspeed (the table's lift, or the linear one)."""
+    cl = n * C["mass"] * am.G / (0.5 * am.RHO * max(V, 1.0) ** 2 * C["S"])
+    if "cfd" in C:
+        A, CLt = np.asarray(C["cfd"]["alpha_deg"]), np.asarray(C["cfd"]["CL"])
+        k = int(np.argmax(CLt))
+        return math.radians(float(np.interp(cl, CLt[:k + 1], A[:k + 1]))) if cl < CLt[k] else math.radians(float(A[k]))
+    return (cl - C["CL0"]) / C["CLa"]
+
+
+def augment(sim, C, s, ctl) -> list:
+    """The dampers and the g limit on the controls [elevator, aileron, rudder, throttle] (deg): for the designs in SAS."""
+    k = SAS.get(C.get("design"))
+    if not k or not getattr(sim, "sas", True):
+        return ctl
+    p, q, r = (math.degrees(x) for x in s["omega_frd"])
+    V = max(float(np.linalg.norm(s["v_air_frd"])), 10.0)
+    st = sim.__dict__.setdefault("_sas", {"r_lp": r})
+    st["r_lp"] += (r - st["r_lp"]) * amj.DT / k["yaw_washout_s"]
+    ctl[2] = max(-am.DR_MAX, min(am.DR_MAX, ctl[2] + k["yaw_k"] * (r - st["r_lp"]) * (1 if C["Cndr"] < 0 else -1)))
+    ctl[0] = max(-am.DE_MAX, min(am.DE_MAX, ctl[0] + k["pitch_k"] * k["pitch_v_ref"] / V * q))
+    return ctl
+
+
 def limit_elevator(C, v_air_frd, q, de) -> float:
     """The angle-of-attack limiter (in the flight controller, under every elevator command, the pilot's included):
     the elevator may not go further nose-up than what holds the limit angle, less a term for the angle beyond it and
     the pitch rate toward it. Positive elevator is nose down."""
     al = math.atan2(v_air_frd[2], max(v_air_frd[0], 1.0))
     a_lim = C["alpha_stall"] - math.radians(ALPHA_MARGIN_DEG)
+    g_max = SAS.get(C.get("design"), {}).get("g_max")
+    if g_max:                                                          # the g limit: the same floor, at the angle that gives g_max
+        a_lim = min(a_lim, alpha_for_g(C, float(np.linalg.norm(v_air_frd)), g_max))
     cm_lim = am._cfd_static(C["cfd"], a_lim)[2] if "cfd" in C else C["Cm0"] + C["Cma"] * a_lim
     de_hold = -cm_lim / C["Cmde"]
     floor = de_hold + LIMIT_K * math.degrees(al - a_lim) + LIMIT_KQ * math.degrees(q)
@@ -362,7 +396,7 @@ class Fixed(amj.Sim):
         import mujoco
         for _ in range(n):
             s = self.state()
-            ctl = list(self.controls)
+            ctl = augment(self, self.C, s, list(self.controls))
             if self.alpha_limit:
                 ctl[0] = limit_elevator(self.C, s["v_air_frd"], s["omega_frd"][1], ctl[0])
             F, M, info = am.aero(self.C, s["v_air_frd"], s["omega_frd"], *ctl)
@@ -448,7 +482,7 @@ class SimV(amj.Sim):
             trim = getattr(self, "trim", None)
             self.C = blended(self.name, self.sweep)
             self.C["mass"] = float(self.m.body_mass[self.bid])
-            ctl = list(self.controls)
+            ctl = augment(self, self.C, s, list(self.controls))
             if self.alpha_limit:
                 ctl[0] = limit_elevator(self.C, s["v_air_frd"], s["omega_frd"][1], ctl[0])
             if not self.prop_on:
