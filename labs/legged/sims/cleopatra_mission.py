@@ -650,7 +650,7 @@ def simulate(model, info, render=None):
         if render is not None:
             render(st, data, phase, caption, speed)
 
-    def freegait(phase, caption, s_to, v=0.12, t_swing=0.16, reach=0.065, look=0.06, speed=1.0, settle=0.3):
+    def freegait(phase, caption, s_to, v=0.12, t_swing=0.16, reach=0.085, look=0.06, speed=1.0, settle=0.3):
         sgn = 1.0 if s_to >= st["sc"] else -1.0
         step = (speed / render.fps) if render is not None else 1.0 / 30
         swing, last, blocked, quiet = {}, None, 0.0, 0.0
@@ -685,7 +685,7 @@ def simulate(model, info, render=None):
                 place_body(s_try)
                 ok = all(np.linalg.norm(F[lg] - foothold(lg, seg_pose(lg[0]))[0]) < reach for lg in legs
                          if lg not in swing)
-                if ok or blocked > 1.0:
+                if ok or blocked > 0.4:
                     st["sc"], blocked = s_try, 0.0
                 else:
                     blocked += step
