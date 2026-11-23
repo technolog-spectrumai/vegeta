@@ -91,14 +91,16 @@ def case(workdir, design, sweep, *, alpha_deg=0.0, quality="screening", env=None
                             geometry_units="mm", environment=env)
 
 
-def lattice_row(sweep, alpha_deg) -> dict:
-    """The lattice's CL and Cm about the CG at this sweep and angle (no drag: inviscid), for the comparison."""
-    r = VM.lattice(sweep, tail_fan=CASES[sweep][1], alpha=alpha_deg)
+def lattice_row(sweep, alpha_deg, design="v") -> dict:
+    """The lattice's CL and Cm about the CG at this sweep and angle (no drag: inviscid), for the comparison: on the
+    design's own wing and tail."""
+    cls, var = _cls(design)
+    r = VM.lattice(sweep, tail_fan=CASES[sweep][1], alpha=alpha_deg, p=cls().resolve(**var()))
     return {"Cl": round(r["CL"], 4), "Cm": round(r["Cm"] + r["CL"] * V.CG_MM / 1000.0 / VM.C_REF, 4)}
 
 
 def row(design, sweep, alpha_deg, result) -> dict:
-    out = {"alpha_deg": alpha_deg, "V": CASES[sweep][0], "lattice": lattice_row(sweep, alpha_deg)}
+    out = {"alpha_deg": alpha_deg, "V": CASES[sweep][0], "lattice": lattice_row(sweep, alpha_deg, design)}
     if result is None or not getattr(result, "ok", False):
         out["status"] = "NOT RUN" if result is None or any("NOT RUN" in s for s in getattr(result, "messages", [])) else "FAILED"
         out["messages"] = [str(m)[:200] for m in list(getattr(result, "messages", []))[:3]]

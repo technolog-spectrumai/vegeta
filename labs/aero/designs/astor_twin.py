@@ -222,6 +222,7 @@ class AstorTwin(T.AstorT):
             out.pop("talons", None)
             out["launcher"] = self._launchers(p)
             out["vessel"] = self._vessel(p)                                    # inside the fuselage: seen only with the body drawn clear
+            out.pop("rail", None)                                              # ASTOR-T's launch fitting: not this aircraft's
             out.pop("belly_camera", None)                                      # the dropped nets' camera went with them
         return out
 
