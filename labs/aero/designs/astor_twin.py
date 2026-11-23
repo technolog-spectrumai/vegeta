@@ -49,7 +49,7 @@ TAIL = dict(span=270.0, root=135.0, tip=70.0, root_y=30.0, z=6.0, fin_height=175
 _DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher", "tail_anhedral_deg": 0.0, "tail_panel_span": TAIL["span"], "tail_panel_root": TAIL["root"],
              "tail_panel_tip": TAIL["tip"], "tail_pivot_y": TAIL["root_y"], "dash_tail_fan": 1.0, "fin_height": TAIL["fin_height"], "fin_root_chord": TAIL["fin_root"],
              "fin_taper": TAIL["fin_taper"], "fin_sweep_deg": TAIL["fin_sweep_deg"], "panel_aileron_from": 0.05, "panel_aileron_to": 0.96, "panel_aileron_chord": 0.30,                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
-             "pivot_slides": False, **_PLAN, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
+             "pivot_slides": False, **_PLAN, "panel_thickness": 0.12, "panel_camber": 0.04, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
 _NEW = [
     Parameter("glove_span", 2 * WING["joint_y"], "mm", min=200.0, description="the fixed inner wing, tip to tip"),
     Parameter("glove_root_chord", WING["root_chord"], "mm", min=120.0), Parameter("glove_taper", _chord(WING["joint_y"]) / WING["root_chord"], "", min=0.3, max=1.0),
@@ -61,7 +61,7 @@ _NEW = [
     Parameter("single_fin", 1, "", min=0, max=1, description="one upright fin on the body's back (not ASTOR-T's two folding ones under it)"),
     Parameter("vtail_z", 22.0, "mm", description="the tail surfaces' roots above the fuselage axis"),
     Parameter("flaperon_deg", 0.0, "deg", min=-25.0, max=40.0, description="the ailerons drooped together (flaperons), trailing edge down: 0 in fast flight, ~20 to turn slowly"),
-    Parameter("inboard_flap_chord", 0.0, "", min=0.0, max=0.4, description="plain flaps on the inner wing pieces, behind the propellers, as a share of the chord (0: none)"),
+    Parameter("inboard_flap_chord", 0.30, "", min=0.0, max=0.4, description="plain flaps on the inner wing pieces, behind the propellers, as a share of the chord (0: none)"),
     Parameter("inboard_flap_deg", 0.0, "deg", min=0.0, max=40.0, description="their droop"),
     Parameter("net_launchers", 0, "", min=0, max=2, description="GAVILAN's recoilless net launcher(s) under the forward belly (0: none; the legs are then left off)"),
     Parameter("launcher_depression_deg", 15.0, "deg", min=0.0, max=15.0, description="the launch tube's tilt below the body axis: it moves between 0 (along the belly) and 15 deg to follow the prey"),
@@ -70,6 +70,12 @@ _NEW = [
 # WING FIXED (2026-11-22): the flight model at 12 / 35 / 60 deg of sweep gave drag at 60 m/s of 20.9 / 21.1 / 21.3 N, stall
 # 23.1 / 23.7 / 26.3 m/s and aileron power 1.0 / 0.68 / 0.26: sweeping bought nothing below 100 m/s once the tube was
 # dropped. The panels stay at V.SPREAD_DEG; ``wing_sweep_deg`` is kept only so the drawing code is shared with ASTOR-T.
+# SECTION AND FLAPS (2026-11-23, after the CFD of that day): the wing's section is 12 % thick with 4 % camber (it was
+# 8 % and 2 %, thin so that the swing panels could stack), the ailerons droop together as flaperons and the inner
+# pieces carry plain flaps behind the propellers (30 % chord). CFD, on the aircraft's own wing area: all flaps down
+# 20 deg add 0.65 to the lift at a fixed angle and raise the maximum from 0.95 to 1.14; the section alone raised it
+# from 0.89 to 0.95. THIN is the old wing, kept for its CFD cases.
+THIN = {"panel_thickness": 0.08, "panel_camber": 0.02, "inboard_flap_chord": 0.0}
 LAUNCHER = dict(tube_mm=300.0, tube_od_mm=45.0, chamber_mm=90.0, chamber_od_mm=60.0, tank_l=1.0)      # gavilan_flight.NET's airborne piece
 # The air vessel is INSIDE the fuselage (2026-11-22): a 1 L vessel of the old 86 mm diameter does not go into a 70 mm
 # body, so it is shaped to the tail cone, where the dropped nets' tube was, its front end above the breech it feeds.

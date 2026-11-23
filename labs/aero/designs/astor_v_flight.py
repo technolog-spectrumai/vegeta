@@ -159,7 +159,8 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
         u = ap._unit("edf-70-p2.20-e0.65-catalogue-s1", FAN_W, None)
         C["boost"] = {"table_V": [float(v) for v in range(0, 92, 2)], "table_T": [float(max(u.full(float(v))[0], 0.0)) for v in range(0, 92, 2)],
                       "power_W": FAN_W, "z_below_axis_m": 0.080}
-    cfg = cfd_config(name, sweep)
+    cfg = cfd_config(CFD_KEY.get(name, name), sweep)
+    C_pre = {k: (v.copy() if isinstance(v, (dict, np.ndarray)) else v) for k, v in C.items()}
     if not cfg and name in ("t", "twin"):
         from_astor_v(C, p, sweep, glove)
         if name == "twin":
@@ -187,7 +188,46 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
             C["aero_source"] = (f"cfd run 1 (camber {cam_cfd:g}, carriage {trav_cfd:.0f} mm) for drag, slopes and stall + the lattice's "
                                 f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep, p):.0f} mm): rerun the CFD")
     lift_table(C, name, sweep, cfg)
+    dx = CG_AFT_MM.get(name, 0.0) / 1000.0 if cfg else 0.0
+
+    def cg_aft(Cx):                                                    # the same aircraft balanced further aft: the moment gains the lift x the shift
+        if dx:
+            Cx["cfd"]["Cm"] = Cx["cfd"]["Cm"] + Cx["cfd"]["CL"] * dx / Cx["c"]
+            Cx["Cm0"], Cx["Cma"] = Cx["Cm0"] + Cx["CL0"] * dx / Cx["c"], Cx["Cma"] + Cx["CLa"] * dx / Cx["c"]
+            Cx["static_margin"], Cx["x_cg_m"] = -Cx["Cma"] / Cx["CLa"], V.CG_MM / 1000.0 + dx
+    cg_aft(C)
+    cfgf = cfd_config(CFD_FLAP_KEY.get(name, "-"), sweep)
+    if cfg and cfgf and sum(r.get("status") == "solved" for r in cfgf.get("rows", [])) >= 4:
+        Cf = C_pre                                                     # the same aircraft, its CFD with every flap down
+        apply_cfd(Cf, cfgf)
+        lift_table(Cf, name, sweep, cfgf)
+        cg_aft(Cf)
+        C["flap"] = {"deg": FLAP_DEG, "cfd": Cf["cfd"], "CL_MAX": Cf["CL_MAX"], "alpha_stall": Cf["alpha_stall"], "Cm0": Cf["Cm0"],
+                     "alpha_margin_deg": 0.0,     # the CFD's lift with flaps is flat from its peak to 16 deg: no fall to keep away from
+                     "source": "cfd (screening RANS) with the flaperons and inboard flaps down"}
     return C
+
+
+# ASTOR-TWIN's CFD with the 12 % wing and the tube level gave a static margin of 23 % at the 365 mm CG the CFD turned
+# about: more than it needs, and it costs elevator at high lift. The pack sits 20 mm further aft (CG 385 mm): ~13 %.
+CG_AFT_MM = {"twin": 20.0}
+CFD_KEY = {"twin": "twin_agile"}             # the CFD configuration a design's clean state flies (astor_v_cfd.DESIGNS)
+CFD_FLAP_KEY = {"twin": "twin_agile_flap"}   # and its state with every flap down
+FLAP_DEG, FLAP_TRAVEL_S = 20.0, 1.0
+
+
+def with_flap(C, f) -> dict:
+    """The set with the flaps a share ``f`` (0-1) of the way down: the two CFD tables blended, and the limiter's angle."""
+    if f <= 1e-3 or "flap" not in C:
+        return C
+    f, F = min(f, 1.0), C["flap"]
+    out = dict(C)
+    out["cfd"] = {k: (C["cfd"][k] if k == "alpha_deg" else (1 - f) * C["cfd"][k] + f * F["cfd"][k]) for k in C["cfd"]}
+    out["CL_MAX"] = (1 - f) * C["CL_MAX"] + f * F["CL_MAX"]
+    out["alpha_stall"] = (1 - f) * C["alpha_stall"] + f * F["alpha_stall"]
+    out["alpha_margin_deg"] = (1 - f) * ALPHA_MARGIN_DEG + f * F["alpha_margin_deg"]
+    out["flap_share"] = f
+    return out
 
 
 TABLE_ALPHA = np.arange(-8.0, 25.0, 1.0)     # the common grid [deg] of every state's table (they are blended between sweeps)
@@ -368,7 +408,7 @@ def limit_elevator(C, v_air_frd, q, de) -> float:
     the elevator may not go further nose-up than what holds the limit angle, less a term for the angle beyond it and
     the pitch rate toward it. Positive elevator is nose down."""
     al = math.atan2(v_air_frd[2], max(v_air_frd[0], 1.0))
-    a_lim = C["alpha_stall"] - math.radians(ALPHA_MARGIN_DEG)
+    a_lim = C["alpha_stall"] - math.radians(C.get("alpha_margin_deg", ALPHA_MARGIN_DEG))
     g_max = SAS.get(C.get("design"), {}).get("g_max")
     if g_max:                                                          # the g limit: the same floor, at the angle that gives g_max
         a_lim = min(a_lim, alpha_for_g(C, float(np.linalg.norm(v_air_frd)), g_max))
@@ -381,9 +421,9 @@ def limit_elevator(C, v_air_frd, q, de) -> float:
 class Fixed(amj.Sim):
     """The aircraft with the wing held at one sweep (the stability tests), the limiter under the elevator."""
 
-    def __init__(self, name, sweep, mesh=None, bandit=False, alpha_limit=True):
+    def __init__(self, name, sweep, mesh=None, bandit=False, alpha_limit=True, flap=0.0):
         import mujoco
-        self.C = get(name, sweep)
+        self.C = with_flap(get(name, sweep), flap)                       # ``flap`` 0-1: held there for the whole test
         self.m = mujoco.MjModel.from_xml_string(amj.mjcf(self.C, mesh, bandit))
         self.d = mujoco.MjData(self.m)
         self.bid = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "arigo")
@@ -463,6 +503,7 @@ class SimV(amj.Sim):
         self.info = {}
         self.prop_on, self.boost, self.nets = True, 0.0, int(self.C["equipment"]["nets"])
         self.alpha_limit = True
+        self.flap, self.flap_cmd = 0.0, 0.0                              # the flaps' position and command, 0 (up) to 1 (20 deg down)
         self.energy_J = 0.0
 
     def drop_net(self) -> bool:
@@ -480,7 +521,8 @@ class SimV(amj.Sim):
             d = self.SWEEP_RATE * amj.DT
             self.sweep += max(-d, min(d, want - self.sweep))
             trim = getattr(self, "trim", None)
-            self.C = blended(self.name, self.sweep)
+            self.flap += max(-amj.DT / FLAP_TRAVEL_S, min(amj.DT / FLAP_TRAVEL_S, self.flap_cmd - self.flap))
+            self.C = with_flap(blended(self.name, self.sweep), self.flap)
             self.C["mass"] = float(self.m.body_mass[self.bid])
             ctl = augment(self, self.C, s, list(self.controls))
             if self.alpha_limit:

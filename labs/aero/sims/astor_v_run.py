@@ -57,6 +57,10 @@ STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep de
 STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
+CFD_STATES = {"twin": ["twin_agile", "twin_agile_flap"]}             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+FLAP_STATES = {"twin": ((12.0, 24.0),)}                              # stability with every flap down: (sweep, speed)
+
+
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
 NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20"}
@@ -79,6 +83,7 @@ def _meta(phase, a):
 def phase_cfd(a) -> int:
     import astor_v_cfd as cf
     quality = "fine" if a.full_cfd else a.quality
+    a.designs = [x for d in a.designs for x in CFD_STATES.get(d, [d])]       # a design's CFD is its states' (ASTOR-TWIN: flaps up, flaps down)
     todo_all = [(d, s, al) for d in a.designs for s in cf.sweeps(d) for al in cf.CASES[s][2]]
     if a.dry_run:
         for d, s, al in todo_all:
@@ -149,16 +154,19 @@ def _job(job):
         if kind == "stab":
             name, sweep, Vt, k = job[1], job[2], job[3], job[4]
 
+            flap = 1.0 if len(job) > 5 else 0.0
+
             class Fixed(VF.Fixed):                                   # the wing held at this sweep, the alpha limiter on
                 def __init__(self, variant=None, propulsion=None, mesh=None, bandit=False):
-                    super().__init__(name, sweep, mesh, bandit)
+                    super().__init__(name, sweep, mesh, bandit, flap=flap)
             old = amj.Sim
             amj.Sim = Fixed
             try:
                 out = amj.stability_tests(f"astor_{name}", "tractor_lowcam", Vt, k)
             finally:
                 amj.Sim = old
-            C = VF.get(name, sweep)
+            C = VF.with_flap(VF.get(name, sweep), flap)
+            out["flaps_deg"] = VF.FLAP_DEG * flap
             k = VF.SAS.get(name)
             if k:                                                    # the modes with the dampers, as equivalent damping derivatives (the washout left out)
                 Ca = {**C, "Cnr": C["Cnr"] - abs(C["Cndr"]) * k["yaw_k"] * 57.3 * 2 * Vt / C["b"], "Cmq": C["Cmq"] + C["Cmde"] * k["pitch_k"] * k["pitch_v_ref"] / Vt * 57.3 * 2 * Vt / C["c"]}
@@ -168,7 +176,7 @@ def _job(job):
                 out["augmentation"] = {**k, "note": "yaw damper, pitch damper and g limit in the flight controller; linear_modes are with them"}
             out.update({"aircraft": NAMES[name], "sweep_deg": sweep, "stall_m_s": round(VF.stall(C), 1), "top_speed_m_s": round(AM.top_speed(C), 1),
                         "static_margin": round(C["static_margin"], 3), "Cnb": round(C["Cnb"], 4), "mass_kg": round(C["mass"], 3),
-                        "alpha_limiter": {"on": True, "limit_deg": round(math.degrees(C["alpha_stall"]) - VF.ALPHA_MARGIN_DEG, 1)},
+                        "alpha_limiter": {"on": True, "limit_deg": round(math.degrees(C["alpha_stall"]) - C.get("alpha_margin_deg", VF.ALPHA_MARGIN_DEG), 1)},
                         "Clda_per_deg": {"ailerons": round(C["Clda_aileron"], 5), "tail": round(C["Clda_tail"], 5)}, "aero_source": C["aero_source"]})
         elif kind == "card":
             import arigo_perf as P
@@ -199,7 +207,8 @@ def _job(job):
 
 # ------------------------------------------------------------------------------------------------ 2. stability
 def phase_stability(a) -> int:
-    jobs = [("stab", d, s, Vt, k) for d in a.designs for s, Vt in states(d) for k in (1.0, 0.35)] + [("card", d) for d in a.designs]
+    jobs = ([("stab", d, s, Vt, k) for d in a.designs for s, Vt in states(d) for k in (1.0, 0.35)]
+            + [("stab", d, s, Vt, 1.0, "flaps") for d in a.designs for s, Vt in FLAP_STATES.get(d, ())] + [("card", d) for d in a.designs])
     if a.dry_run:
         print("\n".join(" ".join(str(x) for x in j) for j in jobs)); print(len(jobs), "jobs")
         return 0
@@ -321,7 +330,7 @@ def phase_netshot(a) -> int:
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.CASES[s][2]) for d in a.designs for s in cf.sweeps(d)), "stability": len(a.designs) * (len(STATES) * 2 + 1),
+    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.CASES[s][2]) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
