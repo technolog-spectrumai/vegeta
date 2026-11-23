@@ -1502,6 +1502,15 @@ def ear_geoms(solid=True):
     return g
 
 
+SCAPULA = {"half": (0.012, 0.035, 0.06), "x": -0.075, "y": 0.055, "z": 0.08}   #: the shoulder blades on the back, under the pack [m]
+
+
+def scapula_geoms():
+    """The shoulder blades as solid plates on the thorax's back: the tail (and the arms) go round them, never over."""
+    return [Geom(f"scap_{t_}", "box", SCAPULA["half"], pos=(SCAPULA["x"], sy * SCAPULA["y"], SCAPULA["z"]), mass=0.01,
+                 role="link", rgba=(0.86, 0.82, 0.68, 1.0)) for sy, t_ in ((1, "l"), (-1, "r"))]
+
+
 def face_prop(p):
     """A sweet, brave little robot-monkey face on the head: camera eyes (a lens in a housing, a glint), a smoke
     detector for a nose, a pale muzzle with a smile, disc ears facing forward with a microphone in each, the helmet's
