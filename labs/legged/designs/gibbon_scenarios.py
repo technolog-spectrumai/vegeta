@@ -1169,10 +1169,9 @@ HOLSTER_ON_THORAX = (np.array([-0.06, -0.14, -0.14]), 0.0)               #: the 
 
 def hat_prop(p):
     red, yel, blk = (0.75, 0.08, 0.06, 1.0), (0.95, 0.78, 0.15, 1.0), (0.1, 0.1, 0.1, 1.0)
-    geoms = [Geom("hat_dome", "sphere", (0.074,), pos=(0.0, 0.0, 0.025), mass=0.15, role="link", rgba=red),
-             gs._cap("hat_brim", 0.006, (0.0, 0.0, -0.012), (0.0, 0.0, -0.006), rgba=red, mass=0.05),
-             Geom("hat_brim_disc", "cylinder", (0.105, 0.004), pos=(-0.02, 0.0, -0.01), mass=0.05, role="link", rgba=red),
-             gs._box("hat_badge", (0.006, 0.03, 0.028), (0.075, 0.0, 0.03), rgba=yel, mass=0.02),
+    geoms = [Geom("hat_dome", "sphere", (0.074,), pos=(0.0, 0.0, 0.025), mass=0.15, role="visual", rgba=red),   # worn: drawn on the head, not colliding with it
+             Geom("hat_brim_disc", "cylinder", (0.105, 0.004), pos=(-0.02, 0.0, -0.01), mass=0.05, role="visual", rgba=red),
+             Geom("hat_badge", "box", (0.006, 0.03, 0.028), pos=(0.075, 0.0, 0.03), mass=0.02, role="visual", rgba=yel),
              gs._box("hat_comb", (0.06, 0.008, 0.012), (0.0, 0.0, 0.1), rgba=blk, mass=0.02)]
     return Prop(Link("fire_hat", pos=(-6.0, 0.0, 4.0), geoms=geoms), free=True)
 
@@ -1312,7 +1311,7 @@ FIRE = {"wall_x": 6.0, "wall_t": 0.25, "floor": 3.0, "sill_h": 0.85, "win_w": 0.
         "room_d": 5.0, "rung_out": 0.14, "rung_sp": 0.3, "rung0": 0.3, "rung_r": 0.016, "rail_y": 0.22, "rail_above": 0.95,
         "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.0, "quad_y": 1.0, "spray_range": 1.1, "climb_s": 3.0}
 RED = (0.72, 0.1, 0.08, 1.0)
-CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (-0.25, -0.5, 0.78), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.24, 0.5)}
+CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (-0.25, -0.78, 0.8), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.53, 0.48)}
 
 
 def _fire_sill(p):
@@ -1373,7 +1372,9 @@ def chuck_prop(p):
              gs._cap("chuck_bars", 0.018, (0.5, -0.3, 1.04), (0.5, 0.3, 1.04), rgba=blk, mass=2.0),
              gs._cap("chuck_cannon_post", 0.04, (0.9, 0.0, 0.58), (0.9, 0.0, 0.8), rgba=steel, mass=4.0),
              gs._cap("chuck_cannon", 0.035, (0.9, 0.0, 0.84), (1.15, 0.0, 0.94), rgba=(0.78, 0.62, 0.25, 1.0), mass=5.0),
-             gs._cap("chuck_hook", 0.01, (CHUCK["hook"][0], -0.45, CHUCK["hook"][2] - 0.05), (CHUCK["hook"][0], -0.52, CHUCK["hook"][2] - 0.05), rgba=steel, mass=0.2)]
+             gs._cap("chuck_hook_arm", 0.012, (CHUCK["hook"][0], -0.45, 0.55), (CHUCK["hook"][0], CHUCK["hook"][1], CHUCK["hook"][2] - 0.05), rgba=steel, mass=0.3)]
+    for sy, tag in ((1, "l"), (-1, "r")):                                    # the foot pegs out beside the frame
+        geoms.append(gs._cap(f"chuck_peg_{tag}", 0.015, (CHUCK["pegs"][0] - 0.06, sy * 0.46, CHUCK["pegs"][2] - 0.03), (CHUCK["pegs"][0] - 0.06, sy * 0.62, CHUCK["pegs"][2] - 0.03), rgba=steel, mass=0.5))
     for i, (sx, sy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
         geoms.append(Geom(f"chuck_wheel_{i}", "cylinder", (0.33, 0.12), pos=(sx * 0.72, sy * 0.6, 0.33), quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=20.0, role="link", rgba=blk))
         geoms.append(Geom(f"chuck_hub_{i}", "cylinder", (0.12, 0.125), pos=(sx * 0.72, sy * 0.6, 0.33), quat=(0.70710678, 0.70710678, 0.0, 0.0), mass=2.0, role="visual", rgba=steel))
@@ -1414,7 +1415,7 @@ def _fire_fight(kin, q_stand, base, fire_c, pt):
 
     def bail(yaw):                                                         # the valve's lever on top of the nozzle, ahead of the grip
         dd, (grip, _) = aim(yaw)
-        c = grip + 0.07 * dd + np.array([0.0, 0.0, 0.05])
+        c = grip + 0.04 * dd + np.array([0.0, 0.05, 0.04])
         return (c, gs.hand_frame_on(gs.bar(c, axis=gs._unit(np.cross(dd, [0.0, 0.0, 1.0])), n=(0.0, 0.0, 1.0), r=0.01, wrist_dir=gs._unit(np.array([-0.4, 0.3, 0.6]))), "L"))
     hand0 = {sd: gs._hand_pose(kin, q_stand, base, pt, sd) for sd in ("L", "R")}
     up_over = p_th + R_th @ np.array([0.12, -0.2, 0.05])
@@ -1622,7 +1623,9 @@ def scenario_fire(kin, q_stand, p):
             g_ = f"{sd}_hand"
             a, b_ = A[g_]
             end = gs.hand_targets(kin, sd, hands_hi[sd])
-            if u < a:
+            if u >= Dc[0] + 0.04:                                          # the feet on the sill: the hands let go of the rails
+                pass
+            elif u < a:
                 out += gs.hand_targets(kin, sd, h_end[g_])
             elif u < b_:
                 f = mk.smooth((u - a) / (b_ - a))
